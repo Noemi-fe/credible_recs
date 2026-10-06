@@ -5,7 +5,8 @@ from datetime import UTC, datetime
 import pytest
 from pydantic import ValidationError
 
-from engine.models import STANCE_VALUE, Comment, Label, Thread
+from engine.config import STANCE_VALUE
+from engine.models import Comment, MentionLabel, Thread, VoiceLabel
 from engine.tests.factories import make_comment, make_thread
 
 
@@ -74,54 +75,94 @@ def test_url_must_be_a_web_link():
         Comment.model_validate(make_comment("c1aaaa", url="reddit.com/r/x"))
 
 
-# Labels arrive from a CSV, so every value is a string and blanks are empty strings.
+# Labels arrive from CSVs, so every value is a string and blanks are empty strings.
+# Two layers (brief v4): a voice label per comment, and an evidence label per product mention.
 
-def label_row(**overrides) -> dict:
+def voice_row(**overrides) -> dict:
+    row = {"thread_id": "1fake01", "comment_id": "c1aaaa", "voice": "high", "tags": "established member, well upvoted", "note": ""}
+    row.update(overrides)
+    return row
+
+
+def mention_row(**overrides) -> dict:
     row = {
-        "thread_id": "1fake01",
         "comment_id": "c1aaaa",
         "product": "CeraVe Renewing SA Cleanser",
+        "category": "skincare",
         "stance": "recommend",
-        "credibility": "high",
-        "reason": "2 years of use and names a downside",
+        "evidence": "long-term use",
+        "tags": "long-term use, mentions flaws",
+        "note": "",
     }
     row.update(overrides)
     return row
 
 
-def test_valid_label_parses():
-    label = Label.model_validate(label_row())
-    assert label.stance == "recommend"
+def test_valid_voice_label_parses():
+    label = VoiceLabel.model_validate(voice_row())
+    assert label.voice == "high"
+    assert label.tags == ["established member", "well upvoted"]
+    assert label.note is None
+
+
+def test_valid_mention_label_parses():
+    label = MentionLabel.model_validate(mention_row())
+    assert label.evidence == "long-term use"
+    assert label.tags == ["long-term use", "mentions flaws"]
     assert STANCE_VALUE[label.stance] == 1
 
 
 def test_label_values_are_tidied_from_spreadsheet_typing():
-    label = Label.model_validate(label_row(stance=" Recommend ", credibility="HIGH", product="  CeraVe SA  "))
-    assert label.stance == "recommend"
-    assert label.credibility == "high"
-    assert label.product == "CeraVe SA"
+    label = MentionLabel.model_validate(
+        mention_row(stance=" Recommend ", evidence="Short-Term Use", category="SKINCARE", product="  CeraVe SA  ", tags=" Vague ;  secondhand")
+    )
+    assert (label.stance, label.evidence, label.category, label.product) == ("recommend", "short-term use", "skincare", "CeraVe SA")
+    assert label.tags == ["vague", "secondhand"]
 
 
-def test_label_rejects_unknown_stance():
-    with pytest.raises(ValidationError):
-        Label.model_validate(label_row(stance="love it"))
+@pytest.mark.parametrize("field, value", [("voice", "very high"), ("tags", "")])
+def test_voice_label_rejects(field, value):
+    with pytest.raises(ValidationError, match=field):
+        VoiceLabel.model_validate(voice_row(**{field: value}))
 
 
-@pytest.mark.parametrize("missing", ["stance", "credibility", "reason"])
-def test_product_mention_needs_stance_credibility_and_reason(missing):
-    with pytest.raises(ValidationError, match=missing):
-        Label.model_validate(label_row(**{missing: ""}))
+@pytest.mark.parametrize(
+    "field, value",
+    [("product", ""), ("category", "electronics"), ("stance", "love it"), ("evidence", "years"), ("tags", "")],
+)
+def test_mention_label_rejects(field, value):
+    with pytest.raises(ValidationError, match=field):
+        MentionLabel.model_validate(mention_row(**{field: value}))
 
 
-def test_blank_product_means_reviewed_with_no_product():
-    label = Label.model_validate(label_row(product="", stance="", credibility="", reason=""))
-    assert label.product is None
-    assert label.stance is None
+def test_off_category_mention_is_labelled_with_category_other():
+    assert MentionLabel.model_validate(mention_row(product="Bodum French press", category="other")).category == "other"
 
 
-def test_no_product_row_cannot_have_a_stance():
-    with pytest.raises(ValidationError, match="stance"):
-        Label.model_validate(label_row(product="", stance="recommend"))
+def test_voice_tags_and_evidence_tags_are_separate_lists():
+    # "mentions flaws" describes evidence about a product, not the voice of the writer.
+    with pytest.raises(ValidationError, match="established member"):
+        VoiceLabel.model_validate(voice_row(tags="mentions flaws"))
+    with pytest.raises(ValidationError, match="long-term use"):
+        MentionLabel.model_validate(mention_row(tags="well upvoted"))
+
+
+def test_misspelt_tag_is_rejected():
+    with pytest.raises(ValidationError, match="longterm use"):
+        MentionLabel.model_validate(mention_row(tags="longterm use"))
+
+
+def test_other_tag_needs_a_note():
+    with pytest.raises(ValidationError, match="note"):
+        VoiceLabel.model_validate(voice_row(tags="other"))
+    with pytest.raises(ValidationError, match="note"):
+        MentionLabel.model_validate(mention_row(tags="specific details, other", note="  "))
+
+
+def test_other_tag_with_a_note_is_fine():
+    label = MentionLabel.model_validate(mention_row(tags="other", note="Bought it for her mum and watched her use it"))
+    assert label.tags == ["other"]
+    assert label.note == "Bought it for her mum and watched her use it"
 
 
 def test_stance_values_match_the_brief():

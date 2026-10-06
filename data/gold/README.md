@@ -4,7 +4,8 @@ The hand-collected threads and Noemi's labels. Everything else is measured again
 
 ```
 data/gold/threads/<thread id>.json   one thread and its comments
-data/gold/labels.csv                 one row per product mention
+data/gold/voices.csv                 one row per comment you read: how credible the writer is
+data/gold/mentions.csv               one row per product mentioned: stance and how well the writer knows it
 ```
 
 Check it at any time with:
@@ -13,7 +14,7 @@ Check it at any time with:
 .venv/bin/python -m engine.gold
 ```
 
-It lists every problem at once, with the file and the line or field, or prints a summary when everything is clean.
+It lists every problem at once, with the file and the line or field. When everything is clean it prints a summary, including how often you used the "other" tag and the notes you wrote with it.
 
 ## A thread file
 
@@ -62,17 +63,35 @@ Save each thread as `threads/<thread id>.json`. The thread id is the part after 
 | `url` | The comment's own link (Share → Copy link). The id at the end is the comment id. |
 | `status` | `"ok"`, or `"deleted"` / `"removed"` when Reddit shows `[deleted]` / `[removed]`. |
 
-## labels.csv
+## Labels: two layers
 
-One row per product mentioned in a comment. Keep the header row as it is.
+Credibility has two layers (brief, version 4): a **voice** label for each comment you read, and an **evidence** label for each product it mentions. A mention's weight is voice × evidence × stance.
+
+Every label needs a reason: one or more **tags** in one cell, separated by commas (`long-term use, mentions flaws`), plus an optional **note**. When no tag fits, use `other` and write the reason in the note; a note is then required. If more than 1 in 10 labels use `other`, the tag list needs work, and the summary says so.
+
+The allowed values and tags live in [`engine/config.py`](../../engine/config.py). Adding a tag is a deliberate change made there.
+
+### voices.csv: one row per comment you read
 
 | Column | What to put |
 | --- | --- |
-| `thread_id`, `comment_id` | Which comment the row is about. |
-| `product` | The product as you would name it. **Leave blank** to record "I read this comment and it mentions no product" (one row, nothing else needed). |
-| `stance` | `recommend`, `warn` or `neutral`. |
-| `credibility` | `high`, `medium` or `low`. It describes the comment, so give every row of the same comment the same value. |
-| `reason` | One line on why, e.g. "3 years of use, names a downside". |
-| `notes` | Optional, for yourself. Ignored by the engine. |
+| `thread_id`, `comment_id` | Which comment. |
+| `voice` | `high`, `medium` or `low`. |
+| `tags` | Voice tags: established member, expert flair, well upvoted, recent, new account, salesy language, promotes one brand, old post, or other. |
+| `note` | Optional; required with `other`. |
 
-Capitals and stray spaces don't matter. Excel files saved with semicolons work too. If a reason contains a comma, the cell must be in double quotes; Excel and Numbers do this for you.
+A comment with a voice row and no rows in mentions.csv is a comment you read that mentions no product.
+
+### mentions.csv: one row per product mentioned
+
+| Column | What to put |
+| --- | --- |
+| `comment_id` | Which comment. It needs its voice row in voices.csv first. |
+| `product` | The product as you would name it. |
+| `category` | `skincare`, `kitchen` or `other`. Label every mention, including products outside the thread's category; the engine filters them out. |
+| `stance` | `recommend`, `warn` or `neutral`. |
+| `evidence` | `long-term use`, `short-term use` or `no first-hand use`. |
+| `tags` | Evidence tags: long-term use, specific details, mentions flaws, compares alternatives, short-term use, secondhand, vague, or other. |
+| `note` | Optional; required with `other`. |
+
+Capitals and stray spaces don't matter. Excel files saved with semicolons work too. In a comma-separated file, a cell holding several tags (or any comma) must be in double quotes; Excel and Numbers do this for you.

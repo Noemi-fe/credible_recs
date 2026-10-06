@@ -11,7 +11,8 @@
 - Ask Noemi before changing scoring weights, categories or anything user-facing.
 
 # Project notes
-- The brief is docs/brief.md (kept out of git because it holds job-search notes); its second tab (End-state tree) is docs/end-state-tree.md.
+- The brief is docs/brief.md, with the End-state tree as its last part. It's kept out of git because it holds job-search notes.
+- Decided values (categories, subreddits, label levels, reason tags) live in engine/config.py. Ask Noemi before changing them.
 - Python 3.12 in `.venv`. Set up with `python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev]"`.
 - Run tests with `.venv/bin/pytest`.
 - Validate the gold set with `.venv/bin/python -m engine.gold`.

@@ -3,7 +3,8 @@
 import json
 from pathlib import Path
 
-LABELS_HEADER = "thread_id,comment_id,product,stance,credibility,reason\n"
+VOICES_HEADER = "thread_id,comment_id,voice,tags,note\n"
+MENTIONS_HEADER = "comment_id,product,category,stance,evidence,tags,note\n"
 
 
 def make_thread(**overrides) -> dict:
@@ -46,11 +47,17 @@ def make_comment(comment_id: str, thread_id: str = "1fake01", **overrides) -> di
     return comment
 
 
-def write_gold(root: Path, threads: list[dict], labels: str | None = LABELS_HEADER) -> Path:
-    """Write threads as threads/<id>.json and labels as labels.csv. Pass labels=None to leave the CSV out."""
+def write_gold(
+    root: Path,
+    threads: list[dict],
+    voices: str | None = VOICES_HEADER,
+    mentions: str | None = MENTIONS_HEADER,
+) -> Path:
+    """Write threads as threads/<id>.json plus voices.csv and mentions.csv. Pass None to leave a CSV out."""
     (root / "threads").mkdir(parents=True, exist_ok=True)
     for thread in threads:
         (root / "threads" / f"{thread['id']}.json").write_text(json.dumps(thread, ensure_ascii=False, indent=2), encoding="utf-8")
-    if labels is not None:
-        (root / "labels.csv").write_text(labels, encoding="utf-8")
+    for name, text in (("voices.csv", voices), ("mentions.csv", mentions)):
+        if text is not None:
+            (root / name).write_text(text, encoding="utf-8")
     return root

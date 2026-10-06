@@ -1,12 +1,14 @@
 """Loads and checks the hand-collected gold set in data/gold.
 
     data/gold/threads/<thread id>.json   one thread with its comments (shape: engine.models.Thread)
-    data/gold/labels.csv                 Noemi's labels, one row per product mention (shape: engine.models.Label)
+    data/gold/voices.csv                 one row per comment read: how credible the writer is (engine.models.VoiceLabel)
+    data/gold/mentions.csv               one row per product mentioned: stance and evidence (engine.models.MentionLabel)
 
 The loader never stops at the first mistake: it collects every problem, names the file and the
 line or field, and raises them together, so a labelling session ends with one complete to-do list.
 
-Run `python -m engine.gold` to check the gold set and print a summary.
+Run `python -m engine.gold` to check the gold set and print a summary, including how often the
+"other" reason tag is used.
 """
 
 import csv
@@ -20,12 +22,14 @@ from urllib.parse import urlparse
 
 from pydantic import ValidationError
 
-from engine.models import SUBREDDITS, Comment, Label, Thread
+from engine.config import OTHER_TAG, OTHER_TAG_LIMIT, SUBREDDITS, THREAD_CATEGORIES
+from engine.models import Comment, MentionLabel, Thread, VoiceLabel
 
 DEFAULT_GOLD_DIR = Path(__file__).resolve().parents[1] / "data" / "gold"
 
-LABEL_COLUMNS = ("thread_id", "comment_id", "product", "stance", "credibility", "reason")
-OPTIONAL_LABEL_COLUMNS = ("notes",)
+VOICE_COLUMNS = ("thread_id", "comment_id", "voice", "tags")
+MENTION_COLUMNS = ("comment_id", "product", "category", "stance", "evidence", "tags")
+OPTIONAL_COLUMNS = ("note",)
 
 
 class GoldSetError(Exception):
@@ -37,7 +41,8 @@ class GoldSetError(Exception):
 @dataclass
 class GoldSet:
     threads: list[Thread]
-    labels: list[Label]
+    voices: list[VoiceLabel]
+    mentions: list[MentionLabel]
 
     def comment(self, comment_id: str) -> Comment:
         for thread in self.threads:
@@ -51,10 +56,11 @@ def load_gold_set(root: Path = DEFAULT_GOLD_DIR) -> GoldSet:
     root = Path(root)
     problems: list[str] = []
     threads, unreadable = _load_threads(root, problems)
-    labels = _load_labels(root, threads, unreadable, problems)
+    voices, skipped = _load_voices(root, threads, unreadable, problems)
+    mentions = _load_mentions(root, threads, voices, skipped, problems)
     if problems:
         raise GoldSetError(problems)
-    return GoldSet(threads=threads, labels=labels)
+    return GoldSet(threads=threads, voices=voices, mentions=mentions)
 
 
 # --- Threads ---
@@ -80,7 +86,7 @@ def _load_threads(root: Path, problems: list[str]) -> tuple[list[Thread], set[st
         try:
             thread = Thread.model_validate(raw)
         except ValidationError as e:
-            problems.extend(f"{where}: {_field(err['loc'])}{err['msg']}" for err in e.errors())
+            problems.extend(f"{where}: {_describe(err)}" for err in e.errors())
             unreadable.add(path.stem)
             if isinstance(raw, dict) and isinstance(raw.get("id"), str):
                 unreadable.add(raw["id"])
@@ -159,16 +165,20 @@ def _day(moment: datetime):
     return moment.date()
 
 
-def _field(loc: tuple) -> str:
-    return ".".join(str(part) for part in loc) + ": " if loc else ""
+def _describe(error: dict) -> str:
+    """One pydantic error as "field.path: message"."""
+    field = ".".join(str(part) for part in error["loc"])
+    message = error["msg"].removeprefix("Value error, ")
+    return f"{field}: {message}" if field else message
 
 
 # --- Labels ---
 
-def _load_labels(root: Path, threads: list[Thread], unreadable: set[str], problems: list[str]) -> list[Label]:
-    path = root / "labels.csv"
+def _read_csv(root: Path, name: str, columns: tuple[str, ...], problems: list[str]) -> list[tuple[int, dict]]:
+    """Returns (line number, row) for every non-blank row, or nothing if the file or its header is wrong."""
+    path = root / name
     if not path.is_file():
-        problems.append(f"labels.csv is missing; create it with the header row: {','.join(LABEL_COLUMNS)}")
+        problems.append(f"{name} is missing; create it with the header row: {','.join(columns + OPTIONAL_COLUMNS)}")
         return []
 
     # utf-8-sig drops the invisible marker Excel puts at the start of a file.
@@ -178,73 +188,147 @@ def _load_labels(root: Path, threads: list[Thread], unreadable: set[str], proble
     delimiter = ";" if ";" in header and "," not in header else ","
     reader = csv.DictReader(text.splitlines(keepends=True), delimiter=delimiter)
 
-    columns = [c.strip() for c in (reader.fieldnames or [])]
-    missing = [c for c in LABEL_COLUMNS if c not in columns]
-    unknown = [c for c in columns if c not in LABEL_COLUMNS + OPTIONAL_LABEL_COLUMNS]
+    found = [c.strip() for c in (reader.fieldnames or [])]
+    missing = [c for c in columns if c not in found]
+    unknown = [c for c in found if c not in columns + OPTIONAL_COLUMNS]
     if missing:
-        problems.append(f"labels.csv is missing column(s): {', '.join(missing)}")
+        problems.append(f"{name} is missing column(s): {', '.join(missing)}")
     if unknown:
-        problems.append(f"labels.csv has unknown column(s): {', '.join(unknown)}")
+        problems.append(f"{name} has unknown column(s): {', '.join(unknown)}")
     if missing or unknown:
         return []
-    reader.fieldnames = columns
+    reader.fieldnames = found
 
-    comments = {c.id: (t.id, c) for t in threads for c in t.comments}
-    labels: list[Label] = []
-    credibility_seen: dict[str, tuple[str, int]] = {}  # comment id -> (credibility, line)
-    products_seen: dict[tuple[str, str], int] = {}  # (comment id, product) -> line
-    with_products: set[str] = set()  # comment ids that have at least one product row
-    no_product_seen: dict[str, int] = {}  # comment id -> line of its "no product" row
-
+    rows = []
     for row in reader:
-        line = reader.line_num
-        where = f"labels.csv line {line}"
         if None in row:
-            problems.append(f"{where}: more values than columns; put text that contains commas inside double quotes")
-            continue
-        if not any((v or "").strip() for v in row.values()):
-            continue
+            problems.append(
+                f"{name} line {reader.line_num}: more values than columns; "
+                "put text that contains commas inside double quotes"
+            )
+        elif any((v or "").strip() for v in row.values()):
+            rows.append((reader.line_num, row))
+    return rows
+
+
+def _load_voices(
+    root: Path, threads: list[Thread], unreadable: set[str], problems: list[str]
+) -> tuple[list[VoiceLabel], set[str]]:
+    """Returns the valid voice labels, plus the ids of comments whose voice row was skipped.
+
+    Mentions of a skipped comment are not reported again: the voice row's own problem comes first.
+    """
+    comments = {c.id: (t.id, c) for t in threads for c in t.comments}
+    voices: list[VoiceLabel] = []
+    skipped: set[str] = set()
+    first_line: dict[str, int] = {}  # comment id -> line of its voice row
+
+    for line, row in _read_csv(root, "voices.csv", VOICE_COLUMNS, problems):
+        where = f"voices.csv line {line}"
         try:
-            label = Label.model_validate(row)
+            label = VoiceLabel.model_validate(row)
         except ValidationError as e:
-            problems.extend(f"{where}: {_field(err['loc'])}{err['msg']}" for err in e.errors())
+            problems.extend(f"{where}: {_describe(err)}" for err in e.errors())
+            skipped.add((row.get("comment_id") or "").strip())
             continue
 
         found = comments.get(label.comment_id)
-        if found is None and label.thread_id in unreadable:
-            continue  # the thread file's own problem is already reported; fix that first
         if found is None:
-            problems.append(f"{where}: comment {label.comment_id} is not in any thread")
+            if label.thread_id not in unreadable:  # otherwise the thread file's own problem is already reported
+                problems.append(f"{where}: comment {label.comment_id} is not in any thread")
+            skipped.add(label.comment_id)
             continue
         thread_id, comment = found
         if thread_id != label.thread_id:
             problems.append(f"{where}: comment {label.comment_id} belongs to thread {thread_id}, not {label.thread_id}")
+            skipped.add(label.comment_id)
             continue
         if comment.status != "ok":
             problems.append(f"{where}: comment {label.comment_id} is {comment.status} and can't be labelled")
+            skipped.add(label.comment_id)
+            continue
+        if label.comment_id in first_line:
+            problems.append(
+                f"{where}: comment {label.comment_id} already has a voice label (line {first_line[label.comment_id]}); one per comment"
+            )
+            continue
+        first_line[label.comment_id] = line
+        voices.append(label)
+    return voices, skipped
+
+
+def _load_mentions(
+    root: Path, threads: list[Thread], voices: list[VoiceLabel], skipped: set[str], problems: list[str]
+) -> list[MentionLabel]:
+    comment_ids = {c.id for t in threads for c in t.comments}
+    voiced = {v.comment_id for v in voices}
+    mentions: list[MentionLabel] = []
+    seen: dict[tuple[str, str], int] = {}  # (comment id, product) -> line
+
+    for line, row in _read_csv(root, "mentions.csv", MENTION_COLUMNS, problems):
+        where = f"mentions.csv line {line}"
+        try:
+            label = MentionLabel.model_validate(row)
+        except ValidationError as e:
+            problems.extend(f"{where}: {_describe(err)}" for err in e.errors())
             continue
 
-        if label.credibility:
-            earlier = credibility_seen.setdefault(label.comment_id, (label.credibility, line))
-            if earlier[0] != label.credibility:
-                problems.append(
-                    f"{where}: comment {label.comment_id} was rated {earlier[0]} on line {earlier[1]}; "
-                    "credibility describes the comment, so use one rating for all its rows"
-                )
-        if label.product:
-            key = (label.comment_id, label.product.casefold())
-            if key in products_seen:
-                problems.append(f"{where}: comment {label.comment_id} already has a label for {label.product!r} (line {products_seen[key]})")
-            elif label.comment_id in no_product_seen:
-                problems.append(f"{where}: comment {label.comment_id} already has a 'no product' row (line {no_product_seen[label.comment_id]})")
-            products_seen.setdefault(key, line)
-            with_products.add(label.comment_id)
-        else:
-            if label.comment_id in with_products:
-                problems.append(f"{where}: comment {label.comment_id} has product rows, so it can't also have a 'no product' row")
-            no_product_seen.setdefault(label.comment_id, line)
-        labels.append(label)
-    return labels
+        if label.comment_id in skipped:
+            continue  # its voice row's problem is already reported
+        if label.comment_id not in comment_ids:
+            problems.append(f"{where}: comment {label.comment_id} is not in any thread")
+            continue
+        if label.comment_id not in voiced:
+            problems.append(f"{where}: comment {label.comment_id} has no voice label; add its row to voices.csv first")
+            continue
+        key = (label.comment_id, label.product.casefold())
+        if key in seen:
+            problems.append(f"{where}: comment {label.comment_id} already has a label for {label.product!r} (line {seen[key]})")
+            continue
+        seen[key] = line
+        mentions.append(label)
+    return mentions
+
+
+# --- How often "other" is used ---
+
+@dataclass
+class OtherTagUsage:
+    """How many labels of one kind fall back on the "other" tag, and the notes they give."""
+
+    kind: str  # "voice" or "evidence"
+    used: int
+    total: int
+    notes: list[str]
+
+    @property
+    def rate(self) -> float:
+        return self.used / self.total if self.total else 0.0
+
+    @property
+    def needs_work(self) -> bool:
+        return self.rate > OTHER_TAG_LIMIT
+
+    def __str__(self) -> str:
+        line = f'{self.kind} tags: "{OTHER_TAG}" used in {self.used} of {self.total} labels ({self.rate:.0%})'
+        if self.needs_work:
+            line += f"; more than {OTHER_TAG_LIMIT:.0%}, so the {self.kind} tag list needs work"
+        return line
+
+
+def other_tag_usage(gold: GoldSet) -> tuple[OtherTagUsage, OtherTagUsage]:
+    usages = []
+    for kind, labels in (("voice", gold.voices), ("evidence", gold.mentions)):
+        with_other = [label for label in labels if OTHER_TAG in label.tags]
+        usages.append(OtherTagUsage(kind, len(with_other), len(labels), [label.note for label in with_other]))
+    return tuple(usages)
+
+
+def print_other_tag_report(gold: GoldSet) -> None:
+    for usage in other_tag_usage(gold):
+        print(usage)
+        for note in usage.notes:
+            print(f"  - {note}")
 
 
 # --- Command line ---
@@ -256,15 +340,14 @@ def main(argv: list[str]) -> int:
     except GoldSetError as e:
         print(e)
         return 1
-    by_category = {c: sum(t.category == c for t in gold.threads) for c in SUBREDDITS}
+    by_category = {c: sum(t.category == c for t in gold.threads) for c in THREAD_CATEGORIES}
     n_comments = sum(len(t.comments) for t in gold.threads)
-    labelled = {label.comment_id for label in gold.labels}
-    mentions = sum(1 for label in gold.labels if label.product)
     print(
         f"Gold set OK: {len(gold.threads)} threads "
         f"({', '.join(f'{n} {c}' for c, n in by_category.items())}), {n_comments} comments, "
-        f"{len(labelled)} labelled comments, {mentions} product mentions."
+        f"{len(gold.voices)} labelled comments, {len(gold.mentions)} product mentions."
     )
+    print_other_tag_report(gold)
     return 0
 
 

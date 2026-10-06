@@ -1,9 +1,9 @@
-"""Loading the gold set: files on disk, how threads connect, and how labels match comments."""
+"""Loading the gold set: files on disk, how threads connect, and how voice and mention labels match comments."""
 
 import pytest
 
-from engine.gold import DEFAULT_GOLD_DIR, GoldSetError, load_gold_set
-from engine.tests.factories import LABELS_HEADER, make_comment, make_thread, write_gold
+from engine.gold import DEFAULT_GOLD_DIR, GoldSetError, load_gold_set, other_tag_usage
+from engine.tests.factories import MENTIONS_HEADER, VOICES_HEADER, make_comment, make_thread, write_gold
 
 
 def problems_for(root) -> list[str]:
@@ -22,20 +22,31 @@ def assert_one_problem(root, *fragments: str):
 # --- Happy path ---
 
 def test_loads_threads_and_labels(tmp_path):
-    labels = LABELS_HEADER + (
-        "1fake01,c1aaaa,CeraVe Renewing SA Cleanser,recommend,high,2 years of use and names a downside\n"
-        "1fake01,c2bbbb,,,,\n"
-        "1fake01,c3cccc,Paula's Choice 2% BHA,recommend,medium,compares alternatives but no duration\n"
+    voices = VOICES_HEADER + (
+        '1fake01,c1aaaa,high,"established member, well upvoted",\n'
+        "1fake01,c2bbbb,medium,recent,\n"
+        "1fake01,c3cccc,low,salesy language,\n"
     )
-    gold = load_gold_set(write_gold(tmp_path, [make_thread()], labels))
+    mentions = MENTIONS_HEADER + (
+        'c1aaaa,CeraVe Renewing SA Cleanser,skincare,recommend,long-term use,"long-term use, mentions flaws",\n'
+        "c3cccc,Paula's Choice 2% BHA,skincare,recommend,no first-hand use,compares alternatives,\n"
+    )
+    gold = load_gold_set(write_gold(tmp_path, [make_thread()], voices, mentions))
     assert [t.id for t in gold.threads] == ["1fake01"]
-    assert len(gold.labels) == 3
-    assert gold.labels[1].product is None
+    assert [v.comment_id for v in gold.voices] == ["c1aaaa", "c2bbbb", "c3cccc"]
+    assert [m.product for m in gold.mentions] == ["CeraVe Renewing SA Cleanser", "Paula's Choice 2% BHA"]
+
+
+def test_voice_label_without_mentions_means_no_product(tmp_path):
+    # c2bbbb was read and rated, and has no rows in mentions.csv: it mentions no product.
+    voices = VOICES_HEADER + "1fake01,c2bbbb,medium,recent,\n"
+    gold = load_gold_set(write_gold(tmp_path, [make_thread()], voices))
+    assert [v.comment_id for v in gold.voices] == ["c2bbbb"] and gold.mentions == []
 
 
 def test_empty_gold_set_loads(tmp_path):
     gold = load_gold_set(write_gold(tmp_path, []))
-    assert gold.threads == [] and gold.labels == []
+    assert gold.threads == [] and gold.voices == [] and gold.mentions == []
 
 
 def test_comment_lookup(tmp_path):
@@ -45,12 +56,14 @@ def test_comment_lookup(tmp_path):
 
 # --- Files ---
 
-def test_missing_labels_file(tmp_path):
-    assert_one_problem(write_gold(tmp_path, [make_thread()], labels=None), "labels.csv", "missing")
+@pytest.mark.parametrize("missing", ["voices", "mentions"])
+def test_missing_label_file(tmp_path, missing):
+    assert_one_problem(write_gold(tmp_path, [make_thread()], **{missing: None}), f"{missing}.csv", "missing")
 
 
 def test_missing_threads_folder(tmp_path):
-    (tmp_path / "labels.csv").write_text(LABELS_HEADER)
+    (tmp_path / "voices.csv").write_text(VOICES_HEADER)
+    (tmp_path / "mentions.csv").write_text(MENTIONS_HEADER)
     assert_one_problem(tmp_path, "threads", "missing")
 
 
@@ -187,105 +200,156 @@ def test_kitchen_thread_loads(tmp_path):
     assert load_gold_set(write_gold(tmp_path, [thread])).threads[0].category == "kitchen"
 
 
-# --- Labels against threads ---
+# --- Voice labels against threads ---
 
-def test_label_for_unknown_comment(tmp_path):
-    labels = LABELS_HEADER + "1fake01,c9zzzz,CeraVe SA,recommend,high,2 years\n"
-    assert_one_problem(write_gold(tmp_path, [make_thread()], labels), "line 2", "c9zzzz")
+def test_voice_for_unknown_comment(tmp_path):
+    voices = VOICES_HEADER + "1fake01,c9zzzz,high,recent,\n"
+    assert_one_problem(write_gold(tmp_path, [make_thread()], voices), "voices.csv line 2", "c9zzzz")
 
 
-def test_label_thread_must_match_the_comment(tmp_path):
-    labels = LABELS_HEADER + "1other9,c1aaaa,CeraVe SA,recommend,high,2 years\n"
-    assert_one_problem(write_gold(tmp_path, [make_thread()], labels), "line 2", "1fake01")
+def test_voice_thread_must_match_the_comment(tmp_path):
+    voices = VOICES_HEADER + "1other9,c1aaaa,high,recent,\n"
+    assert_one_problem(write_gold(tmp_path, [make_thread()], voices), "voices.csv line 2", "1fake01")
 
 
 def test_cannot_label_a_deleted_comment(tmp_path):
     thread = make_thread()
     thread["comments"].append(make_comment("c4dddd", body="[deleted]", status="deleted", author=None))
-    labels = LABELS_HEADER + "1fake01,c4dddd,CeraVe SA,recommend,high,2 years\n"
-    assert_one_problem(write_gold(tmp_path, [thread], labels), "line 2", "deleted")
+    voices = VOICES_HEADER + "1fake01,c4dddd,high,recent,\n"
+    assert_one_problem(write_gold(tmp_path, [thread], voices), "voices.csv line 2", "deleted")
 
 
-def test_one_credibility_per_comment(tmp_path):
-    labels = LABELS_HEADER + (
-        "1fake01,c1aaaa,CeraVe SA,recommend,high,2 years\n"
-        "1fake01,c1aaaa,Paula's Choice BHA,warn,low,2 years\n"
-    )
-    assert_one_problem(write_gold(tmp_path, [make_thread()], labels), "line 3", "c1aaaa", "high")
+def test_one_voice_label_per_comment(tmp_path):
+    voices = VOICES_HEADER + "1fake01,c1aaaa,high,recent,\n1fake01,c1aaaa,low,new account,\n"
+    assert_one_problem(write_gold(tmp_path, [make_thread()], voices), "voices.csv line 3", "c1aaaa", "line 2")
 
 
-def test_same_product_twice_for_one_comment(tmp_path):
-    labels = LABELS_HEADER + (
-        "1fake01,c1aaaa,CeraVe SA,recommend,high,2 years\n"
-        "1fake01,c1aaaa,cerave sa ,warn,high,2 years\n"
-    )
-    assert_one_problem(write_gold(tmp_path, [make_thread()], labels), "line 3", "already")
-
-
-def test_no_product_row_cannot_sit_beside_product_rows(tmp_path):
-    labels = LABELS_HEADER + (
-        "1fake01,c1aaaa,CeraVe SA,recommend,high,2 years\n"
-        "1fake01,c1aaaa,,,,\n"
-    )
-    assert_one_problem(write_gold(tmp_path, [make_thread()], labels), "line 3", "no product")
+def test_invalid_voice_row_reports_its_line(tmp_path):
+    voices = VOICES_HEADER + "1fake01,c1aaaa,high,recent,\n1fake01,c3cccc,meh,recent,\n"
+    assert_one_problem(write_gold(tmp_path, [make_thread()], voices), "voices.csv line 3", "voice")
 
 
 def test_labels_of_an_unreadable_thread_add_no_extra_problems(tmp_path):
     # One typo in a thread file must not turn into a false "not in any thread" for each of its labels.
     thread = make_thread()
     del thread["comments"][0]["score"]
-    labels = LABELS_HEADER + (
-        "1fake01,c1aaaa,CeraVe SA,recommend,high,2 years\n"
-        "1fake01,c3cccc,Paula's Choice BHA,recommend,medium,compares 3\n"
-    )
-    assert_one_problem(write_gold(tmp_path, [thread], labels), "1fake01.json", "score")
+    voices = VOICES_HEADER + "1fake01,c1aaaa,high,recent,\n1fake01,c3cccc,low,salesy language,\n"
+    mentions = MENTIONS_HEADER + "c1aaaa,CeraVe SA,skincare,recommend,long-term use,long-term use,\n"
+    assert_one_problem(write_gold(tmp_path, [thread], voices, mentions), "1fake01.json", "score")
 
 
-def test_invalid_label_row_reports_its_line(tmp_path):
-    labels = LABELS_HEADER + (
-        "1fake01,c1aaaa,CeraVe SA,recommend,high,2 years\n"
-        "1fake01,c3cccc,Paula's Choice BHA,meh,high,compares 3\n"
+# --- Mention labels ---
+
+VOICE_C1 = VOICES_HEADER + "1fake01,c1aaaa,high,recent,\n"
+
+
+def test_mention_needs_a_voice_label_first(tmp_path):
+    mentions = MENTIONS_HEADER + "c3cccc,Paula's Choice BHA,skincare,recommend,short-term use,vague,\n"
+    assert_one_problem(write_gold(tmp_path, [make_thread()], VOICE_C1, mentions), "mentions.csv line 2", "c3cccc", "voices.csv")
+
+
+def test_mention_for_unknown_comment(tmp_path):
+    mentions = MENTIONS_HEADER + "c9zzzz,CeraVe SA,skincare,recommend,long-term use,long-term use,\n"
+    assert_one_problem(write_gold(tmp_path, [make_thread()], VOICE_C1, mentions), "mentions.csv line 2", "c9zzzz")
+
+
+def test_mentions_of_an_invalid_voice_row_add_no_extra_problems(tmp_path):
+    voices = VOICES_HEADER + "1fake01,c1aaaa,meh,recent,\n"
+    mentions = MENTIONS_HEADER + "c1aaaa,CeraVe SA,skincare,recommend,long-term use,long-term use,\n"
+    assert_one_problem(write_gold(tmp_path, [make_thread()], voices, mentions), "voices.csv line 2", "voice")
+
+
+def test_same_product_twice_for_one_comment(tmp_path):
+    mentions = MENTIONS_HEADER + (
+        "c1aaaa,CeraVe SA,skincare,recommend,long-term use,long-term use,\n"
+        "c1aaaa,cerave sa ,skincare,warn,long-term use,mentions flaws,\n"
     )
-    assert_one_problem(write_gold(tmp_path, [make_thread()], labels), "line 3", "stance")
+    assert_one_problem(write_gold(tmp_path, [make_thread()], VOICE_C1, mentions), "mentions.csv line 3", "already", "line 2")
+
+
+def test_invalid_mention_row_reports_its_line(tmp_path):
+    mentions = MENTIONS_HEADER + "c1aaaa,CeraVe SA,skincare,recommend,forever,long-term use,\n"
+    assert_one_problem(write_gold(tmp_path, [make_thread()], VOICE_C1, mentions), "mentions.csv line 2", "evidence")
+
+
+def test_off_category_mention_loads(tmp_path):
+    # End-state tree edge case: a comment that mentions a product outside the category.
+    mentions = MENTIONS_HEADER + "c1aaaa,Bodum Chambord French press,other,neutral,no first-hand use,secondhand,\n"
+    gold = load_gold_set(write_gold(tmp_path, [make_thread()], VOICE_C1, mentions))
+    assert gold.mentions[0].category == "other"
+
+
+def test_reason_that_fits_no_tag(tmp_path):
+    # End-state tree edge case: "other" plus a note loads; "other" alone is reported with its line.
+    voices = VOICES_HEADER + "1fake01,c1aaaa,high,other,Moderator of the subreddit\n1fake01,c3cccc,low,other,\n"
+    assert_one_problem(write_gold(tmp_path, [make_thread()], voices), "voices.csv line 3", "note")
+
+
+# --- How often "other" is used ---
+
+def test_other_tag_usage_counts_each_tag_list(tmp_path):
+    voices = VOICES_HEADER + (
+        "1fake01,c1aaaa,high,other,Moderator of the subreddit\n"
+        "1fake01,c2bbbb,medium,recent,\n"
+        "1fake01,c3cccc,low,salesy language,\n"
+    )
+    mentions = MENTIONS_HEADER + "c1aaaa,CeraVe SA,skincare,recommend,long-term use,long-term use,\n"
+    voice, evidence = other_tag_usage(load_gold_set(write_gold(tmp_path, [make_thread()], voices, mentions)))
+    assert (voice.kind, voice.used, voice.total, voice.notes) == ("voice", 1, 3, ["Moderator of the subreddit"])
+    assert (evidence.kind, evidence.used, evidence.total, evidence.notes) == ("evidence", 0, 1, [])
+
+
+@pytest.mark.parametrize("others, total, needs_work", [(0, 0, False), (1, 10, False), (2, 10, True)])
+def test_more_than_one_in_ten_others_means_the_list_needs_work(tmp_path, others, total, needs_work):
+    # Brief v4: "if more than 1 in 10 labels use 'other', the list needs work". Exactly 1 in 10 is fine.
+    thread = make_thread(comments=[make_comment(f"c{n:05d}") for n in range(total)])
+    voices = VOICES_HEADER + "".join(
+        f"1fake01,c{n:05d},high,other,note {n}\n" if n < others else f"1fake01,c{n:05d},high,recent,\n" for n in range(total)
+    )
+    voice, _ = other_tag_usage(load_gold_set(write_gold(tmp_path, [thread], voices)))
+    assert voice.needs_work is needs_work
 
 
 # --- Spreadsheet quirks ---
 
-def test_missing_column(tmp_path):
-    labels = "thread_id,comment_id,product,stance,reason\n"
-    assert_one_problem(write_gold(tmp_path, [make_thread()], labels), "credibility")
+@pytest.mark.parametrize("file, header", [("voices", VOICES_HEADER), ("mentions", MENTIONS_HEADER)])
+def test_missing_column(tmp_path, file, header):
+    assert_one_problem(write_gold(tmp_path, [make_thread()], **{file: header.replace("tags,", "")}), f"{file}.csv", "tags")
 
 
-def test_unknown_column(tmp_path):
-    labels = "thread_id,comment_id,product,stance,credibility,reason,credibilty\n"
-    assert_one_problem(write_gold(tmp_path, [make_thread()], labels), "credibilty")
+@pytest.mark.parametrize("file, header", [("voices", VOICES_HEADER), ("mentions", MENTIONS_HEADER)])
+def test_unknown_column(tmp_path, file, header):
+    assert_one_problem(write_gold(tmp_path, [make_thread()], **{file: header.replace("note", "credibilty")}), f"{file}.csv", "credibilty")
 
 
-def test_optional_notes_column(tmp_path):
-    labels = "thread_id,comment_id,product,stance,credibility,reason,notes\n1fake01,c1aaaa,CeraVe SA,recommend,high,2 years,check formula year\n"
-    assert load_gold_set(write_gold(tmp_path, [make_thread()], labels)).labels[0].notes == "check formula year"
+def test_note_column_is_optional(tmp_path):
+    voices = "thread_id,comment_id,voice,tags\n1fake01,c1aaaa,high,recent\n"
+    assert load_gold_set(write_gold(tmp_path, [make_thread()], voices)).voices[0].note is None
 
 
 def test_semicolon_csv_from_excel_in_italian(tmp_path):
-    labels = LABELS_HEADER.replace(",", ";") + "1fake01;c1aaaa;CeraVe SA;recommend;high;2 years, names a downside\n"
-    gold = load_gold_set(write_gold(tmp_path, [make_thread()], labels))
-    assert gold.labels[0].reason == "2 years, names a downside"
+    # Excel set to Italian separates columns with semicolons, so commas between tags need no quotes.
+    voices = VOICES_HEADER.replace(",", ";") + "1fake01;c1aaaa;high;established member, well upvoted;\n"
+    mentions = MENTIONS_HEADER.replace(",", ";") + "c1aaaa;CeraVe SA;skincare;recommend;long-term use;long-term use, mentions flaws;\n"
+    gold = load_gold_set(write_gold(tmp_path, [make_thread()], voices, mentions))
+    assert gold.voices[0].tags == ["established member", "well upvoted"]
+    assert gold.mentions[0].tags == ["long-term use", "mentions flaws"]
 
 
 def test_excel_byte_order_mark_is_ignored(tmp_path):
     write_gold(tmp_path, [make_thread()])
-    (tmp_path / "labels.csv").write_text(LABELS_HEADER + "1fake01,c1aaaa,CeraVe SA,recommend,high,2 years\n", encoding="utf-8-sig")
-    assert len(load_gold_set(tmp_path).labels) == 1
+    (tmp_path / "voices.csv").write_text(VOICE_C1, encoding="utf-8-sig")
+    assert len(load_gold_set(tmp_path).voices) == 1
 
 
 def test_blank_rows_are_skipped(tmp_path):
-    labels = LABELS_HEADER + "1fake01,c1aaaa,CeraVe SA,recommend,high,2 years\n,,,,,\n\n"
-    assert len(load_gold_set(write_gold(tmp_path, [make_thread()], labels)).labels) == 1
+    voices = VOICE_C1 + ",,,,\n\n"
+    assert len(load_gold_set(write_gold(tmp_path, [make_thread()], voices)).voices) == 1
 
 
 def test_unquoted_comma_creates_extra_values(tmp_path):
-    labels = LABELS_HEADER + "1fake01,c1aaaa,CeraVe SA,recommend,high,2 years, names a downside\n"
-    assert_one_problem(write_gold(tmp_path, [make_thread()], labels), "line 2", "quotes")
+    voices = VOICES_HEADER + "1fake01,c1aaaa,high,established member, well upvoted,\n"
+    assert_one_problem(write_gold(tmp_path, [make_thread()], voices), "voices.csv line 2", "quotes")
 
 
 # --- Noemi's real gold set ---

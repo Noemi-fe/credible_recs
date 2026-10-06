@@ -1,5 +1,7 @@
 """The shapes of the data every module passes around: threads, comments, authors and gold-set labels.
 
+The allowed values (categories, subreddits, label levels, reason tags) live in engine/config.py.
+
 A Thread looks the same whichever source it came from (the hand-collected gold set today, the
 Reddit API later, another forum one day), so the rest of the engine never needs to know the source.
 
@@ -7,24 +9,24 @@ Rules about a single object live here. Rules about how objects connect (a reply 
 comment, a label points to a real comment) live in engine/gold.py.
 """
 
+import re
 from datetime import UTC, datetime
-from typing import Annotated, Literal
+from typing import Annotated, ClassVar, Literal
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
-Category = Literal["skincare", "kitchen"]
+from engine.config import (
+    EVIDENCE_LEVELS,
+    EVIDENCE_TAGS,
+    MENTION_CATEGORIES,
+    OTHER_TAG,
+    STANCE_VALUE,
+    THREAD_CATEGORIES,
+    VOICE_LEVELS,
+    VOICE_TAGS,
+)
+
 Source = Literal["reddit"]
-
-# Decided in docs/brief.md, "Open decisions". Ask Noemi before changing.
-SUBREDDITS: dict[str, tuple[str, ...]] = {
-    "skincare": ("SkincareAddiction", "AsianBeauty", "30PlusSkinCare", "SkincareAddictionUK"),
-    "kitchen": ("BuyItForLife", "AskCulinary", "chefknives", "Cooking", "castiron", "Coffee", "espresso", "tea"),
-}
-
-Stance = Literal["recommend", "warn", "neutral"]
-STANCE_VALUE: dict[str, int] = {"recommend": 1, "warn": -1, "neutral": 0}
-
-Credibility = Literal["high", "medium", "low"]
 
 
 def _as_utc(value: datetime) -> datetime:
@@ -80,7 +82,7 @@ class Thread(Record):
     id: Id
     source: Source = "reddit"
     community: str = Field(min_length=1)  # the subreddit, without "r/"
-    category: Category
+    category: Literal[THREAD_CATEGORIES]
     title: str = Field(min_length=1)
     body: str = ""
     author: Author | None
@@ -97,20 +99,12 @@ class Thread(Record):
         return community.strip().removeprefix("r/")
 
 
-class Label(Record):
-    """One row of data/gold/labels.csv: Noemi's judgement of one product mention in one comment.
+class _LabelRow(Record):
+    """What voice and mention labels share: tidy spreadsheet values, and a reason made of tags plus an optional note."""
 
-    A row with a blank product means "I read this comment and it mentions no product".
-    Credibility describes the comment, so every row for the same comment carries the same value.
-    """
-
-    thread_id: Id
-    comment_id: Id
-    product: str | None = None
-    stance: Stance | None = None
-    credibility: Credibility | None = None
-    reason: str | None = None
-    notes: str | None = None
+    allowed_tags: ClassVar[tuple[str, ...]]
+    tags: list[str]
+    note: str | None = None
 
     @field_validator("*", mode="before")
     @classmethod
@@ -121,19 +115,61 @@ class Label(Record):
             return value or None
         return value
 
-    @field_validator("stance", "credibility", mode="before")
+    @field_validator("tags", mode="before")
     @classmethod
-    def _lowercase(cls, value):
-        return value.lower() if isinstance(value, str) else value
+    def _split_tags(cls, value):
+        # One cell, tags separated by commas (or semicolons): "long-term use, mentions flaws".
+        if value is None:
+            return []
+        if isinstance(value, str):
+            return [" ".join(tag.split()).lower() for tag in re.split(r"[,;]", value) if tag.strip()]
+        return value
+
+    @field_validator("tags")
+    @classmethod
+    def _known_tags(cls, tags: list[str]) -> list[str]:
+        allowed = cls.allowed_tags + (OTHER_TAG,)
+        if not tags:
+            raise ValueError(f"needs at least one tag: {', '.join(allowed)}")
+        unknown = [tag for tag in tags if tag not in allowed]
+        if unknown:
+            raise ValueError(f"unknown tag(s) {', '.join(map(repr, unknown))}; choose from: {', '.join(allowed)}")
+        return list(dict.fromkeys(tags))  # drop repeats, keep order
 
     @model_validator(mode="after")
-    def _row_is_complete(self) -> "Label":
-        if self.product:
-            missing = [f for f in ("stance", "credibility", "reason") if getattr(self, f) is None]
-            if missing:
-                raise ValueError(f"a product mention needs: {', '.join(missing)}")
-        elif self.stance:
-            raise ValueError("stance given but product is blank; fill in the product or clear the stance")
-        if self.credibility and not self.reason:
-            raise ValueError("credibility given without a reason")
+    def _other_needs_a_note(self):
+        if OTHER_TAG in self.tags and not self.note:
+            raise ValueError(f'tag "{OTHER_TAG}" needs a note saying what the reason is')
         return self
+
+
+def _lowercase(value):
+    return value.lower() if isinstance(value, str) else value
+
+
+class VoiceLabel(_LabelRow):
+    """One row of data/gold/voices.csv: how credible the writer of one comment is.
+
+    Every comment Noemi reads gets one. A comment with a voice label and no mention labels
+    is a comment she read that mentions no product.
+    """
+
+    allowed_tags: ClassVar[tuple[str, ...]] = VOICE_TAGS
+    thread_id: Id
+    comment_id: Id
+    voice: Literal[VOICE_LEVELS]
+
+    _lower = field_validator("voice", mode="before")(_lowercase)
+
+
+class MentionLabel(_LabelRow):
+    """One row of data/gold/mentions.csv: one product mentioned in one comment, and how well the writer knows it."""
+
+    allowed_tags: ClassVar[tuple[str, ...]] = EVIDENCE_TAGS
+    comment_id: Id
+    product: str
+    category: Literal[MENTION_CATEGORIES]
+    stance: Literal[tuple(STANCE_VALUE)]
+    evidence: Literal[EVIDENCE_LEVELS]
+
+    _lower = field_validator("category", "stance", "evidence", mode="before")(_lowercase)
