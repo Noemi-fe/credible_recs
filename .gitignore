@@ -26,3 +26,7 @@ node_modules/
 
 # Private: the full brief includes job-search notes. It stays on Noemi's machine only.
 docs/brief.md
+
+# Gold-set threads are Reddit content: they stay on Noemi's machine (her decision, 7 Oct 2026).
+# data/gold/CANDIDATES.md lists their links, so the set can be fetched again.
+data/gold/threads/*.json

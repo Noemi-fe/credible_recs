@@ -5,7 +5,7 @@
 - Never edit or delete a test just to make it pass. Gold-set labels belong to Noemi.
 - Hill-climb: run eval/run_eval.py, fix the weakest metric, re-run. Keep a change only if metrics improve with no regression. Log every run in eval/RUNS.md.
 - Never display a quote that fails word-for-word verification against its source comment.
-- Reddit data only through the official API with approved credentials. Respect rate limits and the deletion rule. No scraping. Keep every source behind one adapter interface.
+- Reddit data comes only from the hand-collected gold set or the Parse reddit.com API (engine/parse_reddit.py). Parse is a third-party scraping service, not Reddit's official API; Noemi chose it on 7 Oct 2026 after Reddit refused API access. No other scraping. Respect its rate limit and monthly credits, cache every response for at most 48 hours (the deletion rule), and never commit the Parse cache or gold-set threads: they stay on Noemi's machine (her decision, 7 Oct 2026). data/gold/CANDIDATES.md lists their links. Keep every source behind one adapter interface.
 - Keep AI costs low: cache every call, batch where possible, log spend per run.
 - Keys live in .env. Never commit secrets.
 - Ask Noemi before changing scoring weights, categories or anything user-facing.
@@ -17,3 +17,6 @@
 - Run tests with `.venv/bin/pytest`.
 - Validate the gold set with `.venv/bin/python -m engine.gold`.
 - Data shapes live in engine/models.py. The gold-set format is documented in data/gold/README.md.
+
+# Open items
+- When brief version 5 arrives: its "Never scrape" rule must be updated to match the Parse decision (Noemi asked to remember this on 7 Oct 2026).

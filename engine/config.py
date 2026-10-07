@@ -45,3 +45,12 @@ EVIDENCE_TAGS = (
 OTHER_TAG = "other"
 # More than this share of labels using "other" means the tag list needs work.
 OTHER_TAG_LIMIT = 0.10
+
+# Parse reddit.com API (parse.bot): a third-party scraping service Noemi chose on 7 Oct 2026, after
+# Reddit refused official API access. These are the free plan's limits.
+PARSE_MONTHLY_CREDITS = 200
+PARSE_CREDITS_PER_CALL = 2
+PARSE_CALLS_PER_MINUTE = 5
+
+# The deletion rule: nothing fetched from Reddit is kept in the cache longer than this.
+CACHE_MAX_AGE_HOURS = 48

@@ -16,6 +16,16 @@ Check it at any time with:
 
 It lists every problem at once, with the file and the line or field. When everything is clean it prints a summary, including how often you used the "other" tag and the notes you wrote with it.
 
+## Fetching a thread instead of copying it
+
+```bash
+.venv/bin/python -m engine.parse_reddit fetch <thread link> [<thread link> ...]
+```
+
+This saves each thread as `threads/<id>.json`, with every comment copied exactly. It uses the Parse reddit.com API (needs `PARSE_API_KEY` in `.env`) and costs 2 of the 200 free monthly credits per thread. It never overwrites a thread already in the folder, and it refuses subreddits outside the decided list before spending anything. Parse gives no account age, karma or flair; fill those in by hand if you want them. See what you've spent with `.venv/bin/python -m engine.parse_reddit usage`.
+
+Thread files stay on your computer only: git ignores them, so Reddit content never reaches the public repo. Their links are listed in [CANDIDATES.md](CANDIDATES.md), so the set can be fetched again on a new machine. Back the folder up yourself (Time Machine or iCloud).
+
 ## A thread file
 
 Save each thread as `threads/<thread id>.json`. The thread id is the part after `/comments/` in the Reddit link: in `reddit.com/r/SkincareAddiction/comments/1abc23/...` it is `1abc23`.
