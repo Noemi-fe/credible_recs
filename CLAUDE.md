@@ -11,7 +11,9 @@
 - Ask Noemi before changing scoring weights, categories or anything user-facing.
 
 # Project notes
-- The brief is docs/brief.md, with the End-state tree as its last part. It's kept out of git because it holds job-search notes.
+- The brief is docs/brief.md, with the End-state tree as its last part. docs/context.md holds private background notes. Read both at the start of a session. docs/ is private and never committed.
+- Recommendations: first list the options broadly (a breadth-first pass), compare them, then recommend one. Re-check earlier decisions the same way when new facts appear (Noemi, 7 Oct 2026).
+- Build order (agreed 7 Oct 2026): a thin end-to-end slice first (module 1, then a basic version of modules 2–7 on the gold set, so one real request returns a top 3 with verified quotes), then improve each module through the evaluation loop.
 - Decided values (categories, subreddits, label levels, reason tags) live in engine/config.py. Ask Noemi before changing them.
 - Python 3.12 in `.venv`. Set up with `python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev]"`.
 - Run tests with `.venv/bin/pytest`.
@@ -20,3 +22,5 @@
 
 # Open items
 - When brief version 5 arrives: its "Never scrape" rule must be updated to match the Parse decision (Noemi asked to remember this on 7 Oct 2026).
+- Also for brief version 5 (decided 7 Oct 2026): module 1 asks one clarifying question instead of guessing when a need is too vague or holds two needs; the build starts with a thin end-to-end slice; the brief's model name `claude-sonnet-5` is out of date (use the current Sonnet).
+- Claude API key: when module 1's AI parser is next, walk Noemi through creating one step by step (Claude Console, API keys, a monthly spend limit) and pasting ANTHROPIC_API_KEY into .env herself.

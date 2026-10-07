@@ -1,0 +1,559 @@
+{
+  "approved": true,
+  "approved_note": "Drafted by Claude on 7 Oct 2026. Approved by Noemi on 7 Oct 2026, including the eight calls that were marked for her: q04, q05, q10, q13, q15, q20, q24 and q30.",
+  "cases": [
+    {
+      "id": "q01",
+      "text": "gentle exfoliant for sensitive skin under £30",
+      "expected": {
+        "status": "ok",
+        "category": "skincare",
+        "product_type": "exfoliant",
+        "constraints": {
+          "budget": {
+            "max": 30,
+            "currency": "GBP"
+          },
+          "skin_types": [
+            "sensitive"
+          ]
+        }
+      },
+      "notes": "The brief's own example, word for word. 'gentle' is a wish for the search terms, not a must-have."
+    },
+    {
+      "id": "q02",
+      "text": "moisturiser for dry + sensitive skin, fragrance free pls, 15-25 quid",
+      "expected": {
+        "status": "ok",
+        "category": "skincare",
+        "product_type": "moisturiser",
+        "constraints": {
+          "budget": {
+            "min": 15,
+            "max": 25,
+            "currency": "GBP"
+          },
+          "skin_types": [
+            "dry",
+            "sensitive"
+          ],
+          "must_haves": [
+            "fragrance-free"
+          ]
+        }
+      },
+      "notes": "UK spelling, two skin types joined by '+', slang 'quid' -> GBP, a range with the currency word after it. 'fragrance free' normalised to 'fragrance-free'."
+    },
+    {
+      "id": "q03",
+      "text": "spf 50 sunscreen for oily skin no white cast under $20",
+      "expected": {
+        "status": "ok",
+        "category": "skincare",
+        "product_type": "sunscreen",
+        "constraints": {
+          "budget": {
+            "max": 20,
+            "currency": "USD"
+          },
+          "skin_types": [
+            "oily"
+          ],
+          "spf": 50,
+          "must_haves": [
+            "no white cast"
+          ]
+        }
+      },
+      "notes": "SPF and price in one request: 50 is the SPF, 20 is the budget. Trap: swapping them, or reading 50 as a budget."
+    },
+    {
+      "id": "q04",
+      "text": "niacinamide serum for combo skin w breakouts, around 15 euros",
+      "expected": {
+        "status": "ok",
+        "category": "skincare",
+        "product_type": "serum",
+        "constraints": {
+          "budget": {
+            "max": 15,
+            "currency": "EUR"
+          },
+          "skin_types": [
+            "combination",
+            "acne-prone"
+          ],
+          "must_haves": [
+            "niacinamide"
+          ]
+        }
+      },
+      "notes": "'combo' -> combination, 'breakouts' -> acne-prone, 'around 15' -> max 15, 'euros' -> EUR. confirmed by Noemi, 7 Oct 2026: the named ingredient is kept as a must-have rather than folded into product_type ('niacinamide serum')."
+    },
+    {
+      "id": "q05",
+      "text": "retinol for mature skin, max 40€",
+      "expected": {
+        "status": "ok",
+        "category": "skincare",
+        "product_type": "retinoid",
+        "constraints": {
+          "budget": {
+            "max": 40,
+            "currency": "EUR"
+          },
+          "skin_types": [
+            "mature"
+          ]
+        }
+      },
+      "notes": "Currency symbol after the number. 'retinol' maps to the generic 'retinoid'. confirmed by Noemi, 7 Oct 2026: whether 'retinol' should also be kept as a must-have, since the shopper named that specific form (prescription retinoids like tretinoin would not fit)."
+    },
+    {
+      "id": "q06",
+      "text": "fragrance free clenser for oily acne prone skin, cerave or similar, under 12.50",
+      "expected": {
+        "status": "ok",
+        "category": "skincare",
+        "product_type": "cleanser",
+        "constraints": {
+          "budget": {
+            "max": 12.5,
+            "currency": null
+          },
+          "skin_types": [
+            "oily",
+            "acne-prone"
+          ],
+          "must_haves": [
+            "fragrance-free"
+          ]
+        }
+      },
+      "notes": "Typo 'clenser'. Budget with a decimal and no currency: currency must be null, never guessed. Trap: the brand 'cerave or similar' is a hint for search, not a must-have."
+    },
+    {
+      "id": "q07",
+      "text": "need an eye cream 15ml max £35",
+      "expected": {
+        "status": "ok",
+        "category": "skincare",
+        "product_type": "eye cream",
+        "constraints": {
+          "budget": {
+            "max": 35,
+            "currency": "GBP"
+          },
+          "size": {
+            "value": 15,
+            "unit": "ml"
+          }
+        }
+      },
+      "notes": "Size and price side by side with no punctuation: 15 is millilitres, 35 is the budget."
+    },
+    {
+      "id": "q08",
+      "text": "lip balm that actually fixes cracked lips, less than 5 dollars",
+      "expected": {
+        "status": "ok",
+        "category": "skincare",
+        "product_type": "lip balm",
+        "constraints": {
+          "budget": {
+            "max": 5,
+            "currency": "USD"
+          }
+        }
+      },
+      "notes": "Currency as a word ('dollars' -> USD), 'less than' -> max. 'cracked lips' is the problem to solve (search terms), not a skin type or must-have."
+    },
+    {
+      "id": "q09",
+      "text": "toner w/o alcohol for combination/normal skin €10-€20",
+      "expected": {
+        "status": "ok",
+        "category": "skincare",
+        "product_type": "toner",
+        "constraints": {
+          "budget": {
+            "min": 10,
+            "max": 20,
+            "currency": "EUR"
+          },
+          "skin_types": [
+            "combination",
+            "normal"
+          ],
+          "must_haves": [
+            "alcohol-free"
+          ]
+        }
+      },
+      "notes": "Range with the symbol on both numbers. Two skin types joined by a slash. 'w/o alcohol' normalised to 'alcohol-free'."
+    },
+    {
+      "id": "q10",
+      "text": "daily moisturizer w spf30+ for dry skin, 1.7 fl oz, $25 or less",
+      "expected": {
+        "status": "ok",
+        "category": "skincare",
+        "product_type": "moisturiser",
+        "constraints": {
+          "budget": {
+            "max": 25,
+            "currency": "USD"
+          },
+          "skin_types": [
+            "dry"
+          ],
+          "size": {
+            "value": 1.7,
+            "unit": "fl oz"
+          },
+          "spf": 30
+        }
+      },
+      "notes": "US spelling, three numbers (SPF 30, 1.7 fl oz, $25). 'spf30+' -> 30. One need, not two: a moisturiser that has SPF (compare q27). confirmed by Noemi, 7 Oct 2026: product_type 'moisturiser' rather than 'sunscreen'."
+    },
+    {
+      "id": "q11",
+      "text": "mineral sunscreen spf 30 for sensitve skin between 20 and 30 pounds",
+      "expected": {
+        "status": "ok",
+        "category": "skincare",
+        "product_type": "sunscreen",
+        "constraints": {
+          "budget": {
+            "min": 20,
+            "max": 30,
+            "currency": "GBP"
+          },
+          "skin_types": [
+            "sensitive"
+          ],
+          "spf": 30,
+          "must_haves": [
+            "mineral"
+          ]
+        }
+      },
+      "notes": "Typo 'sensitve'. The number 30 appears twice, once as SPF and once as the top of the budget. 'pounds' here is money (GBP), not weight."
+    },
+    {
+      "id": "q12",
+      "text": "electric kettle that lasts 10+ years",
+      "expected": {
+        "status": "ok",
+        "category": "kitchen",
+        "product_type": "electric kettle",
+        "constraints": {
+          "min_years": 10
+        }
+      },
+      "notes": "The brief's own example, word for word. No budget stated, so no budget key: 10 is years, not money."
+    },
+    {
+      "id": "q13",
+      "text": "1.7l kettle under £40",
+      "expected": {
+        "status": "ok",
+        "category": "kitchen",
+        "product_type": "electric kettle",
+        "constraints": {
+          "budget": {
+            "max": 40,
+            "currency": "GBP"
+          },
+          "size": {
+            "value": 1.7,
+            "unit": "l"
+          }
+        }
+      },
+      "notes": "Size and price together: 1.7 litres, max £40. confirmed by Noemi, 7 Oct 2026: plain 'kettle' read as electric (the UK default, and 1.7l is the standard electric size) rather than asking which kind."
+    },
+    {
+      "id": "q14",
+      "text": "210mm gyuto for a beginner, around $100",
+      "expected": {
+        "status": "ok",
+        "category": "kitchen",
+        "product_type": "chef knife",
+        "constraints": {
+          "budget": {
+            "max": 100,
+            "currency": "USD"
+          },
+          "size": {
+            "value": 210,
+            "unit": "mm"
+          }
+        }
+      },
+      "notes": "Enthusiast word 'gyuto' (the Japanese chef knife) maps to 'chef knife'. 210 is blade length in mm, 100 is the budget; 'around' -> max. 'for a beginner' is context, not a must-have."
+    },
+    {
+      "id": "q15",
+      "text": "10 inch cast iron skilet that'll last 20+ yrs, under 50 bucks",
+      "expected": {
+        "status": "ok",
+        "category": "kitchen",
+        "product_type": "cast iron skillet",
+        "constraints": {
+          "budget": {
+            "max": 50,
+            "currency": "USD"
+          },
+          "size": {
+            "value": 10,
+            "unit": "in"
+          },
+          "min_years": 20
+        }
+      },
+      "notes": "Typo 'skilet'. Three numbers: 10 inches (size), 20 years, 50 budget. 'inch' -> 'in', 'yrs' -> years. confirmed by Noemi, 7 Oct 2026: slang 'bucks' read as USD, in line with the dollars -> USD rule (it could also mean other dollars)."
+    },
+    {
+      "id": "q16",
+      "text": "28cm frying pan, non stick but pfas free, £30-60",
+      "expected": {
+        "status": "ok",
+        "category": "kitchen",
+        "product_type": "frying pan",
+        "constraints": {
+          "budget": {
+            "min": 30,
+            "max": 60,
+            "currency": "GBP"
+          },
+          "size": {
+            "value": 28,
+            "unit": "cm"
+          },
+          "must_haves": [
+            "non-stick",
+            "pfas-free"
+          ]
+        }
+      },
+      "notes": "Range with the symbol only on the first number: both ends are GBP. 28 is the size in cm, not money. Two must-haves."
+    },
+    {
+      "id": "q17",
+      "text": "2qt stainless steel saucepan, dishwasher safe, up to 80 usd",
+      "expected": {
+        "status": "ok",
+        "category": "kitchen",
+        "product_type": "saucepan",
+        "constraints": {
+          "budget": {
+            "max": 80,
+            "currency": "USD"
+          },
+          "size": {
+            "value": 2,
+            "unit": "qt"
+          },
+          "must_haves": [
+            "stainless steel",
+            "dishwasher-safe"
+          ]
+        }
+      },
+      "notes": "Unit glued to the number ('2qt'). Currency code written as a lowercase word ('usd'). 'up to' -> max. 'dishwasher safe' -> 'dishwasher-safe'."
+    },
+    {
+      "id": "q18",
+      "text": "enameled dutch oven 5.5 quart, from 100 to 200 euro",
+      "expected": {
+        "status": "ok",
+        "category": "kitchen",
+        "product_type": "dutch oven",
+        "constraints": {
+          "budget": {
+            "min": 100,
+            "max": 200,
+            "currency": "EUR"
+          },
+          "size": {
+            "value": 5.5,
+            "unit": "qt"
+          },
+          "must_haves": [
+            "enameled"
+          ]
+        }
+      },
+      "notes": "'quart' normalised to 'qt', decimal size. 'from X to Y' is a range, not a min only. Singular 'euro' -> EUR. Must-have kept in the shopper's US spelling."
+    },
+    {
+      "id": "q19",
+      "text": "espresso machine w a proper steam wand, willing to spend at least €400",
+      "expected": {
+        "status": "ok",
+        "category": "kitchen",
+        "product_type": "espresso machine",
+        "constraints": {
+          "budget": {
+            "min": 400,
+            "currency": "EUR"
+          },
+          "must_haves": [
+            "steam wand"
+          ]
+        }
+      },
+      "notes": "A minimum budget only ('at least' -> min, no max). Trap: reading 400 as a maximum."
+    },
+    {
+      "id": "q20",
+      "text": "burr grinder for pour over, 150 or less, im in the uk",
+      "expected": {
+        "status": "ok",
+        "category": "kitchen",
+        "product_type": "coffee grinder",
+        "constraints": {
+          "budget": {
+            "max": 150,
+            "currency": null
+          },
+          "must_haves": [
+            "burr"
+          ]
+        }
+      },
+      "notes": "'burr grinder' -> coffee grinder with 'burr' as a must-have; 'pour over' is a use for the search terms. Trap: no currency is written, so currency is null even though the shopper says they are in the UK. confirmed by Noemi, 7 Oct 2026: whether a stated country should set the currency (GBP) or stay null under the never-guess rule."
+    },
+    {
+      "id": "q21",
+      "text": "glass teapot w infuser for loose leaf, no plastic, about 25 quid",
+      "expected": {
+        "status": "ok",
+        "category": "kitchen",
+        "product_type": "teapot",
+        "constraints": {
+          "budget": {
+            "max": 25,
+            "currency": "GBP"
+          },
+          "must_haves": [
+            "glass",
+            "infuser",
+            "plastic-free"
+          ]
+        }
+      },
+      "notes": "'about' -> max, 'quid' -> GBP. 'no plastic' normalised to 'plastic-free'. 'loose leaf' is a use, not a must-have."
+    },
+    {
+      "id": "q22",
+      "text": "stovetop kettle that works on induction, whistling, $29.99 max",
+      "expected": {
+        "status": "ok",
+        "category": "kitchen",
+        "product_type": "stovetop kettle",
+        "constraints": {
+          "budget": {
+            "max": 29.99,
+            "currency": "USD"
+          },
+          "must_haves": [
+            "induction-compatible",
+            "whistling"
+          ]
+        }
+      },
+      "notes": "Decimal price with 'max' after it. Stovetop, not electric (contrast q12 and q13). 'works on induction' -> 'induction-compatible'."
+    },
+    {
+      "id": "q23",
+      "text": "something nice for my mum",
+      "expected": {
+        "status": "clarify",
+        "category": null,
+        "product_type": null,
+        "constraints": {}
+      },
+      "notes": "The brief's vague-need example. No category and no product: ask what kind of thing, don't guess."
+    },
+    {
+      "id": "q24",
+      "text": "need something for my skin its been really dry lately",
+      "expected": {
+        "status": "clarify",
+        "category": null,
+        "product_type": null,
+        "constraints": {}
+      },
+      "notes": "Vague but the category is clear and a skin type is hinted. Trap: guessing 'moisturiser'. Ask which product they want. confirmed by Noemi, 7 Oct 2026: clarify rather than ok with moisturiser for dry skin."
+    },
+    {
+      "id": "q25",
+      "text": "kitchen stuff for my first flat, budget £200",
+      "expected": {
+        "status": "clarify",
+        "category": null,
+        "product_type": null,
+        "constraints": {}
+      },
+      "notes": "Vague even though a category word and a budget are given: no product type. Trap: a budget makes it look ready to search."
+    },
+    {
+      "id": "q26",
+      "text": "a kettle and a good chef knife under £100 total",
+      "expected": {
+        "status": "clarify",
+        "category": null,
+        "product_type": null,
+        "constraints": {}
+      },
+      "notes": "Two different needs in one request, both kitchen. Ask which to start with. Trap: the shared budget makes it read like one request."
+    },
+    {
+      "id": "q27",
+      "text": "sunscreen and a moisturizer for combo skin, under $40 each",
+      "expected": {
+        "status": "clarify",
+        "category": null,
+        "product_type": null,
+        "constraints": {}
+      },
+      "notes": "Two skincare needs ('and', 'each'). Contrast with q10, where a moisturiser with SPF is one need. Ask which one first."
+    },
+    {
+      "id": "q28",
+      "text": "best laptop for uni under 800",
+      "expected": {
+        "status": "out_of_scope",
+        "category": null,
+        "product_type": null,
+        "constraints": {}
+      },
+      "notes": "The brief's out-of-scope example, with a budget added. Trap: a parsable budget is no reason to accept it; reply with a polite no."
+    },
+    {
+      "id": "q29",
+      "text": "hair dryer that wont fry my curls under £100",
+      "expected": {
+        "status": "out_of_scope",
+        "category": null,
+        "product_type": null,
+        "constraints": {}
+      },
+      "notes": "Near-miss: sounds beauty-ish, but hair tools are haircare, not skincare, and none of the skincare subreddits cover it."
+    },
+    {
+      "id": "q30",
+      "text": "quiet dishwasher for a small kitchen",
+      "expected": {
+        "status": "out_of_scope",
+        "category": null,
+        "product_type": null,
+        "constraints": {}
+      },
+      "notes": "Near-miss: says 'kitchen', but a dishwasher is a large built-in appliance, not the cookware, knives, coffee and tea gear our kitchen subreddits cover. confirmed by Noemi, 7 Oct 2026: large appliances are out of scope for 'kitchen gear'."
+    }
+  ]
+}
