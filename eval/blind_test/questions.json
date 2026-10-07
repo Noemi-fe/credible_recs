@@ -1,0 +1,66 @@
+{
+  "approved": true,
+  "approved_note": "Drafted by Claude and approved by Noemi on 7 Oct 2026. The library is filled for these questions first.",
+  "questions": [
+    {
+      "id": "b01",
+      "category": "skincare",
+      "text": "gentle exfoliant for sensitive skin under £30",
+      "why": "The brief's own example; crowded with hyped acids, so credibility matters."
+    },
+    {
+      "id": "b02",
+      "category": "skincare",
+      "text": "sunscreen for oily skin that doesn't leave a white cast, under £20",
+      "why": "Everyone asks it; formulas differ by country and the best-known names aren't always best."
+    },
+    {
+      "id": "b03",
+      "category": "skincare",
+      "text": "retinol for a beginner with sensitive skin",
+      "why": "High stakes for irritation; long-term users' experience is the whole point."
+    },
+    {
+      "id": "b04",
+      "category": "skincare",
+      "text": "fragrance-free moisturiser for very dry skin in winter",
+      "why": "Many options, strong opinions; tests honesty about texture and flaws."
+    },
+    {
+      "id": "b05",
+      "category": "skincare",
+      "text": "gentle cleanser for acne-prone skin that won't strip my skin",
+      "why": "A simple purchase where popularity and quality often differ."
+    },
+    {
+      "id": "b06",
+      "category": "kitchen",
+      "text": "electric kettle that lasts 10+ years",
+      "why": "The brief's own example; the thesis case: most-owned kettles break within years."
+    },
+    {
+      "id": "b07",
+      "category": "kitchen",
+      "text": "first chef's knife under £100 for a home cook",
+      "why": "Enthusiast community (r/chefknives) versus mass-market picks."
+    },
+    {
+      "id": "b08",
+      "category": "kitchen",
+      "text": "cast iron skillet for a beginner that will last decades",
+      "why": "Long-term-use evidence is abundant; tests longevity signals."
+    },
+    {
+      "id": "b09",
+      "category": "kitchen",
+      "text": "burr coffee grinder for pour-over under £150",
+      "why": "Specialist knowledge (r/Coffee) matters; popular picks are often outgrown."
+    },
+    {
+      "id": "b10",
+      "category": "kitchen",
+      "text": "non-stick frying pan without PFAS that actually lasts",
+      "why": "Classic popular-versus-durable trap; tests warnings and the skip-these list."
+    }
+  ]
+}

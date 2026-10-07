@@ -24,6 +24,9 @@ node_modules/
 # OS
 .DS_Store
 
+# The library of saved threads is Reddit content: it stays on this machine.
+data/library/
+
 # Private planning notes. They stay on Noemi's machine only.
 docs/
 

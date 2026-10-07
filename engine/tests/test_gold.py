@@ -2,7 +2,7 @@
 
 import pytest
 
-from engine.gold import DEFAULT_GOLD_DIR, GoldSetError, load_gold_set, other_tag_usage
+from engine.gold import DEFAULT_GOLD_DIR, GoldSetError, load_gold_set, load_threads, other_tag_usage
 from engine.tests.factories import MENTIONS_HEADER, VOICES_HEADER, make_comment, make_thread, write_gold
 
 
@@ -359,3 +359,21 @@ def test_real_gold_set_is_valid():
     if not any(DEFAULT_GOLD_DIR.joinpath("threads").glob("*.json")):
         pytest.skip("data/gold has no threads yet")
     load_gold_set(DEFAULT_GOLD_DIR)
+
+
+# --- Threads without labels (how retrieval reads a folder of saved threads) ---
+
+def test_threads_load_from_a_folder_with_any_name(tmp_path):
+    # A saved library doesn't have to be called threads/.
+    write_gold(tmp_path, [make_thread()])
+    library = tmp_path / "library"
+    (tmp_path / "threads").rename(library)
+    assert [t.id for t in load_threads(library)] == ["1fake01"]
+
+
+def test_problems_name_the_folder_they_are_in(tmp_path):
+    library = tmp_path / "library"
+    library.mkdir()
+    (library / "1fake01.json").write_text("{not json")
+    with pytest.raises(GoldSetError, match="library/1fake01.json"):
+        load_threads(library)

@@ -63,20 +63,32 @@ def load_gold_set(root: Path = DEFAULT_GOLD_DIR) -> GoldSet:
     return GoldSet(threads=threads, voices=voices, mentions=mentions)
 
 
+def load_threads(folder: Path) -> list[Thread]:
+    """Loads and checks the thread files in a folder, without the label files. Retrieval reads threads this way."""
+    problems: list[str] = []
+    threads, _ = _load_thread_folder(Path(folder), problems)
+    if problems:
+        raise GoldSetError(problems)
+    return threads
+
+
 # --- Threads ---
 
 def _load_threads(root: Path, problems: list[str]) -> tuple[list[Thread], set[str]]:
+    return _load_thread_folder(root / "threads", problems)
+
+
+def _load_thread_folder(folder: Path, problems: list[str]) -> tuple[list[Thread], set[str]]:
     """Returns the threads that loaded, plus the ids of thread files that couldn't be read."""
-    folder = root / "threads"
     if not folder.is_dir():
-        problems.append("threads/ folder is missing")
+        problems.append(f"{folder.name}/ folder is missing")
         return [], set()
 
     threads: list[Thread] = []
     unreadable: set[str] = set()
     seen_comments: dict[str, str] = {}  # comment id -> thread id, to catch the same comment pasted into two threads
     for path in sorted(folder.glob("*.json")):
-        where = f"threads/{path.name}"
+        where = f"{folder.name}/{path.name}"
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as e:

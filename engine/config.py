@@ -54,3 +54,7 @@ PARSE_CALLS_PER_MINUTE = 5
 
 # The deletion rule: nothing fetched from Reddit is kept in the cache longer than this.
 CACHE_MAX_AGE_HOURS = 48
+
+# The library: saved threads that answers are prepared from (Noemi, 7 Oct 2026). It is refreshed this often,
+# and each refresh drops comments deleted or removed on Reddit since the last one.
+LIBRARY_REFRESH_DAYS = 30
