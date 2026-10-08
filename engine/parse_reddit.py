@@ -79,8 +79,10 @@ class ParseRedditClient:
         clock=None,
         sleep=time.sleep,
         env_file: Path = DEFAULT_ENV_FILE,
+        offline: bool = False,
     ):
         self._api_key = api_key
+        self.offline = offline  # answer only from the cache: evaluation must never spend credits
         self._env_file = Path(env_file)
         self.cache_dir = Path(cache_dir)
         self.usage_log = self.cache_dir / "usage.jsonl"
@@ -131,6 +133,8 @@ class ParseRedditClient:
             if self._clock() - fetched_at < MAX_AGE:
                 return fetched_at, entry["response"]
 
+        if self.offline:
+            raise ParseAPIError(f"offline: no saved answer for {endpoint} {params}; nothing was fetched")
         key = self._key()
         used = self.credits_used_this_month()
         if used + PARSE_CREDITS_PER_CALL > PARSE_MONTHLY_CREDITS:

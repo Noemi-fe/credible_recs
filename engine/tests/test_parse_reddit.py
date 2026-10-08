@@ -276,3 +276,14 @@ def test_secure_connections_have_certificates_to_check_against():
     from engine.parse_reddit import _ssl_context
 
     assert _ssl_context().cert_store_stats()["x509_ca"] > 0
+
+
+def test_offline_client_answers_from_its_cache_and_never_spends(tmp_path):
+    # Evaluation runs offline: it may reuse saved answers but must never call Parse.
+    service = FakeService()
+    make_client(tmp_path, service).get_thread("SkincareAddiction", "1fake01")
+    offline = ParseRedditClient(api_key="test-key", cache_dir=tmp_path / "cache", fetch=service, clock=FakeClock(), offline=True)
+    assert offline.get_thread("SkincareAddiction", "1fake01").id == "1fake01"
+    with pytest.raises(ParseAPIError, match="offline"):
+        offline.search("SkincareAddiction", "exfoliant")
+    assert len(service.requests) == 1

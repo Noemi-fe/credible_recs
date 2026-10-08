@@ -1,0 +1,468 @@
+{
+ "approved": true,
+ "approved_note": "Grades approved by Noemi on 8 Oct 2026: 2 fits the need, 1 useful evidence about the product type (long-term use, brand experience, warnings, other budgets or alternatives), 0 off-topic. 45 from her relevant/not calls, 32 added from the candidate pools.",
+ "judgements": [
+  {
+   "question": "b01",
+   "post": "dhwlxu",
+   "why": "asks for favourite exfoliators for sensitive skin",
+   "grade": 2
+  },
+  {
+   "question": "b01",
+   "post": "1w15p0t",
+   "why": "a guide to choosing an exfoliator",
+   "grade": 2
+  },
+  {
+   "question": "b01",
+   "post": "119fj0o",
+   "why": "asks for holy-grail exfoliants for sensitive skin",
+   "grade": 2
+  },
+  {
+   "question": "b01",
+   "post": "1sg6qzf",
+   "why": "a product request for a weekly exfoliator",
+   "grade": 2
+  },
+  {
+   "question": "b02",
+   "post": "1dby4rh",
+   "why": "rates many sunscreens",
+   "grade": 2
+  },
+  {
+   "question": "b02",
+   "post": "g6onyo",
+   "why": "asks for sunscreens for oily skin",
+   "grade": 2
+  },
+  {
+   "question": "b02",
+   "post": "d5x4g0",
+   "why": "budget sunscreens, but for sensitive rather than oily skin",
+   "grade": 1
+  },
+  {
+   "question": "b02",
+   "post": "1tb0jcf",
+   "why": "asks which sunscreen won't look greasy",
+   "grade": 2
+  },
+  {
+   "question": "b02",
+   "post": "7ch8g4",
+   "why": "asks for the best matte sunscreen for oily skin",
+   "grade": 2
+  },
+  {
+   "question": "b03",
+   "post": "1wuynqh",
+   "why": "asks for a good retinol",
+   "grade": 2
+  },
+  {
+   "question": "b03",
+   "post": "1wi0ndn",
+   "why": "advice before starting retinol",
+   "grade": 2
+  },
+  {
+   "question": "b03",
+   "post": "1wxv3vv",
+   "why": "starting retinol as a beginner",
+   "grade": 2
+  },
+  {
+   "question": "b03",
+   "post": "1wdwmtt",
+   "why": "asks for a good retinol for beginners",
+   "grade": 2
+  },
+  {
+   "question": "b05",
+   "post": "1lc5zu0",
+   "why": "cleansers that didn't cause breakouts",
+   "grade": 2
+  },
+  {
+   "question": "b05",
+   "post": "1041mt0",
+   "why": "best oil cleanser for acne-prone skin",
+   "grade": 2
+  },
+  {
+   "question": "b05",
+   "post": "upjt1u",
+   "why": "favourite gentle cleansers for acne-prone skin",
+   "grade": 2
+  },
+  {
+   "question": "b05",
+   "post": "1vopwzl",
+   "why": "favourite cleanser for acne-prone skin",
+   "grade": 2
+  },
+  {
+   "question": "b07",
+   "post": "x2nog3",
+   "why": "25 years with one knife brand: long-term experience worth checking",
+   "grade": 1
+  },
+  {
+   "question": "b07",
+   "post": "5nntmk",
+   "why": "long-term praise of a chef knife brand: worth checking for picks",
+   "grade": 1
+  },
+  {
+   "question": "b07",
+   "post": "ijuu43",
+   "why": "long-term experience with a budget chef knife",
+   "grade": 2
+  },
+  {
+   "question": "b07",
+   "post": "10fj2qn",
+   "why": "experience with a first chef knife: can feed the picks or the warnings",
+   "grade": 1
+  },
+  {
+   "question": "b07",
+   "post": "c1cdw3",
+   "why": "a budget cleaver that lasts, not a chef knife",
+   "grade": 1
+  },
+  {
+   "question": "b07",
+   "post": "10eqt7g",
+   "why": "asks about knife sizes, not which to buy",
+   "grade": 0
+  },
+  {
+   "question": "b07",
+   "post": "1lh9yfn",
+   "why": "asks for a chef knife for life",
+   "grade": 2
+  },
+  {
+   "question": "b08",
+   "post": "12fnfjr",
+   "why": "about cleaning, not choosing",
+   "grade": 0
+  },
+  {
+   "question": "b08",
+   "post": "8dg3lv",
+   "why": "proof that cast iron lasts decades",
+   "grade": 1
+  },
+  {
+   "question": "b08",
+   "post": "147sjqj",
+   "why": "discussion of a new skillet and its price: comments compare skillets",
+   "grade": 1
+  },
+  {
+   "question": "b08",
+   "post": "if3pjq",
+   "why": "long-term use plus a buying recommendation",
+   "grade": 2
+  },
+  {
+   "question": "b08",
+   "post": "1bz3wbj",
+   "why": "asks for the best skillets sold today",
+   "grade": 2
+  },
+  {
+   "question": "b08",
+   "post": "178k7ds",
+   "why": "argues for carbon steel instead: an alternative, not cast iron advice",
+   "grade": 1
+  },
+  {
+   "question": "b09",
+   "post": "1qig1wf",
+   "why": "a cleaning problem",
+   "grade": 0
+  },
+  {
+   "question": "b09",
+   "post": "1oaio1b",
+   "why": "about coffee bags, not grinders",
+   "grade": 0
+  },
+  {
+   "question": "b09",
+   "post": "1qpw20p",
+   "why": "grinder buying advice; brands may also make cheaper models that fit",
+   "grade": 1
+  },
+  {
+   "question": "b09",
+   "post": "zmk5u3",
+   "why": "asks which grinder to buy; brand advice may carry over",
+   "grade": 1
+  },
+  {
+   "question": "b09",
+   "post": "t4qgn3",
+   "why": "asks which hand grinder to buy",
+   "grade": 2
+  },
+  {
+   "question": "b09",
+   "post": "13ritzt",
+   "why": "compares grinders with pre-ground coffee instead of answering the question",
+   "grade": 0
+  },
+  {
+   "question": "b10",
+   "post": "1w7bo83",
+   "why": "a lasting PFAS-free alternative, not a non-stick pan",
+   "grade": 1
+  },
+  {
+   "question": "b10",
+   "post": "1pbo7z8",
+   "why": "which pan lasts longest",
+   "grade": 2
+  },
+  {
+   "question": "b10",
+   "post": "1oimkmc",
+   "why": "asks for a frying pan for life",
+   "grade": 2
+  },
+  {
+   "question": "b10",
+   "post": "1jmyj8m",
+   "why": "non-stick pans that last",
+   "grade": 2
+  },
+  {
+   "question": "b10",
+   "post": "1rkkeda",
+   "why": "a non-stick pan that lasts more than a year",
+   "grade": 2
+  },
+  {
+   "question": "b10",
+   "post": "1n8wgf8",
+   "why": "review of a non-stick pan's lifespan",
+   "grade": 2
+  },
+  {
+   "question": "b01",
+   "post": "d9s531",
+   "why": "favourite exfoliating products for sensitive skin (judged by Noemi's rule)",
+   "grade": 2
+  },
+  {
+   "question": "b02",
+   "post": "1s8n0zx",
+   "why": "favourite sunscreens for oily skin (judged by Noemi's rule)",
+   "grade": 2
+  },
+  {
+   "question": "b03",
+   "post": "1wtcplt",
+   "why": "asks for a holy-grail retinol (judged by Noemi's rule)",
+   "grade": 2
+  },
+  {
+   "question": "b01",
+   "post": "13wsdpz",
+   "grade": 1,
+   "why": "a hyperpigmentation guide that covers exfoliants, for a different need"
+  },
+  {
+   "question": "b01",
+   "post": "1mwwen3",
+   "grade": 1,
+   "why": "a routine that cleared comedones, likely naming exfoliants"
+  },
+  {
+   "question": "b01",
+   "post": "1qnb1r7",
+   "grade": 1,
+   "why": "products used up over a year: real use, mixed products"
+  },
+  {
+   "question": "b01",
+   "post": "1rc3txo",
+   "grade": 0,
+   "why": "how to schedule a routine, not which exfoliant"
+  },
+  {
+   "question": "b02",
+   "post": "18mqswh",
+   "grade": 2,
+   "why": "matte sunscreen for oily skin"
+  },
+  {
+   "question": "b02",
+   "post": "1k85zwo",
+   "grade": 2,
+   "why": "review of a sunscreen with no white cast for oily skin"
+  },
+  {
+   "question": "b02",
+   "post": "1la7bsm",
+   "grade": 2,
+   "why": "sunscreen for very oily skin"
+  },
+  {
+   "question": "b02",
+   "post": "6op4mm",
+   "grade": 0,
+   "why": "a thank-you story, not sunscreen advice"
+  },
+  {
+   "question": "b03",
+   "post": "1wtx21k",
+   "grade": 2,
+   "why": "a request for a retinol serum"
+  },
+  {
+   "question": "b03",
+   "post": "1wd3k1m",
+   "grade": 1,
+   "why": "retinol, but for hands"
+  },
+  {
+   "question": "b03",
+   "post": "1wtuhzb",
+   "grade": 1,
+   "why": "starting retinol alongside another acid"
+  },
+  {
+   "question": "b03",
+   "post": "1wn9e5m",
+   "grade": 1,
+   "why": "combining retinoids in a routine"
+  },
+  {
+   "question": "b05",
+   "post": "1nkvep4",
+   "grade": 0,
+   "why": "reviews of serums, not cleansers"
+  },
+  {
+   "question": "b05",
+   "post": "1wesht8",
+   "grade": 1,
+   "why": "favourite products for acne-prone sensitive skin, cleanser likely among them"
+  },
+  {
+   "question": "b05",
+   "post": "1mygn4v",
+   "grade": 1,
+   "why": "a routine for acne-prone sensitive skin"
+  },
+  {
+   "question": "b05",
+   "post": "1s27v2n",
+   "grade": 1,
+   "why": "a cleanser review, for oily rather than acne-prone skin"
+  },
+  {
+   "question": "b07",
+   "post": "1rmf1nb",
+   "grade": 0,
+   "why": "corporate gifts, not knives"
+  },
+  {
+   "question": "b07",
+   "post": "7554s7",
+   "grade": 2,
+   "why": "a request for a quality chef knife that doesn't break the bank"
+  },
+  {
+   "question": "b07",
+   "post": "3ugivl",
+   "grade": 2,
+   "why": "experience of buying a first quality knife"
+  },
+  {
+   "question": "b07",
+   "post": "irotfr",
+   "grade": 1,
+   "why": "cheap knives that lasted a year"
+  },
+  {
+   "question": "b08",
+   "post": "y6hsya",
+   "grade": 1,
+   "why": "a new owner's cheap cast iron purchase"
+  },
+  {
+   "question": "b08",
+   "post": "ziegn5",
+   "grade": 1,
+   "why": "an honest critique of cast iron: possible warnings"
+  },
+  {
+   "question": "b08",
+   "post": "s6lepe",
+   "grade": 1,
+   "why": "the downsides of cast iron in daily use"
+  },
+  {
+   "question": "b08",
+   "post": "10rxi16",
+   "grade": 0,
+   "why": "cooking tips, not which skillet"
+  },
+  {
+   "question": "b09",
+   "post": "sc1eth",
+   "grade": 0,
+   "why": "a joke post"
+  },
+  {
+   "question": "b09",
+   "post": "12zfsd4",
+   "grade": 0,
+   "why": "a joke post"
+  },
+  {
+   "question": "b09",
+   "post": "1ad2j7i",
+   "grade": 0,
+   "why": "a complaint about the community, not grinders"
+  },
+  {
+   "question": "b09",
+   "post": "1we69pz",
+   "grade": 0,
+   "why": "about coffee beans, not grinders"
+  },
+  {
+   "question": "b10",
+   "post": "1tt49pj",
+   "grade": 1,
+   "why": "a brand that wouldn't honour a pan's warranty: a warning"
+  },
+  {
+   "question": "b10",
+   "post": "1qpfe0l",
+   "grade": 1,
+   "why": "a cast iron alternative"
+  },
+  {
+   "question": "b10",
+   "post": "1k242zr",
+   "grade": 1,
+   "why": "a cast iron pan that lasted decades: a lasting alternative"
+  },
+  {
+   "question": "b10",
+   "post": "1rpbd0b",
+   "grade": 1,
+   "why": "a carbon steel alternative"
+  }
+ ]
+}

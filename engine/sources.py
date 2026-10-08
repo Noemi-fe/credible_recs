@@ -9,17 +9,26 @@ touching the rest of the engine. Two sources exist today:
 
 Both hand back threads without deleted or removed comments, since there's nothing in them to quote. Everything
 else (link-only comments, comments in other languages) passes through untouched; later modules decide about those.
+ParseSource can also hand back threads as fetched (find_raw_threads), which is how the library saves them.
+
+Candidate threads are ranked so buying advice beats popularity (rank_posts). For the library, ParseSource can also
+pick a mix of thread kinds (Noemi, 7 Oct 2026): advice threads give the picks, long-term-use threads the strongest
+evidence, warning threads the "skip these" list and the downsides (thread_kind, choose_mix).
 """
 
+import math
 import re
+from datetime import UTC, datetime
 from functools import cache
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
+from engine.arctic_shift import ArcticShiftClient, ArcticShiftError
+from engine.config import LIBRARY_MIX, LIBRARY_THREADS_PER_PRODUCT, MAX_THREADS_PER_SUBREDDIT, SKINCARE_RECENT_YEARS
 from engine.gold import load_threads
 from engine.models import Thread
 from engine.parse_reddit import ParseRedditClient
-from engine.query import PRODUCT_TYPES, ParsedQuery
+from engine.query import PRODUCT_TYPES, TITLE_WORDS, ParsedQuery
 
 
 @runtime_checkable
@@ -50,7 +59,31 @@ def _product_pattern(product_type: str) -> re.Pattern:
 
 
 def mentions_product(text: str, product_type: str) -> bool:
-    return bool(_product_pattern(product_type).search(text))
+    """True if the text names the product, allowing one wrong letter in long names ("suncreen" for "sunscreen")."""
+    if _product_pattern(product_type).search(text):
+        return True
+    long_names = [w for w in _product_words(product_type) if " " not in w and len(w) >= TYPO_MIN_LENGTH]
+    tokens = {t.removesuffix("s") for t in re.findall(r"[a-z]+", text.lower()) if len(t) >= TYPO_MIN_LENGTH - 1}
+    return any(_one_edit_apart(t, w) for t in tokens for w in long_names)
+
+
+# Typos are only forgiven in names this long: shorter ones have real neighbours ("cleaner" is one letter from "cleanser").
+TYPO_MIN_LENGTH = 9
+
+
+def _product_words(product_type: str) -> tuple[str, ...]:
+    known = {p.name: p.keywords + p.hints for p in PRODUCT_TYPES}
+    return known.get(product_type, tuple(product_type.lower().split()))
+
+
+def _one_edit_apart(a: str, b: str) -> bool:
+    """True if one letter added, removed or changed turns a into b."""
+    if a == b or abs(len(a) - len(b)) > 1:
+        return False
+    if len(a) == len(b):
+        return sum(x != y for x, y in zip(a, b)) == 1
+    short, long_ = sorted((a, b), key=len)
+    return any(long_[:i] + long_[i + 1:] == short for i in range(len(long_)))
 
 
 def relevance(thread: Thread, product_type: str) -> float:
@@ -93,37 +126,102 @@ class LocalSource:
 
 # --- Live from Reddit, through Parse ---
 
+# Added to the product's title word to find threads about things going wrong: "kettle died", "moisturizer regret".
+WARNING_SEARCHES = {
+    "kitchen": ("died", "broke", "regret", "avoid"),
+    "skincare": ("irritation", "broke me out", "regret", "avoid"),
+}
+
+
 class ParseSource:
     """Searches Reddit through the Parse reddit.com API, then fetches the most promising threads.
 
-    Credits: every call costs 2, so one request costs at most 2 × max_searches + 2 × limit credits
-    (10 with the defaults: 2 searches and 3 threads), and nothing for answers still in the client's
-    48-hour cache. The free plan has 200 credits a month. Errors from Parse, such as the monthly
-    credits running out, are passed on, never hidden.
+    Credits: every Parse call costs 2, so one request costs at most 2 × max_searches + 2 × limit credits
+    (10 with the defaults: 2 searches and 3 threads; 16 for the library's 6 threads), and nothing for answers
+    still in the client's 48-hour cache. With a finder (Arctic Shift) searching is free, so only the threads
+    read cost credits: 2 × limit (12 for the library's 6). The free plan has 200 credits a month. Errors from
+    Parse, such as the monthly credits running out, are passed on, never hidden.
     """
 
-    def __init__(self, client: ParseRedditClient | None = None, max_searches: int = 2, min_comments: int = 5):
+    def __init__(
+        self,
+        client: ParseRedditClient | None = None,
+        max_searches: int = 2,
+        min_comments: int = 5,
+        finder: ArcticShiftClient | None = None,
+        max_free_searches: int = 4,
+        max_warning_searches: int = 4,
+    ):
         self.client = client if client is not None else ParseRedditClient()
         self.max_searches = max_searches
+        # Optional free finder (Arctic Shift): searches cost nothing and only reading threads uses credits.
+        self.finder = finder
+        self.max_free_searches = max_free_searches
+        self.max_warning_searches = max_warning_searches  # free warning searches, on top of max_free_searches
         self.min_comments = min_comments  # a thread with fewer comments has too little to learn from
 
-    def find_threads(self, query: ParsedQuery, limit: int = 3) -> list[Thread]:
+    def find_threads(self, query: ParsedQuery, limit: int = 3, mix: dict | None = None, fill: bool = True) -> list[Thread]:
+        return [without_unusable_comments(t) for t in self.find_raw_threads(query, limit, mix, fill)]
+
+    def find_raw_threads(self, query: ParsedQuery, limit: int = 3, mix: dict | None = None, fill: bool = True) -> list[Thread]:
+        """The same threads as find_threads, for the same credits, but as fetched: deleted and removed comments included.
+
+        The library saves them this way, so a reply to a deleted comment still has the comment it answers.
+        Without a `mix`, the `limit` best threads are fetched. With one ({"advice": 3, "long_term": 1, "warning": 2},
+        say), the threads fetched are that mix of kinds (choose_mix), and `fill=False` fetches only the kinds in the
+        mix: if none is found, nothing is fetched and no credit is spent on threads.
+        """
         if query.status != "ok" or limit < 1:
             return []
+        ranked = self.rank_candidates(query)
+        chosen = ranked[:limit] if mix is None else choose_mix(query, ranked, total=limit, mix=mix, fill=fill)
+        return [self.client.get_thread(p["subreddit"], _post_id(p)) for p in chosen]
+
+    def rank_candidates(self, query: ParsedQuery) -> list[dict]:
+        """Every candidate post from the searches, best first, without fetching any thread."""
+        if query.status != "ok":
+            return []
+        if self.finder is not None:
+            ranked = self._usable(query, self._search_free(query))
+            if ranked:
+                return ranked
+        # No finder, or the free search found nothing usable: Parse's paid search.
+        return self._usable(query, self._search_with_parse(query))
+
+    def _usable(self, query: ParsedQuery, posts: list[dict]) -> list[dict]:
         wanted = {s.lower() for s in query.subreddits}
         # Search results can include posts from other subreddits (crossposts, for example).
         posts = [
-            p for p in self._search(query)
+            p for p in posts
             if str(p.get("subreddit", "")).lower() in wanted and (p.get("num_comments") or 0) >= self.min_comments
         ]
-        # Posts whose title names the product first, then the ones with more comments.
-        posts.sort(
-            key=lambda p: (mentions_product(p.get("title") or "", query.product_type), p.get("num_comments") or 0),
-            reverse=True,
-        )
-        return [without_unusable_comments(self.client.get_thread(p["subreddit"], _post_id(p))) for p in posts[:limit]]
+        return rank_posts(query, posts)
 
-    def _search(self, query: ParsedQuery) -> list[dict]:
+    def _search_free(self, query: ParsedQuery) -> list[dict]:
+        """Arctic Shift results, in two rounds, each post once.
+
+        1. The product's title words, term by term and subreddit by subreddit, up to `max_free_searches`.
+        2. Warning searches, so threads about failures and regrets are among the candidates: the first title word
+           with each of WARNING_SEARCHES ("kettle died", "kettle regret"…), in the request's most specialist
+           subreddit, up to `max_warning_searches`.
+        A busy or failing service ends the free search, warning searches included; results found before that are
+        still used. Parse's paid search never runs warning searches: they would cost credits.
+        """
+        terms = finder_terms(query.product_type)
+        pairs = [(subreddit, term) for term in terms for subreddit in query.subreddits][: self.max_free_searches]
+        warnings = WARNING_SEARCHES.get(query.category, ())[: self.max_warning_searches]
+        pairs += [(query.subreddits[0], f"{terms[0]} {warning}") for warning in warnings]
+        posts: dict[str, dict] = {}
+        for subreddit, term in pairs:
+            try:
+                found = self.finder.search_posts(subreddit, term, limit=25)
+            except ArcticShiftError:
+                break
+            for post in found:
+                posts.setdefault(_post_id(post), post)
+        return list(posts.values())
+
+    def _search_with_parse(self, query: ParsedQuery) -> list[dict]:
         """Search results for the first `max_searches` (subreddit, search term) pairs, each post once.
 
         Pairs go term by term, most specific first, and for each term subreddit by subreddit, most specific first.
@@ -134,6 +232,260 @@ class ParseSource:
             for post in self.client.search(subreddit, term).get("posts") or []:
                 posts.setdefault(_post_id(post), post)
         return list(posts.values())
+
+
+# --- Ranking candidate threads: buying advice beats popularity ---
+
+# A thread where people ask for or compare recommendations: what the picks are built from.
+_ADVICE = re.compile(
+    r"\b(recommend\w*|suggest\w*|which|best|looking for|advice|help me|worth it|alternatives?|hg|holy grail"
+    r"|favou?rites?|vs|versus|bifl|buy it for life|should i|request\w*)\b"
+)
+# A thread about living with a product for a long time: the evidence the brief values most.
+_NUMBER_WORDS = r"one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty"
+_LONG_TERM = re.compile(
+    rf"\b((\d+|{_NUMBER_WORDS})\s*(years?|yrs?)|decades?|long[- ]term|still going|review|outlast\w*|lifetime)\b"
+)
+# Flairs subreddits use for buying questions. A plain "Question" flair isn't one: it covers any question.
+_ADVICE_FLAIRS = ("request", "product question", "advice", "recommendation")
+_GONE = {"[deleted by user]", "[deleted]", "[removed]"}
+# Recurring threads ("Daily recommendations…", "Weekly questions…") aren't about anyone's specific need.
+# A title starting "Weekly…" counts only when it says it's such a thread: "Weekly exfoliator I could use" is a request.
+_RECURRING = re.compile(
+    r"^\s*(\[[^\]]*\]\s*)?(daily|weekly|monthly)\b.*\b(thread|questions?|discussion|recommendations?|help|chat)\b"
+    r"|\bmegathread\b"
+)
+# Threads about looking after kitchen gear rather than choosing it: cleaning, seasoning, restoring, sharpening.
+# "Easy to clean" is a buying need, so cleaning counts only as "cleaning" or "how I clean". Kitchen only: in
+# skincare "restoring" is what a product does ("barrier restoring cream").
+_CARE = re.compile(
+    r"\b(cleaning|how (i|to|do you|do i|should i|we) (clean|season)|seasoning|re-?season\w*"
+    r"|restor(e|ed|es|ing|ation)|sharpen\w*"
+    r"|tips|recipes?|never cook|what to cook|how to use|foods? you should|sandblast\w*)\b"  # using gear rather than choosing it
+)
+# Shop news rather than anyone's experience: announcements, prices, sales, deals ("deal with" is something else).
+# A plain "price" isn't one: budget questions use it.
+_SHOP_NEWS = re.compile(r"\b(announc\w*|guess the price|price (drops?|cuts?|increases?|hikes?)|sales?|deals?(?!\s+with))\b")
+# Threads with fewer comments give thin evidence. They still count, but a bigger thread on the same question wins
+# (Noemi, 7 Oct 2026: don't drop small threads before there's enough to judge the request).
+SMALL_THREAD = 15
+_STOPWORDS = {
+    "a", "an", "the", "for", "with", "without", "that", "this", "my", "me", "i", "im", "to", "of", "in", "on", "and",
+    "or", "but", "is", "are", "be", "it", "its", "will", "would", "can", "could", "should", "doesnt", "dont", "wont",
+    "actually", "really", "very", "good", "great", "nice", "best", "need", "want", "looking", "something", "some",
+    "any", "skin", "under", "over", "less", "more", "max", "around", "about", "budget", "between", "than", "up",
+    "pounds", "pound", "quid", "euros", "euro", "dollars", "bucks", "usd", "gbp", "eur",
+}
+
+
+def need_words(query: ParsedQuery) -> list[str]:
+    """The specific part of a request, in a form titles can be matched against: "pour-over" -> "pourover"."""
+    product_words = set(query.product_type.split()) | {w for t in TITLE_WORDS.get(query.product_type, ()) for w in t.split()}
+    words = []
+    for token in re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", query.text.lower()):
+        word = _stem(re.sub(r"['-]", "", token))
+        if word.isdigit() or word in _STOPWORDS or word in product_words or word in words:
+            continue
+        words.append(word)
+    return words
+
+
+def rank_posts(query: ParsedQuery, posts: list[dict], now: datetime | None = None) -> list[dict]:
+    """Candidate posts best first.
+
+    Left out:
+    - deleted or removed posts;
+    - recurring threads ("Daily…", "Weekly…", megathreads).
+
+    Points:
+    - asks for or compares recommendations, in its words or a buying flair: 3, and a question mark 0.5 more;
+    - is about long-term use: 1;
+    - matches the specific need: 1.5 per word, at most 2 words;
+    - names the product in the title: 2;
+    - the number of comments, on a slow scale (log10: 10 comments 1, 100 comments 2, 1,000 comments 3);
+    - under 15 comments: minus 2;
+    - in the most specialist subreddit: 0.5;
+    - skincare only, posted more than 3 years (SKINCARE_RECENT_YEARS) before `now`: minus 1.5, since formulas
+      change. `now` is the real clock unless a test gives one; kitchen threads can be any age;
+    - shop news (announcements, "guess the price", price drops, sales, deals) and, for kitchen gear, threads about
+      looking after or using it (cleaning, seasoning, restoring, sharpening, tips, recipes), unless the
+      title has advice words: minus 2.
+      They rank lower rather than being left out, since some still hold useful experience (Noemi, 7 Oct 2026).
+    Advice earns its 3 points only when the title also names the product or the need; a request about something
+    else earns 1. The product counts even with one wrong letter in a long name ("suncreen").
+    So a viral post can't outrank a smaller thread that is actually buying advice, a tiny thread only wins
+    when nothing bigger asks the same question, and an old skincare thread needs a clear lead to stay ahead.
+    """
+    needs = need_words(query)
+    too_old = _years_before(now or datetime.now(UTC), SKINCARE_RECENT_YEARS)
+    scored = []
+    for post in posts:
+        title = (post.get("title") or "").strip()
+        lowered = title.lower()
+        if lowered in _GONE or post.get("removed_by_category") or (post.get("selftext") or "").strip() in _GONE:
+            continue
+        if _RECURRING.search(lowered):
+            continue
+        flair = (post.get("link_flair_text") or "").lower()
+        names_it = mentions_product(title, query.product_type)
+        need_matches = min(2, sum(_title_has(lowered, word) for word in needs))
+        if _is_advice(lowered, flair):
+            # Full points only for advice about this product or this need; a request about something else
+            # ("corporate gifts", flaired [Request]) earns 1.
+            score = 3.0 if (names_it or need_matches) else 1.0
+        else:
+            score = 0.0
+        score += 0.5 if "?" in title else 0.0
+        score += 1.0 if _LONG_TERM.search(lowered) else 0.0
+        score += 1.5 * need_matches
+        score += 2.0 if names_it else 0.0
+        score += math.log10(1 + (post.get("num_comments") or 0))
+        score -= 2.0 if (post.get("num_comments") or 0) < SMALL_THREAD else 0.0
+        score += 0.5 if query.subreddits and _subreddit(post) == query.subreddits[0].lower() else 0.0
+        score -= 1.5 if query.category == "skincare" and _posted_before(post, too_old) else 0.0
+        if not _ADVICE.search(lowered) and (_SHOP_NEWS.search(lowered) or (query.category == "kitchen" and _CARE.search(lowered))):
+            score -= 2.0
+        scored.append((score, post))
+    scored.sort(key=lambda pair: pair[0], reverse=True)
+    return [post for _, post in scored]
+
+
+def _is_advice(lowered_title: str, lowered_flair: str) -> bool:
+    return bool(_ADVICE.search(lowered_title)) or any(f in lowered_flair for f in _ADVICE_FLAIRS)
+
+
+def _subreddit(post: dict) -> str:
+    return str(post.get("subreddit", "")).lower()
+
+
+def _years_before(moment: datetime, years: int) -> datetime:
+    """The same day and time, `years` calendar years earlier (28 February for a 29 February)."""
+    try:
+        return moment.replace(year=moment.year - years)
+    except ValueError:
+        return moment.replace(year=moment.year - years, day=28)
+
+
+def _posted_before(post: dict, moment: datetime) -> bool:
+    """Whether the post was made before `moment`. A post with no usable date isn't: an unknown age costs nothing."""
+    try:
+        return datetime.fromtimestamp(float(post["created_utc"]), UTC) < moment
+    except (KeyError, TypeError, ValueError, OverflowError, OSError):
+        return False
+
+
+# --- Thread kinds and the library's mix (Noemi, 7 Oct 2026) ---
+
+# Something went wrong: what feeds the "skip these" list and the downsides. Each category has its own words:
+# "peeling" is a failing pan but, in skincare, a product, and "breakouts" or "acne" alone are usually the need
+# ("best cleanser for breakouts"), so neither is a skincare warning.
+_SHARED_WARNINGS = r"regret\w*|avoid|disappoint(?:ed|ing)|worst|returned"
+_WARNINGS = {
+    "kitchen": re.compile(
+        # "broke" only as a failure ("broke within a year", "it broke"), never "broke them down" or "broke student".
+        rf"\b(?:{_SHARED_WARNINGS}|died|dead|broke (?:after|within|in)|(?:it|mine|already|just|has|have|had) broke|broken"
+        r"|failed|stopped working|don['’]?t buy|never again|recall(?:s|ed)?"
+        r"|only lasted|lasted only|rust(?:s|ed|ing|y)?|cracked|chipped|flaking|peeling|leaking)\b"
+    ),
+    "skincare": re.compile(
+        rf"\b(?:{_SHARED_WARNINGS}|irritat(?:ion|ed|ing)|reactions?|burn(?:s|ed|t|ing)?|rash(?:es)?|(?:broke|breaking) me out)\b"
+    ),
+}
+_ANY_WARNING = re.compile(rf"\b(?:{_SHARED_WARNINGS})\b")  # for a category without its own words
+# Long-term use, as ranking reads it, plus follow-ups: "ten years later", "Update: my pan after…".
+_LONG_TERM_KIND = re.compile(_LONG_TERM.pattern + r"|\b(years later|update[sd]?)\b")
+THREAD_KINDS = ("advice", "long_term", "warning")  # the kinds the library mixes; anything else is "other"
+
+
+def thread_kind(post: dict, category: str, product_type: str | None = None) -> str:
+    """What a thread can feed, judged from its title (and flair): "warning", "long_term", "advice" or "other".
+
+    - warning: something went wrong ("died", "regret", "broke me out"…), with words for each category. With a
+      `product_type`, the title must name that product, so "broke them down" in a recipe isn't a pan warning.
+    - long_term: living with a product for a long time ("10 years", "decades", "years later", "update", "review").
+    - advice: asking for or comparing recommendations, in its words or a buying flair ("Request").
+    When several apply, a warning wins, then long-term use, then advice: "Mine only lasted 2 years: which kettle
+    actually lasts?" is first of all a story of a kettle that failed.
+    """
+    title = (post.get("title") or "").lower()
+    if _is_warning(title, category, product_type):
+        return "warning"
+    if _LONG_TERM_KIND.search(title):
+        return "long_term"
+    if _is_advice(title, (post.get("link_flair_text") or "").lower()):
+        return "advice"
+    return "other"
+
+
+def _is_warning(lowered_title: str, category: str, product_type: str | None) -> bool:
+    """A warning names the product (when we know which) and isn't a care project ("sandblasted it since it rusted")."""
+    if not _WARNINGS.get(category, _ANY_WARNING).search(lowered_title):
+        return False
+    if category == "kitchen" and _CARE.search(lowered_title):
+        return False
+    return product_type is None or mentions_product(lowered_title, product_type)
+
+
+def choose_mix(
+    query: ParsedQuery,
+    ranked_posts: list[dict],
+    total: int = LIBRARY_THREADS_PER_PRODUCT,
+    mix: dict = LIBRARY_MIX,
+    per_subreddit: int | None = None,
+    fill: bool = True,
+) -> list[dict]:
+    """Up to `total` of the ranked posts, as a mix of thread kinds, returned in rank order.
+
+    1. Going down the ranking, each kind takes posts until it has its share of the mix (by default 3 advice,
+       1 long-term use and 2 warnings out of 6). A kind missing from the mix has no share.
+    2. With `fill` (the default), slots left empty go to the best posts remaining: advice, long-term or warning
+       threads first, "other" threads only when none of those is left. Without it, only the shares are taken,
+       which is how the library fetches warnings only.
+    Throughout, at most `per_subreddit` posts come from any one subreddit, so no single community's taste dominates.
+    By default that's 2 (MAX_THREADS_PER_SUBREDDIT), or more for a product with few subreddits, so it can still
+    reach `total`: a product with 2 subreddits may take 3 from each.
+    """
+    if per_subreddit is None:
+        per_subreddit = max(MAX_THREADS_PER_SUBREDDIT, math.ceil(total / max(1, len(query.subreddits))))
+    kinds = [thread_kind(post, query.category, query.product_type) for post in ranked_posts]
+    chosen: set[int] = set()  # positions in the ranking
+    per_kind: dict[str, int] = {}
+    per_sub: dict[str, int] = {}
+
+    def has_room(i: int) -> bool:
+        return len(chosen) < total and per_sub.get(_subreddit(ranked_posts[i]), 0) < per_subreddit
+
+    def take(i: int) -> None:
+        chosen.add(i)
+        per_kind[kinds[i]] = per_kind.get(kinds[i], 0) + 1
+        per_sub[_subreddit(ranked_posts[i])] = per_sub.get(_subreddit(ranked_posts[i]), 0) + 1
+
+    for i, kind in enumerate(kinds):
+        if per_kind.get(kind, 0) < mix.get(kind, 0) and has_room(i):
+            take(i)
+    if fill:
+        for useful in (True, False):  # the three useful kinds first, "other" threads last
+            for i, kind in enumerate(kinds):
+                if i not in chosen and (kind in THREAD_KINDS) == useful and has_room(i):
+                    take(i)
+    return [ranked_posts[i] for i in sorted(chosen)]
+
+
+def _title_has(lowered_title: str, word: str) -> bool:
+    """Whole words, two-word spellings ("pour over" for "pourover") and longer forms ("lasting" for "last")."""
+    tokens = [re.sub(r"['-]", "", t) for t in re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", lowered_title)]
+    candidates = tokens + [a + b for a, b in zip(tokens, tokens[1:])]
+    return any(t == word or _stem(t) == word or (len(word) >= 4 and t.startswith(word)) for t in candidates)
+
+
+def _stem(word: str) -> str:
+    """A light plural trim: "lasts" -> "last", "years" -> "year"; short words like "pfas" stay as they are."""
+    return word[:-1] if len(word) > 4 and word.endswith("s") and not word.endswith("ss") else word
+
+
+def finder_terms(product_type: str) -> list[str]:
+    """What to type into a title search for this product: its usual title words, else its own name."""
+    return list(TITLE_WORDS.get(product_type, (product_type,)))
 
 
 def _post_id(post: dict) -> str:

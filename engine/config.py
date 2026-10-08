@@ -58,3 +58,14 @@ CACHE_MAX_AGE_HOURS = 48
 # The library: saved threads that answers are prepared from (Noemi, 7 Oct 2026). It is refreshed this often,
 # and each refresh drops comments deleted or removed on Reddit since the last one.
 LIBRARY_REFRESH_DAYS = 30
+
+# How the library is built (Noemi, 7 Oct 2026). Per product type: a mix of thread kinds, each feeding a different
+# step (advice -> the picks, long-term use -> evidence strength, warnings -> the skip-these list and downsides).
+LIBRARY_THREADS_PER_PRODUCT = 6
+LIBRARY_MIX = {"advice": 3, "long_term": 1, "warning": 2}
+MAX_THREADS_PER_SUBREDDIT = 2  # per product type, so no single community's taste dominates
+SKINCARE_RECENT_YEARS = 3  # skincare formulas change, so newer threads are preferred; kitchen threads can be any age
+# Reddit locks threads after about 6 months; only deletions can still change them, so they are refreshed less often.
+# Provisional (Noemi, 7 Oct 2026): holds only until the data source / API choice is settled.
+REDDIT_ARCHIVE_DAYS = 180
+LIBRARY_ARCHIVED_REFRESH_DAYS = 90

@@ -117,6 +117,25 @@ PRODUCT_TYPES = (
     ProductType("teapot", "kitchen", ("teapot", "tea pot"), subreddits=("tea", "BuyItForLife")),
 )
 
+# The short words people put in Reddit post titles for each product, used to find threads.
+# A product not listed is searched by its own name.
+TITLE_WORDS = {
+    "exfoliant": ("exfoliant",),
+    "cleanser": ("cleanser",),
+    "moisturiser": ("moisturizer", "moisturiser"),
+    "sunscreen": ("sunscreen",),
+    "retinoid": ("retinol", "tretinoin"),
+    "serum": ("serum",),
+    "toner": ("toner",),
+    "stovetop kettle": ("kettle",),
+    "electric kettle": ("kettle",),
+    "chef knife": ("knife",),
+    "cast iron skillet": ("cast iron", "skillet"),
+    "frying pan": ("pan",),
+    "coffee grinder": ("grinder",),
+    "teapot": ("teapot",),
+}
+
 # Things people shop for that this version doesn't cover. "-free" and "-safe" forms are requirements, not products.
 OUT_OF_SCOPE = (
     "laptop", "phone", "headphones", "earbuds", "tv", "monitor", "camera", "shoes", "trainers", "sneakers", "boots", "jacket",

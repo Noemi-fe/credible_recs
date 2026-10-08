@@ -291,14 +291,16 @@ def test_posts_from_other_subreddits_or_with_too_few_comments_are_dropped():
     assert [post_id for _, post_id in client.fetches] == ["1lower", "1edge"]  # 40 comments, then 5
 
 
-def test_title_mentions_first_then_more_comments():
+def test_advice_first_then_the_need_then_comments():
+    # Ranking changed on 7 Oct 2026 (Noemi approved): buying advice outranks size. "Kettle recommendations"
+    # asks for advice, so it beats a bigger thread that only matches the need, which beats a viral one.
     client = FakeParseClient(posts=[
         post("1busy", title="What lasts forever in your kitchen?", num_comments=500),
         post("1small", title="Kettle recommendations", num_comments=20),
         post("1big", title="Electric kettle that lasts?", num_comments=80),
     ])
     found = ParseSource(client=client).find_threads(parse_query(KETTLE), limit=3)
-    assert ids(found) == ["1big", "1small", "1busy"]
+    assert ids(found) == ["1small", "1big", "1busy"]
 
 
 def test_fetches_at_most_limit_threads_and_stays_within_the_credit_cap():
@@ -319,6 +321,32 @@ def test_parse_errors_are_passed_on(fail_on):
         ParseSource(client=client).find_threads(parse_query(KETTLE))
 
 
+# --- ParseSource: threads as fetched, for the library ---
+
+def test_raw_threads_come_as_fetched_with_deleted_and_removed_comments():
+    fetched = Thread.model_validate(thread_with_every_kind_of_comment())
+    client = FakeParseClient(posts=[post("1kettle")], threads=[fetched])
+    [raw] = ParseSource(client=client).find_raw_threads(parse_query(KETTLE))
+    assert raw == fetched  # nothing taken out: the library keeps deleted comments as stubs, so reply chains stay whole
+
+
+def test_raw_threads_and_usable_threads_pick_the_same_threads_for_the_same_credits():
+    posts = [post("1busy", title="What lasts forever?", num_comments=500), post("1big", num_comments=80), post("1small", num_comments=20)]
+    raw_client, client = FakeParseClient(posts=posts), FakeParseClient(posts=posts)
+    raw = ParseSource(client=raw_client).find_raw_threads(parse_query(KETTLE), limit=2)
+    usable = ParseSource(client=client).find_threads(parse_query(KETTLE), limit=2)
+    assert usable == [without_unusable_comments(t) for t in raw]
+    assert ids(raw) == ["1big", "1small"]
+    assert (raw_client.searches, raw_client.fetches) == (client.searches, client.fetches)
+
+
+@pytest.mark.parametrize("text", ["something for my face", "a good laptop"])
+def test_raw_threads_for_an_unclear_request_cost_nothing(text):
+    client = FakeParseClient(posts=[post("1kettle")])
+    assert ParseSource(client=client).find_raw_threads(parse_query(text)) == []
+    assert client.searches == [] and client.fetches == []
+
+
 # --- The real gold set, on Noemi's machine only ---
 
 GOLD_THREADS = DEFAULT_GOLD_DIR / "threads"
@@ -330,3 +358,639 @@ def test_finds_kitchen_threads_for_a_kettle_in_the_real_gold_set():
     assert found
     assert all(t.category == "kitchen" for t in found)
     assert all(c.status == "ok" for t in found for c in t.comments)
+
+
+# --- Finding threads for free with Arctic Shift, reading them with Parse ---
+
+from engine.arctic_shift import ArcticShiftError  # noqa: E402
+from engine.sources import finder_terms  # noqa: E402
+
+
+class FakeFinder:
+    """Stands in for ArcticShiftClient: free searches that answer with canned posts, or fail like a busy server."""
+
+    def __init__(self, posts=(), fail=False):
+        self.posts = list(posts)
+        self.fail = fail
+        self.searches: list[tuple[str, str]] = []
+
+    def search_posts(self, subreddit, title, limit=25):
+        self.searches.append((subreddit, title))
+        if self.fail:
+            raise ArcticShiftError("Arctic Shift answered 422: Timeout. Maybe slow down a bit")
+        return [dict(p) for p in self.posts if p["subreddit"] == subreddit]
+
+
+def test_finder_terms_are_the_short_words_people_put_in_titles():
+    assert finder_terms("electric kettle") == ["kettle"]
+    assert finder_terms("chef knife") == ["knife"]
+    assert finder_terms("moisturiser") == ["moisturizer", "moisturiser"]  # both spellings
+    assert finder_terms("espresso machine") == ["espresso machine"]
+    assert finder_terms("something new") == ["something new"]  # unknown products: their own name
+
+
+def test_with_a_finder_searching_costs_no_credits():
+    client = FakeParseClient()
+    finder = FakeFinder([post("1aaa", num_comments=90), post("1bbb", num_comments=20), post("1ccc", subreddit="tea")])
+    threads = ParseSource(client=client, finder=finder).find_threads(parse_query(KETTLE), limit=2)
+    assert client.searches == []  # no paid searches
+    # r/BuyItForLife is the kettle's most specialist subreddit, so its smaller thread edges out r/tea's.
+    assert ids(threads) == ["1aaa", "1bbb"] and client.credits == 4  # only the two threads read
+    assert finder.searches[0] == ("BuyItForLife", "kettle")
+
+
+def test_finder_searches_term_by_term_and_subreddit_by_subreddit_within_its_cap():
+    finder = FakeFinder()
+    ParseSource(client=FakeParseClient(), finder=finder, max_free_searches=5).find_threads(parse_query("moisturiser for dry skin"))
+    assert finder.searches == [
+        ("SkincareAddiction", "moisturizer"), ("AsianBeauty", "moisturizer"), ("30PlusSkinCare", "moisturizer"),
+        ("SkincareAddictionUK", "moisturizer"), ("SkincareAddiction", "moisturiser"),
+        # changed 7 Oct 2026: library mix / refresh cadence approved by Noemi. The warning searches follow,
+        # under their own cap, so the 5 title-word searches above are unchanged.
+        ("SkincareAddiction", "moisturizer irritation"), ("SkincareAddiction", "moisturizer broke me out"),
+        ("SkincareAddiction", "moisturizer regret"), ("SkincareAddiction", "moisturizer avoid"),
+    ]
+
+
+def test_a_busy_finder_falls_back_to_paid_search():
+    client = FakeParseClient(posts=[post("1aaa")])
+    threads = ParseSource(client=client, finder=FakeFinder(fail=True)).find_threads(parse_query(KETTLE))
+    assert client.searches and ids(threads) == ["1aaa"]
+
+
+def test_finder_results_found_before_an_error_are_used_without_paying():
+    class FailsSecond(FakeFinder):
+        def search_posts(self, subreddit, title, limit=25):
+            if self.searches:
+                self.searches.append((subreddit, title))
+                raise ArcticShiftError("Timeout. Maybe slow down a bit")
+            return super().search_posts(subreddit, title, limit)
+
+    client = FakeParseClient()
+    threads = ParseSource(client=client, finder=FailsSecond([post("1aaa")])).find_threads(parse_query(KETTLE))
+    assert client.searches == [] and ids(threads) == ["1aaa"]
+
+
+def test_candidates_can_be_ranked_without_fetching_anything():
+    client = FakeParseClient(posts=[post("1aaa", num_comments=12), post("1bbb", num_comments=90)])
+    ranked = ParseSource(client=client).rank_candidates(parse_query(KETTLE))
+    assert [p["id"] for p in ranked] == ["1bbb", "1aaa"]
+    assert client.fetches == []
+
+
+# --- Ranking candidates: buying advice beats popularity ---
+
+from engine.sources import need_words, rank_posts  # noqa: E402
+
+
+def candidate(post_id, title, num_comments=40, subreddit="BuyItForLife", flair=None, **extra):
+    return {"id": post_id, "title": title, "num_comments": num_comments, "subreddit": subreddit, "link_flair_text": flair, **extra}
+
+
+def test_need_words_are_the_specific_part_of_the_request():
+    assert need_words(parse_query("burr coffee grinder for pour-over under £150")) == ["burr", "pourover"]
+    assert need_words(parse_query("non-stick frying pan without PFAS that actually lasts")) == ["nonstick", "pfas", "last"]
+
+
+def test_a_buying_advice_thread_beats_a_viral_one():
+    query = parse_query("non-stick frying pan without PFAS that actually lasts")
+    ranked = rank_posts(query, [
+        candidate("1viral", "Caught a hot falling frying pan today, share your kitchen mistakes", 480, "Cooking"),
+        candidate("1advice", "Best non-stick pan without PFAS? Mine keeps peeling", 45, "Cooking"),
+    ])
+    assert [p["id"] for p in ranked] == ["1advice", "1viral"]
+
+
+def test_request_flair_counts_as_buying_advice():
+    query = parse_query(KETTLE)
+    ranked = rank_posts(query, [
+        candidate("1show", "My kettle collection", 200),
+        candidate("1req", "Kettle that won't die in two years", 30, flair="[Request]"),
+    ])
+    assert ranked[0]["id"] == "1req"
+
+
+def test_the_specific_need_lifts_a_thread():
+    query = parse_query("burr coffee grinder for pour-over under £150")
+    ranked = rank_posts(query, [
+        candidate("1generic", "Which grinder should I get?", 60, "Coffee"),
+        candidate("1pour", "Which grinder for pour over?", 50, "Coffee"),
+    ])
+    assert ranked[0]["id"] == "1pour"
+
+
+def test_comment_counts_matter_but_slowly():
+    query = parse_query(KETTLE)
+    ranked = rank_posts(query, [candidate("1small", "Kettle recommendations?", 20), candidate("1big", "Kettle recommendations?", 200)])
+    assert ranked[0]["id"] == "1big"
+    # ...but ten times the comments doesn't beat a thread that matches the need and asks for advice.
+    ranked = rank_posts(query, [candidate("1viral", "My kettle", 900), candidate("1fit", "Kettle that lasts 10 years? Recommendations", 40)])
+    assert ranked[0]["id"] == "1fit"
+
+
+@pytest.mark.parametrize("extra", [{"title": "[deleted by user]"}, {"removed_by_category": "moderator"}, {"selftext": "[removed]"}])
+def test_deleted_or_removed_posts_are_left_out(extra):
+    post_ = candidate("1gone", "Kettle recommendations?", 300)
+    post_.update(extra)
+    assert rank_posts(parse_query(KETTLE), [post_, candidate("1ok", "Kettle?", 20)])[0]["id"] == "1ok"
+    assert "1gone" not in [p["id"] for p in rank_posts(parse_query(KETTLE), [post_])]
+
+
+@pytest.mark.parametrize("flair, counts", [("Question", False), ("Product Question", True), ("Buying Advice", True), ("[Request]", True)])
+def test_only_buying_flairs_count_as_advice(flair, counts):
+    query = parse_query("first chef's knife under £100 for a home cook")
+    ranked = rank_posts(query, [
+        candidate("1flair", "Why does no one make a 14 inch knife anymore", 100, "chefknives", flair=flair),
+        candidate("1plain", "Knife collection", 120, "chefknives"),  # a little bigger, so only the flair can lift 1flair
+    ])
+    assert (ranked[0]["id"] == "1flair") == counts
+
+
+@pytest.mark.parametrize("title", [
+    "Daily recommendations for trustworthy, good knife stores",
+    "Weekly Questions Thread",
+    "[Discussion] Monthly kettle megathread",
+])
+def test_recurring_threads_are_left_out(title):
+    # Recurring threads ("Daily…", "Weekly…") aren't about anyone's specific need.
+    assert rank_posts(parse_query(KETTLE), [candidate("1recur", title, 400)]) == []
+
+
+def test_small_threads_count_but_bigger_ones_on_the_same_question_win():
+    # Noemi, 7 Oct 2026: don't drop small threads, but prefer threads with enough to learn from.
+    query = parse_query("gentle exfoliant for sensitive skin under £30")
+    ranked = rank_posts(query, [
+        candidate("1small", "Best gentle exfoliant for sensitive skin?", 8, "SkincareAddiction"),  # matches 2 need words
+        candidate("1big", "Best exfoliant for sensitive skin?", 60, "SkincareAddiction"),  # matches 1, but has more to learn from
+        candidate("1viral", "My skincare shelf", 900, "SkincareAddiction"),
+    ])
+    assert [p["id"] for p in ranked] == ["1big", "1small", "1viral"]  # the small thread still beats an off-topic one
+
+
+def test_free_results_that_all_fail_the_filters_fall_back_to_paid_search():
+    # Arctic Shift answered, but only with tiny or recurring threads: Parse's search should still be tried.
+    client = FakeParseClient(posts=[post("1good", num_comments=80)])
+    finder = FakeFinder([post("1tiny", num_comments=2), post("1recur", title="Daily kettle thread", num_comments=300)])
+    threads = ParseSource(client=client, finder=finder).find_threads(parse_query(KETTLE))
+    assert client.searches and ids(threads) == ["1good"]
+
+
+# --- The library's mix of thread kinds (Noemi, 7 Oct 2026) ---
+# Advice threads give the picks, long-term-use threads the strongest evidence, warning threads the "skip these"
+# list and the downsides. So each product's library is built from a mix of the three kinds.
+
+from datetime import UTC, datetime, timedelta  # noqa: E402
+
+from engine.sources import choose_mix, thread_kind  # noqa: E402
+
+SKILLET = "cast iron skillet for a beginner"  # kitchen; searches castiron, BuyItForLife, Cooking
+KNIFE = "first chef's knife under £100 for a home cook"  # kitchen; searches chefknives, BuyItForLife, Cooking
+CLEANSER = "gentle cleanser for oily skin"  # skincare
+
+
+@pytest.mark.parametrize("title, category, kind", [
+    # Kitchen warnings
+    ("My Fellow Stagg kettle died after 14 months", "kitchen", "warning"),
+    ("Kettle is dead, lid hinge broken", "kitchen", "warning"),
+    ("Thermostat failed on my Breville", "kitchen", "warning"),
+    ("Kettle stopped working, never again", "kitchen", "warning"),
+    ("I regret buying this kettle", "kitchen", "warning"),
+    ("Don't buy the Cosori gooseneck", "kitchen", "warning"),
+    ("Recall on Cuisinart kettles", "kitchen", "warning"),
+    ("Mine only lasted 18 months", "kitchen", "warning"),
+    ("Carbon steel pan: rust everywhere", "kitchen", "warning"),
+    ("Le Creuset chipped after one use", "kitchen", "warning"),
+    ("Enamel cracked on my dutch oven", "kitchen", "warning"),
+    ("Coating flaking into food", "kitchen", "warning"),
+    ("Non-stick pan peeling", "kitchen", "warning"),
+    ("Kettle leaking from the base", "kitchen", "warning"),
+    ("Disappointed with my Smeg", "kitchen", "warning"),
+    ("Worst kettle I've owned", "kitchen", "warning"),
+    ("Returned my third kettle this year", "kitchen", "warning"),
+    # A warning wins over long-term use and advice; long-term use wins over advice.
+    ("Only lasted 2 years: which kettle actually lasts?", "kitchen", "warning"),
+    ("Which kettle lasts 10 years?", "kitchen", "long_term"),
+    # Long-term use
+    ("Dualit kettle, 12 years later", "kitchen", "long_term"),
+    ("Ten years later, still my favourite pan", "kitchen", "long_term"),
+    ("Update on my carbon steel pan", "kitchen", "long_term"),
+    ("Long-term review of the Fellow Stagg", "kitchen", "long_term"),
+    ("Still going after decades", "kitchen", "long_term"),
+    # Advice, and everything else
+    ("Best electric kettle?", "kitchen", "advice"),
+    ("Recommendations for a gooseneck kettle", "kitchen", "advice"),
+    ("My kettle collection", "kitchen", "other"),
+    # Skincare warnings
+    ("This moisturizer broke me out", "skincare", "warning"),
+    ("Irritation from tretinoin", "skincare", "warning"),
+    ("Sunscreen irritated my eyes", "skincare", "warning"),
+    ("Bad reaction to a new serum", "skincare", "warning"),
+    ("Does this burn for anyone else?", "skincare", "warning"),
+    ("Burning after the Ordinary peel", "skincare", "warning"),
+    ("Rash after switching sunscreen", "skincare", "warning"),
+    ("Worst cleanser I've tried", "skincare", "warning"),
+    ("Returned it after a week", "skincare", "warning"),
+    # Breakouts and acne alone are usually the need, not a warning.
+    ("Best cleanser for breakouts?", "skincare", "advice"),
+    ("Acne cleanser routine", "skincare", "other"),
+    ("Breakouts on my chin", "skincare", "other"),
+    # Kitchen-only warning words mean something else in skincare: a peel is a product.
+    ("Peeling solution worth it?", "skincare", "advice"),
+    ("Moisturizer, 3 years later", "skincare", "long_term"),
+])
+def test_thread_kind_from_the_title(title, category, kind):
+    assert thread_kind({"title": title}, category) == kind
+
+
+def test_an_advice_flair_makes_a_thread_advice():
+    assert thread_kind({"title": "Kettle that won't quit", "link_flair_text": "[Request]"}, "kitchen") == "advice"
+    assert thread_kind({"title": "Kettle that won't quit", "link_flair_text": "Question"}, "kitchen") == "other"
+    # A warning in the title still wins over an advice flair.
+    assert thread_kind({"title": "My kettle died, what now", "link_flair_text": "Request"}, "kitchen") == "warning"
+
+
+def test_a_post_without_a_title_is_other():
+    assert thread_kind({"title": None}, "kitchen") == "other"
+    assert thread_kind({}, "skincare") == "other"
+
+
+# --- rank_posts: care, news and deals threads lose points ---
+
+@pytest.mark.parametrize("request_text, title, subreddit", [
+    (SKILLET, "How I clean my cast iron skillet", "castiron"),
+    (SKILLET, "Cleaning a rusty skillet", "castiron"),
+    (SKILLET, "Skillet seasoning came out sticky", "castiron"),
+    (SKILLET, "Restoration of my grandmother's skillet", "castiron"),
+    (KNIFE, "Sharpening my first knife on a whetstone", "chefknives"),
+    (SKILLET, "Lodge announced a new skillet line", "castiron"),
+    (SKILLET, "Guess the price of this vintage skillet", "castiron"),
+    (KNIFE, "Knife sale this weekend", "chefknives"),
+    (SKILLET, "Great deal on a Lodge skillet", "castiron"),
+    (CLEANSER, "Cleanser sale at Boots", "SkincareAddiction"),
+])
+def test_care_news_and_deals_threads_without_advice_words_lose_points_but_stay(request_text, title, subreddit):
+    # Changed 7 Oct 2026 (Noemi): they rank lower instead of being left out, since some still hold useful
+    # experience (she judged a "Yeti… guess the price" thread useful). Same size and place as a plain thread
+    # naming the product, they now come second.
+    plain = {SKILLET: "Cast iron skillet", KNIFE: "Chef knife", CLEANSER: "Cleanser"}[request_text]
+    ranked = rank_posts(parse_query(request_text), [candidate("1off", title, 400, subreddit), candidate("1plain", plain, 400, subreddit)])
+    assert [p["id"] for p in ranked] == ["1plain", "1off"]
+
+
+@pytest.mark.parametrize("request_text, title, subreddit", [
+    (SKILLET, "Best skillet for a beginner? how to season?", "castiron"),
+    (KNIFE, "Which whetstone for sharpening a first knife?", "chefknives"),
+    (SKILLET, "Is this skillet deal worth it?", "castiron"),
+    (KETTLE, "Electric kettle that's easy to clean", "BuyItForLife"),  # a buying need, not a cleaning thread
+    ("retinol for beginners", "How to deal with retinol irritation", "SkincareAddiction"),  # "deal with" isn't a deal
+    # Chosen 7 Oct 2026: the care words apply to kitchen gear only. In skincare "restoring" is what a product does.
+    ("moisturiser for dry skin", "Barrier restoring moisturizer for dry skin", "SkincareAddiction"),
+])
+def test_threads_with_advice_words_or_a_different_meaning_stay(request_text, title, subreddit):
+    assert [p["id"] for p in rank_posts(parse_query(request_text), [candidate("1ok", title, 40, subreddit)])] == ["1ok"]
+
+
+# --- rank_posts: newer skincare threads are preferred ---
+
+NOW = datetime(2026, 10, 7, 12, 0, tzinfo=UTC)
+THREE_YEARS_BEFORE_NOW = datetime(2023, 10, 7, 12, 0, tzinfo=UTC)
+
+
+def dated(post_id, title, num_comments, subreddit, created: datetime | None) -> dict:
+    extra = {"created_utc": created.timestamp()} if created is not None else {}
+    return candidate(post_id, title, num_comments, subreddit, **extra)
+
+
+@pytest.mark.parametrize("old_comments, first", [
+    (527, "1recent"),  # the old thread is ahead by 1.4 points on comments: the 1.5-point penalty puts it behind
+    (835, "1old"),  # ahead by 1.6: still first after the penalty
+])
+def test_skincare_threads_older_than_three_years_lose_one_and_a_half_points(old_comments, first):
+    title = "Best cleanser for oily skin?"
+    ranked = rank_posts(parse_query(CLEANSER), [
+        dated("1old", title, old_comments, "SkincareAddiction", NOW - timedelta(days=4 * 365)),
+        dated("1recent", title, 20, "SkincareAddiction", NOW - timedelta(days=365)),
+    ], now=NOW)
+    assert ranked[0]["id"] == first
+
+
+@pytest.mark.parametrize("created, penalised", [
+    (THREE_YEARS_BEFORE_NOW, False),  # "older than 3 years" means more than 3
+    (THREE_YEARS_BEFORE_NOW - timedelta(seconds=1), True),
+    (None, False),  # no date: no penalty
+])
+def test_the_age_penalty_starts_after_exactly_three_years(created, penalised):
+    title = "Best cleanser for oily skin?"
+    ranked = rank_posts(parse_query(CLEANSER), [
+        dated("1old", title, 527, "SkincareAddiction", created),
+        dated("1recent", title, 20, "SkincareAddiction", NOW - timedelta(days=30)),
+    ], now=NOW)
+    assert ranked[0]["id"] == ("1recent" if penalised else "1old")
+
+
+def test_kitchen_threads_have_no_age_penalty():
+    ranked = rank_posts(parse_query(KETTLE), [
+        dated("1old", "Best electric kettle?", 527, "BuyItForLife", NOW - timedelta(days=10 * 365)),
+        dated("1recent", "Best electric kettle?", 20, "BuyItForLife", NOW - timedelta(days=30)),
+    ], now=NOW)
+    assert ranked[0]["id"] == "1old"
+
+
+def test_without_a_given_time_the_age_penalty_uses_the_real_clock():
+    real_now = datetime.now(UTC)
+    ranked = rank_posts(parse_query(CLEANSER), [
+        dated("1old", "Best cleanser for oily skin?", 527, "SkincareAddiction", real_now - timedelta(days=4 * 365)),
+        dated("1recent", "Best cleanser for oily skin?", 20, "SkincareAddiction", real_now - timedelta(days=30)),
+    ])
+    assert ranked[0]["id"] == "1recent"
+
+
+# --- choose_mix: a mix of kinds, no subreddit dominating ---
+
+ADVICE, WARNING, LONG_TERM, OTHER = "Best kettle?", "My kettle died", "Kettle, 10 years later", "My kettle collection"
+
+
+def mix_ids(ranked, **kwargs) -> list[str]:
+    return [p["id"] for p in choose_mix(parse_query(KETTLE), ranked, **kwargs)]
+
+
+def test_choose_mix_fills_each_kinds_quota_in_rank_order():
+    ranked = [
+        candidate("1a1", ADVICE, subreddit="BuyItForLife"),
+        candidate("1a2", ADVICE, subreddit="tea"),
+        candidate("1o1", OTHER, subreddit="Coffee"),
+        candidate("1w1", WARNING, subreddit="BuyItForLife"),
+        candidate("1a3", ADVICE, subreddit="Coffee"),
+        candidate("1a4", ADVICE, subreddit="tea"),  # advice is full by now: 3
+        candidate("1l1", LONG_TERM, subreddit="tea"),
+        candidate("1w2", WARNING, subreddit="Coffee"),
+        candidate("1w3", WARNING, subreddit="BuyItForLife"),  # warnings are full by now: 2
+    ]
+    # The defaults: 6 threads, 3 advice, 1 long-term, 2 warnings, at most 2 per subreddit.
+    assert mix_ids(ranked) == ["1a1", "1a2", "1w1", "1a3", "1l1", "1w2"]
+
+
+def test_choose_mix_takes_at_most_two_threads_from_one_subreddit():
+    ranked = [
+        candidate("1a1", ADVICE, subreddit="BuyItForLife"),
+        candidate("1a2", ADVICE, subreddit="buyitforlife"),  # the same subreddit, whatever the capitals
+        candidate("1a3", ADVICE, subreddit="BuyItForLife"),
+        candidate("1a4", ADVICE, subreddit="tea"),
+    ]
+    assert mix_ids(ranked, total=3, mix={"advice": 3}) == ["1a1", "1a2", "1a4"]
+    assert mix_ids(ranked, total=3, mix={"advice": 3}, per_subreddit=3) == ["1a1", "1a2", "1a3"]
+
+
+def test_empty_slots_go_to_the_best_remaining_kinds_and_other_threads_come_last():
+    ranked = [
+        candidate("1o1", OTHER, subreddit="BuyItForLife"),
+        candidate("1a1", ADVICE, subreddit="tea"),
+        candidate("1a2", ADVICE, subreddit="Coffee"),
+        candidate("1a3", ADVICE, subreddit="BuyItForLife"),
+        candidate("1a4", ADVICE, subreddit="tea"),
+        candidate("1l1", LONG_TERM, subreddit="Coffee"),
+    ]
+    # No warnings at all: the 2 warning slots go to a 4th advice thread first, then to the "other" thread.
+    assert mix_ids(ranked, total=5) == ["1a1", "1a2", "1a3", "1a4", "1l1"]
+    assert mix_ids(ranked, total=6) == ["1o1", "1a1", "1a2", "1a3", "1a4", "1l1"]  # returned in rank order
+
+
+def test_filling_empty_slots_still_respects_the_subreddit_cap():
+    ranked = [
+        candidate("1a1", ADVICE, subreddit="BuyItForLife"),
+        candidate("1a2", ADVICE, subreddit="BuyItForLife"),
+        candidate("1w1", WARNING, subreddit="BuyItForLife"),
+        candidate("1a3", ADVICE, subreddit="tea"),
+    ]
+    assert mix_ids(ranked, total=4, mix={"advice": 1}) == ["1a1", "1a2", "1a3"]
+
+
+def test_a_kind_missing_from_the_mix_gets_no_reserved_slots():
+    ranked = [
+        candidate("1a1", ADVICE, subreddit="BuyItForLife"),
+        candidate("1a2", ADVICE, subreddit="tea"),
+        candidate("1a3", ADVICE, subreddit="Coffee"),
+        candidate("1w1", WARNING, subreddit="Coffee"),
+    ]
+    # The warning has no slot of its own, so the third slot goes to the better-ranked advice thread.
+    assert mix_ids(ranked, total=3, mix={"advice": 2}) == ["1a1", "1a2", "1a3"]
+
+
+def test_without_filling_only_the_quotas_are_taken():
+    ranked = [
+        candidate("1a1", ADVICE, subreddit="BuyItForLife"),
+        candidate("1w1", WARNING, subreddit="tea"),
+        candidate("1a2", ADVICE, subreddit="Coffee"),
+    ]
+    assert mix_ids(ranked, total=3, mix={"warning": 3}, fill=False) == ["1w1"]
+    assert mix_ids(ranked, total=3, mix={"advice": 2}, fill=False) == ["1a1", "1a2"]
+    assert mix_ids(ranked, total=3, mix={"long_term": 3}, fill=False) == []
+
+
+def test_choose_mix_never_goes_over_the_total():
+    ranked = [candidate(f"1x{n}", title, subreddit=sub) for n, (title, sub) in enumerate([
+        (ADVICE, "BuyItForLife"), (WARNING, "tea"), (ADVICE, "Coffee"), (LONG_TERM, "tea"), (WARNING, "Coffee"),
+    ])]
+    assert mix_ids(ranked, total=2) == ["1x0", "1x1"]
+    assert mix_ids(ranked, total=0) == []
+    assert mix_ids([], total=6) == []
+
+
+# --- ParseSource: warning searches (free) and the mix ---
+
+class TermFinder(FakeFinder):
+    """Answers each (subreddit, search) with its own posts, so a test can tell which search found what."""
+
+    def __init__(self, answers, fail_on=()):
+        super().__init__()
+        self.answers = answers
+        self.fail_on = set(fail_on)  # (subreddit, search) pairs that fail like a busy server
+
+    def search_posts(self, subreddit, title, limit=25):
+        self.searches.append((subreddit, title))
+        if (subreddit, title) in self.fail_on:
+            raise ArcticShiftError("Arctic Shift answered 429: Too many requests")
+        return [dict(p) for p in self.answers.get((subreddit, title), [])]
+
+
+def test_after_the_title_word_searches_the_finder_looks_for_warnings_in_the_most_specialist_subreddit():
+    finder = FakeFinder()
+    ParseSource(client=FakeParseClient(), finder=finder).find_threads(parse_query(KETTLE))
+    assert finder.searches == [
+        ("BuyItForLife", "kettle"), ("tea", "kettle"), ("Coffee", "kettle"),
+        ("BuyItForLife", "kettle died"), ("BuyItForLife", "kettle broke"),
+        ("BuyItForLife", "kettle regret"), ("BuyItForLife", "kettle avoid"),
+    ]
+
+
+def test_warning_searches_use_the_first_finder_term():
+    finder = FakeFinder()
+    ParseSource(client=FakeParseClient(), finder=finder, max_free_searches=0).find_threads(parse_query(SKILLET))
+    assert finder.searches == [
+        ("castiron", "cast iron died"), ("castiron", "cast iron broke"), ("castiron", "cast iron regret"), ("castiron", "cast iron avoid"),
+    ]
+
+
+@pytest.mark.parametrize("max_free, max_warning, expected", [
+    (1, 2, [("BuyItForLife", "kettle"), ("BuyItForLife", "kettle died"), ("BuyItForLife", "kettle broke")]),
+    (2, 0, [("BuyItForLife", "kettle"), ("tea", "kettle")]),
+])
+def test_warning_searches_have_their_own_cap(max_free, max_warning, expected):
+    finder = FakeFinder()
+    source = ParseSource(client=FakeParseClient(), finder=finder, max_free_searches=max_free, max_warning_searches=max_warning)
+    source.find_threads(parse_query(KETTLE))
+    assert finder.searches == expected
+
+
+def test_threads_found_by_a_warning_search_become_candidates_for_free():
+    client = FakeParseClient()
+    finder = TermFinder({
+        ("BuyItForLife", "kettle"): [post("1adv", "Best electric kettle?")],
+        ("BuyItForLife", "kettle died"): [post("1died", "My kettle died after a year"), post("1adv", "Best electric kettle?")],
+    })
+    ranked = ParseSource(client=client, finder=finder).rank_candidates(parse_query(KETTLE))
+    assert [p["id"] for p in ranked] == ["1adv", "1died"]  # each post once
+    assert client.searches == client.fetches == []
+
+
+def test_a_failing_warning_search_ends_the_free_search_and_keeps_what_was_found():
+    client = FakeParseClient()
+    finder = TermFinder(
+        {("BuyItForLife", "kettle died"): [post("1died", "My kettle died after a year")]},
+        fail_on=[("BuyItForLife", "kettle broke")],
+    )
+    ranked = ParseSource(client=client, finder=finder).rank_candidates(parse_query(KETTLE))
+    assert finder.searches[-2:] == [("BuyItForLife", "kettle died"), ("BuyItForLife", "kettle broke")]  # nothing after the error
+    assert [p["id"] for p in ranked] == ["1died"] and client.searches == []
+
+
+def test_a_failing_title_word_search_skips_the_warning_searches_and_parse_search_runs_none():
+    client = FakeParseClient(posts=[post("1aaa")])
+    finder = FakeFinder(fail=True)
+    ParseSource(client=client, finder=finder).find_threads(parse_query(KETTLE))
+    assert finder.searches == [("BuyItForLife", "kettle")]  # a busy service isn't asked again
+    # Parse's paid search runs only the request's own search terms: warning searches would cost credits.
+    assert client.searches == [("BuyItForLife", "electric kettle that lasts"), ("tea", "electric kettle that lasts")]
+
+
+def mix_posts() -> list[dict]:
+    return [
+        post("1a", "Best electric kettle?", 300, "BuyItForLife"),
+        post("1b", "Electric kettle recommendations?", 200, "tea"),
+        post("1c", "Which electric kettle?", 150, "Coffee"),
+        post("1w", "My electric kettle died", 20, "Coffee"),
+    ]
+
+
+def test_without_a_mix_the_top_threads_are_fetched_as_before():
+    client = FakeParseClient(posts=mix_posts())
+    assert ids(ParseSource(client=client).find_raw_threads(parse_query(KETTLE), limit=3)) == ["1a", "1b", "1c"]
+
+
+def test_with_a_mix_the_threads_fetched_are_the_mix():
+    client = FakeParseClient(posts=mix_posts())
+    raw = ParseSource(client=client).find_raw_threads(parse_query(KETTLE), limit=3, mix={"warning": 1})
+    assert ids(raw) == ["1a", "1b", "1w"]  # the warning thread has its slot; the best 2 others fill the rest
+    assert client.fetches == [("BuyItForLife", "1a"), ("tea", "1b"), ("Coffee", "1w")]
+    assert client.credits == 2 * 2 + 2 * 3
+
+    usable_client = FakeParseClient(posts=mix_posts())
+    usable = ParseSource(client=usable_client).find_threads(parse_query(KETTLE), limit=3, mix={"warning": 1})
+    assert usable == [without_unusable_comments(t) for t in raw]
+
+
+def test_with_a_mix_and_no_filling_only_that_kind_is_fetched():
+    client = FakeParseClient(posts=mix_posts())
+    found = ParseSource(client=client).find_threads(parse_query(KETTLE), limit=3, mix={"warning": 3}, fill=False)
+    assert ids(found) == ["1w"] and client.fetches == [("Coffee", "1w")]
+
+    client = FakeParseClient(posts=mix_posts())
+    assert ParseSource(client=client).find_raw_threads(parse_query(KETTLE), limit=1, mix={"long_term": 1}, fill=False) == []
+    assert client.fetches == []  # none of that kind: nothing fetched, no credits for threads
+
+
+def test_products_with_few_subreddits_can_still_fill_the_mix():
+    # Changed 7 Oct 2026: the cap is 2 per subreddit, but a product with only 2 subreddits (coffee grinder: Coffee,
+    # espresso) may take 3 from each so it can still reach 6 threads.
+    query = parse_query("burr coffee grinder for pour-over under £150")
+    ranked = [candidate(f"1c{n}", "Which grinder?", 50, "Coffee") for n in range(4)] + [
+        candidate(f"1e{n}", "Which grinder?", 50, "espresso") for n in range(4)]
+    chosen = choose_mix(query, ranked)
+    assert len(chosen) == 6
+    assert sum(p["subreddit"] == "Coffee" for p in chosen) == 3
+
+
+def test_products_with_three_subreddits_keep_the_cap_of_two():
+    query = parse_query(KETTLE)  # BuyItForLife, tea, Coffee
+    ranked = [candidate(f"1b{n}", "Kettle recommendations?", 50, "BuyItForLife") for n in range(5)] + [
+        candidate("1t", "Kettle recommendations?", 50, "tea")]
+    assert sum(p["subreddit"] == "BuyItForLife" for p in choose_mix(query, ranked)) == 2
+
+
+# --- Ranking refinements from the graded evaluation (7 Oct 2026) ---
+
+def ranked_ids(request_text, posts):
+    return [p["id"] for p in rank_posts(parse_query(request_text), posts)]
+
+
+def test_a_title_starting_with_weekly_isnt_a_recurring_thread_unless_it_says_so():
+    posts = [candidate("1wk", "[Product Request] Weekly exfoliator I could use instead of my toner?", 40, "SkincareAddiction")]
+    assert ranked_ids("gentle exfoliant for sensitive skin under £30", posts) == ["1wk"]
+    assert ranked_ids(KETTLE, [candidate("1q", "Weekly Questions Thread", 400)]) == []
+
+
+def test_request_written_in_the_title_counts_as_advice():
+    knife = "first chef's knife under £100 for a home cook"
+    posts = [candidate("1why", "Serious question: why does no one make a 14 inch chef knife anymore?", 114, "chefknives", flair="Question"),
+             candidate("1req", "[Request] Chef knife with a similar blade style that holds an edge", 243, "BuyItForLife")]
+    assert ranked_ids(knife, posts)[0] == "1req"
+
+
+def test_a_request_about_something_else_earns_less_than_experience_with_the_product():
+    knife = "first chef's knife under £100 for a home cook"
+    posts = [candidate("1gifts", "Long-lasting corporate gifts that actually get used", 624, "BuyItForLife", flair="[Request]"),
+             candidate("1cutco", "These cutco knives my parents bought 25 years ago", 602, "BuyItForLife", flair="Vintage")]
+    assert ranked_ids(knife, posts)[0] == "1cutco"
+
+
+@pytest.mark.parametrize("title", ["I've used this chef knife for ten years", "My chef knife after a decade", "This chef knife will outlast me"])
+def test_long_term_use_in_words_counts(title):
+    knife = "first chef's knife under £100 for a home cook"
+    posts = [candidate("1plain", "My chef knife", 100, "BuyItForLife"), candidate("1long", title, 100, "BuyItForLife")]
+    assert ranked_ids(knife, posts)[0] == "1long"
+
+
+def test_kitchen_usage_tips_lose_points_like_care_threads():
+    posts = [candidate("1tips", "5 foods you should never cook in a cast iron skillet", 400, "castiron"),
+             candidate("1plain", "Cast iron skillet", 400, "castiron")]
+    assert ranked_ids(SKILLET, posts) == ["1plain", "1tips"]
+
+
+def test_a_product_name_one_letter_off_still_counts():
+    from engine.sources import mentions_product
+
+    assert mentions_product("Asian Matte Suncreen for Oily Skin", "sunscreen")
+    assert mentions_product("Best moisturiser for dry skin", "moisturiser")
+    assert not mentions_product("Best sunglasses for summer", "sunscreen")
+
+
+# --- Warnings must be about the product (7 Oct 2026, after the first warning top-up) ---
+
+@pytest.mark.parametrize("title, product_type, category", [
+    ("I got two whole ducks, broke them down, and turned them into duck fat", "frying pan", "kitchen"),  # cooking
+    ("Broke student coffee routine (or dealing with a cheap grinder)", "coffee grinder", "kitchen"),  # money
+    ("I sandblasted my cast iron skillet since it rusted", "cast iron skillet", "kitchen"),  # a care project
+    ("Avoid the crowds: my kitchen tour", "electric kettle", "kitchen"),  # doesn't name the product
+])
+def test_these_are_not_warnings(title, product_type, category):
+    assert thread_kind({"title": title}, category, product_type) != "warning"
+
+
+@pytest.mark.parametrize("title, product_type, category", [
+    ("My kettle broke within a year", "electric kettle", "kitchen"),
+    ("Less than 3 years old electric kettle flaking/chipped already?", "electric kettle", "kitchen"),
+    ("Non-stick pan peeling after six months", "frying pan", "kitchen"),
+    ("This moisturizer gave me a rash", "moisturiser", "skincare"),
+])
+def test_these_are_warnings(title, product_type, category):
+    assert thread_kind({"title": title}, category, product_type) == "warning"

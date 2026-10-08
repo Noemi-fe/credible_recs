@@ -27,3 +27,5 @@
 - Also for brief version 5 (decided 7 Oct 2026): module 1 asks one clarifying question instead of guessing when a need is too vague or holds two needs; the build starts with a thin end-to-end slice; the brief's model name `claude-sonnet-5` is out of date (use the current Sonnet).
 - Claude API key: not used for now (see the working rule). If it's ever needed, walk Noemi through creating one step by step (Claude Console, API keys, a monthly spend limit) and pasting ANTHROPIC_API_KEY into .env herself.
 - Also for brief version 5: no Claude API key; AI steps run offline through Claude Code under Noemi's plan.
+- The quarterly refresh of archived library threads (LIBRARY_ARCHIVED_REFRESH_DAYS) is provisional: revisit it when Noemi settles the data source / API choice (7 Oct 2026).
+- When modules 5–6 exist: if a request lacks enough credible evidence (fewer than 3 credible mentions across 2 threads), fetch more threads automatically, smaller ones included, before giving up (Noemi, 7 Oct 2026).
