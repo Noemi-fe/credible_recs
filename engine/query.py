@@ -15,6 +15,7 @@ from pydantic import Field, model_validator
 
 from engine.config import SUBREDDITS, THREAD_CATEGORIES
 from engine.models import Record
+from engine.text import one_edit_apart
 
 SKIN_TYPES = ("dry", "oily", "combination", "sensitive", "acne-prone", "normal", "mature")
 SIZE_UNITS = ("ml", "l", "fl oz", "qt", "in", "cm", "mm")
@@ -252,14 +253,38 @@ def search_terms(product_type: str, constraints: Constraints) -> list[str]:
 
 # --- The whole of module 1 ---
 
+# Real words one letter away from a product or skin-type word: never "corrected" into it.
+_REAL_WORDS = {"cleaner", "cleaners"}
+
+
+def correct_typos(text: str) -> str:
+    """Fixes one wrong letter in a long product or skin-type word ("clenser" -> "cleanser", "sensitve" ->
+    "sensitive"). Only when the word keeps its first letter (typos rarely change it: "settle" isn't "kettle"),
+    the fix is unambiguous, and the word isn't a real word of its own ("cleaner")."""
+    vocabulary = {w for p in PRODUCT_TYPES for k in p.keywords + p.hints for w in k.split() if len(w) >= 6}
+    vocabulary |= {w for words in TITLE_WORDS.values() for t in words for w in t.split() if len(w) >= 6}
+    vocabulary |= {s for s in SKIN_TYPES if len(s) >= 6 and "-" not in s}
+
+    def fix(match: re.Match) -> str:
+        word = match.group(0)
+        lowered = word.lower()
+        if len(lowered) < 5 or lowered in vocabulary or lowered in _REAL_WORDS:
+            return word
+        candidates = {v for v in vocabulary if v[0] == lowered[0] and one_edit_apart(lowered, v)}
+        return candidates.pop() if len(candidates) == 1 else word
+
+    return re.sub(r"[A-Za-z]+", fix, text)
+
+
 def parse_query(text: str) -> ParsedQuery:
     """Turns a request typed in plain words into an understood request, using rules only (no AI, no cost)."""
     # Imported here because query_rules builds on this file's shapes (Budget, Size).
     from engine.query_rules import parse_budget, parse_min_years, parse_size, parse_skin_types, parse_spf
 
+    original, text = text, correct_typos(text)
     routing = classify(text)
     if routing.status == "out_of_scope":
-        return ParsedQuery(text=text, status="out_of_scope", message=routing.message)
+        return ParsedQuery(text=original, status="out_of_scope", message=routing.message)
 
     constraints = Constraints(
         budget=parse_budget(text),
@@ -271,9 +296,9 @@ def parse_query(text: str) -> ParsedQuery:
     )
     if routing.status == "clarify":
         # Kept so that, once the shopper answers, what they already said isn't lost.
-        return ParsedQuery(text=text, status="clarify", category=routing.category, constraints=constraints, question=routing.question)
+        return ParsedQuery(text=original, status="clarify", category=routing.category, constraints=constraints, question=routing.question)
     return ParsedQuery(
-        text=text,
+        text=original,
         status="ok",
         category=routing.category,
         product_type=routing.product_type,

@@ -29,6 +29,7 @@ from engine.gold import load_threads
 from engine.models import Thread
 from engine.parse_reddit import ParseRedditClient
 from engine.query import PRODUCT_TYPES, TITLE_WORDS, ParsedQuery
+from engine.text import one_edit_apart
 
 
 @runtime_checkable
@@ -64,7 +65,7 @@ def mentions_product(text: str, product_type: str) -> bool:
         return True
     long_names = [w for w in _product_words(product_type) if " " not in w and len(w) >= TYPO_MIN_LENGTH]
     tokens = {t.removesuffix("s") for t in re.findall(r"[a-z]+", text.lower()) if len(t) >= TYPO_MIN_LENGTH - 1}
-    return any(_one_edit_apart(t, w) for t in tokens for w in long_names)
+    return any(one_edit_apart(t, w) for t in tokens for w in long_names)
 
 
 # Typos are only forgiven in names this long: shorter ones have real neighbours ("cleaner" is one letter from "cleanser").
@@ -76,14 +77,6 @@ def _product_words(product_type: str) -> tuple[str, ...]:
     return known.get(product_type, tuple(product_type.lower().split()))
 
 
-def _one_edit_apart(a: str, b: str) -> bool:
-    """True if one letter added, removed or changed turns a into b."""
-    if a == b or abs(len(a) - len(b)) > 1:
-        return False
-    if len(a) == len(b):
-        return sum(x != y for x, y in zip(a, b)) == 1
-    short, long_ = sorted((a, b), key=len)
-    return any(long_[:i] + long_[i + 1:] == short for i in range(len(long_)))
 
 
 def relevance(thread: Thread, product_type: str) -> float:

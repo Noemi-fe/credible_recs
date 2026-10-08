@@ -13,6 +13,7 @@ One entry per run of `eval/run_eval.py`: date, change tested, every metric, kept
 | 7 Oct 2026 | Graded judgements (2 fits the need / 1 useful / 0 off-topic), 32 hard cases added (draft); ordering measure added | 29/30 · 21/22 · 21/22 | fits 19/24, useful 23/24; ordering 63/78 (81%) | n/a | n/a | n/a | n/a | $0 | 0/0 · 0/0 | baseline for the new measure |
 | 7 Oct 2026 | Library criteria: thread mix, warning searches, skincare age rule; care/news threads lose 2 points instead of being dropped; dropped judged threads count as misses | 29/30 · 21/22 · 21/22 | fits 19/24, useful 23/24; ordering 62/79 (78%) | n/a | n/a | n/a | n/a | $0 | 0/0 · 0/0 | yes: needed for the library; ordering within noise |
 | 7 Oct 2026 | Ranking fixes from the misordered pairs: "Weekly…" bug, [Request] in titles, advice must be about the product, long-term use in words, kitchen usage tips lose points, one-letter typos in long product names | 29/30 · 21/22 · 21/22 | fits 19/24, useful 23/24; ordering 75/79 (95%) | n/a | n/a | n/a | n/a | $0 | 0/0 · 0/0 | yes: ordering up 13 pairs, nothing down |
+| 8 Oct 2026 | Module 1: one wrong letter forgiven in long product and skin-type words (same first letter, unambiguous, real words like "cleaner" left alone) | 30/30 · 22/22 · 22/22 | fits 19/24, useful 23/24; ordering 75/79 (95%) | n/a | n/a | n/a | n/a | $0 | 0/0 · 0/0 | yes: module 1 up 3, nothing down |
 
 ## Notes
 
@@ -22,3 +23,4 @@ One entry per run of `eval/run_eval.py`: date, change tested, every metric, kept
 - **7 Oct 2026, approved judgements.** Under Noemi's broader rule, long-term ownership threads count, which the old popularity ranking tended to pick; the gap between the rankings shrinks from 6 to 2. Three new picks after the small-thread change were judged by her rule and are marked as such in the file.
 - **7 Oct 2026, ranking fixes.** Each fix is general, found by reading the 17 misordered pairs. Further tuning was stopped here: the remaining top-3 misses are fine distinctions, and more tuning against 8 questions and draft grades would overfit.
 - **8 Oct 2026.** Noemi approved all grades (77 judgements). Scores unchanged: fits 19/24, useful 23/24, ordering 75/79.
+- **8 Oct 2026, module 1 typos.** The fix targeted the two known misses, so it was also checked on five typos outside the evaluation set (all pass). With 100% on its own 30 cases, module 1 needs harder cases: add real requests from the blind test and from users as they come.

@@ -189,3 +189,27 @@ def test_out_of_scope_carries_nothing_else():
     query = parse_query("best laptop for uni under £800")
     assert query.status == "out_of_scope" and query.message
     assert query.constraints == Constraints() and query.search_terms == [] and query.subreddits == []
+
+
+# --- Typos (8 Oct 2026): one wrong letter in a long word is forgiven; real words are left alone ---
+
+@pytest.mark.parametrize("text, product_type", [
+    ("fragrance free clenser for oily skin", "cleanser"),
+    ("best moisturiizer for dry skin", "moisturiser"),
+    ("sunscren for my face", "sunscreen"),
+    ("cast iron skilet for a beginner", "cast iron skillet"),
+    ("which burr grindr for pour over", "coffee grinder"),
+])
+def test_one_wrong_letter_in_a_product_name_is_forgiven(text, product_type):
+    query = parse_query(text)
+    assert (query.status, query.product_type) == ("ok", product_type)
+
+
+def test_skin_type_typos_are_forgiven():
+    assert parse_query("mineral sunscreen for sensitve skin").constraints.skin_types == ["sensitive"]
+    assert parse_query("moisturiser for combinaton skin").constraints.skin_types == ["combination"]
+
+
+@pytest.mark.parametrize("text", ["oven cleaner that actually works", "best laptop cleaner"])
+def test_real_words_are_not_corrected_into_products(text):
+    assert parse_query(text).product_type != "cleanser"

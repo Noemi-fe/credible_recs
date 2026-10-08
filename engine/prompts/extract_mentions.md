@@ -10,6 +10,13 @@ Write the result as JSON to the file you're given, in the format at the end. Not
 These rules match Noemi's labelling guide (data/gold/LABELLING_GUIDE.md), so the extraction and her labels
 measure the same thing.
 
+## How to read the thread
+
+Read it with `.venv/bin/python -m engine.extract show <thread id> <threads folder>`, not the JSON file: it prints
+the post and each comment you should extract, with its id, what it replies to, score, author and flair. On big
+threads it shows only the highest-scored comments; extract only the comments it shows. Copy quotes from the
+comment text it prints.
+
 ## What counts as a product mention
 
 - A specific product someone could buy: a brand with a product line or model ("CeraVe Hydrating Cleanser",

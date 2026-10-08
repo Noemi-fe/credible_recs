@@ -48,7 +48,7 @@ from typing import Annotated, Literal
 
 from pydantic import AfterValidator, ValidationError
 
-from engine.config import MENTION_CATEGORIES, QUOTE_MAX_WORDS, STANCE_VALUE
+from engine.config import EXTRACT_MAX_COMMENTS, MENTION_CATEGORIES, QUOTE_MAX_WORDS, STANCE_VALUE
 from engine.gold import GoldSetError, _describe, load_threads
 from engine.models import Id, Record, Thread, UtcDatetime
 from engine.verify_quotes import find_quote
@@ -317,8 +317,46 @@ def _todo(threads_dir: Path, version: str) -> dict[str, str]:
 
 # --- Command line ---
 
+# --- The compact reading view the extractor reads (8 Oct 2026) ---
+
+def shown_comment_ids(thread: Thread, max_comments: int = EXTRACT_MAX_COMMENTS) -> list[str]:
+    """The usable comments the extractor reads: the `max_comments` highest-scored, in thread order."""
+    usable = [c for c in thread.comments if c.status == "ok"]
+    keep = {c.id for c in sorted(usable, key=lambda c: c.score, reverse=True)[:max_comments]}
+    return [c.id for c in usable if c.id in keep]
+
+
+def render_thread(thread: Thread, max_comments: int = EXTRACT_MAX_COMMENTS) -> str:
+    """The thread as plain text: the post, then each shown comment with its id, what it replies to, score,
+    author and flair. About half the reading of the JSON, with everything extraction needs."""
+    by_id = {c.id: c for c in thread.comments}
+    shown = shown_comment_ids(thread, max_comments)
+    usable = sum(c.status == "ok" for c in thread.comments)
+    lines = [
+        f"Thread {thread.id} in r/{thread.community} ({thread.category}): {thread.title}",
+        thread.body.strip() or "(no post text)",
+        f"--- {len(shown)} of {usable} comments (the highest-scored, in thread order) ---",
+    ]
+    for comment_id in shown:
+        c = by_id[comment_id]
+        author = c.author.name if c.author else "deleted account"
+        flair = f" [{c.author.flair}]" if c.author and c.author.flair else ""
+        header = f"[{c.id}] score {c.score} | {author}{flair}"
+        if c.parent_id:
+            parent = by_id.get(c.parent_id)
+            snippet = " ".join((parent.body if parent else "").split())[:120]
+            header += f" | reply to {c.parent_id}: \"{snippet}\""
+        lines += ["", header, c.body]
+    return "\n".join(lines)
+
+
 def main(argv: list[str], instructions: Path = DEFAULT_INSTRUCTIONS) -> int:
     """`instructions` can be swapped for another file, which is how the tests run `todo`."""
+    if argv and argv[0] == "show" and len(argv) in (2, 3):
+        folder = Path(argv[2]) if len(argv) == 3 else DEFAULT_THREADS_DIR
+        thread = Thread.model_validate_json((folder / f"{argv[1]}.json").read_text(encoding="utf-8"))
+        print(render_thread(thread))
+        return 0
     if not argv or argv[0] not in ("todo", "check") or len(argv) > 2:
         print(__doc__)
         return 2
@@ -359,6 +397,12 @@ def _print_check(threads_dir: Path) -> int:
         # A rejected quote is never printed: it failed verification, so it must not be shown.
         for mention, reason in result.rejected:
             print(f"  rejected  {mention.comment_id}  {mention.stance:<9}  {mention.product}: {reason}")
+        for kind, kept_items, rejected_items in (("notes", result.kept_notes, result.rejected_notes),
+                                                 ("agreements", result.kept_agreements, result.rejected_agreements)):
+            if kept_items or rejected_items:
+                print(f"  {kind}: {len(kept_items)} kept, {len(rejected_items)} rejected")
+                for item, reason in rejected_items:
+                    print(f"  rejected  {item.comment_id}  {kind[:-1]}: {reason}")
 
     kept = sum(len(result.kept) for result in results.values())
     total = kept + sum(len(result.rejected) for result in results.values())

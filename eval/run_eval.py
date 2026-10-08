@@ -3,6 +3,8 @@
 Built so far:
 - the label report: how often the "other" reason tag is used, and the notes given with it;
 - module 1 (query understanding): outcome, product type and constraints against eval/edge_cases/query.json.
+- module 3 (mention extraction): precision, recall, stance and category agreement of the AI's products against
+  Noemi's gold labels, and the share of quotes found word for word in their comments;
 - module 2 (retrieval): of the 3 threads picked per blind-test question, how many fit the need (grade 2) and how
   many are useful (grade 1 or 2), plus whether useful threads rank above off-topic ones, against
   eval/edge_cases/retrieval.json, re-ranking the saved candidate pool (no credits).
@@ -16,7 +18,11 @@ import json
 import sys
 from pathlib import Path
 
-from engine.gold import GoldSetError, load_gold_set, print_other_tag_report
+from engine.extract import ExtractionError, load_checked, overall_quote_pass_rate
+from engine.extraction_eval import report_lines as extraction_report_lines
+from engine.extraction_eval import score_extraction
+from engine.gold import DEFAULT_GOLD_DIR, GoldSetError, load_gold_set, print_other_tag_report
+from engine.library import DEFAULT_LIBRARY_DIR
 from engine.query import parse_query
 from engine.query_eval import QueryCaseError, load_query_cases, report_lines, score_cases
 from engine.retrieval_eval import DEFAULT_JUDGEMENTS, DEFAULT_POOL, load_judgements, score_ordering, score_ranking, summary_lines
@@ -48,8 +54,33 @@ def main() -> int:
     print()
     print(_retrieval_report())
 
-    print("\nModules 3-7: not built yet.")
+    print()
+    print(_extraction_report())
+
+    print("\nModules 4-7: not built yet.")
     return status
+
+
+def _extraction_report() -> str:
+    """Module 3: the AI's products against Noemi's labels on the gold set, and quote verification everywhere."""
+    lines = ["Module 3, mention extraction"]
+    try:
+        score = score_extraction(load_gold_set(), load_checked(DEFAULT_GOLD_DIR / "threads"))
+    except (GoldSetError, ExtractionError) as e:
+        lines.append(f"  gold set: {e}")
+    else:
+        lines += [f"  {line}" for line in extraction_report_lines(score)]
+    try:
+        library = load_checked(DEFAULT_LIBRARY_DIR / "threads")
+    except ExtractionError as e:
+        lines.append(f"  library: {e}")
+    else:
+        kept = sum(len(r.kept) for r in library.values())
+        total = kept + sum(len(r.rejected) for r in library.values())
+        rate = overall_quote_pass_rate(library.values())
+        share = f"{rate:.0%}" if rate is not None else "n/a"
+        lines.append(f"  quote verification (library, {len(library)} threads extracted): {kept}/{total} quotes found word for word ({share})")
+    return "\n".join(lines)
 
 
 def _retrieval_report() -> str:

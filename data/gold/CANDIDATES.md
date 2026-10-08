@@ -7,6 +7,8 @@ Which threads make up the gold set. Their text stays on Noemi's machine (git ign
 | Category | Thread | Fetched |
 | --- | --- | --- |
 | kitchen | [All steel electric kettle that lasts for years?](https://www.reddit.com/r/BuyItForLife/comments/1tfk6nm/) (r/BuyItForLife, 52 comments, May 2026) | 7 Oct 2026 |
+| skincare | [[Product Request] Best facial exfoliant?](https://www.reddit.com/r/SkincareAddiction/comments/1vumd3s/) (r/SkincareAddiction, 35 comments) | 7 Oct 2026 |
+| kitchen | [Which knife is best?](https://www.reddit.com/r/BuyItForLife/comments/1ur9shv/) (r/BuyItForLife, 27 comments) | 7 Oct 2026 |
 
 ## Picked (7 Oct 2026, found without spending credits)
 

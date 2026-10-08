@@ -72,3 +72,6 @@ LIBRARY_ARCHIVED_REFRESH_DAYS = 90
 
 # Module 3: a supporting quote is short (Reddit's rule: quotes stay short, attributed and linked back).
 QUOTE_MAX_WORDS = 50
+# Extraction reads at most this many comments per thread, the highest-scored (8 Oct 2026): the long tail of a
+# 400-comment thread adds little, and highly upvoted comments carry the community's endorsement.
+EXTRACT_MAX_COMMENTS = 150

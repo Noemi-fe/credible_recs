@@ -479,3 +479,28 @@ def test_notes_and_agreements_are_checked_like_mentions():
 def test_older_extractions_without_notes_or_agreements_still_load():
     extraction = Extraction.model_validate(make_extraction())
     assert extraction.notes == [] and extraction.agreements == []
+
+
+# --- The compact reading view the extractor uses (8 Oct 2026) ---
+
+def test_show_lists_usable_comments_compactly_with_reply_context():
+    from engine.extract import render_thread
+
+    thread = Thread.model_validate(make_thread(comments=[
+        make_comment("c1aaaa", body="The Cuisinart CPK-17 is my pick.", score=40),
+        make_comment("c2bbbb", parent_id="c1aaaa", body="Had this one 13 years.", score=12),
+        make_comment("c3cccc", body="[deleted]", status="deleted", author=None),
+    ]))
+    text = render_thread(thread)
+    assert "[c1aaaa]" in text and "[c2bbbb]" in text and "c3cccc" not in text
+    assert "reply to c1aaaa" in text and "The Cuisinart CPK-17 is my pick." in text
+    assert "Gentle exfoliant for sensitive skin?" in text  # the post's title, for context
+
+
+def test_show_keeps_only_the_highest_scored_comments_in_thread_order():
+    from engine.extract import render_thread, shown_comment_ids
+
+    comments = [make_comment(f"c{n:05d}", body=f"Comment {n}", score=n) for n in range(10)]
+    thread = Thread.model_validate(make_thread(comments=comments))
+    assert shown_comment_ids(thread, max_comments=3) == ["c00007", "c00008", "c00009"]
+    assert "3 of 10 comments" in render_thread(thread, max_comments=3)
