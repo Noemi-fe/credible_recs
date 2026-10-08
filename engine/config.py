@@ -69,3 +69,6 @@ SKINCARE_RECENT_YEARS = 3  # skincare formulas change, so newer threads are pref
 # Provisional (Noemi, 7 Oct 2026): holds only until the data source / API choice is settled.
 REDDIT_ARCHIVE_DAYS = 180
 LIBRARY_ARCHIVED_REFRESH_DAYS = 90
+
+# Module 3: a supporting quote is short (Reddit's rule: quotes stay short, attributed and linked back).
+QUOTE_MAX_WORDS = 50

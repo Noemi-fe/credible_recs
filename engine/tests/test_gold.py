@@ -377,3 +377,30 @@ def test_problems_name_the_folder_they_are_in(tmp_path):
     (library / "1fake01.json").write_text("{not json")
     with pytest.raises(GoldSetError, match="library/1fake01.json"):
         load_threads(library)
+
+
+# --- Comments with no product, and agreeing replies (Noemi, 8 Oct 2026) ---
+
+def test_a_comment_with_product_mentions_still_needs_a_voice(tmp_path):
+    voices = VOICES_HEADER + "1fake01,c1aaaa,,,\n"
+    mentions = MENTIONS_HEADER + "c1aaaa,CeraVe SA,skincare,recommend,long-term use,long-term use,\n"
+    assert_one_problem(write_gold(tmp_path, [make_thread()], voices, mentions), "mentions.csv line 2", "voice")
+
+
+def test_read_with_no_product_needs_only_the_row(tmp_path):
+    voices = VOICES_HEADER + "1fake01,c3cccc,,,\n"
+    gold = load_gold_set(write_gold(tmp_path, [make_thread()], voices))
+    assert gold.voices[0].voice is None
+
+
+def test_only_a_reply_can_agree_with_the_comment_above(tmp_path):
+    header = "thread_id,comment_id,voice,tags,note,agrees\n"
+    ok = load_gold_set(write_gold(tmp_path, [make_thread()], header + "1fake01,c2bbbb,,,,yes\n"))  # c2bbbb replies to c1aaaa
+    assert ok.voices[0].agrees is True
+    assert_one_problem(write_gold(tmp_path / "x", [make_thread()], header + "1fake01,c1aaaa,,,,yes\n"), "c1aaaa", "reply")
+
+
+def test_other_tag_usage_ignores_comments_without_a_voice(tmp_path):
+    voices = VOICES_HEADER + "1fake01,c1aaaa,high,other,Moderator\n1fake01,c3cccc,,,\n"
+    voice, _ = other_tag_usage(load_gold_set(write_gold(tmp_path, [make_thread()], voices)))
+    assert (voice.used, voice.total) == (1, 1)

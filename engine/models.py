@@ -129,8 +129,6 @@ class _LabelRow(Record):
     @classmethod
     def _known_tags(cls, tags: list[str]) -> list[str]:
         allowed = cls.allowed_tags + (OTHER_TAG,)
-        if not tags:
-            raise ValueError(f"needs at least one tag: {', '.join(allowed)}")
         unknown = [tag for tag in tags if tag not in allowed]
         if unknown:
             raise ValueError(f"unknown tag(s) {', '.join(map(repr, unknown))}; choose from: {', '.join(allowed)}")
@@ -142,24 +140,52 @@ class _LabelRow(Record):
             raise ValueError(f'tag "{OTHER_TAG}" needs a note saying what the reason is')
         return self
 
+    @model_validator(mode="after")
+    def _reason_given(self):
+        if self._needs_reason() and not self.tags:
+            raise ValueError(f"needs at least one of the tags: {', '.join(self.allowed_tags + (OTHER_TAG,))}")
+        return self
+
+    def _needs_reason(self) -> bool:
+        return True
+
 
 def _lowercase(value):
     return value.lower() if isinstance(value, str) else value
 
 
 class VoiceLabel(_LabelRow):
-    """One row of data/gold/voices.csv: how credible the writer of one comment is.
+    """One row of data/gold/voices.csv: a comment Noemi read, and how credible its writer is.
 
-    Every comment Noemi reads gets one. A comment with a voice label and no mention labels
-    is a comment she read that mentions no product.
+    Every comment she reads gets a row. A comment with product mentions needs a voice level and its tags; a
+    comment with no product needs neither (Noemi, 8 Oct 2026: no metric uses them, and skipping saves time).
+    `agrees` marks a reply that agrees with the comment above it ("This!", "Same, mine lasted 10 years"):
+    evidence that the other writer is credible.
     """
 
     allowed_tags: ClassVar[tuple[str, ...]] = VOICE_TAGS
     thread_id: Id
     comment_id: Id
-    voice: Literal[VOICE_LEVELS]
+    voice: Literal[VOICE_LEVELS] | None = None
+    agrees: bool = False
 
     _lower = field_validator("voice", mode="before")(_lowercase)
+
+    @field_validator("agrees", mode="before")
+    @classmethod
+    def _yes_or_blank(cls, value):
+        if value is None or isinstance(value, bool):
+            return bool(value)
+        return str(value).strip().lower() in ("yes", "y", "true", "1")
+
+    @model_validator(mode="after")
+    def _tags_need_a_voice(self) -> "VoiceLabel":
+        if self.voice is None and self.tags:
+            raise ValueError("tags given without a voice level: give the voice too, or clear the tags")
+        return self
+
+    def _needs_reason(self) -> bool:
+        return self.voice is not None
 
 
 class MentionLabel(_LabelRow):

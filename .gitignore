@@ -26,6 +26,10 @@ node_modules/
 
 # The library of saved threads is Reddit content: it stays on this machine.
 data/library/
+# Products and quotes the AI extracted from gold-set threads: Reddit text, so it stays here too.
+data/gold/extracted/
+# Labelling pages embed comment text: they stay here too.
+data/gold/labelling/
 
 # Private planning notes. They stay on Noemi's machine only.
 docs/

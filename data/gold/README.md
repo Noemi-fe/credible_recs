@@ -73,6 +73,23 @@ Save each thread as `threads/<thread id>.json`. The thread id is the part after 
 | `url` | The comment's own link (Share → Copy link). The id at the end is the comment id. |
 | `status` | `"ok"`, or `"deleted"` / `"removed"` when Reddit shows `[deleted]` / `[removed]`. |
 
+## Labelling with the page (the easy way)
+
+```bash
+.venv/bin/python -m engine.labelling page <thread id> --open
+```
+
+Opens a page with the thread's comments. Label with clicks or keys (j/k move, 1/2/3 voice, n no product, a agrees,
+p add a product); your work saves in the browser as you go. Press **Export labels** at the end of each session,
+then add them to the gold set:
+
+```bash
+.venv/bin/python -m engine.labelling import ~/Downloads/labels_<thread id>.json --replace
+```
+
+`--replace` swaps that thread's earlier labels for the new export, which always holds everything you've labelled
+in that browser. The rules are in [LABELLING_GUIDE.md](LABELLING_GUIDE.md), shown in the page's Guide panel too.
+
 ## Labels: two layers
 
 Credibility has two layers (brief, version 4): a **voice** label for each comment you read, and an **evidence** label for each product it mentions. A mention's weight is voice × evidence × stance.
@@ -86,9 +103,10 @@ The allowed values and tags live in [`engine/config.py`](../../engine/config.py)
 | Column | What to put |
 | --- | --- |
 | `thread_id`, `comment_id` | Which comment. |
-| `voice` | `high`, `medium` or `low`. |
+| `voice` | `high`, `medium` or `low`. Leave blank (with blank tags) for a comment with no product (Noemi, 8 Oct 2026). |
 | `tags` | Voice tags: established member, expert flair, well upvoted, recent, new account, salesy language, promotes one brand, old post, or other. |
 | `note` | Optional; required with `other`. |
+| `agrees` | Optional: `yes` when a reply agrees with the comment above ("This!"). Only for replies. |
 
 A comment with a voice row and no rows in mentions.csv is a comment you read that mentions no product.
 

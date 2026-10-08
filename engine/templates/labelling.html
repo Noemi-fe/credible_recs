@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{PAGE_TITLE}}</title>
+<style>
+/* Colours: light by default, dark when the computer is set to dark mode. */
+:root {
+  color-scheme: light dark;
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --sunken: #f0eee9;
+  --text: #1c1c1e;
+  --muted: #64646b;
+  --line: #dedbd3;
+  --accent: #2a5fc4;
+  --accent-soft: #e5edfb;
+  --on-accent: #ffffff;
+  --ok: #1b7044;
+  --ok-soft: #e2f2e8;
+  --warn: #93500a;
+  --warn-soft: #fbeedb;
+  --bad: #b3261e;
+  --indent: 22px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141416;
+    --surface: #1d1d21;
+    --sunken: #25252a;
+    --text: #ebeae6;
+    --muted: #a3a2a9;
+    --line: #36363c;
+    --accent: #80a8f5;
+    --accent-soft: #22304a;
+    --on-accent: #0e1420;
+    --ok: #74d39d;
+    --ok-soft: #1b3326;
+    --warn: #efb46a;
+    --warn-soft: #382a17;
+    --bad: #ff8a80;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+a { color: var(--accent); }
+kbd { font: 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 2px 5px; background: var(--surface); color: var(--text); }
+
+/* The bar that stays at the top: progress, export, shortcuts. */
+.topbar { position: sticky; top: 0; z-index: 10; background: var(--bg); border-bottom: 1px solid var(--line); }
+.topbar-inner { max-width: 860px; margin: 0 auto; padding: 10px 16px; }
+.bar { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; }
+.bar-title { flex: 1 1 0; min-width: 120px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.progress { font-weight: 650; font-variant-numeric: tabular-nums; }
+.saved { font-size: 13px; color: var(--muted); }
+.saved.bad { color: var(--bad); font-weight: 650; }
+.keys { margin-top: 6px; font-size: 13px; color: var(--muted); gap: 4px 16px; }
+.panel { margin-top: 10px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); max-height: 45vh; overflow: auto; }
+.panel.bad { border-color: var(--warn); background: var(--warn-soft); }
+.panel.ok { border-color: var(--ok); background: var(--ok-soft); }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.panel p { margin: 6px 0; }
+.panel ul { margin: 6px 0; padding-left: 20px; }
+.panel li { margin: 4px 0; }
+#panel-body > ul { padding-left: 0; list-style: none; }
+#panel-body > ul > li > button { text-align: left; }
+.command { display: block; margin: 4px 0; padding: 6px 10px; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; overflow-wrap: anywhere; user-select: all; }
+
+/* The thread and the guide. */
+main { max-width: 860px; margin: 0 auto; padding: 16px 16px 160px; }
+.thread h1 { margin: 8px 0 6px; font-size: 24px; line-height: 1.3; }
+.thread-meta { display: flex; flex-wrap: wrap; gap: 2px 14px; margin: 0; font-size: 14px; color: var(--muted); }
+.post-body { margin: 12px 0 0; padding: 12px 16px; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.guide { margin: 16px 0 0; padding: 10px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.guide summary { cursor: pointer; font-weight: 650; }
+.guide pre { margin: 10px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 14px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+/* One card per comment; replies are indented under the comment they answer. */
+.comment { margin: 14px 0 0 calc(min(var(--depth, 0), 6) * var(--indent)); padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 10px; scroll-margin-top: calc(var(--header-h, 110px) + 12px); }
+.comment:focus { outline: none; }
+.comment.focused { box-shadow: 0 0 0 2px var(--accent); }
+.comment.done { border-left-color: var(--ok); }
+.comment.fix { border-left-color: var(--warn); }
+.comment.gone { padding: 8px 16px; background: transparent; border-style: dashed; color: var(--muted); font-size: 14px; font-style: italic; }
+.comment.gone p { margin: 0; }
+.meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; font-size: 13.5px; color: var(--muted); }
+.meta .author { font-weight: 650; color: var(--text); text-decoration: none; }
+.meta .author:hover { text-decoration: underline; }
+.flair { padding: 0 6px; background: var(--sunken); border-radius: 4px; }
+.op { color: var(--accent); font-weight: 700; }
+.state { margin-left: auto; font-weight: 650; }
+.done .state { color: var(--ok); }
+.fix .state { color: var(--warn); }
+.parent { margin: 8px 0 0; padding: 2px 10px; border-left: 3px solid var(--line); font-size: 14px; color: var(--muted); }
+.body { margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* The labelling controls. */
+.controls { display: grid; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.group { display: grid; gap: 8px; }
+.group-name { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; font-size: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; cursor: pointer; user-select: none; }
+.pill:hover { border-color: var(--muted); }
+.pill:has(input:checked) { background: var(--accent-soft); border-color: var(--accent); }
+.pill input { margin: 0; accent-color: var(--accent); }
+.pill kbd, .add kbd { font-size: 11px; padding: 1px 4px; }
+.tags .pill { font-size: 13.5px; }
+input[type="text"], select { min-width: 0; padding: 5px 8px; font: inherit; font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+input[type="text"]:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+input.note { width: 100%; }
+.missing { border-color: var(--warn) !important; background: var(--warn-soft) !important; }
+.mention { display: grid; gap: 8px; padding: 10px; background: var(--sunken); border: 1px solid var(--line); border-radius: 8px; }
+.line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.line .product { flex: 1 1 220px; font-weight: 600; }
+.line .note { flex: 1 1 220px; width: auto; }
+.field { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.problems { margin: 0; padding-left: 18px; font-size: 13.5px; color: var(--warn); }
+.problems:empty { display: none; }
+button { padding: 5px 12px; font: inherit; font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button.primary { color: var(--on-accent); background: var(--accent); border-color: var(--accent); font-weight: 650; }
+button.quiet { padding: 3px 8px; color: var(--muted); background: transparent; border-color: transparent; }
+button.quiet:hover { color: var(--text); border-color: var(--line); }
+button.danger:hover { color: var(--bad); }
+button.add { justify-self: start; display: inline-flex; align-items: center; gap: 8px; }
+button.link { padding: 0; color: var(--accent); background: none; border: none; font-weight: 650; text-decoration: underline; }
+button.quiet-link { justify-self: start; font-size: 13.5px; font-weight: 500; }
+
+@media (max-width: 600px) {
+  :root { --indent: 10px; }
+  .keys { display: none; }
+}
+</style>
+</head>
+<body>
+<header class="topbar" id="topbar">
+  <div class="topbar-inner">
+    <div class="bar">
+      <span class="bar-title">{{BAR_TITLE}}</span>
+      <span class="progress" id="progress">{{PROGRESS}}</span>
+      <span class="saved" id="saved"></span>
+      <button type="button" data-action="next">Next to label</button>
+      <button type="button" class="primary" data-action="export">Export labels</button>
+    </div>
+    <div class="bar keys">{{SHORTCUTS}}</div>
+    <section class="panel" id="panel" hidden>
+      <div class="panel-head"><strong id="panel-title"></strong><button type="button" class="quiet" data-action="close">Close</button></div>
+      <div id="panel-body"></div>
+    </section>
+  </div>
+</header>
+<main>
+{{THREAD}}
+{{GUIDE}}
+<noscript><p><strong>This page needs JavaScript to label comments.</strong></p></noscript>
+<div class="comments">
+{{COMMENTS}}
+</div>
+</main>
+<script type="application/json" id="config">{{CONFIG}}</script>
+<script>
+(function () {
+  "use strict";
+
+  // The voice rule, as one switch. true: every comment read needs a voice level and at least one voice tag,
+  // even when it mentions no product. Its value is written here from VOICE_REQUIRED_WITHOUT_PRODUCT in
+  // engine/labelling.py, so this page and the import always follow the same rule.
+  const VOICE_REQUIRED_WITHOUT_PRODUCT = {{VOICE_REQUIRED_WITHOUT_PRODUCT}};
+
+  // Levels, tags and choices come from engine/config.py, through the settings block above.
+  const CONFIG = JSON.parse(document.getElementById("config").textContent);
+  const OTHER = CONFIG.otherTag;
+  const VOICE_TAGS = CONFIG.voiceTags.concat([OTHER]);
+  const EVIDENCE_TAGS = CONFIG.evidenceTags.concat([OTHER]);
+  const STORAGE_KEY = "credible-recs:labels:" + CONFIG.threadId;
+  const IDS = CONFIG.comments.map(function (c) { return c.id; });
+  const AUTHOR = {};
+  const REPLY = {};  // only a reply can agree with the comment above
+  CONFIG.comments.forEach(function (c) { AUTHOR[c.id] = c.author; REPLY[c.id] = c.reply; });
+  const CARDS = {};
+  document.querySelectorAll("article.comment[data-id]").forEach(function (card) { CARDS[card.dataset.id] = card; });
+
+  const topbar = document.getElementById("topbar");
+  const progressEl = document.getElementById("progress");
+  const savedEl = document.getElementById("saved");
+  const panelEl = document.getElementById("panel");
+
+  let labels = {};   // comment id -> its label, as typed so far
+  let focused = -1;  // position in IDS of the highlighted comment
+  const voiceOpened = new Set();  // comments with no product whose optional voice she chose to fill in
+
+  // ---------- Labels ----------
+
+  function emptyLabel() {
+    return { no_product: false, voice: "", voice_tags: [], voice_note: "", agrees: false, mentions: [] };
+  }
+  function emptyMention() {
+    return { product: "", category: CONFIG.threadCategory, stance: "", evidence: "", evidence_tags: [], note: "" };
+  }
+  function labelOf(id) {
+    if (!labels[id]) labels[id] = emptyLabel();
+    return labels[id];
+  }
+  function tidy(text) { return String(text || "").replace(/\s+/g, " ").trim(); }
+  function inOrder(tags, allowed) { return allowed.filter(function (t) { return tags.indexOf(t) !== -1; }); }
+  function withTag(tags, tag, on, allowed) {
+    const set = new Set(tags);
+    if (on) set.add(tag); else set.delete(tag);
+    return allowed.filter(function (t) { return set.has(t); });
+  }
+
+  // A comment is started once anything is filled in, and labelled once it is started and has no problem.
+  function isStarted(l) {
+    return l.no_product || l.mentions.length > 0 || !!l.voice || l.voice_tags.length > 0 || tidy(l.voice_note) !== "" || l.agrees;
+  }
+  // With no product, the voice is optional unless the voice rule asks for it.
+  function voiceOptional(l) { return l.no_product && !VOICE_REQUIRED_WITHOUT_PRODUCT; }
+  function voiceShown(id, l) {
+    return !voiceOptional(l) || voiceOpened.has(id) || !!l.voice || l.voice_tags.length > 0 || tidy(l.voice_note) !== "";
+  }
+  function hasContent(m) {
+    return tidy(m.product) !== "" || !!m.stance || !!m.evidence || m.evidence_tags.length > 0 || tidy(m.note) !== "";
+  }
+  function problemsFor(l) {
+    const problems = [];
+    if (!isStarted(l)) return problems;
+    if (!l.no_product && l.mentions.length === 0) {
+      problems.push("Tick “No product in this comment” or add a product (or press Clear to leave it unlabelled).");
+    }
+    // A level and a tag go together: both are needed with products, and both or neither otherwise.
+    const voiceNeeded = l.mentions.length > 0 || (l.no_product && VOICE_REQUIRED_WITHOUT_PRODUCT);
+    const voiceStarted = !!l.voice || l.voice_tags.length > 0;
+    if (voiceNeeded || voiceStarted) {
+      const why = l.mentions.length > 0 ? " (needed with products)" : "";
+      if (!l.voice) problems.push("Voice: choose " + CONFIG.voiceLevels.join(", ").replace(/, ([^,]*)$/, " or $1") + why + ".");
+      if (l.voice_tags.length === 0) problems.push("Voice: tick at least one tag" + why + ".");
+    }
+    if (l.voice_tags.indexOf(OTHER) !== -1 && tidy(l.voice_note) === "") {
+      problems.push("Voice: “" + OTHER + "” needs a note saying what the reason is.");
+    }
+    const seen = new Map();
+    l.mentions.forEach(function (m, i) {
+      const name = tidy(m.product);
+      const what = "Product " + (i + 1) + (name ? " (" + name + ")" : "");
+      if (!name) {
+        problems.push(what + ": type the product name.");
+      } else if (seen.has(name.toLowerCase())) {
+        problems.push(what + ": already listed as product " + seen.get(name.toLowerCase()) + "; keep one row per product.");
+      } else {
+        seen.set(name.toLowerCase(), i + 1);
+      }
+      if (!m.category) problems.push(what + ": choose a category.");
+      if (!m.stance) problems.push(what + ": choose a stance.");
+      if (!m.evidence) problems.push(what + ": choose the evidence.");
+      if (m.evidence_tags.length === 0) problems.push(what + ": tick at least one evidence tag.");
+      if (m.evidence_tags.indexOf(OTHER) !== -1 && tidy(m.note) === "") {
+        problems.push(what + ": “" + OTHER + "” needs a note saying what the reason is.");
+      }
+    });
+    return problems;
+  }
+
+  // ---------- Saving in this browser ----------
+
+  function cleanLabel(id, raw) {
+    const l = emptyLabel();
+    if (!raw || typeof raw !== "object") return l;
+    l.no_product = raw.no_product === true;
+    l.voice = CONFIG.voiceLevels.indexOf(raw.voice) !== -1 ? raw.voice : "";
+    l.voice_tags = Array.isArray(raw.voice_tags) ? inOrder(raw.voice_tags, VOICE_TAGS) : [];
+    l.voice_note = typeof raw.voice_note === "string" ? raw.voice_note : "";
+    l.agrees = raw.agrees === true && REPLY[id] === true;
+    l.mentions = !l.no_product && Array.isArray(raw.mentions) ? raw.mentions.map(cleanMention) : [];
+    return l;
+  }
+  function cleanMention(raw) {
+    const m = emptyMention();
+    if (!raw || typeof raw !== "object") return m;
+    m.product = typeof raw.product === "string" ? raw.product : "";
+    m.category = CONFIG.categories.indexOf(raw.category) !== -1 ? raw.category : m.category;
+    m.stance = CONFIG.stances.indexOf(raw.stance) !== -1 ? raw.stance : "";
+    m.evidence = CONFIG.evidenceLevels.indexOf(raw.evidence) !== -1 ? raw.evidence : "";
+    m.evidence_tags = Array.isArray(raw.evidence_tags) ? inOrder(raw.evidence_tags, EVIDENCE_TAGS) : [];
+    m.note = typeof raw.note === "string" ? raw.note : "";
+    return m;
+  }
+  function restore() {
+    let saved = null;
+    try {
+      saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "null");
+    } catch (e) {
+      return;
+    }
+    const stored = saved && saved.labels;
+    if (!stored || typeof stored !== "object") return;
+    IDS.forEach(function (id) { if (stored[id]) labels[id] = cleanLabel(id, stored[id]); });
+  }
+  function save() {
+    const kept = {};
+    IDS.forEach(function (id) { if (labels[id] && isStarted(labels[id])) kept[id] = labels[id]; });
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ thread_id: CONFIG.threadId, saved_at: new Date().toISOString(), labels: kept }));
+      showSaved(true);
+    } catch (e) {
+      showSaved(false);
+    }
+  }
+  function showSaved(ok) {
+    savedEl.textContent = ok ? "Saved in this browser" : "Not saved: this browser blocks storage here. Export before closing the tab.";
+    savedEl.classList.toggle("bad", !ok);
+  }
+  function storageWorks() {
+    try {
+      window.localStorage.setItem(STORAGE_KEY + ":probe", "1");
+      window.localStorage.removeItem(STORAGE_KEY + ":probe");
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // ---------- Building the controls ----------
+
+  function make(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = text;
+    return node;
+  }
+  function choice(type, name, value, checked, field, text, key) {
+    const label = make("label", "pill");
+    const input = document.createElement("input");
+    input.type = type;
+    if (name) input.name = name;
+    input.value = value;
+    input.checked = checked;
+    input.dataset.field = field;
+    label.append(input, document.createTextNode(text));
+    if (key) label.append(make("kbd", "", key));
+    return label;
+  }
+  function textBox(field, value, placeholder, className) {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = value;
+    input.placeholder = placeholder;
+    input.className = className;
+    input.dataset.field = field;
+    input.autocomplete = "off";
+    input.setAttribute("aria-label", placeholder);
+    return input;
+  }
+  function dropdown(field, name, options, value, placeholder) {
+    const label = make("label", "field");
+    const select = document.createElement("select");
+    select.dataset.field = field;
+    if (placeholder) select.append(new Option(placeholder, ""));
+    options.forEach(function (o) { select.append(new Option(o, o)); });
+    select.value = value || "";
+    label.append(make("span", "", name), select);
+    return label;
+  }
+  function button(text, action, className, title) {
+    const b = make("button", className || "", text);
+    b.type = "button";
+    b.dataset.action = action;
+    if (title) b.title = title;
+    return b;
+  }
+
+  function renderControls(id) {
+    const card = CARDS[id];
+    const box = card.querySelector(".controls");
+    const hadFocus = box.contains(document.activeElement);
+    const l = labelOf(id);
+    box.replaceChildren();
+
+    const top = make("div", "row");
+    const ticks = make("div", "pills");
+    ticks.append(choice("checkbox", "", "yes", l.no_product, "no_product", "No product in this comment", "n"));
+    if (REPLY[id]) ticks.append(choice("checkbox", "", "yes", l.agrees, "agrees", "Agrees with the comment above", "a"));
+    top.append(ticks, button("Clear", "clear", "quiet", "Remove every label on this comment"));
+
+    const voice = make("div", "group");
+    if (voiceShown(id, l)) {
+      const name = make("div", "row");
+      name.append(make("div", "group-name", voiceOptional(l) ? "Voice (optional with no product)" : "Voice"));
+      if (voiceOptional(l)) name.append(button("Remove voice", "voice-remove", "quiet", "No voice label for this comment"));
+      const levels = make("div", "pills");
+      CONFIG.voiceLevels.forEach(function (level, i) {
+        levels.append(choice("radio", "voice-" + id, level, l.voice === level, "voice", level, String(i + 1)));
+      });
+      const voiceTags = make("div", "pills tags");
+      VOICE_TAGS.forEach(function (tag) {
+        voiceTags.append(choice("checkbox", "", tag, l.voice_tags.indexOf(tag) !== -1, "voice_tags", tag));
+      });
+      voice.append(name, levels, voiceTags,
+        textBox("voice_note", l.voice_note, "Voice note (needed with “" + OTHER + "”)", "note"));
+    } else {
+      voice.append(button("+ Add a voice anyway", "voice-open", "link quiet-link", "Optional for a comment with no product"));
+    }
+
+    const products = make("div", "group");
+    products.hidden = l.no_product;
+    products.append(make("div", "group-name", "Products"));
+    l.mentions.forEach(function (m, i) { products.append(mentionRow(m, i)); });
+    const add = button("+ Add product", "add", "add", "Shortcut: p");
+    add.append(make("kbd", "", "p"));
+    products.append(add);
+
+    box.append(top, voice, products, make("ul", "problems"));
+    refreshStatus(id);
+    if (hadFocus) card.focus({ preventScroll: true });
+  }
+
+  function mentionRow(m, i) {
+    const row = make("div", "mention");
+    row.dataset.index = String(i);
+    const first = make("div", "line");
+    first.append(
+      textBox("product", m.product, "Product, as you'd name it", "product"),
+      dropdown("category", "Category", CONFIG.categories, m.category),
+      dropdown("stance", "Stance", CONFIG.stances, m.stance, "choose…"),
+      dropdown("evidence", "Evidence", CONFIG.evidenceLevels, m.evidence, "choose…")
+    );
+    const tags = make("div", "pills tags");
+    EVIDENCE_TAGS.forEach(function (tag) {
+      tags.append(choice("checkbox", "", tag, m.evidence_tags.indexOf(tag) !== -1, "evidence_tags", tag));
+    });
+    const last = make("div", "line");
+    last.append(
+      textBox("note", m.note, "Note (needed with “" + OTHER + "”)", "note"),
+      button("Remove", "remove", "quiet danger", "Remove this product")
+    );
+    row.append(first, tags, last);
+    return row;
+  }
+
+  // ---------- Showing where each comment stands ----------
+
+  function mark(el, missing) { if (el) el.classList.toggle("missing", missing); }
+
+  function refreshStatus(id) {
+    const card = CARDS[id];
+    const l = labelOf(id);
+    const started = isStarted(l);
+    const problems = problemsFor(l);
+    card.classList.toggle("done", started && problems.length === 0);
+    card.classList.toggle("fix", problems.length > 0);
+    card.querySelector(".state").textContent = !started ? "" : problems.length ? "needs fixing" : "labelled ✓";
+    const list = card.querySelector(".problems");
+    list.replaceChildren.apply(list, problems.map(function (p) { return make("li", "", p); }));
+    mark(card.querySelector('[data-field="voice_note"]'), l.voice_tags.indexOf(OTHER) !== -1 && !tidy(l.voice_note));
+    card.querySelectorAll(".mention").forEach(function (row, i) {
+      const m = l.mentions[i];
+      if (!m) return;
+      mark(row.querySelector('[data-field="product"]'), !tidy(m.product));
+      mark(row.querySelector('[data-field="stance"]'), !m.stance);
+      mark(row.querySelector('[data-field="evidence"]'), !m.evidence);
+      mark(row.querySelector('[data-field="note"]'), m.evidence_tags.indexOf(OTHER) !== -1 && !tidy(m.note));
+    });
+  }
+
+  function updateProgress() {
+    let done = 0;
+    let fix = 0;
+    IDS.forEach(function (id) {
+      const l = labels[id];
+      if (!l || !isStarted(l)) return;
+      if (problemsFor(l).length) fix += 1; else done += 1;
+    });
+    progressEl.textContent = done + " of " + IDS.length + " comments labelled" + (fix ? " · " + fix + " to fix" : "");
+  }
+
+  function changed(id) {
+    save();
+    refreshStatus(id);
+    updateProgress();
+  }
+
+  // ---------- Changing labels ----------
+
+  function setNoProduct(id, on) {
+    const l = labelOf(id);
+    if (on && l.mentions.some(hasContent)) {
+      const what = l.mentions.length === 1 ? "the product" : "the " + l.mentions.length + " products";
+      if (!window.confirm("Tick “No product in this comment”? This removes " + what + " you entered for it.")) {
+        renderControls(id);
+        return;
+      }
+    }
+    l.no_product = on;
+    if (on) l.mentions = [];
+    renderControls(id);
+    changed(id);
+  }
+
+  function setVoice(id, level) {
+    labelOf(id).voice = level;
+    renderControls(id);  // also shows the voice of a comment with no product, where it is hidden until used
+    changed(id);
+  }
+
+  function setAgrees(id, on) {
+    if (!REPLY[id]) return;
+    labelOf(id).agrees = on;
+    renderControls(id);
+    changed(id);
+  }
+
+  function openVoice(id) {
+    voiceOpened.add(id);
+    renderControls(id);
+    const first = CARDS[id].querySelector('input[data-field="voice"]');
+    if (first) first.focus();
+  }
+
+  function removeVoice(id) {
+    const l = labelOf(id);
+    l.voice = "";
+    l.voice_tags = [];
+    l.voice_note = "";
+    voiceOpened.delete(id);
+    renderControls(id);
+    changed(id);
+  }
+
+  function addProduct(id) {
+    const l = labelOf(id);
+    l.no_product = false;
+    l.mentions.push(emptyMention());
+    renderControls(id);
+    changed(id);
+    const rows = CARDS[id].querySelectorAll(".mention");
+    rows[rows.length - 1].querySelector('[data-field="product"]').focus();
+  }
+
+  function removeProduct(id, index) {
+    labelOf(id).mentions.splice(index, 1);
+    renderControls(id);
+    changed(id);
+  }
+
+  function clearComment(id) {
+    if (isStarted(labelOf(id)) && !window.confirm("Clear every label on this comment?")) return;
+    labels[id] = emptyLabel();
+    voiceOpened.delete(id);
+    renderControls(id);
+    changed(id);
+  }
+
+  // Text boxes update the label as you type; ticks, choices and lists when they change.
+  function onEdit(event) {
+    const input = event.target;
+    const field = input.dataset ? input.dataset.field : null;
+    if (!field) return;
+    if ((event.type === "input") !== (input.type === "text")) return;
+    const card = input.closest("article.comment[data-id]");
+    if (!card) return;
+    const id = card.dataset.id;
+    const l = labelOf(id);
+    if (field === "no_product") { setNoProduct(id, input.checked); return; }
+    const row = input.closest(".mention");
+    if (row) {
+      const m = l.mentions[Number(row.dataset.index)];
+      if (!m) return;
+      if (field === "evidence_tags") m.evidence_tags = withTag(m.evidence_tags, input.value, input.checked, EVIDENCE_TAGS);
+      else m[field] = input.value;
+    } else if (field === "voice") {
+      l.voice = input.value;
+    } else if (field === "voice_tags") {
+      l.voice_tags = withTag(l.voice_tags, input.value, input.checked, VOICE_TAGS);
+    } else if (field === "voice_note") {
+      l.voice_note = input.value;
+    } else if (field === "agrees") {
+      l.agrees = input.checked && REPLY[id] === true;
+    }
+    changed(id);
+  }
+
+  // ---------- Moving between comments ----------
+
+  function setFocus(index, scroll) {
+    if (index < 0 || index >= IDS.length) return;
+    if (focused >= 0 && focused !== index) CARDS[IDS[focused]].classList.remove("focused");
+    focused = index;
+    const card = CARDS[IDS[index]];
+    card.classList.add("focused");
+    if (scroll) {
+      if (!card.contains(document.activeElement)) card.focus({ preventScroll: true });
+      card.scrollIntoView({ block: "start" });
+    }
+  }
+
+  function move(step) {
+    if (!IDS.length) return;
+    setFocus(focused < 0 ? 0 : Math.min(IDS.length - 1, Math.max(0, focused + step)), true);
+  }
+
+  function nextToLabel() {
+    for (let step = 1; step <= IDS.length; step += 1) {
+      const index = (focused + step) % IDS.length;
+      const l = labels[IDS[index]];
+      if (!l || !isStarted(l) || problemsFor(l).length) { setFocus(index, true); return; }
+    }
+    openPanel("Every comment is labelled.", "ok", null);
+  }
+
+  // ---------- Export ----------
+
+  function exported(id, l) {
+    return {
+      comment_id: id,
+      no_product: l.no_product,
+      voice: l.voice || null,
+      voice_tags: inOrder(l.voice_tags, VOICE_TAGS),
+      voice_note: tidy(l.voice_note),
+      agrees: l.agrees && REPLY[id] === true,
+      mentions: l.no_product ? [] : l.mentions.map(function (m) {
+        return {
+          product: tidy(m.product),
+          category: m.category,
+          stance: m.stance,
+          evidence: m.evidence,
+          evidence_tags: inOrder(m.evidence_tags, EVIDENCE_TAGS),
+          note: tidy(m.note)
+        };
+      })
+    };
+  }
+
+  function who(id) { return (AUTHOR[id] ? "u/" + AUTHOR[id] : "deleted account") + " · comment " + id; }
+
+  function exportLabels() {
+    const broken = [];
+    const comments = [];
+    IDS.forEach(function (id) {
+      const l = labels[id];
+      if (!l || !isStarted(l)) return;  // only the comments labelled are exported
+      const problems = problemsFor(l);
+      if (problems.length) broken.push({ id: id, problems: problems });
+      else comments.push(exported(id, l));
+    });
+
+    if (broken.length) {
+      const total = broken.reduce(function (n, item) { return n + item.problems.length; }, 0);
+      const list = make("ul");
+      broken.forEach(function (item) {
+        const go = button(who(item.id), "goto", "link", "Go to this comment");
+        go.dataset.target = item.id;
+        const inner = make("ul");
+        item.problems.forEach(function (p) { inner.append(make("li", "", p)); });
+        const li = make("li");
+        li.append(go, inner);
+        list.append(li);
+      });
+      openPanel("Not exported: " + total + (total === 1 ? " problem" : " problems") + " to fix first", "bad", list);
+      return;
+    }
+    if (!comments.length) {
+      openPanel("Nothing to export yet: no comment is labelled.", "", null);
+      return;
+    }
+
+    const name = "labels_" + CONFIG.threadId + ".json";
+    const data = { thread_id: CONFIG.threadId, exported_at: new Date().toISOString(), comments: comments };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2) + "\n"], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+
+    const next = make("div");
+    next.append(
+      make("p", "", "Downloaded " + name + " with " + comments.length + (comments.length === 1 ? " labelled comment" : " labelled comments") + ", usually to your Downloads folder. Next, in Terminal, from the credible-recs folder:"),
+      make("code", "command", ".venv/bin/python -m engine.labelling import ~/Downloads/" + name),
+      make("p", "", "Add --replace at the end if this thread was imported before. If the browser added a number to the file name, use that name.")
+    );
+    openPanel("Exported", "ok", next);
+  }
+
+  function openPanel(title, kind, body) {
+    panelEl.className = "panel" + (kind ? " " + kind : "");
+    document.getElementById("panel-title").textContent = title;
+    const holder = document.getElementById("panel-body");
+    holder.replaceChildren();
+    if (body) holder.append(body);
+    panelEl.hidden = false;
+  }
+
+  function closePanel() { panelEl.hidden = true; }
+
+  // ---------- Events ----------
+
+  document.addEventListener("input", onEdit);
+  document.addEventListener("change", onEdit);
+
+  document.addEventListener("click", function (event) {
+    const target = event.target.closest("[data-action]");
+    if (!target) return;
+    const card = target.closest("article.comment[data-id]");
+    const id = card ? card.dataset.id : null;
+    switch (target.dataset.action) {
+      case "add": addProduct(id); break;
+      case "remove": removeProduct(id, Number(target.closest(".mention").dataset.index)); break;
+      case "clear": clearComment(id); break;
+      case "voice-open": openVoice(id); break;
+      case "voice-remove": removeVoice(id); break;
+      case "export": exportLabels(); break;
+      case "next": nextToLabel(); break;
+      case "close": closePanel(); break;
+      case "goto": setFocus(IDS.indexOf(target.dataset.target), true); break;
+    }
+  });
+
+  // Clicking or tabbing into a comment highlights it, so the shortcuts act on it.
+  document.addEventListener("focusin", function (event) {
+    const card = event.target.closest ? event.target.closest("article.comment[data-id]") : null;
+    if (card) setFocus(IDS.indexOf(card.dataset.id), false);
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    const target = event.target;
+    const typing = target.isContentEditable || target.tagName === "TEXTAREA" || target.tagName === "SELECT" ||
+      (target.tagName === "INPUT" && ["checkbox", "radio", "button"].indexOf(target.type) === -1);
+    if (typing) {
+      // Esc leaves a text box, so the shortcuts work again.
+      if (event.key === "Escape") {
+        target.blur();
+        const card = target.closest("article.comment[data-id]");
+        if (card) card.focus({ preventScroll: true });
+      }
+      return;
+    }
+    const id = focused >= 0 ? IDS[focused] : null;
+    const key = event.key;
+    if (key === "j" || key === "k") {
+      event.preventDefault();
+      move(key === "j" ? 1 : -1);
+    } else if (/^[1-9]$/.test(key) && Number(key) <= CONFIG.voiceLevels.length) {
+      if (id) { event.preventDefault(); setVoice(id, CONFIG.voiceLevels[Number(key) - 1]); }
+    } else if (key === "n") {
+      if (id) { event.preventDefault(); setNoProduct(id, !labelOf(id).no_product); }
+    } else if (key === "a") {
+      if (id && REPLY[id]) { event.preventDefault(); setAgrees(id, !labelOf(id).agrees); }
+    } else if (key === "p") {
+      if (id) { event.preventDefault(); addProduct(id); }
+    } else if (key === "Escape") {
+      closePanel();
+    }
+  });
+
+  // The cards scroll to just below the bar at the top, whatever its height.
+  function trackHeader() { document.documentElement.style.setProperty("--header-h", topbar.offsetHeight + "px"); }
+  if ("ResizeObserver" in window) new ResizeObserver(trackHeader).observe(topbar);
+  trackHeader();
+
+  // ---------- Start ----------
+
+  restore();
+  IDS.forEach(renderControls);
+  updateProgress();
+  if (storageWorks()) savedEl.textContent = "Saves in this browser as you go"; else showSaved(false);
+})();
+</script>
+</body>
+</html>

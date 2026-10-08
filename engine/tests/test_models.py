@@ -167,3 +167,20 @@ def test_other_tag_with_a_note_is_fine():
 
 def test_stance_values_match_the_brief():
     assert STANCE_VALUE == {"recommend": 1, "warn": -1, "neutral": 0}
+
+
+# --- Comments with no product (Noemi, 8 Oct 2026): no voice label needed; replies can mark that they agree ---
+
+def test_a_comment_read_with_no_product_needs_no_voice():
+    label = VoiceLabel.model_validate(voice_row(voice="", tags="", note=""))
+    assert label.voice is None and label.tags == []
+
+
+def test_tags_without_a_voice_make_no_sense():
+    with pytest.raises(ValidationError, match="voice"):
+        VoiceLabel.model_validate(voice_row(voice="", tags="recent"))
+
+
+@pytest.mark.parametrize("cell, expected", [("yes", True), ("Yes", True), ("", False), ("no", False)])
+def test_agrees_with_the_comment_above(cell, expected):
+    assert VoiceLabel.model_validate(voice_row(voice="", tags="", agrees=cell)).agrees is expected

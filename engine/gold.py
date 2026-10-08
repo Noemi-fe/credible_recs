@@ -30,6 +30,7 @@ DEFAULT_GOLD_DIR = Path(__file__).resolve().parents[1] / "data" / "gold"
 VOICE_COLUMNS = ("thread_id", "comment_id", "voice", "tags")
 MENTION_COLUMNS = ("comment_id", "product", "category", "stance", "evidence", "tags")
 OPTIONAL_COLUMNS = ("note",)
+VOICE_OPTIONAL_COLUMNS = ("note", "agrees")  # agrees: a reply agreeing with the comment above (8 Oct 2026)
 
 
 class GoldSetError(Exception):
@@ -186,11 +187,13 @@ def _describe(error: dict) -> str:
 
 # --- Labels ---
 
-def _read_csv(root: Path, name: str, columns: tuple[str, ...], problems: list[str]) -> list[tuple[int, dict]]:
+def _read_csv(
+    root: Path, name: str, columns: tuple[str, ...], problems: list[str], optional: tuple[str, ...] = OPTIONAL_COLUMNS
+) -> list[tuple[int, dict]]:
     """Returns (line number, row) for every non-blank row, or nothing if the file or its header is wrong."""
     path = root / name
     if not path.is_file():
-        problems.append(f"{name} is missing; create it with the header row: {','.join(columns + OPTIONAL_COLUMNS)}")
+        problems.append(f"{name} is missing; create it with the header row: {','.join(columns + optional)}")
         return []
 
     # utf-8-sig drops the invisible marker Excel puts at the start of a file.
@@ -202,7 +205,7 @@ def _read_csv(root: Path, name: str, columns: tuple[str, ...], problems: list[st
 
     found = [c.strip() for c in (reader.fieldnames or [])]
     missing = [c for c in columns if c not in found]
-    unknown = [c for c in found if c not in columns + OPTIONAL_COLUMNS]
+    unknown = [c for c in found if c not in columns + optional]
     if missing:
         problems.append(f"{name} is missing column(s): {', '.join(missing)}")
     if unknown:
@@ -235,7 +238,7 @@ def _load_voices(
     skipped: set[str] = set()
     first_line: dict[str, int] = {}  # comment id -> line of its voice row
 
-    for line, row in _read_csv(root, "voices.csv", VOICE_COLUMNS, problems):
+    for line, row in _read_csv(root, "voices.csv", VOICE_COLUMNS, problems, VOICE_OPTIONAL_COLUMNS):
         where = f"voices.csv line {line}"
         try:
             label = VoiceLabel.model_validate(row)
@@ -259,6 +262,8 @@ def _load_voices(
             problems.append(f"{where}: comment {label.comment_id} is {comment.status} and can't be labelled")
             skipped.add(label.comment_id)
             continue
+        if label.agrees and comment.parent_id is None:
+            problems.append(f"{where}: comment {label.comment_id} isn't a reply, so it can't agree with the comment above")
         if label.comment_id in first_line:
             problems.append(
                 f"{where}: comment {label.comment_id} already has a voice label (line {first_line[label.comment_id]}); one per comment"
@@ -273,7 +278,7 @@ def _load_mentions(
     root: Path, threads: list[Thread], voices: list[VoiceLabel], skipped: set[str], problems: list[str]
 ) -> list[MentionLabel]:
     comment_ids = {c.id for t in threads for c in t.comments}
-    voiced = {v.comment_id for v in voices}
+    voice_of = {v.comment_id: v.voice for v in voices}
     mentions: list[MentionLabel] = []
     seen: dict[tuple[str, str], int] = {}  # (comment id, product) -> line
 
@@ -290,8 +295,11 @@ def _load_mentions(
         if label.comment_id not in comment_ids:
             problems.append(f"{where}: comment {label.comment_id} is not in any thread")
             continue
-        if label.comment_id not in voiced:
+        if label.comment_id not in voice_of:
             problems.append(f"{where}: comment {label.comment_id} has no voice label; add its row to voices.csv first")
+            continue
+        if voice_of[label.comment_id] is None:
+            problems.append(f"{where}: comment {label.comment_id} has product mentions, so it needs a voice level and tags in voices.csv")
             continue
         key = (label.comment_id, label.product.casefold())
         if key in seen:
@@ -330,7 +338,8 @@ class OtherTagUsage:
 
 def other_tag_usage(gold: GoldSet) -> tuple[OtherTagUsage, OtherTagUsage]:
     usages = []
-    for kind, labels in (("voice", gold.voices), ("evidence", gold.mentions)):
+    voiced = [v for v in gold.voices if v.voice is not None]  # a comment with no product has no voice to count
+    for kind, labels in (("voice", voiced), ("evidence", gold.mentions)):
         with_other = [label for label in labels if OTHER_TAG in label.tags]
         usages.append(OtherTagUsage(kind, len(with_other), len(labels), [label.note for label in with_other]))
     return tuple(usages)

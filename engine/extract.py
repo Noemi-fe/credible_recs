@@ -1,4 +1,385 @@
 """Module 3, mention extraction: lists the products each comment mentions, with a stance and a supporting quote.
 
-Not built yet.
+There is no Claude API key (Noemi, 7 Oct 2026), so the AI half runs outside Python: Claude Code reads a thread
+file, follows the instructions in engine/prompts/extract_mentions.md and writes one extraction file per thread.
+This module is the bookkeeping and the guardrail around that:
+
+    data/<set>/threads/<thread id>.json     a thread (engine.models.Thread), from the gold set or the library
+    data/<set>/extracted/<thread id>.json   what the AI found in it (Extraction, below); git ignores these folders
+
+An extraction file looks like this. An empty "mentions" list means the thread mentions no product.
+
+    {
+      "thread_id": "1fake01",
+      "instructions_version": "extract-v1",
+      "extracted_at": "2026-10-08T10:00:00Z",
+      "extractor": "claude-code",
+      "mentions": [
+        {"comment_id": "c1aaaa", "product": "CeraVe SA Cleanser", "category": "skincare",
+         "stance": "recommend", "quote": "I've used the CeraVe SA Cleanser for 2 years."}
+      ]
+    }
+
+The guardrail (the brief's rule): every quote must exist word for word in its comment, checked by code, not by
+the AI, and a quote that fails is dropped. check_extraction keeps a mention only if its comment is in the thread
+and still readable (not deleted or removed), its quote is found word for word (engine.verify_quotes), and the
+quote is at most 50 words (QUOTE_MAX_WORDS). Every other mention is set aside with the reason, never used.
+The share kept is the quote pass rate, which shows how often the AI quotes faithfully.
+
+The instructions version: the instruction file starts with a line such as "Version: extract-v1", and each
+extraction records the version it followed. When the instructions change, the version changes too, and `todo`
+lists the threads extracted with older instructions, so they are done again.
+
+Command line:
+    python -m engine.extract todo [threads folder]    the threads still to extract under the current instructions
+                                                      (data/library/threads by default)
+    python -m engine.extract check [threads folder]   for every extraction: the mentions kept, and the ones rejected
+                                                      with the reason; then totals and the quote pass rate.
+                                                      Exits 1 if any extraction file is malformed.
 """
+
+import json
+import re
+import sys
+from collections.abc import Iterable
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Annotated, Literal
+
+from pydantic import AfterValidator, ValidationError
+
+from engine.config import MENTION_CATEGORIES, QUOTE_MAX_WORDS, STANCE_VALUE
+from engine.gold import GoldSetError, _describe, load_threads
+from engine.models import Id, Record, Thread, UtcDatetime
+from engine.verify_quotes import find_quote
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_INSTRUCTIONS = REPO_ROOT / "engine" / "prompts" / "extract_mentions.md"
+DEFAULT_THREADS_DIR = REPO_ROOT / "data" / "library" / "threads"
+
+_VERSION_LINE = re.compile(r"Version:\s*(\S+)\s*")
+
+
+class ExtractionError(Exception):
+    def __init__(self, problems: list[str]):
+        self.problems = problems
+        super().__init__(f"{len(problems)} problem(s) with the extractions:\n" + "\n".join(f"- {p}" for p in problems))
+
+
+# --- The extraction file ---
+
+def _not_blank(text: str) -> str:
+    if not text.strip():
+        raise ValueError("must not be empty")
+    return text
+
+
+Text = Annotated[str, AfterValidator(_not_blank)]  # some text, not just spaces; kept exactly as written
+
+
+class ExtractedMention(Record):
+    """One product mentioned in one comment, as the AI wrote it down. Nothing here is trusted until checked."""
+
+    comment_id: Id
+    product: Text  # as written in the comment; matching names to products is module 4's job
+    category: Literal[MENTION_CATEGORIES]
+    stance: Literal[tuple(STANCE_VALUE)]
+    quote: Text  # meant to be copied word for word from the comment; check_extraction makes sure
+    # A reply about a product named in the comment above ("had this one 13 years") or in the post ("the one you
+    # listed") names it from there (instructions v2, 8 Oct 2026). None when the comment names it itself.
+    refers_to: Literal["parent", "post"] | None = None
+
+
+class ExtractedNote(Record):
+    """Advice about a kind of product, not a specific one ("get one with no plastic touching the water").
+
+    Not a product mention: it becomes a "what to look for" note under the picks (Noemi, 8 Oct 2026).
+    """
+
+    comment_id: Id
+    about: Text  # the kind of product or the feature, such as "plastic-free kettle"
+    stance: Literal[tuple(STANCE_VALUE)]
+    quote: Text
+
+
+class ExtractedAgreement(Record):
+    """A reply agreeing with the comment above ("This!"): evidence that the other writer is credible."""
+
+    comment_id: Id
+    quote: Text
+
+
+class Extraction(Record):
+    """One extraction file: every product mentioned in one thread, plus its notes and agreements."""
+
+    thread_id: Id
+    instructions_version: Text  # the "Version:" line of the instructions followed, such as "extract-v1"
+    extracted_at: UtcDatetime
+    extractor: Text  # who extracted, such as "claude-code"
+    mentions: list[ExtractedMention]  # empty means the thread mentions no product
+    notes: list[ExtractedNote] = []  # from instructions v2; older extractions have none
+    agreements: list[ExtractedAgreement] = []
+
+
+def extracted_dir(threads_dir: Path) -> Path:
+    """Where the extractions of a threads folder live: next to it, so data/gold/threads -> data/gold/extracted."""
+    return Path(threads_dir).parent / "extracted"
+
+
+# --- The guardrail: checking one extraction against its thread ---
+
+@dataclass
+class CheckResult:
+    kept: list[ExtractedMention] = field(default_factory=list)  # passed every check: safe to use
+    rejected: list[tuple[ExtractedMention, str]] = field(default_factory=list)  # each with the reason it was dropped
+    kept_notes: list[ExtractedNote] = field(default_factory=list)
+    rejected_notes: list[tuple[ExtractedNote, str]] = field(default_factory=list)
+    kept_agreements: list[ExtractedAgreement] = field(default_factory=list)
+    rejected_agreements: list[tuple[ExtractedAgreement, str]] = field(default_factory=list)
+
+    @property
+    def quote_pass_rate(self) -> float | None:
+        """The share of mentions kept, from 0 to 1. None when there were no mentions to check."""
+        return overall_quote_pass_rate([self])
+
+
+def check_extraction(extraction: Extraction, thread: Thread) -> CheckResult:
+    """Splits the AI's mentions into the ones safe to use and the ones dropped, with the reason for each.
+
+    A mention is kept only when all of these hold, checked in this order (the first that fails is the reason):
+    - the extraction is of this thread (if not, every mention is dropped);
+    - its comment is in the thread;
+    - the comment is still readable: one deleted or removed on Reddit can't be quoted;
+    - its quote is in the comment word for word (engine.verify_quotes.find_quote);
+    - the quote isn't from a quoted block (a line starting with ">"): those are someone else's words, and credit
+      has to go to the person who wrote them;
+    - the quote is at most QUOTE_MAX_WORDS words long, counting the pieces between spaces.
+    Mentions keep their order in both lists.
+    """
+    comments = {comment.id: comment for comment in thread.comments}
+    result = CheckResult()
+    for mention in extraction.mentions:
+        reason = _why_rejected(mention, extraction, thread, comments)
+        if reason is None and mention.refers_to == "parent" and comments[mention.comment_id].parent_id is None:
+            reason = f"comment {mention.comment_id} refers to the comment above, but it isn't a reply"
+        if reason is None:
+            result.kept.append(mention)
+        else:
+            result.rejected.append((mention, reason))
+    for note in extraction.notes:
+        reason = _why_rejected(note, extraction, thread, comments)
+        if reason is None:
+            result.kept_notes.append(note)
+        else:
+            result.rejected_notes.append((note, reason))
+    for agreement in extraction.agreements:
+        reason = _why_rejected(agreement, extraction, thread, comments)
+        if reason is None and comments[agreement.comment_id].parent_id is None:
+            reason = f"comment {agreement.comment_id} isn't a reply, so it can't agree with the comment above"
+        if reason is None:
+            result.kept_agreements.append(agreement)
+        else:
+            result.rejected_agreements.append((agreement, reason))
+    return result
+
+
+def _why_rejected(mention, extraction: Extraction, thread: Thread, comments: dict) -> str | None:
+    """The first check a mention, note or agreement fails, or None. Each has a comment_id and a quote."""
+    if extraction.thread_id != thread.id:
+        return f"the extraction is of thread {extraction.thread_id}, not {thread.id}"
+    comment = comments.get(mention.comment_id)
+    if comment is None:
+        return f"comment {mention.comment_id} is not in thread {thread.id}"
+    if comment.status != "ok":
+        return f"comment {mention.comment_id} was {comment.status} on Reddit, so it can't be quoted"
+    span = find_quote(comment.body, mention.quote)
+    if span is None:
+        return f"quote not found word for word in comment {mention.comment_id}"
+    if _in_quoted_block(comment.body, span):
+        return f"quote is from a quoted block in comment {mention.comment_id}: someone else's words"
+    words = len(mention.quote.split())
+    if words > QUOTE_MAX_WORDS:
+        return f"quote has {words} words; the limit is {QUOTE_MAX_WORDS}"
+    return None
+
+
+def _in_quoted_block(body: str, span: tuple[int, int]) -> bool:
+    """Whether the quote starts on a line that quotes someone else (">" or Reddit's "&gt;")."""
+    line_start = body.rfind("\n", 0, span[0]) + 1
+    return body[line_start:].lstrip().startswith((">", "&gt;"))
+
+
+def overall_quote_pass_rate(results: Iterable[CheckResult]) -> float | None:
+    """The share of all mentions kept, across threads: each mention counts once, whatever its thread's size.
+
+    None when there were no mentions at all.
+    """
+    kept = total = 0
+    for result in results:
+        kept += len(result.kept)
+        total += len(result.kept) + len(result.rejected)
+    return kept / total if total else None
+
+
+# --- Loading a folder of extractions ---
+
+def load_checked(threads_dir: Path) -> dict[str, CheckResult]:
+    """Every extraction next to a threads folder, checked against its thread: {thread id: what was kept and dropped}.
+
+    Threads with no extraction yet are left out. A malformed extraction file is never skipped quietly: every
+    problem in every file is collected, then raised together as an ExtractionError naming each file. An extraction
+    whose thread file is gone counts as a problem too. Problems in the thread files themselves raise GoldSetError.
+    """
+    results, problems = _check_folder(Path(threads_dir))
+    if problems:
+        raise ExtractionError(problems)
+    return results
+
+
+def _check_folder(threads_dir: Path) -> tuple[dict[str, CheckResult], list[str]]:
+    """The results of the extraction files that could be read, and the problems of those that couldn't."""
+    threads = {thread.id: thread for thread in load_threads(threads_dir)}
+    folder = extracted_dir(threads_dir)
+    results: dict[str, CheckResult] = {}
+    problems: list[str] = []
+    for path in sorted(folder.glob("*.json")) if folder.is_dir() else []:
+        where = f"{folder.name}/{path.name}"
+        extraction, file_problems = _read_extraction(path)
+        if file_problems:
+            problems.extend(f"{where}: {problem}" for problem in file_problems)
+            continue
+        thread = threads.get(path.stem)
+        if thread is None:
+            problems.append(f"{where}: there is no thread {path.stem} in {threads_dir.name}/; delete this file or put the thread back")
+            continue
+        # The file name says which thread it belongs to; if the file's own thread_id disagrees, every mention is dropped.
+        results[path.stem] = check_extraction(extraction, thread)
+    return results, problems
+
+
+def _read_extraction(path: Path) -> tuple[Extraction | None, list[str]]:
+    """The extraction in a file, or None and every problem that stops it from being read."""
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        return None, [f"not valid JSON (line {e.lineno}, column {e.colno}): {e.msg}"]
+    except UnicodeDecodeError:
+        return None, ["not UTF-8 text"]
+    try:
+        return Extraction.model_validate(raw), []
+    except ValidationError as e:
+        return None, [_describe(error) for error in e.errors()]
+
+
+# --- What still needs extracting ---
+
+def current_instructions_version(path: Path = DEFAULT_INSTRUCTIONS) -> str:
+    """The version of the extraction instructions, read from their first line, "Version: extract-v1"."""
+    path = Path(path)
+    if not path.is_file():
+        raise ExtractionError([f"the instruction file {path} is missing"])
+    lines = path.read_text(encoding="utf-8-sig").splitlines()  # utf-8-sig: an invisible marker some editors add is dropped
+    first = lines[0] if lines else ""
+    found = _VERSION_LINE.fullmatch(first)
+    if found is None:
+        raise ExtractionError([
+            f"{path.name}: the first line must be 'Version: <name>', such as 'Version: extract-v1'; it is {first!r}"
+        ])
+    return found.group(1)
+
+
+def todo(threads_dir: Path, version: str) -> list[str]:
+    """The ids of the threads to extract (again) under these instructions, in file-name order.
+
+    A thread is listed when it has no extraction, when its extraction followed another instructions version, or
+    when its extraction file is malformed (writing it again fixes that; `check` says what is wrong with it).
+    """
+    return list(_todo(Path(threads_dir), version))
+
+
+def _todo(threads_dir: Path, version: str) -> dict[str, str]:
+    """For every thread to extract: why, in a few words."""
+    if not threads_dir.is_dir():
+        raise ExtractionError([f"there is no threads folder at {threads_dir}"])
+    reasons: dict[str, str] = {}
+    for thread_path in sorted(threads_dir.glob("*.json")):
+        path = extracted_dir(threads_dir) / thread_path.name
+        if not path.is_file():
+            reasons[thread_path.stem] = "not extracted yet"
+            continue
+        extraction, problems = _read_extraction(path)
+        if problems:
+            reasons[thread_path.stem] = "its extraction file is malformed (see `check`)"
+        elif extraction.instructions_version != version:
+            reasons[thread_path.stem] = f"extracted with {extraction.instructions_version}"
+    return reasons
+
+
+# --- Command line ---
+
+def main(argv: list[str], instructions: Path = DEFAULT_INSTRUCTIONS) -> int:
+    """`instructions` can be swapped for another file, which is how the tests run `todo`."""
+    if not argv or argv[0] not in ("todo", "check") or len(argv) > 2:
+        print(__doc__)
+        return 2
+    threads_dir = Path(argv[1]) if len(argv) == 2 else DEFAULT_THREADS_DIR
+    try:
+        if argv[0] == "todo":
+            return _print_todo(threads_dir, current_instructions_version(instructions), Path(instructions))
+        return _print_check(threads_dir)
+    except (ExtractionError, GoldSetError) as e:
+        print(e)
+        return 1
+
+
+def _print_todo(threads_dir: Path, version: str, instructions: Path) -> int:
+    reasons = _todo(threads_dir, version)
+    if not reasons:
+        print(f"Nothing to extract: every thread in {_shown(threads_dir)} has an extraction made with {version}.")
+        return 0
+    print(f"{len(reasons)} thread(s) to extract with {version} ({_shown(instructions)}):")
+    for thread_id, reason in reasons.items():
+        print(f"  {thread_id}  {reason}")
+    print(
+        f"Read each thread from {_shown(threads_dir)}/<id>.json and write its extraction to "
+        f"{_shown(extracted_dir(threads_dir))}/<id>.json."
+    )
+    return 0
+
+
+def _print_check(threads_dir: Path) -> int:
+    results, problems = _check_folder(threads_dir)
+    for thread_id, result in results.items():
+        if not result.kept and not result.rejected:
+            print(f"{thread_id}: no products mentioned")
+            continue
+        print(f"{thread_id}: {len(result.kept)} kept, {len(result.rejected)} rejected")
+        for mention in result.kept:
+            print(f"  kept      {mention.comment_id}  {mention.stance:<9}  {mention.product}")
+        # A rejected quote is never printed: it failed verification, so it must not be shown.
+        for mention, reason in result.rejected:
+            print(f"  rejected  {mention.comment_id}  {mention.stance:<9}  {mention.product}: {reason}")
+
+    kept = sum(len(result.kept) for result in results.values())
+    total = kept + sum(len(result.rejected) for result in results.values())
+    rate = overall_quote_pass_rate(results.values())
+    print(f"Total: {len(results)} thread(s), {total} mention{'' if total == 1 else 's'}: {kept} kept, {total - kept} rejected.")
+    print(f"Quote pass rate: {rate:.0%}" if rate is not None else "Quote pass rate: none yet (no mentions)")
+    if problems:
+        print("Malformed extraction files, not checked (fix them, or extract those threads again):")
+        for problem in problems:
+            print(f"  - {problem}")
+        return 1
+    return 0
+
+
+def _shown(path: Path) -> str:
+    """A path as short as it can be: from the project folder when it's inside it."""
+    try:
+        return str(Path(path).resolve().relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

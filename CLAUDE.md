@@ -28,4 +28,7 @@
 - Claude API key: not used for now (see the working rule). If it's ever needed, walk Noemi through creating one step by step (Claude Console, API keys, a monthly spend limit) and pasting ANTHROPIC_API_KEY into .env herself.
 - Also for brief version 5: no Claude API key; AI steps run offline through Claude Code under Noemi's plan.
 - The quarterly refresh of archived library threads (LIBRARY_ARCHIVED_REFRESH_DAYS) is provisional: revisit it when Noemi settles the data source / API choice (7 Oct 2026).
+- Generic types ("a carbon steel pan") aren't product mentions, but credible advice about them is kept separately as "what to look for" notes, shown as a short blueprint under the picks (Noemi, 8 Oct 2026). Extraction instructions v2 and module 7; also for brief version 5.
+- Voice rubric (data/gold/LABELLING_GUIDE.md): once enough labels exist, check the high/medium/low split; if there are too few highs or too many lows, recalibrate with Noemi (8 Oct 2026).
+- Gold threads labelled by Noemi must never be extracted by the AI before she has labelled them (anchoring). First batch: 1vumd3s (exfoliant) and 1ur9shv (chef knife), then 1tfk6nm (kettle).
 - When modules 5–6 exist: if a request lacks enough credible evidence (fewer than 3 credible mentions across 2 threads), fetch more threads automatically, smaller ones included, before giving up (Noemi, 7 Oct 2026).
