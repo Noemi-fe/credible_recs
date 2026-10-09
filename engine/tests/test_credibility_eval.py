@@ -119,7 +119,8 @@ def test_replies_that_agree_come_from_the_extraction():
     # c2bbbb agrees with c1aaaa. With it, c1aaaa has three good signs instead of two: still high, now with the reason.
     checked = {"1fake01": CheckResult(kept_agreements=[ExtractedAgreement(comment_id="c2bbbb", quote="Same here")])}
     score = score_credibility(gold(), checked)
-    assert score.voice_tags.rules[("other")] == 1
+    # Changed on purpose 9 Oct 2026 (Noemi's decision 13): recorded under its own tag, no longer "other".
+    assert score.voice_tags.rules["replies agree"] == 1 and score.voice_tags.rules["other"] == 0
     assert score.agreements_used == 1
 
 

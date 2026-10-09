@@ -10,16 +10,18 @@ import re
 import threading
 import urllib.error
 import urllib.request
+from datetime import date
 from pathlib import Path
 from urllib.parse import quote, urlparse
 
 import pytest
 
 from engine import web
-from engine.answer import QUOTES_HEADING
+from engine.answer import PRICE_LABEL, PRICE_LINK_TEXT, QUOTES_HEADING
 from engine.config import WEB_MAX_REQUEST_CHARS, WEB_PORT
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.pipeline import answer_request
+from engine.prices import Price
 from engine.tests.factories import write_gold
 from engine.tests.test_pipeline import comment, kettle_thread, mention
 
@@ -85,12 +87,16 @@ def test_the_json_has_the_documented_shape(tmp_path):
     _, _, data = ask(REQUEST, kettle_library(tmp_path))
     assert set(data) == {"query", "answer", "threads_used", "left_out"}
     assert set(data["query"]) == {"status", "category", "product_type", "question", "message"}
-    assert set(data["left_out"]) == {"other_type", "loose"}
+    # Changed on purpose 9 Oct 2026 (decision 11, budgets): each pick has its price, and "left_out" counts the
+    # products over the request's budget.
+    assert set(data["left_out"]) == {"other_type", "loose", "over_budget"}
     assert set(data["answer"]) == {"category", "product_type", "picks", "look_for", "skip", "message",
                                    "needs_more_threads", "quotes_dropped"}
     assert set(data["answer"]["picks"][0]) == {"rank", "product_key", "name", "reason", "support", "quotes",
-                                               "downsides", "disagreement", "score", "breakdown"}
+                                               "downsides", "disagreement", "score", "breakdown", "price"}
     assert set(data["answer"]["picks"][0]["quotes"][0]) == {"text", "comment_id", "url", "badges"}
+    assert set(data["answer"]["picks"][0]["price"]) == {"text", "amount", "currency", "shop", "url", "checked_on",
+                                                        "budget_status", "budget_note"}
 
 
 def test_every_card_has_at_least_two_quotes_each_linking_to_reddit(tmp_path):
@@ -105,6 +111,34 @@ def test_every_card_has_at_least_two_quotes_each_linking_to_reddit(tmp_path):
 def test_the_skip_list_comes_through(tmp_path):
     _, _, data = ask(REQUEST, kettle_library(tmp_path))
     assert [item["name"] for item in data["answer"]["skip"]] == ["Chefman kettle"]
+
+
+def with_prices(prices):
+    """answer_request, with a made-up price list instead of data/prices.json."""
+    def answer_with_prices(request, library_dir):
+        return answer_request(request, library_dir, prices=prices, today=date(2026, 10, 9))
+    return answer_with_prices
+
+
+def made_up_price(product: str, amount: float, url: str = "https://shop.example/kettle") -> Price:
+    return Price(product=product, category="kitchen", price=amount, currency="GBP", shop="Made-up Kitchen Shop",
+                 url=url, checked_on=date(2026, 10, 9))
+
+
+def test_each_card_carries_its_price_and_the_shops_own_link(tmp_path, monkeypatch):
+    monkeypatch.setattr(web, "answer_request", with_prices([made_up_price("Zojirushi kettle", 80.0)]))
+    _, _, data = ask("electric kettle under £100", kettle_library(tmp_path))
+    prices = {pick["name"]: pick["price"] for pick in data["answer"]["picks"]}
+    assert prices["Zojirushi kettle"]["url"] == "https://shop.example/kettle"
+    assert prices["Zojirushi kettle"]["budget_status"] == "within"
+    assert prices["Bonavita kettle"]["url"] is None and prices["Bonavita kettle"]["budget_status"] == "unknown"
+
+
+def test_products_over_the_budget_are_counted_as_left_out(tmp_path, monkeypatch):
+    monkeypatch.setattr(web, "answer_request", with_prices([made_up_price("Zojirushi kettle", 180.0)]))
+    _, _, data = ask("electric kettle under £100", kettle_library(tmp_path))
+    assert data["left_out"]["over_budget"] == 1
+    assert "Zojirushi kettle" not in [pick["name"] for pick in data["answer"]["picks"]]
 
 
 def test_too_little_evidence_comes_back_as_the_honest_message(tmp_path):
@@ -204,6 +238,31 @@ def test_the_page_links_and_loads_nothing_outside_this_machine_except_reddit(tmp
 def test_the_page_never_draws_data_as_html(tmp_path):
     # Reddit text is put on the page as text only (textContent), so "<script>" in a comment is shown, never run.
     assert not re.search(r"innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval\(", page(tmp_path))
+
+
+def test_every_link_the_page_draws_goes_through_a_link_check(tmp_path):
+    # Two kinds of link only (changed on purpose 9 Oct 2026, decision 11): a quote's comment on Reddit, and a price's
+    # shop page. Each address is checked before it becomes a link; any other address is shown without one.
+    html = page(tmp_path)
+    links = re.findall(r"href:\s*(\w+)", html)
+    assert links, "the page should draw links"
+    for name in links:
+        assert re.search(rf"const {name} = (redditUrl|shopUrl)\(", html), name
+
+
+def test_a_shop_link_must_be_https_with_no_name_or_password(tmp_path):
+    html = page(tmp_path)
+    check = re.search(r"function shopUrl\(address\) \{(.*?)\n  \}", html, re.DOTALL).group(1)
+    assert 'url.protocol === "https:"' in check and "http:" not in check.replace("https:", "")
+    assert "url.username" in check and "url.password" in check
+    assert html.count('rel: "noopener noreferrer"') == len(re.findall(r"href:", html))  # every link opens apart
+
+
+def test_the_page_carries_the_price_wording(tmp_path):
+    html = page(tmp_path)
+    settings = json.loads(re.search(r'<script type="application/json" id="settings">(.*?)</script>', html, re.DOTALL).group(1))
+    assert settings["wording"]["price_label"] == PRICE_LABEL
+    assert settings["wording"]["price_link_text"] == PRICE_LINK_TEXT
 
 
 def test_the_page_carries_the_answers_own_headings_and_the_example_requests(tmp_path):

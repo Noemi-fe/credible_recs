@@ -28,13 +28,21 @@ The JSON for /api/answer (200):
                  "picks": [{"rank", "product_key", "name", "reason", "support",
                             "quotes": [{"text", "comment_id", "url", "badges": [...]}],   2 or 3, all verified
                             "downsides": [same shape as quotes], "disagreement": "..." | null,
-                            "score", "breakdown": {every number behind the score (engine.rank.ScoreBreakdown)}}],
+                            "score", "breakdown": {every number behind the score (engine.rank.ScoreBreakdown)},
+                            "price": {"text",                  "£120 at <shop>, checked 9 Oct 2026" or
+                                                               "Price not checked yet"
+                                      "amount", "currency", "shop", "checked_on",   null when not known
+                                      "url",                   the shop's own page, https only, or null
+                                      "budget_status",         "within" | "unknown" | "other currency" |
+                                                               "out of date", or null without a budget
+                                      "budget_note"}}],        the same in words, or null
                  "look_for": [{"kind", "advice", "quote": {same shape}}],
                  "skip": [{"product_key", "name", "reason", "quotes": [...]}],
                  "message": the honest "not enough evidence" message, or null when there are 3 picks,
                  "needs_more_threads", "quotes_dropped"},
       "threads_used": ["thread id", ...],          most relevant first
-      "left_out": {"other_type": n, "loose": n}    products of another type, and brand or line names, left out
+      "left_out": {"other_type": n, "loose": n,    products of another type, and brand or line names, left out
+                   "over_budget": n}               and products whose known price is over the request's budget
     }
 An error is {"error": "<plain words>", "code": "<one word for programs>"}:
     400 empty_request, request_too_long (over WEB_MAX_REQUEST_CHARS characters)
@@ -73,7 +81,8 @@ HTML = "text/html; charset=utf-8"
 JSON = "application/json; charset=utf-8"
 
 # Sent with every response. The page may load and call nothing but this server: no outside scripts, styles, fonts
-# or images, and no requests elsewhere. Its links to Reddit still open, in a new tab.
+# or images, and no requests elsewhere. Its links still open, in a new tab: to Reddit, and to a shop's own page for a
+# price (https only, from data/prices.json; decision 11, 9 Oct 2026).
 HEADERS = {
     "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
                                "connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
@@ -154,7 +163,8 @@ def answer_json(result: PipelineResult) -> dict:
                   "question": query.question, "message": query.message},
         "answer": answer_to_dict(result.answer) if result.answer is not None else None,
         "threads_used": list(result.threads_used),
-        "left_out": {"other_type": len(result.left_out_as_other_type), "loose": len(result.left_out_loose)},
+        "left_out": {"other_type": len(result.left_out_as_other_type), "loose": len(result.left_out_loose),
+                     "over_budget": len(result.left_out_over_budget)},
     }
 
 
@@ -196,6 +206,8 @@ def answer_wording() -> dict[str, str]:
         "look_for_heading": wording.LOOK_FOR_HEADING,
         "skip_heading": wording.SKIP_HEADING,
         "link_text": wording.LINK_TEXT,
+        "price_label": wording.PRICE_LABEL,  # "Price"
+        "price_link_text": wording.PRICE_LINK_TEXT,
     }
 
 

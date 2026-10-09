@@ -248,7 +248,8 @@ def test_a_tiny_score_is_not_well_upvoted_even_at_the_top_of_a_tiny_thread():
 def test_a_downvoted_comment_is_a_red_flag():
     voice = voice_for(score=-4)
     assert voice.level == "low"
-    assert config.OTHER_TAG in voice.tags
+    # Changed on purpose 9 Oct 2026 (Noemi's decision 13): "downvoted" is now a voice tag of its own, not "other".
+    assert "downvoted" in voice.tags and config.OTHER_TAG not in voice.tags
     assert any("downvoted" in reason for reason in voice.reasons)
 
 
@@ -260,6 +261,45 @@ def test_replies_that_agree_are_a_good_sign():
     assert any("1 reply agrees" in reason for reason in voice.reasons)
     # An agreement with some other comment is not about this one.
     assert score_voice(comment, thread, agreements=[ExtractedAgreement(comment_id="o0other", quote="x")]).level == "medium"
+
+
+def test_replies_that_agree_are_recorded_under_their_own_tag():
+    # Noemi's decision 13 (9 Oct 2026): "replies agree" is a voice tag of its own, no longer "other".
+    comment, thread = make_case(replies=("This! Mine lasted 10 years too.",))
+    voice = score_voice(comment, thread, agreements=[ExtractedAgreement(comment_id="r0reply", quote="This!")])
+    assert "replies agree" in voice.tags and config.OTHER_TAG not in voice.tags
+
+
+def test_the_two_new_voice_tags_come_after_the_others():
+    assert config.VOICE_TAGS[-2:] == ("replies agree", "downvoted")
+    assert len(set(config.VOICE_TAGS)) == len(config.VOICE_TAGS)
+
+
+# Every red flag the rules can raise, each next to good signs worth more than enough for high: the comment is
+# well upvoted, written by an old account with plenty of karma (established, well regarded), and recent.
+RED_FLAGS = {
+    "new account": {"author": account(created=years_before(RECENT, 0.01), karma=900_000)},
+    "low karma for its activity": {"author": account(created=years_before(RECENT, 8), karma=-50)},
+    "salesy language": {"body": USES_IT + " Use my code GLOW20 for 20% off!"},
+    "promotes one brand": {"body": "I'm the founder, full disclosure. " + USES_IT},
+    "downvoted": {"score": -2},
+}
+
+
+@pytest.mark.parametrize("flag", sorted(RED_FLAGS))
+def test_a_red_flag_makes_the_voice_low_whatever_the_good_signs(flag):
+    # The guide's rule, confirmed by Noemi on 9 Oct 2026 (decision 13): a red flag means a low voice.
+    case = {"score": 9, "others": (1, 1, 2, 2), "author": account(created=years_before(RECENT, 8), karma=250_000)}
+    case.update(RED_FLAGS[flag])
+    voice = voice_for(**case)
+    assert flag in voice.tags
+    assert voice.level == "low"
+    assert len(voice.good_signs) >= config.VOICE_HIGH_MIN_GOOD_SIGNS  # it would be high, but for the red flag
+
+
+def test_without_its_red_flag_the_same_comment_is_high():
+    voice = voice_for(score=9, others=(1, 1, 2, 2), author=account(created=years_before(RECENT, 8), karma=250_000))
+    assert voice.level == "high" and voice.red_flags == ()
 
 
 # --- Recency ---

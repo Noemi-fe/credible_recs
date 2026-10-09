@@ -5,9 +5,13 @@ Names are made up or copied from the library's product names (names only, never 
 
 import random
 
+from engine import config
 from engine.extract import CheckResult, ExtractedMention
-from engine.group_products import ProductMention, group_of, group_products, mentions_from_checked
+from engine.group_products import (
+    ProductMention, brand_pick_name, group_of, group_products, mentions_from_checked, uk_name,
+)
 from engine.match_products import make_aliases
+from engine.query import PRODUCT_TYPES
 
 NO_ALIASES = {"skincare": {}, "kitchen": {}, "other": {}}
 
@@ -221,3 +225,34 @@ def test_each_mention_can_be_looked_up_to_its_group():
     assert lookup[mentions[1]].key == "skincare:cerave sa cleanser"
     assert lookup[mentions[1]].name == "CeraVe SA Cleanser"
     assert lookup[mentions[2]].name == "Vaseline"
+
+
+# --- The name shown to the shopper (decisions 9 and 12, Noemi, 9 Oct 2026) ---
+
+def test_the_uk_name_sage_is_shown_rather_than_breville():
+    # Sage is Breville's UK and EU brand. Grouping keeps its own name; the shown name uses the UK brand.
+    assert uk_name("Breville Smart Grinder Pro") == "Sage Smart Grinder Pro"
+    assert uk_name("breville bambino") == "Sage bambino"
+    assert uk_name("my Breville's kettle") == "my Sage's kettle"
+    assert uk_name("Zojirushi kettle") == "Zojirushi kettle"
+    assert uk_name("Brevilleish Kettle") == "Brevilleish Kettle"  # whole words only
+
+
+def test_the_uk_names_come_from_the_config():
+    assert config.UK_BRAND_NAMES == {"Breville": "Sage"}
+    assert uk_name("Fellow Stagg", {"Fellow": "Made-up UK Brand"}) == "Made-up UK Brand Stagg"
+
+
+def test_a_brand_pick_says_which_products_it_means():
+    assert brand_pick_name("Lodge", "cast iron skillet") == "Lodge (their cast iron skillets)"
+    assert brand_pick_name("Zojirushi", "electric kettle") == "Zojirushi (their electric kettles)"
+    assert brand_pick_name("Victorinox", "chef knife") == "Victorinox (their chef knives)"
+    assert brand_pick_name("Paula's Choice", "exfoliant") == "Paula's Choice (their exfoliants)"
+
+
+def test_every_product_type_has_a_plural():
+    assert set(config.PRODUCT_TYPE_PLURALS) == {p.name for p in PRODUCT_TYPES}
+    assert config.PRODUCT_TYPE_PLURALS["chef knife"] == "chef knives"
+    assert config.PRODUCT_TYPE_PLURALS["dutch oven"] == "Dutch ovens"
+    for name, plural in config.PRODUCT_TYPE_PLURALS.items():
+        assert plural.lower() != name.lower() and plural.endswith("s"), name
