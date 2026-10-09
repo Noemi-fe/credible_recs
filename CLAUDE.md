@@ -39,3 +39,13 @@
 - Commenter history (Noemi's idea, approved 9 Oct 2026), for module 5: from Arctic Shift, numbers only (subreddit, score, date of each comment; no text), turned into "active in this topic's communities" and "usually upvoted there". Keep only those derived numbers per username, under the 48-hour rule.
 - Kind-level advice in the ranking (Noemi, 8–9 Oct 2026): if one kind ("Japanese gyuto") gets far more credible support than another, its products rank first. Kinds are open-ended (her choice, 9 Oct): labelled as rows with kind = yes and extracted as the AI's notes; for each request, the kinds found in its threads are grouped and each product placed in a group (modules 4 and 6). How much kind support moves a product is her decision.
 - Warnings: only exfoliant, cleanser, electric kettle and frying pan are thin (8 Oct 2026). Plan approved 9 Oct: when Arctic Shift answers, find one big "most regretted / overhyped products" thread each for skincare and kitchen (4 Parse credits); otherwise wait for November's credits.
+- Decisions of 9 Oct 2026 (Noemi approved all 13 recommendations):
+  1. Commenter profile numbers (activity since, contributions, karma, flair) are kept with the library and refreshed monthly with it, not only 48 hours: they are public metadata, not the archived text the deletion rule is about.
+  2. Extraction instructions v6: the AI also writes each product's type and an evidence level with tags; Noemi's kettle thread (1tfk6nm) is the fair test of v6, then the whole library is extracted again with it.
+  3. November credits: about 60 to bring every blind-test product type to 6 or more threads about it (candidates in data/library/candidates.json).
+  4–8. Module 5 and 6 values decided as proposed: voice and evidence values 1 / 0.5 / 0.25, honesty bonus +10% per sign; credible mention = recommend or warn from a high or medium voice with first-hand use; picks need 3 credible recommendations across 2 threads and a positive score; skip list needs 2+ credible warnings and more warnings than recommendations; mixed-opinions flag at 1+ credible recommendation and 2+ credible warnings; kind bonus +1 when a kind leads the next by 2x.
+  9. A brand-only name can be a pick when its threads make the product clear, labelled as such ("Lodge (their cast iron skillets)").
+  10. A product that failed after a long life counts as recommend (long-term use, mentions flaws), not warn.
+  11. Budgets: current prices for each blind-test question's shortlist, looked up by Claude with the shop and the date.
+  12. The 75 matching pairs, variant words and alias list approved; the UK name "Sage" is shown rather than "Breville".
+  13. New voice tags "replies agree" and "downvoted"; a red flag means a low voice, as the guide says.

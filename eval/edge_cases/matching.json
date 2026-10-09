@@ -1,6 +1,6 @@
 {
- "approved": false,
- "approved_note": "Draft by Claude, 9 Oct 2026: Noemi reviews. Names copied from the library's product names (names only). 'same' means the two names can name one product: a brand or line alone counts as the same as its products (grouping keeps it apart when it fits several), and an unmarked name next to 'new' or 'old' counts as different.",
+ "approved": true,
+ "approved_note": "Approved by Noemi, 9 Oct 2026 (with the variant words and the alias list, including the inferred EH and LSM90).",
  "pairs": [
   {
    "id": "m01",
