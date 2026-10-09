@@ -181,7 +181,7 @@ ENTHUSIAST_MIN_TERMS = 3  # using this many of the category's specialist words s
 LONG_TERM_MIN_MONTHS = 12  # from the guide: long-term use is a year or more
 
 # --- Module 4: product matching (proposed 9 Oct 2026) ---
-# Proposed by Claude, for Noemi to approve: words that name another model or another version of a product. A name
+# Approved by Noemi, 9 Oct 2026 (decision 12): words that name another model or another version of a product. A name
 # found inside a longer one is the same product, unless the longer name adds one of these words: "Timemore C2" and
 # "Timemore C2 Max" are two grinders, "Dynasty Cream" and "new Dynasty Cream" two formulas.
 PRODUCT_VARIANT_WORDS = frozenset({
