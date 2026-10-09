@@ -83,3 +83,56 @@ QUOTE_MAX_WORDS = 50
 # Extraction reads at most this many comments per thread, the highest-scored (8 Oct 2026): the long tail of a
 # 400-comment thread adds little, and highly upvoted comments carry the community's endorsement.
 EXTRACT_MAX_COMMENTS = 150
+
+# --- Module 5: credibility scoring (proposed 9 Oct 2026, awaiting Noemi) ---
+# Every value marked PROPOSED is a starting point for Noemi to accept or change; none is decided yet. Values taken
+# from the labelling guide (data/gold/LABELLING_GUIDE.md) say so. The rules that use them are in engine/credibility.py.
+
+# A mention's weight = voice value x evidence value x stance value (STANCE_VALUE above).
+# PROPOSED: each step down halves the weight, so a high voice counts 4 times a low one, and long-term use 4 times
+# no first-hand use. Low stays above zero: a genuine expert on a new account still counts a little.
+VOICE_VALUE: dict[str, float] = {"high": 1.0, "medium": 0.5, "low": 0.25}
+EVIDENCE_VALUE: dict[str, float] = {"long-term use": 1.0, "short-term use": 0.5, "no first-hand use": 0.25}
+# PROPOSED: each sign of honesty (mentions flaws, compares alternatives, specific details) adds this share to the
+# evidence value. Three signs add 30%: never enough to beat the next evidence level, which is worth twice as much.
+EVIDENCE_HONESTY_BONUS = 0.1
+
+# Voice levels (the guide): high = good signs worth at least this much and no red flag; low = any red flag.
+VOICE_HIGH_MIN_GOOD_SIGNS = 2  # from the guide: "at least two good signs"
+# How much each good sign counts towards high. PROPOSED: all equal, as the brief says weights start equal.
+# "replies agree" has no tag of its own yet (it is recorded as "other"); a tag for it is proposed to Noemi.
+VOICE_SIGN_WEIGHTS: dict[str, float] = {
+    "established member": 1,
+    "well-regarded account": 1,
+    "expert flair": 1,
+    "well upvoted": 1,
+    "replies agree": 1,
+    "recent": 1,
+    "enthusiast": 1,
+}
+
+# PROPOSED: off. The guide lists "no sign they've used anything" as a red flag (low voice), but in Noemi's first 33
+# labels it never made a voice low (the rule fired on 16 comments she rated 4 high, 12 medium), and the evidence layer
+# already scores it ("no first-hand use"), so counting it twice would punish the same thing twice. True turns it on.
+VOICE_RED_FLAG_NO_USE = False
+
+# Community standing, measured on the day the comment was written.
+NEW_ACCOUNT_DAYS = 30  # PROPOSED: an account younger than this is "new account", a red flag
+ESTABLISHED_ACCOUNT_YEARS = 2  # PROPOSED: "established member" needs an account at least this old...
+ESTABLISHED_MIN_KARMA = 1000  # PROPOSED: ...and this much karma as a sign of activity, until the commenter history exists
+LOW_KARMA_PER_CONTRIBUTION = 1.0  # from the guide: under about 1 karma per contribution is a red flag
+WELL_REGARDED_KARMA_PER_CONTRIBUTION = 5.0  # PROPOSED: "plenty of karma per contribution"
+WELL_REGARDED_KARMA_PER_YEAR = 2000  # PROPOSED: stands in for the line above until contributions are known
+
+# Endorsement: upvotes relative to the thread, never absolute numbers.
+WELL_UPVOTED_SHARE_BEATEN = 0.75  # PROPOSED: "well upvoted" scores higher than at least 75% of the thread's other comments...
+WELL_UPVOTED_MIN_SCORE = 3  # PROPOSED: ...with at least this score, so the top of a tiny, quiet thread doesn't count
+DOWNVOTED_BELOW = 0  # PROPOSED: a score under this (more downvotes than upvotes) is a red flag
+
+# Recency (the guide: "recent" = the last 2-3 years).
+VOICE_RECENT_YEARS = 3  # PROPOSED: a comment written within this many years of collection is "recent"; older is "old post"
+OLD_SKINCARE_POST_MAX_VOICE = "medium"  # PROPOSED: formulas change, so an old skincare comment can't be high
+
+# The comment's words.
+ENTHUSIAST_MIN_TERMS = 3  # PROPOSED: using this many of the category's specialist words shows an "enthusiast"
+LONG_TERM_MIN_MONTHS = 12  # from the guide: long-term use is a year or more
