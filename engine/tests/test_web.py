@@ -89,12 +89,15 @@ def test_the_json_has_the_documented_shape(tmp_path):
     assert set(data["query"]) == {"status", "category", "product_type", "question", "message"}
     # Changed on purpose 9 Oct 2026 (decision 11, budgets): each pick has its price, and "left_out" counts the
     # products over the request's budget.
-    assert set(data["left_out"]) == {"other_type", "loose", "over_budget"}
+    # Changed on purpose 9 Oct 2026 (availability, Noemi's note): "left_out" also counts the products no longer sold.
+    assert set(data["left_out"]) == {"other_type", "loose", "over_budget", "unavailable"}
     assert set(data["answer"]) == {"category", "product_type", "picks", "look_for", "skip", "message",
                                    "needs_more_threads", "quotes_dropped"}
     # Changed on purpose 9 Oct 2026 (care tips, Noemi): each pick also has its "care" list, "How to make it last".
+    # Changed on purpose 9 Oct 2026 (availability, Noemi's note): each pick also says where it is sold, "availability".
     assert set(data["answer"]["picks"][0]) == {"rank", "product_key", "name", "reason", "support", "quotes",
-                                               "downsides", "disagreement", "score", "breakdown", "price", "care"}
+                                               "downsides", "disagreement", "score", "breakdown", "price",
+                                               "availability", "care"}
     assert set(data["answer"]["picks"][0]["quotes"][0]) == {"text", "comment_id", "url", "badges"}
     assert set(data["answer"]["picks"][0]["price"]) == {"text", "amount", "currency", "shop", "url", "checked_on",
                                                         "budget_status", "budget_note"}

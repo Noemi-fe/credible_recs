@@ -390,3 +390,12 @@ CHANGE_WORDS = (
     "died", "broke", "stopped", "fail", "reformulat", "new formula", "change", "changing", "no longer", "anymore",
     "any more", "used to", "update", "edit", "developed a reaction", "developed an allergy",
 )
+
+# --- Upkeep and availability (9 Oct 2026) ---
+# The monthly live check (`python -m engine.library check-live`) reads threads again through Bright Data (free tier:
+# BRIGHT_DATA_MONTHLY_RECORDS records a month) instead of Parse, whose free credits are nearly used up this month.
+# Decided 9 Oct 2026. `--reader parse` still reads through Parse (2 credits a thread), as before.
+LIVE_CHECK_READER = "bright_data"
+# Chosen by Claude (a technical value, reported to Noemi): Bright Data records a live-check run leaves untouched when no
+# --max-records is given (out of the month's 5,000), for backup reads and urgent re-reads.
+LIVE_CHECK_RECORD_RESERVE = 300

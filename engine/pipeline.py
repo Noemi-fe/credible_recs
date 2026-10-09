@@ -27,6 +27,9 @@ Every step is a module of its own; this file only passes each one's output to th
 - with a budget in the request (a max and a currency), a product whose price (engine/prices.py, data/prices.json) is
   known and above the max is left out (Noemi's decision 11). A product with no known price, a price in another
   currency, or a price checked over PRICE_MAX_AGE_DAYS ago is kept, and its answer says so.
+- a product the price list says is no longer sold ("available": false; engine.prices.find_availability) is left out,
+  budget or not (Noemi's note of 9 Oct 2026: "are we making sure the products we recommend exist?"). A product with no
+  availability check is kept, and its answer says so. Brand picks are never priced or checked (named in not_priced).
 - only threads checked live on Reddit in the last LIVE_CHECK_SHOWN_DAYS (14) days are quoted (Noemi, 9 Oct 2026): a
   thread read from Arctic Shift's archive may still hold comments people deleted on Reddit since, so it counts from
   the day a live check read it on Reddit (checked_live_at); a thread read through Parse counts from the day it was
@@ -35,7 +38,7 @@ Every step is a module of its own; this file only passes each one's output to th
   on the result (waiting_live_check) and, like threads not extracted yet, take no reading slot.
   `python -m engine.library check-live` reads them again. Gold-set threads (read_from "gold", or the pipeline pointed
   at data/gold) are exempt. LIVE_CHECK_REQUIRED = False turns the rule off, for an experiment only.
-The three lists of products left out are kept on the result, so nothing is dropped silently; so are the "what to
+The lists of products left out are kept on the result, so nothing is dropped silently; so are the "what to
 look for" notes that name no kind (notes_without_kind, engine.group_kinds step 5), which the ranking and the answer
 can't use. threads_quoted names the threads the answer's quotes come from: the ones whose live checks matter most.
 
@@ -94,7 +97,7 @@ from engine.library import DEFAULT_LIBRARY_DIR, checked_live_within
 from engine.match_products import known_aliases, normalize_name, same_product
 from engine.models import Comment, Thread
 from engine.needs import Need, needs_met, request_needs
-from engine.prices import Price, PriceCheck, check_price, find_price, load_prices
+from engine.prices import Price, PriceCheck, check_price, find_availability, find_price, load_prices
 from engine.profiles import ProfileStore, StoredProfiles, with_profiles
 from engine.query import PRODUCT_TYPES, ParsedQuery, parse_query
 from engine.rank import KindNote, RankingResult, ScoredMention, rank_products
@@ -112,8 +115,10 @@ class PipelineResult:
     left_out_loose: list[str] = field(default_factory=list)  # brand or line names
     not_extracted: list[str] = field(default_factory=list)  # ids of threads about the product the AI hasn't read yet
     notes_without_kind: list[str] = field(default_factory=list)  # the "about" of each kept note that names no kind
-    left_out_over_budget: list[str] = field(default_factory=list)
-    live_dropped: dict[str, int] = field(default_factory=dict)  # comments dropped by the live check, by reason  # product names, with a known price above the max
+    left_out_over_budget: list[str] = field(default_factory=list)  # product names, with a known price above the max
+    left_out_unavailable: list[str] = field(default_factory=list)  # product names the price list says aren't sold now
+    not_priced: list[str] = field(default_factory=list)  # brand or line names ranked (decision 9): never priced
+    live_dropped: dict[str, int] = field(default_factory=dict)  # comments dropped by the live check, by reason
     # Ids of extracted threads about the product not checked live on Reddit in the last LIVE_CHECK_SHOWN_DAYS: not
     # used until `python -m engine.library check-live` reads them again (Noemi, 9 Oct 2026).
     waiting_live_check: list[str] = field(default_factory=list)
@@ -347,10 +352,14 @@ def _another_type_by_name(group: ProductGroup, query: ParsedQuery) -> bool:
 
 def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[Price], today: date,
                    result: PipelineResult) -> tuple[list[ProductGroup], dict[str, PriceCheck]]:
-    """Each product's price, checked against the request's budget: the groups kept, and {product key: PriceCheck}.
+    """Each product's price, checked against the request's budget, and whether it is still sold: the groups kept, and
+    {product key: PriceCheck}.
 
+    A product the price list says is no longer sold is left out first, whatever its price (named on the result as
+    unavailable); one it says is sold carries that entry (PriceCheck.availability), for the answer's "Sold at" line.
     A known, recent price above the budget's max leaves the product out (named on the result). A brand pick has no
-    single price, so it is never priced and never left out for its price.
+    single price, so it is never priced or checked for availability, and never left out for either (named in
+    not_priced).
     """
     budget = query.constraints.budget
     if budget is not None and budget.max is not None and budget.currency is None:
@@ -360,13 +369,19 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
     currency = budget.currency if budget else None
     kept, checks = [], {}
     for group in groups:
+        if group.loose:
+            result.not_priced.append(group.name)
         price = None if group.loose else find_price(group.name, group.category, prices, currency)
+        sold = None if group.loose else find_availability(group.name, group.category, prices)
+        if sold is not None and sold.available is False:
+            result.left_out_unavailable.append(group.name)
+            continue
         check = check_price(price, budget, today)
         if check.status == "over":
             result.left_out_over_budget.append(group.name)
         else:
             kept.append(group)
-            checks[group.key] = check
+            checks[group.key] = replace(check, availability=sold)
     return kept, checks
 
 
@@ -479,7 +494,8 @@ def main(argv: list[str]) -> int:
               f"{len(result.left_out_as_other_type)}; brand or line names left out: {len(result.left_out_loose)}; "
               f"threads not extracted yet: {len(result.not_extracted)}; threads waiting for a live check: "
               f"{len(result.waiting_live_check)}; notes naming no kind: "
-              f"{len(result.notes_without_kind)}; over budget: {len(result.left_out_over_budget)})")
+              f"{len(result.notes_without_kind)}; over budget: {len(result.left_out_over_budget)}; no longer sold: "
+              f"{len(result.left_out_unavailable)})")
     return 0
 
 

@@ -14,12 +14,15 @@ Four jobs:
   Each product type gets a mix of thread kinds (Noemi, 7 Oct 2026), because each kind feeds a different later step:
   6 threads, 3 asking for advice (the picks), 1 about long-term use (the strongest evidence) and 2 warnings (the
   "skip these" list and the downsides), at most 2 from one subreddit. `--only warning` tops up one kind.
-- check-live: reads again on Reddit, through Parse, the threads that need a live check (Noemi, 9 Oct 2026). An
-  archive may still hold comments people later deleted on Reddit, so answers only quote threads checked live in the
-  last 14 days (engine/pipeline.py). First the threads answers quote, if not checked in 14 days; then every other
-  thread read from the archive, if never checked or not in 30 days. The live copy replaces the saved one, and the
-  AI's extraction is kept: its checks then drop any mention whose comment was deleted or whose quote was edited.
-  Archive text not checked live within 37 days is removed from the library (ids and titles stay, to read it again).
+- check-live: reads again on Reddit the threads that need a live check (Noemi, 9 Oct 2026): through Bright Data by
+  default, for free (LIVE_CHECK_READER, 9 Oct 2026), or through Parse with `--reader parse`. An archive may still
+  hold comments people later deleted on Reddit, so answers only quote threads checked live in the last 14 days
+  (engine/pipeline.py). First the threads answers quote, if not checked in 14 days; then every other thread read
+  from the archive or through Bright Data, if never checked or not in 30 days. Parse's copy replaces the saved one;
+  Bright Data's is merged into it, because Bright Data never returns replies to replies (merge_bright_data_read).
+  Either way the AI's extraction is kept: its checks then drop any mention whose comment was deleted or whose quote
+  was edited. Archive text not checked live within 37 days is removed from the library (ids and titles stay, to read
+  it again).
 - refresh: fetches again every saved thread that is due, so comments deleted on Reddit since then lose their text
   in the library too (Noemi, 7 Oct 2026): 30 days after it was saved, or 90 for a thread posted more than 180 days
   ago, which Reddit has archived, so only deletions can still change it. It never deletes a whole thread on its
@@ -32,8 +35,8 @@ What is saved:
   in place of its text, and no author. A stub holds nothing the writer took back, so keeping it respects the
   deletion rule, and replies to it still point to a comment in the same file, which the thread file checks
   (engine.gold) require. Stubs are dropped when the library is read: LocalSource leaves them out.
-- Each thread says where it was read (read_from: "parse" or "arctic_shift") and when Reddit itself was last read
-  for it (checked_live_at). Files saved before 9 Oct 2026 have neither: they were read through Parse.
+- Each thread says where it was read (read_from: "parse", "arctic_shift" or "bright_data") and when Reddit itself was
+  last read for it (checked_live_at). Files saved before 9 Oct 2026 have neither: they were read through Parse.
 - Unlike the hand-checked gold set, the library is managed by these commands, so saving a thread again
   replaces the older copy (except an archive copy over one read on Reddit, as above).
 
@@ -44,8 +47,11 @@ Credits (Parse free plan: 200 a month, 2 per call):
   nothing for calls still in the 48-hour cache.
 - add --reader parse --only warning --limit 1 costs 2 (one thread read), or nothing when no warning thread is found.
   If Arctic Shift finds nothing usable at all, Parse's search is tried: 4 more, even if it finds no warning either.
-- check-live costs 2 per thread read again, and stops at its credit cap: by default what's left this month minus a
-  reserve of 20 (LIVE_CHECK_CREDIT_RESERVE), or `--max-credits N`.
+- check-live through Bright Data (the default) costs no Parse credits, but Bright Data records (free tier: 5,000 a
+  month): 1 for the post and 1 per top-level comment. It stops before a thread could take it past its record cap: by
+  default what's left this month minus a reserve of 300 (LIVE_CHECK_RECORD_RESERVE), or `--max-records N`.
+- check-live --reader parse costs 2 per thread read again, and stops at its credit cap: by default what's left this
+  month minus a reserve of 20 (LIVE_CHECK_CREDIT_RESERVE), or `--max-credits N`.
 - refresh costs 2 per thread due, nothing for the others. Keeping N threads costs at most 2N credits a month,
   less once they are archived (every 90 days).
 
@@ -53,8 +59,10 @@ Command line:
     python -m engine.library add [--reader archive|parse] [--only warning|advice|long_term] [--limit N] "<request>"
                                                find and save the threads for one request (6 by default, as a mix;
                                                with --only, threads of that kind only); quotes are optional
-    python -m engine.library check-live [--max-credits N]
-                                               read again on Reddit the threads that need a live check
+    python -m engine.library check-live [--max-credits N] [--max-records N] [--reader bright_data|parse]
+                                               read again on Reddit the threads that need a live check: through
+                                               Bright Data by default (--max-records caps its records), or through
+                                               Parse with --reader parse (--max-credits caps its credits)
     python -m engine.library refresh           fetch again the threads that are due (30 days, archived threads 90)
     python -m engine.library coverage          saved threads per product type, and of each kind
 """
@@ -68,9 +76,11 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 from engine.arctic_shift import ArcticShiftClient, ArcticShiftError
+from engine.bright_data import BrightDataClient, BrightDataError
 from engine.config import (
     ARCHIVE_TEXT_KEPT_DAYS,
     ARCHIVE_TEXT_RETENTION,
+    BRIGHT_DATA_MONTHLY_RECORDS,
     LIBRARY_ARCHIVED_REFRESH_DAYS,
     LIBRARY_MIX,
     LIBRARY_READER,
@@ -78,6 +88,8 @@ from engine.config import (
     LIBRARY_THREADS_PER_PRODUCT,
     LIVE_CHECK_ALL_DAYS,
     LIVE_CHECK_CREDIT_RESERVE,
+    LIVE_CHECK_READER,
+    LIVE_CHECK_RECORD_RESERVE,
     LIVE_CHECK_SHOWN_DAYS,
     PARSE_CREDITS_PER_CALL,
     PARSE_MONTHLY_CREDITS,
@@ -333,19 +345,28 @@ def checked_live_within(thread: Thread, days: int, today: date) -> bool:
     return last is not None and (today - last.date()).days <= days
 
 
+LIVE_READERS = ("bright_data", "parse")  # how check-live can read a thread again on Reddit
+
+
 @dataclass
 class LiveCheckResult:
-    checked: list[str] = field(default_factory=list)  # threads read again on Reddit and replaced, in the order read
+    reader: str = "parse"  # how the threads were read again: "bright_data" or "parse"
+    checked: list[str] = field(default_factory=list)  # threads read again on Reddit and saved, in the order read
     shown_checked: list[str] = field(default_factory=list)  # of those, the ones answers quote from
     dropped_comments: int = 0  # comments readable in the old copies that the live ones no longer have readable
     posts_gone: list[str] = field(default_factory=list)  # posts now deleted or removed on Reddit: kept, for Noemi to decide
-    failed: dict[str, str] = field(default_factory=dict)  # thread id -> what Parse said; those files are left as they were
-    stopped: bool = False  # True when 3 reads failed in a row and the run ended early
-    capped: bool = False  # True when the credit cap ended the run
+    failed: dict[str, str] = field(default_factory=dict)  # thread id -> what the reader said; those files left as they were
+    stopped: bool = False  # True when 3 reads failed in a row, or Bright Data refused the account: the run ended early
+    account_problem: bool = False  # True when Bright Data refused the account (its key, or no records left)
+    capped: bool = False  # True when the credit cap (Parse) or the record cap (Bright Data) ended the run
     not_tried: list[str] = field(default_factory=list)  # threads still due when the run ended, left as they were
-    credit_cap: int = 0  # the most this run could spend
-    credits_used: int = 0  # by this run
-    credits_left: int = 0  # this month, after the run
+    credit_cap: int = 0  # Parse: the most this run could spend
+    credits_used: int = 0  # Parse: by this run
+    credits_left: int = 0  # Parse: this month, after the run
+    record_cap: int = 0  # Bright Data: the most records this run could use
+    records_used: int = 0  # Bright Data: by this run
+    records_left: int = 0  # Bright Data: this month, after the run
+    replies_kept: int = 0  # Bright Data: readable replies to replies kept as they were (it never returns them)
     text_removed: list[str] = field(default_factory=list)  # archive threads whose text was removed (retention)
     waiting: int = 0  # threads read from the archive and never checked live, after the run
 
@@ -356,29 +377,68 @@ def check_live(
     shown: Iterable[str] = (),
     max_credits: int | None = None,
     now: datetime | None = None,
+    reader: str | None = None,
+    bright_data: BrightDataClient | None = None,
+    max_records: int | None = None,
 ) -> LiveCheckResult:
-    """Reads again on Reddit, through Parse, the saved threads that need a live check, then applies retention.
+    """Reads again on Reddit the saved threads that need a live check, then applies retention.
+
+    How (`reader`): "bright_data" reads through Bright Data, for free (records from its monthly allowance); "parse"
+    reads through Parse (2 credits a thread). None means LIVE_CHECK_READER (Bright Data, decided 9 Oct 2026), except
+    when only a Parse `client` is given, with no `bright_data` client: then Parse, as before 9 Oct 2026. `client` is the
+    Parse client and `bright_data` the Bright Data one; the one needed is built when not given.
 
     Which threads, in this order (live_check_order):
     1. the threads answers quote (`shown`, thread ids; the command line works them out from the blind-test questions),
        when Reddit wasn't read for them in the last LIVE_CHECK_SHOWN_DAYS (14) days;
-    2. every other thread read from the archive, never checked live or not in the last LIVE_CHECK_ALL_DAYS (30) days.
+    2. every other thread read from the archive or through Bright Data, never checked live or not in the last
+       LIVE_CHECK_ALL_DAYS (30) days.
     Within each, threads never checked come first, then the oldest checks. Gold-set threads are never checked here.
 
-    Each read costs 2 credits (nothing if Parse's 48-hour cache has it). The run stops before a read would take it past
-    its credit cap: `max_credits`, never more than what's left this month; by default what's left minus a reserve of
-    LIVE_CHECK_CREDIT_RESERVE (20). It also stops after 3 failures in a row (Parse down, the key refused, the credits
-    gone); a single failure is reported and the run goes on. The live copy replaces the saved one, like refresh, and
-    the AI's extraction file is kept: engine.extract's checks then drop any mention whose comment is gone or whose
-    quote no longer matches (an edit). No thread is ever deleted; one whose post is gone from Reddit is reported.
+    Through Parse, each read costs 2 credits (nothing if Parse's 48-hour cache has it). The run stops before a read
+    would take it past its credit cap: `max_credits`, never more than what's left this month; by default what's left
+    minus a reserve of LIVE_CHECK_CREDIT_RESERVE (20). Parse's live copy replaces the saved one, like refresh.
+
+    Through Bright Data, a read costs 1 record for the post and 1 per top-level comment (nothing if its 48-hour cache
+    has it). Before each read, the most it could cost (the post, and one record per comment Reddit counted when the
+    thread was saved) must fit in the run's record cap: `max_records`, never more than what's left this month; by
+    default what's left minus a reserve of LIVE_CHECK_RECORD_RESERVE (300). Bright Data's copy is merged into the saved
+    one (merge_bright_data_read), since it never returns replies to replies. If Bright Data refuses the account (the
+    key, or no records left), the run stops at once: every other thread would fail the same way.
+
+    Either way, the run also stops after 3 failures in a row; a single failure is reported and the run goes on. The AI's
+    extraction file is kept: engine.extract's checks then drop any mention whose comment is gone or whose quote no
+    longer matches (an edit). No thread is ever deleted; one whose post is gone from Reddit is reported.
 
     Retention, last (ARCHIVE_TEXT_RETENTION): a thread read from the archive whose last live check, or whose reading if
     it was never checked, is more than ARCHIVE_TEXT_KEPT_DAYS (37) days old loses its text (_without_text).
     """
     now = now or datetime.now(UTC)
-    client = client if client is not None else ParseRedditClient()
-    result = LiveCheckResult()
+    if reader is None:
+        reader = "parse" if client is not None and bright_data is None else LIVE_CHECK_READER
+    if reader not in LIVE_READERS:
+        raise ValueError(f"reader must be one of {', '.join(LIVE_READERS)}, not {reader!r}")
+    result = LiveCheckResult(reader=reader)
     due, shown_due = live_check_order(_saved_threads(folder), set(shown), now.date())
+    if reader == "parse":
+        parse = client if client is not None else ParseRedditClient()
+        _read_through_parse(parse, due, shown_due, max_credits, folder, result)
+    else:
+        _read_through_bright_data(bright_data if bright_data is not None else BrightDataClient(), due, shown_due,
+                                  max_records, folder, result)
+
+    for thread in _saved_threads(folder):
+        if ARCHIVE_TEXT_RETENTION and _past_retention(thread, now.date()) and _has_text(thread):
+            _save(_without_text(thread), folder)
+            result.text_removed.append(thread.id)
+        if thread.read_from == "arctic_shift" and thread.last_checked_live() is None:
+            result.waiting += 1
+    return result
+
+
+def _read_through_parse(client: ParseRedditClient, due: list[Thread], shown_due: set[str], max_credits: int | None,
+                        folder: Path, result: LiveCheckResult) -> None:
+    """check-live's reads through Parse: each live copy replaces the saved one (see check_live)."""
     used_before = client.credits_used_this_month()
     left = max(0, PARSE_MONTHLY_CREDITS - used_before)
     result.credit_cap = max(0, left - LIVE_CHECK_CREDIT_RESERVE) if max_credits is None else max(0, min(max_credits, left))
@@ -400,28 +460,136 @@ def check_live(
                 break
             continue
         failures_in_a_row = 0
-        result.checked.append(old.id)
-        if old.id in shown_due:
-            result.shown_checked.append(old.id)
-        usable_before = {c.id for c in old.comments if c.status == "ok"}
-        usable_now = {c.id for c in new.comments if c.status == "ok"}
-        result.dropped_comments += len(usable_before - usable_now)
-        if new.body.strip() in PLACEHOLDERS.values():
-            result.posts_gone.append(old.id)
+        _note_checked(old, new, shown_due, result)
 
     result.credits_used = client.credits_used_this_month() - used_before
     result.credits_left = max(0, PARSE_MONTHLY_CREDITS - client.credits_used_this_month())
-    for thread in _saved_threads(folder):
-        if ARCHIVE_TEXT_RETENTION and _past_retention(thread, now.date()) and _has_text(thread):
-            _save(_without_text(thread), folder)
-            result.text_removed.append(thread.id)
-        if thread.read_from == "arctic_shift" and thread.last_checked_live() is None:
-            result.waiting += 1
-    return result
+
+
+def _read_through_bright_data(client: BrightDataClient, due: list[Thread], shown_due: set[str], max_records: int | None,
+                              folder: Path, result: LiveCheckResult) -> None:
+    """check-live's reads through Bright Data: each read is merged into the saved copy (see check_live)."""
+    used_before = client.records_used_this_month()
+    left = max(0, BRIGHT_DATA_MONTHLY_RECORDS - used_before)
+    default_cap = max(0, left - LIVE_CHECK_RECORD_RESERVE)
+    result.record_cap = default_cap if max_records is None else max(0, min(max_records, left))
+
+    failures_in_a_row = 0
+    for n, old in enumerate(due):
+        if client.records_used_this_month() - used_before + _most_records(old) > result.record_cap:
+            result.capped = True
+            result.not_tried = [t.id for t in due[n:]]
+            break
+        try:
+            fresh = client.get_thread(old.url)
+        except (BrightDataError, ValueError) as e:  # ValueError: a link or subreddit Bright Data can't be asked about
+            result.failed[old.id] = str(e)
+            failures_in_a_row += 1
+            result.account_problem = getattr(e, "account_problem", False)
+            if failures_in_a_row == FAILURES_IN_A_ROW_TO_STOP or result.account_problem:
+                result.stopped = True
+                result.not_tried = [t.id for t in due[n + 1:]]
+                break
+            continue
+        failures_in_a_row = 0
+        merged, kept = merge_bright_data_read(old, fresh, post_read=client.last_read.post_read)
+        result.replies_kept += kept
+        _note_checked(old, _save(merged, folder), shown_due, result)
+
+    result.records_used = client.records_used_this_month() - used_before
+    result.records_left = max(0, BRIGHT_DATA_MONTHLY_RECORDS - client.records_used_this_month())
+
+
+def _most_records(thread: Thread) -> int:
+    """The most a Bright Data read of the thread could cost: 1 record for the post, and 1 per top-level comment, of
+    which there are at most as many as the comments Reddit counted when it was saved (at least 1 is assumed)."""
+    return 1 + max(thread.num_comments, 1)
+
+
+def _note_checked(old: Thread, new: Thread, shown_due: set[str], result: LiveCheckResult) -> None:
+    """Records one thread read again: its id, the comments no longer readable, and whether its post is gone."""
+    result.checked.append(old.id)
+    if old.id in shown_due:
+        result.shown_checked.append(old.id)
+    usable_before = {c.id for c in old.comments if c.status == "ok"}
+    usable_now = {c.id for c in new.comments if c.status == "ok"}
+    result.dropped_comments += len(usable_before - usable_now)
+    if new.body.strip() in PLACEHOLDERS.values():
+        result.posts_gone.append(old.id)
+
+
+def merge_bright_data_read(stored: Thread, fresh: Thread, post_read: bool = True) -> tuple[Thread, int]:
+    """The library's new copy of a thread that Bright Data has just read again, and how many readable replies to
+    replies it keeps from the stored copy without a live check.
+
+    Bright Data returns a thread as Reddit shows it now, but only its top-level comments and their direct replies,
+    never replies to replies (seen on 9 Oct 2026). So its copy can't simply replace the stored one, as Parse's does: a
+    reply to a reply would look deleted when it is just not returned. The two copies are merged, comment by comment:
+    - a comment Bright Data returned replaces the stored one, as Reddit shows it now: edited text, new score; one now
+      deleted or removed becomes a stub ("[deleted]" or "[removed]", no author), as the library keeps them;
+    - a stored top-level comment or direct reply that Bright Data did NOT return is gone from Reddit, since it would
+      have been returned if it were still there: it is treated as deleted, and kept only as a stub ("[deleted]", no
+      author), so the replies under it still have their parent in the file;
+    - a stored reply to a reply is never returned, so its absence proves nothing: it is kept exactly as it was. (Before
+      an answer shows a quote, its comment is read through Reddit's embed page anyway: engine/live_check.py.)
+    - a comment Bright Data returned that wasn't stored (written since) is added at the end.
+    The post (title, text, writer, score, Reddit's comment count) is Bright Data's, unless it couldn't read the post
+    (`post_read` False): then the stored post is kept, since that failure says nothing about the post either.
+
+    Where it was read (read_from): "bright_data" when everything readable in the new copy came from this read. When
+    readable replies to replies, or the post, were kept from the stored copy, the stored read_from stays (an archive
+    thread stays "arctic_shift"), since that text was never read live: the thread then stays in the monthly check and,
+    for an archive thread, under retention. Either way, checked_live_at and collected_at become the time Bright Data
+    read it, so answers may quote it for the next 14 days.
+    """
+    returned = {c.id: c for c in fresh.comments}
+    by_id = {c.id: c for c in stored.comments}
+    comments, kept = [], 0
+    for comment in stored.comments:
+        if comment.id in returned:
+            comments.append(returned[comment.id])
+        elif _depth(comment, by_id) >= 2:
+            comments.append(comment)
+            kept += comment.status == "ok"
+        else:
+            comments.append(_as_deleted(comment))
+    comments += [c for c in fresh.comments if c.id not in by_id]
+    post = fresh if post_read else stored
+    unchecked = kept > 0 or not post_read
+    merged = stored.model_copy(update={
+        "title": post.title, "body": post.body, "author": post.author, "created_at": post.created_at,
+        "score": post.score, "num_comments": post.num_comments, "url": post.url,
+        "comments": comments,
+        "collected_at": fresh.collected_at,
+        "checked_live_at": fresh.checked_live_at or fresh.collected_at,
+        "read_from": stored.read_from if unchecked else "bright_data",
+    })
+    return merged, kept
+
+
+def _depth(comment, by_id: dict) -> int:
+    """0 for a top-level comment, 1 for a direct reply, 2 or more for a reply to a reply (a parent missing from the
+    thread ends the count)."""
+    depth, seen = 0, set()
+    while comment.parent_id is not None and comment.parent_id in by_id and comment.id not in seen:
+        seen.add(comment.id)
+        comment, depth = by_id[comment.parent_id], depth + 1
+    return depth
+
+
+def _as_deleted(comment):
+    """A comment treated as deleted: a stub with no text and no author. A stub already stays as it is."""
+    if comment.status != "ok":
+        return comment
+    return comment.model_copy(update={"body": PLACEHOLDERS["deleted"], "author": None, "status": "deleted"})
 
 
 def live_check_order(threads: list[Thread], shown: set[str], today: date) -> tuple[list[Thread], set[str]]:
-    """The threads check-live reads, in order (see check_live), and the ids of those that answers quote."""
+    """The threads check-live reads, in order (see check_live), and the ids of those that answers quote.
+
+    Threads read through Bright Data are read again monthly like archive threads (9 Oct 2026): Bright Data is the
+    free monthly re-reader, so their deletions are caught without spending Parse credits.
+    """
     def oldest_first(thread: Thread):
         last = thread.last_checked_live()
         return (last is not None, last or thread.collected_at, thread.id)  # never checked first
@@ -429,9 +597,9 @@ def live_check_order(threads: list[Thread], shown: set[str], today: date) -> tup
     quoted = [t for t in threads if t.id in shown and t.read_from != "gold"
               and not checked_live_within(t, LIVE_CHECK_SHOWN_DAYS, today)]
     quoted_ids = {t.id for t in quoted}
-    archive = [t for t in threads if t.read_from == "arctic_shift" and t.id not in quoted_ids
+    monthly = [t for t in threads if t.read_from in ("arctic_shift", "bright_data") and t.id not in quoted_ids
                and not checked_live_within(t, LIVE_CHECK_ALL_DAYS, today)]
-    return sorted(quoted, key=oldest_first) + sorted(archive, key=oldest_first), quoted_ids
+    return sorted(quoted, key=oldest_first) + sorted(monthly, key=oldest_first), quoted_ids
 
 
 def _past_retention(thread: Thread, today: date) -> bool:
@@ -507,16 +675,21 @@ def main(
     folder: Path = DEFAULT_LIBRARY_DIR,
     finder: ArcticShiftClient | None = None,
     shown: set[str] | None = None,
+    bright_data: BrightDataClient | None = None,
 ) -> int:
-    """`client`, `folder`, `finder` and `shown` can be swapped for fakes, which is how the tests run the command line.
+    """`client`, `folder`, `finder`, `shown` and `bright_data` can be swapped for fakes, which is how the tests run the
+    command line.
 
-    A real run (no client given) finds and reads threads with Arctic Shift. A test that passes its own Parse client
-    gets a finder only if it passes one too, so tests never reach the network. `shown`: the threads answers quote,
-    for check-live; None works them out from the blind-test questions (engine.slice_eval.threads_behind_answers).
+    A real run (no client given) finds and reads threads with Arctic Shift, and check-live reads through Bright Data
+    unless --reader parse is typed. A test that passes its own Parse client gets a finder, or a Bright Data client,
+    only if it passes one too, so tests never reach the network: without a Bright Data client, its check-live reads
+    through Parse unless told otherwise. `shown`: the threads answers quote, for check-live; None works them out from
+    the blind-test questions (engine.slice_eval.threads_behind_answers).
     """
     command = argv[0] if argv else None
     add_options = _add_options(argv[1:]) if command == "add" else None
-    check_options = _check_live_options(argv[1:]) if command == "check-live" else None
+    default_reader = LIVE_CHECK_READER if client is None or bright_data is not None else "parse"
+    check_options = _check_live_options(argv[1:], default_reader) if command == "check-live" else None
     if (command not in ("add", "check-live", "refresh", "coverage") or (command == "add" and add_options is None)
             or (command == "check-live" and check_options is None)):
         print(__doc__)
@@ -525,6 +698,8 @@ def main(
     if client is None:
         client = ParseRedditClient()
         finder = finder or ArcticShiftClient()
+        if command == "check-live" and check_options[2] == "bright_data":
+            bright_data = bright_data or BrightDataClient()
     try:
         if command == "add":
             request, only, limit, reader = add_options
@@ -537,13 +712,14 @@ def main(
                 from engine.slice_eval import threads_behind_answers
 
                 shown = threads_behind_answers(library_dir=folder, profiles=cached_profiles())
-            (max_credits,) = check_options
-            status = _print_check_live(check_live(client, folder, shown, max_credits=max_credits))
+            max_credits, max_records, reader = check_options
+            status = _print_check_live(check_live(client, folder, shown, max_credits=max_credits, reader=reader,
+                                                  bright_data=bright_data, max_records=max_records))
         elif command == "refresh":
             status = _print_refresh(refresh(client, folder))
         else:
             status = _print_coverage(coverage(folder), coverage_by_kind(folder))
-    except (ParseAPIError, ArcticShiftError, GoldSetError, ExtractionError) as e:
+    except (ParseAPIError, ArcticShiftError, BrightDataError, GoldSetError, ExtractionError) as e:
         print(e)
         status = 1
     print(f"Parse credits used this month: {client.credits_used_this_month()} of {PARSE_MONTHLY_CREDITS} (the parse.bot dashboard has the exact figure)")
@@ -583,18 +759,33 @@ def _add_options(words: list[str]) -> tuple[str, str | None, int, str] | None:
     return (text, only, limit, reader) if text else None
 
 
-def _check_live_options(words: list[str]) -> tuple[int | None] | None:
-    """(the --max-credits typed after `check-live`, or None for the default cap), or None when the words make no sense.
+def _check_live_options(words: list[str],
+                        default_reader: str = LIVE_CHECK_READER) -> tuple[int | None, int | None, str] | None:
+    """(--max-credits, --max-records, --reader) typed after `check-live`, or None when the words make no sense.
 
-    Typed as `--max-credits 40` or `--max-credits=40`; 0 is allowed (no reads: only retention runs).
+    Each can be typed once, as `--max-credits 40` or `--max-credits=40`; a cap left out is None (the default cap), and
+    0 is allowed (no reads: only retention runs). Without --reader, `default_reader`. A cap must fit the reader: Parse
+    spends credits (--max-credits), Bright Data records (--max-records).
     """
-    if not words:
-        return (None,)
-    name, equals, value = words[0].partition("=")
-    if name != "--max-credits" or len(words) != (1 if equals else 2):
+    options: dict[str, str] = {}
+    words = list(words)
+    while words:
+        name, equals, value = words.pop(0).partition("=")
+        if name not in ("--max-credits", "--max-records", "--reader") or name in options:
+            return None
+        if not equals:
+            if not words:
+                return None
+            value = words.pop(0)
+        options[name] = value
+    reader = options.get("--reader", default_reader)
+    caps = [options.get("--max-credits"), options.get("--max-records")]
+    if reader not in LIVE_READERS or any(cap is not None and not cap.isdigit() for cap in caps):
         return None
-    value = value if equals else words[1]
-    return (int(value),) if value.isdigit() else None
+    max_credits, max_records = (int(cap) if cap is not None else None for cap in caps)
+    if (reader == "parse" and max_records is not None) or (reader == "bright_data" and max_credits is not None):
+        return None
+    return max_credits, max_records, reader
 
 
 KIND_NAMES = {"advice": "advice", "long_term": "long-term use", "warning": "warning"}
@@ -645,16 +836,29 @@ def _print_refresh(result: RefreshResult) -> int:
 
 
 def _print_check_live(result: LiveCheckResult) -> int:
+    bright_data = result.reader == "bright_data"
     checked = f": {', '.join(result.checked)}" if result.checked else ""
-    print(f"Checked live on Reddit through Parse: {len(result.checked)} thread(s){checked}.")
+    through = "Bright Data" if bright_data else "Parse"
+    print(f"Checked live on Reddit through {through}: {len(result.checked)} thread(s){checked}.")
     if result.shown_checked:
         print(f"  quoted in answers: {', '.join(result.shown_checked)}")
     print(f"Comments gone from the live copies (deleted, removed or no longer there): {result.dropped_comments}")
-    print(f"Credits: {result.credits_used} used by this run (cap {result.credit_cap}); {result.credits_left} left this month.")
+    if bright_data:
+        print("Replies to replies kept as they were (Bright Data never returns them, so they aren't taken as deleted): "
+              f"{result.replies_kept}")
+        print(f"Bright Data records: {result.records_used} used by this run (cap {result.record_cap}); "
+              f"{result.records_left} left this month.")
+    else:
+        print(f"Credits: {result.credits_used} used by this run (cap {result.credit_cap}); {result.credits_left} left this month.")
     if result.posts_gone:
         print(f"Post deleted or removed on Reddit, thread kept for you to decide: {', '.join(result.posts_gone)}")
     if result.not_tried:
-        why = "credit cap reached" if result.capped else f"stopped after {FAILURES_IN_A_ROW_TO_STOP} failures in a row"
+        if result.capped:
+            why = "record cap reached" if bright_data else "credit cap reached"
+        elif result.account_problem:
+            why = "Bright Data refused the account: its key, or no records left"
+        else:
+            why = f"stopped after {FAILURES_IN_A_ROW_TO_STOP} failures in a row"
         print(f"Not checked this time ({why}), saved copies unchanged: {', '.join(result.not_tried)}")
     if result.failed:
         print("Failed, saved copies unchanged:")
