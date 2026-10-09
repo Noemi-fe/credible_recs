@@ -39,11 +39,14 @@ def entry(**overrides) -> dict:
 
 # --- The file ---
 
-def test_the_committed_price_list_is_valid_and_starts_empty():
-    # Claude fills it later with real look-ups; until then there is nothing in it.
+def test_the_committed_price_list_is_valid():
+    # Changed 9 Oct 2026: the list started empty and now holds prices checked on each shop's own page. Every entry
+    # must load (load_prices refuses a bad shop link or date), link to the shop over https and be in pounds.
     assert DEFAULT_PRICES.name == "prices.json" and DEFAULT_PRICES.parent.name == "data"
-    assert json.loads(DEFAULT_PRICES.read_text(encoding="utf-8")) == {"prices": []}
-    assert load_prices() == []
+    raw = json.loads(DEFAULT_PRICES.read_text(encoding="utf-8"))["prices"]
+    loaded = load_prices()
+    assert len(loaded) == len(raw)
+    assert all(p.url.startswith("https://") and p.currency == "GBP" and p.checked_on for p in loaded)
 
 
 def test_a_price_list_loads_with_its_shop_link_and_date(tmp_path):
