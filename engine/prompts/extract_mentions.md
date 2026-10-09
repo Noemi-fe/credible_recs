@@ -1,10 +1,11 @@
-Version: extract-v5
+Version: extract-v6
 
 # Finding product mentions in one Reddit thread
 
 You read one Reddit thread saved as JSON (the shape of engine.models.Thread). For every comment, list each product
-it mentions, the writer's stance towards it, and one supporting quote copied word for word from that comment. Also
-list advice about kinds of product ("notes") and replies that agree with the comment above ("agreements").
+it mentions, what type of product it is, the writer's stance towards it, how well the writer knows it (the
+evidence), and one supporting quote copied word for word from that comment. Also list advice about kinds of
+product ("notes") and replies that agree with the comment above ("agreements").
 Write the result as JSON to the file you're given, in the format at the end. Nothing else.
 
 These rules match Noemi's labelling guide (data/gold/LABELLING_GUIDE.md), so the extraction and her labels
@@ -55,6 +56,22 @@ comment text it prints.
   powder, foundation), cleaning products and cooking fats (dish soap, oven cleaner, Crisco). Makeup sold as sun
   protection (a BB cream or tinted product with SPF) is skincare.
 
+## Product type
+
+Each mention gets "product_type": the type of the product itself, not the thread's ("CeraVe SA Cleanser" in an
+exfoliant thread is "cleanser"; a cast iron pan praised in a kettle thread is "cast iron skillet"). A brand named
+alone for the thread's kind of product ("my Lodge is 20 years old" in a cast iron thread) has the thread's type.
+
+Use one of these names, written exactly as here, when it fits:
+- skincare: "exfoliant", "cleanser", "moisturiser", "sunscreen", "retinoid", "serum", "toner", "eye cream",
+  "lip balm"
+- kitchen: "stovetop kettle", "electric kettle", "chef knife", "cast iron skillet", "frying pan", "saucepan",
+  "dutch oven", "espresso machine", "coffee grinder", "teapot"
+
+Otherwise write a short lowercase type in plain words ("face mask", "toaster", "makeup remover"). The names cover
+their usual kinds: a gyuto or santoku is a "chef knife", a non-stick or carbon steel pan a "frying pan", an
+essence a "toner", a retinol or tretinoin a "retinoid".
+
 ## Stance
 
 - recommend: the writer endorses it, or speaks well of it from their own use ("love it", "still going strong
@@ -74,14 +91,43 @@ Tricky cases:
 - Mixed verdicts (Noemi, 8 Oct 2026): ask "would this writer tell a friend with the same need to buy it?"
   - Yes, even with complaints: recommend ("love it, but it dries me out in winter", "a bit pricey", "not quite
     enough moisture", "irritates me a bit, but it's my second pick"). Pick the quote that shows the judgement.
-  - No: warn. It harmed them ("clogged my pores and burned"), it failed or broke, they returned it or stopped
-    using it, or they'd buy something else next time ("if I had my time again I'd spend a little extra").
+  - No: warn. It harmed them ("clogged my pores and burned"), it failed or broke early, they returned it or
+    stopped using it, or they'd buy something else next time ("if I had my time again I'd spend a little extra").
+  - A failure after a long life (Noemi, 9 Oct 2026) is recommend, with evidence "long-term use" and the tag
+    "mentions flaws": "my Panasonic died after 14 years" in a thread about kettles that last praises how long it
+    lasted. A failure after a short life stays warn ("died after a year").
   - A failure the writer caused themselves (a cast iron pan cracked on an induction hob, "learned that the hard
     way") is neutral: it isn't the product's fault.
 - Sarcasm counts as what it means: "great if you like breakouts" is warn.
 - Negation: "not a fan of X" is warn; "X didn't irritate me at all" is recommend.
 - Comparisons: "X beats Y" makes X recommend and Y neutral; Y is warn only if the comment says Y itself is bad
   ("ditch Y and get X", "Y died, X is still going").
+
+## Evidence: how well this writer knows this product
+
+Each mention gets "evidence", one of three levels, and "evidence_tags", the reasons for it. Judge only what this
+writer says about this product: not the thread, not other comments, not the other products in the same comment.
+These are Noemi's definitions (data/gold/LABELLING_GUIDE.md).
+
+- "long-term use": they say they've used it a year or more, or describe how it held up over time ("still going
+  after 8 years").
+- "short-term use": days or weeks, "just bought", "first impressions", or use with no time given ("I use X",
+  "it's amazing").
+- "no first-hand use": heard, read, someone else's experience, never tried, or suggested without saying they
+  used it ("heard good things about X", "my sister swears by X", "is X any good?").
+
+Tags, as many as fit (at least one), spelled exactly as here:
+- "long-term use" or "short-term use": the level itself, when it is one of these two.
+- "specific details": sizes, settings, how it failed. Not a size that is part of the product's name (the
+  "8-inch" of "Victorinox Fibrox 8-inch", the "2%" of "Paula's Choice 2% BHA").
+- "mentions flaws": honest about its downsides.
+- "compares alternatives": names what they used before or instead ("switched from X", "better than my old Y"),
+  not just a list of suggestions.
+- "secondhand": someone else's experience ("my sister swears by it").
+- "vague": nothing concrete; add it to short-term use or no first-hand use when there's nothing more to say.
+- "cheaper alternative": suggested as a cheaper option than another product.
+- "alternative for another need": suggested for a different skin type or use.
+- "asks about it": a question about it ("is that the one you mean?"), with stance neutral.
 
 ## The quote
 
@@ -123,13 +169,13 @@ comment (there's no one left to credit), and agreement with a comment other than
 ```json
 {
   "thread_id": "<the thread's id>",
-  "instructions_version": "extract-v5",
+  "instructions_version": "extract-v6",
   "extracted_at": "<now, ISO 8601 in UTC, e.g. 2026-10-08T10:00:00Z>",
   "extractor": "claude-code",
   "mentions": [
-    {"comment_id": "<id>", "product": "<name>", "category": "kitchen", "stance": "recommend", "quote": "<exact text>"},
-    {"comment_id": "<reply id>", "product": "<name from the parent>", "category": "kitchen", "stance": "recommend", "quote": "<exact text>", "refers_to": "parent"},
-    {"comment_id": "<reply to a reply>", "product": "<name from further up>", "category": "kitchen", "stance": "recommend", "quote": "<exact text>", "refers_to": "earlier"}
+    {"comment_id": "<id>", "product": "<name>", "category": "kitchen", "product_type": "electric kettle", "stance": "recommend", "evidence": "long-term use", "evidence_tags": ["long-term use", "specific details"], "quote": "<exact text>"},
+    {"comment_id": "<reply id>", "product": "<name from the parent>", "category": "kitchen", "product_type": "electric kettle", "stance": "recommend", "evidence": "short-term use", "evidence_tags": ["short-term use", "vague"], "quote": "<exact text>", "refers_to": "parent"},
+    {"comment_id": "<reply to a reply>", "product": "<name from further up>", "category": "kitchen", "product_type": "toaster", "stance": "recommend", "evidence": "no first-hand use", "evidence_tags": ["secondhand"], "quote": "<exact text>", "refers_to": "earlier"}
   ],
   "notes": [
     {"comment_id": "<id>", "about": "<kind or feature>", "stance": "recommend", "quote": "<exact text>"}
@@ -140,10 +186,11 @@ comment (there's no one left to credit), and agreement with a comment other than
 }
 ```
 
-List everything in the order the comments appear. Values like "recommend" and "kitchen" are lowercase. Empty
-lists are fine.
+List everything in the order the comments appear. Values like "recommend", "kitchen", "electric kettle" and
+"long-term use" are lowercase. Empty lists are fine.
 
 ## Before you finish
 
 Run `.venv/bin/python -m engine.extract check <the threads folder>`. If anything is rejected, copy its quote
-again from the comment, exactly. Never change a thread file.
+again from the comment, exactly, or fix what the reason names (an unknown evidence tag: use one from the list
+above). Never change a thread file.

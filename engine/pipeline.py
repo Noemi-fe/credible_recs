@@ -10,9 +10,10 @@ Every step is a module of its own; this file only passes each one's output to th
   PIPELINE_MIN_RELEVANCE). A coffee thread that mentions kettles in passing isn't about kettles, and its grinders
   would otherwise be ranked for a kettle request;
 - products of another type are left out: a skillet praised in a kettle thread is a real product, but not an answer
-  to a kettle request. A product counts as another type when one of its names says so ("Lodge cast iron
-  skillet") and none names the requested type. A name that says nothing ("Zojirushi") stays in. (Rules for now;
-  the AI could tag each product's type when it reads a thread.)
+  to a kettle request. From extraction instructions v6 the AI writes each product's type, and the type most of
+  its mentions give decides. Older extractions have no type: then a product counts as another type when one of
+  its names says so ("Lodge cast iron skillet") and none names the requested type, and a name that says nothing
+  ("Zojirushi") stays in.
 - loose groups (a brand or line that fits several products, such as "Lodge" or "CeraVe") are left out of the
   ranking unless PIPELINE_INCLUDE_LOOSE says otherwise: their mentions can't count for any one product.
 Both lists are kept on the result, so nothing is dropped silently.
@@ -27,6 +28,7 @@ Command line:
 """
 
 import sys
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -94,7 +96,8 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
 # --- Module 4: products and kinds ---
 
 def _product_mentions(checked: dict[str, CheckResult]) -> list[ProductMention]:
-    return [ProductMention(tid, m.comment_id, m.product, m.category, m.stance) for tid, res in checked.items() for m in res.kept]
+    return [ProductMention(tid, m.comment_id, m.product, m.category, m.stance, m.product_type)
+            for tid, res in checked.items() for m in res.kept]
 
 
 def _kind_mentions(checked: dict[str, CheckResult]) -> list[KindMention]:
@@ -117,6 +120,39 @@ def _groups_to_rank(groups: list[ProductGroup], query: ParsedQuery, result: Pipe
 
 
 def _another_type(group: ProductGroup, query: ParsedQuery) -> bool:
+    """Whether the product is another type of product than the one requested.
+
+    The AI's types decide when its mentions have them (instructions v6); when none has one (older extractions),
+    its names do.
+    """
+    types = [m.product_type for m in group.mentions if m.product_type]
+    if types:
+        return _another_type_by_ai(types, query.product_type)
+    return _another_type_by_name(group, query)
+
+
+def _another_type_by_ai(types: list[str], requested: str) -> bool:
+    """Whether the type most of a product's mentions give is another type than the one requested.
+
+    - A tie for the most mentions keeps the product in: the AI isn't sure what it is.
+    - The requested type itself: kept.
+    - Another of module 1's product types (engine.query.PRODUCT_TYPES): left out, even when it shares a word with
+      the requested one ("stovetop kettle" for an electric kettle request).
+    - A type in the AI's own words: left out, unless it names the requested type the way module 2 recognises it
+      (engine.sources.mentions_product): "gooseneck kettle" names an electric kettle, "toaster" doesn't.
+    """
+    counts = Counter(t.strip().lower() for t in types).most_common()
+    if len(counts) > 1 and counts[0][1] == counts[1][1]:
+        return False
+    majority = counts[0][0]
+    if majority == requested:
+        return False
+    if majority in {p.name for p in PRODUCT_TYPES}:
+        return True
+    return not mentions_product(majority, requested)
+
+
+def _another_type_by_name(group: ProductGroup, query: ParsedQuery) -> bool:
     """Whether the product's names say it is another type of product than the one requested, and none says it isn't."""
     names = list(group.names)
     if any(mentions_product(name, query.product_type) for name in names):

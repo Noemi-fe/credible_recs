@@ -6,6 +6,7 @@ reads or writes data/.
 """
 
 import json
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -13,7 +14,7 @@ import pytest
 from pydantic import ValidationError
 
 from engine import extract
-from engine.config import MENTION_CATEGORIES, QUOTE_MAX_WORDS, STANCE_VALUE
+from engine.config import EVIDENCE_LEVELS, EVIDENCE_TAGS, MENTION_CATEGORIES, QUOTE_MAX_WORDS, STANCE_VALUE
 from engine.extract import (
     CheckResult,
     ExtractedMention,
@@ -221,9 +222,10 @@ def test_an_extraction_of_another_thread_is_rejected_whole():
 def test_kept_and_rejected_mentions_keep_their_order():
     first, second, third = mention(), mention(quote="made up"), mention(comment_id="c3cccc", quote=PAULAS_QUOTE)
     result = check(make_extraction(mentions=[first, second, third]))
-    # exclude_none: instructions v2 (8 Oct 2026) added an optional refers_to field, empty for these mentions.
-    assert [m.model_dump(exclude_none=True) for m in result.kept] == [first, third]
-    assert [m.model_dump(exclude_none=True) for m, _ in result.rejected] == [second]
+    # exclude_defaults: later instructions added optional fields these mentions don't fill in (refers_to in v2;
+    # product_type, evidence and evidence_tags in v6, where evidence_tags defaults to an empty list, not None).
+    assert [m.model_dump(exclude_defaults=True) for m in result.kept] == [first, third]
+    assert [m.model_dump(exclude_defaults=True) for m, _ in result.rejected] == [second]
 
 
 def test_quote_pass_rate_is_the_share_of_mentions_kept():
@@ -556,3 +558,97 @@ def test_a_whole_quote_block_copying_someone_else_is_still_rejected(where):
     thread = Thread.model_validate(make_thread(comments=comments, **post))
     result = check_extraction(Extraction.model_validate(make_extraction(mentions=[mention(product="Hada Labo Gokujyun lotion", quote=copied)])), thread)
     assert result.kept == [] and "quoted" in result.rejected[0][1]
+
+
+# --- Instructions v6 (decided 9 Oct 2026): each product's type, and an evidence level with tags ---
+
+def test_a_v6_mention_carries_its_product_type_and_evidence():
+    data = mention(product_type="cleanser", evidence="long-term use", evidence_tags=["long-term use", "mentions flaws"])
+    loaded = ExtractedMention.model_validate(data)
+    assert loaded.product_type == "cleanser"
+    assert loaded.evidence == "long-term use"
+    assert loaded.evidence_tags == ["long-term use", "mentions flaws"]
+
+
+def test_older_mentions_without_a_type_or_evidence_still_load():
+    loaded = ExtractedMention.model_validate(mention())  # as written with instructions v1 to v5
+    assert (loaded.product_type, loaded.evidence, loaded.evidence_tags) == (None, None, [])
+
+
+@pytest.mark.parametrize("bad", [{"evidence": "years of use"}, {"evidence": ""}, {"product_type": ""}, {"product_type": "  "}])
+def test_an_unknown_evidence_level_or_a_blank_type_is_refused(bad):
+    with pytest.raises(ValidationError):
+        ExtractedMention.model_validate(mention(**bad))
+
+
+def test_every_evidence_level_and_tag_is_accepted():
+    for level in EVIDENCE_LEVELS:
+        result = check(make_extraction(mentions=[mention(evidence=level, evidence_tags=list(EVIDENCE_TAGS))]))
+        assert [m.evidence for m in result.kept] == [level]
+
+
+def test_a_mention_with_an_unknown_evidence_tag_is_rejected_with_the_reason():
+    unknown = mention(evidence="long-term use", evidence_tags=["long-term use", "trustworthy"])
+    fine = mention(comment_id="c3cccc", product="Paula's Choice 2% BHA", quote=PAULAS_QUOTE,
+                   evidence="short-term use", evidence_tags=["short-term use", "compares alternatives"])
+    result = check(make_extraction(mentions=[unknown, fine]))
+    assert [m.comment_id for m in result.kept] == ["c3cccc"]
+    assert len(result.rejected) == 1
+    reason = reasons(result)[0]
+    assert "unknown evidence tag" in reason and "'trustworthy'" in reason and "mentions flaws" in reason  # the allowed tags
+    assert "'long-term use'" not in reason  # only the unknown tag is named as the problem
+
+
+def test_other_is_not_an_evidence_tag_for_the_ai():
+    # Noemi's "other" needs a note saying why; the AI has no note, so it picks from the known tags only.
+    result = check(make_extraction(mentions=[mention(evidence="short-term use", evidence_tags=["other"])]))
+    assert result.kept == [] and "unknown evidence tag" in reasons(result)[0]
+
+
+def test_the_current_instructions_are_v6_and_todo_lists_older_extractions(tmp_path):
+    assert current_instructions_version() == "extract-v6"
+    threads_dir = threads_folder(tmp_path, *(other_thread(i) for i in ("1aaaaa", "1bbbbb")))
+    write_extraction(threads_dir, make_extraction(thread_id="1aaaaa", instructions_version="extract-v5", mentions=[]))
+    write_extraction(threads_dir, make_extraction(thread_id="1bbbbb", instructions_version="extract-v6", mentions=[]))
+    assert todo(threads_dir, current_instructions_version()) == ["1aaaaa"]
+
+
+def instructions_text() -> str:
+    return extract.DEFAULT_INSTRUCTIONS.read_text(encoding="utf-8")
+
+
+def section(text: str, heading: str) -> str:
+    """The text under a "## " heading of the instructions, up to the next one."""
+    start = text.index(f"\n## {heading}")
+    end = text.find("\n## ", start + 1)
+    return text[start:end if end != -1 else None]
+
+
+def test_the_instructions_list_every_product_type_exactly():
+    from engine.query import PRODUCT_TYPES
+
+    listed = section(instructions_text(), "Product type")
+    names = listed[listed.index("Use one of these names"):listed.index("Otherwise")]
+    assert re.findall(r'"([^"]+)"', names) == [p.name for p in PRODUCT_TYPES]
+
+
+def test_the_instructions_define_every_evidence_level_and_tag():
+    evidence = section(instructions_text(), "Evidence")
+    for value in EVIDENCE_LEVELS + EVIDENCE_TAGS:
+        assert f'"{value}"' in evidence or f"{value}:" in evidence, value
+
+
+def test_a_long_life_ending_in_a_failure_is_in_the_stance_rules():
+    # Noemi's decision 10 (9 Oct 2026), next to the "tell a friend" test.
+    stance = section(instructions_text(), "Stance")
+    assert "tell a friend" in stance and "died after 14 years" in stance and "mentions flaws" in stance
+
+
+def test_the_output_example_is_a_valid_v6_extraction():
+    example = instructions_text().split("```json", 1)[1].split("```", 1)[0]
+    data = json.loads(example)
+    assert data["instructions_version"] == "extract-v6"
+    for item in data["mentions"]:
+        loaded = ExtractedMention.model_validate(item | {"comment_id": "c1aaaa"})  # the example's ids are placeholders
+        assert loaded.product_type and loaded.evidence and loaded.evidence_tags
+        assert set(loaded.evidence_tags) <= set(EVIDENCE_TAGS)

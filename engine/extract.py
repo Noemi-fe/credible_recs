@@ -20,10 +20,15 @@ An extraction file looks like this. An empty "mentions" list means the thread me
       ]
     }
 
+From instructions v6 (decided 9 Oct 2026) each mention also says what type of product it is ("product_type":
+"cleanser") and how well the writer knows it ("evidence": "long-term use", with "evidence_tags" saying why).
+Older extractions have neither and still load.
+
 The guardrail (the brief's rule): every quote must exist word for word in its comment, checked by code, not by
 the AI, and a quote that fails is dropped. check_extraction keeps a mention only if its comment is in the thread
 and still readable (not deleted or removed), its quote is found word for word (engine.verify_quotes), and the
-quote is at most 50 words (QUOTE_MAX_WORDS). Every other mention is set aside with the reason, never used.
+quote is at most 50 words (QUOTE_MAX_WORDS), and its evidence tags, if any, are known ones (config.EVIDENCE_TAGS).
+Every other mention is set aside with the reason, never used.
 The share kept is the quote pass rate, which shows how often the AI quotes faithfully.
 
 The instructions version: the instruction file starts with a line such as "Version: extract-v1", and each
@@ -48,7 +53,14 @@ from typing import Annotated, Literal
 
 from pydantic import AfterValidator, ValidationError
 
-from engine.config import EXTRACT_MAX_COMMENTS, MENTION_CATEGORIES, QUOTE_MAX_WORDS, STANCE_VALUE
+from engine.config import (
+    EVIDENCE_LEVELS,
+    EVIDENCE_TAGS,
+    EXTRACT_MAX_COMMENTS,
+    MENTION_CATEGORIES,
+    QUOTE_MAX_WORDS,
+    STANCE_VALUE,
+)
 from engine.gold import GoldSetError, _describe, load_threads
 from engine.models import Id, Record, Thread, UtcDatetime
 from engine.verify_quotes import find_quote
@@ -89,6 +101,16 @@ class ExtractedMention(Record):
     # listed") names it from there (instructions v2, 8 Oct 2026). "earlier" when it is named further up the same
     # reply chain ("how did you like it?" then "loved it"; instructions v4). None when the comment names it itself.
     refers_to: Literal["parent", "post", "earlier"] | None = None
+    # From instructions v6 (decided 9 Oct 2026); None or empty in older extractions.
+    # The type of the product itself, not the thread's ("CeraVe SA Cleanser" in an exfoliant thread is "cleanser"):
+    # a product type name from module 1 (engine.query.PRODUCT_TYPES) when one fits, else a short type in plain
+    # words ("toaster"). The pipeline uses it to leave out products of another type.
+    product_type: Text | None = None
+    # How well this writer knows this product, in Noemi's levels (long-term use, short-term use, no first-hand use),
+    # and the tags that explain it. Only known tags (config.EVIDENCE_TAGS): check_extraction drops a mention with
+    # any other, rather than refusing the whole file.
+    evidence: Literal[EVIDENCE_LEVELS] | None = None
+    evidence_tags: list[str] = []
 
 
 class ExtractedNote(Record):
@@ -155,7 +177,9 @@ def check_extraction(extraction: Extraction, thread: Thread) -> CheckResult:
     - the quote isn't from a quoted block (a line starting with ">"): those are someone else's words, and credit
       has to go to the person who wrote them. The exception (instructions v4, Noemi, 8 Oct 2026): a comment
       written entirely as a quoted block, whose quoted words appear nowhere else in the thread, is the writer's own;
-    - the quote is at most QUOTE_MAX_WORDS words long, counting the pieces between spaces.
+    - the quote is at most QUOTE_MAX_WORDS words long, counting the pieces between spaces;
+    - a reply marked as naming its product further up (refers_to) really is a reply (to a reply, for "earlier");
+    - every evidence tag is a known one (config.EVIDENCE_TAGS; instructions v6).
     Mentions keep their order in both lists.
     """
     comments = {comment.id: comment for comment in thread.comments}
@@ -166,6 +190,8 @@ def check_extraction(extraction: Extraction, thread: Thread) -> CheckResult:
             reason = f"comment {mention.comment_id} refers to the comment above, but it isn't a reply"
         if reason is None and mention.refers_to == "earlier" and not _reply_to_a_reply(comments[mention.comment_id], comments):
             reason = f"comment {mention.comment_id} refers to a comment further up, but it isn't a reply to a reply"
+        if reason is None:
+            reason = _unknown_evidence_tags(mention)
         if reason is None:
             result.kept.append(mention)
         else:
@@ -205,6 +231,14 @@ def _why_rejected(mention, extraction: Extraction, thread: Thread, comments: dic
     if words > QUOTE_MAX_WORDS:
         return f"quote has {words} words; the limit is {QUOTE_MAX_WORDS}"
     return None
+
+
+def _unknown_evidence_tags(mention: ExtractedMention) -> str | None:
+    """The reason to drop a mention whose evidence tags include one that isn't in config.EVIDENCE_TAGS, or None."""
+    unknown = [tag for tag in mention.evidence_tags if tag not in EVIDENCE_TAGS]
+    if not unknown:
+        return None
+    return f"unknown evidence tag(s) {', '.join(map(repr, unknown))}; choose from: {', '.join(EVIDENCE_TAGS)}"
 
 
 def _in_quoted_block(body: str, span: tuple[int, int]) -> bool:

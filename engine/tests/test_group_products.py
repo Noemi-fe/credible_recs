@@ -221,3 +221,22 @@ def test_each_mention_can_be_looked_up_to_its_group():
     assert lookup[mentions[1]].key == "skincare:cerave sa cleanser"
     assert lookup[mentions[1]].name == "CeraVe SA Cleanser"
     assert lookup[mentions[2]].name == "Vaseline"
+
+
+# --- Instructions v6 (9 Oct 2026): the AI's product type rides along with each mention ---
+
+def test_a_mention_carries_the_ais_product_type_from_the_checked_extractions():
+    typed = ExtractedMention(comment_id="c1aaaa", product="CeraVe SA Cleanser", category="skincare", stance="recommend",
+                             quote="q", product_type="cleanser")
+    untyped = ExtractedMention(comment_id="c2bbbb", product="Vaseline", category="skincare", stance="recommend", quote="q")
+    mentions = mentions_from_checked({"1fake01": CheckResult(kept=[typed, untyped])})
+    assert [m.product_type for m in mentions] == ["cleanser", None]
+
+
+def test_the_product_type_does_not_change_which_mention_is_which():
+    # The pipeline looks mentions up by thread, comment, name, category and stance; the type is extra information.
+    typed = ProductMention("1fake01", "c1aaaa", "CeraVe SA Cleanser", "skincare", "recommend", product_type="cleanser")
+    plain = mention("CeraVe SA Cleanser")
+    assert typed == plain and hash(typed) == hash(plain)
+    assert group_of(group([typed]))[plain].name == "CeraVe SA Cleanser"
+    assert group([typed])[0].mentions[0].product_type == "cleanser"
