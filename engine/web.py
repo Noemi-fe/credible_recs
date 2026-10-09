@@ -43,7 +43,9 @@ The JSON for /api/answer (200):
                                              "url"},           the shop's own page, https only; null when not
                                                                checked or when the price line links to it
                             "care": [{"tip": "Descale every 6 months.",   "How to make it last" (9 Oct 2026):
-                                      "quote": {same shape}}]}],          0 to 2, each quote verified
+                                      "quote": {same shape}}],            0 to 2, each quote verified
+                            "cautions": ["Note: ..."]}],       product facts that suit the request less well
+                                                               (9 Oct 2026); [] when there are none
                  "look_for": [{"kind", "advice", "quote": {same shape}}],
                  "skip": [{"product_key", "name", "reason", "quotes": [...]}],
                  "message": the honest "not enough evidence" message, or null when there are 3 picks,
@@ -51,7 +53,8 @@ The JSON for /api/answer (200):
       "threads_used": ["thread id", ...],          most relevant first
       "left_out": {"other_type": n, "loose": n,    products of another type, and brand or line names, left out
                    "over_budget": n,               products whose known price is over the request's budget
-                   "unavailable": n}               and products the price list says are no longer sold (9 Oct 2026)
+                   "unavailable": n,               products the price list says are no longer sold (9 Oct 2026),
+                   "not_suited": n}                and products whose checked facts clash with the request (9 Oct 2026)
     }
 An error is {"error": "<plain words>", "code": "<one word for programs>"}:
     400 empty_request, request_too_long (over WEB_MAX_REQUEST_CHARS characters)
@@ -178,7 +181,8 @@ def answer_json(result: PipelineResult) -> dict:
         "threads_used": list(result.threads_used),
         "left_out": {"other_type": len(result.left_out_as_other_type), "loose": len(result.left_out_loose),
                      "over_budget": len(result.left_out_over_budget),
-                     "unavailable": len(result.left_out_unavailable)},
+                     "unavailable": len(result.left_out_unavailable),
+                     "not_suited": len(result.left_out_not_suited)},
     }
 
 
