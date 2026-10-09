@@ -425,3 +425,16 @@ def test_writers_of_what_to_look_for_notes_are_looked_up_too(tmp_path):
                             "quote": "Same here, 3 years and counting."}]
     (extracted_dir(threads_dir) / "1fake01.json").write_text(json.dumps(extraction))
     assert profiles.writers_with_kept_mentions(threads_dir) == {"test_newbie": ["c2bbbb"]}
+
+
+def test_writers_of_care_tips_are_looked_up_too():
+    # Care tips (instructions v7) are shown under picks, so their writers need a profile too.
+    import tempfile
+    from pathlib import Path as _Path
+    tmp = _Path(tempfile.mkdtemp())
+    threads_dir = library_folder(tmp, [])
+    extraction = json.loads((extracted_dir(threads_dir) / "1fake01.json").read_text())
+    extraction["care"] = [{"comment_id": "c2bbbb", "about": "CeraVe SA Cleanser", "tip": "use it at night",
+                           "quote": "Same here, 3 years and counting."}]
+    (extracted_dir(threads_dir) / "1fake01.json").write_text(json.dumps(extraction))
+    assert profiles.writers_with_kept_mentions(threads_dir) == {"test_newbie": ["c2bbbb"]}

@@ -305,7 +305,8 @@ class WarmResult:
 
 
 def writers_with_kept_mentions(threads_dir: Path) -> dict[str, list[str]]:
-    """{writer: the ids of their comments with kept product mentions or notes}, across the folder's checked extractions.
+    """{writer: the ids of their comments with kept product mentions, notes or care tips}, across the folder's checked
+    extractions.
 
     Notes count too (review, 9 Oct 2026): a "what to look for" note's writer needs a profile as much as a product's.
     Deleted accounts are left out. The folder's threads and extractions are only read, never changed.
@@ -314,7 +315,8 @@ def writers_with_kept_mentions(threads_dir: Path) -> dict[str, list[str]]:
     writers: dict[str, list[str]] = {}
     for thread in load_threads(threads_dir):
         result = checked.get(thread.id)
-        kept = {m.comment_id for m in result.kept} | {n.comment_id for n in result.kept_notes} if result else set()
+        kept = ({m.comment_id for m in result.kept} | {n.comment_id for n in result.kept_notes}
+                | {c.comment_id for c in result.kept_care}) if result else set()
         for comment in thread.comments:
             if comment.id in kept and comment.author is not None:
                 writers.setdefault(comment.author.name, []).append(comment.id)
