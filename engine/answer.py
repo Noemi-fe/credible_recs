@@ -25,6 +25,9 @@ What each pick shows (the brief):
 - "How to make it last" (Noemi, 9 Oct 2026): up to CARE_TIPS_PER_PICK credible care tips from the threads ("descale
   every 6 months"), the product's own first, then its kind's, never the same tip twice (engine/care_tips.py), each
   with its verified quote. A pick with no tip has no such heading.
+- cautions (product facts, decided by Claude, 9 Oct 2026): when a checked fact suits the request less well by a soft
+  rule (engine/product_facts.py: a rich moisturiser for oily skin), "Note: <the reason>." under the pick's price lines.
+  Products whose facts clash by a hard rule never get here: the pipeline leaves them out.
 Under the picks: "what to look for" (a short blueprint from credible notes about kinds of product), the
 skip-these list, and an honest message when fewer than 3 products have enough evidence.
 
@@ -151,6 +154,11 @@ BREAKDOWN_NEEDS = ("About your request: {recommends} credible recommendations an
 AVAILABILITY = "Sold at {shop}, checked {date}"
 AVAILABILITY_UNKNOWN = "Availability not checked yet"
 AVAILABILITY_GONE = "No longer sold, checked {date}"  # never shown through the pipeline, which leaves such products out
+# Product facts (9 Oct 2026). Wording DECIDED by Claude on 9 Oct 2026, as Noemi asked, and reported to her. A soft
+# clash between a product's checked facts and the request (engine/product_facts.py) is shown under the pick as
+# "Note: its texture is rich, which can feel heavy on oily or acne-prone skin." The reasons themselves are the rule
+# table's (config.PRODUCT_FACT_RULES), decided by Claude the same day.
+CAUTION = "Note: {reason}."
 
 
 # --- The answer ---
@@ -216,6 +224,7 @@ class Pick:
     price: ShownPrice  # from the price list, or PRICE_UNKNOWN
     availability: ShownAvailability = NOT_CHECKED  # where it is sold, from the price list, or AVAILABILITY_UNKNOWN
     care: list[ShownCareTip] = field(default_factory=list)  # "How to make it last"; empty when there are none
+    cautions: list[str] = field(default_factory=list)  # "Note: ..." from product facts (9 Oct 2026); empty when none
 
 
 @dataclass
@@ -258,17 +267,21 @@ def comment_bodies(threads: Iterable[Thread]) -> dict[str, str]:
 # --- Writing the answer ---
 
 def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type: str | None = None,
-                 prices: Mapping[str, PriceCheck] | None = None, care: Mapping[str, CareTips] | None = None) -> Answer:
+                 prices: Mapping[str, PriceCheck] | None = None, care: Mapping[str, CareTips] | None = None,
+                 cautions: Mapping[str, list[str]] | None = None) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
     with none shows PRICE_UNKNOWN and AVAILABILITY_UNKNOWN. `care` is each product's care tips ({product key:
     engine.care_tips.CareTips}), made by the pipeline; a product with none shows no "How to make it last". Care tips
-    never change which products are picks.
+    never change which products are picks. `cautions` is each product's soft clashes with the request ({product key:
+    [reason]}, engine/product_facts.py), made by the pipeline: each is shown on its pick as CAUTION; they never change
+    which products are picks either.
     """
     check = _QuoteCheck(bodies)
     prices = prices or {}
     care = care or {}
+    cautions = cautions or {}
     picks: list[Pick] = []
     for product in ranking.qualifying:
         if len(picks) == PICKS_SHOWN:
@@ -278,7 +291,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             price = shown_price(prices.get(product.key))
             availability = shown_availability(prices.get(product.key), price.url)
             tips = _care_tips(care.get(product.key), check)
-            picks.append(_pick(len(picks) + 1, product, quotes, check, ranking, price, tips, availability))
+            notes = [CAUTION.format(reason=reason) for reason in cautions.get(product.key, [])]
+            picks.append(_pick(len(picks) + 1, product, quotes, check, ranking, price, tips, availability, notes))
     skip = [_skip_item(product, check) for product in ranking.skip_list]
     look_for = _look_for(ranking, check)
     return Answer(
@@ -360,7 +374,8 @@ def _most_credible_first(items: Iterable[ScoredMention]) -> list[ScoredMention]:
 
 
 def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _QuoteCheck, ranking: RankingResult,
-          price: ShownPrice, care: list[ShownCareTip], availability: ShownAvailability = NOT_CHECKED) -> Pick:
+          price: ShownPrice, care: list[ShownCareTip], availability: ShownAvailability = NOT_CHECKED,
+          cautions: list[str] | None = None) -> Pick:
     warnings = product.credible_warnings
     return Pick(
         rank=rank,
@@ -376,6 +391,7 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
         price=price,
         availability=availability,
         care=care,
+        cautions=cautions or [],
     )
 
 
@@ -639,6 +655,8 @@ def render_markdown(answer: Answer) -> str:
 def _render_pick(pick: Pick) -> list[str]:
     lines = [f"## {pick.rank}. {pick.name}", "", pick.reason, "", f"**{SUPPORT_LABEL}:** {pick.support}", ""]
     lines += _render_price(pick.price) + _render_availability(pick.availability)
+    for caution in pick.cautions:
+        lines += [caution, ""]
     if pick.disagreement:
         lines += [f"**{pick.disagreement}**", ""]
     lines += [f"**{QUOTES_HEADING}**", ""]

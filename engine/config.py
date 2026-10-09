@@ -399,3 +399,88 @@ LIVE_CHECK_READER = "bright_data"
 # Chosen by Claude (a technical value, reported to Noemi): Bright Data records a live-check run leaves untouched when no
 # --max-records is given (out of the month's 5,000), for backup reads and urgent re-reads.
 LIVE_CHECK_RECORD_RESERVE = 300
+
+# --- Product facts (9 Oct 2026) ---
+# Decided by Claude (the orchestrator) on 9 Oct 2026, as Noemi asked, and reported to her. The ranking reads only what
+# Reddit says, so it ignored what a request asks for: "retinol for a beginner with sensitive skin" picked Tazorac, a
+# strong prescription retinoid. Word rules on comments made it worse (NEED_MATCH_BOOST above): comments rarely say "too
+# strong for beginners". So each product can have a few facts, looked up online with a source (data/product_facts.json,
+# engine/product_facts.py), and the request is matched against them. A fact that isn't known never counts against a
+# product.
+
+# The vocabulary: every fact a product can have, and the values it can take. True/false facts take JSON true or false
+# only. Whether a product is sold (in the UK, or at all) isn't a fact here: the price list says it (data/prices.json,
+# "available"), so it isn't kept twice.
+PRODUCT_FACT_VALUES: dict[str, tuple] = {
+    "fragrance_free": (True, False),  # no added fragrance or perfume
+    "prescription_only": (True, False),  # sold in the UK only on a prescription (Tazorac, tretinoin)
+    "strength": ("gentle", "moderate", "strong"),  # how strong a retinoid or an exfoliant is
+    "white_cast": (True, False),  # a sunscreen that leaves a white cast on the skin
+    "finish": ("matte", "natural", "dewy"),  # how a sunscreen looks once on
+    "filters": ("mineral", "chemical", "hybrid"),  # a sunscreen's UV filters
+    "texture": ("light", "rich"),  # a moisturiser's or a cleanser's feel
+    "plastic_free_inside": (True, False),  # a kettle where no plastic touches the water
+    "pfas_free": (True, False),  # a pan with no PFAS ("forever chemicals", such as PTFE / Teflon) in its coating
+    "non_stick": (True, False),  # a pan with a non-stick coating (ceramic or PTFE); seasoned steel or iron isn't
+    "induction": (True, False),  # works on an induction hob
+}
+# The facts each product type (engine/query.py, PRODUCT_TYPES) can have. Every skincare product can say whether it is
+# fragrance-free and prescription-only; a type not listed (a chef knife, a coffee grinder) has no facts yet.
+PRODUCT_FACTS_FOR_SKINCARE = ("fragrance_free", "prescription_only")
+PRODUCT_FACTS_BY_TYPE: dict[str, tuple[str, ...]] = {
+    "exfoliant": PRODUCT_FACTS_FOR_SKINCARE + ("strength",),
+    "retinoid": PRODUCT_FACTS_FOR_SKINCARE + ("strength",),
+    "sunscreen": PRODUCT_FACTS_FOR_SKINCARE + ("white_cast", "finish", "filters"),
+    "moisturiser": PRODUCT_FACTS_FOR_SKINCARE + ("texture",),
+    "cleanser": PRODUCT_FACTS_FOR_SKINCARE + ("texture",),
+    "serum": PRODUCT_FACTS_FOR_SKINCARE,
+    "toner": PRODUCT_FACTS_FOR_SKINCARE,
+    "eye cream": PRODUCT_FACTS_FOR_SKINCARE,
+    "lip balm": PRODUCT_FACTS_FOR_SKINCARE,
+    "electric kettle": ("plastic_free_inside",),
+    "stovetop kettle": ("plastic_free_inside",),
+    "frying pan": ("pfas_free", "non_stick", "induction"),
+    "saucepan": ("pfas_free", "non_stick", "induction"),
+}
+# The rules: when a request asks for one of "asks", a product whose fact has "value" doesn't suit it. "hard": True
+# leaves the product out (listed on the result); False keeps it and shows the reason under the pick as a caution. A
+# request asks for something when module 1 finds it (a skin type, a must-have such as "fragrance-free"), when
+# engine/needs.py finds a need that isn't a must-have ("beginner" in "new to retinol", "gentle"), or when
+# PRODUCT_FACT_REQUEST_WORDS below finds its words. "gentle" is Claude's addition to "a beginner or sensitive skin": a
+# request for a gentle product is not one for a strong formula either. The reasons are shown to users: wording decided
+# by Claude, 9 Oct 2026.
+PRODUCT_FACT_RULES: dict[str, dict] = {
+    "too strong": {"asks": ("beginner", "sensitive", "gentle"), "fact": "strength", "value": "strong", "hard": True,
+                   "reason": "it is a strong formula, too strong for beginners or sensitive skin"},
+    "prescription only": {"asks": ("beginner", "sensitive", "gentle"), "fact": "prescription_only", "value": True,
+                          "hard": True,
+                          "reason": "it is prescription-only: a strong treatment, not one for beginners or sensitive "
+                                    "skin"},
+    "fragrance": {"asks": ("fragrance-free",), "fact": "fragrance_free", "value": False, "hard": True,
+                  "reason": "it has added fragrance"},
+    "white cast": {"asks": ("no white cast",), "fact": "white_cast", "value": True, "hard": True,
+                   "reason": "it leaves a white cast"},
+    "PFAS": {"asks": ("PFAS-free",), "fact": "pfas_free", "value": False, "hard": True,
+             "reason": "it isn't PFAS-free"},
+    "not non-stick": {"asks": ("non-stick",), "fact": "non_stick", "value": False, "hard": True,
+                      "reason": "it isn't non-stick"},
+    "plastic": {"asks": ("plastic-free",), "fact": "plastic_free_inside", "value": False, "hard": True,
+                "reason": "it has plastic inside"},
+    "not induction": {"asks": ("induction-compatible",), "fact": "induction", "value": False, "hard": True,
+                      "reason": "it doesn't work on an induction hob"},
+    "rich texture": {"asks": ("oily", "acne-prone"), "fact": "texture", "value": "rich", "hard": False,
+                     "reason": "its texture is rich, which can feel heavy on oily or acne-prone skin"},
+}
+# Words of a request that ask for something module 1 doesn't find on its own: regular expressions, found at the start
+# of a word in the request (lowercased). "doesn't leave a white cast" asks for no white cast (module 1 finds only "no"
+# or "without a white cast"); "without PFAS" and "PFAS-free" ask for PFAS-free; "non-stick" asks for non-stick, unless
+# a word just before it says the opposite ("not non-stick", "instead of non-stick").
+PRODUCT_FACT_REQUEST_WORDS: dict[str, tuple[str, ...]] = {
+    "no white cast": (r"white cast",),
+    "PFAS-free": (r"pfas",),
+    "non-stick": (r"(?<!not )(?<!not a )(?<!no )(?<!without )(?<!avoid )(?<!instead of )(?<!rather than )"
+                  r"(?<!other than )non[- ]?stick",),
+}
+# `python -m engine.product_facts todo` looks at this many candidates per blind-test question: its picks, then the
+# products that qualify or nearly qualify, in the ranking's order.
+PRODUCT_FACTS_TODO_CANDIDATES = 5

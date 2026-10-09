@@ -30,6 +30,11 @@ Every step is a module of its own; this file only passes each one's output to th
 - a product the price list says is no longer sold ("available": false; engine.prices.find_availability) is left out,
   budget or not (Noemi's note of 9 Oct 2026: "are we making sure the products we recommend exist?"). A product with no
   availability check is kept, and its answer says so. Brand picks are never priced or checked (named in not_priced).
+- product facts (decided by Claude, 9 Oct 2026; engine/product_facts.py, data/product_facts.json): right after the
+  budget step, a product whose checked facts clash with what the request asks for is left out by a hard rule ("retinol
+  for a beginner with sensitive skin" leaves out a strong, prescription-only retinoid) and listed with the reason
+  (left_out_not_suited), or kept by a soft rule with the reason shown under its pick as a caution ("Note: ..."). A fact
+  that isn't known never leaves a product out. Brand picks have no single product, so their facts are never looked up.
 - only threads checked live on Reddit in the last LIVE_CHECK_SHOWN_DAYS (14) days are quoted (Noemi, 9 Oct 2026): a
   thread read from Arctic Shift's archive may still hold comments people deleted on Reddit since, so it counts from
   the day a live check read it on Reddit (checked_live_at); a thread read through Parse counts from the day it was
@@ -98,6 +103,7 @@ from engine.match_products import known_aliases, normalize_name, same_product
 from engine.models import Comment, Thread
 from engine.needs import Need, needs_met, request_needs
 from engine.prices import Price, PriceCheck, check_price, find_availability, find_price, load_prices
+from engine.product_facts import NotSuited, ProductFacts, conflicts, find_facts, load_product_facts
 from engine.profiles import ProfileStore, StoredProfiles, with_profiles
 from engine.query import PRODUCT_TYPES, ParsedQuery, parse_query
 from engine.rank import KindNote, RankingResult, ScoredMention, rank_products
@@ -118,6 +124,8 @@ class PipelineResult:
     left_out_over_budget: list[str] = field(default_factory=list)  # product names, with a known price above the max
     left_out_unavailable: list[str] = field(default_factory=list)  # product names the price list says aren't sold now
     not_priced: list[str] = field(default_factory=list)  # brand or line names ranked (decision 9): never priced
+    # Products whose facts clash with the request by a hard rule (engine/product_facts.py, 9 Oct 2026): name and reason.
+    left_out_not_suited: list[NotSuited] = field(default_factory=list)
     live_dropped: dict[str, int] = field(default_factory=dict)  # comments dropped by the live check, by reason
     # Ids of extracted threads about the product not checked live on Reddit in the last LIVE_CHECK_SHOWN_DAYS: not
     # used until `python -m engine.library check-live` reads them again (Noemi, 9 Oct 2026).
@@ -147,13 +155,15 @@ def _today() -> date:
 
 def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_threads: int = PIPELINE_MAX_THREADS,
                    profiles=None, prices: list[Price] | None = None, today: date | None = None,
-                   live_check_required: bool | None = None, live_checker=None) -> PipelineResult:
+                   live_check_required: bool | None = None, live_checker=None,
+                   product_facts: list[ProductFacts] | None = None) -> PipelineResult:
     """Runs modules 1 to 7 on the saved library and returns everything each step decided.
 
     `profiles`: where writers' standing comes from (an object with user_stats and comment_flairs, such as
     engine.profiles.StoredProfiles); None leaves the writers as saved, known by name only.
     `prices`: the price list; None reads data/prices.json (engine.prices.load_prices). `today`: the day prices are
     judged on (how old they are), and live checks (how long ago Reddit was read); None is today.
+    `product_facts`: the facts list (engine/product_facts.py); None reads data/product_facts.json.
     `live_check_required`: None follows LIVE_CHECK_REQUIRED (on). False uses every thread whatever its last live
     check: only to see what answers would quote once every thread is checked (engine.slice_eval.threads_behind_answers).
     `live_checker` (engine.live_check.LiveChecker): every quote about to be shown is checked against the comment on
@@ -188,6 +198,8 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads})
     prices = load_prices() if prices is None else prices
     kept_groups, price_checks = _within_budget(kept_groups, query, prices, today, result)
+    product_facts = load_product_facts() if product_facts is None else product_facts
+    kept_groups, cautions = _suited_to_request(kept_groups, query, product_facts, result)
     kind_mentions = _kind_mentions(checked)
     kinds = group_kinds(kind_mentions, kept_groups, query.category, query.product_type or "")
     with_a_kind = kinds_of(kinds)
@@ -197,16 +209,17 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
                                 set(result.contradicting_writers))
     result.ranking = rank_products(scored, query.category, kind_notes, placements(kinds))
     care = _care_tips(threads, checked, kept_groups, kinds, query)
-    result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care)
+    result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions)
     if live_checker is not None:
-        _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care)
+        _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions)
     thread_of = {c.id: t.id for t in threads for c in t.comments}
     quoted = {thread_of.get(quote.comment_id) for _, quote in _every_quote(result.answer)}
     result.threads_quoted = [tid for tid in result.threads_used if tid in quoted]
     return result
 
 
-def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds, query, price_checks, care) -> None:
+def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds, query, price_checks, care,
+                cautions=None) -> None:
     """Checks every quote about to be shown against Reddit itself; drops the comments that fail and answers again.
 
     A comment that fails (gone, changed or unreadable) loses its votes too: the ranking is redone without it, so a
@@ -230,7 +243,7 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         result.bodies = {cid: body for cid, body in result.bodies.items() if cid not in failed}
         result.ranking = rank_products([m for m in scored if m.comment_id not in failed], query.category,
                                        [n for n in kind_notes if n.comment_id not in failed], placements(kinds))
-        result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care)
+        result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions)
 
 
 def _checked_live_recently(thread: Thread, today: date) -> bool:
@@ -385,6 +398,32 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
     return kept, checks
 
 
+# --- Product facts (decided by Claude, 9 Oct 2026) ---
+
+def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_facts: list[ProductFacts],
+                       result: PipelineResult) -> tuple[list[ProductGroup], dict[str, list[str]]]:
+    """The groups whose known facts suit the request, and each kept product's cautions ({product key: [reason]}).
+
+    A product with a hard clash (engine.product_facts.conflicts) is left out and named on the result with every hard
+    reason; one with only soft clashes is kept, and their reasons go under its pick. A product with no facts entry, or
+    whose entry doesn't give the facts a rule reads, is kept as it is. A brand pick has no single product, so it is
+    never looked up.
+    """
+    kept, cautions = [], {}
+    for group in groups:
+        found = [] if group.loose else conflicts(query, find_facts(group.name, group.category, product_facts,
+                                                                   query.product_type))
+        hard = [c.reason for c in found if c.hard]
+        if hard:
+            result.left_out_not_suited.append(NotSuited(group.name, "; ".join(hard)))
+            continue
+        kept.append(group)
+        soft = [c.reason for c in found if not c.hard]
+        if soft:
+            cautions[group.key] = soft
+    return kept, cautions
+
+
 # --- Module 5: a weight for every mention and note ---
 
 def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[ProductGroup], kinds,
@@ -495,7 +534,9 @@ def main(argv: list[str]) -> int:
               f"threads not extracted yet: {len(result.not_extracted)}; threads waiting for a live check: "
               f"{len(result.waiting_live_check)}; notes naming no kind: "
               f"{len(result.notes_without_kind)}; over budget: {len(result.left_out_over_budget)}; no longer sold: "
-              f"{len(result.left_out_unavailable)})")
+              f"{len(result.left_out_unavailable)}; not suited to the request: {len(result.left_out_not_suited)})")
+        for item in result.left_out_not_suited:
+            print(f"  not suited: {item.name} ({item.reason})")
     return 0
 
 

@@ -36,6 +36,7 @@ const LABELS = {
   leftOut: "Left out of the ranking: products of another type ({other}), and brand or line names that fit several products ({loose}).",
   leftOutBudget: "Over your budget, so left out: {n}.",  // added 9 Oct 2026 (decision 11, budgets)
   leftOutUnavailable: "No longer sold, so left out: {n}.",  // added 9 Oct 2026 (availability; wording decided by Claude)
+  leftOutNotSuited: "Not suited to your request, so left out: {n}.",  // added 9 Oct 2026 (product facts; wording decided by Claude)
   // The score breakdown: the same words as the text answer's breakdown (engine/answer.py, _render_breakdown).
   bdTotal: "Score {score} = {points} from mentions",
   bdBonus: " + {bonus} kind bonus ({kind}, support {support})",
@@ -152,6 +153,7 @@ h1, h2, h3, h4 { line-height: 1.25; }
 .price { margin: 0 0 4px; }
 .budget { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
 .availability { margin: 0 0 8px; font-size: 14px; }
+.caution { margin: 8px 0; padding: 8px 12px; border-radius: 8px; background: var(--warn-soft); color: var(--text); border-left: 4px solid var(--warn); }
 .flag { margin: 8px 0; padding: 8px 12px; border-radius: 8px; background: var(--warn-soft); color: var(--text); font-weight: 600; border-left: 4px solid var(--warn); }
 .card h4 { margin: 16px 0 6px; font-size: 15px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
 .muted { color: var(--muted); margin: 0; }
@@ -370,6 +372,11 @@ h1, h2, h3, h4 { line-height: 1.25; }
       availability.text, link && " · ", link);
   }
 
+  /** A pick's cautions (product facts, 9 Oct 2026): each "Note: ..." from the answer, drawn as text only. */
+  function cautionLines(cautions) {
+    return (cautions || []).map((text) => el("p", { class: "caution" }, text));
+  }
+
   /** "How to make it last": each care tip in a few words, then its verified quote (drawn like every other quote, so
       its link goes through the same Reddit check). Nothing at all when a pick has no tips. */
   function careSection(tips) {
@@ -389,6 +396,7 @@ h1, h2, h3, h4 { line-height: 1.25; }
       el("p", { class: "reason" }, pick.reason),
       el("p", { class: "support" }, el("strong", {}, WORDING.support_label + ": "), pick.support),
       ...priceLines(pick.price), availabilityLine(pick.availability),
+      ...cautionLines(pick.cautions),
       pick.disagreement && el("p", { class: "flag" }, pick.disagreement),
       el("h4", {}, WORDING.quotes_heading),
       quoteList(pick.quotes),
@@ -434,9 +442,10 @@ h1, h2, h3, h4 { line-height: 1.25; }
     if (extras.length) parts.push(el("div", { class: "extras" }, ...extras));
     const overBudget = data.left_out.over_budget ? " " + fill(LABELS.leftOutBudget, { n: data.left_out.over_budget }) : "";
     const unavailable = data.left_out.unavailable ? " " + fill(LABELS.leftOutUnavailable, { n: data.left_out.unavailable }) : "";
+    const notSuited = data.left_out.not_suited ? " " + fill(LABELS.leftOutNotSuited, { n: data.left_out.not_suited }) : "";
     parts.push(el("p", { class: "footnote" },
       fill(LABELS.threadsRead, { n: data.threads_used.length }) + " " +
-      fill(LABELS.leftOut, { other: data.left_out.other_type, loose: data.left_out.loose }) + overBudget + unavailable));
+      fill(LABELS.leftOut, { other: data.left_out.other_type, loose: data.left_out.loose }) + overBudget + unavailable + notSuited));
     return parts;
   }
 

@@ -90,14 +90,18 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # Changed on purpose 9 Oct 2026 (decision 11, budgets): each pick has its price, and "left_out" counts the
     # products over the request's budget.
     # Changed on purpose 9 Oct 2026 (availability, Noemi's note): "left_out" also counts the products no longer sold.
-    assert set(data["left_out"]) == {"other_type", "loose", "over_budget", "unavailable"}
+    # Changed on purpose 9 Oct 2026 (product facts, decided by Claude): "left_out" also counts the products whose facts
+    # don't suit the request ("not_suited").
+    assert set(data["left_out"]) == {"other_type", "loose", "over_budget", "unavailable", "not_suited"}
     assert set(data["answer"]) == {"category", "product_type", "picks", "look_for", "skip", "message",
                                    "needs_more_threads", "quotes_dropped"}
     # Changed on purpose 9 Oct 2026 (care tips, Noemi): each pick also has its "care" list, "How to make it last".
     # Changed on purpose 9 Oct 2026 (availability, Noemi's note): each pick also says where it is sold, "availability".
+    # Changed on purpose 9 Oct 2026 (product facts, decided by Claude): each pick also has its "cautions", the facts
+    # that suit the request less well ("Note: ..."); an empty list when there are none.
     assert set(data["answer"]["picks"][0]) == {"rank", "product_key", "name", "reason", "support", "quotes",
                                                "downsides", "disagreement", "score", "breakdown", "price",
-                                               "availability", "care"}
+                                               "availability", "care", "cautions"}
     assert set(data["answer"]["picks"][0]["quotes"][0]) == {"text", "comment_id", "url", "badges"}
     assert set(data["answer"]["picks"][0]["price"]) == {"text", "amount", "currency", "shop", "url", "checked_on",
                                                         "budget_status", "budget_note"}
