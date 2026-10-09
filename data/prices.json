@@ -1,1 +1,22 @@
-{"prices": []}
+{
+ "prices": [
+  {
+   "product": "Biore UV Aqua Rich Watery Essence SPF50",
+   "category": "skincare",
+   "price": 15.99,
+   "currency": "GBP",
+   "shop": "Boots",
+   "url": "https://www.boots.com/biore-uv-aqua-rich-watery-essence-j-beauty-sunscreen-spf-50-50ml-10356353",
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "1Zpresso Q2",
+   "category": "kitchen",
+   "price": 95.0,
+   "currency": "GBP",
+   "shop": "Sigma Coffee",
+   "url": "https://sigmacoffee.co.uk/products/1zpressoq2",
+   "checked_on": "2026-10-09"
+  }
+ ]
+}
