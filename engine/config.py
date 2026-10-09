@@ -268,3 +268,7 @@ PAID_PROMOTION_RED_FLAGS = 2
 
 # A budget typed with no currency ("under 100") is in this currency (Noemi, 9 Oct 2026: the shoppers are in the UK).
 BUDGET_DEFAULT_CURRENCY = "GBP"
+
+# --- Live check of shown quotes (Noemi, 9 Oct 2026: Reddit's embed service) ---
+# Seconds between two reads of Reddit's embed page (engine/live_check.py): an answer reads about 9 comments.
+LIVE_CHECK_MIN_INTERVAL = 3.0
