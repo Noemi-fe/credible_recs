@@ -14,7 +14,10 @@ What each pick shows (the brief):
 - its price (Noemi's decision 11, 9 Oct 2026): from the price list (engine/prices.py), with the shop, the day it was
   checked and a link to the shop's own page for it (https only); or "Price not checked yet". When the request has a
   budget, a line says how the price compares with it. Products over the budget never get here: the pipeline leaves
-  them out.
+  them out;
+- "How to make it last" (Noemi, 9 Oct 2026): up to CARE_TIPS_PER_PICK credible care tips from the threads ("descale
+  every 6 months"), the product's own first, then its kind's, never the same tip twice (engine/care_tips.py), each
+  with its verified quote. A pick with no tip has no such heading.
 Under the picks: "what to look for" (a short blueprint from credible notes about kinds of product), the
 skip-these list, and an honest message when fewer than 3 products have enough evidence.
 
@@ -28,7 +31,8 @@ quotes that passed. Then, "no claim without a verified quote":
 - a pick needs at least 2 verified quotes (MIN_QUOTES_PER_PICK); one that has fewer gives its place to the
   next qualifying product;
 - a skip-these product needs at least 1 verified warning quote, or it is left out;
-- a "what to look for" note is a verified quote, or nothing.
+- a "what to look for" note is a verified quote, or nothing;
+- a care tip is a verified quote, or nothing: one that fails gives its place to the next tip.
 unverified_claims() runs the same checks over a finished answer, as an automated proof.
 
 The wording users see is in the constants below, marked PROPOSED: it waits for Noemi.
@@ -36,10 +40,12 @@ The wording users see is in the constants below, marked PROPOSED: it waits for N
 
 import dataclasses
 from collections.abc import Iterable, Iterator, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 
+from engine.care_tips import CareTip, CareTips, same_tip
 from engine.config import (
+    CARE_TIPS_PER_PICK,
     DOWNSIDES_PER_PICK,
     LOOK_FOR_NOTES,
     MIN_CREDIBLE_MENTIONS,
@@ -50,6 +56,7 @@ from engine.config import (
     QUOTE_MAX_WORDS,
     QUOTES_PER_PICK,
     QUOTES_PER_SKIPPED_PRODUCT,
+    VOICE_LEVELS,
 )
 from engine.extract import _as_written, _in_quoted_block, _own_words_in_quote_format
 from engine.models import Thread
@@ -92,6 +99,8 @@ BUDGET_WHY_UNKNOWN = "no price checked yet"
 BUDGET_WHY_CURRENCY = "its price is in {currency}"
 BUDGET_WHY_OLD = "its price was checked over {days} days ago, so it may have changed"
 CURRENCY_SIGNS = {"GBP": "£", "EUR": "€", "USD": "$"}
+# Care tips (Noemi, 9 Oct 2026; wording PROPOSED, awaiting Noemi).
+CARE_HEADING = "How to make it last"
 
 
 # --- The answer ---
@@ -120,6 +129,14 @@ class ShownPrice:
     budget_note: str | None  # the same in words, for the shopper; None without a budget
 
 
+@dataclass(frozen=True)
+class ShownCareTip:
+    """A care tip as shown under a pick: the tip in a few words, and the quote that backs it (verified)."""
+
+    tip: str  # the AI's few plain words, as a short sentence: "Descale every 6 months."
+    quote: ShownQuote
+
+
 @dataclass
 class Pick:
     rank: int  # 1, 2 or 3
@@ -133,6 +150,7 @@ class Pick:
     score: float
     breakdown: ScoreBreakdown  # numbers only: no quote is in it
     price: ShownPrice  # from the price list, or PRICE_UNKNOWN
+    care: list[ShownCareTip] = field(default_factory=list)  # "How to make it last"; empty when there are none
 
 
 @dataclass
@@ -175,14 +193,17 @@ def comment_bodies(threads: Iterable[Thread]) -> dict[str, str]:
 # --- Writing the answer ---
 
 def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type: str | None = None,
-                 prices: Mapping[str, PriceCheck] | None = None) -> Answer:
+                 prices: Mapping[str, PriceCheck] | None = None, care: Mapping[str, CareTips] | None = None) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
-    with none shows PRICE_UNKNOWN.
+    with none shows PRICE_UNKNOWN. `care` is each product's care tips ({product key: engine.care_tips.CareTips}), made
+    by the pipeline; a product with none shows no "How to make it last". Care tips never change which products are
+    picks.
     """
     check = _QuoteCheck(bodies)
     prices = prices or {}
+    care = care or {}
     picks: list[Pick] = []
     for product in ranking.qualifying:
         if len(picks) == PICKS_SHOWN:
@@ -190,7 +211,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
         quotes = check.first(_most_credible_first(product.credible_recommendations), QUOTES_PER_PICK)
         if len(quotes) >= MIN_QUOTES_PER_PICK:
             price = shown_price(prices.get(product.key))
-            picks.append(_pick(len(picks) + 1, product, quotes, check, ranking, price))
+            tips = _care_tips(care.get(product.key), check)
+            picks.append(_pick(len(picks) + 1, product, quotes, check, ranking, price, tips))
     skip = [_skip_item(product, check) for product in ranking.skip_list]
     look_for = _look_for(ranking, check)
     return Answer(
@@ -212,7 +234,7 @@ class _QuoteCheck:
         self.bodies = bodies
         self.dropped = 0
 
-    def first(self, items: Iterable[ScoredMention | KindNote], limit: int) -> list[ShownQuote]:
+    def first(self, items: Iterable[ScoredMention | KindNote | CareTip], limit: int) -> list[ShownQuote]:
         """The first `limit` items whose quote passes the check, as quotes to show."""
         shown: list[ShownQuote] = []
         for item in items:
@@ -258,7 +280,7 @@ def _shown_text(quote: str, body: str) -> str:
     return text if verify_quote(body, text) else quote
 
 
-def _badges(item: ScoredMention | KindNote) -> tuple[str, ...]:
+def _badges(item: ScoredMention | KindNote | CareTip) -> tuple[str, ...]:
     """Module 5's reasons in words; when it gave none, the plain levels ("medium-credibility voice", "short-term use")."""
     if item.badges:
         return item.badges
@@ -272,7 +294,7 @@ def _most_credible_first(items: Iterable[ScoredMention]) -> list[ScoredMention]:
 
 
 def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _QuoteCheck, ranking: RankingResult,
-          price: ShownPrice) -> Pick:
+          price: ShownPrice, care: list[ShownCareTip]) -> Pick:
     warnings = product.credible_warnings
     return Pick(
         rank=rank,
@@ -286,7 +308,39 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
         score=product.score,
         breakdown=product.breakdown,
         price=price,
+        care=care,
     )
+
+
+def _care_tips(tips: CareTips | None, check: _QuoteCheck) -> list[ShownCareTip]:
+    """Up to CARE_TIPS_PER_PICK care tips for one pick: its own tips first, then its kind's, each group most credible
+    voice first (in thread order on a tie). A tip that says the same as one already shown is skipped (same_tip); a
+    tip whose quote fails the check is dropped and the next one takes its place."""
+    if tips is None:
+        return []
+    shown: list[ShownCareTip] = []
+    for item in _most_credible_voice_first(tips.own) + _most_credible_voice_first(tips.kind):
+        if len(shown) == CARE_TIPS_PER_PICK:
+            break
+        if any(same_tip(item.tip, other.tip) for other in shown):
+            continue
+        quote = check.first([item], 1)
+        if quote:
+            shown.append(ShownCareTip(_as_sentence(item.tip), quote[0]))
+    return shown
+
+
+def _most_credible_voice_first(tips: Iterable[CareTip]) -> list[CareTip]:
+    """High voices before medium ones; equal voices keep their order, so the result is always the same."""
+    return sorted(tips, key=lambda tip: VOICE_LEVELS.index(tip.voice))
+
+
+def _as_sentence(tip: str) -> str:
+    """A tip as a short sentence: "descale every 6 months" -> "Descale every 6 months.". Only the first letter and the
+    full stop change: the words stay the AI's."""
+    tip = tip.strip()
+    tip = tip[:1].upper() + tip[1:]
+    return tip if tip.endswith((".", "!", "?")) else tip + "."
 
 
 def _reason(product: ProductScore, ranking: RankingResult) -> str:
@@ -399,9 +453,10 @@ def _plural(n: int, noun: str) -> str:
 def unverified_claims(answer: Answer, bodies: Mapping[str, str]) -> list[str]:
     """Every problem with a finished answer's quotes, in words; an empty list means every claim is backed.
 
-    Checks that each quote shown is found word for word in its comment as it is now, isn't from a quoted block,
-    and matches at most QUOTE_MAX_WORDS words, that each pick has at least MIN_QUOTES_PER_PICK quotes, and that
-    each skip-these product has at least one. The problems name the comment, never the failed quote's words.
+    Checks that each quote shown (care tips' included) is found word for word in its comment as it is now, isn't
+    from a quoted block, and matches at most QUOTE_MAX_WORDS words, that each pick has at least MIN_QUOTES_PER_PICK
+    quotes, and that each skip-these product has at least one. The problems name the comment, never the failed
+    quote's words.
     """
     problems = []
     for where, quote in _every_quote(answer):
@@ -424,6 +479,8 @@ def _every_quote(answer: Answer) -> Iterator[tuple[str, ShownQuote]]:
             yield f"pick {pick.rank} ({pick.name})", quote
         for quote in pick.downsides:
             yield f"pick {pick.rank} ({pick.name}) downside", quote
+        for item in pick.care:
+            yield f"pick {pick.rank} ({pick.name}) care tip", item.quote
     for item in answer.look_for:
         yield f"what to look for ({item.kind})", item.quote
     for item in answer.skip:
@@ -469,6 +526,9 @@ def _render_pick(pick: Pick) -> list[str]:
             lines += _render_quote_block(quote)
     else:
         lines += [NO_DOWNSIDES, ""]
+    if pick.care:
+        lines += [f"**{CARE_HEADING}**", ""]
+        lines += [f"- **{item.tip}** {_render_quote_inline(item.quote)}" for item in pick.care] + [""]
     lines += [f"**{BREAKDOWN_HEADING}**", ""] + _render_breakdown(pick.score, pick.breakdown) + [""]
     return lines
 

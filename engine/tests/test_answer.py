@@ -5,14 +5,17 @@ deleted since, or a quote over the word limit must never reach the answer, in an
 All data is made up (engine/tests/ranking_factories.py and factories.py).
 """
 
+import dataclasses
 import json
 from datetime import date
+from itertools import count
 
 import pytest
 
 from engine import answer as wording
 from engine.answer import ShownQuote, answer_to_dict, comment_bodies, render_markdown, unverified_claims, write_answer
-from engine.config import MIN_QUOTES_PER_PICK, PRICE_MAX_AGE_DAYS, QUOTE_MAX_WORDS, QUOTES_PER_PICK
+from engine.care_tips import CareTip, CareTips
+from engine.config import CARE_TIPS_PER_PICK, MIN_QUOTES_PER_PICK, PRICE_MAX_AGE_DAYS, QUOTE_MAX_WORDS, QUOTES_PER_PICK
 from engine.models import Thread
 from engine.prices import Price, PriceCheck
 from engine.query import Budget
@@ -476,3 +479,136 @@ def test_the_markdown_shows_the_price_the_shop_link_and_the_budget_note():
     assert f"[{wording.PRICE_LINK_TEXT}](https://shop.example/tojiro-dp-gyuto)" in text
     assert wording.BUDGET_WITHIN.format(max="£100") in text
     assert wording.PRICE_UNKNOWN in text  # the other picks
+
+
+# --- Care tips: how to make it last (Noemi, 9 Oct 2026) ---
+
+_care_ids = count(1)
+
+
+def care_tip(tip: str, *, is_kind: bool = False, voice: str = "high", quote: str | None = None,
+             badges: tuple[str, ...] = ("well upvoted",)) -> CareTip:
+    """One credible care tip, from a comment of its own, with a quote of its own unless given."""
+    comment = f"cCare{next(_care_ids)}"
+    return CareTip(about="chef knife" if is_kind else "Tojiro DP Gyuto", is_kind=is_kind, tip=tip,
+                   quote=quote or f"My advice: {tip}, says comment {comment}.", thread_id="t1", comment_id=comment,
+                   comment_url=f"https://www.reddit.com/r/test/comments/t1/comment/{comment}/", voice=voice,
+                   badges=badges)
+
+
+def with_care(own=(), kind=(), key="tojiro-dp-gyuto"):
+    """The kitchen case, with care tips for one product: (answer, bodies)."""
+    ranking, bodies, _ = kitchen_case()
+    bodies = bodies | bodies_for(*own, *kind)
+    answer = write_answer(ranking, bodies, "chef knife", care={key: CareTips(list(own), list(kind))})
+    return answer, bodies
+
+
+def test_care_heading_wording():
+    assert wording.CARE_HEADING == "How to make it last"
+    assert CARE_TIPS_PER_PICK == 2
+
+
+def test_each_pick_gets_its_own_care_tips_first_then_its_kinds():
+    hand_wash, hone, dry = care_tip("hand wash only"), care_tip("hone it weekly", is_kind=True), care_tip("dry it", is_kind=True)
+    answer, bodies = with_care(own=[hand_wash], kind=[hone, dry])
+    tojiro, global_g2, victorinox = answer.picks
+    assert [c.tip for c in tojiro.care] == ["Hand wash only.", "Hone it weekly."]
+    assert [c.quote.text for c in tojiro.care] == [hand_wash.quote, hone.quote]
+    assert tojiro.care[0].quote.url == hand_wash.comment_url and tojiro.care[0].quote.badges == ("well upvoted",)
+    assert global_g2.care == [] and victorinox.care == []
+    assert unverified_claims(answer, bodies) == []
+
+
+def test_at_most_care_tips_per_pick():
+    answer, _ = with_care(own=[care_tip(f"tip number {n}") for n in range(4)])
+    assert len(answer.picks[0].care) == CARE_TIPS_PER_PICK
+
+
+def test_the_most_credible_tip_comes_first_within_own_and_kind_tips():
+    medium, high = care_tip("oil the blade", voice="medium"), care_tip("use a wooden board")
+    kind_medium, kind_high = care_tip("strop it", is_kind=True, voice="medium"), care_tip("hone it", is_kind=True)
+    answer, _ = with_care(own=[medium], kind=[kind_medium, kind_high])
+    assert [c.tip for c in answer.picks[0].care] == ["Oil the blade.", "Hone it."]
+    answer, _ = with_care(own=[medium, high])
+    assert [c.tip for c in answer.picks[0].care] == ["Use a wooden board.", "Oil the blade."]
+
+
+def test_never_two_care_tips_with_the_same_tip():
+    answer, _ = with_care(own=[care_tip("descale every 6 months")],
+                          kind=[care_tip("Descale it every 6 months.", is_kind=True), care_tip("use filtered water", is_kind=True)])
+    assert [c.tip for c in answer.picks[0].care] == ["Descale every 6 months.", "Use filtered water."]
+
+
+def test_a_care_tip_written_as_a_sentence_is_shown_as_it_is():
+    answer, _ = with_care(own=[care_tip("Hand wash only!")])
+    assert answer.picks[0].care[0].tip == "Hand wash only!"
+
+
+def test_a_care_quote_that_fails_is_dropped_never_shown_and_the_next_tip_takes_its_place():
+    fake, real = care_tip("hand wash only", quote=FAKE), care_tip("hand wash only", is_kind=True)
+    ranking, bodies, _ = kitchen_case()
+    without = write_answer(ranking, bodies, "chef knife")
+    bodies = bodies | bodies_for(real) | {fake.comment_id: "I just hand wash it, honestly."}
+    answer = write_answer(ranking, bodies, "chef knife", care={"tojiro-dp-gyuto": CareTips([fake], [real])})
+    assert [c.quote.text for c in answer.picks[0].care] == [real.quote]
+    assert FAKE not in shown_text(answer)
+    assert answer.quotes_dropped == without.quotes_dropped + 1
+    assert unverified_claims(answer, bodies) == []
+
+
+def test_a_care_quote_whose_comment_is_gone_or_from_a_quoted_block_is_dropped():
+    gone, quoted = care_tip("hand wash only"), care_tip("no dishwasher", quote="Never put it in the dishwasher.")
+    ranking, bodies, _ = kitchen_case()
+    bodies = bodies | {quoted.comment_id: "&gt; Never put it in the dishwasher.\n\nI do, and mine is fine."}
+    answer = write_answer(ranking, bodies, care={"tojiro-dp-gyuto": CareTips([gone, quoted], [])})
+    assert answer.picks[0].care == []
+    assert "dishwasher" not in shown_text(answer) and gone.quote not in shown_text(answer)
+
+
+def test_care_tips_never_make_a_pick_and_go_only_with_picks():
+    # The Tefal knife is on the skip list: its care tips are never shown, and the picks are the same as without care.
+    answer, _ = with_care(own=[care_tip("hand wash only")], key="tefal-knife")
+    assert [p.name for p in answer.picks] == ["Tojiro DP Gyuto", "Global G-2", "Victorinox Fibrox"]
+    assert all(p.care == [] for p in answer.picks) and "hand wash only" not in shown_text(answer).lower()
+
+
+def test_without_care_tips_every_pick_has_none():
+    ranking, bodies, _ = kitchen_case()
+    answer = write_answer(ranking, bodies, "chef knife")
+    assert all(p.care == [] for p in answer.picks)
+    assert wording.CARE_HEADING not in render_markdown(answer)
+
+
+def test_the_check_covers_care_quotes():
+    answer, bodies = with_care(own=[care_tip("hand wash only")])
+    real = answer.picks[0].care[0].quote
+    answer.picks[0].care[0] = dataclasses.replace(answer.picks[0].care[0], quote=planted(real))
+    problems = unverified_claims(answer, bodies)
+    assert len(problems) == 1 and "pick 1" in problems[0] and "care tip" in problems[0]
+    assert real.comment_id in problems[0] and FAKE not in problems[0]
+
+
+def test_a_care_tip_with_no_badges_shows_the_plain_voice_level():
+    answer, _ = with_care(own=[care_tip("hand wash only", voice="medium", badges=())])
+    assert answer.picks[0].care[0].quote.badges == ("medium-credibility voice",)
+
+
+def test_the_markdown_shows_how_to_make_it_last_under_the_pick():
+    hand_wash = care_tip("hand wash only")
+    answer, _ = with_care(own=[hand_wash])
+    text = render_markdown(answer)
+    assert f"**{wording.CARE_HEADING}**" in text
+    assert f'- **Hand wash only.** "{hand_wash.quote}" (well upvoted · [{wording.LINK_TEXT}]({hand_wash.comment_url}))' in text
+    tojiro = text.split("## 2.")[0]
+    assert tojiro.index(wording.DOWNSIDES_HEADING) < tojiro.index(wording.CARE_HEADING) < tojiro.index(wording.BREAKDOWN_HEADING)
+    assert text.count(wording.CARE_HEADING) == 1  # only the pick with tips has the heading
+
+
+def test_the_care_tips_turn_into_json():
+    answer, _ = with_care(own=[care_tip("hand wash only")])
+    data = json.loads(json.dumps(answer_to_dict(answer)))
+    care = data["picks"][0]["care"]
+    assert set(care[0]) == {"tip", "quote"} and care[0]["tip"] == "Hand wash only."
+    assert set(care[0]["quote"]) == {"text", "comment_id", "url", "badges"}
+    assert data["picks"][1]["care"] == []

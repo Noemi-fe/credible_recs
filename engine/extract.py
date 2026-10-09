@@ -24,11 +24,16 @@ From instructions v6 (decided 9 Oct 2026) each mention also says what type of pr
 "cleanser") and how well the writer knows it ("evidence": "long-term use", with "evidence_tags" saying why).
 Older extractions have neither and still load.
 
+From instructions v7 (Noemi, 9 Oct 2026) an extraction also lists care tips ("care"): advice on looking after a
+product or a kind of product so it lasts or works well ("descale it every 6 months"), shown under the picks as "How
+to make it last" (engine/care_tips.py). Older extractions have no "care" list and still load.
+
 The guardrail (the brief's rule): every quote must exist word for word in its comment, checked by code, not by
 the AI, and a quote that fails is dropped. check_extraction keeps a mention only if its comment is in the thread
 and still readable (not deleted or removed), its quote is found word for word (engine.verify_quotes), and the
 quote is at most 50 words (QUOTE_MAX_WORDS), and its evidence tags, if any, are known ones (config.EVIDENCE_TAGS).
-Every other mention is set aside with the reason, never used.
+Every other mention is set aside with the reason, never used. Notes, agreements and care tips are checked the
+same way (their comment and their quote).
 The share kept is the quote pass rate, which shows how often the AI quotes faithfully.
 
 The instructions version: the instruction file starts with a line such as "Version: extract-v1", and each
@@ -126,6 +131,21 @@ class ExtractedNote(Record):
     quote: Text
 
 
+class ExtractedCareTip(Record):
+    """Advice on looking after, using or maintaining a product or a kind of product, so it lasts or works well
+    ("descale it every 6 months", "never put a carbon steel knife in the dishwasher"). Instructions v7.
+
+    Not a product mention and not a note (notes are about choosing what to buy): it is shown under a pick as "How to
+    make it last" (Noemi, 9 Oct 2026). Nothing here is trusted until checked, like the rest of the file.
+    """
+
+    comment_id: Id
+    about: Text  # the product as the comment names it ("Zojirushi kettle"), or the kind ("cast iron skillet")
+    is_kind: bool = False  # True when the tip is about a kind of product, False when about one specific product
+    tip: Text  # the tip in a few plain words, saying only what the quote says: "descale every 6 months"
+    quote: Text
+
+
 class ExtractedAgreement(Record):
     """A reply agreeing with the comment above ("This!"): evidence that the other writer is credible."""
 
@@ -143,6 +163,7 @@ class Extraction(Record):
     mentions: list[ExtractedMention]  # empty means the thread mentions no product
     notes: list[ExtractedNote] = []  # from instructions v2; older extractions have none
     agreements: list[ExtractedAgreement] = []
+    care: list[ExtractedCareTip] = []  # from instructions v7 (Noemi, 9 Oct 2026); older extractions have none
 
 
 def extracted_dir(threads_dir: Path) -> Path:
@@ -160,6 +181,8 @@ class CheckResult:
     rejected_notes: list[tuple[ExtractedNote, str]] = field(default_factory=list)
     kept_agreements: list[ExtractedAgreement] = field(default_factory=list)
     rejected_agreements: list[tuple[ExtractedAgreement, str]] = field(default_factory=list)
+    kept_care: list[ExtractedCareTip] = field(default_factory=list)  # care tips (instructions v7), checked like notes
+    rejected_care: list[tuple[ExtractedCareTip, str]] = field(default_factory=list)
 
     @property
     def quote_pass_rate(self) -> float | None:
@@ -185,7 +208,8 @@ def check_extraction(extraction: Extraction, thread: Thread) -> CheckResult:
       and the comment it takes its product from is still readable: a product named only in deleted or removed text
       can't be checked or used;
     - every evidence tag is a known one (config.EVIDENCE_TAGS; instructions v6).
-    Mentions keep their order in both lists.
+    Mentions keep their order in both lists. Notes and care tips (instructions v7) go through the same checks of
+    their comment and quote (the first six above); agreements too, and they must be replies.
     """
     comments = {comment.id: comment for comment in thread.comments}
     result = CheckResult()
@@ -217,11 +241,17 @@ def check_extraction(extraction: Extraction, thread: Thread) -> CheckResult:
             result.kept_agreements.append(agreement)
         else:
             result.rejected_agreements.append((agreement, reason))
+    for tip in extraction.care:
+        reason = _why_rejected(tip, extraction, thread, comments)
+        if reason is None:
+            result.kept_care.append(tip)
+        else:
+            result.rejected_care.append((tip, reason))
     return result
 
 
 def _why_rejected(mention, extraction: Extraction, thread: Thread, comments: dict) -> str | None:
-    """The first check a mention, note or agreement fails, or None. Each has a comment_id and a quote."""
+    """The first check a mention, note, agreement or care tip fails, or None. Each has a comment_id and a quote."""
     if extraction.thread_id != thread.id:
         return f"the extraction is of thread {extraction.thread_id}, not {thread.id}"
     comment = comments.get(mention.comment_id)
@@ -489,17 +519,19 @@ def _print_todo(threads_dir: Path, version: str, instructions: Path) -> int:
 def _print_check(threads_dir: Path) -> int:
     results, problems = _check_folder(threads_dir)
     for thread_id, result in results.items():
+        # A thread with no products can still have notes and care tips: their counts are printed all the same.
         if not result.kept and not result.rejected:
             print(f"{thread_id}: no products mentioned")
-            continue
-        print(f"{thread_id}: {len(result.kept)} kept, {len(result.rejected)} rejected")
+        else:
+            print(f"{thread_id}: {len(result.kept)} kept, {len(result.rejected)} rejected")
         for mention in result.kept:
             print(f"  kept      {mention.comment_id}  {mention.stance:<9}  {mention.product}")
         # A rejected quote is never printed: it failed verification, so it must not be shown.
         for mention, reason in result.rejected:
             print(f"  rejected  {mention.comment_id}  {mention.stance:<9}  {mention.product}: {reason}")
         for kind, kept_items, rejected_items in (("notes", result.kept_notes, result.rejected_notes),
-                                                 ("agreements", result.kept_agreements, result.rejected_agreements)):
+                                                 ("agreements", result.kept_agreements, result.rejected_agreements),
+                                                 ("care tips", result.kept_care, result.rejected_care)):
             if kept_items or rejected_items:
                 print(f"  {kind}: {len(kept_items)} kept, {len(rejected_items)} rejected")
                 for item, reason in rejected_items:

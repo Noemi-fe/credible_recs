@@ -36,6 +36,10 @@ many comments or threads they praise it in (engine.rank).
 
 Names are shown as a UK shopper knows them (decision 12): "Sage", not "Breville" (engine.group_products.uk_name).
 
+Care tips, "How to make it last" (Noemi, 9 Oct 2026): the credible care tips of the threads read (extraction
+instructions v7) go with the products they are about (engine/care_tips.py), and the answer shows them under each pick.
+They never change the ranking. Older extractions have none, so their answers don't change.
+
 Writers' standing (account age, karma, contributions, flair) isn't in the saved threads: Parse gives only names.
 With `profiles` (engine.profiles.StoredProfiles in the command line, the web demo and the evaluation), it is filled in
 from the library's profile store (kept for LIBRARY_REFRESH_DAYS, Noemi's decision of 9 Oct 2026) and Arctic Shift's
@@ -52,6 +56,7 @@ from datetime import date
 from pathlib import Path
 
 from engine.answer import Answer, comment_bodies, render_markdown, write_answer
+from engine.care_tips import CareTips, attach_care_tips, credible_care_tips
 from engine.config import (
     BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE,
     BRAND_PICK_TITLE_SHARE,
@@ -128,7 +133,8 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     result.notes_without_kind = [n.about for n in kind_mentions if n not in with_a_kind]
     scored, kind_notes = _score(threads, checked, kept_groups, kinds)
     result.ranking = rank_products(scored, query.category, kind_notes, placements(kinds))
-    result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks)
+    care = _care_tips(threads, checked, kept_groups, kinds, query)
+    result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care)
     return result
 
 
@@ -302,8 +308,20 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
 
 
 def _commented(result: CheckResult) -> set[str]:
-    """The comments whose writers need a profile: those with kept product mentions or kept notes (review, 9 Oct 2026)."""
-    return {m.comment_id for m in result.kept} | {n.comment_id for n in result.kept_notes}
+    """The comments whose writers need a profile: those with kept product mentions, notes (review, 9 Oct 2026) or
+    care tips (9 Oct 2026)."""
+    return ({m.comment_id for m in result.kept} | {n.comment_id for n in result.kept_notes}
+            | {c.comment_id for c in result.kept_care})
+
+
+# --- Care tips: how to make it last (Noemi, 9 Oct 2026) ---
+
+def _care_tips(threads: list[Thread], checked: dict[str, CheckResult], groups: list[ProductGroup], kinds,
+               query: ParsedQuery) -> dict[str, CareTips]:
+    """The credible care tips of the threads read, for the products ranked: {product key: CareTips}
+    (engine/care_tips.py). An extraction made before instructions v7 has no care tips, so nothing changes for it."""
+    tips = credible_care_tips(threads, checked)
+    return attach_care_tips(tips, groups, kinds, query.category, query.product_type or "")
 
 
 def _writer(comment: Comment) -> str | None:

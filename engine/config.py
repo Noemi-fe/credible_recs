@@ -272,3 +272,9 @@ BUDGET_DEFAULT_CURRENCY = "GBP"
 # --- Live check of shown quotes (Noemi, 9 Oct 2026: Reddit's embed service) ---
 # Seconds between two reads of Reddit's embed page (engine/live_check.py): an answer reads about 9 comments.
 LIVE_CHECK_MIN_INTERVAL = 3.0
+
+# --- Care tips (Noemi, 9 Oct 2026) ---
+# Alongside each pick, credible advice from its threads on making it last ("descale it every 6 months"; extraction
+# instructions v7, engine/care_tips.py), so what people buy lasts longer. Showing them is Noemi's decision.
+# PROPOSED: up to this many per pick, the product's own tips first, then its kind's, never the same tip twice.
+CARE_TIPS_PER_PICK = 2
