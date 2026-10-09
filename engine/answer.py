@@ -10,7 +10,11 @@ What each pick shows (the brief):
 - two or three quotes, the most credible first, each with its "why this voice counts" badges and a link to the
   comment;
 - known downsides: quotes from credible warnings (and the disagreement flag when there are several);
-- the score breakdown, signal by signal.
+- the score breakdown, signal by signal;
+- its price (Noemi's decision 11, 9 Oct 2026): from the price list (engine/prices.py), with the shop, the day it was
+  checked and a link to the shop's own page for it (https only); or "Price not checked yet". When the request has a
+  budget, a line says how the price compares with it. Products over the budget never get here: the pipeline leaves
+  them out.
 Under the picks: "what to look for" (a short blueprint from credible notes about kinds of product), the
 skip-these list, and an honest message when fewer than 3 products have enough evidence.
 
@@ -33,6 +37,7 @@ The wording users see is in the constants below, marked PROPOSED: it waits for N
 import dataclasses
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass
+from datetime import date
 
 from engine.config import (
     DOWNSIDES_PER_PICK,
@@ -41,12 +46,14 @@ from engine.config import (
     MIN_QUOTES_PER_PICK,
     MIN_THREADS,
     PICKS_SHOWN,
+    PRICE_MAX_AGE_DAYS,
     QUOTE_MAX_WORDS,
     QUOTES_PER_PICK,
     QUOTES_PER_SKIPPED_PRODUCT,
 )
 from engine.extract import _as_written, _in_quoted_block, _own_words_in_quote_format
 from engine.models import Thread
+from engine.prices import PriceCheck
 from engine.rank import KindNote, ProductScore, RankingResult, ScoredMention, ScoreBreakdown, is_credible
 from engine.verify_quotes import find_quote, verify_quote
 
@@ -74,6 +81,17 @@ BREAKDOWN_HEADING = "Score breakdown"
 LOOK_FOR_HEADING = "What to look for"
 SKIP_HEADING = "Skip these"
 LINK_TEXT = "see the comment"
+# Prices and budgets (decision 11; wording PROPOSED 9 Oct 2026, awaiting Noemi).
+PRICE_LABEL = "Price"
+PRICE = "{amount} at {shop}, checked {date}"
+PRICE_UNKNOWN = "Price not checked yet"
+PRICE_LINK_TEXT = "see it at the shop"
+BUDGET_WITHIN = "Within your budget (up to {max})."
+BUDGET_NOT_CHECKED = "Not checked against your budget (up to {max}): {why}."
+BUDGET_WHY_UNKNOWN = "no price checked yet"
+BUDGET_WHY_CURRENCY = "its price is in {currency}"
+BUDGET_WHY_OLD = "its price was checked over {days} days ago, so it may have changed"
+CURRENCY_SIGNS = {"GBP": "£", "EUR": "€", "USD": "$"}
 
 
 # --- The answer ---
@@ -88,6 +106,20 @@ class ShownQuote:
     badges: tuple[str, ...]  # why this voice counts: "3 years of use", "expert flair"
 
 
+@dataclass(frozen=True)
+class ShownPrice:
+    """A pick's price as shown, from the price list (engine/prices.py). Unknown: only `text` and the budget fields."""
+
+    text: str  # "£120 at John Lewis, checked 9 Oct 2026", or PRICE_UNKNOWN
+    amount: float | None
+    currency: str | None  # GBP, EUR or USD
+    shop: str | None
+    url: str | None  # the shop's own page for the product, from the price list: https only
+    checked_on: str | None  # the day the price was looked up, as "2026-10-09"
+    budget_status: str | None  # "within", "unknown", "other currency" or "out of date"; None without a budget
+    budget_note: str | None  # the same in words, for the shopper; None without a budget
+
+
 @dataclass
 class Pick:
     rank: int  # 1, 2 or 3
@@ -100,6 +132,7 @@ class Pick:
     disagreement: str | None  # the disagreement flag in words, or None
     score: float
     breakdown: ScoreBreakdown  # numbers only: no quote is in it
+    price: ShownPrice  # from the price list, or PRICE_UNKNOWN
 
 
 @dataclass
@@ -141,16 +174,23 @@ def comment_bodies(threads: Iterable[Thread]) -> dict[str, str]:
 
 # --- Writing the answer ---
 
-def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type: str | None = None) -> Answer:
-    """The answer for one request, from its ranking and the current text of its comments ({comment id: body})."""
+def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type: str | None = None,
+                 prices: Mapping[str, PriceCheck] | None = None) -> Answer:
+    """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
+
+    `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
+    with none shows PRICE_UNKNOWN.
+    """
     check = _QuoteCheck(bodies)
+    prices = prices or {}
     picks: list[Pick] = []
     for product in ranking.qualifying:
         if len(picks) == PICKS_SHOWN:
             break
         quotes = check.first(_most_credible_first(product.credible_recommendations), QUOTES_PER_PICK)
         if len(quotes) >= MIN_QUOTES_PER_PICK:
-            picks.append(_pick(len(picks) + 1, product, quotes, check, ranking))
+            price = shown_price(prices.get(product.key))
+            picks.append(_pick(len(picks) + 1, product, quotes, check, ranking, price))
     skip = [_skip_item(product, check) for product in ranking.skip_list]
     look_for = _look_for(ranking, check)
     return Answer(
@@ -231,7 +271,8 @@ def _most_credible_first(items: Iterable[ScoredMention]) -> list[ScoredMention]:
     return sorted(items, key=lambda m: -abs(m.weight))
 
 
-def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _QuoteCheck, ranking: RankingResult) -> Pick:
+def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _QuoteCheck, ranking: RankingResult,
+          price: ShownPrice) -> Pick:
     warnings = product.credible_warnings
     return Pick(
         rank=rank,
@@ -244,6 +285,7 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
         disagreement=DISAGREEMENT.format(voices=_plural(len(warnings), "credible voice")) if product.disputed else None,
         score=product.score,
         breakdown=product.breakdown,
+        price=price,
     )
 
 
@@ -308,6 +350,43 @@ def _message(picks: int, product_type: str | None) -> str | None:
     if picks == 0:
         return NO_PICKS.format(what=f"any {product_type}" if product_type else "a product", rule=rule)
     return FEWER_PICKS.format(products=_plural(picks, "product"), rule=rule, n=picks, wanted=PICKS_SHOWN)
+
+
+def shown_price(check: PriceCheck | None) -> ShownPrice:
+    """A product's price as the shopper sees it: amount, shop and date when known, and how it meets the budget."""
+    budget_status = None if check is None or check.status == "no budget" else check.status
+    budget_note = _budget_note(check) if budget_status else None
+    price = check.price if check is not None else None
+    if price is None:
+        return ShownPrice(PRICE_UNKNOWN, None, None, None, None, None, budget_status, budget_note)
+    text = PRICE.format(amount=_money(price.price, price.currency), shop=price.shop, date=_day(price.checked_on))
+    url = price.url if price.url.startswith("https://") else None  # the price list allows https only; checked again
+    return ShownPrice(text, price.price, price.currency, price.shop, url, price.checked_on.isoformat(),
+                      budget_status, budget_note)
+
+
+def _budget_note(check: PriceCheck) -> str:
+    """How the price meets the budget, in words: within it, or why it wasn't checked against it."""
+    most = _money(check.budget.max, check.budget.currency)
+    if check.status == "within":
+        return BUDGET_WITHIN.format(max=most)
+    why = {
+        "unknown": BUDGET_WHY_UNKNOWN,
+        "other currency": BUDGET_WHY_CURRENCY.format(currency=check.price.currency if check.price else ""),
+        "out of date": BUDGET_WHY_OLD.format(days=PRICE_MAX_AGE_DAYS),
+    }[check.status]
+    return BUDGET_NOT_CHECKED.format(max=most, why=why)
+
+
+def _money(amount: float, currency: str) -> str:
+    """£120, £119.99, €1,200: whole amounts without pennies."""
+    number = f"{amount:,.0f}" if amount == int(amount) else f"{amount:,.2f}"
+    return CURRENCY_SIGNS.get(currency, currency + " ") + number
+
+
+def _day(day: date) -> str:
+    """9 Oct 2026."""
+    return f"{day.day} {day:%b %Y}"
 
 
 def _plural(n: int, noun: str) -> str:
@@ -378,6 +457,7 @@ def render_markdown(answer: Answer) -> str:
 
 def _render_pick(pick: Pick) -> list[str]:
     lines = [f"## {pick.rank}. {pick.name}", "", pick.reason, "", f"**{SUPPORT_LABEL}:** {pick.support}", ""]
+    lines += _render_price(pick.price)
     if pick.disagreement:
         lines += [f"**{pick.disagreement}**", ""]
     lines += [f"**{QUOTES_HEADING}**", ""]
@@ -391,6 +471,16 @@ def _render_pick(pick: Pick) -> list[str]:
         lines += [NO_DOWNSIDES, ""]
     lines += [f"**{BREAKDOWN_HEADING}**", ""] + _render_breakdown(pick.score, pick.breakdown) + [""]
     return lines
+
+
+def _render_price(price: ShownPrice) -> list[str]:
+    """The price line (with the shop's link when there is one) and the budget line, if any."""
+    if price.amount is None:
+        line = price.text
+    else:
+        link = f" · [{PRICE_LINK_TEXT}]({price.url})" if price.url else ""
+        line = f"**{PRICE_LABEL}:** {price.text}{link}"
+    return [line, ""] + ([price.budget_note, ""] if price.budget_note else [])
 
 
 def _one_line(text: str) -> str:

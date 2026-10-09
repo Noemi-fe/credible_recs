@@ -11,7 +11,7 @@
    on this page is here, and only here.
    Everything else comes from the answer itself (engine/answer.py), sent by the server: the reasons,
    support lines, disagreement flags, messages, module 1's question or polite no, and the headings
-   ("In their words", "Known downsides", "see the comment", ...).
+   ("In their words", "Known downsides", "see the comment", the price lines, ...).
    {name} is filled in by the page.
    ===================================================================================================== */
 const LABELS = {
@@ -31,8 +31,10 @@ const LABELS = {
   rank: "Pick {rank}:",
   badges: "Why this voice counts",
   newTab: "(opens Reddit in a new tab)",
+  shopNewTab: "(opens the shop's page in a new tab)",  // added 9 Oct 2026 (decision 11, budgets)
   threadsRead: "Saved Reddit threads read for this answer: {n}.",
   leftOut: "Left out of the ranking: products of another type ({other}), and brand or line names that fit several products ({loose}).",
+  leftOutBudget: "Over your budget, so left out: {n}.",  // added 9 Oct 2026 (decision 11, budgets)
   // The score breakdown: the same words as the text answer's breakdown (engine/answer.py, _render_breakdown).
   bdTotal: "Score {score} = {points} from mentions",
   bdBonus: " + {bonus} kind bonus ({kind}, support {support})",
@@ -146,6 +148,8 @@ h1, h2, h3, h4 { line-height: 1.25; }
 .rank { flex: none; display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-weight: 700; }
 .reason { margin: 10px 0 4px; font-weight: 600; }
 .support { margin: 0 0 8px; }
+.price { margin: 0 0 4px; }
+.budget { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
 .flag { margin: 8px 0; padding: 8px 12px; border-radius: 8px; background: var(--warn-soft); color: var(--text); font-weight: 600; border-left: 4px solid var(--warn); }
 .card h4 { margin: 16px 0 6px; font-size: 15px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
 .muted { color: var(--muted); margin: 0; }
@@ -225,7 +229,9 @@ h1, h2, h3, h4 { line-height: 1.25; }
    2. The server answers with JSON (its shape is described at the top of engine/web.py).
    3. The page draws the answer. Every piece of text from the answer is added as plain text (never as HTML),
       so a comment containing "<script>" shows those characters and is never run.
-   4. Links go to Reddit only: any other address is shown without a link. */
+   4. Links are checked before they are drawn, and there are two kinds only: a quote's comment on Reddit
+      (redditUrl), and a price's shop page (shopUrl: https only, the shop's own address from data/prices.json, as
+      the server sends it). Any other address is shown without a link. */
 (function () {
   "use strict";
   const SETTINGS = JSON.parse(document.getElementById("settings").textContent);
@@ -265,6 +271,15 @@ h1, h2, h3, h4 { line-height: 1.25; }
     const host = url.hostname.toLowerCase();
     const isReddit = host === "reddit.com" || host.endsWith(".reddit.com");
     return (url.protocol === "https:" || url.protocol === "http:") && isReddit ? url.href : null;
+  }
+
+  /** The address, if it is a safe shop page: https only, with no name or password in it; otherwise null.
+      The server only ever sends the shop's own address from the price list (data/prices.json). */
+  function shopUrl(address) {
+    let url;
+    if (!address) return null;
+    try { url = new URL(address); } catch (error) { return null; }
+    return url.protocol === "https:" && url.hostname && !url.username && !url.password ? url.href : null;
   }
 
   function twoDecimals(number) { return Number(number).toFixed(2); }
@@ -324,6 +339,18 @@ h1, h2, h3, h4 { line-height: 1.25; }
     return el("details", { class: "breakdown" }, el("summary", {}, WORDING.breakdown_heading), el("ul", {}, ...lines.map((line) => el("li", {}, line))));
   }
 
+  /** The price line: amount, shop and date with a link to the shop's page, or "Price not checked yet"; then how it
+      meets the budget, if the request has one. */
+  function priceLines(price) {
+    const shop = shopUrl(price.url);
+    const link = shop && el("a", { href: shop, target: "_blank", rel: "noopener noreferrer" },
+      WORDING.price_link_text, el("span", { class: "visually-hidden" }, " " + LABELS.shopNewTab));
+    const line = price.amount === null
+      ? el("p", { class: "price muted" }, price.text)
+      : el("p", { class: "price" }, el("strong", {}, WORDING.price_label + ": "), price.text, link && " · ", link);
+    return [line, price.budget_note && el("p", { class: "budget" }, price.budget_note)];
+  }
+
   function pickCard(pick) {
     const nameId = "pick-" + pick.rank;
     return el("li", {}, el("article", { class: "card", "aria-labelledby": nameId },
@@ -332,6 +359,7 @@ h1, h2, h3, h4 { line-height: 1.25; }
         el("h3", { id: nameId }, el("span", { class: "visually-hidden" }, fill(LABELS.rank, { rank: pick.rank }) + " "), pick.name)),
       el("p", { class: "reason" }, pick.reason),
       el("p", { class: "support" }, el("strong", {}, WORDING.support_label + ": "), pick.support),
+      ...priceLines(pick.price),
       pick.disagreement && el("p", { class: "flag" }, pick.disagreement),
       el("h4", {}, WORDING.quotes_heading),
       quoteList(pick.quotes),
@@ -374,9 +402,10 @@ h1, h2, h3, h4 { line-height: 1.25; }
     if (answer.look_for.length) extras.push(lookForSection(answer.look_for));
     if (answer.skip.length) extras.push(skipSection(answer.skip));
     if (extras.length) parts.push(el("div", { class: "extras" }, ...extras));
+    const overBudget = data.left_out.over_budget ? " " + fill(LABELS.leftOutBudget, { n: data.left_out.over_budget }) : "";
     parts.push(el("p", { class: "footnote" },
       fill(LABELS.threadsRead, { n: data.threads_used.length }) + " " +
-      fill(LABELS.leftOut, { other: data.left_out.other_type, loose: data.left_out.loose })));
+      fill(LABELS.leftOut, { other: data.left_out.other_type, loose: data.left_out.loose }) + overBudget));
     return parts;
   }
 

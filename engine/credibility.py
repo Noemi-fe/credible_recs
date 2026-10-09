@@ -58,13 +58,17 @@ SignKind = Literal["good", "red flag", "note"]
 class Sign:
     """One thing noticed about a comment's writer, such as "well upvoted" or "new account"."""
 
-    name: str  # a voice tag ("well upvoted"), or a sign with no tag of its own yet ("replies agree", "downvoted")
+    name: str  # a voice tag ("well upvoted", "downvoted"), or a sign with no tag of its own ("deleted comment")
     reason: str  # the same thing in words, for the "why this voice counts" badge
     kind: SignKind  # a good sign, a red flag, or just noted (an old post, a deleted account)
 
     @property
     def tag(self) -> str | None:
-        """The voice tag this sign is recorded under: its name, or "other" for a sign with no tag yet."""
+        """The voice tag this sign is recorded under: its name, or "other" for a sign with no tag of its own.
+
+        "replies agree" and "downvoted" became tags on 9 Oct 2026 (Noemi's decision 13), so they are recorded under
+        their own names; "deleted comment" and "no sign of use" are still "other".
+        """
         if self.name in config.VOICE_TAGS:
             return self.name
         return config.OTHER_TAG if self.kind != "note" else None

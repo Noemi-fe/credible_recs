@@ -1,0 +1,152 @@
+"""Decision 11 (Noemi, 9 Oct 2026), budgets: a list of current prices, each with its shop and date.
+
+Every price, shop and link here is made up. No test reads data/prices.json except the one that checks the committed
+file is valid and starts empty.
+"""
+
+import json
+import typing
+from datetime import date, timedelta
+
+import pytest
+
+from engine import config
+from engine.prices import DEFAULT_PRICES, Price, PriceError, check_price, find_price, load_prices
+from engine.query import Budget
+
+TODAY = date(2026, 10, 9)
+
+
+def price(product: str = "Zojirushi kettle", amount: float = 120.0, currency: str = "GBP", category: str = "kitchen",
+          shop: str = "Made-up Kitchen Shop", url: str = "https://shop.example/zojirushi-kettle",
+          checked_on: date = TODAY) -> Price:
+    return Price(product=product, category=category, price=amount, currency=currency, shop=shop, url=url,
+                 checked_on=checked_on)
+
+
+def write_prices(tmp_path, entries: list[dict]):
+    path = tmp_path / "prices.json"
+    path.write_text(json.dumps({"prices": entries}), encoding="utf-8")
+    return path
+
+
+def entry(**overrides) -> dict:
+    data = {"product": "Zojirushi kettle", "category": "kitchen", "price": 120.0, "currency": "GBP",
+            "shop": "Made-up Kitchen Shop", "url": "https://shop.example/zojirushi-kettle", "checked_on": "2026-10-09"}
+    data.update(overrides)
+    return data
+
+
+# --- The file ---
+
+def test_the_committed_price_list_is_valid_and_starts_empty():
+    # Claude fills it later with real look-ups; until then there is nothing in it.
+    assert DEFAULT_PRICES.name == "prices.json" and DEFAULT_PRICES.parent.name == "data"
+    assert json.loads(DEFAULT_PRICES.read_text(encoding="utf-8")) == {"prices": []}
+    assert load_prices() == []
+
+
+def test_a_price_list_loads_with_its_shop_link_and_date(tmp_path):
+    [loaded] = load_prices(write_prices(tmp_path, [entry()]))
+    assert loaded.product == "Zojirushi kettle" and loaded.price == 120.0 and loaded.currency == "GBP"
+    assert loaded.shop == "Made-up Kitchen Shop" and loaded.url == "https://shop.example/zojirushi-kettle"
+    assert loaded.checked_on == TODAY
+
+
+@pytest.mark.parametrize("bad", [
+    {"url": "http://shop.example/kettle"},  # https only
+    {"url": "HTTPS://shop.example/kettle"},  # written the one way the answer checks again
+    {"url": "javascript:alert(1)"},
+    {"url": "https://"},  # no shop
+    {"url": "https://someone:secret@shop.example/kettle"},  # a name and password in a link: never
+    {"url": "https://shop.example/a kettle"},  # spaces
+    {"currency": "JPY"},  # a request can only name GBP, EUR or USD
+    {"category": "other"},
+    {"price": 0},
+    {"price": -5},
+    {"shop": ""},
+    {"product": ""},
+    {"checked_on": "9 Oct 2026"},
+    {"colour": "red"},  # an unknown field is a typo, never ignored
+])
+def test_a_malformed_entry_is_refused_naming_where_it_is(tmp_path, bad):
+    with pytest.raises(PriceError) as refused:
+        load_prices(write_prices(tmp_path, [entry(), entry(**bad)]))
+    assert "entry 2" in str(refused.value)
+
+
+def test_a_file_without_a_price_list_is_refused(tmp_path):
+    path = tmp_path / "prices.json"
+    path.write_text(json.dumps({"price": []}), encoding="utf-8")
+    with pytest.raises(PriceError):
+        load_prices(path)
+
+
+def test_the_currencies_are_the_ones_a_request_can_name():
+    allowed = typing.get_args(Price.model_fields["currency"].annotation)
+    for currency in allowed:
+        Budget(max=10, currency=currency)  # every price currency can be a budget's
+    assert set(allowed) == {"GBP", "EUR", "USD"}
+
+
+# --- Finding a product's price ---
+
+def test_a_product_finds_its_price_by_name_within_its_category():
+    prices = [price("Zojirushi kettle"), price("Zojirushi kettle", category="skincare", amount=5.0)]
+    found = find_price("zojirushi kettle", "kitchen", prices)
+    assert found is not None and found.category == "kitchen" and found.price == 120.0
+    assert find_price("Fellow Stagg EKG", "kitchen", prices) is None
+
+
+def test_the_uk_name_finds_the_us_name_and_back():
+    # Sage is Breville's UK and EU brand: the alias list makes them one product.
+    prices = [price("Sage Smart Grinder Pro", amount=199.0)]
+    assert find_price("Breville Smart Grinder Pro", "kitchen", prices).price == 199.0
+    assert find_price("Sage Smart Grinder Pro", "kitchen", [price("Breville Smart Grinder Pro")]) is not None
+
+
+def test_when_several_prices_fit_the_exact_name_then_the_currency_then_the_newest_then_the_cheapest_wins():
+    longer = price("Zojirushi kettle with gooseneck spout", amount=50.0)
+    euro = price(amount=90.0, currency="EUR")
+    old = price(amount=80.0, checked_on=TODAY - timedelta(days=10))
+    new_dear, new_cheap = price(amount=130.0), price(amount=110.0)
+    assert find_price("Zojirushi kettle", "kitchen", [longer, new_dear]).price == 130.0  # exact words first
+    assert find_price("Zojirushi kettle", "kitchen", [euro, old], currency="GBP").price == 80.0
+    assert find_price("Zojirushi kettle", "kitchen", [old, new_dear, new_cheap]).price == 110.0
+
+
+# --- Checking a price against the request's budget ---
+
+UNDER_100 = Budget(max=100, currency="GBP")
+
+
+def test_without_a_budget_there_is_nothing_to_check():
+    assert check_price(price(), None, TODAY).status == "no budget"
+    assert check_price(None, None, TODAY).status == "no budget"
+    # Only a budget with a max and a currency can be checked: module 1 never guesses a currency.
+    assert check_price(price(), Budget(max=100), TODAY).status == "no budget"
+    assert check_price(price(), Budget(min=50, currency="GBP"), TODAY).status == "no budget"
+
+
+def test_a_known_price_within_the_budget_is_within():
+    check = check_price(price(amount=99.99), UNDER_100, TODAY)
+    assert check.status == "within" and check.budget == UNDER_100
+    assert check_price(price(amount=100.0), UNDER_100, TODAY).status == "within"  # at the max is within
+
+
+def test_a_known_price_above_the_budget_is_over():
+    assert check_price(price(amount=100.01), UNDER_100, TODAY).status == "over"
+
+
+def test_an_unknown_price_or_another_currency_is_not_checked():
+    assert check_price(None, UNDER_100, TODAY).status == "unknown"
+    assert check_price(price(amount=500.0, currency="EUR"), UNDER_100, TODAY).status == "other currency"
+
+
+def test_an_old_price_is_never_used_to_leave_a_product_out():
+    limit = config.PRICE_MAX_AGE_DAYS
+    just_in_time = price(amount=500.0, checked_on=TODAY - timedelta(days=limit))
+    too_old = price(amount=500.0, checked_on=TODAY - timedelta(days=limit + 1))
+    assert check_price(just_in_time, UNDER_100, TODAY).status == "over"
+    assert check_price(too_old, UNDER_100, TODAY).status == "out of date"
+    assert check_price(price(amount=50.0, checked_on=TODAY - timedelta(days=limit + 1)), UNDER_100, TODAY).status == "out of date"

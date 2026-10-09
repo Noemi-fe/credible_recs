@@ -30,11 +30,19 @@ complete as written is shown ("The Ordinary" rather than "TO"), then the most co
 
 The key is the category and the words of the name shown, such as "skincare:cerave renewing sa cleanser". The
 same mentions, in any order, give the same groups and keys.
+
+Two more steps happen only when the name is shown to a shopper (engine/pipeline.py calls them; Noemi's decisions of
+9 Oct 2026). Grouping itself keeps the name above.
+- uk_name: the brand the UK knows a product by (config.UK_BRAND_NAMES): "Sage Smart Grinder Pro", not "Breville".
+- brand_pick_name: a brand or line ranked as a pick says so: "Lodge (their cast iron skillets)".
 """
 
+import re
 from collections import Counter, defaultdict
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 
+from engine.config import BRAND_PICK_NAME, PRODUCT_TYPE_PLURALS, UK_BRAND_NAMES
 from engine.extract import CheckResult
 from engine.match_products import Aliases, join_split_words, known_aliases, normalize_name, product_words, same_words
 
@@ -211,3 +219,19 @@ def _shown_spelling(mentions: list[ProductMention]) -> str:
         return letters, counts[spelling], capitalised
 
     return max(sorted(counts), key=preference)
+
+
+# --- The name shown to a shopper ---
+
+def uk_name(name: str, shown: Mapping[str, str] = UK_BRAND_NAMES) -> str:
+    """The name with each brand the UK knows by another name replaced, whole words only, in any case:
+    "Breville Smart Grinder Pro" -> "Sage Smart Grinder Pro" (decision 12)."""
+    for brand, uk_brand in shown.items():
+        name = re.sub(rf"(?<!\w){re.escape(brand)}(?!\w)", lambda _: uk_brand, name, flags=re.IGNORECASE)
+    return name
+
+
+def brand_pick_name(brand: str, product_type: str) -> str:
+    """The name a brand or line is shown under when it is ranked as a pick: "Lodge (their cast iron skillets)"
+    (decision 9; the wording is config.BRAND_PICK_NAME)."""
+    return BRAND_PICK_NAME.format(brand=brand, products=PRODUCT_TYPE_PLURALS.get(product_type, f"{product_type}s"))

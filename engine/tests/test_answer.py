@@ -6,11 +6,16 @@ All data is made up (engine/tests/ranking_factories.py and factories.py).
 """
 
 import json
+from datetime import date
+
+import pytest
 
 from engine import answer as wording
 from engine.answer import ShownQuote, answer_to_dict, comment_bodies, render_markdown, unverified_claims, write_answer
-from engine.config import MIN_QUOTES_PER_PICK, QUOTE_MAX_WORDS, QUOTES_PER_PICK
+from engine.config import MIN_QUOTES_PER_PICK, PRICE_MAX_AGE_DAYS, QUOTE_MAX_WORDS, QUOTES_PER_PICK
 from engine.models import Thread
+from engine.prices import Price, PriceCheck
+from engine.query import Budget
 from engine.rank import rank_products
 from engine.tests.factories import make_comment, make_thread
 from engine.tests.ranking_factories import bodies_for, mention, mentions, note
@@ -393,3 +398,81 @@ def test_the_quote_shown_is_the_comments_own_text_with_entities_read():
     assert shown and all(text == "Fits 1.7 L & boils in 3 minutes, love it." for text in shown)
     assert "&amp;" not in shown_text(answer)
     assert unverified_claims(answer, {m.comment_id: body for m in items}) == []
+
+# --- Prices and budgets (decision 11, Noemi, 9 Oct 2026) ---
+
+CHECKED = date(2026, 10, 9)
+UNDER_100 = Budget(max=100, currency="GBP")
+
+
+def shop_price(product: str = "Tojiro DP Gyuto", amount: float = 120.0, currency: str = "GBP", checked_on: date = CHECKED) -> Price:
+    return Price(product=product, category="kitchen", price=amount, currency=currency, shop="Made-up Knife Shop",
+                 url="https://shop.example/tojiro-dp-gyuto", checked_on=checked_on)
+
+
+def test_each_pick_shows_its_price_with_the_shop_and_the_date_or_says_it_is_not_checked():
+    ranking, bodies, _ = kitchen_case()
+    prices = {"tojiro-dp-gyuto": PriceCheck(shop_price(), "no budget")}
+    tojiro, global_g2, _ = write_answer(ranking, bodies, "chef knife", prices).picks
+    assert tojiro.price.text == "£120 at Made-up Knife Shop, checked 9 Oct 2026"
+    assert (tojiro.price.amount, tojiro.price.currency, tojiro.price.shop) == (120.0, "GBP", "Made-up Knife Shop")
+    assert tojiro.price.url == "https://shop.example/tojiro-dp-gyuto" and tojiro.price.checked_on == "2026-10-09"
+    assert tojiro.price.budget_status is None and tojiro.price.budget_note is None
+    assert global_g2.price.text == wording.PRICE_UNKNOWN == "Price not checked yet"
+    assert global_g2.price.amount is None and global_g2.price.url is None
+
+
+def test_without_any_price_list_every_pick_says_its_price_is_not_checked():
+    ranking, bodies, _ = kitchen_case()
+    assert {pick.price.text for pick in write_answer(ranking, bodies).picks} == {wording.PRICE_UNKNOWN}
+
+
+def test_amounts_are_written_with_their_currency():
+    ranking, bodies, _ = kitchen_case()
+    for amount, currency, written in ((119.99, "GBP", "£119.99"), (1200.0, "EUR", "€1,200"), (85.5, "USD", "$85.50")):
+        prices = {"tojiro-dp-gyuto": PriceCheck(shop_price(amount=amount, currency=currency), "no budget")}
+        assert write_answer(ranking, bodies, prices=prices).picks[0].price.text.startswith(written + " at ")
+
+
+@pytest.mark.parametrize("status, expected", [
+    ("within", wording.BUDGET_WITHIN.format(max="£100")),
+    ("unknown", wording.BUDGET_NOT_CHECKED.format(max="£100", why=wording.BUDGET_WHY_UNKNOWN)),
+    ("other currency", wording.BUDGET_NOT_CHECKED.format(max="£100", why=wording.BUDGET_WHY_CURRENCY.format(currency="EUR"))),
+    ("out of date", wording.BUDGET_NOT_CHECKED.format(max="£100", why=wording.BUDGET_WHY_OLD.format(days=PRICE_MAX_AGE_DAYS))),
+])
+def test_each_pick_says_how_its_price_compares_with_the_budget(status, expected):
+    ranking, bodies, _ = kitchen_case()
+    known = None if status == "unknown" else shop_price(amount=90.0, currency="EUR" if status == "other currency" else "GBP")
+    pick = write_answer(ranking, bodies, prices={"tojiro-dp-gyuto": PriceCheck(known, status, UNDER_100)}).picks[0]
+    assert pick.price.budget_status == status
+    assert pick.price.budget_note == expected
+    assert "£100" in expected
+
+
+def test_a_shop_link_that_is_not_https_is_never_passed_on():
+    # The price list refuses such a link when it loads; this is the second lock, in case one is ever built by hand.
+    ranking, bodies, _ = kitchen_case()
+    unsafe = Price.model_construct(product="Tojiro DP Gyuto", category="kitchen", price=120.0, currency="GBP",
+                                   shop="Made-up Knife Shop", url="http://shop.example/tojiro", checked_on=CHECKED)
+    pick = write_answer(ranking, bodies, prices={"tojiro-dp-gyuto": PriceCheck(unsafe, "no budget")}).picks[0]
+    assert pick.price.url is None and pick.price.amount == 120.0
+
+
+def test_the_price_turns_into_json():
+    ranking, bodies, _ = kitchen_case()
+    prices = {"tojiro-dp-gyuto": PriceCheck(shop_price(amount=90.0), "within", UNDER_100)}
+    data = json.loads(json.dumps(answer_to_dict(write_answer(ranking, bodies, prices=prices))))
+    price = data["picks"][0]["price"]
+    assert set(price) == {"text", "amount", "currency", "shop", "url", "checked_on", "budget_status", "budget_note"}
+    assert price["amount"] == 90.0 and price["budget_status"] == "within" and price["checked_on"] == "2026-10-09"
+    assert data["picks"][1]["price"]["text"] == wording.PRICE_UNKNOWN
+
+
+def test_the_markdown_shows_the_price_the_shop_link_and_the_budget_note():
+    ranking, bodies, _ = kitchen_case()
+    prices = {"tojiro-dp-gyuto": PriceCheck(shop_price(amount=90.0), "within", UNDER_100)}
+    text = render_markdown(write_answer(ranking, bodies, prices=prices))
+    assert f"**{wording.PRICE_LABEL}:** £90 at Made-up Knife Shop, checked 9 Oct 2026" in text
+    assert f"[{wording.PRICE_LINK_TEXT}](https://shop.example/tojiro-dp-gyuto)" in text
+    assert wording.BUDGET_WITHIN.format(max="£100") in text
+    assert wording.PRICE_UNKNOWN in text  # the other picks
