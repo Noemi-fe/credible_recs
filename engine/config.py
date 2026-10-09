@@ -83,3 +83,36 @@ QUOTE_MAX_WORDS = 50
 # Extraction reads at most this many comments per thread, the highest-scored (8 Oct 2026): the long tail of a
 # 400-comment thread adds little, and highly upvoted comments carry the community's endorsement.
 EXTRACT_MAX_COMMENTS = 150
+
+# --- Modules 6–7: ranking and answers (proposed 9 Oct 2026, awaiting Noemi) ---
+# Values marked "brief" come from docs/brief.md; the others are PROPOSED and wait for Noemi's decision.
+
+# A credible mention (PROPOSED): a recommend or warn from a voice that isn't low, by someone who has used the
+# product (long-term or short-term). Neutral mentions are never credible: they don't take a side.
+CREDIBLE_VOICES = ("high", "medium")
+CREDIBLE_EVIDENCE = ("long-term use", "short-term use")
+# The minimum-evidence rule (brief): a product is shown only with this many credible recommendations, coming
+# from at least this many different threads.
+MIN_CREDIBLE_MENTIONS = 3
+MIN_THREADS = 2
+PICKS_SHOWN = 3  # brief: the top 3
+# The skip-these list (brief: at least 2 credible warnings). PROPOSED: it also needs more credible warnings than
+# credible recommendations, so a product praised as much as it is warned against is never on it.
+SKIP_MIN_CREDIBLE_WARNINGS = 2
+# The disagreement flag (PROPOSED): praised by at least one credible voice and warned against by at least this many.
+DISAGREEMENT_MIN_CREDIBLE_WARNINGS = 2
+# Kind support (Noemi, 8–9 Oct 2026; values PROPOSED). A kind's support is the sum of the weights of its credible
+# notes. A kind leads when it has at least KIND_MIN_CREDIBLE_NOTES credible recommending notes and at least
+# KIND_LEAD_RATIO times the support of the next kind ("far more"). Its products get KIND_BONUS points, on the
+# same scale as a mention's weight: 1.0 is about one high voice with long-term use; a very large value
+# (such as 1000) would always put the leading kind's products first.
+KIND_MIN_CREDIBLE_NOTES = 2
+KIND_LEAD_RATIO = 2.0
+KIND_BONUS = 1.0
+# The answer (brief: two or three quotes per pick, every card at least 2 verified quotes). PROPOSED: up to 2
+# downsides per pick, 2 quotes per skipped product, 3 "what to look for" notes.
+QUOTES_PER_PICK = 3
+MIN_QUOTES_PER_PICK = 2
+DOWNSIDES_PER_PICK = 2
+QUOTES_PER_SKIPPED_PRODUCT = 2
+LOOK_FOR_NOTES = 3
