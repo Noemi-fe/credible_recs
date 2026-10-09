@@ -18,9 +18,9 @@ Every step is a module of its own; this file only passes each one's output to th
 Both lists are kept on the result, so nothing is dropped silently.
 
 Writers' standing (account age, karma, contributions, flair) isn't in the saved threads: Parse gives only names.
-With `profiles` (engine.profiles.CachedOnly in the command line, the web demo and the evaluation), it is filled in
-from Arctic Shift's answers already in the cache, never waiting on a call; `python -m engine.profiles warm` fills
-the cache beforehand.
+With `profiles` (engine.profiles.StoredProfiles in the command line, the web demo and the evaluation), it is filled in
+from the library's profile store (kept for LIBRARY_REFRESH_DAYS, Noemi's decision of 9 Oct 2026) and Arctic Shift's
+48-hour cache, never waiting on a call; `python -m engine.profiles warm data/library/threads` fills both beforehand.
 
 Command line:
     python -m engine.pipeline "<request>"     prints the answer, from data/library
@@ -38,7 +38,7 @@ from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
 from engine.group_products import ProductGroup, ProductMention, group_of, group_products
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.models import Thread
-from engine.profiles import CachedOnly, with_profiles
+from engine.profiles import ProfileStore, StoredProfiles, with_profiles
 from engine.query import PRODUCT_TYPES, ParsedQuery, parse_query
 from engine.rank import KindNote, RankingResult, ScoredMention, rank_products
 from engine.sources import LocalSource, mentions_product, relevance
@@ -66,7 +66,7 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     """Runs modules 1 to 7 on the saved library and returns everything each step decided.
 
     `profiles`: where writers' standing comes from (an object with user_stats and comment_flairs, such as
-    engine.profiles.CachedOnly); None leaves the writers as saved, known by name only.
+    engine.profiles.StoredProfiles); None leaves the writers as saved, known by name only.
     """
     query = parse_query(request)
     result = PipelineResult(query)
@@ -163,11 +163,12 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
     return scored, notes
 
 
-def cached_profiles() -> CachedOnly:
-    """Writers' standing from the Arctic Shift cache only: what the command line, the demo and the evaluation use."""
+def cached_profiles() -> StoredProfiles:
+    """Writers' standing from the library's profile store, then the Arctic Shift cache; never a call. What the command
+    line, the demo and the evaluation use."""
     from engine.arctic_shift import ArcticShiftClient
 
-    return CachedOnly(ArcticShiftClient())
+    return StoredProfiles(ProfileStore(DEFAULT_LIBRARY_DIR / "profiles.json"), ArcticShiftClient())
 
 
 def main(argv: list[str]) -> int:

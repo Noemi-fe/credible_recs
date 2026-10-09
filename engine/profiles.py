@@ -19,9 +19,12 @@ The archive's account numbers are recalculated now and then, not live: one check
 in 2025, so karma and counts can be months old, and accounts newer than the last update aren't found at all. A
 writer the archive doesn't know is left as is: no sign for or against them.
 
-Where the numbers live, for now: only in Arctic Shift's 48-hour cache (.cache/arctic_shift). Noemi hasn't decided
-whether to keep them with the library, so they are never written into data/library/threads. Each answer fills them
-in again (with_profiles), asking Arctic Shift only for what the cache lacks; `warm` fills the cache ahead of time.
+Where the numbers live (Noemi, 9 Oct 2026): with the library, in data/library/profiles.json (ProfileStore), kept
+for LIBRARY_REFRESH_DAYS like the library itself, then asked for again. They are public account numbers, not the
+archived text the 48-hour deletion rule is about. Writers no longer in the library are dropped from it at each
+`warm`, and a writer the archive no longer knows (a deleted account) is stored as unknown, so nothing about them is
+kept. The thread files stay exactly as Parse gave them. Answers (engine.pipeline) read the store, then the 48-hour
+cache, and never wait on Arctic Shift (StoredProfiles); `warm` fills both ahead of time.
 
 When Arctic Shift is busy or down: the writers it can't answer for are left as they were and counted, and the rest
 are still tried; after 3 failures in a row (PROFILE_FAILURES_IN_A_ROW_TO_STOP) it stops asking. A run never crashes.
@@ -30,8 +33,8 @@ Cost: free, but slow on purpose: 1 call per writer, plus 1 per 100 comments for 
 
 Command line:
     python -m engine.profiles warm <threads folder> [--limit N]
-        fills the cache for the writers of comments with kept product mentions in that folder's checked extractions
-        (engine.extract.load_checked). It says how many calls and how long before it starts, then shows progress.
+        fills the cache for the writers of comments with kept product mentions or notes in that folder's checked
+        extractions (engine.extract.load_checked), and, for the library's folder, keeps the answers in its store. It says how many calls and how long before it starts, then shows progress.
         --limit N looks up at most N writers not yet in the cache; the next run carries on from there.
 """
 
@@ -43,8 +46,11 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
-from engine.arctic_shift import FLAIR_BATCH, RETRY_PAUSE, ArcticShiftClient, ArcticShiftError
-from engine.config import PROFILE_FAILURES_IN_A_ROW_TO_STOP
+import json
+from datetime import timedelta
+
+from engine.arctic_shift import FLAIR_BATCH, MISSING, RETRY_PAUSE, ArcticShiftClient, ArcticShiftError
+from engine.config import LIBRARY_REFRESH_DAYS, PROFILE_FAILURES_IN_A_ROW_TO_STOP
 from engine.extract import ExtractionError, load_checked
 from engine.gold import GoldSetError, load_threads
 from engine.models import Author, Comment, Thread
@@ -96,6 +102,79 @@ def look_up(client: ArcticShiftClient, names: Iterable[str], progress: Callable[
         if progress:
             progress(n, outcome)
     return result
+
+
+# --- Kept with the library ---
+
+class ProfileStore:
+    """Writers' numbers and comments' flairs, kept in one file next to the library for LIBRARY_REFRESH_DAYS.
+
+    {"writers": {name in lowercase: {"stats": numbers or null, "checked_at": when}}, "flairs": {comment id:
+    {"flair": text or null, "checked_at": when}}}. null stats means the archive didn't know the writer. An entry
+    older than LIBRARY_REFRESH_DAYS counts as missing, so it is asked for again.
+    """
+
+    def __init__(self, path: Path, clock=None):
+        self.path = Path(path)
+        self._clock = clock or (lambda: datetime.now(UTC))
+        data = json.loads(self.path.read_text(encoding="utf-8")) if self.path.exists() else {}
+        self.writers: dict[str, dict] = data.get("writers", {})
+        self.flairs: dict[str, dict] = data.get("flairs", {})
+
+    def user_stats(self, name: str):
+        """The writer's numbers, None if the archive didn't know them, or MISSING if not stored or too old."""
+        return self._fresh(self.writers.get(name.lower()), "stats")
+
+    def flair(self, comment_id: str):
+        """The comment's flair (None for none), or MISSING if not stored or too old."""
+        return self._fresh(self.flairs.get(comment_id), "flair")
+
+    def put_user(self, name: str, stats: dict | None) -> None:
+        self.writers[name.lower()] = {"stats": stats, "checked_at": self._clock().isoformat()}
+
+    def put_flair(self, comment_id: str, flair: str | None) -> None:
+        self.flairs[comment_id] = {"flair": flair, "checked_at": self._clock().isoformat()}
+
+    def keep_only(self, names: Iterable[str], comment_ids: Iterable[str]) -> None:
+        """Drops every writer and comment that isn't in the library any more."""
+        names, comment_ids = {n.lower() for n in names}, set(comment_ids)
+        self.writers = {n: e for n, e in self.writers.items() if n in names}
+        self.flairs = {c: e for c, e in self.flairs.items() if c in comment_ids}
+
+    def save(self) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = self.path.with_suffix(".json.tmp")
+        temporary.write_text(json.dumps({"writers": self.writers, "flairs": self.flairs}, ensure_ascii=False), encoding="utf-8")
+        temporary.replace(self.path)
+
+    def _fresh(self, entry: dict | None, name: str):
+        if entry is None:
+            return MISSING
+        if self._clock() - datetime.fromisoformat(entry["checked_at"]) > timedelta(days=LIBRARY_REFRESH_DAYS):
+            return MISSING
+        return entry[name]
+
+
+class StoredProfiles:
+    """Writers' standing for an answer: the library's store first, then the 48-hour cache; never a call."""
+
+    def __init__(self, store: ProfileStore, client: ArcticShiftClient | None = None):
+        self.store = store
+        self.cached = CachedOnly(client) if client is not None else None
+
+    def user_stats(self, author: str) -> dict | None:
+        stats = self.store.user_stats(author)
+        if stats is not MISSING:
+            return stats
+        return self.cached.user_stats(author) if self.cached else None
+
+    def comment_flairs(self, comment_ids: Iterable[str]) -> dict[str, str | None]:
+        ids = list(comment_ids)
+        found = {cid: f for cid in ids if (f := self.store.flair(cid)) is not MISSING}
+        rest = [cid for cid in ids if cid not in found]
+        if rest and self.cached:
+            found |= self.cached.comment_flairs(rest)
+        return found
 
 
 # --- At answer time: the cache only ---
@@ -226,36 +305,44 @@ class WarmResult:
 
 
 def writers_with_kept_mentions(threads_dir: Path) -> dict[str, list[str]]:
-    """{writer: the ids of their comments with kept product mentions}, across the folder's checked extractions.
+    """{writer: the ids of their comments with kept product mentions or notes}, across the folder's checked extractions.
 
+    Notes count too (review, 9 Oct 2026): a "what to look for" note's writer needs a profile as much as a product's.
     Deleted accounts are left out. The folder's threads and extractions are only read, never changed.
     """
     checked = load_checked(threads_dir)
     writers: dict[str, list[str]] = {}
     for thread in load_threads(threads_dir):
-        kept = {m.comment_id for m in checked[thread.id].kept} if thread.id in checked else set()
+        result = checked.get(thread.id)
+        kept = {m.comment_id for m in result.kept} | {n.comment_id for n in result.kept_notes} if result else set()
         for comment in thread.comments:
             if comment.id in kept and comment.author is not None:
                 writers.setdefault(comment.author.name, []).append(comment.id)
     return writers
 
 
-def warm(threads_dir: Path, client: ArcticShiftClient, limit: int | None = None, say: Callable[[str], None] = print) -> WarmResult:
-    """Fills the 48-hour cache for the writers of comments with kept product mentions in `threads_dir`.
+def warm(threads_dir: Path, client: ArcticShiftClient, limit: int | None = None, say: Callable[[str], None] = print,
+         store: ProfileStore | None = None) -> WarmResult:
+    """Fills the 48-hour cache for the writers of comments with kept product mentions or notes in `threads_dir`.
 
     Says what it will cost before starting and shows progress after each writer looked up. With `limit`, at most
-    that many writers not yet in the cache are looked up; the others are left for a later run.
+    that many writers not yet in the cache are looked up; the others are left for a later run. With `store` (the
+    library's), writers and flairs already stored aren't asked again, the answers are kept in it, and writers no
+    longer in the folder are dropped from it.
     """
     writers = writers_with_kept_mentions(threads_dir)
-    to_ask = client.uncached_users(writers)
+    stored = [name for name in writers if store is not None and store.user_stats(name) is not MISSING]
+    to_ask = client.uncached_users([name for name in writers if name not in stored])
     later = to_ask[limit:] if limit is not None else []
     asking = [name for name in to_ask if name not in later]
-    cached = [name for name in writers if name not in to_ask]
-    comment_ids = [cid for name in cached + asking for cid in writers[name]]
+    cached = [name for name in writers if name not in to_ask and name not in stored]
+    comment_ids = [cid for name in cached + asking for cid in writers[name] if store is None or store.flair(cid) is MISSING]
     flair_calls = math.ceil(len(client.uncached_comments(comment_ids)) / FLAIR_BATCH)
     calls = len(asking) + flair_calls
 
-    say(f"{_plural(len(writers), 'writer')} with kept product mentions in {threads_dir}; {len(cached)} already in the 48-hour cache.")
+    in_store = f", {len(stored)} kept with the library" if store is not None else ""
+    say(f"{_plural(len(writers), 'writer')} with kept product mentions or notes in {threads_dir}; {len(cached)} already in "
+        f"the 48-hour cache{in_store}.")
     say(f"Each writer costs 1 free Arctic Shift call, and their flairs 1 call per {FLAIR_BATCH} comments; calls are "
         f"{client.min_interval:.0f} s apart.")
     say(f"This run: {_plural(len(asking), 'writer')} and {_plural(flair_calls, 'flair call')}: {_plural(calls, 'call')}, "
@@ -264,29 +351,46 @@ def warm(threads_dir: Path, client: ArcticShiftClient, limit: int | None = None,
         say(f"{_plural(len(later), 'more writer')} left for a later run (--limit {limit}).")
 
     started, calls_before = time.monotonic(), client.calls
+    flairs: dict[str, str | None] = {}
     try:
-        client.comment_flairs(comment_ids)
+        flairs = client.comment_flairs(comment_ids) if comment_ids else {}
     except ArcticShiftError as e:
         say(f"Flairs not fetched ({e}); the writers' numbers are still looked up.")
     from_cache = look_up(client, cached)
     asked = look_up(client, asking, lambda n, outcome: say(
         f"  {n}/{len(asking)} {outcome} ({_duration(time.monotonic() - started)} so far)"))
+    stored_found = sum(store.user_stats(name) is not None for name in stored) if store is not None else 0
+    if store is not None:
+        _keep(store, [from_cache, asked], flairs, writers)
 
     result = WarmResult(
         writers=len(writers),
-        found=len(from_cache.found) + len(asked.found),
-        unknown=len(from_cache.unknown) + len(asked.unknown),
+        found=stored_found + len(from_cache.found) + len(asked.found),
+        unknown=len(stored) - stored_found + len(from_cache.unknown) + len(asked.unknown),
         failed=len(from_cache.failed) + len(asked.failed),
         left_for_later=len(later),
         stopped=asked.stopped,
     )
-    covered = len(cached) + len(asking)
+    covered = len(stored) + len(cached) + len(asking)
     say(f"Found in the archive: {result.found} of {covered} ({result.unknown} unknown to it, {result.failed} failed).")
     if result.stopped:
         say(f"Stopped asking after {PROFILE_FAILURES_IN_A_ROW_TO_STOP} failures in a row: Arctic Shift may be busy or down. Run warm again later.")
-    say(f"Done: {_plural(client.calls - calls_before, 'Arctic Shift call')} in {_duration(time.monotonic() - started)}. "
-        "The answers stay in the cache for 48 hours.")
+    kept = f"Kept with the library for {LIBRARY_REFRESH_DAYS} days." if store is not None else "The answers stay in the cache for 48 hours."
+    say(f"Done: {_plural(client.calls - calls_before, 'Arctic Shift call')} in {_duration(time.monotonic() - started)}. {kept}")
     return result
+
+
+def _keep(store: ProfileStore, lookups: list[LookUps], flairs: dict[str, str | None], writers: dict[str, list[str]]) -> None:
+    """Keeps this run's answers in the library's store, and drops writers and comments no longer in the library."""
+    for found in lookups:
+        for name, stats in found.found.items():
+            store.put_user(name, stats)
+        for name in found.unknown:
+            store.put_user(name, None)
+    for comment_id, flair in flairs.items():
+        store.put_flair(comment_id, flair)
+    store.keep_only(writers, [cid for ids in writers.values() for cid in ids])
+    store.save()
 
 
 def _plural(n: int, noun: str) -> str:
@@ -303,6 +407,16 @@ def _duration(seconds: float) -> str:
 
 # --- Command line ---
 
+def library_store(threads_dir: Path) -> ProfileStore | None:
+    """The library's store when `threads_dir` is the library's threads folder; None for any other folder (the gold
+    set's is committed to git, so no writer's numbers may be kept next to it)."""
+    from engine.library import DEFAULT_LIBRARY_DIR
+
+    if Path(threads_dir).resolve() == (DEFAULT_LIBRARY_DIR / "threads").resolve():
+        return ProfileStore(DEFAULT_LIBRARY_DIR / "profiles.json")
+    return None
+
+
 def main(argv: list[str], client: ArcticShiftClient | None = None) -> int:
     """`client` can be swapped for one with a fake service, which is how the tests run the command line."""
     options = _warm_options(argv)
@@ -311,7 +425,7 @@ def main(argv: list[str], client: ArcticShiftClient | None = None) -> int:
         return 2
     folder, limit = options
     try:
-        result = warm(folder, client or ArcticShiftClient(), limit)
+        result = warm(folder, client or ArcticShiftClient(), limit, store=library_store(folder))
     except (ExtractionError, GoldSetError) as e:
         print(e)
         return 1

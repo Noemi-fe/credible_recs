@@ -352,3 +352,76 @@ def test_cached_only_never_asks_arctic_shift():
     assert cached.user_stats("someone_else") is None  # not warmed yet: no profile, no call
     assert cached.comment_flairs(["c1aaaa", "c2bbbb"]) == {"c1aaaa": "Chef"}
     assert client.calls == 0
+
+
+# --- Kept with the library (Noemi, 9 Oct 2026: refreshed monthly, not only 48 hours) ---
+
+from engine.profiles import ProfileStore, StoredProfiles  # noqa: E402
+
+
+def store_at(tmp_path, clock=None):
+    return ProfileStore(tmp_path / "profiles.json", clock=clock or FakeClock())
+
+
+def test_the_store_keeps_numbers_flairs_and_unknown_writers(tmp_path):
+    store = store_at(tmp_path)
+    store.put_user("Test_Derm", WRITERS["test_derm"])
+    store.put_user("gone_writer", None)  # not in the archive: remembered, so it isn't asked again for a month
+    store.put_flair("c1aaaa", "Dermatologist")
+    store.save()
+    again = store_at(tmp_path)
+    assert again.user_stats("test_derm") == WRITERS["test_derm"]  # names ignore capitals, as on Reddit
+    assert again.user_stats("gone_writer") is None
+    assert again.user_stats("never_seen") is profiles.MISSING
+    assert again.flair("c1aaaa") == "Dermatologist"
+
+
+def test_entries_older_than_the_library_refresh_are_missing(tmp_path):
+    clock = FakeClock()
+    store = store_at(tmp_path, clock)
+    store.put_user("test_derm", WRITERS["test_derm"])
+    clock.now += timedelta(days=config.LIBRARY_REFRESH_DAYS + 1)
+    assert store.user_stats("test_derm") is profiles.MISSING
+
+
+def test_warm_with_a_store_keeps_the_answers_and_asks_nothing_next_time(tmp_path):
+    threads_dir = library_folder(tmp_path, [KEPT, NEWBIE_KEPT])
+    store = store_at(tmp_path)
+    warm(threads_dir, make_client(tmp_path, FakeArchive(writers={"test_derm": numbers()})), say=lambda line: None, store=store)
+    assert store.user_stats("test_derm")["num_comments"] == 900 and store.user_stats("test_newbie") is None
+    assert (tmp_path / "profiles.json").exists()
+    archive = FakeArchive()
+    fresh_cache = ArcticShiftClient(cache_dir=tmp_path / "other_cache", fetch=archive, clock=FakeClock(), sleep=lambda s: None)
+    warm(threads_dir, fresh_cache, say=lambda line: None, store=store_at(tmp_path))
+    assert archive.requests == []  # everything was in the store
+
+
+def test_warm_with_a_store_drops_writers_no_longer_in_the_library(tmp_path):
+    store = store_at(tmp_path)
+    store.put_user("left_the_library", WRITERS["test_derm"])
+    store.save()
+    warm(library_folder(tmp_path, [KEPT]), make_client(tmp_path, FakeArchive()), say=lambda line: None, store=store_at(tmp_path))
+    assert store_at(tmp_path).user_stats("left_the_library") is profiles.MISSING
+
+
+def test_stored_profiles_answer_without_calls_then_fall_back_to_the_cache(tmp_path):
+    store = store_at(tmp_path)
+    store.put_user("test_derm", WRITERS["test_derm"])
+    store.put_flair("c1aaaa", "Dermatologist")
+    client = CountingClient()
+    stored = StoredProfiles(store, client)
+    assert stored.user_stats("test_derm") == WRITERS["test_derm"]
+    assert stored.user_stats("cached_writer")["num_comments"] == 900  # not stored, but in the cache
+    assert stored.user_stats("someone_else") is None
+    assert stored.comment_flairs(["c1aaaa", "c2bbbb"]) == {"c1aaaa": "Dermatologist"}
+    assert client.calls == 0
+
+
+def test_writers_of_what_to_look_for_notes_are_looked_up_too(tmp_path):
+    # Review finding 7: a note's writer was never looked up, so their notes kept a voice no profile could lower.
+    threads_dir = library_folder(tmp_path, [])
+    extraction = json.loads((extracted_dir(threads_dir) / "1fake01.json").read_text())
+    extraction["notes"] = [{"comment_id": "c2bbbb", "about": "fragrance-free cleanser", "stance": "recommend",
+                            "quote": "Same here, 3 years and counting."}]
+    (extracted_dir(threads_dir) / "1fake01.json").write_text(json.dumps(extraction))
+    assert profiles.writers_with_kept_mentions(threads_dir) == {"test_newbie": ["c2bbbb"]}
