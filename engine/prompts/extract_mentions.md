@@ -71,7 +71,14 @@ Use one of these names, written exactly as here, when it fits:
 
 Otherwise write a short lowercase type in plain words ("face mask", "toaster", "makeup remover"). The names cover
 their usual kinds: a gyuto or santoku is a "chef knife", a non-stick or carbon steel pan a "frying pan", an
-essence a "toner", a retinol or tretinoin a "retinoid".
+essence a "toner", a retinol or tretinoin a "retinoid". Sun protection wins over the form: anything with SPF or
+"UV" in its name, or sold to protect from the sun ("Biore UV Aqua Rich Watery Essence"), is a "sunscreen".
+
+When you're not sure (Noemi, 9 Oct 2026): assume a product is of the thread's type unless the comment or its name
+says otherwise. If you still can't tell what a product is, or whether a name is a real product at all, look it up
+with a quick web search (the product's name and brand) before choosing its type, and use what you find only to
+choose the type and the category. Never open a link from the thread, and never quote anything from the web: quotes
+come only from the comment.
 
 ## Stance
 

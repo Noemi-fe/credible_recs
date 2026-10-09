@@ -6,10 +6,13 @@ Two layers (the brief's "Credibility score v1", with Noemi's definitions from da
 - Voice, once per comment (score_voice): about the writer and the comment, whatever the product. It looks for
   good signs (established member, well-regarded account, expert flair, well upvoted for the thread's size, replies
   that agree, recent, enthusiast) and red flags (new account, low karma for its activity, salesy language, promotes
-  one brand, downvoted). The guide's rubric turns them into a level:
+  one brand, downvoted). The rubric (Noemi, 9 Oct 2026) turns them into a level by counting red flags:
       high    good signs worth at least 2 (VOICE_HIGH_MIN_GOOD_SIGNS) and no red flag;
-      medium  no red flag, fewer good signs: an ordinary owner;
-      low     any red flag.
+      medium  no red flag and fewer good signs (an ordinary owner), or exactly one red flag whatever the good signs:
+              a new account alone doesn't sink a genuine expert, but it stops them being high;
+      low     two red flags or more (VOICE_LOW_MIN_RED_FLAGS). Clear paid promotion (a discount code, an affiliate
+              or referral link, "#ad") counts as two on its own (PAID_PROMOTION_RED_FLAGS): it isn't a hint, it's a
+              conflict of interest.
   An old skincare comment can be at most medium (OLD_SKINCARE_POST_MAX_VOICE): formulas change.
   The guide also lists "no sign they've used anything" as a red flag. It is a switch (VOICE_RED_FLAG_NO_USE), off
   for now: Noemi's labels never applied it, and the evidence layer already scores it.
@@ -61,6 +64,7 @@ class Sign:
     name: str  # a voice tag ("well upvoted", "downvoted"), or a sign with no tag of its own ("deleted comment")
     reason: str  # the same thing in words, for the "why this voice counts" badge
     kind: SignKind  # a good sign, a red flag, or just noted (an old post, a deleted account)
+    red_flags: int = 1  # how many red flags it counts as: paid promotion counts as PAID_PROMOTION_RED_FLAGS
 
     @property
     def tag(self) -> str | None:
@@ -154,11 +158,12 @@ def score_voice(
 
 
 def _voice_level(signs: list[Sign], category: str) -> str:
-    """The guide's rubric: any red flag is low; good signs worth enough are high; anything else is medium."""
-    if any(sign.kind == "red flag" for sign in signs):
+    """The rubric: two red flags or more are low; one caps the voice at medium; good signs worth enough are high."""
+    red_flags = sum(sign.red_flags for sign in signs if sign.kind == "red flag")
+    if red_flags >= config.VOICE_LOW_MIN_RED_FLAGS:
         return "low"
     worth = sum(config.VOICE_SIGN_WEIGHTS.get(sign.name, 1) for sign in signs if sign.kind == "good")
-    level = "high" if worth >= config.VOICE_HIGH_MIN_GOOD_SIGNS else "medium"
+    level = "high" if worth >= config.VOICE_HIGH_MIN_GOOD_SIGNS and not red_flags else "medium"
     if category == "skincare" and any(sign.name == "old post" for sign in signs):
         level = _lower(level, config.OLD_SKINCARE_POST_MAX_VOICE)
     return level
@@ -273,6 +278,11 @@ SALESY_PHRASES = (
     "follow me", "subscribe", "sponsored", "#ad", "#sponsored", "#partner", "limited time", "buy now",
     "order now", "shop now", "click here", "while supplies last",
 )
+# Of those, the ones that show the writer is paid when people buy (Noemi, 9 Oct 2026): they count as two red flags.
+PAID_PROMOTION_PHRASES = (
+    "use my code", "use code", "my code", "discount code", "promo code", "coupon code", "referral code",
+    "referral link", "affiliate link", "affiliate", "sponsored", "#ad", "#sponsored", "#partner",
+)
 # Parts of a link that pay the writer when someone buys: an Amazon associate tag, affiliate networks.
 AFFILIATE_LINK_MARKERS = (
     "tag=", "affiliate", "aff_id=", "affid=", "aff=", "rstyle.me", "shopmy.us", "liketk.it", "skimresources",
@@ -289,11 +299,15 @@ _LINK = re.compile(r"https?://\S+")
 
 def _independence_signs(text: str) -> list[Sign]:
     signs = []
+    paid = _first_phrase(text, PAID_PROMOTION_PHRASES)
     pitch = _first_phrase(text, SALESY_PHRASES)
-    if pitch:
-        signs.append(Sign("salesy language", f'sales talk: "{pitch}"', "red flag"))
+    if paid:
+        signs.append(Sign("salesy language", f'paid promotion: "{paid}"', "red flag", config.PAID_PROMOTION_RED_FLAGS))
     elif any(marker in link for link in _LINK.findall(text) for marker in AFFILIATE_LINK_MARKERS):
-        signs.append(Sign("salesy language", "an affiliate link: the writer earns from sales", "red flag"))
+        signs.append(Sign("salesy language", "an affiliate link: the writer earns from sales", "red flag",
+                          config.PAID_PROMOTION_RED_FLAGS))
+    elif pitch:
+        signs.append(Sign("salesy language", f'sales talk: "{pitch}"', "red flag"))
     if _first_phrase(text, AFFILIATION_PHRASES):
         signs.append(Sign("promotes one brand", "says they work for or represent a brand", "red flag"))
     return signs

@@ -96,7 +96,7 @@ PRODUCT_TYPES = (
     ProductType("cleanser", "skincare", ("cleanser", "face wash", "facial wash", "cleansing oil", "cleansing balm", "micellar")),
     ProductType("moisturiser", "skincare", ("moisturiser", "moisturizer", "moisturising cream", "moisturizing cream", "face cream", "night cream", "day cream"),
                 ("lotion", "cream")),
-    ProductType("sunscreen", "skincare", ("sunscreen", "sun screen", "suncream", "sun cream", "sunblock"), ("spf",)),
+    ProductType("sunscreen", "skincare", ("sunscreen", "sun screen", "suncream", "sun cream", "sunblock"), ("spf", "uv", "sun")),
     ProductType("retinoid", "skincare", ("retinol", "retinoid", "retinal", "tretinoin", "adapalene")),
     ProductType("serum", "skincare", ("vitamin c serum", "niacinamide serum"), ("serum", "vitamin c", "niacinamide")),
     ProductType("toner", "skincare", ("toner", "essence")),

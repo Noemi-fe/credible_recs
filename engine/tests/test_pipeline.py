@@ -519,3 +519,25 @@ def test_the_uk_name_sage_is_shown_rather_than_breville(tmp_path):
     assert [pick.name for pick in result.answer.picks] == ["Sage IQ kettle"]
     assert result.answer.picks[0].price.budget_status == "within"
     assert "## 1. Sage IQ kettle" in result.text()  # the quotes keep their own words: they are never changed
+
+
+# --- Noemi's answers of 9 Oct 2026: a budget with no currency is in pounds ---
+
+def test_a_budget_with_no_currency_is_in_pounds(tmp_path):
+    result = answer_request("electric kettle under 100", library_dir=library(tmp_path),
+                            prices=[made_up_price("Zojirushi kettle", 120.0)], today=TODAY)
+    assert result.query.constraints.budget.currency is None  # module 1 doesn't guess; the budget check assumes £
+    assert result.left_out_over_budget == ["Zojirushi kettle"]
+
+
+def test_a_sunscreen_named_as_an_essence_stays_a_sunscreen():
+    # Noemi, 9 Oct 2026: "UV" and "sun" say sunscreen, so "essence" (a toner word) doesn't leave it out.
+    from engine.pipeline import _another_type_by_name
+    from engine.group_products import ProductGroup, ProductMention
+    from engine.query import parse_query
+
+    query = parse_query("lightweight sunscreen for oily skin")
+    for name in ("Biore UV Aqua Rich Watery Essence", "Missha All Around Safe Block Essence Sun"):
+        group = ProductGroup(key=f"skincare:{name.lower()}", name=name, category="skincare",
+                             mentions=[ProductMention("t1", "c1", name, "skincare", "recommend")])
+        assert not _another_type_by_name(group, query)

@@ -94,7 +94,8 @@ def test_an_old_account_with_no_sign_of_activity_is_not_established():
 
 def test_a_brand_new_account_is_a_red_flag():
     voice = voice_for(author=account(created=years_before(RECENT, (config.NEW_ACCOUNT_DAYS - 5) / 365.25), karma=50))
-    assert voice.level == "low"
+    # Changed 9 Oct 2026 (Noemi's voice rubric): one red flag caps a voice at medium; two, or paid promotion, make it low.
+    assert voice.level == "medium"
     assert "new account" in voice.tags
 
 
@@ -104,25 +105,27 @@ def test_account_age_is_measured_when_the_comment_was_written():
     assert "new account" in voice.tags
 
 
-def test_a_genuine_expert_on_a_new_account_is_low_but_still_counts():
+def test_a_genuine_expert_on_a_new_account_is_medium_and_still_counts():
     # Edge case from the brief. The rubric says any red flag is low; the evidence layer still carries what they know.
     comment, thread = make_case(
         body="Dermatologist here. I've prescribed and used the CeraVe SA Cleanser for 10 years.",
         author=account(created=years_before(RECENT, 0.02), flair="Dermatologist"),
     )
     voice = score_voice(comment, thread)
-    assert voice.level == "low"
+    # Changed 9 Oct 2026 (Noemi's voice rubric): one red flag caps a voice at medium; two, or paid promotion, make it low.
+    assert voice.level == "medium"
     assert {"new account", "expert flair"} <= set(voice.tags)
     evidence = score_evidence(comment, "CeraVe SA Cleanser", "recommend")
     assert evidence.level == "long-term use"
     assert mention_weight(voice, evidence, "recommend") > 0
 
 
-def test_a_high_karma_account_that_promotes_is_still_low():
+def test_a_high_karma_account_that_promotes_is_never_high():
     # Edge case from the brief: karma never buys back independence.
     voice = voice_for(body="Full disclosure: I'm the founder. " + USES_IT,
                       author=account(created=years_before(RECENT, 8), karma=250_000))
-    assert voice.level == "low"
+    # Changed 9 Oct 2026 (Noemi's voice rubric): one red flag caps a voice at medium; two, or paid promotion, make it low.
+    assert voice.level == "medium"
     assert "promotes one brand" in voice.tags
     assert "established member" in voice.tags
 
@@ -142,7 +145,8 @@ def test_a_skin_type_flair_is_not_expert_flair():
 
 def test_an_unverified_expert_flair_cannot_outweigh_salesy_language():
     voice = voice_for(body="DM me for a discount. " + USES_IT, author=account(flair="Dermatologist"))
-    assert voice.level == "low"
+    # Changed 9 Oct 2026 (Noemi's voice rubric): one red flag caps a voice at medium; two, or paid promotion, make it low.
+    assert voice.level == "medium"
 
 
 def test_a_deleted_account_has_no_standing_signs_but_is_still_scored():
@@ -155,7 +159,8 @@ def test_a_deleted_account_has_no_standing_signs_but_is_still_scored():
 def test_low_karma_for_its_activity_needs_the_commenter_history():
     history = CommenterHistory(contributions=450)
     voice = voice_for(author=account(created=years_before(RECENT, 5), karma=209), history=history)
-    assert voice.level == "low"
+    # Changed 9 Oct 2026 (Noemi's voice rubric): one red flag caps a voice at medium; two, or paid promotion, make it low.
+    assert voice.level == "medium"
     assert "low karma for its activity" in voice.tags
     # Without the history, a small karma alone proves nothing (a quiet reader, not a spammer).
     assert "low karma for its activity" not in voice_for(author=account(created=years_before(RECENT, 5), karma=209)).tags
@@ -182,7 +187,8 @@ def test_the_profiles_contributions_show_low_karma_for_its_activity():
     # From Arctic Shift (engine/profiles.py): the writer's own count of comments and posts, no history needed.
     writer = account(created=years_before(RECENT, 5), karma=209) | {"contributions": 450}
     voice = voice_for(author=writer)
-    assert voice.level == "low"
+    # Changed 9 Oct 2026 (Noemi's voice rubric): one red flag caps a voice at medium; two, or paid promotion, make it low.
+    assert voice.level == "medium"
     assert "low karma for its activity" in voice.tags
     assert "209 karma for 450 contributions" in voice.reasons
 
@@ -218,7 +224,10 @@ def test_the_commenter_history_can_show_an_established_member():
 def test_salesy_language_and_affiliate_links_are_red_flags(pitch):
     voice = voice_for(body=f"{USES_IT} {pitch}")
     assert "salesy language" in voice.tags
-    assert voice.level == "low"
+    # Changed 9 Oct 2026 (Noemi's voice rubric): paid promotion (a code, an affiliate link) is low on its own; other
+    # sales talk is one red flag, so medium.
+    paid = any(word in pitch.lower() for word in ("code", "affiliate", "tag="))
+    assert voice.level == ("low" if paid else "medium")
 
 
 def test_an_honest_user_with_a_plain_shop_link_is_not_salesy():
@@ -230,7 +239,8 @@ def test_an_honest_user_with_a_plain_shop_link_is_not_salesy():
 def test_a_brand_rep_who_discloses_promotes_one_brand():
     voice = voice_for(body="I'm a brand ambassador for them, but honestly " + USES_IT)
     assert "promotes one brand" in voice.tags
-    assert voice.level == "low"
+    # Changed 9 Oct 2026 (Noemi's voice rubric): one red flag caps a voice at medium; two, or paid promotion, make it low.
+    assert voice.level == "medium"
 
 
 # --- Endorsement ---
@@ -247,7 +257,8 @@ def test_a_tiny_score_is_not_well_upvoted_even_at_the_top_of_a_tiny_thread():
 
 def test_a_downvoted_comment_is_a_red_flag():
     voice = voice_for(score=-4)
-    assert voice.level == "low"
+    # Changed 9 Oct 2026 (Noemi's voice rubric): one red flag caps a voice at medium; two, or paid promotion, make it low.
+    assert voice.level == "medium"
     # Changed on purpose 9 Oct 2026 (Noemi's decision 13): "downvoted" is now a voice tag of its own, not "other".
     assert "downvoted" in voice.tags and config.OTHER_TAG not in voice.tags
     assert any("downvoted" in reason for reason in voice.reasons)
@@ -287,13 +298,14 @@ RED_FLAGS = {
 
 
 @pytest.mark.parametrize("flag", sorted(RED_FLAGS))
-def test_a_red_flag_makes_the_voice_low_whatever_the_good_signs(flag):
-    # The guide's rule, confirmed by Noemi on 9 Oct 2026 (decision 13): a red flag means a low voice.
+def test_one_red_flag_stops_a_voice_being_high_whatever_the_good_signs(flag):
+    # Changed 9 Oct 2026 (Noemi's voice rubric, replacing decision 13's "a red flag means low"): one red flag caps the
+    # voice at medium whatever the good signs; paid promotion (the salesy case here is a discount code) is low.
     case = {"score": 9, "others": (1, 1, 2, 2), "author": account(created=years_before(RECENT, 8), karma=250_000)}
     case.update(RED_FLAGS[flag])
     voice = voice_for(**case)
     assert flag in voice.tags
-    assert voice.level == "low"
+    assert voice.level == ("low" if flag == "salesy language" else "medium")
     assert len(voice.good_signs) >= config.VOICE_HIGH_MIN_GOOD_SIGNS  # it would be high, but for the red flag
 
 
@@ -326,7 +338,8 @@ def test_no_sign_of_use_is_a_red_flag_only_when_switched_on(monkeypatch):
     # layer already scores it, so it is a switch (VOICE_RED_FLAG_NO_USE) for her to decide.
     monkeypatch.setattr(config, "VOICE_RED_FLAG_NO_USE", True)
     voice = voice_for(body="Try the CeraVe SA Cleanser.")
-    assert voice.level == "low"
+    # Changed 9 Oct 2026 (Noemi's voice rubric): one red flag caps a voice at medium; two, or paid promotion, make it low.
+    assert voice.level == "medium"
     assert any("no sign" in reason for reason in voice.reasons)
     monkeypatch.setattr(config, "VOICE_RED_FLAG_NO_USE", False)
     assert voice_for(body="Try the CeraVe SA Cleanser.").level == "medium"
@@ -676,3 +689,22 @@ def test_a_reply_from_a_deleted_account_still_agrees():
     thread = thread.model_copy(update={"comments": thread.comments[:-1] + [reply]})
     voice = score_voice(comment, thread, agreements=[ExtractedAgreement(comment_id=reply.id, quote="This!")])
     assert voice.level == "high"
+
+
+# --- Red flags counted (Noemi, 9 Oct 2026): one caps a voice at medium, two make it low; paid promotion is two ---
+
+def test_one_red_flag_caps_a_voice_at_medium():
+    # A new account with two good signs: not high, but not low either: a genuine expert can be new.
+    voice = voice_for(body=USES_IT, score=9, others=(1, 1, 2), author=account(created=years_before(RECENT, 0.01), flair="Dermatologist"))
+    assert "new account" in voice.tags and voice.level == "medium"
+
+
+def test_two_red_flags_make_a_voice_low():
+    voice = voice_for(body=USES_IT + " DM me for more tips.", author=account(created=years_before(RECENT, 0.01)))
+    assert {"new account", "salesy language"} <= set(voice.tags) and voice.level == "low"
+
+
+def test_sales_talk_alone_caps_at_medium_but_paid_promotion_alone_is_low():
+    assert voice_for(body=USES_IT + " DM me if you want the link.").level == "medium"
+    assert voice_for(body=USES_IT + " Use my code GLOW20 for 20% off!").level == "low"
+    assert voice_for(body=USES_IT + " https://amzn.to/x?tag=mine-20").level == "low"

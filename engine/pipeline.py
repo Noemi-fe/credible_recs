@@ -55,6 +55,7 @@ from engine.answer import Answer, comment_bodies, render_markdown, write_answer
 from engine.config import (
     BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE,
     BRAND_PICK_TITLE_SHARE,
+    BUDGET_DEFAULT_CURRENCY,
     PIPELINE_BRAND_PICKS,
     PIPELINE_MAX_THREADS,
 )
@@ -245,6 +246,10 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
     single price, so it is never priced and never left out for its price.
     """
     budget = query.constraints.budget
+    if budget is not None and budget.max is not None and budget.currency is None:
+        # "under 100": module 1 doesn't guess a currency, but the shoppers are in the UK (Noemi, 9 Oct 2026).
+        budget = budget.model_copy(update={"currency": BUDGET_DEFAULT_CURRENCY})
+        query = query.model_copy(update={"constraints": query.constraints.model_copy(update={"budget": budget})})
     currency = budget.currency if budget else None
     kept, checks = [], {}
     for group in groups:

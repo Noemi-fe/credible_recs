@@ -259,3 +259,12 @@ PRICE_MAX_AGE_DAYS = 30
 # Breville's UK and EU brand; the alias list (engine/data/product_aliases.json) already treats the two as one product,
 # and the answer shows the UK name. Quotes are never changed: a quote that says "Breville" keeps it.
 UK_BRAND_NAMES: dict[str, str] = {"Breville": "Sage"}
+
+# --- Voice rubric (Noemi, 9 Oct 2026): red flags are counted, not any-one-is-low ---
+# Two red flags or more make a voice low; exactly one caps it at medium, whatever the good signs.
+VOICE_LOW_MIN_RED_FLAGS = 2
+# Clear paid promotion (a discount code, an affiliate or referral link, "#ad") counts as this many red flags on its own.
+PAID_PROMOTION_RED_FLAGS = 2
+
+# A budget typed with no currency ("under 100") is in this currency (Noemi, 9 Oct 2026: the shoppers are in the UK).
+BUDGET_DEFAULT_CURRENCY = "GBP"

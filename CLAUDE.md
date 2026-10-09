@@ -48,4 +48,6 @@
   10. A product that failed after a long life counts as recommend (long-term use, mentions flaws), not warn.
   11. Budgets: current prices for each blind-test question's shortlist, looked up by Claude with the shop and the date.
   12. The 75 matching pairs, variant words and alias list approved; the UK name "Sage" is shown rather than "Breville".
-  13. New voice tags "replies agree" and "downvoted"; a red flag means a low voice, as the guide says.
+  13. New voice tags "replies agree" and "downvoted". Voice rubric (Noemi, 9 Oct 2026, replacing "a red flag means low"): one red flag caps a voice at medium; two or more make it low; clear paid promotion (a code, an affiliate link, #ad) is low on its own.
+  Later the same day: budgets with no currency assume £; brand-only names may appear on the skip list; a brand-pick name drops the "(their …)" bracket when the name already says the type; a product counts as the thread's type unless said otherwise, and the AI looks a product up online when unsure (instructions v6).
+- Working with Noemi (9 Oct 2026): bring her only deeply important decisions (scoring philosophy, how labels are judged, data sources, privacy, scope, spending, publishing); decide technical, wording and small product calls myself and report them.

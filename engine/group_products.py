@@ -233,5 +233,10 @@ def uk_name(name: str, shown: Mapping[str, str] = UK_BRAND_NAMES) -> str:
 
 def brand_pick_name(brand: str, product_type: str) -> str:
     """The name a brand or line is shown under when it is ranked as a pick: "Lodge (their cast iron skillets)"
-    (decision 9; the wording is config.BRAND_PICK_NAME)."""
+    (decision 9; the wording is config.BRAND_PICK_NAME). A name that already says the type is shown as it is:
+    "CeraVe cleanser", not "CeraVe cleanser (their cleansers)" (Noemi, 9 Oct 2026)."""
+    from engine.sources import mentions_product
+
+    if mentions_product(brand, product_type):
+        return brand
     return BRAND_PICK_NAME.format(brand=brand, products=PRODUCT_TYPE_PLURALS.get(product_type, f"{product_type}s"))

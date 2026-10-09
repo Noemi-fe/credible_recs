@@ -274,3 +274,9 @@ def test_every_product_type_has_a_plural():
     assert config.PRODUCT_TYPE_PLURALS["dutch oven"] == "Dutch ovens"
     for name, plural in config.PRODUCT_TYPE_PLURALS.items():
         assert plural.lower() != name.lower() and plural.endswith("s"), name
+
+
+def test_a_brand_pick_name_that_already_says_the_type_has_no_bracket():
+    # Noemi, 9 Oct 2026: "CeraVe cleanser (their cleansers)" reads oddly; the name already says what it is.
+    assert brand_pick_name("CeraVe cleanser", "cleanser") == "CeraVe cleanser"
+    assert brand_pick_name("Lodge", "cast iron skillet") == "Lodge (their cast iron skillets)"
