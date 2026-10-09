@@ -108,6 +108,8 @@ _answers: dict[tuple[str, str], tuple[int, str, bytes]] = {}
 # Where writers' standing comes from (engine.pipeline's `profiles`): the command line sets the Arctic Shift cache
 # (engine.profiles.CachedOnly, never a call); None, as in the tests, leaves writers known by name only.
 profiles = None
+# The live check of every shown quote (engine.live_check): set by the command line; None in the tests.
+live = None
 _answers_lock = threading.Lock()
 
 
@@ -148,6 +150,8 @@ def answer_response(request: str, library_dir: Path) -> tuple[int, str, bytes]:
 def _fresh_answer(request: str, library_dir: Path) -> tuple[int, str, bytes]:
     """Runs the pipeline, then checks every quote once more; one that fails refuses the whole answer."""
     with_profiles = {} if profiles is None else {"profiles": profiles}
+    if live is not None:
+        with_profiles["live_checker"] = live
     result = answer_request(request, library_dir, **with_profiles)
     if result.answer is not None:
         problems = unverified_claims(result.answer, result.bodies)
@@ -299,6 +303,10 @@ def main(argv: list[str]) -> int:
     from engine.pipeline import cached_profiles
 
     profiles = cached_profiles()
+    global live
+    from engine.pipeline import live_checker
+
+    live = live_checker()
     if not (library_dir / "threads").is_dir():
         print(f"Warning: no library at {library_dir} (no threads/ folder), so every answer will fail. "
               "Pass --library DIR to use another one.")

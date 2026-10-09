@@ -70,6 +70,7 @@ from engine.config import (
     BRAND_PICK_TITLE_SHARE,
     BUDGET_DEFAULT_CURRENCY,
     LIVE_CHECK_REQUIRED,
+    LIVE_CHECK_ROUNDS,
     LIVE_CHECK_SHOWN_DAYS,
     PIPELINE_BRAND_PICKS,
     PIPELINE_MAX_THREADS,
@@ -100,7 +101,8 @@ class PipelineResult:
     left_out_loose: list[str] = field(default_factory=list)  # brand or line names
     not_extracted: list[str] = field(default_factory=list)  # ids of threads about the product the AI hasn't read yet
     notes_without_kind: list[str] = field(default_factory=list)  # the "about" of each kept note that names no kind
-    left_out_over_budget: list[str] = field(default_factory=list)  # product names, with a known price above the max
+    left_out_over_budget: list[str] = field(default_factory=list)
+    live_dropped: dict[str, int] = field(default_factory=dict)  # comments dropped by the live check, by reason  # product names, with a known price above the max
     # Ids of extracted threads about the product not checked live on Reddit in the last LIVE_CHECK_SHOWN_DAYS: not
     # used until `python -m engine.library check-live` reads them again (Noemi, 9 Oct 2026).
     waiting_live_check: list[str] = field(default_factory=list)
@@ -126,7 +128,7 @@ def _today() -> date:
 
 def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_threads: int = PIPELINE_MAX_THREADS,
                    profiles=None, prices: list[Price] | None = None, today: date | None = None,
-                   live_check_required: bool | None = None) -> PipelineResult:
+                   live_check_required: bool | None = None, live_checker=None) -> PipelineResult:
     """Runs modules 1 to 7 on the saved library and returns everything each step decided.
 
     `profiles`: where writers' standing comes from (an object with user_stats and comment_flairs, such as
@@ -135,6 +137,10 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     judged on (how old they are), and live checks (how long ago Reddit was read); None is today.
     `live_check_required`: None follows LIVE_CHECK_REQUIRED (on). False uses every thread whatever its last live
     check: only to see what answers would quote once every thread is checked (engine.slice_eval.threads_behind_answers).
+    `live_checker` (engine.live_check.LiveChecker): every quote about to be shown is checked against the comment on
+    Reddit itself; a comment deleted, removed or edited since we saved it is dropped, its votes no longer count, and
+    the answer is written again without it (up to LIVE_CHECK_ROUNDS times). With it, a thread's age no longer holds it
+    back (live_check_required defaults to off), since what is shown is checked live anyway.
     """
     query = parse_query(request)
     result = PipelineResult(query)
@@ -146,7 +152,9 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     candidates = LocalSource(threads_dir).find_threads(query, limit=sys.maxsize)  # the limit is applied below
     about_it = [t for t in candidates if _about_the_product(t, query.product_type)]
     result.not_extracted = [t.id for t in about_it if t.id not in every_checked]  # nothing to offer until read
-    required = LIVE_CHECK_REQUIRED if live_check_required is None else live_check_required
+    if live_check_required is None:
+        live_check_required = LIVE_CHECK_REQUIRED and live_checker is None
+    required = live_check_required
     exempt = not required or _in_gold_set(threads_dir)
     extracted = [t for t in about_it if t.id in every_checked]
     result.waiting_live_check = [t.id for t in extracted if not (exempt or _checked_live_recently(t, today))]
@@ -169,10 +177,39 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     result.ranking = rank_products(scored, query.category, kind_notes, placements(kinds))
     care = _care_tips(threads, checked, kept_groups, kinds, query)
     result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care)
+    if live_checker is not None:
+        _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care)
     thread_of = {c.id: t.id for t in threads for c in t.comments}
     quoted = {thread_of.get(quote.comment_id) for _, quote in _every_quote(result.answer)}
     result.threads_quoted = [tid for tid in result.threads_used if tid in quoted]
     return result
+
+
+def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds, query, price_checks, care) -> None:
+    """Checks every quote about to be shown against Reddit itself; drops the comments that fail and answers again.
+
+    A comment that fails (gone, changed or unreadable) loses its votes too: the ranking is redone without it, so a
+    deleted opinion never decides a pick. Each comment is asked about once (the checker also keeps its answer for
+    48 hours). Stops when every shown quote passes, or after LIVE_CHECK_ROUNDS rounds; result.live_dropped counts the
+    comments dropped by reason.
+    """
+    failed: set[str] = set()
+    for _ in range(LIVE_CHECK_ROUNDS):
+        new = set()
+        for _, quote in _every_quote(result.answer):
+            if quote.comment_id in failed | new:
+                continue
+            outcome = live_checker.check(quote.url, quote.text)
+            if not outcome.show:
+                new.add(quote.comment_id)
+                result.live_dropped[outcome.status] = result.live_dropped.get(outcome.status, 0) + 1
+        if not new:
+            return
+        failed |= new
+        result.bodies = {cid: body for cid, body in result.bodies.items() if cid not in failed}
+        result.ranking = rank_products([m for m in scored if m.comment_id not in failed], query.category,
+                                       [n for n in kind_notes if n.comment_id not in failed], placements(kinds))
+        result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care)
 
 
 def _checked_live_recently(thread: Thread, today: date) -> bool:
@@ -377,6 +414,13 @@ def _writer(comment: Comment) -> str | None:
     return comment.author.name.lower() if comment.author is not None else None
 
 
+def live_checker():
+    """The live check of shown quotes through Reddit's embed page (engine/live_check.py), for real answers."""
+    from engine.live_check import LiveChecker
+
+    return LiveChecker()
+
+
 def cached_profiles() -> StoredProfiles:
     """Writers' standing from the library's profile store, then the Arctic Shift cache; never a call. What the command
     line, the demo and the evaluation use."""
@@ -389,7 +433,7 @@ def main(argv: list[str]) -> int:
     if not argv:
         print(__doc__)
         return 2
-    result = answer_request(" ".join(argv), profiles=cached_profiles())
+    result = answer_request(" ".join(argv), profiles=cached_profiles(), live_checker=live_checker())
     print(result.text())
     if result.answer is not None:
         print(f"\n(threads used: {', '.join(result.threads_used)}; left out as another type: "

@@ -306,3 +306,5 @@ LIVE_CHECK_REQUIRED = True
 # PROPOSED: the 7 days of grace, so one missed monthly run doesn't empty threads straight away. False turns it off.
 ARCHIVE_TEXT_RETENTION = True
 ARCHIVE_TEXT_KEPT_DAYS = LIVE_CHECK_ALL_DAYS + 7
+# How many times an answer is written again after the live check drops comments (engine.pipeline._check_live).
+LIVE_CHECK_ROUNDS = 3

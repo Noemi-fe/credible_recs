@@ -619,3 +619,47 @@ def test_writers_of_care_tips_get_profiles_too(tmp_path):
     profiles = RecordingProfiles()
     answer_request(REQUEST, library_dir=care_library(tmp_path), profiles=profiles, prices=[], today=TODAY)
     assert "test_user_k2cccc" in profiles.asked
+
+
+# --- The live check of every shown quote (Noemi, 9 Oct 2026: Reddit's embed page) ---
+
+class FakeLive:
+    """Stands in for engine.live_check.LiveChecker: the comments in `gone` were deleted on Reddit since we saved them."""
+
+    def __init__(self, gone=()):
+        self.gone, self.asked = set(gone), []
+
+    def check(self, url, quote):
+        from engine.live_check import LiveResult
+
+        self.asked.append(url)
+        comment_id = url.rstrip("/").split("/")[-1]
+        return LiveResult("gone", "deleted") if comment_id in self.gone else LiveResult("ok", "still there")
+
+
+def shown_comment_ids(answer):
+    from engine.answer import _every_quote
+
+    return {quote.comment_id for _, quote in _every_quote(answer)}
+
+
+def test_every_shown_quote_is_checked_live_and_a_deleted_one_never_shows(tmp_path):
+    lib = library(tmp_path)
+    before = answer_request(REQUEST, library_dir=lib)
+    assert "k1aaaa" in shown_comment_ids(before.answer)
+    live = FakeLive(gone={"k1aaaa"})
+    after = answer_request(REQUEST, library_dir=lib, live_checker=live)
+    assert "k1aaaa" not in shown_comment_ids(after.answer)
+    assert live.asked  # the shown quotes were checked
+    assert after.live_dropped == {"gone": 1}
+    assert unverified_claims(after.answer, after.bodies) == []
+
+
+def test_with_the_live_check_threads_are_not_held_back_for_their_age(tmp_path):
+    # Each shown quote is checked against Reddit itself, so a thread's last full re-read doesn't matter for showing it.
+    from datetime import date
+
+    lib = library(tmp_path)
+    late = date(2026, 12, 1)  # long after the made-up threads were saved
+    assert answer_request(REQUEST, library_dir=lib, today=late).answer.picks == []
+    assert answer_request(REQUEST, library_dir=lib, today=late, live_checker=FakeLive()).answer.picks

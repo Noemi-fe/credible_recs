@@ -39,12 +39,12 @@ class QuestionResult:
 
 
 def score_questions(questions_path: Path = DEFAULT_QUESTIONS, library_dir: Path = DEFAULT_LIBRARY_DIR,
-                    profiles=None) -> list[QuestionResult]:
+                    profiles=None, live_checker=None) -> list[QuestionResult]:
     """Runs every question through the pipeline, in the file's order. `profiles`: as in engine.pipeline."""
     questions = json.loads(Path(questions_path).read_text(encoding="utf-8"))["questions"]
     results = []
     for q in questions:
-        run = answer_request(q["text"], library_dir=library_dir, profiles=profiles)
+        run = answer_request(q["text"], library_dir=library_dir, profiles=profiles, live_checker=live_checker)
         result = QuestionResult(q["id"], q["text"], run.query.status, threads=len(run.threads_used),
                                 waiting_live_check=len(run.waiting_live_check))
         if run.answer is not None:
@@ -98,5 +98,7 @@ def slice_report(questions_path: Path = DEFAULT_QUESTIONS, library_dir: Path = D
         return "End to end (modules 1-7): skipped (no local library)"
     from engine.pipeline import cached_profiles
 
-    lines = slice_lines(score_questions(questions_path, library_dir, cached_profiles()))
+    from engine.pipeline import live_checker
+
+    lines = slice_lines(score_questions(questions_path, library_dir, cached_profiles(), live_checker()))
     return "End to end (modules 1-7), blind-test questions on the library\n" + "\n".join(f"  {line}" for line in lines)
