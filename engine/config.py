@@ -325,3 +325,65 @@ BRIGHT_DATA_MAX_WAIT_SECONDS = 600
 # Before a comments job, its cost is checked against the month's records left: at most the post's comment count.
 # When the post couldn't be read first, that count is unknown, and the job is assumed to cost up to this many records.
 BRIGHT_DATA_RECORDS_IF_UNKNOWN = 500
+
+# --- Needs and contradictions (9 Oct 2026) ---
+# Two changes to the ranking decided on 9 Oct 2026 (engine/needs.py, engine/contradictions.py, engine/pipeline.py).
+# The words below are Claude's choice to carry them out (9 Oct 2026); Noemi may change any of them.
+
+# 1. Needs. A mention whose comment talks about what the request asks for ("sensitive skin", "a beginner") counts
+# this many times its weight, a recommendation or a warning alike ("too harsh for sensitive skin"). The starting value
+# set with the change.
+NEED_MATCH_BOOST = 1.5
+# The needs a request can name, each with the words that show a comment talks about it. A word is found at the start
+# of a word, so a word beginning finds its longer forms ("sensitiv" finds "sensitive" and "sensitivity", "start"
+# finds "started" and "starting"); a phrase is found whole ("white cast", "white casts"). The skin types and
+# must-haves module 1 finds (engine/query.py) each have an entry, plus a few needs typed in other words. A request
+# names a need when it says its name or one of its words ("for a beginner", "new to retinol" name "beginner").
+NEEDS: dict[str, tuple[str, ...]] = {
+    # Skin types (engine/query.py, SKIN_TYPES).
+    "sensitive": ("sensitiv", "reactive", "easily irritated", "irritated easily", "irritates easily"),
+    "dry": ("dry", "dries", "dehydrated", "flaky"),
+    "oily": ("oily", "greasy", "shiny"),
+    "combination": ("combination", "combo skin"),
+    "acne-prone": ("acne", "breakout", "break out", "broke me out", "breaks me out", "pimple"),
+    "normal": ("normal skin",),
+    "mature": ("mature", "anti-aging", "anti-ageing", "anti aging", "anti ageing", "wrinkle", "fine line"),
+    # Must-haves (engine/query.py, MUST_HAVES): a comment about the thing itself talks about the need, for or against.
+    "fragrance-free": ("fragrance", "unscented", "scent", "perfume"),
+    "non-comedogenic": ("comedogenic", "clog"),
+    "no white cast": ("white cast",),
+    "cruelty-free": ("cruelty",),
+    "vegan": ("vegan",),
+    "reef-safe": ("reef",),
+    "plastic-free": ("plastic",),
+    "stainless steel": ("stainless",),
+    "dishwasher-safe": ("dishwasher",),
+    "induction-compatible": ("induction",),
+    "temperature control": ("temperature", "temp control", "variable temp"),
+    # Needs typed in other words.
+    # First-timers. "first" alone is too loose in comments ("I used the first one"), so only these two phrases.
+    "beginner": ("beginner", "first time", "my first", "new to", "start", "newbie", "novice"),
+    "gentle": ("gentle", "mild", "harsh"),  # "too harsh" talks about gentleness too
+    "home cook": ("home cook", "home cooking"),
+    # Something that lasts. A mention with long-term use (module 5) talks about it too: it describes long use.
+    "lasting": ("lasts", "lasted", "lasting", "outlast", "durab", "held up", "holds up", "died", "broke",
+                "stopped working", "fell apart"),
+}
+# Other words of a request that name one of those needs: "first chef's knife", "will last decades", "lasts 10+ years".
+# Module 1's "lasts 10+ years" (min_years) names "lasting" as well.
+NEED_REQUEST_WORDS: dict[str, str] = {
+    "first": "beginner", "last": "lasting", "year": "lasting", "decade": "lasting", "lifetime": "lasting",
+}
+# Words of a request too common in comments to show a need: "doesn't leave a white cast", "for a home cook", and
+# "burr coffee grinder" (the kind of grinder nearly every grinder comment is about).
+NEED_IGNORED_WORDS = ("leave", "cook", "burr")
+
+# 2. Writers who contradict themselves (Noemi's rule, 9 Oct 2026). A writer who recommends a product in one comment and
+# warns against it in another, in any of the request's threads, without saying something changed, counts as a low
+# voice in every mention they make (so none of them is credible). Their warning says something changed when its own
+# words hold one of these (word beginnings, as for needs above), or "after" a number of days, weeks, months or years
+# ("after 6 months", engine/contradictions.py): an update is honest, not a contradiction.
+CHANGE_WORDS = (
+    "died", "broke", "stopped", "fail", "reformulat", "new formula", "change", "changing", "no longer", "anymore",
+    "any more", "used to", "update", "edit", "developed a reaction", "developed an allergy",
+)

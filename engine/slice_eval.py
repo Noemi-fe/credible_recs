@@ -36,6 +36,9 @@ class QuestionResult:
     threads: int = 0  # threads read
     unverified: int = 0  # shown quotes that failed the check: must be 0
     waiting_live_check: int = 0  # threads about the product not used because they wait for a live check
+    # Writers who recommend a product and warn against it without saying what changed (Noemi's rule, 9 Oct 2026):
+    # counted only, their names stay on the pipeline's result.
+    contradicting_writers: int = 0
 
 
 def score_questions(questions_path: Path = DEFAULT_QUESTIONS, library_dir: Path = DEFAULT_LIBRARY_DIR,
@@ -46,7 +49,8 @@ def score_questions(questions_path: Path = DEFAULT_QUESTIONS, library_dir: Path 
     for q in questions:
         run = answer_request(q["text"], library_dir=library_dir, profiles=profiles, live_checker=live_checker)
         result = QuestionResult(q["id"], q["text"], run.query.status, threads=len(run.threads_used),
-                                waiting_live_check=len(run.waiting_live_check))
+                                waiting_live_check=len(run.waiting_live_check),
+                                contradicting_writers=len(run.contradicting_writers))
         if run.answer is not None:
             result.picks = [pick.name for pick in run.answer.picks]
             result.unverified = len(unverified_claims(run.answer, run.bodies))
@@ -71,7 +75,9 @@ def slice_lines(results: list[QuestionResult]) -> list[str]:
         names = f": {', '.join(r.picks)}" if r.picks else " (not enough credible evidence)"
         waiting = (f"; {r.waiting_live_check} thread{'' if r.waiting_live_check == 1 else 's'} waiting for a live check"
                    if r.waiting_live_check else "")
-        lines.append(f"  {r.id} {picks}{names}; {r.threads} threads read{waiting}")
+        contradicting = (f"; {r.contradicting_writers} writer{'' if r.contradicting_writers == 1 else 's'} contradicting "
+                         "themselves" if r.contradicting_writers else "")
+        lines.append(f"  {r.id} {picks}{names}; {r.threads} threads read{waiting}{contradicting}")
     return lines
 
 
