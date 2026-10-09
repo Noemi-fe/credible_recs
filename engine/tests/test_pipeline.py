@@ -148,3 +148,93 @@ def test_profiles_from_the_cache_raise_the_writers_standing(tmp_path):
     with_profiles = answer_request(REQUEST, library_dir=lib, profiles=FakeProfiles())
     zoji = lambda result: next(p for p in result.ranking.products if p.name == "Zojirushi kettle")
     assert zoji(without).breakdown.recommend_voices["high"] < zoji(with_profiles).breakdown.recommend_voices["high"]
+
+
+# --- Instructions v6 (9 Oct 2026): the AI writes each product's type, and the type decides ---
+
+def typed_library(tmp_path: Path, title: str, rows: list[tuple[str, str, str | None, str]]) -> Path:
+    """A made-up library extracted with instructions v6. Each row is one comment recommending one product:
+    (comment id, product, the type the AI gave it or None, the comment's text, which is also the quote).
+    Comments starting with "k1" go in thread 1kett01, the others in 1kett02; both threads are titled `title`."""
+    threads, extractions = {}, {}
+    for comment_id, product, product_type, body in rows:
+        thread_id = "1kett01" if comment_id.startswith("k1") else "1kett02"
+        threads.setdefault(thread_id, []).append(comment(comment_id, thread_id, body))
+        typed = mention(comment_id, product, body) | ({"product_type": product_type} if product_type else {})
+        extractions.setdefault(thread_id, []).append(typed)
+    root = write_gold(tmp_path / "library", [
+        make_thread(id=tid, community="BuyItForLife", category="kitchen", title=title, body="Mine died again.",
+                    url=f"https://www.reddit.com/r/BuyItForLife/comments/{tid}/post/", comments=comments)
+        for tid, comments in threads.items()
+    ], voices=None, mentions=None)
+    (root / "extracted").mkdir()
+    for thread_id, mentions in extractions.items():
+        (root / "extracted" / f"{thread_id}.json").write_text(json.dumps({
+            "thread_id": thread_id, "instructions_version": "extract-v6", "extracted_at": "2026-10-09T10:00:00Z",
+            "extractor": "claude-code", "mentions": mentions,
+        }), encoding="utf-8")
+    return root
+
+
+KETTLE_TITLE = "Which electric kettle lasts?"
+
+
+def kept_and_left_out(result) -> tuple[list[str], list[str]]:
+    return sorted(p.name for p in result.ranking.products), sorted(result.left_out_as_other_type)
+
+
+def test_a_product_the_ai_types_as_another_known_type_is_left_out_whatever_its_name(tmp_path):
+    # "Le Creuset" says nothing about its type, so the name rule would keep it; the AI says it's a stovetop kettle.
+    lib = typed_library(tmp_path, KETTLE_TITLE, [
+        ("k1aaaa", "Zojirushi kettle", "electric kettle", ZOJI_1),
+        ("k1bbbb", "Le Creuset", "stovetop kettle", "My Le Creuset has whistled on the hob for 12 years."),
+        ("k2aaaa", "Zojirushi kettle", "electric kettle", ZOJI_3),
+    ])
+    kept, left_out = kept_and_left_out(answer_request(REQUEST, library_dir=lib))
+    assert kept == ["Zojirushi kettle"] and left_out == ["Le Creuset"]
+
+
+def test_a_type_in_plain_words_is_left_out_unless_it_names_the_requested_type(tmp_path):
+    lib = typed_library(tmp_path, KETTLE_TITLE, [
+        ("k1aaaa", "Zojirushi kettle", "electric kettle", ZOJI_1),
+        ("k1bbbb", "Breville", "toaster", "My Breville has made toast every morning for 9 years."),
+        ("k1cccc", "Cuisinart PerfecTemp", "gooseneck kettle", "The Cuisinart PerfecTemp has been great for 3 years."),
+    ])
+    kept, left_out = kept_and_left_out(answer_request(REQUEST, library_dir=lib))
+    assert kept == ["Cuisinart PerfecTemp", "Zojirushi kettle"] and left_out == ["Breville"]
+
+
+def test_the_type_most_of_a_products_mentions_give_decides_and_a_tie_keeps_it(tmp_path):
+    lib = typed_library(tmp_path, KETTLE_TITLE, [
+        ("k1aaaa", "Bodum Bistro", "electric kettle", "The Bodum Bistro has lasted 5 years."),
+        ("k1bbbb", "Bodum Bistro", "electric kettle", "Bodum Bistro, 4 years and counting."),
+        ("k2aaaa", "Bodum Bistro", "teapot", "I love my Bodum Bistro."),
+        ("k1cccc", "Hamilton Beach", "toaster", "Hamilton Beach toasts evenly after 6 years."),
+        ("k1dddd", "Hamilton Beach", "toaster", "My Hamilton Beach still toasts well."),
+        ("k2bbbb", "Hamilton Beach", "electric kettle", "Hamilton Beach boils fast."),
+        ("k1eeee", "Fellow Stagg", "electric kettle", "The Fellow Stagg is lovely to pour from."),
+        ("k2cccc", "Fellow Stagg", "stovetop kettle", "Fellow Stagg on the hob for 2 years."),
+    ])
+    kept, left_out = kept_and_left_out(answer_request(REQUEST, library_dir=lib))
+    assert kept == ["Bodum Bistro", "Fellow Stagg"] and left_out == ["Hamilton Beach"]
+
+
+def test_the_ais_type_keeps_a_product_whose_name_suggests_another_type(tmp_path):
+    # The name rule reads "skillet" as a cast iron skillet; the AI knows a carbon steel skillet is a frying pan.
+    lib = typed_library(tmp_path, "Best frying pan that lasts?", [
+        ("k1aaaa", "Lodge carbon steel skillet", "frying pan", "My Lodge carbon steel skillet has lasted 7 years."),
+        ("k2aaaa", "Lodge carbon steel skillet", "frying pan", "Lodge carbon steel skillet, 3 years, no complaints."),
+    ])
+    kept, left_out = kept_and_left_out(answer_request("a frying pan that lasts", library_dir=lib))
+    assert kept == ["Lodge carbon steel skillet"] and left_out == []
+
+
+def test_without_a_type_the_name_rule_still_decides(tmp_path):
+    # Older extractions (v1 to v5) have no types: a name that says it's another type is still left out.
+    lib = typed_library(tmp_path, KETTLE_TITLE, [
+        ("k1aaaa", "Zojirushi kettle", "electric kettle", ZOJI_1),
+        ("k1bbbb", "Lodge cast iron skillet", None, LODGE),
+        ("k1cccc", "Le Creuset", None, "My Le Creuset has whistled on the hob for 12 years."),
+    ])
+    kept, left_out = kept_and_left_out(answer_request(REQUEST, library_dir=lib))
+    assert kept == ["Le Creuset", "Zojirushi kettle"] and left_out == ["Lodge cast iron skillet"]

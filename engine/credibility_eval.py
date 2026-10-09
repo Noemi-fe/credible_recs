@@ -21,6 +21,14 @@ thread without an extraction is scored without them.
 The held-out thread: 1tfk6nm (kettle) was labelled while these rules were being written and was never used to
 build or tune them, so it is the fair test. It is left out of the score unless asked for (skip_threads=()).
 
+The AI's own evidence level (extraction instructions v6, decided 9 Oct 2026): from v6 the AI writes an evidence
+level for every product it finds. On the products both she and the AI found in a comment (paired as
+engine.extraction_eval pairs them, so "CeraVe SA" and "CeraVe Renewing SA Cleanser" count as one), the AI's level
+is compared with hers: exact agreement, and how many of her long-term-use and no-first-hand-use labels it swapped.
+The rules' level on those very products is shown beside it, so the AI and the rules are compared on equal terms.
+The held-out kettle thread is the fair test of v6 (Noemi's decision 2), so the AI is scored there too, on a line
+of its own; the rules still aren't. Until a labelled thread has a v6 extraction, the report says so.
+
 The report lists only counts, levels and comment ids: never comment text, never product names.
 
 Command line: `python -m engine.credibility_eval` prints the report for data/gold, the held-out thread left out.
@@ -34,7 +42,8 @@ from pathlib import Path
 
 from engine.config import EVIDENCE_LEVELS, VOICE_LEVELS
 from engine.credibility import score_evidence, score_voice
-from engine.extract import CheckResult, ExtractionError, load_checked
+from engine.extract import CheckResult, ExtractedMention, ExtractionError, load_checked
+from engine.extraction_eval import pair_up
 from engine.gold import DEFAULT_GOLD_DIR, GoldSet, GoldSetError, load_gold_set
 
 HOLDOUT_THREADS = ("1tfk6nm",)  # the kettle thread: the fair test, never used to build the rules
@@ -112,6 +121,11 @@ class CredibilityAgreement:
     threads: list[str] = field(default_factory=list)  # thread ids scored
     held_out: list[str] = field(default_factory=list)  # thread ids left out on purpose
     agreements_used: int = 0  # replies that agree, from the AI's extraction of the scored threads
+    # The AI's own evidence level (instructions v6) on the products it found that she labelled, and the rules' level
+    # on the same products. In held-out threads only the AI is compared: the rules stay unscored there.
+    ai_evidence: LevelAgreement = field(default_factory=lambda: LevelAgreement(EVIDENCE_LEVELS))
+    rules_on_ai_matched: LevelAgreement = field(default_factory=lambda: LevelAgreement(EVIDENCE_LEVELS))
+    ai_evidence_held_out: LevelAgreement = field(default_factory=lambda: LevelAgreement(EVIDENCE_LEVELS))
 
 
 def score_credibility(
@@ -120,7 +134,8 @@ def score_credibility(
     """Compares the rules with Noemi's voice and evidence labels, thread by thread, in the gold set's order.
 
     `checked` holds the AI's checked extractions ({thread id: CheckResult}, as engine.extract.load_checked returns
-    them), for the replies that agree. Threads in `skip_threads` are left out.
+    them), for the replies that agree and the AI's own evidence levels. Threads in `skip_threads` are left out,
+    except for the AI's evidence levels (ai_evidence_held_out).
     """
     skip = set(skip_threads)
     checked = checked or {}
@@ -132,27 +147,53 @@ def score_credibility(
 
     score = CredibilityAgreement(held_out=sorted(skip))
     for thread in gold.threads:
-        if thread.id in skip or not any(c.id in voices for c in thread.comments):
+        if not any(c.id in voices for c in thread.comments):
+            continue
+        ai_mentions = _by_comment(checked[thread.id].kept if thread.id in checked else [])
+        if thread.id in skip:
+            for comment in thread.comments:
+                for h, ai_level in _matched_with_ai(products.get(comment.id, []), ai_mentions.get(comment.id, [])):
+                    score.ai_evidence_held_out.pairs.append((comment.id, products[comment.id][h].evidence, ai_level))
             continue
         score.threads.append(thread.id)
         agreements = checked[thread.id].kept_agreements if thread.id in checked else []
         score.agreements_used += len(agreements)
         for comment in thread.comments:
             if comment.id in voices:
-                _compare_comment(score, comment, thread, voices[comment.id], products.get(comment.id, []), agreements)
+                _compare_comment(score, comment, thread, voices[comment.id], products.get(comment.id, []), agreements,
+                                 ai_mentions.get(comment.id, []))
     return score
 
 
-def _compare_comment(score: CredibilityAgreement, comment, thread, her_voice, her_products, agreements) -> None:
-    """Adds one labelled comment: its voice, then each of its products."""
+def _compare_comment(score: CredibilityAgreement, comment, thread, her_voice, her_products, agreements, ai_mentions) -> None:
+    """Adds one labelled comment: its voice, then each of its products, then the AI's levels for those it found."""
     rules_voice = score_voice(comment, thread, agreements)
     score.voice.pairs.append((comment.id, her_voice.voice, rules_voice.level))
     score.voice_tags.add(her_voice.tags, rules_voice.tags)
+    rules_levels = []
     for label in her_products:
         others = [other.product for other in her_products if other is not label]
         rules_evidence = score_evidence(comment, label.product, label.stance, others)
         score.evidence.pairs.append((comment.id, label.evidence, rules_evidence.level))
         score.evidence_tags.add(label.tags, rules_evidence.tags)
+        rules_levels.append(rules_evidence.level)
+    for h, ai_level in _matched_with_ai(her_products, ai_mentions):
+        score.ai_evidence.pairs.append((comment.id, her_products[h].evidence, ai_level))
+        score.rules_on_ai_matched.pairs.append((comment.id, her_products[h].evidence, rules_levels[h]))
+
+
+def _by_comment(mentions: list[ExtractedMention]) -> dict[str, list[ExtractedMention]]:
+    """The AI's kept mentions of one thread, comment by comment."""
+    by_comment: dict[str, list[ExtractedMention]] = {}
+    for mention in mentions:
+        by_comment.setdefault(mention.comment_id, []).append(mention)
+    return by_comment
+
+
+def _matched_with_ai(her_products: list, ai_mentions: list[ExtractedMention]) -> list[tuple[int, str]]:
+    """Her products in one comment that the AI found too, with the AI's own evidence level: (her product's position,
+    the AI's level). The AI's mentions without a level (extracted before instructions v6) are left out."""
+    return [(h, ai_mentions[t].evidence) for h, t in pair_up(her_products, ai_mentions) if ai_mentions[t].evidence]
 
 
 # --- The report ---
@@ -184,8 +225,30 @@ def report_lines(score: CredibilityAgreement) -> list[str]:
         f"replies that agree, from the AI's extraction: {score.agreements_used}",
     ]
     lines += _layer_lines("voice", score.voice, score.voice_tags)
-    lines += _layer_lines("evidence", score.evidence, score.evidence_tags)
+    evidence = _layer_lines("evidence", score.evidence, score.evidence_tags)
+    return lines + evidence[:1] + _ai_evidence_lines(score) + evidence[1:]  # the AI's line right under the rules'
+
+
+def _ai_evidence_lines(score: CredibilityAgreement) -> list[str]:
+    """The AI's own evidence level (instructions v6) against hers, and the rules' on the same products."""
+    ai, held_out = score.ai_evidence, score.ai_evidence_held_out
+    if not ai.total and not held_out.total:
+        return ["  the AI's own level (extraction instructions v6): no v6 extractions yet"]
+    if ai.total:
+        lines = [f"  the AI's own level (v6), on the {ai.total} of these products it found: {_agreement(ai)} | "
+                 f"the rules on the same {ai.total}: {_agreement(score.rules_on_ai_matched)}"]
+    else:
+        lines = ["  the AI's own level (v6): no v6 extractions of the scored threads yet"]
+    if held_out.total:
+        lines.append(f"  the AI's own level (v6) in the held-out thread(s), {_count(held_out.total, 'product')}: "
+                     f"{_agreement(held_out)} (the rules stay unscored there)")
     return lines
+
+
+def _agreement(agreement: LevelAgreement) -> str:
+    """Such as "exact 3/4 (75%), long-versus-none swaps 1 of 2": exact agreement, then how many of her labels at
+    either end (long-term use, no first-hand use) were put at the other end."""
+    return f"exact {_share(agreement.exact, agreement.total)}, long-versus-none swaps {agreement.swaps} of {agreement.extremes}"
 
 
 def _layer_lines(name: str, agreement: LevelAgreement, tags: TagAgreement) -> list[str]:

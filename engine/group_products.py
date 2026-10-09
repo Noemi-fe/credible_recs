@@ -48,6 +48,10 @@ class ProductMention:
     product: str  # the name as the AI wrote it
     category: str  # skincare, kitchen or other
     stance: str  # recommend, warn or neutral
+    # The type the AI gave the product (instructions v6, such as "electric kettle"); None in older extractions.
+    # Extra information, not part of which mention this is: compare=False keeps it out of equality and hashing, so
+    # a mention looked up without its type (as the pipeline does) still finds its group.
+    product_type: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -76,7 +80,7 @@ class ProductGroup:
 def mentions_from_checked(checked: dict[str, CheckResult]) -> list[ProductMention]:
     """The kept mentions of checked extractions ({thread id: CheckResult}, from engine.extract.load_checked)."""
     return [
-        ProductMention(thread_id, m.comment_id, m.product, m.category, m.stance)
+        ProductMention(thread_id, m.comment_id, m.product, m.category, m.stance, m.product_type)
         for thread_id, result in checked.items()
         for m in result.kept
     ]

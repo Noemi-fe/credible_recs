@@ -127,7 +127,7 @@ def score_extraction(gold: GoldSet, checked: dict[str, CheckResult], votes_only:
 
 def _score_comment(score: ExtractionScore, comment_id: str, hers: list[MentionLabel], theirs: list[ExtractedMention]) -> None:
     """Adds one labelled comment's counts and misses to the score."""
-    pairs = _pair_up(hers, theirs)
+    pairs = pair_up(hers, theirs)
     score.gold_total += len(hers)
     score.ai_total += len(theirs)
     score.matched += len(pairs)
@@ -144,8 +144,10 @@ def _score_comment(score: ExtractionScore, comment_id: str, hers: list[MentionLa
     score.misses += [Miss(comment_id, NOT_LABELLED, m.product) for t, m in enumerate(theirs) if t not in paired_theirs]
 
 
-def _pair_up(hers: list[MentionLabel], theirs: list[ExtractedMention]) -> list[tuple[int, int]]:
+def pair_up(hers: list[MentionLabel], theirs: list[ExtractedMention]) -> list[tuple[int, int]]:
     """Pairs her mentions with the AI's (as list positions) so that as many as possible are paired, each at most once.
+
+    Also used by engine.credibility_eval, to compare the AI's evidence level with hers on the products both found.
 
     Her mentions are placed one at a time. When the only AI mention that fits one is already taken, the mention
     that took it is moved to another AI mention that fits it, if there is one free (or one that can be freed the
@@ -155,7 +157,7 @@ def _pair_up(hers: list[MentionLabel], theirs: list[ExtractedMention]) -> list[t
 
 
 def _pair_names(hers: list[str], theirs: list[str]) -> list[tuple[int, int]]:
-    """_pair_up on plain names, also used to pair her kinds of product with the AI's notes."""
+    """pair_up on plain names, also used to pair her kinds of product with the AI's notes."""
     fits = []  # for each of her names, the AI names meaning the same product: exact names first
     for name in hers:
         candidates = [t for t, other in enumerate(theirs) if same_product(name, other)]
