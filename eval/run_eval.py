@@ -9,6 +9,8 @@ Built so far:
   library's mentions group into products;
 - module 5 (credibility): voice and evidence levels from rules against Noemi's labels (the kettle thread is held
   out until she has labelled it);
+- end to end (modules 1-7): every blind-test question through the pipeline on the library: how many get a full
+  top 3, how many at least one pick, and that no shown quote fails the word-for-word check;
 - module 2 (retrieval): of the 3 threads picked per blind-test question, how many fit the need (grade 2) and how
   many are useful (grade 1 or 2), plus whether useful threads rank above off-topic ones, against
   eval/edge_cases/retrieval.json, re-ranking the saved candidate pool (no credits).
@@ -29,6 +31,7 @@ from engine.gold import DEFAULT_GOLD_DIR, GoldSetError, load_gold_set, print_oth
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.matching_eval import matching_report
 from engine.credibility_eval import credibility_report
+from engine.slice_eval import slice_report
 from engine.query import parse_query
 from engine.query_eval import QueryCaseError, load_query_cases, report_lines, score_cases
 from engine.retrieval_eval import DEFAULT_JUDGEMENTS, DEFAULT_POOL, load_judgements, score_ordering, score_ranking, summary_lines
@@ -69,7 +72,8 @@ def main() -> int:
     print()
     print(credibility_report())
 
-    print("\nModules 6-7 (ranking, answers): built; end-to-end scores come with the blind test.")
+    print()
+    print(slice_report())
     return status
 
 
