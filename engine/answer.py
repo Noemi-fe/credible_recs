@@ -5,12 +5,15 @@ from the ranking's data only: names, counts and quotes. Nothing is made up or pa
 write the one-line reasons, but only from the verified quotes, inside this same template.
 
 What each pick shows (the brief):
-- the product name and a one-line reason it wins;
+- the product name and a one-line reason it wins; when some of its credible recommendations talk about what the
+  request asks for (engine/needs.py, 9 Oct 2026), the reason says how many and about what ("3 of them about sensitive
+  skin");
 - its credible support: how many high- and medium-credibility voices recommend it, across how many threads;
 - two or three quotes, the most credible first, each with its "why this voice counts" badges and a link to the
   comment;
 - known downsides: quotes from credible warnings (and the disagreement flag when there are several);
-- the score breakdown, signal by signal;
+- the score breakdown, signal by signal, with how many credible mentions talk about the request's needs (each
+  counts NEED_MATCH_BOOST times as much);
 - its price (Noemi's decision 11, 9 Oct 2026): from the price list (engine/prices.py), with the shop, the day it was
   checked and a link to the shop's own page for it (https only); or "Price not checked yet". When the request has a
   budget, a line says how the price compares with it. Products over the budget never get here: the pipeline leaves
@@ -51,6 +54,7 @@ from engine.config import (
     MIN_CREDIBLE_MENTIONS,
     MIN_QUOTES_PER_PICK,
     MIN_THREADS,
+    NEED_MATCH_BOOST,
     PICKS_SHOWN,
     PRICE_MAX_AGE_DAYS,
     QUOTE_MAX_WORDS,
@@ -60,6 +64,7 @@ from engine.config import (
 )
 from engine.extract import _as_written, _in_quoted_block, _own_words_in_quote_format
 from engine.models import Thread
+from engine.needs import LASTING
 from engine.prices import PriceCheck
 from engine.rank import KindNote, ProductScore, RankingResult, ScoredMention, ScoreBreakdown, is_credible
 from engine.verify_quotes import find_quote, verify_quote
@@ -67,7 +72,7 @@ from engine.verify_quotes import find_quote, verify_quote
 # --- Wording users see: PROPOSED 9 Oct 2026, awaiting Noemi ---
 TITLE = "Top picks: {product_type}"
 TITLE_ANY = "Top picks"
-REASON = "Recommended by {voices}{long_term}{kind}."
+REASON = "Recommended by {voices}{long_term}{needs}{kind}."  # {needs} added 9 Oct 2026 (REASON_NEEDS below)
 REASON_LONG_TERM = ", {n} of them after long-term use"
 REASON_KIND = "; credible voices favour its kind most ({kind})"
 SUPPORT = "Backed by {voices}, across {threads}."
@@ -101,6 +106,42 @@ BUDGET_WHY_OLD = "its price was checked over {days} days ago, so it may have cha
 CURRENCY_SIGNS = {"GBP": "£", "EUR": "€", "USD": "$"}
 # Care tips (Noemi, 9 Oct 2026; wording PROPOSED, awaiting Noemi).
 CARE_HEADING = "How to make it last"
+# Needs (9 Oct 2026; wording decided by Claude, as Noemi asked). The reason line says how many of the credible
+# recommendations talk about what the request asks for, and about what: "Recommended by 5 credible voices, 3 of them
+# about sensitive skin." It says "about", not "with sensitive skin": the rule finds comments that talk about a need,
+# not writers who have it. Needs come from engine/needs.py; one not listed here is shown as the request typed it
+# ("pour-over", "PFAS"). Several are listed with commas and a last "or": "2 of them about starting out or sensitive
+# skin", "3 of them about starting out, home cooking or pour-over".
+REASON_NEEDS = ", {n} of them about {needs}"
+NEEDS_JOIN = ", "
+NEEDS_JOIN_LAST = " or "
+NEED_LABELS: dict[str, str] = {
+    "sensitive": "sensitive skin",
+    "dry": "dry skin",
+    "oily": "oily skin",
+    "combination": "combination skin",
+    "acne-prone": "acne-prone skin",
+    "normal": "normal skin",
+    "mature": "mature skin",
+    "fragrance-free": "fragrance",
+    "non-comedogenic": "clogged pores",
+    "no white cast": "white cast",
+    "cruelty-free": "cruelty-free",
+    "vegan": "vegan",
+    "reef-safe": "reef safety",
+    "plastic-free": "plastic",
+    "stainless steel": "stainless steel",
+    "dishwasher-safe": "the dishwasher",
+    "induction-compatible": "induction",
+    "temperature control": "temperature control",
+    "beginner": "starting out",
+    "gentle": "gentleness",
+    "home cook": "home cooking",
+    "lasting": "how long it lasts",
+}
+# The breakdown's line about needs: only shown when some credible mention talks about them.
+BREAKDOWN_NEEDS = ("About your request: {recommends} credible recommendations and {warnings} credible warnings talk "
+                   "about what you asked for (each counts {boost} times as much)")
 
 
 # --- The answer ---
@@ -344,15 +385,54 @@ def _as_sentence(tip: str) -> str:
 
 
 def _reason(product: ProductScore, ranking: RankingResult) -> str:
-    """The one-line reason: how many credible voices, how many after long-term use, and the kind if it leads."""
+    """The one-line reason: how many credible voices, how many after long-term use, how many talk about the request's
+    needs, and the kind if it leads."""
     recommendations = product.credible_recommendations
     long_term = sum(m.evidence == "long-term use" for m in recommendations)
     has_bonus = product.breakdown.kind_bonus > 0 and ranking.leading_kind is not None
     return REASON.format(
         voices=_plural(len(recommendations), "credible voice"),
         long_term=REASON_LONG_TERM.format(n=long_term) if long_term else "",
+        needs=_needs_clause(recommendations, [m.needs for p in ranking.products for m in p.mentions]),
         kind=REASON_KIND.format(kind=ranking.leading_kind.name) if has_bonus else "",
     )
+
+
+def _needs_clause(recommendations: list[ScoredMention], every_list: list[tuple[str, ...]]) -> str:
+    """", 3 of them about sensitive skin": how many credible recommendations talk about the request's needs, and which
+    needs, in the request's order; "" when none does. `every_list` holds the needs of every mention ranked: each lists
+    them in the request's order, so together they show that order.
+
+    Nothing is said twice: long-term use talks about "lasting" (engine/needs.py), and the reason already says how many
+    recommendations come after long-term use, so those don't count again for "how long it lasts".
+    """
+    fitting = [needs for needs in map(_needs_not_said, recommendations) if needs]
+    if not fitting:
+        return ""
+    mine = {need for needs in fitting for need in needs}
+    ordered = [need for need in _in_request_order(fitting + every_list) if need in mine]
+    named = list(dict.fromkeys(NEED_LABELS.get(need, need) for need in ordered))
+    listed = NEEDS_JOIN.join(named[:-1]) + NEEDS_JOIN_LAST + named[-1] if len(named) > 1 else named[0]
+    return REASON_NEEDS.format(n=len(fitting), needs=listed)
+
+
+def _needs_not_said(mention: ScoredMention) -> tuple[str, ...]:
+    """A mention's needs, less "lasting" when it comes after long-term use: the reason says that already."""
+    return tuple(need for need in mention.needs if not (need == LASTING and mention.evidence == "long-term use"))
+
+
+def _in_request_order(lists: list[tuple[str, ...]]) -> list[str]:
+    """Every need of the lists once, in the request's order. Each list keeps that order but may skip needs (one
+    mention talks about "sensitive" only, another about "beginner" and "sensitive"), so a need goes next when no other
+    need left comes before it in any list. Needs no list puts in order keep the order they were first seen in."""
+    left = list(dict.fromkeys(need for needs in lists for need in needs))
+    before = {(a, b) for needs in lists for i, a in enumerate(needs) for b in needs[i + 1:]}
+    ordered = []
+    while left:
+        first = next((n for n in left if not any((other, n) in before for other in left)), left[0])
+        ordered.append(first)
+        left.remove(first)
+    return ordered
 
 
 def _support(product: ProductScore) -> str:
@@ -572,9 +652,17 @@ def _render_breakdown(score: float, b: ScoreBreakdown) -> list[str]:
         f"- Neutral mentions: {b.neutral} (they never count)",
         f"- Threads: {b.threads}, {b.credible_threads} with a credible recommendation",
     ]
+    if b.credible_recommends_fitting_need or b.credible_warnings_fitting_need:
+        lines.append("- " + breakdown_needs_line(b.credible_recommends_fitting_need, b.credible_warnings_fitting_need))
     if b.kind and not b.kind_bonus:
         lines.append(f"- Kind: {b.kind} (support {b.kind_support:.2f}; no bonus: it doesn't lead by far)")
     return lines
+
+
+def breakdown_needs_line(recommends: int | str, warnings: int | str) -> str:
+    """The breakdown's line about the request's needs. The numbers may be given as placeholders ("{recommends}"):
+    the web page fills them in."""
+    return BREAKDOWN_NEEDS.format(recommends=recommends, warnings=warnings, boost=f"{NEED_MATCH_BOOST:g}")
 
 
 def _levels(counts: dict[str, int]) -> str:

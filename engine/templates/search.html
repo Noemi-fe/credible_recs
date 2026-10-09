@@ -337,6 +337,10 @@ h1, h2, h3, h4 { line-height: 1.25; }
       fill(LABELS.bdNeutral, { n: b.neutral }),
       fill(LABELS.bdThreads, { n: b.threads, credible: b.credible_threads }),
     ];
+    // How many credible mentions talk about what the request asks for (9 Oct 2026); the words come from engine/answer.py.
+    if (b.credible_recommends_fitting_need || b.credible_warnings_fitting_need) {
+      lines.push(fill(WORDING.breakdown_needs, { recommends: b.credible_recommends_fitting_need, warnings: b.credible_warnings_fitting_need }));
+    }
     if (b.kind && !b.kind_bonus) lines.push(fill(LABELS.bdKind, { kind: b.kind, support: twoDecimals(b.kind_support) }));
     return el("details", { class: "breakdown" }, el("summary", {}, WORDING.breakdown_heading), el("ul", {}, ...lines.map((line) => el("li", {}, line))));
   }

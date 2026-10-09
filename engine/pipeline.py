@@ -42,6 +42,14 @@ can't use. threads_quoted names the threads the answer's quotes come from: the o
 Each mention carries its writer's name (lowercased), so the ranking counts one writer once per product, however
 many comments or threads they praise it in (engine.rank).
 
+Two ranking changes of 9 Oct 2026 are worked out here, in _score, before module 6 ranks:
+- needs: a mention whose comment talks about what the request asks for (engine/needs.py: "sensitive skin", "a
+  beginner", "pour-over") weighs NEED_MATCH_BOOST (1.5) times as much, a recommendation or a warning alike;
+- writers who contradict themselves (Noemi's rule; engine/contradictions.py): a writer who recommends a product and
+  warns against it in another comment of the threads read, without saying what changed, counts as a low voice in
+  every mention and note they make, so none of it is credible. They are named on the result (contradicting_writers)
+  for reports, which count them; nothing about them is shown to users.
+
 Names are shown as a UK shopper knows them (decision 12): "Sage", not "Breville" (engine.group_products.uk_name).
 
 Care tips, "How to make it last" (Noemi, 9 Oct 2026): the credible care tips of the threads read (extraction
@@ -72,10 +80,12 @@ from engine.config import (
     LIVE_CHECK_REQUIRED,
     LIVE_CHECK_ROUNDS,
     LIVE_CHECK_SHOWN_DAYS,
+    NEED_MATCH_BOOST,
     PIPELINE_BRAND_PICKS,
     PIPELINE_MAX_THREADS,
 )
-from engine.credibility import badges, mention_weight, score_evidence, score_voice
+from engine.contradictions import contradicting_writers
+from engine.credibility import VoiceScore, badges, mention_weight, score_evidence, score_voice
 from engine.extract import CheckResult, load_checked
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
 from engine.group_products import ProductGroup, ProductMention, brand_pick_name, group_of, group_products, uk_name
@@ -83,6 +93,7 @@ from engine.gold import DEFAULT_GOLD_DIR
 from engine.library import DEFAULT_LIBRARY_DIR, checked_live_within
 from engine.match_products import known_aliases, normalize_name, same_product
 from engine.models import Comment, Thread
+from engine.needs import Need, needs_met, request_needs
 from engine.prices import Price, PriceCheck, check_price, find_price, load_prices
 from engine.profiles import ProfileStore, StoredProfiles, with_profiles
 from engine.query import PRODUCT_TYPES, ParsedQuery, parse_query
@@ -107,6 +118,9 @@ class PipelineResult:
     # used until `python -m engine.library check-live` reads them again (Noemi, 9 Oct 2026).
     waiting_live_check: list[str] = field(default_factory=list)
     threads_quoted: list[str] = field(default_factory=list)  # ids of the threads the answer's quotes come from
+    # Writers (lowercased names) who recommend a product and warn against it without saying what changed: their every
+    # mention counts as a low voice (Noemi's rule, 9 Oct 2026). For reports only, as a count: never shown to users.
+    contradicting_writers: list[str] = field(default_factory=list)
 
     def text(self) -> str:
         """The answer as Markdown, or module 1's question or polite no."""
@@ -173,7 +187,9 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     kinds = group_kinds(kind_mentions, kept_groups, query.category, query.product_type or "")
     with_a_kind = kinds_of(kinds)
     result.notes_without_kind = [n.about for n in kind_mentions if n not in with_a_kind]
-    scored, kind_notes = _score(threads, checked, kept_groups, kinds)
+    result.contradicting_writers = sorted(contradicting_writers(groups, {c.id: c for t in threads for c in t.comments}))
+    scored, kind_notes = _score(threads, checked, kept_groups, kinds, request_needs(query),
+                                set(result.contradicting_writers))
     result.ranking = rank_products(scored, query.category, kind_notes, placements(kinds))
     care = _care_tips(threads, checked, kept_groups, kinds, query)
     result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care)
@@ -356,7 +372,15 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
 
 # --- Module 5: a weight for every mention and note ---
 
-def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[ProductGroup], kinds) -> tuple[list[ScoredMention], list[KindNote]]:
+def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[ProductGroup], kinds,
+           needs: tuple[Need, ...] = (),
+           contradicting: set[str] = frozenset()) -> tuple[list[ScoredMention], list[KindNote]]:
+    """A weight for every product mention and kind note of the threads read (module 5), ready for the ranking.
+
+    `needs` are the request's needs (engine.needs.request_needs): a product mention whose comment talks about one of
+    them weighs NEED_MATCH_BOOST times as much. `contradicting` are the writers who contradict themselves
+    (engine.contradictions): every mention and note of theirs counts as a low voice.
+    """
     by_id = {t.id: t for t in threads}
     group_by_mention = group_of(groups)
     kind_groups = kinds_of(kinds)
@@ -365,23 +389,32 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
         thread = by_id[tid]
         comments = {c.id: c for c in thread.comments}
         voices = {}
+
+        def voice_of(comment: Comment) -> VoiceScore:
+            if comment.id not in voices:
+                voice = score_voice(comment, thread, res.kept_agreements)
+                voices[comment.id] = _as_low(voice) if _writer(comment) in contradicting else voice
+            return voices[comment.id]
+
         for m in res.kept:
             group = group_by_mention.get(ProductMention(tid, m.comment_id, m.product, m.category, m.stance))
             if group is None:
                 continue  # left out above: another category, another type, a loose name, or over budget
             comment = comments[m.comment_id]
-            voice = voices.setdefault(m.comment_id, score_voice(comment, thread, res.kept_agreements))
+            voice = voice_of(comment)
             others = [o.product for o in res.kept if o.comment_id == m.comment_id and o.product != m.product]
             evidence = score_evidence(comment, m.product, m.stance, others)
+            met = needs_met(comment.body, needs, evidence.level == "long-term use")
+            weight = mention_weight(voice, evidence, m.stance) * (NEED_MATCH_BOOST if met else 1)
             scored.append(ScoredMention(
                 product_key=group.key, product_name=group.name, category=group.category, thread_id=tid,
                 comment_id=m.comment_id, comment_url=str(comment.url), stance=m.stance,
-                weight=mention_weight(voice, evidence, m.stance), voice=voice.level, evidence=evidence.level,
-                quote=m.quote, badges=badges(voice, evidence), author=_writer(comment),
+                weight=weight, voice=voice.level, evidence=evidence.level,
+                quote=m.quote, badges=badges(voice, evidence), author=_writer(comment), needs=met,
             ))
         for n in res.kept_notes:
             comment = comments[n.comment_id]
-            voice = voices.setdefault(n.comment_id, score_voice(comment, thread, res.kept_agreements))
+            voice = voice_of(comment)
             evidence = score_evidence(comment, n.about, n.stance)
             for kind in kind_groups.get(KindMention(tid, n.comment_id, n.about, n.stance), []):
                 notes.append(KindNote(
@@ -390,6 +423,12 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                     voice=voice.level, quote=n.quote, badges=badges(voice, evidence), author=_writer(comment),
                 ))
     return scored, notes
+
+
+def _as_low(voice: VoiceScore) -> VoiceScore:
+    """The voice of a writer who contradicts themselves: low, whatever its signs (Noemi's rule, 9 Oct 2026). The signs
+    are kept, so nothing else about the writer changes."""
+    return replace(voice, level="low")
 
 
 def _commented(result: CheckResult) -> set[str]:

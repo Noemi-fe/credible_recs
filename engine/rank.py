@@ -18,6 +18,15 @@ A credible mention is a recommend or warn from a voice that isn't low, by someon
 (config.CREDIBLE_VOICES and CREDIBLE_EVIDENCE). Low voices and hearsay still move the score a little, but
 never count toward the rules below.
 
+Two things the pipeline settles before the ranking (9 Oct 2026), so they arrive here in the mentions:
+- Needs: a mention whose comment talks about what the request asks for ("sensitive skin", "a beginner";
+  engine/needs.py) carries those needs, and its weight is already multiplied by config.NEED_MATCH_BOOST (1.5),
+  for a recommendation or a warning alike. The breakdown counts the credible mentions that fit the request's needs.
+  The rules below don't change: they count credible mentions, not weights.
+- Writers who contradict themselves (Noemi's rule; engine/contradictions.py): every mention by a writer who
+  recommends a product and warns against it without saying what changed arrives as a low voice, so it is never
+  credible.
+
 The rules, in plain words:
 - Minimum evidence: a product can be a pick only with at least 3 credible recommendations from at least 2
   different threads, and a score above zero. The kind bonus never helps a product pass this rule.
@@ -72,15 +81,21 @@ class ScoredMention:
     comment_id: str  # used to find the comment again and re-check the quote at answer time
     comment_url: str  # the link shown next to the quote
     stance: str  # recommend, warn or neutral
-    weight: float  # module 5: voice value x evidence value x stance value; negative for warn, 0 for neutral
-    voice: str  # module 5: high, medium or low (the writer)
+    # module 5: voice value x evidence value x stance value; negative for warn, 0 for neutral. Already multiplied by
+    # config.NEED_MATCH_BOOST when the comment talks about the request's needs (`needs` below).
+    weight: float
+    voice: str  # module 5: high, medium or low (the writer); low for a writer who contradicts themselves
     evidence: str  # module 5: long-term use, short-term use or no first-hand use (this product)
     quote: str  # the supporting quote, checked at extraction; checked again before it is shown
     badges: tuple[str, ...] = ()  # "why this voice counts", in words: "3 years of use", "expert flair"
     author: str | None = None  # the writer's name, lowercased, so one writer counts once; None for a deleted account
+    # The request's needs its comment talks about ("sensitive", "beginner", "pour-over"; engine/needs.py), in the
+    # request's order; empty when it talks about none.
+    needs: tuple[str, ...] = ()
 
     def __post_init__(self):
         object.__setattr__(self, "badges", tuple(self.badges))  # a list given by the pipeline is fine too
+        object.__setattr__(self, "needs", tuple(self.needs))
         _check_choice("category", self.category, MENTION_CATEGORIES)
         _check_choice("voice", self.voice, VOICE_LEVELS)
         _check_choice("evidence", self.evidence, EVIDENCE_LEVELS)
@@ -155,6 +170,9 @@ class ScoreBreakdown:
     warn_evidence: dict[str, int]
     threads: int  # threads mentioning it at all
     credible_threads: int  # threads with at least one credible recommendation
+    # Credible mentions whose comment talks about the request's needs (9 Oct 2026); each weighs NEED_MATCH_BOOST times.
+    credible_recommends_fitting_need: int = 0
+    credible_warnings_fitting_need: int = 0
 
 
 @dataclass
@@ -311,6 +329,8 @@ def _score_product(
         warn_evidence=_count(warnings, "evidence", EVIDENCE_LEVELS),
         threads=len({m.thread_id for m in mentions}),
         credible_threads=credible_threads,
+        credible_recommends_fitting_need=sum(bool(m.needs) for m in credible_recommends),
+        credible_warnings_fitting_need=sum(bool(m.needs) for m in credible_warnings),
     )
     return ProductScore(
         key=key,

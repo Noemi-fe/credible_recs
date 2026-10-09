@@ -215,6 +215,8 @@ def answer_wording() -> dict[str, str]:
         "price_label": wording.PRICE_LABEL,  # "Price"
         "price_link_text": wording.PRICE_LINK_TEXT,
         "care_heading": wording.CARE_HEADING,  # "How to make it last" (care tips, 9 Oct 2026)
+        # The breakdown's line about the request's needs (9 Oct 2026), with {recommends} and {warnings} for the page.
+        "breakdown_needs": wording.breakdown_needs_line("{recommends}", "{warnings}"),
     }
 
 
