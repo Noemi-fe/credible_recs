@@ -538,9 +538,17 @@ _UNIT_NAMES = {"decade": "decade", "year": "year", "yr": "year", "month": "month
                "wk": "week", "day": "day"}
 
 
+# "can last 100 years", "will all last decades", "built to last 20 years": a claim about how long something can
+# last, not how long the writer has used theirs (9 Oct 2026: it gave the badge "100 years of use").
+_CLAIMED_LIFE = re.compile(r"\b(?:can|could|will|would|should|may|might|supposed to|built to|made to|designed to)"
+                           r"(?:\s+\w+){0,2}\s+last\s+(?:for\s+|up to\s+|over\s+)?$")
+
+
 def _is_not_a_duration(text: str, match: re.Match) -> bool:
     """Whether "a day" or "one day" here is a frequency ("twice a day", "once a week") or a figure of speech
-    ("one day it broke"), not a time of use."""
+    ("one day it broke"), or the time is how long something can last rather than how long the writer used it."""
+    if _CLAIMED_LIFE.search(text[max(0, match.start() - 60):match.start()]):
+        return True
     words_before = text[:match.start()].split()[-1:]
     previous = words_before[0] if words_before else ""
     if previous in ("once", "twice", "times", "per", "x", "every"):

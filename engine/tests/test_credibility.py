@@ -537,3 +537,18 @@ def test_badges_say_why_a_voice_counts_and_nothing_against_it():
 def test_weak_evidence_and_red_flags_give_no_badges():
     comment, thread = make_case(body="Use my code SAVE10. Get the Lodge skillet.", author=None, category="kitchen")
     assert badges(score_voice(comment, thread), score_evidence(comment, "Lodge skillet", "recommend")) == ()
+
+
+# --- A claim about how long things last is not the writer's own use (9 Oct 2026, first end-to-end run) ---
+
+def test_how_long_a_kind_can_last_is_not_a_time_of_use():
+    # "Carbon steel ... can all last 100+ years" is a claim about the material, and gave the badge "100 years of use".
+    body = "Carbon steel, cast iron and copper cookware can all last 100+ years without much issues."
+    evidence = evidence_for(body, "carbon steel pan")
+    assert evidence.level != "long-term use"
+    assert not any("years of use" in b for b in evidence.badges)
+
+
+def test_how_long_the_writers_own_one_lasted_still_counts():
+    assert evidence_for("My carbon steel pan has lasted 10 years.", "carbon steel pan").level == "long-term use"
+    assert evidence_for("Our Zojirushi kettle is 8 years old and still going.", "Zojirushi kettle").level == "long-term use"
