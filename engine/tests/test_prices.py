@@ -153,3 +153,19 @@ def test_an_old_price_is_never_used_to_leave_a_product_out():
     assert check_price(just_in_time, UNDER_100, TODAY).status == "over"
     assert check_price(too_old, UNDER_100, TODAY).status == "out of date"
     assert check_price(price(amount=50.0, checked_on=TODAY - timedelta(days=limit + 1)), UNDER_100, TODAY).status == "out of date"
+
+
+# --- Other names for the same product (9 Oct 2026) ---
+
+def test_an_entry_can_list_the_other_names_the_same_product_goes_by():
+    # A shop sells "Cuisinart CPK-17P1 PerfecTemp Cordless Electric Kettle"; Reddit calls it "Cuisinart CPK-17 PerfecTemp".
+    from datetime import date
+
+    from engine.prices import Price, find_availability
+
+    entry = Price(product="Cuisinart CPK-17P1 PerfecTemp Cordless Electric Kettle Silver", category="kitchen", price=None,
+                  currency="GBP", shop="Amazon UK", url="https://www.amazon.co.uk/dp/B08CYBHW8K",
+                  checked_on=date(2026, 10, 9), available=False,
+                  also_called=["Cuisinart CPK-17 PerfecTemp 1.7-Liter Stainless"])
+    assert find_availability("Cuisinart CPK-17 PerfecTemp 1.7-Liter Stainless", "kitchen", [entry]) == entry
+    assert find_availability("Zojirushi kettle", "kitchen", [entry]) is None

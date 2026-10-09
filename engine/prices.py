@@ -99,6 +99,9 @@ class Price(Record):
     checked_on: date
     # True: the shop sells it; False: no longer sold; None (left out of the entry): not checked. JSON true/false only.
     available: StrictBool | None = None
+    # Other names the same product goes by, when the shop's name and the one people use don't match by the word rules
+    # ("Cuisinart CPK-17P1 PerfecTemp Cordless..." at the shop, "Cuisinart CPK-17 PerfecTemp" on Reddit; 9 Oct 2026).
+    also_called: list[str] = []
 
     @model_validator(mode="after")
     def _says_something(self) -> "Price":
@@ -181,7 +184,8 @@ def find_availability(name: str, category: str, prices: Iterable[Price]) -> Pric
 def entries_for(name: str, category: str, prices: Iterable[Price]) -> list[Price]:
     """Every entry of the same category whose name means the same product as `name`, by module 4's rules."""
     aliases = known_aliases().get(category, {})
-    return [p for p in prices if p.category == category and same_product(p.product, name, aliases)]
+    return [p for p in prices if p.category == category
+            and any(same_product(known, name, aliases) for known in [p.product, *p.also_called])]
 
 
 def check_price(price: Price | None, budget: Budget | None, today: date) -> PriceCheck:

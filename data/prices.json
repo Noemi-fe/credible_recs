@@ -7,16 +7,111 @@
    "currency": "GBP",
    "shop": "Boots",
    "url": "https://www.boots.com/biore-uv-aqua-rich-watery-essence-j-beauty-sunscreen-spf-50-50ml-10356353",
-   "checked_on": "2026-10-09"
+   "checked_on": "2026-10-09",
+   "available": true
   },
   {
    "product": "1Zpresso Q2",
    "category": "kitchen",
-   "price": 95.0,
+   "price": null,
    "currency": "GBP",
-   "shop": "Sigma Coffee",
-   "url": "https://sigmacoffee.co.uk/products/1zpressoq2",
-   "checked_on": "2026-10-09"
+   "shop": "1Zpresso (no UK shop sells the Q2; Sigma Coffee now sells its successor, the Q)",
+   "url": "https://1zpresso.coffee/product/q2/",
+   "checked_on": "2026-10-09",
+   "available": false
+  },
+  {
+   "product": "COSRX BHA Blackhead Power Liquid 100ml",
+   "category": "skincare",
+   "price": 22.49,
+   "currency": "GBP",
+   "shop": "LookFantastic",
+   "url": "https://www.lookfantastic.com/p/cosrx-bha-blackhead-power-liquid-100ml/11401180/",
+   "checked_on": "2026-10-09",
+   "available": true
+  },
+  {
+   "product": "ETUDE Sunprise Airy Finish",
+   "category": "skincare",
+   "price": 10.3,
+   "currency": "GBP",
+   "shop": "YesStyle",
+   "url": "https://www.yesstyle.com/en/etude-sunprise-airy-finish-55ml/info.html/pid.1039258908",
+   "checked_on": "2026-10-09",
+   "available": true
+  },
+  {
+   "product": "Tazorac (tazarotene)",
+   "category": "skincare",
+   "price": null,
+   "currency": "GBP",
+   "shop": "NHS dm+d browser (NHSBSA)",
+   "url": "https://dmd-browser.nhsbsa.nhs.uk/vmp/view/3762",
+   "checked_on": "2026-10-09",
+   "available": false
+  },
+  {
+   "product": "Stratia Lipid Gold (formerly Liquid Gold)",
+   "category": "skincare",
+   "price": 23.0,
+   "currency": "GBP",
+   "shop": "Stratia",
+   "url": "https://www.stratiaskin.com/products/lipid-gold",
+   "checked_on": "2026-10-09",
+   "available": true
+  },
+  {
+   "product": "Dualit Classic Kettle",
+   "category": "kitchen",
+   "price": 164.99,
+   "currency": "GBP",
+   "shop": "Dualit",
+   "url": "https://www.dualit.com/products/classic-kettle",
+   "checked_on": "2026-10-09",
+   "available": true
+  },
+  {
+   "product": "Cuisinart CPK-17P1 PerfecTemp Cordless Electric Kettle Silver 1.7 Liter",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK (a US-voltage import only, not for UK mains)",
+   "url": "https://www.amazon.co.uk/dp/B08CYBHW8K",
+   "checked_on": "2026-10-09",
+   "available": false,
+   "also_called": [
+    "Cuisinart CPK-17 PerfecTemp 1.7-Liter Stainless"
+   ]
+  },
+  {
+   "product": "Sage the Compact Kettle Pure",
+   "category": "kitchen",
+   "price": 69.95,
+   "currency": "GBP",
+   "shop": "Sage",
+   "url": "https://www.sageappliances.com/en-gb/product/bke395",
+   "checked_on": "2026-10-09",
+   "available": true
+  },
+  {
+   "product": "Timemore Manual C2 Coffee Burr Grinder - White",
+   "category": "kitchen",
+   "price": 64.95,
+   "currency": "GBP",
+   "shop": "Redber Coffee",
+   "url": "https://www.redber.co.uk/products/timemore-manual-c2-grinder-silver",
+   "checked_on": "2026-10-09",
+   "available": true
+  },
+  {
+   "product": "1Zpresso JX-Pro-S Manual Coffee Grinder",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "The English Coffee Company",
+   "url": "https://englishcoffeecompany.co.uk/products/1zpresso-jx-pro-s-manual-coffee-grinder",
+   "checked_on": "2026-10-09",
+   "available": false
   }
  ]
 }
