@@ -54,6 +54,19 @@ def test_deleted_account_is_null_not_a_name():
     assert comment.author is None
 
 
+def test_an_author_can_say_how_much_they_have_written():
+    # Comments plus posts (from Arctic Shift, engine/profiles.py), for module 5's karma per contribution.
+    author = make_comment("c1aaaa")["author"] | {"contributions": 1000}
+    assert Comment.model_validate(make_comment("c1aaaa", author=author)).author.contributions == 1000
+    with pytest.raises(ValidationError):
+        Comment.model_validate(make_comment("c1aaaa", author=author | {"contributions": -1}))
+
+
+def test_thread_files_saved_before_contributions_existed_still_load():
+    thread = Thread.model_validate(make_thread())  # the factory's authors have no "contributions"
+    assert all(c.author.contributions is None for c in thread.comments)
+
+
 def test_readable_comment_needs_text():
     with pytest.raises(ValidationError):
         Comment.model_validate(make_comment("c1aaaa", body="   "))

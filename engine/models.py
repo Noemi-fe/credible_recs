@@ -45,10 +45,19 @@ class Record(BaseModel):
 
 
 class Author(Record):
+    """A comment's writer. Parse gives only the name; engine/profiles.py can fill in the rest from Arctic Shift.
+
+    From Arctic Shift, account_created_at is the date of the writer's first comment or post in the archive
+    ("active since"), which only approximates the account's age. Every field but the name may be unknown (None).
+    """
+
     name: str = Field(min_length=1)
     account_created_at: UtcDatetime | None = None
     karma: int | None = None
     flair: str | None = None
+    # How many comments and posts the account has written, for karma per contribution (module 5). Thread files
+    # saved before this field existed have no such key, and still load.
+    contributions: int | None = Field(default=None, ge=0)
 
     @field_validator("name")
     @classmethod

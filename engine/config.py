@@ -190,3 +190,9 @@ PIPELINE_MIN_RELEVANCE = 1.0
 # Whether a brand or line that fits several products ("Lodge", "CeraVe") can be ranked as if it were one product.
 # False: left out, and listed on the result.
 PIPELINE_INCLUDE_LOOSE = False
+
+# --- Commenter profiles (proposed 9 Oct 2026) ---
+# engine/profiles.py looks up each writer's numbers on Arctic Shift, one call per writer, 10 seconds apart.
+# PROPOSED: this many failed look-ups in a row means the trouble is Arctic Shift itself (down or busy), not one
+# writer, so it stops asking and leaves the remaining writers as they were, instead of waiting on every one of them.
+PROFILE_FAILURES_IN_A_ROW_TO_STOP = 3
