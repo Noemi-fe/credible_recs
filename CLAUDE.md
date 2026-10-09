@@ -21,6 +21,9 @@
 - Run tests with `.venv/bin/pytest`.
 - Validate the gold set with `.venv/bin/python -m engine.gold`.
 - Data shapes live in engine/models.py. The gold-set format is documented in data/gold/README.md.
+- The pipeline (thin slice, 9 Oct 2026): `python -m engine.pipeline "<request>"` runs modules 1–7 on data/library and prints the answer. Modules: 1 engine/query.py, 2 engine/sources.py + engine/library.py, 3 engine/extract.py, 4 engine/group_products.py + engine/group_kinds.py + engine/match_products.py, 5 engine/credibility.py, 6 engine/rank.py, 7 engine/answer.py; glue in engine/pipeline.py. eval/run_eval.py ends with the end-to-end score over the blind-test questions.
+- Parallel builders work in git worktrees under /Users/noemi/pj/credible-recs-worktrees/<branch> (one branch per module), run tests there with `/Users/noemi/pj/credible-recs/.venv/bin/python -m pytest -q` (the `-m` form imports the worktree's engine), and commit to their branch; the orchestrator merges into main. Proposed values go at the end of engine/config.py under a header per module, marked PROPOSED until Noemi decides.
+- After Noemi labels a gold thread and the AI extracts it, copy its extraction from data/gold/extracted to data/library/extracted, so answers can use it.
 
 # Open items
 - When brief version 5 arrives: its "Never scrape" rule must be updated to match the Parse decision (Noemi asked to remember this on 7 Oct 2026).
