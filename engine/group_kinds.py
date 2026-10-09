@@ -19,7 +19,8 @@ What a note's kind is (kind_parts), in this order:
    is a hand grinder;
 5. the words of the requested product itself say nothing about its kind, so they are left out: in a frying pan
    request, "carbon steel pan" is carbon steel. A note left with no words ("cheap grinder" in a grinder request)
-   names no kind: it is in no group, and stays a "what to look for" note for the answer.
+   names no kind: it is in no group, so the ranking never sees it and the answer doesn't show it. The pipeline
+   lists such notes on its result (notes_without_kind), so none is dropped silently (review fixes, 9 Oct 2026).
 
 Two notes are about the same kind when they are left with the same words, in any order, also when one writes as
 one word what the other splits in two. A narrower kind ("thick carbon steel", "enameled cast iron") is a group of
@@ -125,7 +126,8 @@ def group_kinds(notes: list[KindMention], products: list[ProductGroup], category
     known = (known_aliases("kinds") if aliases is None else aliases).get(category, {})
     type_words = set(_kind_words(product_type, known))
     items = [(n, words) for n in notes for words in kind_parts(n.about, product_type, known, type_words)]
-    groups = [_make_group(members) for members in _same_kind_sets(items)]
+    kinds_per_note = Counter(n for n, _ in items)
+    groups = [_make_group(members, kinds_per_note) for members in _same_kind_sets(items)]
     product_words = {p.key: _words_of_product(p, known) for p in products}
     for g in groups:
         kind = set(g.key.split())
@@ -195,13 +197,20 @@ def _same_kind_sets(items: list[tuple[KindMention, list[str]]]) -> list[list[tup
     return sets
 
 
-def _make_group(members: list[tuple[KindMention, list[str]]]) -> KindGroup:
-    """The kind written most often names the group (on a tie, the shortest, then alphabetically); its words are the key."""
-    counts = Counter(n.about for n, _ in members)
+def _make_group(members: list[tuple[KindMention, list[str]]], kinds_per_note: Counter) -> KindGroup:
+    """The kind written most often names the group (on a tie, the shortest, then alphabetically); its words are the key.
+
+    Only a note about this kind alone can name it (review fixes, 9 Oct 2026): "cast iron or carbon steel pan" is in
+    two groups, and would give both the same name. A group with no such note is named by its key words ("carbon
+    steel"). `kinds_per_note` says in how many of the kind lists a note is.
+    """
+    in_this_group = Counter(n for n, _ in members)
+    alone = Counter(n.about for n, _ in members if in_this_group[n] == kinds_per_note[n])
+    counts = alone or Counter(n.about for n, _ in members)
     shown = min(counts, key=lambda about: (-counts[about], len(about), about))
     key_words = next(words for n, words in members if n.about == shown)
     notes = sorted({n for n, _ in members}, key=lambda n: (n.thread_id, n.comment_id, n.about))
-    return KindGroup(key=" ".join(key_words), name=shown, notes=notes)
+    return KindGroup(key=" ".join(key_words), name=shown if alone else " ".join(key_words), notes=notes)
 
 
 def _words_of_product(product: ProductGroup, aliases: Aliases) -> set[str]:

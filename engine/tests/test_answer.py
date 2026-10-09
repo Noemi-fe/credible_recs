@@ -338,3 +338,58 @@ def test_comment_bodies_holds_only_readable_comments():
         make_comment("c2bbbb", body="[deleted]", status="deleted"),
     ]))
     assert comment_bodies([thread]) == {"c1aaaa": "Still here."}
+
+
+# --- Review fixes, 9 Oct 2026 ---
+
+def answer_with_quote(text: str, comment_id: str = "cQ1") -> wording.Answer:
+    """A finished answer whose only quote is `text`, from comment `comment_id`."""
+    item = wording.SkipItem("acme-kettle", "Acme kettle", "Warned against.", [ShownQuote(text, comment_id, "https://example.com/c", ())])
+    return wording.Answer("kitchen", None, [], [], [item], None, True, 0)
+
+
+QUOTING_REPLY = "&gt; The Acme kettle broke after a week.\nWorst purchase ever, never buy the Acme kettle.\n\nReally? Mine is fine."
+
+
+def test_a_quote_from_a_quoted_block_never_passes_the_answer_check():
+    # Someone else's words, quoted with ">" (the first line) or carried on by the next line of the same block.
+    for text in ("The Acme kettle broke after a week.", "Worst purchase ever, never buy the Acme kettle."):
+        problems = unverified_claims(answer_with_quote(text), {"cQ1": QUOTING_REPLY})
+        assert len(problems) == 1 and "quoted block" in problems[0] and "cQ1" in problems[0]
+    assert unverified_claims(answer_with_quote("Mine is fine."), {"cQ1": QUOTING_REPLY}) == []
+
+
+def test_a_quote_from_a_quoted_block_is_never_shown():
+    warnings = [mention("Acme kettle", f"t{i % 2 + 1}", stance="warn", comment=f"cQ{i}", quote="Worst purchase ever, never buy the Acme kettle.")
+                for i in range(3)]
+    answer = write_answer(rank_products(warnings, "kitchen"), {m.comment_id: QUOTING_REPLY for m in warnings})
+    assert answer.skip == [] and answer.quotes_dropped == 3
+    assert "Worst purchase" not in shown_text(answer)
+
+
+def test_a_comment_written_entirely_as_a_quote_block_passes_when_no_one_else_wrote_it():
+    body = "> **Best:** Hada Labo Gokujyun lotion.\nIt made my dry skin plump in a week."
+    quote = "It made my dry skin plump in a week."
+    assert unverified_claims(answer_with_quote(quote), {"cQ1": body}) == []
+    copied = {"cQ1": body, "cQ2": f"Hada Labo Gokujyun lotion. {quote}"}
+    assert "quoted block" in unverified_claims(answer_with_quote(quote), copied)[0]
+
+
+def test_the_answer_check_counts_the_words_the_quote_matches():
+    words = [f"word{n}" for n in range(QUOTE_MAX_WORDS + 30)]
+    body = "I love the Acme kettle. " + " ".join(words)
+    quote = "&#32;".join(["I", "love", "the", "Acme", "kettle."] + words)
+    problems = unverified_claims(answer_with_quote(quote), {"cQ1": body})
+    assert len(problems) == 1 and f"limit is {QUOTE_MAX_WORDS}" in problems[0]
+
+
+def test_the_quote_shown_is_the_comments_own_text_with_entities_read():
+    # The AI copies Reddit's stored text ("&amp;"); the reader should see "&", and only words the comment has.
+    body = "Some context.\n\nFits 1.7 L &amp; boils in 3 minutes, love it. And one more line."
+    items = [mention("Acme kettle", f"t{i % 2 + 1}", comment=f"cE{i}", quote="Fits 1.7 L &amp; boils in 3 minutes, love it.")
+             for i in range(3)]
+    answer = write_answer(rank_products(items, "kitchen"), {m.comment_id: body for m in items})
+    shown = [q.text for q in answer.picks[0].quotes]
+    assert shown and all(text == "Fits 1.7 L & boils in 3 minutes, love it." for text in shown)
+    assert "&amp;" not in shown_text(answer)
+    assert unverified_claims(answer, {m.comment_id: body for m in items}) == []

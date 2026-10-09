@@ -43,6 +43,7 @@ Command line:
                                                       Exits 1 if any extraction file is malformed.
 """
 
+import html
 import json
 import re
 import sys
@@ -174,11 +175,15 @@ def check_extraction(extraction: Extraction, thread: Thread) -> CheckResult:
     - its comment is in the thread;
     - the comment is still readable: one deleted or removed on Reddit can't be quoted;
     - its quote is in the comment word for word (engine.verify_quotes.find_quote);
-    - the quote isn't from a quoted block (a line starting with ">"): those are someone else's words, and credit
-      has to go to the person who wrote them. The exception (instructions v4, Noemi, 8 Oct 2026): a comment
-      written entirely as a quoted block, whose quoted words appear nowhere else in the thread, is the writer's own;
-    - the quote is at most QUOTE_MAX_WORDS words long, counting the pieces between spaces;
-    - a reply marked as naming its product further up (refers_to) really is a reply (to a reply, for "earlier");
+    - the quote isn't from a quoted block (a line starting with ">", or a line straight after one in the same
+      paragraph): those are someone else's words, and credit has to go to the person who wrote them. The exception
+      (instructions v4, Noemi, 8 Oct 2026): a comment written entirely as a quoted block, whose quoted words appear
+      nowhere else in the thread, is the writer's own;
+    - the quote is at most QUOTE_MAX_WORDS words long, counting the words of the comment it matches (so a quote
+      joined with HTML entities such as "&#32;" can't pass as one long word);
+    - a reply marked as naming its product further up (refers_to) really is a reply (to a reply, for "earlier"),
+      and the comment it takes its product from is still readable: a product named only in deleted or removed text
+      can't be checked or used;
     - every evidence tag is a known one (config.EVIDENCE_TAGS; instructions v6).
     Mentions keep their order in both lists.
     """
@@ -190,6 +195,8 @@ def check_extraction(extraction: Extraction, thread: Thread) -> CheckResult:
             reason = f"comment {mention.comment_id} refers to the comment above, but it isn't a reply"
         if reason is None and mention.refers_to == "earlier" and not _reply_to_a_reply(comments[mention.comment_id], comments):
             reason = f"comment {mention.comment_id} refers to a comment further up, but it isn't a reply to a reply"
+        if reason is None and mention.refers_to in ("parent", "earlier"):
+            reason = _named_in_unreadable_comment(mention, comments)
         if reason is None:
             reason = _unknown_evidence_tags(mention)
         if reason is None:
@@ -225,9 +232,11 @@ def _why_rejected(mention, extraction: Extraction, thread: Thread, comments: dic
     span = find_quote(comment.body, mention.quote)
     if span is None:
         return f"quote not found word for word in comment {mention.comment_id}"
-    if _in_quoted_block(comment.body, span) and not _own_words_in_quote_format(comment, mention.quote, thread):
-        return f"quote is from a quoted block in comment {mention.comment_id}: someone else's words"
-    words = len(mention.quote.split())
+    if _in_quoted_block(comment.body, span):
+        elsewhere = [thread.title, thread.body] + [c.body for c in thread.comments if c.id != comment.id]
+        if not _own_words_in_quote_format(comment.body, mention.quote, elsewhere):
+            return f"quote is from a quoted block in comment {mention.comment_id}: someone else's words"
+    words = len(_as_written(comment.body, span).split())
     if words > QUOTE_MAX_WORDS:
         return f"quote has {words} words; the limit is {QUOTE_MAX_WORDS}"
     return None
@@ -241,23 +250,58 @@ def _unknown_evidence_tags(mention: ExtractedMention) -> str | None:
     return f"unknown evidence tag(s) {', '.join(map(repr, unknown))}; choose from: {', '.join(EVIDENCE_TAGS)}"
 
 
+def _as_written(body: str, span: tuple[int, int]) -> str:
+    """The comment's own text that a quote matched (engine.verify_quotes.find_quote's span), with Reddit's HTML
+    entities turned back into characters ("&amp;" as "&"). Its words are the ones the quote really stands for."""
+    return html.unescape(body[span[0]:span[1]])
+
+
 def _in_quoted_block(body: str, span: tuple[int, int]) -> bool:
-    """Whether the quote starts on a line that quotes someone else (">" or Reddit's "&gt;")."""
-    line_start = body.rfind("\n", 0, span[0]) + 1
-    return body[line_start:].lstrip().startswith((">", "&gt;"))
+    """Whether the quote starts on a line that quotes someone else.
+
+    On Reddit a quoted block starts with a line beginning ">" (stored as "&gt;"), and the lines straight after it
+    stay in the block until a blank line ends the paragraph: in "> It broke.\nNever buy it.", both lines are quoted.
+    So a line is quoted when it, or an earlier line of its paragraph, starts with ">".
+    """
+    line_end = body.find("\n", span[0])
+    paragraph = body[:line_end] if line_end != -1 else body
+    for line in reversed(paragraph.split("\n")):
+        if not line.strip():
+            return False  # a blank line: the paragraph starts below it
+        if line.lstrip().startswith((">", "&gt;")):
+            return True
+    return False
 
 
-def _own_words_in_quote_format(comment, quote: str, thread: Thread) -> bool:
+def _own_words_in_quote_format(body: str, quote: str, elsewhere: Iterable[str]) -> bool:
     """Whether a comment written entirely as a quoted block holds the writer's own words: no one else wrote them.
 
-    Some people format their whole answer with ">". If the quote is found nowhere else in the thread (title, post or
-    any other comment), it isn't copied from anyone there.
+    Some people format their whole answer with ">". If the quote is found nowhere `elsewhere` (the thread's title,
+    post and other comments; at answer time, the other comments), it isn't copied from anyone there. Every paragraph
+    must start with ">": the lines after it are in the same block (see _in_quoted_block).
     """
-    lines = [line.lstrip() for line in comment.body.splitlines() if line.strip()]
-    if not all(line.startswith((">", "&gt;")) for line in lines):
+    paragraphs = [p.lstrip() for p in re.split(r"\n\s*\n", body) if p.strip()]
+    if not all(p.startswith((">", "&gt;")) for p in paragraphs):
         return False
-    elsewhere = [thread.title, thread.body] + [c.body for c in thread.comments if c.id != comment.id]
     return all(find_quote(text, quote) is None for text in elsewhere)
+
+
+def _named_in_unreadable_comment(mention: ExtractedMention, comments: dict) -> str | None:
+    """Why a mention that takes its product from a comment above can't be kept, or None.
+
+    "parent" takes it from the comment above, "earlier" from the one above that (review fixes, 9 Oct 2026). If that
+    comment was deleted or removed, the product is named only in text that is gone: nothing can check it, and the
+    deletion rule says gone text isn't used.
+    """
+    above = comments.get(comments[mention.comment_id].parent_id)
+    if mention.refers_to == "earlier" and above is not None:
+        above = comments.get(above.parent_id)
+    if above is None:
+        return f"comment {mention.comment_id} takes its product from a comment above that isn't in the thread"
+    if above.status != "ok":
+        return (f"comment {mention.comment_id} takes its product from comment {above.id}, which was {above.status} "
+                f"on Reddit, so the product can't be checked")
+    return None
 
 
 def _reply_to_a_reply(comment, comments: dict) -> bool:

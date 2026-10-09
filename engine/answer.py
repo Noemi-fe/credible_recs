@@ -16,9 +16,11 @@ skip-these list, and an honest message when fewer than 3 products have enough ev
 
 The guardrail (the brief's most important rule): every quote is checked again, word for word, against its
 comment as it is now (engine.verify_quotes), right before it is shown. A comment may have been edited or deleted
-since the extraction. A quote that fails, whose comment is gone, or that is over QUOTE_MAX_WORDS words is
-dropped and never shown, anywhere: not in the text, not in the structured answer. The answer never carries the
-ranking's raw mentions, only the quotes that passed. Then, "no claim without a verified quote":
+since the extraction. A quote that fails, whose comment is gone, that comes from a quoted block (someone else's
+words, as at extraction), or whose matched words are over QUOTE_MAX_WORDS is dropped and never shown, anywhere:
+not in the text, not in the structured answer. What is shown is the comment's own text that the quote matched,
+with Reddit's HTML entities read ("&amp;" as "&"). The answer never carries the ranking's raw mentions, only the
+quotes that passed. Then, "no claim without a verified quote":
 - a pick needs at least 2 verified quotes (MIN_QUOTES_PER_PICK); one that has fewer gives its place to the
   next qualifying product;
 - a skip-these product needs at least 1 verified warning quote, or it is left out;
@@ -43,9 +45,10 @@ from engine.config import (
     QUOTES_PER_PICK,
     QUOTES_PER_SKIPPED_PRODUCT,
 )
+from engine.extract import _as_written, _in_quoted_block, _own_words_in_quote_format
 from engine.models import Thread
 from engine.rank import KindNote, ProductScore, RankingResult, ScoredMention, ScoreBreakdown, is_credible
-from engine.verify_quotes import verify_quote
+from engine.verify_quotes import find_quote, verify_quote
 
 # --- Wording users see: PROPOSED 9 Oct 2026, awaiting Noemi ---
 TITLE = "Top picks: {product_type}"
@@ -79,7 +82,7 @@ LINK_TEXT = "see the comment"
 class ShownQuote:
     """A quote that passed the word-for-word check, ready to show."""
 
-    text: str  # exactly as checked against the comment
+    text: str  # the comment's own text the quote matched, entities read ("&amp;" as "&"); verified word for word
     comment_id: str
     url: str  # the link to the comment
     badges: tuple[str, ...]  # why this voice counts: "3 years of use", "expert flair"
@@ -178,21 +181,41 @@ class _QuoteCheck:
             if _quote_problem(item.quote, item.comment_id, self.bodies):
                 self.dropped += 1
             else:
-                shown.append(ShownQuote(item.quote, item.comment_id, item.comment_url, _badges(item)))
+                text = _shown_text(item.quote, self.bodies[item.comment_id])
+                shown.append(ShownQuote(text, item.comment_id, item.comment_url, _badges(item)))
         return shown
 
 
 def _quote_problem(text: str, comment_id: str, bodies: Mapping[str, str]) -> str | None:
-    """Why a quote can't be shown, in words, or None when it passes. The reason never repeats the quote."""
+    """Why a quote can't be shown, in words, or None when it passes. The reason never repeats the quote.
+
+    The same checks as at extraction (engine.extract), on the comment as it is now. A quote from a quoted block is
+    someone else's words, unless the whole comment is a quoted block whose words no other comment here has (at
+    answer time only the comments are at hand: the title and post were checked at extraction). The word limit
+    counts the words of the comment the quote matches.
+    """
     body = bodies.get(comment_id)
     if body is None:
         return f"comment {comment_id} is not available to check against (deleted, removed or missing)"
-    if not verify_quote(body, text):
+    span = find_quote(body, text)
+    if span is None:
         return f"quote not found word for word in comment {comment_id}"
-    words = len(text.split())
+    if _in_quoted_block(body, span):
+        elsewhere = (other for other_id, other in bodies.items() if other_id != comment_id)
+        if not _own_words_in_quote_format(body, text, elsewhere):
+            return f"quote from comment {comment_id} is from a quoted block: someone else's words"
+    words = len(_as_written(body, span).split())
     if words > QUOTE_MAX_WORDS:
         return f"quote from comment {comment_id} has {words} words; the limit is {QUOTE_MAX_WORDS}"
     return None
+
+
+def _shown_text(quote: str, body: str) -> str:
+    """What the reader sees for a quote that passed: the comment's own text it matched, entities read ("&amp;" as
+    "&"), so the page never shows "&#32;" or more words than were counted. In the rare case that text wouldn't pass
+    the check itself (a comment holding an escaped entity such as "&amp;gt;"), the quote as checked is shown."""
+    text = _as_written(body, find_quote(body, quote))
+    return text if verify_quote(body, text) else quote
 
 
 def _badges(item: ScoredMention | KindNote) -> tuple[str, ...]:
@@ -297,9 +320,9 @@ def _plural(n: int, noun: str) -> str:
 def unverified_claims(answer: Answer, bodies: Mapping[str, str]) -> list[str]:
     """Every problem with a finished answer's quotes, in words; an empty list means every claim is backed.
 
-    Checks that each quote shown is found word for word in its comment as it is now and is at most
-    QUOTE_MAX_WORDS words, that each pick has at least MIN_QUOTES_PER_PICK quotes, and that each skip-these
-    product has at least one. The problems name the comment, never the failed quote's words.
+    Checks that each quote shown is found word for word in its comment as it is now, isn't from a quoted block,
+    and matches at most QUOTE_MAX_WORDS words, that each pick has at least MIN_QUOTES_PER_PICK quotes, and that
+    each skip-these product has at least one. The problems name the comment, never the failed quote's words.
     """
     problems = []
     for where, quote in _every_quote(answer):

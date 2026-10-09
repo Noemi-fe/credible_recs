@@ -9,8 +9,10 @@ What comes in (made by modules 4 and 5, put together by the pipeline):
 How a product is scored (the brief's "Sum" rule):
     score = the sum of its mentions' weights + the kind bonus (if any)
 A weight is voice value x evidence value x stance value (module 5), so a recommendation adds, a warning
-subtracts and a neutral mention adds nothing. Only the request's category is ranked. One comment counts once
-per product: if it mentions the product twice, only its strongest mention counts, so no one votes twice.
+subtracts and a neutral mention adds nothing. Only the request's category is ranked. One writer counts once
+per product: if they mention it twice, in one comment or in several comments or threads, only their strongest
+mention counts, so no one votes twice. The same goes for kinds. A writer whose account was deleted can't be
+recognised, so each of their comments counts once (review fixes, 9 Oct 2026; before, it was once per comment).
 
 A credible mention is a recommend or warn from a voice that isn't low, by someone who has used the product
 (config.CREDIBLE_VOICES and CREDIBLE_EVIDENCE). Low voices and hearsay still move the score a little, but
@@ -75,6 +77,7 @@ class ScoredMention:
     evidence: str  # module 5: long-term use, short-term use or no first-hand use (this product)
     quote: str  # the supporting quote, checked at extraction; checked again before it is shown
     badges: tuple[str, ...] = ()  # "why this voice counts", in words: "3 years of use", "expert flair"
+    author: str | None = None  # the writer's name, lowercased, so one writer counts once; None for a deleted account
 
     def __post_init__(self):
         object.__setattr__(self, "badges", tuple(self.badges))  # a list given by the pipeline is fine too
@@ -98,6 +101,7 @@ class KindNote:
     voice: str  # the writer's voice level (module 5)
     quote: str
     badges: tuple[str, ...] = ()
+    author: str | None = None  # the writer's name, lowercased; None for a deleted account
 
     def __post_init__(self):
         object.__setattr__(self, "badges", tuple(self.badges))
@@ -159,7 +163,7 @@ class ProductScore:
     name: str
     score: float  # mention points + kind bonus, rounded to 6 decimals: what the ranking sorts by
     breakdown: ScoreBreakdown
-    mentions: tuple[ScoredMention, ...]  # the mentions counted (one per comment), for quotes and downsides
+    mentions: tuple[ScoredMention, ...]  # the mentions counted (one per writer), for quotes and downsides
     qualifies: bool  # meets the minimum-evidence rule and can be a pick
     shortfall: str | None  # why it can't be a pick, in words; None when it qualifies
     on_skip_list: bool
@@ -188,7 +192,7 @@ class RankingResult:
     products: list[ProductScore]  # every product in the category, best first
     kinds: list[KindSupport] = field(default_factory=list)  # best supported first
     leading_kind: KindSupport | None = None  # the kind whose products get the bonus, if one leads by far
-    kind_notes: list[KindNote] = field(default_factory=list)  # one per comment and kind, for "what to look for"
+    kind_notes: list[KindNote] = field(default_factory=list)  # one per writer and kind, for "what to look for"
 
     @property
     def qualifying(self) -> list[ProductScore]:
@@ -256,10 +260,14 @@ def rank_products(
 
 
 def _one_per_comment(items: Iterable, key_of: Callable) -> list:
-    """Keeps one item per comment and product (or kind): the one with the largest weight either way. Order is kept."""
+    """Keeps one item per writer and product (or kind): the one with the largest weight either way. Order is kept.
+
+    The writer is known by name across comments and threads; a deleted account (no name) counts per comment.
+    """
     best: dict[tuple, object] = {}
     for item in items:
-        slot = (key_of(item), item.comment_id)
+        writer = ("writer", item.author) if item.author is not None else ("comment", item.comment_id)
+        slot = (key_of(item), writer)
         if slot not in best or abs(item.weight) > abs(best[slot].weight):
             best[slot] = item
     return list(best.values())

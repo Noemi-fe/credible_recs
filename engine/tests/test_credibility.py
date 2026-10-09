@@ -577,3 +577,62 @@ def test_how_long_a_kind_can_last_is_not_a_time_of_use():
 def test_how_long_the_writers_own_one_lasted_still_counts():
     assert evidence_for("My carbon steel pan has lasted 10 years.", "carbon steel pan").level == "long-term use"
     assert evidence_for("Our Zojirushi kettle is 8 years old and still going.", "Zojirushi kettle").level == "long-term use"
+
+
+# --- Review fixes, 9 Oct 2026 ---
+
+@pytest.mark.parametrize("body", [
+    "Get the Zojirushi kettle, it comes with a 5 year warranty.",
+    "The Zojirushi kettle has a 2-year limited warranty.",
+    "Zojirushi kettle: 10 years guarantee on the element.",
+])
+def test_a_warranty_is_not_a_time_of_use(body):
+    # How long the maker promises to fix it says nothing about how long the writer has used it.
+    evidence = evidence_for(body, "Zojirushi kettle")
+    assert evidence.level != "long-term use"
+    assert not any("of use" in b for b in evidence.badges)
+
+
+def test_a_time_of_use_mentioning_the_warranty_afterwards_still_counts():
+    evidence = evidence_for("Had my Zojirushi kettle 6 years, warranty long gone, still perfect.", "Zojirushi kettle")
+    assert evidence.level == "long-term use"
+    assert "6 years of use" in evidence.badges
+
+
+@pytest.mark.parametrize("body, product", [
+    ("As a 30 year old with oily skin, the CeraVe SA Cleanser is fine.", "CeraVe SA Cleanser"),
+    ("I'm a 30 year old with oily skin and the CeraVe SA Cleanser is fine.", "CeraVe SA Cleanser"),
+    ("My 6 year old son loves the Zojirushi kettle.", "Zojirushi kettle"),
+    ("Our 3-year-old daughter uses the CeraVe SA Cleanser.", "CeraVe SA Cleanser"),
+    ("40 year old guy here, the CeraVe SA Cleanser works for me.", "CeraVe SA Cleanser"),
+])
+def test_a_persons_age_is_not_a_time_of_use(body, product):
+    evidence = evidence_for(body, product)
+    assert evidence.level != "long-term use"
+    assert not any("of use" in b for b in evidence.badges)
+
+
+def test_the_age_of_the_writers_own_product_is_still_a_time_of_use():
+    # "My 20 year old Lodge skillet": the object's age, and it's theirs, so it is how long they've had it.
+    evidence = evidence_for("My 20 year old Lodge skillet makes the best eggs.")
+    assert evidence.level == "long-term use"
+    assert "20 years of use" in evidence.badges
+
+
+@pytest.mark.parametrize("reply_writer", ["same_writer", "Same_Writer"])
+def test_a_reply_by_the_same_writer_is_not_agreement(reply_writer):
+    comment, thread = make_case(author={"name": "same_writer"}, replies=("This! Agreed.",))
+    reply = thread.comments[-1].model_copy(update={"author": thread.comments[-1].author.model_copy(update={"name": reply_writer})})
+    thread = thread.model_copy(update={"comments": thread.comments[:-1] + [reply]})
+    voice = score_voice(comment, thread, agreements=[ExtractedAgreement(comment_id=reply.id, quote="This!")])
+    assert voice.level == "medium"  # only "recent": agreeing with oneself lifts nothing
+    assert "replies agree" not in voice.tags and config.OTHER_TAG not in voice.tags
+
+
+def test_a_reply_from_a_deleted_account_still_agrees():
+    # Only a reply known to be by the same writer is ignored; one from a deleted account can't be told apart.
+    comment, thread = make_case(author={"name": "same_writer"}, replies=("This! Agreed.",))
+    reply = thread.comments[-1].model_copy(update={"author": None})
+    thread = thread.model_copy(update={"comments": thread.comments[:-1] + [reply]})
+    voice = score_voice(comment, thread, agreements=[ExtractedAgreement(comment_id=reply.id, quote="This!")])
+    assert voice.level == "high"
