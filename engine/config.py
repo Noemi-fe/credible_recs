@@ -180,3 +180,13 @@ PRODUCT_VARIANT_WORDS = frozenset({
 })
 # The brief's target for module 4: at least this share of the labelled same-or-different pairs right.
 MATCHING_TARGET = 0.90
+
+# --- The end-to-end slice (engine/pipeline.py; proposed 9 Oct 2026, awaiting Noemi) ---
+# How many of the library's most relevant threads one request reads.
+PIPELINE_MAX_THREADS = 8
+# A thread is read only when it is about the product: engine.sources.relevance gives 3 points when the title names
+# it and 1 when the post does, plus up to 1 for comments; at least 1 means the title or the post names it.
+PIPELINE_MIN_RELEVANCE = 1.0
+# Whether a brand or line that fits several products ("Lodge", "CeraVe") can be ranked as if it were one product.
+# False: left out, and listed on the result.
+PIPELINE_INCLUDE_LOOSE = False
