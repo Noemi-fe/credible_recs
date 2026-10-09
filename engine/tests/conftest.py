@@ -27,3 +27,9 @@ def _no_real_price_list(monkeypatch):
     # 9 Oct 2026 some marked not sold in the UK), so a made-up product with a similar name would be left out for a
     # reason that has nothing to do with the test. Tests about prices pass their own list.
     monkeypatch.setattr(pipeline, "load_prices", lambda *args, **kwargs: [])
+
+
+@pytest.fixture(autouse=True)
+def _no_real_product_facts(monkeypatch):
+    # The same for data/product_facts.json (9 Oct 2026): tests about facts pass their own.
+    monkeypatch.setattr(pipeline, "load_product_facts", lambda *args, **kwargs: [])
