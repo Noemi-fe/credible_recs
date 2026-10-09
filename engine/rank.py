@@ -20,7 +20,7 @@ never count toward the rules below.
 
 Two things the pipeline settles before the ranking (9 Oct 2026), so they arrive here in the mentions:
 - Needs: a mention whose comment talks about what the request asks for ("sensitive skin", "a beginner";
-  engine/needs.py) carries those needs, and its weight is already multiplied by config.NEED_MATCH_BOOST (1.5),
+  engine/needs.py) carries those needs, and its weight is already multiplied by config.NEED_MATCH_BOOST (off, 1.0, for now),
   for a recommendation or a warning alike. The breakdown counts the credible mentions that fit the request's needs.
   The rules below don't change: they count credible mentions, not weights.
 - Writers who contradict themselves (Noemi's rule; engine/contradictions.py): every mention by a writer who

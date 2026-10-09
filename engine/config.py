@@ -333,7 +333,10 @@ BRIGHT_DATA_RECORDS_IF_UNKNOWN = 500
 # 1. Needs. A mention whose comment talks about what the request asks for ("sensitive skin", "a beginner") counts
 # this many times its weight, a recommendation or a warning alike ("too harsh for sensitive skin"). The starting value
 # set with the change.
-NEED_MATCH_BOOST = 1.5
+# Off (1.0) since 9 Oct 2026: tried at 1.5, word rules made the retinol-for-a-beginner answer worse (a Tazorac comment
+# "started on" read as beginner-friendly; Differin's honest warnings weighed more). Needs a judgement of whether a
+# product suits the request (product knowledge), not words in comments. Kept as a switch; tests set it explicitly.
+NEED_MATCH_BOOST = 1.0
 # The needs a request can name, each with the words that show a comment talks about it. A word is found at the start
 # of a word, so a word beginning finds its longer forms ("sensitiv" finds "sensitive" and "sensitivity", "start"
 # finds "started" and "starting"); a phrase is found whole ("white cast", "white casts"). The skin types and

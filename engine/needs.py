@@ -4,7 +4,7 @@
 sensitive skin. A comment that talks about those needs ("I have sensitive skin and started slowly with Differin") tells
 this shopper more than one that doesn't, whether it recommends the product or warns against it ("too harsh for
 sensitive skin"). So the ranking counts such mentions more: the pipeline multiplies their weight by
-config.NEED_MATCH_BOOST (1.5). The minimum-evidence rule doesn't change: it counts credible mentions, not weights.
+config.NEED_MATCH_BOOST (off, 1.0, since 9 Oct 2026; see config). The minimum-evidence rule doesn't change: it counts credible mentions, not weights.
 
 A request's needs (request_needs), in the order the request gives them:
 - the needs of config.NEEDS that it names: by name or by one of the need's words ("new to retinol" names

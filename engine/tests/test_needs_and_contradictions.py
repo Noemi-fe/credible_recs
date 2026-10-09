@@ -51,7 +51,12 @@ def product(result, name):
 
 # --- Needs ---
 
-def test_a_mention_that_talks_about_the_need_outranks_an_equally_credible_generic_one(tmp_path):
+def test_a_mention_that_talks_about_the_need_outranks_an_equally_credible_generic_one(tmp_path, monkeypatch):
+    # Changed 9 Oct 2026: the boost is switched off by default (word rules made a real answer worse), so this test
+    # sets it to test the mechanism itself.
+    import engine.pipeline
+
+    monkeypatch.setattr(engine.pipeline, "NEED_MATCH_BOOST", 1.5)
     generic = answer_request(SENSITIVE_REQUEST, library_dir=retinol_library(tmp_path / "a", ALPHA + BETA))
     assert [p.name for p in generic.answer.picks] == ["Alpha Retinol", "Beta Retinol"]  # a tie: by name
 
@@ -61,7 +66,7 @@ def test_a_mention_that_talks_about_the_need_outranks_an_equally_credible_generi
     boosted = next(m for m in beta.mentions if m.comment_id == "r2bbbb")
     plain = next(m for m in alpha.mentions if m.comment_id == "r2aaaa")  # the same words, without the need
     assert boosted.needs == ("sensitive",) and plain.needs == ()
-    assert boosted.weight == NEED_MATCH_BOOST * plain.weight
+    assert boosted.weight == 1.5 * plain.weight
     assert beta.breakdown.credible_recommends_fitting_need == 1 and alpha.breakdown.credible_recommends_fitting_need == 0
     assert unverified_claims(fitting.answer, fitting.bodies) == []
 

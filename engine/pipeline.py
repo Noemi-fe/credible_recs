@@ -44,7 +44,7 @@ many comments or threads they praise it in (engine.rank).
 
 Two ranking changes of 9 Oct 2026 are worked out here, in _score, before module 6 ranks:
 - needs: a mention whose comment talks about what the request asks for (engine/needs.py: "sensitive skin", "a
-  beginner", "pour-over") weighs NEED_MATCH_BOOST (1.5) times as much, a recommendation or a warning alike;
+  beginner", "pour-over") weighs NEED_MATCH_BOOST times (off, 1.0, for now) as much, a recommendation or a warning alike;
 - writers who contradict themselves (Noemi's rule; engine/contradictions.py): a writer who recommends a product and
   warns against it in another comment of the threads read, without saying what changed, counts as a low voice in
   every mention and note they make, so none of it is credible. They are named on the result (contradicting_writers)
