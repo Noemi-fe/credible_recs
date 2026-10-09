@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Credible picks</title>
+<script>
+/* =====================================================================================================
+   NEW WORDING ON THIS PAGE: PROPOSED 9 Oct 2026, for Noemi to review. Every word users see that is new
+   on this page is here, and only here.
+   Everything else comes from the answer itself (engine/answer.py), sent by the server: the reasons,
+   support lines, disagreement flags, messages, module 1's question or polite no, and the headings
+   ("In their words", "Known downsides", "see the comment", ...).
+   {name} is filled in by the page.
+   ===================================================================================================== */
+const LABELS = {
+  pageTitle: "Credible picks",
+  heading: "Credible picks",
+  intro: "Three picks for skincare and kitchen gear, ranked by how credible the people recommending them are on Reddit, not by how popular a product is. Every quote is checked word for word against its comment.",
+  searchLabel: "What are you looking for?",
+  searchPlaceholder: "e.g. electric kettle that lasts 10+ years",
+  searchHint: "Say what it is and anything that matters: budget, skin type, how long it should last.",
+  searchButton: "Find picks",
+  examplesHeading: "Try an example",
+  categories: { skincare: "Skincare", kitchen: "Kitchen" },
+  loading: "Reading the saved threads and checking every quote. This takes a few seconds.",
+  done: "Done.",  // read out by screen readers only, when an answer has been drawn
+  clarifyHeading: "One question first",
+  clarifyHint: "Add the answer to your request and search again.",
+  rank: "Pick {rank}:",
+  badges: "Why this voice counts",
+  newTab: "(opens Reddit in a new tab)",
+  threadsRead: "Saved Reddit threads read for this answer: {n}.",
+  leftOut: "Left out of the ranking: products of another type ({other}), and brand or line names that fit several products ({loose}).",
+  // The score breakdown: the same words as the text answer's breakdown (engine/answer.py, _render_breakdown).
+  bdTotal: "Score {score} = {points} from mentions",
+  bdBonus: " + {bonus} kind bonus ({kind}, support {support})",
+  bdRecommends: "Recommendations: {n}, {credible} credible. Voices: {voices}. Evidence: {evidence}.",
+  bdWarnings: "Warnings: {n}, {credible} credible. Voices: {voices}. Evidence: {evidence}.",
+  bdNeutral: "Neutral mentions: {n} (they never count)",
+  bdThreads: "Threads: {n}, {credible} with a credible recommendation",
+  bdKind: "Kind: {kind} (support {support}; no bonus: it doesn't lead by far)",
+  // Errors, by the API's error code.
+  errors: {
+    empty_request: "Type what you're looking for first.",
+    request_too_long: "That's a bit long: please keep it under {max} characters.",
+    quote_not_verified: "This answer can't be shown: one of its quotes failed the word-for-word check, and we never show a quote that fails it.",
+    engine_failed: "Something went wrong while preparing this answer. The details are in the window where the server runs.",
+    other: "Something went wrong. Please try again.",
+    offline: "The local server isn't answering. Is it still running?",
+  },
+  footer: "A free, non-commercial research prototype: read-only, and every quote links back to its comment on Reddit.",
+};
+</script>
+<style>
+/* Colours: light by default, dark when the computer is set to dark mode. Text colours meet WCAG AA contrast. */
+:root {
+  color-scheme: light dark;
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --sunken: #f0eee9;
+  --text: #1c1c1e;
+  --muted: #5c5c63;
+  --line: #dedbd3;
+  --accent: #2a5fc4;
+  --accent-soft: #e5edfb;
+  --on-accent: #ffffff;
+  --ok: #1b7044;
+  --ok-soft: #e2f2e8;
+  --warn: #8a4a08;
+  --warn-soft: #fbeedb;
+  --bad: #b3261e;
+  --bad-soft: #fbe5e3;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141416;
+    --surface: #1d1d21;
+    --sunken: #25252a;
+    --text: #ebeae6;
+    --muted: #a8a7ae;
+    --line: #36363c;
+    --accent: #80a8f5;
+    --accent-soft: #22304a;
+    --on-accent: #0e1420;
+    --ok: #74d39d;
+    --ok-soft: #1b3326;
+    --warn: #efb46a;
+    --warn-soft: #382a17;
+    --bad: #ff8a80;
+    --bad-soft: #3a1d1b;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+a { color: var(--accent); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 0 16px; }
+h1, h2, h3, h4 { line-height: 1.25; }
+
+/* The top: name and what it does. */
+.site { padding: 28px 0 8px; }
+.site h1 { margin: 0 0 6px; font-size: 28px; }
+.intro { margin: 0; color: var(--muted); max-width: 62ch; }
+
+/* The search box. */
+.search { margin: 20px 0 8px; }
+.search label { display: block; font-weight: 650; margin-bottom: 6px; }
+.search-row { display: flex; gap: 8px; }
+.search input { flex: 1 1 auto; min-width: 0; font: inherit; padding: 10px 12px; border: 1px solid var(--muted); border-radius: 8px; background: var(--surface); color: var(--text); }
+.search button { font: inherit; font-weight: 650; padding: 10px 18px; border: 0; border-radius: 8px; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.search button:disabled { opacity: .6; cursor: progress; }
+.hint { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
+
+/* Example requests. */
+.examples { margin: 12px 0 20px; }
+.examples summary { cursor: pointer; font-weight: 650; }
+.example-group h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 14px 0 6px; }
+.chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: inherit; font-size: 14px; text-align: left; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text); cursor: pointer; }
+.chip:hover { border-color: var(--accent); }
+
+/* Loading and status. */
+.status { min-height: 1.55em; margin: 8px 0; color: var(--muted); }
+.status.loading::before { content: ""; display: inline-block; width: 14px; height: 14px; margin-right: 8px; vertical-align: -2px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .status.loading::before { animation: none; } }
+
+/* Notices: the honest message, module 1's question or polite no, and errors. */
+.notice { padding: 14px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); margin: 12px 0; }
+.notice h2 { font-size: 18px; margin: 0 0 6px; }
+.notice p { margin: 0; }
+.notice p + p { margin-top: 6px; }
+.notice.honest { background: var(--warn-soft); border-color: transparent; }
+.notice.error { background: var(--bad-soft); border-color: transparent; }
+
+/* The answer. */
+.answer-title { font-size: 22px; margin: 20px 0 8px; }
+.picks { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+.card-head { display: flex; align-items: center; gap: 12px; }
+.card-head h3 { margin: 0; font-size: 20px; overflow-wrap: anywhere; }
+.rank { flex: none; display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-weight: 700; }
+.reason { margin: 10px 0 4px; font-weight: 600; }
+.support { margin: 0 0 8px; }
+.flag { margin: 8px 0; padding: 8px 12px; border-radius: 8px; background: var(--warn-soft); color: var(--text); font-weight: 600; border-left: 4px solid var(--warn); }
+.card h4 { margin: 16px 0 6px; font-size: 15px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.muted { color: var(--muted); margin: 0; }
+
+/* Quotes: the text exactly as checked, its badges and its link. */
+.quotes { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.quote { margin: 0; padding: 10px 14px; border-left: 3px solid var(--line); background: var(--sunken); border-radius: 0 8px 8px 0; }
+.quote blockquote { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
+.quote blockquote::before { content: "\201C"; }
+.quote blockquote::after { content: "\201D"; }
+.quote figcaption { margin-top: 6px; font-size: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.badges { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.badges li { padding: 1px 8px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-weight: 600; font-size: 13px; }
+.downsides .quote { border-left-color: var(--warn); }
+
+/* The score breakdown. */
+.breakdown { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+.breakdown summary { cursor: pointer; font-weight: 650; }
+.breakdown ul { margin: 8px 0 0; padding-left: 20px; font-size: 14px; font-variant-numeric: tabular-nums; }
+
+/* Under the picks: what to look for, and skip these. Side by side on wide screens. */
+.extras { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.extras section { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.extras h3 { margin: 0 0 10px; font-size: 18px; }
+.extras ul.items { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.extras .lead { margin: 0 0 6px; }
+.skip .quote { border-left-color: var(--bad); }
+.footnote { margin: 18px 0 0; font-size: 14px; color: var(--muted); }
+.foot { padding: 32px 16px 40px; font-size: 14px; color: var(--muted); }
+
+/* Phone width: one column, the button under the box. */
+@media (max-width: 600px) {
+  .site { padding-top: 18px; }
+  .site h1 { font-size: 24px; }
+  .search-row { flex-direction: column; }
+  .search button { width: 100%; }
+  .card { padding: 14px 14px; }
+  .extras { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <h1 data-label="heading"></h1>
+    <p class="intro" data-label="intro"></p>
+  </div>
+</header>
+
+<main class="wrap">
+  <form id="search" class="search" action="/" method="get" role="search">
+    <label for="q" data-label="searchLabel"></label>
+    <div class="search-row">
+      <input id="q" name="q" type="search" autocomplete="off" aria-describedby="q-hint">
+      <button id="go" type="submit" data-label="searchButton"></button>
+    </div>
+    <p id="q-hint" class="hint" data-label="searchHint"></p>
+  </form>
+
+  <details id="examples" class="examples" open>
+    <summary data-label="examplesHeading"></summary>
+    <div id="example-groups"></div>
+  </details>
+
+  <p id="status" class="status" role="status" aria-live="polite"></p>
+  <div id="results" aria-busy="false"></div>
+</main>
+
+<footer class="wrap foot"><p data-label="footer"></p></footer>
+
+<!-- Filled in by the server: the answer's own headings (engine/answer.py), the example requests and the length limit. -->
+<script type="application/json" id="settings">{{SETTINGS}}</script>
+
+<script>
+/* How this page works, in short:
+   1. The search box sends the request to this computer's server (/api/answer?q=...) and shows a loading line.
+   2. The server answers with JSON (its shape is described at the top of engine/web.py).
+   3. The page draws the answer. Every piece of text from the answer is added as plain text (never as HTML),
+      so a comment containing "<script>" shows those characters and is never run.
+   4. Links go to Reddit only: any other address is shown without a link. */
+(function () {
+  "use strict";
+  const SETTINGS = JSON.parse(document.getElementById("settings").textContent);
+  const WORDING = SETTINGS.wording;
+  const form = document.getElementById("search");
+  const input = document.getElementById("q");
+  const button = document.getElementById("go");
+  const examples = document.getElementById("examples");
+  const status = document.getElementById("status");
+  const results = document.getElementById("results");
+  let latest = 0;  // the number of the newest search: an older, slower answer is never drawn over it
+
+  // --- Small helpers ---
+
+  /** A new element. Children that are strings become plain text, never HTML. */
+  function el(tag, attributes, ...children) {
+    const node = document.createElement(tag);
+    for (const [name, value] of Object.entries(attributes || {})) {
+      if (name === "class") node.className = value;
+      else node.setAttribute(name, value);
+    }
+    for (const child of children) {
+      if (child !== null && child !== undefined && child !== false) node.append(child);
+    }
+    return node;
+  }
+
+  /** "Pick {rank}:" with {rank: 1} gives "Pick 1:". A value is never searched for slots itself. */
+  function fill(template, values) {
+    return template.replace(/\{(\w+)\}/g, (slot, name) => (name in values ? String(values[name]) : slot));
+  }
+
+  /** The address, if it is a Reddit page (http or https, reddit.com or one of its subdomains); otherwise null. */
+  function redditUrl(address) {
+    let url;
+    try { url = new URL(address); } catch (error) { return null; }
+    const host = url.hostname.toLowerCase();
+    const isReddit = host === "reddit.com" || host.endsWith(".reddit.com");
+    return (url.protocol === "https:" || url.protocol === "http:") && isReddit ? url.href : null;
+  }
+
+  function twoDecimals(number) { return Number(number).toFixed(2); }
+
+  /** {"high": 2, "medium": 1, "low": 0} as "2 high, 1 medium, 0 low". */
+  function levels(counts) { return Object.entries(counts).map(([level, n]) => n + " " + level).join(", "); }
+
+  // --- The fixed text of the page ---
+
+  document.title = LABELS.pageTitle;
+  for (const node of document.querySelectorAll("[data-label]")) node.textContent = LABELS[node.dataset.label];
+  input.placeholder = LABELS.searchPlaceholder;
+  input.maxLength = SETTINGS.maxChars;
+
+  function drawExamples() {
+    const groups = document.getElementById("example-groups");
+    for (const category of Object.keys(LABELS.categories)) {
+      const items = SETTINGS.examples.filter((example) => example.category === category);
+      if (!items.length) continue;
+      const chips = items.map((example) => {
+        const chip = el("button", { type: "button", class: "chip" }, example.text);
+        chip.addEventListener("click", () => { input.value = example.text; search(example.text, true); });
+        return el("li", {}, chip);
+      });
+      groups.append(el("div", { class: "example-group" }, el("h2", {}, LABELS.categories[category]), el("ul", { class: "chips" }, ...chips)));
+    }
+    examples.hidden = !SETTINGS.examples.length;
+  }
+
+  // --- Drawing an answer ---
+
+  function quoteBlock(quote) {
+    const address = redditUrl(quote.url);
+    const link = address && el("a", { href: address, target: "_blank", rel: "noopener noreferrer" },
+      WORDING.link_text, el("span", { class: "visually-hidden" }, " " + LABELS.newTab));
+    const badges = quote.badges.length > 0 && el("ul", { class: "badges", "aria-label": LABELS.badges },
+      ...quote.badges.map((badge) => el("li", {}, badge)));
+    return el("figure", { class: "quote" }, el("blockquote", {}, quote.text), el("figcaption", {}, badges, link));
+  }
+
+  function quoteList(quotes, extraClass) {
+    return el("ul", { class: "quotes" + (extraClass ? " " + extraClass : "") }, ...quotes.map((quote) => el("li", {}, quoteBlock(quote))));
+  }
+
+  function breakdown(pick) {
+    const b = pick.breakdown;
+    let total = fill(LABELS.bdTotal, { score: twoDecimals(pick.score), points: twoDecimals(b.mention_points) });
+    if (b.kind_bonus) total += fill(LABELS.bdBonus, { bonus: twoDecimals(b.kind_bonus), kind: b.kind, support: twoDecimals(b.kind_support) });
+    const lines = [
+      total,
+      fill(LABELS.bdRecommends, { n: b.recommends, credible: b.credible_recommends, voices: levels(b.recommend_voices), evidence: levels(b.recommend_evidence) }),
+      fill(LABELS.bdWarnings, { n: b.warnings, credible: b.credible_warnings, voices: levels(b.warn_voices), evidence: levels(b.warn_evidence) }),
+      fill(LABELS.bdNeutral, { n: b.neutral }),
+      fill(LABELS.bdThreads, { n: b.threads, credible: b.credible_threads }),
+    ];
+    if (b.kind && !b.kind_bonus) lines.push(fill(LABELS.bdKind, { kind: b.kind, support: twoDecimals(b.kind_support) }));
+    return el("details", { class: "breakdown" }, el("summary", {}, WORDING.breakdown_heading), el("ul", {}, ...lines.map((line) => el("li", {}, line))));
+  }
+
+  function pickCard(pick) {
+    const nameId = "pick-" + pick.rank;
+    return el("li", {}, el("article", { class: "card", "aria-labelledby": nameId },
+      el("div", { class: "card-head" },
+        el("span", { class: "rank", "aria-hidden": "true" }, String(pick.rank)),
+        el("h3", { id: nameId }, el("span", { class: "visually-hidden" }, fill(LABELS.rank, { rank: pick.rank }) + " "), pick.name)),
+      el("p", { class: "reason" }, pick.reason),
+      el("p", { class: "support" }, el("strong", {}, WORDING.support_label + ": "), pick.support),
+      pick.disagreement && el("p", { class: "flag" }, pick.disagreement),
+      el("h4", {}, WORDING.quotes_heading),
+      quoteList(pick.quotes),
+      el("h4", {}, WORDING.downsides_heading),
+      pick.downsides.length ? quoteList(pick.downsides, "downsides") : el("p", { class: "muted" }, WORDING.no_downsides),
+      breakdown(pick)));
+  }
+
+  function lookForSection(items) {
+    return el("section", { class: "look-for", "aria-labelledby": "look-for-heading" },
+      el("h3", { id: "look-for-heading" }, WORDING.look_for_heading),
+      el("ul", { class: "items" }, ...items.map((item) => el("li", {},
+        el("p", { class: "lead" }, el("strong", {}, item.advice + ": " + item.kind + ".")),
+        quoteBlock(item.quote)))));
+  }
+
+  function skipSection(items) {
+    return el("section", { class: "skip", "aria-labelledby": "skip-heading" },
+      el("h3", { id: "skip-heading" }, WORDING.skip_heading),
+      el("ul", { class: "items" }, ...items.map((item) => el("li", {},
+        el("p", { class: "lead" }, el("strong", {}, item.name + ": "), item.reason),
+        quoteList(item.quotes)))));
+  }
+
+  function notice(kind, heading, ...lines) {
+    return el("div", { class: "notice " + kind }, heading && el("h2", {}, heading), ...lines.filter(Boolean).map((line) => el("p", {}, line)));
+  }
+
+  /** Everything to show for one JSON answer from the server. */
+  function drawAnswer(data) {
+    const query = data.query;
+    if (query.status === "clarify") return [notice("question", LABELS.clarifyHeading, query.question, LABELS.clarifyHint)];
+    if (query.status === "out_of_scope") return [notice("question", null, query.message)];
+    const answer = data.answer;
+    const title = answer.product_type ? fill(WORDING.title, { product_type: answer.product_type }) : WORDING.title_any;
+    const parts = [el("h2", { class: "answer-title" }, title)];
+    if (answer.message) parts.push(notice("honest", null, answer.message));
+    if (answer.picks.length) parts.push(el("ol", { class: "picks" }, ...answer.picks.map(pickCard)));
+    const extras = [];
+    if (answer.look_for.length) extras.push(lookForSection(answer.look_for));
+    if (answer.skip.length) extras.push(skipSection(answer.skip));
+    if (extras.length) parts.push(el("div", { class: "extras" }, ...extras));
+    parts.push(el("p", { class: "footnote" },
+      fill(LABELS.threadsRead, { n: data.threads_used.length }) + " " +
+      fill(LABELS.leftOut, { other: data.left_out.other_type, loose: data.left_out.loose })));
+    return parts;
+  }
+
+  // --- Searching ---
+
+  function showOnly(...nodes) {
+    results.replaceChildren(...nodes);
+  }
+
+  function errorText(code) {
+    const text = LABELS.errors[code] || LABELS.errors.other;
+    return fill(text, { max: SETTINGS.maxChars });
+  }
+
+  /** The loading line, while an answer is on its way; the button waits too, so a request isn't sent twice. */
+  function startLoading() {
+    status.textContent = LABELS.loading;
+    status.className = "status loading";
+    results.setAttribute("aria-busy", "true");
+    button.disabled = true;
+  }
+
+  /** Back to rest. `announce` is read out by screen readers only. */
+  function stopLoading(announce) {
+    status.textContent = announce || "";
+    status.className = "status visually-hidden";
+    results.setAttribute("aria-busy", "false");
+    button.disabled = false;
+  }
+
+  /** What to show for one request: the answer drawn, or an error in the page's own words. */
+  async function fetchAnswer(request) {
+    let response;
+    try {
+      response = await fetch("/api/answer?q=" + encodeURIComponent(request), { headers: { Accept: "application/json" } });
+    } catch (error) {
+      return [notice("error", null, LABELS.errors.offline)];  // no reply at all: the server isn't running
+    }
+    const data = await response.json().catch(() => ({}));
+    return response.ok && data.query ? drawAnswer(data) : [notice("error", null, errorText(data.code))];
+  }
+
+  async function search(text, addToHistory) {
+    const request = text.trim();
+    const mine = ++latest;
+    if (addToHistory) history.pushState(null, "", request ? "?q=" + encodeURIComponent(request) : location.pathname);
+    if (!request) {
+      stopLoading();
+      showOnly(notice("error", null, errorText("empty_request")));
+      return;
+    }
+    examples.open = false;
+    startLoading();
+    const shown = await fetchAnswer(request);
+    if (mine !== latest) return;  // a newer search has started: its answer is the one to show
+    showOnly(...shown);
+    stopLoading(LABELS.done);
+  }
+
+  /** The request in the address bar (?q=...), so a reload or the back button shows the same search. */
+  function fromAddress() {
+    const request = new URLSearchParams(location.search).get("q") || "";
+    input.value = request;
+    if (request.trim()) search(request, false);
+    else { latest++; showOnly(); stopLoading(); examples.open = true; }
+  }
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    search(input.value, true);
+  });
+  window.addEventListener("popstate", fromAddress);
+  drawExamples();
+  fromAddress();
+})();
+</script>
+</body>
+</html>

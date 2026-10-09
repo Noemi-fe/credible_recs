@@ -190,3 +190,8 @@ PIPELINE_MIN_RELEVANCE = 1.0
 # Whether a brand or line that fits several products ("Lodge", "CeraVe") can be ranked as if it were one product.
 # False: left out, and listed on the result.
 PIPELINE_INCLUDE_LOOSE = False
+
+# --- Module 8: local demo (proposed 9 Oct 2026) ---
+# The search page and its JSON API (engine/web.py), served on this machine only. PROPOSED, for Noemi to approve.
+WEB_PORT = 8765  # the local address is http://127.0.0.1:8765/; `python -m engine.web --port N` picks another
+WEB_MAX_REQUEST_CHARS = 300  # a longer request is refused (400): a real need fits in far fewer words

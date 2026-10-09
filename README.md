@@ -38,4 +38,5 @@ docs/        the full plan (kept out of the public repo)
 python3.12 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 .venv/bin/pytest
+.venv/bin/python -m engine.web     # local demo: the search page at http://127.0.0.1:8765/ (this computer only)
 ```
