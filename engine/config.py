@@ -308,3 +308,20 @@ ARCHIVE_TEXT_RETENTION = True
 ARCHIVE_TEXT_KEPT_DAYS = LIVE_CHECK_ALL_DAYS + 7
 # How many times an answer is written again after the live check drops comments (engine.pipeline._check_live).
 LIVE_CHECK_ROUNDS = 3
+
+# --- Bright Data reader (Noemi, 9 Oct 2026) ---
+# Bright Data (brightdata.com) reads Reddit pages for us through its ready-made Reddit datasets (engine/bright_data.py).
+# Noemi's account is on the free tier: this many records a month, and no charge beyond it (jobs simply stop working).
+# One record is one post, or one top-level comment with its replies inside it.
+BRIGHT_DATA_MONTHLY_RECORDS = 5000
+# The two datasets used: the comments of a post, and the post itself (its title, text and writer).
+BRIGHT_DATA_COMMENTS_DATASET = "gd_lvzdpsdlw09j6t702"
+BRIGHT_DATA_POSTS_DATASET = "gd_lvz8ah06191smkebj4"
+# A job runs on Bright Data's side (a 5-comment thread took about a minute). Its progress is asked every this many
+# seconds, and after this many seconds the client stops waiting: asking again for the same thread picks the job up
+# instead of paying for a new one.
+BRIGHT_DATA_POLL_SECONDS = 10
+BRIGHT_DATA_MAX_WAIT_SECONDS = 600
+# Before a comments job, its cost is checked against the month's records left: at most the post's comment count.
+# When the post couldn't be read first, that count is unknown, and the job is assumed to cost up to this many records.
+BRIGHT_DATA_RECORDS_IF_UNKNOWN = 500

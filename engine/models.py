@@ -104,7 +104,7 @@ class Thread(Record):
     # Where the thread was read (Noemi, 9 Oct 2026): "parse" is Reddit itself, through Parse; "arctic_shift" is the
     # archive, which may still hold comments people later deleted on Reddit; "gold" is the hand-collected gold set.
     # Files saved before 9 Oct 2026 have no such key and still load (None): they were all read through Parse.
-    read_from: Literal["parse", "arctic_shift", "gold"] | None = None
+    read_from: Literal["parse", "arctic_shift", "bright_data", "gold"] | None = None
     # When Reddit itself was last read for this thread (a "live check"). None when it never was: a thread read from
     # the archive and not checked yet, or an older file, whose collected_at already says when Parse read it.
     checked_live_at: UtcDatetime | None = None
