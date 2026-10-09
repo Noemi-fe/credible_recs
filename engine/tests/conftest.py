@@ -19,3 +19,11 @@ TESTS_TODAY = date(2026, 10, 9)
 @pytest.fixture(autouse=True)
 def _pipeline_today_is_9_october_2026(monkeypatch):
     monkeypatch.setattr(pipeline, "_today", lambda: TESTS_TODAY)
+
+
+@pytest.fixture(autouse=True)
+def _no_real_price_list(monkeypatch):
+    # The pipeline reads data/prices.json when a test passes no `prices`. That real list holds real products (since
+    # 9 Oct 2026 some marked not sold in the UK), so a made-up product with a similar name would be left out for a
+    # reason that has nothing to do with the test. Tests about prices pass their own list.
+    monkeypatch.setattr(pipeline, "load_prices", lambda *args, **kwargs: [])
