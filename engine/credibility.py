@@ -29,10 +29,11 @@ config.EVIDENCE_TAGS, so the results compare directly with Noemi's labels (engin
 What this version can't see yet:
 - The brief's v1 uses an AI judge for proof of use and honesty. There is no API key, so these are word rules: they
   read phrases, not meaning, and miss what is said in unusual ways.
-- Account age, karma and flair: Parse gives only a username, so today's threads have none of them. The rules use
-  them whenever they are filled in (by hand, or by a later source).
-- The writer's history (how many contributions, active in this topic, usually upvoted): it will come from the Arctic
-  Shift archive as numbers only (CLAUDE.md, "Commenter history"). CommenterHistory is the place it plugs in.
+- Account age, karma, contributions and flair: Parse gives only a username, so saved threads have none of them.
+  engine/profiles.py fills them in from the Arctic Shift archive before scoring (numbers and flair only); the rules
+  use them whenever they are filled in. "Account age" is then the writer's first activity in the archive.
+- The writer's history in this topic (active in this topic, usually upvoted): it will come from the Arctic Shift
+  archive as numbers only (CLAUDE.md, "Commenter history"). CommenterHistory is the place it plugs in.
 """
 
 import html
@@ -117,7 +118,7 @@ class CommenterHistory:
     yet; this is where it plugs in. None means unknown.
     """
 
-    contributions: int | None = None  # how many posts and comments the account has written
+    contributions: int | None = None  # how many posts and comments the account has written (Author.contributions first)
     active_in_topic: bool | None = None  # regularly active in this topic's subreddits
     usually_upvoted: bool | None = None  # its comments there are usually upvoted
 
@@ -219,9 +220,13 @@ def _established(author: Author, age_days: int | None, history: CommenterHistory
 
 
 def _regard(author: Author, age_days: int | None, history: CommenterHistory | None) -> Sign | None:
-    """How the writer's comments are received: "well-regarded account", "low karma for its activity", or neither."""
+    """How the writer's comments are received: "well-regarded account", "low karma for its activity", or neither.
+
+    Karma per contribution decides when the number of contributions is known; only when it isn't do the commenter
+    history's "usually upvoted" and then karma per year of account age stand in.
+    """
     karma = author.karma
-    contributions = history.contributions if history else None
+    contributions = _contributions(author, history)
     if karma is not None and karma < 0:
         return Sign("low karma for its activity", f"negative karma ({karma:,})", "red flag")
     if karma is not None and contributions:
@@ -238,6 +243,13 @@ def _regard(author: Author, age_days: int | None, history: CommenterHistory | No
         if per_year >= config.WELL_REGARDED_KARMA_PER_YEAR:
             return Sign("well-regarded account", f"about {per_year:,.0f} karma a year", "good")
     return None
+
+
+def _contributions(author: Author, history: CommenterHistory | None) -> int | None:
+    """How many comments and posts the writer has made: from their profile (engine/profiles.py), else the history."""
+    if author.contributions is not None:
+        return author.contributions
+    return history.contributions if history else None
 
 
 def _is_expert_flair(flair: str | None) -> bool:

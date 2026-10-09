@@ -169,3 +169,9 @@ OLD_SKINCARE_POST_MAX_VOICE = "medium"  # PROPOSED: formulas change, so an old s
 # The comment's words.
 ENTHUSIAST_MIN_TERMS = 3  # PROPOSED: using this many of the category's specialist words shows an "enthusiast"
 LONG_TERM_MIN_MONTHS = 12  # from the guide: long-term use is a year or more
+
+# --- Commenter profiles (proposed 9 Oct 2026) ---
+# engine/profiles.py looks up each writer's numbers on Arctic Shift, one call per writer, 10 seconds apart.
+# PROPOSED: this many failed look-ups in a row means the trouble is Arctic Shift itself (down or busy), not one
+# writer, so it stops asking and leaves the remaining writers as they were, instead of waiting on every one of them.
+PROFILE_FAILURES_IN_A_ROW_TO_STOP = 3

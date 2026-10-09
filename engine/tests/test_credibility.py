@@ -178,6 +178,31 @@ def test_negative_karma_is_low_karma_even_without_the_history():
     assert "low karma for its activity" in voice_for(author=account(created=years_before(RECENT, 3), karma=-40)).tags
 
 
+def test_the_profiles_contributions_show_low_karma_for_its_activity():
+    # From Arctic Shift (engine/profiles.py): the writer's own count of comments and posts, no history needed.
+    writer = account(created=years_before(RECENT, 5), karma=209) | {"contributions": 450}
+    voice = voice_for(author=writer)
+    assert voice.level == "low"
+    assert "low karma for its activity" in voice.tags
+    assert "209 karma for 450 contributions" in voice.reasons
+
+
+def test_the_profiles_contributions_show_a_well_regarded_account():
+    karma = int(config.WELL_REGARDED_KARMA_PER_CONTRIBUTION * 100)
+    assert "well-regarded account" in voice_for(author=account(karma=karma) | {"contributions": 100}).tags
+
+
+def test_once_contributions_are_known_karma_per_year_no_longer_stands_in():
+    # Plenty of karma a year, but only 3 karma per contribution: between the two lines, so neither sign.
+    years = 1
+    karma = int(config.WELL_REGARDED_KARMA_PER_YEAR * years) * 2
+    contributions = int(karma / ((config.LOW_KARMA_PER_CONTRIBUTION + config.WELL_REGARDED_KARMA_PER_CONTRIBUTION) / 2))
+    writer = account(created=years_before(RECENT, years), karma=karma)
+    assert "well-regarded account" in voice_for(author=writer).tags  # unknown contributions: the fallback
+    tags = voice_for(author=writer | {"contributions": contributions}).tags
+    assert not {"well-regarded account", "low karma for its activity"} & set(tags)
+
+
 def test_the_commenter_history_can_show_an_established_member():
     history = CommenterHistory(active_in_topic=True, usually_upvoted=True)
     voice = voice_for(author=account(created=years_before(RECENT, 5)), history=history)
