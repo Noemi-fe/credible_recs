@@ -112,6 +112,26 @@
    "url": "https://englishcoffeecompany.co.uk/products/1zpresso-jx-pro-s-manual-coffee-grinder",
    "checked_on": "2026-10-09",
    "available": false
+  },
+  {
+   "product": "1Zpresso J-Max",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "The English Coffee Company (lists only its 2023 refresh, the J-Max S, sold out; Sigma Coffee, 1Zpresso's UK distributor, now sells the successor J-Ultra, and 1Zpresso's own store no longer lists the J-Max)",
+   "url": "https://englishcoffeecompany.co.uk/products/1zpresso-j-max-s-manual-coffee-grinder-silver-with-assembly-coated-conical-burr",
+   "checked_on": "2026-10-09",
+   "available": false
+  },
+  {
+   "product": "1Zpresso JX",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Sigma Coffee UK (1Zpresso's UK distributor: its J page says the J is an updated model of the recently discontinued JX; 1Zpresso's own store shows the JX as out of stock)",
+   "url": "https://sigmacoffee.co.uk/products/1zpresso-j-manual-coffee-grinder",
+   "checked_on": "2026-10-09",
+   "available": false
   }
  ]
 }

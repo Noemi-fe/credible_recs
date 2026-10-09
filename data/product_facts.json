@@ -1,3 +1,343 @@
 {
- "facts": []
+ "facts": [
+  {
+   "product": "COSRX BHA Blackhead Power Liquid",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "strength": "moderate",
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.cosrx.com/products/bha-blackhead-power-liquid",
+    "https://www.lookfantastic.com/p/cosrx-bha-blackhead-power-liquid-100ml/11401180/"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "Isntree Chestnut BHA 0.9% Clear Toner",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "strength": "gentle",
+    "prescription_only": false
+   },
+   "sources": [
+    "https://skinsider.co.uk/isntree-chestnut-bha-0-9-clear-toner/",
+    "https://www.vitacost.com/products/isntree-chestnut-bha-0-9-clear-toner-6-76-fl-oz-200-ml-122218"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "IOPE Skin Booster Ampoule Peel Pad",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "strength": "strong",
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.apgroup.com/int/ko/news/2024-04-03-1.html",
+    "https://sokoglam.com/products/iope-skin-booster-ampoule-peel-pad"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "Biore UV Aqua Rich Watery Essence SPF50",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "facts": {
+    "white_cast": false,
+    "filters": "chemical",
+    "fragrance_free": false,
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.boots.com/biore-uv-aqua-rich-watery-essence-j-beauty-sunscreen-spf-50-50ml-10356353"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "Etude House Sunprise Mild Airy Finish",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "facts": {
+    "filters": "mineral",
+    "fragrance_free": false,
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.yesstyle.com/en/etude-sunprise-airy-finish-55ml/info.html/pid.1039258908",
+    "https://sokoglam.com/products/etude-sunprise-mild-airy-finish-sun-milk"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "Biore Perfect Milk (blue bottle)",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "facts": {
+    "white_cast": false,
+    "filters": "hybrid",
+    "fragrance_free": false,
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.kao-kirei.com/ja/item/khg/bioresarasarauv/4901301303844/",
+    "https://theyokuglow.com/products/biore-uv-perfect-milk-sunscreen"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "EltaMD UV Clear Broad-Spectrum SPF 46",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "facts": {
+    "white_cast": false,
+    "filters": "hybrid",
+    "fragrance_free": true,
+    "prescription_only": false
+   },
+   "sources": [
+    "https://eltamd.com/products/uv-clear-broad-spectrum-spf-46"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "Rohto Skin Aqua UV Super Moisture Milk SPF50+ PA++++",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "facts": {
+    "filters": "hybrid",
+    "prescription_only": false
+   },
+   "sources": [
+    "https://netshop.create-sd.co.jp/shop/g/g4987241164950/"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "Altreno (tretinoin) Lotion 0.05%",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "strength": "strong",
+    "prescription_only": true
+   },
+   "sources": [
+    "https://www.altreno.com/",
+    "https://dmd-browser.nhsbsa.nhs.uk/ampp/view/11127"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "The INKEY List Retinol Serum",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "strength": "gentle",
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.lookfantastic.com/p/the-inkey-list-retinol-serum-30ml/12208009/",
+    "https://www.cultbeauty.co.uk/p/12208009/"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "Retin-A (tretinoin)",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "strength": "strong",
+    "prescription_only": true
+   },
+   "sources": [
+    "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=9556d73d-c573-4e0a-9feb-764ce2d1107b",
+    "https://dmd-browser.nhsbsa.nhs.uk/ampp/view/11127"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "Stratia Lipid Gold (formerly Liquid Gold)",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true,
+    "texture": "light",
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.stratiaskin.com/products/lipid-gold"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "ILLIYOON Ceramide Ato Concentrate Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true,
+    "texture": "rich",
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.yesstyle.com/en/illiyoon-ceramide-ato-concentrate-cream-230ml/info.html/pid.1134045493"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "Shiseido Bio-Performance Advanced Super Revitalizing Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": false,
+    "texture": "rich",
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.lookfantastic.com/p/10991447/"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "AESTURA Atobarrier 365 Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true,
+    "texture": "rich",
+    "prescription_only": false
+   },
+   "sources": [
+    "https://global.oliveyoung.com/product/detail?prdtNo=GA240121573",
+    "https://www.yesstyle.com/en/aestura-ato-barrier-365-cream-mini-45ml/info.html/pid.1133349503"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "It's Skin Red Ginseng Lotion d'Escargot",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": false,
+    "texture": "light",
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.nahdionline.com/en-ae/its-skin-prestige-lotion-2x-ginseng-descargot-140ml/pdp/103396933"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "Beplain mungbean cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {
+    "texture": "light",
+    "prescription_only": false
+   },
+   "sources": [
+    "https://global.oliveyoung.com/product/detail?prdtNo=GA230619360"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "Kose Speedy oil cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {
+    "prescription_only": false
+   },
+   "sources": [
+    "https://netshop.create-sd.co.jp/shop/g/g4971710579826/",
+    "https://www.yesstyle.com/en/kose-softymo-cleansing-oil-mini-speedy-60ml/info.html/pid.1136061259"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "ROUND LAB 1025 Dokdo Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {
+    "texture": "light",
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.yesstyle.com/en/round-lab-1025-dokdo-cleanser-150ml/info.html/pid.1074113181",
+    "https://global.oliveyoung.com/product/detail?prdtNo=GA211213057"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "haruharu wonder Black Rice Moisture 5.5 Soft Cleansing Gel",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {
+    "texture": "light",
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.yesstyle.com/en/haruharu-wonder-black-rice-moisture-5-5-soft-cleansing-gel-100ml/info.html/pid.1137997768"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "Beplain Mungbean Greenful Oil Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {
+    "texture": "light",
+    "prescription_only": false
+   },
+   "sources": [
+    "https://global.oliveyoung.com/product/detail?prdtNo=GA260338241",
+    "https://global.oliveyoung.com/product/detail?prdtNo=GA230619360"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "Darto pans",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true,
+    "non_stick": false,
+    "induction": true
+   },
+   "sources": [
+    "https://www.darto.org/caracteristicas/",
+    "https://www.darto.org/preguntas-frecuentes/"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "Proline stainless steel skillet",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true,
+    "non_stick": false,
+    "induction": true
+   },
+   "sources": [
+    "https://www.zwilling.com/uk/demeyere-proline-7-28-cm-18%2F10-stainless-steel-frying-pan-silver-40850-938-0/40850-938-0.html"
+   ],
+   "checked_on": "2026-10-09"
+  },
+  {
+   "product": "D3",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true,
+    "non_stick": false,
+    "induction": true
+   },
+   "sources": [
+    "https://www.all-clad.com/d3-stainless-3-ply-bonded-cookware-fry-pan-12-inch.html"
+   ],
+   "checked_on": "2026-10-09"
+  }
+ ]
 }
