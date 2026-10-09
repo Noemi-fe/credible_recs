@@ -82,9 +82,9 @@ thread_id,comment_id,voice,tags,note,agrees
 1tfk6nm,omchbl4,high,"established member, expert flair, well-regarded account, enthusiast",,
 1tfk6nm,om9zo0k,,,,
 1tfk6nm,oma0ul9,high,"established member, expert flair, well upvoted, well-regarded account",,
-1tfk6nm,oman33m,low,"new account, well-regarded account",,
-1tfk6nm,omgdthe,,,,yes
-1tfk6nm,omj21g8,,,,yes
+1tfk6nm,oman33m,medium,"new account, well-regarded account",,
+1tfk6nm,omgdthe,medium,recent,,yes
+1tfk6nm,omj21g8,medium,recent,,yes
 1tfk6nm,omj4e6q,medium,"new account, well-regarded account",,
 1tfk6nm,omj6ryh,medium,"new account, well-regarded account",,
 1tfk6nm,om9ztv8,high,"established member, well upvoted",,
@@ -106,7 +106,7 @@ thread_id,comment_id,voice,tags,note,agrees
 1tfk6nm,oma5yko,high,"established member, well-regarded account",,
 1tfk6nm,oma7h26,high,"established member, well-regarded account, enthusiast",,
 1tfk6nm,omaj6y3,high,"established member, well-regarded account",,
-1tfk6nm,omb45pl,,,,
+1tfk6nm,omb45pl,medium,recent,,
 1tfk6nm,omb8eud,,,,
 1tfk6nm,omc6p0u,medium,"established member, low karma for its activity",,
 1tfk6nm,omdgu18,high,"established member, well-regarded account",,
