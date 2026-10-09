@@ -35,7 +35,9 @@ The JSON for /api/answer (200):
                                       "url",                   the shop's own page, https only, or null
                                       "budget_status",         "within" | "unknown" | "other currency" |
                                                                "out of date", or null without a budget
-                                      "budget_note"}}],        the same in words, or null
+                                      "budget_note"},          the same in words, or null
+                            "care": [{"tip": "Descale every 6 months.",   "How to make it last" (9 Oct 2026):
+                                      "quote": {same shape}}]}],          0 to 2, each quote verified
                  "look_for": [{"kind", "advice", "quote": {same shape}}],
                  "skip": [{"product_key", "name", "reason", "quotes": [...]}],
                  "message": the honest "not enough evidence" message, or null when there are 3 picks,
@@ -208,6 +210,7 @@ def answer_wording() -> dict[str, str]:
         "link_text": wording.LINK_TEXT,
         "price_label": wording.PRICE_LABEL,  # "Price"
         "price_link_text": wording.PRICE_LINK_TEXT,
+        "care_heading": wording.CARE_HEADING,  # "How to make it last" (care tips, 9 Oct 2026)
     }
 
 

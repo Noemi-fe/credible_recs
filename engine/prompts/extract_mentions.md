@@ -1,11 +1,12 @@
-Version: extract-v6
+Version: extract-v7
 
 # Finding product mentions in one Reddit thread
 
 You read one Reddit thread saved as JSON (the shape of engine.models.Thread). For every comment, list each product
 it mentions, what type of product it is, the writer's stance towards it, how well the writer knows it (the
 evidence), and one supporting quote copied word for word from that comment. Also list advice about kinds of
-product ("notes") and replies that agree with the comment above ("agreements").
+product ("notes"), care tips on making a product last ("care") and replies that agree with the comment above
+("agreements").
 Write the result as JSON to the file you're given, in the format at the end. Nothing else.
 
 These rules match Noemi's labelling guide (data/gold/LABELLING_GUIDE.md), so the extraction and her labels
@@ -156,7 +157,23 @@ with no plastic touching the water", "carbon steel will outlast any non-stick", 
 lid"), add a note: what it's about ("plastic-free kettle", "carbon steel pan"), named the way the comment names the
 kind ("sujihiki", "VG10 steel"), the stance and a quote, with the same quote rules. Experience with a kind counts ("used cast iron for decades, never a problem"), and so does
 advice about ingredients ("look for niacinamide"). Care tips that aren't about choosing (how to descale, how to
-season) are not notes.
+season) are not notes: list them in "care" (below).
+
+## Care tips: how to make it last
+
+When a comment gives advice on looking after, using or maintaining a product or a kind of product, so it lasts or
+works well ("descale it every 6 months", "never put a carbon steel knife in the dishwasher", "re-season after
+scrubbing", "keep it away from sunlight"), add a care tip to "care" (Noemi, 9 Oct 2026):
+- "about": the product ("Zojirushi kettle") or the kind of product ("cast iron skillet", "electric kettle"), named
+  the way the comment names it, as for mentions and notes. A reply giving a tip about the product named in the
+  comment it answers ("descale it monthly") takes the name from there.
+- "is_kind": true when the tip is about a kind of product, false when it's about one specific product.
+- "tip": the tip in a few plain words ("descale every 6 months", "no dishwasher", "store away from light"). Say only
+  what the quote says: never add advice of your own.
+- "quote": with the same quote rules as mentions: word for word, never from a quoted block, at most 50 words, and it
+  makes sense on its own.
+Advice about what to buy is a note, not a care tip. A comment can give both, and a care tip doesn't change what
+counts as a product mention: list the mention too when the rules above make it one.
 
 ## Agreements: replies that back up the comment above
 
@@ -177,7 +194,7 @@ comment (there's no one left to credit), and agreement with a comment other than
 ```json
 {
   "thread_id": "<the thread's id>",
-  "instructions_version": "extract-v6",
+  "instructions_version": "extract-v7",
   "extracted_at": "<now, ISO 8601 in UTC, e.g. 2026-10-08T10:00:00Z>",
   "extractor": "claude-code",
   "mentions": [
@@ -187,6 +204,9 @@ comment (there's no one left to credit), and agreement with a comment other than
   ],
   "notes": [
     {"comment_id": "<id>", "about": "<kind or feature>", "stance": "recommend", "quote": "<exact text>"}
+  ],
+  "care": [
+    {"comment_id": "<id>", "about": "<product or kind>", "is_kind": false, "tip": "descale every 6 months", "quote": "<exact text>"}
   ],
   "agreements": [
     {"comment_id": "<reply id>", "quote": "<exact text>"}

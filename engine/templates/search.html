@@ -11,7 +11,7 @@
    on this page is here, and only here.
    Everything else comes from the answer itself (engine/answer.py), sent by the server: the reasons,
    support lines, disagreement flags, messages, module 1's question or polite no, and the headings
-   ("In their words", "Known downsides", "see the comment", the price lines, ...).
+   ("In their words", "Known downsides", "How to make it last", "see the comment", the price lines, ...).
    {name} is filled in by the page.
    ===================================================================================================== */
 const LABELS = {
@@ -164,6 +164,8 @@ h1, h2, h3, h4 { line-height: 1.25; }
 .badges { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .badges li { padding: 1px 8px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-weight: 600; font-size: 13px; }
 .downsides .quote { border-left-color: var(--warn); }
+.care .quote { border-left-color: var(--ok); }
+.care .lead { margin: 0 0 6px; }
 
 /* The score breakdown. */
 .breakdown { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
@@ -351,6 +353,16 @@ h1, h2, h3, h4 { line-height: 1.25; }
     return [line, price.budget_note && el("p", { class: "budget" }, price.budget_note)];
   }
 
+  /** "How to make it last": each care tip in a few words, then its verified quote (drawn like every other quote, so
+      its link goes through the same Reddit check). Nothing at all when a pick has no tips. */
+  function careSection(tips) {
+    if (!tips || !tips.length) return [];
+    return [el("h4", {}, WORDING.care_heading),
+      el("ul", { class: "quotes care" }, ...tips.map((item) => el("li", {},
+        el("p", { class: "lead" }, el("strong", {}, item.tip)),
+        quoteBlock(item.quote))))];
+  }
+
   function pickCard(pick) {
     const nameId = "pick-" + pick.rank;
     return el("li", {}, el("article", { class: "card", "aria-labelledby": nameId },
@@ -365,6 +377,7 @@ h1, h2, h3, h4 { line-height: 1.25; }
       quoteList(pick.quotes),
       el("h4", {}, WORDING.downsides_heading),
       pick.downsides.length ? quoteList(pick.downsides, "downsides") : el("p", { class: "muted" }, WORDING.no_downsides),
+      ...careSection(pick.care),
       breakdown(pick)));
   }
 

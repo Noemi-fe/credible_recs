@@ -541,3 +541,81 @@ def test_a_sunscreen_named_as_an_essence_stays_a_sunscreen():
         group = ProductGroup(key=f"skincare:{name.lower()}", name=name, category="skincare",
                              mentions=[ProductMention("t1", "c1", name, "skincare", "recommend")])
         assert not _another_type_by_name(group, query)
+
+
+# --- Care tips: how to make it last (Noemi, 9 Oct 2026; instructions v7) ---
+
+DESCALE = "Descale it every 6 months and it will outlive you."
+FILTERED = "Whatever kettle you get, use filtered water so it scales less."
+PROMO = "Descale it monthly with our powder, use my code KETTLE10."
+SEASON = "Re-season your cast iron after every scrub."
+
+
+def care(comment_id: str, about: str, tip: str, quote: str, is_kind: bool = False) -> dict:
+    return {"comment_id": comment_id, "about": about, "is_kind": is_kind, "tip": tip, "quote": quote}
+
+
+def care_library(tmp_path: Path) -> Path:
+    """The Zojirushi praised four times across two kettle threads (extracted with v7), with care tips: one about the
+    Zojirushi, one about electric kettles, one from a paid promoter, and one about another kind of product."""
+    threads = [
+        kettle_thread("1kett01", [comment("k1aaaa", "1kett01", ZOJI_1), comment("k1bbbb", "1kett01", ZOJI_2),
+                                  comment("k1cccc", "1kett01", f"My Zojirushi is 9 years old. {DESCALE}"),
+                                  comment("k1dddd", "1kett01", SEASON)]),
+        kettle_thread("1kett02", [comment("k2aaaa", "1kett02", ZOJI_3), comment("k2bbbb", "1kett02", ZOJI_4),
+                                  comment("k2cccc", "1kett02", FILTERED), comment("k2dddd", "1kett02", PROMO)]),
+    ]
+    root = write_gold(tmp_path / "library", threads, voices=None, mentions=None)
+    extractions = {
+        "1kett01": ([mention("k1aaaa", "Zojirushi kettle", ZOJI_1), mention("k1bbbb", "Zojirushi kettle", ZOJI_2)],
+                    [care("k1cccc", "Zojirushi", "descale every 6 months", DESCALE),
+                     care("k1dddd", "cast iron", "re-season after scrubbing", SEASON, is_kind=True)]),
+        "1kett02": ([mention("k2aaaa", "Zojirushi kettle", ZOJI_3), mention("k2bbbb", "Zojirushi kettle", ZOJI_4)],
+                    [care("k2cccc", "electric kettle", "use filtered water", FILTERED, is_kind=True),
+                     care("k2dddd", "electric kettle", "descale monthly", PROMO, is_kind=True)]),
+    }
+    (root / "extracted").mkdir()
+    for thread_id, (mentions, tips) in extractions.items():
+        (root / "extracted" / f"{thread_id}.json").write_text(json.dumps({
+            "thread_id": thread_id, "instructions_version": "extract-v7", "extracted_at": "2026-10-09T10:00:00Z",
+            "extractor": "claude-code", "mentions": mentions, "care": tips,
+        }), encoding="utf-8")
+    return root
+
+
+def test_each_pick_shows_how_to_make_it_last_from_credible_care_tips(tmp_path):
+    result = answer_request(REQUEST, library_dir=care_library(tmp_path), prices=[], today=TODAY)
+    zojirushi = result.answer.picks[0]
+    assert zojirushi.name == "Zojirushi kettle"
+    assert [(c.tip, c.quote.text) for c in zojirushi.care] == [("Descale every 6 months.", DESCALE),
+                                                                ("Use filtered water.", FILTERED)]
+    assert zojirushi.care[0].quote.url == "https://www.reddit.com/r/BuyItForLife/comments/1kett01/comment/k1cccc/"
+    text = result.text()
+    assert answer_wording.CARE_HEADING in text and DESCALE in text
+    assert PROMO not in text and SEASON not in text  # a low voice, and a tip about another kind of product
+    assert unverified_claims(result.answer, result.bodies) == []
+
+
+def test_care_tips_change_nothing_in_the_ranking(tmp_path):
+    lib = care_library(tmp_path)
+    with_tips = answer_request(REQUEST, library_dir=lib, prices=[], today=TODAY)
+    for path in (lib / "extracted").glob("*.json"):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        del data["care"]
+        path.write_text(json.dumps(data), encoding="utf-8")
+    without = answer_request(REQUEST, library_dir=lib, prices=[], today=TODAY)
+    assert [(p.name, p.score) for p in with_tips.ranking.products] == [(p.name, p.score) for p in without.ranking.products]
+    assert all(pick.care == [] for pick in without.answer.picks)
+
+
+def test_an_older_extraction_without_care_tips_changes_nothing(tmp_path):
+    result = answer_request(REQUEST, library_dir=library(tmp_path), prices=[], today=TODAY)
+    assert result.answer.picks and all(pick.care == [] for pick in result.answer.picks)
+    assert answer_wording.CARE_HEADING not in result.text()
+
+
+def test_writers_of_care_tips_get_profiles_too(tmp_path):
+    # Like notes (review finding 7): a care tip's voice needs its writer's standing as much as a product's.
+    profiles = RecordingProfiles()
+    answer_request(REQUEST, library_dir=care_library(tmp_path), profiles=profiles, prices=[], today=TODAY)
+    assert "test_user_k2cccc" in profiles.asked

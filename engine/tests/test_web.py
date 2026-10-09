@@ -17,13 +17,13 @@ from urllib.parse import quote, urlparse
 import pytest
 
 from engine import web
-from engine.answer import PRICE_LABEL, PRICE_LINK_TEXT, QUOTES_HEADING
+from engine.answer import CARE_HEADING, PRICE_LABEL, PRICE_LINK_TEXT, QUOTES_HEADING
 from engine.config import WEB_MAX_REQUEST_CHARS, WEB_PORT
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.pipeline import answer_request
 from engine.prices import Price
 from engine.tests.factories import write_gold
-from engine.tests.test_pipeline import comment, kettle_thread, mention
+from engine.tests.test_pipeline import DESCALE, care_library, comment, kettle_thread, mention
 
 REQUEST = "electric kettle that lasts 10+ years"
 
@@ -92,8 +92,9 @@ def test_the_json_has_the_documented_shape(tmp_path):
     assert set(data["left_out"]) == {"other_type", "loose", "over_budget"}
     assert set(data["answer"]) == {"category", "product_type", "picks", "look_for", "skip", "message",
                                    "needs_more_threads", "quotes_dropped"}
+    # Changed on purpose 9 Oct 2026 (care tips, Noemi): each pick also has its "care" list, "How to make it last".
     assert set(data["answer"]["picks"][0]) == {"rank", "product_key", "name", "reason", "support", "quotes",
-                                               "downsides", "disagreement", "score", "breakdown", "price"}
+                                               "downsides", "disagreement", "score", "breakdown", "price", "care"}
     assert set(data["answer"]["picks"][0]["quotes"][0]) == {"text", "comment_id", "url", "badges"}
     assert set(data["answer"]["picks"][0]["price"]) == {"text", "amount", "currency", "shop", "url", "checked_on",
                                                         "budget_status", "budget_note"}
@@ -308,3 +309,44 @@ def test_the_command_takes_a_port_and_a_library_and_nothing_else():
     assert web._options(["--library", "/elsewhere", "--port", "9000"]) == (9000, Path("/elsewhere"))
     assert web._options(["--port", "nine"]) is None and web._options(["--port"]) is None
     assert web._options(["--host", "0.0.0.0"]) is None  # there is no way to open it to the network
+
+
+# --- Care tips: how to make it last (Noemi, 9 Oct 2026) ---
+
+def test_each_card_carries_its_care_tips_with_verified_reddit_quotes(tmp_path):
+    _, _, data = ask(REQUEST, care_library(tmp_path))
+    care = data["answer"]["picks"][0]["care"]
+    assert [item["tip"] for item in care] == ["Descale every 6 months.", "Use filtered water."]
+    assert care[0]["quote"]["text"] == DESCALE
+    for item in care:
+        link = urlparse(item["quote"]["url"])
+        assert link.scheme == "https" and link.hostname.endswith("reddit.com")
+
+
+def test_a_card_with_no_care_tips_has_an_empty_list(tmp_path):
+    _, _, data = ask(REQUEST, kettle_library(tmp_path))
+    assert all(pick["care"] == [] for pick in data["answer"]["picks"])
+
+
+def test_an_unverifiable_care_quote_makes_the_endpoint_refuse(tmp_path, monkeypatch):
+    planted = "Boil vinegar in it daily and it will last a century."
+
+    def answer_with_a_planted_care_quote(request, library_dir):
+        result = answer_request(request, library_dir)
+        item = result.answer.picks[0].care[0]
+        result.answer.picks[0].care[0] = dataclasses.replace(item, quote=dataclasses.replace(item.quote, text=planted))
+        return result
+
+    monkeypatch.setattr(web, "answer_request", answer_with_a_planted_care_quote)
+    status, _, body = web.handle_request(f"/api/answer?q={quote(REQUEST)}", care_library(tmp_path))
+    assert status == 500 and json.loads(body)["code"] == "quote_not_verified"
+    assert planted.encode() not in body and DESCALE.encode() not in body
+
+
+def test_the_page_carries_the_care_heading_and_draws_care_tips_as_quotes(tmp_path):
+    html = page(tmp_path)
+    settings = json.loads(re.search(r'<script type="application/json" id="settings">(.*?)</script>', html, re.DOTALL).group(1))
+    assert settings["wording"]["care_heading"] == CARE_HEADING == "How to make it last"
+    drawing = re.search(r"function careSection\(tips\) \{(.*?)\n  \}", html, re.DOTALL).group(1)
+    assert "WORDING.care_heading" in drawing and "quoteBlock(item.quote)" in drawing  # the same Reddit link check
+    assert "careSection(pick.care)" in html

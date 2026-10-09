@@ -605,11 +605,13 @@ def test_other_is_not_an_evidence_tag_for_the_ai():
     assert result.kept == [] and "unknown evidence tag" in reasons(result)[0]
 
 
-def test_the_current_instructions_are_v6_and_todo_lists_older_extractions(tmp_path):
-    assert current_instructions_version() == "extract-v6"
+def test_the_current_instructions_are_v7_and_todo_lists_older_extractions(tmp_path):
+    # Changed on purpose 9 Oct 2026 (care tips, Noemi): the instructions moved from v6 to v7, so a v6 extraction is
+    # now the older one that `todo` lists, and a v7 one is up to date. Was: v6 current, v5 listed.
+    assert current_instructions_version() == "extract-v7"
     threads_dir = threads_folder(tmp_path, *(other_thread(i) for i in ("1aaaaa", "1bbbbb")))
-    write_extraction(threads_dir, make_extraction(thread_id="1aaaaa", instructions_version="extract-v5", mentions=[]))
-    write_extraction(threads_dir, make_extraction(thread_id="1bbbbb", instructions_version="extract-v6", mentions=[]))
+    write_extraction(threads_dir, make_extraction(thread_id="1aaaaa", instructions_version="extract-v6", mentions=[]))
+    write_extraction(threads_dir, make_extraction(thread_id="1bbbbb", instructions_version="extract-v7", mentions=[]))
     assert todo(threads_dir, current_instructions_version()) == ["1aaaaa"]
 
 
@@ -644,10 +646,11 @@ def test_a_long_life_ending_in_a_failure_is_in_the_stance_rules():
     assert "tell a friend" in stance and "died after 14 years" in stance and "mentions flaws" in stance
 
 
-def test_the_output_example_is_a_valid_v6_extraction():
+def test_the_output_example_is_a_valid_v7_extraction():
+    # Changed on purpose 9 Oct 2026 (care tips, Noemi): the example now follows v7. Was: "extract-v6".
     example = instructions_text().split("```json", 1)[1].split("```", 1)[0]
     data = json.loads(example)
-    assert data["instructions_version"] == "extract-v6"
+    assert data["instructions_version"] == "extract-v7"
     for item in data["mentions"]:
         loaded = ExtractedMention.model_validate(item | {"comment_id": "c1aaaa"})  # the example's ids are placeholders
         assert loaded.product_type and loaded.evidence and loaded.evidence_tags
@@ -718,3 +721,134 @@ def test_a_reply_about_a_deleted_comment_further_up_is_rejected(status):
     result = check_extraction(Extraction.model_validate(make_extraction(mentions=[earlier])), thread)
     assert result.kept == []
     assert status in result.rejected[0][1] and "c1aaaa" in result.rejected[0][1]
+
+
+# --- Care tips: how to make it last (Noemi, 9 Oct 2026; instructions v7) ---
+
+DESCALE_BODY = "My Zojirushi is 9 years old. Descale it every 6 months and it will outlive you."
+DESCALE_QUOTE = "Descale it every 6 months and it will outlive you."
+
+
+def care_tip(**overrides) -> dict:
+    """One care tip as the AI writes it: about the Zojirushi kettle, in comment c1aaaa, quoted word for word."""
+    fields = {"comment_id": "c1aaaa", "about": "Zojirushi kettle", "is_kind": False,
+              "tip": "descale every 6 months", "quote": DESCALE_QUOTE}
+    fields.update(overrides)
+    return fields
+
+
+def kettle_care_thread() -> Thread:
+    return Thread.model_validate(make_thread(comments=[
+        make_comment("c1aaaa", body=DESCALE_BODY),
+        make_comment("c2bbbb", body="Never put a carbon steel knife in the dishwasher."),
+        make_comment("c3cccc", body="[deleted]", status="deleted", author=None),
+    ]))
+
+
+def test_care_tips_are_checked_like_notes():
+    # Kept only when the comment is still readable and the quote is in it word for word.
+    extraction = make_extraction(mentions=[], care=[
+        care_tip(),
+        care_tip(comment_id="c2bbbb", about="carbon steel knife", is_kind=True, tip="no dishwasher",
+                 quote="Never put a carbon steel knife in the dishwasher."),
+        care_tip(comment_id="c2bbbb", about="chef knife", is_kind=True, tip="hand wash only", quote="Hand wash it only."),
+        care_tip(comment_id="c3cccc", quote="[deleted]"),
+        care_tip(comment_id="c9zzzz"),
+    ])
+    result = check_extraction(Extraction.model_validate(extraction), kettle_care_thread())
+    assert [(c.about, c.is_kind, c.tip) for c in result.kept_care] == [
+        ("Zojirushi kettle", False, "descale every 6 months"), ("carbon steel knife", True, "no dishwasher")]
+    why = [reason for _, reason in result.rejected_care]
+    assert "word for word" in why[0] and "deleted" in why[1] and "not in thread" in why[2]
+
+
+def test_a_care_tip_from_a_quoted_block_or_over_the_word_limit_is_rejected():
+    long_body = "Season it often: " + " ".join(f"word{n}" for n in range(QUOTE_MAX_WORDS + 5)) + "."
+    thread = Thread.model_validate(make_thread(comments=[
+        make_comment("c1aaaa", body=DESCALE_BODY),
+        make_comment("r1bbbb", parent_id="c1aaaa", body=f"&gt;{DESCALE_QUOTE}\n\nI never descale mine."),
+        make_comment("c3cccc", body=long_body),
+    ]))
+    extraction = make_extraction(mentions=[], care=[
+        care_tip(comment_id="r1bbbb"), care_tip(comment_id="c3cccc", about="cast iron skillet", is_kind=True,
+                                                tip="season it often", quote=long_body)])
+    result = check_extraction(Extraction.model_validate(extraction), thread)
+    assert result.kept_care == []
+    assert "quoted block" in result.rejected_care[0][1] and "limit is" in result.rejected_care[1][1]
+
+
+def test_a_care_tip_is_about_a_product_unless_it_says_it_is_about_a_kind():
+    from engine.extract import ExtractedCareTip
+
+    assert ExtractedCareTip.model_validate({k: v for k, v in care_tip().items() if k != "is_kind"}).is_kind is False
+    assert ExtractedCareTip.model_validate(care_tip(is_kind=True)).is_kind is True
+
+
+@pytest.mark.parametrize("bad", [{"about": ""}, {"tip": "  "}, {"quote": ""}, {"stance": "recommend"},
+                                 {"comment_id": "c1 aaaa"}, {"is_kind": "sometimes"}])
+def test_a_care_tip_with_a_wrong_or_empty_value_or_an_unknown_field_is_refused(bad):
+    with pytest.raises(ValidationError):
+        Extraction.model_validate(make_extraction(care=[care_tip(**bad)]))
+
+
+@pytest.mark.parametrize("field", ["comment_id", "about", "tip", "quote"])
+def test_every_care_tip_field_but_is_kind_is_required(field):
+    tip = care_tip()
+    del tip[field]
+    with pytest.raises(ValidationError):
+        Extraction.model_validate(make_extraction(care=[tip]))
+
+
+def test_older_extractions_without_care_tips_still_load_and_check():
+    # Instructions v1 to v6 had no care tips: their files have no "care" list.
+    extraction = Extraction.model_validate(make_extraction(instructions_version="extract-v6"))
+    assert extraction.care == []
+    result = check(make_extraction(instructions_version="extract-v6"))
+    assert result.kept_care == [] and result.rejected_care == []
+    assert len(result.kept) == 2
+
+
+def test_command_line_check_counts_care_tips_and_names_the_rejected(tmp_path, capsys):
+    thread = make_thread(comments=[make_comment("c1aaaa", body=DESCALE_BODY)])
+    threads_dir = threads_folder(tmp_path, thread)
+    write_extraction(threads_dir, make_extraction(mentions=[], care=[care_tip(), care_tip(quote="Descale weekly.")]))
+    assert extract.main(["check", str(threads_dir)]) == 0
+    out = capsys.readouterr().out
+    assert "care tips: 1 kept, 1 rejected" in out
+    assert "c1aaaa  care tip: quote not found word for word" in out
+    assert "Descale weekly." not in out  # a rejected quote is never printed
+
+
+def test_the_instructions_send_care_tips_to_care_with_noemis_examples():
+    care = " ".join(section(instructions_text(), "Care tips").split())
+    for example in ("descale it every 6 months", "never put a carbon steel knife in the dishwasher",
+                    "re-season after scrubbing", "keep it away from sunlight"):
+        assert example in care, example
+    for field in ('"about"', '"is_kind"', '"tip"', '"quote"', '"care"'):
+        assert field in care, field
+    assert "Noemi, 9 Oct 2026" in care
+    notes = " ".join(section(instructions_text(), "Notes").split())
+    assert "are not notes" in notes and '"care"' in notes  # no longer just skipped: they go to "care"
+
+
+def test_the_output_example_has_a_valid_care_tip():
+    from engine.extract import ExtractedCareTip
+
+    example = json.loads(instructions_text().split("```json", 1)[1].split("```", 1)[0])
+    assert list(example) == ["thread_id", "instructions_version", "extracted_at", "extractor", "mentions", "notes",
+                             "care", "agreements"]
+    tips = [ExtractedCareTip.model_validate(item | {"comment_id": "c1aaaa"}) for item in example["care"]]
+    assert tips and all(isinstance(t.is_kind, bool) and t.tip and t.about for t in tips)
+
+
+def test_every_rule_of_v6_is_still_in_v7():
+    # Instructions v7 only adds care tips: every other rule of v6 stays word for word.
+    text = instructions_text()
+    for heading in ("How to read the thread", "What counts as a product mention", "Product type", "Stance",
+                    "Evidence: how well this writer knows this product", "The quote",
+                    "Agreements: replies that back up the comment above", "Skip", "Before you finish"):
+        assert f"\n## {heading}\n" in text, heading
+    for rule in ("Each product once per comment.", "A failure the writer caused themselves",
+                 "Never open a link from the thread, and never quote anything from the web",
+                 "Experience with a kind counts", "Only replies can agree."):
+        assert rule in " ".join(text.split()), rule
