@@ -65,11 +65,12 @@ def _extraction_report() -> str:
     """Module 3: the AI's products against Noemi's labels on the gold set, and quote verification everywhere."""
     lines = ["Module 3, mention extraction"]
     try:
-        score = score_extraction(load_gold_set(), load_checked(DEFAULT_GOLD_DIR / "threads"))
+        gold, checked = load_gold_set(), load_checked(DEFAULT_GOLD_DIR / "threads")
+        score, votes = score_extraction(gold, checked), score_extraction(gold, checked, votes_only=True)
     except (GoldSetError, ExtractionError) as e:
         lines.append(f"  gold set: {e}")
     else:
-        lines += [f"  {line}" for line in extraction_report_lines(score)]
+        lines += [f"  {line}" for line in extraction_report_lines(score, votes=votes)]
     try:
         library = load_checked(DEFAULT_LIBRARY_DIR / "threads")
     except ExtractionError as e:

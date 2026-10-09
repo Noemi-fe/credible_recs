@@ -404,3 +404,15 @@ def test_other_tag_usage_ignores_comments_without_a_voice(tmp_path):
     voices = VOICES_HEADER + "1fake01,c1aaaa,high,other,Moderator\n1fake01,c3cccc,,,\n"
     voice, _ = other_tag_usage(load_gold_set(write_gold(tmp_path, [make_thread()], voices)))
     assert (voice.used, voice.total) == (1, 1)
+
+
+# --- Kinds of product (Noemi, 9 Oct 2026) ---
+
+def test_a_mention_row_can_be_a_kind_of_product_rather_than_a_brand(tmp_path):
+    # Advice about a kind ("a sujihiki", "chemical exfoliant") is labelled like a product, with kind = yes.
+    voices = VOICES_HEADER + "1fake01,c1aaaa,high,recent,\n1fake01,c3cccc,high,recent,\n"
+    mentions = ("comment_id,product,category,stance,evidence,tags,note,kind\n"
+                "c1aaaa,CeraVe SA Cleanser,skincare,recommend,long-term use,long-term use,,\n"
+                "c3cccc,chemical exfoliant,skincare,recommend,no first-hand use,vague,,yes\n")
+    gold = load_gold_set(write_gold(tmp_path, [make_thread()], voices, mentions))
+    assert [(m.product, m.kind) for m in gold.mentions] == [("CeraVe SA Cleanser", False), ("chemical exfoliant", True)]

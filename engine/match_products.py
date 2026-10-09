@@ -25,6 +25,9 @@ Known gaps, the edge cases in the brief's End-state tree that rules on words can
 - US versus EU names: one product sold under two names is not matched, as there is no list of known aliases yet;
 - brand versus product line: a brand alone ("CeraVe") matches any of its products, and a loose name ("CeraVe
   cleanser") matches each of the brand's cleansers, so a vague name can't be told from a specific one.
+- one description written two ways ("Professional Fillet Knife 7 Les Forges 1890" and "Opinel Les Forges 1890 7
+  Fillet Knife"): a rule for "most words shared" was tried on 9 Oct 2026 and dropped, because in the library it
+  merged far more different products ("Round Lab Birch Juice Pads" and "... cream") than renamed ones.
 Also: a filler word that really is part of a name ("One" in a product called "One") is dropped too; a typo is
 only forgiven when the two names have the same number of words, so "Zojurushi" doesn't match "Zojirushi kettle".
 """
@@ -37,8 +40,9 @@ from engine.text import one_edit_apart
 
 # Dropped from the start of a name only: "a" inside a name is often part of it ("Vitamin A serum").
 LEADING_WORDS = ("the", "a", "my")
-# Dropped anywhere: words people add around a name that aren't part of it ("the Victorinox one", "Le Creuset brand").
-FILLER_WORDS = frozenset({"one", "ones", "brand", "the", "my", "their"})
+# Dropped anywhere: words people add around a name that aren't part of it ("the Victorinox one", "Le Creuset brand",
+# "peeling solution by the ordinary"; "by" and "from" added 9 Oct 2026).
+FILLER_WORDS = frozenset({"one", "ones", "brand", "the", "my", "their", "by", "from"})
 # A one-letter typo is only forgiven in words at least this long.
 TYPO_MIN_LENGTH = 5
 

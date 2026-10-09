@@ -31,6 +31,7 @@ VOICE_COLUMNS = ("thread_id", "comment_id", "voice", "tags")
 MENTION_COLUMNS = ("comment_id", "product", "category", "stance", "evidence", "tags")
 OPTIONAL_COLUMNS = ("note",)
 VOICE_OPTIONAL_COLUMNS = ("note", "agrees")  # agrees: a reply agreeing with the comment above (8 Oct 2026)
+MENTION_OPTIONAL_COLUMNS = ("note", "kind")  # kind: a kind of product, not a brand (9 Oct 2026)
 
 
 class GoldSetError(Exception):
@@ -282,7 +283,7 @@ def _load_mentions(
     mentions: list[MentionLabel] = []
     seen: dict[tuple[str, str], int] = {}  # (comment id, product) -> line
 
-    for line, row in _read_csv(root, "mentions.csv", MENTION_COLUMNS, problems):
+    for line, row in _read_csv(root, "mentions.csv", MENTION_COLUMNS, problems, MENTION_OPTIONAL_COLUMNS):
         where = f"mentions.csv line {line}"
         try:
             label = MentionLabel.model_validate(row)

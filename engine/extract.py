@@ -86,8 +86,9 @@ class ExtractedMention(Record):
     stance: Literal[tuple(STANCE_VALUE)]
     quote: Text  # meant to be copied word for word from the comment; check_extraction makes sure
     # A reply about a product named in the comment above ("had this one 13 years") or in the post ("the one you
-    # listed") names it from there (instructions v2, 8 Oct 2026). None when the comment names it itself.
-    refers_to: Literal["parent", "post"] | None = None
+    # listed") names it from there (instructions v2, 8 Oct 2026). "earlier" when it is named further up the same
+    # reply chain ("how did you like it?" then "loved it"; instructions v4). None when the comment names it itself.
+    refers_to: Literal["parent", "post", "earlier"] | None = None
 
 
 class ExtractedNote(Record):
@@ -152,7 +153,8 @@ def check_extraction(extraction: Extraction, thread: Thread) -> CheckResult:
     - the comment is still readable: one deleted or removed on Reddit can't be quoted;
     - its quote is in the comment word for word (engine.verify_quotes.find_quote);
     - the quote isn't from a quoted block (a line starting with ">"): those are someone else's words, and credit
-      has to go to the person who wrote them;
+      has to go to the person who wrote them. The exception (instructions v4, Noemi, 8 Oct 2026): a comment
+      written entirely as a quoted block, whose quoted words appear nowhere else in the thread, is the writer's own;
     - the quote is at most QUOTE_MAX_WORDS words long, counting the pieces between spaces.
     Mentions keep their order in both lists.
     """
@@ -162,6 +164,8 @@ def check_extraction(extraction: Extraction, thread: Thread) -> CheckResult:
         reason = _why_rejected(mention, extraction, thread, comments)
         if reason is None and mention.refers_to == "parent" and comments[mention.comment_id].parent_id is None:
             reason = f"comment {mention.comment_id} refers to the comment above, but it isn't a reply"
+        if reason is None and mention.refers_to == "earlier" and not _reply_to_a_reply(comments[mention.comment_id], comments):
+            reason = f"comment {mention.comment_id} refers to a comment further up, but it isn't a reply to a reply"
         if reason is None:
             result.kept.append(mention)
         else:
@@ -195,7 +199,7 @@ def _why_rejected(mention, extraction: Extraction, thread: Thread, comments: dic
     span = find_quote(comment.body, mention.quote)
     if span is None:
         return f"quote not found word for word in comment {mention.comment_id}"
-    if _in_quoted_block(comment.body, span):
+    if _in_quoted_block(comment.body, span) and not _own_words_in_quote_format(comment, mention.quote, thread):
         return f"quote is from a quoted block in comment {mention.comment_id}: someone else's words"
     words = len(mention.quote.split())
     if words > QUOTE_MAX_WORDS:
@@ -207,6 +211,25 @@ def _in_quoted_block(body: str, span: tuple[int, int]) -> bool:
     """Whether the quote starts on a line that quotes someone else (">" or Reddit's "&gt;")."""
     line_start = body.rfind("\n", 0, span[0]) + 1
     return body[line_start:].lstrip().startswith((">", "&gt;"))
+
+
+def _own_words_in_quote_format(comment, quote: str, thread: Thread) -> bool:
+    """Whether a comment written entirely as a quoted block holds the writer's own words: no one else wrote them.
+
+    Some people format their whole answer with ">". If the quote is found nowhere else in the thread (title, post or
+    any other comment), it isn't copied from anyone there.
+    """
+    lines = [line.lstrip() for line in comment.body.splitlines() if line.strip()]
+    if not all(line.startswith((">", "&gt;")) for line in lines):
+        return False
+    elsewhere = [thread.title, thread.body] + [c.body for c in thread.comments if c.id != comment.id]
+    return all(find_quote(text, quote) is None for text in elsewhere)
+
+
+def _reply_to_a_reply(comment, comments: dict) -> bool:
+    """Whether a comment answers a reply, so there is a comment further up than its parent to take a name from."""
+    parent = comments.get(comment.parent_id) if comment.parent_id else None
+    return parent is not None and parent.parent_id is not None
 
 
 def overall_quote_pass_rate(results: Iterable[CheckResult]) -> float | None:

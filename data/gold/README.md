@@ -115,11 +115,12 @@ A comment with a voice row and no rows in mentions.csv is a comment you read tha
 | Column | What to put |
 | --- | --- |
 | `comment_id` | Which comment. It needs its voice row in voices.csv first. |
-| `product` | The product as you would name it. |
+| `product` | The product as you would name it, brand first ("FAB's exfoliating pads"). For a kind of product, the kind ("sujihiki"). |
 | `category` | `skincare`, `kitchen` or `other`. Label every mention, including products outside the thread's category; the engine filters them out. |
 | `stance` | `recommend`, `warn` or `neutral`. |
 | `evidence` | `long-term use`, `short-term use` or `no first-hand use`. |
 | `tags` | Evidence tags: long-term use, specific details, mentions flaws, compares alternatives, short-term use, secondhand, vague, or other. |
 | `note` | Optional; required with `other`. |
+| `kind` | Optional: `yes` when the row is a kind of product rather than a brand ("sujihiki", "chemical exfoliant"); blank otherwise. Added 9 Oct 2026. |
 
 Capitals and stray spaces don't matter. Excel files saved with semicolons work too. In a comma-separated file, a cell holding several tags (or any comma) must be in double quotes; Excel and Numbers do this for you.

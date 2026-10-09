@@ -66,6 +66,10 @@ def _http_get(url: str, headers: dict) -> tuple[int, bytes]:
             return response.status, response.read()
     except urllib.error.HTTPError as e:
         return e.code, e.read()
+    except (urllib.error.URLError, TimeoutError) as e:
+        # No answer at all (a timeout, no network): reported like any Parse failure, so callers such as the
+        # library refresh count it and carry on or stop, instead of crashing. No credit is logged for it.
+        raise ParseAPIError(f"couldn't reach Parse: {getattr(e, 'reason', e)}") from e
 
 
 class ParseRedditClient:

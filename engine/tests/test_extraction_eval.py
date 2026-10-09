@@ -5,7 +5,7 @@ Everything is built in memory: made-up threads from factories.py, labels as Voic
 the AI's checked extractions as CheckResults. No test reads data/.
 """
 
-from engine.extract import CheckResult, ExtractedMention
+from engine.extract import CheckResult, ExtractedMention, ExtractedNote
 from engine.extraction_eval import Miss, report_lines, score_extraction
 from engine.gold import GoldSet
 from engine.models import MentionLabel, Thread, VoiceLabel
@@ -242,3 +242,51 @@ def test_the_report_lists_at_most_15_misses():
     assert lines[1:16] == [f"  c1aaaa  missed by the AI: Product {letter}" for letter in "ABCDEFGHIJKLMNO"]
     assert lines[16] == "  ... and 5 more"
     assert len(lines) == 17
+
+
+# --- Kinds of product and votes (Noemi, 9 Oct 2026) ---
+
+def kind_label(comment_id: str, name: str, stance: str = "recommend") -> MentionLabel:
+    """Noemi's row for a kind of product, not a brand ("chemical exfoliant")."""
+    return MentionLabel(comment_id=comment_id, product=name, category="skincare", stance=stance,
+                        evidence="no first-hand use", tags="vague", kind=True)
+
+
+def note(comment_id: str, about: str, stance: str = "recommend") -> ExtractedNote:
+    return ExtractedNote(comment_id=comment_id, about=about, stance=stance, quote="a quote")
+
+
+BOTH_PRODUCTS = [ai("c1aaaa", "CeraVe SA Cleanser"), ai("c3cccc", "Paula's Choice 2% BHA")]
+
+
+def test_kinds_are_left_out_of_the_product_scores():
+    labels = LABELS + [kind_label("c1aaaa", "chemical exfoliant")]
+    score = score_extraction(gold(mentions=labels), {"1fake01": kept(*BOTH_PRODUCTS)})
+    assert (score.matched, score.ai_total, score.gold_total) == (2, 2, 2)
+
+
+def test_kinds_are_looked_for_among_the_ais_notes_in_the_same_comment():
+    labels = LABELS + [kind_label("c1aaaa", "chemical exfoliant"), kind_label("c3cccc", "physical scrub")]
+    result = CheckResult(kept=list(BOTH_PRODUCTS), kept_notes=[note("c1aaaa", "chemical exfoliants"), note("c1aaaa", "physical scrub")])
+    score = score_extraction(gold(mentions=labels), {"1fake01": result})
+    assert (score.kinds_found, score.kinds_total) == (1, 2)  # the scrub note is on the wrong comment
+
+
+def test_votes_only_leaves_neutral_mentions_out():
+    # Neutral mentions add nothing to a product's score, so the main score counts recommend and warn only.
+    labels = LABELS + [label("c3cccc", "The Ordinary", stance="neutral")]
+    theirs = kept(*BOTH_PRODUCTS, ai("c1aaaa", "Cosrx", stance="neutral"))
+    every = score_extraction(gold(mentions=labels), {"1fake01": theirs})
+    votes = score_extraction(gold(mentions=labels), {"1fake01": theirs}, votes_only=True)
+    assert (every.matched, every.ai_total, every.gold_total) == (2, 3, 3)
+    assert (votes.matched, votes.ai_total, votes.gold_total) == (2, 2, 2)
+
+
+def test_the_report_leads_with_votes_then_every_mention_and_kinds():
+    checked = {"1fake01": CheckResult(kept=list(BOTH_PRODUCTS), kept_notes=[note("c1aaaa", "chemical exfoliant")])}
+    labels = LABELS + [kind_label("c1aaaa", "chemical exfoliant")]
+    lines = report_lines(score_extraction(gold(mentions=labels), checked),
+                         votes=score_extraction(gold(mentions=labels), checked, votes_only=True))
+    assert lines[0].startswith("votes (recommend or warn): precision 2/2 (100%), recall 2/2 (100%)")
+    assert lines[1].startswith("every mention, neutral included: precision 2/2")
+    assert lines[2].startswith("kinds of product: 1/1 of Noemi's kinds (100%) found among the AI's notes")

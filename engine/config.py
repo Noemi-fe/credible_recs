@@ -30,6 +30,10 @@ VOICE_TAGS = (
     "salesy language",
     "promotes one brand",
     "old post",
+    # Added 8 Oct 2026 from Noemi's "other" notes on her first labelled thread.
+    "well-regarded account",  # high karma for its number of contributions
+    "low karma for its activity",  # under about 1 karma per contribution: a red flag
+    "enthusiast",  # shows care and taste for the category
 )
 EVIDENCE_TAGS = (
     "long-term use",
@@ -39,6 +43,10 @@ EVIDENCE_TAGS = (
     "short-term use",
     "secondhand",
     "vague",
+    # Added 8 Oct 2026 from Noemi's "other" notes on her first labelled thread.
+    "cheaper alternative",
+    "alternative for another need",
+    "asks about it",  # a clarifying question ("is that the one you mean?")
 )
 
 # For a reason no tag fits. It needs a note; recurring notes become new tags at the Sunday review.

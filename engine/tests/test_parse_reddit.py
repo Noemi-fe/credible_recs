@@ -287,3 +287,19 @@ def test_offline_client_answers_from_its_cache_and_never_spends(tmp_path):
     with pytest.raises(ParseAPIError, match="offline"):
         offline.search("SkincareAddiction", "exfoliant")
     assert len(service.requests) == 1
+
+
+# --- Network trouble (9 Oct 2026: a thread fetch timed out and crashed instead of reporting a Parse error) ---
+
+@pytest.mark.parametrize("trouble", [TimeoutError("The read operation timed out"), __import__("urllib.error").error.URLError("no route")])
+def test_a_network_failure_is_a_parse_error_not_a_crash(monkeypatch, trouble):
+    import urllib.request
+
+    from engine.parse_reddit import _http_get
+
+    def fail(*args, **kwargs):
+        raise trouble
+
+    monkeypatch.setattr(urllib.request, "urlopen", fail)
+    with pytest.raises(ParseAPIError, match="couldn't reach Parse"):
+        _http_get("https://api.example.invalid/", {})

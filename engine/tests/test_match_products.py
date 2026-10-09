@@ -102,3 +102,25 @@ def test_a_lone_number_is_not_a_brand():
 def test_names_made_only_of_filler_words_match_nothing():
     assert not same_product("the one", "my one")
     assert not same_product("the one", "Zojirushi")
+
+
+# --- From the first gold-set scores (9 Oct 2026): the same product, written as a description ---
+
+def test_by_and_from_are_filler():
+    # "the weekly peeling solution by the ordinary" and "... from the ordinary" are the same product.
+    assert normalize_name("weekly peeling solution by the ordinary") == ["weekly", "peeling", "solution", "ordinary"]
+    assert same_product("the weekly peeling solution by the ordinary", "weekly peeling solution from the ordinary")
+
+
+@pytest.mark.parametrize("a, b", [
+    # Pairs that share most of their words but are different products, from the library (9 Oct 2026): a rule
+    # merging names with most words in common was tried and dropped because of them.
+    ("Round Lab Birch Juice Pads", "Round Lab birch juice cream"),
+    ("Isntree Yam Root Vegan Milk Cleanser", "yam root vegan milk cream"),
+    ("new Dynasty Cream by Beauty of Joseon", "old Dynasty Cream by Beauty of Joseon"),
+    ("Shisheido Perfect Cleansing Oil blue bottle", "Shisheido Perfect Cleansing Oil transparent bottle"),
+    ("Lodge 10 inch cast iron skillet", "Lodge 12 inch cast iron skillet"),
+    ("Pharmaceris Mandelic acid 5%", "Pharmaceris Mandelic acid 10%"),
+])
+def test_names_sharing_most_words_can_still_be_different_products(a, b):
+    assert not same_product(a, b)

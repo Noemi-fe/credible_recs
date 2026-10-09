@@ -263,10 +263,10 @@ def test_command_line_page_for_a_thread_not_in_the_gold_set(tmp_path, capsys):
 # --- Helpers for the import ---
 
 def product(name="CeraVe SA Cleanser", category="skincare", stance="recommend", evidence="long-term use",
-            tags=("long-term use",), note="") -> dict:
-    """One product row as the page exports it."""
+            tags=("long-term use",), note="", kind=False) -> dict:
+    """One product row as the page exports it. kind=True: a kind of product, not a brand (9 Oct 2026)."""
     return {"product": name, "category": category, "stance": stance, "evidence": evidence,
-            "evidence_tags": list(tags), "note": note}
+            "evidence_tags": list(tags), "note": note, "kind": kind}
 
 
 def labelled(comment_id, voice="high", voice_tags=("established member",), voice_note="", mentions=(), no_product=None,
@@ -676,3 +676,52 @@ def test_command_line_import_of_an_invalid_file_lists_the_problems(tmp_path, cap
 def test_command_line_without_a_known_command_prints_the_usage(argv, capsys):
     assert labelling.main(argv) == 2
     assert "python -m engine.labelling" in capsys.readouterr().out
+
+
+# --- Kinds of product, and pages that start from the gold labels (9 Oct 2026) ---
+
+def test_a_product_row_can_be_marked_as_a_kind_not_a_brand(tmp_path):
+    assert "kind, not a brand" in page_for(tmp_path)
+
+
+def test_a_kind_of_product_is_imported_with_the_kind_column(tmp_path):
+    gold = gold_folder(tmp_path)
+    labels = exported(labelled("c3cccc", mentions=[product("chemical exfoliant", evidence="no first-hand use", tags=["vague"], kind=True)]))
+    import_labels(write_labels(tmp_path, labels), gold_dir=gold)
+    text = (gold / "mentions.csv").read_text(encoding="utf-8")
+    assert text.startswith(MENTIONS_HEADER.rstrip("\n") + ",kind\n")
+    assert text.endswith("c3cccc,chemical exfoliant,skincare,recommend,no first-hand use,vague,,yes\n")
+    assert load_gold_set(gold).mentions[-1].kind is True
+
+
+def test_an_export_from_before_kinds_still_imports(tmp_path):
+    gold = gold_folder(tmp_path)
+    old = product()
+    del old["kind"]
+    import_labels(write_labels(tmp_path, exported(labelled("c1aaaa", mentions=[old]))), gold_dir=gold)
+    assert load_gold_set(gold).mentions[-1].kind is False
+    assert (gold / "mentions.csv").read_text(encoding="utf-8").startswith(MENTIONS_HEADER)
+
+
+def test_a_labelled_threads_page_starts_from_its_gold_labels(tmp_path):
+    # So a thread can be opened again to add to its labels, and exporting it never brings back older ones.
+    gold = gold_folder(tmp_path)  # 1fake02 is labelled, 1fake01 isn't
+    config = page_config(write_page("1fake02", gold_dir=gold, now=NOW).read_text(encoding="utf-8"))
+    start = config["goldLabels"]["1fake02c1"]
+    assert (start["voice"], start["voice_tags"], start["no_product"]) == ("high", ["established member", "well upvoted"], False)
+    assert start["mentions"] == [{"product": "Dualit kettle", "category": "kitchen", "stance": "recommend", "evidence": "long-term use",
+                                  "evidence_tags": ["long-term use"], "note": "", "kind": False}]
+    assert config["goldVersion"]
+
+
+def test_an_unlabelled_threads_page_starts_empty(tmp_path):
+    config = page_config(write_page("1fake01", gold_dir=gold_folder(tmp_path), now=NOW).read_text(encoding="utf-8"))
+    assert (config["goldLabels"], config["goldVersion"]) == ({}, "")
+
+
+def test_the_gold_version_changes_when_the_labels_change(tmp_path):
+    # The browser keeps what was typed under this version: new gold labels mean a fresh start from them.
+    first = page_config(write_page("1fake02", gold_dir=gold_folder(tmp_path), now=NOW).read_text(encoding="utf-8"))
+    changed = OTHER_MENTIONS.replace("recommend", "warn")
+    second = page_config(write_page("1fake02", gold_dir=gold_folder(tmp_path / "b", mentions=changed), now=NOW).read_text(encoding="utf-8"))
+    assert first["goldVersion"] != second["goldVersion"]

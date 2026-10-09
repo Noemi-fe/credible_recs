@@ -175,7 +175,9 @@ button.quiet-link { justify-self: start; font-size: 13.5px; font-weight: 500; }
   const OTHER = CONFIG.otherTag;
   const VOICE_TAGS = CONFIG.voiceTags.concat([OTHER]);
   const EVIDENCE_TAGS = CONFIG.evidenceTags.concat([OTHER]);
-  const STORAGE_KEY = "credible-recs:labels:" + CONFIG.threadId;
+  // Typed labels are kept per version of the gold labels the page started from, so a page rebuilt after the
+  // gold set changed starts from the new gold labels, never from older typing.
+  const STORAGE_KEY = "credible-recs:labels:" + CONFIG.threadId + (CONFIG.goldVersion ? ":" + CONFIG.goldVersion : "");
   const IDS = CONFIG.comments.map(function (c) { return c.id; });
   const AUTHOR = {};
   const REPLY = {};  // only a reply can agree with the comment above
@@ -198,7 +200,7 @@ button.quiet-link { justify-self: start; font-size: 13.5px; font-weight: 500; }
     return { no_product: false, voice: "", voice_tags: [], voice_note: "", agrees: false, mentions: [] };
   }
   function emptyMention() {
-    return { product: "", category: CONFIG.threadCategory, stance: "", evidence: "", evidence_tags: [], note: "" };
+    return { product: "", category: CONFIG.threadCategory, stance: "", evidence: "", evidence_tags: [], note: "", kind: false };
   }
   function labelOf(id) {
     if (!labels[id]) labels[id] = emptyLabel();
@@ -285,6 +287,7 @@ button.quiet-link { justify-self: start; font-size: 13.5px; font-weight: 500; }
     m.evidence = CONFIG.evidenceLevels.indexOf(raw.evidence) !== -1 ? raw.evidence : "";
     m.evidence_tags = Array.isArray(raw.evidence_tags) ? inOrder(raw.evidence_tags, EVIDENCE_TAGS) : [];
     m.note = typeof raw.note === "string" ? raw.note : "";
+    m.kind = raw.kind === true;
     return m;
   }
   function restore() {
@@ -292,10 +295,10 @@ button.quiet-link { justify-self: start; font-size: 13.5px; font-weight: 500; }
     try {
       saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "null");
     } catch (e) {
-      return;
+      saved = null;  // storage blocked or unreadable: start from the gold labels, if any
     }
-    const stored = saved && saved.labels;
-    if (!stored || typeof stored !== "object") return;
+    let stored = saved && saved.labels;
+    if (!stored || typeof stored !== "object") stored = CONFIG.goldLabels || {};  // nothing typed yet: start from the gold set
     IDS.forEach(function (id) { if (stored[id]) labels[id] = cleanLabel(id, stored[id]); });
   }
   function save() {
@@ -421,7 +424,7 @@ button.quiet-link { justify-self: start; font-size: 13.5px; font-weight: 500; }
     row.dataset.index = String(i);
     const first = make("div", "line");
     first.append(
-      textBox("product", m.product, "Product, as you'd name it", "product"),
+      textBox("product", m.product, m.kind ? "Kind of product, as you'd name it" : "Product, as you'd name it", "product"),
       dropdown("category", "Category", CONFIG.categories, m.category),
       dropdown("stance", "Stance", CONFIG.stances, m.stance, "choose…"),
       dropdown("evidence", "Evidence", CONFIG.evidenceLevels, m.evidence, "choose…")
@@ -432,6 +435,7 @@ button.quiet-link { justify-self: start; font-size: 13.5px; font-weight: 500; }
     });
     const last = make("div", "line");
     last.append(
+      choice("checkbox", "", "yes", m.kind, "kind", "kind, not a brand"),
       textBox("note", m.note, "Note (needed with “" + OTHER + "”)", "note"),
       button("Remove", "remove", "quiet danger", "Remove this product")
     );
@@ -568,6 +572,7 @@ button.quiet-link { justify-self: start; font-size: 13.5px; font-weight: 500; }
       const m = l.mentions[Number(row.dataset.index)];
       if (!m) return;
       if (field === "evidence_tags") m.evidence_tags = withTag(m.evidence_tags, input.value, input.checked, EVIDENCE_TAGS);
+      else if (field === "kind") m.kind = input.checked;
       else m[field] = input.value;
     } else if (field === "voice") {
       l.voice = input.value;
@@ -626,7 +631,8 @@ button.quiet-link { justify-self: start; font-size: 13.5px; font-weight: 500; }
           stance: m.stance,
           evidence: m.evidence,
           evidence_tags: inOrder(m.evidence_tags, EVIDENCE_TAGS),
-          note: tidy(m.note)
+          note: tidy(m.note),
+          kind: m.kind === true
         };
       })
     };

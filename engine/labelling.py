@@ -12,14 +12,17 @@ The page lists the thread's comments in order, each reply under the comment it a
 (linked to their Reddit profile, to check the account's age), flair, score and date. Deleted and removed
 comments are greyed out and can't be labelled. Each other comment gets:
 - "No product in this comment", or one row per product mentioned: product, category, stance, evidence,
-  evidence tags and a note;
+  evidence tags and a note. A row can be marked "kind, not a brand" for advice about a kind of product
+  ("a sujihiki", "chemical exfoliant"; Noemi, 9 Oct 2026);
 - a voice level, voice tags and a note. A comment with products needs a voice level and a tag; a comment with
   no product needs neither (Noemi, 8 Oct 2026), so its voice is hidden unless she asks for it;
 - for a reply, "Agrees with the comment above" ("This!", "Same, mine lasted 10 years"): evidence that the
   other writer is credible.
 The levels, tags and choices come from engine/config.py. Keyboard shortcuts: j/k next/previous comment, 1/2/3
 voice high/medium/low, n no product, a agrees, p add a product. Labels are saved in the browser as she goes, so
-closing the tab loses nothing. Export checks every label (required fields, "other" needs a note, no product
+closing the tab loses nothing. A thread that already has gold labels opens with them filled in, so it can be
+added to later; the browser keeps typed labels per version of the gold labels, so after the gold set changes
+the page starts again from it rather than from older typing. Export checks every label (required fields, "other" needs a note, no product
 twice in one comment), lists any problem with its comment, and only then downloads the file. Only the comments
 she labelled are exported: a thread can be labelled in several sittings, or only in part.
 
@@ -38,6 +41,7 @@ Command line:
 
 import codecs
 import csv
+import hashlib
 import io
 import json
 import re
@@ -128,11 +132,38 @@ def write_page(thread_id: str, gold_dir: Path = DEFAULT_GOLD_DIR, now: datetime 
     guide = guide_path.read_text(encoding="utf-8") if guide_path.is_file() else None
     path = gold_dir / "labelling" / f"{thread.id}.html"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(render_page(thread, guide, now), encoding="utf-8")
+    path.write_text(render_page(thread, guide, now, gold_labels(thread, gold_dir)), encoding="utf-8")
     return path
 
 
-def render_page(thread: Thread, guide: str | None = None, now: datetime | None = None) -> str:
+def gold_labels(thread: Thread, gold_dir: Path = DEFAULT_GOLD_DIR) -> dict[str, dict]:
+    """The thread's labels already in the gold set, shaped as the page keeps them: {comment id: label}.
+
+    Empty when the thread has none yet, or when the gold set can't be read (`python -m engine.gold` says why):
+    the page then starts blank, as before.
+    """
+    try:
+        gold = load_gold_set(gold_dir)
+    except GoldSetError:
+        return {}
+    ids = {c.id for c in thread.comments}
+    mentions: dict[str, list[dict]] = {}
+    for m in gold.mentions:
+        if m.comment_id in ids:
+            mentions.setdefault(m.comment_id, []).append({
+                "product": m.product, "category": m.category, "stance": m.stance, "evidence": m.evidence,
+                "evidence_tags": list(m.tags), "note": m.note or "", "kind": m.kind,
+            })
+    return {
+        v.comment_id: {
+            "no_product": v.comment_id not in mentions, "voice": v.voice or "", "voice_tags": list(v.tags),
+            "voice_note": v.note or "", "agrees": v.agrees, "mentions": mentions.get(v.comment_id, []),
+        }
+        for v in gold.voices if v.comment_id in ids
+    }
+
+
+def render_page(thread: Thread, guide: str | None = None, now: datetime | None = None, labels: dict | None = None) -> str:
     """The whole labelling page as one HTML file: the template in engine/templates, filled in for this thread.
 
     Every piece of Reddit text is escaped, so a comment containing "<script>" shows those characters and is
@@ -150,7 +181,7 @@ def render_page(thread: Thread, guide: str | None = None, now: datetime | None =
         "THREAD": _thread_html(thread, now),
         "GUIDE": _guide_html(guide),
         "COMMENTS": "\n".join(_comment_html(comment, depth, by_id, thread, now) for comment, depth in ordered),
-        "CONFIG": _settings_json(thread, usable),
+        "CONFIG": _settings_json(thread, usable, labels or {}),
         "VOICE_REQUIRED_WITHOUT_PRODUCT": "true" if VOICE_REQUIRED_WITHOUT_PRODUCT else "false",
     }
     template = TEMPLATE.read_text(encoding="utf-8")
@@ -287,9 +318,16 @@ def _reddit_link(url: str, text: str) -> str:
     return f'<a href="{escape(url)}" target="_blank" rel="noopener noreferrer">{escape(text)}</a>'
 
 
-def _settings_json(thread: Thread, usable: list[Comment]) -> str:
-    """What the page's script needs, as JSON that is safe inside a <script> block."""
+def _settings_json(thread: Thread, usable: list[Comment], labels: dict) -> str:
+    """What the page's script needs, as JSON that is safe inside a <script> block.
+
+    goldLabels are the labels to start from; goldVersion, a short fingerprint of them, keeps the browser's saved
+    typing apart for each version of the gold labels ("" when there are none, as for a thread not labelled yet).
+    """
+    version = hashlib.sha256(json.dumps(labels, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:12] if labels else ""
     settings = {
+        "goldLabels": labels,
+        "goldVersion": version,
         "threadId": thread.id,
         "threadCategory": thread.category,  # a new product row starts in the thread's category
         "voiceLevels": list(VOICE_LEVELS),
@@ -348,6 +386,7 @@ class ExportedMention(Record):
     evidence: str | None
     evidence_tags: list[str]
     note: str | None = None
+    kind: bool = False  # a kind of product, not a brand; files exported before 9 Oct 2026 have no such field
 
 
 class ExportedComment(Record):
@@ -458,6 +497,7 @@ def check_labels(labels: LabelsFile, thread: Thread) -> tuple[list[VoiceLabel], 
                 "evidence": mention.evidence,
                 "tags": ", ".join(mention.evidence_tags),
                 "note": _tidy(mention.note),
+                "kind": "yes" if mention.kind else "",
             }
             try:
                 mentions.append(MentionLabel.model_validate(row))
@@ -617,6 +657,7 @@ def _mention_row(label: MentionLabel) -> dict[str, str]:
         "evidence": label.evidence,
         "tags": ", ".join(label.tags),
         "note": label.note or "",
+        "kind": "yes" if label.kind else "",
     }
 
 
@@ -661,11 +702,11 @@ class _LabelFile:
     def updated(self, remove: list[_Row], add: list[dict[str, str]]) -> bytes:
         """The file's new content: the rows in `remove` taken out, the rest as typed, then the new rows.
 
-        An optional column the new rows need (note, agrees) is added to the header; rows already there simply
-        have it blank.
+        An optional column the new rows need (note, agrees, kind) is added to the header; rows already there
+        simply have it blank.
         """
         header, columns = self.header, list(self.columns)
-        for column in ("note", "agrees"):
+        for column in ("note", "agrees", "kind"):
             if column not in columns and any(row.get(column) for row in add):
                 header += self.delimiter + column
                 columns.append(column)

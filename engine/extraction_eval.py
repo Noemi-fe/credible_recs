@@ -5,6 +5,12 @@ Four numbers, each "right out of total":
 - recall: of the products Noemi labelled, how many the AI found (target: at least 80%);
 - stance agreement: of the products both found, how many have the same stance (recommend, warn or neutral);
 - category agreement: likewise for the category (skincare, kitchen or other).
+The main score counts votes only (Noemi, 9 Oct 2026): recommend and warn, the mentions that change a product's
+score. Neutral mentions add nothing to a score, so they are reported in a second line, with every mention.
+
+Kinds of product (her rows with kind = yes, such as "sujihiki") aren't products: they are looked for among the
+AI's notes in the same comment, by the same name comparison, and reported as how many of her kinds were found.
+Only recall: she adds kind rows from 9 Oct 2026, so threads labelled before then may hold kinds she didn't label.
 
 What counts:
 - Only comments Noemi labelled: those with a row in voices.csv. Her rows in mentions.csv are the truth for them,
@@ -30,7 +36,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import NamedTuple
 
-from engine.extract import CheckResult, ExtractedMention
+from engine.extract import CheckResult, ExtractedMention, ExtractedNote
 from engine.gold import GoldSet
 from engine.match_products import normalize_name, same_product
 from engine.models import MentionLabel
@@ -60,6 +66,8 @@ class ExtractionScore:
     labelled_comments: int = 0  # comments she labelled in those threads, with or without a product
     misses: list[Miss] = field(default_factory=list)
     not_extracted: list[str] = field(default_factory=list)  # thread ids she labelled that the AI hasn't read yet
+    kinds_found: int = 0  # her kinds of product found among the AI's notes in the same comment
+    kinds_total: int = 0  # her kinds of product in the comments the AI read
 
     @property
     def precision(self) -> float | None:
@@ -78,15 +86,20 @@ class ExtractionScore:
         return _ratio(self.same_category, self.matched)
 
 
-def score_extraction(gold: GoldSet, checked: dict[str, CheckResult]) -> ExtractionScore:
+def score_extraction(gold: GoldSet, checked: dict[str, CheckResult], votes_only: bool = False) -> ExtractionScore:
     """Compares the AI's checked extractions ({thread id: CheckResult}, as engine.extract.load_checked returns them)
-    with Noemi's labels, in the gold set's thread and comment order."""
+    with Noemi's labels, in the gold set's thread and comment order. `votes_only` leaves neutral mentions out of
+    the products on both sides."""
     labelled: dict[str, set[str]] = defaultdict(set)  # thread id -> the comment ids she labelled
     for voice in gold.voices:
         labelled[voice.thread_id].add(voice.comment_id)
     hers: dict[str, list[MentionLabel]] = defaultdict(list)
+    her_kinds: dict[str, list[MentionLabel]] = defaultdict(list)
     for label in gold.mentions:
-        hers[label.comment_id].append(label)
+        if label.kind:
+            her_kinds[label.comment_id].append(label)
+        elif not (votes_only and label.stance == "neutral"):
+            hers[label.comment_id].append(label)
 
     score = ExtractionScore()
     for thread in gold.threads:
@@ -98,11 +111,17 @@ def score_extraction(gold: GoldSet, checked: dict[str, CheckResult]) -> Extracti
         score.threads += 1
         theirs: dict[str, list[ExtractedMention]] = defaultdict(list)
         for mention in checked[thread.id].kept:
-            theirs[mention.comment_id].append(mention)
+            if not (votes_only and mention.stance == "neutral"):
+                theirs[mention.comment_id].append(mention)
+        notes: dict[str, list[ExtractedNote]] = defaultdict(list)
+        for note in checked[thread.id].kept_notes:
+            notes[note.comment_id].append(note)
         for comment in thread.comments:
             if comment.id in labelled[thread.id]:
                 score.labelled_comments += 1
                 _score_comment(score, comment.id, hers[comment.id], theirs[comment.id])
+                score.kinds_total += len(her_kinds[comment.id])
+                score.kinds_found += len(_pair_names([k.product for k in her_kinds[comment.id]], [n.about for n in notes[comment.id]]))
     return score
 
 
@@ -132,10 +151,15 @@ def _pair_up(hers: list[MentionLabel], theirs: list[ExtractedMention]) -> list[t
     that took it is moved to another AI mention that fits it, if there is one free (or one that can be freed the
     same way). This finds the most pairs possible, where taking the first fit could leave a mention unpaired.
     """
-    fits = []  # for each of her mentions, the AI mentions naming the same product: exact names first
-    for label in hers:
-        candidates = [t for t, mention in enumerate(theirs) if same_product(label.product, mention.product)]
-        candidates.sort(key=lambda t: normalize_name(theirs[t].product) != normalize_name(label.product))
+    return _pair_names([label.product for label in hers], [mention.product for mention in theirs])
+
+
+def _pair_names(hers: list[str], theirs: list[str]) -> list[tuple[int, int]]:
+    """_pair_up on plain names, also used to pair her kinds of product with the AI's notes."""
+    fits = []  # for each of her names, the AI names meaning the same product: exact names first
+    for name in hers:
+        candidates = [t for t, other in enumerate(theirs) if same_product(name, other)]
+        candidates.sort(key=lambda t: normalize_name(theirs[t]) != normalize_name(name))
         fits.append(candidates)
 
     partner: dict[int, int] = {}  # AI mention -> her mention it is paired with
@@ -157,14 +181,27 @@ def _pair_up(hers: list[MentionLabel], theirs: list[ExtractedMention]) -> list[t
 
 # --- The report ---
 
-def report_lines(score: ExtractionScore) -> list[str]:
-    """The scores in one line, then up to MAX_MISSES_SHOWN misses, then the labelled threads not extracted yet."""
-    lines = [
+def report_lines(score: ExtractionScore, votes: ExtractionScore | None = None) -> list[str]:
+    """The scores, then up to MAX_MISSES_SHOWN misses, then the labelled threads not extracted yet.
+
+    With `votes` (the same scoring with votes_only=True), the first line is the votes score, then every mention,
+    then the kinds of product.
+    """
+    every = (
         f"precision {_share(score.matched, score.ai_total)}, recall {_share(score.matched, score.gold_total)}, "
         f"stance agreement {_share(score.same_stance, score.matched)}, "
         f"category agreement {_share(score.same_category, score.matched)}, "
         f"over {_count(score.threads, 'thread')}, {_count(score.labelled_comments, 'labelled comment')}"
-    ]
+    )
+    if votes is None:
+        lines = [every]
+    else:
+        lines = [
+            f"votes (recommend or warn): precision {_share(votes.matched, votes.ai_total)}, "
+            f"recall {_share(votes.matched, votes.gold_total)}",
+            f"every mention, neutral included: {every}",
+            f"kinds of product: {_share(score.kinds_found, score.kinds_total, 'of Noemi\'s kinds')} found among the AI's notes",
+        ]
     lines += [f"  {miss.comment_id}  {miss.kind}: {miss.product}" for miss in score.misses[:MAX_MISSES_SHOWN]]
     if len(score.misses) > MAX_MISSES_SHOWN:
         lines.append(f"  ... and {len(score.misses) - MAX_MISSES_SHOWN} more")
@@ -177,9 +214,10 @@ def _ratio(part: int, whole: int) -> float | None:
     return part / whole if whole else None
 
 
-def _share(part: int, whole: int) -> str:
-    """Such as "18/20 (90%)", or "0/0 (n/a)" when there is nothing to divide."""
-    return f"{part}/{whole} ({part / whole:.0%})" if whole else f"{part}/{whole} (n/a)"
+def _share(part: int, whole: int, of: str = "") -> str:
+    """Such as "18/20 (90%)", or "0/0 (n/a)" when there is nothing to divide; `of` goes before the brackets."""
+    middle = f" {of}" if of else ""
+    return f"{part}/{whole}{middle} ({part / whole:.0%})" if whole else f"{part}/{whole}{middle} (n/a)"
 
 
 def _count(n: int, thing: str) -> str:

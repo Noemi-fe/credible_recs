@@ -154,6 +154,13 @@ def _lowercase(value):
     return value.lower() if isinstance(value, str) else value
 
 
+def _yes_or_blank(value) -> bool:
+    """A yes/blank spreadsheet column as True or False."""
+    if value is None or isinstance(value, bool):
+        return bool(value)
+    return str(value).strip().lower() in ("yes", "y", "true", "1")
+
+
 class VoiceLabel(_LabelRow):
     """One row of data/gold/voices.csv: a comment Noemi read, and how credible its writer is.
 
@@ -171,12 +178,7 @@ class VoiceLabel(_LabelRow):
 
     _lower = field_validator("voice", mode="before")(_lowercase)
 
-    @field_validator("agrees", mode="before")
-    @classmethod
-    def _yes_or_blank(cls, value):
-        if value is None or isinstance(value, bool):
-            return bool(value)
-        return str(value).strip().lower() in ("yes", "y", "true", "1")
+    _agrees = field_validator("agrees", mode="before")(lambda value: _yes_or_blank(value))
 
     @model_validator(mode="after")
     def _tags_need_a_voice(self) -> "VoiceLabel":
@@ -197,5 +199,9 @@ class MentionLabel(_LabelRow):
     category: Literal[MENTION_CATEGORIES]
     stance: Literal[tuple(STANCE_VALUE)]
     evidence: Literal[EVIDENCE_LEVELS]
+    # A kind of product rather than a brand ("sujihiki", "chemical exfoliant"; Noemi, 9 Oct 2026): the yes/blank
+    # "kind" column. Kinds are scored against the AI's notes, not its products, and feed the ranking by kind.
+    kind: bool = False
 
     _lower = field_validator("category", "stance", "evidence", mode="before")(_lowercase)
+    _kind = field_validator("kind", mode="before")(lambda value: _yes_or_blank(value))

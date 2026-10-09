@@ -504,3 +504,55 @@ def test_show_keeps_only_the_highest_scored_comments_in_thread_order():
     thread = Thread.model_validate(make_thread(comments=comments))
     assert shown_comment_ids(thread, max_comments=3) == ["c00007", "c00008", "c00009"]
     assert "3 of 10 comments" in render_thread(thread, max_comments=3)
+
+
+# --- Instructions v4 (8 Oct 2026, approved by Noemi) ---
+
+def test_a_product_named_further_up_the_chain_is_marked_earlier():
+    # "How did you like it?" then "Loved it": the product is named two comments up, not in the parent.
+    thread = Thread.model_validate(make_thread(comments=[
+        make_comment("c1aaaa", body="I bought the Cuisinart CPK-17 last year."),
+        make_comment("c2bbbb", parent_id="c1aaaa", body="How did you like it?"),
+        make_comment("c3cccc", parent_id="c2bbbb", body="Still love it, boils in two minutes."),
+    ]))
+    earlier = mention(comment_id="c3cccc", product="Cuisinart CPK-17", category="kitchen", quote="Still love it, boils in two minutes.", refers_to="earlier")
+    result = check_extraction(Extraction.model_validate(make_extraction(mentions=[earlier])), thread)
+    assert result.kept[0].refers_to == "earlier"
+
+
+@pytest.mark.parametrize("comment_id", ["c1aaaa", "c2bbbb"])
+def test_refers_to_earlier_needs_a_reply_to_a_reply(comment_id):
+    thread = Thread.model_validate(make_thread(comments=[
+        make_comment("c1aaaa", body="I bought the Cuisinart CPK-17 last year."),
+        make_comment("c2bbbb", parent_id="c1aaaa", body="Still love it, boils in two minutes."),
+    ]))
+    wrong = mention(comment_id=comment_id, product="Cuisinart CPK-17", category="kitchen",
+                    quote={"c1aaaa": "I bought the Cuisinart CPK-17 last year.", "c2bbbb": "Still love it, boils in two minutes."}[comment_id],
+                    refers_to="earlier")
+    result = check_extraction(Extraction.model_validate(make_extraction(mentions=[wrong])), thread)
+    assert "further up" in result.rejected[0][1]
+
+
+WHOLE_QUOTE_BODY = "> **Best:** Hada Labo Gokujyun lotion.\n>\n> It made my dry skin plump in a week."
+
+
+def test_a_comment_written_entirely_as_a_quote_block_is_the_writers_own_words():
+    # Some people format their whole answer with ">". If no one else in the thread wrote those words, they're theirs.
+    thread = Thread.model_validate(make_thread(comments=[make_comment("c1aaaa", body=WHOLE_QUOTE_BODY)]))
+    own = mention(product="Hada Labo Gokujyun lotion", quote="It made my dry skin plump in a week.")
+    result = check_extraction(Extraction.model_validate(make_extraction(mentions=[own])), thread)
+    assert [m.product for m in result.kept] == ["Hada Labo Gokujyun lotion"]
+
+
+@pytest.mark.parametrize("where", ["post", "another comment"])
+def test_a_whole_quote_block_copying_someone_else_is_still_rejected(where):
+    copied = "It made my dry skin plump in a week."
+    comments = [make_comment("c1aaaa", body=WHOLE_QUOTE_BODY)]
+    post = {}
+    if where == "post":
+        post = {"body": f"Hada Labo Gokujyun lotion: {copied} Any other ideas?"}
+    else:
+        comments.insert(0, make_comment("c0zzzz", body=f"Hada Labo Gokujyun lotion. {copied}"))
+    thread = Thread.model_validate(make_thread(comments=comments, **post))
+    result = check_extraction(Extraction.model_validate(make_extraction(mentions=[mention(product="Hada Labo Gokujyun lotion", quote=copied)])), thread)
+    assert result.kept == [] and "quoted" in result.rejected[0][1]
