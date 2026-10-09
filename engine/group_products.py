@@ -1,0 +1,209 @@
+"""Module 4, grouping: gathers every mention of one product, across threads, under one name.
+
+The AI lists each product as the comment names it, so one product shows up under many names ("CeraVe SA",
+"cerave sa cleanser", "CeraVe Renewing SA Cleanser"). group_products turns a request's mentions into product
+groups: one per product, with a key, the name to show, the category and every mention of it.
+
+How names are grouped, one category at a time (a skincare name never joins a kitchen one):
+1. Names with the same words (engine.match_products.product_words: case, punctuation and known short names
+   aside) are one name: "CeraVe" and "cerave".
+2. Each pair of names is compared with the matcher's rules (engine.match_products.same_words). Names that match
+   with as many words as each other are spellings of one name ("Lodge pans" and "lodge pan", "SoonJung" and
+   "Soon Jung"): they are judged together from here on.
+3. The catch: matching is not transitive. "CeraVe" matches "CeraVe SA Cleanser" and "CeraVe Hydrating
+   Cleanser", which don't match each other, so joining every matching pair would chain all of a brand's products
+   into one group. So a name is loose when it (or another spelling of it) matches two longer names that don't
+   match each other: it fits more than one product ("CeraVe", "CeraVe cleanser", "Lodge skillet" next to a 10
+   and a 12 inch skillet).
+4. The other names, the specific ones, are joined pair by pair: two specific names that match are one product.
+5. A loose name joins a product only when exactly one product among those it matches is specific. Otherwise it
+   stays a group of its own, with its other spellings, flagged loose (a brand or product line, not one
+   product). A loose name never joins two products together.
+A name made only of filler words ("the one") names nothing: it is a loose group of its own.
+
+The name shown: the most complete name (the most words) among the names written at least half as often as the
+group's most written name; on a tie, the one written more often. So "Sunday Riley water cream" (once) beats
+"Sunday Riley" (twice), but "Timemore C2 with titanium coated burrs" (once) doesn't beat "Timemore C2" (24 times).
+Then, brand first: if another name of the group is that name with words added at its start ("1Zpresso JX Pro"
+for "JX Pro"), the most often written of those is shown instead. Of the spellings of that name, the most
+complete as written is shown ("The Ordinary" rather than "TO"), then the most common, then one with capitals.
+
+The key is the category and the words of the name shown, such as "skincare:cerave renewing sa cleanser". The
+same mentions, in any order, give the same groups and keys.
+"""
+
+from collections import Counter, defaultdict
+from dataclasses import dataclass, field
+
+from engine.extract import CheckResult
+from engine.match_products import Aliases, join_split_words, known_aliases, normalize_name, product_words, same_words
+
+
+@dataclass(frozen=True)
+class ProductMention:
+    """One product named in one comment: what grouping needs from a kept ExtractedMention."""
+
+    thread_id: str
+    comment_id: str
+    product: str  # the name as the AI wrote it
+    category: str  # skincare, kitchen or other
+    stance: str  # recommend, warn or neutral
+
+
+@dataclass
+class ProductGroup:
+    """Every mention of one product, across threads."""
+
+    key: str  # the category and the shown name's words: "skincare:cerave renewing sa cleanser"
+    name: str  # the name to show
+    category: str
+    mentions: list[ProductMention] = field(default_factory=list)
+    # True when the name is a brand or product line that fits more than one product ("CeraVe", "Lodge cast iron"):
+    # its mentions can't count for any one product.
+    loose: bool = False
+
+    @property
+    def names(self) -> Counter:
+        """How often each name was written."""
+        return Counter(m.product for m in self.mentions)
+
+    @property
+    def stances(self) -> Counter:
+        """How many mentions recommend, warn or are neutral."""
+        return Counter(m.stance for m in self.mentions)
+
+
+def mentions_from_checked(checked: dict[str, CheckResult]) -> list[ProductMention]:
+    """The kept mentions of checked extractions ({thread id: CheckResult}, from engine.extract.load_checked)."""
+    return [
+        ProductMention(thread_id, m.comment_id, m.product, m.category, m.stance)
+        for thread_id, result in checked.items()
+        for m in result.kept
+    ]
+
+
+def group_of(groups: list[ProductGroup]) -> dict[ProductMention, ProductGroup]:
+    """Each mention's group, so the pipeline can give every mention its product key and shown name."""
+    return {m: g for g in groups for m in g.mentions}
+
+
+def group_products(mentions: list[ProductMention], aliases: dict[str, Aliases] | None = None) -> list[ProductGroup]:
+    """The mentions gathered into product groups, biggest first (then by key).
+
+    `aliases` is {category: known short names}; by default, the shipped list (engine/data/product_aliases.json).
+    """
+    aliases = known_aliases() if aliases is None else aliases
+    by_category: dict[str, list[ProductMention]] = defaultdict(list)
+    for m in mentions:
+        by_category[m.category].append(m)
+    groups = [g for category, ms in by_category.items() for g in _group_category(category, ms, aliases.get(category, {}))]
+    return sorted(groups, key=lambda g: (-len(g.mentions), g.key))
+
+
+Words = tuple[str, ...]
+
+
+def _group_category(category: str, mentions: list[ProductMention], aliases: Aliases) -> list[ProductGroup]:
+    """Steps 1 to 5 of the module docstring, for the mentions of one category."""
+    by_words: dict[Words, list[ProductMention]] = defaultdict(list)  # step 1
+    nameless: dict[str, list[ProductMention]] = defaultdict(list)  # filler words only
+    for m in mentions:
+        words = tuple(product_words(m.product, aliases))
+        if words:
+            by_words[words].append(m)
+        else:
+            nameless[m.product.strip().lower()].append(m)
+
+    names = sorted(by_words)
+    matches = {w: [v for v in names if v != w and same_words(list(w), list(v))] for w in names}  # step 2
+    spelling = {w: w for w in names}  # each name -> the first of its spellings
+    for w in names:
+        for v in matches[w]:
+            if not _more_words(v, w) and not _more_words(w, v):
+                _join(spelling, w, v)
+    spellings: dict[Words, list[Words]] = defaultdict(list)
+    for w in names:
+        spellings[_root(spelling, w)].append(w)
+
+    longer = {s: {v for w in ws for v in matches[w] if _more_words(v, w)} for s, ws in spellings.items()}
+    loose = {s for s in spellings if _fits_two_products(longer[s])}  # step 3
+    parent = {s: s for s in spellings}
+    for s in spellings:  # step 4
+        if s not in loose:
+            for v in longer[s]:
+                if _root(spelling, v) not in loose:
+                    _join(parent, s, _root(spelling, v))
+    for s in sorted(loose):  # step 5
+        products = {_root(parent, _root(spelling, v)) for v in longer[s] if _root(spelling, v) not in loose}
+        if len(products) == 1:
+            _join(parent, products.pop(), s)
+
+    families: dict[Words, list[Words]] = defaultdict(list)  # each group's root -> the names judged together in it
+    for s in spellings:
+        families[_root(parent, s)].append(s)
+    groups = [_make_group(category, {w: by_words[w] for s in ss for w in spellings[s]}, loose=all(s in loose for s in ss))
+              for ss in families.values()]
+    groups += [ProductGroup(f"{category}:{name}", ms[0].product, category, list(ms), loose=True)
+               for name, ms in nameless.items()]
+    return groups
+
+
+def _fits_two_products(longer: set[Words]) -> bool:
+    """Whether a set of longer names a name matches holds two that don't match each other: two products."""
+    ordered = sorted(longer)
+    return any(not same_words(list(a), list(b)) for i, a in enumerate(ordered) for b in ordered[i + 1:])
+
+
+def _more_words(a: Words, b: Words) -> bool:
+    """Whether name a has more words than name b, once words one writes apart and the other as one are joined."""
+    return len(set(join_split_words(list(a), list(b)))) > len(set(join_split_words(list(b), list(a))))
+
+
+def _root(parent: dict[Words, Words], w: Words) -> Words:
+    while parent[w] != w:
+        w = parent[w]
+    return w
+
+
+def _join(parent: dict[Words, Words], a: Words, b: Words) -> None:
+    """Puts two names in one group. The smaller root leads, so the result doesn't depend on the order of joins."""
+    ra, rb = _root(parent, a), _root(parent, b)
+    if ra != rb:
+        parent[max(ra, rb)] = min(ra, rb)
+
+
+# --- The name shown ---
+
+def _make_group(category: str, by_words: dict[Words, list[ProductMention]], loose: bool) -> ProductGroup:
+    shown = _shown_words(by_words)
+    mentions = sorted((m for ms in by_words.values() for m in ms), key=lambda m: (m.thread_id, m.comment_id, m.product))
+    return ProductGroup(f"{category}:{' '.join(shown)}", _shown_spelling(by_words[shown]), category, mentions, loose)
+
+
+def _shown_words(by_words: dict[Words, list[ProductMention]]) -> Words:
+    """The most complete of the names written often, or a name that adds its brand at its start."""
+    most = max(len(ms) for ms in by_words.values())
+    often = [w for w in by_words if 2 * len(by_words[w]) >= most]
+    main = max(sorted(often), key=lambda w: (len(w), len(by_words[w])))
+    with_brand = [w for w in by_words if _adds_words_at_start(w, main)]
+    return max(sorted(with_brand), key=lambda w: (len(by_words[w]), len(w))) if with_brand else main
+
+
+def _adds_words_at_start(longer: Words, name: Words) -> bool:
+    """Whether `longer` is `name` with words added at its start: 1zpresso jx pro for jx pro."""
+    a = join_split_words(list(longer), list(name))
+    b = join_split_words(list(name), a)
+    return len(a) > len(b) and a[-len(b):] == b
+
+
+def _shown_spelling(mentions: list[ProductMention]) -> str:
+    """Of the spellings of one name: the most complete as written (letters and digits), then the most common, then
+    one with capital letters (but not all capitals), then the first alphabetically."""
+    counts = Counter(m.product for m in mentions)
+
+    def preference(spelling: str):
+        letters = len("".join(normalize_name(spelling)))
+        capitalised = spelling != spelling.lower() and spelling != spelling.upper()
+        return letters, counts[spelling], capitalised
+
+    return max(sorted(counts), key=preference)

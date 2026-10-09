@@ -1,0 +1,223 @@
+"""Module 4, grouping: every mention of one product, across threads, gathered under one name.
+
+Names are made up or copied from the library's product names (names only, never comment text).
+"""
+
+import random
+
+from engine.extract import CheckResult, ExtractedMention
+from engine.group_products import ProductMention, group_of, group_products, mentions_from_checked
+from engine.match_products import make_aliases
+
+NO_ALIASES = {"skincare": {}, "kitchen": {}, "other": {}}
+
+
+def mention(product: str, thread_id: str = "1fake01", comment_id: str = "c1aaaa", category: str = "skincare",
+            stance: str = "recommend") -> ProductMention:
+    return ProductMention(thread_id=thread_id, comment_id=comment_id, product=product, category=category, stance=stance)
+
+
+def kitchen(product: str, comment_id: str = "c1aaaa", thread_id: str = "1fake01") -> ProductMention:
+    return mention(product, thread_id, comment_id, category="kitchen")
+
+
+def group(mentions, aliases=NO_ALIASES):
+    return group_products(mentions, aliases)
+
+
+def names_by_group(groups) -> list[set[str]]:
+    return sorted((sorted({m.product for m in g.mentions}) for g in groups), key=lambda names: names[0])
+
+
+# --- One product, several names ---
+
+def test_one_product_named_three_ways_in_two_threads_is_one_group():
+    groups = group([
+        mention("CeraVe SA Cleanser", "1fake01"),
+        mention("cerave sa cleanser", "1fake02"),
+        mention("CeraVe Renewing SA Cleanser", "1fake02", "c2bbbb"),
+    ])
+    assert len(groups) == 1
+    assert groups[0].category == "skincare"
+    assert len(groups[0].mentions) == 3
+    assert not groups[0].loose
+
+
+def test_different_products_are_different_groups():
+    groups = group([mention("CeraVe SA Cleanser"), mention("CeraVe Hydrating Cleanser"), mention("Paula's Choice 2% BHA")])
+    assert len(groups) == 3
+
+
+def test_every_mention_lands_in_exactly_one_group():
+    mentions = [mention(name, comment_id=f"c{i}") for i, name in enumerate(
+        ["CeraVe", "CeraVe SA Cleanser", "CeraVe Hydrating Cleanser", "cerave", "the one", "Vaseline"])]
+    groups = group(mentions)
+    grouped = [m for g in groups for m in g.mentions]
+    assert sorted(grouped, key=repr) == sorted(mentions, key=repr)
+
+
+def test_the_same_name_in_two_categories_is_two_groups():
+    groups = group([kitchen("IKEA"), mention("IKEA", category="other")])
+    assert sorted(g.category for g in groups) == ["kitchen", "other"]
+
+
+# --- Brands and loose names never join two products (same_product is not transitive) ---
+
+def test_a_brand_alone_does_not_join_two_products_of_that_brand():
+    # "CeraVe" matches both cleansers, which don't match each other: it stays a group of its own, flagged loose.
+    groups = group([mention("CeraVe"), mention("CeraVe SA Cleanser"), mention("CeraVe Hydrating Cleanser"), mention("cerave")])
+    assert names_by_group(groups) == [["CeraVe", "cerave"], ["CeraVe Hydrating Cleanser"], ["CeraVe SA Cleanser"]]
+    loose = [g for g in groups if g.loose]
+    assert [g.name for g in loose] == ["CeraVe"]
+
+
+def test_a_brand_alone_joins_the_only_product_of_that_brand_around():
+    groups = group([kitchen("Lodge"), kitchen("Lodge 12 inch skillet")])
+    assert len(groups) == 1
+    assert not groups[0].loose
+
+
+def test_a_loose_name_does_not_join_two_products_it_fits():
+    # "CeraVe cleanser" fits both cleansers: it can't count for either.
+    groups = group([mention("CeraVe cleanser"), mention("CeraVe SA Cleanser"), mention("CeraVe Hydrating Cleanser")])
+    assert len(groups) == 3
+    assert [g.name for g in groups if g.loose] == ["CeraVe cleanser"]
+
+
+def test_a_name_without_a_size_does_not_join_two_sizes():
+    groups = group([kitchen("Lodge skillet"), kitchen("Lodge 10 inch skillet"), kitchen("Lodge 12 inch skillet")])
+    assert names_by_group(groups) == [["Lodge 10 inch skillet"], ["Lodge 12 inch skillet"], ["Lodge skillet"]]
+
+
+def test_a_brand_alone_does_not_chain_through_a_looser_name():
+    # Lodge fits a combo cooker and two skillets; "Lodge cast iron" fits both skillets. Neither joins anything.
+    groups = group([kitchen(n) for n in ("Lodge", "Lodge combo cooker", "Lodge cast iron", "Lodge cast iron skillet 10 inch",
+                                          "Lodge cast iron skillet 12 inch")])
+    assert len(groups) == 5
+    assert sorted(g.name for g in groups if g.loose) == ["Lodge", "Lodge cast iron"]
+
+
+def test_model_and_formula_variants_stay_apart():
+    groups = group([kitchen("Timemore C2"), kitchen("Timemore C2 Max"), mention("Beauty of Joseon Dynasty Cream"),
+                    mention("new Dynasty Cream by Beauty of Joseon"), mention("old Dynasty Cream by Beauty of Joseon")])
+    assert len(groups) == 5
+
+
+def test_a_name_made_only_of_filler_words_is_a_loose_group_of_its_own():
+    groups = group([mention("the one"), mention("CeraVe SA Cleanser")])
+    assert len(groups) == 2
+    assert [g.name for g in groups if g.loose] == ["the one"]
+
+
+# --- Known short names ---
+
+def test_known_short_names_join_their_full_names():
+    aliases = {**NO_ALIASES, "skincare": make_aliases({"TO": "The Ordinary"}), "kitchen": make_aliases({"Sage": "Breville"})}
+    groups = group([mention("TO lactic acid"), mention("The Ordinary Lactic Acid"), kitchen("sage smart grinder pro"),
+                    kitchen("Breville Smart Grinder Pro")], aliases)
+    assert sorted(g.name for g in groups) == ["Breville Smart Grinder Pro", "The Ordinary Lactic Acid"]
+
+
+def test_the_shipped_alias_list_is_used_by_default():
+    groups = group_products([mention("LRP sunscreen"), mention("La Roche-Posay sunscreen")])
+    assert len(groups) == 1
+
+
+def test_short_names_only_apply_within_their_category():
+    aliases = {**NO_ALIASES, "skincare": make_aliases({"TO": "The Ordinary"})}
+    groups = group([kitchen("TO lactic acid"), kitchen("The Ordinary Lactic Acid")], aliases)
+    assert len(groups) == 2
+
+
+# --- The name shown, and the key ---
+
+def test_the_name_shown_is_the_one_written_most_often():
+    groups = group([kitchen("Differin", comment_id=f"c{i}") for i in range(3)] + [kitchen("Differin gel")])
+    assert groups[0].name == "Differin"
+
+
+def test_on_a_tie_the_more_complete_name_is_shown():
+    groups = group([mention("CeraVe SA cleanser"), mention("CeraVe Renewing SA Cleanser")])
+    assert groups[0].name == "CeraVe Renewing SA Cleanser"
+
+
+def test_a_more_complete_name_written_at_least_half_as_often_is_shown():
+    # The brand alone is written twice, the product once: the product's name says more.
+    groups = group([mention("Sunday Riley"), mention("Sunday Riley", comment_id="c2"), mention("Sunday Riley water cream")])
+    assert groups[0].name == "Sunday Riley water cream"
+    # A description written once doesn't beat a name written ten times.
+    groups = group([kitchen("Timemore C2", comment_id=f"c{i}") for i in range(10)] + [kitchen("Timemore C2 with titanium coated burrs")])
+    assert groups[0].name == "Timemore C2"
+
+
+def test_the_brand_goes_first_when_some_name_gives_it():
+    # "JX Pro" is written most often, but "1Zpresso JX Pro" says whose it is.
+    groups = group([kitchen("JX Pro", comment_id=f"c{i}") for i in range(3)] + [kitchen("1Zpresso JX Pro")])
+    assert groups[0].name == "1Zpresso JX Pro"
+
+
+def test_the_spelling_shown_is_the_most_common_and_a_short_name_is_shown_written_out():
+    aliases = {**NO_ALIASES, "skincare": make_aliases({"TO": "The Ordinary"})}
+    groups = group([mention("TO lactic acid"), mention("TO lactic acid", comment_id="c2"), mention("The Ordinary lactic acid"),
+                    mention("lodge", category="kitchen"), mention("Lodge", category="kitchen"),
+                    mention("Lodge", category="kitchen", comment_id="c2")], aliases)
+    assert sorted(g.name for g in groups) == ["Lodge", "The Ordinary lactic acid"]
+
+
+def test_keys_name_the_category_and_the_product():
+    groups = group([mention("CeraVe SA Cleanser"), kitchen("Lodge")])
+    assert sorted(g.key for g in groups) == ["kitchen:lodge", "skincare:cerave sa cleanser"]
+
+
+def test_grouping_does_not_depend_on_the_order_of_the_mentions():
+    mentions = [mention(n, comment_id=f"c{i}") for i, n in enumerate(
+        ["CeraVe", "CeraVe SA Cleanser", "cerave sa cleanser", "CeraVe Hydrating Cleanser", "CeraVe cleanser", "Vaseline",
+         "vaseline", "CeraVe Renewing SA Cleanser"])]
+    expected = [(g.key, g.name, g.loose, sorted(g.mentions, key=repr)) for g in group(mentions)]
+    for seed in range(5):
+        shuffled = mentions[:]
+        random.Random(seed).shuffle(shuffled)
+        assert [(g.key, g.name, g.loose, sorted(g.mentions, key=repr)) for g in group(shuffled)] == expected
+
+
+def test_groups_come_biggest_first():
+    groups = group([mention("Vaseline"), mention("CeraVe SA Cleanser"), mention("CeraVe SA Cleanser", comment_id="c2")])
+    assert [len(g.mentions) for g in groups] == [2, 1]
+
+
+def test_a_group_counts_its_stances():
+    groups = group([mention("Vaseline"), mention("Vaseline", comment_id="c2", stance="warn"), mention("vaseline", comment_id="c3")])
+    assert groups[0].stances == {"recommend": 2, "warn": 1}
+
+
+# --- From the checked extractions ---
+
+def test_mentions_come_from_the_kept_mentions_of_every_thread():
+    kept = ExtractedMention(comment_id="c1aaaa", product="CeraVe SA Cleanser", category="skincare", stance="recommend", quote="q")
+    dropped = ExtractedMention(comment_id="c9zzzz", product="Fake", category="skincare", stance="warn", quote="q")
+    checked = {"1fake01": CheckResult(kept=[kept], rejected=[(dropped, "quote not found")])}
+    assert mentions_from_checked(checked) == [
+        ProductMention(thread_id="1fake01", comment_id="c1aaaa", product="CeraVe SA Cleanser", category="skincare", stance="recommend")
+    ]
+
+
+def test_a_misspelling_does_not_let_a_name_join_two_products():
+    # From the library (9 Oct 2026): "lodge pan" fits a Lodge carbon steel pan, and its plural "Lodge pans" fits the
+    # Lodge cast iron pans. Spellings of one name are judged together, so "lodge pan" is loose and joins neither.
+    groups = group([kitchen("lodge pan"), kitchen("Lodge pans"), kitchen("lodge 12 inch carbon steel fry pan"),
+                    kitchen("Lodge cast iron pans")])
+    assert names_by_group(groups) == [["Lodge cast iron pans"], ["Lodge pans", "lodge pan"], ["lodge 12 inch carbon steel fry pan"]]
+    assert [g.name for g in groups if g.loose] == ["lodge pan"]
+
+
+
+# --- For the pipeline: each mention's product key and shown name (engine.rank.ScoredMention) ---
+
+def test_each_mention_can_be_looked_up_to_its_group():
+    mentions = [mention("CeraVe SA Cleanser"), mention("cerave sa cleanser", "1fake02"), mention("Vaseline", comment_id="c2")]
+    groups = group(mentions)
+    lookup = group_of(groups)
+    assert set(lookup) == set(mentions)
+    assert lookup[mentions[1]].key == "skincare:cerave sa cleanser"
+    assert lookup[mentions[1]].name == "CeraVe SA Cleanser"
+    assert lookup[mentions[2]].name == "Vaseline"

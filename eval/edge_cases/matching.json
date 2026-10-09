@@ -1,0 +1,681 @@
+{
+ "approved": false,
+ "approved_note": "Draft by Claude, 9 Oct 2026: Noemi reviews. Names copied from the library's product names (names only). 'same' means the two names can name one product: a brand or line alone counts as the same as its products (grouping keeps it apart when it fits several), and an unmarked name next to 'new' or 'old' counts as different.",
+ "pairs": [
+  {
+   "id": "m01",
+   "a": "TO lactic acid",
+   "b": "The Ordinary Lactic Acid 10% + HA",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "short name",
+   "note": "TO is The Ordinary"
+  },
+  {
+   "id": "m02",
+   "a": "TO niacinamide",
+   "b": "the Ordinary Niacinamide 10% and Zinc 1%",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "short name",
+   "note": ""
+  },
+  {
+   "id": "m03",
+   "a": "LRP",
+   "b": "La Roche Posay",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "short name",
+   "note": "the brand's initials"
+  },
+  {
+   "id": "m04",
+   "a": "KGD lotion",
+   "b": "Koh Gen Do Lotion I",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "short name",
+   "note": ""
+  },
+  {
+   "id": "m05",
+   "a": "BCIZ",
+   "b": "banila co clean it zero",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "short name",
+   "note": "a product's initials"
+  },
+  {
+   "id": "m06",
+   "a": "HL Hyaluronic Lotion Moist",
+   "b": "Hada Labo Perfect Gel",
+   "category": "skincare",
+   "same": false,
+   "edge_case": "short name",
+   "note": "same brand, two products"
+  },
+  {
+   "id": "m07",
+   "a": "BOJ red bean water gel",
+   "b": "Beauty of Joseon Dynasty Cream",
+   "category": "skincare",
+   "same": false,
+   "edge_case": "short name",
+   "note": "same brand, two products"
+  },
+  {
+   "id": "m08",
+   "a": "SGP",
+   "b": "Breville Smart Grinder Pro",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "short name",
+   "note": ""
+  },
+  {
+   "id": "m09",
+   "a": "1Z K plus",
+   "b": "1ZPresso K Plus",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "short name",
+   "note": "1Z is 1Zpresso"
+  },
+  {
+   "id": "m10",
+   "a": "C2",
+   "b": "Timemore C2",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "short name",
+   "note": "a model written without its brand"
+  },
+  {
+   "id": "m11",
+   "a": "K2",
+   "b": "Kingrinder K2",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "short name",
+   "note": ""
+  },
+  {
+   "id": "m12",
+   "a": "sage smart grinder pro",
+   "b": "Breville Smart Grinder Pro",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "US and EU name",
+   "note": "Breville sells as Sage in the UK and EU"
+  },
+  {
+   "id": "m13",
+   "a": "Skerton",
+   "b": "Hario Skerton",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "line without brand",
+   "note": ""
+  },
+  {
+   "id": "m14",
+   "a": "Encore",
+   "b": "Baratza Encore",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "line without brand",
+   "note": ""
+  },
+  {
+   "id": "m15",
+   "a": "Dedica",
+   "b": "Delonghi Dedica",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "line without brand",
+   "note": ""
+  },
+  {
+   "id": "m16",
+   "a": "Mild Airy Finish",
+   "b": "Etude House Sunprise Mild Airy Finish",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "line without brand",
+   "note": ""
+  },
+  {
+   "id": "m17",
+   "a": "JX Pro",
+   "b": "1zpresso JX-Pro",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "line without brand",
+   "note": ""
+  },
+  {
+   "id": "m18",
+   "a": "Missha soft finish",
+   "b": "Missha All Around Safe Block Soft Finish Sun Milk",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "line without brand",
+   "note": ""
+  },
+  {
+   "id": "m19",
+   "a": "Comandante",
+   "b": "Comandante C40",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "brand alone",
+   "note": "a brand alone can name its product; grouping keeps it apart when it fits several"
+  },
+  {
+   "id": "m20",
+   "a": "Differin",
+   "b": "Differin gel",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "brand alone",
+   "note": ""
+  },
+  {
+   "id": "m21",
+   "a": "Tir Tir",
+   "b": "TirTir Milk Skin Toner",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "brand alone",
+   "note": "and a brand written in two words"
+  },
+  {
+   "id": "m22",
+   "a": "Milwaukee fastback",
+   "b": "Klein Fastback",
+   "category": "other",
+   "same": false,
+   "edge_case": "brand alone",
+   "note": "two brands, the same line name"
+  },
+  {
+   "id": "m23",
+   "a": "Timemore C2",
+   "b": "Timemore C2 Max",
+   "category": "kitchen",
+   "same": false,
+   "edge_case": "model variant",
+   "note": ""
+  },
+  {
+   "id": "m24",
+   "a": "1Zpresso JX",
+   "b": "1zpresso JX pro",
+   "category": "kitchen",
+   "same": false,
+   "edge_case": "model variant",
+   "note": ""
+  },
+  {
+   "id": "m25",
+   "a": "Hario Skerton",
+   "b": "Hario Skerton Pro",
+   "category": "kitchen",
+   "same": false,
+   "edge_case": "model variant",
+   "note": ""
+  },
+  {
+   "id": "m26",
+   "a": "Aeropress",
+   "b": "Aeropress Go",
+   "category": "kitchen",
+   "same": false,
+   "edge_case": "model variant",
+   "note": ""
+  },
+  {
+   "id": "m27",
+   "a": "Lido 2",
+   "b": "Lido 3",
+   "category": "kitchen",
+   "same": false,
+   "edge_case": "model variant",
+   "note": ""
+  },
+  {
+   "id": "m28",
+   "a": "Timemore C2",
+   "b": "Timemore C3",
+   "category": "kitchen",
+   "same": false,
+   "edge_case": "model variant",
+   "note": ""
+  },
+  {
+   "id": "m29",
+   "a": "Kingrinder K2",
+   "b": "Kingrinder K4",
+   "category": "kitchen",
+   "same": false,
+   "edge_case": "model variant",
+   "note": ""
+  },
+  {
+   "id": "m30",
+   "a": "Skin Aqua UV Moisture Milk SPF50",
+   "b": "Skin Aqua UV Super Moisture Milk SPF50",
+   "category": "skincare",
+   "same": false,
+   "edge_case": "model variant",
+   "note": "Super Moisture Milk is another product"
+  },
+  {
+   "id": "m31",
+   "a": "lodge mini cast iron pan",
+   "b": "lodge cast iron pan",
+   "category": "kitchen",
+   "same": false,
+   "edge_case": "model variant",
+   "note": ""
+  },
+  {
+   "id": "m32",
+   "a": "Hario Mini-Slim (MSS-1)",
+   "b": "Hario slim",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "model variant",
+   "note": "the Slim is the Mini-Slim"
+  },
+  {
+   "id": "m33",
+   "a": "1zpresso JX (non pro)",
+   "b": "1zpresso JX",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "model variant",
+   "note": "non pro says it is the plain JX"
+  },
+  {
+   "id": "m34",
+   "a": "lodge 10\"",
+   "b": "Lodge 12\"",
+   "category": "kitchen",
+   "same": false,
+   "edge_case": "size",
+   "note": ""
+  },
+  {
+   "id": "m35",
+   "a": "15” lodge skillet",
+   "b": "lodge 12”",
+   "category": "kitchen",
+   "same": false,
+   "edge_case": "size",
+   "note": ""
+  },
+  {
+   "id": "m36",
+   "a": "9 mm MM Factory pan",
+   "b": "12 mm MM Factory pan",
+   "category": "kitchen",
+   "same": false,
+   "edge_case": "size",
+   "note": "two thicknesses"
+  },
+  {
+   "id": "m37",
+   "a": "Advanced Retinoid",
+   "b": "Advanced Retinoid 2%",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "strength",
+   "note": "the product only comes at 2%"
+  },
+  {
+   "id": "m38",
+   "a": "The Ordinary's 2% Retinol",
+   "b": "The Ordinary's Advanced Retinoid",
+   "category": "skincare",
+   "same": false,
+   "edge_case": "strength",
+   "note": ""
+  },
+  {
+   "id": "m39",
+   "a": "Paula’s choice 2% BHA",
+   "b": "Paula's Choice 2% BHA Skin Perfecting Liquid",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "strength",
+   "note": ""
+  },
+  {
+   "id": "m40",
+   "a": "new Dynasty Cream by Beauty of Joseon",
+   "b": "old Dynasty Cream by Beauty of Joseon",
+   "category": "skincare",
+   "same": false,
+   "edge_case": "old and new formula",
+   "note": ""
+  },
+  {
+   "id": "m41",
+   "a": "Beauty of Joseon Dynasty Cream",
+   "b": "new Dynasty Cream by Beauty of Joseon",
+   "category": "skincare",
+   "same": false,
+   "edge_case": "old and new formula",
+   "note": "an unmarked name can't tell which formula"
+  },
+  {
+   "id": "m42",
+   "a": "old Mastercraft utility knife",
+   "b": "modern Mastercraft utility knife",
+   "category": "other",
+   "same": false,
+   "edge_case": "old and new formula",
+   "note": ""
+  },
+  {
+   "id": "m43",
+   "a": "old Dienes 88",
+   "b": "vintage Dienes 88",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "old and new formula",
+   "note": "old and vintage mean the same here"
+  },
+  {
+   "id": "m44",
+   "a": "Brewville smart grinder pro",
+   "b": "Breville Smart Grinder Pro",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "spelling",
+   "note": ""
+  },
+  {
+   "id": "m45",
+   "a": "Barratza Encore",
+   "b": "Baratza Encore",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "spelling",
+   "note": ""
+  },
+  {
+   "id": "m46",
+   "a": "Pyonkang Yul Moisture Cream",
+   "b": "Pyunkang Yul moisture cream",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "spelling",
+   "note": ""
+  },
+  {
+   "id": "m47",
+   "a": "Pyukang Yul Essence Toner",
+   "b": "Pyunkang Yul Nutrition Cream",
+   "category": "skincare",
+   "same": false,
+   "edge_case": "spelling",
+   "note": "a misspelled brand, another product"
+  },
+  {
+   "id": "m48",
+   "a": "Wustof CLASSIC",
+   "b": "Wusthof Classic",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "spelling",
+   "note": ""
+  },
+  {
+   "id": "m49",
+   "a": "Illyoon Ceramide Ato Concentrate Cream",
+   "b": "Illiyoon ceramide ato concentrate cream",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "spelling",
+   "note": ""
+  },
+  {
+   "id": "m50",
+   "a": "Le Creseut",
+   "b": "Le Creuset",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "spelling",
+   "note": "letters moved further than one place"
+  },
+  {
+   "id": "m51",
+   "a": "Commandante",
+   "b": "Comandante C40",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "spelling",
+   "note": "a misspelled brand alone"
+  },
+  {
+   "id": "m52",
+   "a": "Kikumasamume Sake Skin Care Cream",
+   "b": "Kiku Sake cream",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "spelling",
+   "note": "a nickname and a misspelling"
+  },
+  {
+   "id": "m53",
+   "a": "Etude House SoonJung 2x Barrier Intensive Cream",
+   "b": "Soon Jung 2x Intensive Barrier Cream",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "spacing",
+   "note": "and word order"
+  },
+  {
+   "id": "m54",
+   "a": "1zpresso JMax",
+   "b": "1Zpresso J-Max",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "spacing",
+   "note": ""
+  },
+  {
+   "id": "m55",
+   "a": "Biore Watery Essence SPF 50",
+   "b": "Biore Watery Essence spf50",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "spacing",
+   "note": ""
+  },
+  {
+   "id": "m56",
+   "a": "All Clad",
+   "b": "Allclad",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "spacing",
+   "note": ""
+  },
+  {
+   "id": "m57",
+   "a": "Comfy Water Sunblock",
+   "b": "purito comfy water sun block",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "spacing",
+   "note": ""
+  },
+  {
+   "id": "m58",
+   "a": "Biore UV perfect milk in the blue bottle",
+   "b": "Biore Perfect Milk blue bottle",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "description",
+   "note": ""
+  },
+  {
+   "id": "m59",
+   "a": "kombucha essence by dr. ceuracle",
+   "b": "Dr Ceuracle kombucha essence",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "description",
+   "note": ""
+  },
+  {
+   "id": "m60",
+   "a": "Encore Baratza burr grinder",
+   "b": "Baratza Encore",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "description",
+   "note": ""
+  },
+  {
+   "id": "m61",
+   "a": "Cuisinart CPK-17",
+   "b": "Cuisinart CPK-17 PerfecTemp 1.7-Liter Stainless",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "description",
+   "note": ""
+  },
+  {
+   "id": "m62",
+   "a": "Eucerin dry touch",
+   "b": "Eucerin Sun Gel-Creme Oil Control Dry Touch SPF 50+",
+   "category": "skincare",
+   "same": true,
+   "edge_case": "description",
+   "note": ""
+  },
+  {
+   "id": "m63",
+   "a": "Fellow Stag kettle",
+   "b": "Fellow kettle",
+   "category": "kitchen",
+   "same": true,
+   "edge_case": "description",
+   "note": ""
+  },
+  {
+   "id": "m64",
+   "a": "CeraVe Hydrating Cleanser",
+   "b": "Cerave SA cleanser",
+   "category": "skincare",
+   "same": false,
+   "edge_case": "different product",
+   "note": ""
+  },
+  {
+   "id": "m65",
+   "a": "Round Lab Birch Juice Pads",
+   "b": "Round Lab birch juice cream",
+   "category": "skincare",
+   "same": false,
+   "edge_case": "different product",
+   "note": ""
+  },
+  {
+   "id": "m66",
+   "a": "Cerave cream",
+   "b": "CeraVe Cream to Foam cleanser",
+   "category": "skincare",
+   "same": false,
+   "edge_case": "different product",
+   "note": "a cream and a cleanser"
+  },
+  {
+   "id": "m67",
+   "a": "Isntree Yam Root Vegan Milk Cleanser",
+   "b": "yam root vegan milk cream",
+   "category": "skincare",
+   "same": false,
+   "edge_case": "different product",
+   "note": ""
+  },
+  {
+   "id": "m68",
+   "a": "Shisheido Perfect Cleansing Oil blue bottle",
+   "b": "Shisheido Perfect Cleansing Oil transparent bottle",
+   "category": "skincare",
+   "same": false,
+   "edge_case": "different product",
+   "note": ""
+  },
+  {
+   "id": "m69",
+   "a": "Biore blue bottle",
+   "b": "Biore white bottle",
+   "category": "skincare",
+   "same": false,
+   "edge_case": "different product",
+   "note": ""
+  },
+  {
+   "id": "m70",
+   "a": "Nature Republic blue line",
+   "b": "Nature Republic green line",
+   "category": "skincare",
+   "same": false,
+   "edge_case": "different product",
+   "note": ""
+  },
+  {
+   "id": "m71",
+   "a": "Skin1004 Centella ampoule",
+   "b": "Skin1004 Probio Cica Ampoule",
+   "category": "skincare",
+   "same": false,
+   "edge_case": "different product",
+   "note": ""
+  },
+  {
+   "id": "m72",
+   "a": "Illiyoon ATO gel",
+   "b": "Illiyoon ato cream",
+   "category": "skincare",
+   "same": false,
+   "edge_case": "different product",
+   "note": ""
+  },
+  {
+   "id": "m73",
+   "a": "Wilfa Svart",
+   "b": "Wilfa Uniform",
+   "category": "kitchen",
+   "same": false,
+   "edge_case": "different product",
+   "note": ""
+  },
+  {
+   "id": "m74",
+   "a": "Breville Bambino",
+   "b": "Breville Smart Grinder Pro",
+   "category": "kitchen",
+   "same": false,
+   "edge_case": "different product",
+   "note": ""
+  },
+  {
+   "id": "m75",
+   "a": "Dr Ceracle cream",
+   "b": "Dr Ceuracle kombucha essence",
+   "category": "skincare",
+   "same": false,
+   "edge_case": "different product",
+   "note": "a misspelled brand, another product"
+  }
+ ]
+}

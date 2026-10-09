@@ -83,3 +83,14 @@ QUOTE_MAX_WORDS = 50
 # Extraction reads at most this many comments per thread, the highest-scored (8 Oct 2026): the long tail of a
 # 400-comment thread adds little, and highly upvoted comments carry the community's endorsement.
 EXTRACT_MAX_COMMENTS = 150
+
+# --- Module 4: product matching (proposed 9 Oct 2026) ---
+# Proposed by Claude, for Noemi to approve: words that name another model or another version of a product. A name
+# found inside a longer one is the same product, unless the longer name adds one of these words: "Timemore C2" and
+# "Timemore C2 Max" are two grinders, "Dynasty Cream" and "new Dynasty Cream" two formulas.
+PRODUCT_VARIANT_WORDS = frozenset({
+    "pro", "max", "plus", "mini", "lite", "slim", "go",  # models
+    "new", "newest", "old", "modern", "vintage", "antique",  # versions: a new formula, an old casting
+})
+# The brief's target for module 4: at least this share of the labelled same-or-different pairs right.
+MATCHING_TARGET = 0.90
