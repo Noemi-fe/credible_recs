@@ -101,11 +101,29 @@ class Thread(Record):
     url: WebUrl
     collected_at: UtcDatetime  # when the data was saved; needed for the deletion rule and for recency
     comments: list[Comment]
+    # Where the thread was read (Noemi, 9 Oct 2026): "parse" is Reddit itself, through Parse; "arctic_shift" is the
+    # archive, which may still hold comments people later deleted on Reddit; "gold" is the hand-collected gold set.
+    # Files saved before 9 Oct 2026 have no such key and still load (None): they were all read through Parse.
+    read_from: Literal["parse", "arctic_shift", "gold"] | None = None
+    # When Reddit itself was last read for this thread (a "live check"). None when it never was: a thread read from
+    # the archive and not checked yet, or an older file, whose collected_at already says when Parse read it.
+    checked_live_at: UtcDatetime | None = None
 
     @field_validator("community")
     @classmethod
     def _drop_r_prefix(cls, community: str) -> str:
         return community.strip().removeprefix("r/")
+
+    def last_checked_live(self) -> datetime | None:
+        """When Reddit itself was last read for this thread, or None if it never was.
+
+        A thread read through Parse was read on Reddit when it was collected, so its collected_at counts (older files,
+        all read through Parse, too). A thread read from the archive counts only once a live check has read it on
+        Reddit (checked_live_at).
+        """
+        if self.checked_live_at is not None:
+            return self.checked_live_at
+        return None if self.read_from == "arctic_shift" else self.collected_at
 
 
 class _LabelRow(Record):

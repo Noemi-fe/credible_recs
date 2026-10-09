@@ -225,7 +225,13 @@ def category_for(subreddit: str) -> str:
     raise ValueError(f"r/{subreddit} is not one of the decided subreddits ({decided}); nothing was fetched")
 
 
-def to_thread(data: dict, category: str, fetched_at: datetime) -> Thread:
+def to_thread(data: dict, category: str, fetched_at: datetime, read_from: str = "parse") -> Thread:
+    """Our Thread from an answer shaped like Parse's: {"post": {...}, "comments": [...]}, with Reddit's own field names.
+
+    `read_from` says where the answer came from. Parse ("parse", the default) reads Reddit itself, so the thread
+    counts as checked live when it was fetched. Arctic Shift's archive ("arctic_shift") answers with the same field
+    names, but may still hold comments people later deleted: its threads aren't checked live until Parse reads them.
+    """
     post = data["post"]
     post_id = _plain_id(post["id"])
     subreddit = post["subreddit"]
@@ -244,6 +250,8 @@ def to_thread(data: dict, category: str, fetched_at: datetime) -> Thread:
         url=_web_url(post.get("permalink")) or f"https://www.reddit.com/r/{subreddit}/comments/{post_id}/",
         collected_at=fetched_at,
         comments=comments,
+        read_from=read_from,
+        checked_live_at=fetched_at if read_from == "parse" else None,
     )
 
 
