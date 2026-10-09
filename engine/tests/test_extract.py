@@ -556,3 +556,69 @@ def test_a_whole_quote_block_copying_someone_else_is_still_rejected(where):
     thread = Thread.model_validate(make_thread(comments=comments, **post))
     result = check_extraction(Extraction.model_validate(make_extraction(mentions=[mention(product="Hada Labo Gokujyun lotion", quote=copied)])), thread)
     assert result.kept == [] and "quoted" in result.rejected[0][1]
+
+
+# --- Review fixes, 9 Oct 2026 ---
+
+QUOTED_PARENT = "The Acme kettle broke after a week.\nWorst purchase ever, never buy the Acme kettle."
+
+
+@pytest.mark.parametrize("marker", [">", "&gt;", "> "])
+def test_a_line_straight_after_a_quoted_line_is_still_quoted(marker):
+    # On Reddit a line right after a ">" line, with no blank line between, belongs to the same quoted block.
+    reply = f"{marker}The Acme kettle broke after a week.\nWorst purchase ever, never buy the Acme kettle.\n\nReally? Mine is fine."
+    thread = Thread.model_validate(make_thread(comments=[
+        make_comment("p1aaaa", body=QUOTED_PARENT), make_comment("r1bbbb", parent_id="p1aaaa", body=reply)]))
+    second_line = mention(comment_id="r1bbbb", product="Acme kettle", category="kitchen", stance="warn",
+                          quote="Worst purchase ever, never buy the Acme kettle.")
+    own = mention(comment_id="r1bbbb", product="Acme kettle", category="kitchen", stance="recommend", quote="Mine is fine.")
+    result = check_extraction(Extraction.model_validate(make_extraction(mentions=[second_line, own])), thread)
+    assert [m.quote for m in result.kept] == ["Mine is fine."]
+    assert "quoted" in result.rejected[0][1]
+
+
+def test_a_whole_quote_block_continued_without_markers_is_still_the_writers_own_words():
+    # The exception for a comment written entirely as a quoted block holds when its later lines carry no ">".
+    body = "> **Best:** Hada Labo Gokujyun lotion.\nIt made my dry skin plump in a week."
+    thread = Thread.model_validate(make_thread(comments=[make_comment("c1aaaa", body=body)]))
+    own = mention(product="Hada Labo Gokujyun lotion", quote="It made my dry skin plump in a week.")
+    result = check_extraction(Extraction.model_validate(make_extraction(mentions=[own])), thread)
+    assert [m.product for m in result.kept] == ["Hada Labo Gokujyun lotion"]
+
+
+@pytest.mark.parametrize("joiner", ["&#32;", "&nbsp;", "&#10;"])
+def test_the_word_limit_counts_the_words_the_quote_matches(joiner):
+    # A quote joined with HTML entities is one "word" as written, but matches every word of the comment.
+    words = [f"word{n}" for n in range(QUOTE_MAX_WORDS + 30)]
+    body = "I love the Acme kettle. " + " ".join(words)
+    quote = joiner.join(["I", "love", "the", "Acme", "kettle."] + words)
+    thread = Thread.model_validate(make_thread(comments=[make_comment("c1aaaa", body=body)]))
+    result = check_extraction(Extraction.model_validate(make_extraction(mentions=[mention(product="Acme kettle", category="kitchen", quote=quote)])), thread)
+    assert result.kept == []
+    assert f"{len(words) + 5} words" in result.rejected[0][1]
+
+
+@pytest.mark.parametrize("status", ["deleted", "removed"])
+def test_a_reply_about_a_deleted_comment_above_is_rejected(status):
+    # The product would be named only in text that is gone: it can't be checked, and the deletion rule applies.
+    thread = Thread.model_validate(make_thread(comments=[
+        make_comment("p1aaaa", body=f"[{status}]", status=status, author=None),
+        make_comment("r1bbbb", parent_id="p1aaaa", body="Had this one 13 years, still perfect.")]))
+    inherited = mention(comment_id="r1bbbb", product="Acme kettle", category="kitchen",
+                        quote="Had this one 13 years, still perfect.", refers_to="parent")
+    result = check_extraction(Extraction.model_validate(make_extraction(mentions=[inherited])), thread)
+    assert result.kept == []
+    assert status in result.rejected[0][1] and "p1aaaa" in result.rejected[0][1]
+
+
+@pytest.mark.parametrize("status", ["deleted", "removed"])
+def test_a_reply_about_a_deleted_comment_further_up_is_rejected(status):
+    thread = Thread.model_validate(make_thread(comments=[
+        make_comment("c1aaaa", body=f"[{status}]", status=status, author=None),
+        make_comment("c2bbbb", parent_id="c1aaaa", body="How did you like it?"),
+        make_comment("c3cccc", parent_id="c2bbbb", body="Still love it, boils in two minutes.")]))
+    earlier = mention(comment_id="c3cccc", product="Cuisinart CPK-17", category="kitchen",
+                      quote="Still love it, boils in two minutes.", refers_to="earlier")
+    result = check_extraction(Extraction.model_validate(make_extraction(mentions=[earlier])), thread)
+    assert result.kept == []
+    assert status in result.rejected[0][1] and "c1aaaa" in result.rejected[0][1]

@@ -308,7 +308,14 @@ def _endorsement_signs(comment: Comment, thread: Thread, agreements: Iterable[Ex
         if beaten >= config.WELL_UPVOTED_SHARE_BEATEN:
             signs.append(Sign("well upvoted", f"{comment.score} points, more than {beaten:.0%} of this thread's comments", "good"))
     parent_of = {c.id: c.parent_id for c in thread.comments}
-    agreeing = {a.comment_id for a in agreements if parent_of.get(a.comment_id) == comment.id}
+    # A reply by the writer themselves isn't someone else backing them up (review fixes, 9 Oct 2026). Only a reply
+    # known to be theirs is left out: two deleted accounts can't be told apart.
+    writer_of = {c.id: c.author.name.casefold() for c in thread.comments if c.author is not None}
+    me = comment.author.name.casefold() if comment.author is not None else None
+    agreeing = {
+        a.comment_id for a in agreements
+        if parent_of.get(a.comment_id) == comment.id and not (me is not None and writer_of.get(a.comment_id) == me)
+    }
     if agreeing:
         n = len(agreeing)
         signs.append(Sign("replies agree", f"{n} {'reply agrees' if n == 1 else 'replies agree'}", "good"))
@@ -532,7 +539,7 @@ def _longest_use(text: str, written: datetime | None) -> tuple[float | None, str
     """The longest time of use the text gives, in months, with its badge ("2 years of use"); None if it gives none."""
     found: list[tuple[float, str]] = []
     for match in _DURATION.finditer(text):
-        if _is_an_age(text, match.start()) or _is_not_a_duration(text, match):
+        if _is_an_age(text, match) or _is_not_a_duration(text, match):
             continue
         count_text, unit = match.group(1), match.group(2)
         count = float(count_text) if count_text[0].isdigit() else _NUMBER_WORDS[count_text]
@@ -554,12 +561,19 @@ _UNIT_NAMES = {"decade": "decade", "year": "year", "yr": "year", "month": "month
 # last, not how long the writer has used theirs (9 Oct 2026: it gave the badge "100 years of use").
 _CLAIMED_LIFE = re.compile(r"\b(?:can|could|will|would|should|may|might|supposed to|built to|made to|designed to)"
                            r"(?:\s+\w+){0,2}\s+last\s+(?:for\s+|up to\s+|over\s+)?$")
+# "a 5 year warranty", "2-year limited warranty", "10 years guarantee": what the maker promises, not use (review
+# fixes, 9 Oct 2026: it gave the badge "5 years of use"). Read right after the time.
+_WARRANTY_AFTER = re.compile(r"^[\s-]*(?:(?:limited|full|extended|manufacturer'?s?|parts|of)\s+)?"
+                             r"(?:warrant(?:y|ies)|guarantee)")
 
 
 def _is_not_a_duration(text: str, match: re.Match) -> bool:
     """Whether "a day" or "one day" here is a frequency ("twice a day", "once a week") or a figure of speech
-    ("one day it broke"), or the time is how long something can last rather than how long the writer used it."""
+    ("one day it broke"), or the time is how long something can last rather than how long the writer used it,
+    or how long its warranty is."""
     if _CLAIMED_LIFE.search(text[max(0, match.start() - 60):match.start()]):
+        return True
+    if _WARRANTY_AFTER.search(text[match.end():match.end() + 40]):
         return True
     words_before = text[:match.start()].split()[-1:]
     previous = words_before[0] if words_before else ""
@@ -568,10 +582,27 @@ def _is_not_a_duration(text: str, match: re.Match) -> bool:
     return match.group(0) in ("one day", "some day") and previous not in ("for", "after", "within", "in")
 
 
-def _is_an_age(text: str, start: int) -> bool:
-    """Whether a number starting at `start` is the writer's age ("I'm 35 years old"), not a time of use."""
-    before = text[max(0, start - 8):start]
-    return bool(re.search(r"\b(?:i'?m|i am|im|age|aged)\s+$", before))
+# Words for a person, after "N years old": "my 6 year old son", "40 year old guy here" (review fixes, 9 Oct 2026).
+_OLD_PERSON_AFTER = re.compile(r"^[\s-]+old[\s-]+(?:sons?|daughters?|kids?|child|children|bab(?:y|ies)|wom[ae]n|m[ae]n"
+                               r"|guys?|girls?|boys?|husband|wife)\b")
+_OLD_AFTER = re.compile(r"^[\s-]+old\b")
+
+
+def _is_an_age(text: str, match: re.Match) -> bool:
+    """Whether the time found is a person's age, not a time of use: the writer's ("I'm 35 years old"), or anyone's.
+
+    "N years old" is a person's age after "a" ("as a 30 year old", "a 30 year old with oily skin") or before a word
+    for a person ("my 6 year old son", "our 3-year-old daughter", "40 year old guy here"). After "my" or "our" with
+    no such word, it is the age of the writer's own thing, which is how long they've had it: "My 20 year old Lodge
+    skillet" stays a time of use. (Review fixes, 9 Oct 2026: ages and warranties gave badges like "30 years of use".)
+    """
+    before = text[max(0, match.start() - 8):match.start()]
+    if re.search(r"\b(?:i'?m|i am|im|age|aged)\s+$", before):
+        return True
+    after = text[match.end():match.end() + 30]
+    if _OLD_PERSON_AFTER.search(after):
+        return True
+    return bool(re.search(r"\ba\s+$", before) and _OLD_AFTER.search(after))
 
 
 # Honesty.

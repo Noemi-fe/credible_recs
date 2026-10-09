@@ -165,3 +165,19 @@ def test_each_note_can_be_looked_up_to_its_kinds_and_placements_list_the_product
     assert sorted(g.key for g in lookup[either]) == ["carbon steel", "cast iron"]
     assert plain not in lookup  # names no kind
     assert placements(groups) == {"cast iron": ["kitchen:lodge cast iron skillet"], "carbon steel": []}
+
+
+# --- Review fixes, 9 Oct 2026 ---
+
+def test_a_note_naming_two_kinds_names_neither_group():
+    # "cast iron or carbon steel pan" is about two kinds: if it named both groups, they'd show the same name.
+    groups = kinds([note("cast iron or carbon steel pan")], product_type="frying pan")
+    assert sorted(g.name for g in groups) == ["carbon steel", "cast iron"]  # named by their key words
+
+
+def test_a_group_is_named_by_the_notes_about_it_alone():
+    groups = kinds([note("cast iron or carbon steel pan"), note("cast iron or carbon steel pan", comment_id="c2"),
+                    note("carbon steel pan", comment_id="c3")], product_type="frying pan")
+    by_key = {g.key: g.name for g in groups}
+    assert by_key == {"carbon steel": "carbon steel pan", "cast iron": "cast iron"}
+    assert len(set(by_key.values())) == len(by_key)

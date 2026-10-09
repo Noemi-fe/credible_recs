@@ -4,6 +4,8 @@ All data is made up (engine/tests/ranking_factories.py). Weights follow its simp
 long-term use make 1.0, medium voice and short-term use 0.36, and so on; warnings are negative.
 """
 
+import dataclasses
+
 import pytest
 
 from engine import config
@@ -395,3 +397,43 @@ def test_badges_given_as_a_list_are_kept_as_a_tuple():
         evidence="long-term use", quote="q", badges=["3 years of use"],
     )
     assert m.badges == ("3 years of use",)
+
+
+# --- Review fixes, 9 Oct 2026 ---
+
+def by(writer: str | None, item):
+    """The same mention or note, written by `writer` (None: a deleted account)."""
+    return dataclasses.replace(item, author=writer)
+
+
+def test_one_writer_counts_once_per_product_across_comments_and_threads():
+    # One person praising the same kettle in three comments, in two threads, is still one voice: no one votes twice.
+    same_writer = [by("one_person", mention("Zojirushi kettle", thread)) for thread in ("t1", "t1", "t2")]
+    alone = rank_products(same_writer, "kitchen").products[0]
+    assert alone.breakdown.credible_recommends == 1
+    assert alone.breakdown.recommends == 1 and alone.breakdown.recommend_voices["high"] == 1
+    assert not alone.qualifies
+    others = [by("second_person", mention("Zojirushi kettle", "t1")), by("third_person", mention("Zojirushi kettle", "t2"))]
+    assert rank_products(same_writer + others, "kitchen").products[0].breakdown.credible_recommends == 3
+
+
+def test_a_writers_strongest_mention_is_the_one_kept():
+    weak = by("one_person", mention("Zojirushi kettle", "t1", evidence="short-term use"))
+    strong = by("one_person", mention("Zojirushi kettle", "t2", evidence="long-term use"))
+    kept = rank_products([weak, strong], "kitchen").products[0].mentions
+    assert kept == (strong,)
+
+
+def test_writers_are_matched_by_name_and_deleted_accounts_count_per_comment():
+    # Names are given lowercased by the pipeline; a deleted account (None) can't be matched, so each comment counts.
+    deleted = [by(None, mention("Zojirushi kettle", thread)) for thread in ("t1", "t2", "t1")]
+    assert rank_products(deleted, "kitchen").products[0].breakdown.credible_recommends == 3
+    assert rank_products(deleted, "kitchen").products[0].qualifies
+
+
+def test_one_writer_counts_once_per_kind():
+    notes = [by("one_person", note("Japanese gyuto", thread, comment=f"cW{i}")) for i, thread in enumerate(("t1", "t2", "t1"))]
+    result = rank_products(KNIVES, "kitchen", notes, PLACEMENTS, kind_bonus=1.0)
+    assert result.kinds[0].credible_notes == 1
+    assert len(result.kind_notes) == 1
+    assert result.leading_kind is None

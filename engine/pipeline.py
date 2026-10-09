@@ -6,16 +6,23 @@
             ──6 ranking──> scores, minimum-evidence rule, skip list ──7 answer──> picks with quotes re-verified
 
 Every step is a module of its own; this file only passes each one's output to the next. Three filters sit here:
-- only threads about the product are read: its title or post must name it (engine.sources.relevance of at least
-  PIPELINE_MIN_RELEVANCE). A coffee thread that mentions kettles in passing isn't about kettles, and its grinders
-  would otherwise be ranked for a kettle request;
+- only threads about the product are read: its title or post must name it (engine.sources.mentions_product).
+  Comments don't count, however many name it: a coffee thread whose comments mention kettles in passing isn't
+  about kettles, and its grinders would otherwise be ranked for a kettle request (review fixes, 9 Oct 2026: five
+  such comments used to be enough). Of those, only threads the AI has already read (extracted) can be used, and
+  the reading limit (max_threads) counts only those: threads still waiting for the AI are listed on the result
+  (not_extracted) instead of taking a slot and then being dropped;
 - products of another type are left out: a skillet praised in a kettle thread is a real product, but not an answer
   to a kettle request. A product counts as another type when one of its names says so ("Lodge cast iron
   skillet") and none names the requested type. A name that says nothing ("Zojirushi") stays in. (Rules for now;
   the AI could tag each product's type when it reads a thread.)
 - loose groups (a brand or line that fits several products, such as "Lodge" or "CeraVe") are left out of the
   ranking unless PIPELINE_INCLUDE_LOOSE says otherwise: their mentions can't count for any one product.
-Both lists are kept on the result, so nothing is dropped silently.
+Both lists are kept on the result, so nothing is dropped silently; so are the "what to look for" notes that name
+no kind (notes_without_kind, engine.group_kinds step 5), which the ranking and the answer can't use.
+
+Each mention carries its writer's name (lowercased), so the ranking counts one writer once per product, however
+many comments or threads they praise it in (engine.rank).
 
 Writers' standing (account age, karma, contributions, flair) isn't in the saved threads: Parse gives only names.
 With `profiles` (engine.profiles.CachedOnly in the command line, the web demo and the evaluation), it is filled in
@@ -31,17 +38,17 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from engine.answer import Answer, comment_bodies, render_markdown, write_answer
-from engine.config import PIPELINE_INCLUDE_LOOSE, PIPELINE_MAX_THREADS, PIPELINE_MIN_RELEVANCE
+from engine.config import PIPELINE_INCLUDE_LOOSE, PIPELINE_MAX_THREADS
 from engine.credibility import badges, mention_weight, score_evidence, score_voice
 from engine.extract import CheckResult, load_checked
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
 from engine.group_products import ProductGroup, ProductMention, group_of, group_products
 from engine.library import DEFAULT_LIBRARY_DIR
-from engine.models import Thread
+from engine.models import Comment, Thread
 from engine.profiles import CachedOnly, with_profiles
 from engine.query import PRODUCT_TYPES, ParsedQuery, parse_query
 from engine.rank import KindNote, RankingResult, ScoredMention, rank_products
-from engine.sources import LocalSource, mentions_product, relevance
+from engine.sources import LocalSource, mentions_product
 
 
 @dataclass
@@ -53,6 +60,8 @@ class PipelineResult:
     bodies: dict[str, str] = field(default_factory=dict)  # comment id -> text, to re-check quotes
     left_out_as_other_type: list[str] = field(default_factory=list)  # product names
     left_out_loose: list[str] = field(default_factory=list)  # brand or line names
+    not_extracted: list[str] = field(default_factory=list)  # ids of threads about the product the AI hasn't read yet
+    notes_without_kind: list[str] = field(default_factory=list)  # the "about" of each kept note that names no kind
 
     def text(self) -> str:
         """The answer as Markdown, or module 1's question or polite no."""
@@ -73,10 +82,12 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     if query.status != "ok":
         return result
     threads_dir = Path(library_dir) / "threads"
-    threads = LocalSource(threads_dir).find_threads(query, limit=max_threads)
-    threads = [t for t in threads if relevance(t, query.product_type) >= PIPELINE_MIN_RELEVANCE]
-    checked = {tid: res for tid, res in load_checked(threads_dir).items() if tid in {t.id for t in threads}}
-    threads = [t for t in threads if t.id in checked]  # a thread the AI hasn't read yet has nothing to offer
+    every_checked = load_checked(threads_dir)
+    candidates = LocalSource(threads_dir).find_threads(query, limit=sys.maxsize)  # the limit is applied below
+    about_it = [t for t in candidates if _about_the_product(t, query.product_type)]
+    result.not_extracted = [t.id for t in about_it if t.id not in every_checked]  # nothing to offer until read
+    threads = [t for t in about_it if t.id in every_checked][:max_threads]
+    checked = {t.id: every_checked[t.id] for t in threads}
     if profiles is not None:
         threads = [with_profiles(t, profiles, {m.comment_id for m in checked[t.id].kept}).thread for t in threads]
     result.threads_used = [t.id for t in threads]
@@ -84,11 +95,19 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
 
     groups = group_products(_product_mentions(checked))
     kept_groups = _groups_to_rank(groups, query, result)
-    kinds = group_kinds(_kind_mentions(checked), kept_groups, query.category, query.product_type or "")
+    kind_mentions = _kind_mentions(checked)
+    kinds = group_kinds(kind_mentions, kept_groups, query.category, query.product_type or "")
+    with_a_kind = kinds_of(kinds)
+    result.notes_without_kind = [n.about for n in kind_mentions if n not in with_a_kind]
     scored, kind_notes = _score(threads, checked, kept_groups, kinds)
     result.ranking = rank_products(scored, query.category, kind_notes, placements(kinds))
     result.answer = write_answer(result.ranking, result.bodies, query.product_type)
     return result
+
+
+def _about_the_product(thread: Thread, product_type: str) -> bool:
+    """Whether the thread's title or post names the product. Its comments don't count: they can mention it in passing."""
+    return mentions_product(thread.title, product_type) or mentions_product(thread.body, product_type)
 
 
 # --- Module 4: products and kinds ---
@@ -148,7 +167,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                 product_key=group.key, product_name=group.name, category=group.category, thread_id=tid,
                 comment_id=m.comment_id, comment_url=str(comment.url), stance=m.stance,
                 weight=mention_weight(voice, evidence, m.stance), voice=voice.level, evidence=evidence.level,
-                quote=m.quote, badges=badges(voice, evidence),
+                quote=m.quote, badges=badges(voice, evidence), author=_writer(comment),
             ))
         for n in res.kept_notes:
             comment = comments[n.comment_id]
@@ -158,9 +177,14 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                 notes.append(KindNote(
                     kind_key=kind.key, kind_name=kind.name, thread_id=tid, comment_id=n.comment_id,
                     comment_url=str(comment.url), stance=n.stance, weight=mention_weight(voice, evidence, n.stance),
-                    voice=voice.level, quote=n.quote, badges=badges(voice, evidence),
+                    voice=voice.level, quote=n.quote, badges=badges(voice, evidence), author=_writer(comment),
                 ))
     return scored, notes
+
+
+def _writer(comment: Comment) -> str | None:
+    """The writer's name, lowercased, so the ranking counts each writer once; None for a deleted account."""
+    return comment.author.name.lower() if comment.author is not None else None
 
 
 def cached_profiles() -> CachedOnly:
@@ -178,7 +202,9 @@ def main(argv: list[str]) -> int:
     print(result.text())
     if result.answer is not None:
         print(f"\n(threads used: {', '.join(result.threads_used)}; left out as another type: "
-              f"{len(result.left_out_as_other_type)}; brand or line names left out: {len(result.left_out_loose)})")
+              f"{len(result.left_out_as_other_type)}; brand or line names left out: {len(result.left_out_loose)}; "
+              f"threads not extracted yet: {len(result.not_extracted)}; notes naming no kind: "
+              f"{len(result.notes_without_kind)})")
     return 0
 
 
