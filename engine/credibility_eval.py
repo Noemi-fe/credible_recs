@@ -45,6 +45,7 @@ from engine.credibility import score_evidence, score_voice
 from engine.extract import CheckResult, ExtractedMention, ExtractionError, load_checked
 from engine.extraction_eval import pair_up
 from engine.gold import DEFAULT_GOLD_DIR, GoldSet, GoldSetError, load_gold_set
+from engine.profiles import with_profiles
 
 HOLDOUT_THREADS = ("1tfk6nm",)  # the kettle thread: the fair test, never used to build the rules
 MAX_DIFFERENCES_SHOWN = 15
@@ -129,13 +130,15 @@ class CredibilityAgreement:
 
 
 def score_credibility(
-    gold: GoldSet, checked: dict[str, CheckResult] | None = None, skip_threads: Iterable[str] = HOLDOUT_THREADS
+    gold: GoldSet, checked: dict[str, CheckResult] | None = None, skip_threads: Iterable[str] = HOLDOUT_THREADS,
+    profiles=None,
 ) -> CredibilityAgreement:
     """Compares the rules with Noemi's voice and evidence labels, thread by thread, in the gold set's order.
 
     `checked` holds the AI's checked extractions ({thread id: CheckResult}, as engine.extract.load_checked returns
     them), for the replies that agree and the AI's own evidence levels. Threads in `skip_threads` are left out,
-    except for the AI's evidence levels (ai_evidence_held_out).
+    except for the AI's evidence levels (ai_evidence_held_out). `profiles` (engine.profiles.CachedOnly, say) fills in
+    the labelled writers' standing first, as the pipeline does, so the rules see what Noemi saw on their profiles.
     """
     skip = set(skip_threads)
     checked = checked or {}
@@ -156,6 +159,8 @@ def score_credibility(
                     score.ai_evidence_held_out.pairs.append((comment.id, products[comment.id][h].evidence, ai_level))
             continue
         score.threads.append(thread.id)
+        if profiles is not None:
+            thread = with_profiles(thread, profiles, [c.id for c in thread.comments if c.id in voices]).thread
         agreements = checked[thread.id].kept_agreements if thread.id in checked else []
         score.agreements_used += len(agreements)
         for comment in thread.comments:

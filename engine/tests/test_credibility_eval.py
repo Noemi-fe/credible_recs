@@ -218,3 +218,25 @@ def test_the_report_shows_the_ai_on_a_held_out_thread_without_the_rules():
     lines = report_lines(score_credibility(gold(voices, mentions, (THREAD, second)), checked, skip_threads=("1fake02",)))
     held_out = [line for line in lines if "held-out" in line and "AI" in line]
     assert len(held_out) == 1 and "exact 0/1 (0%)" in held_out[0] and "rules on the same" not in held_out[0]
+
+
+# --- Writers' profiles from the cache (9 Oct 2026): does profile data close the voice gap? ---
+
+class LongStanding:
+    """Profiles as Arctic Shift would give them: every writer active since 2014, with plenty of karma per contribution."""
+
+    def user_stats(self, author):
+        return {"num_comments": 2000, "num_posts": 20, "total_karma": 30000, "earliest_comment_at": 1400000000}
+
+    def comment_flairs(self, comment_ids):
+        return {}
+
+
+def test_profiles_fill_in_plain_writers_before_the_rules_judge_them():
+    # Parse saves writers by name only, so the rules can't see standing; with profiles they can.
+    plain = Thread.model_validate(make_thread(comments=[
+        make_comment(c["id"], body=c["body"], parent_id=c["parent_id"], author={"name": f"writer_{c['id']}"})
+        for c in make_thread()["comments"]]))
+    level = lambda score, cid: next(rules for c, _, rules in score.voice.pairs if c == cid)
+    assert level(score_credibility(gold(threads=(plain,))), "c1aaaa") == "medium"  # only "recent" to go on
+    assert level(score_credibility(gold(threads=(plain,)), profiles=LongStanding()), "c1aaaa") == "high"
