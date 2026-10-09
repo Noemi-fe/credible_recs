@@ -17,6 +17,11 @@ Every step is a module of its own; this file only passes each one's output to th
   ranking unless PIPELINE_INCLUDE_LOOSE says otherwise: their mentions can't count for any one product.
 Both lists are kept on the result, so nothing is dropped silently.
 
+Writers' standing (account age, karma, contributions, flair) isn't in the saved threads: Parse gives only names.
+With `profiles` (engine.profiles.CachedOnly in the command line, the web demo and the evaluation), it is filled in
+from Arctic Shift's answers already in the cache, never waiting on a call; `python -m engine.profiles warm` fills
+the cache beforehand.
+
 Command line:
     python -m engine.pipeline "<request>"     prints the answer, from data/library
 """
@@ -33,6 +38,7 @@ from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
 from engine.group_products import ProductGroup, ProductMention, group_of, group_products
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.models import Thread
+from engine.profiles import CachedOnly, with_profiles
 from engine.query import PRODUCT_TYPES, ParsedQuery, parse_query
 from engine.rank import KindNote, RankingResult, ScoredMention, rank_products
 from engine.sources import LocalSource, mentions_product, relevance
@@ -55,8 +61,13 @@ class PipelineResult:
         return render_markdown(self.answer)
 
 
-def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_threads: int = PIPELINE_MAX_THREADS) -> PipelineResult:
-    """Runs modules 1 to 7 on the saved library and returns everything each step decided."""
+def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_threads: int = PIPELINE_MAX_THREADS,
+                   profiles=None) -> PipelineResult:
+    """Runs modules 1 to 7 on the saved library and returns everything each step decided.
+
+    `profiles`: where writers' standing comes from (an object with user_stats and comment_flairs, such as
+    engine.profiles.CachedOnly); None leaves the writers as saved, known by name only.
+    """
     query = parse_query(request)
     result = PipelineResult(query)
     if query.status != "ok":
@@ -66,6 +77,8 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     threads = [t for t in threads if relevance(t, query.product_type) >= PIPELINE_MIN_RELEVANCE]
     checked = {tid: res for tid, res in load_checked(threads_dir).items() if tid in {t.id for t in threads}}
     threads = [t for t in threads if t.id in checked]  # a thread the AI hasn't read yet has nothing to offer
+    if profiles is not None:
+        threads = [with_profiles(t, profiles, {m.comment_id for m in checked[t.id].kept}).thread for t in threads]
     result.threads_used = [t.id for t in threads]
     result.bodies = comment_bodies(threads)
 
@@ -150,11 +163,18 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
     return scored, notes
 
 
+def cached_profiles() -> CachedOnly:
+    """Writers' standing from the Arctic Shift cache only: what the command line, the demo and the evaluation use."""
+    from engine.arctic_shift import ArcticShiftClient
+
+    return CachedOnly(ArcticShiftClient())
+
+
 def main(argv: list[str]) -> int:
     if not argv:
         print(__doc__)
         return 2
-    result = answer_request(" ".join(argv))
+    result = answer_request(" ".join(argv), profiles=cached_profiles())
     print(result.text())
     if result.answer is not None:
         print(f"\n(threads used: {', '.join(result.threads_used)}; left out as another type: "

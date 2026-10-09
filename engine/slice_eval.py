@@ -32,12 +32,13 @@ class QuestionResult:
     unverified: int = 0  # shown quotes that failed the check: must be 0
 
 
-def score_questions(questions_path: Path = DEFAULT_QUESTIONS, library_dir: Path = DEFAULT_LIBRARY_DIR) -> list[QuestionResult]:
-    """Runs every question through the pipeline, in the file's order."""
+def score_questions(questions_path: Path = DEFAULT_QUESTIONS, library_dir: Path = DEFAULT_LIBRARY_DIR,
+                    profiles=None) -> list[QuestionResult]:
+    """Runs every question through the pipeline, in the file's order. `profiles`: as in engine.pipeline."""
     questions = json.loads(Path(questions_path).read_text(encoding="utf-8"))["questions"]
     results = []
     for q in questions:
-        run = answer_request(q["text"], library_dir=library_dir)
+        run = answer_request(q["text"], library_dir=library_dir, profiles=profiles)
         result = QuestionResult(q["id"], q["text"], run.query.status, threads=len(run.threads_used))
         if run.answer is not None:
             result.picks = [pick.name for pick in run.answer.picks]
@@ -67,5 +68,7 @@ def slice_report(questions_path: Path = DEFAULT_QUESTIONS, library_dir: Path = D
     """For eval/run_eval.py."""
     if not (Path(library_dir) / "threads").is_dir():
         return "End to end (modules 1-7): skipped (no local library)"
-    lines = slice_lines(score_questions(questions_path, library_dir))
+    from engine.pipeline import cached_profiles
+
+    lines = slice_lines(score_questions(questions_path, library_dir, cached_profiles()))
     return "End to end (modules 1-7), blind-test questions on the library\n" + "\n".join(f"  {line}" for line in lines)

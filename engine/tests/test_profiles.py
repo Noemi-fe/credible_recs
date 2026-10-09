@@ -316,3 +316,39 @@ def test_command_line_explains_itself_when_typed_wrong(argv, capsys, tmp_path):
 def test_command_line_reports_a_missing_folder(tmp_path, capsys):
     assert profiles.main(["warm", str(tmp_path / "nowhere")], client=make_client(tmp_path, FakeArchive())) == 1
     assert "missing" in capsys.readouterr().out
+
+
+# --- At answer time: only what is already in the cache (9 Oct 2026) ---
+
+class CountingClient:
+    """A stand-in client: one writer and one comment are cached; every call that would reach Arctic Shift is counted."""
+
+    def __init__(self):
+        self.calls = 0
+
+    def uncached_users(self, authors):
+        return [a for a in authors if a != "cached_writer"]
+
+    def uncached_comments(self, comment_ids):
+        return [c for c in comment_ids if c != "c1aaaa"]
+
+    def user_stats(self, author):
+        if author != "cached_writer":
+            self.calls += 1
+        return {"num_comments": 900, "num_posts": 10, "total_karma": 9000, "earliest_comment_at": 1500000000}
+
+    def comment_flairs(self, comment_ids):
+        ids = list(comment_ids)
+        self.calls += sum(c != "c1aaaa" for c in ids)
+        return {c: "Chef" for c in ids}
+
+
+def test_cached_only_never_asks_arctic_shift():
+    from engine.profiles import CachedOnly
+
+    client = CountingClient()
+    cached = CachedOnly(client)
+    assert cached.user_stats("cached_writer")["num_comments"] == 900
+    assert cached.user_stats("someone_else") is None  # not warmed yet: no profile, no call
+    assert cached.comment_flairs(["c1aaaa", "c2bbbb"]) == {"c1aaaa": "Chef"}
+    assert client.calls == 0

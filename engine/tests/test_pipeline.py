@@ -119,3 +119,32 @@ def test_only_threads_about_the_product_are_read(tmp_path):
     result = answer_request(REQUEST, library_dir=library(tmp_path))
     assert "1coff01" not in result.threads_used
     assert "Hario Skerton" not in [p.name for p in result.ranking.products]
+
+
+class FakeProfiles:
+    """Profiles as the cache would give them: every writer an old, active, well-regarded account."""
+
+    def user_stats(self, author):
+        return {"num_comments": 2000, "num_posts": 20, "total_karma": 30000, "earliest_comment_at": 1400000000}
+
+    def comment_flairs(self, comment_ids):
+        return {}
+
+
+def plain_writers_library(tmp_path: Path) -> Path:
+    """The kettle library, with writers known only by name, as Parse saves them."""
+    root = library(tmp_path)
+    for path in (root / "threads").glob("*.json"):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        for c in data["comments"]:
+            c["author"] = {"name": c["author"]["name"]}
+        path.write_text(json.dumps(data), encoding="utf-8")
+    return root
+
+
+def test_profiles_from_the_cache_raise_the_writers_standing(tmp_path):
+    lib = plain_writers_library(tmp_path)
+    without = answer_request(REQUEST, library_dir=lib)
+    with_profiles = answer_request(REQUEST, library_dir=lib, profiles=FakeProfiles())
+    zoji = lambda result: next(p for p in result.ranking.products if p.name == "Zojirushi kettle")
+    assert zoji(without).breakdown.recommend_voices["high"] < zoji(with_profiles).breakdown.recommend_voices["high"]

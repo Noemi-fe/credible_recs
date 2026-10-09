@@ -94,6 +94,9 @@ ENGINE_FAILED = ("engine_failed", "The engine could not answer this request. The
 
 # Answers already worked out, by (request, library folder), kept until the server stops.
 _answers: dict[tuple[str, str], tuple[int, str, bytes]] = {}
+# Where writers' standing comes from (engine.pipeline's `profiles`): the command line sets the Arctic Shift cache
+# (engine.profiles.CachedOnly, never a call); None, as in the tests, leaves writers known by name only.
+profiles = None
 _answers_lock = threading.Lock()
 
 
@@ -133,7 +136,8 @@ def answer_response(request: str, library_dir: Path) -> tuple[int, str, bytes]:
 
 def _fresh_answer(request: str, library_dir: Path) -> tuple[int, str, bytes]:
     """Runs the pipeline, then checks every quote once more; one that fails refuses the whole answer."""
-    result = answer_request(request, library_dir)
+    with_profiles = {} if profiles is None else {"profiles": profiles}
+    result = answer_request(request, library_dir, **with_profiles)
     if result.answer is not None:
         problems = unverified_claims(result.answer, result.bodies)
         if problems:  # the problems name comments, never the failed quote's words
@@ -276,6 +280,10 @@ def main(argv: list[str]) -> int:
         print(__doc__)
         return 2
     port, library_dir = options
+    global profiles
+    from engine.pipeline import cached_profiles
+
+    profiles = cached_profiles()
     if not (library_dir / "threads").is_dir():
         print(f"Warning: no library at {library_dir} (no threads/ folder), so every answer will fail. "
               "Pass --library DIR to use another one.")

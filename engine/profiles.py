@@ -98,6 +98,30 @@ def look_up(client: ArcticShiftClient, names: Iterable[str], progress: Callable[
     return result
 
 
+# --- At answer time: the cache only ---
+
+class CachedOnly:
+    """Arctic Shift's answers already in the 48-hour cache, and nothing else: it never makes a call.
+
+    For answering a request quickly (engine.pipeline): a writer not looked up yet (see `warm`) simply gets no
+    profile, as if the archive didn't know them, instead of making the person asking wait 10 seconds a writer.
+    """
+
+    def __init__(self, client: ArcticShiftClient):
+        self.client = client
+
+    def user_stats(self, author: str) -> dict | None:
+        if self.client.uncached_users([author]):
+            return None
+        return self.client.user_stats(author)  # answered from the cache
+
+    def comment_flairs(self, comment_ids: Iterable[str]) -> dict[str, str | None]:
+        ids = list(comment_ids)
+        missing = set(self.client.uncached_comments(ids))
+        cached = [cid for cid in ids if cid not in missing]
+        return self.client.comment_flairs(cached) if cached else {}
+
+
 # --- Filling in one thread ---
 
 @dataclass
