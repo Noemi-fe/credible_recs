@@ -15,6 +15,10 @@ What each pick shows (the brief):
   checked and a link to the shop's own page for it (https only); or "Price not checked yet". When the request has a
   budget, a line says how the price compares with it. Products over the budget never get here: the pipeline leaves
   them out;
+- whether it is still sold (Noemi's note, 9 Oct 2026: "are we making sure the products we recommend exist?"): from the
+  same list, "Sold at <shop>, checked <date>" with a link to the shop's page (https only, and only when the price line
+  doesn't already link to that page), or "Availability not checked yet". Products no longer sold never get here: the
+  pipeline leaves them out;
 - "How to make it last" (Noemi, 9 Oct 2026): up to CARE_TIPS_PER_PICK credible care tips from the threads ("descale
   every 6 months"), the product's own first, then its kind's, never the same tip twice (engine/care_tips.py), each
   with its verified quote. A pick with no tip has no such heading.
@@ -35,7 +39,8 @@ quotes that passed. Then, "no claim without a verified quote":
 - a care tip is a verified quote, or nothing: one that fails gives its place to the next tip.
 unverified_claims() runs the same checks over a finished answer, as an automated proof.
 
-The wording users see is in the constants below, marked PROPOSED: it waits for Noemi.
+The wording users see is in the constants below, marked PROPOSED (it waits for Noemi) or decided by Claude (Noemi
+asked Claude to decide wording and report it).
 """
 
 import dataclasses
@@ -101,6 +106,10 @@ BUDGET_WHY_OLD = "its price was checked over {days} days ago, so it may have cha
 CURRENCY_SIGNS = {"GBP": "£", "EUR": "€", "USD": "$"}
 # Care tips (Noemi, 9 Oct 2026; wording PROPOSED, awaiting Noemi).
 CARE_HEADING = "How to make it last"
+# Availability (Noemi's note, 9 Oct 2026). Wording DECIDED by Claude on 9 Oct 2026, as Noemi asked, and reported to her.
+AVAILABILITY = "Sold at {shop}, checked {date}"
+AVAILABILITY_UNKNOWN = "Availability not checked yet"
+AVAILABILITY_GONE = "No longer sold, checked {date}"  # never shown through the pipeline, which leaves such products out
 
 
 # --- The answer ---
@@ -130,6 +139,20 @@ class ShownPrice:
 
 
 @dataclass(frozen=True)
+class ShownAvailability:
+    """Whether a pick is known to be sold, as shown, from the price list (engine/prices.py). Not checked: only text."""
+
+    text: str  # "Sold at Boots, checked 9 Oct 2026", or AVAILABILITY_UNKNOWN
+    available: bool | None  # True: a shop sells it; None: not checked; False: no longer sold (never via the pipeline)
+    shop: str | None
+    url: str | None  # the shop's own page, https only; None when unknown or when the price line already links to it
+    checked_on: str | None  # the day it was looked up, as "2026-10-09"
+
+
+NOT_CHECKED = ShownAvailability(AVAILABILITY_UNKNOWN, None, None, None, None)
+
+
+@dataclass(frozen=True)
 class ShownCareTip:
     """A care tip as shown under a pick: the tip in a few words, and the quote that backs it (verified)."""
 
@@ -150,6 +173,7 @@ class Pick:
     score: float
     breakdown: ScoreBreakdown  # numbers only: no quote is in it
     price: ShownPrice  # from the price list, or PRICE_UNKNOWN
+    availability: ShownAvailability = NOT_CHECKED  # where it is sold, from the price list, or AVAILABILITY_UNKNOWN
     care: list[ShownCareTip] = field(default_factory=list)  # "How to make it last"; empty when there are none
 
 
@@ -197,9 +221,9 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
-    with none shows PRICE_UNKNOWN. `care` is each product's care tips ({product key: engine.care_tips.CareTips}), made
-    by the pipeline; a product with none shows no "How to make it last". Care tips never change which products are
-    picks.
+    with none shows PRICE_UNKNOWN and AVAILABILITY_UNKNOWN. `care` is each product's care tips ({product key:
+    engine.care_tips.CareTips}), made by the pipeline; a product with none shows no "How to make it last". Care tips
+    never change which products are picks.
     """
     check = _QuoteCheck(bodies)
     prices = prices or {}
@@ -211,8 +235,9 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
         quotes = check.first(_most_credible_first(product.credible_recommendations), QUOTES_PER_PICK)
         if len(quotes) >= MIN_QUOTES_PER_PICK:
             price = shown_price(prices.get(product.key))
+            availability = shown_availability(prices.get(product.key), price.url)
             tips = _care_tips(care.get(product.key), check)
-            picks.append(_pick(len(picks) + 1, product, quotes, check, ranking, price, tips))
+            picks.append(_pick(len(picks) + 1, product, quotes, check, ranking, price, tips, availability))
     skip = [_skip_item(product, check) for product in ranking.skip_list]
     look_for = _look_for(ranking, check)
     return Answer(
@@ -294,7 +319,7 @@ def _most_credible_first(items: Iterable[ScoredMention]) -> list[ScoredMention]:
 
 
 def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _QuoteCheck, ranking: RankingResult,
-          price: ShownPrice, care: list[ShownCareTip]) -> Pick:
+          price: ShownPrice, care: list[ShownCareTip], availability: ShownAvailability = NOT_CHECKED) -> Pick:
     warnings = product.credible_warnings
     return Pick(
         rank=rank,
@@ -308,6 +333,7 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
         score=product.score,
         breakdown=product.breakdown,
         price=price,
+        availability=availability,
         care=care,
     )
 
@@ -419,6 +445,24 @@ def shown_price(check: PriceCheck | None) -> ShownPrice:
                       budget_status, budget_note)
 
 
+def shown_availability(check: PriceCheck | None, price_url: str | None = None) -> ShownAvailability:
+    """Whether a product is sold, as the shopper sees it: the shop and the day it was checked, when the price list says.
+
+    The shop's link is passed on only when it is https, and only when the price line (whose link is `price_url`)
+    doesn't already link to the same page.
+    """
+    sold = check.availability if check is not None else None
+    if sold is None or sold.available is None:
+        return NOT_CHECKED
+    day = _day(sold.checked_on)
+    if sold.available is False:
+        return ShownAvailability(AVAILABILITY_GONE.format(date=day), False, sold.shop, None,
+                                 sold.checked_on.isoformat())
+    url = sold.url if sold.url.startswith("https://") and sold.url != price_url else None  # https only; checked again
+    return ShownAvailability(AVAILABILITY.format(shop=sold.shop, date=day), True, sold.shop, url,
+                             sold.checked_on.isoformat())
+
+
 def _budget_note(check: PriceCheck) -> str:
     """How the price meets the budget, in words: within it, or why it wasn't checked against it."""
     most = _money(check.budget.max, check.budget.currency)
@@ -514,7 +558,7 @@ def render_markdown(answer: Answer) -> str:
 
 def _render_pick(pick: Pick) -> list[str]:
     lines = [f"## {pick.rank}. {pick.name}", "", pick.reason, "", f"**{SUPPORT_LABEL}:** {pick.support}", ""]
-    lines += _render_price(pick.price)
+    lines += _render_price(pick.price) + _render_availability(pick.availability)
     if pick.disagreement:
         lines += [f"**{pick.disagreement}**", ""]
     lines += [f"**{QUOTES_HEADING}**", ""]
@@ -541,6 +585,12 @@ def _render_price(price: ShownPrice) -> list[str]:
         link = f" · [{PRICE_LINK_TEXT}]({price.url})" if price.url else ""
         line = f"**{PRICE_LABEL}:** {price.text}{link}"
     return [line, ""] + ([price.budget_note, ""] if price.budget_note else [])
+
+
+def _render_availability(availability: ShownAvailability) -> list[str]:
+    """The availability line, with the shop's link when there is one."""
+    link = f" · [{PRICE_LINK_TEXT}]({availability.url})" if availability.url else ""
+    return [f"{availability.text}{link}", ""]
 
 
 def _one_line(text: str) -> str:

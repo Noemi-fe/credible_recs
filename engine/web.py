@@ -36,6 +36,12 @@ The JSON for /api/answer (200):
                                       "budget_status",         "within" | "unknown" | "other currency" |
                                                                "out of date", or null without a budget
                                       "budget_note"},          the same in words, or null
+                            "availability": {"text",           "Sold at <shop>, checked 9 Oct 2026" or
+                                                               "Availability not checked yet" (9 Oct 2026)
+                                             "available",      true, or null when not checked
+                                             "shop", "checked_on",   null when not checked
+                                             "url"},           the shop's own page, https only; null when not
+                                                               checked or when the price line links to it
                             "care": [{"tip": "Descale every 6 months.",   "How to make it last" (9 Oct 2026):
                                       "quote": {same shape}}]}],          0 to 2, each quote verified
                  "look_for": [{"kind", "advice", "quote": {same shape}}],
@@ -44,7 +50,8 @@ The JSON for /api/answer (200):
                  "needs_more_threads", "quotes_dropped"},
       "threads_used": ["thread id", ...],          most relevant first
       "left_out": {"other_type": n, "loose": n,    products of another type, and brand or line names, left out
-                   "over_budget": n}               and products whose known price is over the request's budget
+                   "over_budget": n,               products whose known price is over the request's budget
+                   "unavailable": n}               and products the price list says are no longer sold (9 Oct 2026)
     }
 An error is {"error": "<plain words>", "code": "<one word for programs>"}:
     400 empty_request, request_too_long (over WEB_MAX_REQUEST_CHARS characters)
@@ -84,7 +91,7 @@ JSON = "application/json; charset=utf-8"
 
 # Sent with every response. The page may load and call nothing but this server: no outside scripts, styles, fonts
 # or images, and no requests elsewhere. Its links still open, in a new tab: to Reddit, and to a shop's own page for a
-# price (https only, from data/prices.json; decision 11, 9 Oct 2026).
+# price or for where a product is sold (https only, from data/prices.json; decision 11 and availability, 9 Oct 2026).
 HEADERS = {
     "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
                                "connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
@@ -170,7 +177,8 @@ def answer_json(result: PipelineResult) -> dict:
         "answer": answer_to_dict(result.answer) if result.answer is not None else None,
         "threads_used": list(result.threads_used),
         "left_out": {"other_type": len(result.left_out_as_other_type), "loose": len(result.left_out_loose),
-                     "over_budget": len(result.left_out_over_budget)},
+                     "over_budget": len(result.left_out_over_budget),
+                     "unavailable": len(result.left_out_unavailable)},
     }
 
 
