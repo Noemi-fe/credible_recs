@@ -27,9 +27,17 @@ Every step is a module of its own; this file only passes each one's output to th
 - with a budget in the request (a max and a currency), a product whose price (engine/prices.py, data/prices.json) is
   known and above the max is left out (Noemi's decision 11). A product with no known price, a price in another
   currency, or a price checked over PRICE_MAX_AGE_DAYS ago is kept, and its answer says so.
+- only threads checked live on Reddit in the last LIVE_CHECK_SHOWN_DAYS (14) days are quoted (Noemi, 9 Oct 2026): a
+  thread read from Arctic Shift's archive may still hold comments people deleted on Reddit since, so it counts from
+  the day a live check read it on Reddit (checked_live_at); a thread read through Parse counts from the day it was
+  read (collected_at; older files have no provenance and were all read through Parse). Days are calendar days on
+  `today`: a thread read on 7 Oct is quoted up to and including 21 Oct. Threads waiting for a live check are listed
+  on the result (waiting_live_check) and, like threads not extracted yet, take no reading slot.
+  `python -m engine.library check-live` reads them again. Gold-set threads (read_from "gold", or the pipeline pointed
+  at data/gold) are exempt. LIVE_CHECK_REQUIRED = False turns the rule off, for an experiment only.
 The three lists of products left out are kept on the result, so nothing is dropped silently; so are the "what to
 look for" notes that name no kind (notes_without_kind, engine.group_kinds step 5), which the ranking and the answer
-can't use.
+can't use. threads_quoted names the threads the answer's quotes come from: the ones whose live checks matter most.
 
 Each mention carries its writer's name (lowercased), so the ranking counts one writer once per product, however
 many comments or threads they praise it in (engine.rank).
@@ -51,11 +59,13 @@ from dataclasses import dataclass, field, replace
 from datetime import date
 from pathlib import Path
 
-from engine.answer import Answer, comment_bodies, render_markdown, write_answer
+from engine.answer import Answer, _every_quote, comment_bodies, render_markdown, write_answer
 from engine.config import (
     BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE,
     BRAND_PICK_TITLE_SHARE,
     BUDGET_DEFAULT_CURRENCY,
+    LIVE_CHECK_REQUIRED,
+    LIVE_CHECK_SHOWN_DAYS,
     PIPELINE_BRAND_PICKS,
     PIPELINE_MAX_THREADS,
 )
@@ -63,7 +73,8 @@ from engine.credibility import badges, mention_weight, score_evidence, score_voi
 from engine.extract import CheckResult, load_checked
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
 from engine.group_products import ProductGroup, ProductMention, brand_pick_name, group_of, group_products, uk_name
-from engine.library import DEFAULT_LIBRARY_DIR
+from engine.gold import DEFAULT_GOLD_DIR
+from engine.library import DEFAULT_LIBRARY_DIR, checked_live_within
 from engine.match_products import known_aliases, normalize_name, same_product
 from engine.models import Comment, Thread
 from engine.prices import Price, PriceCheck, check_price, find_price, load_prices
@@ -85,6 +96,10 @@ class PipelineResult:
     not_extracted: list[str] = field(default_factory=list)  # ids of threads about the product the AI hasn't read yet
     notes_without_kind: list[str] = field(default_factory=list)  # the "about" of each kept note that names no kind
     left_out_over_budget: list[str] = field(default_factory=list)  # product names, with a known price above the max
+    # Ids of extracted threads about the product not checked live on Reddit in the last LIVE_CHECK_SHOWN_DAYS: not
+    # used until `python -m engine.library check-live` reads them again (Noemi, 9 Oct 2026).
+    waiting_live_check: list[str] = field(default_factory=list)
+    threads_quoted: list[str] = field(default_factory=list)  # ids of the threads the answer's quotes come from
 
     def text(self) -> str:
         """The answer as Markdown, or module 1's question or polite no."""
@@ -93,25 +108,44 @@ class PipelineResult:
         return render_markdown(self.answer)
 
 
+# The pipeline sees only the gold set's threads when pointed at this folder (or one inside it): they are exempt from
+# live checks.
+GOLD_DIR = DEFAULT_GOLD_DIR
+
+
+def _today() -> date:
+    """Today's date, the day prices and live checks are judged on when no `today` is given. The tests set it to a fixed
+    day (engine/tests/conftest.py), since their made-up threads are dated October 2026."""
+    return date.today()
+
+
 def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_threads: int = PIPELINE_MAX_THREADS,
-                   profiles=None, prices: list[Price] | None = None, today: date | None = None) -> PipelineResult:
+                   profiles=None, prices: list[Price] | None = None, today: date | None = None,
+                   live_check_required: bool | None = None) -> PipelineResult:
     """Runs modules 1 to 7 on the saved library and returns everything each step decided.
 
     `profiles`: where writers' standing comes from (an object with user_stats and comment_flairs, such as
     engine.profiles.StoredProfiles); None leaves the writers as saved, known by name only.
     `prices`: the price list; None reads data/prices.json (engine.prices.load_prices). `today`: the day prices are
-    judged on (how old they are); None is today.
+    judged on (how old they are), and live checks (how long ago Reddit was read); None is today.
+    `live_check_required`: None follows LIVE_CHECK_REQUIRED (on). False uses every thread whatever its last live
+    check: only to see what answers would quote once every thread is checked (engine.slice_eval.threads_behind_answers).
     """
     query = parse_query(request)
     result = PipelineResult(query)
     if query.status != "ok":
         return result
+    today = today or _today()
     threads_dir = Path(library_dir) / "threads"
     every_checked = load_checked(threads_dir)
     candidates = LocalSource(threads_dir).find_threads(query, limit=sys.maxsize)  # the limit is applied below
     about_it = [t for t in candidates if _about_the_product(t, query.product_type)]
     result.not_extracted = [t.id for t in about_it if t.id not in every_checked]  # nothing to offer until read
-    threads = [t for t in about_it if t.id in every_checked][:max_threads]
+    required = LIVE_CHECK_REQUIRED if live_check_required is None else live_check_required
+    exempt = not required or _in_gold_set(threads_dir)
+    extracted = [t for t in about_it if t.id in every_checked]
+    result.waiting_live_check = [t.id for t in extracted if not (exempt or _checked_live_recently(t, today))]
+    threads = [t for t in extracted if t.id not in result.waiting_live_check][:max_threads]
     checked = {t.id: every_checked[t.id] for t in threads}
     if profiles is not None:
         threads = [with_profiles(t, profiles, _commented(checked[t.id])).thread for t in threads]
@@ -121,7 +155,7 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     groups = group_products(_product_mentions(checked))
     kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads})
     prices = load_prices() if prices is None else prices
-    kept_groups, price_checks = _within_budget(kept_groups, query, prices, today or date.today(), result)
+    kept_groups, price_checks = _within_budget(kept_groups, query, prices, today, result)
     kind_mentions = _kind_mentions(checked)
     kinds = group_kinds(kind_mentions, kept_groups, query.category, query.product_type or "")
     with_a_kind = kinds_of(kinds)
@@ -129,7 +163,21 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     scored, kind_notes = _score(threads, checked, kept_groups, kinds)
     result.ranking = rank_products(scored, query.category, kind_notes, placements(kinds))
     result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks)
+    thread_of = {c.id: t.id for t in threads for c in t.comments}
+    quoted = {thread_of.get(quote.comment_id) for _, quote in _every_quote(result.answer)}
+    result.threads_quoted = [tid for tid in result.threads_used if tid in quoted]
     return result
+
+
+def _checked_live_recently(thread: Thread, today: date) -> bool:
+    """Whether an answer may quote the thread: Reddit itself was read for it in the last LIVE_CHECK_SHOWN_DAYS days, or
+    it is a gold-set thread."""
+    return thread.read_from == "gold" or checked_live_within(thread, LIVE_CHECK_SHOWN_DAYS, today)
+
+
+def _in_gold_set(threads_dir: Path) -> bool:
+    """Whether the folder is the gold set's (or inside it): hand-collected threads, exempt from live checks."""
+    return Path(threads_dir).resolve().is_relative_to(Path(GOLD_DIR).resolve())
 
 
 def _about_the_product(thread: Thread, product_type: str) -> bool:
@@ -328,7 +376,8 @@ def main(argv: list[str]) -> int:
     if result.answer is not None:
         print(f"\n(threads used: {', '.join(result.threads_used)}; left out as another type: "
               f"{len(result.left_out_as_other_type)}; brand or line names left out: {len(result.left_out_loose)}; "
-              f"threads not extracted yet: {len(result.not_extracted)}; notes naming no kind: "
+              f"threads not extracted yet: {len(result.not_extracted)}; threads waiting for a live check: "
+              f"{len(result.waiting_live_check)}; notes naming no kind: "
               f"{len(result.notes_without_kind)}; over budget: {len(result.left_out_over_budget)})")
     return 0
 

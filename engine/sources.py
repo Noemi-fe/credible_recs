@@ -2,14 +2,17 @@
 
 Every data source sits behind one interface, `Source`: give it a request from module 1, get back the most
 relevant threads, best first. So a new source can plug in later (Reddit's public API closes in 2027) without
-touching the rest of the engine. Two sources exist today:
+touching the rest of the engine. Three sources exist today:
 
 - LocalSource reads thread files saved on this machine (the gold set now, a larger saved library later).
 - ParseSource searches Reddit live through the Parse reddit.com API, spending as few credits as it can.
+- ArchiveSource finds and reads threads in Arctic Shift's archive, for free (Noemi, 9 Oct 2026). Its threads are
+  marked as read from the archive, and answers wait for a live check before quoting them (engine/library.py).
 
-Both hand back threads without deleted or removed comments, since there's nothing in them to quote. Everything
+All hand back threads without deleted or removed comments, since there's nothing in them to quote. Everything
 else (link-only comments, comments in other languages) passes through untouched; later modules decide about those.
-ParseSource can also hand back threads as fetched (find_raw_threads), which is how the library saves them.
+ParseSource and ArchiveSource can also hand back threads as fetched (find_raw_threads), which is how the library
+saves them.
 
 Candidate threads are ranked so buying advice beats popularity (rank_posts). For the library, ParseSource can also
 pick a mix of thread kinds (Noemi, 7 Oct 2026): advice threads give the picks, long-term-use threads the strongest
@@ -182,37 +185,10 @@ class ParseSource:
         return self._usable(query, self._search_with_parse(query))
 
     def _usable(self, query: ParsedQuery, posts: list[dict]) -> list[dict]:
-        wanted = {s.lower() for s in query.subreddits}
-        # Search results can include posts from other subreddits (crossposts, for example).
-        posts = [
-            p for p in posts
-            if str(p.get("subreddit", "")).lower() in wanted and (p.get("num_comments") or 0) >= self.min_comments
-        ]
-        return rank_posts(query, posts)
+        return usable_posts(query, posts, self.min_comments)
 
     def _search_free(self, query: ParsedQuery) -> list[dict]:
-        """Arctic Shift results, in two rounds, each post once.
-
-        1. The product's title words, term by term and subreddit by subreddit, up to `max_free_searches`.
-        2. Warning searches, so threads about failures and regrets are among the candidates: the first title word
-           with each of WARNING_SEARCHES ("kettle died", "kettle regret"…), in the request's most specialist
-           subreddit, up to `max_warning_searches`.
-        A busy or failing service ends the free search, warning searches included; results found before that are
-        still used. Parse's paid search never runs warning searches: they would cost credits.
-        """
-        terms = finder_terms(query.product_type)
-        pairs = [(subreddit, term) for term in terms for subreddit in query.subreddits][: self.max_free_searches]
-        warnings = WARNING_SEARCHES.get(query.category, ())[: self.max_warning_searches]
-        pairs += [(query.subreddits[0], f"{terms[0]} {warning}") for warning in warnings]
-        posts: dict[str, dict] = {}
-        for subreddit, term in pairs:
-            try:
-                found = self.finder.search_posts(subreddit, term, limit=25)
-            except ArcticShiftError:
-                break
-            for post in found:
-                posts.setdefault(_post_id(post), post)
-        return list(posts.values())
+        return search_archive(self.finder, query, self.max_free_searches, self.max_warning_searches)
 
     def _search_with_parse(self, query: ParsedQuery) -> list[dict]:
         """Search results for the first `max_searches` (subreddit, search term) pairs, each post once.
@@ -225,6 +201,97 @@ class ParseSource:
             for post in self.client.search(subreddit, term).get("posts") or []:
                 posts.setdefault(_post_id(post), post)
         return list(posts.values())
+
+
+def usable_posts(query: ParsedQuery, posts: list[dict], min_comments: int) -> list[dict]:
+    """The posts in the request's subreddits with at least `min_comments` comments, ranked best first (rank_posts)."""
+    wanted = {s.lower() for s in query.subreddits}
+    # Search results can include posts from other subreddits (crossposts, for example).
+    posts = [
+        p for p in posts
+        if str(p.get("subreddit", "")).lower() in wanted and (p.get("num_comments") or 0) >= min_comments
+    ]
+    return rank_posts(query, posts)
+
+
+def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searches: int = 4,
+                   max_warning_searches: int = 4, raise_if_nothing: bool = False) -> list[dict]:
+    """Arctic Shift results, in two rounds, each post once.
+
+    1. The product's title words, term by term and subreddit by subreddit, up to `max_free_searches`.
+    2. Warning searches, so threads about failures and regrets are among the candidates: the first title word
+       with each of WARNING_SEARCHES ("kettle died", "kettle regret"…), in the request's most specialist
+       subreddit, up to `max_warning_searches`.
+    A busy or failing service ends the free search, warning searches included; results found before that are
+    still used. With `raise_if_nothing`, a failure before anything was found is passed on (ArcticShiftError), so a
+    service that is down isn't mistaken for a search that found nothing. Parse's paid search never runs warning
+    searches: they would cost credits.
+    """
+    terms = finder_terms(query.product_type)
+    pairs = [(subreddit, term) for term in terms for subreddit in query.subreddits][:max_free_searches]
+    warnings = WARNING_SEARCHES.get(query.category, ())[:max_warning_searches]
+    pairs += [(query.subreddits[0], f"{terms[0]} {warning}") for warning in warnings]
+    posts: dict[str, dict] = {}
+    for subreddit, term in pairs:
+        try:
+            found = finder.search_posts(subreddit, term, limit=25)
+        except ArcticShiftError:
+            if raise_if_nothing and not posts:
+                raise
+            break
+        for post in found:
+            posts.setdefault(_post_id(post), post)
+    return list(posts.values())
+
+
+# --- From Arctic Shift's archive, for free (Noemi, 9 Oct 2026) ---
+
+class ArchiveSource:
+    """Finds threads with Arctic Shift's free search and reads them from its archive too: no Parse credit at all.
+
+    Noemi's decision of 9 Oct 2026, instead of paying for Parse. Threads are chosen exactly as ParseSource chooses
+    them with a finder (the same searches, ranking and mix of kinds); only the reading differs. If the archive's
+    search finds nothing usable, nothing is read: there is no paid search to fall back on. Errors from Arctic Shift
+    are passed on, never hidden: a search that fails before finding anything (the service busy or down) raises, rather
+    than looking like a product with no threads; one that fails later keeps what it found, as ParseSource does.
+
+    The archive may still hold comments people later deleted on Reddit, so every thread it reads is marked read_from
+    "arctic_shift", and answers don't quote it until a live check has read it on Reddit through Parse
+    (`python -m engine.library check-live`).
+    """
+
+    def __init__(
+        self,
+        client: ArcticShiftClient | None,
+        min_comments: int = 5,
+        max_free_searches: int = 4,
+        max_warning_searches: int = 4,
+    ):
+        # The Arctic Shift client that searches and reads. It is never built here, so code that gives none (a test
+        # that passes no finder) can't reach the network: with None, nothing is found or read.
+        self.client = client
+        self.min_comments = min_comments  # a thread with fewer comments has too little to learn from
+        self.max_free_searches = max_free_searches
+        self.max_warning_searches = max_warning_searches
+
+    def find_threads(self, query: ParsedQuery, limit: int = 3, mix: dict | None = None, fill: bool = True) -> list[Thread]:
+        return [without_unusable_comments(t) for t in self.find_raw_threads(query, limit, mix, fill)]
+
+    def find_raw_threads(self, query: ParsedQuery, limit: int = 3, mix: dict | None = None, fill: bool = True) -> list[Thread]:
+        """The threads as read from the archive, deleted and removed comments included (as stubs). `mix` and `fill`
+        work as in ParseSource.find_raw_threads."""
+        if query.status != "ok" or limit < 1:
+            return []
+        ranked = self.rank_candidates(query)
+        chosen = ranked[:limit] if mix is None else choose_mix(query, ranked, total=limit, mix=mix, fill=fill)
+        return [self.client.get_thread(_post_id(p), p["subreddit"]) for p in chosen]
+
+    def rank_candidates(self, query: ParsedQuery) -> list[dict]:
+        """Every candidate post from the archive's searches, best first, without reading any thread."""
+        if query.status != "ok" or self.client is None:
+            return []
+        found = search_archive(self.client, query, self.max_free_searches, self.max_warning_searches, raise_if_nothing=True)
+        return usable_posts(query, found, self.min_comments)
 
 
 # --- Ranking candidate threads: buying advice beats popularity ---

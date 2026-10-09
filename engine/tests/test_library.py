@@ -543,7 +543,9 @@ def test_command_line_add_saves_and_prints_the_credits(tmp_path, capsys):
     subreddits = ("BuyItForLife", "tea", "Coffee")
     client = FakeParseClient(threads=threads, posts=[post(t.id, subreddit=s) for t, s in zip(threads, subreddits)])
 
-    assert library.main(["add", *KETTLE.split()], client=client, folder=tmp_path) == 0  # quotes are optional
+    # changed 9 Oct 2026: the archive became add's default reader (Noemi's decision of 9 Oct 2026); this test is
+    # about reading through Parse, so it asks for --reader parse.
+    assert library.main(["add", "--reader", "parse", *KETTLE.split()], client=client, folder=tmp_path) == 0  # quotes are optional
 
     out = capsys.readouterr().out
     assert "Saved 3 threads for electric kettle" in out
@@ -565,7 +567,9 @@ def test_command_line_add_prints_the_question_or_the_polite_no(tmp_path, capsys,
 
 def test_command_line_add_reports_a_parse_error(tmp_path, capsys):
     client = FakeParseClient(posts=[post("1a")], fail_on=["1a"])
-    assert library.main(["add", KETTLE], client=client, folder=tmp_path) == 1
+    # changed 9 Oct 2026: the archive became add's default reader (Noemi's decision of 9 Oct 2026); this test is
+    # about reading through Parse, so it asks for --reader parse.
+    assert library.main(["add", "--reader", "parse", KETTLE], client=client, folder=tmp_path) == 1
     out = capsys.readouterr().out
     assert fetch_error("1a") in out and "Parse credits used this month" in out
 
@@ -645,7 +649,9 @@ def test_command_line_add_finds_threads_for_free_when_given_a_finder(tmp_path, c
     # changed 7 Oct 2026: library mix / refresh cadence approved by Noemi. At most 2 threads per subreddit now,
     # so the 3 threads come from the request's 3 subreddits.
     finder = FakeFinder([post(t.id, subreddit=s) for t, s in zip(threads, ("BuyItForLife", "tea", "Coffee"))])
-    assert library.main(["add", KETTLE], client=client, folder=tmp_path, finder=finder) == 0
+    # changed 9 Oct 2026: the archive became add's default reader (Noemi's decision of 9 Oct 2026); this test is
+    # about reading through Parse, so it asks for --reader parse.
+    assert library.main(["add", "--reader", "parse", KETTLE], client=client, folder=tmp_path, finder=finder) == 0
     assert client.searches == [] and len(client.fetches) == 3
     assert "Parse credits used this month: 6 of 200" in capsys.readouterr().out
 
@@ -796,7 +802,9 @@ def test_command_line_add_only_one_warning_thread_costs_2_credits(tmp_path, caps
     from engine.tests.test_sources import FakeFinder
 
     client = kettle_client()
-    argv = ["add", "--only", "warning", "--limit", "1", *KETTLE.split()]  # quotes still optional
+    # changed 9 Oct 2026: the archive became add's default reader (Noemi's decision of 9 Oct 2026); this test is
+    # about reading through Parse, so it asks for --reader parse.
+    argv = ["add", "--reader", "parse", "--only", "warning", "--limit", "1", *KETTLE.split()]  # quotes still optional
     assert library.main(argv, client=client, folder=tmp_path, finder=FakeFinder(kettle_posts())) == 0
 
     out = capsys.readouterr().out
@@ -809,7 +817,9 @@ def test_command_line_add_options_can_follow_the_request_and_use_an_equals_sign(
     from engine.tests.test_sources import FakeFinder
 
     client = kettle_client()
-    argv = ["add", KETTLE, "--limit=2", "--only=advice"]
+    # changed 9 Oct 2026: the archive became add's default reader (Noemi's decision of 9 Oct 2026); this test is
+    # about reading through Parse, so it asks for --reader parse.
+    argv = ["add", KETTLE, "--limit=2", "--only=advice", "--reader=parse"]
     assert library.main(argv, client=client, folder=tmp_path, finder=FakeFinder(kettle_posts())) == 0
     assert "Saved 2 advice threads for electric kettle" in capsys.readouterr().out
     assert sorted(saved(tmp_path)) == ["1a1", "1a2"]

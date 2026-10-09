@@ -1,13 +1,15 @@
-"""Finds Reddit threads, and looks up commenters' numbers, through the Arctic Shift archive API
+"""Finds Reddit threads, reads them, and looks up commenters' numbers, through the Arctic Shift archive API
 (arctic-shift.photon-reddit.com).
 
 Arctic Shift is a free, community-run archive of Reddit, not Reddit's official API, with no uptime guarantee.
-Noemi approved it on 7 Oct 2026 for finding threads and metadata only: we keep each post's id, title, subreddit
-and counts, never its text, because an archive may still hold comments people later deleted on Reddit.
-The threads themselves are read live through Parse (engine/parse_reddit.py).
+Noemi approved it on 7 Oct 2026 for finding threads and metadata only. On 9 Oct 2026, instead of paying for Parse,
+she decided threads may also be READ from it and their text stored in the library. Because an archive may still
+hold comments people later deleted on Reddit, every thread read here is marked read_from "arctic_shift" and is only
+quoted in answers once Reddit itself has been read for it (a live check through Parse: engine/library.py check-live).
 
-Three questions it answers:
-- search_posts: posts in one subreddit whose title matches (to find threads);
+Four questions it answers:
+- search_posts: posts in one subreddit whose title matches (to find threads); ids, titles and counts only;
+- get_thread: one thread with its comments, in the same shape as a thread read through Parse (engine.models.Thread);
 - user_stats: one account's numbers: when it was first and last active in the archive, how many comments and
   posts it wrote, its karma (for module 5's standing signs, through engine/profiles.py);
 - comment_flairs: the flair shown next to the writer's name on given comments ("Dermatologist", "Home cook"):
@@ -32,6 +34,8 @@ from pathlib import Path
 import certifi
 
 from engine.config import CACHE_MAX_AGE_HOURS
+from engine.models import Thread
+from engine.parse_reddit import category_for, to_thread
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BASE_URL = "https://arctic-shift.photon-reddit.com/api/"
@@ -48,6 +52,16 @@ USER_FIELDS = (
     "num_comments", "num_posts", "post_karma", "comment_karma", "total_karma",
 )
 FLAIR_BATCH = 100  # comments/ids takes at most this many comment ids per call
+# Reading a thread (get_thread): what is kept of its post and of each comment. Nothing else is stored, even for 48 hours.
+POST_FIELDS = ("id", "title", "selftext", "author", "created_utc", "score", "num_comments", "subreddit", "permalink", "link_flair_text")
+COMMENT_FIELDS = ("id", "parent_id", "link_id", "author", "body", "created_utc", "score", "permalink")
+# comments/tree hands back up to this many comments, opened this wide and this deep, so almost none are collapsed.
+TREE_SIZE = 9999
+# The few it still collapses ({"kind": "more", "children": [their ids]}) are asked for by id, this many per call...
+COLLAPSED_BATCH = 500
+# ...and at most this many per thread (2 calls), so one enormous thread can't keep a batch job waiting. Any beyond
+# are left out; the thread's num_comments still says how many it has.
+MAX_COLLAPSED = 1000
 MISSING = object()  # "nothing fresh in the cache": None can't say it, since None is a real answer (an unknown account)
 
 
@@ -91,6 +105,34 @@ class ArcticShiftClient:
         posts = [{field: p.get(field) for field in KEPT_FIELDS} for p in found]
         self._save(params, "posts", posts)
         return posts
+
+    def get_thread(self, post_id: str, subreddit: str | None = None) -> Thread:
+        """One thread with its comments, read from the archive, in the shape Parse's threads have (read_from "arctic_shift").
+
+        Three kinds of call (each answer cached for 48 hours, so reading the thread again costs nothing):
+        1. posts/ids: the post (title, text, author, date, score, number of comments, subreddit, link, flair).
+           Only threads in the decided subreddits are read: with `subreddit` given, anything else is refused before
+           any call; otherwise as soon as the post says where it is, before its comments are read.
+        2. comments/tree: every comment, as a tree of replies, flattened in thread order (each comment, then its
+           replies). A reply to the post has no parent; a reply to a comment points to it.
+        3. comments/ids, only for the comments the tree still collapsed: asked for by id, COLLAPSED_BATCH at a time,
+           at most MAX_COLLAPSED per thread. Fetching them, rather than skipping them, keeps the thread as complete
+           as Parse's; with the tree opened TREE_SIZE wide and deep there are rarely any, so it rarely costs a call.
+        Deleted and removed comments are kept as Reddit marks them ("[deleted]", "[removed]"; a deleted account has no
+        author), as Parse does. Left out: a comment with no text or no date, and a reply whose comment wasn't read
+        (beyond MAX_COLLAPSED, or missing from the archive), so every reply in the thread points to a comment in it.
+        The thread's collected_at is when the archive answered. A post the archive doesn't have raises ArcticShiftError.
+        """
+        post_id = str(post_id).removeprefix("t3_")
+        if subreddit is not None:
+            category_for(subreddit)  # raises for a subreddit outside the decided ones, before any call
+        key = {"thread": post_id}
+        read = self._cached(key, "thread")
+        if read is MISSING:
+            read = self._read_thread(post_id)
+            self._save(key, "thread", read)
+        data = {"post": read["post"], "comments": read["comments"]}
+        return to_thread(data, category_for(read["post"]["subreddit"]), datetime.fromisoformat(read["read_at"]), read_from="arctic_shift")
 
     def user_stats(self, author: str) -> dict | None:
         """One account's numbers in the archive (USER_FIELDS), or None when the archive doesn't know the account.
@@ -142,6 +184,26 @@ class ArcticShiftClient:
     def uncached_comments(self, comment_ids: Iterable[str]) -> list[str]:
         """The comments comment_flairs would have to ask Arctic Shift about, each once."""
         return [cid for cid in dict.fromkeys(comment_ids) if self._cached({"comment_flair": cid}, "flair") is MISSING]
+
+    def _read_thread(self, post_id: str) -> dict:
+        """The post and its comments as the archive answers them, keeping only POST_FIELDS and COMMENT_FIELDS."""
+        url = BASE_URL + "posts/ids?" + urllib.parse.urlencode({"ids": post_id})
+        found = [p for p in self._ask(url, f"a look-up of post {post_id}") if isinstance(p, dict) and _plain_id(p.get("id")) == post_id]
+        if not found:
+            raise ArcticShiftError(f"Arctic Shift has no post {post_id}")
+        post = {field: found[0].get(field) for field in POST_FIELDS} | {"id": post_id}
+        category_for(str(post.get("subreddit") or ""))  # raises for a subreddit outside the decided ones
+
+        params = {"link_id": f"t3_{post_id}", "limit": TREE_SIZE, "start_breadth": TREE_SIZE, "start_depth": TREE_SIZE}
+        tree = self._ask(BASE_URL + "comments/tree?" + urllib.parse.urlencode(params), f"the comments of post {post_id}")
+        comments, collapsed = _flatten(tree)
+        read = {c["id"] for c in comments}
+        wanted = [cid for cid in dict.fromkeys(collapsed) if cid not in read][:MAX_COLLAPSED]
+        for start in range(0, len(wanted), COLLAPSED_BATCH):
+            batch = wanted[start:start + COLLAPSED_BATCH]
+            url = BASE_URL + "comments/ids?" + urllib.parse.urlencode({"ids": ",".join(batch)})
+            comments += [_kept_comment(c) for c in self._ask(url, f"a look-up of {len(batch)} collapsed comments") if isinstance(c, dict)]
+        return {"read_at": self._last_call.isoformat(), "post": post, "comments": _connected(comments, post_id)}
 
     # --- Inside one call: cache, spacing, one retry when busy ---
 
@@ -195,3 +257,68 @@ class ArcticShiftClient:
                 fetched_at = None
             if fetched_at is None or self._clock() - fetched_at >= MAX_AGE:
                 path.unlink()
+
+
+# --- Reading a thread: from the archive's tree of comments to a flat list ---
+
+def _plain_id(value) -> str:
+    """An id without Reddit's type prefix: "t1_abc" (a comment) and "t3_abc" (a post) are both "abc"."""
+    return str(value or "").removeprefix("t1_").removeprefix("t3_")
+
+
+def _flatten(items: list) -> tuple[list[dict], list[str]]:
+    """The comments of a comments/tree answer in thread order (each comment, then its replies), and the ids of the
+    collapsed ones.
+
+    Each comment comes as {"kind": "t1", "data": {..., "replies": {"kind": "Listing", "data": {"children": [...]}}}}
+    ("replies" is "" when there are none). Collapsed comments come as {"kind": "more", "data": {"children": [ids]}};
+    the same without the "data" wrapper is read too, as is a comment given without one.
+    """
+    comments, collapsed = [], []
+    pending = list(reversed(items))  # a to-do pile: the next item to look at is on top
+    while pending:
+        item = pending.pop()
+        if not isinstance(item, dict):
+            continue
+        data = item["data"] if isinstance(item.get("data"), dict) else item
+        if item.get("kind") == "more":
+            collapsed += [_plain_id(cid) for cid in data.get("children") or []]
+            continue
+        comments.append(_kept_comment(data))
+        pending += reversed(_replies(data.get("replies")))
+    return comments, collapsed
+
+
+def _replies(replies) -> list:
+    """The replies under a comment: a Reddit listing, a plain list, or nothing ("")."""
+    if isinstance(replies, dict):
+        children = (replies.get("data") or {}).get("children")
+        return children if isinstance(children, list) else []
+    return replies if isinstance(replies, list) else []
+
+
+def _kept_comment(comment: dict) -> dict:
+    return {field: comment.get(field) for field in COMMENT_FIELDS} | {"id": _plain_id(comment.get("id"))}
+
+
+def _connected(comments: list[dict], post_id: str) -> list[dict]:
+    """The comments that can go in the thread, in their order, each once.
+
+    Left out: a comment of another post, one with no id, no text or no date, and a reply to a comment that isn't
+    kept (and so on down its chain), since every reply in a thread file must point to a comment in it.
+    """
+    kept: dict[str, dict] = {}
+    for c in comments:
+        usable = (c["id"] and isinstance(c.get("created_utc"), int | float) and str(c.get("body") or "").strip()
+                  and _plain_id(c.get("link_id") or post_id) == post_id)
+        if usable and c["id"] not in kept:
+            kept[c["id"]] = c
+    changed = True
+    while changed:  # a reply's reply is only found missing once the reply has gone
+        changed = False
+        for cid, c in list(kept.items()):
+            parent = str(c.get("parent_id") or "")
+            if parent and not parent.startswith("t3_") and _plain_id(parent) != post_id and _plain_id(parent) not in kept:
+                del kept[cid]
+                changed = True
+    return list(kept.values())

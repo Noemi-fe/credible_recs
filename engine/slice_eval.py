@@ -8,6 +8,11 @@ fails, so anything else is a bug.
 The headline: how many questions get a full top 3, and how many get at least one pick. A question with no pick
 gets the honest "not enough credible evidence" message, which is the right answer when the library is thin; the
 fix is more threads, not looser rules.
+
+Answers only quote threads checked live on Reddit in the last 14 days (engine/pipeline.py, Noemi, 9 Oct 2026), so
+the score also counts the threads waiting for a live check: a drop in picks with threads waiting means
+`python -m engine.library check-live` is due, not that the engine got worse. threads_behind_answers lists the
+threads the answers would quote if every thread were checked: the ones check-live reads first.
 """
 
 import json
@@ -30,6 +35,7 @@ class QuestionResult:
     picks: list[str] = field(default_factory=list)  # the picks' names, best first
     threads: int = 0  # threads read
     unverified: int = 0  # shown quotes that failed the check: must be 0
+    waiting_live_check: int = 0  # threads about the product not used because they wait for a live check
 
 
 def score_questions(questions_path: Path = DEFAULT_QUESTIONS, library_dir: Path = DEFAULT_LIBRARY_DIR,
@@ -39,7 +45,8 @@ def score_questions(questions_path: Path = DEFAULT_QUESTIONS, library_dir: Path 
     results = []
     for q in questions:
         run = answer_request(q["text"], library_dir=library_dir, profiles=profiles)
-        result = QuestionResult(q["id"], q["text"], run.query.status, threads=len(run.threads_used))
+        result = QuestionResult(q["id"], q["text"], run.query.status, threads=len(run.threads_used),
+                                waiting_live_check=len(run.waiting_live_check))
         if run.answer is not None:
             result.picks = [pick.name for pick in run.answer.picks]
             result.unverified = len(unverified_claims(run.answer, run.bodies))
@@ -53,15 +60,36 @@ def slice_lines(results: list[QuestionResult]) -> list[str]:
     some = sum(bool(r.picks) for r in results)
     unverified = sum(r.unverified for r in results)
     noun = "question" if len(results) == 1 else "questions"
-    lines = [f"{len(results)} {noun}: {full} with {PICKS_SHOWN} picks, {some} with at least 1 pick; unverified quotes shown: {unverified}"]
+    waiting = sum(r.waiting_live_check for r in results)
+    lines = [f"{len(results)} {noun}: {full} with {PICKS_SHOWN} picks, {some} with at least 1 pick; unverified quotes shown: {unverified}"
+             + (f"; threads waiting for a live check: {waiting}" if waiting else "")]
     for r in results:
         if r.status != "ok":
             lines.append(f"  {r.id} {r.status}")
             continue
         picks = f"{len(r.picks)} pick{'' if len(r.picks) == 1 else 's'}"
         names = f": {', '.join(r.picks)}" if r.picks else " (not enough credible evidence)"
-        lines.append(f"  {r.id} {picks}{names}; {r.threads} threads read")
+        waiting = (f"; {r.waiting_live_check} thread{'' if r.waiting_live_check == 1 else 's'} waiting for a live check"
+                   if r.waiting_live_check else "")
+        lines.append(f"  {r.id} {picks}{names}; {r.threads} threads read{waiting}")
     return lines
+
+
+def threads_behind_answers(questions_path: Path = DEFAULT_QUESTIONS, library_dir: Path = DEFAULT_LIBRARY_DIR,
+                           profiles=None) -> set[str]:
+    """The ids of the library threads the blind-test answers quote from, as if every thread were checked live.
+
+    Each question runs through the pipeline with the live-check requirement off, so a thread waiting for its check
+    still counts: these are the threads whose live checks keep the answers whole (`python -m engine.library
+    check-live` reads them first). Only the answers' quotes count: picks, their downsides, the skip list and the
+    "what to look for" notes. `profiles`: as in engine.pipeline. Nothing is shown to anyone.
+    """
+    questions = json.loads(Path(questions_path).read_text(encoding="utf-8"))["questions"]
+    quoted: set[str] = set()
+    for q in questions:
+        run = answer_request(q["text"], library_dir=library_dir, profiles=profiles, live_check_required=False)
+        quoted.update(run.threads_quoted)
+    return quoted
 
 
 def slice_report(questions_path: Path = DEFAULT_QUESTIONS, library_dir: Path = DEFAULT_LIBRARY_DIR) -> str:

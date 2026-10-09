@@ -268,3 +268,31 @@ PAID_PROMOTION_RED_FLAGS = 2
 
 # A budget typed with no currency ("under 100") is in this currency (Noemi, 9 Oct 2026: the shoppers are in the UK).
 BUDGET_DEFAULT_CURRENCY = "GBP"
+
+# --- Archive reader and live checks (Noemi, 9 Oct 2026) ---
+# Noemi decided on 9 Oct 2026, instead of paying for Parse: threads may be READ from Arctic Shift's archive (free) and
+# their text stored in the library, but an archive keeps comments people later deleted, so archive-read threads are
+# checked live (read again on Reddit through Parse, 2 credits each) regularly, and answers never show a quote from a
+# thread not checked live recently. What she decided says so; the numbers Claude chose to carry it out are PROPOSED.
+
+# How `python -m engine.library add` reads the threads it finds: "archive" (Arctic Shift, free) or "parse" (Parse,
+# 2 credits a thread, as before 9 Oct 2026). Decided: the archive, since Parse credits are scarce.
+LIBRARY_READER = "archive"
+# Answers use a thread only if Reddit itself was read for it within this many days (a thread read through Parse counts
+# from the day it was read). Days are calendar days, counted on the day the answer is given: a thread read live on
+# 7 Oct can be quoted up to and including 21 Oct. Decided: 14 days.
+LIVE_CHECK_SHOWN_DAYS = 14
+# Every other archive-read thread is checked live when it never was, or was last checked more than this many days ago.
+# Decided: 30 days, like the library's monthly refresh.
+LIVE_CHECK_ALL_DAYS = 30
+# PROPOSED: Parse credits a live-check run leaves untouched when no --max-credits is given (out of the month's 200),
+# for adding threads and urgent re-reads.
+LIVE_CHECK_CREDIT_RESERVE = 20
+# Decided: answers require the live check. False (for an experiment only) lets answers use every thread whatever its
+# last live check; the blind test must always run with True, so it can never show a quote that may have been deleted.
+LIVE_CHECK_REQUIRED = True
+# Retention (decided): an archive-read thread not checked live within LIVE_CHECK_ALL_DAYS + 7 days has its comments'
+# text (and its post's text) removed from the library, keeping only ids, titles and dates so it can be read again.
+# PROPOSED: the 7 days of grace, so one missed monthly run doesn't empty threads straight away. False turns it off.
+ARCHIVE_TEXT_RETENTION = True
+ARCHIVE_TEXT_KEPT_DAYS = LIVE_CHECK_ALL_DAYS + 7
