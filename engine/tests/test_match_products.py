@@ -256,3 +256,16 @@ def test_a_slip_must_keep_the_first_letter():
     # the first letter of a name, and names that differ only there are often two brands.
     assert not same_product("Hario", "Vario")
     assert same_product("Fonex", "Finex")
+
+
+# --- A brand written with and without its possessive "'s" (9 Oct 2026, gold scores with instructions v6) ---
+
+def test_a_brand_alone_matches_its_possessive_form():
+    # "FAB" (the AI) and "FAB's exfoliating pads" (Noemi) are the same product: the apostrophe is dropped, leaving "fabs".
+    assert same_product("FAB", "FAB's exfoliating pads")
+    assert not same_product("FAB", "Fable exfoliating pads")  # a longer word is another brand
+
+
+def test_a_model_code_with_an_s_is_another_model():
+    # "Q2" and "Q2S" are two grinders: the possessive rule is for brand words made of letters only.
+    assert not same_product("Q2", "q2s")

@@ -178,6 +178,8 @@ def _found_inside(words_a: list[str], words_b: list[str]) -> bool:
     """Whether every word of the shorter name is in the longer one, the shorter says enough to be a name, and the
     longer doesn't add a word naming another model or version."""
     shorter, longer = sorted((words_a, words_b), key=len)
+    if len(shorter) == 1 and shorter[0].isalpha() and longer[0] == shorter[0] + "s":
+        longer = shorter + longer[1:]  # a brand and its possessive: "FAB" and "FAB's exfoliating pads" (9 Oct 2026)
     if not set(shorter) <= set(longer):
         return False
     if (set(longer) - set(shorter)) & PRODUCT_VARIANT_WORDS:

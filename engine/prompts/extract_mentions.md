@@ -37,8 +37,9 @@ comment text it prints.
 - Not a product: a kind with no brand ("a gooseneck kettle", "a carbon steel pan": see notes below), an
   ingredient alone ("salicylic acid", "niacinamide") unless it names a product ("The Ordinary Niacinamide"), a
   shop (Amazon, Costco, Sephora), a maker of parts inside products (Strix), a vague store brand ("a cheap one
-  from Walmart"), or a product the writer deliberately doesn't name. An upgrade part bought separately
-  (replacement grinder burrs) is a product.
+  from Walmart"), a product the writer deliberately doesn't name, or a service (laser treatments such as
+  "Clear and Brilliant", facials, salon or clinic procedures: they're done to you, not bought to use). An upgrade
+  part bought separately (replacement grinder burrs) is a product.
 - Name the product as the comment writes it, abbreviations included ("Encore", "TO peeling solution", "BoJ
   sunscreen"), but without a leading "the" or "a" (keep it when it's part of the brand: "The Ordinary", "The Face
   Shop"), and with HTML codes turned back into characters ("Black & Decker", not "Black &amp; Decker"). Don't

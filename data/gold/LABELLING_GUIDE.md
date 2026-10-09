@@ -15,7 +15,8 @@ answers measure the same thing. Label before you ever see the AI's output for a 
      comment: "Walgreens glycolic acid toner"). A vague "a cheap one from Walmart" doesn't.
    - A product you only identify by opening a link: label the true product and add the note "from link".
    - Not a product: a type with no brand ("a carbon steel pan"), an ingredient alone ("niacinamide"), a shop
-     (Amazon, Sephora), a parts maker (Strix). An upgrade part you buy separately (replacement burrs) is one.
+     (Amazon, Sephora), a parts maker (Strix), a service (laser treatments, facials, clinic procedures). An upgrade
+     part you buy separately (replacement burrs) is one.
    - Advice about a kind of product ("a sujihiki is the safer bet", "look for VG10 steel", "chemical exfoliants
      beat scrubs"): add a row, tick "kind, not a brand" and name the kind any way you like. Kinds are open-ended:
      they're grouped per request later, so "gyuto" and "Japanese chef knife" can count together.
