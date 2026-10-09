@@ -169,3 +169,14 @@ OLD_SKINCARE_POST_MAX_VOICE = "medium"  # PROPOSED: formulas change, so an old s
 # The comment's words.
 ENTHUSIAST_MIN_TERMS = 3  # PROPOSED: using this many of the category's specialist words shows an "enthusiast"
 LONG_TERM_MIN_MONTHS = 12  # from the guide: long-term use is a year or more
+
+# --- Module 4: product matching (proposed 9 Oct 2026) ---
+# Proposed by Claude, for Noemi to approve: words that name another model or another version of a product. A name
+# found inside a longer one is the same product, unless the longer name adds one of these words: "Timemore C2" and
+# "Timemore C2 Max" are two grinders, "Dynasty Cream" and "new Dynasty Cream" two formulas.
+PRODUCT_VARIANT_WORDS = frozenset({
+    "pro", "max", "plus", "mini", "lite", "slim", "go",  # models
+    "new", "newest", "old", "modern", "vintage", "antique",  # versions: a new formula, an old casting
+})
+# The brief's target for module 4: at least this share of the labelled same-or-different pairs right.
+MATCHING_TARGET = 0.90

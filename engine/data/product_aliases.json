@@ -1,0 +1,51 @@
+{
+  "note": "Known short names, per category: written out in full before names are compared (engine/match_products.py). Drafted by Claude on 9 Oct 2026 from the library's product names; Noemi reviews. Add a short name only when real names show it is needed, and list them under 'seen' (product names only, never comment text). Products: a short name is only written out at the start of a name. Kinds: anywhere in the kind (engine/group_kinds.py).",
+  "products": {
+    "skincare": [
+      {"short": "TO", "full": "The Ordinary", "seen": ["TO lactic acid", "The ordinary lactic acid", "TO niacinamide", "the Ordinary Niacinamide 10% and Zinc 1%"]},
+      {"short": "LRP", "full": "La Roche-Posay", "seen": ["LRP", "La Roche Posay"]},
+      {"short": "BOJ", "full": "Beauty of Joseon", "seen": ["BOJ red bean water gel", "Beauty of Joseon Dynasty Cream"]},
+      {"short": "FAB", "full": "First Aid Beauty", "seen": ["FAB", "Fab ultra repair cream", "First Aid Beauty Coconut Water Cream"]},
+      {"short": "TFS", "full": "The Face Shop", "seen": ["TFS", "The Face Shop Natural Sun Eco Sebum Control Moisture Sun SPF 40 PA+++"]},
+      {"short": "KGD", "full": "Koh Gen Do", "seen": ["KGD lotion", "Koh Gen Do Lotion I"]},
+      {"short": "EH", "full": "Etude House", "seen": ["EH sunscreen", "Etude House Sunprise Mild Airy Finish"]},
+      {"short": "HL", "full": "Hada Labo", "seen": ["HL Hyaluronic Lotion Moist", "Hada Labo Perfect Gel"]},
+      {"short": "Elta", "full": "EltaMD", "seen": ["Elta", "Elta MD UV Clear", "EltaMD"]},
+      {"short": "BCIZ", "full": "Banila Co Clean It Zero", "seen": ["BCIZ", "banila co clean it zero"]}
+    ],
+    "kitchen": [
+      {"short": "1Z", "full": "1Zpresso", "seen": ["1Z K plus", "1ZPresso K Plus"]},
+      {"short": "Sage", "full": "Breville", "seen": ["sage smart grinder pro", "Breville Smart Grinder Pro"]},
+      {"short": "SGP", "full": "Breville Smart Grinder Pro", "seen": ["SGP", "Breville Smart Grinder Pro"]},
+      {"short": "C2", "full": "Timemore C2", "seen": ["C2", "Timemore C2"]},
+      {"short": "C3", "full": "Timemore C3", "seen": ["C3", "Timemore C3"]},
+      {"short": "C40", "full": "Comandante C40", "seen": ["C40", "Comandante C40"]},
+      {"short": "K2", "full": "Kingrinder K2", "seen": ["K2", "KinGrinder K2"]},
+      {"short": "Q2", "full": "1Zpresso Q2", "seen": ["Q2", "1zpresso Q2"]},
+      {"short": "JX", "full": "1Zpresso JX", "seen": ["JX Pro", "1zpresso JX-Pro", "jx", "1zpresso JX"]},
+      {"short": "SD40", "full": "Turin SD40", "seen": ["sd40", "Turin SD-40"]},
+      {"short": "LSM90", "full": "La San Marco SM90", "seen": ["LSM90", "La San Marco SM-90"]},
+      {"short": "Skerton", "full": "Hario Skerton", "seen": ["Skerton", "Hario Skerton"]},
+      {"short": "Encore", "full": "Baratza Encore", "seen": ["Encore", "Baratza Encore"]},
+      {"short": "Sette", "full": "Baratza Sette", "seen": ["Sette", "Baratza Sette"]},
+      {"short": "Preciso", "full": "Baratza Preciso", "seen": ["Preciso", "Baratza Preciso"]},
+      {"short": "Dedica", "full": "DeLonghi Dedica", "seen": ["dedica", "Delonghi Dedica"]},
+      {"short": "Bambino", "full": "Breville Bambino", "seen": ["bambino", "Breville Bambino"]},
+      {"short": "Silenzio", "full": "Eureka Silenzio", "seen": ["Silenzio", "Eureka Silenzio"]},
+      {"short": "Mignon", "full": "Eureka Mignon", "seen": ["Mignon Specialita", "eureka mignon"]},
+      {"short": "Proline", "full": "Demeyere Proline", "seen": ["Proline stainless steel skillet", "Demeyere Proline"]}
+    ]
+  },
+  "kinds": {
+    "skincare": [
+      {"short": "BHA", "full": "salicylic acid", "seen": ["salicylic acid (BHA) exfoliant", "salicylic acid exfoliant"]}
+    ],
+    "kitchen": [
+      {"short": "skillet", "full": "pan", "seen": ["cast iron skillet", "cast iron pan", "carbon steel skillet", "carbon steel pan"]},
+      {"short": "frying pan", "full": "pan", "seen": ["carbon steel frying pan", "carbon steel pan"]},
+      {"short": "Teflon", "full": "nonstick", "seen": ["teflon pan", "nonstick pan", "teflon non-stick pan"]},
+      {"short": "chain mail", "full": "chainmail", "seen": ["chain mail scrubber", "chainmail scrubber"]},
+      {"short": "stainless", "full": "stainless steel", "seen": ["stainless or carbon steel pan", "stainless steel pan"]}
+    ]
+  }
+}
