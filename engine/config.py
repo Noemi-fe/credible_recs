@@ -196,3 +196,8 @@ PIPELINE_INCLUDE_LOOSE = False
 # PROPOSED: this many failed look-ups in a row means the trouble is Arctic Shift itself (down or busy), not one
 # writer, so it stops asking and leaves the remaining writers as they were, instead of waiting on every one of them.
 PROFILE_FAILURES_IN_A_ROW_TO_STOP = 3
+
+# --- Module 8: local demo (proposed 9 Oct 2026) ---
+# The search page and its JSON API (engine/web.py), served on this machine only. PROPOSED, for Noemi to approve.
+WEB_PORT = 8765  # the local address is http://127.0.0.1:8765/; `python -m engine.web --port N` picks another
+WEB_MAX_REQUEST_CHARS = 300  # a longer request is refused (400): a real need fits in far fewer words
