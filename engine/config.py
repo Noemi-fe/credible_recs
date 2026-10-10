@@ -484,3 +484,51 @@ PRODUCT_FACT_REQUEST_WORDS: dict[str, tuple[str, ...]] = {
 # `python -m engine.product_facts todo` looks at this many candidates per blind-test question: its picks, then the
 # products that qualify or nearly qualify, in the ranking's order.
 PRODUCT_FACTS_TODO_CANDIDATES = 5
+
+# --- Pick polish (10 Oct 2026) ---
+# Decided by Claude (the orchestrator) on 10 Oct 2026, as Noemi asked, and reported to her. Three fixes to what a pick
+# shows, found in the 10 Oct evaluation run (eval/RUNS.md).
+#
+# 1. A brand pick never appears next to its own specific product ("Victorinox (their chef knives)" next to "Victorinox
+# chef's knife"): when both qualify, the specific product stays and the brand pick steps aside (engine/pipeline.py). No
+# value to set.
+#
+# 2. A brand pick can't be checked against product facts (a brand has many products), so when the request has a hard
+# requirement that its product type can have (PRODUCT_FACT_RULES above, "hard": True), brand picks are left out and
+# listed with this reason. The wording is shown to users: "a whole brand can't be checked for PFAS or a non-stick
+# coating". HARD_REQUIREMENT_NAMES says what each hard rule checks for, in words that fit the sentence; several are
+# joined with commas and a last "or".
+BRAND_PICK_UNCHECKABLE = "a whole brand can't be checked for {requirements}"
+HARD_REQUIREMENT_NAMES: dict[str, str] = {
+    "too strong": "strength",
+    "prescription only": "prescription-only formulas",
+    "fragrance": "added fragrance",
+    "white cast": "a white cast",
+    "PFAS": "PFAS",
+    "not non-stick": "a non-stick coating",
+    "plastic": "plastic inside",
+    "not induction": "working on an induction hob",
+}
+#
+# 3. Care tips most writers agree on come first (engine/care_tips.py, tips_by_agreement). Two tips say the same thing
+# when they are the same tip (same_tip), or when they share at least CARE_TIP_SHARED_WORDS words and, counting both
+# tips' words together, at least CARE_TIP_SHARED_SHARE of them are words both have (little words such as "with" and
+# "the" aside, and endings: "descale it with vinegar" and "descaling with white vinegar regularly" share 2 words, 4 of
+# their 6, so they say the same thing; "descale every 6 months" and "descale with citric acid", one word in common,
+# don't). Measured on the 10 Oct 2026 library against a looser rule (half of the shorter tip's words), which put
+# "only for boiling water; brew elsewhere" with the kettle's descaling tips.
+CARE_TIP_SHARED_WORDS = 2
+CARE_TIP_SHARED_SHARE = 0.5
+# Tips about fixing a broken part rather than looking after the product come after every other tip, however many
+# writers agree on them: regular expressions, matched on whole words of the tip (lowercase, punctuation aside). "grind"
+# counts only as grinding something down ("grind it flat"): a coffee grinder's "only grind with the cap on" is upkeep.
+CARE_TIP_REPAIR_WORDS = (
+    r"seal(s|ed|ing|ant)?",
+    r"glue(s|d)?", r"gluing",
+    r"replac(e|es|ed|ing|ement)",
+    r"solder(s|ed|ing)?",
+    r"grind(s|ing)? (it |them )?(down|flat|smooth|off|away)", r"angle grinders?",
+    r"sand(s|ed|ing|er|paper)?",
+    r"epoxy",
+    r"repair(s|ed|ing)?",
+)

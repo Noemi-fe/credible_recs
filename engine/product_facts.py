@@ -35,7 +35,11 @@ How a product finds its facts (find_facts), as a product finds its price (engine
 category whose name means the same product, by module 4's rules (engine.match_products.same_product, with the
 category's known short names, so "Sage" finds "Breville"). When several fit: the one with exactly the same words first,
 then one of the requested product type, then the most recently checked. A brand pick ("Lodge (their cast iron
-skillets)") is no single product, so its facts are never looked up.
+skillets)") is no single product, so its facts are never looked up. So when the request has a hard requirement its
+product type can have (hard_requirements: "non-stick frying pan without PFAS"), brand picks are left out and listed with
+the reason uncheckable_brand_reason gives ("a whole brand can't be checked for PFAS or a non-stick coating"; decided by
+Claude, 10 Oct 2026, as Noemi asked): a brand's other pans may well be PTFE-coated. A requirement its type can't have
+("first chef's knife" asks for a beginner's strength, but a chef knife has no strength) leaves brand picks in.
 
 How facts meet a request (conflicts). The rules are config.PRODUCT_FACT_RULES, one table: when the request asks for one
 of a rule's "asks", a product whose fact has the rule's value doesn't suit it. What a request asks for (request_asks):
@@ -73,6 +77,8 @@ from urllib.parse import urlsplit
 from pydantic import AfterValidator, Field, StrictBool, ValidationError, model_validator
 
 from engine.config import (
+    BRAND_PICK_UNCHECKABLE,
+    HARD_REQUIREMENT_NAMES,
     NEEDS,
     PRODUCT_FACT_REQUEST_WORDS,
     PRODUCT_FACT_RULES,
@@ -250,6 +256,26 @@ def facts_that_matter(query: ParsedQuery) -> list[str]:
     matter = [rule["fact"] for rule in PRODUCT_FACT_RULES.values()
               if asks & set(rule["asks"]) and rule["fact"] in allowed]
     return list(dict.fromkeys(matter))
+
+
+def hard_requirements(query: ParsedQuery) -> list[str]:
+    """The hard rules (config.PRODUCT_FACT_RULES, "hard": True) this request asks for, in the rule table's order: the
+    request asks for one of the rule's "asks", and the rule's fact is one its product type can have
+    (config.PRODUCT_FACTS_BY_TYPE). [] when none applies: "first chef's knife" asks for a beginner's strength, but a
+    chef knife has no strength to check. A brand pick can't be checked for any of them (engine/pipeline.py)."""
+    asks = set(request_asks(query))
+    allowed = PRODUCT_FACTS_BY_TYPE.get(query.product_type or "", ())
+    return [name for name, rule in PRODUCT_FACT_RULES.items()
+            if rule["hard"] and asks & set(rule["asks"]) and rule["fact"] in allowed]
+
+
+def uncheckable_brand_reason(rules: list[str]) -> str:
+    """Why a brand pick is left out of a request with these hard rules, in words for the shopper (config.
+    BRAND_PICK_UNCHECKABLE and HARD_REQUIREMENT_NAMES): "a whole brand can't be checked for PFAS or a non-stick
+    coating"."""
+    named = [HARD_REQUIREMENT_NAMES.get(rule, rule) for rule in rules]
+    listed = ", ".join(named[:-1]) + " or " + named[-1] if len(named) > 1 else named[0]
+    return BRAND_PICK_UNCHECKABLE.format(requirements=listed)
 
 
 # --- What is still to look up: python -m engine.product_facts todo ---

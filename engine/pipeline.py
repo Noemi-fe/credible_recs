@@ -23,7 +23,12 @@ Every step is a module of its own; this file only passes each one's output to th
   names the requested product, and one of the brand's own products named in the threads is of that type ("Lodge
   Blacklock skillet"; config.BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE). Then they are ranked under a name that says
   what they are: "Lodge (their cast iron skillets)". The others are left out: their mentions can't count for any
-  one product. PIPELINE_BRAND_PICKS = False leaves them all out.
+  one product. PIPELINE_BRAND_PICKS = False leaves them all out. A brand pick never appears next to its own specific
+  product (decided by Claude, 10 Oct 2026, as Noemi asked): when both qualify ("Victorinox (their chef knives)" and
+  "Victorinox chef's knife"), the specific product stays and the brand pick steps aside, out of the ranking, so its
+  support counts for nothing rather than twice. It is listed on the result with the product it stepped aside for
+  (folded_brand_picks). Its own products are those whose name starts with the brand's words, or that module 4 says
+  are one of its products (engine.match_products.same_product: "CeraVe cleanser" and "CeraVe Hydrating Cleanser").
 - with a budget in the request (a max and a currency), a product whose price (engine/prices.py, data/prices.json) is
   known and above the max is left out (Noemi's decision 11). A product with no known price, a price in another
   currency, or a price checked over PRICE_MAX_AGE_DAYS ago is kept, and its answer says so.
@@ -34,7 +39,10 @@ Every step is a module of its own; this file only passes each one's output to th
   budget step, a product whose checked facts clash with what the request asks for is left out by a hard rule ("retinol
   for a beginner with sensitive skin" leaves out a strong, prescription-only retinoid) and listed with the reason
   (left_out_not_suited), or kept by a soft rule with the reason shown under its pick as a caution ("Note: ..."). A fact
-  that isn't known never leaves a product out. Brand picks have no single product, so their facts are never looked up.
+  that isn't known never leaves a product out. Brand picks have no single product, so their facts are never looked up:
+  when the request has a hard requirement its product type can have ("non-stick frying pan without PFAS"; engine.
+  product_facts.hard_requirements), brand picks are left out too, listed with the reason "a whole brand can't be
+  checked for PFAS or a non-stick coating" (decided by Claude, 10 Oct 2026, as Noemi asked).
 - only threads checked live on Reddit in the last LIVE_CHECK_SHOWN_DAYS (14) days are quoted (Noemi, 9 Oct 2026): a
   thread read from Arctic Shift's archive may still hold comments people deleted on Reddit since, so it counts from
   the day a live check read it on Reddit (checked_live_at); a thread read through Parse counts from the day it was
@@ -103,11 +111,27 @@ from engine.match_products import known_aliases, normalize_name, same_product
 from engine.models import Comment, Thread
 from engine.needs import Need, needs_met, request_needs
 from engine.prices import Price, PriceCheck, check_price, find_availability, find_price, load_prices
-from engine.product_facts import NotSuited, ProductFacts, conflicts, find_facts, load_product_facts
+from engine.product_facts import (
+    NotSuited,
+    ProductFacts,
+    conflicts,
+    find_facts,
+    hard_requirements,
+    load_product_facts,
+    uncheckable_brand_reason,
+)
 from engine.profiles import ProfileStore, StoredProfiles, with_profiles
 from engine.query import PRODUCT_TYPES, ParsedQuery, parse_query
 from engine.rank import KindNote, RankingResult, ScoredMention, rank_products
 from engine.sources import LocalSource, mentions_product
+
+
+@dataclass(frozen=True)
+class FoldedBrandPick:
+    """A brand pick that stepped aside for a specific product of its own brand that also qualifies (10 Oct 2026)."""
+
+    name: str  # the brand pick's name: "Victorinox (their chef knives)"
+    stepped_aside_for: str  # the product it stepped aside for: "Victorinox chef's knife"
 
 
 @dataclass
@@ -125,7 +149,10 @@ class PipelineResult:
     left_out_unavailable: list[str] = field(default_factory=list)  # product names the price list says aren't sold now
     not_priced: list[str] = field(default_factory=list)  # brand or line names ranked (decision 9): never priced
     # Products whose facts clash with the request by a hard rule (engine/product_facts.py, 9 Oct 2026): name and reason.
+    # Since 10 Oct 2026 also brand picks, when the request has a hard requirement: a whole brand can't be checked.
     left_out_not_suited: list[NotSuited] = field(default_factory=list)
+    # Brand picks that stepped aside for a specific product of their brand that also qualifies (10 Oct 2026).
+    folded_brand_picks: list[FoldedBrandPick] = field(default_factory=list)
     live_dropped: dict[str, int] = field(default_factory=dict)  # comments dropped by the live check, by reason
     # Ids of extracted threads about the product not checked live on Reddit in the last LIVE_CHECK_SHOWN_DAYS: not
     # used until `python -m engine.library check-live` reads them again (Noemi, 9 Oct 2026).
@@ -207,11 +234,13 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     result.contradicting_writers = sorted(contradicting_writers(groups, {c.id: c for t in threads for c in t.comments}))
     scored, kind_notes = _score(threads, checked, kept_groups, kinds, request_needs(query),
                                 set(result.contradicting_writers))
-    result.ranking = rank_products(scored, query.category, kind_notes, placements(kinds))
-    care = _care_tips(threads, checked, kept_groups, kinds, query)
+    result.ranking = _fold_brand_picks(rank_products(scored, query.category, kind_notes, placements(kinds)),
+                                       kept_groups, result)
+    folded = {item.name for item in result.folded_brand_picks}
+    care = _care_tips(threads, checked, [g for g in kept_groups if g.name not in folded], kinds, query)
     result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions)
     if live_checker is not None:
-        _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions)
+        _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions, kept_groups)
     thread_of = {c.id: t.id for t in threads for c in t.comments}
     quoted = {thread_of.get(quote.comment_id) for _, quote in _every_quote(result.answer)}
     result.threads_quoted = [tid for tid in result.threads_used if tid in quoted]
@@ -219,13 +248,14 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
 
 
 def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds, query, price_checks, care,
-                cautions=None) -> None:
+                cautions=None, groups: list[ProductGroup] = ()) -> None:
     """Checks every quote about to be shown against Reddit itself; drops the comments that fail and answers again.
 
     A comment that fails (gone, changed or unreadable) loses its votes too: the ranking is redone without it, so a
     deleted opinion never decides a pick. Each comment is asked about once (the checker also keeps its answer for
     48 hours). Stops when every shown quote passes, or after LIVE_CHECK_ROUNDS rounds; result.live_dropped counts the
-    comments dropped by reason.
+    comments dropped by reason. Brand picks step aside for their own products again on the new ranking (`groups` are
+    the product groups ranked): one whose product no longer qualifies comes back.
     """
     failed: set[str] = set()
     for _ in range(LIVE_CHECK_ROUNDS):
@@ -241,8 +271,9 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
             return
         failed |= new
         result.bodies = {cid: body for cid, body in result.bodies.items() if cid not in failed}
-        result.ranking = rank_products([m for m in scored if m.comment_id not in failed], query.category,
-                                       [n for n in kind_notes if n.comment_id not in failed], placements(kinds))
+        ranking = rank_products([m for m in scored if m.comment_id not in failed], query.category,
+                                [n for n in kind_notes if n.comment_id not in failed], placements(kinds))
+        result.ranking = _fold_brand_picks(ranking, groups, result)
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions)
 
 
@@ -407,10 +438,16 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
     A product with a hard clash (engine.product_facts.conflicts) is left out and named on the result with every hard
     reason; one with only soft clashes is kept, and their reasons go under its pick. A product with no facts entry, or
     whose entry doesn't give the facts a rule reads, is kept as it is. A brand pick has no single product, so it is
-    never looked up.
+    never looked up: when the request has a hard requirement its product type can have (engine.product_facts.
+    hard_requirements), it is left out and named on the result, since a whole brand can't be checked (10 Oct 2026);
+    otherwise it is kept.
     """
+    requirements = hard_requirements(query)
     kept, cautions = [], {}
     for group in groups:
+        if group.loose and requirements:
+            result.left_out_not_suited.append(NotSuited(group.name, uncheckable_brand_reason(requirements)))
+            continue
         found = [] if group.loose else conflicts(query, find_facts(group.name, group.category, product_facts,
                                                                    query.product_type))
         hard = [c.reason for c in found if c.hard]
@@ -422,6 +459,45 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
         if soft:
             cautions[group.key] = soft
     return kept, cautions
+
+
+# --- A brand pick steps aside for its own product (decided by Claude, 10 Oct 2026) ---
+
+def _fold_brand_picks(ranking: RankingResult, groups: list[ProductGroup], result: PipelineResult) -> RankingResult:
+    """The ranking without the brand picks that qualify next to a specific product of their own brand that qualifies too
+    ("Victorinox (their chef knives)" next to "Victorinox chef's knife"): the specific product stays, the brand pick
+    leaves the ranking, so its support counts for nothing rather than twice. Each is named on the result with the
+    first such product in the ranking (folded_brand_picks, worked out afresh each time). `groups` are the product
+    groups ranked."""
+    by_key = {g.key: g for g in groups}
+    qualifying = [(p, by_key[p.key]) for p in ranking.qualifying if p.key in by_key]
+    specific = [(p, g) for p, g in qualifying if not g.loose]
+    folded, keys = [], set()
+    for product, brand in qualifying:
+        if not brand.loose:
+            continue
+        own = next((p for p, g in specific if _same_brand(brand, g)), None)
+        if own is not None:
+            folded.append(FoldedBrandPick(product.name, own.name))
+            keys.add(product.key)
+    result.folded_brand_picks = folded
+    return replace(ranking, products=[p for p in ranking.products if p.key not in keys]) if keys else ranking
+
+
+def _same_brand(brand: ProductGroup, product: ProductGroup) -> bool:
+    """Whether a specific product is one of a brand pick's own products: a name of the brand (as written, or as the UK
+    knows it) is the first word or words of one of the product's names ("Victorinox" and "Victorinox chef's knife"), or
+    module 4 says the two names mean the same product (engine.match_products.same_product: "CeraVe cleanser" and
+    "CeraVe Hydrating Cleanser")."""
+    aliases = known_aliases().get(brand.category, {})
+    brand_names = set(brand.names) | {uk_name(name) for name in brand.names}
+    product_names = set(product.names) | {product.name}
+    for name in brand_names:
+        words = normalize_name(name)
+        if words and any(normalize_name(other)[:len(words)] == words or same_product(name, other, aliases)
+                         for other in product_names):
+            return True
+    return False
 
 
 # --- Module 5: a weight for every mention and note ---
@@ -537,6 +613,8 @@ def main(argv: list[str]) -> int:
               f"{len(result.left_out_unavailable)}; not suited to the request: {len(result.left_out_not_suited)})")
         for item in result.left_out_not_suited:
             print(f"  not suited: {item.name} ({item.reason})")
+        for item in result.folded_brand_picks:
+            print(f"  brand pick stepped aside: {item.name} (for {item.stepped_aside_for})")
     return 0
 
 

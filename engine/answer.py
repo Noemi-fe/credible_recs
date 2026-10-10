@@ -23,8 +23,10 @@ What each pick shows (the brief):
   doesn't already link to that page), or "Availability not checked yet". Products no longer sold never get here: the
   pipeline leaves them out;
 - "How to make it last" (Noemi, 9 Oct 2026): up to CARE_TIPS_PER_PICK credible care tips from the threads ("descale
-  every 6 months"), the product's own first, then its kind's, never the same tip twice (engine/care_tips.py), each
-  with its verified quote. A pick with no tip has no such heading.
+  every 6 months"), each with its verified quote. Since 10 Oct 2026 (decided by Claude, as Noemi asked) the advice
+  most credible writers agree on comes first and repairs ("smooth with an angle grinder") last; tips that say the same
+  thing are shown once, in their best writer's words (engine.care_tips.tips_by_agreement). A pick with no tip has no
+  such heading.
 - cautions (product facts, decided by Claude, 9 Oct 2026): when a checked fact suits the request less well by a soft
   rule (engine/product_facts.py: a rich moisturiser for oily skin), "Note: <the reason>." under the pick's price lines.
   Products whose facts clash by a hard rule never get here: the pipeline leaves them out.
@@ -54,7 +56,7 @@ from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import date
 
-from engine.care_tips import CareTip, CareTips, same_tip
+from engine.care_tips import CareTip, CareTips, tips_by_agreement
 from engine.config import (
     CARE_TIPS_PER_PICK,
     DOWNSIDES_PER_PICK,
@@ -68,7 +70,6 @@ from engine.config import (
     QUOTE_MAX_WORDS,
     QUOTES_PER_PICK,
     QUOTES_PER_SKIPPED_PRODUCT,
-    VOICE_LEVELS,
 )
 from engine.extract import _as_written, _in_quoted_block, _own_words_in_quote_format
 from engine.models import Thread
@@ -396,26 +397,22 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
 
 
 def _care_tips(tips: CareTips | None, check: _QuoteCheck) -> list[ShownCareTip]:
-    """Up to CARE_TIPS_PER_PICK care tips for one pick: its own tips first, then its kind's, each group most credible
-    voice first (in thread order on a tie). A tip that says the same as one already shown is skipped (same_tip); a
-    tip whose quote fails the check is dropped and the next one takes its place."""
+    """Up to CARE_TIPS_PER_PICK care tips for one pick, the ones most credible writers agree on first, repairs last
+    (engine.care_tips.tips_by_agreement, 10 Oct 2026). Each tip shown stands for one group of tips that say the same
+    thing, so the same advice is never shown twice: the group's best writer's tip, in their words, with their quote.
+    When that quote fails the check, it is dropped and the group's next writer's tip and quote take its place."""
     if tips is None:
         return []
     shown: list[ShownCareTip] = []
-    for item in _most_credible_voice_first(tips.own) + _most_credible_voice_first(tips.kind):
+    for group in tips_by_agreement(tips):
         if len(shown) == CARE_TIPS_PER_PICK:
             break
-        if any(same_tip(item.tip, other.tip) for other in shown):
-            continue
-        quote = check.first([item], 1)
-        if quote:
-            shown.append(ShownCareTip(_as_sentence(item.tip), quote[0]))
+        for item in group:
+            quote = check.first([item], 1)
+            if quote:
+                shown.append(ShownCareTip(_as_sentence(item.tip), quote[0]))
+                break
     return shown
-
-
-def _most_credible_voice_first(tips: Iterable[CareTip]) -> list[CareTip]:
-    """High voices before medium ones; equal voices keep their order, so the result is always the same."""
-    return sorted(tips, key=lambda tip: VOICE_LEVELS.index(tip.voice))
 
 
 def _as_sentence(tip: str) -> str:

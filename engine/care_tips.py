@@ -23,8 +23,31 @@ two things with the checked tips of one request:
      every steel knife, so when "carbon steel" and "steel" both fit, only "carbon steel" does;
    - a kind tip about the requested kind of product itself ("electric kettle", "kettles" in a kettle request, so no
      kind words are left) goes with every product: descaling is for every kettle.
-   The answer (engine/answer.py) then shows up to CARE_TIPS_PER_PICK per pick, the product's own tips first, never
-   the same tip twice (same_tip), each quote checked again word for word before it is shown.
+3. tips_by_agreement says which of a product's tips to show first (decided by Claude, 10 Oct 2026, as Noemi asked):
+   the ones most credible writers agree on. Showing the first two tips in thread order picked DIY repairs ("Seal a
+   leaking water gauge with silicone", "Smooth with an angle grinder") over the advice nearly everyone gives
+   ("descale with vinegar"). So:
+   - tips that say the same thing are gathered into one group. Two tips say the same thing (similar_tips) when they
+     are the same tip (same_tip), or when they share at least CARE_TIP_SHARED_WORDS words and, counting both tips'
+     words together, at least CARE_TIP_SHARED_SHARE of them are words both have, little words and endings aside
+     ("descale it with vinegar" and "descaling with white vinegar regularly"). Two tips of which only one says
+     "don't", "no", "not", "never" or "avoid" never say the same thing: "use soap" and "don't use soap" are opposite
+     advice. Nor do two tips that both give numbers, but not the same ones: "grind at 12 for pour-over" and "grind at
+     20 for pour-over" are different advice. Tips are taken in order (the product's own first, then its kind's, each
+     in thread order), and each joins the first group whose first tip says the same thing, or starts a group of its
+     own. Comparing with the first tip only keeps a group from drifting: tried on the library on 10 Oct 2026, letting a
+     group grow through a chain of tips, each like the one before, gathered 46 cast iron writers into one group
+     through common words (oil, water, soap, scrub);
+   - each group counts its distinct writers (one writer counts once, however many times they say it; a deleted
+     account counts once per comment), and the group with the most comes first. On a tie: the group with the higher
+     voice, then the one whose best tip is about the product itself rather than its kind, then thread order;
+   - tips about fixing a broken part (config.CARE_TIP_REPAIR_WORDS: seal, glue, replace, solder, sand, epoxy, angle
+     grinder, grinding something down, repair) come after every tip about looking after the product, however many
+     writers agree on them. A repair and an upkeep tip are never in the same group;
+   - within a group, the best writer comes first: the higher voice, then the product's own tip, then thread order.
+   The answer (engine/answer.py) then shows up to CARE_TIPS_PER_PICK per pick, one per group: the best writer's tip, in
+   their words, with their quote, checked again word for word before it is shown (when it fails, the group's next
+   writer's tip and quote take its place). No tip text is ever made up or merged.
 
 What words can't do (as for notes, engine/group_kinds.py): kinds that mean the same in other words stay apart, and
 most product names don't say their kind ("Lodge"), so a tip about a kind other than the requested one reaches only
@@ -32,10 +55,17 @@ products whose names say it ("Lodge cast iron skillet"). A tip about a narrower 
 iron" when only "cast iron" has notes) goes with that broader kind's products.
 """
 
+import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 
-from engine.config import CREDIBLE_VOICES
+from engine.config import (
+    CARE_TIP_REPAIR_WORDS,
+    CARE_TIP_SHARED_SHARE,
+    CARE_TIP_SHARED_WORDS,
+    CREDIBLE_VOICES,
+    VOICE_LEVELS,
+)
 from engine.credibility import score_voice
 from engine.extract import CheckResult
 from engine.group_kinds import KindGroup, kind_parts
@@ -57,6 +87,9 @@ class CareTip:
     comment_url: str  # the link shown next to the quote
     voice: str  # the writer's voice (module 5): high or medium, never low
     badges: tuple[str, ...] = ()  # "why this voice counts", in words: "well upvoted", "expert flair"
+    # The writer's name, lowercased, so a writer who gives the same tip twice counts once when tips are compared
+    # (10 Oct 2026); None for a deleted account.
+    author: str | None = None
 
 
 @dataclass
@@ -86,6 +119,7 @@ def credible_care_tips(threads: Iterable[Thread], checked: Mapping[str, CheckRes
             tips.append(CareTip(
                 about=care.about, is_kind=care.is_kind, tip=care.tip, quote=care.quote, thread_id=thread.id,
                 comment_id=care.comment_id, comment_url=str(comment.url), voice=voice.level, badges=voice.badges,
+                author=comment.author.name.lower() if comment.author is not None else None,
             ))
     return tips
 
@@ -165,3 +199,112 @@ def same_tip(a: str, b: str) -> bool:
 
 def _tip_words(tip: str) -> list[str]:
     return [w for w in plain_words(tip) if w not in _NOT_TIP_WORDS]
+
+
+# --- Which tips to show first: the ones most writers agree on (decided by Claude, 10 Oct 2026) ---
+
+def tips_by_agreement(tips: CareTips) -> list[list[CareTip]]:
+    """A product's care tips gathered into groups that say the same thing, in the order to show them: tips about
+    looking after the product first, the group most distinct credible writers agree on first, then the group with the
+    higher voice, then the one whose best tip is about the product itself rather than its kind, then thread order;
+    repairs last, in the same order. Each group lists its tips best writer first: the higher voice, then the product's
+    own tip, then thread order. The rules are at the top of this file."""
+    every = list(tips.own) + list(tips.kind)  # own tips first, each part in thread order: a tip's place breaks ties
+    words = [_content_words(tip.tip) for tip in every]
+    repair = [is_repair(tip.tip) for tip in every]
+    groups: list[list[int]] = []  # each group's tips, by their place in `every`; its first tip comes first
+    for i in range(len(every)):
+        first = (g for g in groups if repair[g[0]] == repair[i]
+                 and _alike(every[g[0]].tip, every[i].tip, words[g[0]], words[i]))
+        group = next(first, None)
+        if group is None:
+            groups.append([i])
+        else:
+            group.append(i)
+
+    def best_first(i: int) -> tuple:
+        return VOICE_LEVELS.index(every[i].voice), i
+
+    def order(members: list[int]) -> tuple:
+        writers = {_writer(every[i]) for i in members}
+        return repair[members[0]], -len(writers), min(map(best_first, members))
+
+    return [[every[i] for i in sorted(members, key=best_first)] for members in sorted(groups, key=order)]
+
+
+def similar_tips(a: str, b: str) -> bool:
+    """Whether two tips say the same thing: the same tip (same_tip), or tips that share at least CARE_TIP_SHARED_WORDS
+    words, with at least CARE_TIP_SHARED_SHARE of both tips' words, counted together, being words both have, little
+    words and endings aside ("descale it with vinegar" and "descaling with white vinegar regularly": 4 of 6). A tip
+    that says "don't" (or "no", "not", "never", "avoid") never says the same thing as one that doesn't: "use soap" is
+    the opposite of "don't use soap". Two tips that both give numbers, but not the same ones, don't either: "grind at
+    12" and "grind at 20"."""
+    return _alike(a, b, _content_words(a), _content_words(b))
+
+
+def _alike(a: str, b: str, words_a: set[str], words_b: set[str]) -> bool:
+    """similar_tips, with each tip's words (_content_words) worked out once."""
+    if same_tip(a, b):
+        return True
+    if _says_no(a) != _says_no(b):
+        return False
+    numbers_a, numbers_b = _numbers(words_a), _numbers(words_b)
+    if numbers_a and numbers_b and numbers_a != numbers_b:
+        return False
+    shared = len(words_a & words_b)
+    return shared >= CARE_TIP_SHARED_WORDS and 2 * shared >= CARE_TIP_SHARED_SHARE * (len(words_a) + len(words_b))
+
+
+def is_repair(tip: str) -> bool:
+    """Whether a tip is about fixing a broken part rather than looking after the product: it holds one of
+    config.CARE_TIP_REPAIR_WORDS as whole words ("seal", "glue", "replace", "solder", "sand", "epoxy", "angle grinder",
+    "grind it flat", "repair")."""
+    text = " ".join(plain_words(tip))
+    return any(re.search(rf"\b(?:{pattern})\b", text) for pattern in CARE_TIP_REPAIR_WORDS)
+
+
+# Words that carry little of a tip's meaning, left out when two tips' words are compared (on top of _NOT_TIP_WORDS).
+_LITTLE_WORDS = frozenset({
+    "in", "on", "of", "to", "for", "with", "and", "or", "by", "at", "from", "into", "onto", "then", "so", "as", "is",
+    "are", "be", "this", "that", "these", "those", "if", "when", "while", "all", "any", "some", "each", "every", "once",
+    "too", "very", "just", "also", "up", "do", "does", "can", "will", "should", "much", "more", "less", "only", "out",
+})
+# Words that turn a tip into its opposite: "don't use soap" (apostrophes are dropped: "dont").
+_NO_WORDS = frozenset({
+    "no", "not", "never", "dont", "doesnt", "cant", "wont", "shouldnt", "avoid", "without", "nothing",
+})
+
+
+def _content_words(tip: str) -> set[str]:
+    """The words of a tip that carry its meaning, without their endings: "Descaling it with vinegar" -> descal,
+    vinegar. Words that say "no" are left out too: _says_no compares them."""
+    left_out = _NOT_TIP_WORDS | _LITTLE_WORDS | _NO_WORDS
+    return {_stem(word) for word in plain_words(tip) if word not in left_out}
+
+
+def _says_no(tip: str) -> bool:
+    return any(word in _NO_WORDS for word in plain_words(tip))
+
+
+def _numbers(words: set[str]) -> set[str]:
+    return {word for word in words if word.isdigit()}
+
+
+def _stem(word: str) -> str:
+    """A word without its ending, so "descale", "descales", "descaled" and "descaling" are one word: in words of 4
+    letters or more, a final "s" (not "ss"), then "ing" or "ed" (leaving 3 letters at least), then a final "e"."""
+    if len(word) < 4 or word.isdigit():
+        return word
+    if word.endswith("s") and not word.endswith("ss"):
+        word = word[:-1]
+    for ending in ("ing", "ed"):
+        if word.endswith(ending) and len(word) - len(ending) >= 3:
+            word = word[:-len(ending)]
+            break
+    return word[:-1] if word.endswith("e") and len(word) > 3 else word
+
+
+def _writer(tip: CareTip) -> tuple[str, str]:
+    """Who wrote a tip: the writer's name, or, for a deleted account, the comment (so each of its comments counts)."""
+    return ("writer", tip.author) if tip.author is not None else ("comment", tip.comment_id)
+

@@ -529,7 +529,10 @@ def test_the_most_credible_tip_comes_first_within_own_and_kind_tips():
     medium, high = care_tip("oil the blade", voice="medium"), care_tip("use a wooden board")
     kind_medium, kind_high = care_tip("strop it", is_kind=True, voice="medium"), care_tip("hone it", is_kind=True)
     answer, _ = with_care(own=[medium], kind=[kind_medium, kind_high])
-    assert [c.tip for c in answer.picks[0].care] == ["Oil the blade.", "Hone it."]
+    # Updated 10 Oct 2026 (pick polish, decided by Claude as Noemi asked): care tips are now ordered by how many
+    # credible writers agree, and on a tie the higher voice comes first, before the product's own tip. Here every tip
+    # has one writer, so the high kind tip now comes before the medium own one (it was "Oil the blade.", "Hone it.").
+    assert [c.tip for c in answer.picks[0].care] == ["Hone it.", "Oil the blade."]
     answer, _ = with_care(own=[medium, high])
     assert [c.tip for c in answer.picks[0].care] == ["Use a wooden board.", "Oil the blade."]
 
