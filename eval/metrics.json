@@ -4,8 +4,8 @@
     "quote_verification": {
       "value": 1.0,
       "target": 1.0,
-      "count": 228,
-      "out_of": 228,
+      "count": 227,
+      "out_of": 227,
       "threads": null
     },
     "extraction_precision": {
@@ -58,10 +58,10 @@
       "threads": null
     },
     "ai_quotes_found": {
-      "value": 0.9992696731787475,
+      "value": 0.9992774566473989,
       "target": null,
-      "count": 5473,
-      "out_of": 5477,
+      "count": 5532,
+      "out_of": 5536,
       "threads": null
     },
     "request_outcome": {
@@ -119,7 +119,7 @@
     "with_all_picks": 10,
     "with_a_pick": 10,
     "picks_wanted": 3,
-    "quotes_shown": 228,
+    "quotes_shown": 227,
     "unverified_quotes_shown": 0,
     "threads_waiting_live_check": 0
   }
