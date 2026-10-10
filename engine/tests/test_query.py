@@ -98,7 +98,8 @@ def test_clear_requests_find_their_category_and_product(text, category, product_
 def test_subreddits_suit_the_product():
     assert classify("chef knife under £100").subreddits[0] == "chefknives"
     assert classify("cast iron skillet").subreddits[0] == "castiron"
-    assert set(classify("sunscreen spf 50").subreddits) == {"SkincareAddiction", "AsianBeauty", "30PlusSkinCare", "SkincareAddictionUK"}
+    assert set(classify("sunscreen spf 50").subreddits) == {"SkincareAddiction", "AsianBeauty", "30PlusSkinCare", "SkincareAddictionUK",
+                                                             "acne"}  # r/acne: Noemi, 11 Oct 2026
 
 
 def test_vague_request_gets_one_question_instead_of_a_guess():
@@ -213,3 +214,13 @@ def test_skin_type_typos_are_forgiven():
 @pytest.mark.parametrize("text", ["oven cleaner that actually works", "best laptop cleaner"])
 def test_real_words_are_not_corrected_into_products(text):
     assert parse_query(text).product_type != "cleanser"
+
+
+def test_the_acne_subreddit_is_searched_first_for_acne_requests_and_not_otherwise():
+    # Noemi added r/acne on 11 Oct 2026 (an agent had skipped its threads for the acne-prone cleanser question). A
+    # subreddit about one skin condition is the most specific for a request about it, and off-topic for the others.
+    general = ["SkincareAddiction", "AsianBeauty", "30PlusSkinCare", "SkincareAddictionUK"]
+    assert parse_query("gentle cleanser for acne-prone skin").subreddits == ["acne", *general]
+    assert parse_query("exfoliant for breakouts").subreddits[0] == "acne"
+    assert parse_query("moisturiser for dry skin").subreddits == general
+    assert parse_query("sunscreen for oily skin").subreddits == general

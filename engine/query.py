@@ -8,12 +8,13 @@ Every request ends in one of three outcomes:
 """
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal
 
 from pydantic import Field, model_validator
 
-from engine.config import SUBREDDITS, THREAD_CATEGORIES
+from engine.config import CONDITION_SUBREDDITS, SUBREDDITS, THREAD_CATEGORIES
 from engine.models import Record
 from engine.text import one_edit_apart
 
@@ -304,5 +305,13 @@ def parse_query(text: str) -> ParsedQuery:
         product_type=routing.product_type,
         constraints=constraints,
         search_terms=search_terms(routing.product_type, constraints),
-        subreddits=list(routing.subreddits),
+        subreddits=_condition_subreddits(routing.subreddits, constraints.skin_types),
     )
+
+
+def _condition_subreddits(subreddits: Iterable[str], skin_types: Iterable[str]) -> list[str]:
+    """The request's subreddits, with a skin condition's own subreddit (config.CONDITION_SUBREDDITS: r/acne) first when
+    the request is about that condition, and left out when it isn't."""
+    general = [s for s in subreddits if s not in CONDITION_SUBREDDITS]
+    own = [s for s in subreddits if CONDITION_SUBREDDITS.get(s) in set(skin_types)]
+    return own + general

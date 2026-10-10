@@ -10,9 +10,13 @@ THREAD_CATEGORIES = ("skincare", "kitchen")
 MENTION_CATEGORIES = THREAD_CATEGORIES + ("other",)
 
 SUBREDDITS: dict[str, tuple[str, ...]] = {
-    "skincare": ("SkincareAddiction", "AsianBeauty", "30PlusSkinCare", "SkincareAddictionUK"),
+    # "acne" added by Noemi on 11 Oct 2026 (an agent had skipped r/acne threads for the acne-prone cleanser question).
+    "skincare": ("SkincareAddiction", "AsianBeauty", "30PlusSkinCare", "SkincareAddictionUK", "acne"),
     "kitchen": ("BuyItForLife", "AskCulinary", "chefknives", "Cooking", "castiron", "Coffee", "espresso", "tea"),
 }
+# Subreddits about one skin condition, {subreddit: the skin type that brings it in} (decided by Claude, 11 Oct 2026, when
+# Noemi added r/acne): searched first for a request about that condition, as the most specific, and not for others.
+CONDITION_SUBREDDITS: dict[str, str] = {"acne": "acne-prone"}
 
 STANCE_VALUE: dict[str, int] = {"recommend": 1, "warn": -1, "neutral": 0}
 
