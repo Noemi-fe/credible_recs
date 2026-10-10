@@ -322,9 +322,13 @@ def _endorsement_signs(comment: Comment, thread: Thread, agreements: Iterable[Ex
     if comment.score < config.DOWNVOTED_BELOW:
         signs.append(Sign("downvoted", f"downvoted (score {comment.score})", "red flag"))
     elif others and comment.score >= config.WELL_UPVOTED_MIN_SCORE:
-        beaten = sum(score < comment.score for score in others) / len(others)
+        below = sum(score < comment.score for score in others)
+        beaten = below / len(others)
         if beaten >= config.WELL_UPVOTED_SHARE_BEATEN:
-            signs.append(Sign("well upvoted", f"{comment.score} points, more than {beaten:.0%} of this thread's comments", "good"))
+            # Rounded down, so it never says "more than 100%" (the demo page did, 10 Oct 2026).
+            where = ("the top comment in this thread" if below == len(others)
+                     else f"more than {below * 100 // len(others)}% of this thread's comments")
+            signs.append(Sign("well upvoted", f"{comment.score} points, {where}", "good"))
     parent_of = {c.id: c.parent_id for c in thread.comments}
     # A reply by the writer themselves isn't someone else backing them up (review fixes, 9 Oct 2026). Only a reply
     # known to be theirs is left out: two deleted accounts can't be told apart.

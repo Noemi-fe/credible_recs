@@ -251,6 +251,17 @@ def test_well_upvoted_is_relative_to_the_thread():
     assert "well upvoted" not in voice_for(score=6, others=(40, 85, 120, 2, 300)).tags
 
 
+def test_the_upvote_badge_never_says_more_than_every_comment():
+    # Found on the demo page, 10 Oct 2026: "665 points, more than 100% of this thread's comments". The share is rounded
+    # down, and a comment above every other one says so.
+    def badge(score, others):
+        return next(s.reason for s in voice_for(score=score, others=others).signs if s.tag == "well upvoted")
+
+    assert badge(9, (1, 1, 2, 2, 3)) == "9 points, the top comment in this thread"
+    assert badge(9, (1,) * 299 + (12,)) == "9 points, more than 99% of this thread's comments"  # 99.7%, not 100%
+    assert badge(6, (1, 1, 2, 2, 3, 3, 7)) == "6 points, more than 85% of this thread's comments"  # 85.7%, not 86%
+
+
 def test_a_tiny_score_is_not_well_upvoted_even_at_the_top_of_a_tiny_thread():
     assert "well upvoted" not in voice_for(score=config.WELL_UPVOTED_MIN_SCORE - 1, others=(0, 1, 1, 1)).tags
 
