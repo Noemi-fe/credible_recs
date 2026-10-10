@@ -39,11 +39,16 @@ answers measure the same thing. Label before you ever see the AI's output for a 
 | --- | --- |
 | high | At least two good signs (established member, expert flair, well upvoted for the thread's size, recent) and no red flag. |
 | medium | No red flag and fewer good signs (an ordinary owner), or exactly one red flag, whatever the good signs. |
-| low | Two red flags or more (salesy language, promotes one brand, brand-new account, low karma for its activity, downvoted), or clear paid promotion on its own (a discount code, an affiliate or referral link, "#ad"). |
+| low | Two red flags or more (salesy language, promotes one brand, brand-new account, low karma for its activity, downvoted, copied text), or clear paid promotion on its own (a discount code, an affiliate or referral link, "#ad"). |
 
 If, after labelling a while, almost nobody is high or most are low, tell Claude: the rubric gets recalibrated.
 Red flags are counted (Noemi, 9 Oct 2026): a new account alone doesn't sink a genuine expert, it only stops
 them being high.
+
+Copied text (Noemi, 11 Oct 2026): the comment repeats another writer's comment in the same thread word for
+word, 20 words or more in a row. It's a red flag for both copies: the same words under two names suggest
+coordinated promotion, and you can't tell who copied whom. Not copied text: a writer repeating their own
+comment, a reply repeating the comment it answers, words quoted with ">", or a short phrase anyone might write.
 
 Established member and well-regarded account are different signs (9 Oct 2026). Established: the account has
 been around for a while and is regularly active (time and activity). Well-regarded: other people upvote what it

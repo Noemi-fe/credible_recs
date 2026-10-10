@@ -115,7 +115,7 @@ from engine.config import (
     UK_BRAND_NAMES,
 )
 from engine.contradictions import contradicting_writers
-from engine.credibility import VoiceScore, badges, mention_weight, score_evidence, score_voice
+from engine.credibility import VoiceScore, badges, copied_comment_ids, mention_weight, score_evidence, score_voice
 from engine.extract import CheckResult, load_checked
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
 from engine.group_products import ProductGroup, ProductMention, brand_pick_name, group_of, group_products, uk_name
@@ -775,11 +775,12 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
     for tid, res in checked.items():
         thread = by_id[tid]
         comments = {c.id: c for c in thread.comments}
+        copied = copied_comment_ids(thread)  # once per thread: it reads the whole thread
         voices = {}
 
         def voice_of(comment: Comment) -> VoiceScore:
             if comment.id not in voices:
-                voice = score_voice(comment, thread, res.kept_agreements)
+                voice = score_voice(comment, thread, res.kept_agreements, copied=copied)
                 voices[comment.id] = _as_low(voice) if _writer(comment) in contradicting else voice
             return voices[comment.id]
 

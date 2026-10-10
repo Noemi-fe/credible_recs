@@ -41,6 +41,8 @@ VOICE_TAGS = (
     # Added 9 Oct 2026 (Noemi's decision 13): signs module 5 already found, recorded as "other" until then.
     "replies agree",  # replies to the comment agree with it: a good sign
     "downvoted",  # more downvotes than upvotes: a red flag
+    # Added 11 Oct 2026 (Noemi's decision 3).
+    "copied text",  # the same words as another writer's comment in the thread: a red flag (COPIED_TEXT_MIN_WORDS)
 )
 EVIDENCE_TAGS = (
     "long-term use",
@@ -734,3 +736,11 @@ BRIGHT_DATA_BATCH_THREADS = 20
 # After Arctic Shift fails, `library add` goes straight to Bright Data for this many minutes instead of waiting about 4
 # minutes for it to fail again (10 Oct 2026); then it tries Arctic Shift first again.
 ARCHIVE_DOWN_MINUTES = 30
+
+# --- Copied text (Noemi's decision 3, 11 Oct 2026) ---
+# A comment that copies another writer's comment word for word is a red flag in the voice rubric ("copied text" in
+# VOICE_TAGS; engine/credibility.py): its own words share at least this many words in a row with another writer's
+# comment in the same thread. Chosen by Claude (a technical value, reported to Noemi): 20 words is a sentence or two.
+# Writers who agree echo short phrases, not whole sentences: in the library (159 threads, 11 Oct 2026), two writers not
+# answering each other shared at most 9 words in a row, apart from the one copy found, which shared 59.
+COPIED_TEXT_MIN_WORDS = 20

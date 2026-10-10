@@ -128,6 +128,16 @@ def test_only_threads_about_the_product_are_read(tmp_path):
     assert "Hario Skerton" not in [p.name for p in result.ranking.products]
 
 
+def test_copied_text_is_looked_for_once_per_thread_read(tmp_path, monkeypatch):
+    # Module 5's "copied text" red flag (Noemi's decision 3, 11 Oct 2026) compares a whole thread, which can have
+    # hundreds of comments: it is worked out once per thread, not once per comment scored.
+    looked_at = []
+    real = pipeline.copied_comment_ids
+    monkeypatch.setattr(pipeline, "copied_comment_ids", lambda thread: looked_at.append(thread.id) or real(thread))
+    result = answer_request(REQUEST, library_dir=library(tmp_path))
+    assert sorted(looked_at) == sorted(result.threads_used) == ["1kett01", "1kett02"]
+
+
 class FakeProfiles:
     """Profiles as the cache would give them: every writer an old, active, well-regarded account."""
 

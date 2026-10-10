@@ -3,6 +3,7 @@
 Everything is made up: threads from factories.py, labels as VoiceLabel and MentionLabel rows. No test reads data/.
 """
 
+from engine import credibility_eval
 from engine.credibility_eval import (
     LevelAgreement,
     credibility_report,
@@ -89,6 +90,16 @@ def test_voice_is_compared_on_comments_with_a_voice_level():
     score = score_credibility(gold())
     assert score.voice.pairs == [("c1aaaa", "high", "high"), ("c3cccc", "low", "high")]
     assert (score.voice.exact, score.voice.swaps) == (1, 1)
+
+
+def test_copied_text_is_looked_for_once_per_thread(monkeypatch):
+    # Module 5's "copied text" red flag (Noemi's decision 3, 11 Oct 2026) compares a whole thread: it is worked out once
+    # per thread scored, not once per labelled comment (this thread has two).
+    looked_at = []
+    real = credibility_eval.copied_comment_ids
+    monkeypatch.setattr(credibility_eval, "copied_comment_ids", lambda thread: looked_at.append(thread.id) or real(thread))
+    score_credibility(gold())
+    assert looked_at == ["1fake01"]
 
 
 def test_evidence_is_compared_on_products_not_kinds():
