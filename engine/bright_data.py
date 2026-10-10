@@ -27,8 +27,20 @@ Like the other sources, this client:
 The key goes in .env as BRIGHT_DATA_API_KEY=<your key>. It is only ever sent to Bright Data, in the request's
 Authorization header: never printed, logged or cached.
 
+Finding threads (discovery, 10 Oct 2026, while Arctic Shift's archive was down): the same posts dataset can also run
+Reddit's own search and return the posts it finds. A search is a subreddit and some words ("SkincareAddiction",
+"gentle cleanser"); it is sent as Reddit's search syntax "subreddit:SkincareAddiction gentle cleanser", so the results
+stay within that subreddit, most relevant first, from any year. Several searches go in one job. Each post found costs
+one record, like any post (so 4 searches of 10 posts cost 40), and the answer holds the whole post, its text and its
+first comments included: only what's needed to choose a thread is kept (its id, subreddit, title, comment count and
+date), never its text, comments or writers. A post from a subreddit that wasn't asked for is left out (paid for all
+the same). A thread chosen from the list is then read with `fetch` as usual.
+
 Command line:
     python -m engine.bright_data fetch <thread link> [<thread link> ...] [--to <folder>]   save threads as JSON files
+    python -m engine.bright_data discover [--posts N] <subreddit> "<words>" [<subreddit> "<words>" ...]
+                                                   list the threads Reddit's search finds in each subreddit (N each,
+                                                   10 by default): ids, titles and comment counts only
     python -m engine.bright_data usage                                                   records used this month
 Without --to, threads are saved in a scratch folder outside the project (DEFAULT_THREADS_DIR), never in data/.
 """
@@ -74,12 +86,26 @@ DEFAULT_THREADS_DIR = Path(tempfile.gettempdir()) / "credible-recs-bright-data" 
 MAX_AGE = timedelta(hours=CACHE_MAX_AGE_HOURS)
 BUSY_PAUSE = 30.0  # seconds before the one retry when Bright Data says "too many requests" (429)
 JOB_NAMES = {BRIGHT_DATA_POSTS_DATASET: "post", BRIGHT_DATA_COMMENTS_DATASET: "comments"}
+DISCOVERY_JOB = "discovery"  # a search job on the posts dataset (see "Finding threads" above)
+DISCOVER_POSTS_EACH = 10  # posts asked for per search by default: 10 records each
 _SAFE_ID = re.compile(r"^[A-Za-z0-9_-]+$")
 # A comment or reply is recognised by these fields, at whatever depth Bright Data nests it.
 _COMMENT_FIELDS = frozenset({"comment_id", "comment", "reply_id", "reply"})
 # Words in a refusal that mean the account has run out of records, not that this one request went wrong.
 _OUT_OF_RECORDS = ("quota", "balance", "insufficient", "credit")
 READ_MORE = " Read more"  # the label of Reddit's button, which Bright Data adds at the end of a post's text
+
+
+@dataclass(frozen=True)
+class FoundPost:
+    """A thread a discovery search found: what's needed to choose it, never its text, comments or writer."""
+
+    id: str
+    subreddit: str  # as config.SUBREDDITS spells it
+    title: str
+    num_comments: int  # Reddit's count
+    created_at: datetime | None
+    url: str  # the thread's own link, ready for `fetch`
 
 
 class BrightDataError(Exception):
@@ -190,6 +216,54 @@ class BrightDataClient:
             raise BrightDataError(f"Bright Data returned no comments for {link}{said}; nothing was saved")
         return to_thread(post, comments, records, link, community, category, fetched_at)
 
+    def discover(self, searches: list[tuple[str, str]], posts_each: int = DISCOVER_POSTS_EACH) -> list[FoundPost]:
+        """The threads Reddit's search finds for each (subreddit, words) search, `posts_each` per search, in one job.
+
+        Every subreddit must be a decided one, checked before anything is spent. The job can cost up to
+        posts_each records per search, and is refused if that could go past the month's records. Posts from other
+        subreddits, error records and a post found twice are left out. The list is cached for 48 hours, like every
+        answer (ids, titles, counts and dates only), and a job that took too long is picked up the next time the same
+        searches are asked for.
+        """
+        if not searches:
+            raise ValueError("give at least one search: a subreddit and the words to look for")
+        if isinstance(posts_each, bool) or not isinstance(posts_each, int) or posts_each < 1:
+            raise ValueError(f"posts_each must be a whole number of posts, 1 or more (not {posts_each!r})")
+        asked = []
+        for subreddit, words in searches:
+            category_for(subreddit)  # refuses other subreddits before anything is spent
+            if not isinstance(words, str) or not words.strip():
+                raise ValueError(f"the search in r/{subreddit} has no words to look for")
+            asked.append((_decided_name(subreddit), " ".join(words.split())))
+        inputs = [
+            {"keyword": f"subreddit:{name} {words}", "date": "All time", "num_of_posts": posts_each, "sort_by": "Relevance"}
+            for name, words in asked
+        ]
+
+        digest = hashlib.sha256(json.dumps([DISCOVERY_JOB, BRIGHT_DATA_POSTS_DATASET, inputs]).encode()).hexdigest()[:32]
+        cache_file = self.cache_dir / "responses" / f"{digest}.json"
+        entry = self._cached(cache_file)
+        if entry and "found" in entry:
+            return [_found_from_json(item) for item in entry["found"]]
+        if self.offline:
+            raise BrightDataError("offline: no saved answer for these searches; nothing was fetched")
+        key = self._key()
+        snapshot_id = entry["snapshot_id"] if entry else None  # a job that took too long last time
+        if snapshot_id is None:
+            self._check_budget(posts_each * len(inputs), DISCOVERY_JOB)
+            snapshot_id = self._trigger(
+                BRIGHT_DATA_POSTS_DATASET, inputs, key, DISCOVERY_JOB, {"type": "discover_new", "discover_by": "keyword"}
+            )
+            self._save(cache_file, {"started_at": self._clock().isoformat(), "job": DISCOVERY_JOB, "snapshot_id": snapshot_id})
+        records = self._wait_and_download(snapshot_id, key, DISCOVERY_JOB, cache_file)
+        self._log(DISCOVERY_JOB, snapshot_id, len(records), "ready")  # every record delivered is paid for
+        found = found_posts(records, [name for name, _ in asked])
+        self._save(cache_file, {
+            "fetched_at": self._clock().isoformat(), "job": DISCOVERY_JOB, "snapshot_id": snapshot_id,
+            "found": [_found_to_json(post) for post in found],
+        })
+        return found
+
     def records_used_this_month(self) -> int:
         """Records delivered this calendar month, from this client's log (Bright Data's dashboard has the exact figure)."""
         now = self._clock()
@@ -247,9 +321,14 @@ class BrightDataClient:
 
     def _start(self, dataset: str, link: str, key: str) -> str:
         """Starts a job about one thread and returns its snapshot id (Bright Data's name for the job)."""
-        name = JOB_NAMES[dataset]
-        url = API_URL + "trigger?" + urllib.parse.urlencode({"dataset_id": dataset, "include_errors": "true"})
-        status, data, text = self._ask("POST", url, key, f"starting the {name} job", json.dumps([{"url": link}]).encode())
+        return self._trigger(dataset, [{"url": link}], key, JOB_NAMES[dataset])
+
+    def _trigger(self, dataset: str, inputs: list[dict], key: str, name: str, extra: dict | None = None) -> str:
+        """Starts a job on one dataset with these inputs and returns its snapshot id. `extra` adds to the request's
+        parameters (a discovery job says which kind of search it is)."""
+        params = {"dataset_id": dataset, "include_errors": "true", **(extra or {})}
+        url = API_URL + "trigger?" + urllib.parse.urlencode(params)
+        status, data, text = self._ask("POST", url, key, f"starting the {name} job", json.dumps(inputs).encode())
         snapshot_id = data.get("snapshot_id") if status == 200 and isinstance(data, dict) else None
         if not isinstance(snapshot_id, str) or not _SAFE_ID.match(snapshot_id):
             raise BrightDataError(f"Bright Data answered {status} to starting the {name} job, with no job to wait for: {text}")
@@ -429,6 +508,38 @@ def flatten_comments(records: list, community: str, post_id: str) -> tuple[list[
             parent_id = said if said in seen and said != comment_id else None
         comments.append(_to_comment(item, comment_id, parent_id, created_at, community, post_id))
     return comments, left_out, errors
+
+
+def found_posts(records: list, subreddits: list[str]) -> list[FoundPost]:
+    """The posts a discovery job returned, as FoundPost: only those from the subreddits asked for (Reddit may spell
+    them in another case), each once, in the order found. Error records and posts with no id or title are skipped."""
+    wanted = {name.lower(): name for name in subreddits}
+    found: list[FoundPost] = []
+    seen: set[str] = set()
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        post_id = _plain_id(record.get("post_id"))
+        title, community = record.get("title"), record.get("community_name")
+        if post_id is None or not isinstance(title, str) or not title.strip() or not isinstance(community, str):
+            continue
+        name = wanted.get(community.strip().removeprefix("r/").lower())
+        if name is None or post_id in seen:
+            continue
+        seen.add(post_id)
+        found.append(FoundPost(
+            id=post_id, subreddit=name, title=title.strip(), num_comments=_int(record.get("num_comments")),
+            created_at=_date(record.get("date_posted")), url=f"https://www.reddit.com/r/{name}/comments/{post_id}/",
+        ))
+    return found
+
+
+def _found_to_json(post: FoundPost) -> dict:
+    return {**post.__dict__, "created_at": post.created_at.isoformat() if post.created_at else None}
+
+
+def _found_from_json(item: dict) -> FoundPost:
+    return FoundPost(**{**item, "created_at": datetime.fromisoformat(item["created_at"]) if item["created_at"] else None})
 
 
 def to_thread(post: dict | None, comments: list[Comment], records: list, link: str, community: str, category: str,
@@ -619,7 +730,9 @@ def save_thread(thread: Thread, folder: Path) -> Path:
 
 def main(argv: list[str], client: BrightDataClient | None = None) -> int:
     """`client` can be swapped for one with a fake service, which is how the tests run the command line.
-    It prints counts only: never a comment's text or a writer's name."""
+    It prints counts only: never a comment's text or a writer's name (`discover` prints thread titles too)."""
+    if argv and argv[0] == "discover":
+        return _discover_command(argv[1:], client)
     if not argv or argv[0] not in ("fetch", "usage"):
         print(__doc__)
         return 2
@@ -671,6 +784,48 @@ def main(argv: list[str], client: BrightDataClient | None = None) -> int:
         "(as logged by this tool; the Bright Data dashboard has the exact figure)"
     )
     return status
+
+
+def _discover_command(words: list[str], client: BrightDataClient | None) -> int:
+    """`discover [--posts N] <subreddit> "<words>" ...`: one job for all the searches, then one line per thread found."""
+    words, posts_each = list(words), DISCOVER_POSTS_EACH
+    rest = []
+    while words:
+        word = words.pop(0)
+        if word == "--posts" and words:
+            word = "--posts=" + words.pop(0)
+        if word.startswith("--posts="):
+            number = word.removeprefix("--posts=")
+            if not number.isdigit() or int(number) < 1:
+                print(__doc__)
+                return 2
+            posts_each = int(number)
+        elif word.startswith("-"):
+            print(__doc__)
+            return 2
+        else:
+            rest.append(word)
+    if not rest or len(rest) % 2:
+        print(__doc__)
+        return 2
+
+    client = client or BrightDataClient()
+    searches = list(zip(rest[::2], rest[1::2]))
+    before = client.records_used_this_month()
+    try:
+        found = client.discover(searches, posts_each=posts_each)
+    except (ValueError, BrightDataError) as e:
+        print(e)
+        return 1
+    print(f"Found {len(found)} threads ({client.records_used_this_month() - before} records used):")
+    for post in found:
+        day = post.created_at.date().isoformat() if post.created_at else "date unknown"
+        print(f"  {post.id}  r/{post.subreddit}  {post.num_comments} comments  {day}  {post.title}  {post.url}")
+    print(
+        f"Bright Data records used this month: {client.records_used_this_month()} of {BRIGHT_DATA_MONTHLY_RECORDS} "
+        "(as logged by this tool; the Bright Data dashboard has the exact figure)"
+    )
+    return 0
 
 
 if __name__ == "__main__":

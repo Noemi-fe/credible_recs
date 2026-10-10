@@ -594,3 +594,126 @@ def test_a_thread_read_through_bright_data_says_so_and_counts_as_read_on_reddit(
     clock = FakeClock()
     thread = make_client(tmp_path, clock=clock).get_thread(POST_URL)
     assert thread.read_from == "bright_data" and thread.last_checked_live() == clock.now
+
+
+# --- Discovery: finding threads with Reddit's search, through Bright Data ---
+
+def found_record(post_id, title="Best gentle cleanser for acne-prone skin?", community="SkincareAddiction", comments=40, **extra):
+    """One post as the discovery job returns it: the whole post, text and first comments included. All made up."""
+    record = {
+        "post_id": f"t3_{post_id}", "url": f"https://www.reddit.com/r/{community}/comments/{post_id}/x/", "title": title,
+        "community_name": community, "num_comments": comments, "num_upvotes": 25, "date_posted": "2025-05-01T09:00:00.000Z",
+        "description": "The post's own text, never kept.", "user_posted": "test_op",
+        "comments": [{"comment": "A first comment, never kept.", "user_commenting": "test_user"}],
+        "discovery_input": {"keyword": "subreddit:SkincareAddiction gentle cleanser"},
+    }
+    record.update(extra)
+    return record
+
+
+def discovery_service(records=None, **kwargs):
+    found = [found_record("1aaaa01"), found_record("1aaaa02", title="Cleanser that won't strip my skin", comments=12)]
+    return FakeBrightData(post=found if records is None else records, progress={POSTS: ["running", "ready"]}, **kwargs)
+
+
+def test_discover_lists_the_posts_found_with_ids_titles_and_comment_counts(tmp_path):
+    found = make_client(tmp_path, discovery_service()).discover([("SkincareAddiction", "gentle cleanser")], posts_each=5)
+    assert [(f.id, f.subreddit, f.title, f.num_comments) for f in found] == [
+        ("1aaaa01", "SkincareAddiction", "Best gentle cleanser for acne-prone skin?", 40),
+        ("1aaaa02", "SkincareAddiction", "Cleanser that won't strip my skin", 12),
+    ]
+    assert found[0].created_at == datetime(2025, 5, 1, 9, 0, tzinfo=UTC)
+    assert found[0].url == "https://www.reddit.com/r/SkincareAddiction/comments/1aaaa01/"
+
+
+def test_discover_asks_reddits_search_within_each_subreddit_in_one_job(tmp_path):
+    service = discovery_service()
+    make_client(tmp_path, service).discover([("SkincareAddiction", "gentle cleanser"), ("r/castiron", "first skillet")], posts_each=5)
+    triggers = [(url, body) for method, url, _, body in service.requests if "/trigger" in url]
+    assert len(triggers) == 1
+    params = parse_qs(urlparse(triggers[0][0]).query)
+    assert params["dataset_id"] == [POSTS] and params["type"] == ["discover_new"] and params["discover_by"] == ["keyword"]
+    assert json.loads(triggers[0][1]) == [
+        {"keyword": "subreddit:SkincareAddiction gentle cleanser", "date": "All time", "num_of_posts": 5, "sort_by": "Relevance"},
+        {"keyword": "subreddit:castiron first skillet", "date": "All time", "num_of_posts": 5, "sort_by": "Relevance"},
+    ]
+
+
+def test_discover_keeps_only_posts_from_the_subreddits_asked_each_once_and_no_error_records(tmp_path):
+    records = [
+        found_record("1aaaa01"),
+        found_record("1aaaa01"),  # found by two searches
+        found_record("1bbbb01", community="acne"),  # Reddit's search can stray outside the subreddit
+        {"error": "page not found", "error_code": "dead_page"},
+        found_record("1cccc01", community="skincareaddiction"),  # Reddit's spelling may differ in case
+    ]
+    found = make_client(tmp_path, discovery_service(records)).discover([("SkincareAddiction", "cleanser")], posts_each=5)
+    assert [(f.id, f.subreddit) for f in found] == [("1aaaa01", "SkincareAddiction"), ("1cccc01", "SkincareAddiction")]
+
+
+def test_discover_refuses_a_subreddit_outside_the_decided_list_before_spending(tmp_path):
+    service = discovery_service()
+    with pytest.raises(ValueError, match="AskReddit"):
+        make_client(tmp_path, service).discover([("SkincareAddiction", "cleanser"), ("AskReddit", "cleanser")], posts_each=5)
+    assert service.requests == []
+
+
+def test_discover_is_refused_when_it_could_go_past_the_months_records(tmp_path):
+    service = discovery_service()
+    client = make_client(tmp_path, service)
+    write_usage(client, BRIGHT_DATA_MONTHLY_RECORDS - 9)
+    with pytest.raises(BrightDataError, match="monthly"):
+        client.discover([("SkincareAddiction", "cleanser"), ("AsianBeauty", "cleanser")], posts_each=5)
+    assert service.requests == []
+
+
+def test_discover_logs_every_record_delivered_and_asking_again_comes_from_the_cache(tmp_path):
+    records = [found_record("1aaaa01"), found_record("1bbbb01", community="acne"), {"error": "page not found"}]
+    service = discovery_service(records)
+    client = make_client(tmp_path, service)
+    first = client.discover([("SkincareAddiction", "cleanser")], posts_each=5)
+    assert client.records_used_this_month() == 3  # every record delivered is paid for, even those left out
+    assert client.discover([("SkincareAddiction", "cleanser")], posts_each=5) == first
+    assert len([r for r in service.requests if "/trigger" in r[1]]) == 1
+    assert client.records_used_this_month() == 3
+
+
+def test_discover_keeps_no_post_text_comments_or_writers(tmp_path):
+    client = make_client(tmp_path, discovery_service())
+    client.discover([("SkincareAddiction", "cleanser")], posts_each=5)
+    for path in (tmp_path / "cache").rglob("*"):
+        if path.is_file():
+            saved = path.read_text(encoding="utf-8")
+            assert "never kept" not in saved and "test_op" not in saved and "test_user" not in saved
+
+
+def test_discover_needs_at_least_one_search_and_a_sensible_number_of_posts(tmp_path):
+    client = make_client(tmp_path, discovery_service())
+    with pytest.raises(ValueError):
+        client.discover([], posts_each=5)
+    with pytest.raises(ValueError):
+        client.discover([("SkincareAddiction", "cleanser")], posts_each=0)
+    with pytest.raises(ValueError):
+        client.discover([("SkincareAddiction", "  ")], posts_each=5)
+
+
+def test_discover_command_prints_ids_titles_comment_counts_and_records_used(tmp_path, capsys):
+    client = make_client(tmp_path, discovery_service())
+    assert main(["discover", "--posts", "5", "SkincareAddiction", "gentle cleanser"], client=client) == 0
+    printed = capsys.readouterr().out
+    assert "1aaaa01" in printed and "Best gentle cleanser for acne-prone skin?" in printed and "40 comments" in printed
+    assert "records used this month: 2" in printed
+    assert "never kept" not in printed and "test_op" not in printed and "test_user" not in printed
+
+
+def test_discover_command_needs_pairs_of_subreddit_and_words(tmp_path, capsys):
+    service = discovery_service()
+    assert main(["discover", "SkincareAddiction"], client=make_client(tmp_path, service)) == 2
+    assert main(["discover", "--posts", "x", "SkincareAddiction", "cleanser"], client=make_client(tmp_path, service)) == 2
+    assert service.requests == []
+
+
+def test_discover_command_reports_a_refused_subreddit_without_crashing(tmp_path, capsys):
+    service = discovery_service()
+    assert main(["discover", "AskReddit", "cleanser"], client=make_client(tmp_path, service)) == 1
+    assert "AskReddit" in capsys.readouterr().out and service.requests == []
