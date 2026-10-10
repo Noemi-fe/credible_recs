@@ -684,7 +684,14 @@ OPPOSITE_QUOTE_PATTERNS["lasting"] = (rf"\b{_FAILED}\b[^.!?]{{0,40}}?\b{_SOON}\b
                                       r"\b(not|isn't|aren't|wasn't|weren't|never) (really |exactly |quite )?"
                                       r"(bifl|buy it for life)\b",
                                       r"\b(won't|doesn't|didn't|don't|will not|does not|did not|do not|never) "
-                                      r"(really |ever |just )?last\b")
+                                      r"(really |ever |just )?last\b",
+                                      # A short life said plainly: "each kettle lasts somewhere around 2 years" (b06),
+                                      # but not "has lasted 2 years so far" or "3 years and counting".
+                                      r"\blast(s|ed)? (only |just |about |around |somewhere around |roughly |maybe "
+                                      r"|barely |under |less than )*((a|an|one|two|three|four|five|six|\d+|a few"
+                                      r"|(a )?couple( of)?|several) (days?|weeks?|months?)|(a|one|two|three|1|2|3"
+                                      r"|a few|(a )?couple( of)?) years?)\b(?! (so far|and (it'?s |is )?(still|counting)"
+                                      r"|now))")
 
 # --- Quotes that say what the writer thinks come first (10 Oct 2026) ---
 # Decided by Claude, reported to Noemi. Found in b09: "I have a Baratza Encore, Timemore C2 (at work), and a 1zpresso

@@ -599,6 +599,13 @@ def test_a_quote_saying_the_opposite_of_what_was_asked_is_shown_last():
     ("lasting", "It isn't BIFL but it's cheap.", True),
     ("lasting", "This one is BIFL, no question.", False),
     ("lasting", "Mine didn't last.", True),
+    # A short life said plainly (b06 at 16 threads: "each kettle lasts somewhere around 2 years").
+    ("lasting", "In my cafe each kettle lasts somewhere around 2 years which I think is impressive.", True),
+    ("lasting", "Mine lasted about 3 years.", True),
+    ("lasting", "These pans last a few months at most.", True),
+    ("lasting", "It has lasted 2 years so far and is still going strong.", False),
+    ("lasting", "Mine lasted 15 years.", False),
+    ("lasting", "It's lasted 3 years and counting.", False),
 ])
 def test_what_says_the_opposite_of_a_request(ask, quote, against):
     from engine.answer import _says_the_opposite
