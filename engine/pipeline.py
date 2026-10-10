@@ -34,7 +34,10 @@ Every step is a module of its own; this file only passes each one's output to th
   currency, or a price checked over PRICE_MAX_AGE_DAYS ago is kept, and its answer says so.
 - a product the price list says is no longer sold ("available": false; engine.prices.find_availability) is left out,
   budget or not (Noemi's note of 9 Oct 2026: "are we making sure the products we recommend exist?"). A product with no
-  availability check is kept, and its answer says so. Brand picks are never priced or checked (named in not_priced).
+  availability check is kept, and its answer says so. A product no longer made but sold second-hand only ("second_hand":
+  true: vintage Griswold and Wagner cast iron) counts as sold, and its answer says "Sold second-hand only" (Noemi's
+  decision, 10 Oct 2026). Brand picks are never priced or checked (named in not_priced), except that a brand pick
+  shows the second-hand line when the newest entry under the brand's own name ("Griswold") says so.
 - product facts (decided by Claude, 9 Oct 2026; engine/product_facts.py, data/product_facts.json): right after the
   budget step, a product whose checked facts clash with what the request asks for is left out by a hard rule ("retinol
   for a beginner with sensitive skin" leaves out a strong, prescription-only retinoid) and listed with the reason
@@ -111,7 +114,15 @@ from engine.library import DEFAULT_LIBRARY_DIR, checked_live_within
 from engine.match_products import known_aliases, normalize_name, same_product
 from engine.models import Comment, Thread
 from engine.needs import Need, needs_met, request_needs
-from engine.prices import Price, PriceCheck, check_price, find_availability, find_price, load_prices
+from engine.prices import (
+    Price,
+    PriceCheck,
+    check_price,
+    find_availability,
+    find_brand_second_hand,
+    find_price,
+    load_prices,
+)
 from engine.product_facts import (
     NotSuited,
     ProductFacts,
@@ -430,10 +441,14 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
 
     A product the price list says is no longer sold is left out first, whatever its price (named on the result as
     unavailable); one it says is sold carries that entry (PriceCheck.availability), for the answer's "Sold at" line.
-    A known, recent price above the budget's max leaves the product out (named on the result). A brand pick has no
-    single price, so it is never priced or checked for availability itself (named in not_priced); but when every
-    specific product of its brand among these groups is known not to be sold, its writers most likely mean those, so
-    it is left out with them (10 Oct 2026: "Cuisinart (their electric kettles)", from American writers' CPK-17s).
+    A product sold second-hand only counts as sold (Noemi's decision, 10 Oct 2026): it is kept, and its entry gives the
+    answer's "Sold second-hand only" line. A known, recent price above the budget's max leaves the product out (named
+    on the result). A brand pick has no single price, so it is never priced or checked for availability itself (named
+    in not_priced), and an entry under its own name never leaves it out; but when every specific product of its brand
+    among these groups is known not to be sold, its writers most likely mean those, so it is left out with them (10 Oct
+    2026: "Cuisinart (their electric kettles)", from American writers' CPK-17s). When the newest entry under the
+    brand's own name says it is sold second-hand only (engine.prices.find_brand_second_hand: "Griswold"), the brand
+    pick carries that entry, so its answer shows the second-hand line instead of "Availability not checked yet".
     """
     budget = query.constraints.budget
     if budget is not None and budget.max is not None and budget.currency is None:
@@ -451,7 +466,10 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
         if group.loose:
             result.not_priced.append(group.name)
         price = None if group.loose else find_price(group.name, group.category, prices, currency)
-        sold = None if group.loose else find_availability(group.name, group.category, prices)
+        if group.loose:  # second-hand only, or None: never an entry that leaves it out
+            sold = find_brand_second_hand(set(group.names) | {uk_name(n) for n in group.names}, group.category, prices)
+        else:
+            sold = find_availability(group.name, group.category, prices)
         if sold is not None and sold.available is False:
             result.left_out_unavailable.append(group.name)
             continue

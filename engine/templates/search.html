@@ -364,8 +364,9 @@ h1, h2, h3, h4 { line-height: 1.25; }
     return [line, price.budget_note && el("p", { class: "budget" }, price.budget_note)];
   }
 
-  /** Whether the pick is still sold, as text: "Sold at <shop>, checked <date>" with a link to the shop's page (through
-      the same https check as the price's), or "Availability not checked yet". */
+  /** Whether the pick is still sold, as text: "Sold at <shop>, checked <date>" (or "Sold second-hand only: <shop>,
+      checked <date>", 10 Oct 2026) with a link to the shop's page (through the same https check as the price's), or
+      "Availability not checked yet". */
   function availabilityLine(availability) {
     if (!availability) return null;
     const shop = shopUrl(availability.url);

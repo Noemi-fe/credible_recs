@@ -380,14 +380,26 @@
    "available": false
   },
   {
-   "product": "Wagner cast iron skillets",
+   "product": "Wagner",
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "Wagner Cast Iron (no UK shop found selling Wagner skillets: they are vintage pans, made until the Sidney, Ohio foundry closed in 1999 and now sold second-hand, mostly by US sellers; the revived brand sells only a griddle)",
-   "url": "https://wagnercastiron.com/",
+   "shop": "eBay UK (used pans from UK and US sellers)",
+   "url": "https://www.ebay.co.uk/sch/i.html?_nkw=wagner+cast+iron+skillet",
    "checked_on": "2026-10-10",
-   "available": false
+   "available": true,
+   "second_hand": true
+  },
+  {
+   "product": "Griswold",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "eBay UK (used pans, mostly posted from the US, so import terms apply)",
+   "url": "https://www.ebay.co.uk/sch/i.html?_nkw=griswold+cast+iron+skillet",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "second_hand": true
   },
   {
    "product": "Sage the Smart Grinder Pro",

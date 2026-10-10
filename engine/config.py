@@ -404,6 +404,15 @@ LIVE_CHECK_READER = "bright_data"
 # --max-records is given (out of the month's 5,000), for backup reads and urgent re-reads.
 LIVE_CHECK_RECORD_RESERVE = 300
 
+# --- Sold second-hand only (Noemi's decision, 10 Oct 2026) ---
+# Vintage products no longer made, sold only second-hand (cast iron by Griswold and Wagner, out of production for
+# decades), count as available to UK shoppers, and the answer says so: "Sold second-hand only: eBay UK, checked 10 Oct
+# 2026" (engine.answer.AVAILABILITY_SECOND_HAND). A price-list entry says it with "second_hand": true, only with
+# "available": true (engine/prices.py). Before, "available" meant sold new by a shop, so Wagner was left out of b08
+# while the brand pick "Griswold (their cast iron skillets)" stayed only because brand picks are never checked. Brand
+# picks are still never priced and never left out for an entry under their own name, but one whose brand's own name
+# has a second-hand entry ("Griswold") shows the second-hand line. No value to set.
+
 # --- Product facts (9 Oct 2026) ---
 # Decided by Claude (the orchestrator) on 9 Oct 2026, as Noemi asked, and reported to her. The ranking reads only what
 # Reddit says, so it ignored what a request asks for: "retinol for a beginner with sensitive skin" picked Tazorac, a

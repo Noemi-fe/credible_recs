@@ -21,7 +21,9 @@ What each pick shows (the brief):
 - whether it is still sold (Noemi's note, 9 Oct 2026: "are we making sure the products we recommend exist?"): from the
   same list, "Sold at <shop>, checked <date>" with a link to the shop's page (https only, and only when the price line
   doesn't already link to that page), or "Availability not checked yet". Products no longer sold never get here: the
-  pipeline leaves them out;
+  pipeline leaves them out. A product no longer made but sold second-hand only (vintage cast iron) says "Sold
+  second-hand only: <shop>, checked <date>" with the same link (Noemi's decision, 10 Oct 2026), and so does a brand
+  pick whose brand's own name has such an entry ("Griswold");
 - "How to make it last" (Noemi, 9 Oct 2026): up to CARE_TIPS_PER_PICK credible care tips from the threads ("descale
   every 6 months"), each with its verified quote. Since 10 Oct 2026 (decided by Claude, as Noemi asked) the advice
   most credible writers agree on comes first and repairs ("smooth with an angle grinder") last; tips that say the same
@@ -155,6 +157,9 @@ BREAKDOWN_NEEDS = ("About your request: {recommends} credible recommendations an
 AVAILABILITY = "Sold at {shop}, checked {date}"
 AVAILABILITY_UNKNOWN = "Availability not checked yet"
 AVAILABILITY_GONE = "No longer sold, checked {date}"  # never shown through the pipeline, which leaves such products out
+# Sold second-hand only: a product no longer made (Griswold and Wagner cast iron), sold only second-hand, on eBay UK or
+# by a UK vintage dealer. Noemi's decision of 10 Oct 2026: such products count as available, and the answer says so.
+AVAILABILITY_SECOND_HAND = "Sold second-hand only: {shop}, checked {date}"
 # Product facts (9 Oct 2026). Wording DECIDED by Claude on 9 Oct 2026, as Noemi asked, and reported to her. A soft
 # clash between a product's checked facts and the request (engine/product_facts.py) is shown under the pick as
 # "Note: its texture is rich, which can feel heavy on oily or acne-prone skin." The reasons themselves are the rule
@@ -192,11 +197,12 @@ class ShownPrice:
 class ShownAvailability:
     """Whether a pick is known to be sold, as shown, from the price list (engine/prices.py). Not checked: only text."""
 
-    text: str  # "Sold at Boots, checked 9 Oct 2026", or AVAILABILITY_UNKNOWN
+    text: str  # "Sold at Boots, checked 9 Oct 2026", AVAILABILITY_SECOND_HAND's line, or AVAILABILITY_UNKNOWN
     available: bool | None  # True: a shop sells it; None: not checked; False: no longer sold (never via the pipeline)
     shop: str | None
     url: str | None  # the shop's own page, https only; None when unknown or when the price line already links to it
     checked_on: str | None  # the day it was looked up, as "2026-10-09"
+    second_hand: bool = False  # True: no longer made, sold second-hand only (10 Oct 2026); then `available` is True
 
 
 NOT_CHECKED = ShownAvailability(AVAILABILITY_UNKNOWN, None, None, None, None)
@@ -542,7 +548,7 @@ def shown_availability(check: PriceCheck | None, price_url: str | None = None) -
     """Whether a product is sold, as the shopper sees it: the shop and the day it was checked, when the price list says.
 
     The shop's link is passed on only when it is https, and only when the price line (whose link is `price_url`)
-    doesn't already link to the same page.
+    doesn't already link to the same page. A product sold second-hand only says so (AVAILABILITY_SECOND_HAND).
     """
     sold = check.availability if check is not None else None
     if sold is None or sold.available is None:
@@ -552,8 +558,9 @@ def shown_availability(check: PriceCheck | None, price_url: str | None = None) -
         return ShownAvailability(AVAILABILITY_GONE.format(date=day), False, sold.shop, None,
                                  sold.checked_on.isoformat())
     url = sold.url if sold.url.startswith("https://") and sold.url != price_url else None  # https only; checked again
-    return ShownAvailability(AVAILABILITY.format(shop=sold.shop, date=day), True, sold.shop, url,
-                             sold.checked_on.isoformat())
+    wording = AVAILABILITY_SECOND_HAND if sold.second_hand else AVAILABILITY
+    return ShownAvailability(wording.format(shop=sold.shop, date=day), True, sold.shop, url,
+                             sold.checked_on.isoformat(), sold.second_hand)
 
 
 def _budget_note(check: PriceCheck) -> str:
