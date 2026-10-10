@@ -7,8 +7,8 @@ Built so far:
   Noemi's gold labels, and the share of quotes found word for word in their comments;
 - module 4 (product matching): same-or-different name pairs against eval/edge_cases/matching.json, and how the
   library's mentions group into products;
-- module 5 (credibility): voice and evidence levels from rules against Noemi's labels (the kettle thread is held
-  out until she has labelled it);
+- module 5 (credibility): voice and evidence levels from rules against Noemi's labels, with writers' profiles filled
+  in as answers have them (the library's profile store; the kettle thread is held out: the fair test);
 - end to end (modules 1-7): every blind-test question through the pipeline on the library: how many get a full
   top 3, how many at least one pick, and that no shown quote fails the word-for-word check;
 - module 2 (retrieval): of the 3 threads picked per blind-test question, how many fit the need (grade 2) and how
@@ -30,6 +30,7 @@ from engine.extraction_eval import score_extraction
 from engine.gold import DEFAULT_GOLD_DIR, GoldSetError, load_gold_set, print_other_tag_report
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.matching_eval import matching_report
+from engine.pipeline import cached_profiles
 from engine.credibility_eval import credibility_report
 from engine.slice_eval import slice_report
 from engine.query import parse_query
@@ -70,7 +71,7 @@ def main() -> int:
     print(matching_report())
 
     print()
-    print(credibility_report())
+    print(credibility_report(profiles=cached_profiles()))
 
     print()
     print(slice_report())

@@ -12,6 +12,7 @@ from engine.credibility_eval import (
 from engine.extract import CheckResult, ExtractedAgreement, ExtractedMention
 from engine.gold import GoldSet
 from engine.models import MentionLabel, Thread, VoiceLabel
+from engine.profiles import ProfileStore, StoredProfiles
 from engine.tests.factories import MENTIONS_HEADER, VOICES_HEADER, make_comment, make_thread, write_gold
 
 # The made-up thread 1fake01 (factories.make_thread). Its writers have old accounts with 5,000 karma, and wrote in
@@ -240,3 +241,50 @@ def test_profiles_fill_in_plain_writers_before_the_rules_judge_them():
     level = lambda score, cid: next(rules for c, _, rules in score.voice.pairs if c == cid)
     assert level(score_credibility(gold(threads=(plain,))), "c1aaaa") == "medium"  # only "recent" to go on
     assert level(score_credibility(gold(threads=(plain,)), profiles=LongStanding()), "c1aaaa") == "high"
+
+
+# --- The report judges writers with their profiles, as answers do (10 Oct 2026) ---
+# Gold threads are saved by name only, so without profiles the rules could never call anyone "established member" or
+# "well-regarded account", while answers (engine.pipeline) fill writers in from the library's profile store first.
+
+def plain_thread() -> dict:
+    """make_thread's thread with every writer known by name only, as Parse saves them."""
+    thread = make_thread()
+    thread["comments"] = [c | {"author": {"name": f"writer_{c['id']}"}} for c in thread["comments"]]
+    return thread
+
+
+PLAIN_VOICES = VOICES_HEADER + '1fake01,c1aaaa,high,"established member, well-regarded account",\n1fake01,c2bbbb,,,\n'
+
+
+def test_the_report_judges_writers_with_their_profiles_when_given_them(tmp_path):
+    write_gold(tmp_path, [plain_thread()], PLAIN_VOICES)
+    assert "exact 0/1 (0%)" in credibility_report(tmp_path)  # medium: only "recent" to go on
+    report = credibility_report(tmp_path, profiles=LongStanding())
+    assert "exact 1/1 (100%)" in report
+    assert "established member 1/1/1" in report and "well-regarded account 1/1/1" in report
+
+
+def test_the_report_says_how_many_labelled_writers_had_a_profile(tmp_path):
+    write_gold(tmp_path, [plain_thread()], PLAIN_VOICES)
+    assert "writers' profiles: not looked up" in credibility_report(tmp_path)
+    assert "writers' profiles: 1 of 1 labelled writer found" in credibility_report(tmp_path, profiles=LongStanding())
+
+
+def test_the_report_still_works_when_the_library_has_no_profile_store(tmp_path):
+    write_gold(tmp_path / "gold", [plain_thread()], PLAIN_VOICES)
+    no_store = StoredProfiles(ProfileStore(tmp_path / "library" / "profiles.json"))  # no such file
+    report = credibility_report(tmp_path / "gold", profiles=no_store)
+    assert "exact 0/1 (0%)" in report
+    assert "writers' profiles: 0 of 1 labelled writer found" in report
+
+
+def test_writers_are_counted_once_per_thread_and_deleted_accounts_are_not_writers():
+    thread = make_thread(comments=[
+        make_comment("c1aaaa", author={"name": "same_writer"}, body="I've used the CeraVe SA Cleanser for 2 years."),
+        make_comment("c3cccc", author={"name": "same_writer"}, body="Paula's Choice 2% BHA is great."),
+        make_comment("c4dddd", author=None, body="The Ordinary AHA is fine."),
+    ])
+    voices = [voice("c1aaaa", "high", "recent"), voice("c3cccc", "medium", "recent"), voice("c4dddd", "medium", "recent")]
+    score = score_credibility(gold(voices, [], (Thread.model_validate(thread),)), profiles=LongStanding())
+    assert (score.writers, score.writers_profiled) == (1, 1)
