@@ -653,8 +653,11 @@ def _posted_before(post: dict, moment: datetime) -> bool:
 _SHARED_WARNINGS = r"regret\w*|avoid|disappoint(?:ed|ing)|worst|returned"
 _WARNINGS = {
     "kitchen": re.compile(
-        # "broke" only as a failure ("broke within a year", "it broke"), never "broke them down" or "broke student".
-        rf"\b(?:{_SHARED_WARNINGS}|died|dead|broke (?:after|within|in)|(?:it|mine|already|just|has|have|had) broke|broken"
+        # "broke" only as a failure ("broke within a year", "it broke"), never "broke them down" or "broke student";
+        # "broke in" only before a length of time ("broke in 6 months"), never "broke in my new pan" (its first use).
+        rf"\b(?:{_SHARED_WARNINGS}|died|dead|broke (?:after|within)"
+        r"|broke in (?:a|an|one|two|three|four|five|six|\d+|under|less|the first|just|only)\b"
+        r"|(?:it|mine|already|just|has|have|had) broke|broken"
         r"|failed|stopped working|don['’]?t buy|never again|recall(?:s|ed)?"
         r"|only lasted|lasted only|rust(?:s|ed|ing|y)?|cracked|chipped|flaking|peeling|leaking)\b"
     ),

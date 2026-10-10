@@ -326,12 +326,19 @@ KETTLE = "electric kettle that lasts 10+ years"
 
 def test_add_reads_through_the_archive_by_default_and_through_parse_when_asked(tmp_path, monkeypatch):
     built = []
+    # Since 11 Oct 2026 the default ("auto") also builds a Bright Data source, used only if the archive fails: a fake
+    # here, so the test can never reach Bright Data (it once did, through the real cache and outage memo).
+    from engine.tests.test_bright_data_source import FakeBrightData
+
+    bright = FakeBrightData([])
+    monkeypatch.setattr(library, "BrightDataClient", lambda: bright)
     monkeypatch.setattr(library, "ArcticShiftClient", lambda: "an Arctic Shift client")
     monkeypatch.setattr(library, "ArchiveSource", lambda client: built.append(("archive", client)) or FakeArchiveSourceStub())
     monkeypatch.setattr(library, "ParseSource", lambda **kwargs: built.append(("parse", kwargs["finder"])) or FakeArchiveSourceStub())
     library.add(KETTLE, folder=tmp_path)
     library.add(KETTLE, folder=tmp_path, reader="parse")
     assert built == [("archive", "an Arctic Shift client"), ("parse", "an Arctic Shift client")]
+    assert bright.searches == [] and bright.read == []  # the archive answered: Bright Data never asked
     library.add("something for my face", folder=tmp_path)  # a request module 1 can't place builds nothing
     assert len(built) == 2
 
