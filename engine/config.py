@@ -563,3 +563,13 @@ UNCONFIRMED_FACT_NAMES: dict[str, str] = {
     "plastic": "no plastic touches the water",
     "not induction": "it works on an induction hob",
 }
+
+# --- Sets, blocks and sharpeners aren't the product (10 Oct 2026) ---
+# Decided by Claude (the orchestrator) on 10 Oct 2026, as Noemi asked, and reported to her. Found in the 10 Oct
+# evaluation run: "Henckels knife block" (the AI's type: "knife set") was a pick for "first chef's knife", because
+# "knife set" names a knife. A type in the AI's own words that has one of these words names something that holds,
+# sharpens, covers or bundles the product, not the product, so it is another type (engine/pipeline.py,
+# _another_type_by_ai). Whole words, with or without a plural "s"; "steel" and "stone" aren't here: "stainless steel
+# kettle" and "stone frying pan" are the product.
+OTHER_TYPE_WORDS = ("set", "block", "sharpener", "stand", "rack", "holder", "roll", "bag", "case", "cover", "lid", "kit",
+                    "bundle", "strip", "guard", "sheath")

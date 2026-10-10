@@ -8,11 +8,13 @@ import json
 from datetime import date, timedelta
 from pathlib import Path
 
+import pytest
+
 from engine import answer as answer_wording
 from engine import pipeline
 from engine.answer import unverified_claims
 from engine.config import PRICE_MAX_AGE_DAYS
-from engine.pipeline import answer_request
+from engine.pipeline import _another_type_by_ai, answer_request
 from engine.prices import Price
 from engine.tests.factories import make_comment, make_thread, write_gold
 
@@ -208,6 +210,55 @@ def test_a_type_in_plain_words_is_left_out_unless_it_names_the_requested_type(tm
     kept, left_out = kept_and_left_out(answer_request(REQUEST, library_dir=lib))
     # Changed 9 Oct 2026 when decision 12 was merged: Breville is shown by its UK name, Sage, in the left-out list too.
     assert kept == ["Cuisinart PerfecTemp", "Zojirushi kettle"] and left_out == ["Sage"]
+
+
+def test_a_set_block_or_sharpener_of_the_requested_type_is_another_type(tmp_path):
+    # Found in the 10 Oct 2026 evaluation run: "Henckels knife block" (the AI's type: "knife set") was a pick for "first
+    # chef's knife", because "knife set" names a knife. A set, a block, a sharpener or a stand of knives isn't a chef
+    # knife (config.OTHER_TYPE_WORDS); a type that only describes the knife still names it.
+    lib = typed_library(tmp_path, "Best first chef's knife?", [
+        ("k1aaaa", "Victorinox Fibrox", "chef knife", "My Victorinox Fibrox has been my daily knife for 6 years."),
+        ("k1bbbb", "Henckels knife block", "knife set", "The Henckels knife block has served us for 10 years."),
+        ("k1cccc", "Work Sharp", "knife sharpener", "The Work Sharp has kept my knives sharp for 5 years."),
+        ("k1dddd", "Wusthof stand", "knife block", "Our Wusthof stand still looks new after 8 years."),
+        ("k2aaaa", "Mercer Millennia", "chef's knife", "The Mercer Millennia has been great for 4 years."),
+    ])
+    kept, left_out = kept_and_left_out(answer_request("first chef's knife", library_dir=lib))
+    assert kept == ["Mercer Millennia", "Victorinox Fibrox"]
+    assert left_out == ["Henckels knife block", "Work Sharp", "Wusthof stand"]
+
+
+def test_a_set_mention_never_lends_its_votes_to_the_brands_knives(tmp_path):
+    # The 10 Oct 2026 run, again: "Henckels knive block" (knife set) was grouped with the writers' other Henckels
+    # mentions (chef knives), and most of the group's mentions were chef knives, so the knife block's recommendations
+    # counted for a chef knife. Each mention typed as a set, a block or a sharpener is left out before grouping.
+    lib = typed_library(tmp_path, "Best first chef's knife?", [
+        ("k1aaaa", "Henckels", "chef knife", "My Henckels chef's knife has lasted 12 years."),
+        ("k1bbbb", "Henckels knife block", "knife set", "The Henckels knife block has served us for 10 years."),
+        ("k2aaaa", "Henckels", "chef knife", "Henckels, 6 years of daily use and still sharp."),
+        ("k2bbbb", "Henckels", "chef knife", "I have used a Henckels chef's knife for 9 years."),
+        ("k2cccc", "Henckels knife block", "knife set", "Our Henckels knife block is 20 years old."),
+    ])
+    result = answer_request("first chef's knife", library_dir=lib)
+    [henckels] = [p for p in result.ranking.products if "Henckels" in p.name]
+    assert sorted(m.comment_id for m in henckels.mentions) == ["k1aaaa", "k2aaaa", "k2bbbb"]
+    assert "Henckels knife block" in result.left_out_as_other_type
+
+
+@pytest.mark.parametrize("product_type, requested, other", [
+    ("knife set", "chef knife", True),
+    ("knife sets", "chef knife", True),
+    ("knife block", "chef knife", True),
+    ("knife sharpener", "chef knife", True),
+    ("magnetic knife strip", "chef knife", True),
+    ("frying pan set", "frying pan", True),
+    ("frying pan lid", "frying pan", True),
+    ("skincare set", "moisturiser", True),
+    ("gooseneck kettle", "electric kettle", False),
+    ("chef's knife", "chef knife", False),
+])
+def test_the_words_that_make_a_type_another_one(product_type, requested, other):
+    assert _another_type_by_ai([product_type], requested) is other
 
 
 def test_the_type_most_of_a_products_mentions_give_decides_and_a_tie_keeps_it(tmp_path):

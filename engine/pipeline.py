@@ -97,6 +97,7 @@ from engine.config import (
     LIVE_CHECK_ROUNDS,
     LIVE_CHECK_SHOWN_DAYS,
     NEED_MATCH_BOOST,
+    OTHER_TYPE_WORDS,
     PIPELINE_BRAND_PICKS,
     PIPELINE_MAX_THREADS,
 )
@@ -223,7 +224,7 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     result.threads_used = [t.id for t in threads]
     result.bodies = comment_bodies(threads)
 
-    groups = group_products(_product_mentions(checked))
+    groups = group_products(_not_sets(_product_mentions(checked), result))
     kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads})
     prices = load_prices() if prices is None else prices
     kept_groups, price_checks = _within_budget(kept_groups, query, prices, today, result)
@@ -302,6 +303,28 @@ def _product_mentions(checked: dict[str, CheckResult]) -> list[ProductMention]:
             for tid, res in checked.items() for m in res.kept]
 
 
+def _not_sets(mentions: list[ProductMention], result: PipelineResult) -> list[ProductMention]:
+    """The mentions that aren't of a set, a block or a sharpener (config.OTHER_TYPE_WORDS, in the type the AI gave
+    the mention): those are left out before grouping and named on the result, so a "Henckels knife block" never lends
+    its votes to the writers' other Henckels mentions (10 Oct 2026). Any other type is decided for the whole product
+    by most of its mentions (_another_type)."""
+    kept = []
+    for mention in mentions:
+        if mention.product_type and _names_a_set(mention.product_type):
+            if uk_name(mention.product) not in result.left_out_as_other_type:
+                result.left_out_as_other_type.append(uk_name(mention.product))
+        else:
+            kept.append(mention)
+    return kept
+
+
+def _names_a_set(product_type: str) -> bool:
+    """Whether a type in the AI's words names something that holds, sharpens, covers or bundles a product ("knife
+    set", "knife blocks"), not the product: one of its words, singular or plural, is in config.OTHER_TYPE_WORDS."""
+    return any(word in OTHER_TYPE_WORDS or word.removesuffix("s") in OTHER_TYPE_WORDS
+               for word in product_type.strip().lower().split())
+
+
 def _kind_mentions(checked: dict[str, CheckResult]) -> list[KindMention]:
     return [KindMention(tid, n.comment_id, n.about, n.stance) for tid, res in checked.items() for n in res.kept_notes]
 
@@ -372,7 +395,8 @@ def _another_type_by_ai(types: list[str], requested: str) -> bool:
     - Another of module 1's product types (engine.query.PRODUCT_TYPES): left out, even when it shares a word with
       the requested one ("stovetop kettle" for an electric kettle request).
     - A type in the AI's own words: left out, unless it names the requested type the way module 2 recognises it
-      (engine.sources.mentions_product): "gooseneck kettle" names an electric kettle, "toaster" doesn't.
+      (engine.sources.mentions_product): "gooseneck kettle" names an electric kettle, "toaster" doesn't. A set, a
+      block or a sharpener of it (config.OTHER_TYPE_WORDS) doesn't: "knife set" isn't a chef knife (10 Oct 2026).
     """
     counts = Counter(t.strip().lower() for t in types).most_common()
     if len(counts) > 1 and counts[0][1] == counts[1][1]:
@@ -381,6 +405,8 @@ def _another_type_by_ai(types: list[str], requested: str) -> bool:
     if majority == requested:
         return False
     if majority in {p.name for p in PRODUCT_TYPES}:
+        return True
+    if _names_a_set(majority):
         return True
     return not mentions_product(majority, requested)
 
