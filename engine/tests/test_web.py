@@ -99,9 +99,11 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # Changed on purpose 9 Oct 2026 (availability, Noemi's note): each pick also says where it is sold, "availability".
     # Changed on purpose 9 Oct 2026 (product facts, decided by Claude): each pick also has its "cautions", the facts
     # that suit the request less well ("Note: ..."); an empty list when there are none.
+    # Changed on purpose 10 Oct 2026 (decided by Claude): each pick also has its "model", a brand pick's most
+    # recommended model, or null.
     assert set(data["answer"]["picks"][0]) == {"rank", "product_key", "name", "reason", "support", "quotes",
                                                "downsides", "disagreement", "score", "breakdown", "price",
-                                               "availability", "care", "cautions"}
+                                               "availability", "care", "cautions", "model"}
     assert set(data["answer"]["picks"][0]["quotes"][0]) == {"text", "comment_id", "url", "badges"}
     assert set(data["answer"]["picks"][0]["price"]) == {"text", "amount", "currency", "shop", "url", "checked_on",
                                                         "budget_status", "budget_note"}

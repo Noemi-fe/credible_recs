@@ -625,3 +625,19 @@ PRICES_TODO_NEXT_IN_LINE = 3
 # alone: a facial cleanser or oil is one.
 SERVICE_TYPE_PATTERNS = (r"laser", r"procedures?", r"microneedling", r"salon", r"clinic", r"in-office",
                          r"(salon |spa )?facials?$")
+
+# --- A brand pick names its most recommended model (10 Oct 2026) ---
+# Decided by Claude, reported to Noemi. Under a brand pick ("Victorinox (their chef knives)"), the answer names the model
+# of that brand its credible writers recommend most, when at least this many of them recommend it and its name says
+# more than the brand and these generic words (or holds a number: "Lodge 10 skillet"): "Lodge cast iron pan" names no
+# model. Only products still in the ranking count: never one left out as another type, not sold or over budget.
+BRAND_PICK_MODEL = "Most named model: {model}"
+BRAND_MODEL_MIN_CREDIBLE = 2
+BRAND_MODEL_GENERIC_WORDS = ("the", "a", "their", "my", "one", "ones", "pan", "pans", "skillet", "skillets", "knife",
+                             "knives", "kettle", "kettles", "grinder", "grinders", "chef", "chefs", "chef's", "cast",
+                             "iron", "electric", "coffee", "burr", "hand", "manual", "set", "line", "range",
+                             "product", "products", "stuff", "cookware", "frying", "fry", "non-stick", "nonstick",
+                             "stainless", "steel", "carbon",
+                             # descriptions, not models ("restored", "vintage Griswold"): 10 Oct 2026
+                             "restored", "vintage", "old", "older", "used", "new", "newer", "original", "any", "good",
+                             "cheap", "basic", "big", "small", "large", "little", "or", "and")

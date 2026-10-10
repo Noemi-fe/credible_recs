@@ -397,6 +397,7 @@ h1, h2, h3, h4 { line-height: 1.25; }
       el("div", { class: "card-head" },
         el("span", { class: "rank", "aria-hidden": "true" }, String(pick.rank)),
         el("h3", { id: nameId }, el("span", { class: "visually-hidden" }, fill(LABELS.rank, { rank: pick.rank }) + " "), pick.name)),
+      pick.model ? el("p", { class: "model" }, WORDING.brand_model.replace("{model}", pick.model)) : null,
       el("p", { class: "reason" }, pick.reason),
       el("p", { class: "support" }, el("strong", {}, WORDING.support_label + ": "), pick.support),
       ...priceLines(pick.price), availabilityLine(pick.availability),

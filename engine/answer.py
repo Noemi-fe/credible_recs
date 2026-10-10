@@ -61,6 +61,7 @@ from datetime import date
 
 from engine.care_tips import CareTip, CareTips, tips_by_agreement
 from engine.config import (
+    BRAND_PICK_MODEL,
     CARE_TIPS_PER_PICK,
     DOWNSIDES_PER_PICK,
     LOOK_FOR_NOTES,
@@ -237,6 +238,8 @@ class Pick:
     availability: ShownAvailability = NOT_CHECKED  # where it is sold, from the price list, or AVAILABILITY_UNKNOWN
     care: list[ShownCareTip] = field(default_factory=list)  # "How to make it last"; empty when there are none
     cautions: list[str] = field(default_factory=list)  # "Note: ..." from product facts (9 Oct 2026); empty when none
+    # For a brand pick: the model of that brand its credible writers recommend most (10 Oct 2026); None otherwise.
+    model: str | None = None
 
 
 @dataclass
@@ -280,7 +283,7 @@ def comment_bodies(threads: Iterable[Thread]) -> dict[str, str]:
 
 def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type: str | None = None,
                  prices: Mapping[str, PriceCheck] | None = None, care: Mapping[str, CareTips] | None = None,
-                 cautions: Mapping[str, list[str]] | None = None) -> Answer:
+                 cautions: Mapping[str, list[str]] | None = None, models: Mapping[str, str] | None = None) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -288,9 +291,11 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     engine.care_tips.CareTips}), made by the pipeline; a product with none shows no "How to make it last". Care tips
     never change which products are picks. `cautions` is each product's soft clashes with the request ({product key:
     [reason]}, engine/product_facts.py), made by the pipeline: each is shown on its pick as CAUTION; they never change
-    which products are picks either.
+    which products are picks either. `models` is each brand pick's most recommended model ({product key: name}),
+    made by the pipeline (engine.pipeline._brand_models), shown as BRAND_PICK_MODEL.
     """
     check = _QuoteCheck(bodies)
+    models = models or {}
     prices = prices or {}
     care = care or {}
     cautions = cautions or {}
@@ -305,6 +310,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             tips = _care_tips(care.get(product.key), check)
             notes = [CAUTION.format(reason=reason) for reason in cautions.get(product.key, [])]
             picks.append(_pick(len(picks) + 1, product, quotes, check, ranking, price, tips, availability, notes))
+            picks[-1].model = models.get(product.key)
     skip = [_skip_item(product, check) for product in ranking.skip_list]
     look_for = _look_for(ranking, check)
     return Answer(
@@ -731,7 +737,10 @@ def render_markdown(answer: Answer) -> str:
 
 
 def _render_pick(pick: Pick) -> list[str]:
-    lines = [f"## {pick.rank}. {pick.name}", "", pick.reason, "", f"**{SUPPORT_LABEL}:** {pick.support}", ""]
+    lines = [f"## {pick.rank}. {pick.name}", ""]
+    if pick.model:
+        lines += [BRAND_PICK_MODEL.format(model=pick.model), ""]
+    lines += [pick.reason, "", f"**{SUPPORT_LABEL}:** {pick.support}", ""]
     lines += _render_price(pick.price) + _render_availability(pick.availability)
     for caution in pick.cautions:
         lines += [caution, ""]

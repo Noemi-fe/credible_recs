@@ -435,3 +435,48 @@ def test_a_brand_pick_stays_when_its_own_product_qualifies_but_isnt_shown(tmp_pa
     assert blacklock.qualifies and "Lodge Blacklock skillet" not in names(result)  # qualifies, but not in the top 3
     assert names(result)[0] == "Lodge (their cast iron skillets)"
     assert result.folded_brand_picks == []
+
+
+# --- 7. A brand pick names its most recommended model (decided by Claude, 10 Oct 2026) ---
+# Brand picks fill many top 3s (b07: Victorinox, Wüsthof, Tojiro), but nobody can buy "Victorinox (their chef knives)".
+# Under a brand pick, the answer names the model of that brand its credible writers recommend most (at least
+# BRAND_MODEL_MIN_CREDIBLE of them), when there is one: a name that says more than the brand and the product type.
+
+def test_a_brand_pick_names_its_most_recommended_model(tmp_path):
+    from engine.answer import answer_to_dict, render_markdown
+
+    result = answer_request(KNIFE_REQUEST, library_dir=knife_library(tmp_path, fibrox=(1, 1)), prices=[], today=TODAY)
+    victorinox = next(pick for pick in result.answer.picks if pick.name == VICTORINOX)
+    assert victorinox.model == FIBROX  # 2 credible recommendations; the Rosewood has 1
+    assert config.BRAND_PICK_MODEL.format(model=FIBROX) == "Most named model: Victorinox Fibrox chef knife"
+    assert "Most named model: Victorinox Fibrox chef knife" in render_markdown(result.answer)
+    assert answer_to_dict(result.answer)["picks"][0]["model"] == FIBROX
+    others = [pick for pick in result.answer.picks if pick.name != VICTORINOX]
+    assert all(pick.model is None for pick in others)  # specific products name no model
+
+
+def test_a_brand_pick_names_no_model_when_its_names_say_only_brand_and_type(tmp_path):
+    lib = write_library(tmp_path, {
+        "1gen001": ("Best cast iron skillet for a beginner?", "My first one.", [
+            praise("g1a", "Lodge", 20), praise("g1b", "Lodge", 12), praise("g1c", "Lodge cast iron pan", 5),
+            praise("g1d", "Lodge Blacklock skillet", 1), praise("g1e", "Lodge Chef Collection skillet", 1),
+        ]),
+        "1gen002": ("Which cast iron skillet lasts?", "Mine cracked.", [
+            praise("g2a", "Lodge", 15), praise("g2b", "Lodge cast iron pan", 4),
+        ]),
+    }, community="castiron")
+    result = answer_request("cast iron skillet that lasts", library_dir=lib, prices=[], product_facts=[], today=TODAY)
+    lodge = next(pick for pick in result.answer.picks if pick.name.startswith("Lodge"))
+    assert lodge.model is None  # "Lodge cast iron pan" names no model; Blacklock and Chef Collection have 1 each
+
+
+@pytest.mark.parametrize("name, model", [
+    ("Victorinox Fibrox 8 inch chef's knife", True), ("Lodge 10 skillet", True), ("Wusthof Classic", True),
+    ("Lodge cast iron pan", False), ("restored griswold or wagner", False), ("vintage Griswold", False),
+    ("old Griswold pans", False), ("used Lodge skillet", False),
+])
+def test_what_counts_as_a_model_name(name, model):
+    from engine.pipeline import _names_a_model
+
+    brand = group(name.split()[0] if name.split()[0][0].isupper() else name.split()[1], loose=True)
+    assert _names_a_model(name, brand, "cast iron skillet") is model

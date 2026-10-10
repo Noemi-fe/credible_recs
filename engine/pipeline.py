@@ -94,6 +94,8 @@ from pathlib import Path
 from engine.answer import Answer, _every_quote, comment_bodies, render_markdown, write_answer
 from engine.care_tips import CareTips, attach_care_tips, credible_care_tips
 from engine.config import (
+    BRAND_MODEL_GENERIC_WORDS,
+    BRAND_MODEL_MIN_CREDIBLE,
     BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE,
     BRAND_PICK_TITLE_SHARE,
     BUDGET_DEFAULT_CURRENCY,
@@ -258,7 +260,8 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
                                        kept_groups, result)
     folded = {item.name for item in result.folded_brand_picks}
     care = _care_tips(threads, checked, [g for g in kept_groups if g.name not in folded], kinds, query)
-    result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions)
+    result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
+                                 _brand_models(result.ranking, kept_groups, query.product_type))
     if live_checker is not None:
         _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions, kept_groups)
     thread_of = {c.id: t.id for t in threads for c in t.comments}
@@ -294,7 +297,8 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         ranking = rank_products([m for m in scored if m.comment_id not in failed], query.category,
                                 [n for n in kind_notes if n.comment_id not in failed], placements(kinds))
         result.ranking = _fold_brand_picks(ranking, groups, result)
-        result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions)
+        result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
+                                     _brand_models(result.ranking, groups, query.product_type))
 
 
 def _checked_live_recently(thread: Thread, today: date) -> bool:
@@ -576,6 +580,41 @@ def _fold_brand_picks(ranking: RankingResult, groups: list[ProductGroup], result
         keys.add(step[0].key)
     result.folded_brand_picks = folded
     return replace(ranking, products=[p for p in ranking.products if p.key not in keys]) if keys else ranking
+
+
+def _brand_models(ranking: RankingResult, groups: list[ProductGroup], product_type: str | None) -> dict[str, str]:
+    """{brand pick's key: the name of its brand's model its credible writers recommend most} (10 Oct 2026). A model is
+    a specific product of the brand still in the ranking (_same_brand), with at least BRAND_MODEL_MIN_CREDIBLE
+    credible recommendations, whose name says more than the brand and the product type (_names_a_model). The most
+    credible recommendations win, then the higher score. A brand pick with none is left out."""
+    by_key = {g.key: g for g in groups}
+    models = {}
+    for brand in ranking.products:
+        brand_group = by_key.get(brand.key)
+        if brand_group is None or not brand_group.loose:
+            continue
+        candidates = [p for p in ranking.products
+                      if (g := by_key.get(p.key)) is not None and not g.loose
+                      and len(p.credible_recommendations) >= BRAND_MODEL_MIN_CREDIBLE
+                      and _same_brand(brand_group, g) and _names_a_model(p.name, brand_group, product_type)]
+        if candidates:
+            models[brand.key] = max(candidates, key=lambda p: (len(p.credible_recommendations), p.score)).name
+    return models
+
+
+def _names_a_model(name: str, brand: ProductGroup, product_type: str | None) -> bool:
+    """Whether a product's name says more than its brand and its type ("Victorinox Fibrox chef knife": yes;
+    "Lodge cast iron pan": no): a word left after taking out the brand's words, the product type's and
+    config.BRAND_MODEL_GENERIC_WORDS, or a number."""
+    words = re.findall(r"[a-z0-9][a-z0-9'-]*", name.lower())
+    if "or" in words:  # "restored griswold or wagner": two products, not one model
+        return False
+    if any(any(c.isdigit() for c in w) for w in words):
+        return True
+    brand_words = {w for n in list(brand.names) + [uk_name(n) for n in brand.names]
+                   for w in re.findall(r"[a-z0-9][a-z0-9'-]*", n.lower())}
+    generic = set(BRAND_MODEL_GENERIC_WORDS) | set((product_type or "").lower().split())
+    return any(w not in brand_words and w not in generic and w.rstrip("s") not in generic for w in words)
 
 
 def _same_brand(brand: ProductGroup, product: ProductGroup) -> bool:

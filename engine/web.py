@@ -51,8 +51,10 @@ The JSON for /api/answer (200):
                                                                checked or when the price line links to it
                             "care": [{"tip": "Descale every 6 months.",   "How to make it last" (9 Oct 2026):
                                       "quote": {same shape}}],            0 to 2, each quote verified
-                            "cautions": ["Note: ..."]}],       product facts that suit the request less well
+                            "cautions": ["Note: ..."],         product facts that suit the request less well
                                                                (9 Oct 2026); [] when there are none
+                            "model": "Victorinox Fibrox..."}], a brand pick's most recommended model (10 Oct
+                                                               2026); null for other picks
                  "look_for": [{"kind", "advice", "quote": {same shape}}],
                  "skip": [{"product_key", "name", "reason", "quotes": [...]}],
                  "message": the honest "not enough evidence" message, or null when there are 3 picks,
@@ -88,7 +90,7 @@ from urllib.parse import parse_qs, urlsplit
 from engine import answer as wording
 from engine import how_page
 from engine.answer import answer_to_dict, unverified_claims
-from engine.config import WEB_MAX_REQUEST_CHARS, WEB_PORT
+from engine.config import BRAND_PICK_MODEL, WEB_MAX_REQUEST_CHARS, WEB_PORT
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.metrics import METRICS_FILE
 from engine.parse_reddit import REPO_ROOT
@@ -239,6 +241,7 @@ def answer_wording() -> dict[str, str]:
         "price_label": wording.PRICE_LABEL,  # "Price"
         "price_link_text": wording.PRICE_LINK_TEXT,
         "care_heading": wording.CARE_HEADING,  # "How to make it last" (care tips, 9 Oct 2026)
+        "brand_model": BRAND_PICK_MODEL,  # "Most named model: {model}" (brand picks, 10 Oct 2026)
         # The breakdown's line about the request's needs (9 Oct 2026), with {recommends} and {warnings} for the page.
         "breakdown_needs": wording.breakdown_needs_line("{recommends}", "{warnings}"),
     }

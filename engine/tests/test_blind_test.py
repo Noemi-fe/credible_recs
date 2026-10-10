@@ -186,6 +186,11 @@ def test_a_quote_written_over_several_lines_is_shown_on_one():
     assert '"I am on my second one in 13 years, So not BIFL, but I bought it again."' in shown
 
 
+def test_a_brand_picks_model_is_part_of_its_reason():
+    shown = shown_from_ours({"picks": [pick(1, "Victorinox (their chef knives)", model="Victorinox Fibrox chef knife")]})
+    assert "Most named model: Victorinox Fibrox chef knife. Recommended by 3 credible voices" in shown
+
+
 def test_with_no_picks_our_answer_says_so_in_its_own_words():
     assert shown_from_ours({"picks": [], "message": "Not enough credible evidence to recommend a kettle yet."}) == (
         "Not enough credible evidence to recommend a kettle yet.")
