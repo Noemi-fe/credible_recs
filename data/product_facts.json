@@ -885,6 +885,90 @@
     "https://www.greenpan.us/collections/merten-storck-carbon-steel"
    ],
    "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Scanpan non-stick pans",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "non_stick": true
+   },
+   "sources": [
+    "https://www.scanpan.com/scanpan-nonstick",
+    "https://scanpan.co.uk/collections/frying-pans"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "De Buyer carbon steel pans",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true,
+    "non_stick": false,
+    "induction": true
+   },
+   "sources": [
+    "https://www.debuyer-usa.com/products/mineral-b-fry-pan",
+    "https://www.debuyer-usa.com/products/mineral-b-pro-fry-pan",
+    "https://www.debuyer-usa.com/products/blue-carbon-steel-frypan"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Anessa Perfect UV Sunscreen Skincare Milk (gold with blue on the cap)",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "facts": {
+    "filters": "hybrid",
+    "fragrance_free": false
+   },
+   "sources": [
+    "https://www.shiseido.co.jp/sw/onlinestore/products/H16501.html",
+    "https://www.yesstyle.com/en/shiseido-anessa-perfect-uv-sunscreen-skincare-milk-spf-50-pa-2024/info.html/pid.1127278830"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "By Wishtrend Vitamin A-mazing Bakuchiol Night Cream",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "prescription_only": false,
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://bywishtrend.com/products/vitamin-a-mazing-bakuchiol-night-cream"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Dr. Althea 345 Relief Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true,
+    "texture": "light"
+   },
+   "sources": [
+    "https://doctoraltheaglobal.com/products/345-relief-cream",
+    "https://www.cultbeauty.co.uk/p/dr.-althea-345-relief-cream-50ml/17729496/"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "COSRX Salicylic Acid Daily Gentle Cleanser (SA cleanser)",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {
+    "fragrance_free": false
+   },
+   "sources": [
+    "https://www.cosrx.com/products.json",
+    "https://www.lookfantastic.com/p/cosrx-salicylic-acid-daily-gentle-cleanser-170g/11540297/",
+    "https://www.skincupid.co.uk/products/salicylic-acid-daily-gentle-cleanser-150ml"
+   ],
+   "checked_on": "2026-10-10"
   }
  ]
 }
