@@ -160,6 +160,41 @@ def test_the_brand_goes_first_when_some_name_gives_it():
     assert groups[0].name == "1Zpresso JX Pro"
 
 
+def _stagg(*more):
+    """The kettle answer's case (10 Oct 2026): "Stagg" written most often, the brand only in a longer name."""
+    return group([kitchen("Stagg", comment_id=f"c{i}") for i in range(4)]
+                 + [kitchen("Stagg EKG", comment_id="c5"), kitchen("Fellow Stagg EKG", comment_id="c6")]
+                 + [kitchen(name, comment_id=f"d{i}") for i, name in enumerate(more)])
+
+
+def test_the_brand_goes_first_when_only_a_longer_name_gives_it():
+    # No name is "Stagg" with only words before it, but "Fellow Stagg EKG" puts "Fellow" before it, and "Fellow" is
+    # written on its own elsewhere (a brand): shown "Fellow Stagg", not a bare "Stagg" a shopper can't place.
+    groups = _stagg("Fellow", "Fellow Corvo EKG")
+    stagg = next(g for g in groups if "Stagg" in g.names)
+    assert (stagg.name, stagg.key, stagg.loose) == ("Fellow Stagg", "kitchen:fellow stagg", False)
+    assert sorted(stagg.names) == ["Fellow Stagg EKG", "Stagg", "Stagg EKG"]  # the name changes, the group doesn't
+
+
+def test_words_before_the_name_count_as_a_brand_only_when_written_on_their_own():
+    # Nobody writes "Fellow" alone here, so nothing says it's a brand rather than a describing word.
+    assert next(g for g in _stagg() if "Stagg" in g.names).name == "Stagg"
+    # A size before the name: '12"' is never a product of its own.
+    groups = group([kitchen("De Buyer", comment_id=f"c{i}") for i in range(3)]
+                   + [kitchen('12" De Buyer carbon steel crepe pan', comment_id="c4")])
+    assert groups[0].name == "De Buyer"
+
+
+def test_a_brand_put_first_never_takes_another_groups_name():
+    # "Fellow Stagg" is written too, and fits two products, so it is a loose group of its own. The "Stagg" group then
+    # shows its own name that starts with the brand, so no two groups share a name or a key.
+    groups = _stagg("Fellow", "Fellow Corvo EKG", "Fellow Stagg", "Fellow Stagg electric kettle")
+    stagg = next(g for g in groups if "Stagg" in g.names)
+    assert stagg.name == "Fellow Stagg EKG"
+    assert len({g.key for g in groups}) == len(groups)
+    assert len({g.name.lower() for g in groups}) == len(groups)
+
+
 def test_the_spelling_shown_is_the_most_common_and_a_short_name_is_shown_written_out():
     aliases = {**NO_ALIASES, "skincare": make_aliases({"TO": "The Ordinary"})}
     groups = group([mention("TO lactic acid"), mention("TO lactic acid", comment_id="c2"), mention("The Ordinary lactic acid"),

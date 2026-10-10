@@ -30,7 +30,12 @@ The name shown: the most complete name (the most words) among the names written 
 group's most written name; on a tie, the one written more often. So "Sunday Riley water cream" (once) beats
 "Sunday Riley" (twice), but "Timemore C2 with titanium coated burrs" (once) doesn't beat "Timemore C2" (24 times).
 Then, brand first: if another name of the group is that name with words added at its start ("1Zpresso JX Pro"
-for "JX Pro"), the most often written of those is shown instead. Of the spellings of that name, one that says its
+for "JX Pro"), the most often written of those is shown instead. If none is, but a longer name has it after a brand
+(words written on their own as a name in the same category, such as "Fellow"), the brand goes before it: "Fellow
+Stagg" for a group mostly written "Stagg" that also holds "Fellow Stagg EKG" (10 Oct 2026). A size or a colour before
+it ('12"') is never written alone, so it is never taken for a brand. When the brand and the name together are another
+group's name, the group's own shortest name that starts with both is shown ("Fellow Stagg EKG"), so no two groups
+share a name or a key. Of the spellings of that name, one that says its
 words as they are is shown ("House of Hur Weightless Sun Fluid", not "House of Hurr Weightless Sunscreen", which a
 short name writes out), then the most complete as written ("The Ordinary" rather than "TO"), then the most common,
 then one with capitals.
@@ -172,8 +177,15 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
     families: dict[Words, list[Words]] = defaultdict(list)  # each group's root -> the names judged together in it
     for s in spellings:
         families[_root(parent, s)].append(s)
-    groups = [_make_group(category, {w: by_words[w] for s in ss for w in spellings[s]}, loose=all(s in loose for s in ss))
-              for ss in families.values()]
+    members = [({w: by_words[w] for s in ss for w in spellings[s]}, all(s in loose for s in ss)) for ss in families.values()]
+    shown = [_shown_words(own) for own, _ in members]
+    taken = set(by_words) | set(shown)  # names no group may take as its brand-first name: they are names already
+    groups = []
+    for (own, is_loose), words in zip(members, shown):
+        with_brand = _with_brand_before(words, own, by_words, taken)
+        if with_brand:
+            taken.add(with_brand[0])
+        groups.append(_make_group(category, own, is_loose, with_brand or (words, _shown_spelling(own[words], words))))
     groups += [ProductGroup(f"{category}:{name}", ms[0].product, category, list(ms), loose=True)
                for name, ms in nameless.items()]
     return groups
@@ -217,10 +229,12 @@ def _join(parent: dict[Words, Words], a: Words, b: Words) -> None:
 
 # --- The name shown ---
 
-def _make_group(category: str, by_words: dict[Words, list[ProductMention]], loose: bool) -> ProductGroup:
-    shown = _shown_words(by_words)
+def _make_group(category: str, by_words: dict[Words, list[ProductMention]], loose: bool,
+                shown: tuple[Words, str]) -> ProductGroup:
+    """The group of these names, shown as `shown`: (the words its key is made of, the name as it is shown)."""
+    words, name = shown
     mentions = sorted((m for ms in by_words.values() for m in ms), key=lambda m: (m.thread_id, m.comment_id, m.product))
-    return ProductGroup(f"{category}:{' '.join(shown)}", _shown_spelling(by_words[shown], shown), category, mentions, loose)
+    return ProductGroup(f"{category}:{' '.join(words)}", name, category, mentions, loose)
 
 
 def _shown_words(by_words: dict[Words, list[ProductMention]]) -> Words:
@@ -230,6 +244,38 @@ def _shown_words(by_words: dict[Words, list[ProductMention]]) -> Words:
     main = max(sorted(often), key=lambda w: (len(w), len(by_words[w])))
     with_brand = [w for w in by_words if _adds_words_at_start(w, main)]
     return max(sorted(with_brand), key=lambda w: (len(by_words[w]), len(w))) if with_brand else main
+
+
+def _with_brand_before(main: Words, own: dict[Words, list[ProductMention]], every_name: dict[Words, list[ProductMention]],
+                       taken: set[Words]) -> tuple[Words, str] | None:
+    """The brand-first name of a group whose name to show (`main`) has no brand before it in any of its names, but
+    sits after a brand in a longer one: "Stagg", next to "Fellow Stagg EKG" (10 Oct 2026: the kettle answer showed a
+    bare "Stagg"). Returns (its words, the name as shown), or None.
+
+    The words before `main` are a brand only when they are a name of their own in the category (`every_name`, every
+    name written: "Fellow" written alone), so a size or a colour ('12" De Buyer crepe pan') never is. Shown: the brand,
+    then the name ("Fellow Stagg"), each spelled as written. When that is a name already (`taken`: another group's), the
+    group's own shortest name that starts with both is shown instead ("Fellow Stagg EKG"), so two groups never share a
+    name or a key. Among several brands, the one before the most mentions; then the first alphabetically.
+    """
+    if any(_adds_words_at_start(w, main) for w in own):  # a name already gives it: _shown_words showed that one
+        return None
+    found: Counter = Counter()
+    for w, mentions in own.items():
+        for i in range(1, len(w) - len(main) + 1):
+            if w[i:i + len(main)] == main and w[:i] in every_name:
+                found[w[:i]] += len(mentions)
+    if not found:
+        return None
+    brand = max(sorted(found), key=lambda b: found[b])
+    joined = brand + main
+    if joined not in taken:
+        return joined, f"{_shown_spelling(every_name[brand], brand)} {_shown_spelling(own[main], main)}"
+    starting = sorted(w for w in own if w[:len(joined)] == joined)  # this group's names: never another's
+    if not starting:
+        return None
+    longer = min(starting, key=lambda w: (len(w), -len(own[w])))
+    return longer, _shown_spelling(own[longer], longer)
 
 
 def _adds_words_at_start(longer: Words, name: Words) -> bool:
