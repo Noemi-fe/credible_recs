@@ -310,7 +310,10 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     for product in ranking.qualifying:
         if len(picks) == PICKS_SHOWN:
             break
-        quotes = check.first(_naming_first(product.credible_recommendations, asks), QUOTES_PER_PICK)
+        ordered = _naming_first(product.credible_recommendations, asks)
+        quotes = check.first([m for m in ordered if _says_something(m)], QUOTES_PER_PICK)
+        if len(quotes) < MIN_QUOTES_PER_PICK:  # a quote that says nothing about it only makes up the minimum
+            quotes += check.first([m for m in ordered if not _says_something(m)], MIN_QUOTES_PER_PICK - len(quotes))
         if len(quotes) >= MIN_QUOTES_PER_PICK:
             price = shown_price(prices.get(product.key))
             availability = shown_availability(prices.get(product.key), price.url)
@@ -431,11 +434,28 @@ def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = ()) ->
     return sorted(ordered, key=lambda m: (_says_the_opposite(m.quote, asks), tier(m)))
 
 
+def _says_something(m: ScoredMention) -> bool:
+    """Whether a quote names its product, gives a view, or points at it ("it", "this one", "mine"). One that does none
+    of these ("yea no I'm just gonna stick with my cast iron lol.", b08, 10 Oct 2026: the comment named the pans in a
+    sentence the AI didn't quote) is shown only to make up a pick's MIN_QUOTES_PER_PICK."""
+    text = " ".join(re.findall(r"[a-z0-9']+", m.quote.lower().replace("’", "'")))
+    return (_names_product(m.quote, m.product_name, m.category) or _gives_a_view(m.quote)
+            or bool(_POINTS_AT_IT.search(text)))
+
+
+# Words that point at a product already named ("I wouldn't be on my 9th bottle of it", "I've had mine for 6 years").
+_POINTS_AT_IT = re.compile(r"(?<![a-z0-9'])(?:it|it's|its|this|these|those|them|they|they're|mine|ones?)(?![a-z0-9'])")
+# "I like it", "I really like the gel": a view. Not "I would like" (a wish), nor "like" alone ("features like a scale").
+_I_LIKE = re.compile(r"\bi (?:(?:really|also|do|still|just|honestly|actually|genuinely|personally|definitely"
+                     r"|absolutely|quite) )?like[sd]?\b")
+
+
 def _gives_a_view(quote: str) -> bool:
     """Whether the quote says what the writer thinks or went through (config.QUOTE_VIEW_WORDS: "great", "recommend",
-    "lasted"...), rather than only that they own it."""
+    "lasted"..., or "I like"), rather than only that they own it."""
     text = " ".join(re.findall(r"[a-z0-9']+", quote.lower().replace("’", "'")))
-    return any(re.search(rf"(?<![a-z0-9']){re.escape(word)}(?![a-z0-9'])", text) for word in QUOTE_VIEW_WORDS)
+    return (any(re.search(rf"(?<![a-z0-9']){re.escape(word)}(?![a-z0-9'])", text) for word in QUOTE_VIEW_WORDS)
+            or bool(_I_LIKE.search(text)))
 
 
 def _says_the_opposite(quote: str, asks: Iterable[str]) -> bool:
@@ -448,9 +468,11 @@ def _says_the_opposite(quote: str, asks: Iterable[str]) -> bool:
 def _names_product(quote: str, name: str, category: str) -> bool:
     """Whether the quote names the product: the first word of its name (the brand), a model code in it (a word
     with a digit: "C2", "MTH-80"), or a known short or long form of its brand (engine/data/product_aliases.json:
-    "BOJ" for Beauty of Joseon, "Breville" for Sage), as whole words, capitals aside."""
-    text = " ".join(re.findall(r"[a-z0-9][a-z0-9'-]*", quote.lower()))
-    name_words = re.findall(r"[a-z0-9][a-z0-9'-]*", name.lower())
+    "BOJ" for Beauty of Joseon, "Breville" for Sage), as whole words, capitals aside. A plural or a possessive counts
+    ("old wagners", "Prequel's"), and so does a hyphen written as a space or left out ("All clad" for All-Clad; b08,
+    b05 and b10, 10 Oct 2026)."""
+    text = " ".join(re.findall(r"[a-z0-9][a-z0-9'-]*", quote.lower().replace("’", "'")))
+    name_words = [w.removesuffix("'s") for w in re.findall(r"[a-z0-9][a-z0-9'-]*", name.lower().replace("’", "'"))]
     if not name_words:
         return False
     wanted = {name_words[0]} | {w for w in name_words if any(c.isdigit() for c in w)}
@@ -459,7 +481,14 @@ def _names_product(quote: str, name: str, category: str) -> bool:
         short, full = " ".join(short_words), " ".join(full_words)
         if f"{joined} ".startswith(f"{short} ") or f"{joined} ".startswith(f"{full} "):
             wanted |= {short, full}
-    return any(re.search(rf"(?<![a-z0-9]){re.escape(w)}(?![a-z0-9])", text) for w in wanted)
+    return any(re.search(_as_written_loosely(w), text) for w in wanted)
+
+
+def _as_written_loosely(word: str) -> str:
+    """A pattern for a name word (or a short name) as a whole word: its hyphens written as a space or not at all, and a
+    plural or possessive ending allowed."""
+    body = "[- ]?".join(re.escape(part) for part in word.split("-"))
+    return rf"(?<![a-z0-9]){body}(?:'s|s'?|')?(?![a-z0-9])"
 
 
 def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _QuoteCheck, ranking: RankingResult,

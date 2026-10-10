@@ -71,16 +71,18 @@ def test_the_reason_and_support_lines_come_from_the_data():
 
 
 def test_quotes_come_from_credible_recommendations_most_credible_first():
+    # The quotes name the product: since 10 Oct 2026 one that names nothing and gives no view only makes up the
+    # minimum (test_a_quote_that_neither_names_the_product_nor_gives_a_view_only_makes_up_the_minimum).
     lodge = [
-        mention("Lodge Skillet", "t1", voice="medium", evidence="short-term use", quote="Medium short quote here."),
-        mention("Lodge Skillet", "t2", quote="High long quote here."),
-        mention("Lodge Skillet", "t1", voice="medium", quote="Medium long quote here."),
-        mention("Lodge Skillet", "t2", voice="low", quote="Low voice quote here."),
-        mention("Lodge Skillet", "t1", evidence="no first-hand use", quote="Hearsay quote here."),
+        mention("Lodge Skillet", "t1", voice="medium", evidence="short-term use", quote="Medium short quote on the Lodge."),
+        mention("Lodge Skillet", "t2", quote="High long quote on the Lodge."),
+        mention("Lodge Skillet", "t1", voice="medium", quote="Medium long quote on the Lodge."),
+        mention("Lodge Skillet", "t2", voice="low", quote="Low voice quote on the Lodge."),
+        mention("Lodge Skillet", "t1", evidence="no first-hand use", quote="Hearsay quote on the Lodge."),
     ]
     answer = write_answer(rank_products(lodge, "kitchen"), bodies_for(*lodge))
     assert [q.text for q in answer.picks[0].quotes] == [
-        "High long quote here.", "Medium long quote here.", "Medium short quote here."
+        "High long quote on the Lodge.", "Medium long quote on the Lodge.", "Medium short quote on the Lodge."
     ]
 
 
@@ -449,6 +451,55 @@ def test_quotes_that_name_the_product_are_shown_before_ones_that_dont():
     answer = write_answer(rank_products(items, "kitchen"), bodies_for(*items))
     assert [q.text for q in answer.picks[0].quotes][:2] == [m.quote for m in named]
     assert vague.quote in [q.text for q in answer.picks[0].quotes]  # still shown when there's room
+
+
+def test_a_quote_that_neither_names_the_product_nor_gives_a_view_only_makes_up_the_minimum():
+    # Found reading b08, 10 Oct 2026: "yea no I'm just gonna stick with my cast iron lol." was shown for Griswold and
+    # for Wagner (the comment named them in a sentence the AI didn't quote). It says nothing about either, so such a
+    # quote is shown only when the pick would otherwise have fewer than MIN_QUOTES_PER_PICK.
+    empty = mention("Acme skillet", "t1", weight=0.9, quote="yea no I'm just gonna stick with my cast iron lol.")
+    full = [mention("Acme skillet", "t2", weight=0.5, quote="My Acme has lasted 6 years."),
+            mention("Acme skillet", "t1", weight=0.4, quote="Love it, works great every single morning.")]
+    items = [empty, *full]
+    answer = write_answer(rank_products(items, "kitchen"), bodies_for(*items))
+    assert [q.text for q in answer.picks[0].quotes] == [m.quote for m in full]
+    # With one quote that says something, the most credible empty one makes up the two; the other isn't needed.
+    other_empty = mention("Acme skillet", "t2", weight=0.8, quote="Same here, honestly.")
+    items = [empty, other_empty, full[0]]
+    answer = write_answer(rank_products(items, "kitchen"), bodies_for(*items))
+    assert [q.text for q in answer.picks[0].quotes] == [full[0].quote, empty.quote]
+    assert MIN_QUOTES_PER_PICK == 2
+
+
+def test_a_plural_of_the_brand_names_the_product():
+    from engine.answer import _names_product
+
+    assert _names_product("I have some old wagners from my grandparents.", "Wagner", "kitchen")
+    assert not _names_product("I have some old wagons from my grandparents.", "Wagner", "kitchen")
+
+
+@pytest.mark.parametrize("name, quote", [
+    ("Prequel's Gleanser", "Prequel gleanser with salicylic acid, its outstanding."),  # the name's possessive
+    ("All-Clad non-stick pans", "I have some 2 year old All clad non stick pans."),  # a hyphen written as a space
+    ("Prequel Gleanser", "Prequel's cleanser is my favourite."),  # the quote's possessive
+])
+def test_a_brand_written_slightly_differently_still_names_the_product(name, quote):
+    from engine.answer import _names_product
+
+    assert _names_product(quote, name, "skincare")
+
+
+@pytest.mark.parametrize("quote, says_something", [
+    ("yea no I'm just gonna stick with my cast iron lol.", False),
+    ("Well, I wouldn't be on my 9th bottle of it if I didn't like it", True),  # points at it
+    ("I've had mine for 6 year, and only minimal signs of wear on the burrs.", True),
+    ("I like either of the gel or the lotion for a daily moisturizer.", True),  # "I like" is a view
+    ("I would like a new pan for my birthday.", False),  # wanting isn't a view
+])
+def test_what_says_something_about_the_product(quote, says_something):
+    from engine.answer import _says_something
+
+    assert _says_something(mention("Acme skillet", quote=quote)) is says_something
 
 
 def test_a_quote_naming_the_product_and_saying_what_the_writer_thinks_comes_first():
