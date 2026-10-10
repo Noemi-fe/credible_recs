@@ -109,6 +109,7 @@ from engine.config import (
     PIPELINE_BRAND_PICKS,
     PICKS_SHOWN,
     PIPELINE_MAX_THREADS,
+    PRODUCT_TYPE_PLURALS,
     UK_BRAND_NAMES,
 )
 from engine.contradictions import contradicting_writers
@@ -126,7 +127,7 @@ from engine.prices import (
     PriceCheck,
     check_price,
     find_availability,
-    find_brand_second_hand,
+    find_brand_entry,
     find_price,
     load_prices,
 )
@@ -465,7 +466,10 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
     among these groups is known not to be sold, its writers most likely mean those, so it is left out with them (10 Oct
     2026: "Cuisinart (their electric kettles)", from American writers' CPK-17s). When the newest entry under the
     brand's own name says it is sold second-hand only (engine.prices.find_brand_second_hand: "Griswold"), the brand
-    pick carries that entry, so its answer shows the second-hand line instead of "Availability not checked yet".
+    pick carries that entry, so its answer shows the second-hand line instead of "Availability not checked yet". Late on
+    10 Oct 2026: when the newest entry under the brand's name, alone or followed only by the product type's words
+    ("OXO kettle"), says it isn't sold, the brand pick is left out (OXO's kettles are 120 V models: one OXO kettle with
+    no type word in its name had kept "Oxo (their electric kettles)" in b06).
     """
     budget = query.constraints.budget
     if budget is not None and budget.max is not None and budget.currency is None:
@@ -476,20 +480,28 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
     not_sold = [g for g in groups if not g.loose and (a := find_availability(g.name, g.category, prices)) is not None
                 and a.available is False]
     kept, checks = [], {}
+    type_words = _type_words(query.product_type)
+    sold_here = [g for g in groups if not g.loose and (a := find_availability(g.name, g.category, prices)) is not None
+                 and a.available is True]
     for group in groups:
-        if group.loose and _only_unsold_products(group, groups, not_sold):
-            result.left_out_unavailable.append(group.name)
-            continue
         if group.loose:
+            # An entry under the brand ("Griswold", "OXO kettle"): second-hand only is shown; not sold leaves the brand
+            # pick out, unless one of its own products here is known to be sold, which proves the brand is.
+            sold = find_brand_entry(set(group.names) | {uk_name(n) for n in group.names}, group.category, prices,
+                                    type_words)
+            unsold_brand = (sold is not None and sold.available is False
+                            and not any(_same_brand(group, g) for g in sold_here))
+            if unsold_brand or _only_unsold_products(group, groups, not_sold):
+                result.left_out_unavailable.append(group.name)
+                continue
             result.not_priced.append(group.name)
-        price = None if group.loose else find_price(group.name, group.category, prices, currency)
-        if group.loose:  # second-hand only, or None: never an entry that leaves it out
-            sold = find_brand_second_hand(set(group.names) | {uk_name(n) for n in group.names}, group.category, prices)
+            sold = sold if sold is not None and sold.second_hand else None
         else:
             sold = find_availability(group.name, group.category, prices)
         if sold is not None and sold.available is False:
             result.left_out_unavailable.append(group.name)
             continue
+        price = None if group.loose else find_price(group.name, group.category, prices, currency)
         check = check_price(price, budget, today)
         if check.status == "over":
             result.left_out_over_budget.append(group.name)
@@ -497,6 +509,14 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
             kept.append(group)
             checks[group.key] = replace(check, availability=sold)
     return kept, checks
+
+
+def _type_words(product_type: str | None) -> tuple[str, ...]:
+    """The words of a product type and its plural ("electric kettle", "electric kettles"): the only words an entry
+    under a brand may add to speak for the brand's products of that type (engine.prices.find_brand_entry)."""
+    if not product_type:
+        return ()
+    return (product_type, PRODUCT_TYPE_PLURALS.get(product_type, product_type + "s"))
 
 
 def _only_unsold_products(brand: ProductGroup, groups: list[ProductGroup], not_sold: list[ProductGroup]) -> bool:

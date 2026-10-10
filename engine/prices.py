@@ -45,9 +45,11 @@ pipeline leaves out a product whose answer is "no longer sold" (engine.pipeline,
 and however old the check: unlike a price, a product that stopped being sold rarely comes back, and an answer should never
 recommend it. A product with no availability check is kept, and its answer says so.
 
-A brand pick ("Griswold (their cast iron skillets)") has no single product, so it is never priced or checked this way,
-and never left out for an entry under its own name. Its one exception (find_brand_second_hand, 10 Oct 2026): when the
-newest entry under the brand's own name ("Griswold") says it is sold second-hand only, the brand pick says so too.
+A brand pick ("Griswold (their cast iron skillets)") has no single product, so it is never priced or checked this way.
+An entry under the brand's own name speaks for it (find_brand_entry): when the newest one ("Griswold") says it is sold
+second-hand only, the brand pick says so too (10 Oct 2026). Since late on 10 Oct 2026, an entry under the brand's name
+followed only by the product type's own words ("OXO kettle") speaks for the brand's products of that type, and when the
+newest such entry says they aren't sold to UK shoppers (OXO's kettles are 120 V models), the brand pick is left out.
 
 How a price meets the request's budget (check_price). Only a budget with a max and a currency is checked: module 1
 never guesses a currency, and nothing converts one currency into another.
@@ -204,26 +206,39 @@ def find_availability(name: str, category: str, prices: Iterable[Price]) -> Pric
                                     *_newest_check_first(p)))
 
 
-def find_brand_second_hand(names: Iterable[str], category: str, prices: Iterable[Price]) -> Price | None:
-    """The entry saying a brand pick's brand is sold second-hand only, or None (Noemi's decision, 10 Oct 2026).
+def find_brand_entry(names: Iterable[str], category: str, prices: Iterable[Price],
+                     type_words: Iterable[str] = ()) -> Price | None:
+    """The newest entry under a brand pick's brand that says whether it is sold, or None.
 
-    A brand pick ("Griswold (their cast iron skillets)") has no single product, so it is never priced or checked for
-    availability (engine.pipeline, the budget step). But a brand no longer made at all can have an entry under its own
-    name saying it is sold second-hand only ("Griswold": the foundry closed in 1957), and then the brand pick shows it.
-    `names` are the names writers used for the brand ("Griswold", "Griswolds"). An entry is under the brand's name
-    when its words, or an also_called name's, are exactly those of one of them: an entry for one of the brand's
-    products ("Griswold No. 8 skillet") isn't. Of those that say whether it is sold, the newest check decides, as in
-    find_availability; it is returned only when it says second-hand, so an entry under the brand's name that says it is
-    sold new, or no longer sold, changes nothing. It never leaves a brand pick out.
+    `names` are the names writers used for the brand ("Griswold", "Griswolds"). An entry is under the brand's name when
+    its words, or an also_called name's, are exactly those of one of them, or those followed only by `type_words` (the
+    request's product type: "OXO kettle" for "Oxo" in a kettle request; late on 10 Oct 2026), so it speaks for all the
+    brand's products of that type. An entry for one of the brand's products ("Griswold No. 8 skillet", "OXO Cordless
+    Glass Electric Kettle") isn't. Of those that say whether it is sold, the newest check decides, as in
+    find_availability.
     """
     aliases = known_aliases().get(category, {})
     brand = {tuple(product_words(name, aliases)) for name in names} - {()}
+    extra = {word for words in type_words for word in product_words(words, aliases)}
+
+    def under_brand(known: str) -> bool:
+        words = tuple(product_words(known, aliases))
+        return any(words[:len(b)] == b and set(words[len(b):]) <= extra for b in brand)
+
     fits = [p for p in prices if p.category == category and p.available is not None
-            and any(tuple(product_words(known, aliases)) in brand for known in [p.product, *p.also_called])]
-    if not fits:
-        return None
-    newest = min(fits, key=_newest_check_first)
-    return newest if newest.second_hand else None
+            and any(under_brand(known) for known in [p.product, *p.also_called])]
+    return min(fits, key=_newest_check_first) if fits else None
+
+
+def find_brand_second_hand(names: Iterable[str], category: str, prices: Iterable[Price]) -> Price | None:
+    """The entry saying a brand pick's brand is sold second-hand only, or None (Noemi's decision, 10 Oct 2026).
+
+    A brand no longer made at all can have an entry under its own name saying it is sold second-hand only ("Griswold":
+    the foundry closed in 1957), and then the brand pick shows it. The newest entry under the brand's own name decides
+    (find_brand_entry, with no type words); it is returned only when it says second-hand.
+    """
+    entry = find_brand_entry(names, category, prices)
+    return entry if entry is not None and entry.second_hand else None
 
 
 def _newest_check_first(p: Price) -> tuple:

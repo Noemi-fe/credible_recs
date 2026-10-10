@@ -15,7 +15,7 @@
 Every library, product and tip here is made up; no test reads data/.
 """
 
-from datetime import date
+from datetime import date, timedelta
 from itertools import count
 
 import pytest
@@ -368,6 +368,49 @@ def test_a_brand_pick_stays_when_one_of_its_products_here_is_sold_or_not_checked
         result = answer_request("frying pan that lasts", library_dir=library, prices=prices,
                                 product_facts=[], today=TODAY)
         assert names(result)[0] == TRAMONTINA and TRAMONTINA not in result.left_out_unavailable
+
+
+def oxo_library(tmp_path):
+    """"Oxo" fits two Oxo kettles (a brand pick), praised four times across both threads; one of its kettles has no type
+    word in its name; the Dualit and the Zojirushi are praised three times each."""
+    return write_library(tmp_path, {
+        "1oxo001": ("Best electric kettle that lasts?", "Mine died.", [
+            praise("o1a", "Oxo", 5), praise("o1b", "Oxo", 6),
+            praise("o1c", "OXO Cordless Glass Electric Kettle", 3),
+            praise("o1d", "OXO variable temperature gooseneck full steel", 2),
+            praise("o1e", "Dualit Classic kettle", 9), praise("o1f", "Dualit Classic kettle", 8),
+            praise("o1g", "Zojirushi kettle", 7), praise("o1h", "Zojirushi kettle", 6),
+        ]),
+        "1oxo002": ("Which electric kettle lasts 10 years?", "Ten years, ideally.", [
+            praise("o2a", "Oxo", 4), praise("o2b", "Oxo", 7),
+            praise("o2c", "Dualit Classic kettle", 6), praise("o2d", "Zojirushi kettle", 5),
+        ]),
+    }, community="BuyItForLife")
+
+
+OXO = "Oxo (their electric kettles)"
+
+
+def test_a_brand_pick_is_left_out_when_the_list_says_the_brands_products_of_the_type_arent_sold(tmp_path):
+    # Found 10 Oct 2026 (late): OXO's electric kettles are 120 V models, not sold to UK shoppers (the entry "OXO kettle",
+    # not sold). Every OXO kettle named in b06's threads was left out but one with no type word in its name ("OXO variable
+    # temperature gooseneck full steel"), so "Oxo (their electric kettles)" stayed a pick. An entry under the brand's name
+    # followed only by the product type's own words speaks for all the brand's products of that type.
+    from engine.tests.test_availability import listed
+
+    library = oxo_library(tmp_path)
+    run = lambda prices: answer_request("electric kettle that lasts", library_dir=library, prices=prices,
+                                        product_facts=[], today=TODAY)
+    assert OXO in names(run([]))
+    result = run([listed("OXO kettle", available=False)])
+    assert OXO not in names(result) and OXO in result.left_out_unavailable
+    # One model's entry doesn't speak for the brand, nor does a name with other words ("OXO stovetop kettle").
+    for entry in ("OXO Cordless Glass Electric Kettle", "OXO stovetop kettle"):
+        assert OXO in names(run([listed(entry, available=False)])), entry
+    # The newest entry under the brand decides: sold again since.
+    newer = listed("OXO electric kettle", available=True, checked_on=TODAY)
+    older = listed("OXO kettle", available=False, checked_on=TODAY - timedelta(days=30))
+    assert OXO in names(run([older, newer]))
 
 
 # --- 5. Two brand picks of the same brand (decided by Claude, 10 Oct 2026) ---
