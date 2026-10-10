@@ -212,6 +212,23 @@ def test_a_quote_over_the_word_limit_is_rejected():
     assert f"{QUOTE_MAX_WORDS + 1} words" in reasons(result)[0] and f"limit is {QUOTE_MAX_WORDS}" in reasons(result)[0]
 
 
+@pytest.mark.parametrize("product_type", ["laser treatment", "Laser", "in-office procedure", "microneedling",
+                                          "salon facial", "clinic treatment"])
+def test_a_service_is_not_a_product_and_is_rejected(product_type):
+    # Instructions v7 say a service ("laser treatments such as Clear and Brilliant, facials, salon or clinic
+    # procedures: they're done to you, not bought to use") is never a product, but the AI still listed four laser
+    # treatments in one thread (found 10 Oct 2026). The check enforces the instruction for every extraction.
+    result = check(make_extraction(mentions=[mention(product_type=product_type), mention(product_type="exfoliant")]))
+    assert len(result.kept) == 1 and result.kept[0].product_type == "exfoliant"
+    assert "service" in reasons(result)[0] and product_type in reasons(result)[0]
+
+
+@pytest.mark.parametrize("product_type", ["spot treatment", "acne treatment", "chemical peel", "facial cleanser",
+                                          "facial oil", "eye cream", "exfoliant"])
+def test_products_with_service_like_words_are_kept(product_type):
+    assert len(check(make_extraction(mentions=[mention(product_type=product_type)])).kept) == 1
+
+
 def test_an_extraction_of_another_thread_is_rejected_whole():
     result = check(make_extraction(thread_id="1other1"))
     assert result.kept == []

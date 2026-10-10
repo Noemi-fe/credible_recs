@@ -613,3 +613,12 @@ COST_PER_QUESTION_TARGET_USD = 0.05  # "under $0.05": logged API spend divided b
 # (the Comandante C40, then the Baratza Sette 270). So `python -m engine.prices todo` also lists, per question, up to
 # this many products right behind the picks (picks-in-waiting: qualifying or nearly, by engine.product_facts.candidates).
 PRICES_TODO_NEXT_IN_LINE = 3
+
+# --- Services aren't products (10 Oct 2026) ---
+# Instructions v7 say a service (laser treatments, facials, salon or clinic procedures: done to you, not bought to use)
+# is never a product mention, but the AI still listed four laser treatments in one thread. `python -m engine.extract
+# check` enforces it: a mention whose type (in the AI's words) matches one of these, as whole words, is rejected.
+# Decided by Claude, reported to Noemi. "treatment" alone isn't here: a spot treatment is a product; nor "facial"
+# alone: a facial cleanser or oil is one.
+SERVICE_TYPE_PATTERNS = (r"laser", r"procedures?", r"microneedling", r"salon", r"clinic", r"in-office",
+                         r"(salon |spa )?facials?$")

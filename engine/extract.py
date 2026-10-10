@@ -65,6 +65,7 @@ from engine.config import (
     EXTRACT_MAX_COMMENTS,
     MENTION_CATEGORIES,
     QUOTE_MAX_WORDS,
+    SERVICE_TYPE_PATTERNS,
     STANCE_VALUE,
 )
 from engine.gold import DEFAULT_GOLD_DIR, GoldSetError, _describe, load_threads, unlabelled_gold_ids
@@ -207,7 +208,9 @@ def check_extraction(extraction: Extraction, thread: Thread) -> CheckResult:
     - a reply marked as naming its product further up (refers_to) really is a reply (to a reply, for "earlier"),
       and the comment it takes its product from is still readable: a product named only in deleted or removed text
       can't be checked or used;
-    - every evidence tag is a known one (config.EVIDENCE_TAGS; instructions v6).
+    - every evidence tag is a known one (config.EVIDENCE_TAGS; instructions v6);
+    - its type isn't a service (config.SERVICE_TYPE_PATTERNS: "laser treatment"; instructions v7, enforced since
+      10 Oct 2026).
     Mentions keep their order in both lists. Notes and care tips (instructions v7) go through the same checks of
     their comment and quote (the first six above); agreements too, and they must be replies.
     """
@@ -223,6 +226,8 @@ def check_extraction(extraction: Extraction, thread: Thread) -> CheckResult:
             reason = _named_in_unreadable_comment(mention, comments)
         if reason is None:
             reason = _unknown_evidence_tags(mention)
+        if reason is None:
+            reason = _a_service(mention)
         if reason is None:
             result.kept.append(mention)
         else:
@@ -248,6 +253,14 @@ def check_extraction(extraction: Extraction, thread: Thread) -> CheckResult:
         else:
             result.rejected_care.append((tip, reason))
     return result
+
+
+def _a_service(mention) -> str | None:
+    """Why the mention is a service rather than a product, or None (config.SERVICE_TYPE_PATTERNS)."""
+    product_type = (mention.product_type or "").strip().lower()
+    if any(re.search(rf"(?<![\w-]){pattern}(?![\w-])", product_type) for pattern in SERVICE_TYPE_PATTERNS):
+        return f'"{mention.product}" is a service ({mention.product_type}), not a product (instructions v7)'
+    return None
 
 
 def _why_rejected(mention, extraction: Extraction, thread: Thread, comments: dict) -> str | None:
