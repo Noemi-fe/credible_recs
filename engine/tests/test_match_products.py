@@ -410,6 +410,10 @@ def test_a_spelled_out_name_can_hold_another_short_name():
     # two products, each one recommendation short of a pick, and "Paula's choice 2%" fitted both, so it was a line.
     ("skincare", "Paula’s Choice 2% Liquid Exfoliant", "Paula's Choice 2% BHA Skin Perfecting Liquid"),
     ("skincare", "Paula's Choice Skin Perfecting 2% BHA Liquid Exfoliant", "Paula’s Choice 2% Liquid Exfoliant"),
+    # b05, 10 Oct 2026 (night): "CeraVe Hydrating Cleanser" is the UK name of the US "Hydrating Facial Cleanser". Read
+    # as fitting every CeraVe hydrating cleanser, it made 15 writers' mentions a line whose most named model was the
+    # Cream-to-Foam (2 mentions).
+    ("skincare", "Cerave hydrating cleanser", "CeraVe Hydrating Facial Cleanser"),
 ])
 def test_the_shipped_short_names_found_in_the_blind_test_answers(category, a, b):
     assert same_product(a, b, load_aliases()[category])
@@ -422,6 +426,8 @@ def test_the_shipped_short_names_keep_other_models_apart():
     skincare = load_aliases()["skincare"]
     assert not same_product("BoJ retinal eye cream", "Beauty of Joseon Dynasty Cream", skincare)
     assert not same_product("Paula’s choice 2% retinol", "Paula’s Choice 2% Liquid Exfoliant", skincare)
+    assert not same_product("Cerave hydrating cleanser", "CeraVe Hydrating Cream to Foam cleanser", skincare)
+    assert not same_product("CeraVe Hydrating Cleanser", "CeraVe Hydrating Foaming Oil Cleanser", skincare)
 
 
 def test_retinal_and_retinol_are_never_a_slip():
