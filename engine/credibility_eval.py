@@ -18,6 +18,13 @@ For each, four views:
 Replies that agree come from the AI's extraction of the thread (its checked agreements), as they will in use. A
 thread without an extraction is scored without them.
 
+Writers' profiles (10 Oct 2026): gold threads are saved as Parse gives them, by name only, so on their own the rules
+could never see an account's age, karma, contributions or flair, and "established member", "well-regarded account",
+"new account" and "low karma for its activity" never fired in this report, though answers use them. So the report
+fills writers in the way answers do (engine.pipeline.cached_profiles: the library's profile store, then Arctic
+Shift's 48-hour cache; never a call) and says how many labelled writers it found. Without a store, or for writers
+not looked up yet, the writer stays known by name only, as before.
+
 The held-out thread: 1tfk6nm (kettle) was labelled while these rules were being written and was never used to
 build or tune them, so it is the fair test. It is left out of the score unless asked for (skip_threads=()).
 
@@ -31,7 +38,8 @@ of its own; the rules still aren't. Until a labelled thread has a v6 extraction,
 
 The report lists only counts, levels and comment ids: never comment text, never product names.
 
-Command line: `python -m engine.credibility_eval` prints the report for data/gold, the held-out thread left out.
+Command line: `python -m engine.credibility_eval` prints the report for data/gold, the held-out thread left out, with
+writers' profiles as answers have them.
 """
 
 import sys
@@ -122,6 +130,11 @@ class CredibilityAgreement:
     threads: list[str] = field(default_factory=list)  # thread ids scored
     held_out: list[str] = field(default_factory=list)  # thread ids left out on purpose
     agreements_used: int = 0  # replies that agree, from the AI's extraction of the scored threads
+    # Writers' profiles, when looked up: the labelled comments' writers in the scored threads (each once per thread,
+    # deleted accounts left out), and how many of them had a profile to fill in.
+    profiles_used: bool = False
+    writers: int = 0
+    writers_profiled: int = 0
     # The AI's own evidence level (instructions v6) on the products it found that she labelled, and the rules' level
     # on the same products. In held-out threads only the AI is compared: the rules stay unscored there.
     ai_evidence: LevelAgreement = field(default_factory=lambda: LevelAgreement(EVIDENCE_LEVELS))
@@ -148,7 +161,7 @@ def score_credibility(
         if not label.kind:
             products.setdefault(label.comment_id, []).append(label)
 
-    score = CredibilityAgreement(held_out=sorted(skip))
+    score = CredibilityAgreement(held_out=sorted(skip), profiles_used=profiles is not None)
     for thread in gold.threads:
         if not any(c.id in voices for c in thread.comments):
             continue
@@ -159,8 +172,12 @@ def score_credibility(
                     score.ai_evidence_held_out.pairs.append((comment.id, products[comment.id][h].evidence, ai_level))
             continue
         score.threads.append(thread.id)
+        labelled = [c for c in thread.comments if c.id in voices]
+        score.writers += len({c.author.name for c in labelled if c.author is not None})
         if profiles is not None:
-            thread = with_profiles(thread, profiles, [c.id for c in thread.comments if c.id in voices]).thread
+            filled = with_profiles(thread, profiles, [c.id for c in labelled])
+            thread = filled.thread
+            score.writers_profiled += filled.filled
         agreements = checked[thread.id].kept_agreements if thread.id in checked else []
         score.agreements_used += len(agreements)
         for comment in thread.comments:
@@ -203,9 +220,12 @@ def _matched_with_ai(her_products: list, ai_mentions: list[ExtractedMention]) ->
 
 # --- The report ---
 
-def credibility_report(gold_dir: Path = DEFAULT_GOLD_DIR, skip_threads: Iterable[str] = HOLDOUT_THREADS) -> str:
+def credibility_report(gold_dir: Path = DEFAULT_GOLD_DIR, skip_threads: Iterable[str] = HOLDOUT_THREADS,
+                       profiles=None) -> str:
     """Module 5's section of eval/run_eval.py: loads the gold set and its extractions, scores, and reports.
 
+    `profiles`: where writers' standing comes from, as in score_credibility; eval/run_eval.py passes
+    engine.pipeline.cached_profiles(), what answers use. None leaves writers known by name only.
     A broken gold set is reported, not raised. Without readable extractions, voices are scored without replies
     that agree, and the report says so.
     """
@@ -218,7 +238,8 @@ def credibility_report(gold_dir: Path = DEFAULT_GOLD_DIR, skip_threads: Iterable
         checked = load_checked(Path(gold_dir) / "threads")
     except (ExtractionError, GoldSetError):
         checked = {}
-    return "\n".join([title] + [f"  {line}" for line in report_lines(score_credibility(gold, checked, skip_threads))])
+    score = score_credibility(gold, checked, skip_threads, profiles)
+    return "\n".join([title] + [f"  {line}" for line in report_lines(score)])
 
 
 def report_lines(score: CredibilityAgreement) -> list[str]:
@@ -228,10 +249,19 @@ def report_lines(score: CredibilityAgreement) -> list[str]:
         f"{_count(len(score.threads), 'thread')} ({', '.join(score.threads) or 'none'}), "
         f"{_count(score.voice.total, 'labelled comment')}, {_count(score.evidence.total, 'product mention')}{held_out}",
         f"replies that agree, from the AI's extraction: {score.agreements_used}",
+        _profile_line(score),
     ]
     lines += _layer_lines("voice", score.voice, score.voice_tags)
     evidence = _layer_lines("evidence", score.evidence, score.evidence_tags)
     return lines + evidence[:1] + _ai_evidence_lines(score) + evidence[1:]  # the AI's line right under the rules'
+
+
+def _profile_line(score: CredibilityAgreement) -> str:
+    """How many labelled writers had a profile (account age, karma, contributions, flair) for the rules to judge."""
+    if not score.profiles_used:
+        return "writers' profiles: not looked up (writers known by name only)"
+    return (f"writers' profiles: {score.writers_profiled} of {_count(score.writers, 'labelled writer')} found "
+            f"(the library's profile store and Arctic Shift's 48-hour cache, as answers use them)")
 
 
 def _ai_evidence_lines(score: CredibilityAgreement) -> list[str]:
@@ -304,5 +334,7 @@ def _count(n: int, thing: str) -> str:
 
 
 if __name__ == "__main__":
-    print(credibility_report())
+    from engine.pipeline import cached_profiles  # imported here: the pipeline is only needed for the command line
+
+    print(credibility_report(profiles=cached_profiles()))
     sys.exit(0)
