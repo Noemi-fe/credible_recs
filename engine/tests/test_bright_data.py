@@ -717,3 +717,108 @@ def test_discover_command_reports_a_refused_subreddit_without_crashing(tmp_path,
     service = discovery_service()
     assert main(["discover", "AskReddit", "cleanser"], client=make_client(tmp_path, service)) == 1
     assert "AskReddit" in capsys.readouterr().out and service.requests == []
+
+
+# --- Reading several threads at once (11 Oct 2026) ---
+# One thread at a time costs two jobs, about 2.5 minutes (the add of 11 Oct 2026 took 12.5 minutes for 2 threads), so a
+# monthly refresh of the library would take hours. prefetch reads a batch of threads in two jobs (their posts, then
+# their comments) and files each thread's records in its own cache entry, where get_thread finds them.
+
+from engine.parse_reddit import parse_thread_url  # noqa: E402
+
+
+def batch_thread(post_id: str, comments: int = 2) -> tuple[str, dict, list[dict]]:
+    url = f"https://www.reddit.com/r/SkincareAddiction/comments/{post_id}/a_title/"
+    post = {"post_id": post_id, "url": url, "user_posted": "test_op", "title": f"Which cleanser, {post_id}?",
+            "description": "Help me choose.", "num_upvotes": 5, "num_comments": comments,
+            "date_posted": "2025-03-01T09:00:00.000Z", "community_name": "SkincareAddiction"}
+    records = [comment_record(f"c{post_id}{i}", text=f"Comment {i} on {post_id}.", post_id=post_id, post_url=url,
+                              url=f"https://www.reddit.com/r/SkincareAddiction/comments/{post_id}/comment/c{post_id}{i}/")
+               for i in range(comments)]
+    return url, post, records
+
+
+class BatchService:
+    """A fake Bright Data that answers a job about several threads with each one's records, found by the post id in
+    each input link. `dropped` threads are left out of answers about more than one thread (as if Bright Data skipped
+    them), but answered when asked about alone."""
+
+    def __init__(self, threads: dict[str, tuple[dict, list[dict]]], dropped: set[str] = frozenset()):
+        self.threads = threads
+        self.dropped = set(dropped)
+        self.jobs: dict[str, tuple[str, list[str]]] = {}
+
+    def __call__(self, method, url, headers, data=None):
+        path = urlparse(url).path
+        if path.endswith("/trigger"):
+            dataset = parse_qs(urlparse(url).query)["dataset_id"][0]
+            ids = [parse_thread_url(item["url"])[1] for item in json.loads(data)]
+            snapshot_id = f"s{len(self.jobs) + 1}"
+            self.jobs[snapshot_id] = (dataset, ids)
+            return 200, json.dumps({"snapshot_id": snapshot_id}).encode()
+        snapshot_id = path.rstrip("/").rsplit("/", 1)[1]
+        dataset, ids = self.jobs[snapshot_id]
+        if "/progress/" in path:
+            return 200, json.dumps({"status": "ready"}).encode()
+        records = []
+        for post_id in ids:
+            if len(ids) > 1 and post_id in self.dropped:
+                continue
+            post, comments = self.threads[post_id]
+            records += [post] if dataset == POSTS else comments
+        return 200, json.dumps(records).encode()
+
+    def triggered(self) -> list[tuple[str, list[str]]]:
+        return list(self.jobs.values())
+
+
+def batch_of(*post_ids, dropped=()):
+    made = {post_id: batch_thread(post_id) for post_id in post_ids}
+    service = BatchService({pid: (post, comments) for pid, (_, post, comments) in made.items()}, set(dropped))
+    return [made[pid][0] for pid in post_ids], service
+
+
+def test_prefetch_reads_several_threads_in_one_job_per_dataset(tmp_path):
+    links, service = batch_of("1bat001", "1bat002", "1bat003")
+    client = make_client(tmp_path, service)
+    assert client.prefetch([(link, 2) for link in links]) == 3
+    assert service.triggered() == [(POSTS, ["1bat001", "1bat002", "1bat003"]), (COMMENTS, ["1bat001", "1bat002", "1bat003"])]
+    threads = [client.get_thread(link) for link in links]
+    assert len(service.triggered()) == 2  # every read came from the cache
+    assert [t.title for t in threads] == ["Which cleanser, 1bat001?", "Which cleanser, 1bat002?", "Which cleanser, 1bat003?"]
+    assert [c.id for c in threads[1].comments] == ["c1bat0020", "c1bat0021"]
+    assert client.records_used_this_month() == 3 + 6  # 1 per post, 1 per comment
+
+
+def test_prefetch_leaves_out_threads_already_in_the_cache(tmp_path):
+    links, service = batch_of("1bat001", "1bat002", "1bat003")
+    client = make_client(tmp_path, service)
+    client.get_thread(links[0])
+    assert client.prefetch([(link, 2) for link in links]) == 2
+    assert service.triggered()[-2:] == [(POSTS, ["1bat002", "1bat003"]), (COMMENTS, ["1bat002", "1bat003"])]
+
+
+def test_prefetch_goes_in_batches(tmp_path):
+    links, service = batch_of("1bat001", "1bat002", "1bat003")
+    make_client(tmp_path, service).prefetch([(link, 2) for link in links], batch=2)
+    assert [ids for _, ids in service.triggered()] == [["1bat001", "1bat002"], ["1bat001", "1bat002"], ["1bat003"],
+                                                       ["1bat003"]]
+
+
+def test_prefetch_refuses_a_batch_that_could_go_past_the_month(tmp_path):
+    links, service = batch_of("1bat001")
+    client = make_client(tmp_path, service)
+    write_usage(client, BRIGHT_DATA_MONTHLY_RECORDS - 5)
+    with pytest.raises(BrightDataError):
+        client.prefetch([(links[0], 10)])
+    assert service.triggered() == []
+
+
+def test_a_thread_left_out_of_a_batch_answer_is_read_on_its_own_later(tmp_path):
+    links, service = batch_of("1bat001", "1bat002", dropped={"1bat002"})
+    client = make_client(tmp_path, service)
+    client.prefetch([(link, 2) for link in links])
+    assert client.has_thread(links[0]) and not client.has_thread(links[1])
+    thread = client.get_thread(links[1])
+    assert thread.title == "Which cleanser, 1bat002?" and service.triggered()[-2:] == [(POSTS, ["1bat002"]),
+                                                                                      (COMMENTS, ["1bat002"])]

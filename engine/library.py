@@ -7,10 +7,14 @@ itself: one command per request finds the threads and saves them, with no one pi
     data/library/requests.jsonl             one line per `add`: when, the request, module 1's outcome, the threads saved
 
 Four jobs:
-- add: understands a request (module 1), asks a source for threads and saves them. By default (LIBRARY_READER,
-  Noemi, 9 Oct 2026) the threads are found AND read for free in Arctic Shift's archive (engine.sources.ArchiveSource);
-  `--reader parse` finds them with Arctic Shift and reads them through Parse, as before, with Parse's own search as
-  the backup when Arctic Shift is busy. A copy read from the archive never replaces one already read on Reddit.
+- add: understands a request (module 1), asks a source for threads and saves them. By default (LIBRARY_READER
+  "auto", 11 Oct 2026) the threads are found AND read for free in Arctic Shift's archive (engine.sources.ArchiveSource,
+  Noemi's choice of 9 Oct 2026), and when Arctic Shift fails, found with Reddit's own search and read through Bright
+  Data instead (engine.sources.FallbackSource, BrightDataSource): no single service down or out of credits stops it
+  (Noemi's request, 11 Oct 2026). `--reader archive` or `--reader bright_data` uses one of them only; `--reader parse`
+  finds threads with Arctic Shift and reads them through Parse, as before, with Parse's own search as the backup when
+  Arctic Shift is busy. A copy read from the archive never replaces one already read on Reddit. Bright Data never
+  reads a thread already saved, or a gold thread Noemi hasn't labelled.
   Each product type gets a mix of thread kinds (Noemi, 7 Oct 2026), because each kind feeds a different later step:
   6 threads, 3 asking for advice (the picks), 1 about long-term use (the strongest evidence) and 2 warnings (the
   "skip these" list and the downsides), at most 2 from one subreddit. `--only warning` tops up one kind.
@@ -26,7 +30,8 @@ Four jobs:
 - refresh: fetches again every saved thread that is due, so comments deleted on Reddit since then lose their text
   in the library too (Noemi, 7 Oct 2026): 30 days after it was saved, or 90 for a thread posted more than 180 days
   ago, which Reddit has archived, so only deletions can still change it. It never deletes a whole thread on its
-  own; it reports instead.
+  own; it reports instead. Since 11 Oct 2026 it reads through Bright Data by default (REFRESH_READER), merged into
+  the saved copy as check-live does; `--reader parse` reads through Parse, as before.
 - coverage: how many saved threads each product type has, so the website can say "covered" or "not covered yet",
   and how many of each kind.
 
@@ -41,7 +46,11 @@ What is saved:
   replaces the older copy (except an archive copy over one read on Reddit, as above).
 
 Credits (Parse free plan: 200 a month, 2 per call):
-- add costs nothing with the archive reader (the default). With `--reader parse`: at most 12 when Arctic Shift finds
+- add costs nothing with the archive (tried first by default). Through Bright Data (when Arctic Shift fails, or
+  with `--reader bright_data`): no Parse credit, but Bright Data records: 1 per post its searches list (up to 6
+  searches of 10 posts), then 1 for each post read and 1 per top-level comment; it stops BRIGHT_DATA_ADD_RECORD_RESERVE
+  (300) short of the month's allowance, so live checks always have records left (BrightDataSource).
+- With `--reader parse`: at most 12 when Arctic Shift finds
   the threads (only the 6 threads are read; its searches, warning searches included, are free), at most 16 when it
   falls back to Parse's search (2 searches, then the 6 threads), nothing for a request module 1 can't place, and
   nothing for calls still in the 48-hour cache.
@@ -56,14 +65,16 @@ Credits (Parse free plan: 200 a month, 2 per call):
   less once they are archived (every 90 days).
 
 Command line:
-    python -m engine.library add [--reader archive|parse] [--only warning|advice|long_term] [--limit N] "<request>"
+    python -m engine.library add [--reader auto|archive|bright_data|parse] [--only warning|advice|long_term] [--limit N] "<request>"
                                                find and save the threads for one request (6 by default, as a mix;
                                                with --only, threads of that kind only); quotes are optional
     python -m engine.library check-live [--max-credits N] [--max-records N] [--reader bright_data|parse]
                                                read again on Reddit the threads that need a live check: through
                                                Bright Data by default (--max-records caps its records), or through
                                                Parse with --reader parse (--max-credits caps its credits)
-    python -m engine.library refresh           fetch again the threads that are due (30 days, archived threads 90)
+    python -m engine.library refresh [--reader bright_data|parse] [--max-records N]
+                                               fetch again the threads that are due (30 days, archived threads 90):
+                                               through Bright Data by default, or through Parse
     python -m engine.library coverage          saved threads per product type, and of each kind
 """
 
@@ -94,6 +105,7 @@ from engine.config import (
     PARSE_CREDITS_PER_CALL,
     PARSE_MONTHLY_CREDITS,
     REDDIT_ARCHIVE_DAYS,
+    REFRESH_READER,
     THREAD_CATEGORIES,
 )
 from engine.extract import ExtractionError
@@ -104,6 +116,8 @@ from engine.query import PRODUCT_TYPES, parse_query
 from engine.sources import (
     THREAD_KINDS,
     ArchiveSource,
+    BrightDataSource,
+    FallbackSource,
     ParseSource,
     Source,
     relevance,
@@ -144,7 +158,10 @@ def add(
     """Understands the request, saves up to `limit` threads the source finds for it, and logs the request.
 
     Without a `source`, the `reader` (None: LIBRARY_READER) decides how threads are read: "archive" finds and reads
-    them in Arctic Shift's archive, for free (ArchiveSource); "parse" finds them there and reads them through Parse.
+    them in Arctic Shift's archive, for free (ArchiveSource); "parse" finds them there and reads them through Parse;
+    "bright_data" finds them with Reddit's own search and reads them through Bright Data (BrightDataSource, records
+    from its free monthly allowance; threads already saved, and unlabelled gold threads, are skipped); "auto" (the
+    default since 11 Oct 2026) tries the archive and turns to Bright Data when Arctic Shift fails (FallbackSource).
     A thread read from the archive never replaces a copy already read on Reddit (saved through Parse, or checked
     live): that copy is kept, and named on the result (kept_live).
 
@@ -164,7 +181,7 @@ def add(
     result = AddResult(request, query.status, query.product_type, question=query.question, message=query.message, only=only)
     if query.status == "ok":
         # The default source is built only now, so a request that can't be placed never touches Parse or Arctic Shift.
-        source = source if source is not None else _default_source(reader or LIBRARY_READER)
+        source = source if source is not None else _default_source(reader or LIBRARY_READER, folder)
         for thread in _find(source, query, limit, mix, only):
             kept = _live_copy(thread, folder)
             if kept is not None:
@@ -174,15 +191,33 @@ def add(
     return result
 
 
-READERS = ("archive", "parse")
+READERS = ("auto", "archive", "bright_data", "parse")
 
 
-def _default_source(reader: str) -> Source:
+def _default_source(reader: str, folder: Path = DEFAULT_LIBRARY_DIR) -> Source:
     if reader not in READERS:
         raise ValueError(f"reader must be one of {', '.join(READERS)}, not {reader!r}")
     if reader == "archive":
         return ArchiveSource(ArcticShiftClient())
+    if reader == "bright_data":
+        return bright_data_source(folder, BrightDataClient())
+    if reader == "auto":
+        return FallbackSource(ArchiveSource(ArcticShiftClient()), bright_data_source(folder, BrightDataClient()),
+                              memo=ARCHIVE_DOWN_MEMO)
     return ParseSource(finder=ArcticShiftClient())
+
+
+# Where a failure of Arctic Shift is remembered for ARCHIVE_DOWN_MINUTES (git-ignored, like every cache).
+ARCHIVE_DOWN_MEMO = REPO_ROOT / ".cache" / "arctic_shift_down.json"
+
+
+def bright_data_source(folder: Path, client: BrightDataClient | None, max_records: int | None = None) -> BrightDataSource:
+    """The Bright Data source for this library: it skips the threads already saved here (they are kept fresh by
+    check-live and refresh, not read again by add) and the gold threads Noemi hasn't labelled yet, so no record is
+    spent on either. With no client (a test that gives none), it finds nothing."""
+    threads = Path(folder) / "threads"
+    saved = {path.stem for path in threads.glob("*.json")} if threads.is_dir() else set()
+    return BrightDataSource(client, skip_ids=saved | unlabelled_gold_ids(), max_records=max_records)
 
 
 def _live_copy(thread: Thread, folder: Path) -> Thread | None:
@@ -280,28 +315,51 @@ class RefreshResult:
     failed: dict[str, str] = field(default_factory=dict)  # thread id -> what Parse said; those files are left as they were
     stopped: bool = False  # True when 3 fetches failed in a row and the refresh ended early
     not_tried: list[str] = field(default_factory=list)  # threads still due when it stopped, left as they were
+    reader: str = "parse"  # how the due threads were read: "bright_data" or "parse"
+    capped: bool = False  # Bright Data: True when the record cap ended the run
+    record_cap: int = 0  # Bright Data: the most records this run could use
+    records_used: int = 0  # Bright Data: by this run
+    records_left: int = 0  # Bright Data: this month, after the run
 
 
 def refresh(
     client: ParseRedditClient | None = None,
     folder: Path = DEFAULT_LIBRARY_DIR,
     now: datetime | None = None,
+    reader: str | None = None,
+    bright_data: BrightDataClient | None = None,
+    max_records: int | None = None,
 ) -> RefreshResult:
     """Fetches again every saved thread that is due, so comments deleted on Reddit since then lose their text here too.
 
     When a thread is due: see is_due. Oldest first, so if credits run out the most overdue threads are already
-    done. Threads not due are skipped and cost nothing. A thread Parse can't fetch is reported and its file left
+    done. Threads not due are skipped and cost nothing. A thread that can't be fetched is reported and its file left
     as it was; the refresh goes on with the next, so one bad thread never blocks the others month after month.
     Only 3 failures in a row stop it. No thread is ever deleted; one whose post is gone from Reddit is reported instead.
+
+    How (`reader`, 11 Oct 2026): "bright_data" (REFRESH_READER, since Parse's credits are spent) reads through Bright
+    Data and merges each read into the saved copy, exactly as check-live does (merge_bright_data_read: it never returns
+    replies to replies), within a record cap (`max_records`; by default what's left this month minus
+    LIVE_CHECK_RECORD_RESERVE); "parse" fetches through Parse, 2 credits a thread, and replaces the saved copy. None
+    means REFRESH_READER, except when only a Parse `client` is given: then Parse, as before.
     """
     now = now or datetime.now(UTC)
-    result = RefreshResult()
+    if reader is None:
+        reader = "parse" if client is not None and bright_data is None else REFRESH_READER
+    if reader not in LIVE_READERS:
+        raise ValueError(f"reader must be one of {', '.join(LIVE_READERS)}, not {reader!r}")
+    result = RefreshResult(reader=reader)
     due = []
     for thread in sorted(_saved_threads(folder), key=lambda t: (t.collected_at, t.id)):
         if is_due(thread, now):
             due.append(thread)
         else:
             result.skipped.append(thread.id)
+    if reader == "bright_data":
+        if due:
+            _refresh_through_bright_data(bright_data if bright_data is not None else BrightDataClient(), due,
+                                         max_records, folder, result)
+        return result
     if due and client is None:
         client = ParseRedditClient()  # built only when there is something to fetch
 
@@ -325,6 +383,23 @@ def refresh(
         if new.body.strip() in PLACEHOLDERS.values():
             result.posts_gone.append(old.id)
     return result
+
+
+def _refresh_through_bright_data(client: BrightDataClient, due: list[Thread], max_records: int | None, folder: Path,
+                                 result: RefreshResult) -> None:
+    """refresh's reads through Bright Data: check-live's reads (_read_through_bright_data), for the due threads."""
+    read = LiveCheckResult(reader="bright_data")
+    _read_through_bright_data(client, due, set(), max_records, folder, read)
+    result.refreshed = read.checked
+    result.dropped_comments = read.dropped_comments
+    result.posts_gone = read.posts_gone
+    result.failed = read.failed
+    result.stopped = read.stopped
+    result.not_tried = read.not_tried
+    result.capped = read.capped
+    result.record_cap = read.record_cap
+    result.records_used = read.records_used
+    result.records_left = read.records_left
 
 
 def is_due(thread: Thread, now: datetime) -> bool:
@@ -480,9 +555,11 @@ def _read_through_bright_data(client: BrightDataClient, due: list[Thread], shown
     default_cap = max(0, left - LIVE_CHECK_RECORD_RESERVE)
     result.record_cap = default_cap if max_records is None else max(0, min(max_records, left))
 
+    _read_together(client, due, result.record_cap)
     failures_in_a_row = 0
     for n, old in enumerate(due):
-        if client.records_used_this_month() - used_before + _most_records(old) > result.record_cap:
+        cached = getattr(client, "has_thread", lambda link: False)(old.url)  # read ahead: already paid for
+        if not cached and client.records_used_this_month() - used_before + _most_records(old) > result.record_cap:
             result.capped = True
             result.not_tried = [t.id for t in due[n:]]
             break
@@ -504,6 +581,26 @@ def _read_through_bright_data(client: BrightDataClient, due: list[Thread], shown
 
     result.records_used = client.records_used_this_month() - used_before
     result.records_left = max(0, BRIGHT_DATA_MONTHLY_RECORDS - client.records_used_this_month())
+
+
+def _read_together(client: BrightDataClient, due: list[Thread], cap: int) -> None:
+    """Reads ahead, in batches (BrightDataClient.prefetch, 11 Oct 2026), the due threads that fit the record cap one
+    after another, so the reads that follow come from the cache: two Bright Data jobs per batch instead of two per
+    thread. A batch that fails for any reason but the account is simply read one thread at a time afterwards."""
+    if not hasattr(client, "prefetch"):
+        return
+    planned, most = [], 0
+    for thread in due:
+        if most + _most_records(thread) > cap:
+            break
+        planned.append(thread)
+        most += _most_records(thread)
+    if not planned:
+        return
+    try:
+        client.prefetch([(thread.url, thread.num_comments) for thread in planned])
+    except (BrightDataError, ValueError):  # ValueError: a link or subreddit Bright Data can't be asked about
+        pass  # the reads one at a time report it, and stop at once on an account problem, as before
 
 
 def _most_records(thread: Thread) -> int:
@@ -693,6 +790,7 @@ def main(
     the blind-test questions (engine.slice_eval.threads_behind_answers).
     """
     command = argv[0] if argv else None
+    real_run = client is None  # a real run remembers an Arctic Shift outage; a test never writes that memo
     add_options = _add_options(argv[1:]) if command == "add" else None
     default_reader = LIVE_CHECK_READER if client is None or bright_data is not None else "parse"
     check_options = _check_live_options(argv[1:], default_reader) if command == "check-live" else None
@@ -701,17 +799,40 @@ def main(
         print(__doc__)
         return 2
 
+    refresh_options = (_refresh_options(argv[1:], REFRESH_READER if client is None or bright_data is not None
+                                        else "parse") if command == "refresh" else None)
+    if command == "refresh" and refresh_options is None:
+        print(__doc__)
+        return 2
     if client is None:
         client = ParseRedditClient()
         finder = finder or ArcticShiftClient()
-        if command == "check-live" and check_options[2] == "bright_data":
+        if ((command == "check-live" and check_options[2] == "bright_data")
+                or (command == "add" and add_options[3] in ("bright_data", "auto"))
+                or (command == "refresh" and refresh_options[0] == "bright_data")):
             bright_data = bright_data or BrightDataClient()
     try:
         if command == "add":
             request, only, limit, reader = add_options
-            # A test that gives no finder has no archive: then the archive reader finds nothing, and never the network.
-            source = ParseSource(client=client, finder=finder) if reader == "parse" else ArchiveSource(finder)
+            # A test that gives no finder has no archive, and one that gives no Bright Data client has no Bright Data:
+            # then that reader finds nothing, and never reaches the network.
+            if reader == "parse":
+                source = ParseSource(client=client, finder=finder)
+            elif reader == "archive":
+                source = ArchiveSource(finder)
+            elif reader == "bright_data":
+                source = bright_data_source(folder, bright_data)
+            else:  # auto: with no Bright Data client (a test), the archive alone, so its errors are reported as before
+                source = (FallbackSource(ArchiveSource(finder), bright_data_source(folder, bright_data),
+                                         memo=ARCHIVE_DOWN_MEMO if real_run else None)
+                          if bright_data is not None else ArchiveSource(finder))
             status = _print_add(add(request, source, folder, limit=limit, only=only, reader=reader))
+            for note in getattr(source, "notes", []):
+                print(note)
+            if reader in ("bright_data", "auto") and bright_data is not None:
+                print(f"Bright Data records used this month: {bright_data.records_used_this_month()} of "
+                      f"{BRIGHT_DATA_MONTHLY_RECORDS} (as logged by this tool; the Bright Data dashboard has the exact "
+                      "figure)")
         elif command == "check-live":
             if shown is None:
                 from engine.pipeline import cached_profiles  # imported here: the pipeline imports this module
@@ -722,7 +843,9 @@ def main(
             status = _print_check_live(check_live(client, folder, shown, max_credits=max_credits, reader=reader,
                                                   bright_data=bright_data, max_records=max_records))
         elif command == "refresh":
-            status = _print_refresh(refresh(client, folder))
+            reader, max_records = refresh_options
+            status = _print_refresh(refresh(client, folder, reader=reader, bright_data=bright_data,
+                                            max_records=max_records))
         else:
             status = _print_coverage(coverage(folder), coverage_by_kind(folder))
     except (ParseAPIError, ArcticShiftError, BrightDataError, GoldSetError, ExtractionError) as e:
@@ -794,6 +917,27 @@ def _check_live_options(words: list[str],
     return max_credits, max_records, reader
 
 
+def _refresh_options(words: list[str], default_reader: str = REFRESH_READER) -> tuple[str, int | None] | None:
+    """(--reader, --max-records) typed after `refresh`, or None when the words make no sense. --max-records is for
+    Bright Data only (Parse spends credits, not records)."""
+    options: dict[str, str] = {}
+    words = list(words)
+    while words:
+        name, equals, value = words.pop(0).partition("=")
+        if name not in ("--reader", "--max-records") or name in options:
+            return None
+        if not equals:
+            if not words:
+                return None
+            value = words.pop(0)
+        options[name] = value
+    reader = options.get("--reader", default_reader)
+    cap = options.get("--max-records")
+    if reader not in LIVE_READERS or (cap is not None and (not cap.isdigit() or reader != "bright_data")):
+        return None
+    return reader, int(cap) if cap is not None else None
+
+
 KIND_NAMES = {"advice": "advice", "long_term": "long-term use", "warning": "warning"}
 
 
@@ -820,12 +964,18 @@ def _print_add(result: AddResult) -> int:
 
 def _print_refresh(result: RefreshResult) -> int:
     refreshed = f": {', '.join(result.refreshed)}" if result.refreshed else ""
-    print(f"Refreshed {len(result.refreshed)} thread(s){refreshed}.")
+    how = " through Bright Data, merged into the saved copies" if result.reader == "bright_data" else ""
+    print(f"Refreshed {len(result.refreshed)} thread(s){how}{refreshed}.")
     print(f"Comments dropped since the last copies: {result.dropped_comments}")
     print(
         f"Skipped {len(result.skipped)} thread(s) not due yet (due {LIBRARY_REFRESH_DAYS} days after saving, "
-        f"{LIBRARY_ARCHIVED_REFRESH_DAYS} once Reddit has archived them): no credits spent."
+        f"{LIBRARY_ARCHIVED_REFRESH_DAYS} once Reddit has archived them): nothing spent."
     )
+    if result.reader == "bright_data" and (result.refreshed or result.not_tried or result.failed):
+        print(f"Bright Data records: {result.records_used} used by this run (cap {result.record_cap}), "
+              f"{result.records_left} left this month.")
+        if result.capped:
+            print(f"Stopped at the record cap; still due, left as they were: {', '.join(result.not_tried)}.")
     if result.posts_gone:
         print(f"Post deleted or removed on Reddit, thread kept for you to decide: {', '.join(result.posts_gone)}")
     if not result.failed:

@@ -19,6 +19,7 @@ pick a mix of thread kinds (Noemi, 7 Oct 2026): advice threads give the picks, l
 evidence, warning threads the "skip these" list and the downsides (thread_kind, choose_mix).
 """
 
+import json
 import math
 import re
 from datetime import UTC, datetime
@@ -27,7 +28,18 @@ from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from engine.arctic_shift import ArcticShiftClient, ArcticShiftError
-from engine.config import LIBRARY_MIX, LIBRARY_THREADS_PER_PRODUCT, MAX_THREADS_PER_SUBREDDIT, SKINCARE_RECENT_YEARS
+from engine.bright_data import DISCOVER_POSTS_EACH, BrightDataError
+from engine.config import (
+    ARCHIVE_DOWN_MINUTES,
+    BRIGHT_DATA_ADD_RECORD_RESERVE,
+    BRIGHT_DATA_ADD_SEARCHES,
+    BRIGHT_DATA_ADD_WARNING_SEARCHES,
+    BRIGHT_DATA_MONTHLY_RECORDS,
+    LIBRARY_MIX,
+    LIBRARY_THREADS_PER_PRODUCT,
+    MAX_THREADS_PER_SUBREDDIT,
+    SKINCARE_RECENT_YEARS,
+)
 from engine.gold import load_threads
 from engine.models import Thread
 from engine.parse_reddit import ParseRedditClient
@@ -292,6 +304,205 @@ class ArchiveSource:
             return []
         found = search_archive(self.client, query, self.max_free_searches, self.max_warning_searches, raise_if_nothing=True)
         return usable_posts(query, found, self.min_comments)
+
+
+# --- Through Bright Data: Reddit's own search, and reads (Noemi's request, 11 Oct 2026) ---
+
+class BrightDataSource:
+    """Finds threads with Reddit's own search through Bright Data, inside the request's decided subreddits, and reads
+    them through Bright Data too: no Parse credit and no archive, so the library can grow while Arctic Shift is down or
+    Parse's credits are spent (Noemi, 11 Oct 2026: "to not get stuck with parse and everything else").
+
+    The searches mirror the archive's (search_archive): the product's title words, subreddit by subreddit, up to
+    BRIGHT_DATA_ADD_SEARCHES, then BRIGHT_DATA_ADD_WARNING_SEARCHES warning searches ("kettle died") in the most
+    specialist subreddit, in one Bright Data job (engine.bright_data.BrightDataClient.discover: 1 record per post
+    listed). The candidates are ranked and mixed exactly as the other sources' (usable_posts, choose_mix). Threads
+    already in the library or on the gold set's unlabelled list (`skip_ids`) are never candidates, so no record is
+    spent on them. Every thread read is as Reddit shows it now (read_from "bright_data"): no live check is waiting.
+
+    Records: an add never goes past its record cap: `max_records`, or by default what's left this month minus
+    BRIGHT_DATA_ADD_RECORD_RESERVE, kept for live checks. The searches are refused before they start if even they could
+    go past it (BrightDataError, nothing spent); reads go in the chosen order while the most each could cost (1 for the
+    post, 1 per comment Reddit counted) still fits, and the ones left are named in `not_read` and `notes`. With no
+    client (a test that gives none), nothing is found or read.
+    """
+
+    def __init__(self, client, min_comments: int = 5, skip_ids: set[str] | None = None, max_records: int | None = None,
+                 max_searches: int = BRIGHT_DATA_ADD_SEARCHES, max_warning_searches: int = BRIGHT_DATA_ADD_WARNING_SEARCHES,
+                 posts_each: int = DISCOVER_POSTS_EACH):
+        self.client = client
+        self.min_comments = min_comments  # a thread with fewer comments has too little to learn from
+        self.skip_ids = set(skip_ids or ())
+        self.max_records = max_records
+        self.max_searches = max_searches
+        self.max_warning_searches = max_warning_searches
+        self.posts_each = posts_each
+        self.not_read: list[str] = []  # chosen threads left unread: the record cap was reached
+        self.notes: list[str] = []  # what the command line should tell Noemi
+        self._used_before: int | None = None
+        self._cap = 0
+
+    def find_threads(self, query: ParsedQuery, limit: int = 3, mix: dict | None = None, fill: bool = True) -> list[Thread]:
+        return [without_unusable_comments(t) for t in self.find_raw_threads(query, limit, mix, fill)]
+
+    def find_raw_threads(self, query: ParsedQuery, limit: int = 3, mix: dict | None = None, fill: bool = True) -> list[Thread]:
+        """The chosen threads as Bright Data reads them, deleted and removed comments included (as stubs), within the
+        record cap. `mix` and `fill` work as in ParseSource.find_raw_threads."""
+        if query.status != "ok" or limit < 1 or self.client is None:
+            return []
+        ranked = self.rank_candidates(query)
+        chosen = ranked[:limit] if mix is None else choose_mix(query, ranked, total=limit, mix=mix, fill=fill)
+        planned, spent = [], self._spent()
+        for n, post in enumerate(chosen):
+            most = 1 + max(int(post.get("num_comments") or 0), 1)
+            if spent + most > self._cap:
+                self.not_read = [_post_id(p) for p in chosen[n:]]
+                self.notes.append(f"Stopped before reading {len(self.not_read)} more thread"
+                                  f"{'s' if len(self.not_read) != 1 else ''}: the next could take the Bright Data "
+                                  f"records past this add's cap of {self._cap}.")
+                break
+            planned.append(post)
+            spent += most
+        self._read_together(planned)
+        return [self.client.get_thread(post["url"]) for post in planned]
+
+    def _read_together(self, posts: list[dict]) -> None:
+        """Reads the chosen threads in batches when the client can (BrightDataClient.prefetch), so each read after it
+        comes from the cache; if a batch fails, the threads are simply read one at a time."""
+        if not posts or not hasattr(self.client, "prefetch"):
+            return
+        try:
+            self.client.prefetch([(post["url"], int(post.get("num_comments") or 0)) for post in posts])
+        except BrightDataError as e:
+            if e.account_problem:
+                raise
+            self.notes.append(f"Reading the threads together failed ({e}); they were read one at a time.")
+
+    def rank_candidates(self, query: ParsedQuery) -> list[dict]:
+        """Every candidate post from the searches, best first, without reading any thread."""
+        if query.status != "ok" or self.client is None:
+            return []
+        searches = self._searches(query)
+        self._start_budget(len(searches) * self.posts_each)
+        found = self.client.discover(searches, posts_each=self.posts_each)
+        posts = [_as_post(p) for p in found if p.id not in self.skip_ids]
+        return usable_posts(query, posts, self.min_comments)
+
+    def _searches(self, query: ParsedQuery) -> list[tuple[str, str]]:
+        terms = finder_terms(query.product_type)
+        pairs = [(subreddit, term) for term in terms for subreddit in query.subreddits][:self.max_searches]
+        warnings = WARNING_SEARCHES.get(query.category, ())[:self.max_warning_searches]
+        return pairs + [(query.subreddits[0], f"{terms[0]} {warning}") for warning in warnings]
+
+    def _start_budget(self, searching: int) -> None:
+        """Sets this add's record cap, and refuses the searches if even they could go past it."""
+        used = self.client.records_used_this_month()
+        left = max(0, BRIGHT_DATA_MONTHLY_RECORDS - used)
+        default = max(0, left - BRIGHT_DATA_ADD_RECORD_RESERVE)
+        self._cap = default if self.max_records is None else max(0, min(self.max_records, left))
+        self._used_before = used
+        if searching > self._cap:
+            why = (f"the {BRIGHT_DATA_ADD_RECORD_RESERVE}-record reserve kept for live checks" if self.max_records is None
+                   else "its cap")
+            raise BrightDataError(f"Not enough Bright Data records for this add: its searches could use up to "
+                                  f"{searching}, and {self._cap} are left after {why} ({used} used this month); "
+                                  "nothing was spent.")
+
+    def _spent(self) -> int:
+        return self.client.records_used_this_month() - (self._used_before or 0)
+
+
+def _as_post(found) -> dict:
+    """A thread Bright Data's search found, in the shape the ranking reads (rank_posts, thread_kind, choose_mix)."""
+    return {"id": found.id, "subreddit": found.subreddit, "title": found.title, "num_comments": found.num_comments,
+            "created_utc": found.created_at.timestamp() if found.created_at else None, "url": found.url}
+
+
+# --- Never stuck: one source first, another when it fails (11 Oct 2026) ---
+
+class FallbackSource:
+    """Asks the first source; when it fails with one of `fails_with` (Arctic Shift down, by default), asks the second.
+
+    The library's default since 11 Oct 2026 (LIBRARY_READER "auto"): Arctic Shift's archive first, which searches and
+    reads for free with whole reply trees, then Bright Data. The second source is never asked when the first works, so
+    no Bright Data record is spent then. What happened is in `notes`, with the second source's own notes.
+    """
+
+    def __init__(self, first, second, fails_with: tuple[type[Exception], ...] = (ArcticShiftError,),
+                 first_name: str = "Arctic Shift", second_name: str = "Bright Data", memo: Path | None = None,
+                 clock=None):
+        self.first, self.second = first, second
+        self.fails_with = fails_with
+        self.names = (first_name, second_name)
+        self._notes: list[str] = []
+        # Where a failure of the first source is remembered (ARCHIVE_DOWN_MINUTES), so the next run doesn't wait for it
+        # to fail again; None remembers nothing.
+        self.memo = Path(memo) if memo is not None else None
+        self._clock = clock or (lambda: datetime.now(UTC))
+
+    @property
+    def notes(self) -> list[str]:
+        return self._notes + list(getattr(self.second, "notes", []))
+
+    def find_threads(self, query: ParsedQuery, limit: int = 3, mix: dict | None = None, fill: bool = True) -> list[Thread]:
+        return [without_unusable_comments(t) for t in self.find_raw_threads(query, limit, mix, fill)]
+
+    def find_raw_threads(self, query: ParsedQuery, limit: int = 3, mix: dict | None = None, fill: bool = True) -> list[Thread]:
+        if self._recently_down():
+            return _ask(self.second, query, limit, mix, fill)
+        try:
+            threads = _ask(self.first, query, limit, mix, fill)
+        except self.fails_with as e:
+            self._fell_back(e)
+            return _ask(self.second, query, limit, mix, fill)
+        self._forget()
+        return threads
+
+    def rank_candidates(self, query: ParsedQuery) -> list[dict]:
+        if self._recently_down():
+            return self.second.rank_candidates(query)
+        try:
+            ranked = self.first.rank_candidates(query)
+        except self.fails_with as e:
+            self._fell_back(e)
+            return self.second.rank_candidates(query)
+        self._forget()
+        return ranked
+
+    def _fell_back(self, error: Exception) -> None:
+        first, second = self.names
+        self._notes.append(f"{first} couldn't be reached ({error}), so {second} found and read the threads instead.")
+        if self.memo is not None:
+            self.memo.parent.mkdir(parents=True, exist_ok=True)
+            self.memo.write_text(json.dumps({"failed_at": self._clock().isoformat(), "error": str(error)[:300]}),
+                                 encoding="utf-8")
+
+    def _recently_down(self) -> bool:
+        """Whether the first source failed less than ARCHIVE_DOWN_MINUTES ago (the memo says so): then it isn't asked."""
+        if self.memo is None or not self.memo.exists():
+            return False
+        try:
+            failed_at = datetime.fromisoformat(json.loads(self.memo.read_text(encoding="utf-8"))["failed_at"])
+        except (OSError, ValueError, KeyError, TypeError):
+            return False
+        minutes = (self._clock() - failed_at).total_seconds() / 60
+        if minutes >= ARCHIVE_DOWN_MINUTES:
+            return False
+        first, second = self.names
+        self._notes.append(f"{first} failed {minutes:.0f} minutes ago, so {second} found and read the threads straight "
+                           f"away (it is tried again after {ARCHIVE_DOWN_MINUTES} minutes).")
+        return True
+
+    def _forget(self) -> None:
+        if self.memo is not None:
+            self.memo.unlink(missing_ok=True)
+
+
+def _ask(source, query: ParsedQuery, limit: int, mix: dict | None, fill: bool) -> list[Thread]:
+    """A source's threads as fetched when it can give them (and a mix, when it can pick one), else its plain ones."""
+    if hasattr(source, "find_raw_threads"):
+        return source.find_raw_threads(query, limit=limit, mix=mix, fill=fill)
+    return source.find_threads(query, limit=limit)
 
 
 # --- Ranking candidate threads: buying advice beats popularity ---

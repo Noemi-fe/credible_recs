@@ -95,7 +95,9 @@ class FakeLiveParse:
 # --- The decided values ---
 
 def test_the_decided_values():
-    assert (LIBRARY_READER, LIVE_CHECK_SHOWN_DAYS, LIVE_CHECK_ALL_DAYS) == ("archive", 14, 30)
+    # Changed on purpose 11 Oct 2026 (Noemi asked for a Bright Data tool so the library never gets stuck): "auto" tries
+    # the archive first, as decided on 9 Oct, and turns to Bright Data only when Arctic Shift fails.
+    assert (LIBRARY_READER, LIVE_CHECK_SHOWN_DAYS, LIVE_CHECK_ALL_DAYS) == ("auto", 14, 30)
     assert LIVE_CHECK_REQUIRED is True and ARCHIVE_TEXT_RETENTION is True
     assert ARCHIVE_TEXT_KEPT_DAYS == LIVE_CHECK_ALL_DAYS + 7 and LIVE_CHECK_CREDIT_RESERVE == 20
 
@@ -368,7 +370,8 @@ def test_command_line_add_reader_parse_reads_through_parse(tmp_path, capsys):
 @pytest.mark.parametrize("argv", [["add", "--reader", "pushshift", KETTLE], ["add", "--reader", KETTLE], ["add", KETTLE, "--reader"]])
 def test_command_line_add_refuses_an_unknown_reader(tmp_path, capsys, argv):
     assert library.main(argv, client=FakeParseClient(), folder=tmp_path, finder=FakeArchiveClient()) == 2
-    assert "--reader archive|parse" in capsys.readouterr().out
+    # Changed on purpose 11 Oct 2026: Bright Data and the automatic fallback are readers too.
+    assert "--reader auto|archive|bright_data|parse" in capsys.readouterr().out
 
 
 def test_an_archive_copy_never_replaces_a_copy_read_live(tmp_path):

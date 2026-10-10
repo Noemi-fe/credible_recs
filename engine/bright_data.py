@@ -64,6 +64,7 @@ from pathlib import Path
 import certifi
 
 from engine.config import (
+    BRIGHT_DATA_BATCH_THREADS,
     BRIGHT_DATA_COMMENTS_DATASET,
     BRIGHT_DATA_MAX_WAIT_SECONDS,
     BRIGHT_DATA_MONTHLY_RECORDS,
@@ -266,6 +267,72 @@ class BrightDataClient:
             "found": [_found_to_json(post) for post in found],
         })
         return found
+
+    def prefetch(self, threads: list[tuple[str, int]], batch: int = BRIGHT_DATA_BATCH_THREADS) -> int:
+        """Reads several threads ahead, in two Bright Data jobs per batch of `batch` threads (one for their posts, one
+        for their comments) instead of two jobs a thread, and files each thread's records in its own cache entry, where
+        get_thread then finds them (11 Oct 2026: one thread at a time took about 2.5 minutes, so a monthly refresh of the
+        library would take hours). `threads` are (link to the thread, the most comments it may have).
+
+        A thread whose records are already cached is left out. Before each batch, the most it could cost (1 record per
+        post, and each thread's comments) must fit the month, as for one thread: otherwise BrightDataError, and nothing
+        is started. A thread a batch's answer says nothing about isn't cached, so get_thread reads it on its own. A
+        batch job that takes too long isn't picked up later (unlike a single thread's): its threads are simply read one
+        at a time. Returns how many threads were asked about. Offline, nothing is asked."""
+        if self.offline:
+            return 0
+        wanted = []
+        for link, most in threads:
+            subreddit, post_id = parse_thread_url(link)
+            category_for(subreddit)  # refuses other subreddits before anything is spent
+            community = _decided_name(subreddit)
+            needs = [dataset for dataset in (BRIGHT_DATA_POSTS_DATASET, BRIGHT_DATA_COMMENTS_DATASET)
+                     if not self._has_records(dataset, community, post_id)]
+            if needs:
+                wanted.append((_post_link(link, community, post_id), community, post_id, max(int(most or 0), 1), needs))
+        for start in range(0, len(wanted), max(batch, 1)):
+            self._prefetch_batch(wanted[start:start + max(batch, 1)])
+        return len(wanted)
+
+    def has_thread(self, link: str) -> bool:
+        """Whether both of the thread's answers (its post and its comments) are in the cache, so reading it costs
+        nothing."""
+        subreddit, post_id = parse_thread_url(link)
+        community = _decided_name(subreddit)
+        return all(self._has_records(dataset, community, post_id)
+                   for dataset in (BRIGHT_DATA_POSTS_DATASET, BRIGHT_DATA_COMMENTS_DATASET))
+
+    def _has_records(self, dataset: str, community: str, post_id: str) -> bool:
+        entry = self._cached(self._cache_file(dataset, community, post_id))
+        return bool(entry and "records" in entry)
+
+    def _prefetch_batch(self, part: list[tuple[str, str, str, int, list[str]]]) -> None:
+        """One batch of prefetch: both jobs started, then waited for, and each thread's records filed in its cache."""
+        key = self._key()
+        posts = [item for item in part if BRIGHT_DATA_POSTS_DATASET in item[4]]
+        comments = [item for item in part if BRIGHT_DATA_COMMENTS_DATASET in item[4]]
+        self._check_budget(len(posts) + sum(item[3] for item in comments), "batch")
+        jobs = []
+        for dataset, items in ((BRIGHT_DATA_POSTS_DATASET, posts), (BRIGHT_DATA_COMMENTS_DATASET, comments)):
+            if items:
+                name = f"{JOB_NAMES[dataset]} batch"
+                jobs.append((dataset, items, self._trigger(dataset, [{"url": item[0]} for item in items], key, name)))
+        for dataset, items, snapshot_id in jobs:
+            name = JOB_NAMES[dataset]
+            records = self._wait_and_download(snapshot_id, key, f"{name} batch",
+                                              self.cache_dir / "responses" / f"batch_{snapshot_id}.json")
+            fetched_at = self._clock()
+            self._log(name, snapshot_id, len(records), "ready")
+            by_post: dict[str, list] = {}
+            for record in records:
+                post_id = _record_post_id(record)
+                if post_id is not None:
+                    by_post.setdefault(post_id, []).append(record)
+            for _, community, post_id, _, _ in items:
+                if by_post.get(post_id):
+                    self._save(self._cache_file(dataset, community, post_id), {
+                        "fetched_at": fetched_at.isoformat(), "job": name, "snapshot_id": snapshot_id,
+                        "records": by_post[post_id]})
 
     def records_used_this_month(self) -> int:
         """Records delivered this calendar month, from this client's log (Bright Data's dashboard has the exact figure)."""
@@ -535,6 +602,26 @@ def found_posts(records: list, subreddits: list[str]) -> list[FoundPost]:
             created_at=_date(record.get("date_posted")), url=f"https://www.reddit.com/r/{name}/comments/{post_id}/",
         ))
     return found
+
+
+def _record_post_id(record) -> str | None:
+    """The post a record of a batch belongs to: its post_id, else the post in its links, else in the input it answers
+    (an error record has only that). None when nothing says."""
+    if not isinstance(record, dict):
+        return None
+    post_id = _plain_id(record.get("post_id"))
+    if post_id:
+        return post_id
+    links = [record.get("post_url"), record.get("url")]
+    if isinstance(record.get("input"), dict):
+        links.append(record["input"].get("url"))
+    for link in links:
+        if isinstance(link, str):
+            try:
+                return parse_thread_url(link)[1]
+            except ValueError:
+                continue
+    return None
 
 
 def _found_to_json(post: FoundPost) -> dict:
