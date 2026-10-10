@@ -104,6 +104,7 @@ from engine.config import (
     OTHER_NAME_NOTE,
     OTHER_TYPE_WORDS,
     PIPELINE_BRAND_PICKS,
+    PICKS_SHOWN,
     PIPELINE_MAX_THREADS,
     UK_BRAND_NAMES,
 )
@@ -544,28 +545,35 @@ def _note_other_names(groups: list[ProductGroup], cautions: dict[str, list[str]]
 # --- A brand pick steps aside for its own product (decided by Claude, 10 Oct 2026) ---
 
 def _fold_brand_picks(ranking: RankingResult, groups: list[ProductGroup], result: PipelineResult) -> RankingResult:
-    """The ranking without the brand picks that qualify next to a specific product of their own brand that qualifies too
-    ("Victorinox (their chef knives)" next to "Victorinox chef's knife"): the specific product stays, the brand pick
-    leaves the ranking, so its support counts for nothing rather than twice. Each is named on the result with the
-    first such product in the ranking (folded_brand_picks, worked out afresh each time). Two brand picks of the same
-    brand fold the same way: the one ranked lower into the one ranked higher. `groups` are the product groups
-    ranked."""
+    """The ranking without the brand picks shown next to a specific product of their own brand ("Victorinox (their chef
+    knives)" next to "Victorinox chef's knife"): the specific product stays, the brand pick leaves the ranking, so its
+    support counts for nothing rather than twice. Two brand picks of the same brand shown together fold the same way:
+    the one ranked lower into the one ranked higher. Each is named on the result with the product it stepped aside for
+    (folded_brand_picks, worked out afresh each time). `groups` are the product groups ranked.
+
+    Only what is shown counts (10 Oct 2026, evening): a brand pick steps aside only when its own product is among the
+    PICKS_SHOWN qualifying products shown with it, not for one that qualifies further down ("Lodge" had stepped aside
+    for a Lodge pan ranked below the top 3, and vanished). After each fold the next product moves up, so it is checked
+    again until nothing changes."""
     by_key = {g.key: g for g in groups}
     qualifying = [(p, by_key[p.key]) for p in ranking.qualifying if p.key in by_key]
-    specific = [(p, g) for p, g in qualifying if not g.loose]
-    folded, keys, kept_brands = [], set(), []
-    for product, brand in qualifying:  # in the ranking's order
-        if not brand.loose:
-            continue
-        own = next((p for p, g in specific if _same_brand(brand, g)), None)
-        # Two brand picks of the same brand ("Lodge" and "Lodge cast iron"): the one ranked lower folds into the
-        # one ranked higher (10 Oct 2026).
-        own = own or next((p for p, g in kept_brands if _same_brand(g, brand) or _same_brand(brand, g)), None)
-        if own is not None:
-            folded.append(FoldedBrandPick(product.name, own.name))
-            keys.add(product.key)
-        else:
-            kept_brands.append((product, brand))
+    folded, keys = [], set()
+    while True:
+        shown = [(p, g) for p, g in qualifying if p.key not in keys][:PICKS_SHOWN]
+        step = None
+        for position, (product, group) in enumerate(shown):
+            if not group.loose:
+                continue
+            own = next((p for p, g in shown if not g.loose and _same_brand(group, g)), None)
+            own = own or next((p for p, g in shown[:position] if g.loose and (_same_brand(g, group) or
+                                                                             _same_brand(group, g))), None)
+            if own is not None:
+                step = (product, own)
+                break
+        if step is None:
+            break
+        folded.append(FoldedBrandPick(step[0].name, step[1].name))
+        keys.add(step[0].key)
     result.folded_brand_picks = folded
     return replace(ranking, products=[p for p in ranking.products if p.key not in keys]) if keys else ranking
 

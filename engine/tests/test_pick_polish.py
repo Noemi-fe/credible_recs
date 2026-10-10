@@ -92,13 +92,15 @@ def test_a_brand_pick_stays_when_its_specific_product_doesnt_qualify(tmp_path):
 
 
 def test_the_brand_pick_comes_back_when_the_live_check_drops_its_products_support(tmp_path):
-    lib = knife_library(tmp_path, fibrox=(2, 1))
+    # Since 10 Oct 2026 (evening) a brand pick steps aside only for its own product when that product is shown, so this
+    # starts from the library where the Fibrox is shown (4 recommendations), and the live check takes 2 of them away.
+    lib = knife_library(tmp_path)
     before = answer_request(KNIFE_REQUEST, library_dir=lib, prices=[], today=TODAY)
     assert FIBROX in names(before) and VICTORINOX not in names(before)
     fibrox = next(pick for pick in before.answer.picks if pick.name == FIBROX)
-    after = answer_request(KNIFE_REQUEST, library_dir=lib, prices=[], today=TODAY,
-                           live_checker=FakeLive(gone={fibrox.quotes[0].comment_id}))
-    assert after.live_dropped == {"gone": 1}
+    gone = {quote.comment_id for quote in fibrox.quotes[:2]}
+    after = answer_request(KNIFE_REQUEST, library_dir=lib, prices=[], today=TODAY, live_checker=FakeLive(gone=gone))
+    assert after.live_dropped == {"gone": 2}
     assert names(after)[0] == VICTORINOX and FIBROX not in names(after)  # 2 credible recommendations left: not enough
     assert after.folded_brand_picks == []
 
@@ -397,3 +399,39 @@ def test_two_brand_picks_of_the_same_brand_fold_into_the_one_ranked_higher(tmp_p
     assert len(lodge) == 1, names(result)
     [folded] = [item for item in result.folded_brand_picks if item.name.lower().startswith("lodge")]
     assert folded.stepped_aside_for == lodge[0] and folded.name != lodge[0]
+
+
+# --- 6. A brand pick steps aside only for its own product that is shown (10 Oct 2026) ---
+# Found in the evening run: "Lodge (their cast iron skillets)", by far b08's strongest product, stepped aside for "lodge
+# cast iron pan", which just met the minimum but ranked below the top 3, so Lodge vanished from the answer. The rule is
+# there so a brand and its own product are never shown together: it applies only when that product is shown.
+
+def lodge_far_ahead_library(tmp_path):
+    """"Lodge" (fitting two Lodge skillets) praised 6 times; three other skillets 4 times each; the Lodge Blacklock
+    skillet only just qualifies (3 times, both threads), behind them."""
+    return write_library(tmp_path, {
+        "1far001": ("Best cast iron skillet for a beginner?", "My first one.", [
+            praise("f1a", "Lodge", 30), praise("f1b", "Lodge", 25), praise("f1c", "Lodge", 20),
+            praise("f1d", "Smithey No. 10 skillet", 9), praise("f1e", "Smithey No. 10 skillet", 8),
+            praise("f1f", "Field No. 8 skillet", 9), praise("f1g", "Field No. 8 skillet", 8),
+            praise("f1h", "Finex 10 skillet", 9), praise("f1i", "Finex 10 skillet", 8),
+            praise("f1j", "Lodge Blacklock skillet", 1), praise("f1k", "Lodge Blacklock skillet", 1),
+            praise("f1l", "Lodge Chef Collection skillet", 1),
+        ]),
+        "1far002": ("Which cast iron skillet lasts?", "Mine cracked.", [
+            praise("f2a", "Lodge", 15), praise("f2b", "Lodge", 12), praise("f2c", "Lodge", 10),
+            praise("f2d", "Smithey No. 10 skillet", 7), praise("f2e", "Smithey No. 10 skillet", 6),
+            praise("f2f", "Field No. 8 skillet", 7), praise("f2g", "Field No. 8 skillet", 6),
+            praise("f2h", "Finex 10 skillet", 7), praise("f2i", "Finex 10 skillet", 6),
+            praise("f2j", "Lodge Blacklock skillet", 1),
+        ]),
+    }, community="castiron")
+
+
+def test_a_brand_pick_stays_when_its_own_product_qualifies_but_isnt_shown(tmp_path):
+    result = answer_request("cast iron skillet that lasts", library_dir=lodge_far_ahead_library(tmp_path), prices=[],
+                            product_facts=[], today=TODAY)
+    blacklock = next(p for p in result.ranking.products if p.name == "Lodge Blacklock skillet")
+    assert blacklock.qualifies and "Lodge Blacklock skillet" not in names(result)  # qualifies, but not in the top 3
+    assert names(result)[0] == "Lodge (their cast iron skillets)"
+    assert result.folded_brand_picks == []
