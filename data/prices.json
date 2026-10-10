@@ -211,6 +211,9 @@
    "url": "https://www.sageappliances.com/en-gb/product/bke395",
    "checked_on": "2026-10-10",
    "available": true,
+   "also_called": [
+    "Sage glass kettle"
+   ],
    "note": "the Compact Kettle Pure, 1L, is the only glass kettle Sage sells in the UK; its Crystal Clear glass kettle is discontinued"
   },
   {
@@ -321,7 +324,10 @@
    "shop": "Lookfantastic",
    "url": "https://www.lookfantastic.com/p/14866956/",
    "checked_on": "2026-10-10",
-   "available": true
+   "available": true,
+   "also_called": [
+    "beauty of joseon retinal eye cream"
+   ]
   },
   {
    "product": "CeraVe Resurfacing Retinol Serum 30ml",
@@ -491,6 +497,360 @@
    "url": "https://www.baratza.com/en-gb/product/settetm-270-zcg1270",
    "checked_on": "2026-10-10",
    "available": true
+  },
+  {
+   "product": "Peach Slices Acne Exfoliating Toner 120ml",
+   "category": "skincare",
+   "price": 11.0,
+   "currency": "GBP",
+   "shop": "Peach & Lily",
+   "url": "https://www.peachandlily.com/products/acne-exfoliating-toner?country=GB&currency=GBP",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "the maker's own store, set to ship to the United Kingdom, prices it at £11.00 (US$10.99 in the US); no UK high-street shop found selling it; GlamGlobal, a small UK seller, lists it but its site would not load"
+  },
+  {
+   "product": "AXIS-Y PHA Resurfacing Glow Peel 50ml",
+   "category": "skincare",
+   "price": 13.0,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/axis-y-pha-resurfacing-glow-peel-50ml/17735057/",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "in stock; no RRP or was price shown"
+  },
+  {
+   "product": "Isntree Chestnut AHA 8% Clear Essence 100ml",
+   "category": "skincare",
+   "price": 14.0,
+   "currency": "GBP",
+   "shop": "Skinsider",
+   "url": "https://skinsider.co.uk/isntree-chestnut-clear-skin-8-aha-essence/",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Isntree Chestnut Clear Skin 8% AHA Essence"
+   ],
+   "note": "sold as Isntree Chestnut Clear Skin 8% AHA Essence, 100ml; out of stock on 10 Oct"
+  },
+  {
+   "product": "Kao Biore UV Perfect Milk SPF50+ PA++++",
+   "category": "skincare",
+   "price": 8.96,
+   "currency": "GBP",
+   "shop": "YesStyle",
+   "url": "https://www.yesstyle.com/en/kao-biore-uv-perfect-milk-spf-50-pa/info.html/pid.1123069848",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Biore Perfect Milk (blue bottle)",
+    "Bioré UV Perfect Milk"
+   ],
+   "note": "in stock, shipping to the UK; the page doesn't state the size, but its twin pack is two 40ml bottles at £17.02, so it is the usual 40ml; Amazon UK also has a listing for the 40ml (price not checked); no UK high-street shop found selling it"
+  },
+  {
+   "product": "EltaMD UV Clear Broad-Spectrum SPF 46",
+   "category": "skincare",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/eltamd-uv-clear-broad-spectrum-spf46-48g/11370303/",
+   "checked_on": "2026-10-10",
+   "available": false,
+   "note": "Lookfantastic's page for it now opens its 'Do Not Stock' page; Amazon UK lists only lookalikes; Dermstore (US) sells it at US$45 but reportedly ships only within the US; no UK shop found with it"
+  },
+  {
+   "product": "Rohto Skin Aqua UV Super Moisture Milk SPF50+ PA++++",
+   "category": "skincare",
+   "price": null,
+   "currency": "GBP",
+   "shop": "YesStyle",
+   "url": "https://www.yesstyle.com/en/rohto-mentholatum-skin-aqua-uv-super-moisture-milk-spf-50-pa-40ml/info.html/pid.1088081510",
+   "checked_on": "2026-10-10",
+   "available": false,
+   "note": "YesStyle says 'This item is no longer available' on both its listings; Japanese chemist Create SD says Rohto has stopped making it (netshop.create-sd.co.jp, JAN 4987241164950); Amazon UK lists none"
+  },
+  {
+   "product": "The INKEY List Retinol Serum 30ml",
+   "category": "skincare",
+   "price": null,
+   "currency": "GBP",
+   "shop": "The INKEY List",
+   "url": "https://uk.theinkeylist.com/collections/all",
+   "checked_on": "2026-10-10",
+   "available": false,
+   "also_called": [
+    "The INKEY List Retinol Serum"
+   ],
+   "note": "no longer on The INKEY List's UK or US store (its product page is gone); the brand now sells a Starter Retinol Serum (£13) and an Advanced 0.2% Retinal Serum (£18) instead; Lookfantastic and Cult Beauty still show the 30ml at £14, sold out"
+  },
+  {
+   "product": "K-Secret SEOUL 1988 Cream: Retinal Liposome 1% + Fermented Rice 50ml",
+   "category": "skincare",
+   "price": 21.99,
+   "currency": "GBP",
+   "shop": "Superdrug",
+   "url": "https://www.superdrug.com/skin/face-skin-care/face-cream/k-secret-seoul-1988-cream-retinal-liposome-1-fermented-rice-50ml/p/mp-00280978",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "K-Secret Seoul 1988 Retinal Liposome 1%"
+   ],
+   "note": "sold by Lazeco, a marketplace seller on Superdrug (3 other sellers there); K-SECRET's official Amazon UK store sells it at £17.00"
+  },
+  {
+   "product": "By Wishtrend Vitamin A-mazing Bakuchiol Night Cream 30g",
+   "category": "skincare",
+   "price": 32.4,
+   "currency": "GBP",
+   "shop": "Pure Seoul",
+   "url": "https://pureseoul.co.uk/products/by-wishtrend-vitamin-a-mazing-bakuchiol-night-cream",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Wishtrend Vitamin A-mazing Bakuchiol Night Cream"
+   ],
+   "note": "sold out on 10 Oct, as at Skinsider (£33.00) and Wishtrend's own store (US$33, on sale at US$23.10)"
+  },
+  {
+   "product": "ETUDE SoonJung 2x Barrier Intensive Cream 60ml",
+   "category": "skincare",
+   "price": 20.0,
+   "currency": "GBP",
+   "shop": "Holland & Barrett",
+   "url": "https://www.hollandandbarrett.com/shop/product/etude-soonjung-2x-barrier-intensive-cream-60ml-6100023623",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Etude House Soon Jung 2x Barrier Intensive Cream"
+   ],
+   "note": "sold by Melon + Starfish, a seller on its marketplace; in stock"
+  },
+  {
+   "product": "Dr.G R.E.D Blemish Clear Soothing Cream 70ml",
+   "category": "skincare",
+   "price": 25.95,
+   "currency": "GBP",
+   "shop": "YesStyle",
+   "url": "https://www.yesstyle.com/en/dr-g-r-e-d-blemish-clear-soothing-cream-70ml-70ml/info.html/pid.1066131832",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Dr.G Red Blemish Clear Soothing Cream"
+   ],
+   "note": "its full price; £18.16 in a sale on 10 Oct; a tube version is also sold"
+  },
+  {
+   "product": "Dr. Althea 345 Relief Cream 50ml",
+   "category": "skincare",
+   "price": 21.9,
+   "currency": "GBP",
+   "shop": "Cult Beauty",
+   "url": "https://www.cultbeauty.co.uk/p/dr.-althea-345-relief-cream-50ml/17729496/",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "DR Althea 345"
+   ],
+   "note": "in stock; £16.40 in a sale at Lookfantastic on 10 Oct (RRP £21.90)"
+  },
+  {
+   "product": "Beplain mungbean cleanser",
+   "category": "skincare",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Pure Seoul",
+   "url": "https://pureseoul.co.uk/products/beplain-mung-bean-ph-balanced-cleansing-foam-160ml-n1",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "beplain makes more than one mung bean cleanser (a pH-balanced cleansing foam and a cleansing oil), so no one price fits the name: Pure Seoul sells the foam at £18.80 (160ml); YesStyle sells the foam at £9.05 (80ml) and £14.33 (160ml) and the oil at £6.03 (50ml)"
+  },
+  {
+   "product": "Kose Softymo Speedy Cleansing Oil 240ml",
+   "category": "skincare",
+   "price": 11.9,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/dp/B0CT488VKV",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Kose Speedy oil cleanser"
+   ],
+   "note": "sold by GJG Audio and dispatched by Amazon; another Amazon UK listing has it at £9.99; Skin Cupid no longer sells it and YesStyle lists only limited editions"
+  },
+  {
+   "product": "Fellow kettle",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Borough Kitchen",
+   "url": "https://www.boroughkitchen.com/search?q=fellow+kettle&type=product",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "Fellow's electric kettles with UK plugs: Clyde £96, Stagg EKG Pro £145 (matte black) to £195, Corvo EKG Pro £165 to £195; so no one price fits the name"
+  },
+  {
+   "product": "Mac Professional Series Chef's Knife with Dimples 8\" (MTH-80)",
+   "category": "kitchen",
+   "price": 229.0,
+   "currency": "GBP",
+   "shop": "KitchenKnives.co.uk",
+   "url": "https://www.kitchenknives.co.uk/mac-professional-series-chef-s-knife-with-dimples-8-mth-80/",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Mac MTH-80"
+   ],
+   "note": "its full price; £150.00 in a sale (35% off) on 10 Oct, in stock; Amazon UK £150.00; Advantage Catering Equipment £169.20"
+  },
+  {
+   "product": "Timemore C2 Max",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=timemore+chestnut+c2+max",
+   "checked_on": "2026-10-10",
+   "available": false,
+   "note": "no UK shop found selling it: Amazon UK lists the C2S and C3S Max but not the C2 Max, and Redber sells only the C2; Timemore's own store no longer lists it (its product page is gone; it now sells the C3, C3S and C5)"
+  },
+  {
+   "product": "KINGrinder K2 Hand Coffee Grinder",
+   "category": "kitchen",
+   "price": 75.0,
+   "currency": "GBP",
+   "shop": "Sigma Coffee UK",
+   "url": "https://sigmacoffee.co.uk/products/kingrinder-k2-hand-coffee-grinder",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Kingrinder K2"
+   ],
+   "note": "in stock"
+  },
+  {
+   "product": "Helor 101",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=helor+101+grinder",
+   "checked_on": "2026-10-10",
+   "available": false,
+   "note": "no UK shop found selling it new: Amazon UK lists none, and Helor's own site (helor.com) does not load"
+  },
+  {
+   "product": "Circulon pans",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Circulon",
+   "url": "https://circulon.uk.com/collections/cookware-frying-pans-skillets",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "its UK store sells many non-stick frying pans, £39.99 to £125.00 at full price for a single pan (some reduced on 10 Oct), so no one price fits the name"
+  },
+  {
+   "product": "Tefal non-stick pan",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Argos",
+   "url": "https://www.argos.co.uk/search/tefal-frying-pan/",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "Argos sells many Tefal non-stick frying pans, about £12 to £39 on 10 Oct, so no one price fits the name"
+  },
+  {
+   "product": "De Buyer",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Borough Kitchen",
+   "url": "https://www.boroughkitchen.com/collections/de-buyer",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "carbon steel Mineral B frying pans £30 to £69, Mineral B Pro £58 to £95, Prima Matera copper pans from £329; so no one price fits the name"
+  },
+  {
+   "product": "celimax Oil Control Light Sunscreen SPF50+ PA++++ 40ml",
+   "category": "skincare",
+   "price": 16.0,
+   "currency": "GBP",
+   "shop": "YesStyle",
+   "url": "https://www.yesstyle.com/en/celimax-oil-control-light-sunscreen-40ml/info.html/pid.1127281051",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "celimax oil control light sunscreen"
+   ],
+   "note": "its full price; £14.40 in a flash sale on 10 Oct; in stock"
+  },
+  {
+   "product": "Beauty of Joseon Matte Sun Stick Mugwort + Camilia SPF50+ 18g",
+   "category": "skincare",
+   "price": 15.5,
+   "currency": "GBP",
+   "shop": "Cult Beauty",
+   "url": "https://www.cultbeauty.co.uk/p/beauty-of-joseon-matte-sun-stick-mugwort-camilia-spf50-18g/15443550/",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Beauty of Joseon matte sunscreen stick"
+   ],
+   "note": "in stock; £11.63 in a sale at Lookfantastic on 10 Oct (RRP £15.50)"
+  },
+  {
+   "product": "1ZPresso K Plus",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Sigma Coffee UK",
+   "url": "https://sigmacoffee.co.uk/search?q=1zpresso&type=product",
+   "checked_on": "2026-10-10",
+   "available": false,
+   "also_called": [
+    "1Zpresso K-Plus"
+   ],
+   "note": "1Zpresso's UK distributor sells the newer K-Ultra (£229), not the K-Plus, and 1Zpresso's own store no longer lists the K-Plus"
+  },
+  {
+   "product": "1zpresso X-Pro",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Sigma Coffee UK",
+   "url": "https://sigmacoffee.co.uk/search?q=1zpresso&type=product",
+   "checked_on": "2026-10-10",
+   "available": false,
+   "note": "1Zpresso's UK distributor sells the newer X-Ultra (£145, sold out on 10 Oct), not the X-Pro, and 1Zpresso's own store no longer lists the X-Pro"
+  },
+  {
+   "product": "niche",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Niche Coffee",
+   "url": "https://www.nichecoffee.co.uk/",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "Niche's UK store sells two grinders, the Niche Zero (£559) and the Niche Duo (£649 to £749), so no one price fits the name; both are over a £150 budget"
+  },
+  {
+   "product": "Eureka Mignon Filtro Silent Filter Coffee Grinder",
+   "category": "kitchen",
+   "price": 149.0,
+   "currency": "GBP",
+   "shop": "Clumsy Goat",
+   "url": "https://clumsygoat.co.uk/products/eureka-mignon-filtro-silent-coffee-grinder",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Eureka Mignon Filtro"
+   ],
+   "note": "£149.00 including VAT, black (15BL); sold out on 10 Oct; Bella Barista sells only its burrs"
   }
  ]
 }
