@@ -585,6 +585,9 @@ OTHER_TYPE_WORDS = ("set", "block", "sharpener", "stand", "rack", "holder", "rol
 BLIND_TEST_QUESTIONS_PER_TESTER = 5
 BLIND_TEST_TARGET = 0.6
 BLIND_TEST_GIVEAWAYS = ("chatgpt", "openai", "gpt", "vetted", "credible recs", "claude", "anthropic")
+# Noemi's decision, 10 Oct 2026 (eval/blind_test/FORMAT.md): every answer shown to a tester uses the same template, in
+# each tool's own words, with at most this many words per pick (cut at a word, marked "…"), so no answer wins by length.
+BLIND_TEST_WORDS_PER_PICK = 90
 
 # --- The evaluation's targets (docs/brief.md, "Evaluation and success metrics") ---
 # Written down here on 10 Oct 2026 so eval/run_eval.py, eval/metrics.json and the how-we-score page (/how) all read

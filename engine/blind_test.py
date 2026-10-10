@@ -9,21 +9,31 @@
         rivals. Protocol step 5: capture every rival answer on the same day, with the same wording, and keep
         screenshots. Never overwrites a rival's answer already pasted.
 
+    python -m engine.blind_test shown <answers folder>
+        Writes our answers into the template every tool's answer is shown in (eval/blind_test/FORMAT.md, Noemi's
+        decision of 10 Oct 2026), from raw/ours/<id>.json into shown/ours/<id>.md: each pick's name, its reason, two
+        quotes with what backs them, a downside and any caution, and the price, at most BLIND_TEST_WORDS_PER_PICK
+        words a pick. The score breakdown, care tips and support line are left out. The rivals' answers are put into
+        the same template by hand, by FORMAT.md's rules.
+
     python -m engine.blind_test packets <answers folder> <testers.csv> [--seed N]
         testers.csv has the columns tester,category: skincare or kitchen (the tester gets that category's questions)
         or any (the questions fewest testers have so far). Each tester gets 5 questions; for each one, the three
         answers to show (shown/<tool>/<id>.md) named only A, B and C, in an order balanced across testers. Writes
-        packets/<tester>.md and key.json (which letter is which tool). Refuses, writing nothing, while an answer to
-        show is empty or names a tool ("ChatGPT", "Vetted"...).
+        packets/<tester>.md and key.json (which letter is which tool). Each question asks which answer the tester
+        would trust with their own money, and which least, so every response ranks all three. Refuses, writing
+        nothing, while an answer to show is empty, names a tool ("ChatGPT", "Vetted"...) or has a pick longer than
+        BLIND_TEST_WORDS_PER_PICK words.
 
     python -m engine.blind_test tally <answers folder> <responses.csv>
-        responses.csv has the columns tester,question,choice,confidence,comment (choice A, B or C; confidence 1 to 5).
-        Prints how often ours was chosen against each rival (the brief's target: at least 60% against each), with
-        the 95% range such a small sample allows, the confidence per tool, and every comment by the tool chosen.
+        responses.csv has the columns tester,question,choice,least,confidence,comment (choice and least A, B or C,
+        not the same; confidence 1 to 5). Prints how often ours was trusted more than each rival (the brief's target:
+        at least 60% against each), with the 95% range such a small sample allows, the first choices, the
+        confidence per tool, and every comment by the tool chosen.
 
 The answers folder is never committed (.gitignore): our answers quote Reddit, and the rivals' answers and the testers'
 names aren't ours to publish. How each tool's raw answer becomes the answer shown (protocol step 3: "names removed,
-formatting matched") is Noemi's decision; until then shown/ is filled by hand.
+formatting matched") is eval/blind_test/FORMAT.md (Noemi's decision, 10 Oct 2026).
 """
 
 import csv
@@ -38,7 +48,12 @@ from itertools import permutations
 from pathlib import Path
 
 from engine.answer import answer_to_dict
-from engine.config import BLIND_TEST_GIVEAWAYS, BLIND_TEST_QUESTIONS_PER_TESTER, BLIND_TEST_TARGET
+from engine.config import (
+    BLIND_TEST_GIVEAWAYS,
+    BLIND_TEST_QUESTIONS_PER_TESTER,
+    BLIND_TEST_TARGET,
+    BLIND_TEST_WORDS_PER_PICK,
+)
 from engine.pipeline import answer_request
 from engine.slice_eval import DEFAULT_QUESTIONS
 
@@ -84,6 +99,87 @@ def capture(questions_path: Path, answers_dir: Path, day: date, profiles=None, l
         "questions": [{"id": q["id"], "category": q["category"], "text": q["text"]} for q in questions],
     }, ensure_ascii=False, indent=1), encoding="utf-8")
     return folder
+
+
+# --- 1b. The answer testers see (Noemi's decision, 10 Oct 2026: eval/blind_test/FORMAT.md) ---
+
+QUOTES_SHOWN = 2  # pieces of evidence per pick, for every tool
+MIN_CUT_WORDS = 12  # a part cut shorter than this says nothing, so it is left out instead
+_PICK_HEADING = re.compile(r"^\*\*\d+\. .+\*\*$")
+
+
+def shown_from_ours(data: dict | None, words: int = BLIND_TEST_WORDS_PER_PICK) -> str:
+    """Our answer (engine.answer.answer_to_dict) in the template every tool's answer is shown in. Per pick: its name,
+    its reason, its first two quotes with the badge that says what backs them (the writer's use when there is one),
+    its first downside, its cautions and its price when known, at most `words` words, cut at a word. Our words only:
+    the support line, score breakdown, care tips, links and availability are left out. With no picks, the answer's
+    own message."""
+    if data is None:
+        return "No answer."
+    if not data.get("picks"):
+        return data.get("message") or "No picks."
+    return "\n\n".join(_shown_pick(pick, words) for pick in data["picks"])
+
+
+def _shown_pick(pick: dict, words: int) -> str:
+    fixed = list(pick.get("cautions") or [])  # always kept: a caution is part of the pick
+    price = pick.get("price") or {}
+    if price.get("amount") is not None and price.get("text"):
+        fixed.append(f"Price: {price['text'].split(', checked')[0]}")
+    parts = [pick["reason"].rstrip(".") + "."]
+    for quote in (pick.get("quotes") or [])[:QUOTES_SHOWN]:
+        badge = _evidence_badge(quote.get("badges") or [])
+        parts.append(f'"{quote["text"]}"' + (f" ({badge})" if badge else ""))
+    if pick.get("downsides"):
+        parts.append(f'Downside: "{pick["downsides"][0]["text"]}"')
+    left = words - sum(len(line.split()) for line in fixed)
+    kept = []
+    for part in parts:
+        count = len(part.split())
+        if count <= left:
+            kept.append(part)
+            left -= count
+            continue
+        if left >= MIN_CUT_WORDS:
+            kept.append(_cut(part, left))
+        break
+    return "\n\n".join([f"**{pick['rank']}. {pick['name']}**"] + kept + fixed)
+
+
+def _evidence_badge(badges: list[str]) -> str | None:
+    """The badge that says what backs a quote: the writer's use ("five years of use"), else how well it was upvoted
+    ("18 points, more than 86% of this thread's comments"), else none."""
+    return next((b for b in badges if b.endswith(" use")), next((b for b in badges if " points" in b), None))
+
+
+def _cut(text: str, words: int) -> str:
+    """The first `words` words of the text, with "…" on the last, and a closing quote mark if the cut left one open:
+    what is left of a quote is still word for word from its start."""
+    kept = " ".join(text.split()[:words]) + "…"
+    return kept + '"' if kept.count('"') % 2 else kept
+
+
+def words_per_pick(shown: str) -> list[int]:
+    """The words of each pick in a shown answer, its heading ("**1. Name**") left out."""
+    counts: list[int] = []
+    for line in shown.splitlines():
+        if _PICK_HEADING.match(line.strip()):
+            counts.append(0)
+        elif counts:
+            counts[-1] += len(line.split())
+    return counts
+
+
+def write_shown_ours(folder: Path) -> int:
+    """Writes shown/ours/<id>.md from every raw/ours/<id>.json in the day's folder, and returns how many. The rivals'
+    shown answers are never touched."""
+    folder = Path(folder)
+    count = 0
+    for path in sorted((folder / "raw" / "ours").glob("*.json")):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        (folder / "shown" / "ours" / f"{path.stem}.md").write_text(shown_from_ours(data) + "\n", encoding="utf-8")
+        count += 1
+    return count
 
 
 # --- 2. Packets ---
@@ -165,6 +261,10 @@ def build_packets(folder: Path, questions_path: Path, testers: list[Tester], see
                 problems.append(f"{relative} is empty")
             elif giveaway := _giveaway(text):
                 problems.append(f'{relative} names a tool ("{giveaway}")')
+            else:
+                problems += [f"{relative}: pick {number} has {count} words (at most {BLIND_TEST_WORDS_PER_PICK})"
+                             for number, count in enumerate(words_per_pick(text), start=1)
+                             if count > BLIND_TEST_WORDS_PER_PICK]
             answers[(tool, qid)] = text
     if problems:
         raise BlindTestError("Not ready for packets:\n  " + "\n  ".join(problems))
@@ -176,8 +276,8 @@ def build_packets(folder: Path, questions_path: Path, testers: list[Tester], see
         key[tester.id] = {}
         lines = [f"# Blind test: {tester.id}", "",
                  "For each question below there are three answers, from three different tools, in no particular "
-                 "order. Read all three, then say which one you would trust with your own money, how confident you "
-                 "are from 1 to 5, and, if you like, why.", ""]
+                 "order. Read all three, then say which one you would trust with your own money, which one you "
+                 "would trust least, how confident you are from 1 to 5, and, if you like, why.", ""]
         for number, qid in enumerate(assigned[tester.id], start=1):
             order = order_for(tester_index, index[qid], seed)
             key[tester.id][qid] = dict(zip(LETTERS, order))
@@ -185,6 +285,7 @@ def build_packets(folder: Path, questions_path: Path, testers: list[Tester], see
             for letter, tool in zip(LETTERS, order):
                 lines += [f"### Answer {letter}", "", answers[(tool, qid)], ""]
             lines += ["**Which would you trust with your own money?** A / B / C", "",
+                      "**And which would you trust least?** A / B / C", "",
                       "**How confident are you, from 1 to 5?**", "", "**Why? (optional)**", "", "---", ""]
         (folder / "packets" / f"{tester.id}.md").write_text("\n".join(lines), encoding="utf-8")
     (folder / "key.json").write_text(json.dumps(key, indent=1), encoding="utf-8")
@@ -206,7 +307,8 @@ class Response:
     line: int
     tester: str
     question: str
-    choice: str
+    choice: str  # the answer trusted most, with the tester's own money (the protocol's question)
+    least: str  # the answer trusted least; the one left is the middle (Noemi's decision, 10 Oct 2026)
     confidence: str
     comment: str
 
@@ -214,33 +316,36 @@ class Response:
 @dataclass
 class Tally:
     total: int = 0
-    choices: dict[str, int] = field(default_factory=lambda: {tool: 0 for tool in TOOLS})
-    against: dict[str, tuple[int, int]] = field(default_factory=dict)  # {rival: (ours chosen, rival chosen)}
+    choices: dict[str, int] = field(default_factory=lambda: {tool: 0 for tool in TOOLS})  # trusted most
+    least: dict[str, int] = field(default_factory=lambda: {tool: 0 for tool in TOOLS})  # trusted least
+    # {rival: (rankings with ours above the rival, rankings)}: every response ranks all three, so each one counts.
+    against: dict[str, tuple[int, int]] = field(default_factory=dict)
     confidence: dict[str, float] = field(default_factory=dict)  # {tool: mean confidence when chosen}
     comments: dict[str, list[str]] = field(default_factory=lambda: {tool: [] for tool in TOOLS})
 
 
 def load_responses(path: Path) -> list[Response]:
     """The testers' responses, each with its line number. Refuses a file without the columns
-    tester,question,choice,confidence (comment is optional)."""
+    tester,question,choice,least,confidence (comment is optional)."""
     with Path(path).open(encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
         columns = [c.strip() for c in reader.fieldnames or []]
-        if not {"tester", "question", "choice", "confidence"} <= set(columns):
-            raise BlindTestError(f"{path}: the first line must be the columns tester,question,choice,confidence,"
-                                 "comment")
+        if not {"tester", "question", "choice", "least", "confidence"} <= set(columns):
+            raise BlindTestError(f"{path}: the first line must be the columns tester,question,choice,least,"
+                                 "confidence,comment")
         return [Response(number, (row.get("tester") or "").strip(), (row.get("question") or "").strip(),
-                         (row.get("choice") or "").strip().upper(), (row.get("confidence") or "").strip(),
-                         (row.get("comment") or "").strip())
+                         (row.get("choice") or "").strip().upper(), (row.get("least") or "").strip().upper(),
+                         (row.get("confidence") or "").strip(), (row.get("comment") or "").strip())
                 for number, row in enumerate(reader, start=2)]
 
 
 def tally(folder: Path, responses: list[Response]) -> Tally:
-    """The choices, by tool, read through folder/key.json. Refuses a response for a tester or question the key
-    doesn't have, a choice other than A, B or C, a confidence outside 1 to 5, or a second response from a tester to
-    the same question, naming the line."""
+    """The rankings, by tool, read through folder/key.json. Refuses a response for a tester or question the key
+    doesn't have, a choice or least other than A, B or C, the same answer as both, a confidence outside 1 to 5, or a
+    second response from a tester to the same question, naming the line."""
     key = json.loads((Path(folder) / "key.json").read_text(encoding="utf-8"))
     result, confidences, answered = Tally(), {tool: [] for tool in TOOLS}, set()
+    above = {rival: 0 for rival in RIVALS}
     for r in responses:
         where = f"responses, line {r.line}"
         if r.tester not in key:
@@ -249,18 +354,25 @@ def tally(folder: Path, responses: list[Response]) -> Tally:
             raise BlindTestError(f"{where}: question {r.question} isn't in {r.tester}'s packet")
         if r.choice not in LETTERS:
             raise BlindTestError(f"{where}: the choice must be A, B or C")
+        if r.least not in LETTERS or r.least == r.choice:
+            raise BlindTestError(f"{where}: the least trusted must be A, B or C, and not the choice")
         if r.confidence not in {"1", "2", "3", "4", "5"}:
             raise BlindTestError(f"{where}: the confidence must be 1 to 5")
         if (r.tester, r.question) in answered:
             raise BlindTestError(f"{where}: {r.tester} already answered {r.question}")
         answered.add((r.tester, r.question))
-        tool = key[r.tester][r.question][r.choice]
+        letters = key[r.tester][r.question]
+        middle = next(letter for letter in LETTERS if letter not in (r.choice, r.least))
+        order = [letters[r.choice], letters[middle], letters[r.least]]  # most trusted first
         result.total += 1
-        result.choices[tool] += 1
-        confidences[tool].append(int(r.confidence))
+        result.choices[order[0]] += 1
+        result.least[order[2]] += 1
+        for rival in RIVALS:
+            above[rival] += order.index("ours") < order.index(rival)
+        confidences[order[0]].append(int(r.confidence))
         if r.comment:
-            result.comments[tool].append(r.comment)
-    result.against = {rival: (result.choices["ours"], result.choices[rival]) for rival in RIVALS}
+            result.comments[order[0]].append(r.comment)
+    result.against = {rival: (above[rival], result.total) for rival in RIVALS}
     result.confidence = {tool: sum(c) / len(c) for tool, c in confidences.items() if c}
     return result
 
@@ -277,22 +389,20 @@ def wilson_range(wins: int, total: int, z: float = 1.96) -> tuple[float, float]:
 
 
 def tally_lines(result: Tally) -> list[str]:
-    """The report: counts, shares, ranges, confidence and comments. No tester names."""
+    """The report: how often ours was trusted more than each rival, with its range, the first choices, confidence
+    and comments. No tester names."""
     if not result.total:
         return ["No responses yet."]
-    lines = [f"{result.total} choices: " + ", ".join(
-        f"{tool} chosen {result.choices[tool]} of {result.total} ({_percent(result.choices[tool], result.total)})"
-        for tool in TOOLS)]
-    for rival, (ours, theirs) in result.against.items():
-        head_to_head = ours + theirs
-        if not head_to_head:
-            lines.append(f"against {rival}: neither was chosen yet")
-            continue
-        low, high = wilson_range(ours, head_to_head)
-        verdict = "met" if ours / head_to_head >= BLIND_TEST_TARGET else "not met"
-        lines.append(f"against {rival}: {ours} of {head_to_head} ({_percent(ours, head_to_head)}), 95% range "
-                     f"{low:.0%} to {high:.0%}, target {BLIND_TEST_TARGET:.0%}: {verdict} (only the choices of ours "
-                     f"or {rival} count)")
+    lines = []
+    for rival, (wins, total) in result.against.items():
+        low, high = wilson_range(wins, total)
+        verdict = "met" if wins / total >= BLIND_TEST_TARGET else "not met"
+        lines.append(f"against {rival}: ours trusted more in {wins} of {total} ({_percent(wins, total)}), 95% range "
+                     f"{low:.0%} to {high:.0%}, target {BLIND_TEST_TARGET:.0%}: {verdict}")
+    lines.append("first choice: " + ", ".join(
+        f"{tool} {result.choices[tool]} of {result.total} ({_percent(result.choices[tool], result.total)})"
+        for tool in TOOLS))
+    lines.append("trusted least: " + ", ".join(f"{tool} {result.least[tool]}" for tool in TOOLS))
     for tool, mean in result.confidence.items():
         lines.append(f"confidence when {tool} was chosen: {mean:.1f} of 5")
     for tool in TOOLS:
@@ -317,6 +427,11 @@ def main(argv: list[str]) -> int:
             folder = capture(DEFAULT_QUESTIONS, DEFAULT_ANSWERS_DIR, day, cached_profiles(), live_checker())
             print(f"Our answers saved in {folder}/raw/ours. Paste each rival's answer, asked today with the wording "
                   f"in capture.json, into raw/vetted and raw/chatgpt, with screenshots in screenshots/.")
+            return 0
+        if argv[:1] == ["shown"] and len(argv) == 2:
+            count = write_shown_ours(Path(argv[1]))
+            print(f"{count} of our answers written in {Path(argv[1]) / 'shown' / 'ours'}, in the template of "
+                  "eval/blind_test/FORMAT.md. Put the rivals' answers into the same template by its rules.")
             return 0
         if argv[:1] == ["packets"] and len(argv) in (3, 5) and (len(argv) == 3 or argv[3] == "--seed"):
             seed = int(argv[4]) if len(argv) == 5 else 0
