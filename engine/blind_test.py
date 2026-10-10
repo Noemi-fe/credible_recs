@@ -158,8 +158,17 @@ def _shown_pick(pick: dict, words: int) -> str:
 
 
 def _one_line(text: str) -> str:
-    """A quote on one line: line breaks and runs of spaces are formatting, not words."""
-    return " ".join(text.split())
+    """A quote on one line: line breaks and runs of spaces are formatting, not words. Links become labels, as for every
+    tool (FORMAT.md rule 4): "[OXO non-stick pan](https://...)" -> "OXO non-stick pan (source)"."""
+    return " ".join(_links_as_labels(text).split())
+
+
+_MARKDOWN_LINK = re.compile(r"\[([^\]]+)\]\((?:https?://[^)\s]+)\)")
+_BARE_LINK = re.compile(r"<https?://[^>\s]+>|https?://\S+")
+
+
+def _links_as_labels(text: str) -> str:
+    return _BARE_LINK.sub("(source)", _MARKDOWN_LINK.sub(r"\1 (source)", text))
 
 
 def _evidence_badge(badges: list[str]) -> str | None:

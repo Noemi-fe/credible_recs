@@ -186,6 +186,17 @@ def test_a_quote_written_over_several_lines_is_shown_on_one():
     assert '"I am on my second one in 13 years, So not BIFL, but I bought it again."' in shown
 
 
+def test_a_link_in_our_quote_becomes_a_label_as_for_every_tool():
+    # FORMAT.md rule 4 ("Links become labels"), the same for all three: found in b10's OXO quote, 10 Oct 2026 (late),
+    # which showed "[OXO non-stick pan](https://a.co/d/02YAzKiV)".
+    shown = shown_from_ours({"picks": [pick(1, "OXO pan", quotes=[
+        quote("America’s Test Kitchen recommends the [OXO non-stick pan](https://a.co/d/02YAzKiV)."),
+        quote("See <https://example.com/review> for the test.")])]})
+    assert '"America’s Test Kitchen recommends the OXO non-stick pan (source)."' in shown
+    assert '"See (source) for the test."' in shown
+    assert "http" not in shown
+
+
 def test_a_brand_picks_model_is_part_of_its_reason():
     shown = shown_from_ours({"picks": [pick(1, "Victorinox (their chef knives)", model="Victorinox Fibrox chef knife")]})
     assert "Most named model: Victorinox Fibrox chef knife. Recommended by 3 credible voices" in shown
