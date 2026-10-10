@@ -3,6 +3,8 @@
 All requests and comments are made up; module 1 (engine/query.py) reads the requests.
 """
 
+import pytest
+
 from engine.config import NEEDS
 from engine.needs import Need, needs_met, request_needs
 from engine.query import MUST_HAVES, SKIN_TYPES, parse_query
@@ -97,3 +99,14 @@ def test_long_term_use_talks_about_lasting():
 
 def test_a_need_of_its_own_word_finds_its_longer_forms():
     assert needs_met("This one never strips my skin.", (Need("strip", request_word="strip"),)) == ("strip",)
+
+
+@pytest.mark.parametrize("body", [
+    "I love the stratia soft touch AHA with mandelic acid. It’s the only one that doesn’t cause a rash for me",
+    "It didn't irritate my skin at all.",
+    "No redness or stinging, even on my cheeks.",
+])
+def test_a_reaction_or_its_absence_talks_about_sensitive_skin(body):
+    # Found reading the blind-test view, 10 Oct 2026 (late): b01's Stratia quote about never causing a rash wasn't
+    # counted as talking about sensitive skin. Picks don't change; reasons and the quotes shown get more accurate.
+    assert "sensitive" in met("gentle exfoliant for sensitive skin", body)

@@ -360,7 +360,10 @@ NEED_MATCH_BOOST = 1.0
 # names a need when it says its name or one of its words ("for a beginner", "new to retinol" name "beginner").
 NEEDS: dict[str, tuple[str, ...]] = {
     # Skin types (engine/query.py, SKIN_TYPES).
-    "sensitive": ("sensitiv", "reactive", "easily irritated", "irritated easily", "irritates easily"),
+    # A reaction, or the lack of one, talks about sensitive skin too ("doesn't cause a rash", "no redness"; 10 Oct
+    # 2026, late: b01's Stratia quote wasn't counted).
+    "sensitive": ("sensitiv", "reactive", "easily irritated", "irritated easily", "irritates easily", "irritat",
+                  "rash", "redness", "sting"),
     "dry": ("dry", "dries", "dehydrated", "flaky"),
     "oily": ("oily", "greasy", "shiny"),
     "combination": ("combination", "combo skin"),
