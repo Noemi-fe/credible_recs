@@ -1,0 +1,126 @@
+{
+  "measured_on": "2026-10-10",
+  "metrics": {
+    "quote_verification": {
+      "value": 1.0,
+      "target": 1.0,
+      "count": 175,
+      "out_of": 175,
+      "threads": null
+    },
+    "extraction_precision": {
+      "value": 0.8902439024390244,
+      "target": 0.9,
+      "count": 73,
+      "out_of": 82,
+      "threads": 3
+    },
+    "extraction_recall": {
+      "value": 0.9733333333333334,
+      "target": 0.8,
+      "count": 73,
+      "out_of": 75,
+      "threads": 3
+    },
+    "voice_agreement": {
+      "value": 1.0,
+      "target": 0.8,
+      "count": 12,
+      "out_of": 12,
+      "threads": 2
+    },
+    "evidence_agreement": {
+      "value": 1.0,
+      "target": 0.8,
+      "count": 30,
+      "out_of": 30,
+      "threads": 2
+    },
+    "blind_test_vs_vetted": {
+      "value": null,
+      "target": 0.6,
+      "count": null,
+      "out_of": null,
+      "threads": null
+    },
+    "blind_test_vs_chatgpt": {
+      "value": null,
+      "target": 0.6,
+      "count": null,
+      "out_of": null,
+      "threads": null
+    },
+    "cost_per_question_usd": {
+      "value": 0.0,
+      "target": 0.05,
+      "count": null,
+      "out_of": null,
+      "threads": null
+    },
+    "ai_quotes_found": {
+      "value": 1.0,
+      "target": null,
+      "count": 4034,
+      "out_of": 4034,
+      "threads": null
+    },
+    "request_outcome": {
+      "value": 1.0,
+      "target": null,
+      "count": 30,
+      "out_of": 30,
+      "threads": null
+    },
+    "request_product": {
+      "value": 1.0,
+      "target": null,
+      "count": 22,
+      "out_of": 22,
+      "threads": null
+    },
+    "request_details": {
+      "value": 1.0,
+      "target": null,
+      "count": 22,
+      "out_of": 22,
+      "threads": null
+    },
+    "threads_fit": {
+      "value": 0.7916666666666666,
+      "target": null,
+      "count": 19,
+      "out_of": 24,
+      "threads": null
+    },
+    "threads_useful": {
+      "value": 0.9583333333333334,
+      "target": null,
+      "count": 23,
+      "out_of": 24,
+      "threads": null
+    },
+    "thread_order": {
+      "value": 0.9493670886075949,
+      "target": null,
+      "count": 75,
+      "out_of": 79,
+      "threads": null
+    },
+    "name_matching": {
+      "value": 0.9066666666666666,
+      "target": 0.9,
+      "count": 68,
+      "out_of": 75,
+      "threads": null
+    }
+  },
+  "end_to_end": {
+    "questions": 10,
+    "with_all_picks": 6,
+    "with_a_pick": 10,
+    "picks_wanted": 3,
+    "quotes_shown": 175,
+    "unverified_quotes_shown": 0,
+    "threads_waiting_live_check": 0
+  }
+}
