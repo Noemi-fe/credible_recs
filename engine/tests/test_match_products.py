@@ -112,6 +112,21 @@ def test_a_size_in_inches_reads_the_same_with_or_without_the_unit():
     assert "inch" in normalize_name("an inch of water")  # only after a number
 
 
+def test_a_pack_size_is_not_part_of_the_name():
+    # Found reading b01, 10 Oct 2026 (night): the price entry "Dermalogica Daily Microfoliant 74g" (its full size, over
+    # a £30 budget) wasn't found for the group shown as "dermalogica daily microfoliant exfoliant": each name had a word
+    # the other lacked, so a £65 product led an answer asking for under £30. A pack size says which size was priced,
+    # not which product it is.
+    assert normalize_name("Dermalogica Daily Microfoliant 74g") == ["dermalogica", "daily", "microfoliant"]
+    assert normalize_name("NATURIE Hatomugi Gel (180g)") == normalize_name("Naturie Hatomugi Gel")
+    assert normalize_name("PC 2% BHA 118 ml") == normalize_name("PC 2% BHA") == ["pc", "2", "bha"]
+    assert normalize_name("Cream 1.7 fl oz") == normalize_name("Cream 1.7oz") == ["cream"]
+    assert same_product("dermalogica daily microfoliant exfoliant", "Dermalogica Daily Microfoliant 74g")
+    assert normalize_name("Bonavita 1L kettle") == ["bonavita", "1l", "kettle"]  # a kettle's capacity is its model
+    assert normalize_name("Mandelic Acid 10%") == ["mandelic", "acid", "10"]  # a strength is kept
+    assert normalize_name("C2g toner") == ["c2g", "toner"]  # only a number on its own
+
+
 def test_names_made_only_of_filler_words_match_nothing():
     assert not same_product("the one", "my one")
     assert not same_product("the one", "Zojirushi")
@@ -391,6 +406,10 @@ def test_a_spelled_out_name_can_hold_another_short_name():
     ("skincare", "Etude soon jung cleansers", "Etude House Soon Jung foam cleanser"),
     ("skincare", "DDG peel pads", "Dr Dennis Gross peel pads"),
     ("skincare", "PC's BHA", "Paula's Choice 2% BHA Skin Perfecting Liquid"),
+    # b01, 10 Oct 2026 (night): two writers' names for Paula's Choice's Skin Perfecting 2% BHA Liquid Exfoliant were
+    # two products, each one recommendation short of a pick, and "Paula's choice 2%" fitted both, so it was a line.
+    ("skincare", "Paula’s Choice 2% Liquid Exfoliant", "Paula's Choice 2% BHA Skin Perfecting Liquid"),
+    ("skincare", "Paula's Choice Skin Perfecting 2% BHA Liquid Exfoliant", "Paula’s Choice 2% Liquid Exfoliant"),
 ])
 def test_the_shipped_short_names_found_in_the_blind_test_answers(category, a, b):
     assert same_product(a, b, load_aliases()[category])
@@ -402,6 +421,7 @@ def test_the_shipped_short_names_keep_other_models_apart():
     assert not same_product("Hario Slim Pro", "Hario Mini-Slim (MSS-1)", kitchen)
     skincare = load_aliases()["skincare"]
     assert not same_product("BoJ retinal eye cream", "Beauty of Joseon Dynasty Cream", skincare)
+    assert not same_product("Paula’s choice 2% retinol", "Paula’s Choice 2% Liquid Exfoliant", skincare)
 
 
 def test_retinal_and_retinol_are_never_a_slip():

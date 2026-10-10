@@ -190,6 +190,13 @@ def test_the_committed_price_list_keeps_notes_out_of_shop_names():
         assert "(" not in price.shop and len(price.shop) <= 40, price.shop
 
 
+def test_a_pack_size_in_an_entry_does_not_stop_a_longer_name_finding_it():
+    # b01, 10 Oct 2026 (night): the full-size entry wasn't found for a group shown with its type word at the end, so an
+    # answer asking for under £30 led with a £65 product (test_match_products: a pack size is not part of the name).
+    full_size = price("Dermalogica Daily Microfoliant 74g", 65.0, category="skincare")
+    assert find_price("dermalogica daily microfoliant exfoliant", "skincare", [full_size], "GBP") == full_size
+
+
 def test_a_name_with_a_slip_finds_its_own_price_before_a_shorter_name():
     # From the library (10 Oct 2026): the misspelled oil cleanser's price, not the foam cleanser's.
     oil = price("Beplain Mungbean Greenful Oil Cleanser", category="skincare", amount=18.0,

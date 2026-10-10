@@ -127,11 +127,16 @@ class AliasError(Exception):
 
 def normalize_name(name: str) -> list[str]:
     """The words of a product name, in a form that compares cleanly: "The Paula's Choice 2% BHA" -> paulas choice 2 bha."""
-    words = plain_words(name)
+    words = plain_words(PACK_SIZE.sub(" ", name))
     while words and words[0] in LEADING_WORDS:
         words.pop(0)
     return _without_negated_models(_without_size_units([word for word in words if word not in FILLER_WORDS]))
 
+
+# A pack size ("74g", "118 ml", "1.7 fl oz") says which size was priced, not which product it is: it is dropped (b01,
+# 10 Oct 2026: the entry "Dermalogica Daily Microfoliant 74g" wasn't found for a group shown with its type word at the
+# end). Litres and inches are kept: a kettle's capacity and a pan's size tell models apart.
+PACK_SIZE = re.compile(r"\b\d+(?:[.,]\d+)?\s*(?:ml|g|fl\.?\s*oz|oz)\b", re.IGNORECASE)
 
 # A size's unit after its number: '8 inch' reads as '8"', whose mark plain_words already drops (b07, 10 Oct 2026).
 SIZE_UNITS = frozenset({"inch", "inches"})
