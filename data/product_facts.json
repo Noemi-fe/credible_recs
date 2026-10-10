@@ -1004,8 +1004,7 @@
    "category": "skincare",
    "product_type": "cleanser",
    "facts": {
-    "fragrance_free": true,
-    "texture": "rich"
+    "fragrance_free": true
    },
    "sources": [
     "https://www.cerave.co.uk/skincare/cleansers/hydrating-cream-to-foam-cleanser",
