@@ -169,3 +169,22 @@ def test_an_entry_can_list_the_other_names_the_same_product_goes_by():
                   also_called=["Cuisinart CPK-17 PerfecTemp 1.7-Liter Stainless"])
     assert find_availability("Cuisinart CPK-17 PerfecTemp 1.7-Liter Stainless", "kitchen", [entry]) == entry
     assert find_availability("Zojirushi kettle", "kitchen", [entry]) is None
+
+
+# --- A researcher's note (10 Oct 2026) ---
+# Researchers wrote what they found out into the shop's name ("John Lewis (OXO's Professional ceramic non-stick frying
+# pans; ...)"), which then showed on cards. A note now has a field of its own, which the answer never shows.
+
+def test_an_entry_can_carry_a_note_the_answer_never_shows(tmp_path):
+    from engine.answer import shown_availability
+    from engine.prices import PriceCheck
+
+    [price] = load_prices(write_prices(tmp_path, [entry(available=True, note="the only glass kettle Sage sells here")]))
+    assert price.note == "the only glass kettle Sage sells here" and price.shop == entry()["shop"]
+    shown = shown_availability(PriceCheck(None, "unknown", availability=price))
+    assert "glass kettle" not in shown.text and shown.shop == price.shop
+
+
+def test_the_committed_price_list_keeps_notes_out_of_shop_names():
+    for price in load_prices():
+        assert "(" not in price.shop and len(price.shop) <= 40, price.shop

@@ -12,15 +12,17 @@ with the code. Its format:
                  "price": 120.0,                      what it costs there; null when only availability was checked
                  "currency": "GBP",                   GBP, EUR or USD: the currencies a request can name (the shop's
                                                       currency, even when the price is null)
-                 "shop": "John Lewis",                the shop's name
+                 "shop": "John Lewis",                the shop's name only: it is shown in answers
                  "url": "https://...",                the product's page at that shop: https only
                  "checked_on": "2026-10-09",          the day the price (or availability) was looked up
                  "available": true,                   optional: true when the shop sells it (out of stock for now
                                                       still counts), false when it is no longer sold (discontinued,
                                                       or no shop checked sells it); left out when not checked
-                 "second_hand": true}]}               optional, only with "available": true: the product is no
+                 "second_hand": true,                 optional, only with "available": true: the product is no
                                                       longer made and is sold only second-hand (on eBay UK, or by a
                                                       UK vintage dealer); left out otherwise
+                 "note": "..."}]}                     optional: what the researcher found out, for whoever checks
+                                                      the list; never shown in an answer (10 Oct 2026)
 
 An entry must give a price, or say whether the product is available, or both. A malformed entry stops the request with
 its number and the problem (PriceError), rather than being skipped; so does "second_hand": true without
@@ -120,6 +122,9 @@ class Price(Record):
     # Other names the same product goes by, when the shop's name and the one people use don't match by the word rules
     # ("Cuisinart CPK-17P1 PerfecTemp Cordless..." at the shop, "Cuisinart CPK-17 PerfecTemp" on Reddit; 9 Oct 2026).
     also_called: list[str] = []
+    # What the researcher found out about the entry ("the only glass kettle Sage sells in the UK"), for whoever checks
+    # the list: never shown in an answer, so it stays out of the shop's name (10 Oct 2026).
+    note: str | None = None
 
     @model_validator(mode="after")
     def _says_something(self) -> "Price":

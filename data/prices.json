@@ -15,17 +15,18 @@
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "1Zpresso (no UK shop sells the Q2; Sigma Coffee now sells its successor, the Q)",
+   "shop": "1Zpresso",
    "url": "https://1zpresso.coffee/product/q2/",
    "checked_on": "2026-10-09",
-   "available": false
+   "available": false,
+   "note": "no UK shop sells the Q2; Sigma Coffee now sells its successor, the Q"
   },
   {
    "product": "COSRX BHA Blackhead Power Liquid 100ml",
    "category": "skincare",
    "price": 22.49,
    "currency": "GBP",
-   "shop": "LookFantastic",
+   "shop": "Lookfantastic",
    "url": "https://www.lookfantastic.com/p/cosrx-bha-blackhead-power-liquid-100ml/11401180/",
    "checked_on": "2026-10-09",
    "available": true
@@ -45,10 +46,11 @@
    "category": "skincare",
    "price": null,
    "currency": "GBP",
-   "shop": "NHS dm+d browser (NHSBSA)",
+   "shop": "NHS dm+d browser",
    "url": "https://dmd-browser.nhsbsa.nhs.uk/vmp/view/3762",
    "checked_on": "2026-10-09",
-   "available": false
+   "available": false,
+   "note": "NHSBSA"
   },
   {
    "product": "Stratia Lipid Gold (formerly Liquid Gold)",
@@ -75,13 +77,14 @@
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "Amazon UK (a US-voltage import only, not for UK mains)",
+   "shop": "Amazon UK",
    "url": "https://www.amazon.co.uk/dp/B08CYBHW8K",
    "checked_on": "2026-10-09",
    "available": false,
    "also_called": [
     "Cuisinart CPK-17 PerfecTemp 1.7-Liter Stainless"
-   ]
+   ],
+   "note": "a US-voltage import only, not for UK mains"
   },
   {
    "product": "Sage the Compact Kettle Pure",
@@ -118,20 +121,22 @@
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "The English Coffee Company (lists only its 2023 refresh, the J-Max S, sold out; Sigma Coffee, 1Zpresso's UK distributor, now sells the successor J-Ultra, and 1Zpresso's own store no longer lists the J-Max)",
+   "shop": "The English Coffee Company",
    "url": "https://englishcoffeecompany.co.uk/products/1zpresso-j-max-s-manual-coffee-grinder-silver-with-assembly-coated-conical-burr",
    "checked_on": "2026-10-09",
-   "available": false
+   "available": false,
+   "note": "lists only its 2023 refresh, the J-Max S, sold out; Sigma Coffee, 1Zpresso's UK distributor, now sells the successor J-Ultra, and 1Zpresso's own store no longer lists the J-Max"
   },
   {
    "product": "1Zpresso JX",
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "Sigma Coffee UK (1Zpresso's UK distributor: its J page says the J is an updated model of the recently discontinued JX; 1Zpresso's own store shows the JX as out of stock)",
+   "shop": "Sigma Coffee UK",
    "url": "https://sigmacoffee.co.uk/products/1zpresso-j-manual-coffee-grinder",
    "checked_on": "2026-10-09",
-   "available": false
+   "available": false,
+   "note": "1Zpresso's UK distributor: its J page says the J is an updated model of the recently discontinued JX; 1Zpresso's own store shows the JX as out of stock"
   },
   {
    "product": "Dermalogica Daily Microfoliant 74g",
@@ -148,10 +153,11 @@
    "category": "skincare",
    "price": 7.4,
    "currency": "GBP",
-   "shop": "The Ordinary (UK store)",
+   "shop": "The Ordinary",
    "url": "https://theordinary.com/en-gb/mandelic-acid-10-ha-exfoliator-100429.html",
    "checked_on": "2026-10-10",
-   "available": true
+   "available": true,
+   "note": "UK store"
   },
   {
    "product": "NATURIE Hatomugi Gel (180g)",
@@ -201,70 +207,77 @@
    "category": "kitchen",
    "price": 69.95,
    "currency": "GBP",
-   "shop": "Sage (the Compact Kettle Pure, 1L, is the only glass kettle Sage sells in the UK; its Crystal Clear glass kettle is discontinued)",
+   "shop": "Sage",
    "url": "https://www.sageappliances.com/en-gb/product/bke395",
    "checked_on": "2026-10-10",
-   "available": true
+   "available": true,
+   "note": "the Compact Kettle Pure, 1L, is the only glass kettle Sage sells in the UK; its Crystal Clear glass kettle is discontinued"
   },
   {
    "product": "Victorinox chef's knife",
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "Victorinox UK (several chef's knives at different prices, so no one price fits the name)",
+   "shop": "Victorinox UK",
    "url": "https://www.victorinox.com/en-GB/Products/Cutlery/Chef%E2%80%99s-Knives/c/CUT_ChefKnives/",
    "checked_on": "2026-10-10",
-   "available": true
+   "available": true,
+   "note": "several chef's knives at different prices, so no one price fits the name"
   },
   {
    "product": "GreenPan",
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "GreenPan UK (many frying pans at different prices, so no one price fits the name)",
+   "shop": "GreenPan UK",
    "url": "https://greenpan.co.uk/collections/frying-pans",
    "checked_on": "2026-10-10",
-   "available": true
+   "available": true,
+   "note": "many frying pans at different prices, so no one price fits the name"
   },
   {
    "product": "OXO non-stick pan",
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "John Lewis (OXO's Professional ceramic non-stick frying pans; OXO's non-stick pans differ in price, so no one price fits the name)",
+   "shop": "John Lewis",
    "url": "https://www.johnlewis.com/oxo-professional-hard-anodised-aluminium-ceramic-non-stick-frying-pan/p115027525",
    "checked_on": "2026-10-10",
-   "available": true
+   "available": true,
+   "note": "OXO's Professional ceramic non-stick frying pans; OXO's non-stick pans differ in price, so no one price fits the name"
   },
   {
    "product": "All-Clad non-stick pans",
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "Divertimenti (the All-Clad HA1 non-stick frying pan; All-Clad's non-stick pans differ in price, so no one price fits the name)",
+   "shop": "Divertimenti",
    "url": "https://www.divertimenti.co.uk/products/all-clad-ha1-frying-pan-lid-30cm",
    "checked_on": "2026-10-10",
-   "available": true
+   "available": true,
+   "note": "the All-Clad HA1 non-stick frying pan; All-Clad's non-stick pans differ in price, so no one price fits the name"
   },
   {
    "product": "Arazlo (tazarotene) Lotion 0.045%",
    "category": "skincare",
    "price": null,
    "currency": "GBP",
-   "shop": "Patient.info (no skin product with tazarotene is sold in the UK; Zorac gel was discontinued in 2021)",
+   "shop": "Patient.info",
    "url": "https://patient.info/medicine/tazarotene-for-psoriasis-zorac",
    "checked_on": "2026-10-10",
-   "available": false
+   "available": false,
+   "note": "no skin product with tazarotene is sold in the UK; Zorac gel was discontinued in 2021"
   },
   {
    "product": "Stratia Soft Touch AHA 40ml",
    "category": "skincare",
    "price": 14.0,
    "currency": "GBP",
-   "shop": "Stratia (its own shop, priced in £ for UK shoppers)",
+   "shop": "Stratia",
    "url": "https://www.stratiaskin.com/products/soft-touch-aha",
    "checked_on": "2026-10-10",
-   "available": true
+   "available": true,
+   "note": "its own shop, priced in £ for UK shoppers"
   },
   {
    "product": "COSRX AHA/BHA Clarifying Treatment Toner 150ml",
@@ -294,10 +307,11 @@
    "category": "skincare",
    "price": 18.0,
    "currency": "GBP",
-   "shop": "Holland & Barrett (sold by Atelier De Glow, a London seller on its marketplace)",
+   "shop": "Holland & Barrett",
    "url": "https://www.hollandandbarrett.com/shop/product/house-of-hur-weightless-sun-fluid-50ml-6100028986",
    "checked_on": "2026-10-10",
-   "available": true
+   "available": true,
+   "note": "sold by Atelier De Glow, a London seller on its marketplace"
   },
   {
    "product": "Beauty of Joseon Revive Eye Serum: Ginseng + Retinal 30ml",
@@ -324,30 +338,33 @@
    "category": "skincare",
    "price": 33.0,
    "currency": "GBP",
-   "shop": "Space NK (its full price; marked down to £23.10 on 10 Oct but out of stock there, as at Cult Beauty)",
+   "shop": "Space NK",
    "url": "https://www.spacenk.com/uk/skincare/treatment/serums/retinol-cica-moisture-recovery-serum-MUK200049251.html",
    "checked_on": "2026-10-10",
-   "available": true
+   "available": true,
+   "note": "its full price; marked down to £23.10 on 10 Oct but out of stock there, as at Cult Beauty"
   },
   {
    "product": "Cetaphil Gentle Skin Cleanser 236ml",
    "category": "skincare",
    "price": 11.5,
    "currency": "GBP",
-   "shop": "Lookfantastic (its full price; £8.63 in a sale on 10 Oct)",
+   "shop": "Lookfantastic",
    "url": "https://www.lookfantastic.com/p/cetaphil-gentle-skin-cleanser-wash-236ml/13908195/",
    "checked_on": "2026-10-10",
-   "available": true
+   "available": true,
+   "note": "its full price; £8.63 in a sale on 10 Oct"
   },
   {
    "product": "Aveeno Face Calm + Restore Nourishing Oat Cleanser 200ml",
    "category": "skincare",
    "price": 10.49,
    "currency": "GBP",
-   "shop": "Holland & Barrett (out of stock on 10 Oct)",
+   "shop": "Holland & Barrett",
    "url": "https://www.hollandandbarrett.com/shop/product/aveeno-face-calmrestore-nourishing-oat-cleanser-200ml-6100006326",
    "checked_on": "2026-10-10",
-   "available": true
+   "available": true,
+   "note": "out of stock on 10 Oct"
   },
   {
    "product": "ROUND LAB 1025 Dokdo Cleanser 150ml",
@@ -364,42 +381,46 @@
    "category": "skincare",
    "price": 16.5,
    "currency": "GBP",
-   "shop": "Lookfantastic (its full price; £13.20 in a sale on 10 Oct)",
+   "shop": "Lookfantastic",
    "url": "https://www.lookfantastic.com/p/11091885/",
    "checked_on": "2026-10-10",
-   "available": true
+   "available": true,
+   "note": "its full price; £13.20 in a sale on 10 Oct"
   },
   {
    "product": "Bonavita gooseneck electric kettle",
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "Amazon UK (no UK shop found selling a Bonavita gooseneck kettle for UK mains; Amazon UK lists none)",
+   "shop": "Amazon UK",
    "url": "https://www.amazon.co.uk/s?k=Bonavita+gooseneck+kettle",
    "checked_on": "2026-10-10",
-   "available": false
+   "available": false,
+   "note": "no UK shop found selling a Bonavita gooseneck kettle for UK mains; Amazon UK lists none"
   },
   {
    "product": "Wagner",
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "eBay UK (used pans from UK and US sellers)",
+   "shop": "eBay UK",
    "url": "https://www.ebay.co.uk/sch/i.html?_nkw=wagner+cast+iron+skillet",
    "checked_on": "2026-10-10",
    "available": true,
-   "second_hand": true
+   "second_hand": true,
+   "note": "used pans from UK and US sellers"
   },
   {
    "product": "Griswold",
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "eBay UK (used pans, mostly posted from the US, so import terms apply)",
+   "shop": "eBay UK",
    "url": "https://www.ebay.co.uk/sch/i.html?_nkw=griswold+cast+iron+skillet",
    "checked_on": "2026-10-10",
    "available": true,
-   "second_hand": true
+   "second_hand": true,
+   "note": "used pans, mostly posted from the US, so import terms apply"
   },
   {
    "product": "Sage the Smart Grinder Pro",
@@ -416,46 +437,50 @@
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "Amazon UK (sold from Amazon US through its Global Store, so import terms apply; prices differ by size, £49.99 to £71.74, so no one price fits the name; John Lewis, OXO's main UK stockist, sells no OXO carbon steel pans)",
+   "shop": "Amazon UK",
    "url": "https://www.amazon.co.uk/dp/B09LL9M63H",
    "checked_on": "2026-10-10",
-   "available": true
+   "available": true,
+   "note": "sold from Amazon US through its Global Store, so import terms apply; prices differ by size, £49.99 to £71.74, so no one price fits the name; John Lewis, OXO's main UK stockist, sells no OXO carbon steel pans"
   },
   {
    "product": "Cuisinart GK-1 Digital Gooseneck Kettle",
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "Amazon UK (no UK shop found selling it: Amazon UK lists Cuisinart's UK kettles but no gooseneck, and John Lewis stocks no Cuisinart kettles; it is a North American model)",
+   "shop": "Amazon UK",
    "url": "https://www.amazon.co.uk/s?k=Cuisinart+GK-1",
    "checked_on": "2026-10-10",
    "available": false,
    "also_called": [
     "Cuisinart Digital Goose Neck Kettle"
-   ]
+   ],
+   "note": "no UK shop found selling it: Amazon UK lists Cuisinart's UK kettles but no gooseneck, and John Lewis stocks no Cuisinart kettles; it is a North American model"
   },
   {
    "product": "OXO Brew Conical Burr Coffee Grinder",
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "Amazon UK (only 120 V imports for US mains, not usable on UK mains; John Lewis sells OXO's manual grinder, not this electric one)",
+   "shop": "Amazon UK",
    "url": "https://www.amazon.co.uk/dp/B07CSKGLMM",
    "checked_on": "2026-10-10",
-   "available": false
+   "available": false,
+   "note": "only 120 V imports for US mains, not usable on UK mains; John Lewis sells OXO's manual grinder, not this electric one"
   },
   {
    "product": "Comandante C40 MK4",
    "category": "kitchen",
    "price": 249.0,
    "currency": "GBP",
-   "shop": "Clumsy Goat (full price; on sale at £219 and sold out on 10 Oct 2026)",
+   "shop": "Clumsy Goat",
    "url": "https://clumsygoat.co.uk/products/comandante-c40-coffee-grinder",
    "checked_on": "2026-10-10",
    "available": true,
    "also_called": [
     "Comandante C40"
-   ]
+   ],
+   "note": "full price; on sale at £219 and sold out on 10 Oct 2026"
   },
   {
    "product": "Baratza Sette 270",
