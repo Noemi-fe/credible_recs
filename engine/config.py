@@ -197,8 +197,13 @@ MATCHING_TARGET = 0.90
 # Decided by Claude on 10 Oct 2026 (a technical value, reported to Noemi), measured on the 97-thread library without
 # live checks: 8 threads gave 6/10 blind-test questions a full top 3, 12 gave 9/10, 16 and 24 also 9/10 but split
 # one product's evidence across two spellings (b05's Cetaphil). With 8, bigger new threads pushed out the ones that
-# held b02's evidence.
-PIPELINE_MAX_THREADS = 12
+# held b02's evidence. Raised to 16 late on 10 Oct 2026 (a technical value, decided by Claude, reported to Noemi), on
+# the 150-thread library with live checks and writers' profiles: 12 gave 8/10 a full top 3 (b03 retinol and b10 frying
+# pan short), 16 gives 10/10 with every shown quote verified. It waited on the kettle research: at 16, b06's first pick
+# is Bonavita, whose 1L Variable Temp kettle the research found sold in the UK with a UK plug, and OXO (not sold: 120 V)
+# leaves. 16 also drops b08's "Look for: mason jars". The cost: b04 reads four cleanser, sunscreen and exfoliant threads
+# whose posts mention moisturiser (its picks don't change).
+PIPELINE_MAX_THREADS = 16
 # Brand-only picks (decided by Noemi, 9 Oct 2026, decision 9): a brand or line that fits several products ("Lodge",
 # "CeraVe") is ranked, under a name that says so ("Lodge (their cast iron skillets)"), when its threads make the
 # product clear (BRAND_PICK_TITLE_SHARE below); otherwise it is left out, and listed on the result. False leaves
