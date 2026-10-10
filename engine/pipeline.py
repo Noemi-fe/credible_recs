@@ -664,7 +664,12 @@ def _fold_brand_skips(ranking: RankingResult, groups: list[ProductGroup],
     pick and none is hidden. Only a brand or line steps aside (a loose group, _same_brand either way round, among the
     PICKS_SHOWN qualifying products as _fold_brand_picks leaves them): a specific product on the skip list stays, even
     of a picked brand ("Dualit Architect kettle" next to the pick "Dualit Classic kettle"), since skipping it is real
-    advice. Each is named on the result (folded_skips, worked out afresh each time)."""
+    advice. Each is named on the result (folded_skips, worked out afresh each time).
+
+    Also (10 Oct 2026, night: b09's "Hario Mini (their coffee grinders)", while a credible warning about the Hario Mini
+    Mill, one of its own grinders, was shown nowhere): a shown brand or line pick speaks for its specific products, so
+    the credible warnings about those that are neither shown as picks nor on the skip list go under its downsides too,
+    after its own."""
     by_key = {g.key: g for g in groups}
     shown = [(p, by_key[p.key]) for p in ranking.qualifying if p.key in by_key][:PICKS_SHOWN]
     more: dict[str, list[ScoredMention]] = {}
@@ -678,6 +683,14 @@ def _fold_brand_skips(ranking: RankingResult, groups: list[ProductGroup],
             more.setdefault(pick.key, []).extend(skipped.credible_warnings)
             folded.append(FoldedBrandPick(skipped.name, pick.name))
             keys.add(skipped.key)
+    elsewhere = {p.key for p, _ in shown} | {s.key for s in ranking.skip_list}
+    for pick, brand in shown:
+        if not brand.loose:
+            continue
+        for product in ranking.products:
+            group = by_key.get(product.key)
+            if group is not None and not group.loose and product.key not in elsewhere and _same_brand(brand, group):
+                more.setdefault(pick.key, []).extend(product.credible_warnings)
     result.folded_skips = folded
     ranking = replace(ranking, products=[p for p in ranking.products if p.key not in keys]) if keys else ranking
     return ranking, more

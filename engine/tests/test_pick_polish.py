@@ -628,3 +628,33 @@ def test_a_line_on_the_skip_list_that_a_pick_belongs_to_shows_under_its_downside
     assert len(stagg.downsides) == config.DOWNSIDES_PER_PICK and {q.text for q in stagg.downsides} <= line
     assert result.folded_skips == [FoldedBrandPick("Fellow Stagg (their electric kettles)", "Fellow Stagg EKG")]
     assert unverified_claims(result.answer, result.bodies) == []
+
+
+def bodum_library(tmp_path):
+    """"Bodum" fits two Bodum kettles (a brand, loose), praised in both threads; the Bodum Melior kettle, one of its
+    own, is warned against once (too few for the skip list); the Zojirushi is praised across both threads."""
+    return write_library(tmp_path, {
+        "1ket003": ("Best electric kettle that lasts?", "Mine died.", [
+            praise("b1a", "Bodum", 5), praise("b1b", "Bodum", 6), praise("b1c", "Bodum Bistro kettle", 4),
+            warn("b1d", "Bodum Melior kettle", 3),
+            praise("b1e", "Zojirushi kettle", 7), praise("b1f", "Zojirushi kettle", 6),
+        ]),
+        "1ket004": ("Which electric kettle lasts 10 years?", "Ten years, ideally.", [
+            praise("b2a", "Bodum", 4), praise("b2b", "Zojirushi kettle", 5),
+        ]),
+    }, community="BuyItForLife")
+
+
+def test_a_brand_pick_shows_the_warnings_about_its_own_products(tmp_path):
+    # Found reading b09, 10 Oct 2026 (night): "Hario Mini (their coffee grinders)" was a pick, and a credible warning
+    # about the Hario Mini Mill, one of its own grinders with too few warnings for the skip list, was shown nowhere.
+    # A brand or line pick speaks for its products, so their credible warnings go under its Known downsides, after
+    # its own; a product shown as a pick or listed under Skip these keeps its warnings to itself.
+    result = answer_request("electric kettle that lasts", library_dir=bodum_library(tmp_path), prices=[],
+                            product_facts=[], today=TODAY)
+    bodum = next(pick for pick in result.answer.picks if pick.name.startswith("Bodum"))
+    assert [q.text for q in bodum.downsides] == ["My Bodum Melior kettle broke after 3 months, avoid it."]
+    assert "Bodum Melior kettle" not in [item.name for item in result.answer.skip]
+    assert unverified_claims(result.answer, result.bodies) == []
+    zojirushi = next(pick for pick in result.answer.picks if pick.name == "Zojirushi kettle")
+    assert zojirushi.downsides == []  # a specific pick takes no other product's warnings
