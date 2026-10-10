@@ -604,7 +604,7 @@ def test_a_verdict_on_the_product_itself_is_use(body):
 
 
 def test_an_effect_on_the_writer_is_first_hand():
-    body = "Paula's Choice BHA. I wake up with glowy skin, and it never irritates me."
+    body = "Paula's Choice BHA. My skin looks glowy every morning, and it never irritates me."
     assert evidence_for(body, "Paula's Choice BHA").level == "short-term use"
 
 
@@ -622,7 +622,7 @@ def test_someone_elses_first_time_is_not_a_fresh_start():
 
 
 def test_a_link_on_its_own_line_belongs_to_the_sentence_before():
-    body = "My Miyabi Santoku is a workhorse. For fish I ended up getting this:\n\nhttps://example.com/opinel-fillet-knife"
+    body = "My Miyabi Santoku is a workhorse. For filleting I bought this one:\n\nhttps://example.com/opinel-fillet-knife"
     assert evidence_for(body, "Opinel fillet knife", others=("Miyabi Santoku",)).level == "short-term use"
 
 
@@ -666,8 +666,8 @@ def test_weak_evidence_and_red_flags_give_no_badges():
 # --- A claim about how long things last is not the writer's own use (9 Oct 2026, first end-to-end run) ---
 
 def test_how_long_a_kind_can_last_is_not_a_time_of_use():
-    # "Carbon steel ... can all last 100+ years" is a claim about the material, and gave the badge "100 years of use".
-    body = "Carbon steel, cast iron and copper cookware can all last 100+ years without much issues."
+    # A claim that some materials can last over a century gave the badge "100 years of use".
+    body = "Carbon steel, cast iron and copper pans can all last 100+ years if you look after them."
     evidence = evidence_for(body, "carbon steel pan")
     assert evidence.level != "long-term use"
     assert not any("years of use" in b for b in evidence.badges)

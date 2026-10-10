@@ -288,10 +288,10 @@ def test_at_most_three_kinds_strongest_advice_first():
 
 
 def test_one_comment_backing_two_kinds_is_shown_once():
-    # Found on the demo, 10 Oct 2026: "Then get either a cast iron or a carbon steel fry pan." was the strongest note
+    # Found on the demo, 10 Oct 2026: one sentence advising cast iron or carbon steel was the strongest note
     # for both kinds, so the same quote showed twice. A kind takes another credible note when it has one; otherwise
     # the two kinds share one line.
-    shared = "Then get either a cast iron or a carbon steel fry pan."
+    shared = "After that, buy a cast iron pan or else a carbon steel one."
     both = [note("Cast iron", comment="c_both", quote=shared, weight=0.9),
             note("Carbon steel", comment="c_both", quote=shared, weight=0.8)]
     look_for = write_answer(rank_products([], "kitchen", both), bodies_for(*both)).look_for
@@ -458,8 +458,8 @@ def test_the_quote_shown_is_the_comments_own_text_with_entities_read():
 
 
 @pytest.mark.parametrize("body, shown", [
-    ("I absolutely swear by **CosRX Blackhead power liquid** for years.",
-     "I absolutely swear by CosRX Blackhead power liquid for years."),
+    ("I have sworn by **CosRX Blackhead power liquid** for years now.",
+     "I have sworn by CosRX Blackhead power liquid for years now."),
     ("It is *really* gentle and ~~cheap~~ affordable, great.", "It is really gentle and cheap affordable, great."),
     ("My __favourite__ kettle, set to 80_C every day.", "My favourite kettle, set to 80_C every day."),
     # Escaped marks (Reddit's editor writes "\\*lot\\*"): shown as the word, never "\\lot\\" (b10, 10 Oct 2026, late).
@@ -475,7 +475,7 @@ def test_a_quote_is_shown_without_the_writers_bold_or_italics(body, shown):
 
 
 def test_quotes_that_name_the_product_are_shown_before_ones_that_dont():
-    # Found reading the blind-test dry run, 10 Oct 2026: "Others I have used and not had any issues with:" was shown
+    # Found reading the blind-test dry run, 10 Oct 2026: a line that only opened a list of other cleansers was shown
     # for a cleanser. Out of context, a quote that never names the product says little, so among the credible ones,
     # those naming it (its brand, a short name such as "BOJ", or a model code such as "C2") come first.
     vague = mention("Acme kettle", "t1", weight=0.9, quote="Love it, works great every single morning.")
@@ -530,8 +530,8 @@ def test_a_quote_that_neither_names_the_product_nor_gives_a_view_only_makes_up_t
 def test_a_plural_of_the_brand_names_the_product():
     from engine.answer import _names_product
 
-    assert _names_product("I have some old wagners from my grandparents.", "Wagner", "kitchen")
-    assert not _names_product("I have some old wagons from my grandparents.", "Wagner", "kitchen")
+    assert _names_product("We still cook on two old wagners from my aunt.", "Wagner", "kitchen")
+    assert not _names_product("We still cook on two old wagons from my aunt.", "Wagner", "kitchen")
 
 
 @pytest.mark.parametrize("name, quote", [
@@ -549,7 +549,7 @@ def test_a_brand_written_slightly_differently_still_names_the_product(name, quot
     ("nah, I'll keep using my cast iron, ha.", False),
     ("I'm on my fifth bottle of it already", True),  # points at it
     ("I've had mine for ages and only minimal wear on the burrs.", True),
-    ("I like either of the gel or the lotion for a daily moisturizer.", True),  # "I like" is a view
+    ("I like both the gel and the lotion as an everyday moisturiser.", True),  # "I like" is a view
     ("I would like a new pan for my birthday.", False),  # wanting isn't a view
 ])
 def test_what_says_something_about_the_product(quote, says_something):
@@ -559,10 +559,9 @@ def test_what_says_something_about_the_product(quote, says_something):
 
 
 def test_a_quote_naming_the_product_and_saying_what_the_writer_thinks_comes_first():
-    # Found reading b09, 10 Oct 2026: "I have a Baratza Encore, Timemore C2 (at work), and a 1zpresso JX." named the C2
-    # but said nothing about it. Quotes that name the product and give a view or an experience come first.
-    owns = mention("Timemore C2", "t1", weight=0.6, quote="I have a Baratza Encore, Timemore C2 (at work), and a JX.")
-    views = [mention("Timemore C2", "t2", weight=0.3, quote="I have used a C2 almost every day for pour over, it is great."),
+    # Found reading b09, 10 Oct 2026: a writer listing the grinders they own named the C2 but said nothing about it. Quotes that name the product and give a view or an experience come first.
+    owns = mention("Timemore C2", "t1", weight=0.6, quote="I own a Baratza Encore, a Timemore C2 (in the office) and a JX.")
+    views = [mention("Timemore C2", "t2", weight=0.3, quote="I've used a C2 nearly daily for pour over and it's great."),
              mention("Timemore C2", "t1", weight=0.28, quote="I'd recommend going for a C2 if you're getting a grinder.")]
     items = [owns, *views]
     answer = write_answer(rank_products(items, "kitchen"), bodies_for(*items))
@@ -570,15 +569,15 @@ def test_a_quote_naming_the_product_and_saying_what_the_writer_thinks_comes_firs
 
 
 @pytest.mark.parametrize("name, quote", [
-    ("Sage (their electric kettles)", "My Breville has been going strong for 8 years"),
-    ("Beauty of Joseon Revive Eye Serum: Ginseng + Retinal", "I've been loving the BOJ eye serum as a catch all!"),
+    ("Sage (their electric kettles)", "My Breville is still going strong after 8 years"),
+    ("Beauty of Joseon Revive Eye Serum: Ginseng + Retinal", "I've been loving the BOJ eye serum all over my face!"),
     ("Timemore C2", "The C2 is great for pour-over at home."),
 ])
 def test_a_short_name_or_model_code_names_the_product(name, quote):
     from engine.answer import _names_product
 
     assert _names_product(quote, name, "skincare" if "Joseon" in name else "kitchen")
-    assert not _names_product("Others I have used and not had any issues with:", name, "kitchen")
+    assert not _names_product("Some others I've owned without any trouble:", name, "kitchen")
 
 
 def test_among_quotes_that_dont_name_the_product_one_giving_a_view_comes_first():
@@ -628,9 +627,9 @@ def test_failing_to_do_something_is_not_a_view():
 
 
 def test_a_quote_saying_the_opposite_of_what_was_asked_is_shown_last():
-    # Found reading b02, 10 Oct 2026: for "doesn't leave a white cast", the first pick's quote said "the Etude sunscreen
-    # does leave a white cast" (its writer recommends it anyway). Such a quote is shown only if nothing else is left.
-    against = mention("Etude sunscreen", "t1", weight=0.9, quote="The Etude sunscreen does leave a white cast, I still like it.")
+    # Found reading b02, 10 Oct 2026: for "doesn't leave a white cast", the first pick's quote said the Etude sunscreen
+    # does leave one (its writer recommends it anyway). Such a quote is shown only if nothing else is left.
+    against = mention("Etude sunscreen", "t1", weight=0.9, quote="Etude's sunscreen does leave a white cast, but I like it anyway.")
     others = [mention("Etude sunscreen", "t2", weight=0.5, quote="The Etude sunscreen has no white cast at all."),
               mention("Etude sunscreen", "t1", weight=0.4, quote="Etude sunscreen doesn't leave a white cast on me.")]
     items = [against, *others]
@@ -649,8 +648,8 @@ def test_a_quote_saying_the_opposite_of_what_was_asked_is_shown_last():
     ("fragrance-free", "It has a strong scent.", True),
     ("fragrance-free", "It's fragrance-free and gentle.", False),
     ("fragrance-free", "No scent at all.", False),
-    # Something that lasts (10 Oct 2026, b06: an Oxo pick's first quote had its kettle "stop working after about a
-    # year"): failing within days, weeks, months or up to three years is the opposite; after ten years isn't.
+    # Something that lasts (10 Oct 2026, b06: an Oxo pick's first quote had its kettle failing within about a
+    # year): failing within days, weeks, months or up to three years is the opposite; after ten years isn't.
     ("lasting", "My kettle stopped working after about a year.", True),
     ("lasting", "Mine died within 6 months.", True),
     ("lasting", "After two years it broke.", True),
@@ -660,9 +659,8 @@ def test_a_quote_saying_the_opposite_of_what_was_asked_is_shown_last():
     ("lasting", "I've had it for 12 years and it still works.", False),
     ("lasting", "It broke in nicely after a few weeks of use.", False),  # breaking in a pan is using it, not failing
     ("lasting", "Stopped working after 13 years of daily use.", False),
-    # Saying outright it won't last (b10 at 16 threads: "happy with my Greenpan ceramic coated skillets, but they are
-    # not buy it for life").
-    ("lasting", "Nice enough pans, but they are not buy it for life.", True),
+    # Saying outright it won't last (b10 at 16 threads: a writer happy with their ceramic pans said they weren't BIFL).
+    ("lasting", "Decent pans, though they're not buy it for life.", True),
     ("lasting", "Great pan, it just doesn't last.", True),
     ("lasting", "Non-stick coatings won't last, whatever you pay.", True),
     ("lasting", "It isn't BIFL but it's cheap.", True),

@@ -67,7 +67,7 @@ def test_a_comment_talks_about_a_need_by_its_words_and_their_longer_forms():
     assert met(BEGINNER_SENSITIVE, "I started with the 0.2% and was new to retinoids.") == ("beginner",)
     assert met(BEGINNER_SENSITIVE, "My first retinoid, perfect for sensitive skin.") == ("beginner", "sensitive")
     assert met(BEGINNER_SENSITIVE, "It cleared my skin in a month.") == ()
-    assert met(BEGINNER_SENSITIVE, "I used the first one for 9 months.") == ()  # "first" alone is too loose
+    assert met(BEGINNER_SENSITIVE, "We finished the first bottle in 9 months.") == ()  # "first" alone is too loose
 
 
 def test_a_warning_about_the_need_talks_about_it_too():

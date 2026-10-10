@@ -101,7 +101,7 @@ Tricky cases:
   - Yes, even with complaints: recommend ("love it, but it dries me out in winter", "a bit pricey", "not quite
     enough moisture", "irritates me a bit, but it's my second pick"). Pick the quote that shows the judgement.
   - No: warn. It harmed them ("clogged my pores and burned"), it failed or broke early, they returned it or
-    stopped using it, or they'd buy something else next time ("if I had my time again I'd spend a little extra").
+    stopped using it, or they'd buy something else next time ("next time I'd pay a bit more for a better one").
   - A failure after a long life (Noemi, 9 Oct 2026) is recommend, with evidence "long-term use" and the tag
     "mentions flaws": "my Panasonic died after 14 years" in a thread about kettles that last praises how long it
     lasted. A failure after a short life stays warn ("died after a year").

@@ -697,8 +697,8 @@ OPPOSITE_QUOTE_PATTERNS["lasting"] = (rf"\b{_FAILED}\b[^.!?]{{0,40}}?\b{_SOON}\b
                                       r"|now))")
 
 # --- Quotes that say what the writer thinks come first (10 Oct 2026) ---
-# Decided by Claude, reported to Noemi. Found in b09: "I have a Baratza Encore, Timemore C2 (at work), and a 1zpresso
-# JX." named the C2 but gave no view. Among credible quotes, those that name the product and hold one of these words
+# Decided by Claude, reported to Noemi. Found in b09: a writer listing the grinders they own (an Encore, a C2 at work
+# and a JX) named the C2 but gave no view. Among credible quotes, those that name the product and hold one of these words
 # (a view or an experience, whole words, any case) come first; then those that only name it; then the rest.
 QUOTE_VIEW_WORDS = ("great", "love", "loved", "loving", "recommend", "recommended", "best", "solid", "bargain",
                     "amazing", "excellent", "fantastic", "good", "perfect", "happy", "favourite", "favorite", "works",

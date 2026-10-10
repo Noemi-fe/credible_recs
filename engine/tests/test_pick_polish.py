@@ -332,7 +332,7 @@ def test_tips_that_say_the_same_thing(a, b):
     ("descale every 6 months", "descale with citric acid"),  # one word in common is not enough
     ("grind at 12 for pour-over", "grind at 20 for pour-over"),  # different numbers: different advice
     ("wash it with soap", "don't wash it with soap"),  # one says the opposite
-    ("don't boil water and brew tea in the same vessel", "descale by boiling white vinegar in the water"),
+    ("keep separate kettles for plain water and for tea", "descale by boiling white vinegar in the water"),
     ("hand wash only", "use filtered water"),
 ])
 def test_tips_that_say_different_things(a, b):

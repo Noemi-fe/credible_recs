@@ -181,9 +181,9 @@ def test_a_part_that_would_be_cut_too_short_is_left_out_and_a_cut_quote_is_close
 
 
 def test_a_quote_written_over_several_lines_is_shown_on_one():
-    shown = shown_from_ours({"picks": [pick(1, "Kettle", quotes=[quote("I am on my second one in 13 years,\nSo not "
-                                                                          "BIFL, but I bought it again.")])]})
-    assert '"I am on my second one in 13 years, So not BIFL, but I bought it again."' in shown
+    shown = shown_from_ours({"picks": [pick(1, "Kettle", quotes=[quote("This is my second one in 12 years,\nso "
+                                                                          "not quite BIFL, but I'd buy it again.")])]})
+    assert '"This is my second one in 12 years, so not quite BIFL, but I\'d buy it again."' in shown
 
 
 def test_a_link_in_our_quote_becomes_a_label_as_for_every_tool():

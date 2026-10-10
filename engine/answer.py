@@ -436,8 +436,8 @@ def _most_credible_first(items: Iterable[ScoredMention]) -> list[ScoredMention]:
 def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
                   needs: tuple[Need, ...] = ()) -> list[ScoredMention]:
     """The most credible first, but the quotes that name their product and give a view before those that only name
-    it, those before the ones that only give a view, and those before the rest; within each, those whose comment talks about what the request asks for first (10 Oct 2026: out of context, "Others I have used and not had any issues with:" says
-    little, and so does "I have a Baratza Encore, Timemore C2 and a JX"), and a quote that says the opposite of what
+    it, those before the ones that only give a view, and those before the rest; within each, those whose comment talks about what the request asks for first (10 Oct 2026: out of context, a line that only opens a list of other products the
+    writer has had no trouble with says little, and so does a list of the grinders someone owns), and a quote that says the opposite of what
     the request asks ("does leave a white cast") after every other (_says_the_opposite). Each is still shown when
     there's room."""
     ordered = _most_credible_first(items)
