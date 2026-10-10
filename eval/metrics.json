@@ -60,8 +60,8 @@
     "ai_quotes_found": {
       "value": 1.0,
       "target": null,
-      "count": 4034,
-      "out_of": 4034,
+      "count": 4476,
+      "out_of": 4476,
       "threads": null
     },
     "request_outcome": {
