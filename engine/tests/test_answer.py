@@ -250,6 +250,23 @@ def test_at_most_three_kinds_strongest_advice_first():
     assert [item.kind for item in look_for] == ["B kind", "D kind", "C kind"]
 
 
+def test_one_comment_backing_two_kinds_is_shown_once():
+    # Found on the demo, 10 Oct 2026: "Then get either a cast iron or a carbon steel fry pan." was the strongest note
+    # for both kinds, so the same quote showed twice. A kind takes another credible note when it has one; otherwise
+    # the two kinds share one line.
+    shared = "Then get either a cast iron or a carbon steel fry pan."
+    both = [note("Cast iron", comment="c_both", quote=shared, weight=0.9),
+            note("Carbon steel", comment="c_both", quote=shared, weight=0.8)]
+    look_for = write_answer(rank_products([], "kitchen", both), bodies_for(*both)).look_for
+    assert [(item.kind, item.advice) for item in look_for] == [("Cast iron or Carbon steel", wording.LOOK_FOR)]
+    assert [item.quote.text for item in look_for] == [shared]
+
+    own = note("Carbon steel", comment="c_own", quote="Carbon steel heats up fast and lasts forever.", weight=0.5)
+    look_for = write_answer(rank_products([], "kitchen", both + [own]), bodies_for(*both, own)).look_for
+    # Carbon steel now has more support, so it comes first, with its own note; cast iron keeps the shared one.
+    assert [(item.kind, item.quote.text) for item in look_for] == [("Carbon steel", own.quote), ("Cast iron", shared)]
+
+
 def test_a_kind_note_that_fails_verification_gives_way_to_the_next():
     fake, real = note("Japanese gyuto", quote=FAKE), note("Japanese gyuto", weight=0.5)
     bodies = bodies_for(real) | {fake.comment_id: "Something else entirely."}
@@ -546,6 +563,18 @@ def test_never_two_care_tips_with_the_same_tip():
 def test_a_care_tip_written_as_a_sentence_is_shown_as_it_is():
     answer, _ = with_care(own=[care_tip("Hand wash only!")])
     assert answer.picks[0].care[0].tip == "Hand wash only!"
+
+
+def test_a_tip_that_only_repeats_its_quote_is_shown_once():
+    # Found on the demo, 10 Oct 2026: "Plastic or silicone utensils only." was the tip and the whole quote, so it
+    # showed twice. A tip that says nothing more than its quote is left empty: the quote alone is the tip.
+    same = care_tip("plastic or silicone utensils only", quote="Plastic or silicone utensils only.")
+    other = care_tip("hand wash only")
+    answer, _ = with_care(own=[same, other])
+    assert [c.tip for c in answer.picks[0].care] == ["", "Hand wash only."]
+    text = render_markdown(answer)
+    assert text.count("Plastic or silicone utensils only.") == 1
+    assert '- "Plastic or silicone utensils only." (' in text and "- **Hand wash only.** " in text
 
 
 def test_a_care_quote_that_fails_is_dropped_never_shown_and_the_next_tip_takes_its_place():

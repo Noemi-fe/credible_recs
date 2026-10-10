@@ -54,6 +54,7 @@ asked Claude to decide wording and report it).
 """
 
 import dataclasses
+import re
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import date
@@ -212,7 +213,7 @@ NOT_CHECKED = ShownAvailability(AVAILABILITY_UNKNOWN, None, None, None, None)
 class ShownCareTip:
     """A care tip as shown under a pick: the tip in a few words, and the quote that backs it (verified)."""
 
-    tip: str  # the AI's few plain words, as a short sentence: "Descale every 6 months."
+    tip: str  # the AI's few plain words, as a short sentence: "Descale every 6 months."; "" when the quote says just that
     quote: ShownQuote
 
 
@@ -416,7 +417,8 @@ def _care_tips(tips: CareTips | None, check: _QuoteCheck) -> list[ShownCareTip]:
         for item in group:
             quote = check.first([item], 1)
             if quote:
-                shown.append(ShownCareTip(_as_sentence(item.tip), quote[0]))
+                tip = _as_sentence(item.tip)
+                shown.append(ShownCareTip("" if _same_words(tip, quote[0].text) else tip, quote[0]))
                 break
     return shown
 
@@ -505,19 +507,39 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck) -> list[LookFor]:
     """Up to LOOK_FOR_NOTES kinds, strongest credible advice first, each with its strongest verified note.
 
     A kind with positive support gets "Look for" and a recommending note; negative support gets "Avoid" and a
-    warning note. A kind whose support is zero (no credible notes, or as many for as against) gives no advice.
+    warning note. A kind whose support is zero (no credible notes, or as many for as against) gives no advice. A
+    comment already shown for another kind's same advice isn't shown again (10 Oct 2026): the kind takes its next
+    credible note, or, with none, joins that line ("Look for: Cast iron or Carbon steel").
     """
     items: list[LookFor] = []
+    item_notes: list[list[KindNote]] = []  # each item's kind's credible notes, strongest first
     for kind in sorted(ranking.kinds, key=lambda k: -abs(k.support)):  # sorted keeps ties in the ranking's order
         if len(items) == LOOK_FOR_NOTES:
             break
         if kind.support == 0:
             continue
         stance, advice = ("recommend", LOOK_FOR) if kind.support > 0 else ("warn", AVOID)
-        notes = [n for n in ranking.kind_notes if n.kind_key == kind.key and n.stance == stance and is_credible(n)]
-        quote = check.first(_most_credible_first(notes), 1)
+        notes = _most_credible_first([n for n in ranking.kind_notes
+                                      if n.kind_key == kind.key and n.stance == stance and is_credible(n)])
+        used = {item.quote.comment_id: i for i, item in enumerate(items) if item.advice == advice}
+        quote = check.first([n for n in notes if n.comment_id not in used], 1)
+        if not quote:
+            # Only comments already shown back this kind: the kind holding one takes another note if it has one,
+            # and this kind takes the shared comment; otherwise the two kinds share one line.
+            for shared in check.first([n for n in notes if n.comment_id in used], len(notes)):
+                holder = used[shared.comment_id]
+                other = check.first([n for n in item_notes[holder] if n.comment_id not in used], 1)
+                if other:
+                    items[holder].quote, quote = other[0], [shared]
+                    break
+            else:
+                shared = check.first([n for n in notes if n.comment_id in used], 1)
+                if shared:
+                    items[used[shared[0].comment_id]].kind += f" or {kind.name}"
+                continue
         if quote:
             items.append(LookFor(kind.name, advice, quote[0]))
+            item_notes.append(notes)
     return items
 
 
@@ -680,7 +702,8 @@ def _render_pick(pick: Pick) -> list[str]:
         lines += [NO_DOWNSIDES, ""]
     if pick.care:
         lines += [f"**{CARE_HEADING}**", ""]
-        lines += [f"- **{item.tip}** {_render_quote_inline(item.quote)}" for item in pick.care] + [""]
+        lines += [f"- **{item.tip}** {_render_quote_inline(item.quote)}" if item.tip
+                  else f"- {_render_quote_inline(item.quote)}" for item in pick.care] + [""]
     lines += [f"**{BREAKDOWN_HEADING}**", ""] + _render_breakdown(pick.score, pick.breakdown) + [""]
     return lines
 
@@ -709,6 +732,13 @@ def _one_line(text: str) -> str:
 def _render_quote_block(quote: ShownQuote) -> list[str]:
     credit = " · ".join(quote.badges + (f"[{LINK_TEXT}]({quote.url})",))
     return [f'> "{_one_line(quote.text)}"', f"> — {credit}", ""]
+
+
+def _same_words(a: str, b: str) -> bool:
+    """Whether two texts say the same words, capitals and punctuation aside (10 Oct 2026: a care tip that only
+    repeats its quote is shown once)."""
+    words = lambda text: re.findall(r"[a-z0-9]+", text.lower())
+    return words(a) == words(b)
 
 
 def _render_quote_inline(quote: ShownQuote) -> str:

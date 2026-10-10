@@ -387,7 +387,7 @@ h1, h2, h3, h4 { line-height: 1.25; }
     if (!tips || !tips.length) return [];
     return [el("h4", {}, WORDING.care_heading),
       el("ul", { class: "quotes care" }, ...tips.map((item) => el("li", {},
-        el("p", { class: "lead" }, el("strong", {}, item.tip)),
+        item.tip ? el("p", { class: "lead" }, el("strong", {}, item.tip)) : null,
         quoteBlock(item.quote))))];
   }
 
