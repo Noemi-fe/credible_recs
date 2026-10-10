@@ -10,6 +10,7 @@
 - Answers come from a library of saved threads, filled automatically by command, with AI steps run in batches (Noemi, 7 Oct 2026). Keep revisiting data sources and the no-API choice; the aim is a tool that can cover new products on its own.
 - No Claude API key for now (Noemi, 7 Oct 2026). AI steps run through Claude Code under Noemi's existing plan, in batches, with results saved as files the engine reads. Revisit at module 3; the aim is to keep it this way.
 - Keys live in .env. Never commit secrets.
+- Tests never reach the network or a real Bright Data client (engine/tests/conftest.py blocks both since 11 Oct 2026, after a test spent 255 real records): give every client a fake.
 - Ask Noemi before changing scoring weights, categories or anything user-facing.
 
 # Project notes
