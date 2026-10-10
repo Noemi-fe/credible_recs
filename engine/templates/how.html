@@ -74,8 +74,8 @@ h3.group { font-size: 15px; text-transform: uppercase; letter-spacing: .04em; co
   {{communities}}
   <p>We read the threads through third-party services that collect public Reddit posts. People can delete or change what they wrote, so we keep checking:</p>
   <ul>
-    <li>Just before a quote is shown, we read that comment again on Reddit itself. If it was deleted, removed or edited so the quote isn't there any more, the quote is never shown.</li>
-    <li>An answer only uses threads we have re-read on Reddit in the last {{config:LIVE_CHECK_SHOWN_DAYS}} days.</li>
+    <li>Just before a quote is shown, we read that comment again on Reddit itself. If it was deleted, removed or edited so the quote isn't there any more, or if Reddit can't be reached to check it, the quote is never shown, and that comment's opinion no longer counts.</li>
+    <li>When answers are made without that live check (in our offline tests), they only use threads we have re-read on Reddit in the last {{config:LIVE_CHECK_SHOWN_DAYS}} days.</li>
     <li>Every {{config:LIBRARY_REFRESH_DAYS}} days the saved threads are read again, and comments deleted since then are dropped.</li>
   </ul>
 </section>
