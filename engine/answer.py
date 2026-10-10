@@ -455,14 +455,14 @@ def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
 
 def _says_something(m: ScoredMention) -> bool:
     """Whether a quote names its product, gives a view, or points at it ("it", "this one", "mine"). One that does none
-    of these ("yea no I'm just gonna stick with my cast iron lol.", b08, 10 Oct 2026: the comment named the pans in a
-    sentence the AI didn't quote) is shown only to make up a pick's MIN_QUOTES_PER_PICK."""
+    of these (b08, 10 Oct 2026: a one-line reply about sticking with cast iron was shown for two vintage brands; the
+    comment named them in a sentence the AI didn't quote) is shown only to make up a pick's MIN_QUOTES_PER_PICK."""
     text = " ".join(re.findall(r"[a-z0-9']+", m.quote.lower().replace("’", "'")))
     return (_names_product(m.quote, m.product_name, m.category) or _gives_a_view(m.quote)
             or bool(_POINTS_AT_IT.search(text)))
 
 
-# Words that point at a product already named ("I wouldn't be on my 9th bottle of it", "I've had mine for 6 years").
+# Words that point at a product already named ("I'm on my fifth bottle of it", "I've had mine for years").
 _POINTS_AT_IT = re.compile(r"(?<![a-z0-9'])(?:it|it's|its|this|these|those|them|they|they're|mine|ones?)(?![a-z0-9'])")
 # "I like it", "I really like the gel": a view. Not "I would like" (a wish), nor "like" alone ("features like a scale").
 _I_LIKE = re.compile(r"\bi (?:(?:really|also|do|still|just|honestly|actually|genuinely|personally|definitely"
@@ -685,7 +685,7 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
 def _another_types_advice(kind: str, notes: list[KindNote], category: str, product_type: str | None) -> bool:
     """Whether a skincare kind's advice is about another type of product: its name and notes name another skincare type
     (engine.sources.mentions_product) and never the one asked for. Found in b04, 10 Oct 2026: a moisturiser answer
-    showed "Look for: AHA" and "Look for: BHA" ("I usually try exfoliants with bha"). A note tying it to the type asked
+    showed "Look for: AHA" and "Look for: BHA", whose notes were about exfoliants. A note tying it to the type asked
     for keeps it ("an AHA lotion fixed my dry legs"). Kitchen kinds always stay: another kind of pan is a real
     alternative ("Look for: cast iron" for a PFAS-free non-stick pan)."""
     if category != "skincare" or not product_type:

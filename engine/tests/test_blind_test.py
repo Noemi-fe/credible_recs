@@ -188,11 +188,11 @@ def test_a_quote_written_over_several_lines_is_shown_on_one():
 
 def test_a_link_in_our_quote_becomes_a_label_as_for_every_tool():
     # FORMAT.md rule 4 ("Links become labels"), the same for all three: found in b10's OXO quote, 10 Oct 2026 (late),
-    # which showed "[OXO non-stick pan](https://a.co/d/02YAzKiV)".
-    shown = shown_from_ours({"picks": [pick(1, "OXO pan", quotes=[
-        quote("America’s Test Kitchen recommends the [OXO non-stick pan](https://a.co/d/02YAzKiV)."),
+    # which showed a markdown link to a shop.
+    shown = shown_from_ours({"picks": [pick(1, "Acme pan", quotes=[
+        quote("A cooking magazine recommends the [Acme pan](https://example.com/acme-pan)."),
         quote("See <https://example.com/review> for the test.")])]})
-    assert '"America’s Test Kitchen recommends the OXO non-stick pan (source)."' in shown
+    assert '"A cooking magazine recommends the Acme pan (source)."' in shown
     assert '"See (source) for the test."' in shown
     assert "http" not in shown
 

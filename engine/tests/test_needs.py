@@ -102,7 +102,7 @@ def test_a_need_of_its_own_word_finds_its_longer_forms():
 
 
 @pytest.mark.parametrize("body", [
-    "I love the stratia soft touch AHA with mandelic acid. It’s the only one that doesn’t cause a rash for me",
+    "This is the only exfoliant that doesn't cause a rash for me.",
     "It didn't irritate my skin at all.",
     "No redness or stinging, even on my cheeks.",
 ])

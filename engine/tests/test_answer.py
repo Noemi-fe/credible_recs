@@ -248,16 +248,15 @@ def moisturiser_case(aha_quotes: tuple[str, ...]):
 
 
 def test_skincare_advice_about_another_type_of_product_is_left_out():
-    # Found in b04, 10 Oct 2026: "fragrance-free moisturiser for very dry skin in winter" showed "Look for: AHA" ("get
-    # an AHA such as glycolic acid") and "Look for: BHA" ("I usually try exfoliants with bha"): advice on exfoliants. In
-    # skincare each type does its own job, so a kind whose name and notes name another type and never the one asked
-    # for gives no advice here.
-    ranking, bodies = moisturiser_case(("Get an AHA such as glycolic acid.", "I usually try exfoliants with aha."))
+    # Found in b04, 10 Oct 2026: "fragrance-free moisturiser for very dry skin in winter" showed "Look for: AHA" and
+    # "Look for: BHA", whose notes were about exfoliants. In skincare each type does its own job, so a kind whose name
+    # and notes name another type and never the one asked for gives no advice here.
+    ranking, bodies = moisturiser_case(("Try an AHA like glycolic acid for smoothness.", "Exfoliants with aha work best for me."))
     shown = [item.kind for item in write_answer(ranking, bodies, "moisturiser").look_for]
     assert "AHA" not in shown and {"Squalane oil", "Ceramides"} <= set(shown)
     assert "AHA" in [item.kind for item in write_answer(ranking, bodies, "exfoliant").look_for]  # its own type
     # A note that ties it to the type asked for keeps it: an AHA lotion is a moisturiser.
-    ranking, bodies = moisturiser_case(("An AHA lotion fixed my rough dry legs.", "Get an AHA such as glycolic acid."))
+    ranking, bodies = moisturiser_case(("An AHA lotion fixed my rough dry legs.", "Try an AHA like glycolic acid for smoothness."))
     assert "AHA" in [item.kind for item in write_answer(ranking, bodies, "moisturiser").look_for]
 
 
@@ -464,7 +463,7 @@ def test_the_quote_shown_is_the_comments_own_text_with_entities_read():
     ("It is *really* gentle and ~~cheap~~ affordable, great.", "It is really gentle and cheap affordable, great."),
     ("My __favourite__ kettle, set to 80_C every day.", "My favourite kettle, set to 80_C every day."),
     # Escaped marks (Reddit's editor writes "\\*lot\\*"): shown as the word, never "\\lot\\" (b10, 10 Oct 2026, late).
-    ("Love my Acme pans for eggs, I eat a \\*lot\\* of eggs.", "Love my Acme pans for eggs, I eat a lot of eggs."),
+    ("I cook a \\*lot\\* of eggs in my Acme pan.", "I cook a lot of eggs in my Acme pan."),
 ])
 def test_a_quote_is_shown_without_the_writers_bold_or_italics(body, shown):
     # Found in the blind-test dry run, 10 Oct 2026: Reddit's "**" showed as stars on the web card and in the blind
@@ -490,7 +489,7 @@ def test_quotes_that_name_the_product_are_shown_before_ones_that_dont():
 
 def test_among_equally_clear_quotes_those_about_what_was_asked_come_first():
     # Found reading the blind-test view, 10 Oct 2026 (late): "electric kettle that lasts 10+ years" showed the Fellow
-    # Stagg EKG with a much-upvoted comment about "the little metal part on the handle" first, though three of its
+    # Stagg EKG with a much-upvoted comment about a detail of its handle first, though three of its
     # writers spoke of long-term use. Among quotes as clear as each other (naming the product and giving a view), those
     # that themselves talk about what the request asks for come first (the quote, not the rest of its comment: a
     # lukewarm "fine for barrier protection" from a comment about dry skin elsewhere doesn't jump ahead).
@@ -511,10 +510,10 @@ def test_among_equally_clear_quotes_those_about_what_was_asked_come_first():
 
 
 def test_a_quote_that_neither_names_the_product_nor_gives_a_view_only_makes_up_the_minimum():
-    # Found reading b08, 10 Oct 2026: "yea no I'm just gonna stick with my cast iron lol." was shown for Griswold and
-    # for Wagner (the comment named them in a sentence the AI didn't quote). It says nothing about either, so such a
+    # Found reading b08, 10 Oct 2026: a one-line reply about sticking with cast iron was shown for Griswold and for
+    # Wagner (the comment named them in a sentence the AI didn't quote). It says nothing about either, so such a
     # quote is shown only when the pick would otherwise have fewer than MIN_QUOTES_PER_PICK.
-    empty = mention("Acme skillet", "t1", weight=0.9, quote="yea no I'm just gonna stick with my cast iron lol.")
+    empty = mention("Acme skillet", "t1", weight=0.9, quote="nah, I'll keep using my cast iron, ha.")
     full = [mention("Acme skillet", "t2", weight=0.5, quote="My Acme has lasted 6 years."),
             mention("Acme skillet", "t1", weight=0.4, quote="Love it, works great every single morning.")]
     items = [empty, *full]
@@ -536,8 +535,8 @@ def test_a_plural_of_the_brand_names_the_product():
 
 
 @pytest.mark.parametrize("name, quote", [
-    ("Prequel's Gleanser", "Prequel gleanser with salicylic acid, its outstanding."),  # the name's possessive
-    ("All-Clad non-stick pans", "I have some 2 year old All clad non stick pans."),  # a hyphen written as a space
+    ("Prequel's Gleanser", "Prequel gleanser is great for oily skin."),  # the name's possessive
+    ("All-Clad non-stick pans", "I bought some All clad non stick pans last year."),  # a hyphen written as a space
     ("Prequel Gleanser", "Prequel's cleanser is my favourite."),  # the quote's possessive
 ])
 def test_a_brand_written_slightly_differently_still_names_the_product(name, quote):
@@ -547,9 +546,9 @@ def test_a_brand_written_slightly_differently_still_names_the_product(name, quot
 
 
 @pytest.mark.parametrize("quote, says_something", [
-    ("yea no I'm just gonna stick with my cast iron lol.", False),
-    ("Well, I wouldn't be on my 9th bottle of it if I didn't like it", True),  # points at it
-    ("I've had mine for 6 year, and only minimal signs of wear on the burrs.", True),
+    ("nah, I'll keep using my cast iron, ha.", False),
+    ("I'm on my fifth bottle of it already", True),  # points at it
+    ("I've had mine for ages and only minimal wear on the burrs.", True),
     ("I like either of the gel or the lotion for a daily moisturizer.", True),  # "I like" is a view
     ("I would like a new pan for my birthday.", False),  # wanting isn't a view
 ])
@@ -606,7 +605,7 @@ def test_a_quote_saying_the_opposite_of_what_was_asked_is_shown_last():
     ("fragrance-free", "No scent at all.", False),
     # Something that lasts (10 Oct 2026, b06: an Oxo pick's first quote had its kettle "stop working after about a
     # year"): failing within days, weeks, months or up to three years is the opposite; after ten years isn't.
-    ("lasting", "Had a kettle stop working after about a year and contacted them.", True),
+    ("lasting", "My kettle stopped working after about a year.", True),
     ("lasting", "Mine died within 6 months.", True),
     ("lasting", "After two years it broke.", True),
     ("lasting", "The lid cracked within the first year.", True),
@@ -617,14 +616,14 @@ def test_a_quote_saying_the_opposite_of_what_was_asked_is_shown_last():
     ("lasting", "Stopped working after 13 years of daily use.", False),
     # Saying outright it won't last (b10 at 16 threads: "happy with my Greenpan ceramic coated skillets, but they are
     # not buy it for life").
-    ("lasting", "I have been happy with my skillets, but they are not buy it for life.", True),
+    ("lasting", "Nice enough pans, but they are not buy it for life.", True),
     ("lasting", "Great pan, it just doesn't last.", True),
     ("lasting", "Non-stick coatings won't last, whatever you pay.", True),
     ("lasting", "It isn't BIFL but it's cheap.", True),
     ("lasting", "This one is BIFL, no question.", False),
     ("lasting", "Mine didn't last.", True),
-    # A short life said plainly (b06 at 16 threads: "each kettle lasts somewhere around 2 years").
-    ("lasting", "In my cafe each kettle lasts somewhere around 2 years which I think is impressive.", True),
+    # A short life said plainly (b06 at 16 threads: a cafe owner's kettles lasting about two years each).
+    ("lasting", "At our office each kettle lasts around 2 years.", True),
     ("lasting", "Mine lasted about 3 years.", True),
     ("lasting", "These pans last a few months at most.", True),
     ("lasting", "It has lasted 2 years so far and is still going strong.", False),
