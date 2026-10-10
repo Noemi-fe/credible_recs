@@ -146,7 +146,8 @@
    "shop": "Dermalogica UK",
    "url": "https://www.dermalogica.co.uk/products/daily-microfoliant",
    "checked_on": "2026-10-10",
-   "available": true
+   "available": true,
+   "note": "the usual full size, in stock (checked again on 10 Oct); Dermalogica UK also sells 40g at £45.00, a 13g travel size at £19.00 and a 74g refill at £58.00"
   },
   {
    "product": "The Ordinary Mandelic Acid 10% + HA 30ml",
@@ -1064,6 +1065,159 @@
    "checked_on": "2026-10-10",
    "available": true,
    "note": "Bodum's UK store sells two gooseneck electric kettles, both in stock: the BISTRO 1.0L (11940-16UK) at £74.90 and the MELIOR 0.8L (11883-259UK) at £69.90, so no one price fits the name; Lawsons sells the BISTRO at £59.99 in a sale (RRP £74.99)"
+  },
+  {
+   "product": "AESTURA Atobarrier 365 Cream 80ml",
+   "category": "skincare",
+   "price": 26.0,
+   "currency": "GBP",
+   "shop": "YesStyle",
+   "url": "https://www.yesstyle.com/en/info.html/pid.1128134342",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "the 2024 version, 80ml, £26.00 including VAT, in stock; search results show Sephora UK at £26.00 too (45ml £17.00), but its pages block automated reading; no listing found at Skin Cupid, Pure Seoul, Boots, Lookfantastic or Cult Beauty"
+  },
+  {
+   "product": "Prequel Gleanser Non-Drying Glycerin Cleanser",
+   "category": "skincare",
+   "price": 20.0,
+   "currency": "GBP",
+   "shop": "Space NK",
+   "url": "https://www.spacenk.com/uk/skincare/cleansers/cleanser/gleanser-UK200065348.html",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "Prequel itself ships only within the US (its shipping policy: it does not ship internationally or to freight forwarders), but Space NK's UK site sells it (as Prequel Gleanser) at £20.00, in stock by its page data; the page doesn't give the size"
+  },
+  {
+   "product": "CeraVe Hydrating Cleanser 236ml",
+   "category": "skincare",
+   "price": 12.5,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/cerave-hydrating-cleanser-with-hyaluronic-acid-for-normal-to-dry-skin-236ml/11798700/",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "its full price (RRP £12.50), in stock; £9.38 in a sale on 10 Oct; also sold in 88ml and 473ml"
+  },
+  {
+   "product": "CeraVe Hydrating Cream-to-Foam Cleanser 236ml",
+   "category": "skincare",
+   "price": 14.5,
+   "currency": "GBP",
+   "shop": "Cult Beauty",
+   "url": "https://www.cultbeauty.co.uk/p/cerave-hydrating-cream-to-foam-cleanser-with-amino-acids-for-normal-to-dry-skin-236ml/12667341/",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "in stock"
+  },
+  {
+   "product": "Beauty Pie Super Retinol line",
+   "category": "skincare",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Beauty Pie",
+   "url": "https://www.beautypie.com/products/super-retinol-ceramide-boost-anti-aging-serum",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "Beauty Pie's encapsulated retinol range, sold to anyone in the UK (members pay less): the Super Retinol + Vitamin C Night Renewal Moisturizer (1% Retinol Complex, 50 ml) at £40.00 and the Super Retinol Ceramide-Boost Anti-Aging Face Serum (3% Retinol Complex, 50 ml) at £52.00 (£25.00 for members, membership £59 a year); so no one price fits the name"
+  },
+  {
+   "product": "SOME BY MI Retinol Intense Reactivating Serum 30ml",
+   "category": "skincare",
+   "price": 35.9,
+   "currency": "GBP",
+   "shop": "Pure Seoul",
+   "url": "https://pureseoul.co.uk/products/some-by-mi-retinol-intense-reactivating-serum",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "regular price, in stock, dispatched from its London warehouse; Beauty Bay also lists it, but its page couldn't be read automatically"
+  },
+  {
+   "product": "Fellow Corvo EKG",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Clumsy Goat",
+   "url": "https://clumsygoat.co.uk/products/fellow-corvo-ekg-coffee-pouring-kettle-matte-black",
+   "checked_on": "2026-10-10",
+   "available": false,
+   "note": "the original Corvo EKG (not the Pro), UK 3-pin plug: Clumsy Goat still lists it (£149.00, was £175.00) but both colours are sold out; Fellow's own Corvo EKG page now offers only the Corvo EKG Pro and Pro Studio Edition, and its store has only spare kettle bodies for the original; Borough Kitchen's Corvo EKG pages are gone (404), and Borough Kitchen and Coffee Beautiful sell only the Corvo EKG Pro (£159 to £195); so no UK shop checked sells the original new"
+  },
+  {
+   "product": "Knock Aergrind",
+   "category": "kitchen",
+   "price": 150.0,
+   "currency": "GBP",
+   "shop": "Made By Knock",
+   "url": "https://madebyknock.com/products/aergrind",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Aergrind"
+   ],
+   "note": "made in Scotland and sold by its maker: RRP £150 UK including VAT (£125 + VAT), the version with the Blue Dot pour-over burr; on 10 Oct an introductory offer lists it from £110, with taxes added at checkout; black dispatches from 23 Oct, burnt gold is available, rich purple is sold out"
+  },
+  {
+   "product": "Wüsthof Classic Chef's Knife 20cm",
+   "category": "kitchen",
+   "price": 145.0,
+   "currency": "GBP",
+   "shop": "Wüsthof UK",
+   "url": "https://wusthof.co.uk/products/classic-chefs-knife-20-cm-8-inch",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Wusthof Classic 8\" Chef Knife",
+    "Wusthof Classic 8\" Cook's Knife"
+   ],
+   "note": "Classic Chef's Knife 20 cm | 8 inch, black (1040100120): £145.00 regular price, available, other handle colours the same price; John Lewis sells it as the WÜSTHOF Classic Stainless Steel Cook's Knife, 20cm, also £145.00 and in stock; so it is over b07's £100"
+  },
+  {
+   "product": "Tojiro DP Gyuto 210mm",
+   "category": "kitchen",
+   "price": 115.0,
+   "currency": "GBP",
+   "shop": "Cutting Edge Knives",
+   "url": "https://cuttingedgeknives.co.uk/products/tojiro-dp-gyuto-210mm",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "VG10 core, £115.00; out of stock on 10 Oct but still listed; no other UK shop found with a price"
+  },
+  {
+   "product": "Dermalogica Daily Milkfoliant 74g",
+   "category": "skincare",
+   "price": 65.0,
+   "currency": "GBP",
+   "shop": "Dermalogica UK",
+   "url": "https://www.dermalogica.co.uk/products/daily-milkfoliant",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "the usual full size, in stock; also a 13g size at £19.00 and a 74g refill at £58.00"
+  },
+  {
+   "product": "Dr Dennis Gross peel pads",
+   "category": "skincare",
+   "price": 93.0,
+   "currency": "GBP",
+   "shop": "Cult Beauty",
+   "url": "https://www.cultbeauty.co.uk/p/dr-dennis-gross-skincare-alpha-beta-universal-daily-peel-pack-of-30/10891434/",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "writers never name a version, so this is the Alpha Beta Universal Daily Peel, 30 treatments (the maker's version for first-time peel users): £93.00, in stock; the versions don't all cost the same: Ultra Gentle (the maker's version for sensitive skin, once called Extra Gentle) is £93.00 for 30 and Extra Strength £89.00 for 30; 5 treatments cost £21.00 and 60 treatments £150.00 to £153.00"
+  },
+  {
+   "product": "Paula's Choice Skin Perfecting 2% BHA Exfoliating Toner 118ml",
+   "category": "skincare",
+   "price": 36.0,
+   "currency": "GBP",
+   "shop": "Cult Beauty",
+   "url": "https://www.cultbeauty.co.uk/p/paula-s-choice-skin-perfecting-2-bha-liquid-exfoliant-118ml/11174178/",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Paula's Choice Skin Perfecting 2% BHA Liquid Exfoliant"
+   ],
+   "note": "the maker's UK name for its Skin Perfecting 2% BHA Liquid Exfoliant: 118ml £36.00, in stock; a 30ml trial size is £13.00, 236ml £61.00 (out of stock) and 10 pads £16.00; Paula's Choice UK also shows £36.00"
   }
  ]
 }

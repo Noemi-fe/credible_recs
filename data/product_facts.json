@@ -341,7 +341,8 @@
    "product_type": "exfoliant",
    "facts": {
     "strength": "gentle",
-    "prescription_only": false
+    "prescription_only": false,
+    "maker_warns_sensitive": false
    },
    "sources": [
     "https://www.dermalogica.co.uk/products/daily-microfoliant"
@@ -441,10 +442,12 @@
    "category": "skincare",
    "product_type": "moisturiser",
    "facts": {
-    "fragrance_free": true
+    "fragrance_free": true,
+    "texture": "light"
    },
    "sources": [
-    "https://www.imju.jp/shop/g/g4903335696855/"
+    "https://www.imju.jp/shop/g/g4903335696855/",
+    "https://www.skincupid.co.uk/products/hatomugi-skin-conditioning-milk-230ml"
    ],
    "checked_on": "2026-10-10"
   },
@@ -967,6 +970,119 @@
     "https://www.cosrx.com/products.json",
     "https://www.lookfantastic.com/p/cosrx-salicylic-acid-daily-gentle-cleanser-170g/11540297/",
     "https://www.skincupid.co.uk/products/salicylic-acid-daily-gentle-cleanser-150ml"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Prequel Gleanser Non-Drying Glycerin Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.prequelskin.com/products/gleanser-non-drying-glycerin-cleanser"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "CeraVe Hydrating Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {
+    "fragrance_free": true,
+    "texture": "light"
+   },
+   "sources": [
+    "https://www.cerave.co.uk/skincare/cleansers/hydrating-cleanser",
+    "https://www.lookfantastic.com/p/cerave-hydrating-cleanser-with-hyaluronic-acid-for-normal-to-dry-skin-236ml/11798700/"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "CeraVe Hydrating Cream-to-Foam Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {
+    "fragrance_free": true,
+    "texture": "rich"
+   },
+   "sources": [
+    "https://www.cerave.co.uk/skincare/cleansers/hydrating-cream-to-foam-cleanser",
+    "https://www.cerave.com/skincare/cleansers/hydrating-cream-to-foam-cleanser"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Beauty Pie Super Retinol line",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "strength": "gentle",
+    "prescription_only": false,
+    "maker_warns_sensitive": false
+   },
+   "sources": [
+    "https://www.beautypie.com/products/super-retinol-ceramide-boost-anti-aging-serum",
+    "https://www.beautypie.com/products/super-retinol-vitamin-c-night-renewal-moisturiser",
+    "https://www.beautypie.com/products/youth-boosting-super-retinol-trio"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "SOME BY MI Retinol Intense Reactivating Serum",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "strength": "gentle",
+    "prescription_only": false,
+    "fragrance_free": false
+   },
+   "sources": [
+    "https://en.somebymi.com/product/retinol-intense-reactivating-serum-30ml/303/category/380/display/1/",
+    "https://pureseoul.co.uk/products/some-by-mi-retinol-intense-reactivating-serum"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Dualit Classic Kettle",
+   "category": "kitchen",
+   "product_type": "electric kettle",
+   "facts": {
+    "plastic_free_inside": false
+   },
+   "sources": [
+    "https://www.dualit.com/products/classic-kettle"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Vollrath Wear-Ever nonstick fry pans",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "non_stick": true,
+    "pfas_free": false
+   },
+   "sources": [
+    "https://www.vollrathfoodservice.com/products/smallwares/cookware-bakeware/wear-ever-cookware/wear-ever-fry-pans/t4010",
+    "https://www.vollrathfoodservice.com/products/smallwares/cookware-bakeware/wear-ever-cookware/wear-ever-fry-pans/672310",
+    "https://www.vollrathfoodservice.com/products/smallwares/cookware-bakeware/wear-ever-cookware/wear-ever-fry-pans/z4010",
+    "https://www.vollrathfoodservice.com/products/smallwares/cookware-bakeware/wear-ever-cookware/wear-ever-fry-pans/s4010"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Dermalogica Daily Milkfoliant",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "strength": "gentle",
+    "prescription_only": false,
+    "maker_warns_sensitive": false
+   },
+   "sources": [
+    "https://www.dermalogica.co.uk/products/daily-milkfoliant"
    ],
    "checked_on": "2026-10-10"
   }
