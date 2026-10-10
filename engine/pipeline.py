@@ -137,6 +137,7 @@ from engine.product_facts import (
     NotSuited,
     ProductFacts,
     conflicts,
+    find_brand_facts,
     find_facts,
     hard_requirements,
     unconfirmed,
@@ -553,11 +554,21 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
     requirements = hard_requirements(query)
     kept, cautions = [], {}
     by_entry: dict[tuple[str, str], int] = {}  # a facts entry (name, category) -> where its product is in `kept`
+    type_words = _type_words(query.product_type)
     for group in groups:
-        if group.loose and requirements:
-            result.left_out_not_suited.append(NotSuited(group.name, uncheckable_brand_reason(requirements)))
-            continue
-        facts = None if group.loose else find_facts(group.name, group.category, product_facts, query.product_type)
+        if group.loose:
+            # A facts entry under the brand's own name speaks for the brand pick (late on 10 Oct 2026: GreenPan's FAQ
+            # says all its pans are PFAS-free); without one, a whole brand can't be checked.
+            facts = find_brand_facts(set(group.names) | {uk_name(n) for n in group.names}, group.category,
+                                     product_facts, type_words, query.product_type)
+            if facts is None:
+                if requirements:
+                    result.left_out_not_suited.append(NotSuited(group.name, uncheckable_brand_reason(requirements)))
+                else:
+                    kept.append(group)
+                continue
+        else:
+            facts = find_facts(group.name, group.category, product_facts, query.product_type)
         found = conflicts(query, facts)
         hard = [c.reason for c in found if c.hard]
         if hard:
@@ -570,9 +581,9 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
             continue
         if entry is not None:
             by_entry[entry] = len(kept)
-        kept.append(replace(group, name=facts.product) if facts is not None else group)
+        kept.append(replace(group, name=facts.product, loose=False) if facts is not None else group)
         soft = [c.reason for c in found if not c.hard]
-        missing = [] if group.loose else unconfirmed(query, facts)
+        missing = unconfirmed(query, facts)
         if missing:
             soft.append(unconfirmed_note(missing))
         if soft:

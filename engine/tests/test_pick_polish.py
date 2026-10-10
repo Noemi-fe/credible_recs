@@ -163,6 +163,32 @@ def test_a_brand_pick_is_left_out_when_the_request_has_a_hard_requirement(tmp_pa
     assert names(result) == ["GreenPan Valencia frying pan", "Misen frying pan"]
 
 
+def test_a_brand_level_facts_entry_lets_a_brand_pick_be_checked(tmp_path):
+    # Found in b10, 10 Oct 2026 (late): GreenPan's own FAQ says all its pans are PFAS-free (the facts entry "GreenPan"),
+    # yet "GreenPan (their frying pans)" was left out as a whole brand that can't be checked, splitting GreenPan's
+    # support. Like a price entry under a brand's name (OXO's kettles), a facts entry under the brand's name, alone or
+    # followed only by the product type's words, speaks for the brand: its facts are checked like a product's, and the
+    # pick is shown under the entry's name. An entry for one of its products doesn't.
+    from engine.tests.test_product_facts import known
+
+    library = pan_library(tmp_path)
+    run = lambda facts: answer_request("non-stick frying pan without PFAS", library_dir=library, prices=[],
+                                       product_facts=facts, today=TODAY)
+    clean = run([known("Tramontina", category="kitchen", product_type="frying pan", pfas_free=True, non_stick=True)])
+    assert "Tramontina" in names(clean) and TRAMONTINA not in [n.name for n in clean.left_out_not_suited]
+    tramontina = next(p for p in clean.answer.picks if p.name == "Tramontina")
+    assert tramontina.cautions == []
+    unconfirmed = run([known("Tramontina frying pans", category="kitchen", product_type="frying pan", pfas_free=True)])
+    pick = next(p for p in unconfirmed.answer.picks if p.name == "Tramontina frying pans")
+    assert pick.cautions == ["Note: we couldn't confirm it's non-stick."]
+    coated = run([known("Tramontina", category="kitchen", product_type="frying pan", pfas_free=False)])
+    assert NotSuited(TRAMONTINA, "it isn't PFAS-free") in coated.left_out_not_suited
+    one_pan = run([known("Tramontina Professional frying pan", category="kitchen", product_type="frying pan",
+                         pfas_free=True, non_stick=True)])
+    assert NotSuited(TRAMONTINA, "a whole brand can't be checked for PFAS or a non-stick coating") in (
+        one_pan.left_out_not_suited)
+
+
 def test_a_brand_pick_stays_when_the_request_has_no_hard_requirement(tmp_path):
     result = answer_request("frying pan that lasts", library_dir=pan_library(tmp_path), prices=[], product_facts=[],
                             today=TODAY)

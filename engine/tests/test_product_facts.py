@@ -442,6 +442,9 @@ def test_a_soft_clash_keeps_the_product_and_shows_a_caution_under_its_pick(tmp_p
 
 
 def test_a_brand_pick_has_no_single_product_so_its_facts_are_never_looked_up(tmp_path):
+    # Changed on purpose late on 10 Oct 2026: an entry under a brand's own name now speaks for its brand pick
+    # (engine.product_facts.find_brand_facts; GreenPan's FAQ), but only for the entry's own product type. This "Lodge"
+    # entry is about frying pans, so the cast iron skillet pick still isn't checked by it.
     lodge = known("Lodge", category="kitchen", product_type="frying pan", induction=False)
     result = answer_request("cast iron skillet for induction that lasts", library_dir=skillet_library(tmp_path),
                             prices=[], product_facts=[lodge], today=TODAY)

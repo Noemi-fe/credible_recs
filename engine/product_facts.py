@@ -228,6 +228,29 @@ def request_asks(query: ParsedQuery) -> tuple[str, ...]:
     return tuple(dict.fromkeys(asks))
 
 
+def find_brand_facts(names: Iterable[str], category: str, product_facts: Iterable[ProductFacts],
+                     type_words: Iterable[str] = (), product_type: str | None = None) -> ProductFacts | None:
+    """The facts entry under a brand pick's brand, or None (decided by Claude late on 10 Oct 2026).
+
+    `names` are the names writers used for the brand. An entry is under the brand's name when its words are exactly
+    those of one of them, or those followed only by `type_words` (the request's product type: "GreenPan", "Darto
+    pans"): it speaks for all the brand's products of that type, as GreenPan's FAQ does ("all our pans are
+    PFAS-free"). An entry for one of the brand's products ("Tramontina Professional frying pan") isn't, nor one of
+    another product type than the request's (`product_type`): an entry about a brand's frying pans says nothing about
+    its cast iron skillets. When several fit, the most recently checked."""
+    aliases = known_aliases().get(category, {})
+    brand = {tuple(product_words(name, aliases)) for name in names} - {()}
+    extra = {word for words in type_words for word in product_words(words, aliases)}
+
+    def under_brand(entry: ProductFacts) -> bool:
+        words = tuple(product_words(entry.product, aliases))
+        return any(words[:len(b)] == b and set(words[len(b):]) <= extra for b in brand)
+
+    fits = [entry for entry in product_facts if entry.category == category and under_brand(entry)
+            and (product_type is None or entry.product_type == product_type)]
+    return max(fits, key=lambda entry: entry.checked_on) if fits else None
+
+
 def conflicts(query: ParsedQuery, facts: ProductFacts | None) -> list[Conflict]:
     """Every way a product's facts don't suit the request, in the rule table's order; [] when they all suit it, or when
     nothing is known (`facts` None). A rule counts when the request asks for one of its "asks" and the product's fact
