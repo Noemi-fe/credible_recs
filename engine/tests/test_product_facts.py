@@ -209,8 +209,13 @@ def test_the_vocabulary_is_small_and_fits_module_1s_product_types():
     for product_type, facts in config.PRODUCT_FACTS_BY_TYPE.items():
         assert facts and set(facts) <= set(config.PRODUCT_FACT_VALUES), product_type
         if types[product_type] == "skincare":
-            assert {"fragrance_free", "prescription_only"} <= set(facts), product_type
-    assert config.PRODUCT_FACTS_BY_TYPE["retinoid"] == ("fragrance_free", "prescription_only", "strength")
+            assert {"fragrance_free", "maker_warns_sensitive"} <= set(facts), product_type
+    # Only retinoids and exfoliants come in prescription versions and strengths (10 Oct 2026).
+    assert config.PRODUCT_FACTS_BY_TYPE["retinoid"] == ("fragrance_free", "prescription_only", "strength",
+                                                        "maker_warns_sensitive")
+    assert config.PRODUCT_FACTS_BY_TYPE["exfoliant"] == config.PRODUCT_FACTS_BY_TYPE["retinoid"]
+    assert [t for t, facts in config.PRODUCT_FACTS_BY_TYPE.items() if "prescription_only" in facts] == [
+        "exfoliant", "retinoid"]
     assert set(config.PRODUCT_FACTS_BY_TYPE["sunscreen"]) >= {"white_cast", "finish", "filters"}
     assert config.PRODUCT_FACTS_BY_TYPE["frying pan"] == ("pfas_free", "non_stick", "induction")
     assert config.PRODUCT_FACT_VALUES["strength"] == ("gentle", "moderate", "strong")
@@ -221,7 +226,9 @@ def test_the_vocabulary_is_small_and_fits_module_1s_product_types():
 def test_every_rule_reads_a_fact_of_the_vocabulary_and_asks_for_something_a_request_can_say():
     can_ask = set(SKIN_TYPES) | set(MUST_HAVES) | set(config.NEEDS) | set(config.PRODUCT_FACT_REQUEST_WORDS)
     for name, rule in RULES.items():
-        assert set(rule) == {"asks", "fact", "value", "hard", "reason"}, name
+        assert {"asks", "fact", "value", "hard", "reason"} <= set(rule) <= {"asks", "fact", "value", "hard",
+                                                                           "reason", "confirm"}, name
+        assert isinstance(rule.get("confirm", True), bool), name
         values = config.PRODUCT_FACT_VALUES[rule["fact"]]
         assert any(type(value) is type(rule["value"]) and value == rule["value"] for value in values), name
         assert rule["asks"] and set(rule["asks"]) <= can_ask, name
@@ -357,7 +364,7 @@ def test_each_rule_can_be_switched_between_leaving_out_and_a_caution(monkeypatch
     (BEGINNER, ["strength", "prescription_only"]),
     ("sunscreen for oily skin that doesn't leave a white cast, under £20", ["white_cast"]),  # no texture for sunscreen
     ("fragrance-free moisturiser for very dry skin in winter", ["fragrance_free"]),
-    ("gentle cleanser for acne-prone skin that won't strip my skin", ["prescription_only", "texture"]),
+    ("gentle cleanser for acne-prone skin that won't strip my skin", ["texture"]),  # no prescription cleansers
     ("non-stick frying pan without PFAS that actually lasts", ["pfas_free", "non_stick"]),
     ("electric kettle that lasts 10+ years", []),
     ("first chef's knife under £100 for a home cook", []),  # no facts for knives yet
@@ -471,8 +478,10 @@ def test_products_not_suited_are_counted_and_cautions_reach_the_cards(tmp_path, 
     assert data["left_out"]["not_suited"] == 1
     cards = {pick["name"]: pick for pick in data["answer"]["picks"]}
     assert "Vanicream Facial Moisturiser" not in cards
-    assert cards["CeraVe Moisturising Cream"]["cautions"] == [RICH_CAUTION]
-    assert cards["La Roche-Posay Toleriane Double Repair"]["cautions"] == []
+    # Neither entry says whether it is fragrance-free, so both get the note (10 Oct 2026), after any soft clash.
+    unsure = "Note: we couldn't confirm it's fragrance-free."
+    assert cards["CeraVe Moisturising Cream"]["cautions"] == [RICH_CAUTION, unsure]
+    assert cards["La Roche-Posay Toleriane Double Repair"]["cautions"] == [unsure]
 
 
 def test_the_page_counts_products_not_suited_and_draws_cautions_as_text():
@@ -591,3 +600,108 @@ def test_command_line_todo_explains_itself_when_used_wrongly(tmp_path, capsys, a
     assert product_facts.main(argv, questions_path=tmp_path / "none.json", library_dir=tmp_path, facts=[],
                               prices=[]) == 2
     assert "python -m engine.product_facts todo" in capsys.readouterr().out
+
+
+# --- What a maker says, and facts we couldn't confirm (decided by Claude, 10 Oct 2026) ---
+# The Ordinary's Mandelic Acid is gentle by strength, but its maker's page says not to use it on sensitive skin: that
+# warning is a fact of its own, which leaves the product out of a request for sensitive skin. And a pick whose facts
+# can't be confirmed for a hard requirement ("OXO non-stick pan": OXO sells PTFE and ceramic pans) stays, with a note
+# saying what we couldn't confirm, rather than being left out (answers would empty) or shown silently (misleading).
+
+from engine.product_facts import NotSuited, hard_requirements, unconfirmed, unconfirmed_note  # noqa: E402
+from engine.tests.test_pick_polish import pan_library  # noqa: E402
+
+SENSITIVE = "gentle exfoliant for sensitive skin"
+PAN = "non-stick frying pan without PFAS"
+MANDELIC = known("Mandelic Acid Serum", product_type="exfoliant", strength="gentle", maker_warns_sensitive=True)
+
+
+def test_a_makers_warning_against_sensitive_skin_is_a_fact_skincare_can_have(tmp_path):
+    assert config.PRODUCT_FACT_VALUES["maker_warns_sensitive"] == (True, False)
+    for product_type in ("exfoliant", "retinoid", "moisturiser", "sunscreen", "cleanser"):
+        assert "maker_warns_sensitive" in config.PRODUCT_FACTS_BY_TYPE[product_type]
+    assert "maker_warns_sensitive" not in config.PRODUCT_FACTS_BY_TYPE["frying pan"]
+    path = write_facts(tmp_path, [entry(product="Mandelic Acid Serum", product_type="exfoliant",
+                                        facts={"strength": "gentle", "maker_warns_sensitive": True})])
+    [loaded] = load_product_facts(path)
+    assert loaded.facts["maker_warns_sensitive"] is True
+
+
+def test_a_product_its_maker_says_isnt_for_sensitive_skin_doesnt_suit_a_request_for_sensitive_skin():
+    [found] = conflicts(parse_query(SENSITIVE), MANDELIC)
+    assert (found.rule, found.hard) == ("maker warns sensitive", True)
+    assert found.reason == RULES["maker warns sensitive"]["reason"] == "its maker says not to use it on sensitive skin"
+    assert conflicts(parse_query("exfoliant for oily skin"), MANDELIC) == []
+    assert conflicts(parse_query("gentle exfoliant"), MANDELIC) == []  # gentle isn't sensitive skin
+
+
+def test_the_maker_warning_leaves_the_product_out_of_a_sensitive_skin_answer(tmp_path):
+    lib = write_library(tmp_path, ("Gentle exfoliant for sensitive skin?", "Which exfoliant do you use?"),
+                        {"Mandelic Acid Serum": 4, "Lactic Acid Toner": 3, "PHA Toner": 3, "Azelaic Acid Gel": 3})
+    result = answer_request(SENSITIVE, library_dir=lib, prices=[], product_facts=[MANDELIC], today=TODAY)
+    assert "Mandelic Acid Serum" not in names(result.answer.picks) and len(result.answer.picks) == 3
+    assert result.left_out_not_suited == [NotSuited("Mandelic Acid Serum",
+                                                    "its maker says not to use it on sensitive skin")]
+    oily = answer_request("exfoliant for oily skin", library_dir=lib, prices=[], product_facts=[MANDELIC], today=TODAY)
+    assert names(oily.answer.picks)[0] == "Mandelic Acid Serum"
+
+
+def test_a_makers_warning_not_known_is_never_a_requirement():
+    # Most makers say nothing either way, so not knowing it never leaves a brand pick out, adds a note, or asks the
+    # researcher to look it up: it is recorded when a maker's page says it.
+    query = parse_query("moisturiser for sensitive skin")
+    assert hard_requirements(query) == [] and unconfirmed(query, None) == []
+    assert "maker_warns_sensitive" not in facts_that_matter(parse_query(SENSITIVE))
+
+
+def test_the_requirements_whose_facts_arent_known_are_not_confirmed():
+    query = parse_query(PAN)
+    assert unconfirmed(query, None) == ["PFAS", "not non-stick"]
+    pan = dict(category="kitchen", product_type="frying pan")
+    assert unconfirmed(query, known("Half Pan", pfas_free=True, **pan)) == ["not non-stick"]
+    assert unconfirmed(query, known("Full Pan", pfas_free=True, non_stick=True, **pan)) == []
+    # A fact known to clash is a reason to leave the product out, not something unconfirmed.
+    assert unconfirmed(query, known("Teflon Pan", pfas_free=False, non_stick=True, **pan)) == []
+    assert unconfirmed(parse_query("frying pan that lasts"), None) == []
+    assert unconfirmed(parse_query(BEGINNER), known("Mid Retinol", strength="moderate", prescription_only=False)) == []
+    assert unconfirmed(parse_query(BEGINNER), None) == ["too strong", "prescription only"]
+
+
+def test_the_note_for_facts_not_confirmed_wording_decided_by_claude():
+    assert config.UNCONFIRMED_NOTE == "we couldn't confirm {facts}"
+    assert unconfirmed_note(["PFAS"]) == "we couldn't confirm it's PFAS-free"
+    assert unconfirmed_note(["PFAS", "not non-stick"]) == "we couldn't confirm it's PFAS-free or that it's non-stick"
+    assert unconfirmed_note(["PFAS", "not non-stick", "not induction"]) == (
+        "we couldn't confirm it's PFAS-free, that it's non-stick or that it works on an induction hob")
+    assert unconfirmed_note(["too strong", "prescription only"]) == (
+        "we couldn't confirm it's gentle enough for beginners or sensitive skin or that it's sold without a "
+        "prescription")
+
+
+def test_every_requirement_has_words_for_the_note():
+    required = {name for name, rule in RULES.items() if rule["hard"] and rule.get("confirm", True)}
+    assert required == set(config.UNCONFIRMED_FACT_NAMES)
+
+
+def test_a_pick_whose_required_facts_arent_known_keeps_its_place_with_a_note(tmp_path):
+    lib = pan_library(tmp_path)
+    greenpan = known("GreenPan Valencia frying pan", category="kitchen", product_type="frying pan", pfas_free=True,
+                     non_stick=True)
+    without = answer_request(PAN, library_dir=lib, prices=[], product_facts=[], today=TODAY)
+    result = answer_request(PAN, library_dir=lib, prices=[], product_facts=[greenpan], today=TODAY)
+    assert names(result.answer.picks) == names(without.answer.picks) == ["GreenPan Valencia frying pan",
+                                                                         "Misen frying pan"]
+    picks = {pick.name: pick for pick in result.answer.picks}
+    note = "Note: we couldn't confirm it's PFAS-free or that it's non-stick."
+    assert picks["GreenPan Valencia frying pan"].cautions == [] and picks["Misen frying pan"].cautions == [note]
+    assert note in result.text()
+    lasts = answer_request("frying pan that lasts", library_dir=lib, prices=[], product_facts=[], today=TODAY)
+    assert all(pick.cautions == [] for pick in lasts.answer.picks)
+
+
+def test_a_soft_clash_comes_before_the_note(tmp_path):
+    lib = moisturiser_library(tmp_path)
+    result = answer_request("fragrance-free moisturiser for oily skin", library_dir=lib, prices=[],
+                            product_facts=[RICH], today=TODAY)
+    cerave = next(pick for pick in result.answer.picks if pick.name == "CeraVe Moisturising Cream")
+    assert cerave.cautions == [RICH_CAUTION, "Note: we couldn't confirm it's fragrance-free."]

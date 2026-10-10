@@ -413,7 +413,7 @@ LIVE_CHECK_RECORD_RESERVE = 300
 # "available"), so it isn't kept twice.
 PRODUCT_FACT_VALUES: dict[str, tuple] = {
     "fragrance_free": (True, False),  # no added fragrance or perfume
-    "prescription_only": (True, False),  # sold in the UK only on a prescription (Tazorac, tretinoin)
+    "prescription_only": (True, False),  # sold in the UK only on a prescription (Tazorac, tretinoin, Differin)
     "strength": ("gentle", "moderate", "strong"),  # how strong a retinoid or an exfoliant is
     "white_cast": (True, False),  # a sunscreen that leaves a white cast on the skin
     "finish": ("matte", "natural", "dewy"),  # how a sunscreen looks once on
@@ -423,13 +423,18 @@ PRODUCT_FACT_VALUES: dict[str, tuple] = {
     "pfas_free": (True, False),  # a pan with no PFAS ("forever chemicals", such as PTFE / Teflon) in its coating
     "non_stick": (True, False),  # a pan with a non-stick coating (ceramic or PTFE); seasoned steel or iron isn't
     "induction": (True, False),  # works on an induction hob
+    "maker_warns_sensitive": (True, False),  # the maker's own page says not to use it on sensitive skin (10 Oct 2026)
 }
 # The facts each product type (engine/query.py, PRODUCT_TYPES) can have. Every skincare product can say whether it is
-# fragrance-free and prescription-only; a type not listed (a chef knife, a coffee grinder) has no facts yet.
-PRODUCT_FACTS_FOR_SKINCARE = ("fragrance_free", "prescription_only")
+# fragrance-free and whether its maker warns against sensitive skin; only retinoids and exfoliants, the skincare sold in
+# prescription versions (tretinoin, adapalene, azelaic acid 15%+) and in strengths, can be prescription-only or have a
+# strength (10 Oct 2026: a moisturiser's "prescription_only: false" was always true and only asked researchers for busy
+# work). A type not listed (a chef knife, a coffee grinder) has no facts yet.
+PRODUCT_FACTS_FOR_SKINCARE = ("fragrance_free", "maker_warns_sensitive")
+PRODUCT_FACTS_FOR_TREATMENTS = ("fragrance_free", "prescription_only", "strength", "maker_warns_sensitive")
 PRODUCT_FACTS_BY_TYPE: dict[str, tuple[str, ...]] = {
-    "exfoliant": PRODUCT_FACTS_FOR_SKINCARE + ("strength",),
-    "retinoid": PRODUCT_FACTS_FOR_SKINCARE + ("strength",),
+    "exfoliant": PRODUCT_FACTS_FOR_TREATMENTS,
+    "retinoid": PRODUCT_FACTS_FOR_TREATMENTS,
     "sunscreen": PRODUCT_FACTS_FOR_SKINCARE + ("white_cast", "finish", "filters"),
     "moisturiser": PRODUCT_FACTS_FOR_SKINCARE + ("texture",),
     "cleanser": PRODUCT_FACTS_FOR_SKINCARE + ("texture",),
@@ -470,6 +475,12 @@ PRODUCT_FACT_RULES: dict[str, dict] = {
                       "reason": "it doesn't work on an induction hob"},
     "rich texture": {"asks": ("oily", "acne-prone"), "fact": "texture", "value": "rich", "hard": False,
                      "reason": "its texture is rich, which can feel heavy on oily or acne-prone skin"},
+    # Decided by Claude, 10 Oct 2026: The Ordinary's Mandelic Acid is gentle by strength, but its maker's page says not
+    # to use it on sensitive skin. "confirm": False: most makers say nothing either way, so this fact is recorded only
+    # when a maker's page says it, and not knowing it is never a requirement (no note, no brand pick left out, not
+    # asked for by `python -m engine.product_facts todo`). Every other rule is one to confirm.
+    "maker warns sensitive": {"asks": ("sensitive",), "fact": "maker_warns_sensitive", "value": True, "hard": True,
+                              "confirm": False, "reason": "its maker says not to use it on sensitive skin"},
 }
 # Words of a request that ask for something module 1 doesn't find on its own: regular expressions, found at the start
 # of a word in the request (lowercased). "doesn't leave a white cast" asks for no white cast (module 1 finds only "no"
@@ -508,6 +519,7 @@ HARD_REQUIREMENT_NAMES: dict[str, str] = {
     "not non-stick": "a non-stick coating",
     "plastic": "plastic inside",
     "not induction": "working on an induction hob",
+    "maker warns sensitive": "a maker's warning against sensitive skin",
 }
 #
 # 3. Care tips most writers agree on come first (engine/care_tips.py, tips_by_agreement). Two tips say the same thing
@@ -532,3 +544,22 @@ CARE_TIP_REPAIR_WORDS = (
     r"epoxy",
     r"repair(s|ed|ing)?",
 )
+
+# --- Facts we couldn't confirm (10 Oct 2026) ---
+# Decided by Claude (the orchestrator) on 10 Oct 2026, as Noemi asked, and reported to her. When a request has a hard
+# requirement (engine.product_facts.hard_requirements: "without PFAS") and a pick's facts don't say whether it meets it
+# ("OXO non-stick pan": OXO sells both PTFE and ceramic pans), the pick keeps its place and shows a note under it:
+# "Note: we couldn't confirm it's PFAS-free or that it's non-stick." Leaving such picks out would empty most answers;
+# showing them silently would mislead. A note never changes the ranking. The wording is shown to users: each rule's
+# words fit "we couldn't confirm ..."; several are joined with commas, a last "or", and "that" before all but the first.
+UNCONFIRMED_NOTE = "we couldn't confirm {facts}"
+UNCONFIRMED_FACT_NAMES: dict[str, str] = {
+    "too strong": "it's gentle enough for beginners or sensitive skin",
+    "prescription only": "it's sold without a prescription",
+    "fragrance": "it's fragrance-free",
+    "white cast": "it leaves no white cast",
+    "PFAS": "it's PFAS-free",
+    "not non-stick": "it's non-stick",
+    "plastic": "no plastic touches the water",
+    "not induction": "it works on an induction hob",
+}

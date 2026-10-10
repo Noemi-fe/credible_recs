@@ -117,6 +117,8 @@ from engine.product_facts import (
     conflicts,
     find_facts,
     hard_requirements,
+    unconfirmed,
+    unconfirmed_note,
     load_product_facts,
     uncheckable_brand_reason,
 )
@@ -440,7 +442,8 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
     whose entry doesn't give the facts a rule reads, is kept as it is. A brand pick has no single product, so it is
     never looked up: when the request has a hard requirement its product type can have (engine.product_facts.
     hard_requirements), it is left out and named on the result, since a whole brand can't be checked (10 Oct 2026);
-    otherwise it is kept.
+    otherwise it is kept. A kept product whose facts don't say whether it meets a hard requirement gets a note after its
+    soft reasons: "we couldn't confirm it's PFAS-free" (engine.product_facts.unconfirmed, 10 Oct 2026).
     """
     requirements = hard_requirements(query)
     kept, cautions = [], {}
@@ -448,14 +451,17 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
         if group.loose and requirements:
             result.left_out_not_suited.append(NotSuited(group.name, uncheckable_brand_reason(requirements)))
             continue
-        found = [] if group.loose else conflicts(query, find_facts(group.name, group.category, product_facts,
-                                                                   query.product_type))
+        facts = None if group.loose else find_facts(group.name, group.category, product_facts, query.product_type)
+        found = conflicts(query, facts)
         hard = [c.reason for c in found if c.hard]
         if hard:
             result.left_out_not_suited.append(NotSuited(group.name, "; ".join(hard)))
             continue
         kept.append(group)
         soft = [c.reason for c in found if not c.hard]
+        missing = [] if group.loose else unconfirmed(query, facts)
+        if missing:
+            soft.append(unconfirmed_note(missing))
         if soft:
             cautions[group.key] = soft
     return kept, cautions

@@ -49,8 +49,7 @@
    "facts": {
     "white_cast": false,
     "filters": "chemical",
-    "fragrance_free": false,
-    "prescription_only": false
+    "fragrance_free": false
    },
    "sources": [
     "https://www.boots.com/biore-uv-aqua-rich-watery-essence-j-beauty-sunscreen-spf-50-50ml-10356353"
@@ -64,13 +63,14 @@
    "facts": {
     "filters": "mineral",
     "fragrance_free": false,
-    "prescription_only": false
+    "finish": "matte"
    },
    "sources": [
     "https://www.yesstyle.com/en/etude-sunprise-airy-finish-55ml/info.html/pid.1039258908",
-    "https://sokoglam.com/products/etude-sunprise-mild-airy-finish-sun-milk"
+    "https://sokoglam.com/products/etude-sunprise-mild-airy-finish-sun-milk",
+    "https://int.etude.com/shop/category/sun-care/sun-care-all/sunprise-mild-airy-finish-sun-milk-spf-50-pa-55ml/"
    ],
-   "checked_on": "2026-10-09"
+   "checked_on": "2026-10-10"
   },
   {
    "product": "Biore Perfect Milk (blue bottle)",
@@ -79,8 +79,7 @@
    "facts": {
     "white_cast": false,
     "filters": "hybrid",
-    "fragrance_free": false,
-    "prescription_only": false
+    "fragrance_free": false
    },
    "sources": [
     "https://www.kao-kirei.com/ja/item/khg/bioresarasarauv/4901301303844/",
@@ -95,8 +94,7 @@
    "facts": {
     "white_cast": false,
     "filters": "hybrid",
-    "fragrance_free": true,
-    "prescription_only": false
+    "fragrance_free": true
    },
    "sources": [
     "https://eltamd.com/products/uv-clear-broad-spectrum-spf-46"
@@ -109,12 +107,14 @@
    "product_type": "sunscreen",
    "facts": {
     "filters": "hybrid",
-    "prescription_only": false
+    "white_cast": false,
+    "fragrance_free": true
    },
    "sources": [
-    "https://netshop.create-sd.co.jp/shop/g/g4987241164950/"
+    "https://netshop.create-sd.co.jp/shop/g/g4987241164950/",
+    "https://kyodonewsprwire.jp/prwfile/release/M000357/201703029438/_prw_PR1fl_MtuoO9fV.pdf"
    ],
-   "checked_on": "2026-10-09"
+   "checked_on": "2026-10-10"
   },
   {
    "product": "Altreno (tretinoin) Lotion 0.05%",
@@ -164,8 +164,7 @@
    "product_type": "moisturiser",
    "facts": {
     "fragrance_free": true,
-    "texture": "light",
-    "prescription_only": false
+    "texture": "light"
    },
    "sources": [
     "https://www.stratiaskin.com/products/lipid-gold"
@@ -178,8 +177,7 @@
    "product_type": "moisturiser",
    "facts": {
     "fragrance_free": true,
-    "texture": "rich",
-    "prescription_only": false
+    "texture": "rich"
    },
    "sources": [
     "https://www.yesstyle.com/en/illiyoon-ceramide-ato-concentrate-cream-230ml/info.html/pid.1134045493"
@@ -192,8 +190,7 @@
    "product_type": "moisturiser",
    "facts": {
     "fragrance_free": false,
-    "texture": "rich",
-    "prescription_only": false
+    "texture": "rich"
    },
    "sources": [
     "https://www.lookfantastic.com/p/10991447/"
@@ -206,8 +203,7 @@
    "product_type": "moisturiser",
    "facts": {
     "fragrance_free": true,
-    "texture": "rich",
-    "prescription_only": false
+    "texture": "rich"
    },
    "sources": [
     "https://global.oliveyoung.com/product/detail?prdtNo=GA240121573",
@@ -221,8 +217,7 @@
    "product_type": "moisturiser",
    "facts": {
     "fragrance_free": false,
-    "texture": "light",
-    "prescription_only": false
+    "texture": "light"
    },
    "sources": [
     "https://www.nahdionline.com/en-ae/its-skin-prestige-lotion-2x-ginseng-descargot-140ml/pdp/103396933"
@@ -234,8 +229,7 @@
    "category": "skincare",
    "product_type": "cleanser",
    "facts": {
-    "texture": "light",
-    "prescription_only": false
+    "texture": "light"
    },
    "sources": [
     "https://global.oliveyoung.com/product/detail?prdtNo=GA230619360"
@@ -247,21 +241,21 @@
    "category": "skincare",
    "product_type": "cleanser",
    "facts": {
-    "prescription_only": false
+    "fragrance_free": true
    },
    "sources": [
     "https://netshop.create-sd.co.jp/shop/g/g4971710579826/",
-    "https://www.yesstyle.com/en/kose-softymo-cleansing-oil-mini-speedy-60ml/info.html/pid.1136061259"
+    "https://www.yesstyle.com/en/kose-softymo-cleansing-oil-mini-speedy-60ml/info.html/pid.1136061259",
+    "https://kosecosmeport.co.jp/corporate/source/230727_03_release.pdf"
    ],
-   "checked_on": "2026-10-09"
+   "checked_on": "2026-10-10"
   },
   {
    "product": "ROUND LAB 1025 Dokdo Cleanser",
    "category": "skincare",
    "product_type": "cleanser",
    "facts": {
-    "texture": "light",
-    "prescription_only": false
+    "texture": "light"
    },
    "sources": [
     "https://www.yesstyle.com/en/round-lab-1025-dokdo-cleanser-150ml/info.html/pid.1074113181",
@@ -274,8 +268,7 @@
    "category": "skincare",
    "product_type": "cleanser",
    "facts": {
-    "texture": "light",
-    "prescription_only": false
+    "texture": "light"
    },
    "sources": [
     "https://www.yesstyle.com/en/haruharu-wonder-black-rice-moisture-5-5-soft-cleansing-gel-100ml/info.html/pid.1137997768"
@@ -287,8 +280,7 @@
    "category": "skincare",
    "product_type": "cleanser",
    "facts": {
-    "texture": "light",
-    "prescription_only": false
+    "texture": "light"
    },
    "sources": [
     "https://global.oliveyoung.com/product/detail?prdtNo=GA260338241",
@@ -338,6 +330,151 @@
     "https://www.all-clad.com/d3-stainless-3-ply-bonded-cookware-fry-pan-12-inch.html"
    ],
    "checked_on": "2026-10-09"
+  },
+  {
+   "product": "Dermalogica Daily Microfoliant",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "strength": "gentle",
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.dermalogica.co.uk/products/daily-microfoliant"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "The Ordinary Mandelic Acid 10% + HA",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "strength": "gentle",
+    "fragrance_free": true,
+    "prescription_only": false,
+    "maker_warns_sensitive": true
+   },
+   "sources": [
+    "https://theordinary.com/en-gb/mandelic-acid-10-ha-exfoliator-100429.html"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "AXIS-Y PHA Resurfacing Glow Peel",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "strength": "gentle",
+    "fragrance_free": true,
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.axis-y.com/products/pha-resurfacing-glow-peel-1"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Isntree Chestnut AHA 8% Clear Essence",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "strength": "moderate",
+    "fragrance_free": true,
+    "prescription_only": false
+   },
+   "sources": [
+    "https://sokoglam.com/products/isntree-clear-skin-8-aha-essence"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Dr.Different Vitalift-A Fortessimo 0.15% Retinal",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.johnlewis.com/dr-different-vitalift-a-fortessimo-0-15-retinal-30g/p115413476"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "K-Secret Seoul 1988 Retinal Lipisome 1%",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "strength": "gentle",
+    "fragrance_free": true,
+    "prescription_only": false
+   },
+   "sources": [
+    "https://ksecretcosmetics.com/products/seoul-1988-cream-retinal-liposome-1-fermented-rice"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Naturie Hatomugi Skin Conditioning Gel",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true,
+    "texture": "light"
+   },
+   "sources": [
+    "https://www.imju.jp/shop/g/g4903335695551/",
+    "https://www.skincupid.co.uk/products/hatomugi-gel-180g"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Naturie Hatomugi Skin Conditioning Milk",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.imju.jp/shop/g/g4903335696855/"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Beauty of Joseon Red Bean Water Gel",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true,
+    "texture": "light"
+   },
+   "sources": [
+    "https://beautyofjoseon.com/products/red-bean-water-gel"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Etude House Soon Jung 2x Barrier Intensive Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://int.etude.com/shop/category/skin-care/skin-care-all/soonjung-2x-barrier-intensive-cream-60ml/"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Isntree Green Tea Fresh Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {
+    "texture": "light"
+   },
+   "sources": [
+    "https://www.yesstyle.com/en/isntree-green-tea-fresh-cleanser/info.html/pid.1114914570"
+   ],
+   "checked_on": "2026-10-10"
   }
  ]
 }

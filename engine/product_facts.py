@@ -85,6 +85,8 @@ from engine.config import (
     PRODUCT_FACT_VALUES,
     PRODUCT_FACTS_BY_TYPE,
     PRODUCT_FACTS_TODO_CANDIDATES,
+    UNCONFIRMED_FACT_NAMES,
+    UNCONFIRMED_NOTE,
     THREAD_CATEGORIES,
 )
 from engine.match_products import known_aliases, product_words, same_product
@@ -250,11 +252,12 @@ def _has(facts: ProductFacts, fact: str, value) -> bool:
 
 def facts_that_matter(query: ParsedQuery) -> list[str]:
     """The facts a rule reads for what this request asks, among those its product type can have, in the rule table's
-    order: what to look up first for it. [] when no rule applies."""
+    order: what to look up first for it. [] when no rule applies. A rule marked "confirm": False (a maker's warning,
+    recorded only when a maker's page says it) is never asked for."""
     asks = set(request_asks(query))
     allowed = PRODUCT_FACTS_BY_TYPE.get(query.product_type or "", ())
     matter = [rule["fact"] for rule in PRODUCT_FACT_RULES.values()
-              if asks & set(rule["asks"]) and rule["fact"] in allowed]
+              if asks & set(rule["asks"]) and rule["fact"] in allowed and rule.get("confirm", True)]
     return list(dict.fromkeys(matter))
 
 
@@ -262,11 +265,30 @@ def hard_requirements(query: ParsedQuery) -> list[str]:
     """The hard rules (config.PRODUCT_FACT_RULES, "hard": True) this request asks for, in the rule table's order: the
     request asks for one of the rule's "asks", and the rule's fact is one its product type can have
     (config.PRODUCT_FACTS_BY_TYPE). [] when none applies: "first chef's knife" asks for a beginner's strength, but a
-    chef knife has no strength to check. A brand pick can't be checked for any of them (engine/pipeline.py)."""
+    chef knife has no strength to check. A rule marked "confirm": False (a maker's warning) is never a requirement. A
+    brand pick can't be checked for any of them (engine/pipeline.py)."""
     asks = set(request_asks(query))
     allowed = PRODUCT_FACTS_BY_TYPE.get(query.product_type or "", ())
     return [name for name, rule in PRODUCT_FACT_RULES.items()
-            if rule["hard"] and asks & set(rule["asks"]) and rule["fact"] in allowed]
+            if rule["hard"] and rule.get("confirm", True) and asks & set(rule["asks"]) and rule["fact"] in allowed]
+
+
+def unconfirmed(query: ParsedQuery, facts: ProductFacts | None) -> list[str]:
+    """The hard requirements of this request (hard_requirements) whose fact the product's entry doesn't give, in the
+    rule table's order: what we couldn't confirm about it (10 Oct 2026). All of them when nothing is known (`facts`
+    None); a fact known to clash is a reason to leave the product out (conflicts), not something unconfirmed."""
+    requirements = hard_requirements(query)
+    known = facts.facts if facts is not None else {}
+    return [name for name in requirements if PRODUCT_FACT_RULES[name]["fact"] not in known]
+
+
+def unconfirmed_note(rules: list[str]) -> str:
+    """The note under a pick whose facts couldn't confirm these requirements, in words for the shopper (config.
+    UNCONFIRMED_NOTE and UNCONFIRMED_FACT_NAMES): "we couldn't confirm it's PFAS-free or that it's non-stick"."""
+    named = [UNCONFIRMED_FACT_NAMES[rule] for rule in rules]
+    named = named[:1] + [f"that {words}" for words in named[1:]]
+    listed = ", ".join(named[:-1]) + " or " + named[-1] if len(named) > 1 else named[0]
+    return UNCONFIRMED_NOTE.format(facts=listed)
 
 
 def uncheckable_brand_reason(rules: list[str]) -> str:

@@ -132,6 +132,69 @@
    "url": "https://sigmacoffee.co.uk/products/1zpresso-j-manual-coffee-grinder",
    "checked_on": "2026-10-09",
    "available": false
+  },
+  {
+   "product": "Dermalogica Daily Microfoliant 74g",
+   "category": "skincare",
+   "price": 65.0,
+   "currency": "GBP",
+   "shop": "Dermalogica UK",
+   "url": "https://www.dermalogica.co.uk/products/daily-microfoliant",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "The Ordinary Mandelic Acid 10% + HA 30ml",
+   "category": "skincare",
+   "price": 7.4,
+   "currency": "GBP",
+   "shop": "The Ordinary (UK store)",
+   "url": "https://theordinary.com/en-gb/mandelic-acid-10-ha-exfoliator-100429.html",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "NATURIE Hatomugi Gel (180g)",
+   "category": "skincare",
+   "price": 18.0,
+   "currency": "GBP",
+   "shop": "Skin Cupid",
+   "url": "https://www.skincupid.co.uk/products/hatomugi-gel-180g",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Naturie Hatomugi Skin Conditioning Gel"
+   ]
+  },
+  {
+   "product": "Naturie - Hatomugi Skin Conditioning Milk",
+   "category": "skincare",
+   "price": 11.63,
+   "currency": "GBP",
+   "shop": "YesStyle",
+   "url": "https://www.yesstyle.com/en/naturie-hatomugi-skin-conditioning-milk/info.html/pid.1123187293",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "BEAUTY OF JOSEON Red Bean Water Gel (100ml)",
+   "category": "skincare",
+   "price": 18.0,
+   "currency": "GBP",
+   "shop": "Skin Cupid",
+   "url": "https://www.skincupid.co.uk/products/beauty-of-joseon-red-bean-water-gel-100ml",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "Baratza Encore Conical Burr Grinder",
+   "category": "kitchen",
+   "price": 139.95,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/baratza-encore-conical-burr-grinder/p114307240",
+   "checked_on": "2026-10-10",
+   "available": true
   }
  ]
 }
