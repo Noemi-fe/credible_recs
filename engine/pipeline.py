@@ -84,6 +84,7 @@ Command line:
     python -m engine.pipeline "<request>"     prints the answer, from data/library
 """
 
+import re
 import sys
 from collections import Counter
 from dataclasses import dataclass, field, replace
@@ -100,9 +101,11 @@ from engine.config import (
     LIVE_CHECK_ROUNDS,
     LIVE_CHECK_SHOWN_DAYS,
     NEED_MATCH_BOOST,
+    OTHER_NAME_NOTE,
     OTHER_TYPE_WORDS,
     PIPELINE_BRAND_PICKS,
     PIPELINE_MAX_THREADS,
+    UK_BRAND_NAMES,
 )
 from engine.contradictions import contradicting_writers
 from engine.credibility import VoiceScore, badges, mention_weight, score_evidence, score_voice
@@ -242,6 +245,7 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     kept_groups, price_checks = _within_budget(kept_groups, query, prices, today, result)
     product_facts = load_product_facts() if product_facts is None else product_facts
     kept_groups, cautions = _suited_to_request(kept_groups, query, product_facts, result)
+    _note_other_names(kept_groups, cautions)
     kind_mentions = _kind_mentions(checked)
     kinds = group_kinds(kind_mentions, kept_groups, query.category, query.product_type or "")
     with_a_kind = kinds_of(kinds)
@@ -525,6 +529,16 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
         if soft:
             cautions[group.key] = soft
     return kept, cautions
+
+
+def _note_other_names(groups: list[ProductGroup], cautions: dict[str, list[str]]) -> None:
+    """Adds a note to each product shown by its UK name whose writers used another one (UK_BRAND_NAMES: a "Sage"
+    pick whose quotes say "Breville"), so the quotes make sense (10 Oct 2026)."""
+    for group in groups:
+        for brand, uk_brand in UK_BRAND_NAMES.items():
+            if uk_brand.lower() in group.name.lower() and any(
+                    re.search(rf"(?<!\w){re.escape(brand)}(?!\w)", name, re.IGNORECASE) for name in group.names):
+                cautions.setdefault(group.key, []).append(OTHER_NAME_NOTE.format(brand=brand))
 
 
 # --- A brand pick steps aside for its own product (decided by Claude, 10 Oct 2026) ---

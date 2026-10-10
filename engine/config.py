@@ -263,6 +263,9 @@ PRICE_MAX_AGE_DAYS = 30
 # Breville's UK and EU brand; the alias list (engine/data/product_aliases.json) already treats the two as one product,
 # and the answer shows the UK name. Quotes are never changed: a quote that says "Breville" keeps it.
 UK_BRAND_NAMES: dict[str, str] = {"Breville": "Sage"}
+# Under a pick shown by its UK name, a note says why its quotes use the other one (Claude, 10 Oct 2026). Shown as a
+# note ("Note: ...") like the product-facts cautions.
+OTHER_NAME_NOTE = "sold as {brand} outside the UK, so writers often call it {brand}"
 
 # --- Voice rubric (Noemi, 9 Oct 2026): red flags are counted, not any-one-is-low ---
 # Two red flags or more make a voice low; exactly one caps it at medium, whatever the good signs.

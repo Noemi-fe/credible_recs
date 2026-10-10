@@ -245,6 +245,22 @@ def test_a_set_mention_never_lends_its_votes_to_the_brands_knives(tmp_path):
     assert "Henckels knife block" in result.left_out_as_other_type
 
 
+def test_a_pick_known_by_another_name_outside_the_uk_says_so(tmp_path):
+    # Found reading the answers, 10 Oct 2026: "Sage (their electric kettles)" was backed by quotes that all say
+    # "Breville" (decision 12 shows the UK name). A note under the pick says why.
+    lib = typed_library(tmp_path, KETTLE_TITLE, [
+        ("k1aaaa", "Breville kettle", "electric kettle", "My Breville kettle has lasted 8 years."),
+        ("k1bbbb", "Breville kettle", "electric kettle", "The Breville kettle, 6 years and still perfect."),
+        ("k2aaaa", "Breville kettle", "electric kettle", "Breville kettle here, 5 years of daily use."),
+        ("k2bbbb", "Zojirushi kettle", "electric kettle", ZOJI_3),
+    ])
+    result = answer_request(REQUEST, library_dir=lib)
+    sage = next(pick for pick in result.answer.picks if pick.name == "Sage kettle")
+    assert sage.cautions == ["Note: sold as Breville outside the UK, so writers often call it Breville."]
+    zoji = [pick for pick in result.answer.picks if pick.name != "Sage kettle"]
+    assert all(pick.cautions == [] for pick in zoji)
+
+
 @pytest.mark.parametrize("product_type, requested, other", [
     ("knife set", "chef knife", True),
     ("knife sets", "chef knife", True),
