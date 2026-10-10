@@ -507,7 +507,13 @@ _UNTRIED = re.compile(
     r"\b(?:(?:never|haven'?t|have not|hasn'?t|didn'?t|not yet)\s+(?:ever\s+)?(?:tried|used|owned|bought)"
     r"(?!\s+(?:anything|any other|another|other|a different|any|something))"
     r"|(?:want|wanting|planning|plan|hoping|thinking of|thinking about|tempted) to (?:try|buy|get|order|pick up)"
-    r"|on my (?:wish ?list|list)|wish ?list|eyeing)\b"
+    r"|on my (?:wish ?list|list)|wish ?list|eyeing"
+    # About to: "I am about to try it", "yet to try", "excited to try", "gonna try it", "can't review it yet" (b05,
+    # 10 Oct 2026). "Going to try" only with "it", "them" or "one": "I'm going to try a carbon steel pan next", after
+    # years with a skillet, is about the next pan.
+    r"|(?:about|yet) to (?:try|test|use|buy|get|order)|(?:excited|eager|keen|can'?t wait|cannot wait) to (?:try|test)"
+    r"|(?:going to|gonna) try (?:it|them|this|that|one)|(?:can'?t|cannot) review\b[^.!?]{0,40}?\byet"
+    r"|haven'?t (?:had (?:a|the) chance|gotten around|got around|gotten|got) to (?:try|use))\b"
 )
 # Someone else's experience.
 _SECONDHAND = re.compile(
@@ -763,9 +769,11 @@ def _found_name_words(words: list[str], name_words: set[str]) -> frozenset[str]:
 
 
 def _same_word(word: str, name_word: str) -> bool:
+    """The same word, give or take a plural "s", or a one-letter slip of a long name word. A common product word is
+    never a slip: "cleanser" is a word of its own, not "Gleanser" misspelt (b05, 10 Oct 2026)."""
     if word == name_word or word in (name_word + "s", name_word.removesuffix("s")):
         return True
-    return len(name_word) >= 5 and one_edit_apart(word, name_word)
+    return len(name_word) >= 5 and word not in GENERIC_NAME_WORDS and one_edit_apart(word, name_word)
 
 
 # --- Small text helpers ---

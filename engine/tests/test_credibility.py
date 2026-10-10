@@ -536,6 +536,32 @@ def test_sticking_with_one_product_is_not_untried():
     assert evidence_for("Had my Lodge skillet 10 years and never used anything else.").level == "long-term use"
 
 
+# Found reading b05, 10 Oct 2026: "I can't review it yet, but I am about to try Prequel's Gleanser" was shown as a
+# credible recommendation. Two gaps: "about to try" wasn't read as untried, and "cleanser" (a word of its own) was read
+# as a one-letter slip of "Gleanser", so another cleanser's sentence ("I have pretty good results with…") lent it use.
+@pytest.mark.parametrize("body", [
+    # Each also says they have it, which alone would count as use: not having tried it yet wins.
+    "I can't review it yet, but I have the Lodge skillet and am about to try it.",
+    "I just got the Lodge skillet and I'm going to try it tonight.",
+    "Got my Lodge skillet yesterday, gonna try it this weekend.",
+    "I have yet to try the Lodge skillet.",
+    "My Lodge skillet arrived, excited to try it!",
+    "I bought the Lodge skillet, can't wait to try it.",
+    "I can't review the Lodge skillet yet, I only got it today.",
+])
+def test_about_to_try_is_not_use(body):
+    assert evidence_for(body).level == "no first-hand use"
+
+
+def test_a_common_word_one_letter_from_a_name_does_not_name_it():
+    body = "Prequel's Gleanser is supposed to be super gentle. I have pretty good results with Trader Joe's cleanser."
+    evidence = evidence_for(body, product="Prequel's Gleanser", others=("Trader Joe's cleanser",))
+    assert evidence.level == "no first-hand use"
+    # A real slip of the name still names it: "Gleaser" for "Gleanser".
+    assert evidence_for("I have used the Prequel Gleaser every day for a year.",
+                        product="Prequel's Gleanser").level == "long-term use"
+
+
 @pytest.mark.parametrize("body", [
     "I've used my Lodge skillet a lot, no issues at all.",
     "My Lodge skillet is low maintenance and doesn't rust.",
