@@ -176,6 +176,9 @@ class PipelineResult:
     left_out_not_suited: list[NotSuited] = field(default_factory=list)
     # Brand picks that stepped aside for a specific product of their brand that also qualifies (10 Oct 2026).
     folded_brand_picks: list[FoldedBrandPick] = field(default_factory=list)
+    # Brands or lines on the skip list that a shown pick belongs to: not listed as skips; their warnings are shown under
+    # that pick's Known downsides instead (10 Oct 2026).
+    folded_skips: list[FoldedBrandPick] = field(default_factory=list)
     live_dropped: dict[str, int] = field(default_factory=dict)  # comments dropped by the live check, by reason
     # Ids of extracted threads about the product not checked live on Reddit in the last LIVE_CHECK_SHOWN_DAYS: not
     # used until `python -m engine.library check-live` reads them again (Noemi, 9 Oct 2026).
@@ -258,13 +261,14 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     result.contradicting_writers = sorted(contradicting_writers(groups, {c.id: c for t in threads for c in t.comments}))
     scored, kind_notes = _score(threads, checked, kept_groups, kinds, request_needs(query),
                                 set(result.contradicting_writers))
-    result.ranking = _fold_brand_picks(rank_products(scored, query.category, kind_notes, placements(kinds)),
-                                       kept_groups, result)
+    result.ranking, more_downsides = _fold_brand_skips(
+        _fold_brand_picks(rank_products(scored, query.category, kind_notes, placements(kinds)), kept_groups, result),
+        kept_groups, result)
     folded = {item.name for item in result.folded_brand_picks}
     care = _care_tips(threads, checked, [g for g in kept_groups if g.name not in folded], kinds, query)
     models, model_prices = _brand_models(result.ranking, kept_groups, query.product_type, price_checks)
     result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
-                                 models, request_asks(query), model_prices)
+                                 models, request_asks(query), model_prices, more_downsides)
     if live_checker is not None:
         _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions, kept_groups)
     thread_of = {c.id: t.id for t in threads for c in t.comments}
@@ -299,10 +303,10 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         result.bodies = {cid: body for cid, body in result.bodies.items() if cid not in failed}
         ranking = rank_products([m for m in scored if m.comment_id not in failed], query.category,
                                 [n for n in kind_notes if n.comment_id not in failed], placements(kinds))
-        result.ranking = _fold_brand_picks(ranking, groups, result)
+        result.ranking, more_downsides = _fold_brand_skips(_fold_brand_picks(ranking, groups, result), groups, result)
         models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks)
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
-                                     models, request_asks(query), model_prices)
+                                     models, request_asks(query), model_prices, more_downsides)
 
 
 def _checked_live_recently(thread: Thread, today: date) -> bool:
@@ -594,6 +598,36 @@ def _fold_brand_picks(ranking: RankingResult, groups: list[ProductGroup], result
         keys.add(step[0].key)
     result.folded_brand_picks = folded
     return replace(ranking, products=[p for p in ranking.products if p.key not in keys]) if keys else ranking
+
+
+def _fold_brand_skips(ranking: RankingResult, groups: list[ProductGroup],
+                      result: PipelineResult) -> tuple[RankingResult, dict[str, list[ScoredMention]]]:
+    """The ranking without the brands or lines on the skip list that a shown pick belongs to, and their credible
+    warnings by that pick's key, to show under its Known downsides after its own (decided by Claude, 10 Oct 2026).
+
+    Found reading the answers: b08 showed the pick "Lodge (their cast iron skillets)" and the skip "Lodge pans (their
+    cast iron skillets)", b06 the pick "Fellow Stagg EKG" and the skip "Fellow Stagg (their electric kettles)": listing
+    the brand as a skip says to skip the pick. Its warnings are about the pick's own brand or line, so they go with the
+    pick and none is hidden. Only a brand or line steps aside (a loose group, _same_brand either way round, among the
+    PICKS_SHOWN qualifying products as _fold_brand_picks leaves them): a specific product on the skip list stays, even
+    of a picked brand ("Dualit Architect kettle" next to the pick "Dualit Classic kettle"), since skipping it is real
+    advice. Each is named on the result (folded_skips, worked out afresh each time)."""
+    by_key = {g.key: g for g in groups}
+    shown = [(p, by_key[p.key]) for p in ranking.qualifying if p.key in by_key][:PICKS_SHOWN]
+    more: dict[str, list[ScoredMention]] = {}
+    folded, keys = [], set()
+    for skipped in ranking.skip_list:
+        group = by_key.get(skipped.key)
+        if group is None or not group.loose:
+            continue
+        pick = next((p for p, g in shown if _same_brand(group, g) or _same_brand(g, group)), None)
+        if pick is not None:
+            more.setdefault(pick.key, []).extend(skipped.credible_warnings)
+            folded.append(FoldedBrandPick(skipped.name, pick.name))
+            keys.add(skipped.key)
+    result.folded_skips = folded
+    ranking = replace(ranking, products=[p for p in ranking.products if p.key not in keys]) if keys else ranking
+    return ranking, more
 
 
 def _brand_models(ranking: RankingResult, groups: list[ProductGroup], product_type: str | None,

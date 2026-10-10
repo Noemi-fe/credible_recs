@@ -287,7 +287,8 @@ def comment_bodies(threads: Iterable[Thread]) -> dict[str, str]:
 def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type: str | None = None,
                  prices: Mapping[str, PriceCheck] | None = None, care: Mapping[str, CareTips] | None = None,
                  cautions: Mapping[str, list[str]] | None = None, models: Mapping[str, str] | None = None,
-                 asks: tuple[str, ...] = (), model_prices: Mapping[str, str] | None = None) -> Answer:
+                 asks: tuple[str, ...] = (), model_prices: Mapping[str, str] | None = None,
+                 more_downsides: Mapping[str, list[ScoredMention]] | None = None) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -299,7 +300,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     made by the pipeline (engine.pipeline._brand_models), shown as BRAND_PICK_MODEL, with that model's checked price
     from `model_prices` ({product key: price line}) when there is one: shown only, never a reason to leave the brand
     out. `asks` is what the request asks
-    for (engine.product_facts.request_asks): a quote saying the opposite is shown last.
+    for (engine.product_facts.request_asks): a quote saying the opposite is shown last. `more_downsides` ({pick key:
+    credible warnings}) are warnings about a pick's own brand or line, shown under it after its own.
     """
     check = _QuoteCheck(bodies)
     models = models or {}
@@ -319,7 +321,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             availability = shown_availability(prices.get(product.key), price.url)
             tips = _care_tips(care.get(product.key), check)
             notes = [CAUTION.format(reason=reason) for reason in cautions.get(product.key, [])]
-            picks.append(_pick(len(picks) + 1, product, quotes, check, ranking, price, tips, availability, notes))
+            picks.append(_pick(len(picks) + 1, product, quotes, check, ranking, price, tips, availability, notes,
+                               (more_downsides or {}).get(product.key, [])))
             picks[-1].model = models.get(product.key)
             picks[-1].model_price = (model_prices or {}).get(product.key)
     skip = [_skip_item(product, check) for product in ranking.skip_list]
@@ -493,7 +496,9 @@ def _as_written_loosely(word: str) -> str:
 
 def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _QuoteCheck, ranking: RankingResult,
           price: ShownPrice, care: list[ShownCareTip], availability: ShownAvailability = NOT_CHECKED,
-          cautions: list[str] | None = None) -> Pick:
+          cautions: list[str] | None = None, more_downsides: list[ScoredMention] = ()) -> Pick:
+    """One pick. `more_downsides`: credible warnings about the pick's own brand or line, shown after its own (the
+    pipeline's _fold_brand_skips, 10 Oct 2026)."""
     warnings = product.credible_warnings
     return Pick(
         rank=rank,
@@ -502,7 +507,7 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
         reason=_reason(product, ranking),
         support=_support(product),
         quotes=quotes,
-        downsides=check.first(_naming_first(warnings), DOWNSIDES_PER_PICK),
+        downsides=check.first(_naming_first(warnings) + _naming_first(more_downsides), DOWNSIDES_PER_PICK),
         disagreement=DISAGREEMENT.format(voices=_plural(len(warnings), "credible voice")) if product.disputed else None,
         score=product.score,
         breakdown=product.breakdown,

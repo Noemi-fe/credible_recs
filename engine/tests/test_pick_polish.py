@@ -495,3 +495,49 @@ def test_a_brand_picks_model_shows_its_checked_price(tmp_path):
     assert victorinox.model_price == "£41.50 at Victorinox UK, checked 9 Oct 2026"
     assert "Most named model: Victorinox Fibrox chef knife (£41.50 at Victorinox UK, checked 9 Oct 2026)" in (
         render_markdown(result.answer))
+
+
+# --- 7. A brand or line on the skip list that a pick belongs to (10 Oct 2026) ---
+# Found reading the answers: b08 showed the pick "Lodge (their cast iron skillets)" and, under Skip these, "Lodge pans
+# (their cast iron skillets)"; b06 the pick "Fellow Stagg EKG" and the skip "Fellow Stagg (their electric kettles)".
+# A brand or line on the skip list that a shown pick belongs to isn't listed as a skip (that says to skip the pick);
+# its warnings are shown under that pick's Known downsides, after the pick's own, so none is hidden. A specific product
+# on the skip list stays, even of a picked brand: skipping it is real advice.
+
+def warn(comment_id: str, product: str, months: int) -> tuple:
+    return comment_id, product, f"My {product} broke after {months} months, avoid it.", "warn"
+
+
+def stagg_library(tmp_path):
+    """"Fellow Stagg" fits two Fellow kettles (a line, loose), warned against three times; the Fellow Stagg EKG, the
+    Dualit Classic and the Zojirushi are praised across both threads; the Dualit Architect and the Hamilton Beach are
+    warned against."""
+    return write_library(tmp_path, {
+        "1ket001": ("Best electric kettle that lasts?", "Mine died.", [
+            praise("k1a", "Fellow Stagg EKG", 5), praise("k1b", "Fellow Stagg EKG", 6),
+            praise("k1c", "Dualit Classic kettle", 9), praise("k1d", "Dualit Classic kettle", 8),
+            praise("k1e", "Zojirushi kettle", 7), praise("k1f", "Zojirushi kettle", 6),
+            warn("k1g", "Fellow Stagg", 3), warn("k1h", "Fellow Stagg", 4),
+            praise("k1i", "Fellow Stagg Pour-Over kettle", 2),
+            warn("k1j", "Hamilton Beach kettle", 2), warn("k1k", "Dualit Architect kettle", 5),
+        ]),
+        "1ket002": ("Which electric kettle lasts 10 years?", "Ten years, ideally.", [
+            praise("k2a", "Fellow Stagg EKG", 4), praise("k2b", "Dualit Classic kettle", 6),
+            praise("k2c", "Zojirushi kettle", 5), warn("k2d", "Fellow Stagg", 2),
+            warn("k2e", "Hamilton Beach kettle", 4), warn("k2f", "Dualit Architect kettle", 3),
+        ]),
+    }, community="BuyItForLife")
+
+
+def test_a_line_on_the_skip_list_that_a_pick_belongs_to_shows_under_its_downsides(tmp_path):
+    result = answer_request("electric kettle that lasts", library_dir=stagg_library(tmp_path), prices=[],
+                            product_facts=[], today=TODAY)
+    assert "Fellow Stagg EKG" in names(result)
+    skipped = [item.name for item in result.answer.skip]
+    assert not any(name.startswith("Fellow") for name in skipped), skipped
+    assert {"Hamilton Beach kettle", "Dualit Architect kettle"} <= set(skipped)  # specific products stay
+    stagg = next(pick for pick in result.answer.picks if pick.name == "Fellow Stagg EKG")
+    line = {f"My Fellow Stagg broke after {months} months, avoid it." for months in (2, 3, 4)}
+    assert len(stagg.downsides) == config.DOWNSIDES_PER_PICK and {q.text for q in stagg.downsides} <= line
+    assert result.folded_skips == [FoldedBrandPick("Fellow Stagg (their electric kettles)", "Fellow Stagg EKG")]
+    assert unverified_claims(result.answer, result.bodies) == []
