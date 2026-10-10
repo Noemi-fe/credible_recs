@@ -516,10 +516,13 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
     otherwise it is kept. A kept product whose facts don't say whether it meets a hard requirement gets a note after its
     soft reasons: "we couldn't confirm it's PFAS-free" (engine.product_facts.unconfirmed, 10 Oct 2026). A kept product
     with a facts entry is shown under the entry's name, taken from the maker's page, rather than as writers spelled it
-    (10 Oct 2026); its key stays, so its price check and cautions still find it.
+    (10 Oct 2026); its key stays, so its price check and cautions still find it. Groups that find the same entry are one
+    product: the later (smaller) ones join the first, so their mentions are ranked together under its key (b02, 10 Oct
+    2026: "Biore watery essence" was a pick and "Biore aqua rich" a skip, both shown under one entry's name).
     """
     requirements = hard_requirements(query)
     kept, cautions = [], {}
+    by_entry: dict[tuple[str, str], int] = {}  # a facts entry (name, category) -> where its product is in `kept`
     for group in groups:
         if group.loose and requirements:
             result.left_out_not_suited.append(NotSuited(group.name, uncheckable_brand_reason(requirements)))
@@ -530,6 +533,13 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
         if hard:
             result.left_out_not_suited.append(NotSuited(group.name, "; ".join(hard)))
             continue
+        entry = (facts.product, facts.category) if facts is not None else None
+        if entry in by_entry:
+            first = kept[by_entry[entry]]
+            kept[by_entry[entry]] = replace(first, mentions=first.mentions + group.mentions)
+            continue
+        if entry is not None:
+            by_entry[entry] = len(kept)
         kept.append(replace(group, name=facts.product) if facts is not None else group)
         soft = [c.reason for c in found if not c.hard]
         missing = [] if group.loose else unconfirmed(query, facts)

@@ -67,9 +67,10 @@ def write_facts(tmp_path: Path, entries) -> Path:
 # --- Made-up libraries ---
 
 def write_library(tmp_path: Path, titles: tuple[str, str], recommended: dict[str, int],
-                  warned: dict[str, int] | None = None) -> Path:
+                  warned: dict[str, int] | None = None, product_type: str | None = None) -> Path:
     """Two skincare threads with these titles. Each product is recommended (or warned against) its number of times, by
-    a different writer each time, alternating between the two threads; each comment's text is its quote."""
+    a different writer each time, alternating between the two threads; each comment's text is its quote. With
+    `product_type`, every mention has that type, as extraction v6 and later give it."""
     comments: dict[str, list[dict]] = {"1skin01": [], "1skin02": []}
     mentions: dict[str, list[dict]] = {"1skin01": [], "1skin02": []}
     every = [(p, n, "recommend") for p, n in recommended.items()] + [(p, n, "warn") for p, n in (warned or {}).items()]
@@ -81,7 +82,8 @@ def write_library(tmp_path: Path, titles: tuple[str, str], recommended: dict[str
                     else f"I used {product} for {i + 2} weeks and it burned my skin, avoid it.")
             comments[thread_id].append(make_comment(comment_id, thread_id=thread_id, body=text))
             mentions[thread_id].append({"comment_id": comment_id, "product": product, "category": "skincare",
-                                        "stance": stance, "quote": text})
+                                        "stance": stance, "quote": text}
+                                       | ({"product_type": product_type} if product_type else {}))
     threads = [make_thread(id=thread_id, title=title, body="Any advice?", comments=comments[thread_id],
                            url=f"https://www.reddit.com/r/SkincareAddiction/comments/{thread_id}/thread/")
                for thread_id, title in zip(comments, titles)]
@@ -721,6 +723,25 @@ def test_a_pick_with_a_facts_entry_is_shown_under_the_entrys_name(tmp_path):
     assert [p.name for p in result.ranking.products][:1] == ["CeraVe Resurfacing Retinol Serum"]
     without = answer_request(BEGINNER, library_dir=lib, prices=[], product_facts=[], today=TODAY)
     assert names(without.answer.picks)[0] == "cerave resurfacing retinol serum"
+
+
+def test_groups_that_find_the_same_facts_entry_are_one_product(tmp_path):
+    # Found in b02, 10 Oct 2026: "Biore watery essence" and "Biore aqua rich" stayed apart in grouping, but both found
+    # the entry "Biore UV Aqua Rich Watery Essence SPF50" and were shown under its name, one as a pick and the other
+    # on the skip list. One entry is one product: their mentions are ranked together, under the biggest group's key.
+    lib = write_library(tmp_path, ("Sunscreen for oily skin?", "Which sunscreen has no white cast?"),
+                        {"Biore watery essence": 4, "Skin Aqua UV Super Moisture Milk": 3,
+                         "Canmake Mermaid Skin Gel UV": 3},
+                        warned={"Biore aqua rich": 2}, product_type="sunscreen")
+    biore = known("Biore UV Aqua Rich Watery Essence SPF50", product_type="sunscreen", white_cast=False)
+    without = answer_request("sunscreen for oily skin", library_dir=lib, prices=[], product_facts=[], today=TODAY)
+    assert {"Biore watery essence", "Biore aqua rich"} <= {p.name for p in without.ranking.products}  # apart
+    result = answer_request("sunscreen for oily skin", library_dir=lib, prices=[], product_facts=[biore], today=TODAY)
+    named = [p for p in result.ranking.products if p.name == "Biore UV Aqua Rich Watery Essence SPF50"]
+    assert len(named) == 1
+    assert (len(named[0].credible_recommendations), len(named[0].credible_warnings)) == (4, 2)
+    assert named[0].key == "skincare:biore watery essence"
+    assert "Biore UV Aqua Rich Watery Essence SPF50" not in [p.name for p in result.ranking.skip_list]
 
 
 def test_a_renamed_pick_keeps_its_cautions(tmp_path):
