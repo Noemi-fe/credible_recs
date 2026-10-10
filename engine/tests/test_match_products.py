@@ -102,6 +102,16 @@ def test_a_lone_number_is_not_a_brand():
     assert not same_product("10", "10 inch Lodge skillet")
 
 
+def test_a_size_in_inches_reads_the_same_with_or_without_the_unit():
+    # Found reading b07, 10 Oct 2026 (late): 'Wusthof Classic 8" Chef Knife', '8" Wusthof chefs knife' and 'Wusthof classic
+    # 8 inch' were apart (the word "inch" read as a word of the name), so no Wusthof model had two recommendations.
+    assert normalize_name('Wusthof classic 8 inch') == normalize_name('Wusthof classic 8"') == ["wusthof", "classic", "8"]
+    assert same_product('Wusthof Classic 8" Chef Knife', "Wusthof classic 8 inch")
+    assert same_product('8" Wusthof chefs knife', "Wusthoff chefs knife 8 inches")
+    assert not same_product("Lodge 10 inch skillet", 'Lodge 12" skillet')  # sizes still tell products apart
+    assert "inch" in normalize_name("an inch of water")  # only after a number
+
+
 def test_names_made_only_of_filler_words_match_nothing():
     assert not same_product("the one", "my one")
     assert not same_product("the one", "Zojirushi")

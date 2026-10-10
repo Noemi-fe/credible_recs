@@ -130,7 +130,16 @@ def normalize_name(name: str) -> list[str]:
     words = plain_words(name)
     while words and words[0] in LEADING_WORDS:
         words.pop(0)
-    return _without_negated_models([word for word in words if word not in FILLER_WORDS])
+    return _without_negated_models(_without_size_units([word for word in words if word not in FILLER_WORDS]))
+
+
+# A size's unit after its number: '8 inch' reads as '8"', whose mark plain_words already drops (b07, 10 Oct 2026).
+SIZE_UNITS = frozenset({"inch", "inches"})
+
+
+def _without_size_units(words: list[str]) -> list[str]:
+    """`words` without a unit word straight after a number: "wusthof classic 8 inch" -> wusthof classic 8."""
+    return [word for i, word in enumerate(words) if not (word in SIZE_UNITS and i > 0 and words[i - 1].isdigit())]
 
 
 def _without_negated_models(words: list[str]) -> list[str]:
