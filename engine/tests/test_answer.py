@@ -496,6 +496,17 @@ def test_a_quote_saying_the_opposite_of_what_was_asked_is_shown_last():
     ("fragrance-free", "It has a strong scent.", True),
     ("fragrance-free", "It's fragrance-free and gentle.", False),
     ("fragrance-free", "No scent at all.", False),
+    # Something that lasts (10 Oct 2026, b06: an Oxo pick's first quote had its kettle "stop working after about a
+    # year"): failing within days, weeks, months or up to three years is the opposite; after ten years isn't.
+    ("lasting", "Had a kettle stop working after about a year and contacted them.", True),
+    ("lasting", "Mine died within 6 months.", True),
+    ("lasting", "After two years it broke.", True),
+    ("lasting", "The lid cracked within the first year.", True),
+    ("lasting", "It broke in 2 weeks.", True),
+    ("lasting", "The handle cracked after about 10 years, they sent a new one.", False),
+    ("lasting", "I've had it for 12 years and it still works.", False),
+    ("lasting", "It broke in nicely after a few weeks of use.", False),  # breaking in a pan is using it, not failing
+    ("lasting", "Stopped working after 13 years of daily use.", False),
 ])
 def test_what_says_the_opposite_of_a_request(ask, quote, against):
     from engine.answer import _says_the_opposite

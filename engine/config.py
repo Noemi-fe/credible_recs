@@ -658,6 +658,17 @@ OPPOSITE_QUOTE_PATTERNS: dict[str, tuple[str, ...]] = {
     "fragrance-free": (r"(?<!no )(?<!without )(?<!n't )\b(smells?|scent(ed)?|perfume(d)?)\b(?! ?-?free)",
                        r"\bfragrance(d)?\b(?! ?-?free)(?<!no fragrance)"),
 }
+# Something that lasts (10 Oct 2026, b06: an Oxo pick's first quote had its kettle "stop working after about a year"):
+# failing within days, weeks, months or up to three years, said either way round ("died within 6 months", "after two
+# years it broke"). "Broke in" counts only before a length of time: "it broke in nicely" is breaking a pan in.
+_FAILED = (r"(stop(s|ped|ping)? working|died|dies|broke(?! in (?!(about |around |only |just |under |less than )?"
+           r"(a |an |one |two |three |\d|a few |a couple )))|breaks|failed|fails|quit|gave out|fell apart|falls apart"
+           r"|crapped out|packed (in|up)|started leaking|cracked|rusted|warped)")
+_SOON = (r"(after|within|in|under) (just |only |about |around |roughly |barely |less than |under |a little over )?"
+         r"((a|an|one|two|three|four|five|six|\d+|a few|(a )?couple( of)?|several|few) (days?|weeks?|months?)"
+         r"|(a|one|1|two|2|three|3|a few|(a )?couple( of)?) years?|the first (few )?(days?|weeks?|months?|year))")
+OPPOSITE_QUOTE_PATTERNS["lasting"] = (rf"\b{_FAILED}\b[^.!?]{{0,40}}?\b{_SOON}\b",
+                                      rf"\b{_SOON}\b[^.!?]{{0,30}}?\b{_FAILED}\b")
 
 # --- Quotes that say what the writer thinks come first (10 Oct 2026) ---
 # Decided by Claude, reported to Noemi. Found in b09: "I have a Baratza Encore, Timemore C2 (at work), and a 1zpresso
