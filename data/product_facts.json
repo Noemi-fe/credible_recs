@@ -136,13 +136,14 @@
    "product_type": "retinoid",
    "facts": {
     "strength": "gentle",
+    "fragrance_free": true,
     "prescription_only": false
    },
    "sources": [
     "https://www.lookfantastic.com/p/the-inkey-list-retinol-serum-30ml/12208009/",
     "https://www.cultbeauty.co.uk/p/12208009/"
    ],
-   "checked_on": "2026-10-09"
+   "checked_on": "2026-10-10"
   },
   {
    "product": "Retin-A (tretinoin)",
@@ -241,12 +242,15 @@
    "category": "skincare",
    "product_type": "cleanser",
    "facts": {
-    "fragrance_free": true
+    "fragrance_free": true,
+    "texture": "light"
    },
    "sources": [
     "https://netshop.create-sd.co.jp/shop/g/g4971710579826/",
     "https://www.yesstyle.com/en/kose-softymo-cleansing-oil-mini-speedy-60ml/info.html/pid.1136061259",
-    "https://kosecosmeport.co.jp/corporate/source/230727_03_release.pdf"
+    "https://kosecosmeport.co.jp/corporate/source/230727_03_release.pdf",
+    "https://maquia.hpplus.jp/blog/yuno_maquia/116846/",
+    "https://lipscosme.com/posts/1586654"
    ],
    "checked_on": "2026-10-10"
   },
@@ -366,7 +370,8 @@
    "facts": {
     "strength": "gentle",
     "fragrance_free": true,
-    "prescription_only": false
+    "prescription_only": false,
+    "maker_warns_sensitive": false
    },
    "sources": [
     "https://www.axis-y.com/products/pha-resurfacing-glow-peel-1"
@@ -392,15 +397,17 @@
    "category": "skincare",
    "product_type": "retinoid",
    "facts": {
+    "strength": "strong",
     "prescription_only": false
    },
    "sources": [
-    "https://www.johnlewis.com/dr-different-vitalift-a-fortessimo-0-15-retinal-30g/p115413476"
+    "https://www.johnlewis.com/dr-different-vitalift-a-fortessimo-0-15-retinal-30g/p115413476",
+    "https://www.medik8.com/products/crystal-retinal"
    ],
    "checked_on": "2026-10-10"
   },
   {
-   "product": "K-Secret Seoul 1988 Retinal Lipisome 1%",
+   "product": "K-Secret Seoul 1988 Retinal Liposome 1%",
    "category": "skincare",
    "product_type": "retinoid",
    "facts": {
@@ -409,7 +416,9 @@
     "prescription_only": false
    },
    "sources": [
-    "https://ksecretcosmetics.com/products/seoul-1988-cream-retinal-liposome-1-fermented-rice"
+    "https://ksecretcosmetics.com/products/seoul-1988-cream-retinal-liposome-1-fermented-rice",
+    "https://justcosmetics.cy/shop/serums/ksecret-seoul-1988-cream-retinal-liposome-1-fermented-rice",
+    "https://wcosmetics.com.au/products/k-secret-seoul-1988-cream-retinal-liposome-1-fermented-rice"
    ],
    "checked_on": "2026-10-10"
   },
@@ -473,6 +482,192 @@
    },
    "sources": [
     "https://www.yesstyle.com/en/isntree-green-tea-fresh-cleanser/info.html/pid.1114914570"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Paula's Choice 2% BHA Skin Perfecting Liquid",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "strength": "moderate",
+    "fragrance_free": true,
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.paulaschoice.co.uk/skin-perfecting-bha-liquid-exfoliant/m2010.html"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Dr Dennis Gross peel pads",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.drdennisgross.com/alpha-beta",
+    "https://www.cultbeauty.co.uk/dr-dennis-gross-skincare-alpha-beta-extra-strength-daily-peel-pack-of-30/10891436.html"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "The Ordinary Retinol in Squalane 1%",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "strength": "strong",
+    "fragrance_free": true,
+    "prescription_only": false
+   },
+   "sources": [
+    "https://theordinary.com/en-gb/retinol-1-in-squalane-serum-100441.html"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Medik8 Crystal Retinal line",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.medik8.com/products/crystal-retinal"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Arazlo (tazarotene) Lotion 0.045%",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "strength": "strong",
+    "prescription_only": true
+   },
+   "sources": [
+    "https://www.arazlo.com/",
+    "https://patient.info/medicine/tazarotene-for-psoriasis-zorac"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Differin Gel (adapalene 0.1%)",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "prescription_only": true
+   },
+   "sources": [
+    "https://www.medicines.org.uk/emc/product/921/pil"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Kikumasamune Sake cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": false,
+    "texture": "rich"
+   },
+   "sources": [
+    "https://sundrug-online.com/en/products/4971650800912",
+    "https://www.vitacost.com/products/kikumasamune-sake-skin-care-cream-5-3-oz-150-g-100810"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Dr.G Red Blemish Clear Soothing Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true,
+    "texture": "light"
+   },
+   "sources": [
+    "https://peachesandcremeshop.com/products/red-blemish-clear-soothing-cream-1"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "GreenPan",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true
+   },
+   "sources": [
+    "https://greenpan.co.uk/pages/faqs",
+    "https://greenpan.co.uk/collections/frying-pans"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "OXO non-stick pan",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "non_stick": true
+   },
+   "sources": [
+    "https://www.johnlewis.com/oxo-professional-hard-anodised-aluminium-ceramic-non-stick-frying-pan/p115027525",
+    "https://www.lakeland.co.uk/70663/oxo-good-grips-non-stick-28cm-frying-pan"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "All-Clad non-stick pans",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "non_stick": true
+   },
+   "sources": [
+    "https://www.all-clad.com/ha1-expert-cookware-nonstick-fry-pan-10-in.html",
+    "https://www.all-clad.com/ns-pro-ceramic-nonstick-fry-pan-with-lid-12-inch.html",
+    "https://www.williams-sonoma.com.au/all-clad-ns-pro-ceramic-nonstick-fry-pan-set"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Tefal non-stick pan",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "non_stick": true
+   },
+   "sources": [
+    "https://www.tefal.com/weoweyouthebest/pan-manufacturing-secret",
+    "https://blog.tefal.co.uk/2024/04/16/the-non-stick-material-ptfe-of-tefal-pans-everything-you-need-to-know/"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "All-Clad stainless steel frying pan",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true,
+    "non_stick": false
+   },
+   "sources": [
+    "https://www.all-clad.com/d3-stainless-3-ply-bonded-cookware-fry-pan-10-inch.html"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Tefal Titanium x6 made in France",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": false,
+    "non_stick": true
+   },
+   "sources": [
+    "https://www.tefal.com/weoweyouthebest/pan-manufacturing-secret",
+    "https://www.tefal.ie/c/Tefal-Unlimited-ON-Induction-24cm-Non-Stick-Frying-Pan--Black/p/2100116319"
    ],
    "checked_on": "2026-10-10"
   }

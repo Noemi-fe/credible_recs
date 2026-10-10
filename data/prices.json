@@ -195,6 +195,66 @@
    "url": "https://www.johnlewis.com/baratza-encore-conical-burr-grinder/p114307240",
    "checked_on": "2026-10-10",
    "available": true
+  },
+  {
+   "product": "glass Sage kettle",
+   "category": "kitchen",
+   "price": 69.95,
+   "currency": "GBP",
+   "shop": "Sage (the Compact Kettle Pure, 1L, is the only glass kettle Sage sells in the UK; its Crystal Clear glass kettle is discontinued)",
+   "url": "https://www.sageappliances.com/en-gb/product/bke395",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "Victorinox chef's knife",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Victorinox UK (several chef's knives at different prices, so no one price fits the name)",
+   "url": "https://www.victorinox.com/en-GB/Products/Cutlery/Chef%E2%80%99s-Knives/c/CUT_ChefKnives/",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "GreenPan",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "GreenPan UK (many frying pans at different prices, so no one price fits the name)",
+   "url": "https://greenpan.co.uk/collections/frying-pans",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "OXO non-stick pan",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis (OXO's Professional ceramic non-stick frying pans; OXO's non-stick pans differ in price, so no one price fits the name)",
+   "url": "https://www.johnlewis.com/oxo-professional-hard-anodised-aluminium-ceramic-non-stick-frying-pan/p115027525",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "All-Clad non-stick pans",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Divertimenti (the All-Clad HA1 non-stick frying pan; All-Clad's non-stick pans differ in price, so no one price fits the name)",
+   "url": "https://www.divertimenti.co.uk/products/all-clad-ha1-frying-pan-lid-30cm",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "Arazlo (tazarotene) Lotion 0.045%",
+   "category": "skincare",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Patient.info (no skin product with tazarotene is sold in the UK; Zorac gel was discontinued in 2021)",
+   "url": "https://patient.info/medicine/tazarotene-for-psoriasis-zorac",
+   "checked_on": "2026-10-10",
+   "available": false
   }
  ]
 }
