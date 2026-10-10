@@ -212,7 +212,8 @@ def check_extraction(extraction: Extraction, thread: Thread) -> CheckResult:
     - its type isn't a service (config.SERVICE_TYPE_PATTERNS: "laser treatment"; instructions v7, enforced since
       10 Oct 2026).
     Mentions keep their order in both lists. Notes and care tips (instructions v7) go through the same checks of
-    their comment and quote (the first six above); agreements too, and they must be replies.
+    their comment and quote (the first six above), and a note can't be about a service either ("laser facials", 10 Oct
+    2026); agreements too, and they must be replies.
     """
     comments = {comment.id: comment for comment in thread.comments}
     result = CheckResult()
@@ -234,6 +235,8 @@ def check_extraction(extraction: Extraction, thread: Thread) -> CheckResult:
             result.rejected.append((mention, reason))
     for note in extraction.notes:
         reason = _why_rejected(note, extraction, thread, comments)
+        if reason is None and _is_a_service(note.about):
+            reason = f'"{note.about}" is a service, not a kind of product (instructions v7)'
         if reason is None:
             result.kept_notes.append(note)
         else:
@@ -257,10 +260,16 @@ def check_extraction(extraction: Extraction, thread: Thread) -> CheckResult:
 
 def _a_service(mention) -> str | None:
     """Why the mention is a service rather than a product, or None (config.SERVICE_TYPE_PATTERNS)."""
-    product_type = (mention.product_type or "").strip().lower()
-    if any(re.search(rf"(?<![\w-]){pattern}(?![\w-])", product_type) for pattern in SERVICE_TYPE_PATTERNS):
+    if _is_a_service(mention.product_type or ""):
         return f'"{mention.product}" is a service ({mention.product_type}), not a product (instructions v7)'
     return None
+
+
+def _is_a_service(words: str) -> bool:
+    """Whether a type, or what a note is about, names a service (config.SERVICE_TYPE_PATTERNS): "laser treatment".
+    Notes too since 10 Oct 2026: a moisturiser answer said "Look for: laser facials"."""
+    words = words.strip().lower()
+    return any(re.search(rf"(?<![\w-]){pattern}(?![\w-])", words) for pattern in SERVICE_TYPE_PATTERNS)
 
 
 def _why_rejected(mention, extraction: Extraction, thread: Thread, comments: dict) -> str | None:

@@ -495,6 +495,22 @@ def test_notes_and_agreements_are_checked_like_mentions():
     assert "reply" in result.rejected_agreements[0][1]
 
 
+@pytest.mark.parametrize("about", ["laser facials", "Laser", "salon facial", "microneedling"])
+def test_a_note_about_a_service_is_rejected(about):
+    # Found reading b04, 10 Oct 2026: a moisturiser answer said "Look for: laser facials". A service is never a product
+    # (instructions v7), so it is never a kind of product either: notes about one are rejected like mentions.
+    thread = Thread.model_validate(make_thread(comments=[
+        make_comment("c1aaaa", body="Laser facials helped my dry skin, and so did plain squalane oil."),
+    ]))
+    extraction = make_extraction(mentions=[], notes=[
+        {"comment_id": "c1aaaa", "about": about, "stance": "recommend", "quote": "Laser facials helped my dry skin"},
+        {"comment_id": "c1aaaa", "about": "squalane oil", "stance": "recommend", "quote": "plain squalane oil"},
+    ])
+    result = check_extraction(Extraction.model_validate(extraction), thread)
+    assert [n.about for n in result.kept_notes] == ["squalane oil"]
+    assert "service" in result.rejected_notes[0][1]
+
+
 def test_older_extractions_without_notes_or_agreements_still_load():
     extraction = Extraction.model_validate(make_extraction())
     assert extraction.notes == [] and extraction.agreements == []

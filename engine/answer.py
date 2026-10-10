@@ -83,6 +83,8 @@ from engine.needs import LASTING
 from engine.prices import PriceCheck
 from engine.match_products import known_aliases
 from engine.rank import KindNote, ProductScore, RankingResult, ScoredMention, ScoreBreakdown, is_credible
+from engine.query import PRODUCT_TYPES
+from engine.sources import mentions_product
 from engine.verify_quotes import find_quote, verify_quote
 
 # --- Wording users see: PROPOSED 9 Oct 2026, awaiting Noemi ---
@@ -326,7 +328,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             picks[-1].model = models.get(product.key)
             picks[-1].model_price = (model_prices or {}).get(product.key)
     skip = [_skip_item(product, check) for product in ranking.skip_list]
-    look_for = _look_for(ranking, check)
+    look_for = _look_for(ranking, check, product_type)
     return Answer(
         category=ranking.category,
         product_type=product_type,
@@ -618,8 +620,9 @@ def _skip_item(product: ProductScore, check: _QuoteCheck) -> SkipItem | None:
     return SkipItem(product.key, product.name, reason, quotes)
 
 
-def _look_for(ranking: RankingResult, check: _QuoteCheck) -> list[LookFor]:
-    """Up to LOOK_FOR_NOTES kinds, strongest credible advice first, each with its strongest verified note.
+def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | None = None) -> list[LookFor]:
+    """Up to LOOK_FOR_NOTES kinds, strongest credible advice first, each with its strongest verified note. In skincare,
+    a kind whose advice is about another type of product gives none (_another_types_advice).
 
     A kind with positive support gets "Look for" and a recommending note; negative support gets "Avoid" and a
     warning note. A kind whose support is zero (no credible notes, or as many for as against) gives no advice. A
@@ -636,6 +639,8 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck) -> list[LookFor]:
         stance, advice = ("recommend", LOOK_FOR) if kind.support > 0 else ("warn", AVOID)
         notes = _most_credible_first([n for n in ranking.kind_notes
                                       if n.kind_key == kind.key and n.stance == stance and is_credible(n)])
+        if _another_types_advice(kind.name, notes, ranking.category, product_type):
+            continue
         used = {item.quote.comment_id: i for i, item in enumerate(items) if item.advice == advice}
         quote = check.first([n for n in notes if n.comment_id not in used], 1)
         if not quote:
@@ -656,6 +661,21 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck) -> list[LookFor]:
             items.append(LookFor(kind.name, advice, quote[0]))
             item_notes.append(notes)
     return items
+
+
+def _another_types_advice(kind: str, notes: list[KindNote], category: str, product_type: str | None) -> bool:
+    """Whether a skincare kind's advice is about another type of product: its name and notes name another skincare type
+    (engine.sources.mentions_product) and never the one asked for. Found in b04, 10 Oct 2026: a moisturiser answer
+    showed "Look for: AHA" and "Look for: BHA" ("I usually try exfoliants with bha"). A note tying it to the type asked
+    for keeps it ("an AHA lotion fixed my dry legs"). Kitchen kinds always stay: another kind of pan is a real
+    alternative ("Look for: cast iron" for a PFAS-free non-stick pan)."""
+    if category != "skincare" or not product_type:
+        return False
+    text = " ".join([kind] + [n.quote for n in notes])
+    if mentions_product(text, product_type):
+        return False
+    return any(mentions_product(text, other.name) for other in PRODUCT_TYPES
+               if other.category == "skincare" and other.name != product_type)
 
 
 def _message(picks: int, product_type: str | None) -> str | None:

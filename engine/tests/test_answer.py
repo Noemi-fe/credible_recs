@@ -238,6 +238,39 @@ def test_what_to_look_for_comes_from_credible_kind_notes():
     ]
 
 
+def moisturiser_case(aha_quotes: tuple[str, ...]):
+    """A moisturiser ranking with three kinds: "AHA" (its notes' quotes as given), "Squalane oil" and "Ceramides"."""
+    items = mentions(3, "Acme cream", category="skincare") + mentions(3, "Bolt lotion", category="skincare")
+    notes = ([note("AHA", f"t{i % 2 + 1}", quote=quote) for i, quote in enumerate(aha_quotes)]
+             + [note("Squalane oil", "t1", quote="Plain old squalane oil on top."),
+                note("Ceramides", "t2", quote="Anything with ceramides helped my dry patches.")])
+    return rank_products(items, "skincare", notes, {}), bodies_for(*items, *notes)
+
+
+def test_skincare_advice_about_another_type_of_product_is_left_out():
+    # Found in b04, 10 Oct 2026: "fragrance-free moisturiser for very dry skin in winter" showed "Look for: AHA" ("get
+    # an AHA such as glycolic acid") and "Look for: BHA" ("I usually try exfoliants with bha"): advice on exfoliants. In
+    # skincare each type does its own job, so a kind whose name and notes name another type and never the one asked
+    # for gives no advice here.
+    ranking, bodies = moisturiser_case(("Get an AHA such as glycolic acid.", "I usually try exfoliants with aha."))
+    shown = [item.kind for item in write_answer(ranking, bodies, "moisturiser").look_for]
+    assert "AHA" not in shown and {"Squalane oil", "Ceramides"} <= set(shown)
+    assert "AHA" in [item.kind for item in write_answer(ranking, bodies, "exfoliant").look_for]  # its own type
+    # A note that ties it to the type asked for keeps it: an AHA lotion is a moisturiser.
+    ranking, bodies = moisturiser_case(("An AHA lotion fixed my rough dry legs.", "Get an AHA such as glycolic acid."))
+    assert "AHA" in [item.kind for item in write_answer(ranking, bodies, "moisturiser").look_for]
+
+
+def test_kitchen_advice_about_another_kind_of_pan_stays():
+    # Another kind of pan is a real alternative: "Look for: cast iron" answers a PFAS-free non-stick pan request well.
+    items = mentions(3, "Acme pan") + mentions(3, "Bolt pan")
+    notes = [note("Cast iron", "t1", quote="A cast iron skillet will outlive any non-stick pan."),
+             note("Cast iron", "t2", quote="Get a cast iron skillet instead.")]
+    ranking = rank_products(items, "kitchen", notes, {})
+    shown = [item.kind for item in write_answer(ranking, bodies_for(*items, *notes), "frying pan").look_for]
+    assert shown == ["Cast iron"]
+
+
 def test_low_voices_and_balanced_kinds_give_no_advice():
     notes = (
         [note("Plastic handle", voice="low") for _ in range(3)]
