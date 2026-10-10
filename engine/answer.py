@@ -362,10 +362,27 @@ def _quote_problem(text: str, comment_id: str, bodies: Mapping[str, str]) -> str
 
 def _shown_text(quote: str, body: str) -> str:
     """What the reader sees for a quote that passed: the comment's own text it matched, entities read ("&amp;" as
-    "&"), so the page never shows "&#32;" or more words than were counted. In the rare case that text wouldn't pass
-    the check itself (a comment holding an escaped entity such as "&amp;gt;"), the quote as checked is shown."""
+    "&"), so the page never shows "&#32;" or more words than were counted, and without the writer's bold or italics
+    marks (_without_emphasis, 10 Oct 2026). In the rare case that text wouldn't pass the check itself (a comment
+    holding an escaped entity such as "&amp;gt;"), the quote as checked is shown."""
     text = _as_written(body, find_quote(body, quote))
-    return text if verify_quote(body, text) else quote
+    text = text if verify_quote(body, text) else quote
+    plain = _without_emphasis(text)
+    return plain if verify_quote(body, plain) else text
+
+
+# Reddit's markdown for **bold**, __bold__, ~~strikethrough~~, *italics* and _italics_: shown as plain words (10 Oct
+# 2026: "**" showed as stars on cards). The quote check ignores these marks, so the words are still the comment's own.
+_EMPHASIS = (re.compile(r"\*\*(.+?)\*\*"), re.compile(r"__(.+?)__"), re.compile(r"~~(.+?)~~"),
+             re.compile(r"(?<![\w*])\*(?=\S)(.+?)(?<=\S)\*(?![\w*])"),
+             re.compile(r"(?<![\w_])_(?=\S)(.+?)(?<=\S)_(?![\w_])"))
+
+
+def _without_emphasis(text: str) -> str:
+    """The text without the writer's bold, italics and strikethrough marks; an underscore inside a word stays."""
+    for pattern in _EMPHASIS:
+        text = pattern.sub(r"\1", text)
+    return text
 
 
 def _badges(item: ScoredMention | KindNote | CareTip) -> tuple[str, ...]:

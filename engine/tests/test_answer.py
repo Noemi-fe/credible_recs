@@ -419,6 +419,22 @@ def test_the_quote_shown_is_the_comments_own_text_with_entities_read():
     assert "&amp;" not in shown_text(answer)
     assert unverified_claims(answer, {m.comment_id: body for m in items}) == []
 
+
+@pytest.mark.parametrize("body, shown", [
+    ("I absolutely swear by **CosRX Blackhead power liquid** for years.",
+     "I absolutely swear by CosRX Blackhead power liquid for years."),
+    ("It is *really* gentle and ~~cheap~~ affordable, great.", "It is really gentle and cheap affordable, great."),
+    ("My __favourite__ kettle, set to 80_C every day.", "My favourite kettle, set to 80_C every day."),
+])
+def test_a_quote_is_shown_without_the_writers_bold_or_italics(body, shown):
+    # Found in the blind-test dry run, 10 Oct 2026: Reddit's "**" showed as stars on the web card and in the blind
+    # test's plain template. The check ignores these marks, so the words shown are still the comment's own.
+    items = [mention("Acme kettle", f"t{i % 2 + 1}", comment=f"cB{i}", quote=body) for i in range(3)]
+    answer = write_answer(rank_products(items, "kitchen"), {m.comment_id: body for m in items})
+    assert {q.text for q in answer.picks[0].quotes} == {shown}
+    assert unverified_claims(answer, {m.comment_id: body for m in items}) == []
+
+
 # --- Prices and budgets (decision 11, Noemi, 9 Oct 2026) ---
 
 CHECKED = date(2026, 10, 9)
