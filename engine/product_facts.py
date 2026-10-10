@@ -33,9 +33,9 @@ outside the vocabulary stops the request with the entry's number and the problem
 
 How a product finds its facts (find_facts), as a product finds its price (engine.prices): an entry of the same
 category whose name means the same product, by module 4's rules (engine.match_products.same_product, with the
-category's known short names, so "Sage" finds "Breville"). When several fit: the one with exactly the same words first,
-then one of the requested product type, then the most recently checked. A brand pick ("Lodge (their cast iron
-skillets)") is no single product, so its facts are never looked up. So when the request has a hard requirement its
+category's known short names, so "Sage" finds "Breville"). When several fit: the one with the same words (but for
+spelling slips, 10 Oct 2026) first, then one of the requested product type, then the most recently checked. A brand
+pick ("Lodge (their cast iron skillets)") is no single product, so its facts are never looked up. So when the request has a hard requirement its
 product type can have (hard_requirements: "non-stick frying pan without PFAS"), brand picks are left out and listed with
 the reason uncheckable_brand_reason gives ("a whole brand can't be checked for PFAS or a non-stick coating"; decided by
 Claude, 10 Oct 2026, as Noemi asked): a brand's other pans may well be PTFE-coated. A requirement its type can't have
@@ -89,7 +89,7 @@ from engine.config import (
     UNCONFIRMED_NOTE,
     THREAD_CATEGORIES,
 )
-from engine.match_products import known_aliases, product_words, same_product
+from engine.match_products import known_aliases, product_words, same_product, written_alike
 from engine.models import Record
 from engine.needs import request_needs
 from engine.query import MUST_HAVES, PRODUCT_TYPES, ParsedQuery
@@ -194,9 +194,9 @@ def find_facts(name: str, category: str, entries: Iterable[ProductFacts],
                product_type: str | None = None) -> ProductFacts | None:
     """The facts entry of the product called `name`, or None when the list has none.
 
-    Among the entries of the same category whose name means the same product (module 4's rules): the one with exactly
-    the same words first, then one of `product_type` (the request's), then the newest check, then the name, so the
-    choice is always the same. Entries are never merged: two names may be two versions of a product.
+    Among the entries of the same category whose name means the same product (module 4's rules): the one with the
+    same words (but for spelling slips: engine.match_products.written_alike) first, then one of `product_type` (the
+    request's), then the newest check, then the name, so the choice is always the same. Entries are never merged: two names may be two versions of a product.
     """
     aliases = known_aliases().get(category, {})
     fits = [e for e in entries if e.category == category and same_product(e.product, name, aliases)]
@@ -205,7 +205,7 @@ def find_facts(name: str, category: str, entries: Iterable[ProductFacts],
     words = product_words(name, aliases)
 
     def preference(e: ProductFacts) -> tuple:
-        exact = product_words(e.product, aliases) == words
+        exact = written_alike(product_words(e.product, aliases), words)  # the same name, but for slips
         return not exact, e.product_type != product_type, -e.checked_on.toordinal(), e.product.casefold()
 
     return min(fits, key=preference)

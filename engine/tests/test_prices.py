@@ -188,3 +188,11 @@ def test_an_entry_can_carry_a_note_the_answer_never_shows(tmp_path):
 def test_the_committed_price_list_keeps_notes_out_of_shop_names():
     for price in load_prices():
         assert "(" not in price.shop and len(price.shop) <= 40, price.shop
+
+
+def test_a_name_with_a_slip_finds_its_own_price_before_a_shorter_name():
+    # From the library (10 Oct 2026): the misspelled oil cleanser's price, not the foam cleanser's.
+    oil = price("Beplain Mungbean Greenful Oil Cleanser", category="skincare", amount=18.0,
+                checked_on=TODAY - timedelta(days=5))
+    foam = price("Beplain mungbean cleanser", category="skincare", amount=12.0)
+    assert find_price("Beplain mungbean greenful oil cleasner", "skincare", [foam, oil]).price == 18.0

@@ -1,5 +1,5 @@
 {
-  "note": "Known short names, per category: written out in full before names are compared (engine/match_products.py). Drafted by Claude on 9 Oct 2026 from the library's product names; Noemi reviews. Add a short name only when real names show it is needed, and list them under 'seen' (product names only, never comment text). Products: a short name is only written out at the start of a name. Kinds: anywhere in the kind (engine/group_kinds.py).",
+  "note": "Known short names, per category: written out in full before names are compared (engine/match_products.py). Drafted by Claude on 9 Oct 2026 from the library's product names; Noemi reviews. Add a short name only when real names show it is needed, and list them under 'seen' (product names only, never comment text). Since 10 Oct 2026 a short name can also be one product's other name, where a rule would be too risky ('House of Hur weightless sunscreen' is its Weightless Sun Fluid); such entries were added by Claude from the blind-test answers' split products. Products: a short name is only written out at the start of a name, even with a small spelling slip or a possessive ('BoJ's'). Kinds: anywhere in the kind (engine/group_kinds.py).",
   "products": {
     "skincare": [
       {"short": "TO", "full": "The Ordinary", "seen": ["TO lactic acid", "The ordinary lactic acid", "TO niacinamide", "the Ordinary Niacinamide 10% and Zinc 1%"]},
@@ -12,7 +12,13 @@
       {"short": "HL", "full": "Hada Labo", "seen": ["HL Hyaluronic Lotion Moist", "Hada Labo Perfect Gel"]},
       {"short": "Elta", "full": "EltaMD", "seen": ["Elta", "Elta MD UV Clear", "EltaMD"]},
       {"short": "BCIZ", "full": "Banila Co Clean It Zero", "seen": ["BCIZ", "banila co clean it zero"]},
-      {"short": "tret", "full": "Tretinoin", "seen": ["tret", "tret 0.025", "tret micro gel", "Tretinoin"]}
+      {"short": "tret", "full": "Tretinoin", "seen": ["tret", "tret 0.025", "tret micro gel", "Tretinoin"]},
+      {"short": "Etude", "full": "Etude House", "seen": ["Etude Mild airy finish sunscreen", "etude soon jung cleansers", "Etude House SoonJung 2x Barrier Intensive Cream"]},
+      {"short": "Kiku", "full": "Kikumasamune", "seen": ["Kiku Sake cream", "Kikumasamume Sake Skin Care Cream", "kiku masamune emulsion"]},
+      {"short": "DDG", "full": "Dr Dennis Gross", "seen": ["DDG peel pads", "Dr Dennis Gross peel pads"]},
+      {"short": "PC", "full": "Paula's Choice", "seen": ["PC's BHA", "Paula's Choice 2% BHA Skin Perfecting Liquid"]},
+      {"short": "Beauty of Joseon retinal eye cream", "full": "Beauty of Joseon Revive Eye Serum", "seen": ["BoJ retinal eye cream", "beauty of joseon retinal eye cream", "Beauty of Joseon Revive Eye Serum: Retinal + Ginseng", "BOJ eye serum"]},
+      {"short": "House of Hur weightless sunscreen", "full": "House of Hur Weightless Sun Fluid", "seen": ["House of Hurr Weightless Sunscreen", "Houe of Hur weightless sunscreen", "House of Hur Weightless Sun Fluid"]}
     ],
     "kitchen": [
       {"short": "1Z", "full": "1Zpresso", "seen": ["1Z K plus", "1ZPresso K Plus"]},
@@ -34,7 +40,11 @@
       {"short": "Bambino", "full": "Breville Bambino", "seen": ["bambino", "Breville Bambino"]},
       {"short": "Silenzio", "full": "Eureka Silenzio", "seen": ["Silenzio", "Eureka Silenzio"]},
       {"short": "Mignon", "full": "Eureka Mignon", "seen": ["Mignon Specialita", "eureka mignon"]},
-      {"short": "Proline", "full": "Demeyere Proline", "seen": ["Proline stainless steel skillet", "Demeyere Proline"]}
+      {"short": "Proline", "full": "Demeyere Proline", "seen": ["Proline stainless steel skillet", "Demeyere Proline"]},
+      {"short": "Virtuoso", "full": "Baratza Virtuoso", "seen": ["Virtuoso", "Baratza Virtuoso"]},
+      {"short": "Fibrox", "full": "Victorinox Fibrox", "seen": ["Fibrox", "fibrox chef knife", "Victorinox Fibrox"]},
+      {"short": "Hario Slim", "full": "Hario Mini Slim", "seen": ["Hario slim hand grinder", "Hario Mini-Slim (MSS-1)"]},
+      {"short": "Field Company", "full": "Field", "seen": ["Field Company", "Field 10in", "Field skillet"]}
     ]
   },
   "kinds": {

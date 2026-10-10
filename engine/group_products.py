@@ -16,8 +16,13 @@ How names are grouped, one category at a time (a skincare name never joins a kit
    match each other: it fits more than one product ("CeraVe", "CeraVe cleanser", "Lodge skillet" next to a 10
    and a 12 inch skillet).
 4. The other names, the specific ones, are joined pair by pair: two specific names that match are one product.
-5. A loose name joins a product only when exactly one product among those it matches is specific. Otherwise it
-   stays a group of its own, with its other spellings, flagged loose (a brand or product line, not one
+5. A loose name joins a product only when everything it matches is one product: the specific names it matches, and
+   the loose names it matches that joined a product (longer loose names are judged first). A loose name it matches
+   that stays loose counts as another product ("MM" next to an "MM Factory pan" that fits two pans, and an MM
+   Factory lid, joins neither; 10 Oct 2026). When it matches more than one product, it joins the one that has its
+   very name but for a word that never tells products apart, if exactly one does (UNTELLING_WORDS, "skin":
+   "Cetaphil gentle cleanser" is the Gentle Skin Cleanser, not the Gentle Foaming Cleanser; 10 Oct 2026).
+   Otherwise it stays a group of its own, with its other spellings, flagged loose (a brand or product line, not one
    product). A loose name never joins two products together.
 A name made only of filler words ("the one") names nothing: it is a loose group of its own.
 
@@ -25,8 +30,10 @@ The name shown: the most complete name (the most words) among the names written 
 group's most written name; on a tie, the one written more often. So "Sunday Riley water cream" (once) beats
 "Sunday Riley" (twice), but "Timemore C2 with titanium coated burrs" (once) doesn't beat "Timemore C2" (24 times).
 Then, brand first: if another name of the group is that name with words added at its start ("1Zpresso JX Pro"
-for "JX Pro"), the most often written of those is shown instead. Of the spellings of that name, the most
-complete as written is shown ("The Ordinary" rather than "TO"), then the most common, then one with capitals.
+for "JX Pro"), the most often written of those is shown instead. Of the spellings of that name, one that says its
+words as they are is shown ("House of Hur Weightless Sun Fluid", not "House of Hurr Weightless Sunscreen", which a
+short name writes out), then the most complete as written ("The Ordinary" rather than "TO"), then the most common,
+then one with capitals.
 
 The key is the category and the words of the name shown, such as "skincare:cerave renewing sa cleanser". The
 same mentions, in any order, give the same groups and keys.
@@ -44,7 +51,13 @@ from dataclasses import dataclass, field
 
 from engine.config import BRAND_PICK_NAME, PRODUCT_TYPE_PLURALS, UK_BRAND_NAMES
 from engine.extract import CheckResult
-from engine.match_products import Aliases, join_split_words, known_aliases, normalize_name, product_words, same_words
+from engine.match_products import (
+    Aliases, comparable, join_split_words, known_aliases, normalize_name, product_words, same_words,
+)
+
+# Words that never tell two products apart, so a loose name equal to a product's name but for them names that product
+# (step 5): "Cetaphil gentle cleanser" is the Cetaphil Gentle Skin Cleanser, not its Gentle Foaming Cleanser.
+UNTELLING_WORDS = frozenset({"skin"})
 
 
 @dataclass(frozen=True)
@@ -145,8 +158,14 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
             for v in longer[s]:
                 if _root(spelling, v) not in loose:
                     _join(parent, s, _root(spelling, v))
-    for s in sorted(loose):  # step 5
-        products = {_root(parent, _root(spelling, v)) for v in longer[s] if _root(spelling, v) not in loose}
+    # Step 5, longer loose names first, so a shorter one sees whether each loose name it fits found its product: one
+    # still loose counts as a product of its own, since it fits several.
+    for s in sorted(loose, key=lambda s: (-len(s), s)):
+        products = {_root(parent, _root(spelling, v)) for v in longer[s]}
+        if len(products) > 1:  # more than one: the one it names but for words like "skin", if there is exactly one
+            named = [v for v in longer[s] if _root(spelling, v) not in loose
+                     and any(_equal_but_untelling(v, w) for w in spellings[s])]
+            products = {_root(parent, _root(spelling, v)) for v in named}
         if len(products) == 1:
             _join(parent, products.pop(), s)
 
@@ -167,8 +186,20 @@ def _fits_two_products(longer: set[Words]) -> bool:
 
 
 def _more_words(a: Words, b: Words) -> bool:
-    """Whether name a has more words than name b, once words one writes apart and the other as one are joined."""
-    return len(set(join_split_words(list(a), list(b)))) > len(set(join_split_words(list(b), list(a))))
+    """Whether name a has more words than name b, once made ready to compare (engine.match_products.comparable: words
+    one writes apart and the other as one joined, an "and" only one writes dropped)."""
+    words_a, words_b = comparable(list(a), list(b))
+    return len(set(words_a)) > len(set(words_b))
+
+
+def _equal_but_untelling(a: Words, b: Words) -> bool:
+    """Whether two names have the same words once UNTELLING_WORDS are left out of both, and one of them has such a word:
+    "cetaphil gentle skin cleanser" and "cetaphil gentle cleanser"."""
+    kept_a, kept_b = [w for w in a if w not in UNTELLING_WORDS], [w for w in b if w not in UNTELLING_WORDS]
+    if not kept_a or len(kept_a) + len(kept_b) == len(a) + len(b):
+        return False
+    words_a, words_b = comparable(kept_a, kept_b)
+    return words_a == words_b
 
 
 def _root(parent: dict[Words, Words], w: Words) -> Words:
@@ -189,7 +220,7 @@ def _join(parent: dict[Words, Words], a: Words, b: Words) -> None:
 def _make_group(category: str, by_words: dict[Words, list[ProductMention]], loose: bool) -> ProductGroup:
     shown = _shown_words(by_words)
     mentions = sorted((m for ms in by_words.values() for m in ms), key=lambda m: (m.thread_id, m.comment_id, m.product))
-    return ProductGroup(f"{category}:{' '.join(shown)}", _shown_spelling(by_words[shown]), category, mentions, loose)
+    return ProductGroup(f"{category}:{' '.join(shown)}", _shown_spelling(by_words[shown], shown), category, mentions, loose)
 
 
 def _shown_words(by_words: dict[Words, list[ProductMention]]) -> Words:
@@ -208,15 +239,18 @@ def _adds_words_at_start(longer: Words, name: Words) -> bool:
     return len(a) > len(b) and a[-len(b):] == b
 
 
-def _shown_spelling(mentions: list[ProductMention]) -> str:
-    """Of the spellings of one name: the most complete as written (letters and digits), then the most common, then
-    one with capital letters (but not all capitals), then the first alphabetically."""
+def _shown_spelling(mentions: list[ProductMention], words: Words) -> str:
+    """Of the spellings of one name (`words`): one that says those words as they are, with no short name or slip to
+    write out ("House of Hur Weightless Sun Fluid", not "House of Hurr Weightless Sunscreen"; 10 Oct 2026), then the
+    most complete as written (letters and digits: "The Ordinary" rather than "TO"), then the most common, then one with
+    capital letters (but not all capitals), then the first alphabetically."""
     counts = Counter(m.product for m in mentions)
 
     def preference(spelling: str):
-        letters = len("".join(normalize_name(spelling)))
+        as_written = normalize_name(spelling)
+        letters = len("".join(as_written))
         capitalised = spelling != spelling.lower() and spelling != spelling.upper()
-        return letters, counts[spelling], capitalised
+        return tuple(as_written) == words, letters, counts[spelling], capitalised
 
     return max(sorted(counts), key=preference)
 

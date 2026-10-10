@@ -10,7 +10,7 @@ from engine.extract import CheckResult, ExtractedMention
 from engine.group_products import (
     ProductMention, brand_pick_name, group_of, group_products, mentions_from_checked, uk_name,
 )
-from engine.match_products import make_aliases
+from engine.match_products import load_aliases, make_aliases
 from engine.query import PRODUCT_TYPES
 
 NO_ALIASES = {"skincare": {}, "kitchen": {}, "other": {}}
@@ -280,3 +280,55 @@ def test_a_brand_pick_name_that_already_says_the_type_has_no_bracket():
     # Noemi, 9 Oct 2026: "CeraVe cleanser (their cleansers)" reads oddly; the name already says what it is.
     assert brand_pick_name("CeraVe cleanser", "cleanser") == "CeraVe cleanser"
     assert brand_pick_name("Lodge", "cast iron skillet") == "Lodge (their cast iron skillets)"
+
+
+# --- A loose name that is one product's name but for the word "skin" (10 Oct 2026) ---
+
+def test_a_loose_name_joins_the_product_it_names_but_for_the_word_skin():
+    # From the library: "Cetaphil gentle cleanser" fits the Gentle Skin Cleanser and the Gentle Foaming Cleanser, but
+    # it is the first one's name without "skin", which says nothing about which product it is.
+    groups = group([mention("cetaphil gentle cleanser"), mention("Cetaphil gentle cleanser", "1fake02"),
+                    mention("Cetaphil Gentle Skin Cleanser", "1fake03"), mention("Cetaphil gentle foaming cleanser", "1fake04")])
+    assert names_by_group(groups) == [["Cetaphil Gentle Skin Cleanser", "Cetaphil gentle cleanser", "cetaphil gentle cleanser"],
+                                      ["Cetaphil gentle foaming cleanser"]]
+    assert not any(g.loose for g in groups)
+
+
+def test_skin_never_joins_two_products():
+    # Without the loose name, the two cleansers stay apart, and "skin" doesn't bring a third product into either.
+    groups = group([mention("Cetaphil Gentle Skin Cleanser"), mention("Cetaphil gentle foaming cleanser", "1fake02")])
+    assert len(groups) == 2
+    groups = group([mention("CeraVe cleanser"), mention("CeraVe SA cleanser", "1fake02"),
+                    mention("CeraVe Hydrating Cleanser", "1fake03")])
+    assert [g.name for g in groups if g.loose] == ["CeraVe cleanser"]  # no name equals it but for "skin"
+
+
+def test_a_brand_written_with_its_full_name_joins_the_brand():
+    # From the library: "Field Company" is the brand Field (shipped short names), which makes skillets in several
+    # sizes, so both are the brand, not one of its skillets.
+    groups = group([kitchen("Field 10in"), kitchen("Field 8in", "c2"), kitchen("Field", "c3"), kitchen("Field Company", "c4")],
+                   load_aliases())
+    assert names_by_group(groups) == [["Field", "Field Company"], ["Field 10in"], ["Field 8in"]]
+    assert [g.name for g in groups if g.loose] == ["Field"]
+
+
+def test_the_name_shown_is_one_written_as_the_product_is_known():
+    # From the library merges (10 Oct 2026): a name written out through a short name or a slip ("House of Hurr
+    # Weightless Sunscreen") is not shown when a name says the product's words as they are.
+    aliases = {"skincare": make_aliases({"House of Hur weightless sunscreen": "House of Hur Weightless Sun Fluid"})}
+    groups = group([mention("House of Hurr Weightless Sunscreen"), mention("House of Hurr Weightless Sunscreen", "1fake02"),
+                    mention("House of Hur Weightless Sun Fluid", "1fake03")], aliases)
+    assert [g.name for g in groups] == ["House of Hur Weightless Sun Fluid"]
+    # As before, the full name rather than a short one: "The Ordinary", not "TO".
+    groups = group([mention("TO"), mention("TO", "1fake02"), mention("The Ordinary", "1fake03")],
+                   {"skincare": make_aliases({"TO": "The Ordinary"})})
+    assert [g.name for g in groups] == ["The Ordinary"]
+
+
+def test_a_loose_name_that_fits_another_loose_name_stays_loose():
+    # From the library merges (10 Oct 2026): "MM" fits "MM Factory pan", itself loose (a 9 mm and a 12 mm pan), and
+    # an MM Factory lid. It fits more than one product, so it joins none, even though only the lid is specific.
+    groups = group([kitchen("MM"), kitchen("MM Factory extra thick lid", "c2"), kitchen("MM Factory pan", "c3"),
+                    kitchen("9 mm MM Factory pan", "c4"), kitchen("12 mm MM Factory pan", "c5")])
+    assert ["MM"] in names_by_group(groups)
+    assert sorted(g.name for g in groups if g.loose) == ["MM", "MM Factory pan"]

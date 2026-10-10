@@ -35,14 +35,14 @@ from one pan to the next, so `todo` never asks for one.
 
 How a product finds its price (find_price): an entry with a price, of the same category, whose name means the same
 product, by module 4's rules (engine.match_products.same_product, with the category's known short names, so "Sage"
-finds "Breville"). When several fit: the one with exactly the same words first, then one in the request's currency,
-then the most recently checked, then the cheapest.
+finds "Breville"). When several fit: the one with the same words (but for spelling slips, 10 Oct 2026) first, then
+one in the request's currency, then the most recently checked, then the cheapest.
 
 How a product finds whether it is sold (find_availability): among the entries that say, the same way, the one with
-exactly the same words first, then the newest check; on the same day, one shop selling it is enough, and one selling it
-new comes before a second-hand one. A second-hand entry says the product is sold, like any other. The pipeline
-leaves out a product whose answer is "no longer sold" (engine.pipeline, the budget step), whatever its price and
-however old the check: unlike a price, a product that stopped being sold rarely comes back, and an answer should never
+the same words (but for slips) first, then the newest check; on the same day, one shop selling it is enough, and one
+selling it new comes before a second-hand one. A second-hand entry says the product is sold, like any other. The
+pipeline leaves out a product whose answer is "no longer sold" (engine.pipeline, the budget step), whatever its price
+and however old the check: unlike a price, a product that stopped being sold rarely comes back, and an answer should never
 recommend it. A product with no availability check is kept, and its answer says so.
 
 A brand pick ("Griswold (their cast iron skillets)") has no single product, so it is never priced or checked this way,
@@ -82,7 +82,7 @@ from urllib.parse import urlsplit
 from pydantic import AfterValidator, Field, StrictBool, ValidationError, model_validator
 
 from engine.config import PRICE_MAX_AGE_DAYS, PRICES_TODO_NEXT_IN_LINE, THREAD_CATEGORIES
-from engine.match_products import known_aliases, product_words, same_product
+from engine.match_products import known_aliases, product_words, same_product, written_alike
 from engine.models import Record
 from engine.query import Budget
 
@@ -181,7 +181,7 @@ def find_price(name: str, category: str, prices: Iterable[Price], currency: str 
     words = product_words(name, aliases)
 
     def preference(p: Price) -> tuple:
-        exact = product_words(p.product, aliases) == words
+        exact = written_alike(product_words(p.product, aliases), words)  # the same name, but for slips
         return not exact, p.currency != currency, -p.checked_on.toordinal(), p.price, p.shop.casefold()
 
     return min(fits, key=preference)
@@ -190,17 +190,18 @@ def find_price(name: str, category: str, prices: Iterable[Price], currency: str 
 def find_availability(name: str, category: str, prices: Iterable[Price]) -> Price | None:
     """The entry that says whether the product called `name` is still sold, or None when no entry says.
 
-    Among the entries that say (available true or false): the one with exactly the same words first, then the newest
-    check (a product sold in January but no longer in October is no longer sold); on the same day, one that says it is
-    sold, since one shop selling it is enough, and one selling it new before one selling it second-hand (10 Oct 2026);
-    then the shop's name, so the choice is always the same.
+    Among the entries that say (available true or false): the one with the same words (but for spelling slips) first,
+    then the newest check (a product sold in January but no longer in October is no longer sold); on the same day, one
+    that says it is sold, since one shop selling it is enough, and one selling it new before one selling it second-hand
+    (10 Oct 2026); then the shop's name, so the choice is always the same.
     """
     aliases = known_aliases().get(category, {})
     fits = [p for p in entries_for(name, category, prices) if p.available is not None]
     if not fits:
         return None
     words = product_words(name, aliases)
-    return min(fits, key=lambda p: (product_words(p.product, aliases) != words, *_newest_check_first(p)))
+    return min(fits, key=lambda p: (not written_alike(product_words(p.product, aliases), words),
+                                    *_newest_check_first(p)))
 
 
 def find_brand_second_hand(names: Iterable[str], category: str, prices: Iterable[Price]) -> Price | None:
