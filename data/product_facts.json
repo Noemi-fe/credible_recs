@@ -684,6 +684,194 @@
     "https://dmd-browser.nhsbsa.nhs.uk/ampp/view/11127"
    ],
    "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Stratia Soft Touch AHA",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "strength": "gentle",
+    "prescription_only": false,
+    "fragrance_free": true,
+    "maker_warns_sensitive": false
+   },
+   "sources": [
+    "https://www.stratiaskin.com/products/soft-touch-aha"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "COSRX AHA/BHA Clarifying Treatment Toner",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "strength": "gentle",
+    "prescription_only": false,
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.cultbeauty.co.uk/p/cosrx-aha-bha-clarifying-treatment-toner-150ml/11401176/",
+    "https://www.breuninger.com/nl/en/b/cosrx/aha-bha-clarifying-treatment-toner/1003468076/p/"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Peach Slices Acne Exfoliating Toner",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "strength": "moderate",
+    "prescription_only": false,
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.peachandlily.com/products/acne-exfoliating-toner"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Eucerin Sun Gel-Creme Oil Control Dry Touch SPF 50+ (face)",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "facts": {
+    "white_cast": false,
+    "filters": "chemical",
+    "finish": "matte",
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.lookfantastic.com/p/eucerin-sun-face-oil-control-sun-gel-cream-dry-touch-spf50-50ml/12510296/"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "House of Hur Weightless Sun Fluid",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "facts": {
+    "white_cast": false,
+    "filters": "chemical",
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.boozyshop.com/products/house-of-hur-weightless-sun-fluid-spf-50",
+    "https://pureseoul.co.uk/products/house-of-hur-weightless-sun-fluid"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Beauty of Joseon Revive Eye Serum: Ginseng + Retinal",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "strength": "gentle",
+    "prescription_only": false,
+    "fragrance_free": true,
+    "maker_warns_sensitive": false
+   },
+   "sources": [
+    "https://ie.beautyofjoseon.com/products/revive-eye-serum-ginseng-retinal",
+    "https://www.lookfantastic.com/p/14866956/"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "CeraVe Resurfacing Retinol Serum",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "strength": "gentle",
+    "prescription_only": false,
+    "fragrance_free": true,
+    "maker_warns_sensitive": false
+   },
+   "sources": [
+    "https://www.cerave.co.uk/skincare/serums/resurfacing-retinol-serum",
+    "https://theindependentpharmacy.co.uk/acne/cerave-resurfacing-retinol-serum-30ml"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "innisfree Retinol Cica Moisture Recovery Serum",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "strength": "gentle",
+    "prescription_only": false,
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.spacenk.com/uk/skincare/treatment/serums/retinol-cica-moisture-recovery-serum-MUK200049251.html",
+    "https://www.cultbeauty.co.uk/p/innisfree-retinol-cica-moisture-recovery-serum-30ml/14935742",
+    "https://boozyshop.com/products/innisfree-retinol-cica-repair-ampoule"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Cetaphil Gentle Skin Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.lookfantastic.com/p/cetaphil-gentle-skin-cleanser-wash-236ml/13908195/"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Aveeno Calm + Restore Nourishing Oat Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.lookfantastic.com/p/aveeno-face-calm-and-restore-nourishing-oat-cleanser-200ml/13434909/"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "La Roche-Posay Toleriane Dermo-Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {
+    "fragrance_free": true,
+    "texture": "light"
+   },
+   "sources": [
+    "https://www.lookfantastic.com/p/11091885/",
+    "https://escentual.com/products/la-roche-posay-toleriane-dermo-cleanser"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "OXO pre-seasoned carbon steel pan",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true,
+    "non_stick": false,
+    "induction": true
+   },
+   "sources": [
+    "https://www.amazon.com/dp/B09LL9M63H",
+    "https://www.amazon.co.uk/s?k=OXO+Obsidian+carbon+steel"
+   ],
+   "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Circulon pans",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "non_stick": true
+   },
+   "sources": [
+    "https://circulon.com/pages/product-disclosures",
+    "https://circulon.com/products.json"
+   ],
+   "checked_on": "2026-10-10"
   }
  ]
 }
