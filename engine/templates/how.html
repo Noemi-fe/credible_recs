@@ -138,7 +138,7 @@ h3.group { font-size: 15px; text-transform: uppercase; letter-spacing: .04em; co
   <p>The {{config:PICKS_SHOWN}} products with the highest scores are shown. If fewer have enough evidence, we show fewer and say so: we'd rather say "not enough evidence yet" than guess.</p>
   <p>When credible voices clearly prefer one kind of product (at least {{config:KIND_LEAD_RATIO}} times the support of the next kind, say Japanese chef knives over German ones), products of that kind get a bonus of {{config:KIND_BONUS}}.</p>
   <p>Each pick shows {{config:MIN_QUOTES_PER_PICK}} to {{config:QUOTES_PER_PICK}} quotes from the people who back it, each with a link to its comment and checked word for word again just before it's shown.</p>
-  <p>Warnings count too. A product with at least {{config:SKIP_MIN_CREDIBLE_WARNINGS}} credible warnings, and more warnings than recommendations, goes on the "{{skip_heading}}" list. A pick that at least {{config:DISAGREEMENT_MIN_CREDIBLE_WARNINGS}} credible voices warn against is marked "{{mixed_opinions}}".</p>
+  <p>Warnings count too. A product with at least {{config:SKIP_MIN_CREDIBLE_WARNINGS}} credible warnings, and more warnings than recommendations, goes on the "{{skip_heading}}" list, unless it is a brand or line one of the picks belongs to ("Lodge pans" next to the pick "Lodge"): then its warnings are shown under that pick instead, so an answer never tells you to skip one of its picks. A pick that at least {{config:DISAGREEMENT_MIN_CREDIBLE_WARNINGS}} credible voices warn against is marked "{{mixed_opinions}}".</p>
 </section>
 
 <section class="step" aria-labelledby="left-out">
