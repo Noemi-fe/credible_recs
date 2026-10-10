@@ -269,3 +269,153 @@ def test_a_brand_alone_matches_its_possessive_form():
 def test_a_model_code_with_an_s_is_another_model():
     # "Q2" and "Q2S" are two grinders: the possessive rule is for brand words made of letters only.
     assert not same_product("Q2", "q2s")
+
+
+# --- Splits found in the blind-test answers (10 Oct 2026): one product written several ways ---
+
+@pytest.mark.parametrize("a, b", [
+    ("House of Hurr Weightless Sunscreen", "House of Hur weightless sunscreen"),  # a letter doubled, in a short word
+    ("Comandante C40", "Commandante C40"),
+    ("Bioderma AKN Matt", "Bioderma AKN Mat"),
+])
+def test_a_doubled_letter_is_a_slip_even_in_a_short_word(a, b):
+    assert same_product(a, b)
+
+
+def test_a_doubled_digit_is_not_a_slip():
+    # Model numbers differ by a digit: "Lido 2" and "Lido 22" would be two models.
+    assert not same_product("Lido 2", "Lido 22")
+    assert not same_product("Hario V60", "Hario V600")
+
+
+@pytest.mark.parametrize("a, b", [
+    ("Le Creseut", "Le Creuset"),  # letters moved further than one place
+    ("Victoronix Fibrox", "Victorinox Fibrox"),
+])
+def test_letters_moved_within_three_neighbouring_places_are_a_slip(a, b):
+    assert same_product(a, b)
+
+
+def test_the_same_letters_moved_far_apart_are_not_a_slip():
+    assert not same_product("Ginsu knife", "Gusin knife")  # the letters of positions 2 to 5 all moved
+
+
+@pytest.mark.parametrize("a, b", [
+    ("Commandante", "Comandante C40"),  # a misspelled brand alone
+    ("Zojurushi", "Zojirushi kettle"),
+    ("Kikumasamune Sake cream", "Kikumasamume Sake Skin Care Cream"),  # a slip and extra words together
+    ("Beauty of Josen Green Plum cleanser", "Beauty of Joseon Green Plum Refreshing Cleanser"),
+    ("The Ordinary's Advanced Retinoid", "The Ordinary Advanced Retinoid 2%"),  # a possessive "s"
+])
+def test_a_shorter_name_found_inside_a_longer_one_with_a_slip_is_the_same_product(a, b):
+    assert same_product(a, b)
+    assert same_product(b, a)
+
+
+@pytest.mark.parametrize("a, b", [
+    ("Timemore C2", "Timemore C2 Max"),  # the extra model word still makes another model
+    ("Pyukang Yul Essence Toner", "Pyunkang Yul Nutrition Cream"),  # a misspelled brand, another product
+    ("Dr Ceracle cream", "Dr Ceuracle kombucha essence"),
+    ("Zojurushi kettle", "Zojirushi rice cooker"),
+])
+def test_a_slip_does_not_make_different_products_the_same(a, b):
+    assert not same_product(a, b)
+
+
+def test_non_before_a_model_word_says_which_model_it_is_not():
+    # "1zpresso JX (non pro)" is the plain JX: "non pro" says it isn't the Pro.
+    assert normalize_name("1zpresso JX (non-pro)") == ["1zpresso", "jx"]
+    assert same_product("1zpresso JX (non pro)", "1zpresso JX")
+    assert not same_product("1zpresso JX (non pro)", "1zpresso JX Pro")
+    # Before any other word, "non" is part of the name: a non-foaming cleanser is not a foaming one.
+    assert normalize_name("Aveeno non foaming cleanser") == ["aveeno", "non", "foaming", "cleanser"]
+
+
+@pytest.mark.parametrize("a, b", [
+    ("Black and Decker kettle", "Black & Decker kettle"),  # "&" is dropped as punctuation, so "and" is too
+    ("Geek and Gorgeous Zero Feel SPF", "Geek & Gorgeous Zero Feel SPF 50"),
+    ("Mary and May idebenone cream", "Mary & May Idebenone cream"),
+])
+def test_and_written_out_is_the_same_as_an_ampersand(a, b):
+    assert same_product(a, b)
+    assert same_product(b, a)
+
+
+def test_and_still_separates_when_both_names_have_it():
+    assert not same_product("Griswold and Wagner", "Lodge and Wagner")
+
+
+# --- Short names written with a possessive, a slip, or one inside another (10 Oct 2026) ---
+
+def test_a_short_name_with_a_possessive_is_spelled_out():
+    aliases = make_aliases({"TO": "The Ordinary", "BoJ": "Beauty of Joseon"})
+    assert product_words("TO's mandelic acid", aliases) == ["ordinary", "mandelic", "acid"]
+    assert product_words("BoJ's Revive Eye Serum", aliases) == ["beauty", "of", "joseon", "revive", "eye", "serum"]
+    # Without an apostrophe, an "s" after a model code is another model: the Q2S is not the Q2.
+    assert product_words("Q2S", make_aliases({"Q2": "1Zpresso Q2"})) == ["q2s"]
+    assert product_words("tos", aliases) == ["tos"]
+
+
+def test_a_short_name_written_with_a_slip_is_spelled_out():
+    aliases = make_aliases({"House of Hur weightless sunscreen": "House of Hur Weightless Sun Fluid"})
+    assert product_words("House of Hurr Weightless Sunscreen", aliases) == ["house", "of", "hur", "weightless", "sun", "fluid"]
+
+
+def test_a_spelled_out_name_can_hold_another_short_name():
+    # "BoJ retinal eye cream": BoJ is Beauty of Joseon, and Beauty of Joseon's retinal eye cream is its Revive Eye
+    # Serum (its only retinal eye product).
+    aliases = make_aliases({"BOJ": "Beauty of Joseon",
+                            "Beauty of Joseon retinal eye cream": "Beauty of Joseon Revive Eye Serum"})
+    assert product_words("BoJ retinal eye cream", aliases) == ["beauty", "of", "joseon", "revive", "eye", "serum"]
+
+
+@pytest.mark.parametrize("category, a, b", [
+    ("kitchen", "Hario Mini-Slim (MSS-1)", "Hario slim"),  # the Slim is the Mini-Slim
+    ("kitchen", "Virtuoso", "Baratza Virtuoso"),
+    ("kitchen", "Fibrox", "Victorinox Fibrox"),
+    ("kitchen", "Field Company", "Field"),
+    ("skincare", "Kikumasamume Sake Skin Care Cream", "Kiku Sake cream"),
+    ("skincare", "BoJ retinal eye cream", "Beauty of Joseon Revive Eye Serum: Retinal + Ginseng"),
+    ("skincare", "BoJ's Revive Eye Serum", "Beauty of Joseon Revive Eye Serum: Retinal + Ginseng"),
+    ("skincare", "House of Hurr Weightless Sunscreen", "House of Hur Weightless Sun Fluid"),
+    ("skincare", "Etude soon jung cleansers", "Etude House Soon Jung foam cleanser"),
+    ("skincare", "DDG peel pads", "Dr Dennis Gross peel pads"),
+    ("skincare", "PC's BHA", "Paula's Choice 2% BHA Skin Perfecting Liquid"),
+])
+def test_the_shipped_short_names_found_in_the_blind_test_answers(category, a, b):
+    assert same_product(a, b, load_aliases()[category])
+
+
+def test_the_shipped_short_names_keep_other_models_apart():
+    kitchen = load_aliases()["kitchen"]
+    assert not same_product("Baratza Virtuoso Plus", "Virtuoso", kitchen)
+    assert not same_product("Hario Slim Pro", "Hario Mini-Slim (MSS-1)", kitchen)
+    skincare = load_aliases()["skincare"]
+    assert not same_product("BoJ retinal eye cream", "Beauty of Joseon Dynasty Cream", skincare)
+
+
+def test_retinal_and_retinol_are_never_a_slip():
+    # From the library merges (10 Oct 2026): one letter apart, but two different retinoids.
+    assert not same_product("Medik8 retinal", "Medik8 retinol")
+    assert not same_product("Cera Ve retinal", "CeraVe resurfacing retinol serum")
+
+
+def test_a_slip_in_the_first_word_of_a_shorter_name_is_only_forgiven_at_the_start_of_the_longer():
+    # From the library merges (10 Oct 2026): "treitnoin .05" (tretinoin in general) isn't Obagi's tretinoin. The first
+    # word of a name is most often its brand, so a slip in it is only forgiven where the longer name starts.
+    assert not same_product("treitnoin .05", "Obagi 0.05% tretinoin cream")
+    assert same_product("treitnoin .05", "tretinoin 0.05% cream")
+    assert same_product("speedy oil cleaner", "Kose Speedy oil cleanser")  # a slip in a later word is forgiven
+
+
+def test_refurbished_is_filler():
+    # A refurbished unit is the same product (from the library: "Baratza Virtuoso+ (refurbished)", "refurbished Virtuoso").
+    assert normalize_name("refurbished Virtuoso") == ["virtuoso"]
+    assert same_product("refurbished Virtuoso", "Baratza Virtuoso", load_aliases()["kitchen"])
+
+
+def test_a_short_name_already_written_out_with_a_slip_is_left_alone():
+    # "Ettude Houde" is Etude House misspelled, not Etude followed by a word "houde".
+    aliases = make_aliases({"Etude": "Etude House"})
+    assert product_words("Ettude Houde", aliases) == ["ettude", "houde"]
+    assert same_product("Ettude Houde", "Etude House", aliases)

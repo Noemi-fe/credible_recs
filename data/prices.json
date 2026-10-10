@@ -851,6 +851,19 @@
     "Eureka Mignon Filtro"
    ],
    "note": "£149.00 including VAT, black (15BL); sold out on 10 Oct; Bella Barista sells only its burrs"
+  },
+  {
+   "product": "Baratza Virtuoso+",
+   "category": "kitchen",
+   "price": 199.95,
+   "currency": "GBP",
+   "shop": "Baratza UK",
+   "url": "https://www.baratza.com/en-gb/product/virtuosotm-zcg520",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Baratza Virtuoso"
+   ]
   }
  ]
 }

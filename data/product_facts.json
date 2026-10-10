@@ -872,6 +872,19 @@
     "https://circulon.com/products.json"
    ],
    "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Merten & Storck carbon steel pan",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true,
+    "non_stick": false
+   },
+   "sources": [
+    "https://www.greenpan.us/collections/merten-storck-carbon-steel"
+   ],
+   "checked_on": "2026-10-10"
   }
  ]
 }

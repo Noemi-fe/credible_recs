@@ -730,3 +730,12 @@ def test_a_renamed_pick_keeps_its_cautions(tmp_path):
     result = answer_request("moisturiser for oily skin", library_dir=lib, prices=[], product_facts=[RICH], today=TODAY)
     picks = {pick.name: pick for pick in result.answer.picks}
     assert picks["CeraVe Moisturising Cream"].cautions == [RICH_CAUTION]
+
+
+def test_a_name_with_a_slip_comes_first_too():
+    # From the library (10 Oct 2026): "Beplain mungbean greenful oil cleasner" is the oil cleanser misspelled. A shorter
+    # entry ("Beplain mungbean cleanser") fits it too, but the name written alike but for a slip comes first.
+    oil = known("Beplain Mungbean Greenful Oil Cleanser", product_type="cleanser", checked_on=TODAY - timedelta(days=5),
+                fragrance_free=True)
+    foam = known("Beplain mungbean cleanser", product_type="cleanser", fragrance_free=False)
+    assert find_facts("Beplain mungbean greenful oil cleasner", "skincare", [foam, oil], "cleanser") == oil
