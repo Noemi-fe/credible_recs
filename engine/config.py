@@ -667,8 +667,13 @@ _FAILED = (r"(stop(s|ped|ping)? working|died|dies|broke(?! in (?!(about |around 
 _SOON = (r"(after|within|in|under) (just |only |about |around |roughly |barely |less than |under |a little over )?"
          r"((a|an|one|two|three|four|five|six|\d+|a few|(a )?couple( of)?|several|few) (days?|weeks?|months?)"
          r"|(a|one|1|two|2|three|3|a few|(a )?couple( of)?) years?|the first (few )?(days?|weeks?|months?|year))")
+# Saying outright that it won't last counts too: "they are not buy it for life", "it just doesn't last" (b10, 10 Oct).
 OPPOSITE_QUOTE_PATTERNS["lasting"] = (rf"\b{_FAILED}\b[^.!?]{{0,40}}?\b{_SOON}\b",
-                                      rf"\b{_SOON}\b[^.!?]{{0,30}}?\b{_FAILED}\b")
+                                      rf"\b{_SOON}\b[^.!?]{{0,30}}?\b{_FAILED}\b",
+                                      r"\b(not|isn't|aren't|wasn't|weren't|never) (really |exactly |quite )?"
+                                      r"(bifl|buy it for life)\b",
+                                      r"\b(won't|doesn't|didn't|don't|will not|does not|did not|do not|never) "
+                                      r"(really |ever |just )?last\b")
 
 # --- Quotes that say what the writer thinks come first (10 Oct 2026) ---
 # Decided by Claude, reported to Noemi. Found in b09: "I have a Baratza Encore, Timemore C2 (at work), and a 1zpresso

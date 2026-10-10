@@ -558,6 +558,14 @@ def test_a_quote_saying_the_opposite_of_what_was_asked_is_shown_last():
     ("lasting", "I've had it for 12 years and it still works.", False),
     ("lasting", "It broke in nicely after a few weeks of use.", False),  # breaking in a pan is using it, not failing
     ("lasting", "Stopped working after 13 years of daily use.", False),
+    # Saying outright it won't last (b10 at 16 threads: "happy with my Greenpan ceramic coated skillets, but they are
+    # not buy it for life").
+    ("lasting", "I have been happy with my skillets, but they are not buy it for life.", True),
+    ("lasting", "Great pan, it just doesn't last.", True),
+    ("lasting", "Non-stick coatings won't last, whatever you pay.", True),
+    ("lasting", "It isn't BIFL but it's cheap.", True),
+    ("lasting", "This one is BIFL, no question.", False),
+    ("lasting", "Mine didn't last.", True),
 ])
 def test_what_says_the_opposite_of_a_request(ask, quote, against):
     from engine.answer import _says_the_opposite
