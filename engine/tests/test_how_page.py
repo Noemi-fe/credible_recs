@@ -268,6 +268,12 @@ def test_the_lists_of_signs_follow_the_code():
     assert tuple(how_page.METRIC_WORDING) == metrics.METRIC_KEYS
 
 
+def test_the_copied_text_red_flag_is_explained():
+    # Noemi's decision of 11 Oct 2026: copying another writer's comment is a red flag. The page says it lists every red
+    # flag the rules count, so it must list this one too.
+    assert "copied text" in how_page.RED_FLAGS
+
+
 def test_every_need_a_fact_rule_asks_for_has_plain_words():
     asks = {need for rule in config.PRODUCT_FACT_RULES.values() for need in rule["asks"]}
     assert asks <= set(how_page.ASKS_WORDS), asks - set(how_page.ASKS_WORDS)

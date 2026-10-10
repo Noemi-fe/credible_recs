@@ -57,6 +57,9 @@ RED_FLAGS: dict[str, str] = {
     "salesy language": "<strong>Sounds like an advert:</strong> “buy now”, “link in bio”, “use my code”.",
     "promotes one brand": "<strong>Works for a brand:</strong> they say they work for, own or represent one.",
     "downvoted": "<strong>Downvoted:</strong> more people voted the comment down than up.",
+    "copied text": "<strong>Copies someone else:</strong> {{config:COPIED_TEXT_MIN_WORDS}} words or more in a row are "
+                   "the same as another writer's comment in the thread, as when two accounts post the same "
+                   "recommendation.",
 }
 # The signs of honesty that add to the evidence (engine/credibility.py, HONESTY_TAGS), in that order.
 HONESTY_SIGNS: dict[str, str] = {
