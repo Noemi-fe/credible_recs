@@ -124,6 +124,9 @@ def shown_from_ours(data: dict | None, words: int = BLIND_TEST_WORDS_PER_PICK) -
 
 def _shown_pick(pick: dict, words: int) -> str:
     fixed = list(pick.get("cautions") or [])  # always kept: a caution is part of the pick
+    availability = pick.get("availability") or {}
+    if availability.get("second_hand"):  # vintage, sold second-hand only (Noemi, 10 Oct 2026): testers should know
+        fixed.append("Sold second-hand only.")
     price = pick.get("price") or {}
     if price.get("amount") is not None and price.get("text"):
         fixed.append(f"Price: {price['text'].split(', checked')[0]}")

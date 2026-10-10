@@ -191,6 +191,13 @@ def test_a_brand_picks_model_is_part_of_its_reason():
     assert "Most named model: Victorinox Fibrox chef knife. Recommended by 3 credible voices" in shown
 
 
+def test_a_pick_sold_second_hand_only_says_so():
+    shown = shown_from_ours({"picks": [pick(1, "Griswold (their cast iron skillets)",
+                                            availability={"text": "Sold second-hand only: eBay UK, checked 10 Oct 2026",
+                                                          "second_hand": True})]})
+    assert "Sold second-hand only." in shown and "eBay" not in shown
+
+
 def test_with_no_picks_our_answer_says_so_in_its_own_words():
     assert shown_from_ours({"picks": [], "message": "Not enough credible evidence to recommend a kettle yet."}) == (
         "Not enough credible evidence to recommend a kettle yet.")

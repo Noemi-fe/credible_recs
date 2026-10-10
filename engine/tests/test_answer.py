@@ -462,6 +462,35 @@ def test_a_short_name_or_model_code_names_the_product(name, quote):
     assert not _names_product("Others I have used and not had any issues with:", name, "kitchen")
 
 
+def test_a_quote_saying_the_opposite_of_what_was_asked_is_shown_last():
+    # Found reading b02, 10 Oct 2026: for "doesn't leave a white cast", the first pick's quote said "the Etude sunscreen
+    # does leave a white cast" (its writer recommends it anyway). Such a quote is shown only if nothing else is left.
+    against = mention("Etude sunscreen", "t1", weight=0.9, quote="The Etude sunscreen does leave a white cast, I still like it.")
+    others = [mention("Etude sunscreen", "t2", weight=0.5, quote="The Etude sunscreen has no white cast at all."),
+              mention("Etude sunscreen", "t1", weight=0.4, quote="Etude sunscreen doesn't leave a white cast on me.")]
+    items = [against, *others]
+    answer = write_answer(rank_products(items, "kitchen"), bodies_for(*items), asks=("no white cast",))
+    assert [q.text for q in answer.picks[0].quotes][:2] == [m.quote for m in others]
+    plain = write_answer(rank_products(items, "kitchen"), bodies_for(*items))  # nothing asked: weight decides
+    assert plain.picks[0].quotes[0].text == against.quote
+
+
+@pytest.mark.parametrize("ask, quote, against", [
+    ("no white cast", "It leaves a white cast on darker skin.", True),
+    ("no white cast", "It does leave a slight white cast.", True),
+    ("no white cast", "It doesn't leave a white cast.", False),
+    ("no white cast", "No white cast, dries matte.", False),
+    ("fragrance-free", "It smells lovely, like roses.", True),
+    ("fragrance-free", "It has a strong scent.", True),
+    ("fragrance-free", "It's fragrance-free and gentle.", False),
+    ("fragrance-free", "No scent at all.", False),
+])
+def test_what_says_the_opposite_of_a_request(ask, quote, against):
+    from engine.answer import _says_the_opposite
+
+    assert _says_the_opposite(quote, (ask,)) is against
+
+
 # --- Prices and budgets (decision 11, Noemi, 9 Oct 2026) ---
 
 CHECKED = date(2026, 10, 9)

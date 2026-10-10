@@ -65,6 +65,7 @@ from engine.config import (
     CARE_TIPS_PER_PICK,
     DOWNSIDES_PER_PICK,
     LOOK_FOR_NOTES,
+    OPPOSITE_QUOTE_PATTERNS,
     MIN_CREDIBLE_MENTIONS,
     MIN_QUOTES_PER_PICK,
     MIN_THREADS,
@@ -283,7 +284,8 @@ def comment_bodies(threads: Iterable[Thread]) -> dict[str, str]:
 
 def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type: str | None = None,
                  prices: Mapping[str, PriceCheck] | None = None, care: Mapping[str, CareTips] | None = None,
-                 cautions: Mapping[str, list[str]] | None = None, models: Mapping[str, str] | None = None) -> Answer:
+                 cautions: Mapping[str, list[str]] | None = None, models: Mapping[str, str] | None = None,
+                 asks: tuple[str, ...] = ()) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -292,7 +294,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     never change which products are picks. `cautions` is each product's soft clashes with the request ({product key:
     [reason]}, engine/product_facts.py), made by the pipeline: each is shown on its pick as CAUTION; they never change
     which products are picks either. `models` is each brand pick's most recommended model ({product key: name}),
-    made by the pipeline (engine.pipeline._brand_models), shown as BRAND_PICK_MODEL.
+    made by the pipeline (engine.pipeline._brand_models), shown as BRAND_PICK_MODEL. `asks` is what the request asks
+    for (engine.product_facts.request_asks): a quote saying the opposite is shown last.
     """
     check = _QuoteCheck(bodies)
     models = models or {}
@@ -303,7 +306,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     for product in ranking.qualifying:
         if len(picks) == PICKS_SHOWN:
             break
-        quotes = check.first(_naming_first(product.credible_recommendations), QUOTES_PER_PICK)
+        quotes = check.first(_naming_first(product.credible_recommendations, asks), QUOTES_PER_PICK)
         if len(quotes) >= MIN_QUOTES_PER_PICK:
             price = shown_price(prices.get(product.key))
             availability = shown_availability(prices.get(product.key), price.url)
@@ -408,12 +411,21 @@ def _most_credible_first(items: Iterable[ScoredMention]) -> list[ScoredMention]:
     return sorted(items, key=lambda m: -abs(m.weight))
 
 
-def _naming_first(items: Iterable[ScoredMention]) -> list[ScoredMention]:
+def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = ()) -> list[ScoredMention]:
     """The most credible first, but the quotes that name their product before those that don't (10 Oct 2026: out of
-    context, "Others I have used and not had any issues with:" says little). A quote that doesn't name it is still
-    shown when there's room."""
+    context, "Others I have used and not had any issues with:" says little), and a quote that says the opposite of
+    what the request asks ("does leave a white cast") after every other (_says_the_opposite). Each is still shown
+    when there's room."""
     ordered = _most_credible_first(items)
-    return sorted(ordered, key=lambda m: not _names_product(m.quote, m.product_name, m.category))
+    return sorted(ordered, key=lambda m: (_says_the_opposite(m.quote, asks),
+                                          not _names_product(m.quote, m.product_name, m.category)))
+
+
+def _says_the_opposite(quote: str, asks: Iterable[str]) -> bool:
+    """Whether the quote says the opposite of one of the request's asks (config.OPPOSITE_QUOTE_PATTERNS): "it leaves a
+    white cast" for "no white cast", "smells lovely" for "fragrance-free"."""
+    text = " ".join(quote.lower().replace("’", "'").split())
+    return any(re.search(pattern, text) for ask in asks for pattern in OPPOSITE_QUOTE_PATTERNS.get(ask, ()))
 
 
 def _names_product(quote: str, name: str, category: str) -> bool:

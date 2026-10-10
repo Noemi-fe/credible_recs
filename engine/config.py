@@ -641,3 +641,16 @@ BRAND_MODEL_GENERIC_WORDS = ("the", "a", "their", "my", "one", "ones", "pan", "p
                              # descriptions, not models ("restored", "vintage Griswold"): 10 Oct 2026
                              "restored", "vintage", "old", "older", "used", "new", "newer", "original", "any", "good",
                              "cheap", "basic", "big", "small", "large", "little", "or", "and")
+
+# --- A quote that says the opposite of the request is shown last (10 Oct 2026) ---
+# Decided by Claude, reported to Noemi. Found in b02: a pick's supporting quote said "does leave a white cast" for a
+# request asking for none (its writer recommends the sunscreen anyway). For each ask, a quote matching one of these
+# (lowercase, whole words) is tried only after every other credible quote. Never hidden, never a reason to leave a
+# product out: the writer still recommends it.
+OPPOSITE_QUOTE_PATTERNS: dict[str, tuple[str, ...]] = {
+    "no white cast": (r"(?<!n't )(?<!not )(?<!never )(?<!no )\bleaves? (a |any |some |slight |a slight |a little |a bit "
+                      r"of |an? obvious )?white cast",
+                      r"\b(has|have|had|with) (a |some |slight |a slight |a little |a bit of |an? obvious )?white cast"),
+    "fragrance-free": (r"(?<!no )(?<!without )(?<!n't )\b(smells?|scent(ed)?|perfume(d)?)\b(?! ?-?free)",
+                       r"\bfragrance(d)?\b(?! ?-?free)(?<!no fragrance)"),
+}
