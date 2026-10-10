@@ -255,6 +255,182 @@
    "url": "https://patient.info/medicine/tazarotene-for-psoriasis-zorac",
    "checked_on": "2026-10-10",
    "available": false
+  },
+  {
+   "product": "Stratia Soft Touch AHA 40ml",
+   "category": "skincare",
+   "price": 14.0,
+   "currency": "GBP",
+   "shop": "Stratia (its own shop, priced in £ for UK shoppers)",
+   "url": "https://www.stratiaskin.com/products/soft-touch-aha",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "COSRX AHA/BHA Clarifying Treatment Toner 150ml",
+   "category": "skincare",
+   "price": 21.99,
+   "currency": "GBP",
+   "shop": "Cult Beauty",
+   "url": "https://www.cultbeauty.co.uk/p/cosrx-aha-bha-clarifying-treatment-toner-150ml/11401176/",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "Eucerin Sun Face Oil Control Sun Gel-Cream Dry Touch SPF50+ 50ml",
+   "category": "skincare",
+   "price": 20.0,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/eucerin-sun-face-oil-control-sun-gel-cream-dry-touch-spf50-50ml/12510296/",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Eucerin Sun Gel-Creme Oil Control Dry Touch SPF 50+ (face)"
+   ]
+  },
+  {
+   "product": "House of Hur Weightless Sun Fluid 50ml",
+   "category": "skincare",
+   "price": 18.0,
+   "currency": "GBP",
+   "shop": "Holland & Barrett (sold by Atelier De Glow, a London seller on its marketplace)",
+   "url": "https://www.hollandandbarrett.com/shop/product/house-of-hur-weightless-sun-fluid-50ml-6100028986",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "Beauty of Joseon Revive Eye Serum: Ginseng + Retinal 30ml",
+   "category": "skincare",
+   "price": 15.0,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/14866956/",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "CeraVe Resurfacing Retinol Serum 30ml",
+   "category": "skincare",
+   "price": 19.99,
+   "currency": "GBP",
+   "shop": "The Independent Pharmacy",
+   "url": "https://theindependentpharmacy.co.uk/acne/cerave-resurfacing-retinol-serum-30ml",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "innisfree Retinol Cica Moisture Recovery Serum 30ml",
+   "category": "skincare",
+   "price": 33.0,
+   "currency": "GBP",
+   "shop": "Space NK (its full price; marked down to £23.10 on 10 Oct but out of stock there, as at Cult Beauty)",
+   "url": "https://www.spacenk.com/uk/skincare/treatment/serums/retinol-cica-moisture-recovery-serum-MUK200049251.html",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "Cetaphil Gentle Skin Cleanser 236ml",
+   "category": "skincare",
+   "price": 11.5,
+   "currency": "GBP",
+   "shop": "Lookfantastic (its full price; £8.63 in a sale on 10 Oct)",
+   "url": "https://www.lookfantastic.com/p/cetaphil-gentle-skin-cleanser-wash-236ml/13908195/",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "Aveeno Face Calm + Restore Nourishing Oat Cleanser 200ml",
+   "category": "skincare",
+   "price": 10.49,
+   "currency": "GBP",
+   "shop": "Holland & Barrett (out of stock on 10 Oct)",
+   "url": "https://www.hollandandbarrett.com/shop/product/aveeno-face-calmrestore-nourishing-oat-cleanser-200ml-6100006326",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "ROUND LAB 1025 Dokdo Cleanser 150ml",
+   "category": "skincare",
+   "price": 15.0,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/round-lab-1025-dokdo-cleanser-150ml/16858525/",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "La Roche-Posay Toleriane Dermo-Cleanser 200ml",
+   "category": "skincare",
+   "price": 16.5,
+   "currency": "GBP",
+   "shop": "Lookfantastic (its full price; £13.20 in a sale on 10 Oct)",
+   "url": "https://www.lookfantastic.com/p/11091885/",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "Bonavita gooseneck electric kettle",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK (no UK shop found selling a Bonavita gooseneck kettle for UK mains; Amazon UK lists none)",
+   "url": "https://www.amazon.co.uk/s?k=Bonavita+gooseneck+kettle",
+   "checked_on": "2026-10-10",
+   "available": false
+  },
+  {
+   "product": "Wagner cast iron skillets",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Wagner Cast Iron (no UK shop found selling Wagner skillets: they are vintage pans, made until the Sidney, Ohio foundry closed in 1999 and now sold second-hand, mostly by US sellers; the revived brand sells only a griddle)",
+   "url": "https://wagnercastiron.com/",
+   "checked_on": "2026-10-10",
+   "available": false
+  },
+  {
+   "product": "Sage the Smart Grinder Pro",
+   "category": "kitchen",
+   "price": 209.95,
+   "currency": "GBP",
+   "shop": "Sage",
+   "url": "https://www.sageappliances.com/en-gb/product/bcg820",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "OXO pre-seasoned carbon steel pan",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK (sold from Amazon US through its Global Store, so import terms apply; prices differ by size, £49.99 to £71.74, so no one price fits the name; John Lewis, OXO's main UK stockist, sells no OXO carbon steel pans)",
+   "url": "https://www.amazon.co.uk/dp/B09LL9M63H",
+   "checked_on": "2026-10-10",
+   "available": true
+  },
+  {
+   "product": "Cuisinart GK-1 Digital Gooseneck Kettle",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK (no UK shop found selling it: Amazon UK lists Cuisinart's UK kettles but no gooseneck, and John Lewis stocks no Cuisinart kettles; it is a North American model)",
+   "url": "https://www.amazon.co.uk/s?k=Cuisinart+GK-1",
+   "checked_on": "2026-10-10",
+   "available": false,
+   "also_called": [
+    "Cuisinart Digital Goose Neck Kettle"
+   ]
+  },
+  {
+   "product": "OXO Brew Conical Burr Coffee Grinder",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK (only 120 V imports for US mains, not usable on UK mains; John Lewis sells OXO's manual grinder, not this electric one)",
+   "url": "https://www.amazon.co.uk/dp/B07CSKGLMM",
+   "checked_on": "2026-10-10",
+   "available": false
   }
  ]
 }
