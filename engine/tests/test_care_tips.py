@@ -7,6 +7,7 @@ All data is made up.
 
 import pytest
 
+from engine import care_tips
 from engine.care_tips import CareTip, attach_care_tips, credible_care_tips, same_tip
 from engine.extract import Extraction, check_extraction
 from engine.group_kinds import KindGroup
@@ -144,6 +145,25 @@ def test_only_tips_from_voices_that_are_not_low_are_kept_with_the_voice_and_its_
     assert first.voice in ("high", "medium") and first.thread_id == "1kett01" and first.is_kind
     assert first.comment_url == "https://www.reddit.com/r/SkincareAddiction/comments/1kett01/comment/k1aaaa/"
     assert isinstance(first.badges, tuple)
+
+
+def test_copied_text_is_looked_for_once_per_thread(monkeypatch):
+    # Module 5's "copied text" red flag (Noemi's decision 3, 11 Oct 2026) compares a whole thread: it is worked out once
+    # per thread, however many of its tips are scored.
+    looked_at = []
+    real = care_tips.copied_comment_ids
+    monkeypatch.setattr(care_tips, "copied_comment_ids", lambda thread: looked_at.append(thread.id) or real(thread))
+    thread = care_thread()
+    extraction = Extraction.model_validate({
+        "thread_id": "1kett01", "instructions_version": "extract-v7", "extracted_at": "2026-10-09T10:00:00Z",
+        "extractor": "claude-code", "mentions": [],
+        "care": [{"comment_id": "k1aaaa", "about": "electric kettle", "is_kind": True, "tip": "descale every 6 months",
+                  "quote": "Descale it every 6 months and it lasts forever."},
+                 {"comment_id": "k1bbbb", "about": "electric kettle", "is_kind": True, "tip": "descale monthly",
+                  "quote": "Descale it every month with our powder."}],
+    })
+    credible_care_tips([thread], {thread.id: check_extraction(extraction, thread)})
+    assert looked_at == ["1kett01"]
 
 
 def test_an_extraction_without_care_tips_gives_none():

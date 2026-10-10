@@ -6,7 +6,9 @@ Two layers (the brief's "Credibility score v1", with Noemi's definitions from da
 - Voice, once per comment (score_voice): about the writer and the comment, whatever the product. It looks for
   good signs (established member, well-regarded account, expert flair, well upvoted for the thread's size, replies
   that agree, recent, enthusiast) and red flags (new account, low karma for its activity, salesy language, promotes
-  one brand, downvoted). The rubric (Noemi, 9 Oct 2026) turns them into a level by counting red flags:
+  one brand, downvoted, and since 11 Oct 2026 copied text: the same words as another writer's comment in the thread,
+  worked out once per thread by copied_comment_ids). The rubric (Noemi, 9 Oct 2026) turns them into a level by
+  counting red flags:
       high    good signs worth at least 2 (VOICE_HIGH_MIN_GOOD_SIGNS) and no red flag;
       medium  no red flag and fewer good signs (an ordinary owner), or exactly one red flag whatever the good signs:
               a new account alone doesn't sink a genuine expert, but it stops them being high;
@@ -41,9 +43,10 @@ What this version can't see yet:
 
 import html
 import re
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from dataclasses import dataclass
 from datetime import datetime
+from itertools import combinations
 from typing import Literal
 
 from engine import config
@@ -71,7 +74,8 @@ class Sign:
         """The voice tag this sign is recorded under: its name, or "other" for a sign with no tag of its own.
 
         "replies agree" and "downvoted" became tags on 9 Oct 2026 (Noemi's decision 13), so they are recorded under
-        their own names; "deleted comment" and "no sign of use" are still "other".
+        their own names, as "copied text" is from the start (11 Oct 2026); "deleted comment" and "no sign of use" are
+        still "other".
         """
         if self.name in config.VOICE_TAGS:
             return self.name
@@ -138,18 +142,24 @@ def score_voice(
     thread: Thread,
     agreements: Iterable[ExtractedAgreement] = (),
     history: CommenterHistory | None = None,
+    copied: Collection[str] | None = None,
 ) -> VoiceScore:
     """How far to trust the writer of `comment`, a comment of `thread`.
 
     `agreements` are the replies the extraction found agreeing with the comment above them (any in the thread; only
-    the ones answering this comment count). `history` is the writer's commenter history, when known.
+    the ones answering this comment count). `history` is the writer's commenter history, when known. `copied` are the
+    thread's comments that copy another writer's words (copied_comment_ids): a caller scoring many comments of one
+    thread works them out once and passes them in; left out, they are worked out here.
     """
     if comment.status != "ok":
         return VoiceScore("low", (Sign("deleted comment", f"the comment was {comment.status}: nothing to go on", "red flag"),))
     text = _own_words(comment.body)
+    if copied is None:
+        copied = copied_comment_ids(thread)
     signs = (
         _standing_signs(comment, history)
         + _independence_signs(text)
+        + _copy_signs(comment, copied)
         + _endorsement_signs(comment, thread, agreements)
         + _recency_signs(comment, thread)
         + _care_signs(text, thread.category)
@@ -311,6 +321,59 @@ def _independence_signs(text: str) -> list[Sign]:
     if _first_phrase(text, AFFILIATION_PHRASES):
         signs.append(Sign("promotes one brand", "says they work for or represent a brand", "red flag"))
     return signs
+
+
+# Copied text (Noemi's decision 3, 11 Oct 2026): another writer's comment, word for word. Found in the library: two
+# accounts posted the same promotional recommendation in one thread, and each counted as an independent voice.
+
+COPIED_TEXT_REASON = "the same words as another writer's comment in this thread"
+# A word, for comparing texts: letters and digits, with any apostrophes inside ("don't"). Punctuation, markdown and
+# spaces fall between words, so a copy with a comma more or a word in bold is still a copy.
+_WORD = re.compile(r"[^\W_]+(?:'[^\W_]+)*")
+
+
+def copied_comment_ids(thread: Thread) -> frozenset[str]:
+    """The comments of `thread` whose own words share a run of at least COPIED_TEXT_MIN_WORDS words in a row with
+    another writer's comment there: "copied text", a red flag.
+
+    Both copies are flagged: the same words under two names suggest coordinated promotion, and the order they were
+    posted can't show who copied. Never flagged: a writer posting twice, a reply and the comment it answers (replies
+    often repeat it), a deleted or removed comment (nor does its text count against others), words quoted from
+    someone else (lines starting with ">", as _own_words leaves out) and a comment too short to hold such a run.
+    Links don't count as words.
+
+    Worked out once per thread, not comment by comment: every run of that many words is listed with the comments it
+    appears in, so a thread of hundreds of comments is read once. score_voice takes the result.
+    """
+    size = config.COPIED_TEXT_MIN_WORDS
+    readable = {c.id: c for c in thread.comments if c.status == "ok"}
+    found_in: dict[tuple[str, ...], list[str]] = {}  # each run of `size` words: the comments that have it
+    for comment in readable.values():
+        words = _WORD.findall(_LINK.sub(" ", _own_words(comment.body)))
+        for run in {tuple(words[start:start + size]) for start in range(len(words) - size + 1)}:
+            found_in.setdefault(run, []).append(comment.id)
+    copied: set[str] = set()
+    # The same passage gives many runs with the same comments: each set of comments is compared once.
+    for sharing in {tuple(ids) for ids in found_in.values() if len(ids) > 1}:
+        for first, second in combinations(sharing, 2):
+            if _two_writers_copies(readable[first], readable[second]):
+                copied.update((first, second))
+    return frozenset(copied)
+
+
+def _two_writers_copies(a: Comment, b: Comment) -> bool:
+    """Whether two comments with the same words are two writers' copies: neither answers the other, and the writers
+    aren't the same. Two deleted accounts can't be told apart, so they get the benefit of the doubt, as a writer
+    posting twice would; a deleted account and a named one are two accounts."""
+    if a.parent_id == b.id or b.parent_id == a.id:
+        return False
+    if a.author is None or b.author is None:
+        return not (a.author is None and b.author is None)
+    return a.author.name.casefold() != b.author.name.casefold()
+
+
+def _copy_signs(comment: Comment, copied: Collection[str]) -> list[Sign]:
+    return [Sign("copied text", COPIED_TEXT_REASON, "red flag")] if comment.id in copied else []
 
 
 # Endorsement: others back it up.

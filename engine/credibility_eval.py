@@ -49,7 +49,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from engine.config import CREDIBILITY_AGREEMENT_TARGET, EVIDENCE_LEVELS, VOICE_LEVELS
-from engine.credibility import score_evidence, score_voice
+from engine.credibility import copied_comment_ids, score_evidence, score_voice
 from engine.extract import CheckResult, ExtractedMention, ExtractionError, load_checked
 from engine.extraction_eval import pair_up
 from engine.gold import DEFAULT_GOLD_DIR, GoldSet, GoldSetError, load_gold_set
@@ -180,16 +180,19 @@ def score_credibility(
             score.writers_profiled += filled.filled
         agreements = checked[thread.id].kept_agreements if thread.id in checked else []
         score.agreements_used += len(agreements)
+        copied = copied_comment_ids(thread)  # once per thread: it reads the whole thread
         for comment in thread.comments:
             if comment.id in voices:
                 _compare_comment(score, comment, thread, voices[comment.id], products.get(comment.id, []), agreements,
-                                 ai_mentions.get(comment.id, []))
+                                 ai_mentions.get(comment.id, []), copied)
     return score
 
 
-def _compare_comment(score: CredibilityAgreement, comment, thread, her_voice, her_products, agreements, ai_mentions) -> None:
-    """Adds one labelled comment: its voice, then each of its products, then the AI's levels for those it found."""
-    rules_voice = score_voice(comment, thread, agreements)
+def _compare_comment(score: CredibilityAgreement, comment, thread, her_voice, her_products, agreements, ai_mentions,
+                     copied) -> None:
+    """Adds one labelled comment: its voice, then each of its products, then the AI's levels for those it found.
+    `copied` are the thread's comments that copy another writer's words (engine.credibility.copied_comment_ids)."""
+    rules_voice = score_voice(comment, thread, agreements, copied=copied)
     score.voice.pairs.append((comment.id, her_voice.voice, rules_voice.level))
     score.voice_tags.add(her_voice.tags, rules_voice.tags)
     rules_levels = []

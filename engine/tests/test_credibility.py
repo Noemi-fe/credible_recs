@@ -10,7 +10,8 @@ import pytest
 
 from engine import config
 from engine.credibility import (
-    CommenterHistory, EvidenceScore, VoiceScore, badges, mention_weight, score_evidence, score_voice,
+    CommenterHistory, EvidenceScore, VoiceScore, badges, copied_comment_ids, mention_weight, score_evidence,
+    score_voice,
 )
 from engine.extract import ExtractedAgreement
 from engine.models import Comment, Thread
@@ -20,6 +21,9 @@ COLLECTED = "2026-10-06"
 RECENT = "2026-09-01T10:00:00Z"  # a month before the thread was collected
 PLAIN = {"name": "test_writer"}  # what Parse gives: a name, no account age, karma or flair
 USES_IT = "I've used the CeraVe SA Cleanser every day for a year."  # first-hand use, nothing else
+# Made-up text of 25 words, for copied text (Noemi's decision 3, 11 Oct 2026): long enough to be a copy.
+COPIED = ("The Fernleaf Barrier Balm rescued my winter skin and nothing else I tried came close, so grab it before the "
+          "price goes up next month.")
 
 
 def years_before(moment: str, years: float) -> str:
@@ -32,10 +36,12 @@ def account(created: str | None = None, karma: int | None = None, flair: str | N
 
 
 def make_case(body: str = USES_IT, score: int = 2, author: dict | None = PLAIN, created: str = RECENT,
-              others: tuple[int, ...] = (1, 1, 2, 2), category: str = "skincare", replies: tuple[str, ...] = ()) -> tuple[Comment, Thread]:
-    """One comment (c1aaaa) in a made-up thread, plus other comments with the given scores, plus replies to it."""
+              others: tuple[int, ...] = (1, 1, 2, 2), category: str = "skincare", replies: tuple[str, ...] = (),
+              others_body: str = "Nice thread.") -> tuple[Comment, Thread]:
+    """One comment (c1aaaa) in a made-up thread, plus other writers' comments with the given scores (and text), plus
+    replies to it."""
     comments = [make_comment("c1aaaa", body=body, score=score, author=author, created_at=created)]
-    comments += [make_comment(f"o{i}other", body="Nice thread.", score=s, created_at=created) for i, s in enumerate(others)]
+    comments += [make_comment(f"o{i}other", body=others_body, score=s, created_at=created) for i, s in enumerate(others)]
     comments += [make_comment(f"r{i}reply", parent_id="c1aaaa", body=text, created_at=created) for i, text in enumerate(replies)]
     community = "SkincareAddiction" if category == "skincare" else "BuyItForLife"
     thread = Thread.model_validate(make_thread(
@@ -293,7 +299,8 @@ def test_replies_that_agree_are_recorded_under_their_own_tag():
 
 
 def test_the_two_new_voice_tags_come_after_the_others():
-    assert config.VOICE_TAGS[-2:] == ("replies agree", "downvoted")
+    # Changed on purpose 11 Oct 2026 (Noemi's decision 3): "copied text", newer still, comes after them.
+    assert config.VOICE_TAGS[-3:] == ("replies agree", "downvoted", "copied text")
     assert len(set(config.VOICE_TAGS)) == len(config.VOICE_TAGS)
 
 
@@ -305,6 +312,7 @@ RED_FLAGS = {
     "salesy language": {"body": USES_IT + " Use my code GLOW20 for 20% off!"},
     "promotes one brand": {"body": "I'm the founder, full disclosure. " + USES_IT},
     "downvoted": {"score": -2},
+    "copied text": {"body": COPIED, "others_body": COPIED},  # the thread's other writers posted the same words
 }
 
 
@@ -778,3 +786,118 @@ def test_sales_talk_alone_caps_at_medium_but_paid_promotion_alone_is_low():
     assert voice_for(body=USES_IT + " DM me if you want the link.").level == "medium"
     assert voice_for(body=USES_IT + " Use my code GLOW20 for 20% off!").level == "low"
     assert voice_for(body=USES_IT + " https://amzn.to/x?tag=mine-20").level == "low"
+
+
+# --- Copied text (Noemi's decision 3, 11 Oct 2026): another writer's comment, word for word, is a red flag ---
+# Found in the library: two accounts posted the same promotional recommendation in one thread, and each counted as an
+# independent voice. Both copies get the flag: the order they were posted can't show who copied.
+
+COPIED_REASON = "the same words as another writer's comment in this thread"
+# More made-up text, to cut shared phrases of any length from.
+LONGER = ("I keep a small jar of the Fernleaf balm by the sink and use a little every night after washing, then a thin "
+          "layer of sunscreen in the morning, and my cheeks have stopped flaking since the cold weather started.")
+
+
+def by(name: str, comment_id: str, body: str = COPIED, **overrides) -> dict:
+    """A comment by `name`, an old account with plenty of karma: established, well regarded and recent, so high unless
+    a red flag says otherwise."""
+    author = account(created=years_before(RECENT, 8), karma=250_000, name=name)
+    return make_comment(comment_id, body=body, author=author, created_at=RECENT, **overrides)
+
+
+def thread_of(*comments: dict) -> Thread:
+    return Thread.model_validate(make_thread(created_at=RECENT, collected_at=COLLECTED, comments=list(comments)))
+
+
+def test_two_writers_with_the_same_words_are_both_capped_at_medium():
+    assert len(COPIED.split()) == 25 >= config.COPIED_TEXT_MIN_WORDS
+    thread = thread_of(by("writer_one", "c1aaaa"), by("writer_two", "c2bbbb"))
+    for comment in thread.comments:
+        voice = score_voice(comment, thread)
+        assert "copied text" in voice.tags and voice.level == "medium"
+        assert len(voice.good_signs) >= config.VOICE_HIGH_MIN_GOOD_SIGNS  # it would be high, but for the copy
+        assert COPIED_REASON in voice.reasons  # in words, for the evaluation
+        assert COPIED_REASON not in voice.badges  # users never see red flags
+
+
+def test_one_writer_alone_with_those_words_is_still_high():
+    thread = thread_of(by("writer_one", "c1aaaa"), by("writer_two", "c2bbbb", body=USES_IT))
+    assert [score_voice(c, thread).level for c in thread.comments] == ["high", "high"]
+
+
+def test_a_copy_with_other_punctuation_capitals_or_a_link_is_still_a_copy():
+    retyped = ("The **Fernleaf Barrier Balm** rescued my winter skin, and nothing else I tried came close! So grab it "
+               "before the price goes up next month: https://example.com/fernleaf-balm")
+    thread = thread_of(by("writer_one", "c1aaaa"), by("writer_two", "c2bbbb", body=retyped))
+    assert copied_comment_ids(thread) == {"c1aaaa", "c2bbbb"}
+
+
+def test_a_reply_repeating_the_comment_it_answers_is_not_copied_text():
+    # Replies often repeat the comment they answer, to agree with it or to argue with it.
+    thread = thread_of(by("writer_one", "c1aaaa"), by("writer_two", "c2bbbb", body="This, exactly: " + COPIED,
+                                                      parent_id="c1aaaa"))
+    for comment in thread.comments:
+        voice = score_voice(comment, thread)
+        assert "copied text" not in voice.tags and voice.level == "high"
+
+
+def test_the_same_writer_posting_twice_is_not_copied_text():
+    thread = thread_of(by("writer_one", "c1aaaa"), by("Writer_One", "c2bbbb"))  # a name in other capitals is the same
+    assert copied_comment_ids(thread) == frozenset()
+    assert [score_voice(c, thread).level for c in thread.comments] == ["high", "high"]
+
+
+def test_a_short_shared_phrase_is_not_copied_text():
+    words = LONGER.split()
+    assert len(words) > config.COPIED_TEXT_MIN_WORDS
+
+    def two_writers_sharing(n: int) -> Thread:
+        shared = " ".join(words[:n])
+        return thread_of(by("writer_one", "c1aaaa", body=f"{shared} for me"),
+                         by("writer_two", "c2bbbb", body=f"{shared} too"))
+
+    short = two_writers_sharing(config.COPIED_TEXT_MIN_WORDS - 1)
+    assert copied_comment_ids(short) == frozenset()
+    assert [score_voice(c, short).level for c in short.comments] == ["high", "high"]
+    assert copied_comment_ids(two_writers_sharing(config.COPIED_TEXT_MIN_WORDS)) == {"c1aaaa", "c2bbbb"}
+
+
+def test_copied_text_and_another_red_flag_make_a_voice_low():
+    newcomer = account(created=years_before(RECENT, 0.01), name="writer_two")
+    thread = thread_of(by("writer_one", "c1aaaa"), make_comment("c2bbbb", body=COPIED, author=newcomer, created_at=RECENT))
+    voice = score_voice(thread.comments[1], thread)
+    assert {"copied text", "new account"} <= set(voice.tags) and voice.level == "low"
+    assert score_voice(thread.comments[0], thread).level == "medium"  # one red flag: capped, not low
+
+
+def test_a_deleted_or_removed_comment_is_neither_flagged_nor_a_copy():
+    # An archive may still hold the text of a comment removed on Reddit: it never counts.
+    thread = thread_of(by("writer_one", "c1aaaa"), by("writer_two", "c2bbbb", status="removed"))
+    assert copied_comment_ids(thread) == frozenset()
+    assert score_voice(thread.comments[0], thread).level == "high"
+    assert "copied text" not in score_voice(thread.comments[1], thread).tags
+
+
+def test_two_deleted_accounts_cannot_be_told_apart_so_they_are_not_flagged():
+    # The benefit of the doubt, as for a writer posting twice. A deleted account and a named one are two accounts.
+    gone = [make_comment(f"c{i}gone", body=COPIED, author=None, created_at=RECENT) for i in (1, 2)]
+    assert copied_comment_ids(thread_of(*gone)) == frozenset()
+    assert copied_comment_ids(thread_of(gone[0], by("writer_two", "c2bbbb"))) == {"c1gone", "c2bbbb"}
+
+
+def test_words_quoted_from_another_comment_are_not_the_writers_own():
+    # Lines starting with ">" quote someone else (_own_words), here a comment that isn't the one being answered.
+    quoting = by("writer_three", "c3cccc", body=f"> {COPIED}\n\nI tried it after reading that and it stung, sadly.",
+                 parent_id="c2bbbb")
+    thread = thread_of(by("writer_one", "c1aaaa"), by("writer_two", "c2bbbb", body="Any other ideas?"), quoting)
+    assert copied_comment_ids(thread) == frozenset()
+
+
+def test_the_copied_comments_are_worked_out_once_and_passed_in():
+    # A thread can have hundreds of comments: callers scoring many of them work this out once per thread.
+    thread = thread_of(by("writer_one", "c1aaaa"), by("writer_two", "c2bbbb"), by("writer_three", "c3cccc", body=USES_IT))
+    copied = copied_comment_ids(thread)
+    assert copied == {"c1aaaa", "c2bbbb"}
+    for comment in thread.comments:
+        assert score_voice(comment, thread, copied=copied) == score_voice(comment, thread)
+    assert "copied text" not in score_voice(thread.comments[0], thread, copied=frozenset()).tags  # what it's given
