@@ -55,7 +55,7 @@ asked Claude to decide wording and report it).
 
 import dataclasses
 import re
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Collection, Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import date
 
@@ -290,7 +290,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
                  prices: Mapping[str, PriceCheck] | None = None, care: Mapping[str, CareTips] | None = None,
                  cautions: Mapping[str, list[str]] | None = None, models: Mapping[str, str] | None = None,
                  asks: tuple[str, ...] = (), model_prices: Mapping[str, str] | None = None,
-                 more_downsides: Mapping[str, list[ScoredMention]] | None = None) -> Answer:
+                 more_downsides: Mapping[str, list[ScoredMention]] | None = None,
+                 unsuited_kinds: Collection[str] = ()) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -303,7 +304,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     from `model_prices` ({product key: price line}) when there is one: shown only, never a reason to leave the brand
     out. `asks` is what the request asks
     for (engine.product_facts.request_asks): a quote saying the opposite is shown last. `more_downsides` ({pick key:
-    credible warnings}) are warnings about a pick's own brand or line, shown under it after its own.
+    credible warnings}) are warnings about a pick's own brand or line, shown under it after its own. `unsuited_kinds`
+    are the keys of kinds that give no "Look for" (engine.pipeline._unsuited_kinds).
     """
     check = _QuoteCheck(bodies)
     models = models or {}
@@ -328,7 +330,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             picks[-1].model = models.get(product.key)
             picks[-1].model_price = (model_prices or {}).get(product.key)
     skip = [_skip_item(product, check) for product in ranking.skip_list]
-    look_for = _look_for(ranking, check, product_type)
+    look_for = _look_for(ranking, check, product_type, unsuited_kinds)
     return Answer(
         category=ranking.category,
         product_type=product_type,
@@ -620,9 +622,11 @@ def _skip_item(product: ProductScore, check: _QuoteCheck) -> SkipItem | None:
     return SkipItem(product.key, product.name, reason, quotes)
 
 
-def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | None = None) -> list[LookFor]:
+def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | None = None,
+              unsuited_kinds: Collection[str] = ()) -> list[LookFor]:
     """Up to LOOK_FOR_NOTES kinds, strongest credible advice first, each with its strongest verified note. In skincare,
-    a kind whose advice is about another type of product gives none (_another_types_advice).
+    a kind whose advice is about another type of product gives none (_another_types_advice). A kind in
+    `unsuited_kinds` (its facts clash hard with the request: the pipeline's _unsuited_kinds) gives no "Look for".
 
     A kind with positive support gets "Look for" and a recommending note; negative support gets "Avoid" and a
     warning note. A kind whose support is zero (no credible notes, or as many for as against) gives no advice. A
@@ -634,7 +638,7 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
     for kind in sorted(ranking.kinds, key=lambda k: -abs(k.support)):  # sorted keeps ties in the ranking's order
         if len(items) == LOOK_FOR_NOTES:
             break
-        if kind.support == 0:
+        if kind.support == 0 or (kind.support > 0 and kind.key in unsuited_kinds):
             continue
         stance, advice = ("recommend", LOOK_FOR) if kind.support > 0 else ("warn", AVOID)
         notes = _most_credible_first([n for n in ranking.kind_notes

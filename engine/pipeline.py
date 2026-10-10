@@ -119,7 +119,7 @@ from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
 from engine.group_products import ProductGroup, ProductMention, brand_pick_name, group_of, group_products, uk_name
 from engine.gold import DEFAULT_GOLD_DIR
 from engine.library import DEFAULT_LIBRARY_DIR, checked_live_within
-from engine.match_products import known_aliases, normalize_name, same_product
+from engine.match_products import known_aliases, normalize_name, product_words, same_product
 from engine.models import Comment, Thread
 from engine.needs import Need, needs_met, request_needs
 from engine.prices import (
@@ -265,13 +265,15 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     result.ranking, more_downsides = _fold_brand_skips(
         _fold_brand_picks(rank_products(scored, query.category, kind_notes, placements(kinds)), kept_groups, result),
         kept_groups, result)
+    unsuited_kinds = _unsuited_kinds(result.ranking.kinds, query, product_facts)
     folded = {item.name for item in result.folded_brand_picks}
     care = _care_tips(threads, checked, [g for g in kept_groups if g.name not in folded], kinds, query)
     models, model_prices = _brand_models(result.ranking, kept_groups, query.product_type, price_checks)
     result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
-                                 models, request_asks(query), model_prices, more_downsides)
+                                 models, request_asks(query), model_prices, more_downsides, unsuited_kinds)
     if live_checker is not None:
-        _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions, kept_groups)
+        _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions, kept_groups,
+                    unsuited_kinds)
     thread_of = {c.id: t.id for t in threads for c in t.comments}
     quoted = {thread_of.get(quote.comment_id) for _, quote in _every_quote(result.answer)}
     result.threads_quoted = [tid for tid in result.threads_used if tid in quoted]
@@ -279,7 +281,7 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
 
 
 def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds, query, price_checks, care,
-                cautions=None, groups: list[ProductGroup] = ()) -> None:
+                cautions=None, groups: list[ProductGroup] = (), unsuited_kinds: frozenset[str] = frozenset()) -> None:
     """Checks every quote about to be shown against Reddit itself; drops the comments that fail and answers again.
 
     A comment that fails (gone, changed or unreadable) loses its votes too: the ranking is redone without it, so a
@@ -307,7 +309,7 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         result.ranking, more_downsides = _fold_brand_skips(_fold_brand_picks(ranking, groups, result), groups, result)
         models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks)
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
-                                     models, request_asks(query), model_prices, more_downsides)
+                                     models, request_asks(query), model_prices, more_downsides, unsuited_kinds)
 
 
 def _checked_live_recently(thread: Thread, today: date) -> bool:
@@ -572,6 +574,22 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
         if soft:
             cautions[group.key] = soft
     return kept, cautions
+
+
+def _unsuited_kinds(kinds, query: ParsedQuery, product_facts: list[ProductFacts]) -> set[str]:
+    """The keys of the kinds whose own facts entry clashes hard with the request: they give no "Look for" (decided by
+    Claude late on 10 Oct 2026; b03 said "Look for: tret" to a beginner with sensitive skin, though the rules leave
+    tretinoin products out of that answer). A kind takes an entry's facts only when the entry has the kind's very name
+    (short names allowed: "tret" is Tretinoin), never one that only shares words with it ("salicylic acid" and "COSRX
+    Salicylic Acid Daily Gentle Cleanser"). "Avoid" advice about such a kind stays."""
+    aliases = known_aliases().get(query.category, {})
+    unsuited = set()
+    for kind in kinds:
+        words = product_words(kind.name, aliases)
+        own = [f for f in product_facts if f.category == query.category and product_words(f.product, aliases) == words]
+        if words and any(c.hard for f in own for c in conflicts(query, f)):
+            unsuited.add(kind.key)
+    return unsuited
 
 
 def _note_other_names(groups: list[ProductGroup], cautions: dict[str, list[str]]) -> None:

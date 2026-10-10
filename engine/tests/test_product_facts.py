@@ -762,6 +762,36 @@ def test_groups_that_find_the_same_facts_entry_are_one_product(tmp_path):
     assert "Biore UV Aqua Rich Watery Essence SPF50" not in [p.name for p in result.ranking.skip_list]
 
 
+def test_kind_advice_follows_the_hard_facts_rules():
+    # Found reading b03, 10 Oct 2026 (late): "retinol for a beginner with sensitive skin" said "Look for: tret", though
+    # tretinoin (prescription-only, strong) is a product the rules leave out of that answer. A kind whose own facts entry
+    # (the same name, short names allowed: "tret" is Tretinoin) clashes hard with the request gives no "Look for". A
+    # kind that only shares words with a product's name ("salicylic acid", "COSRX Salicylic Acid Daily Gentle
+    # Cleanser") takes none of its facts.
+    from engine.pipeline import _unsuited_kinds
+    from engine.rank import KindSupport
+
+    tret = known("Tretinoin", strength="strong", prescription_only=True)
+    cleanser = known("COSRX Salicylic Acid Daily Gentle Cleanser", product_type="cleanser", maker_warns_sensitive=True)
+    kinds = [KindSupport("tret", "tret", 1.5, 3), KindSupport("salicylic-acid", "salicylic acid", 1.2, 4),
+             KindSupport("retinol", "retinol", 3.0, 9)]
+    assert _unsuited_kinds(kinds, parse_query(BEGINNER), [tret, cleanser]) == {"tret"}
+    assert _unsuited_kinds(kinds, parse_query("retinol for my oily skin"), [tret, cleanser]) == set()
+
+
+def test_an_unsuited_kind_gives_no_look_for_but_can_still_be_avoided():
+    from engine.tests.ranking_factories import bodies_for, mentions, note
+    from engine.rank import rank_products
+
+    items = mentions(3, "Acme serum", category="skincare") + mentions(3, "Bolt serum", category="skincare")
+    for stance, shown in (("recommend", []), ("warn", ["tret"])):
+        notes = [note("tret", "t1", stance=stance, quote="Go see a derm for tret."),
+                 note("tret", "t2", stance=stance, quote="Tret is the gold standard.")]
+        ranking = rank_products(items, "skincare", notes, {})
+        look_for = write_answer(ranking, bodies_for(*items, *notes), "retinoid", unsuited_kinds={"tret"}).look_for
+        assert [item.kind for item in look_for] == shown
+
+
 def test_a_renamed_pick_keeps_its_cautions(tmp_path):
     lib = write_library(tmp_path, ("Moisturiser for oily skin?", "Which moisturiser do you swear by?"),
                         {"cerave moisturising cream": 3, "Vanicream Facial Moisturiser": 3,
