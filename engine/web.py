@@ -39,9 +39,13 @@ The JSON for /api/answer (200):
                                       "budget_status",         "within" | "unknown" | "other currency" |
                                                                "out of date", or null without a budget
                                       "budget_note"},          the same in words, or null
-                            "availability": {"text",           "Sold at <shop>, checked 9 Oct 2026" or
+                            "availability": {"text",           "Sold at <shop>, checked 9 Oct 2026",
+                                                               "Sold second-hand only: <shop>, checked
+                                                               10 Oct 2026" (10 Oct 2026), or
                                                                "Availability not checked yet" (9 Oct 2026)
                                              "available",      true, or null when not checked
+                                             "second_hand",    true when no longer made and sold second-hand
+                                                               only (Noemi, 10 Oct 2026), else false
                                              "shop", "checked_on",   null when not checked
                                              "url"},           the shop's own page, https only; null when not
                                                                checked or when the price line links to it

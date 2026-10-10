@@ -15,12 +15,21 @@ with the code. Its format:
                  "shop": "John Lewis",                the shop's name
                  "url": "https://...",                the product's page at that shop: https only
                  "checked_on": "2026-10-09",          the day the price (or availability) was looked up
-                 "available": true}]}                 optional: true when the shop sells it (out of stock for now
+                 "available": true,                   optional: true when the shop sells it (out of stock for now
                                                       still counts), false when it is no longer sold (discontinued,
                                                       or no shop checked sells it); left out when not checked
+                 "second_hand": true}]}               optional, only with "available": true: the product is no
+                                                      longer made and is sold only second-hand (on eBay UK, or by a
+                                                      UK vintage dealer); left out otherwise
 
 An entry must give a price, or say whether the product is available, or both. A malformed entry stops the request with
-its number and the problem (PriceError), rather than being skipped.
+its number and the problem (PriceError), rather than being skipped; so does "second_hand": true without
+"available": true.
+
+Sold second-hand only (Noemi's decision, 10 Oct 2026): a vintage product no longer made, sold only second-hand (cast
+iron by Griswold and Wagner, out of production for decades), counts as sold to UK shoppers, and its answer says so:
+"Sold second-hand only: eBay UK, checked 10 Oct 2026". Such an entry's price is usually null: second-hand prices vary
+from one pan to the next, so `todo` never asks for one.
 
 How a product finds its price (find_price): an entry with a price, of the same category, whose name means the same
 product, by module 4's rules (engine.match_products.same_product, with the category's known short names, so "Sage"
@@ -28,10 +37,15 @@ finds "Breville"). When several fit: the one with exactly the same words first, 
 then the most recently checked, then the cheapest.
 
 How a product finds whether it is sold (find_availability): among the entries that say, the same way, the one with
-exactly the same words first, then the newest check; on the same day, one shop selling it is enough. The pipeline
+exactly the same words first, then the newest check; on the same day, one shop selling it is enough, and one selling it
+new comes before a second-hand one. A second-hand entry says the product is sold, like any other. The pipeline
 leaves out a product whose answer is "no longer sold" (engine.pipeline, the budget step), whatever its price and
 however old the check: unlike a price, a product that stopped being sold rarely comes back, and an answer should never
 recommend it. A product with no availability check is kept, and its answer says so.
+
+A brand pick ("Griswold (their cast iron skillets)") has no single product, so it is never priced or checked this way,
+and never left out for an entry under its own name. Its one exception (find_brand_second_hand, 10 Oct 2026): when the
+newest entry under the brand's own name ("Griswold") says it is sold second-hand only, the brand pick says so too.
 
 How a price meets the request's budget (check_price). Only a budget with a max and a currency is checked: module 1
 never guesses a currency, and nothing converts one currency into another.
@@ -45,7 +59,8 @@ never guesses a currency, and nothing converts one currency into another.
 A budget's min is never used to leave a product out: a product cheaper than the shopper expected is still an answer.
 
 What is still to look up (`todo`): the picks of the blind-test answers with no entry yet, or whose entries still lack
-a price or an availability check, so Claude can look them up on shop pages.
+a price or an availability check, so Claude can look them up on shop pages. A second-hand entry counts as a price
+looked at.
 
 Command line:
     python -m engine.prices todo     the blind-test picks still to look up (names and product types only), from the
@@ -99,12 +114,17 @@ class Price(Record):
     checked_on: date
     # True: the shop sells it; False: no longer sold; None (left out of the entry): not checked. JSON true/false only.
     available: StrictBool | None = None
+    # True: no longer made and sold only second-hand (on eBay UK, or by a UK vintage dealer), which counts as sold
+    # (Noemi, 10 Oct 2026); so only with "available": true. False (left out): sold new, or not checked. JSON true/false.
+    second_hand: StrictBool = False
     # Other names the same product goes by, when the shop's name and the one people use don't match by the word rules
     # ("Cuisinart CPK-17P1 PerfecTemp Cordless..." at the shop, "Cuisinart CPK-17 PerfecTemp" on Reddit; 9 Oct 2026).
     also_called: list[str] = []
 
     @model_validator(mode="after")
     def _says_something(self) -> "Price":
+        if self.second_hand and self.available is not True:
+            raise ValueError('"second_hand": true needs "available": true: a product sold second-hand is still sold')
         if self.price is None and self.available is None:
             raise ValueError('an entry needs a price, or "available": true or false (or both)')
         return self
@@ -166,19 +186,43 @@ def find_availability(name: str, category: str, prices: Iterable[Price]) -> Pric
 
     Among the entries that say (available true or false): the one with exactly the same words first, then the newest
     check (a product sold in January but no longer in October is no longer sold); on the same day, one that says it is
-    sold, since one shop selling it is enough; then the shop's name, so the choice is always the same.
+    sold, since one shop selling it is enough, and one selling it new before one selling it second-hand (10 Oct 2026);
+    then the shop's name, so the choice is always the same.
     """
     aliases = known_aliases().get(category, {})
     fits = [p for p in entries_for(name, category, prices) if p.available is not None]
     if not fits:
         return None
     words = product_words(name, aliases)
+    return min(fits, key=lambda p: (product_words(p.product, aliases) != words, *_newest_check_first(p)))
 
-    def preference(p: Price) -> tuple:
-        exact = product_words(p.product, aliases) == words
-        return not exact, -p.checked_on.toordinal(), not p.available, p.shop.casefold()
 
-    return min(fits, key=preference)
+def find_brand_second_hand(names: Iterable[str], category: str, prices: Iterable[Price]) -> Price | None:
+    """The entry saying a brand pick's brand is sold second-hand only, or None (Noemi's decision, 10 Oct 2026).
+
+    A brand pick ("Griswold (their cast iron skillets)") has no single product, so it is never priced or checked for
+    availability (engine.pipeline, the budget step). But a brand no longer made at all can have an entry under its own
+    name saying it is sold second-hand only ("Griswold": the foundry closed in 1957), and then the brand pick shows it.
+    `names` are the names writers used for the brand ("Griswold", "Griswolds"). An entry is under the brand's name
+    when its words, or an also_called name's, are exactly those of one of them: an entry for one of the brand's
+    products ("Griswold No. 8 skillet") isn't. Of those that say whether it is sold, the newest check decides, as in
+    find_availability; it is returned only when it says second-hand, so an entry under the brand's name that says it is
+    sold new, or no longer sold, changes nothing. It never leaves a brand pick out.
+    """
+    aliases = known_aliases().get(category, {})
+    brand = {tuple(product_words(name, aliases)) for name in names} - {()}
+    fits = [p for p in prices if p.category == category and p.available is not None
+            and any(tuple(product_words(known, aliases)) in brand for known in [p.product, *p.also_called])]
+    if not fits:
+        return None
+    newest = min(fits, key=_newest_check_first)
+    return newest if newest.second_hand else None
+
+
+def _newest_check_first(p: Price) -> tuple:
+    """The order availability entries of one product are read in: the newest check first; on the same day, one that
+    says it is sold, then one selling it new, then by the shop's name."""
+    return -p.checked_on.toordinal(), not p.available, p.second_hand, p.shop.casefold()
 
 
 def entries_for(name: str, category: str, prices: Iterable[Price]) -> list[Price]:
@@ -212,11 +256,13 @@ MISSING_WORDS = {"entry": "no entry yet", "price": "no price yet", "availability
 
 def missing(name: str, category: str, prices: Iterable[Price]) -> list[str]:
     """What the list still lacks for one product: ["entry"] when it has no entry for it; otherwise "price" when none of
-    its entries has a price, and "availability" when none says whether it is sold. [] when nothing is missing."""
+    its entries has a price, and "availability" when none says whether it is sold. [] when nothing is missing. A
+    second-hand entry counts as a price looked at: second-hand prices vary from one pan to the next, so its price stays
+    null on purpose (10 Oct 2026)."""
     entries = entries_for(name, category, prices)
     if not entries:
         return ["entry"]
-    return ([] if any(p.price is not None for p in entries) else ["price"]) + (
+    return ([] if any(p.price is not None or p.second_hand for p in entries) else ["price"]) + (
         [] if any(p.available is not None for p in entries) else ["availability"])
 
 

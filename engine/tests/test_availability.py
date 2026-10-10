@@ -243,7 +243,7 @@ def test_the_availability_turns_into_json_and_markdown():
     checks = {"tojiro-dp-gyuto": PriceCheck(None, "within", Budget(max=100, currency="GBP"), availability=knife())}
     answer = write_answer(ranking, bodies, prices=checks)
     data = json.loads(json.dumps(answer_to_dict(answer)))
-    assert set(data["picks"][0]["availability"]) == {"text", "available", "shop", "url", "checked_on"}
+    assert set(data["picks"][0]["availability"]) == {"text", "available", "shop", "url", "checked_on", "second_hand"}
     assert data["picks"][0]["availability"]["available"] is True
     assert data["picks"][1]["availability"]["text"] == wording.AVAILABILITY_UNKNOWN
     text = render_markdown(answer)
@@ -271,7 +271,7 @@ def test_each_card_carries_its_availability_and_products_no_longer_sold_are_coun
     assert shown["Zojirushi kettle"]["text"] == "Sold at Made-up Kitchen Shop, checked 9 Oct 2026"
     assert shown["Zojirushi kettle"]["url"] == "https://shop.example/zojirushi-kettle"
     assert shown["Fellow Stagg kettle"] == {"text": wording.AVAILABILITY_UNKNOWN, "available": None, "shop": None,
-                                            "url": None, "checked_on": None}
+                                            "url": None, "checked_on": None, "second_hand": False}
     assert data["left_out"]["unavailable"] == 1
 
 
