@@ -564,6 +564,15 @@ def test_about_to_try_is_not_use(body):
     assert evidence_for(body).level == "no first-hand use"
 
 
+@pytest.mark.parametrize("body", [
+    "I've used the Lodge skillet for 3 years and have yet to get a single scratch.",
+    "Had my Lodge skillet 5 years; I'm yet to buy another pan.",
+])
+def test_yet_to_without_trying_is_not_untried(body):
+    # "Yet to" means untried only before "try" or "test": "yet to get a breakout" is a writer who has used it.
+    assert evidence_for(body).level == "long-term use"
+
+
 def test_a_common_word_one_letter_from_a_name_does_not_name_it():
     body = "Prequel's Gleanser is supposed to be super gentle. I have pretty good results with Trader Joe's cleanser."
     evidence = evidence_for(body, product="Prequel's Gleanser", others=("Trader Joe's cleanser",))

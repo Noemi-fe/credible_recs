@@ -514,8 +514,8 @@ _UNTRIED = re.compile(
     r"|on my (?:wish ?list|list)|wish ?list|eyeing"
     # About to: "I am about to try it", "yet to try", "excited to try", "gonna try it", "can't review it yet" (b05,
     # 10 Oct 2026). "Going to try" only with "it", "them" or "one": "I'm going to try a carbon steel pan next", after
-    # years with a skillet, is about the next pan.
-    r"|(?:about|yet) to (?:try|test|use|buy|get|order)|(?:excited|eager|keen|can'?t wait|cannot wait) to (?:try|test)"
+    # years with a skillet, is about the next pan. "Yet to" only before "try" or "test": "yet to get a breakout" is use.
+    r"|about to (?:try|test|use|buy|get|order)|(?:yet|excited|eager|keen|can'?t wait|cannot wait) to (?:try|test)"
     r"|(?:going to|gonna) try (?:it|them|this|that|one)|(?:can'?t|cannot) review\b[^.!?]{0,40}?\byet"
     r"|haven'?t (?:had (?:a|the) chance|gotten around|got around|gotten|got) to (?:try|use))\b"
 )
