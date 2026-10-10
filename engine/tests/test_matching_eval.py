@@ -114,3 +114,12 @@ def test_the_report_skips_the_library_when_there_is_none(tmp_path):
     report = matching_report(write_pairs(tmp_path), tmp_path / "no library")
     assert report.startswith("Module 4, product matching")
     assert "library: skipped" in report
+
+
+def test_the_section_gives_the_printed_text_and_the_results_it_came_from(tmp_path):
+    from engine.matching_eval import matching_section
+
+    text, results = matching_section(write_pairs(tmp_path), tmp_path / "no library")
+    assert text == matching_report(write_pairs(tmp_path), tmp_path / "no library")
+    assert [r.pair.id for r in results] == ["m01", "m02", "m03", "m04"]
+    assert matching_section(tmp_path / "missing.json", tmp_path / "no library")[1] is None

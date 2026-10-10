@@ -158,25 +158,35 @@ def _described(group: ProductGroup) -> str:
 
 # --- For eval/run_eval.py ---
 
-def matching_report(pairs_path: Path = DEFAULT_PAIRS, library_dir: Path = DEFAULT_LIBRARY_DIR) -> str:
-    """Module 4's lines for the evaluation harness: the pairs score, then the library summary if there is one."""
+def matching_section(pairs_path: Path = DEFAULT_PAIRS, library_dir: Path = DEFAULT_LIBRARY_DIR,
+                     ) -> tuple[str, list[PairResult] | None]:
+    """Module 4's lines for the evaluation harness: the pairs score, then the library summary if there is one. Returns
+    the printed text and the pairs' results it was printed from (None when the pairs can't be read), which also go
+    into eval/metrics.json (engine/metrics.py)."""
+    results = None
     try:
         pairs_file = load_pairs(pairs_path)
     except MatchingPairError as e:
         lines = ["Module 4, product matching", f"  pairs: {e}"]
     else:
-        lines = report_lines(pairs_file, score_pairs(pairs_file.pairs))
+        results = score_pairs(pairs_file.pairs)
+        lines = report_lines(pairs_file, results)
     threads_dir = Path(library_dir) / "threads"
     if not threads_dir.is_dir():
         lines.append(f"  library: skipped (no library at {threads_dir})")
-        return "\n".join(lines)
+        return "\n".join(lines), results
     try:
         checked = load_checked(threads_dir)
     except ExtractionError as e:
         lines.append(f"  library: {e}")
     else:
         lines += [f"  {line}" for line in library_lines(checked)[:2]]
-    return "\n".join(lines)
+    return "\n".join(lines), results
+
+
+def matching_report(pairs_path: Path = DEFAULT_PAIRS, library_dir: Path = DEFAULT_LIBRARY_DIR) -> str:
+    """Module 4's lines for the evaluation harness, as text only."""
+    return matching_section(pairs_path, library_dir)[0]
 
 
 def _percent(part: int, whole: int) -> str:

@@ -13,6 +13,9 @@ later decision; the JSON below is the contract it will use.
 
 Routes (GET only):
     /                       the search page (engine/templates/search.html)
+    /how                    the how-we-score page (engine/how_page.py): how an answer is made and scored, in plain
+                            words, and the latest evaluation results, read from eval/metrics.json each time it is
+                            opened (10 Oct 2026)
     /api/answer?q=<request> the answer to one request, as JSON
     anything else           404
 
@@ -79,9 +82,11 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from engine import answer as wording
+from engine import how_page
 from engine.answer import answer_to_dict, unverified_claims
 from engine.config import WEB_MAX_REQUEST_CHARS, WEB_PORT
 from engine.library import DEFAULT_LIBRARY_DIR
+from engine.metrics import METRICS_FILE
 from engine.parse_reddit import REPO_ROOT
 from engine.pipeline import PipelineResult, answer_request
 
@@ -106,7 +111,8 @@ HEADERS = {
 # The API's errors: a code for programs, and plain words for whoever calls the API (the page has its own wording).
 EMPTY_REQUEST = ("empty_request", "Type what you're looking for: the request is empty.")
 TOO_LONG = ("request_too_long", "The request is {n} characters long; the limit is {limit}.")
-NOT_FOUND = ("not_found", "Nothing here. The search page is at / and answers at /api/answer?q=<request>.")
+NOT_FOUND = ("not_found", "Nothing here. The search page is at /, how we score at /how, and answers at "
+                          "/api/answer?q=<request>.")
 WRONG_HOST = ("wrong_host", "This server only answers requests addressed to 127.0.0.1 or localhost.")
 REFUSED = ("quote_not_verified",
            "This answer was not shown: a quote in it could not be checked word for word against its comment.")
@@ -133,6 +139,8 @@ def handle_request(path_and_query: str, library_dir: Path = DEFAULT_LIBRARY_DIR)
     parts = urlsplit(path_and_query)
     if parts.path == "/":
         return 200, HTML, search_page()
+    if parts.path == "/how":
+        return 200, HTML, how_page.page(METRICS_FILE).encode("utf-8")  # read now: a new evaluation run shows at once
     if parts.path == "/api/answer":
         request = parse_qs(parts.query).get("q", [""])[0]
         return answer_response(request, Path(library_dir))
