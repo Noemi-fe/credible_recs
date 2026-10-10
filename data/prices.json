@@ -969,6 +969,21 @@
    "checked_on": "2026-10-10",
    "available": true,
    "note": "a name for Hario's small hand grinders (Mini Mill, Mini Mill Plus, Mini-Slim), so no one price fits it; Ozone Coffee (Hasbean's shop now) sells the Mini Mill Plus at £39"
+  },
+  {
+   "product": "Victorinox Fibrox Chef's Knife 20cm",
+   "category": "kitchen",
+   "price": 32.0,
+   "currency": "GBP",
+   "shop": "Butchers Equipment",
+   "url": "https://www.butchersequipment.co.uk/knives-sharpeners/knives/chefs-cooks-knives/victorinox-cooks-knives/victorinox-8-cooks-knife-broad-blade",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Victorinox Fibrox 8 inch chef's knife",
+    "Victorinox Fibrox chef knife"
+   ],
+   "note": "Victorinox 8\" cook's knife, broad blade, 5.2063.20 (Fibrox handle): £26.67 before VAT, £32.00 with VAT; in stock"
   }
  ]
 }

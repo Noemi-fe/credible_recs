@@ -103,7 +103,7 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # recommended model, or null.
     assert set(data["answer"]["picks"][0]) == {"rank", "product_key", "name", "reason", "support", "quotes",
                                                "downsides", "disagreement", "score", "breakdown", "price",
-                                               "availability", "care", "cautions", "model"}
+                                               "availability", "care", "cautions", "model", "model_price"}
     assert set(data["answer"]["picks"][0]["quotes"][0]) == {"text", "comment_id", "url", "badges"}
     assert set(data["answer"]["picks"][0]["price"]) == {"text", "amount", "currency", "shop", "url", "checked_on",
                                                         "budget_status", "budget_note"}

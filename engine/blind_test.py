@@ -136,7 +136,8 @@ def _shown_pick(pick: dict, words: int) -> str:
         fixed.append(f"Price: {price['text'].split(', checked')[0]}")
     parts = [pick["reason"].rstrip(".") + "."]
     if pick.get("model"):  # a brand pick's most recommended model (10 Oct 2026): our own words too
-        parts[0] = BRAND_PICK_MODEL.format(model=pick["model"]) + ". " + parts[0]
+        price = f" ({pick['model_price'].split(', checked')[0]})" if pick.get("model_price") else ""
+        parts[0] = BRAND_PICK_MODEL.format(model=pick["model"]) + price + ". " + parts[0]
     for quote in (pick.get("quotes") or [])[:QUOTES_SHOWN]:
         badge = _evidence_badge(quote.get("badges") or [])
         parts.append(f'"{_one_line(quote["text"])}"' + (f" ({badge})" if badge else ""))

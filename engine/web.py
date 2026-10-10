@@ -53,8 +53,9 @@ The JSON for /api/answer (200):
                                       "quote": {same shape}}],            0 to 2, each quote verified
                             "cautions": ["Note: ..."],         product facts that suit the request less well
                                                                (9 Oct 2026); [] when there are none
-                            "model": "Victorinox Fibrox..."}], a brand pick's most recommended model (10 Oct
+                            "model": "Victorinox Fibrox...",   a brand pick's most recommended model (10 Oct
                                                                2026); null for other picks
+                            "model_price": "£41.50 at ..."}],  that model's checked price line, or null
                  "look_for": [{"kind", "advice", "quote": {same shape}}],
                  "skip": [{"product_key", "name", "reason", "quotes": [...]}],
                  "message": the honest "not enough evidence" message, or null when there are 3 picks,

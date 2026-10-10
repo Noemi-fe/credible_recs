@@ -480,3 +480,18 @@ def test_what_counts_as_a_model_name(name, model):
 
     brand = group(name.split()[0] if name.split()[0][0].isupper() else name.split()[1], loose=True)
     assert _names_a_model(name, brand, "cast iron skillet") is model
+
+
+def test_a_brand_picks_model_shows_its_checked_price(tmp_path):
+    # A price the shopper can act on, for the model named (10 Oct 2026). Only shown, never used to leave the brand out.
+    from engine.answer import render_markdown
+    from engine.tests.test_availability import listed
+
+    fibrox_price = listed(FIBROX, available=True, price=41.5, shop="Victorinox UK")
+    result = answer_request(KNIFE_REQUEST, library_dir=knife_library(tmp_path, fibrox=(1, 1)), prices=[fibrox_price],
+                            today=TODAY)
+    victorinox = next(pick for pick in result.answer.picks if pick.name == VICTORINOX)
+    assert victorinox.model == FIBROX
+    assert victorinox.model_price == "£41.50 at Victorinox UK, checked 9 Oct 2026"
+    assert "Most named model: Victorinox Fibrox chef knife (£41.50 at Victorinox UK, checked 9 Oct 2026)" in (
+        render_markdown(result.answer))

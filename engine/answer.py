@@ -242,6 +242,7 @@ class Pick:
     cautions: list[str] = field(default_factory=list)  # "Note: ..." from product facts (9 Oct 2026); empty when none
     # For a brand pick: the model of that brand its credible writers recommend most (10 Oct 2026); None otherwise.
     model: str | None = None
+    model_price: str | None = None  # that model's checked price, as the price line words it; None when not checked
 
 
 @dataclass
@@ -286,7 +287,7 @@ def comment_bodies(threads: Iterable[Thread]) -> dict[str, str]:
 def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type: str | None = None,
                  prices: Mapping[str, PriceCheck] | None = None, care: Mapping[str, CareTips] | None = None,
                  cautions: Mapping[str, list[str]] | None = None, models: Mapping[str, str] | None = None,
-                 asks: tuple[str, ...] = ()) -> Answer:
+                 asks: tuple[str, ...] = (), model_prices: Mapping[str, str] | None = None) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -295,7 +296,9 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     never change which products are picks. `cautions` is each product's soft clashes with the request ({product key:
     [reason]}, engine/product_facts.py), made by the pipeline: each is shown on its pick as CAUTION; they never change
     which products are picks either. `models` is each brand pick's most recommended model ({product key: name}),
-    made by the pipeline (engine.pipeline._brand_models), shown as BRAND_PICK_MODEL. `asks` is what the request asks
+    made by the pipeline (engine.pipeline._brand_models), shown as BRAND_PICK_MODEL, with that model's checked price
+    from `model_prices` ({product key: price line}) when there is one: shown only, never a reason to leave the brand
+    out. `asks` is what the request asks
     for (engine.product_facts.request_asks): a quote saying the opposite is shown last.
     """
     check = _QuoteCheck(bodies)
@@ -315,6 +318,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             notes = [CAUTION.format(reason=reason) for reason in cautions.get(product.key, [])]
             picks.append(_pick(len(picks) + 1, product, quotes, check, ranking, price, tips, availability, notes))
             picks[-1].model = models.get(product.key)
+            picks[-1].model_price = (model_prices or {}).get(product.key)
     skip = [_skip_item(product, check) for product in ranking.skip_list]
     look_for = _look_for(ranking, check)
     return Answer(
@@ -764,7 +768,8 @@ def render_markdown(answer: Answer) -> str:
 def _render_pick(pick: Pick) -> list[str]:
     lines = [f"## {pick.rank}. {pick.name}", ""]
     if pick.model:
-        lines += [BRAND_PICK_MODEL.format(model=pick.model), ""]
+        price = f" ({pick.model_price})" if pick.model_price else ""
+        lines += [BRAND_PICK_MODEL.format(model=pick.model) + price, ""]
     lines += [pick.reason, "", f"**{SUPPORT_LABEL}:** {pick.support}", ""]
     lines += _render_price(pick.price) + _render_availability(pick.availability)
     for caution in pick.cautions:

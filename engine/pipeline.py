@@ -87,11 +87,12 @@ Command line:
 import re
 import sys
 from collections import Counter
+from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from datetime import date
 from pathlib import Path
 
-from engine.answer import Answer, _every_quote, comment_bodies, render_markdown, write_answer
+from engine.answer import Answer, _every_quote, comment_bodies, render_markdown, shown_price, write_answer
 from engine.care_tips import CareTips, attach_care_tips, credible_care_tips
 from engine.config import (
     BRAND_MODEL_GENERIC_WORDS,
@@ -261,8 +262,9 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
                                        kept_groups, result)
     folded = {item.name for item in result.folded_brand_picks}
     care = _care_tips(threads, checked, [g for g in kept_groups if g.name not in folded], kinds, query)
+    models, model_prices = _brand_models(result.ranking, kept_groups, query.product_type, price_checks)
     result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
-                                 _brand_models(result.ranking, kept_groups, query.product_type), request_asks(query))
+                                 models, request_asks(query), model_prices)
     if live_checker is not None:
         _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions, kept_groups)
     thread_of = {c.id: t.id for t in threads for c in t.comments}
@@ -298,8 +300,9 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         ranking = rank_products([m for m in scored if m.comment_id not in failed], query.category,
                                 [n for n in kind_notes if n.comment_id not in failed], placements(kinds))
         result.ranking = _fold_brand_picks(ranking, groups, result)
+        models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks)
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
-                                     _brand_models(result.ranking, groups, query.product_type), request_asks(query))
+                                     models, request_asks(query), model_prices)
 
 
 def _checked_live_recently(thread: Thread, today: date) -> bool:
@@ -583,13 +586,15 @@ def _fold_brand_picks(ranking: RankingResult, groups: list[ProductGroup], result
     return replace(ranking, products=[p for p in ranking.products if p.key not in keys]) if keys else ranking
 
 
-def _brand_models(ranking: RankingResult, groups: list[ProductGroup], product_type: str | None) -> dict[str, str]:
-    """{brand pick's key: the name of its brand's model its credible writers recommend most} (10 Oct 2026). A model is
-    a specific product of the brand still in the ranking (_same_brand), with at least BRAND_MODEL_MIN_CREDIBLE
-    credible recommendations, whose name says more than the brand and the product type (_names_a_model). The most
-    credible recommendations win, then the higher score. A brand pick with none is left out."""
+def _brand_models(ranking: RankingResult, groups: list[ProductGroup], product_type: str | None,
+                  price_checks: Mapping[str, PriceCheck] | None = None) -> tuple[dict[str, str], dict[str, str]]:
+    """({brand pick's key: the name of its brand's model its credible writers recommend most}, {brand pick's key: that
+    model's checked price, as the price line words it}) (10 Oct 2026). A model is a specific product of the brand
+    still in the ranking (_same_brand), with at least BRAND_MODEL_MIN_CREDIBLE credible recommendations, whose name
+    says more than the brand and the product type (_names_a_model). The most credible recommendations win, then the
+    higher score. A brand pick with none is left out; a model with no price checked has no price."""
     by_key = {g.key: g for g in groups}
-    models = {}
+    models, prices = {}, {}
     for brand in ranking.products:
         brand_group = by_key.get(brand.key)
         if brand_group is None or not brand_group.loose:
@@ -599,8 +604,12 @@ def _brand_models(ranking: RankingResult, groups: list[ProductGroup], product_ty
                       and len(p.credible_recommendations) >= BRAND_MODEL_MIN_CREDIBLE
                       and _same_brand(brand_group, g) and _names_a_model(p.name, brand_group, product_type)]
         if candidates:
-            models[brand.key] = max(candidates, key=lambda p: (len(p.credible_recommendations), p.score)).name
-    return models
+            model = max(candidates, key=lambda p: (len(p.credible_recommendations), p.score))
+            models[brand.key] = model.name
+            check = (price_checks or {}).get(model.key)
+            if check is not None and check.price is not None and check.price.price is not None:
+                prices[brand.key] = shown_price(check).text
+    return models, prices
 
 
 def _names_a_model(name: str, brand: ProductGroup, product_type: str | None) -> bool:
