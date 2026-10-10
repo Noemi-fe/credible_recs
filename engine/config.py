@@ -607,3 +607,9 @@ EXTRACTION_PRECISION_TARGET = 0.90  # of the AI's products, the share Noemi's la
 EXTRACTION_RECALL_TARGET = 0.80  # of Noemi's labelled products, the share the AI finds
 CREDIBILITY_AGREEMENT_TARGET = 0.80  # high-versus-low match with Noemi's labels
 COST_PER_QUESTION_TARGET_USD = 0.05  # "under $0.05": logged API spend divided by questions
+
+# --- The price to-do looks past the picks (10 Oct 2026) ---
+# Decided by Claude, reported to Noemi. Pricing a pick over budget let the next, unpriced product into b09's top 3
+# (the Comandante C40, then the Baratza Sette 270). So `python -m engine.prices todo` also lists, per question, up to
+# this many products right behind the picks (picks-in-waiting: qualifying or nearly, by engine.product_facts.candidates).
+PRICES_TODO_NEXT_IN_LINE = 3

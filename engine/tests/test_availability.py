@@ -345,6 +345,24 @@ def test_command_line_todo_prints_names_and_product_types_only(tmp_path, monkeyp
     assert "lasted" not in out and "years" not in out  # never a quote
 
 
+def test_todo_also_lists_the_products_next_in_line_after_the_picks(tmp_path, monkeypatch, capsys):
+    # Found on 10 Oct 2026: pricing a pick over budget let the next, unpriced product in (b09: the Comandante C40,
+    # then the Baratza Sette 270, both over £150). So the products right behind the picks are looked up too.
+    from engine.tests.test_product_facts import retinol_library
+
+    questions = questions_file(tmp_path, ["best retinol"])
+    [retinol] = prices.todo(questions, retinol_library(tmp_path), [])
+    shown = set(by_name(retinol))
+    assert retinol.picks == 3 and len(shown) == 3
+    assert [item.name for item in retinol.next_in_line] == [
+        name for name in ("Differin Gel", "The Ordinary Retinol in Squalane", "CeraVe Resurfacing Retinol Serum")
+        if name not in shown]
+    assert retinol.next_in_line[0].missing == ["entry"]
+    monkeypatch.setattr(pipeline, "cached_profiles", lambda: None)
+    assert prices.main(["todo"], questions_path=questions, library_dir=tmp_path / "library", prices=[]) == 0
+    assert f"    next in line: {retinol.next_in_line[0].name}: no entry yet\n" in capsys.readouterr().out
+
+
 @pytest.mark.parametrize("argv", [[], ["todo", "now"], ["fetch"]])
 def test_command_line_todo_explains_itself_when_used_wrongly(tmp_path, capsys, argv):
     assert prices.main(argv, questions_path=tmp_path / "none.json", library_dir=tmp_path, prices=[]) == 2

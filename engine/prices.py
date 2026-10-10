@@ -66,7 +66,8 @@ looked at.
 
 Command line:
     python -m engine.prices todo     the blind-test picks still to look up (names and product types only), from the
-                                     answers on data/library without live checks
+                                     answers on data/library without live checks, and the products next in line
+                                     behind them (PRICES_TODO_NEXT_IN_LINE)
 """
 
 import json
@@ -80,7 +81,7 @@ from urllib.parse import urlsplit
 
 from pydantic import AfterValidator, Field, StrictBool, ValidationError, model_validator
 
-from engine.config import PRICE_MAX_AGE_DAYS, THREAD_CATEGORIES
+from engine.config import PRICE_MAX_AGE_DAYS, PRICES_TODO_NEXT_IN_LINE, THREAD_CATEGORIES
 from engine.match_products import known_aliases, product_words, same_product
 from engine.models import Record
 from engine.query import Budget
@@ -285,6 +286,9 @@ class QuestionToCheck:
     picks: int  # how many picks its answer shows
     to_check: list[PickToCheck] = field(default_factory=list)  # in the answer's order
     brand_picks: list[str] = field(default_factory=list)  # picks that are brands (decision 9): never priced or checked
+    # The products right behind the picks still missing something (10 Oct 2026): a pick left out for its price lets
+    # the next one in, so they are looked up too. Up to PRICES_TODO_NEXT_IN_LINE, brand picks aside.
+    next_in_line: list[PickToCheck] = field(default_factory=list)
 
 
 def todo(questions_path: Path | None = None, library_dir: Path | None = None, prices: list[Price] | None = None,
@@ -302,6 +306,7 @@ def todo(questions_path: Path | None = None, library_dir: Path | None = None, pr
     """
     from engine.library import DEFAULT_LIBRARY_DIR  # imported here: the pipeline imports this module
     from engine.pipeline import answer_request
+    from engine.product_facts import candidates
     from engine.slice_eval import DEFAULT_QUESTIONS
 
     prices = load_prices() if prices is None else prices
@@ -317,6 +322,10 @@ def todo(questions_path: Path | None = None, library_dir: Path | None = None, pr
                 result.brand_picks.append(pick.name)
             elif lacking := missing(pick.name, run.query.category, prices):
                 result.to_check.append(PickToCheck(pick.name, lacking))
+        behind = candidates(run, limit=len(picks) + PRICES_TODO_NEXT_IN_LINE)[len(picks):]
+        for name in behind:
+            if name not in run.not_priced and (lacking := missing(name, run.query.category, prices)):
+                result.next_in_line.append(PickToCheck(name, lacking))
         results.append(result)
     return results
 
@@ -343,7 +352,7 @@ def main(argv: list[str], questions_path: Path | None = None, library_dir: Path 
             print(f"  {question.id}: no picks")
             continue
         heading = f"  {question.id} {question.product_type} ({question.category})"
-        if not question.to_check and not question.brand_picks:
+        if not question.to_check and not question.brand_picks and not question.next_in_line:
             print(f"{heading}: every pick has a price and an availability check")
             continue
         print(heading)
@@ -351,6 +360,12 @@ def main(argv: list[str], questions_path: Path | None = None, library_dir: Path 
             print(f"    {pick.name}: {'; '.join(MISSING_WORDS[m] for m in pick.missing)}")
         for name in question.brand_picks:
             print(f"    {name}: a brand pick, never priced or checked")
+        for pick in question.next_in_line:
+            print(f"    next in line: {pick.name}: {'; '.join(MISSING_WORDS[m] for m in pick.missing)}")
+    waiting = sum(len(question.next_in_line) for question in results)
+    if waiting:
+        print(f"{waiting} product{'' if waiting == 1 else 's'} next in line to look up too, so a pick left out for its "
+              "price doesn't let an unpriced one in.")
     picks = [pick for question in results for pick in question.to_check]
     no_entry = sum(pick.missing == ["entry"] for pick in picks)
     print(f"{len(picks)} pick{'' if len(picks) == 1 else 's'} to look up: {no_entry} with no entry yet, "
