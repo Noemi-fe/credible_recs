@@ -469,7 +469,9 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
     never looked up: when the request has a hard requirement its product type can have (engine.product_facts.
     hard_requirements), it is left out and named on the result, since a whole brand can't be checked (10 Oct 2026);
     otherwise it is kept. A kept product whose facts don't say whether it meets a hard requirement gets a note after its
-    soft reasons: "we couldn't confirm it's PFAS-free" (engine.product_facts.unconfirmed, 10 Oct 2026).
+    soft reasons: "we couldn't confirm it's PFAS-free" (engine.product_facts.unconfirmed, 10 Oct 2026). A kept product
+    with a facts entry is shown under the entry's name, taken from the maker's page, rather than as writers spelled it
+    (10 Oct 2026); its key stays, so its price check and cautions still find it.
     """
     requirements = hard_requirements(query)
     kept, cautions = [], {}
@@ -483,7 +485,7 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
         if hard:
             result.left_out_not_suited.append(NotSuited(group.name, "; ".join(hard)))
             continue
-        kept.append(group)
+        kept.append(replace(group, name=facts.product) if facts is not None else group)
         soft = [c.reason for c in found if not c.hard]
         missing = [] if group.loose else unconfirmed(query, facts)
         if missing:

@@ -705,3 +705,28 @@ def test_a_soft_clash_comes_before_the_note(tmp_path):
                             product_facts=[RICH], today=TODAY)
     cerave = next(pick for pick in result.answer.picks if pick.name == "CeraVe Moisturising Cream")
     assert cerave.cautions == [RICH_CAUTION, "Note: we couldn't confirm it's fragrance-free."]
+
+
+# --- The name a pick is shown under (decided by Claude, 10 Oct 2026) ---
+# Writers spell names as they like ("Beauty of joseon Red Bean water gel", "Biore Watery Essence spf50"). A product
+# with a facts entry is shown under the entry's name, which the researcher took from the maker's own page. Price
+# entries aren't used: their names carry a size or a colour ("Timemore C2 - White", "(180g)").
+
+def test_a_pick_with_a_facts_entry_is_shown_under_the_entrys_name(tmp_path):
+    lib = write_library(tmp_path, ("Retinol for a beginner with sensitive skin?", "Which retinol should I start with?"),
+                        {"cerave resurfacing retinol serum": 4, "Differin Gel": 3, "inkey list retinol": 3})
+    proper = [known("CeraVe Resurfacing Retinol Serum", strength="gentle", prescription_only=False)]
+    result = answer_request(BEGINNER, library_dir=lib, prices=[], product_facts=proper, today=TODAY)
+    assert names(result.answer.picks) == ["CeraVe Resurfacing Retinol Serum", "Differin Gel", "inkey list retinol"]
+    assert [p.name for p in result.ranking.products][:1] == ["CeraVe Resurfacing Retinol Serum"]
+    without = answer_request(BEGINNER, library_dir=lib, prices=[], product_facts=[], today=TODAY)
+    assert names(without.answer.picks)[0] == "cerave resurfacing retinol serum"
+
+
+def test_a_renamed_pick_keeps_its_cautions(tmp_path):
+    lib = write_library(tmp_path, ("Moisturiser for oily skin?", "Which moisturiser do you swear by?"),
+                        {"cerave moisturising cream": 3, "Vanicream Facial Moisturiser": 3,
+                         "La Roche-Posay Toleriane Double Repair": 3})
+    result = answer_request("moisturiser for oily skin", library_dir=lib, prices=[], product_facts=[RICH], today=TODAY)
+    picks = {pick.name: pick for pick in result.answer.picks}
+    assert picks["CeraVe Moisturising Cream"].cautions == [RICH_CAUTION]
