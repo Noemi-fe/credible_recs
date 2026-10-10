@@ -76,6 +76,7 @@ ASKS_WORDS: dict[str, str] = {
     "plastic-free": "plastic-free",
     "induction-compatible": "something that works on induction",
     "oily": "something for oily skin",
+    "dry": "something for dry skin",
     "acne-prone": "something for acne-prone skin",
 }
 # Each result of eval/metrics.json: its name and what it measures (engine/metrics.py, METRIC_KEYS, in that order).

@@ -229,13 +229,16 @@ def test_every_rule_reads_a_fact_of_the_vocabulary_and_asks_for_something_a_requ
     can_ask = set(SKIN_TYPES) | set(MUST_HAVES) | set(config.NEEDS) | set(config.PRODUCT_FACT_REQUEST_WORDS)
     for name, rule in RULES.items():
         assert {"asks", "fact", "value", "hard", "reason"} <= set(rule) <= {"asks", "fact", "value", "hard",
-                                                                           "reason", "confirm"}, name
+                                                                           "reason", "confirm", "types"}, name
         assert isinstance(rule.get("confirm", True), bool), name
+        assert set(rule.get("types", ())) <= {p.name for p in PRODUCT_TYPES}, name  # the types it applies to
         values = config.PRODUCT_FACT_VALUES[rule["fact"]]
         assert any(type(value) is type(rule["value"]) and value == rule["value"] for value in values), name
         assert rule["asks"] and set(rule["asks"]) <= can_ask, name
         assert isinstance(rule["hard"], bool) and rule["reason"], name
-    assert [name for name, rule in RULES.items() if not rule["hard"]] == ["rich texture"]
+    # Changed on purpose 10 Oct 2026 (late): "light texture", the mirror of "rich texture", is a second soft rule, and
+    # rules may name the product types they apply to ("types").
+    assert [name for name, rule in RULES.items() if not rule["hard"]] == ["rich texture", "light texture"]
 
 
 # --- Finding a product's facts ---
@@ -353,6 +356,20 @@ def test_a_rich_moisturiser_for_oily_or_acne_prone_skin_is_only_a_caution():
     assert conflicts(parse_query("moisturiser for oily skin"), light) == []
 
 
+def test_a_light_moisturiser_for_dry_skin_is_only_a_caution():
+    # Found in b04, 10 Oct 2026 (late): "fragrance-free moisturiser for very dry skin in winter" had a light gel
+    # (Naturie Hatomugi Skin Conditioning Gel) as its first pick with nothing said. The mirror of "rich texture": a
+    # note, never a reason to leave it out. Moisturisers only: a light cleanser suits dry skin.
+    light = known("Gel Cream", product_type="moisturiser", texture="light")
+    [found] = conflicts(parse_query("fragrance-free moisturiser for very dry skin in winter"), light)
+    assert (found.rule, found.hard, found.reason) == ("light texture", False, RULES["light texture"]["reason"])
+    assert conflicts(parse_query("moisturiser for dry skin"), RICH) == []
+    gel_cleanser = known("Gel Cleanser", product_type="cleanser", texture="light")
+    assert conflicts(parse_query("gentle cleanser for dry skin"), gel_cleanser) == []
+    assert "texture" not in facts_that_matter(parse_query("gentle cleanser for dry skin"))
+    assert "texture" in facts_that_matter(parse_query("moisturiser for dry skin"))
+
+
 def test_each_rule_can_be_switched_between_leaving_out_and_a_caution(monkeypatch):
     rules = {name: dict(rule) for name, rule in RULES.items()}
     rules["too strong"]["hard"] = False
@@ -365,7 +382,8 @@ def test_each_rule_can_be_switched_between_leaving_out_and_a_caution(monkeypatch
     ("gentle exfoliant for sensitive skin under £30", ["strength", "prescription_only"]),
     (BEGINNER, ["strength", "prescription_only"]),
     ("sunscreen for oily skin that doesn't leave a white cast, under £20", ["white_cast"]),  # no texture for sunscreen
-    ("fragrance-free moisturiser for very dry skin in winter", ["fragrance_free"]),
+    # Changed on purpose 10 Oct 2026 (late): a light moisturiser for dry skin gets a note ("light texture").
+    ("fragrance-free moisturiser for very dry skin in winter", ["fragrance_free", "texture"]),
     ("gentle cleanser for acne-prone skin that won't strip my skin", ["texture"]),  # no prescription cleansers
     ("non-stick frying pan without PFAS that actually lasts", ["pfas_free", "non_stick"]),
     ("electric kettle that lasts 10+ years", []),

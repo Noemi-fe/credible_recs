@@ -237,9 +237,15 @@ def conflicts(query: ParsedQuery, facts: ProductFacts | None) -> list[Conflict]:
     asks = set(request_asks(query))
     found = []
     for name, rule in PRODUCT_FACT_RULES.items():
-        if asks & set(rule["asks"]) and _has(facts, rule["fact"], rule["value"]):
+        if asks & set(rule["asks"]) and _for_type(rule, facts.product_type) and _has(facts, rule["fact"], rule["value"]):
             found.append(Conflict(name, rule["reason"], rule["hard"]))
     return found
+
+
+def _for_type(rule: dict, product_type: str | None) -> bool:
+    """Whether a rule applies to a product type: every type, unless the rule names its "types" ("light texture" is
+    for moisturisers: a light cleanser suits dry skin)."""
+    return "types" not in rule or product_type in rule["types"]
 
 
 def _has(facts: ProductFacts, fact: str, value) -> bool:
@@ -257,7 +263,8 @@ def facts_that_matter(query: ParsedQuery) -> list[str]:
     asks = set(request_asks(query))
     allowed = PRODUCT_FACTS_BY_TYPE.get(query.product_type or "", ())
     matter = [rule["fact"] for rule in PRODUCT_FACT_RULES.values()
-              if asks & set(rule["asks"]) and rule["fact"] in allowed and rule.get("confirm", True)]
+              if asks & set(rule["asks"]) and rule["fact"] in allowed and rule.get("confirm", True)
+              and _for_type(rule, query.product_type)]
     return list(dict.fromkeys(matter))
 
 

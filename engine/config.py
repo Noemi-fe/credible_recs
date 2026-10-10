@@ -495,6 +495,12 @@ PRODUCT_FACT_RULES: dict[str, dict] = {
                       "reason": "it doesn't work on an induction hob"},
     "rich texture": {"asks": ("oily", "acne-prone"), "fact": "texture", "value": "rich", "hard": False,
                      "reason": "its texture is rich, which can feel heavy on oily or acne-prone skin"},
+    # Decided by Claude, 10 Oct 2026 (late), reported to Noemi: the mirror of "rich texture". Found in b04: "fragrance-
+    # free moisturiser for very dry skin in winter" had a light gel as its first pick with nothing said. A note only.
+    # "types": the product types a rule applies to (every type that has the fact when left out): a light cleanser
+    # suits dry skin, so this one is for moisturisers.
+    "light texture": {"asks": ("dry",), "fact": "texture", "value": "light", "hard": False, "types": ("moisturiser",),
+                      "reason": "its texture is light, which may not be enough on its own for dry skin"},
     # Decided by Claude, 10 Oct 2026: The Ordinary's Mandelic Acid is gentle by strength, but its maker's page says not
     # to use it on sensitive skin. "confirm": False: most makers say nothing either way, so this fact is recorded only
     # when a maker's page says it, and not knowing it is never a requirement (no note, no brand pick left out, not
