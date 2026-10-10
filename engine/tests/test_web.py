@@ -93,8 +93,9 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # Changed on purpose 9 Oct 2026 (product facts, decided by Claude): "left_out" also counts the products whose facts
     # don't suit the request ("not_suited").
     assert set(data["left_out"]) == {"other_type", "loose", "over_budget", "unavailable", "not_suited"}
+    # Changed on purpose 11 Oct 2026 (Noemi): the tips about the kind of product are shown once, in "care_note".
     assert set(data["answer"]) == {"category", "product_type", "picks", "look_for", "skip", "message",
-                                   "needs_more_threads", "quotes_dropped"}
+                                   "needs_more_threads", "quotes_dropped", "care_note"}
     # Changed on purpose 9 Oct 2026 (care tips, Noemi): each pick also has its "care" list, "How to make it last".
     # Changed on purpose 9 Oct 2026 (availability, Noemi's note): each pick also says where it is sold, "availability".
     # Changed on purpose 9 Oct 2026 (product facts, decided by Claude): each pick also has its "cautions", the facts
@@ -320,14 +321,16 @@ def test_the_command_takes_a_port_and_a_library_and_nothing_else():
     assert web._options(["--host", "0.0.0.0"]) is None  # there is no way to open it to the network
 
 
-# --- Care tips: how to make it last (Noemi, 9 Oct 2026) ---
+# --- Care tips: how to take care of it (Noemi, 9 Oct 2026; renamed and split on 11 Oct 2026) ---
 
 def test_each_card_carries_its_care_tips_with_verified_reddit_quotes(tmp_path):
     _, _, data = ask(REQUEST, care_library(tmp_path))
     care = data["answer"]["picks"][0]["care"]
-    assert [item["tip"] for item in care] == ["Descale every 6 months.", "Use filtered water."]
+    # Since 11 Oct 2026 (Noemi): the card has the tips about its product; the kind's are in the answer's note.
+    assert [item["tip"] for item in care] == ["Descale every 6 months."]
+    assert [item["tip"] for item in data["answer"]["care_note"]] == ["Use filtered water."]
     assert care[0]["quote"]["text"] == DESCALE
-    for item in care:
+    for item in care + data["answer"]["care_note"]:
         link = urlparse(item["quote"]["url"])
         assert link.scheme == "https" and link.hostname.endswith("reddit.com")
 
@@ -355,7 +358,12 @@ def test_an_unverifiable_care_quote_makes_the_endpoint_refuse(tmp_path, monkeypa
 def test_the_page_carries_the_care_heading_and_draws_care_tips_as_quotes(tmp_path):
     html = page(tmp_path)
     settings = json.loads(re.search(r'<script type="application/json" id="settings">(.*?)</script>', html, re.DOTALL).group(1))
-    assert settings["wording"]["care_heading"] == CARE_HEADING == "How to make it last"
+    # Renamed by Noemi on 11 Oct 2026 (was "How to make it last"); the kind's tips are drawn once, as a note at the end.
+    assert settings["wording"]["care_heading"] == CARE_HEADING == "How to take care of it"
+    assert settings["wording"]["care_note_heading"] == "How to take care of your {product_type}"
+    assert "careNote(answer)" in html
     drawing = re.search(r"function careSection\(tips\) \{(.*?)\n  \}", html, re.DOTALL).group(1)
-    assert "WORDING.care_heading" in drawing and "quoteBlock(item.quote)" in drawing  # the same Reddit link check
+    listing = re.search(r"function careList\(tips\) \{(.*?)\n  \}", html, re.DOTALL).group(1)
+    assert "WORDING.care_heading" in drawing and "careList(tips)" in drawing
+    assert "quoteBlock(item.quote)" in listing  # the same Reddit link check as every other quote
     assert "careSection(pick.care)" in html

@@ -24,8 +24,9 @@ What each pick shows (the brief):
   pipeline leaves them out. A product no longer made but sold second-hand only (vintage cast iron) says "Sold
   second-hand only: <shop>, checked <date>" with the same link (Noemi's decision, 10 Oct 2026), and so does a brand
   pick whose brand's own name has such an entry ("Griswold");
-- "How to make it last" (Noemi, 9 Oct 2026): up to CARE_TIPS_PER_PICK credible care tips from the threads ("descale
-  every 6 months"), each with its verified quote. Since 10 Oct 2026 (decided by Claude, as Noemi asked) the advice
+- "How to take care of it" (Noemi, 9 Oct 2026; named so on 11 Oct 2026, and since then only the pick's own tips, the
+  tips about its kind of product being shown once, in a note at the end): up to CARE_TIPS_PER_PICK credible care tips
+  ("descale every 6 months"), each with its verified quote. Since 10 Oct 2026 (decided by Claude, as Noemi asked) the advice
   most credible writers agree on comes first and repairs ("smooth with an angle grinder") last; tips that say the same
   thing are shown once, in their best writer's words (engine.care_tips.tips_by_agreement). A pick with no tip has no
   such heading.
@@ -59,9 +60,10 @@ from collections.abc import Collection, Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import date
 
-from engine.care_tips import CareTip, CareTips, tips_by_agreement
+from engine.care_tips import CareTip, CareTips, similar_tips, tips_by_agreement
 from engine.config import (
     BRAND_PICK_MODEL,
+    CARE_NOTE_TIPS,
     CARE_TIPS_PER_PICK,
     DOWNSIDES_PER_PICK,
     LOOK_FOR_NOTES,
@@ -123,8 +125,12 @@ BUDGET_WHY_UNKNOWN = "no price checked yet"
 BUDGET_WHY_CURRENCY = "its price is in {currency}"
 BUDGET_WHY_OLD = "its price was checked over {days} days ago, so it may have changed"
 CURRENCY_SIGNS = {"GBP": "£", "EUR": "€", "USD": "$"}
-# Care tips (Noemi, 9 Oct 2026; wording PROPOSED, awaiting Noemi).
-CARE_HEADING = "How to make it last"
+# Care tips (Noemi, 9 Oct 2026). Renamed by Noemi on 11 Oct 2026 (was "How to make it last"): only care of the product
+# itself. A pick shows the tips about itself; tips about its kind of product are shown once, in a note at the end
+# (CARE_NOTE_HEADING, filled with the request's product type; CARE_NOTE_HEADING_ANY without one).
+CARE_HEADING = "How to take care of it"
+CARE_NOTE_HEADING = "How to take care of your {product_type}"
+CARE_NOTE_HEADING_ANY = "How to take care of it"
 # Needs (9 Oct 2026; wording decided by Claude, as Noemi asked). The reason line says how many of the credible
 # recommendations talk about what the request asks for, and about what: "Recommended by 5 credible voices, 3 of them
 # about sensitive skin." It says "about", not "with sensitive skin": the rule finds comments that talk about a need,
@@ -241,7 +247,7 @@ class Pick:
     breakdown: ScoreBreakdown  # numbers only: no quote is in it
     price: ShownPrice  # from the price list, or PRICE_UNKNOWN
     availability: ShownAvailability = NOT_CHECKED  # where it is sold, from the price list, or AVAILABILITY_UNKNOWN
-    care: list[ShownCareTip] = field(default_factory=list)  # "How to make it last"; empty when there are none
+    care: list[ShownCareTip] = field(default_factory=list)  # "How to take care of it": the pick's own tips only
     cautions: list[str] = field(default_factory=list)  # "Note: ..." from product facts (9 Oct 2026); empty when none
     # For a brand pick: the model of that brand its credible writers recommend most (10 Oct 2026); None otherwise.
     model: str | None = None
@@ -273,6 +279,8 @@ class Answer:
     message: str | None  # the honest message when fewer than 3 picks have enough evidence
     needs_more_threads: bool  # fewer than 3 picks: fetching more threads may help
     quotes_dropped: int  # quotes that failed the check at answer time (for the logs; never shown)
+    # Care tips about the kind of product, shown once at the end (Noemi, 11 Oct 2026); empty when there are none.
+    care_note: list[ShownCareTip] = field(default_factory=list)
 
 
 def answer_to_dict(answer: Answer) -> dict:
@@ -297,7 +305,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
     with none shows PRICE_UNKNOWN and AVAILABILITY_UNKNOWN. `care` is each product's care tips ({product key:
-    engine.care_tips.CareTips}), made by the pipeline; a product with none shows no "How to make it last". Care tips
+    engine.care_tips.CareTips}), made by the pipeline; a product with none shows no "How to take care of it". Care tips
     never change which products are picks. `cautions` is each product's soft clashes with the request ({product key:
     [reason]}, engine/product_facts.py), made by the pipeline: each is shown on its pick as CAUTION; they never change
     which products are picks either. `models` is each brand pick's most recommended model ({product key: name}),
@@ -325,7 +333,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
         if len(quotes) >= MIN_QUOTES_PER_PICK:
             price = shown_price(prices.get(product.key))
             availability = shown_availability(prices.get(product.key), price.url)
-            tips = _care_tips(care.get(product.key), check)
+            own = care.get(product.key)
+            tips = _care_tips(CareTips(own.own, []) if own else None, check)
             notes = [CAUTION.format(reason=reason) for reason in cautions.get(product.key, [])]
             picks.append(_pick(len(picks) + 1, product, quotes, check, ranking, price, tips, availability, notes,
                                (more_downsides or {}).get(product.key, []), needs))
@@ -333,6 +342,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             picks[-1].model_price = (model_prices or {}).get(product.key)
     skip = [_skip_item(product, check) for product in ranking.skip_list]
     look_for = _look_for(ranking, check, product_type, unsuited_kinds)
+    care_note = _care_note([care.get(pick.product_key) for pick in picks], picks, check)
     return Answer(
         category=ranking.category,
         product_type=product_type,
@@ -342,7 +352,21 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
         message=_message(len(picks), product_type),
         needs_more_threads=len(picks) < PICKS_SHOWN,
         quotes_dropped=check.dropped,
+        care_note=care_note,
     )
+
+
+def _care_note(tips: Iterable[CareTips | None], picks: list[Pick], check: "_QuoteCheck") -> list[ShownCareTip]:
+    """The note at the end of the answer (Noemi, 11 Oct 2026: tips about the kind of product were repeated under every
+    pick): up to CARE_NOTE_TIPS tips about the kind, gathered once from the shown picks' tips, the ones most credible
+    writers agree on first, and never one that says the same as a tip already shown under a pick."""
+    kind: list[CareTip] = []
+    for item in tips:
+        for tip in item.kind if item is not None else []:
+            if not any(other.comment_id == tip.comment_id and other.tip == tip.tip for other in kind):
+                kind.append(tip)
+    under_picks = [shown.tip or shown.quote.text for pick in picks for shown in pick.care]
+    return _care_tips(CareTips([], kind), check, CARE_NOTE_TIPS, under_picks)
 
 
 class _QuoteCheck:
@@ -550,17 +574,21 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
     )
 
 
-def _care_tips(tips: CareTips | None, check: _QuoteCheck) -> list[ShownCareTip]:
-    """Up to CARE_TIPS_PER_PICK care tips for one pick, the ones most credible writers agree on first, repairs last
+def _care_tips(tips: CareTips | None, check: _QuoteCheck, limit: int = CARE_TIPS_PER_PICK,
+               already: Iterable[str] = ()) -> list[ShownCareTip]:
+    """Up to `limit` care tips (a pick's own, or the note's), the ones most credible writers agree on first, repairs last
     (engine.care_tips.tips_by_agreement, 10 Oct 2026). Each tip shown stands for one group of tips that say the same
     thing, so the same advice is never shown twice: the group's best writer's tip, in their words, with their quote.
-    When that quote fails the check, it is dropped and the group's next writer's tip and quote take its place."""
+    When that quote fails the check, it is dropped and the group's next writer's tip and quote take its place. A group
+    saying the same as one of `already` (tips shown elsewhere in the answer) is left out."""
     if tips is None:
         return []
     shown: list[ShownCareTip] = []
     for group in tips_by_agreement(tips):
-        if len(shown) == CARE_TIPS_PER_PICK:
+        if len(shown) == limit:
             break
+        if any(similar_tips(group[0].tip, tip) for tip in already):
+            continue
         for item in group:
             quote = check.first([item], 1)
             if quote:
@@ -820,6 +848,8 @@ def _every_quote(answer: Answer) -> Iterator[tuple[str, ShownQuote]]:
             yield f"pick {pick.rank} ({pick.name}) downside", quote
         for item in pick.care:
             yield f"pick {pick.rank} ({pick.name}) care tip", item.quote
+    for item in answer.care_note:
+        yield "care note", item.quote
     for item in answer.look_for:
         yield f"what to look for ({item.kind})", item.quote
     for item in answer.skip:
@@ -848,6 +878,10 @@ def render_markdown(answer: Answer) -> str:
             lines.append(f"- **{item.name}:** {item.reason}")
             lines += [f"  - {_render_quote_inline(quote)}" for quote in item.quotes]
         lines.append("")
+    if answer.care_note:
+        heading = (CARE_NOTE_HEADING.format(product_type=answer.product_type) if answer.product_type
+                   else CARE_NOTE_HEADING_ANY)
+        lines += [f"## {heading}", ""] + _render_care(answer.care_note)
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -872,11 +906,15 @@ def _render_pick(pick: Pick) -> list[str]:
     else:
         lines += [NO_DOWNSIDES, ""]
     if pick.care:
-        lines += [f"**{CARE_HEADING}**", ""]
-        lines += [f"- **{item.tip}** {_render_quote_inline(item.quote)}" if item.tip
-                  else f"- {_render_quote_inline(item.quote)}" for item in pick.care] + [""]
+        lines += [f"**{CARE_HEADING}**", ""] + _render_care(pick.care)
     lines += [f"**{BREAKDOWN_HEADING}**", ""] + _render_breakdown(pick.score, pick.breakdown) + [""]
     return lines
+
+
+def _render_care(items: list[ShownCareTip]) -> list[str]:
+    """Care tips as a list: the tip in bold, then its quote; a tip that only repeats its quote shows the quote alone."""
+    return [f"- **{item.tip}** {_render_quote_inline(item.quote)}" if item.tip
+            else f"- {_render_quote_inline(item.quote)}" for item in items] + [""]
 
 
 def _render_price(price: ShownPrice) -> list[str]:

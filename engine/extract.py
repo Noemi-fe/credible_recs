@@ -25,8 +25,9 @@ From instructions v6 (decided 9 Oct 2026) each mention also says what type of pr
 Older extractions have neither and still load.
 
 From instructions v7 (Noemi, 9 Oct 2026) an extraction also lists care tips ("care"): advice on looking after a
-product or a kind of product so it lasts or works well ("descale it every 6 months"), shown under the picks as "How
-to make it last" (engine/care_tips.py). Older extractions have no "care" list and still load.
+product or a kind of product so it lasts ("descale it every 6 months"), shown as "How to take care of it"
+(engine/care_tips.py). Since v8 (Noemi, 11 Oct 2026) only care of the product itself, stated, never a question or a
+guess, and never how to use it for results. Older extractions have no "care" list and still load.
 
 The guardrail (the brief's rule): every quote must exist word for word in its comment, checked by code, not by
 the AI, and a quote that fails is dropped. check_extraction keeps a mention only if its comment is in the thread
@@ -137,7 +138,8 @@ class ExtractedCareTip(Record):
     ("descale it every 6 months", "never put a carbon steel knife in the dishwasher"). Instructions v7.
 
     Not a product mention and not a note (notes are about choosing what to buy): it is shown under a pick as "How to
-    make it last" (Noemi, 9 Oct 2026). Nothing here is trusted until checked, like the rest of the file.
+    make it last" (Noemi, 9 Oct 2026; "How to take care of it" since 11 Oct 2026, and from instructions v8 only care of
+    the product itself, stated, never a question or a guess). Nothing here is trusted until checked, like the rest.
     """
 
     comment_id: Id
@@ -213,7 +215,8 @@ def check_extraction(extraction: Extraction, thread: Thread) -> CheckResult:
       10 Oct 2026).
     Mentions keep their order in both lists. Notes and care tips (instructions v7) go through the same checks of
     their comment and quote (the first six above), and a note can't be about a service either ("laser facials", 10 Oct
-    2026); agreements too, and they must be replies.
+    2026); agreements too, and they must be replies. A care tip's quote can't be a question (instructions v8, 11 Oct
+    2026: a care tip states its advice).
     """
     comments = {comment.id: comment for comment in thread.comments}
     result = CheckResult()
@@ -251,6 +254,8 @@ def check_extraction(extraction: Extraction, thread: Thread) -> CheckResult:
             result.rejected_agreements.append((agreement, reason))
     for tip in extraction.care:
         reason = _why_rejected(tip, extraction, thread, comments)
+        if reason is None and tip.quote.rstrip().endswith("?"):
+            reason = "the quote asks a question: a care tip states its advice (instructions v8)"
         if reason is None:
             result.kept_care.append(tip)
         else:

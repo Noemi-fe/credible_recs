@@ -11,7 +11,7 @@
    on this page is here, and only here.
    Everything else comes from the answer itself (engine/answer.py), sent by the server: the reasons,
    support lines, disagreement flags, messages, module 1's question or polite no, and the headings
-   ("In their words", "Known downsides", "How to make it last", "see the comment", the price lines, ...).
+   ("In their words", "Known downsides", "How to take care of it", "see the comment", the price lines, ...).
    {name} is filled in by the page.
    ===================================================================================================== */
 const LABELS = {
@@ -171,6 +171,9 @@ h1, h2, h3, h4 { line-height: 1.25; }
 .badges li { padding: 1px 8px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-weight: 600; font-size: 13px; }
 .downsides .quote { border-left-color: var(--warn); }
 .care .quote { border-left-color: var(--ok); }
+.care-note { margin: 24px 0 0; padding: 14px 16px; border-radius: 10px; background: var(--ok-soft);
+  border: 1px solid var(--line); }
+.care-note h3 { margin: 0 0 8px; }
 .care .lead { margin: 0 0 6px; }
 
 /* The score breakdown. */
@@ -381,14 +384,27 @@ h1, h2, h3, h4 { line-height: 1.25; }
     return (cautions || []).map((text) => el("p", { class: "caution" }, text));
   }
 
-  /** "How to make it last": each care tip in a few words, then its verified quote (drawn like every other quote, so
-      its link goes through the same Reddit check). Nothing at all when a pick has no tips. */
+  /** "How to take care of it": each care tip in a few words, then its verified quote (drawn like every other quote,
+      so its link goes through the same Reddit check). Nothing at all when a pick has no tips of its own. */
+  function careList(tips) {
+    return el("ul", { class: "quotes care" }, ...tips.map((item) => el("li", {},
+      item.tip ? el("p", { class: "lead" }, el("strong", {}, item.tip)) : null,
+      quoteBlock(item.quote))));
+  }
+
   function careSection(tips) {
     if (!tips || !tips.length) return [];
-    return [el("h4", {}, WORDING.care_heading),
-      el("ul", { class: "quotes care" }, ...tips.map((item) => el("li", {},
-        item.tip ? el("p", { class: "lead" }, el("strong", {}, item.tip)) : null,
-        quoteBlock(item.quote))))];
+    return [el("h4", {}, WORDING.care_heading), careList(tips)];
+  }
+
+  /** The note at the end (Noemi, 11 Oct 2026): tips about the kind of product, shown once rather than under every
+      pick. Nothing when there are none. */
+  function careNote(answer) {
+    if (!answer.care_note || !answer.care_note.length) return null;
+    const heading = answer.product_type
+      ? fill(WORDING.care_note_heading, { product_type: answer.product_type }) : WORDING.care_note_heading_any;
+    return el("section", { class: "care-note", "aria-labelledby": "care-note-heading" },
+      el("h3", { id: "care-note-heading" }, heading), careList(answer.care_note));
   }
 
   function pickCard(pick) {
@@ -446,6 +462,8 @@ h1, h2, h3, h4 { line-height: 1.25; }
     if (answer.look_for.length) extras.push(lookForSection(answer.look_for));
     if (answer.skip.length) extras.push(skipSection(answer.skip));
     if (extras.length) parts.push(el("div", { class: "extras" }, ...extras));
+    const note = careNote(answer);
+    if (note) parts.push(note);
     const overBudget = data.left_out.over_budget ? " " + fill(LABELS.leftOutBudget, { n: data.left_out.over_budget }) : "";
     const unavailable = data.left_out.unavailable ? " " + fill(LABELS.leftOutUnavailable, { n: data.left_out.unavailable }) : "";
     const notSuited = data.left_out.not_suited ? " " + fill(LABELS.leftOutNotSuited, { n: data.left_out.not_suited }) : "";

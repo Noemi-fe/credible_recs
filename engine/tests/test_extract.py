@@ -638,13 +638,13 @@ def test_other_is_not_an_evidence_tag_for_the_ai():
     assert result.kept == [] and "unknown evidence tag" in reasons(result)[0]
 
 
-def test_the_current_instructions_are_v7_and_todo_lists_older_extractions(tmp_path):
-    # Changed on purpose 9 Oct 2026 (care tips, Noemi): the instructions moved from v6 to v7, so a v6 extraction is
-    # now the older one that `todo` lists, and a v7 one is up to date. Was: v6 current, v5 listed.
-    assert current_instructions_version() == "extract-v7"
+def test_the_current_instructions_are_v8_and_todo_lists_older_extractions(tmp_path):
+    # Changed on purpose 11 Oct 2026 (care tips narrowed to looking after the product, Noemi): the instructions moved
+    # from v7 to v8, so a v7 extraction is now the older one that `todo` lists. Was: v7 current, v6 listed (9 Oct).
+    assert current_instructions_version() == "extract-v8"
     threads_dir = threads_folder(tmp_path, *(other_thread(i) for i in ("1aaaaa", "1bbbbb")))
-    write_extraction(threads_dir, make_extraction(thread_id="1aaaaa", instructions_version="extract-v6", mentions=[]))
-    write_extraction(threads_dir, make_extraction(thread_id="1bbbbb", instructions_version="extract-v7", mentions=[]))
+    write_extraction(threads_dir, make_extraction(thread_id="1aaaaa", instructions_version="extract-v7", mentions=[]))
+    write_extraction(threads_dir, make_extraction(thread_id="1bbbbb", instructions_version="extract-v8", mentions=[]))
     assert todo(threads_dir, current_instructions_version()) == ["1aaaaa"]
 
 
@@ -679,11 +679,11 @@ def test_a_long_life_ending_in_a_failure_is_in_the_stance_rules():
     assert "tell a friend" in stance and "died after 14 years" in stance and "mentions flaws" in stance
 
 
-def test_the_output_example_is_a_valid_v7_extraction():
-    # Changed on purpose 9 Oct 2026 (care tips, Noemi): the example now follows v7. Was: "extract-v6".
+def test_the_output_example_is_a_valid_v8_extraction():
+    # Changed on purpose 11 Oct 2026 (care tips narrowed, Noemi): the example now follows v8. Was: "extract-v7".
     example = instructions_text().split("```json", 1)[1].split("```", 1)[0]
     data = json.loads(example)
-    assert data["instructions_version"] == "extract-v7"
+    assert data["instructions_version"] == "extract-v8"
     for item in data["mentions"]:
         loaded = ExtractedMention.model_validate(item | {"comment_id": "c1aaaa"})  # the example's ids are placeholders
         assert loaded.product_type and loaded.evidence and loaded.evidence_tags
@@ -808,6 +808,21 @@ def test_a_care_tip_from_a_quoted_block_or_over_the_word_limit_is_rejected():
     result = check_extraction(Extraction.model_validate(extraction), thread)
     assert result.kept_care == []
     assert "quoted block" in result.rejected_care[0][1] and "limit is" in result.rejected_care[1][1]
+
+
+def test_a_care_tip_asked_as_a_question_is_rejected():
+    # Noemi, 11 Oct 2026 (instructions v8): a care tip states its advice. A cleanser answer showed "use a smaller amount
+    # for a shorter time" from a writer who only wondered whether that would help.
+    thread = Thread.model_validate(make_thread(comments=[
+        make_comment("c1aaaa", body=DESCALE_BODY),
+        make_comment("c2bbbb", body="Could you descale it less often with filtered water?"),
+    ]))
+    extraction = make_extraction(mentions=[], care=[
+        care_tip(), care_tip(comment_id="c2bbbb", tip="descale less often with filtered water",
+                             quote="Could you descale it less often with filtered water?")])
+    result = check_extraction(Extraction.model_validate(extraction), thread)
+    assert [c.comment_id for c in result.kept_care] == ["c1aaaa"]
+    assert "question" in result.rejected_care[0][1]
 
 
 def test_a_care_tip_is_about_a_product_unless_it_says_it_is_about_a_kind():

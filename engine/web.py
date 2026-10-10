@@ -49,8 +49,9 @@ The JSON for /api/answer (200):
                                              "shop", "checked_on",   null when not checked
                                              "url"},           the shop's own page, https only; null when not
                                                                checked or when the price line links to it
-                            "care": [{"tip": "Descale every 6 months.",   "How to make it last" (9 Oct 2026):
-                                      "quote": {same shape}}],            0 to 2, each quote verified
+                            "care": [{"tip": "Descale every 6 months.",   "How to take care of it" (9 Oct 2026,
+                                      "quote": {same shape}}],            renamed 11 Oct): the pick's own tips, 0 to 2,
+                                                               each quote verified
                             "cautions": ["Note: ..."],         product facts that suit the request less well
                                                                (9 Oct 2026); [] when there are none
                             "model": "Victorinox Fibrox...",   a brand pick's most recommended model (10 Oct
@@ -58,6 +59,8 @@ The JSON for /api/answer (200):
                             "model_price": "£41.50 at ..."}],  that model's checked price line, or null
                  "look_for": [{"kind", "advice", "quote": {same shape}}],
                  "skip": [{"product_key", "name", "reason", "quotes": [...]}],
+                 "care_note": [{"tip", "quote"}],   care tips about the kind of product, shown once at the end
+                                                    (Noemi, 11 Oct 2026); [] when there are none
                  "message": the honest "not enough evidence" message, or null when there are 3 picks,
                  "needs_more_threads", "quotes_dropped"},
       "threads_used": ["thread id", ...],          most relevant first
@@ -241,7 +244,10 @@ def answer_wording() -> dict[str, str]:
         "link_text": wording.LINK_TEXT,
         "price_label": wording.PRICE_LABEL,  # "Price"
         "price_link_text": wording.PRICE_LINK_TEXT,
-        "care_heading": wording.CARE_HEADING,  # "How to make it last" (care tips, 9 Oct 2026)
+        "care_heading": wording.CARE_HEADING,  # "How to take care of it" (care tips; renamed by Noemi on 11 Oct 2026)
+        # The note at the end with the tips about the kind of product (Noemi, 11 Oct 2026), and its wording without one.
+        "care_note_heading": wording.CARE_NOTE_HEADING,
+        "care_note_heading_any": wording.CARE_NOTE_HEADING_ANY,
         "brand_model": BRAND_PICK_MODEL,  # "Most named model: {model}" (brand picks, 10 Oct 2026)
         # The breakdown's line about the request's needs (9 Oct 2026), with {recommends} and {warnings} for the page.
         "breakdown_needs": wording.breakdown_needs_line("{recommends}", "{warnings}"),

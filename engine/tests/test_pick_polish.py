@@ -252,7 +252,9 @@ def shown_tips(own=(), kind=(), bodies_extra=None) -> list[str]:
     bodies = bodies | bodies_for(*own, *kind) | (bodies_extra or {})
     answer = write_answer(ranking, bodies, "chef knife", care={"tojiro-dp-gyuto": CareTips(list(own), list(kind))})
     assert unverified_claims(answer, bodies) == []
-    return [c.tip for c in answer.picks[0].care]
+    # Since 11 Oct 2026 (Noemi) a pick shows its own tips and the note at the end the kind's: what a reader sees about
+    # this product, in that order.
+    return [c.tip for c in answer.picks[0].care] + [c.tip for c in answer.care_note]
 
 
 def test_the_tip_most_writers_agree_on_comes_first():
@@ -276,20 +278,26 @@ def test_deleted_accounts_count_once_per_comment():
     assert shown_tips(kind=tips) == ["Hand wash only.", "Use filtered water."]
 
 
-def test_on_a_tie_the_higher_voice_comes_first_then_the_products_own_tip():
-    own_medium, kind_high = care("oil the blade", "ann", is_kind=False, voice="medium"), care("hone it", "bo")
-    assert shown_tips(own=[own_medium], kind=[kind_high]) == ["Hone it.", "Oil the blade."]
+def test_on_a_tie_the_higher_voice_comes_first():
+    # Updated 11 Oct 2026 (Noemi): a pick's own tips and the kind's tips are shown apart (the kind's in the note at the
+    # end), so the tie between them is gone; within each, the higher voice still comes first.
+    medium, high = care("oil the blade", "ann", is_kind=False, voice="medium"), care("hand wash only", "bo", is_kind=False)
+    kind_medium, kind_high = care("strop it", "cy", voice="medium"), care("hone it", "di")
+    assert shown_tips(own=[medium, high], kind=[kind_medium, kind_high]) == [
+        "Hand wash only.", "Oil the blade.", "Hone it.", "Strop it."]
+    # tips_by_agreement itself still puts a product's own tip before its kind's on a full tie.
     own_high, kind_high = care("oil the blade", "ann", is_kind=False), care("hone it", "bo")
-    assert shown_tips(own=[own_high], kind=[kind_high]) == ["Oil the blade.", "Hone it."]
+    assert [g[0].tip for g in tips_by_agreement(CareTips([own_high], [kind_high]))] == ["oil the blade", "hone it"]
 
 
 def test_repairs_come_after_looking_after_the_product_however_many_agree():
-    repairs = [care("Seal a leaking water gauge with silicone", "ann", is_kind=False),
-               care("seal the leaking water gauge with silicone", "bo", is_kind=False),
+    # Updated 11 Oct 2026: all kind tips here, so they meet in the note at the end (own and kind tips are shown apart).
+    repairs = [care("Seal a leaking water gauge with silicone", "ann"),
+               care("seal the leaking water gauge with silicone", "bo"),
                care("smooth with an angle grinder", "cy")]
     upkeep = care("descale regularly", "di", voice="medium")
-    assert shown_tips(own=repairs[:2], kind=[repairs[2], upkeep]) == ["Descale regularly.",
-                                                                      "Seal a leaking water gauge with silicone."]
+    assert shown_tips(kind=[*repairs, upkeep]) == ["Descale regularly.", "Seal a leaking water gauge with silicone.",
+                                                   "Smooth with an angle grinder."]
 
 
 def test_the_best_writers_tip_and_quote_are_shown_and_the_next_writers_when_it_fails():

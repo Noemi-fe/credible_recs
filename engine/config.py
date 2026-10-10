@@ -290,10 +290,13 @@ BUDGET_DEFAULT_CURRENCY = "GBP"
 LIVE_CHECK_MIN_INTERVAL = 3.0
 
 # --- Care tips (Noemi, 9 Oct 2026) ---
-# Alongside each pick, credible advice from its threads on making it last ("descale it every 6 months"; extraction
-# instructions v7, engine/care_tips.py), so what people buy lasts longer. Showing them is Noemi's decision.
-# PROPOSED: up to this many per pick, the product's own tips first, then its kind's, never the same tip twice.
+# Alongside each pick, credible advice from its threads on looking after it ("descale it every 6 months"; extraction
+# instructions v8, engine/care_tips.py), so what people buy lasts longer. Showing them is Noemi's decision. Up to this
+# many per pick, about the pick itself (Noemi, 11 Oct 2026), never the same tip twice.
 CARE_TIPS_PER_PICK = 2
+# Tips about the kind of product ("descale any electric kettle") are shown once, in a note at the end of the answer,
+# not under every pick (Noemi, 11 Oct 2026): at most this many (decided by Claude, 11 Oct 2026).
+CARE_NOTE_TIPS = 3
 
 # --- Archive reader and live checks (Noemi, 9 Oct 2026) ---
 # Noemi decided on 9 Oct 2026, instead of paying for Parse: threads may be READ from Arctic Shift's archive (free) and

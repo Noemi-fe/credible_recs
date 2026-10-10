@@ -15,7 +15,8 @@ import pytest
 from engine import answer as wording
 from engine.answer import ShownQuote, answer_to_dict, comment_bodies, render_markdown, unverified_claims, write_answer
 from engine.care_tips import CareTip, CareTips
-from engine.config import CARE_TIPS_PER_PICK, MIN_QUOTES_PER_PICK, PRICE_MAX_AGE_DAYS, QUOTE_MAX_WORDS, QUOTES_PER_PICK
+from engine.config import (CARE_NOTE_TIPS, CARE_TIPS_PER_PICK, MIN_QUOTES_PER_PICK, PRICE_MAX_AGE_DAYS, QUOTE_MAX_WORDS,
+                           QUOTES_PER_PICK)
 from engine.models import Thread
 from engine.prices import Price, PriceCheck
 from engine.query import Budget
@@ -759,7 +760,7 @@ def test_the_markdown_shows_the_price_the_shop_link_and_the_budget_note():
     assert wording.PRICE_UNKNOWN in text  # the other picks
 
 
-# --- Care tips: how to make it last (Noemi, 9 Oct 2026) ---
+# --- Care tips: how to take care of it (Noemi, 9 Oct 2026; renamed and split on 11 Oct 2026) ---
 
 _care_ids = count(1)
 
@@ -783,42 +784,49 @@ def with_care(own=(), kind=(), key="tojiro-dp-gyuto"):
 
 
 def test_care_heading_wording():
-    assert wording.CARE_HEADING == "How to make it last"
-    assert CARE_TIPS_PER_PICK == 2
+    # Renamed by Noemi on 11 Oct 2026 (was "How to make it last"): the section holds care of the product only.
+    assert wording.CARE_HEADING == "How to take care of it"
+    assert wording.CARE_NOTE_HEADING == "How to take care of your {product_type}"
+    assert CARE_TIPS_PER_PICK == 2 and CARE_NOTE_TIPS == 3
 
 
-def test_each_pick_gets_its_own_care_tips_first_then_its_kinds():
+def test_a_pick_shows_its_own_care_tips_and_the_answer_ends_with_the_general_ones():
+    # Noemi, 11 Oct 2026: tips about the kind of product ("hone it weekly" for any chef knife) were repeated under
+    # every pick. A pick now shows only the tips about itself; the kind's tips are shown once, in a note at the end.
     hand_wash, hone, dry = care_tip("hand wash only"), care_tip("hone it weekly", is_kind=True), care_tip("dry it", is_kind=True)
     answer, bodies = with_care(own=[hand_wash], kind=[hone, dry])
     tojiro, global_g2, victorinox = answer.picks
-    assert [c.tip for c in tojiro.care] == ["Hand wash only.", "Hone it weekly."]
-    assert [c.quote.text for c in tojiro.care] == [hand_wash.quote, hone.quote]
+    assert [c.tip for c in tojiro.care] == ["Hand wash only."]
+    assert [c.quote.text for c in tojiro.care] == [hand_wash.quote]
     assert tojiro.care[0].quote.url == hand_wash.comment_url and tojiro.care[0].quote.badges == ("well upvoted",)
     assert global_g2.care == [] and victorinox.care == []
+    assert [(c.tip, c.quote.text) for c in answer.care_note] == [("Hone it weekly.", hone.quote), ("Dry it.", dry.quote)]
     assert unverified_claims(answer, bodies) == []
 
 
-def test_at_most_care_tips_per_pick():
-    answer, _ = with_care(own=[care_tip(f"tip number {n}") for n in range(4)])
+def test_at_most_care_tips_per_pick_and_in_the_note():
+    answer, _ = with_care(own=[care_tip(f"tip number {n}") for n in range(4)],
+                          kind=[care_tip(f"general tip {n}", is_kind=True) for n in range(5)])
     assert len(answer.picks[0].care) == CARE_TIPS_PER_PICK
+    assert len(answer.care_note) == CARE_NOTE_TIPS
 
 
 def test_the_most_credible_tip_comes_first_within_own_and_kind_tips():
     medium, high = care_tip("oil the blade", voice="medium"), care_tip("use a wooden board")
     kind_medium, kind_high = care_tip("strop it", is_kind=True, voice="medium"), care_tip("hone it", is_kind=True)
-    answer, _ = with_care(own=[medium], kind=[kind_medium, kind_high])
-    # Updated 10 Oct 2026 (pick polish, decided by Claude as Noemi asked): care tips are now ordered by how many
-    # credible writers agree, and on a tie the higher voice comes first, before the product's own tip. Here every tip
-    # has one writer, so the high kind tip now comes before the medium own one (it was "Oil the blade.", "Hone it.").
-    assert [c.tip for c in answer.picks[0].care] == ["Hone it.", "Oil the blade."]
-    answer, _ = with_care(own=[medium, high])
+    answer, _ = with_care(own=[medium, high], kind=[kind_medium, kind_high])
+    # Updated 11 Oct 2026 (Noemi): a pick shows its own tips and the note at the end shows the kind's, so the two are
+    # ordered apart (on 10 Oct they were one list, where the high kind tip came before the medium own one). Within each,
+    # the most credible writers' tip still comes first.
     assert [c.tip for c in answer.picks[0].care] == ["Use a wooden board.", "Oil the blade."]
+    assert [c.tip for c in answer.care_note] == ["Hone it.", "Strop it."]
 
 
 def test_never_two_care_tips_with_the_same_tip():
     answer, _ = with_care(own=[care_tip("descale every 6 months")],
                           kind=[care_tip("Descale it every 6 months.", is_kind=True), care_tip("use filtered water", is_kind=True)])
-    assert [c.tip for c in answer.picks[0].care] == ["Descale every 6 months.", "Use filtered water."]
+    assert [c.tip for c in answer.picks[0].care] == ["Descale every 6 months."]
+    assert [c.tip for c in answer.care_note] == ["Use filtered water."]  # the note never repeats a pick's own tip
 
 
 def test_a_care_tip_written_as_a_sentence_is_shown_as_it_is():
@@ -839,11 +847,11 @@ def test_a_tip_that_only_repeats_its_quote_is_shown_once():
 
 
 def test_a_care_quote_that_fails_is_dropped_never_shown_and_the_next_tip_takes_its_place():
-    fake, real = care_tip("hand wash only", quote=FAKE), care_tip("hand wash only", is_kind=True)
+    fake, real = care_tip("hand wash only", quote=FAKE), care_tip("hand wash only")
     ranking, bodies, _ = kitchen_case()
     without = write_answer(ranking, bodies, "chef knife")
     bodies = bodies | bodies_for(real) | {fake.comment_id: "I just hand wash it, honestly."}
-    answer = write_answer(ranking, bodies, "chef knife", care={"tojiro-dp-gyuto": CareTips([fake], [real])})
+    answer = write_answer(ranking, bodies, "chef knife", care={"tojiro-dp-gyuto": CareTips([fake, real], [])})
     assert [c.quote.text for c in answer.picks[0].care] == [real.quote]
     assert FAKE not in shown_text(answer)
     assert answer.quotes_dropped == without.quotes_dropped + 1
@@ -861,16 +869,18 @@ def test_a_care_quote_whose_comment_is_gone_or_from_a_quoted_block_is_dropped():
 
 def test_care_tips_never_make_a_pick_and_go_only_with_picks():
     # The Tefal knife is on the skip list: its care tips are never shown, and the picks are the same as without care.
-    answer, _ = with_care(own=[care_tip("hand wash only")], key="tefal-knife")
+    answer, _ = with_care(own=[care_tip("hand wash only")], kind=[care_tip("hone it weekly", is_kind=True)], key="tefal-knife")
     assert [p.name for p in answer.picks] == ["Tojiro DP Gyuto", "Global G-2", "Victorinox Fibrox"]
     assert all(p.care == [] for p in answer.picks) and "hand wash only" not in shown_text(answer).lower()
+    assert answer.care_note == []  # the note gathers the shown picks' kind tips only
 
 
 def test_without_care_tips_every_pick_has_none():
     ranking, bodies, _ = kitchen_case()
     answer = write_answer(ranking, bodies, "chef knife")
-    assert all(p.care == [] for p in answer.picks)
+    assert all(p.care == [] for p in answer.picks) and answer.care_note == []
     assert wording.CARE_HEADING not in render_markdown(answer)
+    assert wording.CARE_NOTE_HEADING.format(product_type="chef knife") not in render_markdown(answer)
 
 
 def test_the_check_covers_care_quotes():
@@ -882,12 +892,20 @@ def test_the_check_covers_care_quotes():
     assert real.comment_id in problems[0] and FAKE not in problems[0]
 
 
+def test_the_check_covers_the_care_note():
+    answer, bodies = with_care(kind=[care_tip("hone it weekly", is_kind=True)])
+    real = answer.care_note[0].quote
+    answer.care_note[0] = dataclasses.replace(answer.care_note[0], quote=planted(real))
+    problems = unverified_claims(answer, bodies)
+    assert len(problems) == 1 and "care note" in problems[0] and FAKE not in problems[0]
+
+
 def test_a_care_tip_with_no_badges_shows_the_plain_voice_level():
     answer, _ = with_care(own=[care_tip("hand wash only", voice="medium", badges=())])
     assert answer.picks[0].care[0].quote.badges == ("medium-credibility voice",)
 
 
-def test_the_markdown_shows_how_to_make_it_last_under_the_pick():
+def test_the_markdown_shows_how_to_take_care_of_it_under_the_pick():
     hand_wash = care_tip("hand wash only")
     answer, _ = with_care(own=[hand_wash])
     text = render_markdown(answer)
@@ -899,9 +917,20 @@ def test_the_markdown_shows_how_to_make_it_last_under_the_pick():
 
 
 def test_the_care_tips_turn_into_json():
-    answer, _ = with_care(own=[care_tip("hand wash only")])
+    answer, _ = with_care(own=[care_tip("hand wash only")], kind=[care_tip("hone it weekly", is_kind=True)])
     data = json.loads(json.dumps(answer_to_dict(answer)))
     care = data["picks"][0]["care"]
     assert set(care[0]) == {"tip", "quote"} and care[0]["tip"] == "Hand wash only."
     assert set(care[0]["quote"]) == {"text", "comment_id", "url", "badges"}
     assert data["picks"][1]["care"] == []
+    assert [item["tip"] for item in data["care_note"]] == ["Hone it weekly."]
+
+
+def test_the_markdown_ends_with_the_care_note():
+    hone = care_tip("hone it weekly", is_kind=True)
+    answer, _ = with_care(kind=[hone])
+    text = render_markdown(answer)
+    heading = f"## {wording.CARE_NOTE_HEADING.format(product_type='chef knife')}"
+    assert heading in text and text.index(heading) > text.index(f"## {wording.SKIP_HEADING}")
+    assert f'- **Hone it weekly.** "{hone.quote}"' in text
+    assert f"**{wording.CARE_HEADING}**" not in text  # no pick has tips of its own

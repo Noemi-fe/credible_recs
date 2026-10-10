@@ -71,9 +71,11 @@ Two ranking changes of 9 Oct 2026 are worked out here, in _score, before module 
 
 Names are shown as a UK shopper knows them (decision 12): "Sage", not "Breville" (engine.group_products.uk_name).
 
-Care tips, "How to make it last" (Noemi, 9 Oct 2026): the credible care tips of the threads read (extraction
-instructions v7) go with the products they are about (engine/care_tips.py), and the answer shows them under each pick.
-They never change the ranking. Older extractions have none, so their answers don't change.
+Care tips, "How to take care of it" (Noemi, 9 Oct 2026; renamed 11 Oct 2026): the credible care tips of the threads
+read (extraction instructions v7, narrowed in v8 to care of the product itself) go with the products they are about
+(engine/care_tips.py). The answer shows a pick's own tips under it, and the tips about its kind of product once, in a
+note at the end (Noemi, 11 Oct 2026). They never change the ranking. Older extractions have none, so their answers
+don't change.
 
 Writers' standing (account age, karma, contributions, flair) isn't in the saved threads: Parse gives only names.
 With `profiles` (engine.profiles.StoredProfiles in the command line, the web demo and the evaluation), it is filled in
@@ -826,7 +828,7 @@ def _commented(result: CheckResult) -> set[str]:
             | {c.comment_id for c in result.kept_care})
 
 
-# --- Care tips: how to make it last (Noemi, 9 Oct 2026) ---
+# --- Care tips: how to take care of it (Noemi, 9 Oct 2026; renamed 11 Oct 2026) ---
 
 def _care_tips(threads: list[Thread], checked: dict[str, CheckResult], groups: list[ProductGroup], kinds,
                query: ParsedQuery) -> dict[str, CareTips]:

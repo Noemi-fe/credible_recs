@@ -1,4 +1,4 @@
-"""Care tips, "how to make it last" (Noemi, 9 Oct 2026): credible advice from the threads on looking after a product,
+"""Care tips, "how to take care of it" (Noemi, 9 Oct 2026; renamed 11 Oct 2026): credible advice from the threads on looking after a product,
 shown next to each pick, so what people buy lasts longer.
 
 The AI lists care tips while it extracts a thread (instructions v7, engine.extract.ExtractedCareTip): what the tip is

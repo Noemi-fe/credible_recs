@@ -1,11 +1,11 @@
-Version: extract-v7
+Version: extract-v8
 
 # Finding product mentions in one Reddit thread
 
 You read one Reddit thread saved as JSON (the shape of engine.models.Thread). For every comment, list each product
 it mentions, what type of product it is, the writer's stance towards it, how well the writer knows it (the
 evidence), and one supporting quote copied word for word from that comment. Also list advice about kinds of
-product ("notes"), care tips on making a product last ("care") and replies that agree with the comment above
+product ("notes"), care tips on looking after a product ("care") and replies that agree with the comment above
 ("agreements").
 Write the result as JSON to the file you're given, in the format at the end. Nothing else.
 
@@ -159,11 +159,18 @@ kind ("sujihiki", "VG10 steel"), the stance and a quote, with the same quote rul
 advice about ingredients ("look for niacinamide"). Care tips that aren't about choosing (how to descale, how to
 season) are not notes: list them in "care" (below).
 
-## Care tips: how to make it last
+## Care tips: how to take care of it
 
-When a comment gives advice on looking after, using or maintaining a product or a kind of product, so it lasts or
-works well ("descale it every 6 months", "never put a carbon steel knife in the dishwasher", "re-season after
-scrubbing", "keep it away from sunlight"), add a care tip to "care" (Noemi, 9 Oct 2026):
+When a comment gives advice on looking after a product or a kind of product, so it lasts or keeps working ("descale
+it every 6 months", "never put a carbon steel knife in the dishwasher", "re-season after scrubbing", "keep it away
+from sunlight"), add a care tip to "care" (Noemi, 9 Oct 2026; narrowed on 11 Oct 2026, instructions v8):
+- Only care of the product itself: cleaning, descaling, drying, oiling, seasoning, sharpening or honing, storing,
+  protecting it from damage (no dishwasher, no metal utensils, don't heat it empty) and repairing it. How to use a
+  product for good results is not a care tip: applying or layering a skincare product, how often to use it on the
+  skin, what to pair it with, cooking or brewing technique.
+- Only advice the comment states, as advice or as the writer's own habit ("I descale mine monthly"). A question
+  ("could you use less of it?") or a guess ("maybe try...", "I wonder if...") is not a care tip.
+- Only advice that says what to do: "take care of it" says nothing.
 - "about": the product ("Zojirushi kettle") or the kind of product ("cast iron skillet", "electric kettle"), named
   the way the comment names it, as for mentions and notes. A reply giving a tip about the product named in the
   comment it answers ("descale it monthly") takes the name from there.
@@ -194,7 +201,7 @@ comment (there's no one left to credit), and agreement with a comment other than
 ```json
 {
   "thread_id": "<the thread's id>",
-  "instructions_version": "extract-v7",
+  "instructions_version": "extract-v8",
   "extracted_at": "<now, ISO 8601 in UTC, e.g. 2026-10-08T10:00:00Z>",
   "extractor": "claude-code",
   "mentions": [

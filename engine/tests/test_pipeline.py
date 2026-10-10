@@ -650,15 +650,17 @@ def care_library(tmp_path: Path) -> Path:
     return root
 
 
-def test_each_pick_shows_how_to_make_it_last_from_credible_care_tips(tmp_path):
+def test_each_pick_shows_how_to_take_care_of_it_from_credible_care_tips(tmp_path):
     result = answer_request(REQUEST, library_dir=care_library(tmp_path), prices=[], today=TODAY)
     zojirushi = result.answer.picks[0]
     assert zojirushi.name == "Zojirushi kettle"
-    assert [(c.tip, c.quote.text) for c in zojirushi.care] == [("Descale every 6 months.", DESCALE),
-                                                                ("Use filtered water.", FILTERED)]
+    # Since 11 Oct 2026 (Noemi): the pick shows the tips about itself, and the tips about any electric kettle are in
+    # one note at the end of the answer, not under every pick.
+    assert [(c.tip, c.quote.text) for c in zojirushi.care] == [("Descale every 6 months.", DESCALE)]
+    assert [(c.tip, c.quote.text) for c in result.answer.care_note] == [("Use filtered water.", FILTERED)]
     assert zojirushi.care[0].quote.url == "https://www.reddit.com/r/BuyItForLife/comments/1kett01/comment/k1cccc/"
     text = result.text()
-    assert answer_wording.CARE_HEADING in text and DESCALE in text
+    assert answer_wording.CARE_HEADING in text and DESCALE in text and FILTERED in text
     assert PROMO not in text and SEASON not in text  # a low voice, and a tip about another kind of product
     assert unverified_claims(result.answer, result.bodies) == []
 
