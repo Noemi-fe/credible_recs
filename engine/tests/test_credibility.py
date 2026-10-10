@@ -681,6 +681,10 @@ def test_how_long_the_writers_own_one_lasted_still_counts():
 @pytest.mark.parametrize("body", [
     "You could pick up a Lodge skillet for twenty quid and keep it for 40 years.",
     "Buy the Lodge skillet once and you'll have it for 30 years.",
+    # b09, 10 Oct 2026 (night): a writer telling another that they had put up with a poor grinder for three years got
+    # the badge "three years of use" for that grinder.
+    "Honestly the Lodge skillet is poor, you've put up with it for FOUR years!",
+    "You have used that Lodge skillet for 6 years, time for a better one.",
 ])
 def test_how_long_the_reader_could_keep_it_is_not_a_time_of_use(body):
     # Found reading b08, 10 Oct 2026 (night): a writer saying anyone could buy a Lodge cheaply and keep it for decades
@@ -694,6 +698,8 @@ def test_the_writers_own_time_after_a_word_to_the_reader_still_counts():
     assert "6 years of use" in evidence.badges
     evidence = evidence_for("You can't go wrong with the Lodge skillet, mine is 12 years old.", "Lodge skillet")
     assert "12 years of use" in evidence.badges
+    evidence = evidence_for("Thank you, I had the Lodge skillet for 7 years too.", "Lodge skillet")
+    assert "7 years of use" in evidence.badges
 
 
 # --- Review fixes, 9 Oct 2026 ---

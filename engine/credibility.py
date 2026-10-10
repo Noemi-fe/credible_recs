@@ -595,10 +595,12 @@ _WARRANTY_AFTER = re.compile(r"^[\s-]*(?:(?:limited|full|extended|manufacturer'?
                              r"(?:warrant(?:y|ies)|guarantee)")
 
 
-# "you could buy one for £20 and keep it for 40 years": how long the reader could keep it, not the writer's own use
-# (b08, 10 Oct 2026, night: it gave the badge "30 years of use"). A "you" with "can", "could", "will"... (not "can't")
-# earlier in the same sentence, and no "I", "my" or "we" between it and the time.
-_READERS_TIME = re.compile(r"\byou(?:'ll|'d| will| would| can| could| should| might| may)(?!n't|'t|not)\b"
+# "you could buy one for £20 and keep it for 40 years", "you've put up with it for three years": how long the reader
+# could keep it or has had it, not the writer's own use (b08 and b09, 10 Oct 2026, night: they gave the badges "30 years
+# of use" and "three years of use"). A "you" with "can", "could", "will", "have", "used"... (not "can't") earlier in
+# the same sentence, and no "I", "my" or "we" between it and the time. "Thank you, I had mine 7 years" still counts.
+_READERS_TIME = re.compile(r"\byou(?:'ll|'d|'ve| will| would| can| could| should| might| may| have| had| got"
+                           r"| put up| stuck| used| owned| kept| been)(?!n't|'t|not)\b"
                            r"(?:(?!\b(?:i|i've|i'd|i'm|my|mine|we|we've|our)\b)[^.!?;])*$")
 
 
