@@ -180,6 +180,12 @@ def test_a_part_that_would_be_cut_too_short_is_left_out_and_a_cut_quote_is_close
     assert shown.count('"') % 2 == 0 and '…"' in shown
 
 
+def test_a_quote_written_over_several_lines_is_shown_on_one():
+    shown = shown_from_ours({"picks": [pick(1, "Kettle", quotes=[quote("I am on my second one in 13 years,\nSo not "
+                                                                          "BIFL, but I bought it again.")])]})
+    assert '"I am on my second one in 13 years, So not BIFL, but I bought it again."' in shown
+
+
 def test_with_no_picks_our_answer_says_so_in_its_own_words():
     assert shown_from_ours({"picks": [], "message": "Not enough credible evidence to recommend a kettle yet."}) == (
         "Not enough credible evidence to recommend a kettle yet.")

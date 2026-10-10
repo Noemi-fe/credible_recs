@@ -129,9 +129,9 @@ def _shown_pick(pick: dict, words: int) -> str:
     parts = [pick["reason"].rstrip(".") + "."]
     for quote in (pick.get("quotes") or [])[:QUOTES_SHOWN]:
         badge = _evidence_badge(quote.get("badges") or [])
-        parts.append(f'"{quote["text"]}"' + (f" ({badge})" if badge else ""))
+        parts.append(f'"{_one_line(quote["text"])}"' + (f" ({badge})" if badge else ""))
     if pick.get("downsides"):
-        parts.append(f'Downside: "{pick["downsides"][0]["text"]}"')
+        parts.append(f'Downside: "{_one_line(pick["downsides"][0]["text"])}"')
     left = words - sum(len(line.split()) for line in fixed)
     kept = []
     for part in parts:
@@ -144,6 +144,11 @@ def _shown_pick(pick: dict, words: int) -> str:
             kept.append(_cut(part, left))
         break
     return "\n\n".join([f"**{pick['rank']}. {pick['name']}**"] + kept + fixed)
+
+
+def _one_line(text: str) -> str:
+    """A quote on one line: line breaks and runs of spaces are formatting, not words."""
+    return " ".join(text.split())
 
 
 def _evidence_badge(badges: list[str]) -> str | None:

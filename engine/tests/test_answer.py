@@ -95,7 +95,9 @@ def test_each_quote_carries_its_badges_or_a_plain_fallback():
 
 def test_a_planted_fake_quote_is_dropped_and_never_shown():
     real = mentions(3, "Tojiro DP Gyuto", voice="medium")
-    fake = mention("Tojiro DP Gyuto", "t1", quote=FAKE)  # the most credible, so it would be shown first
+    # The most credible, and naming its product, so it would be shown first (quotes naming the product come first
+    # since 10 Oct 2026).
+    fake = mention("Tojiro DP Gyuto", "t1", quote="Tojiro: " + FAKE)
     bodies = bodies_for(*real) | {fake.comment_id: "Decent knife. I'd buy it again."}
     answer = write_answer(rank_products(real + [fake], "kitchen"), bodies)
     assert answer.picks[0].name == "Tojiro DP Gyuto"
@@ -114,7 +116,7 @@ def test_a_quote_whose_comment_is_gone_is_dropped():
 
 
 def test_a_quote_over_the_word_limit_is_dropped():
-    long_quote = " ".join(["word"] * QUOTE_MAX_WORDS) + " more."
+    long_quote = "Tojiro " + " ".join(["word"] * QUOTE_MAX_WORDS) + " more."  # names it, so it's tried first
     data = [mention("Tojiro DP Gyuto", "t1", quote=long_quote)] + mentions(3, "Tojiro DP Gyuto", voice="medium")
     answer = write_answer(rank_products(data, "kitchen"), bodies_for(*data))
     assert long_quote not in shown_text(answer)
@@ -350,9 +352,9 @@ def test_the_markdown_shows_names_quotes_badges_links_and_the_breakdown():
 
 
 def test_quotes_written_over_several_lines_render_on_one():
-    data = [mention("A Knife", "t1", quote="Sharp.\nVery sharp.")] + mentions(3, "A Knife", voice="medium")
+    data = [mention("A Knife", "t1", quote="A Knife: sharp.\nVery sharp.")] + mentions(3, "A Knife", voice="medium")
     text = render_markdown(write_answer(rank_products(data, "kitchen"), bodies_for(*data)))
-    assert '"Sharp. Very sharp."' in text
+    assert '"A Knife: sharp. Very sharp."' in text
 
 
 # --- Comment bodies, read from threads ---
@@ -433,6 +435,31 @@ def test_a_quote_is_shown_without_the_writers_bold_or_italics(body, shown):
     answer = write_answer(rank_products(items, "kitchen"), {m.comment_id: body for m in items})
     assert {q.text for q in answer.picks[0].quotes} == {shown}
     assert unverified_claims(answer, {m.comment_id: body for m in items}) == []
+
+
+def test_quotes_that_name_the_product_are_shown_before_ones_that_dont():
+    # Found reading the blind-test dry run, 10 Oct 2026: "Others I have used and not had any issues with:" was shown
+    # for a cleanser. Out of context, a quote that never names the product says little, so among the credible ones,
+    # those naming it (its brand, a short name such as "BOJ", or a model code such as "C2") come first.
+    vague = mention("Acme kettle", "t1", weight=0.9, quote="Love it, works great every single morning.")
+    named = [mention("Acme kettle", "t2", weight=0.5, quote="My Acme has lasted 6 years."),
+             mention("Acme kettle", "t1", weight=0.4, quote="The acme kettle still boils fast.")]
+    items = [vague, *named]
+    answer = write_answer(rank_products(items, "kitchen"), bodies_for(*items))
+    assert [q.text for q in answer.picks[0].quotes][:2] == [m.quote for m in named]
+    assert vague.quote in [q.text for q in answer.picks[0].quotes]  # still shown when there's room
+
+
+@pytest.mark.parametrize("name, quote", [
+    ("Sage (their electric kettles)", "My Breville has been going strong for 8 years"),
+    ("Beauty of Joseon Revive Eye Serum: Ginseng + Retinal", "I've been loving the BOJ eye serum as a catch all!"),
+    ("Timemore C2", "The C2 is great for pour-over at home."),
+])
+def test_a_short_name_or_model_code_names_the_product(name, quote):
+    from engine.answer import _names_product
+
+    assert _names_product(quote, name, "skincare" if "Joseon" in name else "kitchen")
+    assert not _names_product("Others I have used and not had any issues with:", name, "kitchen")
 
 
 # --- Prices and budgets (decision 11, Noemi, 9 Oct 2026) ---

@@ -78,6 +78,7 @@ from engine.extract import _as_written, _in_quoted_block, _own_words_in_quote_fo
 from engine.models import Thread
 from engine.needs import LASTING
 from engine.prices import PriceCheck
+from engine.match_products import known_aliases
 from engine.rank import KindNote, ProductScore, RankingResult, ScoredMention, ScoreBreakdown, is_credible
 from engine.verify_quotes import find_quote, verify_quote
 
@@ -294,7 +295,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     for product in ranking.qualifying:
         if len(picks) == PICKS_SHOWN:
             break
-        quotes = check.first(_most_credible_first(product.credible_recommendations), QUOTES_PER_PICK)
+        quotes = check.first(_naming_first(product.credible_recommendations), QUOTES_PER_PICK)
         if len(quotes) >= MIN_QUOTES_PER_PICK:
             price = shown_price(prices.get(product.key))
             availability = shown_availability(prices.get(product.key), price.url)
@@ -398,6 +399,31 @@ def _most_credible_first(items: Iterable[ScoredMention]) -> list[ScoredMention]:
     return sorted(items, key=lambda m: -abs(m.weight))
 
 
+def _naming_first(items: Iterable[ScoredMention]) -> list[ScoredMention]:
+    """The most credible first, but the quotes that name their product before those that don't (10 Oct 2026: out of
+    context, "Others I have used and not had any issues with:" says little). A quote that doesn't name it is still
+    shown when there's room."""
+    ordered = _most_credible_first(items)
+    return sorted(ordered, key=lambda m: not _names_product(m.quote, m.product_name, m.category))
+
+
+def _names_product(quote: str, name: str, category: str) -> bool:
+    """Whether the quote names the product: the first word of its name (the brand), a model code in it (a word
+    with a digit: "C2", "MTH-80"), or a known short or long form of its brand (engine/data/product_aliases.json:
+    "BOJ" for Beauty of Joseon, "Breville" for Sage), as whole words, capitals aside."""
+    text = " ".join(re.findall(r"[a-z0-9][a-z0-9'-]*", quote.lower()))
+    name_words = re.findall(r"[a-z0-9][a-z0-9'-]*", name.lower())
+    if not name_words:
+        return False
+    wanted = {name_words[0]} | {w for w in name_words if any(c.isdigit() for c in w)}
+    joined = " ".join(name_words)
+    for short_words, full_words in known_aliases().get(category, {}).items():
+        short, full = " ".join(short_words), " ".join(full_words)
+        if f"{joined} ".startswith(f"{short} ") or f"{joined} ".startswith(f"{full} "):
+            wanted |= {short, full}
+    return any(re.search(rf"(?<![a-z0-9]){re.escape(w)}(?![a-z0-9])", text) for w in wanted)
+
+
 def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _QuoteCheck, ranking: RankingResult,
           price: ShownPrice, care: list[ShownCareTip], availability: ShownAvailability = NOT_CHECKED,
           cautions: list[str] | None = None) -> Pick:
@@ -409,7 +435,7 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
         reason=_reason(product, ranking),
         support=_support(product),
         quotes=quotes,
-        downsides=check.first(_most_credible_first(warnings), DOWNSIDES_PER_PICK),
+        downsides=check.first(_naming_first(warnings), DOWNSIDES_PER_PICK),
         disagreement=DISAGREEMENT.format(voices=_plural(len(warnings), "credible voice")) if product.disputed else None,
         score=product.score,
         breakdown=product.breakdown,
@@ -509,7 +535,7 @@ def _support(product: ProductScore) -> str:
 
 def _skip_item(product: ProductScore, check: _QuoteCheck) -> SkipItem | None:
     """A skip-these entry with its verified warnings, or None when no warning quote passes the check."""
-    quotes = check.first(_most_credible_first(product.credible_warnings), QUOTES_PER_SKIPPED_PRODUCT)
+    quotes = check.first(_naming_first(product.credible_warnings), QUOTES_PER_SKIPPED_PRODUCT)
     if not quotes:
         return None
     praised = len(product.credible_recommendations)
