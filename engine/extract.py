@@ -67,7 +67,7 @@ from engine.config import (
     QUOTE_MAX_WORDS,
     STANCE_VALUE,
 )
-from engine.gold import GoldSetError, _describe, load_threads
+from engine.gold import DEFAULT_GOLD_DIR, GoldSetError, _describe, load_threads, unlabelled_gold_ids
 from engine.models import Id, Record, Thread, UtcDatetime
 from engine.verify_quotes import find_quote
 
@@ -433,7 +433,13 @@ def _todo(threads_dir: Path, version: str) -> dict[str, str]:
     if not threads_dir.is_dir():
         raise ExtractionError([f"there is no threads folder at {threads_dir}"])
     reasons: dict[str, str] = {}
+    # Outside the gold set's own folder, a gold thread Noemi hasn't labelled yet is never listed for the AI to read
+    # (10 Oct 2026; engine.gold.unlabelled_gold_ids).
+    in_gold = threads_dir.resolve().is_relative_to(DEFAULT_GOLD_DIR.resolve())
+    never = set() if in_gold else unlabelled_gold_ids()
     for thread_path in sorted(threads_dir.glob("*.json")):
+        if thread_path.stem in never:
+            continue
         path = extracted_dir(threads_dir) / thread_path.name
         if not path.is_file():
             reasons[thread_path.stem] = "not extracted yet"

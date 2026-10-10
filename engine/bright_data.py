@@ -73,6 +73,7 @@ from engine.config import (
     CACHE_MAX_AGE_HOURS,
     SUBREDDITS,
 )
+from engine.gold import unlabelled_gold_ids
 from engine.models import Author, Comment, Thread
 from engine.parse_reddit import _read_env_file, category_for, parse_thread_url
 
@@ -81,7 +82,9 @@ API_URL = "https://api.brightdata.com/datasets/v3/"
 DEFAULT_CACHE_DIR = REPO_ROOT / ".cache" / "bright_data"
 # Where `fetch` saves threads unless told otherwise: a scratch folder outside the project, so a trial read never
 # lands in the library or the gold set (those are filled by their own commands).
-DEFAULT_THREADS_DIR = Path(tempfile.gettempdir()) / "credible-recs-bright-data" / "threads"
+DEFAULT_THREADS_DIR = Path(tempfile.gettempdir()) / "credible-recs-bright-data"
+# The library's threads folder: a gold-set thread Noemi hasn't labelled yet is never read into it (10 Oct 2026).
+LIBRARY_THREADS_DIR = Path(__file__).resolve().parents[1] / "data" / "library" / "threads" / "threads"
 
 MAX_AGE = timedelta(hours=CACHE_MAX_AGE_HOURS)
 BUSY_PAUSE = 30.0  # seconds before the one retry when Bright Data says "too many requests" (429)
@@ -754,9 +757,16 @@ def main(argv: list[str], client: BrightDataClient | None = None) -> int:
 
     client = client or BrightDataClient()
     status = 0
+    into_library = Path(folder).resolve() == LIBRARY_THREADS_DIR.resolve()
+    gold = unlabelled_gold_ids() if into_library else set()
     for link in links:
         try:
             post_id = parse_thread_url(link)[1]
+            if post_id in gold:
+                print(f"{link}: {post_id} is a gold-set thread Noemi hasn't labelled yet (data/gold/CANDIDATES.md); "
+                      "never read into the library, no records spent")
+                status = 1
+                continue
             if (folder / f"{post_id}.json").exists():
                 print(f"{link}: {post_id}.json is already in {folder}; skipped, no records spent")
                 continue

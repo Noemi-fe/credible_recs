@@ -13,6 +13,7 @@ Run `python -m engine.gold` to check the gold set and print a summary, including
 
 import csv
 import json
+import re
 import sys
 from collections import Counter
 from dataclasses import dataclass
@@ -52,6 +53,29 @@ class GoldSet:
                 if comment.id == comment_id:
                     return comment
         raise KeyError(comment_id)
+
+
+class GoldThreadError(ValueError):
+    """A gold-set thread Noemi hasn't labelled yet was about to enter the library (10 Oct 2026)."""
+
+
+def unlabelled_gold_ids(root: Path = DEFAULT_GOLD_DIR) -> set[str]:
+    """The gold set's threads Noemi hasn't labelled yet: every Reddit thread link in CANDIDATES.md (backups too) and
+    every thread saved in threads/, less the threads voices.csv labels. None of them may enter the library or be read
+    by the AI before she labels it (anchoring; 10 Oct 2026, after a backup candidate turned up in the library). A
+    labelled thread's copy belongs in the library (CLAUDE.md), so it isn't listed. Empty without a gold folder."""
+    root = Path(root)
+    ids: set[str] = set()
+    candidates = root / "CANDIDATES.md"
+    if candidates.is_file():
+        ids |= set(re.findall(r"/comments/([A-Za-z0-9]+)", candidates.read_text(encoding="utf-8")))
+    if (root / "threads").is_dir():
+        ids |= {path.stem for path in (root / "threads").glob("*.json")}
+    voices = root / "voices.csv"
+    if voices.is_file():
+        with voices.open(encoding="utf-8", newline="") as f:
+            ids -= {(row.get("thread_id") or "").strip() for row in csv.DictReader(f)}
+    return ids
 
 
 def load_gold_set(root: Path = DEFAULT_GOLD_DIR) -> GoldSet:

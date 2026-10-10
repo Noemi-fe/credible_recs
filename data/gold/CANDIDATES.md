@@ -25,7 +25,9 @@ Fetch all four (8 credits):
 .venv/bin/python -m engine.parse_reddit fetch https://www.reddit.com/r/BuyItForLife/comments/1v40u3t/ https://www.reddit.com/r/BuyItForLife/comments/1g4y12m/ https://www.reddit.com/r/SkincareAddiction/comments/14km9i2/ https://www.reddit.com/r/SkincareAddiction/comments/15l873f/
 ```
 
-Backups: [what actually failed first?](https://www.reddit.com/r/BuyItForLife/comments/1wvt0wl/) (kettles, 115 comments, Oct 2026), [most gentle BHA product](https://www.reddit.com/r/SkincareAddiction/comments/14h3awk/) (skincare).
+Backups: [most gentle BHA product](https://www.reddit.com/r/SkincareAddiction/comments/14h3awk/) (skincare).
+
+No longer a backup (10 Oct 2026): the kettle thread "what actually failed first?" (r/BuyItForLife, id 1wvt0wl) was read into the library and extracted by the AI on 9 Oct 2026, before anyone noticed it was a backup, so it can no longer be a clean gold thread. It stays in the library. Since 10 Oct the library, Bright Data reads and `extract todo` refuse every gold thread not labelled yet (engine/gold.py, unlabelled_gold_ids).
 
 ## Still needed for 10 per category
 

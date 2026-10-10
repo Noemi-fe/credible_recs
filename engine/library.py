@@ -97,7 +97,7 @@ from engine.config import (
     THREAD_CATEGORIES,
 )
 from engine.extract import ExtractionError
-from engine.gold import GoldSetError, load_threads
+from engine.gold import GoldSetError, GoldThreadError, load_threads, unlabelled_gold_ids
 from engine.models import Thread
 from engine.parse_reddit import REPO_ROOT, ParseAPIError, ParseRedditClient
 from engine.query import PRODUCT_TYPES, parse_query
@@ -232,8 +232,14 @@ def _library_copy(thread: Thread) -> Thread:
     ]})
 
 
-def _save(thread: Thread, folder: Path) -> Thread:
-    """Writes the library's copy of the thread to threads/<id>.json, replacing any older copy, and returns that copy."""
+def _save(thread: Thread, folder: Path, gold_ids: set[str] | None = None) -> Thread:
+    """Writes the library's copy of the thread to threads/<id>.json, replacing any older copy, and returns that copy.
+    Refuses a gold-set thread Noemi hasn't labelled yet (engine.gold.unlabelled_gold_ids; `gold_ids` replaces them in
+    tests), whatever read it."""
+    gold_ids = unlabelled_gold_ids() if gold_ids is None else gold_ids
+    if thread.id in gold_ids:
+        raise GoldThreadError(f"{thread.id} is a gold-set thread Noemi hasn't labelled yet (data/gold/CANDIDATES.md): "
+                              "it never enters the library")
     copy = _library_copy(thread)
     path = Path(folder) / "threads" / f"{copy.id}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
