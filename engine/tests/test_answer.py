@@ -486,6 +486,28 @@ def test_quotes_that_name_the_product_are_shown_before_ones_that_dont():
     assert vague.quote in [q.text for q in answer.picks[0].quotes]  # still shown when there's room
 
 
+def test_among_equally_clear_quotes_those_about_what_was_asked_come_first():
+    # Found reading the blind-test view, 10 Oct 2026 (late): "electric kettle that lasts 10+ years" showed the Fellow
+    # Stagg EKG with a much-upvoted comment about "the little metal part on the handle" first, though three of its
+    # writers spoke of long-term use. Among quotes as clear as each other (naming the product and giving a view), those
+    # that themselves talk about what the request asks for come first (the quote, not the rest of its comment: a
+    # lukewarm "fine for barrier protection" from a comment about dry skin elsewhere doesn't jump ahead).
+    from engine.config import NEEDS
+    from engine.needs import Need
+
+    lasting = (Need("lasting", NEEDS["lasting"]),)
+    handle = mention("Acme kettle", "t1", weight=0.9, evidence="short-term use",
+                     quote="I love my Acme but the metal part on the handle is odd.")
+    about_it = [mention("Acme kettle", "t2", weight=0.4, evidence="short-term use",
+                        quote="My Acme has lasted 9 years, I love it."),
+                mention("Acme kettle", "t1", weight=0.3, quote="Love my Acme, still going after 6 years.")]  # long use
+    items = [handle, *about_it]
+    answer = write_answer(rank_products(items, "kitchen"), bodies_for(*items), needs=lasting)
+    assert [q.text for q in answer.picks[0].quotes] == [m.quote for m in about_it] + [handle.quote]
+    plain = write_answer(rank_products(items, "kitchen"), bodies_for(*items))  # nothing asked: credibility decides
+    assert plain.picks[0].quotes[0].text == handle.quote
+
+
 def test_a_quote_that_neither_names_the_product_nor_gives_a_view_only_makes_up_the_minimum():
     # Found reading b08, 10 Oct 2026: "yea no I'm just gonna stick with my cast iron lol." was shown for Griswold and
     # for Wagner (the comment named them in a sentence the AI didn't quote). It says nothing about either, so such a

@@ -79,7 +79,7 @@ from engine.config import (
 )
 from engine.extract import _as_written, _in_quoted_block, _own_words_in_quote_format
 from engine.models import Thread
-from engine.needs import LASTING
+from engine.needs import LASTING, Need, needs_met
 from engine.prices import PriceCheck
 from engine.match_products import known_aliases
 from engine.rank import KindNote, ProductScore, RankingResult, ScoredMention, ScoreBreakdown, is_credible
@@ -291,7 +291,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
                  cautions: Mapping[str, list[str]] | None = None, models: Mapping[str, str] | None = None,
                  asks: tuple[str, ...] = (), model_prices: Mapping[str, str] | None = None,
                  more_downsides: Mapping[str, list[ScoredMention]] | None = None,
-                 unsuited_kinds: Collection[str] = ()) -> Answer:
+                 unsuited_kinds: Collection[str] = (), needs: tuple[Need, ...] = ()) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -305,7 +305,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     out. `asks` is what the request asks
     for (engine.product_facts.request_asks): a quote saying the opposite is shown last. `more_downsides` ({pick key:
     credible warnings}) are warnings about a pick's own brand or line, shown under it after its own. `unsuited_kinds`
-    are the keys of kinds that give no "Look for" (engine.pipeline._unsuited_kinds).
+    are the keys of kinds that give no "Look for" (engine.pipeline._unsuited_kinds). `needs` (engine.needs.request_needs):
+    among equally clear quotes, those talking about them come first.
     """
     check = _QuoteCheck(bodies)
     models = models or {}
@@ -316,7 +317,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     for product in ranking.qualifying:
         if len(picks) == PICKS_SHOWN:
             break
-        ordered = _naming_first(product.credible_recommendations, asks)
+        ordered = _naming_first(product.credible_recommendations, asks, needs)
         quotes = check.first([m for m in ordered if _says_something(m)], QUOTES_PER_PICK)
         if len(quotes) < MIN_QUOTES_PER_PICK:  # a quote that says nothing about it only makes up the minimum
             quotes += check.first([m for m in ordered if not _says_something(m)], MIN_QUOTES_PER_PICK - len(quotes))
@@ -326,7 +327,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             tips = _care_tips(care.get(product.key), check)
             notes = [CAUTION.format(reason=reason) for reason in cautions.get(product.key, [])]
             picks.append(_pick(len(picks) + 1, product, quotes, check, ranking, price, tips, availability, notes,
-                               (more_downsides or {}).get(product.key, [])))
+                               (more_downsides or {}).get(product.key, []), needs))
             picks[-1].model = models.get(product.key)
             picks[-1].model_price = (model_prices or {}).get(product.key)
     skip = [_skip_item(product, check) for product in ranking.skip_list]
@@ -426,9 +427,10 @@ def _most_credible_first(items: Iterable[ScoredMention]) -> list[ScoredMention]:
     return sorted(items, key=lambda m: -abs(m.weight))
 
 
-def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = ()) -> list[ScoredMention]:
+def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
+                  needs: tuple[Need, ...] = ()) -> list[ScoredMention]:
     """The most credible first, but the quotes that name their product and give a view before those that only name
-    it, and those before the rest (10 Oct 2026: out of context, "Others I have used and not had any issues with:" says
+    it, and those before the rest; within each, those whose comment talks about what the request asks for first (10 Oct 2026: out of context, "Others I have used and not had any issues with:" says
     little, and so does "I have a Baratza Encore, Timemore C2 and a JX"), and a quote that says the opposite of what
     the request asks ("does leave a white cast") after every other (_says_the_opposite). Each is still shown when
     there's room."""
@@ -438,7 +440,12 @@ def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = ()) ->
         names = _names_product(m.quote, m.product_name, m.category)
         return 0 if names and _gives_a_view(m.quote) else 1 if names else 2
 
-    return sorted(ordered, key=lambda m: (_says_the_opposite(m.quote, asks), tier(m)))
+    # Within a tier, quotes that themselves talk about what the request asks for come first (10 Oct 2026, late: a kettle
+    # pick led with a comment about its handle, not one of its writers' years of use). The quote, not its comment.
+    def about_the_ask(m: ScoredMention) -> bool:
+        return bool(needs and needs_met(m.quote, needs, m.evidence == "long-term use"))
+
+    return sorted(ordered, key=lambda m: (_says_the_opposite(m.quote, asks), tier(m), not about_the_ask(m)))
 
 
 def _says_something(m: ScoredMention) -> bool:
@@ -500,9 +507,11 @@ def _as_written_loosely(word: str) -> str:
 
 def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _QuoteCheck, ranking: RankingResult,
           price: ShownPrice, care: list[ShownCareTip], availability: ShownAvailability = NOT_CHECKED,
-          cautions: list[str] | None = None, more_downsides: list[ScoredMention] = ()) -> Pick:
+          cautions: list[str] | None = None, more_downsides: list[ScoredMention] = (),
+          needs: tuple[Need, ...] = ()) -> Pick:
     """One pick. `more_downsides`: credible warnings about the pick's own brand or line, shown after its own (the
-    pipeline's _fold_brand_skips, 10 Oct 2026)."""
+    pipeline's _fold_brand_skips, 10 Oct 2026). `needs`: warnings that talk about them come first among equally clear
+    ones ("when my bonavita broke" for a kettle that should last)."""
     warnings = product.credible_warnings
     return Pick(
         rank=rank,
@@ -511,7 +520,8 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
         reason=_reason(product, ranking),
         support=_support(product),
         quotes=quotes,
-        downsides=check.first(_naming_first(warnings) + _naming_first(more_downsides), DOWNSIDES_PER_PICK),
+        downsides=check.first(_naming_first(warnings, needs=needs) + _naming_first(more_downsides, needs=needs),
+                              DOWNSIDES_PER_PICK),
         disagreement=DISAGREEMENT.format(voices=_plural(len(warnings), "credible voice")) if product.disputed else None,
         score=product.score,
         breakdown=product.breakdown,

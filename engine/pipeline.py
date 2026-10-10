@@ -272,7 +272,8 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     care = _care_tips(threads, checked, [g for g in kept_groups if g.name not in folded], kinds, query)
     models, model_prices = _brand_models(result.ranking, kept_groups, query.product_type, price_checks)
     result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
-                                 models, request_asks(query), model_prices, more_downsides, unsuited_kinds)
+                                 models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
+                                 request_needs(query))
     if live_checker is not None:
         _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions, kept_groups,
                     unsuited_kinds)
@@ -311,7 +312,8 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         result.ranking, more_downsides = _fold_brand_skips(_fold_brand_picks(ranking, groups, result), groups, result)
         models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks)
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
-                                     models, request_asks(query), model_prices, more_downsides, unsuited_kinds)
+                                     models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
+                                     request_needs(query))
 
 
 def _checked_live_recently(thread: Thread, today: date) -> bool:
