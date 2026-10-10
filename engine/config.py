@@ -573,3 +573,11 @@ UNCONFIRMED_FACT_NAMES: dict[str, str] = {
 # kettle" and "stone frying pan" are the product.
 OTHER_TYPE_WORDS = ("set", "block", "sharpener", "stand", "rack", "holder", "roll", "bag", "case", "cover", "lid", "kit",
                     "bundle", "strip", "guard", "sheath")
+
+# --- The blind test (engine/blind_test.py, 10 Oct 2026) ---
+# From the brief's protocol: each tester gets 5 of the 10 questions, and the target is at least 60% preference
+# against each rival. Decided by Claude (10 Oct 2026): the names that give a tool away in an answer shown to a tester
+# (any case, whole words); packets are refused while an answer to show has one.
+BLIND_TEST_QUESTIONS_PER_TESTER = 5
+BLIND_TEST_TARGET = 0.6
+BLIND_TEST_GIVEAWAYS = ("chatgpt", "openai", "gpt", "vetted", "credible recs", "claude", "anthropic")

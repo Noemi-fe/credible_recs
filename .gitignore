@@ -40,3 +40,6 @@ data/gold/threads/*.json
 
 # Candidate threads used to measure retrieval: Reddit titles, so they stay on this machine.
 data/eval/
+
+# Blind-test answers: ours quote Reddit, and the rivals' answers and the testers' names aren't ours to publish.
+eval/blind_test/answers/
