@@ -170,8 +170,11 @@ def test_a_product_with_no_availability_check_says_so(tmp_path):
 
 
 def test_a_brand_pick_is_never_checked_for_availability(tmp_path):
+    # Since 10 Oct 2026 a brand pick is left out when every one of its own specific products here isn't sold
+    # (engine/tests/test_pick_polish.py, part 4), and the "Lodge" entry below also fits both Lodge skillets. So one of them
+    # is listed as sold: the entry under the brand's own name still never leaves the brand pick out by itself.
     result = answer_request("cast iron skillet that lasts", library_dir=skillet_library(tmp_path), today=TODAY,
-                            prices=[listed("Lodge", available=False)])
+                            prices=[listed("Lodge", available=False), listed("Lodge Blacklock skillet")])
     assert "Lodge (their cast iron skillets)" in [pick.name for pick in result.answer.picks]
     assert "Lodge (their cast iron skillets)" in result.not_priced
     assert "Lodge (their cast iron skillets)" not in result.left_out_unavailable

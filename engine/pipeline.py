@@ -131,7 +131,8 @@ from engine.sources import LocalSource, mentions_product
 
 @dataclass(frozen=True)
 class FoldedBrandPick:
-    """A brand pick that stepped aside for a specific product of its own brand that also qualifies (10 Oct 2026)."""
+    """A brand pick that stepped aside for a specific product of its own brand that also qualifies, or for a brand pick
+    of the same brand ranked higher (10 Oct 2026)."""
 
     name: str  # the brand pick's name: "Victorinox (their chef knives)"
     stepped_aside_for: str  # the product it stepped aside for: "Victorinox chef's knife"
@@ -430,8 +431,9 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
     A product the price list says is no longer sold is left out first, whatever its price (named on the result as
     unavailable); one it says is sold carries that entry (PriceCheck.availability), for the answer's "Sold at" line.
     A known, recent price above the budget's max leaves the product out (named on the result). A brand pick has no
-    single price, so it is never priced or checked for availability, and never left out for either (named in
-    not_priced).
+    single price, so it is never priced or checked for availability itself (named in not_priced); but when every
+    specific product of its brand among these groups is known not to be sold, its writers most likely mean those, so
+    it is left out with them (10 Oct 2026: "Cuisinart (their electric kettles)", from American writers' CPK-17s).
     """
     budget = query.constraints.budget
     if budget is not None and budget.max is not None and budget.currency is None:
@@ -439,8 +441,13 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
         budget = budget.model_copy(update={"currency": BUDGET_DEFAULT_CURRENCY})
         query = query.model_copy(update={"constraints": query.constraints.model_copy(update={"budget": budget})})
     currency = budget.currency if budget else None
+    not_sold = [g for g in groups if not g.loose and (a := find_availability(g.name, g.category, prices)) is not None
+                and a.available is False]
     kept, checks = [], {}
     for group in groups:
+        if group.loose and _only_unsold_products(group, groups, not_sold):
+            result.left_out_unavailable.append(group.name)
+            continue
         if group.loose:
             result.not_priced.append(group.name)
         price = None if group.loose else find_price(group.name, group.category, prices, currency)
@@ -455,6 +462,13 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
             kept.append(group)
             checks[group.key] = replace(check, availability=sold)
     return kept, checks
+
+
+def _only_unsold_products(brand: ProductGroup, groups: list[ProductGroup], not_sold: list[ProductGroup]) -> bool:
+    """Whether the brand pick's own specific products among `groups` (_same_brand) are all in `not_sold`, and there
+    is at least one. A product not checked yet counts as maybe sold."""
+    own = [g for g in groups if not g.loose and _same_brand(brand, g)]
+    return bool(own) and all(g in not_sold for g in own)
 
 
 # --- Product facts (decided by Claude, 9 Oct 2026) ---
@@ -501,19 +515,25 @@ def _fold_brand_picks(ranking: RankingResult, groups: list[ProductGroup], result
     """The ranking without the brand picks that qualify next to a specific product of their own brand that qualifies too
     ("Victorinox (their chef knives)" next to "Victorinox chef's knife"): the specific product stays, the brand pick
     leaves the ranking, so its support counts for nothing rather than twice. Each is named on the result with the
-    first such product in the ranking (folded_brand_picks, worked out afresh each time). `groups` are the product
-    groups ranked."""
+    first such product in the ranking (folded_brand_picks, worked out afresh each time). Two brand picks of the same
+    brand fold the same way: the one ranked lower into the one ranked higher. `groups` are the product groups
+    ranked."""
     by_key = {g.key: g for g in groups}
     qualifying = [(p, by_key[p.key]) for p in ranking.qualifying if p.key in by_key]
     specific = [(p, g) for p, g in qualifying if not g.loose]
-    folded, keys = [], set()
-    for product, brand in qualifying:
+    folded, keys, kept_brands = [], set(), []
+    for product, brand in qualifying:  # in the ranking's order
         if not brand.loose:
             continue
         own = next((p for p, g in specific if _same_brand(brand, g)), None)
+        # Two brand picks of the same brand ("Lodge" and "Lodge cast iron"): the one ranked lower folds into the
+        # one ranked higher (10 Oct 2026).
+        own = own or next((p for p, g in kept_brands if _same_brand(g, brand) or _same_brand(brand, g)), None)
         if own is not None:
             folded.append(FoldedBrandPick(product.name, own.name))
             keys.add(product.key)
+        else:
+            kept_brands.append((product, brand))
     result.folded_brand_picks = folded
     return replace(ranking, products=[p for p in ranking.products if p.key not in keys]) if keys else ranking
 

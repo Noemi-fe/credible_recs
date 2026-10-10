@@ -11,7 +11,8 @@
       {"short": "EH", "full": "Etude House", "seen": ["EH sunscreen", "Etude House Sunprise Mild Airy Finish"]},
       {"short": "HL", "full": "Hada Labo", "seen": ["HL Hyaluronic Lotion Moist", "Hada Labo Perfect Gel"]},
       {"short": "Elta", "full": "EltaMD", "seen": ["Elta", "Elta MD UV Clear", "EltaMD"]},
-      {"short": "BCIZ", "full": "Banila Co Clean It Zero", "seen": ["BCIZ", "banila co clean it zero"]}
+      {"short": "BCIZ", "full": "Banila Co Clean It Zero", "seen": ["BCIZ", "banila co clean it zero"]},
+      {"short": "tret", "full": "Tretinoin", "seen": ["tret", "tret 0.025", "tret micro gel", "Tretinoin"]}
     ],
     "kitchen": [
       {"short": "1Z", "full": "1Zpresso", "seen": ["1Z K plus", "1ZPresso K Plus"]},

@@ -670,6 +670,20 @@
     "https://www.tefal.ie/c/Tefal-Unlimited-ON-Induction-24cm-Non-Stick-Frying-Pan--Black/p/2100116319"
    ],
    "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Tretinoin",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "strength": "strong",
+    "prescription_only": true
+   },
+   "sources": [
+    "https://www.nhs.uk/conditions/acne/treatment/",
+    "https://dmd-browser.nhsbsa.nhs.uk/ampp/view/11127"
+   ],
+   "checked_on": "2026-10-10"
   }
  ]
 }

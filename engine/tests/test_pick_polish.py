@@ -338,3 +338,62 @@ def test_a_care_tip_knows_its_writer():
                   "quote": "Descale it every 6 months and it lasts forever."}]})
     [tip] = credible_care_tips([thread], {thread.id: check_extraction(extraction, thread)})
     assert tip.author == "test_user_k1aaaa"
+
+
+# --- 4. A brand pick whose own products here aren't sold in the UK (decided by Claude, 10 Oct 2026) ---
+# Found in the 10 Oct 2026 run: "Cuisinart (their electric kettles)" was a pick for b06, from American writers whose
+# Cuisinart kettles (the CPK-17) aren't sold in the UK. When every specific product of the brand in these threads is
+# known not to be sold in the UK, its writers most likely mean those, so the brand pick is left out with them.
+
+def test_a_brand_pick_is_left_out_when_all_its_own_products_here_arent_sold_in_the_uk(tmp_path):
+    from engine.tests.test_availability import listed
+
+    gone = [listed("Tramontina Professional frying pan", available=False),
+            listed("Tramontina tri-ply frying pan", available=False)]
+    result = answer_request("frying pan that lasts", library_dir=pan_library(tmp_path), prices=gone, product_facts=[],
+                            today=TODAY)
+    assert TRAMONTINA not in names(result) and TRAMONTINA not in [p.name for p in result.ranking.products]
+    assert TRAMONTINA in result.left_out_unavailable
+
+
+def test_a_brand_pick_stays_when_one_of_its_products_here_is_sold_or_not_checked(tmp_path):
+    from engine.tests.test_availability import listed
+
+    library = pan_library(tmp_path)
+    for prices in ([listed("Tramontina Professional frying pan", available=False),
+                    listed("Tramontina tri-ply frying pan", available=True)],
+                   [listed("Tramontina Professional frying pan", available=False)]):  # tri-ply: not checked
+        result = answer_request("frying pan that lasts", library_dir=library, prices=prices,
+                                product_facts=[], today=TODAY)
+        assert names(result)[0] == TRAMONTINA and TRAMONTINA not in result.left_out_unavailable
+
+
+# --- 5. Two brand picks of the same brand (decided by Claude, 10 Oct 2026) ---
+# Found with 12 threads per question: "Lodge (their cast iron skillets)" and "Lodge cast iron" (a line, whose name already
+# says the type) were both picks for b08. Like a brand pick next to its own product, the one ranked lower folds into the
+# one ranked higher, so the same brand never takes two of the three places.
+
+def lodge_lines_library(tmp_path):
+    """"Lodge" and "Lodge cast iron" both fit the two Lodge cast iron skillets (so both are loose), each praised
+    across both threads."""
+    return write_library(tmp_path, {
+        "1lod001": ("Best cast iron skillet for a beginner?", "My first one.", [
+            praise("l1a", "Lodge", 9), praise("l1b", "Lodge", 8), praise("l1c", "Lodge", 7),
+            praise("l1d", "Lodge cast iron", 6), praise("l1e", "Lodge cast iron", 5),
+            praise("l1f", "Lodge cast iron Blacklock skillet", 2), praise("l1g", "Lodge cast iron Chef Collection skillet", 2),
+            praise("l1h", "Smithey No. 10 skillet", 4), praise("l1i", "Smithey No. 10 skillet", 5),
+        ]),
+        "1lod002": ("Which cast iron skillet lasts?", "Mine cracked.", [
+            praise("l2a", "Lodge", 6), praise("l2b", "Lodge cast iron", 4),
+            praise("l2c", "Smithey No. 10 skillet", 3),
+        ]),
+    }, community="castiron")
+
+
+def test_two_brand_picks_of_the_same_brand_fold_into_the_one_ranked_higher(tmp_path):
+    result = answer_request("cast iron skillet that lasts", library_dir=lodge_lines_library(tmp_path), prices=[],
+                            product_facts=[], today=TODAY)
+    lodge = [name for name in names(result) if name.lower().startswith("lodge")]
+    assert len(lodge) == 1, names(result)
+    [folded] = [item for item in result.folded_brand_picks if item.name.lower().startswith("lodge")]
+    assert folded.stepped_aside_for == lodge[0] and folded.name != lodge[0]
