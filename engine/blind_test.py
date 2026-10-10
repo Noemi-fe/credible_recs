@@ -26,11 +26,12 @@
         nothing, while an answer to show is empty, names a tool ("ChatGPT", "Vetted"...) or has a pick longer than
         BLIND_TEST_WORDS_PER_PICK words.
 
-    python -m engine.blind_test tally <answers folder> <responses.csv>
+    python -m engine.blind_test tally <answers folder> <responses.csv> [--save]
         responses.csv has the columns tester,question,choice,least,confidence,comment (choice and least A, B or C,
         not the same; confidence 1 to 5). Prints how often ours was trusted more than each rival (the brief's target:
         at least 60% against each), with the 95% range such a small sample allows, the first choices, the
-        confidence per tool, and every comment by the tool chosen.
+        confidence per tool, and every comment by the tool chosen. With --save, the result also goes into
+        eval/metrics.json, which the how-we-score page shows (later evaluation runs keep it).
 
 The answers folder is never committed (.gitignore): our answers quote Reddit, and the rivals' answers and the testers'
 names aren't ours to publish. How each tool's raw answer becomes the answer shown (protocol step 3: "names removed,
@@ -57,6 +58,7 @@ from engine.config import (
     BLIND_TEST_WORDS_PER_PICK,
     BRAND_PICK_MODEL,
 )
+from engine.metrics import METRICS_FILE, MetricsError, save_blind_test
 from engine.pipeline import answer_request
 from engine.slice_eval import DEFAULT_QUESTIONS
 
@@ -495,10 +497,14 @@ def main(argv: list[str]) -> int:
             print(f"{len(key)} packets written in {Path(argv[1]) / 'packets'}; the key is key.json (never show it "
                   "to a tester).")
             return 0
-        if argv[:1] == ["tally"] and len(argv) == 3:
-            print("\n".join(tally_lines(tally(Path(argv[1]), load_responses(Path(argv[2]))))))
+        if argv[:1] == ["tally"] and len(argv) in (3, 4) and (len(argv) == 3 or argv[3] == "--save"):
+            result = tally(Path(argv[1]), load_responses(Path(argv[2])))
+            print("\n".join(tally_lines(result)))
+            if len(argv) == 4:
+                save_blind_test(result.against, METRICS_FILE)
+                print(f"Saved in {METRICS_FILE.name}: the how-we-score page (/how) now shows it.")
             return 0
-    except (BlindTestError, OSError, ValueError) as e:
+    except (BlindTestError, MetricsError, OSError, ValueError) as e:
         print(e)
         return 1
     print(__doc__)

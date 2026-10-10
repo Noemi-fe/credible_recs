@@ -37,7 +37,15 @@ from engine.library import DEFAULT_LIBRARY_DIR
 from engine.matching_eval import matching_section
 from engine.pipeline import cached_profiles
 from engine.credibility_eval import credibility_section
-from engine.metrics import METRICS_FILE, EvalResults, build_metrics, missing_parts, runs_cells, write_metrics
+from engine.metrics import (
+    METRICS_FILE,
+    EvalResults,
+    build_metrics,
+    carry_blind_test,
+    missing_parts,
+    runs_cells,
+    write_metrics,
+)
 from engine.slice_eval import slice_section
 from engine.query import parse_query
 from engine.query_eval import QueryCaseError, load_query_cases, report_lines, score_cases, summarize
@@ -95,7 +103,7 @@ def main() -> int:
 
 def _metrics_lines(results: EvalResults, today: date, path: Path = METRICS_FILE) -> list[str]:
     """Saves eval/metrics.json when every part could run, and gives the RUNS.md cells of the same numbers."""
-    metrics = build_metrics(results, today)
+    metrics = carry_blind_test(build_metrics(results, today), path)  # the blind test's result isn't measured here
     missing = missing_parts(results)
     if missing:
         saved = f"Numbers: {path.name} left as it was (not measured: {', '.join(missing)})."

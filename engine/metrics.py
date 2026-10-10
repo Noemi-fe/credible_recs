@@ -226,6 +226,40 @@ def load_metrics(path: Path = METRICS_FILE) -> MetricsFile | None:
         raise MetricsError(f"{path}: {e}") from e
 
 
+# --- The blind test's result (10 Oct 2026) ---
+
+BLIND_TEST_KEYS = {"vetted": "blind_test_vs_vetted", "chatgpt": "blind_test_vs_chatgpt"}
+
+
+def save_blind_test(against: dict[str, tuple[int, int]], path: Path = METRICS_FILE) -> None:
+    """Writes the blind test's result into the metrics file: for each rival, (rankings with ours above it,
+    rankings), from engine.blind_test.tally. Everything else in the file stays as it is. Raises MetricsError when
+    there is no file yet: run eval/run_eval.py first."""
+    current = load_metrics(path)
+    if current is None:
+        raise MetricsError(f"{path}: no metrics file yet; run eval/run_eval.py first")
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    for rival, (wins, total) in against.items():
+        data["metrics"][BLIND_TEST_KEYS[rival]] = _entry(wins, total, config.BLIND_TEST_TARGET)
+    write_metrics(data, path)
+
+
+def carry_blind_test(metrics: dict, path: Path = METRICS_FILE) -> dict:
+    """The new run's numbers, with the blind test's result carried over from the file (an evaluation run doesn't
+    measure it, so it must not wipe it). Unchanged when there is no file or no result in it."""
+    try:
+        current = load_metrics(path)
+    except MetricsError:
+        return metrics
+    if current is None:
+        return metrics
+    old = json.loads(Path(path).read_text(encoding="utf-8"))["metrics"]
+    carried = {key: old[key] for key in BLIND_TEST_KEYS.values() if old.get(key, {}).get("value") is not None}
+    if not carried:
+        return metrics
+    return {**metrics, "metrics": {**metrics["metrics"], **carried}}
+
+
 # --- The same numbers for eval/RUNS.md ---
 
 def runs_cells(metrics: dict) -> str:

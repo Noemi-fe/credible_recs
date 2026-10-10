@@ -75,8 +75,8 @@ T01,b01,B,C,4,the quotes from people who used it for years
     prints, for each rival, how often ours was trusted more (the target: at least 60% against each), with the range a
     sample this small allows, the first choices, the confidence per tool and every comment, grouped by the answer
     chosen. The brief also asks for the three most common reasons: read the comments and group them by hand.
-12. Log the result in `eval/RUNS.md`. The how-we-score page reads `eval/metrics.json`, whose two blind-test lines
-    stay "not measured yet" until the result is written there (not automated yet: a small step to add before 26 Oct).
+12. Run the tally again with `--save` at the end: the result goes into `eval/metrics.json`, and the how-we-score page
+    shows it (later evaluation runs keep it). Log the result in `eval/RUNS.md`.
 
 ## Things to watch
 

@@ -408,6 +408,22 @@ def test_responses_without_the_least_trusted_column_are_refused(tmp_path):
     assert "least" in str(refused.value)
 
 
+def test_tally_save_writes_the_result_into_the_metrics_file(tmp_path, monkeypatch, capsys):
+    from engine import metrics
+    from engine.tests.test_metrics import built
+
+    write_key(tmp_path, KEY)
+    responses = write_responses(tmp_path / "responses.csv", [("T01", "b01", "A", "C", 4, ""),
+                                                             ("T02", "b02", "C", "A", 2, "")])
+    path = tmp_path / "metrics.json"
+    metrics.write_metrics(built(), path)
+    monkeypatch.setattr(blind_test, "METRICS_FILE", path)
+    assert blind_test.main(["tally", str(tmp_path), str(responses), "--save"]) == 0
+    saved = json.loads(path.read_text(encoding="utf-8"))["metrics"]
+    assert saved["blind_test_vs_vetted"]["out_of"] == 2 and saved["blind_test_vs_chatgpt"]["out_of"] == 2
+    assert "Saved in metrics.json" in capsys.readouterr().out
+
+
 # --- The command line ---
 
 def test_command_line_explains_itself_when_used_wrongly(capsys):

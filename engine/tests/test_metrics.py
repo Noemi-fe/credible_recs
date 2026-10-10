@@ -266,3 +266,27 @@ def test_the_committed_metrics_have_their_run_logged_in_runs_md():
     day = f"{loaded.measured_on.day} {loaded.measured_on:%b %Y}"
     runs = (metrics.METRICS_FILE.parent / "RUNS.md").read_text(encoding="utf-8")
     assert re.search(rf"^\| {day} \|", runs, re.MULTILINE), f"eval/RUNS.md has no row dated {day}"
+
+
+# --- The blind test's result (10 Oct 2026) ---
+# `python -m engine.blind_test tally ... --save` writes how often ours was trusted more than each rival into
+# eval/metrics.json, so the how-we-score page shows it; a later evaluation run keeps it (it doesn't measure it).
+
+def test_the_blind_test_result_is_saved_and_kept_by_the_next_evaluation_run(tmp_path):
+    path = tmp_path / "metrics.json"
+    metrics.write_metrics(built(), path)
+    metrics.save_blind_test({"vetted": (31, 50), "chatgpt": (36, 50)}, path)
+    saved = json.loads(path.read_text(encoding="utf-8"))["metrics"]
+    assert (saved["blind_test_vs_vetted"]["count"], saved["blind_test_vs_vetted"]["out_of"]) == (31, 50)
+    assert saved["blind_test_vs_chatgpt"]["value"] == 36 / 50
+    assert saved["blind_test_vs_vetted"]["target"] == config.BLIND_TEST_TARGET
+    assert saved["quote_verification"] == built()["metrics"]["quote_verification"]  # nothing else changes
+
+    again = metrics.carry_blind_test(built(), path)  # the next evaluation run, before it writes the file
+    assert again["metrics"]["blind_test_vs_vetted"]["count"] == 31
+    assert metrics.carry_blind_test(built(), tmp_path / "none.json") == built()  # no file yet: nothing to carry
+
+
+def test_saving_a_blind_test_result_needs_the_metrics_file(tmp_path):
+    with pytest.raises(metrics.MetricsError):
+        metrics.save_blind_test({"vetted": (1, 2), "chatgpt": (1, 2)}, tmp_path / "none.json")
