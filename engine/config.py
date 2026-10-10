@@ -581,3 +581,13 @@ OTHER_TYPE_WORDS = ("set", "block", "sharpener", "stand", "rack", "holder", "rol
 BLIND_TEST_QUESTIONS_PER_TESTER = 5
 BLIND_TEST_TARGET = 0.6
 BLIND_TEST_GIVEAWAYS = ("chatgpt", "openai", "gpt", "vetted", "credible recs", "claude", "anthropic")
+
+# --- The evaluation's targets (docs/brief.md, "Evaluation and success metrics") ---
+# Written down here on 10 Oct 2026 so eval/run_eval.py, eval/metrics.json and the how-we-score page (/how) all read
+# the same targets. They are the brief's, not new decisions. MATCHING_TARGET (module 4) and BLIND_TEST_TARGET (against
+# each rival) are above.
+QUOTE_VERIFICATION_TARGET = 1.0  # every shown quote found word for word in its comment
+EXTRACTION_PRECISION_TARGET = 0.90  # of the AI's products, the share Noemi's labels confirm
+EXTRACTION_RECALL_TARGET = 0.80  # of Noemi's labelled products, the share the AI finds
+CREDIBILITY_AGREEMENT_TARGET = 0.80  # high-versus-low match with Noemi's labels
+COST_PER_QUESTION_TARGET_USD = 0.05  # "under $0.05": logged API spend divided by questions

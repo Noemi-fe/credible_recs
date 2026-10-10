@@ -60,11 +60,18 @@ def score_ordering(
     return right, total
 
 
-def summary_lines(scores: dict[str, dict], ordering: tuple[int, int]) -> list[str]:
+def top3_counts(scores: dict[str, dict]) -> tuple[int, int, int, int]:
+    """Over every question's top 3: (threads that fit the need, useful ones, judged ones, ones not judged yet).
+    Useful counts the ones that fit the need too. Also what eval/metrics.json keeps (engine/metrics.py)."""
     fits = sum(s[2] for s in scores.values())
     useful = fits + sum(s[1] for s in scores.values())
     judged = useful + sum(s[0] for s in scores.values())
     unjudged = sum(s[None] for s in scores.values())
+    return fits, useful, judged, unjudged
+
+
+def summary_lines(scores: dict[str, dict], ordering: tuple[int, int]) -> list[str]:
+    fits, useful, judged, unjudged = top3_counts(scores)
     right, total = ordering
     return [
         f"top 3, fits the need (grade 2): {fits}/{judged} judged ({_share(fits, judged)}); "

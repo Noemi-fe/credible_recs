@@ -40,7 +40,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from engine.config import EVIDENCE_LEVELS, VOICE_LEVELS
+from engine.config import CREDIBILITY_AGREEMENT_TARGET, EVIDENCE_LEVELS, VOICE_LEVELS
 from engine.credibility import score_evidence, score_voice
 from engine.extract import CheckResult, ExtractedMention, ExtractionError, load_checked
 from engine.extraction_eval import pair_up
@@ -203,8 +203,11 @@ def _matched_with_ai(her_products: list, ai_mentions: list[ExtractedMention]) ->
 
 # --- The report ---
 
-def credibility_report(gold_dir: Path = DEFAULT_GOLD_DIR, skip_threads: Iterable[str] = HOLDOUT_THREADS) -> str:
-    """Module 5's section of eval/run_eval.py: loads the gold set and its extractions, scores, and reports.
+def credibility_section(gold_dir: Path = DEFAULT_GOLD_DIR, skip_threads: Iterable[str] = HOLDOUT_THREADS,
+                        ) -> tuple[str, CredibilityAgreement | None]:
+    """Module 5's section of eval/run_eval.py: loads the gold set and its extractions, scores, and reports. Returns the
+    printed text and the score it was printed from (None for a broken gold set), which also goes into
+    eval/metrics.json (engine/metrics.py).
 
     A broken gold set is reported, not raised. Without readable extractions, voices are scored without replies
     that agree, and the report says so.
@@ -213,12 +216,18 @@ def credibility_report(gold_dir: Path = DEFAULT_GOLD_DIR, skip_threads: Iterable
     try:
         gold = load_gold_set(Path(gold_dir))
     except GoldSetError as e:
-        return f"{title}\n  gold set: {e}"
+        return f"{title}\n  gold set: {e}", None
     try:
         checked = load_checked(Path(gold_dir) / "threads")
     except (ExtractionError, GoldSetError):
         checked = {}
-    return "\n".join([title] + [f"  {line}" for line in report_lines(score_credibility(gold, checked, skip_threads))])
+    score = score_credibility(gold, checked, skip_threads)
+    return "\n".join([title] + [f"  {line}" for line in report_lines(score)]), score
+
+
+def credibility_report(gold_dir: Path = DEFAULT_GOLD_DIR, skip_threads: Iterable[str] = HOLDOUT_THREADS) -> str:
+    """Module 5's section of eval/run_eval.py, as text only."""
+    return credibility_section(gold_dir, skip_threads)[0]
 
 
 def report_lines(score: CredibilityAgreement) -> list[str]:
@@ -260,7 +269,7 @@ def _layer_lines(name: str, agreement: LevelAgreement, tags: TagAgreement) -> li
     best, worst = agreement.levels[0], agreement.levels[-1]
     lines = [
         f"{name}: {best}-versus-{worst} {_share(agreement.not_swapped, agreement.extremes)} of Noemi's {best} and "
-        f"{worst} labels not swapped (target 80%); same end {_share(agreement.same_extreme, agreement.extremes)}; "
+        f"{worst} labels not swapped (target {CREDIBILITY_AGREEMENT_TARGET:.0%}); same end {_share(agreement.same_extreme, agreement.extremes)}; "
         f"exact {_share(agreement.exact, agreement.total)}",
         f"  split: Noemi {_split(agreement.split('hers'))} | rules {_split(agreement.split('rules'))}",
         "  confusion (rows Noemi, columns rules):",

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>How we score</title>
+<!--
+  The how-we-score page (/how), filled in by engine/how_page.py each time it is opened.
+  WORDING: decided by Claude, 10 Oct 2026 (Noemi asked Claude to decide wording and report it). The words of the
+  explanation are here; the words for each listed sign and each test result are in engine/how_page.py.
+  NO NUMBERS ARE TYPED HERE: each slot in double curly brackets is filled by the code. A "config:NAME" slot is that
+  value of engine/config.py ("config%:NAME" shows it as a percentage); the others are filled from config,
+  engine/answer.py or eval/metrics.json. So the page can't drift from what the engine does: a test fails if a digit
+  is typed into this page's text.
+-->
+{{search_page_style}}
+<style>
+/* What this page adds to the search page's look (its colours, fonts and dark mode come with the style above). */
+.back { margin: 0 0 12px; font-size: 14px; }
+.how { counter-reset: step; }
+.step { margin: 32px 0 0; }
+.step > h2 { font-size: 22px; margin: 0 0 10px; }
+.step > h2::before { counter-increment: step; content: counter(step) ". "; color: var(--muted); }
+.step p, .step li { max-width: 70ch; }
+.step ul { padding-left: 22px; }
+.step li + li { margin-top: 4px; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; margin: 12px 0; }
+.box h3 { margin: 0 0 8px; font-size: 17px; }
+.box ul { margin: 0; }
+.signs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+.signs .box { margin: 0; }
+.signs .good { border-left: 4px solid var(--ok); }
+.signs .red { border-left: 4px solid var(--bad); }
+.config { font-weight: 650; font-variant-numeric: tabular-nums; }
+.measured { margin: 8px 0 0; }
+h3.group { font-size: 15px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 24px 0 8px; }
+.metrics { list-style: none; margin: 0; padding: 0 !important; display: grid; gap: 12px; }
+.metrics li + li { margin-top: 0; }
+.metric { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px;
+          display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 20px; align-items: start; max-width: none !important; }
+.metric h4 { margin: 0 0 4px; font-size: 16px; }
+.metric p { margin: 0; }
+.metric .about, .metric .sample { color: var(--muted); font-size: 14px; }
+.metric .sample { margin-top: 4px; }
+.metric .result { text-align: right; min-width: 12em; }
+.metric .score { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.metric .target { font-size: 14px; color: var(--muted); }
+.verdict { display: inline-block; margin-top: 6px; padding: 1px 10px; border-radius: 999px; font-size: 13px; font-weight: 650; }
+.verdict.meets { background: var(--ok-soft); color: var(--ok); }
+.verdict.misses { background: var(--bad-soft); color: var(--bad); }
+.verdict.unmeasured { background: var(--sunken); color: var(--muted); }
+@media (max-width: 600px) {
+  .signs { grid-template-columns: 1fr; }
+  .metric { grid-template-columns: 1fr; padding: 12px 14px; }
+  .metric .result { text-align: left; min-width: 0; }
+}
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <p class="back"><a href="/">Back to the search</a></p>
+    <h1>How we score</h1>
+    <p class="intro">How an answer is made, step by step, and how well it works. The rules and numbers on this page come straight from the engine's code and its latest test run, so they always match what it really does.</p>
+  </div>
+</header>
+
+<main class="wrap how">
+
+<section class="step" aria-labelledby="threads">
+  <h2 id="threads">Where the threads come from</h2>
+  <p>Every answer comes from Reddit threads we saved ahead of time, from communities where people talk about these things in depth:</p>
+  {{communities}}
+  <p>We read the threads through third-party services that collect public Reddit posts. People can delete or change what they wrote, so we keep checking:</p>
+  <ul>
+    <li>Just before a quote is shown, we read that comment again on Reddit itself. If it was deleted, removed or edited so the quote isn't there any more, the quote is never shown.</li>
+    <li>An answer only uses threads we have re-read on Reddit in the last {{config:LIVE_CHECK_SHOWN_DAYS}} days.</li>
+    <li>Every {{config:LIBRARY_REFRESH_DAYS}} days the saved threads are read again, and comments deleted since then are dropped.</li>
+  </ul>
+</section>
+
+<section class="step" aria-labelledby="finding">
+  <h2 id="finding">How products and opinions are found</h2>
+  <p>An AI reads each saved thread ahead of time, up to {{config:EXTRACT_MAX_COMMENTS}} of its most upvoted comments. For every product someone talks about, it writes down:</p>
+  <ul>
+    <li>the product's name;</li>
+    <li>the writer's stance: do they <strong>recommend</strong> it, <strong>warn</strong> against it, or just mention it?</li>
+    <li>their own words: a short quote, at most {{config:QUOTE_MAX_WORDS}} words, copied exactly.</li>
+  </ul>
+  <p>Then code, not the AI, checks that the quote really is in that comment, word for word. A quote that isn't is thrown away. That way the AI can never put words in anyone's mouth.</p>
+  <p>People write the same product in different ways ("CeraVe SA" and "CeraVe Renewing SA Cleanser"), so names are matched up and counted as one product.</p>
+</section>
+
+<section class="step" aria-labelledby="voices">
+  <h2 id="voices">Who counts as a credible voice</h2>
+  <p>For each comment we look at who wrote it and how other people reacted to it, and count good signs and red flags.</p>
+  <div class="signs">
+    <div class="box good"><h3>Good signs</h3>{{good_signs}}</div>
+    <div class="box red"><h3>Red flags</h3>{{red_flags}}</div>
+  </div>
+  <p>Then each comment gets a level:</p>
+  <ul>
+    <li><strong>High</strong>: at least {{config:VOICE_HIGH_MIN_GOOD_SIGNS}} good signs and no red flag.</li>
+    <li><strong>Medium</strong>: no red flag but fewer good signs (an ordinary owner), or {{medium_red_flags}}, however many good signs.</li>
+    <li><strong>Low</strong>: {{config:VOICE_LOW_MIN_RED_FLAGS}} red flags or more. Clear paid promotion (a discount code, an affiliate link, "#ad") counts as {{config:PAID_PROMOTION_RED_FLAGS}} red flags on its own.</li>
+  </ul>
+  <p>Skincare formulas change, so a skincare comment older than {{config:VOICE_RECENT_YEARS}} years is {{config:OLD_SKINCARE_POST_MAX_VOICE}} at most. And someone who recommends a product in one comment and warns against it in another, without saying what changed, counts as low.</p>
+  <p>How much a voice counts: high {{config:VOICE_VALUE.high}}, medium {{config:VOICE_VALUE.medium}}, low {{config:VOICE_VALUE.low}}. So a high voice counts {{voice_ratio}} times as much as a low one.</p>
+</section>
+
+<section class="step" aria-labelledby="evidence">
+  <h2 id="evidence">How strong the evidence is</h2>
+  <p>For each product a writer mentions, we ask: how well do they know it?</p>
+  <ul>
+    <li><strong>Long-term use</strong> (counts {{config:EVIDENCE_VALUE.long-term use}}): they've used it for {{long_term}} or more, or describe how it held up over time.</li>
+    <li><strong>Short-term use</strong> (counts {{config:EVIDENCE_VALUE.short-term use}}): days or weeks, "just bought", or they use it but don't say for how long.</li>
+    <li><strong>No first-hand use</strong> (counts {{config:EVIDENCE_VALUE.no first-hand use}}): they heard or read about it, or suggest it without saying they've used it.</li>
+  </ul>
+  <p>Each sign of honesty adds {{config%:EVIDENCE_HONESTY_BONUS}}:</p>
+  {{honesty_signs}}
+</section>
+
+<section class="step" aria-labelledby="picks">
+  <h2 id="picks">How a product becomes a pick</h2>
+  <p>Every mention earns points: the voice's number times the evidence's number. A recommendation adds the points, a warning takes them away, and a mention with no opinion counts nothing. For example:</p>
+  <ul>
+    <li>a high voice who has used it for years: {{config:VOICE_VALUE.high}} × {{config:EVIDENCE_VALUE.long-term use}} = {{example_strong}};</li>
+    <li>a medium voice who tried it for a week: {{config:VOICE_VALUE.medium}} × {{config:EVIDENCE_VALUE.short-term use}} = {{example_weak}}.</li>
+  </ul>
+  <p>A product's score is all its points added up. A mention is <strong>credible</strong> when it recommends or warns, comes from a {{credible_voices}} voice, and the writer has used the product ({{credible_evidence}}).</p>
+  <p>A product becomes a pick only with:</p>
+  <ul>
+    <li>at least {{config:MIN_CREDIBLE_MENTIONS}} credible recommendations,</li>
+    <li>from at least {{config:MIN_THREADS}} different threads,</li>
+    <li>and a score above zero.</li>
+  </ul>
+  <p>The {{config:PICKS_SHOWN}} products with the highest scores are shown. If fewer have enough evidence, we show fewer and say so: we'd rather say "not enough evidence yet" than guess.</p>
+  <p>When credible voices clearly prefer one kind of product (at least {{config:KIND_LEAD_RATIO}} times the support of the next kind, say Japanese chef knives over German ones), products of that kind get a bonus of {{config:KIND_BONUS}}.</p>
+  <p>Each pick shows {{config:MIN_QUOTES_PER_PICK}} to {{config:QUOTES_PER_PICK}} quotes from the people who back it, each with a link to its comment and checked word for word again just before it's shown.</p>
+  <p>Warnings count too. A product with at least {{config:SKIP_MIN_CREDIBLE_WARNINGS}} credible warnings, and more warnings than recommendations, goes on the "{{skip_heading}}" list. A pick that at least {{config:DISAGREEMENT_MIN_CREDIBLE_WARNINGS}} credible voices warn against is marked "{{mixed_opinions}}".</p>
+</section>
+
+<section class="step" aria-labelledby="left-out">
+  <h2 id="left-out">What gets left out</h2>
+  <ul>
+    <li><strong>Something else.</strong> A knife block or a sharpener isn't a chef knife: anything that holds, sharpens or bundles a product ({{other_type_words}}) doesn't count for the product itself.</li>
+    <li><strong>A brand on its own.</strong> "Lodge" alone could mean many products. It counts only when its threads make clear which ones, and is then shown as "{{brand_pick_example}}".</li>
+    <li><strong>Not sold in the UK.</strong> If we found a product isn't sold to UK shoppers, it's left out. Each pick says where it's sold and when we checked, or that we haven't checked yet.</li>
+    <li><strong>Over your budget.</strong> Left out when we checked its price in the last {{config:PRICE_MAX_AGE_DAYS}} days. An older price is shown with its date, but never used to leave a product out. A budget with no currency is taken to be in {{default_currency}}.</li>
+    <li><strong>Facts that clash with your request.</strong> For some products we look up a few facts on the maker's or a shop's page, such as whether it has added fragrance or whether a pan is PFAS-free. A product is left out when:
+      {{hard_rules}}
+    </li>
+  </ul>
+  <p>Smaller clashes keep the product in, with a note under it, such as "{{soft_note_example}}"</p>
+  <p>When we couldn't check a fact you asked for, the pick keeps its place with a note: "{{unconfirmed_example}}" A whole brand can't be checked like this, so a brand on its own is left out when your request has a must-have like these.</p>
+  <p>Under each answer we say how many products were left out, and why.</p>
+</section>
+
+<section class="step" aria-labelledby="results">
+  <h2 id="results">How well it works</h2>
+  <p>We test the engine against work we checked by hand, and against targets we set before building it.</p>
+  {{evaluation}}
+</section>
+
+</main>
+
+<footer class="wrap foot"><p>A free, non-commercial research prototype: read-only, and every quote links back to its comment on Reddit.</p></footer>
+</body>
+</html>

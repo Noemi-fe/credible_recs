@@ -240,3 +240,23 @@ def test_profiles_fill_in_plain_writers_before_the_rules_judge_them():
     level = lambda score, cid: next(rules for c, _, rules in score.voice.pairs if c == cid)
     assert level(score_credibility(gold(threads=(plain,))), "c1aaaa") == "medium"  # only "recent" to go on
     assert level(score_credibility(gold(threads=(plain,)), profiles=LongStanding()), "c1aaaa") == "high"
+
+
+def test_the_section_gives_the_printed_text_and_the_score_it_came_from(tmp_path):
+    from engine.credibility_eval import credibility_section
+
+    voices = VOICES_HEADER + "1fake01,c1aaaa,high,\"established member, recent\",\n1fake01,c2bbbb,,,\n"
+    mentions = MENTIONS_HEADER + "c1aaaa,CeraVe SA Cleanser,skincare,recommend,long-term use,long-term use,\n"
+    write_gold(tmp_path, [make_thread()], voices, mentions)
+    text, score = credibility_section(tmp_path)
+    assert text == credibility_report(tmp_path)
+    assert (score.voice.not_swapped, score.voice.extremes) == (1, 1)
+    assert "(target 80%)" in text
+
+
+def test_the_section_gives_no_score_for_a_broken_gold_set(tmp_path):
+    from engine.credibility_eval import credibility_section
+
+    write_gold(tmp_path, [make_thread()], voices="thread_id,comment_id\n")
+    text, score = credibility_section(tmp_path)
+    assert score is None and "voices.csv" in text

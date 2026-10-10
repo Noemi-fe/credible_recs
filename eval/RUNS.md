@@ -2,6 +2,8 @@
 
 One entry per run of `eval/run_eval.py`: date, change tested, every metric, kept or reverted.
 
+Since 10 Oct 2026 each complete run also saves its numbers in `eval/metrics.json` (numbers only), which the how-we-score page (`/how` on the local demo) shows, and ends by printing this table's metric cells (Module 1 to Cost/query) from the same numbers: paste them into the run's row.
+
 | Date | Change | Module 1 (outcome / product / constraints) | Module 2 (relevant in top 3) | Quote verification | Extraction P | Extraction R | Credibility agreement | Cost/query | "Other" tags (voice / evidence) | Kept? |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 7 Oct 2026 | Module 1 baseline: rules only, no AI. 30 draft cases, not yet approved | 29/30 · 21/22 · 20/22 | n/a | n/a | n/a | n/a | n/a | $0 | 0/0 · 0/0 | yes (first run) |

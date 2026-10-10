@@ -609,6 +609,12 @@ def unverified_claims(answer: Answer, bodies: Mapping[str, str]) -> list[str]:
     return problems
 
 
+def shown_quotes(answer: Answer) -> list[ShownQuote]:
+    """Every quote the answer shows: its picks' quotes, downsides and care tips, "what to look for" and the skip list.
+    The evaluation counts them (engine/slice_eval.py)."""
+    return [quote for _, quote in _every_quote(answer)]
+
+
 def _every_quote(answer: Answer) -> Iterator[tuple[str, ShownQuote]]:
     """Each quote in the answer, with where it is shown."""
     for pick in answer.picks:

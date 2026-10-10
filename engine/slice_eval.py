@@ -19,7 +19,7 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from engine.answer import unverified_claims
+from engine.answer import shown_quotes, unverified_claims
 from engine.config import PICKS_SHOWN
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.pipeline import answer_request
@@ -35,6 +35,7 @@ class QuestionResult:
     picks: list[str] = field(default_factory=list)  # the picks' names, best first
     threads: int = 0  # threads read
     unverified: int = 0  # shown quotes that failed the check: must be 0
+    quotes_shown: int = 0  # every quote the answer shows (engine.answer.shown_quotes), for eval/metrics.json
     waiting_live_check: int = 0  # threads about the product not used because they wait for a live check
     # Writers who recommend a product and warn against it without saying what changed (Noemi's rule, 9 Oct 2026):
     # counted only, their names stay on the pipeline's result.
@@ -54,6 +55,7 @@ def score_questions(questions_path: Path = DEFAULT_QUESTIONS, library_dir: Path 
         if run.answer is not None:
             result.picks = [pick.name for pick in run.answer.picks]
             result.unverified = len(unverified_claims(run.answer, run.bodies))
+            result.quotes_shown = len(shown_quotes(run.answer))
         results.append(result)
     return results
 
@@ -98,13 +100,26 @@ def threads_behind_answers(questions_path: Path = DEFAULT_QUESTIONS, library_dir
     return quoted
 
 
-def slice_report(questions_path: Path = DEFAULT_QUESTIONS, library_dir: Path = DEFAULT_LIBRARY_DIR) -> str:
-    """For eval/run_eval.py."""
+_REAL = object()  # slice_section's default: the real writer profiles and live checker, as answers use them
+
+
+def slice_section(questions_path: Path = DEFAULT_QUESTIONS, library_dir: Path = DEFAULT_LIBRARY_DIR,
+                  profiles=_REAL, live_checker=_REAL) -> tuple[str, list[QuestionResult] | None]:
+    """For eval/run_eval.py: the printed section, and the results it was printed from (None when there is no library),
+    which also become eval/metrics.json (engine/metrics.py). By default it runs the way answers run: writers' profiles
+    from the cache and every shown quote checked live (Reddit's embed page); the tests pass None for both."""
     if not (Path(library_dir) / "threads").is_dir():
-        return "End to end (modules 1-7): skipped (no local library)"
-    from engine.pipeline import cached_profiles
+        return "End to end (modules 1-7): skipped (no local library)", None
+    from engine import pipeline
 
-    from engine.pipeline import live_checker
+    profiles = pipeline.cached_profiles() if profiles is _REAL else profiles
+    live_checker = pipeline.live_checker() if live_checker is _REAL else live_checker
+    results = score_questions(questions_path, library_dir, profiles, live_checker)
+    lines = slice_lines(results)
+    text = "End to end (modules 1-7), blind-test questions on the library\n" + "\n".join(f"  {line}" for line in lines)
+    return text, results
 
-    lines = slice_lines(score_questions(questions_path, library_dir, cached_profiles(), live_checker()))
-    return "End to end (modules 1-7), blind-test questions on the library\n" + "\n".join(f"  {line}" for line in lines)
+
+def slice_report(questions_path: Path = DEFAULT_QUESTIONS, library_dir: Path = DEFAULT_LIBRARY_DIR) -> str:
+    """For eval/run_eval.py: the printed section alone."""
+    return slice_section(questions_path, library_dir)[0]
