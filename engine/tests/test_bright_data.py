@@ -719,8 +719,8 @@ def test_discover_command_reports_a_refused_subreddit_without_crashing(tmp_path,
     assert "AskReddit" in capsys.readouterr().out and service.requests == []
 
 
-# --- Reading several threads at once (11 Oct 2026) ---
-# One thread at a time costs two jobs, about 2.5 minutes (the add of 11 Oct 2026 took 12.5 minutes for 2 threads), so a
+# --- Reading several threads at once (10 Oct 2026) ---
+# One thread at a time costs two jobs, about 2.5 minutes (the add of 10 Oct 2026 took 12.5 minutes for 2 threads), so a
 # monthly refresh of the library would take hours. prefetch reads a batch of threads in two jobs (their posts, then
 # their comments) and files each thread's records in its own cache entry, where get_thread finds them.
 

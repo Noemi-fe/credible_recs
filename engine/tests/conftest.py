@@ -37,7 +37,7 @@ def _no_real_product_facts(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def _no_network(monkeypatch):
-    # Found on 11 Oct 2026: a test reached the real Bright Data API through the new "auto" reader and spent 255 of
+    # Found on 10 Oct 2026: a test reached the real Bright Data API through the new "auto" reader and spent 255 of
     # Noemi's records. Every client (Bright Data, Arctic Shift, Parse, Reddit's embed page) goes through
     # urllib.request.urlopen, so no test may call it: a test that does fails loudly instead of spending anything.
     import urllib.request

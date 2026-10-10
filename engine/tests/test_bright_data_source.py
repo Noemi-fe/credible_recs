@@ -1,4 +1,4 @@
-"""Bright Data as a full source for the library (Noemi's request, 11 Oct 2026: "not get stuck with parse and everything
+"""Bright Data as a full source for the library (Noemi's request, 10 Oct 2026: "not get stuck with parse and everything
 else").
 
 Until now the library's `add` found and read threads through Arctic Shift (down since 9 Oct 2026) or Parse (out of
@@ -253,7 +253,7 @@ def test_refresh_reads_through_bright_data_by_default():
     assert config.REFRESH_READER == "bright_data"
 
 
-# --- Reading together (11 Oct 2026) ---
+# --- Reading together (10 Oct 2026) ---
 
 class BatchingFake(FakeBrightData):
     """A fake that can also read ahead in one go, as the real client's prefetch does."""
@@ -294,7 +294,7 @@ def test_refresh_reads_due_threads_together_through_the_real_client(tmp_path):
     assert len(service.triggered()) == 2  # one job for the posts, one for the comments: not six
 
 
-# --- An outage is remembered for a while (11 Oct 2026) ---
+# --- An outage is remembered for a while (10 Oct 2026) ---
 # Each add waited about 4 minutes for Arctic Shift to fail before turning to Bright Data. After a failure, the fallback
 # goes straight to Bright Data for ARCHIVE_DOWN_MINUTES, then tries Arctic Shift again.
 

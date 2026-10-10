@@ -271,7 +271,7 @@ class BrightDataClient:
     def prefetch(self, threads: list[tuple[str, int]], batch: int = BRIGHT_DATA_BATCH_THREADS) -> int:
         """Reads several threads ahead, in two Bright Data jobs per batch of `batch` threads (one for their posts, one
         for their comments) instead of two jobs a thread, and files each thread's records in its own cache entry, where
-        get_thread then finds them (11 Oct 2026: one thread at a time took about 2.5 minutes, so a monthly refresh of the
+        get_thread then finds them (10 Oct 2026: one thread at a time took about 2.5 minutes, so a monthly refresh of the
         library would take hours). `threads` are (link to the thread, the most comments it may have).
 
         A thread whose records are already cached is left out. Before each batch, the most it could cost (1 record per

@@ -8,10 +8,10 @@ itself: one command per request finds the threads and saves them, with no one pi
 
 Four jobs:
 - add: understands a request (module 1), asks a source for threads and saves them. By default (LIBRARY_READER
-  "auto", 11 Oct 2026) the threads are found AND read for free in Arctic Shift's archive (engine.sources.ArchiveSource,
+  "auto", 10 Oct 2026) the threads are found AND read for free in Arctic Shift's archive (engine.sources.ArchiveSource,
   Noemi's choice of 9 Oct 2026), and when Arctic Shift fails, found with Reddit's own search and read through Bright
   Data instead (engine.sources.FallbackSource, BrightDataSource): no single service down or out of credits stops it
-  (Noemi's request, 11 Oct 2026). `--reader archive` or `--reader bright_data` uses one of them only; `--reader parse`
+  (Noemi's request, 10 Oct 2026). `--reader archive` or `--reader bright_data` uses one of them only; `--reader parse`
   finds threads with Arctic Shift and reads them through Parse, as before, with Parse's own search as the backup when
   Arctic Shift is busy. A copy read from the archive never replaces one already read on Reddit. Bright Data never
   reads a thread already saved, or a gold thread Noemi hasn't labelled.
@@ -30,7 +30,7 @@ Four jobs:
 - refresh: fetches again every saved thread that is due, so comments deleted on Reddit since then lose their text
   in the library too (Noemi, 7 Oct 2026): 30 days after it was saved, or 90 for a thread posted more than 180 days
   ago, which Reddit has archived, so only deletions can still change it. It never deletes a whole thread on its
-  own; it reports instead. Since 11 Oct 2026 it reads through Bright Data by default (REFRESH_READER), merged into
+  own; it reports instead. Since 10 Oct 2026 it reads through Bright Data by default (REFRESH_READER), merged into
   the saved copy as check-live does; `--reader parse` reads through Parse, as before.
 - coverage: how many saved threads each product type has, so the website can say "covered" or "not covered yet",
   and how many of each kind.
@@ -161,7 +161,7 @@ def add(
     them in Arctic Shift's archive, for free (ArchiveSource); "parse" finds them there and reads them through Parse;
     "bright_data" finds them with Reddit's own search and reads them through Bright Data (BrightDataSource, records
     from its free monthly allowance; threads already saved, and unlabelled gold threads, are skipped); "auto" (the
-    default since 11 Oct 2026) tries the archive and turns to Bright Data when Arctic Shift fails (FallbackSource).
+    default since 10 Oct 2026) tries the archive and turns to Bright Data when Arctic Shift fails (FallbackSource).
     A thread read from the archive never replaces a copy already read on Reddit (saved through Parse, or checked
     live): that copy is kept, and named on the result (kept_live).
 
@@ -337,7 +337,7 @@ def refresh(
     as it was; the refresh goes on with the next, so one bad thread never blocks the others month after month.
     Only 3 failures in a row stop it. No thread is ever deleted; one whose post is gone from Reddit is reported instead.
 
-    How (`reader`, 11 Oct 2026): "bright_data" (REFRESH_READER, since Parse's credits are spent) reads through Bright
+    How (`reader`, 10 Oct 2026): "bright_data" (REFRESH_READER, since Parse's credits are spent) reads through Bright
     Data and merges each read into the saved copy, exactly as check-live does (merge_bright_data_read: it never returns
     replies to replies), within a record cap (`max_records`; by default what's left this month minus
     LIVE_CHECK_RECORD_RESERVE); "parse" fetches through Parse, 2 credits a thread, and replaces the saved copy. None
@@ -584,7 +584,7 @@ def _read_through_bright_data(client: BrightDataClient, due: list[Thread], shown
 
 
 def _read_together(client: BrightDataClient, due: list[Thread], cap: int) -> None:
-    """Reads ahead, in batches (BrightDataClient.prefetch, 11 Oct 2026), the due threads that fit the record cap one
+    """Reads ahead, in batches (BrightDataClient.prefetch, 10 Oct 2026), the due threads that fit the record cap one
     after another, so the reads that follow come from the cache: two Bright Data jobs per batch instead of two per
     thread. A batch that fails for any reason but the account is simply read one thread at a time afterwards."""
     if not hasattr(client, "prefetch"):

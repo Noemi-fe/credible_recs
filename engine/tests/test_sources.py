@@ -826,7 +826,7 @@ def test_after_the_title_word_searches_the_finder_looks_for_warnings_in_the_most
 def test_warning_searches_use_the_first_finder_term():
     finder = FakeFinder()
     ParseSource(client=FakeParseClient(), finder=finder, max_free_searches=0).find_threads(parse_query(SKILLET))
-    # Changed on purpose 11 Oct 2026: cast iron fails in its own words (WARNING_SEARCHES_BY_TYPE), not "died"/"broke".
+    # Changed on purpose 10 Oct 2026: cast iron fails in its own words (WARNING_SEARCHES_BY_TYPE), not "died"/"broke".
     assert finder.searches == [
         ("castiron", "cast iron cracked"), ("castiron", "cast iron warped"), ("castiron", "cast iron regret"),
         ("castiron", "cast iron avoid"),
@@ -983,10 +983,10 @@ def test_a_product_name_one_letter_off_still_counts():
     ("Broke student coffee routine (or dealing with a cheap grinder)", "coffee grinder", "kitchen"),  # money
     ("I sandblasted my cast iron skillet since it rusted", "cast iron skillet", "kitchen"),  # a care project
     ("Avoid the crowds: my kitchen tour", "electric kettle", "kitchen"),  # doesn't name the product
-    # "Breaking in" a pan is its first use, not a failure (found through Bright Data's search, 11 Oct 2026).
+    # "Breaking in" a pan is its first use, not a failure (found through Bright Data's search, 10 Oct 2026).
     ("Broke in my new cast iron for Sunday dinner chicken pot pie", "cast iron skillet", "kitchen"),
     ("Broke in my new (and first) cast iron skillet with some chicken. Turned out great!", "cast iron skillet", "kitchen"),
-    # Regretting NOT doing something, or having no regrets, isn't a warning (11 Oct 2026).
+    # Regretting NOT doing something, or having no regrets, isn't a warning (10 Oct 2026).
     ("Will I regret not using retinol?", "retinoid", "skincare"),
     ("No regrets: my cast iron skillet after 10 years", "cast iron skillet", "kitchen"),
 ])
@@ -1011,7 +1011,7 @@ def test_these_are_warnings(title, product_type, category):
 
 
 
-# --- Warning searches fit the product (11 Oct 2026) ---
+# --- Warning searches fit the product (10 Oct 2026) ---
 # "kettle died" finds failures; "skillet died" found only "broke in my new skillet" (its first use). Cast iron fails by
 # cracking or warping, non-stick pans by peeling or scratching, knives by chipping.
 

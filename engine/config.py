@@ -295,7 +295,7 @@ CARE_TIPS_PER_PICK = 2
 # How `python -m engine.library add` reads the threads it finds: "archive" (Arctic Shift, free) or "parse" (Parse,
 # 2 credits a thread, as before 9 Oct 2026). Decided: the archive, since Parse credits are scarce.
 LIBRARY_READER = "auto"
-# Since 11 Oct 2026 (Noemi asked for a Bright Data tool "to not get stuck with parse and everything else", and for it
+# Since 10 Oct 2026 (Noemi asked for a Bright Data tool "to not get stuck with parse and everything else", and for it
 # to be built if it made sense): "auto" tries Arctic Shift's archive first (free search, full reply trees), and when it
 # fails (down since 9 Oct 2026: Cloudflare 522) finds and reads the threads through Bright Data instead
 # (engine.sources.FallbackSource and BrightDataSource). "archive", "parse" and "bright_data" each use one source only.
@@ -670,8 +670,8 @@ QUOTE_VIEW_WORDS = ("great", "love", "loved", "loving", "recommend", "recommende
                     "fine", "decent", "enjoy", "enjoyed", "helped", "improved", "game changer")
 # Not "like": "features like a scale" isn't a view.
 
-# --- Bright Data as a full source (11 Oct 2026) ---
-# Noemi's request of 11 Oct 2026. `library add` can find threads with Reddit's own search through Bright Data (inside
+# --- Bright Data as a full source (10 Oct 2026) ---
+# Noemi's request of 10 Oct 2026. `library add` can find threads with Reddit's own search through Bright Data (inside
 # the request's decided subreddits) and read them through Bright Data, and `library refresh` reads through it too, so
 # no single service being down or out of credits stops the library. Searches per request: up to this many (subreddit,
 # title word) searches, then this many warning searches ("kettle died") in the most specialist subreddit, each listing
@@ -681,12 +681,12 @@ QUOTE_VIEW_WORDS = ("great", "love", "loved", "loving", "recommend", "recommende
 BRIGHT_DATA_ADD_SEARCHES = 4
 BRIGHT_DATA_ADD_WARNING_SEARCHES = 2
 BRIGHT_DATA_ADD_RECORD_RESERVE = 300
-# How `library refresh` reads the threads that are due (11 Oct 2026): Bright Data, merged into the saved copy as
+# How `library refresh` reads the threads that are due (10 Oct 2026): Bright Data, merged into the saved copy as
 # check-live does, since Parse's credits are spent; "parse" with `--reader parse`.
 REFRESH_READER = "bright_data"
-# Threads read together in one pair of Bright Data jobs (engine.bright_data.BrightDataClient.prefetch, 11 Oct 2026):
+# Threads read together in one pair of Bright Data jobs (engine.bright_data.BrightDataClient.prefetch, 10 Oct 2026):
 # one thread at a time took about 2.5 minutes, two jobs each. The docs advise up to 20 links for a quick answer.
 BRIGHT_DATA_BATCH_THREADS = 20
 # After Arctic Shift fails, `library add` goes straight to Bright Data for this many minutes instead of waiting about 4
-# minutes for it to fail again (11 Oct 2026); then it tries Arctic Shift first again.
+# minutes for it to fail again (10 Oct 2026); then it tries Arctic Shift first again.
 ARCHIVE_DOWN_MINUTES = 30

@@ -95,7 +95,7 @@ class FakeLiveParse:
 # --- The decided values ---
 
 def test_the_decided_values():
-    # Changed on purpose 11 Oct 2026 (Noemi asked for a Bright Data tool so the library never gets stuck): "auto" tries
+    # Changed on purpose 10 Oct 2026 (Noemi asked for a Bright Data tool so the library never gets stuck): "auto" tries
     # the archive first, as decided on 9 Oct, and turns to Bright Data only when Arctic Shift fails.
     assert (LIBRARY_READER, LIVE_CHECK_SHOWN_DAYS, LIVE_CHECK_ALL_DAYS) == ("auto", 14, 30)
     assert LIVE_CHECK_REQUIRED is True and ARCHIVE_TEXT_RETENTION is True
@@ -326,7 +326,7 @@ KETTLE = "electric kettle that lasts 10+ years"
 
 def test_add_reads_through_the_archive_by_default_and_through_parse_when_asked(tmp_path, monkeypatch):
     built = []
-    # Since 11 Oct 2026 the default ("auto") also builds a Bright Data source, used only if the archive fails: a fake
+    # Since 10 Oct 2026 the default ("auto") also builds a Bright Data source, used only if the archive fails: a fake
     # here, so the test can never reach Bright Data (it once did, through the real cache and outage memo).
     from engine.tests.test_bright_data_source import FakeBrightData
 
@@ -377,7 +377,7 @@ def test_command_line_add_reader_parse_reads_through_parse(tmp_path, capsys):
 @pytest.mark.parametrize("argv", [["add", "--reader", "pushshift", KETTLE], ["add", "--reader", KETTLE], ["add", KETTLE, "--reader"]])
 def test_command_line_add_refuses_an_unknown_reader(tmp_path, capsys, argv):
     assert library.main(argv, client=FakeParseClient(), folder=tmp_path, finder=FakeArchiveClient()) == 2
-    # Changed on purpose 11 Oct 2026: Bright Data and the automatic fallback are readers too.
+    # Changed on purpose 10 Oct 2026: Bright Data and the automatic fallback are readers too.
     assert "--reader auto|archive|bright_data|parse" in capsys.readouterr().out
 
 

@@ -139,7 +139,7 @@ WARNING_SEARCHES = {
     "kitchen": ("died", "broke", "regret", "avoid"),
     "skincare": ("irritation", "broke me out", "regret", "avoid"),
 }
-# Product types that fail in their own words (11 Oct 2026): "skillet died" found only "broke in my new skillet" (its
+# Product types that fail in their own words (10 Oct 2026): "skillet died" found only "broke in my new skillet" (its
 # first use). Used before the category's words.
 WARNING_SEARCHES_BY_TYPE = {
     "cast iron skillet": ("cracked", "warped", "regret", "avoid"),
@@ -319,12 +319,12 @@ class ArchiveSource:
         return usable_posts(query, found, self.min_comments)
 
 
-# --- Through Bright Data: Reddit's own search, and reads (Noemi's request, 11 Oct 2026) ---
+# --- Through Bright Data: Reddit's own search, and reads (Noemi's request, 10 Oct 2026) ---
 
 class BrightDataSource:
     """Finds threads with Reddit's own search through Bright Data, inside the request's decided subreddits, and reads
     them through Bright Data too: no Parse credit and no archive, so the library can grow while Arctic Shift is down or
-    Parse's credits are spent (Noemi, 11 Oct 2026: "to not get stuck with parse and everything else").
+    Parse's credits are spent (Noemi, 10 Oct 2026: "to not get stuck with parse and everything else").
 
     The searches mirror the archive's (search_archive): the product's title words, subreddit by subreddit, up to
     BRIGHT_DATA_ADD_SEARCHES, then BRIGHT_DATA_ADD_WARNING_SEARCHES warning searches ("kettle died") in the most
@@ -431,12 +431,12 @@ def _as_post(found) -> dict:
             "created_utc": found.created_at.timestamp() if found.created_at else None, "url": found.url}
 
 
-# --- Never stuck: one source first, another when it fails (11 Oct 2026) ---
+# --- Never stuck: one source first, another when it fails (10 Oct 2026) ---
 
 class FallbackSource:
     """Asks the first source; when it fails with one of `fails_with` (Arctic Shift down, by default), asks the second.
 
-    The library's default since 11 Oct 2026 (LIBRARY_READER "auto"): Arctic Shift's archive first, which searches and
+    The library's default since 10 Oct 2026 (LIBRARY_READER "auto"): Arctic Shift's archive first, which searches and
     reads for free with whole reply trees, then Bright Data. The second source is never asked when the first works, so
     no Bright Data record is spent then. What happened is in `notes`, with the second source's own notes.
     """
@@ -663,7 +663,7 @@ def _posted_before(post: dict, moment: datetime) -> bool:
 # Something went wrong: what feeds the "skip these" list and the downsides. Each category has its own words:
 # "peeling" is a failing pan but, in skincare, a product, and "breakouts" or "acne" alone are usually the need
 # ("best cleanser for breakouts"), so neither is a skincare warning.
-# "regret" only as a real regret: never "will I regret not using…", "no regrets" or "won't regret" (11 Oct 2026).
+# "regret" only as a real regret: never "will I regret not using…", "no regrets" or "won't regret" (10 Oct 2026).
 _SHARED_WARNINGS = (r"(?<!no )(?<!won't )(?<!never )(?<!don't )(?<!will i )regret\w*(?! not)(?! skipping)"
                     r"|avoid|disappoint(?:ed|ing)|worst|returned")
 _WARNINGS = {
