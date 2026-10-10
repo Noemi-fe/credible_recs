@@ -338,8 +338,11 @@ def warm(threads_dir: Path, client: ArcticShiftClient, limit: int | None = None,
     later = to_ask[limit:] if limit is not None else []
     asking = [name for name in to_ask if name not in later]
     cached = [name for name in writers if name not in to_ask and name not in stored]
-    comment_ids = [cid for name in cached + asking for cid in writers[name] if store is None or store.flair(cid) is MISSING]
-    flair_calls = math.ceil(len(client.uncached_comments(comment_ids)) / FLAIR_BATCH)
+    # Every writer's comments whose flair isn't stored, stored writers' too (10 Oct 2026: their flairs were left in the
+    # 48-hour cache and lost when it expired). Flairs already in the cache cost no call.
+    comment_ids = [cid for name in writers for cid in writers[name] if store is None or store.flair(cid) is MISSING]
+    uncached = client.uncached_comments(comment_ids)
+    flair_calls = math.ceil(len(uncached) / FLAIR_BATCH)
     calls = len(asking) + flair_calls
 
     in_store = f", {len(stored)} kept with the library" if store is not None else ""
@@ -353,9 +356,11 @@ def warm(threads_dir: Path, client: ArcticShiftClient, limit: int | None = None,
         say(f"{_plural(len(later), 'more writer')} left for a later run (--limit {limit}).")
 
     started, calls_before = time.monotonic(), client.calls
-    flairs: dict[str, str | None] = {}
+    # The cached flairs first, without a call, so a failing archive can't lose them; then the others.
+    not_cached = set(uncached)
+    flairs = client.comment_flairs([cid for cid in comment_ids if cid not in not_cached])
     try:
-        flairs = client.comment_flairs(comment_ids) if comment_ids else {}
+        flairs |= client.comment_flairs(uncached) if uncached else {}
     except ArcticShiftError as e:
         say(f"Flairs not fetched ({e}); the writers' numbers are still looked up.")
     from_cache = look_up(client, cached)

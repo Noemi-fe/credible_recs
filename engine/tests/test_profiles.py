@@ -404,6 +404,33 @@ def test_warm_with_a_store_drops_writers_no_longer_in_the_library(tmp_path):
     assert store_at(tmp_path).user_stats("left_the_library") is profiles.MISSING
 
 
+def test_warm_keeps_the_cached_flairs_of_writers_already_stored(tmp_path):
+    # Found 10 Oct 2026: warm asked for flairs only for writers not stored yet, so a stored writer's flairs stayed in the
+    # 48-hour cache and were lost when it expired, though decision 1 keeps flairs with the library for a month.
+    threads_dir = library_folder(tmp_path, [KEPT, NEWBIE_KEPT])
+    client = make_client(tmp_path, FakeArchive())
+    client.comment_flairs(["c1aaaa", "c2bbbb"])  # in the cache, as after an earlier run
+    store = store_at(tmp_path)
+    store.put_user("test_derm", WRITERS["test_derm"])
+    store.put_user("test_newbie", None)
+    store.save()
+    calls_before = client.calls
+    warm(threads_dir, client, say=lambda line: None, store=store_at(tmp_path))
+    assert client.calls == calls_before  # all from the cache
+    assert store_at(tmp_path).flair("c1aaaa") == "Dermatologist" and store_at(tmp_path).flair("c2bbbb") is None
+
+
+def test_cached_flairs_are_kept_even_when_the_archive_is_down(tmp_path):
+    threads_dir = library_folder(tmp_path, [KEPT, NEWBIE_KEPT])
+    make_client(tmp_path, FakeArchive()).comment_flairs(["c1aaaa"])  # c1aaaa cached; c2bbbb never asked
+    down = make_client(tmp_path, FakeArchive(failing=("*", "flairs")))
+    lines = []
+    warm(threads_dir, down, say=lines.append, store=store_at(tmp_path))
+    assert store_at(tmp_path).flair("c1aaaa") == "Dermatologist"
+    assert store_at(tmp_path).flair("c2bbbb") is profiles.MISSING  # not known: asked again next time
+    assert any("Flairs not fetched" in line for line in lines)
+
+
 def test_stored_profiles_answer_without_calls_then_fall_back_to_the_cache(tmp_path):
     store = store_at(tmp_path)
     store.put_user("test_derm", WRITERS["test_derm"])
