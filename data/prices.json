@@ -864,6 +864,111 @@
    "also_called": [
     "Baratza Virtuoso"
    ]
+  },
+  {
+   "product": "Scanpan non-stick pans",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Scanpan UK",
+   "url": "https://scanpan.co.uk/collections/frying-pans",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "Scanpan's UK store sells non-stick frying pans (Classic, Classic Induction, CTX, CS+, Haptiq, Pro SB+, Urban) from £84 (Classic 20cm) to £193 (Haptiq or Pro SB+ 32cm) at full price for a single pan (Classic 20cm £39 and Urban 20cm £87 in a sale on 10 Oct), so no one price fits the name; it also sells uncoated frying pans (Black Iron carbon steel £70 to £98, Impact stainless £64 to £79, Fusion 5 stainless £99 to £129, Maitre D copper £124 to £144); no Stratanium LEAP (ceramic, PFAS-free) pans in the UK store"
+  },
+  {
+   "product": "De Buyer carbon steel pans",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Borough Kitchen",
+   "url": "https://www.boroughkitchen.com/search?q=de+buyer+mineral+b&type=product",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "carbon steel Mineral B frying pans £30 (20cm) to £69 (32cm), Mineral B Pro £58 to £95, plus Mineral B crepe pans and woks; so no one price fits the name"
+  },
+  {
+   "product": "Anessa Perfect UV Sunscreen Skincare Milk SPF50+ PA++++ 60ml",
+   "category": "skincare",
+   "price": 17.66,
+   "currency": "GBP",
+   "shop": "YesStyle",
+   "url": "https://www.yesstyle.com/en/shiseido-anessa-perfect-uv-sunscreen-skincare-milk-spf-50-pa-2024/info.html/pid.1127278830",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Anessa milk sunscreen gold with blue on the cap"
+   ],
+   "note": "2024 edition, in stock; £14.13 in a sale on 10 Oct (list price £17.66); Magielog lists it at £35.99 (out of stock) and StrawberryNET at £19 (RRP £32.50)"
+  },
+  {
+   "product": "Medik8 Crystal Retinal line",
+   "category": "skincare",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Medik8",
+   "url": "https://www.medik8.com/products/crystal-retinal",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "Medik8's own UK store sells six strengths, Crystal Retinal 1, 3, 6, 10, 20 and 24 (0.01% to 0.24% retinal), 30ml each, £45 to £114; so no one price fits the line"
+  },
+  {
+   "product": "COSRX Salicylic Acid Daily Gentle Cleanser 150ml",
+   "category": "skincare",
+   "price": 12.95,
+   "currency": "GBP",
+   "shop": "Skin Cupid",
+   "url": "https://www.skincupid.co.uk/products/salicylic-acid-daily-gentle-cleanser-150ml",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Cosrx SA cleanser"
+   ],
+   "note": "in stock, ships from its UK warehouse"
+  },
+  {
+   "product": "Handground Precision Manual Coffee Grinder",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Handground",
+   "url": "https://store.handground.com/products/eu-handground-precision-manual-coffee-grinder-black",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "still made: the maker's store sells a UK-only version (black $79, nickel $99, priced in US dollars; it 'will not ship outside of the UK'), sold out on 10 Oct, so out of stock for now; its US version is in stock ($79.95, $59.95 in a sale); no UK shop found with it in stock, so no price in pounds"
+  },
+  {
+   "product": "Porlex Mini II",
+   "category": "kitchen",
+   "price": 80.0,
+   "currency": "GBP",
+   "shop": "Tokyobike",
+   "url": "https://tokyobike.co.uk/products/porlex-hand-coffee-grinder",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "the Mini size of Porlex's Hand Coffee Grinder II (barcode 4986555700120), in stock; the Tall is £85; the Mini II is the current version of the Porlex Mini"
+  },
+  {
+   "product": "Lido 2",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Orphan Espresso",
+   "url": "https://www.orphanespresso.com/orphan-espresso-hand-coffee-grinders",
+   "checked_on": "2026-10-10",
+   "available": false,
+   "note": "an old model: its maker, Orphan Espresso, now sells the Smol, Lido OG 2.0, Fixie, OE Lido (Basic) and Apex, not the Lido 2 (the Lido OG 2.0 is a different grinder); no UK shop found selling it new"
+  },
+  {
+   "product": "Hario Mini",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Ozone Coffee",
+   "url": "https://ozonecoffee.co.uk/products/hario-mini-mill-plus-ceramic",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "a name for Hario's small hand grinders (Mini Mill, Mini Mill Plus, Mini-Slim), so no one price fits it; Ozone Coffee (Hasbean's shop now) sells the Mini Mill Plus at £39"
   }
  ]
 }
