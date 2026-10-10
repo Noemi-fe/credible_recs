@@ -398,11 +398,11 @@
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "Amazon UK",
-   "url": "https://www.amazon.co.uk/s?k=Bonavita+gooseneck+kettle",
+   "shop": "The English Coffee Company",
+   "url": "https://englishcoffeecompany.co.uk/products/bonavita-variable-temp-digital-electric-kettle-1l",
    "checked_on": "2026-10-10",
-   "available": false,
-   "note": "no UK shop found selling a Bonavita gooseneck kettle for UK mains; Amazon UK lists none"
+   "available": true,
+   "note": "The English Coffee Company sells Bonavita's 1L Variable Temp Digital Electric Kettle, a gooseneck, with a UK plug (£129, in stock); Bonavita has made other gooseneck kettles too (the plain 1L BV3825B, for one), so no one price fits the name; corrected on 10 Oct 2026: an earlier check of Amazon UK alone found none"
   },
   {
    "product": "Wagner",
@@ -984,6 +984,86 @@
     "Victorinox Fibrox chef knife"
    ],
    "note": "Victorinox 8\" cook's knife, broad blade, 5.2063.20 (Fibrox handle): £26.67 before VAT, £32.00 with VAT; in stock"
+  },
+  {
+   "product": "Bonavita Variable Temp Digital Electric Kettle, 1L",
+   "category": "kitchen",
+   "price": 129.0,
+   "currency": "GBP",
+   "shop": "The English Coffee Company",
+   "url": "https://englishcoffeecompany.co.uk/products/bonavita-variable-temp-digital-electric-kettle-1l",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "the 1L variable temperature gooseneck (SKU BV382510VCEB), with a UK plug, in stock; Coffee World lists it at £119.99 (in stock, plug not stated) and Coffee Omega at £120 before VAT, with a UK adaptor supplied"
+  },
+  {
+   "product": "Bonavita Cosmopolitan",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "eBay US",
+   "url": "https://www.ebay.com/p/15054407876",
+   "checked_on": "2026-10-10",
+   "available": false,
+   "note": "a US model: eBay's US catalogue lists the Cosmopolitan 1.3L glass kettle as BV07001US, 120 V, sold out, so not usable on UK mains; no UK shop found selling it: The English Coffee Company, Coffee World and Coffee Omega, which sell Bonavita in the UK, list only its 1L Variable Temp kettle (and Coffee Omega a stovetop gooseneck)"
+  },
+  {
+   "product": "OXO kettle",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/search?search-term=oxo",
+   "checked_on": "2026-10-10",
+   "available": false,
+   "note": "OXO's electric kettles are 120 V North American models, not usable on UK mains: eBay UK's catalogue page for the OXO Cordless Glass Electric Kettle (8710300) gives 120 V, sold out; no UK shop found selling one: none of John Lewis's 150 OXO products (search 'oxo') or Lakeland's 191 OXO products is a kettle, electric or stovetop"
+  },
+  {
+   "product": "Zojirushi kettle",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "WAFUU JAPAN",
+   "url": "https://wafuu.com/en-gb/products/zojirushi-cd-lcq50-tk-electronic-kettle-for-overseas-use",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Zojirushi water boiler"
+   ],
+   "note": "an import from Japan: WAFUU JAPAN's UK store (prices in £, ships to the UK, import charges paid by the buyer) sells Zojirushi's CD-LCQ50 5L water boiler, made for 220-230 V, with a BF (UK-type) plug at £112.00, in stock; its other 220-230 V Zojirushi kettles have European SE plugs (the 1L CK-EBT10 £137, the 4L CV-DST40 £156); Zojirushi makes many kettles and water boilers, so no one price fits the name; no UK high-street shop found selling one: John Lewis has no Zojirushi products, Sous Chef none"
+  },
+  {
+   "product": "Fellow Stagg EKG",
+   "category": "kitchen",
+   "price": 155.0,
+   "currency": "GBP",
+   "shop": "Coffee Beautiful",
+   "url": "https://coffeebeautiful.co.uk/products/fellow-stagg-ekg-electric-kettle-smoke-green-with-maple-0-9l",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "the original Stagg EKG (not the Pro), Smoke Green with a maple handle, UK plug, in stock: the only colour found in stock; Clumsy Goat shows it at £139 in a sale (was £165), every colour sold out, and Borough Kitchen now sells only the Stagg EKG Pro; no also_called: 'Stagg' and 'Fellow Stag kettle' can mean Fellow's stovetop Stagg, also sold in the UK (Clumsy Goat lists it), and 'Fellow Stagg electric kettle' would also catch 'Fellow kettle' by the word rules; the Stagg EKG Pro has its own entry"
+  },
+  {
+   "product": "Fellow Stagg EKG Pro",
+   "category": "kitchen",
+   "price": 145.0,
+   "currency": "GBP",
+   "shop": "Borough Kitchen",
+   "url": "https://www.boroughkitchen.com/products/fellow-stagg-ekg-pro-pour-over-electric-kettle-matte-black",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "matte black, UK plug (220-240V), in stock; Borough Kitchen's other colours are £165 (matte white) and £195 (wood handles); Clumsy Goat shows the matte black at £145 in a sale (was £195)"
+  },
+  {
+   "product": "Bodum gooseneck electric kettle",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Bodum",
+   "url": "https://www.bodum.com/gb/en/11940-16uk-bistro",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "note": "Bodum's UK store sells two gooseneck electric kettles, both in stock: the BISTRO 1.0L (11940-16UK) at £74.90 and the MELIOR 0.8L (11883-259UK) at £69.90, so no one price fits the name; Lawsons sells the BISTRO at £59.99 in a sale (RRP £74.99)"
   }
  ]
 }
