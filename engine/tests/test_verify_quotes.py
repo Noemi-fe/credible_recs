@@ -140,3 +140,12 @@ def test_a_quote_that_cuts_a_word_fails():
 def test_other_punctuation_must_match():
     assert not verify_quote(BODY, "Gentle but it dries me out in winter.")
     assert not verify_quote(BODY, "Gentle, but it dries me out in winter!")
+
+
+def test_an_escaped_emphasis_mark_is_formatting_too():
+    # Reddit's editor escapes marks a writer types ("a \*lot\* of eggs"): the backslash before an emphasis mark is
+    # formatting like the mark itself (b10, 10 Oct 2026, late). Any other backslash is a real character.
+    body = "Love my pans for eggs, I eat a \\*lot\\* of eggs."
+    assert verify_quote(body, "I eat a lot of eggs.")
+    assert verify_quote(body, "I eat a \\*lot\\* of eggs.")
+    assert not verify_quote("Save it in C:\\games please.", "Save it in C:games please.")

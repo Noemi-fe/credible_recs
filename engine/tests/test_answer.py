@@ -463,6 +463,8 @@ def test_the_quote_shown_is_the_comments_own_text_with_entities_read():
      "I absolutely swear by CosRX Blackhead power liquid for years."),
     ("It is *really* gentle and ~~cheap~~ affordable, great.", "It is really gentle and cheap affordable, great."),
     ("My __favourite__ kettle, set to 80_C every day.", "My favourite kettle, set to 80_C every day."),
+    # Escaped marks (Reddit's editor writes "\\*lot\\*"): shown as the word, never "\\lot\\" (b10, 10 Oct 2026, late).
+    ("Love my Acme pans for eggs, I eat a \\*lot\\* of eggs.", "Love my Acme pans for eggs, I eat a lot of eggs."),
 ])
 def test_a_quote_is_shown_without_the_writers_bold_or_italics(body, shown):
     # Found in the blind-test dry run, 10 Oct 2026: Reddit's "**" showed as stars on the web card and in the blind

@@ -10,7 +10,7 @@ other. Only differences that are formatting, not words, are tolerated:
 - curly apostrophes and quote marks equal straight ones (’ ‘ ‛ as ', and “ ” as ");
 - HTML entities equal their characters: Reddit stores "&" as "&amp;" and ">" as "&gt;";
 - the markdown symbols for bold, italics and strikethrough (* _ ~) are ignored, so "**great** kettle" contains
-  "great kettle".
+  "great kettle", and so is a backslash escaping one ("a \\*lot\\* of eggs" contains "a lot of eggs"; 10 Oct 2026).
 A quote must also start and end on whole words: "like it" is not in "I dislike it", because a cut word can flip
 the meaning.
 
@@ -63,6 +63,9 @@ def _plain(text: str) -> tuple[str, list[tuple[int, int]]]:
     origins: list[tuple[int, int]] = []
     i = 0
     while i < len(text):
+        if text[i] == "\\" and i + 1 < len(text) and text[i + 1] in EMPHASIS_MARKS:  # Reddit's escape: "\\*lot\\*"
+            i += 1
+            continue
         entity = _ENTITY.match(text, i) if text[i] == "&" else None
         if entity and html.unescape(entity.group()) != entity.group():
             pieces, end = html.unescape(entity.group()), entity.end()

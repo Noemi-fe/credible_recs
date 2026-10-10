@@ -408,10 +408,15 @@ _EMPHASIS = (re.compile(r"\*\*(.+?)\*\*"), re.compile(r"__(.+?)__"), re.compile(
 
 
 def _without_emphasis(text: str) -> str:
-    """The text without the writer's bold, italics and strikethrough marks; an underscore inside a word stays."""
+    """The text without the writer's bold, italics and strikethrough marks; an underscore inside a word stays. Marks
+    Reddit's editor escaped ("\\*lot\\*") go too, never leaving "\\lot\\" (10 Oct 2026, late)."""
+    text = _ESCAPED_MARK.sub(r"\1", text)
     for pattern in _EMPHASIS:
         text = pattern.sub(r"\1", text)
     return text
+
+
+_ESCAPED_MARK = re.compile(r"\\([*_~])")
 
 
 def _badges(item: ScoredMention | KindNote | CareTip) -> tuple[str, ...]:
