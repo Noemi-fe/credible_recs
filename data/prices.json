@@ -431,6 +431,29 @@
    "url": "https://www.amazon.co.uk/dp/B07CSKGLMM",
    "checked_on": "2026-10-10",
    "available": false
+  },
+  {
+   "product": "Comandante C40 MK4",
+   "category": "kitchen",
+   "price": 249.0,
+   "currency": "GBP",
+   "shop": "Clumsy Goat (full price; on sale at £219 and sold out on 10 Oct 2026)",
+   "url": "https://clumsygoat.co.uk/products/comandante-c40-coffee-grinder",
+   "checked_on": "2026-10-10",
+   "available": true,
+   "also_called": [
+    "Comandante C40"
+   ]
+  },
+  {
+   "product": "Baratza Sette 270",
+   "category": "kitchen",
+   "price": 299.95,
+   "currency": "GBP",
+   "shop": "Baratza UK",
+   "url": "https://www.baratza.com/en-gb/product/settetm-270-zcg1270",
+   "checked_on": "2026-10-10",
+   "available": true
   }
  ]
 }
