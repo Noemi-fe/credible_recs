@@ -581,6 +581,39 @@ def test_a_short_name_or_model_code_names_the_product(name, quote):
     assert not _names_product("Others I have used and not had any issues with:", name, "kitchen")
 
 
+def test_the_writers_own_name_for_the_product_names_it():
+    # Found reading b06, 10 Oct 2026 (night): the kettle shown as "Fellow Stagg EKG" (its brand taken from a longer
+    # name) had its writers' quotes saying "Stagg" read as naming nothing, so a writer's decade without a failure was
+    # left out and two quotes about a detail of its handle were shown. The name the writer used names it too.
+    from engine.answer import _names_product
+
+    quote = "Bought the Stagg EKG at launch, its daily use since."
+    assert not _names_product(quote, "Fellow Stagg EKG", "kitchen")  # the shown name's first word is the brand
+    assert _names_product(quote, "Fellow Stagg EKG", "kitchen", written_as="my Stagg EKG")  # "my" isn't a name
+    assert not _names_product("A gooseneck pours better.", "Fellow Stagg EKG", "kitchen", written_as="gooseneck kettle")
+    named = mention("Fellow Stagg EKG", "t1", weight=0.4, written_as="Stagg EKG", quote=quote)
+    unnamed = mention("Fellow Stagg EKG", "t2", weight=0.9, written_as="Stagg", quote="Love it, pours so nicely.")
+    empty = mention("Fellow Stagg EKG", "t2", weight=0.2, written_as="Stagg", quote="Bought for my partner, who makes tea.")
+    items = [named, unnamed, empty]  # three, so it's a pick; the last says nothing, so it isn't shown
+    answer = write_answer(rank_products(items, "kitchen"), bodies_for(*items))
+    assert [q.text for q in answer.picks[0].quotes] == [named.quote, unnamed.quote]
+
+
+@pytest.mark.parametrize("quote", ["Using the same one for a decade now.", "It has never failed."])
+def test_time_in_use_and_failing_or_not_are_what_a_writer_went_through(quote):
+    # b06, 10 Oct 2026 (night): "years" gave a view, but "a decade" and "never failed" didn't.
+    from engine.answer import _gives_a_view
+
+    assert _gives_a_view(quote)
+
+
+def test_failing_to_do_something_is_not_a_view():
+    # Not "failed" alone: a quote about a video reviewer leaving out a feature led a pick's downsides.
+    from engine.answer import _gives_a_view
+
+    assert not _gives_a_view("The video failed to show the timer on the cheaper model.")
+
+
 def test_a_quote_saying_the_opposite_of_what_was_asked_is_shown_last():
     # Found reading b02, 10 Oct 2026: for "doesn't leave a white cast", the first pick's quote said "the Etude sunscreen
     # does leave a white cast" (its writer recommends it anyway). Such a quote is shown only if nothing else is left.

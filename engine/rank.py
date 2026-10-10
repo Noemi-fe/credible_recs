@@ -92,6 +92,9 @@ class ScoredMention:
     # The request's needs its comment talks about ("sensitive", "beginner", "pour-over"; engine/needs.py), in the
     # request's order; empty when it talks about none.
     needs: tuple[str, ...] = ()
+    # The product's name as this comment's writer wrote it (module 3: "my Stagg"), which names the product in a quote
+    # as well as the name shown does (engine/answer.py; 10 Oct 2026). Empty when not known.
+    written_as: str = ""
 
     def __post_init__(self):
         object.__setattr__(self, "badges", tuple(self.badges))  # a list given by the pipeline is fine too

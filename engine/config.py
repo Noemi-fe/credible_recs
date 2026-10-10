@@ -704,7 +704,10 @@ QUOTE_VIEW_WORDS = ("great", "love", "loved", "loving", "recommend", "recommende
                     "amazing", "excellent", "fantastic", "good", "perfect", "happy", "favourite", "favorite", "works",
                     "worked", "lasted", "lasts", "lasting", "years", "still", "swear", "hg", "gentle", "reliable",
                     "durable", "sturdy", "quality", "value", "worth", "nice", "awesome", "brilliant", "impressed",
-                    "fine", "decent", "enjoy", "enjoyed", "helped", "improved", "game changer")
+                    "fine", "decent", "enjoy", "enjoyed", "helped", "improved", "game changer",
+                    # What a writer went through, too (10 Oct 2026, night: a writer's decade of use without a failure).
+                    # Not "failed" alone: a reviewer who failed to mention a feature says nothing about the product.
+                    "decade", "decades", "never failed")
 # Not "like": "features like a scale" isn't a view.
 
 # --- Bright Data as a full source (10 Oct 2026) ---

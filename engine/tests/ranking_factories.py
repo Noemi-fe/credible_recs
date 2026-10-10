@@ -34,6 +34,7 @@ def mention(
     quote: str | None = None,
     badges: tuple[str, ...] = ("3 years of use",),
     key: str | None = None,
+    written_as: str = "",
 ) -> ScoredMention:
     """One scored mention. Each call gets a new comment id and a quote of its own, unless given."""
     comment = comment or f"c{next(_comment_ids)}"
@@ -50,6 +51,7 @@ def mention(
         evidence=evidence,
         badges=badges,
         quote=quote or f"My {stance} for the {product}, from comment {comment}.",
+        written_as=written_as,
     )
 
 

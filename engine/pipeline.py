@@ -785,6 +785,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                 comment_id=m.comment_id, comment_url=str(comment.url), stance=m.stance,
                 weight=weight, voice=voice.level, evidence=evidence.level,
                 quote=m.quote, badges=badges(voice, evidence), author=_writer(comment), needs=met,
+                written_as=m.product,
             ))
         for n in res.kept_notes:
             comment = comments[n.comment_id]

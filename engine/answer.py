@@ -81,7 +81,8 @@ from engine.extract import _as_written, _in_quoted_block, _own_words_in_quote_fo
 from engine.models import Thread
 from engine.needs import LASTING, Need, needs_met
 from engine.prices import PriceCheck
-from engine.match_products import known_aliases
+from engine.credibility import GENERIC_NAME_WORDS
+from engine.match_products import FILLER_WORDS, known_aliases
 from engine.rank import KindNote, ProductScore, RankingResult, ScoredMention, ScoreBreakdown, is_credible
 from engine.query import PRODUCT_TYPES
 from engine.sources import mentions_product
@@ -442,7 +443,7 @@ def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
     ordered = _most_credible_first(items)
 
     def tier(m: ScoredMention) -> int:  # 0: names it and gives a view; 1: only names it; 2: neither
-        names = _names_product(m.quote, m.product_name, m.category)
+        names = _names_product(m.quote, m.product_name, m.category, m.written_as)
         return 0 if names and _gives_a_view(m.quote) else 1 if names else 2
 
     # Within a tier, quotes that themselves talk about what the request asks for come first (10 Oct 2026, late: a kettle
@@ -458,7 +459,7 @@ def _says_something(m: ScoredMention) -> bool:
     of these (b08, 10 Oct 2026: a one-line reply about sticking with cast iron was shown for two vintage brands; the
     comment named them in a sentence the AI didn't quote) is shown only to make up a pick's MIN_QUOTES_PER_PICK."""
     text = " ".join(re.findall(r"[a-z0-9']+", m.quote.lower().replace("’", "'")))
-    return (_names_product(m.quote, m.product_name, m.category) or _gives_a_view(m.quote)
+    return (_names_product(m.quote, m.product_name, m.category, m.written_as) or _gives_a_view(m.quote)
             or bool(_POINTS_AT_IT.search(text)))
 
 
@@ -484,23 +485,33 @@ def _says_the_opposite(quote: str, asks: Iterable[str]) -> bool:
     return any(re.search(pattern, text) for ask in asks for pattern in OPPOSITE_QUOTE_PATTERNS.get(ask, ()))
 
 
-def _names_product(quote: str, name: str, category: str) -> bool:
+def _names_product(quote: str, name: str, category: str, written_as: str = "") -> bool:
     """Whether the quote names the product: the first word of its name (the brand), a model code in it (a word
     with a digit: "C2", "MTH-80"), or a known short or long form of its brand (engine/data/product_aliases.json:
     "BOJ" for Beauty of Joseon, "Breville" for Sage), as whole words, capitals aside. A plural or a possessive counts
     ("old wagners", "Prequel's"), and so does a hyphen written as a space or left out ("All clad" for All-Clad; b08,
-    b05 and b10, 10 Oct 2026)."""
+    b05 and b10, 10 Oct 2026). So does the first word of the writer's own name for it (`written_as`; "my" or "the"
+    aside, and never a common product word such as "gooseneck"): "Stagg" for a kettle shown as "Fellow Stagg EKG"
+    (b06, 10 Oct 2026, night: its writers' quotes had stopped naming it once the shown name took its brand)."""
     text = " ".join(re.findall(r"[a-z0-9][a-z0-9'-]*", quote.lower().replace("’", "'")))
-    name_words = [w.removesuffix("'s") for w in re.findall(r"[a-z0-9][a-z0-9'-]*", name.lower().replace("’", "'"))]
+    name_words = _name_words(name)
     if not name_words:
         return False
     wanted = {name_words[0]} | {w for w in name_words if any(c.isdigit() for c in w)}
+    writers = [w for w in _name_words(written_as) if w not in FILLER_WORDS]
+    if writers and writers[0] not in GENERIC_NAME_WORDS:
+        wanted.add(writers[0])
     joined = " ".join(name_words)
     for short_words, full_words in known_aliases().get(category, {}).items():
         short, full = " ".join(short_words), " ".join(full_words)
         if f"{joined} ".startswith(f"{short} ") or f"{joined} ".startswith(f"{full} "):
             wanted |= {short, full}
     return any(re.search(_as_written_loosely(w), text) for w in wanted)
+
+
+def _name_words(name: str) -> list[str]:
+    """A name's words as _names_product compares them: lowercase, a possessive "'s" dropped."""
+    return [w.removesuffix("'s") for w in re.findall(r"[a-z0-9][a-z0-9'-]*", name.lower().replace("’", "'"))]
 
 
 def _as_written_loosely(word: str) -> str:
