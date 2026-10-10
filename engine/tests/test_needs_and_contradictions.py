@@ -211,3 +211,10 @@ def test_the_reason_doesnt_count_long_use_twice(tmp_path):
     zoji = result.answer.picks[0]
     assert zoji.reason == "Recommended by 4 credible voices, 4 of them after long-term use."
     assert zoji.breakdown.credible_recommends_fitting_need == 4  # the breakdown still counts them: they weigh more
+
+
+def test_a_need_typed_as_a_verb_gets_words_that_read_well():
+    # Found reading the answers, 10 Oct 2026: "won't strip my skin" read "3 of them about gentleness or strip".
+    from engine import answer as wording
+
+    assert wording.NEED_LABELS["strip"] == "not stripping the skin"

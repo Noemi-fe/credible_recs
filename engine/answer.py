@@ -151,6 +151,9 @@ NEED_LABELS: dict[str, str] = {
     "gentle": "gentleness",
     "home cook": "home cooking",
     "lasting": "how long it lasts",
+    # A request's own word that reads badly as typed ("won't strip my skin": "about gentleness or strip"); Claude,
+    # 10 Oct 2026.
+    "strip": "not stripping the skin",
 }
 # The breakdown's line about needs: only shown when some credible mention talks about them.
 BREAKDOWN_NEEDS = ("About your request: {recommends} credible recommendations and {warnings} credible warnings talk "
