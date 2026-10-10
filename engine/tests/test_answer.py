@@ -581,6 +581,19 @@ def test_a_short_name_or_model_code_names_the_product(name, quote):
     assert not _names_product("Others I have used and not had any issues with:", name, "kitchen")
 
 
+def test_among_quotes_that_dont_name_the_product_one_giving_a_view_comes_first():
+    # Found reading b04, 10 Oct 2026 (night): Etude's second quote was a writer still looking for a richer cream (no
+    # name, no view), ahead of a writer saying they now swear by it after years of trying others.
+    plain = mention("Acme cream", "t1", weight=0.9, category="skincare",
+                    quote="Haven't found a richer one, it's my main for now.")
+    view = mention("Acme cream", "t2", weight=0.5, category="skincare",
+                   quote="After years of trying others, I'm a convert to it.")
+    named = mention("Acme cream", "t1", weight=0.3, category="skincare", quote="I love the Acme cream.")
+    items = [plain, view, named]
+    answer = write_answer(rank_products(items, "skincare"), bodies_for(*items))
+    assert [q.text for q in answer.picks[0].quotes][:2] == [named.quote, view.quote]
+
+
 def test_the_writers_own_name_for_the_product_names_it():
     # Found reading b06, 10 Oct 2026 (night): the kettle shown as "Fellow Stagg EKG" (its brand taken from a longer
     # name) had its writers' quotes saying "Stagg" read as naming nothing, so a writer's decade without a failure was

@@ -436,15 +436,17 @@ def _most_credible_first(items: Iterable[ScoredMention]) -> list[ScoredMention]:
 def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
                   needs: tuple[Need, ...] = ()) -> list[ScoredMention]:
     """The most credible first, but the quotes that name their product and give a view before those that only name
-    it, and those before the rest; within each, those whose comment talks about what the request asks for first (10 Oct 2026: out of context, "Others I have used and not had any issues with:" says
+    it, those before the ones that only give a view, and those before the rest; within each, those whose comment talks about what the request asks for first (10 Oct 2026: out of context, "Others I have used and not had any issues with:" says
     little, and so does "I have a Baratza Encore, Timemore C2 and a JX"), and a quote that says the opposite of what
     the request asks ("does leave a white cast") after every other (_says_the_opposite). Each is still shown when
     there's room."""
     ordered = _most_credible_first(items)
 
-    def tier(m: ScoredMention) -> int:  # 0: names it and gives a view; 1: only names it; 2: neither
-        names = _names_product(m.quote, m.product_name, m.category, m.written_as)
-        return 0 if names and _gives_a_view(m.quote) else 1 if names else 2
+    # 0: names it and gives a view; 1: only names it; 2: only gives a view; 3: neither (10 Oct 2026, night: b04 showed a
+    # writer still looking for a richer cream before one who swears by it, neither naming it).
+    def tier(m: ScoredMention) -> int:
+        names, view = _names_product(m.quote, m.product_name, m.category, m.written_as), _gives_a_view(m.quote)
+        return 0 if names and view else 1 if names else 2 if view else 3
 
     # Within a tier, quotes that themselves talk about what the request asks for come first (10 Oct 2026, late: a kettle
     # pick led with a comment about its handle, not one of its writers' years of use). The quote, not its comment.
