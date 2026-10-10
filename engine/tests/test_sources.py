@@ -826,8 +826,10 @@ def test_after_the_title_word_searches_the_finder_looks_for_warnings_in_the_most
 def test_warning_searches_use_the_first_finder_term():
     finder = FakeFinder()
     ParseSource(client=FakeParseClient(), finder=finder, max_free_searches=0).find_threads(parse_query(SKILLET))
+    # Changed on purpose 11 Oct 2026: cast iron fails in its own words (WARNING_SEARCHES_BY_TYPE), not "died"/"broke".
     assert finder.searches == [
-        ("castiron", "cast iron died"), ("castiron", "cast iron broke"), ("castiron", "cast iron regret"), ("castiron", "cast iron avoid"),
+        ("castiron", "cast iron cracked"), ("castiron", "cast iron warped"), ("castiron", "cast iron regret"),
+        ("castiron", "cast iron avoid"),
     ]
 
 
@@ -984,6 +986,9 @@ def test_a_product_name_one_letter_off_still_counts():
     # "Breaking in" a pan is its first use, not a failure (found through Bright Data's search, 11 Oct 2026).
     ("Broke in my new cast iron for Sunday dinner chicken pot pie", "cast iron skillet", "kitchen"),
     ("Broke in my new (and first) cast iron skillet with some chicken. Turned out great!", "cast iron skillet", "kitchen"),
+    # Regretting NOT doing something, or having no regrets, isn't a warning (11 Oct 2026).
+    ("Will I regret not using retinol?", "retinoid", "skincare"),
+    ("No regrets: my cast iron skillet after 10 years", "cast iron skillet", "kitchen"),
 ])
 def test_these_are_not_warnings(title, product_type, category):
     assert thread_kind({"title": title}, category, product_type) != "warning"
@@ -992,6 +997,9 @@ def test_these_are_not_warnings(title, product_type, category):
 @pytest.mark.parametrize("title, product_type, category", [
     ("My kettle broke within a year", "electric kettle", "kitchen"),
     ("My kettle broke in 6 months", "electric kettle", "kitchen"),
+    ("I regret buying this kettle", "electric kettle", "kitchen"),
+    ("My cast iron skillet warped on the induction hob", "cast iron skillet", "kitchen"),
+    ("Scratched non-stick frying pan after a month", "frying pan", "kitchen"),
     ("Grinder broke in a year, avoid", "coffee grinder", "kitchen"),
     ("Cast iron skillet broke in the first week", "cast iron skillet", "kitchen"),
     ("Less than 3 years old electric kettle flaking/chipped already?", "electric kettle", "kitchen"),
@@ -1000,3 +1008,21 @@ def test_these_are_not_warnings(title, product_type, category):
 ])
 def test_these_are_warnings(title, product_type, category):
     assert thread_kind({"title": title}, category, product_type) == "warning"
+
+
+
+# --- Warning searches fit the product (11 Oct 2026) ---
+# "kettle died" finds failures; "skillet died" found only "broke in my new skillet" (its first use). Cast iron fails by
+# cracking or warping, non-stick pans by peeling or scratching, knives by chipping.
+
+@pytest.mark.parametrize("request_text, words", [
+    ("cast iron skillet for a beginner that will last decades", ("cracked", "warped")),
+    ("non-stick frying pan without PFAS that actually lasts", ("peeling", "scratched")),
+    ("first chef's knife under £100 for a home cook", ("chipped", "broke")),
+    ("electric kettle that lasts 10+ years", ("died", "broke")),  # the category's own words
+    ("gentle cleanser for acne-prone skin that won't strip my skin", ("irritation", "broke me out")),
+])
+def test_warning_searches_use_the_words_each_product_fails_with(request_text, words):
+    from engine.sources import warning_words
+
+    assert warning_words(parse_query(request_text))[:2] == words

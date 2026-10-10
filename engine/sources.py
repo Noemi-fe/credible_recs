@@ -139,6 +139,19 @@ WARNING_SEARCHES = {
     "kitchen": ("died", "broke", "regret", "avoid"),
     "skincare": ("irritation", "broke me out", "regret", "avoid"),
 }
+# Product types that fail in their own words (11 Oct 2026): "skillet died" found only "broke in my new skillet" (its
+# first use). Used before the category's words.
+WARNING_SEARCHES_BY_TYPE = {
+    "cast iron skillet": ("cracked", "warped", "regret", "avoid"),
+    "frying pan": ("peeling", "scratched", "regret", "avoid"),
+    "saucepan": ("peeling", "scratched", "regret", "avoid"),
+    "chef knife": ("chipped", "broke", "regret", "avoid"),
+}
+
+
+def warning_words(query: ParsedQuery) -> tuple[str, ...]:
+    """The words a warning search adds to the product's title word ("kettle died"): its type's own, else its category's."""
+    return WARNING_SEARCHES_BY_TYPE.get(query.product_type or "") or WARNING_SEARCHES.get(query.category, ())
 
 
 class ParseSource:
@@ -241,7 +254,7 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
     """
     terms = finder_terms(query.product_type)
     pairs = [(subreddit, term) for term in terms for subreddit in query.subreddits][:max_free_searches]
-    warnings = WARNING_SEARCHES.get(query.category, ())[:max_warning_searches]
+    warnings = warning_words(query)[:max_warning_searches]
     pairs += [(query.subreddits[0], f"{terms[0]} {warning}") for warning in warnings]
     posts: dict[str, dict] = {}
     for subreddit, term in pairs:
@@ -391,7 +404,7 @@ class BrightDataSource:
     def _searches(self, query: ParsedQuery) -> list[tuple[str, str]]:
         terms = finder_terms(query.product_type)
         pairs = [(subreddit, term) for term in terms for subreddit in query.subreddits][:self.max_searches]
-        warnings = WARNING_SEARCHES.get(query.category, ())[:self.max_warning_searches]
+        warnings = warning_words(query)[:self.max_warning_searches]
         return pairs + [(query.subreddits[0], f"{terms[0]} {warning}") for warning in warnings]
 
     def _start_budget(self, searching: int) -> None:
@@ -650,7 +663,9 @@ def _posted_before(post: dict, moment: datetime) -> bool:
 # Something went wrong: what feeds the "skip these" list and the downsides. Each category has its own words:
 # "peeling" is a failing pan but, in skincare, a product, and "breakouts" or "acne" alone are usually the need
 # ("best cleanser for breakouts"), so neither is a skincare warning.
-_SHARED_WARNINGS = r"regret\w*|avoid|disappoint(?:ed|ing)|worst|returned"
+# "regret" only as a real regret: never "will I regret not using…", "no regrets" or "won't regret" (11 Oct 2026).
+_SHARED_WARNINGS = (r"(?<!no )(?<!won't )(?<!never )(?<!don't )(?<!will i )regret\w*(?! not)(?! skipping)"
+                    r"|avoid|disappoint(?:ed|ing)|worst|returned")
 _WARNINGS = {
     "kitchen": re.compile(
         # "broke" only as a failure ("broke within a year", "it broke"), never "broke them down" or "broke student";
@@ -659,7 +674,8 @@ _WARNINGS = {
         r"|broke in (?:a|an|one|two|three|four|five|six|\d+|under|less|the first|just|only)\b"
         r"|(?:it|mine|already|just|has|have|had) broke|broken"
         r"|failed|stopped working|don['’]?t buy|never again|recall(?:s|ed)?"
-        r"|only lasted|lasted only|rust(?:s|ed|ing|y)?|cracked|chipped|flaking|peeling|leaking)\b"
+        r"|only lasted|lasted only|rust(?:s|ed|ing|y)?|cracked|chipped|flaking|peeling|leaking|warp(?:ed|ing|s)?"
+        r"|scratch(?:ed|es))\b"
     ),
     "skincare": re.compile(
         rf"\b(?:{_SHARED_WARNINGS}|irritat(?:ion|ed|ing)|reactions?|burn(?:s|ed|t|ing)?|rash(?:es)?|(?:broke|breaking) me out)\b"
