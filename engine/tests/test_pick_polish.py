@@ -540,6 +540,24 @@ def test_a_brand_picks_model_shows_its_checked_price(tmp_path):
         render_markdown(result.answer))
 
 
+def test_a_brand_picks_model_with_no_price_says_where_it_is_sold(tmp_path):
+    # Found in b06 at 16 threads, 10 Oct 2026 (late): "Most named model: Bonavita gooseneck" said nothing, though its entry
+    # says a UK shop sells it (no one price fits the name). Where it's sold is shown instead of a price.
+    from engine.answer import render_markdown
+    from engine.tests.test_availability import listed
+
+    sold = listed(FIBROX, available=True, price=None, shop="Victorinox UK")
+    result = answer_request(KNIFE_REQUEST, library_dir=knife_library(tmp_path, fibrox=(1, 1)), prices=[sold],
+                            today=TODAY)
+    victorinox = next(pick for pick in result.answer.picks if pick.name == VICTORINOX)
+    assert victorinox.model_price == "sold at Victorinox UK, checked 9 Oct 2026"
+    assert "Most named model: Victorinox Fibrox chef knife (sold at Victorinox UK, checked 9 Oct 2026)" in (
+        render_markdown(result.answer))
+    unchecked = answer_request(KNIFE_REQUEST, library_dir=knife_library(tmp_path / "again", fibrox=(1, 1)), prices=[],
+                               today=TODAY)
+    assert next(p for p in unchecked.answer.picks if p.name == VICTORINOX).model_price is None
+
+
 # --- 7. A brand or line on the skip list that a pick belongs to (10 Oct 2026) ---
 # Found reading the answers: b08 showed the pick "Lodge (their cast iron skillets)" and, under Skip these, "Lodge pans
 # (their cast iron skillets)"; b06 the pick "Fellow Stagg EKG" and the skip "Fellow Stagg (their electric kettles)".

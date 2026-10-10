@@ -92,7 +92,9 @@ from dataclasses import dataclass, field, replace
 from datetime import date
 from pathlib import Path
 
-from engine.answer import Answer, _every_quote, comment_bodies, render_markdown, shown_price, write_answer
+from engine.answer import (
+    Answer, _every_quote, comment_bodies, render_markdown, shown_availability, shown_price, write_answer,
+)
 from engine.care_tips import CareTips, attach_care_tips, credible_care_tips
 from engine.config import (
     BRAND_MODEL_GENERIC_WORDS,
@@ -674,7 +676,8 @@ def _brand_models(ranking: RankingResult, groups: list[ProductGroup], product_ty
     model's checked price, as the price line words it}) (10 Oct 2026). A model is a specific product of the brand
     still in the ranking (_same_brand), with at least BRAND_MODEL_MIN_CREDIBLE credible recommendations, whose name
     says more than the brand and the product type (_names_a_model). The most credible recommendations win, then the
-    higher score. A brand pick with none is left out; a model with no price checked has no price."""
+    higher score. A brand pick with none is left out; a model with no price checked has no price, but one a shop is
+    known to sell says where ("sold at The English Coffee Company, checked 10 Oct 2026")."""
     by_key = {g.key: g for g in groups}
     models, prices = {}, {}
     for brand in ranking.products:
@@ -691,6 +694,9 @@ def _brand_models(ranking: RankingResult, groups: list[ProductGroup], product_ty
             check = (price_checks or {}).get(model.key)
             if check is not None and check.price is not None and check.price.price is not None:
                 prices[brand.key] = shown_price(check).text
+            elif (sold := shown_availability(check)).available is True:
+                # No one price fits the name, but a shop sells it (10 Oct 2026, late: "Bonavita gooseneck").
+                prices[brand.key] = sold.text[:1].lower() + sold.text[1:]
     return models, prices
 
 
