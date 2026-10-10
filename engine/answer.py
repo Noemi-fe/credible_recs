@@ -66,6 +66,7 @@ from engine.config import (
     DOWNSIDES_PER_PICK,
     LOOK_FOR_NOTES,
     OPPOSITE_QUOTE_PATTERNS,
+    QUOTE_VIEW_WORDS,
     MIN_CREDIBLE_MENTIONS,
     MIN_QUOTES_PER_PICK,
     MIN_THREADS,
@@ -412,13 +413,25 @@ def _most_credible_first(items: Iterable[ScoredMention]) -> list[ScoredMention]:
 
 
 def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = ()) -> list[ScoredMention]:
-    """The most credible first, but the quotes that name their product before those that don't (10 Oct 2026: out of
-    context, "Others I have used and not had any issues with:" says little), and a quote that says the opposite of
-    what the request asks ("does leave a white cast") after every other (_says_the_opposite). Each is still shown
-    when there's room."""
+    """The most credible first, but the quotes that name their product and give a view before those that only name
+    it, and those before the rest (10 Oct 2026: out of context, "Others I have used and not had any issues with:" says
+    little, and so does "I have a Baratza Encore, Timemore C2 and a JX"), and a quote that says the opposite of what
+    the request asks ("does leave a white cast") after every other (_says_the_opposite). Each is still shown when
+    there's room."""
     ordered = _most_credible_first(items)
-    return sorted(ordered, key=lambda m: (_says_the_opposite(m.quote, asks),
-                                          not _names_product(m.quote, m.product_name, m.category)))
+
+    def tier(m: ScoredMention) -> int:  # 0: names it and gives a view; 1: only names it; 2: neither
+        names = _names_product(m.quote, m.product_name, m.category)
+        return 0 if names and _gives_a_view(m.quote) else 1 if names else 2
+
+    return sorted(ordered, key=lambda m: (_says_the_opposite(m.quote, asks), tier(m)))
+
+
+def _gives_a_view(quote: str) -> bool:
+    """Whether the quote says what the writer thinks or went through (config.QUOTE_VIEW_WORDS: "great", "recommend",
+    "lasted"...), rather than only that they own it."""
+    text = " ".join(re.findall(r"[a-z0-9']+", quote.lower().replace("’", "'")))
+    return any(re.search(rf"(?<![a-z0-9']){re.escape(word)}(?![a-z0-9'])", text) for word in QUOTE_VIEW_WORDS)
 
 
 def _says_the_opposite(quote: str, asks: Iterable[str]) -> bool:

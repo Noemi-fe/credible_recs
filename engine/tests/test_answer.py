@@ -116,7 +116,8 @@ def test_a_quote_whose_comment_is_gone_is_dropped():
 
 
 def test_a_quote_over_the_word_limit_is_dropped():
-    long_quote = "Tojiro " + " ".join(["word"] * QUOTE_MAX_WORDS) + " more."  # names it, so it's tried first
+    # Names it and gives a view, so it's tried first (10 Oct 2026).
+    long_quote = "Tojiro is great " + " ".join(["word"] * QUOTE_MAX_WORDS) + " more."
     data = [mention("Tojiro DP Gyuto", "t1", quote=long_quote)] + mentions(3, "Tojiro DP Gyuto", voice="medium")
     answer = write_answer(rank_products(data, "kitchen"), bodies_for(*data))
     assert long_quote not in shown_text(answer)
@@ -352,9 +353,9 @@ def test_the_markdown_shows_names_quotes_badges_links_and_the_breakdown():
 
 
 def test_quotes_written_over_several_lines_render_on_one():
-    data = [mention("A Knife", "t1", quote="A Knife: sharp.\nVery sharp.")] + mentions(3, "A Knife", voice="medium")
+    data = [mention("A Knife", "t1", quote="A Knife: great.\nVery sharp.")] + mentions(3, "A Knife", voice="medium")
     text = render_markdown(write_answer(rank_products(data, "kitchen"), bodies_for(*data)))
-    assert '"A Knife: sharp. Very sharp."' in text
+    assert '"A Knife: great. Very sharp."' in text
 
 
 # --- Comment bodies, read from threads ---
@@ -448,6 +449,17 @@ def test_quotes_that_name_the_product_are_shown_before_ones_that_dont():
     answer = write_answer(rank_products(items, "kitchen"), bodies_for(*items))
     assert [q.text for q in answer.picks[0].quotes][:2] == [m.quote for m in named]
     assert vague.quote in [q.text for q in answer.picks[0].quotes]  # still shown when there's room
+
+
+def test_a_quote_naming_the_product_and_saying_what_the_writer_thinks_comes_first():
+    # Found reading b09, 10 Oct 2026: "I have a Baratza Encore, Timemore C2 (at work), and a 1zpresso JX." named the C2
+    # but said nothing about it. Quotes that name the product and give a view or an experience come first.
+    owns = mention("Timemore C2", "t1", weight=0.6, quote="I have a Baratza Encore, Timemore C2 (at work), and a JX.")
+    views = [mention("Timemore C2", "t2", weight=0.3, quote="I have used a C2 almost every day for pour over, it is great."),
+             mention("Timemore C2", "t1", weight=0.28, quote="I'd recommend going for a C2 if you're getting a grinder.")]
+    items = [owns, *views]
+    answer = write_answer(rank_products(items, "kitchen"), bodies_for(*items))
+    assert [q.text for q in answer.picks[0].quotes][:2] == [m.quote for m in views]
 
 
 @pytest.mark.parametrize("name, quote", [

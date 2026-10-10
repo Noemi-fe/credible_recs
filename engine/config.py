@@ -654,3 +654,14 @@ OPPOSITE_QUOTE_PATTERNS: dict[str, tuple[str, ...]] = {
     "fragrance-free": (r"(?<!no )(?<!without )(?<!n't )\b(smells?|scent(ed)?|perfume(d)?)\b(?! ?-?free)",
                        r"\bfragrance(d)?\b(?! ?-?free)(?<!no fragrance)"),
 }
+
+# --- Quotes that say what the writer thinks come first (10 Oct 2026) ---
+# Decided by Claude, reported to Noemi. Found in b09: "I have a Baratza Encore, Timemore C2 (at work), and a 1zpresso
+# JX." named the C2 but gave no view. Among credible quotes, those that name the product and hold one of these words
+# (a view or an experience, whole words, any case) come first; then those that only name it; then the rest.
+QUOTE_VIEW_WORDS = ("great", "love", "loved", "loving", "recommend", "recommended", "best", "solid", "bargain",
+                    "amazing", "excellent", "fantastic", "good", "perfect", "happy", "favourite", "favorite", "works",
+                    "worked", "lasted", "lasts", "lasting", "years", "still", "swear", "hg", "gentle", "reliable",
+                    "durable", "sturdy", "quality", "value", "worth", "nice", "awesome", "brilliant", "impressed",
+                    "fine", "decent", "enjoy", "enjoyed", "helped", "improved", "game changer")
+# Not "like": "features like a scale" isn't a view.
