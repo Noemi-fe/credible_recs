@@ -595,11 +595,20 @@ _WARRANTY_AFTER = re.compile(r"^[\s-]*(?:(?:limited|full|extended|manufacturer'?
                              r"(?:warrant(?:y|ies)|guarantee)")
 
 
+# "you could buy one for £20 and keep it for 40 years": how long the reader could keep it, not the writer's own use
+# (b08, 10 Oct 2026, night: it gave the badge "30 years of use"). A "you" with "can", "could", "will"... (not "can't")
+# earlier in the same sentence, and no "I", "my" or "we" between it and the time.
+_READERS_TIME = re.compile(r"\byou(?:'ll|'d| will| would| can| could| should| might| may)(?!n't|'t|not)\b"
+                           r"(?:(?!\b(?:i|i've|i'd|i'm|my|mine|we|we've|our)\b)[^.!?;])*$")
+
+
 def _is_not_a_duration(text: str, match: re.Match) -> bool:
     """Whether "a day" or "one day" here is a frequency ("twice a day", "once a week") or a figure of speech
     ("one day it broke"), or the time is how long something can last rather than how long the writer used it,
-    or how long its warranty is."""
+    how long the reader could keep it, or how long its warranty is."""
     if _CLAIMED_LIFE.search(text[max(0, match.start() - 60):match.start()]):
+        return True
+    if _READERS_TIME.search(text[max(0, match.start() - 200):match.start()]):
         return True
     if _WARRANTY_AFTER.search(text[match.end():match.end() + 40]):
         return True
