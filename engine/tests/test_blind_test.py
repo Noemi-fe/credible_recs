@@ -279,6 +279,20 @@ def test_packets_show_the_answers_as_a_b_and_c_and_the_key_says_which_is_which(t
     assert sorted(saved["T01"]["b01"].values()) == sorted(blind_test.TOOLS)
 
 
+def test_each_packet_is_also_a_plain_web_page_testers_can_open(tmp_path, monkeypatch):
+    # Testers shouldn't have to read Markdown's stars: each packet is also written as a simple page, phone-friendly,
+    # with every answer's text escaped (an answer can't add its own HTML).
+    folder = fake_capture(tmp_path, monkeypatch)
+    fill_shown(folder, text="**1. A <b>bold</b> product** & more")
+    build_packets(folder, questions_file(tmp_path), [Tester("T01", "skincare")], seed=1)
+    page = (folder / "packets" / "T01.html").read_text(encoding="utf-8")
+    assert page.startswith("<!doctype html>") and '<meta name="viewport"' in page
+    assert "<h2>Question 1: &quot;gentle exfoliant for sensitive skin under £30&quot;</h2>" in page
+    assert "<h3>Answer A</h3>" in page and "<h3>Answer C</h3>" in page
+    assert "<strong>1. A &lt;b&gt;bold&lt;/b&gt; product</strong> &amp; more" in page
+    assert "**" not in page and "<b>bold</b>" not in page
+
+
 def test_packets_are_refused_while_an_answer_to_show_is_missing(tmp_path, monkeypatch):
     folder = fake_capture(tmp_path, monkeypatch)
     fill_shown(folder)

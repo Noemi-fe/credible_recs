@@ -20,7 +20,8 @@
         testers.csv has the columns tester,category: skincare or kitchen (the tester gets that category's questions)
         or any (the questions fewest testers have so far). Each tester gets 5 questions; for each one, the three
         answers to show (shown/<tool>/<id>.md) named only A, B and C, in an order balanced across testers. Writes
-        packets/<tester>.md and key.json (which letter is which tool). Each question asks which answer the tester
+        packets/<tester>.md, the same as a plain page to give the tester (packets/<tester>.html), and key.json
+        (which letter is which tool). Each question asks which answer the tester
         would trust with their own money, and which least, so every response ranks all three. Refuses, writing
         nothing, while an answer to show is empty, names a tool ("ChatGPT", "Vetted"...) or has a pick longer than
         BLIND_TEST_WORDS_PER_PICK words.
@@ -37,6 +38,7 @@ formatting matched") is eval/blind_test/FORMAT.md (Noemi's decision, 10 Oct 2026
 """
 
 import csv
+import html
 import json
 import math
 import random
@@ -299,8 +301,51 @@ def build_packets(folder: Path, questions_path: Path, testers: list[Tester], see
                       "**And which would you trust least?** A / B / C", "",
                       "**How confident are you, from 1 to 5?**", "", "**Why? (optional)**", "", "---", ""]
         (folder / "packets" / f"{tester.id}.md").write_text("\n".join(lines), encoding="utf-8")
+        (folder / "packets" / f"{tester.id}.html").write_text(packet_page(tester.id, lines), encoding="utf-8")
     (folder / "key.json").write_text(json.dumps(key, indent=1), encoding="utf-8")
     return key
+
+
+_PAGE_STYLE = ("body{font:17px/1.5 system-ui,sans-serif;max-width:42rem;margin:0 auto;padding:16px;"
+               "background:#fff;color:#111}h3{margin-top:1.6em;border-top:1px solid #ccc;padding-top:.8em}"
+               "hr{margin:2em 0}")
+
+
+def packet_page(tester: str, lines: list[str]) -> str:
+    """A tester's packet as a plain, phone-friendly web page, from its Markdown lines: headings, paragraphs, **bold**
+    and rules only. Every text is escaped, so an answer can never add its own HTML."""
+    body, paragraph = [], []
+
+    def flush():
+        if paragraph:
+            body.append(f"<p>{_bold(' '.join(paragraph))}</p>")
+            paragraph.clear()
+
+    for line in lines:
+        heading = re.match(r"^(#{1,3}) (.*)$", line)
+        if heading:
+            flush()
+            level = len(heading.group(1))
+            body.append(f"<h{level}>{html.escape(heading.group(2))}</h{level}>")
+        elif line.strip() == "---":
+            flush()
+            body.append("<hr>")
+        elif not line.strip():
+            flush()
+        else:
+            paragraph.append(line.strip())
+    flush()
+    return ("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">"
+            "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+            f"<title>Blind test: {html.escape(tester)}</title><style>{_PAGE_STYLE}</style></head><body>\n"
+            + "\n".join(body) + "\n</body></html>\n")
+
+
+def _bold(text: str) -> str:
+    """Escaped text, with Markdown's **bold** turned into <strong>."""
+    parts = text.split("**")
+    return "".join(f"<strong>{html.escape(part)}</strong>" if i % 2 else html.escape(part)
+                   for i, part in enumerate(parts))
 
 
 def _giveaway(text: str) -> str | None:
