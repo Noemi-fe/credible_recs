@@ -625,14 +625,16 @@
    "category": "kitchen",
    "product_type": "frying pan",
    "facts": {
-    "non_stick": true
+    "non_stick": true,
+    "pfas_free": false
    },
    "sources": [
+    "https://www.all-clad.com/aboutnonstick",
     "https://www.all-clad.com/ha1-expert-cookware-nonstick-fry-pan-10-in.html",
-    "https://www.all-clad.com/ns-pro-ceramic-nonstick-fry-pan-with-lid-12-inch.html",
-    "https://www.williams-sonoma.com.au/all-clad-ns-pro-ceramic-nonstick-fry-pan-set"
+    "https://www.all-clad.com/cookware/materials/nonstick.html",
+    "https://www.divertimenti.co.uk/products/all-clad-ha1-frying-pan-lid-30cm"
    ],
-   "checked_on": "2026-10-10"
+   "checked_on": "2026-10-11"
   },
   {
    "product": "Tefal non-stick pan",
@@ -1084,6 +1086,91 @@
     "https://www.dermalogica.co.uk/products/daily-milkfoliant"
    ],
    "checked_on": "2026-10-10"
+  },
+  {
+   "product": "Beauty of Joseon Matte Sun Stick: Mugwort + Camelia SPF50+ PA++++",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "facts": {
+    "filters": "chemical",
+    "fragrance_free": true,
+    "finish": "matte"
+   },
+   "sources": [
+    "https://ie.beautyofjoseon.com/products/matte-sun-stick-mugwort-camelia",
+    "https://beautyofjoseon.co.kr/product/detail.html?product_no=22"
+   ],
+   "checked_on": "2026-10-11"
+  },
+  {
+   "product": "Good Molecules Gentle Retinol Cream",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "strength": "gentle",
+    "prescription_only": false,
+    "fragrance_free": true,
+    "maker_warns_sensitive": false
+   },
+   "sources": [
+    "https://www.amazon.com/dp/B09BST7MMP"
+   ],
+   "checked_on": "2026-10-11"
+  },
+  {
+   "product": "COSRX Balancium Comfort Ceramide Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": false
+   },
+   "sources": [
+    "https://www.cosrx.com/products/balancium-comfort-ceramide-cream"
+   ],
+   "checked_on": "2026-10-11"
+  },
+  {
+   "product": "Tramontina Professional Nonstick",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "non_stick": true,
+    "pfas_free": false,
+    "induction": false
+   },
+   "sources": [
+    "https://www.tramontina.com/products/pro-series-nonstick-fry-pan",
+    "https://www.tramontina.co.uk/products/tramontina-professional-non-stick-frying-pan-30cm-3-0l-20890030",
+    "https://www.costco.com/p/-/tramontina-professional-12-restaurant-fry-pan-nonstick-aluminum/100704291"
+   ],
+   "checked_on": "2026-10-11"
+  },
+  {
+   "product": "Purito Oat In Calming Gel Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true,
+    "texture": "light"
+   },
+   "sources": [
+    "https://purito.com/product/oat-in-calming-gel-cream/"
+   ],
+   "checked_on": "2026-10-11"
+  },
+  {
+   "product": "Lodge Carbon Steel Skillet",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true,
+    "non_stick": false,
+    "induction": true
+   },
+   "sources": [
+    "https://www.lodgecastiron.com/products/carbon-steel-skillet"
+   ],
+   "checked_on": "2026-10-11"
   }
  ]
 }
