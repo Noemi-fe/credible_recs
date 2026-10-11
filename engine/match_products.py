@@ -97,8 +97,9 @@ MAX_WORDS_JOINED = 3
 DOUBLED_MIN_LENGTH = 3
 # Letters moved within this many neighbouring places are a slip ("Creseut" for "Creuset": three places).
 MOVED_LETTERS_SPAN = 3
-# Words a slip apart that are two different words: "retinal" and "retinol" are two retinoids (10 Oct 2026).
-NOT_SLIPS = frozenset({frozenset({"retinal", "retinol"})})
+# Words a slip apart that are two different words: "retinal" and "retinol" are two retinoids (10 Oct 2026); Prequel's
+# "Pre-Gleanse" is a cleansing balm, not its "Gleanser" (11 Oct 2026, b05).
+NOT_SLIPS = frozenset({frozenset({"retinal", "retinol"}), frozenset({"gleanse", "gleanser"})})
 # "non" before a model word says which model a name is not: "1zpresso JX (non pro)" is the plain JX.
 NEGATION = "non"
 # A short name written out can start with another short name, written out in turn, at most this many times.

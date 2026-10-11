@@ -430,6 +430,13 @@ def test_the_shipped_short_names_keep_other_models_apart():
     assert not same_product("CeraVe Hydrating Cleanser", "CeraVe Hydrating Foaming Oil Cleanser", skincare)
 
 
+def test_gleanse_and_gleanser_are_never_a_slip():
+    # Found reading b05, 11 Oct 2026: Prequel's Pre-Gleanse (a cleansing balm) read as a one-letter slip of its
+    # Gleanser, so "Prequel's Gleanser" fitted two products and its writers' support was set aside as a line.
+    assert not same_product("Prequel's Gleanser", "Prequel Pre-Gleanse")
+    assert same_product("Prequel Gleaser", "Prequel Gleanser")  # a real slip still is one
+
+
 def test_retinal_and_retinol_are_never_a_slip():
     # From the library merges (10 Oct 2026): one letter apart, but two different retinoids.
     assert not same_product("Medik8 retinal", "Medik8 retinol")
