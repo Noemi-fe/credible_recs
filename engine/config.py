@@ -831,3 +831,7 @@ ARCHIVE_MAX_SEARCHES = 16
 ARCHIVE_POSTS_EACH = 100
 ARCHIVE_OLDER_YEARS = 3
 ARCHIVE_SEARCH_MAX_FAILURES = 3
+# 12 Oct 2026: a title search over a big subreddit's whole history timed out, one bounded by dates didn't (r/curlyhair,
+# "conditioner": 35 s for the last 3 years, 11 s for the 6 before). So both rounds are bounded: the last
+# ARCHIVE_OLDER_YEARS years, then back to ARCHIVE_OLDEST_FACTOR times as far (9 years).
+ARCHIVE_OLDEST_FACTOR = 3

@@ -325,9 +325,9 @@ class FakeArchiveClient:
         self.asked: list[dict] = []
         self.reads: list[tuple[str, str | None]] = []
 
-    def search_posts(self, subreddit, title, limit=25, before=None):
+    def search_posts(self, subreddit, title, limit=25, before=None, after=None):
         self.searches.append((subreddit, title))
-        self.asked.append({"limit": limit, "before": before})
+        self.asked.append({"limit": limit, "before": before, "after": after})
         if self.fail_search:
             raise ArcticShiftError("Arctic Shift answered 422: Timeout. Maybe slow down a bit")
         return [dict(p) for p in self.posts if p["subreddit"] == subreddit]
@@ -421,11 +421,11 @@ def test_one_failed_archive_search_doesnt_end_the_round():
     # 11 Oct 2026, from the data builders' findings: a timeout in one subreddit ended the whole search, so the later
     # subreddits (and the warning searches) were never looked at. Now the next search runs, and the failed one is named.
     class FailsFirst(FakeArchiveClient):
-        def search_posts(self, subreddit, title, limit=25, before=None):
+        def search_posts(self, subreddit, title, limit=25, before=None, after=None):
             if not self.searches:
                 self.searches.append((subreddit, title))
                 raise ArcticShiftError("Arctic Shift answered 422: Timeout. Maybe slow down a bit")
-            return super().search_posts(subreddit, title, limit, before)
+            return super().search_posts(subreddit, title, limit, before, after)
 
     client = FailsFirst(kettle_posts())
     source = ArchiveSource(client)
@@ -444,15 +444,18 @@ def test_the_archive_search_covers_every_subreddit_and_older_threads():
     assert searched == set(SUBREDDITS["haircare"])
     assert {ask["limit"] for ask in client.asked} == {100}
     assert any(ask["before"] for ask in client.asked) and any(not ask["before"] for ask in client.asked)
+    # Every title search is bounded by dates: a search over a big subreddit's whole history timed out (12 Oct 2026).
+    titles = [ask for ask, (_, term) in zip(client.asked, client.searches) if term == "shampoo"]
+    assert titles and all(ask["after"] for ask in titles)
 
 
 def test_an_archive_search_failing_later_keeps_what_was_found():
     class FailsSecond(FakeArchiveClient):
-        def search_posts(self, subreddit, title, limit=25, before=None):
+        def search_posts(self, subreddit, title, limit=25, before=None, after=None):
             if self.searches:
                 self.searches.append((subreddit, title))
                 raise ArcticShiftError("Arctic Shift answered 422: Timeout. Maybe slow down a bit")
-            return super().search_posts(subreddit, title, limit, before)
+            return super().search_posts(subreddit, title, limit, before, after)
 
     client = FailsSecond(kettle_posts())
     threads = ArchiveSource(client).find_threads(parse_query(KETTLE), limit=6)

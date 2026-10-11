@@ -33,6 +33,7 @@ from engine.config import (
     ARCHIVE_DOWN_MINUTES,
     ARCHIVE_MAX_SEARCHES,
     ARCHIVE_OLDER_YEARS,
+    ARCHIVE_OLDEST_FACTOR,
     ARCHIVE_POSTS_EACH,
     ARCHIVE_SEARCH_MAX_FAILURES,
     BRIGHT_DATA_ADD_RECORD_RESERVE,
@@ -269,8 +270,9 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
 
     1. The product's title words, term by term and subreddit by subreddit, up to `max_free_searches`, the newest
        `posts_each` posts each.
-    2. With `older_than_years`, the same searches again for posts from before that many years ago: big threads are
-       often old ones (11 Oct 2026: haircare's were out of reach).
+    2. With `older_than_years`, round 1 covers only that many recent years, and the same searches run again for the
+       years before, back to ARCHIVE_OLDEST_FACTOR times as far: big threads are often old ones (11 Oct 2026:
+       haircare's were out of reach), and a search bounded by dates doesn't time out over a big subreddit's history.
     3. Warning searches, so threads about failures and regrets are among the candidates: the first title word
        with each of WARNING_SEARCHES ("kettle died", "kettle regret"…), in the request's most specialist
        subreddit, up to `max_warning_searches`.
@@ -280,24 +282,27 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
     a search that found nothing. Parse's paid search never runs warning searches: they would cost credits.
     """
     terms = finder_terms(query.product_type)
-    pairs = [(subreddit, term, None) for term in terms for subreddit in query.subreddits][:max_free_searches]
+    titles = [(subreddit, term) for term in terms for subreddit in query.subreddits][:max_free_searches]
+    pairs: list[tuple[str, str, dict]] = [(subreddit, term, {}) for subreddit, term in titles]
     if older_than_years:
-        before = _years_before(now or datetime.now(UTC), older_than_years).date().isoformat()
-        pairs += [(subreddit, term, before) for subreddit, term, _ in pairs]
+        # Two date windows, each search bounded (12 Oct 2026: a search over a big subreddit's whole history timed out).
+        now = now or datetime.now(UTC)
+        split = _years_before(now, older_than_years).date().isoformat()
+        oldest = _years_before(now, older_than_years * ARCHIVE_OLDEST_FACTOR).date().isoformat()
+        pairs = ([(subreddit, term, {"after": split}) for subreddit, term in titles]
+                 + [(subreddit, term, {"after": oldest, "before": split}) for subreddit, term in titles])
     warnings = warning_words(query)[:max_warning_searches]
-    pairs += [(query.subreddits[0], f"{terms[0]} {warning}", None) for warning in warnings]
+    pairs += [(query.subreddits[0], f"{terms[0]} {warning}", {}) for warning in warnings]
     posts: dict[str, dict] = {}
     failures = 0
-    for subreddit, term, before in pairs:
+    for subreddit, term, dates in pairs:
         try:
-            if before is None:
-                found = finder.search_posts(subreddit, term, limit=posts_each)
-            else:
-                found = finder.search_posts(subreddit, term, limit=posts_each, before=before)
+            found = finder.search_posts(subreddit, term, limit=posts_each, **dates)
         except ArcticShiftError as error:
             failures += 1
             if failed is not None:
-                failed.append(f"r/{subreddit} for \"{term}\"{f' before {before}' if before else ''} ({error})")
+                window = " ".join(f"{key} {value}" for key, value in dates.items())
+                failed.append(f"r/{subreddit} for \"{term}\"{f' ({window})' if window else ''}: {error}")
             if failures >= max_failures:
                 if raise_if_nothing and not posts:
                     raise

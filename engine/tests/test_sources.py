@@ -395,7 +395,7 @@ class FakeFinder:
         self.fail = fail
         self.searches: list[tuple[str, str]] = []
 
-    def search_posts(self, subreddit, title, limit=25, before=None):  # `before`: the real client's, 11 Oct 2026
+    def search_posts(self, subreddit, title, limit=25, before=None, after=None):  # the real client's (11-12 Oct 2026)
         self.searches.append((subreddit, title))
         if self.fail:
             raise ArcticShiftError("Arctic Shift answered 422: Timeout. Maybe slow down a bit")
