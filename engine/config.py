@@ -753,3 +753,27 @@ ARCHIVE_DOWN_MINUTES = 30
 # Writers who agree echo short phrases, not whole sentences: in the library (159 threads, 11 Oct 2026), two writers not
 # answering each other shared at most 9 words in a row, apart from the one copy found, which shared 59.
 COPIED_TEXT_MIN_WORDS = 20
+
+# --- Going live (Noemi, 11 Oct 2026) ---
+# Noemi approved putting the demo online as a Hugging Face Space, with GoatCounter visit counts, a "First time here?"
+# question and an anonymous feedback form (engine/web.py --public, engine/feedback.py, deploy/huggingface/DEPLOY.md).
+# The values below were chosen by Claude to carry that out (technical values, reported to her).
+# Feedback (engine/feedback.py): a comment is at most this many characters, as the page's comment box says; the product
+# type sent with it at most this many (module 1's types are a few words). The request it is about has the search's own
+# limit, WEB_MAX_REQUEST_CHARS.
+FEEDBACK_MAX_COMMENT_CHARS = 1000
+FEEDBACK_MAX_PRODUCT_TYPE_CHARS = 100
+# A feedback request (JSON) longer than this many bytes is refused (413) before it is read: the longest real one, every
+# text at its limit in a three-byte script, is about 5,000 bytes.
+FEEDBACK_MAX_BODY_BYTES = 8192
+# On the Space, feedback waits in memory and is uploaded to Noemi's private dataset in one batch at most once every this
+# many seconds, so a click never makes a commit of its own (Hugging Face advises 5 minutes or more between such commits).
+FEEDBACK_UPLOAD_EVERY_SECONDS = 300
+# If uploads keep failing, at most this many records wait; past it new feedback is refused (503) instead of filling memory.
+FEEDBACK_MAX_PENDING = 10000
+# Public mode only (engine/web.py): each visitor, told apart by address in memory only (never stored or logged), may ask
+# for RATE_LIMIT_ANSWERS answers and send RATE_LIMIT_FEEDBACK pieces of feedback in any RATE_LIMIT_WINDOW_SECONDS; more
+# gets a polite "please wait" (429). Remembered answers count too. Feedback is tighter: one per answer is all a page sends.
+RATE_LIMIT_WINDOW_SECONDS = 600
+RATE_LIMIT_ANSWERS = 30
+RATE_LIMIT_FEEDBACK = 15
