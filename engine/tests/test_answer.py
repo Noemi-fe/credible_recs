@@ -645,6 +645,11 @@ def test_a_quote_saying_the_opposite_of_what_was_asked_is_shown_last():
     ("no white cast", "It does leave a slight white cast.", True),
     ("no white cast", "It doesn't leave a white cast.", False),
     ("no white cast", "No white cast, dries matte.", False),
+    # b02, 11 Oct 2026: a liked sunscreen's writer said milk sunscreens "will give you a white cast".
+    ("no white cast", "Only downside is they will give you a white cast.", True),
+    ("no white cast", "It gave me a slight white cast at first.", True),
+    ("no white cast", "It doesn't give a white cast at all.", False),
+    ("no white cast", "Never gives me any white cast.", False),
     ("fragrance-free", "It smells lovely, like roses.", True),
     ("fragrance-free", "It has a strong scent.", True),
     ("fragrance-free", "It's fragrance-free and gentle.", False),

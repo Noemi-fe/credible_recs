@@ -504,6 +504,11 @@ def _gives_a_view(quote: str) -> bool:
             or bool(_I_LIKE.search(text)))
 
 
+def says_the_opposite(quote: str, asks: Iterable[str]) -> bool:
+    """Whether the quote says the opposite of one of the request's asks (_says_the_opposite); the pipeline uses it too."""
+    return _says_the_opposite(quote, asks)
+
+
 def _says_the_opposite(quote: str, asks: Iterable[str]) -> bool:
     """Whether the quote says the opposite of one of the request's asks (config.OPPOSITE_QUOTE_PATTERNS): "it leaves a
     white cast" for "no white cast", "smells lovely" for "fragrance-free"."""

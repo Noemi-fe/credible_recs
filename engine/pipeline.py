@@ -95,7 +95,8 @@ from datetime import date
 from pathlib import Path
 
 from engine.answer import (
-    Answer, _every_quote, comment_bodies, render_markdown, shown_availability, shown_price, write_answer,
+    Answer, _every_quote, comment_bodies, render_markdown, says_the_opposite, shown_availability, shown_price,
+    write_answer,
 )
 from engine.care_tips import CareTips, attach_care_tips, credible_care_tips
 from engine.config import (
@@ -268,7 +269,7 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     result.notes_without_kind = [n.about for n in kind_mentions if n not in with_a_kind]
     result.contradicting_writers = sorted(contradicting_writers(groups, {c.id: c for t in threads for c in t.comments}))
     scored, kind_notes = _score(threads, checked, kept_groups, kinds, request_needs(query),
-                                set(result.contradicting_writers))
+                                set(result.contradicting_writers), request_asks(query))
     result.ranking, more_downsides = _fold_brand_skips(
         _fold_brand_picks(rank_products(scored, query.category, kind_notes, placements(kinds)), kept_groups, result),
         kept_groups, result)
@@ -765,7 +766,7 @@ def _same_brand(brand: ProductGroup, product: ProductGroup) -> bool:
 
 def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[ProductGroup], kinds,
            needs: tuple[Need, ...] = (),
-           contradicting: set[str] = frozenset()) -> tuple[list[ScoredMention], list[KindNote]]:
+           contradicting: set[str] = frozenset(), asks: tuple[str, ...] = ()) -> tuple[list[ScoredMention], list[KindNote]]:
     """A weight for every product mention and kind note of the threads read (module 5), ready for the ranking.
 
     `needs` are the request's needs (engine.needs.request_needs): a product mention whose comment talks about one of
@@ -800,7 +801,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
             voice = voice_of(comment)
             others = [o.product for o in res.kept if o.comment_id == m.comment_id and o.product != m.product]
             evidence = score_evidence(comment, m.product, m.stance, others)
-            met = needs_met(comment.body, needs, evidence.level == "long-term use")
+            met = _needs_talked_about(m.quote, comment.body, needs, asks, evidence.level == "long-term use")
             weight = mention_weight(voice, evidence, m.stance) * (NEED_MATCH_BOOST if met else 1)
             scored.append(ScoredMention(
                 product_key=group.key, product_name=group.name, category=group.category, thread_id=tid,
@@ -822,6 +823,15 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                     voice=voice.level, quote=n.quote, badges=badges(voice, evidence), author=_writer(comment),
                 ))
     return scored, notes
+
+
+def _needs_talked_about(quote: str, body: str, needs: tuple[Need, ...], asks: tuple[str, ...],
+                        long_term_use: bool = False) -> tuple[str, ...]:
+    """The request's needs a comment talks about (engine.needs.needs_met), for NEED_MATCH_BOOST; none when the
+    mention's quote says the opposite of what the request asks (engine.answer.says_the_opposite: "it will give you a
+    white cast" for a no-white-cast request; b02, 11 Oct 2026). Such a comment talks about the need, but against the
+    request."""
+    return () if says_the_opposite(quote, asks) else needs_met(body, needs, long_term_use)
 
 
 def _as_low(voice: VoiceScore) -> VoiceScore:

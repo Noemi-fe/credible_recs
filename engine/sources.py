@@ -104,6 +104,12 @@ def relevance(thread: Thread, product_type: str) -> float:
 
 # --- Threads saved on this machine ---
 
+def _thread_as_post(thread: Thread) -> dict:
+    """A saved thread in the shape rank_posts reads (a post's title, text, comment count, subreddit and date)."""
+    return {"title": thread.title, "selftext": thread.body, "num_comments": thread.num_comments,
+            "subreddit": thread.community, "created_utc": thread.created_at.timestamp()}
+
+
 class LocalSource:
     """Reads thread files from a folder shaped like data/gold/threads/ and picks the most relevant ones.
 
@@ -122,13 +128,17 @@ class LocalSource:
             self._threads = load_threads(self.folder)
 
         candidates = [without_unusable_comments(t) for t in self._threads if t.category == query.category]
-        scored = [(relevance(t, query.product_type), t) for t in candidates]
-        # Highest score first; on a tie, the thread with more comments.
-        best = sorted(
-            ((score, t) for score, t in scored if score > 0),
-            key=lambda pair: (pair[0], pair[1].num_comments),
-            reverse=True,
-        )
+        # Only threads that name the product somewhere (relevance) are read. Since 11 Oct 2026 they come in module 2's
+        # graded order (post_score: advice, the request's own needs, long-term use, comments; b10 had read "Best pots
+        # and pans set?" before a thread asking for a PFAS-free non-stick pan that lasts); then relevance, then the
+        # thread with more comments.
+        scored = []
+        for t in candidates:
+            if (points := relevance(t, query.product_type)) > 0:
+                graded = post_score(query, _thread_as_post(t))
+                if graded is not None:
+                    scored.append(((graded, points, t.num_comments), t))
+        best = sorted(scored, key=lambda pair: pair[0], reverse=True)
         return [t for _, t in best[:limit]]
 
 
@@ -602,36 +612,43 @@ def rank_posts(query: ParsedQuery, posts: list[dict], now: datetime | None = Non
     """
     needs = need_words(query)
     too_old = _years_before(now or datetime.now(UTC), SKINCARE_RECENT_YEARS)
-    scored = []
-    for post in posts:
-        title = (post.get("title") or "").strip()
-        lowered = title.lower()
-        if lowered in _GONE or post.get("removed_by_category") or (post.get("selftext") or "").strip() in _GONE:
-            continue
-        if _RECURRING.search(lowered):
-            continue
-        flair = (post.get("link_flair_text") or "").lower()
-        names_it = mentions_product(title, query.product_type)
-        need_matches = min(2, sum(_title_has(lowered, word) for word in needs))
-        if _is_advice(lowered, flair):
-            # Full points only for advice about this product or this need; a request about something else
-            # ("corporate gifts", flaired [Request]) earns 1.
-            score = 3.0 if (names_it or need_matches) else 1.0
-        else:
-            score = 0.0
-        score += 0.5 if "?" in title else 0.0
-        score += 1.0 if _LONG_TERM.search(lowered) else 0.0
-        score += 1.5 * need_matches
-        score += 2.0 if names_it else 0.0
-        score += math.log10(1 + (post.get("num_comments") or 0))
-        score -= 2.0 if (post.get("num_comments") or 0) < SMALL_THREAD else 0.0
-        score += 0.5 if query.subreddits and _subreddit(post) == query.subreddits[0].lower() else 0.0
-        score -= 1.5 if query.category == "skincare" and _posted_before(post, too_old) else 0.0
-        if not _ADVICE.search(lowered) and (_SHOP_NEWS.search(lowered) or (query.category == "kitchen" and _CARE.search(lowered))):
-            score -= 2.0
-        scored.append((score, post))
+    scored = [(score, post) for post in posts if (score := _post_score(query, post, needs, too_old)) is not None]
     scored.sort(key=lambda pair: pair[0], reverse=True)
     return [post for _, post in scored]
+
+
+def post_score(query: ParsedQuery, post: dict, now: datetime | None = None) -> float | None:
+    """One post's points by rank_posts' rules; None for a post rank_posts leaves out (deleted, removed, recurring)."""
+    return _post_score(query, post, need_words(query), _years_before(now or datetime.now(UTC), SKINCARE_RECENT_YEARS))
+
+
+def _post_score(query: ParsedQuery, post: dict, needs: list[str], too_old: datetime) -> float | None:
+    title = (post.get("title") or "").strip()
+    lowered = title.lower()
+    if lowered in _GONE or post.get("removed_by_category") or (post.get("selftext") or "").strip() in _GONE:
+        return None
+    if _RECURRING.search(lowered):
+        return None
+    flair = (post.get("link_flair_text") or "").lower()
+    names_it = mentions_product(title, query.product_type)
+    need_matches = min(2, sum(_title_has(lowered, word) for word in needs))
+    if _is_advice(lowered, flair):
+        # Full points only for advice about this product or this need; a request about something else
+        # ("corporate gifts", flaired [Request]) earns 1.
+        score = 3.0 if (names_it or need_matches) else 1.0
+    else:
+        score = 0.0
+    score += 0.5 if "?" in title else 0.0
+    score += 1.0 if _LONG_TERM.search(lowered) else 0.0
+    score += 1.5 * need_matches
+    score += 2.0 if names_it else 0.0
+    score += math.log10(1 + (post.get("num_comments") or 0))
+    score -= 2.0 if (post.get("num_comments") or 0) < SMALL_THREAD else 0.0
+    score += 0.5 if query.subreddits and _subreddit(post) == query.subreddits[0].lower() else 0.0
+    score -= 1.5 if query.category == "skincare" and _posted_before(post, too_old) else 0.0
+    if not _ADVICE.search(lowered) and (_SHOP_NEWS.search(lowered) or (query.category == "kitchen" and _CARE.search(lowered))):
+        score -= 2.0
+    return score
 
 
 def _is_advice(lowered_title: str, lowered_flair: str) -> bool:

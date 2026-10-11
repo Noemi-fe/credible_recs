@@ -158,6 +158,20 @@ def test_copies_count_once(tmp_path):
     assert sorted(m.comment_id for m in acme.mentions) == ["k5a", "k6a"]
 
 
+def test_a_quote_saying_the_opposite_of_the_ask_gets_no_boost_for_talking_about_it():
+    # Found reading b02, 11 Oct 2026: for "no white cast", a liked sunscreen's top comment said milk sunscreens "will
+    # give you a white cast". It talked about the need, but against the request, and still counted extra for it.
+    from engine.config import NEEDS
+    from engine.needs import Need
+    from engine.pipeline import _needs_talked_about
+
+    white_cast = (Need("no white cast", NEEDS["no white cast"]),)
+    against = "Love it, but it will give you a white cast."
+    assert _needs_talked_about(against, against, white_cast, ("no white cast",)) == ()
+    favour = "Love it, and there's no white cast at all."
+    assert _needs_talked_about(favour, favour, white_cast, ("no white cast",)) == ("no white cast",)
+
+
 class FakeProfiles:
     """Profiles as the cache would give them: every writer an old, active, well-regarded account."""
 

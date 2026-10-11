@@ -177,10 +177,14 @@ def test_respects_the_limit_and_returns_the_best_first(tmp_path):
 
 
 def test_title_outweighs_body_and_comments(tmp_path):
+    # Changed on purpose 11 Oct 2026: the library follows module 2's graded ranking, where naming the product in the
+    # title earns 2 points and comments count on a slow scale. Between threads of the same size, the one whose title
+    # names the product still comes first. Before, it came first whatever the sizes: a one-comment title match beat a
+    # 900-comment thread asking about lasting with the kettle in its post, which now comes first.
     source = local_source(tmp_path, [
         kitchen_thread("1body", "Something that lasts?", body="Thinking of an electric kettle.",
-                       comments=["The kettle from Dualit."] * 8, num_comments=900),
-        kitchen_thread("1title", "Electric kettle recommendations", comments=["No idea."]),
+                       comments=["The kettle from Dualit."] * 8, num_comments=60),
+        kitchen_thread("1title", "Electric kettle that lasts?", comments=["No idea."], num_comments=60),
     ])
     assert ids(source.find_threads(parse_query(KETTLE))) == ["1title", "1body"]
 
@@ -210,6 +214,22 @@ def test_an_unknown_product_type_falls_back_to_the_words_of_its_name():
     thread = Thread.model_validate(kitchen_thread("1x", "Best rice cooker?", body="Rice every day."))
     assert relevance(thread, "rice cooker") == 4
     assert relevance(thread, "Air Fryer") == 0
+
+
+def test_the_library_ranks_threads_by_module_2s_graded_ranking(tmp_path):
+    # Found reading b10, 11 Oct 2026: the library was ranked only by whether a thread names the product, then by its
+    # comments, so "Best pots and pans set?" and a request to fix a cast iron handle were read for "non-stick frying
+    # pan without PFAS that actually lasts", ahead of a thread asking exactly that. Module 2's ranking (rank_posts:
+    # advice, the request's own needs, long-term use, comments), the one Noemi's judgements grade, now orders the
+    # library too; a thread must still name the product somewhere to be read at all.
+    source = local_source(tmp_path, [
+        kitchen_thread("1generic", "Best pots and pans set?", comments=["A pan."] * 3, num_comments=300),
+        kitchen_thread("1onpoint", "Best nonstick pan without PFAS that will last?", comments=["A pan."] * 3,
+                       num_comments=40),
+        kitchen_thread("1nopan", "Best PFAS-free stuff that lasts?", comments=["Nothing here."], num_comments=500),
+    ])
+    found = source.find_threads(parse_query("non-stick frying pan without PFAS that actually lasts"), limit=5)
+    assert ids(found) == ["1onpoint", "1generic"]  # 1nopan never names a pan, so it isn't read
 
 
 def test_ties_go_to_the_thread_with_more_comments(tmp_path):

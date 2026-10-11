@@ -679,7 +679,11 @@ BRAND_MODEL_GENERIC_WORDS = ("the", "a", "their", "my", "one", "ones", "pan", "p
 OPPOSITE_QUOTE_PATTERNS: dict[str, tuple[str, ...]] = {
     "no white cast": (r"(?<!n't )(?<!not )(?<!never )(?<!no )\bleaves? (a |any |some |slight |a slight |a little |a bit "
                       r"of |an? obvious )?white cast",
-                      r"\b(has|have|had|with) (a |some |slight |a slight |a little |a bit of |an? obvious )?white cast"),
+                      r"\b(has|have|had|with) (a |some |slight |a slight |a little |a bit of |an? obvious )?white cast",
+                      # "will give you a white cast", "gave me a slight white cast" (b02, 11 Oct 2026); never
+                      # "doesn't give a white cast" or "never gives me any".
+                      r"(?<!n't )(?<!not )(?<!never )\b(gives?|gave|giving|causes?|caused) (you |me |us )?(a |any |some "
+                      r"|slight |a slight |a little |a bit of |an? obvious )?white cast"),
     "fragrance-free": (r"(?<!no )(?<!without )(?<!n't )\b(smells?|scent(ed)?|perfume(d)?)\b(?! ?-?free)",
                        r"\bfragrance(d)?\b(?! ?-?free)(?<!no fragrance)"),
 }
