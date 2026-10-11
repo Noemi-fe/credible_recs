@@ -110,6 +110,7 @@ from engine.config import (
     LIVE_CHECK_SHOWN_DAYS,
     NEED_MATCH_BOOST,
     OTHER_NAME_NOTE,
+    OTHER_KIND_WORDS,
     OTHER_TYPE_WORDS,
     PIPELINE_BRAND_PICKS,
     PICKS_SHOWN,
@@ -409,9 +410,14 @@ def _not_sets(mentions: list[ProductMention], result: PipelineResult) -> list[Pr
 
 def _names_a_set(product_type: str) -> bool:
     """Whether a type in the AI's words names something that holds, sharpens, covers or bundles a product ("knife
-    set", "knife blocks"), not the product: one of its words, singular or plural, is in config.OTHER_TYPE_WORDS."""
-    return any(word in OTHER_TYPE_WORDS or word.removesuffix("s") in OTHER_TYPE_WORDS
-               for word in product_type.strip().lower().split())
+    set", "knife blocks"), not the product: the word that says what it is, singular or plural, is in
+    config.OTHER_TYPE_WORDS. That word is the last one ("knife stand"), or the one before "of" ("set of knives"):
+    a "stand mixer" is a mixer (11 Oct 2026, when its every mention had been dropped)."""
+    words = product_type.strip().lower().split()
+    if not words:
+        return False
+    head = words[words.index("of") - 1] if "of" in words[1:] else words[-1]
+    return head in OTHER_TYPE_WORDS or head.removesuffix("s") in OTHER_TYPE_WORDS
 
 
 def _kind_mentions(checked: dict[str, CheckResult]) -> list[KindMention]:
@@ -497,7 +503,25 @@ def _another_type_by_ai(types: list[str], requested: str) -> bool:
         return True
     if _names_a_set(majority):
         return True
+    if requested not in {p.name for p in PRODUCT_TYPES}:
+        return not _same_kind(majority, requested)
     return not mentions_product(majority, requested)
+
+
+def _same_kind(product_type: str, requested: str) -> bool:
+    """For a type the open model named (11 Oct 2026, from the appliance builder's findings): the AI's type is the
+    requested one when it ends with its name ("basket air fryer" is an air fryer; "toaster oven" isn't a toaster), and
+    the word just before doesn't make it another kind (config.OTHER_KIND_WORDS: an "immersion blender" isn't a
+    blender)."""
+    def singular(word: str) -> str:
+        return word.removesuffix("es") if word.endswith(("ches", "shes", "sses", "xes")) else word.removesuffix("s")
+
+    words = [singular(w) for w in product_type.strip().lower().split()]
+    wanted = [singular(w) for w in requested.strip().lower().split()]
+    if not wanted or words[-len(wanted):] != wanted:
+        return False
+    before = words[:-len(wanted)]
+    return not (before and before[-1] in OTHER_KIND_WORDS)
 
 
 def _another_type_by_name(group: ProductGroup, query: ParsedQuery) -> bool:

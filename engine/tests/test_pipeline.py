@@ -316,6 +316,17 @@ def test_a_pick_known_by_another_name_outside_the_uk_says_so(tmp_path):
     ("skincare set", "moisturiser", True),
     ("gooseneck kettle", "electric kettle", False),
     ("chef's knife", "chef knife", False),
+    # 11 Oct 2026, from the appliance builder's findings: only the last word says what a thing is ("stand mixer" is a
+    # mixer, "knife stand" a stand), and for a type the open model named, another kind of it isn't it.
+    ("stand mixer", "stand mixer", False),
+    ("knife stand", "chef knife", True),
+    ("toaster oven", "toaster", True),
+    ("air fryer oven", "air fryer", True),
+    ("immersion blender", "blender", True),
+    ("hand mixer", "stand mixer", True),
+    ("pressure cooker", "rice cooker", True),
+    ("basket air fryer", "air fryer", False),
+    ("countertop blender", "blender", False),
 ])
 def test_the_words_that_make_a_type_another_one(product_type, requested, other):
     assert _another_type_by_ai([product_type], requested) is other

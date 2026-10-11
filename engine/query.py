@@ -192,6 +192,7 @@ class Routing:
     question: str | None = None
     message: str | None = None
     several: bool = False  # a question because the request names two products: the open model is never asked
+    clues: tuple[str, ...] = ()  # the clue words that alone placed the product ("pot"), when no product name did
 
 
 OUT_OF_SCOPE_MESSAGE = "Sorry, I only cover skincare, haircare and kitchen gear for now, so I can't recommend that one."
@@ -203,7 +204,8 @@ def classify(text: str) -> Routing:
     if _mentions_any(lowered, OUT_OF_SCOPE_LOOKALIKES):
         return Routing("out_of_scope", message=OUT_OF_SCOPE_MESSAGE)
     lowered = _set_aside(lowered, LOOKALIKES)
-    found = _find_products(lowered, strong=True) or _clues_that_fit(_find_products(lowered, strong=False), lowered)
+    named = _find_products(lowered, strong=True)
+    found = named or _clues_that_fit(_find_products(lowered, strong=False), lowered)
     names = list(dict.fromkeys(p.name for p in found))
 
     if len(names) > 1:
@@ -211,7 +213,9 @@ def classify(text: str) -> Routing:
                        several=True)
     if names:
         product = next(p for p in found if p.name == names[0])
-        return Routing("ok", product.category, product.name, product.subreddits or SUBREDDITS[product.category])
+        clues = () if named else tuple(h for h in product.hints if _mentions_any(lowered, (h,)))
+        return Routing("ok", product.category, product.name, product.subreddits or SUBREDDITS[product.category],
+                       clues=clues)
     if _mentions_any(lowered, OUT_OF_SCOPE, skip_requirements=True):
         return Routing("out_of_scope", message=OUT_OF_SCOPE_MESSAGE)
     for category, hints in CATEGORY_HINTS.items():
@@ -342,6 +346,8 @@ def parse_query(text: str, model=_DEFAULT) -> ParsedQuery:
     model = default_query_model() if model is _DEFAULT else model
     if routing.status == "clarify" and not routing.several and model is not None:
         routing = routed_by_model(text, model) or routing
+    elif routing.status == "ok" and routing.clues and model is not None:
+        routing = _second_opinion(text, routing, model)
     if routing.status == "out_of_scope":
         return ParsedQuery(text=original, status="out_of_scope", message=routing.message)
 
@@ -365,6 +371,20 @@ def parse_query(text: str, model=_DEFAULT) -> ParsedQuery:
         search_terms=search_terms(routing.product_type, constraints),
         subreddits=_condition_subreddits(routing.subreddits, constraints.skin_types),
     )
+
+
+def _second_opinion(text: str, routing: Routing, model) -> Routing:
+    """For a request the rules placed by a clue word alone ("pot"): the open model's reading when it names another
+    product, in the request's own words and without that clue word ("rice cooker with a non-stick pot" is a rice
+    cooker, the pot a part of it; 11 Oct 2026). Otherwise, or when the model is unsure, the rules' routing stands."""
+    from engine.query_model import routed_by_model
+
+    other = routed_by_model(text, model)
+    if other is None or other.status != "ok" or other.product_type == routing.product_type:
+        return routing
+    if any(_mentions_any(other.product_type, (clue,)) for clue in routing.clues):
+        return routing  # "stainless pot" is the rules' saucepan
+    return other
 
 
 def _condition_subreddits(subreddits: Iterable[str], skin_types: Iterable[str]) -> list[str]:

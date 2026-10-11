@@ -477,6 +477,15 @@ def test_an_age_is_not_a_duration_of_use():
     assert evidence_for("I'm 35 years old and I like the Lodge skillet.").level == "short-term use"
 
 
+def test_a_time_no_one_could_use_something_for_is_not_a_duration_of_use():
+    # 11 Oct 2026, from the thin-types builder's findings: a teapot note got the badge "400 years of use" from a
+    # tradition's age. A person's own use is at most USE_MAX_YEARS.
+    evidence = evidence_for("This Lodge skillet style has a 400 year history and I've used mine for 2 years.")
+    assert "400 years of use" not in " ".join(evidence.reasons)
+    assert evidence_for("Lodge skillet: the design is 150 years old and it works.").level != "long-term use"
+    assert evidence_for("I've cooked with my Lodge skillet for 40 years.").level == "long-term use"
+
+
 def test_since_a_year_counts_from_when_the_comment_was_written():
     # "since 2025" in a comment from early 2026 is months, not years.
     assert evidence_for("Had my Lodge skillet since 2025.", created="2026-02-01T10:00:00Z").level == "short-term use"

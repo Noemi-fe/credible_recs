@@ -677,6 +677,8 @@ def _longest_use(text: str, written: datetime | None) -> tuple[float | None, str
             continue
         count_text, unit = match.group(1), match.group(2)
         count = float(count_text) if count_text[0].isdigit() else _NUMBER_WORDS[count_text]
+        if count * _MONTHS_PER_UNIT[unit] > config.USE_MAX_YEARS * 12:
+            continue  # a tradition's or a design's age ("a 400 year history"), not anyone's use (11 Oct 2026)
         plural = "s" if count != 1 else ""
         found.append((count * _MONTHS_PER_UNIT[unit], f"{count_text} {_UNIT_NAMES[unit]}{plural} of use"))
     if written is not None:

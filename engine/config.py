@@ -644,6 +644,9 @@ UNCONFIRMED_FACT_NAMES: dict[str, str] = {
 # sharpens, covers or bundles the product, not the product, so it is another type (engine/pipeline.py,
 # _another_type_by_ai). Whole words, with or without a plural "s"; "steel" and "stone" aren't here: "stainless steel
 # kettle" and "stone frying pan" are the product.
+# Words that, just before a product type the open model named, make another kind of product (11 Oct 2026): an
+# "immersion blender" or a "stick blender" isn't a blender, a "hand mixer" isn't a mixer. Chosen by Claude, reported.
+OTHER_KIND_WORDS = ("immersion", "stick", "hand", "handheld")
 OTHER_TYPE_WORDS = ("set", "block", "sharpener", "stand", "rack", "holder", "roll", "bag", "case", "cover", "lid", "kit",
                     "bundle", "strip", "guard", "sheath")
 
@@ -811,3 +814,9 @@ FEEDBACK_MAX_PENDING = 10000
 RATE_LIMIT_WINDOW_SECONDS = 600
 RATE_LIMIT_ANSWERS = 30
 RATE_LIMIT_FEEDBACK = 15
+
+# --- Time of use (11 Oct 2026) ---
+# A time longer than this many years is nobody's own use of a product: "a 400 year history" is a tradition's age (a
+# teapot note had the badge "400 years of use"). Chosen by Claude, reported to Noemi: a long cooking life with one pan
+# (40 or 50 years, often inherited) still counts.
+USE_MAX_YEARS = 60

@@ -155,3 +155,19 @@ def test_a_model_library_that_fails_to_load_leaves_the_rules_alone(tmp_path, mon
     monkeypatch.delitem(sys.modules, "llama_cpp", raising=False)
     monkeypatch.setattr(sys, "meta_path", [_BrokenLlama(), *sys.meta_path])
     assert query_model.find_default_model() is None
+
+
+def test_a_clue_word_for_a_part_doesnt_decide_when_the_model_names_the_product():
+    # 11 Oct 2026, from the appliance builder's findings: "pot" in "rice cooker with a non-stick pot" is a part of a
+    # rice cooker, not a saucepan. When the rules place a request by a clue word alone, the model is asked too.
+    query = parse_query("rice cooker with a non-stick pot", model=FakeModel({"category": "kitchen", "product": "rice cooker"}))
+    assert (query.status, query.product_type) == ("ok", "rice cooker")
+
+
+def test_a_clue_word_the_model_agrees_with_stands():
+    assert parse_query("pot for pasta", model=FakeModel({"category": "kitchen", "product": "pot"})).product_type == "saucepan"
+    stainless = FakeModel({"category": "kitchen", "product": "stainless pot"})
+    assert parse_query("stainless pot for soup", model=stainless).product_type == "saucepan"
+    unsure = FakeModel({"category": "unclear", "product": ""})
+    assert parse_query("pot for pasta", model=unsure).product_type == "saucepan"
+    assert parse_query("rice cooker with a non-stick pot", model=None).product_type == "saucepan"  # rules alone
