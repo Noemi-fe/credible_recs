@@ -155,7 +155,9 @@ VOICE_SIGN_WEIGHTS: dict[str, float] = {
     "expert flair": 1,
     "well upvoted": 1,
     "replies agree": 1,
-    "recent": 1,
+    # Noemi's decision of 11 Oct 2026: 0 (was 1). "Recent" fired on all 64 comments she labelled, so it told no one
+    # apart and lifted voices to high (the rules said high 52 times to her 31). Still recorded as a tag.
+    "recent": 0,
     "enthusiast": 1,
 }
 

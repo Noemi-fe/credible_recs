@@ -262,7 +262,8 @@ def test_the_template_types_no_numbers():
 
 
 def test_the_lists_of_signs_follow_the_code():
-    assert list(how_page.GOOD_SIGNS) == list(config.VOICE_SIGN_WEIGHTS)  # every good sign the rules count
+    # Every good sign the rules count, and only those: "recent" is worth 0 since 11 Oct 2026 (Noemi), so it isn't listed.
+    assert list(how_page.GOOD_SIGNS) == [sign for sign, worth in config.VOICE_SIGN_WEIGHTS.items() if worth]
     assert set(how_page.RED_FLAGS) <= set(config.VOICE_TAGS) and not set(how_page.RED_FLAGS) & set(config.VOICE_SIGN_WEIGHTS)
     assert list(how_page.HONESTY_SIGNS) == list(credibility.HONESTY_TAGS)
     assert tuple(how_page.METRIC_WORDING) == metrics.METRIC_KEYS
@@ -281,7 +282,8 @@ def test_every_need_a_fact_rule_asks_for_has_plain_words():
 
 def test_every_sign_of_voice_and_honesty_is_explained(tmp_path, monkeypatch):
     html = get_how(tmp_path, monkeypatch)
-    for tag in list(config.VOICE_SIGN_WEIGHTS) + list(how_page.RED_FLAGS) + list(credibility.HONESTY_TAGS):
+    counted = [sign for sign, worth in config.VOICE_SIGN_WEIGHTS.items() if worth]
+    for tag in counted + list(how_page.RED_FLAGS) + list(credibility.HONESTY_TAGS):
         assert f'data-tag="{tag}"' in html, tag
 
 

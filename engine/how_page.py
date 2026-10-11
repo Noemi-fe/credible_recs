@@ -44,7 +44,6 @@ GOOD_SIGNS: dict[str, str] = {
     "well upvoted": "<strong>Well upvoted:</strong> the comment scored higher than "
                     "{{config%:WELL_UPVOTED_SHARE_BEATEN}} of the other comments in its thread.",
     "replies agree": "<strong>Backed up:</strong> other people replied to say they agree.",
-    "recent": "<strong>Recent:</strong> written in the last {{config:VOICE_RECENT_YEARS}} years.",
     "enthusiast": "<strong>Knows the topic:</strong> uses at least {{config:ENTHUSIAST_MIN_TERMS}} expert words for it, "
                   "like “gyuto” for knives or “niacinamide” for skincare.",
 }

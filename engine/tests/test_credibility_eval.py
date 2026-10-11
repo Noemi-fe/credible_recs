@@ -88,8 +88,10 @@ def test_the_confusion_table_and_the_split():
 
 def test_voice_is_compared_on_comments_with_a_voice_level():
     score = score_credibility(gold())
-    assert score.voice.pairs == [("c1aaaa", "high", "high"), ("c3cccc", "low", "high")]
-    assert (score.voice.exact, score.voice.swaps) == (1, 1)
+    # Changed on purpose 11 Oct 2026 (Noemi: "recent" counts for nothing): each comment's second good sign was "recent",
+    # so the rules now say medium for both (it was high for both: one exact, one swap).
+    assert score.voice.pairs == [("c1aaaa", "high", "medium"), ("c3cccc", "low", "medium")]
+    assert (score.voice.exact, score.voice.swaps) == (0, 0)
 
 
 def test_copied_text_is_looked_for_once_per_thread(monkeypatch):

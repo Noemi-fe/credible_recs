@@ -66,9 +66,20 @@ def test_an_ordinary_owner_in_a_recent_thread_is_medium():
 
 
 def test_two_good_signs_and_no_red_flag_is_high():
-    voice = voice_for(score=9, others=(1, 1, 2, 2, 3))  # well upvoted for this thread, and recent
+    # Changed on purpose 11 Oct 2026 (Noemi: "recent" counts for nothing): the two signs are now well upvoted and
+    # established member; well upvoted and recent were enough before.
+    voice = voice_for(score=9, others=(1, 1, 2, 2, 3), author=account(
+        created=years_before(RECENT, config.ESTABLISHED_ACCOUNT_YEARS + 1), karma=config.ESTABLISHED_MIN_KARMA))
     assert voice.level == "high"
-    assert set(voice.tags) == {"well upvoted", "recent"}
+    assert {"well upvoted", "established member"} <= set(voice.tags)
+
+
+def test_being_recent_counts_for_nothing():
+    # Noemi's decision of 11 Oct 2026: "recent" fired on all 64 comments she labelled, so it told no one apart, and the
+    # rules called 52 voices high where she called 31. It is still recorded as a tag; its weight is 0.
+    assert config.VOICE_SIGN_WEIGHTS["recent"] == 0
+    voice = voice_for(score=9, others=(1, 1, 2, 2, 3))  # well upvoted for this thread, and recent
+    assert set(voice.tags) == {"well upvoted", "recent"} and voice.level == "medium"
 
 
 def test_any_red_flag_is_low_whatever_the_good_signs():
@@ -90,7 +101,7 @@ def test_an_old_account_with_karma_is_an_established_member():
     voice = voice_for(author=account(created=years_before(RECENT, config.ESTABLISHED_ACCOUNT_YEARS + 1),
                                      karma=config.ESTABLISHED_MIN_KARMA))
     assert "established member" in voice.tags
-    assert voice.level == "high"  # established and recent
+    assert voice.level == "medium"  # established alone: "recent" counts for nothing since 11 Oct 2026 (Noemi)
 
 
 def test_an_old_account_with_no_sign_of_activity_is_not_established():
@@ -140,7 +151,7 @@ def test_expert_flair_counts_but_says_it_is_unverified():
     # Edge case from the brief: anyone can write "dermatologist" in a flair, so it is one good sign, worded as a claim.
     voice = voice_for(author=account(flair="Dermatologist"))
     assert "expert flair" in voice.tags
-    assert voice.level == "high"  # expert flair and recent: two good signs
+    assert voice.level == "medium"  # expert flair alone: "recent" counts for nothing since 11 Oct 2026 (Noemi)
     reason = next(sign.reason for sign in voice.signs if sign.name == "expert flair")
     assert "Dermatologist" in reason and "not verified" in reason
 
@@ -157,7 +168,9 @@ def test_an_unverified_expert_flair_cannot_outweigh_salesy_language():
 
 def test_a_deleted_account_has_no_standing_signs_but_is_still_scored():
     voice = voice_for(author=None, score=9, others=(1, 1, 2))
-    assert voice.level == "high"  # well upvoted and recent; a deleted account is not a red flag
+    # Well upvoted, and no red flag: a deleted account is not one. ("Recent" counts for nothing since 11 Oct 2026, so
+    # one good sign is medium; it was high.)
+    assert voice.level == "medium"
     assert not {"established member", "new account", "expert flair"} & set(voice.tags)
     assert any("deleted" in reason for reason in voice.reasons)
 
@@ -282,10 +295,12 @@ def test_a_downvoted_comment_is_a_red_flag():
 
 
 def test_replies_that_agree_are_a_good_sign():
-    comment, thread = make_case(replies=("This! Mine lasted 10 years too.",))
+    # Well upvoted, and backed up by a reply: two good signs. (Was recent and backed up; "recent" counts for nothing
+    # since 11 Oct 2026, Noemi's decision.)
+    comment, thread = make_case(score=9, others=(1, 1, 2, 2, 3), replies=("This! Mine lasted 10 years too.",))
     agreement = ExtractedAgreement(comment_id="r0reply", quote="This!")
     voice = score_voice(comment, thread, agreements=[agreement])
-    assert voice.level == "high"  # recent, and backed up by a reply
+    assert voice.level == "high"
     assert any("1 reply agrees" in reason for reason in voice.reasons)
     # An agreement with some other comment is not about this one.
     assert score_voice(comment, thread, agreements=[ExtractedAgreement(comment_id="o0other", quote="x")]).level == "medium"
@@ -762,7 +777,8 @@ def test_a_reply_by_the_same_writer_is_not_agreement(reply_writer):
 
 def test_a_reply_from_a_deleted_account_still_agrees():
     # Only a reply known to be by the same writer is ignored; one from a deleted account can't be told apart.
-    comment, thread = make_case(author={"name": "same_writer"}, replies=("This! Agreed.",))
+    # Well upvoted too, so the agreement is the second good sign ("recent" counts for nothing since 11 Oct 2026).
+    comment, thread = make_case(author={"name": "same_writer"}, score=9, others=(1, 1, 2, 2, 3), replies=("This! Agreed.",))
     reply = thread.comments[-1].model_copy(update={"author": None})
     thread = thread.model_copy(update={"comments": thread.comments[:-1] + [reply]})
     voice = score_voice(comment, thread, agreements=[ExtractedAgreement(comment_id=reply.id, quote="This!")])
