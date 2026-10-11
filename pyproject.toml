@@ -12,6 +12,11 @@ dependencies = [
 dev = [
     "pytest>=8",
 ]
+# Going live (11 Oct 2026): the Hugging Face Space's downloads and feedback uploads, and the library upload
+# (deploy/huggingface/DEPLOY.md). The local demo doesn't need it.
+deploy = [
+    "huggingface_hub>=0.30",
+]
 
 [build-system]
 requires = ["setuptools>=69"]

@@ -149,6 +149,7 @@ GOATCOUNTER_VAR = "CREDIBLE_RECS_GOATCOUNTER"  # Noemi's GoatCounter site code; 
 GOATCOUNTER_SCRIPT = "https://gc.zgo.at"  # where GoatCounter's script comes from
 HUGGING_FACE = "https://huggingface.co"  # the Space's page there shows the public site in a frame
 MAX_TRACKED_CLIENTS = 10_000  # the rate limit remembers at most this many visitors (the least recent are forgotten)
+MAX_HOSTS_NAMED = 20  # public mode names at most this many refused hosts in its window, so scanners can't flood it
 
 HTML = "text/html; charset=utf-8"
 JSON = "application/json; charset=utf-8"
@@ -628,8 +629,26 @@ class _PublicHandler(_Handler):
     timeout = 30  # seconds a connection may stay silent in the middle of a request before it is closed
     _wrong_host = WRONG_HOST_PUBLIC
 
+    def _addressed_here(self) -> bool:
+        host = self.headers.get("Host", "")
+        if self._accepts(host):
+            return True
+        self._name_refused_host(host[:100])
+        return False
+
     def _accepts(self, host: str) -> bool:
         return host_name(host) in self.server.site.hosts
+
+    def _name_refused_host(self, host: str) -> None:
+        """Names a refused host once in the server's window (never who sent the request): if Hugging Face's proxy
+        addresses the site in a way nobody expected, the Space's logs say what to add to the list."""
+        named = self.server.refused_hosts
+        with self.server.refused_lock:
+            if host in named or len(named) >= MAX_HOSTS_NAMED:
+                return
+            named.add(host)
+        print(f"Refused a request addressed to {host!r}. If that is this site's own address, add it to "
+              f"{ALLOWED_HOSTS_VAR}.", file=sys.stderr, flush=True)
 
     def _held_back(self, limit: str) -> bool:
         visitor = client_address(self.headers.get("X-Forwarded-For"), self.client_address[0])
@@ -662,6 +681,7 @@ def make_server(port: int = WEB_PORT, library_dir: Path = DEFAULT_LIBRARY_DIR, s
     server.site = site
     server.limits = {"answers": RateLimiter(RATE_LIMIT_ANSWERS, RATE_LIMIT_WINDOW_SECONDS),
                      "feedback": RateLimiter(RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS)}
+    server.refused_hosts, server.refused_lock = set(), threading.Lock()  # public mode: refused hosts already named
     return server
 
 

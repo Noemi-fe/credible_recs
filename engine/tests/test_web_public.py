@@ -275,6 +275,14 @@ def test_public_mode_refuses_any_other_host(public_server, host):
     assert "127.0.0.1" not in data["error"]  # the public site's own words
 
 
+def test_a_refused_host_is_named_once_in_the_servers_window_so_the_list_can_be_fixed(public_server, capfd):
+    for _ in range(3):
+        public_send(public_server, "/api/answer?q=kettle", headers={"Host": "internal-proxy.example:7860"})
+    said = capfd.readouterr().err
+    assert said.count("internal-proxy.example:7860") == 1 and "CREDIBLE_RECS_ALLOWED_HOSTS" in said
+    assert "203.0.113.7" not in said  # never who sent it
+
+
 def test_public_feedback_must_come_from_the_sites_own_page(public_server, fake_store):
     headers = {"Content-Type": "application/json", "Origin": f"https://{HOST}"}
     assert public_send(public_server, "/api/feedback", USEFUL, headers=headers)[0] == 200
