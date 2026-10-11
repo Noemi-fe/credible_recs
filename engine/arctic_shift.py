@@ -95,9 +95,12 @@ class ArcticShiftClient:
         self._last_call: datetime | None = None
         self.purge_cache()
 
-    def search_posts(self, subreddit: str, title: str, limit: int = 25) -> list[dict]:
-        """Posts in one subreddit whose title matches, with only the fields needed to choose threads."""
+    def search_posts(self, subreddit: str, title: str, limit: int = 25, before: str | None = None) -> list[dict]:
+        """Posts in one subreddit whose title matches, with only the fields needed to choose threads: the newest
+        `limit` (at most 100), or the newest posted before the date `before` ("2023-10-11"), to reach older threads."""
         params = {"subreddit": subreddit, "title": title, "limit": limit}
+        if before is not None:
+            params["before"] = before
         cached = self._cached(params, "posts")
         if cached is not MISSING:
             return cached

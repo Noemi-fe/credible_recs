@@ -31,6 +31,10 @@ from engine.arctic_shift import ArcticShiftClient, ArcticShiftError
 from engine.bright_data import DISCOVER_POSTS_EACH, BrightDataError
 from engine.config import (
     ARCHIVE_DOWN_MINUTES,
+    ARCHIVE_MAX_SEARCHES,
+    ARCHIVE_OLDER_YEARS,
+    ARCHIVE_POSTS_EACH,
+    ARCHIVE_SEARCH_MAX_FAILURES,
     BRIGHT_DATA_ADD_RECORD_RESERVE,
     BRIGHT_DATA_ADD_SEARCHES,
     BRIGHT_DATA_ADD_WARNING_SEARCHES,
@@ -257,32 +261,51 @@ def usable_posts(query: ParsedQuery, posts: list[dict], min_comments: int) -> li
 
 
 def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searches: int = 4,
-                   max_warning_searches: int = 4, raise_if_nothing: bool = False) -> list[dict]:
-    """Arctic Shift results, in two rounds, each post once.
+                   max_warning_searches: int = 4, raise_if_nothing: bool = False, posts_each: int = 25,
+                   older_than_years: int | None = None, max_failures: int = 1, failed: list[str] | None = None,
+                   now: datetime | None = None) -> list[dict]:
+    """Arctic Shift results, in rounds, each post once.
 
-    1. The product's title words, term by term and subreddit by subreddit, up to `max_free_searches`.
-    2. Warning searches, so threads about failures and regrets are among the candidates: the first title word
+    1. The product's title words, term by term and subreddit by subreddit, up to `max_free_searches`, the newest
+       `posts_each` posts each.
+    2. With `older_than_years`, the same searches again for posts from before that many years ago: big threads are
+       often old ones (11 Oct 2026: haircare's were out of reach).
+    3. Warning searches, so threads about failures and regrets are among the candidates: the first title word
        with each of WARNING_SEARCHES ("kettle died", "kettle regret"…), in the request's most specialist
        subreddit, up to `max_warning_searches`.
-    A busy or failing service ends the free search, warning searches included; results found before that are
-    still used. With `raise_if_nothing`, a failure before anything was found is passed on (ArcticShiftError), so a
-    service that is down isn't mistaken for a search that found nothing. Parse's paid search never runs warning
-    searches: they would cost credits.
+    A busy or failing search is skipped and named in `failed`; `max_failures` of them end the round (1: the first
+    failure ends it, as Parse's source has it); results found before that are still used. With `raise_if_nothing`, a
+    round that ends before anything was found raises (ArcticShiftError), so a service that is down isn't mistaken for
+    a search that found nothing. Parse's paid search never runs warning searches: they would cost credits.
     """
     terms = finder_terms(query.product_type)
-    pairs = [(subreddit, term) for term in terms for subreddit in query.subreddits][:max_free_searches]
+    pairs = [(subreddit, term, None) for term in terms for subreddit in query.subreddits][:max_free_searches]
+    if older_than_years:
+        before = _years_before(now or datetime.now(UTC), older_than_years).date().isoformat()
+        pairs += [(subreddit, term, before) for subreddit, term, _ in pairs]
     warnings = warning_words(query)[:max_warning_searches]
-    pairs += [(query.subreddits[0], f"{terms[0]} {warning}") for warning in warnings]
+    pairs += [(query.subreddits[0], f"{terms[0]} {warning}", None) for warning in warnings]
     posts: dict[str, dict] = {}
-    for subreddit, term in pairs:
+    failures = 0
+    for subreddit, term, before in pairs:
         try:
-            found = finder.search_posts(subreddit, term, limit=25)
-        except ArcticShiftError:
-            if raise_if_nothing and not posts:
-                raise
-            break
+            if before is None:
+                found = finder.search_posts(subreddit, term, limit=posts_each)
+            else:
+                found = finder.search_posts(subreddit, term, limit=posts_each, before=before)
+        except ArcticShiftError as error:
+            failures += 1
+            if failed is not None:
+                failed.append(f"r/{subreddit} for \"{term}\"{f' before {before}' if before else ''} ({error})")
+            if failures >= max_failures:
+                if raise_if_nothing and not posts:
+                    raise
+                break
+            continue
         for post in found:
             posts.setdefault(_post_id(post), post)
+    if raise_if_nothing and not posts and failures:
+        raise ArcticShiftError(f"every archive search that ran failed ({failures})")
     return list(posts.values())
 
 
@@ -306,7 +329,7 @@ class ArchiveSource:
         self,
         client: ArcticShiftClient | None,
         min_comments: int = 5,
-        max_free_searches: int = 4,
+        max_free_searches: int = ARCHIVE_MAX_SEARCHES,
         max_warning_searches: int = 4,
     ):
         # The Arctic Shift client that searches and reads. It is never built here, so code that gives none (a test
@@ -315,6 +338,7 @@ class ArchiveSource:
         self.min_comments = min_comments  # a thread with fewer comments has too little to learn from
         self.max_free_searches = max_free_searches
         self.max_warning_searches = max_warning_searches
+        self.notes: list[str] = []  # what the last search couldn't do, for `library add` to print
 
     def find_threads(self, query: ParsedQuery, limit: int = 3, mix: dict | None = None, fill: bool = True) -> list[Thread]:
         return [without_unusable_comments(t) for t in self.find_raw_threads(query, limit, mix, fill)]
@@ -332,7 +356,16 @@ class ArchiveSource:
         """Every candidate post from the archive's searches, best first, without reading any thread."""
         if query.status != "ok" or self.client is None:
             return []
-        found = search_archive(self.client, query, self.max_free_searches, self.max_warning_searches, raise_if_nothing=True)
+        failed: list[str] = []
+        try:
+            # Free searches, so every decided subreddit, 100 posts each, and older threads too (11 Oct 2026).
+            found = search_archive(self.client, query, self.max_free_searches, self.max_warning_searches,
+                                   raise_if_nothing=True, posts_each=ARCHIVE_POSTS_EACH,
+                                   older_than_years=ARCHIVE_OLDER_YEARS, max_failures=ARCHIVE_SEARCH_MAX_FAILURES,
+                                   failed=failed)
+        finally:
+            self.notes = [f"The archive's search in {search} failed; run the add again to retry it (searches that "
+                          "worked are cached for 48 hours)." for search in failed]
         return usable_posts(query, found, self.min_comments)
 
 
@@ -582,6 +615,7 @@ _STOPWORDS = {
 def need_words(query: ParsedQuery) -> list[str]:
     """The specific part of a request, in a form titles can be matched against: "pour-over" -> "pourover"."""
     product_words = set(query.product_type.split()) | {w for t in TITLE_WORDS.get(query.product_type, ()) for w in t.split()}
+    product_words |= {re.sub(r"['-]", "", w) for w in product_words}  # "leave-in" is "leavein" below
     words = []
     for token in re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", query.text.lower()):
         # "anti-dandruff" asks about dandruff and "sulfate-free" about sulfates (11 Oct 2026), as people write them.

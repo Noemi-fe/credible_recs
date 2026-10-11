@@ -820,3 +820,14 @@ RATE_LIMIT_FEEDBACK = 15
 # teapot note had the badge "400 years of use"). Chosen by Claude, reported to Noemi: a long cooking life with one pan
 # (40 or 50 years, often inherited) still counts.
 USE_MAX_YEARS = 60
+
+# --- The archive's free search (11 Oct 2026, from the data builders' findings) ---
+# `library add --reader archive` searched only the first 4 subreddits, for the 25 newest posts each, and a timeout in
+# one ended the whole search: haircare's big threads, mostly years old, were out of reach. Its searches are free, so
+# now: up to ARCHIVE_MAX_SEARCHES title searches (every decided subreddit), ARCHIVE_POSTS_EACH posts each (the most
+# Arctic Shift gives), then the same searches again for posts from before ARCHIVE_OLDER_YEARS ago; a failed search is
+# skipped and named, and ARCHIVE_SEARCH_MAX_FAILURES of them end the round. Chosen by Claude, reported to Noemi.
+ARCHIVE_MAX_SEARCHES = 16
+ARCHIVE_POSTS_EACH = 100
+ARCHIVE_OLDER_YEARS = 3
+ARCHIVE_SEARCH_MAX_FAILURES = 3

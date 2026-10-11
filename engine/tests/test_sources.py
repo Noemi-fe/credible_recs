@@ -395,7 +395,7 @@ class FakeFinder:
         self.fail = fail
         self.searches: list[tuple[str, str]] = []
 
-    def search_posts(self, subreddit, title, limit=25):
+    def search_posts(self, subreddit, title, limit=25, before=None):  # `before`: the real client's, 11 Oct 2026
         self.searches.append((subreddit, title))
         if self.fail:
             raise ArcticShiftError("Arctic Shift answered 422: Timeout. Maybe slow down a bit")
@@ -1075,6 +1075,7 @@ def test_haircare_need_words():
     assert need_words(parse_query("anti-dandruff shampoo")) == ["dandruff"]
     assert need_words(parse_query("sulfate-free shampoo for curly hair")) == ["sulfate", "curly"]
     assert need_words(parse_query("purple shampoo for blonde hair")) == ["purple", "blonde"]
+    assert need_words(parse_query("leave-in conditioner for curly hair")) == ["curly"]  # its own name, hyphen and all
 
 
 def test_a_hyphenated_title_word_matches_its_parts():
