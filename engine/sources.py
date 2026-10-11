@@ -833,11 +833,14 @@ def choose_mix(
 
 
 def _title_has(lowered_title: str, word: str) -> bool:
-    """Whole words, two-word spellings ("pour over" for "pourover"), longer forms ("lasting" for "last") and the parts of
-    a hyphenated word ("anti-dandruff" has "dandruff", 11 Oct 2026)."""
+    """Whole words, two-word spellings ("pour over" for "pourover"), longer forms ("lasting" for "last"), and "anti-X"
+    or "X-free" read as X, as need words read them ("anti-dandruff" has "dandruff", 11 Oct 2026). Other hyphenated
+    words aren't split: that moved a thread Noemi hadn't judged into b02's top 3 (12 Oct 2026)."""
     written = re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", lowered_title)
     tokens = [re.sub(r"['-]", "", t) for t in written]
-    candidates = tokens + [a + b for a, b in zip(tokens, tokens[1:])] + [part for t in written if "-" in t for part in t.split("-")]
+    candidates = tokens + [a + b for a, b in zip(tokens, tokens[1:])]
+    candidates += [re.sub(r"['-]", "", re.sub(r"^anti-(?=[a-z])|(?<=[a-z])-free$", "", t)) for t in written
+                   if t.startswith("anti-") or t.endswith("-free")]
     return any(t == word or _stem(t) == word or (len(word) >= 4 and t.startswith(word)) for t in candidates)
 
 
