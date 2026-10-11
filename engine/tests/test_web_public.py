@@ -13,6 +13,7 @@ import threading
 import urllib.error
 import urllib.request
 from pathlib import Path
+from urllib.parse import quote
 
 import pytest
 
@@ -151,6 +152,39 @@ def test_feedback_that_cant_be_kept_right_now_says_so(monkeypatch, store):
     assert status == 503 and data["code"] == "feedback_unavailable"
 
 
+def test_a_remembered_answer_comes_back_at_once_while_a_new_one_is_worked_out(tmp_path, monkeypatch):
+    # On the public site a new answer can take a minute (every quote is checked live on Reddit, a few seconds apart).
+    # Answers are still worked out one at a time, but one already remembered never waits behind it.
+    library_dir = kettle_library(tmp_path)
+    assert web.handle_request(f"/api/answer?q={quote(REQUEST)}", library_dir)[0] == 200  # remembered
+    started, release = threading.Event(), threading.Event()
+
+    def slow(request, library_dir):
+        started.set()
+        release.wait(10)
+        return pipeline.answer_request(request, library_dir)
+
+    monkeypatch.setattr(web, "answer_request", slow)
+    worker = threading.Thread(target=web.answer_response, args=("kettle that lasts forever", library_dir))
+    worker.start()
+    try:
+        assert started.wait(10)
+        done = []
+        reader = threading.Thread(target=lambda: done.append(web.answer_response(REQUEST, library_dir)))
+        reader.start()
+        reader.join(2)
+        assert done and done[0][0] == 200  # it didn't wait for the slow answer
+    finally:
+        release.set()
+        worker.join(10)
+
+
+def test_feedback_about_the_longest_product_type_module_1_can_give_is_kept(fake_store):
+    # Module 1 can take a product type from the request's own words, so it is never longer than a request.
+    assert FEEDBACK_MAX_PRODUCT_TYPE_CHARS >= WEB_MAX_REQUEST_CHARS
+    assert post({**USEFUL, "product_type": "p" * WEB_MAX_REQUEST_CHARS})[0] == 200
+
+
 def test_feedback_is_sent_with_post_only(tmp_path):
     status, _, body = web.handle_request("/api/feedback", tmp_path)
     assert status == 405 and json.loads(body)["code"] == "method_not_allowed"
@@ -263,7 +297,7 @@ def public_send(server, path: str, body=None, client: str = "203.0.113.7", heade
 
 @pytest.mark.parametrize("host", [HOST, HOST + ":443", HOST.upper()])
 def test_public_mode_answers_requests_for_its_own_host(public_server, host):
-    status, _, data = public_send(public_server, f"/api/answer?q={REQUEST.replace(' ', '%20')}", headers={"Host": host})
+    status, _, data = public_send(public_server, f"/api/answer?q={quote(REQUEST)}", headers={"Host": host})
     assert status == 200 and len(data["answer"]["picks"]) == 3
 
 

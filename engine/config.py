@@ -758,11 +758,11 @@ COPIED_TEXT_MIN_WORDS = 20
 # Noemi approved putting the demo online as a Hugging Face Space, with GoatCounter visit counts, a "First time here?"
 # question and an anonymous feedback form (engine/web.py --public, engine/feedback.py, deploy/huggingface/DEPLOY.md).
 # The values below were chosen by Claude to carry that out (technical values, reported to her).
-# Feedback (engine/feedback.py): a comment is at most this many characters, as the page's comment box says; the product
-# type sent with it at most this many (module 1's types are a few words). The request it is about has the search's own
-# limit, WEB_MAX_REQUEST_CHARS.
+# Feedback (engine/feedback.py): a comment is at most this many characters, as the page's comment box says. The request
+# it is about has the search's own limit, WEB_MAX_REQUEST_CHARS, and so does the product type sent with it: module 1
+# can take a product type from the request's own words, so it is never longer than a request.
 FEEDBACK_MAX_COMMENT_CHARS = 1000
-FEEDBACK_MAX_PRODUCT_TYPE_CHARS = 100
+FEEDBACK_MAX_PRODUCT_TYPE_CHARS = WEB_MAX_REQUEST_CHARS
 # A feedback request (JSON) longer than this many bytes is refused (413) before it is read: the longest real one, every
 # text at its limit in a three-byte script, is about 5,000 bytes.
 FEEDBACK_MAX_BODY_BYTES = 8192

@@ -249,6 +249,9 @@ def answer_response(request: str, library_dir: Path, quiet: bool = False) -> tup
     if len(request) > WEB_MAX_REQUEST_CHARS:
         return _error(400, TOO_LONG, n=len(request), limit=WEB_MAX_REQUEST_CHARS)
     key = (request, str(library_dir))
+    remembered = _answers.get(key)  # read without waiting (11 Oct 2026): a slow new answer never holds up a known one
+    if remembered is not None:
+        return remembered
     with _answers_lock:  # one answer is worked out at a time, so the same request is never worked out twice
         if key not in _answers:
             try:
