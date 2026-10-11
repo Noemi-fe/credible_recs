@@ -960,3 +960,15 @@ def test_copies_count_once_the_first_posted_stays():
     thread = Thread.model_validate(make_thread(comments=comments))
     assert repeated_copies(thread) == {"c1aaaa", "c3cccc"}  # c2bbbb was posted first
     assert copied_comment_ids(thread) == {"c1aaaa", "c2bbbb", "c3cccc"}
+
+
+def test_haircare_and_appliance_words_dont_pick_out_a_product():
+    # 11 Oct 2026 (haircare, and the open model's kitchen types): "shampoo", "dandruff" or "air fryer" in a sentence name
+    # no product in particular, so they can't tie a sentence to one product's name.
+    from engine.credibility import _name_words
+
+    assert _name_words("Head & Shoulders Classic Clean Anti-Dandruff Shampoo") == {"head", "shoulders"}
+    assert _name_words("Olaplex No. 4 Bond Maintenance Shampoo") == {"olaplex", "maintenance"}
+    assert _name_words("Ninja Air Fryer Max") == {"ninja", "max"}
+    assert _name_words("Zojirushi Neuro Fuzzy Rice Cooker") == {"zojirushi", "neuro", "fuzzy"}
+    assert _name_words("Cantu Leave-In Conditioning Repair Cream") == {"cantu"}

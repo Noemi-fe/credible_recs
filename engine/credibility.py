@@ -831,6 +831,13 @@ GENERIC_NAME_WORDS = frozenset({
     "glycolic", "lactic", "salicylic", "mandelic", "azelaic", "retinol", "niacinamide", "hydrating", "gentle",
     "foaming", "facial", "face", "daily", "body", "skin", "care", "eye", "lip", "night", "day", "water", "essence",
     "mist", "wash", "liquid", "toning", "clarifying", "renewing", "calming", "soothing", "barrier", "repair",
+    # Haircare and the open model's kitchen types (11 Oct 2026).
+    "shampoo", "shampoos", "conditioner", "conditioners", "conditioning", "hair", "scalp", "leave", "deep", "dry",
+    "curl", "curls", "curly", "wavy", "dandruff", "anti", "clean", "purple", "silver", "blonde", "colour", "color",
+    "volume", "volumizing", "volumising", "thickening", "strengthening", "smoothing", "smooth", "frizz", "shine",
+    "treatment", "spray", "mousse", "masque", "styling", "bond", "keratin", "protein", "sulfate", "sulphate", "free",
+    "argan", "air", "fryer", "fryers", "rice", "cooker", "cookers", "slow", "pressure", "processor", "food", "stand",
+    "hand", "immersion", "basket",
 })
 
 

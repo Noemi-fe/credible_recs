@@ -76,7 +76,10 @@ def main() -> int:
     else:
         scored = score_cases(cases.cases, parse_query)
         results.query = summarize(scored)
-        print("\n".join(report_lines(cases, scored, "rules only")))
+        from engine.query_model import default_query_model  # here: only this report needs it
+
+        parser = "rules, then the open model" if default_query_model() is not None else "rules only"
+        print("\n".join(report_lines(cases, scored, parser)))
 
     print()
     print(_retrieval_report(results))
