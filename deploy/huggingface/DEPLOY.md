@@ -10,8 +10,10 @@ uploaded for you. Allow about an hour the first time.
 
 Hugging Face now asks for its **PRO plan ($9 a month, checked on 11 Oct 2026)** before you can create a Space that
 runs your own code (a "Docker Space"). The computer the Space runs on ("CPU basic": 2 processors, 16 GB of memory) is
-free on top of that. GoatCounter, for visit counts, is free for non-commercial sites. Whether to pay is your decision:
-nothing below spends money unless you subscribe.
+free on top of that. This changed in July 2026: users reported it on Hugging Face's forum, and the screen asking for it
+offers either PRO or adding prepaid credits to your account; Hugging Face hasn't announced it, so check what the
+"Create Space" page says on the day. GoatCounter, for visit counts, is free for non-commercial sites. Whether to pay is
+your decision: nothing below spends money unless you subscribe.
 
 ## What stays private, and what is public
 
