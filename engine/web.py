@@ -269,6 +269,9 @@ def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple
     if live is not None:
         with_profiles["live_checker"] = live
     result = answer_request(request, library_dir, **with_profiles)
+    if result.skipped_files:  # a broken library file was left out of the answer (11 Oct 2026): say so where it runs
+        print(f"Library files left out ({len(result.skipped_files)} problem(s)); first: {result.skipped_files[0]}",
+              file=sys.stderr)
     if result.answer is not None:
         problems = unverified_claims(result.answer, result.bodies)
         if problems:  # the problems name comments, never the failed quote's words

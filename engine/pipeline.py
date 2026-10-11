@@ -198,6 +198,9 @@ class PipelineResult:
     # mention counts as a low voice (Noemi's rule, 9 Oct 2026). For reports only, as a count: never shown to users.
     contradicting_writers: list[str] = field(default_factory=list)
     threads_available: int = 0  # extracted threads about the product that could be read (threads_used is the first ones)
+    # Problems of library files left out of this answer (a thread or extraction file that doesn't load or check):
+    # reported, never quietly dropped (11 Oct 2026).
+    skipped_files: list[str] = field(default_factory=list)
     read_more: bool = False  # the first threads gave too few picks, so more were read (answer_request, 11 Oct 2026)
 
     def text(self) -> str:
@@ -270,8 +273,9 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
         return result
     today = today or _today()
     threads_dir = Path(library_dir) / "threads"
-    every_checked = load_checked(threads_dir)
-    candidates = LocalSource(threads_dir).find_threads(query, limit=sys.maxsize)  # the limit is applied below
+    # A broken file is left out and named, never quietly: one had stopped every answer (11 Oct 2026).
+    every_checked = load_checked(threads_dir, skip_broken=True, problems=result.skipped_files)
+    candidates = LocalSource(threads_dir, skip_broken=True).find_threads(query, limit=sys.maxsize)  # limit: below
     about_it = [t for t in candidates if _about_the_product(t, query.product_type)]
     result.not_extracted = [t.id for t in about_it if t.id not in every_checked]  # nothing to offer until read
     if live_check_required is None:
@@ -955,6 +959,9 @@ def main(argv: list[str]) -> int:
     result = answer_request(" ".join(argv), profiles=cached_profiles(), live_checker=live_checker())
     print(result.text())
     if result.answer is not None:
+        if result.skipped_files:
+            print(f"\n(left out of this answer: {len(result.skipped_files)} problem(s) in library files, first: "
+                  f"{result.skipped_files[0]}; run `python -m engine.extract check` for the list)")
         if result.read_more:
             print(f"\n(the first {PIPELINE_MAX_THREADS} threads gave too few picks, so {len(result.threads_used)} were read)")
         print(f"\n(threads used: {', '.join(result.threads_used)}; left out as another type: "

@@ -382,22 +382,27 @@ def overall_quote_pass_rate(results: Iterable[CheckResult]) -> float | None:
 
 # --- Loading a folder of extractions ---
 
-def load_checked(threads_dir: Path) -> dict[str, CheckResult]:
+def load_checked(threads_dir: Path, skip_broken: bool = False, problems: list[str] | None = None) -> dict[str, CheckResult]:
     """Every extraction next to a threads folder, checked against its thread: {thread id: what was kept and dropped}.
 
     Threads with no extraction yet are left out. A malformed extraction file is never skipped quietly: every
     problem in every file is collected, then raised together as an ExtractionError naming each file. An extraction
     whose thread file is gone counts as a problem too. Problems in the thread files themselves raise GoldSetError.
+    With `skip_broken` (answers, 11 Oct 2026), broken thread and extraction files are left out instead, and every
+    problem is added to `problems`, for the caller to report.
     """
-    results, problems = _check_folder(Path(threads_dir))
-    if problems:
-        raise ExtractionError(problems)
+    results, found = _check_folder(Path(threads_dir), skip_broken)
+    if found and not skip_broken:
+        raise ExtractionError(found)
+    if problems is not None:
+        problems.extend(found)
     return results
 
 
-def _check_folder(threads_dir: Path) -> tuple[dict[str, CheckResult], list[str]]:
+def _check_folder(threads_dir: Path, skip_broken: bool = False) -> tuple[dict[str, CheckResult], list[str]]:
     """The results of the extraction files that could be read, and the problems of those that couldn't."""
-    threads = {thread.id: thread for thread in load_threads(threads_dir)}
+    thread_problems: list[str] = []
+    threads = {thread.id: thread for thread in load_threads(threads_dir, skip_broken, thread_problems)}
     folder = extracted_dir(threads_dir)
     results: dict[str, CheckResult] = {}
     problems: list[str] = []
@@ -413,7 +418,7 @@ def _check_folder(threads_dir: Path) -> tuple[dict[str, CheckResult], list[str]]
             continue
         # The file name says which thread it belongs to; if the file's own thread_id disagrees, every mention is dropped.
         results[path.stem] = check_extraction(extraction, thread)
-    return results, problems
+    return results, thread_problems + problems
 
 
 def _read_extraction(path: Path) -> tuple[Extraction | None, list[str]]:

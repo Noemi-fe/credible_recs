@@ -127,15 +127,16 @@ class LocalSource:
     with the full list of problems (engine.gold.GoldSetError), rather than quietly leaving the thread out.
     """
 
-    def __init__(self, folder: Path):
+    def __init__(self, folder: Path, skip_broken: bool = False):
         self.folder = Path(folder)
+        self.skip_broken = skip_broken  # answers leave a broken file out (engine.gold.load_threads), 11 Oct 2026
         self._threads: list[Thread] | None = None
 
     def find_threads(self, query: ParsedQuery, limit: int = 3) -> list[Thread]:
         if query.status != "ok" or limit < 1:
             return []
         if self._threads is None:
-            self._threads = load_threads(self.folder)
+            self._threads = load_threads(self.folder, skip_broken=self.skip_broken)
 
         candidates = [without_unusable_comments(t) for t in self._threads if t.category == query.category]
         # Only threads that name the product somewhere (relevance) are read. Since 11 Oct 2026 they come in module 2's

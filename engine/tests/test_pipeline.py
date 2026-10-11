@@ -819,3 +819,16 @@ def test_with_the_live_check_threads_are_not_held_back_for_their_age(tmp_path):
     late = date(2026, 12, 1)  # long after the made-up threads were saved
     assert answer_request(REQUEST, library_dir=lib, today=late).answer.picks == []
     assert answer_request(REQUEST, library_dir=lib, today=late, live_checker=FakeLive()).answer.picks
+
+
+def test_a_broken_thread_file_doesnt_stop_answers_and_is_named(tmp_path):
+    # 11 Oct 2026: twice a newly saved thread with broken comment links stopped every answer until it was repaired. On
+    # a public site one bad file must not take every answer down: the answer leaves it out and names it. (`extract
+    # check` and the gold set stay strict.)
+    root = library(tmp_path)
+    broken = kettle_thread("1kett09", [comment("k9aaaa", "1kett09", "Made-up text about a kettle.")])
+    broken["comments"][0]["url"] = "https://www.reddit.com/r/BuyItForLife/comments/t3_1kett09/k9aaaa"
+    (root / "threads" / "1kett09.json").write_text(json.dumps(broken), encoding="utf-8")
+    result = answer_request(REQUEST, library_dir=root)
+    assert [pick.name for pick in result.answer.picks][:1] == ["Zojirushi kettle"]
+    assert any("1kett09" in problem for problem in result.skipped_files)
