@@ -303,3 +303,16 @@ def test_a_network_failure_is_a_parse_error_not_a_crash(monkeypatch, trouble):
     monkeypatch.setattr(urllib.request, "urlopen", fail)
     with pytest.raises(ParseAPIError, match="couldn't reach Parse"):
         _http_get("https://api.example.invalid/", {})
+
+
+def test_a_comment_link_that_doesnt_point_to_its_thread_is_rebuilt():
+    # Found on 11 Oct 2026: the archive gives some 2012 comments a link with the post's type prefix in it
+    # (".../comments/t3_<id>/<comment>"), which the thread's own checks rightly refuse. The link is built again.
+    from engine.parse_reddit import _to_comment
+
+    broken = {"id": "c1aaaa", "body": "Made-up text.", "created_utc": 1339950274, "score": 2,
+              "permalink": "/r/BuyItForLife/comments/t3_1fake01/c1aaaa"}
+    comment = _to_comment(broken, "1fake01", "BuyItForLife")
+    assert comment.url == "https://www.reddit.com/r/BuyItForLife/comments/1fake01/comment/c1aaaa/"
+    good = broken | {"permalink": "/r/BuyItForLife/comments/1fake01/a_title/c1aaaa/"}
+    assert _to_comment(good, "1fake01", "BuyItForLife").url == "https://www.reddit.com/r/BuyItForLife/comments/1fake01/a_title/c1aaaa/"

@@ -268,7 +268,8 @@ def _to_comment(c: dict, post_id: str, subreddit: str) -> Comment:
         body=body,
         created_at=_time(c["created_utc"]),
         score=c.get("score", 0),
-        url=_web_url(c.get("permalink")) or f"https://www.reddit.com/r/{subreddit}/comments/{post_id}/comment/{comment_id}/",
+        url=_own_link(_web_url(c.get("permalink")), post_id)
+        or f"https://www.reddit.com/r/{subreddit}/comments/{post_id}/comment/{comment_id}/",
         status={"[deleted]": "deleted", "[removed]": "removed"}.get(body.strip(), "ok"),
     )
 
@@ -282,6 +283,12 @@ def _author(name: str | None) -> Author | None:
 
 def _time(value):
     return datetime.fromtimestamp(value, UTC) if isinstance(value, int | float) else value
+
+
+def _own_link(url: str | None, post_id: str) -> str | None:
+    """The comment's link if it points to its own thread; None otherwise, so it is built again. The archive gives some
+    2012 comments a link with the post's type prefix in it (".../comments/t3_<id>/...", found 11 Oct 2026)."""
+    return url if url and f"/comments/{post_id}/" in url else None
 
 
 def _web_url(permalink: str | None) -> str | None:
