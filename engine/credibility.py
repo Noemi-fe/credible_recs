@@ -701,13 +701,21 @@ _READERS_TIME = re.compile(r"\byou(?:'ll|'d|'ve| will| would| can| could| should
                            r"(?:(?!\b(?:i|i've|i'd|i'm|my|mine|we|we've|our)\b)[^.!?;])*$")
 
 
+# "if I get a year out of it", "hopefully it lasts 10 years": a hoped-for time, not the writer's use (b10, 11 Oct 2026:
+# a writer two months into a pan had the badge "a year of use"). Read just before the time, in the same sentence.
+_HOPED_TIME = re.compile(r"(\bif (i|we|it|they|this|mine) (can |could )?(get|gets|last|lasts|make it|manage|manages)\b"
+                         r"|\b(hopefully|hope|hoping|expect|expecting)\b)[^.!?;]{0,30}$")
+
+
 def _is_not_a_duration(text: str, match: re.Match) -> bool:
     """Whether "a day" or "one day" here is a frequency ("twice a day", "once a week") or a figure of speech
     ("one day it broke"), or the time is how long something can last rather than how long the writer used it,
-    how long the reader could keep it, or how long its warranty is."""
+    how long the reader could keep it, how long the writer hopes it lasts, or how long its warranty is."""
     if _CLAIMED_LIFE.search(text[max(0, match.start() - 60):match.start()]):
         return True
     if _READERS_TIME.search(text[max(0, match.start() - 200):match.start()]):
+        return True
+    if _HOPED_TIME.search(text[max(0, match.start() - 60):match.start()]):
         return True
     if _WARRANTY_AFTER.search(text[match.end():match.end() + 40]):
         return True

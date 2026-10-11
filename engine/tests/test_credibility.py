@@ -716,6 +716,24 @@ def test_how_long_the_reader_could_keep_it_is_not_a_time_of_use(body):
     assert not any("of use" in b for b in evidence.badges)
 
 
+@pytest.mark.parametrize("body", [
+    "Had the Lodge skillet a couple of months. If I get a year out of it I'll be happy.",
+    "Just bought the Lodge skillet, hopefully it lasts 10 years.",
+    "Bought the Lodge skillet last week, hoping to get 20 years from it.",
+])
+def test_a_hoped_for_time_is_not_a_time_of_use(body):
+    # Found reading b10, 11 Oct 2026: a writer two months into a pan, happy "if I get a year out of it", had the badge
+    # "a year of use" and counted as long-term use.
+    evidence = evidence_for(body, "Lodge skillet")
+    assert not any(("year" in b or "years" in b) and "of use" in b for b in evidence.badges)
+    assert evidence.level != "long-term use"
+
+
+def test_a_time_of_use_near_an_if_still_counts():
+    evidence = evidence_for("If you're wondering, I've had my Lodge skillet 10 years.", "Lodge skillet")
+    assert "10 years of use" in evidence.badges
+
+
 def test_the_writers_own_time_after_a_word_to_the_reader_still_counts():
     evidence = evidence_for("If you can, get the Lodge skillet; I've had mine for 6 years.", "Lodge skillet")
     assert "6 years of use" in evidence.badges
