@@ -151,8 +151,8 @@ def test_copied_text_is_looked_for_once_per_thread(monkeypatch):
     # Module 5's "copied text" red flag (Noemi's decision 3, 11 Oct 2026) compares a whole thread: it is worked out once
     # per thread, however many of its tips are scored.
     looked_at = []
-    real = care_tips.copied_comment_ids
-    monkeypatch.setattr(care_tips, "copied_comment_ids", lambda thread: looked_at.append(thread.id) or real(thread))
+    real = care_tips.copy_groups  # since 11 Oct 2026 the once-per-thread reading (copies count once, Noemi)
+    monkeypatch.setattr(care_tips, "copy_groups", lambda thread: looked_at.append(thread.id) or real(thread))
     thread = care_thread()
     extraction = Extraction.model_validate({
         "thread_id": "1kett01", "instructions_version": "extract-v7", "extracted_at": "2026-10-09T10:00:00Z",

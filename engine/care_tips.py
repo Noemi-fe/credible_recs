@@ -66,7 +66,7 @@ from engine.config import (
     CREDIBLE_VOICES,
     VOICE_LEVELS,
 )
-from engine.credibility import copied_comment_ids, score_voice
+from engine.credibility import copied_comment_ids, copy_groups, repeated_copies, score_voice
 from engine.extract import CheckResult
 from engine.group_kinds import KindGroup, kind_parts
 from engine.group_products import ProductGroup
@@ -111,8 +111,11 @@ def credible_care_tips(threads: Iterable[Thread], checked: Mapping[str, CheckRes
         if result is None or not result.kept_care:
             continue
         comments = {c.id: c for c in thread.comments}
-        copied = copied_comment_ids(thread)  # once per thread: it reads the whole thread
+        groups = copy_groups(thread)  # once per thread: it reads the whole thread
+        copied, repeats = copied_comment_ids(thread, groups), repeated_copies(thread, groups)
         for care in result.kept_care:
+            if care.comment_id in repeats:  # copies count once (Noemi, 11 Oct 2026)
+                continue
             comment = comments[care.comment_id]
             voice = score_voice(comment, thread, result.kept_agreements, copied=copied)
             if voice.level not in CREDIBLE_VOICES:

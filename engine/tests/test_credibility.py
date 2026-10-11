@@ -10,8 +10,8 @@ import pytest
 
 from engine import config
 from engine.credibility import (
-    CommenterHistory, EvidenceScore, VoiceScore, badges, copied_comment_ids, mention_weight, score_evidence,
-    score_voice,
+    CommenterHistory, EvidenceScore, VoiceScore, badges, copied_comment_ids, mention_weight, repeated_copies,
+    score_evidence, score_voice,
 )
 from engine.extract import ExtractedAgreement
 from engine.models import Comment, Thread
@@ -917,3 +917,15 @@ def test_the_copied_comments_are_worked_out_once_and_passed_in():
     for comment in thread.comments:
         assert score_voice(comment, thread, copied=copied) == score_voice(comment, thread)
     assert "copied text" not in score_voice(thread.comments[0], thread, copied=frozenset()).tags  # what it's given
+
+
+def test_copies_count_once_the_first_posted_stays():
+    # Noemi's decision of 11 Oct 2026: copies count once. Of comments that copy one another, the first posted counts;
+    # the later ones are repeats, which the pipeline leaves out (their red flag stays on the one that counts).
+    comments = [make_comment("c1aaaa", body=COPIED, created_at="2025-03-02T10:00:00Z", author=account(name="ann")),
+                make_comment("c2bbbb", body=COPIED, created_at="2025-01-01T10:00:00Z", author=account(name="bo")),
+                make_comment("c3cccc", body=COPIED, created_at="2025-05-01T10:00:00Z", author=account(name="cy")),
+                make_comment("c4dddd", body="Something else entirely, about another cream.", author=account(name="di"))]
+    thread = Thread.model_validate(make_thread(comments=comments))
+    assert repeated_copies(thread) == {"c1aaaa", "c3cccc"}  # c2bbbb was posted first
+    assert copied_comment_ids(thread) == {"c1aaaa", "c2bbbb", "c3cccc"}

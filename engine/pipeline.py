@@ -117,7 +117,9 @@ from engine.config import (
     UK_BRAND_NAMES,
 )
 from engine.contradictions import contradicting_writers
-from engine.credibility import VoiceScore, badges, copied_comment_ids, mention_weight, score_evidence, score_voice
+from engine.credibility import (
+    VoiceScore, badges, copied_comment_ids, copy_groups, mention_weight, repeated_copies, score_evidence, score_voice,
+)
 from engine.extract import CheckResult, load_checked
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
 from engine.group_products import ProductGroup, ProductMention, brand_pick_name, group_of, group_products, uk_name
@@ -777,7 +779,9 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
     for tid, res in checked.items():
         thread = by_id[tid]
         comments = {c.id: c for c in thread.comments}
-        copied = copied_comment_ids(thread)  # once per thread: it reads the whole thread
+        groups = copy_groups(thread)  # once per thread: it reads the whole thread
+        # Copies count once (Noemi, 11 Oct 2026): the later copies' mentions and notes are left out.
+        copied, repeats = copied_comment_ids(thread, groups), repeated_copies(thread, groups)
         voices = {}
 
         def voice_of(comment: Comment) -> VoiceScore:
@@ -787,6 +791,8 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
             return voices[comment.id]
 
         for m in res.kept:
+            if m.comment_id in repeats:
+                continue
             group = group_by_mention.get(ProductMention(tid, m.comment_id, m.product, m.category, m.stance))
             if group is None:
                 continue  # left out above: another category, another type, a loose name, or over budget
@@ -804,6 +810,8 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                 written_as=m.product,
             ))
         for n in res.kept_notes:
+            if n.comment_id in repeats:
+                continue
             comment = comments[n.comment_id]
             voice = voice_of(comment)
             evidence = score_evidence(comment, n.about, n.stance)

@@ -332,7 +332,7 @@ COPIED_TEXT_REASON = "the same words as another writer's comment in this thread"
 _WORD = re.compile(r"[^\W_]+(?:'[^\W_]+)*")
 
 
-def copied_comment_ids(thread: Thread) -> frozenset[str]:
+def copy_groups(thread: Thread) -> list[frozenset[str]]:
     """The comments of `thread` whose own words share a run of at least COPIED_TEXT_MIN_WORDS words in a row with
     another writer's comment there: "copied text", a red flag.
 
@@ -343,7 +343,8 @@ def copied_comment_ids(thread: Thread) -> frozenset[str]:
     Links don't count as words.
 
     Worked out once per thread, not comment by comment: every run of that many words is listed with the comments it
-    appears in, so a thread of hundreds of comments is read once. score_voice takes the result.
+    appears in, so a thread of hundreds of comments is read once. Returns the sets of comments that copy one another
+    (a comment copied by two others joins them in one set); copied_comment_ids and repeated_copies read them.
     """
     size = config.COPIED_TEXT_MIN_WORDS
     readable = {c.id: c for c in thread.comments if c.status == "ok"}
@@ -352,13 +353,46 @@ def copied_comment_ids(thread: Thread) -> frozenset[str]:
         words = _WORD.findall(_LINK.sub(" ", _own_words(comment.body)))
         for run in {tuple(words[start:start + size]) for start in range(len(words) - size + 1)}:
             found_in.setdefault(run, []).append(comment.id)
-    copied: set[str] = set()
+    joined: dict[str, str] = {}  # each copy's set, by one comment standing for it (union-find)
+
+    def root(cid: str) -> str:
+        while joined.get(cid, cid) != cid:
+            cid = joined[cid]
+        return cid
+
     # The same passage gives many runs with the same comments: each set of comments is compared once.
     for sharing in {tuple(ids) for ids in found_in.values() if len(ids) > 1}:
         for first, second in combinations(sharing, 2):
             if _two_writers_copies(readable[first], readable[second]):
-                copied.update((first, second))
-    return frozenset(copied)
+                joined.setdefault(first, first)
+                joined.setdefault(second, second)
+                joined[root(first)] = root(second)
+    groups: dict[str, set[str]] = {}
+    for cid in joined:
+        groups.setdefault(root(cid), set()).add(cid)
+    return [frozenset(group) for group in groups.values()]
+
+
+def copied_comment_ids(thread: Thread, groups: list[frozenset[str]] | None = None) -> frozenset[str]:
+    """The comments of `thread` with the "copied text" red flag: every comment of copy_groups (or of `groups`, when the
+    caller has them already)."""
+    return frozenset(cid for group in (copy_groups(thread) if groups is None else groups) for cid in group)
+
+
+def repeated_copies(thread: Thread, groups: list[frozenset[str]] | None = None) -> frozenset[str]:
+    """The copies that don't count (Noemi's decision of 11 Oct 2026: copies count once): of each set of comments that
+    copy one another (copy_groups, or `groups`), every one but the first posted (on the same second, the lowest id).
+    The pipeline leaves their mentions, notes and care tips out; the copy that counts keeps its red flag."""
+    by_id = {c.id: c for c in thread.comments}
+
+    def posted(cid: str) -> tuple:
+        when = by_id[cid].created_at
+        return when is None, when.timestamp() if when is not None else 0.0, cid
+
+    repeats: set[str] = set()
+    for group in copy_groups(thread) if groups is None else groups:
+        repeats |= group - {min(group, key=posted)}
+    return frozenset(repeats)
 
 
 def _two_writers_copies(a: Comment, b: Comment) -> bool:

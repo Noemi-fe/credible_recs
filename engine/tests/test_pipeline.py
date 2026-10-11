@@ -132,10 +132,30 @@ def test_copied_text_is_looked_for_once_per_thread_read(tmp_path, monkeypatch):
     # Module 5's "copied text" red flag (Noemi's decision 3, 11 Oct 2026) compares a whole thread, which can have
     # hundreds of comments: it is worked out once per thread, not once per comment scored.
     looked_at = []
-    real = pipeline.copied_comment_ids
-    monkeypatch.setattr(pipeline, "copied_comment_ids", lambda thread: looked_at.append(thread.id) or real(thread))
+    real = pipeline.copy_groups  # since 11 Oct 2026 the once-per-thread reading (copies count once, Noemi)
+    monkeypatch.setattr(pipeline, "copy_groups", lambda thread: looked_at.append(thread.id) or real(thread))
     result = answer_request(REQUEST, library_dir=library(tmp_path))
     assert sorted(looked_at) == sorted(result.threads_used) == ["1kett01", "1kett02"]
+
+
+# Made-up text of 26 words, posted twice by two writers below: a copy.
+ACME_COPY = ("My Acme kettle has lasted nine years of daily use and still boils fast, so I would buy the same one again "
+             "without thinking twice about it.")
+
+
+def test_copies_count_once(tmp_path):
+    # Noemi's decision of 11 Oct 2026: two writers posting the same words count as one voice. The first posted copy
+    # counts (here, on the same second, the lower id); the later one adds nothing to the ranking.
+    lib = write_library(tmp_path, {
+        "1ket005": ("Which electric kettle lasts?", "Ten years, ideally.", [
+            ("k5a", "Acme kettle", ACME_COPY, "recommend"), ("k5b", "Acme kettle", ACME_COPY, "recommend"),
+            praise("k5c", "Zojirushi kettle", 7), praise("k5d", "Zojirushi kettle", 6)]),
+        "1ket006": ("Best electric kettle?", "Mine died.", [
+            praise("k6a", "Acme kettle", 5), praise("k6b", "Zojirushi kettle", 5)]),
+    }, community="BuyItForLife")
+    result = answer_request("electric kettle that lasts", library_dir=lib, prices=[], product_facts=[], today=TODAY)
+    acme = next(p for p in result.ranking.products if p.name == "Acme kettle")
+    assert sorted(m.comment_id for m in acme.mentions) == ["k5a", "k6a"]
 
 
 class FakeProfiles:

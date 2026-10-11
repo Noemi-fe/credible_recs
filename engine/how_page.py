@@ -58,7 +58,7 @@ RED_FLAGS: dict[str, str] = {
     "downvoted": "<strong>Downvoted:</strong> more people voted the comment down than up.",
     "copied text": "<strong>Copies someone else:</strong> {{config:COPIED_TEXT_MIN_WORDS}} words or more in a row are "
                    "the same as another writer's comment in the thread, as when two accounts post the same "
-                   "recommendation.",
+                   "recommendation. Copies count once: only the first one posted counts at all.",
 }
 # The signs of honesty that add to the evidence (engine/credibility.py, HONESTY_TAGS), in that order.
 HONESTY_SIGNS: dict[str, str] = {
