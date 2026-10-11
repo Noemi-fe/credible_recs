@@ -419,8 +419,30 @@ def test_threads_not_yet_extracted_dont_take_the_reading_slots_and_are_listed(tm
 
 
 def test_the_reading_limit_counts_only_threads_read(tmp_path):
-    result = answer_request(REQUEST, library_dir=library(tmp_path), max_threads=1)
+    # more_threads=None since 11 Oct 2026: without it, a first read short of picks now reads further (below).
+    result = answer_request(REQUEST, library_dir=library(tmp_path), max_threads=1, more_threads=None)
     assert len(result.threads_used) == 1
+
+
+def test_short_of_picks_the_answer_reads_more_threads_before_giving_up(tmp_path):
+    # Noemi, 7 Oct 2026: "if a request lacks enough credible evidence, fetch more threads before giving up". Built on
+    # 11 Oct 2026, when shampoo advice proved spread over many brands: the first 16 threads gave no pick, 48 gave 3.
+    # Here the first thread read alone gives the Zojirushi one thread of the two it needs; reading on gives both.
+    root = library(tmp_path)
+    first = answer_request(REQUEST, library_dir=root, max_threads=1, more_threads=None)
+    assert first.answer.picks == []
+    wider = answer_request(REQUEST, library_dir=root, max_threads=1, more_threads=5)
+    assert [pick.name for pick in wider.answer.picks][:1] == ["Zojirushi kettle"]
+    assert sorted(wider.threads_used) == ["1kett01", "1kett02"] and wider.read_more
+
+
+def test_an_answer_with_enough_picks_never_reads_more(tmp_path, monkeypatch):
+    # The wider read is only for answers short of picks: one with a full top 3 stays as the first threads made it.
+    from engine import pipeline
+
+    monkeypatch.setattr(pipeline, "PICKS_SHOWN", 1)
+    result = answer_request(REQUEST, library_dir=library(tmp_path), max_threads=2, more_threads=5)
+    assert not result.read_more and len(result.answer.picks) >= 1
 
 
 def test_notes_naming_no_kind_are_listed_not_dropped_silently(tmp_path):

@@ -114,6 +114,7 @@ from engine.config import (
     PIPELINE_BRAND_PICKS,
     PICKS_SHOWN,
     PIPELINE_MAX_THREADS,
+    PIPELINE_MORE_THREADS,
     UK_BRAND_NAMES,
 )
 from engine.contradictions import contradicting_writers
@@ -195,6 +196,8 @@ class PipelineResult:
     # Writers (lowercased names) who recommend a product and warn against it without saying what changed: their every
     # mention counts as a low voice (Noemi's rule, 9 Oct 2026). For reports only, as a count: never shown to users.
     contradicting_writers: list[str] = field(default_factory=list)
+    threads_available: int = 0  # extracted threads about the product that could be read (threads_used is the first ones)
+    read_more: bool = False  # the first threads gave too few picks, so more were read (answer_request, 11 Oct 2026)
 
     def text(self) -> str:
         """The answer as Markdown, or module 1's question or polite no."""
@@ -217,8 +220,33 @@ def _today() -> date:
 def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_threads: int = PIPELINE_MAX_THREADS,
                    profiles=None, prices: list[Price] | None = None, today: date | None = None,
                    live_check_required: bool | None = None, live_checker=None,
-                   product_facts: list[ProductFacts] | None = None) -> PipelineResult:
+                   product_facts: list[ProductFacts] | None = None,
+                   more_threads: int | None = PIPELINE_MORE_THREADS) -> PipelineResult:
     """Runs modules 1 to 7 on the saved library and returns everything each step decided.
+
+    The answer reads the `max_threads` most relevant threads first. When they give fewer than PICKS_SHOWN picks and the
+    library holds more threads about the product, it reads up to `more_threads` before giving up (Noemi, 7 Oct 2026:
+    "fetch more threads automatically before giving up"; built 11 Oct 2026), and keeps that wider answer only if it has
+    more picks: the first threads are the ones closest to the request's needs. `more_threads=None` never reads more.
+    """
+    query = parse_query(request)
+    reading = dict(library_dir=library_dir, profiles=profiles, prices=prices, today=today,
+                   live_check_required=live_check_required, live_checker=live_checker, product_facts=product_facts)
+    result = _answer(query, max_threads=max_threads, **reading)
+    if (more_threads is None or more_threads <= max_threads or result.answer is None
+            or len(result.answer.picks) >= PICKS_SHOWN or result.threads_available <= len(result.threads_used)):
+        return result
+    wider = _answer(query, max_threads=more_threads, **reading)
+    if len(wider.answer.picks) <= len(result.answer.picks):
+        return result
+    wider.read_more = True
+    return wider
+
+
+def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, prices: list[Price] | None,
+            today: date | None, live_check_required: bool | None, live_checker,
+            product_facts: list[ProductFacts] | None) -> PipelineResult:
+    """One reading of the library for an understood request, with at most `max_threads` threads (answer_request).
 
     `profiles`: where writers' standing comes from (an object with user_stats and comment_flairs, such as
     engine.profiles.StoredProfiles); None leaves the writers as saved, known by name only.
@@ -232,7 +260,6 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     the answer is written again without it (up to LIVE_CHECK_ROUNDS times). With it, a thread's age no longer holds it
     back (live_check_required defaults to off), since what is shown is checked live anyway.
     """
-    query = parse_query(request)
     result = PipelineResult(query)
     if query.status != "ok":
         return result
@@ -248,7 +275,9 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     exempt = not required or _in_gold_set(threads_dir)
     extracted = [t for t in about_it if t.id in every_checked]
     result.waiting_live_check = [t.id for t in extracted if not (exempt or _checked_live_recently(t, today))]
-    threads = [t for t in extracted if t.id not in result.waiting_live_check][:max_threads]
+    usable = [t for t in extracted if t.id not in result.waiting_live_check]
+    result.threads_available = len(usable)
+    threads = usable[:max_threads]
     checked = {t.id: every_checked[t.id] for t in threads}
     if profiles is not None:
         threads = [with_profiles(t, profiles, _commented(checked[t.id])).thread for t in threads]
@@ -883,6 +912,8 @@ def main(argv: list[str]) -> int:
     result = answer_request(" ".join(argv), profiles=cached_profiles(), live_checker=live_checker())
     print(result.text())
     if result.answer is not None:
+        if result.read_more:
+            print(f"\n(the first {PIPELINE_MAX_THREADS} threads gave too few picks, so {len(result.threads_used)} were read)")
         print(f"\n(threads used: {', '.join(result.threads_used)}; left out as another type: "
               f"{len(result.left_out_as_other_type)}; brand or line names left out: {len(result.left_out_loose)}; "
               f"threads not extracted yet: {len(result.not_extracted)}; threads waiting for a live check: "

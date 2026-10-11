@@ -220,6 +220,11 @@ MATCHING_TARGET = 0.90
 # leaves. 16 also drops b08's "Look for: mason jars". The cost: b04 reads four cleanser, sunscreen and exfoliant threads
 # whose posts mention moisturiser (its picks don't change).
 PIPELINE_MAX_THREADS = 16
+# When those threads give fewer than 3 picks, up to this many are read before giving up (Noemi's decision of 7 Oct
+# 2026: "fetch more threads automatically before giving up"; built 11 Oct 2026, the value chosen by Claude and reported
+# to her). Shampoo advice is spread over many brands: its 16 most relevant threads gave no pick, 24 and 32 gave one,
+# 48 gave three (Nizoral, Neutrogena T-Gel, Head & Shoulders for an oily scalp).
+PIPELINE_MORE_THREADS = 48
 # Brand-only picks (decided by Noemi, 9 Oct 2026, decision 9): a brand or line that fits several products ("Lodge",
 # "CeraVe") is ranked, under a name that says so ("Lodge (their cast iron skillets)"), when its threads make the
 # product clear (BRAND_PICK_TITLE_SHARE below); otherwise it is left out, and listed on the result. False leaves
