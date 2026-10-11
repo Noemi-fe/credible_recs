@@ -1,11 +1,11 @@
 {
-  "measured_on": "2026-10-10",
+  "measured_on": "2026-10-11",
   "metrics": {
     "quote_verification": {
       "value": 1.0,
       "target": 1.0,
-      "count": 228,
-      "out_of": 228,
+      "count": 196,
+      "out_of": 196,
       "threads": null
     },
     "extraction_precision": {
@@ -58,10 +58,10 @@
       "threads": null
     },
     "ai_quotes_found": {
-      "value": 0.9992774566473989,
+      "value": 0.9992979992979993,
       "target": null,
-      "count": 5532,
-      "out_of": 5536,
+      "count": 5694,
+      "out_of": 5698,
       "threads": null
     },
     "request_outcome": {
@@ -116,10 +116,10 @@
   },
   "end_to_end": {
     "questions": 10,
-    "with_all_picks": 10,
+    "with_all_picks": 9,
     "with_a_pick": 10,
     "picks_wanted": 3,
-    "quotes_shown": 228,
+    "quotes_shown": 196,
     "unverified_quotes_shown": 0,
     "threads_waiting_live_check": 0
   }
