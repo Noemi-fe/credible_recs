@@ -729,18 +729,18 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
 
 
 def _another_types_advice(kind: str, notes: list[KindNote], category: str, product_type: str | None) -> bool:
-    """Whether a skincare kind's advice is about another type of product: its name and notes name another skincare type
-    (engine.sources.mentions_product) and never the one asked for. Found in b04, 10 Oct 2026: a moisturiser answer
+    """Whether a skincare or haircare kind's advice is about another type of product: its name and notes name another
+    type of its category (engine.sources.mentions_product) and never the one asked for. Found in b04, 10 Oct 2026: a moisturiser answer
     showed "Look for: AHA" and "Look for: BHA", whose notes were about exfoliants. A note tying it to the type asked
     for keeps it ("an AHA lotion fixed my dry legs"). Kitchen kinds always stay: another kind of pan is a real
     alternative ("Look for: cast iron" for a PFAS-free non-stick pan)."""
-    if category != "skincare" or not product_type:
+    if category not in ("skincare", "haircare") or not product_type:
         return False
     text = " ".join([kind] + [n.quote for n in notes])
     if mentions_product(text, product_type):
         return False
     return any(mentions_product(text, other.name) for other in PRODUCT_TYPES
-               if other.category == "skincare" and other.name != product_type)
+               if other.category == category and other.name != product_type)
 
 
 def _message(picks: int, product_type: str | None) -> str | None:

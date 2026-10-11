@@ -1,7 +1,7 @@
 [project]
 name = "credible-recs"
 version = "0.1.0"
-description = "Credibility-ranked product picks for skincare and kitchen gear."
+description = "Credibility-ranked product picks for skincare, haircare and kitchen gear."
 requires-python = ">=3.12"
 dependencies = [
     "certifi>=2024.2.2",
@@ -11,6 +11,10 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8",
+]
+# Module 1's free open model (Noemi, 11 Oct 2026); without it, the rules work alone.
+model = [
+    "llama-cpp-python==0.3.16",
 ]
 
 [build-system]

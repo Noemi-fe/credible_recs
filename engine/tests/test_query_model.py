@@ -1,0 +1,132 @@
+"""Module 1's second opinion: a free open model for the requests the rules can't route (Noemi, 11 Oct 2026).
+
+The rules stay first; the model is asked only when they find no product type, and its answer is checked by code. Every
+test here uses a stand-in model: no test loads the real one (engine/tests/conftest.py turns it off).
+"""
+
+import threading
+import time
+from pathlib import Path
+
+from engine.config import SUBREDDITS
+from engine.query import parse_query
+from engine.query_model import LlamaQueryModel
+
+
+class FakeModel:
+    """Answers every request with the same fields, and remembers what it was asked."""
+
+    def __init__(self, answer):
+        self.answer = answer
+        self.asked: list[str] = []
+
+    def read(self, text: str):
+        self.asked.append(text)
+        if isinstance(self.answer, Exception):
+            raise self.answer
+        return self.answer
+
+
+def test_the_rules_go_first_and_the_model_isnt_asked_when_they_route_a_request():
+    model = FakeModel({"category": "kitchen", "product": "kettle"})
+    query = parse_query("gentle cleanser for acne-prone skin", model=model)
+    assert (query.status, query.product_type) == ("ok", "cleanser")
+    assert model.asked == []
+
+
+def test_a_kitchen_product_the_rules_dont_know_becomes_a_product_type_of_its_own():
+    query = parse_query("air fryer that lasts, under £100", model=FakeModel({"category": "kitchen", "product": "air fryer"}))
+    assert (query.status, query.category, query.product_type) == ("ok", "kitchen", "air fryer")
+    assert query.subreddits == list(SUBREDDITS["kitchen"])
+    assert query.constraints.budget.max == 100  # budgets and units are still read by the rules
+    assert query.search_terms and "air fryer" in query.search_terms[-1]
+
+
+def test_a_plural_in_the_request_still_counts_as_its_own_words():
+    query = parse_query("best rice cookers for sushi rice", model=FakeModel({"category": "kitchen", "product": "rice cooker"}))
+    assert (query.status, query.product_type) == ("ok", "rice cooker")
+
+
+def test_a_product_the_request_doesnt_name_is_never_used():
+    # A vague request stays a question: the model can't turn "something nice for my mum" into a gift set.
+    query = parse_query("something nice for my mum", model=FakeModel({"category": "kitchen", "product": "gift set"}))
+    assert query.status == "clarify" and query.product_type is None
+
+
+def test_a_generic_word_is_not_a_product():
+    query = parse_query("best gadget for my kitchen", model=FakeModel({"category": "kitchen", "product": "gadget"}))
+    assert query.status == "clarify"
+
+
+def test_a_request_the_model_puts_outside_our_categories_gets_the_polite_no():
+    query = parse_query("best yoga mat for beginners", model=FakeModel({"category": "other", "product": "yoga mat"}))
+    assert query.status == "out_of_scope" and "skincare, haircare and kitchen" in query.message
+
+
+def test_an_unclear_broken_or_failing_answer_leaves_the_rules_question():
+    for answer in ({"category": "unclear", "product": ""}, {"category": "garden", "product": "hose"}, "not json",
+                   None, RuntimeError("the model crashed")):
+        query = parse_query("best hose reel", model=FakeModel(answer))
+        assert query.status == "clarify", answer
+
+
+def test_two_products_stay_a_question_and_the_model_isnt_asked():
+    model = FakeModel({"category": "kitchen", "product": "kettle"})
+    query = parse_query("kettle and chef knife", model=model)
+    assert query.status == "clarify" and model.asked == []
+
+
+def test_without_a_model_nothing_changes():
+    # Tests run with the real model turned off (conftest): the rules alone ask what kind of product.
+    assert parse_query("air fryer that lasts").status == "clarify"
+
+
+def test_a_word_for_a_category_or_a_place_is_not_a_product():
+    # "kitchen gadget" or "hair products" say where or what for, not what: the question stands.
+    for text, product in (("best kitchen gadget", "kitchen gadget"), ("hair products for curls", "hair product"),
+                          ("best skincare for my 30s", "skincare")):
+        category = "haircare" if "hair" in text else "kitchen" if "kitchen" in text else "skincare"
+        query = parse_query(text, model=FakeModel({"category": category, "product": product}))
+        assert query.status == "clarify", text
+
+
+def test_a_lookalike_the_rules_leave_to_the_model_is_placed_by_it():
+    # "cream" in "ice cream maker" isn't a moisturiser: the rules ask, and the model places it in the kitchen.
+    query = parse_query("ice cream maker that lasts", model=FakeModel({"category": "kitchen", "product": "ice cream maker"}))
+    assert (query.status, query.category, query.product_type) == ("ok", "kitchen", "ice cream maker")
+    query = parse_query("vacuum sealer for sous vide", model=FakeModel({"category": "kitchen", "product": "vacuum sealer"}))
+    assert (query.status, query.category, query.product_type) == ("ok", "kitchen", "vacuum sealer")
+
+
+def test_the_model_can_place_a_haircare_product():
+    query = parse_query("heat protectant spray for fine hair", model=FakeModel({"category": "haircare", "product": "heat protectant spray"}))
+    assert (query.status, query.category, query.product_type) == ("ok", "haircare", "heat protectant spray")
+    assert query.subreddits == list(SUBREDDITS["haircare"])
+
+
+class _OneAtATime:
+    """A stand-in for llama.cpp that notices when two requests use it at once."""
+
+    def __init__(self):
+        self.busy = False
+        self.overlapped = False
+
+    def create_chat_completion(self, **_):
+        if self.busy:
+            self.overlapped = True
+        self.busy = True
+        time.sleep(0.02)
+        self.busy = False
+        return {"choices": [{"message": {"content": '{"category": "kitchen", "product": "toaster"}'}}]}
+
+
+def test_the_open_model_answers_one_request_at_a_time():
+    # The web server answers requests in parallel; llama.cpp can't be used by two of them at once.
+    model = LlamaQueryModel(Path("not-loaded.gguf"))
+    model._llm = _OneAtATime()
+    workers = [threading.Thread(target=model.read, args=("toaster",)) for _ in range(4)]
+    for worker in workers:
+        worker.start()
+    for worker in workers:
+        worker.join()
+    assert not model._llm.overlapped

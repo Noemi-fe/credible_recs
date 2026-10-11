@@ -5,14 +5,19 @@ a label or a test pass: ask Noemi first. After a change, run `python -m engine.g
 that no longer fits is reported with its file and line.
 """
 
-# Categories the engine ranks. A product mention can also be "other" (outside both categories).
-THREAD_CATEGORIES = ("skincare", "kitchen")
+# Categories the engine ranks. A product mention can also be "other" (outside every category).
+# "haircare" added on 11 Oct 2026 (Noemi: "i want to be able to ask about shampoo and receive some proper answers"):
+# products put on the hair or scalp. Hair tools (dryers, straighteners) stay out of scope.
+THREAD_CATEGORIES = ("skincare", "kitchen", "haircare")
 MENTION_CATEGORIES = THREAD_CATEGORIES + ("other",)
 
 SUBREDDITS: dict[str, tuple[str, ...]] = {
     # "acne" added by Noemi on 11 Oct 2026 (an agent had skipped r/acne threads for the acne-prone cleanser question).
     "skincare": ("SkincareAddiction", "AsianBeauty", "30PlusSkinCare", "SkincareAddictionUK", "acne"),
     "kitchen": ("BuyItForLife", "AskCulinary", "chefknives", "Cooking", "castiron", "Coffee", "espresso", "tea"),
+    # Chosen by Claude on 11 Oct 2026 (reported to Noemi): the science-minded and product-heavy haircare communities,
+    # most general advice first.
+    "haircare": ("HaircareScience", "curlyhair", "wavyhair", "Hair", "femalehairadvice", "malehairadvice", "Dandruff"),
 }
 # Subreddits about one skin condition, {subreddit: the skin type that brings it in} (decided by Claude, 11 Oct 2026, when
 # Noemi added r/acne): searched first for a request about that condition, as the most specific, and not for others.
@@ -183,6 +188,9 @@ DOWNVOTED_BELOW = 0  # a score under this (more downvotes than upvotes) is "down
 # Recency (the guide: "recent" = the last 2-3 years). Decided by Noemi, 9 Oct 2026.
 VOICE_RECENT_YEARS = 3  # a comment written within this many years of collection is "recent"; older is "old post"
 OLD_SKINCARE_POST_MAX_VOICE = "medium"  # formulas change, so an old skincare comment can't be high
+# The categories whose formulas change, so OLD_SKINCARE_POST_MAX_VOICE and the ranking's old-post penalty apply to them
+# (haircare added by Claude on 11 Oct 2026, reported to Noemi: shampoos are reformulated as skincare is).
+REFORMULATED_CATEGORIES = ("skincare", "haircare")
 
 # The comment's words. Decided by Noemi, 9 Oct 2026.
 ENTHUSIAST_MIN_TERMS = 3  # using this many of the category's specialist words shows an "enthusiast"
@@ -265,6 +273,12 @@ PRODUCT_TYPE_PLURALS: dict[str, str] = {
     "espresso machine": "espresso machines",
     "coffee grinder": "coffee grinders",
     "teapot": "teapots",
+    "shampoo": "shampoos",
+    "dry shampoo": "dry shampoos",
+    "conditioner": "conditioners",
+    "leave-in conditioner": "leave-in conditioners",
+    "hair mask": "hair masks",
+    "hair oil": "hair oils",
 }
 
 # Decision 11, budgets (engine/prices.py). Current prices live in data/prices.json, each with its shop and the day
@@ -753,3 +767,9 @@ ARCHIVE_DOWN_MINUTES = 30
 # Writers who agree echo short phrases, not whole sentences: in the library (159 threads, 11 Oct 2026), two writers not
 # answering each other shared at most 9 words in a row, apart from the one copy found, which shared 59.
 COPIED_TEXT_MIN_WORDS = 20
+
+# --- Haircare (Noemi, 11 Oct 2026) ---
+# Extraction instructions that only add a category leave the other categories' extractions as they were:
+# {current version: {older version: the thread categories it is still current for}}. v9 added haircare (its category
+# and product types) and changed nothing else, so skincare and kitchen threads extracted with v8 aren't done again.
+EXTRACT_STILL_CURRENT: dict[str, dict[str, tuple[str, ...]]] = {"extract-v9": {"extract-v8": ("skincare", "kitchen")}}

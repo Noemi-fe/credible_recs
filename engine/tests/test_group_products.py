@@ -303,6 +303,15 @@ def test_a_brand_pick_says_which_products_it_means():
     assert brand_pick_name("Paula's Choice", "exfoliant") == "Paula's Choice (their exfoliants)"
 
 
+def test_a_product_type_the_open_model_names_gets_a_plural_too():
+    # Types module 1 doesn't list (the open model's, 11 Oct 2026) follow English's usual rules.
+    assert brand_pick_name("Ninja", "air fryer") == "Ninja (their air fryers)"
+    assert brand_pick_name("OXO", "dish brush") == "OXO (their dish brushes)"
+    assert brand_pick_name("Microplane", "zester") == "Microplane (their zesters)"
+    assert brand_pick_name("Bodum", "french press") == "Bodum (their french presses)"
+    assert brand_pick_name("Yamachu", "wok") == "Yamachu (their woks)"
+
+
 def test_every_product_type_has_a_plural():
     assert set(config.PRODUCT_TYPE_PLURALS) == {p.name for p in PRODUCT_TYPES}
     assert config.PRODUCT_TYPE_PLURALS["chef knife"] == "chef knives"

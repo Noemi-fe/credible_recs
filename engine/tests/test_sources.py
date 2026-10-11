@@ -209,10 +209,11 @@ def test_mentions_are_whole_words():
     assert relevance(pan, "frying pan") == 0
 
 
-def test_an_unknown_product_type_falls_back_to_the_words_of_its_name():
-    # A future AI parser might name a product module 1 doesn't list.
+def test_an_unknown_product_type_falls_back_to_its_whole_name():
+    # The open model can name a product module 1 doesn't list. Changed on 11 Oct 2026, when that model arrived: the
+    # name counts as a whole ("Rice every day." no longer names a rice cooker; this test expected 4 before).
     thread = Thread.model_validate(kitchen_thread("1x", "Best rice cooker?", body="Rice every day."))
-    assert relevance(thread, "rice cooker") == 4
+    assert relevance(thread, "rice cooker") == 3
     assert relevance(thread, "Air Fryer") == 0
 
 
@@ -617,6 +618,12 @@ CLEANSER = "gentle cleanser for oily skin"  # skincare
     # Kitchen-only warning words mean something else in skincare: a peel is a product.
     ("Peeling solution worth it?", "skincare", "advice"),
     ("Moisturizer, 3 years later", "skincare", "long_term"),
+    # Haircare (11 Oct 2026): what went wrong, never the need ("for an itchy scalp", "for damaged hair").
+    ("This shampoo ruined my hair", "haircare", "warning"),
+    ("My hair is falling out after switching conditioner", "haircare", "warning"),
+    ("Bad reaction to a new hair mask", "haircare", "warning"),
+    ("Best shampoo for an itchy scalp?", "haircare", "advice"),
+    ("Recommendations for damaged hair", "haircare", "advice"),
 ])
 def test_thread_kind_from_the_title(title, category, kind):
     assert thread_kind({"title": title}, category) == kind
@@ -1046,3 +1053,15 @@ def test_warning_searches_use_the_words_each_product_fails_with(request_text, wo
     from engine.sources import warning_words
 
     assert warning_words(parse_query(request_text))[:2] == words
+
+
+def test_a_product_type_module_1_doesnt_list_is_found_by_its_whole_name():
+    # The open model can name a type the rules don't list ("air fryer", 11 Oct 2026): only its whole name counts,
+    # never one of its words ("fresh air" isn't an air fryer), written with a space, a hyphen or as one word.
+    from engine.sources import mentions_product
+
+    assert mentions_product("My air fryer died after a year", "air fryer")
+    assert mentions_product("Air-fryers are overrated", "air fryer")
+    assert mentions_product("the airfryer basket cracked", "air fryer")
+    assert not mentions_product("Let them air dry on a rack", "air fryer")
+    assert not mentions_product("a deep fryer for chips", "air fryer")

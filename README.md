@@ -3,7 +3,7 @@
 Credibility-ranked product recommendations from public Reddit discussions.
 Free, non-commercial research prototype: read-only, links back to every source comment.
 
-It returns three picks for skincare and kitchen gear, ranked by how credible the recommenders are rather than by how popular a product is.
+It returns three picks for skincare, haircare and kitchen gear, ranked by how credible the recommenders are rather than by how popular a product is.
 
 Read `CLAUDE.md` for how the build works, and `eval/RUNS.md` for every measured result.
 

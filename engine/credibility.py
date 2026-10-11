@@ -15,7 +15,7 @@ Two layers (the brief's "Credibility score v1", with Noemi's definitions from da
       low     two red flags or more (VOICE_LOW_MIN_RED_FLAGS). Clear paid promotion (a discount code, an affiliate
               or referral link, "#ad") counts as two on its own (PAID_PROMOTION_RED_FLAGS): it isn't a hint, it's a
               conflict of interest.
-  An old skincare comment can be at most medium (OLD_SKINCARE_POST_MAX_VOICE): formulas change.
+  An old skincare or haircare comment can be at most medium (OLD_SKINCARE_POST_MAX_VOICE): formulas change.
   The guide also lists "no sign they've used anything" as a red flag. It is a switch (VOICE_RED_FLAG_NO_USE), off
   for now: Noemi's labels never applied it, and the evidence layer already scores it.
 - Evidence, once per product mention (score_evidence): how well this writer knows this product. Proof of use sets
@@ -174,7 +174,7 @@ def _voice_level(signs: list[Sign], category: str) -> str:
         return "low"
     worth = sum(config.VOICE_SIGN_WEIGHTS.get(sign.name, 1) for sign in signs if sign.kind == "good")
     level = "high" if worth >= config.VOICE_HIGH_MIN_GOOD_SIGNS and not red_flags else "medium"
-    if category == "skincare" and any(sign.name == "old post" for sign in signs):
+    if category in config.REFORMULATED_CATEGORIES and any(sign.name == "old post" for sign in signs):
         level = _lower(level, config.OLD_SKINCARE_POST_MAX_VOICE)
     return level
 
@@ -472,6 +472,15 @@ CATEGORY_TERMS = {
         "wa handle", "seasoning", "polymerized", "enameled", "tri-ply", "fully clad", "fond", "gooseneck", "burr",
         "burrs", "conical", "grind size", "extraction", "bloom", "heat retention", "descale", "descaling",
         "limescale",
+    ),
+    # Haircare (11 Oct 2026): the words of people who study their hair and its products.
+    "haircare": (
+        "sulfate", "sulfates", "sulphate", "sulphates", "sls", "sles", "silicone", "silicones", "cones", "protein",
+        "porosity", "humectant", "humectants", "emollient", "emollients", "co-wash", "cowash", "clarify", "clarifying",
+        "chelating", "build-up", "buildup", "plopping", "scrunch", "scrunching", "squish to condish", "curly girl",
+        "cg method", "ketoconazole", "zinc pyrithione", "selenium sulfide", "piroctone olamine", "seborrheic",
+        "malassezia", "film former", "cationic", "behentrimonium", "polyquaternium", "cuticle", "hygral fatigue",
+        "heat protectant", "bond builder", "wet line", "cast",
     ),
 }
 

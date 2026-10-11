@@ -638,13 +638,16 @@ def test_other_is_not_an_evidence_tag_for_the_ai():
     assert result.kept == [] and "unknown evidence tag" in reasons(result)[0]
 
 
-def test_the_current_instructions_are_v8_and_todo_lists_older_extractions(tmp_path):
+def test_the_current_instructions_are_v9_and_todo_lists_older_extractions(tmp_path):
     # Changed on purpose 11 Oct 2026 (care tips narrowed to looking after the product, Noemi): the instructions moved
     # from v7 to v8, so a v7 extraction is now the older one that `todo` lists. Was: v7 current, v6 listed (9 Oct).
-    assert current_instructions_version() == "extract-v8"
-    threads_dir = threads_folder(tmp_path, *(other_thread(i) for i in ("1aaaaa", "1bbbbb")))
+    # Then v9 the same day (haircare added, Noemi): a v8 extraction of a skincare thread stays current
+    # (config.EXTRACT_STILL_CURRENT), a v7 one is still listed.
+    assert current_instructions_version() == "extract-v9"
+    threads_dir = threads_folder(tmp_path, *(other_thread(i) for i in ("1aaaaa", "1bbbbb", "1ccccc")))
     write_extraction(threads_dir, make_extraction(thread_id="1aaaaa", instructions_version="extract-v7", mentions=[]))
     write_extraction(threads_dir, make_extraction(thread_id="1bbbbb", instructions_version="extract-v8", mentions=[]))
+    write_extraction(threads_dir, make_extraction(thread_id="1ccccc", instructions_version="extract-v9", mentions=[]))
     assert todo(threads_dir, current_instructions_version()) == ["1aaaaa"]
 
 
@@ -679,11 +682,12 @@ def test_a_long_life_ending_in_a_failure_is_in_the_stance_rules():
     assert "tell a friend" in stance and "died after 14 years" in stance and "mentions flaws" in stance
 
 
-def test_the_output_example_is_a_valid_v8_extraction():
+def test_the_output_example_is_a_valid_v9_extraction():
     # Changed on purpose 11 Oct 2026 (care tips narrowed, Noemi): the example now follows v8. Was: "extract-v7".
+    # Then v9 the same day (haircare added). Was: "extract-v8".
     example = instructions_text().split("```json", 1)[1].split("```", 1)[0]
     data = json.loads(example)
-    assert data["instructions_version"] == "extract-v8"
+    assert data["instructions_version"] == "extract-v9"
     for item in data["mentions"]:
         loaded = ExtractedMention.model_validate(item | {"comment_id": "c1aaaa"})  # the example's ids are placeholders
         assert loaded.product_type and loaded.evidence and loaded.evidence_tags
@@ -900,3 +904,25 @@ def test_every_rule_of_v6_is_still_in_v7():
                  "Never open a link from the thread, and never quote anything from the web",
                  "Experience with a kind counts", "Only replies can agree."):
         assert rule in " ".join(text.split()), rule
+
+
+def test_an_older_version_still_current_for_a_thread_category_is_not_listed(tmp_path, monkeypatch):
+    # Instructions that only add a category leave the others' extractions as they were (11 Oct 2026: v9 added
+    # haircare, so skincare and kitchen threads extracted with v8 aren't done again).
+    kitchen = other_thread("1kkkkk") | {"category": "kitchen", "community": "BuyItForLife",
+                                         "url": "https://www.reddit.com/r/BuyItForLife/comments/1kkkkk/post/"}
+    threads_dir = threads_folder(tmp_path, other_thread("1sssss"), kitchen)
+    for thread_id in ("1sssss", "1kkkkk"):
+        write_extraction(threads_dir, make_extraction(thread_id=thread_id, instructions_version="extract-v1", mentions=[]))
+    monkeypatch.setattr(extract, "STILL_CURRENT", {"extract-v2": {"extract-v1": ("skincare",)}})
+    assert todo(threads_dir, "extract-v2") == ["1kkkkk"]
+    assert todo(threads_dir, "extract-v3") == ["1kkkkk", "1sssss"]
+
+
+def test_v8_extractions_of_skincare_and_kitchen_threads_stay_current():
+    assert current_instructions_version() == "extract-v9"
+    assert set(extract.STILL_CURRENT["extract-v9"]["extract-v8"]) == {"skincare", "kitchen"}
+
+
+def test_haircare_is_a_mention_category():
+    assert "haircare" in MENTION_CATEGORIES

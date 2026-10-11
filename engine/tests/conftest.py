@@ -22,6 +22,15 @@ def _pipeline_today_is_9_october_2026(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_query_model(monkeypatch):
+    # Module 1's open model (Noemi, 11 Oct 2026) is a 1.12 GB file on this machine: tests never load it. A test about
+    # the model passes its own stand-in (engine/tests/test_query_model.py).
+    from engine import query_model
+
+    monkeypatch.setattr(query_model, "default_query_model", lambda: None)
+
+
+@pytest.fixture(autouse=True)
 def _no_real_price_list(monkeypatch):
     # The pipeline reads data/prices.json when a test passes no `prices`. That real list holds real products (since
     # 9 Oct 2026 some marked not sold in the UK), so a made-up product with a similar name would be left out for a

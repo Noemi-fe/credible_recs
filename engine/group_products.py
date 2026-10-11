@@ -319,4 +319,16 @@ def brand_pick_name(brand: str, product_type: str) -> str:
 
     if mentions_product(brand, product_type):
         return brand
-    return BRAND_PICK_NAME.format(brand=brand, products=PRODUCT_TYPE_PLURALS.get(product_type, f"{product_type}s"))
+    return BRAND_PICK_NAME.format(brand=brand, products=plural(product_type))
+
+
+def plural(product_type: str) -> str:
+    """A product type's plural: config.PRODUCT_TYPE_PLURALS for module 1's types ("chef knives", "Dutch ovens"), and
+    English's usual rules for a type the open model named (11 Oct 2026): "dish brushes", "french presses", "air fryers"."""
+    if product_type in PRODUCT_TYPE_PLURALS:
+        return PRODUCT_TYPE_PLURALS[product_type]
+    if re.search(r"(?:s|sh|ch|x|z)$", product_type):
+        return product_type + "es"
+    if re.search(r"[^aeiou]y$", product_type):
+        return product_type[:-1] + "ies"
+    return product_type + "s"

@@ -43,3 +43,6 @@ data/eval/
 
 # Blind-test answers: ours quote Reddit, and the rivals' answers and the testers' names aren't ours to publish.
 eval/blind_test/answers/
+
+# Open models run locally (module 1, 11 Oct 2026): large binary weights, never committed.
+models/

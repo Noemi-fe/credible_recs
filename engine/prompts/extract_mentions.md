@@ -1,4 +1,4 @@
-Version: extract-v8
+Version: extract-v9
 
 # Finding product mentions in one Reddit thread
 
@@ -53,10 +53,13 @@ comment text it prints.
   are strengths and sizes named separately, even with one verdict ("Mandelic acid 5%" and "Mandelic acid 10%"
   in a list are two mentions).
 - Only comments count, not the post's own title or text.
-- Category: "skincare", "kitchen" or "other". Other is anything outside skincare and kitchen gear, even in a
-  kitchen or skincare thread: a humidifier, a laptop, a hair dryer, a box-cutter "utility knife", makeup (primer,
-  powder, foundation), cleaning products and cooking fats (dish soap, oven cleaner, Crisco). Makeup sold as sun
-  protection (a BB cream or tinted product with SPF) is skincare.
+- Category: "skincare", "kitchen", "haircare" or "other". Haircare (added 11 Oct 2026, instructions v9) is anything
+  put on the hair or scalp: shampoo, conditioner, hair masks, hair oils, leave-ins, curl creams, gels, mousses, heat
+  protectants, scalp treatments. Other is anything outside skincare, haircare and kitchen gear, even in one of their
+  threads: a humidifier, a laptop, a hair dryer or straightener (a tool, not haircare), a box-cutter "utility knife",
+  makeup (primer, powder, foundation), cleaning products and cooking fats (dish soap, oven cleaner, Crisco). Makeup
+  sold as sun protection (a BB cream or tinted product with SPF) is skincare. A body wash is skincare; a 2-in-1
+  shampoo and body wash is haircare.
 
 ## Product type
 
@@ -69,10 +72,12 @@ Use one of these names, written exactly as here, when it fits:
   "lip balm"
 - kitchen: "stovetop kettle", "electric kettle", "chef knife", "cast iron skillet", "frying pan", "saucepan",
   "dutch oven", "espresso machine", "coffee grinder", "teapot"
+- haircare: "shampoo", "dry shampoo", "conditioner", "leave-in conditioner", "hair mask", "hair oil"
 
-Otherwise write a short lowercase type in plain words ("face mask", "toaster", "makeup remover"). The names cover
-their usual kinds: a gyuto or santoku is a "chef knife", a non-stick or carbon steel pan a "frying pan", an
-essence a "toner", a retinol or tretinoin a "retinoid". Sun protection wins over the form: anything with SPF or
+Otherwise write a short lowercase type in plain words ("face mask", "toaster", "makeup remover", "air fryer", "curl
+cream"). The names cover their usual kinds: a gyuto or santoku is a "chef knife", a non-stick or carbon steel pan a
+"frying pan", an essence a "toner", a retinol or tretinoin a "retinoid", a clarifying, anti-dandruff or sulfate-free
+shampoo or a co-wash a "shampoo", a deep conditioner a "hair mask", a hair serum a "hair oil". Sun protection wins over the form: anything with SPF or
 "UV" in its name, or sold to protect from the sun ("Biore UV Aqua Rich Watery Essence"), is a "sunscreen".
 
 When you're not sure (Noemi, 9 Oct 2026): assume a product is of the thread's type unless the comment or its name
@@ -201,7 +206,7 @@ comment (there's no one left to credit), and agreement with a comment other than
 ```json
 {
   "thread_id": "<the thread's id>",
-  "instructions_version": "extract-v8",
+  "instructions_version": "extract-v9",
   "extracted_at": "<now, ISO 8601 in UTC, e.g. 2026-10-08T10:00:00Z>",
   "extractor": "claude-code",
   "mentions": [

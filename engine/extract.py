@@ -64,6 +64,7 @@ from engine.config import (
     EVIDENCE_LEVELS,
     EVIDENCE_TAGS,
     EXTRACT_MAX_COMMENTS,
+    EXTRACT_STILL_CURRENT as STILL_CURRENT,
     MENTION_CATEGORIES,
     QUOTE_MAX_WORDS,
     SERVICE_TYPE_PATTERNS,
@@ -449,8 +450,9 @@ def current_instructions_version(path: Path = DEFAULT_INSTRUCTIONS) -> str:
 def todo(threads_dir: Path, version: str) -> list[str]:
     """The ids of the threads to extract (again) under these instructions, in file-name order.
 
-    A thread is listed when it has no extraction, when its extraction followed another instructions version, or
-    when its extraction file is malformed (writing it again fixes that; `check` says what is wrong with it).
+    A thread is listed when it has no extraction, when its extraction followed another instructions version (unless
+    that version is still current for the thread's category: config.EXTRACT_STILL_CURRENT), or when its extraction
+    file is malformed (writing it again fixes that; `check` says what is wrong with it).
     """
     return list(_todo(Path(threads_dir), version))
 
@@ -474,9 +476,22 @@ def _todo(threads_dir: Path, version: str) -> dict[str, str]:
         extraction, problems = _read_extraction(path)
         if problems:
             reasons[thread_path.stem] = "its extraction file is malformed (see `check`)"
-        elif extraction.instructions_version != version:
+        elif extraction.instructions_version != version and not _still_current(extraction.instructions_version,
+                                                                                version, thread_path):
             reasons[thread_path.stem] = f"extracted with {extraction.instructions_version}"
     return reasons
+
+
+def _still_current(older: str, version: str, thread_path: Path) -> bool:
+    """Whether an extraction made with `older` instructions is still current under `version` for this thread's
+    category (config.EXTRACT_STILL_CURRENT: v8 for skincare and kitchen threads under v9, which only added haircare)."""
+    categories = STILL_CURRENT.get(version, {}).get(older)
+    if not categories:
+        return False
+    try:
+        return json.loads(thread_path.read_text(encoding="utf-8")).get("category") in categories
+    except (OSError, ValueError, AttributeError):
+        return False
 
 
 # --- Command line ---
@@ -537,7 +552,7 @@ def main(argv: list[str], instructions: Path = DEFAULT_INSTRUCTIONS) -> int:
 def _print_todo(threads_dir: Path, version: str, instructions: Path) -> int:
     reasons = _todo(threads_dir, version)
     if not reasons:
-        print(f"Nothing to extract: every thread in {_shown(threads_dir)} has an extraction made with {version}.")
+        print(f"Nothing to extract: every thread in {_shown(threads_dir)} has an extraction current under {version}.")
         return 0
     print(f"{len(reasons)} thread(s) to extract with {version} ({_shown(instructions)}):")
     for thread_id, reason in reasons.items():

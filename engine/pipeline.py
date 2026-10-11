@@ -114,7 +114,6 @@ from engine.config import (
     PIPELINE_BRAND_PICKS,
     PICKS_SHOWN,
     PIPELINE_MAX_THREADS,
-    PRODUCT_TYPE_PLURALS,
     UK_BRAND_NAMES,
 )
 from engine.contradictions import contradicting_writers
@@ -123,7 +122,7 @@ from engine.credibility import (
 )
 from engine.extract import CheckResult, load_checked
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
-from engine.group_products import ProductGroup, ProductMention, brand_pick_name, group_of, group_products, uk_name
+from engine.group_products import ProductGroup, ProductMention, brand_pick_name, group_of, group_products, plural, uk_name
 from engine.gold import DEFAULT_GOLD_DIR
 from engine.library import DEFAULT_LIBRARY_DIR, checked_live_within
 from engine.match_products import known_aliases, normalize_name, product_words, same_product
@@ -528,7 +527,7 @@ def _type_words(product_type: str | None) -> tuple[str, ...]:
     under a brand may add to speak for the brand's products of that type (engine.prices.find_brand_entry)."""
     if not product_type:
         return ()
-    return (product_type, PRODUCT_TYPE_PLURALS.get(product_type, product_type + "s"))
+    return (product_type, plural(product_type))
 
 
 def _only_unsold_products(brand: ProductGroup, groups: list[ProductGroup], not_sold: list[ProductGroup]) -> bool:

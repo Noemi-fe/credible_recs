@@ -4,7 +4,7 @@ Every request ends in one of three outcomes:
 - "ok": the need is clear. We know the category, the product type, any constraints (budget, skin type,
   size, SPF, how long it should last), what to search for and in which subreddits.
 - "clarify": the need is too vague, or holds two needs at once. Instead of guessing, we ask one question.
-- "out_of_scope": the product isn't skincare or kitchen gear. We say so politely.
+- "out_of_scope": the product isn't skincare, haircare or kitchen gear. We say so politely.
 """
 
 import re
@@ -94,7 +94,8 @@ class ProductType:
 PRODUCT_TYPES = (
     ProductType("exfoliant", "skincare", ("exfoliant", "exfoliator", "exfoliating", "exfoliate", "peeling solution", "peel"),
                 ("aha", "bha", "pha", "salicylic", "glycolic", "lactic acid", "mandelic")),
-    ProductType("cleanser", "skincare", ("cleanser", "face wash", "facial wash", "cleansing oil", "cleansing balm", "micellar")),
+    ProductType("cleanser", "skincare", ("cleanser", "face wash", "facial wash", "cleansing oil", "cleansing balm", "micellar",
+                                         "makeup remover", "make-up remover")),
     ProductType("moisturiser", "skincare", ("moisturiser", "moisturizer", "moisturising cream", "moisturizing cream", "face cream", "night cream", "day cream"),
                 ("lotion", "cream")),
     ProductType("sunscreen", "skincare", ("sunscreen", "sun screen", "suncream", "sun cream", "sunblock"), ("spf", "uv", "sun")),
@@ -117,6 +118,14 @@ PRODUCT_TYPES = (
                 subreddits=("espresso", "Coffee", "BuyItForLife")),
     ProductType("coffee grinder", "kitchen", ("coffee grinder", "burr grinder", "grinder"), subreddits=("Coffee", "espresso")),
     ProductType("teapot", "kitchen", ("teapot", "tea pot"), subreddits=("tea", "BuyItForLife")),
+    # Haircare (Noemi, 11 Oct 2026). A longer name wins over a shorter one inside it: "dry shampoo" isn't a shampoo,
+    # and a "deep conditioner" is a hair mask.
+    ProductType("shampoo", "haircare", ("shampoo", "co-wash", "cowash")),
+    ProductType("dry shampoo", "haircare", ("dry shampoo",)),
+    ProductType("conditioner", "haircare", ("conditioner",)),
+    ProductType("leave-in conditioner", "haircare", ("leave-in conditioner", "leave in conditioner", "leave-in")),
+    ProductType("hair mask", "haircare", ("hair mask", "hair masque", "deep conditioner", "deep conditioning mask")),
+    ProductType("hair oil", "haircare", ("hair oil", "scalp oil", "hair serum")),
 )
 
 # The short words people put in Reddit post titles for each product, used to find threads.
@@ -136,23 +145,42 @@ TITLE_WORDS = {
     "frying pan": ("pan",),
     "coffee grinder": ("grinder",),
     "teapot": ("teapot",),
+    "shampoo": ("shampoo",),
+    "conditioner": ("conditioner",),
+    "leave-in conditioner": ("leave-in", "leave in"),
+    "hair mask": ("hair mask", "deep conditioner"),
 }
 
 # Things people shop for that this version doesn't cover. "-free" and "-safe" forms are requirements, not products.
+# Shampoo and conditioner moved into haircare on 11 Oct 2026; hair tools stay out.
 OUT_OF_SCOPE = (
     "laptop", "phone", "headphones", "earbuds", "tv", "monitor", "camera", "shoes", "trainers", "sneakers", "boots", "jacket",
-    "mattress", "pillow", "vacuum", "hair dryer", "hairdryer", "straightener", "shampoo", "conditioner", "makeup", "make-up",
-    "foundation", "mascara", "lipstick", "perfume", "fragrance", "dishwasher", "washing machine", "fridge", "car", "bike",
-    "chair", "desk", "watch", "toothbrush", "razor",
+    "mattress", "pillow", "vacuum", "hair dryer", "hairdryer", "straightener", "curling iron", "curling wand", "makeup",
+    "make-up", "foundation", "mascara", "lipstick", "perfume", "fragrance", "dishwasher", "washing machine", "fridge", "car",
+    "bike", "chair", "desk", "watch", "toothbrush", "razor",
+)
+# Out of scope although they hold a product's name: an air conditioner isn't a hair conditioner.
+OUT_OF_SCOPE_LOOKALIKES = ("air conditioner", "air conditioning")
+
+# Phrases that hold a product's word, or an out-of-scope word, but name something else (11 Oct 2026): "cream" in "ice
+# cream maker" isn't a moisturiser, a "crock pot" isn't a saucepan, a "vacuum sealer" isn't a vacuum cleaner. They are
+# set aside before products are looked for, so the request is asked about, or placed by the open model
+# (engine.query_model), instead of being taken for the product whose word it holds.
+LOOKALIKES = (
+    "ice cream", "crock pot", "instant pot", "coffee pot", "sheet pan", "cake pan", "loaf pan", "roasting pan",
+    "baking pan", "muffin pan", "bundt pan", "pie pan", "tart pan", "sun hat", "sun lounger", "vacuum sealer",
+    "vacuum flask", "vacuum-insulated", "vacuum insulated",
 )
 
 # Words that place a vague request in a category, so the question can be more specific.
 CATEGORY_HINTS = {
     "skincare": ("skin", "face", "acne", "wrinkles", "pores", "skincare", "complexion"),
     "kitchen": ("kitchen", "cooking", "cook", "coffee", "tea", "baking", "cookware"),
+    "haircare": ("hair", "scalp", "curl", "curly", "frizz", "frizzy", "dandruff", "haircare"),
 }
 
-EXAMPLES = {"skincare": "a cleanser, a moisturiser or a sunscreen", "kitchen": "a kettle, a chef's knife or a pan"}
+EXAMPLES = {"skincare": "a cleanser, a moisturiser or a sunscreen", "kitchen": "a kettle, a chef's knife or a pan",
+            "haircare": "a shampoo, a conditioner or a hair mask"}
 
 
 @dataclass(frozen=True)
@@ -163,28 +191,49 @@ class Routing:
     subreddits: tuple[str, ...] = ()
     question: str | None = None
     message: str | None = None
+    several: bool = False  # a question because the request names two products: the open model is never asked
+
+
+OUT_OF_SCOPE_MESSAGE = "Sorry, I only cover skincare, haircare and kitchen gear for now, so I can't recommend that one."
 
 
 def classify(text: str) -> Routing:
     """Decides the outcome. Ambiguity becomes a question, never a guess."""
     lowered = text.lower()
-    found = _find_products(lowered, strong=True) or _find_products(lowered, strong=False)
+    if _mentions_any(lowered, OUT_OF_SCOPE_LOOKALIKES):
+        return Routing("out_of_scope", message=OUT_OF_SCOPE_MESSAGE)
+    lowered = _set_aside(lowered, LOOKALIKES)
+    found = _find_products(lowered, strong=True) or _clues_that_fit(_find_products(lowered, strong=False), lowered)
     names = list(dict.fromkeys(p.name for p in found))
 
     if len(names) > 1:
-        return Routing("clarify", question=f"I look for one thing at a time: shall I start with the {names[0]} or the {names[1]}?")
+        return Routing("clarify", question=f"I look for one thing at a time: shall I start with the {names[0]} or the {names[1]}?",
+                       several=True)
     if names:
         product = next(p for p in found if p.name == names[0])
         return Routing("ok", product.category, product.name, product.subreddits or SUBREDDITS[product.category])
     if _mentions_any(lowered, OUT_OF_SCOPE, skip_requirements=True):
-        return Routing(
-            "out_of_scope",
-            message="Sorry, I only cover skincare and kitchen gear for now, so I can't recommend that one.",
-        )
+        return Routing("out_of_scope", message=OUT_OF_SCOPE_MESSAGE)
     for category, hints in CATEGORY_HINTS.items():
         if _mentions_any(lowered, hints):
             return Routing("clarify", category, question=f"What kind of {category} product are you after? For example {EXAMPLES[category]}?")
-    return Routing("clarify", question="What kind of product are you looking for? For example a cleanser, a sunscreen, a kettle or a chef's knife?")
+    return Routing("clarify", question="What kind of product are you looking for? For example a cleanser, a shampoo, a kettle or a chef's knife?")
+
+
+def _set_aside(lowered: str, phrases: tuple[str, ...]) -> str:
+    """The text with every one of these phrases blanked out (same length, so positions don't move)."""
+    for phrase in phrases:
+        lowered = re.sub(rf"\b{re.escape(phrase)}s?\b", lambda m: " " * len(m.group(0)), lowered)
+    return lowered
+
+
+def _clues_that_fit(found: list[ProductType], lowered: str) -> list[ProductType]:
+    """Products found by a clue word alone, less the skincare ones in a request about hair (11 Oct 2026): "cream" in
+    "curl cream for curly hair" is a styling product, not a moisturiser. The request is then asked about, or placed by
+    the open model."""
+    if not _mentions_any(lowered, CATEGORY_HINTS["haircare"]):
+        return found
+    return [p for p in found if p.category != "skincare"]
 
 
 def _find_products(lowered: str, strong: bool) -> list[ProductType]:
@@ -277,13 +326,22 @@ def correct_typos(text: str) -> str:
     return re.sub(r"[A-Za-z]+", fix, text)
 
 
-def parse_query(text: str) -> ParsedQuery:
-    """Turns a request typed in plain words into an understood request, using rules only (no AI, no cost)."""
+_DEFAULT = object()  # parse_query's model: the open model when this machine has it (engine.query_model)
+
+
+def parse_query(text: str, model=_DEFAULT) -> ParsedQuery:
+    """Turns a request typed in plain words into an understood request: rules first, at no cost; when they find no
+    product type, a free open model's second opinion, checked by code (engine.query_model; Noemi, 11 Oct 2026).
+    `model`: the model to ask (None: the rules alone); by default the one engine.query_model finds on this machine."""
     # Imported here because query_rules builds on this file's shapes (Budget, Size).
+    from engine.query_model import default_query_model, routed_by_model
     from engine.query_rules import parse_budget, parse_min_years, parse_size, parse_skin_types, parse_spf
 
     original, text = text, correct_typos(text)
     routing = classify(text)
+    model = default_query_model() if model is _DEFAULT else model
+    if routing.status == "clarify" and not routing.several and model is not None:
+        routing = routed_by_model(text, model) or routing
     if routing.status == "out_of_scope":
         return ParsedQuery(text=original, status="out_of_scope", message=routing.message)
 

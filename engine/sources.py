@@ -38,6 +38,7 @@ from engine.config import (
     LIBRARY_MIX,
     LIBRARY_THREADS_PER_PRODUCT,
     MAX_THREADS_PER_SUBREDDIT,
+    REFORMULATED_CATEGORIES,
     SKINCARE_RECENT_YEARS,
 )
 from engine.gold import load_threads
@@ -65,12 +66,16 @@ def without_unusable_comments(thread: Thread) -> Thread:
 def _product_pattern(product_type: str) -> re.Pattern:
     """Finds any word that names the product: whole words only, in any case, singular or plural.
 
-    The words are the product's keywords and hints from module 1. A product module 1 doesn't list (a future
-    AI parser might name one) falls back to the words of its own name.
+    The words are the product's keywords and hints from module 1. A product module 1 doesn't list, named by the open
+    model (engine.query_model, 11 Oct 2026), is found by its whole name only, never by one of its words ("fresh air"
+    isn't an air fryer), written with a space, a hyphen or as one word ("air fryer", "air-fryer", "airfryer").
     """
     known = {p.name: p.keywords + p.hints for p in PRODUCT_TYPES}
-    words = known.get(product_type.strip().lower()) or tuple(product_type.lower().split())
-    alternatives = "|".join(re.escape(word) for word in words) or "(?!)"  # (?!) never matches: no words, no mentions
+    words = known.get(product_type.strip().lower())
+    if words:
+        alternatives = "|".join(re.escape(word) for word in words)
+    else:
+        alternatives = r"[\s-]?".join(re.escape(word) for word in product_type.lower().split()) or "(?!)"  # (?!): never
     return re.compile(rf"\b(?:{alternatives})s?\b", re.IGNORECASE)
 
 
@@ -88,8 +93,9 @@ TYPO_MIN_LENGTH = 9
 
 
 def _product_words(product_type: str) -> tuple[str, ...]:
+    """The names a product is known by: module 1's keywords and hints, or its own whole name."""
     known = {p.name: p.keywords + p.hints for p in PRODUCT_TYPES}
-    return known.get(product_type, tuple(product_type.lower().split()))
+    return known.get(product_type, (product_type.lower(),))
 
 
 
@@ -148,6 +154,7 @@ class LocalSource:
 WARNING_SEARCHES = {
     "kitchen": ("died", "broke", "regret", "avoid"),
     "skincare": ("irritation", "broke me out", "regret", "avoid"),
+    "haircare": ("ruined", "falling out", "regret", "avoid"),
 }
 # Product types that fail in their own words (10 Oct 2026): "skillet died" found only "broke in my new skillet" (its
 # first use). Used before the category's words.
@@ -645,7 +652,7 @@ def _post_score(query: ParsedQuery, post: dict, needs: list[str], too_old: datet
     score += math.log10(1 + (post.get("num_comments") or 0))
     score -= 2.0 if (post.get("num_comments") or 0) < SMALL_THREAD else 0.0
     score += 0.5 if query.subreddits and _subreddit(post) == query.subreddits[0].lower() else 0.0
-    score -= 1.5 if query.category == "skincare" and _posted_before(post, too_old) else 0.0
+    score -= 1.5 if query.category in REFORMULATED_CATEGORIES and _posted_before(post, too_old) else 0.0
     if not _ADVICE.search(lowered) and (_SHOP_NEWS.search(lowered) or (query.category == "kitchen" and _CARE.search(lowered))):
         score -= 2.0
     return score
@@ -696,6 +703,11 @@ _WARNINGS = {
     ),
     "skincare": re.compile(
         rf"\b(?:{_SHARED_WARNINGS}|irritat(?:ion|ed|ing)|reactions?|burn(?:s|ed|t|ing)?|rash(?:es)?|(?:broke|breaking) me out)\b"
+    ),
+    # Haircare (11 Oct 2026): "damaged", "itchy" or "hair loss" alone are usually the need ("for damaged hair").
+    "haircare": re.compile(
+        rf"\b(?:{_SHARED_WARNINGS}|ruin(?:ed|s)?|(?:fell|falling|fall) out|stripp(?:ed|ing)|fried"
+        r"|reactions?|burn(?:s|ed|t|ing)?|rash(?:es)?|(?:broke|breaking) me out)\b"
     ),
 }
 _ANY_WARNING = re.compile(rf"\b(?:{_SHARED_WARNINGS})\b")  # for a category without its own words

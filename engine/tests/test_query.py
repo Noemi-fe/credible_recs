@@ -123,7 +123,7 @@ def test_two_needs_get_one_question():
 def test_out_of_scope_gets_a_polite_no():
     routing = classify("best laptop for uni")
     assert routing.status == "out_of_scope" and routing.category is None
-    assert "skincare and kitchen" in routing.message
+    assert "skincare, haircare and kitchen" in routing.message  # haircare: Noemi, 11 Oct 2026
 
 
 def test_requirements_that_mention_other_products_are_not_out_of_scope():
@@ -224,3 +224,71 @@ def test_the_acne_subreddit_is_searched_first_for_acne_requests_and_not_otherwis
     assert parse_query("exfoliant for breakouts").subreddits[0] == "acne"
     assert parse_query("moisturiser for dry skin").subreddits == general
     assert parse_query("sunscreen for oily skin").subreddits == general
+
+
+# --- Haircare (Noemi, 11 Oct 2026: "i want to be able to ask about shampoo and receive some proper answers") ---
+
+from engine.config import SUBREDDITS  # noqa: E402
+
+
+@pytest.mark.parametrize("text, product_type", [
+    ("shampoo for an oily scalp", "shampoo"),
+    ("sulfate-free shampoos for curly hair", "shampoo"),
+    ("dry shampoo for dark hair", "dry shampoo"),
+    ("conditioner for fine hair", "conditioner"),
+    ("leave-in conditioner for frizz", "leave-in conditioner"),
+    ("deep conditioner for bleached hair", "hair mask"),
+    ("hair oil for split ends", "hair oil"),
+])
+def test_haircare_products_are_routed_to_haircare(text, product_type):
+    routing = classify(text)
+    assert (routing.status, routing.category, routing.product_type) == ("ok", "haircare", product_type)
+    assert set(routing.subreddits) == set(SUBREDDITS["haircare"])
+
+
+def test_shampoo_and_conditioner_get_one_question():
+    routing = classify("shampoo and conditioner for dry hair")
+    assert routing.status == "clarify"
+    assert "shampoo" in routing.question and "conditioner" in routing.question
+
+
+def test_a_vague_hair_request_asks_within_haircare():
+    routing = classify("something for my frizzy hair")
+    assert (routing.status, routing.category) == ("clarify", "haircare")
+    assert "shampoo" in routing.question
+
+
+def test_hair_tools_and_air_conditioners_stay_out_of_scope():
+    for text in ("best hair dryer", "hair straightener that lasts", "air conditioner for a small flat"):
+        routing = classify(text)
+        assert routing.status == "out_of_scope", text
+        assert "haircare" in routing.message
+
+
+# --- Words inside another product's name (11 Oct 2026) ---
+
+@pytest.mark.parametrize("text, not_this", [
+    ("ice cream maker", "moisturiser"),
+    ("crock pot for stews", "saucepan"),
+    ("instant pot that lasts", "saucepan"),
+    ("sheet pan for roasting vegetables", "frying pan"),
+    ("sun hat for the beach", "sunscreen"),
+])
+def test_a_word_inside_another_products_name_is_not_that_product(text, not_this):
+    # "cream" in "ice cream maker" isn't a moisturiser: without the open model, the rules ask instead of guessing.
+    routing = classify(text)
+    assert routing.product_type != not_this
+    assert routing.status == "clarify"
+
+
+def test_a_vacuum_sealer_is_not_a_vacuum_cleaner():
+    assert classify("vacuum sealer for sous vide").status == "clarify"
+    assert classify("best vacuum for pet hair").status == "out_of_scope"
+
+
+def test_a_makeup_remover_is_a_cleanser_not_makeup():
+    # Micellar waters and cleansing balms are sold as makeup removers (11 Oct 2026).
+    routing = classify("makeup remover for sensitive eyes")
+    assert (routing.status, routing.product_type) == ("ok", "cleanser")
+    assert classify("make-up remover").product_type == "cleanser"
+    assert classify("best mascara").status == "out_of_scope"

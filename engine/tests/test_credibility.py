@@ -365,6 +365,19 @@ def test_an_old_skincare_post_can_be_at_most_the_capped_level():
     assert kitchen.level == "high"
 
 
+def test_an_old_haircare_post_is_capped_like_skincare():
+    # Haircare formulas change too (11 Oct 2026): an old comment about a shampoo may describe an older formula.
+    old = years_before(COLLECTED + "T00:00:00Z", config.VOICE_RECENT_YEARS + 2)
+    rich = account(created="2010-01-01", karma=500_000, flair="Dermatologist")
+    haircare = voice_for(created=old, author=rich, score=9, others=(1, 1, 2), category="haircare")
+    assert haircare.level == config.OLD_SKINCARE_POST_MAX_VOICE
+
+
+def test_haircare_vocabulary_shows_an_enthusiast():
+    body = "My low porosity hair hates protein, so I use a sulfate-free shampoo and clarify once a month for build-up."
+    assert "enthusiast" in voice_for(body=body, category="haircare").tags
+
+
 # --- The text of the comment ---
 
 def test_no_sign_of_use_is_a_red_flag_only_when_switched_on(monkeypatch):
