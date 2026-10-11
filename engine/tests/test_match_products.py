@@ -414,6 +414,8 @@ def test_a_spelled_out_name_can_hold_another_short_name():
     # as fitting every CeraVe hydrating cleanser, it made 15 writers' mentions a line whose most named model was the
     # Cream-to-Foam (2 mentions).
     ("skincare", "Cerave hydrating cleanser", "CeraVe Hydrating Facial Cleanser"),
+    # b02, 11 Oct 2026: writers' "matte sunscreen stick" is the maker's Matte Sun Stick (round 9 found its facts).
+    ("skincare", "Beauty of Joseon matte sunscreen stick", "Beauty of Joseon Matte Sun Stick: Mugwort + Camelia SPF50+ PA++++"),
 ])
 def test_the_shipped_short_names_found_in_the_blind_test_answers(category, a, b):
     assert same_product(a, b, load_aliases()[category])

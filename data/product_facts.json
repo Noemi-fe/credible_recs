@@ -896,13 +896,14 @@
    "category": "kitchen",
    "product_type": "frying pan",
    "facts": {
-    "non_stick": true
+    "non_stick": true,
+    "pfas_free": false
    },
    "sources": [
     "https://www.scanpan.com/scanpan-nonstick",
     "https://scanpan.co.uk/collections/frying-pans"
    ],
-   "checked_on": "2026-10-10"
+   "checked_on": "2026-10-11"
   },
   {
    "product": "De Buyer carbon steel pans",
