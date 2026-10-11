@@ -227,7 +227,10 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     The answer reads the `max_threads` most relevant threads first. When they give fewer than PICKS_SHOWN picks and the
     library holds more threads about the product, it reads up to `more_threads` before giving up (Noemi, 7 Oct 2026:
     "fetch more threads automatically before giving up"; built 11 Oct 2026), and keeps that wider answer only if it has
-    more picks: the first threads are the ones closest to the request's needs. `more_threads=None` never reads more.
+    more picks: the first threads are the ones closest to the request's needs. In the wider reading a pick also needs a
+    credible recommendation that talks about what the request asks for, when it asks for something besides the product
+    (its needs, engine/needs.py): reading 48 shampoo threads had given every shampoo request the same popular picks.
+    `more_threads=None` never reads more.
     """
     query = parse_query(request)
     reading = dict(library_dir=library_dir, profiles=profiles, prices=prices, today=today,
@@ -236,7 +239,7 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     if (more_threads is None or more_threads <= max_threads or result.answer is None
             or len(result.answer.picks) >= PICKS_SHOWN or result.threads_available <= len(result.threads_used)):
         return result
-    wider = _answer(query, max_threads=more_threads, **reading)
+    wider = _answer(query, max_threads=more_threads, need_led=True, **reading)
     if len(wider.answer.picks) <= len(result.answer.picks):
         return result
     wider.read_more = True
@@ -245,8 +248,9 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
 
 def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, prices: list[Price] | None,
             today: date | None, live_check_required: bool | None, live_checker,
-            product_facts: list[ProductFacts] | None) -> PipelineResult:
+            product_facts: list[ProductFacts] | None, need_led: bool = False) -> PipelineResult:
     """One reading of the library for an understood request, with at most `max_threads` threads (answer_request).
+    `need_led`: the wider reading's rule, a pick needs a credible recommendation that talks about the request's needs.
 
     `profiles`: where writers' standing comes from (an object with user_stats and comment_flairs, such as
     engine.profiles.StoredProfiles); None leaves the writers as saved, known by name only.
@@ -299,8 +303,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     scored, kind_notes = _score(threads, checked, kept_groups, kinds, request_needs(query),
                                 set(result.contradicting_writers), request_asks(query))
     result.ranking, more_downsides = _fold_brand_skips(
-        _fold_brand_picks(rank_products(scored, query.category, kind_notes, placements(kinds)), kept_groups, result),
-        kept_groups, result)
+        _fold_brand_picks(_ranked(scored, query, kind_notes, kinds, need_led), kept_groups, result), kept_groups, result)
     unsuited_kinds = _unsuited_kinds(result.ranking.kinds, query, product_facts)
     folded = {item.name for item in result.folded_brand_picks}
     care = _care_tips(threads, checked, [g for g in kept_groups if g.name not in folded], kinds, query)
@@ -310,15 +313,31 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
                                  request_needs(query))
     if live_checker is not None:
         _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions, kept_groups,
-                    unsuited_kinds)
+                    unsuited_kinds, need_led)
     thread_of = {c.id: t.id for t in threads for c in t.comments}
     quoted = {thread_of.get(quote.comment_id) for _, quote in _every_quote(result.answer)}
     result.threads_quoted = [tid for tid in result.threads_used if tid in quoted]
     return result
 
 
+# Why a product found only in a wider reading isn't a pick (answer_request, 11 Oct 2026).
+WIDER_READING_SHORTFALL = "no credible recommendation talks about what you asked for"
+
+
+def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool) -> RankingResult:
+    """Module 6's ranking. In a wider reading (`need_led`) of a request that asks for something besides the product, a
+    product with no credible recommendation talking about it can't be a pick (answer_request)."""
+    ranking = rank_products(scored, query.category, kind_notes, placements(kinds))
+    if need_led and request_needs(query):
+        ranking.products = [replace(p, qualifies=False, shortfall=WIDER_READING_SHORTFALL)
+                            if p.qualifies and not p.breakdown.credible_recommends_fitting_need else p
+                            for p in ranking.products]
+    return ranking
+
+
 def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds, query, price_checks, care,
-                cautions=None, groups: list[ProductGroup] = (), unsuited_kinds: frozenset[str] = frozenset()) -> None:
+                cautions=None, groups: list[ProductGroup] = (), unsuited_kinds: frozenset[str] = frozenset(),
+                need_led: bool = False) -> None:
     """Checks every quote about to be shown against Reddit itself; drops the comments that fail and answers again.
 
     A comment that fails (gone, changed or unreadable) loses its votes too: the ranking is redone without it, so a
@@ -341,8 +360,8 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
             return
         failed |= new
         result.bodies = {cid: body for cid, body in result.bodies.items() if cid not in failed}
-        ranking = rank_products([m for m in scored if m.comment_id not in failed], query.category,
-                                [n for n in kind_notes if n.comment_id not in failed], placements(kinds))
+        ranking = _ranked([m for m in scored if m.comment_id not in failed], query,
+                          [n for n in kind_notes if n.comment_id not in failed], kinds, need_led)
         result.ranking, more_downsides = _fold_brand_skips(_fold_brand_picks(ranking, groups, result), groups, result)
         models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks)
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,

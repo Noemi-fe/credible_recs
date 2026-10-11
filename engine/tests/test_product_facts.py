@@ -811,3 +811,19 @@ def test_a_name_with_a_slip_comes_first_too():
                 fragrance_free=True)
     foam = known("Beplain mungbean cleanser", product_type="cleanser", fragrance_free=False)
     assert find_facts("Beplain mungbean greenful oil cleasner", "skincare", [foam, oil], "cleanser") == oil
+
+
+# --- Sulfate-free shampoo (11 Oct 2026) ---
+
+def test_a_sulfate_free_request_asks_for_it_and_a_shampoo_with_sulfates_clashes():
+    # Found on 11 Oct 2026: "sulfate-free shampoo for curly hair" picked Head & Shoulders, which has sulfates.
+    for text in ("sulfate-free shampoo for curly hair", "sulphate free shampoo", "shampoo without sulfates",
+                 "shampoo with no sulphates"):
+        assert "sulfate-free" in request_asks(parse_query(text)), text
+    assert "sulfate-free" not in request_asks(parse_query("shampoo for an oily scalp"))
+    with_sulfates = known("Classic Shampoo", category="haircare", product_type="shampoo", sulfate_free=False)
+    [found] = conflicts(parse_query("sulfate-free shampoo for curly hair"), with_sulfates)
+    assert (found.rule, found.hard, found.reason) == ("sulfates", True, RULES["sulfates"]["reason"])
+    gentle = known("Gentle Shampoo", category="haircare", product_type="shampoo", sulfate_free=True)
+    assert conflicts(parse_query("sulfate-free shampoo for curly hair"), gentle) == []
+    assert unconfirmed_note(["sulfates"]) == "we couldn't confirm it's sulfate-free"

@@ -1065,3 +1065,24 @@ def test_a_product_type_module_1_doesnt_list_is_found_by_its_whole_name():
     assert mentions_product("the airfryer basket cracked", "air fryer")
     assert not mentions_product("Let them air dry on a rack", "air fryer")
     assert not mentions_product("a deep fryer for chips", "air fryer")
+
+
+def test_haircare_need_words():
+    # 11 Oct 2026, from the shampoo builder's findings: "hair" is to haircare what "skin" is to skincare, too common to
+    # show a need; "anti-dandruff" asks about dandruff and "sulfate-free" about sulfates, as titles and comments say.
+    from engine.sources import need_words
+
+    assert need_words(parse_query("anti-dandruff shampoo")) == ["dandruff"]
+    assert need_words(parse_query("sulfate-free shampoo for curly hair")) == ["sulfate", "curly"]
+    assert need_words(parse_query("purple shampoo for blonde hair")) == ["purple", "blonde"]
+
+
+def test_a_hyphenated_title_word_matches_its_parts():
+    # "Anti-dandruff shampoo recs?" is about dandruff, and "recs" asks for recommendations.
+    from engine.sources import rank_posts
+
+    posts = [post("1aaaaa", "Shampoo for my sister?", subreddit="Hair"),
+             post("1bbbbb", "Anti-dandruff shampoo recs?", subreddit="Hair")]
+    ranked = rank_posts(parse_query("anti-dandruff shampoo"), posts)
+    assert [p["id"] for p in ranked][:1] == ["1bbbbb"]
+    assert thread_kind({"title": "Shampoo recs please"}, "haircare") == "advice"

@@ -28,7 +28,7 @@ from functools import cache
 
 from engine.config import NEED_IGNORED_WORDS, NEED_REQUEST_WORDS, NEEDS
 from engine.credibility import _own_words
-from engine.query import ParsedQuery
+from engine.query import PRODUCT_TYPES, ParsedQuery
 from engine.sources import _stem, _title_has, need_words
 
 LASTING = "lasting"  # the need that long-term use also speaks to
@@ -50,7 +50,7 @@ def request_needs(query: ParsedQuery) -> tuple[Need, ...]:
     """
     if query.status != "ok":
         return ()
-    text = _plain(query.text)
+    text = _without_product_names(_plain(query.text), query.product_type)
     found: dict[str, int] = {}  # need name -> where the request names it
 
     def name(need: str, at: int) -> None:
@@ -119,6 +119,15 @@ def _pattern(word: str) -> re.Pattern:
     casts")."""
     start = r"(?<![a-z0-9])" + re.escape(word.lower())
     return re.compile(start + (r"s?(?![a-z0-9])" if " " in word else ""))
+
+
+def _without_product_names(text: str, product_type: str | None) -> str:
+    """The request with the product's own names blanked out (same length, so positions don't move): "dry" in "dry
+    shampoo" names the product, not dry skin (11 Oct 2026)."""
+    known = {p.name: p.keywords for p in PRODUCT_TYPES}
+    for name in sorted({product_type or "", *known.get(product_type or "", ())} - {""}, key=len, reverse=True):
+        text = re.sub(rf"\b{re.escape(name)}s?\b", lambda m: " " * len(m.group(0)), text)
+    return text
 
 
 def _plain(text: str) -> str:

@@ -110,3 +110,9 @@ def test_a_reaction_or_its_absence_talks_about_sensitive_skin(body):
     # Found reading the blind-test view, 10 Oct 2026 (late): b01's Stratia quote about never causing a rash wasn't
     # counted as talking about sensitive skin. Picks don't change; reasons and the quotes shown get more accurate.
     assert "sensitive" in met("gentle exfoliant for sensitive skin", body)
+
+
+def test_the_products_own_name_is_not_a_need():
+    # "dry shampoo" names a product, not dry skin (11 Oct 2026, from the shampoo builder's findings).
+    assert names("dry shampoo that doesn't leave a white cast") == ["no white cast"]
+    assert "dry" in names("moisturiser for dry skin")

@@ -540,7 +540,7 @@ def _ask(source, query: ParsedQuery, limit: int, mix: dict | None, fill: bool) -
 # A thread where people ask for or compare recommendations: what the picks are built from.
 _ADVICE = re.compile(
     r"\b(recommend\w*|suggest\w*|which|best|looking for|advice|help me|worth it|alternatives?|hg|holy grail"
-    r"|favou?rites?|vs|versus|bifl|buy it for life|should i|request\w*)\b"
+    r"|favou?rites?|vs|versus|bifl|buy it for life|should i|request\w*|recs?)\b"
 )
 # A thread about living with a product for a long time: the evidence the brief values most.
 _NUMBER_WORDS = r"one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty"
@@ -574,7 +574,7 @@ _STOPWORDS = {
     "a", "an", "the", "for", "with", "without", "that", "this", "my", "me", "i", "im", "to", "of", "in", "on", "and",
     "or", "but", "is", "are", "be", "it", "its", "will", "would", "can", "could", "should", "doesnt", "dont", "wont",
     "actually", "really", "very", "good", "great", "nice", "best", "need", "want", "looking", "something", "some",
-    "any", "skin", "under", "over", "less", "more", "max", "around", "about", "budget", "between", "than", "up",
+    "any", "skin", "hair", "under", "over", "less", "more", "max", "around", "about", "budget", "between", "than", "up",
     "pounds", "pound", "quid", "euros", "euro", "dollars", "bucks", "usd", "gbp", "eur",
 }
 
@@ -584,6 +584,8 @@ def need_words(query: ParsedQuery) -> list[str]:
     product_words = set(query.product_type.split()) | {w for t in TITLE_WORDS.get(query.product_type, ()) for w in t.split()}
     words = []
     for token in re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", query.text.lower()):
+        # "anti-dandruff" asks about dandruff and "sulfate-free" about sulfates (11 Oct 2026), as people write them.
+        token = re.sub(r"^anti-(?=[a-z])|(?<=[a-z])-free$", "", token)
         word = _stem(re.sub(r"['-]", "", token))
         if word.isdigit() or word in _STOPWORDS or word in product_words or word in words:
             continue
@@ -791,9 +793,11 @@ def choose_mix(
 
 
 def _title_has(lowered_title: str, word: str) -> bool:
-    """Whole words, two-word spellings ("pour over" for "pourover") and longer forms ("lasting" for "last")."""
-    tokens = [re.sub(r"['-]", "", t) for t in re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", lowered_title)]
-    candidates = tokens + [a + b for a, b in zip(tokens, tokens[1:])]
+    """Whole words, two-word spellings ("pour over" for "pourover"), longer forms ("lasting" for "last") and the parts of
+    a hyphenated word ("anti-dandruff" has "dandruff", 11 Oct 2026)."""
+    written = re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", lowered_title)
+    tokens = [re.sub(r"['-]", "", t) for t in written]
+    candidates = tokens + [a + b for a, b in zip(tokens, tokens[1:])] + [part for t in written if "-" in t for part in t.split("-")]
     return any(t == word or _stem(t) == word or (len(word) >= 4 and t.startswith(word)) for t in candidates)
 
 

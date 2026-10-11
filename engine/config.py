@@ -482,6 +482,7 @@ PRODUCT_FACT_VALUES: dict[str, tuple] = {
     "non_stick": (True, False),  # a pan with a non-stick coating (ceramic or PTFE); seasoned steel or iron isn't
     "induction": (True, False),  # works on an induction hob
     "maker_warns_sensitive": (True, False),  # the maker's own page says not to use it on sensitive skin (10 Oct 2026)
+    "sulfate_free": (True, False),  # a shampoo that cleans without sulfates (SLS, SLES, ALS...) (11 Oct 2026)
 }
 # The facts each product type (engine/query.py, PRODUCT_TYPES) can have. Every skincare product can say whether it is
 # fragrance-free and whether its maker warns against sensitive skin; only retinoids and exfoliants, the skincare sold in
@@ -504,6 +505,7 @@ PRODUCT_FACTS_BY_TYPE: dict[str, tuple[str, ...]] = {
     "stovetop kettle": ("plastic_free_inside",),
     "frying pan": ("pfas_free", "non_stick", "induction"),
     "saucepan": ("pfas_free", "non_stick", "induction"),
+    "shampoo": ("sulfate_free",),  # 11 Oct 2026: "sulfate-free" is the shampoo requirement people type most
 }
 # The rules: when a request asks for one of "asks", a product whose fact has "value" doesn't suit it. "hard": True
 # leaves the product out (listed on the result); False keeps it and shows the reason under the pick as a caution. A
@@ -545,6 +547,10 @@ PRODUCT_FACT_RULES: dict[str, dict] = {
     # asked for by `python -m engine.product_facts todo`). Every other rule is one to confirm.
     "maker warns sensitive": {"asks": ("sensitive",), "fact": "maker_warns_sensitive", "value": True, "hard": True,
                               "confirm": False, "reason": "its maker says not to use it on sensitive skin"},
+    # Decided by Claude, 11 Oct 2026, reported to Noemi: "sulfate-free shampoo for curly hair" had picked Head &
+    # Shoulders, which has sulfates. A requirement like PFAS-free: left out when its facts say it has sulfates.
+    "sulfates": {"asks": ("sulfate-free",), "fact": "sulfate_free", "value": False, "hard": True,
+                 "reason": "it has sulfates"},
 }
 # Words of a request that ask for something module 1 doesn't find on its own: regular expressions, found at the start
 # of a word in the request (lowercased). "doesn't leave a white cast" asks for no white cast (module 1 finds only "no"
@@ -553,6 +559,7 @@ PRODUCT_FACT_RULES: dict[str, dict] = {
 PRODUCT_FACT_REQUEST_WORDS: dict[str, tuple[str, ...]] = {
     "no white cast": (r"white cast",),
     "PFAS-free": (r"pfas",),
+    "sulfate-free": (r"sul(?:f|ph)ate[- ]?free", r"(?<=no )sul(?:f|ph)ates?", r"(?<=without )sul(?:f|ph)ates?"),
     "non-stick": (r"(?<!not )(?<!not a )(?<!no )(?<!without )(?<!avoid )(?<!instead of )(?<!rather than )"
                   r"(?<!other than )non[- ]?stick",),
 }
@@ -584,6 +591,7 @@ HARD_REQUIREMENT_NAMES: dict[str, str] = {
     "plastic": "plastic inside",
     "not induction": "working on an induction hob",
     "maker warns sensitive": "a maker's warning against sensitive skin",
+    "sulfates": "sulfates",
 }
 #
 # 3. Care tips most writers agree on come first (engine/care_tips.py, tips_by_agreement). Two tips say the same thing
@@ -626,6 +634,7 @@ UNCONFIRMED_FACT_NAMES: dict[str, str] = {
     "not non-stick": "it's non-stick",
     "plastic": "no plastic touches the water",
     "not induction": "it works on an induction hob",
+    "sulfates": "it's sulfate-free",
 }
 
 # --- Sets, blocks and sharpeners aren't the product (10 Oct 2026) ---

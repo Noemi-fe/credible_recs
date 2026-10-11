@@ -80,6 +80,7 @@ ASKS_WORDS: dict[str, str] = {
     "PFAS-free": "PFAS-free",
     "non-stick": "non-stick",
     "plastic-free": "plastic-free",
+    "sulfate-free": "sulfate-free",
     "induction-compatible": "something that works on induction",
     "oily": "something for oily skin",
     "dry": "something for dry skin",

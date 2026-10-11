@@ -436,6 +436,16 @@ def test_short_of_picks_the_answer_reads_more_threads_before_giving_up(tmp_path)
     assert sorted(wider.threads_used) == ["1kett01", "1kett02"] and wider.read_more
 
 
+def test_a_wider_reading_only_picks_what_talks_about_the_request(tmp_path):
+    # Found by the shampoo builder (11 Oct 2026): reading 48 threads gave every shampoo request the same three popular
+    # picks, a dandruff shampoo for a purple-shampoo request included. In a wider reading, a pick needs a credible
+    # recommendation that talks about what the request asks for; the Zojirushi's say nothing about being quiet.
+    root = library(tmp_path)
+    result = answer_request("quiet electric kettle", library_dir=root, max_threads=1, more_threads=5)
+    assert result.answer.picks == [] and not result.read_more
+    assert answer_request("electric kettle", library_dir=root, max_threads=1, more_threads=5).read_more  # no needs
+
+
 def test_an_answer_with_enough_picks_never_reads_more(tmp_path, monkeypatch):
     # The wider read is only for answers short of picks: one with a full top 3 stays as the first threads made it.
     from engine import pipeline
