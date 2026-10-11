@@ -13,8 +13,12 @@ How it stays true:
   page is still shown.
 
 Everything put into the page is escaped (html.escape), the numbers from eval/metrics.json included. The page has no
-script and loads nothing: its styles are the search page's own (copied in from engine/templates/search.html when the
-page is made, so both look alike), plus a few of its own.
+script of its own and loads nothing, except GoatCounter's script when visits are counted (11 Oct 2026; engine/web.py):
+its styles are the search page's own (copied in from engine/templates/search.html when the page is made, so both look
+alike), plus a few of its own.
+
+Its last section, "Your privacy" (11 Oct 2026, going live), says what is collected about visitors and what isn't. What
+it says about visit counts follows whether they are on, and the public site also names its host.
 
 Wording: decided by Claude, 10 Oct 2026 (Noemi asked Claude to decide wording and report it). The explanation is in
 the template; the words for each listed sign and each test result are below.
@@ -133,6 +137,17 @@ METRIC_WORDING: dict[str, tuple[str, str]] = {
                       "the same product."),
 }
 
+# "Your privacy" (Noemi, 11 Oct 2026: going live; wording decided by Claude). The rest of the section is in the template.
+VISITS_COUNTED = ("<strong>Visit counts.</strong> We count visits with GoatCounter, which sets no cookies and never "
+                  "stores IP addresses. It keeps totals only: pages opened, the websites that sent people here, "
+                  "browsers, screen sizes and countries, and a few events: that a search was made, the kind of answer "
+                  "it got, which feedback button was pressed, and the answer to “First time here?”. Never what you "
+                  "typed.")
+VISITS_NOT_COUNTED = "<strong>Visit counts.</strong> Visits aren't counted at the moment."
+PUBLIC_SITE = ("<p>The site runs on Hugging Face, which may keep its own logs, as any web host does. To stop anyone "
+               "flooding it, our server counts each address's requests for a short while, in memory only: addresses "
+               "are never written down.</p>")
+
 MEASURED_ON = "Last measured on {date}."
 TARGETS_HEADING = "The targets we set"
 OTHER_HEADING = "Other checks"
@@ -152,8 +167,12 @@ OTHER_TYPE_EXAMPLES = 5
 _SLOT = re.compile(r"\{\{([^{}]+)\}\}")
 
 
-def page(metrics_path: Path = METRICS_FILE) -> str:
-    """The whole page, with the decided values from config and the results from `metrics_path`, read now."""
+def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = False) -> str:
+    """The whole page, with the decided values from config and the results from `metrics_path`, read now.
+
+    `counter`: GoatCounter's script when visits are counted (engine.web.counter_script), else "", and the privacy
+    section says which. `public`: the page is served by the public site, so it also names the site's host.
+    """
     slots = {
         "search_page_style": _search_page_style(),
         "communities": _communities(),
@@ -162,6 +181,9 @@ def page(metrics_path: Path = METRICS_FILE) -> str:
         "honesty_signs": _sign_list(HONESTY_SIGNS),
         "hard_rules": _hard_rules(),
         "evaluation": evaluation_section(metrics_path),
+        "visit_counting": VISITS_COUNTED if counter else VISITS_NOT_COUNTED,
+        "public_site": PUBLIC_SITE if public else "",
+        "counter_script": counter,
     }
     texts = {
         "medium_red_flags": _medium_red_flags(),

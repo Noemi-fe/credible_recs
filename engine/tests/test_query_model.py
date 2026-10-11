@@ -4,6 +4,8 @@ The rules stay first; the model is asked only when they find no product type, an
 test here uses a stand-in model: no test loads the real one (engine/tests/conftest.py turns it off).
 """
 
+import importlib.abc
+import sys
 import threading
 import time
 from pathlib import Path
@@ -130,3 +132,26 @@ def test_the_open_model_answers_one_request_at_a_time():
     for worker in workers:
         worker.join()
     assert not model._llm.overlapped
+
+
+class _BrokenLlama(importlib.abc.MetaPathFinder):
+    """Makes `import llama_cpp` fail the way a missing system library does (an OSError, not an ImportError)."""
+
+    def find_spec(self, name, path, target=None):
+        if name == "llama_cpp":
+            raise OSError("libgomp.so.1: cannot open shared object file")
+        return None
+
+
+def test_a_model_library_that_fails_to_load_leaves_the_rules_alone(tmp_path, monkeypatch):
+    # Found at the Space package's review (11 Oct 2026): only a missing package was caught, so a llama.cpp that can't
+    # load its system library would have broken every request instead of falling back to the rules.
+    from engine import query_model
+
+    weights = tmp_path / "model.gguf"
+    weights.write_bytes(b"not a real model")
+    monkeypatch.setattr(query_model, "DEFAULT_MODEL_PATH", weights)
+    monkeypatch.delenv(query_model.SWITCH, raising=False)
+    monkeypatch.delitem(sys.modules, "llama_cpp", raising=False)
+    monkeypatch.setattr(sys, "meta_path", [_BrokenLlama(), *sys.meta_path])
+    assert query_model.find_default_model() is None

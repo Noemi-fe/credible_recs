@@ -41,6 +41,9 @@ data/gold/threads/*.json
 # Candidate threads used to measure retrieval: Reddit titles, so they stay on this machine.
 data/eval/
 
+# Visitors' feedback from the demo (engine/feedback.py): what people typed stays on this machine.
+data/feedback/
+
 # Blind-test answers: ours quote Reddit, and the rivals' answers and the testers' names aren't ours to publish.
 eval/blind_test/answers/
 

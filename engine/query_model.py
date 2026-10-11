@@ -110,17 +110,20 @@ class LlamaQueryModel:
             return None
 
 
-@cache
-def default_query_model() -> QueryModel | None:
+def find_default_model() -> QueryModel | None:
     """The model module 1 asks by default: the open model when its file and llama.cpp are on this machine and the
-    switch isn't "off"; otherwise None, and the rules work alone."""
+    switch isn't "off"; otherwise None, and the rules work alone. A llama.cpp that is installed but can't load (a
+    missing system library raises OSError, not ImportError) counts as missing too."""
     if os.environ.get(SWITCH, "").lower() == "off" or not DEFAULT_MODEL_PATH.is_file():
         return None
     try:
         import llama_cpp  # noqa: F401
-    except ImportError:
+    except Exception:
         return None
     return LlamaQueryModel(DEFAULT_MODEL_PATH)
+
+
+default_query_model = cache(find_default_model)  # found once per run
 
 
 def routed_by_model(text: str, model: QueryModel):

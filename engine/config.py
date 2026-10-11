@@ -773,3 +773,27 @@ COPIED_TEXT_MIN_WORDS = 20
 # {current version: {older version: the thread categories it is still current for}}. v9 added haircare (its category
 # and product types) and changed nothing else, so skincare and kitchen threads extracted with v8 aren't done again.
 EXTRACT_STILL_CURRENT: dict[str, dict[str, tuple[str, ...]]] = {"extract-v9": {"extract-v8": ("skincare", "kitchen")}}
+
+# --- Going live (Noemi, 11 Oct 2026) ---
+# Noemi approved putting the demo online as a Hugging Face Space, with GoatCounter visit counts, a "First time here?"
+# question and an anonymous feedback form (engine/web.py --public, engine/feedback.py, deploy/huggingface/DEPLOY.md).
+# The values below were chosen by Claude to carry that out (technical values, reported to her).
+# Feedback (engine/feedback.py): a comment is at most this many characters, as the page's comment box says. The request
+# it is about has the search's own limit, WEB_MAX_REQUEST_CHARS, and so does the product type sent with it: module 1
+# can take a product type from the request's own words, so it is never longer than a request.
+FEEDBACK_MAX_COMMENT_CHARS = 1000
+FEEDBACK_MAX_PRODUCT_TYPE_CHARS = WEB_MAX_REQUEST_CHARS
+# A feedback request (JSON) longer than this many bytes is refused (413) before it is read: the longest real one, every
+# text at its limit in a three-byte script, is about 5,000 bytes.
+FEEDBACK_MAX_BODY_BYTES = 8192
+# On the Space, feedback waits in memory and is uploaded to Noemi's private dataset in one batch at most once every this
+# many seconds, so a click never makes a commit of its own (Hugging Face advises 5 minutes or more between such commits).
+FEEDBACK_UPLOAD_EVERY_SECONDS = 300
+# If uploads keep failing, at most this many records wait; past it new feedback is refused (503) instead of filling memory.
+FEEDBACK_MAX_PENDING = 10000
+# Public mode only (engine/web.py): each visitor, told apart by address in memory only (never stored or logged), may ask
+# for RATE_LIMIT_ANSWERS answers and send RATE_LIMIT_FEEDBACK pieces of feedback in any RATE_LIMIT_WINDOW_SECONDS; more
+# gets a polite "please wait" (429). Remembered answers count too. Feedback is tighter: one per answer is all a page sends.
+RATE_LIMIT_WINDOW_SECONDS = 600
+RATE_LIMIT_ANSWERS = 30
+RATE_LIMIT_FEEDBACK = 15

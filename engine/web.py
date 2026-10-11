@@ -1,4 +1,5 @@
-"""Module 8, the interface (a local demo): a search page and a small JSON API, served from this machine only.
+"""Module 8, the interface: a search page and a small JSON API, served from this machine only, or since 11 Oct 2026 from
+Noemi's Hugging Face Space (public mode).
 
 Someone types a need ("electric kettle that lasts 10+ years") into the page; the page asks the API; the API runs
 modules 1 to 7 (engine.pipeline) and sends the answer back as JSON; the page draws it as cards. Nothing here
@@ -6,18 +7,35 @@ decides anything: every word of an answer comes from engine/answer.py, and every
 word-for-word check there. Before an answer leaves the server it is checked once more (unverified_claims): if
 any quote fails, the whole answer is refused (HTTP 500) and nothing from it is shown.
 
-Local only: the server listens on 127.0.0.1, so only this computer can reach it, and it answers only requests
-addressed to 127.0.0.1 or localhost (a page on another website can't reach it through a trick called DNS
+Local only (the default): the server listens on 127.0.0.1, so only this computer can reach it, and it answers only
+requests addressed to 127.0.0.1 or localhost (a page on another website can't reach it through a trick called DNS
 rebinding). It uses Python's standard library only. The final website (Next.js, with a FastAPI service) is a
 later decision; the JSON below is the contract it will use.
 
-Routes (GET only):
-    /                       the search page (engine/templates/search.html)
-    /how                    the how-we-score page (engine/how_page.py): how an answer is made and scored, in plain
-                            words, and the latest evaluation results, read from eval/metrics.json each time it is
-                            opened (10 Oct 2026)
-    /api/answer?q=<request> the answer to one request, as JSON
-    anything else           404
+Public mode (`--public`, for the Hugging Face Space; Noemi's decision of 11 Oct 2026, deploy/huggingface/DEPLOY.md):
+- the server listens on every network interface (0.0.0.0), since the Space's proxy reaches it from outside its
+  container, and answers only requests addressed to a host named in CREDIBLE_RECS_ALLOWED_HOSTS (comma-separated,
+  such as "noemi-credible-recs.hf.space"). Without that list it refuses to start.
+- each visitor may ask for RATE_LIMIT_ANSWERS answers and send RATE_LIMIT_FEEDBACK pieces of feedback in any
+  RATE_LIMIT_WINDOW_SECONDS (engine/config.py); more gets 429 and a polite "please wait". A visitor is told apart by
+  the last public address in X-Forwarded-For, the one the Space's proxy adds (client_address), held in memory only:
+  never stored, never logged. It is a courtesy against casual floods, not a wall.
+- it keeps no access log (no addresses, no requests), its pages may be shown inside the Space's own page on
+  huggingface.co (a frame), and its error messages speak to visitors rather than to whoever runs the server.
+Local mode is exactly as before: none of this applies to it.
+
+Visit counts (11 Oct 2026, either mode): when CREDIBLE_RECS_GOATCOUNTER holds Noemi's GoatCounter site code (letters,
+digits and hyphens only), both pages load GoatCounter's standard script, which sets no cookies, and the search page
+counts a few events by fixed names (listed in the page). Unset, nothing is loaded and nothing is counted.
+
+Routes:
+    GET  /                       the search page (engine/templates/search.html)
+    GET  /how                    the how-we-score page (engine/how_page.py): how an answer is made and scored, in plain
+                                 words, and the latest evaluation results, read from eval/metrics.json each time it is
+                                 opened (10 Oct 2026); and what is collected about visitors (11 Oct 2026)
+    GET  /api/answer?q=<request> the answer to one request, as JSON
+    POST /api/feedback           "Was this useful?" or "First time here?" (engine/feedback.py; 11 Oct 2026)
+    anything else                404; a known route asked the wrong way, 405
 
 The JSON for /api/answer (200):
     {
@@ -69,11 +87,21 @@ The JSON for /api/answer (200):
                    "unavailable": n,               products the price list says are no longer sold (9 Oct 2026),
                    "not_suited": n}                and products whose checked facts clash with the request (9 Oct 2026)
     }
+
+POST /api/feedback takes one JSON object (Content-Type: application/json, at most FEEDBACK_MAX_BODY_BYTES) in one of
+the two shapes engine/feedback.py describes, and answers {"saved": true}. It is taken only from this site's own page:
+the Origin header the browser adds (or, when it sends none, its Referer) must name this server's host.
+
 An error is {"error": "<plain words>", "code": "<one word for programs>"}:
-    400 empty_request, request_too_long (over WEB_MAX_REQUEST_CHARS characters)
-    403 wrong_host        a request not addressed to this computer
+    400 empty_request, request_too_long (over WEB_MAX_REQUEST_CHARS characters); bad_length, bad_json, bad_feedback
+    403 wrong_host        a request not addressed to this server
+        cross_site        feedback not sent from this site's own page
     404 not_found
+    405 method_not_allowed (with an Allow header)
+    411 length_required, 413 too_large, 415 not_json   (feedback)
+    429 too_many_requests (public mode only, with a Retry-After header in seconds)
     500 quote_not_verified (the answer is refused), engine_failed (details in the server's window, never sent)
+    503 feedback_unavailable (the feedback couldn't be kept just now)
 The words are for whoever calls the API; the page picks its own words by code (PROPOSED, at the top of the page).
 
 Answers take about 2 seconds, so each one is remembered for as long as the server runs: asking again is instant.
@@ -81,28 +109,48 @@ A library refresh needs a restart to show.
 
 Command line:
     python -m engine.web [--port N] [--library DIR]    serves the page at http://127.0.0.1:8765/ (Ctrl+C stops it)
+    python -m engine.web --public --port 7860           the public site (deploy/huggingface/start.sh runs it)
+Feedback goes to data/feedback/feedback.jsonl, or to Noemi's private dataset when CREDIBLE_RECS_FEEDBACK_REPO and
+HF_TOKEN are set (engine/feedback.py).
 """
 
+import html
+import ipaddress
 import json
+import math
+import os
+import re
+import signal
 import sys
 import threading
+import time
 import traceback
+from collections import OrderedDict, deque
+from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from engine import answer as wording
-from engine import how_page
+from engine import feedback, how_page
 from engine.answer import answer_to_dict, unverified_claims
-from engine.config import BRAND_PICK_MODEL, WEB_MAX_REQUEST_CHARS, WEB_PORT
+from engine.config import (BRAND_PICK_MODEL, FEEDBACK_MAX_BODY_BYTES, FEEDBACK_MAX_COMMENT_CHARS, RATE_LIMIT_ANSWERS,
+                           RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS, WEB_MAX_REQUEST_CHARS, WEB_PORT)
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.metrics import METRICS_FILE
 from engine.parse_reddit import REPO_ROOT
 from engine.pipeline import PipelineResult, answer_request
 
 HOST = "127.0.0.1"  # this computer only. Never "0.0.0.0", which would open the server to the whole network.
+PUBLIC_HOST = "0.0.0.0"  # public mode only: every network interface, so the Space's proxy can reach the server
 PAGE_TEMPLATE = Path(__file__).resolve().parent / "templates" / "search.html"
 EXAMPLES_FILE = REPO_ROOT / "eval" / "blind_test" / "questions.json"  # the 10 approved blind-test questions
+ALLOWED_HOSTS_VAR = "CREDIBLE_RECS_ALLOWED_HOSTS"  # public mode: the host names the site answers for
+GOATCOUNTER_VAR = "CREDIBLE_RECS_GOATCOUNTER"  # Noemi's GoatCounter site code; unset, visits aren't counted
+GOATCOUNTER_SCRIPT = "https://gc.zgo.at"  # where GoatCounter's script comes from
+HUGGING_FACE = "https://huggingface.co"  # the Space's page there shows the public site in a frame
+MAX_TRACKED_CLIENTS = 10_000  # the rate limit remembers at most this many visitors (the least recent are forgotten)
+MAX_HOSTS_NAMED = 20  # public mode names at most this many refused hosts in its window, so scanners can't flood it
 
 HTML = "text/html; charset=utf-8"
 JSON = "application/json; charset=utf-8"
@@ -110,6 +158,7 @@ JSON = "application/json; charset=utf-8"
 # Sent with every response. The page may load and call nothing but this server: no outside scripts, styles, fonts
 # or images, and no requests elsewhere. Its links still open, in a new tab: to Reddit, and to a shop's own page for a
 # price or for where a product is sold (https only, from data/prices.json; decision 11 and availability, 9 Oct 2026).
+# Exactly what local mode sends; security_headers adds GoatCounter when visits are counted, and the Space's page.
 HEADERS = {
     "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
                                "connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
@@ -127,6 +176,35 @@ WRONG_HOST = ("wrong_host", "This server only answers requests addressed to 127.
 REFUSED = ("quote_not_verified",
            "This answer was not shown: a quote in it could not be checked word for word against its comment.")
 ENGINE_FAILED = ("engine_failed", "The engine could not answer this request. The details are in the server's window.")
+# Added 11 Oct 2026 (going live).
+WRONG_HOST_PUBLIC = ("wrong_host", "This server only answers requests addressed to its own website.")
+WRONG_METHOD = ("method_not_allowed", "This address takes {allowed} requests only.")
+CROSS_SITE = ("cross_site", "Feedback is taken only from this website's own page.")
+NOT_JSON = ("not_json", "Send the feedback as JSON, with the header Content-Type: application/json.")
+NO_LENGTH = ("length_required", "Say how long the feedback is, with a Content-Length header.")
+BAD_LENGTH = ("bad_length", "The Content-Length header isn't a plain number.")
+TOO_LARGE = ("too_large", "Feedback is limited to {limit} bytes.")
+BAD_JSON = ("bad_json", "The feedback isn't one valid JSON value (or a name in it appears twice).")
+BAD_FEEDBACK = ("bad_feedback", "{reason}")
+FEEDBACK_UNAVAILABLE = ("feedback_unavailable", "Feedback can't be kept just now. Please try again later.")
+TOO_MANY = ("too_many_requests", "Too many requests in a short time. Please try again in {seconds} seconds.")
+
+FEEDBACK_PATH = "/api/feedback"
+METHODS = {"/": "GET", "/how": "GET", "/api/answer": "GET", FEEDBACK_PATH: "POST"}  # each route and how it is asked
+
+
+@dataclass(frozen=True)
+class Site:
+    """How the server runs. Local (the default): this computer only, as before. Public (the Hugging Face Space): every
+    network interface, requests for `hosts` only, rate limits, no access log. `goatcounter`: Noemi's GoatCounter site
+    code when visits are counted, else None (either mode)."""
+
+    public: bool = False
+    hosts: tuple[str, ...] = ()
+    goatcounter: str | None = None
+
+
+LOCAL = Site()
 
 
 # Answers already worked out, by (request, library folder), kept until the server stops.
@@ -136,46 +214,56 @@ _answers: dict[tuple[str, str], tuple[int, str, bytes]] = {}
 profiles = None
 # The live check of every shown quote (engine.live_check): set by the command line; None in the tests.
 live = None
+# Where feedback goes (engine.feedback, 11 Oct 2026): set by the command line; None in the tests, which give their own.
+store = None
 _answers_lock = threading.Lock()
 
 
 # --- Routing: one GET request in, one response out ---
 
-def handle_request(path_and_query: str, library_dir: Path = DEFAULT_LIBRARY_DIR) -> tuple[int, str, bytes]:
+def handle_request(path_and_query: str, library_dir: Path = DEFAULT_LIBRARY_DIR,
+                   site: Site = LOCAL) -> tuple[int, str, bytes]:
     """What the server sends back for one GET request: (status code, content type, body).
 
     A plain function, with no network in it, so the tests can call it directly.
     """
     parts = urlsplit(path_and_query)
     if parts.path == "/":
-        return 200, HTML, search_page()
-    if parts.path == "/how":
-        return 200, HTML, how_page.page(METRICS_FILE).encode("utf-8")  # read now: a new evaluation run shows at once
+        return 200, HTML, search_page(site)
+    if parts.path == "/how":  # read now: a new evaluation run shows at once
+        page = how_page.page(METRICS_FILE, counter=counter_script(site.goatcounter), public=site.public)
+        return 200, HTML, page.encode("utf-8")
     if parts.path == "/api/answer":
         request = parse_qs(parts.query).get("q", [""])[0]
-        return answer_response(request, Path(library_dir))
+        return answer_response(request, Path(library_dir), quiet=site.public)
+    if parts.path in METHODS:  # a route that takes another method: feedback is sent, never fetched
+        return _error(405, WRONG_METHOD, allowed=METHODS[parts.path])
     return _error(404, NOT_FOUND)
 
 
-def answer_response(request: str, library_dir: Path) -> tuple[int, str, bytes]:
-    """The answer to one request as JSON, remembered for next time; or an error."""
+def answer_response(request: str, library_dir: Path, quiet: bool = False) -> tuple[int, str, bytes]:
+    """The answer to one request as JSON, remembered for next time; or an error. `quiet` (the public site): nothing
+    about the request goes to the server's window, not even in a report of a failure."""
     request = request.strip()
     if not request:
         return _error(400, EMPTY_REQUEST)
     if len(request) > WEB_MAX_REQUEST_CHARS:
         return _error(400, TOO_LONG, n=len(request), limit=WEB_MAX_REQUEST_CHARS)
     key = (request, str(library_dir))
+    remembered = _answers.get(key)  # read without waiting (11 Oct 2026): a slow new answer never holds up a known one
+    if remembered is not None:
+        return remembered
     with _answers_lock:  # one answer is worked out at a time, so the same request is never worked out twice
         if key not in _answers:
             try:
-                _answers[key] = _fresh_answer(request, library_dir)
+                _answers[key] = _fresh_answer(request, library_dir, quiet)
             except Exception:  # a broken library file, say: reported in the server's window, never sent
-                traceback.print_exc()
+                _report_failure(quiet)
                 return _error(500, ENGINE_FAILED)  # not remembered: fixing the file and asking again works
         return _answers[key]
 
 
-def _fresh_answer(request: str, library_dir: Path) -> tuple[int, str, bytes]:
+def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple[int, str, bytes]:
     """Runs the pipeline, then checks every quote once more; one that fails refuses the whole answer."""
     with_profiles = {} if profiles is None else {"profiles": profiles}
     if live is not None:
@@ -184,9 +272,22 @@ def _fresh_answer(request: str, library_dir: Path) -> tuple[int, str, bytes]:
     if result.answer is not None:
         problems = unverified_claims(result.answer, result.bodies)
         if problems:  # the problems name comments, never the failed quote's words
-            print(f"Refused the answer to {request!r}:", *problems, sep="\n  - ", file=sys.stderr)
+            asked = "a request" if quiet else repr(request)
+            print(f"Refused the answer to {asked}:", *problems, sep="\n  - ", file=sys.stderr)
             return _error(500, REFUSED)
     return 200, JSON, _json_bytes(answer_json(result))
+
+
+def _report_failure(quiet: bool) -> None:
+    """An engine failure, in the server's window: the whole traceback locally; on the public site only where it happened
+    and what kind of error it was, since an error's own message can quote the request."""
+    if not quiet:
+        traceback.print_exc()
+        return
+    kind, _, trace = sys.exc_info()
+    frames = traceback.extract_tb(trace) if trace else []
+    where = f" at {Path(frames[-1].filename).name}:{frames[-1].lineno}" if frames else ""
+    print(f"The engine failed on a request ({kind.__name__ if kind else 'unknown error'}{where}).", file=sys.stderr)
 
 
 def answer_json(result: PipelineResult) -> dict:
@@ -220,13 +321,221 @@ def _json_bytes(data: dict) -> bytes:
     return json.dumps(data, ensure_ascii=False).encode("utf-8")
 
 
+# --- Feedback: one POST request in, one response out (11 Oct 2026) ---
+
+def handle_feedback(content_type: str | None, content_length: str | None, read) -> tuple[int, str, bytes]:
+    """POST /api/feedback, once the request is known to come from this site's own page: the record, checked
+    (engine.feedback.parse_record) and kept in `store`; or an error. `read(n)` reads the body, and is called only once
+    the body is known to be JSON of a sensible size, so an oversized one is never read.
+
+    Only JSON is taken: a form on another website can send nothing else without the browser first asking this server
+    for leave, which it never gives.
+    """
+    if (content_type or "").split(";")[0].strip().lower() != "application/json":
+        return _error(415, NOT_JSON)
+    if content_length is None:
+        return _error(411, NO_LENGTH)
+    if not re.fullmatch(r"[0-9]{1,9}", content_length.strip()):
+        return _error(400, BAD_LENGTH)
+    size = int(content_length)
+    if size > FEEDBACK_MAX_BODY_BYTES:
+        return _error(413, TOO_LARGE, limit=FEEDBACK_MAX_BODY_BYTES)
+    try:
+        data = json.loads(read(size).decode("utf-8"), object_pairs_hook=_no_repeated_names)
+    except (ValueError, RecursionError):  # not UTF-8, not JSON, a name given twice, or nested too deep to read
+        return _error(400, BAD_JSON)
+    try:
+        record = feedback.parse_record(data)
+    except feedback.FeedbackError as error:
+        return _error(400, BAD_FEEDBACK, reason=str(error))
+    if store is None:
+        return _error(503, FEEDBACK_UNAVAILABLE)
+    try:
+        store.add(record)
+    except Exception as error:  # too much waiting to be uploaded, or a full disk: the record's words are never logged
+        print(f"Feedback not kept ({type(error).__name__}).", file=sys.stderr)
+        return _error(503, FEEDBACK_UNAVAILABLE)
+    return 200, JSON, _json_bytes({"saved": True})
+
+
+def _no_repeated_names(pairs: list[tuple[str, object]]) -> dict:
+    """A JSON object as a dict, refusing one that gives the same name twice (which of the two would count?)."""
+    names = [name for name, _ in pairs]
+    if len(set(names)) != len(names):
+        raise ValueError("a name appears twice")
+    return dict(pairs)
+
+
+def from_this_site(origin: str | None, referer: str | None, accepts) -> bool:
+    """Whether a POST comes from this site's own page: the Origin header the browser adds (or, when it sends none, the
+    Referer) names a host this server takes requests for (`accepts(host)`, the same test as for the Host header). A page
+    on another website can't make a browser send ours; a request that names no page at all is refused too."""
+    source = origin if origin is not None else referer
+    if not source or source == "null":
+        return False
+    return accepts(urlsplit(source).netloc)
+
+
+# --- Public mode: hosts, visitors and rate limits (11 Oct 2026) ---
+
+_HOST_NAME = re.compile(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*")
+
+
+def host_name(value: str) -> str:
+    """The host name in a Host header or in an address: lowercased, without its port or a final dot."""
+    value = value.strip().lower()
+    if value.startswith("["):  # an IPv6 address, "[::1]:7860"
+        return value.split("]")[0] + "]"
+    if value.count(":") == 1:
+        value = value.split(":")[0]
+    return value.rstrip(".")
+
+
+def allowed_hosts(value: str) -> tuple[str, ...]:
+    """The host names in CREDIBLE_RECS_ALLOWED_HOSTS, read kindly: lowercased, without a port, and taken from a whole
+    address if one is pasted in ("https://noemi-credible-recs.hf.space/"). Raises ValueError for an entry that names no
+    host, such as "*" or "*.hf.space": every host must be named."""
+    hosts = []
+    for entry in value.split(","):
+        entry = entry.strip()
+        if not entry:
+            continue
+        name = host_name(urlsplit(entry).netloc if "//" in entry else entry)
+        if not _HOST_NAME.fullmatch(name):
+            raise ValueError(f"{entry!r} isn't a host name (such as noemi-credible-recs.hf.space).")
+        hosts.append(name)
+    return tuple(dict.fromkeys(hosts))
+
+
+def client_address(forwarded_for: str | None, socket_address: str) -> str:
+    """Who a request comes from, for the rate limit only (public mode): the last public address in X-Forwarded-For,
+    the one the Space's proxy adds (a visitor can write made-up addresses into the header, but only in front of it, so
+    the first one could change on every request and get round the limit); proxies' own private addresses are skipped.
+    With no public address, the first entry, else the connection's own address. Cut to 100 characters, so a made-up
+    header can't fill memory. Held in memory only: never stored, never logged."""
+    entries = [entry.strip()[:100] for entry in (forwarded_for or "")[:2000].split(",")]
+    for entry in reversed(entries):
+        try:
+            if ipaddress.ip_address(entry).is_global:
+                return entry
+        except ValueError:
+            continue
+    return next((entry for entry in entries if entry), "") or socket_address
+
+
+class RateLimiter:
+    """At most `limit` requests from each visitor in any `window` seconds (a sliding window). Kept in memory only, and
+    only for the `max_clients` visitors seen most recently, so a flood of made-up addresses can't fill memory."""
+
+    def __init__(self, limit: int, window: float, clock=time.monotonic, max_clients: int = MAX_TRACKED_CLIENTS):
+        self.limit = limit
+        self.window = window
+        self._clock = clock
+        self._max_clients = max_clients
+        self._seen: OrderedDict[str, deque[float]] = OrderedDict()  # visitor: their requests' times, least recent first
+        self._lock = threading.Lock()
+
+    def wait(self, client: str) -> int:
+        """0 when this request may go ahead (it is counted); otherwise the whole seconds until it may (it isn't)."""
+        now = self._clock()
+        with self._lock:
+            times = self._seen.get(client)
+            if times is None:
+                times = self._seen[client] = deque()
+                if len(self._seen) > self._max_clients:
+                    self._seen.popitem(last=False)  # forget the visitor seen least recently
+            else:
+                self._seen.move_to_end(client)
+            while times and now - times[0] >= self.window:
+                times.popleft()
+            if len(times) >= self.limit:
+                return max(1, math.ceil(self.window - (now - times[0])))
+            times.append(now)
+            return 0
+
+    def __len__(self) -> int:
+        return len(self._seen)
+
+
+def site_from_env(environ, public: bool) -> tuple[Site | None, list[str]]:
+    """The site the command line asks for, from the environment, and any problems in plain words. A public site with no
+    usable CREDIBLE_RECS_ALLOWED_HOSTS is None: it must not start. A CREDIBLE_RECS_GOATCOUNTER that isn't a code leaves
+    visit counting off, with a warning (the site is more use running than not)."""
+    problems = []
+    hosts: tuple[str, ...] = ()
+    if public:
+        try:
+            hosts = allowed_hosts(environ.get(ALLOWED_HOSTS_VAR, ""))
+        except ValueError as error:
+            problems.append(f"Not starting: {ALLOWED_HOSTS_VAR} has {error}")
+        if not hosts and not problems:
+            problems.append(f"Not starting: the public site needs {ALLOWED_HOSTS_VAR}, the host names it answers for, "
+                            "comma-separated (such as noemi-credible-recs.hf.space).")
+    setting = environ.get(GOATCOUNTER_VAR, "")
+    code = goatcounter_code(setting)
+    if setting.strip() and code is None:
+        problems.append(f"{GOATCOUNTER_VAR} isn't a GoatCounter code (letters, digits and hyphens only, such as "
+                        "credible-recs), so visits aren't counted.")
+    if public and not hosts:
+        return None, problems
+    return Site(public=public, hosts=hosts, goatcounter=code), problems
+
+
+# --- Visit counts: GoatCounter (11 Oct 2026) ---
+
+_GOATCOUNTER_CODE = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?")
+
+
+def goatcounter_code(value: str | None) -> str | None:
+    """Noemi's GoatCounter site code ("credible-recs" counts at credible-recs.goatcounter.com), if `value` is one:
+    letters, digits and hyphens only. It goes into the page's script address, so nothing else may get in. None when
+    unset or not a code."""
+    code = (value or "").strip().lower()
+    return code if _GOATCOUNTER_CODE.fullmatch(code) else None
+
+
+def counter_script(code: str | None) -> str:
+    """GoatCounter's standard script for the site `code`, or "" when visits aren't counted. Two small changes to the
+    snippet GoatCounter suggests: the script's address says https (GoatCounter's own "//gc.zgo.at/count.js" would be
+    fetched over plain http on an http page, which the security policy refuses), and its one setting, allow_frame, lets
+    it count visits made through the Space's page on huggingface.co, which shows the site in a frame (GoatCounter skips
+    framed pages otherwise)."""
+    code = goatcounter_code(code)
+    if code is None:
+        return ""
+    return (f'<script data-goatcounter="https://{html.escape(code)}.goatcounter.com/count" '
+            f"""data-goatcounter-settings='{{"allow_frame": true}}' async src="{GOATCOUNTER_SCRIPT}/count.js"></script>""")
+
+
+def security_headers(site: Site = LOCAL) -> dict[str, str]:
+    """The headers sent with every response: exactly HEADERS in local mode without visit counts. Counting lets in
+    GoatCounter's script and its counting address, and nothing else; the public site may also be shown inside the
+    Space's page on huggingface.co."""
+    if not site.public and site.goatcounter is None:
+        return dict(HEADERS)
+    scripts, connections, images = "'unsafe-inline'", "'self'", ""
+    if site.goatcounter is not None:
+        counter = f"https://{site.goatcounter}.goatcounter.com"
+        scripts += f" {GOATCOUNTER_SCRIPT}"
+        connections += f" {counter}"
+        images = f"img-src {counter}; "  # GoatCounter's fallback when a browser won't send its count another way
+    frames = HUGGING_FACE if site.public else "'none'"
+    policy = (f"default-src 'none'; script-src {scripts}; style-src 'unsafe-inline'; {images}connect-src {connections}; "
+              f"form-action 'self'; base-uri 'none'; frame-ancestors {frames}")
+    return {**HEADERS, "Content-Security-Policy": policy}
+
+
 # --- The page ---
 
-def search_page() -> bytes:
-    """The search page: the template, with the answer's own headings and the example requests filled in."""
-    settings = {"wording": answer_wording(), "examples": example_requests(), "maxChars": WEB_MAX_REQUEST_CHARS}
+def search_page(site: Site = LOCAL) -> bytes:
+    """The search page: the template, with the answer's own headings, the example requests, the length limits and the
+    site's settings filled in, and GoatCounter's script when visits are counted."""
+    settings = {"wording": answer_wording(), "examples": example_requests(), "maxChars": WEB_MAX_REQUEST_CHARS,
+                "maxCommentChars": FEEDBACK_MAX_COMMENT_CHARS, "counting": site.goatcounter is not None,
+                "public": site.public}
     template = PAGE_TEMPLATE.read_text(encoding="utf-8")
-    return template.replace("{{SETTINGS}}", _script_json(settings)).encode("utf-8")
+    page = template.replace("{{COUNTER}}", counter_script(site.goatcounter))  # first: the settings could hold any text
+    return page.replace("{{SETTINGS}}", _script_json(settings)).encode("utf-8")
 
 
 def answer_wording() -> dict[str, str]:
@@ -271,22 +580,97 @@ def _script_json(data: dict) -> str:
 # --- The server ---
 
 class _Handler(BaseHTTPRequestHandler):
-    """Turns each GET request into a call to handle_request, and its result into an HTTP response."""
+    """Turns each request into a call to handle_request (GET) or handle_feedback (POST), and its result into an HTTP
+    response. This is local mode; _PublicHandler changes what the public site needs."""
 
     server_version = "credible-recs-demo"
+    _wrong_host = WRONG_HOST
 
     def do_GET(self):
-        if self.headers.get("Host", "") in _local_names(self.server.server_address[1]):
-            status, content_type, body = handle_request(self.path, self.server.library_dir)
-        else:
-            status, content_type, body = _error(403, WRONG_HOST)
+        path = urlsplit(self.path).path
+        if not self._addressed_here():
+            return self._send(*_error(403, self._wrong_host))
+        if path == "/api/answer" and self._held_back("answers"):
+            return
+        self._send(*handle_request(self.path, self.server.library_dir, self.server.site), path=path)
+
+    def do_POST(self):
+        path = urlsplit(self.path).path
+        if not self._addressed_here():
+            return self._send(*_error(403, self._wrong_host))
+        if path != FEEDBACK_PATH:
+            refused = _error(405, WRONG_METHOD, allowed=METHODS[path]) if path in METHODS else _error(404, NOT_FOUND)
+            return self._send(*refused, path=path)
+        if not from_this_site(self.headers.get("Origin"), self.headers.get("Referer"), self._accepts):
+            return self._send(*_error(403, CROSS_SITE))
+        if self._held_back("feedback"):
+            return
+        self._send(*handle_feedback(self.headers.get("Content-Type"), self.headers.get("Content-Length"),
+                                    self.rfile.read))
+
+    def _addressed_here(self) -> bool:
+        return self._accepts(self.headers.get("Host", ""))
+
+    def _accepts(self, host: str) -> bool:
+        """Whether a request for `host` is for this server: here, this computer's own addresses, exactly as written."""
+        return host in _local_names(self.server.server_address[1])
+
+    def _held_back(self, limit: str) -> bool:
+        """Whether a rate limit stops this request, which has then been answered (429). Never in local mode."""
+        return False
+
+    def _send(self, status: int, content_type: str, body: bytes, path: str | None = None,
+              extra: dict[str, str] | None = None) -> None:
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
-        for name, value in HEADERS.items():
+        for name, value in security_headers(self.server.site).items():
+            self.send_header(name, value)
+        if status == 405 and path in METHODS:
+            self.send_header("Allow", METHODS[path])
+        for name, value in (extra or {}).items():
             self.send_header(name, value)
         self.end_headers()
         self.wfile.write(body)
+
+
+class _PublicHandler(_Handler):
+    """The public site's differences: its own host names, rate limits, no access log, and no waiting forever on a
+    visitor's connection that has gone quiet."""
+
+    timeout = 30  # seconds a connection may stay silent in the middle of a request before it is closed
+    _wrong_host = WRONG_HOST_PUBLIC
+
+    def _addressed_here(self) -> bool:
+        host = self.headers.get("Host", "")
+        if self._accepts(host):
+            return True
+        self._name_refused_host(host[:100])
+        return False
+
+    def _accepts(self, host: str) -> bool:
+        return host_name(host) in self.server.site.hosts
+
+    def _name_refused_host(self, host: str) -> None:
+        """Names a refused host once in the server's window (never who sent the request): if Hugging Face's proxy
+        addresses the site in a way nobody expected, the Space's logs say what to add to the list."""
+        named = self.server.refused_hosts
+        with self.server.refused_lock:
+            if host in named or len(named) >= MAX_HOSTS_NAMED:
+                return
+            named.add(host)
+        print(f"Refused a request addressed to {host!r}. If that is this site's own address, add it to "
+              f"{ALLOWED_HOSTS_VAR}.", file=sys.stderr, flush=True)
+
+    def _held_back(self, limit: str) -> bool:
+        visitor = client_address(self.headers.get("X-Forwarded-For"), self.client_address[0])
+        seconds = self.server.limits[limit].wait(visitor)
+        if seconds:
+            self._send(*_error(429, TOO_MANY, seconds=seconds), extra={"Retry-After": str(seconds)})
+        return bool(seconds)
+
+    def log_message(self, format, *args):
+        """No access log on the public site: no visitors' addresses, no requests (Noemi, 11 Oct 2026)."""
 
 
 def _local_names(port: int) -> tuple[str, ...]:
@@ -294,23 +678,46 @@ def _local_names(port: int) -> tuple[str, ...]:
     return f"{HOST}:{port}", f"localhost:{port}"
 
 
-def make_server(port: int = WEB_PORT, library_dir: Path = DEFAULT_LIBRARY_DIR) -> ThreadingHTTPServer:
-    """A server listening on this computer only (port 0 picks any free port). Start it with serve_forever()."""
-    server = ThreadingHTTPServer((HOST, port), _Handler)
+def listen_address(site: Site) -> str:
+    """Where the server listens: this computer only, or every network interface for the public site."""
+    return PUBLIC_HOST if site.public else HOST
+
+
+def make_server(port: int = WEB_PORT, library_dir: Path = DEFAULT_LIBRARY_DIR, site: Site = LOCAL) -> ThreadingHTTPServer:
+    """A server for `site` (port 0 picks any free port): on this computer only, unless the site is public. Start it with
+    serve_forever()."""
+    if site.public and not site.hosts:
+        raise ValueError(f"a public site needs the host names it answers for ({ALLOWED_HOSTS_VAR})")
+    server = ThreadingHTTPServer((listen_address(site), port), _PublicHandler if site.public else _Handler)
     server.library_dir = Path(library_dir)
+    server.site = site
+    server.limits = {"answers": RateLimiter(RATE_LIMIT_ANSWERS, RATE_LIMIT_WINDOW_SECONDS),
+                     "feedback": RateLimiter(RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS)}
+    server.refused_hosts, server.refused_lock = set(), threading.Lock()  # public mode: refused hosts already named
     return server
 
 
-def serve(port: int = WEB_PORT, library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
-    """Serves the page until Ctrl+C."""
-    server = make_server(port, library_dir)
-    print(f"Open http://{HOST}:{server.server_address[1]}/ in your browser (answers from {library_dir}). Ctrl+C stops it.", flush=True)
+def serve(port: int = WEB_PORT, library_dir: Path = DEFAULT_LIBRARY_DIR, site: Site = LOCAL) -> None:
+    """Serves the page until Ctrl+C (on the Space, until it is stopped); then hands over any feedback still waiting."""
+    server = make_server(port, library_dir, site)
+    if site.public:
+        signal.signal(signal.SIGTERM, _stop)  # how a Space stops its container: wind down as for Ctrl+C
+        print(f"Serving the public site for {', '.join(site.hosts)} on port {server.server_address[1]} (answers from "
+              f"{library_dir}).", flush=True)
+    else:
+        print(f"Open http://{HOST}:{server.server_address[1]}/ in your browser (answers from {library_dir}). Ctrl+C stops it.", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
         server.server_close()
+        if store is not None:
+            store.close()
+
+
+def _stop(signum, frame):
+    raise KeyboardInterrupt
 
 
 def _options(argv: list[str]) -> tuple[int, Path] | None:
@@ -330,23 +737,38 @@ def _options(argv: list[str]) -> tuple[int, Path] | None:
 
 
 def main(argv: list[str]) -> int:
-    options = _options(argv)
+    global profiles, live, store
+    public = "--public" in argv
+    options = _options([arg for arg in argv if arg != "--public"])
     if options is None:
         print(__doc__)
         return 2
     port, library_dir = options
-    global profiles
+    site, problems = site_from_env(os.environ, public)
+    for problem in problems:
+        print(problem, file=sys.stderr, flush=True)
+    if site is None:
+        return 2
+    try:
+        store = feedback.store_from_env()
+    except RuntimeError as error:  # feedback set to go to the dataset, without huggingface_hub installed
+        print(error, file=sys.stderr)
+        return 2
+    if public:
+        kept = "" if isinstance(store, feedback.HubStore) else (
+            " A Space's disk is wiped at every restart: set CREDIBLE_RECS_FEEDBACK_REPO and HF_TOKEN to keep it.")
+        print(f"Feedback is {store.describe()}.{kept}", flush=True)
+        print(f"Visit counts: {'GoatCounter, ' + site.goatcounter if site.goatcounter else 'off'}.", flush=True)
     from engine.pipeline import cached_profiles
 
     profiles = cached_profiles()
-    global live
     from engine.pipeline import live_checker
 
     live = live_checker()
     if not (library_dir / "threads").is_dir():
         print(f"Warning: no library at {library_dir} (no threads/ folder), so every answer will fail. "
               "Pass --library DIR to use another one.")
-    serve(port, library_dir)
+    serve(port, library_dir, site)
     return 0
 
 

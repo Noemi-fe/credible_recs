@@ -51,11 +51,35 @@ const LABELS = {
     request_too_long: "That's a bit long: please keep it under {max} characters.",
     quote_not_verified: "This answer can't be shown: one of its quotes failed the word-for-word check, and we never show a quote that fails it.",
     engine_failed: "Something went wrong while preparing this answer. The details are in the window where the server runs.",
+    too_many_requests: "You've asked for a lot of answers in a short time. Please wait a few minutes and try again.",  // added 11 Oct 2026
     other: "Something went wrong. Please try again.",
     offline: "The local server isn't answering. Is it still running?",
   },
+  // The public site's words for two of those (11 Oct 2026): its visitors can't see the server's window.
+  errorsPublic: {
+    engine_failed: "Something went wrong while preparing this answer. Please try again later.",
+    offline: "The site isn't answering right now. Please try again in a minute.",
+  },
   footer: "A free, non-commercial research prototype: read-only, and every quote links back to its comment on Reddit.",
   howLink: "How we pick and score",  // added 10 Oct 2026: the how-we-score page (wording decided by Claude)
+  // Added 11 Oct 2026 (going live; wording decided by Claude): "Was this useful?" under every answer, and the
+  // "First time here?" question asked once per browser.
+  feedbackHeading: "Was this useful?",
+  feedbackUseful: "Useful",
+  feedbackNotUseful: "Not useful",
+  feedbackComment: "Anything to add? (optional)",
+  feedbackPrivacy: "Please don't include personal details.",
+  feedbackSend: "Send",
+  feedbackChoose: "Choose Useful or Not useful first.",
+  feedbackSending: "Sending…",
+  feedbackThanks: "Thanks for your feedback!",
+  feedbackFailed: "Your feedback couldn't be sent. Please try again.",
+  feedbackTooMany: "That's a lot of feedback in a short time. Please try again in a few minutes.",
+  firstTimeQuestion: "First time here?",
+  firstTimeYes: "Yes",
+  firstTimeNo: "No, I've been before",
+  firstTimeClose: "Close this question",
+  firstTimeThanks: "Thanks!",
 };
 </script>
 <style>
@@ -189,6 +213,29 @@ h1, h2, h3, h4 { line-height: 1.25; }
 .extras .lead { margin: 0 0 6px; }
 .skip .quote { border-left-color: var(--bad); }
 .footnote { margin: 18px 0 0; font-size: 14px; color: var(--muted); }
+
+/* "First time here?" (11 Oct 2026): a small question, asked once per browser. */
+.first-time { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 16px 0 0;
+  padding: 10px 52px 10px 16px; border-radius: 10px; background: var(--accent-soft); }
+.first-time p { margin: 0; font-weight: 650; }
+.first-time .answers { display: flex; flex-wrap: wrap; gap: 8px; }
+.first-time .close { position: absolute; top: 8px; right: 8px; font: inherit; font-size: 22px; line-height: 1;
+  width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; }
+.first-time .close:hover { color: var(--text); background: var(--surface); }
+
+/* "Was this useful?" under every answer (11 Oct 2026). */
+.feedback { margin: 24px 0 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.feedback h2 { font-size: 17px; margin: 0 0 10px; }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.choice { font: inherit; padding: 6px 16px; border: 1px solid var(--muted); border-radius: 999px; background: var(--surface); color: var(--text); cursor: pointer; }
+.choice[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 650; }
+.feedback label { display: block; font-weight: 650; margin-bottom: 6px; }
+.feedback textarea { display: block; width: 100%; font: inherit; padding: 8px 10px; border: 1px solid var(--muted); border-radius: 8px; background: var(--surface); color: var(--text); resize: vertical; }
+.feedback .send { margin-top: 10px; font: inherit; font-weight: 650; padding: 8px 18px; border: 0; border-radius: 8px; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.feedback .send:disabled { opacity: .6; cursor: progress; }
+.feedback-note { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+.feedback-note:empty { display: none; }
+.feedback-thanks { margin: 24px 0 0; padding: 12px 16px; border-radius: 10px; background: var(--ok-soft); color: var(--text); }
 .foot { padding: 32px 16px 40px; font-size: 14px; color: var(--muted); }
 
 /* Phone width: one column, the button under the box. */
@@ -199,6 +246,7 @@ h1, h2, h3, h4 { line-height: 1.25; }
   .search button { width: 100%; }
   .card { padding: 14px 14px; }
   .extras { grid-template-columns: 1fr; }
+  .feedback .send { width: 100%; }
 }
 </style>
 </head>
@@ -243,7 +291,10 @@ h1, h2, h3, h4 { line-height: 1.25; }
       so a comment containing "<script>" shows those characters and is never run.
    4. Links are checked before they are drawn, and there are two kinds only: a quote's comment on Reddit
       (redditUrl), and a shop's page for a price or for where a product is sold (shopUrl: https only, the shop's own
-      address from data/prices.json, as the server sends it). Any other address is shown without a link. */
+      address from data/prices.json, as the server sends it). Any other address is shown without a link.
+   5. Since 11 Oct 2026 (going live): under every answer, "Was this useful?" (feedbackForm); once per browser, "First
+      time here?" (firstTimeQuestion). Both send to this site's server only (sendFeedback). When visit counting is on,
+      a few events are counted by fixed names (track), never anything typed. */
 (function () {
   "use strict";
   const SETTINGS = JSON.parse(document.getElementById("settings").textContent);
@@ -298,6 +349,132 @@ h1, h2, h3, h4 { line-height: 1.25; }
 
   /** {"high": 2, "medium": 1, "low": 0} as "2 high, 1 medium, 0 low". */
   function levels(counts) { return Object.entries(counts).map(([level, n]) => n + " " + level).join(", "); }
+
+  // --- Visit counts (11 Oct 2026): GoatCounter events, only when counting is on ---
+
+  /* The only events ever counted, by these fixed names, never with anything typed on the page. Each name's words are
+     what Noemi's GoatCounter page shows. */
+  const EVENTS = {
+    "search": "A search was made",
+    "answer-ok": "Answer: picks",
+    "answer-clarify": "Answer: one question first",
+    "answer-out-of-scope": "Answer: outside skincare and kitchen",
+    "feedback-useful": "Feedback: useful",
+    "feedback-not-useful": "Feedback: not useful",
+    "first-time-yes": "First time here: yes",
+    "first-time-no": "First time here: no, been before",
+  };
+  const STATUS_EVENTS = { ok: "answer-ok", clarify: "answer-clarify", out_of_scope: "answer-out-of-scope" };
+
+  /** Counts one event with GoatCounter when visit counting is on. A name not in EVENTS is never sent; without
+      GoatCounter's script (not loaded yet, or blocked) nothing happens; and counting can never break the page. */
+  function track(name) {
+    if (!SETTINGS.counting || !Object.hasOwn(EVENTS, name)) return;
+    const counter = window.goatcounter;
+    if (!counter || typeof counter.count !== "function") return;
+    try { counter.count({ path: name, title: EVENTS[name], event: true }); } catch (error) { /* not counted, that's all */ }
+  }
+
+  // --- Feedback (11 Oct 2026): to this site's own server only ---
+
+  /** Sends one feedback record (engine/feedback.py says which); resolves to {ok, code}, and never throws. */
+  async function sendFeedback(record) {
+    try {
+      const response = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(record),
+        // The page sends no Referer; this lets the browser say which site the feedback comes from (the Origin header,
+        // which the server checks), and never the page's address.
+        referrerPolicy: "strict-origin",
+      });
+      if (response.ok) return { ok: true };
+      const data = await response.json().catch(() => ({}));
+      return { ok: false, code: data.code };
+    } catch (error) {
+      return { ok: false, code: "offline" };
+    }
+  }
+
+  let feedbackForms = 0;  // numbers each form, so its labels point at its own boxes
+
+  /** "Was this useful?" under an answer: Useful or Not useful, an optional comment, then Send. Nothing is sent before
+      Send; then a short thanks takes the form's place. What goes to the server: the request, the choice, the comment,
+      the product type and the kind of answer. Nothing about who sent it. */
+  function feedbackForm(request, query) {
+    const id = "feedback-" + (++feedbackForms);
+    let verdict = null;
+    const note = el("p", { class: "feedback-note", role: "status" });
+    const choices = [["useful", LABELS.feedbackUseful], ["not useful", LABELS.feedbackNotUseful]].map(([value, words]) => {
+      const choice = el("button", { type: "button", class: "choice", "aria-pressed": "false" }, words);
+      choice.addEventListener("click", () => {
+        verdict = value;
+        for (const other of choices) other.setAttribute("aria-pressed", String(other === choice));
+        note.textContent = "";
+      });
+      return choice;
+    });
+    const comment = el("textarea", { id: id + "-comment", rows: "3", maxlength: String(SETTINGS.maxCommentChars) });
+    const send = el("button", { type: "submit", class: "send" }, LABELS.feedbackSend);
+    const box = el("form", { class: "feedback", "aria-labelledby": id + "-heading" },
+      el("h2", { id: id + "-heading" }, LABELS.feedbackHeading),
+      el("div", { class: "choices", role: "group", "aria-labelledby": id + "-heading" }, ...choices),
+      el("label", { for: id + "-comment" }, LABELS.feedbackComment),
+      comment,
+      el("p", { class: "hint" }, LABELS.feedbackPrivacy),
+      send, note);
+    box.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!verdict) { note.textContent = LABELS.feedbackChoose; return; }
+      send.disabled = true;
+      note.textContent = LABELS.feedbackSending;
+      const sent = await sendFeedback({ kind: "answer_feedback", request, verdict, comment: comment.value.trim() || null,
+                                        product_type: query.product_type, status: query.status });
+      if (sent.ok) {
+        track(verdict === "useful" ? "feedback-useful" : "feedback-not-useful");
+        const thanks = el("p", { class: "feedback-thanks", role: "status", tabindex: "-1" }, LABELS.feedbackThanks);
+        box.replaceWith(thanks);
+        thanks.focus();
+        return;
+      }
+      send.disabled = false;
+      note.textContent = sent.code === "too_many_requests" ? LABELS.feedbackTooMany : LABELS.feedbackFailed;
+    });
+    return box;
+  }
+
+  // --- "First time here?" (Noemi, 11 Oct 2026, to count new and returning visitors) ---
+
+  const FIRST_TIME_KEY = "credible-recs:first-time";
+
+  /* The browser's own storage, for one thing only: that "First time here?" was asked. Every use is wrapped in try and
+     catch, since storage can be switched off, full, or refused inside a frame. */
+  function recall(key) { try { return localStorage.getItem(key); } catch (error) { return null; } }
+  function remember(key, value) { try { localStorage.setItem(key, value); return true; } catch (error) { return false; } }
+
+  /** Asked once per browser, on its first visit: the browser notes it as asked as soon as it is shown (then answered
+      or closed), so nobody is asked twice; where the browser can't keep that note, it isn't shown at all. Only the yes
+      or no goes to the server, and it is counted as an event when visit counting is on. */
+  function firstTimeQuestion() {
+    if (recall(FIRST_TIME_KEY) !== null || !remember(FIRST_TIME_KEY, "asked")) return;
+    const box = el("aside", { class: "first-time", "aria-labelledby": "first-time-question" });
+    function answered(answer) {
+      remember(FIRST_TIME_KEY, "answered");
+      sendFeedback({ kind: "first_time", answer });
+      track(answer === "yes" ? "first-time-yes" : "first-time-no");
+      const thanks = el("p", { role: "status", tabindex: "-1" }, LABELS.firstTimeThanks);
+      box.replaceChildren(thanks);
+      thanks.focus();
+    }
+    const yes = el("button", { type: "button", class: "chip" }, LABELS.firstTimeYes);
+    const no = el("button", { type: "button", class: "chip" }, LABELS.firstTimeNo);
+    const close = el("button", { type: "button", class: "close", "aria-label": LABELS.firstTimeClose, title: LABELS.firstTimeClose }, "\u00d7");
+    yes.addEventListener("click", () => answered("yes"));
+    no.addEventListener("click", () => answered("no"));
+    close.addEventListener("click", () => { remember(FIRST_TIME_KEY, "closed"); box.remove(); input.focus(); });
+    box.append(el("p", { id: "first-time-question" }, LABELS.firstTimeQuestion), el("div", { class: "answers" }, yes, no), close);
+    form.before(box);
+  }
 
   // --- The fixed text of the page ---
 
@@ -448,8 +625,13 @@ h1, h2, h3, h4 { line-height: 1.25; }
     return el("div", { class: "notice " + kind }, heading && el("h2", {}, heading), ...lines.filter(Boolean).map((line) => el("p", {}, line)));
   }
 
-  /** Everything to show for one JSON answer from the server. */
-  function drawAnswer(data) {
+  /** Everything to show for one JSON answer from the server, ending with "Was this useful?" (11 Oct 2026): under the
+      picks, under module 1's question, and under its polite no alike. */
+  function drawAnswer(data, request) {
+    return [...answerParts(data), feedbackForm(request, data.query)];
+  }
+
+  function answerParts(data) {
     const query = data.query;
     if (query.status === "clarify") return [notice("question", LABELS.clarifyHeading, query.question, LABELS.clarifyHint)];
     if (query.status === "out_of_scope") return [notice("question", null, query.message)];
@@ -480,7 +662,7 @@ h1, h2, h3, h4 { line-height: 1.25; }
   }
 
   function errorText(code) {
-    const text = LABELS.errors[code] || LABELS.errors.other;
+    const text = (SETTINGS.public && LABELS.errorsPublic[code]) || LABELS.errors[code] || LABELS.errors.other;
     return fill(text, { max: SETTINGS.maxChars });
   }
 
@@ -506,16 +688,18 @@ h1, h2, h3, h4 { line-height: 1.25; }
     try {
       response = await fetch("/api/answer?q=" + encodeURIComponent(request), { headers: { Accept: "application/json" } });
     } catch (error) {
-      return [notice("error", null, LABELS.errors.offline)];  // no reply at all: the server isn't running
+      return [notice("error", null, errorText("offline"))];  // no reply at all: the server isn't running
     }
     const data = await response.json().catch(() => ({}));
-    return response.ok && data.query ? drawAnswer(data) : [notice("error", null, errorText(data.code))];
+    if (!response.ok || !data.query) return [notice("error", null, errorText(data.code))];
+    track(STATUS_EVENTS[data.query.status]);
+    return drawAnswer(data, request);
   }
 
   async function search(text, addToHistory) {
     const request = text.trim();
     const mine = ++latest;
-    if (addToHistory) history.pushState(null, "", request ? "?q=" + encodeURIComponent(request) : location.pathname);
+    if (addToHistory) history.pushState(null, "", request ? "#q=" + encodeURIComponent(request) : location.pathname + location.search);
     if (!request) {
       stopLoading();
       showOnly(notice("error", null, errorText("empty_request")));
@@ -523,18 +707,33 @@ h1, h2, h3, h4 { line-height: 1.25; }
     }
     examples.open = false;
     startLoading();
+    track("search");
     const shown = await fetchAnswer(request);
     if (mine !== latest) return;  // a newer search has started: its answer is the one to show
     showOnly(...shown);
     stopLoading(LABELS.done);
   }
 
-  /** The request in the address bar (?q=...), so a reload or the back button shows the same search. */
+  /** The request in the address bar (#q=...), so a reload or the back button shows the same search. Since 11 Oct 2026
+      it sits after the "#", which browsers never send anywhere: not to this server, and not with the visit counts. */
   function fromAddress() {
-    const request = new URLSearchParams(location.search).get("q") || "";
+    const request = requestInAddress();
     input.value = request;
     if (request.trim()) search(request, false);
     else { latest++; showOnly(); stopLoading(); examples.open = true; }
+  }
+
+  /** The request after "#q=" in the address. An older link with "?q=..." is first moved there, so the request leaves
+      the part of the address that is sent with every request. */
+  function requestInAddress() {
+    const query = new URLSearchParams(location.search);
+    if (query.has("q")) {
+      const old = query.get("q");
+      query.delete("q");
+      const rest = query.toString();
+      history.replaceState(null, "", location.pathname + (rest ? "?" + rest : "") + (old.trim() ? "#q=" + encodeURIComponent(old) : ""));
+    }
+    return new URLSearchParams(location.hash.slice(1)).get("q") || "";
   }
 
   form.addEventListener("submit", (event) => {
@@ -543,8 +742,12 @@ h1, h2, h3, h4 { line-height: 1.25; }
   });
   window.addEventListener("popstate", fromAddress);
   drawExamples();
+  firstTimeQuestion();
   fromAddress();
 })();
 </script>
+<!-- Filled in by the server: GoatCounter's script when visits are counted (engine/web.py), else nothing. It comes after
+     the page's own script, so an old link's request has left the address before anything is counted. -->
+{{COUNTER}}
 </body>
 </html>

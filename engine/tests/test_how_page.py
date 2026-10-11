@@ -318,3 +318,30 @@ def test_the_page_loads_nothing_and_runs_nothing(tmp_path, monkeypatch):
 def test_the_search_page_links_to_how(tmp_path):
     status, _, body = web.handle_request("/", tmp_path / "no library")
     assert status == 200 and 'href="/how"' in body.decode("utf-8")
+
+
+# --- Your privacy (Noemi, 11 Oct 2026: going live) ---
+
+def test_the_page_says_plainly_what_is_collected_and_what_is_not(tmp_path, monkeypatch):
+    words = text_of(get_how(tmp_path, monkeypatch))
+    assert "Your privacy" in words
+    for said in ("No names, accounts or IP addresses", "no cookies", "Please don't put personal details in a comment",
+                 "First time here?", "not a cookie", "Your searches aren't saved"):
+        assert said in words, said
+    assert "Visits aren't counted at the moment." in words  # GoatCounter stays off until Noemi gives its code
+    assert "GoatCounter" not in words
+
+
+def test_with_visit_counting_on_the_page_names_goatcounter_and_loads_its_script(tmp_path):
+    script = web.counter_script("credible-recs")
+    html = how_page.page(write(tmp_path), counter=script)
+    words = text_of(html)
+    assert "GoatCounter" in words and "sets no cookies" in words and "never stores IP addresses" in words
+    assert "Never what you typed." in words
+    assert html.count(script) == 1
+
+
+def test_on_the_public_site_the_page_names_its_host_and_the_memory_only_limit(tmp_path):
+    words = text_of(how_page.page(write(tmp_path), public=True))
+    assert "Hugging Face" in words and "in memory only" in words
+    assert "Hugging Face" not in text_of(how_page.page(write(tmp_path)))

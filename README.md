@@ -40,3 +40,8 @@ python3.12 -m venv .venv
 .venv/bin/pytest
 .venv/bin/python -m engine.web     # local demo: the search page at http://127.0.0.1:8765/ (this computer only)
 ```
+
+## Going live
+
+The demo can run on a Hugging Face Space, with anonymous feedback and optional visit counts:
+`deploy/huggingface/DEPLOY.md` explains every step.
