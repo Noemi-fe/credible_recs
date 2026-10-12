@@ -376,3 +376,45 @@ def test_the_page_says_how_many_threads_and_comments_an_answer_read():
     # Noemi, 12 Oct 2026: shown under every answer's title, not only in the small print.
     page = web.search_page().decode("utf-8")
     assert "{threads} Reddit threads and {comments} comments" in page
+
+
+# --- Getting ready before the first visitor (latency, 12 Oct 2026) ---
+
+def test_warming_up_reads_the_library_and_loads_the_open_model(tmp_path, monkeypatch):
+    from engine import library_cache, query_model
+    from engine.tests.test_library_cache import settled
+    from engine.tests.test_pipeline import library
+
+    root = settled(library(tmp_path))
+
+    class FakeModel:
+        loaded = False
+        read_before_any_request = []
+
+        def load(self):
+            FakeModel.loaded = True
+
+        def read(self, text):
+            FakeModel.read_before_any_request.append(text)
+            return {"category": "kitchen", "product": "toaster"}
+
+    monkeypatch.setattr(query_model, "default_query_model", lambda: FakeModel())
+    web.warm_up(root)
+    assert FakeModel.loaded
+    assert FakeModel.read_before_any_request == [web.PRIMING_REQUEST]  # its instructions read once, ahead
+    reads = []
+    real = library_cache.load_threads
+    monkeypatch.setattr(library_cache, "load_threads", lambda *a, **k: reads.append(1) or real(*a, **k))
+    library_cache.loaded(root / "threads")
+    assert reads == []  # already read, while getting ready
+
+
+def test_warming_up_never_stops_the_server(tmp_path, monkeypatch, capsys):
+    from engine import query_model
+
+    def broken():
+        raise RuntimeError("the model file is damaged")
+
+    monkeypatch.setattr(query_model, "default_query_model", broken)
+    web.warm_up(tmp_path / "no-library")  # no threads/ folder, and a model that fails to load: reported, not raised
+    assert "damaged" in capsys.readouterr().err
