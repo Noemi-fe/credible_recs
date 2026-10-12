@@ -181,3 +181,46 @@ def test_a_group_is_named_by_the_notes_about_it_alone():
     by_key = {g.key: g.name for g in groups}
     assert by_key == {"carbon steel": "carbon steel pan", "cast iron": "cast iron"}
     assert len(set(by_key.values())) == len(by_key)
+
+
+# --- Kinds compared once per pair of names (latency, 12 Oct 2026) ---
+
+def _same_kind_sets_one_by_one(items):
+    """The grouping as first written, comparing every note with every note of every set: what the faster one must
+    give, set for set and in the same order."""
+    from engine.group_kinds import _same_kind
+
+    sets = []
+    for item in items:
+        matching = [s for s in sets if any(_same_kind(item[1], other[1]) for other in s)]
+        merged = [item] + [x for s in matching for x in s]
+        sets = [s for s in sets if s not in matching] + [merged]
+    return sets
+
+
+def test_kind_sets_are_the_same_as_comparing_every_note():
+    import random
+
+    from engine.group_kinds import KindMention, _same_kind_sets
+
+    rng = random.Random(7)
+    words = ["cast", "iron", "castiron", "carbon", "steel", "stainless", "nonstick", "non", "stick", "pan", "clad"]
+    items = []
+    for n in range(300):
+        kind = [rng.choice(words) for _ in range(rng.randint(1, 3))]
+        items.append((KindMention(f"t{n % 7}", f"c{n}", " ".join(kind), "recommend"), list(dict.fromkeys(kind))))
+    assert _same_kind_sets(items) == _same_kind_sets_one_by_one(items)
+
+
+def test_each_pair_of_kind_names_is_compared_once(monkeypatch):
+    from engine import group_kinds
+    from engine.group_kinds import KindMention
+
+    calls = []
+    real = group_kinds._same_kind
+    monkeypatch.setattr(group_kinds, "_same_kind", lambda a, b: calls.append((tuple(a), tuple(b))) or real(a, b))
+    items = [(KindMention("t1", f"c{n}", "cast iron", "recommend"), ["cast", "iron"]) for n in range(20)]
+    items += [(KindMention("t1", f"d{n}", "carbon steel", "recommend"), ["carbon", "steel"]) for n in range(20)]
+    sets = group_kinds._same_kind_sets(items)
+    assert len(sets) == 2
+    assert len(calls) == len(set(calls))  # never the same two names twice

@@ -188,12 +188,29 @@ def _same_kind(a: list[str], b: list[str]) -> bool:
 
 
 def _same_kind_sets(items: list[tuple[KindMention, list[str]]]) -> list[list[tuple[KindMention, list[str]]]]:
-    """The items split into sets of the same kind."""
+    """The items split into sets of the same kind: each item joins every set holding a kind it is the same as.
+
+    Many notes name the same kind in the same words ("cast iron" 40 times), so a set is compared by the different
+    word lists it holds, and two word lists are compared once (latency, 12 Oct 2026: comparing every note with every
+    note took a second on a 26-thread answer). The sets, and the order of everything in them, are as before."""
     sets: list[list[tuple[KindMention, list[str]]]] = []
+    kinds: list[set[tuple[str, ...]]] = []  # the different word lists of each set, in step with `sets`
+    known: dict[tuple[tuple[str, ...], tuple[str, ...]], bool] = {}
+
+    def same(a: tuple[str, ...], b: tuple[str, ...]) -> bool:
+        if (a, b) not in known:
+            known[(a, b)] = _same_kind(list(a), list(b))
+        return known[(a, b)]
+
     for item in items:
-        matching = [s for s in sets if any(_same_kind(item[1], other[1]) for other in s)]
-        merged = [item] + [x for s in matching for x in s]
-        sets = [s for s in sets if s not in matching] + [merged]
+        words = tuple(item[1])
+        matching = [i for i, held in enumerate(kinds) if any(same(words, other) for other in held)]
+        merged = [item] + [x for i in matching for x in sets[i]]
+        merged_kinds = {words}.union(*(kinds[i] for i in matching))
+        matching_sets = [sets[i] for i in matching]
+        keep = [i for i, s in enumerate(sets) if s not in matching_sets]  # as before: by what the sets hold
+        sets = [sets[i] for i in keep] + [merged]
+        kinds = [kinds[i] for i in keep] + [merged_kinds]
     return sets
 
 
