@@ -319,7 +319,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     models, model_prices = _brand_models(result.ranking, kept_groups, query.product_type, price_checks)
     result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                  models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
-                                 request_needs(query))
+                                 request_needs(query), query.text)
     if live_checker is not None:
         _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions, kept_groups,
                     unsuited_kinds, need_led)
@@ -375,7 +375,7 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks)
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
-                                     request_needs(query))
+                                     request_needs(query), query.text)
 
 
 def _checked_live_recently(thread: Thread, today: date) -> bool:
