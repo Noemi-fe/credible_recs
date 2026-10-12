@@ -226,7 +226,12 @@ LOCAL = Site()
 
 
 # Answers already worked out, by (request, library folder), kept until the server stops.
-_answers: dict[tuple[str, str], tuple[int, str, bytes]] = {}
+_answers: dict[tuple[str, str], tuple[float, tuple[int, str, bytes]]] = {}  # key -> (when worked out, the answer)
+# How long a remembered answer is kept before it is worked out again, its quotes checked live once more (12 Oct 2026):
+# well within the 48 hours Reddit content may be kept, and short enough that a comment deleted today leaves the
+# answers by tomorrow. Chosen by Claude, reported to Noemi.
+ANSWER_KEEP_HOURS = 24
+_clock = time.monotonic
 # Where writers' standing comes from (engine.pipeline's `profiles`): the command line sets the Arctic Shift cache
 # (engine.profiles.CachedOnly, never a call); None, as in the tests, leaves writers known by name only.
 profiles = None
@@ -269,16 +274,17 @@ def answer_response(request: str, library_dir: Path, quiet: bool = False) -> tup
         return _error(400, TOO_LONG, n=len(request), limit=WEB_MAX_REQUEST_CHARS)
     key = (request, str(library_dir))
     remembered = _answers.get(key)  # read without waiting (11 Oct 2026): a slow new answer never holds up a known one
-    if remembered is not None:
-        return remembered
+    if remembered is not None and _clock() - remembered[0] < ANSWER_KEEP_HOURS * 3600:
+        return remembered[1]
     with _answers_lock:  # one answer is worked out at a time, so the same request is never worked out twice
-        if key not in _answers:
+        remembered = _answers.get(key)
+        if remembered is None or _clock() - remembered[0] >= ANSWER_KEEP_HOURS * 3600:
             try:
-                _answers[key] = _fresh_answer(request, library_dir, quiet)
+                _answers[key] = (_clock(), _fresh_answer(request, library_dir, quiet))
             except Exception:  # a broken library file, say: reported in the server's window, never sent
                 _report_failure(quiet)
                 return _error(500, ENGINE_FAILED)  # not remembered: fixing the file and asking again works
-        return _answers[key]
+        return _answers[key][1]
 
 
 def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple[int, str, bytes]:

@@ -227,6 +227,28 @@ def test_answers_are_remembered_for_the_life_of_the_process(tmp_path, monkeypatc
     assert first == again and calls == [REQUEST]
 
 
+def test_a_remembered_answer_is_worked_out_again_after_its_time(tmp_path, monkeypatch):
+    # 12 Oct 2026 (the latency builder): answers were remembered for as long as the server ran, so their quotes were
+    # checked live on Reddit once a run; the deletion rule keeps Reddit content at most 48 hours. A remembered answer
+    # is kept for ANSWER_KEEP_HOURS, then worked out (and its quotes checked) again.
+    calls, clock = [], [1000.0]
+
+    def counting(request, library_dir):
+        calls.append(request)
+        return answer_request(request, library_dir)
+
+    monkeypatch.setattr(web, "answer_request", counting)
+    monkeypatch.setattr(web, "_clock", lambda: clock[0])
+    library_dir = kettle_library(tmp_path)
+    web.handle_request(f"/api/answer?q={quote(REQUEST)}", library_dir)
+    clock[0] += web.ANSWER_KEEP_HOURS * 3600 - 1
+    web.handle_request(f"/api/answer?q={quote(REQUEST)}", library_dir)
+    assert calls == [REQUEST]
+    clock[0] += 2
+    web.handle_request(f"/api/answer?q={quote(REQUEST)}", library_dir)
+    assert calls == [REQUEST, REQUEST]
+
+
 def test_a_missing_library_is_an_error_not_a_crash(tmp_path):
     status, _, body = web.handle_request(f"/api/answer?q={quote(REQUEST)}", tmp_path / "no-library")
     assert status == 500 and json.loads(body)["code"] == "engine_failed"
