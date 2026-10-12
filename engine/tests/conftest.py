@@ -76,3 +76,12 @@ def _no_real_bright_data_or_outage_memo(monkeypatch, tmp_path):
 
     monkeypatch.setattr(library, "BrightDataClient", refuse)
     monkeypatch.setattr(library, "ARCHIVE_DOWN_MEMO", tmp_path / "arctic_shift_down.json")
+
+
+@pytest.fixture(autouse=True)
+def _nothing_remembered_from_another_test():
+    # Answers keep what they work out between requests (the library, price and facts lookups, product names, comment
+    # signs: engine/memo.py; latency, 12 Oct 2026). Each test starts with nothing kept, so none depends on another's.
+    from engine import memo
+
+    memo.forget_all()

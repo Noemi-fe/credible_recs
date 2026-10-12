@@ -77,6 +77,7 @@ from functools import cache
 from pathlib import Path
 
 from engine.config import MENTION_CATEGORIES, PRODUCT_VARIANT_WORDS
+from engine.memo import register
 from engine.text import one_edit_apart
 
 DEFAULT_ALIASES = Path(__file__).resolve().parent / "data" / "product_aliases.json"
@@ -156,6 +157,8 @@ _WORDS_BY_LIST: dict[int, tuple[dict, dict[str, tuple[str, ...]]]] = {}  # id(li
 _WORDS_NO_ALIASES: dict[str, tuple[str, ...]] = {}  # every empty list gives the same words
 MAX_LISTS_REMEMBERED = 16
 MAX_NAMES_REMEMBERED = 200_000  # per table; a full table starts again (a long-running server never grows past it)
+for _table in (_NORMALIZED, _WORDS_BY_LIST, _WORDS_NO_ALIASES):
+    register(_table.clear)  # engine.memo.forget_all empties them
 
 
 def _limit(table: dict) -> None:

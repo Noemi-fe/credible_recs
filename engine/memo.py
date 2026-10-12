@@ -10,8 +10,11 @@ lists change only when a researcher adds entries. Two small tools let each be wo
 - `PerList`: answers worked out from one list, kept for as long as that very list is the one asked about. A list is
   known by its identity, not its contents, and kept with its answers, so a list made later can't be mistaken for it.
   The lists asked about are never changed once made; answers are worked out again for any other kind of collection.
+- `Table`: the answers of a function that depends only on what it is given (a comment's text, say), by what it was
+  given; it starts again empty past `limit` answers, so a long-running server never grows past it.
 
-Each memory here registers a way to empty it: `forget_all` empties them all.
+Every memory here, and the others like it (engine.library_cache, engine.match_products), registers a way to empty it:
+`forget_all` empties them all, so each test starts from nothing (engine/tests/conftest.py).
 """
 
 import os
@@ -35,6 +38,22 @@ def forget_all() -> None:
     """Empties every memory of worked-out answers: the next answers work everything out again."""
     for forget in _forgetters:
         forget()
+
+
+class Table(dict):
+    """Remembered answers by key, emptied past `limit` of them (see the module docstring)."""
+
+    def __init__(self, limit: int = 200_000):
+        super().__init__()
+        self.limit = limit
+        register(self.clear)
+
+    def keep(self, key, value):
+        """Remembers `value` for `key` and hands it back."""
+        if len(self) >= self.limit:
+            self.clear()
+        self[key] = value
+        return value
 
 
 def file_fingerprint(path: Path) -> tuple | None:

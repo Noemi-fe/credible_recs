@@ -45,6 +45,7 @@ import html
 import re
 from collections.abc import Collection, Iterable
 from dataclasses import dataclass
+from functools import cache
 from datetime import datetime
 from itertools import combinations
 from typing import Literal
@@ -52,6 +53,7 @@ from typing import Literal
 from engine import config
 from engine.extract import ExtractedAgreement
 from engine.match_products import normalize_name, same_product
+from engine.memo import Table
 from engine.models import Author, Comment, Thread
 from engine.text import one_edit_apart
 
@@ -133,6 +135,14 @@ class CommenterHistory:
     contributions: int | None = None  # how many posts and comments the account has written (Author.contributions first)
     active_in_topic: bool | None = None  # regularly active in this topic's subreddits
     usually_upvoted: bool | None = None  # its comments there are usually upvoted
+
+
+# What a comment's own words show, worked out once per comment and remembered (latency, 12 Oct 2026): the next answer
+# reading the same thread asks again. Each depends only on what its key holds (engine.memo.Table).
+_INDEPENDENCE = Table()
+_CARE = Table()
+_EVIDENCE = Table()
+_COPIES = Table(limit=20_000)
 
 
 # --- Voice: once per comment ---
@@ -308,6 +318,15 @@ _LINK = re.compile(r"https?://\S+")
 
 
 def _independence_signs(text: str) -> list[Sign]:
+    """Paid promotion, sales talk or working for a brand, in the comment's own words. They depend on the words alone,
+    so each comment's are worked out once and remembered (latency, 12 Oct 2026)."""
+    key = (text, config.PAID_PROMOTION_RED_FLAGS)
+    if key not in _INDEPENDENCE:
+        _INDEPENDENCE.keep(key, tuple(_independence_signs_of(text)))
+    return list(_INDEPENDENCE[key])
+
+
+def _independence_signs_of(text: str) -> list[Sign]:
     signs = []
     paid = _first_phrase(text, PAID_PROMOTION_PHRASES)
     pitch = _first_phrase(text, SALESY_PHRASES)
@@ -344,8 +363,18 @@ def copy_groups(thread: Thread) -> list[frozenset[str]]:
 
     Worked out once per thread, not comment by comment: every run of that many words is listed with the comments it
     appears in, so a thread of hundreds of comments is read once. Returns the sets of comments that copy one another
-    (a comment copied by two others joins them in one set); copied_comment_ids and repeated_copies read them.
+    (a comment copied by two others joins them in one set); copied_comment_ids and repeated_copies read them. Since 12
+    Oct 2026 (latency) also remembered, by everything of the thread it reads, so the next answer reading the same
+    thread doesn't work it out again.
     """
+    key = (thread.id, config.COPIED_TEXT_MIN_WORDS,
+           tuple((c.id, c.status, c.parent_id, c.author.name if c.author else None, c.body) for c in thread.comments))
+    if key not in _COPIES:
+        _COPIES.keep(key, tuple(_copy_groups(thread)))
+    return list(_COPIES[key])
+
+
+def _copy_groups(thread: Thread) -> list[frozenset[str]]:
     size = config.COPIED_TEXT_MIN_WORDS
     readable = {c.id: c for c in thread.comments if c.status == "ok"}
     found_in: dict[tuple[str, ...], list[str]] = {}  # each run of `size` words: the comments that have it
@@ -486,6 +515,16 @@ CATEGORY_TERMS = {
 
 
 def _care_signs(text: str, category: str) -> list[Sign]:
+    """The category's specialist words (an enthusiast) and, when switched on, no sign of use. They depend on the words
+    and the category alone, so each comment's are worked out once and remembered (latency, 12 Oct 2026)."""
+    key = (text, category, config.ENTHUSIAST_MIN_TERMS, config.VOICE_RED_FLAG_NO_USE, config.LONG_TERM_MIN_MONTHS,
+           config.USE_MAX_YEARS)
+    if key not in _CARE:
+        _CARE.keep(key, tuple(_care_signs_of(text, category)))
+    return list(_CARE[key])
+
+
+def _care_signs_of(text: str, category: str) -> list[Sign]:
     signs = []
     terms = [term for term in CATEGORY_TERMS.get(category, ()) if _has_any(text, (term,))]
     if len(terms) >= config.ENTHUSIAST_MIN_TERMS:
@@ -507,8 +546,18 @@ def score_evidence(comment: Comment, product_name: str, stance: str, other_produ
 
     `other_products` are the other products named in the same comment. Their sentences are kept apart, so "had my
     Lodge 10 years; never tried Staub" gives each its own evidence, and they are the alternatives counted when the
-    writer compares ("compares 2 alternatives").
+    writer compares ("compares 2 alternatives"). It depends on the comment's words and date, the product, the stance
+    and the others alone, so each is worked out once and remembered (latency, 12 Oct 2026).
     """
+    other_products = tuple(other_products)
+    key = (comment.body, comment.created_at, product_name, stance, other_products, config.LONG_TERM_MIN_MONTHS,
+           config.USE_MAX_YEARS)
+    if key not in _EVIDENCE:
+        _EVIDENCE.keep(key, _score_evidence(comment, product_name, stance, other_products))
+    return _EVIDENCE[key]
+
+
+def _score_evidence(comment: Comment, product_name: str, stance: str, other_products: tuple[str, ...]) -> EvidenceScore:
     others = _distinct_others(product_name, other_products)
     context = _product_context(_own_words(comment.body), product_name, others)
     text = " ".join(context)
@@ -943,7 +992,10 @@ def _sentences(text: str) -> list[str]:
     return sentences
 
 
+@cache
 def _phrase_pattern(phrase: str) -> re.Pattern:
+    """The pattern finding a phrase as whole words, made once per phrase (latency, 12 Oct 2026: hundreds of phrases
+    were compiled again for every comment, more than Python's own cache of patterns holds)."""
     return re.compile(r"(?<!\w)" + re.escape(phrase) + r"(?!\w)")
 
 

@@ -30,6 +30,7 @@ from pathlib import Path
 
 from engine.extract import CheckResult, check_extractions, extracted_dir
 from engine.gold import load_threads
+from engine.memo import register
 from engine.models import Thread
 
 # How many libraries are kept at once (the web demo uses one; the tests make many small ones).
@@ -80,6 +81,8 @@ def forget() -> None:
     with _lock:
         _kept.clear()
 
+
+register(forget)  # engine.memo.forget_all empties it too
 
 
 def fingerprint(threads_dir: Path) -> tuple:
