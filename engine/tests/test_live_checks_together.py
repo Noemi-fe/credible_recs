@@ -191,3 +191,30 @@ def test_quotes_shown_after_several_rounds_of_deleted_comments_were_checked_too(
     unchecked = [pair for pair in shown if pair not in set(live.asked)]
     assert unchecked == []  # every comment is gone, so nothing may be shown
     assert result.answer.picks == []
+
+
+# --- Never past Reddit's own limit (12 Oct 2026) ---
+
+def test_reads_beyond_the_burst_wait_their_turn(tmp_path):
+    # Reddit's embed pages allow about 200 reads in 10 minutes from one address (the limit its answers state): after
+    # a burst, reads start one every `refill` seconds, so the limit is never reached.
+    from engine.tests.test_live_check import Clock
+
+    clock = Clock()
+    started = []
+
+    def reddit(url, headers):
+        started.append(clock())
+        return 200, page(QUOTE)
+
+    live = LiveChecker(cache_dir=tmp_path / "cache", fetch=reddit, clock=clock, sleep=clock.sleep, min_interval=0,
+                       burst=3, refill=4)
+    for n in range(6):
+        live.check(URL.replace("c1aaaa", f"c{n}xxxx"), QUOTE)
+    assert [(t - started[0]).total_seconds() for t in started] == [0, 0, 0, 4, 8, 12]
+
+
+def test_the_default_budget_stays_under_reddits_limit():
+    # 200 reads in any 10 minutes, as Reddit's rate-limit headers said on 12 Oct 2026: the burst plus what refills in
+    # 10 minutes must stay within it, with room for a few other reads from the same address.
+    assert config.LIVE_CHECK_BURST + 600 / config.LIVE_CHECK_REFILL_SECONDS <= 190

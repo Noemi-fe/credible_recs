@@ -317,6 +317,14 @@ BUDGET_DEFAULT_CURRENCY = "GBP"
 # read once and kept for 48 hours as before.
 LIVE_CHECK_MIN_INTERVAL = 0.1
 LIVE_CHECK_PARALLEL = 8
+# Never more than Reddit allows (12 Oct 2026): its embed pages answer about 200 reads in 10 minutes from one address
+# (x-ratelimit-used 200 in its "429 Too Many Requests" answer to a test run that read faster), and a read refused that
+# way can't check a quote, which is then dropped. So up to LIVE_CHECK_BURST reads at once, then one more every
+# LIVE_CHECK_REFILL_SECONDS: at most 40 + 600 / 4 = 190 in any 10 minutes, leaving room for other reads from the same
+# address. A fresh answer (10 to 40 comments) reads at full speed; many answers in a row slow to a read every 4 s, as
+# 3 s spacing did before. Decided by Claude, reported.
+LIVE_CHECK_BURST = 40
+LIVE_CHECK_REFILL_SECONDS = 4.0
 
 # --- Care tips (Noemi, 9 Oct 2026) ---
 # Alongside each pick, credible advice from its threads on looking after it ("descale it every 6 months"; extraction
