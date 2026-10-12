@@ -30,3 +30,4 @@ each); the 48-thread answer under 10 s uncached.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 12 Oct 2026 | Baseline: the code before any change (f699e30), stand-in checks | 7.70 / 16.36 | 14.28 / 35.52 | 12.29 / 21.48 | 18.99 / 72.28 after 0.25 | 21.01 | 13.5 | yes (it saved the baseline answers) | the baseline |
 | 12 Oct 2026 | The library read once and kept in memory until a file changes | 3.38 / 9.50 | 8.98 / 15.15 | 10.65 / 19.71 | 11.48 / 17.10 after 0.19 | 15.15 | 3.2 | yes | yes: reading and checking the library, 1.97 s an answer (median), now 0.00 |
+| 12 Oct 2026 | Module 4 remembers each name's words | 1.55 / 4.47 | 7.08 / 10.96 | 7.11 / 10.97 | 11.75 / 17.39 after 0.29 | 14.57 | 3.0 | yes | yes: prices 1.43 / 7.58 s (median / max) now 0.20 / 1.11, facts 0.12 / 1.52 now 0.02 / 0.24 |

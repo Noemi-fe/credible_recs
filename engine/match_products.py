@@ -127,11 +127,52 @@ class AliasError(Exception):
 
 
 def normalize_name(name: str) -> list[str]:
-    """The words of a product name, in a form that compares cleanly: "The Paula's Choice 2% BHA" -> paulas choice 2 bha."""
+    """The words of a product name, in a form that compares cleanly: "The Paula's Choice 2% BHA" -> paulas choice 2 bha.
+
+    Each name is worked out once and remembered (latency, 12 Oct 2026): answers compare the same names thousands of
+    times. The list handed back is a new one each time, so a caller changing it changes nothing remembered."""
+    words = _NORMALIZED.get(name)
+    if words is None:
+        words = _NORMALIZED[name] = tuple(_normalize_name(name))
+        _limit(_NORMALIZED)
+    return list(words)
+
+
+def _normalize_name(name: str) -> list[str]:
     words = plain_words(PACK_SIZE.sub(" ", name))
     while words and words[0] in LEADING_WORDS:
         words.pop(0)
     return _without_negated_models(_without_size_units([word for word in words if word not in FILLER_WORDS]))
+
+
+# --- Names already worked out (latency, 12 Oct 2026) ---
+# A name's words depend only on the name and the list of short names used, so each is worked out once. A list of short
+# names is known by its identity (the shipped list is read once: known_aliases), and kept with its answers, so a list
+# the caller drops can't be mistaken for a new one made in its place. Lists are never changed once made.
+_NORMALIZED: dict[str, tuple[str, ...]] = {}
+_WORDS_BY_LIST: dict[int, tuple[dict, dict[str, tuple[str, ...]]]] = {}  # id(list) -> (the list, {name: words})
+_WORDS_NO_ALIASES: dict[str, tuple[str, ...]] = {}  # every empty list gives the same words
+MAX_LISTS_REMEMBERED = 16
+MAX_NAMES_REMEMBERED = 200_000  # per table; a full table starts again (a long-running server never grows past it)
+
+
+def _limit(table: dict) -> None:
+    if len(table) > MAX_NAMES_REMEMBERED:
+        table.clear()
+
+
+def _words_table(aliases: "Aliases") -> dict[str, tuple[str, ...]]:
+    """The remembered words of names under this list of short names."""
+    if not aliases:
+        return _WORDS_NO_ALIASES
+    found = _WORDS_BY_LIST.get(id(aliases))
+    if found is not None and found[0] is aliases:
+        return found[1]
+    if len(_WORDS_BY_LIST) >= MAX_LISTS_REMEMBERED:
+        _WORDS_BY_LIST.pop(next(iter(_WORDS_BY_LIST)))  # the list remembered first
+    table: dict[str, tuple[str, ...]] = {}
+    _WORDS_BY_LIST[id(aliases)] = (aliases, table)
+    return table
 
 
 # A pack size ("74g", "118 ml", "1.7 fl oz") says which size was priced, not which product it is: it is dropped (b01,
@@ -176,8 +217,18 @@ def product_words(name: str, aliases: Aliases = NO_ALIASES) -> list[str]:
     """The words of a name (normalize_name), with a known short name at its start written out in full.
 
     A short name written with a possessive is written out too ("TO's mandelic acid"), but only when the name shows the
-    apostrophe: without it, an "s" after a model code is another model ("Q2S" is not the "Q2").
+    apostrophe: without it, an "s" after a model code is another model ("Q2S" is not the "Q2"). Each name is worked out
+    once per list of short names and remembered (latency, 12 Oct 2026); the list handed back is a new one each time.
     """
+    table = _words_table(aliases)
+    words = table.get(name)
+    if words is None:
+        words = table[name] = tuple(_product_words(name, aliases))
+        _limit(table)
+    return list(words)
+
+
+def _product_words(name: str, aliases: Aliases) -> list[str]:
     words = normalize_name(name)
     spelled = spell_out(words, aliases)
     if spelled == words and words and _written_possessive(words[0], name):
