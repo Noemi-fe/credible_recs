@@ -1229,6 +1229,423 @@
    "checked_on": "2026-10-11",
    "available": true,
    "note": "Purito SEOUL's 100 ml tube, the size the maker sells: £17.90, in stock on 11 Oct"
+  },
+  {
+   "product": "Sage the Bambino Plus",
+   "category": "kitchen",
+   "price": 399.95,
+   "currency": "GBP",
+   "shop": "Sage",
+   "url": "https://www.sageappliances.com/en-gb/product/bes500",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "SES500BSS4GUK1, brushed stainless steel, in stock at £399.95; Sage's other colours (same price) were sold out on 12 Oct, and its 'an Aboriginal Culinary Journey' edition is £799.95"
+  },
+  {
+   "product": "Sage the Bambino",
+   "category": "kitchen",
+   "price": 329.95,
+   "currency": "GBP",
+   "shop": "Sage",
+   "url": "https://www.sageappliances.com/en-gb/product/bes450",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "BES450, the Bambino without the Plus's automatic milk frothing: £329.95, Black Truffle, Sea Salt and Damson Blue in stock on 12 Oct (brushed stainless steel sold out)"
+  },
+  {
+   "product": "Sage the Dual Boiler",
+   "category": "kitchen",
+   "price": 1249.95,
+   "currency": "GBP",
+   "shop": "Sage",
+   "url": "https://www.sageappliances.com/en-gb/product/bes920",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "BES920UK, brushed stainless steel, and Black Truffle in stock: full price £1,249.95, shown at £1,099.95 in a sale on 12 Oct; Black Sesame (£1,199.95) sold out; over n15's £500 either way"
+  },
+  {
+   "product": "Sage the Barista Pro",
+   "category": "kitchen",
+   "price": 729.95,
+   "currency": "GBP",
+   "shop": "Sage",
+   "url": "https://www.sageappliances.com/en-gb/product/bes878",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "£729.95 in brushed stainless steel, black truffle and black stainless steel, in stock on 12 Oct; its 'an Aboriginal Culinary Journey' edition is £1,099.95"
+  },
+  {
+   "product": "Sage the Barista Express with Milk Jug Thermal",
+   "category": "kitchen",
+   "price": 629.95,
+   "currency": "GBP",
+   "shop": "Sage",
+   "url": "https://www.sageappliances.com/en-gb/product/bes875",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "BES875UK, the Barista Express as Sage UK now sells it (with a thermal milk jug): £629.95, brushed stainless steel and black truffle in stock on 12 Oct; the Barista Express Impress (BES876) is £729.95, £599.95 in a sale; so over n15's £500 either way"
+  },
+  {
+   "product": "Gaggia Classic E24",
+   "category": "kitchen",
+   "price": 499.0,
+   "currency": "GBP",
+   "shop": "Gaggia UK",
+   "url": "https://www.gaggiadirect.com/classic-range.html#!/Gaggia-Classic-E24-BRASS-BOILER-GREY-240V-Manual-Espresso-Coffee-Machine/p/703898977",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "also_called": [
+    "Gaggia Classic Evo Pro"
+   ],
+   "note": "Gaggia's UK shop (gaggiadirect.com, its UK office in Elland) sells the Classic E24 [Brass Boiler] 240V, which it calls its Classic 2024 model: Grey (RI9481/16E) and Polar White £499.00, Inox brushed stainless (RI9481/11E) and the other colours £549.00, all addable to the bag on 12 Oct; Amazon UK sells it as the 'Classic E24 Evo Pro' (£549.00) and Clumsy Goat as the 'Classic E24 Evo Pro' (£549, was £579); Gaggia UK sells no other Classic Pro and no UK shop was found selling the earlier Classic Pro (RI9480) new, so writers' 'Gaggia Classic' (by the word rules) and 'Gaggia Classic Pro' (through 'Gaggia Classic Evo Pro') find this entry; Gaggia's newer Classic UP (£849) and Classic GT (£1,499 in a sale, was £1,699) are other machines"
+  },
+  {
+   "product": "Ninja CRISPi PRO 7-in-1 XL Glass Air Fryer",
+   "category": "kitchen",
+   "price": 264.99,
+   "currency": "GBP",
+   "shop": "SharkNinja UK",
+   "url": "https://www.sharkninja.co.uk/ninja-crispi-pro-7-in-1-xl-glass-air-fryer-ash-grey-as101ukgy/AS101UKGY.html",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "AS101UK, Ninja's UK version of the Crispi Pro sold in the US as AS101 (the US one has 6 functions, Bake and Prove as one): full price £264.99, £214.99 in a sale on 12 Oct (£189.99 with a code), every colour in stock; Ninja UK also sells a CRISPi PRO 5-in-1 XL (AS090UK) without Roast and Dehydrate, full price £249.99 (£199.99 in the sale)"
+  },
+  {
+   "product": "Ninja CRISPi 4-in-1 Portable Glass Air Fryer",
+   "category": "kitchen",
+   "price": 159.99,
+   "currency": "GBP",
+   "shop": "SharkNinja UK",
+   "url": "https://www.sharkninja.co.uk/ninja-crispi-4-in-1-portable-glass-air-fryer-cyber-space-fn101ukgy/FN101UKGY.html",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "FN101UK: full price £159.99, £125.99 (Cyber Space) to £139.99 in a sale on 12 Oct, in stock; writers' bare 'Crispi' isn't added as another name: some writers mean the Crispi Pro"
+  },
+  {
+   "product": "Typhur Dome 2 Air Fryer",
+   "category": "kitchen",
+   "price": 499.0,
+   "currency": "GBP",
+   "shop": "Typhur UK",
+   "url": "https://uk.typhur.com/products/dome-air-fryer",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "Typhur's UK store sells only the Dome 2 (Classic Silver AF03, Graphite Gray AF05): full price £499.00, £399.00 in a sale on 12 Oct, 'Low Stock'; the original Dome is no longer sold (Typhur's US store also sells only the Dome 2), so writers' 'Typhur Dome' finds this entry by the word rules"
+  },
+  {
+   "product": "Zojirushi Neuro Fuzzy Rice Cooker & Warmer NS-ZCC10/18",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=zojirushi+neuro+fuzzy",
+   "checked_on": "2026-10-12",
+   "available": false,
+   "note": "a 120 V model only (Zojirushi's own page: NS-ZCC10 120 volts / 680 watts, NS-ZCC18 120 volts / 1,000 watts), not for UK mains: Amazon UK lists only US imports (NS-ZCC10 £362.45, NS-ZCC18 £328.07 on 12 Oct) and WAFUU JAPAN's UK store sells the NS-ZCC10 'for overseas use' at 120 V (£151); no 220-240 V Neuro Fuzzy found for UK shoppers"
+  },
+  {
+   "product": "Zojirushi rice cooker",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "WAFUU JAPAN",
+   "url": "https://wafuu.com/en-gb/products/zojirushi-overseas-model-ns-zlh10-wz-220-230v",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "an import from Japan: WAFUU JAPAN's UK store (prices in £) sells Zojirushi's 220-230 V export rice cookers with European SE plugs, among them the micom NS-ZLH10 5.5-cup (£147.00, in stock on 12 Oct) and the NS-YMH10 (£185.00); Zojirushi makes many rice cookers, so no one price fits the name; its 120 V Neuro Fuzzy has its own entry (not sold), and this one keeps a bare 'Zojirushi' from taking that one's answer"
+  },
+  {
+   "product": "Vitamix 5200",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Vitamix UK",
+   "url": "https://vitamix.co.uk/collections/blenders",
+   "checked_on": "2026-10-12",
+   "available": false,
+   "note": "not sold to UK shoppers: Vitamix's UK store sells the Explorian E310 (£429), E510 (£449) and E520 (£499) and the Ascent A2500i (£679) and A3500i (£829), John Lewis the E310, A2500i and A3500i, and Amazon UK's search for it shows only other Vitamix blenders; no UK shop found selling the 5200 or its 230 V version, the TNC 5200"
+  },
+  {
+   "product": "Vitamix blender",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Vitamix UK",
+   "url": "https://vitamix.co.uk/collections/blenders",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "Vitamix's UK store sells five blenders: Explorian E310 £429, E510 £449, E520 £499, Ascent A2500i £679 and A3500i £829 (all but one E510 bundle in stock on 12 Oct), so no one price fits the name; its US 5200 has its own entry (not sold), and this one keeps a bare 'Vitamix' from taking that one's answer"
+  },
+  {
+   "product": "Blendtec",
+   "category": "kitchen",
+   "price": 499.0,
+   "currency": "GBP",
+   "shop": "Blendtec UK",
+   "url": "https://blendtecuk.com/blendtec-total-blender-with-wildside-jar-in-black/",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "writers name no model, so this is the Total Blender with WildSide+ jar (220-240 V), Blendtec's classic home blender: £499.00, in stock on 12 Oct; Blendtec UK's other home blenders: Classic 575 £499 (£439 in black in a sale), Prosumer £649 (£579 in a sale), Designer 650 £649, Professional 800 £1,299 (£1,049 in a sale)"
+  },
+  {
+   "product": "SMEG 2 Slice Toaster TSF01",
+   "category": "kitchen",
+   "price": 159.95,
+   "currency": "GBP",
+   "shop": "Smeg UK",
+   "url": "https://shop.smeguk.com/products/2-slice-toaster",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "SMEG's 50's style 2-slice toaster: full price £159.95 in the gloss colours, £129.95 in a sale on 12 Oct; matte colours and steel £189.95 (£159.95 in the sale); all in stock; writers' bare 'SMEG' finds this entry by the word rules; SMEG's 4-slice toasters cost more (TSF03 £199.95, £169.95 in the sale; TSF02 £189.95)"
+  },
+  {
+   "product": "Sage the 'A Bit More' Toaster 2 Slice",
+   "category": "kitchen",
+   "price": 79.95,
+   "currency": "GBP",
+   "shop": "Sage",
+   "url": "https://www.sageappliances.com/en-gb/product/bta720",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "BTA720UK, in stock on 12 Oct; the 4 slice (BTA730UK) is £99.95"
+  },
+  {
+   "product": "Cuisinart CPT-142 Compact 4-Slice Toaster",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=cuisinart+cpt-142",
+   "checked_on": "2026-10-12",
+   "available": false,
+   "note": "a North American model (sold by US shops such as Macy's and Kohl's): Amazon UK lists only dust covers that fit it, and John Lewis stocks no Cuisinart toasters; no UK shop found selling it"
+  },
+  {
+   "product": "Ankarsrum Assistent Original",
+   "category": "kitchen",
+   "price": 695.0,
+   "currency": "GBP",
+   "shop": "Ankarsrum",
+   "url": "https://www.ankarsrum.com/uk/stand-mixer/ankarsrum-assistent-original-stand-mixer-black",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "also_called": [
+    "Ankarsrum mixer"
+   ],
+   "note": "Ankarsrum's only stand mixer: £695 in every colour, all in stock on 12 Oct"
+  },
+  {
+   "product": "KitchenAid NSF Certified Commercial Series 8 Quart Bowl Lift Stand Mixer KSM8990ER",
+   "category": "kitchen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/dp/B00CPRYZG6",
+   "checked_on": "2026-10-12",
+   "available": false,
+   "also_called": [
+    "KitchenAid Commercial Series 8-Qt Bowl Lift Stand Mixer KSM8990ER"
+   ],
+   "note": "a US commercial mixer: Amazon UK sells it only from Amazon US (£1,026.39 on 12 Oct) with 'Voltage 120', so not for UK mains; KitchenAid UK's stand mixers go up to 6.6 L bowl-lift models (Artisan 5KSM70SHX, Heavy Duty 5KSM70JPX), with no 8-quart (7.6 L) commercial model"
+  },
+  {
+   "product": "KitchenAid Artisan Tilt-Head Stand Mixer 4.7L 5KSM125",
+   "category": "kitchen",
+   "price": 459.0,
+   "currency": "GBP",
+   "shop": "KitchenAid UK",
+   "url": "https://www.kitchenaid.co.uk/mixers/medium/859701315000/mixer-tilt-head-4-7l-artisan-5ksm125-almond-cream",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "also_called": [
+    "KitchenAid Artisan Series 5 Quart Tilt-Head Stand Mixer"
+   ],
+   "note": "KitchenAid UK's Artisan tilt-head, 'Mixer Tilt-Head 4.7L - Artisan' (4.7 L is the US Artisan's 5 quarts): £459, in stock in Almond Cream, Empire Red, Matte Black and Milkshake on 12 Oct (Onyx Black and Contour Silver out of stock); Fresh Linen, Pistachio and Mineral Water £390.15 in an offer"
+  },
+  {
+   "product": "R 101 XL Food Processor by Robot-Coupe",
+   "category": "kitchen",
+   "price": 827.99,
+   "currency": "GBP",
+   "shop": "Nisbets",
+   "url": "https://www.nisbets.co.uk/robot-coupe-food-processor/dm957",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "writers name no model, so this is Robot Coupe's smallest food processor at Nisbets (R101XL: 1.9 L bowl, 450 W, 230 V, UK plug fitted, in stock on 12 Oct): list price £689.99 before VAT (£827.99 with 20% VAT), web price £549.99 before VAT (£659.99 with VAT); Nisbets shows prices before VAT; its bigger food processors cost more (R201XL £779.99, R211XL Ultra £1,163.99, before VAT); the brand is written last on purpose: a name starting with 'Robot' would also be found by a bare 'Robot', what writers call the Cafelat Robot espresso maker, and give it this price"
+  },
+  {
+   "product": "Sage the Kitchen Wizz 16",
+   "category": "kitchen",
+   "price": 409.95,
+   "currency": "GBP",
+   "shop": "Sage",
+   "url": "https://www.sageappliances.com/en-gb/product/bfp810",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "also_called": [
+    "Sage the Sous Chef 16"
+   ],
+   "note": "BFP810, sold as Breville's Sous Chef 16 outside the UK (US and Canadian shops list the BFP810 as 'the Sous Chef 16'): full price £409.95, £329.95 in a sale on 12 Oct, in stock; Sage's Peel & Dice version (Breville's Sous Chef 16 Peel & Dice, BFP820) is the Kitchen Wizz Peel & Dice, £519.95, sold out on 12 Oct"
+  },
+  {
+   "product": "TOCOBO Vita Glazed Lip Mask 20ml",
+   "category": "skincare",
+   "price": 15.0,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/tocobo-vita-glazed-lip-mask-20ml/16858563/",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "£15.00, in stock on 12 Oct"
+  },
+  {
+   "product": "Lanolips The Original 101 Ointment Multipurpose Superbalm 15g",
+   "category": "skincare",
+   "price": 10.99,
+   "currency": "GBP",
+   "shop": "Lanolips UK",
+   "url": "https://lanolips.co.uk/products/101-ointment-multipurpose-superbalm",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "the maker's UK store, in stock on 12 Oct; writers' bare 'Lanolips' finds this entry by the word rules; Lanolips' flavoured 101 Ointment Multi-Balms are £8.99"
+  },
+  {
+   "product": "Dr. Dan's CortiBalm",
+   "category": "skincare",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=dr+dans+cortibalm",
+   "checked_on": "2026-10-12",
+   "available": false,
+   "note": "a US 1% hydrocortisone lip balm sold by US shops (Walmart, US pharmacies); Amazon UK's search shows only other lip balms; no UK shop found selling it"
+  },
+  {
+   "product": "Malin+Goetz Lip Moisturizer",
+   "category": "skincare",
+   "price": 17.0,
+   "currency": "GBP",
+   "shop": "Malin+Goetz UK",
+   "url": "https://www.malinandgoetz.co.uk/lip-moisturizer-0-20oz-e7g",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "the maker's UK store, addable to the bag on 12 Oct; John Lewis also £17.00 (10ml, in stock)"
+  },
+  {
+   "product": "L'Oréal EverPure Sulfate-Free Clarifying Shampoo",
+   "category": "haircare",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=everpure+sulfate+free+clarifying+shampoo",
+   "checked_on": "2026-10-12",
+   "available": false,
+   "also_called": [
+    "L'Oréal EverPure Clarifying Shampoo"
+   ],
+   "note": "a US product, sold by L'Oréal Paris USA as the EverPure Sulfate-Free Clarifying Shampoo (L'Oréal Paris Canada calls it EverPure Clarify Shampoo): Amazon UK lists only imported EverPure Volume shampoo and an EverPure Bonding set from other sellers, not this one; L'Oréal Paris UK's site couldn't be read (a bot check); no UK shop found selling it; named without 'Paris' so that writers' bare 'L'Oréal Paris' (hair masks) doesn't find it"
+  },
+  {
+   "product": "L'Oréal Paris",
+   "category": "haircare",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Boots",
+   "url": "https://www.boots.com/sitesearch?searchTerm=loreal+paris+elvive+hair+mask",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "Boots sells L'Oréal Paris's UK haircare, Elvive (35 results for its hair masks on 12 Oct, such as the Dream Lengths Hair Saviour Mask 300ml and the Colour Protect Hair Mask 300ml), so no one price fits the name; this entry keeps a bare 'L'Oréal' from taking the not-sold answer of the US EverPure Clarifying shampoo"
+  },
+  {
+   "product": "Neutrogena T/Gel Therapeutic Shampoo",
+   "category": "haircare",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Neutrogena UK",
+   "url": "https://www.neutrogena.co.uk/hair-and-scalp/dandruff/t-gel-therapeutic-shampoo",
+   "checked_on": "2026-10-12",
+   "available": false,
+   "note": "the coal tar T/Gel: Neutrogena UK's page says it has been discontinued and points to its new T/Gel Scalp Relief (salicylic acid and piroctone olamine, a different formula); Boots finds no T/Gel Therapeutic and sells only the newer T/Gel range, Amazon UK's search shows only that range, and Morrisons' and Ocado's pages for it are gone"
+  },
+  {
+   "product": "Suave Essentials Daily Clarifying Shampoo",
+   "category": "haircare",
+   "price": 9.81,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/dp/B00FENR1W8",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "a US shampoo, imported: 22.5 fl oz, listed under its old name 'Suave Naturals Daily Clarifying Shampoo', sold by a third-party seller (CNKG DEALER) and dispatched from Amazon, only 1 left on 12 Oct"
+  },
+  {
+   "product": "Kristin Ess Deep Clean Clarifying Shampoo",
+   "category": "haircare",
+   "price": 19.5,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/dp/B084F2M6PJ",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "a US shampoo, imported: 10 oz, sold by a third-party seller (Frovix) and dispatched from Amazon, only 1 left on 12 Oct (shown as was £20.77); the maker's US store lists it at US$13, out of stock"
+  },
+  {
+   "product": "Giovanni 50:50 Balanced Hydrating-Clarifying Shampoo 250ml",
+   "category": "haircare",
+   "price": 10.99,
+   "currency": "GBP",
+   "shop": "Holland & Barrett",
+   "url": "https://www.hollandandbarrett.com/shop/product/giovanni-5050-balanced-hydrating-clarifying-shampoo-250ml-6100027432",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "sold on Holland & Barrett's site by Kinetic4Health, 28 in stock on 12 Oct"
+  },
+  {
+   "product": "Living Proof Perfect hair Day Dry Shampoo 198ml",
+   "category": "haircare",
+   "price": 27.0,
+   "currency": "GBP",
+   "shop": "Living Proof UK",
+   "url": "https://www.livingproof.co.uk/products/perfect-hair-day-dry-shampoo",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "the maker's UK store: full size 198 ml £27.00, travel 92 ml £15.00, jumbo 355 ml £36.00, all in stock on 12 Oct; its Advanced Clean Dry Shampoo is also £27.00 (198 ml)"
+  },
+  {
+   "product": "Not Your Mother's Clean Freak Refreshing Dry Shampoo 198g",
+   "category": "haircare",
+   "price": 40.02,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/dp/B0057NE7NQ",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "writers name no version, and the Clean Freak Refreshing is the only Not Your Mother's dry shampoo found for UK shoppers: a US import, 198 g (7 oz), sold by a third-party seller (Tengu Trade), dispatched in 8 to 9 days; Amazon UK also lists the 2 oz at £23.15; Boots' search finds no Not Your Mother's products"
+  },
+  {
+   "product": "Bumble and bumble Prêt-à-powder Dry Shampoo 56g",
+   "category": "haircare",
+   "price": 26.0,
+   "currency": "GBP",
+   "shop": "Bumble and bumble UK",
+   "url": "https://www.bumbleandbumble.co.uk/product/19049/27810/care/dry-shampoos/pret-a-powder-dry-shampoo",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "also_called": [
+    "Bumble and bumble's Pret-a-powder"
+   ],
+   "note": "the maker's UK store: 56 g £26.00, 14 g £16.00, addable to the bag on 12 Oct; the other name is the possessive form writers use, which the word rules don't read (only a name's first word can be possessive)"
+  },
+  {
+   "product": "KLORANE Oil-control Tinted Dry Shampoo with Nettle for Oily, Brown-Dark Hair 150ml",
+   "category": "haircare",
+   "price": 11.5,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/klorane-purifying-tinted-dry-shampoo-with-nettle-for-oily-brown-dark-hair-150ml/12298856/",
+   "checked_on": "2026-10-12",
+   "available": true,
+   "note": "writers' 'Klorane dry shampoo for dark hair' fits both of Klorane's tinted dry shampoos for brown to dark hair, which cost the same at Lookfantastic: this one (nettle, for oily hair), £11.50, in stock on 12 Oct, and the Extra-Gentle Tinted Dry Shampoo with Oat and Ceramide, £11.50, out of stock"
   }
  ]
 }

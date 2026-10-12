@@ -1172,6 +1172,81 @@
     "https://www.lodgecastiron.com/products/carbon-steel-skillet"
    ],
    "checked_on": "2026-10-11"
+  },
+  {
+   "product": "Neutrogena T/Gel Therapeutic Shampoo",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "facts": {
+    "sulfate_free": false
+   },
+   "sources": [
+    "https://www.neutrogena.co.uk/hair-and-scalp/dandruff/t-gel-therapeutic-shampoo",
+    "https://www.medicines.org.uk/emc/product/6289/smpc"
+   ],
+   "checked_on": "2026-10-12"
+  },
+  {
+   "product": "L'Oréal EverPure Sulfate-Free Clarifying Shampoo",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "facts": {
+    "sulfate_free": true
+   },
+   "sources": [
+    "https://www.lorealparisusa.com/hair-care-hair-style/shampoo/everpure-clarify-care-shampoo"
+   ],
+   "checked_on": "2026-10-12"
+  },
+  {
+   "product": "Kristin Ess Deep Clean Clarifying Shampoo",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "facts": {
+    "sulfate_free": false
+   },
+   "sources": [
+    "https://kristinesshair.com/products/deep-clean-clarifying-shampoo"
+   ],
+   "checked_on": "2026-10-12"
+  },
+  {
+   "product": "Giovanni 50:50 Balanced Hydrating-Clarifying Shampoo",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "facts": {
+    "sulfate_free": false
+   },
+   "sources": [
+    "https://giovannicosmetics.com/products/5050-balanced-hydrating-clarifying-shampoo-for-daily-use",
+    "https://www.hollandandbarrett.com/shop/product/giovanni-5050-balanced-hydrating-clarifying-shampoo-250ml-6100027432"
+   ],
+   "checked_on": "2026-10-12"
+  },
+  {
+   "product": "Suave Essentials Daily Clarifying Shampoo",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "facts": {
+    "sulfate_free": false
+   },
+   "sources": [
+    "https://www.suave.com/products/essentials-daily-clarifying-shampoo",
+    "https://cdn.shopify.com/s/files/1/0808/2282/9368/files/383711004582_SV_WMWC_SVSHESSDailyClarifying6p22.5z_BOP.png"
+   ],
+   "checked_on": "2026-10-12"
+  },
+  {
+   "product": "Head & Shoulders Classic Clean Anti-Dandruff Shampoo",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "facts": {
+    "sulfate_free": false
+   },
+   "sources": [
+    "https://www.headandshoulders.co.uk/en-gb/anti-dandruff-products/dandruff-shampoo/classic-clean-shampoo/"
+   ],
+   "checked_on": "2026-10-12"
   }
  ]
 }
