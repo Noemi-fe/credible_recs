@@ -64,7 +64,9 @@ def knife_library(tmp_path, fibrox: tuple[int, int] = (2, 2)):
 
 
 KNIFE_REQUEST = "first chef knife for a home cook"
-VICTORINOX = "Victorinox (their chef knives)"
+# Changed on purpose 12 Oct 2026 (Noemi's wording): a brand pick is shown as the brand's line; it was "Victorinox (their
+# chef knives)". So are the other brand picks below (Tramontina, Oxo, Lodge, Fellow Stagg).
+VICTORINOX = "Victorinox chef knife line"
 FIBROX = "Victorinox Fibrox chef knife"
 
 
@@ -151,7 +153,7 @@ def pan_library(tmp_path):
     }, community="BuyItForLife")
 
 
-TRAMONTINA = "Tramontina (their frying pans)"
+TRAMONTINA = "Tramontina frying pan line"
 
 
 def test_a_brand_pick_is_left_out_when_the_request_has_a_hard_requirement(tmp_path):
@@ -174,9 +176,12 @@ def test_a_brand_level_facts_entry_lets_a_brand_pick_be_checked(tmp_path):
     library = pan_library(tmp_path)
     run = lambda facts: answer_request("non-stick frying pan without PFAS", library_dir=library, prices=[],
                                        product_facts=facts, today=TODAY)
+    # Changed on purpose 12 Oct 2026 (Noemi's wording): an entry under the brand's own name speaks for its whole line,
+    # so the pick is shown as that line, "<entry's name> <type> line" (it was the entry's name alone, "Tramontina"); an
+    # entry's name that already says the type ("Tramontina frying pans") is shown as it is.
     clean = run([known("Tramontina", category="kitchen", product_type="frying pan", pfas_free=True, non_stick=True)])
-    assert "Tramontina" in names(clean) and TRAMONTINA not in [n.name for n in clean.left_out_not_suited]
-    tramontina = next(p for p in clean.answer.picks if p.name == "Tramontina")
+    assert TRAMONTINA in names(clean) and TRAMONTINA not in [n.name for n in clean.left_out_not_suited]
+    tramontina = next(p for p in clean.answer.picks if p.name == TRAMONTINA)
     assert tramontina.cautions == []
     unconfirmed = run([known("Tramontina frying pans", category="kitchen", product_type="frying pan", pfas_free=True)])
     pick = next(p for p in unconfirmed.answer.picks if p.name == "Tramontina frying pans")
@@ -199,7 +204,7 @@ def test_a_requirement_the_product_type_cant_have_never_leaves_a_brand_out(tmp_p
     # "for a beginner" asks for a gentle strength, but a cast iron skillet has no strength to check.
     result = answer_request("cast iron skillet for a beginner", library_dir=skillet_library(tmp_path), prices=[],
                             product_facts=[], today=TODAY)
-    assert "Lodge (their cast iron skillets)" in names(result) and result.left_out_not_suited == []
+    assert "Lodge cast iron skillet line" in names(result) and result.left_out_not_suited == []
 
 
 @pytest.mark.parametrize("request_text, rules", [
@@ -422,7 +427,7 @@ def oxo_library(tmp_path):
     }, community="BuyItForLife")
 
 
-OXO = "Oxo (their electric kettles)"
+OXO = "Oxo electric kettle line"
 
 
 def test_a_brand_pick_is_left_out_when_the_list_says_the_brands_products_of_the_type_arent_sold(tmp_path):
@@ -510,7 +515,7 @@ def test_a_brand_pick_stays_when_its_own_product_qualifies_but_isnt_shown(tmp_pa
                             product_facts=[], today=TODAY)
     blacklock = next(p for p in result.ranking.products if p.name == "Lodge Blacklock skillet")
     assert blacklock.qualifies and "Lodge Blacklock skillet" not in names(result)  # qualifies, but not in the top 3
-    assert names(result)[0] == "Lodge (their cast iron skillets)"
+    assert names(result)[0] == "Lodge cast iron skillet line"
     assert result.folded_brand_picks == []
 
 
@@ -634,7 +639,7 @@ def test_a_line_on_the_skip_list_that_a_pick_belongs_to_shows_under_its_downside
     stagg = next(pick for pick in result.answer.picks if pick.name == "Fellow Stagg EKG")
     line = {f"My Fellow Stagg broke after {months} months, avoid it." for months in (2, 3, 4)}
     assert len(stagg.downsides) == config.DOWNSIDES_PER_PICK and {q.text for q in stagg.downsides} <= line
-    assert result.folded_skips == [FoldedBrandPick("Fellow Stagg (their electric kettles)", "Fellow Stagg EKG")]
+    assert result.folded_skips == [FoldedBrandPick("Fellow Stagg electric kettle line", "Fellow Stagg EKG")]
     assert unverified_claims(result.answer, result.bodies) == []
 
 

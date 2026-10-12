@@ -35,7 +35,15 @@ const LABELS = {
   threadsRead: "Saved Reddit threads read for this answer: {n}.",
   reading: "Based on {threads} Reddit threads and {comments} comments, read for this answer",
   readingSaved: " (of {saved} threads saved about {product_type})",
-  leftOut: "Left out of the ranking: products of another type ({other}), and brand or line names that fit several products ({loose}).",
+  // The footnote's left-out counts (12 Oct 2026; Noemi asked whether "(19)" counted mentions or threads: it counts
+  // names), in words, with a few of the names; wording decided by Claude. [one, many]: {n} is the count.
+  leftOut: "Left out of the ranking: {parts}.",
+  leftOutOther: ["1 product of another type", "{n} products of another type"],
+  leftOutLoose: ["1 brand or line name that could mean several products", "{n} brand or line names that could mean several products"],
+  leftOutExamples: ", such as {names}",
+  leftOutJoin: "; and ",
+  listAnd: " and ",
+  rankedAsLines: ["1 brand or line name was ranked as a brand's whole line instead.", "{n} brand or line names were ranked as brands' whole lines instead."],
   leftOutBudget: "Over your budget, so left out: {n}.",  // added 9 Oct 2026 (decision 11, budgets)
   leftOutUnavailable: "No longer sold, so left out: {n}.",  // added 9 Oct 2026 (availability; wording decided by Claude)
   leftOutNotSuited: "Not suited to your request, so left out: {n}.",  // added 9 Oct 2026 (product facts; wording decided by Claude)
@@ -350,6 +358,14 @@ h1, h2, h3, h4 { line-height: 1.25; }
 
   function twoDecimals(number) { return Number(number).toFixed(2); }
 
+  /** A count in words, one or many: `forms` is [one, many], with {n} for the count. */
+  function counted(forms, n) { return fill(n === 1 ? forms[0] : forms[1], { n: n.toLocaleString("en-GB") }); }
+
+  /** Names as words: "A", "A and B", "A, B and C". */
+  function listed(names) {
+    return names.length < 2 ? names.join("") : names.slice(0, -1).join(", ") + LABELS.listAnd + names[names.length - 1];
+  }
+
   /** {"high": 2, "medium": 1, "low": 0} as "2 high, 1 medium, 0 low". */
   function levels(counts) { return Object.entries(counts).map(([level, n]) => n + " " + level).join(", "); }
 
@@ -662,10 +678,24 @@ h1, h2, h3, h4 { line-height: 1.25; }
     const overBudget = data.left_out.over_budget ? " " + fill(LABELS.leftOutBudget, { n: data.left_out.over_budget }) : "";
     const unavailable = data.left_out.unavailable ? " " + fill(LABELS.leftOutUnavailable, { n: data.left_out.unavailable }) : "";
     const notSuited = data.left_out.not_suited ? " " + fill(LABELS.leftOutNotSuited, { n: data.left_out.not_suited }) : "";
+    const leftOut = leftOutText(data.left_out);
     parts.push(el("p", { class: "footnote" },
-      fill(LABELS.threadsRead, { n: data.threads_used.length }) + " " +
-      fill(LABELS.leftOut, { other: data.left_out.other_type, loose: data.left_out.loose }) + overBudget + unavailable + notSuited));
+      fill(LABELS.threadsRead, { n: data.threads_used.length }) + (leftOut ? " " + leftOut : "") + overBudget + unavailable + notSuited));
     return parts;
+  }
+
+  /** What was left out of the ranking, in words that say what is counted (names, never mentions or threads; Noemi,
+      12 Oct 2026), with a few of the names: "Left out of the ranking: 4 products of another type, such as A, B and C;
+      and 19 brand or line names that could mean several products, such as L'Oréal, Suave and Aveda." Then how many
+      brand or line names were ranked as the brand's whole line instead. "" when there is nothing to say. */
+  function leftOutText(leftOut) {
+    const examples = (names) => (names && names.length ? fill(LABELS.leftOutExamples, { names: listed(names) }) : "");
+    const parts = [];
+    if (leftOut.other_type) parts.push(counted(LABELS.leftOutOther, leftOut.other_type) + examples(leftOut.other_type_names));
+    if (leftOut.loose) parts.push(counted(LABELS.leftOutLoose, leftOut.loose) + examples(leftOut.loose_names));
+    const sentences = parts.length ? [fill(LABELS.leftOut, { parts: parts.join(LABELS.leftOutJoin) })] : [];
+    if (leftOut.ranked_as_lines) sentences.push(counted(LABELS.rankedAsLines, leftOut.ranked_as_lines));
+    return sentences.join(" ");
   }
 
   // --- Searching ---

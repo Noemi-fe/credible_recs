@@ -1,0 +1,330 @@
+{
+ "brand_lines": [
+  {
+   "brand": "Bonavita",
+   "category": "kitchen",
+   "product_type": "electric kettle",
+   "sells": true,
+   "sources": ["https://englishcoffeecompany.co.uk/products/bonavita-variable-temp-digital-electric-kettle-1l"],
+   "checked_on": "2026-10-12",
+   "note": "A UK coffee shop lists the Bonavita Variable Temp Digital Electric Kettle, 1L (\"this full-featured electric kettle from Bonavita\"). Bonavita's own site didn't load."
+  },
+  {
+   "brand": "Victorinox",
+   "category": "kitchen",
+   "product_type": "chef knife",
+   "sells": true,
+   "sources": ["https://www.victorinox.com/en-GB/Products/Cutlery/Chef%E2%80%99s-Knives/c/CUT_ChefKnives/"],
+   "checked_on": "2026-10-12",
+   "note": "Victorinox's UK site has a Chef's Knives category: Fibrox, Swiss Modern and Grand Maitre chef's knives."
+  },
+  {
+   "brand": "Wüsthof",
+   "category": "kitchen",
+   "product_type": "chef knife",
+   "sells": true,
+   "sources": ["https://wusthof.com/collections/chefs-knives"],
+   "checked_on": "2026-10-12",
+   "note": "Wüsthof's official online store has a Chef's Knives collection (Gourmet 8\" Chef's Knife among them). Writers spell it Wusthof."
+  },
+  {
+   "brand": "Tojiro",
+   "category": "kitchen",
+   "product_type": "chef knife",
+   "sells": true,
+   "sources": ["https://tojiro.net/product/26/"],
+   "checked_on": "2026-10-12",
+   "note": "Tojiro's own (Japanese) site lists the TOJIRO PRO series with gyuto (牛刀, the Japanese chef's knife) from 180 to 300 mm."
+  },
+  {
+   "brand": "Misono",
+   "category": "kitchen",
+   "product_type": "chef knife",
+   "sells": true,
+   "sources": ["https://www.misono-hamono.com/UX10/top.html"],
+   "checked_on": "2026-10-12",
+   "note": "Misono Cutlery's own site lists a gyutou knife (牛刀) in its UX10 series, made in Seki, Japan."
+  },
+  {
+   "brand": "Lodge",
+   "category": "kitchen",
+   "product_type": "cast iron skillet",
+   "sells": true,
+   "sources": ["https://www.lodgecastiron.com/collections/skillets"],
+   "checked_on": "2026-10-12",
+   "note": "Lodge's own (US) site has a Skillets collection of cast iron skillets (Classic round skillet and others)."
+  },
+  {
+   "brand": "Field Company",
+   "also_called": ["Field"],
+   "category": "kitchen",
+   "product_type": "cast iron skillet",
+   "sells": true,
+   "sources": ["https://fieldcompany.com/collections/all"],
+   "checked_on": "2026-10-12",
+   "note": "Field Company's own (US) site sells cast iron skillets (No.8 and No.10 Skillet, the Chef Skillet). Writers call it Field."
+  },
+  {
+   "brand": "Lodge",
+   "category": "kitchen",
+   "product_type": "dutch oven",
+   "sells": true,
+   "sources": ["https://www.lodgecastiron.com/collections/dutch-ovens"],
+   "checked_on": "2026-10-12",
+   "note": "Lodge's own (US) site has a Dutch Ovens collection, with enamelled Dutch ovens (4.5 and 6 quart) among them."
+  },
+  {
+   "brand": "Le Creuset",
+   "category": "kitchen",
+   "product_type": "dutch oven",
+   "sells": true,
+   "sources": ["https://www.lecreuset.co.uk/en_GB/c/cooking-and-baking/cooking/casseroles"],
+   "checked_on": "2026-10-12",
+   "note": "Le Creuset's UK store has a Casseroles category of cast iron casseroles: the UK name for a Dutch oven."
+  },
+  {
+   "brand": "Staub",
+   "category": "kitchen",
+   "product_type": "dutch oven",
+   "sells": true,
+   "sources": ["https://www.zwilling.com/uk/staub/cast-iron/staub-cocottes/"],
+   "checked_on": "2026-10-12",
+   "note": "Zwilling's UK site (Staub's owner) lists \"Cast iron STAUB Cocottes & Dutch Ovens\", La Cocotte from 20 to 28 cm."
+  },
+  {
+   "brand": "Cosori",
+   "category": "kitchen",
+   "product_type": "air fryer",
+   "sells": true,
+   "sources": ["https://cosori.com/collections/air-fryers"],
+   "checked_on": "2026-10-12",
+   "note": "Cosori's own (US) store has an Air Fryers collection of ten models (TurboBlaze, Dual Blaze, Pro LE and others)."
+  },
+  {
+   "brand": "Ninja",
+   "category": "kitchen",
+   "product_type": "air fryer",
+   "sells": true,
+   "sources": ["https://www.sharkninja.co.uk/kitchen/cooking-appliances/air-fryers"],
+   "checked_on": "2026-10-12",
+   "note": "SharkNinja's UK site (Ninja's maker) has an Air Fryers category under Cooking Appliances."
+  },
+  {
+   "brand": "Ninja",
+   "category": "kitchen",
+   "product_type": "blender",
+   "sells": true,
+   "sources": ["https://www.sharkninja.co.uk/kitchen/blenders-food-prep/blenders"],
+   "checked_on": "2026-10-12",
+   "note": "SharkNinja's UK site has a Blenders category under Blenders & Food Prep (hand blenders are a category of their own)."
+  },
+  {
+   "brand": "Ninja",
+   "category": "kitchen",
+   "product_type": "toaster",
+   "sells": true,
+   "sources": ["https://www.sharkninja.co.uk/kitchen/kitchenware/toasters"],
+   "checked_on": "2026-10-12",
+   "note": "SharkNinja's UK site has a Toasters category under Kitchenware."
+  },
+  {
+   "brand": "Zojirushi",
+   "category": "kitchen",
+   "product_type": "rice cooker",
+   "sells": true,
+   "sources": ["https://www.zojirushi.com/app/category/rice-cookers"],
+   "checked_on": "2026-10-12",
+   "note": "Zojirushi America's own site has a Rice Cookers category. Whether UK shoppers can buy them is the price list's job."
+  },
+  {
+   "brand": "Tiger",
+   "category": "kitchen",
+   "product_type": "rice cooker",
+   "sells": true,
+   "sources": ["https://www.tiger-corporation.com/en/usa/product/rice-cooker/"],
+   "checked_on": "2026-10-12",
+   "note": "Tiger Corporation's own site (its US pages) has a Rice Cookers section."
+  },
+  {
+   "brand": "Aroma",
+   "category": "kitchen",
+   "product_type": "rice cooker",
+   "sells": true,
+   "sources": ["https://www.aromaco.com/category/rice-cookers-multicookers/rice-grain-cookers/"],
+   "checked_on": "2026-10-12",
+   "note": "Aroma Housewares' own (US) site has Rice & Grain Cookers and Digital Rice & Grain Multicookers."
+  },
+  {
+   "brand": "Vitamix",
+   "category": "kitchen",
+   "product_type": "blender",
+   "sells": true,
+   "sources": ["https://vitamix.co.uk/collections/blenders"],
+   "checked_on": "2026-10-12",
+   "note": "Vitamix UK's store sells blenders (Ascent and Explorian series), containers and spares."
+  },
+  {
+   "brand": "NutriBullet",
+   "category": "kitchen",
+   "product_type": "blender",
+   "sells": true,
+   "sources": ["https://www.nutribullet.co.uk/"],
+   "checked_on": "2026-10-12",
+   "note": "nutribullet's UK store sells personal, portable and family blenders (the 600 Series, the Blender Combo 1200W)."
+  },
+  {
+   "brand": "KitchenAid",
+   "category": "kitchen",
+   "product_type": "stand mixer",
+   "sells": true,
+   "sources": ["https://www.kitchenaid.co.uk/all-mixers"],
+   "checked_on": "2026-10-12",
+   "note": "KitchenAid's UK site sells stand mixers, medium and large (the Artisan tilt-head mixer among them)."
+  },
+  {
+   "brand": "KitchenAid",
+   "category": "kitchen",
+   "product_type": "food processor",
+   "sells": true,
+   "sources": ["https://www.kitchenaid.co.uk/food-processors"],
+   "checked_on": "2026-10-12",
+   "note": "KitchenAid's UK site has a Food processors category under Small Kitchen Appliances."
+  },
+  {
+   "brand": "Kenwood",
+   "category": "kitchen",
+   "product_type": "stand mixer",
+   "sells": true,
+   "sources": ["https://www.kenwoodworld.com/en-gb/products/stand-mixers"],
+   "checked_on": "2026-10-12",
+   "note": "Kenwood's UK site sells stand mixers: Chef, Chef XL, Titanium Chef Patissier XL, kMix and others."
+  },
+  {
+   "brand": "Bosch",
+   "category": "kitchen",
+   "product_type": "stand mixer",
+   "sells": true,
+   "sources": ["https://www.bosch-home.co.uk/en/category/kitchen-machines/mum-kitchen-machines"],
+   "checked_on": "2026-10-12",
+   "note": "Bosch's UK site lists its MUM kitchen machines as stand mixers (Series 2, 4 and 6)."
+  },
+  {
+   "brand": "Comandante",
+   "category": "kitchen",
+   "product_type": "coffee grinder",
+   "sells": true,
+   "sources": ["https://www.comandantegrinder.com/"],
+   "checked_on": "2026-10-12",
+   "note": "Comandante's own site: it \"develops and manufactures high performance coffee grinders\" (C40, C60, X25)."
+  },
+  {
+   "brand": "1Zpresso",
+   "category": "kitchen",
+   "product_type": "coffee grinder",
+   "sells": true,
+   "sources": ["https://1zpresso.coffee/"],
+   "checked_on": "2026-10-12",
+   "note": "1Zpresso's own store sells manual coffee grinders (K-Ultra, J-Ultra, X, Q and ZP6 series). Several older models aren't sold in the UK any more (price list)."
+  },
+  {
+   "brand": "Baratza",
+   "category": "kitchen",
+   "product_type": "coffee grinder",
+   "sells": true,
+   "sources": ["https://www.baratza.com/en-gb/"],
+   "checked_on": "2026-10-12",
+   "note": "Baratza's UK site sells coffee grinders (Encore ESP, Virtuoso+, Sette 270) in pounds."
+  },
+  {
+   "brand": "De'Longhi",
+   "category": "kitchen",
+   "product_type": "espresso machine",
+   "sells": true,
+   "sources": ["https://www.delonghi.com/en-gb/"],
+   "checked_on": "2026-10-12",
+   "note": "De'Longhi's UK site has a Manual Espresso Machines category under Coffee machines, besides its automatic machines."
+  },
+  {
+   "brand": "Nizoral",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "sells": true,
+   "sources": ["https://www.medicines.org.uk/emc/product/1510/smpc"],
+   "checked_on": "2026-10-12",
+   "note": "The UK medicines register's product page for Nizoral 2% shampoo (ketoconazole), made by Thornton & Ross. The brand's own UK site didn't load."
+  },
+  {
+   "brand": "Head & Shoulders",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "sells": true,
+   "sources": ["https://www.headandshoulders.co.uk/en-gb"],
+   "checked_on": "2026-10-12",
+   "note": "Head & Shoulders' UK site sells dandruff shampoos, dandruff conditioners, 2 in 1s and scalp balms."
+  },
+  {
+   "brand": "Innersense",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "sells": true,
+   "sources": ["https://innersensebeauty.com/en-gb/collections/shampoo"],
+   "checked_on": "2026-10-12",
+   "note": "Innersense Organic Beauty's UK pages have a Shampoo collection (the Hairbaths, such as Pure Harmony Hairbath)."
+  },
+  {
+   "brand": "Hask",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "sells": true,
+   "sources": ["https://haskbeauty.com/collections/shampoo"],
+   "checked_on": "2026-10-12",
+   "note": "HASK's own site sells shampoos (Repair + Argan Oil, Smooth + Keratin & Jojoba Oil and others)."
+  },
+  {
+   "brand": "Batiste",
+   "category": "haircare",
+   "product_type": "dry shampoo",
+   "sells": true,
+   "sources": ["https://www.batiste-hair.eu/en/our-products/all-products/"],
+   "checked_on": "2026-10-12",
+   "note": "Batiste's European site (its region selector includes the UK; batistehair.co.uk redirects there) lists dry shampoos in every range."
+  },
+  {
+   "brand": "Batiste",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "sells": false,
+   "sources": ["https://www.batiste-hair.eu/en/our-products/all-products/"],
+   "checked_on": "2026-10-12",
+   "note": "Batiste's whole range (All Products) is dry shampoos and leave-in dry conditioners: no shampoo to wash hair with. Writers who praise Batiste in a shampoo thread mean its dry shampoo."
+  },
+  {
+   "brand": "L'Oréal Paris",
+   "also_called": ["L'Oréal"],
+   "category": "haircare",
+   "product_type": "hair oil",
+   "sells": true,
+   "sources": ["https://www.loreal-paris.co.uk/hair-care/hair-serum"],
+   "checked_on": "2026-10-12",
+   "note": "L'Oréal Paris UK's Hair Serum page lists Extraordinary Oil Sublime Hair Enhancer and Extraordinary Oil Midnight Serum. Noemi's own example, 12 Oct 2026."
+  },
+  {
+   "brand": "O'Keeffe's",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "sells": true,
+   "sources": ["https://www.okeeffescompany.com/range/lips"],
+   "checked_on": "2026-10-12",
+   "note": "O'Keeffe's own (US) site has a Lips range: Lip Repair lip balms."
+  },
+  {
+   "brand": "Burt's Bees",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "sells": true,
+   "sources": ["https://www.burtsbees.co.uk/product/beeswax-lip-balm/"],
+   "checked_on": "2026-10-12",
+   "note": "Burt's Bees UK sells lip balms (Beeswax, Honey and Pomegranate Lip Balm)."
+  }
+ ]
+}

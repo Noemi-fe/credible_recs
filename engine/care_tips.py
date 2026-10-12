@@ -12,7 +12,7 @@ two things with the checked tips of one request:
 2. attach_care_tips says which tips go with which products:
    - a product tip goes with the product it names, matched the way module 4 matches names
      (engine.match_products.same_product), among the products ranked for the request. A name written the same way as
-     one of a product's names wins ("Lodge" goes with the brand pick "Lodge (their cast iron skillets)"). Otherwise,
+     one of a product's names wins ("Lodge" goes with the brand pick "Lodge cast iron skillet line"). Otherwise,
      a specific product wins over a brand or line ("Lodge Blacklock" goes with "Lodge Blacklock skillet", not with
      "Lodge"). A name that still fits two products ("Lodge" next to two Lodge skillets, and no brand pick) goes with
      neither: we can't tell which one it means;

@@ -561,9 +561,12 @@ def skillet_library(tmp_path: Path) -> Path:
     })
 
 
+# Changed on purpose 12 Oct 2026 (Noemi's wording): a brand pick is shown as the brand's line ("Lodge cast iron skillet
+# line"; it was "Lodge (their cast iron skillets)"), so the tests below look for " line" where they looked for "their".
+
 def test_a_brand_whose_threads_make_the_product_clear_is_a_pick_named_as_a_brand(tmp_path):
     result = answer_request("cast iron skillet that lasts", library_dir=skillet_library(tmp_path), prices=[], today=TODAY)
-    assert "Lodge (their cast iron skillets)" in [pick.name for pick in result.answer.picks]
+    assert "Lodge cast iron skillet line" in [pick.name for pick in result.answer.picks]
     assert "Lodge" not in result.left_out_loose
     assert unverified_claims(result.answer, result.bodies) == []
 
@@ -573,32 +576,32 @@ def test_a_brand_mentioned_mostly_in_threads_about_something_else_stays_out(tmp_
     # skillet. More than half is needed.
     result = answer_request("cast iron skillet that lasts", library_dir=skillet_library(tmp_path), prices=[], today=TODAY)
     assert "Smithey" in result.left_out_loose
-    assert not any("Smithey" in p.name and "their" in p.name for p in result.ranking.products)
+    assert not any("Smithey" in p.name and p.name.endswith(" line") for p in result.ranking.products)
 
 
 def test_a_line_of_another_type_or_a_name_that_names_nothing_stays_out(tmp_path):
     result = answer_request("cast iron skillet that lasts", library_dir=skillet_library(tmp_path), prices=[], today=TODAY)
     assert {"Le Creuset dutch oven", "the one"} <= set(result.left_out_loose)
-    assert not any("their" in p.name and p.name != "Lodge (their cast iron skillets)" for p in result.ranking.products)
+    assert not any(p.name.endswith(" line") and p.name != "Lodge cast iron skillet line" for p in result.ranking.products)
 
 
 def test_a_brand_none_of_whose_products_here_is_of_the_type_stays_out(tmp_path, monkeypatch):
     # Found in the library on 9 Oct 2026: All-Clad, praised in cast iron threads for its stainless and non-stick
-    # pans, would be shown as "All-Clad (their cast iron skillets)". At least one of the brand's own products named
+    # pans, would be shown as "All-Clad cast iron skillet line". At least one of the brand's own products named
     # in the threads must be of the requested type ("Lodge Blacklock skillet").
     lib = skillet_library(tmp_path)
     result = answer_request("cast iron skillet that lasts", library_dir=lib, prices=[], today=TODAY)
     assert "All-Clad" in result.left_out_loose
     monkeypatch.setattr(pipeline, "BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE", False)
     loose_rule_only = answer_request("cast iron skillet that lasts", library_dir=lib, prices=[], today=TODAY)
-    assert "All-Clad (their cast iron skillets)" in [pick.name for pick in loose_rule_only.answer.picks]
+    assert "All-Clad cast iron skillet line" in [pick.name for pick in loose_rule_only.answer.picks]
 
 
 def test_brand_picks_can_be_switched_off(tmp_path, monkeypatch):
     monkeypatch.setattr(pipeline, "PIPELINE_BRAND_PICKS", False)
     result = answer_request("cast iron skillet that lasts", library_dir=skillet_library(tmp_path), prices=[], today=TODAY)
     assert "Lodge" in result.left_out_loose
-    assert not any("their" in p.name for p in result.ranking.products)
+    assert not any(p.name.endswith(" line") for p in result.ranking.products)
 
 
 def made_up_price(product: str, amount: float, checked_on: date = TODAY, currency: str = "GBP") -> Price:
@@ -658,7 +661,7 @@ def test_without_a_budget_a_known_price_is_still_shown(tmp_path):
 def test_a_brand_pick_has_no_single_price_so_a_budget_never_leaves_it_out(tmp_path):
     result = answer_request("cast iron skillet under £50", library_dir=skillet_library(tmp_path),
                             prices=[made_up_price("Lodge", 500.0)], today=TODAY)
-    lodge = next(pick for pick in result.answer.picks if pick.name == "Lodge (their cast iron skillets)")
+    lodge = next(pick for pick in result.answer.picks if pick.name == "Lodge cast iron skillet line")
     assert lodge.price.amount is None and lodge.price.budget_status == "unknown"
 
 

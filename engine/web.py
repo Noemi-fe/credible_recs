@@ -82,7 +82,15 @@ The JSON for /api/answer (200):
                  "message": the honest "not enough evidence" message, or null when there are 3 picks,
                  "needs_more_threads", "quotes_dropped"},
       "threads_used": ["thread id", ...],          most relevant first
-      "left_out": {"other_type": n, "loose": n,    products of another type, and brand or line names, left out
+      "left_out": {"other_type": n,                products of another type, left out,
+                   "other_type_names": [...],      and up to LEFT_OUT_NAMES_SHOWN of their names (12 Oct 2026);
+                   "loose": n,                     brand or line names that fit several products, left out (a name of
+                                                   filler words only, such as "the one", names nothing: since 12 Oct
+                                                   2026 it isn't counted),
+                   "loose_names": [...],           and up to LEFT_OUT_NAMES_SHOWN of them, most mentioned first;
+                   "ranked_as_lines": n,           the brand or line names ranked as the brand's whole line instead
+                                                   ("Lodge cast iron skillet line"; 12 Oct 2026). Every count here is
+                                                   of names (products), never of mentions or threads,
                    "over_budget": n,               products whose known price is over the request's budget
                    "unavailable": n,               products the price list says are no longer sold (9 Oct 2026),
                    "not_suited": n},               and products whose checked facts clash with the request (9 Oct 2026)
@@ -137,8 +145,9 @@ from urllib.parse import parse_qs, urlsplit
 from engine import answer as wording
 from engine import feedback, how_page
 from engine.answer import answer_to_dict, unverified_claims
-from engine.config import (BRAND_PICK_MODEL, FEEDBACK_MAX_BODY_BYTES, FEEDBACK_MAX_COMMENT_CHARS, RATE_LIMIT_ANSWERS,
-                           RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS, WEB_MAX_REQUEST_CHARS, WEB_PORT)
+from engine.config import (BRAND_PICK_MODEL, FEEDBACK_MAX_BODY_BYTES, FEEDBACK_MAX_COMMENT_CHARS, LEFT_OUT_NAMES_SHOWN,
+                           RATE_LIMIT_ANSWERS, RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS, WEB_MAX_REQUEST_CHARS,
+                           WEB_PORT)
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.metrics import METRICS_FILE
 from engine.parse_reddit import REPO_ROOT
@@ -299,12 +308,18 @@ def _report_failure(quiet: bool) -> None:
 def answer_json(result: PipelineResult) -> dict:
     """The pipeline's result in the shape the page (and the later website) reads: see the top of this file."""
     query = result.query
+    brand_names = result.brand_or_line_names_left_out
     return {
         "query": {"status": query.status, "category": query.category, "product_type": query.product_type,
                   "question": query.question, "message": query.message},
         "answer": answer_to_dict(result.answer) if result.answer is not None else None,
         "threads_used": list(result.threads_used),
-        "left_out": {"other_type": len(result.left_out_as_other_type), "loose": len(result.left_out_loose),
+        # Names, a few of them for the page's footnote to give as examples (Noemi asked what its numbers count, 12 Oct
+        # 2026): products of another type, brand or line names left out, and brand or line names ranked as lines.
+        "left_out": {"other_type": len(result.left_out_as_other_type),
+                     "other_type_names": result.left_out_as_other_type[:LEFT_OUT_NAMES_SHOWN],
+                     "loose": len(brand_names), "loose_names": brand_names[:LEFT_OUT_NAMES_SHOWN],
+                     "ranked_as_lines": len(result.ranked_as_lines),
                      "over_budget": len(result.left_out_over_budget),
                      "unavailable": len(result.left_out_unavailable),
                      "not_suited": len(result.left_out_not_suited)},

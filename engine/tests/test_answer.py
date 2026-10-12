@@ -570,7 +570,7 @@ def test_a_quote_naming_the_product_and_saying_what_the_writer_thinks_comes_firs
 
 
 @pytest.mark.parametrize("name, quote", [
-    ("Sage (their electric kettles)", "My Breville is still going strong after 8 years"),
+    ("Sage electric kettle line", "My Breville is still going strong after 8 years"),  # a brand line: 12 Oct 2026
     ("Beauty of Joseon Revive Eye Serum: Ginseng + Retinal", "I've been loving the BOJ eye serum all over my face!"),
     ("Timemore C2", "The C2 is great for pour-over at home."),
 ])

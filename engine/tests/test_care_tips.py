@@ -57,7 +57,7 @@ def test_a_brand_that_fits_two_products_goes_with_neither():
 
 
 def test_a_name_written_the_same_way_wins_then_a_specific_product_over_a_brand():
-    brand = product("Lodge", loose=True, shown="Lodge (their cast iron skillets)")
+    brand = product("Lodge", loose=True, shown="Lodge cast iron skillet line")  # a brand line's name since 12 Oct 2026
     blacklock, chef = product("Lodge Blacklock skillet"), product("Lodge Chef Collection skillet")
     care = attach([tip("Lodge", text="season it", comment="cT1"), tip("Lodge Blacklock", text="dry it", comment="cT2")],
                   [brand, blacklock, chef], product_type="cast iron skillet")

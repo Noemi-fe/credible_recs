@@ -17,14 +17,20 @@ Every step is a module of its own; this file only passes each one's output to th
   its mentions give decides. Older extractions have no type: then a product counts as another type when one of
   its names says so ("Lodge cast iron skillet") and none names the requested type, and a name that says nothing
   ("Zojirushi") stays in.
-- loose groups (a brand or line that fits several products, such as "Lodge" or "CeraVe") are ranked only when their
-  threads make the product clear (Noemi's decision 9, 9 Oct 2026): none of their names says another type of product
-  (the rule above), more than half of their mentions (config.BRAND_PICK_TITLE_SHARE) are in threads whose title
-  names the requested product, and one of the brand's own products named in the threads is of that type ("Lodge
-  Blacklock skillet"; config.BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE). Then they are ranked under a name that says
-  what they are: "Lodge (their cast iron skillets)". The others are left out: their mentions can't count for any
-  one product. PIPELINE_BRAND_PICKS = False leaves them all out. A brand pick never appears next to its own specific
-  product (decided by Claude, 10 Oct 2026, as Noemi asked): when both qualify ("Victorinox (their chef knives)" and
+- loose groups (a brand or line that fits several products, such as "Lodge" or "CeraVe") are ranked, as the brand's
+  whole line, only when it is clear they mean the requested product (Noemi's decision 9, 9 Oct 2026). They must name
+  something, and none of their names (nor most of the AI's types for their mentions) may say another type of product
+  (the rule above). Then, since 12 Oct 2026 (Noemi: "are we making sure that the brand mentioned doesn't sell the
+  product we're looking for?"), the brand-lines list decides when it has an entry for the brand and the requested type
+  (engine/brand_lines.py, data/brand_lines.json, checked on the makers' own pages): ranked when the brand sells that
+  kind of product, left out when it doesn't, with the reason (brands_not_selling: "Batiste doesn't sell shampoos").
+  With no entry, their threads decide, as before: more than half of their mentions (config.BRAND_PICK_TITLE_SHARE) are
+  in threads whose title names the requested product, and one of the brand's own products named in the threads is of
+  that type ("Lodge Blacklock skillet"; config.BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE). A group ranked is shown under a
+  name that says what it is, the brand's line of the requested type: "Lodge cast iron skillet line" (Noemi's wording,
+  12 Oct 2026), named on the result (ranked_as_lines). The others are left out: their mentions can't count for any one
+  product. PIPELINE_BRAND_PICKS = False leaves them all out. A brand pick never appears next to its own specific
+  product (decided by Claude, 10 Oct 2026, as Noemi asked): when both qualify ("Victorinox chef knife line" and
   "Victorinox chef's knife"), the specific product stays and the brand pick steps aside, out of the ranking, so its
   support counts for nothing rather than twice. It is listed on the result with the product it stepped aside for
   (folded_brand_picks). Its own products are those whose name starts with the brand's words, or that module 4 says
@@ -45,7 +51,8 @@ Every step is a module of its own; this file only passes each one's output to th
   that isn't known never leaves a product out. Brand picks have no single product, so their facts are never looked up:
   when the request has a hard requirement its product type can have ("non-stick frying pan without PFAS"; engine.
   product_facts.hard_requirements), brand picks are left out too, listed with the reason "a whole brand can't be
-  checked for PFAS or a non-stick coating" (decided by Claude, 10 Oct 2026, as Noemi asked).
+  checked for PFAS or a non-stick coating" (decided by Claude, 10 Oct 2026, as Noemi asked), whatever the brand-lines
+  list says it sells.
 - only threads checked live on Reddit in the last LIVE_CHECK_SHOWN_DAYS (14) days are quoted (Noemi, 9 Oct 2026): a
   thread read from Arctic Shift's archive may still hold comments people deleted on Reddit since, so it counts from
   the day a live check read it on Reddit (checked_live_at); a thread read through Parse counts from the day it was
@@ -98,6 +105,7 @@ from engine.answer import (
     Answer, _every_quote, comment_bodies, render_markdown, says_the_opposite, shown_availability, shown_price,
     write_answer,
 )
+from engine.brand_lines import BrandLine, find_brand_line, load_brand_lines, not_sold_reason
 from engine.care_tips import CareTips, attach_care_tips, credible_care_tips
 from engine.config import (
     BRAND_MODEL_GENERIC_WORDS,
@@ -163,7 +171,7 @@ class FoldedBrandPick:
     """A brand pick that stepped aside for a specific product of its own brand that also qualifies, or for a brand pick
     of the same brand ranked higher (10 Oct 2026)."""
 
-    name: str  # the brand pick's name: "Victorinox (their chef knives)"
+    name: str  # the brand pick's name: "Victorinox chef knife line"
     stepped_aside_for: str  # the product it stepped aside for: "Victorinox chef's knife"
 
 
@@ -175,7 +183,12 @@ class PipelineResult:
     answer: Answer | None = None  # None when module 1 asks a question or says no
     bodies: dict[str, str] = field(default_factory=dict)  # comment id -> text, to re-check quotes
     left_out_as_other_type: list[str] = field(default_factory=list)  # product names
-    left_out_loose: list[str] = field(default_factory=list)  # brand or line names
+    left_out_loose: list[str] = field(default_factory=list)  # brand or line names (and names that name nothing)
+    # Brand or line names left out because the brand-lines list says their brand doesn't sell the requested type of
+    # product, with that reason (12 Oct 2026); they are in left_out_loose too.
+    brands_not_selling: list[NotSuited] = field(default_factory=list)
+    # The brand or line names ranked as the brand's whole line ("Lodge cast iron skillet line"), as shown (12 Oct 2026).
+    ranked_as_lines: list[str] = field(default_factory=list)
     not_extracted: list[str] = field(default_factory=list)  # ids of threads about the product the AI hasn't read yet
     notes_without_kind: list[str] = field(default_factory=list)  # the "about" of each kept note that names no kind
     left_out_over_budget: list[str] = field(default_factory=list)  # product names, with a known price above the max
@@ -212,6 +225,13 @@ class PipelineResult:
             return self.query.question or self.query.message or "Nothing to show."
         return render_markdown(self.answer)
 
+    @property
+    def brand_or_line_names_left_out(self) -> list[str]:
+        """The brand or line names left out (left_out_loose), most mentioned first, without the names made of filler
+        words only ("the one"): those name nothing, so they aren't brand or line names (12 Oct 2026, for the page's
+        footnote)."""
+        return [name for name in self.left_out_loose if normalize_name(name)]
+
 
 # The pipeline sees only the gold set's threads when pointed at this folder (or one inside it): they are exempt from
 # live checks.
@@ -228,7 +248,8 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
                    profiles=None, prices: list[Price] | None = None, today: date | None = None,
                    live_check_required: bool | None = None, live_checker=None,
                    product_facts: list[ProductFacts] | None = None,
-                   more_threads: int | None = PIPELINE_MORE_THREADS) -> PipelineResult:
+                   more_threads: int | None = PIPELINE_MORE_THREADS,
+                   brand_lines: list[BrandLine] | None = None) -> PipelineResult:
     """Runs modules 1 to 7 on the saved library and returns everything each step decided.
 
     The answer reads the `max_threads` most relevant threads first. When they give fewer than PICKS_SHOWN picks and the
@@ -237,11 +258,13 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     more picks: the first threads are the ones closest to the request's needs. In the wider reading a pick also needs a
     credible recommendation that talks about what the request asks for, when it asks for something besides the product
     (its needs, engine/needs.py): reading 48 shampoo threads had given every shampoo request the same popular picks.
-    `more_threads=None` never reads more.
+    `more_threads=None` never reads more. `brand_lines`: the brand-lines list (engine/brand_lines.py); None reads
+    data/brand_lines.json.
     """
     query = parse_query(request)
     reading = dict(library_dir=library_dir, profiles=profiles, prices=prices, today=today,
-                   live_check_required=live_check_required, live_checker=live_checker, product_facts=product_facts)
+                   live_check_required=live_check_required, live_checker=live_checker, product_facts=product_facts,
+                   brand_lines=brand_lines)
     result = _answer(query, max_threads=max_threads, **reading)
     if (more_threads is None or more_threads <= max_threads or result.answer is None
             or len(result.answer.picks) >= PICKS_SHOWN or result.threads_available <= len(result.threads_used)):
@@ -255,7 +278,8 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
 
 def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, prices: list[Price] | None,
             today: date | None, live_check_required: bool | None, live_checker,
-            product_facts: list[ProductFacts] | None, need_led: bool = False) -> PipelineResult:
+            product_facts: list[ProductFacts] | None, need_led: bool = False,
+            brand_lines: list[BrandLine] | None = None) -> PipelineResult:
     """One reading of the library for an understood request, with at most `max_threads` threads (answer_request).
     `need_led`: the wider reading's rule, a pick needs a credible recommendation that talks about the request's needs.
 
@@ -264,6 +288,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     `prices`: the price list; None reads data/prices.json (engine.prices.load_prices). `today`: the day prices are
     judged on (how old they are), and live checks (how long ago Reddit was read); None is today.
     `product_facts`: the facts list (engine/product_facts.py); None reads data/product_facts.json.
+    `brand_lines`: the brand-lines list (engine/brand_lines.py); None reads data/brand_lines.json.
     `live_check_required`: None follows LIVE_CHECK_REQUIRED (on). False uses every thread whatever its last live
     check: only to see what answers would quote once every thread is checked (engine.slice_eval.threads_behind_answers).
     `live_checker` (engine.live_check.LiveChecker): every quote about to be shown is checked against the comment on
@@ -298,11 +323,14 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.bodies = comment_bodies(threads)
 
     groups = group_products(_not_sets(_product_mentions(checked), result))
-    kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads})
+    brand_lines = load_brand_lines() if brand_lines is None else brand_lines
+    kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads}, brand_lines)
+    lines = {g.key for g in kept_groups if g.loose}  # the brand or line names kept as the brand's whole line
     prices = load_prices() if prices is None else prices
     kept_groups, price_checks = _within_budget(kept_groups, query, prices, today, result)
     product_facts = load_product_facts() if product_facts is None else product_facts
     kept_groups, cautions = _suited_to_request(kept_groups, query, product_facts, result)
+    result.ranked_as_lines = [g.name for g in kept_groups if g.key in lines]
     _note_other_names(kept_groups, cautions)
     kind_mentions = _kind_mentions(checked)
     kinds = group_kinds(kind_mentions, kept_groups, query.category, query.product_type or "")
@@ -433,18 +461,21 @@ def _kind_mentions(checked: dict[str, CheckResult]) -> list[KindMention]:
 
 
 def _groups_to_rank(groups: list[ProductGroup], query: ParsedQuery, result: PipelineResult,
-                    titles: dict[str, str]) -> list[ProductGroup]:
+                    titles: dict[str, str], brand_lines: list[BrandLine] = ()) -> list[ProductGroup]:
     """The product groups worth ranking for this request, each under the name to show; the others are named on the
     result. Every name is shown as a UK shopper knows it ("Sage", not "Breville": decision 12). `titles` is
-    {thread id: title} for the threads read."""
+    {thread id: title} for the threads read; `brand_lines` the brand-lines list (engine/brand_lines.py)."""
     kept = []
     same_category = [g for g in groups if g.category == query.category]
     for group in same_category:  # the ranking only looks at the request's category anyway
         if group.loose:
-            if _clear_brand(group, query, titles, same_category):
-                kept.append(replace(group, name=brand_pick_name(uk_name(group.name), query.product_type)))
+            line = _brand_line(group, query, brand_lines)
+            if _clear_brand(group, query, titles, same_category, line):
+                kept.append(replace(group, name=_line_name(group, line, query.product_type)))
             else:
                 result.left_out_loose.append(uk_name(group.name))
+                if line is not None and not line.sells:
+                    result.brands_not_selling.append(NotSuited(uk_name(group.name), not_sold_reason(line)))
         elif _another_type(group, query):
             result.left_out_as_other_type.append(uk_name(group.name))
         else:
@@ -452,14 +483,38 @@ def _groups_to_rank(groups: list[ProductGroup], query: ParsedQuery, result: Pipe
     return kept
 
 
-def _clear_brand(group: ProductGroup, query: ParsedQuery, titles: dict[str, str], groups: list[ProductGroup]) -> bool:
-    """Whether a brand or line name clearly means the requested product in these threads (decision 9): it names
-    something, none of its names says another type of product, more than BRAND_PICK_TITLE_SHARE of its mentions are
-    in threads whose title names the requested product, and (BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE) one of its own
-    products named in the threads is of that type. "Lodge" in "Best cast iron skillet?" threads, next to "Lodge
-    Blacklock skillet", is clear. `groups` are every product group of the request's category."""
+def _brand_line(group: ProductGroup, query: ParsedQuery, brand_lines: list[BrandLine]) -> BrandLine | None:
+    """The brand-lines entry for a brand or line name in this request (engine.brand_lines.find_brand_line, by the names
+    writers used for it and their UK names), or None."""
+    names = set(group.names) | {uk_name(name) for name in group.names}
+    return find_brand_line(names, group.category, query.product_type, brand_lines)
+
+
+def _line_name(group: ProductGroup, line: BrandLine | None, product_type: str) -> str:
+    """The name a brand or line ranked as the brand's line is shown under (engine.group_products.brand_pick_name):
+    "Lodge cast iron skillet line". The brand as its writers spelled it, as a UK shopper knows it; but a name its
+    writers wrote all in lowercase ("head and shoulders") is shown as its maker writes it when the brand-lines list
+    has an entry for it ("Head & Shoulders shampoo line"; 12 Oct 2026)."""
+    brand = uk_name(group.name)
+    if line is not None and brand == brand.lower():
+        brand = line.brand
+    return brand_pick_name(brand, product_type)
+
+
+def _clear_brand(group: ProductGroup, query: ParsedQuery, titles: dict[str, str], groups: list[ProductGroup],
+                 line: BrandLine | None = None) -> bool:
+    """Whether a brand or line name clearly means the requested product (decision 9), so it is ranked as the brand's
+    whole line. It must name something, and none of its names, nor most of the AI's types for its mentions, may say
+    another type of product. Then the brand-lines entry for it decides, when there is one (`line`, 12 Oct 2026): yes
+    when the brand sells the requested type, no when it doesn't. With none, its threads decide: more than
+    BRAND_PICK_TITLE_SHARE of its mentions are in threads whose title names the requested product, and
+    (BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE) one of its own products named in the threads is of that type. "Lodge" in
+    "Best cast iron skillet?" threads, next to "Lodge Blacklock skillet", is clear. `groups` are every product group of
+    the request's category."""
     if not PIPELINE_BRAND_PICKS or not normalize_name(group.name) or _another_type(group, query):
         return False  # a name made of filler words only ("the one") names nothing
+    if line is not None:
+        return line.sells  # checked on the maker's own pages: better than any clue in the threads
     in_titled = sum(mentions_product(titles.get(m.thread_id, ""), query.product_type) for m in group.mentions)
     if in_titled <= BRAND_PICK_TITLE_SHARE * len(group.mentions):
         return False
@@ -632,9 +687,11 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
     otherwise it is kept. A kept product whose facts don't say whether it meets a hard requirement gets a note after its
     soft reasons: "we couldn't confirm it's PFAS-free" (engine.product_facts.unconfirmed, 10 Oct 2026). A kept product
     with a facts entry is shown under the entry's name, taken from the maker's page, rather than as writers spelled it
-    (10 Oct 2026); its key stays, so its price check and cautions still find it. Groups that find the same entry are one
-    product: the later (smaller) ones join the first, so their mentions are ranked together under its key (b02, 10 Oct
-    2026: "Biore watery essence" was a pick and "Biore aqua rich" a skip, both shown under one entry's name).
+    (10 Oct 2026); its key stays, so its price check and cautions still find it. An entry under a brand's own name
+    speaks for the brand's whole line, so its pick is shown as that line: "GreenPan frying pan line" (12 Oct 2026).
+    Groups that find the same entry are one product: the later (smaller) ones join the first, so their mentions are
+    ranked together under its key (b02, 10 Oct 2026: "Biore watery essence" was a pick and "Biore aqua rich" a skip,
+    both shown under one entry's name).
     """
     requirements = hard_requirements(query)
     kept, cautions = [], {}
@@ -666,7 +723,11 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
             continue
         if entry is not None:
             by_entry[entry] = len(kept)
-        kept.append(replace(group, name=facts.product, loose=False) if facts is not None else group)
+        if facts is None:
+            kept.append(group)
+        else:  # a brand pick whose entry is under its brand's name is still the brand's line (12 Oct 2026)
+            name = brand_pick_name(facts.product, query.product_type) if group.loose else facts.product
+            kept.append(replace(group, name=name, loose=False))
         soft = [c.reason for c in found if not c.hard]
         missing = unconfirmed(query, facts)
         if missing:
@@ -705,8 +766,8 @@ def _note_other_names(groups: list[ProductGroup], cautions: dict[str, list[str]]
 # --- A brand pick steps aside for its own product (decided by Claude, 10 Oct 2026) ---
 
 def _fold_brand_picks(ranking: RankingResult, groups: list[ProductGroup], result: PipelineResult) -> RankingResult:
-    """The ranking without the brand picks shown next to a specific product of their own brand ("Victorinox (their chef
-    knives)" next to "Victorinox chef's knife"): the specific product stays, the brand pick leaves the ranking, so its
+    """The ranking without the brand picks shown next to a specific product of their own brand ("Victorinox chef knife
+    line" next to "Victorinox chef's knife"): the specific product stays, the brand pick leaves the ranking, so its
     support counts for nothing rather than twice. Two brand picks of the same brand shown together fold the same way:
     the one ranked lower into the one ranked higher. Each is named on the result with the product it stepped aside for
     (folded_brand_picks, worked out afresh each time). `groups` are the product groups ranked.
@@ -972,13 +1033,16 @@ def main(argv: list[str]) -> int:
         print(f"\n(read for this answer: {len(result.threads_used)} threads, of {result.threads_available} saved about it, "
               f"and {result.comments_read:,} comments)")
         print(f"\n(threads used: {', '.join(result.threads_used)}; left out as another type: "
-              f"{len(result.left_out_as_other_type)}; brand or line names left out: {len(result.left_out_loose)}; "
+              f"{len(result.left_out_as_other_type)}; brand or line names left out: "
+              f"{len(result.brand_or_line_names_left_out)}; ranked as a brand's line: {len(result.ranked_as_lines)}; "
               f"threads not extracted yet: {len(result.not_extracted)}; threads waiting for a live check: "
               f"{len(result.waiting_live_check)}; notes naming no kind: "
               f"{len(result.notes_without_kind)}; over budget: {len(result.left_out_over_budget)}; no longer sold: "
               f"{len(result.left_out_unavailable)}; not suited to the request: {len(result.left_out_not_suited)})")
         for item in result.left_out_not_suited:
             print(f"  not suited: {item.name} ({item.reason})")
+        for item in result.brands_not_selling:
+            print(f"  left out: {item.name} ({item.reason})")
         for item in result.folded_brand_picks:
             print(f"  brand pick stepped aside: {item.name} (for {item.stepped_aside_for})")
     return 0

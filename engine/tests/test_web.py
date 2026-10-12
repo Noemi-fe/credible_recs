@@ -94,7 +94,12 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # Changed on purpose 9 Oct 2026 (availability, Noemi's note): "left_out" also counts the products no longer sold.
     # Changed on purpose 9 Oct 2026 (product facts, decided by Claude): "left_out" also counts the products whose facts
     # don't suit the request ("not_suited").
-    assert set(data["left_out"]) == {"other_type", "loose", "over_budget", "unavailable", "not_suited"}
+    # Changed on purpose 12 Oct 2026 (Noemi asked whether the footnote's numbers counted mentions or threads: they count
+    # names): "left_out" also gives a few of the names left out ("other_type_names", "loose_names", at most
+    # LEFT_OUT_NAMES_SHOWN each) and counts the brand or line names ranked as the brand's whole line ("ranked_as_lines").
+    assert set(data["left_out"]) == {"other_type", "other_type_names", "loose", "loose_names", "ranked_as_lines",
+                                     "over_budget", "unavailable", "not_suited"}
+    assert isinstance(data["left_out"]["loose_names"], list) and isinstance(data["left_out"]["other_type_names"], list)
     # Changed on purpose 11 Oct 2026 (Noemi): the tips about the kind of product are shown once, in "care_note".
     assert set(data["answer"]) == {"category", "product_type", "picks", "look_for", "skip", "message",
                                    "needs_more_threads", "quotes_dropped", "care_note"}
