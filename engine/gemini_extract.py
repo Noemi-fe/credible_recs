@@ -38,7 +38,7 @@ from pathlib import Path
 import certifi
 from pydantic import ValidationError
 
-from engine.extract import DEFAULT_INSTRUCTIONS, Extraction, current_instructions_version, render_thread
+from engine.extract import DEFAULT_INSTRUCTIONS, Extraction, current_instructions_version, shown_comment_ids
 from engine.gold import load_threads, unlabelled_gold_ids
 from engine.parse_reddit import REPO_ROOT, _read_env_file
 
@@ -51,6 +51,11 @@ TIMEOUT = 600  # seconds: a long thread's extraction can take a few minutes to w
 # thread is reported as failed, to try again later (12 Oct 2026: the quality test met 503s).
 BUSY_PAUSES = (30, 90, 240)
 BUSY_STATUSES = (429, 500, 503)
+# A long thread is read in parts of this many comments, each with the post (12 Oct 2026: on Noemi's labelled threads,
+# Gemini read whole found 84% of her products, against Claude's 97%; a smaller part leaves it less to miss).
+PART_COMMENTS = 40
+# The extraction's lists, joined across a thread's parts.
+LISTS = ("mentions", "notes", "care", "agreements")
 
 
 class GeminiError(Exception):
@@ -134,7 +139,7 @@ class ExtractReport:
 
 
 def extract_threads(threads_dir: Path, out_dir: Path, client: GeminiClient, ids: Iterable[str] | None = None,
-                    instructions: Path = DEFAULT_INSTRUCTIONS) -> ExtractReport:
+                    instructions: Path = DEFAULT_INSTRUCTIONS, part_comments: int = PART_COMMENTS) -> ExtractReport:
     """Sends each thread (those in `ids`, or all) to Gemini and writes its extraction under `out_dir`.
 
     The bookkeeping fields are ours, whatever the model wrote: the thread id, the instructions version followed, when,
@@ -156,12 +161,19 @@ def extract_threads(threads_dir: Path, out_dir: Path, client: GeminiClient, ids:
         if thread is None:
             report.failed[thread_id] = "no such thread in the folder"
             continue
-        user = (render_thread(thread) + f"\n\nWrite the extraction of thread {thread.id} as one JSON object, in the "
-                "format of the instructions' Output section, and nothing else.")
         try:
-            data = json.loads(client.generate(system, user))
-            if not isinstance(data, dict):
-                raise ValueError("the answer isn't a JSON object")
+            data = {name: [] for name in LISTS}
+            shown = shown_comment_ids(thread)
+            parts = [shown[i:i + part_comments] for i in range(0, len(shown), part_comments)] or [[]]
+            for number, part in enumerate(parts, 1):
+                user = (render_part(thread, part, number, len(parts)) + f"\n\nWrite the extraction of these comments of "
+                        f"thread {thread.id} as one JSON object, in the format of the instructions' Output section, and "
+                        "nothing else.")
+                answer = json.loads(client.generate(system, user))
+                if not isinstance(answer, dict):
+                    raise ValueError("the answer isn't a JSON object")
+                for name in LISTS:
+                    data[name] += answer.get(name) or []
             data.update(thread_id=thread.id, instructions_version=version, extractor=f"gemini:{client.model}",
                         extracted_at=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"))
             Extraction.model_validate(data)
@@ -178,6 +190,31 @@ def extract_threads(threads_dir: Path, out_dir: Path, client: GeminiClient, ids:
             json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         report.written.append(thread.id)
     return report
+
+
+def render_part(thread, comment_ids: list[str], number: int, parts: int) -> str:
+    """One part of a thread as the AI reads it: the post, then these comments, in engine.extract.render_thread's
+    format (each comment with its id, what it replies to, score, author and flair), the parent of a reply looked up in
+    the whole thread."""
+    by_id = {c.id: c for c in thread.comments}
+    usable = sum(c.status == "ok" for c in thread.comments)
+    lines = [
+        f"Thread {thread.id} in r/{thread.community} ({thread.category}): {thread.title}",
+        thread.body.strip() or "(no post text)",
+        f"--- part {number} of {parts}: {len(comment_ids)} of the thread's {usable} comments (the highest-scored, in "
+        "thread order) ---",
+    ]
+    for comment_id in comment_ids:
+        c = by_id[comment_id]
+        author = c.author.name if c.author else "deleted account"
+        flair = f" [{c.author.flair}]" if c.author and c.author.flair else ""
+        header = f"[{c.id}] score {c.score} | {author}{flair}"
+        if c.parent_id:
+            parent = by_id.get(c.parent_id)
+            snippet = " ".join((parent.body if parent else "").split())[:120]
+            header += f" | reply to {c.parent_id}: \"{snippet}\""
+        lines += ["", header, c.body]
+    return "\n".join(lines)
 
 
 def main(argv: list[str]) -> int:

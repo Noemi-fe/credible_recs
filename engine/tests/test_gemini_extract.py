@@ -144,3 +144,30 @@ def test_the_thinking_level_can_be_raised():
     fetch = FakeFetch({"mentions": []})
     GeminiClient(key="test-key", fetch=fetch, sleep=lambda s: None).generate("system", "user")
     assert "thinkingConfig" not in fetch.sent[0]["body"]["generationConfig"]  # the model's own default
+
+
+def test_a_long_thread_is_read_in_parts_and_the_parts_joined(tmp_path):
+    # 12 Oct 2026: Gemini found 84% of Noemi's labelled products against Claude's 97%; long threads are read in parts
+    # of PART_COMMENTS comments, each with the post, and the parts' extractions are joined into one.
+    from engine.tests.factories import make_comment
+
+    comments = [make_comment(f"c{i:04d}", body=f"The Brand{i} cleanser is great, used it for {i} years.") for i in range(5)]
+    write_gold(tmp_path, [make_thread(comments=comments)], voices=None, mentions=None)
+    sent_ids = []
+
+    def fetch(url, headers, body):
+        text = json.loads(body)["contents"][0]["parts"][0]["text"]
+        ids = [c["id"] for c in comments if f"[{c['id']}]" in text]
+        sent_ids.append(ids)
+        mentions = [{"comment_id": cid, "product": f"Brand{int(cid[1:])} cleanser", "category": "skincare",
+                     "product_type": "cleanser", "stance": "recommend", "evidence": "long-term use",
+                     "evidence_tags": ["long-term use"], "quote": f"The Brand{int(cid[1:])} cleanser is great"}
+                    for cid in ids]
+        return {"candidates": [{"content": {"parts": [{"text": json.dumps({"mentions": mentions})}]}}]}
+
+    client = GeminiClient(key="test-key", model="gemini-test", fetch=fetch, sleep=lambda s: None, min_interval=0)
+    report = extract_threads(tmp_path / "threads", tmp_path / "out", client, ids=["1fake01"], part_comments=2)
+    assert report.written == ["1fake01"]
+    assert [len(ids) for ids in sent_ids] == [2, 2, 1]  # three parts, every comment in exactly one
+    saved = json.loads((tmp_path / "out" / "extracted" / "1fake01.json").read_text(encoding="utf-8"))
+    assert sorted(m["comment_id"] for m in saved["mentions"]) == [c["id"] for c in comments]
