@@ -297,12 +297,14 @@ def test_on_a_tie_the_higher_voice_comes_first():
 
 def test_repairs_come_after_looking_after_the_product_however_many_agree():
     # Updated 11 Oct 2026: all kind tips here, so they meet in the note at the end (own and kind tips are shown apart).
+    # Changed on purpose 12 Oct 2026 (Noemi): a repair story isn't advice on looking after the product, so answers leave
+    # repairs out altogether; tips_by_agreement still puts them last.
     repairs = [care("Seal a leaking water gauge with silicone", "ann"),
                care("seal the leaking water gauge with silicone", "bo"),
                care("smooth with an angle grinder", "cy")]
     upkeep = care("descale regularly", "di", voice="medium")
-    assert shown_tips(kind=[*repairs, upkeep]) == ["Descale regularly.", "Seal a leaking water gauge with silicone.",
-                                                   "Smooth with an angle grinder."]
+    assert shown_tips(kind=[*repairs, upkeep]) == ["Descale regularly."]
+    assert [g[0].tip for g in tips_by_agreement(CareTips([], [*repairs, upkeep]))][0] == "descale regularly"
 
 
 def test_the_best_writers_tip_and_quote_are_shown_and_the_next_writers_when_it_fails():

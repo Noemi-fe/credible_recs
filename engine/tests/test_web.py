@@ -109,9 +109,12 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # that suit the request less well ("Note: ..."); an empty list when there are none.
     # Changed on purpose 10 Oct 2026 (decided by Claude): each pick also has its "model", a brand pick's most
     # recommended model, or null.
+    # Changed on purpose 12 Oct 2026 (Noemi): each pick also says how many credible voices warned against it, of all,
+    # "downsides_share" ("1 of 15 credible voices warned against it:"), or null when no downside is shown.
     assert set(data["answer"]["picks"][0]) == {"rank", "product_key", "name", "reason", "support", "quotes",
                                                "downsides", "disagreement", "score", "breakdown", "price",
-                                               "availability", "care", "cautions", "model", "model_price"}
+                                               "availability", "care", "cautions", "model", "model_price",
+                                               "downsides_share"}
     assert set(data["answer"]["picks"][0]["quotes"][0]) == {"text", "comment_id", "url", "badges"}
     assert set(data["answer"]["picks"][0]["price"]) == {"text", "amount", "currency", "shop", "url", "checked_on",
                                                         "budget_status", "budget_note"}

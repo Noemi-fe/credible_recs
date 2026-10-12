@@ -613,10 +613,15 @@ CARE_TIP_SHARED_SHARE = 0.5
 # Tips about fixing a broken part rather than looking after the product come after every other tip, however many
 # writers agree on them: regular expressions, matched on whole words of the tip (lowercase, punctuation aside). "grind"
 # counts only as grinding something down ("grind it flat"): a coffee grinder's "only grind with the cap on" is upkeep.
+# Since 12 Oct 2026 (Noemi: "a repair story isn't one") repairs are left out of answers altogether (engine/answer.py),
+# bending or pushing a part back into shape is one, and replacing the product itself when it wears out ("replace it
+# when the coating is damaged") isn't: only replacing a part ("replace the thermal fuse") is.
 CARE_TIP_REPAIR_WORDS = (
     r"seal(s|ed|ing|ant)?",
     r"glue(s|d)?", r"gluing",
-    r"replac(e|es|ed|ing|ement)",
+    r"replac(e|es|ed|ing|ement)(?! (it|them|when|once|if|as soon as|after)\b)",
+    r"(push|pushed|pushing|bend|bends|bent|bending|hammer|hammered) (it |them |the \w+ )?back",
+    r"back (in)?to (its |their )?(original )?shape", r"straighten(s|ed|ing)?",
     r"solder(s|ed|ing)?",
     r"grind(s|ing)? (it |them )?(down|flat|smooth|off|away)", r"angle grinders?",
     r"sand(s|ed|ing|er|paper)?",
@@ -721,7 +726,11 @@ OPPOSITE_QUOTE_PATTERNS: dict[str, tuple[str, ...]] = {
                       # "will give you a white cast", "gave me a slight white cast" (b02, 11 Oct 2026); never
                       # "doesn't give a white cast" or "never gives me any".
                       r"(?<!n't )(?<!not )(?<!never )\b(gives?|gave|giving|causes?|caused) (you |me |us )?(a |any |some "
-                      r"|slight |a slight |a little |a bit of |an? obvious )?white cast"),
+                      r"|slight |a slight |a little |a bit of |an? obvious )?white cast",
+                      # "there's a slight white cast" (12 Oct 2026: a "Look for: mineral sunscreen" note said so for a
+                      # request asking for none); never "there's no white cast".
+                      r"\bthere('s| is| was| will be| would be) (a |some |slight |a slight |a little |a bit of "
+                      r"|an? obvious )?white cast"),
     "fragrance-free": (r"(?<!no )(?<!without )(?<!n't )\b(smells?|scent(ed)?|perfume(d)?)\b(?! ?-?free)",
                        r"\bfragrance(d)?\b(?! ?-?free)(?<!no fragrance)"),
 }
@@ -747,7 +756,10 @@ OPPOSITE_QUOTE_PATTERNS["lasting"] = (rf"\b{_FAILED}\b[^.!?]{{0,40}}?\b{_SOON}\b
                                       r"|barely |under |less than )*((a|an|one|two|three|four|five|six|\d+|a few"
                                       r"|(a )?couple( of)?|several) (days?|weeks?|months?)|(a|one|two|three|1|2|3"
                                       r"|a few|(a )?couple( of)?) years?)\b(?! (so far|and (it'?s |is )?(still|counting)"
-                                      r"|now))")
+                                      r"|now))",
+                                      # Buy the cheapest and swap it for a new one when it fails (12 Oct 2026: a "Look for" note
+                                      # said so for an air fryer that lasts).
+                                      r"\breplace (it|them) (before|once|as soon as) (it|they)\b")
 
 # --- Quotes that say what the writer thinks come first (10 Oct 2026) ---
 # Decided by Claude, reported to Noemi. Found in b09: a writer listing the grinders they own (an Encore, a C2 at work

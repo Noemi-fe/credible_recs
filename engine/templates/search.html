@@ -47,14 +47,6 @@ const LABELS = {
   leftOutBudget: "Over your budget, so left out: {n}.",  // added 9 Oct 2026 (decision 11, budgets)
   leftOutUnavailable: "No longer sold, so left out: {n}.",  // added 9 Oct 2026 (availability; wording decided by Claude)
   leftOutNotSuited: "Not suited to your request, so left out: {n}.",  // added 9 Oct 2026 (product facts; wording decided by Claude)
-  // The score breakdown: the same words as the text answer's breakdown (engine/answer.py, _render_breakdown).
-  bdTotal: "Score {score} = {points} from mentions",
-  bdBonus: " + {bonus} kind bonus ({kind}, support {support})",
-  bdRecommends: "Recommendations: {n}, {credible} credible. Voices: {voices}. Evidence: {evidence}.",
-  bdWarnings: "Warnings: {n}, {credible} credible. Voices: {voices}. Evidence: {evidence}.",
-  bdNeutral: "Neutral mentions: {n} (they never count)",
-  bdThreads: "Threads: {n}, {credible} with a credible recommendation",
-  bdKind: "Kind: {kind} (support {support}; no bonus: it doesn't lead by far)",
   // Errors, by the API's error code.
   errors: {
     empty_request: "Type what you're looking for first.",
@@ -211,10 +203,8 @@ h1, h2, h3, h4 { line-height: 1.25; }
 .care-note h3 { margin: 0 0 8px; }
 .care .lead { margin: 0 0 6px; }
 
-/* The score breakdown. */
-.breakdown { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
-.breakdown summary { cursor: pointer; font-weight: 650; }
-.breakdown ul { margin: 8px 0 0; padding-left: 20px; font-size: 14px; font-variant-numeric: tabular-nums; }
+/* How many credible voices warned, above a pick's downsides (12 Oct 2026). */
+.share { margin: 0 0 6px; font-size: 14px; color: var(--muted); }
 
 /* Under the picks: what to look for, and skip these. Side by side on wide screens. */
 .extras { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
@@ -312,11 +302,11 @@ h1, h2, h3, h4 { line-height: 1.25; }
   const WORDING = SETTINGS.wording;
   const form = document.getElementById("search");
   const input = document.getElementById("q");
-  const button = document.getElementById("go");
   const examples = document.getElementById("examples");
   const status = document.getElementById("status");
   const results = document.getElementById("results");
   let latest = 0;  // the number of the newest search: an older, slower answer is never drawn over it
+  let pending = null;  // the newest search's request, cancelled when a newer search starts (AbortController)
 
   // --- Small helpers ---
 
@@ -356,8 +346,6 @@ h1, h2, h3, h4 { line-height: 1.25; }
     return url.protocol === "https:" && url.hostname && !url.username && !url.password ? url.href : null;
   }
 
-  function twoDecimals(number) { return Number(number).toFixed(2); }
-
   /** A count in words, one or many: `forms` is [one, many], with {n} for the count. */
   function counted(forms, n) { return fill(n === 1 ? forms[0] : forms[1], { n: n.toLocaleString("en-GB") }); }
 
@@ -366,8 +354,14 @@ h1, h2, h3, h4 { line-height: 1.25; }
     return names.length < 2 ? names.join("") : names.slice(0, -1).join(", ") + LABELS.listAnd + names[names.length - 1];
   }
 
-  /** {"high": 2, "medium": 1, "low": 0} as "2 high, 1 medium, 0 low". */
-  function levels(counts) { return Object.entries(counts).map(([level, n]) => n + " " + level).join(", "); }
+
+  /** A text as shown: swear words keep their first and last letters, the rest starred ("f**k"), with the answer's own
+      list (engine/answer.py, MASKED_WORDS; Noemi, 12 Oct 2026). Display only: the quote checked word for word stays the
+      comment's own. */
+  const MASKED = new RegExp("\\b(?:" + WORDING.masked_words.join("|") + ")\\b", "gi");
+  function masked(text) {
+    return String(text).replace(MASKED, (word) => word[0] + "*".repeat(word.length - 2) + word[word.length - 1]);
+  }
 
   // --- Visit counts (11 Oct 2026): GoatCounter events, only when counting is on ---
 
@@ -525,30 +519,11 @@ h1, h2, h3, h4 { line-height: 1.25; }
       WORDING.link_text, el("span", { class: "visually-hidden" }, " " + LABELS.newTab));
     const badges = quote.badges.length > 0 && el("ul", { class: "badges", "aria-label": LABELS.badges },
       ...quote.badges.map((badge) => el("li", {}, badge)));
-    return el("figure", { class: "quote" }, el("blockquote", {}, quote.text), el("figcaption", {}, badges, link));
+    return el("figure", { class: "quote" }, el("blockquote", {}, masked(quote.text)), el("figcaption", {}, badges, link));
   }
 
   function quoteList(quotes, extraClass) {
     return el("ul", { class: "quotes" + (extraClass ? " " + extraClass : "") }, ...quotes.map((quote) => el("li", {}, quoteBlock(quote))));
-  }
-
-  function breakdown(pick) {
-    const b = pick.breakdown;
-    let total = fill(LABELS.bdTotal, { score: twoDecimals(pick.score), points: twoDecimals(b.mention_points) });
-    if (b.kind_bonus) total += fill(LABELS.bdBonus, { bonus: twoDecimals(b.kind_bonus), kind: b.kind, support: twoDecimals(b.kind_support) });
-    const lines = [
-      total,
-      fill(LABELS.bdRecommends, { n: b.recommends, credible: b.credible_recommends, voices: levels(b.recommend_voices), evidence: levels(b.recommend_evidence) }),
-      fill(LABELS.bdWarnings, { n: b.warnings, credible: b.credible_warnings, voices: levels(b.warn_voices), evidence: levels(b.warn_evidence) }),
-      fill(LABELS.bdNeutral, { n: b.neutral }),
-      fill(LABELS.bdThreads, { n: b.threads, credible: b.credible_threads }),
-    ];
-    // How many credible mentions talk about what the request asks for (9 Oct 2026); the words come from engine/answer.py.
-    if (b.credible_recommends_fitting_need || b.credible_warnings_fitting_need) {
-      lines.push(fill(WORDING.breakdown_needs, { recommends: b.credible_recommends_fitting_need, warnings: b.credible_warnings_fitting_need }));
-    }
-    if (b.kind && !b.kind_bonus) lines.push(fill(LABELS.bdKind, { kind: b.kind, support: twoDecimals(b.kind_support) }));
-    return el("details", { class: "breakdown" }, el("summary", {}, WORDING.breakdown_heading), el("ul", {}, ...lines.map((line) => el("li", {}, line))));
   }
 
   /** The price line: amount, shop and date with a link to the shop's page, or "Price not checked yet"; then how it
@@ -584,7 +559,7 @@ h1, h2, h3, h4 { line-height: 1.25; }
       so its link goes through the same Reddit check). Nothing at all when a pick has no tips of its own. */
   function careList(tips) {
     return el("ul", { class: "quotes care" }, ...tips.map((item) => el("li", {},
-      item.tip ? el("p", { class: "lead" }, el("strong", {}, item.tip)) : null,
+      item.tip ? el("p", { class: "lead" }, el("strong", {}, masked(item.tip))) : null,
       quoteBlock(item.quote))));
   }
 
@@ -603,6 +578,8 @@ h1, h2, h3, h4 { line-height: 1.25; }
       el("h3", { id: "care-note-heading" }, heading), careList(answer.care_note));
   }
 
+  /** One pick's card. The score breakdown left it on 12 Oct 2026 (Noemi: too technical for most shoppers, and it
+      doesn't build trust): the API's JSON keeps it, and the how-we-score page explains the scoring. */
   function pickCard(pick) {
     const nameId = "pick-" + pick.rank;
     return el("li", {}, el("article", { class: "card", "aria-labelledby": nameId },
@@ -619,9 +596,10 @@ h1, h2, h3, h4 { line-height: 1.25; }
       el("h4", {}, WORDING.quotes_heading),
       quoteList(pick.quotes),
       el("h4", {}, WORDING.downsides_heading),
+      // "1 of 15 credible voices warned against it:" (Noemi, 12 Oct 2026): a lone warning reads as what it is.
+      pick.downsides.length && pick.downsides_share ? el("p", { class: "share" }, pick.downsides_share) : null,
       pick.downsides.length ? quoteList(pick.downsides, "downsides") : el("p", { class: "muted" }, WORDING.no_downsides),
-      ...careSection(pick.care),
-      breakdown(pick)));
+      ...careSection(pick.care)));
   }
 
   function lookForSection(items) {
@@ -709,12 +687,12 @@ h1, h2, h3, h4 { line-height: 1.25; }
     return fill(text, { max: SETTINGS.maxChars });
   }
 
-  /** The loading line, while an answer is on its way; the button waits too, so a request isn't sent twice. */
+  /** The loading line, while an answer is on its way. The button stays usable (12 Oct 2026: Noemi typed a new request
+      while a slow answer loaded, couldn't send it, and got the old answer under it): a new search cancels the old one. */
   function startLoading() {
     status.textContent = LABELS.loading;
     status.className = "status loading";
     results.setAttribute("aria-busy", "true");
-    button.disabled = true;
   }
 
   /** Back to rest. `announce` is read out by screen readers only. */
@@ -722,15 +700,16 @@ h1, h2, h3, h4 { line-height: 1.25; }
     status.textContent = announce || "";
     status.className = "status visually-hidden";
     results.setAttribute("aria-busy", "false");
-    button.disabled = false;
   }
 
-  /** What to show for one request: the answer drawn, or an error in the page's own words. */
-  async function fetchAnswer(request) {
+  /** What to show for one request: the answer drawn, or an error in the page's own words; null when a newer search
+      cancelled it (`signal`). */
+  async function fetchAnswer(request, signal) {
     let response;
     try {
-      response = await fetch("/api/answer?q=" + encodeURIComponent(request), { headers: { Accept: "application/json" } });
+      response = await fetch("/api/answer?q=" + encodeURIComponent(request), { headers: { Accept: "application/json" }, signal });
     } catch (error) {
+      if (signal.aborted) return null;  // a newer search cancelled this one: nothing to show
       return [notice("error", null, errorText("offline"))];  // no reply at all: the server isn't running
     }
     const data = await response.json().catch(() => ({}));
@@ -742,6 +721,9 @@ h1, h2, h3, h4 { line-height: 1.25; }
   async function search(text, addToHistory) {
     const request = text.trim();
     const mine = ++latest;
+    if (pending) pending.abort();  // an older search still loading is cancelled: only the newest is ever drawn
+    const controller = new AbortController();
+    pending = controller;
     if (addToHistory) history.pushState(null, "", request ? "#q=" + encodeURIComponent(request) : location.pathname + location.search);
     if (!request) {
       stopLoading();
@@ -751,8 +733,9 @@ h1, h2, h3, h4 { line-height: 1.25; }
     examples.open = false;
     startLoading();
     track("search");
-    const shown = await fetchAnswer(request);
-    if (mine !== latest) return;  // a newer search has started: its answer is the one to show
+    const shown = await fetchAnswer(request, controller.signal);
+    if (mine !== latest || shown === null) return;  // a newer search has started: its answer is the one to show
+    pending = null;
     showOnly(...shown);
     stopLoading(LABELS.done);
   }

@@ -378,12 +378,16 @@ def test_the_markdown_shows_names_quotes_badges_links_and_the_breakdown():
     answer = write_answer(ranking, bodies, "chef knife")
     text = render_markdown(answer)
     tojiro = answer.picks[0]
+    # Changed on purpose 12 Oct 2026 (Noemi): the score breakdown left the answer card ("too technical, and it doesn't
+    # build trust"); the JSON keeps it (answer_to_dict) and the how-we-score page explains the scoring.
     for expected in (
         "chef knife", "## 1. Tojiro DP Gyuto", tojiro.reason, tojiro.support, tojiro.quotes[0].text,
-        "3 years of use", tojiro.quotes[0].url, wording.BREAKDOWN_HEADING, "kind bonus",
+        "3 years of use", tojiro.quotes[0].url,
         wording.LOOK_FOR_HEADING, wording.SKIP_HEADING, "Tefal Knife", "The handle gets slippery when wet.",
     ):
         assert expected in text, expected
+    assert wording.BREAKDOWN_HEADING not in text and "kind bonus" not in text
+    assert answer_to_dict(answer)["picks"][0]["breakdown"]["kind_bonus"] > 0
     assert "Looks cheap, never tried it." not in text  # a low voice's warning is not a known downside
 
 
@@ -917,7 +921,9 @@ def test_the_markdown_shows_how_to_take_care_of_it_under_the_pick():
     assert f"**{wording.CARE_HEADING}**" in text
     assert f'- **Hand wash only.** "{hand_wash.quote}" (well upvoted · [{wording.LINK_TEXT}]({hand_wash.comment_url}))' in text
     tojiro = text.split("## 2.")[0]
-    assert tojiro.index(wording.DOWNSIDES_HEADING) < tojiro.index(wording.CARE_HEADING) < tojiro.index(wording.BREAKDOWN_HEADING)
+    # Changed on purpose 12 Oct 2026 (Noemi): the score breakdown left the card, so the care tips come last.
+    assert tojiro.index(wording.DOWNSIDES_HEADING) < tojiro.index(wording.CARE_HEADING)
+    assert wording.BREAKDOWN_HEADING not in tojiro
     assert text.count(wording.CARE_HEADING) == 1  # only the pick with tips has the heading
 
 

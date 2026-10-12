@@ -36,6 +36,23 @@ What each pick shows (the brief):
 Under the picks: "what to look for" (a short blueprint from credible notes about kinds of product), the
 skip-these list, and an honest message when fewer than 3 products have enough evidence.
 
+Sense (Noemi's note, 12 Oct 2026: "some reccs make little sense"; measured by engine/sense_eval.py). Every quote passed
+the word-for-word check, yet "retinol for a beginner" showed "Look for: retinol" with a writer's shrug for its quote,
+and a pick's quote was a reply ("Yes!") whose "it" only the comment above explained. So:
+- a quote that doesn't stand on its own (_standing: it never names what it is about and leans on "it", "this", "they"
+  or a reply word, or is very short; or it leans on something said before it, "both of them", "for that reason") is
+  shown with the sentences before it in its comment, back to the one that names what it is about, as one stretch of the
+  comment's own text, within QUOTE_MAX_WORDS (_widened). A quote that still leans on the thread, or on someone or
+  something the comment doesn't show ("he said", "the same experience", "as you said"), comes after every quote that
+  stands: it is shown only to make up a pick's two quotes, or when a downside or a skipped product has no other;
+- a quote that only mentions the product ("I have one") is never more than a pick needs;
+- "What to look for" never shows the product asked for itself ("retinol" for a retinol request), nor advice named after
+  another type of product (skincare and haircare: "eye creams" for a moisturiser; a type the open model named: another
+  listed type, or "an immersion blender" for a blender); each line's quote names its kind and states advice about it,
+  not a hedge, a wish or a question, and not the opposite of what the request asks; an "Avoid" line never quotes a
+  warning about one of the answer's own picks. A kind with no such note is left out. Kinds whose name or notes name the
+  product asked for come first (_look_for).
+
 The guardrail (the brief's most important rule): every quote is checked again, word for word, against its
 comment as it is now (engine.verify_quotes), right before it is shown. A comment may have been edited or deleted
 since the extraction. A quote that fails, whose comment is gone, that comes from a quoted block (someone else's
@@ -56,11 +73,11 @@ asked Claude to decide wording and report it).
 
 import dataclasses
 import re
-from collections.abc import Collection, Iterable, Iterator, Mapping
+from collections.abc import Callable, Collection, Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import date
 
-from engine.care_tips import CareTip, CareTips, similar_tips, tips_by_agreement
+from engine.care_tips import CareTip, CareTips, is_repair, similar_tips, tips_by_agreement
 from engine.config import (
     BRAND_PICK_MODEL,
     CARE_NOTE_TIPS,
@@ -68,6 +85,7 @@ from engine.config import (
     DOWNSIDES_PER_PICK,
     LOOK_FOR_NOTES,
     OPPOSITE_QUOTE_PATTERNS,
+    OTHER_KIND_WORDS,
     QUOTE_VIEW_WORDS,
     MIN_CREDIBLE_MENTIONS,
     MIN_QUOTES_PER_PICK,
@@ -80,6 +98,7 @@ from engine.config import (
     QUOTES_PER_SKIPPED_PRODUCT,
 )
 from engine.extract import _as_written, _in_quoted_block, _own_words_in_quote_format
+from engine.group_kinds import PURPOSE_WORDS, _kind_words, kind_parts
 from engine.models import Thread
 from engine.needs import LASTING, Need, needs_met
 from engine.prices import PriceCheck
@@ -88,6 +107,7 @@ from engine.match_products import FILLER_WORDS, known_aliases
 from engine.rank import KindNote, ProductScore, RankingResult, ScoredMention, ScoreBreakdown, is_credible
 from engine.query import PRODUCT_TYPES
 from engine.sources import mentions_product
+from engine.text import one_edit_apart
 from engine.verify_quotes import find_quote, verify_quote
 
 # --- Wording users see: PROPOSED 9 Oct 2026, awaiting Noemi ---
@@ -109,8 +129,11 @@ FEWER_PICKS = "Enough credible evidence for only {products} ({rule}), so we show
 BADGE_VOICE = "{voice}-credibility voice"  # the badge when module 5 gave no reason in words
 QUOTES_HEADING = "In their words"
 DOWNSIDES_HEADING = "Known downsides"
+# Known downsides in proportion (Noemi, 12 Oct 2026: a single warning under many long-term recommendations read as if it
+# outweighed them). Shown above a pick's downsides; wording from her own example, decided by Claude.
+DOWNSIDES_SHARE = "{n} of {total} credible voices warned against it:"
 SUPPORT_LABEL = "Credible support"
-BREAKDOWN_HEADING = "Score breakdown"
+BREAKDOWN_HEADING = "Score breakdown"  # off the answer card since 12 Oct 2026 (Noemi); kept in the JSON
 LOOK_FOR_HEADING = "What to look for"
 SKIP_HEADING = "Skip these"
 LINK_TEXT = "see the comment"
@@ -252,6 +275,9 @@ class Pick:
     # For a brand pick: the model of that brand its credible writers recommend most (10 Oct 2026); None otherwise.
     model: str | None = None
     model_price: str | None = None  # that model's checked price, as the price line words it; None when not checked
+    # How many credible voices warned against it, of all who spoke for or against it (DOWNSIDES_SHARE, 12 Oct 2026);
+    # None when no downside is shown.
+    downsides_share: str | None = None
 
 
 @dataclass
@@ -300,7 +326,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
                  cautions: Mapping[str, list[str]] | None = None, models: Mapping[str, str] | None = None,
                  asks: tuple[str, ...] = (), model_prices: Mapping[str, str] | None = None,
                  more_downsides: Mapping[str, list[ScoredMention]] | None = None,
-                 unsuited_kinds: Collection[str] = (), needs: tuple[Need, ...] = ()) -> Answer:
+                 unsuited_kinds: Collection[str] = (), needs: tuple[Need, ...] = (), request: str = "") -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -315,7 +341,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     for (engine.product_facts.request_asks): a quote saying the opposite is shown last. `more_downsides` ({pick key:
     credible warnings}) are warnings about a pick's own brand or line, shown under it after its own. `unsuited_kinds`
     are the keys of kinds that give no "Look for" (engine.pipeline._unsuited_kinds). `needs` (engine.needs.request_needs):
-    among equally clear quotes, those talking about them come first.
+    among equally clear quotes, those talking about them come first. `request` is the request as typed: the product it
+    names ("retinol") is no advice about what to look for.
     """
     check = _QuoteCheck(bodies)
     models = models or {}
@@ -326,10 +353,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     for product in ranking.qualifying:
         if len(picks) == PICKS_SHOWN:
             break
-        ordered = _naming_first(product.credible_recommendations, asks, needs)
-        quotes = check.first([m for m in ordered if _says_something(m)], QUOTES_PER_PICK)
-        if len(quotes) < MIN_QUOTES_PER_PICK:  # a quote that says nothing about it only makes up the minimum
-            quotes += check.first([m for m in ordered if not _says_something(m)], MIN_QUOTES_PER_PICK - len(quotes))
+        quotes = _pick_quotes(product, check, asks, needs, product_type)
         if len(quotes) >= MIN_QUOTES_PER_PICK:
             price = shown_price(prices.get(product.key))
             availability = shown_availability(prices.get(product.key), price.url)
@@ -341,7 +365,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             picks[-1].model = models.get(product.key)
             picks[-1].model_price = (model_prices or {}).get(product.key)
     skip = [_skip_item(product, check) for product in ranking.skip_list]
-    look_for = _look_for(ranking, check, product_type, unsuited_kinds)
+    look_for = _look_for(ranking, check, product_type, unsuited_kinds, request, asks, [pick.name for pick in picks])
     care_note = _care_note([care.get(pick.product_key) for pick in picks], picks, check)
     return Answer(
         category=ranking.category,
@@ -458,12 +482,15 @@ def _most_credible_first(items: Iterable[ScoredMention]) -> list[ScoredMention]:
 
 
 def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
-                  needs: tuple[Need, ...] = ()) -> list[ScoredMention]:
+                  needs: tuple[Need, ...] = (), leaning: Collection[str] = (),
+                  product_type: str | None = None) -> list[ScoredMention]:
     """The most credible first, but the quotes that name their product and give a view before those that only name
     it, those before the ones that only give a view, and those before the rest; within each, those whose comment talks about what the request asks for first (10 Oct 2026: out of context, a line that only opens a list of other products the
     writer has had no trouble with says little, and so does a list of the grinders someone owns), and a quote that says the opposite of what
     the request asks ("does leave a white cast") after every other (_says_the_opposite). Each is still shown when
-    there's room."""
+    there's room. Since 12 Oct 2026 the quotes of `leaning` (comment ids: quotes that lean on the thread, _standing) come
+    after all of these, and a quote saying the product isn't really the `product_type` asked for (that it
+    isn't really a moisturiser) counts as saying the opposite of the request (_not_the_type)."""
     ordered = _most_credible_first(items)
 
     # 0: names it and gives a view; 1: only names it; 2: only gives a view; 3: neither (10 Oct 2026, night: b04 showed a
@@ -477,7 +504,21 @@ def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
     def about_the_ask(m: ScoredMention) -> bool:
         return bool(needs and needs_met(m.quote, needs, m.evidence == "long-term use"))
 
-    return sorted(ordered, key=lambda m: (_says_the_opposite(m.quote, asks), tier(m), not about_the_ask(m)))
+    def opposite(m: ScoredMention) -> bool:
+        return _says_the_opposite(m.quote, asks) or _not_the_type(m.quote, product_type)
+
+    return sorted(ordered, key=lambda m: (m.comment_id in leaning, opposite(m), tier(m), not about_the_ask(m)))
+
+
+def _not_the_type(quote: str, product_type: str | None) -> bool:
+    """Whether a quote says its product isn't (really) the type of product asked for: "not a moisturizer", "I don't feel
+    like it's a 'moisturizer'" (b04, 12 Oct 2026), by the type's name or one of module 1's names for it."""
+    if not product_type:
+        return False
+    names = {product_type, *(k for p in PRODUCT_TYPES if p.name == product_type for k in p.keywords)}
+    text = _plain(quote)
+    return any(re.search(rf"(?:\bnot\b|n't\b)[^.!?]{{0,30}}?\b(?:an?|real|really)\W+{re.escape(name)}s?\b", text)
+               for name in names)
 
 
 def _says_something(m: ScoredMention) -> bool:
@@ -523,12 +564,15 @@ def _names_product(quote: str, name: str, category: str, written_as: str = "") -
     ("old wagners", "Prequel's"), and so does a hyphen written as a space or left out ("All clad" for All-Clad; b08,
     b05 and b10, 10 Oct 2026). So does the first word of the writer's own name for it (`written_as`; "my" or "the"
     aside, and never a common product word such as "gooseneck"): "Stagg" for a kettle shown as "Fellow Stagg EKG"
-    (b06, 10 Oct 2026, night: its writers' quotes had stopped naming it once the shown name took its brand)."""
+    (b06, 10 Oct 2026, night: its writers' quotes had stopped naming it once the shown name took its brand). A name that
+    is an everyday short word too (COMMON_SHORT_WORDS: "TO" for The Ordinary) names it only in capitals (12 Oct 2026)."""
     text = " ".join(re.findall(r"[a-z0-9][a-z0-9'-]*", quote.lower().replace("’", "'")))
     name_words = _name_words(name)
     if not name_words:
         return False
-    wanted = {name_words[0]} | {w for w in name_words if any(c.isdigit() for c in w)}
+    # The brand is the first word that isn't a filler word: "the" never names The Ordinary (12 Oct 2026).
+    first = next((w for w in name_words if w not in FILLER_WORDS), name_words[0])
+    wanted = {first} | {w for w in name_words if any(c.isdigit() for c in w)}
     writers = [w for w in _name_words(written_as) if w not in FILLER_WORDS]
     if writers and writers[0] not in GENERIC_NAME_WORDS:
         wanted.add(writers[0])
@@ -537,7 +581,15 @@ def _names_product(quote: str, name: str, category: str, written_as: str = "") -
         short, full = " ".join(short_words), " ".join(full_words)
         if f"{joined} ".startswith(f"{short} ") or f"{joined} ".startswith(f"{full} "):
             wanted |= {short, full}
-    return any(re.search(_as_written_loosely(w), text) for w in wanted)
+    common = {w for w in wanted if w in COMMON_SHORT_WORDS}  # named only in capitals: "TO", never "to"
+    return (any(re.search(_as_written_loosely(w), text) for w in wanted - common)
+            or any(re.search(rf"(?<![A-Za-z0-9]){re.escape(w.upper())}(?![A-Za-z0-9])", quote) for w in common))
+
+
+# Short words a name for a product can be that are everyday words too: "TO" (The Ordinary, as a writer or a known short
+# name has it) names it only in capitals, never "having to throw it away" (12 Oct 2026).
+COMMON_SHORT_WORDS = frozenset({"to", "of", "in", "on", "at", "it", "is", "as", "an", "or", "by", "be", "do", "go", "so",
+                                "up", "we", "me", "no", "if", "us", "am", "a", "i"})
 
 
 def _name_words(name: str) -> list[str]:
@@ -552,6 +604,188 @@ def _as_written_loosely(word: str) -> str:
     return rf"(?<![a-z0-9]){body}(?:'s|s'?|')?(?![a-z0-9])"
 
 
+# --- Quotes that stand on their own (Noemi's note, 12 Oct 2026) ---
+
+# Things a quote can lean on that the comment around it doesn't show: another person ("he said"), what someone else went
+# through ("the same experience"), what the comment it answers or the post said ("as you said", "OP's budget"). The
+# writer's own sentences can't explain them, so such a quote comes after every quote that stands on its own.
+_ELSEWHERE = re.compile(
+    r"\b(?:he|she|him|his|her|hers)\b"
+    r"|\bsame (?:reaction|experience|thing|issue|problem|results?)\b"
+    r"|\bthe reasons? (?:he|she|they|you) (?:said|gave|mentioned)\b"
+    r"|\bas you (?:said|say|mentioned|found|noted|described)\b"
+    r"|\bwhat you(?:'re| are) (?:wanting|after|describing)\b"
+    r"|\byour problem\b|(?-i:\bOP(?:'s)?\b)", re.IGNORECASE)
+# Things a quote can lean on that its writer said just before it: "both of them", "either product", "for that reason",
+# "that part". The sentences before it are shown with it, when they fit (_widened).
+_BEFORE = re.compile(
+    r"\bboth of them\b|\bwith both\b|\beither (?:one|product|of them|if|is|was|will|would)\b"
+    r"|\b(?:for|because of) (?:that|this|those|these) reasons?\b|\bthat (?:part|type)\b|\bonce i did that\b",
+    re.IGNORECASE)
+# A reply's first words ("Yes!", "Same.", "I agree, this is..."), and the words that stand for something named before.
+_REPLY_OPENER = re.compile(r"^\W*(?:yes|yeah|yea|yep|yup|same|agreed|i agree|seconded|seconding|ditto|exactly|this|"
+                           r"lol|haha|true|\+1)\b", re.IGNORECASE)
+_POINTER = re.compile(r"(?<![a-z0-9'])(?:it|it's|its|this|these|those|they|they're|them|both|either|same|mine|"
+                      r"that one|this one|the one)(?![a-z0-9'])")
+SHORT_QUOTE_WORDS = 5  # fewer words, naming nothing, say too little alone ("This looks very cool!")
+BARE_MENTION_WORDS = 5  # "I have a ballarini": fewer words, naming the product with no view, only makes up the minimum
+# Where a stretch of a comment can't be widened to: a link, a bare address, a list, a heading, a table, code or a quoted
+# block. Reddit shows these differently from how they are typed, so the live check (engine/live_check.py) couldn't find
+# the words, and a quoted block is someone else's words.
+_UNSHOWABLE = re.compile(r"\]\(|https?://|www\.|^\s*(?:[-*+]|\d+[.)])\s|^\s*#|^\s*(?:>|&gt;)|\||`", re.MULTILINE)
+_SENTENCE_END = re.compile(r"[.!?…]+[\"'”’)\]]*\s+|\n+\s*")
+
+
+def _plain(text: str) -> str:
+    """The text in lowercase with straight apostrophes, for the patterns above."""
+    return text.lower().replace("’", "'")
+
+
+def _stands_alone(quote: str, names_it: bool) -> bool:
+    """Whether a quote says what it is about without the thread: it leans on nothing said elsewhere or just before it,
+    and either names what it is about or reads on its own (no reply opener, no "it" or "this" standing in for a name,
+    and at least SHORT_QUOTE_WORDS words)."""
+    if _ELSEWHERE.search(quote) or _BEFORE.search(quote):
+        return False
+    return names_it or not (_leans_without_a_name(quote) or _POINTER.search(_words(quote)))
+
+
+def _leans_without_a_name(quote: str) -> bool:
+    """Whether a quote that never names what it is about can't be read without the thread: it opens as a reply ("Yes!",
+    "Same."), opens with a word standing for something named before ("It", "This", "They"), or is under
+    SHORT_QUOTE_WORDS words ("This looks very cool!"). One that only has an "it" further on ("Love it, works great")
+    reads well enough under its pick's name, so it keeps its place (10 Oct 2026)."""
+    words = _words(quote)
+    return bool(_REPLY_OPENER.match(_plain(quote)) or _POINTER.match(words) or len(words.split()) < SHORT_QUOTE_WORDS)
+
+
+def _words(text: str) -> str:
+    return " ".join(re.findall(r"[a-z0-9'+]+", _plain(text)))
+
+
+def _widened(quote: str, body: str | None, names: Callable[[str], bool]) -> str | None:
+    """The quote with the sentences before it in its comment, back to the nearest one from which the stretch names what
+    it is about, as one stretch of the comment's own text (so it is still checked word for word, and live); None when
+    there is no such sentence within QUOTE_MAX_WORDS words, the stretch would take in something Reddit shows differently
+    from how it is typed (_UNSHOWABLE) or something said elsewhere (_ELSEWHERE), or the comment isn't at hand."""
+    span = find_quote(body, quote) if body else None
+    if span is None:
+        return None
+    start, end = span
+    starts = {0} | {m.end() for m in _SENTENCE_END.finditer(body, 0, start)}
+    for begin in sorted((s for s in starts if s < start), reverse=True):
+        added = body[begin:start]
+        if _UNSHOWABLE.search(added) or _in_quoted_block(body, (begin, start)):
+            return None
+        if len(_as_written(body, (begin, end)).split()) > QUOTE_MAX_WORDS:
+            return None
+        text = body[begin:end]
+        if names(text) and not _ELSEWHERE.search(text):
+            return text
+    return None
+
+
+def _standing(items: Iterable, bodies: Mapping[str, str], names: Callable[[str, object], bool],
+              must_name: bool = False) -> tuple[list, set[str]]:
+    """Each item (a mention or a note), its quote widened to the sentences before it when it doesn't stand alone and
+    they make it (_widened); and the comment ids of those that still lean on the thread. `names(text, item)` says
+    whether a text names what the item is about; with `must_name` (a note under its kind), a quote that doesn't is
+    widened, or else leans, whatever else it says."""
+    out, leaning = [], set()
+    for item in items:
+        names_it = names(item.quote, item)
+        if not _stands_alone(item.quote, names_it) or (must_name and not names_it):
+            wider = None if _ELSEWHERE.search(item.quote) else _widened(
+                item.quote, bodies.get(item.comment_id), lambda text, item=item: names(text, item))
+            if wider is not None:
+                item = dataclasses.replace(item, quote=wider)
+            elif _ELSEWHERE.search(item.quote) or _BEFORE.search(item.quote) or (
+                    not names_it and (must_name or _leans_without_a_name(item.quote))):
+                leaning.add(item.comment_id)
+        out.append(item)
+    return out, leaning
+
+
+def _names_its_product(text: str, mention: ScoredMention) -> bool:
+    return _names_product(text, mention.product_name, mention.category, mention.written_as)
+
+
+def _bare_mention(m: ScoredMention) -> bool:
+    """A quote that names the product and says nothing more about it, in under BARE_MENTION_WORDS words ("I have a
+    ballarini"): it never takes a place beyond what a pick needs (12 Oct 2026)."""
+    return not _gives_a_view(m.quote) and len(m.quote.split()) < BARE_MENTION_WORDS
+
+
+# A garbled quote: "the" left hanging before the end of a clause, alone or before an "-ly" word (Noemi's second demo test,
+# 12 Oct 2026: a writer typed "the" for "them", as in "I wash the carefully."), or "a" or "an" before one. A writer's
+# slip, not words a reader can follow.
+_GARBLED = re.compile(r"(?:\bthe\b(?:\s+[a-z]+ly)?|\ban?\s+[a-z]+ly)\s*(?:[.!?,;:]|$)", re.IGNORECASE)
+
+
+def _garbled(quote: str) -> bool:
+    return bool(_GARBLED.search(quote.strip()))
+
+
+# Advice: a sentence that opens with what to do ("Buy a decent pan, keep the heat low"), or says what one should do.
+_ADVICE = re.compile(r"(?:^|[.!?]\s+)(?:just |so |also |then )?(?:get|buy|go for|try|avoid|keep|wash|don't|do not|never|"
+                     r"always|look for|pick|choose|stick with|spend)\b"
+                     r"|\b(?:you should|you'll want|i'd recommend|i recommend|is the way to go|worth it)\b", re.IGNORECASE)
+
+
+def _gives_a_view_or_advice(text: str) -> bool:
+    return _gives_a_view(text) or bool(_ADVICE.search(_plain(text)))
+
+
+def _with_a_view(mentions: list[ScoredMention], bodies: Mapping[str, str]) -> list[ScoredMention]:
+    """Each bare mention (_bare_mention) widened to the sentences before it in its comment that state a view or advice,
+    when there are any within QUOTE_MAX_WORDS words (Noemi's second demo test, 12 Oct 2026: "prefer the comment's
+    sentences that state a view or advice"); the others as they are."""
+    out = []
+    for m in mentions:
+        if _bare_mention(m):
+            wider = _widened(m.quote, bodies.get(m.comment_id),
+                             lambda text, m=m: _names_its_product(text, m) and _gives_a_view_or_advice(text))
+            m = dataclasses.replace(m, quote=wider) if wider is not None else m
+        out.append(m)
+    return out
+
+
+def _pick_quotes(product: ProductScore, check: _QuoteCheck, asks: tuple[str, ...],
+                 needs: tuple[Need, ...], product_type: str | None = None) -> list[ShownQuote]:
+    """Up to QUOTES_PER_PICK verified quotes for a pick, in _naming_first's order, each widened to stand on its own where
+    its comment allows (_standing), and a bare mention to the view or advice before it (_with_a_view). Quotes that say
+    something about it come first; a bare mention or a garbled quote (_garbled), a quote that says nothing about it
+    (_says_something) and, last, one that still leans on the thread only make up MIN_QUOTES_PER_PICK."""
+    mentions, leaning = _standing(product.credible_recommendations, check.bodies, _names_its_product)
+    ordered = _naming_first(_with_a_view(mentions, check.bodies), asks, needs, leaning, product_type)
+    standing = [m for m in ordered if m.comment_id not in leaning]
+
+    def filler(m: ScoredMention) -> bool:
+        return _bare_mention(m) or _garbled(m.quote)
+
+    quotes = check.first([m for m in standing if _says_something(m) and not filler(m)], QUOTES_PER_PICK)
+    for rest in ([m for m in standing if _says_something(m) and filler(m)],
+                 [m for m in standing if not _says_something(m)],
+                 [m for m in ordered if m.comment_id in leaning]):
+        if len(quotes) < MIN_QUOTES_PER_PICK:
+            quotes += check.first(rest, MIN_QUOTES_PER_PICK - len(quotes))
+    return quotes
+
+
+def _warning_quotes(groups: Iterable[Iterable[ScoredMention]], check: _QuoteCheck, limit: int,
+                    needs: tuple[Need, ...] = ()) -> list[ShownQuote]:
+    """Up to `limit` verified warning quotes (a pick's downsides, a skipped product's quotes): each group in turn, in
+    _naming_first's order, widened where that makes them stand (_standing). A quote that still leans on the thread is
+    shown only when no other is: a pick's downsides are never hidden."""
+    ordered, leaning = [], set()
+    for group in groups:
+        mentions, group_leaning = _standing(group, check.bodies, _names_its_product)
+        ordered += _naming_first(mentions, needs=needs, leaning=group_leaning)
+        leaning |= group_leaning
+    shown = check.first([m for m in ordered if m.comment_id not in leaning], limit)
+    return shown or check.first([m for m in ordered if m.comment_id in leaning], 1)
+
+
 def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _QuoteCheck, ranking: RankingResult,
           price: ShownPrice, care: list[ShownCareTip], availability: ShownAvailability = NOT_CHECKED,
           cautions: list[str] | None = None, more_downsides: list[ScoredMention] = (),
@@ -560,6 +794,7 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
     pipeline's _fold_brand_skips, 10 Oct 2026). `needs`: warnings that talk about them come first among equally clear
     ones ("when my bonavita broke" for a kettle that should last)."""
     warnings = product.credible_warnings
+    downsides = _warning_quotes((warnings, more_downsides), check, DOWNSIDES_PER_PICK, needs)
     return Pick(
         rank=rank,
         product_key=product.key,
@@ -567,23 +802,40 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
         reason=_reason(product, ranking),
         support=_support(product),
         quotes=quotes,
-        downsides=check.first(_naming_first(warnings, needs=needs) + _naming_first(more_downsides, needs=needs),
-                              DOWNSIDES_PER_PICK),
-        disagreement=DISAGREEMENT.format(voices=_plural(len(warnings), "credible voice")) if product.disputed else None,
+        downsides=downsides,
+        disagreement=(DISAGREEMENT.format(voices=_plural(len(_warned(product, more_downsides)), "credible voice"))
+                      if product.disputed else None),
         score=product.score,
         breakdown=product.breakdown,
         price=price,
         availability=availability,
         care=care,
         cautions=cautions or [],
+        downsides_share=_downsides_share(product, more_downsides) if downsides else None,
     )
+
+
+def _warned(product: ProductScore, more_downsides: Iterable[ScoredMention] = ()) -> set[str]:
+    """The writers of a pick's credible warnings and of those about its own brand or line shown under it (the pipeline's
+    _fold_brand_skips), each once: whom its downsides come from."""
+    return {m.author or m.comment_id for m in [*product.credible_warnings, *more_downsides]}
+
+
+def _downsides_share(product: ProductScore, more_downsides: Iterable[ScoredMention] = ()) -> str:
+    """DOWNSIDES_SHARE for a pick: the writers its downsides come from (_warned), of those and its credible
+    recommendations together (Noemi, 12 Oct 2026): "1 of 15 credible voices warned against it:" reads as what it is.
+    The mixed-opinions line (DISAGREEMENT) counts the same writers, so the two never give different numbers."""
+    warned = _warned(product, more_downsides)
+    return DOWNSIDES_SHARE.format(n=len(warned), total=len(warned) + len(product.credible_recommendations))
 
 
 def _care_tips(tips: CareTips | None, check: _QuoteCheck, limit: int = CARE_TIPS_PER_PICK,
                already: Iterable[str] = ()) -> list[ShownCareTip]:
-    """Up to `limit` care tips (a pick's own, or the note's), the ones most credible writers agree on first, repairs last
-    (engine.care_tips.tips_by_agreement, 10 Oct 2026). Each tip shown stands for one group of tips that say the same
-    thing, so the same advice is never shown twice: the group's best writer's tip, in their words, with their quote.
+    """Up to `limit` care tips (a pick's own, or the note's), the ones most credible writers agree on first
+    (engine.care_tips.tips_by_agreement, 10 Oct 2026); repairs are left out since 12 Oct 2026 (Noemi: a repair story
+    isn't advice on looking after the product, as extraction instructions v8 say). Each tip shown stands for one group
+    of tips that say the same thing, so the same advice is never shown twice: the group's best writer's tip, in their
+    words, with their quote.
     When that quote fails the check, it is dropped and the group's next writer's tip and quote take its place. A group
     saying the same as one of `already` (tips shown elsewhere in the answer) is left out."""
     if tips is None:
@@ -592,6 +844,8 @@ def _care_tips(tips: CareTips | None, check: _QuoteCheck, limit: int = CARE_TIPS
     for group in tips_by_agreement(tips):
         if len(shown) == limit:
             break
+        if is_repair(group[0].tip):  # a repair story isn't looking after the product (Noemi, 12 Oct 2026)
+            continue
         if any(similar_tips(group[0].tip, tip) for tip in already):
             continue
         for item in group:
@@ -672,7 +926,7 @@ def _support(product: ProductScore) -> str:
 
 def _skip_item(product: ProductScore, check: _QuoteCheck) -> SkipItem | None:
     """A skip-these entry with its verified warnings, or None when no warning quote passes the check."""
-    quotes = check.first(_naming_first(product.credible_warnings), QUOTES_PER_SKIPPED_PRODUCT)
+    quotes = _warning_quotes((product.credible_warnings,), check, QUOTES_PER_SKIPPED_PRODUCT)
     if not quotes:
         return None
     praised = len(product.credible_recommendations)
@@ -684,7 +938,8 @@ def _skip_item(product: ProductScore, check: _QuoteCheck) -> SkipItem | None:
 
 
 def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | None = None,
-              unsuited_kinds: Collection[str] = ()) -> list[LookFor]:
+              unsuited_kinds: Collection[str] = (), request: str = "", asks: tuple[str, ...] = (),
+              picks: Collection[str] = ()) -> list[LookFor]:
     """Up to LOOK_FOR_NOTES kinds, strongest credible advice first, each with its strongest verified note. In skincare,
     a kind whose advice is about another type of product gives none (_another_types_advice). A kind in
     `unsuited_kinds` (its facts clash hard with the request: the pipeline's _unsuited_kinds) gives no "Look for".
@@ -693,19 +948,35 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
     warning note. A kind whose support is zero (no credible notes, or as many for as against) gives no advice. A
     comment already shown for another kind's same advice isn't shown again (10 Oct 2026): the kind takes its next
     credible note, or, with none, joins that line ("Look for: Cast iron or Carbon steel").
+
+    Since 12 Oct 2026 (Noemi's note: "Look for: retinol" in a retinol answer), the product asked for itself is no advice
+    (_the_product_asked_for: `request` is the request as typed), and neither is another type of product named in the
+    kind's own name (_another_types_advice) or, for a type the open model named, another kind of it (config.
+    OTHER_KIND_WORDS: an immersion blender for a blender). A kind is shown only with a note that states advice about it
+    (_advice_notes: it names the kind, widened to the sentence before that does when needed, and isn't a hedge, a wish,
+    a question, the opposite of one of the request's `asks`, or, for "Avoid", a warning about one of the `picks`); with
+    none, it is left out. Kinds whose name or notes name the product asked for come before those that never do.
     """
-    items: list[LookFor] = []
-    item_notes: list[list[KindNote]] = []  # each item's kind's credible notes, strongest first
-    for kind in sorted(ranking.kinds, key=lambda k: -abs(k.support)):  # sorted keeps ties in the ranking's order
-        if len(items) == LOOK_FOR_NOTES:
-            break
+    candidates = []
+    for kind in ranking.kinds:  # best supported first
         if kind.support == 0 or (kind.support > 0 and kind.key in unsuited_kinds):
             continue
         stance, advice = ("recommend", LOOK_FOR) if kind.support > 0 else ("warn", AVOID)
         notes = _most_credible_first([n for n in ranking.kind_notes
                                       if n.kind_key == kind.key and n.stance == stance and is_credible(n)])
-        if _another_types_advice(kind.name, notes, ranking.category, product_type):
+        if (_the_product_asked_for(kind.name, ranking.category, product_type, request)
+                or _instead_of_the_product(kind.name, ranking.category, product_type, request)
+                or _another_types_advice(kind.name, notes, ranking.category, product_type)):
             continue
+        candidates.append((kind, advice, notes))
+    # sorted keeps ties in the ranking's order
+    candidates.sort(key=lambda c: (not _about_the_type(c[0].name, c[2], product_type), -abs(c[0].support)))
+    items: list[LookFor] = []
+    item_notes: list[list[KindNote]] = []  # each item's kind's notes that state advice, strongest first
+    for kind, advice, notes in candidates:
+        if len(items) == LOOK_FOR_NOTES:
+            break
+        notes = _advice_notes(kind.name, advice, notes, check.bodies, ranking.category, product_type, asks, picks)
         used = {item.quote.comment_id: i for i, item in enumerate(items) if item.advice == advice}
         quote = check.first([n for n in notes if n.comment_id not in used], 1)
         if not quote:
@@ -733,14 +1004,174 @@ def _another_types_advice(kind: str, notes: list[KindNote], category: str, produ
     type of its category (engine.sources.mentions_product) and never the one asked for. Found in b04, 10 Oct 2026: a moisturiser answer
     showed "Look for: AHA" and "Look for: BHA", whose notes were about exfoliants. A note tying it to the type asked
     for keeps it ("an AHA lotion fixed my dry legs"). Kitchen kinds always stay: another kind of pan is a real
-    alternative ("Look for: cast iron" for a PFAS-free non-stick pan)."""
-    if category not in ("skincare", "haircare") or not product_type:
+    alternative ("Look for: cast iron" for a PFAS-free non-stick pan).
+
+    Since 12 Oct 2026, first the kind's own name: when it names types of product of its category (_named_types), they
+    decide, whatever the notes say: advice named after other types only is another type's ("Avoid: eye creams" in a
+    moisturiser answer, "double cleansing" in a sunscreen one), while "retinol eye cream" names a retinoid too. The
+    same holds for a type the open model named, in any category: another listed type ("coffee grinder for seeds") or
+    another kind of it ("immersion blender", config.OTHER_KIND_WORDS) is no advice for it."""
+    if not product_type:
+        return False
+    listed = product_type in {p.name for p in PRODUCT_TYPES}
+    if not listed and _another_kind_of(kind, product_type):
+        return True
+    if category in ("skincare", "haircare") or not listed:
+        named = _named_types(kind, category)
+        if named:
+            return product_type not in named
+    if category not in ("skincare", "haircare"):
         return False
     text = " ".join([kind] + [n.quote for n in notes])
     if mentions_product(text, product_type):
         return False
     return any(mentions_product(text, other.name) for other in PRODUCT_TYPES
                if other.category == category and other.name != product_type)
+
+
+STEM_LETTERS = 6  # two words of more letters sharing their first STEM_LETTERS are one word told two ways
+
+
+def _same_word(a: str, b: str) -> bool:
+    """Whether two words are the same word, or two forms of one ("cleansing" and "cleanser", "moisturizer" and
+    "moisturiser", "separate" and "separately"): longer than STEM_LETTERS letters and sharing their first ones. Never
+    "retinal" and "retinol"."""
+    return a == b or (len(a) > STEM_LETTERS and len(b) > STEM_LETTERS and a[:STEM_LETTERS] == b[:STEM_LETTERS])
+
+
+def _named_types(kind: str, category: str) -> set[str]:
+    """The types of product a kind's own name names (12 Oct 2026), of module 1's product types of its category, before a
+    word saying what it is for ("for", "instead", "with": engine.group_kinds): by one of the type's names, the longest
+    where one holds another ("dry shampoo", not "shampoo"), or by a word sharing the stem of a one-word one
+    ("cleansing", a cleanser's). "retinol eye cream" names a retinoid and an eye cream; "AHA" names none."""
+    words = re.findall(r"[a-z0-9][a-z0-9'-]*", _plain(kind))
+    cut = next((i for i, w in enumerate(words) if w in PURPOSE_WORDS), len(words))
+    text = " ".join(words[:cut])
+    types = [p for p in PRODUCT_TYPES if p.category == category]
+    matches = [(m.start(), m.end(), p.name) for p in types for keyword in p.keywords
+               for m in re.finditer(rf"\b{re.escape(keyword)}s?\b", text)]
+    named = [(s, e, name) for s, e, name in matches
+             if not any(s2 <= s and e <= e2 and e2 - s2 > e - s for s2, e2, _ in matches)]
+    for word in re.finditer(r"[a-z0-9]+", text):
+        if not any(s <= word.start() < e for s, e, _ in named):
+            named += [(word.start(), word.end(), p.name) for p in types
+                      if any(_same_word(word.group(), name) for name in (p.name, *p.keywords) if " " not in name)]
+    return {name for _, _, name in named}
+
+
+def _another_kind_of(kind: str, product_type: str) -> bool:
+    """Whether a kind is another kind of a type the open model named: its name ends with the type's name and the word
+    before it says another kind (config.OTHER_KIND_WORDS: an "immersion blender" isn't a blender)."""
+    words = [w.removesuffix("s") for w in re.findall(r"[a-z0-9]+", _plain(kind))]
+    wanted = [w.removesuffix("s") for w in re.findall(r"[a-z0-9]+", _plain(product_type))]
+    for i in range(len(words) - len(wanted) + 1):
+        if words[i:i + len(wanted)] == wanted and i > 0 and words[i - 1] in OTHER_KIND_WORDS:
+            return True
+    return False
+
+
+def _own_names(category: str, product_type: str, request: str) -> set[str]:
+    """The words the request's own product goes by: its type's name, and the type's names the request uses ("retinol"
+    for a retinoid), read the way kinds are (engine.group_kinds)."""
+    aliases = known_aliases("kinds").get(category, {})
+    own = set(_kind_words(product_type, aliases))
+    lowered = _plain(request)
+    for p in PRODUCT_TYPES:
+        if p.name == product_type:
+            for keyword in p.keywords:
+                if re.search(rf"\b{re.escape(keyword)}s?\b", lowered):
+                    own |= set(_kind_words(keyword, aliases))
+    return own
+
+
+def _the_product_asked_for(kind: str, category: str, product_type: str | None, request: str = "") -> bool:
+    """Whether a kind is just the product the request asks for (12 Oct 2026: "Look for: retinol" in a retinol answer,
+    "Look for: kettle" in a kettle one): every word of its name is one the product goes by (_own_names), told the same
+    way (_same_word)."""
+    if not product_type:
+        return False
+    own = _own_names(category, product_type, request)
+    parts = kind_parts(kind, "", known_aliases("kinds").get(category, {}), set())
+    return bool(parts) and all(any(_same_word(w, o) for o in own) for part in parts for w in part)
+
+
+def _instead_of_the_product(kind: str, category: str, product_type: str | None, request: str = "") -> bool:
+    """Whether a kind's name sets it against the product asked for: "moisturizer instead of eye cream" in an eye cream
+    answer, "grinder over machine" in an espresso machine one (12 Oct 2026). That is advice to buy something else."""
+    if not product_type:
+        return False
+    own = _own_names(category, product_type, request)
+    aliases = known_aliases("kinds").get(category, {})
+    words = _kind_words(kind, aliases)
+    for i, word in enumerate(words):
+        after = words[i + 2:] if words[i:i + 2] in (["instead", "of"], ["rather", "than"]) else (
+            words[i + 1:] if word in ("over", "not") else None)
+        after = [w for w in after or [] if w not in ("a", "an", "the", "any", "one")]
+        if after and all(any(_same_word(w, o) for o in own) for w in after):
+            return True
+    return False
+
+
+# Words of a kind's name that a note needn't repeat to name it: "lactic" names "lactic acid".
+GENERIC_KIND_WORDS = frozenset({"acid", "product", "type", "kind", "option", "thing", "stuff", "formula", "texture",
+                                "then", "gentle", "mild", "plain"})
+
+
+def _names_kind(text: str, kind: str, category: str, product_type: str | None) -> bool:
+    """Whether a text names a kind: every word of its name (or of one of its parts, "cast iron or carbon steel") but
+    the product type's own and GENERIC_KIND_WORDS, read the way kinds are (known short names written out, "Teflon" as
+    "nonstick"), told the same way (_same_word), or two of its words written as one."""
+    aliases = known_aliases("kinds").get(category, {})
+    parts = [[w for w in part if w not in GENERIC_KIND_WORDS] or part
+             for part in kind_parts(kind, product_type or "", aliases)]
+    words = _kind_words(text, aliases)
+    seen = set(words) | {a + b for a, b in zip(words, words[1:])}
+    return any(part and all(any(_same_word(w, s) for s in seen) for w in part) for part in parts)
+
+
+# A question, a hedge or a wish states no advice: a writer saying there's no hurry to start retinol (shown as "Look for:
+# retinol"), "I want one with a steel body", "Is it worth it?" (12 Oct 2026).
+_NO_ADVICE = re.compile(r"\?[\s\"')”]*$|\b(?:don't|do not|dont) think (?:you|anyone) (?:should|need|has to|have to)\b"
+                        r"|\bno (?:need|rush|urgency)\b|\b(?:not|isn't|is not) (?:necessary|essential)\b"
+                        r"|\btoo early to (?:say|tell)\b")
+_WISH = re.compile(r"\b(?:i|we) (?:really )?(?:want|wanted|would like|'d like|wish|need) (?:a|an|one|some|something)\b")
+
+
+def _advice_notes(kind: str, advice: str, notes: list[KindNote], bodies: Mapping[str, str], category: str,
+                  product_type: str | None, asks: tuple[str, ...] = (), picks: Collection[str] = ()) -> list[KindNote]:
+    """A kind's notes that state advice about it, as they can be shown (12 Oct 2026): each names the kind, widened to the
+    sentences before it that do when it doesn't (_standing), and none leans on what the comment doesn't show, is a
+    question or a hedge (_NO_ADVICE), a wish (_WISH, for "Look for"), the opposite of one of the request's `asks` (for
+    "Look for"), or a warning about one of the answer's `picks` (for "Avoid", _names_a_pick)."""
+    widened, leaning = _standing(notes, bodies, lambda text, note: _names_kind(text, kind, category, product_type),
+                                 must_name=True)
+    kept = []
+    for note in widened:
+        text = _plain(note.quote)
+        if note.comment_id in leaning or not _names_kind(note.quote, kind, category, product_type) or (
+                _NO_ADVICE.search(text)):
+            continue
+        if advice == LOOK_FOR and (_WISH.search(text) or _says_the_opposite(note.quote, asks)):
+            continue
+        if advice == AVOID and any(_names_a_pick(note.quote, pick, category) for pick in picks):
+            continue
+        kept.append(note)
+    return kept
+
+
+def _names_a_pick(text: str, pick: str, category: str) -> bool:
+    """Whether a text names a pick, its first name word written with a one-letter slip too ("Greenspan" for GreenPan),
+    when that word is long enough to tell (more than STEM_LETTERS letters)."""
+    if _names_product(text, pick, category):
+        return True
+    first = (_name_words(pick) or [""])[0]
+    return len(first) > STEM_LETTERS and any(one_edit_apart(word, first) for word in _name_words(text))
+
+
+def _about_the_type(kind: str, notes: list[KindNote], product_type: str | None) -> bool:
+    """Whether a kind's name or one of its notes names the product asked for (engine.sources.mentions_product): such
+    kinds come first. Without a product type, every kind is about it."""
+    return not product_type or mentions_product(" ".join([kind] + [n.quote for n in notes]), product_type)
 
 
 def _message(picks: int, product_type: str | None) -> str | None:
@@ -906,19 +1337,21 @@ def _render_pick(pick: Pick) -> list[str]:
         lines += _render_quote_block(quote)
     lines += [f"**{DOWNSIDES_HEADING}**", ""]
     if pick.downsides:
+        lines += [pick.downsides_share, ""] if pick.downsides_share else []
         for quote in pick.downsides:
             lines += _render_quote_block(quote)
     else:
         lines += [NO_DOWNSIDES, ""]
     if pick.care:
         lines += [f"**{CARE_HEADING}**", ""] + _render_care(pick.care)
-    lines += [f"**{BREAKDOWN_HEADING}**", ""] + _render_breakdown(pick.score, pick.breakdown) + [""]
+    # The score breakdown is off the card since 12 Oct 2026 (Noemi: too technical, and it doesn't build trust); the
+    # JSON keeps it (answer_to_dict) and the how-we-score page explains the scoring.
     return lines
 
 
 def _render_care(items: list[ShownCareTip]) -> list[str]:
     """Care tips as a list: the tip in bold, then its quote; a tip that only repeats its quote shows the quote alone."""
-    return [f"- **{item.tip}** {_render_quote_inline(item.quote)}" if item.tip
+    return [f"- **{masked(item.tip)}** {_render_quote_inline(item.quote)}" if item.tip
             else f"- {_render_quote_inline(item.quote)}" for item in items] + [""]
 
 
@@ -945,7 +1378,7 @@ def _one_line(text: str) -> str:
 
 def _render_quote_block(quote: ShownQuote) -> list[str]:
     credit = " · ".join(quote.badges + (f"[{LINK_TEXT}]({quote.url})",))
-    return [f'> "{_one_line(quote.text)}"', f"> — {credit}", ""]
+    return [f'> "{masked(_one_line(quote.text))}"', f"> — {credit}", ""]
 
 
 def _same_words(a: str, b: str) -> bool:
@@ -957,28 +1390,7 @@ def _same_words(a: str, b: str) -> bool:
 
 def _render_quote_inline(quote: ShownQuote) -> str:
     credit = " · ".join(quote.badges + (f"[{LINK_TEXT}]({quote.url})",))
-    return f'"{_one_line(quote.text)}" ({credit})'
-
-
-def _render_breakdown(score: float, b: ScoreBreakdown) -> list[str]:
-    """The score breakdown as a list, signal by signal."""
-    total = f"- Score {score:.2f} = {b.mention_points:.2f} from mentions"
-    if b.kind_bonus:
-        total += f" + {b.kind_bonus:.2f} kind bonus ({b.kind}, support {b.kind_support:.2f})"
-    lines = [
-        total,
-        f"- Recommendations: {b.recommends}, {b.credible_recommends} credible. "
-        f"Voices: {_levels(b.recommend_voices)}. Evidence: {_levels(b.recommend_evidence)}.",
-        f"- Warnings: {b.warnings}, {b.credible_warnings} credible. "
-        f"Voices: {_levels(b.warn_voices)}. Evidence: {_levels(b.warn_evidence)}.",
-        f"- Neutral mentions: {b.neutral} (they never count)",
-        f"- Threads: {b.threads}, {b.credible_threads} with a credible recommendation",
-    ]
-    if b.credible_recommends_fitting_need or b.credible_warnings_fitting_need:
-        lines.append("- " + breakdown_needs_line(b.credible_recommends_fitting_need, b.credible_warnings_fitting_need))
-    if b.kind and not b.kind_bonus:
-        lines.append(f"- Kind: {b.kind} (support {b.kind_support:.2f}; no bonus: it doesn't lead by far)")
-    return lines
+    return f'"{masked(_one_line(quote.text))}" ({credit})'
 
 
 def breakdown_needs_line(recommends: int | str, warnings: int | str) -> str:
@@ -987,6 +1399,19 @@ def breakdown_needs_line(recommends: int | str, warnings: int | str) -> str:
     return BREAKDOWN_NEEDS.format(recommends=recommends, warnings=warnings, boost=f"{NEED_MATCH_BOOST:g}")
 
 
-def _levels(counts: dict[str, int]) -> str:
-    """{"high": 2, "medium": 1, "low": 0} as "2 high, 1 medium, 0 low"."""
-    return ", ".join(f"{n} {level}" for level, n in counts.items())
+# --- Swear words, masked on display (Noemi, 12 Oct 2026) ---
+
+# Whole words only, so "Scunthorpe", "shiitake" and "Dickens" stay as written. Regular expressions that read the same in
+# Python and in the page's JavaScript (engine/templates/search.html masks with this same list).
+MASKED_WORDS = (
+    r"(?:mother)?fuck(?:s|ed|er|ers|ing|in|ery)?", r"(?:bull|horse)?shit(?:s|ty|tier|ting|ted|head|heads|show)?",
+    r"cunts?", r"bitch(?:es|y|ing)?", r"(?:arse|ass)holes?", r"bastards?", r"dick(?:s|head|heads)?",
+    r"piss(?:ed|ing)?", r"twats?", r"wank(?:er|ers|ing)?", r"bollocks",
+)
+_MASKED = re.compile(r"\b(?:" + "|".join(MASKED_WORDS) + r")\b", re.IGNORECASE)
+
+
+def masked(text: str) -> str:
+    """The text as shown: each swear word keeps its first and last letters, the rest starred ("f**k"). Only what is
+    displayed changes: the quote checked word for word, against the saved comment and live, stays the comment's own."""
+    return _MASKED.sub(lambda m: m.group()[0] + "*" * (len(m.group()) - 2) + m.group()[-1], text)
