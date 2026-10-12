@@ -32,6 +32,8 @@ def test_a_bundle_with_a_secret_or_a_cache_is_refused(tmp_path):
     out.mkdir()
     (out / "engine").mkdir()
     make_context.check_bundle(out)  # clean: no error
+    (out / ".env.example").write_text("HF_TOKEN=", encoding="utf-8")  # the repository's template, no secret in it
+    make_context.check_bundle(out)
     (out / ".env").write_text("HF_TOKEN=hf_secret", encoding="utf-8")
     with pytest.raises(make_context.BundleError, match=".env"):
         make_context.check_bundle(out)

@@ -42,7 +42,8 @@ def copy_library(library: Path, dest: Path) -> int:
 
 def check_bundle(bundle: Path) -> None:
     """Raises BundleError when the bundle holds a secret file, a cache, the model folder or git history."""
-    found = sorted({p.name for p in Path(bundle).rglob("*") if p.name in FORBIDDEN or p.name.startswith(".env.")})
+    found = sorted({p.name for p in Path(bundle).rglob("*")
+                    if p.name in FORBIDDEN or (p.name.startswith(".env.") and p.name != ".env.example")})
     if found:
         raise BundleError(f"the bundle must not hold {', '.join(found)}")
 
