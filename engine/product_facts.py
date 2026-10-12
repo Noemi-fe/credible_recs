@@ -194,12 +194,15 @@ def find_facts(name: str, category: str, entries: Iterable[ProductFacts],
                product_type: str | None = None) -> ProductFacts | None:
     """The facts entry of the product called `name`, or None when the list has none.
 
-    Among the entries of the same category whose name means the same product (module 4's rules): the one with the
-    same words (but for spelling slips: engine.match_products.written_alike) first, then one of `product_type` (the
-    request's), then the newest check, then the name, so the choice is always the same. Entries are never merged: two names may be two versions of a product.
+    Among the entries of the same category whose name means the same product (module 4's rules), and of
+    `product_type` (the request's) when it is given (12 Oct 2026: a bare "L'Oréal" hair mask could have taken a
+    shampoo's entry and name): the one with the same words (but for spelling slips: engine.match_products.written_alike)
+    first, then the newest check, then the name, so the choice is always the same. Entries are never merged: two
+    names may be two versions of a product.
     """
     aliases = known_aliases().get(category, {})
-    fits = [e for e in entries if e.category == category and same_product(e.product, name, aliases)]
+    fits = [e for e in entries if e.category == category and same_product(e.product, name, aliases)
+            and (product_type is None or e.product_type == product_type)]
     if not fits:
         return None
     words = product_words(name, aliases)

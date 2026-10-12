@@ -564,18 +564,19 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
         budget = budget.model_copy(update={"currency": BUDGET_DEFAULT_CURRENCY})
         query = query.model_copy(update={"constraints": query.constraints.model_copy(update={"budget": budget})})
     currency = budget.currency if budget else None
-    not_sold = [g for g in groups if not g.loose and (a := find_availability(g.name, g.category, prices)) is not None
-                and a.available is False]
+    product_type = query.product_type
+    not_sold = [g for g in groups if not g.loose
+                and (a := find_availability(g.name, g.category, prices, product_type)) is not None and a.available is False]
     kept, checks = [], {}
     type_words = _type_words(query.product_type)
-    sold_here = [g for g in groups if not g.loose and (a := find_availability(g.name, g.category, prices)) is not None
-                 and a.available is True]
+    sold_here = [g for g in groups if not g.loose
+                 and (a := find_availability(g.name, g.category, prices, product_type)) is not None and a.available is True]
     for group in groups:
         if group.loose:
             # An entry under the brand ("Griswold", "OXO kettle"): second-hand only is shown; not sold leaves the brand
             # pick out, unless one of its own products here is known to be sold, which proves the brand is.
             sold = find_brand_entry(set(group.names) | {uk_name(n) for n in group.names}, group.category, prices,
-                                    type_words)
+                                    type_words, query.product_type)
             unsold_brand = (sold is not None and sold.available is False
                             and not any(_same_brand(group, g) for g in sold_here))
             if unsold_brand or _only_unsold_products(group, groups, not_sold):
@@ -584,11 +585,11 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
             result.not_priced.append(group.name)
             sold = sold if sold is not None and sold.second_hand else None
         else:
-            sold = find_availability(group.name, group.category, prices)
+            sold = find_availability(group.name, group.category, prices, query.product_type)
         if sold is not None and sold.available is False:
             result.left_out_unavailable.append(group.name)
             continue
-        price = None if group.loose else find_price(group.name, group.category, prices, currency)
+        price = None if group.loose else find_price(group.name, group.category, prices, currency, query.product_type)
         check = check_price(price, budget, today)
         if check.status == "over":
             result.left_out_over_budget.append(group.name)

@@ -827,3 +827,11 @@ def test_a_sulfate_free_request_asks_for_it_and_a_shampoo_with_sulfates_clashes(
     gentle = known("Gentle Shampoo", category="haircare", product_type="shampoo", sulfate_free=True)
     assert conflicts(parse_query("sulfate-free shampoo for curly hair"), gentle) == []
     assert unconfirmed_note(["sulfates"]) == "we couldn't confirm it's sulfate-free"
+
+
+def test_a_facts_entry_of_another_type_is_never_used():
+    # From prices round 9: a bare "L'Oréal" hair mask could take the EverPure shampoo's entry, and be shown under its
+    # name. With the request's product type, an entry of another type is left out, not just ranked lower.
+    shampoo = known("L'Oréal EverPure Clarifying Shampoo", category="haircare", product_type="shampoo", sulfate_free=True)
+    assert find_facts("L'Oréal EverPure Clarifying Shampoo", "haircare", [shampoo], "hair mask") is None
+    assert find_facts("L'Oréal EverPure Clarifying Shampoo", "haircare", [shampoo], "shampoo") == shampoo

@@ -1233,6 +1233,7 @@
   {
    "product": "Sage the Bambino Plus",
    "category": "kitchen",
+   "product_type": "espresso machine",
    "price": 399.95,
    "currency": "GBP",
    "shop": "Sage",
@@ -1244,6 +1245,7 @@
   {
    "product": "Sage the Bambino",
    "category": "kitchen",
+   "product_type": "espresso machine",
    "price": 329.95,
    "currency": "GBP",
    "shop": "Sage",
@@ -1255,6 +1257,7 @@
   {
    "product": "Sage the Dual Boiler",
    "category": "kitchen",
+   "product_type": "espresso machine",
    "price": 1249.95,
    "currency": "GBP",
    "shop": "Sage",
@@ -1266,6 +1269,7 @@
   {
    "product": "Sage the Barista Pro",
    "category": "kitchen",
+   "product_type": "espresso machine",
    "price": 729.95,
    "currency": "GBP",
    "shop": "Sage",
@@ -1277,6 +1281,7 @@
   {
    "product": "Sage the Barista Express with Milk Jug Thermal",
    "category": "kitchen",
+   "product_type": "espresso machine",
    "price": 629.95,
    "currency": "GBP",
    "shop": "Sage",
@@ -1288,6 +1293,7 @@
   {
    "product": "Gaggia Classic E24",
    "category": "kitchen",
+   "product_type": "espresso machine",
    "price": 499.0,
    "currency": "GBP",
    "shop": "Gaggia UK",
@@ -1302,6 +1308,7 @@
   {
    "product": "Ninja CRISPi PRO 7-in-1 XL Glass Air Fryer",
    "category": "kitchen",
+   "product_type": "air fryer",
    "price": 264.99,
    "currency": "GBP",
    "shop": "SharkNinja UK",
@@ -1313,6 +1320,7 @@
   {
    "product": "Ninja CRISPi 4-in-1 Portable Glass Air Fryer",
    "category": "kitchen",
+   "product_type": "air fryer",
    "price": 159.99,
    "currency": "GBP",
    "shop": "SharkNinja UK",
@@ -1324,6 +1332,7 @@
   {
    "product": "Typhur Dome 2 Air Fryer",
    "category": "kitchen",
+   "product_type": "air fryer",
    "price": 499.0,
    "currency": "GBP",
    "shop": "Typhur UK",
@@ -1335,6 +1344,7 @@
   {
    "product": "Zojirushi Neuro Fuzzy Rice Cooker & Warmer NS-ZCC10/18",
    "category": "kitchen",
+   "product_type": "rice cooker",
    "price": null,
    "currency": "GBP",
    "shop": "Amazon UK",
@@ -1346,6 +1356,7 @@
   {
    "product": "Zojirushi rice cooker",
    "category": "kitchen",
+   "product_type": "rice cooker",
    "price": null,
    "currency": "GBP",
    "shop": "WAFUU JAPAN",
@@ -1357,6 +1368,7 @@
   {
    "product": "Vitamix 5200",
    "category": "kitchen",
+   "product_type": "blender",
    "price": null,
    "currency": "GBP",
    "shop": "Vitamix UK",
@@ -1368,6 +1380,7 @@
   {
    "product": "Vitamix blender",
    "category": "kitchen",
+   "product_type": "blender",
    "price": null,
    "currency": "GBP",
    "shop": "Vitamix UK",
@@ -1379,6 +1392,7 @@
   {
    "product": "Blendtec",
    "category": "kitchen",
+   "product_type": "blender",
    "price": 499.0,
    "currency": "GBP",
    "shop": "Blendtec UK",
@@ -1390,6 +1404,7 @@
   {
    "product": "SMEG 2 Slice Toaster TSF01",
    "category": "kitchen",
+   "product_type": "toaster",
    "price": 159.95,
    "currency": "GBP",
    "shop": "Smeg UK",
@@ -1401,6 +1416,7 @@
   {
    "product": "Sage the 'A Bit More' Toaster 2 Slice",
    "category": "kitchen",
+   "product_type": "toaster",
    "price": 79.95,
    "currency": "GBP",
    "shop": "Sage",
@@ -1412,6 +1428,7 @@
   {
    "product": "Cuisinart CPT-142 Compact 4-Slice Toaster",
    "category": "kitchen",
+   "product_type": "toaster",
    "price": null,
    "currency": "GBP",
    "shop": "Amazon UK",
@@ -1423,6 +1440,7 @@
   {
    "product": "Ankarsrum Assistent Original",
    "category": "kitchen",
+   "product_type": "stand mixer",
    "price": 695.0,
    "currency": "GBP",
    "shop": "Ankarsrum",
@@ -1437,6 +1455,7 @@
   {
    "product": "KitchenAid NSF Certified Commercial Series 8 Quart Bowl Lift Stand Mixer KSM8990ER",
    "category": "kitchen",
+   "product_type": "stand mixer",
    "price": null,
    "currency": "GBP",
    "shop": "Amazon UK",
@@ -1451,6 +1470,7 @@
   {
    "product": "KitchenAid Artisan Tilt-Head Stand Mixer 4.7L 5KSM125",
    "category": "kitchen",
+   "product_type": "stand mixer",
    "price": 459.0,
    "currency": "GBP",
    "shop": "KitchenAid UK",
@@ -1465,6 +1485,7 @@
   {
    "product": "R 101 XL Food Processor by Robot-Coupe",
    "category": "kitchen",
+   "product_type": "food processor",
    "price": 827.99,
    "currency": "GBP",
    "shop": "Nisbets",
@@ -1476,6 +1497,7 @@
   {
    "product": "Sage the Kitchen Wizz 16",
    "category": "kitchen",
+   "product_type": "food processor",
    "price": 409.95,
    "currency": "GBP",
    "shop": "Sage",
@@ -1490,6 +1512,7 @@
   {
    "product": "TOCOBO Vita Glazed Lip Mask 20ml",
    "category": "skincare",
+   "product_type": "lip balm",
    "price": 15.0,
    "currency": "GBP",
    "shop": "Lookfantastic",
@@ -1501,6 +1524,7 @@
   {
    "product": "Lanolips The Original 101 Ointment Multipurpose Superbalm 15g",
    "category": "skincare",
+   "product_type": "lip balm",
    "price": 10.99,
    "currency": "GBP",
    "shop": "Lanolips UK",
@@ -1512,6 +1536,7 @@
   {
    "product": "Dr. Dan's CortiBalm",
    "category": "skincare",
+   "product_type": "lip balm",
    "price": null,
    "currency": "GBP",
    "shop": "Amazon UK",
@@ -1523,6 +1548,7 @@
   {
    "product": "Malin+Goetz Lip Moisturizer",
    "category": "skincare",
+   "product_type": "lip balm",
    "price": 17.0,
    "currency": "GBP",
    "shop": "Malin+Goetz UK",
@@ -1534,6 +1560,7 @@
   {
    "product": "L'Oréal EverPure Sulfate-Free Clarifying Shampoo",
    "category": "haircare",
+   "product_type": "shampoo",
    "price": null,
    "currency": "GBP",
    "shop": "Amazon UK",
@@ -1548,6 +1575,7 @@
   {
    "product": "L'Oréal Paris",
    "category": "haircare",
+   "product_type": "shampoo",
    "price": null,
    "currency": "GBP",
    "shop": "Boots",
@@ -1559,6 +1587,7 @@
   {
    "product": "Neutrogena T/Gel Therapeutic Shampoo",
    "category": "haircare",
+   "product_type": "shampoo",
    "price": null,
    "currency": "GBP",
    "shop": "Neutrogena UK",
@@ -1570,6 +1599,7 @@
   {
    "product": "Suave Essentials Daily Clarifying Shampoo",
    "category": "haircare",
+   "product_type": "shampoo",
    "price": 9.81,
    "currency": "GBP",
    "shop": "Amazon UK",
@@ -1581,6 +1611,7 @@
   {
    "product": "Kristin Ess Deep Clean Clarifying Shampoo",
    "category": "haircare",
+   "product_type": "shampoo",
    "price": 19.5,
    "currency": "GBP",
    "shop": "Amazon UK",
@@ -1592,6 +1623,7 @@
   {
    "product": "Giovanni 50:50 Balanced Hydrating-Clarifying Shampoo 250ml",
    "category": "haircare",
+   "product_type": "shampoo",
    "price": 10.99,
    "currency": "GBP",
    "shop": "Holland & Barrett",
@@ -1603,6 +1635,7 @@
   {
    "product": "Living Proof Perfect hair Day Dry Shampoo 198ml",
    "category": "haircare",
+   "product_type": "dry shampoo",
    "price": 27.0,
    "currency": "GBP",
    "shop": "Living Proof UK",
@@ -1614,6 +1647,7 @@
   {
    "product": "Not Your Mother's Clean Freak Refreshing Dry Shampoo 198g",
    "category": "haircare",
+   "product_type": "dry shampoo",
    "price": 40.02,
    "currency": "GBP",
    "shop": "Amazon UK",
@@ -1625,6 +1659,7 @@
   {
    "product": "Bumble and bumble Prêt-à-powder Dry Shampoo 56g",
    "category": "haircare",
+   "product_type": "dry shampoo",
    "price": 26.0,
    "currency": "GBP",
    "shop": "Bumble and bumble UK",
@@ -1639,6 +1674,7 @@
   {
    "product": "KLORANE Oil-control Tinted Dry Shampoo with Nettle for Oily, Brown-Dark Hair 150ml",
    "category": "haircare",
+   "product_type": "dry shampoo",
    "price": 11.5,
    "currency": "GBP",
    "shop": "Lookfantastic",

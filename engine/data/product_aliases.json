@@ -36,6 +36,7 @@
       {"short": "C2", "full": "Timemore C2", "seen": ["C2", "Timemore C2"]},
       {"short": "C3", "full": "Timemore C3", "seen": ["C3", "Timemore C3"]},
       {"short": "C40", "full": "Comandante C40", "seen": ["C40", "Comandante C40"]},
+      {"short": "Zoji", "full": "Zojirushi", "seen": ["Zoji", "Zojirushi rice cooker"]},
       {"short": "K2", "full": "Kingrinder K2", "seen": ["K2", "KinGrinder K2"]},
       {"short": "Q2", "full": "1Zpresso Q2", "seen": ["Q2", "1zpresso Q2"]},
       {"short": "JX", "full": "1Zpresso JX", "seen": ["JX Pro", "1zpresso JX-Pro", "jx", "1zpresso JX"]},

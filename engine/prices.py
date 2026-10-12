@@ -8,7 +8,11 @@ exist?") an entry can also say whether the product is still sold. Prices aren't 
 with the code. Its format:
 
     {"prices": [{"product": "Zojirushi kettle",       the product's name as the answer shows it
-                 "category": "kitchen",               skincare or kitchen
+                 "category": "kitchen",               skincare, kitchen or haircare
+                 "product_type": "electric kettle",   optional (12 Oct 2026): the product type the entry is about; it
+                                                      then never prices or sells a product of another type ("KitchenAid"
+                                                      in a blender answer never takes a stand mixer's price); left out,
+                                                      it speaks for any type
                  "price": 120.0,                      what it costs there; null when only availability was checked
                  "currency": "GBP",                   GBP, EUR or USD: the currencies a request can name (the shop's
                                                       currency, even when the price is null)
@@ -33,8 +37,8 @@ iron by Griswold and Wagner, out of production for decades), counts as sold to U
 "Sold second-hand only: eBay UK, checked 10 Oct 2026". Such an entry's price is usually null: second-hand prices vary
 from one pan to the next, so `todo` never asks for one.
 
-How a product finds its price (find_price): an entry with a price, of the same category, whose name means the same
-product, by module 4's rules (engine.match_products.same_product, with the category's known short names, so "Sage"
+How a product finds its price (find_price): an entry with a price, of the same category (and of the request's product
+type, when the entry names one), whose name means the same product, by module 4's rules (engine.match_products.same_product, with the category's known short names, so "Sage"
 finds "Breville"). When several fit: the one with the same words (but for spelling slips, 10 Oct 2026) first, then
 one in the request's currency, then the most recently checked, then the cheapest.
 
@@ -119,6 +123,10 @@ class Price(Record):
     checked_on: date
     # True: the shop sells it; False: no longer sold; None (left out of the entry): not checked. JSON true/false only.
     available: StrictBool | None = None
+    # The product type the entry is about ("stand mixer"), when given: it then never prices or sells a product of
+    # another type, so a bare "KitchenAid" in a blender answer doesn't take the stand mixer's price (12 Oct 2026).
+    # Left out: it speaks for any type, as before.
+    product_type: str | None = Field(default=None, min_length=1)
     # True: no longer made and sold only second-hand (on eBay UK, or by a UK vintage dealer), which counts as sold
     # (Noemi, 10 Oct 2026); so only with "available": true. False (left out): sold new, or not checked. JSON true/false.
     second_hand: StrictBool = False
@@ -170,14 +178,15 @@ def load_prices(path: Path = DEFAULT_PRICES) -> list[Price]:
 
 # --- One product's price ---
 
-def find_price(name: str, category: str, prices: Iterable[Price], currency: str | None = None) -> Price | None:
+def find_price(name: str, category: str, prices: Iterable[Price], currency: str | None = None,
+               product_type: str | None = None) -> Price | None:
     """The price of the product called `name`, or None when the list has none.
 
     `currency` is the request's, when it has a budget: a price in it is preferred to one in another currency. An entry
-    with no price (only its availability was checked) is never a price.
+    with no price (only its availability was checked) is never a price. `product_type`: the request's (entries_for).
     """
     aliases = known_aliases().get(category, {})
-    fits = [p for p in entries_for(name, category, prices) if p.price is not None]
+    fits = [p for p in entries_for(name, category, prices, product_type) if p.price is not None]
     if not fits:
         return None
     words = product_words(name, aliases)
@@ -189,7 +198,8 @@ def find_price(name: str, category: str, prices: Iterable[Price], currency: str 
     return min(fits, key=preference)
 
 
-def find_availability(name: str, category: str, prices: Iterable[Price]) -> Price | None:
+def find_availability(name: str, category: str, prices: Iterable[Price],
+                      product_type: str | None = None) -> Price | None:
     """The entry that says whether the product called `name` is still sold, or None when no entry says.
 
     Among the entries that say (available true or false): the one with the same words (but for spelling slips) first,
@@ -198,7 +208,7 @@ def find_availability(name: str, category: str, prices: Iterable[Price]) -> Pric
     (10 Oct 2026); then the shop's name, so the choice is always the same.
     """
     aliases = known_aliases().get(category, {})
-    fits = [p for p in entries_for(name, category, prices) if p.available is not None]
+    fits = [p for p in entries_for(name, category, prices, product_type) if p.available is not None]
     if not fits:
         return None
     words = product_words(name, aliases)
@@ -207,7 +217,7 @@ def find_availability(name: str, category: str, prices: Iterable[Price]) -> Pric
 
 
 def find_brand_entry(names: Iterable[str], category: str, prices: Iterable[Price],
-                     type_words: Iterable[str] = ()) -> Price | None:
+                     type_words: Iterable[str] = (), product_type: str | None = None) -> Price | None:
     """The newest entry under a brand pick's brand that says whether it is sold, or None.
 
     `names` are the names writers used for the brand ("Griswold", "Griswolds"). An entry is under the brand's name when
@@ -225,7 +235,7 @@ def find_brand_entry(names: Iterable[str], category: str, prices: Iterable[Price
         words = tuple(product_words(known, aliases))
         return any(words[:len(b)] == b and set(words[len(b):]) <= extra for b in brand)
 
-    fits = [p for p in prices if p.category == category and p.available is not None
+    fits = [p for p in prices if p.category == category and p.available is not None and _of_type(p, product_type)
             and any(under_brand(known) for known in [p.product, *p.also_called])]
     return min(fits, key=_newest_check_first) if fits else None
 
@@ -247,11 +257,17 @@ def _newest_check_first(p: Price) -> tuple:
     return -p.checked_on.toordinal(), not p.available, p.second_hand, p.shop.casefold()
 
 
-def entries_for(name: str, category: str, prices: Iterable[Price]) -> list[Price]:
-    """Every entry of the same category whose name means the same product as `name`, by module 4's rules."""
+def entries_for(name: str, category: str, prices: Iterable[Price], product_type: str | None = None) -> list[Price]:
+    """Every entry of the same category whose name means the same product as `name`, by module 4's rules, less those
+    about another product type than `product_type` (the request's) when they say which type they are about."""
     aliases = known_aliases().get(category, {})
-    return [p for p in prices if p.category == category
+    return [p for p in prices if p.category == category and _of_type(p, product_type)
             and any(same_product(known, name, aliases) for known in [p.product, *p.also_called])]
+
+
+def _of_type(entry: Price, product_type: str | None) -> bool:
+    """Whether an entry can speak for a product of this type: it names no type, no type is asked about, or the same."""
+    return entry.product_type is None or product_type is None or entry.product_type == product_type
 
 
 def check_price(price: Price | None, budget: Budget | None, today: date) -> PriceCheck:
@@ -276,12 +292,12 @@ def check_price(price: Price | None, budget: Budget | None, today: date) -> Pric
 MISSING_WORDS = {"entry": "no entry yet", "price": "no price yet", "availability": "availability not checked yet"}
 
 
-def missing(name: str, category: str, prices: Iterable[Price]) -> list[str]:
+def missing(name: str, category: str, prices: Iterable[Price], product_type: str | None = None) -> list[str]:
     """What the list still lacks for one product: ["entry"] when it has no entry for it; otherwise "price" when none of
     its entries has a price, and "availability" when none says whether it is sold. [] when nothing is missing. A
     second-hand entry counts as a price looked at: second-hand prices vary from one pan to the next, so its price stays
     null on purpose (10 Oct 2026)."""
-    entries = entries_for(name, category, prices)
+    entries = entries_for(name, category, prices, product_type)
     if not entries:
         return ["entry"]
     return ([] if any(p.price is not None or p.second_hand for p in entries) else ["price"]) + (
@@ -336,11 +352,12 @@ def todo(questions_path: Path | None = None, library_dir: Path | None = None, pr
         for pick in picks:
             if pick.name in run.not_priced:
                 result.brand_picks.append(pick.name)
-            elif lacking := missing(pick.name, run.query.category, prices):
+            elif lacking := missing(pick.name, run.query.category, prices, run.query.product_type):
                 result.to_check.append(PickToCheck(pick.name, lacking))
         behind = candidates(run, limit=len(picks) + PRICES_TODO_NEXT_IN_LINE)[len(picks):]
         for name in behind:
-            if name not in run.not_priced and (lacking := missing(name, run.query.category, prices)):
+            lacking = missing(name, run.query.category, prices, run.query.product_type)
+            if name not in run.not_priced and lacking:
                 result.next_in_line.append(PickToCheck(name, lacking))
         results.append(result)
     return results

@@ -203,3 +203,21 @@ def test_a_name_with_a_slip_finds_its_own_price_before_a_shorter_name():
                 checked_on=TODAY - timedelta(days=5))
     foam = price("Beplain mungbean cleanser", category="skincare", amount=12.0)
     assert find_price("Beplain mungbean greenful oil cleasner", "skincare", [foam, oil]).price == 18.0
+
+
+# --- Product types (12 Oct 2026) ---
+
+def test_a_typed_entry_never_prices_or_sells_another_type():
+    # From prices round 9: a bare "KitchenAid" in a blender answer took the KitchenAid stand mixer's price. An entry
+    # may say which product type it is about; it then never speaks for a product of another type. Untyped entries work
+    # as before.
+    from engine.prices import find_availability, find_brand_entry
+
+    mixer = Price.model_validate(entry(product="KitchenAid Artisan stand mixer", category="kitchen", price=459.0,
+                                       product_type="stand mixer", available=True))
+    assert find_price("KitchenAid", "kitchen", [mixer], product_type="blender") is None
+    assert find_availability("KitchenAid", "kitchen", [mixer], product_type="blender") is None
+    assert find_brand_entry(["KitchenAid"], "kitchen", [mixer], product_type="blender") is None
+    assert find_price("KitchenAid Artisan stand mixer", "kitchen", [mixer], product_type="stand mixer") == mixer
+    untyped = Price.model_validate(entry(product="KitchenAid Artisan stand mixer", category="kitchen", price=459.0))
+    assert find_price("KitchenAid Artisan stand mixer", "kitchen", [untyped], product_type="blender") == untyped
