@@ -35,7 +35,7 @@ How a product finds its facts (find_facts), as a product finds its price (engine
 category whose name means the same product, by module 4's rules (engine.match_products.same_product, with the
 category's known short names, so "Sage" finds "Breville"). When several fit: the one with the same words (but for
 spelling slips, 10 Oct 2026) first, then one of the requested product type, then the most recently checked. A brand
-pick ("Lodge (their cast iron skillets)") is no single product, so its facts are never looked up. So when the request has a hard requirement its
+pick ("Lodge cast iron skillet line") is no single product, so its facts are never looked up. So when the request has a hard requirement its
 product type can have (hard_requirements: "non-stick frying pan without PFAS"), brand picks are left out and listed with
 the reason uncheckable_brand_reason gives ("a whole brand can't be checked for PFAS or a non-stick coating"; decided by
 Claude, 10 Oct 2026, as Noemi asked): a brand's other pans may well be PTFE-coated. A requirement its type can't have

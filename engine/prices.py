@@ -49,7 +49,7 @@ pipeline leaves out a product whose answer is "no longer sold" (engine.pipeline,
 and however old the check: unlike a price, a product that stopped being sold rarely comes back, and an answer should never
 recommend it. A product with no availability check is kept, and its answer says so.
 
-A brand pick ("Griswold (their cast iron skillets)") has no single product, so it is never priced or checked this way.
+A brand pick ("Griswold cast iron skillet line") has no single product, so it is never priced or checked this way.
 An entry under the brand's own name speaks for it (find_brand_entry): when the newest one ("Griswold") says it is sold
 second-hand only, the brand pick says so too (10 Oct 2026). Since late on 10 Oct 2026, an entry under the brand's name
 followed only by the product type's own words ("OXO kettle") speaks for the brand's products of that type, and when the

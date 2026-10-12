@@ -448,8 +448,9 @@ def test_a_brand_pick_has_no_single_product_so_its_facts_are_never_looked_up(tmp
     lodge = known("Lodge", category="kitchen", product_type="frying pan", induction=False)
     result = answer_request("cast iron skillet for induction that lasts", library_dir=skillet_library(tmp_path),
                             prices=[], product_facts=[lodge], today=TODAY)
-    assert "Lodge (their cast iron skillets)" in names(result.answer.picks)
-    assert "Lodge (their cast iron skillets)" not in [item.name for item in result.left_out_not_suited]
+    # Changed on purpose 12 Oct 2026 (Noemi's wording): a brand pick is shown as the brand's line.
+    assert "Lodge cast iron skillet line" in names(result.answer.picks)
+    assert "Lodge cast iron skillet line" not in [item.name for item in result.left_out_not_suited]
 
 
 def test_cautions_stay_when_the_live_check_writes_the_answer_again(tmp_path):
@@ -561,8 +562,9 @@ def test_todo_names_brand_picks_apart(tmp_path):
         "CeraVe": 3, "CeraVe Moisturising Cream": 1, "CeraVe Facial Moisturising Lotion": 1,
         "Vanicream Facial Moisturiser": 3, "La Roche-Posay Toleriane Double Repair": 3})
     [question] = product_facts.todo(questions_file(tmp_path, ["moisturiser for oily skin"]), lib, [], prices=[])
-    assert question.brand_candidates == ["CeraVe (their moisturisers)"]
-    assert "CeraVe (their moisturisers)" not in by_name(question)
+    # Changed on purpose 12 Oct 2026 (Noemi's wording): a brand pick is shown as the brand's line.
+    assert question.brand_candidates == ["CeraVe moisturiser line"]
+    assert "CeraVe moisturiser line" not in by_name(question)
     assert question.facts_that_matter == ["texture"]
 
 

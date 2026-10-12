@@ -175,11 +175,12 @@ def test_a_brand_pick_is_never_checked_for_availability(tmp_path):
     # is listed as sold. Changed on purpose late on 10 Oct 2026: an entry under the brand's own name that says it isn't
     # sold now leaves the brand pick out (OXO's 120 V kettles), but not while one of its own products here is known to
     # be sold, as here: that proves the brand is.
+    # Changed on purpose 12 Oct 2026 (Noemi's wording): a brand pick is shown as the brand's line.
     result = answer_request("cast iron skillet that lasts", library_dir=skillet_library(tmp_path), today=TODAY,
                             prices=[listed("Lodge", available=False), listed("Lodge Blacklock skillet")])
-    assert "Lodge (their cast iron skillets)" in [pick.name for pick in result.answer.picks]
-    assert "Lodge (their cast iron skillets)" in result.not_priced
-    assert "Lodge (their cast iron skillets)" not in result.left_out_unavailable
+    assert "Lodge cast iron skillet line" in [pick.name for pick in result.answer.picks]
+    assert "Lodge cast iron skillet line" in result.not_priced
+    assert "Lodge cast iron skillet line" not in result.left_out_unavailable
 
 
 # --- The answer ---
@@ -312,8 +313,9 @@ def test_todo_skips_products_no_longer_sold_and_brand_picks(tmp_path):
     [kettle] = prices.todo(questions_file(tmp_path, [REQUEST]), three_kettles(tmp_path), gone)
     assert "Bonavita kettle" not in by_name(kettle) and kettle.picks == 2  # no longer sold: not a pick
     [skillet] = prices.todo(questions_file(tmp_path, ["cast iron skillet that lasts"]), skillet_library(tmp_path / "2"), [])
-    assert "Lodge (their cast iron skillets)" not in by_name(skillet)  # a brand pick is never priced
-    assert "Lodge (their cast iron skillets)" in skillet.brand_picks
+    # Changed on purpose 12 Oct 2026 (Noemi's wording): a brand pick is shown as the brand's line.
+    assert "Lodge cast iron skillet line" not in by_name(skillet)  # a brand pick is never priced
+    assert "Lodge cast iron skillet line" in skillet.brand_picks
 
 
 def test_todo_runs_without_live_checks(tmp_path, monkeypatch):
@@ -341,7 +343,8 @@ def test_command_line_todo_prints_names_and_product_types_only(tmp_path, monkeyp
     assert "Zojirushi kettle" not in out  # nothing missing
     assert "  b02: no picks\n" in out
     assert "  b03 cast iron skillet (kitchen)\n" in out
-    assert "    Lodge (their cast iron skillets): a brand pick, never priced or checked\n" in out
+    # Changed on purpose 12 Oct 2026 (Noemi's wording): a brand pick is shown as the brand's line.
+    assert "    Lodge cast iron skillet line: a brand pick, never priced or checked\n" in out
     assert out.rstrip().endswith("2 picks to look up: 1 with no entry yet, 1 with an entry still missing a price or "
                                  "an availability check.")
     assert "lasted" not in out and "years" not in out  # never a quote

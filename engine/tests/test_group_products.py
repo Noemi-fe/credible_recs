@@ -8,7 +8,7 @@ import random
 from engine import config
 from engine.extract import CheckResult, ExtractedMention
 from engine.group_products import (
-    ProductMention, brand_pick_name, group_of, group_products, mentions_from_checked, uk_name,
+    ProductMention, brand_pick_name, group_of, group_products, mentions_from_checked, plural, uk_name,
 )
 from engine.match_products import load_aliases, make_aliases
 from engine.query import PRODUCT_TYPES
@@ -297,19 +297,26 @@ def test_the_uk_names_come_from_the_config():
 
 
 def test_a_brand_pick_says_which_products_it_means():
-    assert brand_pick_name("Lodge", "cast iron skillet") == "Lodge (their cast iron skillets)"
-    assert brand_pick_name("Zojirushi", "electric kettle") == "Zojirushi (their electric kettles)"
-    assert brand_pick_name("Victorinox", "chef knife") == "Victorinox (their chef knives)"
-    assert brand_pick_name("Paula's Choice", "exfoliant") == "Paula's Choice (their exfoliants)"
+    # Changed on purpose 12 Oct 2026 (Noemi's wording, from testing the demo: "L'Oreal hair oil serum line"): a brand
+    # pick is the brand's line of the requested type, "<Brand> <product type> line"; it was "Lodge (their cast iron
+    # skillets)".
+    assert brand_pick_name("Lodge", "cast iron skillet") == "Lodge cast iron skillet line"
+    assert brand_pick_name("Zojirushi", "electric kettle") == "Zojirushi electric kettle line"
+    assert brand_pick_name("Victorinox", "chef knife") == "Victorinox chef knife line"
+    assert brand_pick_name("Paula's Choice", "exfoliant") == "Paula's Choice exfoliant line"
+    assert brand_pick_name("Nizoral", "shampoo") == "Nizoral shampoo line"
+    assert brand_pick_name("Le Creuset", "dutch oven") == "Le Creuset Dutch oven line"  # as a name writes the type
 
 
 def test_a_product_type_the_open_model_names_gets_a_plural_too():
     # Types module 1 doesn't list (the open model's, 11 Oct 2026) follow English's usual rules.
-    assert brand_pick_name("Ninja", "air fryer") == "Ninja (their air fryers)"
-    assert brand_pick_name("OXO", "dish brush") == "OXO (their dish brushes)"
-    assert brand_pick_name("Microplane", "zester") == "Microplane (their zesters)"
-    assert brand_pick_name("Bodum", "french press") == "Bodum (their french presses)"
-    assert brand_pick_name("Yamachu", "wok") == "Yamachu (their woks)"
+    for product_type, plural_ in [("air fryer", "air fryers"), ("dish brush", "dish brushes"), ("zester", "zesters"),
+                                  ("french press", "french presses"), ("wok", "woks"), ("rice cooker", "rice cookers")]:
+        assert plural(product_type) == plural_
+    # Changed on purpose 12 Oct 2026 (Noemi's wording): a brand pick names the type itself, "<Brand> <type> line",
+    # so the plural is no longer part of its name (it was "Ninja (their air fryers)").
+    assert brand_pick_name("Ninja", "air fryer") == "Ninja air fryer line"
+    assert brand_pick_name("Zojirushi", "rice cooker") == "Zojirushi rice cooker line"
 
 
 def test_every_product_type_has_a_plural():
@@ -322,8 +329,25 @@ def test_every_product_type_has_a_plural():
 
 def test_a_brand_pick_name_that_already_says_the_type_has_no_bracket():
     # Noemi, 9 Oct 2026: "CeraVe cleanser (their cleansers)" reads oddly; the name already says what it is.
+    # Changed on purpose 12 Oct 2026 (Noemi's wording): the same holds for "<Brand> <type> line", never "CeraVe cleanser
+    # cleanser line".
     assert brand_pick_name("CeraVe cleanser", "cleanser") == "CeraVe cleanser"
-    assert brand_pick_name("Lodge", "cast iron skillet") == "Lodge (their cast iron skillets)"
+    assert brand_pick_name("Lodge cast iron", "cast iron skillet") == "Lodge cast iron"
+    assert brand_pick_name("Lodge", "cast iron skillet") == "Lodge cast iron skillet line"
+
+
+def test_a_brand_pick_name_never_says_part_of_its_type_twice():
+    # Found measuring 27 answers on 12 Oct 2026: a line name ending in part of the type (or a plural or slip of it) would
+    # say it twice once the type is added ("Zojirushi cooker rice cooker line"). Those last words give way to the type.
+    assert brand_pick_name("Zojirushi cooker", "rice cooker") == "Zojirushi rice cooker line"
+    assert brand_pick_name("KitchenAid processor", "food processor") == "KitchenAid food processor line"
+    assert brand_pick_name("Torriden Ceramide Lip", "lip balm") == "Torriden Ceramide lip balm line"
+    assert brand_pick_name("8 inch Victorinox chefs", "chef knife") == "8 inch Victorinox chef knife line"
+    assert brand_pick_name("Ouai shanpoo", "shampoo") == "Ouai shampoo line"  # a writer's slip for "shampoo"
+    assert brand_pick_name("Lodge pans", "frying pan") == "Lodge pans"  # "pans" says the type already: shown as it is
+    # Other last words stay.
+    assert brand_pick_name("Hario Mini", "coffee grinder") == "Hario Mini coffee grinder line"
+    assert brand_pick_name("Lodge pans", "cast iron skillet") == "Lodge pans cast iron skillet line"
 
 
 # --- A loose name that is one product's name but for the word "skin" (10 Oct 2026) ---

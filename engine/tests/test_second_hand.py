@@ -27,7 +27,7 @@ from engine.tests.test_web import ask
 
 TODAY = date(2026, 10, 9)
 REQUEST = "cast iron skillet that lasts"
-GRISWOLD = "Griswold (their cast iron skillets)"
+GRISWOLD = "Griswold cast iron skillet line"  # changed on purpose 12 Oct 2026 (Noemi's wording): the brand's line
 WAGNER = "Wagner 1891 skillet"
 LINE = "Sold second-hand only: Made-up Vintage Dealer, checked 9 Oct 2026"
 

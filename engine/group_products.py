@@ -46,7 +46,8 @@ same mentions, in any order, give the same groups and keys.
 Two more steps happen only when the name is shown to a shopper (engine/pipeline.py calls them; Noemi's decisions of
 9 Oct 2026). Grouping itself keeps the name above.
 - uk_name: the brand the UK knows a product by (config.UK_BRAND_NAMES): "Sage Smart Grinder Pro", not "Breville".
-- brand_pick_name: a brand or line ranked as a pick says so: "Lodge (their cast iron skillets)".
+- brand_pick_name: a brand or line ranked as a pick says so: "Lodge cast iron skillet line" (Noemi's wording of
+  12 Oct 2026; it was "Lodge (their cast iron skillets)").
 """
 
 import re
@@ -54,10 +55,10 @@ from collections import Counter, defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
-from engine.config import BRAND_PICK_NAME, PRODUCT_TYPE_PLURALS, UK_BRAND_NAMES
+from engine.config import BRAND_PICK_NAME, PRODUCT_TYPE_PLURALS, PRODUCT_TYPE_SHOWN, UK_BRAND_NAMES
 from engine.extract import CheckResult
 from engine.match_products import (
-    Aliases, comparable, join_split_words, known_aliases, normalize_name, product_words, same_words,
+    Aliases, comparable, join_split_words, known_aliases, normalize_name, product_words, same_words, written_alike,
 )
 
 # Words that never tell two products apart, so a loose name equal to a product's name but for them names that product
@@ -312,14 +313,22 @@ def uk_name(name: str, shown: Mapping[str, str] = UK_BRAND_NAMES) -> str:
 
 
 def brand_pick_name(brand: str, product_type: str) -> str:
-    """The name a brand or line is shown under when it is ranked as a pick: "Lodge (their cast iron skillets)"
-    (decision 9; the wording is config.BRAND_PICK_NAME). A name that already says the type is shown as it is:
-    "CeraVe cleanser", not "CeraVe cleanser (their cleansers)" (Noemi, 9 Oct 2026)."""
+    """The name a brand or line is shown under when it is ranked as a pick, the brand's whole line of the requested
+    type: "Lodge cast iron skillet line", "Zojirushi rice cooker line" (decision 9; Noemi's wording of 12 Oct 2026,
+    config.BRAND_PICK_NAME; it was "Lodge (their cast iron skillets)"). A name that already says the type is shown as it
+    is: "CeraVe cleanser", never "CeraVe cleanser cleanser line" (Noemi, 9 Oct 2026). Nor does a name say part of its
+    type twice: its last words that are the type's own words, or a plural or slip of them, give way to the type
+    ("Zojirushi cooker" is the "Zojirushi rice cooker line"; 12 Oct 2026). A type is written as a name shows it
+    (config.PRODUCT_TYPE_SHOWN): "Le Creuset Dutch oven line"."""
     from engine.sources import mentions_product
 
     if mentions_product(brand, product_type):
         return brand
-    return BRAND_PICK_NAME.format(brand=brand, products=plural(product_type))
+    type_words = [[word] for word in product_words(product_type)]
+    words = brand.split()
+    while len(words) > 1 and any(written_alike(product_words(words[-1]), word) for word in type_words):
+        words.pop()
+    return BRAND_PICK_NAME.format(brand=" ".join(words), product_type=PRODUCT_TYPE_SHOWN.get(product_type, product_type))
 
 
 def plural(product_type: str) -> str:

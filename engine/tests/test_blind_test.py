@@ -198,12 +198,15 @@ def test_a_link_in_our_quote_becomes_a_label_as_for_every_tool():
 
 
 def test_a_brand_picks_model_is_part_of_its_reason():
-    shown = shown_from_ours({"picks": [pick(1, "Victorinox (their chef knives)", model="Victorinox Fibrox chef knife")]})
+    # Changed on purpose 12 Oct 2026 (Noemi's wording): a brand pick is shown as the brand's line, in the blind-test
+    # view too ("Victorinox chef knife line"; it was "Victorinox (their chef knives)").
+    shown = shown_from_ours({"picks": [pick(1, "Victorinox chef knife line", model="Victorinox Fibrox chef knife")]})
+    assert shown.startswith("**1. Victorinox chef knife line**")
     assert "Most named model: Victorinox Fibrox chef knife. Recommended by 3 credible voices" in shown
 
 
 def test_a_pick_sold_second_hand_only_says_so():
-    shown = shown_from_ours({"picks": [pick(1, "Griswold (their cast iron skillets)",
+    shown = shown_from_ours({"picks": [pick(1, "Griswold cast iron skillet line",  # the line's name: 12 Oct 2026
                                             availability={"text": "Sold second-hand only: eBay UK, checked 10 Oct 2026",
                                                           "second_hand": True})]})
     assert "Sold second-hand only." in shown and "eBay" not in shown

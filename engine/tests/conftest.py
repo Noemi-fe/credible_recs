@@ -45,6 +45,13 @@ def _no_real_product_facts(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_brand_lines(monkeypatch):
+    # The same for data/brand_lines.json (12 Oct 2026): it says which real brands sell which kinds of product, so a
+    # made-up library's real brand names would be ranked or left out by it. Tests about brand lines pass their own.
+    monkeypatch.setattr(pipeline, "load_brand_lines", lambda *args, **kwargs: [])
+
+
+@pytest.fixture(autouse=True)
 def _no_network(monkeypatch):
     # Found on 10 Oct 2026: a test reached the real Bright Data API through the new "auto" reader and spent 255 of
     # Noemi's records. Every client (Bright Data, Arctic Shift, Parse, Reddit's embed page) goes through

@@ -226,9 +226,10 @@ PIPELINE_MAX_THREADS = 16
 # 48 gave three (Nizoral, Neutrogena T-Gel, Head & Shoulders for an oily scalp).
 PIPELINE_MORE_THREADS = 48
 # Brand-only picks (decided by Noemi, 9 Oct 2026, decision 9): a brand or line that fits several products ("Lodge",
-# "CeraVe") is ranked, under a name that says so ("Lodge (their cast iron skillets)"), when its threads make the
-# product clear (BRAND_PICK_TITLE_SHARE below); otherwise it is left out, and listed on the result. False leaves
-# every brand or line name out, as before 9 Oct 2026.
+# "CeraVe") is ranked, under a name that says so ("Lodge cast iron skillet line", BRAND_PICK_NAME below), when its
+# threads make the product clear (BRAND_PICK_TITLE_SHARE below) or, since 12 Oct 2026, when the brand-lines list says
+# the brand sells that kind of product (BRAND_LINE_NOT_SOLD below); otherwise it is left out, and listed on the result.
+# False leaves every brand or line name out, as before 9 Oct 2026.
 PIPELINE_BRAND_PICKS = True
 
 # --- Commenter profiles (proposed 9 Oct 2026) ---
@@ -255,9 +256,15 @@ BRAND_PICK_TITLE_SHARE = 0.5
 # iron threads for its stainless and non-stick pans only, was ranked as "All-Clad (their cast iron skillets)".
 # False drops this condition.
 BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE = True
-# The name such a pick is shown under. PROPOSED wording: "Lodge (their cast iron skillets)".
-BRAND_PICK_NAME = "{brand} (their {products})"
-# The plural of each product type (engine/query.py, PRODUCT_TYPES), for the name above.
+# The name such a pick is shown under: "Lodge cast iron skillet line". Noemi's wording of 12 Oct 2026, from testing the
+# demo ("L'Oreal hair oil serum line"); from 9 Oct it was "Lodge (their cast iron skillets)". A name that already says
+# the type is shown as it is: "CeraVe cleanser" (Noemi, 9 Oct 2026), never "CeraVe cleanser cleanser line".
+BRAND_PICK_NAME = "{brand} {product_type} line"
+# A product type as a name shows it, when that isn't module 1's lowercase name: "Le Creuset Dutch oven line".
+PRODUCT_TYPE_SHOWN: dict[str, str] = {"dutch oven": "Dutch oven"}
+# The plural of each product type (engine/query.py, PRODUCT_TYPES): for the name of a brand line left out because its
+# brand doesn't sell them ("Batiste doesn't sell shampoos", BRAND_LINE_NOT_SOLD), and for the words a price or facts
+# entry under a brand's name may add ("OXO kettles"; engine/pipeline.py, _type_words).
 PRODUCT_TYPE_PLURALS: dict[str, str] = {
     "exfoliant": "exfoliants",
     "cleanser": "cleansers",
@@ -571,7 +578,7 @@ PRODUCT_FACTS_TODO_CANDIDATES = 5
 # Decided by Claude (the orchestrator) on 10 Oct 2026, as Noemi asked, and reported to her. Three fixes to what a pick
 # shows, found in the 10 Oct evaluation run (eval/RUNS.md).
 #
-# 1. A brand pick never appears next to its own specific product ("Victorinox (their chef knives)" next to "Victorinox
+# 1. A brand pick never appears next to its own specific product ("Victorinox chef knife line" next to "Victorinox
 # chef's knife"): when both qualify, the specific product stays and the brand pick steps aside (engine/pipeline.py). No
 # value to set.
 #
@@ -687,7 +694,7 @@ SERVICE_TYPE_PATTERNS = (r"laser", r"procedures?", r"microneedling", r"salon", r
                          r"(salon |spa )?facials?$")
 
 # --- A brand pick names its most recommended model (10 Oct 2026) ---
-# Decided by Claude, reported to Noemi. Under a brand pick ("Victorinox (their chef knives)"), the answer names the model
+# Decided by Claude, reported to Noemi. Under a brand pick ("Victorinox chef knife line"), the answer names the model
 # of that brand its credible writers recommend most, when at least this many of them recommend it and its name says
 # more than the brand and these generic words (or holds a number: "Lodge 10 skillet"): "Lodge cast iron pan" names no
 # model. Only products still in the ranking count: never one left out as another type, not sold or over budget.
@@ -835,3 +842,17 @@ ARCHIVE_SEARCH_MAX_FAILURES = 3
 # "conditioner": 35 s for the last 3 years, 11 s for the 6 before). So both rounds are bounded: the last
 # ARCHIVE_OLDER_YEARS years, then back to ARCHIVE_OLDEST_FACTOR times as far (9 years).
 ARCHIVE_OLDEST_FACTOR = 3
+
+# --- Brand lines (Noemi's note of 12 Oct 2026, from testing the demo) ---
+# "Are we making sure that the brand mentioned doesn't sell the product we're looking for?" Decided by Claude, as she
+# asked, and reported to her: data/brand_lines.json records, from the makers' own pages, whether a brand sells a kind
+# of product (engine/brand_lines.py). A brand or line name counts for a request, as the brand's whole line, when the
+# list says its brand sells that kind of product, whatever its threads' clues; when the list says it doesn't, the name
+# is left out with this reason ("Batiste doesn't sell shampoos": its whole range is dry shampoos). With no entry, the
+# clues decide as before (BRAND_PICK_TITLE_SHARE, BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE).
+BRAND_LINE_NOT_SOLD = "{brand} doesn't sell {products}"
+# What the page's footnote counts (Noemi asked whether its numbers were mentions or threads: they are names). The
+# answer's JSON names this many of the names left out of each kind, products of another type and brand or line names,
+# for the footnote to give as examples ("19 brand or line names that could mean several products, such as L'Oréal,
+# Suave and Aveda"). Chosen by Claude: a handful, so the footnote stays short.
+LEFT_OUT_NAMES_SHOWN = 3
