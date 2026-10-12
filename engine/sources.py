@@ -126,12 +126,14 @@ class LocalSource:
 
     The folder is read on the first request and kept in memory. Any file with a problem stops the request
     with the full list of problems (engine.gold.GoldSetError), rather than quietly leaving the thread out.
+    `threads`: the folder's threads already read (the library kept in memory between answers, engine.library_cache;
+    12 Oct 2026), so the folder isn't read again.
     """
 
-    def __init__(self, folder: Path, skip_broken: bool = False):
+    def __init__(self, folder: Path, skip_broken: bool = False, threads: list[Thread] | None = None):
         self.folder = Path(folder)
         self.skip_broken = skip_broken  # answers leave a broken file out (engine.gold.load_threads), 11 Oct 2026
-        self._threads: list[Thread] | None = None
+        self._threads: list[Thread] | None = threads
 
     def find_threads(self, query: ParsedQuery, limit: int = 3) -> list[Thread]:
         if query.status != "ok" or limit < 1:

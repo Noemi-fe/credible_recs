@@ -122,11 +122,12 @@ from engine.contradictions import contradicting_writers
 from engine.credibility import (
     VoiceScore, badges, copied_comment_ids, copy_groups, mention_weight, repeated_copies, score_evidence, score_voice,
 )
-from engine.extract import CheckResult, load_checked, shown_comment_ids
+from engine.extract import CheckResult, shown_comment_ids
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
 from engine.group_products import ProductGroup, ProductMention, brand_pick_name, group_of, group_products, plural, uk_name
 from engine.gold import DEFAULT_GOLD_DIR
 from engine.library import DEFAULT_LIBRARY_DIR, checked_live_within
+from engine.library_cache import loaded as loaded_library
 from engine.match_products import known_aliases, normalize_name, product_words, same_product
 from engine.models import Comment, Thread
 from engine.needs import Need, needs_met, request_needs
@@ -276,9 +277,13 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
         return result
     today = today or _today()
     threads_dir = Path(library_dir) / "threads"
-    # A broken file is left out and named, never quietly: one had stopped every answer (11 Oct 2026).
-    every_checked = load_checked(threads_dir, skip_broken=True, problems=result.skipped_files)
-    candidates = LocalSource(threads_dir, skip_broken=True).find_threads(query, limit=sys.maxsize)  # limit: below
+    # Read once and kept in memory until one of its files changes (engine.library_cache; latency, 12 Oct 2026). A broken
+    # file is left out and named, never quietly: one had stopped every answer (11 Oct 2026).
+    library = loaded_library(threads_dir)
+    result.skipped_files.extend(library.problems)
+    every_checked = library.checked
+    candidates = LocalSource(threads_dir, skip_broken=True, threads=library.threads).find_threads(
+        query, limit=sys.maxsize)  # limit: below
     about_it = [t for t in candidates if _about_the_product(t, query.product_type)]
     result.not_extracted = [t.id for t in about_it if t.id not in every_checked]  # nothing to offer until read
     if live_check_required is None:

@@ -402,7 +402,18 @@ def load_checked(threads_dir: Path, skip_broken: bool = False, problems: list[st
 def _check_folder(threads_dir: Path, skip_broken: bool = False) -> tuple[dict[str, CheckResult], list[str]]:
     """The results of the extraction files that could be read, and the problems of those that couldn't."""
     thread_problems: list[str] = []
-    threads = {thread.id: thread for thread in load_threads(threads_dir, skip_broken, thread_problems)}
+    threads = load_threads(threads_dir, skip_broken, thread_problems)
+    results, problems = check_extractions(threads_dir, threads)
+    return results, thread_problems + problems
+
+
+def check_extractions(threads_dir: Path, threads: Iterable[Thread]) -> tuple[dict[str, CheckResult], list[str]]:
+    """Every extraction file next to a threads folder, checked against its thread among `threads` (the folder's threads,
+    already loaded): {thread id: CheckResult}, and the problems of the files that couldn't be checked. load_checked
+    reads the threads first; the library kept in memory between answers (engine.library_cache) reads them once for
+    both retrieval and this check (12 Oct 2026)."""
+    by_id = {thread.id: thread for thread in threads}
+    threads_dir = Path(threads_dir)
     folder = extracted_dir(threads_dir)
     results: dict[str, CheckResult] = {}
     problems: list[str] = []
@@ -412,13 +423,13 @@ def _check_folder(threads_dir: Path, skip_broken: bool = False) -> tuple[dict[st
         if file_problems:
             problems.extend(f"{where}: {problem}" for problem in file_problems)
             continue
-        thread = threads.get(path.stem)
+        thread = by_id.get(path.stem)
         if thread is None:
             problems.append(f"{where}: there is no thread {path.stem} in {threads_dir.name}/; delete this file or put the thread back")
             continue
         # The file name says which thread it belongs to; if the file's own thread_id disagrees, every mention is dropped.
         results[path.stem] = check_extraction(extraction, thread)
-    return results, thread_problems + problems
+    return results, problems
 
 
 def _read_extraction(path: Path) -> tuple[Extraction | None, list[str]]:
