@@ -309,8 +309,14 @@ PAID_PROMOTION_RED_FLAGS = 2
 BUDGET_DEFAULT_CURRENCY = "GBP"
 
 # --- Live check of shown quotes (Noemi, 9 Oct 2026: Reddit's embed service) ---
-# Seconds between two reads of Reddit's embed page (engine/live_check.py): an answer reads about 9 comments.
-LIVE_CHECK_MIN_INTERVAL = 3.0
+# Seconds between the starts of two reads of Reddit's embed page (engine/live_check.py). 3.0 when an answer read about 9
+# comments one at a time; answers now show 10 to 40 quotes, and a fresh answer waited up to a minute on them. PROPOSED
+# (latency, 12 Oct 2026, decided by Claude as the orchestrator asked, to be confirmed by Noemi): the comments of an
+# answer are read the way a web page that embeds them is loaded by a browser: LIVE_CHECK_PARALLEL at once, each read
+# starting at least LIVE_CHECK_MIN_INTERVAL after the one before (so never more than 10 reads a second), each comment
+# read once and kept for 48 hours as before.
+LIVE_CHECK_MIN_INTERVAL = 0.1
+LIVE_CHECK_PARALLEL = 8
 
 # --- Care tips (Noemi, 9 Oct 2026) ---
 # Alongside each pick, credible advice from its threads on looking after it ("descale it every 6 months"; extraction

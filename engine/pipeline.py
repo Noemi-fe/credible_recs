@@ -90,6 +90,7 @@ import re
 import sys
 from collections import Counter
 from collections.abc import Mapping
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from datetime import date
 from pathlib import Path
@@ -105,6 +106,7 @@ from engine.config import (
     BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE,
     BRAND_PICK_TITLE_SHARE,
     BUDGET_DEFAULT_CURRENCY,
+    LIVE_CHECK_PARALLEL,
     LIVE_CHECK_REQUIRED,
     LIVE_CHECK_ROUNDS,
     LIVE_CHECK_SHOWN_DAYS,
@@ -363,10 +365,12 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
     failed: set[str] = set()
     for _ in range(LIVE_CHECK_ROUNDS):
         new = set()
-        for _, quote in _every_quote(result.answer):
-            if quote.comment_id in failed | new:
+        quotes = [quote for _, quote in _every_quote(result.answer) if quote.comment_id not in failed]
+        outcomes = _checked_together(live_checker, quotes)
+        for quote in quotes:  # in the answer's order: a comment's first quote that fails says why it was dropped
+            if quote.comment_id in new:
                 continue
-            outcome = live_checker.check(quote.url, quote.text)
+            outcome = outcomes[(quote.url, quote.text)]
             if not outcome.show:
                 new.add(quote.comment_id)
                 result.live_dropped[outcome.status] = result.live_dropped.get(outcome.status, 0) + 1
@@ -381,6 +385,34 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
                                      request_needs(query))
+
+
+def _checked_together(live_checker, quotes) -> dict[tuple[str, str], object]:
+    """The live check of each quote, {(link, text): engine.live_check.LiveResult}, with LIVE_CHECK_PARALLEL comments
+    read at once (latency, 12 Oct 2026: one at a time, the checks were most of an answer's wait). Each comment's quotes
+    are checked one after another, in the answer's order, up to its first that fails: the very checks made when every
+    quote was checked in turn, so no comment is read more than before, and none of its later quotes, which the failure
+    drops anyway."""
+    by_comment: dict[str, list] = {}
+    for quote in quotes:
+        by_comment.setdefault(quote.comment_id, []).append(quote)
+
+    def check_comment(own: list) -> dict[tuple[str, str], object]:
+        found = {}
+        for quote in own:
+            key = (quote.url, quote.text)
+            if key not in found:
+                found[key] = live_checker.check(quote.url, quote.text)
+                if not found[key].show:
+                    break
+        return found
+
+    if LIVE_CHECK_PARALLEL <= 1 or len(by_comment) <= 1:
+        found = [check_comment(own) for own in by_comment.values()]
+    else:
+        with ThreadPoolExecutor(max_workers=min(LIVE_CHECK_PARALLEL, len(by_comment))) as pool:
+            found = list(pool.map(check_comment, by_comment.values()))
+    return {key: outcome for each in found for key, outcome in each.items()}
 
 
 def _checked_live_recently(thread: Thread, today: date) -> bool:
