@@ -77,7 +77,7 @@ from functools import cache
 from pathlib import Path
 
 from engine.config import MENTION_CATEGORIES, PRODUCT_VARIANT_WORDS
-from engine.memo import register
+from engine.memo import Table, register
 from engine.text import one_edit_apart
 
 DEFAULT_ALIASES = Path(__file__).resolve().parent / "data" / "product_aliases.json"
@@ -159,6 +159,7 @@ MAX_LISTS_REMEMBERED = 16
 MAX_NAMES_REMEMBERED = 200_000  # per table; a full table starts again (a long-running server never grows past it)
 for _table in (_NORMALIZED, _WORDS_BY_LIST, _WORDS_NO_ALIASES):
     register(_table.clear)  # engine.memo.forget_all empties them
+_SAME = Table()  # (words, words) -> whether they name the same product (same_words)
 
 
 def _limit(table: dict) -> None:
@@ -294,7 +295,16 @@ def same_product(a: str, b: str, aliases: Aliases = NO_ALIASES) -> bool:
 
 
 def same_words(words_a: list[str], words_b: list[str]) -> bool:
-    """same_product on names already turned into words (product_words)."""
+    """same_product on names already turned into words (product_words). It depends on the two names' words alone, so
+    each pair is compared once and remembered (latency, 12 Oct 2026)."""
+    key = (tuple(words_a), tuple(words_b))
+    found = _SAME.get(key)
+    if found is None:
+        found = _SAME.keep(key, _same_words(words_a, words_b))
+    return found
+
+
+def _same_words(words_a: list[str], words_b: list[str]) -> bool:
     if not words_a or not words_b:
         return False  # a name made only of filler words ("the one") names nothing
     words_a, words_b = comparable(words_a, words_b)

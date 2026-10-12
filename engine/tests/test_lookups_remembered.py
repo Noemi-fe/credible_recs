@@ -147,3 +147,15 @@ def test_retrieval_reads_a_kept_library_once_per_product(tmp_path, monkeypatch):
     second = answer_request(REQUEST, library_dir=root)
     assert times and len(scored) == times  # the second answer found them already scored
     assert second.threads_used == first.threads_used
+
+
+def test_two_names_are_compared_once(monkeypatch):
+    from engine import match_products
+
+    calls = []
+    real = match_products._found_inside
+    monkeypatch.setattr(match_products, "_found_inside", lambda a, b: calls.append(1) or real(a, b))
+    assert match_products.same_words(["cerave", "sa"], ["cerave", "renewing", "sa", "cleanser"])
+    assert match_products.same_words(["cerave", "sa"], ["cerave", "renewing", "sa", "cleanser"])
+    assert len(calls) == 1
+    assert not match_products.same_words(["cerave", "hydrating", "cleanser"], ["cerave", "sa", "cleanser"])
