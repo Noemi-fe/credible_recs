@@ -25,7 +25,7 @@ import os
 import threading
 import time
 from collections import OrderedDict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from engine.extract import CheckResult, check_extractions, extracted_dir
@@ -46,6 +46,9 @@ class KeptLibrary:
     threads: list[Thread]  # every thread file that loaded without a problem, in file-name order
     checked: dict[str, CheckResult]  # {thread id: its extraction, checked against it}
     problems: list[str]  # the problems of the files left out, for the answer to report
+    # What retrieval works out from these threads that doesn't depend on the request (engine.sources.LocalSource): kept
+    # with them, and gone with them when the library is read again.
+    remembered: dict = field(default_factory=dict)
 
 
 _kept: OrderedDict[str, tuple[tuple, KeptLibrary]] = OrderedDict()  # folder -> (fingerprint, library), latest last

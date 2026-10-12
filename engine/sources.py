@@ -127,13 +127,17 @@ class LocalSource:
     The folder is read on the first request and kept in memory. Any file with a problem stops the request
     with the full list of problems (engine.gold.GoldSetError), rather than quietly leaving the thread out.
     `threads`: the folder's threads already read (the library kept in memory between answers, engine.library_cache;
-    12 Oct 2026), so the folder isn't read again.
+    12 Oct 2026), so the folder isn't read again. `remembered`: where to keep what retrieval works out from them that
+    doesn't depend on the request (each thread's readable copy, and how much it is about each product), given with the
+    kept library so the next answer finds it done; by default, kept by this source alone.
     """
 
-    def __init__(self, folder: Path, skip_broken: bool = False, threads: list[Thread] | None = None):
+    def __init__(self, folder: Path, skip_broken: bool = False, threads: list[Thread] | None = None,
+                 remembered: dict | None = None):
         self.folder = Path(folder)
         self.skip_broken = skip_broken  # answers leave a broken file out (engine.gold.load_threads), 11 Oct 2026
         self._threads: list[Thread] | None = threads
+        self._remembered = {} if remembered is None else remembered
 
     def find_threads(self, query: ParsedQuery, limit: int = 3) -> list[Thread]:
         if query.status != "ok" or limit < 1:
@@ -141,19 +145,34 @@ class LocalSource:
         if self._threads is None:
             self._threads = load_threads(self.folder, skip_broken=self.skip_broken)
 
-        candidates = [without_unusable_comments(t) for t in self._threads if t.category == query.category]
+        candidates = self._readable(query.category)
         # Only threads that name the product somewhere (relevance) are read. Since 11 Oct 2026 they come in module 2's
         # graded order (post_score: advice, the request's own needs, long-term use, comments; b10 had read "Best pots
         # and pans set?" before a thread asking for a PFAS-free non-stick pan that lasts); then relevance, then the
         # thread with more comments.
         scored = []
         for t in candidates:
-            if (points := relevance(t, query.product_type)) > 0:
+            if (points := self._relevance(t, query.product_type)) > 0:
                 graded = post_score(query, _thread_as_post(t))
                 if graded is not None:
                     scored.append(((graded, points, t.num_comments), t))
         best = sorted(scored, key=lambda pair: pair[0], reverse=True)
         return [t for _, t in best[:limit]]
+
+    def _readable(self, category: str) -> list[Thread]:
+        """The category's threads without their deleted or removed comments, made once (latency, 12 Oct 2026). Copies:
+        the threads read are never changed."""
+        key = ("readable", category)
+        if key not in self._remembered:
+            self._remembered[key] = [without_unusable_comments(t) for t in self._threads if t.category == category]
+        return self._remembered[key]
+
+    def _relevance(self, thread: Thread, product_type: str) -> float:
+        """relevance(thread, product_type), worked out once per thread and product (latency, 12 Oct 2026)."""
+        key = ("relevance", thread.id, product_type)
+        if key not in self._remembered:
+            self._remembered[key] = relevance(thread, product_type)
+        return self._remembered[key]
 
 
 # --- Live from Reddit, through Parse ---

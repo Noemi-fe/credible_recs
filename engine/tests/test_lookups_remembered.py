@@ -128,3 +128,22 @@ def test_the_memo_tells_lists_apart_by_identity_not_by_content():
     table.of(a)["x"] = "a's"
     assert table.of(b).get("x") is None
     assert table.of(a)["x"] == "a's"
+
+
+# --- Retrieval and name matching, worked out once (latency, 12 Oct 2026) ---
+
+def test_retrieval_reads_a_kept_library_once_per_product(tmp_path, monkeypatch):
+    from engine import sources
+    from engine.pipeline import answer_request
+    from engine.tests.test_library_cache import settled as settled_library
+    from engine.tests.test_pipeline import REQUEST, library
+
+    root = settled_library(library(tmp_path))
+    scored = []
+    real = sources.relevance
+    monkeypatch.setattr(sources, "relevance", lambda thread, product_type: scored.append(thread.id) or real(thread, product_type))
+    first = answer_request(REQUEST, library_dir=root)
+    times = len(scored)
+    second = answer_request(REQUEST, library_dir=root)
+    assert times and len(scored) == times  # the second answer found them already scored
+    assert second.threads_used == first.threads_used

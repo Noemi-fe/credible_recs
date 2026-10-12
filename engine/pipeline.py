@@ -283,8 +283,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     library = loaded_library(threads_dir)
     result.skipped_files.extend(library.problems)
     every_checked = library.checked
-    candidates = LocalSource(threads_dir, skip_broken=True, threads=library.threads).find_threads(
-        query, limit=sys.maxsize)  # limit: below
+    candidates = LocalSource(threads_dir, skip_broken=True, threads=library.threads,
+                             remembered=library.remembered).find_threads(query, limit=sys.maxsize)  # limit: below
     about_it = [t for t in candidates if _about_the_product(t, query.product_type)]
     result.not_extracted = [t.id for t in about_it if t.id not in every_checked]  # nothing to offer until read
     if live_check_required is None:
