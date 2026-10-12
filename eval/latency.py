@@ -25,8 +25,8 @@ What it measures (seconds), each as p50 / p95 / max over the requests (per reque
 - warm, cached checks: a request asked again in a process that has answered it before, every comment already checked
   (the stand-in answers at once): the engine's own time;
 - warm, uncached checks: the same, with the stand-in's memory emptied first, so each comment checked costs the pause;
-- first ask: in a process that has answered another request (library and open model loaded), this one asked for the
-  first time, uncached checks;
+- first ask: in a process that has answered another request and done what the web server does as it starts
+  (engine.web.warm_up, when there is one), this request asked for the first time, uncached checks;
 - cold: a fresh process, one per request: "start-up" is what a server does before its first request (the imports,
   and engine.web.warm_up when there is one: reading the library, loading the open model), then the first request
   (uncached checks). Reported both ways: start-up plus first request, and the first request alone, which is what the
@@ -354,6 +354,10 @@ def warm_passes(queries: list[dict], library: Path, runs: int, live: bool) -> di
     checker = RecordingChecker(temporary) if live else StandInChecker()
     answer_request(WARM_UP_REQUEST, library_dir=library, profiles=profiles, today=FROZEN_DAY,
                    live_checker=StandInChecker(pause=0))
+    import engine.web
+
+    if hasattr(engine.web, "warm_up"):  # what the server does before its first visitor, when it does anything
+        engine.web.warm_up(library)
     passes: dict[str, dict[str, list[dict]]] = {"first ask": {}, "warm, cached": {}, "warm, uncached": {}}
     try:
         for q in queries:  # each asked for the first time

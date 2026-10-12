@@ -401,7 +401,7 @@ def test_warming_up_reads_the_library_and_loads_the_open_model(tmp_path, monkeyp
     monkeypatch.setattr(query_model, "default_query_model", lambda: FakeModel())
     web.warm_up(root)
     assert FakeModel.loaded
-    assert FakeModel.read_before_any_request == [web.PRIMING_REQUEST]  # its instructions read once, ahead
+    assert FakeModel.read_before_any_request[0] == web.PRIMING_REQUEST  # its instructions read first, ahead
     reads = []
     real = library_cache.load_threads
     monkeypatch.setattr(library_cache, "load_threads", lambda *a, **k: reads.append(1) or real(*a, **k))
@@ -418,3 +418,31 @@ def test_warming_up_never_stops_the_server(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(query_model, "default_query_model", broken)
     web.warm_up(tmp_path / "no-library")  # no threads/ folder, and a model that fails to load: reported, not raised
     assert "damaged" in capsys.readouterr().err
+
+
+def test_warming_up_answers_each_product_type_without_asking_reddit(tmp_path, monkeypatch):
+    from engine import query_model
+    from engine.tests.test_library_cache import settled
+    from engine.tests.test_pipeline import library
+
+    monkeypatch.setattr(query_model, "default_query_model", lambda: None)
+    asked = []
+    monkeypatch.setattr(web, "answer_request", lambda request, library_dir, **kwargs: asked.append(
+        (request, kwargs | {"in_turn": web._answers_lock.locked()})))
+    web.warm_up(settled(library(tmp_path)))
+    assert all(kwargs["in_turn"] for _, kwargs in asked)  # one at a time with visitors' answers
+    assert [request for request, _ in asked] == list(web.WARM_PRODUCT_TYPES)
+    assert "electric kettle" in web.WARM_PRODUCT_TYPES and "shampoo" in web.WARM_PRODUCT_TYPES
+    assert all("live_checker" not in kwargs and kwargs["live_check_required"] is False for _, kwargs in asked)
+
+
+def test_a_warmed_answer_leaves_every_answer_as_it_was(tmp_path):
+    from engine import memo
+    from engine.tests.test_library_cache import settled
+    from engine.tests.test_pipeline import REQUEST, library
+
+    root = settled(library(tmp_path))
+    before = web.answer_json(answer_request(REQUEST, library_dir=root))
+    memo.forget_all()
+    web.warm_answer("electric kettle", root)
+    assert web.answer_json(answer_request(REQUEST, library_dir=root)) == before
