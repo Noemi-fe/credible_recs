@@ -358,8 +358,9 @@ LIVE_CHECK_REQUIRED = True
 # PROPOSED: the 7 days of grace, so one missed monthly run doesn't empty threads straight away. False turns it off.
 ARCHIVE_TEXT_RETENTION = True
 ARCHIVE_TEXT_KEPT_DAYS = LIVE_CHECK_ALL_DAYS + 7
-# How many times an answer is written again after the live check drops comments (engine.pipeline._check_live).
-LIVE_CHECK_ROUNDS = 3
+# LIVE_CHECK_ROUNDS (3), how many times an answer was written again after the live check dropped comments, is gone
+# (12 Oct 2026): an answer written after the third round was shown with its new quotes unchecked. It is now written
+# again until every quote it shows has passed (engine.pipeline._check_live).
 
 # --- Bright Data reader (Noemi, 9 Oct 2026) ---
 # Bright Data (brightdata.com) reads Reddit pages for us through its ready-made Reddit datasets (engine/bright_data.py).

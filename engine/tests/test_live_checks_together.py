@@ -144,3 +144,50 @@ def test_a_saved_check_is_dated_by_its_own_call(tmp_path):
 
     dates = sorted(json.loads(p.read_text())["fetched_at"] for p in (tmp_path / "cache").glob("*.json"))
     assert dates == ["2026-10-12T12:00:00+00:00", "2026-10-12T12:00:03+00:00"]
+
+
+# --- No quote is shown unchecked, however many rounds it takes (12 Oct 2026) ---
+
+def many_writers_library(tmp_path):
+    """Five kettle threads, each with three writers praising the Zojirushi kettle for years: fifteen credible quotes."""
+    import json
+
+    from engine.tests.factories import write_gold
+    from engine.tests.test_pipeline import comment, kettle_thread, mention
+
+    threads, extractions = [], {}
+    for t in range(5):
+        tid = f"1kett1{t}"
+        bodies = [(f"z{t}{n}aaaa", f"My Zojirushi kettle has lasted {4 + t + n} years and still boils fast.")
+                  for n in range(3)]
+        threads.append(kettle_thread(tid, [comment(cid, tid, body) for cid, body in bodies]))
+        extractions[tid] = [mention(cid, "Zojirushi kettle", body) for cid, body in bodies]
+    root = write_gold(tmp_path / "library", threads, voices=None, mentions=None)
+    (root / "extracted").mkdir()
+    for tid, mentions in extractions.items():
+        (root / "extracted" / f"{tid}.json").write_text(json.dumps({
+            "thread_id": tid, "instructions_version": "extract-v5", "extracted_at": "2026-10-09T10:00:00Z",
+            "extractor": "claude-code", "mentions": mentions}), encoding="utf-8")
+    return root
+
+
+class EverythingGone:
+    """Every comment it is asked about has been deleted on Reddit since it was saved."""
+
+    def __init__(self):
+        self.asked = []
+
+    def check(self, url, quote):
+        self.asked.append((url, quote))
+        return LiveResult("gone", "deleted")
+
+
+def test_quotes_shown_after_several_rounds_of_deleted_comments_were_checked_too(tmp_path):
+    lib = many_writers_library(tmp_path)
+    assert answer_request(REQUEST, library_dir=lib).answer.picks  # without live checks: the Zojirushi is a pick
+    live = EverythingGone()
+    result = answer_request(REQUEST, library_dir=lib, live_checker=live)
+    shown = [(quote.url, quote.text) for _, quote in _every_quote(result.answer)]
+    unchecked = [pair for pair in shown if pair not in set(live.asked)]
+    assert unchecked == []  # every comment is gone, so nothing may be shown
+    assert result.answer.picks == []

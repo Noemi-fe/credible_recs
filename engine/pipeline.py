@@ -108,7 +108,6 @@ from engine.config import (
     BUDGET_DEFAULT_CURRENCY,
     LIVE_CHECK_PARALLEL,
     LIVE_CHECK_REQUIRED,
-    LIVE_CHECK_ROUNDS,
     LIVE_CHECK_SHOWN_DAYS,
     NEED_MATCH_BOOST,
     OTHER_NAME_NOTE,
@@ -271,8 +270,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     check: only to see what answers would quote once every thread is checked (engine.slice_eval.threads_behind_answers).
     `live_checker` (engine.live_check.LiveChecker): every quote about to be shown is checked against the comment on
     Reddit itself; a comment deleted, removed or edited since we saved it is dropped, its votes no longer count, and
-    the answer is written again without it (up to LIVE_CHECK_ROUNDS times). With it, a thread's age no longer holds it
-    back (live_check_required defaults to off), since what is shown is checked live anyway.
+    the answer is written again without it, until every quote it shows has passed. With it, a thread's age no longer
+    holds it back (live_check_required defaults to off), since what is shown is checked live anyway.
     """
     result = PipelineResult(query)
     if query.status != "ok":
@@ -358,12 +357,14 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
 
     A comment that fails (gone, changed or unreadable) loses its votes too: the ranking is redone without it, so a
     deleted opinion never decides a pick. Each comment is asked about once (the checker also keeps its answer for
-    48 hours). Stops when every shown quote passes, or after LIVE_CHECK_ROUNDS rounds; result.live_dropped counts the
-    comments dropped by reason. Brand picks step aside for their own products again on the new ranking (`groups` are
-    the product groups ranked): one whose product no longer qualifies comes back.
+    48 hours). Stops when every shown quote has passed: until 12 Oct 2026 it stopped after 3 rounds (LIVE_CHECK_ROUNDS),
+    and an answer written after a third round of drops was shown with its new quotes unchecked. Each round drops at
+    least one comment, so it always ends. result.live_dropped counts the comments dropped by reason. Brand picks step
+    aside for their own products again on the new ranking (`groups` are the product groups ranked): one whose product
+    no longer qualifies comes back.
     """
     failed: set[str] = set()
-    for _ in range(LIVE_CHECK_ROUNDS):
+    while True:
         new = set()
         quotes = [quote for _, quote in _every_quote(result.answer) if quote.comment_id not in failed]
         outcomes = _checked_together(live_checker, quotes)
