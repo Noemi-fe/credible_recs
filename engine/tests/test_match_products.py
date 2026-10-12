@@ -5,6 +5,7 @@ extraction scores (engine/extraction_eval.py) need this to tell a renamed produc
 """
 
 import json
+import random
 
 import pytest
 
@@ -525,3 +526,53 @@ def test_a_name_is_worked_out_once(monkeypatch):
     for _ in range(3):
         assert product_words("TO niacinamide serum", aliases) == ["ordinary", "niacinamide", "serum"]
     assert len(calls) == 1
+
+
+# --- Which pairs of names can match at all (latency, 12 Oct 2026) ---
+
+from engine.match_products import match_candidates, same_words  # noqa: E402
+
+
+def every_match(names: list[tuple[str, ...]]) -> set[tuple]:
+    """Every ordered pair of different names that same_words accepts, comparing them all."""
+    return {(a, b) for a in names for b in names if a != b and same_words(list(a), list(b))}
+
+
+def candidate_pairs(names: list[tuple[str, ...]]) -> set[tuple]:
+    candidates = match_candidates(names)
+    return {(a, b) for a in names for b in candidates[a] if a != b}
+
+
+TRICKY_NAMES = [
+    ("soon", "jung", "cream"), ("soonjung", "essence"), ("soonjung",), ("tir", "tir", "milk"), ("tirtir", "milk"),
+    ("black", "and", "decker"), ("black", "decker", "kettle"), ("and", "co"), ("creseut",), ("le", "creuset"),
+    ("creuset", "pan"), ("zojurushi",), ("zojirushi", "kettle"), ("lodge", "pans"), ("lodge", "pan"),
+    ("hurr", "fluid"), ("hur", "fluid"), ("cosrx", "bha"), ("corsx", "bha", "liquid"), ("timemore", "c2"),
+    ("timemore", "c2", "max"), ("v60",), ("v61",), ("cerave",), ("cerave", "sa", "cleanser"),
+    ("cerave", "hydrating", "cleanser"), ("sa", "cleanser"), ("2", "bha"), ("paulas", "choice", "2", "bha"),
+    ("comandante", "c40"), ("commandante",), ("1zpresso", "jx", "pro"), ("jx", "pro"), ("a",), ("vitamin", "a"),
+    ("j", "max"), ("jmax",), ("1zpresso", "j", "max"), ("fab", "pads"), ("fabs", "exfoliating", "pads"),
+]
+
+
+def test_every_pair_that_can_match_is_a_candidate():
+    # Two names can match only if each word of one starts like a word of the other (a slip keeps the first letter),
+    # unless words written apart join into one of the other's ("soon jung" and "soonjung"), or an "and" is dropped.
+    found = every_match(TRICKY_NAMES)
+    assert found and found <= candidate_pairs(TRICKY_NAMES)
+
+
+def test_candidates_hold_every_match_among_made_up_names():
+    rng = random.Random(12)
+    stems = ["soon", "jung", "soonjung", "cera", "ve", "cerave", "kettle", "kettles", "pan", "pans", "and", "creuset",
+             "creseut", "lodge", "lodgee", "max", "jmax", "j", "2", "22", "bha", "bhas", "salicylic", "salicyclic"]
+    names = sorted({tuple(rng.choice(stems) for _ in range(rng.randint(1, 4))) for _ in range(400)})
+    names = [name for name in names if set(name) != {"and"}]  # a name of "and" alone isn't one (and stops the matcher)
+    found = every_match(names)
+    assert len(found) > 100
+    assert found <= candidate_pairs(names)
+
+
+def test_names_with_no_first_letters_in_common_are_not_compared():
+    names = [("zojirushi", "kettle"), ("bonavita", "gooseneck"), ("cerave", "cleanser")]
+    assert candidate_pairs(names) == set()

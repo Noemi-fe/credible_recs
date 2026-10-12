@@ -71,6 +71,8 @@ import html
 import json
 import re
 import unicodedata
+from collections import defaultdict
+from collections.abc import Iterable
 from functools import cache
 from pathlib import Path
 
@@ -296,6 +298,58 @@ def same_words(words_a: list[str], words_b: list[str]) -> bool:
     if words_a == words_b:
         return True
     return _found_inside(words_a, words_b) or _only_typos_apart(words_a, words_b)
+
+
+def match_candidates(names: Iterable[tuple[str, ...]]) -> dict[tuple[str, ...], set[tuple[str, ...]]]:
+    """For each name (its words, as product_words gives them), the names among `names` it could match by same_words:
+    every pair that matches is among them, and most that can't are left out, so grouping (engine/group_products.py)
+    compares only these. A big request has 700 names, half a million pairs to compare: seconds (latency, 12 Oct 2026).
+
+    Why a pair is left out, in the matcher's own rules: when two names match, each word of one of them (the one with
+    fewer words, as the matcher compares them) is found in the other as it is, or with a spelling slip, and every slip
+    keeps a word's first letter. So the set of first letters of one name is inside the other's. Two things can change
+    a name's words before that comparison, and pairs where they could are always kept: words written apart that join
+    into a longer word of the other name ("soon jung" and "soonjung": one word is the start of a longer one), and an
+    "and" written in only one of the two names, which is dropped from both ("black and decker", "black decker").
+    """
+    names = list(dict.fromkeys(names))
+    candidates: dict[tuple[str, ...], set[tuple[str, ...]]] = {name: set() for name in names}
+    for without_and in (False, True):
+        letters = {name: frozenset(w[0] for w in name if w and not (without_and and w == AND)) for name in names}
+        having = defaultdict(set)  # a first letter -> the names with a word starting with it
+        by_letters = defaultdict(set)  # a set of first letters -> the names with exactly those
+        for name, found in letters.items():
+            by_letters[found].add(name)
+            for letter in found:
+                having[letter].add(name)
+        for name, found in letters.items():
+            if not found:
+                candidates[name].update(names)  # nothing to tell by: compare it with every name
+                continue
+            inside = set.intersection(*(having[letter] for letter in found))  # names with all its first letters
+            candidates[name] |= inside
+            for other, names_with in by_letters.items():  # names whose first letters are all among its own
+                if other <= found:
+                    candidates[name] |= names_with
+            for other in inside:
+                candidates[other].add(name)
+    # A word that starts a longer word of the other name: the matcher may join words, so the pair is kept.
+    words = sorted({w for name in names for w in name})
+    names_with_word = defaultdict(set)
+    for name in names:
+        for w in name:
+            names_with_word[w].add(name)
+    for i, short in enumerate(words):
+        j = i + 1
+        while j < len(words) and words[j].startswith(short):
+            for a in names_with_word[short]:
+                for b in names_with_word[words[j]]:
+                    candidates[a].add(b)
+                    candidates[b].add(a)
+            j += 1
+    for name in names:
+        candidates[name].discard(name)
+    return candidates
 
 
 def written_alike(words_a: list[str], words_b: list[str]) -> bool:
