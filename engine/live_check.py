@@ -22,6 +22,7 @@ the same time never reads half of one.
 
 import hashlib
 import html
+import http.client
 import json
 import os
 import re
@@ -116,8 +117,8 @@ class LiveChecker:
                 return entry["text"]
         try:
             status, page, fetched_at = self._get(url)
-        except (urllib.error.URLError, TimeoutError, OSError):
-            return None  # not saved: the next answer asks again
+        except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException):
+            return None  # not saved: the next answer asks again (HTTPException: a page cut off halfway, 12 Oct 2026)
         if status != 200:
             return None
         found = _BODY.search(page.decode("utf-8", "replace"))
