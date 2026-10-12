@@ -122,7 +122,7 @@ from engine.contradictions import contradicting_writers
 from engine.credibility import (
     VoiceScore, badges, copied_comment_ids, copy_groups, mention_weight, repeated_copies, score_evidence, score_voice,
 )
-from engine.extract import CheckResult, load_checked
+from engine.extract import CheckResult, load_checked, shown_comment_ids
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
 from engine.group_products import ProductGroup, ProductMention, brand_pick_name, group_of, group_products, plural, uk_name
 from engine.gold import DEFAULT_GOLD_DIR
@@ -198,6 +198,9 @@ class PipelineResult:
     # mention counts as a low voice (Noemi's rule, 9 Oct 2026). For reports only, as a count: never shown to users.
     contradicting_writers: list[str] = field(default_factory=list)
     threads_available: int = 0  # extracted threads about the product that could be read (threads_used is the first ones)
+    # The comments the AI read in the threads used (its reading view: the readable comments, up to EXTRACT_MAX_COMMENTS
+    # a thread), shown with every answer (Noemi, 12 Oct 2026).
+    comments_read: int = 0
     # Problems of library files left out of this answer (a thread or extraction file that doesn't load or check):
     # reported, never quietly dropped (11 Oct 2026).
     skipped_files: list[str] = field(default_factory=list)
@@ -291,6 +294,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     if profiles is not None:
         threads = [with_profiles(t, profiles, _commented(checked[t.id])).thread for t in threads]
     result.threads_used = [t.id for t in threads]
+    result.comments_read = sum(len(shown_comment_ids(t)) for t in threads)  # what the AI read in them (12 Oct 2026)
     result.bodies = comment_bodies(threads)
 
     groups = group_products(_not_sets(_product_mentions(checked), result))
@@ -965,6 +969,8 @@ def main(argv: list[str]) -> int:
                   f"{result.skipped_files[0]}; run `python -m engine.extract check` for the list)")
         if result.read_more:
             print(f"\n(the first {PIPELINE_MAX_THREADS} threads gave too few picks, so {len(result.threads_used)} were read)")
+        print(f"\n(read for this answer: {len(result.threads_used)} threads, of {result.threads_available} saved about it, "
+              f"and {result.comments_read:,} comments)")
         print(f"\n(threads used: {', '.join(result.threads_used)}; left out as another type: "
               f"{len(result.left_out_as_other_type)}; brand or line names left out: {len(result.left_out_loose)}; "
               f"threads not extracted yet: {len(result.not_extracted)}; threads waiting for a live check: "

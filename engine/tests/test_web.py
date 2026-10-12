@@ -85,7 +85,9 @@ def test_a_known_request_comes_back_as_three_cards_in_json(tmp_path):
 def test_the_json_has_the_documented_shape(tmp_path):
     # The contract the later website will use: change it only on purpose, and update engine/web.py's docstring.
     _, _, data = ask(REQUEST, kettle_library(tmp_path))
-    assert set(data) == {"query", "answer", "threads_used", "left_out"}
+    # Changed on purpose 12 Oct 2026 (Noemi: show how many threads and comments each answer read): "reading".
+    assert set(data) == {"query", "answer", "threads_used", "left_out", "reading"}
+    assert data["reading"] == {"threads": 2, "threads_saved": 2, "comments": 11}  # 3 kettles x 3 comments, 2 warnings
     assert set(data["query"]) == {"status", "category", "product_type", "question", "message"}
     # Changed on purpose 9 Oct 2026 (decision 11, budgets): each pick has its price, and "left_out" counts the
     # products over the request's budget.
@@ -367,3 +369,10 @@ def test_the_page_carries_the_care_heading_and_draws_care_tips_as_quotes(tmp_pat
     assert "WORDING.care_heading" in drawing and "careList(tips)" in drawing
     assert "quoteBlock(item.quote)" in listing  # the same Reddit link check as every other quote
     assert "careSection(pick.care)" in html
+
+
+
+def test_the_page_says_how_many_threads_and_comments_an_answer_read():
+    # Noemi, 12 Oct 2026: shown under every answer's title, not only in the small print.
+    page = web.search_page().decode("utf-8")
+    assert "{threads} Reddit threads and {comments} comments" in page

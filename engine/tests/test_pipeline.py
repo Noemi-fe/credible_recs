@@ -832,3 +832,13 @@ def test_a_broken_thread_file_doesnt_stop_answers_and_is_named(tmp_path):
     result = answer_request(REQUEST, library_dir=root)
     assert [pick.name for pick in result.answer.picks][:1] == ["Zojirushi kettle"]
     assert any("1kett09" in problem for problem in result.skipped_files)
+
+
+def test_an_answer_counts_the_threads_and_comments_it_read(tmp_path):
+    # Noemi, 12 Oct 2026: she, and the tool's users, should see how many threads were searched for a request and how
+    # many comments were considered. The comments are the ones the AI read in the threads used (its reading view: the
+    # readable comments, up to config.EXTRACT_MAX_COMMENTS a thread).
+    result = answer_request(REQUEST, library_dir=library(tmp_path))
+    assert sorted(result.threads_used) == ["1kett01", "1kett02"]
+    assert result.comments_read == 7  # 4 + 3 readable comments
+    assert result.threads_available == 2

@@ -85,7 +85,10 @@ The JSON for /api/answer (200):
       "left_out": {"other_type": n, "loose": n,    products of another type, and brand or line names, left out
                    "over_budget": n,               products whose known price is over the request's budget
                    "unavailable": n,               products the price list says are no longer sold (9 Oct 2026),
-                   "not_suited": n}                and products whose checked facts clash with the request (9 Oct 2026)
+                   "not_suited": n},               and products whose checked facts clash with the request (9 Oct 2026)
+      "reading": {"threads": n,                    how much the answer read (Noemi, 12 Oct 2026): the threads used,
+                  "threads_saved": n,              the extracted threads saved about the product,
+                  "comments": n}                   and the comments the AI read in the threads used
     }
 
 POST /api/feedback takes one JSON object (Content-Type: application/json, at most FEEDBACK_MAX_BODY_BYTES) in one of
@@ -305,6 +308,10 @@ def answer_json(result: PipelineResult) -> dict:
                      "over_budget": len(result.left_out_over_budget),
                      "unavailable": len(result.left_out_unavailable),
                      "not_suited": len(result.left_out_not_suited)},
+        # How much the answer read (Noemi, 12 Oct 2026): the threads used, the extracted threads saved about the product,
+        # and the comments the AI read in the threads used.
+        "reading": {"threads": len(result.threads_used), "threads_saved": result.threads_available,
+                    "comments": result.comments_read},
     }
 
 
