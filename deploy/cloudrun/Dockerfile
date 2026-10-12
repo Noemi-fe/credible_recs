@@ -18,6 +18,8 @@ ENV HOME=/home/user \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
+# Made by the user itself: a WORKDIR Docker creates belongs to root, and the install below writes into it.
+RUN mkdir -p /home/user/app
 WORKDIR /home/user/app
 COPY --chown=user . .
 
