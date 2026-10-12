@@ -292,3 +292,19 @@ def test_a_makeup_remover_is_a_cleanser_not_makeup():
     assert (routing.status, routing.product_type) == ("ok", "cleanser")
     assert classify("make-up remover").product_type == "cleanser"
     assert classify("best mascara").status == "out_of_scope"
+
+
+# --- Tea kettles (12 Oct 2026, from the kitchen builder's findings) ---
+
+def test_a_tea_kettle_is_a_stovetop_kettle_unless_it_says_electric():
+    # Threads titled "tea kettle" (people's usual name for a stovetop kettle) were never read for a stovetop request.
+    assert classify("best tea kettle that lasts").product_type == "stovetop kettle"
+    assert classify("electric tea kettle with temperature control").product_type == "electric kettle"
+    assert classify("electric kettle").product_type == "electric kettle"
+
+
+def test_a_tea_kettle_title_is_read_for_a_stovetop_request():
+    from engine.sources import mentions_product
+
+    assert mentions_product("Recommendations for a tea kettle that won't rust?", "stovetop kettle")
+    assert mentions_product("Best tea pot for loose leaf?", "teapot")
