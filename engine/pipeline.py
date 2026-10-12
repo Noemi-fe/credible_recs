@@ -327,7 +327,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads}, brand_lines)
     lines = {g.key for g in kept_groups if g.loose}  # the brand or line names kept as the brand's whole line
     prices = load_prices() if prices is None else prices
-    kept_groups, price_checks = _within_budget(kept_groups, query, prices, today, result)
+    kept_groups, price_checks = _within_budget(kept_groups, query, prices, today, result, brand_lines)
     product_facts = load_product_facts() if product_facts is None else product_facts
     kept_groups, cautions = _suited_to_request(kept_groups, query, product_facts, result)
     result.ranked_as_lines = [g.name for g in kept_groups if g.key in lines]
@@ -599,7 +599,8 @@ def _another_type_by_name(group: ProductGroup, query: ParsedQuery) -> bool:
 # --- Budgets (decision 11) ---
 
 def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[Price], today: date,
-                   result: PipelineResult) -> tuple[list[ProductGroup], dict[str, PriceCheck]]:
+                   result: PipelineResult,
+                   brand_lines: list[BrandLine] = ()) -> tuple[list[ProductGroup], dict[str, PriceCheck]]:
     """Each product's price, checked against the request's budget, and whether it is still sold: the groups kept, and
     {product key: PriceCheck}.
 
@@ -655,6 +656,20 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
         else:
             kept.append(group)
             checks[group.key] = replace(check, availability=sold)
+    # A brand line under a budget (12 Oct 2026: b09, "under £150", had picked the Comandante coffee grinder line, whose
+    # cheapest grinder costs more): when its brand-lines entry gives a "from" price (the brand's cheapest UK product of
+    # this type) above the budget, even its cheapest product is over, so it is left out as over budget. No from price,
+    # or one within the budget, keeps it (b07's Wüsthof sells cheaper knives than the Classic its writers name).
+    over_from = budget is not None and budget.max is not None and budget.currency == "GBP"
+    for group in [g for g in kept if g.loose and over_from]:
+        line = find_brand_line(set(group.names) | {uk_name(n) for n in group.names}, group.category, product_type,
+                               brand_lines)
+        if line is not None and line.from_price is not None and line.from_price > budget.max:
+            kept.remove(group)
+            checks.pop(group.key, None)
+            if group.name in result.not_priced:
+                result.not_priced.remove(group.name)
+            result.left_out_over_budget.append(group.name)
     return kept, checks
 
 
@@ -850,8 +865,23 @@ def _brand_models(ranking: RankingResult, groups: list[ProductGroup], product_ty
     says more than the brand and the product type (_names_a_model). The most credible recommendations win, then the
     higher score. A brand pick with none is left out; a model with no price checked has no price, but one a shop is
     known to sell says where ("sold at The English Coffee Company, checked 10 Oct 2026")."""
-    by_key = {g.key: g for g in groups}
     models, prices = {}, {}
+    for brand_key, model in _brand_model_products(ranking, groups, product_type).items():
+        models[brand_key] = model.name
+        check = (price_checks or {}).get(model.key)
+        if check is not None and check.price is not None and check.price.price is not None:
+            prices[brand_key] = shown_price(check).text
+        elif (sold := shown_availability(check)).available is True:
+            # No one price fits the name, but a shop sells it (10 Oct 2026, late: "Bonavita gooseneck").
+            prices[brand_key] = sold.text[:1].lower() + sold.text[1:]
+    return models, prices
+
+
+def _brand_model_products(ranking: RankingResult, groups: list[ProductGroup],
+                          product_type: str | None) -> dict[str, "ProductScore"]:
+    """{brand pick's key: the ranked product that is its brand's most recommended model} (see _brand_models)."""
+    by_key = {g.key: g for g in groups}
+    found = {}
     for brand in ranking.products:
         brand_group = by_key.get(brand.key)
         if brand_group is None or not brand_group.loose:
@@ -861,15 +891,8 @@ def _brand_models(ranking: RankingResult, groups: list[ProductGroup], product_ty
                       and len(p.credible_recommendations) >= BRAND_MODEL_MIN_CREDIBLE
                       and _same_brand(brand_group, g) and _names_a_model(p.name, brand_group, product_type)]
         if candidates:
-            model = max(candidates, key=lambda p: (len(p.credible_recommendations), p.score))
-            models[brand.key] = model.name
-            check = (price_checks or {}).get(model.key)
-            if check is not None and check.price is not None and check.price.price is not None:
-                prices[brand.key] = shown_price(check).text
-            elif (sold := shown_availability(check)).available is True:
-                # No one price fits the name, but a shop sells it (10 Oct 2026, late: "Bonavita gooseneck").
-                prices[brand.key] = sold.text[:1].lower() + sold.text[1:]
-    return models, prices
+            found[brand.key] = max(candidates, key=lambda p: (len(p.credible_recommendations), p.score))
+    return found
 
 
 def _names_a_model(name: str, brand: ProductGroup, product_type: str | None) -> bool:

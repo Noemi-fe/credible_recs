@@ -673,3 +673,25 @@ def test_a_brand_pick_shows_the_warnings_about_its_own_products(tmp_path):
     assert unverified_claims(result.answer, result.bodies) == []
     zojirushi = next(pick for pick in result.answer.picks if pick.name == "Zojirushi kettle")
     assert zojirushi.downsides == []  # a specific pick takes no other product's warnings
+
+
+def test_a_brand_line_whose_cheapest_product_is_over_the_budget_is_left_out(tmp_path):
+    # 12 Oct 2026 (b09, from the brand-lines builder): "burr coffee grinder for pour-over under £150" picked the
+    # Comandante coffee grinder line, whose cheapest grinder costs more than £150. A brand-lines entry may say the
+    # brand's "from" price (its cheapest UK product of that type); under a budget below it, the line is left out as
+    # over budget. A from price within the budget, or none recorded, keeps it (Wüsthof sells cheaper knives than the
+    # Classic its writers name).
+    from engine.brand_lines import BrandLine
+
+    def line(from_price):
+        return BrandLine(brand="Victorinox", category="kitchen", product_type="chef knife", sells=True,
+                         sources=["https://maker.example/knives"], checked_on="2026-10-12", from_price=from_price)
+
+    request = KNIFE_REQUEST + " under £100"
+    out = answer_request(request, library_dir=knife_library(tmp_path, fibrox=(1, 1)), prices=[], today=TODAY,
+                         brand_lines=[line(120.0)])
+    assert VICTORINOX not in [pick.name for pick in out.answer.picks] and VICTORINOX in out.left_out_over_budget
+    for i, kept in enumerate((line(25.0), None)):
+        result = answer_request(request, library_dir=knife_library(tmp_path / f"again{i}", fibrox=(1, 1)), prices=[],
+                                today=TODAY, brand_lines=[kept] if kept else [])
+        assert VICTORINOX in [pick.name for pick in result.answer.picks]

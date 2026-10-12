@@ -25,6 +25,9 @@ lines aren't Reddit data, so the list is committed with the code. Its format:
                                                           range on its own pages
                       "sources": ["https://..."],         the pages that say so: at least one, https only, never Reddit
                       "checked_on": "2026-10-12",         the day they were read
+                      "from_price": 199.0,                optional: the cheapest UK price in pounds of the brand's
+                                                          products of this type; under a budget below it the brand's
+                                                          line is left out as over budget (12 Oct 2026)
                       "note": "..."}]}                    what the researcher found, for whoever checks the list; never
                                                           shown in an answer
 A malformed entry, or a second entry for the same brand, category and product type (two entries could disagree), stops
@@ -99,6 +102,9 @@ class BrandLine(Record):
     sells: StrictBool  # true: the brand sells that kind of product; false: it doesn't. JSON true/false only.
     sources: list[Annotated[str, AfterValidator(_source_page)]] = Field(min_length=1)
     checked_on: date
+    # The cheapest UK price, in pounds, of the brand's products of this type (12 Oct 2026): under a budget below it the
+    # brand's line is left out as over budget. From a UK shop's or the maker's UK page among the sources. Optional.
+    from_price: float | None = Field(default=None, gt=0)
     note: str | None = None  # what the researcher found, for whoever checks the list: never shown in an answer
 
     @model_validator(mode="after")
