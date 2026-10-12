@@ -570,6 +570,8 @@ def answer_wording() -> dict[str, str]:
         "brand_model": BRAND_PICK_MODEL,  # "Most named model: {model}" (brand picks, 10 Oct 2026)
         # The breakdown's line about the request's needs (9 Oct 2026), with {recommends} and {warnings} for the page.
         "breakdown_needs": wording.breakdown_needs_line("{recommends}", "{warnings}"),
+        # Swear words the page masks on display (Noemi, 12 Oct 2026): the same list as the text answer's.
+        "masked_words": list(wording.MASKED_WORDS),
     }
 
 

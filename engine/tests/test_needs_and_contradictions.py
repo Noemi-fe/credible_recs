@@ -97,7 +97,10 @@ def test_the_reason_says_how_many_credible_voices_talk_about_the_need(tmp_path):
     assert alpha.reason == "Recommended by 3 credible voices, 3 of them after long-term use."
     text = result.text()
     assert beta.reason in text
-    assert "About your request: 2 credible recommendations and 0 credible warnings talk about what you asked for" in text
+    # Changed on purpose 12 Oct 2026 (Noemi): the score breakdown left the answer card, so its line about the request
+    # is no longer in the text; the numbers stay in the breakdown the JSON carries.
+    assert "About your request:" not in text
+    assert beta.breakdown.credible_recommends_fitting_need == 2 and beta.breakdown.credible_warnings_fitting_need == 0
 
 
 def test_a_request_with_no_needs_changes_nothing(tmp_path):
@@ -181,7 +184,9 @@ def test_the_web_page_gets_the_same_breakdown_line_with_its_numbers_left_to_fill
     line = json.loads(html.split('<script type="application/json" id="settings">')[1].split("</script>")[0])["wording"]["breakdown_needs"]
     assert line == ("About your request: {recommends} credible recommendations and {warnings} credible warnings talk "
                     f"about what you asked for (each counts {NEED_MATCH_BOOST:g} times as much)")
-    assert "b.credible_recommends_fitting_need" in html  # the page shows it when some credible mention fits
+    # Changed on purpose 12 Oct 2026 (Noemi): the score breakdown left the answer card, so the page no longer draws
+    # this line; the wording stays available to the page, and the numbers in the JSON.
+    assert "b.credible_recommends_fitting_need" not in html
 
 
 # --- The reason's wording, from made-up ranked mentions (engine/tests/ranking_factories.py) ---

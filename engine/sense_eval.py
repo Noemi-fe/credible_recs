@@ -3,25 +3,31 @@
 Noemi's note of 12 Oct 2026, from testing the demo: some recommendations make little sense. "retinol for a beginner with
 sensitive skin" showed "Look for: retinol" with a writer saying there's no hurry to start retinol; a pick's quote was a
 reply whose "it" only the comment above explained. Every quote passed the word-for-word check; what failed was sense.
+Her second demo test the same day (a frying pan answer) added no-view and garbled quotes, repair stories under "How to
+take care of it", the same tip twice, swear words, a lone downside under strong support, the score breakdown, and an
+older answer drawn under a newer request (engine/answer.py and the page).
 
 What is judged: every item an answer shows (answer_items): each pick's quotes ("pick quote"), its known downsides
-("downside") and care tips ("care tip", with the tip's few words), the "What to look for" lines ("look for" and
-"avoid", under their kind), the skip-these quotes ("skip") and the care note at the end ("care note").
+("downside", read with the line above them: "1 of 15 credible voices warned against it:") and care tips ("care tip",
+with the tip's few words), the "What to look for" lines ("look for" and "avoid", under their kind), the skip-these
+quotes ("skip") and the care note at the end ("care note"). Swear words are masked on display only, so items hold the
+quote's own words, as checked.
 
 The criteria. Claude judges each item by hand, reading it as a shopper would: alone, in the answer, under its heading,
 for this request. An item makes sense when all three hold:
 1. It says what it is about. Its words name the product or kind, or its "it", "this" or "they" can only mean the
    product whose heading it is under (a pick, its downsides, a skipped product, a care tip); and it leans on nothing the
-   reader can't see: a reply with no name in it (a "Yes!" and then an "it" never named), a person or
-   thing not shown ("for the reasons he said", "the same reaction", "both of them", "that part"), or a product other
-   than its heading's that "it" means (a quote shown under one blender whose "it", beating that blender, is another one). Our own words shown with
-   it (a care tip's few words, an introduction outside the quotation marks) count as shown. A stray "Yeah," or "Same."
-   before a quote that names its product doesn't stop it making sense.
+   reader can't see: a reply with no name in it (a "Yes!" and then an "it" never named), a person or thing not shown
+   ("for the reasons he said", "the same reaction", "both of them", "that part"), or a product other than its
+   heading's that "it" means (a quote under one blender whose "it", beating that blender, is another one). Our own
+   words shown with it (a care tip's few words, the downsides' share line, an introduction outside the quotation marks)
+   count as shown. A stray "Yeah," or "Same." before a quote that names its product doesn't stop it making sense.
 2. It backs what its heading claims. A pick's quote speaks for that product, from use or a clear view: not a passing
-   mention ("I have a ballarini"), a look ("This looks very cool!"), or a view of another product (under one rice cooker, a
-   quote whose point is that a cheaper brand does as well). A downside states a drawback of the pick; a skipped product's quote warns
-   against it. "Look for: X" recommends X: it names X and gives a view of it, not a hedge, a wish or a passing mention;
-   "Avoid: X" warns against X and names it. A care tip says how to look after the product.
+   mention ("I have a ballarini"), a look ("This looks very cool!"), garbled words, or a view of another product
+   (under one rice cooker, a quote whose point is that a cheaper brand does as well). A downside states a drawback of
+   the pick; a skipped product's quote warns against it. "Look for: X" recommends X: it names X and gives a view of
+   it, not a hedge, a wish or a passing mention; "Avoid: X" warns against X and names it. A care tip says how to look
+   after the product (a repair story isn't one).
 3. It fits the request. It is about the type of product asked for, as the request means it: "Look for: double
    cleansing" in a sunscreen answer, "Avoid: eye creams" in a moisturiser answer, "Look for: bread knife" for a chef's
    knife or "Look for: pre-ground coffee" for a grinder don't fit. It isn't the requested product itself ("Look for:
@@ -127,7 +133,7 @@ def answer_items(answer: Answer, request_id: str, request: str) -> list[Item]:
         for quote in pick.quotes:
             add("pick quote", pick.name, quote)
         for quote in pick.downsides:
-            add("downside", pick.name, quote)
+            add("downside", pick.name, quote, pick.downsides_share or "")
         for tip in pick.care:
             add("care tip", pick.name, tip.quote, tip.tip)
     for item in answer.look_for:

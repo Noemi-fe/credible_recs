@@ -606,10 +606,15 @@ CARE_TIP_SHARED_SHARE = 0.5
 # Tips about fixing a broken part rather than looking after the product come after every other tip, however many
 # writers agree on them: regular expressions, matched on whole words of the tip (lowercase, punctuation aside). "grind"
 # counts only as grinding something down ("grind it flat"): a coffee grinder's "only grind with the cap on" is upkeep.
+# Since 12 Oct 2026 (Noemi: "a repair story isn't one") repairs are left out of answers altogether (engine/answer.py),
+# bending or pushing a part back into shape is one, and replacing the product itself when it wears out ("replace it
+# when the coating is damaged") isn't: only replacing a part ("replace the thermal fuse") is.
 CARE_TIP_REPAIR_WORDS = (
     r"seal(s|ed|ing|ant)?",
     r"glue(s|d)?", r"gluing",
-    r"replac(e|es|ed|ing|ement)",
+    r"replac(e|es|ed|ing|ement)(?! (it|them|when|once|if|as soon as|after)\b)",
+    r"(push|pushed|pushing|bend|bends|bent|bending|hammer|hammered) (it |them |the \w+ )?back",
+    r"back (in)?to (its |their )?(original )?shape", r"straighten(s|ed|ing)?",
     r"solder(s|ed|ing)?",
     r"grind(s|ing)? (it |them )?(down|flat|smooth|off|away)", r"angle grinders?",
     r"sand(s|ed|ing|er|paper)?",

@@ -77,7 +77,7 @@ from collections.abc import Callable, Collection, Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import date
 
-from engine.care_tips import CareTip, CareTips, similar_tips, tips_by_agreement
+from engine.care_tips import CareTip, CareTips, is_repair, similar_tips, tips_by_agreement
 from engine.config import (
     BRAND_PICK_MODEL,
     CARE_NOTE_TIPS,
@@ -129,8 +129,11 @@ FEWER_PICKS = "Enough credible evidence for only {products} ({rule}), so we show
 BADGE_VOICE = "{voice}-credibility voice"  # the badge when module 5 gave no reason in words
 QUOTES_HEADING = "In their words"
 DOWNSIDES_HEADING = "Known downsides"
+# Known downsides in proportion (Noemi, 12 Oct 2026: a single warning under many long-term recommendations read as if it
+# outweighed them). Shown above a pick's downsides; wording from her own example, decided by Claude.
+DOWNSIDES_SHARE = "{n} of {total} credible voices warned against it:"
 SUPPORT_LABEL = "Credible support"
-BREAKDOWN_HEADING = "Score breakdown"
+BREAKDOWN_HEADING = "Score breakdown"  # off the answer card since 12 Oct 2026 (Noemi); kept in the JSON
 LOOK_FOR_HEADING = "What to look for"
 SKIP_HEADING = "Skip these"
 LINK_TEXT = "see the comment"
@@ -272,6 +275,9 @@ class Pick:
     # For a brand pick: the model of that brand its credible writers recommend most (10 Oct 2026); None otherwise.
     model: str | None = None
     model_price: str | None = None  # that model's checked price, as the price line words it; None when not checked
+    # How many credible voices warned against it, of all who spoke for or against it (DOWNSIDES_SHARE, 12 Oct 2026);
+    # None when no downside is shown.
+    downsides_share: str | None = None
 
 
 @dataclass
@@ -710,16 +716,55 @@ def _bare_mention(m: ScoredMention) -> bool:
     return not _gives_a_view(m.quote) and len(m.quote.split()) < BARE_MENTION_WORDS
 
 
+# A garbled quote: "the" left hanging before the end of a clause, alone or before an "-ly" word (Noemi's second demo test,
+# 12 Oct 2026: a writer typed "the" for "them", as in "I wash the carefully."), or "a" or "an" before one. A writer's
+# slip, not words a reader can follow.
+_GARBLED = re.compile(r"(?:\bthe\b(?:\s+[a-z]+ly)?|\ban?\s+[a-z]+ly)\s*(?:[.!?,;:]|$)", re.IGNORECASE)
+
+
+def _garbled(quote: str) -> bool:
+    return bool(_GARBLED.search(quote.strip()))
+
+
+# Advice: a sentence that opens with what to do ("Buy a decent pan, keep the heat low"), or says what one should do.
+_ADVICE = re.compile(r"(?:^|[.!?]\s+)(?:just |so |also |then )?(?:get|buy|go for|try|avoid|keep|wash|don't|do not|never|"
+                     r"always|look for|pick|choose|stick with|spend)\b"
+                     r"|\b(?:you should|you'll want|i'd recommend|i recommend|is the way to go|worth it)\b", re.IGNORECASE)
+
+
+def _gives_a_view_or_advice(text: str) -> bool:
+    return _gives_a_view(text) or bool(_ADVICE.search(_plain(text)))
+
+
+def _with_a_view(mentions: list[ScoredMention], bodies: Mapping[str, str]) -> list[ScoredMention]:
+    """Each bare mention (_bare_mention) widened to the sentences before it in its comment that state a view or advice,
+    when there are any within QUOTE_MAX_WORDS words (Noemi's second demo test, 12 Oct 2026: "prefer the comment's
+    sentences that state a view or advice"); the others as they are."""
+    out = []
+    for m in mentions:
+        if _bare_mention(m):
+            wider = _widened(m.quote, bodies.get(m.comment_id),
+                             lambda text, m=m: _names_its_product(text, m) and _gives_a_view_or_advice(text))
+            m = dataclasses.replace(m, quote=wider) if wider is not None else m
+        out.append(m)
+    return out
+
+
 def _pick_quotes(product: ProductScore, check: _QuoteCheck, asks: tuple[str, ...],
                  needs: tuple[Need, ...], product_type: str | None = None) -> list[ShownQuote]:
     """Up to QUOTES_PER_PICK verified quotes for a pick, in _naming_first's order, each widened to stand on its own where
-    its comment allows (_standing). Quotes that say something about it come first; a bare mention, a quote that says
-    nothing about it (_says_something) and, last, one that still leans on the thread only make up MIN_QUOTES_PER_PICK."""
+    its comment allows (_standing), and a bare mention to the view or advice before it (_with_a_view). Quotes that say
+    something about it come first; a bare mention or a garbled quote (_garbled), a quote that says nothing about it
+    (_says_something) and, last, one that still leans on the thread only make up MIN_QUOTES_PER_PICK."""
     mentions, leaning = _standing(product.credible_recommendations, check.bodies, _names_its_product)
-    ordered = _naming_first(mentions, asks, needs, leaning, product_type)
+    ordered = _naming_first(_with_a_view(mentions, check.bodies), asks, needs, leaning, product_type)
     standing = [m for m in ordered if m.comment_id not in leaning]
-    quotes = check.first([m for m in standing if _says_something(m) and not _bare_mention(m)], QUOTES_PER_PICK)
-    for rest in ([m for m in standing if _says_something(m) and _bare_mention(m)],
+
+    def filler(m: ScoredMention) -> bool:
+        return _bare_mention(m) or _garbled(m.quote)
+
+    quotes = check.first([m for m in standing if _says_something(m) and not filler(m)], QUOTES_PER_PICK)
+    for rest in ([m for m in standing if _says_something(m) and filler(m)],
                  [m for m in standing if not _says_something(m)],
                  [m for m in ordered if m.comment_id in leaning]):
         if len(quotes) < MIN_QUOTES_PER_PICK:
@@ -749,6 +794,7 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
     pipeline's _fold_brand_skips, 10 Oct 2026). `needs`: warnings that talk about them come first among equally clear
     ones ("when my bonavita broke" for a kettle that should last)."""
     warnings = product.credible_warnings
+    downsides = _warning_quotes((warnings, more_downsides), check, DOWNSIDES_PER_PICK, needs)
     return Pick(
         rank=rank,
         product_key=product.key,
@@ -756,22 +802,40 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
         reason=_reason(product, ranking),
         support=_support(product),
         quotes=quotes,
-        downsides=_warning_quotes((warnings, more_downsides), check, DOWNSIDES_PER_PICK, needs),
-        disagreement=DISAGREEMENT.format(voices=_plural(len(warnings), "credible voice")) if product.disputed else None,
+        downsides=downsides,
+        disagreement=(DISAGREEMENT.format(voices=_plural(len(_warned(product, more_downsides)), "credible voice"))
+                      if product.disputed else None),
         score=product.score,
         breakdown=product.breakdown,
         price=price,
         availability=availability,
         care=care,
         cautions=cautions or [],
+        downsides_share=_downsides_share(product, more_downsides) if downsides else None,
     )
+
+
+def _warned(product: ProductScore, more_downsides: Iterable[ScoredMention] = ()) -> set[str]:
+    """The writers of a pick's credible warnings and of those about its own brand or line shown under it (the pipeline's
+    _fold_brand_skips), each once: whom its downsides come from."""
+    return {m.author or m.comment_id for m in [*product.credible_warnings, *more_downsides]}
+
+
+def _downsides_share(product: ProductScore, more_downsides: Iterable[ScoredMention] = ()) -> str:
+    """DOWNSIDES_SHARE for a pick: the writers its downsides come from (_warned), of those and its credible
+    recommendations together (Noemi, 12 Oct 2026): "1 of 15 credible voices warned against it:" reads as what it is.
+    The mixed-opinions line (DISAGREEMENT) counts the same writers, so the two never give different numbers."""
+    warned = _warned(product, more_downsides)
+    return DOWNSIDES_SHARE.format(n=len(warned), total=len(warned) + len(product.credible_recommendations))
 
 
 def _care_tips(tips: CareTips | None, check: _QuoteCheck, limit: int = CARE_TIPS_PER_PICK,
                already: Iterable[str] = ()) -> list[ShownCareTip]:
-    """Up to `limit` care tips (a pick's own, or the note's), the ones most credible writers agree on first, repairs last
-    (engine.care_tips.tips_by_agreement, 10 Oct 2026). Each tip shown stands for one group of tips that say the same
-    thing, so the same advice is never shown twice: the group's best writer's tip, in their words, with their quote.
+    """Up to `limit` care tips (a pick's own, or the note's), the ones most credible writers agree on first
+    (engine.care_tips.tips_by_agreement, 10 Oct 2026); repairs are left out since 12 Oct 2026 (Noemi: a repair story
+    isn't advice on looking after the product, as extraction instructions v8 say). Each tip shown stands for one group
+    of tips that say the same thing, so the same advice is never shown twice: the group's best writer's tip, in their
+    words, with their quote.
     When that quote fails the check, it is dropped and the group's next writer's tip and quote take its place. A group
     saying the same as one of `already` (tips shown elsewhere in the answer) is left out."""
     if tips is None:
@@ -780,6 +844,8 @@ def _care_tips(tips: CareTips | None, check: _QuoteCheck, limit: int = CARE_TIPS
     for group in tips_by_agreement(tips):
         if len(shown) == limit:
             break
+        if is_repair(group[0].tip):  # a repair story isn't looking after the product (Noemi, 12 Oct 2026)
+            continue
         if any(similar_tips(group[0].tip, tip) for tip in already):
             continue
         for item in group:
@@ -1271,19 +1337,21 @@ def _render_pick(pick: Pick) -> list[str]:
         lines += _render_quote_block(quote)
     lines += [f"**{DOWNSIDES_HEADING}**", ""]
     if pick.downsides:
+        lines += [pick.downsides_share, ""] if pick.downsides_share else []
         for quote in pick.downsides:
             lines += _render_quote_block(quote)
     else:
         lines += [NO_DOWNSIDES, ""]
     if pick.care:
         lines += [f"**{CARE_HEADING}**", ""] + _render_care(pick.care)
-    lines += [f"**{BREAKDOWN_HEADING}**", ""] + _render_breakdown(pick.score, pick.breakdown) + [""]
+    # The score breakdown is off the card since 12 Oct 2026 (Noemi: too technical, and it doesn't build trust); the
+    # JSON keeps it (answer_to_dict) and the how-we-score page explains the scoring.
     return lines
 
 
 def _render_care(items: list[ShownCareTip]) -> list[str]:
     """Care tips as a list: the tip in bold, then its quote; a tip that only repeats its quote shows the quote alone."""
-    return [f"- **{item.tip}** {_render_quote_inline(item.quote)}" if item.tip
+    return [f"- **{masked(item.tip)}** {_render_quote_inline(item.quote)}" if item.tip
             else f"- {_render_quote_inline(item.quote)}" for item in items] + [""]
 
 
@@ -1310,7 +1378,7 @@ def _one_line(text: str) -> str:
 
 def _render_quote_block(quote: ShownQuote) -> list[str]:
     credit = " · ".join(quote.badges + (f"[{LINK_TEXT}]({quote.url})",))
-    return [f'> "{_one_line(quote.text)}"', f"> — {credit}", ""]
+    return [f'> "{masked(_one_line(quote.text))}"', f"> — {credit}", ""]
 
 
 def _same_words(a: str, b: str) -> bool:
@@ -1322,28 +1390,7 @@ def _same_words(a: str, b: str) -> bool:
 
 def _render_quote_inline(quote: ShownQuote) -> str:
     credit = " · ".join(quote.badges + (f"[{LINK_TEXT}]({quote.url})",))
-    return f'"{_one_line(quote.text)}" ({credit})'
-
-
-def _render_breakdown(score: float, b: ScoreBreakdown) -> list[str]:
-    """The score breakdown as a list, signal by signal."""
-    total = f"- Score {score:.2f} = {b.mention_points:.2f} from mentions"
-    if b.kind_bonus:
-        total += f" + {b.kind_bonus:.2f} kind bonus ({b.kind}, support {b.kind_support:.2f})"
-    lines = [
-        total,
-        f"- Recommendations: {b.recommends}, {b.credible_recommends} credible. "
-        f"Voices: {_levels(b.recommend_voices)}. Evidence: {_levels(b.recommend_evidence)}.",
-        f"- Warnings: {b.warnings}, {b.credible_warnings} credible. "
-        f"Voices: {_levels(b.warn_voices)}. Evidence: {_levels(b.warn_evidence)}.",
-        f"- Neutral mentions: {b.neutral} (they never count)",
-        f"- Threads: {b.threads}, {b.credible_threads} with a credible recommendation",
-    ]
-    if b.credible_recommends_fitting_need or b.credible_warnings_fitting_need:
-        lines.append("- " + breakdown_needs_line(b.credible_recommends_fitting_need, b.credible_warnings_fitting_need))
-    if b.kind and not b.kind_bonus:
-        lines.append(f"- Kind: {b.kind} (support {b.kind_support:.2f}; no bonus: it doesn't lead by far)")
-    return lines
+    return f'"{masked(_one_line(quote.text))}" ({credit})'
 
 
 def breakdown_needs_line(recommends: int | str, warnings: int | str) -> str:
@@ -1352,6 +1399,19 @@ def breakdown_needs_line(recommends: int | str, warnings: int | str) -> str:
     return BREAKDOWN_NEEDS.format(recommends=recommends, warnings=warnings, boost=f"{NEED_MATCH_BOOST:g}")
 
 
-def _levels(counts: dict[str, int]) -> str:
-    """{"high": 2, "medium": 1, "low": 0} as "2 high, 1 medium, 0 low"."""
-    return ", ".join(f"{n} {level}" for level, n in counts.items())
+# --- Swear words, masked on display (Noemi, 12 Oct 2026) ---
+
+# Whole words only, so "Scunthorpe", "shiitake" and "Dickens" stay as written. Regular expressions that read the same in
+# Python and in the page's JavaScript (engine/templates/search.html masks with this same list).
+MASKED_WORDS = (
+    r"(?:mother)?fuck(?:s|ed|er|ers|ing|in|ery)?", r"(?:bull|horse)?shit(?:s|ty|tier|ting|ted|head|heads|show)?",
+    r"cunts?", r"bitch(?:es|y|ing)?", r"(?:arse|ass)holes?", r"bastards?", r"dick(?:s|head|heads)?",
+    r"piss(?:ed|ing)?", r"twats?", r"wank(?:er|ers|ing)?", r"bollocks",
+)
+_MASKED = re.compile(r"\b(?:" + "|".join(MASKED_WORDS) + r")\b", re.IGNORECASE)
+
+
+def masked(text: str) -> str:
+    """The text as shown: each swear word keeps its first and last letters, the rest starred ("f**k"). Only what is
+    displayed changes: the quote checked word for word, against the saved comment and live, stays the comment's own."""
+    return _MASKED.sub(lambda m: m.group()[0] + "*" * (len(m.group()) - 2) + m.group()[-1], text)

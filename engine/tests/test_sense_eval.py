@@ -43,6 +43,9 @@ def test_every_item_an_answer_shows_is_listed_under_its_heading():
     assert all(item.request == "a kettle that lasts" and item.request_id == "k01" for item in shown)
     tip = next(item for item in shown if item.where == "care tip")
     assert (tip.lead, tip.text) == ("Descale it monthly.", "I descale it monthly and it still works.")
+    # A downside is read with the line above it (Noemi, 12 Oct 2026): how many credible voices warned, of all.
+    downside = next(item for item in shown if item.where == "downside")
+    assert downside.lead == "1 of 4 credible voices warned against it:"
     assert len(shown) == len({item.key for item in shown})
 
 

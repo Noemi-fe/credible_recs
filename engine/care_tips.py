@@ -41,9 +41,12 @@ two things with the checked tips of one request:
    - each group counts its distinct writers (one writer counts once, however many times they say it; a deleted
      account counts once per comment), and the group with the most comes first. On a tie: the group with the higher
      voice, then the one whose best tip is about the product itself rather than its kind, then thread order;
-   - tips about fixing a broken part (config.CARE_TIP_REPAIR_WORDS: seal, glue, replace, solder, sand, epoxy, angle
-     grinder, grinding something down, repair) come after every tip about looking after the product, however many
-     writers agree on them. A repair and an upkeep tip are never in the same group;
+   - tips about fixing a broken part (config.CARE_TIP_REPAIR_WORDS: seal, glue, replace a part, solder, sand, epoxy,
+     angle grinder, grinding something down, bending something back into shape, repair) come after every tip about
+     looking after the product, however many writers agree on them. A repair and an upkeep tip are never in the same
+     group; since 12 Oct 2026 (Noemi) answers leave repairs out altogether;
+   - two tips keeping metal utensils off the product say the same thing, either way round ("wooden or silicone
+     utensils only", "no metal utensils"; Noemi, 12 Oct 2026);
    - within a group, the best writer comes first: the higher voice, then the product's own tip, then thread order.
    The answer (engine/answer.py) then shows up to CARE_TIPS_PER_PICK per pick, one per group: the best writer's tip, in
    their words, with their quote, checked again word for word before it is shown (when it fails, the group's next
@@ -248,7 +251,7 @@ def similar_tips(a: str, b: str) -> bool:
 
 def _alike(a: str, b: str, words_a: set[str], words_b: set[str]) -> bool:
     """similar_tips, with each tip's words (_content_words) worked out once."""
-    if same_tip(a, b):
+    if same_tip(a, b) or (_no_metal_utensils(a) and _no_metal_utensils(b)):
         return True
     if _says_no(a) != _says_no(b):
         return False
@@ -257,6 +260,23 @@ def _alike(a: str, b: str, words_a: set[str], words_b: set[str]) -> bool:
         return False
     shared = len(words_a & words_b)
     return shared >= CARE_TIP_SHARED_WORDS and 2 * shared >= CARE_TIP_SHARED_SHARE * (len(words_a) + len(words_b))
+
+
+_UTENSILS = re.compile(r"\b(utensils?|spatulas?|spoons?|tongs|whisks?|turners?)\b")
+_SOFT = re.compile(r"\b(wood|wooden|silicone|plastic|nylon|bamboo)\b")
+_METAL = re.compile(r"\b(metal|steel|stainless)\b")
+
+
+def _no_metal_utensils(tip: str) -> bool:
+    """Whether a tip says to keep metal utensils off the product, either way round (Noemi, 12 Oct 2026: "wooden or
+    silicone utensils only" and "no metal utensils" were shown as two tips): it names utensils and either says no to
+    metal ones or names only soft ones (wood, silicone, plastic, nylon)."""
+    text = " ".join(plain_words(tip))
+    if not _UTENSILS.search(text):
+        return False
+    if _METAL.search(text):
+        return _says_no(tip)
+    return bool(_SOFT.search(text))
 
 
 def is_repair(tip: str) -> bool:
