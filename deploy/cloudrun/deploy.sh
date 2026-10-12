@@ -20,7 +20,7 @@ BUNDLE="$(mktemp -d)/bundle"
 $GCLOUD run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --source "$BUNDLE" \
     --allow-unauthenticated --memory 2Gi --cpu 1 --cpu-boost --max-instances 1 --min-instances 0 \
     --concurrency 8 --timeout 300 \
-    --set-env-vars "CREDIBLE_RECS_ALLOWED_HOSTS=${HOSTS},CREDIBLE_RECS_GOATCOUNTER=noemix,CREDIBLE_RECS_FEEDBACK_REPO=Noemix/credible-recs-feedback" \
+    --set-env-vars "^;^CREDIBLE_RECS_ALLOWED_HOSTS=${HOSTS};CREDIBLE_RECS_GOATCOUNTER=noemix;CREDIBLE_RECS_FEEDBACK_REPO=Noemix/credible-recs-feedback" \
     --set-secrets "HF_TOKEN=hf-token:latest" --quiet
 rm -rf "$(dirname "$BUNDLE")"
 $GCLOUD run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)'
