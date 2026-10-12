@@ -58,7 +58,8 @@ from dataclasses import dataclass, field
 from engine.config import BRAND_PICK_NAME, PRODUCT_TYPE_PLURALS, PRODUCT_TYPE_SHOWN, UK_BRAND_NAMES
 from engine.extract import CheckResult
 from engine.match_products import (
-    Aliases, comparable, join_split_words, known_aliases, normalize_name, product_words, same_words, written_alike,
+    Aliases, comparable, join_split_words, known_aliases, match_candidates, normalize_name, product_words, same_words,
+    written_alike,
 )
 
 # Words that never tell two products apart, so a loose name equal to a product's name but for them names that product
@@ -146,7 +147,10 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
             nameless[m.product.strip().lower()].append(m)
 
     names = sorted(by_words)
-    matches = {w: [v for v in names if v != w and same_words(list(w), list(v))] for w in names}  # step 2
+    # Step 2. Only pairs that could match are compared (engine.match_products.match_candidates; latency, 12 Oct 2026):
+    # every pair that matches is among them, in the same order as before.
+    candidates = match_candidates(names)
+    matches = {w: [v for v in sorted(candidates[w]) if same_words(list(w), list(v))] for w in names}
     spelling = {w: w for w in names}  # each name -> the first of its spellings
     for w in names:
         for v in matches[w]:

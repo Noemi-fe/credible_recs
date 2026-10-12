@@ -97,6 +97,7 @@ import re
 import sys
 from collections import Counter
 from collections.abc import Mapping
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from datetime import date
 from pathlib import Path
@@ -113,8 +114,8 @@ from engine.config import (
     BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE,
     BRAND_PICK_TITLE_SHARE,
     BUDGET_DEFAULT_CURRENCY,
+    LIVE_CHECK_PARALLEL,
     LIVE_CHECK_REQUIRED,
-    LIVE_CHECK_ROUNDS,
     LIVE_CHECK_SHOWN_DAYS,
     NEED_MATCH_BOOST,
     OTHER_NAME_NOTE,
@@ -130,11 +131,12 @@ from engine.contradictions import contradicting_writers
 from engine.credibility import (
     VoiceScore, badges, copied_comment_ids, copy_groups, mention_weight, repeated_copies, score_evidence, score_voice,
 )
-from engine.extract import CheckResult, load_checked, shown_comment_ids
+from engine.extract import CheckResult, shown_comment_ids
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
 from engine.group_products import ProductGroup, ProductMention, brand_pick_name, group_of, group_products, plural, uk_name
 from engine.gold import DEFAULT_GOLD_DIR
 from engine.library import DEFAULT_LIBRARY_DIR, checked_live_within
+from engine.library_cache import loaded as loaded_library
 from engine.match_products import known_aliases, normalize_name, product_words, same_product
 from engine.models import Comment, Thread
 from engine.needs import Need, needs_met, request_needs
@@ -293,17 +295,21 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     check: only to see what answers would quote once every thread is checked (engine.slice_eval.threads_behind_answers).
     `live_checker` (engine.live_check.LiveChecker): every quote about to be shown is checked against the comment on
     Reddit itself; a comment deleted, removed or edited since we saved it is dropped, its votes no longer count, and
-    the answer is written again without it (up to LIVE_CHECK_ROUNDS times). With it, a thread's age no longer holds it
-    back (live_check_required defaults to off), since what is shown is checked live anyway.
+    the answer is written again without it, until every quote it shows has passed. With it, a thread's age no longer
+    holds it back (live_check_required defaults to off), since what is shown is checked live anyway.
     """
     result = PipelineResult(query)
     if query.status != "ok":
         return result
     today = today or _today()
     threads_dir = Path(library_dir) / "threads"
-    # A broken file is left out and named, never quietly: one had stopped every answer (11 Oct 2026).
-    every_checked = load_checked(threads_dir, skip_broken=True, problems=result.skipped_files)
-    candidates = LocalSource(threads_dir, skip_broken=True).find_threads(query, limit=sys.maxsize)  # limit: below
+    # Read once and kept in memory until one of its files changes (engine.library_cache; latency, 12 Oct 2026). A broken
+    # file is left out and named, never quietly: one had stopped every answer (11 Oct 2026).
+    library = loaded_library(threads_dir)
+    result.skipped_files.extend(library.problems)
+    every_checked = library.checked
+    candidates = LocalSource(threads_dir, skip_broken=True, threads=library.threads,
+                             remembered=library.remembered).find_threads(query, limit=sys.maxsize)  # limit: below
     about_it = [t for t in candidates if _about_the_product(t, query.product_type)]
     result.not_extracted = [t.id for t in about_it if t.id not in every_checked]  # nothing to offer until read
     if live_check_required is None:
@@ -379,17 +385,21 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
 
     A comment that fails (gone, changed or unreadable) loses its votes too: the ranking is redone without it, so a
     deleted opinion never decides a pick. Each comment is asked about once (the checker also keeps its answer for
-    48 hours). Stops when every shown quote passes, or after LIVE_CHECK_ROUNDS rounds; result.live_dropped counts the
-    comments dropped by reason. Brand picks step aside for their own products again on the new ranking (`groups` are
-    the product groups ranked): one whose product no longer qualifies comes back.
+    48 hours). Stops when every shown quote has passed: until 12 Oct 2026 it stopped after 3 rounds (LIVE_CHECK_ROUNDS),
+    and an answer written after a third round of drops was shown with its new quotes unchecked. Each round drops at
+    least one comment, so it always ends. result.live_dropped counts the comments dropped by reason. Brand picks step
+    aside for their own products again on the new ranking (`groups` are the product groups ranked): one whose product
+    no longer qualifies comes back.
     """
     failed: set[str] = set()
-    for _ in range(LIVE_CHECK_ROUNDS):
+    while True:
         new = set()
-        for _, quote in _every_quote(result.answer):
-            if quote.comment_id in failed | new:
+        quotes = [quote for _, quote in _every_quote(result.answer) if quote.comment_id not in failed]
+        outcomes = _checked_together(live_checker, quotes)
+        for quote in quotes:  # in the answer's order: a comment's first quote that fails says why it was dropped
+            if quote.comment_id in new:
                 continue
-            outcome = live_checker.check(quote.url, quote.text)
+            outcome = outcomes[(quote.url, quote.text)]
             if not outcome.show:
                 new.add(quote.comment_id)
                 result.live_dropped[outcome.status] = result.live_dropped.get(outcome.status, 0) + 1
@@ -404,6 +414,34 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
                                      request_needs(query), query.text)
+
+
+def _checked_together(live_checker, quotes) -> dict[tuple[str, str], object]:
+    """The live check of each quote, {(link, text): engine.live_check.LiveResult}, with LIVE_CHECK_PARALLEL comments
+    read at once (latency, 12 Oct 2026: one at a time, the checks were most of an answer's wait). Each comment's quotes
+    are checked one after another, in the answer's order, up to its first that fails: the very checks made when every
+    quote was checked in turn, so no comment is read more than before, and none of its later quotes, which the failure
+    drops anyway."""
+    by_comment: dict[str, list] = {}
+    for quote in quotes:
+        by_comment.setdefault(quote.comment_id, []).append(quote)
+
+    def check_comment(own: list) -> dict[tuple[str, str], object]:
+        found = {}
+        for quote in own:
+            key = (quote.url, quote.text)
+            if key not in found:
+                found[key] = live_checker.check(quote.url, quote.text)
+                if not found[key].show:
+                    break
+        return found
+
+    if LIVE_CHECK_PARALLEL <= 1 or len(by_comment) <= 1:
+        found = [check_comment(own) for own in by_comment.values()]
+    else:
+        with ThreadPoolExecutor(max_workers=min(LIVE_CHECK_PARALLEL, len(by_comment))) as pool:
+            found = list(pool.map(check_comment, by_comment.values()))
+    return {key: outcome for each in found for key, outcome in each.items()}
 
 
 def _checked_live_recently(thread: Thread, today: date) -> bool:

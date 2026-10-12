@@ -118,6 +118,11 @@ The words are for whoever calls the API; the page picks its own words by code (P
 Answers take about 2 seconds, so each one is remembered for as long as the server runs: asking again is instant.
 A library refresh needs a restart to show.
 
+Getting ready (latency, 12 Oct 2026): as it starts, the server reads the library, the price and facts lists, loads
+the open model, and works out (and throws away) one answer per product type without live checks, so what answers keep
+between requests is ready (warm_up). All in the background: the page is there at once, and the first visitor doesn't
+wait for any of it.
+
 Command line:
     python -m engine.web [--port N] [--library DIR]    serves the page at http://127.0.0.1:8765/ (Ctrl+C stops it)
     python -m engine.web --public --port 7860           the public site (deploy/huggingface/start.sh runs it)
@@ -152,6 +157,7 @@ from engine.library import DEFAULT_LIBRARY_DIR
 from engine.metrics import METRICS_FILE
 from engine.parse_reddit import REPO_ROOT
 from engine.pipeline import PipelineResult, answer_request
+from engine.query import PRODUCT_TYPES
 
 HOST = "127.0.0.1"  # this computer only. Never "0.0.0.0", which would open the server to the whole network.
 PUBLIC_HOST = "0.0.0.0"  # public mode only: every network interface, so the Space's proxy can reach the server
@@ -724,9 +730,63 @@ def make_server(port: int = WEB_PORT, library_dir: Path = DEFAULT_LIBRARY_DIR, s
     return server
 
 
+PRIMING_REQUEST = "best toaster for a small kitchen"  # one of the open model's own examples (engine.query_model)
+
+
+def warm_up(library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
+    """Everything answers keep in memory, made ready before the first request needs it (latency, 12 Oct 2026): the
+    library read and checked (engine.library_cache), the price and facts lists, and the open model loaded (a few
+    seconds each). A problem is reported in the server's window and never stops it: the answer that needs the missing
+    piece reports it as before."""
+    from engine.library_cache import loaded
+    from engine.prices import load_prices
+    from engine.product_facts import load_product_facts
+    from engine.query_model import default_query_model
+
+    def load_model():
+        model = default_query_model()
+        if model is not None and hasattr(model, "load"):
+            model.load()
+            # One reading of an example request, so the model has read its instructions (which every request repeats)
+            # and the first visitor's request reads only its own words: seconds the first time, then a second or two.
+            model.read(PRIMING_REQUEST)
+
+    threads = Path(library_dir) / "threads"
+    steps = [("the open model", load_model), ("the price list", load_prices), ("the facts list", load_product_facts)]
+    if threads.is_dir():
+        steps.insert(0, ("the library", lambda: loaded(threads)))
+        steps += [(f"the answers' memory for {name}", lambda name=name: warm_answer(name, library_dir))
+                  for name in WARM_PRODUCT_TYPES]
+    for name, step in steps:
+        try:
+            step()
+        except Exception as error:  # reported where the server runs; answers report it again when they need it
+            print(f"Getting ready: {name} couldn't be loaded ({type(error).__name__}: {error}).", file=sys.stderr,
+                  flush=True)
+
+
+def warm_answer(product_type: str, library_dir: Path) -> None:
+    """One answer about a product type, worked out and thrown away while the server gets ready (latency, 12 Oct
+    2026), so what answers keep between requests is ready for the first visitors: retrieval's reading of each thread,
+    what each comment's words show, the name matching, the price and facts lookups (engine.memo). Nothing is shown and
+    Reddit is never asked: no live check, and every thread read as answers checked live read them
+    (live_check_required=False). The answers themselves are never kept. It takes its turn with visitors' answers
+    (_answers_lock), so a visitor arriving meanwhile waits for one of these at most, rather than sharing the processor
+    with all of them."""
+    with _answers_lock:
+        answer_request(product_type, library_dir, profiles=profiles, live_check_required=False)
+
+
+# The product types answered while getting ready: module 1's own (engine.query.PRODUCT_TYPES). The rules route each by
+# its name (only "serum", placed by a clue word, also gets the open model's view, as any request would).
+WARM_PRODUCT_TYPES = tuple(p.name for p in PRODUCT_TYPES)
+
+
 def serve(port: int = WEB_PORT, library_dir: Path = DEFAULT_LIBRARY_DIR, site: Site = LOCAL) -> None:
-    """Serves the page until Ctrl+C (on the Space, until it is stopped); then hands over any feedback still waiting."""
+    """Serves the page until Ctrl+C (on the Space, until it is stopped); then hands over any feedback still waiting.
+    The server gets ready for answers in the background as it starts (warm_up)."""
     server = make_server(port, library_dir, site)
+    threading.Thread(target=warm_up, args=(library_dir,), name="warm-up", daemon=True).start()
     if site.public:
         signal.signal(signal.SIGTERM, _stop)  # how a Space stops its container: wind down as for Ctrl+C
         print(f"Serving the public site for {', '.join(site.hosts)} on port {server.server_address[1]} (answers from "

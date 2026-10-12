@@ -981,3 +981,50 @@ def test_haircare_and_appliance_words_dont_pick_out_a_product():
     assert _name_words("Ninja Air Fryer Max") == {"ninja", "max"}
     assert _name_words("Zojirushi Neuro Fuzzy Rice Cooker") == {"zojirushi", "neuro", "fuzzy"}
     assert _name_words("Cantu Leave-In Conditioning Repair Cream") == {"cantu"}
+
+
+# --- What a comment's words show, worked out once (latency, 12 Oct 2026) ---
+
+def test_a_comments_own_signs_are_worked_out_once(monkeypatch):
+    from engine import credibility
+
+    calls = []
+    real = credibility._first_phrase
+    monkeypatch.setattr(credibility, "_first_phrase", lambda text, phrases: calls.append(1) or real(text, phrases))
+    body = "Use my code SAVE10 for this cleanser, I've had it two years."
+    first = voice_for(body=body)
+    asked = len(calls)
+    assert asked and voice_for(body=body) == first
+    assert len(calls) == asked  # the second time, nothing was worked out again
+    assert voice_for(body="I've had this cleanser two years.") != first  # other words: worked out for themselves
+
+
+def test_a_mentions_evidence_is_worked_out_once(monkeypatch):
+    from engine import credibility
+
+    calls = []
+    real = credibility._proof_of_use
+    monkeypatch.setattr(credibility, "_proof_of_use", lambda text, written: calls.append(1) or real(text, written))
+    first = evidence_for("I've had my Lodge skillet for 2 years and use it daily.")
+    asked = len(calls)
+    assert evidence_for("I've had my Lodge skillet for 2 years and use it daily.") == first
+    assert len(calls) == asked
+    assert evidence_for("I've had my Lodge skillet for 2 years and use it daily.", stance="warn") is not None
+    assert evidence_for("Had my Lodge skillet a week.").level != first.level
+
+
+def test_copies_are_looked_for_once_per_thread_as_it_is(monkeypatch):
+    from engine import credibility
+    from engine.credibility import copy_groups
+
+    calls = []
+    real = credibility._copy_groups
+    monkeypatch.setattr(credibility, "_copy_groups", lambda thread: calls.append(thread.id) or real(thread))
+    text = ("My Acme kettle has lasted nine years of daily use and still boils fast, so I would buy the same one again "
+            "without thinking twice about it.")
+    thread = Thread.model_validate(make_thread(comments=[make_comment("c1aaaa", body=text),
+                                                         make_comment("c2bbbb", body=text)]))
+    assert copy_groups(thread) == copy_groups(thread) == [frozenset({"c1aaaa", "c2bbbb"})]
+    assert calls == ["1fake01"]
+    changed = thread.model_copy(update={"comments": [thread.comments[0]]})
+    assert copy_groups(changed) == []  # the thread now holds other comments: looked at afresh

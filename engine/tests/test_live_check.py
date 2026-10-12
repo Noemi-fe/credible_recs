@@ -103,3 +103,16 @@ def test_only_the_comments_status_and_text_are_saved_never_the_page(tmp_path):
     checker(tmp_path, FakeReddit()).check(URL, QUOTE)
     saved = "".join(p.read_text() for p in (tmp_path / "cache").glob("*.json"))
     assert "utm_source" not in saved and "<div" not in saved
+
+
+def test_a_page_cut_off_halfway_is_unknown_and_never_shown(tmp_path):
+    # Found in the first real run with several reads at once (12 Oct 2026): Reddit's server stopped sending a page
+    # halfway, and the error (http.client.IncompleteRead) stopped the whole answer instead of dropping the quote.
+    import http.client
+
+    def cut_off(url, headers):
+        raise http.client.IncompleteRead(b"<html>half a page")
+
+    result = checker(tmp_path, cut_off).check(URL, QUOTE)
+    assert (result.status, result.show) == ("unknown", False)
+    assert not list((tmp_path / "cache").glob("*.json"))  # nothing kept: the next answer asks again

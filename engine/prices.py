@@ -89,6 +89,7 @@ from pydantic import AfterValidator, Field, StrictBool, ValidationError, model_v
 
 from engine.config import PRICE_MAX_AGE_DAYS, PRICES_TODO_NEXT_IN_LINE, THREAD_CATEGORIES
 from engine.match_products import known_aliases, product_words, same_product, written_alike
+from engine.memo import FileMemo, PerList
 from engine.models import Record
 from engine.query import Budget
 
@@ -159,7 +160,19 @@ class PriceCheck:
 # --- The list ---
 
 def load_prices(path: Path = DEFAULT_PRICES) -> list[Price]:
-    """Every price in the list (data/prices.json by default). A malformed file or entry raises PriceError."""
+    """Every price in the list (data/prices.json by default). A malformed file or entry raises PriceError.
+
+    Read once and kept while the file is unchanged (engine.memo; latency, 12 Oct 2026): every caller gets the same list,
+    which none may change, so the lookups worked out from it are kept too (entries_for)."""
+    return _LOADED.get(Path(path), _read_prices)
+
+
+# The price lists read, and the entries found for each product in each list (latency, 12 Oct 2026).
+_LOADED = FileMemo()
+_ENTRIES = PerList()
+
+
+def _read_prices(path: Path) -> list[Price]:
     try:
         entries = json.loads(Path(path).read_text(encoding="utf-8"))["prices"]
     except (OSError, json.JSONDecodeError, KeyError, TypeError) as e:
@@ -259,10 +272,20 @@ def _newest_check_first(p: Price) -> tuple:
 
 def entries_for(name: str, category: str, prices: Iterable[Price], product_type: str | None = None) -> list[Price]:
     """Every entry of the same category whose name means the same product as `name`, by module 4's rules, less those
-    about another product type than `product_type` (the request's) when they say which type they are about."""
+    about another product type than `product_type` (the request's) when they say which type they are about.
+
+    Worked out once per product and list, and kept with the list (engine.memo.PerList; latency, 12 Oct 2026): an answer
+    asks about each product up to four times, and the next answers about the same products again."""
+    table = _ENTRIES.of(prices)
+    key = (name, category, product_type)
+    if table is not None and key in table:
+        return list(table[key])
     aliases = known_aliases().get(category, {})
-    return [p for p in prices if p.category == category and _of_type(p, product_type)
-            and any(same_product(known, name, aliases) for known in [p.product, *p.also_called])]
+    found = [p for p in prices if p.category == category and _of_type(p, product_type)
+             and any(same_product(known, name, aliases) for known in [p.product, *p.also_called])]
+    if table is not None:
+        table[key] = tuple(found)
+    return found
 
 
 def _of_type(entry: Price, product_type: str | None) -> bool:

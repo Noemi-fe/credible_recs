@@ -316,8 +316,22 @@ PAID_PROMOTION_RED_FLAGS = 2
 BUDGET_DEFAULT_CURRENCY = "GBP"
 
 # --- Live check of shown quotes (Noemi, 9 Oct 2026: Reddit's embed service) ---
-# Seconds between two reads of Reddit's embed page (engine/live_check.py): an answer reads about 9 comments.
-LIVE_CHECK_MIN_INTERVAL = 3.0
+# Seconds between the starts of two reads of Reddit's embed page (engine/live_check.py). 3.0 when an answer read about 9
+# comments one at a time; answers now show 10 to 40 quotes, and a fresh answer waited up to a minute on them. PROPOSED
+# (latency, 12 Oct 2026, decided by Claude as the orchestrator asked, to be confirmed by Noemi): the comments of an
+# answer are read the way a web page that embeds them is loaded by a browser: LIVE_CHECK_PARALLEL at once, each read
+# starting at least LIVE_CHECK_MIN_INTERVAL after the one before (so never more than 10 reads a second), each comment
+# read once and kept for 48 hours as before.
+LIVE_CHECK_MIN_INTERVAL = 0.1
+LIVE_CHECK_PARALLEL = 8
+# Never more than Reddit allows (12 Oct 2026): its embed pages answer about 200 reads in 10 minutes from one address
+# (x-ratelimit-used 200 in its "429 Too Many Requests" answer to a test run that read faster), and a read refused that
+# way can't check a quote, which is then dropped. So up to LIVE_CHECK_BURST reads at once, then one more every
+# LIVE_CHECK_REFILL_SECONDS: at most 40 + 600 / 4 = 190 in any 10 minutes, leaving room for other reads from the same
+# address. A fresh answer (10 to 40 comments) reads at full speed; many answers in a row slow to a read every 4 s, as
+# 3 s spacing did before. Decided by Claude, reported.
+LIVE_CHECK_BURST = 40
+LIVE_CHECK_REFILL_SECONDS = 4.0
 
 # --- Care tips (Noemi, 9 Oct 2026) ---
 # Alongside each pick, credible advice from its threads on looking after it ("descale it every 6 months"; extraction
@@ -359,8 +373,9 @@ LIVE_CHECK_REQUIRED = True
 # PROPOSED: the 7 days of grace, so one missed monthly run doesn't empty threads straight away. False turns it off.
 ARCHIVE_TEXT_RETENTION = True
 ARCHIVE_TEXT_KEPT_DAYS = LIVE_CHECK_ALL_DAYS + 7
-# How many times an answer is written again after the live check drops comments (engine.pipeline._check_live).
-LIVE_CHECK_ROUNDS = 3
+# LIVE_CHECK_ROUNDS (3), how many times an answer was written again after the live check dropped comments, is gone
+# (12 Oct 2026): an answer written after the third round was shown with its new quotes unchecked. It is now written
+# again until every quote it shows has passed (engine.pipeline._check_live).
 
 # --- Bright Data reader (Noemi, 9 Oct 2026) ---
 # Bright Data (brightdata.com) reads Reddit pages for us through its ready-made Reddit datasets (engine/bright_data.py).

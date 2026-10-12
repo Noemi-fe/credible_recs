@@ -82,7 +82,8 @@ class QueryModel(Protocol):
 
 
 class LlamaQueryModel:
-    """The open model, loaded on first use (a few seconds) and kept; each request then takes a second or two.
+    """The open model, loaded on first use (a few seconds) and kept; each request then takes a second or two. The web
+    server loads it as it starts (load; latency, 12 Oct 2026), so its first visitor doesn't wait for it.
 
     One request at a time: the web server answers requests in parallel threads, and llama.cpp can't be used by two at
     once, so the others wait their turn (a second or two each)."""
@@ -92,18 +93,26 @@ class LlamaQueryModel:
         self._llm = None
         self._lock = threading.Lock()
 
+    def load(self) -> None:
+        """Loads the model now, if it isn't loaded yet."""
+        with self._lock:
+            self._loaded()
+
+    def _loaded(self):
+        if self._llm is None:
+            from llama_cpp import Llama  # imported here: the rules never need it
+
+            self._llm = Llama(model_path=str(self.path), n_ctx=1024, verbose=False)
+        return self._llm
+
     def read(self, text: str) -> object:
         messages = [{"role": "system", "content": SYSTEM}]
         for request, answer in EXAMPLES:
             messages += [{"role": "user", "content": request}, {"role": "assistant", "content": json.dumps(answer)}]
         messages.append({"role": "user", "content": text})
         with self._lock:
-            if self._llm is None:
-                from llama_cpp import Llama  # imported here: the rules never need it
-
-                self._llm = Llama(model_path=str(self.path), n_ctx=1024, verbose=False)
-            out = self._llm.create_chat_completion(messages=messages, temperature=0, max_tokens=60,
-                                                   response_format={"type": "json_object", "schema": SCHEMA})
+            out = self._loaded().create_chat_completion(messages=messages, temperature=0, max_tokens=60,
+                                                        response_format={"type": "json_object", "schema": SCHEMA})
         try:
             return json.loads(out["choices"][0]["message"]["content"])
         except (KeyError, IndexError, TypeError, json.JSONDecodeError):

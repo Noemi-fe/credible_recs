@@ -1,0 +1,27 @@
+{
+  "note": "The latency eval's fixed requests (eval/latency.py; Noemi asked on 12 Oct 2026 for answers to be made much faster, measured on a set of evals). The 10 blind-test questions (copied from eval/blind_test/questions.json, so this set stays fixed), then 12 others chosen by Claude: the product types added on 11 Oct 2026 (haircare, appliances the open model routes), the slowest known case (anti-dandruff shampoo, whose first 16 threads give fewer than 3 picks, so it reads 48), one request module 1 answers with a clarifying question and one it answers with a polite no.",
+  "queries": [
+    {"id": "b01", "text": "gentle exfoliant for sensitive skin under £30", "why": "blind test"},
+    {"id": "b02", "text": "sunscreen for oily skin that doesn't leave a white cast, under £20", "why": "blind test"},
+    {"id": "b03", "text": "retinol for a beginner with sensitive skin", "why": "blind test"},
+    {"id": "b04", "text": "fragrance-free moisturiser for very dry skin in winter", "why": "blind test"},
+    {"id": "b05", "text": "gentle cleanser for acne-prone skin that won't strip my skin", "why": "blind test"},
+    {"id": "b06", "text": "electric kettle that lasts 10+ years", "why": "blind test"},
+    {"id": "b07", "text": "first chef's knife under £100 for a home cook", "why": "blind test"},
+    {"id": "b08", "text": "cast iron skillet for a beginner that will last decades", "why": "blind test"},
+    {"id": "b09", "text": "burr coffee grinder for pour-over under £150", "why": "blind test"},
+    {"id": "b10", "text": "non-stick frying pan without PFAS that actually lasts", "why": "blind test"},
+    {"id": "l01", "text": "anti-dandruff shampoo", "why": "the slowest known: fewer than 3 picks in its first 16 threads, so it reads 48"},
+    {"id": "l02", "text": "shampoo for an oily scalp", "why": "haircare; also reads more threads"},
+    {"id": "l03", "text": "air fryer that lasts", "why": "a type only the open model routes"},
+    {"id": "l04", "text": "rice cooker for a family of four", "why": "placed by a clue word, so the open model is asked too"},
+    {"id": "l05", "text": "espresso machine for a beginner under £500", "why": "a new kitchen type with a budget"},
+    {"id": "l06", "text": "lip balm for very dry lips", "why": "a new skincare type"},
+    {"id": "l07", "text": "conditioner for dry damaged hair", "why": "haircare"},
+    {"id": "l08", "text": "toaster that lasts 10 years", "why": "a type only the open model routes, asking for long life"},
+    {"id": "l09", "text": "blender for smoothies", "why": "a type only the open model routes"},
+    {"id": "l10", "text": "enamelled dutch oven that lasts", "why": "a kitchen type the rules know"},
+    {"id": "l11", "text": "something nice for my mum", "why": "module 1 asks a clarifying question (after asking the open model)"},
+    {"id": "l12", "text": "best gaming laptop under 800", "why": "out of scope: the polite no"}
+  ]
+}

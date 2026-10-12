@@ -71,10 +71,13 @@ import html
 import json
 import re
 import unicodedata
+from collections import defaultdict
+from collections.abc import Iterable
 from functools import cache
 from pathlib import Path
 
 from engine.config import MENTION_CATEGORIES, PRODUCT_VARIANT_WORDS
+from engine.memo import Table, register
 from engine.text import one_edit_apart
 
 DEFAULT_ALIASES = Path(__file__).resolve().parent / "data" / "product_aliases.json"
@@ -127,11 +130,55 @@ class AliasError(Exception):
 
 
 def normalize_name(name: str) -> list[str]:
-    """The words of a product name, in a form that compares cleanly: "The Paula's Choice 2% BHA" -> paulas choice 2 bha."""
+    """The words of a product name, in a form that compares cleanly: "The Paula's Choice 2% BHA" -> paulas choice 2 bha.
+
+    Each name is worked out once and remembered (latency, 12 Oct 2026): answers compare the same names thousands of
+    times. The list handed back is a new one each time, so a caller changing it changes nothing remembered."""
+    words = _NORMALIZED.get(name)
+    if words is None:
+        words = _NORMALIZED[name] = tuple(_normalize_name(name))
+        _limit(_NORMALIZED)
+    return list(words)
+
+
+def _normalize_name(name: str) -> list[str]:
     words = plain_words(PACK_SIZE.sub(" ", name))
     while words and words[0] in LEADING_WORDS:
         words.pop(0)
     return _without_negated_models(_without_size_units([word for word in words if word not in FILLER_WORDS]))
+
+
+# --- Names already worked out (latency, 12 Oct 2026) ---
+# A name's words depend only on the name and the list of short names used, so each is worked out once. A list of short
+# names is known by its identity (the shipped list is read once: known_aliases), and kept with its answers, so a list
+# the caller drops can't be mistaken for a new one made in its place. Lists are never changed once made.
+_NORMALIZED: dict[str, tuple[str, ...]] = {}
+_WORDS_BY_LIST: dict[int, tuple[dict, dict[str, tuple[str, ...]]]] = {}  # id(list) -> (the list, {name: words})
+_WORDS_NO_ALIASES: dict[str, tuple[str, ...]] = {}  # every empty list gives the same words
+MAX_LISTS_REMEMBERED = 16
+MAX_NAMES_REMEMBERED = 200_000  # per table; a full table starts again (a long-running server never grows past it)
+for _table in (_NORMALIZED, _WORDS_BY_LIST, _WORDS_NO_ALIASES):
+    register(_table.clear)  # engine.memo.forget_all empties them
+_SAME = Table()  # (words, words) -> whether they name the same product (same_words)
+
+
+def _limit(table: dict) -> None:
+    if len(table) > MAX_NAMES_REMEMBERED:
+        table.clear()
+
+
+def _words_table(aliases: "Aliases") -> dict[str, tuple[str, ...]]:
+    """The remembered words of names under this list of short names."""
+    if not aliases:
+        return _WORDS_NO_ALIASES
+    found = _WORDS_BY_LIST.get(id(aliases))
+    if found is not None and found[0] is aliases:
+        return found[1]
+    if len(_WORDS_BY_LIST) >= MAX_LISTS_REMEMBERED:
+        _WORDS_BY_LIST.pop(next(iter(_WORDS_BY_LIST)))  # the list remembered first
+    table: dict[str, tuple[str, ...]] = {}
+    _WORDS_BY_LIST[id(aliases)] = (aliases, table)
+    return table
 
 
 # A pack size ("74g", "118 ml", "1.7 fl oz") says which size was priced, not which product it is: it is dropped (b01,
@@ -176,8 +223,18 @@ def product_words(name: str, aliases: Aliases = NO_ALIASES) -> list[str]:
     """The words of a name (normalize_name), with a known short name at its start written out in full.
 
     A short name written with a possessive is written out too ("TO's mandelic acid"), but only when the name shows the
-    apostrophe: without it, an "s" after a model code is another model ("Q2S" is not the "Q2").
+    apostrophe: without it, an "s" after a model code is another model ("Q2S" is not the "Q2"). Each name is worked out
+    once per list of short names and remembered (latency, 12 Oct 2026); the list handed back is a new one each time.
     """
+    table = _words_table(aliases)
+    words = table.get(name)
+    if words is None:
+        words = table[name] = tuple(_product_words(name, aliases))
+        _limit(table)
+    return list(words)
+
+
+def _product_words(name: str, aliases: Aliases) -> list[str]:
     words = normalize_name(name)
     spelled = spell_out(words, aliases)
     if spelled == words and words and _written_possessive(words[0], name):
@@ -238,13 +295,74 @@ def same_product(a: str, b: str, aliases: Aliases = NO_ALIASES) -> bool:
 
 
 def same_words(words_a: list[str], words_b: list[str]) -> bool:
-    """same_product on names already turned into words (product_words)."""
+    """same_product on names already turned into words (product_words). It depends on the two names' words alone, so
+    each pair is compared once and remembered (latency, 12 Oct 2026)."""
+    key = (tuple(words_a), tuple(words_b))
+    found = _SAME.get(key)
+    if found is None:
+        found = _SAME.keep(key, _same_words(words_a, words_b))
+    return found
+
+
+def _same_words(words_a: list[str], words_b: list[str]) -> bool:
     if not words_a or not words_b:
         return False  # a name made only of filler words ("the one") names nothing
     words_a, words_b = comparable(words_a, words_b)
     if words_a == words_b:
         return True
     return _found_inside(words_a, words_b) or _only_typos_apart(words_a, words_b)
+
+
+def match_candidates(names: Iterable[tuple[str, ...]]) -> dict[tuple[str, ...], set[tuple[str, ...]]]:
+    """For each name (its words, as product_words gives them), the names among `names` it could match by same_words:
+    every pair that matches is among them, and most that can't are left out, so grouping (engine/group_products.py)
+    compares only these. A big request has 700 names, half a million pairs to compare: seconds (latency, 12 Oct 2026).
+
+    Why a pair is left out, in the matcher's own rules: when two names match, each word of one of them (the one with
+    fewer words, as the matcher compares them) is found in the other as it is, or with a spelling slip, and every slip
+    keeps a word's first letter. So the set of first letters of one name is inside the other's. Two things can change
+    a name's words before that comparison, and pairs where they could are always kept: words written apart that join
+    into a longer word of the other name ("soon jung" and "soonjung": one word is the start of a longer one), and an
+    "and" written in only one of the two names, which is dropped from both ("black and decker", "black decker").
+    """
+    names = list(dict.fromkeys(names))
+    candidates: dict[tuple[str, ...], set[tuple[str, ...]]] = {name: set() for name in names}
+    for without_and in (False, True):
+        letters = {name: frozenset(w[0] for w in name if w and not (without_and and w == AND)) for name in names}
+        having = defaultdict(set)  # a first letter -> the names with a word starting with it
+        by_letters = defaultdict(set)  # a set of first letters -> the names with exactly those
+        for name, found in letters.items():
+            by_letters[found].add(name)
+            for letter in found:
+                having[letter].add(name)
+        for name, found in letters.items():
+            if not found:
+                candidates[name].update(names)  # nothing to tell by: compare it with every name
+                continue
+            inside = set.intersection(*(having[letter] for letter in found))  # names with all its first letters
+            candidates[name] |= inside
+            for other, names_with in by_letters.items():  # names whose first letters are all among its own
+                if other <= found:
+                    candidates[name] |= names_with
+            for other in inside:
+                candidates[other].add(name)
+    # A word that starts a longer word of the other name: the matcher may join words, so the pair is kept.
+    words = sorted({w for name in names for w in name})
+    names_with_word = defaultdict(set)
+    for name in names:
+        for w in name:
+            names_with_word[w].add(name)
+    for i, short in enumerate(words):
+        j = i + 1
+        while j < len(words) and words[j].startswith(short):
+            for a in names_with_word[short]:
+                for b in names_with_word[words[j]]:
+                    candidates[a].add(b)
+                    candidates[b].add(a)
+            j += 1
+    for name in names:
+        candidates[name].discard(name)
+    return candidates
 
 
 def written_alike(words_a: list[str], words_b: list[str]) -> bool:
@@ -272,6 +390,10 @@ def join_split_words(words: list[str], other: list[str]) -> list[str]:
     the longest first.
     """
     targets = set(other)
+    # A run joins only into a word of the other name that starts with the run's first word and is longer: when no word
+    # of the other name starts that way, nothing joins (a quick answer for most pairs of names; latency, 12 Oct 2026).
+    if not any(len(t) > len(w) and t.startswith(w) for t in targets for w in words):
+        return list(words)
     joined, i = [], 0
     while i < len(words):
         for size in range(min(MAX_WORDS_JOINED, len(words) - i), 1, -1):
@@ -314,7 +436,7 @@ def _words_found(shorter: list[str], longer: list[str]) -> set[int] | None:
         # A first word (most often the brand) is only forgiven a slip where the longer name starts: "treitnoin .05" is
         # tretinoin in general, not "Obagi 0.05% tretinoin cream".
         places = [i for i, w in enumerate(longer)
-                  if i not in found and w not in shorter and _spelling_slip(word, w) and (n > 0 or i == 0)]
+                  if (n > 0 or i == 0) and i not in found and w not in shorter and _spelling_slip(word, w)]
         if not places:
             return None
         found.add(places[0])
@@ -343,7 +465,9 @@ def _spelling_slip(x: str, y: str) -> bool:
     """Whether two different words are one word misspelled: a plural "s", a letter doubled ("hurr" for "hur"), or a
     slip in a long word that keeps its first letter: one letter added, dropped or changed, or letters moved within
     three neighbouring places ("creseut" for "creuset")."""
-    if x == y or frozenset((x, y)) in NOT_SLIPS:
+    if x == y or not x or not y or x[0] != y[0] or abs(len(x) - len(y)) > 1:
+        return False  # every slip below keeps the first letter and the length within one: a quick no for most pairs
+    if frozenset((x, y)) in NOT_SLIPS:
         return False
     shorter, longer = sorted((x, y), key=len)
     if longer == shorter + "s" and len(shorter) >= PLURAL_MIN_LENGTH:

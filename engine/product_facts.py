@@ -90,6 +90,7 @@ from engine.config import (
     THREAD_CATEGORIES,
 )
 from engine.match_products import known_aliases, product_words, same_product, written_alike
+from engine.memo import FileMemo, PerList
 from engine.models import Record
 from engine.needs import request_needs
 from engine.query import MUST_HAVES, PRODUCT_TYPES, ParsedQuery
@@ -165,7 +166,19 @@ class NotSuited:
 
 def load_product_facts(path: Path = DEFAULT_PRODUCT_FACTS) -> list[ProductFacts]:
     """Every entry of the facts list (data/product_facts.json by default). A malformed file or entry raises
-    ProductFactsError, naming the entry and the problem."""
+    ProductFactsError, naming the entry and the problem.
+
+    Read once and kept while the file is unchanged (engine.memo; latency, 12 Oct 2026): every caller gets the same list,
+    which none may change, so the lookups worked out from it are kept too (find_facts)."""
+    return _LOADED.get(Path(path), _read_product_facts)
+
+
+# The facts lists read, and the entry found for each product in each list (latency, 12 Oct 2026).
+_LOADED = FileMemo()
+_FOUND = PerList()
+
+
+def _read_product_facts(path: Path) -> list[ProductFacts]:
     try:
         entries = json.loads(Path(path).read_text(encoding="utf-8"))["facts"]
     except (OSError, json.JSONDecodeError, KeyError, TypeError) as e:
@@ -198,8 +211,21 @@ def find_facts(name: str, category: str, entries: Iterable[ProductFacts],
     `product_type` (the request's) when it is given (12 Oct 2026: a bare "L'Oréal" hair mask could have taken a
     shampoo's entry and name): the one with the same words (but for spelling slips: engine.match_products.written_alike)
     first, then the newest check, then the name, so the choice is always the same. Entries are never merged: two
-    names may be two versions of a product.
+    names may be two versions of a product. Worked out once per product and list, and kept with the list
+    (engine.memo.PerList; latency, 12 Oct 2026).
     """
+    table = _FOUND.of(entries)
+    key = (name, category, product_type)
+    if table is not None and key in table:
+        return table[key]
+    found = _find_facts(name, category, entries, product_type)
+    if table is not None:
+        table[key] = found
+    return found
+
+
+def _find_facts(name: str, category: str, entries: Iterable[ProductFacts],
+                product_type: str | None) -> ProductFacts | None:
     aliases = known_aliases().get(category, {})
     fits = [e for e in entries if e.category == category and same_product(e.product, name, aliases)
             and (product_type is None or e.product_type == product_type)]

@@ -5,6 +5,7 @@ extraction scores (engine/extraction_eval.py) need this to tell a renamed produc
 """
 
 import json
+import random
 
 import pytest
 
@@ -472,3 +473,106 @@ def test_a_short_name_already_written_out_with_a_slip_is_left_alone():
     aliases = make_aliases({"Etude": "Etude House"})
     assert product_words("Ettude Houde", aliases) == ["ettude", "houde"]
     assert same_product("Ettude Houde", "Etude House", aliases)
+
+
+# --- Names already worked out are remembered (latency, 12 Oct 2026) ---
+
+def test_a_name_seen_before_gives_the_same_words():
+    aliases = make_aliases({"TO": "The Ordinary"})
+    first = product_words("TO's mandelic acid", aliases)
+    assert product_words("TO's mandelic acid", aliases) == first == ["ordinary", "mandelic", "acid"]
+    assert normalize_name("The Paula's Choice 2% BHA") == normalize_name("The Paula's Choice 2% BHA")
+
+
+def test_changing_the_words_handed_back_changes_nothing_remembered():
+    aliases = make_aliases({"TO": "The Ordinary"})
+    words = product_words("TO sunscreen", aliases)
+    words.append("spf50")
+    words[0] = "changed"
+    assert product_words("TO sunscreen", aliases) == ["ordinary", "sunscreen"]
+    plain = normalize_name("Lodge skillet")
+    plain.clear()
+    assert normalize_name("Lodge skillet") == ["lodge", "skillet"]
+
+
+def test_two_lists_of_short_names_never_mix():
+    # The same name means different things with different short names: each list keeps its own answers.
+    to_ordinary = make_aliases({"TO": "The Ordinary"})
+    to_other = make_aliases({"TO": "Tatcha Original"})
+    assert product_words("TO cleanser", to_ordinary) == ["ordinary", "cleanser"]
+    assert product_words("TO cleanser", to_other) == ["tatcha", "original", "cleanser"]
+    assert product_words("TO cleanser") == ["to", "cleanser"]
+    assert product_words("TO cleanser", {}) == ["to", "cleanser"]
+    assert product_words("TO cleanser", to_ordinary) == ["ordinary", "cleanser"]
+
+
+def test_many_lists_of_short_names_are_each_answered_rightly():
+    # More lists than are remembered at once: the ones forgotten are worked out again, never confused.
+    lists = [make_aliases({"XY": f"Brand{n} Line"}) for n in range(40)]
+    for n, aliases in enumerate(lists):
+        assert product_words("XY toner", aliases) == [f"brand{n}", "line", "toner"]
+    for n, aliases in enumerate(lists):
+        assert product_words("XY toner", aliases) == [f"brand{n}", "line", "toner"]
+
+
+def test_a_name_is_worked_out_once(monkeypatch):
+    # Answers compare the same names thousands of times (prices, facts, grouping): each name is worked out once.
+    from engine import match_products
+
+    calls = []
+    real = match_products.spell_out
+    monkeypatch.setattr(match_products, "spell_out", lambda words, aliases: calls.append(1) or real(words, aliases))
+    aliases = make_aliases({"TO": "The Ordinary"})
+    for _ in range(3):
+        assert product_words("TO niacinamide serum", aliases) == ["ordinary", "niacinamide", "serum"]
+    assert len(calls) == 1
+
+
+# --- Which pairs of names can match at all (latency, 12 Oct 2026) ---
+
+from engine.match_products import match_candidates, same_words  # noqa: E402
+
+
+def every_match(names: list[tuple[str, ...]]) -> set[tuple]:
+    """Every ordered pair of different names that same_words accepts, comparing them all."""
+    return {(a, b) for a in names for b in names if a != b and same_words(list(a), list(b))}
+
+
+def candidate_pairs(names: list[tuple[str, ...]]) -> set[tuple]:
+    candidates = match_candidates(names)
+    return {(a, b) for a in names for b in candidates[a] if a != b}
+
+
+TRICKY_NAMES = [
+    ("soon", "jung", "cream"), ("soonjung", "essence"), ("soonjung",), ("tir", "tir", "milk"), ("tirtir", "milk"),
+    ("black", "and", "decker"), ("black", "decker", "kettle"), ("and", "co"), ("creseut",), ("le", "creuset"),
+    ("creuset", "pan"), ("zojurushi",), ("zojirushi", "kettle"), ("lodge", "pans"), ("lodge", "pan"),
+    ("hurr", "fluid"), ("hur", "fluid"), ("cosrx", "bha"), ("corsx", "bha", "liquid"), ("timemore", "c2"),
+    ("timemore", "c2", "max"), ("v60",), ("v61",), ("cerave",), ("cerave", "sa", "cleanser"),
+    ("cerave", "hydrating", "cleanser"), ("sa", "cleanser"), ("2", "bha"), ("paulas", "choice", "2", "bha"),
+    ("comandante", "c40"), ("commandante",), ("1zpresso", "jx", "pro"), ("jx", "pro"), ("a",), ("vitamin", "a"),
+    ("j", "max"), ("jmax",), ("1zpresso", "j", "max"), ("fab", "pads"), ("fabs", "exfoliating", "pads"),
+]
+
+
+def test_every_pair_that_can_match_is_a_candidate():
+    # Two names can match only if each word of one starts like a word of the other (a slip keeps the first letter),
+    # unless words written apart join into one of the other's ("soon jung" and "soonjung"), or an "and" is dropped.
+    found = every_match(TRICKY_NAMES)
+    assert found and found <= candidate_pairs(TRICKY_NAMES)
+
+
+def test_candidates_hold_every_match_among_made_up_names():
+    rng = random.Random(12)
+    stems = ["soon", "jung", "soonjung", "cera", "ve", "cerave", "kettle", "kettles", "pan", "pans", "and", "creuset",
+             "creseut", "lodge", "lodgee", "max", "jmax", "j", "2", "22", "bha", "bhas", "salicylic", "salicyclic"]
+    names = sorted({tuple(rng.choice(stems) for _ in range(rng.randint(1, 4))) for _ in range(400)})
+    names = [name for name in names if set(name) != {"and"}]  # a name of "and" alone isn't one (and stops the matcher)
+    found = every_match(names)
+    assert len(found) > 100
+    assert found <= candidate_pairs(names)
+
+
+def test_names_with_no_first_letters_in_common_are_not_compared():
+    names = [("zojirushi", "kettle"), ("bonavita", "gooseneck"), ("cerave", "cleanser")]
+    assert candidate_pairs(names) == set()
