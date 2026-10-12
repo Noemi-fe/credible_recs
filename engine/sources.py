@@ -49,7 +49,7 @@ from engine.config import (
 from engine.gold import load_threads
 from engine.models import Thread
 from engine.parse_reddit import ParseRedditClient
-from engine.query import PRODUCT_TYPES, TITLE_WORDS, ParsedQuery
+from engine.query import LOOKALIKES, PRODUCT_TYPES, TITLE_WORDS, ParsedQuery
 from engine.text import one_edit_apart
 
 
@@ -84,10 +84,28 @@ def _product_pattern(product_type: str) -> re.Pattern:
     return re.compile(rf"\b(?:{alternatives})s?\b", re.IGNORECASE)
 
 
+@cache
+def _covering_pattern(product_type: str) -> re.Pattern:
+    """Longer names that hold one of this product's words but name something else: the other product types' names and
+    module 1's look-alike phrases ("tea pot" and "crock pot" hold "pot"; "dry shampoo" holds "shampoo")."""
+    name = product_type.strip().lower()
+    phrases = {k for p in PRODUCT_TYPES if p.name != name for k in p.keywords} | set(LOOKALIKES)
+    alternatives = "|".join(re.escape(x) for x in sorted(phrases, key=len, reverse=True))
+    return re.compile(rf"\b(?:{alternatives})s?\b", re.IGNORECASE)
+
+
 def mentions_product(text: str, product_type: str) -> bool:
-    """True if the text names the product, allowing one wrong letter in long names ("suncreen" for "sunscreen")."""
-    if _product_pattern(product_type).search(text):
-        return True
+    """True if the text names the product, allowing one wrong letter in long names ("suncreen" for "sunscreen").
+
+    A word of the product's inside a longer name of another product doesn't count (12 Oct 2026: "pot" in "tea pot"
+    or "crock pot" had brought teapot and slow-cooker threads, and their advice, into a saucepan answer; "shampoo" in
+    "dry shampoo" likewise)."""
+    covers = None
+    for match in _product_pattern(product_type).finditer(text):
+        if covers is None:
+            covers = [(c.start(), c.end()) for c in _covering_pattern(product_type).finditer(text)]
+        if not any(s <= match.start() and match.end() <= e and e - s > match.end() - match.start() for s, e in covers):
+            return True
     long_names = [w for w in _product_words(product_type) if " " not in w and len(w) >= TYPO_MIN_LENGTH]
     tokens = {t.removesuffix("s") for t in re.findall(r"[a-z]+", text.lower()) if len(t) >= TYPO_MIN_LENGTH - 1}
     return any(one_edit_apart(t, w) for t in tokens for w in long_names)

@@ -1087,3 +1087,17 @@ def test_a_hyphenated_title_word_matches_its_parts():
     ranked = rank_posts(parse_query("anti-dandruff shampoo"), posts)
     assert [p["id"] for p in ranked][:1] == ["1bbbbb"]
     assert thread_kind({"title": "Shampoo recs please"}, "haircare") == "advice"
+
+
+def test_a_word_inside_another_products_name_doesnt_name_the_product():
+    # 12 Oct 2026, from Noemi's "pot" test and the shampoo builder: "pot" in "tea pot" or "crock pot", and "shampoo" in
+    # "dry shampoo", name another product, so those threads were read (and their notes shown) for the wrong request.
+    from engine.sources import mentions_product
+
+    assert not mentions_product("Best tea pot for loose leaf?", "saucepan")
+    assert not mentions_product("Instant pot or crock pot for stews?", "saucepan")
+    assert mentions_product("Best stock pot that lasts?", "saucepan")
+    assert mentions_product("Pots and pans set: worth it?", "saucepan")
+    assert not mentions_product("Holy grail dry shampoo?", "shampoo")
+    assert mentions_product("Dry shampoo vs regular shampoo for oily hair", "shampoo")
+    assert mentions_product("Holy grail dry shampoo?", "dry shampoo")
