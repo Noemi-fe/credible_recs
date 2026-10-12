@@ -323,6 +323,10 @@ def join_split_words(words: list[str], other: list[str]) -> list[str]:
     the longest first.
     """
     targets = set(other)
+    # A run joins only into a word of the other name that starts with the run's first word and is longer: when no word
+    # of the other name starts that way, nothing joins (a quick answer for most pairs of names; latency, 12 Oct 2026).
+    if not any(len(t) > len(w) and t.startswith(w) for t in targets for w in words):
+        return list(words)
     joined, i = [], 0
     while i < len(words):
         for size in range(min(MAX_WORDS_JOINED, len(words) - i), 1, -1):
@@ -365,7 +369,7 @@ def _words_found(shorter: list[str], longer: list[str]) -> set[int] | None:
         # A first word (most often the brand) is only forgiven a slip where the longer name starts: "treitnoin .05" is
         # tretinoin in general, not "Obagi 0.05% tretinoin cream".
         places = [i for i, w in enumerate(longer)
-                  if i not in found and w not in shorter and _spelling_slip(word, w) and (n > 0 or i == 0)]
+                  if (n > 0 or i == 0) and i not in found and w not in shorter and _spelling_slip(word, w)]
         if not places:
             return None
         found.add(places[0])
@@ -394,7 +398,9 @@ def _spelling_slip(x: str, y: str) -> bool:
     """Whether two different words are one word misspelled: a plural "s", a letter doubled ("hurr" for "hur"), or a
     slip in a long word that keeps its first letter: one letter added, dropped or changed, or letters moved within
     three neighbouring places ("creseut" for "creuset")."""
-    if x == y or frozenset((x, y)) in NOT_SLIPS:
+    if x == y or not x or not y or x[0] != y[0] or abs(len(x) - len(y)) > 1:
+        return False  # every slip below keeps the first letter and the length within one: a quick no for most pairs
+    if frozenset((x, y)) in NOT_SLIPS:
         return False
     shorter, longer = sorted((x, y), key=len)
     if longer == shorter + "s" and len(shorter) >= PLURAL_MIN_LENGTH:
