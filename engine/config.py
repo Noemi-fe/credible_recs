@@ -355,6 +355,9 @@ PRECHECK_FRESH_HOURS = 20
 # job stays well inside Cloud Run's free tier. The answers of the 13 Oct 2026 library show 759 comments, hold 170 next in
 # line and 146 in the products behind the picks (1,075: all read), then 289 next after those (read as the budget allows).
 PRECHECK_MAX_READS = 1100
+# Unlike a visitor's answer (LIVE_CHECK_MAX_WAIT_SECONDS), nobody waits on the pre-check: a read waits for Reddit's next
+# 10 minutes however long that is (13 Oct 2026).
+PRECHECK_MAX_WAIT_SECONDS = 660
 # A run stops after this many unreadable pages in a row: Reddit is refusing reads (its allowance used from elsewhere).
 PRECHECK_STOP_AFTER_UNKNOWN = 20
 # The open model's product types (engine.query_model) the library had threads about on 13 Oct 2026, from its request

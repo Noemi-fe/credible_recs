@@ -319,6 +319,18 @@ def test_the_command_refuses_anything_else(argv, capsys):
     assert "python -m engine.precheck" in capsys.readouterr().out
 
 
+def test_the_command_waits_for_reddits_next_10_minutes_rather_than_give_up(monkeypatch):
+    # 13 Oct 2026: a visitor's read never waits more than LIVE_CHECK_MAX_WAIT_SECONDS for Reddit's next 10 minutes; the
+    # pre-check has nobody waiting on it and reads until its budget is spent, so it waits as long as a window lasts.
+    given = {}
+    monkeypatch.setattr(precheck, "requests_to_check", lambda: [REQUEST])
+    monkeypatch.setattr(precheck.pipeline, "cached_profiles", lambda: None)
+    monkeypatch.setattr(precheck, "run", lambda requests, limit, dry_run, library_dir, checker, profiles:
+                        given.setdefault("checker", checker) and 0)
+    assert precheck.main(["--dry-run"]) == 0
+    assert given["checker"].max_wait > 600 > config.LIVE_CHECK_MAX_WAIT_SECONDS
+
+
 def test_a_whole_run_from_the_command(tmp_path, capsys):
     reddit = FakeReddit()
     status = precheck.run([REQUEST], limit=100, dry_run=False, library_dir=library(tmp_path),

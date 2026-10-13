@@ -26,13 +26,14 @@ Each comment gets a tier (0: shown; 1: next in line; 2: behind the picks; 3: nex
 that order, a pick's own quotes before the rest of each tier, then by request, then by place in the answer: the
 likeliest to be shown first. A comment in several answers or places is read once, at its likeliest.
 
-How it is read (check_ahead): through the live site's own checker (engine.pipeline.live_checker: the same pace, the
-same 48-hour cache), one comment at a time, until the run's budget of reads (--limit, default
-config.PRECHECK_MAX_READS) is spent. On Google Cloud the checks are shared with the site through the bucket, as one
-object (engine.live_check.LiveChecker.load_bundle and save_bundle): read as a run starts, written midway and at the end. A comment read less than config.PRECHECK_FRESH_HOURS ago is skipped; an older one
-is read again, so the next day's answers never find its check expired. A run stops when Reddit stops answering
-(config.PRECHECK_STOP_AFTER_UNKNOWN unreadable pages in a row). The report gives counts and times only, never a
-comment's words.
+How it is read (check_ahead): through the live site's own checker (engine.live_check.checker_from_env: the same pace,
+the same 48-hour cache; but a read waits for Reddit's next 10 minutes however long that is, config.
+PRECHECK_MAX_WAIT_SECONDS, since nobody waits on it), one comment at a time, until the run's budget of reads (--limit,
+default config.PRECHECK_MAX_READS) is spent. On Google Cloud the checks are shared with the site through the bucket, as
+one object (engine.live_check.LiveChecker.load_bundle and save_bundle): read as a run starts, written midway and at the
+end. A comment read less than config.PRECHECK_FRESH_HOURS ago is skipped; an older one is read again, so the next
+day's answers never find its check expired. A run stops when Reddit stops answering (config.PRECHECK_STOP_AFTER_UNKNOWN
+unreadable pages in a row). The report gives counts and times only, never a comment's words.
 
     python -m engine.precheck [--limit N] [--dry-run]
 
@@ -52,10 +53,10 @@ from pathlib import Path
 
 from engine import pipeline
 from engine.answer import Answer, ShownQuote, quotes_to_check
-from engine.config import (PICKS_SHOWN, PRECHECK_FRESH_HOURS, PRECHECK_MAX_READS, PRECHECK_MODEL_TYPES,
-                           PRECHECK_STOP_AFTER_UNKNOWN)
+from engine.config import (PICKS_SHOWN, PRECHECK_FRESH_HOURS, PRECHECK_MAX_READS, PRECHECK_MAX_WAIT_SECONDS,
+                           PRECHECK_MODEL_TYPES, PRECHECK_STOP_AFTER_UNKNOWN)
 from engine.library import DEFAULT_LIBRARY_DIR
-from engine.live_check import LiveResult
+from engine.live_check import LiveResult, checker_from_env
 from engine.parse_reddit import REPO_ROOT
 from engine.query import PRODUCT_TYPES
 
@@ -386,8 +387,8 @@ def main(argv: list[str]) -> int:
         print(__doc__)
         return 2
     limit, dry_run = parsed
-    return run(requests_to_check(), limit, dry_run, DEFAULT_LIBRARY_DIR, pipeline.live_checker(),
-               pipeline.cached_profiles())
+    return run(requests_to_check(), limit, dry_run, DEFAULT_LIBRARY_DIR,
+               checker_from_env(max_wait=PRECHECK_MAX_WAIT_SECONDS), pipeline.cached_profiles())
 
 
 if __name__ == "__main__":
