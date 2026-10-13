@@ -19,7 +19,8 @@ from engine.tests.test_live_check import Clock, deleted_page, page
 from engine.tests.test_pipeline import REQUEST, comment, kettle_thread, mention
 
 # Made-up comments: (comment id, thread, product, stance, text). Four kettles with enough credible praise to be picks,
-# so one is ranked behind the three picks, and one kettle warned against twice, for the skip list.
+# so one is ranked behind the three picks; one praised twice, for "Also worth a look"; and one kettle warned against
+# twice, for the skip list.
 COMMENTS = [
     ("z1aaaa", "1kett01", "Zojirushi kettle", "recommend", "My Zojirushi kettle has lasted 9 years and still boils fast."),
     ("z1bbbb", "1kett01", "Zojirushi kettle", "recommend", "Our Zojirushi kettle is 8 years old and works every day."),
@@ -36,6 +37,8 @@ COMMENTS = [
     ("s1aaaa", "1kett01", "Cosori kettle", "recommend", "My Cosori kettle has lasted 4 years with daily use."),
     ("s2aaaa", "1kett02", "Cosori kettle", "recommend", "Cosori kettle for 3 years, it still works well."),
     ("s2bbbb", "1kett02", "Cosori kettle", "recommend", "I have had the Cosori kettle 3 years, no issues yet."),
+    ("r1aaaa", "1kett01", "Russell Hobbs kettle", "recommend", "My Russell Hobbs kettle has lasted 5 years so far."),
+    ("r2aaaa", "1kett02", "Russell Hobbs kettle", "recommend", "Russell Hobbs kettle, 4 years of daily use, still good."),
     ("c1aaaa", "1kett01", "Chefman kettle", "warn", "The Chefman kettle died after 6 months of use."),
     ("c2aaaa", "1kett02", "Chefman kettle", "warn", "Two Chefman kettles broke within a year of use, avoid them."),
 ]
@@ -121,6 +124,30 @@ def test_the_products_behind_the_picks_are_checked_ahead(tmp_path):
     assert {c.comment_id for c in found if c.comment_id[0] == letter} == {cid for cid, *_ in COMMENTS
                                                                           if cid[0] == letter}
     assert all(c.tier > 0 for c in found if c.comment_id[0] == letter)
+
+
+def test_also_worth_a_look_and_the_comments_a_summary_cites_are_checked_ahead(tmp_path):
+    # Every quote the live check must pass before an answer is shown (engine.answer.quotes_to_check), since 13 Oct 2026
+    # also "Also worth a look" and the comments a one-line summary cites, though the summary shows no quote.
+    lib = library(tmp_path)
+    plain = answer_request(REQUEST, library_dir=lib, live_checker=AllPass()).answer
+    zojirushi = next(pick for pick in plain.picks if pick.name == "Zojirushi kettle")
+    praise = [cid for cid, _, product, stance, _ in COMMENTS if product == "Zojirushi kettle" and stance == "recommend"]
+    unquoted = [cid for cid in praise if cid not in {q.comment_id for q in zojirushi.quotes}]
+    from engine.summaries import current_version
+
+    (lib / "summaries.json").write_text(json.dumps({"kitchen:zojirushi kettle": {
+        "product": "Zojirushi kettle", "category": "kitchen", "product_type": "electric kettle",
+        "text": "Owners say it keeps boiling well for years.", "cites": unquoted[-1:],
+        "written_at": "2026-10-13T10:00:00Z", "writer": "claude-code", "instructions_version": current_version()}}),
+        encoding="utf-8")
+    answer = answer_request(REQUEST, library_dir=lib, live_checker=AllPass()).answer
+    assert [q.comment_id for q in next(p for p in answer.picks if p.name == "Zojirushi kettle").summary.sources] == \
+        unquoted[-1:]
+    assert [item.name for item in answer.worth_a_look] == ["Russell Hobbs kettle"]
+    found = comments_to_check([REQUEST], library_dir=lib, checker=live_checker(tmp_path, FakeReddit()))
+    shown = {c.comment_id for c in found if c.tier == 0}
+    assert {"r1aaaa", "r2aaaa"} <= shown and unquoted[-1] in shown
 
 
 def test_working_out_the_comments_never_reads_reddit(tmp_path):

@@ -13,9 +13,10 @@ What is read, worked out without reading Reddit (comments_to_check):
    types the library holds threads about (its request log, and config.PRECHECK_MODEL_TYPES where the log isn't kept);
 2. each request's answer, as the live site writes it (engine.pipeline.answer_request, with writers' standing from the
    library), every quote taken as passing except where a saved check already says a comment was deleted or edited: then
-   that comment drops out and what replaces it is shown, as for a visitor. Every quote the answer shows counts,
-   wherever it is: a pick's quotes, its downsides and care tips, the care note, "What to look for" and "Avoid", the skip
-   list, and anything else the answer holds quotes in (such as "Also worth a look");
+   that comment drops out and what replaces it is shown, as for a visitor. Every quote the live check must pass counts
+   (engine.answer.quotes_to_check): a pick's quotes, its downsides and care tips, "Also worth a look" with its
+   downsides, the care note, "What to look for" and "Avoid", the skip list, and the comments the one-line summaries
+   cite;
 3. what would be shown if checks failed: the answer written again (module 7's own write_answer, with what the pipeline
    gave it) without each comment it shows, one at a time, so that place's next in line shows (a pick's next quote, the
    next downside, care tip or note); with its picks set aside, so the products ranked just behind them show; and
@@ -49,7 +50,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from engine import pipeline
-from engine.answer import Answer, ShownQuote
+from engine.answer import Answer, ShownQuote, quotes_to_check
 from engine.config import (PICKS_SHOWN, PRECHECK_FRESH_HOURS, PRECHECK_MAX_READS, PRECHECK_MODEL_TYPES,
                            PRECHECK_STOP_AFTER_UNKNOWN)
 from engine.library import DEFAULT_LIBRARY_DIR
@@ -244,26 +245,11 @@ def _comment_ids(answer: Answer) -> set[str]:
 
 
 def shown_quotes(answer: Answer) -> list[tuple[int, ShownQuote]]:
-    """Every quote the answer shows, in its own order (the picks first), each with its section: 0 for a pick's own
-    quotes ("In their words"), 1 for everything else. Found wherever the answer holds them, so a part added to answers
-    later (such as "Also worth a look") is checked ahead too."""
-    found: list[tuple[int, ShownQuote]] = []
-
-    def walk(value, path: tuple) -> None:
-        if isinstance(value, ShownQuote):
-            found.append((0 if path[:1] == ("picks",) and path[2:3] == ("quotes",) else 1, value))
-        elif dataclasses.is_dataclass(value) and not isinstance(value, type):
-            for f in dataclasses.fields(value):
-                walk(getattr(value, f.name), path + (f.name,))
-        elif isinstance(value, (list, tuple)):
-            for i, item in enumerate(value):
-                walk(item, path + (i,))
-        elif isinstance(value, dict):
-            for key, item in value.items():
-                walk(item, path + (key,))
-
-    walk(answer, ())
-    return found
+    """Every quote the live check must pass before the answer is shown (engine.answer.quotes_to_check: the quotes it
+    shows, "Also worth a look" and its downsides among them, then the quotes its one-line summaries cite), in its own
+    order (the picks first), each with its section: 0 for a pick's own quotes ("In their words"), 1 for the rest."""
+    own = {id(quote) for pick in answer.picks for quote in pick.quotes}
+    return [(0 if id(quote) in own else 1, quote) for quote in quotes_to_check(answer)]
 
 
 def merged(candidates: list[Candidate]) -> list[Candidate]:

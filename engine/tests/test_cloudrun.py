@@ -9,7 +9,8 @@ from deploy.cloudrun import make_context
 
 def a_repo(tmp_path: Path) -> Path:
     repo = tmp_path / "repo"
-    for name in ("threads/1abc.json", "extracted/1abc.json", "profiles.json", "requests.jsonl", "candidates.json"):
+    for name in ("threads/1abc.json", "extracted/1abc.json", "profiles.json", "summaries.json", "requests.jsonl",
+                 "candidates.json", "summaries_todo.json"):
         path = repo / "data" / "library" / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("{}", encoding="utf-8")
@@ -24,7 +25,8 @@ def test_the_bundle_holds_the_library_the_answers_read_and_nothing_else_of_it(tm
     out = tmp_path / "bundle"
     make_context.copy_library(repo / "data" / "library", out / "data" / "library")
     copied = sorted(p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file())
-    assert copied == ["data/library/extracted/1abc.json", "data/library/profiles.json", "data/library/threads/1abc.json"]
+    assert copied == ["data/library/extracted/1abc.json", "data/library/profiles.json", "data/library/summaries.json",
+                      "data/library/threads/1abc.json"]  # the one-line summaries too (13 Oct 2026), not their to-do list
 
 
 def test_a_bundle_with_a_secret_or_a_cache_is_refused(tmp_path):

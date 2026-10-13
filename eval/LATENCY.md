@@ -46,3 +46,18 @@ each); the 48-thread answer under 10 s uncached.
 | 12 Oct 2026 | `--live`, first try (real Reddit, empty cache; 8 reads at once, 0.1 s apart, no budget) | 0.69 / 30.00 | n/a | 3.80 / 31.81 | n/a | n/a | 5 | no: after about 200 reads Reddit answered 429 Too Many Requests (its limit: 200 reads in 10 minutes from one address), unread pages dropped their quotes, and the new product types lost every pick (a first attempt had also stopped on a page cut off halfway) | led to two fixes: a cut-off page drops its quote (d8e47b2); a read budget under Reddit's limit (19cfed9) |
 | 12 Oct 2026 | All kept changes, stand-in checks | 0.37 / 1.75 | 1.10 / 3.23 | 1.20 / 3.34 | 1.26 / 3.41 after 26.50 | 2.02 | 4.9 | yes | final: every target met |
 | 12 Oct 2026 | All kept changes, `--live` (real Reddit, empty cache, the 22 requests one after another) | 0.62 / 30.21 | n/a | 68.00 / 103.82 | n/a | n/a | 5 | no, as expected: 10 of 22 differ where Reddit changed since the snapshot (comments deleted, edited, or whose embed page no longer shows them; 7 of 40 such pages checked by hand); every quote shown passed its live check | b01 2.06 s and b02 3.23 s while the burst of 40 reads lasted; then every fresh answer waited for Reddit's budget (a read every 4 s): 22 fresh answers need about 800 reads, 4 windows of 10 minutes. Repeats: 0.2 to 0.7 s (cached checks) |
+
+## The live site (Google Cloud Run)
+
+Measured from outside with `python eval/live_latency.py --limit 8 --repeat` (13 Oct 2026 on): the first 8 requests
+of eval/edge_cases/latency_queries.json asked one after another, straight after a deploy (a new server, an empty
+cache of checks), then each again. Waited is what a visitor waits; the server reports its own time, split into the
+Reddit wait (live checks of the quotes shown, which Reddit's allowance of about 200 embed reads in 10 minutes paces
+once the burst of 40 is spent) and the engine's own work; queued is the rest (the network, and a server still
+getting ready or working out another answer). Fresh times are p50 / max; a repeat is a remembered answer.
+
+| Date | Change | Fresh: waited | Engine | Reddit | Queued | Repeat | Checks an answer | Kept? |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 13 Oct 2026 | Baseline: 1 processor, 2 GiB (revision 00006) | 60.12 / 80.08 | 2.04 / 11.04 | 54.65 / 76.13 | 2.76 / 8.08 | 0.11 / 0.14 | 12 to 21 | the baseline. The first 3 answers took 7 to 13 s while the burst lasted; from the 4th, each waited 45 to 76 s on Reddit's pace (a read every 4 s) |
+| 13 Oct 2026 | 2 processors (revision 00007) | 52.09 / 80.02 | 1.86 / 12.17 | 36.57 / 78.56 | 0.15 / 33.14 | 0.08 / 0.11 | 12 to 21 | no: the engine's time is the same within noise, and Reddit's pace is the same. Back to 1 (revision 00008). It showed the queue: the 2nd and 3rd answers waited 17 s and 33 s before their work began, behind a new server getting ready (warm_up) with the processor Cloud Run gives only during a request |
+| 13 Oct 2026 | A new server gets visitors only once its /ready says it has got ready (Cloud Run's startup probe; it got ready in 65.3 s, with the processor in full), and a ping to /ready every 5 minutes (Cloud Scheduler, free tier) keeps it awake (revision 00009) | 62.25 / 80.02 | 1.34 / 3.61 | 59.55 / 78.66 | 0.16 / 0.67 | n/a | 12 to 21 | yes: no answer waits behind a server getting ready (queued max 33.14 s now 0.67), and the first answers find everything ready (engine max 12.17 s now 3.61). The first 3 answers took 3.1 to 5.9 s; from the 4th, Reddit's pace again (what checking ahead removes) |

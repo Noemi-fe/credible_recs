@@ -4,8 +4,8 @@ commit, the saved library the answers read, and the Dockerfile next to this file
 The bundle is uploaded to Cloud Build in Noemi's own project and becomes a private image there: the library (Reddit
 text) is never public, and never in this repository. What goes in:
 - the code as committed (`git archive HEAD`), so nothing uncommitted and nothing git ignores: no .env, no caches;
-- data/library's threads/*.json, extracted/*.json and profiles.json, the files answers read (not the request log or
-  the candidate lists);
+- data/library's threads/*.json, extracted/*.json, profiles.json and summaries.json (the picks' one-line summaries,
+  13 Oct 2026), the files answers read (not the request log, the candidate lists or the summaries' to-do list);
 - deploy/cloudrun/Dockerfile, as the bundle's Dockerfile.
 check_bundle then refuses a bundle holding a secret file or a cache, whatever put it there.
 
@@ -20,7 +20,7 @@ import io
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-LIBRARY_PATTERNS = ("threads/*.json", "extracted/*.json", "profiles.json")
+LIBRARY_PATTERNS = ("threads/*.json", "extracted/*.json", "profiles.json", "summaries.json")
 FORBIDDEN = (".env", ".cache", "models", ".git")  # secrets, caches, the 1.1 GB model (downloaded at build) and history
 
 

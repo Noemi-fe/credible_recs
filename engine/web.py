@@ -74,11 +74,28 @@ The JSON for /api/answer (200):
                                                                (9 Oct 2026); [] when there are none
                             "model": "Victorinox Fibrox...",   a brand pick's most recommended model (10 Oct
                                                                2026); null for other picks
-                            "model_price": "£41.50 at ..."}],  that model's checked price line, or null
+                            "model_price": "£41.50 at ...",    that model's checked price line, or null
+                            "downsides_share": "1 of 15 ...",  how many credible voices warned against it (12 Oct
+                                                               2026), or null when no downside is shown
+                            "summary": {"text": "...",         "In short:" (Noemi's decision 4, 13 Oct 2026): one
+                                        "sources": [quotes]}   sentence in our words, never a quote, shown only when
+                                                               every check passes (engine/summaries.py); "sources"
+                                                               are the verified quotes of the comments it sums up
+                                                               (not shown; checked word for word and live like every
+                                                               quote); null when the pick has none
+                           }],
                  "look_for": [{"kind", "advice", "quote": {same shape}}],
                  "skip": [{"product_key", "name", "reason", "quotes": [...]}],
                  "care_note": [{"tip", "quote"}],   care tips about the kind of product, shown once at the end
                                                     (Noemi, 11 Oct 2026); [] when there are none
+                 "worth_a_look": [{"product_key", "name", "reason", "quotes", "downsides", "downsides_share",
+                                   "disagreement", "score", "breakdown", "price", "availability", "cautions",
+                                   "summary"}],
+                                  "Also worth a look" (Noemi's decision 2, 13 Oct 2026): up to 3 products with 2
+                                  credible recommendations across at least 2 threads, best first, shown apart after the
+                                  picks and never among them; the same shapes as a pick's fields, with 1 or 2 quotes,
+                                  and downsides only when credible voices warn against it; [] when there are none
+                 "worth_note": "2 credible voices each: ...",   the words under its heading, or null without items
                  "message": the honest "not enough evidence" message, or null when there are 3 picks,
                  "needs_more_threads", "quotes_dropped"},
       "threads_used": ["thread id", ...],          most relevant first
@@ -94,6 +111,8 @@ The JSON for /api/answer (200):
                    "over_budget": n,               products whose known price is over the request's budget
                    "unavailable": n,               products the price list says are no longer sold (9 Oct 2026),
                    "not_suited": n},               and products whose checked facts clash with the request (9 Oct 2026)
+      "timing": {"total_s": s, "reddit_s": s,      diagnostic, never shown (13 Oct 2026): how long the answer took to
+                 "checks": n},                     work out, how long it waited on live checks, and how many it made
       "reading": {"threads": n,                    how much the answer read (Noemi, 12 Oct 2026): the threads used,
                   "threads_saved": n,              the extracted threads saved about the product,
                   "comments": n}                   and the comments the AI read in the threads used
@@ -208,7 +227,9 @@ FEEDBACK_UNAVAILABLE = ("feedback_unavailable", "Feedback can't be kept just now
 TOO_MANY = ("too_many_requests", "Too many requests in a short time. Please try again in {seconds} seconds.")
 
 FEEDBACK_PATH = "/api/feedback"
-METHODS = {"/": "GET", "/how": "GET", "/api/answer": "GET", FEEDBACK_PATH: "POST"}  # each route and how it is asked
+READY_PATH = "/ready"  # whether the server has got ready (warm_up): Cloud Run's startup probe asks it
+METHODS = {"/": "GET", "/how": "GET", "/api/answer": "GET", READY_PATH: "GET",
+           FEEDBACK_PATH: "POST"}  # each route and how it is asked
 
 
 @dataclass(frozen=True)
@@ -240,6 +261,11 @@ live = None
 # Where feedback goes (engine.feedback, 11 Oct 2026): set by the command line; None in the tests, which give their own.
 store = None
 _answers_lock = threading.Lock()
+# Set once the server has got ready (warm_up). Until then /ready says 503, and Cloud Run sends visitors to the server
+# only when it says 200 (13 Oct 2026, the live site's latency): a new server getting ready took turns with its first
+# visitors' answers and held them up to 30 s, with the processor Cloud Run gives a server only while it answers
+# someone. While it starts, Cloud Run gives it the processor in full, and keeps visitors on the server before it.
+ready = threading.Event()
 
 
 # --- Routing: one GET request in, one response out ---
@@ -259,6 +285,8 @@ def handle_request(path_and_query: str, library_dir: Path = DEFAULT_LIBRARY_DIR,
     if parts.path == "/api/answer":
         request = parse_qs(parts.query).get("q", [""])[0]
         return answer_response(request, Path(library_dir), quiet=site.public)
+    if parts.path == READY_PATH:
+        return (200 if ready.is_set() else 503), JSON, json.dumps({"ready": ready.is_set()}).encode("utf-8")
     if parts.path in METHODS:  # a route that takes another method: feedback is sent, never fetched
         return _error(405, WRONG_METHOD, allowed=METHODS[parts.path])
     return _error(404, NOT_FOUND)
@@ -287,12 +315,53 @@ def answer_response(request: str, library_dir: Path, quiet: bool = False) -> tup
         return _answers[key][1]
 
 
+class _TimedChecker:
+    """The live checker, timed for one answer (13 Oct 2026, hill-climbing the live site's latency): how many checks it
+    made and how long the answer waited on them, overlapping checks counted once."""
+
+    def __init__(self, checker):
+        self._checker = checker
+        self._spans: list[tuple[float, float]] = []
+        self._lock = threading.Lock()
+
+    def check(self, *args, **kwargs):
+        started = time.perf_counter()
+        try:
+            return self._checker.check(*args, **kwargs)
+        finally:
+            with self._lock:
+                self._spans.append((started, time.perf_counter()))
+
+    def __getattr__(self, name):  # anything else the pipeline asks the checker goes to the real one
+        return getattr(self._checker, name)
+
+    @property
+    def checks(self) -> int:
+        return len(self._spans)
+
+    def waited(self) -> float:
+        """Seconds during which at least one check was running."""
+        total, end = 0.0, None
+        for start, stop in sorted(self._spans):
+            if end is None or start > end:
+                total += stop - start
+                end = stop
+            elif stop > end:
+                total += stop - end
+                end = stop
+        return total
+
+
 def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple[int, str, bytes]:
     """Runs the pipeline, then checks every quote once more; one that fails refuses the whole answer."""
     with_profiles = {} if profiles is None else {"profiles": profiles}
-    if live is not None:
-        with_profiles["live_checker"] = live
+    timed = _TimedChecker(live) if live is not None else None
+    if timed is not None:
+        with_profiles["live_checker"] = timed
+    started = time.perf_counter()
     result = answer_request(request, library_dir, **with_profiles)
+    timing = {"total_s": round(time.perf_counter() - started, 2), "reddit_s": round(timed.waited(), 2) if timed else 0.0,
+              "checks": timed.checks if timed else 0}
     if result.skipped_files:  # a broken library file was left out of the answer (11 Oct 2026): say so where it runs
         print(f"Library files left out ({len(result.skipped_files)} problem(s)); first: {result.skipped_files[0]}",
               file=sys.stderr)
@@ -302,7 +371,7 @@ def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple
             asked = "a request" if quiet else repr(request)
             print(f"Refused the answer to {asked}:", *problems, sep="\n  - ", file=sys.stderr)
             return _error(500, REFUSED)
-    return 200, JSON, _json_bytes(answer_json(result))
+    return 200, JSON, _json_bytes(answer_json(result) | {"timing": timing})
 
 
 def _report_failure(quiet: bool) -> None:
@@ -599,6 +668,11 @@ def answer_wording() -> dict[str, str]:
         "breakdown_needs": wording.breakdown_needs_line("{recommends}", "{warnings}"),
         # Swear words the page masks on display (Noemi, 12 Oct 2026): the same list as the text answer's.
         "masked_words": list(wording.MASKED_WORDS),
+        # "Also worth a look" (Noemi, 13 Oct 2026); the note under it comes with each answer ("worth_note").
+        "worth_heading": wording.WORTH_HEADING,
+        # One-line summaries (Noemi, 13 Oct 2026): "In short:" and the note saying it is ours, not a quote.
+        "summary_label": wording.SUMMARY_LABEL,
+        "summary_note": wording.SUMMARY_NOTE,
     }
 
 
@@ -627,7 +701,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlsplit(self.path).path
-        if not self._addressed_here():
+        if path != READY_PATH and not self._addressed_here():  # Cloud Run's probe names no site: it learns only this
             return self._send(*_error(403, self._wrong_host))
         if path == "/api/answer" and self._held_back("answers"):
             return
@@ -757,6 +831,7 @@ def warm_up(library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
             # and the first visitor's request reads only its own words: seconds the first time, then a second or two.
             model.read(PRIMING_REQUEST)
 
+    started = time.perf_counter()
     threads = Path(library_dir) / "threads"
     steps = [("the open model", load_model), ("the price list", load_prices), ("the facts list", load_product_facts)]
     if threads.is_dir():
@@ -769,6 +844,8 @@ def warm_up(library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
         except Exception as error:  # reported where the server runs; answers report it again when they need it
             print(f"Getting ready: {name} couldn't be loaded ({type(error).__name__}: {error}).", file=sys.stderr,
                   flush=True)
+    ready.set()
+    print(f"Ready for visitors: got ready in {time.perf_counter() - started:.1f} s.", flush=True)
 
 
 def warm_answer(product_type: str, library_dir: Path) -> None:

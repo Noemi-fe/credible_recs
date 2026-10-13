@@ -92,11 +92,25 @@ execution's logs in the console (Cloud Run, Jobs, credible-recs-precheck, Logs).
 Reddit's limit is per address. The job and the site usually leave Google from different addresses, but not always: the
 job runs at 4 am, when the site is quietest, and at its pace leaves about 50 of every 200 reads in 10 minutes free.
 
+## Keeping it awake
+
+A server that has slept takes about a minute to get ready (engine/web.py's warm_up: 65 s on 13 Oct 2026), and Cloud
+Run sends it visitors only once its /ready says so (deploy.sh's startup probe). So a Cloud Scheduler job asks /ready
+every 5 minutes, and a visitor never waits for one to start. It was set up once (13 Oct 2026) with:
+
+    gcloud services enable cloudscheduler.googleapis.com --project credible-picks
+    gcloud scheduler jobs create http credible-recs-keep-warm --project credible-picks --location europe-west1 \
+        --schedule "*/5 * * * *" --time-zone "Europe/London" --http-method GET --attempt-deadline 300s \
+        --uri "https://credible-recs-446702383157.europe-west1.run.app/ready"
+
+`gcloud scheduler jobs pause credible-recs-keep-warm --location europe-west1` stops it.
+
 ## Costs
 
 The free tier covers our traffic (Cloud Run: 180,000 vCPU-seconds, 360,000 GiB-seconds and 2 million requests a
 month). The image is about 1.5 GB in Artifact Registry, whose free storage is 0.5 GB: about 0.10 EUR a month for the
-rest. The budget alert emails Noemi at 50% and 100% of 1 EUR.
+rest. Cloud Scheduler's first 3 jobs are free; a ping is one short request, and a server between requests costs
+nothing. The budget alert emails Noemi at 50% and 100% of 1 EUR.
 
 The pre-check (estimates, 13 Oct 2026): jobs have a free tier of their own, 240,000 vCPU-seconds and 450,000
 GiB-seconds a month; a 90-minute run a day with 1 vCPU and 2 GiB uses about 162,000 and 324,000 of them. Cloud

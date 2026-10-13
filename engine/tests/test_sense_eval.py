@@ -100,3 +100,43 @@ def test_the_look_for_heading_is_the_kind_and_its_advice_is_where_it_is():
     look = [item for item in shown if item.where in ("look for", "avoid")]
     assert {(item.where, item.heading) for item in look} == {("look for", "Steel kettle"), ("avoid", "Plastic kettle")}
     assert wording.LOOK_FOR == "Look for" and wording.AVOID == "Avoid"
+
+
+def test_also_worth_a_look_items_and_summaries_are_judged_too():
+    # Noemi's decisions 2 and 4 of 13 Oct 2026: what they show is judged like everything else an answer shows.
+    from engine.summaries import Summary, current_version
+
+    items = (mentions(3, "Acme kettle") + mentions(2, "Dune kettle")
+             + [mention("Dune kettle", "t1", stance="warn", quote="The Dune kettle's spout drips.")])
+    ranking = rank_products(items, "kitchen")
+    acme = next(p for p in ranking.products if p.name == "Acme kettle")
+    summary = Summary(product="Acme kettle", category="kitchen", text="Owners say it boils fast.",
+                      cites=[acme.credible_recommendations[0].comment_id], written_at="2026-10-13T10:00:00Z",
+                      writer="claude-code", instructions_version=current_version())
+    answer = write_answer(ranking, bodies_for(*items), "electric kettle", summaries={"kitchen:acme kettle": summary})
+    shown = answer_items(answer, "k01", "a kettle that lasts")
+    where = [(item.where, item.heading) for item in shown]
+    assert ("worth quote", "Dune kettle") in where and ("worth downside", "Dune kettle") in where
+    assert where.index(("summary", "Acme kettle")) < where.index(("pick quote", "Acme kettle"))  # under the name
+    assert where.index(("pick quote", "Acme kettle")) < where.index(("worth quote", "Dune kettle"))
+    item = next(item for item in shown if item.where == "summary")
+    assert (item.lead, item.text) == (wording.SUMMARY_LABEL, "Owners say it boils fast.")
+    downside = next(item for item in shown if item.where == "worth downside")
+    assert downside.lead == "1 of 3 credible voices warned against it:"
+
+
+def test_summaries_are_read_from_the_file_they_are_written_in_not_the_frozen_snapshot(tmp_path):
+    # The snapshot was frozen before summaries existed (13 Oct 2026); they are written in data/library/summaries.json.
+    import json as _json
+
+    from engine.summaries import current_version
+
+    written = tmp_path / "summaries.json"
+    written.write_text(_json.dumps({"kitchen:zojirushi kettle": {
+        "product": "Zojirushi kettle", "category": "kitchen", "product_type": "electric kettle",
+        "text": "Owners of 6 years say it still boils fast.", "cites": ["k1aaaa"], "written_at": "2026-10-13T10:00:00Z",
+        "writer": "claude-code", "instructions_version": current_version()}}), encoding="utf-8")
+    found = collect([("k01", REQUEST)], library(tmp_path), profiles=None, summaries_file=written)
+    summaries = [item for item in found.items if item.where == "summary"]
+    assert [(item.heading, item.text) for item in summaries] == [("Zojirushi kettle",
+                                                                  "Owners of 6 years say it still boils fast.")]

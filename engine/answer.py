@@ -33,8 +33,19 @@ What each pick shows (the brief):
 - cautions (product facts, decided by Claude, 9 Oct 2026): when a checked fact suits the request less well by a soft
   rule (engine/product_facts.py: a rich moisturiser for oily skin), "Note: <the reason>." under the pick's price lines.
   Products whose facts clash by a hard rule never get here: the pipeline leaves them out.
-Under the picks: "what to look for" (a short blueprint from credible notes about kinds of product), the
-skip-these list, and an honest message when fewer than 3 products have enough evidence.
+- "In short:" (Noemi's decision 4 of 13 Oct 2026, to try and judge): a one-line summary of what its credible voices
+  say, in our words, written ahead of time (engine/summaries.py, data/library/summaries.json). It is shown only when
+  every check passes: its text (one sentence, at most SUMMARY_MAX_WORDS words, no quotation marks), every comment it
+  cites is one of the pick's credible mentions in this answer and its quote passes the word-for-word check, its numbers
+  are in those comments, and it acknowledges a downside when the pick has credible warnings. It carries the verified
+  quotes of the comments it cites (`sources`, not shown), so they are checked again, live too, like every quote.
+Under the picks: "Also worth a look" (Noemi's decision 2 of 13 Oct 2026): up to WORTH_A_LOOK_SHOWN products with two
+credible recommendations across two threads (engine.rank), in their own section, labelled as less supported (WORTH_NOTE).
+Each shows its reason line, price, cautions, one or two verified quotes that say something about it (never a bare
+mention, a garbled quote or one leaning on the thread: there is no minimum to make up), and known downsides only when
+credible voices warn against it; an item with no such quote gives its place to the next. They are never picks. Then
+"what to look for" (a short blueprint from credible notes about kinds of product), the skip-these list, and an honest
+message when fewer than 3 products have enough evidence.
 
 Sense (Noemi's note, 12 Oct 2026: "some reccs make little sense"; measured by engine/sense_eval.py). Every quote passed
 the word-for-word check, yet "retinol for a beginner" showed "Look for: retinol" with a writer's shrug for its quote,
@@ -64,7 +75,9 @@ quotes that passed. Then, "no claim without a verified quote":
   next qualifying product;
 - a skip-these product needs at least 1 verified warning quote, or it is left out;
 - a "what to look for" note is a verified quote, or nothing;
-- a care tip is a verified quote, or nothing: one that fails gives its place to the next tip.
+- a care tip is a verified quote, or nothing: one that fails gives its place to the next tip;
+- an "Also worth a look" item needs at least 1 verified quote, or it is left out;
+- a summary needs every quote it cites to pass, or it isn't shown, and it is never a quote itself.
 unverified_claims() runs the same checks over a finished answer, as an automated proof.
 
 The wording users see is in the constants below, marked PROPOSED (it waits for Noemi) or decided by Claude (Noemi
@@ -96,6 +109,9 @@ from engine.config import (
     QUOTE_MAX_WORDS,
     QUOTES_PER_PICK,
     QUOTES_PER_SKIPPED_PRODUCT,
+    WORTH_A_LOOK_CREDIBLE,
+    WORTH_A_LOOK_QUOTES,
+    WORTH_A_LOOK_SHOWN,
 )
 from engine.extract import _as_written, _in_quoted_block, _own_words_in_quote_format
 from engine.group_kinds import PURPOSE_WORDS, _kind_words, kind_parts
@@ -107,6 +123,7 @@ from engine.match_products import FILLER_WORDS, known_aliases
 from engine.rank import KindNote, ProductScore, RankingResult, ScoredMention, ScoreBreakdown, is_credible
 from engine.query import PRODUCT_TYPES
 from engine.sources import mentions_product
+from engine.summaries import Summary, shown_problems, summary_key, text_problems
 from engine.text import one_edit_apart
 from engine.verify_quotes import find_quote, verify_quote
 
@@ -205,6 +222,16 @@ AVAILABILITY_SECOND_HAND = "Sold second-hand only: {shop}, checked {date}"
 # "Note: its texture is rich, which can feel heavy on oily or acne-prone skin." The reasons themselves are the rule
 # table's (config.PRODUCT_FACT_RULES), decided by Claude the same day.
 CAUTION = "Note: {reason}."
+# Also worth a look (Noemi's decision 2 of 13 Oct 2026; wording decided by Claude). The note under the heading says how
+# much less support its products have: "2 credible voices each: less evidence than the picks above, which need at least
+# 3 credible recommendations across at least 2 threads." With no picks above, WORTH_NOTE_NO_PICKS.
+WORTH_HEADING = "Also worth a look"
+WORTH_NOTE = "{voices} each: less evidence than the picks above, which need {rule}."
+WORTH_NOTE_NO_PICKS = "{voices} each: less evidence than a pick needs ({rule})."
+# One-line summaries (Noemi's decision 4 of 13 Oct 2026; wording decided by Claude): shown under a pick's name as
+# "In short: <summary>", with the note saying it is ours and not a quote.
+SUMMARY_LABEL = "In short:"
+SUMMARY_NOTE = "Our summary of what its credible voices say, not a quote."
 
 
 # --- The answer ---
@@ -256,6 +283,16 @@ class ShownCareTip:
     quote: ShownQuote
 
 
+@dataclass(frozen=True)
+class ShownSummary:
+    """A one-line summary that passed every check (engine/summaries.py): our words, never shown as a quote."""
+
+    text: str
+    # The verified quotes of the comments it cites, in its order: not shown, but checked word for word again (and live)
+    # like every quote, so a summary never stands on a comment deleted or changed since.
+    sources: tuple[ShownQuote, ...]
+
+
 @dataclass
 class Pick:
     rank: int  # 1, 2 or 3
@@ -278,6 +315,26 @@ class Pick:
     # How many credible voices warned against it, of all who spoke for or against it (DOWNSIDES_SHARE, 12 Oct 2026);
     # None when no downside is shown.
     downsides_share: str | None = None
+    summary: ShownSummary | None = None  # "In short:" (13 Oct 2026); None when it has none, or one that fails a check
+
+
+@dataclass
+class WorthALook:
+    """A product under "Also worth a look" (Noemi, 13 Oct 2026): less supported than a pick, shown apart."""
+
+    product_key: str
+    name: str
+    reason: str  # "Recommended by 2 credible voices, 1 of them after long-term use."
+    quotes: list[ShownQuote]  # 1 or 2, each saying something about it
+    downsides: list[ShownQuote]  # from credible warnings; empty when there are none
+    downsides_share: str | None  # "1 of 3 credible voices warned against it:", or None without downsides
+    disagreement: str | None
+    score: float
+    breakdown: ScoreBreakdown
+    price: ShownPrice
+    availability: ShownAvailability = NOT_CHECKED
+    cautions: list[str] = field(default_factory=list)
+    summary: ShownSummary | None = None
 
 
 @dataclass
@@ -307,6 +364,10 @@ class Answer:
     quotes_dropped: int  # quotes that failed the check at answer time (for the logs; never shown)
     # Care tips about the kind of product, shown once at the end (Noemi, 11 Oct 2026); empty when there are none.
     care_note: list[ShownCareTip] = field(default_factory=list)
+    # "Also worth a look" (Noemi, 13 Oct 2026): best first, after the picks; and the note under its heading, or None
+    # when there are none.
+    worth_a_look: list[WorthALook] = field(default_factory=list)
+    worth_note: str | None = None
 
 
 def answer_to_dict(answer: Answer) -> dict:
@@ -326,7 +387,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
                  cautions: Mapping[str, list[str]] | None = None, models: Mapping[str, str] | None = None,
                  asks: tuple[str, ...] = (), model_prices: Mapping[str, str] | None = None,
                  more_downsides: Mapping[str, list[ScoredMention]] | None = None,
-                 unsuited_kinds: Collection[str] = (), needs: tuple[Need, ...] = (), request: str = "") -> Answer:
+                 unsuited_kinds: Collection[str] = (), needs: tuple[Need, ...] = (), request: str = "",
+                 summaries: Mapping[str, Summary] | None = None, worth_left_out: Collection[str] = ()) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -342,13 +404,16 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     credible warnings}) are warnings about a pick's own brand or line, shown under it after its own. `unsuited_kinds`
     are the keys of kinds that give no "Look for" (engine.pipeline._unsuited_kinds). `needs` (engine.needs.request_needs):
     among equally clear quotes, those talking about them come first. `request` is the request as typed: the product it
-    names ("retinol") is no advice about what to look for.
+    names ("retinol") is no advice about what to look for. `summaries` ({engine.summaries.summary_key: Summary}) are
+    the one-line summaries written ahead of time: each is shown on its pick or item only when every check passes.
+    `worth_left_out` are the keys of products the pipeline leaves out of "Also worth a look" (its brand rules).
     """
     check = _QuoteCheck(bodies)
     models = models or {}
     prices = prices or {}
     care = care or {}
     cautions = cautions or {}
+    summaries = summaries or {}
     picks: list[Pick] = []
     for product in ranking.qualifying:
         if len(picks) == PICKS_SHOWN:
@@ -364,6 +429,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
                                (more_downsides or {}).get(product.key, []), needs))
             picks[-1].model = models.get(product.key)
             picks[-1].model_price = (model_prices or {}).get(product.key)
+            picks[-1].summary = _summary(product, _summary_of(product, summaries), check)
+    worth = _worth_items(ranking, check, prices, cautions, summaries, worth_left_out, asks, needs, product_type)
     skip = [_skip_item(product, check) for product in ranking.skip_list]
     look_for = _look_for(ranking, check, product_type, unsuited_kinds, request, asks, [pick.name for pick in picks])
     care_note = _care_note([care.get(pick.product_key) for pick in picks], picks, check)
@@ -377,7 +444,112 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
         needs_more_threads=len(picks) < PICKS_SHOWN,
         quotes_dropped=check.dropped,
         care_note=care_note,
+        worth_a_look=worth,
+        worth_note=_worth_note(len(picks)) if worth else None,
     )
+
+
+# --- Also worth a look (Noemi's decision 2 of 13 Oct 2026) ---
+
+def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[str, PriceCheck],
+                 cautions: Mapping[str, list[str]], summaries: Mapping[str, Summary], left_out: Collection[str],
+                 asks: tuple[str, ...], needs: tuple[Need, ...], product_type: str | None) -> list[WorthALook]:
+    """Up to WORTH_A_LOOK_SHOWN products with two credible recommendations across two threads (ranking.worth_a_look),
+    best first, those in `left_out` aside; each with its verified quotes (_worth_quotes), or left out without one."""
+    items: list[WorthALook] = []
+    for product in ranking.worth_a_look:
+        if len(items) == WORTH_A_LOOK_SHOWN:
+            break
+        if product.key in left_out:
+            continue
+        quotes = _worth_quotes(product, check, asks, needs, product_type)
+        if not quotes:
+            continue
+        downsides = _warning_quotes((product.credible_warnings,), check, DOWNSIDES_PER_PICK, needs)
+        price = shown_price(prices.get(product.key))
+        items.append(WorthALook(
+            product_key=product.key,
+            name=product.name,
+            reason=_reason(product, ranking),
+            quotes=quotes,
+            downsides=downsides,
+            downsides_share=_downsides_share(product) if downsides else None,
+            disagreement=(DISAGREEMENT.format(voices=_plural(len(_warned(product)), "credible voice"))
+                          if product.disputed else None),
+            score=product.score,
+            breakdown=product.breakdown,
+            price=price,
+            availability=shown_availability(prices.get(product.key), price.url),
+            cautions=[CAUTION.format(reason=reason) for reason in cautions.get(product.key, [])],
+            summary=_summary(product, _summary_of(product, summaries), check),
+        ))
+    return items
+
+
+def _worth_quotes(product: ProductScore, check: "_QuoteCheck", asks: tuple[str, ...], needs: tuple[Need, ...],
+                  product_type: str | None) -> list[ShownQuote]:
+    """Up to WORTH_A_LOOK_QUOTES verified quotes for an "Also worth a look" item, in a pick's order (_pick_quotes): each
+    widened to stand on its own where its comment allows. Only quotes that say something about it: with no minimum to
+    make up, a bare mention, a garbled quote, one that says nothing about it, one that still leans on the thread or one
+    that starts mid-sentence (_mid_sentence) is never shown."""
+    mentions, leaning = _standing(product.credible_recommendations, check.bodies, _names_its_product)
+    ordered = _naming_first(_with_a_view(mentions, check.bodies), asks, needs, leaning, product_type)
+    good = [m for m in ordered if m.comment_id not in leaning and _says_something(m)
+            and not (_bare_mention(m) or _garbled(m.quote) or _mid_sentence(m.quote, check.bodies.get(m.comment_id)))]
+    return check.first(good, WORTH_A_LOOK_QUOTES)
+
+
+def _mid_sentence(quote: str, body: str | None) -> bool:
+    """Whether a quote starts in the middle of a sentence of its comment: in lowercase, after words that don't end a
+    sentence (one opening on its verb, its subject a link left out; 13 Oct 2026). Such a quote never names what it is
+    about."""
+    span = find_quote(body, quote) if body else None
+    if span is None or not quote[:1].islower():
+        return False
+    before = body[:span[0]].rstrip()
+    return bool(before) and not before.endswith((".", "!", "?", "…", ":", ";"))
+
+
+def _worth_note(picks: int) -> str:
+    """The note under "Also worth a look": how much less support its products have than a pick."""
+    voices = _plural(WORTH_A_LOOK_CREDIBLE, "credible voice")
+    rule = RULE.format(mentions=MIN_CREDIBLE_MENTIONS, threads=MIN_THREADS)
+    return (WORTH_NOTE if picks else WORTH_NOTE_NO_PICKS).format(voices=voices, rule=rule)
+
+
+# --- One-line summaries (Noemi's decision 4 of 13 Oct 2026) ---
+
+def _summary_of(product: ProductScore, summaries: Mapping[str, Summary]) -> Summary | None:
+    """The product's summary, saved under the category and the words of the name it is shown under (summary_key)."""
+    return summaries.get(summary_key(product.mentions[0].category, product.name)) if product.mentions else None
+
+
+def summary_reasons(product: ProductScore, summary: Summary | None, bodies: Mapping[str, str]) -> list[str]:
+    """Why a product's summary can't be shown in this answer, in words; [] when it can. The checks of
+    engine.summaries.shown_problems, against the product's credible mentions here, and each cited comment's quote checked
+    word for word like every quote (_quote_problem). The reasons never repeat a quote."""
+    if summary is None:
+        return ["no summary yet"]
+    credible = {m.comment_id: m for m in [*product.credible_recommendations, *product.credible_warnings]}
+    reasons = shown_problems(summary, {cid: m.stance for cid, m in credible.items()}, bodies,
+                             bool(product.credible_warnings))
+    for cid in dict.fromkeys(summary.cites):
+        if cid in credible and cid in bodies:
+            problem = _quote_problem(credible[cid].quote, cid, bodies)
+            if problem:
+                reasons.append(f"cited {problem}")
+    return reasons
+
+
+def _summary(product: ProductScore, summary: Summary | None, check: "_QuoteCheck") -> ShownSummary | None:
+    """The product's summary as shown, with the verified quotes of the comments it cites; None when it has none or one
+    that fails a check (summary_reasons): then it is simply not shown, and the pick stays as it is."""
+    if summary is None or summary_reasons(product, summary, check.bodies):
+        return None
+    credible = {m.comment_id: m for m in [*product.credible_recommendations, *product.credible_warnings]}
+    cites = list(dict.fromkeys(summary.cites))
+    sources = check.first([credible[cid] for cid in cites], len(cites))
+    return ShownSummary(summary.text, tuple(sources)) if len(sources) == len(cites) else None
 
 
 def _care_note(tips: Iterable[CareTips | None], picks: list[Pick], check: "_QuoteCheck") -> list[ShownCareTip]:
@@ -1266,11 +1438,39 @@ def unverified_claims(answer: Answer, bodies: Mapping[str, str]) -> list[str]:
     for item in answer.skip:
         if not item.quotes:
             problems.append(f"skip-these ({item.name}): no quote backs the warning")
+    for item in answer.worth_a_look:
+        if not item.quotes:
+            problems.append(f"worth a look ({item.name}): no quote backs it")
+    for where, shown in _summaries(answer):
+        problems += [f"{where} summary: {problem}" for problem in text_problems(shown.text)]
+        if not shown.sources:
+            problems.append(f"{where} summary: it cites no verified quote")
+        for quote in shown.sources:
+            problem = _quote_problem(quote.text, quote.comment_id, bodies)
+            if problem:
+                problems.append(f"{where} summary: {problem}")
     return problems
 
 
+def _summaries(answer: Answer) -> Iterator[tuple[str, ShownSummary]]:
+    """Each summary the answer shows, with where."""
+    for pick in answer.picks:
+        if pick.summary is not None:
+            yield f"pick {pick.rank} ({pick.name})", pick.summary
+    for item in answer.worth_a_look:
+        if item.summary is not None:
+            yield f"worth a look ({item.name})", item.summary
+
+
+def quotes_to_check(answer: Answer) -> list[ShownQuote]:
+    """Every quote the live check must pass before the answer is shown: the quotes it shows (shown_quotes), then those
+    its summaries cite (13 Oct 2026), so a summary never stands on a comment deleted or changed on Reddit since."""
+    return shown_quotes(answer) + [quote for _, shown in _summaries(answer) for quote in shown.sources]
+
+
 def shown_quotes(answer: Answer) -> list[ShownQuote]:
-    """Every quote the answer shows: its picks' quotes, downsides and care tips, "what to look for" and the skip list.
+    """Every quote the answer shows: its picks' quotes, downsides and care tips, "Also worth a look", "what to look for"
+    and the skip list.
     The evaluation counts them (engine/slice_eval.py)."""
     return [quote for _, quote in _every_quote(answer)]
 
@@ -1284,6 +1484,11 @@ def _every_quote(answer: Answer) -> Iterator[tuple[str, ShownQuote]]:
             yield f"pick {pick.rank} ({pick.name}) downside", quote
         for item in pick.care:
             yield f"pick {pick.rank} ({pick.name}) care tip", item.quote
+    for item in answer.worth_a_look:
+        for quote in item.quotes:
+            yield f"worth a look ({item.name})", quote
+        for quote in item.downsides:
+            yield f"worth a look ({item.name}) downside", quote
     for item in answer.care_note:
         yield "care note", item.quote
     for item in answer.look_for:
@@ -1303,6 +1508,10 @@ def render_markdown(answer: Answer) -> str:
         lines += [answer.message, ""]
     for pick in answer.picks:
         lines += _render_pick(pick)
+    if answer.worth_a_look:
+        lines += [f"## {WORTH_HEADING}", "", answer.worth_note or "", ""]
+        for item in answer.worth_a_look:
+            lines += _render_worth(item)
     if answer.look_for:
         lines += [f"## {LOOK_FOR_HEADING}", ""]
         for item in answer.look_for:
@@ -1326,6 +1535,7 @@ def _render_pick(pick: Pick) -> list[str]:
     if pick.model:
         price = f" ({pick.model_price})" if pick.model_price else ""
         lines += [BRAND_PICK_MODEL.format(model=pick.model) + price, ""]
+    lines += _render_summary(pick.summary)
     lines += [pick.reason, "", f"**{SUPPORT_LABEL}:** {pick.support}", ""]
     lines += _render_price(pick.price) + _render_availability(pick.availability)
     for caution in pick.cautions:
@@ -1346,6 +1556,32 @@ def _render_pick(pick: Pick) -> list[str]:
         lines += [f"**{CARE_HEADING}**", ""] + _render_care(pick.care)
     # The score breakdown is off the card since 12 Oct 2026 (Noemi: too technical, and it doesn't build trust); the
     # JSON keeps it (answer_to_dict) and the how-we-score page explains the scoring.
+    return lines
+
+
+def _render_summary(summary: ShownSummary | None) -> list[str]:
+    """"In short:" and the summary, in our words and never in quotation marks, with the note saying so."""
+    return [f"**{SUMMARY_LABEL}** {summary.text} _({SUMMARY_NOTE})_", ""] if summary is not None else []
+
+
+def _render_worth(item: WorthALook) -> list[str]:
+    """An "Also worth a look" item: its name, summary, reason, price (when known, or with a budget), where it is sold
+    (when checked), cautions, quotes and, only when credible voices warn against it, its downsides."""
+    lines = [f"### {item.name}", ""] + _render_summary(item.summary) + [item.reason, ""]
+    if item.price.amount is not None or item.price.budget_note:  # lighter than a pick: what is known, or the budget's
+        lines += _render_price(item.price)
+    if item.availability.available is not None:
+        lines += _render_availability(item.availability)
+    for caution in item.cautions:
+        lines += [caution, ""]
+    if item.disagreement:
+        lines += [f"**{item.disagreement}**", ""]
+    for quote in item.quotes:
+        lines += _render_quote_block(quote)
+    if item.downsides:
+        lines += [f"**{DOWNSIDES_HEADING}**", ""] + ([item.downsides_share, ""] if item.downsides_share else [])
+        for quote in item.downsides:
+            lines += _render_quote_block(quote)
     return lines
 
 

@@ -445,3 +445,15 @@ def test_command_line_explains_itself_when_used_wrongly(capsys):
     out = capsys.readouterr().out
     for command in ("capture", "shown", "packets", "tally"):
         assert f"python -m engine.blind_test {command}" in out
+
+
+def test_also_worth_a_look_and_summaries_stay_out_of_the_blind_test_view():
+    # Noemi's decisions of 13 Oct 2026: the blind test still shows the top 3 picks only, in FORMAT.md's template.
+    data = {"picks": [pick(1, "Dualit Classic Kettle", summary={"text": "Owners say it keeps going for years.",
+                                                                 "sources": []})],
+            "worth_a_look": [pick(1, "Made-up Worth Kettle")], "worth_note": "2 credible voices each: less evidence.",
+            "message": None}
+    shown = shown_from_ours(data)
+    assert "**1. Dualit Classic Kettle**" in shown
+    for left_out in ("Made-up Worth Kettle", "Owners say it keeps going", "2 credible voices each", "In short"):
+        assert left_out not in shown

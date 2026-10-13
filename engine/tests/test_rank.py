@@ -437,3 +437,61 @@ def test_one_writer_counts_once_per_kind():
     assert result.kinds[0].credible_notes == 1
     assert len(result.kind_notes) == 1
     assert result.leading_kind is None
+
+
+# --- Also worth a look (Noemi's decision 2 of 13 Oct 2026) ---
+
+def test_also_worth_a_look_holds_products_with_two_credible_recommendations_across_two_threads():
+    data = (
+        mentions(3, "Tojiro DP Gyuto")  # a pick: 3 credible recommendations across 2 threads
+        + mentions(2, "Misono UX10")  # 2 across 2 threads: worth a look
+        + mentions(2, "Global G-2", threads=("t1",))  # 2, but both in one thread: not
+        + mentions(1, "Mac Pro")  # 1: not
+        + mentions(2, "Shun Classic", voice="low")  # 2 recommendations, neither credible: not
+    )
+    result = rank_products(data, "kitchen")
+    assert names(result.picks) == ["Tojiro DP Gyuto"]
+    assert names(result.worth_a_look) == ["Misono UX10"]
+    assert product(result, "Misono UX10").worth_a_look and not product(result, "Misono UX10").qualifies
+    assert not product(result, "Tojiro DP Gyuto").worth_a_look  # a pick is never in it
+
+
+def test_also_worth_a_look_needs_exactly_two_and_follows_the_config(monkeypatch):
+    data = mentions(4, "Tojiro DP Gyuto", threads=("t1",)) + mentions(2, "Misono UX10")
+    result = rank_products(data, "kitchen")
+    # Four credible recommendations in one thread: not a pick (one thread), and not "worth a look" either (not two).
+    assert names(result.picks) == [] and names(result.worth_a_look) == ["Misono UX10"]
+    monkeypatch.setattr("engine.rank.WORTH_A_LOOK_CREDIBLE", 1)
+    assert names(rank_products(data, "kitchen").worth_a_look) == []
+
+
+def test_also_worth_a_look_keeps_the_picks_filters_score_and_skip_list():
+    data = (
+        mentions(2, "Misono UX10")
+        # Praised twice, warned against three times: on the skip list.
+        + mentions(2, "Global G-2") + mentions(3, "Global G-2", stance="warn")
+        # Praised twice by medium voices with short use (0.72), warned against once by a high long-term voice (-1):
+        # its score is below zero.
+        + mentions(2, "Mac Pro", voice="medium", evidence="short-term use") + [mention("Mac Pro", "t1", stance="warn")]
+    )
+    result = rank_products(data, "kitchen")
+    assert names(result.worth_a_look) == ["Misono UX10"]
+    assert product(result, "Global G-2").on_skip_list and not product(result, "Global G-2").worth_a_look
+    assert product(result, "Mac Pro").score < 0 and not product(result, "Mac Pro").worth_a_look
+
+
+def test_also_worth_a_look_is_ranked_as_picks_are():
+    data = (mentions(2, "Misono UX10", voice="medium") + mentions(2, "Sakai Takayuki")
+            + mentions(2, "Masamoto VG", evidence="short-term use"))
+    assert names(rank_products(data, "kitchen").worth_a_look) == ["Sakai Takayuki", "Masamoto VG", "Misono UX10"]
+
+
+def test_the_kind_bonus_never_makes_a_product_worth_a_look():
+    # Like the minimum-evidence rule: the score above zero is the mentions' own, without the kind bonus.
+    data = [mention("Misono UX10", "t1", voice="medium", evidence="short-term use"),
+            mention("Misono UX10", "t2", voice="medium", evidence="short-term use"),
+            mention("Misono UX10", "t1", stance="warn")]
+    notes = [note("Japanese gyuto", "t1"), note("Japanese gyuto", "t2")]
+    result = rank_products(data, "kitchen", notes, {"japanese-gyuto": ["misono-ux10"]}, kind_bonus=5.0)
+    assert product(result, "Misono UX10").score > 0 and product(result, "Misono UX10").breakdown.mention_points < 0
+    assert names(result.worth_a_look) == []

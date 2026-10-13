@@ -3,6 +3,10 @@
 # pre-check of the quotes answers show (engine/precheck.py, Noemi's decision of 13 Oct 2026: "check ahead") as a Cloud
 # Run job on the same image, and the private bucket both keep the live checks in. Run from the repository's root after
 # committing:   sh deploy/cloudrun/deploy.sh
+# It bundles the current commit with the saved library (deploy/cloudrun/make_context.py), has Cloud Build turn it into
+# a private image, and deploys it: public site, one server at most, none when idle (the free tier). A new server gets
+# visitors only once its /ready says it has got ready (up to 4 minutes; engine/web.py's warm_up), so a deploy never
+# makes visitors wait on one getting ready: they stay with the server before it until then.
 # Safe to run again: each step creates what is missing and sets again what is there.
 set -eu
 PROJECT="${CREDIBLE_RECS_GCP_PROJECT:-credible-picks}"
@@ -42,6 +46,7 @@ BUNDLE="$(mktemp -d)/bundle"
 $GCLOUD run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --source "$BUNDLE" \
     --allow-unauthenticated --memory 2Gi --cpu 1 --cpu-boost --max-instances 1 --min-instances 0 \
     --concurrency 8 --timeout 300 \
+    --startup-probe "httpGet.path=/ready,httpGet.port=8080,periodSeconds=3,timeoutSeconds=2,failureThreshold=80" \
     --set-env-vars "^;^CREDIBLE_RECS_ALLOWED_HOSTS=${HOSTS};CREDIBLE_RECS_GOATCOUNTER=noemix;CREDIBLE_RECS_FEEDBACK_REPO=Noemix/credible-recs-feedback;CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}" \
     --set-secrets "HF_TOKEN=hf-token:latest" --quiet
 rm -rf "$(dirname "$BUNDLE")"

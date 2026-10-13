@@ -206,6 +206,21 @@ h1, h2, h3, h4 { line-height: 1.25; }
 /* How many credible voices warned, above a pick's downsides (12 Oct 2026). */
 .share { margin: 0 0 6px; font-size: 14px; color: var(--muted); }
 
+/* "In short:" (13 Oct 2026): our one-line summary of what a pick's credible voices say. Our words, so never drawn
+   like a quote: no quotation marks, no quote box. */
+.summary { margin: 10px 0 0; }
+.summary-note { font-size: 13px; color: var(--muted); }
+
+/* "Also worth a look" (13 Oct 2026): apart from the picks, after them, and plainly less supported. */
+.worth { margin: 28px 0 0; }
+.worth > h3 { margin: 0 0 4px; font-size: 20px; }
+.worth-note { margin: 0 0 12px; color: var(--muted); }
+.worth-card { border-style: dashed; }
+.worth-card h4.item-name { margin: 0; font-size: 18px; text-transform: none; letter-spacing: normal; color: var(--text);
+  overflow-wrap: anywhere; }
+.worth-card .quotes { margin-top: 10px; }
+.card h5 { margin: 14px 0 6px; font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+
 /* Under the picks: what to look for, and skip these. Side by side on wide screens. */
 .extras { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
 .extras section { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
@@ -578,6 +593,14 @@ h1, h2, h3, h4 { line-height: 1.25; }
       el("h3", { id: "care-note-heading" }, heading), careList(answer.care_note));
   }
 
+  /** "In short:" and a one-line summary (Noemi, 13 Oct 2026): our own words, drawn as plain text and never like a
+      quotation, with the note saying it is ours. Nothing when there is none (or when it failed a check). */
+  function summaryLine(summary) {
+    if (!summary || !summary.text) return null;
+    return el("p", { class: "summary" }, el("strong", {}, WORDING.summary_label + " "), summary.text,
+      el("span", { class: "summary-note" }, " " + WORDING.summary_note));
+  }
+
   /** One pick's card. The score breakdown left it on 12 Oct 2026 (Noemi: too technical for most shoppers, and it
       doesn't build trust): the API's JSON keeps it, and the how-we-score page explains the scoring. */
   function pickCard(pick) {
@@ -588,6 +611,7 @@ h1, h2, h3, h4 { line-height: 1.25; }
         el("h3", { id: nameId }, el("span", { class: "visually-hidden" }, fill(LABELS.rank, { rank: pick.rank }) + " "), pick.name)),
       pick.model ? el("p", { class: "model" }, WORDING.brand_model.replace("{model}", pick.model)
         + (pick.model_price ? " (" + pick.model_price + ")" : "")) : null,
+      summaryLine(pick.summary),
       el("p", { class: "reason" }, pick.reason),
       el("p", { class: "support" }, el("strong", {}, WORDING.support_label + ": "), pick.support),
       ...priceLines(pick.price), availabilityLine(pick.availability),
@@ -600,6 +624,39 @@ h1, h2, h3, h4 { line-height: 1.25; }
       pick.downsides.length && pick.downsides_share ? el("p", { class: "share" }, pick.downsides_share) : null,
       pick.downsides.length ? quoteList(pick.downsides, "downsides") : el("p", { class: "muted" }, WORDING.no_downsides),
       ...careSection(pick.care)));
+  }
+
+  let worthCards = 0;  // numbers each item's heading, so its card is labelled by it
+
+  /** One "Also worth a look" item (Noemi, 13 Oct 2026): a lighter card than a pick's, with its summary, reason, price
+      (when known, or with a budget), where it is sold (when checked), cautions and one or two quotes; its downsides only
+      when credible voices warn against it. */
+  function worthCard(item) {
+    const nameId = "worth-" + (++worthCards);
+    return el("li", {}, el("article", { class: "card worth-card", "aria-labelledby": nameId },
+      el("h4", { id: nameId, class: "item-name" }, item.name),
+      summaryLine(item.summary),
+      el("p", { class: "reason" }, item.reason),
+      // Lighter than a pick's card: its price only when known or when the request has a budget, where it is sold only
+      // when checked.
+      ...(item.price.amount !== null || item.price.budget_note ? priceLines(item.price) : []),
+      item.availability && item.availability.available !== null ? availabilityLine(item.availability) : null,
+      ...cautionLines(item.cautions),
+      item.disagreement && el("p", { class: "flag" }, item.disagreement),
+      quoteList(item.quotes),
+      ...(item.downsides.length ? [el("h5", {}, WORDING.downsides_heading),
+        item.downsides_share ? el("p", { class: "share" }, item.downsides_share) : null,
+        quoteList(item.downsides, "downsides")] : [])));
+  }
+
+  /** "Also worth a look" (Noemi, 13 Oct 2026): after the picks, in a section of its own, under the answer's note saying
+      how much less support its products have. Never mixed into the picks. Nothing when there are none. */
+  function worthSection(answer) {
+    if (!answer.worth_a_look || !answer.worth_a_look.length) return null;
+    return el("section", { class: "worth", "aria-labelledby": "worth-heading" },
+      el("h3", { id: "worth-heading" }, WORDING.worth_heading),
+      answer.worth_note && el("p", { class: "worth-note" }, answer.worth_note),
+      el("ul", { class: "picks" }, ...answer.worth_a_look.map((item) => worthCard(item))));
   }
 
   function lookForSection(items) {
@@ -647,6 +704,8 @@ h1, h2, h3, h4 { line-height: 1.25; }
     }
     if (answer.message) parts.push(notice("honest", null, answer.message));
     if (answer.picks.length) parts.push(el("ol", { class: "picks" }, ...answer.picks.map(pickCard)));
+    const worth = worthSection(answer);
+    if (worth) parts.push(worth);
     const extras = [];
     if (answer.look_for.length) extras.push(lookForSection(answer.look_for));
     if (answer.skip.length) extras.push(skipSection(answer.skip));
