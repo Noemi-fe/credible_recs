@@ -62,6 +62,7 @@ from engine.query import PRODUCT_TYPES
 
 QUESTIONS_FILE = REPO_ROOT / "eval" / "blind_test" / "questions.json"  # the search page's example requests
 LATENCY_FILE = REPO_ROOT / "eval" / "edge_cases" / "latency_queries.json"
+INGREDIENTS_FILE = REPO_ROOT / "eval" / "edge_cases" / "ingredients.json"  # the ingredient eval's requests (13 Oct 2026)
 TIERS = ("shown", "next in line", "behind the picks", "next after those")  # each tier in words, for the report
 SET_ASIDE = "set aside by the pre-check, to see what is ranked behind it"  # never shown: these answers are thrown away
 PROGRESS_EVERY = 100  # reads between progress lines on stderr
@@ -114,15 +115,17 @@ class _Found:
 # --- Which requests ---
 
 def requests_to_check(questions: Path = QUESTIONS_FILE, latency: Path = LATENCY_FILE,
-                      library_dir: Path = DEFAULT_LIBRARY_DIR) -> list[str]:
+                      library_dir: Path = DEFAULT_LIBRARY_DIR, ingredients: Path = INGREDIENTS_FILE) -> list[str]:
     """The requests whose answers are checked ahead, likeliest first, each once: the search page's example requests
     (the blind-test questions), the latency eval's requests, module 1's product types, the open model's types in the
-    library's request log, then config.PRECHECK_MODEL_TYPES. A missing file adds nothing."""
+    library's request log, config.PRECHECK_MODEL_TYPES, then the ingredient eval's requests (13 Oct 2026: ingredient-led
+    answers read skincare threads of every type). A missing file adds nothing."""
     found = [q["text"] for q in _read_json(questions).get("questions", [])]
     found += [q["text"] for q in _read_json(latency).get("queries", [])]
     found += [p.name for p in PRODUCT_TYPES]
     found += _logged_types(Path(library_dir) / "requests.jsonl")
     found += list(PRECHECK_MODEL_TYPES)
+    found += [q["text"] for q in _read_json(ingredients).get("cases", [])]
     return list(dict.fromkeys(text.strip() for text in found if text and text.strip()))
 
 
