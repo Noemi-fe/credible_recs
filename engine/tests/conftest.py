@@ -52,6 +52,15 @@ def _no_real_brand_lines(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_summaries(monkeypatch, tmp_path):
+    # The one-line summaries (13 Oct 2026) live in data/library/summaries.json, and the sense evaluation reads them from
+    # there whatever library it answers on: in tests, from a file that isn't there. Tests about summaries pass their own.
+    from engine import sense_eval
+
+    monkeypatch.setattr(sense_eval, "SUMMARIES_FILE", tmp_path / "no summaries here.json")
+
+
+@pytest.fixture(autouse=True)
 def _no_network(monkeypatch):
     # Found on 10 Oct 2026: a test reached the real Bright Data API through the new "auto" reader and spent 255 of
     # Noemi's records. Every client (Bright Data, Arctic Shift, Parse, Reddit's embed page) goes through

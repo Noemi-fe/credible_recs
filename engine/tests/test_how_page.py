@@ -345,3 +345,10 @@ def test_on_the_public_site_the_page_names_its_host_and_the_memory_only_limit(tm
     words = text_of(how_page.page(write(tmp_path), public=True))
     assert "Hugging Face" in words and "in memory only" in words
     assert "Hugging Face" not in text_of(how_page.page(write(tmp_path)))
+
+
+def test_also_worth_a_look_and_the_summaries_are_explained(tmp_path, monkeypatch):
+    # Noemi's decisions 2 and 4 of 13 Oct 2026: the page says what the section is and how a summary is checked.
+    words = text_of(get_how(tmp_path, monkeypatch))
+    assert f"“{answer.WORTH_HEADING}”" in words and f"“{answer.SUMMARY_LABEL}”" in words
+    assert "never a quote" in words
