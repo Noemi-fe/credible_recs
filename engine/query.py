@@ -17,8 +17,10 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
-from engine.config import CONDITION_SUBREDDITS, INGREDIENTS, SUBREDDITS, THREAD_CATEGORIES
-from engine.ingredients import TYPE_OWN_INGREDIENT, blanked, find_ingredients, ingredient_type_name, ingredients_of_type
+from engine.config import CONDITION_PRODUCT_TYPES, CONDITION_SUBREDDITS, INGREDIENTS, SUBREDDITS, THREAD_CATEGORIES
+from engine.ingredients import (
+    TYPE_OWN_INGREDIENT, blanked, find_ingredients, forms_named, ingredient_type_name, ingredients_of_type,
+)
 from engine.ingredients import shown as shown_ingredients
 from engine.models import Record
 from engine.text import one_edit_apart
@@ -58,6 +60,10 @@ class Constraints(Record):
     # kept in this list of its own since 13 Oct 2026, a hard requirement checked against facts and names
     # (engine/pipeline.py).
     ingredients: list[str] = []
+    # The forms an ingredient-led request names next to its ingredient ("salicylic acid wash": cleanser; Noemi's
+    # decision 1 of 13 Oct 2026, engine.ingredients.forms_named): its answer shows those forms only. Empty for any
+    # other request: an ingredient-led one naming none shows leave-on forms only, a typed one its type.
+    forms: list[str] = []
 
     @model_validator(mode="after")
     def _known_ingredients(self) -> "Constraints":
@@ -124,6 +130,16 @@ PRODUCT_TYPES = (
     ProductType("toner", "skincare", ("toner", "essence")),
     ProductType("eye cream", "skincare", ("eye cream", "under eye", "under-eye", "eye serum")),
     ProductType("lip balm", "skincare", ("lip balm", "lip mask", "chapstick")),
+    # Noemi's decision 2 of 13 Oct 2026: spot treatments, pimple and acne patches (hydrocolloid ones too) are a type of
+    # their own, a leave-on form an ingredient-led answer may show. A plain hydrocolloid bandage or plaster, and a
+    # "dark spot" product (for marks, not spots), aren't one (LOOKALIKES below).
+    # Words match with a plural "s" ("pimple stickers"); a patch's plural is written out ("pimple patches").
+    ProductType("spot treatment", "skincare",
+                ("spot treatment", "spot gel", "spot cream", "pimple sticker", "acne sticker", "zit sticker",
+                 "spot sticker", "pimple dot", "acne dot")
+                + tuple(f"{kind} {patch}" for kind in ("pimple", "acne", "spot", "zit", "blemish", "hydrocolloid")
+                        for patch in ("patch", "patches")),
+                ("hydrocolloid",)),
     # "tea kettle" is people's usual name for a stovetop one, unless it says electric (12 Oct 2026: threads titled "tea
     # kettle" had never been read for a stovetop request).
     ProductType("stovetop kettle", "kitchen", ("stovetop kettle", "stove top kettle", "stove-top kettle", "whistling kettle", "hob kettle",
@@ -162,6 +178,7 @@ TITLE_WORDS = {
     "retinoid": ("retinol", "tretinoin"),
     "serum": ("serum",),
     "toner": ("toner",),
+    "spot treatment": ("spot treatment", "pimple patch", "acne patch"),
     "stovetop kettle": ("kettle",),
     "electric kettle": ("kettle",),
     "chef knife": ("knife",),
@@ -201,6 +218,10 @@ LOOKALIKES = (
     "vacuum flask", "vacuum-insulated", "vacuum insulated",
     # 13 Oct 2026: razor bumps and razor burn are skin, not a razor ("salicylic acid for razor bumps").
     "razor bump", "razor burn",
+    # 13 Oct 2026 (spot treatments a type): a plain hydrocolloid bandage, plaster or dressing isn't a pimple patch, nor
+    # a blister plaster; a dark spot, an age spot or a sun spot is a mark on the skin, not a spot to treat.
+    "hydrocolloid bandage", "hydrocolloid plaster", "hydrocolloid dressing", "blister plaster", "blister patch",
+    "dark spot", "age spot", "sun spot",
 ) + tuple(f"{kind} {knife}" for kind in _OTHER_KNIVES for knife in ("knife", "knives"))
 
 # Words that place a vague request in a category, so the question can be more specific.
@@ -404,6 +425,7 @@ def parse_query(text: str, model=_DEFAULT) -> ParsedQuery:
         min_years=parse_min_years(text),
         must_haves=find_must_haves(text),
         ingredients=ingredients,
+        forms=forms_named(text, found) if led else [],
     )
     if routing.status == "clarify":
         # Kept so that, once the shopper answers, what they already said isn't lost.
@@ -415,7 +437,7 @@ def parse_query(text: str, model=_DEFAULT) -> ParsedQuery:
         product_type=routing.product_type,
         constraints=constraints,
         search_terms=search_terms(routing.product_type, constraints),
-        subreddits=_condition_subreddits(routing.subreddits, constraints.skin_types),
+        subreddits=_condition_subreddits(routing.subreddits, constraints.skin_types, routing.product_type),
         ingredient_led=led,
     )
 
@@ -452,9 +474,12 @@ def _second_opinion(text: str, routing: Routing, model) -> Routing:
     return other
 
 
-def _condition_subreddits(subreddits: Iterable[str], skin_types: Iterable[str]) -> list[str]:
+def _condition_subreddits(subreddits: Iterable[str], skin_types: Iterable[str],
+                          product_type: str | None = None) -> list[str]:
     """The request's subreddits, with a skin condition's own subreddit (config.CONDITION_SUBREDDITS: r/acne) first when
-    the request is about that condition, and left out when it isn't."""
+    the request is about that condition, or for a product made for it (config.CONDITION_PRODUCT_TYPES: spot
+    treatments, 13 Oct 2026), and left out otherwise."""
     general = [s for s in subreddits if s not in CONDITION_SUBREDDITS]
-    own = [s for s in subreddits if CONDITION_SUBREDDITS.get(s) in set(skin_types)]
+    own = [s for s in subreddits if CONDITION_SUBREDDITS.get(s) in set(skin_types)
+           or product_type in CONDITION_PRODUCT_TYPES.get(s, ())]
     return own + general

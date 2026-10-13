@@ -50,6 +50,11 @@ const LABELS = {
   // Added 13 Oct 2026 (active ingredients; wording decided by Claude): products we couldn't confirm contain the
   // ingredient asked for, or whose maker's actives don't include it.
   leftOutNoIngredient: "Not confirmed to contain {ingredient}, so left out: {n}.",
+  // Added 13 Oct 2026 (Noemi's decision 1: leave-on forms only, unless the request names another form): products with
+  // the ingredient left out for their form. Wording decided by Claude.
+  leftOutRinseOff: "Rinse-off, so left out: {n} (ask for a {ingredient} cleanser to see them).",
+  leftOutFormUnconfirmed: "Not confirmed as a leave-on form, so left out: {n}.",
+  leftOutOtherForm: "Not the form you asked for, so left out: {n}.",
   // Errors, by the API's error code.
   errors: {
     empty_request: "Type what you're looking for first.",
@@ -735,11 +740,24 @@ h1, h2, h3, h4 { line-height: 1.25; }
     const notSuited = data.left_out.not_suited ? " " + fill(LABELS.leftOutNotSuited, { n: data.left_out.not_suited }) : "";
     const noIngredient = data.left_out.no_ingredient && answer.ingredient
       ? " " + fill(LABELS.leftOutNoIngredient, { n: data.left_out.no_ingredient, ingredient: answer.ingredient }) : "";
+    const byForm = formLeftOutText(data.left_out, query, answer.ingredient);
     const leftOut = leftOutText(data.left_out);
     parts.push(el("p", { class: "footnote" },
       fill(LABELS.threadsRead, { n: data.threads_used.length }) + (leftOut ? " " + leftOut : "") + overBudget
-      + unavailable + notSuited + noIngredient));
+      + unavailable + notSuited + noIngredient + byForm));
     return parts;
+  }
+
+  /** Products with the ingredient left out of an ingredient-led answer for their form (13 Oct 2026): those not of the
+      form the request names, or, when it names none, the rinse-off ones (with how to see them) and those whose form
+      isn't known to be leave-on. "" when there are none. */
+  function formLeftOutText(leftOut, query, ingredient) {
+    const all = leftOut.by_form || 0;
+    if (!all || !ingredient) return "";
+    if (query.forms && query.forms.length) return " " + fill(LABELS.leftOutOtherForm, { n: all });
+    const rinse = leftOut.rinse_off || 0;
+    return (rinse ? " " + fill(LABELS.leftOutRinseOff, { n: rinse, ingredient }) : "")
+      + (all > rinse ? " " + fill(LABELS.leftOutFormUnconfirmed, { n: all - rinse }) : "");
   }
 
   /** What was left out of the ranking, in words that say what is counted (names, never mentions or threads; Noemi,

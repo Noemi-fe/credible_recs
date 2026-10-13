@@ -91,8 +91,10 @@ def test_the_json_has_the_documented_shape(tmp_path):
     assert data["reading"] == {"threads": 2, "threads_saved": 2, "comments": 11}  # 3 kettles x 3 comments, 2 warnings
     # Changed on purpose 13 Oct 2026 (active ingredients, the orchestrator's decision after Noemi's live test): the
     # query also says which ingredients every product shown must contain, and whether the request is ingredient-led.
+    # Changed on purpose 13 Oct 2026 (Noemi's decision 1 on forms): the query also says which forms an ingredient-led
+    # request names ("salicylic acid wash": cleanser).
     assert set(data["query"]) == {"status", "category", "product_type", "question", "message", "ingredients",
-                                  "ingredient_led"}
+                                  "ingredient_led", "forms"}
     # Changed on purpose 9 Oct 2026 (decision 11, budgets): each pick has its price, and "left_out" counts the
     # products over the request's budget.
     # Changed on purpose 9 Oct 2026 (availability, Noemi's note): "left_out" also counts the products no longer sold.
@@ -103,8 +105,11 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # LEFT_OUT_NAMES_SHOWN each) and counts the brand or line names ranked as the brand's whole line ("ranked_as_lines").
     # Changed on purpose 13 Oct 2026 (active ingredients): "left_out" also counts the products without evidence they
     # contain the ingredient asked for ("no_ingredient").
+    # Changed on purpose 13 Oct 2026 (Noemi's decision 1): "left_out" also counts the products of an ingredient-led
+    # request left out for their form ("by_form"), and how many of them are rinse-off ("rinse_off").
     assert set(data["left_out"]) == {"other_type", "other_type_names", "loose", "loose_names", "ranked_as_lines",
-                                     "over_budget", "unavailable", "not_suited", "no_ingredient"}
+                                     "over_budget", "unavailable", "not_suited", "no_ingredient", "by_form",
+                                     "rinse_off"}
     assert isinstance(data["left_out"]["loose_names"], list) and isinstance(data["left_out"]["other_type_names"], list)
     # Changed on purpose 11 Oct 2026 (Noemi): the tips about the kind of product are shown once, in "care_note".
     # Changed on purpose 13 Oct 2026 (Noemi's decision 2): "worth_a_look", the products with two credible
