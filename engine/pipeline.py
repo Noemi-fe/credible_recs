@@ -543,9 +543,12 @@ def _checked_together(live_checker, quotes, may_wait: set[str] | None = None) ->
 
 def _checked_live_recently(thread: Thread, today: date) -> bool:
     """Whether an answer may quote the thread: Reddit itself was read for it in the last LIVE_CHECK_SHOWN_DAYS days, or
-    it is a gold-set thread. A slimmed thread is never held back whole: its kept comments are verified one by one, and
-    the rule applies to each of them (_recently_verified)."""
-    return thread.read_from == "gold" or thread.slimmed or checked_live_within(thread, LIVE_CHECK_SHOWN_DAYS, today)
+    it is a gold-set thread. A slimmed thread's kept comments are verified one by one: it may be quoted when one of them
+    was verified in that time, and then only those (_recently_verified); with none, it waits as a whole thread would."""
+    if thread.slimmed:
+        return any(c.status == "ok" and c.verified_at is not None
+                   and (today - c.verified_at.date()).days <= LIVE_CHECK_SHOWN_DAYS for c in thread.comments)
+    return thread.read_from == "gold" or checked_live_within(thread, LIVE_CHECK_SHOWN_DAYS, today)
 
 
 def _recently_verified(checked: CheckResult, thread: Thread, today: date) -> CheckResult:

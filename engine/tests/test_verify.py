@@ -261,18 +261,20 @@ def test_without_a_live_check_answers_use_only_kept_comments_verified_within_14_
     from engine.tests.test_pipeline import REQUEST
 
     root = slimmed_library(tmp_path)
+    ranked = lambda result: sorted(p.name for p in result.ranking.products)
 
-    def ranked(today: date) -> list[str]:
-        result = answer_request(REQUEST, library_dir=root, today=today)
-        assert result.waiting_live_check == []  # the thread itself never waits
-        return sorted(p.name for p in result.ranking.products)
-
-    assert ranked(date(2026, 10, 20)) == ["Fellow Stagg EKG", "Zojirushi kettle"]  # verified 14 days before
-    assert ranked(date(2026, 10, 21)) == []
+    on_time = answer_request(REQUEST, library_dir=root, today=date(2026, 10, 20))  # verified 14 days before
+    assert ranked(on_time) == ["Fellow Stagg EKG", "Zojirushi kettle"]
+    assert (on_time.threads_used, on_time.waiting_live_check) == ([TID], [])
+    # No kept comment verified in the last 14 days: the thread waits, as a whole thread would, and takes no slot.
+    late = answer_request(REQUEST, library_dir=root, today=date(2026, 10, 21))
+    assert (late.threads_used, late.waiting_live_check) == ([], [TID])
     ledger = Ledger()
     ledger.record("s1kept", day(14), "passing")
     apply_checks(root, ledger, now=day(15))
-    assert ranked(date(2026, 10, 21)) == ["Zojirushi kettle"]  # its reply's product came from an unverified comment
+    stamped = answer_request(REQUEST, library_dir=root, today=date(2026, 10, 21))
+    assert (stamped.threads_used, stamped.waiting_live_check) == ([TID], [])
+    assert ranked(stamped) == ["Zojirushi kettle"]  # its reply's product came from an unverified comment
 
 
 # --- check-live and refresh: Bright Data and Parse are never spent on a slimmed thread ---
