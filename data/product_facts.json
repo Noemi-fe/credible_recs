@@ -12,7 +12,16 @@
     "https://www.cosrx.com/products/bha-blackhead-power-liquid",
     "https://www.lookfantastic.com/p/cosrx-bha-blackhead-power-liquid-100ml/11401180/"
    ],
-   "checked_on": "2026-10-09"
+   "checked_on": "2026-10-09",
+   "formula": {
+    "actives": [
+     "betaine salicylate"
+    ],
+    "sources": [
+     "https://www.lookfantastic.com/p/cosrx-bha-blackhead-power-liquid-100ml/11401180/"
+    ],
+    "checked_on": "2026-10-13"
+   }
   },
   {
    "product": "Isntree Chestnut BHA 0.9% Clear Toner",
@@ -26,7 +35,16 @@
     "https://skinsider.co.uk/isntree-chestnut-bha-0-9-clear-toner/",
     "https://www.vitacost.com/products/isntree-chestnut-bha-0-9-clear-toner-6-76-fl-oz-200-ml-122218"
    ],
-   "checked_on": "2026-10-09"
+   "checked_on": "2026-10-09",
+   "formula": {
+    "actives": [
+     "betaine salicylate"
+    ],
+    "sources": [
+     "https://www.yesstyle.com/en/isntree-clear-skin-bha-toner-200ml/info.html/pid.1067998250"
+    ],
+    "checked_on": "2026-10-13"
+   }
   },
   {
    "product": "IOPE Skin Booster Ampoule Peel Pad",
@@ -347,7 +365,18 @@
    "sources": [
     "https://www.dermalogica.co.uk/products/daily-microfoliant"
    ],
-   "checked_on": "2026-10-10"
+   "checked_on": "2026-10-10",
+   "formula": {
+    "actives": [
+     "salicylic acid",
+     "papain"
+    ],
+    "form": "rinse-off powder",
+    "sources": [
+     "https://www.dermalogica.co.uk/products/daily-microfoliant"
+    ],
+    "checked_on": "2026-10-13"
+   }
   },
   {
    "product": "The Ordinary Mandelic Acid 10% + HA",
@@ -500,7 +529,16 @@
    "sources": [
     "https://www.paulaschoice.co.uk/skin-perfecting-bha-liquid-exfoliant/m2010.html"
    ],
-   "checked_on": "2026-10-10"
+   "checked_on": "2026-10-10",
+   "formula": {
+    "actives": [
+     "salicylic acid"
+    ],
+    "sources": [
+     "https://www.paulaschoice.co.uk/skin-perfecting-bha-liquid-exfoliant/m2010.html"
+    ],
+    "checked_on": "2026-10-13"
+   }
   },
   {
    "product": "Dr Dennis Gross peel pads",
@@ -718,7 +756,17 @@
     "https://www.cultbeauty.co.uk/p/cosrx-aha-bha-clarifying-treatment-toner-150ml/11401176/",
     "https://www.breuninger.com/nl/en/b/cosrx/aha-bha-clarifying-treatment-toner/1003468076/p/"
    ],
-   "checked_on": "2026-10-10"
+   "checked_on": "2026-10-10",
+   "formula": {
+    "actives": [
+     "glycolic acid",
+     "betaine salicylate"
+    ],
+    "sources": [
+     "https://www.cultbeauty.co.uk/p/cosrx-aha-bha-clarifying-treatment-toner-150ml/11401176/"
+    ],
+    "checked_on": "2026-10-13"
+   }
   },
   {
    "product": "Peach Slices Acne Exfoliating Toner",
@@ -732,7 +780,18 @@
    "sources": [
     "https://www.peachandlily.com/products/acne-exfoliating-toner"
    ],
-   "checked_on": "2026-10-10"
+   "checked_on": "2026-10-10",
+   "formula": {
+    "actives": [
+     "salicylic acid",
+     "glycolic acid",
+     "lactic acid"
+    ],
+    "sources": [
+     "https://www.peachandlily.com/products/acne-exfoliating-toner"
+    ],
+    "checked_on": "2026-10-13"
+   }
   },
   {
    "product": "Eucerin Sun Gel-Creme Oil Control Dry Touch SPF 50+ (face)",
@@ -946,7 +1005,17 @@
    "sources": [
     "https://bywishtrend.com/products/vitamin-a-mazing-bakuchiol-night-cream"
    ],
-   "checked_on": "2026-10-10"
+   "checked_on": "2026-10-10",
+   "formula": {
+    "actives": [
+     "retinal",
+     "bakuchiol"
+    ],
+    "sources": [
+     "https://bywishtrend.com/products/vitamin-a-mazing-bakuchiol-night-cream"
+    ],
+    "checked_on": "2026-10-13"
+   }
   },
   {
    "product": "Dr. Althea 345 Relief Cream",
@@ -1247,6 +1316,47 @@
     "https://www.headandshoulders.co.uk/en-gb/anti-dandruff-products/dandruff-shampoo/classic-clean-shampoo/"
    ],
    "checked_on": "2026-10-12"
+  },
+  {
+   "product": "Isntree Chestnut BHA 2% Clear Liquid",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {},
+   "sources": [
+    "https://www.yesstyle.com/en/isntree-chestnut-bha-2-clear-liquid-100ml/info.html/pid.1115329665"
+   ],
+   "checked_on": "2026-10-13",
+   "formula": {
+    "actives": [
+     "salicylic acid"
+    ],
+    "sources": [
+     "https://www.yesstyle.com/en/isntree-chestnut-bha-2-clear-liquid-100ml/info.html/pid.1115329665",
+     "https://www.stylevana.com/en_US/isntree-chestnut-bha-2-clear-liquid-100ml30060.html"
+    ],
+    "checked_on": "2026-10-13"
+   }
+  },
+  {
+   "product": "CeraVe SA Smoothing Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {},
+   "sources": [
+    "https://www.cerave.co.uk/skincare/cleansers/sa-smoothing-cleanser"
+   ],
+   "checked_on": "2026-10-13",
+   "formula": {
+    "actives": [
+     "salicylic acid",
+     "ceramides",
+     "hyaluronic acid"
+    ],
+    "sources": [
+     "https://www.cerave.co.uk/skincare/cleansers/sa-smoothing-cleanser"
+    ],
+    "checked_on": "2026-10-13"
+   }
   }
  ]
 }

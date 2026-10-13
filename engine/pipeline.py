@@ -62,6 +62,15 @@ Every step is a module of its own; this file only passes each one's output to th
   on the result (waiting_live_check) and, like threads not extracted yet, take no reading slot.
   `python -m engine.library check-live` reads them again. Gold-set threads (read_from "gold", or the pipeline pointed
   at data/gold) are exempt. LIVE_CHECK_REQUIRED = False turns the rule off, for an experiment only.
+- active ingredients (13 Oct 2026; engine/ingredients.py): when the request names one ("salicylic acid for acne",
+  "salicylic acid cleanser"), right after the facts step a product is kept only with evidence it contains it: its facts
+  entry's formula lists it among its actives (from the maker's page), or, with no formula, the name it is shown under
+  names it. A formula without it, or no evidence at all, leaves the product out, named with the reason
+  (left_out_no_ingredient), and so does a brand pick: a whole brand can't be checked for an ingredient. An
+  ingredient-led request (one naming no product type) reads the skincare threads that name the ingredient, whatever
+  their type, and keeps the products of every type that can carry it (engine.ingredients.wanted_types): a serum, a
+  toner and a cleanser compete, each shown with its form. Each product's own type is the one its mentions give, and it
+  is what its price and facts are looked up by.
 The lists of products left out are kept on the result, so nothing is dropped silently; so are the "what to
 look for" notes that name no kind (notes_without_kind, engine.group_kinds step 5), which the ranking and the answer
 can't use. threads_quoted names the threads the answer's quotes come from: the ones whose live checks matter most.
@@ -133,6 +142,9 @@ from engine.config import (
     BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE,
     BRAND_PICK_TITLE_SHARE,
     BUDGET_DEFAULT_CURRENCY,
+    INGREDIENT_BRAND_UNCHECKABLE,
+    INGREDIENT_NOT_CONFIRMED,
+    INGREDIENT_NOT_LISTED,
     LIVE_CHECK_PARALLEL,
     LIVE_CHECK_REQUIRED,
     LIVE_CHECK_SHOWN_DAYS,
@@ -156,6 +168,9 @@ from engine.extract import CheckResult, shown_comment_ids
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
 from engine.group_products import ProductGroup, ProductMention, brand_pick_name, group_of, group_products, plural, uk_name
 from engine.gold import DEFAULT_GOLD_DIR
+from engine.ingredients import evidence as ingredient_evidence
+from engine.ingredients import form_of, ingredient_type_name, own_name, wanted_types
+from engine.ingredients import shown as shown_ingredients
 from engine.library import DEFAULT_LIBRARY_DIR, checked_live_within
 from engine.library_cache import loaded as loaded_library
 from engine.match_products import known_aliases, normalize_name, product_words, same_product
@@ -227,6 +242,9 @@ class PipelineResult:
     # The brand lines among them kept in the ranking for Skip these only, {product key: reason} (Noemi's decision 1 of
     # 13 Oct 2026: never a pick, but listed under Skip these when their credible warnings put them there).
     skip_only: dict[str, str] = field(default_factory=dict)
+    # Products left out of a request naming an active ingredient (13 Oct 2026): no evidence they contain it, a formula
+    # without it, or a brand pick (a whole brand can't be checked); name and reason.
+    left_out_no_ingredient: list[NotSuited] = field(default_factory=list)
     # Brand picks that stepped aside for a specific product of their brand that also qualifies (10 Oct 2026).
     folded_brand_picks: list[FoldedBrandPick] = field(default_factory=list)
     # Brands or lines on the skip list that a shown pick belongs to: not listed as skips; their warnings are shown under
@@ -346,7 +364,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     every_checked = library.checked
     candidates = LocalSource(threads_dir, skip_broken=True, threads=library.threads,
                              remembered=library.remembered).find_threads(query, limit=sys.maxsize)  # limit: below
-    about_it = [t for t in candidates if _about_the_product(t, query.product_type)]
+    about_it = [t for t in candidates if _about_the_request(t, query)]
     result.not_extracted = [t.id for t in about_it if t.id not in every_checked]  # nothing to offer until read
     if live_check_required is None:
         live_check_required = LIVE_CHECK_REQUIRED and live_checker is None
@@ -365,22 +383,25 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.bodies = comment_bodies(threads)
 
     mentions = _not_sets(_product_mentions(checked), result)
-    # Grouped for this request's type (13 Oct 2026): "Fellow kettle" in a kettle answer is Fellow's kettle line.
-    groups = group_products(mentions, product_type=query.product_type)
+    # Grouped for this request's type (13 Oct 2026): "Fellow kettle" in a kettle answer is Fellow's kettle line. An
+    # ingredient-led request has no one type: its products are grouped as the library's are.
+    grouping_type = None if query.ingredient_led else query.product_type
+    groups = group_products(mentions, product_type=grouping_type)
     of_another_type = _of_another_type(groups, query, result)
     if of_another_type:  # grouped again without them, so they neither count for nor name a product (13 Oct 2026)
-        groups = group_products([m for m in mentions if _typed(m) not in of_another_type],
-                                product_type=query.product_type)
+        groups = group_products([m for m in mentions if _typed(m) not in of_another_type], product_type=grouping_type)
     brand_lines = load_brand_lines() if brand_lines is None else brand_lines
     kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads}, brand_lines)
     lines = {g.key for g in kept_groups if g.loose}  # the brand or line names kept as the brand's whole line
+    types = {g.key: _own_type(g, query) for g in kept_groups}  # each product's own type (13 Oct 2026)
     prices = load_prices() if prices is None else prices
-    kept_groups, price_checks = _within_budget(kept_groups, query, prices, today, result, brand_lines)
+    kept_groups, price_checks = _within_budget(kept_groups, query, prices, today, result, brand_lines, types)
     product_facts = load_product_facts() if product_facts is None else product_facts
-    kept_groups, cautions = _suited_to_request(kept_groups, query, product_facts, result)
+    kept_groups, cautions, formulas = _suited_to_request(kept_groups, query, product_facts, result, types)
     kept_groups = _one_per_name(kept_groups)  # the names are final here: one item per name (13 Oct 2026)
     result.ranked_as_lines = [g.name for g in kept_groups if g.key in lines]
     _note_other_names(kept_groups, cautions)
+    wording = _ingredient_wording(query, kept_groups, types, formulas)
     kind_mentions = _kind_mentions(checked)
     kinds = group_kinds(kind_mentions, kept_groups, query.category, query.product_type or "")
     with_a_kind = kinds_of(kinds)
@@ -402,10 +423,10 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                  models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
                                  request_needs(query), query.text, summaries,
-                                 _worth_left_out(result.ranking, kept_groups))
+                                 _worth_left_out(result.ranking, kept_groups), **wording)
     if live_checker is not None:
         _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions, kept_groups,
-                    unsuited_kinds, need_led, summaries)
+                    unsuited_kinds, need_led, summaries, wording)
     thread_of = {c.id: t.id for t in threads for c in t.comments}
     quoted = {thread_of.get(quote.comment_id) for _, quote in _every_quote(result.answer)}
     result.threads_quoted = [tid for tid in result.threads_used if tid in quoted]
@@ -436,7 +457,8 @@ def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
 
 def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds, query, price_checks, care,
                 cautions=None, groups: list[ProductGroup] = (), unsuited_kinds: frozenset[str] = frozenset(),
-                need_led: bool = False, summaries: Mapping[str, Summary] | None = None) -> None:
+                need_led: bool = False, summaries: Mapping[str, Summary] | None = None,
+                wording: Mapping | None = None) -> None:
     """Checks every quote about to be shown against Reddit itself; drops the comments that fail and answers again.
     Since 13 Oct 2026 the quotes a shown summary cites are checked too (engine.answer.quotes_to_check): a summary never
     stands on a comment deleted or changed since.
@@ -482,7 +504,7 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
                                      request_needs(query), query.text, summaries,
-                                     _worth_left_out(result.ranking, groups))
+                                     _worth_left_out(result.ranking, groups), **(wording or {}))
 
 
 def _checked_together(live_checker, quotes, may_wait: set[str] | None = None) -> dict[tuple[str, str], object]:
@@ -533,6 +555,19 @@ def _about_the_product(thread: Thread, product_type: str) -> bool:
     return mentions_product(thread.title, product_type) or mentions_product(thread.body, product_type)
 
 
+def _about_the_request(thread: Thread, query: ParsedQuery) -> bool:
+    """Whether the thread is about what the request asks for (13 Oct 2026): its title or post names the product
+    (_about_the_product), or, for a request naming active ingredients, one of them ("Glycolic acid: worth it?" for a
+    glycolic acid toner). An ingredient-led request reads every thread module 2 found naming its ingredient anywhere,
+    comments included: its products may be of any type, so no title names them all."""
+    if query.ingredient_led:
+        return True
+    if _about_the_product(thread, query.product_type):
+        return True
+    ingredients = query.constraints.ingredients
+    return bool(ingredients) and _about_the_product(thread, ingredient_type_name(ingredients))
+
+
 # --- Module 4: products and kinds ---
 
 def _product_mentions(checked: dict[str, CheckResult]) -> list[ProductMention]:
@@ -580,11 +615,12 @@ def _of_another_type(groups: list[ProductGroup], query: ParsedQuery, result: Pip
     names to a product of the requested type. Done once: a regrouping that brings a new mention of another type into a
     product leaves it there (none did on the 20 sense-eval requests, 13 Oct 2026)."""
     found = set()
+    wanted = wanted_types(query.product_type)
     for group in groups:
         if group.category != query.category or _another_type(group, query):
             continue  # left out whole, or never ranked
         for mention in group.mentions:
-            if _mention_of_another_type(mention, query.product_type):
+            if all(_mention_of_another_type(mention, w) for w in wanted):
                 found.add(_typed(mention))
                 if uk_name(mention.product) not in result.mentions_of_another_type:
                     result.mentions_of_another_type.append(uk_name(mention.product))
@@ -689,15 +725,47 @@ def _has_a_product_of_the_type(brand: ProductGroup, query: ParsedQuery, groups: 
 
 
 def _another_type(group: ProductGroup, query: ParsedQuery) -> bool:
-    """Whether the product is another type of product than the one requested.
+    """Whether the product is another type of product than the one requested (for an ingredient-led request, than
+    every type that can carry its ingredient: engine.ingredients.wanted_types, 13 Oct 2026).
 
     The AI's types decide when its mentions have them (instructions v6); when none has one (older extractions),
     its names do.
     """
     types = [m.product_type for m in group.mentions if m.product_type]
+    wanted = wanted_types(query.product_type)
+    if _named_as_asked_with_its_ingredient(group, query, types):
+        return False
     if types:
-        return _another_type_by_ai(types, query.product_type)
-    return _another_type_by_name(group, query)
+        return all(_another_type_by_ai(types, w) for w in wanted)
+    return all(_another_type_by_name(group, query, w) for w in wanted)
+
+
+def _named_as_asked_with_its_ingredient(group: ProductGroup, query: ParsedQuery, types: list[str]) -> bool:
+    """For a request naming a type and an active ingredient ("glycolic acid toner"; 13 Oct 2026): whether one of the
+    product's names names the requested type while the AI typed it as another type that can carry the ingredient. The
+    AI types acid toners and pads as exfoliants; a "Glycolic Acid Toner" is the toner asked for."""
+    ingredients = query.constraints.ingredients
+    if not ingredients or query.ingredient_led or not types:
+        return False
+    carrying = set(wanted_types(ingredient_type_name(ingredients)))
+    majority = Counter(t.strip().lower() for t in types).most_common(1)[0][0]
+    return (query.product_type in carrying and majority in carrying
+            and any(mentions_product(name, query.product_type) for name in group.names))
+
+
+def _own_type(group: ProductGroup, query: ParsedQuery) -> str | None:
+    """The product's own type (13 Oct 2026): the request's, or for an ingredient-led request the first of its wanted
+    types the product is of, by the AI's types (most of its mentions) or, without them, its names; None when none
+    says (a brand or line name). Its price and facts are looked up by it, and its form shown from it."""
+    if not query.ingredient_led:
+        return query.product_type
+    wanted = wanted_types(query.product_type)
+    types = [m.product_type for m in group.mentions if m.product_type]
+    if types:
+        majority = Counter(t.strip().lower() for t in types).most_common(1)[0][0]
+        return next((w for w in wanted if not _another_type_by_ai([majority], w)),
+                    next((w for w in wanted if not _another_type_by_ai(types, w)), None))
+    return next((w for w in wanted if any(mentions_product(name, w) for name in group.names)), None)
 
 
 def _another_type_by_ai(types: list[str], requested: str) -> bool:
@@ -744,20 +812,22 @@ def _same_kind(product_type: str, requested: str) -> bool:
     return not (before and before[-1] in OTHER_KIND_WORDS)
 
 
-def _another_type_by_name(group: ProductGroup, query: ParsedQuery) -> bool:
-    """Whether the product's names say it is another type of product than the one requested, and none says it isn't."""
+def _another_type_by_name(group: ProductGroup, query: ParsedQuery, requested: str | None = None) -> bool:
+    """Whether the product's names say it is another type of product than the one requested (`requested`, by default
+    the request's), and none says it isn't."""
+    requested = requested or query.product_type
     names = list(group.names)
-    if any(mentions_product(name, query.product_type) for name in names):
+    if any(mentions_product(name, requested) for name in names):
         return False
-    others = [p.name for p in PRODUCT_TYPES if p.category == query.category and p.name != query.product_type]
+    others = [p.name for p in PRODUCT_TYPES if p.category == query.category and p.name != requested]
     return any(mentions_product(name, other) for name in names for other in others)
 
 
 # --- Budgets (decision 11) ---
 
 def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[Price], today: date,
-                   result: PipelineResult,
-                   brand_lines: list[BrandLine] = ()) -> tuple[list[ProductGroup], dict[str, PriceCheck]]:
+                   result: PipelineResult, brand_lines: list[BrandLine] = (),
+                   types: Mapping[str, str | None] | None = None) -> tuple[list[ProductGroup], dict[str, PriceCheck]]:
     """Each product's price, checked against the request's budget, and whether it is still sold: the groups kept, and
     {product key: PriceCheck}.
 
@@ -774,7 +844,11 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
     10 Oct 2026: when the newest entry under the brand's name, alone or followed only by the product type's words
     ("OXO kettle"), says it isn't sold, the brand pick is left out (OXO's kettles are 120 V models: one OXO kettle with
     no type word in its name had kept "Oxo (their electric kettles)" in b06).
+
+    `types`: each product's own type ({product key: type}, _own_type), which its price entries are looked up by; by
+    default the request's (13 Oct 2026: an ingredient-led request has products of several types).
     """
+    type_of = lambda g: (types or {}).get(g.key, query.product_type)
     budget = query.constraints.budget
     if budget is not None and budget.max is not None and budget.currency is None:
         # "under 100": module 1 doesn't guess a currency, but the shoppers are in the UK (Noemi, 9 Oct 2026).
@@ -783,11 +857,13 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
     currency = budget.currency if budget else None
     product_type = query.product_type
     not_sold = [g for g in groups if not g.loose
-                and (a := find_availability(g.name, g.category, prices, product_type)) is not None and a.available is False]
+                and (a := find_availability(g.name, g.category, prices, type_of(g))) is not None
+                and a.available is False]
     kept, checks = [], {}
     type_words = _type_words(query.product_type)
     sold_here = [g for g in groups if not g.loose
-                 and (a := find_availability(g.name, g.category, prices, product_type)) is not None and a.available is True]
+                 and (a := find_availability(g.name, g.category, prices, type_of(g))) is not None
+                 and a.available is True]
     for group in groups:
         if group.loose:
             # An entry under the brand ("Griswold", "OXO kettle"): second-hand only is shown; not sold leaves the brand
@@ -802,11 +878,11 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
             result.not_priced.append(group.name)
             sold = sold if sold is not None and sold.second_hand else None
         else:
-            sold = find_availability(group.name, group.category, prices, query.product_type)
+            sold = find_availability(group.name, group.category, prices, type_of(group))
         if sold is not None and sold.available is False:
             result.left_out_unavailable.append(group.name)
             continue
-        price = None if group.loose else find_price(group.name, group.category, prices, currency, query.product_type)
+        price = None if group.loose else find_price(group.name, group.category, prices, currency, type_of(group))
         check = check_price(price, budget, today)
         if check.status == "over":
             result.left_out_over_budget.append(group.name)
@@ -821,7 +897,7 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
     # look): it costs at least its brand's cheapest.
     over_from = budget is not None and budget.max is not None and budget.currency == "GBP"
     for group in [g for g in kept if over_from and (g.loose or checks[g.key].status == "unknown")]:
-        line = find_brand_line(set(group.names) | {uk_name(n) for n in group.names}, group.category, product_type,
+        line = find_brand_line(set(group.names) | {uk_name(n) for n in group.names}, group.category, type_of(group),
                                brand_lines, of_a_product=not group.loose)
         if line is not None and line.from_price is not None and line.from_price > budget.max:
             kept.remove(group)
@@ -850,8 +926,10 @@ def _only_unsold_products(brand: ProductGroup, groups: list[ProductGroup], not_s
 # --- Product facts (decided by Claude, 9 Oct 2026) ---
 
 def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_facts: list[ProductFacts],
-                       result: PipelineResult) -> tuple[list[ProductGroup], dict[str, list[str]]]:
-    """The groups whose known facts suit the request, and each kept product's cautions ({product key: [reason]}).
+                       result: PipelineResult, types: Mapping[str, str | None] | None = None
+                       ) -> tuple[list[ProductGroup], dict[str, list[str]], dict[str, ProductFacts]]:
+    """The groups whose known facts suit the request, each kept product's cautions ({product key: [reason]}), and the
+    facts entry each kept product found ({product key: entry}).
 
     A product with a hard clash (engine.product_facts.conflicts) is left out and named on the result with every hard
     reason; one with only soft clashes is kept, and their reasons go under its pick. A product with no facts entry, or
@@ -867,12 +945,27 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
     Groups that find the same entry are one product: the later (smaller) ones join the first, so their mentions are
     ranked together under its key (b02, 10 Oct 2026: "Biore watery essence" was a pick and "Biore aqua rich" a skip,
     both shown under one entry's name).
+
+    Active ingredients (13 Oct 2026): when the request names some (constraints.ingredients), a product is kept only
+    with evidence it contains each (engine.ingredients.evidence: its entry's formula, else the name it is shown under);
+    otherwise it is left out, named in left_out_no_ingredient with the reason, and so is a brand pick. `types` gives
+    each product's own type (_own_type): its entry is looked up by it, then, for an ingredient-led request, by its name
+    alone, and the hard requirements are those its type can have.
     """
     requirements = hard_requirements(query)
-    kept, cautions = [], {}
+    ingredients = query.constraints.ingredients
+    kept, cautions, found_facts = [], {}, {}
     by_entry: dict[tuple[str, str], int] = {}  # a facts entry (name, category) -> where its product is in `kept`
     type_words = _type_words(query.product_type)
     for group in groups:
+        own_type = (types or {}).get(group.key, query.product_type)
+        if query.ingredient_led:
+            requirements = hard_requirements(query, own_type)
+        if group.loose and ingredients:
+            # A brand has many products: it can't be checked for an ingredient (13 Oct 2026).
+            reason = INGREDIENT_BRAND_UNCHECKABLE.format(ingredient=shown_ingredients(ingredients))
+            result.left_out_no_ingredient.append(NotSuited(group.name, reason))
+            continue
         if group.loose:
             # A facts entry under the brand's own name speaks for the brand pick (late on 10 Oct 2026: GreenPan's FAQ
             # says all its pans are PFAS-free); without one, a whole brand can't be checked.
@@ -888,11 +981,18 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
                 kept.append(group)
                 continue
         else:
-            facts = find_facts(group.name, group.category, product_facts, query.product_type)
+            facts = find_facts(group.name, group.category, product_facts, own_type)
+            if facts is None and query.ingredient_led:
+                facts = find_facts(group.name, group.category, product_facts)
         found = conflicts(query, facts)
         hard = [c.reason for c in found if c.hard]
         if hard:
             result.left_out_not_suited.append(NotSuited(group.name, "; ".join(hard)))
+            continue
+        missing_ingredient = _without_ingredient(group, facts, ingredients)
+        if missing_ingredient:
+            result.left_out_no_ingredient.append(NotSuited(facts.product if facts is not None else group.name,
+                                                           missing_ingredient))
             continue
         entry = (facts.product, facts.category) if facts is not None else None
         if entry in by_entry:
@@ -906,13 +1006,48 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
         else:  # a brand pick whose entry is under its brand's name is still the brand's line (12 Oct 2026)
             name = brand_pick_name(facts.product, query.product_type) if group.loose else facts.product
             kept.append(replace(group, name=name, loose=False))
+            found_facts[group.key] = facts
         soft = [c.reason for c in found if not c.hard]
-        missing = unconfirmed(query, facts)
+        missing = unconfirmed(query, facts, own_type if query.ingredient_led else None)
         if missing:
             soft.append(unconfirmed_note(missing))
         if soft:
             cautions[group.key] = soft
-    return kept, cautions
+    return kept, cautions, found_facts
+
+
+def _without_ingredient(group: ProductGroup, facts: ProductFacts | None, ingredients: list[str]) -> str | None:
+    """Why a product is left out of a request for these active ingredients (13 Oct 2026), or None when there is
+    evidence it contains each (engine.ingredients.evidence): its entry's formula decides when it has one ("its maker
+    doesn't list salicylic acid among its actives"), otherwise the name it is shown under, the entry's or its group's
+    (without a writer's "with ..."); with neither, "we couldn't confirm it contains salicylic acid". Never a guess."""
+    # The maker's name when the product has a facts entry; otherwise the writers' name, without a writer's own
+    # description of what it has ("<cleanser> with salicylic acid": engine.ingredients.own_name).
+    name = facts.product if facts is not None else own_name(uk_name(group.name))
+    actives = facts.formula.actives if facts is not None and facts.formula is not None else None
+    for ingredient in ingredients:
+        found = ingredient_evidence(ingredient, name, actives)
+        if found.contains is False:
+            return INGREDIENT_NOT_LISTED.format(ingredient=ingredient)
+        if found.contains is None:
+            return INGREDIENT_NOT_CONFIRMED.format(ingredient=ingredient)
+    return None
+
+
+def _ingredient_wording(query: ParsedQuery, groups: list[ProductGroup], types: Mapping[str, str | None],
+                        found_facts: Mapping[str, ProductFacts]) -> dict:
+    """What the answer says about a request's active ingredients (13 Oct 2026), as write_answer's keywords: the
+    ingredients' names, and for an ingredient-led request each product's form ({product key: form},
+    engine.ingredients.form_of), from its entry's formula, its name or its own type. {} for a request naming none."""
+    if not query.constraints.ingredients:
+        return {}
+    forms = {}
+    if query.ingredient_led:
+        for group in groups:
+            facts = found_facts.get(group.key)
+            form = facts.formula.form if facts is not None and facts.formula is not None else None
+            forms[group.key] = form_of(group.name, types.get(group.key), form)
+    return {"ingredient": shown_ingredients(query.constraints.ingredients), "forms": forms}
 
 
 def _one_per_name(groups: list[ProductGroup]) -> list[ProductGroup]:

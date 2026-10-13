@@ -92,7 +92,10 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # gave too few picks, so more were read ("read_more"), for the page's reading strip.
     assert data["reading"] == {"threads": 2, "threads_saved": 2, "comments": 11,  # 3 kettles x 3 comments, 2 warnings
                                "read_more": False}
-    assert set(data["query"]) == {"status", "category", "product_type", "question", "message"}
+    # Changed on purpose 13 Oct 2026 (active ingredients, the orchestrator's decision after Noemi's live test): the
+    # query also says which ingredients every product shown must contain, and whether the request is ingredient-led.
+    assert set(data["query"]) == {"status", "category", "product_type", "question", "message", "ingredients",
+                                  "ingredient_led"}
     # Changed on purpose 9 Oct 2026 (decision 11, budgets): each pick has its price, and "left_out" counts the
     # products over the request's budget.
     # Changed on purpose 9 Oct 2026 (availability, Noemi's note): "left_out" also counts the products no longer sold.
@@ -101,14 +104,19 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # Changed on purpose 12 Oct 2026 (Noemi asked whether the footnote's numbers counted mentions or threads: they count
     # names): "left_out" also gives a few of the names left out ("other_type_names", "loose_names", at most
     # LEFT_OUT_NAMES_SHOWN each) and counts the brand or line names ranked as the brand's whole line ("ranked_as_lines").
+    # Changed on purpose 13 Oct 2026 (active ingredients): "left_out" also counts the products without evidence they
+    # contain the ingredient asked for ("no_ingredient").
     assert set(data["left_out"]) == {"other_type", "other_type_names", "loose", "loose_names", "ranked_as_lines",
-                                     "over_budget", "unavailable", "not_suited"}
+                                     "over_budget", "unavailable", "not_suited", "no_ingredient"}
     assert isinstance(data["left_out"]["loose_names"], list) and isinstance(data["left_out"]["other_type_names"], list)
     # Changed on purpose 11 Oct 2026 (Noemi): the tips about the kind of product are shown once, in "care_note".
     # Changed on purpose 13 Oct 2026 (Noemi's decision 2): "worth_a_look", the products with two credible
     # recommendations across two threads, shown apart after the picks, and "worth_note", the words under its heading.
+    # Changed on purpose 13 Oct 2026 (active ingredients): the answer's "title" as shown, the "ingredient" asked for and
+    # the "ingredient_note" under the title (null for a request naming none).
     assert set(data["answer"]) == {"category", "product_type", "picks", "look_for", "skip", "message",
-                                   "needs_more_threads", "quotes_dropped", "care_note", "worth_a_look", "worth_note"}
+                                   "needs_more_threads", "quotes_dropped", "care_note", "worth_a_look", "worth_note",
+                                   "ingredient", "ingredient_note", "title"}
     # Changed on purpose 9 Oct 2026 (care tips, Noemi): each pick also has its "care" list, "How to make it last".
     # Changed on purpose 9 Oct 2026 (availability, Noemi's note): each pick also says where it is sold, "availability".
     # Changed on purpose 9 Oct 2026 (product facts, decided by Claude): each pick also has its "cautions", the facts
@@ -122,10 +130,12 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # Changed on purpose 13 Oct 2026 (the UX builder): each pick also has its "voices", the credible voices behind it as
     # numbers (recommend, high, medium, warn, threads) for the page's credibility meter: the same writers its reason,
     # support line and share line count in words.
+    # Changed on purpose 13 Oct 2026 (active ingredients): each pick also has its "form" in an ingredient-led answer
+    # ("pads", "toner"), or null.
     assert set(data["answer"]["picks"][0]) == {"rank", "product_key", "name", "reason", "support", "quotes",
                                                "downsides", "disagreement", "score", "breakdown", "price",
                                                "availability", "care", "cautions", "model", "model_price",
-                                               "downsides_share", "summary", "voices"}
+                                               "downsides_share", "summary", "voices", "form"}
     assert set(data["answer"]["picks"][0]["quotes"][0]) == {"text", "comment_id", "url", "badges"}
     assert set(data["answer"]["picks"][0]["price"]) == {"text", "amount", "currency", "shop", "url", "checked_on",
                                                         "budget_status", "budget_note"}
@@ -439,7 +449,7 @@ def test_the_page_says_how_many_threads_and_comments_an_answer_read():
     # title, now as a strip of numbers in plain words: the threads read (the most relevant to the request), the comments
     # in them, and the threads saved about the product (engine/tests/test_web_ux.py has the strip's own test).
     page = web.search_page().decode("utf-8")
-    assert "readingStrip(data.reading)" in page
+    assert "readingStrip(data.reading" in page
     for label in ('readingThreads: ["Reddit thread read", "Reddit threads read"]',
                   'readingComments: ["comment in them", "comments in them"]'):
         assert label in page, label
@@ -563,9 +573,10 @@ def test_also_worth_a_look_comes_through_in_the_json(tmp_path):
     assert "Smeg kettle" not in [pick["name"] for pick in data["answer"]["picks"]]
     assert data["answer"]["worth_note"].startswith("2 credible voices each")
     # Changed on purpose 13 Oct 2026 (the UX builder): "voices", as for a pick (its credibility meter).
+    # Changed on purpose 13 Oct 2026 (active ingredients): each item also has its "form", as picks do.
     assert set(data["answer"]["worth_a_look"][0]) == {"product_key", "name", "reason", "quotes", "downsides",
                                                      "downsides_share", "disagreement", "score", "breakdown", "price",
-                                                     "availability", "cautions", "summary", "voices"}
+                                                     "availability", "cautions", "summary", "voices", "form"}
 
 
 def test_the_page_draws_also_worth_a_look_and_summaries_with_the_answers_own_words(tmp_path):

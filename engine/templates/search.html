@@ -59,6 +59,10 @@ const LABELS = {
   readingAll: "all we've saved about this kind of product",
   readingComments: ["comment in them", "comments in them"],
   readingSaved: ["thread saved about this kind of product", "threads saved about this kind of product"],
+  // For a request naming an active ingredient and no type (13 Oct 2026, with main's ingredient-led answers): the
+  // threads saved are those about the ingredient.
+  readingAllIngredient: "all we've saved about {ingredient}",
+  readingSavedIngredient: ["thread saved about {ingredient}", "threads saved about {ingredient}"],
   readingWhyHeading: "Why not read them all?",
   readingWhy: "The rest are less related to what you asked. When the most relevant threads don't give {picks} picks, we read more of them too, and show that wider reading if it finds more picks.",
   // The credibility meter (13 Oct 2026): the numbers its pick's own sentences say in words.
@@ -102,6 +106,9 @@ const LABELS = {
   leftOutBudget: "Over your budget, so left out: {n}.",  // added 9 Oct 2026 (decision 11, budgets)
   leftOutUnavailable: "No longer sold, so left out: {n}.",  // added 9 Oct 2026 (availability; wording decided by Claude)
   leftOutNotSuited: "Not suited to your request, so left out: {n}.",  // added 9 Oct 2026 (product facts; wording decided by Claude)
+  // Added 13 Oct 2026 (active ingredients; wording decided by Claude): products we couldn't confirm contain the
+  // ingredient asked for, or whose maker's actives don't include it.
+  leftOutNoIngredient: "Not confirmed to contain {ingredient}, so left out: {n}.",
   // Errors, by the API's error code.
   errors: {
     empty_request: "Type what you're looking for first.",
@@ -378,6 +385,11 @@ button { font: inherit; color: inherit; }
 /* "In short:" (13 Oct 2026): our one-line summary of what a pick's credible voices say. Our words, so never drawn
    like a quote: no quotation marks, no quote box, no serif; with the note saying it is ours. */
 .summary { margin: 0; font-size: 17px; line-height: 1.55; }
+/* An ingredient-led answer (13 Oct 2026): every product's form as a small chip, and the note under the title. */
+.form-chip { display: inline-block; margin: 6px 6px 0 0; padding: 1px 9px; border-radius: 999px; border: 1px solid var(--line-strong);
+  background: var(--surface); color: var(--muted); font-size: 13px; font-weight: 600; }
+.ingredient-note { display: flex; gap: 8px; align-items: flex-start; margin: -6px 0 16px; color: var(--muted); max-width: 80ch; }
+.ingredient-note .icon { color: var(--accent); margin-top: 3px; }
 .summary-label { display: inline-block; margin-right: 6px; padding: 1px 8px; border-radius: 6px; background: var(--accent-soft); color: var(--accent);
   font-size: 13px; font-weight: 700; vertical-align: 1px; }
 .summary-note { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); }
@@ -734,6 +746,12 @@ details[open] > summary .icon { transform: rotate(180deg); }
     return parts[1] === "r" && /^[A-Za-z0-9_]{2,21}$/.test(parts[2] || "") ? "r/" + parts[2] : null;
   }
 
+  /** A product's form in an answer to a request naming an ingredient but no type (13 Oct 2026): "Form: pads", as a
+      small chip; nothing otherwise. */
+  function formChip(form) {
+    return form ? el("span", { class: "form-chip" }, WORDING.form_label + ": " + form) : null;
+  }
+
   /** A count in words, one or many: `forms` is [one, many], with {n} for the count. */
   function counted(forms, n) { return fill(n === 1 ? forms[0] : forms[1], { n: n.toLocaleString("en-GB") }); }
 
@@ -1080,6 +1098,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
         el("span", { class: "rank", "aria-hidden": "true" }, String(pick.rank)),
         el("div", { class: "card-title" },
           el("h3", { id: nameId }, el("span", { class: "visually-hidden" }, fill(LABELS.rank, { rank: pick.rank }) + " "), pick.name),
+          formChip(pick.form),
           pick.model ? el("p", { class: "model" }, WORDING.brand_model.replace("{model}", pick.model)
             + (pick.model_price ? " (" + pick.model_price + ")" : "")) : null)),
       el("div", { class: "card-body" },
@@ -1148,6 +1167,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
     const nameId = "worth-" + (++worthCards);
     return el("li", {}, el("article", { class: "card worth-card", "aria-labelledby": nameId },
       el("h4", { id: nameId, class: "item-name" }, item.name),
+      formChip(item.form),
       summaryLine(item.summary),
       trustBox(item, false),
       // Lighter than a pick's card: its price only when known or when the request has a budget, where it is sold only
@@ -1184,7 +1204,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
     return el("section", { class: "panel skip", "aria-labelledby": "skip-heading" },
       el("h3", { id: "skip-heading" }, WORDING.skip_heading),
       ...foldedList("items", items.map((item) => el("li", {}, el("details", {},
-        el("summary", {}, el("span", { class: "lead" }, el("strong", {}, item.name + ": "), item.reason), icon("chevron")),
+        el("summary", {}, el("span", { class: "lead" }, el("strong", {}, item.name + ": "), formChip(item.form), item.reason), icon("chevron")),
         quoteList(item.quotes)))), LIST_SHOWN_FIRST));
   }
 
@@ -1225,15 +1245,17 @@ details[open] > summary .icon { transform: rotate(180deg); }
   /** How much the answer read (Noemi, 12 Oct 2026; redrawn 13 Oct 2026 from her testing, as numbers): the threads
       read, which are the most relevant to the request (or more of them, when those gave too few picks), the comments
       in them, and the threads saved about the product, with why they weren't all read. Nothing without a count. */
-  function readingStrip(reading) {
+  function readingStrip(reading, ingredient) {
     if (!reading || !reading.threads) return null;
     const all = !(reading.threads_saved > reading.threads);
-    const note = all ? LABELS.readingAll : reading.read_more ? LABELS.readingMore : LABELS.readingMost;
+    const allNote = ingredient ? fill(LABELS.readingAllIngredient, { ingredient }) : LABELS.readingAll;
+    const note = all ? allNote : reading.read_more ? LABELS.readingMore : LABELS.readingMost;
     const stats = [stat(reading.threads, LABELS.readingThreads, note), stat(reading.comments || 0, LABELS.readingComments)];
     if (!all) {
       const ratio = el("dd", { class: "ratio", "aria-hidden": "true" }, el("span", {}));
       ratio.style.setProperty("--share", String(reading.threads / reading.threads_saved));
-      stats.push(stat(reading.threads_saved, LABELS.readingSaved, null, ratio));
+      const saved = ingredient ? LABELS.readingSavedIngredient.map((words) => fill(words, { ingredient })) : LABELS.readingSaved;
+      stats.push(stat(reading.threads_saved, saved, null, ratio));
     }
     const why = all ? null : el("details", { class: "why" }, el("summary", {}, LABELS.readingWhyHeading),
       el("p", {}, fill(LABELS.readingWhy, { picks: SETTINGS.picksShown })));
@@ -1289,9 +1311,15 @@ details[open] > summary .icon { transform: rotate(180deg); }
     if (query.status === "clarify") return [notice("question", LABELS.clarifyHeading, query.question, LABELS.clarifyHint)];
     if (query.status === "out_of_scope") return [notice("question", null, query.message)];
     const answer = data.answer;
-    const title = answer.product_type ? fill(WORDING.title, { product_type: answer.product_type }) : WORDING.title_any;
-    // How much was read for this answer, under its title (Noemi, 12 Oct 2026).
-    const parts = [answerHead(title, query.category, answer.picks.length > 0), readingStrip(data.reading)];
+    // The answer's own title since 13 Oct 2026 ("Top picks: salicylic acid products"); built here for older answers.
+    const title = answer.title
+      || (answer.product_type ? fill(WORDING.title, { product_type: answer.product_type }) : WORDING.title_any);
+    // What every product shown has in common, for a request naming an active ingredient (13 Oct 2026), under the title;
+    // then how much was read for this answer (Noemi, 12 Oct 2026).
+    const ingredient = query.ingredient_led && answer.ingredient ? answer.ingredient : null;
+    const parts = [answerHead(title, query.category, answer.picks.length > 0),
+      answer.ingredient_note ? withIcon("check", el("p", { class: "ingredient-note" }, answer.ingredient_note)) : null,
+      readingStrip(data.reading, ingredient)];
     if (answer.message) parts.push(notice("honest", null, answer.message));
     parts.push(glanceTable(answer.picks));
     if (answer.picks.length) parts.push(el("ol", { class: "picks" }, ...answer.picks.map(pickCard)));
@@ -1304,7 +1332,9 @@ details[open] > summary .icon { transform: rotate(180deg); }
     const overBudget = data.left_out.over_budget ? " " + fill(LABELS.leftOutBudget, { n: data.left_out.over_budget }) : "";
     const unavailable = data.left_out.unavailable ? " " + fill(LABELS.leftOutUnavailable, { n: data.left_out.unavailable }) : "";
     const notSuited = data.left_out.not_suited ? " " + fill(LABELS.leftOutNotSuited, { n: data.left_out.not_suited }) : "";
-    const leftOut = (leftOutText(data.left_out) + overBudget + unavailable + notSuited).trim();
+    const noIngredient = data.left_out.no_ingredient && answer.ingredient
+      ? " " + fill(LABELS.leftOutNoIngredient, { n: data.left_out.no_ingredient, ingredient: answer.ingredient }) : "";
+    const leftOut = (leftOutText(data.left_out) + overBudget + unavailable + notSuited + noIngredient).trim();
     if (leftOut) parts.push(el("p", { class: "footnote" }, el("strong", {}, LABELS.leftOutHeading + ". "), leftOut));
     return parts.filter(Boolean);
   }

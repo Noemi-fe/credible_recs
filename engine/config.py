@@ -955,3 +955,145 @@ SUMMARY_DOWNSIDE_WORDS = ("but", "though", "although", "however", "except", "dow
 SUMMARY_PEOPLE_WORDS = ("owner", "owners", "user", "users", "people", "person", "writer", "writers", "voice", "voices",
                         "commenter", "commenters", "reviewer", "reviewers", "buyer", "buyers", "cook", "cooks",
                         "backer", "backers", "fan", "fans", "customer", "customers", "others")
+
+# --- Active ingredients (13 Oct 2026; engine/ingredients.py) ---
+# The orchestrator's decision of 13 Oct 2026, after Noemi tested the live site ("when I put salicylic acid, it should
+# give me like a serum, not an exfoliant": "salicylic acid for acne" was read as an exfoliant request, and its answer
+# showed exfoliants without the acid). When a request names an active ingredient, the answer is ingredient-led: every
+# product it shows (picks, Also worth a look, Skip these) contains that ingredient, and the ingredient is a hard
+# requirement like the product facts' ones. A request that names a product type too ("salicylic acid cleanser") keeps
+# its type and adds the requirement; one that names only the ingredient ("salicylic acid for acne") reads the skincare
+# threads of every product type that can carry it, and each product shown says its form ("pads", "toner", "cleanser").
+# The list below was chosen by Claude (the builder), reported to Noemi. Each ingredient, by its key (the name shown):
+# - "asked": how a request names it: regular expressions, matched on whole words of the lowercased request (a plural
+#   "s" may follow). A request's "no X", "without X", "X-free", "instead of X" (and the like) doesn't ask for it;
+# - "named": how a product's own name shows it contains it (whole words, as above): "Paula's Choice 2% BHA" names a
+#   BHA. Stricter than "asked" where it must be: a BHA in a name isn't proof of salicylic acid (COSRX's BHA is betaine
+#   salicylate), so salicylic acid is only "salicylic";
+# - "actives": the actives of a product-facts entry's formula that count for it (data/product_facts.json, "formula";
+#   the vocabulary is INGREDIENT_ACTIVES below): a BHA is salicylic acid or betaine salicylate;
+# - "types": the product types (engine/query.py, PRODUCT_TYPES) that can carry it, read for an ingredient-led request;
+# - "related" (optional): other ingredients whose words also show a thread talks about it, for choosing threads (a
+#   thread about BHAs is about salicylic acid too), never as evidence.
+# The retinoid words that are module 1's own name for the retinoid type ("retinol", "retinoid") add no requirement:
+# Noemi decided on 7 Oct 2026 (eval/edge_cases/query.json, q05) that "retinol" means the generic retinoid, so the type
+# already is the requirement. The specific forms ("retinal", "tretinoin", "adapalene", "tazarotene") are required.
+_ACID_TYPES = ("exfoliant", "toner", "serum", "cleanser", "moisturiser")
+_SOOTHING_TYPES = ("moisturiser", "serum", "toner", "cleanser", "sunscreen", "eye cream")
+_RETINOID_TYPES = ("retinoid", "serum", "moisturiser", "eye cream")
+INGREDIENTS: dict[str, dict] = {
+    "salicylic acid": {"asked": (r"salicylic(?: acid)?",), "named": (r"salicylic",),
+                       "actives": ("salicylic acid",), "types": _ACID_TYPES, "related": ("BHA",)},
+    "BHA": {"asked": (r"bha", r"beta[- ]hydroxy(?: acid)?"), "named": (r"bha", r"salicylic", r"betaine salicylate"),
+            "actives": ("salicylic acid", "betaine salicylate"), "types": _ACID_TYPES, "related": ("salicylic acid",)},
+    "glycolic acid": {"asked": (r"glycolic(?: acid)?",), "named": (r"glycolic",), "actives": ("glycolic acid",),
+                      "types": _ACID_TYPES, "related": ("AHA",)},
+    "lactic acid": {"asked": (r"lactic acid",), "named": (r"lactic",), "actives": ("lactic acid",),
+                    "types": _ACID_TYPES, "related": ("AHA",)},
+    "mandelic acid": {"asked": (r"mandelic(?: acid)?",), "named": (r"mandelic",), "actives": ("mandelic acid",),
+                      "types": _ACID_TYPES, "related": ("AHA",)},
+    "AHA": {"asked": (r"aha", r"alpha[- ]hydroxy(?: acid)?"), "named": (r"aha", r"glycolic", r"lactic", r"mandelic"),
+            "actives": ("glycolic acid", "lactic acid", "mandelic acid"), "types": _ACID_TYPES,
+            "related": ("glycolic acid", "lactic acid", "mandelic acid")},
+    "PHA": {"asked": (r"pha", r"gluconolactone", r"lactobionic(?: acid)?"),
+            "named": (r"pha", r"gluconolactone", r"lactobionic"), "actives": ("gluconolactone", "lactobionic acid"),
+            "types": _ACID_TYPES},
+    "azelaic acid": {"asked": (r"azelaic(?: acid)?",), "named": (r"azelaic",), "actives": ("azelaic acid",),
+                     "types": ("serum", "moisturiser", "exfoliant", "toner")},
+    "niacinamide": {"asked": (r"niacinamide", r"nicotinamide", r"vitamin b3"),
+                    "named": (r"niacinamide", r"nicotinamide"), "actives": ("niacinamide",),
+                    "types": _SOOTHING_TYPES},
+    "vitamin C": {"asked": (r"vitamin c", r"vit c", r"ascorbic(?: acid)?", r"ascorbyl"),
+                  "named": (r"vitamin c", r"vit\.? c", r"ascorbic", r"ascorbyl", r"ascorbate"),
+                  "actives": ("vitamin c",), "types": ("serum", "moisturiser", "toner", "eye cream", "sunscreen")},
+    "benzoyl peroxide": {"asked": (r"benzoyl(?: peroxide)?", r"bpo"), "named": (r"benzoyl", r"bpo"),
+                         "actives": ("benzoyl peroxide",), "types": ("cleanser", "moisturiser", "serum")},
+    "hyaluronic acid": {"asked": (r"hyaluronic(?: acid)?", r"sodium hyaluronate"),
+                        "named": (r"hyaluronic", r"hyaluronate", r"ha"), "actives": ("hyaluronic acid",),
+                        "types": _SOOTHING_TYPES},
+    "ceramides": {"asked": (r"ceramide",), "named": (r"ceramide",), "actives": ("ceramides",),
+                  "types": _SOOTHING_TYPES + ("lip balm",)},
+    "centella": {"asked": (r"centella(?: asiatica)?", r"cica", r"tiger grass", r"madecassoside"),
+                 "named": (r"centella", r"cica", r"madecass\w*", r"tiger grass"), "actives": ("centella asiatica",),
+                 "types": _SOOTHING_TYPES},
+    "snail mucin": {"asked": (r"snail(?: mucin| secretion)?",), "named": (r"snail", r"mucin"),
+                    "actives": ("snail mucin",), "types": ("serum", "moisturiser", "toner", "eye cream", "cleanser")},
+    # Retinoids: the retinoid type itself, named by module 1's words ("retinol"), adds no requirement (above);
+    # "vitamin A" isn't one of the type's words, so "vitamin a serum" is a serum with a retinoid.
+    "retinoid": {"asked": (r"retinol", r"retinoid", r"vitamin a"),
+                 "named": (r"retin(?:ol|al|aldehyde|oid|yl)\w*", r"tretinoin", r"adapalene", r"tazarotene",
+                           r"retin-a"),
+                 "actives": ("retinol", "retinal", "retinyl ester", "hydroxypinacolone retinoate", "tretinoin",
+                             "adapalene", "tazarotene"),
+                 "types": _RETINOID_TYPES},
+    "retinal": {"asked": (r"retinal", r"retinaldehyde"), "named": (r"retinal", r"retinaldehyde"),
+                "actives": ("retinal",), "types": _RETINOID_TYPES},
+    "tretinoin": {"asked": (r"tretinoin", r"tret"), "named": (r"tretinoin", r"retin-a"), "actives": ("tretinoin",),
+                  "types": _RETINOID_TYPES},
+    "adapalene": {"asked": (r"adapalene",), "named": (r"adapalene",), "actives": ("adapalene",),
+                  "types": _RETINOID_TYPES},
+    "tazarotene": {"asked": (r"tazarotene",), "named": (r"tazarotene",), "actives": ("tazarotene",),
+                   "types": _RETINOID_TYPES},
+}
+# A product-facts entry may say what a product is made with and its form, in a block of its own with its own sources and
+# date (data/product_facts.json, "formula": {"actives": [...], "form": "...", "sources": [...], "checked_on": "..."};
+# engine/product_facts.py), so adding it never claims the entry's other facts were checked again.
+# The actives a formula may list (INGREDIENT_ACTIVES): what its maker presents as the
+# product's actives (its name, its stated strengths or its "key ingredients"), checked against its ingredient list. A
+# trace further down the list isn't an active: a moisturiser with a little sodium hyaluronate isn't a hyaluronic acid
+# product. "vitamin c" is ascorbic acid or one of its derivatives; "retinyl ester" is retinyl palmitate or retinyl
+# retinoate; "bakuchiol" and "papain" are listed so an entry can say what a product is made with when that isn't one of
+# the ingredients above.
+INGREDIENT_ACTIVES = (
+    "salicylic acid", "betaine salicylate", "glycolic acid", "lactic acid", "mandelic acid", "malic acid",
+    "citric acid", "gluconolactone", "lactobionic acid", "azelaic acid", "niacinamide", "vitamin c", "benzoyl peroxide",
+    "hyaluronic acid", "ceramides", "centella asiatica", "snail mucin", "retinol", "retinal", "retinyl ester",
+    "hydroxypinacolone retinoate", "tretinoin", "adapalene", "tazarotene", "bakuchiol", "papain", "sulfur", "zinc",
+)
+# The words a request may put before an ingredient so it doesn't ask for it ("no", "without"), or after it ("-free").
+INGREDIENT_NOT_ASKED_BEFORE = (r"no", r"not", r"without", r"avoid(?:ing)?", r"instead of", r"rather than",
+                               r"other than", r"alternative to", r"alternatives to", r"allergic to", r"sensitive to",
+                               r"can'?t use", r"cannot use", r"can'?t tolerate", r"except", r"minus", r"never")
+INGREDIENT_NOT_ASKED_AFTER = (r"[- ]?free", r" alternatives?", r" dupes? for")
+# Why a product is left out of an ingredient request (the pipeline's left_out_no_ingredient), in words for the shopper.
+# Wording decided by Claude, 13 Oct 2026.
+INGREDIENT_NOT_CONFIRMED = "we couldn't confirm it contains {ingredient}"
+INGREDIENT_NOT_LISTED = "its maker doesn't list {ingredient} among its actives"
+INGREDIENT_BRAND_UNCHECKABLE = "a whole brand can't be checked for {ingredient}"
+# Choosing threads for an ingredient-led request (engine/sources.py, LocalSource): its products may be of any type, so a
+# thread's title rarely names them. Each comment that names the ingredient (or a related one) adds this many points to
+# the thread's grade (module 2's post_score), up to INGREDIENT_TALK_MAX: a thread where 6 comments name salicylic acid
+# gains 3, as much as an advice title about it. Chosen by Claude, 13 Oct 2026.
+INGREDIENT_TALK_POINTS = 0.5
+INGREDIENT_TALK_MAX = 3.0
+# The forms a formula may give (its maker's own description of what the product is), when its name doesn't say.
+INGREDIENT_FORMS = ("serum", "leave-on liquid", "toner", "pads", "essence", "cleanser", "rinse-off powder", "peel",
+                    "mask", "cream", "lotion", "gel", "oil", "balm", "sunscreen", "eye cream", "spot treatment")
+# The form shown with each product of an ingredient-led answer ("Form: pads"), from the first that gives one:
+# 1. its product-facts entry's formula "form" (INGREDIENT_FORMS);
+# 2. its own name, by these words (regular expressions on whole words of the lowercased name, in this order, so
+#    "peel pads" are pads and "cleansing foam" a cleanser);
+# 3. its product type (PRODUCT_TYPE_FORMS).
+INGREDIENT_FORM_WORDS: tuple[tuple[str, str], ...] = (
+    (r"pads?", "pads"),
+    (r"peel(?:ing)?", "peel"),
+    (r"toners?", "toner"),
+    (r"essences?", "essence"),
+    (r"serums?|ampoules?|boosters?", "serum"),
+    (r"cleansers?|cleansing|face ?wash|wash|foam|gleanser", "cleanser"),
+    (r"liquids?|solutions?", "leave-on liquid"),
+    (r"masks?|masques?", "mask"),
+    (r"sunscreens?|spf\s?\d*|sun (?:cream|fluid|milk|gel|stick|essence)", "sunscreen"),
+    (r"eye (?:creams?|serums?|gels?)", "eye cream"),
+    (r"lotions?", "lotion"),
+    (r"gel[- ]?creams?|creams?|cremes?|moisturi[sz]ers?|emulsions?", "cream"),
+    (r"gels?", "gel"),
+    (r"oils?", "oil"),
+    (r"balms?", "balm"),
+    (r"powders?", "powder"),
+)
+PRODUCT_TYPE_FORMS: dict[str, str] = {
+    "exfoliant": "exfoliant", "cleanser": "cleanser", "moisturiser": "moisturiser", "sunscreen": "sunscreen",
+    "retinoid": "retinoid treatment", "serum": "serum", "toner": "toner", "eye cream": "eye cream",
+    "lip balm": "lip balm",
+}

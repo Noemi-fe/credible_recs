@@ -84,11 +84,11 @@ def test_the_reading_says_whether_the_answer_read_more_threads_than_usual(tmp_pa
 
 def test_the_page_draws_the_reading_as_a_strip_of_numbers_in_plain_words(tmp_path):
     html = page_text(tmp_path)
-    strip = function_body(html, "function readingStrip(reading)")
+    strip = function_body(html, "function readingStrip(reading, ingredient)")
     for field in ("reading.threads", "reading.comments", "reading.threads_saved", "reading.read_more"):
         assert field in strip, field
     assert "LABELS.readingWhy" in strip  # why not all of them: the rest are less related to the request
-    assert "readingStrip(data.reading)" in html
+    assert "readingStrip(data.reading, ingredient)" in html
     assert settings_of(html)["picksShown"] == 3
 
 

@@ -30,30 +30,41 @@ any check is simply not shown:
 - when the product has credible warnings in this answer, or a cited comment is one, the text acknowledges a downside:
   it holds a contrast or a drawback word (config.SUMMARY_DOWNSIDE_WORDS; acknowledges_downside).
 
+Which products: every product that can be a pick or an "Also worth a look" item (Noemi, 13 Oct 2026: "why are we
+giving In short just for a few recommendations instead of for all of them?"). That is every product that qualifies, or
+is worth a look, in the ranking of an answer to one of these requests (all_requests), shown or not: a product ranked
+fourth is shown when a request's budget or must-haves leave one of the first three out. The requests are those the
+pre-check answers ahead (engine.precheck.requests_to_check: the search page's examples, the latency requests and every
+product type by name, the open model's types included) and the sense evaluation's other requests; and for every
+product type asked by name, also its wider reading (config.PIPELINE_MORE_THREADS threads, as an answer short of picks
+reads), so a product that only qualifies there is covered too. Answers come from data/library without live checks.
+
 Command line:
-    python -m engine.summaries todo    which products need a summary: the picks and "Also worth a look" items of the
-                                       answers to the requests in eval/blind_test/questions.json and
-                                       eval/edge_cases/latency_queries.json (from data/library, without live checks)
-                                       with no summary, one written under older instructions, or one that wouldn't be
-                                       shown (with the reason). Writes data/library/summaries_todo.json, the writer's
-                                       reading (git-ignored: it holds Reddit text); prints names and reasons only.
+    python -m engine.summaries todo    which products need a summary: none yet, one written under older instructions,
+                                       or one that wouldn't be shown in one of the answers where its product qualifies
+                                       (with the reason). Writes data/library/summaries_todo.json, the writer's reading
+                                       (git-ignored: it holds Reddit text); prints names and reasons only.
     python -m engine.summaries check   every entry checked, with reasons: its shape and text, its cited comments (still
-                                       in the library and readable, their numbers), and, in each of those answers
-                                       that shows its product, whether it would be shown. Exits 1 if any fails.
+                                       in the library and readable, their numbers), and, in each answer where its
+                                       product qualifies, whether it would be shown. Exits 1 if any fails. Both answer
+                                       about 90 requests: a few minutes.
 """
 
 import json
 import re
 import sys
 import threading
+import time
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import NamedTuple
 
 from pydantic import Field, ValidationError, field_validator
 
 from engine.config import (
+    PIPELINE_MORE_THREADS,
     SUMMARY_DOWNSIDE_WORDS,
     SUMMARY_MAX_WORDS,
     SUMMARY_PEOPLE_WORDS,
@@ -66,8 +77,10 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SUMMARIES_FILE = "summaries.json"  # in the library folder: data/library/summaries.json
 TODO_FILE = "summaries_todo.json"  # the writer's reading, next to it
 DEFAULT_INSTRUCTIONS = REPO_ROOT / "engine" / "prompts" / "summarise_pick.md"
-REQUEST_FILES = (REPO_ROOT / "eval" / "blind_test" / "questions.json",
-                 REPO_ROOT / "eval" / "edge_cases" / "latency_queries.json")
+QUESTIONS_FILE = REPO_ROOT / "eval" / "blind_test" / "questions.json"  # the search page's examples
+LATENCY_FILE = REPO_ROOT / "eval" / "edge_cases" / "latency_queries.json"
+REQUEST_FILES = (QUESTIONS_FILE, LATENCY_FILE)
+WIDER = "{request} ({threads} threads)"  # a wider reading's id: "electric kettle (48 threads)"
 
 
 class Summary(Record):
@@ -288,10 +301,41 @@ def shown_problems(summary: Summary, credible: Mapping[str, str], bodies: Mappin
 
 # --- todo and check: the AI step's bookkeeping ---
 
-def requests_to_answer(files: Iterable[Path] = REQUEST_FILES) -> list[tuple[str, str]]:
+class Request(NamedTuple):
+    """One request to answer: its id (from its file, else the request itself), the request, and whether to read it
+    wider (config.PIPELINE_MORE_THREADS threads, more_threads off) instead of as an answer does."""
+
+    id: str
+    text: str
+    wider: bool = False
+
+
+def all_requests(questions: Path = QUESTIONS_FILE, latency: Path = LATENCY_FILE, library_dir: Path | None = None,
+                 extra: Iterable[str] | None = None) -> list[Request]:
+    """Every request whose answers' products need a summary (13 Oct 2026): the pre-check's (engine.precheck.
+    requests_to_check: the examples in `questions`, the latency requests in `latency`, every product type by name and
+    the open model's types), then `extra` (None: the sense evaluation's other requests), each once; then the wider
+    reading of every product type asked by name. Ids come from the files where they have one."""
+    from engine.library import DEFAULT_LIBRARY_DIR  # imported here: these modules import this one
+    from engine.precheck import requests_to_check
+    from engine.sense_eval import OTHER_REQUESTS
+
+    texts = requests_to_check(questions, latency, library_dir or DEFAULT_LIBRARY_DIR)
+    extra = list(OTHER_REQUESTS if extra is None else extra)
+    texts += [text for text in extra if text not in texts]
+    ids = dict((text, request_id) for request_id, text in requests_to_answer((questions, latency), missing_ok=True))
+    named_types = [text for text in texts if text not in ids and text not in extra]
+    found = [Request(ids.get(text, text), text) for text in texts]
+    return found + [Request(WIDER.format(request=text, threads=PIPELINE_MORE_THREADS), text, True)
+                    for text in named_types]
+
+
+def requests_to_answer(files: Iterable[Path] = REQUEST_FILES, missing_ok: bool = False) -> list[tuple[str, str]]:
     """(id, request) for each request in the files (a "questions" or a "queries" list), in order, each request once."""
     found, seen = [], set()
     for path in files:
+        if missing_ok and not Path(path).is_file():
+            continue
         data = json.loads(Path(path).read_text(encoding="utf-8"))
         for item in data.get("questions", data.get("queries", [])):
             if item["text"] not in seen:
@@ -308,7 +352,7 @@ class ProductToSummarise:
     product: str
     category: str
     product_type: str | None
-    requests: list[str] = field(default_factory=list)  # the ids of the answers that show it
+    requests: list[str] = field(default_factory=list)  # the ids of the answers where it can be shown
     reasons: list[str] = field(default_factory=list)  # why it needs one, by answer: "b06: no summary yet"
     # Its credible mentions in those answers, one per writer: comment_id, stance, voice, evidence, badges, quote, body,
     # url, shown (its quote is shown in an answer) and in_every_answer (a credible mention in each of them).
@@ -318,7 +362,8 @@ class ProductToSummarise:
 
 @dataclass
 class _Shown:
-    """One product shown in one answer: its ranking entry, and the comment ids of its quotes shown there."""
+    """One product that can be shown in one answer: its ranking entry, and the comment ids of its quotes shown there
+    (none when the answer doesn't show it)."""
 
     request_id: str
     product: object  # engine.rank.ProductScore
@@ -327,30 +372,33 @@ class _Shown:
     bodies: Mapping[str, str]
 
 
-def _answers(requests: list[tuple[str, str]], library_dir: Path, profiles=None,
+def _answers(requests: Iterable[Request | tuple[str, str]], library_dir: Path, profiles=None,
              entries: Mapping[str, Summary] | None = None) -> list[_Shown]:
-    """Every pick and "Also worth a look" item of the requests' answers, from the library and without live checks (as
-    engine.prices.todo answers): no comment is read on Reddit, and threads waiting for their live check count too."""
-    from engine.pipeline import answer_request  # here: the pipeline imports this module
+    """Every product that qualifies as a pick, or is worth a look, in the ranking of each request's answer, shown or
+    not, from the library and without live checks (as engine.prices.todo answers): no comment is read on Reddit, and
+    threads waiting for their live check count too. A wider request reads config.PIPELINE_MORE_THREADS threads."""
+    from engine import pipeline  # here: the pipeline imports this module
 
-    shown = []
-    for request_id, text in requests:
-        run = answer_request(text, library_dir=library_dir, profiles=profiles, live_check_required=False,
-                             summaries=entries)
+    found = []
+    for request in (Request(*r) for r in requests):
+        wider = dict(max_threads=PIPELINE_MORE_THREADS, more_threads=None) if request.wider else {}
+        run = pipeline.answer_request(request.text, library_dir=library_dir, profiles=profiles,
+                                      live_check_required=False, summaries=entries, **wider)
         if run.answer is None:
             continue
-        ranked = {p.key: p for p in run.ranking.products}
-        for item in [*run.answer.picks, *run.answer.worth_a_look]:
-            quotes = {q.comment_id for q in [*item.quotes, *item.downsides]}
-            if item.product_key in ranked:
-                shown.append(_Shown(request_id, ranked[item.product_key], quotes, run.query.product_type, run.bodies))
-    return shown
+        quotes = {item.product_key: {q.comment_id for q in [*item.quotes, *item.downsides]}
+                  for item in [*run.answer.picks, *run.answer.worth_a_look]}
+        for product in run.ranking.products:
+            if product.qualifies or product.worth_a_look:
+                found.append(_Shown(request.id, product, quotes.get(product.key, set()), run.query.product_type,
+                                    run.bodies))
+    return found
 
 
-def todo(requests: list[tuple[str, str]], library_dir: Path, profiles=None) -> list[ProductToSummarise]:
-    """The picks and "Also worth a look" items of the requests' answers that need a summary: none yet, one written under
-    older instructions, or one that wouldn't be shown in one of the answers that show it (engine.answer.summary_reasons,
-    with the reason). In the order they are first shown."""
+def todo(requests: Iterable[Request | tuple[str, str]], library_dir: Path, profiles=None) -> list[ProductToSummarise]:
+    """The products that can be a pick or an "Also worth a look" item in the requests' answers (_answers) and need a
+    summary: none yet, one written under older instructions, or one that wouldn't be shown in one of the answers where
+    the product qualifies (engine.answer.summary_reasons, with the reason). In the order they are first met."""
     from engine.answer import summary_reasons
 
     loaded = load_summaries(Path(library_dir) / SUMMARIES_FILE)
@@ -405,11 +453,12 @@ def write_todo(found: list[ProductToSummarise], library_dir: Path) -> Path:
     return path
 
 
-def check(library_dir: Path, requests: list[tuple[str, str]], profiles=None) -> tuple[list[str], list[str]]:
+def check(library_dir: Path, requests: Iterable[Request | tuple[str, str]],
+          profiles=None) -> tuple[list[str], list[str]]:
     """(problems, notes) for every entry of the library's summaries.json, each problem naming its entry: entries that
     don't load; each entry's text, instructions version, cited comments (in the library and still readable) and their
-    numbers; then, in each of the requests' answers that shows its product, why it wouldn't be shown there. The notes
-    name the entries no answer shows (not a problem: the product may come back)."""
+    numbers; then, in each of the requests' answers where its product can be shown (_answers), why it wouldn't be shown
+    there. The notes name the entries whose product no answer can show (not a problem: the product may come back)."""
     from engine.answer import summary_reasons
     from engine.library_cache import loaded as loaded_library
 
@@ -428,7 +477,7 @@ def check(library_dir: Path, requests: list[tuple[str, str]], profiles=None) -> 
                                 entry.product)
         problems += [f"{key}: {problem}" for problem in mine]
     shown_keys = set()
-    for item in _answers(requests, library_dir, profiles, loaded.entries) if loaded.entries else []:
+    for item in _answers(list(requests), library_dir, profiles, loaded.entries) if loaded.entries else []:
         key = _key_of(item.product)
         entry = loaded.entries.get(key)
         if entry is None:
@@ -436,7 +485,7 @@ def check(library_dir: Path, requests: list[tuple[str, str]], profiles=None) -> 
         shown_keys.add(key)
         problems += [f"{key}: in {item.request_id}: {reason}"
                      for reason in summary_reasons(item.product, entry, item.bodies)]
-    notes = [f"{key}: no answer to these requests shows its product" for key in loaded.entries
+    notes = [f"{key}: its product isn't a pick or worth a look in any of these answers" for key in loaded.entries
              if requests and key not in shown_keys]
     return list(dict.fromkeys(problems)), notes
 
@@ -450,17 +499,20 @@ def main(argv: list[str], request_files: Iterable[Path] | None = None, library_d
     from engine.library import DEFAULT_LIBRARY_DIR
 
     library_dir = Path(library_dir or DEFAULT_LIBRARY_DIR)
-    requests = requests_to_answer(request_files or REQUEST_FILES)
+    requests = (requests_to_answer(request_files) if request_files is not None
+                else all_requests(library_dir=library_dir))
     profiles = _profiles(library_dir)
+    started = time.monotonic()
     if argv == ["todo"]:
         found = todo(requests, library_dir, profiles)
         path = write_todo(found, library_dir)
-        print(f"Products that need a one-line summary, in the answers to {len(requests)} requests (from the library, "
-              "without live checks):")
+        print(f"Products that need a one-line summary, of those that can be shown in the answers to {len(requests)} "
+              "requests (from the library, without live checks):")
         for item in found:
             print(f"  {item.key} ({item.product}; {', '.join(item.requests)}):")
             print("".join(f"    - {reason}\n" for reason in item.reasons), end="")
-        print(f"{len(found)} product{'' if len(found) == 1 else 's'} to summarise. What to read: {path}")
+        print(f"{len(found)} product{'' if len(found) == 1 else 's'} to summarise. What to read: {path} "
+              f"({time.monotonic() - started:.0f} s)")
         return 0
     problems, notes = check(library_dir, requests, profiles)
     entries = load_summaries(library_dir / SUMMARIES_FILE).entries
@@ -472,6 +524,7 @@ def main(argv: list[str], request_files: Iterable[Path] | None = None, library_d
         print(f"  - {problem}")
     for note in notes:
         print(f"  (note) {note}")
+    print(f"({len(requests)} requests answered in {time.monotonic() - started:.0f} s)")
     return 1 if problems else 0
 
 
