@@ -501,7 +501,7 @@ def _worth_quotes(product: ProductScore, check: "_QuoteCheck", asks: tuple[str, 
 
 def _mid_sentence(quote: str, body: str | None) -> bool:
     """Whether a quote starts in the middle of a sentence of its comment: in lowercase, after words that don't end a
-    sentence ("is my daily driver", its subject a link left out; 13 Oct 2026). Such a quote never names what it is
+    sentence (one opening on its verb, its subject a link left out; 13 Oct 2026). Such a quote never names what it is
     about."""
     span = find_quote(body, quote) if body else None
     if span is None or not quote[:1].islower():

@@ -267,12 +267,12 @@ def test_an_items_unknown_price_and_availability_arent_spelled_out_but_a_budget_
 
 
 def test_an_item_never_shows_a_quote_that_starts_mid_sentence():
-    # Found judging the 13 Oct 2026 answers: a quote began "is my daily driver", its subject (a link) left out.
-    cut = [mention("Mauviel M150", t, quote="is my daily driver and a great pan.") for t in ("t1", "t2")]
+    # Found judging the 13 Oct 2026 answers: a quote opened on its verb, its subject (a link) left out.
+    cut = [mention("Mauviel M150", t, quote="is what I cook with every day, a great pan.") for t in ("t1", "t2")]
     ranking, bodies, _ = case(cut)
     for m in cut:
-        bodies[m.comment_id] = "[This Mauviel](https://shop.example/pan) is my daily driver and a great pan."
+        bodies[m.comment_id] = "[This Mauviel](https://shop.example/pan) is what I cook with every day, a great pan."
     assert "Mauviel M150" not in names(write_answer(ranking, bodies, "chef knife").worth_a_look)
-    whole = [mention("Mauviel M150", t, quote="My Mauviel is my daily driver and a great pan.") for t in ("t1", "t2")]
+    whole = [mention("Mauviel M150", t, quote="My Mauviel is what I cook with every day, a great pan.") for t in ("t1", "t2")]
     ranking, bodies, _ = case(whole)
     assert "Mauviel M150" in names(write_answer(ranking, bodies, "chef knife").worth_a_look)
