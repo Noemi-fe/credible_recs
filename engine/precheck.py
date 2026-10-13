@@ -105,6 +105,7 @@ class _Found:
 
     candidates: list[Candidate] = field(default_factory=list)
     answered: int = 0
+    failed: int = 0  # requests the pipeline couldn't answer (each named on stderr)
 
 
 # --- Which requests ---
@@ -163,7 +164,8 @@ class _AsIfChecked:
 @contextmanager
 def _answers_kept():
     """While open, each answer the pipeline writes is kept with what it was written from (engine.answer.write_answer's
-    arguments), so it can be written again as it would be if checks failed. The pipeline itself is unchanged."""
+    arguments), so it can be written again as it would be if checks failed. The pipeline itself is unchanged, and the
+    pre-check runs as a process of its own, never inside the site, so no visitor's answer passes through here."""
     written: list[tuple[dict, Answer]] = []
     original = pipeline.write_answer
     signature = inspect.signature(original)
@@ -195,7 +197,14 @@ def _work_out(requests: list[str], library_dir: Path, checker, profiles) -> _Fou
     with _answers_kept() as (written, write_answer):
         for number, request in enumerate(requests):
             written.clear()
-            result = pipeline.answer_request(request, library_dir=library_dir, profiles=profiles, live_checker=as_if)
+            try:
+                result = pipeline.answer_request(request, library_dir=library_dir, profiles=profiles,
+                                                 live_checker=as_if)
+            except Exception as error:  # a broken library file, say: the other requests are still checked ahead
+                found.failed += 1
+                print(f"  {request!r} couldn't be answered ({type(error).__name__}: {error}): left out of this run.",
+                      file=sys.stderr, flush=True)
+                continue
             if result.answer is None:
                 continue
             found.answered += 1
@@ -316,11 +325,12 @@ def _read(candidate: Candidate, checker, fresh: timedelta) -> str:
 # --- The report and the command ---
 
 def report(candidates: list[Candidate], run: Reading, requests: int, answered: int, seconds_working: float,
-           seconds_reading: float) -> str:
+           seconds_reading: float, failed: int = 0) -> str:
     """The run in a few lines: counts and times only, never a comment's words."""
     by_tier = [sum(1 for c in candidates if c.tier == tier) for tier in range(len(TIERS))]
     tiers = ", ".join(f"{n:,} {words}" for n, words in zip(by_tier, TIERS))
-    lines = [f"Requests: {requests} ({answered} answered). Comments their answers show or hold next in line: "
+    failures = f", {failed} failed (named above)" if failed else ""
+    lines = [f"Requests: {requests} ({answered} answered{failures}). Comments their answers show or hold next in line: "
              f"{len(candidates):,} ({tiers})."]
     if run.would_read or not run.read:
         lines.append(f"Would read on Reddit: {run.would_read:,}." if run.would_read else "Read on Reddit now: none.")
@@ -364,7 +374,7 @@ def run(requests: list[str], limit: int, dry_run: bool, library_dir: Path, check
           f"{'counting' if dry_run else 'reading'} up to {limit:,}.", file=sys.stderr, flush=True)
     reading = check_ahead(found.candidates, checker, limit=limit, dry_run=dry_run)
     bucket = getattr(checker, "bucket", None)
-    print(report(found.candidates, reading, len(requests), found.answered, working, reading.seconds))
+    print(report(found.candidates, reading, len(requests), found.answered, working, reading.seconds, found.failed))
     if bucket is not None and bucket.problems:
         print(f"The bucket {bucket.name} failed {bucket.problems} time(s): those checks were kept on this machine only.")
     return 0

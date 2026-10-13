@@ -309,3 +309,21 @@ def test_a_check_skipped_as_fresh_lasts_until_the_next_days_run_has_read_everyth
     longest_run_hours = config.PRECHECK_MAX_READS * config.LIVE_CHECK_REFILL_SECONDS / 3600
     assert config.PRECHECK_FRESH_HOURS + 24 + longest_run_hours < config.CACHE_MAX_AGE_HOURS
     assert config.PRECHECK_FRESH_HOURS >= 12  # "fresh for most of a day": not read twice a day
+
+
+def test_a_request_whose_answer_fails_is_reported_and_the_others_still_worked_out(tmp_path, monkeypatch, capsys):
+    from engine import pipeline
+
+    real = pipeline.answer_request
+
+    def failing(request, **kwargs):
+        if request == "a broken request":
+            raise ValueError("a library file that doesn't load")
+        return real(request, **kwargs)
+
+    monkeypatch.setattr(pipeline, "answer_request", failing)
+    found = comments_to_check(["a broken request", REQUEST], library_dir=library(tmp_path),
+                              checker=live_checker(tmp_path, FakeReddit()))
+    assert found and all(c.request == 1 for c in found)
+    said = capsys.readouterr().err
+    assert "ValueError" in said and "a broken request" in said  # our own request list: named, to find the problem
