@@ -434,9 +434,15 @@ def test_the_page_carries_the_care_heading_and_draws_care_tips_as_quotes(tmp_pat
 
 def test_the_page_says_how_many_threads_and_comments_an_answer_read():
     # Noemi, 12 Oct 2026: shown under every answer's title, not only in the small print.
+    # Changed on purpose 13 Oct 2026 (Noemi's testing, through the orchestrator: "Based on 16 Reddit threads and 469
+    # comments read for this answer, of 25 threads saved about exfoliant" confused her): still under every answer's
+    # title, now as a strip of numbers in plain words: the threads read (the most relevant to the request), the comments
+    # in them, and the threads saved about the product (engine/tests/test_web_ux.py has the strip's own test).
     page = web.search_page().decode("utf-8")
-    assert "{threads} Reddit threads and {comments} comments" in page
-
+    assert "readingStrip(data.reading)" in page
+    for label in ('readingThreads: ["Reddit thread read", "Reddit threads read"]',
+                  'readingComments: ["comment in them", "comments in them"]'):
+        assert label in page, label
 
 
 # --- Getting ready before the first visitor (latency, 12 Oct 2026) ---

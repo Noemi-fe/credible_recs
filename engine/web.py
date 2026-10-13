@@ -680,6 +680,9 @@ def answer_wording() -> dict[str, str]:
         "no_downsides": wording.NO_DOWNSIDES,
         "breakdown_heading": wording.BREAKDOWN_HEADING,
         "look_for_heading": wording.LOOK_FOR_HEADING,
+        # The two kinds of advice under it (13 Oct 2026, the redesign marks each with its own sign): "Look for", "Avoid".
+        "look_for_advice": wording.LOOK_FOR,
+        "avoid_advice": wording.AVOID,
         "skip_heading": wording.SKIP_HEADING,
         "link_text": wording.LINK_TEXT,
         "price_label": wording.PRICE_LABEL,  # "Price"

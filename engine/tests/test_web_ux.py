@@ -82,9 +82,92 @@ def test_the_reading_says_whether_the_answer_read_more_threads_than_usual(tmp_pa
     assert data["reading"]["read_more"] is True
 
 
+def test_the_page_draws_the_reading_as_a_strip_of_numbers_in_plain_words(tmp_path):
+    html = page_text(tmp_path)
+    strip = function_body(html, "function readingStrip(reading)")
+    for field in ("reading.threads", "reading.comments", "reading.threads_saved", "reading.read_more"):
+        assert field in strip, field
+    assert "LABELS.readingWhy" in strip  # why not all of them: the rest are less related to the request
+    assert "readingStrip(data.reading)" in html
+    assert settings_of(html)["picksShown"] == 3
+
+
 # --- Size and speed ---
 
 def test_the_page_stays_within_its_size_budget(tmp_path):
     biggest = web.Site(public=True, hosts=("demo.example",), goatcounter="credible-recs")
     assert len(web.search_page(biggest)) <= PAGE_BUDGET_BYTES
     assert len(page_text(tmp_path, "/how", biggest).encode("utf-8")) <= PAGE_BUDGET_BYTES
+
+
+def test_the_page_measures_its_own_drawing_time_and_sends_it_nowhere(tmp_path):
+    # The drawing time is kept in the browser's own performance timeline (User Timing), for checking the page stays
+    # fast; nothing is sent anywhere.
+    script = script_of(page_text(tmp_path))
+    assert 'performance.measure("credible-recs:draw"' in script
+    assert len(re.findall(r"\bfetch\(", script)) == 2  # the answer and the feedback, to this site's own server
+
+
+# --- The rules the new parts keep ---
+
+def test_the_page_never_draws_the_score_breakdown(tmp_path):
+    # Noemi, 12 Oct 2026: the score breakdown is off the card. The meter draws "voices", the numbers the answer's own
+    # sentences say in words.
+    script = script_of(page_text(tmp_path))
+    code = re.sub(r"//[^\n]*", "", re.sub(r"/\*.*?\*/", "", script, flags=re.DOTALL))  # the comments may tell its story
+    assert "breakdown" not in code
+    meter = function_body(script, "function trustMeter(voices)")
+    assert "voices.recommend" in meter and "voices.warn" in meter
+
+
+def test_nothing_typed_ever_goes_into_the_pages_title(tmp_path):
+    # GoatCounter sends the page's title with each count, so the title never holds a request or an answer.
+    script = script_of(page_text(tmp_path))
+    assert re.findall(r"document\.title\s*=[^=][^;]*", script) == ["document.title = LABELS.pageTitle"]
+
+
+def test_the_browsers_storage_keeps_only_the_first_time_note_and_the_visitors_own_requests(tmp_path):
+    script = script_of(page_text(tmp_path))
+    calls = re.findall(r"\bremember\(((?:[^()]|\([^()]*\))*)\)", script.replace("function remember(key, value)", ""))
+    assert calls
+    for arguments in calls:
+        assert re.fullmatch(r'FIRST_TIME_KEY, "[a-z]+"|RECENT_KEY, JSON\.stringify\(recent\)', arguments), arguments
+    keeping = function_body(script, "function rememberSearch(request)")
+    assert "recent = [request" in keeping  # the request as typed, and nothing from an answer
+    assert "data." not in keeping and "answer" not in keeping
+
+
+def test_recent_searches_can_be_cleared(tmp_path):
+    script = script_of(page_text(tmp_path))
+    assert "function forget(key) { try { localStorage.removeItem(key); } catch (error) { /* nothing kept */ } }" in script
+    assert "forget(RECENT_KEY)" in function_body(script, "function clearRecent()")
+
+
+def test_quotes_are_drawn_whole(tmp_path):
+    # A quote is shown as the API gives it, never cut short: not in the script, not by the styles.
+    html = page_text(tmp_path)
+    script = script_of(html)
+    assert set(re.findall(r"quote\.text[\w.(]*", script)) == {"quote.text"}
+    assert "masked(quote.text)" in script
+    styles = re.search(r"<style>(.*?)</style>", html, re.DOTALL).group(1)
+    assert "line-clamp" not in styles and "text-overflow" not in styles
+
+
+def test_the_slash_key_goes_to_the_search_box(tmp_path):
+    keys = function_body(script_of(page_text(tmp_path)), "function onKey(event)")
+    assert 'event.key === "/"' in keys and "input.focus()" in keys
+    assert "isTyping(event.target)" in keys  # never while someone is typing in a box
+
+
+def test_a_long_skip_list_shows_its_strongest_first_and_folds_the_rest_without_leaving_any_out(tmp_path):
+    # 13 Oct 2026 (the orchestrator, after Noemi's decision to list brand lines under "Skip these"): b02's answer had
+    # 15 items. The first 5 (the API's order, strongest first) are in view, the rest behind "Show 10 more".
+    html = page_text(tmp_path)
+    script = script_of(html)
+    assert "const LIST_SHOWN_FIRST = 5;" in script
+    skip = function_body(script, "function skipSection(items)")
+    assert "foldedList(" in skip and "LIST_SHOWN_FIRST" in skip and "quoteList(item.quotes)" in skip
+    folding = function_body(script, "function foldedList(listClass, entries, first)")
+    assert "entries.slice(0, first)" in folding and "entries.slice(first)" in folding  # every item drawn; some hidden
+    assert '"aria-expanded"' in folding
+    assert 'showMore: ["Show 1 more", "Show {n} more"]' in html
