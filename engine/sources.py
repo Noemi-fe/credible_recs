@@ -43,10 +43,13 @@ from engine.config import (
     LIBRARY_MIX,
     LIBRARY_THREADS_PER_PRODUCT,
     MAX_THREADS_PER_SUBREDDIT,
+    INGREDIENT_TALK_MAX,
+    INGREDIENT_TALK_POINTS,
     REFORMULATED_CATEGORIES,
     SKINCARE_RECENT_YEARS,
 )
 from engine.gold import load_threads
+from engine.ingredients import ingredient_type_name, ingredients_of_type, talk_words
 from engine.models import Thread
 from engine.parse_reddit import ParseRedditClient
 from engine.query import LOOKALIKES, PRODUCT_TYPES, TITLE_WORDS, ParsedQuery
@@ -73,8 +76,13 @@ def _product_pattern(product_type: str) -> re.Pattern:
 
     The words are the product's keywords and hints from module 1. A product module 1 doesn't list, named by the open
     model (engine.query_model, 11 Oct 2026), is found by its whole name only, never by one of its words ("fresh air"
-    isn't an air fryer), written with a space, a hyphen or as one word ("air fryer", "air-fryer", "airfryer").
+    isn't an air fryer), written with a space, a hyphen or as one word ("air fryer", "air-fryer", "airfryer"). An
+    ingredient-led request's type ("salicylic acid product", 13 Oct 2026) is found by its ingredients' words and their
+    related ingredients' (engine.ingredients.talk_words: a thread about BHAs is about salicylic acid too).
     """
+    talk = talk_words(product_type.strip())
+    if talk:
+        return re.compile(rf"(?<![a-z0-9])(?:{'|'.join(talk)})s?(?![a-z0-9])", re.IGNORECASE)
     known = {p.name: p.keywords + p.hints for p in PRODUCT_TYPES}
     words = known.get(product_type.strip().lower())
     if words:
@@ -193,11 +201,15 @@ class LocalSource:
         # graded order (post_score: advice, the request's own needs, long-term use, comments; b10 had read "Best pots
         # and pans set?" before a thread asking for a PFAS-free non-stick pan that lasts); then relevance, then the
         # thread with more comments.
+        # A request naming active ingredients (13 Oct 2026) reads first the threads whose comments talk about them most:
+        # an ingredient-led one's products may be of any type, so a thread's title rarely names them (talk_points).
+        about = ingredient_type_name(query.constraints.ingredients) if query.constraints.ingredients else None
         scored = []
         for t in candidates:
-            if (points := self._relevance(t, query.product_type)) > 0:
+            if (points := self._relevance(t, query.product_type)) > 0 or (about and self._relevance(t, about) >= 1):
                 graded = post_score(query, _thread_as_post(t))
                 if graded is not None:
+                    graded += talk_points(self._talking(t, about)) if about else 0.0
                     scored.append(((graded, points, t.num_comments), t))
         best = sorted(scored, key=lambda pair: pair[0], reverse=True)
         return [t for _, t in best[:limit]]
@@ -216,6 +228,24 @@ class LocalSource:
         if key not in self._remembered:
             self._remembered[key] = relevance(thread, product_type)
         return self._remembered[key]
+
+    def _talking(self, thread: Thread, product_type: str) -> int:
+        """talking(thread, product_type), worked out once per thread and product."""
+        key = ("talking", thread.id, product_type)
+        if key not in self._remembered:
+            self._remembered[key] = talking(thread, product_type)
+        return self._remembered[key]
+
+
+def talking(thread: Thread, product_type: str) -> int:
+    """How many of the thread's comments name the product (for an ingredient-led request, its ingredient)."""
+    return sum(mentions_product(c.body, product_type) for c in thread.comments)
+
+
+def talk_points(comments: int) -> float:
+    """The points an ingredient-led request adds to a thread's grade for its comments that name the ingredient
+    (13 Oct 2026): INGREDIENT_TALK_POINTS each, at most INGREDIENT_TALK_MAX."""
+    return min(INGREDIENT_TALK_MAX, INGREDIENT_TALK_POINTS * comments)
 
 
 # --- Live from Reddit, through Parse ---
@@ -684,7 +714,10 @@ _STOPWORDS = {
 
 def need_words(query: ParsedQuery) -> list[str]:
     """The specific part of a request, in a form titles can be matched against: "pour-over" -> "pourover"."""
-    product_words = set(query.product_type.split()) | {w for t in TITLE_WORDS.get(query.product_type, ()) for w in t.split()}
+    product_words = set(query.product_type.lower().split()) | {w for t in TITLE_WORDS.get(query.product_type, ())
+                                                               for w in t.split()}
+    # An ingredient-led request's ingredients are its product (13 Oct 2026): "beta hydroxy acid" is no need.
+    product_words |= {w for pattern in talk_words(query.product_type) for w in re.findall(r"[a-z0-9]+", pattern)}
     product_words |= {re.sub(r"['-]", "", w) for w in product_words}  # "leave-in" is "leavein" below
     words = []
     for token in re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", query.text.lower()):
@@ -914,7 +947,11 @@ def _stem(word: str) -> str:
 
 
 def finder_terms(product_type: str) -> list[str]:
-    """What to type into a title search for this product: its usual title words, else its own name."""
+    """What to type into a title search for this product: its usual title words, else its own name; for an
+    ingredient-led request, its ingredients' names ("salicylic acid", 13 Oct 2026)."""
+    led = ingredients_of_type(product_type)
+    if led:
+        return list(led)
     return list(TITLE_WORDS.get(product_type, (product_type,)))
 
 

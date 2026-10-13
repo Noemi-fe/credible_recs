@@ -43,7 +43,9 @@ The JSON for /api/answer (200):
                 "category": "skincare" | "kitchen" | null,
                 "product_type": "electric kettle" | null,
                 "question": "..." | null,     the one clarifying question, when status is "clarify"
-                "message": "..." | null},     the polite no, when status is "out_of_scope"
+                "message": "..." | null,      the polite no, when status is "out_of_scope"
+                "ingredients": [...],         the active ingredients every product shown contains (13 Oct 2026)
+                "ingredient_led": bool},      true when the request names ingredients and no product type
       "answer": null when status isn't "ok", else engine.answer.answer_to_dict(...):
                 {"category", "product_type",
                  "picks": [{"rank", "product_key", "name", "reason", "support",
@@ -97,7 +99,12 @@ The JSON for /api/answer (200):
                                   and downsides only when credible voices warn against it; [] when there are none
                  "worth_note": "2 credible voices each: ...",   the words under its heading, or null without items
                  "message": the honest "not enough evidence" message, or null when there are 3 picks,
-                 "needs_more_threads", "quotes_dropped"},
+                 "needs_more_threads", "quotes_dropped",
+                 "title": "Top picks: ...",    the answer's title, as shown (13 Oct 2026)
+                 "ingredient": "salicylic acid" | null,   the active ingredients asked for, as shown (13 Oct 2026),
+                 "ingredient_note": "..." | null,         and the note under the title saying every product has them;
+                 each pick, "worth_a_look" item and "skip" item also has "form": "pads" | null, its form in an
+                 ingredient-led answer},
       "threads_used": ["thread id", ...],          most relevant first
       "left_out": {"other_type": n,                products of another type, left out,
                    "other_type_names": [...],      and up to LEFT_OUT_NAMES_SHOWN of their names (12 Oct 2026);
@@ -110,7 +117,9 @@ The JSON for /api/answer (200):
                                                    of names (products), never of mentions or threads,
                    "over_budget": n,               products whose known price is over the request's budget
                    "unavailable": n,               products the price list says are no longer sold (9 Oct 2026),
-                   "not_suited": n},               and products whose checked facts clash with the request (9 Oct 2026)
+                   "not_suited": n,                products whose checked facts clash with the request (9 Oct 2026),
+                   "no_ingredient": n},            and products without evidence they contain the active ingredients
+                                                   asked for, or whose maker's actives don't (13 Oct 2026)
       "timing": {"total_s": s, "reddit_s": s,      diagnostic, never shown (13 Oct 2026): how long the answer took to
                  "checks": n,                      work out, how long it waited on live checks, how many it made,
                  "put_off": n},                    and the comments put off rather than wait (what they back is left out)
@@ -407,7 +416,8 @@ def answer_json(result: PipelineResult) -> dict:
     brand_names = result.brand_or_line_names_left_out
     return {
         "query": {"status": query.status, "category": query.category, "product_type": query.product_type,
-                  "question": query.question, "message": query.message},
+                  "question": query.question, "message": query.message,
+                  "ingredients": list(query.constraints.ingredients), "ingredient_led": query.ingredient_led},
         "answer": answer_to_dict(result.answer) if result.answer is not None else None,
         "threads_used": list(result.threads_used),
         # Names, a few of them for the page's footnote to give as examples (Noemi asked what its numbers count, 12 Oct
@@ -418,7 +428,8 @@ def answer_json(result: PipelineResult) -> dict:
                      "ranked_as_lines": len(result.ranked_as_lines),
                      "over_budget": len(result.left_out_over_budget),
                      "unavailable": len(result.left_out_unavailable),
-                     "not_suited": len(result.left_out_not_suited)},
+                     "not_suited": len(result.left_out_not_suited),
+                     "no_ingredient": len(result.left_out_no_ingredient)},
         # How much the answer read (Noemi, 12 Oct 2026): the threads used, the extracted threads saved about the product,
         # and the comments the AI read in the threads used.
         "reading": {"threads": len(result.threads_used), "threads_saved": result.threads_available,
@@ -688,6 +699,8 @@ def answer_wording() -> dict[str, str]:
         # One-line summaries (Noemi, 13 Oct 2026): "In short:" and the note saying it is ours, not a quote.
         "summary_label": wording.SUMMARY_LABEL,
         "summary_note": wording.SUMMARY_NOTE,
+        # Active ingredients (13 Oct 2026): the label of each product's form in an ingredient-led answer.
+        "form_label": wording.FORM_LABEL,
     }
 
 

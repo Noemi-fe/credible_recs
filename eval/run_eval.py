@@ -13,7 +13,10 @@ Built so far:
   top 3, how many at least one pick, and that no shown quote fails the word-for-word check;
 - module 2 (retrieval): of the 3 threads picked per blind-test question, how many fit the need (grade 2) and how
   many are useful (grade 1 or 2), plus whether useful threads rank above off-topic ones, against
-  eval/edge_cases/retrieval.json, re-ranking the saved candidate pool (no credits).
+  eval/edge_cases/retrieval.json, re-ranking the saved candidate pool (no credits);
+- active ingredients (13 Oct 2026): the requests of eval/edge_cases/ingredients.json through the pipeline: module 1's
+  routing as expected, what each answer shows with its forms, and whether every shown product has evidence it
+  contains the ingredient asked for (engine/ingredient_eval.py).
 Still to come: the blind test's preference per rival (engine/blind_test.py tally, week 3).
 
 The numbers (10 Oct 2026): each section's scores are kept (engine.metrics.EvalResults) as the report prints them, and
@@ -46,6 +49,7 @@ from engine.metrics import (
     runs_cells,
     write_metrics,
 )
+from engine.ingredient_eval import ingredient_section
 from engine.slice_eval import slice_section
 from engine.query import parse_query
 from engine.query_eval import QueryCaseError, load_query_cases, report_lines, score_cases, summarize
@@ -98,6 +102,9 @@ def main() -> int:
     print()
     text, results.end_to_end = slice_section()
     print(text)
+
+    print()
+    print(ingredient_section())
 
     print()
     print("\n".join(_metrics_lines(results, date.today())))

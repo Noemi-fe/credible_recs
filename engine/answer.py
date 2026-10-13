@@ -39,6 +39,12 @@ What each pick shows (the brief):
   cites is one of the pick's credible mentions in this answer and its quote passes the word-for-word check, its numbers
   are in those comments, and it acknowledges a downside when the pick has credible warnings. It carries the verified
   quotes of the comments it cites (`sources`, not shown), so they are checked again, live too, like every quote.
+- its form (13 Oct 2026), in an answer to a request that names an active ingredient but no product type ("salicylic
+  acid for acne"): "Form: pads", "Form: cleanser" (engine.ingredients.form_of), since such an answer shows several
+  types of product side by side. The title then says the ingredient ("Top picks: salicylic acid products"), and a note
+  under it says what every product shown has in common: it contains the ingredient, by its maker's list of actives or
+  its own name (INGREDIENT_NOTE_LED). A request naming a type and an ingredient gets "Top picks: cleanser with salicylic
+  acid" and its own note (INGREDIENT_NOTE).
 Under the picks: "Also worth a look" (Noemi's decision 2 of 13 Oct 2026): up to WORTH_A_LOOK_SHOWN products with two
 credible recommendations across two threads (engine.rank), in their own section, labelled as less supported (WORTH_NOTE).
 Each shows its reason line, price, cautions, one or two verified quotes that say something about it (never a bare
@@ -115,6 +121,9 @@ from engine.config import (
 )
 from engine.extract import _as_written, _in_quoted_block, _own_words_in_quote_format
 from engine.group_kinds import PURPOSE_WORDS, _kind_words, kind_parts
+from engine.ingredients import (
+    TYPE_OWN_INGREDIENT, find_ingredients, ingredient_type_name, ingredients_of_type, talk_words,
+)
 from engine.models import Thread
 from engine.needs import LASTING, Need, needs_met
 from engine.prices import PriceCheck
@@ -232,6 +241,15 @@ WORTH_NOTE_NO_PICKS = "{voices} each: less evidence than a pick needs ({rule})."
 # "In short: <summary>", with the note saying it is ours and not a quote.
 SUMMARY_LABEL = "In short:"
 SUMMARY_NOTE = "Our summary of what its credible voices say, not a quote."
+# Active ingredients (13 Oct 2026; wording decided by Claude). The title of an answer to a request naming an ingredient
+# and no type, and of one naming both; the note under the title; the label of each product's form.
+TITLE_INGREDIENT_LED = "Top picks: {ingredient} products"
+TITLE_WITH_INGREDIENT = "Top picks: {product_type} with {ingredient}"
+INGREDIENT_NOTE_LED = ("Every product here contains {ingredient}: its maker's list of actives or its own name says so. "
+                       "They come in different forms, each shown with it.")
+INGREDIENT_NOTE = ("Every {product_type} here contains {ingredient}: its maker's list of actives or its own name says "
+                   "so.")
+FORM_LABEL = "Form"
 
 
 # --- The answer ---
@@ -316,6 +334,7 @@ class Pick:
     # None when no downside is shown.
     downsides_share: str | None = None
     summary: ShownSummary | None = None  # "In short:" (13 Oct 2026); None when it has none, or one that fails a check
+    form: str | None = None  # its form in an ingredient-led answer ("pads"; 13 Oct 2026); None otherwise
 
 
 @dataclass
@@ -335,6 +354,7 @@ class WorthALook:
     availability: ShownAvailability = NOT_CHECKED
     cautions: list[str] = field(default_factory=list)
     summary: ShownSummary | None = None
+    form: str | None = None  # as a pick's
 
 
 @dataclass
@@ -343,6 +363,7 @@ class SkipItem:
     name: str
     reason: str
     quotes: list[ShownQuote]  # credible warnings, at least 1
+    form: str | None = None  # as a pick's
 
 
 @dataclass
@@ -368,6 +389,11 @@ class Answer:
     # when there are none.
     worth_a_look: list[WorthALook] = field(default_factory=list)
     worth_note: str | None = None
+    # The active ingredients the request names, as shown ("salicylic acid"; 13 Oct 2026), and the note under the title
+    # saying every product shown contains them; None for a request naming none.
+    ingredient: str | None = None
+    ingredient_note: str | None = None
+    title: str = ""  # the answer's title, as shown ("Top picks: salicylic acid products")
 
 
 def answer_to_dict(answer: Answer) -> dict:
@@ -388,7 +414,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
                  asks: tuple[str, ...] = (), model_prices: Mapping[str, str] | None = None,
                  more_downsides: Mapping[str, list[ScoredMention]] | None = None,
                  unsuited_kinds: Collection[str] = (), needs: tuple[Need, ...] = (), request: str = "",
-                 summaries: Mapping[str, Summary] | None = None, worth_left_out: Collection[str] = ()) -> Answer:
+                 summaries: Mapping[str, Summary] | None = None, worth_left_out: Collection[str] = (),
+                 ingredient: str | None = None, forms: Mapping[str, str | None] | None = None) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -407,8 +434,11 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     names ("retinol") is no advice about what to look for. `summaries` ({engine.summaries.summary_key: Summary}) are
     the one-line summaries written ahead of time: each is shown on its pick or item only when every check passes.
     `worth_left_out` are the keys of products the pipeline leaves out of "Also worth a look" (its brand rules).
+    `ingredient` names the active ingredients the request asks for (13 Oct 2026; every product here contains them, the
+    pipeline made sure), and `forms` is each product's form ({product key: form}) in an ingredient-led answer.
     """
     check = _QuoteCheck(bodies)
+    forms = forms or {}
     models = models or {}
     prices = prices or {}
     care = care or {}
@@ -430,8 +460,14 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             picks[-1].model = models.get(product.key)
             picks[-1].model_price = (model_prices or {}).get(product.key)
             picks[-1].summary = _summary(product, _summary_of(product, summaries), check)
+            picks[-1].form = forms.get(product.key)
     worth = _worth_items(ranking, check, prices, cautions, summaries, worth_left_out, asks, needs, product_type)
+    for item in worth:
+        item.form = forms.get(item.product_key)
     skip = [_skip_item(product, check) for product in ranking.skip_list]
+    for item in skip:
+        if item is not None:
+            item.form = forms.get(item.product_key)
     look_for = _look_for(ranking, check, product_type, unsuited_kinds, request, asks, [pick.name for pick in picks])
     care_note = _care_note([care.get(pick.product_key) for pick in picks], picks, check)
     return Answer(
@@ -446,7 +482,29 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
         care_note=care_note,
         worth_a_look=worth,
         worth_note=_worth_note(len(picks)) if worth else None,
+        ingredient=ingredient,
+        ingredient_note=_ingredient_note(product_type, ingredient),
+        title=answer_title(product_type, ingredient),
     )
+
+
+def answer_title(product_type: str | None, ingredient: str | None = None) -> str:
+    """The answer's title: "Top picks: chef knife"; with an active ingredient asked for (13 Oct 2026), "Top picks:
+    salicylic acid products" when the request names no type, "Top picks: cleanser with salicylic acid" when it does."""
+    if ingredient and ingredients_of_type(product_type):
+        return TITLE_INGREDIENT_LED.format(ingredient=ingredient)
+    if ingredient and product_type:
+        return TITLE_WITH_INGREDIENT.format(product_type=product_type, ingredient=ingredient)
+    return TITLE.format(product_type=product_type) if product_type else TITLE_ANY
+
+
+def _ingredient_note(product_type: str | None, ingredient: str | None) -> str | None:
+    """The note under the title of an answer to a request naming an active ingredient (13 Oct 2026), or None."""
+    if not ingredient:
+        return None
+    if ingredients_of_type(product_type) or not product_type:
+        return INGREDIENT_NOTE_LED.format(ingredient=ingredient)
+    return INGREDIENT_NOTE.format(product_type=product_type, ingredient=ingredient)
 
 
 # --- Also worth a look (Noemi's decision 2 of 13 Oct 2026) ---
@@ -789,9 +847,10 @@ _ELSEWHERE = re.compile(
     r"|\bwhat you(?:'re| are) (?:wanting|after|describing)\b"
     r"|\byour problem\b|(?-i:\bOP(?:'s)?\b)", re.IGNORECASE)
 # Things a quote can lean on that its writer said just before it: "both of them", "either product", "for that reason",
-# "that part". The sentences before it are shown with it, when they fit (_widened).
+# "that part"; since 13 Oct 2026 "both in one" (a product holding two things the asker wanted, not shown). The
+# sentences before it are shown with it, when they fit (_widened).
 _BEFORE = re.compile(
-    r"\bboth of them\b|\bwith both\b|\beither (?:one|product|of them|if|is|was|will|would)\b"
+    r"\bboth of them\b|\bwith both\b|\bboth in one\b|\beither (?:one|product|of them|if|is|was|will|would)\b"
     r"|\b(?:for|because of) (?:that|this|those|these) reasons?\b|\bthat (?:part|type)\b|\bonce i did that\b",
     re.IGNORECASE)
 # A reply's first words ("Yes!", "Same.", "I agree, this is..."), and the words that stand for something named before.
@@ -1121,6 +1180,9 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
     comment already shown for another kind's same advice isn't shown again (10 Oct 2026): the kind takes its next
     credible note, or, with none, joins that line ("Look for: Cast iron or Carbon steel").
 
+    Since 13 Oct 2026, when the request names active ingredients (engine/ingredients.py), a kind is advice only when
+    its own name names one of them or a related one ("leave-on BHA" for salicylic acid).
+
     Since 12 Oct 2026 (Noemi's note: "Look for: retinol" in a retinol answer), the product asked for itself is no advice
     (_the_product_asked_for: `request` is the request as typed), and neither is another type of product named in the
     kind's own name (_another_types_advice) or, for a type the open model named, another kind of it (config.
@@ -1130,8 +1192,16 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
     none, it is left out. Kinds whose name or notes name the product asked for come before those that never do.
     """
     candidates = []
+    # A request naming active ingredients (13 Oct 2026): advice must be about them ("Look for: tret" or "a cream
+    # formula" says nothing to someone asking for a niacinamide serum). "retinol" names the retinoid type itself, so a
+    # retinol request asks for no ingredient beyond its type (engine.ingredients.TYPE_OWN_INGREDIENT).
+    named = [f.ingredient for f in find_ingredients(request)
+             if TYPE_OWN_INGREDIENT.get(product_type or "") != f.ingredient]
+    asked = list(dict.fromkeys([*ingredients_of_type(product_type), *named]))
     for kind in ranking.kinds:  # best supported first
         if kind.support == 0 or (kind.support > 0 and kind.key in unsuited_kinds):
+            continue
+        if asked and not mentions_product(kind.name, ingredient_type_name(asked)):
             continue
         stance, advice = ("recommend", LOOK_FOR) if kind.support > 0 else ("warn", AVOID)
         notes = _most_credible_first([n for n in ranking.kind_notes
@@ -1182,9 +1252,15 @@ def _another_types_advice(kind: str, notes: list[KindNote], category: str, produ
     decide, whatever the notes say: advice named after other types only is another type's ("Avoid: eye creams" in a
     moisturiser answer, "double cleansing" in a sunscreen one), while "retinol eye cream" names a retinoid too. The
     same holds for a type the open model named, in any category: another listed type ("coffee grinder for seeds") or
-    another kind of it ("immersion blender", config.OTHER_KIND_WORDS) is no advice for it."""
+    another kind of it ("immersion blender", config.OTHER_KIND_WORDS) is no advice for it.
+
+    For an ingredient-led request ("salicylic acid for acne", 13 Oct 2026), advice must be about its ingredient: the
+    kind's own name names it (or a related one: "leave-on BHA"); "Look for: AHA" or "a humidifier" isn't, whatever its
+    notes compare it with."""
     if not product_type:
         return False
+    if ingredients_of_type(product_type):
+        return not mentions_product(kind, product_type)
     listed = product_type in {p.name for p in PRODUCT_TYPES}
     if not listed and _another_kind_of(kind, product_type):
         return True
@@ -1244,9 +1320,13 @@ def _another_kind_of(kind: str, product_type: str) -> bool:
 
 def _own_names(category: str, product_type: str, request: str) -> set[str]:
     """The words the request's own product goes by: its type's name, and the type's names the request uses ("retinol"
-    for a retinoid), read the way kinds are (engine.group_kinds)."""
+    for a retinoid), read the way kinds are (engine.group_kinds); since 13 Oct 2026 also the words of the active
+    ingredients it asks for and their related ones' ("BHA" in a salicylic acid answer is what was asked for)."""
     aliases = known_aliases("kinds").get(category, {})
     own = set(_kind_words(product_type, aliases))
+    asked = list(ingredients_of_type(product_type)) + [f.ingredient for f in find_ingredients(request)]
+    for words in (talk_words(ingredient_type_name(asked)) if asked else ()):
+        own |= set(_kind_words(" ".join(re.findall(r"[a-z0-9]+", words)), aliases))
     lowered = _plain(request)
     for p in PRODUCT_TYPES:
         if p.name == product_type:
@@ -1523,8 +1603,10 @@ def _every_quote(answer: Answer) -> Iterator[tuple[str, ShownQuote]]:
 
 def render_markdown(answer: Answer) -> str:
     """The answer as markdown text, readable as plain text too."""
-    title = TITLE.format(product_type=answer.product_type) if answer.product_type else TITLE_ANY
+    title = answer.title or answer_title(answer.product_type, answer.ingredient)
     lines = [f"# {title}", ""]
+    if answer.ingredient_note:
+        lines += [answer.ingredient_note, ""]
     if answer.message:
         lines += [answer.message, ""]
     for pick in answer.picks:
@@ -1541,7 +1623,8 @@ def render_markdown(answer: Answer) -> str:
     if answer.skip:
         lines += [f"## {SKIP_HEADING}", ""]
         for item in answer.skip:
-            lines.append(f"- **{item.name}:** {item.reason}")
+            form = f" ({FORM_LABEL.lower()}: {item.form})" if item.form else ""
+            lines.append(f"- **{item.name}**{form}**:** {item.reason}")
             lines += [f"  - {_render_quote_inline(quote)}" for quote in item.quotes]
         lines.append("")
     if answer.care_note:
@@ -1551,8 +1634,13 @@ def render_markdown(answer: Answer) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+def _render_form(form: str | None) -> list[str]:
+    """The form line of a product in an ingredient-led answer (13 Oct 2026)."""
+    return [f"**{FORM_LABEL}:** {form}", ""] if form else []
+
+
 def _render_pick(pick: Pick) -> list[str]:
-    lines = [f"## {pick.rank}. {pick.name}", ""]
+    lines = [f"## {pick.rank}. {pick.name}", ""] + _render_form(pick.form)
     if pick.model:
         price = f" ({pick.model_price})" if pick.model_price else ""
         lines += [BRAND_PICK_MODEL.format(model=pick.model) + price, ""]
@@ -1588,7 +1676,7 @@ def _render_summary(summary: ShownSummary | None) -> list[str]:
 def _render_worth(item: WorthALook) -> list[str]:
     """An "Also worth a look" item: its name, summary, reason, price (when known, or with a budget), where it is sold
     (when checked), cautions, quotes and, only when credible voices warn against it, its downsides."""
-    lines = [f"### {item.name}", ""] + _render_summary(item.summary) + [item.reason, ""]
+    lines = [f"### {item.name}", ""] + _render_form(item.form) + _render_summary(item.summary) + [item.reason, ""]
     if item.price.amount is not None or item.price.budget_note:  # lighter than a pick: what is known, or the budget's
         lines += _render_price(item.price)
     if item.availability.available is not None:

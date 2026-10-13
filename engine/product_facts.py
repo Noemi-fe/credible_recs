@@ -16,7 +16,21 @@ list is committed with the code. Its format:
                 "facts": {"strength": "gentle",         facts from the vocabulary below, at least one; a fact that
                           "prescription_only": false},  isn't known is left out (never null)
                 "sources": ["https://..."],             the pages the facts come from: at least one, https only
-                "checked_on": "2026-10-09"}]}           the day they were looked up
+                "checked_on": "2026-10-09",             the day they were looked up
+                "formula": {...}}]}                     optional (13 Oct 2026): what it is made with, see below
+
+A formula (13 Oct 2026, for requests that name an active ingredient; engine/ingredients.py) says what a skincare
+product is made with, from its maker's page, in a block with its own sources and date, so adding one never claims the
+entry's other facts were checked again:
+
+    "formula": {"actives": ["salicylic acid", "papain"],   the actives its maker presents (config.INGREDIENT_ACTIVES)
+                "form": "rinse-off powder",                optional: its form, when its name doesn't say
+                                                           (config.INGREDIENT_FORMS)
+                "sources": ["https://..."], "checked_on": "2026-10-13"}
+
+Its actives are the ones the maker presents as the product's (its name, stated strengths, "key ingredients"), checked
+against its ingredient list; an active not listed is one it isn't made with (a trace further down the ingredient list
+isn't an active). An entry with a formula needs no other fact.
 
 The vocabulary (engine/config.py, "Product facts"): PRODUCT_FACT_VALUES lists every fact and the values it can take,
 PRODUCT_FACTS_BY_TYPE which facts each product type can have. In short:
@@ -79,6 +93,8 @@ from pydantic import AfterValidator, Field, StrictBool, ValidationError, model_v
 
 from engine.config import (
     BRAND_PICK_UNCHECKABLE,
+    INGREDIENT_ACTIVES,
+    INGREDIENT_FORMS,
     HARD_REQUIREMENT_NAMES,
     NEEDS,
     PRODUCT_FACT_REQUEST_WORDS,
@@ -112,6 +128,24 @@ def _source_page(url: str) -> str:
     return url
 
 
+class Formula(Record):
+    """What a skincare product is made with and its form, from its maker's page (13 Oct 2026)."""
+
+    actives: list[str] = Field(min_length=1)  # from config.INGREDIENT_ACTIVES
+    form: str | None = None  # from config.INGREDIENT_FORMS; None when its name says it
+    sources: list[Annotated[str, AfterValidator(_source_page)]] = Field(min_length=1)
+    checked_on: date
+
+    @model_validator(mode="after")
+    def _fits_the_vocabulary(self) -> "Formula":
+        unknown = [a for a in self.actives if a not in INGREDIENT_ACTIVES]
+        if unknown:
+            raise ValueError(f'unknown actives {", ".join(unknown)}: each must be one of config.INGREDIENT_ACTIVES')
+        if self.form is not None and self.form not in INGREDIENT_FORMS:
+            raise ValueError(f'unknown form "{self.form}": a form must be one of {", ".join(INGREDIENT_FORMS)}')
+        return self
+
+
 class ProductFacts(Record):
     """One entry of the facts list: what is known about one product, where it comes from and when it was checked."""
 
@@ -121,6 +155,7 @@ class ProductFacts(Record):
     facts: dict[str, StrictBool | str]  # {fact: value}, from the vocabulary; a fact not known is left out
     sources: list[Annotated[str, AfterValidator(_source_page)]] = Field(min_length=1)
     checked_on: date
+    formula: Formula | None = None  # what it is made with (13 Oct 2026); None when not looked up
 
     @model_validator(mode="after")
     def _fits_the_vocabulary(self) -> "ProductFacts":
@@ -133,8 +168,8 @@ class ProductFacts(Record):
         allowed = PRODUCT_FACTS_BY_TYPE.get(self.product_type, ())
         if not allowed:
             raise ValueError(f"no facts are kept for a {self.product_type} yet (config.PRODUCT_FACTS_BY_TYPE)")
-        if not self.facts:
-            raise ValueError("an entry needs at least one fact")
+        if not self.facts and self.formula is None:
+            raise ValueError("an entry needs at least one fact, or a formula")
         for fact, value in self.facts.items():
             if fact not in allowed:
                 raise ValueError(f'unknown fact "{fact}" for a {self.product_type}: the facts a {self.product_type} '
@@ -321,23 +356,25 @@ def facts_that_matter(query: ParsedQuery) -> list[str]:
     return list(dict.fromkeys(matter))
 
 
-def hard_requirements(query: ParsedQuery) -> list[str]:
+def hard_requirements(query: ParsedQuery, product_type: str | None = None) -> list[str]:
     """The hard rules (config.PRODUCT_FACT_RULES, "hard": True) this request asks for, in the rule table's order: the
     request asks for one of the rule's "asks", and the rule's fact is one its product type can have
     (config.PRODUCT_FACTS_BY_TYPE). [] when none applies: "first chef's knife" asks for a beginner's strength, but a
     chef knife has no strength to check. A rule marked "confirm": False (a maker's warning) is never a requirement. A
-    brand pick can't be checked for any of them (engine/pipeline.py)."""
+    brand pick can't be checked for any of them (engine/pipeline.py). `product_type`: the type whose facts count, when
+    it isn't the request's (13 Oct 2026: a product of an ingredient-led request has a type of its own)."""
     asks = set(request_asks(query))
-    allowed = PRODUCT_FACTS_BY_TYPE.get(query.product_type or "", ())
+    allowed = PRODUCT_FACTS_BY_TYPE.get(product_type or query.product_type or "", ())
     return [name for name, rule in PRODUCT_FACT_RULES.items()
             if rule["hard"] and rule.get("confirm", True) and asks & set(rule["asks"]) and rule["fact"] in allowed]
 
 
-def unconfirmed(query: ParsedQuery, facts: ProductFacts | None) -> list[str]:
+def unconfirmed(query: ParsedQuery, facts: ProductFacts | None, product_type: str | None = None) -> list[str]:
     """The hard requirements of this request (hard_requirements) whose fact the product's entry doesn't give, in the
     rule table's order: what we couldn't confirm about it (10 Oct 2026). All of them when nothing is known (`facts`
-    None); a fact known to clash is a reason to leave the product out (conflicts), not something unconfirmed."""
-    requirements = hard_requirements(query)
+    None); a fact known to clash is a reason to leave the product out (conflicts), not something unconfirmed.
+    `product_type`: as in hard_requirements."""
+    requirements = hard_requirements(query, product_type)
     known = facts.facts if facts is not None else {}
     return [name for name in requirements if PRODUCT_FACT_RULES[name]["fact"] not in known]
 
