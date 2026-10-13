@@ -675,3 +675,21 @@ def test_a_pair_ruled_out_by_the_quick_look_is_not_remembered():
     assert not match_products.same_words(["zojirushi", "kettle"], ["bonavita", "gooseneck"])
     assert not match_products.same_words(("cerave", "hydrating", "cleanser"), ("cerave", "sa", "cleanser"))
     assert len(match_products._SAME) == before
+
+
+def test_a_pair_ruled_out_by_the_quick_look_has_no_held_back_word_either():
+    # Grouping asks held_back_word only of pairs the quick look leaves (engine.group_products._matching): a word held
+    # back needs every other word found, so a pair ruled out can never have one.
+    rng = random.Random(14)
+    stems = ["ballarini", "zwilling", "pans", "pan", "nonstick", "chai", "shampoo", "ecoslay", "spice", "coconut",
+             "milk", "and", "neutrogena", "t", "gel", "tgel", "mugwort", "cream", "essence", "creams", "ballarinis"]
+    names = sorted({tuple(rng.choice(stems) for _ in range(rng.randint(1, 4))) for _ in range(400)})
+    names = [name for name in names if set(name) != {"and"}]  # a name of "and" alone isn't one (and stops the matcher)
+    held_back = 0
+    for a in names:
+        for b in names:
+            word = held_back_word(list(a), list(b))
+            held_back += word is not None
+            if match_products._cannot_match(a, b):
+                assert word is None, (a, b)
+    assert held_back > 20

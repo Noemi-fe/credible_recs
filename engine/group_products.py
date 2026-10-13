@@ -84,8 +84,8 @@ from engine.config import BRAND_PICK_NAME, PRODUCT_TYPE_PLURALS, PRODUCT_TYPE_SH
 from engine.extract import CheckResult
 from engine.memo import register
 from engine.match_products import (
-    KIND_WORDS, Aliases, comparable, held_back_word, join_split_words, known_aliases, match_candidates, normalize_name,
-    own_words, product_words, same_words, written_alike,
+    KIND_WORDS, Aliases, _cannot_match, comparable, held_back_word, join_split_words, known_aliases, match_candidates,
+    normalize_name, own_words, product_words, same_words, written_alike,
 )
 
 # Words that never tell two products apart, so a loose name equal to a product's name but for them names that product
@@ -270,12 +270,30 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
 def _matching(w: Words, v: Words, alone: set[str]) -> bool:
     """Whether two names match (engine.match_products.same_words), or would but for a one-word name without its brand
     whose word is written alone as a name here (held_back_word): "Ballarini pans" and "Zwilling/Ballarini pans". Only
-    a name whose one word besides its kinds is written alone is asked about (latency, 13 Oct 2026)."""
-    if same_words(list(w), list(v)):
+    a name whose one word besides its kinds is written alone is asked about (latency, 13 Oct 2026). A pair the quick
+    look rules out (engine.match_products._cannot_match: 9 pairs in 10) is neither: both need every word of the
+    shorter name found in the longer one."""
+    if _cannot_match(w, v):
+        return False
+    if same_words(w, v):
         return True
     return any(len(own) == 1 and own[0] in alone and own[0] in other
-               for own, other in ((own_words(list(w)), v), (own_words(list(v)), w))) and (
+               for own, other in ((_own_words(w), v), (_own_words(v), w))) and (
         held_back_word(list(w), list(v)) in alone)
+
+
+_OWN_WORDS: dict[Words, list[str]] = {}  # a name's words -> its words besides its kinds of product (own_words)
+register(_OWN_WORDS.clear)
+
+
+def _own_words(words: Words) -> list[str]:
+    """engine.match_products.own_words, worked out once per name (latency, 13 Oct 2026). Never changed by a caller."""
+    found = _OWN_WORDS.get(words)
+    if found is None:
+        if len(_OWN_WORDS) >= 200_000:
+            _OWN_WORDS.clear()
+        found = _OWN_WORDS[words] = own_words(list(words))
+    return found
 
 
 # --- In one request: a name with the requested type's words (13 Oct 2026) ---
@@ -436,7 +454,7 @@ def _without_brand_and_type(own: dict[Words, list[ProductMention]],
 def _fits_two_products(longer: set[Words]) -> bool:
     """Whether a set of longer names a name matches holds two that don't match each other: two products."""
     ordered = sorted(longer)
-    return any(not same_words(list(a), list(b)) for i, a in enumerate(ordered) for b in ordered[i + 1:])
+    return any(not same_words(a, b) for i, a in enumerate(ordered) for b in ordered[i + 1:])
 
 
 def _more_words(a: Words, b: Words) -> bool:
