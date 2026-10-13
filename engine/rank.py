@@ -33,6 +33,10 @@ The rules, in plain words:
 - Skip-these list: at least 2 credible warnings, and more credible warnings than credible recommendations.
   A product on it is never a pick.
 - Disagreement flag: at least one credible recommendation and at least 2 credible warnings. Flagged, not hidden.
+- Also worth a look (Noemi's decision 2 of 13 Oct 2026): a product with exactly 2 credible recommendations
+  (config.WORTH_A_LOOK_CREDIBLE), from at least 2 different threads (WORTH_A_LOOK_MIN_THREADS), a score above zero and
+  not on the skip-these list is shown apart from the picks, as less supported. It is never a pick, and, as for picks,
+  the kind bonus never helps it in.
 - Kind support: each kind's support is the sum of the weights of its credible notes. If the best-supported kind
   has at least 2 credible recommending notes and at least twice the support of the next kind, its products
   get a bonus (config.KIND_BONUS, shown in the score breakdown).
@@ -63,6 +67,8 @@ from engine.config import (
     STANCE_VALUE,
     THREAD_CATEGORIES,
     VOICE_LEVELS,
+    WORTH_A_LOOK_CREDIBLE,
+    WORTH_A_LOOK_MIN_THREADS,
 )
 
 DECIMALS = 6  # scores are rounded to this many decimals, so tiny rounding noise can't break a tie
@@ -189,6 +195,9 @@ class ProductScore:
     shortfall: str | None  # why it can't be a pick, in words; None when it qualifies
     on_skip_list: bool
     disputed: bool  # the disagreement flag
+    # Shown under "Also worth a look": exactly WORTH_A_LOOK_CREDIBLE credible recommendations, from at least
+    # WORTH_A_LOOK_MIN_THREADS threads, mention points above zero, not on the skip list (Noemi, 13 Oct 2026).
+    worth_a_look: bool = False
 
     @property
     def credible_recommendations(self) -> list[ScoredMention]:
@@ -224,6 +233,12 @@ class RankingResult:
     def picks(self) -> list[ProductScore]:
         """The top 3 (or fewer) qualifying products."""
         return self.qualifying[:PICKS_SHOWN]
+
+    @property
+    def worth_a_look(self) -> list[ProductScore]:
+        """The products for "Also worth a look", best first: two credible recommendations across two threads, so less
+        supported than a pick (Noemi's decision 2 of 13 Oct 2026). Never a pick."""
+        return [p for p in self.products if p.worth_a_look and not p.qualifies]
 
     @property
     def skip_list(self) -> list[ProductScore]:
@@ -316,6 +331,8 @@ def _score_product(
     )
     disputed = bool(credible_recommends) and len(credible_warnings) >= DISAGREEMENT_MIN_CREDIBLE_WARNINGS
     shortfall = _shortfall(len(credible_recommends), credible_threads, points, on_skip_list)
+    worth_a_look = (len(credible_recommends) == WORTH_A_LOOK_CREDIBLE and credible_threads >= WORTH_A_LOOK_MIN_THREADS
+                    and points > 0 and not on_skip_list)
     breakdown = ScoreBreakdown(
         mention_points=points,
         kind_bonus=bonus,
@@ -345,6 +362,7 @@ def _score_product(
         shortfall=shortfall,
         on_skip_list=on_skip_list,
         disputed=disputed,
+        worth_a_look=worth_a_look and shortfall is not None,
     )
 
 

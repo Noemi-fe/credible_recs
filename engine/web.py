@@ -74,11 +74,28 @@ The JSON for /api/answer (200):
                                                                (9 Oct 2026); [] when there are none
                             "model": "Victorinox Fibrox...",   a brand pick's most recommended model (10 Oct
                                                                2026); null for other picks
-                            "model_price": "£41.50 at ..."}],  that model's checked price line, or null
+                            "model_price": "£41.50 at ...",    that model's checked price line, or null
+                            "downsides_share": "1 of 15 ...",  how many credible voices warned against it (12 Oct
+                                                               2026), or null when no downside is shown
+                            "summary": {"text": "...",         "In short:" (Noemi's decision 4, 13 Oct 2026): one
+                                        "sources": [quotes]}   sentence in our words, never a quote, shown only when
+                                                               every check passes (engine/summaries.py); "sources"
+                                                               are the verified quotes of the comments it sums up
+                                                               (not shown; checked word for word and live like every
+                                                               quote); null when the pick has none
+                           }],
                  "look_for": [{"kind", "advice", "quote": {same shape}}],
                  "skip": [{"product_key", "name", "reason", "quotes": [...]}],
                  "care_note": [{"tip", "quote"}],   care tips about the kind of product, shown once at the end
                                                     (Noemi, 11 Oct 2026); [] when there are none
+                 "worth_a_look": [{"product_key", "name", "reason", "quotes", "downsides", "downsides_share",
+                                   "disagreement", "score", "breakdown", "price", "availability", "cautions",
+                                   "summary"}],
+                                  "Also worth a look" (Noemi's decision 2, 13 Oct 2026): up to 3 products with 2
+                                  credible recommendations across at least 2 threads, best first, shown apart after the
+                                  picks and never among them; the same shapes as a pick's fields, with 1 or 2 quotes,
+                                  and downsides only when credible voices warn against it; [] when there are none
+                 "worth_note": "2 credible voices each: ...",   the words under its heading, or null without items
                  "message": the honest "not enough evidence" message, or null when there are 3 picks,
                  "needs_more_threads", "quotes_dropped"},
       "threads_used": ["thread id", ...],          most relevant first
@@ -599,6 +616,11 @@ def answer_wording() -> dict[str, str]:
         "breakdown_needs": wording.breakdown_needs_line("{recommends}", "{warnings}"),
         # Swear words the page masks on display (Noemi, 12 Oct 2026): the same list as the text answer's.
         "masked_words": list(wording.MASKED_WORDS),
+        # "Also worth a look" (Noemi, 13 Oct 2026); the note under it comes with each answer ("worth_note").
+        "worth_heading": wording.WORTH_HEADING,
+        # One-line summaries (Noemi, 13 Oct 2026): "In short:" and the note saying it is ours, not a quote.
+        "summary_label": wording.SUMMARY_LABEL,
+        "summary_note": wording.SUMMARY_NOTE,
     }
 
 

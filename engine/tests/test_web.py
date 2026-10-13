@@ -101,8 +101,10 @@ def test_the_json_has_the_documented_shape(tmp_path):
                                      "over_budget", "unavailable", "not_suited"}
     assert isinstance(data["left_out"]["loose_names"], list) and isinstance(data["left_out"]["other_type_names"], list)
     # Changed on purpose 11 Oct 2026 (Noemi): the tips about the kind of product are shown once, in "care_note".
+    # Changed on purpose 13 Oct 2026 (Noemi's decision 2): "worth_a_look", the products with two credible
+    # recommendations across two threads, shown apart after the picks, and "worth_note", the words under its heading.
     assert set(data["answer"]) == {"category", "product_type", "picks", "look_for", "skip", "message",
-                                   "needs_more_threads", "quotes_dropped", "care_note"}
+                                   "needs_more_threads", "quotes_dropped", "care_note", "worth_a_look", "worth_note"}
     # Changed on purpose 9 Oct 2026 (care tips, Noemi): each pick also has its "care" list, "How to make it last".
     # Changed on purpose 9 Oct 2026 (availability, Noemi's note): each pick also says where it is sold, "availability".
     # Changed on purpose 9 Oct 2026 (product facts, decided by Claude): each pick also has its "cautions", the facts
@@ -111,10 +113,12 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # recommended model, or null.
     # Changed on purpose 12 Oct 2026 (Noemi): each pick also says how many credible voices warned against it, of all,
     # "downsides_share" ("1 of 15 credible voices warned against it:"), or null when no downside is shown.
+    # Changed on purpose 13 Oct 2026 (Noemi's decision 4): each pick also has its one-line "summary", {"text",
+    # "sources"}, or null when it has none (or one that fails a check).
     assert set(data["answer"]["picks"][0]) == {"rank", "product_key", "name", "reason", "support", "quotes",
                                                "downsides", "disagreement", "score", "breakdown", "price",
                                                "availability", "care", "cautions", "model", "model_price",
-                                               "downsides_share"}
+                                               "downsides_share", "summary"}
     assert set(data["answer"]["picks"][0]["quotes"][0]) == {"text", "comment_id", "url", "badges"}
     assert set(data["answer"]["picks"][0]["price"]) == {"text", "amount", "currency", "shop", "url", "checked_on",
                                                         "budget_status", "budget_note"}
@@ -476,3 +480,43 @@ def test_a_warmed_answer_leaves_every_answer_as_it_was(tmp_path):
     memo.forget_all()
     web.warm_answer("electric kettle", root)
     assert web.answer_json(answer_request(REQUEST, library_dir=root)) == before
+
+
+# --- Also worth a look and one-line summaries (Noemi's decisions 2 and 4, 13 Oct 2026) ---
+
+def test_also_worth_a_look_comes_through_in_the_json(tmp_path):
+    # The Smeg is praised twice, once in each thread: two credible voices, so "Also worth a look", never a pick.
+    library_dir = kettle_library(tmp_path, praised=("Zojirushi", "Fellow Stagg", "Bonavita"))
+    extra = {"1kett01": ("k1smeg", "My Smeg kettle has boiled every morning for 5 years."),
+             "1kett02": ("k2smeg", "Our Smeg kettle is 7 years old and still looks new.")}
+    for thread_id, (comment_id, text) in extra.items():
+        thread_file = library_dir / "threads" / f"{thread_id}.json"
+        thread = json.loads(thread_file.read_text(encoding="utf-8"))
+        thread["comments"].append(comment(comment_id, thread_id, text))
+        thread_file.write_text(json.dumps(thread), encoding="utf-8")
+        extraction_file = library_dir / "extracted" / f"{thread_id}.json"
+        extraction = json.loads(extraction_file.read_text(encoding="utf-8"))
+        extraction["mentions"].append(mention(comment_id, "Smeg kettle", text))
+        extraction_file.write_text(json.dumps(extraction), encoding="utf-8")
+    _, _, data = ask(REQUEST, library_dir)
+    assert [item["name"] for item in data["answer"]["worth_a_look"]] == ["Smeg kettle"]
+    assert "Smeg kettle" not in [pick["name"] for pick in data["answer"]["picks"]]
+    assert data["answer"]["worth_note"].startswith("2 credible voices each")
+    assert set(data["answer"]["worth_a_look"][0]) == {"product_key", "name", "reason", "quotes", "downsides",
+                                                     "downsides_share", "disagreement", "score", "breakdown", "price",
+                                                     "availability", "cautions", "summary"}
+
+
+def test_the_page_draws_also_worth_a_look_and_summaries_with_the_answers_own_words(tmp_path):
+    from engine.answer import SUMMARY_LABEL, SUMMARY_NOTE, WORTH_HEADING
+
+    html = page(tmp_path)
+    settings = json.loads(re.search(r'<script type="application/json" id="settings">(.*?)</script>', html, re.DOTALL).group(1))
+    assert settings["wording"]["worth_heading"] == WORTH_HEADING == "Also worth a look"
+    assert settings["wording"]["summary_label"] == SUMMARY_LABEL and settings["wording"]["summary_note"] == SUMMARY_NOTE
+    assert "worthSection(answer)" in html and "answer.worth_note" in html
+    worth = re.search(r"function worthCard\(item\) \{(.*?)\n  \}", html, re.DOTALL).group(1)
+    assert "quoteList(item.quotes" in worth  # the same Reddit link check as every other quote
+    assert "summaryLine(item.summary)" in worth and "summaryLine(pick.summary)" in html
+    line = re.search(r"function summaryLine\(summary\) \{(.*?)\n  \}", html, re.DOTALL).group(1)
+    assert "blockquote" not in line and "quote" not in line.replace("summary_note", "")  # never drawn as a quote

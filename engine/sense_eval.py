@@ -10,8 +10,10 @@ older answer drawn under a newer request (engine/answer.py and the page).
 What is judged: every item an answer shows (answer_items): each pick's quotes ("pick quote"), its known downsides
 ("downside", read with the line above them: "1 of 15 credible voices warned against it:") and care tips ("care tip",
 with the tip's few words), the "What to look for" lines ("look for" and "avoid", under their kind), the skip-these
-quotes ("skip") and the care note at the end ("care note"). Swear words are masked on display only, so items hold the
-quote's own words, as checked.
+quotes ("skip") and the care note at the end ("care note"). Since 13 Oct 2026 (Noemi's decisions 2 and 4) also the "Also
+worth a look" items' quotes ("worth quote") and downsides ("worth downside"), and every one-line summary shown under a
+pick's or an item's name ("summary", led by "In short:"), judged by the same three criteria and one more: is it faithful
+to the comments it cites? Swear words are masked on display only, so items hold the quote's own words, as checked.
 
 The criteria. Claude judges each item by hand, reading it as a shopper would: alone, in the answer, under its heading,
 for this request. An item makes sense when all three hold:
@@ -67,7 +69,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import date
 from pathlib import Path
 
-from engine.answer import AVOID, CARE_NOTE_HEADING, CARE_NOTE_HEADING_ANY, Answer, unverified_claims
+from engine.answer import AVOID, CARE_NOTE_HEADING, CARE_NOTE_HEADING_ANY, SUMMARY_LABEL, Answer, unverified_claims
 from engine.slice_eval import DEFAULT_QUESTIONS
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -88,7 +90,9 @@ class Item:
 
     request_id: str  # "b03" (a blind-test question) or "s01" (OTHER_REQUESTS)
     request: str  # the request as typed
-    where: str  # "pick quote", "downside", "care tip", "look for", "avoid", "skip" or "care note"
+    # "pick quote", "downside", "care tip", "look for", "avoid", "skip", "care note"; since 13 Oct 2026 also "summary"
+    # (its text is the summary's, our words), "worth quote" and "worth downside"
+    where: str
     heading: str  # what it is shown under: the pick's or skipped product's name, the kind, the care note's heading
     lead: str  # our own words shown with it: a care tip's few words, an introduction; "" when none
     text: str  # the quote as shown: the comment's own words, checked word for word
@@ -129,13 +133,24 @@ def answer_items(answer: Answer, request_id: str, request: str) -> list[Item]:
         items.append(Item(request_id, request, where, heading, " ".join(w for w in (lead, intro) if w), quote.text,
                           quote.url))
 
+    def add_summary(heading: str, summary) -> None:
+        if summary is not None:
+            items.append(Item(request_id, request, "summary", heading, SUMMARY_LABEL, summary.text, ""))
+
     for pick in answer.picks:
+        add_summary(pick.name, pick.summary)
         for quote in pick.quotes:
             add("pick quote", pick.name, quote)
         for quote in pick.downsides:
             add("downside", pick.name, quote, pick.downsides_share or "")
         for tip in pick.care:
             add("care tip", pick.name, tip.quote, tip.tip)
+    for item in answer.worth_a_look:
+        add_summary(item.name, item.summary)
+        for quote in item.quotes:
+            add("worth quote", item.name, quote)
+        for quote in item.downsides:
+            add("worth downside", item.name, quote, item.downsides_share or "")
     for item in answer.look_for:
         add("avoid" if item.advice == AVOID else "look for", item.kind, item.quote)
     for item in answer.skip:

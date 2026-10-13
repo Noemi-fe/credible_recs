@@ -78,6 +78,18 @@ Two ranking changes of 9 Oct 2026 are worked out here, in _score, before module 
 
 Names are shown as a UK shopper knows them (decision 12): "Sage", not "Breville" (engine.group_products.uk_name).
 
+"Also worth a look" (Noemi's decision 2 of 13 Oct 2026): products with two credible recommendations across two threads
+(engine.rank), shown apart after the picks. The filters above apply to them as to picks, since they come before the
+ranking, and so does the wider reading's rule (a credible recommendation about the request's needs). The brand rules
+too (_worth_left_out): an item of the brand of a brand-line pick shown is left out, since the pick speaks for its
+brand's products ("Lodge dutch oven" under the pick "Lodge Dutch oven line"); a brand line whose own product is a pick
+is left out; among the items, a brand line steps aside for its own product, as picks do; and an item whose brand or line
+is on the skip list is left out, so an answer never lists a product apart while telling you to skip its brand.
+
+One-line summaries (Noemi's decision 4 of 13 Oct 2026): read from the library's summaries.json (engine/summaries.py),
+written ahead of time; the answer shows one only when every check passes, and with the live checker on, the quotes of
+the comments it cites are checked on Reddit with every shown quote (engine.answer.quotes_to_check).
+
 Care tips, "How to take care of it" (Noemi, 9 Oct 2026; renamed 11 Oct 2026): the credible care tips of the threads
 read (extraction instructions v7, narrowed in v8 to care of the product itself) go with the products they are about
 (engine/care_tips.py). The answer shows a pick's own tips under it, and the tips about its kind of product once, in a
@@ -103,8 +115,8 @@ from datetime import date
 from pathlib import Path
 
 from engine.answer import (
-    Answer, _every_quote, comment_bodies, render_markdown, says_the_opposite, shown_availability, shown_price,
-    write_answer,
+    Answer, _every_quote, comment_bodies, quotes_to_check, render_markdown, says_the_opposite, shown_availability,
+    shown_price, write_answer,
 )
 from engine.brand_lines import BrandLine, find_brand_line, load_brand_lines, not_sold_reason
 from engine.care_tips import CareTips, attach_care_tips, credible_care_tips
@@ -126,6 +138,7 @@ from engine.config import (
     PIPELINE_MAX_THREADS,
     PIPELINE_MORE_THREADS,
     UK_BRAND_NAMES,
+    WORTH_A_LOOK_SHOWN,
 )
 from engine.contradictions import contradicting_writers
 from engine.credibility import (
@@ -166,6 +179,7 @@ from engine.profiles import ProfileStore, StoredProfiles, with_profiles
 from engine.query import PRODUCT_TYPES, ParsedQuery, parse_query
 from engine.rank import KindNote, RankingResult, ScoredMention, rank_products
 from engine.sources import LocalSource, mentions_product
+from engine.summaries import SUMMARIES_FILE, Summary, load_summaries
 
 
 @dataclass(frozen=True)
@@ -251,7 +265,8 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
                    live_check_required: bool | None = None, live_checker=None,
                    product_facts: list[ProductFacts] | None = None,
                    more_threads: int | None = PIPELINE_MORE_THREADS,
-                   brand_lines: list[BrandLine] | None = None) -> PipelineResult:
+                   brand_lines: list[BrandLine] | None = None,
+                   summaries: Mapping[str, Summary] | None = None) -> PipelineResult:
     """Runs modules 1 to 7 on the saved library and returns everything each step decided.
 
     The answer reads the `max_threads` most relevant threads first. When they give fewer than PICKS_SHOWN picks and the
@@ -261,12 +276,13 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     credible recommendation that talks about what the request asks for, when it asks for something besides the product
     (its needs, engine/needs.py): reading 48 shampoo threads had given every shampoo request the same popular picks.
     `more_threads=None` never reads more. `brand_lines`: the brand-lines list (engine/brand_lines.py); None reads
-    data/brand_lines.json.
+    data/brand_lines.json. `summaries`: the one-line summaries ({product key: engine.summaries.Summary}); None reads the
+    library's summaries.json (none when there is no such file).
     """
     query = parse_query(request)
     reading = dict(library_dir=library_dir, profiles=profiles, prices=prices, today=today,
                    live_check_required=live_check_required, live_checker=live_checker, product_facts=product_facts,
-                   brand_lines=brand_lines)
+                   brand_lines=brand_lines, summaries=summaries)
     result = _answer(query, max_threads=max_threads, **reading)
     if (more_threads is None or more_threads <= max_threads or result.answer is None
             or len(result.answer.picks) >= PICKS_SHOWN or result.threads_available <= len(result.threads_used)):
@@ -281,7 +297,8 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
 def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, prices: list[Price] | None,
             today: date | None, live_check_required: bool | None, live_checker,
             product_facts: list[ProductFacts] | None, need_led: bool = False,
-            brand_lines: list[BrandLine] | None = None) -> PipelineResult:
+            brand_lines: list[BrandLine] | None = None,
+            summaries: Mapping[str, Summary] | None = None) -> PipelineResult:
     """One reading of the library for an understood request, with at most `max_threads` threads (answer_request).
     `need_led`: the wider reading's rule, a pick needs a credible recommendation that talks about the request's needs.
 
@@ -291,6 +308,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     judged on (how old they are), and live checks (how long ago Reddit was read); None is today.
     `product_facts`: the facts list (engine/product_facts.py); None reads data/product_facts.json.
     `brand_lines`: the brand-lines list (engine/brand_lines.py); None reads data/brand_lines.json.
+    `summaries`: the one-line summaries; None reads the library's summaries.json, whose broken entries are left out and
+    named in skipped_files.
     `live_check_required`: None follows LIVE_CHECK_REQUIRED (on). False uses every thread whatever its last live
     check: only to see what answers would quote once every thread is checked (engine.slice_eval.threads_behind_answers).
     `live_checker` (engine.live_check.LiveChecker): every quote about to be shown is checked against the comment on
@@ -351,12 +370,17 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     folded = {item.name for item in result.folded_brand_picks}
     care = _care_tips(threads, checked, [g for g in kept_groups if g.name not in folded], kinds, query)
     models, model_prices = _brand_models(result.ranking, kept_groups, query.product_type, price_checks)
+    if summaries is None:
+        loaded = load_summaries(Path(library_dir) / SUMMARIES_FILE)
+        summaries = loaded.entries
+        result.skipped_files.extend(loaded.problems)
     result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                  models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
-                                 request_needs(query), query.text)
+                                 request_needs(query), query.text, summaries,
+                                 _worth_left_out(result.ranking, kept_groups))
     if live_checker is not None:
         _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions, kept_groups,
-                    unsuited_kinds, need_led)
+                    unsuited_kinds, need_led, summaries)
     thread_of = {c.id: t.id for t in threads for c in t.comments}
     quoted = {thread_of.get(quote.comment_id) for _, quote in _every_quote(result.answer)}
     result.threads_quoted = [tid for tid in result.threads_used if tid in quoted]
@@ -369,19 +393,22 @@ WIDER_READING_SHORTFALL = "no credible recommendation talks about what you asked
 
 def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool) -> RankingResult:
     """Module 6's ranking. In a wider reading (`need_led`) of a request that asks for something besides the product, a
-    product with no credible recommendation talking about it can't be a pick (answer_request)."""
+    product with no credible recommendation talking about it can't be a pick (answer_request), nor "Also worth a look"
+    (13 Oct 2026)."""
     ranking = rank_products(scored, query.category, kind_notes, placements(kinds))
     if need_led and request_needs(query):
-        ranking.products = [replace(p, qualifies=False, shortfall=WIDER_READING_SHORTFALL)
-                            if p.qualifies and not p.breakdown.credible_recommends_fitting_need else p
-                            for p in ranking.products]
+        ranking.products = [replace(p, qualifies=False, shortfall=WIDER_READING_SHORTFALL, worth_a_look=False)
+                            if (p.qualifies or p.worth_a_look) and not p.breakdown.credible_recommends_fitting_need
+                            else p for p in ranking.products]
     return ranking
 
 
 def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds, query, price_checks, care,
                 cautions=None, groups: list[ProductGroup] = (), unsuited_kinds: frozenset[str] = frozenset(),
-                need_led: bool = False) -> None:
+                need_led: bool = False, summaries: Mapping[str, Summary] | None = None) -> None:
     """Checks every quote about to be shown against Reddit itself; drops the comments that fail and answers again.
+    Since 13 Oct 2026 the quotes a shown summary cites are checked too (engine.answer.quotes_to_check): a summary never
+    stands on a comment deleted or changed since.
 
     A comment that fails (gone, changed or unreadable) loses its votes too: the ranking is redone without it, so a
     deleted opinion never decides a pick. Each comment is asked about once (the checker also keeps its answer for
@@ -394,7 +421,7 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
     failed: set[str] = set()
     while True:
         new = set()
-        quotes = [quote for _, quote in _every_quote(result.answer) if quote.comment_id not in failed]
+        quotes = [quote for quote in quotes_to_check(result.answer) if quote.comment_id not in failed]
         outcomes = _checked_together(live_checker, quotes)
         for quote in quotes:  # in the answer's order: a comment's first quote that fails says why it was dropped
             if quote.comment_id in new:
@@ -413,7 +440,8 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks)
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
-                                     request_needs(query), query.text)
+                                     request_needs(query), query.text, summaries,
+                                     _worth_left_out(result.ranking, groups))
 
 
 def _checked_together(live_checker, quotes) -> dict[tuple[str, str], object]:
@@ -893,6 +921,71 @@ def _fold_brand_skips(ranking: RankingResult, groups: list[ProductGroup],
     result.folded_skips = folded
     ranking = replace(ranking, products=[p for p in ranking.products if p.key not in keys]) if keys else ranking
     return ranking, more
+
+
+# --- Also worth a look: the brand rules (Noemi's decision 2 of 13 Oct 2026; rules decided by Claude) ---
+
+def _worth_left_out(ranking: RankingResult, groups: list[ProductGroup]) -> set[str]:
+    """The keys of the "Also worth a look" products (ranking.worth_a_look) the answer leaves out, by the brand rules
+    (found in the 13 Oct 2026 answers: "Lodge dutch oven" next to the pick "Lodge Dutch oven line", "Shun chef knife
+    line" next to "Shun Chef's knife"):
+    - an item of the same brand as a brand-line pick shown (the PICKS_SHOWN qualifying products, as for picks): the
+      pick speaks for its brand's products (_fold_brand_skips). An item whose name starts with a size ('10" Lodge') is
+      of that brand too (_same_brand_sized);
+    - a brand line whose own product, or another line of its brand, is a pick shown;
+    - a brand line among the WORTH_A_LOOK_SHOWN items shown with its own product, or after a line of the same brand:
+      it steps aside, as brand picks do (_fold_brand_picks); checked again after each step, until nothing changes;
+    - an item whose brand or line is on the skip list: an answer never lists a product apart while telling you to skip
+      its brand. A specific product skipped stays skipped, and doesn't stop its brand's other products."""
+    by_key = {g.key: g for g in groups}
+    shown_picks = [by_key[p.key] for p in ranking.qualifying[:PICKS_SHOWN] if p.key in by_key]
+    skipped_lines = [by_key[p.key] for p in ranking.skip_list if p.key in by_key and by_key[p.key].loose]
+    left_out, items = set(), []
+    for product in ranking.worth_a_look:
+        group = by_key.get(product.key)
+        if group is None:
+            continue
+        if (any(_one_brand(pick, group) for pick in shown_picks)
+                or any(_same_brand_sized(line, group) for line in skipped_lines)):
+            left_out.add(product.key)
+        else:
+            items.append(group)
+    while True:
+        shown = [g for g in items if g.key not in left_out][:WORTH_A_LOOK_SHOWN]
+        step = next((g.key for i, g in enumerate(shown) if g.loose and any(
+            (not other.loose and _same_brand_sized(g, other))
+            or (other.loose and j < i and (_same_brand_sized(other, g) or _same_brand_sized(g, other)))
+            for j, other in enumerate(shown) if other is not g)), None)
+        if step is None:
+            return left_out
+        left_out.add(step)
+
+
+def _one_brand(pick: ProductGroup, item: ProductGroup) -> bool:
+    """Whether an item can't be listed apart from a pick of its brand: the pick is a brand line and the item one of its
+    brand's products or lines, or the item is a brand line and the pick one of its products or lines. Two specific
+    products of one brand are alternatives ("Timemore C2" and "Timemore Slim"): both may be shown."""
+    return (pick.loose and _same_brand_sized(pick, item)) or (item.loose and _same_brand_sized(item, pick))
+
+
+def _same_brand_sized(brand: ProductGroup, product: ProductGroup) -> bool:
+    """_same_brand, and the same with a size or a number before the names left aside ('10" Lodge', '8" Wusthof
+    Classic'): sizes come first in some writers' names, never as the brand."""
+    if _same_brand(brand, product):
+        return True
+    unsized = lambda g: replace(g, mentions=[replace(m, product=_without_leading_size(m.product)) for m in g.mentions])
+    return _same_brand(unsized(brand), unsized(product))
+
+
+# A size or a number at a name's start, followed by its unit or a space (never "1Zpresso").
+_LEADING_SIZE = re.compile(r"^\s*\d+(?:[.,]\d+)?"
+                           r"(?:\s*(?:\"|”|''|-?\s*(?:inch|inches|in|cm|qt|quart|l|litre|liter)\b)\s*|\s+)", re.IGNORECASE)
+
+
+def _without_leading_size(name: str) -> str:
+    """A name without a size or a number at its start: '10" Lodge cast iron' -> 'Lodge cast iron'."""
+    rest = _LEADING_SIZE.sub("", name, count=1)
+    return rest or name
 
 
 def _brand_models(ranking: RankingResult, groups: list[ProductGroup], product_type: str | None,

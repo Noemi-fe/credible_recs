@@ -196,6 +196,8 @@ def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = Fa
         "credible_voices": " or ".join(config.CREDIBLE_VOICES),
         "credible_evidence": " or ".join(config.CREDIBLE_EVIDENCE),
         "skip_heading": answer.SKIP_HEADING,
+        "worth_heading": answer.WORTH_HEADING,  # "Also worth a look" (Noemi, 13 Oct 2026)
+        "summary_label": answer.SUMMARY_LABEL,  # "In short:" (Noemi, 13 Oct 2026)
         "mixed_opinions": answer.DISAGREEMENT.split(":")[0],
         "other_type_words": ", ".join(config.OTHER_TYPE_WORDS[:OTHER_TYPE_EXAMPLES]) + " and so on",
         "brand_pick_example": brand_pick_name("Lodge", "cast iron skillet"),  # "Lodge cast iron skillet line"

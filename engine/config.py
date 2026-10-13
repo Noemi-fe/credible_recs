@@ -883,3 +883,34 @@ BRAND_LINE_NOT_SOLD = "{brand} doesn't sell {products}"
 # for the footnote to give as examples ("19 brand or line names that could mean several products, such as L'Oréal,
 # Suave and Aveda"). Chosen by Claude: a handful, so the footnote stays short.
 LEFT_OUT_NAMES_SHOWN = 3
+
+# --- Also worth a look (Noemi's decision 2 of 13 Oct 2026) ---
+# "Picks rule: let's follow your suggestion." The top picks keep their bar (MIN_CREDIBLE_MENTIONS across MIN_THREADS);
+# products with exactly WORTH_A_LOOK_CREDIBLE credible recommendations, from at least WORTH_A_LOOK_MIN_THREADS threads,
+# are shown apart, after the picks, under "Also worth a look", clearly labelled as less supported (engine/rank.py,
+# engine/answer.py). The same filters as picks apply (the request's type, a score above zero, not on the skip list,
+# budget, availability, hard requirements, brand lines). Up to WORTH_A_LOOK_SHOWN of them, each with up to
+# WORTH_A_LOOK_QUOTES verified quotes. They never take a pick's place, and the blind test shows the picks only.
+WORTH_A_LOOK_CREDIBLE = 2
+WORTH_A_LOOK_MIN_THREADS = 2
+WORTH_A_LOOK_SHOWN = 3
+WORTH_A_LOOK_QUOTES = 2
+
+# --- One-line summaries (Noemi's decision 4 of 13 Oct 2026: "let's do the one line summary and see how it turns out") ---
+# One sentence per pick (and "Also worth a look" item) saying what its credible backers say, in our words, written
+# ahead of time by Claude Code from the product's credible comments (engine/prompts/summarise_pick.md) and saved in
+# data/library/summaries.json (engine/summaries.py). Code checks it before it is shown; one that fails isn't shown.
+# The rules' values, chosen by Claude and reported to Noemi:
+SUMMARY_MAX_WORDS = 30  # at most this many words
+# A summary of a product with credible warnings must acknowledge a downside: it holds one of these words (a contrast or
+# a drawback), as a whole word. A simple rule, so it can be tested; whether the downside is told faithfully is judged
+# by hand (the sense evaluation).
+SUMMARY_DOWNSIDE_WORDS = ("but", "though", "although", "however", "except", "downside", "downsides", "drawback",
+                          "drawbacks", "complain", "complains", "complained", "complaint", "complaints", "warn", "warns",
+                          "warned", "warning", "warnings", "flaw", "flaws", "problem", "problems", "issue", "issues",
+                          "fault", "faults", "gripe", "gripes")
+# A number followed by one of these words counts people ("two owners", "3 users"): it may be at most the number of
+# comments the summary cites. Every other number must be written in one of the cited comments.
+SUMMARY_PEOPLE_WORDS = ("owner", "owners", "user", "users", "people", "person", "writer", "writers", "voice", "voices",
+                        "commenter", "commenters", "reviewer", "reviewers", "buyer", "buyers", "cook", "cooks",
+                        "backer", "backers", "fan", "fans", "customer", "customers", "others")
