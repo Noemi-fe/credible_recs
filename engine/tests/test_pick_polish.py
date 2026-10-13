@@ -157,12 +157,39 @@ TRAMONTINA = "Tramontina frying pan line"
 
 
 def test_a_brand_pick_is_left_out_when_the_request_has_a_hard_requirement(tmp_path):
+    # Changed on purpose 13 Oct 2026 (Noemi's decision 1 of 13 Oct: a brand line may still be listed under Skip these
+    # when its credible warnings put it there): the line is ranked again, but it is never a pick nor Also worth a look,
+    # so it was taken out of the ranking's products before.
     result = answer_request("non-stick frying pan without PFAS", library_dir=pan_library(tmp_path), prices=[],
                             product_facts=[], today=TODAY)
-    assert TRAMONTINA not in names(result) and TRAMONTINA not in [p.name for p in result.ranking.products]
+    assert TRAMONTINA not in names(result) and TRAMONTINA not in [p.name for p in result.ranking.qualifying]
+    assert TRAMONTINA not in [item.name for item in result.answer.worth_a_look + result.answer.skip]
     assert result.left_out_not_suited == [NotSuited(TRAMONTINA, "a whole brand can't be checked for PFAS or a "
                                                                 "non-stick coating")]
     assert names(result) == ["GreenPan Valencia frying pan", "Misen frying pan"]
+
+
+def test_a_brand_line_warned_against_is_listed_under_skip_these_under_a_hard_requirement(tmp_path):
+    # Noemi's decision 1 of 13 Oct 2026: a whole brand can't be checked for PFAS, so it is never a pick; but when its
+    # credible warnings put it on the skip list, it is listed there (b04 had lost a moisturiser line warned against by 12
+    # credible writers once its writers' name for it was read as the brand's line).
+    warn = lambda cid, months: (cid, "Tramontina", f"My Tramontina pan died after {months} months of daily use, avoid it.",
+                                "warn")
+    library = write_library(tmp_path, {
+        "1pan003": ("Best non-stick frying pan?", "Mine is peeling.", [
+            warn("w3a", 5), warn("w3b", 6), praise("w3c", "Tramontina Professional frying pan", 3),
+            praise("w3d", "Tramontina tri-ply frying pan", 2),
+            praise("w3e", "GreenPan Valencia frying pan", 4), praise("w3f", "GreenPan Valencia frying pan", 5),
+        ]),
+        "1pan004": ("Which frying pan lasts?", "Ten years, ideally.", [
+            warn("w4a", 4), praise("w4b", "GreenPan Valencia frying pan", 6),
+        ]),
+    }, community="BuyItForLife")
+    for request in ("non-stick frying pan without PFAS", "frying pan that lasts"):
+        result = answer_request(request, library_dir=library, prices=[], product_facts=[], today=TODAY)
+        assert TRAMONTINA in [item.name for item in result.answer.skip], request
+        assert TRAMONTINA not in names(result) + [item.name for item in result.answer.worth_a_look]
+        assert unverified_claims(result.answer, result.bodies) == []
 
 
 def test_a_brand_level_facts_entry_lets_a_brand_pick_be_checked(tmp_path):
@@ -178,13 +205,14 @@ def test_a_brand_level_facts_entry_lets_a_brand_pick_be_checked(tmp_path):
                                        product_facts=facts, today=TODAY)
     # Changed on purpose 12 Oct 2026 (Noemi's wording): an entry under the brand's own name speaks for its whole line,
     # so the pick is shown as that line, "<entry's name> <type> line" (it was the entry's name alone, "Tramontina"); an
-    # entry's name that already says the type ("Tramontina frying pans") is shown as it is.
+    # entry's name that already says the type ("Tramontina frying pans") was shown as it is. Changed on purpose 13 Oct
+    # 2026 (Noemi's decision 3 of 13 Oct): every brand line is "<Brand> <type> line", that one too.
     clean = run([known("Tramontina", category="kitchen", product_type="frying pan", pfas_free=True, non_stick=True)])
     assert TRAMONTINA in names(clean) and TRAMONTINA not in [n.name for n in clean.left_out_not_suited]
     tramontina = next(p for p in clean.answer.picks if p.name == TRAMONTINA)
     assert tramontina.cautions == []
     unconfirmed = run([known("Tramontina frying pans", category="kitchen", product_type="frying pan", pfas_free=True)])
-    pick = next(p for p in unconfirmed.answer.picks if p.name == "Tramontina frying pans")
+    pick = next(p for p in unconfirmed.answer.picks if p.name == TRAMONTINA)
     assert pick.cautions == ["Note: we couldn't confirm it's non-stick."]
     coated = run([known("Tramontina", category="kitchen", product_type="frying pan", pfas_free=False)])
     assert NotSuited(TRAMONTINA, "it isn't PFAS-free") in coated.left_out_not_suited

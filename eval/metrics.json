@@ -4,8 +4,8 @@
     "quote_verification": {
       "value": 1.0,
       "target": 1.0,
-      "count": 235,
-      "out_of": 235,
+      "count": 256,
+      "out_of": 256,
       "threads": null
     },
     "extraction_precision": {
@@ -119,7 +119,7 @@
     "with_all_picks": 8,
     "with_a_pick": 10,
     "picks_wanted": 3,
-    "quotes_shown": 235,
+    "quotes_shown": 256,
     "unverified_quotes_shown": 0,
     "threads_waiting_live_check": 0
   }

@@ -48,8 +48,9 @@ How the pipeline uses it (engine/pipeline.py, the brand-pick step), for a loose 
 - no entry: its threads decide, as before.
 Whatever the list says, a name made of filler words only ("the one") names nothing, a group whose mentions the AI typed
 as another kind of product is left out (the list says what the brand sells, the AI's type what its writer meant), brand
-lines are left out when the request has a hard requirement (decided 10 Oct 2026: a whole brand can't be checked), and
-the price list still says whether UK shoppers can buy them.
+lines are never picks when the request has a hard requirement (decided 10 Oct 2026: a whole brand can't be checked;
+since Noemi's decision 1 of 13 Oct 2026 they may still be listed under Skip these, when their credible warnings put them
+there), and the price list still says whether UK shoppers can buy them.
 """
 
 import json

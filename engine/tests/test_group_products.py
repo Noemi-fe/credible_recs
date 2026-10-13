@@ -331,9 +331,20 @@ def test_a_brand_pick_name_that_already_says_the_type_has_no_bracket():
     # Noemi, 9 Oct 2026: "CeraVe cleanser (their cleansers)" reads oddly; the name already says what it is.
     # Changed on purpose 12 Oct 2026 (Noemi's wording): the same holds for "<Brand> <type> line", never "CeraVe cleanser
     # cleanser line".
-    assert brand_pick_name("CeraVe cleanser", "cleanser") == "CeraVe cleanser"
-    assert brand_pick_name("Lodge cast iron", "cast iron skillet") == "Lodge cast iron"
+    # Changed on purpose 13 Oct 2026 (Noemi's decision 3 of 13 Oct, replacing the 9 Oct rule): every brand line is shown
+    # as "<Brand> <type> line", also when its name already holds the type; the type is said once.
+    assert brand_pick_name("CeraVe cleanser", "cleanser") == "CeraVe cleanser line"
+    assert brand_pick_name("Lodge cast iron", "cast iron skillet") == "Lodge cast iron skillet line"
     assert brand_pick_name("Lodge", "cast iron skillet") == "Lodge cast iron skillet line"
+    assert brand_pick_name("Davines conditioner", "conditioner") == "Davines conditioner line"
+    assert brand_pick_name("Ninja electric kettle", "electric kettle") == "Ninja electric kettle line"
+    assert brand_pick_name("Sage kettle", "electric kettle") == "Sage electric kettle line"
+    assert brand_pick_name("Herbal Essences shampoos", "shampoo") == "Herbal Essences shampoo line"
+    assert brand_pick_name("Lodge cast iron pan", "cast iron skillet") == "Lodge cast iron skillet line"
+    assert brand_pick_name("Cuisinart stainless kettle", "electric kettle") == "Cuisinart stainless electric kettle line"
+    # Only the ending that says the type gives way: a line's own words stay.
+    assert brand_pick_name("Aussie Miracle Curls shampoo", "shampoo") == "Aussie Miracle Curls shampoo line"
+    assert brand_pick_name("Haden brand electric kettle", "electric kettle") == "Haden electric kettle line"
 
 
 def test_a_brand_pick_name_never_says_part_of_its_type_twice():
@@ -344,7 +355,9 @@ def test_a_brand_pick_name_never_says_part_of_its_type_twice():
     assert brand_pick_name("Torriden Ceramide Lip", "lip balm") == "Torriden Ceramide lip balm line"
     assert brand_pick_name("8 inch Victorinox chefs", "chef knife") == "8 inch Victorinox chef knife line"
     assert brand_pick_name("Ouai shanpoo", "shampoo") == "Ouai shampoo line"  # a writer's slip for "shampoo"
-    assert brand_pick_name("Lodge pans", "frying pan") == "Lodge pans"  # "pans" says the type already: shown as it is
+    # Changed on purpose 13 Oct 2026 (Noemi's decision 3 of 13 Oct): "pans" says the type, so it gives way to it; it was
+    # shown as it is, "Lodge pans".
+    assert brand_pick_name("Lodge pans", "frying pan") == "Lodge frying pan line"
     # Other last words stay.
     assert brand_pick_name("Hario Mini", "coffee grinder") == "Hario Mini coffee grinder line"
     assert brand_pick_name("Lodge pans", "cast iron skillet") == "Lodge pans cast iron skillet line"

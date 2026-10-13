@@ -258,7 +258,9 @@ BRAND_PICK_TITLE_SHARE = 0.5
 BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE = True
 # The name such a pick is shown under: "Lodge cast iron skillet line". Noemi's wording of 12 Oct 2026, from testing the
 # demo ("L'Oreal hair oil serum line"); from 9 Oct it was "Lodge (their cast iron skillets)". A name that already says
-# the type is shown as it is: "CeraVe cleanser" (Noemi, 9 Oct 2026), never "CeraVe cleanser cleanser line".
+# the type was shown as it is, "CeraVe cleanser" (Noemi, 9 Oct 2026); since Noemi's decision 3 of 13 Oct 2026 every
+# brand line is shown so, the type said once: "CeraVe cleanser line", "Davines conditioner line" (never "CeraVe
+# cleanser cleanser line"; engine.group_products.brand_pick_name).
 BRAND_PICK_NAME = "{brand} {product_type} line"
 # A product type as a name shows it, when that isn't module 1's lowercase name: "Le Creuset Dutch oven line".
 PRODUCT_TYPE_SHOWN: dict[str, str] = {"dutch oven": "Dutch oven"}
@@ -637,9 +639,10 @@ PRODUCT_FACTS_TODO_CANDIDATES = 5
 #
 # 2. A brand pick can't be checked against product facts (a brand has many products), so when the request has a hard
 # requirement that its product type can have (PRODUCT_FACT_RULES above, "hard": True), brand picks are left out and
-# listed with this reason. The wording is shown to users: "a whole brand can't be checked for PFAS or a non-stick
-# coating". HARD_REQUIREMENT_NAMES says what each hard rule checks for, in words that fit the sentence; several are
-# joined with commas and a last "or".
+# listed with this reason (since Noemi's decision 1 of 13 Oct 2026 such a line is still listed under Skip these when its
+# credible warnings put it there, never as a pick). The wording is shown to users: "a whole brand can't be checked for
+# PFAS or a non-stick coating". HARD_REQUIREMENT_NAMES says what each hard rule checks for, in words that fit the
+# sentence; several are joined with commas and a last "or".
 BRAND_PICK_UNCHECKABLE = "a whole brand can't be checked for {requirements}"
 HARD_REQUIREMENT_NAMES: dict[str, str] = {
     "too strong": "strength",
