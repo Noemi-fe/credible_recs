@@ -71,7 +71,7 @@ from urllib.parse import urlparse
 import certifi
 
 from engine.config import (CACHE_MAX_AGE_HOURS, LIVE_CHECK_BURST, LIVE_CHECK_MIN_INTERVAL, LIVE_CHECK_REFILL_SECONDS,
-                           LIVE_CHECK_RESERVE, LIVE_CHECK_SPREAD_BELOW)
+                           LIVE_CHECK_MAX_WAIT_SECONDS, LIVE_CHECK_RESERVE, LIVE_CHECK_SPREAD_BELOW)
 from engine.verify_quotes import find_quote
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -253,7 +253,8 @@ class LiveChecker:
     def __init__(self, cache_dir: Path = DEFAULT_CACHE_DIR, fetch=_http_get, clock=None, sleep=time.sleep,
                  min_interval: float = LIVE_CHECK_MIN_INTERVAL, burst: int = LIVE_CHECK_BURST,
                  refill: float = LIVE_CHECK_REFILL_SECONDS, reserve: int = LIVE_CHECK_RESERVE,
-                 spread_below: int = LIVE_CHECK_SPREAD_BELOW, bucket: Bucket | None = None):
+                 spread_below: int = LIVE_CHECK_SPREAD_BELOW, max_wait: float = LIVE_CHECK_MAX_WAIT_SECONDS,
+                 bucket: Bucket | None = None):
         self.cache_dir = Path(cache_dir)
         self.bucket = bucket
         self._fetch = fetch
@@ -264,6 +265,7 @@ class LiveChecker:
         self._last_call: datetime | None = None  # when the latest call started (or will start)
         self._allowed = float(burst)  # reads allowed at once when _last_call started
         self.reserve, self.spread_below = reserve, spread_below  # reads kept for others; fewer left spread out
+        self.max_wait = max_wait  # seconds a read may wait for Reddit's next 10 minutes; longer, it isn't made
         self._window: _Window | None = None  # what Reddit last said is left, until its 10 minutes end
         self._in_flight = 0  # reads started that Reddit hasn't answered yet
         self._lock = threading.Lock()
@@ -297,8 +299,8 @@ class LiveChecker:
             return saved["text"]
         try:
             got = self._get(url, wait)
-            if got is None:
-                return _PUT_OFF
+            if got is None or got is _PUT_OFF:
+                return got  # None: it would have waited longer than max_wait, so it is unreadable now (not saved)
             status, page, fetched_at = got
         except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException):
             return None  # not saved: the next answer asks again (HTTPException: a page cut off halfway, 12 Oct 2026)
@@ -344,10 +346,12 @@ class LiveChecker:
         partial.write_bytes(data)
         partial.replace(cache_file)
 
-    def _get(self, url: str, wait: bool = True) -> tuple[int, bytes, datetime] | None:
+    def _get(self, url: str, wait: bool = True):
         """The page, and when its call started: at least min_interval after the call before it started, whichever
-        thread made that one, and when Reddit's allowance allows (what Reddit last said is left; until it has said, a
-        burst, then one every `refill` seconds). None, with nothing read or counted, if wait=False and it would wait."""
+        thread made that one, and when Reddit's allowance allows (what Reddit last said is left, spread out no slower
+        than one every `refill` seconds; until it has said, a burst, then one every `refill` seconds). Nothing is read
+        or counted when it would wait and wait=False (_PUT_OFF), or when it would wait longer than max_wait for
+        Reddit's next 10 minutes (None)."""
         with self._lock:
             now = self._clock()
             spaced = now if self._last_call is None else max(now,
@@ -361,7 +365,8 @@ class LiveChecker:
                     start = window.ends + timedelta(seconds=WINDOW_MARGIN_SECONDS)
                     window, allowed = None, float(self.burst) - 1
                 elif spare < self.spread_below and self._last_call is not None:
-                    start = max(spaced, self._last_call + (window.ends - self._last_call) / spare)
+                    gap = min((window.ends - self._last_call) / spare, timedelta(seconds=self.refill))
+                    start = max(spaced, self._last_call + gap)
             else:
                 if self._last_call is not None:
                     allowed = min(self.burst, allowed + (spaced - self._last_call).total_seconds() / self.refill)
@@ -370,6 +375,8 @@ class LiveChecker:
                     allowed = 1.0
                 allowed -= 1
             if not wait and start > spaced:
+                return _PUT_OFF
+            if (start - now).total_seconds() > self.max_wait:
                 return None
             self._window, self._allowed, self._last_call = window, allowed, start
             self._in_flight += 1

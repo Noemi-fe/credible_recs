@@ -32,7 +32,8 @@ class CountingReddit:
 
 
 def paced(tmp_path, reddit, clock, **settings):
-    settings = {"min_interval": 0, "burst": 2, "refill": 4, "reserve": 10, "spread_below": 50} | settings
+    settings = {"min_interval": 0, "burst": 2, "refill": 4, "reserve": 10, "spread_below": 50,
+                "max_wait": 600} | settings
     return LiveChecker(cache_dir=tmp_path / "cache", fetch=reddit, clock=clock, sleep=clock.sleep, **settings)
 
 
@@ -55,12 +56,23 @@ def test_reads_go_at_once_while_reddit_says_plenty_are_left(tmp_path):
 def test_reads_spread_out_over_the_window_when_few_are_left(tmp_path):
     clock = Clock()
     reddit = CountingReddit(clock, left=41, reset=300)  # 40 left after the first read, 10 kept: 30 to spread
-    live = paced(tmp_path, reddit, clock)
+    live = paced(tmp_path, reddit, clock, refill=20)
     for url in urls(3):
         live.check(url, QUOTE)
     gaps = [b - a for a, b in zip(seconds(reddit), seconds(reddit)[1:])]
     assert gaps[0] == 300 / 30  # the rest of the window over what may be spent
     assert 9 < gaps[1] < 11
+
+
+def test_spread_out_reads_are_never_slower_than_the_refill_pace(tmp_path):
+    # 13 Oct 2026, measured live: spread over a long rest of the window, a read waited up to 20 s, slower than the one
+    # every 4 s of the burst and refill, and an answer took 110 s. The refill pace is now the slowest.
+    clock = Clock()
+    reddit = CountingReddit(clock, left=21, reset=600)  # 10 to spread over 600 s: one a minute, so the refill's 4 s
+    live = paced(tmp_path, reddit, clock)
+    for url in urls(3):
+        live.check(url, QUOTE)
+    assert seconds(reddit) == [0, 4, 8]
 
 
 def test_with_none_left_reads_wait_for_the_window_to_reset_and_then_go_at_once(tmp_path):
@@ -71,6 +83,17 @@ def test_with_none_left_reads_wait_for_the_window_to_reset_and_then_go_at_once(t
     reddit.left, reddit.ends = 200, reddit.ends + timedelta(minutes=10)  # Reddit's next window
     live.check(urls(2)[1], QUOTE)
     assert 120 <= seconds(reddit)[1] <= 122
+
+
+def test_with_none_left_a_read_never_waits_longer_than_max_wait_for_the_window(tmp_path):
+    # An answer must come back before Cloud Run's 5-minute timeout: a comment that would wait longer for Reddit's next
+    # 10 minutes is taken as unreadable now (its quote is dropped, as for any page that can't be read), and not saved.
+    clock = Clock()
+    reddit = CountingReddit(clock, left=11, reset=300)
+    live = paced(tmp_path, reddit, clock, max_wait=60)
+    live.check(urls(2)[0], QUOTE)
+    result = live.check(urls(2)[1], QUOTE)
+    assert result.status == "unknown" and len(reddit.started) == 1 and clock.now == reddit.started[0]
 
 
 def test_until_reddit_has_said_the_burst_and_refill_apply(tmp_path):
@@ -101,7 +124,7 @@ def test_an_answer_that_comes_back_late_never_raises_the_count_left(tmp_path):
 def test_a_read_asked_not_to_wait_is_put_off_unread_and_uncounted(tmp_path):
     clock = Clock()
     reddit = CountingReddit(clock, left=41, reset=300)  # after the first read, reads are spread out: 10 s apart
-    live = paced(tmp_path, reddit, clock)
+    live = paced(tmp_path, reddit, clock, refill=20)
     live.check(urls(3)[0], QUOTE)
     put_off = live.check(urls(3)[1], QUOTE, wait=False)
     assert put_off.status == "later" and not put_off.show

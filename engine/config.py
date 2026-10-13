@@ -341,6 +341,11 @@ LIVE_CHECK_REFILL_SECONDS = 4.0
 # the burst and refill above. Numbers decided by Claude, reported.
 LIVE_CHECK_RESERVE = 10
 LIVE_CHECK_SPREAD_BELOW = 50
+# Measured live the same day: spread over a long rest of the 10 minutes, a read waited up to 20 s and an answer 110 s.
+# So spread-out reads are never slower than one every LIVE_CHECK_REFILL_SECONDS, and a read never waits more than
+# LIVE_CHECK_MAX_WAIT_SECONDS for Reddit's next 10 minutes: past that its page is taken as unreadable now (its quote is
+# dropped), so an answer comes back well before Cloud Run's 5-minute timeout.
+LIVE_CHECK_MAX_WAIT_SECONDS = 60
 # Checking ahead (Noemi's decision of 13 Oct 2026: "check ahead"): the comments answers would show are read live in
 # advance, daily, within the same limits (engine/precheck.py). The numbers are Claude's, reported to Noemi. A comment
 # read less than PRECHECK_FRESH_HOURS ago is left as it is ("fresh for most of a day"), so after a run every check it

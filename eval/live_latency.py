@@ -49,7 +49,9 @@ def ask(url: str, request: str) -> dict:
     return {"request": request, "waited_s": waited, "server_s": total,
             "queued_s": round(waited - total, 2) if total is not None else None, "reddit_s": reddit,
             "engine_s": round(total - reddit, 2) if total is not None and reddit is not None else None,
-            "checks": timing.get("checks"), "picks": len((data.get("answer") or {}).get("picks", []))}
+            "checks": timing.get("checks"), "put_off": timing.get("put_off"),
+            "picks": len((data.get("answer") or {}).get("picks", [])),
+            "worth": len((data.get("answer") or {}).get("worth_a_look") or [])}
 
 
 def summary(name: str, values: list[float]) -> str:
@@ -73,7 +75,8 @@ def main(argv: list[str]) -> int:
             results.append(result)
             print(f"{label:6} {result['waited_s']:7.2f} s waited | engine {result['engine_s']} s, reddit "
                   f"{result['reddit_s']} s, {result['checks']} checks, queued {result['queued_s']} s | "
-                  f"{result['picks']} picks | {request}", flush=True)
+                  f"{result['picks']} picks, {result['worth']} worth a look ({result['put_off']} put off) | {request}",
+                  flush=True)
         print(summary(f"{label} waited", [r["waited_s"] for r in results]))
         print(summary(f"{label} engine", [r["engine_s"] for r in results]))
         print(summary(f"{label} reddit", [r["reddit_s"] for r in results]))
