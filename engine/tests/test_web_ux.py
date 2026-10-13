@@ -179,3 +179,48 @@ def test_the_how_page_says_recent_searches_stay_in_the_browser(tmp_path):
 
     words = text_of(page_text(tmp_path, "/how"))
     assert "Your recent searches." in words and "That list is never sent to us" in words and "Clear button" in words
+
+
+# --- Sent compressed (13 Oct 2026): the redesigned page is bigger, so it travels gzipped to browsers that take it ---
+
+def fetch_raw(server, path: str, accept_encoding: str | None):
+    import urllib.error
+    import urllib.request
+
+    headers = {"Accept-Encoding": accept_encoding} if accept_encoding else {}
+    request = urllib.request.Request(f"http://127.0.0.1:{server.server_address[1]}{path}", headers=headers)
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            return dict(response.headers), response.read()
+    except urllib.error.HTTPError as error:  # an error's headers and body all the same
+        return dict(error.headers), error.read()
+
+
+def test_pages_and_answers_travel_gzipped_to_browsers_that_take_it(tmp_path):
+    import gzip
+    import threading
+    from urllib.parse import quote
+
+    server = web.make_server(port=0, library_dir=kettle_library(tmp_path))
+    threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.01}, daemon=True).start()
+    try:
+        for path in ("/", "/how", f"/api/answer?q={quote(REQUEST)}"):
+            headers, body = fetch_raw(server, path, "gzip, deflate, br")
+            assert headers["Content-Encoding"] == "gzip" and headers["Vary"] == "Accept-Encoding", path
+            assert int(headers["Content-Length"]) == len(body)
+            plain_headers, plain = fetch_raw(server, path, None)
+            assert "Content-Encoding" not in plain_headers and gzip.decompress(body) == plain, path
+            assert len(body) < len(plain) / 2, path
+        headers, _ = fetch_raw(server, "/", "br;q=1, gzip;q=0")  # refused by the browser: sent as it is
+        assert "Content-Encoding" not in headers
+        headers, _ = fetch_raw(server, "/api/answer?q=", "gzip")  # a small error isn't worth compressing
+        assert "Content-Encoding" not in headers
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_only_a_browser_that_says_it_takes_gzip_gets_it():
+    assert web.takes_gzip("gzip") and web.takes_gzip("deflate, gzip;q=0.5") and web.takes_gzip("*")
+    assert not web.takes_gzip(None) and not web.takes_gzip("br") and not web.takes_gzip("gzip;q=0")
+    assert not web.takes_gzip("gzip;q=0.000")

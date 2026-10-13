@@ -161,6 +161,7 @@ Feedback goes to data/feedback/feedback.jsonl, or to Noemi's private dataset whe
 HF_TOKEN are set (engine/feedback.py).
 """
 
+import gzip
 import html
 import ipaddress
 import json
@@ -204,6 +205,9 @@ MAX_HOSTS_NAMED = 20  # public mode names at most this many refused hosts in its
 
 HTML = "text/html; charset=utf-8"
 JSON = "application/json; charset=utf-8"
+# Pages and answers are sent gzipped to browsers that say they take it (13 Oct 2026, with the redesigned page: 93 KB
+# becomes 27 KB on the way); smaller bodies, such as errors, as they are.
+GZIP_MIN_BYTES = 1024
 
 # Sent with every response. The page may load and call nothing but this server: no outside scripts, styles, fonts
 # or images, and no requests elsewhere. Its links still open, in a new tab: to Reddit, and to a shop's own page for a
@@ -762,6 +766,9 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _send(self, status: int, content_type: str, body: bytes, path: str | None = None,
               extra: dict[str, str] | None = None) -> None:
+        if len(body) >= GZIP_MIN_BYTES and takes_gzip(self.headers.get("Accept-Encoding")):
+            body = gzip.compress(body, compresslevel=6)
+            extra = {**(extra or {}), "Content-Encoding": "gzip", "Vary": "Accept-Encoding"}
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
@@ -812,6 +819,20 @@ class _PublicHandler(_Handler):
 
     def log_message(self, format, *args):
         """No access log on the public site: no visitors' addresses, no requests (Noemi, 11 Oct 2026)."""
+
+
+def takes_gzip(accept_encoding: str | None) -> bool:
+    """Whether a browser's Accept-Encoding header takes gzip ("gzip", "*", "gzip;q=0.8"), and not with q=0."""
+    for entry in (accept_encoding or "").lower().split(","):
+        name, _, params = entry.strip().partition(";")
+        if name.strip() not in ("gzip", "*"):
+            continue
+        quality = params.strip().removeprefix("q=").strip() if params.strip().startswith("q=") else "1"
+        try:
+            return float(quality) > 0
+        except ValueError:
+            return False
+    return False
 
 
 def _local_names(port: int) -> tuple[str, ...]:
