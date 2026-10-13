@@ -38,7 +38,8 @@ spelling slips, 10 Oct 2026) first, then one of the requested product type, then
 pick ("Lodge cast iron skillet line") is no single product, so its facts are never looked up. So when the request has a hard requirement its
 product type can have (hard_requirements: "non-stick frying pan without PFAS"), brand picks are left out and listed with
 the reason uncheckable_brand_reason gives ("a whole brand can't be checked for PFAS or a non-stick coating"; decided by
-Claude, 10 Oct 2026, as Noemi asked): a brand's other pans may well be PTFE-coated. A requirement its type can't have
+Claude, 10 Oct 2026, as Noemi asked): a brand's other pans may well be PTFE-coated. Since Noemi's decision 1 of 13 Oct
+2026 such a line is still listed under Skip these when its credible warnings put it there (never as a pick). A requirement its type can't have
 ("first chef's knife" asks for a beginner's strength, but a chef knife has no strength) leaves brand picks in.
 
 How facts meet a request (conflicts). The rules are config.PRODUCT_FACT_RULES, one table: when the request asks for one
