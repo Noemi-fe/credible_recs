@@ -423,6 +423,10 @@ class ArchiveSource:
     The archive may still hold comments people later deleted on Reddit, so every thread it reads is marked read_from
     "arctic_shift", and answers don't quote it until a live check has read it on Reddit through Parse
     (`python -m engine.library check-live`).
+
+    `skip_ids`: threads never chosen or read, however well they rank (13 Oct 2026): `library add` passes the threads
+    already saved and the gold threads Noemi hasn't labelled, as it does for Bright Data, so the mix is made of the next
+    threads in line instead of the saved ones read again and written over.
     """
 
     def __init__(
@@ -431,6 +435,7 @@ class ArchiveSource:
         min_comments: int = 5,
         max_free_searches: int = ARCHIVE_MAX_SEARCHES,
         max_warning_searches: int = 4,
+        skip_ids: set[str] | None = None,
     ):
         # The Arctic Shift client that searches and reads. It is never built here, so code that gives none (a test
         # that passes no finder) can't reach the network: with None, nothing is found or read.
@@ -438,6 +443,7 @@ class ArchiveSource:
         self.min_comments = min_comments  # a thread with fewer comments has too little to learn from
         self.max_free_searches = max_free_searches
         self.max_warning_searches = max_warning_searches
+        self.skip_ids = set(skip_ids or ())
         self.notes: list[str] = []  # what the last search couldn't do, for `library add` to print
 
     def find_threads(self, query: ParsedQuery, limit: int = 3, mix: dict | None = None, fill: bool = True) -> list[Thread]:
@@ -466,7 +472,7 @@ class ArchiveSource:
         finally:
             self.notes = [f"The archive's search in {search} failed; run the add again to retry it (searches that "
                           "worked are cached for 48 hours)." for search in failed]
-        return usable_posts(query, found, self.min_comments)
+        return [post for post in usable_posts(query, found, self.min_comments) if _post_id(post) not in self.skip_ids]
 
 
 # --- Through Bright Data: Reddit's own search, and reads (Noemi's request, 10 Oct 2026) ---
