@@ -309,6 +309,18 @@ def test_public_mode_refuses_any_other_host(public_server, host):
     assert "127.0.0.1" not in data["error"]  # the public site's own words
 
 
+@pytest.mark.parametrize("host", [HOST, "10.0.0.5:8080", "localhost:8080"])
+def test_the_ready_check_answers_cloud_runs_probe_whatever_host_it_names(public_server, monkeypatch, host):
+    """Cloud Run's startup probe asks /ready from inside its own machine, not by the site's name: it gets an answer
+    (only whether the server is ready, nothing else), and it never counts against a visitor's answers."""
+    monkeypatch.setattr(web, "ready", threading.Event())
+    public_server.limits["answers"] = web.RateLimiter(1, 600)
+    assert public_send(public_server, "/ready", headers={"Host": host})[::2] == (503, {"ready": False})
+    web.ready.set()
+    assert [public_send(public_server, "/ready", headers={"Host": host})[::2] for _ in range(2)] == [
+        (200, {"ready": True})] * 2
+
+
 def test_a_refused_host_is_named_once_in_the_servers_window_so_the_list_can_be_fixed(public_server, capfd):
     for _ in range(3):
         public_send(public_server, "/api/answer?q=kettle", headers={"Host": "internal-proxy.example:7860"})

@@ -447,8 +447,25 @@ def test_warming_up_never_stops_the_server(tmp_path, monkeypatch, capsys):
         raise RuntimeError("the model file is damaged")
 
     monkeypatch.setattr(query_model, "default_query_model", broken)
+    monkeypatch.setattr(web, "ready", threading.Event())
     web.warm_up(tmp_path / "no-library")  # no threads/ folder, and a model that fails to load: reported, not raised
     assert "damaged" in capsys.readouterr().err
+    assert web.ready.is_set()  # ready all the same: the answer that needs the model reports it
+
+
+def test_the_server_says_it_is_ready_for_visitors_once_it_has_got_ready(tmp_path, monkeypatch, capsys):
+    """Cloud Run sends visitors to a new server only once its /ready says so (13 Oct 2026): a server getting ready
+    held the first visitors' answers up to 30 s on the live site, taking turns with them."""
+    from engine import query_model
+
+    monkeypatch.setattr(query_model, "default_query_model", lambda: None)
+    monkeypatch.setattr(web, "ready", threading.Event())
+    status, content_type, body = web.handle_request("/ready")
+    assert status == 503 and content_type == web.JSON and json.loads(body) == {"ready": False}
+    web.warm_up(tmp_path / "no-library")
+    status, _, body = web.handle_request("/ready")
+    assert status == 200 and json.loads(body) == {"ready": True}
+    assert re.search(r"Ready for visitors: got ready in \d+\.\d s", capsys.readouterr().out)
 
 
 def test_warming_up_answers_each_product_type_without_asking_reddit(tmp_path, monkeypatch):

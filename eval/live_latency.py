@@ -1,23 +1,29 @@
 """Latency of the live site (13 Oct 2026): asks the deployed site a fixed set of requests and times each answer, from
 outside (what a visitor waits) and as the server reports it (engine/web.py's "timing": its total, and how long it
-waited on live checks of quotes against Reddit). What's left after the Reddit wait is the engine's own work, which
-settings such as the number of processors change; the Reddit wait is what checking quotes ahead (engine/precheck.py)
-cuts. eval/latency.py measures the engine on this computer; this measures the site people use.
+waited on live checks of quotes against Reddit). Queued is the wait before the server started on the answer: the
+network, and a server still getting ready or working out another answer. What's left after the Reddit wait is the
+engine's own work, which settings such as the number of processors change; the Reddit wait is what checking quotes
+ahead (engine/precheck.py) cuts. eval/latency.py measures the engine on this computer; this measures the site people
+use.
 
-    python eval/live_latency.py [--url URL] [--limit N] [--repeat]
+    python eval/live_latency.py [--url URL] [--start K] [--limit N] [--repeat]
 
---limit asks only the first N requests of eval/edge_cases/latency_queries.json (each fresh answer can use 20-40 of
-Reddit's ~200 embed reads per 10 minutes, so a full run of 22 takes a while); --repeat asks each a second time (a
-remembered answer: the floor). Prints one line per request and p50 / p95 / max; add the summary to eval/LATENCY.md.
+--start K skips the first K requests of eval/edge_cases/latency_queries.json (to ask ones the server hasn't
+remembered) and --limit asks only N of them (each fresh answer can use 20-40 of Reddit's ~200 embed reads per 10
+minutes, so a full run of 22 takes a while); --repeat asks each a second time (a remembered answer: the floor). Prints
+one line per request and p50 / p95 / max; add the summary to eval/LATENCY.md.
 """
 
 import json
+import ssl
 import statistics
 import sys
 import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
+
+import certifi
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_URL = "https://credible-recs-446702383157.europe-west1.run.app"
@@ -32,13 +38,17 @@ def requests_to_ask() -> list[str]:
 
 def ask(url: str, request: str) -> dict:
     started = time.perf_counter()
-    with urllib.request.urlopen(f"{url}/api/answer?q={urllib.parse.quote(request)}", timeout=600) as response:
+    context = ssl.create_default_context(cafile=certifi.where())
+    with urllib.request.urlopen(f"{url}/api/answer?q={urllib.parse.quote(request)}", timeout=600,
+                                context=context) as response:
         data = json.load(response)
     timing = data.get("timing") or {}
     total = timing.get("total_s")
     reddit = timing.get("reddit_s")
-    return {"request": request, "waited_s": round(time.perf_counter() - started, 2), "server_s": total,
-            "reddit_s": reddit, "engine_s": round(total - reddit, 2) if total is not None and reddit is not None else None,
+    waited = round(time.perf_counter() - started, 2)
+    return {"request": request, "waited_s": waited, "server_s": total,
+            "queued_s": round(waited - total, 2) if total is not None else None, "reddit_s": reddit,
+            "engine_s": round(total - reddit, 2) if total is not None and reddit is not None else None,
             "checks": timing.get("checks"), "picks": len((data.get("answer") or {}).get("picks", []))}
 
 
@@ -52,8 +62,9 @@ def summary(name: str, values: list[float]) -> str:
 
 def main(argv: list[str]) -> int:
     url = argv[argv.index("--url") + 1] if "--url" in argv else DEFAULT_URL
+    start = int(argv[argv.index("--start") + 1]) if "--start" in argv else 0
     limit = int(argv[argv.index("--limit") + 1]) if "--limit" in argv else None
-    requests = requests_to_ask()[:limit]
+    requests = requests_to_ask()[start:][:limit]
     rounds = [("fresh", requests)] + ([("repeat", requests)] if "--repeat" in argv else [])
     for label, batch in rounds:
         results = []
@@ -61,10 +72,13 @@ def main(argv: list[str]) -> int:
             result = ask(url, request)
             results.append(result)
             print(f"{label:6} {result['waited_s']:7.2f} s waited | engine {result['engine_s']} s, reddit "
-                  f"{result['reddit_s']} s, {result['checks']} checks | {result['picks']} picks | {request}")
+                  f"{result['reddit_s']} s, {result['checks']} checks, queued {result['queued_s']} s | "
+                  f"{result['picks']} picks | {request}", flush=True)
         print(summary(f"{label} waited", [r["waited_s"] for r in results]))
         print(summary(f"{label} engine", [r["engine_s"] for r in results]))
         print(summary(f"{label} reddit", [r["reddit_s"] for r in results]))
+        if label == "fresh":
+            print(summary(f"{label} queued", [r["queued_s"] for r in results]), flush=True)
     return 0
 
 

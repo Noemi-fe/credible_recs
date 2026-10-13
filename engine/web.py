@@ -210,7 +210,9 @@ FEEDBACK_UNAVAILABLE = ("feedback_unavailable", "Feedback can't be kept just now
 TOO_MANY = ("too_many_requests", "Too many requests in a short time. Please try again in {seconds} seconds.")
 
 FEEDBACK_PATH = "/api/feedback"
-METHODS = {"/": "GET", "/how": "GET", "/api/answer": "GET", FEEDBACK_PATH: "POST"}  # each route and how it is asked
+READY_PATH = "/ready"  # whether the server has got ready (warm_up): Cloud Run's startup probe asks it
+METHODS = {"/": "GET", "/how": "GET", "/api/answer": "GET", READY_PATH: "GET",
+           FEEDBACK_PATH: "POST"}  # each route and how it is asked
 
 
 @dataclass(frozen=True)
@@ -242,6 +244,11 @@ live = None
 # Where feedback goes (engine.feedback, 11 Oct 2026): set by the command line; None in the tests, which give their own.
 store = None
 _answers_lock = threading.Lock()
+# Set once the server has got ready (warm_up). Until then /ready says 503, and Cloud Run sends visitors to the server
+# only when it says 200 (13 Oct 2026, the live site's latency): a new server getting ready took turns with its first
+# visitors' answers and held them up to 30 s, with the processor Cloud Run gives a server only while it answers
+# someone. While it starts, Cloud Run gives it the processor in full, and keeps visitors on the server before it.
+ready = threading.Event()
 
 
 # --- Routing: one GET request in, one response out ---
@@ -261,6 +268,8 @@ def handle_request(path_and_query: str, library_dir: Path = DEFAULT_LIBRARY_DIR,
     if parts.path == "/api/answer":
         request = parse_qs(parts.query).get("q", [""])[0]
         return answer_response(request, Path(library_dir), quiet=site.public)
+    if parts.path == READY_PATH:
+        return (200 if ready.is_set() else 503), JSON, json.dumps({"ready": ready.is_set()}).encode("utf-8")
     if parts.path in METHODS:  # a route that takes another method: feedback is sent, never fetched
         return _error(405, WRONG_METHOD, allowed=METHODS[parts.path])
     return _error(404, NOT_FOUND)
@@ -670,7 +679,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlsplit(self.path).path
-        if not self._addressed_here():
+        if path != READY_PATH and not self._addressed_here():  # Cloud Run's probe names no site: it learns only this
             return self._send(*_error(403, self._wrong_host))
         if path == "/api/answer" and self._held_back("answers"):
             return
@@ -800,6 +809,7 @@ def warm_up(library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
             # and the first visitor's request reads only its own words: seconds the first time, then a second or two.
             model.read(PRIMING_REQUEST)
 
+    started = time.perf_counter()
     threads = Path(library_dir) / "threads"
     steps = [("the open model", load_model), ("the price list", load_prices), ("the facts list", load_product_facts)]
     if threads.is_dir():
@@ -812,6 +822,8 @@ def warm_up(library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
         except Exception as error:  # reported where the server runs; answers report it again when they need it
             print(f"Getting ready: {name} couldn't be loaded ({type(error).__name__}: {error}).", file=sys.stderr,
                   flush=True)
+    ready.set()
+    print(f"Ready for visitors: got ready in {time.perf_counter() - started:.1f} s.", flush=True)
 
 
 def warm_answer(product_type: str, library_dir: Path) -> None:
