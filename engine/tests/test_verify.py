@@ -277,6 +277,23 @@ def test_without_a_live_check_answers_use_only_kept_comments_verified_within_14_
     assert ranked(stamped) == ["Zojirushi kettle"]  # its reply's product came from an unverified comment
 
 
+def test_a_slimmed_thread_keeping_no_comment_counts_from_its_own_live_read(tmp_path):
+    # Found comparing the whole and slimmed library with the rule on: a thread whose extraction points to no comment
+    # keeps none, and has nothing to verify; it takes a reading slot as long as the whole thread would.
+    from datetime import date
+
+    from engine.pipeline import answer_request
+    from engine.tests.test_pipeline import REQUEST
+
+    nothing = {**extraction_dict(), "mentions": [], "notes": [], "agreements": [], "care": []}
+    root = a_library(tmp_path, [whole_thread_dict()], {TID: nothing})
+    assert slim_library(root, now=SLIMMED, gold_ids=set()).slimmed == [TID]
+    on_time = answer_request(REQUEST, library_dir=root, today=date(2026, 10, 20))  # read through Parse on 6 Oct
+    assert (on_time.threads_used, on_time.waiting_live_check) == ([TID], [])
+    late = answer_request(REQUEST, library_dir=root, today=date(2026, 10, 21))
+    assert (late.threads_used, late.waiting_live_check) == ([], [TID])
+
+
 # --- check-live and refresh: Bright Data and Parse are never spent on a slimmed thread ---
 
 def test_check_live_never_reads_a_slimmed_thread_again_but_keeps_its_comments_deadline(tmp_path):
