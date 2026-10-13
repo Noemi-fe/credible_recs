@@ -21,6 +21,24 @@ and then one every LIVE_CHECK_REFILL_SECONDS, which can't reach it. What a comme
 deletion rule), so asking again about the same comment costs nothing. Only the
 comment's own text is kept, never the page around it, and each is saved whole under its own name, so a check made at
 the same time never reads half of one.
+
+Checked ahead (Noemi's decision of 13 Oct 2026). A fresh answer needs 20 to 40 checks, and once Reddit's allowance is
+used each one waits its turn, so a fresh answer could take a minute or two. So the quotes answers would show are also
+read in advance, every day, within the same limits (engine/precheck.py, `python -m engine.precheck`): the comments of
+every answer the library gives, the ones next in line for each place in them, and the products ranked just behind the
+picks. The rule doesn't change: a quote is shown only when its comment passed a check made in the last 48 hours, by the
+pre-check or at answer time; a failed check drops it, and an older one is read again before it is shown. The pre-check
+reads again any comment last read over PRECHECK_FRESH_HOURS ago (check's `max_age`), so a check never runs out during
+the next day's answers.
+
+Where checks are kept. In this machine's folder (.cache/live_check) and, when CREDIBLE_RECS_LIVE_CACHE_BUCKET names one,
+in a private Google Cloud Storage bucket (Bucket): on Google Cloud Run the server's disk is wiped whenever it sleeps,
+and the daily pre-check runs on a machine of its own, so the server and the pre-check share the bucket. A check is
+looked for here first, then in the bucket (and kept here when found there), and only then read on Reddit; a new one is
+written to both. The 48-hour rule is the same for the bucket: an entry older than that is never used, whatever is asked,
+and the bucket deletes objects 2 days old (deploy/cloudrun/DEPLOY.md). The bucket is reached with plain HTTPS calls to
+Cloud Storage's JSON API, with the token Cloud Run's metadata server gives the service account; when it can't be
+reached, checks go on with this folder and Reddit, and the bucket is left alone for BUCKET_REST_SECONDS.
 """
 
 import hashlib
@@ -30,6 +48,7 @@ import json
 import os
 import re
 import ssl
+import sys
 import threading
 import time
 import urllib.error
@@ -38,6 +57,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal
+from urllib.parse import quote as url_quote
 from urllib.parse import urlparse
 
 import certifi
@@ -49,6 +69,18 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CACHE_DIR = REPO_ROOT / ".cache" / "live_check"
 USER_AGENT = "credible-recs research prototype (github.com/Noemi-fe/credible_recs)"
 MAX_AGE = timedelta(hours=CACHE_MAX_AGE_HOURS)
+
+# The bucket (check ahead, 13 Oct 2026): its name, from the environment; unset, checks are kept on this machine only.
+BUCKET_VAR = "CREDIBLE_RECS_LIVE_CACHE_BUCKET"
+BUCKET_PREFIX = "live_check/"  # objects are named like the folder's files, under this prefix
+BUCKET_TIMEOUT = 5  # seconds a call to the bucket may take: never long enough to hold up an answer for long
+BUCKET_REST_SECONDS = 60  # after a failed call the bucket is left alone this long, so answers don't keep waiting on it
+STORAGE_API = "https://storage.googleapis.com/storage/v1"
+UPLOAD_API = "https://storage.googleapis.com/upload/storage/v1"
+# Where a program on Google Cloud gets an access token for its service account (plain http: the metadata server is
+# inside Google's machine, never on the internet).
+METADATA_TOKEN_URL = "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token"
+TOKEN_MARGIN_SECONDS = 60  # a token is asked for again this long before it runs out
 
 Status = Literal["ok", "gone", "changed", "unknown"]
 
@@ -85,14 +117,117 @@ def _http_get(url: str, headers: dict) -> tuple[int, bytes]:
         return e.code, e.read()
 
 
+def _http_request(method: str, url: str, headers: dict, body: bytes | None = None,
+                  timeout: float = BUCKET_TIMEOUT) -> tuple[int, bytes]:
+    """One call to Google (the metadata server or Cloud Storage): its status and body."""
+    request = urllib.request.Request(url, data=body, headers=headers, method=method)
+    context = ssl.create_default_context(cafile=certifi.where())
+    try:
+        with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
+            return response.status, response.read()
+    except urllib.error.HTTPError as e:
+        return e.code, e.read()
+
+
+class Bucket:
+    """The saved checks in a private Google Cloud Storage bucket, shared by the server and the daily pre-check (check
+    ahead, 13 Oct 2026). Plain HTTPS calls to Cloud Storage's JSON API, with the access token Cloud Run's metadata
+    server gives the service account, kept until shortly before it runs out. A problem never stops a check: it is said
+    once in the server's window (never with the token), and the bucket is left alone for BUCKET_REST_SECONDS.
+    `request` and `clock` (seconds) can be swapped for fakes, which is how the tests avoid the network."""
+
+    def __init__(self, name: str, request=_http_request, clock=time.monotonic):
+        self.name = name
+        self._request = request
+        self._clock = clock
+        self._token: str | None = None
+        self._token_until = 0.0
+        self._resting_until = 0.0
+        self.problems = 0  # how many calls failed, for reports
+        self._lock = threading.Lock()
+
+    def get(self, name: str) -> bytes | None:
+        """The object's content, or None when there is none (or the bucket can't be read just now)."""
+        path = url_quote(BUCKET_PREFIX + name, safe="")
+        status, body = self._call("GET", f"{STORAGE_API}/b/{url_quote(self.name, safe='')}/o/{path}?alt=media")
+        return body if status == 200 else None
+
+    def put(self, name: str, data: bytes) -> bool:
+        """Saves the object whole (a new version replaces the old one); whether it was saved."""
+        path = url_quote(BUCKET_PREFIX + name, safe="")
+        status, _ = self._call("POST", f"{UPLOAD_API}/b/{url_quote(self.name, safe='')}/o?uploadType=media&name={path}",
+                               data, {"Content-Type": "application/json; charset=utf-8"})
+        return status == 200
+
+    def _call(self, method: str, url: str, body: bytes | None = None,
+              headers: dict | None = None) -> tuple[int | None, bytes]:
+        token = self._access_token()
+        if token is None:
+            return None, b""
+        try:
+            status, data = self._request(method, url, {"Authorization": f"Bearer {token}", **(headers or {})}, body,
+                                         timeout=BUCKET_TIMEOUT)
+        except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException) as error:
+            self._failed(f"{type(error).__name__}")
+            return None, b""
+        if status == 401:
+            with self._lock:
+                self._token = None  # run out early: the next call asks for a new one
+        if status not in (200, 404):
+            self._failed(f"HTTP {status}")
+        return status, data
+
+    def _access_token(self) -> str | None:
+        with self._lock:
+            now = self._clock()
+            if now < self._resting_until:
+                return None
+            if self._token is not None and now < self._token_until:
+                return self._token
+        try:
+            status, data = self._request("GET", METADATA_TOKEN_URL, {"Metadata-Flavor": "Google"}, None,
+                                         timeout=BUCKET_TIMEOUT)
+            answer = json.loads(data) if status == 200 else None
+            token, lasts = (answer["access_token"], float(answer["expires_in"])) if answer else (None, 0.0)
+        except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException, ValueError, KeyError,
+                TypeError) as error:
+            self._failed(f"no access token ({type(error).__name__})")
+            return None
+        if token is None:
+            self._failed(f"no access token (HTTP {status})")
+            return None
+        with self._lock:
+            self._token, self._token_until = token, self._clock() + lasts - TOKEN_MARGIN_SECONDS
+        return token
+
+    def _failed(self, why: str) -> None:
+        with self._lock:
+            self.problems += 1
+            self._resting_until = self._clock() + BUCKET_REST_SECONDS
+            first = self.problems == 1
+        if first:
+            print(f"The live checks' bucket {self.name} couldn't be used ({why}): checks go on with this machine's "
+                  f"folder and Reddit, and the bucket is tried again every {BUCKET_REST_SECONDS} s.", file=sys.stderr,
+                  flush=True)
+
+
+def checker_from_env(environ=os.environ, **settings) -> "LiveChecker":
+    """The live checker real answers and the pre-check use: with the bucket CREDIBLE_RECS_LIVE_CACHE_BUCKET names, or
+    this machine's folder only when it is unset. `settings` go to LiveChecker (the tests give a folder)."""
+    name = (environ.get(BUCKET_VAR) or "").strip()
+    return LiveChecker(bucket=Bucket(name) if name else None, **settings)
+
+
 class LiveChecker:
     """`fetch`, `clock` and `sleep` can be swapped for fakes, which is how the tests avoid the network. Safe to ask from
-    several threads at once (engine.pipeline checks the comments of an answer together)."""
+    several threads at once (engine.pipeline checks the comments of an answer together). `bucket`: where checks are
+    kept besides this machine's folder (Bucket), or None."""
 
     def __init__(self, cache_dir: Path = DEFAULT_CACHE_DIR, fetch=_http_get, clock=None, sleep=time.sleep,
                  min_interval: float = LIVE_CHECK_MIN_INTERVAL, burst: int = LIVE_CHECK_BURST,
-                 refill: float = LIVE_CHECK_REFILL_SECONDS):
+                 refill: float = LIVE_CHECK_REFILL_SECONDS, bucket: Bucket | None = None):
         self.cache_dir = Path(cache_dir)
+        self.bucket = bucket
         self._fetch = fetch
         self._clock = clock or (lambda: datetime.now(UTC))
         self._sleep = sleep
@@ -102,25 +237,29 @@ class LiveChecker:
         self._allowed = float(burst)  # reads allowed at once when _last_call started
         self._lock = threading.Lock()
 
-    def check(self, comment_url: str, quote: str) -> LiveResult:
-        """Whether `quote` can be shown: its comment is still on Reddit and still says it, word for word."""
-        body = self._comment_text(comment_url)
-        if body is None:
-            return LiveResult("unknown", "the comment's page couldn't be read")
-        if body.strip() in _GONE:
-            return LiveResult("gone", f"the comment now reads {body.strip()}")
-        if find_quote(body, quote) is None:
-            return LiveResult("changed", "the comment no longer says this: it was edited")
-        return LiveResult("ok", "the comment still says this")
+    def check(self, comment_url: str, quote: str, max_age: timedelta = MAX_AGE) -> LiveResult:
+        """Whether `quote` can be shown: its comment is still on Reddit and still says it, word for word. A saved check
+        made within `max_age` answers (never one over 48 hours old, whatever is asked); else Reddit is read."""
+        return _outcome(self._comment_text(comment_url, min(max_age, MAX_AGE)), quote)
 
-    def _comment_text(self, comment_url: str) -> str | None:
-        """The comment's text as Reddit shows it now, from the 48-hour cache when it is there; None if unreadable."""
+    def saved_check(self, comment_url: str, quote: str) -> LiveResult | None:
+        """What a saved check from the last 48 hours says about `quote`, without reading Reddit; None if there is none."""
+        entry = self._saved(embed_url(comment_url), MAX_AGE)
+        return None if entry is None else _outcome(entry["text"], quote)
+
+    def checked_at(self, comment_url: str, max_age: timedelta = MAX_AGE) -> datetime | None:
+        """When the comment was last read on Reddit, if a saved check made within `max_age` (48 hours at most) says
+        so; None otherwise. Reddit is never read for it."""
+        entry = self._saved(embed_url(comment_url), min(max_age, MAX_AGE))
+        return None if entry is None else datetime.fromisoformat(entry["fetched_at"])
+
+    def _comment_text(self, comment_url: str, max_age: timedelta) -> str | None:
+        """The comment's text as Reddit shows it now, from a check saved within `max_age` when there is one; None if
+        unreadable."""
         url = embed_url(comment_url)
-        cache_file = self.cache_dir / f"{hashlib.sha256(url.encode()).hexdigest()[:32]}.json"
-        if cache_file.exists():
-            entry = json.loads(cache_file.read_text(encoding="utf-8"))
-            if self._clock() - datetime.fromisoformat(entry["fetched_at"]) < MAX_AGE:
-                return entry["text"]
+        saved = self._saved(url, max_age)
+        if saved is not None:
+            return saved["text"]
         try:
             status, page, fetched_at = self._get(url)
         except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException):
@@ -131,13 +270,41 @@ class LiveChecker:
         if not found:
             return None  # a page with no comment on it, or a new layout: never guessed
         text = html.unescape(" ".join(_TAG.sub(" ", found.group(1)).split()))
-        cache_file.parent.mkdir(parents=True, exist_ok=True)
-        # Written whole under another name, then renamed: a check reading it at the same moment sees all of it or none.
-        partial = cache_file.with_name(f"{cache_file.stem}.{os.getpid()}.{threading.get_ident()}.tmp")
-        partial.write_text(json.dumps({"fetched_at": fetched_at.isoformat(), "text": text}, ensure_ascii=False),
-                           encoding="utf-8")
-        partial.replace(cache_file)
+        data = json.dumps({"fetched_at": fetched_at.isoformat(), "text": text}, ensure_ascii=False).encode("utf-8")
+        self._keep(_entry_name(url), data)
+        if self.bucket is not None:
+            self.bucket.put(_entry_name(url), data)
         return text
+
+    def _saved(self, url: str, max_age: timedelta) -> dict | None:
+        """The check of this page saved within `max_age`: from this machine's folder, else from the bucket (then kept
+        in the folder too, so the next check needs no call); None when neither has one."""
+        name = _entry_name(url)
+        try:
+            here = _entry((self.cache_dir / name).read_bytes())
+        except OSError:
+            here = None
+        if self._within(here, max_age):
+            return here
+        if self.bucket is None:
+            return None
+        there = _entry(self.bucket.get(name))
+        if not self._within(there, max_age):
+            return None
+        self._keep(name, json.dumps(there, ensure_ascii=False).encode("utf-8"))
+        return there
+
+    def _within(self, entry: dict | None, max_age: timedelta) -> bool:
+        return entry is not None and self._clock() - datetime.fromisoformat(entry["fetched_at"]) < max_age
+
+    def _keep(self, name: str, data: bytes) -> None:
+        """Saves a check in this machine's folder, whole under another name and then renamed: a check reading it at the
+        same moment sees all of it or none."""
+        cache_file = self.cache_dir / name
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        partial = cache_file.with_name(f"{cache_file.stem}.{os.getpid()}.{threading.get_ident()}.tmp")
+        partial.write_bytes(data)
+        partial.replace(cache_file)
 
     def _get(self, url: str) -> tuple[int, bytes, datetime]:
         """The page, and when its call started: at least min_interval after the call before it started, whichever
@@ -157,3 +324,32 @@ class LiveChecker:
         if start > now:
             self._sleep((start - now).total_seconds())
         return (*self._fetch(url, {"User-Agent": USER_AGENT}), start)
+
+
+def _outcome(body: str | None, quote: str) -> LiveResult:
+    """What the comment's text as Reddit shows it now (None: it couldn't be read) says about showing `quote`."""
+    if body is None:
+        return LiveResult("unknown", "the comment's page couldn't be read")
+    if body.strip() in _GONE:
+        return LiveResult("gone", f"the comment now reads {body.strip()}")
+    if find_quote(body, quote) is None:
+        return LiveResult("changed", "the comment no longer says this: it was edited")
+    return LiveResult("ok", "the comment still says this")
+
+
+def _entry_name(url: str) -> str:
+    """The name a check of this embed page is saved under, in the folder and in the bucket."""
+    return f"{hashlib.sha256(url.encode()).hexdigest()[:32]}.json"
+
+
+def _entry(data: bytes | None) -> dict | None:
+    """A saved check ({"fetched_at", "text"}) read from its file or object; None when there is none or it can't be
+    read (it is then read on Reddit again)."""
+    if data is None:
+        return None
+    try:
+        entry = json.loads(data)
+        datetime.fromisoformat(entry["fetched_at"])
+    except (ValueError, KeyError, TypeError):
+        return None
+    return entry if isinstance(entry.get("text"), str) else None
