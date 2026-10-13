@@ -7,7 +7,10 @@ short:", marked as our summary, never in quotation marks and never as a quote.
 Who writes it and when: like extraction, an AI step run offline by Claude Code under Noemi's plan, following
 engine/prompts/summarise_pick.md, and saved as a file the engine reads: never written while someone waits for an
 answer. The file is data/library/summaries.json (git-ignored with the library, since it paraphrases Reddit comments),
-one entry per product key (the category and the words of the product's name, as module 4 makes it):
+one entry per product, under its key: the category and the words of the name the product is shown under (summary_key,
+the way module 4 makes a group's key). The name shown, not module 4's group key: a brand's line has one group key for
+every type of product ("kitchen:lodge"), but "Lodge cast iron skillet line" and "Lodge Dutch oven line" are two
+products, with two summaries ("kitchen:lodge cast iron skillet line", "kitchen:lodge dutch oven line"; 13 Oct 2026).
 
     {"kitchen:zojirushi kettle": {"product": "Zojirushi kettle", "category": "kitchen",
                                   "product_type": "electric kettle", "text": "...", "cites": ["c1aaaa", "c2bbbb"],
@@ -56,6 +59,7 @@ from engine.config import (
     SUMMARY_PEOPLE_WORDS,
     THREAD_CATEGORIES,
 )
+from engine.match_products import normalize_name
 from engine.models import Id, Record, UtcDatetime
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -90,6 +94,12 @@ class Summary(Record):
 class LoadedSummaries:
     entries: dict[str, Summary] = field(default_factory=dict)  # {product key: its summary}
     problems: list[str] = field(default_factory=list)  # entries left out, with the reason; or the file's own problem
+
+
+def summary_key(category: str, name: str) -> str:
+    """The key a product's summary is saved under: its category and the words of the name it is shown under
+    (engine.match_products.normalize_name): "Lodge Dutch oven line" in kitchen is "kitchen:lodge dutch oven line"."""
+    return f"{category}:{' '.join(normalize_name(name))}"
 
 
 def current_version(instructions: Path = DEFAULT_INSTRUCTIONS) -> str:
@@ -294,7 +304,7 @@ def requests_to_answer(files: Iterable[Path] = REQUEST_FILES) -> list[tuple[str,
 class ProductToSummarise:
     """A pick or "Also worth a look" item that needs a summary, with what the writer reads to write one."""
 
-    key: str
+    key: str  # summary_key: what its summary is saved under
     product: str
     category: str
     product_type: str | None
@@ -348,7 +358,7 @@ def todo(requests: list[tuple[str, str]], library_dir: Path, profiles=None) -> l
     found: dict[str, ProductToSummarise] = {}
     per_answer: dict[str, list[_Shown]] = {}
     for item in _answers(requests, library_dir, profiles, loaded.entries):
-        per_answer.setdefault(item.product.key, []).append(item)
+        per_answer.setdefault(_key_of(item.product), []).append(item)
     for key, shown in per_answer.items():
         product = shown[0].product
         entry = loaded.entries.get(key)
@@ -361,6 +371,11 @@ def todo(requests: list[tuple[str, str]], library_dir: Path, profiles=None) -> l
                                         list(dict.fromkeys(s.request_id for s in shown)), reasons,
                                         _credible(shown), any(s.product.credible_warnings for s in shown))
     return list(found.values())
+
+
+def _key_of(product) -> str:
+    """The summary key of a ranked product (engine.rank.ProductScore)."""
+    return summary_key(product.mentions[0].category, product.name)
 
 
 def _credible(shown: list[_Shown]) -> list[dict]:
@@ -414,11 +429,12 @@ def check(library_dir: Path, requests: list[tuple[str, str]], profiles=None) -> 
         problems += [f"{key}: {problem}" for problem in mine]
     shown_keys = set()
     for item in _answers(requests, library_dir, profiles, loaded.entries) if loaded.entries else []:
-        entry = loaded.entries.get(item.product.key)
+        key = _key_of(item.product)
+        entry = loaded.entries.get(key)
         if entry is None:
             continue
-        shown_keys.add(item.product.key)
-        problems += [f"{item.product.key}: in {item.request_id}: {reason}"
+        shown_keys.add(key)
+        problems += [f"{key}: in {item.request_id}: {reason}"
                      for reason in summary_reasons(item.product, entry, item.bodies)]
     notes = [f"{key}: no answer to these requests shows its product" for key in loaded.entries
              if requests and key not in shown_keys]

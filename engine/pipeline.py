@@ -276,7 +276,7 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     credible recommendation that talks about what the request asks for, when it asks for something besides the product
     (its needs, engine/needs.py): reading 48 shampoo threads had given every shampoo request the same popular picks.
     `more_threads=None` never reads more. `brand_lines`: the brand-lines list (engine/brand_lines.py); None reads
-    data/brand_lines.json. `summaries`: the one-line summaries ({product key: engine.summaries.Summary}); None reads the
+    data/brand_lines.json. `summaries`: the one-line summaries ({engine.summaries.summary_key: Summary}); None reads the
     library's summaries.json (none when there is no such file).
     """
     query = parse_query(request)

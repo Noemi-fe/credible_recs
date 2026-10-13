@@ -152,6 +152,9 @@ def test_their_quotes_are_checked_like_every_quote():
 
 # --- One-line summaries ---
 
+TOJIRO = "kitchen:tojiro dp gyuto"  # a summary's key: the category and the words of the name shown (summary_key)
+
+
 def summary(cites, text="Owners of many years say it holds an edge well.", **overrides) -> Summary:
     return Summary(**(dict(product="Tojiro DP Gyuto", category="kitchen", product_type="chef knife", text=text,
                            cites=list(cites), written_at="2026-10-13T10:00:00Z", writer="claude-code",
@@ -165,7 +168,7 @@ def tojiro(ranking):
 def test_a_valid_summary_is_shown_with_the_quotes_it_cites():
     ranking, bodies, _ = case()
     cites = [m.comment_id for m in tojiro(ranking).credible_recommendations[:2]]
-    answer = write_answer(ranking, bodies, "chef knife", summaries={"tojiro-dp-gyuto": summary(cites)})
+    answer = write_answer(ranking, bodies, "chef knife", summaries={TOJIRO: summary(cites)})
     shown = answer.picks[0].summary
     assert shown.text == "Owners of many years say it holds an edge well."
     assert [q.comment_id for q in shown.sources] == cites
@@ -187,7 +190,7 @@ def test_a_pick_without_a_summary_shows_none():
 def test_a_summary_citing_a_comment_that_isnt_a_credible_mention_here_isnt_shown():
     ranking, bodies, _ = case()
     cites = [tojiro(ranking).credible_recommendations[0].comment_id, "c-somewhere-else"]
-    answer = write_answer(ranking, bodies, "chef knife", summaries={"tojiro-dp-gyuto": summary(cites)})
+    answer = write_answer(ranking, bodies, "chef knife", summaries={TOJIRO: summary(cites)})
     assert answer.picks[0].summary is None and answer.picks[0].name == "Tojiro DP Gyuto"
 
 
@@ -195,7 +198,7 @@ def test_a_summary_whose_cited_quote_fails_the_check_isnt_shown():
     ranking, bodies, _ = case()
     cited = tojiro(ranking).credible_recommendations[2]
     bodies[cited.comment_id] = "Edited since: this comment now says something else entirely."
-    answer = write_answer(ranking, bodies, "chef knife", summaries={"tojiro-dp-gyuto": summary([cited.comment_id])})
+    answer = write_answer(ranking, bodies, "chef knife", summaries={TOJIRO: summary([cited.comment_id])})
     assert answer.picks[0].summary is None
 
 
@@ -203,11 +206,11 @@ def test_a_summary_must_acknowledge_the_picks_credible_warnings():
     warning = mention("Tojiro DP Gyuto", "t1", stance="warn", voice="medium", quote="The Tojiro handle cracked.")
     ranking, bodies, _ = case([warning])
     cites = [m.comment_id for m in tojiro(ranking).credible_recommendations[:2]]
-    praise = write_answer(ranking, bodies, "chef knife", summaries={"tojiro-dp-gyuto": summary(cites)})
+    praise = write_answer(ranking, bodies, "chef knife", summaries={TOJIRO: summary(cites)})
     assert praise.picks[0].summary is None
     honest = summary(cites + [warning.comment_id], text="Owners of many years praise its edge, but one owner's handle "
                                                          "cracked.")
-    answer = write_answer(ranking, bodies, "chef knife", summaries={"tojiro-dp-gyuto": honest})
+    answer = write_answer(ranking, bodies, "chef knife", summaries={TOJIRO: honest})
     assert answer.picks[0].summary.text == honest.text
 
 
@@ -216,14 +219,14 @@ def test_an_item_can_have_a_summary_too():
     misono = next(p for p in ranking.products if p.name == "Misono UX10")
     entry = summary([m.comment_id for m in misono.credible_recommendations], product="Misono UX10",
                     text="Two owners with long use recommend it.")
-    answer = write_answer(ranking, bodies, "chef knife", summaries={"misono-ux10": entry})
+    answer = write_answer(ranking, bodies, "chef knife", summaries={"kitchen:misono ux10": entry})
     assert answer.worth_a_look[0].summary.text == "Two owners with long use recommend it."
 
 
 def test_the_live_check_covers_the_quotes_a_summary_cites():
     ranking, bodies, _ = case()
     cites = [m.comment_id for m in tojiro(ranking).credible_recommendations]
-    answer = write_answer(ranking, bodies, "chef knife", summaries={"tojiro-dp-gyuto": summary(cites)})
+    answer = write_answer(ranking, bodies, "chef knife", summaries={TOJIRO: summary(cites)})
     checked = {(q.url, q.text) for q in quotes_to_check(answer)}
     assert {(q.url, q.text) for q in answer.picks[0].summary.sources} <= checked
     assert {(q.url, q.text) for q in shown_quotes(answer)} <= checked
@@ -232,7 +235,7 @@ def test_the_live_check_covers_the_quotes_a_summary_cites():
 def test_a_shown_summary_is_checked_once_more_with_every_quote():
     ranking, bodies, _ = case()
     cites = [m.comment_id for m in tojiro(ranking).credible_recommendations[:2]]
-    answer = write_answer(ranking, bodies, "chef knife", summaries={"tojiro-dp-gyuto": summary(cites)})
+    answer = write_answer(ranking, bodies, "chef knife", summaries={TOJIRO: summary(cites)})
     pick = answer.picks[0]
     pick.summary = dataclasses.replace(pick.summary, text='Owners call it "the best".')
     assert any("quotation marks" in problem for problem in unverified_claims(answer, bodies))
@@ -261,3 +264,15 @@ def test_an_items_unknown_price_and_availability_arent_spelled_out_but_a_budget_
     with_budget = render_markdown(write_answer(ranking, bodies, "chef knife", prices=checks))
     assert "Not checked against your budget (up to £100): no price checked yet." in with_budget[
         with_budget.index(wording.WORTH_HEADING):]
+
+
+def test_an_item_never_shows_a_quote_that_starts_mid_sentence():
+    # Found judging the 13 Oct 2026 answers: a quote began "is my daily driver", its subject (a link) left out.
+    cut = [mention("Mauviel M150", t, quote="is my daily driver and a great pan.") for t in ("t1", "t2")]
+    ranking, bodies, _ = case(cut)
+    for m in cut:
+        bodies[m.comment_id] = "[This Mauviel](https://shop.example/pan) is my daily driver and a great pan."
+    assert "Mauviel M150" not in names(write_answer(ranking, bodies, "chef knife").worth_a_look)
+    whole = [mention("Mauviel M150", t, quote="My Mauviel is my daily driver and a great pan.") for t in ("t1", "t2")]
+    ranking, bodies, _ = case(whole)
+    assert "Mauviel M150" in names(write_answer(ranking, bodies, "chef knife").worth_a_look)

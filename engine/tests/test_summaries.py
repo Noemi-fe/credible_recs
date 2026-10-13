@@ -309,3 +309,11 @@ def test_check_names_a_broken_entry(tmp_path):
     (lib / "summaries.json").write_text(json.dumps({ZOJI: {"product": "Zojirushi kettle"}}), encoding="utf-8")
     problems = summaries.check(lib, [])[0]
     assert problems and ZOJI in problems[0]
+
+
+def test_a_summary_is_keyed_by_the_name_shown_so_a_brands_lines_of_two_types_are_two_products():
+    # Found on 13 Oct 2026: module 4 gives a brand's line one key for every type ("kitchen:lodge"), but the cast iron
+    # skillet line and the Dutch oven line are two products, praised in different threads.
+    assert summaries.summary_key("kitchen", "Lodge cast iron skillet line") == "kitchen:lodge cast iron skillet line"
+    assert summaries.summary_key("kitchen", "Lodge Dutch oven line") == "kitchen:lodge dutch oven line"
+    assert summaries.summary_key("kitchen", "The Zojirushi kettle") == "kitchen:zojirushi kettle"

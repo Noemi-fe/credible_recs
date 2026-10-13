@@ -113,7 +113,7 @@ def test_also_worth_a_look_items_and_summaries_are_judged_too():
     summary = Summary(product="Acme kettle", category="kitchen", text="Owners say it boils fast.",
                       cites=[acme.credible_recommendations[0].comment_id], written_at="2026-10-13T10:00:00Z",
                       writer="claude-code", instructions_version=current_version())
-    answer = write_answer(ranking, bodies_for(*items), "electric kettle", summaries={"acme-kettle": summary})
+    answer = write_answer(ranking, bodies_for(*items), "electric kettle", summaries={"kitchen:acme kettle": summary})
     shown = answer_items(answer, "k01", "a kettle that lasts")
     where = [(item.where, item.heading) for item in shown]
     assert ("worth quote", "Dune kettle") in where and ("worth downside", "Dune kettle") in where
@@ -123,3 +123,20 @@ def test_also_worth_a_look_items_and_summaries_are_judged_too():
     assert (item.lead, item.text) == (wording.SUMMARY_LABEL, "Owners say it boils fast.")
     downside = next(item for item in shown if item.where == "worth downside")
     assert downside.lead == "1 of 3 credible voices warned against it:"
+
+
+def test_summaries_are_read_from_the_file_they_are_written_in_not_the_frozen_snapshot(tmp_path):
+    # The snapshot was frozen before summaries existed (13 Oct 2026); they are written in data/library/summaries.json.
+    import json as _json
+
+    from engine.summaries import current_version
+
+    written = tmp_path / "summaries.json"
+    written.write_text(_json.dumps({"kitchen:zojirushi kettle": {
+        "product": "Zojirushi kettle", "category": "kitchen", "product_type": "electric kettle",
+        "text": "Owners of 6 years say it still boils fast.", "cites": ["k1aaaa"], "written_at": "2026-10-13T10:00:00Z",
+        "writer": "claude-code", "instructions_version": current_version()}}), encoding="utf-8")
+    found = collect([("k01", REQUEST)], library(tmp_path), profiles=None, summaries_file=written)
+    summaries = [item for item in found.items if item.where == "summary"]
+    assert [(item.heading, item.text) for item in summaries] == [("Zojirushi kettle",
+                                                                  "Owners of 6 years say it still boils fast.")]

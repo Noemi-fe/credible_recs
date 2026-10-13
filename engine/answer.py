@@ -123,7 +123,7 @@ from engine.match_products import FILLER_WORDS, known_aliases
 from engine.rank import KindNote, ProductScore, RankingResult, ScoredMention, ScoreBreakdown, is_credible
 from engine.query import PRODUCT_TYPES
 from engine.sources import mentions_product
-from engine.summaries import Summary, shown_problems, text_problems
+from engine.summaries import Summary, shown_problems, summary_key, text_problems
 from engine.text import one_edit_apart
 from engine.verify_quotes import find_quote, verify_quote
 
@@ -404,7 +404,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     credible warnings}) are warnings about a pick's own brand or line, shown under it after its own. `unsuited_kinds`
     are the keys of kinds that give no "Look for" (engine.pipeline._unsuited_kinds). `needs` (engine.needs.request_needs):
     among equally clear quotes, those talking about them come first. `request` is the request as typed: the product it
-    names ("retinol") is no advice about what to look for. `summaries` ({product key: engine.summaries.Summary}) are
+    names ("retinol") is no advice about what to look for. `summaries` ({engine.summaries.summary_key: Summary}) are
     the one-line summaries written ahead of time: each is shown on its pick or item only when every check passes.
     `worth_left_out` are the keys of products the pipeline leaves out of "Also worth a look" (its brand rules).
     """
@@ -429,7 +429,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
                                (more_downsides or {}).get(product.key, []), needs))
             picks[-1].model = models.get(product.key)
             picks[-1].model_price = (model_prices or {}).get(product.key)
-            picks[-1].summary = _summary(product, summaries.get(product.key), check)
+            picks[-1].summary = _summary(product, _summary_of(product, summaries), check)
     worth = _worth_items(ranking, check, prices, cautions, summaries, worth_left_out, asks, needs, product_type)
     skip = [_skip_item(product, check) for product in ranking.skip_list]
     look_for = _look_for(ranking, check, product_type, unsuited_kinds, request, asks, [pick.name for pick in picks])
@@ -481,7 +481,7 @@ def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[s
             price=price,
             availability=shown_availability(prices.get(product.key), price.url),
             cautions=[CAUTION.format(reason=reason) for reason in cautions.get(product.key, [])],
-            summary=_summary(product, summaries.get(product.key), check),
+            summary=_summary(product, _summary_of(product, summaries), check),
         ))
     return items
 
@@ -490,13 +490,24 @@ def _worth_quotes(product: ProductScore, check: "_QuoteCheck", asks: tuple[str, 
                   product_type: str | None) -> list[ShownQuote]:
     """Up to WORTH_A_LOOK_QUOTES verified quotes for an "Also worth a look" item, in a pick's order (_pick_quotes): each
     widened to stand on its own where its comment allows. Only quotes that say something about it: with no minimum to
-    make up, a bare mention, a garbled quote, one that says nothing about it or one that still leans on the thread is
-    never shown."""
+    make up, a bare mention, a garbled quote, one that says nothing about it, one that still leans on the thread or one
+    that starts mid-sentence (_mid_sentence) is never shown."""
     mentions, leaning = _standing(product.credible_recommendations, check.bodies, _names_its_product)
     ordered = _naming_first(_with_a_view(mentions, check.bodies), asks, needs, leaning, product_type)
     good = [m for m in ordered if m.comment_id not in leaning and _says_something(m)
-            and not (_bare_mention(m) or _garbled(m.quote))]
+            and not (_bare_mention(m) or _garbled(m.quote) or _mid_sentence(m.quote, check.bodies.get(m.comment_id)))]
     return check.first(good, WORTH_A_LOOK_QUOTES)
+
+
+def _mid_sentence(quote: str, body: str | None) -> bool:
+    """Whether a quote starts in the middle of a sentence of its comment: in lowercase, after words that don't end a
+    sentence ("is my daily driver", its subject a link left out; 13 Oct 2026). Such a quote never names what it is
+    about."""
+    span = find_quote(body, quote) if body else None
+    if span is None or not quote[:1].islower():
+        return False
+    before = body[:span[0]].rstrip()
+    return bool(before) and not before.endswith((".", "!", "?", "…", ":", ";"))
 
 
 def _worth_note(picks: int) -> str:
@@ -507,6 +518,11 @@ def _worth_note(picks: int) -> str:
 
 
 # --- One-line summaries (Noemi's decision 4 of 13 Oct 2026) ---
+
+def _summary_of(product: ProductScore, summaries: Mapping[str, Summary]) -> Summary | None:
+    """The product's summary, saved under the category and the words of the name it is shown under (summary_key)."""
+    return summaries.get(summary_key(product.mentions[0].category, product.name)) if product.mentions else None
+
 
 def summary_reasons(product: ProductScore, summary: Summary | None, bodies: Mapping[str, str]) -> list[str]:
     """Why a product's summary can't be shown in this answer, in words; [] when it can. The checks of

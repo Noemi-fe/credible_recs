@@ -76,6 +76,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SENSE_DIR = REPO_ROOT / "data" / "eval" / "sense"
 SNAPSHOT_DIR = REPO_ROOT / "data" / "eval" / "library_snapshot"
 SNAPSHOT_DAY = date(2026, 10, 12)  # the day the library snapshot was frozen: its prices are judged on that day
+# The one-line summaries (13 Oct 2026) are written in the live library's file, after the snapshot was frozen: answers on
+# the snapshot read them from there, and show each one only where its checks pass on the snapshot's comments.
+SUMMARIES_FILE = REPO_ROOT / "data" / "library" / "summaries.json"
 # The ten requests beyond the blind test (12 Oct 2026): skincare, haircare and kitchen, as people type them.
 OTHER_REQUESTS = (
     "shampoo for an oily scalp", "anti-dandruff shampoo", "air fryer that lasts", "rice cooker for a family of four",
@@ -164,17 +167,24 @@ def answer_items(answer: Answer, request_id: str, request: str) -> list[Item]:
 
 
 def collect(requests: list[tuple[str, str]], library_dir: Path = SNAPSHOT_DIR, profiles=None,
-            today: date = SNAPSHOT_DAY, jobs: int = 1) -> Collection:
+            today: date = SNAPSHOT_DAY, jobs: int = 1, summaries_file: Path | None = None) -> Collection:
     """Each request answered on the library, and every item its answer shows. `profiles`: as in engine.pipeline; with
     `jobs` above 1, the requests are answered that many at a time, each with the library's own profile store
-    (snapshot_profiles), and `profiles` isn't used."""
+    (snapshot_profiles), and `profiles` isn't used. `summaries_file`: where the one-line summaries are read from (None:
+    SUMMARIES_FILE)."""
+    summaries_file = SUMMARIES_FILE if summaries_file is None else summaries_file
+    n = len(requests)
     if jobs > 1:
         from concurrent.futures import ProcessPoolExecutor
 
+        from functools import partial
+
+        # By keyword, so each worker keeps _answered's own default for profiles (a marker object can't be sent to it).
         with ProcessPoolExecutor(max_workers=jobs) as pool:
-            answered = list(pool.map(_answered, requests, [library_dir] * len(requests), [today] * len(requests)))
+            answered = list(pool.map(partial(_answered, summaries_file=summaries_file), requests, [library_dir] * n,
+                                     [today] * n))
     else:
-        answered = [_answered(request, library_dir, today, profiles) for request in requests]
+        answered = [_answered(request, library_dir, today, profiles, summaries_file) for request in requests]
     found = Collection()
     for (request_id, _), (items, unverified, picks) in zip(requests, answered):
         if items is not None:
@@ -187,14 +197,17 @@ def collect(requests: list[tuple[str, str]], library_dir: Path = SNAPSHOT_DIR, p
 _SNAPSHOT_PROFILES = object()  # _answered's default: the library's own profile store
 
 
-def _answered(request: tuple[str, str], library_dir: Path, today: date, profiles=_SNAPSHOT_PROFILES):
+def _answered(request: tuple[str, str], library_dir: Path, today: date, profiles=_SNAPSHOT_PROFILES,
+              summaries_file: Path = SUMMARIES_FILE):
     """(items, unverified quotes, picks' names) for one (id, request) answered on the library; (None, 0, []) when module
     1 asks a question or says no."""
     from engine.pipeline import answer_request
+    from engine.summaries import load_summaries
 
     request_id, text = request
     profiles = snapshot_profiles(library_dir) if profiles is _SNAPSHOT_PROFILES else profiles
-    run = answer_request(text, library_dir=library_dir, profiles=profiles, today=today, live_check_required=False)
+    run = answer_request(text, library_dir=library_dir, profiles=profiles, today=today, live_check_required=False,
+                         summaries=load_summaries(summaries_file).entries)
     if run.answer is None:
         return None, 0, []
     return (answer_items(run.answer, request_id, text), len(unverified_claims(run.answer, run.bodies)),
