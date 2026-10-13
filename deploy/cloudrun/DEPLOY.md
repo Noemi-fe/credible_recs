@@ -34,6 +34,10 @@ rule is unchanged: a quote is shown only with a passing check from the last 48 h
   minutes working out the answers. Its report (counts and times, never a comment's words) is in the job's logs. On
   Noemi's computer on 13 Oct 2026 a run worked out 1,145 comments in 3.7 minutes and read 928 of them in 59 minutes
   (872 passing, 2 deleted, 8 edited, 46 pages that couldn't be read).
+  Then, for the comments whose embed page shows no comment ("Not supported comment", about 1 in 8; Noemi, 13 Oct 2026:
+  "Use Bright Data"), it reads their threads through Bright Data, within 30 records a run (the most useful threads
+  first), and saves a check for each comment it finds there. It needs the Bright Data key, the Secret Manager secret
+  `bright-data-key` (below). The site never calls Bright Data.
 - **Feedback**: Noemi's private Hugging Face dataset Noemix/credible-recs-feedback. The site uploads it in batches with
   the token stored as the Secret Manager secret `hf-token`.
 - **Visit counts**: GoatCounter, site code noemix (CREDIBLE_RECS_GOATCOUNTER).
@@ -56,7 +60,10 @@ prints the address. Safe to run again: each step creates what is missing and set
 The project number is `NUMBER` below (`gcloud projects describe credible-picks --format='value(projectNumber)'`), and
 `RUNNER` is the account the site and the job run as, `NUMBER-compute@developer.gserviceaccount.com`.
 
-1. The APIs: `gcloud services enable storage.googleapis.com cloudscheduler.googleapis.com --project credible-picks`
+0. Noemi's Bright Data key as a secret, once, by Noemi herself (see "The Bright Data key" below). deploy.sh stops
+   before building anything if it isn't there, and never makes or reads it.
+1. The APIs: `gcloud services enable storage.googleapis.com cloudscheduler.googleapis.com secretmanager.googleapis.com
+   --project credible-picks`
 2. The bucket, the first time only:
 
        gcloud storage buckets create gs://credible-picks-live-checks --project credible-picks --location europe-west1 \
@@ -72,14 +79,17 @@ The project number is `NUMBER` below (`gcloud projects describe credible-picks -
 
 3. The site, as before, with `CREDIBLE_RECS_LIVE_CACHE_BUCKET=credible-picks-live-checks` added to its settings
    (`gcloud run deploy credible-recs --source <bundle> ...`).
-4. The job, on the image the site now runs (create or update):
+4. The job, on the image the site now runs (create or update), allowed to read the Bright Data key:
 
+       gcloud secrets add-iam-policy-binding bright-data-key --project credible-picks \
+           --member serviceAccount:RUNNER --role roles/secretmanager.secretAccessor
        IMAGE=$(gcloud run services describe credible-recs --region europe-west1 --project credible-picks \
            --format='value(spec.template.spec.containers[0].image)')
        gcloud run jobs deploy credible-recs-precheck --project credible-picks --region europe-west1 --image "$IMAGE" \
            --command python --args=-m,engine.precheck,--limit,1100 \
            --tasks 1 --max-retries 0 --task-timeout 2h --memory 1536Mi --cpu 1 \
-           --set-env-vars CREDIBLE_RECS_LIVE_CACHE_BUCKET=credible-picks-live-checks
+           --set-env-vars CREDIBLE_RECS_LIVE_CACHE_BUCKET=credible-picks-live-checks \
+           --set-secrets BRIGHT_DATA_API_KEY=bright-data-key:latest
        gcloud run jobs add-iam-policy-binding credible-recs-precheck --project credible-picks --region europe-west1 \
            --member serviceAccount:RUNNER --role roles/run.invoker
 
@@ -99,6 +109,18 @@ execution's logs in the console (Cloud Run, Jobs, credible-recs-precheck, Logs).
 
 Reddit's limit is per address. The job and the site usually leave Google from different addresses, but not always: the
 job runs at 4 am, when the site is quietest, and at its pace leaves about 50 of every 200 reads in 10 minutes free.
+
+## The Bright Data key
+
+The pre-check reads the key from the environment (BRIGHT_DATA_API_KEY), which Cloud Run fills from the Secret Manager
+secret `bright-data-key`. Noemi creates it once, from the repository's root on her computer, with the key taken from
+her .env and handed straight to gcloud, never shown on screen or kept anywhere else (in Belgium, like the rest):
+
+    .venv/bin/python -c "import sys; from pathlib import Path; from engine.parse_reddit import _read_env_file; sys.stdout.write(_read_env_file(Path('.env'))['BRIGHT_DATA_API_KEY'])" | gcloud secrets create bright-data-key --project credible-picks --replication-policy user-managed --locations europe-west1 --data-file=-
+
+When the key changes: the same command with `gcloud secrets versions add bright-data-key --project credible-picks
+--data-file=-` after the pipe. Secret Manager's free tier covers it (6 secret versions and 10,000 reads a month: the job
+reads it once a run).
 
 ## Keeping it awake
 
@@ -129,6 +151,16 @@ GiB-seconds, 60% and 48% of the free tier for instance-billed work (240,000 vCPU
 month; the site itself is billed by request, under its own free tier). So 0 EUR. If the first run's log says the memory
 limit was exceeded, 2 GiB (`--memory 2Gi`) is still inside the free tier: 288,000 GiB-seconds, 64%. The schedule is
 the second of Cloud Scheduler's 3 free jobs (the keep-warm ping is the first).
+
+Bright Data (estimates, 13 Oct 2026; no money: the free tier is 5,000 records a month, and past it jobs simply stop).
+Reading a thread costs a record for its post and one for each top-level comment: 22 for the median thread the answers
+quote, 63 at the 90th percentile. The pre-check reads at most 30 records a run (PRECHECK_BRIGHT_DATA_RECORDS), so at most
+930 a month, under a fifth of the free records, leaving the rest to the library's own reads (3,972 were used in October
+by the 13th). That is about one thread a day: at 1 comment in 8, the answers' 1,288 comments hold about 161 the embed
+page can't show, in about 105 threads, and the shown ones alone about 89 in 68 threads (about 3,000 records). So the
+threads verifying the most shown comments for their records go first, a comment verified that way lasts 48 hours and is
+read again only every other run, and covering them all would need far more records than the free tier has: Noemi's
+call.
 
 The bucket (estimates, 13 Oct 2026), effectively nothing: Cloud Storage's free tier is for US regions only, so every
 operation is billed, but there are very few. Class A (writes): the pre-check's 2 a run, about 60 a month, 0.0003 USD

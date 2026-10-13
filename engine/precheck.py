@@ -35,9 +35,22 @@ end. A comment read less than config.PRECHECK_FRESH_HOURS ago is skipped; an old
 day's answers never find its check expired. A run stops when Reddit stops answering (config.PRECHECK_STOP_AFTER_UNKNOWN
 unreadable pages in a row). The report gives counts and times only, never a comment's words.
 
+Comments the embed page can't show (Noemi, 13 Oct 2026: "Use Bright Data"). For about 1 comment in 8 the embed page
+holds no comment ("Not supported comment", likely comments with photos): it is kept as unreadable and never shown. After
+the embed reads, the comments needed here whose check is that kind are verified through Bright Data instead
+(verify_through_bright_data): their threads are read as Reddit shows them now (engine/bright_data.py, its pacing and
+monthly records), the likeliest to be shown first, in one batch of at most config.PRECHECK_BRIGHT_DATA_MAX_THREADS
+threads and config.PRECHECK_BRIGHT_DATA_RECORDS records a run (estimated from the library's copy of each thread: its
+post and its top-level comments). Each comment found gets a normal check, its own text as Reddit shows it now, saved
+when Bright Data read it (via "bright_data"), used like any other (found word for word, gone, changed) for 48 hours, and
+shared in the bundle. One its answer doesn't hold stays unreadable: Bright Data returns top-level comments and their
+direct replies only, so missing never means deleted. Such a check isn't read again on the embed page, and through Bright
+Data only after config.PRECHECK_BRIGHT_DATA_FRESH_HOURS. The site itself never calls Bright Data.
+
     python -m engine.precheck [--limit N] [--dry-run]
 
---dry-run works out the comments and says how many would be read and how many are fresh, reading nothing on Reddit.
+--dry-run works out the comments and says how many would be read and how many are fresh, reading nothing on Reddit,
+and how many comments and threads would be read through Bright Data, and about how many records that would use.
 On Google Cloud a Cloud Run job runs it once a day (deploy/cloudrun/DEPLOY.md).
 """
 
@@ -53,11 +66,13 @@ from pathlib import Path
 
 from engine import pipeline
 from engine.answer import Answer, ShownQuote, quotes_to_check
-from engine.config import (PICKS_SHOWN, PRECHECK_FRESH_HOURS, PRECHECK_MAX_READS, PRECHECK_MAX_WAIT_SECONDS,
-                           PRECHECK_MODEL_TYPES, PRECHECK_STOP_AFTER_UNKNOWN)
+from engine.config import (BRIGHT_DATA_BATCH_THREADS, PICKS_SHOWN, PRECHECK_BRIGHT_DATA_FRESH_HOURS,
+                           PRECHECK_BRIGHT_DATA_MAX_THREADS, PRECHECK_BRIGHT_DATA_RECORDS, PRECHECK_FRESH_HOURS,
+                           PRECHECK_MAX_READS, PRECHECK_MAX_WAIT_SECONDS, PRECHECK_MODEL_TYPES,
+                           PRECHECK_STOP_AFTER_UNKNOWN)
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.live_check import LiveResult, checker_from_env
-from engine.parse_reddit import REPO_ROOT
+from engine.parse_reddit import REPO_ROOT, parse_thread_url
 from engine.query import PRODUCT_TYPES
 
 QUESTIONS_FILE = REPO_ROOT / "eval" / "blind_test" / "questions.json"  # the search page's example requests
@@ -96,6 +111,7 @@ class Reading:
     changed: int = 0  # edited: a quote no longer found
     unknown: int = 0  # the page couldn't be read
     fresh: int = 0  # skipped: read less than PRECHECK_FRESH_HOURS ago
+    via_bright_data: int = 0  # skipped: verified through Bright Data (its embed page shows no comment)
     would_read: int = 0  # a dry run: what would have been read
     not_reached: int = 0  # left for lack of reads in this run's budget
     stopped: bool = False  # stopped early: Reddit stopped answering
@@ -155,13 +171,17 @@ def _logged_types(log: Path) -> list[str]:
 class _AsIfChecked:
     """The checker answers get while the pre-check works out what they show: a comment with a saved check is answered
     by it (one deleted or edited drops out, as it would for a visitor); one without is taken as passing, since it is
-    about to be read. Reddit is never read here."""
+    about to be read, and so is one whose embed page showed no comment, since it is about to be verified through
+    Bright Data. Reddit is never read here."""
 
     def __init__(self, live):
         self.live = live
 
     def check(self, url: str, quote: str, wait: bool = True) -> LiveResult:
-        return self.live.saved_check(url, quote) or LiveResult("ok", "not checked yet: taken as passing for now")
+        saved = self.live.saved_check(url, quote)
+        if saved is None or saved.status == "unknown":
+            return LiveResult("ok", "not checked yet: taken as passing for now")
+        return saved
 
 
 @contextmanager
@@ -282,6 +302,10 @@ def check_ahead(candidates: list[Candidate], checker, limit: int = PRECHECK_MAX_
         if run.stopped or run.read + run.would_read >= limit:
             run.not_reached += 1
             continue
+        entry = checker.saved_entry(candidate.url)
+        if entry is not None and entry.get("via") == "bright_data":  # its embed page shows no comment: never read there
+            run.via_bright_data += 1
+            continue
         if checker.checked_at(candidate.url, max_age=fresh) is not None:
             run.fresh += 1
             continue
@@ -313,6 +337,151 @@ def _read(candidate: Candidate, checker, fresh: timedelta) -> str:
     return "passing"
 
 
+# --- Comments the embed page can't show, through Bright Data ---
+
+@dataclass
+class BrightDataReading:
+    """What a run verified through Bright Data, in counts."""
+
+    needed: int = 0  # comments whose embed page shows no comment (or whose Bright Data check is due again)
+    threads: int = 0  # the threads they are in
+    read: int = 0  # threads read through Bright Data now (a dry run: would be)
+    records: int = 0  # records Bright Data delivered (a dry run: the estimate)
+    passing: int = 0
+    gone: int = 0
+    changed: int = 0
+    absent: int = 0  # not in Bright Data's answer: still unverified, never shown
+    not_reached: int = 0  # threads left for this run's budget (or whose size isn't known)
+    failed: int = 0  # threads Bright Data couldn't read
+    problem: str | None = None  # an account problem (no key, no records left) that stopped the reads
+    dry_run: bool = False
+
+
+def needing_bright_data(candidates: list[Candidate], checker,
+                        fresh: timedelta = timedelta(hours=PRECHECK_BRIGHT_DATA_FRESH_HOURS)) -> list[Candidate]:
+    """The candidates whose saved check says the embed page shows no comment (text None), or that were verified
+    through Bright Data more than `fresh` ago, likeliest to be shown first."""
+    needed = []
+    for candidate in candidates:
+        entry = checker.saved_entry(candidate.url)
+        if entry is None:
+            continue
+        if entry["text"] is None:
+            needed.append(candidate)
+        elif entry.get("via") == "bright_data" and checker.checked_at(candidate.url, max_age=fresh) is None:
+            needed.append(candidate)
+    return needed
+
+
+def verify_through_bright_data(candidates: list[Candidate], checker, client_factory, library_dir: Path,
+                               max_records: int = PRECHECK_BRIGHT_DATA_RECORDS,
+                               max_threads: int = PRECHECK_BRIGHT_DATA_MAX_THREADS,
+                               dry_run: bool = False) -> BrightDataReading:
+    """Reads the threads of the comments needing_bright_data, the most useful first (_value_order), through Bright Data
+    (`client_factory()`, an engine.bright_data.BrightDataClient, built only when there is something to read), within
+    `max_records` (each thread's cost estimated from the library's copy: its post and its top-level comments) and
+    `max_threads` a run, in one batch; and saves a check for each comment its answer holds (checker.keep_check)."""
+    reading = BrightDataReading(dry_run=dry_run)
+    needed = needing_bright_data(candidates, checker)
+    by_thread: dict[str, list[Candidate]] = {}
+    for candidate in needed:
+        by_thread.setdefault(parse_thread_url(candidate.url)[1], []).append(candidate)
+    reading.needed, reading.threads = len(needed), len(by_thread)
+    costs = {post_id: _records_estimate(Path(library_dir), post_id) for post_id in by_thread}
+    chosen, spent = [], 0
+    for post_id in sorted(by_thread, key=lambda t: _value_order(by_thread[t], costs[t])):
+        comments, cost = by_thread[post_id], costs[post_id]
+        if cost is None or len(chosen) >= min(max_threads, BRIGHT_DATA_BATCH_THREADS) or spent + cost > max_records:
+            reading.not_reached += 1
+            continue
+        chosen.append((post_id, comments, cost))
+        spent += cost
+    if dry_run or not chosen:
+        reading.read, reading.records = (len(chosen), spent) if dry_run else (0, 0)
+        return reading
+    from engine.bright_data import BrightDataError
+
+    client = client_factory()
+    if client is None:
+        reading.problem = "no Bright Data client"
+        return reading
+    before = client.records_used_this_month()
+    try:
+        client.prefetch([(comments[0].url, max(cost - 1, 1)) for _, comments, cost in chosen])
+    except BrightDataError as error:
+        if error.account_problem:
+            reading.problem = str(error)
+            return reading
+        # Not the account: each thread is asked on its own below.
+    for post_id, comments, _ in chosen:
+        try:
+            thread = client.get_thread(comments[0].url)
+        except BrightDataError as error:
+            if error.account_problem:
+                reading.problem = str(error)
+                break
+            reading.failed += 1
+            continue
+        reading.read += 1
+        found = {comment.id: comment for comment in thread.comments}
+        for candidate in comments:
+            comment = found.get(candidate.comment_id)
+            if comment is None:
+                reading.absent += 1  # Bright Data returns top-level comments and direct replies only: not deleted
+                continue
+            checker.keep_check(candidate.url, comment.body, thread.collected_at, "bright_data")
+            outcomes = [checker.saved_check(candidate.url, quote) for quote in candidate.quotes]
+            status = next((o.status for o in outcomes if not o.show), "passing")  # "gone" or "changed" when not
+            setattr(reading, status, getattr(reading, status) + 1)
+    reading.records = client.records_used_this_month() - before
+    return reading
+
+
+def _value_order(comments: list[Candidate], cost: int | None) -> tuple:
+    """Which threads are read first: those whose comments are likeliest to be shown (the best tier, a pick's own quotes
+    first), then those that verify the most comments for their records, then by their likeliest comment."""
+    return (min(c.tier for c in comments), min(c.section for c in comments),
+            (cost if cost is not None else float("inf")) / len(comments), min(c.order for c in comments))
+
+
+def _records_estimate(library_dir: Path, post_id: str) -> int | None:
+    """What reading a thread through Bright Data should cost, from the library's copy of it: a record for its post and
+    one for each top-level comment; None when the library doesn't hold it."""
+    try:
+        thread = json.loads((library_dir / "threads" / f"{post_id}.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return 1 + sum(1 for comment in thread.get("comments", []) if not comment.get("parent_id"))
+
+
+def bright_data_report(reading: BrightDataReading) -> str:
+    """The Bright Data reads in a line or two: counts only."""
+    head = (f"{_n(reading.needed, 'comment')} the embed page can't show, in {_n(reading.threads, 'thread')}")
+    if reading.dry_run:
+        return (f"Bright Data (dry run): {head}; would read {_n(reading.read, 'thread')}, about "
+                f"{_n(reading.records, 'record')} (at most {PRECHECK_BRIGHT_DATA_RECORDS} a run); "
+                f"{reading.not_reached} left for this run's budget.")
+    line = (f"Bright Data: {head}; {_n(reading.read, 'thread')} read ({_n(reading.records, 'record')}): "
+            f"{reading.passing} passing, {reading.gone} gone, {reading.changed} changed, {reading.absent} not in its "
+            f"answer (still unverified); {reading.not_reached} left for this run's budget"
+            + (f"; {reading.failed} couldn't be read" if reading.failed else "") + ".")
+    if reading.problem:
+        line += f"\nBright Data stopped: {reading.problem}"
+    return line
+
+
+def _n(count: int, word: str) -> str:
+    return f"{count:,} {word}{'' if count == 1 else 's'}"
+
+
+def _bright_data_client():
+    """The real Bright Data client (key BRIGHT_DATA_API_KEY, from the environment or .env), built the way the library
+    builds it, so the tests' guard against real clients (engine/tests/conftest.py) covers it too."""
+    from engine import library
+
+    return library.BrightDataClient()
+
+
 # --- The report and the command ---
 
 def report(candidates: list[Candidate], run: Reading, requests: int, answered: int, seconds_working: float,
@@ -328,8 +497,10 @@ def report(candidates: list[Candidate], run: Reading, requests: int, answered: i
     if run.read:
         lines.append(f"Read on Reddit now: {run.read:,} ({run.passing:,} passing, {run.gone:,} gone, {run.changed:,} "
                      f"changed, {run.unknown:,} unreadable).")
-    lines.append(f"Skipped, read within {PRECHECK_FRESH_HOURS} hours: {run.fresh:,}. Not reached within this run's "
-                 f"budget: {run.not_reached:,}.")
+    via = f"; verified through Bright Data, never read on the embed page: {run.via_bright_data:,}" if (
+        run.via_bright_data) else ""
+    lines.append(f"Skipped, read within {PRECHECK_FRESH_HOURS} hours: {run.fresh:,}{via}. Not reached within this "
+                 f"run's budget: {run.not_reached:,}.")
     if run.stopped:
         lines.append(f"Stopped early: {PRECHECK_STOP_AFTER_UNKNOWN} pages in a row couldn't be read (Reddit is "
                      "refusing reads); the rest wait for the next run.")
@@ -356,10 +527,14 @@ def options(argv: list[str]) -> tuple[int, bool] | None:
     return limit, dry_run
 
 
-def run(requests: list[str], limit: int, dry_run: bool, library_dir: Path, checker, profiles) -> int:
-    """Works out the comments, reads them, and prints the report. With a bucket (the daily job on Google Cloud), it
-    starts from the bundle of checks the last run left (engine.live_check.LiveChecker.load_bundle), so what is still
-    fresh isn't read again, and leaves a new one, midway and at the end (save_bundle): one object, a few calls a run."""
+def run(requests: list[str], limit: int, dry_run: bool, library_dir: Path, checker, profiles,
+        bright_data=_bright_data_client, bright_data_records: int = PRECHECK_BRIGHT_DATA_RECORDS,
+        bright_data_threads: int = PRECHECK_BRIGHT_DATA_MAX_THREADS) -> int:
+    """Works out the comments, reads them on the embed page, then those it can't show through Bright Data
+    (`bright_data`: builds the client, only when there is something to read), and prints the report. With a bucket
+    (the daily job on Google Cloud), it starts from the bundle of checks the last run left
+    (engine.live_check.LiveChecker.load_bundle), so what is still fresh isn't read again, and leaves a new one, midway
+    and at the end (save_bundle): one object, a few calls a run."""
     started = time.perf_counter()
     bucket = getattr(checker, "bucket", None)
     loaded = checker.load_bundle() if bucket is not None else 0
@@ -369,7 +544,11 @@ def run(requests: list[str], limit: int, dry_run: bool, library_dir: Path, check
           f"{'counting' if dry_run else 'reading'} up to {limit:,}.", file=sys.stderr, flush=True)
     save = None if bucket is None or dry_run else checker.save_bundle
     reading = check_ahead(found.candidates, checker, limit=limit, dry_run=dry_run, midway=save)
+    through = verify_through_bright_data(found.candidates, checker, bright_data, library_dir,
+                                         max_records=bright_data_records, max_threads=bright_data_threads,
+                                         dry_run=dry_run)
     print(report(found.candidates, reading, len(requests), found.answered, working, reading.seconds, found.failed))
+    print(bright_data_report(through))
     if bucket is not None:
         saved = None if save is None else save()
         written = ("not written: a dry run" if save is None else f"{saved:,} written to it at the end" if saved

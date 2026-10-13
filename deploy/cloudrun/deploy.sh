@@ -21,13 +21,20 @@ GCLOUD="${GCLOUD:-gcloud}"
 
 NUMBER="$($GCLOUD projects describe "$PROJECT" --format='value(projectNumber)')"
 RUNNER="${NUMBER}-compute@developer.gserviceaccount.com"  # the account the site and the job run as (the default)
+# The pre-check's Bright Data key (Noemi, 13 Oct 2026: comments the embed page can't show are verified through Bright
+# Data): the Secret Manager secret bright-data-key, which Noemi creates herself (DEPLOY.md). This script never makes or
+# reads it; it only stops before building anything when it isn't there yet.
+if ! $GCLOUD secrets describe bright-data-key --project "$PROJECT" >/dev/null 2>&1; then
+    echo "The secret bright-data-key isn't there yet: create it first (deploy/cloudrun/DEPLOY.md, The Bright Data key)." >&2
+    exit 1
+fi
 HOSTS="${SERVICE}-${NUMBER}.${REGION}.run.app"
 # The service's older-style address too, once it exists.
 OLD="$($GCLOUD run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)' 2>/dev/null || true)"
 if [ -n "$OLD" ]; then HOSTS="$HOSTS,${OLD#https://}"; fi
 
 # 1. The APIs the job and its schedule need (nothing happens when they are on already).
-$GCLOUD services enable storage.googleapis.com cloudscheduler.googleapis.com --project "$PROJECT"
+$GCLOUD services enable storage.googleapis.com cloudscheduler.googleapis.com secretmanager.googleapis.com --project "$PROJECT"
 
 # 2. The live checks' bucket: private (uniform access, public access prevented), in the site's region, every object
 #    deleted once 2 days old, and nothing kept after a deletion (no soft delete).
@@ -56,11 +63,15 @@ rm -rf "$(dirname "$BUNDLE")"
 #    live check's pace, about 71 minutes for 1,100), never retried the same day. Billed for its whole run, sleeping
 #    included, so it gets the least that works: 1 vCPU (a job's minimum) and 1.5 GiB (it peaked at 1.3 GB with the
 #    open model loaded, 13 Oct 2026; 0.2 GB without it).
+#    Its one secret is the Bright Data key, which the account it runs as may read.
+$GCLOUD secrets add-iam-policy-binding bright-data-key --project "$PROJECT" \
+    --member "serviceAccount:$RUNNER" --role roles/secretmanager.secretAccessor >/dev/null
 IMAGE="$($GCLOUD run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(spec.template.spec.containers[0].image)')"
 $GCLOUD run jobs deploy "$JOB" --project "$PROJECT" --region "$REGION" --image "$IMAGE" \
     --command python --args=-m,engine.precheck,--limit,${PRECHECK_LIMIT} \
     --tasks 1 --max-retries 0 --task-timeout 2h --memory 1536Mi --cpu 1 \
-    --set-env-vars "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}" --quiet
+    --set-env-vars "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}" \
+    --set-secrets "BRIGHT_DATA_API_KEY=bright-data-key:latest" --quiet
 $GCLOUD run jobs add-iam-policy-binding "$JOB" --project "$PROJECT" --region "$REGION" \
     --member "serviceAccount:$RUNNER" --role roles/run.invoker >/dev/null
 

@@ -84,7 +84,9 @@ def test_the_site_and_the_pre_check_share_the_bucket_and_the_image():
     service = _command(script, '$GCLOUD run deploy')
     job = _command(script, '$GCLOUD run jobs deploy')
     assert "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}" in service and "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}" in job
-    assert '--image "$IMAGE"' in job and "--set-secrets" not in job  # the service's image; the job needs no secret
+    assert '--image "$IMAGE"' in job  # the service's image
+    # Its one secret is the Bright Data key (Noemi, 13 Oct 2026: "Use Bright Data"), never the feedback token.
+    assert '--set-secrets "BRIGHT_DATA_API_KEY=bright-data-key:latest"' in job and "HF_TOKEN" not in job
     assert "--args=-m,engine.precheck,--limit,${PRECHECK_LIMIT}" in job and "--max-retries 0" in job
 
 
@@ -107,3 +109,13 @@ def test_the_pre_check_runs_once_a_day_at_night_uk_time():
     assert '--schedule "0 4 * * *"' in schedule and '--time-zone "Europe/London"' in schedule
     assert '--oauth-service-account-email "$RUNNER"' in schedule and "jobs/${JOB}:run" in schedule
     assert "roles/run.invoker" in _command(script, '$GCLOUD run jobs add-iam-policy-binding')
+
+
+def test_the_job_may_read_the_bright_data_key_which_the_script_never_reads_or_makes():
+    script = DEPLOY_SH.read_text(encoding="utf-8")
+    grant = _command(script, '$GCLOUD secrets add-iam-policy-binding')
+    assert "bright-data-key" in grant and "roles/secretmanager.secretAccessor" in grant and '"serviceAccount:$RUNNER"' in grant
+    assert script.index("$GCLOUD secrets add-iam-policy-binding") < script.index("$GCLOUD run jobs deploy")
+    # Noemi creates the secret herself (DEPLOY.md); the script only checks it is there, before building anything.
+    assert "secrets create" not in script and "versions access" not in script and "BRIGHT_DATA_API_KEY=$" not in script
+    assert script.index("$GCLOUD secrets describe bright-data-key") < script.index("-m deploy.cloudrun.make_context")
