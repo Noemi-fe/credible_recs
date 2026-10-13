@@ -69,6 +69,16 @@ class ArcticShiftError(Exception):
     pass
 
 
+def _search_params(subreddit: str, title: str, limit: int, before: str | None, after: str | None) -> dict:
+    """A title search's parameters, as asked and as cached."""
+    params = {"subreddit": subreddit, "title": title, "limit": limit}
+    if before is not None:
+        params["before"] = before
+    if after is not None:
+        params["after"] = after
+    return params
+
+
 def _http_get(url: str, headers: dict) -> tuple[int, bytes]:
     request = urllib.request.Request(url, headers=headers)
     context = ssl.create_default_context(cafile=certifi.where())
@@ -100,11 +110,7 @@ class ArcticShiftClient:
         """Posts in one subreddit whose title matches, with only the fields needed to choose threads: the newest
         `limit` (at most 100), posted before the date `before` and after the date `after` ("2023-10-11") when given.
         Dates reach older threads, and keep a search over a big subreddit from timing out (12 Oct 2026)."""
-        params = {"subreddit": subreddit, "title": title, "limit": limit}
-        if before is not None:
-            params["before"] = before
-        if after is not None:
-            params["after"] = after
+        params = _search_params(subreddit, title, limit, before, after)
         cached = self._cached(params, "posts")
         if cached is not MISSING:
             return cached
@@ -112,6 +118,13 @@ class ArcticShiftClient:
         posts = [{field: p.get(field) for field in KEPT_FIELDS} for p in found]
         self._save(params, "posts", posts)
         return posts
+
+    def cached_posts(self, subreddit: str, title: str, limit: int = 25, before: str | None = None,
+                     after: str | None = None) -> list[dict] | None:
+        """What search_posts would answer from its 48-hour cache for the same search, or None when the cache doesn't
+        hold it: never a call (13 Oct 2026: a round of searches ended by Arctic Shift's timeouts still uses them)."""
+        cached = self._cached(_search_params(subreddit, title, limit, before, after), "posts")
+        return None if cached is MISSING else cached
 
     def get_thread(self, post_id: str, subreddit: str | None = None) -> Thread:
         """One thread with its comments, read from the archive, in the shape Parse's threads have (read_from "arctic_shift").

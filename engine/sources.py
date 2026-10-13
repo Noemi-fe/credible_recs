@@ -382,6 +382,8 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
     search's first timeout right away, every other half at the end of the round,
     at most ARCHIVE_SPLIT_DEPTH times over, and named in `halved`; only a search that can't be split further is named
     in `failed`. Each timeout still counts towards the failures in a row: a service that is down ends the round as soon.
+    A round ended by failures still uses the searches it had queued whose answers the client's 48-hour cache already
+    holds (cached_posts: no call).
     """
     terms = finder_terms(query.product_type)
     titles = [(subreddit, term) for term in terms for subreddit in query.subreddits][:max_free_searches]
@@ -400,6 +402,7 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
     queue = deque((subreddit, term, dates, 0) for subreddit, term, dates in pairs)  # 0: not halved yet
     posts: dict[str, dict] = {}
     failures = in_a_row = 0
+    ended_by: ArcticShiftError | None = None  # the failure that ended the round early, if one did
     while queue:
         subreddit, term, dates, times_halved = queue.popleft()
         try:
@@ -427,13 +430,20 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
             elif failed is not None:
                 failed.append(f"{name}: {error}")
             if in_a_row >= max_failures:
-                if raise_if_nothing and not posts:
-                    raise
+                ended_by = error
                 break
             continue
         in_a_row = 0
         for post in found:
             posts.setdefault(_post_id(post), post)
+    if ended_by is not None:
+        # The searches still queued are used when the client's 48-hour cache already holds them: no call (13 Oct 2026).
+        cached_posts = getattr(finder, "cached_posts", None)
+        for subreddit, term, dates, _ in queue if cached_posts is not None else ():
+            for post in cached_posts(subreddit, term, limit=posts_each, **dates) or []:
+                posts.setdefault(_post_id(post), post)
+        if raise_if_nothing and not posts:
+            raise ended_by
     if raise_if_nothing and not posts and failures:
         raise ArcticShiftError(f"every archive search that ran failed ({failures})")
     return list(posts.values())
