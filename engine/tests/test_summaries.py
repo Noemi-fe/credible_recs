@@ -317,3 +317,60 @@ def test_a_summary_is_keyed_by_the_name_shown_so_a_brands_lines_of_two_types_are
     assert summaries.summary_key("kitchen", "Lodge cast iron skillet line") == "kitchen:lodge cast iron skillet line"
     assert summaries.summary_key("kitchen", "Lodge Dutch oven line") == "kitchen:lodge dutch oven line"
     assert summaries.summary_key("kitchen", "The Zojirushi kettle") == "kitchen:zojirushi kettle"
+
+
+# --- Every product that can be shown (Noemi, 13 Oct 2026: "why are we giving In short just for a few recommendations
+# instead of for all of them?") ---
+
+def request_files(tmp_path: Path) -> tuple[Path, Path]:
+    questions = tmp_path / "questions.json"
+    questions.write_text(json.dumps({"questions": [{"id": "k01", "text": REQUEST}]}), encoding="utf-8")
+    latency = tmp_path / "latency.json"
+    latency.write_text(json.dumps({"queries": [{"id": "x01", "text": "a toaster for a small kitchen"}]}),
+                       encoding="utf-8")
+    return questions, latency
+
+
+def test_every_request_the_pre_check_answers_is_covered_with_the_wider_reading_of_each_product_type(tmp_path):
+    from engine.query import PRODUCT_TYPES
+
+    questions, latency = request_files(tmp_path)
+    found = summaries.all_requests(questions, latency, tmp_path / "no library", extra=("electric kettle for tea",))
+    assert found[:2] == [summaries.Request("k01", REQUEST), summaries.Request("x01", "a toaster for a small kitchen")]
+    texts = [request.text for request in found if not request.wider]
+    assert {p.name for p in PRODUCT_TYPES} <= set(texts) and "electric kettle for tea" in texts
+    wider = [request for request in found if request.wider]
+    # The 48-thread reading of every product type asked by name, never of the example or latency requests.
+    assert {request.text for request in wider} >= {p.name for p in PRODUCT_TYPES}
+    assert REQUEST not in {request.text for request in wider}
+    assert summaries.Request("electric kettle (48 threads)", "electric kettle", True) in wider
+    assert len({request.id for request in found}) == len(found)
+
+
+def test_a_wider_reading_reads_the_most_threads_an_answer_can(tmp_path, monkeypatch):
+    from engine import pipeline
+    from engine.config import PIPELINE_MORE_THREADS
+
+    asked = []
+    real = pipeline.answer_request
+
+    def recording(text, **kwargs):
+        asked.append((text, kwargs.get("max_threads"), kwargs.get("more_threads", "default")))
+        return real(text, **kwargs)
+
+    monkeypatch.setattr(pipeline, "answer_request", recording)
+    summaries.todo([summaries.Request("w", REQUEST, True)], library(tmp_path))
+    assert asked == [(REQUEST, PIPELINE_MORE_THREADS, None)]
+
+
+def test_todo_covers_every_product_that_qualifies_not_only_those_shown(tmp_path):
+    # Four kettles qualify; the answer shows three. The fourth can still be shown, for a request whose budget or must-haves
+    # leave one of the three out, so it needs a summary too.
+    from engine.tests.test_web import kettle_library
+
+    lib = kettle_library(tmp_path, praised=("Zojirushi", "Fellow Stagg", "Bonavita", "Smeg"))
+    found = {item.key: item for item in summaries.todo([summaries.Request("k01", REQUEST)], lib)}
+    assert {"kitchen:zojirushi kettle", "kitchen:fellow stagg kettle", "kitchen:bonavita kettle",
+            "kitchen:smeg kettle"} <= set(found)
+    shown_in_answer = [key for key, item in found.items() if any(m["shown"] for m in item.credible)]
+    assert len(shown_in_answer) == 3
