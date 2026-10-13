@@ -91,8 +91,8 @@ from engine.match_products import (
 # Words that never tell two products apart, so a loose name equal to a product's name but for them names that product
 # (step 5): "Cetaphil gentle cleanser" is the Cetaphil Gentle Skin Cleanser, not its Gentle Foaming Cleanser.
 UNTELLING_WORDS = frozenset({"skin"})
-# Words at a brand pick's name's end that say nothing about it ("aveeno one"): left out of its shown name.
-TRAILING_FILLER = frozenset({"one", "ones"})
+# Words at a brand pick's name's end that say nothing about it ("aveeno one", "Haden brand"): left out of its shown name.
+TRAILING_FILLER = frozenset({"one", "ones", "brand"})
 
 
 @dataclass(frozen=True)
@@ -556,21 +556,23 @@ def uk_name(name: str, shown: Mapping[str, str] = UK_BRAND_NAMES) -> str:
 def brand_pick_name(brand: str, product_type: str) -> str:
     """The name a brand or line is shown under when it is ranked as a pick, the brand's whole line of the requested
     type: "Lodge cast iron skillet line", "Zojirushi rice cooker line" (decision 9; Noemi's wording of 12 Oct 2026,
-    config.BRAND_PICK_NAME; it was "Lodge (their cast iron skillets)"). A name that already says the type is shown as it
-    is: "CeraVe cleanser", never "CeraVe cleanser cleanser line" (Noemi, 9 Oct 2026). Nor does a name say part of its
-    type twice: its last words that are the type's own words, or a plural or slip of them, give way to the type
-    ("Zojirushi cooker" is the "Zojirushi rice cooker line"; 12 Oct 2026). A type is written as a name shows it
-    (config.PRODUCT_TYPE_SHOWN): "Le Creuset Dutch oven line"."""
+    config.BRAND_PICK_NAME; it was "Lodge (their cast iron skillets)"). Every line is shown so, also when its name
+    already holds the type (Noemi's decision 3 of 13 Oct 2026, replacing her rule of 9 Oct, which showed such a name as
+    it is, "CeraVe cleanser"): the type is said once, so the shortest ending of the name that names the type
+    (engine.sources.mentions_product: "conditioner", "kettle", "cast iron pan") gives way to it: "Davines conditioner
+    line", "Sage electric kettle line", "Lodge cast iron skillet line". Nor does a name say part of its type twice: its
+    last words that are the type's own words, or a plural or slip of them, give way to the type ("Zojirushi cooker" is
+    the "Zojirushi rice cooker line"; 12 Oct 2026), and so do filler words at its end ("aveeno one", "Haden brand"; 13
+    Oct 2026). A type is written as a name shows it (config.PRODUCT_TYPE_SHOWN): "Le Creuset Dutch oven line"."""
     from engine.sources import mentions_product
 
-    if mentions_product(brand, product_type):
-        return brand
     type_words = [[word] for word in product_words(product_type)]
     words = brand.split()
-    # A trailing "one" is filler ("the Aveeno one", written "aveeno one"; 13 Oct 2026): the name is the brand's.
-    while len(words) > 1 and words[-1].casefold() in TRAILING_FILLER:
-        words.pop()
-    while len(words) > 1 and any(written_alike(product_words(words[-1]), word) for word in type_words):
+    ending = next((k for k in range(1, len(words)) if mentions_product(" ".join(words[-k:]), product_type)), 0)
+    if ending:
+        words = words[:-ending]
+    while len(words) > 1 and (words[-1].casefold() in TRAILING_FILLER
+                              or any(written_alike(product_words(words[-1]), word) for word in type_words)):
         words.pop()
     return BRAND_PICK_NAME.format(brand=" ".join(words), product_type=PRODUCT_TYPE_SHOWN.get(product_type, product_type))
 

@@ -311,9 +311,11 @@ def test_whether_uk_shoppers_can_buy_it_is_still_the_price_lists_job(tmp_path):
 
 def test_a_brand_line_is_still_left_out_under_a_hard_requirement(tmp_path):
     # Decided 10 Oct 2026: a whole brand can't be checked for PFAS or a non-stick coating, whatever it sells.
+    # Changed on purpose 13 Oct 2026 (Noemi's decision 1 of 13 Oct): it is ranked again, so its credible warnings can
+    # list it under Skip these, but it never qualifies as a pick.
     result = answer_request("non-stick frying pan without PFAS", library_dir=pan_library(tmp_path), prices=[],
                             product_facts=[], brand_lines=[line("Tramontina", "frying pan")], today=TODAY)
-    assert TRAMONTINA not in ranked(result)
+    assert TRAMONTINA not in qualifying(result) and TRAMONTINA not in names(result)
     assert result.left_out_not_suited == [NotSuited(TRAMONTINA, "a whole brand can't be checked for PFAS or a "
                                                                 "non-stick coating")]
 

@@ -52,7 +52,8 @@ Every step is a module of its own; this file only passes each one's output to th
   when the request has a hard requirement its product type can have ("non-stick frying pan without PFAS"; engine.
   product_facts.hard_requirements), brand picks are left out too, listed with the reason "a whole brand can't be
   checked for PFAS or a non-stick coating" (decided by Claude, 10 Oct 2026, as Noemi asked), whatever the brand-lines
-  list says it sells.
+  list says it sells. Since Noemi's decision 1 of 13 Oct 2026 such a line is still ranked, never as a pick nor "Also
+  worth a look", so its credible warnings can list it under Skip these (skip_only).
 - only threads checked live on Reddit in the last LIVE_CHECK_SHOWN_DAYS (14) days are quoted (Noemi, 9 Oct 2026): a
   thread read from Arctic Shift's archive may still hold comments people deleted on Reddit since, so it counts from
   the day a live check read it on Reddit (checked_live_at); a thread read through Parse counts from the day it was
@@ -223,6 +224,9 @@ class PipelineResult:
     # Products whose facts clash with the request by a hard rule (engine/product_facts.py, 9 Oct 2026): name and reason.
     # Since 10 Oct 2026 also brand picks, when the request has a hard requirement: a whole brand can't be checked.
     left_out_not_suited: list[NotSuited] = field(default_factory=list)
+    # The brand lines among them kept in the ranking for Skip these only, {product key: reason} (Noemi's decision 1 of
+    # 13 Oct 2026: never a pick, but listed under Skip these when their credible warnings put them there).
+    skip_only: dict[str, str] = field(default_factory=dict)
     # Brand picks that stepped aside for a specific product of their brand that also qualifies (10 Oct 2026).
     folded_brand_picks: list[FoldedBrandPick] = field(default_factory=list)
     # Brands or lines on the skip list that a shown pick belongs to: not listed as skips; their warnings are shown under
@@ -385,7 +389,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     scored, kind_notes = _score(threads, checked, kept_groups, kinds, request_needs(query),
                                 set(result.contradicting_writers), request_asks(query))
     result.ranking, more_downsides = _fold_brand_skips(
-        _fold_brand_picks(_ranked(scored, query, kind_notes, kinds, need_led), kept_groups, result), kept_groups, result)
+        _fold_brand_picks(_ranked(scored, query, kind_notes, kinds, need_led, result.skip_only), kept_groups, result),
+        kept_groups, result)
     unsuited_kinds = _unsuited_kinds(result.ranking.kinds, query, product_facts)
     folded = {item.name for item in result.folded_brand_picks}
     care = _care_tips(threads, checked, [g for g in kept_groups if g.name not in folded], kinds, query)
@@ -411,15 +416,21 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
 WIDER_READING_SHORTFALL = "no credible recommendation talks about what you asked for"
 
 
-def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool) -> RankingResult:
+def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
+            skip_only: Mapping[str, str] | None = None) -> RankingResult:
     """Module 6's ranking. In a wider reading (`need_led`) of a request that asks for something besides the product, a
     product with no credible recommendation talking about it can't be a pick (answer_request), nor "Also worth a look"
-    (13 Oct 2026)."""
+    (13 Oct 2026). `skip_only`: {product key: reason} of the brand lines a hard requirement keeps from being picks (a
+    whole brand can't be checked): never a pick nor "Also worth a look", but listed under Skip these when their credible
+    warnings put them there (Noemi's decision 1 of 13 Oct 2026)."""
     ranking = rank_products(scored, query.category, kind_notes, placements(kinds))
     if need_led and request_needs(query):
         ranking.products = [replace(p, qualifies=False, shortfall=WIDER_READING_SHORTFALL, worth_a_look=False)
                             if (p.qualifies or p.worth_a_look) and not p.breakdown.credible_recommends_fitting_need
                             else p for p in ranking.products]
+    if skip_only:
+        ranking.products = [replace(p, qualifies=False, worth_a_look=False, shortfall=skip_only[p.key])
+                            if p.key in skip_only and (p.qualifies or p.worth_a_look) else p for p in ranking.products]
     return ranking
 
 
@@ -465,7 +476,7 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         failed |= new
         result.bodies = {cid: body for cid, body in result.bodies.items() if cid not in failed}
         ranking = _ranked([m for m in scored if m.comment_id not in failed], query,
-                          [n for n in kind_notes if n.comment_id not in failed], kinds, need_led)
+                          [n for n in kind_notes if n.comment_id not in failed], kinds, need_led, result.skip_only)
         result.ranking, more_downsides = _fold_brand_skips(_fold_brand_picks(ranking, groups, result), groups, result)
         models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks)
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
@@ -846,8 +857,9 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
     reason; one with only soft clashes is kept, and their reasons go under its pick. A product with no facts entry, or
     whose entry doesn't give the facts a rule reads, is kept as it is. A brand pick has no single product, so it is
     never looked up: when the request has a hard requirement its product type can have (engine.product_facts.
-    hard_requirements), it is left out and named on the result, since a whole brand can't be checked (10 Oct 2026);
-    otherwise it is kept. A kept product whose facts don't say whether it meets a hard requirement gets a note after its
+    hard_requirements), it is left out of the picks and named on the result, since a whole brand can't be checked (10
+    Oct 2026), but kept for Skip these only (result.skip_only; Noemi's decision 1 of 13 Oct 2026: listed there when its
+    credible warnings put it there); otherwise it is kept. A kept product whose facts don't say whether it meets a hard requirement gets a note after its
     soft reasons: "we couldn't confirm it's PFAS-free" (engine.product_facts.unconfirmed, 10 Oct 2026). A kept product
     with a facts entry is shown under the entry's name, taken from the maker's page, rather than as writers spelled it
     (10 Oct 2026); its key stays, so its price check and cautions still find it. An entry under a brand's own name
@@ -868,9 +880,12 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
                                      product_facts, type_words, query.product_type)
             if facts is None:
                 if requirements:
-                    result.left_out_not_suited.append(NotSuited(group.name, uncheckable_brand_reason(requirements)))
-                else:
-                    kept.append(group)
+                    # Never a pick, but ranked, so its credible warnings can list it under Skip these (Noemi's decision
+                    # 1 of 13 Oct 2026; it was left out of the ranking altogether).
+                    reason = uncheckable_brand_reason(requirements)
+                    result.left_out_not_suited.append(NotSuited(group.name, reason))
+                    result.skip_only[group.key] = reason
+                kept.append(group)
                 continue
         else:
             facts = find_facts(group.name, group.category, product_facts, query.product_type)
