@@ -187,6 +187,19 @@ def test_the_ais_evidence_is_compared_with_hers_on_the_products_both_found():
     assert score.rules_on_ai_matched.pairs == [("c1aaaa", "long-term use", "long-term use"), ("c3cccc", "short-term use", "short-term use")]
 
 
+def test_the_level_answers_use_is_compared_too():
+    # Since 13 Oct 2026 answers take the AI's "no first-hand use" over the rules' use (engine.credibility.
+    # with_ai_evidence): the report scores that level as well, on the same products.
+    checked = {"1fake01": CheckResult(kept=[ai("c1aaaa", "CeraVe Renewing SA Cleanser", "no first-hand use"),
+                                            ai("c3cccc", "Paula's Choice 2% BHA", "short-term use")])}
+    score = score_credibility(gold(), checked)
+    assert score.as_answers_use.pairs == [("c1aaaa", "long-term use", "no first-hand use"),
+                                          ("c3cccc", "short-term use", "short-term use")]
+    lines = report_lines(score)
+    ai_line = lines[next(i for i, line in enumerate(lines) if line.startswith("evidence:")) + 1]
+    assert "as answers use them: exact 1/2 (50%), long-versus-none swaps 1 of 1" in ai_line
+
+
 def test_ai_mentions_without_evidence_are_not_compared():
     # Extractions made before instructions v6 have no evidence level.
     checked = {"1fake01": CheckResult(kept=[ai("c1aaaa", "CeraVe SA Cleanser"), ai("c3cccc", "Paula's Choice 2% BHA")])}

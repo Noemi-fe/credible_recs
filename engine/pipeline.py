@@ -143,6 +143,7 @@ from engine.config import (
 from engine.contradictions import contradicting_writers
 from engine.credibility import (
     VoiceScore, badges, copied_comment_ids, copy_groups, mention_weight, repeated_copies, score_evidence, score_voice,
+    with_ai_evidence,
 )
 from engine.extract import CheckResult, shown_comment_ids
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
@@ -1095,7 +1096,9 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
             comment = comments[m.comment_id]
             voice = voice_of(comment)
             others = [o.product for o in res.kept if o.comment_id == m.comment_id and o.product != m.product]
-            evidence = score_evidence(comment, m.product, m.stance, others)
+            # First-hand use needs the AI's reading to agree when it says no use (13 Oct 2026; with_ai_evidence).
+            evidence = with_ai_evidence(score_evidence(comment, m.product, m.stance, others), m.evidence,
+                                        m.evidence_tags)
             met = _needs_talked_about(m.quote, comment.body, needs, asks, evidence.level == "long-term use")
             weight = mention_weight(voice, evidence, m.stance) * (NEED_MATCH_BOOST if met else 1)
             scored.append(ScoredMention(

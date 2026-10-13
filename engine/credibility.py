@@ -580,6 +580,44 @@ def _score_evidence(comment: Comment, product_name: str, stance: str, other_prod
     return EvidenceScore(level, tuple(dict.fromkeys(tags)), tuple(reasons), tuple(shown))
 
 
+NO_USE = "no first-hand use"
+_VERDICT_REASON = "speaks of it from use (no time given)"
+_SECONDHAND_TAG = "secondhand"
+_AI_NO_USE_REASON = "no use of it in the AI's reading of the whole comment"
+
+
+def with_ai_evidence(evidence: EvidenceScore, ai_level: str | None, ai_tags: Iterable[str] = ()) -> EvidenceScore:
+    """The mention's evidence once the AI's own reading of it is taken in: first-hand use needs both readers to see it.
+
+    From extraction instructions v6 the AI writes an evidence level for every mention, reading the whole comment
+    (`ai_level`, with its tags `ai_tags`). When it says "no first-hand use" and these rules found use, the words the
+    rules read as use were about something else, so the mention has no first-hand use (13 Oct 2026). A review of the
+    answers had found picks backed by writers who only suggested the product: a "my" in a phrase of opinion and "for
+    me" read as the writer's own, a "mine" that was the writer's other machine, a time of use that was another product's. On
+    Noemi's labels the AI never said "no first-hand use" where she saw use (48 of the gold set's products, and all 29 of
+    the held-out kettle thread's).
+
+    One exception, from the labelling guide: a verdict on the product alone ("it's amazing", the rules' "speaks of it
+    from use") is short-term use, so it stays use unless the AI says it is someone else's experience ("secondhand").
+    Whether a plain verdict should need the AI's agreement too is Noemi's call (see eval/RUNS.md, 13 Oct 2026).
+
+    The AI's reading only ever takes use away: when it sees use the rules don't, the rules' level stands. With no
+    level from the AI (an older extraction), the rules decide alone, as before. The honesty tags stay what they are.
+    """
+    ai_tags = tuple(ai_tags)
+    if ai_level != NO_USE or evidence.level == NO_USE:
+        return evidence
+    if evidence.reasons[:1] == (_VERDICT_REASON,) and _SECONDHAND_TAG not in ai_tags:
+        return evidence
+    tags = [tag for tag in evidence.tags if tag not in ("long-term use", "short-term use")]
+    if _SECONDHAND_TAG in ai_tags and _SECONDHAND_TAG not in tags:
+        tags.append(_SECONDHAND_TAG)
+    if not set(tags) & _CONCRETE_TAGS and "vague" not in tags:
+        tags.append("vague")
+    honest = tuple(r for r in evidence.reasons if r in HONESTY_TAGS or r.startswith("compares "))
+    return EvidenceScore(NO_USE, tuple(tags), (_AI_NO_USE_REASON,) + honest, honest)
+
+
 # Words that compare one product with another ("better than", "switched from", "instead of").
 _COMPARISON = re.compile(
     r"\b(?:than|vs|versus|compared?|comparison|instead|switched|switch|prefer|preferred|beats?|superior|inferior"
@@ -714,7 +752,7 @@ def _proof_of_use(text: str, written: datetime | None) -> tuple[str, list[str]]:
     if own_use:
         return "short-term use", ["uses it (no time given)"]
     if _VERDICT.search(text):
-        return "short-term use", ["speaks of it from use (no time given)"]
+        return "short-term use", [_VERDICT_REASON]
     return "no first-hand use", ["suggests it without saying they used it"]
 
 
