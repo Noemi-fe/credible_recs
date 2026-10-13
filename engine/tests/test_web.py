@@ -86,7 +86,8 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # The contract the later website will use: change it only on purpose, and update engine/web.py's docstring.
     _, _, data = ask(REQUEST, kettle_library(tmp_path))
     # Changed on purpose 12 Oct 2026 (Noemi: show how many threads and comments each answer read): "reading".
-    assert set(data) == {"query", "answer", "threads_used", "left_out", "reading"}
+    # Changed on purpose 13 Oct 2026 (hill-climbing the live site's latency): "timing", how long a fresh answer took.
+    assert set(data) == {"query", "answer", "threads_used", "left_out", "reading", "timing"}
     assert data["reading"] == {"threads": 2, "threads_saved": 2, "comments": 11}  # 3 kettles x 3 comments, 2 warnings
     assert set(data["query"]) == {"status", "category", "product_type", "question", "message"}
     # Changed on purpose 9 Oct 2026 (decision 11, budgets): each pick has its price, and "left_out" counts the
@@ -476,3 +477,13 @@ def test_a_warmed_answer_leaves_every_answer_as_it_was(tmp_path):
     memo.forget_all()
     web.warm_answer("electric kettle", root)
     assert web.answer_json(answer_request(REQUEST, library_dir=root)) == before
+
+
+
+def test_a_fresh_answer_says_how_long_it_took_and_how_long_reddit_did(tmp_path, monkeypatch):
+    # 13 Oct 2026: to hill-climb the live site's latency, each fresh answer says its total time, the time spent waiting
+    # on live checks (overlapping checks counted once) and how many checks it made. Diagnostic only: never shown.
+    status, _, data = ask(REQUEST, kettle_library(tmp_path))
+    timing = data["timing"]
+    assert set(timing) == {"total_s", "reddit_s", "checks"}
+    assert timing["total_s"] >= timing["reddit_s"] >= 0 and timing["checks"] >= 0

@@ -94,6 +94,8 @@ The JSON for /api/answer (200):
                    "over_budget": n,               products whose known price is over the request's budget
                    "unavailable": n,               products the price list says are no longer sold (9 Oct 2026),
                    "not_suited": n},               and products whose checked facts clash with the request (9 Oct 2026)
+      "timing": {"total_s": s, "reddit_s": s,      diagnostic, never shown (13 Oct 2026): how long the answer took to
+                 "checks": n},                     work out, how long it waited on live checks, and how many it made
       "reading": {"threads": n,                    how much the answer read (Noemi, 12 Oct 2026): the threads used,
                   "threads_saved": n,              the extracted threads saved about the product,
                   "comments": n}                   and the comments the AI read in the threads used
@@ -287,12 +289,53 @@ def answer_response(request: str, library_dir: Path, quiet: bool = False) -> tup
         return _answers[key][1]
 
 
+class _TimedChecker:
+    """The live checker, timed for one answer (13 Oct 2026, hill-climbing the live site's latency): how many checks it
+    made and how long the answer waited on them, overlapping checks counted once."""
+
+    def __init__(self, checker):
+        self._checker = checker
+        self._spans: list[tuple[float, float]] = []
+        self._lock = threading.Lock()
+
+    def check(self, *args, **kwargs):
+        started = time.perf_counter()
+        try:
+            return self._checker.check(*args, **kwargs)
+        finally:
+            with self._lock:
+                self._spans.append((started, time.perf_counter()))
+
+    def __getattr__(self, name):  # anything else the pipeline asks the checker goes to the real one
+        return getattr(self._checker, name)
+
+    @property
+    def checks(self) -> int:
+        return len(self._spans)
+
+    def waited(self) -> float:
+        """Seconds during which at least one check was running."""
+        total, end = 0.0, None
+        for start, stop in sorted(self._spans):
+            if end is None or start > end:
+                total += stop - start
+                end = stop
+            elif stop > end:
+                total += stop - end
+                end = stop
+        return total
+
+
 def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple[int, str, bytes]:
     """Runs the pipeline, then checks every quote once more; one that fails refuses the whole answer."""
     with_profiles = {} if profiles is None else {"profiles": profiles}
-    if live is not None:
-        with_profiles["live_checker"] = live
+    timed = _TimedChecker(live) if live is not None else None
+    if timed is not None:
+        with_profiles["live_checker"] = timed
+    started = time.perf_counter()
     result = answer_request(request, library_dir, **with_profiles)
+    timing = {"total_s": round(time.perf_counter() - started, 2), "reddit_s": round(timed.waited(), 2) if timed else 0.0,
+              "checks": timed.checks if timed else 0}
     if result.skipped_files:  # a broken library file was left out of the answer (11 Oct 2026): say so where it runs
         print(f"Library files left out ({len(result.skipped_files)} problem(s)); first: {result.skipped_files[0]}",
               file=sys.stderr)
@@ -302,7 +345,7 @@ def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple
             asked = "a request" if quiet else repr(request)
             print(f"Refused the answer to {asked}:", *problems, sep="\n  - ", file=sys.stderr)
             return _error(500, REFUSED)
-    return 200, JSON, _json_bytes(answer_json(result))
+    return 200, JSON, _json_bytes(answer_json(result) | {"timing": timing})
 
 
 def _report_failure(quiet: bool) -> None:
