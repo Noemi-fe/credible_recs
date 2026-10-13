@@ -170,11 +170,16 @@ OUT_OF_SCOPE_LOOKALIKES = ("air conditioner", "air conditioning")
 # cream maker" isn't a moisturiser, a "crock pot" isn't a saucepan, a "vacuum sealer" isn't a vacuum cleaner. They are
 # set aside before products are looked for, so the request is asked about, or placed by the open model
 # (engine.query_model), instead of being taken for the product whose word it holds.
+# Since 13 Oct 2026 also the other kinds of knife: "knife" alone is a chef's knife, as people mean it in "a good knife",
+# but a paring or a bread knife isn't one (b07's Tojiro line had counted a writer's paring knives). Each with its
+# plural, which isn't the name and an "s".
+_OTHER_KNIVES = ("paring", "bread", "steak", "utility", "boning", "fillet", "filet", "carving", "butter", "pocket",
+                 "cheese", "oyster", "tomato", "petty")
 LOOKALIKES = (
     "ice cream", "crock pot", "instant pot", "coffee pot", "sheet pan", "cake pan", "loaf pan", "roasting pan",
     "baking pan", "muffin pan", "bundt pan", "pie pan", "tart pan", "sun hat", "sun lounger", "vacuum sealer",
     "vacuum flask", "vacuum-insulated", "vacuum insulated",
-)
+) + tuple(f"{kind} {knife}" for kind in _OTHER_KNIVES for knife in ("knife", "knives"))
 
 # Words that place a vague request in a category, so the question can be more specific.
 CATEGORY_HINTS = {

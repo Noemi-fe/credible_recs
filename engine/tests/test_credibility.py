@@ -11,7 +11,7 @@ import pytest
 from engine import config
 from engine.credibility import (
     CommenterHistory, EvidenceScore, VoiceScore, badges, copied_comment_ids, mention_weight, repeated_copies,
-    score_evidence, score_voice,
+    score_evidence, score_voice, with_ai_evidence,
 )
 from engine.extract import ExtractedAgreement
 from engine.models import Comment, Thread
@@ -512,6 +512,55 @@ def test_a_question_about_it_is_tagged():
     evidence = evidence_for("Is the Lodge skillet any good?", stance="neutral")
     assert evidence.level == "no first-hand use"
     assert "asks about it" in evidence.tags
+
+
+# --- Evidence: two readers must see the use (13 Oct 2026) ---
+# A review of the answers found picks backed by writers who never said they used the product: the rules had read
+# a "my" in a phrase of opinion, "for me" or a "mine" that meant the writer's other machine as use. The AI, reading the
+# whole comment (extraction instructions v6), had said "no first-hand use" each time, so its reading now has the last
+# word when it says so, except over a plain verdict on the product (the guide counts "it's amazing" as use).
+
+@pytest.mark.parametrize("body", [
+    "The Acme Glide kettle is the one to buy, in my book.",  # "my" before a word that isn't a thing owned
+    "For me the Acme Glide kettle is the one to get.",  # an opinion, not use
+    "You could also look at the Acme Glide kettle. Mine broke when we moved somewhere with hard water.",  # another
+])
+def test_owner_words_the_ai_reads_as_no_use_are_no_use(body):
+    rules = evidence_for(body, "Acme Glide kettle")
+    assert rules.level == "short-term use"  # what the words alone say
+    evidence = with_ai_evidence(rules, "no first-hand use", ["vague"])
+    assert evidence.level == "no first-hand use"
+    assert not {"short-term use", "long-term use"} & set(evidence.tags)
+    medium = VoiceScore("medium", ())
+    assert mention_weight(medium, evidence, "recommend") < mention_weight(medium, rules, "recommend")
+
+
+def test_a_time_that_is_another_products_gives_way_too_and_its_badge_goes():
+    rules = evidence_for("You could also look at the Acme Glide kettle, though it is pricey. Mine broke after a year "
+                         "of hard water.", "Acme Glide kettle")
+    assert rules.level == "long-term use"
+    evidence = with_ai_evidence(rules, "no first-hand use", ["mentions flaws"])
+    assert evidence.level == "no first-hand use"
+    assert "a year of use" not in evidence.badges + evidence.reasons
+    assert "mentions flaws" in evidence.tags and "mentions flaws" in evidence.badges  # honesty is still honesty
+
+
+def test_a_verdict_alone_stays_use_as_the_guide_says():
+    # The labelling guide: used without saying for how long ("it's amazing") is short-term use.
+    rules = evidence_for("The Acme Glide kettle is fantastic.", "Acme Glide kettle")
+    assert with_ai_evidence(rules, "no first-hand use", ["vague"]) == rules
+
+
+def test_a_verdict_the_ai_reads_as_someone_elses_experience_is_no_use():
+    rules = evidence_for("The Acme Glide kettle is fantastic.", "Acme Glide kettle")
+    assert with_ai_evidence(rules, "no first-hand use", ["secondhand"]).level == "no first-hand use"
+
+
+@pytest.mark.parametrize("ai_level", ["short-term use", "long-term use", None])
+def test_the_ais_reading_never_adds_use_and_without_one_the_rules_decide(ai_level):
+    for body in ("Get the Acme Glide kettle.", "I've had my Acme Glide kettle for 3 years."):
+        rules = evidence_for(body, "Acme Glide kettle")
+        assert with_ai_evidence(rules, ai_level, []) == rules
 
 
 # --- Evidence: honesty ---

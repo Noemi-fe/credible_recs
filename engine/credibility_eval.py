@@ -34,7 +34,9 @@ engine.extraction_eval pairs them, so "CeraVe SA" and "CeraVe Renewing SA Cleans
 is compared with hers: exact agreement, and how many of her long-term-use and no-first-hand-use labels it swapped.
 The rules' level on those very products is shown beside it, so the AI and the rules are compared on equal terms.
 The held-out kettle thread is the fair test of v6 (Noemi's decision 2), so the AI is scored there too, on a line
-of its own; the rules still aren't. Until a labelled thread has a v6 extraction, the report says so.
+of its own; the rules still aren't. Until a labelled thread has a v6 extraction, the report says so. Since 13 Oct 2026
+answers use the rules' level unless the AI says "no first-hand use" (engine.credibility.with_ai_evidence), so the same
+line also scores that level, "as answers use them", on the same products.
 
 The report lists only counts, levels and comment ids: never comment text, never product names.
 
@@ -49,7 +51,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from engine.config import CREDIBILITY_AGREEMENT_TARGET, EVIDENCE_LEVELS, VOICE_LEVELS
-from engine.credibility import copied_comment_ids, score_evidence, score_voice
+from engine.credibility import copied_comment_ids, score_evidence, score_voice, with_ai_evidence
 from engine.extract import CheckResult, ExtractedMention, ExtractionError, load_checked
 from engine.extraction_eval import pair_up
 from engine.gold import DEFAULT_GOLD_DIR, GoldSet, GoldSetError, load_gold_set
@@ -140,6 +142,9 @@ class CredibilityAgreement:
     ai_evidence: LevelAgreement = field(default_factory=lambda: LevelAgreement(EVIDENCE_LEVELS))
     rules_on_ai_matched: LevelAgreement = field(default_factory=lambda: LevelAgreement(EVIDENCE_LEVELS))
     ai_evidence_held_out: LevelAgreement = field(default_factory=lambda: LevelAgreement(EVIDENCE_LEVELS))
+    # The level answers use since 13 Oct 2026, on the same products: the rules', unless the AI says no first-hand use
+    # (engine.credibility.with_ai_evidence).
+    as_answers_use: LevelAgreement = field(default_factory=lambda: LevelAgreement(EVIDENCE_LEVELS))
 
 
 def score_credibility(
@@ -195,16 +200,19 @@ def _compare_comment(score: CredibilityAgreement, comment, thread, her_voice, he
     rules_voice = score_voice(comment, thread, agreements, copied=copied)
     score.voice.pairs.append((comment.id, her_voice.voice, rules_voice.level))
     score.voice_tags.add(her_voice.tags, rules_voice.tags)
-    rules_levels = []
+    rules_scores = []
     for label in her_products:
         others = [other.product for other in her_products if other is not label]
         rules_evidence = score_evidence(comment, label.product, label.stance, others)
         score.evidence.pairs.append((comment.id, label.evidence, rules_evidence.level))
         score.evidence_tags.add(label.tags, rules_evidence.tags)
-        rules_levels.append(rules_evidence.level)
-    for h, ai_level in _matched_with_ai(her_products, ai_mentions):
-        score.ai_evidence.pairs.append((comment.id, her_products[h].evidence, ai_level))
-        score.rules_on_ai_matched.pairs.append((comment.id, her_products[h].evidence, rules_levels[h]))
+        rules_scores.append(rules_evidence)
+    for h, t in _paired_with_ai(her_products, ai_mentions):
+        hers, theirs = her_products[h].evidence, ai_mentions[t]
+        score.ai_evidence.pairs.append((comment.id, hers, theirs.evidence))
+        score.rules_on_ai_matched.pairs.append((comment.id, hers, rules_scores[h].level))
+        answers = with_ai_evidence(rules_scores[h], theirs.evidence, theirs.evidence_tags)
+        score.as_answers_use.pairs.append((comment.id, hers, answers.level))
 
 
 def _by_comment(mentions: list[ExtractedMention]) -> dict[str, list[ExtractedMention]]:
@@ -218,7 +226,12 @@ def _by_comment(mentions: list[ExtractedMention]) -> dict[str, list[ExtractedMen
 def _matched_with_ai(her_products: list, ai_mentions: list[ExtractedMention]) -> list[tuple[int, str]]:
     """Her products in one comment that the AI found too, with the AI's own evidence level: (her product's position,
     the AI's level). The AI's mentions without a level (extracted before instructions v6) are left out."""
-    return [(h, ai_mentions[t].evidence) for h, t in pair_up(her_products, ai_mentions) if ai_mentions[t].evidence]
+    return [(h, ai_mentions[t].evidence) for h, t in _paired_with_ai(her_products, ai_mentions)]
+
+
+def _paired_with_ai(her_products: list, ai_mentions: list[ExtractedMention]) -> list[tuple[int, int]]:
+    """(her product's position, the AI's mention's position) for her products the AI found with a level of its own."""
+    return [(h, t) for h, t in pair_up(her_products, ai_mentions) if ai_mentions[t].evidence]
 
 
 # --- The report ---
@@ -282,7 +295,8 @@ def _ai_evidence_lines(score: CredibilityAgreement) -> list[str]:
         return ["  the AI's own level (extraction instructions v6): no v6 extractions yet"]
     if ai.total:
         lines = [f"  the AI's own level (v6), on the {ai.total} of these products it found: {_agreement(ai)} | "
-                 f"the rules on the same {ai.total}: {_agreement(score.rules_on_ai_matched)}"]
+                 f"the rules on the same {ai.total}: {_agreement(score.rules_on_ai_matched)} | the rules with the AI's "
+                 f"no-use reading, as answers use them: {_agreement(score.as_answers_use)}"]
     else:
         lines = ["  the AI's own level (v6): no v6 extractions of the scored threads yet"]
     if held_out.total:

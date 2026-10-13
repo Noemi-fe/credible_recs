@@ -15,6 +15,7 @@ from engine import pipeline
 from engine.answer import unverified_claims
 from engine.config import PRICE_MAX_AGE_DAYS
 from engine.pipeline import _another_type_by_ai, answer_request
+from engine.sources import mentions_product
 from engine.prices import Price
 from engine.tests.factories import make_comment, make_thread, write_gold
 
@@ -366,6 +367,120 @@ def test_without_a_type_the_name_rule_still_decides(tmp_path):
     ])
     kept, left_out = kept_and_left_out(answer_request(REQUEST, library_dir=lib))
     assert kept == ["Le Creuset", "Zojirushi kettle"] and left_out == ["Lodge cast iron skillet"]
+
+
+# --- A mention about another type of product never counts for one of the requested type (13 Oct 2026) ---
+# Found reviewing the answers: a brand named alone in a moisturiser sentence had joined the brand's scrub and counted
+# for an exfoliant; a hot water dispenser stood for a kettle because a writer's bare "Panasonic kettle" had joined it; a
+# brand line of chef knives counted its paring knives. Which products are of the requested type is decided as before,
+# by most of their mentions; then, inside those, a mention the AI types as another type whose own words (its name and
+# quote) don't name the requested type is left out, and the mentions are grouped again without it.
+
+def product_mentions(result, name: str) -> list[str]:
+    return sorted(m.comment_id for p in result.ranking.products if p.name == name for m in p.mentions)
+
+
+def test_a_brands_mention_of_another_type_doesnt_count_for_its_product_of_the_type(tmp_path):
+    lib = typed_library(tmp_path, KETTLE_TITLE, [
+        ("k1aaaa", "Brightline Glass Kettle", "electric kettle", "My Brightline Glass Kettle has lasted 5 years."),
+        ("k2aaaa", "Brightline", "toaster", "Brightline makes a decent toaster too, ours browns bread evenly."),
+    ])
+    result = answer_request(REQUEST, library_dir=lib)
+    assert product_mentions(result, "Brightline Glass Kettle") == ["k1aaaa"]
+    assert result.mentions_of_another_type == ["Brightline"]
+
+
+def test_a_product_of_another_type_doesnt_take_a_brands_kettle_mention_with_it(tmp_path):
+    # The dispenser and a writer's bare "Corvo" kettle tied on type, so the product stayed in, under the dispenser's name.
+    lib = typed_library(tmp_path, KETTLE_TITLE, [
+        ("k1aaaa", "Corvo hot water dispenser 4l", "water boiler", "Ours has kept water hot for 11 years now."),
+        ("k2aaaa", "Corvo", "electric kettle", "Our Corvo kettle did 9 years of daily boiling."),
+    ])
+    result = answer_request(REQUEST, library_dir=lib)
+    names = [p.name for p in result.ranking.products]
+    assert "Corvo hot water dispenser 4l" not in names
+    assert result.mentions_of_another_type == ["Corvo hot water dispenser 4l"]
+    assert product_mentions(result, "Corvo") == ["k2aaaa"]
+
+
+def test_the_word_a_type_ends_with_doesnt_name_the_requested_type(tmp_path):
+    # "knife" is a chef knife's word, but a writer's paring knife is no chef's knife.
+    lib = typed_library(tmp_path, "Best first chef's knife?", [
+        ("k1aaaa", "Kanto Gyuto", "chef knife", "My Kanto Gyuto has been my daily knife for 6 years."),
+        ("k1bbbb", "Kanto", "paring knife", "The Kanto paring knives are the best knife in my drawer."),
+        ("k2aaaa", "Kanto Gyuto", "chef knife", "The Kanto Gyuto, 4 years in, still sharp."),
+    ])
+    result = answer_request("first chef's knife", library_dir=lib)
+    assert product_mentions(result, "Kanto Gyuto") == ["k1aaaa", "k2aaaa"]
+
+
+def test_a_mention_whose_words_name_the_requested_type_counts_whatever_its_type(tmp_path):
+    # The AI's types are noisy at the edges; the writer's own words saying it is the requested type keep it in.
+    lib = typed_library(tmp_path, KETTLE_TITLE, [
+        ("k1aaaa", "Brightline Glass Kettle", "electric kettle", "My Brightline Glass Kettle has lasted 5 years."),
+        ("k1bbbb", "Brightline Glass Kettle", "electric kettle", "Brightline Glass Kettle, 3 years and counting."),
+        ("k1cccc", "Brightline Glass Kettle", "electric kettle", "I love the Brightline Glass Kettle."),
+        ("k2aaaa", "Brightline Glass Kettle", "teapot", "The Brightline Glass Kettle makes my tea every day."),
+        ("k2bbbb", "Brightline", "teapot", "My Brightline electric kettle boils fast."),
+    ])
+    result = answer_request(REQUEST, library_dir=lib)
+    assert product_mentions(result, "Brightline Glass Kettle") == ["k1aaaa", "k1bbbb", "k1cccc", "k2aaaa", "k2bbbb"]
+
+
+def test_a_tie_keeps_a_product_in_only_when_one_of_the_tied_types_is_the_requested_one():
+    # A tie keeps a product in because the AI isn't sure what it is: but a tie between a hair mask and a leave-in
+    # treatment is sure it isn't a conditioner.
+    assert _another_type_by_ai(["electric kettle", "stovetop kettle"], "electric kettle") is False
+    assert _another_type_by_ai(["gooseneck kettle", "water boiler"], "electric kettle") is False
+    assert _another_type_by_ai(["water boiler", "samovar"], "electric kettle") is True
+    assert _another_type_by_ai(["hair mask", "leave-in treatment"], "conditioner") is True
+
+
+def test_mentions_of_another_type_are_left_out_and_named_apart(tmp_path):
+    # Named apart from the products left out whole (left_out_as_other_type): the product itself stays in.
+    lib = typed_library(tmp_path, KETTLE_TITLE, [
+        ("k1aaaa", "Zojirushi kettle", "electric kettle", ZOJI_1),
+        ("k1bbbb", "Zojirushi kettle", "electric kettle", ZOJI_2),
+        ("k2aaaa", "Zojirushi", "rice cooker", "Our Zojirushi makes perfect rice every night."),
+        ("k2bbbb", "Zojirushi", "rice cooker", "The Zojirushi makes rice for four in no time."),
+    ])
+    result = answer_request(REQUEST, library_dir=lib)
+    assert product_mentions(result, "Zojirushi kettle") == ["k1aaaa", "k1bbbb"]
+    assert result.mentions_of_another_type == ["Zojirushi"]  # each name once
+    assert result.left_out_as_other_type == []
+
+
+def test_a_brand_listed_once_per_type_in_one_comment_keeps_its_mention_of_the_requested_type(tmp_path):
+    # The AI lists a brand recommended for its kettle and its toaster as two mentions, the same but for their types (as
+    # it did for a haircare brand's shampoo and conditioner): only the toaster's is left out.
+    both = "Everything I have from Brightline has lasted 5 years."  # names neither type
+    threads = [kettle_thread("1kett01", [comment("k1aaaa", "1kett01", both)]),
+               kettle_thread("1kett02", [comment("k2aaaa", "1kett02", "Brightline, 6 years and still boiling.")])]
+    root = write_gold(tmp_path / "library", threads, voices=None, mentions=None)
+    (root / "extracted").mkdir()
+    for thread_id, mentions in {
+        "1kett01": [mention("k1aaaa", "Brightline", both) | {"product_type": "electric kettle"},
+                    mention("k1aaaa", "Brightline", both) | {"product_type": "toaster"}],
+        "1kett02": [mention("k2aaaa", "Brightline", "Brightline, 6 years and still boiling.")
+                    | {"product_type": "electric kettle"}],
+    }.items():
+        (root / "extracted" / f"{thread_id}.json").write_text(json.dumps({
+            "thread_id": thread_id, "instructions_version": "extract-v6", "extracted_at": "2026-10-09T10:00:00Z",
+            "extractor": "claude-code", "mentions": mentions,
+        }), encoding="utf-8")
+    result = answer_request(REQUEST, library_dir=root)
+    assert product_mentions(result, "Brightline") == ["k1aaaa", "k2aaaa"]
+    assert result.mentions_of_another_type == ["Brightline"]
+
+
+@pytest.mark.parametrize("product_type", ["paring knife", "bread knife", "steak knives", "utility knife",
+                                          "boning knife", "fillet knife", "carving knife", "pocket knife"])
+def test_a_knife_of_another_kind_is_no_chef_knife(product_type):
+    # "knife" alone names a chef's knife (module 1: what people mean by "a good knife"), but a paring or bread knife is
+    # another kind of knife (engine.query.LOOKALIKES, 13 Oct 2026): b07's Tojiro line had counted a writer's paring knives.
+    assert _another_type_by_ai([product_type], "chef knife") is True
+    assert not mentions_product(f"Which {product_type} should I get?", "chef knife")
+    assert mentions_product(f"A chef's knife and a {product_type}", "chef knife")
 
 
 # --- Review fixes, 9 Oct 2026 ---

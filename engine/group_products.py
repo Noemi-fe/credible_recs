@@ -80,6 +80,10 @@ class ProductMention:
     # Extra information, not part of which mention this is: compare=False keeps it out of equality and hashing, so
     # a mention looked up without its type (as the pipeline does) still finds its group.
     product_type: str | None = field(default=None, compare=False)
+    # The mention's supporting quote (checked word for word at extraction), extra information like the type: the
+    # pipeline reads it to tell whether a mention the AI typed as another type still names the requested one (13 Oct
+    # 2026). "" when not given.
+    quote: str = field(default="", compare=False)
 
 
 @dataclass
@@ -108,7 +112,7 @@ class ProductGroup:
 def mentions_from_checked(checked: dict[str, CheckResult]) -> list[ProductMention]:
     """The kept mentions of checked extractions ({thread id: CheckResult}, from engine.extract.load_checked)."""
     return [
-        ProductMention(thread_id, m.comment_id, m.product, m.category, m.stance, m.product_type)
+        ProductMention(thread_id, m.comment_id, m.product, m.category, m.stance, m.product_type, m.quote)
         for thread_id, result in checked.items()
         for m in result.kept
     ]

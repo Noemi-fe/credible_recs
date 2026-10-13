@@ -94,21 +94,46 @@ def _covering_pattern(product_type: str) -> re.Pattern:
     return re.compile(rf"\b(?:{alternatives})s?\b", re.IGNORECASE)
 
 
-def mentions_product(text: str, product_type: str) -> bool:
+def mentions_product(text: str, product_type: str, leave_aside: str = "") -> bool:
     """True if the text names the product, allowing one wrong letter in long names ("suncreen" for "sunscreen").
 
     A word of the product's inside a longer name of another product doesn't count (12 Oct 2026: "pot" in "tea pot"
     or "crock pot" had brought teapot and slow-cooker threads, and their advice, into a saucepan answer; "shampoo" in
-    "dry shampoo" likewise)."""
+    "dry shampoo" likewise).
+
+    `leave_aside`: one word that doesn't name the product on its own here, in any of its forms (singular, plural or a
+    slip: "knife", "knives"): the last word of another type the text is said to be about, so "knife" in a comment
+    about a paring knife doesn't name a chef's knife (13 Oct 2026). Longer names that hold it still count ("chef's
+    knife")."""
     covers = None
     for match in _product_pattern(product_type).finditer(text):
+        if leave_aside and _same_word_as(match.group(0), leave_aside):
+            continue
         if covers is None:
             covers = [(c.start(), c.end()) for c in _covering_pattern(product_type).finditer(text)]
         if not any(s <= match.start() and match.end() <= e and e - s > match.end() - match.start() for s, e in covers):
             return True
     long_names = [w for w in _product_words(product_type) if " " not in w and len(w) >= TYPO_MIN_LENGTH]
     tokens = {t.removesuffix("s") for t in re.findall(r"[a-z]+", text.lower()) if len(t) >= TYPO_MIN_LENGTH - 1}
+    tokens = {t for t in tokens if not (leave_aside and _same_word_as(t, leave_aside))}
     return any(one_edit_apart(t, w) for t in tokens for w in long_names)
+
+
+def _singular(word: str) -> str:
+    """A word in the singular, by English's usual rules: "knives" -> "knife", "brushes" -> "brush", "pans" -> "pan"."""
+    word = word.lower()
+    if word.endswith("ives") and len(word) > 4:
+        return word[:-3] + "fe"
+    if word.endswith(("ches", "shes", "sses", "xes")):
+        return word[:-2]
+    return word.removesuffix("s") if not word.endswith("ss") else word
+
+
+def _same_word_as(found: str, word: str) -> bool:
+    """Whether a word found in a text is `word`, in any form: singular or plural, or a slip of a word of 5 letters or
+    more ("moisturizer" for "moisturiser")."""
+    found, word = _singular(found), _singular(word)
+    return found == word or (len(word) >= 5 and one_edit_apart(found, word))
 
 
 # Typos are only forgiven in names this long: shorter ones have real neighbours ("cleaner" is one letter from "cleanser").
