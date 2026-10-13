@@ -88,7 +88,10 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # Changed on purpose 12 Oct 2026 (Noemi: show how many threads and comments each answer read): "reading".
     # Changed on purpose 13 Oct 2026 (hill-climbing the live site's latency): "timing", how long a fresh answer took.
     assert set(data) == {"query", "answer", "threads_used", "left_out", "reading", "timing"}
-    assert data["reading"] == {"threads": 2, "threads_saved": 2, "comments": 11}  # 3 kettles x 3 comments, 2 warnings
+    # Changed on purpose 13 Oct 2026 (Noemi's testing; the UX builder): "reading" also says whether the first threads
+    # gave too few picks, so more were read ("read_more"), for the page's reading strip.
+    assert data["reading"] == {"threads": 2, "threads_saved": 2, "comments": 11,  # 3 kettles x 3 comments, 2 warnings
+                               "read_more": False}
     # Changed on purpose 13 Oct 2026 (active ingredients, the orchestrator's decision after Noemi's live test): the
     # query also says which ingredients every product shown must contain, and whether the request is ingredient-led.
     assert set(data["query"]) == {"status", "category", "product_type", "question", "message", "ingredients",
@@ -124,12 +127,15 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # "downsides_share" ("1 of 15 credible voices warned against it:"), or null when no downside is shown.
     # Changed on purpose 13 Oct 2026 (Noemi's decision 4): each pick also has its one-line "summary", {"text",
     # "sources"}, or null when it has none (or one that fails a check).
+    # Changed on purpose 13 Oct 2026 (the UX builder): each pick also has its "voices", the credible voices behind it as
+    # numbers (recommend, high, medium, warn, threads) for the page's credibility meter: the same writers its reason,
+    # support line and share line count in words.
     # Changed on purpose 13 Oct 2026 (active ingredients): each pick also has its "form" in an ingredient-led answer
     # ("pads", "toner"), or null.
     assert set(data["answer"]["picks"][0]) == {"rank", "product_key", "name", "reason", "support", "quotes",
                                                "downsides", "disagreement", "score", "breakdown", "price",
                                                "availability", "care", "cautions", "model", "model_price",
-                                               "downsides_share", "summary", "form"}
+                                               "downsides_share", "summary", "voices", "form"}
     assert set(data["answer"]["picks"][0]["quotes"][0]) == {"text", "comment_id", "url", "badges"}
     assert set(data["answer"]["picks"][0]["price"]) == {"text", "amount", "currency", "shop", "url", "checked_on",
                                                         "budget_status", "budget_note"}
@@ -438,8 +444,15 @@ def test_the_page_carries_the_care_heading_and_draws_care_tips_as_quotes(tmp_pat
 
 def test_the_page_says_how_many_threads_and_comments_an_answer_read():
     # Noemi, 12 Oct 2026: shown under every answer's title, not only in the small print.
+    # Changed on purpose 13 Oct 2026 (Noemi's testing, through the orchestrator: "Based on 16 Reddit threads and 469
+    # comments read for this answer, of 25 threads saved about exfoliant" confused her): still under every answer's
+    # title, now as a strip of numbers in plain words: the threads read (the most relevant to the request), the comments
+    # in them, and the threads saved about the product (engine/tests/test_web_ux.py has the strip's own test).
     page = web.search_page().decode("utf-8")
-    assert "{threads} Reddit threads and {comments} comments" in page
+    assert "readingStrip(data.reading" in page
+    for label in ('readingThreads: ["Reddit thread read", "Reddit threads read"]',
+                  'readingComments: ["comment in them", "comments in them"]'):
+        assert label in page, label
 
 
 # --- Getting ready before the first visitor (latency, 12 Oct 2026) ---
@@ -559,10 +572,11 @@ def test_also_worth_a_look_comes_through_in_the_json(tmp_path):
     assert [item["name"] for item in data["answer"]["worth_a_look"]] == ["Smeg kettle"]
     assert "Smeg kettle" not in [pick["name"] for pick in data["answer"]["picks"]]
     assert data["answer"]["worth_note"].startswith("2 credible voices each")
+    # Changed on purpose 13 Oct 2026 (the UX builder): "voices", as for a pick (its credibility meter).
     # Changed on purpose 13 Oct 2026 (active ingredients): each item also has its "form", as picks do.
     assert set(data["answer"]["worth_a_look"][0]) == {"product_key", "name", "reason", "quotes", "downsides",
                                                      "downsides_share", "disagreement", "score", "breakdown", "price",
-                                                     "availability", "cautions", "summary", "form"}
+                                                     "availability", "cautions", "summary", "voices", "form"}
 
 
 def test_the_page_draws_also_worth_a_look_and_summaries_with_the_answers_own_words(tmp_path):

@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
 <title>Credible picks</title>
 <script>
 /* =====================================================================================================
@@ -13,18 +14,35 @@
    support lines, disagreement flags, messages, module 1's question or polite no, and the headings
    ("In their words", "Known downsides", "How to take care of it", "see the comment", the price lines, ...).
    {name} is filled in by the page.
+   The redesign of 13 Oct 2026 (the UX builder; Noemi: "something way nicer and advanced"; wording decided by
+   Claude, PROPOSED like the rest) added the hero's words, the three steps, recent searches, the reading strip,
+   the credibility meter, "At a glance", the cards' "more" toggles and the answer's tools.
    ===================================================================================================== */
 const LABELS = {
   pageTitle: "Credible picks",
   heading: "Credible picks",
+  kicker: "Skincare · Haircare · Kitchen",
+  heroTitle: "Product picks from the people who really know.",
   intro: "Three picks for skincare, haircare and kitchen gear, ranked by how credible the people recommending them are on Reddit, not by how popular a product is. Every quote is checked word for word against its comment.",
   searchLabel: "What are you looking for?",
   searchPlaceholder: "e.g. electric kettle that lasts 10+ years",
   searchHint: "Say what it is and anything that matters: budget, skin type, how long it should last.",
   searchButton: "Find picks",
   examplesHeading: "Try an example",
-  categories: { skincare: "Skincare", kitchen: "Kitchen" },
-  loading: "Reading the saved threads and checking every quote. This takes a few seconds.",
+  categories: { skincare: "Skincare", haircare: "Haircare", kitchen: "Kitchen" },
+  // Recent searches (13 Oct 2026): kept in this browser's own storage only, never sent anywhere; Clear removes them.
+  recentHeading: "Your recent searches",
+  recentNote: "Kept in this browser only.",
+  recentClear: "Clear",
+  recentClearLabel: "Clear your recent searches",
+  stepsHeading: "How it works",
+  steps: [
+    ["Reads the threads", "Saved Reddit threads from the communities that talk about these products in depth."],
+    ["Weighs every voice", "Who wrote it, whether they've used it, whether they mention its flaws: credible voices count more than loud ones."],
+    ["Checks every quote", "Word for word against its comment, and again on Reddit, so a deleted or edited comment is never quoted."],
+  ],
+  loading: "Reading saved Reddit threads and checking every quote word for word…",
+  loadingSlow: "Still working: a quote not checked lately is read again on Reddit before it's shown, which can take a few more seconds.",
   done: "Done.",  // read out by screen readers only, when an answer has been drawn
   clarifyHeading: "One question first",
   clarifyHint: "Add the answer to your request and search again.",
@@ -32,9 +50,53 @@ const LABELS = {
   badges: "Why this voice counts",
   newTab: "(opens Reddit in a new tab)",
   shopNewTab: "(opens the shop's page in a new tab)",  // added 9 Oct 2026 (decision 11, budgets)
-  threadsRead: "Saved Reddit threads read for this answer: {n}.",
-  reading: "Based on {threads} Reddit threads and {comments} comments, read for this answer",
-  readingSaved: " (of {saved} threads saved about {product_type})",
+  // What the answer read (13 Oct 2026, from Noemi's testing: "Based on 16 Reddit threads ... of 25 threads saved about
+  // exfoliant" confused her). [one, many] forms, with the number drawn large above them.
+  readingHeading: "What this answer read",
+  readingThreads: ["Reddit thread read", "Reddit threads read"],
+  readingMost: "the most relevant to your request",
+  readingMore: "more than usual: the most relevant ones gave too few picks",
+  readingAll: "all we've saved about this kind of product",
+  readingComments: ["comment in them", "comments in them"],
+  readingSaved: ["thread saved about this kind of product", "threads saved about this kind of product"],
+  // For a request naming an active ingredient and no type (13 Oct 2026, with main's ingredient-led answers): the
+  // threads saved are those about the ingredient.
+  readingAllIngredient: "all we've saved about {ingredient}",
+  readingSavedIngredient: ["thread saved about {ingredient}", "threads saved about {ingredient}"],
+  readingWhyHeading: "Why not read them all?",
+  readingWhy: "The rest are less related to what you asked. When the most relevant threads don't give {picks} picks, we read more of them too, and show that wider reading if it finds more picks.",
+  // The credibility meter (13 Oct 2026): the numbers its pick's own sentences say in words.
+  meterHeading: "Credible voices",
+  meterFor: ["{n} credible voice recommends it", "{n} credible voices recommend it"],
+  meterAgainst: ["{n} warned against it", "{n} warned against it"],
+  meterNoneAgainst: "none warned against it",
+  meterThreads: ["across {n} thread", "across {n} threads"],
+  // "At a glance" (13 Oct 2026): the picks side by side.
+  glanceHeading: "At a glance",
+  glancePick: "Pick",
+  glanceVoices: "Credible voices",
+  glanceThreads: "Threads",
+  glancePrice: "Price",
+  glanceTally: "{for} for, {against} against",
+  glanceNoPrice: "Not checked yet",
+  // A card's toggle for the rest of its evidence (13 Oct 2026).
+  moreQuotes: ["1 more quote", "{n} more quotes"],
+  moreDownsides: ["1 known downside", "{n} known downsides"],
+  moreCare: ["1 care tip", "{n} care tips"],
+  // An "Also worth a look" row's tag (13 Oct 2026, round two): how much backs it, in a few words.
+  tagVoices: ["{n} credible voice", "{n} credible voices"],
+  tagThreads: ["{n} thread", "{n} threads"],
+  // A long list's toggle (13 Oct 2026): "Skip these" shows its strongest first, the rest a click away.
+  showMore: ["Show 1 more", "Show {n} more"],
+  showFewer: "Show fewer",
+  // The answer's tools (13 Oct 2026).
+  copyLink: "Copy link",
+  copied: "Link copied",
+  copyFailed: "Couldn't copy the link",
+  expandAll: "Open all details",
+  collapseAll: "Close all details",
+  retry: "Try again",
+  leftOutHeading: "About this answer",
   // The footnote's left-out counts (12 Oct 2026; Noemi asked whether "(19)" counted mentions or threads: it counts
   // names), in words, with a few of the names; wording decided by Claude. [one, many]: {n} is the count.
   leftOut: "Left out of the ranking: {parts}.",
@@ -88,225 +150,573 @@ const LABELS = {
 };
 </script>
 <style>
-/* Colours: light by default, dark when the computer is set to dark mode. Text colours meet WCAG AA contrast. */
+/* Credible picks, redesigned 13 Oct 2026 (the UX builder): calm and editorial, a warm neutral palette with one green
+   accent for trust, the system's own serif for headings (no font is downloaded) and its sans for everything else.
+   Light by default, dark when the computer is set to dark mode; every text colour meets WCAG AA contrast on the
+   surfaces it sits on (4.5:1 or more). Motion is small and never holds content back; it stops for reduced motion.
+   The how-we-score page (engine/how_page.py) copies this block in, so both pages look alike. */
 :root {
   color-scheme: light dark;
-  --bg: #f5f4f0;
-  --surface: #ffffff;
-  --sunken: #f0eee9;
-  --text: #1c1c1e;
-  --muted: #5c5c63;
-  --line: #dedbd3;
-  --accent: #2a5fc4;
-  --accent-soft: #e5edfb;
+  --bg: #f6f3ee;
+  --surface: #fffdf9;
+  --sunken: #f1ede5;
+  --text: #1c1a17;
+  --muted: #5d574e;
+  --line: #e4ded3;
+  --line-strong: #cdc4b5;
+  --accent: #1d6a51;
+  --accent-hover: #15543f;
+  --accent-soft: #e2efe8;
   --on-accent: #ffffff;
-  --ok: #1b7044;
-  --ok-soft: #e2f2e8;
-  --warn: #8a4a08;
-  --warn-soft: #fbeedb;
-  --bad: #b3261e;
-  --bad-soft: #fbe5e3;
+  --ok: #1d6a51;
+  --ok-soft: #e2efe8;
+  --warn: #8a4f0b;
+  --warn-soft: #fbefdc;
+  --bad: #a5311f;
+  --bad-soft: #fbe5df;
+  --bar-for: #2f8566;
+  --bar-against: #e0a245;
+  --bar-against-2: #eebd73;
+  --bar-track: #e9e3d8;
+  /* Under the picks (13 Oct 2026, round two): one colour family per kind of section; text colours meet AA on their
+     grounds (engine/tests/test_web_ux.py computes every pair). */
+  --worth: #5d574e;
+  --worth-bg: #ece6db;
+  --worth-soft: #e4ddd0;
+  --worth-line: #d9cfbf;
+  --skip: #9f2733;
+  --skip-bg: #fbeaea;
+  --skip-soft: #f7dadc;
+  --skip-line: #efc9cc;
+  --advice: #235a87;
+  --advice-bg: #e8f0f7;
+  --advice-soft: #d9e7f3;
+  --advice-line: #c9dbea;
+  --care: #1d6a51;
+  --care-bg: #e3f0e8;
+  --care-soft: #d3e8db;
+  --care-line: #c0dccb;
+  --quiet-bg: #efebe4;
+  --shadow: 0 1px 2px rgba(48, 36, 16, .05), 0 6px 20px rgba(48, 36, 16, .06);
+  --serif: ui-serif, "New York", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --radius: 14px;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #141416;
-    --surface: #1d1d21;
-    --sunken: #25252a;
-    --text: #ebeae6;
-    --muted: #a8a7ae;
-    --line: #36363c;
-    --accent: #80a8f5;
-    --accent-soft: #22304a;
-    --on-accent: #0e1420;
-    --ok: #74d39d;
-    --ok-soft: #1b3326;
-    --warn: #efb46a;
-    --warn-soft: #382a17;
-    --bad: #ff8a80;
-    --bad-soft: #3a1d1b;
+    --bg: #131210;
+    --surface: #1c1b18;
+    --sunken: #232220;
+    --text: #ece8e1;
+    --muted: #a9a297;
+    --line: #2e2c28;
+    --line-strong: #45423c;
+    --accent: #6fc4a1;
+    --accent-hover: #8fd6b8;
+    --accent-soft: #1b2f27;
+    --on-accent: #0c1d16;
+    --ok: #6fc4a1;
+    --ok-soft: #1b2f27;
+    --warn: #e7b366;
+    --warn-soft: #2e2517;
+    --bad: #f09a89;
+    --bad-soft: #341d19;
+    --bar-for: #4fae88;
+    --bar-against: #e3ac5c;
+    --bar-against-2: #b98637;
+    --bar-track: #2c2a26;
+    --worth: #c4b9a6;
+    --worth-bg: #2a251d;
+    --worth-soft: #383126;
+    --worth-line: #4a4134;
+    --skip: #f3a3ab;
+    --skip-bg: #2c171a;
+    --skip-soft: #3b1f22;
+    --skip-line: #4b2a2e;
+    --advice: #8ec0ea;
+    --advice-bg: #152029;
+    --advice-soft: #1c2c3a;
+    --advice-line: #263a4c;
+    --care: #6fc4a1;
+    --care-bg: #15271f;
+    --care-soft: #1b3328;
+    --care-line: #26442f;
+    --quiet-bg: #191816;
+    --shadow: 0 1px 0 rgba(0, 0, 0, .35);
   }
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
-a { color: var(--accent); }
-:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+html { scrollbar-gutter: stable; -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--sans); }
+a { color: var(--accent); text-underline-offset: .18em; text-decoration-thickness: 1px; }
+a:hover { color: var(--accent-hover); text-decoration-thickness: 2px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.wrap { max-width: 860px; margin: 0 auto; padding: 0 16px; }
-h1, h2, h3, h4 { line-height: 1.25; }
-
-/* The top: name and what it does. */
-.site { padding: 28px 0 8px; }
-.site h1 { margin: 0 0 6px; font-size: 28px; }
-.intro { margin: 0; color: var(--muted); max-width: 62ch; }
-.how-link { margin: 6px 0 0; font-size: 14px; }
-
-/* The search box. */
-.search { margin: 20px 0 8px; }
-.search label { display: block; font-weight: 650; margin-bottom: 6px; }
-.search-row { display: flex; gap: 8px; }
-.search input { flex: 1 1 auto; min-width: 0; font: inherit; padding: 10px 12px; border: 1px solid var(--muted); border-radius: 8px; background: var(--surface); color: var(--text); }
-.search button { font: inherit; font-weight: 650; padding: 10px 18px; border: 0; border-radius: 8px; background: var(--accent); color: var(--on-accent); cursor: pointer; }
-.search button:disabled { opacity: .6; cursor: progress; }
-.hint { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
-
-/* Example requests. */
-.examples { margin: 12px 0 20px; }
-.examples summary { cursor: pointer; font-weight: 650; }
-.example-group h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 14px 0 6px; }
-.chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
-.chip { font: inherit; font-size: 14px; text-align: left; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text); cursor: pointer; }
-.chip:hover { border-color: var(--accent); }
-
-/* Loading and status. */
-.status { min-height: 1.55em; margin: 8px 0; color: var(--muted); }
-.status.loading::before { content: ""; display: inline-block; width: 14px; height: 14px; margin-right: 8px; vertical-align: -2px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .status.loading::before { animation: none; } }
-
-/* Notices: the honest message, module 1's question or polite no, and errors. */
-.notice { padding: 14px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); margin: 12px 0; }
-.notice h2 { font-size: 18px; margin: 0 0 6px; }
-.notice p { margin: 0; }
-.notice p + p { margin-top: 6px; }
-.notice.honest { background: var(--warn-soft); border-color: transparent; }
-.notice.error { background: var(--bad-soft); border-color: transparent; }
-
-/* The answer. */
-.answer-title { font-size: 22px; margin: 20px 0 8px; }
-.reading { margin: 0 0 14px; font-size: 15px; color: var(--muted); }
-.ingredient-note { margin: 0 0 8px; }
-.form { margin: 8px 0 0; }
-.picks { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
-.card-head { display: flex; align-items: center; gap: 12px; }
-.card-head h3 { margin: 0; font-size: 20px; overflow-wrap: anywhere; }
-.rank { flex: none; display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-weight: 700; }
-.reason { margin: 10px 0 4px; font-weight: 600; }
-.support { margin: 0 0 8px; }
-.price { margin: 0 0 4px; }
-.budget { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
-.availability { margin: 0 0 8px; font-size: 14px; }
-.caution { margin: 8px 0; padding: 8px 12px; border-radius: 8px; background: var(--warn-soft); color: var(--text); border-left: 4px solid var(--warn); }
-.flag { margin: 8px 0; padding: 8px 12px; border-radius: 8px; background: var(--warn-soft); color: var(--text); font-weight: 600; border-left: 4px solid var(--warn); }
-.card h4 { margin: 16px 0 6px; font-size: 15px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+h1, h2, h3, h4, h5 { line-height: 1.2; }
+button { font: inherit; color: inherit; }
+.icon { width: 1.15em; height: 1.15em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round;
+  stroke-linejoin: round; vertical-align: -.2em; }
+.num { font-variant-numeric: tabular-nums; }
+.kicker { margin: 0 0 6px; font-size: 12.5px; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
 .muted { color: var(--muted); margin: 0; }
 
-/* Quotes: the text exactly as checked, its badges and its link. */
-.quotes { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.quote { margin: 0; padding: 10px 14px; border-left: 3px solid var(--line); background: var(--sunken); border-radius: 0 8px 8px 0; }
-.quote blockquote { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
-.quote blockquote::before { content: "\201C"; }
-.quote blockquote::after { content: "\201D"; }
-.quote figcaption { margin-top: 6px; font-size: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
-.badges { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-.badges li { padding: 1px 8px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-weight: 600; font-size: 13px; }
-.downsides .quote { border-left-color: var(--warn); }
-.care .quote { border-left-color: var(--ok); }
-.care-note { margin: 24px 0 0; padding: 14px 16px; border-radius: 10px; background: var(--ok-soft);
-  border: 1px solid var(--line); }
-.care-note h3 { margin: 0 0 8px; }
-.care .lead { margin: 0 0 6px; }
+/* The top bar: the name and the how-we-score page. */
+.topbar { border-bottom: 1px solid var(--line); background: var(--surface); }
+.topbar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 60px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font: 600 20px/1 var(--serif); letter-spacing: -.01em; }
+.brand:hover { color: var(--text); }
+.brand .icon { width: 26px; height: 26px; color: var(--accent); stroke-width: 1.6; }
+.topbar nav a { font-size: 14.5px; font-weight: 550; }
 
-/* How many credible voices warned, above a pick's downsides (12 Oct 2026). */
-.share { margin: 0 0 6px; font-size: 14px; color: var(--muted); }
+/* The older header (the how-we-score page still uses it). */
+.site { padding: 36px 0 8px; }
+.site h1 { margin: 0 0 10px; font: 600 clamp(32px, 5vw, 44px)/1.1 var(--serif); letter-spacing: -.02em; }
+.intro { margin: 0; color: var(--muted); max-width: 62ch; font-size: 17px; }
+.back { margin: 0 0 14px; font-size: 14.5px; }
+
+/* The hero: a question, the search box, examples and how it works. */
+.hero { padding: 56px 0 8px; text-align: center; }
+.hero h1 { margin: 0 auto 14px; max-width: 24ch; font: 600 clamp(34px, 6vw, 56px)/1.06 var(--serif); letter-spacing: -.025em; text-wrap: balance; }
+.hero .intro { margin: 0 auto; max-width: 60ch; text-wrap: pretty; }
+.search { max-width: 720px; margin: 32px auto 0; text-align: left; }
+.search-label { display: block; font-weight: 650; margin: 0 0 8px; }
+.search-box { position: relative; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 14px; background: var(--surface);
+  border: 1px solid var(--line-strong); border-radius: 16px; box-shadow: var(--shadow); transition: border-color .15s, box-shadow .15s; }
+.search-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft), var(--shadow); }
+.search-box > .icon { color: var(--muted); width: 22px; height: 22px; }
+.search input { flex: 1 1 auto; min-width: 0; height: 48px; font: inherit; font-size: 17px; padding: 0 4px; border: 0; background: transparent; color: var(--text); }
+.search input:focus { outline: none; }
+.search input::placeholder { color: var(--muted); opacity: .85; }
+.slash { flex: none; display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 6px; border: 1px solid var(--line-strong);
+  border-radius: 6px; font: 600 12px/1 var(--sans); color: var(--muted); background: var(--sunken); }
+.search-box:focus-within .slash { visibility: hidden; }
+.go { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 22px; border: 0; border-radius: 12px;
+  background: var(--accent); color: var(--on-accent); font-weight: 650; cursor: pointer; transition: background-color .15s; }
+.go:hover { background: var(--accent-hover); }
+.hint { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+
+/* Example requests and recent searches, as chips. */
+.examples { max-width: 720px; margin: 22px auto 0; text-align: left; }
+.examples > summary { list-style: none; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px;
+  font-weight: 650; color: var(--muted); padding: 4px 0; }
+.examples > summary::-webkit-details-marker { display: none; }
+.examples > summary .icon { transition: transform .15s; }
+.examples[open] > summary .icon { transform: rotate(180deg); }
+.example-group { margin: 10px 0 0; }
+.example-group h2 { display: flex; align-items: center; gap: 10px; font-size: 12.5px; font-weight: 650; text-transform: uppercase;
+  letter-spacing: .09em; color: var(--muted); margin: 14px 0 8px; }
+.example-group h2 .note { font-size: 12.5px; font-weight: 450; text-transform: none; letter-spacing: 0; }
+.chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 14.5px; text-align: left; padding: 7px 14px; border: 1px solid var(--line);
+  border-radius: 999px; background: var(--surface); color: var(--text); cursor: pointer; transition: border-color .15s, background-color .15s; }
+.chip:hover { border-color: var(--accent); background: var(--accent-soft); }
+.chip .icon { color: var(--muted); }
+.link-button { border: 0; background: none; padding: 2px 4px; color: var(--accent); font-size: 13.5px; font-weight: 600; cursor: pointer;
+  text-decoration: underline; text-underline-offset: .18em; text-transform: none; letter-spacing: 0; }
+
+/* How it works: three steps under the box. */
+.steps { list-style: none; counter-reset: step; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 980px;
+  margin: 48px auto 0; padding: 28px 0 0; border-top: 1px solid var(--line); text-align: left; }
+.steps li { counter-increment: step; display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; }
+.steps li::before { content: counter(step); grid-row: span 2; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+  background: var(--accent-soft); color: var(--accent); font: 600 17px/1 var(--serif); }
+.steps h2 { margin: 4px 0 0; font-size: 16px; }
+.steps p { margin: 0; color: var(--muted); font-size: 14.5px; }
+
+/* After a search: the hero steps aside and the box stays on top. */
+.hero.compact { padding-top: 24px; text-align: left; }
+.hero.compact h1, .hero.compact .search-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.hero.compact .intro, .hero.compact .steps, .hero.compact .hint, .hero.compact > .kicker { display: none; }
+.hero.compact .search, .hero.compact .examples { margin-left: 0; margin-top: 0; max-width: 760px; }
+.hero.compact .examples { margin-top: 8px; }
+
+/* Loading: an honest line, and the answer's shape while it's on its way. */
+.status { min-height: 1.6em; margin: 20px 0 0; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+.status.loading::before { content: ""; flex: none; width: 16px; height: 16px; border: 2px solid var(--line-strong); border-top-color: var(--accent);
+  border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#results[aria-busy="true"] > :not(.skeleton) { opacity: .45; transition: opacity .2s; }
+.sk { display: block; border-radius: 8px; background: linear-gradient(90deg, var(--sunken) 0%, var(--line) 50%, var(--sunken) 100%);
+  background-size: 200% 100%; animation: shimmer 1.3s linear infinite; }
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+.sk-heading { width: min(420px, 70%); height: 40px; margin: 28px 0 18px; }
+.sk-strip { height: 74px; margin: 0 0 24px; border-radius: var(--radius); }
+.sk-title { width: 45%; height: 26px; margin: 0 0 18px; }
+.sk-line { height: 14px; margin: 0 0 10px; }
+.sk-line.short { width: 60%; }
+.sk-block { height: 96px; margin-top: 18px; }
+
+/* Notices: the honest message, module 1's question or polite no, and errors. */
+.notice { display: flex; gap: 12px; align-items: flex-start; padding: 16px 18px; border-radius: var(--radius); border: 1px solid var(--line);
+  background: var(--surface); margin: 16px 0; }
+.notice > .icon { margin-top: 3px; color: var(--accent); }
+.notice h2 { font: 600 20px/1.25 var(--serif); margin: 0 0 6px; }
+.notice p { margin: 0; }
+.notice p + p { margin-top: 6px; }
+.notice .actions { margin-top: 12px; }
+.notice.honest { background: var(--warn-soft); border-color: transparent; }
+.notice.honest > .icon { color: var(--warn); }
+.notice.error { background: var(--bad-soft); border-color: transparent; }
+.notice.error > .icon { color: var(--bad); }
+.button { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid var(--line-strong); border-radius: 10px;
+  background: var(--surface); color: var(--text); font-weight: 600; cursor: pointer; }
+.button:hover { border-color: var(--accent); }
+
+/* The answer's head: what it is, what it read, and its tools. */
+#results > * { animation: rise .22s ease-out; }
+@keyframes rise { from { transform: translateY(6px); } }
+.answer-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 20px; margin: 28px 0 18px; }
+.answer-title { margin: 0; font: 600 clamp(28px, 4.4vw, 42px)/1.1 var(--serif); letter-spacing: -.02em; overflow-wrap: anywhere; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.tool { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--surface); color: var(--text); font-size: 14px; font-weight: 550; cursor: pointer; }
+.tool:hover { border-color: var(--accent); }
+.tool .icon { color: var(--muted); }
+
+/* The reading strip: how much the answer read, in numbers. */
+/* Round two (13 Oct 2026): housekeeping, so quiet: no box of its own, small numbers between two hairlines. */
+.reading { margin: 0 0 24px; border-block: 1px solid var(--line); }
+.reading dl { display: flex; flex-wrap: wrap; margin: 0; }
+.stat { flex: 1 1 180px; display: flex; flex-direction: column; padding: 10px 18px 10px 0; }
+.stat + .stat { border-left: 1px solid var(--line); padding-left: 18px; }
+.stat dd { margin: 0; }
+.stat .value { order: -1; font: 600 21px/1.15 var(--serif); font-variant-numeric: tabular-nums; }
+.stat dt { font-size: 13.5px; font-weight: 600; }
+.stat .note { font-size: 13px; color: var(--muted); }
+.stat .ratio { order: 3; margin-top: 8px; height: 6px; border-radius: 99px; background: var(--bar-track); overflow: hidden; }
+.stat .ratio span { display: block; height: 100%; width: calc(var(--share) * 100%); background: var(--accent); border-radius: 99px; }
+.why { margin: 0; padding: 0 0 10px; font-size: 13.5px; }
+.why summary { cursor: pointer; color: var(--accent); font-weight: 600; width: max-content; max-width: 100%; }
+.why p { margin: 6px 0 2px; color: var(--muted); max-width: 70ch; }
+
+/* At a glance: the picks side by side. */
+.glance { margin: 0 0 28px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.glance h3 { margin: 0; padding: 14px 18px 0; font-size: 12.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
+.glance table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.glance th, .glance td { padding: 10px 18px; text-align: left; vertical-align: middle; }
+.glance thead th { font-size: 13px; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--line); }
+.glance tbody tr + tr > * { border-top: 1px solid var(--line); }
+.glance tbody th { font-weight: 600; }
+.glance .jump { display: inline-flex; align-items: baseline; gap: 10px; border: 0; background: none; padding: 0; text-align: left; cursor: pointer; font-weight: 600; }
+.glance .jump:hover .name { color: var(--accent); text-decoration: underline; text-underline-offset: .18em; }
+.glance .jump .rank-num { font: 600 18px/1 var(--serif); color: var(--accent); }
+.glance th .form-chip { display: block; width: max-content; margin: 4px 0 0 22px; }
+.glance .tally { display: grid; gap: 6px; min-width: 150px; }
+.glance .tally span { font-size: 14px; color: var(--muted); }
+.glance td.n { font-variant-numeric: tabular-nums; }
+
+/* The picks. */
+.picks { list-style: none; margin: 0; padding: 0; display: grid; gap: 20px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow);
+  scroll-margin-top: 16px; }
+.card:focus { outline: none; }
+.card:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.card-head { display: flex; align-items: flex-start; gap: 16px; }
+.rank { flex: none; display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--accent);
+  color: var(--on-accent); font: 600 22px/1 var(--serif); }
+.card-title { min-width: 0; }
+.card-head h3 { margin: 6px 0 0; font: 600 clamp(22px, 3vw, 27px)/1.2 var(--serif); letter-spacing: -.01em; overflow-wrap: anywhere; }
+.model { margin: 6px 0 0; font-size: 14.5px; color: var(--muted); }
+.card-body { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 24px 32px; margin-top: 18px; }
+.card-main > * + * { margin-top: 14px; }
+.card h4 { margin: 0 0 10px; font-size: 12.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
 
 /* "In short:" (13 Oct 2026): our one-line summary of what a pick's credible voices say. Our words, so never drawn
-   like a quote: no quotation marks, no quote box. */
-.summary { margin: 10px 0 0; }
-.summary-note { font-size: 13px; color: var(--muted); }
+   like a quote: no quotation marks, no quote box, no serif; with the note saying it is ours. */
+.summary { margin: 0; font-size: 17px; line-height: 1.55; }
+/* An ingredient-led answer (13 Oct 2026): every product's form as a small chip, and the note under the title. */
+.form-chip { display: inline-block; margin: 6px 6px 0 0; padding: 1px 9px; border-radius: 999px; border: 1px solid var(--line-strong);
+  background: var(--surface); color: var(--muted); font-size: 13px; font-weight: 600; }
+.ingredient-note { display: flex; gap: 8px; align-items: flex-start; margin: -6px 0 16px; color: var(--muted); max-width: 80ch; }
+.ingredient-note .icon { color: var(--accent); margin-top: 3px; }
+.summary-label { display: inline-block; margin-right: 6px; padding: 1px 8px; border-radius: 6px; background: var(--accent-soft); color: var(--accent);
+  font-size: 13px; font-weight: 700; vertical-align: 1px; }
+.summary-note { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); }
 
-/* "Also worth a look" (13 Oct 2026): apart from the picks, after them, and plainly less supported. */
-.worth { margin: 28px 0 0; }
-.worth > h3 { margin: 0 0 4px; font-size: 20px; }
-.worth-note { margin: 0 0 12px; color: var(--muted); }
-.worth-card { border-style: dashed; }
-.worth-card h4.item-name { margin: 0; font-size: 18px; text-transform: none; letter-spacing: normal; color: var(--text);
-  overflow-wrap: anywhere; }
-.worth-card .quotes { margin-top: 10px; }
-.card h5 { margin: 14px 0 6px; font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+/* Why we trust it: the credibility meter, then the answer's own reason and support line. */
+.trust { padding: 14px 16px; border-radius: 12px; background: var(--sunken); border: 1px solid var(--line); }
+.trust p { margin: 8px 0 0; font-size: 14.5px; }
+.trust .reason { font-weight: 600; font-size: 15px; }
+.meter .bar { display: flex; gap: 2px; height: 10px; border-radius: 99px; overflow: hidden; background: var(--bar-track); }
+.meter .bar .for { flex: 0 1 calc(var(--for) * 100%); background: var(--bar-for); }
+.meter .bar .against { flex: 1 1 0; min-width: 4px; background: repeating-linear-gradient(135deg, var(--bar-against) 0 4px, var(--bar-against-2) 4px 7px); }
+.legend { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 14px; color: var(--muted); }
+.legend li { display: inline-flex; align-items: center; gap: 6px; }
+.legend strong { color: var(--text); font-size: 15px; }
+.legend .for::before, .legend .against::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: var(--bar-for); }
+.legend .against::before { background: repeating-linear-gradient(135deg, var(--bar-against) 0 3px, var(--bar-against-2) 3px 5px); }
+.no-downsides { display: flex; gap: 8px; align-items: flex-start; color: var(--muted); }
+.no-downsides .icon { color: var(--accent); margin-top: 2px; }
 
-/* Under the picks: what to look for, and skip these. Side by side on wide screens. */
-.extras { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
-.extras section { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
-.extras h3 { margin: 0 0 10px; font-size: 18px; }
-.extras ul.items { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
-.extras .lead { margin: 0 0 6px; }
-.skip .quote { border-left-color: var(--bad); }
-.footnote { margin: 18px 0 0; font-size: 14px; color: var(--muted); }
+/* Price, where it's sold, notes and the mixed-opinions flag. */
+.card-main > .fact + .fact, .card-main > .fact + .budget, .card-main > .budget + .fact { margin-top: 6px; }
+.fact { display: flex; gap: 10px; align-items: flex-start; margin: 0; font-size: 15px; }
+.fact > .icon { margin-top: 3px; color: var(--muted); }
+.budget { margin: 0 0 0 28px; font-size: 14px; color: var(--muted); }
+.budget.within { color: var(--accent); font-weight: 600; }
+.caution, .flag { display: flex; gap: 10px; align-items: flex-start; margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--warn-soft);
+  color: var(--text); font-size: 14.5px; }
+.caution .icon, .flag .icon { margin-top: 2px; color: var(--warn); }
+.flag { font-weight: 600; }
+.card-main > .caution + .caution, .card-main > .caution + .flag { margin-top: 8px; }
 
-/* "First time here?" (11 Oct 2026): a small question, asked once per browser. */
-.first-time { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 16px 0 0;
-  padding: 10px 52px 10px 16px; border-radius: 10px; background: var(--accent-soft); }
+/* Quotes: the text exactly as checked, where it was said, why its writer counts, and its link. */
+.quotes { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.quote { margin: 0; padding: 14px 16px; border-left: 3px solid var(--bar-for); background: var(--sunken); border-radius: 0 12px 12px 0; }
+.quote blockquote { margin: 0; font: 17px/1.55 var(--serif); white-space: pre-line; overflow-wrap: anywhere; }
+.quote blockquote::before { content: "\201C"; }
+.quote blockquote::after { content: "\201D"; }
+.quote figcaption { margin-top: 10px; font-size: 13.5px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.community { font-weight: 650; color: var(--text); }
+.badges { list-style: none; margin: 0; padding: 0; display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.badges li { padding: 1px 8px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); font-size: 12.5px; }
+.source-link { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
+.source-link .icon { width: 14px; height: 14px; }
+.downsides .quote { border-left-color: var(--bar-against); }
+.care .quote { border-left-color: var(--line-strong); }
+.share { margin: 0 0 10px; font-size: 14px; color: var(--muted); }
+.care .lead, .items .lead { margin: 0 0 8px; }
+
+/* A card's toggle for the rest of its evidence: quotes, downsides and care. */
+.more { margin-top: 12px; }
+.more > summary { list-style: none; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.more > summary { width: max-content; max-width: 100%; padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; font-size: 14px;
+  font-weight: 600; color: var(--accent); background: var(--surface); }
+.more > summary:hover { border-color: var(--accent); }
+.more > summary::-webkit-details-marker { display: none; }
+details > summary .icon { transition: transform .15s; }
+details[open] > summary .icon { transform: rotate(180deg); }
+.more-body { margin-top: 14px; }
+.more-body > * + h4, .more-body > .quotes + h4 { margin-top: 20px; }
+
+/* Under the picks (13 Oct 2026, round two; Noemi: "a little more distinct from the picks... a little too uniform"): the
+   picks are the only raised cards. Each section under them is a flat panel in its own colour family, with a head of
+   its icon, its name and a thin rule: Also worth a look (stone: secondary), Skip these (rose: a warning), What to look
+   for (blue: advice), the care note (green: a tip). Their items are compact rows, their evidence a click away. */
+.more-zone { display: grid; gap: 22px; margin-top: 56px; }
+.zone-panel { background: var(--fam-bg); border: 1px solid var(--fam-line); border-radius: var(--radius); padding: 18px 22px 14px; }
+.fam-worth { --fam: var(--worth); --fam-bg: var(--worth-bg); --fam-soft: var(--worth-soft); --fam-line: var(--worth-line); }
+.fam-skip { --fam: var(--skip); --fam-bg: var(--skip-bg); --fam-soft: var(--skip-soft); --fam-line: var(--skip-line); }
+.fam-advice { --fam: var(--advice); --fam-bg: var(--advice-bg); --fam-soft: var(--advice-soft); --fam-line: var(--advice-line); }
+.fam-care { --fam: var(--care); --fam-bg: var(--care-bg); --fam-soft: var(--care-soft); --fam-line: var(--care-line);
+  border-left: 5px solid var(--fam); padding-bottom: 20px; }
+.section-head { display: flex; align-items: center; gap: 10px; }
+.section-head::after { content: ""; flex: 1 1 24px; height: 1px; background: var(--fam-line); }
+.section-head h3 { margin: 0; font: 600 21px/1.2 var(--serif); color: var(--text); }
+.section-icon { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--fam-soft);
+  color: var(--fam); }
+.section-icon .icon { width: 18px; height: 18px; }
+.zone-note { margin: 8px 0 0; font-size: 14.5px; color: var(--muted); max-width: 78ch; }
+.rows { list-style: none; margin: 8px 0 0; padding: 0; }
+.rows > li + li, .rows.rest > li:first-child { border-top: 1px solid var(--fam-line); }
+.row-details > summary { list-style: none; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: "mark main meta chev"; column-gap: 10px; align-items: start; padding: 11px 0; cursor: pointer; }
+.row-details > summary::-webkit-details-marker { display: none; }
+.row-details > summary:hover .row-name { text-decoration: underline; text-underline-offset: .18em; }
+.row-mark { grid-area: mark; margin-top: 3px; color: var(--fam); }
+.row-main { grid-area: main; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.row-name { margin: 0; font: 600 16px/1.35 var(--sans); color: var(--text); overflow-wrap: anywhere; }
+.row-reason { flex-basis: 100%; font-size: 14px; color: var(--muted); }
+.row-meta { grid-area: meta; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px 8px; margin-top: 1px; }
+.row-price { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.row-chev { grid-area: chev; margin-top: 3px; color: var(--muted); }
+.row-body { display: grid; gap: 10px; padding: 0 0 16px 28px; }
+.row-body > p { margin: 0; }
+.tag { display: inline-block; padding: 1px 9px; border-radius: 999px; background: var(--fam-soft); color: var(--fam); font-size: 13px;
+  font-weight: 600; white-space: nowrap; }
+.tag.warned { background: var(--warn-soft); color: var(--warn); }
+.zone-panel .form-chip { margin: 0; }
+.zone-panel .summary { font-size: 15.5px; }
+.zone-panel .quote { background: var(--surface); border-left-color: var(--fam); }
+.fam-worth .quote { border-left-color: var(--bar-for); }
+.zone-panel .downsides .quote { border-left-color: var(--bar-against); }
+.zone-panel h5 { margin: 4px 0 6px; font-size: 12.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
+.fold { margin: 8px 0 4px; font-size: 14px; background: var(--surface); }
+.fold .icon { transition: transform .15s; }
+.fold[aria-expanded="true"] .icon { transform: rotate(180deg); }
+/* What to look for: a checklist, "Look for" beside "Avoid". */
+.checklist { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 4px 32px; margin-top: 8px; }
+.check-group h4 { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; font-size: 12.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .09em; color: var(--fam); }
+.check-group.avoid h4, .check-group.avoid .row-mark { color: var(--skip); }
+.check-group.avoid .quote { border-left-color: var(--skip); }
+/* The care note: a tip. */
+.care-note .tip-quote { padding: 10px 0; }
+
+/* The quiet zone after the answer (round two): what was left out, then "Was this useful?". Housekeeping, so plain: no
+   colour of its own, small headings, a dashed edge; "First time here?" sits right after it, alike. */
+.quiet-zone { display: grid; gap: 18px; margin-top: 56px; padding: 20px 22px; border: 1px dashed var(--line-strong); border-radius: var(--radius);
+  background: var(--quiet-bg); }
+.quiet-zone > * + * { padding-top: 18px; border-top: 1px solid var(--line); }
+.about h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font: 650 15px/1.3 var(--sans); }
+.about h2 .icon { color: var(--muted); }
+.footnote { margin: 0; font-size: 13.5px; color: var(--muted); max-width: 95ch; }
+.feedback-thanks { margin: 0; font-weight: 600; color: var(--accent); }
+
+/* "First time here?" (11 Oct 2026): a small question, asked once per browser; since 13 Oct 2026 in the quiet zone. */
+#first-time-slot:empty { display: none; }
+.first-time { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 16px 0 0; padding: 12px 52px 12px 18px;
+  border: 1px dashed var(--line-strong); border-radius: var(--radius); background: var(--quiet-bg); }
+.hero:not(.compact) ~ #first-time-slot .first-time { max-width: 980px; margin: 36px auto 0; }
 .first-time p { margin: 0; font-weight: 650; }
 .first-time .answers { display: flex; flex-wrap: wrap; gap: 8px; }
-.first-time .close { position: absolute; top: 8px; right: 8px; font: inherit; font-size: 22px; line-height: 1;
+.first-time .close { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); font-size: 22px; line-height: 1;
   width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; }
 .first-time .close:hover { color: var(--text); background: var(--surface); }
 
-/* "Was this useful?" under every answer (11 Oct 2026). */
-.feedback { margin: 24px 0 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
-.feedback h2 { font-size: 17px; margin: 0 0 10px; }
-.choices { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
-.choice { font: inherit; padding: 6px 16px; border: 1px solid var(--muted); border-radius: 999px; background: var(--surface); color: var(--text); cursor: pointer; }
+/* "Was this useful?" under every answer (11 Oct 2026), in the quiet zone. */
+.feedback { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 4px 28px; align-items: start; margin: 0; }
+.feedback h2 { grid-column: 1; font: 650 17px/1.3 var(--sans); margin: 0 0 12px; }
+.choices { grid-column: 1; display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.choice { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid var(--line-strong); border-radius: 999px;
+  background: var(--surface); color: var(--text); cursor: pointer; }
+.choice:hover { border-color: var(--accent); }
+.choice .icon.down { transform: rotate(180deg); }
 .choice[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 650; }
-.feedback label { display: block; font-weight: 650; margin-bottom: 6px; }
-.feedback textarea { display: block; width: 100%; font: inherit; padding: 8px 10px; border: 1px solid var(--muted); border-radius: 8px; background: var(--surface); color: var(--text); resize: vertical; }
-.feedback .send { margin-top: 10px; font: inherit; font-weight: 650; padding: 8px 18px; border: 0; border-radius: 8px; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.feedback label, .feedback textarea, .feedback .hint, .feedback .send, .feedback-note { grid-column: 2; }
+.feedback label { grid-row: 1; display: block; font-weight: 650; margin-bottom: 6px; align-self: end; }
+.feedback textarea { grid-row: 2 / span 2; display: block; width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--line-strong);
+  border-radius: 10px; background: var(--surface); color: var(--text); resize: vertical; }
+.feedback textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.feedback .send { justify-self: start; margin-top: 10px; font-weight: 650; padding: 9px 20px; border: 0; border-radius: 10px; background: var(--accent);
+  color: var(--on-accent); cursor: pointer; }
+.feedback .send:hover { background: var(--accent-hover); }
 .feedback .send:disabled { opacity: .6; cursor: progress; }
 .feedback-note { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
 .feedback-note:empty { display: none; }
-.feedback-thanks { margin: 24px 0 0; padding: 12px 16px; border-radius: 10px; background: var(--ok-soft); color: var(--text); }
-.foot { padding: 32px 16px 40px; font-size: 14px; color: var(--muted); }
+.foot { margin-top: 56px; padding: 28px 0 44px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+.foot p { margin: 0 0 6px; }
 
-/* Phone width: one column, the button under the box. */
+/* Tablets and phones: one column. */
+@media (max-width: 860px) {
+  .card-body { grid-template-columns: minmax(0, 1fr); }
+  .feedback { grid-template-columns: minmax(0, 1fr); }
+  .feedback h2, .choices, .feedback label, .feedback textarea, .feedback .hint, .feedback .send, .feedback-note { grid-column: 1; grid-row: auto; }
+}
 @media (max-width: 600px) {
-  .site { padding-top: 18px; }
-  .site h1 { font-size: 24px; }
-  .search-row { flex-direction: column; }
-  .search button { width: 100%; }
-  .card { padding: 14px 14px; }
-  .extras { grid-template-columns: 1fr; }
+  .wrap { padding: 0 16px; }
+  .topbar .wrap { min-height: 54px; }
+  .brand { font-size: 18px; }
+  .topbar nav a { font-size: 13.5px; }
+  .site { padding-top: 24px; }
+  .hero { padding-top: 32px; text-align: left; }
+  .hero h1 { margin-left: 0; }
+  .hero .intro { margin-left: 0; font-size: 16px; }
+  .search { margin-top: 24px; }
+  .search-box { padding-left: 12px; border-radius: 14px; }
+  .search input { height: 44px; font-size: 16px; }
+  .go { height: 44px; padding: 0 16px; }
+  .slash { display: none; }
+  .steps { grid-template-columns: minmax(0, 1fr); margin-top: 32px; gap: 14px; }
+  .card { padding: 18px 16px; }
+  .rank { width: 38px; height: 38px; font-size: 19px; }
+  .card-head { gap: 12px; }
+  .card-head h3 { margin-top: 4px; }
+  .zone-panel { padding: 16px 14px 12px; }
+  .fam-care { padding-bottom: 16px; }
+  .section-head h3 { font-size: 19px; }
+  .row-details > summary { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "mark main chev" "mark meta meta"; }
+  .row-meta { justify-content: flex-start; margin-top: 6px; }
+  .row-body { padding-left: 0; }
+  .row-meta:empty { display: none; }
+  .quiet-zone { padding: 16px 14px; }
+  .hero:not(.compact) ~ #first-time-slot .first-time { margin-top: 28px; }
+  .reading dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .stat { padding: 10px 12px 10px 0; }
+  .stat + .stat { padding-left: 14px; }
+  .stat:nth-child(3) { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line); padding-left: 0; }
+  .stat .value { font-size: 24px; }
+  .glance thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .glance tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; align-items: center; padding: 12px 14px; }
+  .glance tbody tr + tr { border-top: 1px solid var(--line); }
+  .glance tbody tr + tr > * { border-top: 0; }
+  .glance tbody th, .glance tbody td { padding: 0; }
+  .glance tbody th { grid-column: 1 / -1; }
+  .glance .col-threads { display: none; }
+  .glance td.n:last-child { text-align: right; color: var(--muted); font-size: 14px; }
+  .glance .tally { min-width: 0; }
   .feedback .send { width: 100%; }
+}
+@media (hover: none) { .slash { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; }
+}
+@media (forced-colors: active) {
+  .meter .bar span, .stat .ratio span, .legend .for::before, .legend .against::before { forced-color-adjust: none; border: 1px solid CanvasText; }
+}
+@media print {
+  .topbar nav, .hero, .status, .tools, .feedback, .feedback-thanks, .first-time { display: none !important; }
+  .card, .zone-panel, .glance, .reading { box-shadow: none; break-inside: avoid; }
 }
 </style>
 </head>
 <body>
-<header class="site">
+<header class="topbar">
   <div class="wrap">
-    <h1 data-label="heading"></h1>
-    <p class="intro" data-label="intro"></p>
-    <p class="how-link"><a href="/how" data-label="howLink"></a></p>
+    <a class="brand" href="/"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6l2.3 1.7 2.9-.1.9 2.7 2.3 1.7-.9 2.7.9 2.7-2.3 1.7-.9 2.7-2.9-.1L12 21.4l-2.3-1.7-2.9.1-.9-2.7-2.3-1.7.9-2.7-.9-2.7 2.3-1.7.9-2.7 2.9.1z"/><path d="M8.6 12.1l2.3 2.3 4.6-4.7"/></svg><span data-label="heading"></span></a>
+    <nav><a href="/how" data-label="howLink"></a></nav>
   </div>
 </header>
 
 <main class="wrap">
-  <form id="search" class="search" action="/" method="get" role="search">
-    <label for="q" data-label="searchLabel"></label>
-    <div class="search-row">
-      <input id="q" name="q" type="search" autocomplete="off" aria-describedby="q-hint">
-      <button id="go" type="submit" data-label="searchButton"></button>
-    </div>
-    <p id="q-hint" class="hint" data-label="searchHint"></p>
-  </form>
-
-  <details id="examples" class="examples" open>
-    <summary data-label="examplesHeading"></summary>
-    <div id="example-groups"></div>
-  </details>
+  <section id="hero" class="hero" aria-labelledby="hero-title">
+    <p class="kicker" data-label="kicker"></p>
+    <h1 id="hero-title" data-label="heroTitle"></h1>
+    <p class="intro" data-label="intro"></p>
+    <form id="search" class="search" action="/" method="get" role="search">
+      <label for="q" class="search-label" data-label="searchLabel"></label>
+      <div class="search-box">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg>
+        <input id="q" name="q" type="search" autocomplete="off" enterkeyhint="search" aria-describedby="q-hint">
+        <kbd class="slash" aria-hidden="true">/</kbd>
+        <button id="go" class="go" type="submit" data-label="searchButton"></button>
+      </div>
+      <p id="q-hint" class="hint" data-label="searchHint"></p>
+    </form>
+    <details id="examples" class="examples" open>
+      <summary><span data-label="examplesHeading"></span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></summary>
+      <div id="recent" class="example-group" hidden></div>
+      <div id="example-groups"></div>
+    </details>
+    <h2 id="steps-heading" class="visually-hidden" data-label="stepsHeading"></h2>
+    <ol id="steps" class="steps" aria-labelledby="steps-heading"></ol>
+  </section>
 
   <p id="status" class="status" role="status" aria-live="polite"></p>
   <div id="results" aria-busy="false"></div>
+  <div id="first-time-slot"></div>
 </main>
 
-<footer class="wrap foot"><p data-label="footer"></p></footer>
+<footer class="foot"><div class="wrap"><p data-label="footer"></p><p><a href="/how" data-label="howLink"></a></p></div></footer>
+
+<!-- Icons, drawn for this page (no outside files): the page copies them in where they're needed. -->
+<template id="i-tag"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 3.5h7.6l9.4 9.4-7.6 7.6-9.4-9.4z"/><circle cx="8" cy="8" r="1.4"/></svg></template>
+<template id="i-store"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4.5 8.5h15l-1.2 12h-12.6z"/><path d="M8.5 8.5V7a3.5 3.5 0 0 1 7 0v1.5"/></svg></template>
+<template id="i-info"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.6v.4"/></svg></template>
+<template id="i-alert"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.8l9 15.7H3z"/><path d="M12 10v4.4M12 17.2v.3"/></svg></template>
+<template id="i-check"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></template>
+<template id="i-x"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></template>
+<template id="i-external"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18.5 14v5.5h-14v-14H10"/></svg></template>
+<template id="i-chevron"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></template>
+<template id="i-thumb"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 10.5V20H4v-9.5zM7 10.5l3.8-7c1.6 0 2.6 1.1 2.3 2.7L12.4 9.5h6.3a2 2 0 0 1 2 2.4l-1.4 6.5a2 2 0 0 1-2 1.6H7"/></svg></template>
+<template id="i-link"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 14a4.2 4.2 0 0 0 6 0l3-3a4.2 4.2 0 0 0-6-6l-1 1"/><path d="M14 10a4.2 4.2 0 0 0-6 0l-3 3a4.2 4.2 0 0 0 6 6l1-1"/></svg></template>
+<template id="i-clock"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></template>
+<template id="i-eye"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg></template>
+<template id="i-ban"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></svg></template>
+<template id="i-compass"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg></template>
+<template id="i-leaf"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5.5 18.5C5 10 10 5 19 5c0 9-5 14-13.5 13.5z"/><path d="M5.5 18.5L13 11"/></svg></template>
+<template id="i-retry"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9"/><path d="M4.5 4v5h5"/></svg></template>
 
 <!-- Filled in by the server: the answer's own headings (engine/answer.py), the example requests and the length limit. -->
 <script type="application/json" id="settings">{{SETTINGS}}</script>
 
 <script>
 /* How this page works, in short:
-   1. The search box sends the request to this computer's server (/api/answer?q=...) and shows a loading line.
+   1. The search box sends the request to this computer's server (/api/answer?q=...) and shows a loading line, then,
+      if the answer takes more than a moment, the answer's shape (grey blocks) where it will appear.
    2. The server answers with JSON (its shape is described at the top of engine/web.py).
    3. The page draws the answer. Every piece of text from the answer is added as plain text (never as HTML),
       so a comment containing "<script>" shows those characters and is never run.
@@ -315,25 +725,44 @@ h1, h2, h3, h4 { line-height: 1.25; }
       address from data/prices.json, as the server sends it). Any other address is shown without a link.
    5. Since 11 Oct 2026 (going live): under every answer, "Was this useful?" (feedbackForm); once per browser, "First
       time here?" (firstTimeQuestion). Both send to this site's server only (sendFeedback). When visit counting is on,
-      a few events are counted by fixed names (track), never anything typed. */
+      a few events are counted by fixed names (track), never anything typed.
+   6. Since 13 Oct 2026 (the redesign): the visitor's last few requests are kept in this browser's own storage for the
+      "recent searches" chips (rememberSearch), never sent anywhere and cleared with one button; the "/" key goes to
+      the search box; and the page notes how long drawing an answer took in the browser's own performance timeline
+      (measureDraw), which is never sent anywhere either. */
 (function () {
   "use strict";
   const SETTINGS = JSON.parse(document.getElementById("settings").textContent);
   const WORDING = SETTINGS.wording;
   const form = document.getElementById("search");
   const input = document.getElementById("q");
+  const hero = document.getElementById("hero");
   const examples = document.getElementById("examples");
   const status = document.getElementById("status");
   const results = document.getElementById("results");
+  // A pick's quotes in view at once (2, or 1 on a phone, where each card is long); the rest are a click away (its "more"
+  // toggle).
+  const QUOTES_SHOWN_FIRST = window.matchMedia("(max-width: 600px)").matches ? 1 : 2;
+  const SKELETON_AFTER_MS = 150;  // a remembered answer comes back sooner than this, so its grey blocks never flash
+  const SLOW_AFTER_MS = 4000;  // when the loading line says why a fresh answer can take longer
+  const RECENT_MAX = 5;  // recent searches kept
+  const LIST_SHOWN_FIRST = 5;  // "Skip these" items in view at once, strongest first (the API's order); the rest a click away
+  const WORTH_SHOWN_FIRST = 6;  // "Also worth a look" has 3 items at most today; a longer one would fold the same way
+  let foldedLists = 0;  // numbers each folded list, so its toggle points at it
   let latest = 0;  // the number of the newest search: an older, slower answer is never drawn over it
   let pending = null;  // the newest search's request, cancelled when a newer search starts (AbortController)
+  let skeletonTimer = 0;
+  let slowTimer = 0;
+  let drawStarted = 0;  // when drawing the newest answer started (performance.now), for measureDraw
 
   // --- Small helpers ---
 
-  /** A new element. Children that are strings become plain text, never HTML. */
+  /** A new element. Children that are strings become plain text, never HTML. An attribute that is null, undefined or
+      false is left out. */
   function el(tag, attributes, ...children) {
     const node = document.createElement(tag);
     for (const [name, value] of Object.entries(attributes || {})) {
+      if (value === null || value === undefined || value === false) continue;
       if (name === "class") node.className = value;
       else node.setAttribute(name, value);
     }
@@ -346,6 +775,23 @@ h1, h2, h3, h4 { line-height: 1.25; }
   /** "Pick {rank}:" with {rank: 1} gives "Pick 1:". A value is never searched for slots itself. */
   function fill(template, values) {
     return template.replace(/\{(\w+)\}/g, (slot, name) => (name in values ? String(values[name]) : slot));
+  }
+
+  /** The same, as page pieces: each filled slot drawn in bold (as text), the words around it as text. */
+  function fillNodes(template, values) {
+    return template.split(/(\{\w+\})/).filter(Boolean).map((part) => {
+      const slot = /^\{(\w+)\}$/.exec(part);
+      return slot && slot[1] in values ? el("strong", { class: "num" }, String(values[slot[1]])) : part;
+    });
+  }
+
+  /** One of the page's icons (the templates at the end of the page), or null. */
+  function icon(name, extraClass) {
+    const template = document.getElementById("i-" + name);
+    if (!template) return null;
+    const svg = template.content.firstElementChild.cloneNode(true);
+    if (extraClass) svg.classList.add(extraClass);
+    return svg;
   }
 
   /** The address, if it is a Reddit page (http or https, reddit.com or one of its subdomains); otherwise null. */
@@ -366,14 +812,31 @@ h1, h2, h3, h4 { line-height: 1.25; }
     return url.protocol === "https:" && url.hostname && !url.username && !url.password ? url.href : null;
   }
 
+  /** The community a checked Reddit address is in ("r/BuyItForLife"), from its path; null when it doesn't say. */
+  function community(address) {
+    const parts = new URL(address).pathname.split("/");
+    return parts[1] === "r" && /^[A-Za-z0-9_]{2,21}$/.test(parts[2] || "") ? "r/" + parts[2] : null;
+  }
+
+  /** A product's form in an answer to a request naming an ingredient but no type (13 Oct 2026): "Form: pads", as a
+      small chip; nothing otherwise. */
+  function formChip(form) {
+    return form ? el("span", { class: "form-chip" }, WORDING.form_label + ": " + form) : null;
+  }
+
   /** A count in words, one or many: `forms` is [one, many], with {n} for the count. */
   function counted(forms, n) { return fill(n === 1 ? forms[0] : forms[1], { n: n.toLocaleString("en-GB") }); }
+
+  /** The same, as page pieces with the count in bold. */
+  function countedNodes(forms, n) { return fillNodes(n === 1 ? forms[0] : forms[1], { n: n.toLocaleString("en-GB") }); }
 
   /** Names as words: "A", "A and B", "A, B and C". */
   function listed(names) {
     return names.length < 2 ? names.join("") : names.slice(0, -1).join(", ") + LABELS.listAnd + names[names.length - 1];
   }
 
+  /** Whether movement is welcome (the computer isn't set to reduce motion). */
+  function motionOk() { return !window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
 
   /** A text as shown: swear words keep their first and last letters, the rest starred ("f**k"), with the answer's own
       list (engine/answer.py, MASKED_WORDS; Noemi, 12 Oct 2026). Display only: the quote checked word for word stays the
@@ -438,8 +901,8 @@ h1, h2, h3, h4 { line-height: 1.25; }
     const id = "feedback-" + (++feedbackForms);
     let verdict = null;
     const note = el("p", { class: "feedback-note", role: "status" });
-    const choices = [["useful", LABELS.feedbackUseful], ["not useful", LABELS.feedbackNotUseful]].map(([value, words]) => {
-      const choice = el("button", { type: "button", class: "choice", "aria-pressed": "false" }, words);
+    const choices = [["useful", LABELS.feedbackUseful, null], ["not useful", LABELS.feedbackNotUseful, "down"]].map(([value, words, turn]) => {
+      const choice = el("button", { type: "button", class: "choice", "aria-pressed": "false" }, icon("thumb", turn), words);
       choice.addEventListener("click", () => {
         verdict = value;
         for (const other of choices) other.setAttribute("aria-pressed", String(other === choice));
@@ -476,20 +939,27 @@ h1, h2, h3, h4 { line-height: 1.25; }
     return box;
   }
 
-  // --- "First time here?" (Noemi, 11 Oct 2026, to count new and returning visitors) ---
+  // --- The browser's own storage: "First time here?" and recent searches ---
 
   const FIRST_TIME_KEY = "credible-recs:first-time";
+  const RECENT_KEY = "credible-recs:recent";
 
-  /* The browser's own storage, for one thing only: that "First time here?" was asked. Every use is wrapped in try and
-     catch, since storage can be switched off, full, or refused inside a frame. */
+  /* The browser's own storage, for two things only: that "First time here?" was asked, and the visitor's own last few
+     requests (13 Oct 2026). Every use is wrapped in try and catch, since storage can be switched off, full, or refused
+     inside a frame. */
   function recall(key) { try { return localStorage.getItem(key); } catch (error) { return null; } }
   function remember(key, value) { try { localStorage.setItem(key, value); return true; } catch (error) { return false; } }
+  function forget(key) { try { localStorage.removeItem(key); } catch (error) { /* nothing kept */ } }
 
-  /** Asked once per browser, on its first visit: the browser notes it as asked as soon as it is shown (then answered
-      or closed), so nobody is asked twice; where the browser can't keep that note, it isn't shown at all. Only the yes
-      or no goes to the server, and it is counted as an event when visit counting is on. */
+  /** Asked once per browser: the browser notes it as asked once it has been seen (then answered or closed), so nobody
+      is asked twice; where the browser can't keep that note, it isn't shown at all. Since 13 Oct 2026 it sits in the
+      quiet zone at the end of the page, which not every visitor reaches, so until it has been on screen the note says
+      "pending" and the question is still asked on a later visit. Only the yes or no goes to the server, and it is
+      counted as an event when visit counting is on. */
   function firstTimeQuestion() {
-    if (recall(FIRST_TIME_KEY) !== null || !remember(FIRST_TIME_KEY, "asked")) return;
+    const state = recall(FIRST_TIME_KEY);
+    if (state !== null && state !== "pending") return;  // asked before: seen, answered or closed
+    if (!remember(FIRST_TIME_KEY, "pending")) return;  // the browser can't keep the note: never asked, so never twice
     const box = el("aside", { class: "first-time", "aria-labelledby": "first-time-question" });
     function answered(answer) {
       remember(FIRST_TIME_KEY, "answered");
@@ -501,12 +971,64 @@ h1, h2, h3, h4 { line-height: 1.25; }
     }
     const yes = el("button", { type: "button", class: "chip" }, LABELS.firstTimeYes);
     const no = el("button", { type: "button", class: "chip" }, LABELS.firstTimeNo);
-    const close = el("button", { type: "button", class: "close", "aria-label": LABELS.firstTimeClose, title: LABELS.firstTimeClose }, "\u00d7");
+    const close = el("button", { type: "button", class: "close", "aria-label": LABELS.firstTimeClose, title: LABELS.firstTimeClose }, "×");
     yes.addEventListener("click", () => answered("yes"));
     no.addEventListener("click", () => answered("no"));
     close.addEventListener("click", () => { remember(FIRST_TIME_KEY, "closed"); box.remove(); input.focus(); });
     box.append(el("p", { id: "first-time-question" }, LABELS.firstTimeQuestion), el("div", { class: "answers" }, yes, no), close);
-    form.before(box);
+    document.getElementById("first-time-slot").append(box);
+    whenSeen(box, () => remember(FIRST_TIME_KEY, "asked"));
+  }
+
+  /** Calls `then` once, when `node` has been at least half on screen; at once in a browser that can't tell. */
+  function whenSeen(node, then) {
+    if (!("IntersectionObserver" in window)) { then(); return; }
+    const watcher = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) { watcher.disconnect(); then(); }
+    }, { threshold: 0.5 });
+    watcher.observe(node);
+  }
+
+  /** The visitor's recent requests, newest first: only texts, as they typed them; anything else kept there is ignored. */
+  function recentSearches() {
+    let list;
+    try { list = JSON.parse(recall(RECENT_KEY) || "[]"); } catch (error) { return []; }
+    if (!Array.isArray(list)) return [];
+    return list.filter((item) => typeof item === "string" && item.trim() && item.length <= SETTINGS.maxChars).slice(0, RECENT_MAX);
+  }
+
+  /** Keeps a request the visitor searched for at the front of their recent searches (once, whatever its capitals). */
+  function rememberSearch(request) {
+    let recent = recentSearches().filter((other) => other.toLowerCase() !== request.toLowerCase());
+    recent = [request, ...recent].slice(0, RECENT_MAX);
+    remember(RECENT_KEY, JSON.stringify(recent));
+    drawRecent();
+  }
+
+  function clearRecent() {
+    forget(RECENT_KEY);
+    drawRecent();
+    input.focus();
+  }
+
+  /** The recent searches as chips, above the examples; nothing when there are none. */
+  function drawRecent() {
+    const box = document.getElementById("recent");
+    const recent = recentSearches();
+    box.hidden = !recent.length;
+    if (!recent.length) { box.replaceChildren(); return; }
+    const clear = el("button", { type: "button", class: "link-button", "aria-label": LABELS.recentClearLabel }, LABELS.recentClear);
+    clear.addEventListener("click", clearRecent);
+    box.replaceChildren(
+      el("h2", {}, el("span", {}, LABELS.recentHeading), el("span", { class: "note" }, LABELS.recentNote), clear),
+      el("ul", { class: "chips" }, ...recent.map((text) => el("li", {}, searchChip(text, icon("clock"))))));
+  }
+
+  /** A chip that searches for its text. */
+  function searchChip(text, mark) {
+    const chip = el("button", { type: "button", class: "chip" }, mark, el("span", {}, text));
+    chip.addEventListener("click", () => { input.value = text; search(text, true); });
+    return chip;
   }
 
   // --- The fixed text of the page ---
@@ -515,31 +1037,30 @@ h1, h2, h3, h4 { line-height: 1.25; }
   for (const node of document.querySelectorAll("[data-label]")) node.textContent = LABELS[node.dataset.label];
   input.placeholder = LABELS.searchPlaceholder;
   input.maxLength = SETTINGS.maxChars;
+  document.getElementById("steps").append(...LABELS.steps.map(([title, text]) => el("li", {}, el("h2", {}, title), el("p", {}, text))));
 
   function drawExamples() {
     const groups = document.getElementById("example-groups");
     for (const category of Object.keys(LABELS.categories)) {
       const items = SETTINGS.examples.filter((example) => example.category === category);
       if (!items.length) continue;
-      const chips = items.map((example) => {
-        const chip = el("button", { type: "button", class: "chip" }, example.text);
-        chip.addEventListener("click", () => { input.value = example.text; search(example.text, true); });
-        return el("li", {}, chip);
-      });
+      const chips = items.map((example) => el("li", {}, searchChip(example.text, null)));
       groups.append(el("div", { class: "example-group" }, el("h2", {}, LABELS.categories[category]), el("ul", { class: "chips" }, ...chips)));
     }
-    examples.hidden = !SETTINGS.examples.length;
+    examples.hidden = !SETTINGS.examples.length && !recentSearches().length;
   }
 
   // --- Drawing an answer ---
 
   function quoteBlock(quote) {
     const address = redditUrl(quote.url);
-    const link = address && el("a", { href: address, target: "_blank", rel: "noopener noreferrer" },
-      WORDING.link_text, el("span", { class: "visually-hidden" }, " " + LABELS.newTab));
+    const link = address && el("a", { href: address, target: "_blank", rel: "noopener noreferrer", class: "source-link" },
+      WORDING.link_text, el("span", { class: "visually-hidden" }, " " + LABELS.newTab), icon("external"));
+    const where = address && community(address);
     const badges = quote.badges.length > 0 && el("ul", { class: "badges", "aria-label": LABELS.badges },
       ...quote.badges.map((badge) => el("li", {}, badge)));
-    return el("figure", { class: "quote" }, el("blockquote", {}, masked(quote.text)), el("figcaption", {}, badges, link));
+    return el("figure", { class: "quote" }, el("blockquote", {}, masked(quote.text)),
+      el("figcaption", {}, where && el("span", { class: "community" }, where), badges, link));
   }
 
   function quoteList(quotes, extraClass) {
@@ -553,9 +1074,9 @@ h1, h2, h3, h4 { line-height: 1.25; }
     const link = shop && el("a", { href: shop, target: "_blank", rel: "noopener noreferrer" },
       WORDING.price_link_text, el("span", { class: "visually-hidden" }, " " + LABELS.shopNewTab));
     const line = price.amount === null
-      ? el("p", { class: "price muted" }, price.text)
-      : el("p", { class: "price" }, el("strong", {}, WORDING.price_label + ": "), price.text, link && " · ", link);
-    return [line, price.budget_note && el("p", { class: "budget" }, price.budget_note)];
+      ? el("p", { class: "fact price muted" }, icon("tag"), el("span", {}, price.text))
+      : el("p", { class: "fact price" }, icon("tag"), el("span", {}, el("strong", {}, WORDING.price_label + ": "), price.text, link && " · ", link));
+    return [line, price.budget_note && el("p", { class: price.budget_status === "within" ? "budget within" : "budget" }, price.budget_note)];
   }
 
   /** Whether the pick is still sold, as text: "Sold at <shop>, checked <date>" (or "Sold second-hand only: <shop>,
@@ -566,13 +1087,19 @@ h1, h2, h3, h4 { line-height: 1.25; }
     const shop = shopUrl(availability.url);
     const link = shop && el("a", { href: shop, target: "_blank", rel: "noopener noreferrer" },
       WORDING.price_link_text, el("span", { class: "visually-hidden" }, " " + LABELS.shopNewTab));
-    return el("p", { class: availability.available ? "availability" : "availability muted" },
-      availability.text, link && " · ", link);
+    return el("p", { class: availability.available ? "fact availability" : "fact availability muted" }, icon("store"),
+      el("span", {}, availability.text, link && " · ", link));
   }
 
   /** A pick's cautions (product facts, 9 Oct 2026): each "Note: ..." from the answer, drawn as text only. */
   function cautionLines(cautions) {
-    return (cautions || []).map((text) => el("p", { class: "caution" }, text));
+    return (cautions || []).map((text) => withIcon("info", el("p", { class: "caution" }, text)));
+  }
+
+  /** A line with an icon in front, its words wrapped so they flow beside it. */
+  function withIcon(name, line) {
+    line.replaceChildren(...[icon(name), el("span", {}, ...line.childNodes)].filter(Boolean));
+    return line;
   }
 
   /** "How to take care of it": each care tip in a few words, then its verified quote (drawn like every other quote,
@@ -589,113 +1116,322 @@ h1, h2, h3, h4 { line-height: 1.25; }
   }
 
   /** The note at the end (Noemi, 11 Oct 2026): tips about the kind of product, shown once rather than under every
-      pick. Nothing when there are none. */
+      pick. Since 13 Oct 2026 (round two) a tip callout: each tip in a few words, its quote a click away (a tip that is
+      its quote shows the quote). Nothing when there are none. */
   function careNote(answer) {
     if (!answer.care_note || !answer.care_note.length) return null;
     const heading = answer.product_type
       ? fill(WORDING.care_note_heading, { product_type: answer.product_type }) : WORDING.care_note_heading_any;
-    return el("section", { class: "care-note", "aria-labelledby": "care-note-heading" },
-      el("h3", { id: "care-note-heading" }, heading), careList(answer.care_note));
+    return el("section", { class: "zone-panel fam-care care-note", "aria-labelledby": "care-note-heading" },
+      sectionHead("care-note-heading", "leaf", heading),
+      el("ul", { class: "rows" }, ...answer.care_note.map((item) => item.tip
+        ? row(icon("leaf", "row-mark"), [el("span", { class: "row-name" }, masked(item.tip))], [], quoteBlock(item.quote))
+        : el("li", { class: "row tip-quote" }, quoteBlock(item.quote)))));
   }
 
   /** "In short:" and a one-line summary (Noemi, 13 Oct 2026): our own words, drawn as plain text and never like a
       quotation, with the note saying it is ours. Nothing when there is none (or when it failed a check). */
   function summaryLine(summary) {
     if (!summary || !summary.text) return null;
-    return el("p", { class: "summary" }, el("strong", {}, WORDING.summary_label + " "), summary.text,
-      el("span", { class: "summary-note" }, " " + WORDING.summary_note));
+    return el("p", { class: "summary" }, el("span", { class: "summary-label" }, WORDING.summary_label), summary.text,
+      el("span", { class: "summary-note" }, WORDING.summary_note));
   }
 
-  /** One pick's card. The score breakdown left it on 12 Oct 2026 (Noemi: too technical for most shoppers, and it
-      doesn't build trust): the API's JSON keeps it, and the how-we-score page explains the scoring. */
+  /** The credibility meter (13 Oct 2026): a bar of the credible voices for and against, with their numbers in words
+      beside it, so colour never carries them alone. Its numbers are the API's "voices", the same writers the answer's
+      reason, support line and share line count. Nothing without them. */
+  function trustMeter(voices) {
+    if (!voices || !voices.recommend) return null;
+    const bar = el("div", { class: "bar", "aria-hidden": "true" }, el("span", { class: "for" }), voices.warn ? el("span", { class: "against" }) : null);
+    bar.style.setProperty("--for", String(voices.recommend / (voices.recommend + voices.warn)));
+    return el("div", { class: "meter" }, bar, el("ul", { class: "legend", "aria-label": LABELS.meterHeading },
+      el("li", { class: "for" }, ...countedNodes(LABELS.meterFor, voices.recommend)),
+      el("li", { class: "against" }, ...(voices.warn ? countedNodes(LABELS.meterAgainst, voices.warn) : [LABELS.meterNoneAgainst])),
+      el("li", { class: "threads" }, ...countedNodes(LABELS.meterThreads, voices.threads))));
+  }
+
+  /** Why a pick or an item is here: the meter, the answer's own reason, its support line when it has one, and, for a
+      pick no credible voice warned against, the answer's own sentence saying so. */
+  function trustBox(item, sayNoDownsides) {
+    return el("div", { class: "trust" },
+      trustMeter(item.voices),
+      el("p", { class: "reason" }, item.reason),
+      item.support ? el("p", { class: "support" }, el("strong", {}, WORDING.support_label + ": "), item.support) : null,
+      sayNoDownsides && !item.downsides.length ? withIcon("check", el("p", { class: "no-downsides" }, WORDING.no_downsides)) : null);
+  }
+
+  /** "Known downsides": how many credible voices warned, then their verified quotes. Nothing when there are none. */
+  function downsideSection(item, heading) {
+    if (!item.downsides.length) return [];
+    return [el(heading, {}, WORDING.downsides_heading),
+      item.downsides_share ? el("p", { class: "share" }, item.downsides_share) : null,
+      quoteList(item.downsides, "downsides")];
+  }
+
+  /** A card's toggle for the rest of its evidence, saying what it holds ("1 more quote, 2 known downsides and 1 care
+      tip"); null when there is nothing more. */
+  function moreDetails(counts, ...content) {
+    const words = counts.filter(([, n]) => n).map(([forms, n]) => counted(forms, n));
+    if (!words.length) return null;
+    return el("details", { class: "more" }, el("summary", {}, el("span", {}, listed(words)), icon("chevron")),
+      el("div", { class: "more-body" }, ...content));
+  }
+
+  /** One pick's card: its name and summary, why it's here, its price and notes beside its first quotes, and the rest of
+      its evidence a click away. The score breakdown left it on 12 Oct 2026 (Noemi: too technical for most shoppers, and
+      it doesn't build trust): the API's JSON keeps it, and the how-we-score page explains the scoring. */
   function pickCard(pick) {
     const nameId = "pick-" + pick.rank;
-    return el("li", {}, el("article", { class: "card", "aria-labelledby": nameId },
+    const later = pick.quotes.slice(QUOTES_SHOWN_FIRST);
+    return el("li", {}, el("article", { class: "card pick", id: "card-" + pick.rank, tabindex: "-1", "aria-labelledby": nameId },
       el("div", { class: "card-head" },
         el("span", { class: "rank", "aria-hidden": "true" }, String(pick.rank)),
-        el("h3", { id: nameId }, el("span", { class: "visually-hidden" }, fill(LABELS.rank, { rank: pick.rank }) + " "), pick.name)),
-      formLine(pick.form),
-      pick.model ? el("p", { class: "model" }, WORDING.brand_model.replace("{model}", pick.model)
-        + (pick.model_price ? " (" + pick.model_price + ")" : "")) : null,
-      summaryLine(pick.summary),
-      el("p", { class: "reason" }, pick.reason),
-      el("p", { class: "support" }, el("strong", {}, WORDING.support_label + ": "), pick.support),
-      ...priceLines(pick.price), availabilityLine(pick.availability),
-      ...cautionLines(pick.cautions),
-      pick.disagreement && el("p", { class: "flag" }, pick.disagreement),
-      el("h4", {}, WORDING.quotes_heading),
-      quoteList(pick.quotes),
-      el("h4", {}, WORDING.downsides_heading),
-      // "1 of 15 credible voices warned against it:" (Noemi, 12 Oct 2026): a lone warning reads as what it is.
-      pick.downsides.length && pick.downsides_share ? el("p", { class: "share" }, pick.downsides_share) : null,
-      pick.downsides.length ? quoteList(pick.downsides, "downsides") : el("p", { class: "muted" }, WORDING.no_downsides),
-      ...careSection(pick.care)));
+        el("div", { class: "card-title" },
+          el("h3", { id: nameId }, el("span", { class: "visually-hidden" }, fill(LABELS.rank, { rank: pick.rank }) + " "), pick.name),
+          formChip(pick.form),
+          pick.model ? el("p", { class: "model" }, WORDING.brand_model.replace("{model}", pick.model)
+            + (pick.model_price ? " (" + pick.model_price + ")" : "")) : null)),
+      el("div", { class: "card-body" },
+        el("div", { class: "card-main" },
+          summaryLine(pick.summary),
+          trustBox(pick, true),
+          ...priceLines(pick.price), availabilityLine(pick.availability),
+          ...cautionLines(pick.cautions),
+          pick.disagreement && withIcon("alert", el("p", { class: "flag" }, pick.disagreement))),
+        el("div", { class: "card-evidence" },
+          el("h4", {}, WORDING.quotes_heading),
+          quoteList(pick.quotes.slice(0, QUOTES_SHOWN_FIRST)),
+          // "1 of 15 credible voices warned against it:" (Noemi, 12 Oct 2026): a lone warning reads as what it is.
+          moreDetails([[LABELS.moreQuotes, later.length], [LABELS.moreDownsides, pick.downsides.length], [LABELS.moreCare, (pick.care || []).length]],
+            later.length ? quoteList(later) : null, ...downsideSection(pick, "h4"), ...careSection(pick.care))))));
   }
 
-  /** A product's form in an answer to a request naming an ingredient but no type (13 Oct 2026): "Form: pads". */
-  function formLine(form) {
-    return form ? el("p", { class: "form" }, el("strong", {}, WORDING.form_label + ": "), form) : null;
+  /** "At a glance" (13 Oct 2026): the picks side by side, each row a way to its card. Nothing for a single pick. */
+  function glanceTable(picks) {
+    if (picks.length < 2) return null;
+    const head = el("tr", {}, el("th", { scope: "col" }, LABELS.glancePick), el("th", { scope: "col" }, LABELS.glanceVoices),
+      el("th", { scope: "col", class: "col-threads" }, LABELS.glanceThreads), el("th", { scope: "col" }, LABELS.glancePrice));
+    const rows = picks.map((pick) => {
+      const jump = el("button", { type: "button", class: "jump" }, el("span", { class: "rank-num", "aria-hidden": "true" }, String(pick.rank)),
+        el("span", { class: "name" }, pick.name));
+      jump.addEventListener("click", () => goToCard(pick.rank));
+      const voices = pick.voices || { recommend: 0, warn: 0, threads: 0 };
+      const meter = voices.recommend ? el("div", { class: "meter" }, el("div", { class: "bar", "aria-hidden": "true" },
+        el("span", { class: "for" }), voices.warn ? el("span", { class: "against" }) : null)) : null;
+      if (meter) meter.firstChild.style.setProperty("--for", String(voices.recommend / (voices.recommend + voices.warn)));
+      return el("tr", {}, el("th", { scope: "row" }, jump, formChip(pick.form)),
+        el("td", {}, el("div", { class: "tally" }, meter, el("span", {}, ...fillNodes(LABELS.glanceTally,
+          { for: voices.recommend.toLocaleString("en-GB"), against: voices.warn.toLocaleString("en-GB") })))),
+        el("td", { class: "n col-threads" }, voices.threads.toLocaleString("en-GB")),
+        el("td", { class: "n" }, priceAmount(pick.price)));
+    });
+    return el("section", { class: "glance", "aria-labelledby": "glance-heading" }, el("h3", { id: "glance-heading" }, LABELS.glanceHeading),
+      el("table", {}, el("thead", {}, head), el("tbody", {}, ...rows)));
   }
 
-  let worthCards = 0;  // numbers each item's heading, so its card is labelled by it
+  /** A checked price's amount alone ("£155", "£21.99"), or "Not checked yet". */
+  function priceAmount(price) {
+    if (price.amount === null || price.amount === undefined) return LABELS.glanceNoPrice;
+    const digits = price.amount % 1 ? 2 : 0;
+    try {
+      return new Intl.NumberFormat("en-GB", { style: "currency", currency: price.currency || "GBP",
+        minimumFractionDigits: digits, maximumFractionDigits: digits }).format(price.amount);
+    } catch (error) {
+      return price.text;
+    }
+  }
 
-  /** One "Also worth a look" item (Noemi, 13 Oct 2026): a lighter card than a pick's, with its summary, reason, price
-      (when known, or with a budget), where it is sold (when checked), cautions and one or two quotes; its downsides only
-      when credible voices warn against it. */
+  function goToCard(rank) {
+    const card = document.getElementById("card-" + rank);
+    if (!card) return;
+    card.scrollIntoView({ block: "start", behavior: motionOk() ? "smooth" : "auto" });
+    card.focus({ preventScroll: true });
+  }
+
+  /** A section's head under the picks (13 Oct 2026, round two): its icon, its name, then a thin rule. */
+  function sectionHead(id, mark, text) {
+    return el("div", { class: "section-head" }, el("span", { class: "section-icon", "aria-hidden": "true" }, icon(mark)), el("h3", { id }, text));
+  }
+
+  /** A compact row under the picks: a mark, its name and words, its tags, and the rest a click away (`body`). */
+  function row(mark, main, meta, ...body) {
+    return el("li", { class: "row" }, el("details", { class: "row-details" },
+      el("summary", {}, mark, el("span", { class: "row-main" }, ...main), el("span", { class: "row-meta" }, ...meta), icon("chevron", "row-chev")),
+      el("div", { class: "row-body" }, ...body)));
+  }
+
+  let worthCards = 0;  // numbers each item's heading, so its row is labelled by it
+
+  /** One "Also worth a look" item (Noemi, 13 Oct 2026): a compact row, plainly not a pick (round two, the same day: no
+      card, no meter), with how much backs it as a tag and its price when known. Opened: its summary, reason, price (when
+      known, or with a budget), where it is sold (when checked), cautions and one or two quotes; its downsides only when
+      credible voices warn against it. */
   function worthCard(item) {
     const nameId = "worth-" + (++worthCards);
-    return el("li", {}, el("article", { class: "card worth-card", "aria-labelledby": nameId },
-      el("h4", { id: nameId, class: "item-name" }, item.name),
-      formLine(item.form),
+    const head = [el("h4", { id: nameId, class: "row-name" }, item.name), formChip(item.form)];
+    const tags = [...worthTag(item.voices), item.price.amount !== null ? el("span", { class: "row-price" }, priceAmount(item.price)) : null];
+    return row(icon("eye", "row-mark"), head, tags,
       summaryLine(item.summary),
       el("p", { class: "reason" }, item.reason),
-      // Lighter than a pick's card: its price only when known or when the request has a budget, where it is sold only
-      // when checked.
+      // Its price only when known or when the request has a budget, where it is sold only when checked.
       ...(item.price.amount !== null || item.price.budget_note ? priceLines(item.price) : []),
       item.availability && item.availability.available !== null ? availabilityLine(item.availability) : null,
       ...cautionLines(item.cautions),
-      item.disagreement && el("p", { class: "flag" }, item.disagreement),
+      item.disagreement && withIcon("alert", el("p", { class: "flag" }, item.disagreement)),
       quoteList(item.quotes),
-      ...(item.downsides.length ? [el("h5", {}, WORDING.downsides_heading),
-        item.downsides_share ? el("p", { class: "share" }, item.downsides_share) : null,
-        quoteList(item.downsides, "downsides")] : [])));
+      ...downsideSection(item, "h5"));
   }
 
-  /** "Also worth a look" (Noemi, 13 Oct 2026): after the picks, in a section of its own, under the answer's note saying
-      how much less support its products have. Never mixed into the picks. Nothing when there are none. */
+  /** How much backs an "Also worth a look" item, as tags: "2 credible voices · 2 threads", and how many warned. */
+  function worthTag(voices) {
+    if (!voices || !voices.recommend) return [];
+    return [el("span", { class: "tag" }, counted(LABELS.tagVoices, voices.recommend) + " · " + counted(LABELS.tagThreads, voices.threads)),
+      voices.warn ? el("span", { class: "tag warned" }, counted(LABELS.meterAgainst, voices.warn)) : null];
+  }
+
+  /** "Also worth a look" (Noemi, 13 Oct 2026): after the picks, in a muted panel of its own, under the answer's note
+      saying how much less support its products have. Never mixed into the picks. Nothing when there are none. */
   function worthSection(answer) {
     if (!answer.worth_a_look || !answer.worth_a_look.length) return null;
-    return el("section", { class: "worth", "aria-labelledby": "worth-heading" },
-      el("h3", { id: "worth-heading" }, WORDING.worth_heading),
-      answer.worth_note && el("p", { class: "worth-note" }, answer.worth_note),
-      el("ul", { class: "picks" }, ...answer.worth_a_look.map((item) => worthCard(item))));
+    return el("section", { class: "zone-panel fam-worth worth", "aria-labelledby": "worth-heading" },
+      sectionHead("worth-heading", "eye", WORDING.worth_heading),
+      answer.worth_note && el("p", { class: "zone-note" }, answer.worth_note),
+      ...foldedList("rows", answer.worth_a_look.map((item) => worthCard(item)), WORTH_SHOWN_FIRST));
   }
 
+  /** "What to look for": an advice panel, a checklist with "Look for" beside "Avoid" (the answer's own words), each kind
+      with its quote a click away. */
   function lookForSection(items) {
-    return el("section", { class: "look-for", "aria-labelledby": "look-for-heading" },
-      el("h3", { id: "look-for-heading" }, WORDING.look_for_heading),
-      el("ul", { class: "items" }, ...items.map((item) => el("li", {},
-        el("p", { class: "lead" }, el("strong", {}, item.advice + ": " + item.kind + ".")),
-        quoteBlock(item.quote)))));
+    const groups = [];
+    for (const item of items) {
+      const group = groups.find(([advice]) => advice === item.advice);
+      if (group) group[1].push(item);
+      else groups.push([item.advice, [item]]);
+    }
+    groups.sort(([a], [b]) => (a === WORDING.avoid_advice) - (b === WORDING.avoid_advice));  // "Look for" first
+    return el("section", { class: "zone-panel fam-advice look-for", "aria-labelledby": "look-for-heading" },
+      sectionHead("look-for-heading", "compass", WORDING.look_for_heading),
+      el("div", { class: "checklist" }, ...groups.map(([advice, entries]) => {
+        const mark = advice === WORDING.avoid_advice ? "x" : "check";
+        return el("div", { class: "check-group " + (mark === "x" ? "avoid" : "seek") }, el("h4", {}, icon(mark), advice),
+          el("ul", { class: "rows" }, ...entries.map((item) => row(icon(mark, "row-mark"), [el("span", { class: "row-name" }, item.kind)], [],
+            quoteBlock(item.quote)))));
+      })));
   }
 
+  /** "Skip these": a warning panel, each product with a warning mark and why, its warnings a click away; the first few
+      in view, strongest first, the rest behind "Show N more" (13 Oct 2026: brand lines are listed too, so a list can
+      be long). Nothing is left out. */
   function skipSection(items) {
-    return el("section", { class: "skip", "aria-labelledby": "skip-heading" },
-      el("h3", { id: "skip-heading" }, WORDING.skip_heading),
-      el("ul", { class: "items" }, ...items.map((item) => el("li", {},
-        el("p", { class: "lead" }, el("strong", {}, item.name
-          + (item.form ? " (" + WORDING.form_label.toLowerCase() + ": " + item.form + ")" : "") + ": "), item.reason),
-        quoteList(item.quotes)))));
+    return el("section", { class: "zone-panel fam-skip skip", "aria-labelledby": "skip-heading" },
+      sectionHead("skip-heading", "ban", WORDING.skip_heading),
+      ...foldedList("rows", items.map((item) => row(icon("x", "row-mark"),
+        [el("strong", { class: "row-name" }, item.name), formChip(item.form), el("span", { class: "row-reason" }, item.reason)], [],
+        quoteList(item.quotes))), LIST_SHOWN_FIRST));
+  }
+
+  /** A list of `entries` (list items) with the first `first` in view and the rest in a second list, hidden behind a
+      toggle saying how many there are ("Show 10 more", then "Show fewer"). Just the list when they all fit. */
+  function foldedList(listClass, entries, first) {
+    const shown = el("ul", { class: listClass }, ...entries.slice(0, first));
+    if (entries.length <= first) return [shown];
+    const id = "folded-" + (++foldedLists);
+    const rest = el("ul", { class: listClass + " rest", id, hidden: "" }, ...entries.slice(first));
+    const more = counted(LABELS.showMore, entries.length - first);
+    const toggle = el("button", { type: "button", class: "button fold", "aria-expanded": "false", "aria-controls": id }, icon("chevron"), el("span", {}, more));
+    toggle.addEventListener("click", () => {
+      rest.hidden = !rest.hidden;
+      toggle.setAttribute("aria-expanded", String(!rest.hidden));
+      toggle.lastChild.textContent = rest.hidden ? more : LABELS.showFewer;
+    });
+    return [shown, rest, toggle];
   }
 
   function notice(kind, heading, ...lines) {
-    return el("div", { class: "notice " + kind }, heading && el("h2", {}, heading), ...lines.filter(Boolean).map((line) => el("p", {}, line)));
+    const mark = { honest: "info", error: "alert", question: "info" }[kind];
+    return el("div", { class: "notice " + kind }, icon(mark),
+      el("div", {}, heading && el("h2", {}, heading), ...lines.filter(Boolean).map((line) => el("p", {}, line))));
+  }
+
+  /** An error in the page's own words, with "Try again" when trying again could help. */
+  function errorNotice(code, request) {
+    const box = notice("error", null, errorText(code));
+    if (request && code !== "empty_request" && code !== "request_too_long") {
+      const again = el("button", { type: "button", class: "button" }, icon("retry"), LABELS.retry);
+      again.addEventListener("click", () => search(request, false));
+      box.lastChild.append(el("p", { class: "actions" }, again));
+    }
+    return box;
+  }
+
+  /** How much the answer read (Noemi, 12 Oct 2026; redrawn 13 Oct 2026 from her testing, as numbers): the threads
+      read, which are the most relevant to the request (or more of them, when those gave too few picks), the comments
+      in them, and the threads saved about the product, with why they weren't all read. Nothing without a count. */
+  function readingStrip(reading, ingredient) {
+    if (!reading || !reading.threads) return null;
+    const all = !(reading.threads_saved > reading.threads);
+    const allNote = ingredient ? fill(LABELS.readingAllIngredient, { ingredient }) : LABELS.readingAll;
+    const note = all ? allNote : reading.read_more ? LABELS.readingMore : LABELS.readingMost;
+    const stats = [stat(reading.threads, LABELS.readingThreads, note), stat(reading.comments || 0, LABELS.readingComments)];
+    if (!all) {
+      const ratio = el("dd", { class: "ratio", "aria-hidden": "true" }, el("span", {}));
+      ratio.style.setProperty("--share", String(reading.threads / reading.threads_saved));
+      const saved = ingredient ? LABELS.readingSavedIngredient.map((words) => fill(words, { ingredient })) : LABELS.readingSaved;
+      stats.push(stat(reading.threads_saved, saved, null, ratio));
+    }
+    const why = all ? null : el("details", { class: "why" }, el("summary", {}, LABELS.readingWhyHeading),
+      el("p", {}, fill(LABELS.readingWhy, { picks: SETTINGS.picksShown })));
+    return el("section", { class: "reading", "aria-label": LABELS.readingHeading }, el("dl", {}, ...stats), why);
+  }
+
+  /** One number of the strip: the number large, what it counts under it, and a note. */
+  function stat(n, forms, note, extra) {
+    return el("div", { class: "stat" }, el("dt", {}, n === 1 ? forms[0] : forms[1]), el("dd", { class: "value" }, n.toLocaleString("en-GB")),
+      note ? el("dd", { class: "note" }, note) : null, extra || null);
+  }
+
+  /** The answer's title, its category, and its tools: copy its link, open every card's details. */
+  function answerHead(title, category, withTools) {
+    const kicker = LABELS.categories[category];
+    return el("div", { class: "answer-head" },
+      el("div", {}, kicker ? el("p", { class: "kicker" }, kicker) : null, el("h2", { class: "answer-title", id: "answer-title" }, title)),
+      withTools ? el("div", { class: "tools" }, copyLinkButton(), openAllButton()) : null);
+  }
+
+  /** "Copy link": the page's address, which holds the request after its "#", for sharing the answer. Not offered
+      where the browser can't copy. */
+  function copyLinkButton() {
+    if (!navigator.clipboard || !window.isSecureContext) return null;
+    const words = el("span", { "aria-live": "polite" }, LABELS.copyLink);
+    const button = el("button", { type: "button", class: "tool" }, icon("link"), words);
+    button.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(location.href); words.textContent = LABELS.copied; } catch (error) { words.textContent = LABELS.copyFailed; }
+      setTimeout(() => { words.textContent = LABELS.copyLink; }, 2500);
+    });
+    return button;
+  }
+
+  function openAllButton() {
+    const words = el("span", {}, LABELS.expandAll);
+    const button = el("button", { type: "button", class: "tool" }, icon("chevron"), words);
+    button.addEventListener("click", () => {
+      const open = words.textContent === LABELS.expandAll;
+      for (const details of results.querySelectorAll("details.more, details.row-details")) details.open = open;
+      words.textContent = open ? LABELS.collapseAll : LABELS.expandAll;
+    });
+    return button;
   }
 
   /** Everything to show for one JSON answer from the server, ending with "Was this useful?" (11 Oct 2026): under the
-      picks, under module 1's question, and under its polite no alike. */
+      picks, under module 1's question, and under its polite no alike; since 13 Oct 2026 in a quiet zone with what was
+      left out of the answer. */
   function drawAnswer(data, request) {
-    return [...answerParts(data), feedbackForm(request, data.query)];
+    return [...answerParts(data), quietZone(aboutAnswer(data), feedbackForm(request, data.query))];
+  }
+
+  /** The quiet zone after an answer: housekeeping, drawn plainly (13 Oct 2026, round two). */
+  function quietZone(...parts) {
+    return el("div", { class: "quiet-zone" }, ...parts.filter(Boolean));
   }
 
   function answerParts(data) {
@@ -706,40 +1442,36 @@ h1, h2, h3, h4 { line-height: 1.25; }
     // The answer's own title since 13 Oct 2026 ("Top picks: salicylic acid products"); built here for older answers.
     const title = answer.title
       || (answer.product_type ? fill(WORDING.title, { product_type: answer.product_type }) : WORDING.title_any);
-    const parts = [el("h2", { class: "answer-title" }, title)];
-    // What every product shown has in common, for a request naming an active ingredient (13 Oct 2026).
-    if (answer.ingredient_note) parts.push(el("p", { class: "ingredient-note" }, answer.ingredient_note));
-    // How much was read for this answer, under its title (Noemi, 12 Oct 2026).
-    const reading = data.reading;
-    const about = query.ingredient_led && answer.ingredient ? answer.ingredient : answer.product_type;
-    if (reading && reading.threads) {
-      const saved = reading.threads_saved > reading.threads && about
-        ? fill(LABELS.readingSaved, { saved: reading.threads_saved.toLocaleString("en-GB"), product_type: about })
-        : "";
-      parts.push(el("p", { class: "reading" },
-        fill(LABELS.reading, { threads: reading.threads.toLocaleString("en-GB"), comments: reading.comments.toLocaleString("en-GB") })
-        + saved + "."));
-    }
+    // What every product shown has in common, for a request naming an active ingredient (13 Oct 2026), under the title;
+    // then how much was read for this answer (Noemi, 12 Oct 2026).
+    const ingredient = query.ingredient_led && answer.ingredient ? answer.ingredient : null;
+    const parts = [answerHead(title, query.category, answer.picks.length > 0),
+      answer.ingredient_note ? withIcon("check", el("p", { class: "ingredient-note" }, answer.ingredient_note)) : null,
+      readingStrip(data.reading, ingredient)];
     if (answer.message) parts.push(notice("honest", null, answer.message));
+    parts.push(glanceTable(answer.picks));
     if (answer.picks.length) parts.push(el("ol", { class: "picks" }, ...answer.picks.map(pickCard)));
-    const worth = worthSection(answer);
-    if (worth) parts.push(worth);
-    const extras = [];
-    if (answer.look_for.length) extras.push(lookForSection(answer.look_for));
-    if (answer.skip.length) extras.push(skipSection(answer.skip));
-    if (extras.length) parts.push(el("div", { class: "extras" }, ...extras));
-    const note = careNote(answer);
-    if (note) parts.push(note);
+    // Under the picks, each kind of section in its own panel (13 Oct 2026, round two): more products, products to
+    // skip, then advice and care.
+    const below = [worthSection(answer), answer.skip.length ? skipSection(answer.skip) : null,
+      answer.look_for.length ? lookForSection(answer.look_for) : null, careNote(answer)].filter(Boolean);
+    if (below.length) parts.push(el("div", { class: "more-zone" }, ...below));
+    return parts.filter(Boolean);
+  }
+
+  /** "About this answer": what was left out of the ranking and why, in the quiet zone; null when nothing was. */
+  function aboutAnswer(data) {
+    const answer = data.answer;
+    if (!answer || !data.left_out) return null;
     const overBudget = data.left_out.over_budget ? " " + fill(LABELS.leftOutBudget, { n: data.left_out.over_budget }) : "";
     const unavailable = data.left_out.unavailable ? " " + fill(LABELS.leftOutUnavailable, { n: data.left_out.unavailable }) : "";
     const notSuited = data.left_out.not_suited ? " " + fill(LABELS.leftOutNotSuited, { n: data.left_out.not_suited }) : "";
     const noIngredient = data.left_out.no_ingredient && answer.ingredient
       ? " " + fill(LABELS.leftOutNoIngredient, { n: data.left_out.no_ingredient, ingredient: answer.ingredient }) : "";
-    const leftOut = leftOutText(data.left_out);
-    parts.push(el("p", { class: "footnote" },
-      fill(LABELS.threadsRead, { n: data.threads_used.length }) + (leftOut ? " " + leftOut : "") + overBudget
-      + unavailable + notSuited + noIngredient));
-    return parts;
+    const leftOut = (leftOutText(data.left_out) + overBudget + unavailable + notSuited + noIngredient).trim();
+    if (!leftOut) return null;
+    return el("section", { class: "about", "aria-labelledby": "about-heading" },
+      el("h2", { id: "about-heading" }, icon("info"), LABELS.leftOutHeading), el("p", { class: "footnote" }, leftOut));
   }
 
   /** What was left out of the ranking, in words that say what is counted (names, never mentions or threads; Noemi,
@@ -756,6 +1488,14 @@ h1, h2, h3, h4 { line-height: 1.25; }
     return sentences.join(" ");
   }
 
+  /** The answer's shape while it's on its way: grey blocks where its title, strip and cards will be. */
+  function skeleton() {
+    const card = () => el("li", { class: "card" }, el("span", { class: "sk sk-title" }), el("span", { class: "sk sk-line" }),
+      el("span", { class: "sk sk-line short" }), el("span", { class: "sk sk-block" }));
+    return el("div", { class: "skeleton", "aria-hidden": "true" }, el("span", { class: "sk sk-heading" }), el("span", { class: "sk sk-strip" }),
+      el("ol", { class: "picks" }, card(), card(), card()));
+  }
+
   // --- Searching ---
 
   function showOnly(...nodes) {
@@ -767,19 +1507,38 @@ h1, h2, h3, h4 { line-height: 1.25; }
     return fill(text, { max: SETTINGS.maxChars });
   }
 
-  /** The loading line, while an answer is on its way. The button stays usable (12 Oct 2026: Noemi typed a new request
-      while a slow answer loaded, couldn't send it, and got the old answer under it): a new search cancels the old one. */
+  /** The loading line, while an answer is on its way, then the answer's shape if it takes more than a moment, and
+      after a few seconds why a fresh answer can take longer. The button stays usable (12 Oct 2026: Noemi typed a new
+      request while a slow answer loaded, couldn't send it, and got the old answer under it): a new search cancels the
+      old one. */
   function startLoading() {
+    clearTimeout(skeletonTimer);
+    clearTimeout(slowTimer);
     status.textContent = LABELS.loading;
     status.className = "status loading";
     results.setAttribute("aria-busy", "true");
+    skeletonTimer = setTimeout(() => showOnly(skeleton()), SKELETON_AFTER_MS);
+    slowTimer = setTimeout(() => { status.textContent = LABELS.loading + " " + LABELS.loadingSlow; }, SLOW_AFTER_MS);
   }
 
   /** Back to rest. `announce` is read out by screen readers only. */
   function stopLoading(announce) {
+    clearTimeout(skeletonTimer);
+    clearTimeout(slowTimer);
     status.textContent = announce || "";
     status.className = "status visually-hidden";
     results.setAttribute("aria-busy", "false");
+  }
+
+  /** How long drawing the newest answer took, in the browser's own performance timeline (User Timing): the pieces
+      built and put on the page ("credible-recs:draw"), and until the next frame after that ("credible-recs:shown").
+      For checking the page stays fast; never sent anywhere. */
+  function measureDraw() {
+    const start = drawStarted;
+    try { performance.measure("credible-recs:draw", { start, end: performance.now() }); } catch (error) { return; }
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      try { performance.measure("credible-recs:shown", { start, end: performance.now() }); } catch (error) { /* not measured */ }
+    }));
   }
 
   /** What to show for one request: the answer drawn, or an error in the page's own words; null when a newer search
@@ -790,12 +1549,20 @@ h1, h2, h3, h4 { line-height: 1.25; }
       response = await fetch("/api/answer?q=" + encodeURIComponent(request), { headers: { Accept: "application/json" }, signal });
     } catch (error) {
       if (signal.aborted) return null;  // a newer search cancelled this one: nothing to show
-      return [notice("error", null, errorText("offline"))];  // no reply at all: the server isn't running
+      return [errorNotice("offline", request)];  // no reply at all: the server isn't running
     }
     const data = await response.json().catch(() => ({}));
-    if (!response.ok || !data.query) return [notice("error", null, errorText(data.code))];
+    drawStarted = performance.now();
+    if (!response.ok || !data.query) return [errorNotice(data.code, request)];
     track(STATUS_EVENTS[data.query.status]);
     return drawAnswer(data, request);
+  }
+
+  /** The hero steps aside once there's a request (its box stays on top), and comes back without one. */
+  function compact(on) {
+    hero.classList.toggle("compact", on);
+    examples.open = !on;
+    if (on && hero.getBoundingClientRect().top < 0) hero.scrollIntoView({ block: "start" });
   }
 
   async function search(text, addToHistory) {
@@ -807,16 +1574,18 @@ h1, h2, h3, h4 { line-height: 1.25; }
     if (addToHistory) history.pushState(null, "", request ? "#q=" + encodeURIComponent(request) : location.pathname + location.search);
     if (!request) {
       stopLoading();
-      showOnly(notice("error", null, errorText("empty_request")));
+      showOnly(errorNotice("empty_request"));
       return;
     }
-    examples.open = false;
+    if (addToHistory) rememberSearch(request);
+    compact(true);
     startLoading();
     track("search");
     const shown = await fetchAnswer(request, controller.signal);
     if (mine !== latest || shown === null) return;  // a newer search has started: its answer is the one to show
     pending = null;
     showOnly(...shown);
+    measureDraw();
     stopLoading(LABELS.done);
   }
 
@@ -826,7 +1595,13 @@ h1, h2, h3, h4 { line-height: 1.25; }
     const request = requestInAddress();
     input.value = request;
     if (request.trim()) search(request, false);
-    else { latest++; showOnly(); stopLoading(); examples.open = true; }
+    else {
+      latest++;
+      if (pending) pending.abort();
+      showOnly();
+      stopLoading();
+      compact(false);
+    }
   }
 
   /** The request after "#q=" in the address. An older link with "?q=..." is first moved there, so the request leaves
@@ -842,11 +1617,29 @@ h1, h2, h3, h4 { line-height: 1.25; }
     return new URLSearchParams(location.hash.slice(1)).get("q") || "";
   }
 
+  /** Whether a key press belongs to a box someone is typing in. */
+  function isTyping(target) {
+    return Boolean(target && (target.isContentEditable || /^(input|textarea|select)$/i.test(target.tagName)));
+  }
+
+  /** "/" goes to the search box (13 Oct 2026), as on many search sites; never while someone is typing in a box. */
+  function onKey(event) {
+    if (event.key === "/" && !event.ctrlKey && !event.metaKey && !event.altKey && !isTyping(event.target)) {
+      event.preventDefault();
+      input.focus();
+      input.select();
+    }
+  }
+
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     search(input.value, true);
   });
   window.addEventListener("popstate", fromAddress);
+  document.addEventListener("keydown", onKey);
+  // Printing an answer prints all of it: every card's details open first.
+  window.addEventListener("beforeprint", () => { for (const details of results.querySelectorAll("details")) details.open = true; });
+  drawRecent();
   drawExamples();
   firstTimeQuestion();
   fromAddress();

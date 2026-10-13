@@ -85,6 +85,11 @@ The JSON for /api/answer (200):
                                                                are the verified quotes of the comments it sums up
                                                                (not shown; checked word for word and live like every
                                                                quote); null when the pick has none
+                            "voices": {"recommend": n,         the credible voices behind it, as numbers for the page's
+                                       "high": n, "medium": n, credibility meter (13 Oct 2026): its credible
+                                       "warn": n,              recommendations, of them the high and medium voices, the
+                                       "threads": n}           writers who warned (as the share line counts them) and
+                                                               the threads with a credible recommendation
                            }],
                  "look_for": [{"kind", "advice", "quote": {same shape}}],
                  "skip": [{"product_key", "name", "reason", "quotes": [...]}],
@@ -92,7 +97,7 @@ The JSON for /api/answer (200):
                                                     (Noemi, 11 Oct 2026); [] when there are none
                  "worth_a_look": [{"product_key", "name", "reason", "quotes", "downsides", "downsides_share",
                                    "disagreement", "score", "breakdown", "price", "availability", "cautions",
-                                   "summary"}],
+                                   "summary", "voices"}],
                                   "Also worth a look" (Noemi's decision 2, 13 Oct 2026): up to 3 products with 2
                                   credible recommendations across at least 2 threads, best first, shown apart after the
                                   picks and never among them; the same shapes as a pick's fields, with 1 or 2 quotes,
@@ -123,9 +128,12 @@ The JSON for /api/answer (200):
       "timing": {"total_s": s, "reddit_s": s,      diagnostic, never shown (13 Oct 2026): how long the answer took to
                  "checks": n,                      work out, how long it waited on live checks, how many it made,
                  "put_off": n},                    and the comments put off rather than wait (what they back is left out)
-      "reading": {"threads": n,                    how much the answer read (Noemi, 12 Oct 2026): the threads used,
+      "reading": {"threads": n,                    how much the answer read (Noemi, 12 Oct 2026): the threads used
+                                                   (the most relevant to the request),
                   "threads_saved": n,              the extracted threads saved about the product,
-                  "comments": n}                   and the comments the AI read in the threads used
+                  "comments": n,                   the comments the AI read in the threads used,
+                  "read_more": bool}               and whether the first threads gave too few picks, so more were read
+                                                   (13 Oct 2026, for the page's reading strip)
     }
 
 POST /api/feedback takes one JSON object (Content-Type: application/json, at most FEEDBACK_MAX_BODY_BYTES) in one of
@@ -162,6 +170,7 @@ Feedback goes to data/feedback/feedback.jsonl, or to Noemi's private dataset whe
 HF_TOKEN are set (engine/feedback.py).
 """
 
+import gzip
 import html
 import ipaddress
 import json
@@ -183,7 +192,7 @@ from engine import answer as wording
 from engine import feedback, how_page
 from engine.answer import answer_to_dict, unverified_claims
 from engine.config import (BRAND_PICK_MODEL, FEEDBACK_MAX_BODY_BYTES, FEEDBACK_MAX_COMMENT_CHARS, LEFT_OUT_NAMES_SHOWN,
-                           RATE_LIMIT_ANSWERS, RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS, WEB_MAX_REQUEST_CHARS,
+                           PICKS_SHOWN, RATE_LIMIT_ANSWERS, RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS, WEB_MAX_REQUEST_CHARS,
                            WEB_PORT)
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.live_check import BUNDLE_RELOAD_SECONDS
@@ -205,6 +214,9 @@ MAX_HOSTS_NAMED = 20  # public mode names at most this many refused hosts in its
 
 HTML = "text/html; charset=utf-8"
 JSON = "application/json; charset=utf-8"
+# Pages and answers are sent gzipped to browsers that say they take it (13 Oct 2026, with the redesigned page: 93 KB
+# becomes 27 KB on the way); smaller bodies, such as errors, as they are.
+GZIP_MIN_BYTES = 1024
 
 # Sent with every response. The page may load and call nothing but this server: no outside scripts, styles, fonts
 # or images, and no requests elsewhere. Its links still open, in a new tab: to Reddit, and to a shop's own page for a
@@ -431,9 +443,10 @@ def answer_json(result: PipelineResult) -> dict:
                      "not_suited": len(result.left_out_not_suited),
                      "no_ingredient": len(result.left_out_no_ingredient)},
         # How much the answer read (Noemi, 12 Oct 2026): the threads used, the extracted threads saved about the product,
-        # and the comments the AI read in the threads used.
+        # and the comments the AI read in the threads used; and since 13 Oct 2026 (Noemi's testing: the page's line
+        # about it confused her) whether the first threads gave too few picks, so more were read.
         "reading": {"threads": len(result.threads_used), "threads_saved": result.threads_available,
-                    "comments": result.comments_read},
+                    "comments": result.comments_read, "read_more": result.read_more},
     }
 
 
@@ -664,7 +677,8 @@ def search_page(site: Site = LOCAL) -> bytes:
     site's settings filled in, and GoatCounter's script when visits are counted."""
     settings = {"wording": answer_wording(), "examples": example_requests(), "maxChars": WEB_MAX_REQUEST_CHARS,
                 "maxCommentChars": FEEDBACK_MAX_COMMENT_CHARS, "counting": site.goatcounter is not None,
-                "public": site.public}
+                "public": site.public,
+                "picksShown": PICKS_SHOWN}  # the reading strip's "why not all?" (13 Oct 2026)
     template = PAGE_TEMPLATE.read_text(encoding="utf-8")
     page = template.replace("{{COUNTER}}", counter_script(site.goatcounter))  # first: the settings could hold any text
     return page.replace("{{SETTINGS}}", _script_json(settings)).encode("utf-8")
@@ -681,6 +695,9 @@ def answer_wording() -> dict[str, str]:
         "no_downsides": wording.NO_DOWNSIDES,
         "breakdown_heading": wording.BREAKDOWN_HEADING,
         "look_for_heading": wording.LOOK_FOR_HEADING,
+        # The two kinds of advice under it (13 Oct 2026, the redesign marks each with its own sign): "Look for", "Avoid".
+        "look_for_advice": wording.LOOK_FOR,
+        "avoid_advice": wording.AVOID,
         "skip_heading": wording.SKIP_HEADING,
         "link_text": wording.LINK_TEXT,
         "price_label": wording.PRICE_LABEL,  # "Price"
@@ -762,6 +779,9 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _send(self, status: int, content_type: str, body: bytes, path: str | None = None,
               extra: dict[str, str] | None = None) -> None:
+        if len(body) >= GZIP_MIN_BYTES and takes_gzip(self.headers.get("Accept-Encoding")):
+            body = gzip.compress(body, compresslevel=6)
+            extra = {**(extra or {}), "Content-Encoding": "gzip", "Vary": "Accept-Encoding"}
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
@@ -812,6 +832,20 @@ class _PublicHandler(_Handler):
 
     def log_message(self, format, *args):
         """No access log on the public site: no visitors' addresses, no requests (Noemi, 11 Oct 2026)."""
+
+
+def takes_gzip(accept_encoding: str | None) -> bool:
+    """Whether a browser's Accept-Encoding header takes gzip ("gzip", "*", "gzip;q=0.8"), and not with q=0."""
+    for entry in (accept_encoding or "").lower().split(","):
+        name, _, params = entry.strip().partition(";")
+        if name.strip() not in ("gzip", "*"):
+            continue
+        quality = params.strip().removeprefix("q=").strip() if params.strip().startswith("q=") else "1"
+        try:
+            return float(quality) > 0
+        except ValueError:
+            return False
+    return False
 
 
 def _local_names(port: int) -> tuple[str, ...]:
