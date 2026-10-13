@@ -115,8 +115,8 @@ from datetime import date
 from pathlib import Path
 
 from engine.answer import (
-    Answer, _every_quote, comment_bodies, quotes_to_check, render_markdown, says_the_opposite, shown_availability,
-    shown_price, write_answer,
+    Answer, _every_quote, comment_bodies, needed_quotes, quotes_to_check, render_markdown, says_the_opposite,
+    shown_availability, shown_price, without_unread, write_answer,
 )
 from engine.brand_lines import BrandLine, find_brand_line, load_brand_lines, not_sold_reason
 from engine.care_tips import CareTips, attach_care_tips, credible_care_tips
@@ -219,6 +219,9 @@ class PipelineResult:
     # that pick's Known downsides instead (10 Oct 2026).
     folded_skips: list[FoldedBrandPick] = field(default_factory=list)
     live_dropped: dict[str, int] = field(default_factory=dict)  # comments dropped by the live check, by reason
+    # Comments the live check put off rather than wait for Reddit's allowance (13 Oct 2026): what stands on them ("Also
+    # worth a look", a summary) is left out of this answer, and the web page doesn't remember it.
+    live_put_off: int = 0
     # Ids of extracted threads about the product not checked live on Reddit in the last LIVE_CHECK_SHOWN_DAYS: not
     # used until `python -m engine.library check-live` reads them again (Noemi, 9 Oct 2026).
     waiting_live_check: list[str] = field(default_factory=list)
@@ -417,20 +420,30 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
     least one comment, so it always ends. result.live_dropped counts the comments dropped by reason. Brand picks step
     aside for their own products again on the new ranking (`groups` are the product groups ranked): one whose product
     no longer qualifies comes back.
+
+    The picks first (Noemi, 13 Oct 2026): a comment quoted only by "Also worth a look" or a summary (none of the
+    needed_quotes) is read only if that needs no wait for Reddit's allowance (the checker's wait=False). Put off, it
+    keeps its votes (it hasn't failed), and what stands on it is left out of the answer (without_unread);
+    result.live_put_off counts them.
     """
     failed: set[str] = set()
     while True:
-        new = set()
+        new, put_off = set(), set()
         quotes = [quote for quote in quotes_to_check(result.answer) if quote.comment_id not in failed]
-        outcomes = _checked_together(live_checker, quotes)
+        may_wait = {quote.comment_id for quote in needed_quotes(result.answer)}
+        outcomes = _checked_together(live_checker, quotes, may_wait)
         for quote in quotes:  # in the answer's order: a comment's first quote that fails says why it was dropped
-            if quote.comment_id in new:
+            if quote.comment_id in new or quote.comment_id in put_off:
                 continue
             outcome = outcomes[(quote.url, quote.text)]
-            if not outcome.show:
+            if outcome.status == "later":
+                put_off.add(quote.comment_id)
+            elif not outcome.show:
                 new.add(quote.comment_id)
                 result.live_dropped[outcome.status] = result.live_dropped.get(outcome.status, 0) + 1
         if not new:
+            if put_off:
+                result.answer, result.live_put_off = without_unread(result.answer, put_off), len(put_off)
             return
         failed |= new
         result.bodies = {cid: body for cid, body in result.bodies.items() if cid not in failed}
@@ -444,22 +457,26 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
                                      _worth_left_out(result.ranking, groups))
 
 
-def _checked_together(live_checker, quotes) -> dict[tuple[str, str], object]:
+def _checked_together(live_checker, quotes, may_wait: set[str] | None = None) -> dict[tuple[str, str], object]:
     """The live check of each quote, {(link, text): engine.live_check.LiveResult}, with LIVE_CHECK_PARALLEL comments
     read at once (latency, 12 Oct 2026: one at a time, the checks were most of an answer's wait). Each comment's quotes
     are checked one after another, in the answer's order, up to its first that fails: the very checks made when every
     quote was checked in turn, so no comment is read more than before, and none of its later quotes, which the failure
-    drops anyway."""
+    drops anyway. A comment not in `may_wait` (when given) is checked with wait=False, after those that may wait."""
     by_comment: dict[str, list] = {}
     for quote in quotes:
         by_comment.setdefault(quote.comment_id, []).append(quote)
+    if may_wait is not None:  # the picks' comments first, so the reads free now go to them
+        by_comment = dict(sorted(by_comment.items(), key=lambda item: item[0] not in may_wait))
 
     def check_comment(own: list) -> dict[tuple[str, str], object]:
         found = {}
+        waits = may_wait is None or own[0].comment_id in may_wait
         for quote in own:
             key = (quote.url, quote.text)
             if key not in found:
-                found[key] = live_checker.check(quote.url, quote.text)
+                found[key] = (live_checker.check(quote.url, quote.text) if waits
+                              else live_checker.check(quote.url, quote.text, wait=False))
                 if not found[key].show:
                     break
         return found

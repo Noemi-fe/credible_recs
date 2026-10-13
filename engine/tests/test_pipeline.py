@@ -788,7 +788,7 @@ class FakeLive:
     def __init__(self, gone=()):
         self.gone, self.asked = set(gone), []
 
-    def check(self, url, quote):
+    def check(self, url, quote, wait=True):
         from engine.live_check import LiveResult
 
         self.asked.append(url)

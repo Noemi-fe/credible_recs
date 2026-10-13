@@ -112,7 +112,8 @@ The JSON for /api/answer (200):
                    "unavailable": n,               products the price list says are no longer sold (9 Oct 2026),
                    "not_suited": n},               and products whose checked facts clash with the request (9 Oct 2026)
       "timing": {"total_s": s, "reddit_s": s,      diagnostic, never shown (13 Oct 2026): how long the answer took to
-                 "checks": n},                     work out, how long it waited on live checks, and how many it made
+                 "checks": n,                      work out, how long it waited on live checks, how many it made,
+                 "put_off": n},                    and the comments put off rather than wait (what they back is left out)
       "reading": {"threads": n,                    how much the answer read (Noemi, 12 Oct 2026): the threads used,
                   "threads_saved": n,              the extracted threads saved about the product,
                   "comments": n}                   and the comments the AI read in the threads used
@@ -308,10 +309,14 @@ def answer_response(request: str, library_dir: Path, quiet: bool = False) -> tup
         remembered = _answers.get(key)
         if remembered is None or _clock() - remembered[0] >= ANSWER_KEEP_HOURS * 3600:
             try:
-                _answers[key] = (_clock(), _fresh_answer(request, library_dir, quiet))
+                response, whole = _fresh_answer(request, library_dir, quiet)
             except Exception:  # a broken library file, say: reported in the server's window, never sent
                 _report_failure(quiet)
                 return _error(500, ENGINE_FAILED)  # not remembered: fixing the file and asking again works
+            if not whole:  # something was left out for Reddit's allowance (13 Oct 2026): worked out again next time
+                _answers.pop(key, None)
+                return response
+            _answers[key] = (_clock(), response)
         return _answers[key][1]
 
 
@@ -352,8 +357,9 @@ class _TimedChecker:
         return total
 
 
-def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple[int, str, bytes]:
-    """Runs the pipeline, then checks every quote once more; one that fails refuses the whole answer."""
+def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple[tuple[int, str, bytes], bool]:
+    """Runs the pipeline, then checks every quote once more; one that fails refuses the whole answer. Also whether the
+    answer is whole: nothing in it was left out because its live check would have waited (13 Oct 2026)."""
     with_profiles = {} if profiles is None else {"profiles": profiles}
     timed = _TimedChecker(live) if live is not None else None
     if timed is not None:
@@ -361,7 +367,7 @@ def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple
     started = time.perf_counter()
     result = answer_request(request, library_dir, **with_profiles)
     timing = {"total_s": round(time.perf_counter() - started, 2), "reddit_s": round(timed.waited(), 2) if timed else 0.0,
-              "checks": timed.checks if timed else 0}
+              "checks": timed.checks if timed else 0, "put_off": result.live_put_off}
     if result.skipped_files:  # a broken library file was left out of the answer (11 Oct 2026): say so where it runs
         print(f"Library files left out ({len(result.skipped_files)} problem(s)); first: {result.skipped_files[0]}",
               file=sys.stderr)
@@ -370,8 +376,8 @@ def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple
         if problems:  # the problems name comments, never the failed quote's words
             asked = "a request" if quiet else repr(request)
             print(f"Refused the answer to {asked}:", *problems, sep="\n  - ", file=sys.stderr)
-            return _error(500, REFUSED)
-    return 200, JSON, _json_bytes(answer_json(result) | {"timing": timing})
+            return _error(500, REFUSED), True
+    return (200, JSON, _json_bytes(answer_json(result) | {"timing": timing})), result.live_put_off == 0
 
 
 def _report_failure(quiet: bool) -> None:

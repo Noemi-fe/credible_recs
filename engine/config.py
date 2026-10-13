@@ -332,6 +332,15 @@ LIVE_CHECK_PARALLEL = 8
 # 3 s spacing did before. Decided by Claude, reported.
 LIVE_CHECK_BURST = 40
 LIVE_CHECK_REFILL_SECONDS = 4.0
+# Paced by what Reddit says is left (13 Oct 2026, Noemi: "go ahead with the reddit header pacing"): every embed page
+# says how many reads the address has left in the current 10 minutes (x-ratelimit-remaining) and when they come back
+# (x-ratelimit-reset, seconds). Reads go at once while LIVE_CHECK_SPREAD_BELOW or more are left beyond the
+# LIVE_CHECK_RESERVE kept for other reads from the same address (on Google Cloud Run it is shared); with fewer, they are
+# spread evenly over the rest of the 10 minutes, so they never run out before it ends; with none, the next read waits
+# for the next 10 minutes. About 140 of each 200 go at once, against 40 with the burst alone. Until Reddit has said,
+# the burst and refill above. Numbers decided by Claude, reported.
+LIVE_CHECK_RESERVE = 10
+LIVE_CHECK_SPREAD_BELOW = 50
 
 # --- Care tips (Noemi, 9 Oct 2026) ---
 # Alongside each pick, credible advice from its threads on looking after it ("descale it every 6 months"; extraction

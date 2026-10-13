@@ -87,7 +87,7 @@ asked Claude to decide wording and report it).
 import dataclasses
 import re
 from collections.abc import Callable, Collection, Iterable, Iterator, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 
 from engine.care_tips import CareTip, CareTips, is_repair, similar_tips, tips_by_agreement
@@ -1466,6 +1466,27 @@ def quotes_to_check(answer: Answer) -> list[ShownQuote]:
     """Every quote the live check must pass before the answer is shown: the quotes it shows (shown_quotes), then those
     its summaries cite (13 Oct 2026), so a summary never stands on a comment deleted or changed on Reddit since."""
     return shown_quotes(answer) + [quote for _, shown in _summaries(answer) for quote in shown.sources]
+
+
+def needed_quotes(answer: Answer) -> list[ShownQuote]:
+    """The quotes an answer can't go without (Noemi, 13 Oct 2026: the picks first): every quote it shows but those of
+    "Also worth a look". Their live checks wait for Reddit's allowance when they must; the others' (that section's, and
+    those the summaries cite) never do."""
+    return [quote for where, quote in _every_quote(answer) if not where.startswith("worth a look")]
+
+
+def without_unread(answer: Answer, comment_ids: set[str]) -> Answer:
+    """The answer without what stands on these comments, which the live check put off (13 Oct 2026): an "Also worth a
+    look" item quoting one (in its quotes or downsides), and a summary citing one. Nothing else changes."""
+    def unread(quotes) -> bool:
+        return any(quote.comment_id in comment_ids for quote in quotes)
+
+    def summary_read(shown):
+        return replace(shown, summary=None) if shown.summary is not None and unread(shown.summary.sources) else shown
+
+    worth = [summary_read(item) for item in answer.worth_a_look if not unread((*item.quotes, *item.downsides))]
+    return replace(answer, picks=[summary_read(pick) for pick in answer.picks], worth_a_look=worth,
+                   worth_note=answer.worth_note if worth else None)
 
 
 def shown_quotes(answer: Answer) -> list[ShownQuote]:

@@ -90,7 +90,7 @@ class StandInChecker:
         self.asked: list[tuple[str, str]] = []  # (comment link, quote), every check asked
         self.passed: set[tuple[str, str]] = set()
 
-    def check(self, comment_url: str, quote: str):
+    def check(self, comment_url: str, quote: str, wait: bool = True):
         from engine.live_check import LiveResult
 
         with self._lock:
@@ -126,8 +126,8 @@ class RecordingChecker:
         self.asked: list[tuple[str, str]] = []
         self.passed: set[tuple[str, str]] = set()
 
-    def check(self, comment_url: str, quote: str):
-        outcome = self.real.check(comment_url, quote)
+    def check(self, comment_url: str, quote: str, wait: bool = True):
+        outcome = self.real.check(comment_url, quote, wait=wait)
         with self._lock:
             self.asked.append((comment_url, quote))
             if outcome.show:

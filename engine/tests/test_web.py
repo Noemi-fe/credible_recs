@@ -232,6 +232,25 @@ def test_answers_are_remembered_for_the_life_of_the_process(tmp_path, monkeypatc
     assert first == again and calls == [REQUEST]
 
 
+def test_an_answer_that_left_something_out_for_reddits_allowance_is_worked_out_again_next_time(tmp_path, monkeypatch):
+    # 13 Oct 2026: "Also worth a look" and summaries never wait for Reddit's allowance; an answer that left one out for
+    # that is not remembered, so the next ask (its picks' checks saved by then) can show it.
+    import dataclasses
+
+    calls = []
+
+    def counting(request, library_dir):
+        calls.append(request)
+        return dataclasses.replace(answer_request(request, library_dir), live_put_off=1)
+
+    monkeypatch.setattr(web, "answer_request", counting)
+    library_dir = kettle_library(tmp_path)
+    first = web.handle_request(f"/api/answer?q={quote(REQUEST)}", library_dir)
+    web.handle_request(f"/api/answer?q={quote(REQUEST)}", library_dir)
+    assert first[0] == 200 and calls == [REQUEST, REQUEST]
+    assert json.loads(first[2])["timing"]["put_off"] == 1
+
+
 def test_a_remembered_answer_is_worked_out_again_after_its_time(tmp_path, monkeypatch):
     # 12 Oct 2026 (the latency builder): answers were remembered for as long as the server ran, so their quotes were
     # checked live on Reddit once a run; the deletion rule keeps Reddit content at most 48 hours. A remembered answer
@@ -506,7 +525,7 @@ def test_a_fresh_answer_says_how_long_it_took_and_how_long_reddit_did(tmp_path, 
     # on live checks (overlapping checks counted once) and how many checks it made. Diagnostic only: never shown.
     status, _, data = ask(REQUEST, kettle_library(tmp_path))
     timing = data["timing"]
-    assert set(timing) == {"total_s", "reddit_s", "checks"}
+    assert set(timing) == {"total_s", "reddit_s", "checks", "put_off"}  # put_off: 13 Oct 2026, see below
     assert timing["total_s"] >= timing["reddit_s"] >= 0 and timing["checks"] >= 0
 
 

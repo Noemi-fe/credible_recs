@@ -28,7 +28,7 @@ class SlowLive:
         self.running = self.most = 0
         self._lock = threading.Lock()
 
-    def check(self, url, quote):
+    def check(self, url, quote, wait=True):
         with self._lock:
             self.running += 1
             self.most = max(self.most, self.running)
@@ -66,7 +66,7 @@ class OneAtATime:
     def __init__(self, gone=()):
         self.inner = SlowLive(pause=0, gone=gone)
 
-    def check(self, url, quote):
+    def check(self, url, quote, wait=True):
         return self.inner.check(url, quote)
 
 
@@ -177,7 +177,7 @@ class EverythingGone:
     def __init__(self):
         self.asked = []
 
-    def check(self, url, quote):
+    def check(self, url, quote, wait=True):
         self.asked.append((url, quote))
         return LiveResult("gone", "deleted")
 
