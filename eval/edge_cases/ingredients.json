@@ -1,0 +1,33 @@
+{
+  "approved": false,
+  "approved_note": "Drafted by Claude on 13 Oct 2026 for the active-ingredient change (engine/ingredients.py); made-up wording; not yet checked by Noemi. 'expected' is module 1's routing; every shown product is checked for evidence of the ingredients asked for (engine/ingredient_eval.py).",
+  "cases": [
+    {"id": "i01", "text": "salicylic acid for acne",
+     "expected": {"product_type": "salicylic acid product", "ingredients": ["salicylic acid"], "ingredient_led": true},
+     "why": "Noemi's live test: an ingredient with no product type, across forms."},
+    {"id": "i02", "text": "niacinamide serum for oily skin",
+     "expected": {"product_type": "serum", "ingredients": ["niacinamide"], "ingredient_led": false},
+     "why": "A type named with the ingredient: the type stays, the ingredient is required."},
+    {"id": "i03", "text": "azelaic acid for redness",
+     "expected": {"product_type": "azelaic acid product", "ingredients": ["azelaic acid"], "ingredient_led": true},
+     "why": "An ingredient the rules had no clue word for at all: was a question."},
+    {"id": "i04", "text": "gentle retinol for beginners",
+     "expected": {"product_type": "retinoid", "ingredients": [], "ingredient_led": false},
+     "why": "Retinol is the retinoid type's own word (Noemi, 7 Oct 2026, q05): no requirement beyond the type; retinoid evidence is reported."},
+    {"id": "i05", "text": "vitamin c serum under £20",
+     "expected": {"product_type": "serum", "ingredients": ["vitamin C"], "ingredient_led": false},
+     "why": "A type, an ingredient and a budget."},
+    {"id": "i06", "text": "glycolic acid toner",
+     "expected": {"product_type": "toner", "ingredients": ["glycolic acid"], "ingredient_led": false},
+     "why": "Acid toners are typed as exfoliants by the AI: a toner named as one still counts."},
+    {"id": "i07", "text": "a bha for blackheads",
+     "expected": {"product_type": "BHA product", "ingredients": ["BHA"], "ingredient_led": true},
+     "why": "A BHA is salicylic acid or betaine salicylate: broader than salicylic acid."},
+    {"id": "i08", "text": "salicylic acid cleanser",
+     "expected": {"product_type": "cleanser", "ingredients": ["salicylic acid"], "ingredient_led": false},
+     "why": "The example of a type named with the ingredient."},
+    {"id": "i09", "text": "moisturiser without niacinamide",
+     "expected": {"product_type": "moisturiser", "ingredients": [], "ingredient_led": false},
+     "why": "An ingredient to avoid is never required."}
+  ]
+}

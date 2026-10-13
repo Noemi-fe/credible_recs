@@ -2,7 +2,10 @@
 
 Every request ends in one of three outcomes:
 - "ok": the need is clear. We know the category, the product type, any constraints (budget, skin type,
-  size, SPF, how long it should last), what to search for and in which subreddits.
+  size, SPF, how long it should last, the active ingredients it must contain), what to search for and in which
+  subreddits. A request that names an active ingredient but no product type ("salicylic acid for acne") is
+  ingredient-led (13 Oct 2026, engine/ingredients.py): its product type is the ingredient's own ("salicylic acid
+  product"), and its answer may show every type of skincare product that can carry it.
 - "clarify": the need is too vague, or holds two needs at once. Instead of guessing, we ask one question.
 - "out_of_scope": the product isn't skincare, haircare or kitchen gear. We say so politely.
 """
@@ -14,7 +17,9 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
-from engine.config import CONDITION_SUBREDDITS, SUBREDDITS, THREAD_CATEGORIES
+from engine.config import CONDITION_SUBREDDITS, INGREDIENTS, SUBREDDITS, THREAD_CATEGORIES
+from engine.ingredients import TYPE_OWN_INGREDIENT, blanked, find_ingredients, ingredient_type_name, ingredients_of_type
+from engine.ingredients import shown as shown_ingredients
 from engine.models import Record
 from engine.text import one_edit_apart
 
@@ -48,6 +53,18 @@ class Constraints(Record):
     spf: int | None = Field(default=None, ge=1, le=100)
     min_years: int | None = Field(default=None, ge=1)  # "a kettle that lasts 10+ years"
     must_haves: list[str] = []  # free text, e.g. "fragrance-free", "plastic-free"
+    # The active ingredients every product shown must contain (13 Oct 2026; keys of config.INGREDIENTS), such as
+    # "salicylic acid". Noemi's call of 7 Oct 2026 (q04) kept a named ingredient apart from the product type; it is
+    # kept in this list of its own since 13 Oct 2026, a hard requirement checked against facts and names
+    # (engine/pipeline.py).
+    ingredients: list[str] = []
+
+    @model_validator(mode="after")
+    def _known_ingredients(self) -> "Constraints":
+        unknown = [i for i in self.ingredients if i not in INGREDIENTS]
+        if unknown:
+            raise ValueError(f"unknown ingredients: {', '.join(unknown)} (config.INGREDIENTS)")
+        return self
 
 
 class ParsedQuery(Record):
@@ -60,6 +77,9 @@ class ParsedQuery(Record):
     subreddits: list[str] = []
     question: str | None = None  # the one clarifying question, when status is "clarify"
     message: str | None = None  # the polite no, when status is "out_of_scope"
+    # True when the request names active ingredients and no product type (13 Oct 2026): product_type is then the
+    # ingredients' own (engine.ingredients.ingredient_type_name), and its answer may show any type that carries them.
+    ingredient_led: bool = False
 
     @model_validator(mode="after")
     def _fits_its_outcome(self) -> "ParsedQuery":
@@ -179,6 +199,8 @@ LOOKALIKES = (
     "ice cream", "crock pot", "instant pot", "coffee pot", "sheet pan", "cake pan", "loaf pan", "roasting pan",
     "baking pan", "muffin pan", "bundt pan", "pie pan", "tart pan", "sun hat", "sun lounger", "vacuum sealer",
     "vacuum flask", "vacuum-insulated", "vacuum insulated",
+    # 13 Oct 2026: razor bumps and razor burn are skin, not a razor ("salicylic acid for razor bumps").
+    "razor bump", "razor burn",
 ) + tuple(f"{kind} {knife}" for kind in _OTHER_KNIVES for knife in ("knife", "knives"))
 
 # Words that place a vague request in a category, so the question can be more specific.
@@ -302,8 +324,15 @@ def find_must_haves(text: str) -> list[str]:
 
 
 def search_terms(product_type: str, constraints: Constraints) -> list[str]:
-    """What to search for, most specific first. Each search costs credits, so at most three."""
+    """What to search for, most specific first. Each search costs credits, so at most three. An ingredient-led request
+    is searched by its ingredients' names ("salicylic acid"), a typed one with an ingredient by both ("salicylic acid
+    cleanser") first (13 Oct 2026)."""
+    led = ingredients_of_type(product_type)
+    if led:
+        product_type = shown_ingredients(led)
     terms = []
+    if constraints.ingredients and not led:
+        terms.append(f"{shown_ingredients(constraints.ingredients)} {product_type}")
     if constraints.skin_types:
         terms.append(f"{product_type} for {' '.join(constraints.skin_types)} skin")
     if constraints.must_haves:
@@ -327,6 +356,9 @@ def correct_typos(text: str) -> str:
     vocabulary = {w for p in PRODUCT_TYPES for k in p.keywords + p.hints for w in k.split() if len(w) >= 6}
     vocabulary |= {w for words in TITLE_WORDS.values() for t in words for w in t.split() if len(w) >= 6}
     vocabulary |= {s for s in SKIN_TYPES if len(s) >= 6 and "-" not in s}
+    # The active ingredients' words too (13 Oct 2026): "azeliac" is azelaic.
+    vocabulary |= {w for entry in INGREDIENTS.values() for pattern in entry["asked"]
+                   for w in re.findall(r"[a-z]+", pattern) if len(w) >= 6}
 
     def fix(match: re.Match) -> str:
         word = match.group(0)
@@ -351,14 +383,18 @@ def parse_query(text: str, model=_DEFAULT) -> ParsedQuery:
     from engine.query_rules import parse_budget, parse_min_years, parse_size, parse_skin_types, parse_spf
 
     original, text = text, correct_typos(text)
-    routing = classify(text)
+    found = find_ingredients(text)
+    routing, led = _with_ingredients(text, classify(text), found)
     model = default_query_model() if model is _DEFAULT else model
-    if routing.status == "clarify" and not routing.several and model is not None:
+    if led or model is None:
+        pass  # an ingredient-led request is placed by the rules: the open model is never asked about it
+    elif routing.status == "clarify" and not routing.several:
         routing = routed_by_model(text, model) or routing
-    elif routing.status == "ok" and routing.clues and model is not None:
+    elif routing.status == "ok" and routing.clues:
         routing = _second_opinion(text, routing, model)
     if routing.status == "out_of_scope":
         return ParsedQuery(text=original, status="out_of_scope", message=routing.message)
+    ingredients = [f.ingredient for f in found if TYPE_OWN_INGREDIENT.get(routing.product_type or "") != f.ingredient]
 
     constraints = Constraints(
         budget=parse_budget(text),
@@ -367,6 +403,7 @@ def parse_query(text: str, model=_DEFAULT) -> ParsedQuery:
         spf=parse_spf(text),
         min_years=parse_min_years(text),
         must_haves=find_must_haves(text),
+        ingredients=ingredients,
     )
     if routing.status == "clarify":
         # Kept so that, once the shopper answers, what they already said isn't lost.
@@ -379,7 +416,26 @@ def parse_query(text: str, model=_DEFAULT) -> ParsedQuery:
         constraints=constraints,
         search_terms=search_terms(routing.product_type, constraints),
         subreddits=_condition_subreddits(routing.subreddits, constraints.skin_types),
+        ingredient_led=led,
     )
+
+
+def _with_ingredients(text: str, routing: Routing, found: list) -> tuple[Routing, bool]:
+    """The routing of a request that names active ingredients (13 Oct 2026), and whether it is ingredient-led.
+
+    A product type named by its own name ("salicylic acid cleanser", "vitamin c serum", "retinol") stays. When the
+    type came only from clue words, or none was found, the rest of the request is read without the ingredients' words
+    (engine.ingredients.blanked): a product it names stays ("lactic acid lotion" is a moisturiser, though "lactic acid"
+    alone is an exfoliant's clue), something out of scope stays out ("makeup with niacinamide"), a question about
+    another category stays a question ("salicylic acid for my scalp"); otherwise the ingredients alone are what is asked
+    for, and the request is ingredient-led, in skincare ("salicylic acid for acne")."""
+    if not found or (routing.status == "ok" and not routing.clues):
+        return routing, False
+    rest = classify(blanked(text, found))
+    if rest.status in ("ok", "out_of_scope") or rest.several or rest.category not in (None, "skincare"):
+        return rest, False
+    keys = [f.ingredient for f in found]
+    return Routing("ok", "skincare", ingredient_type_name(keys), SUBREDDITS["skincare"]), True
 
 
 def _second_opinion(text: str, routing: Routing, model) -> Routing:

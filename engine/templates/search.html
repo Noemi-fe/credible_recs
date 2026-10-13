@@ -47,6 +47,9 @@ const LABELS = {
   leftOutBudget: "Over your budget, so left out: {n}.",  // added 9 Oct 2026 (decision 11, budgets)
   leftOutUnavailable: "No longer sold, so left out: {n}.",  // added 9 Oct 2026 (availability; wording decided by Claude)
   leftOutNotSuited: "Not suited to your request, so left out: {n}.",  // added 9 Oct 2026 (product facts; wording decided by Claude)
+  // Added 13 Oct 2026 (active ingredients; wording decided by Claude): products we couldn't confirm contain the
+  // ingredient asked for, or whose maker's actives don't include it.
+  leftOutNoIngredient: "Not confirmed to contain {ingredient}, so left out: {n}.",
   // Errors, by the API's error code.
   errors: {
     empty_request: "Type what you're looking for first.",
@@ -172,6 +175,8 @@ h1, h2, h3, h4 { line-height: 1.25; }
 /* The answer. */
 .answer-title { font-size: 22px; margin: 20px 0 8px; }
 .reading { margin: 0 0 14px; font-size: 15px; color: var(--muted); }
+.ingredient-note { margin: 0 0 8px; }
+.form { margin: 8px 0 0; }
 .picks { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
 .card-head { display: flex; align-items: center; gap: 12px; }
@@ -609,6 +614,7 @@ h1, h2, h3, h4 { line-height: 1.25; }
       el("div", { class: "card-head" },
         el("span", { class: "rank", "aria-hidden": "true" }, String(pick.rank)),
         el("h3", { id: nameId }, el("span", { class: "visually-hidden" }, fill(LABELS.rank, { rank: pick.rank }) + " "), pick.name)),
+      formLine(pick.form),
       pick.model ? el("p", { class: "model" }, WORDING.brand_model.replace("{model}", pick.model)
         + (pick.model_price ? " (" + pick.model_price + ")" : "")) : null,
       summaryLine(pick.summary),
@@ -626,6 +632,11 @@ h1, h2, h3, h4 { line-height: 1.25; }
       ...careSection(pick.care)));
   }
 
+  /** A product's form in an answer to a request naming an ingredient but no type (13 Oct 2026): "Form: pads". */
+  function formLine(form) {
+    return form ? el("p", { class: "form" }, el("strong", {}, WORDING.form_label + ": "), form) : null;
+  }
+
   let worthCards = 0;  // numbers each item's heading, so its card is labelled by it
 
   /** One "Also worth a look" item (Noemi, 13 Oct 2026): a lighter card than a pick's, with its summary, reason, price
@@ -635,6 +646,7 @@ h1, h2, h3, h4 { line-height: 1.25; }
     const nameId = "worth-" + (++worthCards);
     return el("li", {}, el("article", { class: "card worth-card", "aria-labelledby": nameId },
       el("h4", { id: nameId, class: "item-name" }, item.name),
+      formLine(item.form),
       summaryLine(item.summary),
       el("p", { class: "reason" }, item.reason),
       // Lighter than a pick's card: its price only when known or when the request has a budget, where it is sold only
@@ -671,7 +683,8 @@ h1, h2, h3, h4 { line-height: 1.25; }
     return el("section", { class: "skip", "aria-labelledby": "skip-heading" },
       el("h3", { id: "skip-heading" }, WORDING.skip_heading),
       el("ul", { class: "items" }, ...items.map((item) => el("li", {},
-        el("p", { class: "lead" }, el("strong", {}, item.name + ": "), item.reason),
+        el("p", { class: "lead" }, el("strong", {}, item.name
+          + (item.form ? " (" + WORDING.form_label.toLowerCase() + ": " + item.form + ")" : "") + ": "), item.reason),
         quoteList(item.quotes)))));
   }
 
@@ -690,13 +703,18 @@ h1, h2, h3, h4 { line-height: 1.25; }
     if (query.status === "clarify") return [notice("question", LABELS.clarifyHeading, query.question, LABELS.clarifyHint)];
     if (query.status === "out_of_scope") return [notice("question", null, query.message)];
     const answer = data.answer;
-    const title = answer.product_type ? fill(WORDING.title, { product_type: answer.product_type }) : WORDING.title_any;
+    // The answer's own title since 13 Oct 2026 ("Top picks: salicylic acid products"); built here for older answers.
+    const title = answer.title
+      || (answer.product_type ? fill(WORDING.title, { product_type: answer.product_type }) : WORDING.title_any);
     const parts = [el("h2", { class: "answer-title" }, title)];
+    // What every product shown has in common, for a request naming an active ingredient (13 Oct 2026).
+    if (answer.ingredient_note) parts.push(el("p", { class: "ingredient-note" }, answer.ingredient_note));
     // How much was read for this answer, under its title (Noemi, 12 Oct 2026).
     const reading = data.reading;
+    const about = query.ingredient_led && answer.ingredient ? answer.ingredient : answer.product_type;
     if (reading && reading.threads) {
-      const saved = reading.threads_saved > reading.threads && answer.product_type
-        ? fill(LABELS.readingSaved, { saved: reading.threads_saved.toLocaleString("en-GB"), product_type: answer.product_type })
+      const saved = reading.threads_saved > reading.threads && about
+        ? fill(LABELS.readingSaved, { saved: reading.threads_saved.toLocaleString("en-GB"), product_type: about })
         : "";
       parts.push(el("p", { class: "reading" },
         fill(LABELS.reading, { threads: reading.threads.toLocaleString("en-GB"), comments: reading.comments.toLocaleString("en-GB") })
@@ -715,9 +733,12 @@ h1, h2, h3, h4 { line-height: 1.25; }
     const overBudget = data.left_out.over_budget ? " " + fill(LABELS.leftOutBudget, { n: data.left_out.over_budget }) : "";
     const unavailable = data.left_out.unavailable ? " " + fill(LABELS.leftOutUnavailable, { n: data.left_out.unavailable }) : "";
     const notSuited = data.left_out.not_suited ? " " + fill(LABELS.leftOutNotSuited, { n: data.left_out.not_suited }) : "";
+    const noIngredient = data.left_out.no_ingredient && answer.ingredient
+      ? " " + fill(LABELS.leftOutNoIngredient, { n: data.left_out.no_ingredient, ingredient: answer.ingredient }) : "";
     const leftOut = leftOutText(data.left_out);
     parts.push(el("p", { class: "footnote" },
-      fill(LABELS.threadsRead, { n: data.threads_used.length }) + (leftOut ? " " + leftOut : "") + overBudget + unavailable + notSuited));
+      fill(LABELS.threadsRead, { n: data.threads_used.length }) + (leftOut ? " " + leftOut : "") + overBudget
+      + unavailable + notSuited + noIngredient));
     return parts;
   }
 

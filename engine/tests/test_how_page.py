@@ -352,3 +352,11 @@ def test_also_worth_a_look_and_the_summaries_are_explained(tmp_path, monkeypatch
     words = text_of(get_how(tmp_path, monkeypatch))
     assert f"“{answer.WORTH_HEADING}”" in words and f"“{answer.SUMMARY_LABEL}”" in words
     assert "never a quote" in words
+
+
+def test_the_ingredient_requirement_is_explained(tmp_path, monkeypatch):
+    # 13 Oct 2026 (active ingredients): an ingredient asked for is a requirement, with evidence, and each product of an
+    # ingredient-led answer shows its form.
+    words = text_of(get_how(tmp_path, monkeypatch))
+    assert "Without the ingredient you asked for." in words
+    assert "its maker's list of actives" in words and f"“{answer.FORM_LABEL}: pads”" in words
