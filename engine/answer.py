@@ -316,6 +316,9 @@ class Pick:
     # None when no downside is shown.
     downsides_share: str | None = None
     summary: ShownSummary | None = None  # "In short:" (13 Oct 2026); None when it has none, or one that fails a check
+    # The credible voices behind it as numbers, for the page's credibility meter (13 Oct 2026, the UX builder; _voices):
+    # {"recommend", "high", "medium", "warn", "threads"}, the writers its reason, support and share lines count.
+    voices: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass
@@ -335,6 +338,7 @@ class WorthALook:
     availability: ShownAvailability = NOT_CHECKED
     cautions: list[str] = field(default_factory=list)
     summary: ShownSummary | None = None
+    voices: dict[str, int] = field(default_factory=dict)  # as a pick's (13 Oct 2026, the UX builder)
 
 
 @dataclass
@@ -482,6 +486,7 @@ def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[s
             availability=shown_availability(prices.get(product.key), price.url),
             cautions=[CAUTION.format(reason=reason) for reason in cautions.get(product.key, [])],
             summary=_summary(product, _summary_of(product, summaries), check),
+            voices=_voices(product),
         ))
     return items
 
@@ -984,7 +989,22 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
         care=care,
         cautions=cautions or [],
         downsides_share=_downsides_share(product, more_downsides) if downsides else None,
+        voices=_voices(product, more_downsides),
     )
+
+
+def _voices(product: ProductScore, more_downsides: Iterable[ScoredMention] = ()) -> dict[str, int]:
+    """The credible voices behind a pick or an "Also worth a look" item, as numbers for the page's credibility meter (13
+    Oct 2026, the UX builder): its credible recommendations (as the reason counts them), of them the high and the medium
+    voices (as the support line does), the writers who warned against it (_warned, as the share line and the
+    mixed-opinions line do) and the threads with a credible recommendation (as the support line does). So the meter
+    never disagrees with the words around it. Numbers only, like the breakdown; the score itself isn't in it."""
+    recommendations = product.credible_recommendations
+    return {"recommend": len(recommendations),
+            "high": sum(m.voice == "high" for m in recommendations),
+            "medium": sum(m.voice == "medium" for m in recommendations),
+            "warn": len(_warned(product, more_downsides)),
+            "threads": product.breakdown.credible_threads}
 
 
 def _warned(product: ProductScore, more_downsides: Iterable[ScoredMention] = ()) -> set[str]:

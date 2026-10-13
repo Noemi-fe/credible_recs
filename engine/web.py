@@ -83,6 +83,11 @@ The JSON for /api/answer (200):
                                                                are the verified quotes of the comments it sums up
                                                                (not shown; checked word for word and live like every
                                                                quote); null when the pick has none
+                            "voices": {"recommend": n,         the credible voices behind it, as numbers for the page's
+                                       "high": n, "medium": n, credibility meter (13 Oct 2026): its credible
+                                       "warn": n,              recommendations, of them the high and medium voices, the
+                                       "threads": n}           writers who warned (as the share line counts them) and
+                                                               the threads with a credible recommendation
                            }],
                  "look_for": [{"kind", "advice", "quote": {same shape}}],
                  "skip": [{"product_key", "name", "reason", "quotes": [...]}],
@@ -90,7 +95,7 @@ The JSON for /api/answer (200):
                                                     (Noemi, 11 Oct 2026); [] when there are none
                  "worth_a_look": [{"product_key", "name", "reason", "quotes", "downsides", "downsides_share",
                                    "disagreement", "score", "breakdown", "price", "availability", "cautions",
-                                   "summary"}],
+                                   "summary", "voices"}],
                                   "Also worth a look" (Noemi's decision 2, 13 Oct 2026): up to 3 products with 2
                                   credible recommendations across at least 2 threads, best first, shown apart after the
                                   picks and never among them; the same shapes as a pick's fields, with 1 or 2 quotes,
@@ -114,9 +119,12 @@ The JSON for /api/answer (200):
       "timing": {"total_s": s, "reddit_s": s,      diagnostic, never shown (13 Oct 2026): how long the answer took to
                  "checks": n,                      work out, how long it waited on live checks, how many it made,
                  "put_off": n},                    and the comments put off rather than wait (what they back is left out)
-      "reading": {"threads": n,                    how much the answer read (Noemi, 12 Oct 2026): the threads used,
+      "reading": {"threads": n,                    how much the answer read (Noemi, 12 Oct 2026): the threads used
+                                                   (the most relevant to the request),
                   "threads_saved": n,              the extracted threads saved about the product,
-                  "comments": n}                   and the comments the AI read in the threads used
+                  "comments": n,                   the comments the AI read in the threads used,
+                  "read_more": bool}               and whether the first threads gave too few picks, so more were read
+                                                   (13 Oct 2026, for the page's reading strip)
     }
 
 POST /api/feedback takes one JSON object (Content-Type: application/json, at most FEEDBACK_MAX_BODY_BYTES) in one of
@@ -174,7 +182,7 @@ from engine import answer as wording
 from engine import feedback, how_page
 from engine.answer import answer_to_dict, unverified_claims
 from engine.config import (BRAND_PICK_MODEL, FEEDBACK_MAX_BODY_BYTES, FEEDBACK_MAX_COMMENT_CHARS, LEFT_OUT_NAMES_SHOWN,
-                           RATE_LIMIT_ANSWERS, RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS, WEB_MAX_REQUEST_CHARS,
+                           PICKS_SHOWN, RATE_LIMIT_ANSWERS, RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS, WEB_MAX_REQUEST_CHARS,
                            WEB_PORT)
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.live_check import BUNDLE_RELOAD_SECONDS
@@ -420,9 +428,10 @@ def answer_json(result: PipelineResult) -> dict:
                      "unavailable": len(result.left_out_unavailable),
                      "not_suited": len(result.left_out_not_suited)},
         # How much the answer read (Noemi, 12 Oct 2026): the threads used, the extracted threads saved about the product,
-        # and the comments the AI read in the threads used.
+        # and the comments the AI read in the threads used; and since 13 Oct 2026 (Noemi's testing: the page's line
+        # about it confused her) whether the first threads gave too few picks, so more were read.
         "reading": {"threads": len(result.threads_used), "threads_saved": result.threads_available,
-                    "comments": result.comments_read},
+                    "comments": result.comments_read, "read_more": result.read_more},
     }
 
 
@@ -653,7 +662,8 @@ def search_page(site: Site = LOCAL) -> bytes:
     site's settings filled in, and GoatCounter's script when visits are counted."""
     settings = {"wording": answer_wording(), "examples": example_requests(), "maxChars": WEB_MAX_REQUEST_CHARS,
                 "maxCommentChars": FEEDBACK_MAX_COMMENT_CHARS, "counting": site.goatcounter is not None,
-                "public": site.public}
+                "public": site.public,
+                "picksShown": PICKS_SHOWN}  # the reading strip's "why not all?" (13 Oct 2026)
     template = PAGE_TEMPLATE.read_text(encoding="utf-8")
     page = template.replace("{{COUNTER}}", counter_script(site.goatcounter))  # first: the settings could hold any text
     return page.replace("{{SETTINGS}}", _script_json(settings)).encode("utf-8")

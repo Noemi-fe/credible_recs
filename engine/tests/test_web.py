@@ -88,7 +88,10 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # Changed on purpose 12 Oct 2026 (Noemi: show how many threads and comments each answer read): "reading".
     # Changed on purpose 13 Oct 2026 (hill-climbing the live site's latency): "timing", how long a fresh answer took.
     assert set(data) == {"query", "answer", "threads_used", "left_out", "reading", "timing"}
-    assert data["reading"] == {"threads": 2, "threads_saved": 2, "comments": 11}  # 3 kettles x 3 comments, 2 warnings
+    # Changed on purpose 13 Oct 2026 (Noemi's testing; the UX builder): "reading" also says whether the first threads
+    # gave too few picks, so more were read ("read_more"), for the page's reading strip.
+    assert data["reading"] == {"threads": 2, "threads_saved": 2, "comments": 11,  # 3 kettles x 3 comments, 2 warnings
+                               "read_more": False}
     assert set(data["query"]) == {"status", "category", "product_type", "question", "message"}
     # Changed on purpose 9 Oct 2026 (decision 11, budgets): each pick has its price, and "left_out" counts the
     # products over the request's budget.
@@ -116,10 +119,13 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # "downsides_share" ("1 of 15 credible voices warned against it:"), or null when no downside is shown.
     # Changed on purpose 13 Oct 2026 (Noemi's decision 4): each pick also has its one-line "summary", {"text",
     # "sources"}, or null when it has none (or one that fails a check).
+    # Changed on purpose 13 Oct 2026 (the UX builder): each pick also has its "voices", the credible voices behind it as
+    # numbers (recommend, high, medium, warn, threads) for the page's credibility meter: the same writers its reason,
+    # support line and share line count in words.
     assert set(data["answer"]["picks"][0]) == {"rank", "product_key", "name", "reason", "support", "quotes",
                                                "downsides", "disagreement", "score", "breakdown", "price",
                                                "availability", "care", "cautions", "model", "model_price",
-                                               "downsides_share", "summary"}
+                                               "downsides_share", "summary", "voices"}
     assert set(data["answer"]["picks"][0]["quotes"][0]) == {"text", "comment_id", "url", "badges"}
     assert set(data["answer"]["picks"][0]["price"]) == {"text", "amount", "currency", "shop", "url", "checked_on",
                                                         "budget_status", "budget_note"}
@@ -432,6 +438,7 @@ def test_the_page_says_how_many_threads_and_comments_an_answer_read():
     assert "{threads} Reddit threads and {comments} comments" in page
 
 
+
 # --- Getting ready before the first visitor (latency, 12 Oct 2026) ---
 
 def test_warming_up_reads_the_library_and_loads_the_open_model(tmp_path, monkeypatch):
@@ -549,9 +556,10 @@ def test_also_worth_a_look_comes_through_in_the_json(tmp_path):
     assert [item["name"] for item in data["answer"]["worth_a_look"]] == ["Smeg kettle"]
     assert "Smeg kettle" not in [pick["name"] for pick in data["answer"]["picks"]]
     assert data["answer"]["worth_note"].startswith("2 credible voices each")
+    # Changed on purpose 13 Oct 2026 (the UX builder): "voices", as for a pick (its credibility meter).
     assert set(data["answer"]["worth_a_look"][0]) == {"product_key", "name", "reason", "quotes", "downsides",
                                                      "downsides_share", "disagreement", "score", "breakdown", "price",
-                                                     "availability", "cautions", "summary"}
+                                                     "availability", "cautions", "summary", "voices"}
 
 
 def test_the_page_draws_also_worth_a_look_and_summaries_with_the_answers_own_words(tmp_path):
