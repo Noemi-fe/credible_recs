@@ -1175,10 +1175,12 @@ def _writer(comment: Comment) -> str | None:
 
 
 def live_checker():
-    """The live check of shown quotes through Reddit's embed page (engine/live_check.py), for real answers."""
-    from engine.live_check import LiveChecker
+    """The live check of shown quotes through Reddit's embed page (engine/live_check.py), for real answers: checks are
+    kept in this machine's folder, and in the bucket CREDIBLE_RECS_LIVE_CACHE_BUCKET names when it is set (the live
+    site, which shares it with the daily pre-check, engine/precheck.py; 13 Oct 2026)."""
+    from engine.live_check import checker_from_env
 
-    return LiveChecker()
+    return checker_from_env()
 
 
 def cached_profiles() -> StoredProfiles:

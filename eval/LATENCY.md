@@ -61,3 +61,30 @@ getting ready or working out another answer). Fresh times are p50 / max; a repea
 | 13 Oct 2026 | Baseline: 1 processor, 2 GiB (revision 00006) | 60.12 / 80.08 | 2.04 / 11.04 | 54.65 / 76.13 | 2.76 / 8.08 | 0.11 / 0.14 | 12 to 21 | the baseline. The first 3 answers took 7 to 13 s while the burst lasted; from the 4th, each waited 45 to 76 s on Reddit's pace (a read every 4 s) |
 | 13 Oct 2026 | 2 processors (revision 00007) | 52.09 / 80.02 | 1.86 / 12.17 | 36.57 / 78.56 | 0.15 / 33.14 | 0.08 / 0.11 | 12 to 21 | no: the engine's time is the same within noise, and Reddit's pace is the same. Back to 1 (revision 00008). It showed the queue: the 2nd and 3rd answers waited 17 s and 33 s before their work began, behind a new server getting ready (warm_up) with the processor Cloud Run gives only during a request |
 | 13 Oct 2026 | A new server gets visitors only once its /ready says it has got ready (Cloud Run's startup probe; it got ready in 65.3 s, with the processor in full), and a ping to /ready every 5 minutes (Cloud Scheduler, free tier) keeps it awake (revision 00009) | 62.25 / 80.02 | 1.34 / 3.61 | 59.55 / 78.66 | 0.16 / 0.67 | n/a | 12 to 21 | yes: no answer waits behind a server getting ready (queued max 33.14 s now 0.67), and the first answers find everything ready (engine max 12.17 s now 3.61). The first 3 answers took 3.1 to 5.9 s; from the 4th, Reddit's pace again (what checking ahead removes) |
+
+## Checked ahead (13 Oct 2026)
+
+Noemi's decision of 13 Oct 2026, "check ahead": the comments answers would show are read live in advance, daily
+(engine/precheck.py), so a fresh answer finds its quotes already checked. `python eval/latency.py --prechecked
+[CACHE_DIR]` measures it on the live library (data/library), today, with writers' standing as the site reads it, the
+checker reading the pre-check's saved checks only (no network): the share of shown quotes already pre-checked, the
+Reddit reads each fresh answer still needs, and fresh answers' times (each request asked once before, with instant
+checks, so the engine is equally ready), with the pre-check and with nothing pre-checked (0.3 s a read while Reddit's
+allowance lasts; once it is spent, worked out as a read every 4 s). Seconds as p50 / p95 over the 20 answers that show
+quotes (of the 22 latency requests).
+
+The one real run, on Noemi's computer: 56 requests (53 answered), 1,145 comments worked out in 3.7 minutes, 928 read on
+Reddit in 59.2 minutes (872 passing, 2 deleted, 8 edited, 46 pages that couldn't be read) and 217 skipped as read
+within 20 hours; 62.9 minutes in all. It ran before "Also worth a look" and the one-line summaries were merged, so
+their comments weren't in it: the second row is the merged pre-check's next run, simulated on a copy of the cache (the
+241 comments it would read taken as still saying what the library saved; about 6% failed in the real run).
+
+| Date | Saved checks | Shown quotes pre-checked | Answers needing no read | Reads still needed (p50 / p95 / max) | Fresh, pre-checked | Nothing pre-checked, within the allowance | Nothing pre-checked, allowance spent | Requests never asked (14 made up) | Load |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 13 Oct 2026 | after the real run | 391 of 432 (90.5%) | 11 of 20 | 0 / 10 / 11 | 2.16 / 80.67 (first ask: the open model, not reads) | 4.35 / 11.18 | 110.35 / 136.04 | 85.9% of their quotes, 1 of 14 answers with no read | 20 |
+| 13 Oct 2026 | after the merged pre-check's next run (simulated) | 432 of 432 (100%) | 20 of 20 | 0 / 0 / 0 | 0.78 / 21.48 | 1.79 / 4.07 | 106.45 / 129.08 | 97.4%, 8 of 14 with no read, 2 reads at most | 23 |
+
+With the pre-check, the 10 blind-test questions needed no Reddit read in both rows: their fresh answers took 0.2 to
+1.5 s. The p95s "with the pre-check" are module 1's open model on a machine loaded at 23 (l08 and l09, 46 s and 21 s
+with no read at all), not live checks. Without it, a fresh answer needs 26 reads (p50): about 2 s while Reddit's
+allowance lasts, and over 100 s once it is spent.

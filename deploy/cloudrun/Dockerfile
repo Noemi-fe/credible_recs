@@ -3,7 +3,8 @@
 # Built from the private bundle deploy/cloudrun/make_context.py writes (the code at a commit, and the saved library the
 # answers read), inside Noemi's own Google Cloud project, so the image is private to it: the library is Reddit text and
 # is never public. No secret is used while building; the Hugging Face token for feedback uploads is given at run time
-# from Secret Manager.
+# from Secret Manager. The same image runs the daily pre-check of the quotes answers show (13 Oct 2026): a Cloud Run
+# job whose command is `python -m engine.precheck` instead of the CMD below (deploy.sh).
 FROM python:3.12-slim
 
 # libgomp1, the one system library llama.cpp's prebuilt CPU build needs; curl, to fetch the open model below.

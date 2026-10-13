@@ -341,6 +341,22 @@ LIVE_CHECK_REFILL_SECONDS = 4.0
 # the burst and refill above. Numbers decided by Claude, reported.
 LIVE_CHECK_RESERVE = 10
 LIVE_CHECK_SPREAD_BELOW = 50
+# Checking ahead (Noemi's decision of 13 Oct 2026: "check ahead"): the comments answers would show are read live in
+# advance, daily, within the same limits (engine/precheck.py). The numbers are Claude's, reported to Noemi. A comment
+# read less than PRECHECK_FRESH_HOURS ago is left as it is ("fresh for most of a day"), so after a run every check it
+# covers has 28 hours or more to go: the next day's run reads it again before it runs out, even a run that is late.
+PRECHECK_FRESH_HOURS = 20
+# Reddit reads one run makes at most: at the pace above (about 190 in each 10 minutes) about an hour, so the daily
+# job stays well inside Cloud Run's free tier. The answers of the 13 Oct 2026 library show 759 comments, hold 170 next in
+# line and 146 in the products behind the picks (1,075: all read), then 289 next after those (read as the budget allows).
+PRECHECK_MAX_READS = 1100
+# A run stops after this many unreadable pages in a row: Reddit is refusing reads (its allowance used from elsewhere).
+PRECHECK_STOP_AFTER_UNKNOWN = 20
+# The open model's product types (engine.query_model) the library had threads about on 13 Oct 2026, from its request
+# log (data/library/requests.jsonl, which isn't in the Cloud Run image): checked ahead by their names, like module 1's
+# own types. Types the log names later are checked too wherever the log is.
+PRECHECK_MODEL_TYPES = ("air fryer", "slow cooker", "toaster", "blender", "food processor", "rice cooker", "stand mixer",
+                        "body wash")
 
 # --- Care tips (Noemi, 9 Oct 2026) ---
 # Alongside each pick, credible advice from its threads on looking after it ("descale it every 6 months"; extraction

@@ -5,6 +5,7 @@ weren't yet checked live. Every change made to speed them up is measured here fi
 changes (the answer-equality guard, below). Each run is logged in eval/LATENCY.md.
 
     python eval/latency.py [--runs N] [--live] [--only ID,ID] [--no-cold] [--save-baseline] [--library DIR]
+    python eval/latency.py --prechecked [CACHE_DIR] [--only ID,ID] [--library DIR]
 
 The requests: eval/edge_cases/latency_queries.json, the 10 blind-test questions and 12 others (the product types added
 on 11 Oct 2026, the slowest known case, a clarifying question and a polite no). Each goes through
@@ -34,6 +35,19 @@ What it measures (seconds), each as p50 / p95 / max over the requests (per reque
 Then the time of each stage (module 1, the library, retrieval, ..., the live checks), its median and max over the
 requests, each stage's own time without the stages it calls, so they add up to the whole. Times are wall-clock;
 "cpu" is the process's processor time over the same request, steadier when other programs share the machine.
+
+Checked ahead (--prechecked, 13 Oct 2026; engine/precheck.py, Noemi's decision "check ahead"): after a pre-check run,
+how many of the quotes fresh answers show were already checked, and how long those answers take. The answers are the
+live site's: the live library (data/library), today's date, writers' standing as the site reads it
+(engine.pipeline.cached_profiles), so they are the answers the pre-check worked out. The checker reads the pre-check's
+saved checks only (CACHE_DIR, by default .cache/live_check; PrecheckedChecker): a comment with a saved check from the
+last 48 hours is answered by it at once, as the site's checker would; one without would be read on Reddit, so it counts
+as a read still needed and is answered "shown" after STAND_IN_PAUSE, as the stand-in does. Nothing reaches the network.
+It reports the share of shown quotes already pre-checked, the Reddit reads each fresh answer still needs, and the times
+of fresh answers (answers the site doesn't remember yet, each request asked once before, with instant checks, so the
+engine is equally ready for both) with the pre-check and with nothing pre-checked (an empty cache, 0.3 s a read while
+Reddit's allowance lasts), and what they come to once the allowance is spent (a read every LIVE_CHECK_REFILL_SECONDS).
+The answer-equality guard is skipped: the baseline is the snapshot's.
 
 The answer-equality guard. --save-baseline saves each request's whole answer (engine.web.answer_json, the answer as
 markdown, and the result's lists of what was left out and why) in data/eval/latency_baseline/ (git-ignored: it holds
@@ -65,6 +79,8 @@ sys.path.insert(0, str(REPO_ROOT))  # this checkout's engine, never another inst
 QUERIES = REPO_ROOT / "eval" / "edge_cases" / "latency_queries.json"
 DEFAULT_SNAPSHOT = REPO_ROOT / "data" / "eval" / "library_snapshot"
 DEFAULT_BASELINE = REPO_ROOT / "data" / "eval" / "latency_baseline"
+DEFAULT_LIVE_LIBRARY = REPO_ROOT / "data" / "library"  # --prechecked: the library the site and the pre-check read
+DEFAULT_PRECHECK_CACHE = REPO_ROOT / ".cache" / "live_check"  # where the pre-check's checks are saved on this machine
 FROZEN_DAY = date(2026, 10, 12)  # the day the snapshot was taken: answers are judged on it
 FROZEN_NOW = datetime(2026, 10, 12, 12, 0, tzinfo=UTC)
 STAND_IN_PAUSE = 0.3  # seconds the stand-in checker takes for a comment it hasn't read yet
@@ -141,6 +157,63 @@ class RecordingChecker:
         with self._lock:
             self.asked.clear()
             self.passed.clear()
+
+
+class PrecheckedChecker:
+    """--prechecked: the pre-check's saved checks (engine.live_check.LiveChecker.saved_check), and nothing else. A
+    comment with one from the last 48 hours is answered by it at once; one without is a Reddit read a real answer would
+    still need: counted (reads_needed), and answered "shown" after `pause` (once per comment), like the stand-in. Reddit
+    itself is never read. Safe to call from several threads at once."""
+
+    def __init__(self, cache_dir: Path, pause: float = STAND_IN_PAUSE):
+        from engine.live_check import LiveChecker
+
+        self.saved = LiveChecker(cache_dir=cache_dir, fetch=_no_reddit)
+        self.pause = pause
+        self._lock = threading.Lock()
+        self.asked: list[tuple[str, str]] = []
+        self.passed: set[tuple[str, str]] = set()
+        self.reads_needed: set[str] = set()  # links of the comments not pre-checked, this request
+
+    def check(self, comment_url: str, quote: str, wait: bool = True):
+        from engine.live_check import LiveResult
+
+        outcome = self.saved.saved_check(comment_url, quote)
+        if outcome is None:
+            with self._lock:
+                new = comment_url not in self.reads_needed
+                self.reads_needed.add(comment_url)
+            if new and self.pause:
+                time.sleep(self.pause)
+            outcome = LiveResult("ok", "not pre-checked: a real answer would read it on Reddit")
+        with self._lock:
+            self.asked.append((comment_url, quote))
+            if outcome.show:
+                self.passed.add((comment_url, quote))
+        return outcome
+
+    def forget(self) -> None:
+        """Nothing to forget: the saved checks are the pre-check's."""
+
+    def new_request(self) -> None:
+        with self._lock:
+            self.asked.clear()
+            self.passed.clear()
+            self.reads_needed.clear()
+
+
+def _no_reddit(url, headers):
+    raise RuntimeError("--prechecked never reads Reddit")
+
+
+def coverage(result, checker: PrecheckedChecker) -> tuple[int, int]:
+    """(quotes the answer shows, how many of them come from a comment the pre-check had checked)."""
+    from engine.answer import _every_quote
+
+    if result.answer is None:
+        return 0, 0
+    shown = [quote for _, quote in _every_quote(result.answer)]
+    return len(shown), sum(1 for quote in shown if quote.url not in checker.reads_needed)
 
 
 # --- Timing each stage ---
@@ -277,19 +350,25 @@ def unchecked_quotes(result, checker) -> list[str]:
     return [where for where, quote in _every_quote(result.answer) if (quote.url, quote.text) not in checker.passed]
 
 
-def run_request(text: str, library: Path, profiles, checker, clock: StageClock) -> dict:
-    """One request through the pipeline: its times, stages, answer record, and checks."""
+def run_request(text: str, library: Path, profiles, checker, clock: StageClock, today: date | None = FROZEN_DAY) -> dict:
+    """One request through the pipeline: its times, stages, answer record, and checks. `today`: the day answers are
+    judged on (FROZEN_DAY; None, today, for --prechecked). With a PrecheckedChecker, also the quotes shown, how many
+    were pre-checked, and the Reddit reads still needed."""
     from engine.pipeline import answer_request
 
     clock.reset()
     checker.new_request()
     cpu, started = time.process_time(), time.perf_counter()
-    result = answer_request(text, library_dir=library, profiles=profiles, today=FROZEN_DAY, live_checker=checker)
+    result = answer_request(text, library_dir=library, profiles=profiles, today=today, live_checker=checker)
     seconds, cpu = time.perf_counter() - started, time.process_time() - cpu
-    return {"seconds": seconds, "cpu": cpu, "stages": clock.reset(), "record": answer_record(result),
-            "checks": len(checker.asked), "comments_checked": len({url for url, _ in checker.asked}),
-            "unchecked": unchecked_quotes(result, checker), "threads": len(result.threads_used),
-            "read_more": result.read_more, "status": result.query.status}
+    run = {"seconds": seconds, "cpu": cpu, "stages": clock.reset(), "record": answer_record(result),
+           "checks": len(checker.asked), "comments_checked": len({url for url, _ in checker.asked}),
+           "unchecked": unchecked_quotes(result, checker), "threads": len(result.threads_used),
+           "read_more": result.read_more, "status": result.query.status}
+    if isinstance(checker, PrecheckedChecker):
+        run["shown"], run["prechecked"] = coverage(result, checker)
+        run["reads_needed"] = len(checker.reads_needed)
+    return run
 
 
 # --- Comparing answers ---
@@ -426,6 +505,89 @@ def one_cold_request(query_id: str, library: Path) -> dict:
     run["seconds"] += startup
     run["cpu"] = time.process_time() - cpu
     return run
+
+
+# --- Checked ahead (--prechecked) ---
+
+def prechecked_passes(queries: list[dict], library: Path, cache_dir: Path) -> dict[str, dict[str, list[dict]]]:
+    """Each request as a fresh answer (one the site doesn't remember), as the live site answers it (its library, today,
+    its writers' standing): with the pre-check's saved checks, then with none (an empty cache: every comment a read).
+    Each request is asked once before either, with instant checks, so both find the engine equally ready (module 1's
+    open model has read the request, the lookups are kept) and differ only in their live checks."""
+    from engine.pipeline import answer_request, cached_profiles
+
+    clock = StageClock()
+    clock.install()
+    profiles = cached_profiles()
+    answer_request(WARM_UP_REQUEST, library_dir=library, profiles=profiles, live_checker=StandInChecker(pause=0))
+    import engine.web
+
+    if hasattr(engine.web, "warm_up"):
+        engine.web.warm_up(library)
+    passes: dict[str, dict[str, list[dict]]] = {"fresh, pre-checked": {}, "fresh, nothing pre-checked": {}}
+    for q in queries:  # getting ready: not reported
+        run_request(q["text"], library, profiles, StandInChecker(pause=0), clock, None)
+    prechecked = PrecheckedChecker(cache_dir)
+    for q in queries:
+        _ran(passes["fresh, pre-checked"], q, run_request(q["text"], library, profiles, prechecked, clock, None),
+             "pre-checked")
+    empty = Path(tempfile.mkdtemp(prefix="latency-nothing-checked-"))
+    try:
+        nothing = PrecheckedChecker(empty)
+        for q in queries:
+            _ran(passes["fresh, nothing pre-checked"], q, run_request(q["text"], library, profiles, nothing, clock,
+                                                                      None), "nothing checked")
+    finally:
+        shutil.rmtree(empty, ignore_errors=True)
+    return passes
+
+
+def prechecked_report(passes: dict, queries: list[dict]) -> int:
+    """Coverage and times, with the pre-check and without (see the module's docstring)."""
+    from engine.config import LIVE_CHECK_REFILL_SECONDS
+
+    with_it = {qid: runs[0] for qid, runs in passes["fresh, pre-checked"].items()}
+    without = {qid: runs[0] for qid, runs in passes["fresh, nothing pre-checked"].items()}
+    answered = [qid for qid, run in with_it.items() if run["shown"]]
+    shown = sum(with_it[qid]["shown"] for qid in answered)
+    prechecked = sum(with_it[qid]["prechecked"] for qid in answered)
+    whole = sum(1 for qid in answered if with_it[qid]["reads_needed"] == 0)
+    print(f"\nShown quotes already pre-checked: {prechecked} of {shown} ({100 * prechecked / max(shown, 1):.1f}%), "
+          f"over the {len(answered)} answers that show quotes; {whole} of them need no Reddit read at all.")
+
+    def spent(run: dict) -> float:
+        # Once Reddit's allowance is used, every read still needed waits its turn: one every LIVE_CHECK_REFILL_SECONDS,
+        # one after another however many are asked at once (a little over, as the measured time holds the stand-in's).
+        return run["seconds"] + run["reads_needed"] * LIVE_CHECK_REFILL_SECONDS
+
+    rows = [("with the pre-check", with_it), ("nothing pre-checked", without)]
+    print("\nReddit reads a fresh answer still needs, p50 / p95 / max:")
+    for name, runs in rows:
+        print(f"  {name:<22} {spread([float(runs[qid]['reads_needed']) for qid in answered])}")
+    print("Fresh answers, seconds, p50 / p95 / max (measured; reads cost the stand-in's "
+          f"{STAND_IN_PAUSE} s while Reddit's allowance lasts):")
+    for name, runs in rows:
+        print(f"  {name:<22} {spread([runs[qid]['seconds'] for qid in answered])}")
+    print(f"Once the allowance is spent (worked out: the measured time plus a read every {LIVE_CHECK_REFILL_SECONDS:.0f} s "
+          "for each read still needed):")
+    for name, runs in rows:
+        print(f"  {name:<22} {spread([spent(runs[qid]) for qid in answered])}")
+    print(f"\n{'id':<5} {'shown':>5} {'pre-checked':>11} {'reads with':>10} {'without':>8} {'s with':>7} "
+          f"{'s without':>9}")
+    for q in queries:
+        qid = q["id"]
+        if qid not in with_it:
+            continue
+        a, b = with_it[qid], without[qid]
+        print(f"{qid:<5} {a['shown']:>5} {a['prechecked']:>11} {a['reads_needed']:>10} {b['reads_needed']:>8} "
+              f"{a['seconds']:>7.2f} {b['seconds']:>9.2f}")
+    unchecked = [(qid, where) for by_query in passes.values() for qid, runs in by_query.items() for run in runs
+                 for where in run["unchecked"]]
+    if unchecked:
+        print(f"\nQUOTES SHOWN WITHOUT A PASSED CHECK: {len(unchecked)}")
+        return 1
+    print("\nEvery quote shown was checked (by the pre-check, or the stand-in for a read still needed) and passed.")
+    return 0
 
 
 # --- The report ---
@@ -575,14 +737,27 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--only", help="comma-separated request ids (default: all)")
     parser.add_argument("--no-cold", action="store_true", help="skip the fresh-process runs")
     parser.add_argument("--save-baseline", action="store_true", help="save these answers as the baseline")
-    parser.add_argument("--library", type=Path, default=DEFAULT_SNAPSHOT)
+    parser.add_argument("--library", type=Path, default=None,
+                        help="the library (default: the frozen snapshot; data/library with --prechecked)")
+    parser.add_argument("--prechecked", type=Path, nargs="?", const=DEFAULT_PRECHECK_CACHE, default=None,
+                        metavar="CACHE_DIR", help="coverage and times after a pre-check run (no network)")
     parser.add_argument("--baseline", type=Path, default=DEFAULT_BASELINE)
     parser.add_argument("--one", help=argparse.SUPPRESS)  # internal: one cold request in this fresh process
     args = parser.parse_args(argv)
 
+    if args.library is None:
+        args.library = DEFAULT_LIVE_LIBRARY if args.prechecked else DEFAULT_SNAPSHOT
     if args.one:
         print(json.dumps(one_cold_request(args.one, args.library), ensure_ascii=False))
         return 0
+    if args.prechecked:
+        if not (args.library / "threads").is_dir():
+            print(f"No library at {args.library} (a threads/ folder).")
+            return 2
+        queries = load_queries(set(args.only.split(",")) if args.only else None)
+        print(f"{len(queries)} requests on {args.library}, today; the pre-check's saved checks in {args.prechecked}; "
+              f"machine load {_load()}", file=sys.stderr)
+        return prechecked_report(prechecked_passes(queries, args.library, args.prechecked), queries)
     if not (args.library / "threads").is_dir():
         print(f"No library snapshot at {args.library} (a threads/ folder).")
         return 2
