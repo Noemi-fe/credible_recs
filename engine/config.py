@@ -920,8 +920,9 @@ ARCHIVE_OLDER_YEARS = 3
 ARCHIVE_SEARCH_MAX_FAILURES = 3
 # 13 Oct 2026 (the data round): Arctic Shift timed out on half the searches for "shampoo" over 3 years in the big
 # haircare subreddits, round after round, and answered one over the last year in 14 s. A search that times out is asked
-# again as the two halves of its span, newer first (an undated one as the two windows above), at most this many times
-# over: then it counts as failed. Chosen by Claude, reported to Noemi.
+# again as the two halves of its span (an undated one as the two windows above): the newer half of its first timeout right
+# away, every other half at the end of the round, so one search that times out over any span can't end the round. At
+# most this many halvings: then it counts as failed. Chosen by Claude, reported to Noemi.
 ARCHIVE_SPLIT_DEPTH = 2
 # 12 Oct 2026: a title search over a big subreddit's whole history timed out, one bounded by dates didn't (r/curlyhair,
 # "conditioner": 35 s for the last 3 years, 11 s for the 6 before). So both rounds are bounded: the last

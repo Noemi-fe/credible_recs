@@ -378,7 +378,8 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
     isn't mistaken for a search that found nothing. Parse's paid search never runs warning searches: they would cost
     credits.
     With `older_than_years` (the archive reader's rounds, 13 Oct 2026), a search Arctic Shift times out on is asked again
-    as the two halves of its span, newer first, right away (an undated warning search as the two windows of round 2),
+    as the two halves of its span (an undated warning search as the two windows of round 2): the newer half of a
+    search's first timeout right away, every other half at the end of the round,
     at most ARCHIVE_SPLIT_DEPTH times over, and named in `halved`; only a search that can't be split further is named
     in `failed`. Each timeout still counts towards the failures in a row: a service that is down ends the round as soon.
     """
@@ -412,7 +413,15 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
                       if windows and times_halved < ARCHIVE_SPLIT_DEPTH and in_a_row < max_failures
                       and _timed_out(error) else [])
             if halves:
-                queue.extendleft((subreddit, term, half, times_halved + 1) for half in reversed(halves))
+                # The newer half of a search's first timeout is asked next: a shorter span is what tells a busy
+                # archive from one that is down. Every other half waits for the end of the round (13 Oct 2026), so a
+                # search that times out over any span can't end the round before the other subreddits are searched.
+                newer, older = ((subreddit, term, half, times_halved + 1) for half in halves)
+                if times_halved == 0:
+                    queue.appendleft(newer)
+                else:
+                    queue.append(newer)
+                queue.append(older)
                 if halved is not None:
                     halved.append(name)
             elif failed is not None:

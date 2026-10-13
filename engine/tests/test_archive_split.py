@@ -4,9 +4,11 @@ On 13 Oct 2026 Arctic Shift timed out ("Timeout. Maybe slow down a bit") on half
 last 3 years in the big haircare subreddits, round after round, while a search over the last year answered in 14 s:
 the cost is in the span searched. Three failures ended the round, so `library add` found almost nothing. Now a search
 that times out is asked again as the two halves of its span, newest first (an undated one, as the archive's two
-windows), at most ARCHIVE_SPLIT_DEPTH times; only a search that can't be split further counts as failed. And the round
-ends after ARCHIVE_SEARCH_MAX_FAILURES failures in a row, not in all: a busy service fails some searches and answers
-others, one that is down fails every one.
+windows), at most ARCHIVE_SPLIT_DEPTH times; only a search that can't be split further counts as failed. The newer half
+of a search's first timeout is asked right away, every other half at the end of the round, so a search that times out
+over any span can't end the round before the other subreddits are searched. And the round ends after
+ARCHIVE_SEARCH_MAX_FAILURES failures in a row, not in all: a busy service fails some searches and answers others, one
+that is down fails every one.
 
 Every test uses a fake archive and made-up data: no network.
 """
@@ -74,11 +76,11 @@ def test_a_search_timing_out_over_its_span_is_asked_again_in_two_halves_newest_f
     failed, halved = [], []
     found = search(client, failed, halved)
     middle = (date.fromisoformat(THREE_YEARS_AGO) + (NOW.date() - date.fromisoformat(THREE_YEARS_AGO)) / 2).isoformat()
-    assert client.windows[:3] == [
-        ("BuyItForLife", "kettle", THREE_YEARS_AGO, None),  # timed out
-        ("BuyItForLife", "kettle", middle, None),  # the newer half: from the middle to now
-        ("BuyItForLife", "kettle", THREE_YEARS_AGO, middle),  # then the older half
-    ]
+    asked = client.windows
+    assert asked[0] == ("BuyItForLife", "kettle", THREE_YEARS_AGO, None)  # timed out
+    newer = asked.index(("BuyItForLife", "kettle", middle, None))  # the newer half: from the middle to now
+    older = asked.index(("BuyItForLife", "kettle", THREE_YEARS_AGO, middle))  # then the older half
+    assert 0 < newer < older
     assert {p["id"] for p in found} >= {"1a1", "1w1"}  # r/BuyItForLife's posts, found through the halves
     assert halved[0] == f'r/BuyItForLife for "kettle" (after {THREE_YEARS_AGO})'  # named as a failed one would be
     assert failed == []  # every half answered (the 6 years before 3 were halved twice), so nothing failed
@@ -87,7 +89,7 @@ def test_a_search_timing_out_over_its_span_is_asked_again_in_two_halves_newest_f
 def test_a_half_still_timing_out_is_halved_again_then_counts_as_failed():
     client = TimesOutOverLongSpans(kettle_posts(), max_days=200)  # even a quarter of 3 years (274 days) times out
     failed = []
-    search(client, failed)
+    search(client, failed, max_failures=20)  # every search fails here: a limit high enough to see them all
     recent = [w for w in client.windows if w[2] and w[2] >= THREE_YEARS_AGO]
     # The 3 years, its 2 halves, and their 4 halves: halved ARCHIVE_SPLIT_DEPTH (2) times, no more.
     assert len(recent) == 1 + 2 + 4
@@ -138,3 +140,21 @@ def test_the_archive_source_names_the_searches_it_split_in_its_notes():
     threads = source.find_threads(parse_query(KETTLE), limit=2)
     assert threads
     assert any("r/BuyItForLife" in note and "shorter spans" in note for note in source.notes)
+
+
+def test_a_first_search_that_keeps_timing_out_does_not_end_the_round():
+    # 13 Oct 2026: r/HaircareScience's "dry shampoo" search timed out over 3 years, then over its halves and quarters:
+    # three timeouts in a row, before anything was found, ended the round as if Arctic Shift were down. Only the newer
+    # half of a first timeout is asked right away; the other halves wait, so the subreddits that answer are searched.
+    class OneSubredditTimesOut(TimesOutOverLongSpans):
+        def search_posts(self, subreddit, title, limit=25, before=None, after=None):
+            if subreddit == "BuyItForLife":
+                self.windows.append((subreddit, title, after, before))
+                raise ArcticShiftError(TIMEOUT.format(subreddit))
+            return super().search_posts(subreddit, title, limit, before, after)
+
+    client = OneSubredditTimesOut(kettle_posts())
+    failed = []
+    found = search(client, failed, max_free_searches=3, max_failures=ARCHIVE_SEARCH_MAX_FAILURES)
+    assert {p["subreddit"] for p in found} == {"tea", "Coffee"}
+    assert sum(subreddit == "BuyItForLife" for subreddit, *_ in client.windows) > 2  # its halves were asked too
