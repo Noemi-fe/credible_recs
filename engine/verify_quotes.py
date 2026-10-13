@@ -58,32 +58,52 @@ def _plain(text: str) -> tuple[str, list[tuple[int, int]]]:
 
     For every character of the plain text, (start, end) of the original characters it stands for: one character
     usually, a whole entity such as "&amp;" for its "&", or a whole run of spaces for its single space.
+
+    Worked out run by run (latency, 13 Oct 2026: one character at a time, it was most of reading the library and of
+    writing an answer's quotes): a run of characters that stay as they are (_ORDINARY: no backslash, "&", emphasis mark,
+    curly quote mark or space, but single spaces between them) is copied whole, each character from its own place; the
+    others are read one at a time, as before.
     """
-    chars: list[str] = []
+    pieces: list[str] = []
     origins: list[tuple[int, int]] = []
+    last = ""  # the plain text's last character so far
     i = 0
     while i < len(text):
+        run = _ORDINARY.match(text, i)
+        if run is not None:
+            end = run.end()
+            pieces.append(run.group())
+            origins.extend(zip(range(i, end), range(i + 1, end + 1)))
+            last, i = text[end - 1], end
+            continue
         if text[i] == "\\" and i + 1 < len(text) and text[i + 1] in EMPHASIS_MARKS:  # Reddit's escape: "\\*lot\\*"
             i += 1
             continue
         entity = _ENTITY.match(text, i) if text[i] == "&" else None
         if entity and html.unescape(entity.group()) != entity.group():
-            pieces, end = html.unescape(entity.group()), entity.end()
+            chunk, end = html.unescape(entity.group()), entity.end()
         else:  # an ordinary character, or something that only looks like an entity, such as "&foo;"
-            pieces, end = text[i], i + 1
-        for char in pieces:
+            chunk, end = text[i], i + 1
+        for char in chunk:
             char = CURLY_TO_STRAIGHT.get(char, char)
             if char in EMPHASIS_MARKS:
                 continue
             if char.isspace():
-                if chars and chars[-1] == " ":  # still the same run of spaces: it grows, it doesn't repeat
+                if last == " ":  # still the same run of spaces: it grows, it doesn't repeat
                     origins[-1] = (origins[-1][0], end)
                     continue
                 char = " "
-            chars.append(char)
+            pieces.append(char)
             origins.append((i, end))
+            last = char
         i = end
-    return "".join(chars), origins
+    return "".join(pieces), origins
+
+
+# The characters _plain copies as they are: anything but a backslash, "&", an emphasis mark, a curly quote mark or a space
+# (\s: str.isspace's spaces); a run of them may hold single spaces between them, which stay single spaces.
+_KEPT = "[^" + re.escape("\\&" + "".join(sorted(EMPHASIS_MARKS)) + "".join(CURLY_TO_STRAIGHT)) + r"\s]"
+_ORDINARY = re.compile(f"{_KEPT}+(?: {_KEPT}+)*")
 
 
 def _cuts_a_word(text: str, start: int, end: int) -> bool:
