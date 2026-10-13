@@ -167,9 +167,10 @@ _NORMALIZED: dict[str, tuple[str, ...]] = {}
 _WORDS_BY_LIST: dict[int, tuple[dict, dict[str, tuple[str, ...]]]] = {}  # id(list) -> (the list, {name: words})
 _WORDS_NO_ALIASES: dict[str, tuple[str, ...]] = {}  # every empty list gives the same words
 _FEATURES: dict[tuple[str, ...], "_Features"] = {}  # a name's words -> what _cannot_match reads of them
+_SLIP_KEYS: dict[str, tuple] = {}  # a word -> the first letters and lengths it could be a slip of (_slip_keys)
 MAX_LISTS_REMEMBERED = 16
 MAX_NAMES_REMEMBERED = 200_000  # per table; a full table starts again (a long-running server never grows past it)
-for _table in (_NORMALIZED, _WORDS_BY_LIST, _WORDS_NO_ALIASES, _FEATURES):
+for _table in (_NORMALIZED, _WORDS_BY_LIST, _WORDS_NO_ALIASES, _FEATURES, _SLIP_KEYS):
     register(_table.clear)  # engine.memo.forget_all empties them
 _SAME = Table()  # (words, words) -> whether they name the same product (same_words)
 _HELD_BACK = Table()  # (words, words) -> held_back_word's word, or "" for none
@@ -325,14 +326,20 @@ def _cannot_match(words_a, words_b) -> bool:
     pairs of names the 40 latency requests compare, 9 in 10; only 1 in 60 match). True when a word of the shorter name
     is neither one of the longer name's words nor could be a spelling slip of one (_spelling_slip: a slip keeps the
     first letter and the length within one, a word of 1 or 2 letters has none, one of 3 or 4 only gains or loses a
-    letter, and the shorter name's first word only slips at the longer name's start; _words_found). It looks only at
-    names whose words compare as they are (comparable): when either has an "and", or two or three neighbouring words
-    of one are a word of the other ("soon jung", "soonjung"), it says nothing (False) and same_words looks closely."""
+    letter, and the shorter name's first word only slips at the longer name's start; _words_found). The words compared
+    are the ones comparable gives: an "and" only one name writes left out of both. When two or three neighbouring words
+    of one are a word of the other ("soon jung", "soonjung"), comparable may join them, so it says nothing (False) and
+    same_words looks closely."""
     if not words_a or not words_b:
         return True
     a, b = _features(words_a), _features(words_b)
-    if a.has_and or b.has_and or not a.runs.isdisjoint(b.words) or not b.runs.isdisjoint(a.words):
+    if not a.runs.isdisjoint(b.words) or not b.runs.isdisjoint(a.words):
         return False
+    if a.has_and != b.has_and:  # comparable leaves the "and" out of both
+        words_a, words_b = a.without_and, b.without_and
+        if not words_a or not words_b:
+            return False  # a name of "and" alone: left to same_words
+        a, b = _features(words_a), _features(words_b)
     shorter, longer = (words_a, b) if len(words_a) <= len(words_b) else (words_b, a)  # as _found_inside sorts them
     first = True
     for word in shorter:
@@ -350,6 +357,7 @@ class _Features(NamedTuple):
     lengths: frozenset[tuple[str, int]]  # (first letter, length) of each word
     starts: frozenset[tuple[str, int]]  # the same, of its first word only
     has_and: bool
+    without_and: tuple[str, ...]  # its words but "and"
 
 
 def _features(words) -> _Features:
@@ -358,7 +366,7 @@ def _features(words) -> _Features:
     if found is None:
         found = _FEATURES[words] = _Features(
             frozenset(words), _runs(words), frozenset((w[:1], len(w)) for w in words),
-            frozenset((w[:1], len(w)) for w in words[:1]), AND in words)
+            frozenset((w[:1], len(w)) for w in words[:1]), AND in words, tuple(w for w in words if w != AND))
         _limit(_FEATURES)
     return found
 
@@ -374,10 +382,20 @@ def _could_slip(word: str, lengths: frozenset[tuple[str, int]]) -> bool:
     """Whether `word` could be a spelling slip of a word with one of these (first letter, length), by _spelling_slip's
     rules on letters and lengths alone: the same length needs 5 letters or more (a letter changed or moved); one
     letter more or less needs the shorter word to have 3 or more (a plural "s", a doubled letter, a letter added)."""
-    first, n = word[:1], len(word)
-    return ((n >= TYPO_MIN_LENGTH and (first, n) in lengths)
-            or (n >= _SHORTEST_SLIPPING and (first, n + 1) in lengths)
-            or (n - 1 >= _SHORTEST_SLIPPING and (first, n - 1) in lengths))
+    return not lengths.isdisjoint(_slip_keys(word))
+
+
+def _slip_keys(word: str) -> tuple[tuple[str, int], ...]:
+    """The (first letter, length) of the words `word` could be a spelling slip of (_could_slip), worked out once per
+    word."""
+    found = _SLIP_KEYS.get(word)
+    if found is None:
+        first, n = word[:1], len(word)
+        found = _SLIP_KEYS[word] = tuple(key for key, possible in (
+            ((first, n), n >= TYPO_MIN_LENGTH), ((first, n + 1), n >= _SHORTEST_SLIPPING),
+            ((first, n - 1), n - 1 >= _SHORTEST_SLIPPING)) if possible)
+        _limit(_SLIP_KEYS)
+    return found
 
 
 # The fewest letters the shorter of two words a letter apart in length needs for a slip (a plural, a doubled letter or a
@@ -395,54 +413,59 @@ def _same_words(words_a: list[str], words_b: list[str]) -> bool:
 
 
 def match_candidates(names: Iterable[tuple[str, ...]]) -> dict[tuple[str, ...], set[tuple[str, ...]]]:
-    """For each name (its words, as product_words gives them), the names among `names` it could match by same_words:
-    every pair that matches is among them, and most that can't are left out, so grouping (engine/group_products.py)
-    compares only these. A big request has 700 names, half a million pairs to compare: seconds (latency, 12 Oct 2026).
+    """For each name (its words, as product_words gives them), the names among `names` it could match: the pairs the
+    quick look (_cannot_match) doesn't rule out, one way round or the other, so grouping (engine/group_products.py)
+    compares only these. Every pair that matches by same_words, has a held-back word or is written alike is among them
+    (each needs every word of the shorter name found in the longer one). A big request has 1,000 names, half a million
+    pairs: comparing them all took seconds (latency, 12 Oct 2026).
 
-    Why a pair is left out, in the matcher's own rules: when two names match, each word of one of them (the one with
-    fewer words, as the matcher compares them) is found in the other as it is, or with a spelling slip, and every slip
-    keeps a word's first letter. So the set of first letters of one name is inside the other's. Two things can change
-    a name's words before that comparison, and pairs where they could are always kept: words written apart that join
-    into a longer word of the other name ("soon jung" and "soonjung": one word is the start of a longer one), and an
-    "and" written in only one of the two names, which is dropped from both ("black and decker", "black decker").
-    """
+    How they are found without looking at every pair (13 Oct 2026; until then by first letters alone, ten times as many
+    pairs): when a name is the shorter of two that can match, each of its words is one of the other's, or could be a
+    spelling slip of one (_could_slip: the same first letter, a length within one), its first word only of the other's
+    first word. So the names each word could be found in are listed once (an index of every name's words, and of their
+    words' first letters and lengths), and the names on every list of a name's words are the ones it could match as the
+    shorter; pairs where the other is the shorter are found from the other's side. An "and" only one of two names
+    writes is left out of both (comparable), so a name's "and" never needs finding, its first word is any of its words,
+    and each name is listed under its first word and its first word but "and". Words written apart that may join into
+    one of the other's ("soon jung", "soonjung") keep the pair. Each pair found is then asked the quick look itself."""
     names = list(dict.fromkeys(names))
+    by_word: dict[str, set] = defaultdict(set)  # a word -> the names with it
+    by_length: dict[tuple[str, int], set] = defaultdict(set)  # a word's first letter and length -> the names with one
+    by_start: dict[tuple[str, int], set] = defaultdict(set)  # the same, for names' first words (and first but "and")
+    for name in names:
+        for word in name:
+            by_word[word].add(name)
+            by_length[(word[:1], len(word))].add(name)
+        for word in {*name[:1], *_features(name).without_and[:1]}:
+            by_start[(word[:1], len(word))].add(name)
+    covers: dict[tuple[str, bool], set] = {}
+
+    def cover(word: str, first: bool) -> set:
+        """The names `word` could be found in (as a first word: slipped only at their start)."""
+        found = covers.get((word, first))
+        if found is None:
+            index = by_start if first else by_length
+            found = set(by_word.get(word, ()))
+            for key in _slip_keys(word):
+                found |= index.get(key, set())
+            covers[(word, first)] = found
+        return found
+
     candidates: dict[tuple[str, ...], set[tuple[str, ...]]] = {name: set() for name in names}
-    for without_and in (False, True):
-        letters = {name: frozenset(w[0] for w in name if w and not (without_and and w == AND)) for name in names}
-        having = defaultdict(set)  # a first letter -> the names with a word starting with it
-        by_letters = defaultdict(set)  # a set of first letters -> the names with exactly those
-        for name, found in letters.items():
-            by_letters[found].add(name)
-            for letter in found:
-                having[letter].add(name)
-        for name, found in letters.items():
-            if not found:
-                candidates[name].update(names)  # nothing to tell by: compare it with every name
-                continue
-            inside = set.intersection(*(having[letter] for letter in found))  # names with all its first letters
-            candidates[name] |= inside
-            for other, names_with in by_letters.items():  # names whose first letters are all among its own
-                if other <= found:
-                    candidates[name] |= names_with
-            for other in inside:
+    for name in names:
+        features = _features(name)
+        words = list(dict.fromkeys(features.without_and if features.has_and else name))
+        if words:
+            lists = sorted((cover(word, i == 0 and not features.has_and) for i, word in enumerate(words)), key=len)
+            found = lists[0].intersection(*lists[1:])
+        else:  # no word to tell by (an empty name, or "and" alone): every name
+            found = set(names)
+        for run in features.runs:
+            found |= by_word.get(run, set())
+        for other in found:
+            if other != name and (not _cannot_match(name, other) or not _cannot_match(other, name)):
+                candidates[name].add(other)
                 candidates[other].add(name)
-    # A word that starts a longer word of the other name: the matcher may join words, so the pair is kept.
-    words = sorted({w for name in names for w in name})
-    names_with_word = defaultdict(set)
-    for name in names:
-        for w in name:
-            names_with_word[w].add(name)
-    for i, short in enumerate(words):
-        j = i + 1
-        while j < len(words) and words[j].startswith(short):
-            for a in names_with_word[short]:
-                for b in names_with_word[words[j]]:
-                    candidates[a].add(b)
-                    candidates[b].add(a)
-            j += 1
-    for name in names:
-        candidates[name].discard(name)
     return candidates
 
 

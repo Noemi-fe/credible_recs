@@ -693,3 +693,18 @@ def test_a_pair_ruled_out_by_the_quick_look_has_no_held_back_word_either():
             if match_products._cannot_match(a, b):
                 assert word is None, (a, b)
     assert held_back > 20
+
+
+def test_the_candidates_are_the_pairs_the_quick_look_leaves_either_way_round():
+    # match_candidates finds them from an index of the names' words without looking at every pair: the same pairs as
+    # looking at every pair, among made-up names with joined words, "and"s, slips, plurals and short words.
+    rng = random.Random(15)
+    stems = ["soon", "jung", "soonjung", "cera", "ve", "cerave", "kettle", "kettles", "kettel", "pan", "pans", "and",
+             "creuset", "creseut", "lodge", "lodgee", "max", "jmax", "j", "2", "22", "bha", "bhas", "hur", "hurr", "a",
+             "spf", "50", "spf50", "fab", "fabs", "tir", "tirtir", "black", "decker", "blackdecker"]
+    names = sorted({tuple(rng.choice(stems) for _ in range(rng.randint(1, 4))) for _ in range(600)})
+    candidates = match_candidates(names)
+    for a in names:
+        left = {b for b in names if b != a and (not match_products._cannot_match(a, b)
+                                                 or not match_products._cannot_match(b, a))}
+        assert candidates[a] == left, a
