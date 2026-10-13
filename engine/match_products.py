@@ -80,6 +80,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 from functools import cache
 from pathlib import Path
+from typing import NamedTuple
 
 from engine.config import MENTION_CATEGORIES, PRODUCT_VARIANT_WORDS
 from engine.memo import Table, register
@@ -165,9 +166,10 @@ def _normalize_name(name: str) -> list[str]:
 _NORMALIZED: dict[str, tuple[str, ...]] = {}
 _WORDS_BY_LIST: dict[int, tuple[dict, dict[str, tuple[str, ...]]]] = {}  # id(list) -> (the list, {name: words})
 _WORDS_NO_ALIASES: dict[str, tuple[str, ...]] = {}  # every empty list gives the same words
+_FEATURES: dict[tuple[str, ...], "_Features"] = {}  # a name's words -> what _cannot_match reads of them
 MAX_LISTS_REMEMBERED = 16
 MAX_NAMES_REMEMBERED = 200_000  # per table; a full table starts again (a long-running server never grows past it)
-for _table in (_NORMALIZED, _WORDS_BY_LIST, _WORDS_NO_ALIASES):
+for _table in (_NORMALIZED, _WORDS_BY_LIST, _WORDS_NO_ALIASES, _FEATURES):
     register(_table.clear)  # engine.memo.forget_all empties them
 _SAME = Table()  # (words, words) -> whether they name the same product (same_words)
 _HELD_BACK = Table()  # (words, words) -> held_back_word's word, or "" for none
@@ -307,12 +309,80 @@ def same_product(a: str, b: str, aliases: Aliases = NO_ALIASES) -> bool:
 
 def same_words(words_a: list[str], words_b: list[str]) -> bool:
     """same_product on names already turned into words (product_words). It depends on the two names' words alone, so
-    each pair is compared once and remembered (latency, 12 Oct 2026)."""
+    each pair is compared once and remembered (latency, 12 Oct 2026). Most pairs are settled by a quick look first
+    (_cannot_match, 13 Oct 2026), and those are never remembered: the memory keeps only the pairs worth it."""
+    if _cannot_match(words_a, words_b):
+        return False
     key = (tuple(words_a), tuple(words_b))
     found = _SAME.get(key)
     if found is None:
         found = _SAME.keep(key, _same_words(words_a, words_b))
     return found
+
+
+def _cannot_match(words_a, words_b) -> bool:
+    """A quick, sure no for most pairs of names, before same_words compares them (latency, 13 Oct 2026: of the 700,000
+    pairs of names the 40 latency requests compare, 9 in 10; only 1 in 60 match). True when a word of the shorter name
+    is neither one of the longer name's words nor could be a spelling slip of one (_spelling_slip: a slip keeps the
+    first letter and the length within one, a word of 1 or 2 letters has none, one of 3 or 4 only gains or loses a
+    letter, and the shorter name's first word only slips at the longer name's start; _words_found). It looks only at
+    names whose words compare as they are (comparable): when either has an "and", or two or three neighbouring words
+    of one are a word of the other ("soon jung", "soonjung"), it says nothing (False) and same_words looks closely."""
+    if not words_a or not words_b:
+        return True
+    a, b = _features(words_a), _features(words_b)
+    if a.has_and or b.has_and or not a.runs.isdisjoint(b.words) or not b.runs.isdisjoint(a.words):
+        return False
+    shorter, longer = (words_a, b) if len(words_a) <= len(words_b) else (words_b, a)  # as _found_inside sorts them
+    first = True
+    for word in shorter:
+        if word not in longer.words and not _could_slip(word, longer.starts if first else longer.lengths):
+            return True
+        first = False
+    return False
+
+
+class _Features(NamedTuple):
+    """What _cannot_match reads of a name's words, worked out once per name."""
+
+    words: frozenset[str]
+    runs: frozenset[str]  # every 2 or 3 neighbouring words written as one (join_split_words joins only into those)
+    lengths: frozenset[tuple[str, int]]  # (first letter, length) of each word
+    starts: frozenset[tuple[str, int]]  # the same, of its first word only
+    has_and: bool
+
+
+def _features(words) -> _Features:
+    words = tuple(words)
+    found = _FEATURES.get(words)
+    if found is None:
+        found = _FEATURES[words] = _Features(
+            frozenset(words), _runs(words), frozenset((w[:1], len(w)) for w in words),
+            frozenset((w[:1], len(w)) for w in words[:1]), AND in words)
+        _limit(_FEATURES)
+    return found
+
+
+def _runs(words: tuple[str, ...]) -> frozenset[str]:
+    """Every run of 2 to MAX_WORDS_JOINED neighbouring words, written as one word: the only words join_split_words can
+    make."""
+    return frozenset("".join(words[i:i + size]) for size in range(2, MAX_WORDS_JOINED + 1)
+                     for i in range(len(words) - size + 1))
+
+
+def _could_slip(word: str, lengths: frozenset[tuple[str, int]]) -> bool:
+    """Whether `word` could be a spelling slip of a word with one of these (first letter, length), by _spelling_slip's
+    rules on letters and lengths alone: the same length needs 5 letters or more (a letter changed or moved); one
+    letter more or less needs the shorter word to have 3 or more (a plural "s", a doubled letter, a letter added)."""
+    first, n = word[:1], len(word)
+    return ((n >= TYPO_MIN_LENGTH and (first, n) in lengths)
+            or (n >= _SHORTEST_SLIPPING and (first, n + 1) in lengths)
+            or (n - 1 >= _SHORTEST_SLIPPING and (first, n - 1) in lengths))
+
+
+# The fewest letters the shorter of two words a letter apart in length needs for a slip (a plural, a doubled letter or a
+# letter added): _spelling_slip.
+_SHORTEST_SLIPPING = min(PLURAL_MIN_LENGTH, DOUBLED_MIN_LENGTH, TYPO_MIN_LENGTH)
 
 
 def _same_words(words_a: list[str], words_b: list[str]) -> bool:
@@ -401,9 +471,9 @@ def join_split_words(words: list[str], other: list[str]) -> list[str]:
     the longest first.
     """
     targets = set(other)
-    # A run joins only into a word of the other name that starts with the run's first word and is longer: when no word
-    # of the other name starts that way, nothing joins (a quick answer for most pairs of names; latency, 12 Oct 2026).
-    if not any(len(t) > len(w) and t.startswith(w) for t in targets for w in words):
+    # A run joins only into a word of the other name that is the run written as one: when none is, nothing joins (a
+    # quick answer for most pairs of names; latency, 12 Oct 2026, and 13 Oct 2026: the runs, worked out once per name).
+    if _features(words).runs.isdisjoint(targets):
         return list(words)
     joined, i = [], 0
     while i < len(words):

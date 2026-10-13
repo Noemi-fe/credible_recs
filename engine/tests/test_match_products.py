@@ -630,3 +630,48 @@ def test_candidates_hold_every_match_among_made_up_names():
 def test_names_with_no_first_letters_in_common_are_not_compared():
     names = [("zojirushi", "kettle"), ("bonavita", "gooseneck"), ("cerave", "cleanser")]
     assert candidate_pairs(names) == set()
+
+
+# --- A quick, sure no for pairs of names that can't match (latency, 13 Oct 2026) ---
+
+from engine import match_products  # noqa: E402
+
+
+def test_a_quick_no_is_never_wrong_on_tricky_names():
+    # Every pair the quick look rules out is one the full comparison rejects too: joined words ("soon jung" and
+    # "soonjung"), an "and" only one writes, slips in the first word, plurals and doubled letters among them.
+    for a in TRICKY_NAMES:
+        for b in TRICKY_NAMES:
+            if match_products._cannot_match(a, b):
+                assert not match_products._same_words(list(a), list(b)), (a, b)
+
+
+def test_a_quick_no_is_never_wrong_on_made_up_names():
+    rng = random.Random(13)
+    stems = ["soon", "jung", "soonjung", "cera", "ve", "cerave", "kettle", "kettles", "kettel", "pan", "pans", "and",
+             "creuset", "creseut", "lodge", "lodgee", "max", "jmax", "j", "2", "22", "bha", "bhas", "salicylic",
+             "salicyclic", "hur", "hurr", "mat", "matt", "a", "spf", "50", "spf50", "fab", "fabs", "tir", "tirtir"]
+    names = sorted({tuple(rng.choice(stems) for _ in range(rng.randint(1, 4))) for _ in range(500)})
+    ruled_out = 0
+    for a in names:
+        for b in names:
+            if match_products._cannot_match(a, b):
+                ruled_out += 1
+                assert not match_products._same_words(list(a), list(b)), (a, b)
+    assert ruled_out > len(names) ** 2 // 2  # most pairs are settled by the quick look
+
+
+def test_names_that_need_a_closer_look_still_get_one():
+    # The quick look never rules out a pair whose words compare only once joined, or once an "and" is dropped.
+    assert not match_products._cannot_match(("soon", "jung", "cream"), ("soonjung", "cream"))
+    assert match_products.same_words(["soon", "jung", "cream"], ["soonjung", "cream"])
+    assert not match_products._cannot_match(("black", "and", "decker"), ("black", "decker"))
+    assert match_products.same_words(["black", "and", "decker"], ["black", "decker"])
+    assert not match_products._cannot_match(("zojurushi",), ("zojirushi", "kettle"))  # a slip of a long word
+
+
+def test_a_pair_ruled_out_by_the_quick_look_is_not_remembered():
+    before = len(match_products._SAME)
+    assert not match_products.same_words(["zojirushi", "kettle"], ["bonavita", "gooseneck"])
+    assert not match_products.same_words(("cerave", "hydrating", "cleanser"), ("cerave", "sa", "cleanser"))
+    assert len(match_products._SAME) == before

@@ -90,3 +90,33 @@ with no read at all), not live checks. Without it, a fresh answer needs 26 reads
 allowance lasts, and over 100 s once it is spent.
 | 13 Oct 2026 | With Also worth a look and summaries (merged that day): reads paced by what Reddit's rate-limit headers say is left (at once while 50+ are left beyond 10 kept, then spread over the rest of the 10 minutes), and the comments only Also worth a look or a summary quote never wait (revision 00011) | 7.96 / 109.71 | 1.89 / 4.91 | 3.76 / 107.63 | 0.10 / 0.14 | n/a | 20 to 35 | yes, with a fix: the first 5 answers took 4.3 to 9.0 s (from the 4th, 50 to 80 s before), and when reads ran short the answers kept their 3 picks and left Also worth a look out (5 to 11 comments put off). But spread over a long rest of the 10 minutes a read waited up to 20 s (answers 6 to 8: 21, 110 and 93 s), so spread-out reads are now never slower than one every 4 s, and a visitor's read never waits over 60 s for the next 10 minutes (e8ba80b) |
 | 13 Oct 2026 | Check ahead: the daily pre-check job's checks in the bucket's bundle (1,099 after two runs: 53 min, then 5 min for the day's new picks), read by the server as it gets ready; plus the first-hand fix, the refill cap and 60 s wait limit (revision 00014) | 2.76 / 5.22 | 2.60 / 5.05 | 0.04 / 0.08 | 0.14 / 0.22 | 0.08 / 0.09 | 20 to 36 | yes: no fresh answer waited on Reddit (every quote shown already checked within 48 hours), all 8 under 5.3 s, and every answer kept Also worth a look (none put off). From 60.12 / 80.08 s this morning. What's left is the engine's own work (p50 2.6 s, against 1.34 in revision 00009, before Also worth a look, summaries and the first-hand rules) |
+
+## The engine's own work (13 Oct 2026, evening)
+
+Also worth a look, the one-line summaries and their checks, the first-hand rules, name grouping that knows the requested
+type, brand lines on Skip these and ingredient-led answers (all merged on 13 Oct 2026) made each fresh answer's own work
+grow: 2 to 8 s on Cloud Run's one processor, and getting ready (one answer per product type, engine.web.warm_up) no
+longer fitted Cloud Run's 4-minute startup probe (capped at 120 s, 14 of 26 product types were left cold). Each change
+below was measured on its own, on top of the ones kept before it, and kept only if every answer stayed byte for byte
+the same and the engine got faster.
+
+How to read a row. Seconds of this process's processor time (steadier than wall time on a machine shared with other
+builders), on the frozen copy of the library taken on the afternoon of 13 Oct 2026 (436 threads), the open model off
+(its loading and reading cost the same before and after every change; with it, getting ready takes about 10 s more),
+writers' standing from that copy's profile store and the Arctic Shift cache, no live checks. The baseline and the change
+took turns, twice each, and each figure is the lower of the two runs:
+
+- Getting ready: engine.web.warm_up with no time limit: the library, the price and facts lists, and one answer per
+  product type (26), each worked out for the first time.
+- Fresh: the 40 requests of the answers check (the 22 latency requests, the 12 ingredient requests and 6 others), each
+  asked once in a process that has got ready: what a visitor waits for, less the live checks. p50 / p95 / max / total.
+- Warm: each product type asked again (the minimum of 2 runs): p50 / max / total over the 26 types.
+- Identical: the 40 requests' answers (engine.web.answer_json) byte for byte the same as before any change, and the
+  same for the 26 product types and the 40 requests with writers' standing; eval/run_eval.py's whole report byte for byte
+  the same (run with no network: live checks from a copy of the live-check cache, at a fixed time); the full test suite
+  passing.
+
+| Date | Change | Getting ready | Fresh (p50 / p95 / max / total) | Warm (p50 / max / total) | Load | Identical? | Kept? |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 13 Oct 2026 | Baseline (576700a) | 37.6 | 0.67 / 2.94 / 3.86 / 40.7 | 0.36 / 1.51 / 12.3 | 3 to 4.5 | yes (the reference) | the baseline. With the open model, getting ready took 48.2 s on this Mac (58.6 s of processor time), and the warm serum answer 2.21 s (its model reading) |
+| 13 Oct 2026 | Name matching settles most pairs of names with a quick look (engine.match_products._cannot_match): a word of the shorter name that is neither in the longer one nor could be a spelling slip of one of its words (same first letter, length within one, enough letters) rules the pair out, when no "and" or joined words could change the words compared; and join_split_words checks the runs of words it could join, worked out once per name | 33.1 | 0.51 / 2.08 / 2.28 / 32.0 | 0.32 / 1.25 / 10.2 | 2.5 to 3.7 | yes | yes: of the 700,872 pairs of names the 66 answers compared, 635,285 (91%) are settled by the quick look (all 700,872 give the same answer as before); the pairs remembered fell from 700,000 (past the memory's 200,000, so it started again over and over) to 66,000 |
