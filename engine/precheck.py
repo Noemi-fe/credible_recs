@@ -27,8 +27,9 @@ that order, a pick's own quotes before the rest of each tier, then by request, t
 likeliest to be shown first. A comment in several answers or places is read once, at its likeliest.
 
 How it is read (check_ahead): through the live site's own checker (engine.pipeline.live_checker: the same pace, the
-same 48-hour cache, the same bucket), one comment at a time, until the run's budget of reads (--limit, default
-config.PRECHECK_MAX_READS) is spent. A comment read less than config.PRECHECK_FRESH_HOURS ago is skipped; an older one
+same 48-hour cache), one comment at a time, until the run's budget of reads (--limit, default
+config.PRECHECK_MAX_READS) is spent. On Google Cloud the checks are shared with the site through the bucket, as one
+object (engine.live_check.LiveChecker.load_bundle and save_bundle): read as a run starts, written midway and at the end. A comment read less than config.PRECHECK_FRESH_HOURS ago is skipped; an older one
 is read again, so the next day's answers never find its check expired. A run stops when Reddit stops answering
 (config.PRECHECK_STOP_AFTER_UNKNOWN unreadable pages in a row). The report gives counts and times only, never a
 comment's words.
@@ -269,9 +270,10 @@ def merged(candidates: list[Candidate]) -> list[Candidate]:
 
 def check_ahead(candidates: list[Candidate], checker, limit: int = PRECHECK_MAX_READS, dry_run: bool = False,
                 stop_after_unknown: int = PRECHECK_STOP_AFTER_UNKNOWN,
-                fresh: timedelta = timedelta(hours=PRECHECK_FRESH_HOURS)) -> Reading:
+                fresh: timedelta = timedelta(hours=PRECHECK_FRESH_HOURS), midway=None) -> Reading:
     """Reads the candidates on Reddit in order through `checker` (engine.live_check.LiveChecker), skipping those read
-    within `fresh`, until `limit` reads are made. `dry_run`: nothing is read; counts what would be."""
+    within `fresh`, until `limit` reads are made. `dry_run`: nothing is read; counts what would be. `midway`: called
+    once when half the budget is read (the run saves its checks then too, so a run cut short still leaves them)."""
     run = Reading()
     started = time.perf_counter()
     unknown_in_a_row = 0
@@ -291,6 +293,8 @@ def check_ahead(candidates: list[Candidate], checker, limit: int = PRECHECK_MAX_
         unknown_in_a_row = unknown_in_a_row + 1 if status == "unknown" else 0
         if unknown_in_a_row >= stop_after_unknown:
             run.stopped = True
+        if midway is not None and run.read == max(limit // 2, 1):
+            midway()
         if run.read % PROGRESS_EVERY == 0:
             print(f"  read {run.read:,} of up to {limit:,} ({(time.perf_counter() - started) / 60:.1f} min)",
                   file=sys.stderr, flush=True)
@@ -352,17 +356,27 @@ def options(argv: list[str]) -> tuple[int, bool] | None:
 
 
 def run(requests: list[str], limit: int, dry_run: bool, library_dir: Path, checker, profiles) -> int:
-    """Works out the comments, reads them, and prints the report."""
+    """Works out the comments, reads them, and prints the report. With a bucket (the daily job on Google Cloud), it
+    starts from the bundle of checks the last run left (engine.live_check.LiveChecker.load_bundle), so what is still
+    fresh isn't read again, and leaves a new one, midway and at the end (save_bundle): one object, a few calls a run."""
     started = time.perf_counter()
+    bucket = getattr(checker, "bucket", None)
+    loaded = checker.load_bundle() if bucket is not None else 0
     found = _work_out(requests, library_dir, checker, profiles)
     working = time.perf_counter() - started
     print(f"Worked out {len(found.candidates):,} comments from {len(requests)} requests in {_duration(working)}; "
           f"{'counting' if dry_run else 'reading'} up to {limit:,}.", file=sys.stderr, flush=True)
-    reading = check_ahead(found.candidates, checker, limit=limit, dry_run=dry_run)
-    bucket = getattr(checker, "bucket", None)
+    save = None if bucket is None or dry_run else checker.save_bundle
+    reading = check_ahead(found.candidates, checker, limit=limit, dry_run=dry_run, midway=save)
     print(report(found.candidates, reading, len(requests), found.answered, working, reading.seconds, found.failed))
-    if bucket is not None and bucket.problems:
-        print(f"The bucket {bucket.name} failed {bucket.problems} time(s): those checks were kept on this machine only.")
+    if bucket is not None:
+        saved = None if save is None else save()
+        written = ("not written: a dry run" if save is None else f"{saved:,} written to it at the end" if saved
+                   is not None else "the bundle couldn't be written: the site keeps yesterday's until the next run")
+        print(f"Checks shared through the bucket {bucket.name}: {loaded:,} from the bucket's bundle at the start; "
+              f"{written}.")
+        if bucket.problems:
+            print(f"The bucket failed {bucket.problems} time(s) (said above).")
     return 0
 
 

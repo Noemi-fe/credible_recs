@@ -39,14 +39,19 @@ pre-check or at answer time; a failed check drops it, and an older one is read a
 reads again any comment last read over PRECHECK_FRESH_HOURS ago (check's `max_age`), so a check never runs out during
 the next day's answers.
 
-Where checks are kept. In this machine's folder (.cache/live_check) and, when CREDIBLE_RECS_LIVE_CACHE_BUCKET names one,
-in a private Google Cloud Storage bucket (Bucket): on Google Cloud Run the server's disk is wiped whenever it sleeps,
-and the daily pre-check runs on a machine of its own, so the server and the pre-check share the bucket. A check is
-looked for here first, then in the bucket (and kept here when found there), and only then read on Reddit; a new one is
-written to both. The 48-hour rule is the same for the bucket: an entry older than that is never used, whatever is asked,
-and the bucket deletes objects 2 days old (deploy/cloudrun/DEPLOY.md). The bucket is reached with plain HTTPS calls to
-Cloud Storage's JSON API, with the token Cloud Run's metadata server gives the service account; when it can't be
-reached, checks go on with this folder and Reddit, and the bucket is left alone for BUCKET_REST_SECONDS.
+Where checks are kept. In this machine's folder (.cache/live_check): every check, whoever made it. Shared, when
+CREDIBLE_RECS_LIVE_CACHE_BUCKET names one, through a private Google Cloud Storage bucket (Bucket), as one object
+(free tiers only, Noemi's rule: a few calls a day, never one a comment): the daily pre-check runs on a machine of its
+own whose disk starts empty, and the site's disk is wiped whenever it restarts. The pre-check reads the bundle into its
+folder as it starts (so what it read yesterday and is still fresh isn't read again), and writes every check its folder
+holds that is under 48 hours old back to the bucket as one bundle (save_bundle, mid-run and at the end). The site reads
+the bundle into its folder as it gets ready and then at most once an hour, only when it has changed (load_bundle: one
+small question about the object's generation, and a download only when that changed), keeping its own check of a
+comment when it is newer; it never writes to the bucket. The 48-hour rule holds for every entry wherever it is read
+from: one older than that is never written to the folder or the bundle and never used, whatever is asked, and the
+bucket deletes objects 2 days old (deploy/cloudrun/DEPLOY.md). The bucket is reached with plain HTTPS calls to Cloud
+Storage's JSON API, with the token Cloud Run's metadata server gives the service account; when it can't be reached,
+checks go on with this folder and Reddit, and the bucket is left alone for BUCKET_REST_SECONDS.
 """
 
 import hashlib
@@ -81,7 +86,10 @@ MAX_AGE = timedelta(hours=CACHE_MAX_AGE_HOURS)
 
 # The bucket (check ahead, 13 Oct 2026): its name, from the environment; unset, checks are kept on this machine only.
 BUCKET_VAR = "CREDIBLE_RECS_LIVE_CACHE_BUCKET"
-BUCKET_PREFIX = "live_check/"  # objects are named like the folder's files, under this prefix
+BUCKET_PREFIX = "live_check/"  # the bucket's objects are under this prefix
+BUNDLE_NAME = "bundle.json"  # the one object: every check the pre-check holds that is under 48 hours old
+BUNDLE_RELOAD_SECONDS = 3600  # the site reads the bundle again at most this often (only when it has changed)
+_ENTRY_NAME = re.compile(r"^[0-9a-f]{32}\.json$")  # a check's name in the folder and the bundle (_entry_name)
 BUCKET_TIMEOUT = 5  # seconds a call to the bucket may take: never long enough to hold up an answer for long
 BUCKET_REST_SECONDS = 60  # after a failed call the bucket is left alone this long, so answers don't keep waiting on it
 STORAGE_API = "https://storage.googleapis.com/storage/v1"
@@ -156,8 +164,8 @@ def _http_request(method: str, url: str, headers: dict, body: bytes | None = Non
 
 
 class Bucket:
-    """The saved checks in a private Google Cloud Storage bucket, shared by the server and the daily pre-check (check
-    ahead, 13 Oct 2026). Plain HTTPS calls to Cloud Storage's JSON API, with the access token Cloud Run's metadata
+    """A private Google Cloud Storage bucket, through which the daily pre-check shares its saved checks with the site
+    (check ahead, 13 Oct 2026). Plain HTTPS calls to Cloud Storage's JSON API, with the access token Cloud Run's metadata
     server gives the service account, kept until shortly before it runs out. A problem never stops a check: it is said
     once in the server's window (never with the token), and the bucket is left alone for BUCKET_REST_SECONDS.
     `request` and `clock` (seconds) can be swapped for fakes, which is how the tests avoid the network."""
@@ -172,10 +180,24 @@ class Bucket:
         self.problems = 0  # how many calls failed, for reports
         self._lock = threading.Lock()
 
-    def get(self, name: str) -> bytes | None:
-        """The object's content, or None when there is none (or the bucket can't be read just now)."""
+    def generation(self, name: str) -> str | None:
+        """The object's generation (Cloud Storage's number for each version of it), from a small metadata read; None
+        when there is none (or the bucket can't be read just now)."""
         path = url_quote(BUCKET_PREFIX + name, safe="")
-        status, body = self._call("GET", f"{STORAGE_API}/b/{url_quote(self.name, safe='')}/o/{path}?alt=media")
+        status, body = self._call("GET", f"{STORAGE_API}/b/{url_quote(self.name, safe='')}/o/{path}?fields=generation")
+        if status != 200:
+            return None
+        try:
+            return str(json.loads(body)["generation"])
+        except (ValueError, KeyError, TypeError):
+            return None
+
+    def get(self, name: str, generation: str | None = None) -> bytes | None:
+        """The object's content (that version of it, when `generation` is given), or None when there is none (or the
+        bucket can't be read just now)."""
+        path = url_quote(BUCKET_PREFIX + name, safe="")
+        version = f"&generation={url_quote(generation, safe='')}" if generation else ""
+        status, body = self._call("GET", f"{STORAGE_API}/b/{url_quote(self.name, safe='')}/o/{path}?alt=media{version}")
         return body if status == 200 else None
 
     def put(self, name: str, data: bytes) -> bool:
@@ -247,8 +269,8 @@ def checker_from_env(environ=os.environ, **settings) -> "LiveChecker":
 class LiveChecker:
     """`fetch`, `clock` and `sleep` can be swapped for fakes, which is how the tests avoid the network (a fake `fetch`
     may leave out the rate-limit headers: then the burst and refill pace every read). Safe to ask from several threads
-    at once (engine.pipeline checks the comments of an answer together). `bucket`: where checks are kept besides this
-    machine's folder (Bucket), or None."""
+    at once (engine.pipeline checks the comments of an answer together). `bucket`: the bucket the pre-check's checks
+    are shared through, as one bundle (Bucket; load_bundle, save_bundle), or None. Checks never call it."""
 
     def __init__(self, cache_dir: Path = DEFAULT_CACHE_DIR, fetch=_http_get, clock=None, sleep=time.sleep,
                  min_interval: float = LIVE_CHECK_MIN_INTERVAL, burst: int = LIVE_CHECK_BURST,
@@ -266,6 +288,7 @@ class LiveChecker:
         self.reserve, self.spread_below = reserve, spread_below  # reads kept for others; fewer left spread out
         self._window: _Window | None = None  # what Reddit last said is left, until its 10 minutes end
         self._in_flight = 0  # reads started that Reddit hasn't answered yet
+        self._bundle_generation: str | None = None  # the version of the bucket's bundle last read into the folder
         self._lock = threading.Lock()
 
     def check(self, comment_url: str, quote: str, max_age: timedelta = MAX_AGE, wait: bool = True) -> LiveResult:
@@ -310,27 +333,58 @@ class LiveChecker:
         text = html.unescape(" ".join(_TAG.sub(" ", found.group(1)).split()))
         data = json.dumps({"fetched_at": fetched_at.isoformat(), "text": text}, ensure_ascii=False).encode("utf-8")
         self._keep(_entry_name(url), data)
-        if self.bucket is not None:
-            self.bucket.put(_entry_name(url), data)
         return text
 
-    def _saved(self, url: str, max_age: timedelta) -> dict | None:
-        """The check of this page saved within `max_age`: from this machine's folder, else from the bucket (then kept
-        in the folder too, so the next check needs no call); None when neither has one."""
-        name = _entry_name(url)
+    def load_bundle(self) -> int:
+        """The pre-check's checks, from the bucket's bundle into this machine's folder: each one under 48 hours old,
+        unless the folder's own check of that comment is as new or newer. Only when the bundle changed since the last
+        load (its generation, from one small metadata read; then one download). How many checks it wrote here."""
+        if self.bucket is None:
+            return 0
+        generation = self.bucket.generation(BUNDLE_NAME)
+        if generation is None or generation == self._bundle_generation:
+            return 0
         try:
-            here = _entry((self.cache_dir / name).read_bytes())
-        except OSError:
-            here = None
-        if self._within(here, max_age):
-            return here
+            checks = json.loads(self.bucket.get(BUNDLE_NAME, generation) or b"")["checks"]
+        except (ValueError, KeyError, TypeError):
+            return 0  # a bundle that can't be read, or that changed again meanwhile: tried again next time
+        written = 0
+        for name, value in checks.items() if isinstance(checks, dict) else ():
+            entry = _entry(json.dumps(value).encode("utf-8")) if _ENTRY_NAME.match(str(name)) else None
+            if not self._within(entry, MAX_AGE):
+                continue
+            here = self._saved_here(name)
+            if here is not None and datetime.fromisoformat(here["fetched_at"]) >= datetime.fromisoformat(
+                    entry["fetched_at"]):
+                continue
+            self._keep(name, json.dumps(entry, ensure_ascii=False).encode("utf-8"))
+            written += 1
+        self._bundle_generation = generation
+        return written
+
+    def save_bundle(self) -> int | None:
+        """Every check in this machine's folder under 48 hours old, written to the bucket as one object (the daily
+        pre-check does, mid-run and at the end; the site never does). How many it holds; None when it wasn't saved."""
         if self.bucket is None:
             return None
-        there = _entry(self.bucket.get(name))
-        if not self._within(there, max_age):
+        checks = {}
+        for path in sorted(self.cache_dir.glob("*.json")) if self.cache_dir.is_dir() else ():
+            entry = self._saved_here(path.name)
+            if _ENTRY_NAME.match(path.name) and self._within(entry, MAX_AGE):
+                checks[path.name] = {"fetched_at": entry["fetched_at"], "text": entry["text"]}
+        data = json.dumps({"written_at": self._clock().isoformat(), "checks": checks}, ensure_ascii=False)
+        return len(checks) if self.bucket.put(BUNDLE_NAME, data.encode("utf-8")) else None
+
+    def _saved(self, url: str, max_age: timedelta) -> dict | None:
+        """The check of this page saved in this machine's folder within `max_age`; None when there is none."""
+        here = self._saved_here(_entry_name(url))
+        return here if self._within(here, max_age) else None
+
+    def _saved_here(self, name: str) -> dict | None:
+        try:
+            return _entry((self.cache_dir / name).read_bytes())
+        except OSError:
             return None
-        self._keep(name, json.dumps(there, ensure_ascii=False).encode("utf-8"))
-        return there
 
     def _within(self, entry: dict | None, max_age: timedelta) -> bool:
         return entry is not None and self._clock() - datetime.fromisoformat(entry["fetched_at"]) < max_age

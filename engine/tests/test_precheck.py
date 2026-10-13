@@ -354,3 +354,51 @@ def test_a_request_whose_answer_fails_is_reported_and_the_others_still_worked_ou
     assert found and all(c.request == 1 for c in found)
     said = capsys.readouterr().err
     assert "ValueError" in said and "a broken request" in said  # our own request list: named, to find the problem
+
+
+# --- Sharing the checks through the bucket, as one bundle (free tiers only, 13 Oct 2026) ---
+
+def bucketed(tmp_path, folder, reddit, google, clock=None):
+    from engine.live_check import Bucket
+
+    clock = clock or Clock()
+    return LiveChecker(cache_dir=tmp_path / folder, fetch=reddit, clock=clock, sleep=clock.sleep, min_interval=0,
+                       bucket=Bucket(google.bucket, request=google, clock=lambda: clock.now.timestamp()))
+
+
+def test_a_run_starts_from_yesterdays_bundle_and_leaves_one_bundle_behind(tmp_path, capsys):
+    from engine.tests.test_live_check_bucket import FakeGoogle
+
+    google, clock, lib = FakeGoogle(), Clock(), library(tmp_path)
+    first = FakeReddit()
+    precheck.run([REQUEST], limit=100, dry_run=False, library_dir=lib,
+                 checker=bucketed(tmp_path, "monday", first, google, clock), profiles=None)
+    assert first.asked and len(google.asked("POST")) <= 2  # a bundle mid-run at most, and one at the end
+    held = len(google.bundle()["checks"])
+    assert held == len(set(first.asked))
+    clock.now += timedelta(hours=2)  # the next run, on a new machine whose folder starts empty
+    second = FakeReddit()
+    precheck.run([REQUEST], limit=100, dry_run=False, library_dir=lib,
+                 checker=bucketed(tmp_path, "tuesday", second, google, clock), profiles=None)
+    assert second.asked == []  # every check came from the bundle, and is fresh
+    said = capsys.readouterr().out
+    assert f"{held} from the bucket's bundle" in said and f"{held} written to it" in said
+
+
+def test_a_dry_run_reads_the_bundle_but_never_writes_it(tmp_path):
+    from engine.tests.test_live_check_bucket import FakeGoogle
+
+    google = FakeGoogle()
+    precheck.run([REQUEST], limit=100, dry_run=True, library_dir=library(tmp_path),
+                 checker=bucketed(tmp_path, "here", FakeReddit(), google), profiles=None)
+    assert google.asked("POST") == [] and google.asked("GET", "fields=generation")
+
+
+def test_the_checks_are_saved_once_midway_through_a_run(tmp_path):
+    found = candidates(tmp_path)
+    saved = []
+    check_ahead(found, live_checker(tmp_path, FakeReddit()), limit=8, midway=lambda: saved.append(1))
+    assert saved == [1]
+    saved.clear()
+    check_ahead(found[:2], live_checker(tmp_path, FakeReddit()), limit=8, midway=lambda: saved.append(1))
+    assert saved == []  # fewer reads than half the budget: the end of the run saves them
