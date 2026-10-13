@@ -989,8 +989,30 @@ def _naming(sentence: str, mine: set[str], theirs: list[set[str]]) -> tuple[bool
 
 
 def _found_name_words(words: list[str], name_words: set[str]) -> frozenset[str]:
-    """The name words that appear among `words`, give or take a plural "s" or a one-letter typo."""
-    return frozenset(name_word for name_word in name_words if any(_same_word(word, name_word) for word in words))
+    """The name words that appear among `words`, give or take a plural "s" or a one-letter typo (_same_word).
+
+    Looked up rather than compared with every word (latency, 13 Oct 2026: module 5 compared every word of every
+    sentence with every name word, three million times for the answers getting ready asks): the word itself, its plural
+    and its singular among the sentence's words, and only then a slip, among the words a letter longer or shorter or of
+    its length, which are the only ones a slip can be."""
+    if not name_words:
+        return frozenset()
+    present = set(words)
+    found = []
+    by_length = None
+    for name_word in name_words:
+        if name_word in present or name_word + "s" in present or name_word.removesuffix("s") in present:
+            found.append(name_word)
+        elif len(name_word) >= 5:
+            if by_length is None:
+                by_length = {}
+                for word in present:
+                    if word not in GENERIC_NAME_WORDS:
+                        by_length.setdefault(len(word), []).append(word)
+            n = len(name_word)
+            if any(one_edit_apart(word, name_word) for size in (n - 1, n, n + 1) for word in by_length.get(size, ())):
+                found.append(name_word)
+    return frozenset(found)
 
 
 def _same_word(word: str, name_word: str) -> bool:
@@ -1038,7 +1060,8 @@ def _phrase_pattern(phrase: str) -> re.Pattern:
 
 
 def _has_any(text: str, phrases: Iterable[str]) -> bool:
-    return any(_phrase_pattern(phrase).search(text) for phrase in phrases)
+    # A phrase is looked for as whole words only where it is written at all (latency, 13 Oct 2026: a quick look first).
+    return any(phrase in text and _phrase_pattern(phrase).search(text) for phrase in phrases)
 
 
 _NEGATION = re.compile(r"\b(?:no|not|never|without|zero|any|nor|hardly|(?:does|do|did|is|was|has|have|wo|ca)n'?t|dont|doesnt|wont)\b")
@@ -1058,7 +1081,7 @@ def _found(pattern: re.Pattern, text: str) -> bool:
 def _first_phrase(text: str, phrases: Iterable[str]) -> str | None:
     """The first of `phrases` found in `text` without a negation just before it, or None."""
     for phrase in phrases:
-        if _found(_phrase_pattern(phrase), text):
+        if phrase in text and _found(_phrase_pattern(phrase), text):  # a quick look first, as in _has_any
             return phrase
     return None
 
