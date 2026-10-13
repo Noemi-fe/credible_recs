@@ -33,6 +33,7 @@ from engine.bright_data import DISCOVER_POSTS_EACH, BrightDataError
 from engine.config import (
     ARCHIVE_DOWN_MINUTES,
     ARCHIVE_MAX_SEARCHES,
+    ARCHIVE_NEED_WORDS,
     ARCHIVE_OLDER_YEARS,
     ARCHIVE_OLDEST_FACTOR,
     ARCHIVE_POSTS_EACH,
@@ -361,7 +362,7 @@ def usable_posts(query: ParsedQuery, posts: list[dict], min_comments: int) -> li
 def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searches: int = 4,
                    max_warning_searches: int = 4, raise_if_nothing: bool = False, posts_each: int = 25,
                    older_than_years: int | None = None, max_failures: int = 1, failed: list[str] | None = None,
-                   now: datetime | None = None, halved: list[str] | None = None) -> list[dict]:
+                   now: datetime | None = None, halved: list[str] | None = None, need_searches: int = 0) -> list[dict]:
     """Arctic Shift results, in rounds, each post once.
 
     1. The product's title words, term by term and subreddit by subreddit, up to `max_free_searches`, the newest
@@ -369,7 +370,10 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
     2. With `older_than_years`, round 1 covers only that many recent years, and the same searches run again for the
        years before, back to ARCHIVE_OLDEST_FACTOR times as far: big threads are often old ones (11 Oct 2026:
        haircare's were out of reach), and a search bounded by dates doesn't time out over a big subreddit's history.
-    3. Warning searches, so threads about failures and regrets are among the candidates: the first title word
+    3. With `need_searches` (the archive reader's rounds, 13 Oct 2026), the first title word with each of the request's
+       first `need_searches` need words ("conditioner curly"), subreddit by subreddit, over the whole history: the
+       threads asking the request's own question, however old, which round 1's newest 100 posts rarely reach.
+    4. Warning searches, so threads about failures and regrets are among the candidates: the first title word
        with each of WARNING_SEARCHES ("kettle died", "kettle regret"…), in the request's most specialist
        subreddit, up to `max_warning_searches`.
     A busy or failing search is skipped and named in `failed`; `max_failures` of them in a row end the round (1: the
@@ -397,6 +401,8 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
         windows = ({"after": split}, {"after": oldest, "before": split})
         pairs = ([(subreddit, term, {"after": split}) for subreddit, term in titles]
                  + [(subreddit, term, {"after": oldest, "before": split}) for subreddit, term in titles])
+    needs = need_words(query)[:need_searches] if need_searches else []
+    pairs += [(subreddit, f"{terms[0]} {need}", {}) for need in needs for subreddit in query.subreddits][:max_free_searches]
     warnings = warning_words(query)[:max_warning_searches]
     pairs += [(query.subreddits[0], f"{terms[0]} {warning}", {}) for warning in warnings]
     queue = deque((subreddit, term, dates, 0) for subreddit, term, dates in pairs)  # 0: not halved yet
@@ -533,7 +539,7 @@ class ArchiveSource:
             found = search_archive(self.client, query, self.max_free_searches, self.max_warning_searches,
                                    raise_if_nothing=True, posts_each=ARCHIVE_POSTS_EACH,
                                    older_than_years=ARCHIVE_OLDER_YEARS, max_failures=ARCHIVE_SEARCH_MAX_FAILURES,
-                                   failed=failed, halved=halved)
+                                   failed=failed, halved=halved, need_searches=ARCHIVE_NEED_WORDS)
         finally:
             self.notes = ([f"The archive's search in {search} timed out, so it was asked again over shorter spans of "
                            "time." for search in halved]

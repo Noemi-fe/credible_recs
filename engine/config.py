@@ -924,6 +924,12 @@ ARCHIVE_SEARCH_MAX_FAILURES = 3
 # away, every other half at the end of the round, so one search that times out over any span can't end the round. At
 # most this many halvings: then it counts as failed. Chosen by Claude, reported to Noemi.
 ARCHIVE_SPLIT_DEPTH = 2
+# 13 Oct 2026 (the data round): Arctic Shift answers the newest 100 posts of a title search, so "conditioner" over 3 years
+# in r/curlyhair finds the last few months of small posts, and the threads asking a request's exact question ("best
+# conditioner for curly hair?", often years old and big) stayed out of reach. The archive's round also searches the
+# product's title word with each of the request's first ARCHIVE_NEED_WORDS need words ("conditioner curly"), in each of
+# its subreddits, over the whole history: few posts match both. Chosen by Claude, reported to Noemi.
+ARCHIVE_NEED_WORDS = 2
 # 12 Oct 2026: a title search over a big subreddit's whole history timed out, one bounded by dates didn't (r/curlyhair,
 # "conditioner": 35 s for the last 3 years, 11 s for the 6 before). So both rounds are bounded: the last
 # ARCHIVE_OLDER_YEARS years, then back to ARCHIVE_OLDEST_FACTOR times as far (9 years).
