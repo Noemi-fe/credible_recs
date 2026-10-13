@@ -477,12 +477,39 @@ def lodge_lines_library(tmp_path):
 
 
 def test_two_brand_picks_of_the_same_brand_fold_into_the_one_ranked_higher(tmp_path):
+    # Changed on purpose 13 Oct 2026 (the name-merge builder): in a cast iron skillet answer "Lodge cast iron" is the
+    # brand followed by the type's words, so it is the Lodge line itself (engine.group_products, "In one request"): the
+    # two names are one line, ranked with the support of both, and nothing needs to fold. Two lines of one brand that
+    # are different lines still fold, below.
     result = answer_request("cast iron skillet that lasts", library_dir=lodge_lines_library(tmp_path), prices=[],
+                            product_facts=[], today=TODAY)
+    lodge = [name for name in names(result) if name.lower().startswith("lodge")]
+    assert len(lodge) == 1, names(result)
+    line = next(p for p in result.ranking.products if p.name == lodge[0])
+    assert line.breakdown.credible_recommends == 7  # "Lodge" 4 times and "Lodge cast iron" 3 times
+    result = answer_request("cast iron skillet that lasts", library_dir=two_lodge_lines_library(tmp_path), prices=[],
                             product_facts=[], today=TODAY)
     lodge = [name for name in names(result) if name.lower().startswith("lodge")]
     assert len(lodge) == 1, names(result)
     [folded] = [item for item in result.folded_brand_picks if item.name.lower().startswith("lodge")]
     assert folded.stepped_aside_for == lodge[0] and folded.name != lodge[0]
+
+
+def two_lodge_lines_library(tmp_path):
+    """"Lodge" and "Lodge Blacklock" both fit two Lodge Blacklock skillets (so both are loose, and two lines), each
+    praised across both threads."""
+    return write_library(tmp_path / "two", {
+        "1lod003": ("Best cast iron skillet for a beginner?", "My first one.", [
+            praise("l3a", "Lodge", 9), praise("l3b", "Lodge", 8), praise("l3c", "Lodge", 7),
+            praise("l3d", "Lodge Blacklock", 6), praise("l3e", "Lodge Blacklock", 5),
+            praise("l3f", "Lodge Blacklock 10 inch skillet", 2), praise("l3g", "Lodge Blacklock 12 inch skillet", 2),
+            praise("l3h", "Smithey No. 10 skillet", 4), praise("l3i", "Smithey No. 10 skillet", 5),
+        ]),
+        "1lod004": ("Which cast iron skillet lasts?", "Mine cracked.", [
+            praise("l4a", "Lodge", 6), praise("l4b", "Lodge Blacklock", 4),
+            praise("l4c", "Smithey No. 10 skillet", 3),
+        ]),
+    }, community="castiron")
 
 
 # --- 6. A brand pick steps aside only for its own product that is shown (10 Oct 2026) ---

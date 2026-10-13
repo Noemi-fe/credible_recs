@@ -16,7 +16,12 @@ Then two names mean the same product when:
 - their words are the same; or
 - every word of the shorter name is in the longer one ("cerave sa" in "cerave renewing sa cleanser"), as long as
   the shorter has at least 2 words, or is a single brand-like word (not just a number) that also starts the
-  longer name ("zojirushi" and "zojirushi kettle"; but "kettle" alone names a kind of product, not this one);
+  longer name ("zojirushi" and "zojirushi kettle"; but "kettle" alone names a kind of product, not this one). Since
+  13 Oct 2026 a shorter name that doesn't start where the longer one starts (most often, written without its brand)
+  needs two words besides its kinds of product (KIND_WORDS, haircare's "shampoo" and "conditioner" among them): one
+  word and a kind ("Chai shampoo") is only the longer name's product when the longer name is it with a brand before it
+  ("Ecoslay Chai shampoo"); a flavour found among another maker's words is not ("Hair Food coconut milk and chai spice
+  shampoo"). Grouping lets such a name in when its word is written alone as a name (held_back_word: a brand);
   except when the longer name adds a word naming another model or version (PRODUCT_VARIANT_WORDS in
   engine/config.py: "Timemore C2" and "Timemore C2 Max", "Dynasty Cream" and "new Dynasty Cream"), or when the
   two names end in different kinds of product ("CeraVe cream" and "CeraVe Cream to Foam cleanser"). Since 10 Oct
@@ -115,6 +120,11 @@ PRODUCT_TYPE_WORDS = frozenset({
     "soap", "scrub", "spray", "peel",
     "pan", "skillet", "kettle", "grinder", "knife", "pot", "lid", "oven", "scale", "burrs",
 })
+# Every word that says what kind of product a name is: the words above, and haircare's (13 Oct 2026; the category came
+# on 11 Oct). A name without its brand needs more than one word besides these (_says_enough_without_its_brand). The
+# haircare words don't tell two names apart by their last words, as the words above do: haircare's line names often end
+# in a kind ("Neutrogena T/Gel", "SheaMoisture Castor Oil"), and the T/Gel is its shampoo.
+KIND_WORDS = PRODUCT_TYPE_WORDS | {"shampoo", "conditioner"}
 
 _APOSTROPHES = re.compile(r"['’‘`]")
 _POSSESSIVE = re.compile(r"([^\W_]+)['’‘`]s(?![^\W_])")  # "TO's": the word before the apostrophe
@@ -160,6 +170,7 @@ MAX_NAMES_REMEMBERED = 200_000  # per table; a full table starts again (a long-r
 for _table in (_NORMALIZED, _WORDS_BY_LIST, _WORDS_NO_ALIASES):
     register(_table.clear)  # engine.memo.forget_all empties them
 _SAME = Table()  # (words, words) -> whether they name the same product (same_words)
+_HELD_BACK = Table()  # (words, words) -> held_back_word's word, or "" for none
 
 
 def _limit(table: dict) -> None:
@@ -407,9 +418,10 @@ def join_split_words(words: list[str], other: list[str]) -> list[str]:
     return joined
 
 
-def _found_inside(words_a: list[str], words_b: list[str]) -> bool:
+def _found_inside(words_a: list[str], words_b: list[str], waive_brandless: bool = False) -> bool:
     """Whether every word of the shorter name is in the longer one (as it is, or with a spelling slip), the shorter
-    says enough to be a name, and the longer doesn't add a word naming another model or version."""
+    says enough to be a name, and the longer doesn't add a word naming another model or version. `waive_brandless`
+    leaves out the rule for a name without its brand (held_back_word)."""
     shorter, longer = sorted((words_a, words_b), key=len)
     found = _words_found(shorter, longer)
     if found is None:
@@ -419,10 +431,53 @@ def _found_inside(words_a: list[str], words_b: list[str]) -> bool:
         return False
     if _different_types(shorter[-1], longer[-1]):
         return False
+    starts_it = longer[0] == shorter[0] or _spelling_slip(shorter[0], longer[0])
     if len(shorter) >= 2:
-        return True
+        return starts_it or waive_brandless or _says_enough_without_its_brand(shorter, longer)
     # One word: a brand that starts the longer name, maybe with its possessive ("FAB" and "FAB's exfoliating pads").
-    return _brand_like(shorter[0]) and (longer[0] == shorter[0] or _spelling_slip(shorter[0], longer[0]))
+    return _brand_like(shorter[0]) and starts_it
+
+
+def _says_enough_without_its_brand(shorter: list[str], longer: list[str]) -> bool:
+    """For a shorter name that doesn't start where the longer one starts (most often, written without its brand):
+    whether it says enough to be the longer one's product. Two words besides its kinds of product (KIND_WORDS) do ("SA
+    cleanser" in "CeraVe Renewing SA Cleanser"); one word and a kind ("Chai shampoo") only when the longer name is it
+    with words before it, a brand ("Ecoslay Chai shampoo", "Neutrogena T Gel"). A flavour or an ingredient many makers
+    use ("chai", "mugwort") found among another maker's words isn't its product (13 Oct 2026: one maker's chai shampoo,
+    named without its brand, had joined another maker's coconut milk and chai spice shampoo)."""
+    if len(own_words(shorter)) >= 2:
+        return True
+    ending = longer[-len(shorter):]
+    return all(x == y or _spelling_slip(x, y) for x, y in zip(shorter, ending))
+
+
+def own_words(words: list[str]) -> list[str]:
+    """A name's words besides its kinds of product (KIND_WORDS, or their plurals): "chai shampoo" -> chai."""
+    return [w for w in words if w not in KIND_WORDS and w.removesuffix("s") not in KIND_WORDS]
+
+
+def held_back_word(words_a: list[str], words_b: list[str]) -> str | None:
+    """The one word a shorter name says besides its kinds of product, when that rule alone keeps two names apart
+    (_says_enough_without_its_brand): "ballarini" for "Ballarini pans" and "Zwilling/Ballarini non-stick pans", "chai"
+    for "Chai shampoo" and another maker's chai spice shampoo; None otherwise (they match, or never would). Grouping
+    lets them match when that word is written alone as a name there, so it is a brand, not a flavour (13 Oct 2026).
+    Remembered like same_words."""
+    key = (tuple(words_a), tuple(words_b))
+    found = _HELD_BACK.get(key)
+    if found is None:
+        found = _HELD_BACK.keep(key, _held_back_word(words_a, words_b) or "")
+    return found or None
+
+
+def _held_back_word(words_a: list[str], words_b: list[str]) -> str | None:
+    if not words_a or not words_b or same_words(words_a, words_b):
+        return None
+    words_a, words_b = comparable(words_a, words_b)
+    if not _found_inside(words_a, words_b, waive_brandless=True):
+        return None
+    shorter = min((words_a, words_b), key=len)
+    own = own_words(shorter)
+    return own[0] if len(own) == 1 else None
 
 
 def _words_found(shorter: list[str], longer: list[str]) -> set[int] | None:

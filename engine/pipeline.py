@@ -78,6 +78,12 @@ Two ranking changes of 9 Oct 2026 are worked out here, in _score, before module 
 
 Names are shown as a UK shopper knows them (decision 12): "Sage", not "Breville" (engine.group_products.uk_name).
 
+The same product never shows twice in one answer (13 Oct 2026, from reading the day's answers: b06 had "Fellow Stagg
+EKG" and "Fellow kettle" as two picks, a lip balm answer one brand's line twice on its skip list). Module 4 groups the
+request's mentions for its product type (engine.group_products, "In one request": "Fellow kettle" is Fellow's kettle
+line, which steps aside for its own model as brand picks do), and as the last guard, groups shown under the same name
+are joined before the ranking (_one_per_name).
+
 "Also worth a look" (Noemi's decision 2 of 13 Oct 2026): products with two credible recommendations across two threads
 (engine.rank), shown apart after the picks. The filters above apply to them as to picks, since they come before the
 ranking, and so does the wider reading's rule (a credible recommendation about the request's needs). The brand rules
@@ -355,10 +361,12 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.bodies = comment_bodies(threads)
 
     mentions = _not_sets(_product_mentions(checked), result)
-    groups = group_products(mentions)
+    # Grouped for this request's type (13 Oct 2026): "Fellow kettle" in a kettle answer is Fellow's kettle line.
+    groups = group_products(mentions, product_type=query.product_type)
     of_another_type = _of_another_type(groups, query, result)
     if of_another_type:  # grouped again without them, so they neither count for nor name a product (13 Oct 2026)
-        groups = group_products([m for m in mentions if _typed(m) not in of_another_type])
+        groups = group_products([m for m in mentions if _typed(m) not in of_another_type],
+                                product_type=query.product_type)
     brand_lines = load_brand_lines() if brand_lines is None else brand_lines
     kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads}, brand_lines)
     lines = {g.key for g in kept_groups if g.loose}  # the brand or line names kept as the brand's whole line
@@ -366,6 +374,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     kept_groups, price_checks = _within_budget(kept_groups, query, prices, today, result, brand_lines)
     product_facts = load_product_facts() if product_facts is None else product_facts
     kept_groups, cautions = _suited_to_request(kept_groups, query, product_facts, result)
+    kept_groups = _one_per_name(kept_groups)  # the names are final here: one item per name (13 Oct 2026)
     result.ranked_as_lines = [g.name for g in kept_groups if g.key in lines]
     _note_other_names(kept_groups, cautions)
     kind_mentions = _kind_mentions(checked)
@@ -887,6 +896,26 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
         if soft:
             cautions[group.key] = soft
     return kept, cautions
+
+
+def _one_per_name(groups: list[ProductGroup]) -> list[ProductGroup]:
+    """The groups, with those shown under the same name (its words, case and punctuation aside) joined into the first,
+    the bigger: a reader can't tell two items of one name apart, so they are one product, ranked once with every mention
+    (13 Oct 2026, the last guard of "the same product never twice": a lip balm answer had listed "Torriden lip balm line"
+    and "torriden lip balm line" on its skip list, two lines of one brand, before module 4 made them one). The first's
+    key, name and price check stand for both."""
+    kept: list[ProductGroup] = []
+    by_name: dict[tuple[str, ...], int] = {}
+    for group in groups:
+        words = tuple(normalize_name(group.name))
+        if words and words in by_name:
+            first = kept[by_name[words]]
+            kept[by_name[words]] = replace(first, mentions=first.mentions + group.mentions)
+            continue
+        if words:
+            by_name[words] = len(kept)
+        kept.append(group)
+    return kept
 
 
 def _unsuited_kinds(kinds, query: ParsedQuery, product_facts: list[ProductFacts]) -> set[str]:
