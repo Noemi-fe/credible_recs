@@ -159,9 +159,33 @@ def _product_words(product_type: str) -> tuple[str, ...]:
 def relevance(thread: Thread, product_type: str) -> float:
     """3 points if the title names the product, 1 if the post body does, plus up to 1 for comments that do (full at 5)."""
     score = 3 if mentions_product(thread.title, product_type) else 0
-    score += 1 if mentions_product(thread.body, product_type) else 0
-    talking = sum(mentions_product(c.body, product_type) for c in thread.comments)
-    return score + min(1, talking / 5)
+    score += 1 if post_names(thread, product_type) else 0
+    return score + min(1, talking(thread, product_type) / 5)
+
+
+def post_names(thread: Thread, product_type: str) -> bool:
+    """Whether the thread's post names the product. A slimmed thread no longer holds its post's words (engine/slim.py,
+    13 Oct 2026): the product types they named were worked out first (engine.models.WholeThread.post_names)."""
+    if mentions_product(thread.body, product_type):
+        return True
+    return thread.whole_thread is not None and _among(thread.whole_thread.post_names, product_type)
+
+
+def names_product(thread: Thread, product_type: str) -> bool:
+    """Whether the thread's title or post names the product (its comments don't count)."""
+    return mentions_product(thread.title, product_type) or post_names(thread, product_type)
+
+
+def _among(names: list[str], product_type: str) -> bool:
+    """Whether the product types a slimmed thread's words named, worked out before they were dropped, include this
+    one. An ingredient-led request naming two ingredients ("salicylic acid and niacinamide product") is named where one
+    of them is, as its words are (engine.ingredients.talk_words). A type that wasn't known then (engine.slim.
+    known_types) can't be found in words that are gone: only the title and the kept comments can name it."""
+    wanted = product_type.strip()
+    if any(name == wanted or name.lower() == wanted.lower() for name in names):
+        return True
+    keys = ingredients_of_type(wanted)
+    return len(keys) > 1 and any(ingredient_type_name([key]) in names for key in keys)
 
 
 # --- Threads saved on this machine ---
@@ -238,8 +262,14 @@ class LocalSource:
 
 
 def talking(thread: Thread, product_type: str) -> int:
-    """How many of the thread's comments name the product (for an ingredient-led request, its ingredient)."""
-    return sum(mentions_product(c.body, product_type) for c in thread.comments)
+    """How many of the thread's comments name the product (for an ingredient-led request, its ingredient). In a slimmed
+    thread, the comments whose words aren't kept count by the product types they named (WholeThread.comment_names)."""
+    count = sum(mentions_product(c.body, product_type) for c in thread.comments)
+    if thread.whole_thread is not None:
+        not_kept = {c.id for c in thread.comments if c.status == "not_kept"}
+        count += sum(1 for cid, names in thread.whole_thread.comment_names.items()
+                     if cid in not_kept and _among(names, product_type))
+    return count
 
 
 def talk_points(comments: int) -> float:

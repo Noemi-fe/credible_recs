@@ -71,7 +71,7 @@ from engine.config import (
     STANCE_VALUE,
 )
 from engine.gold import DEFAULT_GOLD_DIR, GoldSetError, _describe, load_threads, unlabelled_gold_ids
-from engine.models import Id, Record, Thread, UtcDatetime
+from engine.models import READABLE_ON_REDDIT, Id, Record, Thread, UtcDatetime, quote_fingerprint
 from engine.verify_quotes import find_quote
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -285,6 +285,8 @@ def _why_rejected(mention, extraction: Extraction, thread: Thread, comments: dic
     comment = comments.get(mention.comment_id)
     if comment is None:
         return f"comment {mention.comment_id} is not in thread {thread.id}"
+    if comment.status == "not_kept":
+        return f"comment {mention.comment_id}'s words aren't kept in the library, so it can't be quoted"
     if comment.status != "ok":
         return f"comment {mention.comment_id} was {comment.status} on Reddit, so it can't be quoted"
     span = find_quote(comment.body, mention.quote)
@@ -292,7 +294,10 @@ def _why_rejected(mention, extraction: Extraction, thread: Thread, comments: dic
         return f"quote not found word for word in comment {mention.comment_id}"
     if _in_quoted_block(comment.body, span):
         elsewhere = [thread.title, thread.body] + [c.body for c in thread.comments if c.id != comment.id]
-        if not _own_words_in_quote_format(comment.body, mention.quote, elsewhere):
+        # A slimmed thread no longer holds most of these words: the quotes found in them were noted first (13 Oct 2026).
+        written_elsewhere = thread.whole_thread is not None and (
+            quote_fingerprint(mention.quote) in thread.whole_thread.quoted_elsewhere)
+        if written_elsewhere or not _own_words_in_quote_format(comment.body, mention.quote, elsewhere):
             return f"quote is from a quoted block in comment {mention.comment_id}: someone else's words"
     words = len(_as_written(comment.body, span).split())
     if words > QUOTE_MAX_WORDS:
@@ -356,6 +361,9 @@ def _named_in_unreadable_comment(mention: ExtractedMention, comments: dict) -> s
         above = comments.get(above.parent_id)
     if above is None:
         return f"comment {mention.comment_id} takes its product from a comment above that isn't in the thread"
+    if above.status == "not_kept":
+        return (f"comment {mention.comment_id} takes its product from comment {above.id}, whose words aren't kept "
+                f"in the library, so the product can't be checked")
     if above.status != "ok":
         return (f"comment {mention.comment_id} takes its product from comment {above.id}, which was {above.status} "
                 f"on Reddit, so the product can't be checked")
@@ -483,7 +491,9 @@ def _todo(threads_dir: Path, version: str) -> dict[str, str]:
     in_gold = threads_dir.resolve().is_relative_to(DEFAULT_GOLD_DIR.resolve())
     never = set() if in_gold else unlabelled_gold_ids()
     for thread_path in sorted(threads_dir.glob("*.json")):
-        if thread_path.stem in never:
+        if thread_path.stem in never or _slimmed(thread_path):
+            # A slimmed thread keeps only the comments answers use (13 Oct 2026): the AI would read a thread with most
+            # of its words gone, so it is read whole again on Reddit before it is extracted again.
             continue
         path = extracted_dir(threads_dir) / thread_path.name
         if not path.is_file():
@@ -496,6 +506,14 @@ def _todo(threads_dir: Path, version: str) -> dict[str, str]:
                                                                                 version, thread_path):
             reasons[thread_path.stem] = f"extracted with {extraction.instructions_version}"
     return reasons
+
+
+def _slimmed(thread_path: Path) -> bool:
+    """Whether a thread file holds a slimmed thread (engine/slim.py): one that keeps only the comments answers use."""
+    try:
+        return json.loads(thread_path.read_text(encoding="utf-8")).get("whole_thread") is not None
+    except (OSError, ValueError, AttributeError):
+        return False
 
 
 def _still_current(older: str, version: str, thread_path: Path) -> bool:
@@ -515,15 +533,21 @@ def _still_current(older: str, version: str, thread_path: Path) -> bool:
 # --- The compact reading view the extractor reads (8 Oct 2026) ---
 
 def shown_comment_ids(thread: Thread, max_comments: int = EXTRACT_MAX_COMMENTS) -> list[str]:
-    """The usable comments the extractor reads: the `max_comments` highest-scored, in thread order."""
-    usable = [c for c in thread.comments if c.status == "ok"]
+    """The usable comments the extractor reads: the `max_comments` highest-scored, in thread order. In a slimmed
+    thread, those whose words aren't kept count too: the AI read them when the thread was whole (answers say how many
+    comments they read)."""
+    usable = [c for c in thread.comments if c.status in READABLE_ON_REDDIT]
     keep = {c.id for c in sorted(usable, key=lambda c: c.score, reverse=True)[:max_comments]}
     return [c.id for c in usable if c.id in keep]
 
 
 def render_thread(thread: Thread, max_comments: int = EXTRACT_MAX_COMMENTS) -> str:
     """The thread as plain text: the post, then each shown comment with its id, what it replies to, score,
-    author and flair. About half the reading of the JSON, with everything extraction needs."""
+    author and flair. About half the reading of the JSON, with everything extraction needs. Never a slimmed thread:
+    most of its words are gone (ExtractionError)."""
+    if thread.slimmed:
+        raise ExtractionError([f"thread {thread.id} is slimmed (only the comments answers use are kept): read it whole "
+                               "again on Reddit before extracting it again"])
     by_id = {c.id: c for c in thread.comments}
     shown = shown_comment_ids(thread, max_comments)
     usable = sum(c.status == "ok" for c in thread.comments)
@@ -550,7 +574,11 @@ def main(argv: list[str], instructions: Path = DEFAULT_INSTRUCTIONS) -> int:
     if argv and argv[0] == "show" and len(argv) in (2, 3):
         folder = Path(argv[2]) if len(argv) == 3 else DEFAULT_THREADS_DIR
         thread = Thread.model_validate_json((folder / f"{argv[1]}.json").read_text(encoding="utf-8"))
-        print(render_thread(thread))
+        try:
+            print(render_thread(thread))
+        except ExtractionError as e:
+            print(e)
+            return 1
         return 0
     if not argv or argv[0] not in ("todo", "check") or len(argv) > 2:
         print(__doc__)

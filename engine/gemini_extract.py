@@ -161,6 +161,9 @@ def extract_threads(threads_dir: Path, out_dir: Path, client: GeminiClient, ids:
         if thread is None:
             report.failed[thread_id] = "no such thread in the folder"
             continue
+        if thread.slimmed:  # only the comments answers use are kept (13 Oct 2026): never read for extraction
+            report.skipped.append(thread_id)
+            continue
         try:
             data = {name: [] for name in LISTS}
             shown = shown_comment_ids(thread)

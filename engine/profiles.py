@@ -250,12 +250,17 @@ def _flairs_by_writer(chosen: list[Comment], flairs: dict[str, str | None]) -> d
 
 
 def _first_seen(thread: Thread) -> dict[str, datetime]:
-    """{writer: when they wrote their first comment in this thread}."""
+    """{writer: when they wrote their first comment in this thread}. A slimmed thread no longer names the writers of
+    the comments it doesn't keep: when a kept comment's writer wrote one of those first, its date was kept
+    (engine.models.WholeThread.first_seen, 13 Oct 2026)."""
     first: dict[str, datetime] = {}
     for comment in thread.comments:
         if comment.author is not None:
             name = comment.author.name
             first[name] = min(first.get(name, comment.created_at), comment.created_at)
+    if thread.whole_thread is not None:
+        for name, when in thread.whole_thread.first_seen.items():
+            first[name] = min(first.get(name, when), when)
     return first
 
 

@@ -413,6 +413,26 @@ LIVE_CHECK_REQUIRED = True
 # PROPOSED: the 7 days of grace, so one missed monthly run doesn't empty threads straight away. False turns it off.
 ARCHIVE_TEXT_RETENTION = True
 ARCHIVE_TEXT_KEPT_DAYS = LIVE_CHECK_ALL_DAYS + 7
+
+# --- Keep only the comments answers use (Noemi, 13 Oct 2026: "Keep only comments we use"; engine/slim.py) ---
+# A slimmed thread keeps its title and the comments its extraction points to, and each of them is verified on Reddit's
+# embed page one by one (engine/verify.py); the thread-level rules above (14 days, monthly checks, 37 days) apply to
+# whole threads only (not extracted yet, or gold-set threads). The values below were chosen by Claude, reported.
+# A kept comment not verified on Reddit within this many calendar days (since its last passing read; never verified:
+# since its thread was read from the archive) loses its words and its mentions. 30, as the monthly check above, inside
+# Noemi's "about 37 days": the week left over covers a missed run or a deploy a few days late.
+LIBRARY_VERIFY_DAYS = 30
+# The daily pre-check's own budget of embed-page reads for the kept comments verified longest ago, after the comments
+# answers would show (PRECHECK_MAX_READS). Sized on 13 Oct 2026's slimmed library: about 10,200 kept comments, of which
+# about 1,150 are read every day as the comments answers show; the other 9,050 at 400 a day are each read every 23 days,
+# a week inside LIBRARY_VERIFY_DAYS. About 26 minutes a day at the live check's pace (3.9 s a read on 13 Oct 2026).
+LIBRARY_VERIFY_READS = 400
+# A kept comment verified within this many days isn't read again by that pass (the comments answers show still are,
+# daily): with a library smaller than its budget, it doesn't spend reads verifying again what is a few days old.
+LIBRARY_VERIFY_AGAIN_DAYS = 7
+# An embed page that showed no comment ("Not supported comment") is tried again only after this many days: such a
+# comment usually stays unreadable there, and each try would take a read from the comments that can pass.
+LIBRARY_VERIFY_RETRY_DAYS = 10
 # LIVE_CHECK_ROUNDS (3), how many times an answer was written again after the live check dropped comments, is gone
 # (12 Oct 2026): an answer written after the third round was shown with its new quotes unchecked. It is now written
 # again until every quote it shows has passed (engine.pipeline._check_live).

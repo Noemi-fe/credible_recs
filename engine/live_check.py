@@ -315,6 +315,24 @@ class LiveChecker:
         entry = self._saved(embed_url(comment_url), min(max_age, MAX_AGE))
         return None if entry is None else datetime.fromisoformat(entry["fetched_at"])
 
+    def saved_text(self, comment_url: str) -> tuple[datetime, str | None] | None:
+        """When the comment was last read and its text as Reddit showed it then (None: the page had no comment on it),
+        from a check saved in the last 48 hours (an unreadable one: LIVE_CHECK_UNREADABLE_KEEP_HOURS); None when there
+        is none. Reddit isn't read. What verifies a slimmed library's kept comments (engine/verify.py, 13 Oct 2026)."""
+        entry = self._saved(embed_url(comment_url), MAX_AGE)
+        return None if entry is None else (datetime.fromisoformat(entry["fetched_at"]), entry["text"])
+
+    def read_text(self, comment_url: str, max_age: timedelta = MAX_AGE) -> tuple[datetime, str | None] | None:
+        """The comment as Reddit's embed page shows it, and when it was read: a check saved within `max_age`, else read
+        now (at the same pace as every read). None when it couldn't be read now (an error, or a wait over max_wait):
+        nothing was saved, and it is asked again another time."""
+        max_age = min(max_age, MAX_AGE)
+        self._comment_text(comment_url, max_age)
+        saved = self.saved_text(comment_url)
+        if saved is None or self._clock() - saved[0] >= max_age:
+            return None  # this read saved nothing: an older check isn't this read
+        return saved
+
     def _comment_text(self, comment_url: str, max_age: timedelta, wait: bool = True) -> str | None:
         """The comment's text as Reddit shows it now, from a check saved within `max_age` when there is one; None if
         unreadable; _PUT_OFF if there is none and reading it would wait (wait=False)."""

@@ -101,6 +101,16 @@ def test_the_pre_checks_reads_fit_in_its_time_and_reddits_pace():
     assert reading + 30 * 60 < hours * 3600  # and half an hour to work out the answers on one processor
 
 
+def test_the_kept_comments_reads_are_applied_to_the_library_before_it_is_bundled():
+    # Noemi, 13 Oct 2026 ("Keep only comments we use"): the image holds the library, so the pre-check's record of its
+    # reads of the kept comments (in the bucket, next to the bundle) is applied before the bundle is made.
+    script = DEPLOY_SH.read_text(encoding="utf-8")
+    fetch = script.index('$GCLOUD storage cp "gs://$BUCKET/live_check/verified.json"')
+    apply = script.index("-m engine.library apply-checks --ledger")
+    assert fetch < apply < script.index("-m deploy.cloudrun.make_context")
+    assert script.count("-m engine.library apply-checks") == 2  # with the record, or this machine's checks alone
+
+
 def test_the_pre_check_runs_once_a_day_at_night_uk_time():
     script = DEPLOY_SH.read_text(encoding="utf-8")
     schedule = _command(script, '$GCLOUD scheduler jobs "$VERB" http')

@@ -6,7 +6,7 @@ itself: one command per request finds the threads and saves them, with no one pi
     data/library/threads/<thread id>.json   one thread each, the same shape as the gold set's thread files
     data/library/requests.jsonl             one line per `add`: when, the request, module 1's outcome, the threads saved
 
-Four jobs:
+Six jobs:
 - add: understands a request (module 1), asks a source for threads and saves them. By default (LIBRARY_READER
   "auto", 10 Oct 2026) the threads are found AND read for free in Arctic Shift's archive (engine.sources.ArchiveSource,
   Noemi's choice of 9 Oct 2026), and when Arctic Shift fails, found with Reddit's own search and read through Bright
@@ -34,6 +34,16 @@ Four jobs:
   the saved copy as check-live does; `--reader parse` reads through Parse, as before.
 - coverage: how many saved threads each product type has, so the website can say "covered" or "not covered yet",
   and how many of each kind.
+- slim (Noemi, 13 Oct 2026: "Keep only comments we use"; engine/slim.py): each extracted thread keeps its title and
+  only the comments answers use (those its extraction points to), whole; the other comments keep their ids, dates,
+  scores and replies, not their words or writers, and what the scoring reads from the whole thread is worked out first.
+  Answers read a slimmed thread exactly as they read the whole one (checked thread by thread before it is written).
+  Gold-set threads and threads not extracted yet stay whole, under the rules above.
+- apply-checks (engine/verify.py): each comment a slimmed thread keeps is verified on Reddit's embed page by the daily
+  pre-check (engine/precheck.py, which records each read: when, and what it said); this applies those reads before a
+  deploy: passing comments get their date, and a comment found deleted or edited, or not verified within
+  LIBRARY_VERIFY_DAYS (30), loses its words and its mentions. check-live and refresh never read a slimmed thread again
+  (no Bright Data record, no Parse credit); check-live applies the 30-day deadline to its comments.
 
 What is saved:
 - Threads as fetched, but a deleted or removed comment only as a stub: its status, "[deleted]" or "[removed]"
@@ -76,6 +86,12 @@ Command line:
                                                fetch again the threads that are due (30 days, archived threads 90):
                                                through Bright Data by default, or through Parse
     python -m engine.library coverage          saved threads per product type, and of each kind
+    python -m engine.library slim [--dry-run] [--library DIR]
+                                               keep only the comments answers use in each extracted thread
+    python -m engine.library apply-checks [--ledger FILE]... [--checks DIR] [--dry-run] [--library DIR]
+                                               apply the kept comments' reads on Reddit (the pre-check's record in
+                                               FILE, this machine's .cache/verified.json and the checks of the last
+                                               48 hours in DIR, .cache/live_check by default) and the 30-day deadline
 """
 
 import inspect
@@ -97,6 +113,7 @@ from engine.config import (
     LIBRARY_READER,
     LIBRARY_REFRESH_DAYS,
     LIBRARY_THREADS_PER_PRODUCT,
+    LIBRARY_VERIFY_DAYS,
     LIVE_CHECK_ALL_DAYS,
     LIVE_CHECK_CREDIT_RESERVE,
     LIVE_CHECK_READER,
@@ -224,7 +241,9 @@ def _live_copy(thread: Thread, folder: Path) -> Thread | None:
     """The saved copy to keep instead of `thread`: one read on Reddit, when `thread` was read from the archive.
 
     A copy read on Reddit (through Parse, or checked live since) has already lost what people deleted; an archive copy
-    may still hold it, and would wait for a live check before answers could quote it again. None: save `thread`.
+    may still hold it, and would wait for a live check before answers could quote it again. A slimmed copy (engine/
+    slim.py, 13 Oct 2026) is kept too: it is extracted and verified comment by comment, and an archive copy would bring
+    back words no answer uses. None: save `thread`.
     """
     if thread.read_from != "arctic_shift":
         return None
@@ -233,7 +252,7 @@ def _live_copy(thread: Thread, folder: Path) -> Thread | None:
         saved = Thread.model_validate_json(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None  # nothing saved yet, or a broken file: the new copy replaces it
-    return saved if saved.last_checked_live() is not None else None
+    return saved if saved.slimmed or saved.last_checked_live() is not None else None
 
 
 def _find(source: Source, query, limit: int, mix: dict | None, only: str | None) -> list[Thread]:
@@ -260,9 +279,10 @@ def _library_copy(thread: Thread) -> Thread:
 
     Reddit already shows those as "[deleted]" or "[removed]"; this makes sure, should a source ever hand over
     the text or author of one, that it isn't stored. Nothing else changes, not even which comment a reply answers.
+    A comment a slimmed thread doesn't keep ("not_kept") already has neither (engine.models.Comment checks it).
     """
     return thread.model_copy(update={"comments": [
-        c if c.status == "ok" else c.model_copy(update={"body": PLACEHOLDERS[c.status], "author": None})
+        c if c.status in ("ok", "not_kept") else c.model_copy(update={"body": PLACEHOLDERS[c.status], "author": None})
         for c in thread.comments
     ]})
 
@@ -320,6 +340,7 @@ class RefreshResult:
     record_cap: int = 0  # Bright Data: the most records this run could use
     records_used: int = 0  # Bright Data: by this run
     records_left: int = 0  # Bright Data: this month, after the run
+    slimmed: list[str] = field(default_factory=list)  # never fetched again: verified comment by comment (engine/verify.py)
 
 
 def refresh(
@@ -342,6 +363,10 @@ def refresh(
     replies to replies), within a record cap (`max_records`; by default what's left this month minus
     LIVE_CHECK_RECORD_RESERVE); "parse" fetches through Parse, 2 credits a thread, and replaces the saved copy. None
     means REFRESH_READER, except when only a Parse `client` is given: then Parse, as before.
+
+    A slimmed thread (engine/slim.py, 13 Oct 2026) is never fetched again here: no Bright Data record or Parse credit is
+    spent on it. The comments it keeps are verified one by one through Reddit's embed page instead (engine/verify.py),
+    and it is named on the result (slimmed).
     """
     now = now or datetime.now(UTC)
     if reader is None:
@@ -351,7 +376,9 @@ def refresh(
     result = RefreshResult(reader=reader)
     due = []
     for thread in sorted(_saved_threads(folder), key=lambda t: (t.collected_at, t.id)):
-        if is_due(thread, now):
+        if thread.slimmed:
+            result.slimmed.append(thread.id)
+        elif is_due(thread, now):
             due.append(thread)
         else:
             result.skipped.append(thread.id)
@@ -450,6 +477,9 @@ class LiveCheckResult:
     replies_kept: int = 0  # Bright Data: readable replies to replies kept as they were (it never returns them)
     text_removed: list[str] = field(default_factory=list)  # archive threads whose text was removed (retention)
     waiting: int = 0  # threads read from the archive and never checked live, after the run
+    # Slimmed threads (13 Oct 2026): never read again here; their kept comments not verified within
+    # LIBRARY_VERIFY_DAYS lose their words and mentions (engine.verify.expire).
+    comments_expired: int = 0
 
 
 def check_live(
@@ -493,6 +523,11 @@ def check_live(
 
     Retention, last (ARCHIVE_TEXT_RETENTION): a thread read from the archive whose last live check, or whose reading if
     it was never checked, is more than ARCHIVE_TEXT_KEPT_DAYS (37) days old loses its text (_without_text).
+
+    Slimmed threads (engine/slim.py; Noemi, 13 Oct 2026: "Keep only comments we use") are never read again here, so no
+    Bright Data record or Parse credit is spent on them: the comments they keep are verified one by one through Reddit's
+    embed page by the daily pre-check (engine/precheck.py, engine/verify.py). Their retention is per comment: a kept
+    comment not verified within LIBRARY_VERIFY_DAYS (30) loses its words and its mentions (engine.verify.expire).
     """
     now = now or datetime.now(UTC)
     if reader is None:
@@ -509,11 +544,17 @@ def check_live(
                                   max_records, folder, result)
 
     for thread in _saved_threads(folder):
+        if thread.slimmed:
+            continue  # its comments' own deadline, below
         if ARCHIVE_TEXT_RETENTION and _past_retention(thread, now.date()) and _has_text(thread):
             _save(_without_text(thread), folder)
             result.text_removed.append(thread.id)
         if thread.read_from == "arctic_shift" and thread.last_checked_live() is None:
             result.waiting += 1
+    if ARCHIVE_TEXT_RETENTION:
+        from engine.verify import expire  # here: engine.verify reads the library through engine.slim
+
+        result.comments_expired = expire(folder, now).dropped.get("expired", 0)
     return result
 
 
@@ -691,12 +732,14 @@ def live_check_order(threads: list[Thread], shown: set[str], today: date) -> tup
     """The threads check-live reads, in order (see check_live), and the ids of those that answers quote.
 
     Threads read through Bright Data are read again monthly like archive threads (9 Oct 2026): Bright Data is the
-    free monthly re-reader, so their deletions are caught without spending Parse credits.
+    free monthly re-reader, so their deletions are caught without spending Parse credits. Slimmed threads never are
+    (13 Oct 2026): their kept comments are verified one by one on Reddit's embed page instead (engine/verify.py).
     """
     def oldest_first(thread: Thread):
         last = thread.last_checked_live()
         return (last is not None, last or thread.collected_at, thread.id)  # never checked first
 
+    threads = [t for t in threads if not t.slimmed]
     quoted = [t for t in threads if t.id in shown and t.read_from != "gold"
               and not checked_live_within(t, LIVE_CHECK_SHOWN_DAYS, today)]
     quoted_ids = {t.id for t in quoted}
@@ -790,6 +833,8 @@ def main(
     the blind-test questions (engine.slice_eval.threads_behind_answers).
     """
     command = argv[0] if argv else None
+    if command in ("slim", "apply-checks"):  # this machine's files only: no client, no credit, no network
+        return _slim_or_apply(command, argv[1:], folder)
     real_run = client is None  # a real run remembers an Arctic Shift outage; a test never writes that memo
     add_options = _add_options(argv[1:]) if command == "add" else None
     default_reader = LIVE_CHECK_READER if client is None or bright_data is not None else "parse"
@@ -853,6 +898,53 @@ def main(
         status = 1
     print(f"Parse credits used this month: {client.credits_used_this_month()} of {PARSE_MONTHLY_CREDITS} (the parse.bot dashboard has the exact figure)")
     return status
+
+
+def _slim_or_apply(command: str, words: list[str], folder: Path) -> int:
+    """`slim` and `apply-checks` (Noemi, 13 Oct 2026: "Keep only comments we use"; engine/slim.py, engine/verify.py).
+    Both read and write this machine's library only, and print counts, never anyone's words."""
+    options = _file_options(words, ("--library", "--ledger", "--checks") if command == "apply-checks" else ("--library",))
+    if options is None:
+        print(__doc__)
+        return 2
+    flags, values = options
+    folder = Path(values["--library"][-1]) if "--library" in values else folder
+    if command == "slim":
+        from engine.slim import report, slim_library
+
+        print(report(slim_library(folder, dry_run="--dry-run" in flags)))
+        return 0
+    from engine.live_check import DEFAULT_CACHE_DIR, LiveChecker
+    from engine.verify import LEDGER_NAME, Ledger, apply_checks, record_saved_checks, report
+
+    checks = Path(values["--checks"][-1]) if "--checks" in values else DEFAULT_CACHE_DIR
+    ledger = Ledger.load(checks.parent / LEDGER_NAME)  # this machine's pre-check runs, next to its checks, if any
+    for path in values.get("--ledger", []):
+        ledger.merge(Ledger.load(Path(path)))  # the bucket's record, fetched by deploy.sh
+    taken = record_saved_checks(folder, LiveChecker(cache_dir=checks), ledger)
+    print(f"Verification record: {len(ledger.entries):,} kept comments' latest reads ({taken:,} from this machine's "
+          "checks of the last 48 hours).")
+    print(report(apply_checks(folder, ledger, dry_run="--dry-run" in flags)))
+    return 0
+
+
+def _file_options(words: list[str], named: tuple[str, ...]) -> tuple[set[str], dict[str, list[str]]] | None:
+    """(--dry-run, {option: its values}) typed after `slim` or `apply-checks`, or None when the words make no sense.
+    Each named option takes a value (`--ledger FILE` or `--ledger=FILE`), and --ledger may be given more than once."""
+    flags, values, words = set(), {}, list(words)
+    while words:
+        name, equals, value = words.pop(0).partition("=")
+        if name == "--dry-run" and not equals:
+            flags.add(name)
+            continue
+        if name not in named:
+            return None
+        if not equals:
+            if not words:
+                return None
+            value = words.pop(0)
+        values.setdefault(name, []).append(value)
+    return flags, values
 
 
 def _add_options(words: list[str]) -> tuple[str, str | None, int, str] | None:
@@ -971,6 +1063,9 @@ def _print_refresh(result: RefreshResult) -> int:
         f"Skipped {len(result.skipped)} thread(s) not due yet (due {LIBRARY_REFRESH_DAYS} days after saving, "
         f"{LIBRARY_ARCHIVED_REFRESH_DAYS} once Reddit has archived them): nothing spent."
     )
+    if result.slimmed:
+        print(f"Never fetched again: {len(result.slimmed)} slimmed thread(s), whose kept comments are verified one by "
+              "one on Reddit's embed page (engine/verify.py): nothing spent.")
     if result.reader == "bright_data" and (result.refreshed or result.not_tried or result.failed):
         print(f"Bright Data records: {result.records_used} used by this run (cap {result.record_cap}), "
               f"{result.records_left} left this month.")
@@ -1026,6 +1121,9 @@ def _print_check_live(result: LiveCheckResult) -> int:
         print(f"Text removed (read from the archive, not checked live within {ARCHIVE_TEXT_KEPT_DAYS} days; ids and "
               f"titles kept): {', '.join(result.text_removed)}")
     print(f"Threads read from the archive still waiting for their first live check: {result.waiting}")
+    if result.comments_expired:
+        print(f"Kept comments of slimmed threads not verified within {LIBRARY_VERIFY_DAYS} days, their words and "
+              f"mentions dropped: {result.comments_expired}")
     return 1 if result.failed else 0
 
 
