@@ -213,6 +213,16 @@ def test_the_requests_checked_ahead_likeliest_first_each_once(tmp_path):
     assert len(found) == len(set(found))
 
 
+def test_the_ingredient_requests_are_checked_ahead_too(tmp_path):
+    # 13 Oct 2026: ingredient-led answers (engine/ingredients.py) read skincare threads of every type, and none of their
+    # requests was on the list, so their quotes were all read at answer time: the ingredient eval's requests come last.
+    ingredients = tmp_path / "ingredients.json"
+    ingredients.write_text(json.dumps({"cases": [{"id": "i01", "text": "salicylic acid for acne"},
+                                                 {"id": "i02", "text": "air fryer"}]}))  # listed already: once
+    found = requests_to_check(tmp_path / "none.json", tmp_path / "none.json", tmp_path / "no library", ingredients)
+    assert found[-1] == "salicylic acid for acne" and found.count("air fryer") == 1
+
+
 def test_without_the_request_log_the_listed_model_types_are_still_checked(tmp_path):
     found = requests_to_check(tmp_path / "none.json", tmp_path / "none.json", tmp_path / "no library")
     assert "air fryer" in found and "electric kettle" in found
