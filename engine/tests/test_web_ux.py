@@ -171,3 +171,11 @@ def test_a_long_skip_list_shows_its_strongest_first_and_folds_the_rest_without_l
     assert "entries.slice(0, first)" in folding and "entries.slice(first)" in folding  # every item drawn; some hidden
     assert '"aria-expanded"' in folding
     assert 'showMore: ["Show 1 more", "Show {n} more"]' in html
+
+
+def test_the_how_page_says_recent_searches_stay_in_the_browser(tmp_path):
+    # The privacy section says what the browser keeps for the "recent searches" chips, and that it never leaves it.
+    from engine.tests.test_how_page import text_of
+
+    words = text_of(page_text(tmp_path, "/how"))
+    assert "Your recent searches." in words and "That list is never sent to us" in words and "Clear button" in words

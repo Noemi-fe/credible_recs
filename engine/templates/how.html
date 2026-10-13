@@ -18,59 +18,73 @@
 -->
 {{search_page_style}}
 <style>
-/* What this page adds to the search page's look (its colours, fonts and dark mode come with the style above). */
-.back { margin: 0 0 12px; font-size: 14px; }
+/* What this page adds to the search page's look (its colours, fonts and dark mode come with the style above).
+   Restyled 13 Oct 2026 with the search page's redesign: the same top bar, an editorial header, numbered steps in
+   circles, and the results as cards. */
+.how-head { padding-top: 48px; padding-bottom: 8px; }
+.how-head h1 { margin: 0 0 12px; font: 600 clamp(34px, 5.5vw, 52px)/1.06 var(--serif); letter-spacing: -.025em; }
+.how-head .intro { max-width: 62ch; }
 .how { counter-reset: step; }
-.step { margin: 32px 0 0; }
-.step > h2 { font-size: 22px; margin: 0 0 10px; }
-.step > h2::before { counter-increment: step; content: counter(step) ". "; color: var(--muted); }
+.step, .privacy { max-width: 780px; }
+.step { margin: 44px 0 0; }
+.step > h2 { display: flex; align-items: center; gap: 14px; font: 600 26px/1.2 var(--serif); letter-spacing: -.01em; margin: 0 0 14px; }
+.step > h2::before { counter-increment: step; content: counter(step); flex: none; display: grid; place-items: center; width: 38px; height: 38px;
+  border-radius: 50%; background: var(--accent-soft); color: var(--accent); font: 600 18px/1 var(--serif); }
 .step p, .step li { max-width: 70ch; }
 .step ul { padding-left: 22px; }
-.step li + li { margin-top: 4px; }
-.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; margin: 12px 0; }
-.box h3 { margin: 0 0 8px; font-size: 17px; }
+.step li + li { margin-top: 6px; }
+.step li::marker { color: var(--accent); }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 20px; margin: 14px 0; }
+.box h3 { margin: 0 0 8px; font: 600 19px/1.25 var(--serif); }
 .box ul { margin: 0; }
-.signs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
-.signs .box { margin: 0; }
-.signs .good { border-left: 4px solid var(--ok); }
-.signs .red { border-left: 4px solid var(--bad); }
-.config { font-weight: 650; font-variant-numeric: tabular-nums; }
-.measured { margin: 8px 0 0; }
-h3.group { font-size: 15px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 24px 0 8px; }
-.metrics { list-style: none; margin: 0; padding: 0 !important; display: grid; gap: 12px; }
+.signs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin: 14px 0; }
+.signs .box { margin: 0; border-top: 4px solid var(--line); }
+.signs .good { border-top-color: var(--bar-for); }
+.signs .red { border-top-color: var(--bad); }
+.config { font-weight: 650; font-variant-numeric: tabular-nums; color: var(--text); background: var(--accent-soft); padding: 0 5px; border-radius: 5px; }
+.measured { margin: 8px 0 0; color: var(--muted); }
+h3.group { font-size: 12.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); margin: 28px 0 10px; }
+.step:has(.metrics) { max-width: none; }
+.metrics { list-style: none; margin: 0; padding: 0 !important; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
 .metrics li + li { margin-top: 0; }
-.metric { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px;
-          display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 20px; align-items: start; max-width: none !important; }
+.metric { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px;
+          display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; align-content: space-between; max-width: none !important; }
 .metric h4 { margin: 0 0 4px; font-size: 16px; }
 .metric p { margin: 0; }
 .metric .about, .metric .sample { color: var(--muted); font-size: 14px; }
 .metric .sample { margin-top: 4px; }
-.metric .result { text-align: right; min-width: 12em; }
-.metric .score { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.metric .result { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.metric .score { font: 600 22px/1.2 var(--serif); font-variant-numeric: tabular-nums; }
 .metric .target { font-size: 14px; color: var(--muted); }
-.verdict { display: inline-block; margin-top: 6px; padding: 1px 10px; border-radius: 999px; font-size: 13px; font-weight: 650; }
+.verdict { display: inline-block; padding: 1px 10px; border-radius: 999px; font-size: 13px; font-weight: 650; }
 .verdict.meets { background: var(--ok-soft); color: var(--ok); }
 .verdict.misses { background: var(--bad-soft); color: var(--bad); }
 .verdict.unmeasured { background: var(--sunken); color: var(--muted); }
-.privacy { margin: 40px 0 0; padding-top: 8px; border-top: 1px solid var(--line); }
-.privacy > h2 { font-size: 22px; margin: 16px 0 10px; }
+.privacy { margin: 56px 0 0; padding: 24px 24px 8px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.privacy > h2 { font: 600 26px/1.2 var(--serif); margin: 0 0 12px; }
 .privacy p, .privacy li { max-width: 70ch; }
 .privacy ul { padding-left: 22px; }
-.privacy li + li { margin-top: 6px; }
+.privacy li + li { margin-top: 8px; }
 @media (max-width: 600px) {
-  .signs { grid-template-columns: 1fr; }
-  .metric { grid-template-columns: 1fr; padding: 12px 14px; }
-  .metric .result { text-align: left; min-width: 0; }
+  .how-head { padding-top: 28px; }
+  .signs { grid-template-columns: minmax(0, 1fr); }
+  .metrics { grid-template-columns: minmax(0, 1fr); }
+  .step > h2, .privacy > h2 { font-size: 22px; }
+  .privacy { padding: 18px 16px 4px; }
 }
 </style>
 </head>
 <body>
-<header class="site">
+<header class="topbar">
   <div class="wrap">
-    <p class="back"><a href="/">Back to the search</a></p>
-    <h1>How we score</h1>
-    <p class="intro">How an answer is made, step by step, and how well it works. The rules and numbers on this page come straight from the engine's code and its latest test run, so they always match what it really does.</p>
+    <span class="brand"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6l2.3 1.7 2.9-.1.9 2.7 2.3 1.7-.9 2.7.9 2.7-2.3 1.7-.9 2.7-2.9-.1L12 21.4l-2.3-1.7-2.9.1-.9-2.7-2.3-1.7.9-2.7-.9-2.7 2.3-1.7.9-2.7 2.9.1z"/><path d="M8.6 12.1l2.3 2.3 4.6-4.7"/></svg>Credible picks</span>
+    <nav><a href="/">Back to the search</a></nav>
   </div>
+</header>
+<header class="wrap how-head">
+  <p class="kicker">How it works</p>
+  <h1>How we score</h1>
+  <p class="intro">How an answer is made, step by step, and how well it works. The rules and numbers on this page come straight from the engine's code and its latest test run, so they always match what it really does.</p>
 </header>
 
 <main class="wrap how">
@@ -179,14 +193,15 @@ h3.group { font-size: 15px; text-transform: uppercase; letter-spacing: .04em; co
     <li>{{visit_counting}}</li>
     <li><strong>Feedback, if you send it.</strong> Under each answer you can say whether it was useful and add a comment. We keep your choice, your comment, the request the answer was for, the kind of product and the kind of answer, and the time. Please don't put personal details in a comment.</li>
     <li><strong>“First time here?”</strong> We keep your yes or no and the time, to count new and returning visitors. Your browser remembers that it asked you (in its own storage, not a cookie), so we don't ask again.</li>
+    <li><strong>Your recent searches.</strong> Your browser keeps your last few searches in its own storage, on this device only, so you can run them again with one click. That list is never sent to us, and the Clear button next to it removes it.</li>
   </ul>
-  <p><strong>What we don't collect.</strong> No names, accounts or IP addresses, no cookies, no adverts and no tracking across websites. Your searches aren't saved, except the request you send with feedback.</p>
+  <p><strong>What we don't collect.</strong> No names, accounts or IP addresses, no cookies, no adverts and no tracking across websites. Your searches aren't saved by us, except the request you send with feedback.</p>
   {{public_site}}
 </section>
 
 </main>
 
-<footer class="wrap foot"><p>A free, non-commercial research prototype: read-only, and every quote links back to its comment on Reddit.</p></footer>
+<footer class="foot"><div class="wrap"><p>A free, non-commercial research prototype: read-only, and every quote links back to its comment on Reddit.</p></div></footer>
 {{counter_script}}
 </body>
 </html>
