@@ -400,3 +400,205 @@ def test_a_loose_name_that_fits_another_loose_name_stays_loose():
                     kitchen("9 mm MM Factory pan", "c4"), kitchen("12 mm MM Factory pan", "c5")])
     assert ["MM"] in names_by_group(groups)
     assert sorted(g.name for g in groups if g.loose) == ["MM", "MM Factory pan"]
+
+
+# --- A name without its brand, of one word and a kind of product (13 Oct 2026) ---
+
+def haircare(product: str, comment_id: str = "c1aaaa", thread_id: str = "1fake01") -> ProductMention:
+    return mention(product, thread_id, comment_id, category="haircare")
+
+
+def test_a_flavour_and_a_kind_never_join_another_makers_product():
+    # Found reading the shampoo answers: one maker's chai shampoo, named without its brand, had joined another maker's
+    # coconut milk and chai spice shampoo. Two brands are never one product.
+    groups = group([haircare("Chai shampoo"), haircare("Hair Food coconut milk and chai spice shampoo", "c2")])
+    assert names_by_group(groups) == [["Chai shampoo"], ["Hair Food coconut milk and chai spice shampoo"]]
+
+
+def test_a_brand_and_a_kind_join_a_product_whose_name_holds_the_brand_later():
+    # "Ballarini" is written alone as a name: a brand, so "Ballarini pans" is its product in a co-branded name.
+    groups = group([kitchen("Ballarini pans"), kitchen("ballarini", "c2"), kitchen("Zwilling/Ballarini non-stick pans", "c3")])
+    assert names_by_group(groups) == [["Ballarini pans", "Zwilling/Ballarini non-stick pans", "ballarini"]]
+
+
+# --- A brand followed by the requested type's words is the brand's line of that type (13 Oct 2026) ---
+
+def kettles(*names):
+    return [kitchen(name, comment_id=f"c{i}") for i, name in enumerate(names)]
+
+
+def test_a_brand_and_the_requested_type_fits_every_model_of_the_brand():
+    # Found reading the kettle answer (b06): "Fellow kettle" was a product of its own, a pick next to "Fellow Stagg EKG",
+    # because no Fellow model's name says "kettle". In a kettle answer it names Fellow's kettles, so it fits the Stagg EKG
+    # and the Corvo EKG: Fellow's kettle line, one line with "Fellow" written alone.
+    mentions = kettles("Fellow kettle", "Fellow kettles", "Fellow", "Fellow Stagg EKG", "Fellow Corvo EKG")
+    groups = group_products(mentions, NO_ALIASES, product_type="electric kettle")
+    assert names_by_group(groups) == [["Fellow", "Fellow kettle", "Fellow kettles"], ["Fellow Corvo EKG"], ["Fellow Stagg EKG"]]
+    line = next(g for g in groups if "Fellow" in g.names)
+    assert line.loose and line.name == "Fellow"  # shown as the brand, so the answer names it "Fellow ... line"
+
+
+def test_a_models_name_with_the_type_joins_that_model():
+    # "Fellow Stag kettle" (a slip) is the Stagg with the type's word: it fits the Stagg EKG alone, so it joins it.
+    mentions = kettles("Fellow Stag kettle", "Fellow kettle", "Fellow", "Fellow Stagg EKG", "Fellow Corvo EKG")
+    groups = group_products(mentions, NO_ALIASES, product_type="electric kettle")
+    assert ["Fellow Stag kettle", "Fellow Stagg EKG"] in names_by_group(groups)
+    assert ["Fellow", "Fellow kettle"] in names_by_group(groups)
+
+
+def test_two_lines_of_one_brand_with_and_without_the_type_are_one_line():
+    # Found in the lip balm answer (s06): "Torriden" and "Torriden balm" both fit two Torriden lip balms, and both were
+    # listed as "Torriden lip balm line" on the skip list.
+    mentions = [mention(n, comment_id=f"c{i}") for i, n in enumerate(
+        ["Torriden", "torriden", "Torriden balm", "Torriden yellow lip balm", "Torriden ceramide solid-in lip balm",
+         "Torriden dive in serum"])]
+    groups = group_products(mentions, NO_ALIASES, product_type="lip balm")
+    line = [g for g in groups if g.loose]
+    assert [sorted(g.names) for g in line] == [["Torriden", "Torriden balm", "torriden"]]
+    assert len(groups) == 4
+
+
+def test_the_requested_types_words_never_join_a_shampoo_to_its_conditioner():
+    # "Suave Naturals ocean breeze shampoo" is one product in a shampoo answer: dropping the type's word never makes it
+    # the line's conditioner, nor the line itself.
+    mentions = [haircare(n, f"c{i}") for i, n in enumerate(
+        ["Suave Naturals ocean breeze", "Suave Naturals ocean breeze shampoo", "Suave Naturals ocean breeze conditioner"])]
+    for product_type in ("shampoo", None):
+        groups = group_products(mentions, NO_ALIASES, product_type=product_type)
+        assert names_by_group(groups) == [["Suave Naturals ocean breeze"], ["Suave Naturals ocean breeze conditioner"],
+                                          ["Suave Naturals ocean breeze shampoo"]]
+        assert [g.name for g in groups if g.loose] == ["Suave Naturals ocean breeze"]
+
+
+def test_a_brand_and_the_type_joins_a_line_name_that_says_no_type():
+    # Found in the conditioner answer (s08): "Suave Coconut conditioner" is the "Suave Naturals Coconut" conditioner, whose
+    # name says no type: in a conditioner answer they are one product.
+    mentions = [haircare(n, f"c{i}") for i, n in enumerate(["Suave Coconut conditioner", "Suave Naturals Coconut"])]
+    assert len(group_products(mentions, NO_ALIASES, product_type="conditioner")) == 1
+    assert len(group_products(mentions, NO_ALIASES, product_type="shampoo")) == 2  # its words aren't the shampoo's
+    assert len(group_products(mentions, NO_ALIASES)) == 2  # with no request, as before
+
+
+def test_without_a_requested_type_a_brand_and_a_type_is_grouped_as_before():
+    mentions = kettles("Fellow kettle", "Fellow kettles", "Fellow", "Fellow Stagg EKG", "Fellow Corvo EKG")
+    assert ["Fellow kettle", "Fellow kettles"] in names_by_group(group_products(mentions, NO_ALIASES))
+
+
+def test_a_brands_line_is_shown_as_the_brand_not_with_the_types_words():
+    # Found in the cast iron answer (b08) once "Lodge cast iron" joined the Lodge line: its other spelling, "cast iron
+    # Lodge", has words before the brand, and was shown as if they were a brand ("cast iron Lodge cast iron skillet").
+    mentions = [kitchen(n, comment_id=f"c{i}") for i, n in enumerate(
+        ["Lodge", "Lodge", "Lodge", "Lodge cast iron", "cast iron Lodge", "Lodge cast iron skillet 10 inch",
+         "Lodge cast iron skillet 12 inch"])]
+    groups = group_products(mentions, NO_ALIASES, product_type="cast iron skillet")
+    line = next(g for g in groups if g.loose)
+    assert sorted(line.names) == ["Lodge", "Lodge cast iron", "cast iron Lodge"]
+    assert (line.name, line.key) == ("Lodge", "kitchen:lodge")
+
+
+def typed(product: str, product_type: str, comment_id: str = "c1aaaa", category: str = "skincare") -> ProductMention:
+    return ProductMention("1fake01", comment_id, product, category, "recommend", product_type=product_type)
+
+
+def test_a_brand_and_the_type_fits_only_the_brands_products_of_that_type():
+    # Found in the sunscreen answer (b02): "TO sunscreen" had fitted The Ordinary's lactic acid and niacinamide, whose
+    # names say no kind of product: the AI's type says they aren't sunscreens.
+    mentions = [typed("TO sunscreen", "sunscreen", "c1"), typed("TO sunscreen", "sunscreen", "c2"),
+                typed("The Ordinary Lactic Acid 10% + HA", "exfoliant", "c3"),
+                typed("The Ordinary Niacinamide 10% and Zinc 1%", "serum", "c4")]
+    aliases = {"skincare": make_aliases({"TO": "The Ordinary"})}
+    groups = group_products(mentions, aliases, product_type="sunscreen")
+    assert len(groups) == 3 and not any(g.loose for g in groups)
+
+
+def test_a_brand_and_the_types_plural_fits_the_brands_models_of_that_type():
+    # Found in the chef knife answer (b07): "Shun knives" fitted only "Shun 7"" (a size) and so joined it, though it
+    # names Shun's knives: it fits the Shun Classic chef knife too, whose name ends in the type's own word. So it is the
+    # Shun line, as is "Shun Chef's knife" (the brand and the type's words: Shun makes many chef's knives).
+    mentions = [typed(n, "chef knife", f"c{i}", "kitchen") for i, n in enumerate(
+        ["Shun", "Shun knives", "Shun knives", 'Shun 7"', "Shun Chef's knife", "Shun Classic chef knife"])]
+    groups = group_products(mentions, NO_ALIASES, product_type="chef knife")
+    line = next(g for g in groups if "Shun" in g.names)
+    assert line.loose and sorted(line.names) == ["Shun", "Shun Chef's knife", "Shun knives"]
+    assert names_by_group(groups) == [["Shun", "Shun Chef's knife", "Shun knives"], ["Shun 7\""], ["Shun Classic chef knife"]]
+
+
+def test_a_brand_and_the_type_written_two_ways_is_one_name_not_two_products():
+    # Found in the sunscreen answer (b02): "TO sunscreen" fitted "TO sunscreens" (its own plural) and a TO sun care line,
+    # so it read as fitting two products and left the skip list as a line.
+    mentions = [typed("TO sunscreen", "sunscreen", "c1"), typed("TO sunscreens", "sunscreen", "c2"),
+                typed("The Ordinary sunscreen", "sunscreen", "c3"), typed("The Ordinary suncare", "sunscreen", "c4")]
+    groups = group_products(mentions, {"skincare": make_aliases({"TO": "The Ordinary"})}, product_type="sunscreen")
+    assert len(groups) == 1 and not groups[0].loose
+
+
+def test_a_brand_written_alone_and_with_the_type_is_a_line_even_with_one_model_named():
+    # Found in the rice cooker answer (s04): "Tiger" (written 15 times) and "Tiger rice cooker" name Tiger's rice cookers.
+    # With one Tiger model named, the brand had joined that model, and the pick was shown as a bare "Tiger". Writers who
+    # name a brand both alone and with the type speak of its line: it stays the line, and the model a product of its own.
+    mentions = [typed(n, "rice cooker", f"c{i}", "kitchen") for i, n in enumerate(
+        ["Tiger", "Tiger", "tiger", "Tiger rice cooker", "Tiger 1 button"])]
+    groups = group_products(mentions, NO_ALIASES, product_type="rice cooker")
+    assert names_by_group(groups) == [["Tiger", "Tiger rice cooker", "tiger"], ["Tiger 1 button"]]
+    assert [g.name for g in groups if g.loose] == ["Tiger"]
+    # Without the name with the type, the brand alone joins its only model, as before (a brand alone fits its one
+    # product).
+    groups = group_products([m for m in mentions if m.product != "Tiger rice cooker"], NO_ALIASES, product_type="rice cooker")
+    assert len(groups) == 1 and not groups[0].loose
+
+
+def test_the_ais_type_says_which_of_a_brands_products_are_of_the_type():
+    # A cream and a lotion the AI typed as moisturisers are moisturisers, whatever their last words: "Cetaphil moisturizer"
+    # fits both, so it is Cetaphil's moisturiser line in a moisturiser request.
+    mentions = [typed("Cetaphil moisturizer", "moisturiser", "c1"), typed("Cetaphil Moisturising Cream", "moisturiser", "c2"),
+                typed("Cetaphil Daily Hydrating Lotion", "moisturiser", "c3"), typed("Cetaphil cleanser", "cleanser", "c4")]
+    groups = group_products(mentions, NO_ALIASES, product_type="moisturiser")
+    assert [g.name for g in groups if g.loose] == ["Cetaphil moisturizer"]
+    assert len(groups) == 4
+
+
+def test_a_product_is_shown_by_its_own_name_not_its_brand_with_the_type():
+    # Found in the eye cream answer (s10): "Lancome eye creams" fitted one Lancôme product here, the Génifique, and joined
+    # it; the item was shown as "Lancome eye creams", a line's name, though its other name says which product it is.
+    mentions = [typed("Lancôme genefique", "eye cream", "c1"), typed("Lancôme genefique", "eye cream", "c2"),
+                typed("Lancome eye creams", "eye cream", "c3")]
+    groups = group_products(mentions, NO_ALIASES, product_type="eye cream")
+    assert [(g.name, g.loose) for g in groups] == [("Lancôme genefique", False)]
+
+
+def test_a_brand_pick_name_leaves_out_a_trailing_one():
+    # Found in the cleanser answer (b05): the AI wrote "the Aveeno one" as "aveeno one" ("one" is filler: the name is the
+    # brand), and the line was shown as "aveeno one cleanser line".
+    assert brand_pick_name("aveeno one", "cleanser") == "aveeno cleanser line"
+    assert brand_pick_name("Victorinox ones", "chef knife") == "Victorinox chef knife line"
+    assert brand_pick_name("One", "cleanser") == "One cleanser line"  # a name that is only "one" keeps it
+
+
+def test_a_line_name_without_its_brand_and_with_the_type_is_its_product_not_a_line():
+    # Found in the dandruff answer (s02): "T-Gel" and "T Gel shampoo" are Neutrogena's T/Gel written without the brand.
+    # "Neutrogena T-Gel" adds the brand before the name, not a model after it, so it isn't a model of a "T-Gel" line:
+    # all of them are the one shampoo.
+    mentions = [typed(n, "shampoo", f"c{i}", "haircare") for i, n in enumerate(
+        ["T-Gel", "T-Gel", "T Gel shampoo", "neutrogena t-gel", "Neutrogena T/Gel shampoo"])]
+    groups = group_products(mentions, NO_ALIASES, product_type="shampoo")
+    assert len(groups) == 1 and not groups[0].loose
+
+
+def test_a_brand_and_the_type_fitting_one_of_several_models_joins_none():
+    # Found in the frying pan answer (b10): "our place pan" fitted only the titanium cookware, because the brand alone
+    # never fits a model with a model word ("Pro"), and so joined it, though its writer's pan was ceramic (the Always
+    # Pan). Our Place has several products named here: its name with the type fits one of them only by chance.
+    mentions = [typed(n, "frying pan", f"c{i}", "kitchen") for i, n in enumerate(
+        ["our place pan", "Our Place titanium cookware", "Our Place titanium cookware", "Our Place Titanium Always Pan Pro"])]
+    groups = group_products(mentions, NO_ALIASES, product_type="frying pan")
+    assert names_by_group(groups) == [["Our Place Titanium Always Pan Pro"], ["Our Place titanium cookware"], ["our place pan"]]
+    # A name of one product with the type's words still joins it: "Suave Coconut conditioner" (test above).
+
+
+def test_a_products_most_written_name_stays_shown_though_it_ends_like_the_type():
+    # Found in the eye cream answer (s10): "Clinique all about eyes" (its "eyes" reads as the type's word) was shown as
+    # "Clinique All About Eyes Rich", the name of one writer's variant, once names with the type gave way.
+    mentions = [typed(n, "eye cream", f"c{i}") for i, n in enumerate(
+        ["Clinique all about eyes", "Clinique all about eyes", "Clinique All About Eyes", "Clinique All About Eyes Rich"])]
+    groups = group_products(mentions, NO_ALIASES, product_type="eye cream")
+    assert [g.name.lower() for g in groups] == ["clinique all about eyes"]

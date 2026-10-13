@@ -10,7 +10,9 @@ import random
 import pytest
 
 from engine.config import MENTION_CATEGORIES
-from engine.match_products import AliasError, load_aliases, make_aliases, normalize_name, product_words, same_product
+from engine.match_products import (
+    AliasError, held_back_word, load_aliases, make_aliases, normalize_name, product_words, same_product,
+)
 
 
 # --- normalize_name ---
@@ -101,6 +103,52 @@ def test_a_single_word_that_does_not_start_the_longer_name_is_not_enough():
 
 def test_a_lone_number_is_not_a_brand():
     assert not same_product("10", "10 inch Lodge skillet")
+
+
+# --- A name without its brand, of one word and its type (13 Oct 2026) ---
+
+@pytest.mark.parametrize("a, b", [
+    # Found reading the shampoo answers: the AI named one maker's chai shampoo without its brand, and the two words were
+    # found in another brand's coconut milk and chai spice shampoo, so two brands' products were one. One word besides
+    # the type ("chai", a flavour many makers use) says too little to be another maker's product.
+    ("Chai shampoo", "Hair Food coconut milk and chai spice shampoo"),
+    ("mugwort cream", "Round Lab mugwort calming cream"),
+    ("coconut oil shampoo", "Garnier coconut oil and argan conditioning shampoo"),
+])
+def test_one_word_and_a_type_without_a_brand_is_not_another_makers_product(a, b):
+    assert not same_product(a, b)
+    assert not same_product(b, a)
+
+
+@pytest.mark.parametrize("a, b", [
+    ("Chai shampoo", "Ecoslay Chai shampoo"),  # the same name with a brand before it
+    ("T Gel", "Neutrogena T-Gel"),  # a line name that ends in a type word ("gel")
+    ("SA cleanser", "CeraVe Renewing SA Cleanser"),
+    ("Nizoral shampoo", "Nizoral A-D shampoo"),  # the one word is the brand: it starts the longer name
+    ("Miracle Curls conditioner", "Aussie Miracle Curls conditioner"),  # two words besides the type
+])
+def test_one_word_and_a_type_still_names_its_product_with_its_brand_before_it(a, b):
+    assert same_product(a, b)
+    assert same_product(b, a)
+
+
+def test_a_shampoo_or_conditioner_counts_as_a_kind_of_product_without_splitting_a_line_name():
+    # "Shampoo" and "conditioner" say what kind of product a name is, so "Chai shampoo" is one word and a kind. They don't
+    # tell two names apart by their last words, as skincare's kinds do: haircare line names often end in one ("T/Gel",
+    # "Castor Oil"), and Neutrogena's T/Gel is its shampoo (the library's 9 T/Gel mentions were one product).
+    assert same_product("Neutrogena T-Gel", "Neutrogena T/Gel shampoo")
+    assert same_product("SheaMoisture Castor Oil", "SheaMoisture Castor Oil shampoo")
+    assert not same_product("Chai shampoo", "Hair Food coconut milk and chai spice shampoo")
+
+
+def test_a_brandless_name_held_back_only_by_its_one_word_says_which_word():
+    # Grouping (engine/group_products.py) lets such a name join when its one word is written alone as a name there: a
+    # brand ("Ballarini", in a co-branded "Zwilling/Ballarini non-stick pans").
+    assert not same_product("Ballarini pans", "Zwilling/Ballarini non-stick pans")
+    assert held_back_word(product_words("Ballarini pans"), product_words("Zwilling/Ballarini non-stick pans")) == "ballarini"
+    assert held_back_word(product_words("Chai shampoo"), product_words("Hair Food coconut milk and chai spice shampoo")) == "chai"
+    assert held_back_word(product_words("Ecoslay Chai shampoo"), product_words("Chai shampoo")) is None  # they match
+    assert held_back_word(product_words("Chai shampoo"), product_words("Native shampoo")) is None  # never would
 
 
 def test_a_size_in_inches_reads_the_same_with_or_without_the_unit():
@@ -403,6 +451,11 @@ def test_a_spelled_out_name_can_hold_another_short_name():
     ("skincare", "Kikumasamume Sake Skin Care Cream", "Kiku Sake cream"),
     ("skincare", "BoJ retinal eye cream", "Beauty of Joseon Revive Eye Serum: Retinal + Ginseng"),
     ("skincare", "BoJ's Revive Eye Serum", "Beauty of Joseon Revive Eye Serum: Retinal + Ginseng"),
+    # s10, 13 Oct 2026: writers' "Beauty of Joseon eye cream" is its Revive Eye Serum, the brand's only eye product (a
+    # thread asking whether it is worth it for dark circles; its tube): it was a pick and, under its other name, a skip.
+    ("skincare", "Beauty of Joseon eye cream", "Beauty of Joseon Revive Eye Serum: Retinal + Ginseng"),
+    ("skincare", "BoJ eye cream", "Beauty of Joseon Revive Eye Serum: Retinal + Ginseng"),
+    ("skincare", "BoJ ginseng + retinal eye cream", "Beauty of Joseon Revive Eye Serum: Retinal + Ginseng"),
     ("skincare", "House of Hurr Weightless Sunscreen", "House of Hur Weightless Sun Fluid"),
     ("skincare", "Etude soon jung cleansers", "Etude House Soon Jung foam cleanser"),
     ("skincare", "DDG peel pads", "Dr Dennis Gross peel pads"),
@@ -436,6 +489,7 @@ def test_the_shipped_short_names_keep_other_models_apart():
     assert not same_product("Hario Slim Pro", "Hario Mini-Slim (MSS-1)", kitchen)
     skincare = load_aliases()["skincare"]
     assert not same_product("BoJ retinal eye cream", "Beauty of Joseon Dynasty Cream", skincare)
+    assert not same_product("BoJ eye cream", "Beauty of Joseon Dynasty Cream", skincare)
     assert not same_product("Paula’s choice 2% retinol", "Paula’s Choice 2% Liquid Exfoliant", skincare)
     assert not same_product("Cerave hydrating cleanser", "CeraVe Hydrating Cream to Foam cleanser", skincare)
     assert not same_product("CeraVe Hydrating Cleanser", "CeraVe Hydrating Foaming Oil Cleanser", skincare)
