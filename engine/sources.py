@@ -22,7 +22,8 @@ evidence, warning threads the "skip these" list and the downsides (thread_kind, 
 import json
 import math
 import re
-from datetime import UTC, datetime
+from collections import deque
+from datetime import UTC, date, datetime
 from functools import cache
 from pathlib import Path
 from typing import Protocol, runtime_checkable
@@ -36,6 +37,7 @@ from engine.config import (
     ARCHIVE_OLDEST_FACTOR,
     ARCHIVE_POSTS_EACH,
     ARCHIVE_SEARCH_MAX_FAILURES,
+    ARCHIVE_SPLIT_DEPTH,
     BRIGHT_DATA_ADD_RECORD_RESERVE,
     BRIGHT_DATA_ADD_SEARCHES,
     BRIGHT_DATA_ADD_WARNING_SEARCHES,
@@ -359,7 +361,7 @@ def usable_posts(query: ParsedQuery, posts: list[dict], min_comments: int) -> li
 def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searches: int = 4,
                    max_warning_searches: int = 4, raise_if_nothing: bool = False, posts_each: int = 25,
                    older_than_years: int | None = None, max_failures: int = 1, failed: list[str] | None = None,
-                   now: datetime | None = None) -> list[dict]:
+                   now: datetime | None = None, halved: list[str] | None = None) -> list[dict]:
     """Arctic Shift results, in rounds, each post once.
 
     1. The product's title words, term by term and subreddit by subreddit, up to `max_free_searches`, the newest
@@ -370,43 +372,85 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
     3. Warning searches, so threads about failures and regrets are among the candidates: the first title word
        with each of WARNING_SEARCHES ("kettle died", "kettle regret"…), in the request's most specialist
        subreddit, up to `max_warning_searches`.
-    A busy or failing search is skipped and named in `failed`; `max_failures` of them end the round (1: the first
-    failure ends it, as Parse's source has it); results found before that are still used. With `raise_if_nothing`, a
-    round that ends before anything was found raises (ArcticShiftError), so a service that is down isn't mistaken for
-    a search that found nothing. Parse's paid search never runs warning searches: they would cost credits.
+    A busy or failing search is skipped and named in `failed`; `max_failures` of them in a row end the round (1: the
+    first failure ends it, as Parse's source has it); results found before that are still used. With
+    `raise_if_nothing`, a round that ends before anything was found raises (ArcticShiftError), so a service that is down
+    isn't mistaken for a search that found nothing. Parse's paid search never runs warning searches: they would cost
+    credits.
+    With `older_than_years` (the archive reader's rounds, 13 Oct 2026), a search Arctic Shift times out on is asked again
+    as the two halves of its span, newer first, right away (an undated warning search as the two windows of round 2),
+    at most ARCHIVE_SPLIT_DEPTH times over, and named in `halved`; only a search that can't be split further is named
+    in `failed`. Each timeout still counts towards the failures in a row: a service that is down ends the round as soon.
     """
     terms = finder_terms(query.product_type)
     titles = [(subreddit, term) for term in terms for subreddit in query.subreddits][:max_free_searches]
     pairs: list[tuple[str, str, dict]] = [(subreddit, term, {}) for subreddit, term in titles]
+    windows: tuple[dict, dict] | None = None  # round 1's and round 2's spans, for halving an undated search
     if older_than_years:
         # Two date windows, each search bounded (12 Oct 2026: a search over a big subreddit's whole history timed out).
         now = now or datetime.now(UTC)
         split = _years_before(now, older_than_years).date().isoformat()
         oldest = _years_before(now, older_than_years * ARCHIVE_OLDEST_FACTOR).date().isoformat()
+        windows = ({"after": split}, {"after": oldest, "before": split})
         pairs = ([(subreddit, term, {"after": split}) for subreddit, term in titles]
                  + [(subreddit, term, {"after": oldest, "before": split}) for subreddit, term in titles])
     warnings = warning_words(query)[:max_warning_searches]
     pairs += [(query.subreddits[0], f"{terms[0]} {warning}", {}) for warning in warnings]
+    queue = deque((subreddit, term, dates, 0) for subreddit, term, dates in pairs)  # 0: not halved yet
     posts: dict[str, dict] = {}
-    failures = 0
-    for subreddit, term, dates in pairs:
+    failures = in_a_row = 0
+    while queue:
+        subreddit, term, dates, times_halved = queue.popleft()
         try:
             found = finder.search_posts(subreddit, term, limit=posts_each, **dates)
         except ArcticShiftError as error:
             failures += 1
-            if failed is not None:
-                window = " ".join(f"{key} {value}" for key, value in dates.items())
-                failed.append(f"r/{subreddit} for \"{term}\"{f' ({window})' if window else ''}: {error}")
-            if failures >= max_failures:
+            in_a_row += 1
+            window = " ".join(f"{key} {value}" for key, value in dates.items())
+            name = f"r/{subreddit} for \"{term}\"{f' ({window})' if window else ''}"
+            halves = (_halves(dates, now.date(), windows)
+                      if windows and times_halved < ARCHIVE_SPLIT_DEPTH and in_a_row < max_failures
+                      and _timed_out(error) else [])
+            if halves:
+                queue.extendleft((subreddit, term, half, times_halved + 1) for half in reversed(halves))
+                if halved is not None:
+                    halved.append(name)
+            elif failed is not None:
+                failed.append(f"{name}: {error}")
+            if in_a_row >= max_failures:
                 if raise_if_nothing and not posts:
                     raise
                 break
             continue
+        in_a_row = 0
         for post in found:
             posts.setdefault(_post_id(post), post)
     if raise_if_nothing and not posts and failures:
         raise ArcticShiftError(f"every archive search that ran failed ({failures})")
     return list(posts.values())
+
+
+def _timed_out(error: ArcticShiftError) -> bool:
+    """Whether Arctic Shift gave up on a search for time ("Timeout. Maybe slow down a bit"), or the answer didn't come in
+    time: what a shorter span of time helps with. Other errors (a refusal, a service that is down) aren't."""
+    words = str(error).lower()
+    return "timeout" in words or "timed out" in words
+
+
+def _halves(dates: dict, today: date, windows: tuple[dict, dict]) -> list[dict]:
+    """The two halves of a search's span of time, newer first; an undated search's are the two windows. None (an empty
+    list) for a span that can't be halved: one with no start, or under two days."""
+    if not dates:
+        return [dict(window) for window in windows]
+    if "after" not in dates:
+        return []
+    start = date.fromisoformat(dates["after"])
+    end = date.fromisoformat(dates["before"]) if "before" in dates else today
+    if (end - start).days < 2:
+        return []
+    middle = (start + (end - start) // 2).isoformat()
+    newer = {"after": middle} | ({"before": dates["before"]} if "before" in dates else {})
+    return [newer, {"after": dates["after"], "before": middle}]
 
 
 # --- From Arctic Shift's archive, for free (Noemi, 9 Oct 2026) ---
@@ -463,15 +507,19 @@ class ArchiveSource:
         if query.status != "ok" or self.client is None:
             return []
         failed: list[str] = []
+        halved: list[str] = []
         try:
-            # Free searches, so every decided subreddit, 100 posts each, and older threads too (11 Oct 2026).
+            # Free searches, so every decided subreddit, 100 posts each, and older threads too (11 Oct 2026); a search
+            # that times out is asked again over shorter spans of time (13 Oct 2026).
             found = search_archive(self.client, query, self.max_free_searches, self.max_warning_searches,
                                    raise_if_nothing=True, posts_each=ARCHIVE_POSTS_EACH,
                                    older_than_years=ARCHIVE_OLDER_YEARS, max_failures=ARCHIVE_SEARCH_MAX_FAILURES,
-                                   failed=failed)
+                                   failed=failed, halved=halved)
         finally:
-            self.notes = [f"The archive's search in {search} failed; run the add again to retry it (searches that "
-                          "worked are cached for 48 hours)." for search in failed]
+            self.notes = ([f"The archive's search in {search} timed out, so it was asked again over shorter spans of "
+                           "time." for search in halved]
+                          + [f"The archive's search in {search} failed; run the add again to retry it (searches that "
+                             "worked are cached for 48 hours)." for search in failed])
         return [post for post in usable_posts(query, found, self.min_comments) if _post_id(post) not in self.skip_ids]
 
 
