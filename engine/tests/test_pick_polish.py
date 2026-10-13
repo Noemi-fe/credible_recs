@@ -32,7 +32,7 @@ from engine.query import parse_query
 from engine.tests.factories import make_comment, make_thread
 from engine.tests.ranking_factories import bodies_for
 from engine.tests.test_answer import kitchen_case
-from engine.tests.test_pipeline import FakeLive, praise, skillet_library, write_library
+from engine.tests.test_pipeline import FakeLive, made_up_price, praise, skillet_library, write_library
 
 TODAY = date(2026, 10, 9)
 
@@ -695,3 +695,21 @@ def test_a_brand_line_whose_cheapest_product_is_over_the_budget_is_left_out(tmp_
         result = answer_request(request, library_dir=knife_library(tmp_path / f"again{i}", fibrox=(1, 1)), prices=[],
                                 today=TODAY, brand_lines=[kept] if kept else [])
         assert VICTORINOX in [pick.name for pick in result.answer.picks]
+
+
+def test_a_product_with_no_price_of_its_own_whose_brands_cheapest_is_over_the_budget_is_left_out(tmp_path):
+    # 13 Oct 2026 (b09, from the summaries builder): "Comandante with the Red Clix upgrade" showed under Also worth a
+    # look in an "under £150" answer: no price of its own, but Comandante's cheapest grinder costs £219 (its brand line's
+    # from price). The brand's cheapest product of the type is over the budget, so every one of its products is.
+    from engine.brand_lines import BrandLine
+
+    line = BrandLine(brand="Victorinox", category="kitchen", product_type="chef knife", sells=True,
+                     sources=["https://maker.example/knives"], checked_on="2026-10-12", from_price=120.0)
+    out = answer_request(KNIFE_REQUEST + " under £100", library_dir=knife_library(tmp_path, fibrox=(1, 1)), prices=[],
+                         today=TODAY, brand_lines=[line])
+    fibrox = "Victorinox Fibrox chef knife"
+    assert fibrox in out.left_out_over_budget
+    assert fibrox not in [p.name for p in out.answer.picks] + [item.name for item in out.answer.worth_a_look]
+    priced = answer_request(KNIFE_REQUEST + " under £100", library_dir=knife_library(tmp_path / "priced", fibrox=(1, 1)),
+                            prices=[made_up_price(fibrox, 45.0)], today=TODAY, brand_lines=[line])
+    assert fibrox not in priced.left_out_over_budget  # its own price, within the budget, says otherwise

@@ -796,11 +796,13 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
     # A brand line under a budget (12 Oct 2026: b09, "under £150", had picked the Comandante coffee grinder line, whose
     # cheapest grinder costs more): when its brand-lines entry gives a "from" price (the brand's cheapest UK product of
     # this type) above the budget, even its cheapest product is over, so it is left out as over budget. No from price,
-    # or one within the budget, keeps it (b07's Wüsthof sells cheaper knives than the Classic its writers name).
+    # or one within the budget, keeps it (b07's Wüsthof sells cheaper knives than the Classic its writers name). So is
+    # a product of that brand with no price of its own (13 Oct 2026: "Comandante with Red Clix" in b09's Also worth a
+    # look): it costs at least its brand's cheapest.
     over_from = budget is not None and budget.max is not None and budget.currency == "GBP"
-    for group in [g for g in kept if g.loose and over_from]:
+    for group in [g for g in kept if over_from and (g.loose or checks[g.key].status == "unknown")]:
         line = find_brand_line(set(group.names) | {uk_name(n) for n in group.names}, group.category, product_type,
-                               brand_lines)
+                               brand_lines, of_a_product=not group.loose)
         if line is not None and line.from_price is not None and line.from_price > budget.max:
             kept.remove(group)
             checks.pop(group.key, None)

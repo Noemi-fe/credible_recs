@@ -158,7 +158,7 @@ def _plain(message: str) -> str:
 # --- One brand's entry ---
 
 def find_brand_line(names: Iterable[str], category: str, product_type: str | None,
-                    lines: Iterable[BrandLine]) -> BrandLine | None:
+                    lines: Iterable[BrandLine], of_a_product: bool = False) -> BrandLine | None:
     """The entry for a brand or line name in a request for `product_type`, or None when the list has none.
 
     `names` are the names writers used for it (a loose group's names, and their UK names). An entry fits when its brand,
@@ -166,6 +166,8 @@ def find_brand_line(names: Iterable[str], category: str, product_type: str | Non
     short names: case, accents, spacing and an "and" aside, spelling slips forgiven), alone or followed only by the
     product type's own words ("Nizoral shampoo" for a shampoo request). When several fit: the one whose brand has the
     most words (a line with an entry of its own before its brand), then the newest check, then the brand's name.
+    `of_a_product` (13 Oct 2026): the entry of the brand a specific product's names start with, whatever words follow
+    ("Comandante with Red Clix"), for its from price.
     """
     if not product_type:
         return None
@@ -178,7 +180,7 @@ def find_brand_line(names: Iterable[str], category: str, product_type: str | Non
             for words in written:
                 name, brand_words = comparable(list(words), product_words(brand, aliases))
                 if (brand_words and written_alike(name[:len(brand_words)], brand_words)
-                        and set(name[len(brand_words):]) <= type_words):
+                        and (of_a_product or set(name[len(brand_words):]) <= type_words)):
                     return True
         return False
 
