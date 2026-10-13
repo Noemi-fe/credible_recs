@@ -74,6 +74,34 @@ def test_when_reddit_cant_be_read_the_quote_is_not_shown(tmp_path):
     assert checker(tmp_path, FakeReddit(answer=(200, b"<html>a page with no comment on it</html>"))).check(URL, QUOTE).show is False
 
 
+def test_a_page_with_no_comment_on_it_is_kept_as_unreadable_for_a_while(tmp_path):
+    # 13 Oct 2026: for some comments the embed page is a whole Reddit page with no comment on it, every time, and every
+    # answer and every pre-check read it again (37 of a run's 89 reads). It is kept as unreadable (when, and no text:
+    # nothing of the page) for LIVE_CHECK_UNREADABLE_KEEP_HOURS, then read again; its quote is never shown meanwhile.
+    import json
+
+    from engine.config import LIVE_CHECK_UNREADABLE_KEEP_HOURS
+
+    reddit, clock = FakeReddit(answer=(200, b"<html>a page with no comment on it</html>")), Clock()
+    live = checker(tmp_path, reddit, clock)
+    assert live.check(URL, QUOTE).status == "unknown"
+    clock.now += timedelta(hours=LIVE_CHECK_UNREADABLE_KEEP_HOURS - 1)
+    assert live.check(URL, QUOTE).status == "unknown" and len(reddit.asked) == 1
+    assert [json.loads(p.read_text())["text"] for p in (tmp_path / "cache").glob("*.json")] == [None]
+    clock.now += timedelta(hours=2)
+    live.check(URL, QUOTE)
+    assert len(reddit.asked) == 2
+
+
+def test_a_page_reddit_refused_or_failed_on_is_never_kept(tmp_path):
+    for n, answer in enumerate([(429, b"Too Many Requests"), (503, b"busy"), (404, b"not found")]):
+        reddit = FakeReddit(answer=answer)
+        live = checker(tmp_path / str(n), reddit)
+        live.check(URL, QUOTE)
+        live.check(URL, QUOTE)
+        assert len(reddit.asked) == 2  # asked again: it may answer next time
+
+
 def test_html_codes_in_the_page_are_read_as_characters(tmp_path):
     quote = "Black & Decker kettle, 5 years and counting."
     result = checker(tmp_path, FakeReddit(answer=(200, page("Black &amp; Decker kettle, 5 years and counting.")))).check(URL, quote)

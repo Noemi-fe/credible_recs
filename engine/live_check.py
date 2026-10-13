@@ -76,13 +76,15 @@ from urllib.parse import urlparse
 import certifi
 
 from engine.config import (CACHE_MAX_AGE_HOURS, LIVE_CHECK_BURST, LIVE_CHECK_MIN_INTERVAL, LIVE_CHECK_REFILL_SECONDS,
-                           LIVE_CHECK_MAX_WAIT_SECONDS, LIVE_CHECK_RESERVE, LIVE_CHECK_SPREAD_BELOW)
+                           LIVE_CHECK_MAX_WAIT_SECONDS, LIVE_CHECK_RESERVE, LIVE_CHECK_SPREAD_BELOW,
+                           LIVE_CHECK_UNREADABLE_KEEP_HOURS)
 from engine.verify_quotes import find_quote
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CACHE_DIR = REPO_ROOT / ".cache" / "live_check"
 USER_AGENT = "credible-recs research prototype (github.com/Noemi-fe/credible_recs)"
 MAX_AGE = timedelta(hours=CACHE_MAX_AGE_HOURS)
+UNREADABLE_MAX_AGE = timedelta(hours=LIVE_CHECK_UNREADABLE_KEEP_HOURS)
 
 # The bucket (check ahead, 13 Oct 2026): its name, from the environment; unset, checks are kept on this machine only.
 BUCKET_VAR = "CREDIBLE_RECS_LIVE_CACHE_BUCKET"
@@ -330,8 +332,10 @@ class LiveChecker:
         if status != 200:
             return None
         found = _BODY.search(page.decode("utf-8", "replace"))
-        if not found:
-            return None  # a page with no comment on it, or a new layout: never guessed
+        if not found:  # a page with no comment on it, or a new layout: never guessed, and kept as unreadable a while
+            unreadable = {"fetched_at": fetched_at.isoformat(), "text": None}
+            self._keep(_entry_name(url), json.dumps(unreadable).encode("utf-8"))
+            return None
         text = html.unescape(" ".join(_TAG.sub(" ", found.group(1)).split()))
         data = json.dumps({"fetched_at": fetched_at.isoformat(), "text": text}, ensure_ascii=False).encode("utf-8")
         self._keep(_entry_name(url), data)
@@ -389,7 +393,13 @@ class LiveChecker:
             return None
 
     def _within(self, entry: dict | None, max_age: timedelta) -> bool:
-        return entry is not None and self._clock() - datetime.fromisoformat(entry["fetched_at"]) < max_age
+        """Whether a saved check is younger than `max_age`; one that found no comment on the page (text None) counts
+        for UNREADABLE_MAX_AGE at most."""
+        if entry is None:
+            return False
+        if entry["text"] is None:
+            max_age = min(max_age, UNREADABLE_MAX_AGE)
+        return self._clock() - datetime.fromisoformat(entry["fetched_at"]) < max_age
 
     def _keep(self, name: str, data: bytes) -> None:
         """Saves a check in this machine's folder, whole under another name and then renamed: a check reading it at the
@@ -478,8 +488,8 @@ def _entry_name(url: str) -> str:
 
 
 def _entry(data: bytes | None) -> dict | None:
-    """A saved check ({"fetched_at", "text"}) read from its file or object; None when there is none or it can't be
-    read (it is then read on Reddit again)."""
+    """A saved check ({"fetched_at", "text"}; text None: the page had no comment on it) read from its file or object;
+    None when there is none or it can't be read (it is then read on Reddit again)."""
     if data is None:
         return None
     try:
@@ -487,4 +497,4 @@ def _entry(data: bytes | None) -> dict | None:
         datetime.fromisoformat(entry["fetched_at"])
     except (ValueError, KeyError, TypeError):
         return None
-    return entry if isinstance(entry.get("text"), str) else None
+    return entry if "text" in entry and (entry["text"] is None or isinstance(entry["text"], str)) else None

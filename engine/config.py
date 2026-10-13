@@ -346,6 +346,11 @@ LIVE_CHECK_SPREAD_BELOW = 50
 # LIVE_CHECK_MAX_WAIT_SECONDS for Reddit's next 10 minutes: past that its page is taken as unreadable now (its quote is
 # dropped), so an answer comes back well before Cloud Run's 5-minute timeout.
 LIVE_CHECK_MAX_WAIT_SECONDS = 60
+# A comment whose embed page has no comment on it (a whole Reddit page instead, every time: 37 of a pre-check run's 89
+# reads, 13 Oct 2026) is kept as unreadable (when, and no text) this long, so answers and the pre-check stop reading it
+# again; its quote is never shown meanwhile. As long as the pre-check's PRECHECK_FRESH_HOURS, so each day's run reads
+# it once. A page Reddit refused or failed on (429, 5xx, a timeout) is never kept. Decided by Claude, 13 Oct 2026.
+LIVE_CHECK_UNREADABLE_KEEP_HOURS = 20
 # Checking ahead (Noemi's decision of 13 Oct 2026: "check ahead"): the comments answers would show are read live in
 # advance, daily, within the same limits (engine/precheck.py). The numbers are Claude's, reported to Noemi. A comment
 # read less than PRECHECK_FRESH_HOURS ago is left as it is ("fresh for most of a day"), so after a run every check it
