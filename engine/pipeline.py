@@ -939,9 +939,13 @@ def _type_words(product_type: str | None) -> tuple[str, ...]:
 
 def _only_unsold_products(brand: ProductGroup, groups: list[ProductGroup], not_sold: list[ProductGroup]) -> bool:
     """Whether the brand pick's own specific products among `groups` (_same_brand) are all in `not_sold`, and there
-    is at least one. A product not checked yet counts as maybe sold."""
-    own = [g for g in groups if not g.loose and _same_brand(brand, g)]
-    return bool(own) and all(g in not_sold for g in own)
+    is at least one. A product not checked yet counts as maybe sold. The few unsold products are looked at first
+    (13 Oct 2026, the live site's engine time: comparing every brand with every product took 0.6 s an answer, almost
+    always to find no unsold product of the brand); the same answer, for `not_sold` drawn from `groups`."""
+    if not any(_same_brand(brand, g) for g in not_sold if not g.loose):
+        return False
+    unsold = {id(g) for g in not_sold}
+    return not any(id(g) not in unsold and not g.loose and _same_brand(brand, g) for g in groups)
 
 
 # --- Product facts (decided by Claude, 9 Oct 2026) ---
