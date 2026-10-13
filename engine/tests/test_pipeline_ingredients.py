@@ -1,5 +1,7 @@
 """Ingredient-led answers through the pipeline (13 Oct 2026): every product an answer shows contains the ingredient
-asked for, in whatever form, labelled with it.
+asked for, labelled with its form. Since Noemi's decision 1 of 13 Oct 2026, an ingredient-led answer shows leave-on
+forms only (serums, liquids, toners, pads, creams, spot treatments...), unless the request names another form
+("salicylic acid wash"); a cleanser counts when the request names it ("salicylic acid cleanser").
 
 The library is made up: products, writers, threads and quotes. Each comment's text is also its quote, so every quote
 is found word for word, and each mention has the type the AI would give it (extraction v6 and later).
@@ -23,8 +25,11 @@ BLOOM = ("Bloom Salicylic Cleanser", "cleanser")
 CORRA = ("Corra Glow Powder", "exfoliant")  # its name doesn't say what it is made with
 DUNE = ("Dune BHA Liquid", "exfoliant")  # a BHA: its formula decides whether it is salicylic acid
 FERN = ("Fern Gentle Cleanser", "cleanser")  # no acid at all
-ECHO = ("Echo Salicylic Peel", "exfoliant")  # warned against
+ECHO = ("Echo Salicylic Peel", "exfoliant")  # warned against; a peel is rinse-off
 HAZE = ("Haze Scrub", "exfoliant")  # warned against, no acid
+OPAL = ("Opal Salicylic Gel", "exfoliant")  # warned against; a gel is leave-on
+GILT = ("Gilt Salicylic Acid", "exfoliant")  # its name says the acid, not its form: an exfoliant may be a scrub
+KIRI = ("Kiri Salicylic Pimple Patch", "pimple patch")  # a spot treatment, leave-on
 IRIS = ("Iris Salicylic Toner", "toner")  # two recommendations: Also worth a look
 JADE = ("Jade Mist", "toner")  # two recommendations, no acid
 GALE = ("Gale Cream", "moisturiser")  # only in a thread that never names the acid
@@ -47,8 +52,9 @@ def write_library(tmp_path: Path, threads: dict[str, tuple[str, list[tuple]]]) -
         comments = [make_comment(cid, thread_id=thread_id, body=text,
                                  url=f"https://www.reddit.com/r/SkincareAddiction/comments/{thread_id}/comment/{cid}/")
                     for cid, _, text, _ in rows]
-        saved.append(make_thread(id=thread_id, title=title, body="Mild acne, oily skin. Which cleanser or serum?",
-                                 url=url, comments=comments, num_comments=len(comments) + 20))
+        post = "Mild acne, oily skin. Which cleanser, serum or spot treatment?"
+        saved.append(make_thread(id=thread_id, title=title, body=post, url=url, comments=comments,
+                                 num_comments=len(comments) + 20))
         extractions[thread_id] = [{"comment_id": cid, "product": product, "category": "skincare", "stance": stance,
                                    "quote": text, "product_type": product_type}
                                   for cid, (product, product_type), text, stance in rows]
@@ -68,11 +74,13 @@ def acne_library(tmp_path: Path) -> Path:
             praise("a1", ACME, 2), praise("a2", ACME, 3), praise("b1", BLOOM, 2), praise("b2", BLOOM, 4),
             praise("c1", CORRA, 2), praise("c2", CORRA, 3), praise("d1", DUNE, 2), praise("d2", DUNE, 3),
             praise("f1", FERN, 2), praise("f2", FERN, 3), warn("e1", ECHO), warn("h1", HAZE),
-            praise("i1", IRIS, 2), praise("j1", JADE, 2),
+            praise("i1", IRIS, 2), praise("j1", JADE, 2), warn("o1", OPAL), praise("g4", GILT, 2),
+            praise("g5", GILT, 3), praise("k1", KIRI, 2), praise("k2", KIRI, 3),
         ]),
         "1sali02": ("Salicylic acid recommendations?", [
             praise("a3", ACME, 5), praise("b3", BLOOM, 5), praise("c3", CORRA, 5), praise("d3", DUNE, 5),
             praise("f3", FERN, 5), warn("e2", ECHO), warn("h2", HAZE), praise("i2", IRIS, 3), praise("j2", JADE, 3),
+            warn("o2", OPAL), praise("g6", GILT, 4), praise("k3", KIRI, 4),
         ]),
         "1sali03": ("Best moisturiser for dry skin?", [
             praise("g1", GALE, 2), praise("g2", GALE, 3), praise("g3", GALE, 4),
@@ -100,10 +108,40 @@ def left_out(result) -> dict[str, str]:
     return {item.name: item.reason for item in result.left_out_no_ingredient}
 
 
-def test_an_ingredient_led_answer_shows_products_with_the_ingredient_in_every_form(tmp_path):
+def by_form(result) -> dict[str, str]:
+    return {item.name: item.reason for item in result.left_out_by_form}
+
+
+def test_an_ingredient_led_answer_shows_leave_on_products_with_the_ingredient(tmp_path):
+    # Changed on purpose 13 Oct 2026 (Noemi's decision 1: leave-on forms only): the cleanser was a pick. A spot
+    # treatment (decision 2) is a leave-on form like the serum.
     result = ask(tmp_path)
-    assert picks(result) == [("Acme 2% Salicylic Acid Serum", "serum"), ("Bloom Salicylic Cleanser", "cleanser")]
+    assert sorted(picks(result)) == [("Acme 2% Salicylic Acid Serum", "serum"),
+                                     ("Kiri Salicylic Pimple Patch", "patch")]
     assert unverified_claims(result.answer, result.bodies) == []
+
+
+def test_a_rinse_off_product_with_the_ingredient_is_left_out_and_says_how_to_see_it(tmp_path):
+    result = ask(tmp_path)
+    assert by_form(result)["Bloom Salicylic Cleanser"] == (
+        "a rinse-off cleanser: ask for a salicylic acid cleanser to see these")
+    assert "Bloom Salicylic Cleanser" not in left_out(result)  # it does contain the acid
+    rinse = [item for item in result.left_out_by_form if item.rinse_off]
+    assert {item.name for item in rinse} == {"Bloom Salicylic Cleanser", "Echo Salicylic Peel"}
+
+
+def test_a_product_whose_form_isnt_known_is_left_out(tmp_path):
+    # "Gilt Salicylic Acid", typed as an exfoliant: a leave-on liquid or a rinse-off scrub? Never a guess.
+    result = ask(tmp_path)
+    assert by_form(result)["Gilt Salicylic Acid"] == "we couldn't confirm it's a leave-on form"
+    assert not next(item for item in result.left_out_by_form if item.name == "Gilt Salicylic Acid").rinse_off
+
+
+def test_a_request_naming_a_form_gets_that_form_rinse_off_or_not(tmp_path):
+    wash = ask(tmp_path, "salicylic acid wash")
+    assert wash.query.ingredient_led and wash.query.constraints.forms == ["cleanser"]
+    assert picks(wash) == [("Bloom Salicylic Cleanser", "cleanser")]
+    assert by_form(wash)["Acme 2% Salicylic Acid Serum"] == "not the form you asked for (cleanser)"
 
 
 def test_a_product_with_no_evidence_of_the_ingredient_is_left_out_and_named(tmp_path):
@@ -116,10 +154,13 @@ def test_a_product_with_no_evidence_of_the_ingredient_is_left_out_and_named(tmp_
 
 
 def test_a_formula_from_the_makers_page_is_evidence_and_gives_the_form(tmp_path):
-    result = ask(tmp_path, product_facts=[facts("Corra Glow Powder", "exfoliant", ["salicylic acid", "papain"],
-                                                "rinse-off powder")])
-    assert ("Corra Glow Powder", "rinse-off powder") in picks(result)
-    assert "Corra Glow Powder" not in left_out(result)
+    # Changed on purpose 13 Oct 2026 (Noemi's decision 1): a rinse-off powder shows when the request names a powder.
+    powder = [facts("Corra Glow Powder", "exfoliant", ["salicylic acid", "papain"], "rinse-off powder")]
+    result = ask(tmp_path, product_facts=powder)
+    assert "Corra Glow Powder" not in left_out(result)  # the formula is evidence of the acid
+    assert by_form(result)["Corra Glow Powder"] == "a rinse-off powder: ask for a salicylic acid powder to see these"
+    asked = ask(tmp_path / "powder", "salicylic acid powder", product_facts=powder)
+    assert picks(asked) == [("Corra Glow Powder", "rinse-off powder")]
 
 
 def test_a_formula_without_the_ingredient_leaves_the_product_out_whatever_its_name(tmp_path):
@@ -131,10 +172,13 @@ def test_a_formula_without_the_ingredient_leaves_the_product_out_whatever_its_na
 
 
 def test_also_worth_a_look_and_the_skip_list_hold_the_ingredient_too(tmp_path):
+    # Changed on purpose 13 Oct 2026 (Noemi's decision 1): the peel on the skip list is rinse-off, so a leave-on gel
+    # was added to hold its place.
     result = ask(tmp_path)
     assert [(item.name, item.form) for item in result.answer.worth_a_look] == [("Iris Salicylic Toner", "toner")]
-    assert [(item.name, item.form) for item in result.answer.skip] == [("Echo Salicylic Peel", "peel")]
+    assert [(item.name, item.form) for item in result.answer.skip] == [("Opal Salicylic Gel", "gel")]
     assert {"Jade Mist", "Haze Scrub"} <= set(left_out(result))
+    assert "Echo Salicylic Peel" in by_form(result)
 
 
 def test_threads_that_never_name_the_ingredient_are_not_read(tmp_path):
@@ -148,8 +192,10 @@ def test_the_answer_says_the_ingredient_and_each_products_form(tmp_path):
     assert result.answer.ingredient == "salicylic acid"
     text = render_markdown(result.answer)
     assert text.startswith("# Top picks: salicylic acid products\n")
-    assert "**Form:** serum" in text and "**Form:** cleanser" in text
+    # Changed on purpose 13 Oct 2026 (Noemi's decision 1): no cleanser now; the note says how to see rinse-off forms.
+    assert "**Form:** serum" in text and "**Form:** patch" in text and "**Form:** cleanser" not in text
     assert result.answer.ingredient_note.startswith("Every product here contains salicylic acid")
+    assert '"salicylic acid cleanser"' in result.answer.ingredient_note
 
 
 def test_a_type_named_with_the_ingredient_keeps_its_type(tmp_path):
@@ -171,8 +217,12 @@ def test_the_page_gets_the_ingredient_and_how_many_were_left_out(tmp_path):
     result = ask(tmp_path)
     data = web.answer_json(result)
     assert data["answer"]["ingredient"] == "salicylic acid"
-    assert [pick["form"] for pick in data["answer"]["picks"]] == ["serum", "cleanser"]
+    # Changed on purpose 13 Oct 2026 (Noemi's decision 1): leave-on forms only, and the forms left out are counted.
+    assert sorted(pick["form"] for pick in data["answer"]["picks"]) == ["patch", "serum"]
     assert data["left_out"]["no_ingredient"] == len(result.left_out_no_ingredient) > 0
+    assert data["left_out"]["by_form"] == len(result.left_out_by_form) == 3  # the cleanser, the peel, Gilt
+    assert data["left_out"]["rinse_off"] == 2
+    assert data["query"]["forms"] == []
     assert data["query"]["ingredients"] == ["salicylic acid"] and data["query"]["ingredient_led"] is True
 
 
@@ -255,3 +305,32 @@ def test_a_note_leaning_on_both_in_one_is_no_advice_on_its_own():
 
     assert not _stands_alone("Nothing puts both in one tube; a leave-on BHA is the nearest thing.", names_it=True)
     assert _stands_alone("A leave-on BHA works better than a wash for me.", names_it=True)
+
+
+def test_a_spot_treatment_request_gets_spot_treatments(tmp_path):
+    # Noemi's decision 2 of 13 Oct 2026: spot treatments and pimple patches are a type of their own.
+    result = ask(tmp_path, "salicylic acid spot treatment")
+    assert [pick.name for pick in result.answer.picks] == ["Kiri Salicylic Pimple Patch"]
+    assert "Acme 2% Salicylic Acid Serum" in result.left_out_as_other_type
+
+
+def test_advice_in_an_ingredient_led_answer_keeps_to_its_forms():
+    # Noemi's decision 1 of 13 Oct 2026: an answer of leave-on products gives no advice to look for a rinse-off form,
+    # and an answer to "salicylic acid wash" none to look for a toner.
+    from engine.answer import write_answer
+    from engine.rank import rank_products
+    from engine.tests.ranking_factories import bodies_for, mentions, note
+
+    notes = [note("BHA cleanser", "t1", quote="A BHA cleanser is great, it keeps my pores clear.", weight=0.9),
+             note("BHA toner", "t2", quote="A BHA toner is great every other night.", weight=0.8),
+             note("leave-on BHA", "t1", quote="A leave-on BHA is great, it works better than any wash.", weight=0.5)]
+    items = mentions(3, "Acme thing", category="skincare")
+    ranking = rank_products(items, "skincare", notes, {})
+
+    def kinds(request: str, forms_asked=()) -> list[str]:
+        answer = write_answer(ranking, bodies_for(*items, *notes), "salicylic acid product", request=request,
+                              ingredient="salicylic acid", forms_asked=forms_asked)
+        return [item.kind for item in answer.look_for]
+
+    assert kinds(REQUEST) == ["BHA toner", "leave-on BHA"]
+    assert kinds("salicylic acid wash", ["cleanser"]) == ["BHA cleanser", "leave-on BHA"]

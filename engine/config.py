@@ -22,6 +22,9 @@ SUBREDDITS: dict[str, tuple[str, ...]] = {
 # Subreddits about one skin condition, {subreddit: the skin type that brings it in} (decided by Claude, 11 Oct 2026, when
 # Noemi added r/acne): searched first for a request about that condition, as the most specific, and not for others.
 CONDITION_SUBREDDITS: dict[str, str] = {"acne": "acne-prone"}
+# The product types made for one condition (13 Oct 2026, Noemi's decision 2: spot treatments become a type): their
+# condition's subreddit is searched first for them, whether or not the request names the condition ("pimple patches").
+CONDITION_PRODUCT_TYPES: dict[str, tuple[str, ...]] = {"acne": ("spot treatment",)}
 
 STANCE_VALUE: dict[str, int] = {"recommend": 1, "warn": -1, "neutral": 0}
 
@@ -277,6 +280,7 @@ PRODUCT_TYPE_PLURALS: dict[str, str] = {
     "toner": "toners",
     "eye cream": "eye creams",
     "lip balm": "lip balms",
+    "spot treatment": "spot treatments",
     "stovetop kettle": "stovetop kettles",
     "electric kettle": "electric kettles",
     "chef knife": "chef knives",
@@ -563,6 +567,7 @@ PRODUCT_FACTS_BY_TYPE: dict[str, tuple[str, ...]] = {
     "toner": PRODUCT_FACTS_FOR_SKINCARE,
     "eye cream": PRODUCT_FACTS_FOR_SKINCARE,
     "lip balm": PRODUCT_FACTS_FOR_SKINCARE,
+    "spot treatment": PRODUCT_FACTS_FOR_SKINCARE,  # 13 Oct 2026 (Noemi's decision 2)
     "electric kettle": ("plastic_free_inside",),
     "stovetop kettle": ("plastic_free_inside",),
     "frying pan": ("pfas_free", "non_stick", "induction"),
@@ -864,7 +869,13 @@ COPIED_TEXT_MIN_WORDS = 20
 # Extraction instructions that only add a category leave the other categories' extractions as they were:
 # {current version: {older version: the thread categories it is still current for}}. v9 added haircare (its category
 # and product types) and changed nothing else, so skincare and kitchen threads extracted with v8 aren't done again.
-EXTRACT_STILL_CURRENT: dict[str, dict[str, tuple[str, ...]]] = {"extract-v9": {"extract-v8": ("skincare", "kitchen")}}
+# v10 (13 Oct 2026, Noemi's decision 2) only added the "spot treatment" type's name to the list the AI types products
+# with, so every v9 extraction stays current (the AI had typed pimple patches in plain words, "pimple patch", which the
+# spot treatment type's words find), and v8 ones of skincare and kitchen threads, as under v9.
+EXTRACT_STILL_CURRENT: dict[str, dict[str, tuple[str, ...]]] = {
+    "extract-v9": {"extract-v8": ("skincare", "kitchen")},
+    "extract-v10": {"extract-v9": THREAD_CATEGORIES, "extract-v8": ("skincare", "kitchen")},
+}
 
 # --- Going live (Noemi, 11 Oct 2026) ---
 # Noemi approved putting the demo online as a Hugging Face Space, with GoatCounter visit counts, a "First time here?"
@@ -978,7 +989,7 @@ SUMMARY_PEOPLE_WORDS = ("owner", "owners", "user", "users", "people", "person", 
 # The retinoid words that are module 1's own name for the retinoid type ("retinol", "retinoid") add no requirement:
 # Noemi decided on 7 Oct 2026 (eval/edge_cases/query.json, q05) that "retinol" means the generic retinoid, so the type
 # already is the requirement. The specific forms ("retinal", "tretinoin", "adapalene", "tazarotene") are required.
-_ACID_TYPES = ("exfoliant", "toner", "serum", "cleanser", "moisturiser")
+_ACID_TYPES = ("exfoliant", "toner", "serum", "cleanser", "moisturiser", "spot treatment")
 _SOOTHING_TYPES = ("moisturiser", "serum", "toner", "cleanser", "sunscreen", "eye cream")
 _RETINOID_TYPES = ("retinoid", "serum", "moisturiser", "eye cream")
 INGREDIENTS: dict[str, dict] = {
@@ -999,7 +1010,7 @@ INGREDIENTS: dict[str, dict] = {
             "named": (r"pha", r"gluconolactone", r"lactobionic"), "actives": ("gluconolactone", "lactobionic acid"),
             "types": _ACID_TYPES},
     "azelaic acid": {"asked": (r"azelaic(?: acid)?",), "named": (r"azelaic",), "actives": ("azelaic acid",),
-                     "types": ("serum", "moisturiser", "exfoliant", "toner")},
+                     "types": ("serum", "moisturiser", "exfoliant", "toner", "spot treatment")},
     "niacinamide": {"asked": (r"niacinamide", r"nicotinamide", r"vitamin b3"),
                     "named": (r"niacinamide", r"nicotinamide"), "actives": ("niacinamide",),
                     "types": _SOOTHING_TYPES},
@@ -1007,7 +1018,8 @@ INGREDIENTS: dict[str, dict] = {
                   "named": (r"vitamin c", r"vit\.? c", r"ascorbic", r"ascorbyl", r"ascorbate"),
                   "actives": ("vitamin c",), "types": ("serum", "moisturiser", "toner", "eye cream", "sunscreen")},
     "benzoyl peroxide": {"asked": (r"benzoyl(?: peroxide)?", r"bpo"), "named": (r"benzoyl", r"bpo"),
-                         "actives": ("benzoyl peroxide",), "types": ("cleanser", "moisturiser", "serum")},
+                         "actives": ("benzoyl peroxide",),
+                         "types": ("cleanser", "moisturiser", "serum", "spot treatment")},
     "hyaluronic acid": {"asked": (r"hyaluronic(?: acid)?", r"sodium hyaluronate"),
                         "named": (r"hyaluronic", r"hyaluronate", r"ha"), "actives": ("hyaluronic acid",),
                         "types": _SOOTHING_TYPES},
@@ -1060,6 +1072,12 @@ INGREDIENT_NOT_ASKED_AFTER = (r"[- ]?free", r" alternatives?", r" dupes? for")
 INGREDIENT_NOT_CONFIRMED = "we couldn't confirm it contains {ingredient}"
 INGREDIENT_NOT_LISTED = "its maker doesn't list {ingredient} among its actives"
 INGREDIENT_BRAND_UNCHECKABLE = "a whole brand can't be checked for {ingredient}"
+# Why a product with the ingredient is left out of an ingredient-led request for its form (Noemi's decision 1 of 13 Oct
+# 2026; the pipeline's left_out_by_form). Wording decided by Claude.
+INGREDIENT_RINSE_OFF = "a rinse-off {noun}: ask for a {ingredient} {noun} to see these"
+INGREDIENT_FORM_UNKNOWN = "we couldn't confirm it's a leave-on form"
+INGREDIENT_NOT_FORM_ASKED = "not the form you asked for ({forms})"
+INGREDIENT_FORM_NOT_CONFIRMED = "we couldn't confirm it's the form you asked for ({forms})"
 # Choosing threads for an ingredient-led request (engine/sources.py, LocalSource): its products may be of any type, so a
 # thread's title rarely names them. Each comment that names the ingredient (or a related one) adds this many points to
 # the thread's grade (module 2's post_score), up to INGREDIENT_TALK_MAX: a thread where 6 comments name salicylic acid
@@ -1067,8 +1085,9 @@ INGREDIENT_BRAND_UNCHECKABLE = "a whole brand can't be checked for {ingredient}"
 INGREDIENT_TALK_POINTS = 0.5
 INGREDIENT_TALK_MAX = 3.0
 # The forms a formula may give (its maker's own description of what the product is), when its name doesn't say.
-INGREDIENT_FORMS = ("serum", "leave-on liquid", "toner", "pads", "essence", "cleanser", "rinse-off powder", "peel",
-                    "mask", "cream", "lotion", "gel", "oil", "balm", "sunscreen", "eye cream", "spot treatment")
+INGREDIENT_FORMS = ("serum", "leave-on liquid", "toner", "pads", "essence", "cream", "lotion", "gel", "oil", "balm",
+                    "sunscreen", "eye cream", "spot treatment", "patch", "sleeping mask",
+                    "cleanser", "rinse-off powder", "peel", "mask", "scrub")
 # The form shown with each product of an ingredient-led answer ("Form: pads"), from the first that gives one:
 # 1. its product-facts entry's formula "form" (INGREDIENT_FORMS);
 # 2. its own name, by these words (regular expressions on whole words of the lowercased name, in this order, so
@@ -1077,9 +1096,13 @@ INGREDIENT_FORMS = ("serum", "leave-on liquid", "toner", "pads", "essence", "cle
 INGREDIENT_FORM_WORDS: tuple[tuple[str, str], ...] = (
     (r"pads?", "pads"),
     (r"peel(?:ing)?", "peel"),
+    (r"(?:sleeping|overnight) (?:masks?|masques?|packs?)", "sleeping mask"),
+    (r"(?:pimple|acne|spot|zit|blemish|hydrocolloid) (?:patch(?:es)?|stickers?|dots?)|patch(?:es)?", "patch"),
+    (r"(?<!dark )(?<!age )(?<!sun )spot[- ](?:treatments?|gels?|creams?)", "spot treatment"),
     (r"toners?", "toner"),
     (r"essences?", "essence"),
     (r"serums?|ampoules?|boosters?", "serum"),
+    (r"scrubs?|polish", "scrub"),
     (r"cleansers?|cleansing|face ?wash|wash|foam|gleanser", "cleanser"),
     (r"liquids?|solutions?", "leave-on liquid"),
     (r"masks?|masques?", "mask"),
@@ -1090,10 +1113,21 @@ INGREDIENT_FORM_WORDS: tuple[tuple[str, str], ...] = (
     (r"gels?", "gel"),
     (r"oils?", "oil"),
     (r"balms?", "balm"),
-    (r"powders?", "powder"),
+    (r"powders?", "rinse-off powder"),
 )
+# Leave-on and rinse-off forms (Noemi's decision 1 of 13 Oct 2026): an ingredient-led request ("salicylic acid for
+# acne") shows leave-on forms only; a rinse-off form counts only when the request names it ("salicylic acid wash", or
+# a type: "salicylic acid cleanser"). Every form a name, a type or a formula can give is one or the other, except an
+# exfoliant whose name and facts don't say (a leave-on liquid or a rinse-off scrub): its form isn't known, so it is
+# left out of such a request, never guessed. RINSE_OFF_FORMS gives the word a request names each by ("a salicylic acid
+# powder"), for the reason a product is left out with.
+LEAVE_ON_FORMS = ("serum", "leave-on liquid", "toner", "pads", "essence", "cream", "moisturiser", "lotion", "gel",
+                  "oil", "balm", "sunscreen", "eye cream", "spot treatment", "patch", "sleeping mask",
+                  "retinoid treatment", "lip balm")
+RINSE_OFF_FORMS: dict[str, str] = {"cleanser": "cleanser", "rinse-off powder": "powder", "peel": "peel",
+                                   "mask": "mask", "scrub": "scrub"}
 PRODUCT_TYPE_FORMS: dict[str, str] = {
     "exfoliant": "exfoliant", "cleanser": "cleanser", "moisturiser": "moisturiser", "sunscreen": "sunscreen",
     "retinoid": "retinoid treatment", "serum": "serum", "toner": "toner", "eye cream": "eye cream",
-    "lip balm": "lip balm",
+    "lip balm": "lip balm", "spot treatment": "spot treatment",
 }

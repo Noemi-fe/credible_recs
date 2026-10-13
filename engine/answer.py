@@ -122,7 +122,7 @@ from engine.config import (
 from engine.extract import _as_written, _in_quoted_block, _own_words_in_quote_format
 from engine.group_kinds import PURPOSE_WORDS, _kind_words, kind_parts
 from engine.ingredients import (
-    TYPE_OWN_INGREDIENT, find_ingredients, ingredient_type_name, ingredients_of_type, talk_words,
+    TYPE_OWN_INGREDIENT, find_ingredients, form_kind, form_of, ingredient_type_name, ingredients_of_type, talk_words,
 )
 from engine.models import Thread
 from engine.needs import LASTING, Need, needs_met
@@ -245,8 +245,13 @@ SUMMARY_NOTE = "Our summary of what its credible voices say, not a quote."
 # and no type, and of one naming both; the note under the title; the label of each product's form.
 TITLE_INGREDIENT_LED = "Top picks: {ingredient} products"
 TITLE_WITH_INGREDIENT = "Top picks: {product_type} with {ingredient}"
-INGREDIENT_NOTE_LED = ("Every product here contains {ingredient}: its maker's list of actives or its own name says so. "
-                       "They come in different forms, each shown with it.")
+# Since Noemi's decision 1 of 13 Oct 2026 an ingredient-led answer shows leave-on forms only, or the forms the request
+# names (INGREDIENT_NOTE_FORMS), and its note says how to see a cleanser.
+INGREDIENT_NOTE_LED = ("Every product here contains {ingredient}: its maker's list of actives or its own name says "
+                       "so. All are leave-on forms, each shown with it; for a cleanser or another rinse-off form, ask "
+                       "for it by name (\"{ingredient} cleanser\").")
+INGREDIENT_NOTE_FORMS = ("Every product here contains {ingredient}: its maker's list of actives or its own name says "
+                         "so, and its form is the one you asked for ({forms}).")
 INGREDIENT_NOTE = ("Every {product_type} here contains {ingredient}: its maker's list of actives or its own name says "
                    "so.")
 FORM_LABEL = "Form"
@@ -419,7 +424,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
                  more_downsides: Mapping[str, list[ScoredMention]] | None = None,
                  unsuited_kinds: Collection[str] = (), needs: tuple[Need, ...] = (), request: str = "",
                  summaries: Mapping[str, Summary] | None = None, worth_left_out: Collection[str] = (),
-                 ingredient: str | None = None, forms: Mapping[str, str | None] | None = None) -> Answer:
+                 ingredient: str | None = None, forms: Mapping[str, str | None] | None = None,
+                 forms_asked: Collection[str] = ()) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -439,7 +445,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     the one-line summaries written ahead of time: each is shown on its pick or item only when every check passes.
     `worth_left_out` are the keys of products the pipeline leaves out of "Also worth a look" (its brand rules).
     `ingredient` names the active ingredients the request asks for (13 Oct 2026; every product here contains them, the
-    pipeline made sure), and `forms` is each product's form ({product key: form}) in an ingredient-led answer.
+    pipeline made sure), and `forms` is each product's form ({product key: form}) in an ingredient-led answer;
+    `forms_asked` the forms an ingredient-led request names ("salicylic acid wash": cleanser), for its note.
     """
     check = _QuoteCheck(bodies)
     forms = forms or {}
@@ -472,7 +479,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     for item in skip:
         if item is not None:
             item.form = forms.get(item.product_key)
-    look_for = _look_for(ranking, check, product_type, unsuited_kinds, request, asks, [pick.name for pick in picks])
+    look_for = _look_for(ranking, check, product_type, unsuited_kinds, request, asks, [pick.name for pick in picks],
+                         forms_asked)
     care_note = _care_note([care.get(pick.product_key) for pick in picks], picks, check)
     return Answer(
         category=ranking.category,
@@ -487,7 +495,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
         worth_a_look=worth,
         worth_note=_worth_note(len(picks)) if worth else None,
         ingredient=ingredient,
-        ingredient_note=_ingredient_note(product_type, ingredient),
+        ingredient_note=_ingredient_note(product_type, ingredient, forms_asked),
         title=answer_title(product_type, ingredient),
     )
 
@@ -502,10 +510,13 @@ def answer_title(product_type: str | None, ingredient: str | None = None) -> str
     return TITLE.format(product_type=product_type) if product_type else TITLE_ANY
 
 
-def _ingredient_note(product_type: str | None, ingredient: str | None) -> str | None:
+def _ingredient_note(product_type: str | None, ingredient: str | None,
+                     forms_asked: Collection[str] = ()) -> str | None:
     """The note under the title of an answer to a request naming an active ingredient (13 Oct 2026), or None."""
     if not ingredient:
         return None
+    if forms_asked:
+        return INGREDIENT_NOTE_FORMS.format(ingredient=ingredient, forms=" or ".join(forms_asked))
     if ingredients_of_type(product_type) or not product_type:
         return INGREDIENT_NOTE_LED.format(ingredient=ingredient)
     return INGREDIENT_NOTE.format(product_type=product_type, ingredient=ingredient)
@@ -1190,7 +1201,7 @@ def _skip_item(product: ProductScore, check: _QuoteCheck) -> SkipItem | None:
 
 def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | None = None,
               unsuited_kinds: Collection[str] = (), request: str = "", asks: tuple[str, ...] = (),
-              picks: Collection[str] = ()) -> list[LookFor]:
+              picks: Collection[str] = (), forms_asked: Collection[str] = ()) -> list[LookFor]:
     """Up to LOOK_FOR_NOTES kinds, strongest credible advice first, each with its strongest verified note. In skincare,
     a kind whose advice is about another type of product gives none (_another_types_advice). A kind in
     `unsuited_kinds` (its facts clash hard with the request: the pipeline's _unsuited_kinds) gives no "Look for".
@@ -1201,7 +1212,9 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
     credible note, or, with none, joins that line ("Look for: Cast iron or Carbon steel").
 
     Since 13 Oct 2026, when the request names active ingredients (engine/ingredients.py), a kind is advice only when
-    its own name names one of them or a related one ("leave-on BHA" for salicylic acid).
+    its own name names one of them or a related one ("leave-on BHA" for salicylic acid); in an ingredient-led answer,
+    only when the form its name says (if any) is one the answer may show (Noemi's decision 1: leave-on forms, or
+    `forms_asked`, the forms the request names): no "Look for: BHA cleanser" above leave-on products.
 
     Since 12 Oct 2026 (Noemi's note: "Look for: retinol" in a retinol answer), the product asked for itself is no advice
     (_the_product_asked_for: `request` is the request as typed), and neither is another type of product named in the
@@ -1222,6 +1235,8 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
         if kind.support == 0 or (kind.support > 0 and kind.key in unsuited_kinds):
             continue
         if asked and not mentions_product(kind.name, ingredient_type_name(asked)):
+            continue
+        if ingredients_of_type(product_type) and not _form_shown(kind.name, forms_asked):
             continue
         stance, advice = ("recommend", LOOK_FOR) if kind.support > 0 else ("warn", AVOID)
         notes = _most_credible_first([n for n in ranking.kind_notes
@@ -1259,6 +1274,15 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
             items.append(LookFor(kind.name, advice, quote[0]))
             item_notes.append(notes)
     return items
+
+
+def _form_shown(kind: str, forms_asked: Collection[str]) -> bool:
+    """Whether the form a kind's own name says (engine.ingredients.form_of on its words alone) is one an ingredient-led
+    answer may show: one the request names, or, when it names none, a leave-on one; a kind naming no form is fine."""
+    form = form_of(kind, None)
+    if form is None:
+        return True
+    return form in forms_asked if forms_asked else form_kind(form) == "leave-on"
 
 
 def _another_types_advice(kind: str, notes: list[KindNote], category: str, product_type: str | None) -> bool:

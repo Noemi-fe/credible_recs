@@ -1,6 +1,6 @@
 {
   "approved": false,
-  "approved_note": "Drafted by Claude on 13 Oct 2026 for the active-ingredient change (engine/ingredients.py); made-up wording; not yet checked by Noemi. 'expected' is module 1's routing; every shown product is checked for evidence of the ingredients asked for (engine/ingredient_eval.py).",
+  "approved_note": "Drafted by Claude on 13 Oct 2026 for the active-ingredient change (engine/ingredients.py); made-up wording; not yet checked by Noemi. 'expected' is module 1's routing (and the forms an ingredient-led request names, [] when not given); every shown product is checked for evidence of the ingredients asked for and, for an ingredient-led request, for a leave-on form or the form asked for (engine/ingredient_eval.py). i10-i12 added the same day for Noemi's decisions on forms and spot treatments.",
   "cases": [
     {"id": "i01", "text": "salicylic acid for acne",
      "expected": {"product_type": "salicylic acid product", "ingredients": ["salicylic acid"], "ingredient_led": true},
@@ -28,6 +28,16 @@
      "why": "The example of a type named with the ingredient."},
     {"id": "i09", "text": "moisturiser without niacinamide",
      "expected": {"product_type": "moisturiser", "ingredients": [], "ingredient_led": false},
-     "why": "An ingredient to avoid is never required."}
+     "why": "An ingredient to avoid is never required."},
+    {"id": "i10", "text": "salicylic acid spot treatment",
+     "expected": {"product_type": "spot treatment", "ingredients": ["salicylic acid"], "ingredient_led": false},
+     "why": "Spot treatments are a type since Noemi's decision 2 of 13 Oct 2026; with an ingredient, the type stays."},
+    {"id": "i11", "text": "pimple patches for acne",
+     "expected": {"product_type": "spot treatment", "ingredients": [], "ingredient_led": false},
+     "why": "Pimple patches are spot treatments (decision 2); no ingredient asked for."},
+    {"id": "i12", "text": "salicylic acid wash",
+     "expected": {"product_type": "salicylic acid product", "ingredients": ["salicylic acid"], "ingredient_led": true,
+                  "forms": ["cleanser"]},
+     "why": "A rinse-off form named next to the ingredient, not one of module 1's types: shown, and only it (decision 1)."}
   ]
 }

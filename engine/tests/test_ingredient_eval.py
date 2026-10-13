@@ -24,14 +24,19 @@ def test_each_case_reports_its_routing_picks_forms_and_evidence(tmp_path):
     results = score_cases(path, acne_library(tmp_path), profiles=None, live_checker=None, product_facts=[])
     first, second = results
     assert first.routing_ok and not second.routing_ok  # the second case expects the wrong type on purpose
-    assert [(s.where, s.name, s.form, s.evidence) for s in first.shown] == [
-        ("pick", "Acme 2% Salicylic Acid Serum", "serum", "name"),
-        ("pick", "Bloom Salicylic Cleanser", "cleanser", "name"),
-        ("worth", "Iris Salicylic Toner", "toner", "name"),
-        ("skip", "Echo Salicylic Peel", "peel", "name")]
-    assert first.evidence_holds == (4, 4)
+    # Changed on purpose 13 Oct 2026 (Noemi's decisions 1 and 2): an ingredient-led answer shows leave-on forms only,
+    # spot treatments among them, and the evaluation checks each shown product's form too.
+    assert [(s.where, s.name, s.form, s.evidence, s.form_ok) for s in first.shown] == [
+        ("pick", "Acme 2% Salicylic Acid Serum", "serum", "name", True),
+        ("pick", "Kiri Salicylic Pimple Patch", "patch", "name", True),
+        ("worth", "Iris Salicylic Toner", "toner", "name", True),
+        ("skip", "Opal Salicylic Gel", "gel", "name", True)]
+    assert first.evidence_holds == (4, 4) and first.form_holds == (4, 4)
+    assert first.left_out_by_form == 3 and first.rinse_off == 2
+    assert [s.form_ok for s in second.shown] == [None]  # a typed request: its type says the form
     lines = ingredient_lines(results)
-    assert lines[0] == "2 requests: routing 1/2 as expected; shown products with evidence of the ingredient 5/5"
+    assert lines[0] == ("2 requests: routing 1/2 as expected; shown products with evidence of the ingredient 5/5; "
+                        "ingredient-led products in a leave-on form or the form asked for 4/4")
     assert any("i02" in line and "expected serum" in line for line in lines)
 
 
@@ -43,5 +48,6 @@ def test_the_committed_cases_load_and_route_as_expected():
     for case in cases:
         query = parse_query(case["text"])
         expected = case["expected"]
-        assert (query.product_type, query.constraints.ingredients, query.ingredient_led) == (
-            expected["product_type"], expected["ingredients"], expected["ingredient_led"]), case["id"]
+        assert (query.product_type, query.constraints.ingredients, query.ingredient_led, query.constraints.forms) == (
+            expected["product_type"], expected["ingredients"], expected["ingredient_led"],
+            expected.get("forms", [])), case["id"]

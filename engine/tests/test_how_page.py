@@ -360,3 +360,5 @@ def test_the_ingredient_requirement_is_explained(tmp_path, monkeypatch):
     words = text_of(get_how(tmp_path, monkeypatch))
     assert "Without the ingredient you asked for." in words
     assert "its maker's list of actives" in words and f"“{answer.FORM_LABEL}: pads”" in words
+    # Noemi's decision 1 of 13 Oct 2026: leave-on forms only, unless you name another.
+    assert "leave-on" in words and "rinse-off" in words

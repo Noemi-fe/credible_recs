@@ -1,4 +1,4 @@
-Version: extract-v9
+Version: extract-v10
 
 # Finding product mentions in one Reddit thread
 
@@ -69,15 +69,16 @@ alone for the thread's kind of product ("my Lodge is 20 years old" in a cast iro
 
 Use one of these names, written exactly as here, when it fits:
 - skincare: "exfoliant", "cleanser", "moisturiser", "sunscreen", "retinoid", "serum", "toner", "eye cream",
-  "lip balm"
+  "lip balm", "spot treatment"
 - kitchen: "stovetop kettle", "electric kettle", "chef knife", "cast iron skillet", "frying pan", "saucepan",
   "dutch oven", "espresso machine", "coffee grinder", "teapot"
 - haircare: "shampoo", "dry shampoo", "conditioner", "leave-in conditioner", "hair mask", "hair oil"
 
 Otherwise write a short lowercase type in plain words ("face mask", "toaster", "makeup remover", "air fryer", "curl
 cream"). The names cover their usual kinds: a gyuto or santoku is a "chef knife", a non-stick or carbon steel pan a
-"frying pan", an essence a "toner", a retinol or tretinoin a "retinoid", a clarifying, anti-dandruff or sulfate-free
-shampoo or a co-wash a "shampoo", a deep conditioner a "hair mask", a hair serum a "hair oil". Sun protection wins over the form: anything with SPF or
+"frying pan", an essence a "toner", a retinol or tretinoin a "retinoid", a spot gel or cream and a pimple or acne
+patch (hydrocolloid ones too) a "spot treatment" (a plain hydrocolloid bandage or plaster isn't one: "bandage"), a
+clarifying, anti-dandruff or sulfate-free shampoo or a co-wash a "shampoo", a deep conditioner a "hair mask", a hair serum a "hair oil". Sun protection wins over the form: anything with SPF or
 "UV" in its name, or sold to protect from the sun ("Biore UV Aqua Rich Watery Essence"), is a "sunscreen".
 
 When you're not sure (Noemi, 9 Oct 2026): assume a product is of the thread's type unless the comment or its name
@@ -206,7 +207,7 @@ comment (there's no one left to credit), and agreement with a comment other than
 ```json
 {
   "thread_id": "<the thread's id>",
-  "instructions_version": "extract-v9",
+  "instructions_version": "extract-v10",
   "extracted_at": "<now, ISO 8601 in UTC, e.g. 2026-10-08T10:00:00Z>",
   "extractor": "claude-code",
   "mentions": [

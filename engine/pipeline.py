@@ -70,7 +70,10 @@ Every step is a module of its own; this file only passes each one's output to th
   ingredient-led request (one naming no product type) reads the skincare threads that name the ingredient, whatever
   their type, and keeps the products of every type that can carry it (engine.ingredients.wanted_types): a serum, a
   toner and a cleanser compete, each shown with its form. Each product's own type is the one its mentions give, and it
-  is what its price and facts are looked up by.
+  is what its price and facts are looked up by. Since Noemi's decision 1 of 13 Oct 2026, such a request shows leave-on
+  forms only (a serum, a liquid, a toner, pads, a cream, a spot treatment...), or the forms it names ("salicylic acid
+  wash"): a rinse-off product, or one whose form isn't known, is left out with the reason and counted
+  (left_out_by_form); a cleanser shows when the request names it ("salicylic acid cleanser", a type of its own).
 The lists of products left out are kept on the result, so nothing is dropped silently; so are the "what to
 look for" notes that name no kind (notes_without_kind, engine.group_kinds step 5), which the ranking and the answer
 can't use. threads_quoted names the threads the answer's quotes come from: the ones whose live checks matter most.
@@ -143,8 +146,12 @@ from engine.config import (
     BRAND_PICK_TITLE_SHARE,
     BUDGET_DEFAULT_CURRENCY,
     INGREDIENT_BRAND_UNCHECKABLE,
+    INGREDIENT_FORM_NOT_CONFIRMED,
+    INGREDIENT_FORM_UNKNOWN,
     INGREDIENT_NOT_CONFIRMED,
+    INGREDIENT_NOT_FORM_ASKED,
     INGREDIENT_NOT_LISTED,
+    INGREDIENT_RINSE_OFF,
     LIVE_CHECK_PARALLEL,
     LIVE_CHECK_REQUIRED,
     LIVE_CHECK_SHOWN_DAYS,
@@ -169,7 +176,7 @@ from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
 from engine.group_products import ProductGroup, ProductMention, brand_pick_name, group_of, group_products, plural, uk_name
 from engine.gold import DEFAULT_GOLD_DIR
 from engine.ingredients import evidence as ingredient_evidence
-from engine.ingredients import form_of, ingredient_type_name, own_name, wanted_types
+from engine.ingredients import form_kind, form_of, ingredient_type_name, own_name, rinse_off_word, wanted_types
 from engine.ingredients import shown as shown_ingredients
 from engine.library import DEFAULT_LIBRARY_DIR, checked_live_within
 from engine.library_cache import loaded as loaded_library
@@ -203,6 +210,17 @@ from engine.query import PRODUCT_TYPES, ParsedQuery, parse_query
 from engine.rank import KindNote, RankingResult, ScoredMention, rank_products
 from engine.sources import LocalSource, mentions_product
 from engine.summaries import SUMMARIES_FILE, Summary, load_summaries
+
+
+@dataclass(frozen=True)
+class LeftOutByForm:
+    """A product with the ingredient asked for, left out of an ingredient-led answer for its form (Noemi's decision 1 of
+    13 Oct 2026): rinse-off, not known to be leave-on, or not the form the request names."""
+
+    name: str  # as the answer would have shown it
+    reason: str  # in words for the shopper: "a rinse-off cleanser: ask for a salicylic acid cleanser to see these"
+    form: str | None  # its form (engine.ingredients.form_of), or None when not known
+    rinse_off: bool  # True when its form is rinse-off (the page's footnote says how to see those)
 
 
 @dataclass(frozen=True)
@@ -245,6 +263,9 @@ class PipelineResult:
     # Products left out of a request naming an active ingredient (13 Oct 2026): no evidence they contain it, a formula
     # without it, or a brand pick (a whole brand can't be checked); name and reason.
     left_out_no_ingredient: list[NotSuited] = field(default_factory=list)
+    # Products with the ingredient left out of an ingredient-led answer for their form (Noemi's decision 1, 13 Oct
+    # 2026): rinse-off, form not known, or not the form the request names.
+    left_out_by_form: list[LeftOutByForm] = field(default_factory=list)
     # Brand picks that stepped aside for a specific product of their brand that also qualifies (10 Oct 2026).
     folded_brand_picks: list[FoldedBrandPick] = field(default_factory=list)
     # Brands or lines on the skip list that a shown pick belongs to: not listed as skips; their warnings are shown under
@@ -994,6 +1015,13 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
             result.left_out_no_ingredient.append(NotSuited(facts.product if facts is not None else group.name,
                                                            missing_ingredient))
             continue
+        if query.ingredient_led:
+            shown_name = facts.product if facts is not None else group.name
+            form = form_of(shown_name, own_type, _formula_form(facts))
+            unsuited = _form_left_out(shown_name, form, query)
+            if unsuited is not None:
+                result.left_out_by_form.append(unsuited)
+                continue
         entry = (facts.product, facts.category) if facts is not None else None
         if entry in by_entry:
             first = kept[by_entry[entry]]
@@ -1034,20 +1062,47 @@ def _without_ingredient(group: ProductGroup, facts: ProductFacts | None, ingredi
     return None
 
 
+def _formula_form(facts: ProductFacts | None) -> str | None:
+    """The form a facts entry's formula gives (from the maker's page), or None."""
+    return facts.formula.form if facts is not None and facts.formula is not None else None
+
+
+def _form_left_out(name: str, form: str | None, query: ParsedQuery) -> LeftOutByForm | None:
+    """Why a product with the ingredient is left out of an ingredient-led answer for its form, or None when its form
+    suits it (Noemi's decision 1 of 13 Oct 2026): the request names forms ("salicylic acid wash") and it isn't one of
+    them; or it names none and the product is rinse-off ("a rinse-off cleanser: ask for a salicylic acid cleanser to see
+    these"), or its form isn't known to be leave-on (an exfoliant whose name and facts don't say: never a guess)."""
+    asked = query.constraints.forms
+    kind = form_kind(form)
+    if asked:
+        if form in asked:
+            return None
+        listed = " or ".join(asked)
+        reason = (INGREDIENT_FORM_NOT_CONFIRMED if kind is None else INGREDIENT_NOT_FORM_ASKED).format(forms=listed)
+    elif kind == "leave-on":
+        return None
+    elif kind == "rinse-off":
+        reason = INGREDIENT_RINSE_OFF.format(noun=rinse_off_word(form),
+                                             ingredient=shown_ingredients(query.constraints.ingredients))
+    else:
+        reason = INGREDIENT_FORM_UNKNOWN
+    return LeftOutByForm(name, reason, form if kind is not None else None, kind == "rinse-off")
+
+
 def _ingredient_wording(query: ParsedQuery, groups: list[ProductGroup], types: Mapping[str, str | None],
                         found_facts: Mapping[str, ProductFacts]) -> dict:
     """What the answer says about a request's active ingredients (13 Oct 2026), as write_answer's keywords: the
-    ingredients' names, and for an ingredient-led request each product's form ({product key: form},
-    engine.ingredients.form_of), from its entry's formula, its name or its own type. {} for a request naming none."""
+    ingredients' names, the forms an ingredient-led request names, and for an ingredient-led request each product's
+    form ({product key: form}, engine.ingredients.form_of), from its entry's formula, its name or its own type. {} for
+    a request naming none."""
     if not query.constraints.ingredients:
         return {}
     forms = {}
     if query.ingredient_led:
         for group in groups:
-            facts = found_facts.get(group.key)
-            form = facts.formula.form if facts is not None and facts.formula is not None else None
-            forms[group.key] = form_of(group.name, types.get(group.key), form)
-    return {"ingredient": shown_ingredients(query.constraints.ingredients), "forms": forms}
+            forms[group.key] = form_of(group.name, types.get(group.key), _formula_form(found_facts.get(group.key)))
+    return {"ingredient": shown_ingredients(query.constraints.ingredients), "forms": forms,
+            "forms_asked": list(query.constraints.forms)}
 
 
 def _one_per_name(groups: list[ProductGroup]) -> list[ProductGroup]:

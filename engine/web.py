@@ -45,7 +45,9 @@ The JSON for /api/answer (200):
                 "question": "..." | null,     the one clarifying question, when status is "clarify"
                 "message": "..." | null,      the polite no, when status is "out_of_scope"
                 "ingredients": [...],         the active ingredients every product shown contains (13 Oct 2026)
-                "ingredient_led": bool},      true when the request names ingredients and no product type
+                "ingredient_led": bool,       true when the request names ingredients and no product type
+                "forms": [...]},              the forms an ingredient-led request names ("salicylic acid wash":
+                                              ["cleanser"]); [] for any other request (Noemi, 13 Oct 2026)
       "answer": null when status isn't "ok", else engine.answer.answer_to_dict(...):
                 {"category", "product_type",
                  "picks": [{"rank", "product_key", "name", "reason", "support",
@@ -123,8 +125,12 @@ The JSON for /api/answer (200):
                    "over_budget": n,               products whose known price is over the request's budget
                    "unavailable": n,               products the price list says are no longer sold (9 Oct 2026),
                    "not_suited": n,                products whose checked facts clash with the request (9 Oct 2026),
-                   "no_ingredient": n},            and products without evidence they contain the active ingredients
-                                                   asked for, or whose maker's actives don't (13 Oct 2026)
+                   "no_ingredient": n,             products without evidence they contain the active ingredients
+                                                   asked for, or whose maker's actives don't (13 Oct 2026),
+                   "by_form": n,                   products with them left out of an ingredient-led answer for their
+                                                   form: rinse-off, not known to be leave-on, or not the form asked
+                                                   for (Noemi's decision 1, 13 Oct 2026),
+                   "rinse_off": n},                and how many of those are rinse-off
       "timing": {"total_s": s, "reddit_s": s,      diagnostic, never shown (13 Oct 2026): how long the answer took to
                  "checks": n,                      work out, how long it waited on live checks, how many it made,
                  "put_off": n},                    and the comments put off rather than wait (what they back is left out)
@@ -429,7 +435,8 @@ def answer_json(result: PipelineResult) -> dict:
     return {
         "query": {"status": query.status, "category": query.category, "product_type": query.product_type,
                   "question": query.question, "message": query.message,
-                  "ingredients": list(query.constraints.ingredients), "ingredient_led": query.ingredient_led},
+                  "ingredients": list(query.constraints.ingredients), "ingredient_led": query.ingredient_led,
+                  "forms": list(query.constraints.forms)},
         "answer": answer_to_dict(result.answer) if result.answer is not None else None,
         "threads_used": list(result.threads_used),
         # Names, a few of them for the page's footnote to give as examples (Noemi asked what its numbers count, 12 Oct
@@ -441,7 +448,9 @@ def answer_json(result: PipelineResult) -> dict:
                      "over_budget": len(result.left_out_over_budget),
                      "unavailable": len(result.left_out_unavailable),
                      "not_suited": len(result.left_out_not_suited),
-                     "no_ingredient": len(result.left_out_no_ingredient)},
+                     "no_ingredient": len(result.left_out_no_ingredient),
+                     "by_form": len(result.left_out_by_form),
+                     "rinse_off": sum(item.rinse_off for item in result.left_out_by_form)},
         # How much the answer read (Noemi, 12 Oct 2026): the threads used, the extracted threads saved about the product,
         # and the comments the AI read in the threads used; and since 13 Oct 2026 (Noemi's testing: the page's line
         # about it confused her) whether the first threads gave too few picks, so more were read.

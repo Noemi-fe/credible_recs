@@ -39,12 +39,13 @@ from dataclasses import dataclass
 from functools import cache
 
 from engine.config import (
-    INGREDIENT_ACTIVES,
     INGREDIENT_FORM_WORDS,
     INGREDIENT_NOT_ASKED_AFTER,
     INGREDIENT_NOT_ASKED_BEFORE,
     INGREDIENTS,
+    LEAVE_ON_FORMS,
     PRODUCT_TYPE_FORMS,
+    RINSE_OFF_FORMS,
 )
 from engine.text import one_edit_apart
 
@@ -213,14 +214,69 @@ def form_of(name: str, product_type: str | None, facts_form: str | None = None) 
         return facts_form
     lowered = _plain(name)
     for pattern, form in INGREDIENT_FORM_WORDS:
-        if re.search(rf"(?<![a-z0-9]){pattern}(?![a-z0-9])", lowered):
+        if _form_word(pattern).search(lowered):
             return form
     return PRODUCT_TYPE_FORMS.get(product_type or "")
 
 
-def unknown_actives(actives: Iterable[str]) -> list[str]:
-    """The actives not in config.INGREDIENT_ACTIVES, for the facts list's checks."""
-    return [a for a in actives if a not in INGREDIENT_ACTIVES]
+def form_kind(form: str | None) -> str | None:
+    """Whether a form is "leave-on" (a serum, a toner, pads, a cream, a spot treatment...) or "rinse-off" (a cleanser,
+    a powder, a peel, a mask, a scrub), by config.LEAVE_ON_FORMS and RINSE_OFF_FORMS (Noemi's decision 1 of 13 Oct
+    2026); None when it isn't known: an "exfoliant" whose name and facts don't say may be either."""
+    if form in LEAVE_ON_FORMS:
+        return "leave-on"
+    if form in RINSE_OFF_FORMS:
+        return "rinse-off"
+    return None
+
+
+def rinse_off_word(form: str) -> str:
+    """The word a request names a rinse-off form by ("powder" for a rinse-off powder), for the reason a product of it is
+    left out ("ask for a salicylic acid powder to see these")."""
+    return RINSE_OFF_FORMS.get(form, form)
+
+
+# Words that may come between an ingredient and the form a request names ("salicylic acid 2% liquid", "bha
+# exfoliating pads"): numbers and percentages, and one word describing the form.
+_DESCRIBING = re.compile(r"[a-z]+ing|leave-on|daily|gentle|acne|spot|pimple|clarifying")
+
+
+def forms_named(text: str, found: Iterable[Found]) -> list[str]:
+    """The forms a request names right next to one of its ingredients, in the order named (Noemi's decision 1 of 13 Oct
+    2026): after it ("salicylic acid wash", "salicylic acid 2% liquid", "bha exfoliating pads") or before it with
+    "with" ("pads with salicylic acid"). A form word elsewhere doesn't count: in "salicylic acid that won't make my
+    skin peel" no peel is asked for."""
+    lowered = _plain(text)
+    named: list[str] = []
+    for f in found:
+        after = re.findall(r"[a-z0-9%.'-]+|[^\sa-z0-9%.'-]", lowered[f.end:])
+        words = [w for w in after if not re.fullmatch(r"[\d.,]+%?|%", w)]  # "2% liquid" is a liquid
+        form = _form_at_start(words)
+        if form is None and words and _DESCRIBING.fullmatch(words[0]):
+            form = _form_at_start(words[1:])  # "exfoliating pads"
+        before = re.search(r"([a-z'-]+) (?:with|containing|that (?:has|have|contains?)) $", lowered[:f.start])
+        if form is None and before:
+            form = _form_at_start([before.group(1)])  # "pads with salicylic acid"
+        if form is not None and form not in named:
+            named.append(form)
+    return named
+
+
+def _form_at_start(words: list[str]) -> str | None:
+    """The form the first one or two words name, as a whole (config.INGREDIENT_FORM_WORDS), or None."""
+    for size in (2, 1):
+        phrase = " ".join(words[:size])
+        if len(words) >= size:
+            for pattern, form in INGREDIENT_FORM_WORDS:
+                if re.fullmatch(rf"(?:{pattern})", phrase):
+                    return form
+    return None
+
+
+@cache
+def _form_word(pattern: str) -> re.Pattern:
+    """A form's words found as whole words in a name."""
+    return re.compile(rf"(?<![a-z0-9])(?:{pattern})(?![a-z0-9])")
 
 
 # --- Helpers ---
