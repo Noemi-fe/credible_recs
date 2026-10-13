@@ -141,7 +141,9 @@ A library refresh needs a restart to show.
 Getting ready (latency, 12 Oct 2026): as it starts, the server reads the library, the price and facts lists, loads
 the open model, and works out (and throws away) one answer per product type without live checks, so what answers keep
 between requests is ready (warm_up). All in the background: the page is there at once, and the first visitor doesn't
-wait for any of it.
+wait for any of it. On the live site (CREDIBLE_RECS_LIVE_CACHE_BUCKET set) it first reads the daily pre-check's checks
+from the bucket's one bundle into its folder, and again at most once an hour, only when the bundle has changed
+(start_reloading_checks; 13 Oct 2026). It never writes to the bucket: its own checks stay in its folder.
 
 Command line:
     python -m engine.web [--port N] [--library DIR]    serves the page at http://127.0.0.1:8765/ (Ctrl+C stops it)
@@ -174,6 +176,7 @@ from engine.config import (BRAND_PICK_MODEL, FEEDBACK_MAX_BODY_BYTES, FEEDBACK_M
                            RATE_LIMIT_ANSWERS, RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS, WEB_MAX_REQUEST_CHARS,
                            WEB_PORT)
 from engine.library import DEFAULT_LIBRARY_DIR
+from engine.live_check import BUNDLE_RELOAD_SECONDS
 from engine.metrics import METRICS_FILE
 from engine.parse_reddit import REPO_ROOT
 from engine.pipeline import PipelineResult, answer_request
@@ -823,7 +826,8 @@ def warm_up(library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
     """Everything answers keep in memory, made ready before the first request needs it (latency, 12 Oct 2026): the
     library read and checked (engine.library_cache), the price and facts lists, and the open model loaded (a few
     seconds each). A problem is reported in the server's window and never stops it: the answer that needs the missing
-    piece reports it as before."""
+    piece reports it as before. On the live site, first of all, the daily pre-check's checks (engine/precheck.py), read
+    from the bucket's bundle into this server's folder (engine.live_check.LiveChecker.load_bundle; 13 Oct 2026)."""
     from engine.library_cache import loaded
     from engine.prices import load_prices
     from engine.product_facts import load_product_facts
@@ -840,6 +844,8 @@ def warm_up(library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
     started = time.perf_counter()
     threads = Path(library_dir) / "threads"
     steps = [("the open model", load_model), ("the price list", load_prices), ("the facts list", load_product_facts)]
+    if live is not None and getattr(live, "bucket", None) is not None:  # first, and quick: the first answers find them
+        steps.insert(0, ("the pre-check's checks", live.load_bundle))
     if threads.is_dir():
         steps.insert(0, ("the library", lambda: loaded(threads)))
         steps += [(f"the answers' memory for {name}", lambda name=name: warm_answer(name, library_dir))
@@ -852,6 +858,31 @@ def warm_up(library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
                   flush=True)
     ready.set()
     print(f"Ready for visitors: got ready in {time.perf_counter() - started:.1f} s.", flush=True)
+
+
+def start_reloading_checks() -> threading.Thread | None:
+    """On the live site (a live checker with a bucket), reads the pre-check's bundle again in the background, at most
+    once an hour (reload_checks); None, and nothing started, without one."""
+    if live is None or getattr(live, "bucket", None) is None:
+        return None
+    thread = threading.Thread(target=reload_checks, name="pre-checked checks", daemon=True)
+    thread.start()
+    return thread
+
+
+def reload_checks(rounds: int | None = None, sleep=time.sleep) -> None:
+    """Every BUNDLE_RELOAD_SECONDS, the pre-check's bundle read into this server's folder again: one small question
+    about its version, and a download only when the daily run has written a new one (load_bundle). A problem is
+    reported and never stops it. `rounds`: how many times (the tests'); None, until the server stops."""
+    done = 0
+    while rounds is None or done < rounds:
+        sleep(BUNDLE_RELOAD_SECONDS)
+        done += 1
+        try:
+            live.load_bundle()
+        except Exception as error:  # reported where the server runs; checks go on with what the folder holds
+            print(f"The pre-check's checks couldn't be read again ({type(error).__name__}: {error}).", file=sys.stderr,
+                  flush=True)
 
 
 def warm_answer(product_type: str, library_dir: Path) -> None:
@@ -876,6 +907,7 @@ def serve(port: int = WEB_PORT, library_dir: Path = DEFAULT_LIBRARY_DIR, site: S
     The server gets ready for answers in the background as it starts (warm_up)."""
     server = make_server(port, library_dir, site)
     threading.Thread(target=warm_up, args=(library_dir,), name="warm-up", daemon=True).start()
+    start_reloading_checks()
     if site.public:
         signal.signal(signal.SIGTERM, _stop)  # how a Space stops its container: wind down as for Ctrl+C
         print(f"Serving the public site for {', '.join(site.hosts)} on port {server.server_address[1]} (answers from "

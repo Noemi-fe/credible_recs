@@ -15,13 +15,18 @@ rule is unchanged: a quote is shown only with a passing check from the last 48 h
 - **The image** (the code, the saved library of Reddit threads, the open model): private, in the project's own
   Artifact Registry. Built by Cloud Build from a bundle made on Noemi's computer (deploy/cloudrun/make_context.py), so
   the library is never in this public repository and never public anywhere.
-- **The live checks' bucket** (`credible-picks-live-checks`, CREDIBLE_RECS_LIVE_CACHE_BUCKET): what Reddit's embed page
-  said about each comment checked (its text and when it was read, nothing else), kept so the site, whose disk is wiped
-  whenever it sleeps, and the pre-check, which runs on a machine of its own, share it. Private: uniform bucket-level
-  access, public access prevention, readable only by the project's compute service account. In europe-west1. Every
-  object is deleted once it is 2 days old (deploy/cloudrun/live_cache_lifecycle.json; Google runs these deletions
-  about once a day, so one can stay up to a day longer, unused), and soft delete is off, so nothing deleted is kept.
-  The code never uses an entry older than 48 hours either way.
+- **The live checks' bucket** (`credible-picks-live-checks`, CREDIBLE_RECS_LIVE_CACHE_BUCKET): one object,
+  `live_check/bundle.json`, holding what Reddit's embed page said about each comment the pre-check holds a check of
+  from the last 48 hours (its text and when it was read, nothing else; about 0.6 MB). The pre-check runs on a machine
+  of its own whose disk starts empty: it reads the bundle as it starts, so what is still fresh isn't read again, and
+  writes it back twice a run (midway, in case the run is cut short, and at the end). The site reads it into its own
+  folder as it gets ready and then at most once an hour, downloading it only when it has changed (a small metadata
+  read of its version first), and never writes to the bucket: its own checks stay in its folder (the keep-warm ping
+  keeps the server, and so its folder, alive). Private: uniform bucket-level access, public access prevention, readable
+  only by the project's compute service account. In europe-west1. Every object is deleted once it is 2 days old
+  (deploy/cloudrun/live_cache_lifecycle.json; Google runs these deletions about once a day, so it can stay up to a day
+  longer, unused; it is written again every day, so it goes only if the pre-check stops), and soft delete is off, so
+  nothing deleted is kept. No entry older than 48 hours is ever written into the bundle, copied out of it or used.
 - **The pre-check** (Cloud Run job `credible-recs-precheck`): the site's own image, running
   `python -m engine.precheck --limit 1100`, started by Cloud Scheduler (`credible-recs-precheck-daily`) at 4 am UK time.
   It reads at the live check's pace (40 at once, then one every 4 s): 1,100 reads take about 71 minutes, plus a few
@@ -122,7 +127,12 @@ processor, 71 to read 1,100 comments), about 4,800 seconds a day, 144,000 a mont
 GiB-seconds, 60% and 48% of the free tier for instance-billed work (240,000 vCPU-seconds and 450,000 GiB-seconds a
 month; the site itself is billed by request, under its own free tier). So 0 EUR. If the first run's log says the memory
 limit was exceeded, 2 GiB (`--memory 2Gi`) is still inside the free tier: 288,000 GiB-seconds, 64%. The schedule is
-the second of Cloud Scheduler's 3 free jobs (the keep-warm ping is the first). The bucket is tiny (a few MB), but Cloud
-Storage's free operations are for US regions only: about 1,100 writes a day are about 33,000 a month, about 0.15 EUR
-at 0.005 USD per 1,000; reads cost almost nothing. So about 0.25 EUR a month in all with the image, under the 1 EUR
+the second of Cloud Scheduler's 3 free jobs (the keep-warm ping is the first).
+
+The bucket (estimates, 13 Oct 2026), effectively nothing: Cloud Storage's free tier is for US regions only, so every
+operation is billed, but there are very few. Class A (writes): the pre-check's 2 a run, about 60 a month, 0.0003 USD
+at 0.005 USD per 1,000. Class B (reads): the site's hourly question about the bundle's version, about 720 a month,
+plus a download each time it changed (up to 2 a day) and the pre-check's own 2 a run, about 900 a month in all, 0.0004
+USD at 0.0004 USD per 1,000. Storage: one object of about 0.6 MB, 0.00001 USD a month. Reading it from Cloud Run in the
+same region is free. Under 0.001 USD a month in all; with the image's storage, about 0.10 EUR a month, under the 1 EUR
 alert.

@@ -1,8 +1,9 @@
 #!/bin/sh
 # Builds and deploys the site to Google Cloud Run in Noemi's project (deploy/cloudrun/DEPLOY.md), with the daily
 # pre-check of the quotes answers show (engine/precheck.py, Noemi's decision of 13 Oct 2026: "check ahead") as a Cloud
-# Run job on the same image, and the private bucket both keep the live checks in. Run from the repository's root after
-# committing:   sh deploy/cloudrun/deploy.sh
+# Run job on the same image, and the private bucket it shares its checks with the site through (one object, written
+# by the job twice a run, read by the site at most hourly). Run from the repository's root after committing:
+#     sh deploy/cloudrun/deploy.sh
 # It bundles the current commit with the saved library (deploy/cloudrun/make_context.py), has Cloud Build turn it into
 # a private image, and deploys it: public site, one server at most, none when idle (the free tier). A new server gets
 # visitors only once its /ready says it has got ready (up to 4 minutes; engine/web.py's warm_up), so a deploy never
