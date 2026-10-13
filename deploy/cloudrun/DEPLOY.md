@@ -23,9 +23,11 @@ rule is unchanged: a quote is shown only with a passing check from the last 48 h
   about once a day, so one can stay up to a day longer, unused), and soft delete is off, so nothing deleted is kept.
   The code never uses an entry older than 48 hours either way.
 - **The pre-check** (Cloud Run job `credible-recs-precheck`): the site's own image, running
-  `python -m engine.precheck --limit 1300`, started by Cloud Scheduler (`credible-recs-precheck-daily`) at 4 am UK time.
-  It reads at the live check's pace (40 at once, then one every 4 s): 1,300 reads take about 85 minutes, plus a few
-  minutes working out the answers. Its report (counts and times, never a comment's words) is in the job's logs.
+  `python -m engine.precheck --limit 1100`, started by Cloud Scheduler (`credible-recs-precheck-daily`) at 4 am UK time.
+  It reads at the live check's pace (40 at once, then one every 4 s): 1,100 reads take about 71 minutes, plus a few
+  minutes working out the answers. Its report (counts and times, never a comment's words) is in the job's logs. On
+  Noemi's computer on 13 Oct 2026 a run worked out 1,145 comments in 3.7 minutes and read 928 of them in 59 minutes
+  (872 passing, 2 deleted, 8 edited, 46 pages that couldn't be read).
 - **Feedback**: Noemi's private Hugging Face dataset Noemix/credible-recs-feedback. The site uploads it in batches with
   the token stored as the Secret Manager secret `hf-token`.
 - **Visit counts**: GoatCounter, site code noemix (CREDIBLE_RECS_GOATCOUNTER).
@@ -69,8 +71,8 @@ The project number is `NUMBER` below (`gcloud projects describe credible-picks -
        IMAGE=$(gcloud run services describe credible-recs --region europe-west1 --project credible-picks \
            --format='value(spec.template.spec.containers[0].image)')
        gcloud run jobs deploy credible-recs-precheck --project credible-picks --region europe-west1 --image "$IMAGE" \
-           --command python --args=-m,engine.precheck,--limit,1300 \
-           --tasks 1 --max-retries 0 --task-timeout 3h --memory 2Gi --cpu 1 \
+           --command python --args=-m,engine.precheck,--limit,1100 \
+           --tasks 1 --max-retries 0 --task-timeout 2h --memory 1536Mi --cpu 1 \
            --set-env-vars CREDIBLE_RECS_LIVE_CACHE_BUCKET=credible-picks-live-checks
        gcloud run jobs add-iam-policy-binding credible-recs-precheck --project credible-picks --region europe-west1 \
            --member serviceAccount:RUNNER --role roles/run.invoker
@@ -112,8 +114,15 @@ month). The image is about 1.5 GB in Artifact Registry, whose free storage is 0.
 rest. Cloud Scheduler's first 3 jobs are free; a ping is one short request, and a server between requests costs
 nothing. The budget alert emails Noemi at 50% and 100% of 1 EUR.
 
-The pre-check (estimates, 13 Oct 2026): jobs have a free tier of their own, 240,000 vCPU-seconds and 450,000
-GiB-seconds a month; a 90-minute run a day with 1 vCPU and 2 GiB uses about 162,000 and 324,000 of them. Cloud
-Scheduler gives 3 schedules free. The bucket is tiny (a few MB), but Cloud Storage's free operations are for US regions
-only: about 1,300 writes a day are about 40,000 a month, about 0.20 EUR at 0.005 USD per 1,000; reads cost almost
-nothing. So about 0.30 EUR a month in all, under the 1 EUR alert.
+The pre-check (estimates, 13 Oct 2026). A job is billed per instance-second for its whole run, sleeping between reads
+included, so it runs with the least that works: 1 vCPU (a job's minimum) and 1.5 GiB (on Noemi's computer it peaked at
+1.3 GB with module 1's open model loaded; 0.2 GB without it, but without the model the open model's product types, such
+as air fryers, would not be checked ahead). A run is at most about 80 minutes (5 to work out the answers on one
+processor, 71 to read 1,100 comments), about 4,800 seconds a day, 144,000 a month: 144,000 vCPU-seconds and 216,000
+GiB-seconds, 60% and 48% of the free tier for instance-billed work (240,000 vCPU-seconds and 450,000 GiB-seconds a
+month; the site itself is billed by request, under its own free tier). So 0 EUR. If the first run's log says the memory
+limit was exceeded, 2 GiB (`--memory 2Gi`) is still inside the free tier: 288,000 GiB-seconds, 64%. The schedule is
+the second of Cloud Scheduler's 3 free jobs (the keep-warm ping is the first). The bucket is tiny (a few MB), but Cloud
+Storage's free operations are for US regions only: about 1,100 writes a day are about 33,000 a month, about 0.15 EUR
+at 0.005 USD per 1,000; reads cost almost nothing. So about 0.25 EUR a month in all with the image, under the 1 EUR
+alert.

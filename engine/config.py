@@ -337,9 +337,10 @@ LIVE_CHECK_REFILL_SECONDS = 4.0
 # read less than PRECHECK_FRESH_HOURS ago is left as it is ("fresh for most of a day"), so after a run every check it
 # covers has 28 hours or more to go: the next day's run reads it again before it runs out, even a run that is late.
 PRECHECK_FRESH_HOURS = 20
-# Reddit reads one run makes at most: at the pace above (40 at once, then one every 4 s) about 85 minutes. The answers
-# of the 13 Oct 2026 library show, or hold next in line, about 1,240 comments.
-PRECHECK_MAX_READS = 1300
+# Reddit reads one run makes at most: at the pace above (40 at once, then one every 4 s) about 71 minutes, so the daily
+# job stays well inside Cloud Run's free tier. The answers of the 13 Oct 2026 library show 759 comments, hold 170 next in
+# line and 146 in the products behind the picks (1,075: all read), then 289 next after those (read as the budget allows).
+PRECHECK_MAX_READS = 1100
 # A run stops after this many unreadable pages in a row: Reddit is refusing reads (its allowance used from elsewhere).
 PRECHECK_STOP_AFTER_UNKNOWN = 20
 # The open model's product types (engine.query_model) the library had threads about on 13 Oct 2026, from its request

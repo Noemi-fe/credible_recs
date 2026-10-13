@@ -15,7 +15,7 @@ SERVICE="${CREDIBLE_RECS_GCP_SERVICE:-credible-recs}"
 JOB="${CREDIBLE_RECS_GCP_JOB:-credible-recs-precheck}"
 SCHEDULE="${JOB}-daily"
 BUCKET="${CREDIBLE_RECS_LIVE_CACHE_BUCKET:-credible-picks-live-checks}"
-PRECHECK_LIMIT="${CREDIBLE_RECS_PRECHECK_LIMIT:-1300}"
+PRECHECK_LIMIT="${CREDIBLE_RECS_PRECHECK_LIMIT:-1100}"
 GCLOUD="${GCLOUD:-gcloud}"
 
 NUMBER="$($GCLOUD projects describe "$PROJECT" --format='value(projectNumber)')"
@@ -52,11 +52,13 @@ $GCLOUD run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --source "
 rm -rf "$(dirname "$BUNDLE")"
 
 # 4. The pre-check: a Cloud Run job on the image just deployed, reading at most PRECHECK_LIMIT comments a run (at the
-#    live check's pace, about 85 minutes for 1,300), never retried the same day.
+#    live check's pace, about 71 minutes for 1,100), never retried the same day. Billed for its whole run, sleeping
+#    included, so it gets the least that works: 1 vCPU (a job's minimum) and 1.5 GiB (it peaked at 1.3 GB with the
+#    open model loaded, 13 Oct 2026; 0.2 GB without it).
 IMAGE="$($GCLOUD run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(spec.template.spec.containers[0].image)')"
 $GCLOUD run jobs deploy "$JOB" --project "$PROJECT" --region "$REGION" --image "$IMAGE" \
     --command python --args=-m,engine.precheck,--limit,${PRECHECK_LIMIT} \
-    --tasks 1 --max-retries 0 --task-timeout 3h --memory 2Gi --cpu 1 \
+    --tasks 1 --max-retries 0 --task-timeout 2h --memory 1536Mi --cpu 1 \
     --set-env-vars "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}" --quiet
 $GCLOUD run jobs add-iam-policy-binding "$JOB" --project "$PROJECT" --region "$REGION" \
     --member "serviceAccount:$RUNNER" --role roles/run.invoker >/dev/null

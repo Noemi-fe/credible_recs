@@ -44,9 +44,10 @@ saved checks only (CACHE_DIR, by default .cache/live_check; PrecheckedChecker): 
 last 48 hours is answered by it at once, as the site's checker would; one without would be read on Reddit, so it counts
 as a read still needed and is answered "shown" after STAND_IN_PAUSE, as the stand-in does. Nothing reaches the network.
 It reports the share of shown quotes already pre-checked, the Reddit reads each fresh answer still needs, and the times
-of fresh answers with the pre-check (first ask) and with nothing pre-checked (the same answers, an empty cache,
-0.3 s a read while Reddit's allowance lasts), and what they come to once the allowance is spent (a read every
-LIVE_CHECK_REFILL_SECONDS). The answer-equality guard is skipped: the baseline is the snapshot's.
+of fresh answers (answers the site doesn't remember yet, each request asked once before, with instant checks, so the
+engine is equally ready for both) with the pre-check and with nothing pre-checked (an empty cache, 0.3 s a read while
+Reddit's allowance lasts), and what they come to once the allowance is spent (a read every LIVE_CHECK_REFILL_SECONDS).
+The answer-equality guard is skipped: the baseline is the snapshot's.
 
 The answer-equality guard. --save-baseline saves each request's whole answer (engine.web.answer_json, the answer as
 markdown, and the result's lists of what was left out and why) in data/eval/latency_baseline/ (git-ignored: it holds
@@ -509,8 +510,10 @@ def one_cold_request(query_id: str, library: Path) -> dict:
 # --- Checked ahead (--prechecked) ---
 
 def prechecked_passes(queries: list[dict], library: Path, cache_dir: Path) -> dict[str, dict[str, list[dict]]]:
-    """Each request asked for the first time with the pre-check's saved checks, then again with none (an empty cache:
-    every comment a read), as the live site answers them (its library, today, its writers' standing)."""
+    """Each request as a fresh answer (one the site doesn't remember), as the live site answers it (its library, today,
+    its writers' standing): with the pre-check's saved checks, then with none (an empty cache: every comment a read).
+    Each request is asked once before either, with instant checks, so both find the engine equally ready (module 1's
+    open model has read the request, the lookups are kept) and differ only in their live checks."""
     from engine.pipeline import answer_request, cached_profiles
 
     clock = StageClock()
@@ -521,17 +524,19 @@ def prechecked_passes(queries: list[dict], library: Path, cache_dir: Path) -> di
 
     if hasattr(engine.web, "warm_up"):
         engine.web.warm_up(library)
-    passes: dict[str, dict[str, list[dict]]] = {"first ask, pre-checked": {}, "warm, nothing pre-checked": {}}
+    passes: dict[str, dict[str, list[dict]]] = {"fresh, pre-checked": {}, "fresh, nothing pre-checked": {}}
+    for q in queries:  # getting ready: not reported
+        run_request(q["text"], library, profiles, StandInChecker(pause=0), clock, None)
     prechecked = PrecheckedChecker(cache_dir)
     for q in queries:
-        _ran(passes["first ask, pre-checked"], q, run_request(q["text"], library, profiles, prechecked, clock, None),
+        _ran(passes["fresh, pre-checked"], q, run_request(q["text"], library, profiles, prechecked, clock, None),
              "pre-checked")
     empty = Path(tempfile.mkdtemp(prefix="latency-nothing-checked-"))
     try:
         nothing = PrecheckedChecker(empty)
         for q in queries:
-            _ran(passes["warm, nothing pre-checked"], q, run_request(q["text"], library, profiles, nothing, clock,
-                                                                     None), "nothing checked")
+            _ran(passes["fresh, nothing pre-checked"], q, run_request(q["text"], library, profiles, nothing, clock,
+                                                                      None), "nothing checked")
     finally:
         shutil.rmtree(empty, ignore_errors=True)
     return passes
@@ -541,8 +546,8 @@ def prechecked_report(passes: dict, queries: list[dict]) -> int:
     """Coverage and times, with the pre-check and without (see the module's docstring)."""
     from engine.config import LIVE_CHECK_REFILL_SECONDS
 
-    with_it = {qid: runs[0] for qid, runs in passes["first ask, pre-checked"].items()}
-    without = {qid: runs[0] for qid, runs in passes["warm, nothing pre-checked"].items()}
+    with_it = {qid: runs[0] for qid, runs in passes["fresh, pre-checked"].items()}
+    without = {qid: runs[0] for qid, runs in passes["fresh, nothing pre-checked"].items()}
     answered = [qid for qid, run in with_it.items() if run["shown"]]
     shown = sum(with_it[qid]["shown"] for qid in answered)
     prechecked = sum(with_it[qid]["prechecked"] for qid in answered)
