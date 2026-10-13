@@ -1,5 +1,6 @@
 """The Arctic Shift finder. Every test uses a fake service: no network."""
 
+import http.client
 import json
 from datetime import UTC, datetime, timedelta
 from urllib.parse import parse_qs, urlparse
@@ -279,3 +280,18 @@ def test_no_answer_at_all_is_an_arctic_shift_error(monkeypatch):
     monkeypatch.setattr(arctic_shift.urllib.request, "urlopen", times_out)
     with pytest.raises(ArcticShiftError):
         arctic_shift._http_get("https://arctic-shift.photon-reddit.com/api/users/search?author=x", {})
+
+
+@pytest.mark.parametrize("dropped", [
+    http.client.RemoteDisconnected("Remote end closed connection without response"),
+    ConnectionResetError("Connection reset by peer"),
+    http.client.IncompleteRead(b"partial"),
+])
+def test_a_dropped_connection_is_an_arctic_shift_error(monkeypatch, dropped):
+    # 13 Oct 2026: the archive closed a connection without answering, and the warm-up run crashed on
+    # http.client.RemoteDisconnected instead of carrying on with its other searches.
+    def drops(*args, **kwargs):
+        raise dropped
+    monkeypatch.setattr(arctic_shift.urllib.request, "urlopen", drops)
+    with pytest.raises(ArcticShiftError):
+        arctic_shift._http_get("https://arctic-shift.photon-reddit.com/api/posts/search?subreddit=x&title=y", {})

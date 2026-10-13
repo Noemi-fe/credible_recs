@@ -21,6 +21,7 @@ answer is cached for 48 hours, calls are spaced 10 seconds apart, and when the s
 """
 
 import hashlib
+import http.client
 import json
 import ssl
 import time
@@ -87,8 +88,10 @@ def _http_get(url: str, headers: dict) -> tuple[int, bytes]:
             return response.status, response.read()
     except urllib.error.HTTPError as e:
         return e.code, e.read()
-    except (urllib.error.URLError, TimeoutError) as e:
-        # No answer at all (a timeout, no network): reported like any failure, so callers can carry on.
+    except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException) as e:
+        # No answer at all (a timeout, no network, a connection the archive closed without answering or cut short:
+        # http.client.RemoteDisconnected had ended a whole warm-up run on 13 Oct 2026): reported like any failure, so
+        # callers can carry on.
         raise ArcticShiftError(f"couldn't reach Arctic Shift: {getattr(e, 'reason', e)}") from e
 
 
