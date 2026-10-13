@@ -535,6 +535,33 @@ def test_warming_up_answers_each_product_type_without_asking_reddit(tmp_path, mo
     assert all("live_checker" not in kwargs and kwargs["live_check_required"] is False for _, kwargs in asked)
 
 
+def test_warming_up_stops_answering_product_types_once_its_time_is_up(tmp_path, monkeypatch, capsys):
+    # 13 Oct 2026: on Cloud Run a new server must say it is ready within the startup probe's 4 minutes, and the warm
+    # answers alone grew past that (a deploy failed). Once WARM_UP_ANSWERS_SECONDS have passed, the remaining product
+    # types are left for their first visitors and the server says it is ready.
+    from engine import query_model
+    from engine.tests.test_library_cache import settled
+    from engine.tests.test_pipeline import library
+
+    monkeypatch.setattr(query_model, "default_query_model", lambda: None)
+    monkeypatch.setattr(web, "ready", threading.Event())
+    now = [0.0]
+    monkeypatch.setattr(web.time, "perf_counter", lambda: now[0])
+    asked = []
+
+    def slow(request, library_dir, **kwargs):  # every warm answer takes 40 s
+        asked.append(request)
+        now[0] += 40
+
+    monkeypatch.setattr(web, "answer_request", slow)
+    web.warm_up(settled(library(tmp_path)))
+    assert web.ready.is_set()
+    expected = -(-web.WARM_UP_ANSWERS_SECONDS // 40)  # answers started before the time was up
+    assert len(asked) == expected < len(web.WARM_PRODUCT_TYPES)
+    said = capsys.readouterr().out
+    assert f"left {len(web.WARM_PRODUCT_TYPES) - expected} product types for their first visitors" in said
+
+
 def test_a_warmed_answer_leaves_every_answer_as_it_was(tmp_path):
     from engine import memo
     from engine.tests.test_library_cache import settled

@@ -910,14 +910,21 @@ def warm_up(library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
         steps.insert(0, ("the pre-check's checks", _read_checks))
     if threads.is_dir():
         steps.insert(0, ("the library", lambda: loaded(threads)))
-        steps += [(f"the answers' memory for {name}", lambda name=name: warm_answer(name, library_dir))
+        steps += [(f"{WARM_ANSWER_STEP} {name}", lambda name=name: warm_answer(name, library_dir))
                   for name in WARM_PRODUCT_TYPES]
+    left = 0
     for name, step in steps:
+        if name.startswith(WARM_ANSWER_STEP) and time.perf_counter() - started >= WARM_UP_ANSWERS_SECONDS:
+            left += 1  # its first visitor works it out instead
+            continue
         try:
             step()
         except Exception as error:  # reported where the server runs; answers report it again when they need it
             print(f"Getting ready: {name} couldn't be loaded ({type(error).__name__}: {error}).", file=sys.stderr,
                   flush=True)
+    if left:
+        print(f"Getting ready: left {left} product types for their first visitors (time up after "
+              f"{WARM_UP_ANSWERS_SECONDS} s).", flush=True)
     ready.set()
     print(f"Ready for visitors: got ready in {time.perf_counter() - started:.1f} s.", flush=True)
 
@@ -965,6 +972,11 @@ def warm_answer(product_type: str, library_dir: Path) -> None:
 # The product types answered while getting ready: module 1's own (engine.query.PRODUCT_TYPES). The rules route each by
 # its name (only "serum", placed by a clue word, also gets the open model's view, as any request would).
 WARM_PRODUCT_TYPES = tuple(p.name for p in PRODUCT_TYPES)
+WARM_ANSWER_STEP = "the answers' memory for"
+# Getting ready starts no more warm answers once this many seconds have passed (13 Oct 2026): Cloud Run's startup probe
+# waits 4 minutes for /ready (deploy/cloudrun/deploy.sh), and the warm answers alone had grown past that, so a deploy
+# failed (the server before it kept serving). The product types left are worked out by their first visitors.
+WARM_UP_ANSWERS_SECONDS = 120
 
 
 def serve(port: int = WEB_PORT, library_dir: Path = DEFAULT_LIBRARY_DIR, site: Site = LOCAL) -> None:
