@@ -200,6 +200,9 @@ class PipelineResult:
     answer: Answer | None = None  # None when module 1 asks a question or says no
     bodies: dict[str, str] = field(default_factory=dict)  # comment id -> text, to re-check quotes
     left_out_as_other_type: list[str] = field(default_factory=list)  # product names
+    # The names of single mentions about another type of product, left out of a product of the requested type (13 Oct
+    # 2026; _of_another_type): the product itself stays in, so it isn't in left_out_as_other_type.
+    mentions_of_another_type: list[str] = field(default_factory=list)
     left_out_loose: list[str] = field(default_factory=list)  # brand or line names (and names that name nothing)
     # Brand or line names left out because the brand-lines list says their brand doesn't sell the requested type of
     # product, with that reason (12 Oct 2026); they are in left_out_loose too.
@@ -348,7 +351,11 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.comments_read = sum(len(shown_comment_ids(t)) for t in threads)  # what the AI read in them (12 Oct 2026)
     result.bodies = comment_bodies(threads)
 
-    groups = group_products(_not_sets(_product_mentions(checked), result))
+    mentions = _not_sets(_product_mentions(checked), result)
+    groups = group_products(mentions)
+    of_another_type = _of_another_type(groups, query, result)
+    if of_another_type:  # grouped again without them, so they neither count for nor name a product (13 Oct 2026)
+        groups = group_products([m for m in mentions if _typed(m) not in of_another_type])
     brand_lines = load_brand_lines() if brand_lines is None else brand_lines
     kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads}, brand_lines)
     lines = {g.key for g in kept_groups if g.loose}  # the brand or line names kept as the brand's whole line
@@ -492,7 +499,7 @@ def _about_the_product(thread: Thread, product_type: str) -> bool:
 # --- Module 4: products and kinds ---
 
 def _product_mentions(checked: dict[str, CheckResult]) -> list[ProductMention]:
-    return [ProductMention(tid, m.comment_id, m.product, m.category, m.stance, m.product_type)
+    return [ProductMention(tid, m.comment_id, m.product, m.category, m.stance, m.product_type, m.quote)
             for tid, res in checked.items() for m in res.kept]
 
 
@@ -521,6 +528,50 @@ def _names_a_set(product_type: str) -> bool:
         return False
     head = words[words.index("of") - 1] if "of" in words[1:] else words[-1]
     return head in OTHER_TYPE_WORDS or head.removesuffix("s") in OTHER_TYPE_WORDS
+
+
+def _of_another_type(groups: list[ProductGroup], query: ParsedQuery, result: PipelineResult) -> set[tuple]:
+    """The mentions about another type of product inside the products of the requested type (13 Oct 2026), each told
+    apart by its type (_typed), and named on the result (mentions_of_another_type).
+
+    Which products are of the requested type is decided first, as before, by most of their mentions (_another_type).
+    Inside those, a mention the AI typed as another type counts for nothing when its own words don't say it is the
+    requested type either (_mention_of_another_type): a review of the answers had found a brand named alone in a
+    sentence about moisturisers counting for the brand's scrub in an exfoliant answer, a writer's bare "Panasonic"
+    kettle joining a hot water dispenser (which then stood for a kettle), and a chef knife line counting a writer's
+    paring knives. The pipeline groups the other mentions again without them, so they neither count for nor lend their
+    names to a product of the requested type. Done once: a regrouping that brings a new mention of another type into a
+    product leaves it there (none did on the 20 sense-eval requests, 13 Oct 2026)."""
+    found = set()
+    for group in groups:
+        if group.category != query.category or _another_type(group, query):
+            continue  # left out whole, or never ranked
+        for mention in group.mentions:
+            if _mention_of_another_type(mention, query.product_type):
+                found.add(_typed(mention))
+                if uk_name(mention.product) not in result.mentions_of_another_type:
+                    result.mentions_of_another_type.append(uk_name(mention.product))
+    return found
+
+
+def _typed(mention: ProductMention) -> tuple:
+    """A mention told apart by its type and quote too: the AI lists a brand named for its shampoo and its conditioner
+    in one comment as two mentions, equal but for their types, and only the one of another type is left out."""
+    return mention, mention.product_type, mention.quote
+
+
+def _mention_of_another_type(mention: ProductMention, requested: str) -> bool:
+    """Whether one mention is about another type of product than the one requested: the AI typed it as another type
+    (_another_type_by_ai, on its type alone) and its name and quote don't name the requested type, leaving aside the
+    AI's type itself and the word it ends with ("knife" in a paring knife, "air fryer" in an "air fryer oven"). The
+    AI's types are noisy at the edges, so the writer's own words win when they say it is the requested type: a "COSRX
+    AHA/BHA toner" the AI typed as a toner is an exfoliant still ("AHA" names one)."""
+    product_type = (mention.product_type or "").strip().lower()
+    if not product_type or not _another_type_by_ai([product_type], requested):
+        return False
+    words = f"{mention.product} {mention.quote}"
+    words = re.sub(rf"(?<!\w){re.escape(product_type)}(?:s|es)?(?!\w)", " ", words, flags=re.IGNORECASE)
+    return not mentions_product(words, requested, leave_aside=product_type.split()[-1])
 
 
 def _kind_mentions(checked: dict[str, CheckResult]) -> list[KindMention]:
@@ -615,7 +666,9 @@ def _another_type(group: ProductGroup, query: ParsedQuery) -> bool:
 def _another_type_by_ai(types: list[str], requested: str) -> bool:
     """Whether the type most of a product's mentions give is another type than the one requested.
 
-    - A tie for the most mentions keeps the product in: the AI isn't sure what it is.
+    - A tie for the most mentions keeps the product in: the AI isn't sure what it is. But only when one of the tied
+      types is the requested one (13 Oct 2026): a tie between a hair mask and a leave-in treatment is sure it isn't a
+      conditioner.
     - The requested type itself: kept.
     - Another of module 1's product types (engine.query.PRODUCT_TYPES): left out, even when it shares a word with
       the requested one ("stovetop kettle" for an electric kettle request).
@@ -625,7 +678,7 @@ def _another_type_by_ai(types: list[str], requested: str) -> bool:
     """
     counts = Counter(t.strip().lower() for t in types).most_common()
     if len(counts) > 1 and counts[0][1] == counts[1][1]:
-        return False
+        return all(_another_type_by_ai([t], requested) for t, n in counts if n == counts[0][1])
     majority = counts[0][0]
     if majority == requested:
         return False
