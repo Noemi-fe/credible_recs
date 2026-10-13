@@ -1,9 +1,10 @@
 """The last check before a quote is shown: is the comment still on Reddit, saying what the quote says?
 
-Saved threads can be days or weeks old, and Arctic Shift's archive keeps comments people later deleted. So just
-before an answer shows a quote, its comment is read live through Reddit's embed page (embed.reddit.com, what
-Reddit's official oEmbed widget loads to show a comment on another site; approved by Noemi on 9 Oct 2026), one
-comment at a time, and only for quotes about to be shown. The result:
+Saved threads can be days or weeks old, and Arctic Shift's archive keeps comments people later deleted. So before
+an answer shows a quote, its comment must have been read live through Reddit's embed page (embed.reddit.com, what
+Reddit's official oEmbed widget loads to show a comment on another site; approved by Noemi on 9 Oct 2026) in the last
+48 hours, one comment at a time, and only for quotes answers show or would show: read as the answer is written, or
+since 13 Oct 2026 the day before, by the daily pre-check (below). The result:
 
     ok        the comment is there and the quote is found in it word for word (engine.verify_quotes.find_quote)
     gone      the comment was deleted or removed: its text reads "[deleted]" or "[removed]"
