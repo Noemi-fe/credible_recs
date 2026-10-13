@@ -20,8 +20,9 @@ rule is unchanged: a quote is shown only with a passing check from the last 48 h
   from the last 48 hours (its text and when it was read, nothing else; about 0.6 MB). The pre-check runs on a machine
   of its own whose disk starts empty: it reads the bundle as it starts, so what is still fresh isn't read again, and
   writes it back twice a run (midway, in case the run is cut short, and at the end). The site reads it into its own
-  folder as it gets ready and then at most once an hour, downloading it only when it has changed (a small metadata
-  read of its version first), and never writes to the bucket: its own checks stay in its folder (the keep-warm ping
+  folder as it gets ready and then at most once an hour, when the keep-warm ping asks /ready (Cloud Run gives the
+  server its processor only during a request), downloading it only when it has changed (a small metadata read of its
+  version first), and never writes to the bucket: its own checks stay in its folder (the keep-warm ping
   keeps the server, and so its folder, alive). Private: uniform bucket-level access, public access prevention, readable
   only by the project's compute service account. In europe-west1. Every object is deleted once it is 2 days old
   (deploy/cloudrun/live_cache_lifecycle.json; Google runs these deletions about once a day, so it can stay up to a day

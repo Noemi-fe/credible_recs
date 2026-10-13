@@ -142,8 +142,9 @@ Getting ready (latency, 12 Oct 2026): as it starts, the server reads the library
 the open model, and works out (and throws away) one answer per product type without live checks, so what answers keep
 between requests is ready (warm_up). All in the background: the page is there at once, and the first visitor doesn't
 wait for any of it. On the live site (CREDIBLE_RECS_LIVE_CACHE_BUCKET set) it first reads the daily pre-check's checks
-from the bucket's one bundle into its folder, and again at most once an hour, only when the bundle has changed
-(start_reloading_checks; 13 Oct 2026). It never writes to the bucket: its own checks stay in its folder.
+from the bucket's one bundle into its folder, and again at most once an hour, only when the bundle has changed, when
+Cloud Scheduler's keep-warm ping asks /ready (reload_checks_if_due; 13 Oct 2026: Cloud Run gives a server its
+processor only while it answers a request). It never writes to the bucket: its own checks stay in its folder.
 
 Command line:
     python -m engine.web [--port N] [--library DIR]    serves the page at http://127.0.0.1:8765/ (Ctrl+C stops it)
@@ -270,6 +271,9 @@ _answers_lock = threading.Lock()
 # visitors' answers and held them up to 30 s, with the processor Cloud Run gives a server only while it answers
 # someone. While it starts, Cloud Run gives it the processor in full, and keeps visitors on the server before it.
 ready = threading.Event()
+# When the pre-check's bundle was last read (warm_up, then reload_checks_if_due), by _clock; None: not yet.
+_checks_read_at: float | None = None
+_checks_lock = threading.Lock()
 
 
 # --- Routing: one GET request in, one response out ---
@@ -290,6 +294,8 @@ def handle_request(path_and_query: str, library_dir: Path = DEFAULT_LIBRARY_DIR,
         request = parse_qs(parts.query).get("q", [""])[0]
         return answer_response(request, Path(library_dir), quiet=site.public)
     if parts.path == READY_PATH:
+        if ready.is_set():
+            reload_checks_if_due()
         return (200 if ready.is_set() else 503), JSON, json.dumps({"ready": ready.is_set()}).encode("utf-8")
     if parts.path in METHODS:  # a route that takes another method: feedback is sent, never fetched
         return _error(405, WRONG_METHOD, allowed=METHODS[parts.path])
@@ -845,7 +851,7 @@ def warm_up(library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
     threads = Path(library_dir) / "threads"
     steps = [("the open model", load_model), ("the price list", load_prices), ("the facts list", load_product_facts)]
     if live is not None and getattr(live, "bucket", None) is not None:  # first, and quick: the first answers find them
-        steps.insert(0, ("the pre-check's checks", live.load_bundle))
+        steps.insert(0, ("the pre-check's checks", _read_checks))
     if threads.is_dir():
         steps.insert(0, ("the library", lambda: loaded(threads)))
         steps += [(f"the answers' memory for {name}", lambda name=name: warm_answer(name, library_dir))
@@ -860,29 +866,32 @@ def warm_up(library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
     print(f"Ready for visitors: got ready in {time.perf_counter() - started:.1f} s.", flush=True)
 
 
-def start_reloading_checks() -> threading.Thread | None:
-    """On the live site (a live checker with a bucket), reads the pre-check's bundle again in the background, at most
-    once an hour (reload_checks); None, and nothing started, without one."""
+def _read_checks() -> None:
+    """The pre-check's bundle read into this server's folder (engine.live_check.LiveChecker.load_bundle), and when."""
+    global _checks_read_at
+    _checks_read_at = _clock()
+    live.load_bundle()
+
+
+def reload_checks_if_due() -> None:
+    """On the live site (a live checker with a bucket), the pre-check's bundle read again when the last reading is
+    BUNDLE_RELOAD_SECONDS old: one small question about its version, and a download only when the daily run has written
+    a new one. /ready asks, so Cloud Scheduler's keep-warm ping every 5 minutes drives it, while Cloud Run gives the
+    server its processor (13 Oct 2026: a background thread waiting an hour between requests would barely run). One
+    reading at a time; a problem is reported, tried again an hour later, and never stops the ping."""
     if live is None or getattr(live, "bucket", None) is None:
-        return None
-    thread = threading.Thread(target=reload_checks, name="pre-checked checks", daemon=True)
-    thread.start()
-    return thread
-
-
-def reload_checks(rounds: int | None = None, sleep=time.sleep) -> None:
-    """Every BUNDLE_RELOAD_SECONDS, the pre-check's bundle read into this server's folder again: one small question
-    about its version, and a download only when the daily run has written a new one (load_bundle). A problem is
-    reported and never stops it. `rounds`: how many times (the tests'); None, until the server stops."""
-    done = 0
-    while rounds is None or done < rounds:
-        sleep(BUNDLE_RELOAD_SECONDS)
-        done += 1
-        try:
-            live.load_bundle()
-        except Exception as error:  # reported where the server runs; checks go on with what the folder holds
-            print(f"The pre-check's checks couldn't be read again ({type(error).__name__}: {error}).", file=sys.stderr,
-                  flush=True)
+        return
+    if _checks_read_at is not None and _clock() - _checks_read_at < BUNDLE_RELOAD_SECONDS:
+        return
+    if not _checks_lock.acquire(blocking=False):
+        return  # another request is reading it now
+    try:
+        _read_checks()
+    except Exception as error:  # reported where the server runs; checks go on with what the folder holds
+        print(f"The pre-check's checks couldn't be read again ({type(error).__name__}: {error}).", file=sys.stderr,
+              flush=True)
+    finally:
+        _checks_lock.release()
 
 
 def warm_answer(product_type: str, library_dir: Path) -> None:
@@ -907,7 +916,6 @@ def serve(port: int = WEB_PORT, library_dir: Path = DEFAULT_LIBRARY_DIR, site: S
     The server gets ready for answers in the background as it starts (warm_up)."""
     server = make_server(port, library_dir, site)
     threading.Thread(target=warm_up, args=(library_dir,), name="warm-up", daemon=True).start()
-    start_reloading_checks()
     if site.public:
         signal.signal(signal.SIGTERM, _stop)  # how a Space stops its container: wind down as for Ctrl+C
         print(f"Serving the public site for {', '.join(site.hosts)} on port {server.server_address[1]} (answers from "
