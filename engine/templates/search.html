@@ -83,6 +83,9 @@ const LABELS = {
   moreQuotes: ["1 more quote", "{n} more quotes"],
   moreDownsides: ["1 known downside", "{n} known downsides"],
   moreCare: ["1 care tip", "{n} care tips"],
+  // An "Also worth a look" row's tag (13 Oct 2026, round two): how much backs it, in a few words.
+  tagVoices: ["{n} credible voice", "{n} credible voices"],
+  tagThreads: ["{n} thread", "{n} threads"],
   // A long list's toggle (13 Oct 2026): "Skip these" shows its strongest first, the rest a click away.
   showMore: ["Show 1 more", "Show {n} more"],
   showFewer: "Show fewer",
@@ -175,6 +178,25 @@ const LABELS = {
   --bar-against: #e0a245;
   --bar-against-2: #eebd73;
   --bar-track: #e9e3d8;
+  /* Under the picks (13 Oct 2026, round two): one colour family per kind of section; text colours meet AA on their
+     grounds (engine/tests/test_web_ux.py computes every pair). */
+  --worth: #5d574e;
+  --worth-bg: #ece6db;
+  --worth-soft: #e4ddd0;
+  --worth-line: #d9cfbf;
+  --skip: #9f2733;
+  --skip-bg: #fbeaea;
+  --skip-soft: #f7dadc;
+  --skip-line: #efc9cc;
+  --advice: #235a87;
+  --advice-bg: #e8f0f7;
+  --advice-soft: #d9e7f3;
+  --advice-line: #c9dbea;
+  --care: #1d6a51;
+  --care-bg: #e3f0e8;
+  --care-soft: #d3e8db;
+  --care-line: #c0dccb;
+  --quiet-bg: #efebe4;
   --shadow: 0 1px 2px rgba(48, 36, 16, .05), 0 6px 20px rgba(48, 36, 16, .06);
   --serif: ui-serif, "New York", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -203,6 +225,23 @@ const LABELS = {
     --bar-against: #e3ac5c;
     --bar-against-2: #b98637;
     --bar-track: #2c2a26;
+    --worth: #c4b9a6;
+    --worth-bg: #2a251d;
+    --worth-soft: #383126;
+    --worth-line: #4a4134;
+    --skip: #f3a3ab;
+    --skip-bg: #2c171a;
+    --skip-soft: #3b1f22;
+    --skip-line: #4b2a2e;
+    --advice: #8ec0ea;
+    --advice-bg: #152029;
+    --advice-soft: #1c2c3a;
+    --advice-line: #263a4c;
+    --care: #6fc4a1;
+    --care-bg: #15271f;
+    --care-soft: #1b3328;
+    --care-line: #26442f;
+    --quiet-bg: #191816;
     --shadow: 0 1px 0 rgba(0, 0, 0, .35);
   }
 }
@@ -337,17 +376,18 @@ button { font: inherit; color: inherit; }
 .tool .icon { color: var(--muted); }
 
 /* The reading strip: how much the answer read, in numbers. */
-.reading { margin: 0 0 22px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+/* Round two (13 Oct 2026): housekeeping, so quiet: no box of its own, small numbers between two hairlines. */
+.reading { margin: 0 0 24px; border-block: 1px solid var(--line); }
 .reading dl { display: flex; flex-wrap: wrap; margin: 0; }
-.stat { flex: 1 1 180px; display: flex; flex-direction: column; padding: 12px 16px; }
-.stat + .stat { border-left: 1px solid var(--line); }
+.stat { flex: 1 1 180px; display: flex; flex-direction: column; padding: 10px 18px 10px 0; }
+.stat + .stat { border-left: 1px solid var(--line); padding-left: 18px; }
 .stat dd { margin: 0; }
-.stat .value { order: -1; font: 600 28px/1.1 var(--serif); font-variant-numeric: tabular-nums; }
-.stat dt { font-size: 14px; font-weight: 600; }
-.stat .note { font-size: 13.5px; color: var(--muted); }
+.stat .value { order: -1; font: 600 21px/1.15 var(--serif); font-variant-numeric: tabular-nums; }
+.stat dt { font-size: 13.5px; font-weight: 600; }
+.stat .note { font-size: 13px; color: var(--muted); }
 .stat .ratio { order: 3; margin-top: 8px; height: 6px; border-radius: 99px; background: var(--bar-track); overflow: hidden; }
 .stat .ratio span { display: block; height: 100%; width: calc(var(--share) * 100%); background: var(--accent); border-radius: 99px; }
-.why { margin: 0; padding: 2px 16px 10px; font-size: 14px; }
+.why { margin: 0; padding: 0 0 10px; font-size: 13.5px; }
 .why summary { cursor: pointer; color: var(--accent); font-weight: 600; width: max-content; max-width: 100%; }
 .why p { margin: 6px 0 2px; color: var(--muted); max-width: 70ch; }
 
@@ -362,6 +402,7 @@ button { font: inherit; color: inherit; }
 .glance .jump { display: inline-flex; align-items: baseline; gap: 10px; border: 0; background: none; padding: 0; text-align: left; cursor: pointer; font-weight: 600; }
 .glance .jump:hover .name { color: var(--accent); text-decoration: underline; text-underline-offset: .18em; }
 .glance .jump .rank-num { font: 600 18px/1 var(--serif); color: var(--accent); }
+.glance th .form-chip { display: block; width: max-content; margin: 4px 0 0 22px; }
 .glance .tally { display: grid; gap: 6px; min-width: 150px; }
 .glance .tally span { font-size: 14px; color: var(--muted); }
 .glance td.n { font-variant-numeric: tabular-nums; }
@@ -440,72 +481,94 @@ button { font: inherit; color: inherit; }
 
 /* A card's toggle for the rest of its evidence: quotes, downsides and care. */
 .more { margin-top: 12px; }
-.more > summary, .skip details > summary { list-style: none; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.more > summary { list-style: none; display: flex; align-items: center; gap: 8px; cursor: pointer; }
 .more > summary { width: max-content; max-width: 100%; padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; font-size: 14px;
   font-weight: 600; color: var(--accent); background: var(--surface); }
 .more > summary:hover { border-color: var(--accent); }
-.more > summary::-webkit-details-marker, .skip details > summary::-webkit-details-marker { display: none; }
+.more > summary::-webkit-details-marker { display: none; }
 details > summary .icon { transition: transform .15s; }
 details[open] > summary .icon { transform: rotate(180deg); }
 .more-body { margin-top: 14px; }
 .more-body > * + h4, .more-body > .quotes + h4 { margin-top: 20px; }
 
-/* "Also worth a look" (13 Oct 2026): apart from the picks, after them, and plainly less supported. */
-.worth { margin: 40px 0 0; padding: 24px; border-radius: var(--radius); background: var(--sunken); border: 1px dashed var(--line-strong); }
-.worth > h3 { margin: 0 0 4px; font: 600 24px/1.2 var(--serif); }
-.worth-note { margin: 0 0 18px; color: var(--muted); max-width: 70ch; }
-.worth-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
-.worth-card { height: 100%; padding: 18px; box-shadow: none; }
-.worth-card > * + * { margin-top: 12px; }
-.worth-card h4.item-name { margin: 0; font: 600 19px/1.25 var(--serif); text-transform: none; letter-spacing: normal; color: var(--text); overflow-wrap: anywhere; }
-.worth-card .summary { font-size: 15.5px; }
-.worth-card .trust { padding: 12px; }
-.worth-card .quote blockquote { font-size: 16px; }
-.card h5 { margin: 0 0 8px; font-size: 12.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
-
-/* Under the picks: what to look for, and skip these. Side by side on wide screens. */
-.extras { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 40px; }
-.extras > :only-child { grid-column: 1 / -1; }
-.extras > :only-child .items { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; }
-.panel h3, .care-note h3 { margin: 0 0 14px; font: 600 22px/1.2 var(--serif); }
-.items { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
-.items .lead { display: flex; gap: 8px; align-items: flex-start; }
-.items .lead .icon { margin-top: 3px; }
-.look-for .seek .lead .icon { color: var(--accent); }
-.look-for .avoid .lead .icon { color: var(--bad); }
-.look-for .avoid .quote { border-left-color: var(--bad); }
-.skip .items { gap: 0; }
-.skip .items > li + li { border-top: 1px solid var(--line); }
-.skip details > summary { justify-content: space-between; padding: 12px 0; }
-.skip details > summary .lead { display: block; margin: 0; }
-.skip details > summary .icon { color: var(--muted); }
-.skip details[open] { padding-bottom: 14px; }
-.skip .quote { border-left-color: var(--bad); }
-.skip .rest > li:first-child { border-top: 1px solid var(--line); }
-.fold { margin-top: 12px; font-size: 14px; }
+/* Under the picks (13 Oct 2026, round two; Noemi: "a little more distinct from the picks... a little too uniform"): the
+   picks are the only raised cards. Each section under them is a flat panel in its own colour family, with a head of
+   its icon, its name and a thin rule: Also worth a look (stone: secondary), Skip these (rose: a warning), What to look
+   for (blue: advice), the care note (green: a tip). Their items are compact rows, their evidence a click away. */
+.more-zone { display: grid; gap: 22px; margin-top: 56px; }
+.zone-panel { background: var(--fam-bg); border: 1px solid var(--fam-line); border-radius: var(--radius); padding: 18px 22px 14px; }
+.fam-worth { --fam: var(--worth); --fam-bg: var(--worth-bg); --fam-soft: var(--worth-soft); --fam-line: var(--worth-line); }
+.fam-skip { --fam: var(--skip); --fam-bg: var(--skip-bg); --fam-soft: var(--skip-soft); --fam-line: var(--skip-line); }
+.fam-advice { --fam: var(--advice); --fam-bg: var(--advice-bg); --fam-soft: var(--advice-soft); --fam-line: var(--advice-line); }
+.fam-care { --fam: var(--care); --fam-bg: var(--care-bg); --fam-soft: var(--care-soft); --fam-line: var(--care-line);
+  border-left: 5px solid var(--fam); padding-bottom: 20px; }
+.section-head { display: flex; align-items: center; gap: 10px; }
+.section-head::after { content: ""; flex: 1 1 24px; height: 1px; background: var(--fam-line); }
+.section-head h3 { margin: 0; font: 600 21px/1.2 var(--serif); color: var(--text); }
+.section-icon { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--fam-soft);
+  color: var(--fam); }
+.section-icon .icon { width: 18px; height: 18px; }
+.zone-note { margin: 8px 0 0; font-size: 14.5px; color: var(--muted); max-width: 78ch; }
+.rows { list-style: none; margin: 8px 0 0; padding: 0; }
+.rows > li + li, .rows.rest > li:first-child { border-top: 1px solid var(--fam-line); }
+.row-details > summary { list-style: none; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: "mark main meta chev"; column-gap: 10px; align-items: start; padding: 11px 0; cursor: pointer; }
+.row-details > summary::-webkit-details-marker { display: none; }
+.row-details > summary:hover .row-name { text-decoration: underline; text-underline-offset: .18em; }
+.row-mark { grid-area: mark; margin-top: 3px; color: var(--fam); }
+.row-main { grid-area: main; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.row-name { margin: 0; font: 600 16px/1.35 var(--sans); color: var(--text); overflow-wrap: anywhere; }
+.row-reason { flex-basis: 100%; font-size: 14px; color: var(--muted); }
+.row-meta { grid-area: meta; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px 8px; margin-top: 1px; }
+.row-price { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.row-chev { grid-area: chev; margin-top: 3px; color: var(--muted); }
+.row-body { display: grid; gap: 10px; padding: 0 0 16px 28px; }
+.row-body > p { margin: 0; }
+.tag { display: inline-block; padding: 1px 9px; border-radius: 999px; background: var(--fam-soft); color: var(--fam); font-size: 13px;
+  font-weight: 600; white-space: nowrap; }
+.tag.warned { background: var(--warn-soft); color: var(--warn); }
+.zone-panel .form-chip { margin: 0; }
+.zone-panel .summary { font-size: 15.5px; }
+.zone-panel .quote { background: var(--surface); border-left-color: var(--fam); }
+.fam-worth .quote { border-left-color: var(--bar-for); }
+.zone-panel .downsides .quote { border-left-color: var(--bar-against); }
+.zone-panel h5 { margin: 4px 0 6px; font-size: 12.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
+.fold { margin: 8px 0 4px; font-size: 14px; background: var(--surface); }
 .fold .icon { transition: transform .15s; }
 .fold[aria-expanded="true"] .icon { transform: rotate(180deg); }
-.worth-list.rest { margin-top: 16px; }
-.care-note { margin: 20px 0 0; padding: 20px 22px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); }
-.care-note .quotes { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-.footnote { margin: 28px 0 0; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--muted); max-width: 90ch; }
-.footnote strong { color: var(--text); }
+/* What to look for: a checklist, "Look for" beside "Avoid". */
+.checklist { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 4px 32px; margin-top: 8px; }
+.check-group h4 { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; font-size: 12.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .09em; color: var(--fam); }
+.check-group.avoid h4, .check-group.avoid .row-mark { color: var(--skip); }
+.check-group.avoid .quote { border-left-color: var(--skip); }
+/* The care note: a tip. */
+.care-note .tip-quote { padding: 10px 0; }
 
-/* "First time here?" (11 Oct 2026): a small question, asked once per browser. */
-.first-time { position: relative; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; max-width: 720px;
-  margin: 24px auto 0; padding: 10px 52px 10px 16px; border-radius: 12px; background: var(--accent-soft); text-align: left; }
+/* The quiet zone after the answer (round two): what was left out, then "Was this useful?". Housekeeping, so plain: no
+   colour of its own, small headings, a dashed edge; "First time here?" sits right after it, alike. */
+.quiet-zone { display: grid; gap: 18px; margin-top: 56px; padding: 20px 22px; border: 1px dashed var(--line-strong); border-radius: var(--radius);
+  background: var(--quiet-bg); }
+.quiet-zone > * + * { padding-top: 18px; border-top: 1px solid var(--line); }
+.about h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font: 650 15px/1.3 var(--sans); }
+.about h2 .icon { color: var(--muted); }
+.footnote { margin: 0; font-size: 13.5px; color: var(--muted); max-width: 95ch; }
+.feedback-thanks { margin: 0; font-weight: 600; color: var(--accent); }
+
+/* "First time here?" (11 Oct 2026): a small question, asked once per browser; since 13 Oct 2026 in the quiet zone. */
+#first-time-slot:empty { display: none; }
+.first-time { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 16px 0 0; padding: 12px 52px 12px 18px;
+  border: 1px dashed var(--line-strong); border-radius: var(--radius); background: var(--quiet-bg); }
+.hero:not(.compact) ~ #first-time-slot .first-time { max-width: 980px; margin: 36px auto 0; }
 .first-time p { margin: 0; font-weight: 650; }
 .first-time .answers { display: flex; flex-wrap: wrap; gap: 8px; }
 .first-time .close { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); font-size: 22px; line-height: 1;
   width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; }
 .first-time .close:hover { color: var(--text); background: var(--surface); }
-.hero.compact .first-time { margin-left: 0; justify-content: flex-start; }
 
-/* "Was this useful?" under every answer (11 Oct 2026). */
-.feedback { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 4px 28px; align-items: start; margin: 40px 0 0;
-  padding: 20px 22px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
-.feedback h2 { grid-column: 1; font: 600 22px/1.2 var(--serif); margin: 0 0 12px; }
+/* "Was this useful?" under every answer (11 Oct 2026), in the quiet zone. */
+.feedback { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 4px 28px; align-items: start; margin: 0; }
+.feedback h2 { grid-column: 1; font: 650 17px/1.3 var(--sans); margin: 0 0 12px; }
 .choices { grid-column: 1; display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
 .choice { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid var(--line-strong); border-radius: 999px;
   background: var(--surface); color: var(--text); cursor: pointer; }
@@ -515,7 +578,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
 .feedback label, .feedback textarea, .feedback .hint, .feedback .send, .feedback-note { grid-column: 2; }
 .feedback label { grid-row: 1; display: block; font-weight: 650; margin-bottom: 6px; align-self: end; }
 .feedback textarea { grid-row: 2 / span 2; display: block; width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--line-strong);
-  border-radius: 10px; background: var(--bg); color: var(--text); resize: vertical; }
+  border-radius: 10px; background: var(--surface); color: var(--text); resize: vertical; }
 .feedback textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .feedback .send { justify-self: start; margin-top: 10px; font-weight: 650; padding: 9px 20px; border: 0; border-radius: 10px; background: var(--accent);
   color: var(--on-accent); cursor: pointer; }
@@ -523,14 +586,12 @@ details[open] > summary .icon { transform: rotate(180deg); }
 .feedback .send:disabled { opacity: .6; cursor: progress; }
 .feedback-note { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
 .feedback-note:empty { display: none; }
-.feedback-thanks { margin: 40px 0 0; padding: 14px 18px; border-radius: 12px; background: var(--ok-soft); color: var(--text); }
 .foot { margin-top: 56px; padding: 28px 0 44px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
 .foot p { margin: 0 0 6px; }
 
 /* Tablets and phones: one column. */
 @media (max-width: 860px) {
   .card-body { grid-template-columns: minmax(0, 1fr); }
-  .extras { grid-template-columns: minmax(0, 1fr); }
   .feedback { grid-template-columns: minmax(0, 1fr); }
   .feedback h2, .choices, .feedback label, .feedback textarea, .feedback .hint, .feedback .send, .feedback-note { grid-column: 1; grid-row: auto; }
 }
@@ -549,14 +610,19 @@ details[open] > summary .icon { transform: rotate(180deg); }
   .go { height: 44px; padding: 0 16px; }
   .slash { display: none; }
   .steps { grid-template-columns: minmax(0, 1fr); margin-top: 32px; gap: 14px; }
-  .first-time { justify-content: flex-start; }
   .card { padding: 18px 16px; }
   .rank { width: 38px; height: 38px; font-size: 19px; }
   .card-head { gap: 12px; }
   .card-head h3 { margin-top: 4px; }
-  .worth { padding: 18px 14px; }
-  .worth-list { grid-template-columns: minmax(0, 1fr); }
-  .panel, .care-note, .feedback { padding: 18px 16px; }
+  .zone-panel { padding: 16px 14px 12px; }
+  .fam-care { padding-bottom: 16px; }
+  .section-head h3 { font-size: 19px; }
+  .row-details > summary { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "mark main chev" "mark meta meta"; }
+  .row-meta { justify-content: flex-start; margin-top: 6px; }
+  .row-body { padding-left: 0; }
+  .row-meta:empty { display: none; }
+  .quiet-zone { padding: 16px 14px; }
+  .hero:not(.compact) ~ #first-time-slot .first-time { margin-top: 28px; }
   .reading dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .stat { padding: 10px 12px; }
   .stat:nth-child(3) { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line); }
@@ -582,7 +648,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
 }
 @media print {
   .topbar nav, .hero, .status, .tools, .feedback, .feedback-thanks, .first-time { display: none !important; }
-  .card, .panel, .worth, .glance, .reading { box-shadow: none; break-inside: avoid; }
+  .card, .zone-panel, .glance, .reading { box-shadow: none; break-inside: avoid; }
 }
 </style>
 </head>
@@ -620,6 +686,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
 
   <p id="status" class="status" role="status" aria-live="polite"></p>
   <div id="results" aria-busy="false"></div>
+  <div id="first-time-slot"></div>
 </main>
 
 <footer class="foot"><div class="wrap"><p data-label="footer"></p><p><a href="/how" data-label="howLink"></a></p></div></footer>
@@ -636,6 +703,10 @@ details[open] > summary .icon { transform: rotate(180deg); }
 <template id="i-thumb"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 10.5V20H4v-9.5zM7 10.5l3.8-7c1.6 0 2.6 1.1 2.3 2.7L12.4 9.5h6.3a2 2 0 0 1 2 2.4l-1.4 6.5a2 2 0 0 1-2 1.6H7"/></svg></template>
 <template id="i-link"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 14a4.2 4.2 0 0 0 6 0l3-3a4.2 4.2 0 0 0-6-6l-1 1"/><path d="M14 10a4.2 4.2 0 0 0-6 0l-3 3a4.2 4.2 0 0 0 6 6l1-1"/></svg></template>
 <template id="i-clock"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></template>
+<template id="i-eye"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg></template>
+<template id="i-ban"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></svg></template>
+<template id="i-compass"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg></template>
+<template id="i-leaf"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5.5 18.5C5 10 10 5 19 5c0 9-5 14-13.5 13.5z"/><path d="M5.5 18.5L13 11"/></svg></template>
 <template id="i-retry"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9"/><path d="M4.5 4v5h5"/></svg></template>
 
 <!-- Filled in by the server: the answer's own headings (engine/answer.py), the example requests and the length limit. -->
@@ -879,11 +950,15 @@ details[open] > summary .icon { transform: rotate(180deg); }
   function remember(key, value) { try { localStorage.setItem(key, value); return true; } catch (error) { return false; } }
   function forget(key) { try { localStorage.removeItem(key); } catch (error) { /* nothing kept */ } }
 
-  /** Asked once per browser, on its first visit: the browser notes it as asked as soon as it is shown (then answered
-      or closed), so nobody is asked twice; where the browser can't keep that note, it isn't shown at all. Only the yes
-      or no goes to the server, and it is counted as an event when visit counting is on. */
+  /** Asked once per browser: the browser notes it as asked once it has been seen (then answered or closed), so nobody
+      is asked twice; where the browser can't keep that note, it isn't shown at all. Since 13 Oct 2026 it sits in the
+      quiet zone at the end of the page, which not every visitor reaches, so until it has been on screen the note says
+      "pending" and the question is still asked on a later visit. Only the yes or no goes to the server, and it is
+      counted as an event when visit counting is on. */
   function firstTimeQuestion() {
-    if (recall(FIRST_TIME_KEY) !== null || !remember(FIRST_TIME_KEY, "asked")) return;
+    const state = recall(FIRST_TIME_KEY);
+    if (state !== null && state !== "pending") return;  // asked before: seen, answered or closed
+    if (!remember(FIRST_TIME_KEY, "pending")) return;  // the browser can't keep the note: never asked, so never twice
     const box = el("aside", { class: "first-time", "aria-labelledby": "first-time-question" });
     function answered(answer) {
       remember(FIRST_TIME_KEY, "answered");
@@ -900,7 +975,17 @@ details[open] > summary .icon { transform: rotate(180deg); }
     no.addEventListener("click", () => answered("no"));
     close.addEventListener("click", () => { remember(FIRST_TIME_KEY, "closed"); box.remove(); input.focus(); });
     box.append(el("p", { id: "first-time-question" }, LABELS.firstTimeQuestion), el("div", { class: "answers" }, yes, no), close);
-    examples.after(box);  // under the box and its examples (13 Oct 2026): the search comes first
+    document.getElementById("first-time-slot").append(box);
+    whenSeen(box, () => remember(FIRST_TIME_KEY, "asked"));
+  }
+
+  /** Calls `then` once, when `node` has been at least half on screen; at once in a browser that can't tell. */
+  function whenSeen(node, then) {
+    if (!("IntersectionObserver" in window)) { then(); return; }
+    const watcher = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) { watcher.disconnect(); then(); }
+    }, { threshold: 0.5 });
+    watcher.observe(node);
   }
 
   /** The visitor's recent requests, newest first: only texts, as they typed them; anything else kept there is ignored. */
@@ -1030,13 +1115,17 @@ details[open] > summary .icon { transform: rotate(180deg); }
   }
 
   /** The note at the end (Noemi, 11 Oct 2026): tips about the kind of product, shown once rather than under every
-      pick. Nothing when there are none. */
+      pick. Since 13 Oct 2026 (round two) a tip callout: each tip in a few words, its quote a click away (a tip that is
+      its quote shows the quote). Nothing when there are none. */
   function careNote(answer) {
     if (!answer.care_note || !answer.care_note.length) return null;
     const heading = answer.product_type
       ? fill(WORDING.care_note_heading, { product_type: answer.product_type }) : WORDING.care_note_heading_any;
-    return el("section", { class: "care-note", "aria-labelledby": "care-note-heading" },
-      el("h3", { id: "care-note-heading" }, heading), careList(answer.care_note));
+    return el("section", { class: "zone-panel fam-care care-note", "aria-labelledby": "care-note-heading" },
+      sectionHead("care-note-heading", "leaf", heading),
+      el("ul", { class: "rows" }, ...answer.care_note.map((item) => item.tip
+        ? row(icon("leaf", "row-mark"), [el("span", { class: "row-name" }, masked(item.tip))], [], quoteBlock(item.quote))
+        : el("li", { class: "row tip-quote" }, quoteBlock(item.quote)))));
   }
 
   /** "In short:" and a one-line summary (Noemi, 13 Oct 2026): our own words, drawn as plain text and never like a
@@ -1129,7 +1218,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
       const meter = voices.recommend ? el("div", { class: "meter" }, el("div", { class: "bar", "aria-hidden": "true" },
         el("span", { class: "for" }), voices.warn ? el("span", { class: "against" }) : null)) : null;
       if (meter) meter.firstChild.style.setProperty("--for", String(voices.recommend / (voices.recommend + voices.warn)));
-      return el("tr", {}, el("th", { scope: "row" }, jump),
+      return el("tr", {}, el("th", { scope: "row" }, jump, formChip(pick.form)),
         el("td", {}, el("div", { class: "tally" }, meter, el("span", {}, ...fillNodes(LABELS.glanceTally,
           { for: voices.recommend.toLocaleString("en-GB"), against: voices.warn.toLocaleString("en-GB") })))),
         el("td", { class: "n col-threads" }, voices.threads.toLocaleString("en-GB")),
@@ -1158,54 +1247,86 @@ details[open] > summary .icon { transform: rotate(180deg); }
     card.focus({ preventScroll: true });
   }
 
-  let worthCards = 0;  // numbers each item's heading, so its card is labelled by it
+  /** A section's head under the picks (13 Oct 2026, round two): its icon, its name, then a thin rule. */
+  function sectionHead(id, mark, text) {
+    return el("div", { class: "section-head" }, el("span", { class: "section-icon", "aria-hidden": "true" }, icon(mark)), el("h3", { id }, text));
+  }
 
-  /** One "Also worth a look" item (Noemi, 13 Oct 2026): a lighter card than a pick's, with its summary, reason, price
-      (when known, or with a budget), where it is sold (when checked), cautions and one or two quotes; its downsides only
-      when credible voices warn against it. */
+  /** A compact row under the picks: a mark, its name and words, its tags, and the rest a click away (`body`). */
+  function row(mark, main, meta, ...body) {
+    return el("li", { class: "row" }, el("details", { class: "row-details" },
+      el("summary", {}, mark, el("span", { class: "row-main" }, ...main), el("span", { class: "row-meta" }, ...meta), icon("chevron", "row-chev")),
+      el("div", { class: "row-body" }, ...body)));
+  }
+
+  let worthCards = 0;  // numbers each item's heading, so its row is labelled by it
+
+  /** One "Also worth a look" item (Noemi, 13 Oct 2026): a compact row, plainly not a pick (round two, the same day: no
+      card, no meter), with how much backs it as a tag and its price when known. Opened: its summary, reason, price (when
+      known, or with a budget), where it is sold (when checked), cautions and one or two quotes; its downsides only when
+      credible voices warn against it. */
   function worthCard(item) {
     const nameId = "worth-" + (++worthCards);
-    return el("li", {}, el("article", { class: "card worth-card", "aria-labelledby": nameId },
-      el("h4", { id: nameId, class: "item-name" }, item.name),
-      formChip(item.form),
+    const head = [el("h4", { id: nameId, class: "row-name" }, item.name), formChip(item.form)];
+    const tags = [...worthTag(item.voices), item.price.amount !== null ? el("span", { class: "row-price" }, priceAmount(item.price)) : null];
+    return row(icon("eye", "row-mark"), head, tags,
       summaryLine(item.summary),
-      trustBox(item, false),
-      // Lighter than a pick's card: its price only when known or when the request has a budget, where it is sold only
-      // when checked.
+      el("p", { class: "reason" }, item.reason),
+      // Its price only when known or when the request has a budget, where it is sold only when checked.
       ...(item.price.amount !== null || item.price.budget_note ? priceLines(item.price) : []),
       item.availability && item.availability.available !== null ? availabilityLine(item.availability) : null,
       ...cautionLines(item.cautions),
       item.disagreement && withIcon("alert", el("p", { class: "flag" }, item.disagreement)),
       quoteList(item.quotes),
-      moreDetails([[LABELS.moreDownsides, item.downsides.length]], ...downsideSection(item, "h5"))));
+      ...downsideSection(item, "h5"));
   }
 
-  /** "Also worth a look" (Noemi, 13 Oct 2026): after the picks, in a section of its own, under the answer's note saying
-      how much less support its products have. Never mixed into the picks. Nothing when there are none. */
+  /** How much backs an "Also worth a look" item, as tags: "2 credible voices · 2 threads", and how many warned. */
+  function worthTag(voices) {
+    if (!voices || !voices.recommend) return [];
+    return [el("span", { class: "tag" }, counted(LABELS.tagVoices, voices.recommend) + " · " + counted(LABELS.tagThreads, voices.threads)),
+      voices.warn ? el("span", { class: "tag warned" }, counted(LABELS.meterAgainst, voices.warn)) : null];
+  }
+
+  /** "Also worth a look" (Noemi, 13 Oct 2026): after the picks, in a muted panel of its own, under the answer's note
+      saying how much less support its products have. Never mixed into the picks. Nothing when there are none. */
   function worthSection(answer) {
     if (!answer.worth_a_look || !answer.worth_a_look.length) return null;
-    return el("section", { class: "worth", "aria-labelledby": "worth-heading" },
-      el("h3", { id: "worth-heading" }, WORDING.worth_heading),
-      answer.worth_note && el("p", { class: "worth-note" }, answer.worth_note),
-      ...foldedList("worth-list", answer.worth_a_look.map((item) => worthCard(item)), WORTH_SHOWN_FIRST));
+    return el("section", { class: "zone-panel fam-worth worth", "aria-labelledby": "worth-heading" },
+      sectionHead("worth-heading", "eye", WORDING.worth_heading),
+      answer.worth_note && el("p", { class: "zone-note" }, answer.worth_note),
+      ...foldedList("rows", answer.worth_a_look.map((item) => worthCard(item)), WORTH_SHOWN_FIRST));
   }
 
+  /** "What to look for": an advice panel, a checklist with "Look for" beside "Avoid" (the answer's own words), each kind
+      with its quote a click away. */
   function lookForSection(items) {
-    return el("section", { class: "panel look-for", "aria-labelledby": "look-for-heading" },
-      el("h3", { id: "look-for-heading" }, WORDING.look_for_heading),
-      el("ul", { class: "items" }, ...items.map((item) => el("li", { class: item.advice === WORDING.avoid_advice ? "avoid" : "seek" },
-        el("p", { class: "lead" }, icon(item.advice === WORDING.avoid_advice ? "x" : "check"), el("strong", {}, item.advice + ": " + item.kind + ".")),
-        quoteBlock(item.quote)))));
+    const groups = [];
+    for (const item of items) {
+      const group = groups.find(([advice]) => advice === item.advice);
+      if (group) group[1].push(item);
+      else groups.push([item.advice, [item]]);
+    }
+    groups.sort(([a], [b]) => (a === WORDING.avoid_advice) - (b === WORDING.avoid_advice));  // "Look for" first
+    return el("section", { class: "zone-panel fam-advice look-for", "aria-labelledby": "look-for-heading" },
+      sectionHead("look-for-heading", "compass", WORDING.look_for_heading),
+      el("div", { class: "checklist" }, ...groups.map(([advice, entries]) => {
+        const mark = advice === WORDING.avoid_advice ? "x" : "check";
+        return el("div", { class: "check-group " + (mark === "x" ? "avoid" : "seek") }, el("h4", {}, icon(mark), advice),
+          el("ul", { class: "rows" }, ...entries.map((item) => row(icon(mark, "row-mark"), [el("span", { class: "row-name" }, item.kind)], [],
+            quoteBlock(item.quote)))));
+      })));
   }
 
-  /** "Skip these": each product and why, its warnings a click away; the first few in view, strongest first, the rest
-      behind "Show N more" (13 Oct 2026: brand lines are listed too, so a list can be long). Nothing is left out. */
+  /** "Skip these": a warning panel, each product with a warning mark and why, its warnings a click away; the first few
+      in view, strongest first, the rest behind "Show N more" (13 Oct 2026: brand lines are listed too, so a list can
+      be long). Nothing is left out. */
   function skipSection(items) {
-    return el("section", { class: "panel skip", "aria-labelledby": "skip-heading" },
-      el("h3", { id: "skip-heading" }, WORDING.skip_heading),
-      ...foldedList("items", items.map((item) => el("li", {}, el("details", {},
-        el("summary", {}, el("span", { class: "lead" }, el("strong", {}, item.name + ": "), formChip(item.form), item.reason), icon("chevron")),
-        quoteList(item.quotes)))), LIST_SHOWN_FIRST));
+    return el("section", { class: "zone-panel fam-skip skip", "aria-labelledby": "skip-heading" },
+      sectionHead("skip-heading", "ban", WORDING.skip_heading),
+      ...foldedList("rows", items.map((item) => row(icon("x", "row-mark"),
+        [el("strong", { class: "row-name" }, item.name), formChip(item.form), el("span", { class: "row-reason" }, item.reason)], [],
+        quoteList(item.quotes))), LIST_SHOWN_FIRST));
   }
 
   /** A list of `entries` (list items) with the first `first` in view and the rest in a second list, hidden behind a
@@ -1294,16 +1415,22 @@ details[open] > summary .icon { transform: rotate(180deg); }
     const button = el("button", { type: "button", class: "tool" }, icon("chevron"), words);
     button.addEventListener("click", () => {
       const open = words.textContent === LABELS.expandAll;
-      for (const details of results.querySelectorAll("details.more")) details.open = open;
+      for (const details of results.querySelectorAll("details.more, details.row-details")) details.open = open;
       words.textContent = open ? LABELS.collapseAll : LABELS.expandAll;
     });
     return button;
   }
 
   /** Everything to show for one JSON answer from the server, ending with "Was this useful?" (11 Oct 2026): under the
-      picks, under module 1's question, and under its polite no alike. */
+      picks, under module 1's question, and under its polite no alike; since 13 Oct 2026 in a quiet zone with what was
+      left out of the answer. */
   function drawAnswer(data, request) {
-    return [...answerParts(data), feedbackForm(request, data.query)];
+    return [...answerParts(data), quietZone(aboutAnswer(data), feedbackForm(request, data.query))];
+  }
+
+  /** The quiet zone after an answer: housekeeping, drawn plainly (13 Oct 2026, round two). */
+  function quietZone(...parts) {
+    return el("div", { class: "quiet-zone" }, ...parts.filter(Boolean));
   }
 
   function answerParts(data) {
@@ -1323,20 +1450,27 @@ details[open] > summary .icon { transform: rotate(180deg); }
     if (answer.message) parts.push(notice("honest", null, answer.message));
     parts.push(glanceTable(answer.picks));
     if (answer.picks.length) parts.push(el("ol", { class: "picks" }, ...answer.picks.map(pickCard)));
-    parts.push(worthSection(answer));
-    const extras = [];
-    if (answer.look_for.length) extras.push(lookForSection(answer.look_for));
-    if (answer.skip.length) extras.push(skipSection(answer.skip));
-    if (extras.length) parts.push(el("div", { class: "extras" }, ...extras));
-    parts.push(careNote(answer));
+    // Under the picks, each kind of section in its own panel (13 Oct 2026, round two): more products, products to
+    // skip, then advice and care.
+    const below = [worthSection(answer), answer.skip.length ? skipSection(answer.skip) : null,
+      answer.look_for.length ? lookForSection(answer.look_for) : null, careNote(answer)].filter(Boolean);
+    if (below.length) parts.push(el("div", { class: "more-zone" }, ...below));
+    return parts.filter(Boolean);
+  }
+
+  /** "About this answer": what was left out of the ranking and why, in the quiet zone; null when nothing was. */
+  function aboutAnswer(data) {
+    const answer = data.answer;
+    if (!answer || !data.left_out) return null;
     const overBudget = data.left_out.over_budget ? " " + fill(LABELS.leftOutBudget, { n: data.left_out.over_budget }) : "";
     const unavailable = data.left_out.unavailable ? " " + fill(LABELS.leftOutUnavailable, { n: data.left_out.unavailable }) : "";
     const notSuited = data.left_out.not_suited ? " " + fill(LABELS.leftOutNotSuited, { n: data.left_out.not_suited }) : "";
     const noIngredient = data.left_out.no_ingredient && answer.ingredient
       ? " " + fill(LABELS.leftOutNoIngredient, { n: data.left_out.no_ingredient, ingredient: answer.ingredient }) : "";
     const leftOut = (leftOutText(data.left_out) + overBudget + unavailable + notSuited + noIngredient).trim();
-    if (leftOut) parts.push(el("p", { class: "footnote" }, el("strong", {}, LABELS.leftOutHeading + ". "), leftOut));
-    return parts.filter(Boolean);
+    if (!leftOut) return null;
+    return el("section", { class: "about", "aria-labelledby": "about-heading" },
+      el("h2", { id: "about-heading" }, icon("info"), LABELS.leftOutHeading), el("p", { class: "footnote" }, leftOut));
   }
 
   /** What was left out of the ranking, in words that say what is counted (names, never mentions or threads; Noemi,

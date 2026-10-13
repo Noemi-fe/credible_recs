@@ -224,3 +224,89 @@ def test_only_a_browser_that_says_it_takes_gzip_gets_it():
     assert web.takes_gzip("gzip") and web.takes_gzip("deflate, gzip;q=0.5") and web.takes_gzip("*")
     assert not web.takes_gzip(None) and not web.takes_gzip("br") and not web.takes_gzip("gzip;q=0")
     assert not web.takes_gzip("gzip;q=0.000")
+
+
+# --- Round two (Noemi, 13 Oct 2026: "Can we make the sections 'also worth a look' and the other ones under a little more
+# distinct from the picks? It feels a little too uniform"): the picks are the only raised cards; every section under
+# them has its own colour family, a flat tinted panel and a head with its icon; the housekeeping sits in a quiet zone ---
+
+SECTIONS = {"function worthSection(answer)": "fam-worth", "function skipSection(items)": "fam-skip",
+            "function lookForSection(items)": "fam-advice", "function careNote(answer)": "fam-care"}
+
+
+def test_nothing_under_the_picks_is_drawn_like_a_pick(tmp_path):
+    script = script_of(page_text(tmp_path))
+    for signature, family in SECTIONS.items():
+        body = function_body(script, signature)
+        assert "zone-panel " + family in body and "sectionHead(" in body, signature
+    for signature in ("function worthCard(item)", *SECTIONS):
+        body = function_body(script, signature)
+        assert '"card' not in body and "trustMeter(" not in body and "trustBox(" not in body, signature
+    assert '"card pick"' in function_body(script, "function pickCard(pick)")
+
+
+def test_an_also_worth_a_look_item_is_a_compact_row_with_its_evidence_a_click_away(tmp_path):
+    script = script_of(page_text(tmp_path))
+    worth = function_body(script, "function worthCard(item)")
+    shown, opened = worth.split("return row(", 1)  # what the row shows, then what opening it shows
+    assert "worthTag(item.voices)" in shown and "summaryLine(" not in shown and "quoteList(" not in shown
+    assert "summaryLine(item.summary)" in opened and "quoteList(item.quotes" in opened  # a click away
+    row = function_body(script, "function row(mark, main, meta, ...body)")
+    assert 'el("details", { class: "row-details" }' in row and 'el("div", { class: "row-body" }, ...body)' in row
+    tag = function_body(script, "function worthTag(voices)")
+    assert "voices.recommend" in tag and "voices.threads" in tag and "voices.warn" in tag
+
+
+def test_skip_these_rows_each_carry_a_warning_mark(tmp_path):
+    skip = function_body(script_of(page_text(tmp_path)), "function skipSection(items)")
+    assert 'icon("x", "row-mark")' in skip and "foldedList(" in skip
+
+
+def test_the_housekeeping_sits_in_a_quiet_zone_after_the_answer(tmp_path):
+    script = script_of(page_text(tmp_path))
+    draw = function_body(script, "function drawAnswer(data, request)")
+    assert "quietZone(aboutAnswer(data), feedbackForm(request, data.query))" in draw
+    assert "LABELS.leftOutHeading" in function_body(script, "function aboutAnswer(data)")
+    assert 'id="first-time-slot"' in page_text(tmp_path)
+
+
+def test_first_time_here_is_noted_as_asked_only_once_it_has_been_seen(tmp_path):
+    # It sits at the end of the page since 13 Oct 2026, which not every visitor reaches: noted as asked when it has been
+    # on screen (never twice once seen), and "pending" until then, so a visitor who never saw it can still be asked.
+    asking = function_body(script_of(page_text(tmp_path)), "function firstTimeQuestion()")
+    assert 'remember(FIRST_TIME_KEY, "pending")' in asking
+    assert 'whenSeen(box, () => remember(FIRST_TIME_KEY, "asked"))' in asking
+    assert 'state !== null && state !== "pending"' in asking
+
+
+def _tokens(css: str) -> tuple[dict[str, str], dict[str, str]]:
+    """The page's colour tokens: light (the first :root block) and dark (the :root block in the dark-mode query)."""
+    light = dict(re.findall(r"--([\w-]+):\s*(#[0-9a-fA-F]{6})", re.search(r":root \{(.*?)\n\}", css, re.DOTALL).group(1)))
+    dark_block = re.search(r"@media \(prefers-color-scheme: dark\) \{\s*:root \{(.*?)\n  \}", css, re.DOTALL).group(1)
+    return light, light | dict(re.findall(r"--([\w-]+):\s*(#[0-9a-fA-F]{6})", dark_block))
+
+
+def _contrast(a: str, b: str) -> float:
+    def luminance(colour: str) -> float:
+        channels = [int(colour[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+        r, g, b = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    high, low = sorted((luminance(a), luminance(b)), reverse=True)
+    return (high + 0.05) / (low + 0.05)
+
+
+# Every pair of text colour and the background it is drawn on, by token name.
+TEXT_ON = [("text", "bg"), ("text", "surface"), ("text", "sunken"), ("muted", "bg"), ("muted", "surface"),
+           ("muted", "sunken"), ("accent", "bg"), ("accent", "surface"), ("accent", "sunken"), ("accent", "accent-soft"),
+           ("on-accent", "accent"), ("warn", "warn-soft"), ("text", "warn-soft"), ("bad", "bad-soft"),
+           ("text", "bad-soft"), ("muted", "quiet-bg"), ("text", "quiet-bg")]
+TEXT_ON += [(colour, family + "-" + ground) for family in ("worth", "advice", "skip", "care")
+            for colour, ground in ((family, "bg"), (family, "soft"), ("text", "bg"), ("muted", "bg"))]
+
+
+def test_every_text_colour_meets_wcag_aa_contrast_in_light_and_dark(tmp_path):
+    css = re.search(r"<style>(.*?)</style>", page_text(tmp_path), re.DOTALL).group(1)
+    for mode, tokens in zip(("light", "dark"), _tokens(css)):
+        for colour, ground in TEXT_ON:
+            ratio = _contrast(tokens[colour], tokens[ground])
+            assert ratio >= 4.5, f"{mode}: {colour} on {ground} is {ratio:.2f}:1"
