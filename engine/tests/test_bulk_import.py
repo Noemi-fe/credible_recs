@@ -157,6 +157,35 @@ def test_a_post_whose_title_doesnt_name_the_type_isnt_chosen(tmp_path, lib):
     assert not chosen_ids(run(files, lib, dry_run=True), "electric kettle")
 
 
+@pytest.mark.parametrize("title, type_name", [
+    # kitchen threads about food or using the gear, not about choosing it (14 Oct 2026, the coordinator's rule)
+    ("What should I make first with my new stand mixer?", "stand mixer"),
+    ("Easy weeknight meals for a slow cooker?", "slow cooker"),
+    ("What's the best thing you've baked in a toaster oven?", "toaster oven"),
+    ("Any tips for getting the most out of a microwave?", "microwave"),
+    ("What can I add to my rice cooker to make plain rice taste better?", "rice cooker"),
+    ("How do I cook fluffy rice without a rice cooker?", "rice cooker"),
+    # a general megathread naming the type only in passing
+    ("Besides an air fryer, what is the one kitchen gadget you'd buy again?", "air fryer"),
+    ("What cooking tool was a waste of money? Mine was an electric kettle", "electric kettle"),
+])
+def test_food_usage_and_megathread_titles_arent_chosen(tmp_path, lib, title, type_name):
+    files = tmp_path / "files"
+    write_subreddit(files, "BuyItForLife", [post("1food01", title)], some_comments("1food01"))
+    assert not chosen_ids(run(files, lib, dry_run=True), type_name)
+
+
+@pytest.mark.parametrize("title, type_name", [
+    ("Which rice cooker lasts? Any tips for buying one?", "rice cooker"),
+    ("Which air fryer should I buy? Mine broke after a year", "air fryer"),
+    ("What's your favourite electric kettle that has lasted?", "electric kettle"),
+])
+def test_buying_questions_with_tips_or_favourites_are_still_chosen(tmp_path, lib, title, type_name):
+    files = tmp_path / "files"
+    write_subreddit(files, "BuyItForLife", [post("1buy001", title)], some_comments("1buy001"))
+    assert chosen_ids(run(files, lib, dry_run=True), type_name) == {"1buy001"}
+
+
 def test_a_post_named_by_a_look_alike_isnt_about_the_type(tmp_path, lib):
     files = tmp_path / "files"
     write_subreddit(files, "BuyItForLife", [post("1pot01", "Which crock pot should I buy?")], some_comments("1pot01"))

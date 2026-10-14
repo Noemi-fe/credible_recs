@@ -16,11 +16,12 @@ Choosing uses modules 1 and 2's own rules; nothing new decides what a good threa
    most likely to be about it: a recipe thread whose post mentions a microwave isn't, 14 Oct 2026), of a kind the
    library mixes (engine.sources.thread_kind: advice, long-term use or a warning), in the type's own subreddits
    (module 1's routing: r/acne only for spot treatments, for example), with real engagement (BULK_MIN_COMMENTS
-   comments and a score of BULK_MIN_SCORE), not removed or deleted, not a recurring thread, not a kitchen recipe
-   thread, posted from BULK_FIRST_YEAR on, and not already in the library or the gold set. The archive saved most
-   posts weeks after they were written, but much of late 2023 within the hour, before their score and comment count
-   had settled: for a post saved within a day of its writing, its comments in the file are counted instead, and its
-   score isn't asked for.
+   comments and a score of BULK_MIN_SCORE), not removed or deleted, not a recurring thread or a general megathread
+   ("what's the one gadget..."), not a kitchen thread about food or using the gear (recipes, what to cook, tips) nor one
+   about doing without the type, posted from BULK_FIRST_YEAR on, and not already in the library or the gold set. The
+   archive saved most posts weeks after they were written, but much of late 2023 within the hour, before their score
+   and comment count had settled: for a post saved within a day of its writing, its comments in the file are counted
+   instead, and its score isn't asked for.
 2. Which types. Module 1's product types as they are when the import runs (engine.query.PRODUCT_TYPES), so a type added
    later is picked up by running it again while the files are still here; `--type "air fryer:kitchen"` adds a type
    module 1 names only through its open model, found by its whole name, as answers find it.
@@ -205,9 +206,41 @@ def _titled(title: str, subject: str, title_words: set[str]) -> bool:
     return False
 
 
-# Kitchen threads asking for recipes are about food, not about choosing the gear their title names ("favourite Instant
-# Pot recipes?"): module 2 ranks them low (engine.sources._CARE), and the import leaves them out.
-_RECIPES = re.compile(r"\brecipes?\b", re.IGNORECASE)
+# Kitchen threads about food or about using the gear, not about choosing it, are left out (14 Oct 2026, the coordinator's
+# rule after the first import: several of the biggest threads chosen were these): recipes ("favourite Instant Pot
+# recipes?", which module 2 ranks low too: engine.sources._CARE), what to cook, make or add, meal and dish ideas, the
+# best thing someone cooked in it, tips for getting the most out of it, and "I made a milkshake in my food processor".
+# Buying tips ("tips for buying a rice cooker") and care questions ("how do I season my wok") stay.
+_FOOD_OR_USE = re.compile(
+    r"\b(recipes?"
+    r"|what\b(\s+\w+){0,4}\s+(can|should|could|do) (i|we|you) (make|cook|bake|do with)"
+    r"|what (can|should) (i|we) add\b.{0,40}\bto make"
+    r"|what to (make|cook|bake)"
+    r"|best thing (you|to|i)('ve)? (cook|make|bake|made|cooked|baked)"
+    r"|(meal|dinner|dish|snack|breakfast|lunch) (ideas?|prep)|ideas? for (meals?|dinner|dishes)"
+    r"|(thanksgiving|christmas|holiday|party|potluck|weeknight|side|favou?rite|easy|quick|healthy|cheap) (dish(es)?|meals?)"
+    r"|dish(es)? (ideas?|to (make|bring))"
+    r"|(best|any|your) tips? (for|on|to) (getting the most|using|use|cooking)|best tip ever"
+    r"|i (just )?made (a|an|some|this|my)|(buy|get) to (cook|make|eat)|infuse)\b",
+    re.IGNORECASE)
+
+# General megathreads ("what's the one kitchen gadget you'd buy again?", "what cooking tool was a waste of money?") name
+# a type only in passing: their thousands of comments are about everything else. Left out in every category.
+_MEGATHREAD = re.compile(
+    r"\bwhat('?s| is| was| are| were)?\s+(is\s+)?(the|your)\s+(one|single|best|worst|favou?rite|most\s+\w+)\b"
+    r".{0,40}?\b(items?|things?|tools?|gadgets?|appliances?|purchases?)\b"
+    r"|\bwhat\s+(cooking\s+|kitchen\s+)?(tools?|items?|gadgets?|appliances?|things?)\s+"
+    r"(was|were|is|are|do|did|have|has|would|should)\b",
+    re.IGNORECASE)
+
+_WITHOUT = re.compile(r"\bwithout (using )?(a|an|my|the)\s+", re.IGNORECASE)
+
+
+def _without(title: str, subject: str) -> bool:
+    """Whether the title asks about doing without the subject ("rice without a rice cooker"): a thread about its
+    absence isn't about choosing one."""
+    pattern = _product_pattern(subject)
+    return any(pattern.match(title, found.end()) for found in _WITHOUT.finditer(title))
 
 
 def _long_words(text: str) -> set[str]:
@@ -233,7 +266,7 @@ def scan_submissions(path: str, subjects: tuple[tuple[str, str], ...], first_yea
 
     A candidate names one of `subjects` ((category, subject) pairs: a product type, or an ingredient's type, with its
     category, whose words judge its kind) in its title, is of a kind the library mixes for it, isn't removed, deleted,
-    recurring or a kitchen recipe thread, was posted from `first_year` to the files' last day, and has real engagement, unless its
+    recurring, a megathread or a kitchen food or usage thread, was posted from `first_year` to the files' last day, and has real engagement, unless its
     numbers hadn't settled when the archive saved it (then its comments are counted later). Each candidate keeps
     POST_FIELDS, "about" (the subjects it names, each with its kind), "settled", and "file" and "source" (the file and
     the subreddit as its name writes it)."""
@@ -261,6 +294,9 @@ def scan_submissions(path: str, subjects: tuple[tuple[str, str], ...], first_yea
         if _RECURRING.search(title.lower()):
             left_out["a recurring thread"] += 1
             continue
+        if _MEGATHREAD.search(title):
+            left_out["a general megathread"] += 1
+            continue
         # Cheap and exact first: a title of no kind at all is of no kind for any type (a warning needs its words too),
         # and engagement doesn't depend on the type.
         if not any(thread_kind(readable, category) in THREAD_KINDS for category in categories):
@@ -272,7 +308,7 @@ def scan_submissions(path: str, subjects: tuple[tuple[str, str], ...], first_yea
             continue
         kinds, title_words = {}, _long_words(title)
         for category, subject in subjects:
-            if category == "kitchen" and _RECIPES.search(title):
+            if (category == "kitchen" and _FOOD_OR_USE.search(title)) or _without(title, subject):
                 continue
             if subject not in kinds and _titled(title, subject, title_words):
                 kind = thread_kind(readable, category, subject)
