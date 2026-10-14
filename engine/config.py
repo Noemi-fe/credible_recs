@@ -1517,8 +1517,9 @@ ON_DEMAND_QUEUE_FRESH_SECONDS = 60
 #      and C put lifted shampoos in place of picks with three credible writers).
 # In every variant nothing leaves the answer (a lifted product its score keeps out of the picks stays under Also worth a
 # look) and how much an answer reads doesn't change (engine.pipeline.answer_request).
-# PROPOSED (Claude, 14 Oct 2026): every value but her "10+", and which variant, wait for Noemi; the switch stays off.
-UPVOTE_COUNTS_MORE = False
+# Decided (Noemi, 14 Oct 2026: "yes" to turning on variant D, as recommended after its effect report): the switch is on,
+# with D's values below (her "10+", the top 10% of a thread of 20+ comments, filling empty places only).
+UPVOTE_COUNTS_MORE = True
 UPVOTE_MIN_SCORE = 10  # Noemi's "10+"
 UPVOTE_ONLY_WHEN_SHORT = True
 UPVOTE_TOP_OF_BIG_THREAD = True

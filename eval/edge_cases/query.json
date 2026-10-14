@@ -526,34 +526,44 @@
       "id": "q28",
       "text": "best laptop for uni under 800",
       "expected": {
-        "status": "out_of_scope",
-        "category": null,
-        "product_type": null,
-        "constraints": {}
+        "status": "ok",
+        "category": "general",
+        "product_type": "laptop",
+        "constraints": {
+          "budget": {
+            "max": 800,
+            "currency": null
+          }
+        }
       },
-      "notes": "The brief's out-of-scope example, with a budget added. Trap: a parsable budget is no reason to accept it; reply with a polite no."
+      "notes": "Relabelled 14 Oct 2026 (Noemi: \"yes\" to relabelling after her decision \"I want recs regardless of the category\"): a laptop is a product now (general category, tech). The budget has no currency: module 1 doesn't guess one (the answer assumes GBP). Was: out of scope (7 Oct). Earlier note: The brief's out-of-scope example, with a budget added. Trap: a parsable budget is no reason to accept it; reply with a polite no."
     },
     {
       "id": "q29",
       "text": "hair dryer that wont fry my curls under £100",
       "expected": {
-        "status": "out_of_scope",
-        "category": null,
-        "product_type": null,
-        "constraints": {}
+        "status": "ok",
+        "category": "general",
+        "product_type": "hair dryer",
+        "constraints": {
+          "budget": {
+            "max": 100,
+            "currency": "GBP"
+          }
+        }
       },
-      "notes": "Near-miss: sounds beauty-ish, but hair tools are haircare, not skincare, and none of the skincare subreddits cover it."
+      "notes": "Relabelled 14 Oct 2026 (Noemi: \"yes\" to relabelling after \"I want recs regardless of the category\"): hair tools are products now (general category, beauty and personal care). 'won't fry my curls' is a wish for the search, not a must-have. Was: out of scope (7 Oct). Earlier note: Near-miss: sounds beauty-ish, but hair tools are haircare, not skincare, and none of the skincare subreddits cover it."
     },
     {
       "id": "q30",
       "text": "quiet dishwasher for a small kitchen",
       "expected": {
-        "status": "out_of_scope",
-        "category": null,
-        "product_type": null,
+        "status": "ok",
+        "category": "kitchen",
+        "product_type": "dishwasher",
         "constraints": {}
       },
-      "notes": "Near-miss: says 'kitchen', but a dishwasher is a large built-in appliance, not the cookware, knives, coffee and tea gear our kitchen subreddits cover. confirmed by Noemi, 7 Oct 2026: large appliances are out of scope for 'kitchen gear'."
+      "notes": "Relabelled 14 Oct 2026 (Noemi: \"yes\" to relabelling; her 14 Oct decision \"I want recs regardless of the category\" supersedes her 7 Oct one that large appliances are out of scope for kitchen gear): a dishwasher is a kitchen product. 'quiet' and 'small kitchen' are wishes for the search. Was: out of scope (7 Oct). Earlier note: Near-miss: says 'kitchen', but a dishwasher is a large built-in appliance, not the cookware, knives, coffee and tea gear our kitchen subreddits cover. confirmed by Noemi, 7 Oct 2026: large appliances are out of scope for 'kitchen gear'."
     }
   ]
 }
