@@ -642,6 +642,19 @@ def test_warming_up_stops_answering_product_types_once_its_time_is_up(tmp_path, 
     assert f"left {len(web.warm_requests()) - expected} requests for their first visitors" in said
 
 
+def test_getting_ready_says_how_long_each_step_took(tmp_path, monkeypatch, capsys):
+    # 14 Oct 2026 (the coordinator): on Cloud Run getting ready warmed far fewer requests than on this Mac in its 120 s;
+    # each step before the warm answers now says its time in the server's window, so the slow one can be seen.
+    from engine import query_model
+
+    monkeypatch.setattr(query_model, "default_query_model", lambda: None)
+    monkeypatch.setattr(web, "ready", threading.Event())
+    web.warm_up(tmp_path / "no-library")
+    said = capsys.readouterr().out
+    for step in ("the open model", "the price list", "the facts list"):
+        assert re.search(rf"Getting ready: {step} took \d+\.\d s\.", said), step
+
+
 def _ready_with_requests_left(tmp_path, monkeypatch, takes: float = 40.0):
     """A server that got ready with time for 3 warm answers of `takes` seconds each, the rest left (a clock that moves
     only as answers take time); and the requests asked."""
