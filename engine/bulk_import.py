@@ -20,7 +20,8 @@ Choosing uses modules 1 and 2's own rules; nothing new decides what a good threa
    ("what's the one gadget..."), not a kitchen thread about food or using the gear (recipes, what to cook, tips) nor one
    about doing without the type, not a question about a fault or safety issue with someone's own unit ("is my damaged
    microwave safe?", "my kettle stopped working, why?") unless it also asks what to buy, posted from BULK_FIRST_YEAR
-   on, and not already in the library or the gold set. The
+   on, and not already in the library, set aside before (imports.jsonl keeps every imported thread's id, and
+   set_aside/threads holds the set-aside ones not deleted yet) or in the gold set. The
    archive saved most posts weeks after they were written, but much of late 2023 within the hour, before their score
    and comment count had settled: for a post saved within a day of its writing, its comments in the file are counted
    instead, and its score isn't asked for.
@@ -664,6 +665,7 @@ def import_dump(files_dir: Path, library_dir: Path = DEFAULT_LIBRARY_DIR, reques
     files, result.skipped_files = history_files(Path(files_dir))
     threads_dir = Path(library_dir) / "threads"
     saved_ids = {path.stem for path in threads_dir.glob("*.json")} if threads_dir.is_dir() else set()
+    saved_ids |= imported_before(Path(library_dir))
     library_threads = load_threads(threads_dir, skip_broken=True) if threads_dir.is_dir() else []
     never = _gold_ids() if never is None else set(never)
 
@@ -688,7 +690,7 @@ def import_dump(files_dir: Path, library_dir: Path = DEFAULT_LIBRARY_DIR, reques
     result.posts_read = len(posts)
     known = len(posts)
     posts = [p for p in posts if p["id"] not in saved_ids and p["id"] not in never]
-    left_out["already in the library or the gold set"] += known - len(posts)
+    left_out["already in the library, set aside before or in the gold set"] += known - len(posts)
     _settle(posts, files, workers, left_out, result)
     posts = [p for p in posts if p["num_comments"] >= BULK_MIN_COMMENTS]
     result.left_out = dict(left_out)
@@ -723,6 +725,25 @@ def carry_out(result: ImportResult, files_dir: Path, library_dir: Path = DEFAULT
         _read_and_save(result.chosen, files, Path(library_dir) / "threads", never, now, workers, result)
         _log(result, result.chosen, Path(library_dir), now)
     return result
+
+
+def imported_before(library_dir: Path = DEFAULT_LIBRARY_DIR) -> set[str]:
+    """Every thread an import has saved (imports.jsonl logs each, and each later set aside), and every thread in
+    set_aside/threads: an off-topic import is moved there or deleted, and is never imported again (Noemi, 14 Oct 2026)."""
+    ids: set[str] = set()
+    log = Path(library_dir) / "imports.jsonl"
+    if log.is_file():
+        for line in log.read_text(encoding="utf-8").splitlines():
+            try:
+                thread_id = json.loads(line).get("thread_id")
+            except (ValueError, AttributeError):  # a broken or foreign line names no thread
+                continue
+            if thread_id:
+                ids.add(str(thread_id))
+    aside = Path(library_dir) / "set_aside" / "threads"
+    if aside.is_dir():
+        ids |= {path.stem for path in aside.glob("*.json")}
+    return ids
 
 
 def _gold_ids() -> set[str]:
