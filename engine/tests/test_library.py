@@ -635,6 +635,20 @@ def test_command_line_coverage(tmp_path, capsys):
     assert "Parse credits used this month: 0 of 200" in out
 
 
+def test_command_line_coverage_lists_the_taxonomys_types_only_when_they_have_threads(tmp_path, capsys):
+    # 14 Oct 2026 (the general category's 352 types): one line each for those with saved threads, then how many have
+    # none, instead of hundreds of zeros.
+    from engine.config import MORE_PRODUCT_TYPES
+
+    folder = library_with(tmp_path, kettle_thread("1k1"), kettle_thread("1h1", category="general",
+                                                                         title="Headphones that last?"))
+    assert library.main(["coverage"], client=FakeParseClient(), folder=folder) == 0
+    out = capsys.readouterr().out
+    assert re.search(r"  general\n    headphones\s+1\n", out) and not re.search(r"robot vacuum\s+0", out)
+    general = sum(entry["category"] == "general" for entry in MORE_PRODUCT_TYPES)
+    assert f"and {general - 1} more types with none yet" in out
+
+
 @pytest.mark.parametrize("argv", [[], ["add"], ["fetch"]])
 def test_command_line_explains_itself_when_used_wrongly(tmp_path, capsys, argv):
     client = FakeParseClient()

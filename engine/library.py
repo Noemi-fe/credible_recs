@@ -119,7 +119,7 @@ from engine.extract import ExtractionError
 from engine.gold import GoldSetError, GoldThreadError, load_threads, unlabelled_gold_ids
 from engine.models import Thread
 from engine.parse_reddit import REPO_ROOT, ParseAPIError, ParseRedditClient
-from engine.query import PRODUCT_TYPES, parse_query
+from engine.query import FIRST_PRODUCT_TYPES, PRODUCT_TYPES, parse_query
 from engine.sources import (
     THREAD_KINDS,
     ArchiveSource,
@@ -1049,12 +1049,21 @@ def _print_check_live(result: LiveCheckResult) -> int:
 
 
 def _print_coverage(counts: dict[str, int], kinds: dict[str, dict[str, int]]) -> int:
+    """Module 1's first types each on a line; the taxonomy's (engine/data/product_types.json, 14 Oct 2026) only when they
+    have saved threads, then how many have none, so 352 types don't print as hundreds of zeros."""
     print("Saved threads per product type:")
+    first = {p.name for p in FIRST_PRODUCT_TYPES}
     for category in THREAD_CATEGORIES:
         print(f"  {category}")
+        empty = 0
         for product in PRODUCT_TYPES:
             if product.category == category:
-                print(f"    {product.name:<18} {counts[product.name]}")
+                if product.name in first or counts[product.name]:
+                    print(f"    {product.name:<18} {counts[product.name]}")
+                else:
+                    empty += 1
+        if empty:
+            print(f"    and {empty} more types with none yet")
     target = ", ".join(f"{KIND_NAMES[kind]} {LIBRARY_MIX.get(kind, 0)}" for kind in THREAD_KINDS)
     print(f"Threads of each kind, against the library's mix ({target}), for product types with saved threads:")
     covered = [product.name for product in PRODUCT_TYPES if counts[product.name]]
