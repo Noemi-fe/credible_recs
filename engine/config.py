@@ -126,7 +126,7 @@ GENERAL_DEPARTMENTS: dict[str, dict] = {
             "hints": ("car", "vehicle", "driving"),
             "communities": ("cars", "MechanicAdvice", "AutoDetailing", "BuyItForLife")},
 }
-# Module 1's product types beyond its first 53 (engine/query.py's own list), as data: 336 popular types of the general
+# Module 1's product types beyond its first 43 (engine/query.py's own list), as data: 336 popular types of the general
 # category, plus large kitchen appliances, barbecues and cooking gear, and a few haircare types (14 Oct 2026, Noemi's
 # plan part 1, for the library prepared ahead in part 2; chosen by Claude, reported to Noemi). Left out on purpose,
 # because they changed answers about the first types (their names would have covered words those answers read):
