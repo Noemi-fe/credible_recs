@@ -29,6 +29,19 @@ def test_the_bundle_holds_the_library_the_answers_read_and_nothing_else_of_it(tm
                       "data/library/threads/1abc.json"]  # the one-line summaries too (13 Oct 2026), not their to-do list
 
 
+def test_the_bundle_leaves_out_threads_not_extracted_yet(tmp_path):
+    # 14 Oct 2026 (the orchestrator, after the bulk import added 1,133 threads awaiting extraction): answers never use a
+    # thread with no extraction, so the image doesn't carry it (the server reads and checks fewer files as it starts);
+    # it ships once extracted. Gold-set threads aren't in the library folder at all.
+    repo = a_repo(tmp_path)
+    waiting = repo / "data" / "library" / "threads" / "1zzz.json"
+    waiting.write_text("{}", encoding="utf-8")
+    out = tmp_path / "bundle"
+    make_context.copy_library(repo / "data" / "library", out / "data" / "library")
+    assert not (out / "data" / "library" / "threads" / "1zzz.json").exists()
+    assert (out / "data" / "library" / "threads" / "1abc.json").exists()
+
+
 def test_a_bundle_with_a_secret_or_a_cache_is_refused(tmp_path):
     out = tmp_path / "bundle"
     out.mkdir()
@@ -193,3 +206,44 @@ def test_a_deploy_bakes_in_the_threads_read_on_demand_and_then_the_bucket_lets_t
     pull = script.index("-m engine.library pull-bucket")
     assert pull < script.index("-m deploy.cloudrun.make_context") < script.index("$GCLOUD run deploy")
     assert script.index("$GCLOUD run deploy") < script.index("-m engine.library forget-baked")
+
+
+# --- File times (14 Oct 2026): nothing in the image may be dated ahead of the clock ---
+
+def test_every_file_of_the_bundle_is_dated_well_before_it_was_made(tmp_path):
+    # The deploy's upload stores each file's time as the local time of the computer it runs on, which the build reads
+    # as UTC: in British Summer Time the site's files were dated an hour ahead, and the server took the library's newest
+    # files for ones still changing (engine.memo.changed_just_now). Stamped a day before the bundle was made, no time
+    # zone's shift (at most 14 hours) can date a file ahead of the clock.
+    import os
+    import time
+
+    repo = a_repo(tmp_path)
+    future = time.time() + 3600
+    os.utime(repo / "data" / "library" / "extracted" / "1abc.json", (future, future))  # a file already dated ahead
+    out = tmp_path / "bundle"
+    make_context.copy_library(repo / "data" / "library", out / "data" / "library")
+    (out / "engine").mkdir()
+    (out / "engine" / "web.py").write_text("# code\n", encoding="utf-8")
+    made = time.time()
+    make_context.stamp_files(out, made)
+    times = {p.relative_to(out).as_posix(): p.stat().st_mtime for p in out.rglob("*")}
+    assert set(times.values()) == {make_context.bundle_stamp(made)}
+    assert make_context.bundle_stamp(made) + 14 * 3600 < made
+
+
+def test_making_the_bundle_stamps_its_files(tmp_path, monkeypatch):
+    stamped = []
+    monkeypatch.setattr(make_context, "stamp_files", lambda dest, made: stamped.append(dest))
+    repo = a_repo(tmp_path)
+    import subprocess
+
+    (repo / ".gitignore").write_text(".env\ndata/library/\n", encoding="utf-8")
+    (repo / "engine").mkdir()
+    (repo / "engine" / "web.py").write_text("# code\n", encoding="utf-8")
+    env = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.com", "GIT_COMMITTER_NAME": "t",
+           "GIT_COMMITTER_EMAIL": "t@example.com", "PATH": __import__("os").environ["PATH"], "HOME": str(tmp_path)}
+    for command in (["init", "-q"], ["add", "-A"], ["commit", "-q", "-m", "made-up"]):
+        subprocess.run(["git", "-C", str(repo), *command], check=True, env=env)
+    make_context.make_context(tmp_path / "bundle", repo=repo)
+    assert stamped == [tmp_path / "bundle"]

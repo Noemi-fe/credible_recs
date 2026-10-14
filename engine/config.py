@@ -345,6 +345,13 @@ PIPELINE_MAX_THREADS = 16
 # to her). Shampoo advice is spread over many brands: its 16 most relevant threads gave no pick, 24 and 32 gave one,
 # 48 gave three (Nizoral, Neutrogena T-Gel, Head & Shoulders for an oily scalp).
 PIPELINE_MORE_THREADS = 48
+# In the wider reading a pick, and an Also worth a look item, needs a credible recommendation that talks about the
+# request's needs (11 Oct 2026); in these categories it needs one in every reading (Noemi's decision 4 of 14 Oct 2026,
+# morning: option B of the need-quality builder). Haircare's first reading is filled by big curly-hair threads, so its
+# popular picks needn't be about what was asked: on the frozen library "gentle shampoo for wavy hair" had picked an
+# anti-dandruff shampoo its writers used for a deep clean. Measured there before her decision: 2 answers change, the
+# blind test's (skincare and kitchen) not at all. An empty tuple keeps the rule to the wider reading, as before.
+NEED_RULE_IN_EVERY_READING = ("haircare",)
 # Brand-only picks (decided by Noemi, 9 Oct 2026, decision 9): a brand or line that fits several products ("Lodge",
 # "CeraVe") is ranked, under a name that says so ("Lodge cast iron skillet line", BRAND_PICK_NAME below), when its
 # threads make the product clear (BRAND_PICK_TITLE_SHARE below) or, since 12 Oct 2026, when the brand-lines list says
@@ -741,7 +748,7 @@ LIVE_CHECK_RECORD_RESERVE = 300
 # "available"), so it isn't kept twice.
 PRODUCT_FACT_VALUES: dict[str, tuple] = {
     "fragrance_free": (True, False),  # no added fragrance or perfume
-    "prescription_only": (True, False),  # sold in the UK only on a prescription (Tazorac, tretinoin, Differin)
+    "prescription_only": (True, False),  # sold in the UK only on a prescription (tretinoin, Differin, Duac, Finacea)
     "strength": ("gentle", "moderate", "strong"),  # how strong a retinoid or an exfoliant is
     "white_cast": (True, False),  # a sunscreen that leaves a white cast on the skin
     "finish": ("matte", "natural", "dewy"),  # how a sunscreen looks once on
@@ -755,11 +762,14 @@ PRODUCT_FACT_VALUES: dict[str, tuple] = {
     "sulfate_free": (True, False),  # a shampoo that cleans without sulfates (SLS, SLES, ALS...) (11 Oct 2026)
 }
 # The facts each product type (engine/query.py, PRODUCT_TYPES) can have. Every skincare product can say whether it is
-# fragrance-free and whether its maker warns against sensitive skin; only retinoids and exfoliants, the skincare sold in
-# prescription versions (tretinoin, adapalene, azelaic acid 15%+) and in strengths, can be prescription-only or have a
-# strength (10 Oct 2026: a moisturiser's "prescription_only: false" was always true and only asked researchers for busy
+# fragrance-free, whether its maker warns against sensitive skin and, since Noemi's decision 5 of 14 Oct 2026, whether it
+# is prescription-only (Duac, a clindamycin and benzoyl peroxide gel, is a spot treatment; Finacea's azelaic acid gel is
+# read as a cream); only retinoids and exfoliants come in strengths. Not knowing whether a product is prescription-only
+# is a requirement for retinoids and exfoliants only, the skincare mostly sold in prescription versions (the rule's
+# "confirm_types" below): for every other type the fact is recorded when an official source says so and never asked
+# for (10 Oct 2026: a moisturiser's "prescription_only: false" was always true and only asked researchers for busy
 # work). A type not listed (a chef knife, a coffee grinder) has no facts yet.
-PRODUCT_FACTS_FOR_SKINCARE = ("fragrance_free", "maker_warns_sensitive")
+PRODUCT_FACTS_FOR_SKINCARE = ("fragrance_free", "maker_warns_sensitive", "prescription_only")
 PRODUCT_FACTS_FOR_TREATMENTS = ("fragrance_free", "prescription_only", "strength", "maker_warns_sensitive")
 PRODUCT_FACTS_BY_TYPE: dict[str, tuple[str, ...]] = {
     "exfoliant": PRODUCT_FACTS_FOR_TREATMENTS,
@@ -788,8 +798,12 @@ PRODUCT_FACTS_BY_TYPE: dict[str, tuple[str, ...]] = {
 PRODUCT_FACT_RULES: dict[str, dict] = {
     "too strong": {"asks": ("beginner", "sensitive", "gentle"), "fact": "strength", "value": "strong", "hard": True,
                    "reason": "it is a strong formula, too strong for beginners or sensitive skin"},
+    # "confirm_types" (14 Oct 2026, Noemi's decision 5): the product types for which not knowing the fact is a
+    # requirement ("we couldn't confirm it's sold without a prescription"; a brand line can't be checked for it). Any
+    # skincare product can have the fact; a product whose facts say it is prescription-only also shows a note wherever it
+    # is shown (engine/answer.py, PRESCRIPTION_NOTE).
     "prescription only": {"asks": ("beginner", "sensitive", "gentle"), "fact": "prescription_only", "value": True,
-                          "hard": True,
+                          "hard": True, "confirm_types": ("retinoid", "exfoliant"),
                           "reason": "it is prescription-only: a strong treatment, not one for beginners or sensitive "
                                     "skin"},
     "fragrance": {"asks": ("fragrance-free",), "fact": "fragrance_free", "value": False, "hard": True,
@@ -1517,8 +1531,9 @@ ON_DEMAND_QUEUE_FRESH_SECONDS = 60
 #      and C put lifted shampoos in place of picks with three credible writers).
 # In every variant nothing leaves the answer (a lifted product its score keeps out of the picks stays under Also worth a
 # look) and how much an answer reads doesn't change (engine.pipeline.answer_request).
-# PROPOSED (Claude, 14 Oct 2026): every value but her "10+", and which variant, wait for Noemi; the switch stays off.
-UPVOTE_COUNTS_MORE = False
+# Decided (Noemi, 14 Oct 2026: "yes" to turning on variant D, as recommended after its effect report): the switch is on,
+# with D's values below (her "10+", the top 10% of a thread of 20+ comments, filling empty places only).
+UPVOTE_COUNTS_MORE = True
 UPVOTE_MIN_SCORE = 10  # Noemi's "10+"
 UPVOTE_ONLY_WHEN_SHORT = True
 UPVOTE_TOP_OF_BIG_THREAD = True
@@ -1557,3 +1572,30 @@ BULK_GENERAL_TYPE_TARGET = LIBRARY_THREADS_PER_PRODUCT
 # A request given to the import (need-led choice, Noemi's decision 3 of 14 Oct 2026: "conditioner for curly hair") takes
 # up to this many threads asking about its needs, within its type's BULK_MAX_NEW_PER_TYPE.
 BULK_PER_REQUEST = 8
+
+# --- A comment that stands out in its thread (Noemi, 14 Oct 2026, after switching on variant D) ---
+# Noemi: "if a comment has a lot of upvotes compared to the size of the thread, i want it as a pick or worth a look". A
+# credible recommendation (CREDIBLE_VOICES, CREDIBLE_EVIDENCE: upvotes never make a comment credible) stands out in its
+# thread when its comment has at least STANDOUT_UPVOTES_PER_COMMENT upvotes for each comment of its thread readable when
+# it was read (3 for every 4) and at least STANDOUT_MIN_SCORE upvotes, in a thread of at least
+# STANDOUT_MIN_THREAD_COMMENTS comments; it names at most STANDOUT_MAX_PRODUCTS products (a whole routine or a review of
+# many shares its upvotes among them); and, when the request asks for anything besides the product (engine/needs.py),
+# it talks about that (engine/rank.py, stands_out). Its product, with more credible recommendations than credible
+# warnings and a score above zero, can then take a place left empty under Also worth a look even with that one credible
+# voice, and with a second credible writer, even from the same thread, it meets the picks bar (STANDOUT_FILLS_PICKS),
+# only to fill a place the products meeting it otherwise leave empty (RankingResult.qualifying): never the place of a
+# product that meets the rules without it, as for variant D. Variant D comes first: what it lifts, it lifts as before.
+# The answer says which comment stands out and by how much ("its comment has 74 upvotes in a 69-comment thread"), and
+# how much an answer reads doesn't change (engine.pipeline.answer_request). The measure and the values were chosen by a
+# breadth-first pass over six ways of measuring standing out on the library of 14 Oct 2026, quality first: the lowest
+# values that lifted nothing that made no sense (eval/RUNS.md, 14 Oct 2026). Switched on as Noemi asked; the values
+# PROPOSED by Claude.
+STANDOUT_ON = True
+STANDOUT_UPVOTES_PER_COMMENT = 0.75
+STANDOUT_MIN_SCORE = 25
+STANDOUT_MIN_THREAD_COMMENTS = 20
+STANDOUT_MAX_PRODUCTS = 5
+# Into the picks with a second credible writer even from one thread: her "as a pick", which sets aside, for this case
+# only, her night rule for the upvote rule that "a pick still needs credible recommendations across 2 threads". False
+# keeps that rule: then a standing-out comment earns a place under Also worth a look only. For Noemi to confirm.
+STANDOUT_FILLS_PICKS = True

@@ -58,10 +58,10 @@
       "threads": null
     },
     "ai_quotes_found": {
-      "value": 0.9997015593523838,
+      "value": 0.9997055792727808,
       "target": null,
-      "count": 13399,
-      "out_of": 13403,
+      "count": 13582,
+      "out_of": 13586,
       "threads": null
     },
     "request_outcome": {
@@ -74,15 +74,15 @@
     "request_product": {
       "value": 1.0,
       "target": null,
-      "count": 22,
-      "out_of": 22,
+      "count": 25,
+      "out_of": 25,
       "threads": null
     },
     "request_details": {
       "value": 1.0,
       "target": null,
-      "count": 22,
-      "out_of": 22,
+      "count": 25,
+      "out_of": 25,
       "threads": null
     },
     "threads_fit": {

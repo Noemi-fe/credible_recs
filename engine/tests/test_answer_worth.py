@@ -13,6 +13,7 @@ import json
 from datetime import date
 
 from engine import answer as wording
+from engine import config
 from engine.answer import answer_to_dict, quotes_to_check, render_markdown, shown_quotes, unverified_claims, write_answer
 from engine.config import WORTH_A_LOOK_QUOTES, WORTH_A_LOOK_SHOWN
 from engine.prices import Price, PriceCheck
@@ -53,7 +54,9 @@ def test_also_worth_a_look_comes_after_the_picks_and_never_among_them():
     assert unverified_claims(answer, bodies) == []
 
 
-def test_its_note_says_plainly_that_it_is_less_supported():
+def test_its_note_says_plainly_that_it_is_less_supported(monkeypatch):
+    # The upvote rule is on since 14 Oct 2026 and adds its own clause to the bar; this test is about the plain bar.
+    monkeypatch.setattr(config, "UPVOTE_COUNTS_MORE", False)
     ranking, bodies, _ = case()
     answer = write_answer(ranking, bodies, "chef knife")
     assert answer.worth_note == ("2 credible voices each: less evidence than the picks above, which need at least 3 "
@@ -61,7 +64,9 @@ def test_its_note_says_plainly_that_it_is_less_supported():
     assert answer.worth_a_look[0].reason == "Recommended by 2 credible voices, 2 of them after long-term use."
 
 
-def test_with_no_picks_the_note_doesnt_point_at_picks_above():
+def test_with_no_picks_the_note_doesnt_point_at_picks_above(monkeypatch):
+    # The upvote rule is on since 14 Oct 2026 and adds its own clause to the bar; this test is about the plain bar.
+    monkeypatch.setattr(config, "UPVOTE_COUNTS_MORE", False)
     ranking, bodies, _ = case()
     ranking.products = [p for p in ranking.products if p.name != "Tojiro DP Gyuto"]
     answer = write_answer(ranking, bodies, "chef knife")
@@ -136,9 +141,11 @@ def test_items_are_in_the_json_and_the_text():
     # Changed on purpose 13 Oct 2026 (active ingredients): each item also has its "form" in an ingredient-led answer.
     # Changed on purpose 14 Oct 2026 (Noemi's night decision 1): each item also has its "range", a brand line's link to
     # its maker's page for the type, or null (engine/tests/test_line_links.py).
+    # Changed on purpose 14 Oct 2026 (Noemi's decision 5): each item also has its "prescription" note, or null
+    # (engine/tests/test_prescription_note.py).
     assert set(data["worth_a_look"][0]) == {"product_key", "name", "reason", "quotes", "downsides", "downsides_share",
                                            "disagreement", "score", "breakdown", "price", "availability", "cautions",
-                                           "summary", "voices", "form", "range"}
+                                           "summary", "voices", "form", "range", "prescription"}
     text = render_markdown(answer)
     assert f"## {wording.WORTH_HEADING}" in text and answer.worth_note in text
     assert text.index("Tojiro DP Gyuto") < text.index(wording.WORTH_HEADING) < text.index("Misono UX10")

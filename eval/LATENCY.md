@@ -150,3 +150,43 @@ took turns, twice each, and each figure is the lower of the two runs:
 | 14 Oct 2026 | Copies of another writer's words looked for only among the comments that could share a run of 20 words (engine.credibility._could_share_a_run: such a run holds, in each comment, a run of 10 words starting at a multiple of 10, since any 11 places in a row hold one; a comment holding none of another's such runs can't share one with it), rather than every run of every comment listed | n/a | n/a | n/a | 7 to 16 | yes | yes: the copy groups of all 436 threads of the library, the same, in turns (fastest of 3): 1.08 s every run listed, now 0.58. New tests: the quick look, and the groups against every run listed, over made-up threads with shared passages at any place, replies, one writer twice, deleted accounts and removed comments |
 | 14 Oct 2026 | A text's kind words (its words, plurals dropped, known kind names written out) worked out once per text and list of known names (engine.group_kinds._kind_words: an answer's "What to look for" and the kind groups ask it of the same kinds, notes and names over and over, each trying every known name at every word) | n/a | n/a | n/a | 4 | yes | yes, by the work done: over getting ready's answers and 32 more, the known names written out 62,514 times, now 8,331 (function calls in all 89.6 million, now 87.9); writing the answers, fastest of 2 in turns, 0.80 s now 0.73 for getting ready's, 0.26 now 0.23 for the 32 (in the noise). New test: worked out once, a new list each time |
 | 14 Oct 2026 | Where this leaves it: main before any of this work (27bdd76), the deployed site's code (acc4d07) and the branch now (f31cfee), side by side on the Mac's efficiency cores (steadier than its main cores under the other builders' load, and nearer Cloud Run's one processor; about 2.5 times slower than the main cores), the open model's readings replayed, getting ready answering the 43 product types by name | 120.7, 54.4, now 32.5 (the server's own getting ready, its 65 requests on the main cores, in turns: acc4d07 28.4 and 32.0, now 25.6 and 17.7) | 1.58 / 7.16 / 8.67 / 101.6, 0.45 / 2.19 / 2.83 / 27.6, now 0.39 / 1.65 / 1.84 / 23.7 | 0.52 / 3.86 / 35.4, 0.16 / 0.82 / 8.3, now 0.17 / 0.71 / 8.2 | 5 to 16 | yes (main cee1c91's answers, the same as acc4d07's) | the summary: each type's first answer in turn 113.0 s in all, 51.0, now 28.7. Memory after getting ready 313 MB (acc4d07), now 333 |
+
+## Files dated ahead of the clock (14 Oct 2026, the live site's getting ready)
+
+With the same code (main), the live site built with the library of 04:50 that morning got ready in 63.9 s, every warm
+request done, while built with the library as the bulk import filled it (revisions 00033 to 00035 and 00037) it warmed
+12 or 13 of its 416 requests in the 120 s and fresh answers took 7 to 16 s of engine time. Not the new threads' size or
+shape: on this Mac, with the files' true times, the 11:30 library gets ready in 16.4 s against the 04:50 one's 14.8 s
+(the 80 imported threads extracted by then add 24% more comments; no request more than 0.22 s slower). The cause was the
+files' times. gcloud's upload of the source is a ZIP file, which stores each file's time as the local time of the
+computer it runs on, in two-second steps; the build reads it as UTC, so in British Summer Time every file of the image
+is dated an hour ahead of when it was written (read back from the images themselves: the 00037 image dates
+extracted/15t1w3o.json 11:17:42 UTC, written at 10:17:43.8 UTC). engine.library_cache kept the library only when its
+newest file was dated more than 2 s before reading began, so for the hour after a deploy whose library held files
+written in the hour before it (the bulk import's, always), every answer read and checked the whole library again: about
+10 s on Cloud Run. engine.memo.FileMemo did the same with the price, facts and brand-lines lists, which git archive
+dates at the commit's time (00039 started 26 minutes before its commit's time came). Fixed by not counting a time more
+than 2 s ahead of the clock as a change happening now (engine.memo.changed_just_now, 9ee43b3), and by dating every file
+of the bundle a day before it is made (deploy/cloudrun/make_context.stamp_files, bf1f529).
+
+How to read a row: getting ready as the server does it (engine.web.warm_up: the library, the lists, then its 416 warm
+requests), on the bundle's selection of each library (extracted threads only), writers' standing from the library's
+profiles.json and an empty Arctic Shift cache (as on Cloud Run), the open model off (on Cloud Run its step took 0.1 s),
+no time limit unless the row says so; two rounds in turns, both given. "Dated as the image" is the 11:30 library with
+each file's real time in two-second steps, shifted so that its newest file is 55 minutes ahead of the clock (the
+upload's hour, less the minutes from writing it to the server starting). Identical: the 437 answers (the 40 requests of
+the answers check and every product type by its name, writers' standing at a fixed time) byte for byte main's on the
+04:50 library, the 11:30 one and the 11:30 one dated as the image; and eval/run_eval.py's whole report on the 04:50
+snapshot (no network, a fixed time) byte for byte main's.
+
+| Date | Library | main (f6bc983) | This branch (2bfc7e5) | Library reads | Load | Identical? |
+| --- | --- | --- | --- | --- | --- | --- |
+| 14 Oct 2026 | 11:30, dated as the image, with the server's 120 s limit | 43 of 416 warm answers in 122.7 and 121.8 s (2.3 s each, median), 373 left | all 416 in 16.4 and 16.3 s | 55, now 1 | 2.6 to 4.1 | yes |
+| 14 Oct 2026 | 04:50, its price, facts and brand-lines lists dated 25 minutes ahead (00039's case) | 17.8 and 17.7 s | 14.8 and 14.9 s | 1 | 2.3 to 3.4 | yes |
+| 14 Oct 2026 | 04:50, true times | 14.9 and 14.7 s | 14.8 and 14.7 s | 1 | 2.4 to 3.9 | yes |
+| 14 Oct 2026 | 11:30, true times | 16.4 and 16.5 s | 16.5 and 16.3 s | 1 | 2.3 to 4.1 | yes |
+
+On Cloud Run's one processor (about 3.5 times this Mac's main cores: 63.9 s there for the 04:50 library with its lists
+dated ahead, 17.7 s here), the 11:30 library should get ready in about a minute, every warm request done. The same
+branch reads HTML's character codes as their characters in retrieval (2bfc7e5: "&amp;" had named a guitar amp), which
+changes none of these answers.

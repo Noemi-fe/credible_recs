@@ -40,6 +40,14 @@ BY_SCORE = ("A", "B", "C")  # the variants in which a lifted product takes its p
 TOP = {"thread_comments": 40, "share_beaten": 0.95}
 
 
+@pytest.fixture(autouse=True)
+def _the_upvote_rule_alone(monkeypatch):
+    # These tests are about the upvote rule alone (its variants A to D): the comment that stands out in its thread
+    # (Noemi, 14 Oct 2026; engine/tests/test_standout.py) is switched off here, so a well upvoted comment lifts a
+    # product only by counting twice (added on purpose with that rule).
+    monkeypatch.setattr(config, "STANDOUT_ON", False)
+
+
 def upvote_rule(monkeypatch, variant: str) -> None:
     """Turns the rule on, in one variant."""
     only_when_short, top_of_big_thread, only_to_fill = VARIANTS[variant]
@@ -89,8 +97,15 @@ def test_a_lone_comment_beats_no_one():
 
 # --- Module 6: when a credible recommendation counts twice ---
 
-def test_off_by_default_upvotes_change_nothing():
-    assert config.UPVOTE_COUNTS_MORE is False
+def test_the_rule_is_on_as_noemi_decided():
+    # Changed on purpose, 14 Oct 2026: off by default until Noemi's "yes" to variant D after the effect report.
+    assert config.UPVOTE_COUNTS_MORE is True
+    assert (config.UPVOTE_ONLY_WHEN_SHORT, config.UPVOTE_TOP_OF_BIG_THREAD, config.UPVOTE_ONLY_TO_FILL) == (True,) * 3
+
+
+def test_off_upvotes_change_nothing(monkeypatch):
+    # The rule is on since Noemi's decision of 14 Oct 2026; this test is about it off, so it says so (changed on purpose).
+    monkeypatch.setattr(config, "UPVOTE_COUNTS_MORE", False)
     scored = the_product([mention("Kettle K", "t1", upvotes=500, **TOP), mention("Kettle K", "t2", upvotes=2)])
     assert not scored.qualifies and scored.worth_a_look
     assert scored.counted_twice == ()
@@ -307,6 +322,8 @@ def test_two_counted_twice_are_both_named(monkeypatch):
 
 
 def test_the_answers_json_gains_nothing_with_the_rule_off_and_only_twice_with_it_on(monkeypatch):
+    # The rule is on since Noemi's decision of 14 Oct 2026; this test is about it off, so it says so (changed on purpose).
+    monkeypatch.setattr(config, "UPVOTE_COUNTS_MORE", False)
     # With the switch off an answer is byte for byte what it was (the coordinator's check against main, 14 Oct 2026); on,
     # the count of voices counted twice lives in the meter's "twice" and the reason, never in the score's breakdown.
     from engine.answer import answer_to_dict
@@ -344,7 +361,9 @@ def test_the_answers_messages_give_the_rule_with_its_upvotes(monkeypatch, varian
     assert some.worth_note == wording.WORTH_NOTE.format(voices="2 credible voices", rule=rule)
 
 
-def test_with_the_rule_off_the_messages_are_as_before():
+def test_with_the_rule_off_the_messages_are_as_before(monkeypatch):
+    # The rule is on since Noemi's decision of 14 Oct 2026; this test is about it off, so it says so (changed on purpose).
+    monkeypatch.setattr(config, "UPVOTE_COUNTS_MORE", False)
     nothing, _ = answer_for(mentions(1, "Kettle K"))
     assert nothing.message == wording.NO_PICKS.format(
         what="any electric kettle", rule="at least 3 credible recommendations across at least 2 threads")
@@ -399,7 +418,9 @@ def shown(result) -> tuple[list[str], list[str]]:
     return [pick.name for pick in result.answer.picks], [item.name for item in result.answer.worth_a_look]
 
 
-def test_through_the_pipeline_off_the_stagg_is_only_worth_a_look(tmp_path):
+def test_through_the_pipeline_off_the_stagg_is_only_worth_a_look(tmp_path, monkeypatch):
+    # The rule is on since Noemi's decision of 14 Oct 2026; this test is about it off, so it says so (changed on purpose).
+    monkeypatch.setattr(config, "UPVOTE_COUNTS_MORE", False)
     result = answer_request(REQUEST, library_dir=kettle_library(tmp_path))
     assert shown(result) == (["Zojirushi kettle"], ["Fellow Stagg kettle"])
 
@@ -527,6 +548,8 @@ def test_through_the_pipeline_variant_c_leaves_a_small_threads_top_comment_as_it
 # --- The how-we-score page and the search page ---
 
 def test_the_how_page_explains_the_rule_only_when_it_is_on(tmp_path, monkeypatch):
+    # The rule is on since Noemi's decision of 14 Oct 2026; this test is about it off, so it says so (changed on purpose).
+    monkeypatch.setattr(config, "UPVOTE_COUNTS_MORE", False)
     assert "counts as two" not in text_of(get_how(tmp_path, monkeypatch))
     upvote_rule(monkeypatch, "B")
     html = get_how(tmp_path, monkeypatch)

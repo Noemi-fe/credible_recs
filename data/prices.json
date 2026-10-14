@@ -1744,6 +1744,39 @@
    "checked_on": "2026-10-14",
    "available": true,
    "note": "the 20 ml bottle, in stock on 14 Oct; a Japanese import, sold by Japanese Taste's UK store"
+  },
+  {
+   "product": "Altreno (tretinoin) Lotion 0.05%",
+   "category": "skincare",
+   "price": null,
+   "currency": "GBP",
+   "shop": "emc",
+   "url": "https://www.medicines.org.uk/emc/search?q=altreno",
+   "checked_on": "2026-10-14",
+   "available": false,
+   "note": "a US prescription tretinoin lotion (Ortho Dermatologics); the eMC, the UK's product information for licensed medicines, has no Altreno and no tretinoin-only skin product (its tretinoin products are Aknemycin Plus and Treclin, combinations, and capsules); a search found only US pharmacies selling it"
+  },
+  {
+   "product": "BenzaClin (clindamycin 1% / benzoyl peroxide 5%) Gel",
+   "category": "skincare",
+   "price": null,
+   "currency": "GBP",
+   "shop": "emc",
+   "url": "https://www.medicines.org.uk/emc/search?q=benzaclin",
+   "checked_on": "2026-10-14",
+   "available": false,
+   "note": "a US prescription gel; the eMC has no BenzaClin: the UK's licensed clindamycin and benzoyl peroxide gel is Duac Once Daily (prescription-only; on the eMC, and sold on prescription by Pharmacy2U)"
+  },
+  {
+   "product": "Tri-Luma (fluocinolone, hydroquinone 4%, tretinoin 0.05%) Cream",
+   "category": "skincare",
+   "price": null,
+   "currency": "GBP",
+   "shop": "emc",
+   "url": "https://www.medicines.org.uk/emc/search?q=tri-luma",
+   "checked_on": "2026-10-14",
+   "available": false,
+   "note": "a US prescription cream for melasma (Galderma); the eMC has no Tri-Luma; a search found no UK pharmacy selling it"
   }
  ]
 }

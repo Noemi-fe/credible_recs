@@ -162,6 +162,7 @@ from engine.config import (
     LIVE_CHECK_REQUIRED,
     LIVE_CHECK_SHOWN_DAYS,
     NEED_MATCH_BOOST,
+    NEED_RULE_IN_EVERY_READING,
     OTHER_NAME_NOTE,
     OTHER_KIND_WORDS,
     OTHER_TYPE_WORDS,
@@ -343,8 +344,9 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     "fetch more threads automatically before giving up"; built 11 Oct 2026), and keeps that wider answer only if it has
     more picks: the first threads are the ones closest to the request's needs. In the wider reading a pick also needs a
     credible recommendation that talks about what the request asks for, when it asks for something besides the product
-    (its needs, engine/needs.py): reading 48 shampoo threads had given every shampoo request the same popular picks.
-    `more_threads=None` never reads more. `brand_lines`: the brand-lines list (engine/brand_lines.py); None reads
+    (its needs, engine/needs.py): reading 48 shampoo threads had given every shampoo request the same popular picks. For
+    haircare it needs one in the first reading too (config.NEED_RULE_IN_EVERY_READING; Noemi's decision 4 of 14 Oct
+    2026). `more_threads=None` never reads more. `brand_lines`: the brand-lines list (engine/brand_lines.py); None reads
     data/brand_lines.json. `summaries`: the one-line summaries ({engine.summaries.summary_key: Summary}); None reads the
     library's summaries.json (none when there is no such file).
 
@@ -352,10 +354,11 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     it, a first reading short of picks could reach three with products it lifts and never read on, where the wider
     reading's picks talk about what was asked (on the library: Nizoral and Head & Shoulders for a dandruff shampoo). So
     which reading to keep is decided as with the rule off, and the reading kept is then ranked with it, from what it has
-    read (_answer's upvotes_too: its threads aren't read again).
+    read (_answer's upvotes_too: its threads aren't read again). The same goes for a comment standing out in its thread
+    (14 Oct 2026; config.STANDOUT_ON): the upvote rules, together.
     """
     query = parse_query(request)
-    upvotes = config.UPVOTE_COUNTS_MORE
+    upvotes = config.UPVOTE_COUNTS_MORE or config.STANDOUT_ON
     reading = dict(library_dir=library_dir, profiles=profiles, prices=prices, today=today,
                    live_check_required=live_check_required, live_checker=live_checker, product_facts=product_facts,
                    brand_lines=brand_lines, summaries=summaries, upvotes_too=upvotes)
@@ -379,7 +382,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
             summaries: Mapping[str, Summary] | None = None, upvotes_too: bool = False) -> PipelineResult:
     """One reading of the library for an understood request, with at most `max_threads` threads (answer_request).
     `need_led`: the wider reading's rule, a pick needs a credible recommendation that talks about the request's needs.
-    `upvotes_too`: the reading is also ranked with Noemi's upvote rule (engine.rank.counts_twice), from what it has read
+    `upvotes_too`: the reading is also ranked with Noemi's upvote rules (engine.rank.counts_twice, stands_out, as config
+    sets them), from what it has read
     and the comments its live checks dropped, into result.with_upvotes (14 Oct 2026); the result itself is ranked
     without it, so answer_request can decide which reading to keep as with the rule off.
 
@@ -451,7 +455,10 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     kept_groups = _one_per_name(kept_groups)  # the names are final here: one item per name (13 Oct 2026)
     result.ranked_as_lines = [g.name for g in kept_groups if g.key in lines]
     _note_other_names(kept_groups, cautions)
-    wording = _ingredient_wording(query, kept_groups, types, formulas)
+    # What the answer says beyond the ranking, as write_answer's keywords: about the request's active ingredients (13 Oct
+    # 2026), and which products its facts say are prescription-only in the UK (Noemi's decision 5 of 14 Oct 2026).
+    wording = {**_ingredient_wording(query, kept_groups, types, formulas),
+               "prescription": _prescription_only(kept_groups, formulas)}
     kind_mentions = _kind_mentions(checked)
     kinds = group_kinds(kind_mentions, kept_groups, query.category, query.product_type or "")
     with_a_kind = kinds_of(kinds)
@@ -509,17 +516,20 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
 
 def _upvotes_change_nothing(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
                             skip_only: Mapping[str, str]) -> bool:
-    """Whether Noemi's upvote rule (14 Oct 2026) leaves a reading's ranking as it is: every product meets the bar, is an
-    Also worth a look item or neither, as without the rule, and none that meets it has a voice counted twice (which its
-    reason would say). The rest of a ranking doesn't depend on the rule, so its answer would be the same."""
+    """Whether Noemi's upvote rules (14 Oct 2026: counting twice, and a comment standing out in its thread) leave a
+    reading's ranking as it is: every product meets the bar, is an Also worth a look item or neither, as without them,
+    none that meets it has a voice counted twice, and none is shown thanks to a comment standing out (which its reason
+    would say). The rest of a ranking doesn't depend on the rules, so its answer would be the same."""
     def marks(ranking: RankingResult) -> list[tuple]:
-        return [(p.key, p.qualifies, p.worth_a_look, p.qualifies and bool(p.counted_twice)) for p in ranking.products]
+        return [(p.key, p.qualifies, p.worth_a_look, p.qualifies and bool(p.counted_twice),
+                 p.by_standout and (p.qualifies or p.worth_a_look)) for p in ranking.products]
 
     return (marks(_ranked(scored, query, kind_notes, kinds, need_led, skip_only, False))
             == marks(_ranked(scored, query, kind_notes, kinds, need_led, skip_only, True)))
 
 
-# Why a product found only in a wider reading isn't a pick (answer_request, 11 Oct 2026).
+# Why a product found only in a wider reading isn't a pick (answer_request, 11 Oct 2026), nor, since 14 Oct 2026, one in
+# any reading of a category of config.NEED_RULE_IN_EVERY_READING (haircare).
 WIDER_READING_SHORTFALL = "no credible recommendation talks about what you asked for"
 
 
@@ -527,11 +537,15 @@ def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
             skip_only: Mapping[str, str] | None = None, upvote_rule: bool = False) -> RankingResult:
     """Module 6's ranking. In a wider reading (`need_led`) of a request that asks for something besides the product, a
     product with no credible recommendation talking about it can't be a pick (answer_request), nor "Also worth a look"
-    (13 Oct 2026). `skip_only`: {product key: reason} of the brand lines a hard requirement keeps from being picks (a
+    (13 Oct 2026); in every reading for a category of config.NEED_RULE_IN_EVERY_READING (haircare: Noemi's decision 4 of
+    14 Oct 2026). `skip_only`: {product key: reason} of the brand lines a hard requirement keeps from being picks (a
     whole brand can't be checked): never a pick nor "Also worth a look", but listed under Skip these when their credible
-    warnings put them there (Noemi's decision 1 of 13 Oct 2026). `upvote_rule`: with Noemi's upvote rule (14 Oct 2026)."""
-    ranking = rank_products(scored, query.category, kind_notes, placements(kinds), upvote_rule=upvote_rule)
-    if need_led and request_needs(query):
+    warnings put them there (Noemi's decision 1 of 13 Oct 2026). `upvote_rule`: with Noemi's upvote rules (14 Oct 2026),
+    as config sets them: counting twice (config.UPVOTE_COUNTS_MORE) and a comment standing out (config.STANDOUT_ON)."""
+    ranking = rank_products(scored, query.category, kind_notes, placements(kinds),
+                            upvote_rule=upvote_rule and config.UPVOTE_COUNTS_MORE,
+                            standout_rule=upvote_rule and config.STANDOUT_ON)
+    if (need_led or query.category in NEED_RULE_IN_EVERY_READING) and request_needs(query):
         ranking.products = [replace(p, qualifies=False, shortfall=WIDER_READING_SHORTFALL, worth_a_look=False)
                             if (p.qualifies or p.worth_a_look) and not p.breakdown.credible_recommends_fitting_need
                             else p for p in ranking.products]
@@ -1223,6 +1237,13 @@ def _without_ingredient(group: ProductGroup, facts: ProductFacts | None, ingredi
     return None
 
 
+def _prescription_only(groups: list[ProductGroup], found_facts: Mapping[str, ProductFacts]) -> frozenset[str]:
+    """The keys of the products whose facts entry says they are prescription-only in the UK (Noemi's decision 5 of 14
+    Oct 2026): the answer says so wherever it shows them (engine.answer.PRESCRIPTION_NOTE)."""
+    return frozenset(g.key for g in groups
+                     if g.key in found_facts and found_facts[g.key].facts.get("prescription_only") is True)
+
+
 def _formula_form(facts: ProductFacts | None) -> str | None:
     """The form a facts entry's formula gives (from the maker's page), or None."""
     return facts.formula.form if facts is not None and facts.formula is not None else None
@@ -1562,6 +1583,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
         # Copies count once (Noemi, 11 Oct 2026): the later copies' mentions and notes are left out.
         copied, repeats = copied_comment_ids(thread, groups), repeated_copies(thread, groups)
         upvotes = thread_upvotes(thread)  # each comment's beside the thread's, for the upvote rule (14 Oct 2026)
+        named = _products_named(res)  # for a comment standing out in its thread (14 Oct 2026)
         voices = {}
 
         def voice_of(comment: Comment) -> VoiceScore:
@@ -1594,6 +1616,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                 upvotes=standing.score if standing else None,
                 thread_comments=standing.thread_comments if standing else None,
                 share_beaten=standing.share_beaten if standing else None,
+                products_named=named[m.comment_id], needs_asked=bool(needs),
             ))
         for n in res.kept_notes:
             if n.comment_id in repeats:
@@ -1608,6 +1631,16 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                     voice=voice.level, quote=n.quote, badges=badges(voice, evidence), author=_writer(comment),
                 ))
     return scored, notes
+
+
+def _products_named(res: CheckResult) -> dict[str, int]:
+    """{comment id: how many products it names}, from a thread's kept mentions (module 3), each product once whatever
+    its spelling's capitals and punctuation (engine.match_products.normalize_name): one that names many shares its
+    upvotes among them, so it never stands out for any (engine.rank.stands_out; 14 Oct 2026)."""
+    names: dict[str, set[tuple[str, ...]]] = {}
+    for m in res.kept:
+        names.setdefault(m.comment_id, set()).add(tuple(normalize_name(m.product)))
+    return {cid: len(found) for cid, found in names.items()}
 
 
 def _needs_talked_about(quote: str, body: str, needs: tuple[Need, ...], asks: tuple[str, ...],

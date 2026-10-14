@@ -598,9 +598,10 @@
    },
    "sources": [
     "https://www.arazlo.com/",
-    "https://patient.info/medicine/tazarotene-for-psoriasis-zorac"
+    "https://patient.info/medicine/tazarotene-for-psoriasis-zorac",
+    "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=d941ff25-c221-4a55-8012-0dcf3bbcbbd1"
    ],
-   "checked_on": "2026-10-10"
+   "checked_on": "2026-10-14"
   },
   {
    "product": "Differin Gel (adapalene 0.1%)",
@@ -1510,7 +1511,7 @@
   {
    "product": "Finacea (azelaic acid) 15% Gel",
    "category": "skincare",
-   "product_type": "exfoliant",
+   "product_type": "moisturiser",
    "facts": {
     "prescription_only": true
    },
@@ -1532,7 +1533,7 @@
   {
    "product": "Skinoren (azelaic acid) 20% Cream",
    "category": "skincare",
-   "product_type": "exfoliant",
+   "product_type": "moisturiser",
    "facts": {
     "prescription_only": true
    },
@@ -2298,6 +2299,72 @@
     "sources": [
      "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=021744d1-a6d7-4ad6-99c2-7187c24e64c6",
      "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4e4e4b81-420e-4492-8a74-80b692a80057"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Duac Once Daily (clindamycin 1% / benzoyl peroxide 5%) Gel",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {
+    "prescription_only": true
+   },
+   "sources": [
+    "https://www.medicines.org.uk/emc/product/6/smpc"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "benzoyl peroxide"
+    ],
+    "form": "gel",
+    "sources": [
+     "https://www.medicines.org.uk/emc/product/6/smpc"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "BenzaClin (clindamycin 1% / benzoyl peroxide 5%) Gel",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {
+    "prescription_only": true
+   },
+   "sources": [
+    "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=c1adf643-ee59-4251-bbf8-49f54265f833"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "benzoyl peroxide"
+    ],
+    "form": "gel",
+    "sources": [
+     "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=c1adf643-ee59-4251-bbf8-49f54265f833"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Tri-Luma (fluocinolone, hydroquinone 4%, tretinoin 0.05%) Cream",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {
+    "prescription_only": true
+   },
+   "sources": [
+    "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=a35fa709-5eb5-4429-b38f-f1e0019bf0ee"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "tretinoin"
+    ],
+    "form": "cream",
+    "sources": [
+     "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=a35fa709-5eb5-4429-b38f-f1e0019bf0ee"
     ],
     "checked_on": "2026-10-14"
    }
