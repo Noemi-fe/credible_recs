@@ -6,35 +6,79 @@
    "product_type": "electric kettle",
    "sells": true,
    "sources": ["https://englishcoffeecompany.co.uk/products/bonavita-variable-temp-digital-electric-kettle-1l"],
-   "checked_on": "2026-10-12",
-   "note": "A UK coffee shop lists the Bonavita Variable Temp Digital Electric Kettle, 1L (\"this full-featured electric kettle from Bonavita\"). Bonavita's own site didn't load."
+   "checked_on": "2026-10-14",
+   "note": "A UK coffee shop lists the Bonavita Variable Temp Digital Electric Kettle, 1L (\"this full-featured electric kettle from Bonavita\"). Bonavita's own site didn't load. On 14 Oct 2026 the shop still lists it, at £129; bonavitaworld.com and bonavita.com refused connections (in a browser too). No range page and no from price: the maker's site can't be read, and this coffee shop, the only UK seller found, isn't known to be an official stockist; no big UK shop sells Bonavita."
+  },
+  {
+   "brand": "Sage",
+   "category": "kitchen",
+   "product_type": "electric kettle",
+   "sells": true,
+   "sources": ["https://www.sageappliances.com/en-gb/shop/kettles", "https://www.sageappliances.com/en-gb/product/bke395?sku=BKE395UK"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.sageappliances.com/en-gb/shop/kettles",
+   "from_price": 69.95,
+   "from_price_shop": "Sage",
+   "from_price_url": "https://www.sageappliances.com/en-gb/product/bke395?sku=BKE395UK",
+   "from_price_checked_on": "2026-10-14",
+   "note": "Sage (Breville outside the UK, the name many writers use) sells three kettles on its UK site on 14 Oct 2026: the Compact Kettle Pure at £69.95, the Smart Kettle at £99.95 and the Soft Top Luxe at £119.95. From price: the Compact Kettle Pure (BKE395UK), to add to the cart. Its pages are drawn by script: read in a browser."
+  },
+  {
+   "brand": "Ninja",
+   "category": "kitchen",
+   "product_type": "electric kettle",
+   "sells": true,
+   "sources": ["https://www.sharkninja.co.uk/kitchen/kitchenware/kettles", "https://www.sharkninja.co.uk/ninja-black-perfect-temperature-kettle-rapid-boil-kt200uk/KT200UK.html"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.sharkninja.co.uk/kitchen/kitchenware/kettles",
+   "from_price": 69.99,
+   "from_price_shop": "SharkNinja UK",
+   "from_price_url": "https://www.sharkninja.co.uk/ninja-black-perfect-temperature-kettle-rapid-boil-kt200uk/KT200UK.html",
+   "from_price_checked_on": "2026-10-14",
+   "note": "SharkNinja's UK site (Ninja's maker) has a Kettles category, 2 results on 14 Oct 2026: the Ninja Perfect Temperature Kettle (KT200UK) at £69.99 to £99.99 by colour and a kettle and toaster set. From price: the black KT200UK at £69.99 (reduced from £109.99), to add to the cart; its £59.99 replacement jug is a spare part, not counted."
   },
   {
    "brand": "Victorinox",
    "category": "kitchen",
    "product_type": "chef knife",
    "sells": true,
-   "sources": ["https://www.victorinox.com/en-GB/Products/Cutlery/Chef%E2%80%99s-Knives/c/CUT_ChefKnives/"],
-   "checked_on": "2026-10-12",
-   "note": "Victorinox's UK site has a Chef's Knives category: Fibrox, Swiss Modern and Grand Maitre chef's knives."
+   "sources": ["https://www.victorinox.com/en-GB/Products/Cutlery/Chef%E2%80%99s-Knives/c/CUT_ChefKnives/", "https://www.victorinox.com/en-GB/Products/Cutlery/Chef%E2%80%99s-Knives/Fibrox-Chef%E2%80%99s-Knife/p/5.2003.12BK"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.victorinox.com/en-GB/Products/Cutlery/Chef%E2%80%99s-Knives/c/CUT_ChefKnives/",
+   "from_price": 25.0,
+   "from_price_shop": "Victorinox UK",
+   "from_price_url": "https://www.victorinox.com/en-GB/Products/Cutlery/Chef%E2%80%99s-Knives/Fibrox-Chef%E2%80%99s-Knife/p/5.2003.12BK",
+   "from_price_checked_on": "2026-10-14",
+   "note": "Victorinox's UK site has a Chef's Knives category: Fibrox, Swiss Modern and Grand Maitre chef's knives. On 14 Oct 2026: its UK shop's cheapest chef's knife is the Fibrox Chef's Knife 12 cm (5.2003.12BK) at £25, to add to the cart (Fibrox 15 cm £27, Swiss Classic 12 cm £27 and 15 cm £29, Fibrox 20 cm £43). John Lewis sells only the Swiss Modern 15 cm (£79); Lakeland's Swiss Classic 15 cm is discontinued."
   },
   {
    "brand": "Wüsthof",
    "category": "kitchen",
    "product_type": "chef knife",
    "sells": true,
-   "sources": ["https://wusthof.com/collections/chefs-knives"],
-   "checked_on": "2026-10-12",
-   "note": "Wüsthof's official online store has a Chef's Knives collection (Gourmet 8\" Chef's Knife among them). Writers spell it Wusthof."
+   "sources": ["https://wusthof.com/collections/chefs-knives", "https://wusthof.co.uk/collections/chefs-knives", "https://wusthof.co.uk/products/gourmet-chefs-knife-16-cm-6-inch"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://wusthof.co.uk/collections/chefs-knives",
+   "from_price": 59.0,
+   "from_price_shop": "Wüsthof UK",
+   "from_price_url": "https://wusthof.co.uk/products/gourmet-chefs-knife-16-cm-6-inch",
+   "from_price_checked_on": "2026-10-14",
+   "note": "Wüsthof's official online store has a Chef's Knives collection (Gourmet 8\" Chef's Knife among them). Writers spell it Wusthof. That store is its US one (dollars). On 14 Oct 2026 its UK store (wusthof.co.uk, pounds) has a Chef's Knives collection of 30: the cheapest are the Gourmet 16 cm and 18 cm at £59 (sale; regular £79), to add to the cart, then the Partner 16 cm at £67 (the Junior Chef's Knife for Children, £35, is a child's knife, not counted). John Lewis also sells a Gourmet 16 cm at £59."
   },
   {
    "brand": "Tojiro",
    "category": "kitchen",
    "product_type": "chef knife",
    "sells": true,
-   "sources": ["https://tojiro.net/product/26/"],
-   "checked_on": "2026-10-12",
-   "note": "Tojiro's own (Japanese) site lists the TOJIRO PRO series with gyuto (牛刀, the Japanese chef's knife) from 180 to 300 mm."
+   "sources": ["https://tojiro.net/product/26/", "https://www.tojiro-japan.com/distributors-information/", "https://japaneseknifecompany.com/brand/tojiro/", "https://japaneseknifecompany.com/product/tojiro-dp-3-layer-vg10-gyuto-180mm-no-bolster/"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://japaneseknifecompany.com/brand/tojiro/",
+   "range_shop": "Japanese Knife Company",
+   "from_price": 59.0,
+   "from_price_shop": "Japanese Knife Company",
+   "from_price_url": "https://japaneseknifecompany.com/product/tojiro-dp-3-layer-vg10-gyuto-180mm-no-bolster/",
+   "from_price_checked_on": "2026-10-14",
+   "note": "Tojiro's own (Japanese) site lists the TOJIRO PRO series with gyuto (牛刀, the Japanese chef's knife) from 180 to 300 mm. On 14 Oct 2026: Tojiro's English site names J&M Michaels Limited, Japanese Knife Company, its distributor for the UK and Ireland, whose Tojiro page lists 62 products in pounds; the maker has no page for its gyutos in English. From price: the Tojiro Basic 3 Layer VG10 Gyuto 210mm at £59, in stock, the cheapest Tojiro gyuto there (then the Basic Damascus 180mm £104, the DP VG10 Gyuto from £106). The distributor's site refuses automated reads (403): read in a browser."
   },
   {
    "brand": "Misono",
@@ -42,17 +86,48 @@
    "product_type": "chef knife",
    "sells": true,
    "sources": ["https://www.misono-hamono.com/UX10/top.html"],
-   "checked_on": "2026-10-12",
-   "note": "Misono Cutlery's own site lists a gyutou knife (牛刀) in its UX10 series, made in Seki, Japan."
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.misono-hamono.com/UX10/top.html",
+   "note": "Misono Cutlery's own site lists a gyutou knife (牛刀) in its UX10 series, made in Seki, Japan. Re-read on 14 Oct 2026: the English page of its UX10 series, which lists its gyutou; the site has no page for gyutos across its series."
+  },
+  {
+   "brand": "Global",
+   "category": "kitchen",
+   "product_type": "chef knife",
+   "sells": true,
+   "sources": ["https://www.yoshikin.co.jp/en/products/global", "https://www.hartsofstur.com/global-gs-89-13cm-blade-cooks-knife-gs-89.html"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.yoshikin.co.jp/en/products/global",
+   "from_price": 49.95,
+   "from_price_shop": "Harts of Stur",
+   "from_price_url": "https://www.hartsofstur.com/global-gs-89-13cm-blade-cooks-knife-gs-89.html",
+   "from_price_checked_on": "2026-10-14",
+   "note": "Yoshikin (Yoshida Metal Industry, Niigata), GLOBAL's maker: its English GLOBAL page lists three cook knives (G-2 20 cm, G-55 18 cm, GS-3 13 cm) among the series' knives; it has no UK site. From price: Harts of Stur, a large UK cookware retailer with Global's full G and GS series, on 14 Oct 2026, the GS-89 13cm Cooks Knife at £49.95 (RRP £100), in stock, its cheapest Global cook's knife (GS-3 13 cm £83.95, GS-98 18 cm £94.95, G-2 20 cm £109.95). John Lewis sells only Global's NI series (Cook's Knife 16 cm £125, 20 cm £150); Lakeland's Global G-2 is discontinued."
+  },
+  {
+   "brand": "Mercer",
+   "also_called": ["Mercer Culinary"],
+   "category": "kitchen",
+   "product_type": "chef knife",
+   "sells": true,
+   "sources": ["https://www.mercerculinary.com/product-category/cutlery/"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.mercerculinary.com/product-category/cutlery/",
+   "note": "Mercer Culinary's own Cutlery page, 14 Oct 2026: chef's knives in its BPX, ZüM, Millennia, Renaissance and Genesis lines (its Chef's filter shows 54; the filtered page refuses automated reads). No from price: a US maker with no UK site; in the UK only trade catering suppliers list it (ex VAT), no big UK shop."
   },
   {
    "brand": "Lodge",
    "category": "kitchen",
    "product_type": "cast iron skillet",
    "sells": true,
-   "sources": ["https://www.lodgecastiron.com/collections/skillets"],
-   "checked_on": "2026-10-12",
-   "note": "Lodge's own (US) site has a Skillets collection of cast iron skillets (Classic round skillet and others)."
+   "sources": ["https://www.lodgecastiron.com/collections/skillets", "https://www.johnlewis.com/lodge-cast-iron-skillet-frying-pan/p5192004"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.lodgecastiron.com/collections/skillets",
+   "from_price": 50.0,
+   "from_price_shop": "John Lewis",
+   "from_price_url": "https://www.johnlewis.com/lodge-cast-iron-skillet-frying-pan/p5192004",
+   "from_price_checked_on": "2026-10-14",
+   "note": "Lodge's own (US) site has a Skillets collection of cast iron skillets (Classic round skillet and others). On 14 Oct 2026 (no Lodge UK site found): John Lewis sells the Lodge Cast Iron Skillet Frying Pan in 25 cm and 30.5 cm at £50 to £70, to add to the basket: the cheapest Lodge skillet at the big UK shops checked (Lakeland's 13, 23 and 24 cm Lodge skillets are discontinued; Argos sells no Lodge)."
   },
   {
    "brand": "Field Company",
@@ -60,9 +135,40 @@
    "category": "kitchen",
    "product_type": "cast iron skillet",
    "sells": true,
-   "sources": ["https://fieldcompany.com/collections/all"],
-   "checked_on": "2026-10-12",
-   "note": "Field Company's own (US) site sells cast iron skillets (No.8 and No.10 Skillet, the Chef Skillet). Writers call it Field."
+   "sources": ["https://fieldcompany.com/collections/all", "https://fieldcompany.com/collections/cast-iron-skillets"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://fieldcompany.com/collections/cast-iron-skillets",
+   "note": "Field Company's own (US) site sells cast iron skillets (No.8 and No.10 Skillet, the Chef Skillet). Writers call it Field. On 14 Oct 2026 its Cast Iron Skillets collection lists the No.4 to No.16 skillets in dollars ($100 to $350). No from price: it sells from its US store, and no UK shop was found selling it."
+  },
+  {
+   "brand": "GreenPan",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "sells": true,
+   "sources": ["https://greenpan.co.uk/collections/frypans", "https://greenpan.co.uk/products/memphis-ceramic-nonstick-20cm-frypan"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://greenpan.co.uk/collections/frypans",
+   "from_price": 30.9,
+   "from_price_shop": "GreenPan UK",
+   "from_price_url": "https://greenpan.co.uk/products/memphis-ceramic-nonstick-20cm-frypan",
+   "from_price_checked_on": "2026-10-14",
+   "note": "GreenPan's UK store has a Frypans collection (the old frying-pans address redirects there). On 14 Oct 2026, sorted by price: the Memphis Ceramic Non-Stick 20 cm Frypan at £30.90, to add to the cart (its page's out-of-stock text is hidden, read in a browser), then the Memphis 24 cm at £35.90."
+  },
+  {
+   "brand": "OXO",
+   "also_called": ["OXO non-stick"],
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "sells": true,
+   "sources": ["https://www.johnlewis.com/browse/home-garden/cooking-baking/pots-pans/oxo/_/N-7d3bZ1z13sfl", "https://www.johnlewis.com/oxo-professional-hard-anodised-aluminium-ceramic-non-stick-frying-pan/p115027525"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.johnlewis.com/browse/home-garden/cooking-baking/pots-pans/oxo/_/N-7d3bZ1z13sfl",
+   "range_shop": "John Lewis",
+   "from_price": 75.0,
+   "from_price_shop": "John Lewis",
+   "from_price_url": "https://www.johnlewis.com/oxo-professional-hard-anodised-aluminium-ceramic-non-stick-frying-pan/p115027525",
+   "from_price_checked_on": "2026-10-14",
+   "note": "OXO has no UK site and its own (US) site no frying-pan page; writers call its non-stick pans \"OXO non-stick\". John Lewis's OXO pots and pans, 14 Oct 2026: the Professional Hard Anodised Aluminium Ceramic Non-Stick Frying Pan at £75 to £95 (20, 26 and 30 cm), to add to the basket, its cheapest OXO frying pan (the Mira stainless frying pan £90 to £110). Lakeland's OXO Softworks non-stick pan is discontinued."
   },
   {
    "brand": "Lodge",
@@ -70,53 +176,93 @@
    "product_type": "dutch oven",
    "sells": true,
    "sources": ["https://www.lodgecastiron.com/collections/dutch-ovens"],
-   "checked_on": "2026-10-12",
-   "note": "Lodge's own (US) site has a Dutch Ovens collection, with enamelled Dutch ovens (4.5 and 6 quart) among them."
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.lodgecastiron.com/collections/dutch-ovens",
+   "note": "Lodge's own (US) site has a Dutch Ovens collection, with enamelled Dutch ovens (4.5 and 6 quart) among them. Re-read on 14 Oct 2026. No from price: no big UK shop has a Lodge Dutch oven on sale (John Lewis sells only its skillet and grill pan; Lakeland's Dutch Oven 26 cm is discontinued and its Double Dutch Oven 26 cm, £114.99, currently unavailable; Argos none)."
   },
   {
    "brand": "Le Creuset",
    "category": "kitchen",
    "product_type": "dutch oven",
    "sells": true,
-   "sources": ["https://www.lecreuset.co.uk/en_GB/c/cooking-and-baking/cooking/casseroles"],
-   "checked_on": "2026-10-12",
-   "note": "Le Creuset's UK store has a Casseroles category of cast iron casseroles: the UK name for a Dutch oven."
+   "sources": ["https://www.lecreuset.co.uk/en_GB/c/cooking-and-baking/cooking/casseroles", "https://www.lecreuset.co.uk/en_GB/p/cast-iron-round-casserole/CI1177.html"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.lecreuset.co.uk/en_GB/c/cooking-and-baking/cooking/casseroles",
+   "from_price": 229.0,
+   "from_price_shop": "Le Creuset UK",
+   "from_price_url": "https://www.lecreuset.co.uk/en_GB/p/cast-iron-round-casserole/CI1177.html",
+   "from_price_checked_on": "2026-10-14",
+   "note": "Le Creuset's UK store has a Casseroles category of cast iron casseroles: the UK name for a Dutch oven. On 14 Oct 2026 the category (56 results) also holds toughened non-stick and stainless steel casseroles, which aren't Dutch ovens; the cheapest cast iron casserole is the Cast Iron Round Casserole at £229 in its 18 cm (1.8 L) size (up to £529 at 34 cm), to add to the basket."
   },
   {
    "brand": "Staub",
    "category": "kitchen",
    "product_type": "dutch oven",
    "sells": true,
-   "sources": ["https://www.zwilling.com/uk/staub/cast-iron/staub-cocottes/"],
-   "checked_on": "2026-10-12",
-   "note": "Zwilling's UK site (Staub's owner) lists \"Cast iron STAUB Cocottes & Dutch Ovens\", La Cocotte from 20 to 28 cm."
+   "sources": ["https://www.zwilling.com/uk/staub/cast-iron/staub-cocottes/", "https://www.zwilling.com/uk/staub-la-cocotte-14-cm-round-cast-iron-cocotte-black-40509-476-0/40509-476-0.html"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.zwilling.com/uk/staub/cast-iron/staub-cocottes/",
+   "from_price": 119.0,
+   "from_price_shop": "Zwilling UK",
+   "from_price_url": "https://www.zwilling.com/uk/staub-la-cocotte-14-cm-round-cast-iron-cocotte-black-40509-476-0/40509-476-0.html",
+   "from_price_checked_on": "2026-10-14",
+   "note": "Zwilling's UK site (Staub's owner) lists \"Cast iron STAUB Cocottes & Dutch Ovens\", La Cocotte from 20 to 28 cm. On 14 Oct 2026 (144 results, sorted by price): the cheapest standard cocotte is La Cocotte 14 cm round at £119, in stock; the 10 cm round Mini Cocotte (£69.95) is a mini serving piece and the 12 cm La Coquette (£99.95) a speciality, so neither is counted."
   },
   {
    "brand": "Cosori",
    "category": "kitchen",
    "product_type": "air fryer",
    "sells": true,
-   "sources": ["https://cosori.com/collections/air-fryers"],
-   "checked_on": "2026-10-12",
-   "note": "Cosori's own (US) store has an Air Fryers collection of ten models (TurboBlaze, Dual Blaze, Pro LE and others)."
+   "sources": ["https://cosori.com/collections/air-fryers", "https://cosori.co.uk/collections/air-fryers", "https://cosori.co.uk/products/cosori-2l-mini-air-fryer"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://cosori.co.uk/collections/air-fryers",
+   "from_price": 59.99,
+   "from_price_shop": "Cosori UK",
+   "from_price_url": "https://cosori.co.uk/products/cosori-2l-mini-air-fryer",
+   "from_price_checked_on": "2026-10-14",
+   "note": "Cosori's own (US) store has an Air Fryers collection of ten models (TurboBlaze, Dual Blaze, Pro LE and others). Its UK store (cosori.co.uk, VeSync (UK) Limited) lists 11 air fryers on 14 Oct 2026, from the COSORI 2L Mini Air Fryer at £59.99 (sold out that day; the cheapest in stock was the Air Fryer Lite 3.8L at £89.99) to the Turbo Tower 10.8 L at £299.99."
   },
   {
    "brand": "Ninja",
    "category": "kitchen",
    "product_type": "air fryer",
    "sells": true,
-   "sources": ["https://www.sharkninja.co.uk/kitchen/cooking-appliances/air-fryers"],
-   "checked_on": "2026-10-12",
-   "note": "SharkNinja's UK site (Ninja's maker) has an Air Fryers category under Cooking Appliances."
+   "sources": ["https://www.sharkninja.co.uk/kitchen/cooking-appliances/air-fryers", "https://www.sharkninja.co.uk/ninja-air-fryer-pro-4-7l-cyber-space-af140ukcyd/AF140UKCYD.html"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.sharkninja.co.uk/kitchen/cooking-appliances/air-fryers",
+   "from_price": 89.99,
+   "from_price_shop": "SharkNinja UK",
+   "from_price_url": "https://www.sharkninja.co.uk/ninja-air-fryer-pro-4-7l-cyber-space-af140ukcyd/AF140UKCYD.html",
+   "from_price_checked_on": "2026-10-14",
+   "note": "SharkNinja's UK site (Ninja's maker) has an Air Fryers category under Cooking Appliances. On 14 Oct 2026 (39 results, sorted by price): the cheapest is the Ninja Air Fryer PRO 4.7L in Cyber Space (AF140UKCYD) at £89.99, reduced from £109.99 and out of stock that day, then the Ninja Air Fryer 4.7L (AF110UK) at £99.99, in stock."
+  },
+  {
+   "brand": "Instant Vortex Plus",
+   "category": "kitchen",
+   "product_type": "air fryer",
+   "sells": true,
+   "sources": ["https://instantpot.co.uk/shop-by-brand/instant/cooking-appliances/air-fryers/", "https://www.johnlewis.com/instant-vortex-plus-air-fryer-3-8l-stainless-steel/p110965222"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://instantpot.co.uk/shop-by-brand/instant/cooking-appliances/air-fryers/",
+   "from_price": 89.99,
+   "from_price_shop": "John Lewis",
+   "from_price_url": "https://www.johnlewis.com/instant-vortex-plus-air-fryer-3-8l-stainless-steel/p110965222",
+   "from_price_checked_on": "2026-10-14",
+   "note": "Instant's UK site (instantbrands.co.uk redirects to instantpot.co.uk) lists 12 air fryers on 14 Oct 2026, four of them Vortex Plus (3.8L, 13L Air Fryer Oven, VersaZone 8.5L with and without ClearCook), without prices. From price: John Lewis's Vortex Plus 3.8L at £89.99 (currently out of stock online that day; read in a browser)."
   },
   {
    "brand": "Ninja",
    "category": "kitchen",
    "product_type": "blender",
    "sells": true,
-   "sources": ["https://www.sharkninja.co.uk/kitchen/blenders-food-prep/blenders"],
-   "checked_on": "2026-10-12",
-   "note": "SharkNinja's UK site has a Blenders category under Blenders & Food Prep (hand blenders are a category of their own)."
+   "sources": ["https://www.sharkninja.co.uk/kitchen/blenders-food-prep/blenders", "https://www.sharkninja.co.uk/ninja-blast-cordless-portable-blender-denim-blue-bc151uknv/BC151UKNV.html"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.sharkninja.co.uk/kitchen/blenders-food-prep/blenders",
+   "from_price": 54.99,
+   "from_price_shop": "SharkNinja UK",
+   "from_price_url": "https://www.sharkninja.co.uk/ninja-blast-cordless-portable-blender-denim-blue-bc151uknv/BC151UKNV.html",
+   "from_price_checked_on": "2026-10-14",
+   "note": "SharkNinja's UK site has a Blenders category under Blenders & Food Prep (hand blenders are a category of their own). On 14 Oct 2026 (21 results, sorted by price): the cheapest is the Ninja Blast Cordless Portable Blender at £54.99 (Denim Blue to add to the cart; Sage Green out of stock), then the Nutri Ninja 700W Slim Blender at £64.99."
   },
   {
    "brand": "Ninja",
@@ -124,8 +270,23 @@
    "product_type": "toaster",
    "sells": true,
    "sources": ["https://www.sharkninja.co.uk/kitchen/kitchenware/toasters"],
-   "checked_on": "2026-10-12",
-   "note": "SharkNinja's UK site has a Toasters category under Kitchenware."
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.sharkninja.co.uk/kitchen/kitchenware/toasters",
+   "note": "SharkNinja's UK site has a Toasters category under Kitchenware. Re-read on 14 Oct 2026: 2 results, the Ninja Foodi 3-in-1 Toaster, Grill & Panini Press and a kettle and toaster set."
+  },
+  {
+   "brand": "Dualit",
+   "category": "kitchen",
+   "product_type": "toaster",
+   "sells": true,
+   "sources": ["https://www.dualit.com/collections/toasters", "https://www.dualit.com/products/studio-2-slot-toaster"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.dualit.com/collections/toasters",
+   "from_price": 64.99,
+   "from_price_shop": "Dualit",
+   "from_price_url": "https://www.dualit.com/products/studio-2-slot-toaster",
+   "from_price_checked_on": "2026-10-14",
+   "note": "Dualit's own UK store lists 13 toasters on 14 Oct 2026. From price: the Studio by Dualit 2 Slice Toaster at £64.99 (currently out of stock that day), then the 2 Slice Lite Toaster at £94.99 and the Architect 2 Slice at £99.99."
   },
   {
    "brand": "Zojirushi",
@@ -133,8 +294,9 @@
    "product_type": "rice cooker",
    "sells": true,
    "sources": ["https://www.zojirushi.com/app/category/rice-cookers"],
-   "checked_on": "2026-10-12",
-   "note": "Zojirushi America's own site has a Rice Cookers category. Whether UK shoppers can buy them is the price list's job."
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.zojirushi.com/app/category/rice-cookers",
+   "note": "Zojirushi America's own site has a Rice Cookers category. Whether UK shoppers can buy them is the price list's job. Re-read on 14 Oct 2026, in a browser (the site refuses automated reads). No from price: in the UK it is sold by specialist importers (Yum Asia, and WAFUU JAPAN's export models), not by big UK shops."
   },
   {
    "brand": "Tiger",
@@ -142,8 +304,9 @@
    "product_type": "rice cooker",
    "sells": true,
    "sources": ["https://www.tiger-corporation.com/en/usa/product/rice-cooker/"],
-   "checked_on": "2026-10-12",
-   "note": "Tiger Corporation's own site (its US pages) has a Rice Cookers section."
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.tiger-corporation.com/en/usa/product/rice-cooker/",
+   "note": "Tiger Corporation's own site (its US pages) has a Rice Cookers section. Re-read on 14 Oct 2026: its regional sites cover Japan, South-East Asia, Korea, Australia and the US, not the UK or Europe. No from price: no big UK shop sells it."
   },
   {
    "brand": "Aroma",
@@ -151,26 +314,43 @@
    "product_type": "rice cooker",
    "sells": true,
    "sources": ["https://www.aromaco.com/category/rice-cookers-multicookers/rice-grain-cookers/"],
-   "checked_on": "2026-10-12",
-   "note": "Aroma Housewares' own (US) site has Rice & Grain Cookers and Digital Rice & Grain Multicookers."
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.aromaco.com/category/rice-cookers-multicookers/rice-grain-cookers/",
+   "note": "Aroma Housewares' own (US) site has Rice & Grain Cookers and Digital Rice & Grain Multicookers. Re-read on 14 Oct 2026, in a browser (the site refuses automated reads). No from price: a US maker, no UK seller found."
+  },
+  {
+   "brand": "Tatung",
+   "category": "kitchen",
+   "product_type": "rice cooker",
+   "sells": true,
+   "sources": ["https://us.tatung.com/products"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://us.tatung.com/products",
+   "note": "TATUNG-USA (Tatung Company) lists its multi-functional cookers, the Taiwanese rice cooker (TAC-6GS, TAC-10GS, TAC-06IN, TAC-06KN, TAC-11KN, TAC-11QM, TAC-11TM), on 14 Oct 2026. No from price: no big UK shop sells it (a UK cookware specialist does)."
   },
   {
    "brand": "Vitamix",
    "category": "kitchen",
    "product_type": "blender",
    "sells": true,
-   "sources": ["https://vitamix.co.uk/collections/blenders"],
-   "checked_on": "2026-10-12",
-   "note": "Vitamix UK's store sells blenders (Ascent and Explorian series), containers and spares."
+   "sources": ["https://vitamix.co.uk/collections/blenders", "https://vitamix.co.uk/products/explorian-e310"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://vitamix.co.uk/collections/blenders",
+   "from_price": 429.0,
+   "from_price_shop": "Vitamix UK",
+   "from_price_url": "https://vitamix.co.uk/products/explorian-e310",
+   "from_price_checked_on": "2026-10-14",
+   "note": "Vitamix UK's store sells blenders (Ascent and Explorian series), containers and spares. On 14 Oct 2026 (8 blenders, sorted by price): from the Explorian E310 at £429 to the Ascent A3500i Gourmet Bundle at £899."
   },
   {
    "brand": "NutriBullet",
    "category": "kitchen",
    "product_type": "blender",
    "sells": true,
-   "sources": ["https://www.nutribullet.co.uk/"],
-   "checked_on": "2026-10-12",
-   "note": "nutribullet's UK store sells personal, portable and family blenders (the 600 Series, the Blender Combo 1200W)."
+   "sources": ["https://www.nutribullet.co.uk/", "https://nutribullet.co.uk/collections/all-blenders"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://nutribullet.co.uk/collections/all-blenders",
+   "note": "nutribullet's UK store sells personal, portable and family blenders (the 600 Series, the Blender Combo 1200W). On 14 Oct 2026 its All Blenders collection lists 24 products (nutribullet and magic bullet)."
   },
   {
    "brand": "KitchenAid",
@@ -178,8 +358,9 @@
    "product_type": "stand mixer",
    "sells": true,
    "sources": ["https://www.kitchenaid.co.uk/all-mixers"],
-   "checked_on": "2026-10-12",
-   "note": "KitchenAid's UK site sells stand mixers, medium and large (the Artisan tilt-head mixer among them)."
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.kitchenaid.co.uk/all-mixers",
+   "note": "KitchenAid's UK site sells stand mixers, medium and large (the Artisan tilt-head mixer among them). Re-read on 14 Oct 2026 (Artisan and Classic tilt-head and bowl-lift mixers)."
   },
   {
    "brand": "KitchenAid",
@@ -187,17 +368,19 @@
    "product_type": "food processor",
    "sells": true,
    "sources": ["https://www.kitchenaid.co.uk/food-processors"],
-   "checked_on": "2026-10-12",
-   "note": "KitchenAid's UK site has a Food processors category under Small Kitchen Appliances."
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.kitchenaid.co.uk/food-processors",
+   "note": "KitchenAid's UK site has a Food processors category under Small Kitchen Appliances. Re-read on 14 Oct 2026 (1.7 L, 2.1 L and 3.1 L food processors and food choppers)."
   },
   {
    "brand": "Kenwood",
    "category": "kitchen",
    "product_type": "stand mixer",
    "sells": true,
-   "sources": ["https://www.kenwoodworld.com/en-gb/products/stand-mixers"],
-   "checked_on": "2026-10-12",
-   "note": "Kenwood's UK site sells stand mixers: Chef, Chef XL, Titanium Chef Patissier XL, kMix and others."
+   "sources": ["https://www.kenwoodworld.com/en-gb/products/stand-mixers", "https://www.kenwoodworld.com/en-gb/c/kenwood-stand-mixers-and-kitchen-machines"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.kenwoodworld.com/en-gb/c/kenwood-stand-mixers-and-kitchen-machines",
+   "note": "Kenwood's UK site sells stand mixers: Chef, Chef XL, Titanium Chef Patissier XL, kMix and others. On 14 Oct 2026 the first page redirects to its stand mixers and kitchen machines page (Chef, Chef XL, kMix, Titanium Chef Patissier XL, Kenwood Go)."
   },
   {
    "brand": "Bosch",
@@ -205,8 +388,9 @@
    "product_type": "stand mixer",
    "sells": true,
    "sources": ["https://www.bosch-home.co.uk/en/category/kitchen-machines/mum-kitchen-machines"],
-   "checked_on": "2026-10-12",
-   "note": "Bosch's UK site lists its MUM kitchen machines as stand mixers (Series 2, 4 and 6)."
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.bosch-home.co.uk/en/category/kitchen-machines/mum-kitchen-machines",
+   "note": "Bosch's UK site lists its MUM kitchen machines as stand mixers (Series 2, 4 and 6). Re-read on 14 Oct 2026 (7 stand mixers, Series 2, 4 and 6)."
   },
   {
    "brand": "Comandante",
@@ -214,12 +398,13 @@
    "product_type": "coffee grinder",
    "sells": true,
    "sources": ["https://www.comandantegrinder.com/", "https://clumsygoat.co.uk/products/comandante-c40-coffee-grinder"],
-   "checked_on": "2026-10-12",
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.comandantegrinder.com/",
    "from_price": 219.0,
    "from_price_shop": "Clumsy Goat",
    "from_price_url": "https://clumsygoat.co.uk/products/comandante-c40-coffee-grinder",
-   "from_price_checked_on": "2026-10-12",
-   "note": "Comandante's own site: it \"develops and manufactures high performance coffee grinders\" (C40, C60, X25). From price: Clumsy Goat's Comandante range on 12 Oct 2026, the C40 MK4 at £219 (the cheapest; sold out that day) and the C60 Baracuda at £479; no X25 listed."
+   "from_price_checked_on": "2026-10-14",
+   "note": "Comandante's own site: it \"develops and manufactures high performance coffee grinders\" (C40, C60, X25). From price: Clumsy Goat's Comandante range on 12 Oct 2026, the C40 MK4 at £219 (the cheapest; sold out that day) and the C60 Baracuda at £479; no X25 listed. Re-read on 14 Oct 2026: still £219 (was £249), sold out in every colour. Comandante's own site is all grinders, burrs and tools (C40, C60, X25), so it is the range page."
   },
   {
    "brand": "1Zpresso",
@@ -227,53 +412,78 @@
    "product_type": "coffee grinder",
    "sells": true,
    "sources": ["https://1zpresso.coffee/"],
-   "checked_on": "2026-10-12",
-   "note": "1Zpresso's own store sells manual coffee grinders (K-Ultra, J-Ultra, X, Q and ZP6 series). Several older models aren't sold in the UK any more (price list)."
+   "checked_on": "2026-10-14",
+   "range_page": "https://1zpresso.coffee/",
+   "note": "1Zpresso's own store sells manual coffee grinders (K-Ultra, J-Ultra, X, Q and ZP6 series). Several older models aren't sold in the UK any more (price list). Re-read on 14 Oct 2026: a maker of manual grinders only (K-Ultra, J, X and Q series), so its home page is the range page."
   },
   {
    "brand": "Baratza",
    "category": "kitchen",
    "product_type": "coffee grinder",
    "sells": true,
-   "sources": ["https://www.baratza.com/en-gb/"],
-   "checked_on": "2026-10-12",
-   "note": "Baratza's UK site sells coffee grinders (Encore ESP, Virtuoso+, Sette 270) in pounds."
+   "sources": ["https://www.baratza.com/en-gb/", "https://www.baratza.com/en-gb/shop/grinders"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.baratza.com/en-gb/shop/grinders",
+   "note": "Baratza's UK site sells coffee grinders (Encore ESP, Virtuoso+, Sette 270) in pounds. On 14 Oct 2026 its UK Coffee Grinders page lists 11 grinders (Encore £139.95 to Sette 270Wi and Vario W+ £399.95)."
+  },
+  {
+   "brand": "Hario Mini Mill",
+   "also_called": ["Hario Mini"],
+   "category": "kitchen",
+   "product_type": "coffee grinder",
+   "sells": true,
+   "sources": ["https://www.hario.co.uk/collections/coffee-grind-hand-grinders", "https://www.hario.co.uk/coffee/grinders/ceramic-mini-mill.html"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.hario.co.uk/collections/coffee-grind-hand-grinders",
+   "from_price": 39.0,
+   "from_price_shop": "Hario UK",
+   "from_price_url": "https://www.hario.co.uk/coffee/grinders/ceramic-mini-mill.html",
+   "from_price_checked_on": "2026-10-14",
+   "note": "Hario's UK store, 14 Oct 2026: its Hand Coffee Grinders hold the Mini Mill PLUS Ceramic Coffee Grinder (MSS-1DTB) at £39, \"936 in stock\", and Mini Mill bundles with V60 kits (the £33 starter kit is sold out). Writers call it the Hario Mini."
   },
   {
    "brand": "De'Longhi",
    "category": "kitchen",
    "product_type": "espresso machine",
    "sells": true,
-   "sources": ["https://www.delonghi.com/en-gb/"],
-   "checked_on": "2026-10-12",
-   "note": "De'Longhi's UK site has a Manual Espresso Machines category under Coffee machines, besides its automatic machines."
+   "sources": ["https://www.delonghi.com/en-gb/", "https://www.delonghi.com/en-gb/c/coffee/coffee-machines/manual-espresso-machines"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.delonghi.com/en-gb/c/coffee/coffee-machines/manual-espresso-machines",
+   "note": "De'Longhi's UK site has a Manual Espresso Machines category under Coffee machines, besides its automatic machines. On 14 Oct 2026 that category's page lists 23 manual espresso machines (La Specialista, Dedica, Stilosa)."
   },
   {
    "brand": "Nizoral",
    "category": "haircare",
    "product_type": "shampoo",
    "sells": true,
-   "sources": ["https://www.medicines.org.uk/emc/product/1510/smpc"],
-   "checked_on": "2026-10-12",
-   "note": "The UK medicines register's product page for Nizoral 2% shampoo (ketoconazole), made by Thornton & Ross. The brand's own UK site didn't load."
+   "sources": ["https://www.medicines.org.uk/emc/product/1510/smpc", "https://www.nizoralshampoo.co.uk/anti-dandruff-shampoo"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.nizoralshampoo.co.uk/anti-dandruff-shampoo",
+   "note": "The UK medicines register's product page for Nizoral 2% shampoo (ketoconazole), made by Thornton & Ross. The brand's own UK site didn't load. On 14 Oct 2026 Nizoral's UK site (Thornton & Ross Ltd, a STADA company; the address on its packaging) has an anti-dandruff shampoo page (Nizoral 2% Shampoo, Nizoral Dandruff Shampoo)."
   },
   {
    "brand": "Head & Shoulders",
    "category": "haircare",
    "product_type": "shampoo",
    "sells": true,
-   "sources": ["https://www.headandshoulders.co.uk/en-gb"],
-   "checked_on": "2026-10-12",
-   "note": "Head & Shoulders' UK site sells dandruff shampoos, dandruff conditioners, 2 in 1s and scalp balms."
+   "sources": ["https://www.headandshoulders.co.uk/en-gb", "https://www.headandshoulders.co.uk/en-gb/anti-dandruff-products/dandruff-shampoo/"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.headandshoulders.co.uk/en-gb/anti-dandruff-products/dandruff-shampoo/",
+   "note": "Head & Shoulders' UK site sells dandruff shampoos, dandruff conditioners, 2 in 1s and scalp balms. On 14 Oct 2026 its Dandruff Shampoo page lists 32 shampoos."
   },
   {
    "brand": "Innersense",
    "category": "haircare",
    "product_type": "shampoo",
    "sells": true,
-   "sources": ["https://innersensebeauty.com/en-gb/collections/shampoo"],
-   "checked_on": "2026-10-12",
-   "note": "Innersense Organic Beauty's UK pages have a Shampoo collection (the Hairbaths, such as Pure Harmony Hairbath)."
+   "sources": ["https://innersensebeauty.com/en-gb/collections/shampoo", "https://www.cultbeauty.co.uk/p/innersense-clarity-hairbath-295ml/13950836/"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://innersensebeauty.com/en-gb/collections/shampoo",
+   "from_price": 28.0,
+   "from_price_shop": "Cult Beauty",
+   "from_price_url": "https://www.cultbeauty.co.uk/p/innersense-clarity-hairbath-295ml/13950836/",
+   "from_price_checked_on": "2026-10-14",
+   "note": "Innersense Organic Beauty's UK pages have a Shampoo collection (the Hairbaths, such as Pure Harmony Hairbath). On 14 Oct 2026 its UK pages price in dollars (Hairbaths $28 to $30). From price: Cult Beauty's Clarity Hairbath 295ml at £28, in stock; its 295ml Hairbaths cost £28 to £30 there (59ml travel sizes at £10 aren't counted: a product is priced at its full size)."
   },
   {
    "brand": "Hask",
@@ -281,8 +491,25 @@
    "product_type": "shampoo",
    "sells": true,
    "sources": ["https://haskbeauty.com/collections/shampoo"],
-   "checked_on": "2026-10-12",
-   "note": "HASK's own site sells shampoos (Repair + Argan Oil, Smooth + Keratin & Jojoba Oil and others)."
+   "checked_on": "2026-10-14",
+   "range_page": "https://haskbeauty.com/collections/shampoo",
+   "note": "HASK's own site sells shampoos (Repair + Argan Oil, Smooth + Keratin & Jojoba Oil and others). Re-read on 14 Oct 2026."
+  },
+  {
+   "brand": "Herbal Essences",
+   "also_called": ["Herbal Essence"],
+   "category": "haircare",
+   "product_type": "shampoo",
+   "sells": true,
+   "sources": ["https://www.boots.com/herbal-essences/herbal-essences-shampoo/herbal-essences-2", "https://www.boots.com/herbal-essences-shampoo-hello-hydration-400ml-10083177"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.boots.com/herbal-essences/herbal-essences-shampoo/herbal-essences-2",
+   "range_shop": "Boots",
+   "from_price": 2.0,
+   "from_price_shop": "Boots",
+   "from_price_url": "https://www.boots.com/herbal-essences-shampoo-hello-hydration-400ml-10083177",
+   "from_price_checked_on": "2026-10-14",
+   "note": "herbalessences.co.uk now redirects to P&G's brand list, so its range page is Boots's Herbal Essences shampoo page (17 items on 14 Oct 2026, read in a browser): the 400ml Hello Hydration, Ignite My Colour and Dazzling Shine shampoos at £2.00, to add to the basket (Love Me Longer 400ml £2.00, stock coming soon), the 350ml shampoos at £6.00."
   },
   {
    "brand": "Batiste",
@@ -290,8 +517,9 @@
    "product_type": "dry shampoo",
    "sells": true,
    "sources": ["https://www.batiste-hair.eu/en/our-products/all-products/"],
-   "checked_on": "2026-10-12",
-   "note": "Batiste's European site (its region selector includes the UK; batistehair.co.uk redirects there) lists dry shampoos in every range."
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.batiste-hair.eu/en/our-products/all-products/",
+   "note": "Batiste's European site (its region selector includes the UK; batistehair.co.uk redirects there) lists dry shampoos in every range. Re-read on 14 Oct 2026: its whole range, dry shampoos and leave-in dry conditioners, so the range page."
   },
   {
    "brand": "Batiste",
@@ -309,8 +537,9 @@
    "product_type": "hair oil",
    "sells": true,
    "sources": ["https://www.loreal-paris.co.uk/hair-care/hair-serum"],
-   "checked_on": "2026-10-12",
-   "note": "L'Oréal Paris UK's Hair Serum page lists Extraordinary Oil Sublime Hair Enhancer and Extraordinary Oil Midnight Serum. Noemi's own example, 12 Oct 2026."
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.loreal-paris.co.uk/hair-care/hair-serum",
+   "note": "L'Oréal Paris UK's Hair Serum page lists Extraordinary Oil Sublime Hair Enhancer and Extraordinary Oil Midnight Serum. Noemi's own example, 12 Oct 2026. Re-read on 14 Oct 2026, in a browser (its listing is drawn by script)."
   },
   {
    "brand": "O'Keeffe's",
@@ -318,17 +547,76 @@
    "product_type": "lip balm",
    "sells": true,
    "sources": ["https://www.okeeffescompany.com/range/lips"],
-   "checked_on": "2026-10-12",
-   "note": "O'Keeffe's own (US) site has a Lips range: Lip Repair lip balms."
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.okeeffescompany.com/range/lips",
+   "note": "O'Keeffe's own (US) site has a Lips range: Lip Repair lip balms. Re-read on 14 Oct 2026: eight Lip Repair balms."
   },
   {
    "brand": "Burt's Bees",
    "category": "skincare",
    "product_type": "lip balm",
    "sells": true,
-   "sources": ["https://www.burtsbees.co.uk/product/beeswax-lip-balm/"],
-   "checked_on": "2026-10-12",
-   "note": "Burt's Bees UK sells lip balms (Beeswax, Honey and Pomegranate Lip Balm)."
+   "sources": ["https://www.burtsbees.co.uk/product/beeswax-lip-balm/", "https://www.burtsbees.co.uk/lip/"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.burtsbees.co.uk/lip/",
+   "note": "Burt's Bees UK sells lip balms (Beeswax, Honey and Pomegranate Lip Balm). On 14 Oct 2026 its UK Lip page lists its lip balms (Beeswax, Honey, Vanilla Bean, tinted balms)."
+  },
+  {
+   "brand": "BYOMA",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "sells": true,
+   "sources": ["https://uk.byoma.com/collections/skin-cleansers", "https://www.boots.com/byoma-creamy-jelly-cleanser-175ml-10307028"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://uk.byoma.com/collections/skin-cleansers",
+   "from_price": 10.99,
+   "from_price_shop": "Boots",
+   "from_price_url": "https://www.boots.com/byoma-creamy-jelly-cleanser-175ml-10307028",
+   "from_price_checked_on": "2026-10-14",
+   "note": "BYOMA's UK store lists six cleansers on 14 Oct 2026 (Creamy Jelly £10.99 to Melting Balm £14.99), all sold out there. From price: Boots's Creamy Jelly Cleanser 175ml at £10.99, to add to the basket (its smaller 60ml size and its refill pouch, made to refill a pump bottle, aren't counted)."
+  },
+  {
+   "brand": "CeraVe",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "sells": true,
+   "sources": ["https://www.cerave.co.uk/skincare/moisturisers", "https://www.boots.com/cerave-moisturising-cream-177ml-10258273"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.cerave.co.uk/skincare/moisturisers",
+   "from_price": 12.0,
+   "from_price_shop": "Boots",
+   "from_price_url": "https://www.boots.com/cerave-moisturising-cream-177ml-10258273",
+   "from_price_checked_on": "2026-10-14",
+   "note": "CeraVe UK's Moisturisers page, 14 Oct 2026 (Moisturising Cream Tube, PM and AM Facial Moisturising Lotions, Intensive Moisturising Cream and others). From price: Boots's CeraVe Moisturisers (27 items), the Moisturising Cream Tube 177ml at £12, to add to the basket (the Moisturising Lotion 236ml £12.50, the PM Facial Lotion 52ml £12.75; an eye cream, a serum, a repair ointment and refill pouches aren't counted)."
+  },
+  {
+   "brand": "ILLIYOON",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "sells": true,
+   "sources": ["https://www.boots.com/illiyoon", "https://www.boots.com/illiyoon-ceramide-ato-soothing-gel-175ml-10374662"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.boots.com/illiyoon",
+   "range_shop": "Boots",
+   "from_price": 18.99,
+   "from_price_shop": "Boots",
+   "from_price_url": "https://www.boots.com/illiyoon-ceramide-ato-soothing-gel-175ml-10374662",
+   "from_price_checked_on": "2026-10-14",
+   "note": "Amorepacific's ILLIYOON has no English site found; Boots's Illiyoon page lists seven products on 14 Oct 2026: Ceramide Ato Concentrate Cream 200ml £19.99 (75ml £9.99, 500ml £34.99), Ceramide Ato Lotion 350ml £19.99 (68ml £9.99), Ceramide Ato Soothing Gel 175ml £18.99 (a moisturising gel for dry areas of face and body) and a wash. From price: the Soothing Gel, to add to the basket (the 75ml and 68ml are small packs of products sold larger, not counted)."
+  },
+  {
+   "brand": "COSRX",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "sells": true,
+   "sources": ["https://www.cosrx.com/collections/spot-care", "https://www.lookfantastic.com/p/cosrx-acne-pimple-master-patch-24-patches/11401172/"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.cosrx.com/collections/spot-care",
+   "from_price": 5.99,
+   "from_price_shop": "Lookfantastic",
+   "from_price_url": "https://www.lookfantastic.com/p/cosrx-acne-pimple-master-patch-24-patches/11401172/",
+   "from_price_checked_on": "2026-10-14",
+   "note": "COSRX's own Spot Care collection (pimple patches and a spot cream, in dollars), 14 Oct 2026. From price: Lookfantastic (an official UK stockist of COSRX, its page says), the Acne Pimple Master Patch (24 patches) at £5.99, to add to the basket, its cheapest COSRX spot treatment (AC Collection Acne Patch 26 £6.99, Clear Fit 18 £6.99, Master Patch Intensive 36 £13.99)."
   }
  ]
 }

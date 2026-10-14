@@ -494,3 +494,11 @@ def test_every_from_price_in_the_committed_list_says_where_and_when_it_was_found
             assert line_.from_price_url in line_.sources, line_.brand
         if line_.range_page is not None:
             assert line_.range_page in line_.sources and line_.range_page.startswith("https://"), line_.brand
+
+
+def test_a_brand_in_the_committed_list_that_sells_the_type_has_a_range_page_or_says_why_not():
+    # Every brand-line pick should link to its maker's page for the type (14 Oct 2026); when no page could be found or
+    # read, the researcher says so in the note, for whoever checks the list next.
+    for line_ in load_brand_lines():
+        if line_.sells and line_.range_page is None:
+            assert "no range page" in (line_.note or "").casefold(), line_.brand
