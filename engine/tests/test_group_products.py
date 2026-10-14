@@ -534,7 +534,12 @@ def test_a_brand_and_the_type_fits_only_the_brands_products_of_that_type():
                 typed("The Ordinary Niacinamide 10% and Zinc 1%", "serum", "c4")]
     aliases = {"skincare": make_aliases({"TO": "The Ordinary"})}
     groups = group_products(mentions, aliases, product_type="sunscreen")
-    assert len(groups) == 3 and not any(g.loose for g in groups)
+    # Changed on purpose 14 Oct 2026 (name levels, engine/tests/test_name_levels.py): "TO sunscreen" is The Ordinary
+    # with only the type's word, so it is The Ordinary's sunscreen line (loose); it was a product of its own. What this
+    # test guards stays: it fits neither the lactic acid nor the niacinamide, which stay products of their own.
+    assert len(groups) == 3
+    assert [sorted(g.names) for g in groups if g.loose] == [["TO sunscreen"]]
+    assert not any(g.loose for g in groups if "TO sunscreen" not in g.names)
 
 
 def test_a_brand_and_the_types_plural_fits_the_brands_models_of_that_type():

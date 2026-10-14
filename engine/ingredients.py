@@ -143,6 +143,15 @@ def wanted_types(product_type: str | None, ingredients: Iterable[str] = ()) -> t
     return tuple(every or dict.fromkeys(t for types in lists for t in types))
 
 
+def facts_types(product_type: str | None) -> tuple[str, ...]:
+    """The more product types an ingredient-led answer may show, besides wanted_types', whose products count only when
+    their facts entry's formula lists the ingredient (config.INGREDIENTS' "facts_types": a retinoid with benzoyl
+    peroxide, such as Epiduo; the orchestrator's decision of 14 Oct 2026); () for any other type."""
+    led = ingredients_of_type(product_type)
+    wanted = wanted_types(product_type)
+    return tuple(dict.fromkeys(t for key in led for t in INGREDIENTS[key].get("facts_types", ()) if t not in wanted))
+
+
 def talk_words(product_type: str) -> tuple[str, ...]:
     """The regular expressions that show a text talks about an ingredient-led request's ingredients: their own words
     and those of their related ingredients (a thread about BHAs talks about salicylic acid). () for another type."""
