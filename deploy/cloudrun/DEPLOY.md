@@ -382,6 +382,8 @@ same (the 3,000 a day are the budget; each kept comment is then read every 12 da
 due takes about a millisecond a ping (each comment's last read is kept in memory, read from the folder in 0.3 s once a
 day as the new plan comes in).
 
+Container images (14 Oct 2026). Each deploy stores the site's image in Artifact Registry (the repository `cloud-run-source-deploy`, which `gcloud run deploy --source` makes): about 1.15 GB, most of it the open model the build downloads. Its free tier is 0.5 GB of storage, then about 0.10 USD per GB a month. By the evening of 14 Oct 44 images had grown to 51 GB (about 4.60 EUR a month); Noemi chose to keep only the newest one, so the other 43 were deleted that evening and deploy.sh applies a cleanup policy after each deploy (image_cleanup_policy.json: keep the newest version, delete every other; Google runs it about once a day). One image costs about 0.07 EUR a month. An older site version can't be rolled back to once its image is gone: rebuild it from its commit instead. To bring storage under the free 0.5 GB, the model would have to leave the image (downloaded as the server starts, about 20 s slower starts): not done.
+
 On-demand reading (estimates, 14 Oct 2026; 0 EUR). The reading job is billed like the pre-check, per instance-second
 for its whole run, waiting included, on 1 vCPU and 1 GiB. One product takes about 12 minutes: about 6 minutes of
 Arctic Shift at its 10 s pace (20 title searches and about 15 reads for a kitchen type with no title words of its own,

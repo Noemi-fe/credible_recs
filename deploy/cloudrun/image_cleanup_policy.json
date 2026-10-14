@@ -1,0 +1,12 @@
+[
+  {
+    "name": "keep-the-newest-image",
+    "action": {"type": "Keep"},
+    "mostRecentVersions": {"keepCount": 1}
+  },
+  {
+    "name": "delete-every-other-image",
+    "action": {"type": "Delete"},
+    "condition": {"tagState": "ANY"}
+  }
+]

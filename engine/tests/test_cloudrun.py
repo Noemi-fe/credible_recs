@@ -71,6 +71,24 @@ def _command(script: str, starts: str) -> str:
     return " ".join(found.split())
 
 
+def test_only_the_newest_site_image_is_kept():
+    # Noemi, 14 Oct 2026 ("Keep only the newest 1"): every deploy stores its container image (about 1.15 GB, most of it
+    # the open model) in Artifact Registry, whose free tier is 0.5 GB; 44 images had grown to 51 GB (about 4.60 EUR a
+    # month). deploy.sh applies a cleanup policy after each deploy that keeps the newest image only.
+    import json
+
+    policy = json.loads((DEPLOY_SH.parent / "image_cleanup_policy.json").read_text(encoding="utf-8"))
+    keep = [rule for rule in policy if rule["action"]["type"] == "Keep"]
+    delete = [rule for rule in policy if rule["action"]["type"] == "Delete"]
+    assert [rule["mostRecentVersions"]["keepCount"] for rule in keep] == [1]
+    assert [rule["condition"] for rule in delete] == [{"tagState": "ANY"}]
+    script = DEPLOY_SH.read_text(encoding="utf-8")
+    command = _command(script, '$GCLOUD artifacts repositories set-cleanup-policies')
+    assert "cloud-run-source-deploy" in command and "--policy deploy/cloudrun/image_cleanup_policy.json" in command
+    assert "--no-dry-run" in command
+    assert script.index("set-cleanup-policies") > script.index('$GCLOUD run deploy "$SERVICE"')  # the repository exists
+
+
 def test_the_bucket_deletes_every_check_two_days_old():
     import json
 
