@@ -710,6 +710,39 @@ def test_each_ping_after_getting_ready_warms_a_slice_of_the_requests_left(tmp_pa
     assert "warmed" not in capsys.readouterr().out
 
 
+def test_a_slice_of_warming_stops_as_soon_as_a_visitor_is_waiting(tmp_path, monkeypatch, capsys):
+    # 14 Oct 2026, measured on the live site just after a deploy: a visitor's answer queued 31 s behind a warming
+    # slice. Each warmed answer takes its turn (_answers_lock), but Python's lock isn't fair: the slice took it back for
+    # its next request before the visitor's thread woke. So a slice starts no answer while a visitor is waiting.
+    root, asked = _ready_with_requests_left(tmp_path, monkeypatch, takes=1.0)
+    monkeypatch.setattr(web, "_visitors_waiting", 0)
+    before, inner = len(asked), web.answer_request
+
+    def a_visitor_arrives_during_the_second(request, library_dir, **kwargs):
+        inner(request, library_dir, **kwargs)
+        if len(asked) == before + 2:
+            web._visitors_waiting += 1
+
+    monkeypatch.setattr(web, "answer_request", a_visitor_arrives_during_the_second)
+    capsys.readouterr()
+    web.handle_request("/ready", root)
+    assert len(asked) == before + 2  # the answer under way ends; no other starts
+    assert "warmed 2 more" in capsys.readouterr().out
+    web._visitors_waiting -= 1
+    web.handle_request("/ready", root)  # the next ping, nobody waiting: a whole slice again
+    assert len(asked) == before + 2 + web.WARM_MORE_SECONDS
+
+
+def test_a_visitor_counts_as_waiting_only_until_its_turn_comes(tmp_path, monkeypatch):
+    monkeypatch.setattr(web, "_visitors_waiting", 0)
+    seen = []
+    monkeypatch.setattr(web, "_fresh_answer", lambda request, library_dir, quiet: (seen.append(web._visitors_waiting)
+                                                                                    or (200, web.JSON, b"{}"), True))
+    web.clear_answer_cache()
+    web.answer_response("a kettle", tmp_path)
+    assert seen == [0] and web._visitors_waiting == 0  # counted while it waited for its turn, not once it had it
+
+
 def test_a_ping_before_the_server_is_ready_warms_nothing(tmp_path, monkeypatch):
     root, asked = _ready_with_requests_left(tmp_path, monkeypatch)
     web.ready.clear()

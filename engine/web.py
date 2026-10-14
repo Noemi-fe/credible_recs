@@ -338,6 +338,17 @@ on_demand = None
 # Where feedback goes (engine.feedback, 11 Oct 2026): set by the command line; None in the tests, which give their own.
 store = None
 _answers_lock = threading.Lock()
+# Visitors waiting for _answers_lock (14 Oct 2026, measured live just after a deploy: a visitor's answer queued 31 s
+# behind a warming slice, because Python's lock isn't fair and the slice took it back for its next request before the
+# visitor's thread woke). A slice of warming (warm_more) starts no answer while one is waiting.
+_visitors_waiting = 0
+_visitors_lock = threading.Lock()
+
+
+def _visitor_waits(change: int) -> None:
+    global _visitors_waiting
+    with _visitors_lock:
+        _visitors_waiting += change
 # Set once the server has got ready (warm_up). Until then /ready says 503, and Cloud Run sends visitors to the server
 # only when it says 200 (13 Oct 2026, the live site's latency): a new server getting ready took turns with its first
 # visitors' answers and held them up to 30 s, with the processor Cloud Run gives a server only while it answers
@@ -389,7 +400,9 @@ def answer_response(request: str, library_dir: Path, quiet: bool = False) -> tup
     remembered = _answers.get(key)  # read without waiting (11 Oct 2026): a slow new answer never holds up a known one
     if remembered is not None and _clock() - remembered[0] < ANSWER_KEEP_HOURS * 3600:
         return remembered[1]
+    _visitor_waits(+1)
     with _answers_lock:  # one answer is worked out at a time, so the same request is never worked out twice
+        _visitor_waits(-1)
         remembered = _answers.get(key)
         if remembered is None or _clock() - remembered[0] >= ANSWER_KEEP_HOURS * 3600:
             try:
@@ -1013,16 +1026,21 @@ def warm_more() -> None:
     time, and a request whose threads weren't warmed took ~8 s; Cloud Run gives a server its processor only while it
     answers someone, so a thread warming in the background would barely run). Each ping warms the next ones for up to
     WARM_MORE_SECONDS (an answer begun then ends), each taking its turn with visitors' answers as getting ready's do
-    (warm_answer), until none are left; one slice at a time (a ping arriving meanwhile only says it is ready)."""
+    (warm_answer), until none are left; one slice at a time (a ping arriving meanwhile only says it is ready). A slice
+    starts no answer while a visitor is waiting for their turn (_visitors_waiting): the next ping carries on."""
     if not _left_to_warm or not _warming.acquire(blocking=False):
         return
     try:
-        started, warmed = time.perf_counter(), 0
+        started, warmed, gave_way = time.perf_counter(), 0, False
         while _left_to_warm and time.perf_counter() - started < WARM_MORE_SECONDS:
+            if _visitors_waiting:
+                gave_way = True
+                break
             request = _left_to_warm.pop(0)
             _step(f"{WARM_ANSWER_STEP} {request}", lambda: warm_answer(request, _left_in[0]))
             warmed += 1
-        print(f"Getting ready: warmed {warmed} more, {len(_left_to_warm)} left.", flush=True)
+        way = "; a visitor's answer came first" if gave_way else ""
+        print(f"Getting ready: warmed {warmed} more, {len(_left_to_warm)} left{way}.", flush=True)
     finally:
         _warming.release()
 
