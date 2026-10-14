@@ -96,6 +96,7 @@ import dataclasses
 import inspect
 import json
 import os
+import re
 import sys
 import time
 from contextlib import contextmanager
@@ -513,7 +514,7 @@ class BrightDataMemory:
         return cls(entries)
 
 
-_ID = __import__("re").compile(r"^[A-Za-z0-9_-]{1,20}$")
+_ID = re.compile(r"^[A-Za-z0-9_-]{1,20}$")  # a post's or a comment's id, as the memory keeps them
 
 
 def _brief(text) -> str | None:
