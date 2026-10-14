@@ -140,6 +140,14 @@ The JSON for /api/answer (200):
                   "comments": n,                   the comments the AI read in the threads used,
                   "read_more": bool}               and whether the first threads gave too few picks, so more were read
                                                    (13 Oct 2026, for the page's reading strip)
+      "on_demand": {"state": "reading" | "waiting" | "late",   only on the live site with on-demand reading
+                    "product_type": "teapot",                  (engine/on_demand.py, 14 Oct 2026), for a request about a
+                    "about": "teapots",                        product the library has too few threads about, now queued
+                    "read_before": bool,                       for reading: whether it is being read, waits for the free
+                    "check_back_minutes": n | null,            allowance, or is late; its type and plural; whether some
+                    "message": "We haven't read Reddit ..."}   threads were read before; when to check back (reading
+                                                               only); and the sentence the page shows. Such an answer
+                                                               isn't remembered. Absent for every other answer.
     }
 
 POST /api/feedback takes one JSON object (Content-Type: application/json, at most FEEDBACK_MAX_BODY_BYTES) in one of
@@ -168,6 +176,14 @@ wait for any of it. On the live site (CREDIBLE_RECS_LIVE_CACHE_BUCKET set) it fi
 from the bucket's one bundle into its folder, and again at most once an hour, only when the bundle has changed, when
 Cloud Scheduler's keep-warm ping asks /ready (reload_checks_if_due; 13 Oct 2026: Cloud Run gives a server its
 processor only while it answers a request). It never writes to the bucket: its own checks stay in its folder.
+
+On-demand reading (Noemi's plan of 14 Oct 2026, part 3; engine/on_demand.py): on the live site, with its own bucket and
+job (CREDIBLE_RECS_ON_DEMAND_BUCKET, CREDIBLE_RECS_ON_DEMAND_JOB), a request whose product the library has too few
+threads about is queued and the reading job started; the answer says so ("on_demand" above) and isn't remembered. The
+threads it reads are taken into the library folder first of all as the server gets ready, then at the keep-warm ping
+(every ping while a request it queued waits, at most hourly otherwise; reload_on_demand_if_due), and answers use them
+like any other, every quote shown checked live. This server writes the queue (only over the version it read), never
+the threads.
 
 Command line:
     python -m engine.web [--port N] [--library DIR]    serves the page at http://127.0.0.1:8765/ (Ctrl+C stops it)
@@ -290,6 +306,10 @@ _clock = time.monotonic
 profiles = None
 # The live check of every shown quote (engine.live_check): set by the command line; None in the tests.
 live = None
+# On-demand reading (Noemi's plan of 14 Oct 2026, part 3; engine/on_demand.py): set by the command line when the live
+# site has its bucket and job (CREDIBLE_RECS_ON_DEMAND_BUCKET, CREDIBLE_RECS_ON_DEMAND_JOB); None otherwise and in the
+# tests, which give their own.
+on_demand = None
 # Where feedback goes (engine.feedback, 11 Oct 2026): set by the command line; None in the tests, which give their own.
 store = None
 _answers_lock = threading.Lock()
@@ -315,7 +335,8 @@ def handle_request(path_and_query: str, library_dir: Path = DEFAULT_LIBRARY_DIR,
     if parts.path == "/":
         return 200, HTML, search_page(site)
     if parts.path == "/how":  # read now: a new evaluation run shows at once
-        page = how_page.page(METRICS_FILE, counter=counter_script(site.goatcounter), public=site.public)
+        page = how_page.page(METRICS_FILE, counter=counter_script(site.goatcounter), public=site.public,
+                             on_demand=on_demand is not None)
         return 200, HTML, page.encode("utf-8")
     if parts.path == "/api/answer":
         request = parse_qs(parts.query).get("q", [""])[0]
@@ -323,6 +344,7 @@ def handle_request(path_and_query: str, library_dir: Path = DEFAULT_LIBRARY_DIR,
     if parts.path == READY_PATH:
         if ready.is_set():
             reload_checks_if_due()
+            reload_on_demand_if_due()
         return (200 if ready.is_set() else 503), JSON, json.dumps({"ready": ready.is_set()}).encode("utf-8")
     if parts.path in METHODS:  # a route that takes another method: feedback is sent, never fetched
         return _error(405, WRONG_METHOD, allowed=METHODS[parts.path])
@@ -395,13 +417,20 @@ class _TimedChecker:
 
 def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple[tuple[int, str, bytes], bool]:
     """Runs the pipeline, then checks every quote once more; one that fails refuses the whole answer. Also whether the
-    answer is whole: nothing in it was left out because its live check would have waited (13 Oct 2026)."""
+    answer is whole: nothing in it was left out because its live check would have waited (13 Oct 2026), and since 14
+    Oct 2026 it isn't an answer on-demand reading is about to change (engine/on_demand.py: a request queued for
+    reading, or one whose queue couldn't be read): such an answer is worked out again next time."""
     with_profiles = {} if profiles is None else {"profiles": profiles}
     timed = _TimedChecker(live) if live is not None else None
     if timed is not None:
         with_profiles["live_checker"] = timed
     started = time.perf_counter()
     result = answer_request(request, library_dir, **with_profiles)
+    reading = on_demand.after_answer(result) if on_demand is not None else None
+    if reading is not None and reading.again:  # threads read on demand have just come in: answered with them
+        _answers.clear()  # (the lock is held here) every remembered answer is worked out again with them too
+        result = answer_request(request, library_dir, **with_profiles)
+        reading = on_demand.after_answer(result)
     timing = {"total_s": round(time.perf_counter() - started, 2), "reddit_s": round(timed.waited(), 2) if timed else 0.0,
               "checks": timed.checks if timed else 0, "put_off": result.live_put_off}
     if result.skipped_files:  # a broken library file was left out of the answer (11 Oct 2026): say so where it runs
@@ -413,7 +442,9 @@ def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple
             asked = "a request" if quiet else repr(request)
             print(f"Refused the answer to {asked}:", *problems, sep="\n  - ", file=sys.stderr)
             return _error(500, REFUSED), True
-    return (200, JSON, _json_bytes(answer_json(result) | {"timing": timing})), result.live_put_off == 0
+    extra = {"on_demand": reading.state} if reading is not None and reading.state is not None else {}
+    whole = result.live_put_off == 0 and (reading is None or reading.remember)
+    return (200, JSON, _json_bytes(answer_json(result) | {"timing": timing} | extra)), whole
 
 
 def _report_failure(quiet: bool) -> None:
@@ -912,6 +943,8 @@ def warm_up(library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
         steps.insert(0, ("the library", lambda: loaded(threads)))
         steps += [(f"{WARM_ANSWER_STEP} {name}", lambda name=name: warm_answer(name, library_dir))
                   for name in WARM_PRODUCT_TYPES]
+    if on_demand is not None:  # first of all (14 Oct 2026): the library is then read once, with them
+        steps.insert(0, ("the threads read on demand", on_demand.warm_up))
     left = 0
     for name, step in steps:
         if name.startswith(WARM_ANSWER_STEP) and time.perf_counter() - started >= WARM_UP_ANSWERS_SECONDS:
@@ -955,6 +988,23 @@ def reload_checks_if_due() -> None:
               flush=True)
     finally:
         _checks_lock.release()
+
+
+def reload_on_demand_if_due() -> None:
+    """On the live site with on-demand reading (engine/on_demand.py, 14 Oct 2026), at Cloud Scheduler's keep-warm ping:
+    the threads read on demand looked for (at every ping while a request this server queued waits, at most hourly
+    otherwise; one small question about the bundle's version, a download only when it changed) and the reading job
+    started again when it should run and doesn't. When threads come in or go, every remembered answer is forgotten,
+    without waiting for an answer being worked out (a dict emptied at once). A problem is reported and never stops
+    the ping."""
+    if on_demand is None:
+        return
+    try:
+        if on_demand.on_ping():
+            _answers.clear()
+    except Exception as error:  # reported where the server runs; answers go on with the library they have
+        print(f"The threads read on demand couldn't be looked for ({type(error).__name__}: {error}).",
+              file=sys.stderr, flush=True)
 
 
 def warm_answer(product_type: str, library_dir: Path) -> None:
@@ -1021,7 +1071,7 @@ def _options(argv: list[str]) -> tuple[int, Path] | None:
 
 
 def main(argv: list[str]) -> int:
-    global profiles, live, store
+    global profiles, live, store, on_demand
     public = "--public" in argv
     options = _options([arg for arg in argv if arg != "--public"])
     if options is None:
@@ -1049,6 +1099,14 @@ def main(argv: list[str]) -> int:
     from engine.pipeline import live_checker
 
     live = live_checker()
+    from engine.on_demand import site_reader_from_env
+
+    try:
+        on_demand = site_reader_from_env(os.environ, library_dir)
+    except ValueError as error:  # a job name that isn't one: the site runs without on-demand reading
+        print(f"On-demand reading is off: {error}", file=sys.stderr, flush=True)
+    if on_demand is not None:
+        print(f"On-demand reading: on (queue and threads in {on_demand.bucket.name}).", flush=True)
     if not (library_dir / "threads").is_dir():
         print(f"Warning: no library at {library_dir} (no threads/ folder), so every answer will fail. "
               "Pass --library DIR to use another one.")

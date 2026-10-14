@@ -95,6 +95,7 @@ import re
 from collections.abc import Callable, Collection, Iterable, Iterator, Mapping
 from dataclasses import dataclass, field, replace
 from datetime import date
+from functools import cache
 
 from engine.care_tips import CareTip, CareTips, is_repair, similar_tips, tips_by_agreement
 from engine.config import (
@@ -131,7 +132,7 @@ from engine.credibility import GENERIC_NAME_WORDS
 from engine.match_products import FILLER_WORDS, known_aliases
 from engine.memo import Table
 from engine.rank import KindNote, ProductScore, RankingResult, ScoredMention, ScoreBreakdown, is_credible
-from engine.query import PRODUCT_TYPES
+from engine.query import LOOKALIKES, PRODUCT_TYPES
 from engine.sources import mentions_product
 from engine.summaries import Summary, shown_problems, summary_key, text_problems
 from engine.text import one_edit_apart
@@ -216,6 +217,16 @@ NEED_LABELS: dict[str, str] = {
     # A request's own word that reads badly as typed ("won't strip my skin": "about gentleness or strip"); Claude,
     # 10 Oct 2026.
     "strip": "not stripping the skin",
+    # Haircare needs (config.HAIR_NEEDS) and kitchen needs in other words, 14 Oct 2026 (Claude). "oily hair", "dry
+    # hair", "dandruff" and "fine hair" read well as they are.
+    "frizzy": "frizz",
+    "curly": "curly hair",
+    "wavy": "wavy hair",
+    "colour-treated": "colour-treated hair",
+    "itchy scalp": "an itchy scalp",
+    "sensitive scalp": "a sensitive scalp",
+    "quiet": "noise",
+    "glass top stove": "glass-top stoves",
 }
 # The breakdown's line about needs: only shown when some credible mention talks about them.
 BREAKDOWN_NEEDS = ("About your request: {recommends} credible recommendations and {warnings} credible warnings talk "
@@ -1339,6 +1350,8 @@ def _another_types_advice(kind: str, notes: list[KindNote], category: str, produ
     listed = product_type in {p.name for p in PRODUCT_TYPES}
     if not listed and _another_kind_of(kind, product_type):
         return True
+    if listed and _a_lookalike_of(kind, product_type):
+        return True
     if category in ("skincare", "haircare") or not listed:
         named = _named_types(kind, category)
         if named:
@@ -1389,6 +1402,25 @@ def _named_types_of(kind: str, category: str) -> set[str]:
             named += [(word.start(), word.end(), p.name) for p in types
                       if any(_same_word(word.group(), name) for name in (p.name, *p.keywords) if " " not in name)]
     return {name for _, _, name in named}
+
+
+def _a_lookalike_of(kind: str, product_type: str) -> bool:
+    """Whether a kind's name holds one of module 1's look-alikes of a listed type (engine.query.LOOKALIKES): a phrase
+    holding one of the type's own words that names something else (14 Oct 2026). An "immersion blender" in a blender
+    answer, a "bread knife" in a chef's knife one (the other kinds of knife, 13 Oct 2026), a "sheet pan" in a frying pan
+    one: advice about another product, as an immersion blender was for a blender when it was the open model's type."""
+    pattern = _lookalikes_of(product_type)
+    return pattern is not None and bool(pattern.search(_plain(kind)))
+
+
+@cache
+def _lookalikes_of(product_type: str) -> re.Pattern | None:
+    """Module 1's look-alikes holding one of the type's own words (its names and clue words), as one pattern."""
+    words = {w for p in PRODUCT_TYPES if p.name == product_type for w in p.keywords + p.hints}
+    phrases = [phrase for phrase in LOOKALIKES if any(re.search(rf"\b{re.escape(w)}s?\b", phrase) for w in words)]
+    if not phrases:
+        return None
+    return re.compile(rf"\b(?:{'|'.join(re.escape(phrase) for phrase in phrases)})s?\b")
 
 
 def _another_kind_of(kind: str, product_type: str) -> bool:

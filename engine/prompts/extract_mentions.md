@@ -1,4 +1,4 @@
-Version: extract-v10
+Version: extract-v11
 
 # Finding product mentions in one Reddit thread
 
@@ -73,13 +73,22 @@ Use one of these names, written exactly as here, when it fits:
 - kitchen: "stovetop kettle", "electric kettle", "chef knife", "cast iron skillet", "frying pan", "saucepan",
   "dutch oven", "espresso machine", "coffee grinder", "teapot"
 - haircare: "shampoo", "dry shampoo", "conditioner", "leave-in conditioner", "hair mask", "hair oil"
+- kitchen appliances (added 14 Oct 2026, instructions v11): "microwave", "oven", "toaster oven", "air fryer",
+  "blender", "food processor", "stand mixer", "hand mixer", "slow cooker", "rice cooker", "pressure cooker",
+  "coffee maker", "french press", "toaster", "waffle maker", "juicer", "kitchen scale"
 
-Otherwise write a short lowercase type in plain words ("face mask", "toaster", "makeup remover", "air fryer", "curl
-cream"). The names cover their usual kinds: a gyuto or santoku is a "chef knife", a non-stick or carbon steel pan a
-"frying pan", an essence a "toner", a retinol or tretinoin a "retinoid", a spot gel or cream and a pimple or acne
-patch (hydrocolloid ones too) a "spot treatment" (a plain hydrocolloid bandage or plaster isn't one: "bandage"), a
-clarifying, anti-dandruff or sulfate-free shampoo or a co-wash a "shampoo", a deep conditioner a "hair mask", a hair serum a "hair oil". Sun protection wins over the form: anything with SPF or
-"UV" in its name, or sold to protect from the sun ("Biore UV Aqua Rich Watery Essence"), is a "sunscreen".
+Otherwise write a short lowercase type in plain words ("face mask", "bread maker", "makeup remover", "ice cream
+maker", "curl cream"). The names cover their usual kinds: a gyuto or santoku is a "chef knife", a non-stick or carbon
+steel pan a "frying pan", an essence a "toner", a retinol or tretinoin a "retinoid", a spot gel or cream and a pimple or
+acne patch (hydrocolloid ones too) a "spot treatment" (a plain hydrocolloid bandage or plaster isn't one: "bandage"), a
+clarifying, anti-dandruff or sulfate-free shampoo or a co-wash a "shampoo", a deep conditioner a "hair mask", a hair
+serum a "hair oil"; a microwave oven or combination microwave a "microwave", a range, range cooker or wall oven an
+"oven", an air fryer oven or another countertop oven a "toaster oven", an Instant Pot or another multicooker a
+"pressure cooker", a crock pot a "slow cooker", a pressure rice cooker a "rice cooker", a drip or filter coffee machine
+a "coffee maker" (an espresso or bean-to-cup machine is an "espresso machine"), a cafetiere a "french press", a coffee
+or food scale a "kitchen scale"; an immersion, stick or hand blender isn't a "blender" ("immersion blender"), nor a hand
+mixer a "stand mixer". Sun protection wins over the form: anything with SPF or "UV" in its name, or sold to protect
+from the sun ("Biore UV Aqua Rich Watery Essence"), is a "sunscreen".
 
 When you're not sure (Noemi, 9 Oct 2026): assume a product is of the thread's type unless the comment or its name
 says otherwise. If you still can't tell what a product is, or whether a name is a real product at all, look it up
@@ -207,7 +216,7 @@ comment (there's no one left to credit), and agreement with a comment other than
 ```json
 {
   "thread_id": "<the thread's id>",
-  "instructions_version": "extract-v10",
+  "instructions_version": "extract-v11",
   "extracted_at": "<now, ISO 8601 in UTC, e.g. 2026-10-08T10:00:00Z>",
   "extractor": "claude-code",
   "mentions": [

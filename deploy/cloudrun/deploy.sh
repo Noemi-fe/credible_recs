@@ -8,6 +8,10 @@
 # a private image, and deploys it: public site, one server at most, none when idle (the free tier). A new server gets
 # visitors only once its /ready says it has got ready (up to 4 minutes; engine/web.py's warm_up), so a deploy never
 # makes visitors wait on one getting ready: they stay with the server before it until then.
+# Since 14 Oct 2026 also on-demand reading (Noemi's plan, part 3; deploy/cloudrun/on_demand.sh): its private bucket,
+# its reading job on the same image (started by the site, no schedule of its own), and the threads it has read baked
+# into the image first (pull-bucket), then let go of by the bucket once the site runs it (forget-baked). It needs the
+# Gemini key's secret, gemini-key, which Noemi creates herself (DEPLOY.md): without it on-demand reading stays off.
 # Safe to run again: each step creates what is missing and sets again what is there.
 set -eu
 PROJECT="${CREDIBLE_RECS_GCP_PROJECT:-credible-picks}"
@@ -21,13 +25,23 @@ GCLOUD="${GCLOUD:-gcloud}"
 
 NUMBER="$($GCLOUD projects describe "$PROJECT" --format='value(projectNumber)')"
 RUNNER="${NUMBER}-compute@developer.gserviceaccount.com"  # the account the site and the job run as (the default)
+. deploy/cloudrun/on_demand.sh  # on-demand reading's steps (ON_DEMAND_BUCKET, READER_JOB, READER_JOB_NAME)
+on_demand_secret  # ON_DEMAND on or off: off while the Gemini key's secret isn't there yet (the site deploys anyway)
+if [ "$ON_DEMAND" = on ]; then
+    ON_DEMAND_SITE_VARS=";CREDIBLE_RECS_ON_DEMAND_BUCKET=${ON_DEMAND_BUCKET};CREDIBLE_RECS_ON_DEMAND_JOB=${READER_JOB_NAME}"
+    ON_DEMAND_PRECHECK_VARS=",CREDIBLE_RECS_ON_DEMAND_BUCKET=${ON_DEMAND_BUCKET}"
+else
+    ON_DEMAND_SITE_VARS=""
+    ON_DEMAND_PRECHECK_VARS=""
+fi
 HOSTS="${SERVICE}-${NUMBER}.${REGION}.run.app"
 # The service's older-style address too, once it exists.
 OLD="$($GCLOUD run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)' 2>/dev/null || true)"
 if [ -n "$OLD" ]; then HOSTS="$HOSTS,${OLD#https://}"; fi
 
-# 1. The APIs the job and its schedule need (nothing happens when they are on already).
-$GCLOUD services enable storage.googleapis.com cloudscheduler.googleapis.com --project "$PROJECT"
+# 1. The APIs the jobs, the schedule and the Gemini key need (nothing happens when they are on already).
+$GCLOUD services enable storage.googleapis.com cloudscheduler.googleapis.com secretmanager.googleapis.com \
+    --project "$PROJECT"
 
 # 2. The live checks' bucket: private (uniform access, public access prevented), in the site's region, every object
 #    deleted once 2 days old, and nothing kept after a deletion (no soft delete).
@@ -40,15 +54,23 @@ $GCLOUD storage buckets update "gs://$BUCKET" --project "$PROJECT" --public-acce
     --lifecycle-file deploy/cloudrun/live_cache_lifecycle.json
 $GCLOUD storage buckets add-iam-policy-binding "gs://$BUCKET" --project "$PROJECT" \
     --member "serviceAccount:$RUNNER" --role roles/storage.objectUser >/dev/null
+#    And on-demand reading's bucket (on_demand.sh): the queue and the threads read on demand, deleted at 37 days.
+if [ "$ON_DEMAND" = on ]; then on_demand_bucket; fi
 
-# 3. The site: public, one server at most, none when idle (the free tier).
+# 3. The site: public, one server at most, none when idle (the free tier). First the threads read on demand come into
+#    data/library (through gcloud's sign-in), so the image holds them; when that fails they stay in the bucket, where
+#    the site finds them as it gets ready.
+if [ "$ON_DEMAND" = on ]; then
+    CREDIBLE_RECS_ON_DEMAND_BUCKET="$ON_DEMAND_BUCKET" GCLOUD="$GCLOUD" .venv/bin/python -m engine.library pull-bucket \
+        || echo "The threads read on demand weren't pulled: the site still loads them from the bucket." >&2
+fi
 BUNDLE="$(mktemp -d)/bundle"
 .venv/bin/python -m deploy.cloudrun.make_context "$BUNDLE"
 $GCLOUD run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --source "$BUNDLE" \
     --allow-unauthenticated --memory 2Gi --cpu 1 --cpu-boost --max-instances 1 --min-instances 0 \
     --concurrency 8 --timeout 300 \
     --startup-probe "httpGet.path=/ready,httpGet.port=8080,periodSeconds=3,timeoutSeconds=2,failureThreshold=80" \
-    --set-env-vars "^;^CREDIBLE_RECS_ALLOWED_HOSTS=${HOSTS};CREDIBLE_RECS_GOATCOUNTER=noemix;CREDIBLE_RECS_FEEDBACK_REPO=Noemix/credible-recs-feedback;CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}" \
+    --set-env-vars "^;^CREDIBLE_RECS_ALLOWED_HOSTS=${HOSTS};CREDIBLE_RECS_GOATCOUNTER=noemix;CREDIBLE_RECS_FEEDBACK_REPO=Noemix/credible-recs-feedback;CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}${ON_DEMAND_SITE_VARS}" \
     --set-secrets "HF_TOKEN=hf-token:latest" --quiet
 rm -rf "$(dirname "$BUNDLE")"
 
@@ -60,9 +82,11 @@ IMAGE="$($GCLOUD run services describe "$SERVICE" --region "$REGION" --project "
 $GCLOUD run jobs deploy "$JOB" --project "$PROJECT" --region "$REGION" --image "$IMAGE" \
     --command python --args=-m,engine.precheck,--limit,${PRECHECK_LIMIT} \
     --tasks 1 --max-retries 0 --task-timeout 2h --memory 1536Mi --cpu 1 \
-    --set-env-vars "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}" --quiet
+    --set-env-vars "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}${ON_DEMAND_PRECHECK_VARS}" --quiet
 $GCLOUD run jobs add-iam-policy-binding "$JOB" --project "$PROJECT" --region "$REGION" \
     --member "serviceAccount:$RUNNER" --role roles/run.invoker >/dev/null
+#    And on-demand reading's job on the same image (on_demand.sh), which the site may start.
+if [ "$ON_DEMAND" = on ]; then on_demand_job; fi
 
 # 5. Once a day at 4 am UK time, when the site is quietest, Cloud Scheduler starts the job.
 if $GCLOUD scheduler jobs describe "$SCHEDULE" --project "$PROJECT" --location "$REGION" >/dev/null 2>&1; then
@@ -74,5 +98,11 @@ $GCLOUD scheduler jobs "$VERB" http "$SCHEDULE" --project "$PROJECT" --location 
     --schedule "0 4 * * *" --time-zone "Europe/London" --http-method POST \
     --uri "https://${REGION}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${PROJECT}/jobs/${JOB}:run" \
     --oauth-service-account-email "$RUNNER" --quiet
+
+# 6. The site runs the new image: the bucket lets go of the threads read on demand that it now holds.
+if [ "$ON_DEMAND" = on ]; then
+    CREDIBLE_RECS_ON_DEMAND_BUCKET="$ON_DEMAND_BUCKET" GCLOUD="$GCLOUD" .venv/bin/python -m engine.library forget-baked \
+        || echo "The bucket kept the threads read on demand: the next deploy lets them go." >&2
+fi
 
 $GCLOUD run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)'

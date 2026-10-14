@@ -287,3 +287,24 @@ def test_a_note_that_never_names_its_kind_is_widened_whatever_else_it_says():
     answer = write_answer(rank_products(items, "kitchen", [advice], {}), bodies, "coffee grinder")
     assert [item.quote.text for item in answer.look_for] == [
         "Some cheap hand grinders are fine these days. Look for metal burrs and a stepped dial."]
+
+
+def test_advice_about_a_look_alike_of_the_product_asked_for_is_no_advice_for_it():
+    # 14 Oct 2026 (kitchen appliances, Noemi's decision 3): a blender became one of module 1's own types, and an
+    # immersion or stick blender stays no advice for it, as when it was the open model's type: module 1 sets those
+    # aside as look-alikes of a blender. So is a look-alike of any type: a bread or paring knife (13 Oct 2026, other
+    # kinds of knife) in a chef's knife answer, a sheet pan in a frying pan one. A kind that only shares a word with one
+    # stays ("Look for: Santoku", "Look for: cast iron").
+    notes = [note("immersion blender", "t1", quote="An immersion blender is worth it for soups."),
+             note("stick blender", "t2", quote="A stick blender is great for small jobs."),
+             note("glass jar", "t1", quote="A glass jar blender is great, no stains.", weight=0.3)]
+    assert [kind for _, kind, _ in look_for(notes, "blender", "blender for smoothies", category="kitchen")] == [
+        "glass jar"]
+    knives = [note("bread knife", "t1", quote="Get a serrated bread knife alongside it, it's great."),
+              note("paring knife", "t2", quote="A cheap paring knife is great for small jobs."),
+              note("Santoku", "t1", quote="A Santoku is a great first chef's knife.", weight=0.4)]
+    assert [kind for _, kind, _ in look_for(knives, "chef knife", "first chef's knife", category="kitchen")] == [
+        "Santoku"]
+    pans = [note("sheet pan", "t1", quote="A sheet pan is great for roasting veg."),
+            note("cast iron", "t2", quote="Cast iron is great and lasts forever.", weight=0.4)]
+    assert [kind for _, kind, _ in look_for(pans, "frying pan", "a frying pan", category="kitchen")] == ["cast iron"]

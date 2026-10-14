@@ -76,6 +76,13 @@ Command line:
                                                fetch again the threads that are due (30 days, archived threads 90):
                                                through Bright Data by default, or through Parse
     python -m engine.library coverage          saved threads per product type, and of each kind
+    python -m engine.library pull-bucket [--bucket NAME]
+                                               the threads read on demand (engine/on_demand.py, 14 Oct 2026), from
+                                               the private bucket into this library: deploy/cloudrun/deploy.sh runs it
+                                               before building the site's image, through gcloud's sign-in
+    python -m engine.library forget-baked [--bucket NAME]
+                                               once the site is deployed: the bucket lets go of the threads read on
+                                               demand that the image now holds (deploy.sh runs it too)
 """
 
 import inspect
@@ -779,9 +786,10 @@ def main(
     finder: ArcticShiftClient | None = None,
     shown: set[str] | None = None,
     bright_data: BrightDataClient | None = None,
+    bucket=None,
 ) -> int:
-    """`client`, `folder`, `finder`, `shown` and `bright_data` can be swapped for fakes, which is how the tests run the
-    command line.
+    """`client`, `folder`, `finder`, `shown`, `bright_data` and `bucket` (on-demand reading's, for pull-bucket and
+    forget-baked) can be swapped for fakes, which is how the tests run the command line.
 
     A real run (no client given) finds and reads threads with Arctic Shift, and check-live reads through Bright Data
     unless --reader parse is typed. A test that passes its own Parse client gets a finder, or a Bright Data client,
@@ -790,6 +798,10 @@ def main(
     the blind-test questions (engine.slice_eval.threads_behind_answers).
     """
     command = argv[0] if argv else None
+    if command in ("pull-bucket", "forget-baked"):  # on-demand reading's threads (14 Oct 2026): no Parse, no archive
+        from engine.on_demand import pull_command  # imported here: on-demand reading saves threads through this module
+
+        return pull_command(command, argv[1:], folder, bucket)
     real_run = client is None  # a real run remembers an Arctic Shift outage; a test never writes that memo
     add_options = _add_options(argv[1:]) if command == "add" else None
     default_reader = LIVE_CHECK_READER if client is None or bright_data is not None else "parse"

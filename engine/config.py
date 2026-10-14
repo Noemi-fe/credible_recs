@@ -14,7 +14,10 @@ MENTION_CATEGORIES = THREAD_CATEGORIES + ("other",)
 SUBREDDITS: dict[str, tuple[str, ...]] = {
     # "acne" added by Noemi on 11 Oct 2026 (an agent had skipped r/acne threads for the acne-prone cleanser question).
     "skincare": ("SkincareAddiction", "AsianBeauty", "30PlusSkinCare", "SkincareAddictionUK", "acne"),
-    "kitchen": ("BuyItForLife", "AskCulinary", "chefknives", "Cooking", "castiron", "Coffee", "espresso", "tea"),
+    # The last six added on 14 Oct 2026 with the kitchen appliances (Noemi's decision 3 of 14 Oct; chosen by Claude,
+    # reported to her): appliance advice and repair (r/Appliances), and the communities of one appliance or use.
+    "kitchen": ("BuyItForLife", "AskCulinary", "chefknives", "Cooking", "castiron", "Coffee", "espresso", "tea",
+                "Appliances", "airfryer", "instantpot", "slowcooking", "Baking", "juicing"),
     # Chosen by Claude on 11 Oct 2026 (reported to Noemi): the science-minded and product-heavy haircare communities,
     # most general advice first.
     "haircare": ("HaircareScience", "curlyhair", "wavyhair", "Hair", "femalehairadvice", "malehairadvice", "Dandruff"),
@@ -266,7 +269,7 @@ BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE = True
 # cleanser cleanser line"; engine.group_products.brand_pick_name).
 BRAND_PICK_NAME = "{brand} {product_type} line"
 # A product type as a name shows it, when that isn't module 1's lowercase name: "Le Creuset Dutch oven line".
-PRODUCT_TYPE_SHOWN: dict[str, str] = {"dutch oven": "Dutch oven"}
+PRODUCT_TYPE_SHOWN: dict[str, str] = {"dutch oven": "Dutch oven", "french press": "French press"}
 # The plural of each product type (engine/query.py, PRODUCT_TYPES): for the name of a brand line left out because its
 # brand doesn't sell them ("Batiste doesn't sell shampoos", BRAND_LINE_NOT_SOLD), and for the words a price or facts
 # entry under a brand's name may add ("OXO kettles"; engine/pipeline.py, _type_words).
@@ -297,6 +300,24 @@ PRODUCT_TYPE_PLURALS: dict[str, str] = {
     "leave-in conditioner": "leave-in conditioners",
     "hair mask": "hair masks",
     "hair oil": "hair oils",
+    # Kitchen appliances (14 Oct 2026).
+    "microwave": "microwaves",
+    "oven": "ovens",
+    "toaster oven": "toaster ovens",
+    "air fryer": "air fryers",
+    "blender": "blenders",
+    "food processor": "food processors",
+    "stand mixer": "stand mixers",
+    "hand mixer": "hand mixers",
+    "slow cooker": "slow cookers",
+    "rice cooker": "rice cookers",
+    "pressure cooker": "pressure cookers",
+    "coffee maker": "coffee makers",
+    "french press": "French presses",
+    "toaster": "toasters",
+    "waffle maker": "waffle makers",
+    "juicer": "juicers",
+    "kitchen scale": "kitchen scales",
 }
 
 # Decision 11, budgets (engine/prices.py). Current prices live in data/prices.json, each with its shop and the day
@@ -373,9 +394,9 @@ PRECHECK_MAX_WAIT_SECONDS = 660
 PRECHECK_STOP_AFTER_UNKNOWN = 20
 # The open model's product types (engine.query_model) the library had threads about on 13 Oct 2026, from its request
 # log (data/library/requests.jsonl, which isn't in the Cloud Run image): checked ahead by their names, like module 1's
-# own types. Types the log names later are checked too wherever the log is.
-PRECHECK_MODEL_TYPES = ("air fryer", "slow cooker", "toaster", "blender", "food processor", "rice cooker", "stand mixer",
-                        "body wash")
+# own types. Types the log names later are checked too wherever the log is. Since 14 Oct 2026 the air fryer, slow
+# cooker, toaster, blender, food processor, rice cooker and stand mixer are module 1's own types (checked ahead as such).
+PRECHECK_MODEL_TYPES = ("body wash",)
 
 # --- Care tips (Noemi, 9 Oct 2026) ---
 # Alongside each pick, credible advice from its threads on looking after it ("descale it every 6 months"; extraction
@@ -486,6 +507,32 @@ NEEDS: dict[str, tuple[str, ...]] = {
     # Something that lasts. A mention with long-term use (module 5) talks about it too: it describes long use.
     "lasting": ("lasts", "lasted", "lasting", "outlast", "durab", "held up", "holds up", "died", "broke",
                 "stopped working", "fell apart"),
+    # 14 Oct 2026 (need-led thread choice, Noemi's decision 3 of 14 Oct; words chosen by Claude, reported to her): a quiet
+    # appliance, and a pan for a glass-top (ceramic) stove, said in the words people use. "glass" alone isn't one.
+    "quiet": ("quiet", "noise", "noisy", "loud", "silent", "silence"),
+    "glass top stove": ("glass top", "glass-top", "glasstop", "glass stove", "glass cooktop", "glass hob",
+                        "ceramic hob", "ceramic cooktop", "ceramic top", "ceramic stove", "smooth top", "smooth-top",
+                        "smoothtop"),
+}
+# A haircare request's needs (14 Oct 2026, need-led thread choice, Noemi's decision 3 of 14 Oct; words chosen by Claude,
+# reported to her), in place of the skin types': a scalp is oily, hair is dry, fine or frizzy, and the words differ
+# ("shiny" hair isn't greasy, a "flaky" scalp is dandruff, not dry hair). Found as NEEDS' words are: a word at the start
+# of a word, a phrase whole. "fine" or "dry" alone aren't words of them: "it works fine", "I let it air dry".
+HAIR_NEEDS: dict[str, tuple[str, ...]] = {
+    "oily hair": ("oily", "oili", "greas", "sebum"),
+    "dry hair": ("dry hair", "dry ends", "dry curls", "dry strands", "dry and", "dry,", "dry curly", "dry wavy",
+                 "dry frizzy", "dryness", "brittle", "like straw", "straw-like", "dehydrat", "parched"),
+    "dandruff": ("dandruff", "flak", "seborrh", "seb derm", "sebderm", "malassezia"),
+    "itchy scalp": ("itch",),
+    "sensitive scalp": NEEDS["sensitive"],
+    "fine hair": ("fine hair", "fine strands", "fine curly", "fine wavy", "fine straight", "fine flat", "fine thin",
+                  "fine and thin", "thin hair", "thin fine", "flat hair", "falls flat", "fall flat", "limp", "volum",
+                  "weigh", "lifeless"),
+    "frizzy": ("frizz", "flyaway", "fly-away", "fly away"),
+    "curly": ("curl", "coil", "ringlet", "3a", "3b", "3c", "4a", "4b", "4c"),
+    "wavy": ("wavy", "waves", "wavies", "2a", "2b", "2c"),
+    "colour-treated": ("colour-treated", "color-treated", "colour treated", "color treated", "coloured", "colored",
+                       "dye", "bleach", "highlight", "colour-safe", "color-safe", "colour safe", "color safe"),
 }
 # Other words of a request that name one of those needs: "first chef's knife", "will last decades", "lasts 10+ years".
 # Module 1's "lasts 10+ years" (min_years) names "lasting" as well.
@@ -872,9 +919,15 @@ COPIED_TEXT_MIN_WORDS = 20
 # v10 (13 Oct 2026, Noemi's decision 2) only added the "spot treatment" type's name to the list the AI types products
 # with, so every v9 extraction stays current (the AI had typed pimple patches in plain words, "pimple patch", which the
 # spot treatment type's words find), and v8 ones of skincare and kitchen threads, as under v9.
+# v11 (14 Oct 2026, Noemi's decision 3: kitchen appliances as product types) only added the appliances' names, and how
+# their usual kinds are typed, to that list: the AI had typed appliances in plain words ("air fryer", "rice cooker",
+# "multicooker", "air fryer oven"), which module 1's names and words find, so every v10 and v9 extraction stays current,
+# and v8 ones of skincare and kitchen threads.
 EXTRACT_STILL_CURRENT: dict[str, dict[str, tuple[str, ...]]] = {
     "extract-v9": {"extract-v8": ("skincare", "kitchen")},
     "extract-v10": {"extract-v9": THREAD_CATEGORIES, "extract-v8": ("skincare", "kitchen")},
+    "extract-v11": {"extract-v10": THREAD_CATEGORIES, "extract-v9": THREAD_CATEGORIES,
+                    "extract-v8": ("skincare", "kitchen")},
 }
 
 # --- Going live (Noemi, 11 Oct 2026) ---
@@ -1131,3 +1184,56 @@ PRODUCT_TYPE_FORMS: dict[str, str] = {
     "retinoid": "retinoid treatment", "serum": "serum", "toner": "toner", "eye cream": "eye cream",
     "lip balm": "lip balm", "spot treatment": "spot treatment",
 }
+
+# --- On-demand reading (Noemi's plan of 14 Oct 2026, part 3; values chosen by Claude, reported to Noemi) ---
+# engine/on_demand.py. A request module 1 understands, about a product type the library holds fewer extracted threads
+# about than this, is queued for a reading job (Arctic Shift's archive, Gemini's free allowance), and the site says so:
+# the library's own mix per product type.
+ON_DEMAND_MIN_THREADS = LIBRARY_THREADS_PER_PRODUCT
+# What the queue keeps of a request: its product type, category and subreddits (module 1's), and at most this many of its
+# need words (engine.sources.need_words: its own words less the product's name, filler words and numbers), for a
+# need-led choice of threads. Never the request as typed, never a time or an address (Noemi's rule of 11 Oct 2026).
+ON_DEMAND_NEED_WORDS = 3
+# At most this many requests wait at once: more are answered from what the library has, and asked about again later.
+ON_DEMAND_MAX_WAITING = 10
+# The queue remembers at most this many requests already read (the oldest are forgotten): each is read again, when its
+# library is still thin, after ON_DEMAND_READ_AGAIN_DAYS (Reddit may have more by then), or after ON_DEMAND_RETRY_DAYS
+# when its reading failed ON_DEMAND_MAX_TRIES times (Arctic Shift down, say), each try at least an hour apart.
+ON_DEMAND_MAX_DONE = 300
+ON_DEMAND_READ_AGAIN_DAYS = 30
+ON_DEMAND_RETRY_DAYS = 1
+ON_DEMAND_MAX_TRIES = 3
+ON_DEMAND_RETRY_MINUTES = 60
+# A thread whose extraction fails this many times (not for the daily limit) is let go.
+ON_DEMAND_EXTRACT_TRIES = 3
+# The job's time (Cloud Run jobs are billed for their whole run, waiting included; free tiers only): a run starts no new
+# request's reading after ON_DEMAND_NEW_READING_SECONDS (its task timeout, 45 minutes, leaves room to finish one), and
+# the runs of a month read for at most ON_DEMAND_MONTH_SECONDS, which with the daily pre-check keeps Cloud Run jobs
+# inside their free 240,000 vCPU-seconds a month (deploy/cloudrun/DEPLOY.md). Each run also counts
+# ON_DEMAND_START_SECONDS for starting up. A run holds the queue (its lease) for ON_DEMAND_LEASE_MINUTES at most: longer
+# than its task timeout, so a run cut short never keeps the next one out for long.
+ON_DEMAND_NEW_READING_SECONDS = 15 * 60
+ON_DEMAND_MONTH_SECONDS = 50_000
+ON_DEMAND_START_SECONDS = 30
+ON_DEMAND_LEASE_MINUTES = 50
+# Gemini calls a day the job may make (Gemini's free allowance only, Noemi's decision of 14 Oct 2026), leaving the rest
+# of the free daily allowance to Noemi's own bulk reading; a 429 for the day stops it sooner. The allowance resets at
+# midnight Pacific time: the job waits until GEMINI_RESET_HOUR_UTC (8 am UTC: midnight in winter, 1 am in summer), so
+# it never asks before the reset.
+ON_DEMAND_GEMINI_CALLS_A_DAY = 100
+GEMINI_RESET_HOUR_UTC = 8
+# The bundle holds at most this many threads not baked into the site's image yet: past it the job reads no new request
+# until a deploy takes them in (python -m engine.library pull-bucket, run by deploy/cloudrun/deploy.sh).
+ON_DEMAND_BUNDLE_MAX_THREADS = 300
+# What a visitor is told: the first request waiting is read in about ON_DEMAND_FIRST_MINUTES (the job starts at once:
+# about 6 minutes of Arctic Shift's paced searches and reads, then Gemini's extraction and the site's pick-up), each one
+# ahead of it about ON_DEMAND_EACH_MINUTES more; past ON_DEMAND_LATE_MINUTES of waiting (by the site's own clock, kept in
+# memory only) it is said to be taking longer than usual.
+ON_DEMAND_FIRST_MINUTES = 20
+ON_DEMAND_EACH_MINUTES = 15
+ON_DEMAND_LATE_MINUTES = 90
+# The site starts the job at most this often, when requests wait and no run holds the queue (the keep-warm ping, every 5
+# minutes, starts it again when a start failed), and reads the queue again at most this often when asked about a
+# request it knows is waiting.
+ON_DEMAND_START_EVERY_SECONDS = 300
+ON_DEMAND_QUEUE_FRESH_SECONDS = 60
