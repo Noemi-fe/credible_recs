@@ -45,7 +45,7 @@ the request with the entry's number and the problem (BrandLinesError).
 
 Range pages and from prices (Noemi's night decision 1, 14 Oct 2026, after asking why the knife answer showed no product
 link: its three picks were brand lines, which have no single price): a brand-line pick, and a line under "Also worth a
-look", links to its entry's range page ("Browse Victorinox's chef knives", engine/answer.py), and shows its from price
+look", links to its entry's range page ("Browse Victorinox chef knives", engine/answer.py), and shows its from price
 with the shop and the day. Both are for display and the budget check only: how picks are chosen doesn't change. The
 link is the entry's own address, never one from a comment; it is checked again before it is shown (https, one of the
 entry's sources) and on the page (rangeUrl in engine/templates/search.html).

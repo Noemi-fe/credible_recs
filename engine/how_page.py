@@ -202,8 +202,8 @@ def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = Fa
         "mixed_opinions": answer.DISAGREEMENT.split(":")[0],
         "other_type_words": ", ".join(config.OTHER_TYPE_WORDS[:OTHER_TYPE_EXAMPLES]) + " and so on",
         "brand_pick_example": brand_pick_name("Lodge", "cast iron skillet"),  # "Lodge cast iron skillet line"
-        # A line's link to its maker's page (Noemi's night decision 1, 14 Oct 2026): "Browse Lodge's cast iron skillets".
-        "range_example": answer.RANGE_LINK.format(brand="Lodge's", products=plural("cast iron skillet")),
+        # A line's link to its maker's page (Noemi's night decision 1, 14 Oct 2026): "Browse Lodge cast iron skillets".
+        "range_example": answer.RANGE_LINK.format(brand="Lodge", products=plural("cast iron skillet")),
         "default_currency": answer.CURRENCY_SIGNS.get(config.BUDGET_DEFAULT_CURRENCY, config.BUDGET_DEFAULT_CURRENCY),
         "soft_note_example": _soft_note_example(),
         "unconfirmed_example": answer.CAUTION.format(reason=unconfirmed_note(["PFAS"])),

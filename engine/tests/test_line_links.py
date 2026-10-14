@@ -5,7 +5,7 @@ picks were brand lines, and a line has no single price (since 10 Oct 2026 it was
 shop), so each said "Price not checked yet". She approved two things, for display and the budget check only (how picks
 are chosen doesn't change):
 1. each brand-line pick, and each line under "Also worth a look", links to the maker's page for its products of that type
-   (or an official UK stockist's), from data/brand_lines.json's researched sources: "Browse Victorinox's chef knives",
+   (or an official UK stockist's), from data/brand_lines.json's researched sources: "Browse Victorinox chef knives",
    with the day its sources were read;
 2. a researched, sourced, dated "From £X" price: the cheapest UK price of the line's products of that type, shown as
    "From £X at <shop>, checked <date>". Under a budget below it the line is left out, as before (12 Oct 2026); within
@@ -58,7 +58,7 @@ def test_a_brand_line_pick_links_to_its_makers_page_for_its_type(tmp_path):
     result = answer(tmp_path, [victorinox()])
     assert [p.name for p in result.answer.picks] == [VICTORINOX, "Mac Mighty chef knife", "Tojiro DP gyuto"]
     assert pick(result, VICTORINOX).range == ShownRange(
-        text="Browse Victorinox's chef knives", url=RANGE, checked="checked 14 Oct 2026", checked_on="2026-10-14")
+        text="Browse Victorinox chef knives", url=RANGE, checked="checked 14 Oct 2026", checked_on="2026-10-14")
     # A specific product has its own price line; only a line, which has many products, links to its maker's range.
     assert pick(result, "Mac Mighty chef knife").range is None and pick(result, "Tojiro DP gyuto").range is None
     assert unverified_claims(result.answer, result.bodies) == []
@@ -66,7 +66,7 @@ def test_a_brand_line_pick_links_to_its_makers_page_for_its_type(tmp_path):
 
 def test_an_official_uk_stockists_page_says_whose_it_is(tmp_path):
     result = answer(tmp_path, [victorinox(range_page=SHOP, range_shop="Made-up Cookshop")])
-    assert pick(result, VICTORINOX).range.text == "Browse Victorinox's chef knives at Made-up Cookshop"
+    assert pick(result, VICTORINOX).range.text == "Browse Victorinox chef knives at Made-up Cookshop"
     assert pick(result, VICTORINOX).range.url == SHOP
 
 
@@ -90,11 +90,11 @@ def test_the_link_is_the_entrys_own_page_checked_again_before_it_is_shown():
 
 
 @pytest.mark.parametrize("brand, product_type, category, text", [
-    ("Wüsthof", "chef knife", "kitchen", "Browse Wüsthof's chef knives"),  # as its maker writes it
-    ("Head & Shoulders", "shampoo", "haircare", "Browse Head & Shoulders' shampoos"),
-    ("Burt's Bees", "lip balm", "skincare", "Browse Burt's Bees' lip balms"),
-    ("O'Keeffe's", "lip balm", "skincare", "Browse O'Keeffe's lip balms"),  # already a possessive
-    ("Le Creuset", "dutch oven", "kitchen", "Browse Le Creuset's Dutch ovens"),  # the type as a name shows it
+    ("Wüsthof", "chef knife", "kitchen", "Browse Wüsthof chef knives"),  # the brand as its maker writes it
+    ("Head & Shoulders", "shampoo", "haircare", "Browse Head & Shoulders shampoos"),
+    ("O'Keeffe's", "lip balm", "skincare", "Browse O'Keeffe's lip balms"),
+    ("Le Creuset", "dutch oven", "kitchen", "Browse Le Creuset Dutch ovens"),  # the type as a name shows it
+    ("Wilfa Svart", "coffee grinder", "kitchen", "Browse Wilfa Svart coffee grinders"),  # a line of a brand
 ])
 def test_the_link_says_whose_products_it_shows(brand, product_type, category, text):
     page = "https://maker.example/range"
@@ -182,7 +182,7 @@ def test_a_line_under_also_worth_a_look_links_and_shows_its_from_price_too(tmp_p
     result = answer_request(KNIFE_REQUEST, library_dir=knives(tmp_path, line), prices=[], product_facts=[],
                             brand_lines=[hearthblade()], today=TODAY)
     item = next(i for i in result.answer.worth_a_look if i.name == "Hearthblade chef knife line")
-    assert item.range == ShownRange("Browse Hearthblade's chef knives", HEARTH_RANGE, "checked 14 Oct 2026",
+    assert item.range == ShownRange("Browse Hearthblade chef knives", HEARTH_RANGE, "checked 14 Oct 2026",
                                     "2026-10-14")
     assert item.price.text == "From £59.99 at Made-up Cookshop, checked 14 Oct 2026" and item.price.from_price
     assert all(i.range is None for i in result.answer.worth_a_look if i.name != "Hearthblade chef knife line")
@@ -215,7 +215,7 @@ def test_the_link_and_the_from_price_turn_into_json_and_markdown(tmp_path):
     result = answer(tmp_path, [victorinox()], UNDER_100)
     data = json.loads(json.dumps(answer_to_dict(result.answer)))
     first, second = data["picks"][0], data["picks"][1]
-    assert first["range"] == {"text": "Browse Victorinox's chef knives", "url": RANGE, "checked": "checked 14 Oct 2026",
+    assert first["range"] == {"text": "Browse Victorinox chef knives", "url": RANGE, "checked": "checked 14 Oct 2026",
                               "checked_on": "2026-10-14"}
     assert first["price"]["from_price"] is True and first["price"]["amount"] == 25.0
     assert second["range"] is None and second["price"]["from_price"] is False
@@ -223,7 +223,7 @@ def test_the_link_and_the_from_price_turn_into_json_and_markdown(tmp_path):
     assert (f"**{wording.PRICE_LABEL}:** From £25 at Made-up Cookshop, checked 14 Oct 2026 · "
             f"[{wording.PRICE_LINK_TEXT}]({SHOP})") in text
     assert "From £25, within your budget (up to £100)." in text
-    assert f"[Browse Victorinox's chef knives]({RANGE}) · checked 14 Oct 2026" in text
+    assert f"[Browse Victorinox chef knives]({RANGE}) · checked 14 Oct 2026" in text
 
 
 def test_the_wording_decided_by_claude_from_noemis_example():
@@ -270,7 +270,7 @@ def test_the_how_page_says_how_a_brand_line_is_linked_and_priced(tmp_path, monke
     from engine.tests.test_how_page import get_how, text_of
 
     text = text_of(get_how(tmp_path, monkeypatch))
-    assert "links to the maker's page for that kind of product, such as \"Browse Lodge's cast iron skillets\"" in text
+    assert "links to the maker's page for that kind of product, such as \"Browse Lodge cast iron skillets\"" in text
     assert "its \"From\" price: the cheapest price we found for that kind of product of the brand" in text
     assert "with the shop and the day we checked" in text
     assert "A brand's line is left out when even its cheapest product of that kind is over your budget." in text

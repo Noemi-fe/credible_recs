@@ -29,7 +29,7 @@ What each pick shows (the brief):
   John Lewis, checked 14 Oct 2026", with the shop's link; within a budget, "From £25, within your budget (up to £100)."
   (a line whose from price is over the budget never gets here); and since the researcher found it on sale there, "Sold
   at John Lewis, checked 14 Oct 2026". Then a link to its maker's page for its products of the type, or an official UK
-  stockist's: "Browse Victorinox's chef knives", "checked 14 Oct 2026" (shown_range). Both come from the brand-lines
+  stockist's: "Browse Victorinox chef knives", "checked 14 Oct 2026" (shown_range). Both come from the brand-lines
   list, never from a comment, and change nothing about which products are picks. A line under "Also worth a look" shows
   them too;
 - "How to take care of it" (Noemi, 9 Oct 2026; named so on 11 Oct 2026, and since then only the pick's own tips, the
@@ -187,7 +187,9 @@ CURRENCY_SIGNS = {"GBP": "£", "EUR": "€", "USD": "$"}
 # Brand lines (Noemi's night decision 1, 14 Oct 2026; wording decided by Claude from her example, reported to her). A
 # line has many products, so no single price: it shows its from price, the cheapest UK price of its products of the
 # type (data/brand_lines.json), and a link to its maker's page for them (or an official UK stockist's), with the day
-# its sources were read: "Browse Victorinox's chef knives", "checked 14 Oct 2026".
+# its sources were read: "Browse Victorinox chef knives", "checked 14 Oct 2026". Her example said "Victorinox's"; the
+# brand stays as its maker writes it, since some entries are a line of a brand and read badly as a possessive
+# ("Instant Vortex Plus' air fryers"), and a stockist's page says whose it is ("... at <shop>").
 PRICE_FROM = "From {amount} at {shop}, checked {date}"
 PRICE_FROM_AMOUNT = "From {amount}"  # the amount alone, as the page's "At a glance" and an item's row show it
 BUDGET_WITHIN_FROM = "From {amount}, within your budget (up to {max})."
@@ -311,7 +313,7 @@ class ShownRange:
     """A brand line's link to its maker's page for its products of the type, or an official UK stockist's, as shown
     (Noemi's night decision 1, 14 Oct 2026): from data/brand_lines.json, never from a comment."""
 
-    text: str  # "Browse Victorinox's chef knives" (RANGE_LINK), or "... at <shop>" for a stockist's page
+    text: str  # "Browse Victorinox chef knives" (RANGE_LINK), or "... at <shop>" for a stockist's page
     url: str  # the entry's range page, exactly as the list writes it: https only, one of its sources, never Reddit
     checked: str  # "checked 14 Oct 2026": the day the entry's sources were read
     checked_on: str  # the same day, as "2026-10-14"
@@ -1540,8 +1542,9 @@ def shown_price(check: PriceCheck | None) -> ShownPrice:
 
 
 def shown_range(line: BrandLine | None) -> ShownRange | None:
-    """A brand line's link to its entry's range page (Noemi's night decision 1, 14 Oct 2026): "Browse Victorinox's chef
-    knives", with the day its sources were read; "... at <shop>" when the page is an official UK stockist's. None when
+    """A brand line's link to its entry's range page (Noemi's night decision 1, 14 Oct 2026): "Browse Victorinox chef
+    knives" (the brand as its maker writes it, the type as a name shows it), with the day its sources were read; "...
+    at <shop>" when the page is an official UK stockist's. None when
     there is no entry, it says the brand doesn't sell the type, or it has no range page. The page is shown exactly as
     the list writes it, and only when it is still one of the entry's sources and a page the list allows (https, never
     Reddit: engine.brand_lines.is_source_page), checked again here as the shop links are."""
@@ -1549,18 +1552,12 @@ def shown_range(line: BrandLine | None) -> ShownRange | None:
         return None
     if line.range_page not in line.sources or not is_source_page(line.range_page):
         return None
-    brand, products = _possessive(line.brand), plural(line.product_type)
+    brand, products = line.brand, plural(line.product_type)
     text = (RANGE_LINK_AT.format(brand=brand, products=products, shop=line.range_shop) if line.range_shop
             else RANGE_LINK.format(brand=brand, products=products))
     return ShownRange(text, line.range_page, RANGE_CHECKED.format(date=_day(line.checked_on)),
                       line.checked_on.isoformat())
 
-
-def _possessive(brand: str) -> str:
-    """Whose products: "Victorinox's", "Head & Shoulders'", and a name that already is one as it is ("O'Keeffe's")."""
-    if re.search(r"['’]s$", brand):
-        return brand
-    return brand + ("'" if brand.endswith("s") else "'s")
 
 
 def shown_availability(check: PriceCheck | None, price_url: str | None = None) -> ShownAvailability:

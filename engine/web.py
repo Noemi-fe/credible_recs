@@ -101,7 +101,7 @@ The JSON for /api/answer (200):
                                                                the threads with a credible recommendation
                             "range": {"text",                  a brand line's link to its maker's page for its products
                                       "url",                   of the type, or an official UK stockist's (Noemi's night
-                                      "checked",               decision 1, 14 Oct 2026): "Browse Victorinox's chef
+                                      "checked",               decision 1, 14 Oct 2026): "Browse Victorinox chef
                                       "checked_on"}            knives", the entry's range page exactly as
                                                                data/brand_lines.json writes it (https only, one of its
                                                                sources, never Reddit's, never from a comment), and
