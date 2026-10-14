@@ -117,6 +117,14 @@ class WholeThread(Record):
     extraction: str
     # The product types (engine.slim.known_types) the post named: module 2 finds a thread by its title or its post.
     post_names: list[str] = []
+    # The words of config's needs the post held (engine.needs.post_need_words; config's words, not the post's), and
+    # those of hair types written together (post_list_words): need-led reading reads a thread about the request's needs
+    # first, by its title or its post (14 Oct 2026).
+    post_need_words: list[str] = []
+    post_list_words: list[str] = []
+    # The words the engine knows (engine.slim.known_words) the post held as a request's own word is found
+    # (engine.needs.post_request_words): the engine's words, not the post's.
+    post_words: list[str] = []
     # {comment id: the product types it named}, for the comments whose words aren't kept: module 2's count of the
     # comments naming a product.
     comment_names: dict[Id, list[str]] = {}

@@ -6,7 +6,9 @@ first reading (its first PIPELINE_MAX_THREADS threads) was filled by big general
 wider, need-led reading never ran (engine.pipeline.answer_request). This evaluation measures, on the library, for the
 made-up requests of eval/edge_cases/needs.json:
 - the first reading: how many of its threads are about the request's need, by their title, and by their title or post
-  (the post is the thread's own opening text). A thread is about the need when it holds one of the case's judge words:
+  (the post is the thread's own opening text; a slimmed thread keeps no words of its post, engine/slim.py, so it is
+  judged by its title only, and the report says how many were). A thread is about the need when it holds one of the
+  case's judge words:
   regular expressions matched at the start of a word, lowercased, chosen for each case apart from the engine's own need
   words (config.NEEDS), so the engine doesn't grade itself;
 - what the answer shows: its picks and "Also worth a look", and how many threads it read (more than the first reading
@@ -54,6 +56,7 @@ class CaseResult:
     about_every_need: int = 0  # first-reading threads whose title or post is about every one of them
     titled_opposite: int = 0  # first-reading threads whose title holds a word of the case's "opposite"
     named_opposite: int = 0  # picks and "Also worth a look" items whose name holds one
+    slimmed: int = 0  # first-reading threads slimmed (engine/slim.py): their posts' words are gone, judged by title
 
 
 def about_the_need(text: str, judge: list[str]) -> bool:
@@ -83,6 +86,7 @@ def score_cases(cases_path: Path = DEFAULT_CASES, library_dir: Path = DEFAULT_LI
             by_title = about_the_need(thread.title, judge)
             result.about_by_title += by_title
             result.about_by_title_or_post += by_title or about_the_need(thread.body, judge)
+            result.slimmed += thread.slimmed
             result.about_every_need += bool(each) and all(
                 about_the_need(thread.title, words) or about_the_need(thread.body, words) for words in each.values())
             result.titled_opposite += bool(opposite) and about_the_need(thread.title, opposite)
@@ -106,7 +110,9 @@ def need_lines(results: list[CaseResult]) -> list[str]:
     every = (f"; about every need {sum(r.about_every_need for r in each)}/{sum(len(r.first) for r in each)} (the "
              f"{len(each)} with each need judged), titled as the opposite {sum(r.titled_opposite for r in results)}, "
              f"shown named as the opposite {sum(r.named_opposite for r in results)}") if each else ""
-    lines = [f"{len(results)} requests: first-reading threads about the need {posted}/{read} by title or post, "
+    slimmed = sum(r.slimmed for r in results)
+    gone = f" ({slimmed} slimmed: their posts' words are gone, judged by title only)" if slimmed else ""
+    lines = [f"{len(results)} requests: first-reading threads about the need {posted}/{read} by title or post{gone}, "
              f"{titled}/{read} by title; {full} with 3 picks{every}"]
     for r in results:
         wider = f"; read {r.threads_read} threads (the wider reading)" if r.read_more else ""

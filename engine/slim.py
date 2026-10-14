@@ -17,7 +17,9 @@ What a slimmed thread keeps:
   whether its title or post names the product; known_types), the pairs of comments with the same words under two
   writers' names (module 5's "copied text", and copies counting once), when a kept comment's writer first commented
   when that comment is dropped (engine.profiles checks their "active since" against it), and the fingerprints of the
-  extraction's quotes in a quoted block whose words a dropped comment or the post had written (someone else's words);
+  extraction's quotes in a quoted block whose words a dropped comment or the post had written (someone else's words),
+  and the words of config's needs the post held (need-led reading reads a thread about the request's needs first; 14
+  Oct 2026: engine.needs.post_need_words, config's words, never the post's);
 - for each kept comment, verified_at: when Reddit last showed it saying what the library holds (initial_verified_at:
   when the thread was read on Reddit itself, through Parse or Bright Data; never, for a comment read from Arctic Shift's
   archive and not read live since). From then on each kept comment is verified one by one (engine/verify.py).
@@ -26,13 +28,15 @@ The guard. Before a slimmed copy is written it is read the way answers read it, 
 (differences): the extraction's checks (every item kept or rejected alike, with its reason), every kept comment's voice
 (module 5's signs, "well upvoted" and "replies agree" among them), the copies, the thread's relevance to every known
 product type and whether its title or post names it, how many of its comments name it, the comments the AI read, and
-each kept writer's first comment. A thread whose slimmed copy would read differently in any of these stays whole, and
-is named with what differed.
+each kept writer's first comment, and the needs of config its title or post talks about. A thread whose slimmed copy
+would read differently in any of these stays whole, and is named with what differed.
 
 What can't carry over: a product type unknown when a thread is slimmed (one the open model names later) can't be looked
 for in words that are gone, so such a thread is found for it by its title and the comments it keeps only. known_types
 holds every type module 1 knows, the open model's types in config.PRECHECK_MODEL_TYPES and in the library's request log,
-and each active ingredient's own type: add a new type before slimming the threads about it.
+and each active ingredient's own type: add a new type before slimming the threads about it. Likewise a request's own
+words (need-led reading's open-ended needs: "pour-over", "winter") and need words config gains later are looked for in a
+slimmed thread's title only.
 
 Which threads: those with an extraction that loads, except gold-set threads (Noemi's: unchanged) and those already
 slimmed. Running it again changes nothing. A thread not extracted yet stays whole until it is: new threads are read
@@ -43,6 +47,7 @@ whole, extracted, then slimmed.
 
 import json
 import os
+import re
 import threading
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -55,8 +60,9 @@ from engine.extract import (Extraction, _in_quoted_block, _read_extraction, chec
 from engine.gold import DEFAULT_GOLD_DIR, unlabelled_gold_ids
 from engine.ingredients import ingredient_type_name
 from engine.models import Thread, WholeThread, quote_fingerprint
-from engine.query import PRODUCT_TYPES
-from engine.sources import mentions_product, names_product, relevance, talking
+from engine.needs import Need, every_config_need, post_list_words, post_need_words, post_request_words, thread_needs
+from engine.query import PRODUCT_TYPES, TITLE_WORDS
+from engine.sources import _STOPWORDS, _stem, mentions_product, names_product, relevance, talking
 from engine.verify_quotes import find_quote
 
 PLACEHOLDERS = ("[deleted]", "[removed]")  # what Reddit shows in place of a post's or a comment's words
@@ -93,6 +99,43 @@ def known_types(library_dir: Path) -> tuple[str, ...]:
     found = [p.name for p in PRODUCT_TYPES] + list(PRECHECK_MODEL_TYPES) + _logged_types(Path(library_dir))
     found += [ingredient_type_name([key]) for key in INGREDIENTS]
     return tuple(dict.fromkeys(t.strip() for t in found if t and t.strip()))
+
+
+def known_words(library_dir: Path | None = None) -> frozenset[str]:
+    """The words a slimmed post is searched for, before its words go, as need-led reading looks for a request's own
+    words (14 Oct 2026; engine.sources.need_words' form: "pour-over" is "pourover", "smoothies" "smoothie"): the words of
+    every request the daily plan works out (engine.precheck.requests_to_check: the search page's example requests, the
+    latency and ingredient evals' requests, every product type, the open model's types and, with `library_dir`, the
+    library's request log), and the engine's own: the product types' names, keywords, clue and title words, the active
+    ingredients' names and the needs' words. A request's word outside them is looked for in a slimmed thread's title
+    only (engine.needs)."""
+    from engine.precheck import requests_to_check  # here: engine.precheck reads the record (engine.verify), which reads this module
+
+    texts = requests_to_check(library_dir=Path(library_dir) if library_dir is not None else _NO_LIBRARY)
+    for product in PRODUCT_TYPES:
+        texts += [product.name, *product.keywords, *product.hints]
+    texts += [word for words in TITLE_WORDS.values() for word in words]
+    texts += [name for key, entry in INGREDIENTS.items() for name in (key, *entry.get("actives", ()))]
+    texts += [word for need in every_config_need() for word in (need.name, *need.words)]
+    return known_words_of(*texts)
+
+
+def known_words_of(*texts: str) -> frozenset[str]:
+    """The words of these texts as need_words gives a request's: lowercase, "anti-X" and "X-free" as X, apostrophes and
+    hyphens left out, a plural trimmed; numbers and filler words left out; and each two neighbouring words written as one
+    ("pour over": "pourover")."""
+    found = set()
+    for text in texts:
+        tokens = [_WORD_ENDS.sub("", t) for t in _TOKEN.findall(str(text).lower())]
+        plain = [_stem(re.sub(r"['-]", "", t)) for t in tokens]
+        found |= {w for w in plain if w and not w.isdigit() and w not in _STOPWORDS}
+        found |= {_stem(a + b) for a, b in zip(plain, plain[1:]) if a and b}  # "pour over" written as one
+    return frozenset(w for w in found if w.isalnum())
+
+
+_NO_LIBRARY = Path(__file__).resolve().parent / "no library"  # a folder that holds no request log
+_TOKEN = re.compile(r"[a-z0-9]+(?:['-][a-z0-9]+)*")
+_WORD_ENDS = re.compile(r"^anti-(?=[a-z])|(?<=[a-z])-free$")  # as need_words reads "anti-dandruff" and "sulfate-free"
 
 
 def _logged_types(library_dir: Path) -> list[str]:
@@ -176,9 +219,10 @@ def extraction_stamp(extraction: Extraction) -> str:
     return f"{extraction.instructions_version} {extraction.extracted_at.isoformat()}"
 
 
-def slim_thread(thread: Thread, extraction: Extraction, types, now: datetime) -> Thread:
+def slim_thread(thread: Thread, extraction: Extraction, types, now: datetime, words=None) -> Thread:
     """The slimmed copy of a whole thread (see the module's docstring). `types`: the product types to work out from
-    the words dropped (known_types). The thread passed in is left as it was."""
+    the words dropped (known_types); `words`: the request words its post is searched for (known_words; by default
+    those without a library's request log). The thread passed in is left as it was."""
     if extraction.thread_id != thread.id:
         raise SlimError(f"the extraction of {extraction.thread_id} isn't of thread {thread.id}")
     if thread.slimmed:
@@ -191,6 +235,9 @@ def slim_thread(thread: Thread, extraction: Extraction, types, now: datetime) ->
         slimmed_at=now,
         extraction=extraction_stamp(extraction),
         post_names=names_in(thread.body, types) if post_words else [],
+        post_need_words=post_need_words(thread.body) if post_words else [],
+        post_list_words=post_list_words(thread.body) if post_words else [],
+        post_words=post_request_words(thread.body, known_words() if words is None else words) if post_words else [],
         comment_names={c.id: names for c in dropped if (names := names_in(c.body, types))},
         copies=_copies_reaching(thread, kept),
         first_seen=_first_seen_dropped(thread, kept),
@@ -251,8 +298,10 @@ def _quoted_elsewhere(thread: Thread, extraction: Extraction, kept: set[str], dr
 
 # --- The guard: read the same as the whole thread ---
 
-def differences(whole: Thread, slimmed: Thread, extraction: Extraction, types) -> list[str]:
-    """What answers would read differently in the slimmed copy than in the whole thread (empty: nothing)."""
+def differences(whole: Thread, slimmed: Thread, extraction: Extraction, types, words=None) -> list[str]:
+    """What answers would read differently in the slimmed copy than in the whole thread (empty: nothing). `words`: the
+    request words looked for (known_words), of which every one the whole thread's title or post holds is compared,
+    and as many others."""
     found = []
     before, after = check_extraction(extraction, whole), check_extraction(extraction, slimmed)
     if _checked(before) != _checked(after):
@@ -273,6 +322,14 @@ def differences(whole: Thread, slimmed: Thread, extraction: Extraction, types) -
             found.append(f"the relevance to {product_type}")
     if len(shown_comment_ids(slimmed)) != len(shown_comment_ids(whole)):
         found.append("the comments the AI read")
+    if thread_needs(slimmed, every_config_need()) != thread_needs(whole, every_config_need()):
+        found.append("the needs its title or post talks about")
+    vocabulary = sorted(known_words() if words is None else words)
+    held = set(post_request_words(f"{whole.title}\n{whole.body}", vocabulary))
+    asked = sorted(held) + [w for w in vocabulary if w not in held][:len(held) + 20]
+    as_needs = tuple(Need(word, request_word=word) for word in asked)
+    if thread_needs(slimmed, as_needs) != thread_needs(whole, as_needs):
+        found.append("the request words its title or post holds")
     from engine.profiles import _first_seen  # here: engine.profiles reads the library's folders
 
     writers = {c.author.name for c in slimmed.comments if c.author is not None}
@@ -301,7 +358,7 @@ def slim_library(folder: Path, dry_run: bool = False, now: datetime | None = Non
     folder, now = Path(folder), now or datetime.now(UTC)
     threads_dir = folder / "threads"
     gold_ids = gold_thread_ids() if gold_ids is None else gold_ids
-    types = known_types(folder)
+    types, words = known_types(folder), known_words(folder)
     result = SlimResult(dry_run=dry_run)
     for path in sorted(threads_dir.glob("*.json")) if threads_dir.is_dir() else ():
         raw = path.read_bytes()
@@ -328,11 +385,11 @@ def slim_library(folder: Path, dry_run: bool = False, now: datetime | None = Non
             result.problems[thread.id] = "its extraction file is malformed (python -m engine.extract check)"
             continue
         try:
-            slimmed = slim_thread(thread, extraction, types, now)
+            slimmed = slim_thread(thread, extraction, types, now, words)
         except SlimError as error:
             result.problems[thread.id] = str(error)
             continue
-        found = differences(thread, slimmed, extraction, types)
+        found = differences(thread, slimmed, extraction, types, words)
         if found:
             result.refused[thread.id] = "would read differently: " + ", ".join(found)
             continue

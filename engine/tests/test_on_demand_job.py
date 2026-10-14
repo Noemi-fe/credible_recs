@@ -216,11 +216,15 @@ def test_with_the_real_lean_library_threads_read_on_demand_are_slimmed(tmp_path)
 
 
 def test_with_the_lean_library_threads_keep_only_the_comments_answers_use(tmp_path, monkeypatch):
-    calls = []
+    # Changed on purpose, 14 Oct 2026 (lean-library merged with main's need-led reading): engine.slim also takes the
+    # words a slimmed post is searched for (known_words, and the queued request's own: known_words_of).
+    calls, said = [], []
     fake = types.ModuleType("engine.slim")
     fake.known_types = lambda library_dir: ("electric kettle",)
-    fake.slim_thread = lambda thread, extraction, kinds, now: (calls.append(kinds), thread)[1]
-    fake.differences = lambda whole, slimmed, extraction, kinds: []
+    fake.known_words = lambda library_dir: frozenset({"kettle"})
+    fake.known_words_of = lambda *texts: (said.append(texts), frozenset(texts))[1]
+    fake.slim_thread = lambda thread, extraction, kinds, now, words=None: (calls.append((kinds, words)), thread)[1]
+    fake.differences = lambda whole, slimmed, extraction, kinds, words=None: []
     fake.thread_json = lambda thread: b'{"slimmed": "copy"}'
     monkeypatch.setitem(sys.modules, "engine.slim", fake)
     google = FakeGoogle()
@@ -228,14 +232,18 @@ def test_with_the_lean_library_threads_keep_only_the_comments_answers_use(tmp_pa
     report = run(tmp_path, google)
     assert report.slimmed == 3 and report.whole == 0
     assert all(item.slimmed and item.thread == '{"slimmed": "copy"}' for item in the_bundle(google).threads.values())
-    assert calls[0] == ("electric kettle", "teapot")  # the request's own type is looked for in the words dropped
+    assert calls[0][0] == ("electric kettle", "teapot")  # the request's own type is looked for in the words dropped
+    assert said[0][0] == "teapot" and "loose" in said[0]  # and its own words, as need-led reading will look for them
+    assert {"kettle", "teapot", "loose"} <= calls[0][1]
 
 
 def test_a_slimmed_copy_that_would_read_differently_stays_whole(tmp_path, monkeypatch):
     fake = types.ModuleType("engine.slim")
     fake.known_types = lambda library_dir: ()
-    fake.slim_thread = lambda thread, extraction, kinds, now: thread
-    fake.differences = lambda whole, slimmed, extraction, kinds: ["the extraction's checks"]
+    fake.known_words = lambda library_dir: frozenset()
+    fake.known_words_of = lambda *texts: frozenset()
+    fake.slim_thread = lambda thread, extraction, kinds, now, words=None: thread
+    fake.differences = lambda whole, slimmed, extraction, kinds, words=None: ["the extraction's checks"]
     fake.thread_json = lambda thread: pytest.fail("never written")
     monkeypatch.setitem(sys.modules, "engine.slim", fake)
     google = FakeGoogle()

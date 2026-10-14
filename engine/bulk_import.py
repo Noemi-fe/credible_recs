@@ -108,6 +108,7 @@ from engine.sources import (
     choose_mix,
     mentions_product,
     need_words,
+    post_names,
     rank_posts,
     thread_kind,
     unescaped,
@@ -559,10 +560,12 @@ def _kind_targets(total: int) -> dict[str, int]:
 
 
 def _have(threads: list[Thread], name: str, category: str) -> dict[str, int]:
-    """The library's threads about a type (title or post names it), by kind."""
+    """The library's threads about a type (title or post names it), by kind. A slimmed thread's post keeps no words: the
+    types it named were noted before they went (engine.sources.post_names)."""
     counts = Counter()
     for thread in threads:
-        if thread.category == category and _names(unescaped(thread.title), unescaped(thread.body or ""), name):
+        if thread.category == category and (_names(unescaped(thread.title), unescaped(thread.body or ""), name)
+                                            or thread.slimmed and post_names(thread, name)):
             kind = thread_kind({"title": thread.title}, category, name)
             if kind in THREAD_KINDS:
                 counts[kind] += 1

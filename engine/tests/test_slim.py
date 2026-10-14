@@ -255,6 +255,84 @@ def test_the_thread_is_found_for_every_known_product_type_as_before(whole, slimm
     assert talking(slimmed, "salicylic acid and niacinamide product") == 1
 
 
+# --- Need-led reading (main, 14 Oct 2026: a thread whose title or post talks about the request's needs is read first) ---
+
+def test_the_needs_a_slimmed_threads_post_talked_about_are_known_as_before(extraction, types):
+    from engine.needs import every_config_need, thread_needs
+
+    body = "My electric kettle died after two years. I want a quiet one: the old one was so loud, and not plastic."
+    whole = Thread.model_validate(whole_thread_dict(body=body))
+    slimmed = slim_thread(whole, extraction, types, NOW)
+    needs = every_config_need()
+    assert slimmed.body == "" and thread_needs(slimmed, needs) == thread_needs(whole, needs)
+    assert {"lasting", "quiet", "plastic-free"} <= set(thread_needs(slimmed, needs))
+    # What is noted is config's own need words the post held, never the post's words.
+    assert set(slimmed.whole_thread.post_need_words) <= {word for need in needs for word in need.words}
+    assert "electric" not in slimmed.whole_thread.post_need_words
+
+
+def test_hair_types_written_together_in_a_slimmed_post_still_name_their_needs(extraction, types):
+    from engine.needs import every_config_need, thread_needs
+
+    whole = Thread.model_validate(whole_thread_dict(body="Any kettle for someone with fine, oily hair? Joking."))
+    slimmed = slim_thread(whole, extraction, types, NOW)
+    assert "fine hair" in thread_needs(whole, every_config_need())
+    assert thread_needs(slimmed, every_config_need()) == thread_needs(whole, every_config_need())
+
+
+def test_a_requests_own_words_are_found_in_a_slimmed_post_when_they_are_words_the_engine_knows(extraction, types):
+    # A word of the request ("pour-over") is no need of config's, and any word can be one: a slimmed post keeps, of its
+    # words, only which of the words the engine knows it held (engine.slim.known_words: the words of every request the
+    # daily plan works out, and the product types', ingredients' and needs' own). Another is found by the title only.
+    from engine.needs import Need, thread_needs
+
+    pour_over, zeppelin = (Need("pour-over", request_word="pourover"),), (Need("zeppelin", request_word="zeppelin"),)
+    posted = Thread.model_validate(whole_thread_dict(body="I make pour-over every morning, zeppelin mug in hand."))
+    slimmed = slim_thread(posted, extraction, types, NOW, words=frozenset({"pourover", "mug"}))
+    assert thread_needs(posted, pour_over) == thread_needs(slimmed, pour_over) == ("pour-over",)
+    assert thread_needs(posted, zeppelin) == ("zeppelin",) and thread_needs(slimmed, zeppelin) == ()
+    assert slimmed.whole_thread.post_words == ["mug", "pourover"]  # the engine's words, never the post's own
+    titled = Thread.model_validate(whole_thread_dict(title="Zeppelin kettle?", body="I make pour-over."))
+    assert thread_needs(slim_thread(titled, extraction, types, NOW, words=frozenset()), zeppelin) == ("zeppelin",)
+
+
+def test_the_words_the_engine_knows_hold_the_checked_requests_and_its_own(tmp_path):
+    words = slim.known_words(tmp_path)
+    assert {"pourover", "pfas", "nonstick"} <= words  # the search page's example requests (b09, b10)
+    assert {"kettle", "salicylic", "smoothie", "sensitiv"} <= words  # product types, ingredients, title and need words
+    assert all(word.isalnum() and word == word.lower() for word in words)  # as need_words gives a request's words
+
+
+def test_a_posts_known_words_are_found_as_need_led_reading_finds_a_requests_word():
+    from engine.needs import post_request_words
+    from engine.credibility import _own_words
+    from engine.sources import _title_has
+
+    posts = ["I make Pour-Over every morning; anti-frizz serum, sulfate-free shampoo.", "&gt; quoted pfas line\nmine: ok",
+             "Non-stick pans: the Tefal one is non stick, the best pour over kit", ""]
+    words = sorted(slim.known_words(None))
+    for body in posts:
+        found = post_request_words(body, words)
+        assert found == [word for word in words if _title_has(_own_words(body), word)], body
+
+
+def test_a_thread_whose_slimmed_copy_would_lose_its_posts_needs_is_left_whole(tmp_path, monkeypatch):
+    root = a_library(tmp_path, [whole_thread_dict(body="My electric kettle died after two years.")],
+                     {TID: extraction_dict()})
+    monkeypatch.setattr(slim, "post_need_words", lambda body: [])  # the needs its post talked about "forgotten"
+    result = slim_library(root, now=NOW, gold_ids=set())
+    assert result.slimmed == [] and "the needs" in result.refused[TID]
+
+
+def test_the_bulk_importer_counts_a_slimmed_thread_its_post_named_the_type_in(extraction, types):
+    from engine.bulk_import import _have
+
+    whole = Thread.model_validate(whole_thread_dict(title="Which one should I buy?"))  # its post names the kettle
+    slimmed = slim_thread(whole, extraction, types, NOW)
+    assert _have([slimmed], "electric kettle", "kitchen") == _have([whole], "electric kettle", "kitchen")
+    assert sum(_have([slimmed], "electric kettle", "kitchen").values()) == 1
+
+
 def test_the_product_types_looked_for_include_the_ones_the_library_was_filled_for(tmp_path):
     (tmp_path / "requests.jsonl").write_text(json.dumps({"status": "ok", "product_type": "sourdough proofer"}) + "\n"
                                              + json.dumps({"status": "clarify", "product_type": None}) + "\n",
