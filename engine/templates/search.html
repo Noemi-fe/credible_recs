@@ -424,7 +424,7 @@ button { font: inherit; color: inherit; }
 .glance .jump { display: inline-flex; align-items: baseline; gap: 10px; border: 0; background: none; padding: 0; text-align: left; cursor: pointer; font-weight: 600; }
 .glance .jump:hover .name { color: var(--accent); text-decoration: underline; text-underline-offset: .18em; }
 .glance .jump .rank-num { font: 600 18px/1 var(--serif); color: var(--accent); }
-.glance th .form-chip { display: block; width: max-content; margin: 4px 0 0 22px; }
+.glance th .form-chip, .glance th .tag { display: block; width: max-content; margin: 4px 0 0 22px; }
 .glance .tally { display: grid; gap: 6px; min-width: 150px; }
 .glance .tally span { font-size: 14px; color: var(--muted); }
 .glance td.n { font-variant-numeric: tabular-nums; }
@@ -553,7 +553,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
 .row-body > p { margin: 0; }
 .tag { display: inline-block; padding: 1px 9px; border-radius: 999px; background: var(--fam-soft); color: var(--fam); font-size: 13px;
   font-weight: 600; white-space: nowrap; }
-.tag.warned { background: var(--warn-soft); color: var(--warn); }
+.tag.warned, .tag.rx { background: var(--warn-soft); color: var(--warn); }
 .zone-panel .form-chip { margin: 0; }
 .zone-panel .summary { font-size: 15.5px; }
 .zone-panel .quote { background: var(--surface); border-left-color: var(--fam); }
@@ -1151,6 +1151,18 @@ details[open] > summary .icon { transform: rotate(180deg); }
     return (cautions || []).map((text) => withIcon("info", el("p", { class: "caution" }, text)));
   }
 
+  /** The note on a product sold in the UK only on a prescription (Noemi's decision 5, 14 Oct 2026), wherever the
+      answer shows it: the answer's own words, drawn as text only. Nothing for any other product. */
+  function prescriptionLine(text) {
+    return text ? withIcon("alert", el("p", { class: "caution prescription" }, text)) : null;
+  }
+
+  /** The tag a row under the picks carries before it is opened when its product is prescription-only (14 Oct 2026),
+      in the answer's words: the note itself is in the row. A pick's row "At a glance" carries it too. */
+  function prescriptionTag(text) {
+    return text ? el("span", { class: "tag rx" }, WORDING.prescription_tag) : null;
+  }
+
   /** A line with an icon in front, its words wrapped so they flow beside it. */
   function withIcon(name, line) {
     line.replaceChildren(...[icon(name), el("span", {}, ...line.childNodes)].filter(Boolean));
@@ -1253,6 +1265,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
           summaryLine(pick.summary),
           trustBox(pick, true),
           ...priceLines(pick.price), availabilityLine(pick.availability), rangeLine(pick.range),
+          prescriptionLine(pick.prescription),
           ...cautionLines(pick.cautions),
           pick.disagreement && withIcon("alert", el("p", { class: "flag" }, pick.disagreement))),
         el("div", { class: "card-evidence" },
@@ -1276,7 +1289,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
       const meter = voices.recommend ? el("div", { class: "meter" }, el("div", { class: "bar", "aria-hidden": "true" },
         el("span", { class: "for" }), voices.warn ? el("span", { class: "against" }) : null)) : null;
       if (meter) meter.firstChild.style.setProperty("--for", String(voices.recommend / (voices.recommend + voices.warn)));
-      return el("tr", {}, el("th", { scope: "row" }, jump, formChip(pick.form)),
+      return el("tr", {}, el("th", { scope: "row" }, jump, formChip(pick.form), prescriptionTag(pick.prescription)),
         el("td", {}, el("div", { class: "tally" }, meter, el("span", {}, ...fillNodes(LABELS.glanceTally,
           { for: voices.recommend.toLocaleString("en-GB"), against: voices.warn.toLocaleString("en-GB") })))),
         el("td", { class: "n col-threads" }, voices.threads.toLocaleString("en-GB")),
@@ -1329,7 +1342,8 @@ details[open] > summary .icon { transform: rotate(180deg); }
   function worthCard(item) {
     const nameId = "worth-" + (++worthCards);
     const head = [el("h4", { id: nameId, class: "row-name" }, item.name), formChip(item.form)];
-    const tags = [...worthTag(item.voices), item.price.amount !== null ? el("span", { class: "row-price" }, priceAmount(item.price)) : null];
+    const tags = [...worthTag(item.voices), prescriptionTag(item.prescription),
+      item.price.amount !== null ? el("span", { class: "row-price" }, priceAmount(item.price)) : null];
     return row(icon("eye", "row-mark"), head, tags,
       summaryLine(item.summary),
       el("p", { class: "reason" }, item.reason),
@@ -1337,6 +1351,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
       ...(item.price.amount !== null || item.price.budget_note ? priceLines(item.price) : []),
       item.availability && item.availability.available !== null ? availabilityLine(item.availability) : null,
       rangeLine(item.range),
+      prescriptionLine(item.prescription),
       ...cautionLines(item.cautions),
       item.disagreement && withIcon("alert", el("p", { class: "flag" }, item.disagreement)),
       quoteList(item.quotes),
@@ -1387,8 +1402,9 @@ details[open] > summary .icon { transform: rotate(180deg); }
     return el("section", { class: "zone-panel fam-skip skip", "aria-labelledby": "skip-heading" },
       sectionHead("skip-heading", "ban", WORDING.skip_heading),
       ...foldedList("rows", items.map((item) => row(icon("x", "row-mark"),
-        [el("strong", { class: "row-name" }, item.name), formChip(item.form), el("span", { class: "row-reason" }, item.reason)], [],
-        quoteList(item.quotes))), LIST_SHOWN_FIRST));
+        [el("strong", { class: "row-name" }, item.name), formChip(item.form), el("span", { class: "row-reason" }, item.reason)],
+        [prescriptionTag(item.prescription)],
+        prescriptionLine(item.prescription), quoteList(item.quotes))), LIST_SHOWN_FIRST));
   }
 
   /** A list of `entries` (list items) with the first `first` in view and the rest in a second list, hidden behind a

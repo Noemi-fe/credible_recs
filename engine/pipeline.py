@@ -453,7 +453,10 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     kept_groups = _one_per_name(kept_groups)  # the names are final here: one item per name (13 Oct 2026)
     result.ranked_as_lines = [g.name for g in kept_groups if g.key in lines]
     _note_other_names(kept_groups, cautions)
-    wording = _ingredient_wording(query, kept_groups, types, formulas)
+    # What the answer says beyond the ranking, as write_answer's keywords: about the request's active ingredients (13 Oct
+    # 2026), and which products its facts say are prescription-only in the UK (Noemi's decision 5 of 14 Oct 2026).
+    wording = {**_ingredient_wording(query, kept_groups, types, formulas),
+               "prescription": _prescription_only(kept_groups, formulas)}
     kind_mentions = _kind_mentions(checked)
     kinds = group_kinds(kind_mentions, kept_groups, query.category, query.product_type or "")
     with_a_kind = kinds_of(kinds)
@@ -1225,6 +1228,13 @@ def _without_ingredient(group: ProductGroup, facts: ProductFacts | None, ingredi
         if found.contains is None:
             return INGREDIENT_NOT_CONFIRMED.format(ingredient=ingredient)
     return None
+
+
+def _prescription_only(groups: list[ProductGroup], found_facts: Mapping[str, ProductFacts]) -> frozenset[str]:
+    """The keys of the products whose facts entry says they are prescription-only in the UK (Noemi's decision 5 of 14
+    Oct 2026): the answer says so wherever it shows them (engine.answer.PRESCRIPTION_NOTE)."""
+    return frozenset(g.key for g in groups
+                     if g.key in found_facts and found_facts[g.key].facts.get("prescription_only") is True)
 
 
 def _formula_form(facts: ProductFacts | None) -> str | None:
