@@ -46,6 +46,11 @@ const LABELS = {
   done: "Done.",  // read out by screen readers only, when an answer has been drawn
   clarifyHeading: "One question first",
   clarifyHint: "Add the answer to your request and search again.",
+  // On-demand reading (14 Oct 2026; wording decided by Claude): an answer about a product we haven't read Reddit about
+  // yet. The sentence itself comes from the server (when to check back); these frame it.
+  onDemandHeading: "Reading Reddit for you",
+  onDemandHint: "Every quote from the new threads is checked word for word, like all the others.",
+  onDemandAgain: "Check again",
   rank: "Pick {rank}:",
   badges: "Why this voice counts",
   newTab: "(opens Reddit in a new tab)",
@@ -365,6 +370,8 @@ button { font: inherit; color: inherit; }
 .notice.honest > .icon { color: var(--warn); }
 .notice.error { background: var(--bad-soft); border-color: transparent; }
 .notice.error > .icon { color: var(--bad); }
+/* On-demand reading (14 Oct 2026): a friendly state, in the accent's soft green, with a clock. */
+.notice.reading { background: var(--accent-soft); border-color: transparent; }
 .button { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid var(--line-strong); border-radius: 10px;
   background: var(--surface); color: var(--text); font-weight: 600; cursor: pointer; }
 .button:hover { border-color: var(--accent); }
@@ -1353,7 +1360,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
   }
 
   function notice(kind, heading, ...lines) {
-    const mark = { honest: "info", error: "alert", question: "info" }[kind];
+    const mark = { honest: "info", error: "alert", question: "info", reading: "clock" }[kind];
     return el("div", { class: "notice " + kind }, icon(mark),
       el("div", {}, heading && el("h2", {}, heading), ...lines.filter(Boolean).map((line) => el("p", {}, line))));
   }
@@ -1431,7 +1438,17 @@ details[open] > summary .icon { transform: rotate(180deg); }
       picks, under module 1's question, and under its polite no alike; since 13 Oct 2026 in a quiet zone with what was
       left out of the answer. */
   function drawAnswer(data, request) {
-    return [...answerParts(data), quietZone(aboutAnswer(data), feedbackForm(request, data.query))];
+    return [...answerParts(data, request), quietZone(aboutAnswer(data), feedbackForm(request, data.query))];
+  }
+
+  /** An answer the site is reading Reddit for (on-demand reading, 14 Oct 2026): the server's sentence (what is happening
+      and when to check back), a short hint, and "Check again", which asks for the same answer again. */
+  function onDemandNotice(state, request) {
+    const box = notice("reading", LABELS.onDemandHeading, state.message, LABELS.onDemandHint);
+    const again = el("button", { type: "button", class: "button" }, icon("retry"), LABELS.onDemandAgain);
+    again.addEventListener("click", () => search(request, false));
+    box.lastChild.append(el("p", { class: "actions" }, again));
+    return box;
   }
 
   /** The quiet zone after an answer: housekeeping, drawn plainly (13 Oct 2026, round two). */
@@ -1439,7 +1456,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
     return el("div", { class: "quiet-zone" }, ...parts.filter(Boolean));
   }
 
-  function answerParts(data) {
+  function answerParts(data, request) {
     const query = data.query;
     if (query.status === "clarify") return [notice("question", LABELS.clarifyHeading, query.question, LABELS.clarifyHint)];
     if (query.status === "out_of_scope") return [notice("question", null, query.message)];
@@ -1450,10 +1467,13 @@ details[open] > summary .icon { transform: rotate(180deg); }
     // What every product shown has in common, for a request naming an active ingredient (13 Oct 2026), under the title;
     // then how much was read for this answer (Noemi, 12 Oct 2026).
     const ingredient = query.ingredient_led && answer.ingredient ? answer.ingredient : null;
+    // Being read on demand (14 Oct 2026): said first, under the title; with nothing read yet, the "not enough
+    // evidence" message would be about threads that aren't there, so it is left out.
     const parts = [answerHead(title, query.category, answer.picks.length > 0),
+      data.on_demand ? onDemandNotice(data.on_demand, request) : null,
       answer.ingredient_note ? withIcon("check", el("p", { class: "ingredient-note" }, answer.ingredient_note)) : null,
       readingStrip(data.reading, ingredient)];
-    if (answer.message) parts.push(notice("honest", null, answer.message));
+    if (answer.message && !(data.on_demand && !(data.reading && data.reading.threads))) parts.push(notice("honest", null, answer.message));
     parts.push(glanceTable(answer.picks));
     if (answer.picks.length) parts.push(el("ol", { class: "picks" }, ...answer.picks.map(pickCard)));
     // Under the picks, each kind of section in its own panel (13 Oct 2026, round two): more products, products to

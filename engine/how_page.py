@@ -150,6 +150,14 @@ PUBLIC_SITE = ("<p>The site runs on Hugging Face, which may keep its own logs, a
                "flooding it, our server counts each address's requests for a short while, in memory only: addresses "
                "are never written down.</p>")
 
+# On-demand reading (14 Oct 2026; wording decided by Claude): on the live site, a request about a product we haven't
+# read about yet is noted for the reading job (engine/on_demand.py). The page says so only where it happens.
+ON_DEMAND_NOTE = ("<li><strong>Products we haven't read about yet.</strong> When you ask about one, we note the kind of "
+                  "product and up to {words} words of what you asked for, nothing else: never your request as typed, "
+                  "and nothing about you. A reading job uses the note to find Reddit threads about it, and it is kept "
+                  "so the same product isn't read again within a month.</li>")
+ON_DEMAND_EXCEPT = ", and the short note about a product we haven't read about yet"
+
 MEASURED_ON = "Last measured on {date}."
 TARGETS_HEADING = "The targets we set"
 OTHER_HEADING = "Other checks"
@@ -169,11 +177,13 @@ OTHER_TYPE_EXAMPLES = 5
 _SLOT = re.compile(r"\{\{([^{}]+)\}\}")
 
 
-def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = False) -> str:
+def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = False, on_demand: bool = False) -> str:
     """The whole page, with the decided values from config and the results from `metrics_path`, read now.
 
     `counter`: GoatCounter's script when visits are counted (engine.web.counter_script), else "", and the privacy
     section says which. `public`: the page is served by the public site, so it also names the site's host.
+    `on_demand`: the site notes requests about products not read yet (engine/on_demand.py), and the privacy section
+    says what it keeps (14 Oct 2026).
     """
     slots = {
         "search_page_style": _search_page_style(),
@@ -185,6 +195,8 @@ def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = Fa
         "evaluation": evaluation_section(metrics_path),
         "visit_counting": VISITS_COUNTED if counter else VISITS_NOT_COUNTED,
         "public_site": PUBLIC_SITE if public else "",
+        "on_demand_note": ON_DEMAND_NOTE.format(words=_config_span("ON_DEMAND_NEED_WORDS")) if on_demand else "",
+        "on_demand_except": html.escape(ON_DEMAND_EXCEPT) if on_demand else "",
         "counter_script": counter,
     }
     texts = {
