@@ -59,6 +59,9 @@ SUBREDDITS: dict[str, tuple[str, ...]] = {
         # outdoor and travel
         "bikecommuting", "birding", "ebikes", "EDC", "ElectricScooters", "Fishing", "flashlight", "golf", "hiking",
         "Kayaking", "Paddleboarding", "whichbike",
+        # 14 Oct 2026 (the routing audit, chosen by Claude, reported to Noemi): the communities of the knives that
+        # aren't the kitchen's (pocket, outdoor and whittling knives)
+        "knives", "Bushcraft", "Whittling",
         # clothing and accessories
         "ABraThatFits", "handbags", "rawdenim", "Sneakers", "suits",
         # baby and kids
@@ -1185,6 +1188,13 @@ EXTRACT_STILL_CURRENT: dict[str, dict[str, tuple[str, ...]]] = {
                     "extract-v8": ("skincare", "kitchen")},
     "extract-v12": {"extract-v11": _BEFORE_GENERAL, "extract-v10": _BEFORE_GENERAL, "extract-v9": _BEFORE_GENERAL,
                     "extract-v8": ("skincare", "kitchen")},
+    # v13 (14 Oct 2026, the routing audit) only adds the names of module 1's new types (the kitchen's paring, bread and
+    # carving knives, cleavers, pepper grinders, baking trays, bread makers...; the general category's pocket, outdoor,
+    # whittling and craft knives, box cutters and camping cookware) to the list the AI types products with. The AI had
+    # typed them in plain words ("paring knife", "bread maker", "pocket knife") that those types' names find, so every
+    # v12 extraction stays current, general threads' too, and the older ones as under v12. Decided by Claude, reported.
+    "extract-v13": {"extract-v12": THREAD_CATEGORIES, "extract-v11": _BEFORE_GENERAL, "extract-v10": _BEFORE_GENERAL,
+                    "extract-v9": _BEFORE_GENERAL, "extract-v8": ("skincare", "kitchen")},
 }
 
 # --- Going live (Noemi, 11 Oct 2026) ---
@@ -1603,3 +1613,16 @@ STANDOUT_MAX_PRODUCTS = 5
 # only, her night rule for the upvote rule that "a pick still needs credible recommendations across 2 threads". False
 # keeps that rule: then a standing-out comment earns a place under Also worth a look only. For Noemi to confirm.
 STANDOUT_FILLS_PICKS = True
+
+# --- Module 1: weapon-like knives the polite no doesn't name yet (14 Oct 2026, the routing audit) ---
+# PROPOSED by Claude, for Noemi to decide (her decision 6 of 14 Oct 2026 keeps weapons a polite no exactly as
+# engine.query.HARMFUL lists them). Until 14 Oct 2026 each of these was taken for the kitchen's chef knife; the rules
+# now set them aside (engine.query._OTHER_KNIVES), so the open model places them, which can make one a general product
+# of its own. Proposed: refuse them as HARMFUL refuses a combat knife. Some can't be sold in the UK at all (zombie
+# knives, gravity knives, push daggers, knives disguised as an everyday object such as a credit card knife); the others
+# are sold mostly as fighting or concealed-carry knives. Not used by the code: nothing changes until she says.
+PROPOSED_HARMFUL = (
+    "zombie knife", "karambit", "push dagger", "gravity knife", "knuckle knife", "trench knife", "otf knife",
+    "automatic knife", "stiletto knife", "credit card knife", "hidden knife", "concealed knife", "boot knife",
+    "neck knife", "bowie knife", "fighting knife", "dagger",
+)

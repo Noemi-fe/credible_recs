@@ -17,11 +17,12 @@ where the general category's departments (config.GENERAL_DEPARTMENTS: "home", "t
   medicine, a book, a film, a game or an app, anything harmful); until 14 Oct 2026 also every product outside
   skincare, haircare and kitchen gear, as a laptop was;
 - a category or a department: the product must be written in the request itself, a plural aside ("rice
-  cookers"), so a vague "something nice for my mum" never becomes a "gift set"; words that name no product ("gadget",
-  "stuff") or only a category, a place or an animal ("kitchen gadget", "hair products", "dog") don't count. A product
-  the rules route by its name, or by a clue word in the same category, when it is written alone is routed as they route
-  it; any other becomes a product type of its own, read from its category's decided subreddits ("bread maker", "curl
-  cream"), or for the general category from its department's communities ("eyelash curler": beauty's);
+  cookers"), so a vague "something nice for my mum" never becomes a "gift set", and not only inside a phrase the rules
+  read as something else ("knife" in "tomato knife", "ipad" in "ipad case": 14 Oct 2026); words that name no product
+  ("gadget", "stuff") or only a category, a place or an animal ("kitchen gadget", "hair products", "dog") don't count.
+  A product the rules route by its name, or by a clue word in the same category, when it is written alone is routed as
+  they route it; any other becomes a product type of its own, read from its category's decided subreddits ("yogurt
+  maker", "curl cream"), or for the general category from its department's communities ("eyelash curler": beauty's);
 - anything else, a broken answer, or a model that fails: the rules' question stands.
 Budgets, skin types, sizes and the rest are always read by the rules (the brief: "AI turns the query into structured
 fields; rules handle budget and units").
@@ -193,7 +194,7 @@ def routed_by_model(text: str, model: QueryModel):
     category = "general" if department else category
     if category not in THREAD_CATEGORIES or not product or set(product.split()) <= NO_PRODUCT_WORDS:
         return None
-    if not re.search(rf"\b{re.escape(product)}(?:s|es)?\b", text.lower()):
+    if not _in_own_words(product, text.lower()):
         return None  # only the request's own words: never a product the shopper didn't name
     known = classify(product)
     if known.status == "ok" and (known.category == category or not known.clues):
@@ -201,3 +202,16 @@ def routed_by_model(text: str, model: QueryModel):
     if department:
         return Routing("ok", "general", product, GENERAL_DEPARTMENTS[department]["communities"], department=department)
     return Routing("ok", category, product, SUBREDDITS[category])  # "curl cream" isn't the rules' moisturiser
+
+
+def _in_own_words(product: str, lowered: str) -> bool:
+    """Whether the request (lowercase) names the product, a plural aside, somewhere other than strictly inside a stretch
+    the rules read as something else (engine.query.set_aside_stretches; 14 Oct 2026, the routing audit). Asked about
+    "petty knife" or "hand blender", the model had answered "knife" and "blender", which the rules route as the chef
+    knife and the blender: the very types the rules had set those look-alikes aside from. The whole stretch ("hand
+    blender", "ipad case") is the request's own words."""
+    from engine.query import set_aside_stretches  # here: engine.query imports this module
+
+    found = [(m.start(), m.end()) for m in re.finditer(rf"\b{re.escape(product)}(?:s|es)?\b", lowered)]
+    stretches = set_aside_stretches(lowered) if found else []
+    return any(not any(s <= start and end <= e and e - s > end - start for s, e in stretches) for start, end in found)

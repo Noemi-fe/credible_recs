@@ -157,22 +157,36 @@ FIRST_PRODUCT_TYPES = (
                         for patch in ("patch", "patches")),
                 ("hydrocolloid",)),
     # "tea kettle" is people's usual name for a stovetop one, unless it says electric (12 Oct 2026: threads titled "tea
-    # kettle" had never been read for a stovetop request).
+    # kettle" had never been read for a stovetop request). A kettle for an induction hob, a stove or an Aga, and a cast
+    # iron one (a tetsubin), is one too (14 Oct 2026, the routing audit: "kettle for a gas stove" was an electric
+    # kettle; "X for my Y" reads as "Y X", engine.query._reversed_name, so "kettle for an aga" is an "aga kettle").
     ProductType("stovetop kettle", "kitchen", ("stovetop kettle", "stove top kettle", "stove-top kettle", "whistling kettle", "hob kettle",
-                                               "tea kettle"),
+                                               "tea kettle", "induction kettle", "stove kettle", "aga kettle",
+                                               "cast iron kettle", "tetsubin"),
                 subreddits=("BuyItForLife", "tea", "Cooking")),
     ProductType("electric kettle", "kitchen", ("electric kettle", "electric tea kettle", "kettle", "gooseneck"),
                 subreddits=("BuyItForLife", "tea", "Coffee")),
     ProductType("chef knife", "kitchen", ("chef knife", "chef's knife", "chefs knife", "kitchen knife", "gyuto", "santoku", "knife", "knives"),
                 subreddits=("chefknives", "BuyItForLife", "Cooking")),
     ProductType("cast iron skillet", "kitchen", ("cast iron", "cast-iron", "skillet"), subreddits=("castiron", "BuyItForLife", "Cooking")),
+    # An enamelled cast iron casserole is a Dutch oven, its British name (14 Oct 2026, the routing audit). Not done, on
+    # purpose: a "nonstick skillet" (American for a frying pan) is still the cast iron skillet's, since as the frying
+    # pan's name it changed what frying pan and cast iron skillet answers read (eval/RUNS.md, 14 Oct 2026).
     ProductType("frying pan", "kitchen", ("frying pan", "fry pan", "non-stick pan", "nonstick pan", "stainless steel pan", "carbon steel pan"),
                 ("pan",), subreddits=("BuyItForLife", "Cooking", "AskCulinary")),
     ProductType("saucepan", "kitchen", ("saucepan", "sauce pan"), ("pot",), subreddits=("BuyItForLife", "Cooking", "AskCulinary")),
-    ProductType("dutch oven", "kitchen", ("dutch oven", "cocotte", "casserole dish"), subreddits=("BuyItForLife", "Cooking", "AskCulinary")),
+    ProductType("dutch oven", "kitchen", ("dutch oven", "cocotte", "casserole dish", "cast iron casserole",
+                                          "enamelled casserole", "enameled casserole", "enamel casserole",
+                                          "casserole pot"),
+                subreddits=("BuyItForLife", "Cooking", "AskCulinary")),
     ProductType("espresso machine", "kitchen", ("espresso machine", "espresso maker", "coffee machine"), ("espresso",),
                 subreddits=("espresso", "Coffee", "BuyItForLife")),
-    ProductType("coffee grinder", "kitchen", ("coffee grinder", "burr grinder", "grinder"), subreddits=("Coffee", "espresso")),
+    # A grinder sold for coffee and spices is a coffee grinder (14 Oct 2026, the routing audit): since a spice grinder
+    # is a type of its own, "spice grinder" would otherwise take "coffee/spice grinder" titles from coffee grinder
+    # answers.
+    ProductType("coffee grinder", "kitchen", ("coffee grinder", "burr grinder", "grinder", "coffee/spice grinder",
+                                              "coffee and spice grinder", "spice and coffee grinder"),
+                subreddits=("Coffee", "espresso")),
     ProductType("teapot", "kitchen", ("teapot", "tea pot"), subreddits=("tea", "BuyItForLife")),
     # Haircare (Noemi, 11 Oct 2026). A longer name wins over a shorter one inside it: "dry shampoo" isn't a shampoo,
     # and a "deep conditioner" is a hair mask.
@@ -201,7 +215,7 @@ FIRST_PRODUCT_TYPES = (
     ProductType("toaster oven", "kitchen", ("toaster oven", "countertop oven", "counter top oven", "benchtop oven",
                                             "mini oven", "air fryer oven", "air fry oven", "air-fryer oven",
                                             "air fryer toaster oven", "toaster oven air fryer", "convection toaster oven",
-                                            "countertop convection oven"),
+                                            "countertop convection oven", "halogen oven"),
                 subreddits=("BuyItForLife", "Appliances", "Cooking")),
     ProductType("air fryer", "kitchen", ("air fryer", "air-fryer", "airfryer"),
                 subreddits=("airfryer", "BuyItForLife", "Cooking")),
@@ -325,6 +339,11 @@ HARMFUL_LOOKALIKES = (
     "weed membrane", "weed puller", "weed burner", "cigarette lighter", "cigar box", "dry herb dehydrator",
     "nicotine patch", "nicotine patches", "nicotine gum", "nicotine replacement", "secret weapon", "tobacco vanille",
     "tobacco vanilla", "tobacco oud", "noise suppressor", "rifle paper",
+    # 14 Oct 2026, the routing audit: tools and garden products refused as weapons or drugs. HARMFUL itself is
+    # unchanged (Noemi's decision 6 of 14 Oct 2026; additions she may make are proposed in config.PROPOSED_HARMFUL).
+    "rivet gun", "riveting gun", "airbrush gun", "tattoo gun", "icing gun", "cookie gun", "hose gun", "grout gun",
+    "sealant gun", "silicone gun", "mastic gun", "shotgun mic", "shotgun microphone", "weed control", "weed fabric",
+    "weed brush", "weed sprayer", "weed suppressant", "weed suppressing",
 )
 HEALTH = (
     "medicine", "medication", "meds", "pills", "painkiller", "ibuprofen", "paracetamol", "acetaminophen", "aspirin",
@@ -342,6 +361,8 @@ FOOD_AND_DRINK = (
     "hot sauce", "spices", "green tea", "black tea", "herbal tea", "loose leaf tea", "tea bags", "matcha", "oolong",
     "dog food", "cat food", "puppy food", "kitten food", "pet food", "dog treats", "cat treats", "baby food",
     "baby formula", "formula milk", "protein bar", "meal kit", "groceries", "recipe", "recipes",
+    # 14 Oct 2026, the routing audit: kettle chips had been an electric kettle, vanilla essence a toner.
+    "kettle chips", "kettle crisps", "kettle corn", "crisps", "vanilla essence", "vanilla extract", "almond extract",
 )
 MEDIA = (
     "books", "book for", "book about", "book on", "novel", "novels", "audiobook", "ebook", "movie", "movies",
@@ -382,6 +403,14 @@ MEDIA_MESSAGE = ("Sorry, I recommend products you use, not books, films, music, 
 # Checked in this order when the request names no product: the first that matches gives its polite no.
 NOT_RECOMMENDED = ((HEALTH, HEALTH_MESSAGE), (FOOD_AND_DRINK, FOOD_MESSAGE), (MEDIA, MEDIA_MESSAGE),
                    (NOT_PRODUCTS, OUT_OF_SCOPE_MESSAGE))
+# Products holding one of those words (14 Oct 2026, the routing audit: wine glasses, a baby food maker, a photo album, a
+# medicine cabinet and a flight case had each been given a polite no). Such a word directly followed by a word for a
+# thing made for it (THING_WORDS below: "wine rack", "baby food maker", "medicine cabinet", "games table") names that
+# thing, and these phrases name products too: both are set aside before the polite nos' words are looked for, so the
+# request is asked about, or placed by the open model. Never for HARMFUL: a gun case is still its polite no.
+NOT_RECOMMENDED_LOOKALIKES = ("photo album", "camera film", "35mm film", "instant film", "polaroid film",
+                              "film for my camera", "film for a camera", "film for my polaroid", "spa pool",
+                              "lay z spa", "lay-z-spa", "inflatable spa", "hot tub")
 # Kept for code that imports it (the open model's answers in engine/query_model.py): nothing stays out by holding a
 # product's name any more (an air conditioner and an oven cleaner are products of the general category since 14 Oct).
 OUT_OF_SCOPE_LOOKALIKES = ()
@@ -393,11 +422,21 @@ OUT_OF_SCOPE_LOOKALIKES = ()
 # Since 13 Oct 2026 also the other kinds of knife: "knife" alone is a chef's knife, as people mean it in "a good knife",
 # but a paring or a bread knife isn't one (b07's Tojiro line had counted a writer's paring knives). Each with its
 # plural, which isn't the name and an "s".
+# Since 14 Oct 2026 (the routing audit) most of these are types of their own (engine/data/product_types.json: the
+# kitchen's paring, bread, steak, boning, fillet and carving knives and cutlery, the general category's pocket knives),
+# and their names win as the longer ones. The rest are set aside here, so the open model places them, never the chef
+# knife: a plain "utility knife" (a box cutter or a small kitchen knife), knives for other trades (putty, palette,
+# drywall, linoleum), an electric knife, Japanese slicers no type lists, and the weapon-like knives HARMFUL doesn't name
+# (zombie, karambit, bowie...: whether they join its polite no is Noemi's call, config.PROPOSED_HARMFUL).
 _OTHER_KNIVES = ("paring", "bread", "steak", "utility", "boning", "fillet", "filet", "carving", "butter", "pocket",
-                 "cheese", "oyster", "tomato", "petty")
+                 "cheese", "oyster", "tomato", "petty", "grapefruit", "electric", "sushi", "sashimi", "yanagiba",
+                 "putty", "palette", "drywall", "taping", "filling", "decorating", "linoleum", "lino", "zombie",
+                 "karambit", "bowie", "trench", "knuckle", "gravity", "otf", "automatic", "auto", "stiletto", "boot",
+                 "neck", "credit card", "hidden", "concealed", "tanto", "kukri", "fighting", "military")
 # 14 Oct 2026 (kitchen appliances, Noemi's decision 3): a blender held in the hand (config.OTHER_KIND_WORDS) isn't a
 # blender, and a beauty or makeup blender is a sponge. A crock pot and an Instant Pot are no longer look-alikes: they
-# name a slow cooker and a pressure cooker.
+# name a slow cooker and a pressure cooker. Since the routing audit the same day an immersion blender is a kitchen type
+# of its own (its names win; the open model had put it in the general category's home department).
 _OTHER_BLENDERS = ("immersion", "stick", "hand", "handheld", "hand-held", "beauty", "makeup", "make-up")
 # Where an oven, a microwave or a dishwasher is only the place something goes ("a pan to put in the oven", "oven-safe",
 # "dishwasher-safe"), or what goes with it ("oven gloves", "microwave popcorn", "toaster bags"). Never "for a" or "in an":
@@ -428,7 +467,30 @@ FIRST_LOOKALIKES = (
     "blender bottle", "blender sponge", "blender brush", "cooker hood",
     # A coffee maker or an espresso machine with a grinder built in is still the machine.
     "built-in grinder", "built in grinder", "integrated grinder", "with a grinder", "with grinder",
-) + _PLACES + tuple(f"{kind} {knife}" for kind in _OTHER_KNIVES for knife in ("knife", "knives")) + tuple(
+    # 14 Oct 2026, the routing audit: phrases holding a first type's word, or a clue word, that name something else.
+    # A grinder for tools; a kettle that's food or a fish poacher; cast iron that isn't cookware; a mixer tap or shower;
+    # a pan for dust, oil or gold; a pot plant; an oven for camping or a tandoor; a shampoo or conditioner for carpets,
+    # fabric, leather, soil or a fish tank; a serum for lashes; a toner for hair; an essence for baking; peel-and-stick
+    # tiles; a spot treatment for stains; sun and UV words that aren't sun protection; an electric carving knife and a
+    # pumpkin carving one.
+    "bench grinder", "die grinder", "stump grinder", "kettle chips", "kettle crisps", "kettle corn", "fish kettle",
+    "cast iron radiator", "cast iron bath", "cast iron bathtub", "cast iron tub", "cast iron fireplace",
+    "cast iron stove", "cast iron wood burner", "cast iron sink", "cast iron plant", "cast iron bench",
+    "cast iron gate", "cast iron pipe", "mixer tap", "kitchen mixer tap", "mixer shower", "basin mixer", "bath mixer",
+    "dust pan", "drain pan", "oil drain pan", "drip pan", "gold pan", "bed pan", "pot plant", "solar oven",
+    "camping oven", "tandoor oven", "tandoor", "clay oven", "toy oven", "carpet shampoo", "upholstery shampoo",
+    "rug shampoo", "fabric conditioner", "leather conditioner", "water conditioner", "soil conditioner",
+    "wood conditioner", "lash serum", "eyelash serum", "brow serum", "eyebrow serum", "hair toner", "purple toner",
+    "blue toner", "silver toner", "blonde toner", "vanilla essence", "almond essence", "peppermint essence",
+    "lemon essence", "peel and stick", "peel-and-stick", "peel & stick", "stick and peel", "carpet spot treatment",
+    "spot treatment for carpet", "spot treatment for carpets", "fabric spot treatment", "upholstery spot treatment",
+    "laundry spot treatment", "spot treatment for clothes", "sun shade", "sun canopy", "sun visor", "uv light",
+    "uv torch", "uv flashlight", "uv steriliser", "uv sterilizer", "uv sanitiser", "uv sanitizer", "uv resin",
+    "uv filter", "electric carving knife", "electric carving knives", "pumpkin carving knife",
+    "pumpkin carving knives",
+) + tuple(f"toner for {shade} hair" for shade in ("orange", "brassy", "yellow", "blonde", "bleached", "grey", "gray",
+                                                  "silver", "white", "highlighted", "dyed", "coloured", "colored")
+          ) + _PLACES + tuple(f"{kind} {knife}" for kind in _OTHER_KNIVES for knife in ("knife", "knives")) + tuple(
     f"{kind} blender" for kind in _OTHER_BLENDERS)
 # 14 Oct 2026 (the general category): phrases that hold a new type's word but are something else, an accessory of it or
 # a service ("phone plan", "tv show", "laptop stand", "mouse mat", "life jacket", "bike pump", "guitar lessons"), kept
@@ -439,9 +501,13 @@ _GENERAL_LOOKALIKES = tuple(phrase for entry in MORE_PRODUCT_TYPES for phrase in
     "toner cartridge",
 )
 # A phrase that is a product's own name is no look-alike (14 Oct 2026: "pizza oven", "vacuum sealer" and "beauty blender"
-# are names of the general category's types, or of the kitchen's); the longer name wins as it always has.
+# are names of the general category's types, or of the kitchen's); the longer name wins as it always has. Every phrase
+# module 1 knows as a look-alike, names included, is still another product than the type whose word it holds
+# (LOOKALIKE_PHRASES: advice about it is no advice for that type, engine.answer), as an immersion blender is for a
+# blender, now that it is a type of its own (14 Oct 2026, the routing audit).
 _KEYWORDS = frozenset(k for product in PRODUCT_TYPES for k in product.keywords)
-LOOKALIKES = tuple(phrase for phrase in dict.fromkeys(FIRST_LOOKALIKES + _GENERAL_LOOKALIKES)
+LOOKALIKE_PHRASES = tuple(dict.fromkeys(FIRST_LOOKALIKES + _GENERAL_LOOKALIKES))
+LOOKALIKES = tuple(phrase for phrase in LOOKALIKE_PHRASES
                    if phrase not in _KEYWORDS and phrase.removesuffix("s") not in _KEYWORDS)
 
 # Words that place a vague request in a category, so the question can be more specific.
@@ -484,22 +550,30 @@ def classify(text: str) -> Routing:
        laptop with a good keyboard": _context_ranges) isn't the one asked for; of two names written together the last
        is ("laptop backpack", "cast iron dutch oven": _heads); "X for my Y" may name a product in the other order
        ("a bed for my dog" is a dog bed, "a case for my iphone" an iPhone case: _reversed_name); a name followed by
-       "-free" or "-safe", or after "not", "no" or "instead of", is a requirement, not the product. One product is the
-       answer; two get one question; clue words count only when no name does.
-    4. No product: a polite no in the words of what it is (NOT_RECOMMENDED, ADVICE), else a question within the
-       category or department its words suggest, else a general question."""
+       "-free" or "-safe", or after "not", "no" or "instead of", is a requirement, not the product; a name followed
+       by a word for a thing made for it names that thing ("ipad case", "guitar strings": ACCESSORY_WORDS, 14 Oct
+       2026). One product is the answer; two get one question; clue words count only when no name does.
+    4. No product: a polite no in the words of what it is (NOT_RECOMMENDED, ADVICE; not for a thing made for what it
+       names, "wine rack", nor NOT_RECOMMENDED_LOOKALIKES, "photo album"), else a question within the category or
+       department its words suggest, else a general question."""
     lowered = text.lower()
     if _HARMFUL.mentioned(_phrases_pattern(HARMFUL_LOOKALIKES).sub(lambda m: " " * len(m.group(0)), lowered)):
         return Routing("out_of_scope", message=HARMFUL_MESSAGE)
     aside = _set_aside(lowered, LOOKALIKES)
     context = _context_ranges(aside)
-    named = _find_matches(aside, strong=True)
+    every_name = _find_matches(aside, strong=True)
+    owners = [(s, e) for s, e, _ in every_name if _accessory_after(aside, e)]  # "ipad" in "ipad case"
+    named = [m for m in every_name if (m[0], m[1]) not in owners]
     turned = _reversed_name(aside)
     if turned is not None and not any(s <= turned[0] and turned[1] <= e and e - s > turned[1] - turned[0]
                                        for s, e, _ in named):  # "robot vacuum for pet hair" is a robot vacuum
         named = sorted([m for m in named if not (m[0] < turned[1] and turned[0] < m[1])] + [turned],
                        key=lambda match: match[0])
-    clues = [m for m in _find_matches(aside, strong=False) if m[2] in _clues_that_fit([m[2]], aside)]
+    # A clue word followed by a thing made for it, or inside a name that is ("sun" in "sun lounger cushions"), counts
+    # no more than that name.
+    clues = [m for m in _find_matches(aside, strong=False)
+             if m[2] in _clues_that_fit([m[2]], aside) and not _accessory_after(aside, m[1])
+             and not any(s <= m[0] and m[1] <= e for s, e in owners)]
     own_named = [m for m in named if not _in_context(m, context)]
     own_clues = [m for m in clues if not _in_context(m, context)]
     found = [product for _, _, product in _heads(own_named, aside)] if own_named else [p for _, _, p in own_clues]
@@ -513,8 +587,9 @@ def classify(text: str) -> Routing:
         hints = () if own_named else tuple(h for h in product.hints if _mentions_any(aside, (h,)))
         return Routing("ok", product.category, product.name, product.subreddits or SUBREDDITS[product.category],
                        clues=hints, department=product.department)
+    left = _not_recommended_text(lowered)
     for words, message in NOT_RECOMMENDED:
-        if _NOT_RECOMMENDED[message].mentioned(lowered):
+        if _NOT_RECOMMENDED[message].mentioned(left):
             return Routing("out_of_scope", message=message)
     if ADVICE.search(lowered):
         return Routing("out_of_scope", message=OUT_OF_SCOPE_MESSAGE)
@@ -542,6 +617,61 @@ class _Words:
 
 _HARMFUL = _Words(HARMFUL)
 _NOT_RECOMMENDED = {message: _Words(words) for words, message in NOT_RECOMMENDED}
+
+# A product's name followed by a word for a thing made for it names that thing, not the product (14 Oct 2026, the
+# routing audit: an "ipad case" had been an iPad, "guitar strings" a guitar, a "kettle descaler" a kettle, "drill bits"
+# a drill), as a name followed by "-free" names a requirement (_REQUIREMENT_AFTER). The words: those of
+# config.OTHER_TYPE_WORDS that say what holds, covers or sharpens a product (not "set", "kit" or "bundle": a set of pans
+# is pans), and parts, refills and what cleans or goes with one. A model number may come between ("iphone 15 pro
+# case"). A name holding such a word is still that name, the longest found as always ("phone case", "laptop bag", "tv
+# stand"), and "battery life" isn't a battery. Not "light" (a stroller light enough to carry is a stroller), "handles"
+# (a vacuum that handles pet hair), "replacement" (a kettle replacement is a new kettle), "screen", "set" or "kit". The
+# request is then asked about, or placed by the open model in its own words ("ipad case"); never as the product whose
+# name it holds (engine.query_model).
+ACCESSORY_WORDS = (
+    "case", "cases", "cover", "covers", "stand", "stands", "rack", "racks", "holder", "holders", "mount", "mounts",
+    "strap", "straps", "band", "bands", "bag", "bags", "sleeve", "sleeves", "strings", "pedal", "pedals", "tuner",
+    "tuners", "pick", "picks", "battery", "batteries", "cable", "cables", "cord", "cords", "adapter", "adapters",
+    "adaptor", "adaptors", "filament", "remote", "remotes", "parts", "accessories", "accessory", "attachment",
+    "attachments", "lid", "lids", "liner", "liners", "filter", "filters", "bulb", "bulbs", "blade", "blades", "bits",
+    "chain", "chains", "peg", "pegs", "pole", "poles", "pump", "pumps", "seat", "seats", "saddle", "tube", "tubes",
+    "mat", "mats", "cushion", "cushions", "tray", "trays", "box", "boxes", "dock", "docks", "cleaner", "cleaners",
+    "descaler", "polish", "oil", "wax", "salt", "refill", "refills", "steriliser", "sterilizer", "warmer", "warmers",
+    "toy", "toys", "bowl", "bowls", "jug", "jugs", "table", "tables", "cabinet", "cabinets", "opener", "openers",
+    "dispenser", "dispensers", "container", "containers", "fountain", "thermometer", "shaker", "shakers", "decanter",
+    "organiser", "organizer", "organisers", "organizers", "ball", "balls", "protector", "protectors", "guard",
+    "guards", "sheath", "sheaths", "roll", "strip", "strips", "block", "blocks", "sharpener", "sharpeners", "gimbal",
+    "cap", "caps", "net", "nets", "frame", "frames", "legs", "wheel", "wheels", "knob", "knobs", "brush", "brushes",
+    "head", "heads", "spares", "repair", "scrubber", "scrubbers", "stool", "stools", "paddle", "paddles",
+)
+_MODEL_WORD = r"(?:[a-z]*\d[a-z0-9-]*|pro|max|mini|plus|ultra|air|lite|se|xl|oled|slim|fe|gen)"
+_ACCESSORY_AFTER = re.compile(rf"(?:\s+{_MODEL_WORD}){{0,3}}\s+(?:{'|'.join(map(re.escape, ACCESSORY_WORDS))})\b"
+                              r"(?!\s+life\b)")
+
+
+def _accessory_after(lowered: str, end: int) -> bool:
+    """Whether the name ending at `end` is followed by a word for a thing made for it (ACCESSORY_WORDS)."""
+    return _ACCESSORY_AFTER.match(lowered, end) is not None
+
+
+# After a word of what stays out (NOT_RECOMMENDED), the words of a thing made for it: ACCESSORY_WORDS and the things
+# food, drink and the rest are kept, served or shown in ("wine glasses", "a medicine cabinet", "holiday lights").
+THING_WORDS = ACCESSORY_WORDS + (
+    "glass", "glasses", "light", "lights", "storage", "brewing", "making", "maker", "makers", "chiller", "bucket",
+    "aerator", "pourer", "stopper", "jar", "jars", "tin", "tins", "scoop", "grinder", "mill", "press", "machine",
+    "fridge", "cooler", "whisk",
+)
+_NOT_RECOMMENDED_BEFORE_A_THING = re.compile(
+    r"\b(?:" + "|".join(re.escape(w) for w in sorted({w for words, _ in NOT_RECOMMENDED for w in words}, key=len,
+                                                         reverse=True))
+    + r")s?\b(?=\s+(?:" + "|".join(map(re.escape, THING_WORDS)) + r")\b)")
+
+
+def _not_recommended_text(lowered: str) -> str:
+    """The request as the polite nos' words are looked for in it: the products holding one of them
+    (NOT_RECOMMENDED_LOOKALIKES), and each one followed by a word for a thing made for it ("wine rack"), blanked out."""
+    blank = lambda m: " " * len(m.group(0))  # noqa: E731
+    return _NOT_RECOMMENDED_BEFORE_A_THING.sub(blank, _phrases_pattern(NOT_RECOMMENDED_LOOKALIKES).sub(blank, lowered))
 
 
 def plural_ending(word: str) -> str:
@@ -655,10 +785,12 @@ _REVERSED = re.compile(r"\b([a-z][a-z'-]*?)(s?)\s+for\s+(?:(?:my|our|your|his|he
 def _reversed_name(lowered: str) -> tuple[int, int, ProductType] | None:
     """A product named in the other order, "X for my Y" for "Y X" (14 Oct 2026): "a bed for my dog" is a dog bed,
     "toys for my cat" cat toys, "a case for my iphone" an iPhone case, "shoes for running" running shoes; only when "Y X"
-    is one of module 1's names. Its span is X's."""
+    is one of module 1's names. Its span is X's. The longer name wins, as everywhere in module 1 (14 Oct 2026, the
+    routing audit): "knife for wood carving" is a "wood carving knife", not a kitchen "carving knife"; then each word of
+    Y alone, the last first ("a lens for my sony camera" is a camera lens)."""
     for m in _REVERSED.finditer(lowered):
         thing, others = m.group(1), m.group(3).split()
-        for words in [[w] for w in reversed(others)] + [others]:
+        for words in [others[i:] for i in range(len(others) - 1)] + [[w] for w in reversed(others)]:
             for name in (f"{' '.join(words)} {thing}", f"{' '.join(words)} {thing}{m.group(2)}"):
                 product = _NAME_INDEX.get(name) or _NAME_INDEX.get(name.removesuffix("s"))
                 if product is not None:
@@ -679,15 +811,32 @@ def _set_aside(lowered: str, phrases: tuple[str, ...]) -> str:
     inside a product's name found before it stays (14 Oct 2026): "oven safe" in "a dutch oven safe to 260c" is part of
     the Dutch oven's name, which is what the request asks for. So does one inside a product's longer name (the general
     category, 14 Oct 2026): "car wash" in "car wash soap", "nail clippers" in "dog nail clippers"."""
+    for start, end in _set_aside_spans(lowered, phrases):
+        lowered = lowered[:start] + " " * (end - start) + lowered[end:]
+    return lowered
+
+
+def _set_aside_spans(lowered: str, phrases: tuple[str, ...]) -> list[tuple[int, int]]:
+    """Where _set_aside blanks the text: (start, end) of each of these phrases not inside a product's name."""
     named = [(start, end) for start, end, _ in _find_matches(lowered, strong=True)]
-    pattern = _phrases_pattern(tuple(phrases))
+    return [(m.start(), m.end()) for m in _phrases_pattern(tuple(phrases)).finditer(lowered)
+            if not any(start < m.start() < end or (start <= m.start() and m.end() <= end
+                                                    and end - start > m.end() - m.start()) for start, end in named)]
 
-    def blank(m: re.Match) -> str:
-        inside = any(start < m.start() < end or (start <= m.start() and m.end() <= end and end - start > m.end() - m.start())
-                     for start, end in named)
-        return m.group(0) if inside else " " * len(m.group(0))
 
-    return pattern.sub(blank, lowered)
+def set_aside_stretches(lowered: str) -> list[tuple[int, int]]:
+    """The stretches of a request (lowercase) that the rules read as something else than the product whose word they
+    hold (14 Oct 2026, the routing audit): each look-alike they set aside ("hand blender", "tomato knife"), and each
+    name followed by a word for a thing made for it, with that word ("ipad case"). The open model's answer is checked
+    against them (engine.query_model): a product found only inside one, such as "knife" in "tomato knife" or "ipad" in
+    "ipad case", isn't what the request names, and would bring back the very type the rules set aside."""
+    stretches = _set_aside_spans(lowered, LOOKALIKES)
+    aside = _set_aside(lowered, LOOKALIKES)
+    for start, end, _ in _find_matches(aside, strong=True) + _find_matches(aside, strong=False):
+        accessory = _ACCESSORY_AFTER.match(aside, end)
+        if accessory is not None:
+            stretches.append((start, accessory.end()))
+    return stretches
 
 
 _PHRASE_PATTERNS: dict[tuple[str, ...], re.Pattern] = {}

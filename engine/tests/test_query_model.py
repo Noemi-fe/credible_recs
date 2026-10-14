@@ -39,19 +39,22 @@ def test_the_rules_go_first_and_the_model_isnt_asked_when_they_route_a_request()
 # Changed on purpose 14 Oct 2026 (kitchen appliances, Noemi's decision 3): the air fryer and the rice cooker, the
 # examples below until then, are module 1's own types now, routed by the rules without the model
 # (engine/tests/test_query_appliances.py). A bread maker is still one the rules don't know.
+# Changed on purpose again the same day (the routing audit): a bread maker is module 1's own type now too
+# (engine/tests/test_query_routing_audit.py), so a yogurt maker, which no type lists, takes its place below.
 
 def test_a_kitchen_product_the_rules_dont_know_becomes_a_product_type_of_its_own():
-    query = parse_query("bread maker that lasts, under £100",
-                        model=FakeModel({"category": "kitchen", "product": "bread maker"}))
-    assert (query.status, query.category, query.product_type) == ("ok", "kitchen", "bread maker")
+    query = parse_query("yogurt maker that lasts, under £100",
+                        model=FakeModel({"category": "kitchen", "product": "yogurt maker"}))
+    assert (query.status, query.category, query.product_type) == ("ok", "kitchen", "yogurt maker")
     assert query.subreddits == list(SUBREDDITS["kitchen"])
     assert query.constraints.budget.max == 100  # budgets and units are still read by the rules
-    assert query.search_terms and "bread maker" in query.search_terms[-1]
+    assert query.search_terms and "yogurt maker" in query.search_terms[-1]
 
 
 def test_a_plural_in_the_request_still_counts_as_its_own_words():
-    query = parse_query("best bread makers for sourdough", model=FakeModel({"category": "kitchen", "product": "bread maker"}))
-    assert (query.status, query.product_type) == ("ok", "bread maker")
+    query = parse_query("best yogurt makers for greek yogurt",
+                        model=FakeModel({"category": "kitchen", "product": "yogurt maker"}))
+    assert (query.status, query.product_type) == ("ok", "yogurt maker")
 
 
 def test_an_appliance_the_rules_route_never_asks_the_model():
@@ -95,7 +98,8 @@ def test_two_products_stay_a_question_and_the_model_isnt_asked():
 
 def test_without_a_model_nothing_changes():
     # Tests run with the real model turned off (conftest): the rules alone ask what kind of product.
-    assert parse_query("bread maker that lasts").status == "clarify"
+    # Changed on purpose 14 Oct 2026 (the routing audit): a bread maker is module 1's own type now. Was: "bread maker".
+    assert parse_query("yogurt maker that lasts").status == "clarify"
 
 
 def test_a_word_for_a_category_or_a_place_is_not_a_product():
@@ -192,9 +196,12 @@ def test_a_clue_word_the_model_agrees_with_stands():
     # Changed on purpose again the same day (the general category's context rule, engine.query._context_ranges): a
     # word after "with a" says what the product has, not what is asked for, so the rules alone now ask about "bread
     # maker with a non-stick pot" (the open model places the bread maker) instead of calling it a saucepan.
-    assert parse_query("bread maker with a non-stick pot", model=None).status == "clarify"  # rules alone
-    assert parse_query("bread maker with a non-stick pot",
-                       model=FakeModel({"category": "kitchen", "product": "bread maker"})).product_type == "bread maker"
+    # Changed on purpose again the same day (the routing audit): the bread maker is module 1's own type now, so the
+    # rules alone place it; a yogurt maker's pot is the one left to the open model.
+    assert parse_query("bread maker with a non-stick pot", model=None).product_type == "bread maker"
+    assert parse_query("yogurt maker with a non-stick pot", model=None).status == "clarify"  # rules alone
+    yogurt = FakeModel({"category": "kitchen", "product": "yogurt maker"})
+    assert parse_query("yogurt maker with a non-stick pot", model=yogurt).product_type == "yogurt maker"
     assert parse_query("rice cooker with a non-stick pot", model=None).product_type == "rice cooker"
 
 

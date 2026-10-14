@@ -1,4 +1,4 @@
-Version: extract-v12
+Version: extract-v13
 
 # Finding product mentions in one Reddit thread
 
@@ -84,6 +84,13 @@ Use one of these names, written exactly as here, when it fits:
   "coffee maker", "french press", "toaster", "waffle maker", "juicer", "kitchen scale"
 - more kitchen gear (added 14 Oct 2026, instructions v12): "dishwasher", "fridge", "freezer", "hob", "cooker hood",
   "wok", "knife sharpener", "cutting board", "pizza oven", "barbecue", "moka pot", "milk frother"
+- kitchen knives, gadgets and tableware (added 14 Oct 2026, instructions v13): "paring knife", "bread knife",
+  "cleaver", "steak knife", "boning knife", "fillet knife", "carving knife", "nakiri", "pepper grinder",
+  "spice grinder", "meat grinder", "baking tray", "cake tin", "bread maker", "ice cream maker", "sandwich maker",
+  "electric grill", "pasta maker", "soda maker", "ice maker", "popcorn maker", "sous vide cooker", "vacuum sealer",
+  "immersion blender", "deep fryer", "food dehydrator", "mandoline", "meat thermometer", "garlic press",
+  "salad spinner", "can opener", "peeler", "grater", "mixing bowl", "food storage container", "cutlery", "dinnerware",
+  "wine glass", "cocktail shaker", "wine opener", "kitchen scissors"
 - more haircare (v12): "hair gel", "heat protectant", "hairspray"
 - general, home (v12): "vacuum cleaner", "robot vacuum", "carpet cleaner", "steam mop", "mop", "mattress",
   "mattress topper", "pillow", "duvet", "bed sheets", "duvet cover", "bed frame", "sofa", "armchair", "office chair",
@@ -100,9 +107,10 @@ Use one of these names, written exactly as here, when it fits:
   "tablet", "e-reader", "smartwatch", "camera", "camera lens", "tripod", "action camera", "webcam", "drone",
   "printer", "3d printer", "wifi router", "external hard drive", "docking station", "charger", "power bank",
   "gaming console", "game controller", "vr headset", "microphone", "smart ring"
-- general, outdoor and travel (v12): "tent", "sleeping bag", "sleeping pad", "air mattress", "hiking backpack",
-  "suitcase", "duffel bag", "packing cubes", "travel pillow", "travel adapter", "water bottle", "travel mug", "flask",
-  "hiking boots", "rain jacket", "down jacket", "fleece", "headlamp", "flashlight", "camping stove", "cooler",
+- general, outdoor and travel (v12; pocket knife, outdoor knife and camping cookware v13): "tent", "sleeping bag",
+  "sleeping pad", "air mattress", "hiking backpack", "suitcase", "duffel bag", "packing cubes", "travel pillow",
+  "travel adapter", "water bottle", "travel mug", "flask", "hiking boots", "rain jacket", "down jacket", "fleece",
+  "headlamp", "flashlight", "pocket knife", "outdoor knife", "camping stove", "camping cookware", "cooler",
   "camping chair", "hammock", "trekking poles", "camping water filter", "binoculars", "portable power station",
   "bicycle", "e-bike", "bike helmet", "bike lock", "bike light", "electric scooter", "kayak", "paddle board",
   "fishing rod", "golf clubs"
@@ -121,22 +129,23 @@ Use one of these names, written exactly as here, when it fits:
   "resistance bands", "pull-up bar", "foam roller", "massage gun", "fitness tracker", "sports watch",
   "heart rate monitor", "boxing gloves", "punching bag", "tennis racket", "football boots", "skateboard",
   "swimming goggles", "jump rope", "gym flooring", "lifting belt"
-- general, tools and garden (v12): "drill", "impact driver", "circular saw", "mitre saw", "table saw", "jigsaw",
-  "angle grinder", "sander", "multi-tool", "oscillating tool", "tool set", "screwdriver", "tape measure",
-  "laser level", "stud finder", "shop vac", "pressure washer", "ladder", "soldering iron", "multimeter", "glue gun",
-  "lawn mower", "robot lawn mower", "string trimmer", "hedge trimmer", "leaf blower", "chainsaw", "garden hose",
-  "pruners", "garden furniture", "fire pit", "wheelbarrow", "spade"
+- general, tools and garden (v12; box cutter v13): "drill", "impact driver", "circular saw", "mitre saw", "table saw",
+  "jigsaw", "angle grinder", "sander", "multi-tool", "box cutter", "oscillating tool", "tool set", "screwdriver",
+  "tape measure", "laser level", "stud finder", "shop vac", "pressure washer", "ladder", "soldering iron",
+  "multimeter", "glue gun", "lawn mower", "robot lawn mower", "string trimmer", "hedge trimmer", "leaf blower",
+  "chainsaw", "garden hose", "pruners", "garden furniture", "fire pit", "wheelbarrow", "spade"
 - general, beauty and personal care (v12): "hair dryer", "hair straightener", "curling iron", "hot air brush",
   "hair brush", "electric toothbrush", "water flosser", "razor", "electric shaver", "beard trimmer", "shaving cream",
   "deodorant", "perfume", "foundation", "concealer", "mascara", "lipstick", "eyeliner", "eyeshadow", "blush",
   "setting spray", "makeup primer", "brow pencil", "makeup brush", "makeup sponge", "nail polish", "nail lamp",
   "epilator", "ipl device"
-- general, hobbies (v12): "guitar", "guitar amp", "digital piano", "sewing machine", "board game", "jigsaw puzzle",
-  "fountain pen", "notebook", "telescope", "drawing tablet", "electronic drum kit"
+- general, hobbies (v12; whittling knife and craft knife v13): "guitar", "guitar amp", "digital piano",
+  "sewing machine", "board game", "jigsaw puzzle", "fountain pen", "notebook", "telescope", "drawing tablet",
+  "electronic drum kit", "whittling knife", "craft knife"
 - general, car (v12): "dash cam", "car tyres", "jump starter", "tyre inflator", "car vacuum", "car phone mount",
   "car wax", "car shampoo", "roof box", "ev charger", "obd scanner"
-Otherwise write a short lowercase type in plain words ("face mask", "bread maker", "makeup remover", "ice cream
-maker", "eyelash curler"). The names cover their usual kinds: a gyuto or santoku is a "chef knife", a non-stick or carbon
+Otherwise write a short lowercase type in plain words ("face mask", "yogurt maker", "makeup remover", "ice cube
+tray", "eyelash curler"). The names cover their usual kinds: a gyuto or santoku is a "chef knife", a non-stick or carbon
 steel pan a "frying pan", an essence a "toner", a retinol or tretinoin a "retinoid", a spot gel or cream and a pimple or
 acne patch (hydrocolloid ones too) a "spot treatment" (a plain hydrocolloid bandage or plaster isn't one: "bandage"), a
 clarifying, anti-dandruff or sulfate-free shampoo or a co-wash a "shampoo", a deep conditioner a "hair mask", a hair
@@ -153,7 +162,16 @@ cordless or handheld vacuum a "vacuum cleaner"; a Kindle or a Kobo an "e-reader"
 "stroller"; a strimmer a "string trimmer"; a puffer a "down jacket", a shell or a raincoat a "rain jacket"; trainers
 for everyday wear "sneakers", for running "running shoes"; a sleeping mat a "sleeping pad", a backpacking quilt a
 "sleeping bag"; a daypack for walks a "hiking backpack", one for work, school or travel a "backpack"; a BBQ, a grill
-or a smoker a "barbecue"; a whetstone or a honing rod a "knife sharpener".
+or a smoker a "barbecue"; a whetstone or a honing rod a "knife sharpener". The v13 names cover theirs: a petty knife
+is a "paring knife", a serrated knife a "bread knife", a Chinese cleaver a "cleaver", a slicer or sujihiki a
+"carving knife"; a folding, EDC or Swiss Army knife a "pocket knife", a hunting, survival or bushcraft knife an
+"outdoor knife", a Stanley knife or retractable utility knife a "box cutter", an X-Acto a "craft knife", a wood
+carving knife a "whittling knife"; a pepper or salt mill a "pepper grinder", a mincer a "meat grinder"; a sheet pan,
+baking sheet or roasting tin a "baking tray", a cake pan, springform or loaf tin a "cake tin"; a toastie maker or
+panini press a "sandwich maker", a contact or indoor grill an "electric grill", a SodaStream a "soda maker", an
+immersion circulator a "sous vide cooker", a hand or stick blender an "immersion blender", a deep fat fryer a
+"deep fryer", a microplane a "grater", a corkscrew a "wine opener", butter and table knives "cutlery", plates and
+crockery "dinnerware", wine, beer or whisky glasses a "wine glass"; a camping pot, pan or kettle "camping cookware".
 
 When you're not sure (Noemi, 9 Oct 2026): assume a product is of the thread's type unless the comment or its name
 says otherwise. If you still can't tell what a product is, or whether a name is a real product at all, look it up
@@ -281,7 +299,7 @@ comment (there's no one left to credit), and agreement with a comment other than
 ```json
 {
   "thread_id": "<the thread's id>",
-  "instructions_version": "extract-v12",
+  "instructions_version": "extract-v13",
   "extracted_at": "<now, ISO 8601 in UTC, e.g. 2026-10-08T10:00:00Z>",
   "extractor": "claude-code",
   "mentions": [
