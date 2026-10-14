@@ -101,6 +101,35 @@ def test_in_a_wider_reading_an_item_needs_a_recommendation_about_the_requests_ne
         "Made-up Exfoliant", "Other Exfoliant"}
 
 
+def test_for_haircare_a_pick_needs_a_recommendation_about_the_requests_needs_in_every_reading(monkeypatch):
+    # Noemi's decision 4 of 14 Oct 2026 (morning; option B of the need-quality builder): in haircare, where big
+    # curly-hair threads fill even the first reading, the wider reading's rule holds in every reading. On the library the
+    # gentle-wavy shampoo answer's first reading had picked an anti-dandruff shampoo whose writers said nothing about
+    # gentleness or waves. Skincare and kitchen first readings are unchanged. All made up.
+    hair = parse_query("gentle shampoo for wavy hair")
+    plain = [mention("Made-up Shampoo", thread, category="haircare") for thread in ("t1", "t2", "t1")]
+    fitting = [mention("Other Shampoo", thread, category="haircare") for thread in ("t1", "t2", "t2")]
+    fitting[0] = dataclasses.replace(fitting[0], needs=("wavy",))
+    first = pipeline._ranked(plain + fitting, hair, [], [], need_led=False)
+    assert [p.name for p in first.picks] == ["Other Shampoo"]
+    made_up = next(p for p in first.products if p.name == "Made-up Shampoo")
+    assert made_up.shortfall == pipeline.WIDER_READING_SHORTFALL
+    skin = parse_query("gentle exfoliant for sensitive skin")
+    as_skin = [dataclasses.replace(m, category="skincare") for m in plain + fitting]
+    assert {p.name for p in pipeline._ranked(as_skin, skin, [], [], need_led=False).picks} == {
+        "Made-up Shampoo", "Other Shampoo"}
+    # The config value names the categories: without haircare, its first reading is as before.
+    monkeypatch.setattr(pipeline, "NEED_RULE_IN_EVERY_READING", ())
+    assert {p.name for p in pipeline._ranked(plain + fitting, hair, [], [], need_led=False).picks} == {
+        "Made-up Shampoo", "Other Shampoo"}
+
+
+def test_the_need_rule_holds_in_every_reading_for_haircare_only():
+    from engine.config import NEED_RULE_IN_EVERY_READING
+
+    assert NEED_RULE_IN_EVERY_READING == ("haircare",)
+
+
 # --- One-line summaries, read from the library ---
 
 ZOJI = "kitchen:zojirushi kettle"
