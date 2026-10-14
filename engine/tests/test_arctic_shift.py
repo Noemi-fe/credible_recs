@@ -317,6 +317,25 @@ def test_purging_carries_on_when_another_client_removed_a_file(tmp_path, monkeyp
     assert not (cache / "stale.json").exists()
 
 
+def test_two_clients_deleting_the_same_stale_answer_never_crash(tmp_path, monkeypatch):
+    # 14 Oct 2026 (the coordinator, after builders' runs shared main's cache folder): two clients starting together both
+    # read the same stale answer, and the other one deletes it between this one's reading and its deleting.
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    stale = cache / "twice.json"
+    stale.write_text(json.dumps({"fetched_at": "2020-01-01T00:00:00+00:00", "posts": []}))
+    real_unlink = arctic_shift.Path.unlink
+
+    def other_client_first(self, *args, **kwargs):
+        if self.name == "twice.json" and self.exists():
+            real_unlink(self)  # the other client's purge got there first
+        return real_unlink(self, *args, **kwargs)
+
+    monkeypatch.setattr(arctic_shift.Path, "unlink", other_client_first)
+    make_client(tmp_path)  # purges on start: must not raise
+    assert not stale.exists()
+
+
 def test_a_cached_answer_another_client_is_still_writing_is_asked_again(tmp_path):
     # A file cut short (being written by another client, or left by a killed one) is no answer: the search is asked
     # again instead of crashing on the JSON.

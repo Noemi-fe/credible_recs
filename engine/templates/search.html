@@ -79,6 +79,8 @@ const LABELS = {
   meterAgainst: ["{n} warned against it", "{n} warned against it"],
   meterNoneAgainst: "none warned against it",
   meterThreads: ["across {n} thread", "across {n} threads"],
+  // Noemi's upvote rule (14 Oct 2026; off): how many of those writers counted twice toward the picks bar.
+  meterTwice: ["{n} counted twice for its upvotes", "{n} counted twice for their upvotes"],
   // "At a glance" (13 Oct 2026): the picks side by side.
   glanceHeading: "At a glance",
   glancePick: "Pick",
@@ -1187,13 +1189,15 @@ details[open] > summary .icon { transform: rotate(180deg); }
 
   /** The credibility meter (13 Oct 2026): a bar of the credible voices for and against, with their numbers in words
       beside it, so colour never carries them alone. Its numbers are the API's "voices", the same writers the answer's
-      reason, support line and share line count. Nothing without them. */
+      reason, support line and share line count; "twice" (only with Noemi's upvote rule on, 14 Oct 2026) how many of
+      them counted twice for their upvotes, as the reason says. Nothing without them. */
   function trustMeter(voices) {
     if (!voices || !voices.recommend) return null;
     const bar = el("div", { class: "bar", "aria-hidden": "true" }, el("span", { class: "for" }), voices.warn ? el("span", { class: "against" }) : null);
     bar.style.setProperty("--for", String(voices.recommend / (voices.recommend + voices.warn)));
     return el("div", { class: "meter" }, bar, el("ul", { class: "legend", "aria-label": LABELS.meterHeading },
       el("li", { class: "for" }, ...countedNodes(LABELS.meterFor, voices.recommend)),
+      voices.twice ? el("li", { class: "twice" }, ...countedNodes(LABELS.meterTwice, voices.twice)) : null,
       el("li", { class: "against" }, ...(voices.warn ? countedNodes(LABELS.meterAgainst, voices.warn) : [LABELS.meterNoneAgainst])),
       el("li", { class: "threads" }, ...countedNodes(LABELS.meterThreads, voices.threads))));
   }

@@ -1250,3 +1250,33 @@ ON_DEMAND_LATE_MINUTES = 90
 # request it knows is waiting.
 ON_DEMAND_START_EVERY_SECONDS = 300
 ON_DEMAND_QUEUE_FRESH_SECONDS = 60
+
+# --- Upvotes count more when credible mentions are few (Noemi, 14 Oct 2026; built switched off) ---
+# Noemi: "let's be reasonable. if we have few credible mentions, a highly upvoted comment (10+) counts more", and she
+# asked to see which picks it would change before it is turned on (the effect report: eval/RUNS.md, 14 Oct 2026). With
+# it on, a credible recommendation (CREDIBLE_VOICES, CREDIBLE_EVIDENCE: upvotes never make a comment credible) whose
+# comment has at least UPVOTE_MIN_SCORE upvotes (its score: upvotes minus downvotes) counts as two credible
+# recommendations toward the picks bar (MIN_CREDIBLE_MENTIONS) and Also worth a look's (WORTH_A_LOOK_CREDIBLE): never
+# more than two, never for a warning, and never in place of the second thread (MIN_THREADS still counts threads). The
+# score, the order's tie-breaks, Skip these and the mixed-opinions flag still count writers, and the answer says which
+# voices counted twice and for how many upvotes (engine/rank.py, engine/answer.py). Four variants, by the three
+# settings below (UPVOTE_ONLY_WHEN_SHORT, UPVOTE_TOP_OF_BIG_THREAD, UPVOTE_ONLY_TO_FILL):
+#   A: any product (False, False, False);
+#   B: only a product with fewer credible recommendations than the bar, and only as many as it needs, the most upvoted
+#      first: it can lift a product to the picks, never inflate one that qualifies (True, False, False);
+#   C: as B, and the comment must be among the top of a big thread, her earlier "needs to be a high quality thread":
+#      at least UPVOTE_THREAD_MIN_COMMENTS comments readable when it was read, and scoring higher than at least
+#      UPVOTE_THREAD_SHARE_BEATEN of the others, its top 10% (True, True, False);
+#   D: as C, and a product it lifts ranks after every product meeting the bar on its own, so it only fills a place the
+#      picks would leave empty, never takes one (True, True, True; added by Claude after the first effect run, where B
+#      and C put lifted shampoos in place of picks with three credible writers).
+# In every variant nothing leaves the answer (a lifted product its score keeps out of the picks stays under Also worth a
+# look) and how much an answer reads doesn't change (engine.pipeline.answer_request).
+# PROPOSED (Claude, 14 Oct 2026): every value but her "10+", and which variant, wait for Noemi; the switch stays off.
+UPVOTE_COUNTS_MORE = False
+UPVOTE_MIN_SCORE = 10  # Noemi's "10+"
+UPVOTE_ONLY_WHEN_SHORT = True
+UPVOTE_TOP_OF_BIG_THREAD = True
+UPVOTE_ONLY_TO_FILL = True
+UPVOTE_THREAD_MIN_COMMENTS = 20
+UPVOTE_THREAD_SHARE_BEATEN = 0.9

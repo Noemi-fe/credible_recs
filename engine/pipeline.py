@@ -82,7 +82,8 @@ look for" notes that name no kind (notes_without_kind, engine.group_kinds step 5
 can't use. threads_quoted names the threads the answer's quotes come from: the ones whose live checks matter most.
 
 Each mention carries its writer's name (lowercased), so the ranking counts one writer once per product, however
-many comments or threads they praise it in (engine.rank).
+many comments or threads they praise it in (engine.rank). Since 14 Oct 2026 it also carries its comment's upvotes beside
+its thread's (engine.credibility.thread_upvotes), for Noemi's upvote rule, which is off (engine.rank.counts_twice).
 
 Two ranking changes of 9 Oct 2026 are worked out here, in _score, before module 6 ranks:
 - needs: a mention whose comment talks about what the request asks for (engine/needs.py: "sensitive skin", "a
@@ -136,6 +137,7 @@ from dataclasses import dataclass, field, replace
 from datetime import date
 from pathlib import Path
 
+from engine import config  # the upvote rule's switch, read for each request (14 Oct 2026)
 from engine.answer import (
     Answer, _every_quote, comment_bodies, needed_quotes, quotes_to_check, render_markdown, says_the_opposite,
     shown_availability, shown_price, without_unread, write_answer,
@@ -172,7 +174,7 @@ from engine.config import (
 from engine.contradictions import contradicting_writers
 from engine.credibility import (
     VoiceScore, badges, copied_comment_ids, copy_groups, mention_weight, repeated_copies, score_evidence, score_voice,
-    with_ai_evidence,
+    thread_upvotes, with_ai_evidence,
 )
 from engine.extract import CheckResult, shown_comment_ids
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
@@ -296,6 +298,10 @@ class PipelineResult:
     # reported, never quietly dropped (11 Oct 2026).
     skipped_files: list[str] = field(default_factory=list)
     read_more: bool = False  # the first threads gave too few picks, so more were read (answer_request, 11 Oct 2026)
+    # The same reading ranked with Noemi's upvote rule (14 Oct 2026), when asked for (_answer's upvotes_too): what
+    # answer_request returns for the reading it keeps. None otherwise, and when the rule changes nothing in its ranking
+    # (the answer is this one).
+    with_upvotes: "PipelineResult | None" = field(default=None, repr=False, compare=False)
 
     def text(self) -> str:
         """The answer as Markdown, or module 1's question or polite no."""
@@ -340,29 +346,41 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     `more_threads=None` never reads more. `brand_lines`: the brand-lines list (engine/brand_lines.py); None reads
     data/brand_lines.json. `summaries`: the one-line summaries ({engine.summaries.summary_key: Summary}); None reads the
     library's summaries.json (none when there is no such file).
+
+    Noemi's upvote rule (14 Oct 2026; off unless config.UPVOTE_COUNTS_MORE) never changes how much is read: ranked with
+    it, a first reading short of picks could reach three with products it lifts and never read on, where the wider
+    reading's picks talk about what was asked (on the library: Nizoral and Head & Shoulders for a dandruff shampoo). So
+    which reading to keep is decided as with the rule off, and the reading kept is then ranked with it, from what it has
+    read (_answer's upvotes_too: its threads aren't read again).
     """
     query = parse_query(request)
+    upvotes = config.UPVOTE_COUNTS_MORE
     reading = dict(library_dir=library_dir, profiles=profiles, prices=prices, today=today,
                    live_check_required=live_check_required, live_checker=live_checker, product_facts=product_facts,
-                   brand_lines=brand_lines, summaries=summaries)
+                   brand_lines=brand_lines, summaries=summaries, upvotes_too=upvotes)
     result = _answer(query, max_threads=max_threads, **reading)
-    if (more_threads is None or more_threads <= max_threads or result.answer is None
+    if not (more_threads is None or more_threads <= max_threads or result.answer is None
             or len(result.answer.picks) >= PICKS_SHOWN or result.threads_available <= len(result.threads_used)):
-        return result
-    wider = _answer(query, max_threads=more_threads, need_led=True, **reading)
-    if len(wider.answer.picks) <= len(result.answer.picks):
-        return result
-    wider.read_more = True
-    return wider
+        wider = _answer(query, max_threads=more_threads, need_led=True, **reading)
+        if len(wider.answer.picks) > len(result.answer.picks):
+            wider.read_more = True
+            result = wider
+    if upvotes and result.with_upvotes is not None:
+        result.with_upvotes.read_more = result.read_more
+        result = result.with_upvotes
+    return result
 
 
 def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, prices: list[Price] | None,
             today: date | None, live_check_required: bool | None, live_checker,
             product_facts: list[ProductFacts] | None, need_led: bool = False,
             brand_lines: list[BrandLine] | None = None,
-            summaries: Mapping[str, Summary] | None = None) -> PipelineResult:
+            summaries: Mapping[str, Summary] | None = None, upvotes_too: bool = False) -> PipelineResult:
     """One reading of the library for an understood request, with at most `max_threads` threads (answer_request).
     `need_led`: the wider reading's rule, a pick needs a credible recommendation that talks about the request's needs.
+    `upvotes_too`: the reading is also ranked with Noemi's upvote rule (engine.rank.counts_twice), from what it has read
+    and the comments its live checks dropped, into result.with_upvotes (14 Oct 2026); the result itself is ranked
+    without it, so answer_request can decide which reading to keep as with the rule off.
 
     `profiles`: where writers' standing comes from (an object with user_stats and comment_flairs, such as
     engine.profiles.StoredProfiles); None leaves the writers as saved, known by name only.
@@ -440,28 +458,60 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.contradicting_writers = sorted(contradicting_writers(groups, {c.id: c for t in threads for c in t.comments}))
     scored, kind_notes = _score(threads, checked, kept_groups, kinds, request_needs(query),
                                 set(result.contradicting_writers), request_asks(query))
-    result.ranking, more_downsides = _fold_brand_skips(
-        _fold_brand_picks(_ranked(scored, query, kind_notes, kinds, need_led, result.skip_only), kept_groups, result),
-        kept_groups, result)
-    unsuited_kinds = _unsuited_kinds(result.ranking.kinds, query, product_facts)
-    folded = {item.name for item in result.folded_brand_picks}
-    care = _care_tips(threads, checked, [g for g in kept_groups if g.name not in folded], kinds, query)
-    models, model_prices = _brand_models(result.ranking, kept_groups, query.product_type, price_checks)
     if summaries is None:
         loaded = load_summaries(Path(library_dir) / SUMMARIES_FILE)
         summaries = loaded.entries
         result.skipped_files.extend(loaded.problems)
-    result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
-                                 models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
-                                 request_needs(query), query.text, summaries,
-                                 _worth_left_out(result.ranking, kept_groups), **wording, ranges=ranges)
-    if live_checker is not None:
-        _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions, kept_groups,
-                    unsuited_kinds, need_led, summaries, wording, ranges)
-    thread_of = {c.id: t.id for t in threads for c in t.comments}
-    quoted = {thread_of.get(quote.comment_id) for _, quote in _every_quote(result.answer)}
-    result.threads_quoted = [tid for tid in result.threads_used if tid in quoted]
+
+    def rank_and_write(result: PipelineResult, scored: list[ScoredMention], kind_notes: list[KindNote],
+                       upvote_rule: bool) -> PipelineResult:
+        """Modules 6 and 7 for this reading: the ranking, the answer, and the live checks of what it shows."""
+        result.ranking, more_downsides = _fold_brand_skips(
+            _fold_brand_picks(_ranked(scored, query, kind_notes, kinds, need_led, result.skip_only, upvote_rule),
+                              kept_groups, result),
+            kept_groups, result)
+        unsuited_kinds = _unsuited_kinds(result.ranking.kinds, query, product_facts)
+        folded = {item.name for item in result.folded_brand_picks}
+        care = _care_tips(threads, checked, [g for g in kept_groups if g.name not in folded], kinds, query)
+        models, model_prices = _brand_models(result.ranking, kept_groups, query.product_type, price_checks)
+        result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
+                                     models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
+                                     request_needs(query), query.text, summaries,
+                                     _worth_left_out(result.ranking, kept_groups), **wording, ranges=ranges)
+        if live_checker is not None:
+            _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions,
+                        kept_groups, unsuited_kinds, need_led, summaries, wording, ranges, upvote_rule=upvote_rule)
+        thread_of = {c.id: t.id for t in threads for c in t.comments}
+        quoted = {thread_of.get(quote.comment_id) for _, quote in _every_quote(result.answer)}
+        result.threads_quoted = [tid for tid in result.threads_used if tid in quoted]
+        return result
+
+    readable = set(result.bodies)
+    rank_and_write(result, scored, kind_notes, upvote_rule=False)
+    if upvotes_too:
+        # The same reading, ranked with Noemi's upvote rule (14 Oct 2026). The comments its live checks dropped (gone,
+        # changed or unreadable on Reddit) stay dropped, so their votes and notes count for nothing here either; anything
+        # new it shows is checked live as usual (the checker remembers the rest). When the rule changes nothing in the
+        # ranking, the answer is the same: it isn't written again.
+        dropped = readable - set(result.bodies)
+        scored = [m for m in scored if m.comment_id not in dropped]
+        kind_notes = [n for n in kind_notes if n.comment_id not in dropped]
+        if not _upvotes_change_nothing(scored, query, kind_notes, kinds, need_led, result.skip_only):
+            again = replace(result, live_dropped=dict(result.live_dropped), live_put_off=0)
+            result.with_upvotes = rank_and_write(again, scored, kind_notes, upvote_rule=True)
     return result
+
+
+def _upvotes_change_nothing(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
+                            skip_only: Mapping[str, str]) -> bool:
+    """Whether Noemi's upvote rule (14 Oct 2026) leaves a reading's ranking as it is: every product meets the bar, is an
+    Also worth a look item or neither, as without the rule, and none that meets it has a voice counted twice (which its
+    reason would say). The rest of a ranking doesn't depend on the rule, so its answer would be the same."""
+    def marks(ranking: RankingResult) -> list[tuple]:
+        return [(p.key, p.qualifies, p.worth_a_look, p.qualifies and bool(p.counted_twice)) for p in ranking.products]
+
+    return (marks(_ranked(scored, query, kind_notes, kinds, need_led, skip_only, False))
+            == marks(_ranked(scored, query, kind_notes, kinds, need_led, skip_only, True)))
 
 
 # Why a product found only in a wider reading isn't a pick (answer_request, 11 Oct 2026).
@@ -469,13 +519,13 @@ WIDER_READING_SHORTFALL = "no credible recommendation talks about what you asked
 
 
 def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
-            skip_only: Mapping[str, str] | None = None) -> RankingResult:
+            skip_only: Mapping[str, str] | None = None, upvote_rule: bool = False) -> RankingResult:
     """Module 6's ranking. In a wider reading (`need_led`) of a request that asks for something besides the product, a
     product with no credible recommendation talking about it can't be a pick (answer_request), nor "Also worth a look"
     (13 Oct 2026). `skip_only`: {product key: reason} of the brand lines a hard requirement keeps from being picks (a
     whole brand can't be checked): never a pick nor "Also worth a look", but listed under Skip these when their credible
-    warnings put them there (Noemi's decision 1 of 13 Oct 2026)."""
-    ranking = rank_products(scored, query.category, kind_notes, placements(kinds))
+    warnings put them there (Noemi's decision 1 of 13 Oct 2026). `upvote_rule`: with Noemi's upvote rule (14 Oct 2026)."""
+    ranking = rank_products(scored, query.category, kind_notes, placements(kinds), upvote_rule=upvote_rule)
     if need_led and request_needs(query):
         ranking.products = [replace(p, qualifies=False, shortfall=WIDER_READING_SHORTFALL, worth_a_look=False)
                             if (p.qualifies or p.worth_a_look) and not p.breakdown.credible_recommends_fitting_need
@@ -489,7 +539,8 @@ def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
 def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds, query, price_checks, care,
                 cautions=None, groups: list[ProductGroup] = (), unsuited_kinds: frozenset[str] = frozenset(),
                 need_led: bool = False, summaries: Mapping[str, Summary] | None = None,
-                wording: Mapping | None = None, ranges: Mapping[str, BrandLine] | None = None) -> None:
+                wording: Mapping | None = None, ranges: Mapping[str, BrandLine] | None = None,
+                upvote_rule: bool = False) -> None:
     """Checks every quote about to be shown against Reddit itself; drops the comments that fail and answers again.
     Since 13 Oct 2026 the quotes a shown summary cites are checked too (engine.answer.quotes_to_check): a summary never
     stands on a comment deleted or changed since.
@@ -529,7 +580,8 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         failed |= new
         result.bodies = {cid: body for cid, body in result.bodies.items() if cid not in failed}
         ranking = _ranked([m for m in scored if m.comment_id not in failed], query,
-                          [n for n in kind_notes if n.comment_id not in failed], kinds, need_led, result.skip_only)
+                          [n for n in kind_notes if n.comment_id not in failed], kinds, need_led, result.skip_only,
+                          upvote_rule)
         result.ranking, more_downsides = _fold_brand_skips(_fold_brand_picks(ranking, groups, result), groups, result)
         models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks)
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
@@ -1449,6 +1501,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
         groups = copy_groups(thread)  # once per thread: it reads the whole thread
         # Copies count once (Noemi, 11 Oct 2026): the later copies' mentions and notes are left out.
         copied, repeats = copied_comment_ids(thread, groups), repeated_copies(thread, groups)
+        upvotes = thread_upvotes(thread)  # each comment's beside the thread's, for the upvote rule (14 Oct 2026)
         voices = {}
 
         def voice_of(comment: Comment) -> VoiceScore:
@@ -1471,12 +1524,16 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                                         m.evidence_tags)
             met = _needs_talked_about(m.quote, comment.body, needs, asks, evidence.level == "long-term use")
             weight = mention_weight(voice, evidence, m.stance) * (NEED_MATCH_BOOST if met else 1)
+            standing = upvotes.get(m.comment_id)
             scored.append(ScoredMention(
                 product_key=group.key, product_name=group.name, category=group.category, thread_id=tid,
                 comment_id=m.comment_id, comment_url=str(comment.url), stance=m.stance,
                 weight=weight, voice=voice.level, evidence=evidence.level,
                 quote=m.quote, badges=badges(voice, evidence), author=_writer(comment), needs=met,
                 written_as=m.product,
+                upvotes=standing.score if standing else None,
+                thread_comments=standing.thread_comments if standing else None,
+                share_beaten=standing.share_beaten if standing else None,
             ))
         for n in res.kept_notes:
             if n.comment_id in repeats:

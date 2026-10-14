@@ -97,8 +97,11 @@ The JSON for /api/answer (200):
                             "voices": {"recommend": n,         the credible voices behind it, as numbers for the page's
                                        "high": n, "medium": n, credibility meter (13 Oct 2026): its credible
                                        "warn": n,              recommendations, of them the high and medium voices, the
-                                       "threads": n}           writers who warned (as the share line counts them) and
-                                                               the threads with a credible recommendation
+                                       "threads": n,           writers who warned (as the share line counts them) and
+                                       "twice": n}             the threads with a credible recommendation; "twice" only
+                                                               with Noemi's upvote rule on (14 Oct 2026; off), when
+                                                               some of those writers counted twice toward the picks bar
+                                                               for their upvotes (the reason says which)
                             "range": {"text",                  a brand line's link to its maker's page for its products
                                       "url",                   of the type, or an official UK stockist's (Noemi's night
                                       "checked",               decision 1, 14 Oct 2026): "Browse Victorinox chef
