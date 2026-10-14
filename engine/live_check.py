@@ -353,6 +353,10 @@ class LiveChecker:
         entry = self._saved(embed_url(comment_url), MAX_AGE)
         return None if entry is None else _outcome(entry["text"], quote)
 
+    def now(self) -> datetime:
+        """The checker's own time (what its 48 hours and its pacing count by)."""
+        return self._clock()
+
     def checked_at(self, comment_url: str, max_age: timedelta = MAX_AGE) -> datetime | None:
         """When the comment was last read on Reddit, if a saved check made within `max_age` (48 hours at most) says
         so; None otherwise. Reddit is never read for it."""

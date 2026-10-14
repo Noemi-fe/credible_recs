@@ -508,10 +508,14 @@ LIVE_CHECK_UNREADABLE_KEEP_HOURS = 20
 # read less than PRECHECK_FRESH_HOURS ago is left as it is ("fresh for most of a day"), so after a run every check it
 # covers has 28 hours or more to go: the next day's run reads it again before it runs out, even a run that is late.
 PRECHECK_FRESH_HOURS = 20
-# Reddit reads one run makes at most: at the pace above (about 190 in each 10 minutes) about an hour, so the daily
-# job stays well inside Cloud Run's free tier. The answers of the 13 Oct 2026 library show 759 comments, hold 170 next in
-# line and 146 in the products behind the picks (1,075: all read), then 289 next after those (read as the budget allows).
-PRECHECK_MAX_READS = 1100
+# A run's budget, reads and time, whichever runs out first. Time (14 Oct 2026, Claude's call, reported to Noemi): a run
+# starts no read PRECHECK_MAX_RUN_MINUTES after it started (working out the answers included), so the job's bill stays
+# inside Cloud Run's free tier however fast Reddit lets it read (engine/tests/test_cloudrun.py does the sums: with
+# on-demand reading, at most 88% of the free vCPU-seconds in a 31-day month). Reads: a ceiling, about what Reddit allows
+# in that time. On 14 Oct 2026 a run read its 1,100 in 46 minutes (Reddit's headers let it go faster than the refill
+# pace) and left 459 of the 1,967 comments answers show or hold next in line unread; 75 minutes is about 1,700 reads.
+PRECHECK_MAX_READS = 2000
+PRECHECK_MAX_RUN_MINUTES = 75
 # Unlike a visitor's answer (LIVE_CHECK_MAX_WAIT_SECONDS), nobody waits on the pre-check: a read waits for Reddit's next
 # 10 minutes however long that is (13 Oct 2026).
 PRECHECK_MAX_WAIT_SECONDS = 660

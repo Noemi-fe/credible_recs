@@ -45,7 +45,7 @@ def test_the_daily_command_adds_the_queues_products_to_its_requests(monkeypatch)
     monkeypatch.setattr(precheck, "requests_to_check", lambda: [REQUEST, "teapot"])
     monkeypatch.setattr(precheck.on_demand, "precheck_types", lambda environ, library_dir: ["teapot", "air fryer"])
     monkeypatch.setattr(precheck.pipeline, "cached_profiles", lambda: None)
-    monkeypatch.setattr(precheck, "run", lambda requests, limit, dry_run, library_dir, checker, profiles:
+    monkeypatch.setattr(precheck, "run", lambda requests, limit, dry_run, library_dir, checker, profiles, **times:
                         given.setdefault("requests", requests) and 0)
     assert precheck.main(["--dry-run"]) == 0
     assert given["requests"] == [REQUEST, "teapot", "air fryer"]  # each once, after the usual ones

@@ -29,9 +29,11 @@ rule is unchanged: a quote is shown only with a passing check from the last 48 h
   longer, unused; it is written again every day, so it goes only if the pre-check stops), and soft delete is off, so
   nothing deleted is kept. No entry older than 48 hours is ever written into the bundle, copied out of it or used.
 - **The pre-check** (Cloud Run job `credible-recs-precheck`): the site's own image, running
-  `python -m engine.precheck --limit 1100`, started by Cloud Scheduler (`credible-recs-precheck-daily`) at 4 am UK time.
-  It reads at the live check's pace (40 at once, then one every 4 s): 1,100 reads take about 71 minutes, plus a few
-  minutes working out the answers. Its report (counts and times, never a comment's words) is in the job's logs. On
+  `python -m engine.precheck --limit 2000 --minutes 75`, started by Cloud Scheduler (`credible-recs-precheck-daily`) at
+  4 am UK time. It reads as fast as Reddit's rate-limit headers allow (never slower than one every 4 s) and starts no
+  read 75 minutes after it started, so a run's length, and its bill, doesn't depend on Reddit's pace (14 Oct 2026: the
+  run before read its then budget of 1,100 in 46 minutes, after 84 s working out the answers, and left 459 of 1,967
+  comments unread; 75 minutes is about 1,700 reads). Its report (counts and times, never a comment's words) is in the job's logs. On
   Noemi's computer on 13 Oct 2026 a run worked out 1,145 comments in 3.7 minutes and read 928 of them in 59 minutes
   (872 passing, 2 deleted, 8 edited, 46 pages that couldn't be read).
 - **On-demand reading's bucket** (`credible-picks-on-demand`, CREDIBLE_RECS_ON_DEMAND_BUCKET; 14 Oct 2026, Noemi's plan,
@@ -123,7 +125,7 @@ The project number is `NUMBER` below (`gcloud projects describe credible-picks -
        IMAGE=$(gcloud run services describe credible-recs --region europe-west1 --project credible-picks \
            --format='value(spec.template.spec.containers[0].image)')
        gcloud run jobs deploy credible-recs-precheck --project credible-picks --region europe-west1 --image "$IMAGE" \
-           --command python --args=-m,engine.precheck,--limit,1100 \
+           --command python --args=-m,engine.precheck,--limit,2000,--minutes,75 \
            --tasks 1 --max-retries 0 --task-timeout 2h --memory 1536Mi --cpu 1 \
            --set-env-vars CREDIBLE_RECS_LIVE_CACHE_BUCKET=credible-picks-live-checks,CREDIBLE_RECS_ON_DEMAND_BUCKET=credible-picks-on-demand
        gcloud run jobs add-iam-policy-binding credible-recs-precheck --project credible-picks --region europe-west1 \
@@ -226,14 +228,16 @@ month). The image is about 1.5 GB in Artifact Registry, whose free storage is 0.
 rest. Cloud Scheduler's first 3 jobs are free; a ping is one short request, and a server between requests costs
 nothing. The budget alert emails Noemi at 50% and 100% of 1 EUR.
 
-The pre-check (estimates, 13 Oct 2026). A job is billed per instance-second for its whole run, sleeping between reads
+The pre-check (estimates, 13 Oct 2026; the time limit 14 Oct 2026). A job is billed per instance-second for its whole run, sleeping between reads
 included, so it runs with the least that works: 1 vCPU (a job's minimum) and 1.5 GiB (on Noemi's computer it peaked at
 1.3 GB with module 1's open model loaded; 0.2 GB without it, but without the model the open model's product types, such
-as air fryers, would not be checked ahead). A run is at most about 80 minutes (5 to work out the answers on one
-processor, 71 to read 1,100 comments), about 4,800 seconds a day, 144,000 a month: 144,000 vCPU-seconds and 216,000
-GiB-seconds, 60% and 48% of the free tier for instance-billed work (240,000 vCPU-seconds and 450,000 GiB-seconds a
-month; the site itself is billed by request, under its own free tier). So 0 EUR. If the first run's log says the memory
-limit was exceeded, 2 GiB (`--memory 2Gi`) is still inside the free tier: 288,000 GiB-seconds, 64%. The schedule is
+as air fryers, would not be checked ahead). A run is at most about 87 minutes (no read starts 75 minutes after the
+run started, working out the answers included; the last may wait up to 11 for Reddit's next 10 minutes; a minute to
+save), 5,220 seconds a day, 161,820 in a 31-day month: 161,820 vCPU-seconds and 242,730 GiB-seconds, 67% and 54% of the
+free tier for instance-billed work (240,000 vCPU-seconds and 450,000 GiB-seconds a month; the site itself is billed by
+request, under its own free tier). So 0 EUR. engine/tests/test_cloudrun.py does these sums from deploy.sh's own
+settings. If a run's log says the memory limit was exceeded, 2 GiB (`--memory 2Gi`) is still inside the free tier:
+323,640 GiB-seconds, 72%. The schedule is
 the second of Cloud Scheduler's 3 free jobs (the keep-warm ping is the first).
 
 On-demand reading (estimates, 14 Oct 2026; 0 EUR). The reading job is billed like the pre-check, per instance-second
@@ -241,8 +245,8 @@ for its whole run, waiting included, on 1 vCPU and 1 GiB. One product takes abou
 Arctic Shift at its 10 s pace (20 title searches and about 15 reads for a kitchen type with no title words of its own,
 fewer for most), about 5 for Gemini (about 9 calls for 6 threads read in parts of 40 comments, each paced 6 s apart),
 and half a minute to start. Its runs are capped at 50,000 s a month (about 70 products), so the worst month is 50,000
-vCPU-seconds and 50,000 GiB-seconds; with the pre-check's 144,000 and 216,000, 194,000 of the free 240,000
-vCPU-seconds (81%) and 266,000 of the free 450,000 GiB-seconds (59%). There are no empty runs: nothing is scheduled,
+vCPU-seconds and 50,000 GiB-seconds; with the pre-check's 161,820 and 242,730, 211,820 of the free 240,000
+vCPU-seconds (88%) and 292,730 of the free 450,000 GiB-seconds (65%). There are no empty runs: nothing is scheduled,
 the job runs only when a request waits. Cloud Scheduler: no new job (the site starts the reading job, and the keep-warm
 ping starts it again when a start failed), so still 2 of the 3 free jobs. Gemini: free tier only, at most 100 calls a
 day by the job (about 10 products), stopping at Gemini's own daily limit. Secret Manager: a third secret (gemini-key,

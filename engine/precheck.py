@@ -28,14 +28,15 @@ likeliest to be shown first. A comment in several answers or places is read once
 
 How it is read (check_ahead): through the live site's own checker (engine.live_check.checker_from_env: the same pace,
 the same 48-hour cache; but a read waits for Reddit's next 10 minutes however long that is, config.
-PRECHECK_MAX_WAIT_SECONDS, since nobody waits on it), one comment at a time, until the run's budget of reads (--limit,
-default config.PRECHECK_MAX_READS) is spent. On Google Cloud the checks are shared with the site through the bucket, as
+PRECHECK_MAX_WAIT_SECONDS, since nobody waits on it), one comment at a time, until the run's budget is spent: its reads
+(--limit, default config.PRECHECK_MAX_READS) or its time (--minutes from the run's start, default
+config.PRECHECK_MAX_RUN_MINUTES: no read starts after it, so the job's bill stays inside the free tier; 14 Oct 2026). On Google Cloud the checks are shared with the site through the bucket, as
 one object (engine.live_check.LiveChecker.load_bundle and save_bundle): read as a run starts, written midway and at the
 end. A comment read less than config.PRECHECK_FRESH_HOURS ago is skipped; an older one is read again, so the next
 day's answers never find its check expired. A run stops when Reddit stops answering (config.PRECHECK_STOP_AFTER_UNKNOWN
 unreadable pages in a row). The report gives counts and times only, never a comment's words.
 
-    python -m engine.precheck [--limit N] [--dry-run]
+    python -m engine.precheck [--limit N] [--minutes M] [--dry-run]
 
 --dry-run works out the comments and says how many would be read and how many are fresh, reading nothing on Reddit.
 On Google Cloud a Cloud Run job runs it once a day (deploy/cloudrun/DEPLOY.md).
@@ -53,13 +54,13 @@ import sys
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from engine import on_demand, pipeline
 from engine.answer import Answer, ShownQuote, quotes_to_check
-from engine.config import (PICKS_SHOWN, PRECHECK_FRESH_HOURS, PRECHECK_MAX_READS, PRECHECK_MAX_WAIT_SECONDS,
-                           PRECHECK_MODEL_TYPES, PRECHECK_STOP_AFTER_UNKNOWN)
+from engine.config import (PICKS_SHOWN, PRECHECK_FRESH_HOURS, PRECHECK_MAX_READS, PRECHECK_MAX_RUN_MINUTES,
+                           PRECHECK_MAX_WAIT_SECONDS, PRECHECK_MODEL_TYPES, PRECHECK_STOP_AFTER_UNKNOWN)
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.live_check import LiveResult, checker_from_env
 from engine.parse_reddit import REPO_ROOT
@@ -103,7 +104,8 @@ class Reading:
     unknown: int = 0  # the page couldn't be read
     fresh: int = 0  # skipped: read less than PRECHECK_FRESH_HOURS ago
     would_read: int = 0  # a dry run: what would have been read
-    not_reached: int = 0  # left for lack of reads in this run's budget
+    not_reached: int = 0  # left for lack of reads or time in this run's budget
+    out_of_time: float | None = None  # the run's minutes, when they ran out before its reads
     stopped: bool = False  # stopped early: Reddit stopped answering
     seconds: float = 0.0
 
@@ -279,15 +281,25 @@ def merged(candidates: list[Candidate]) -> list[Candidate]:
 
 def check_ahead(candidates: list[Candidate], checker, limit: int = PRECHECK_MAX_READS, dry_run: bool = False,
                 stop_after_unknown: int = PRECHECK_STOP_AFTER_UNKNOWN,
-                fresh: timedelta = timedelta(hours=PRECHECK_FRESH_HOURS), midway=None) -> Reading:
+                fresh: timedelta = timedelta(hours=PRECHECK_FRESH_HOURS), midway=None,
+                started: datetime | None = None, minutes: float | None = None) -> Reading:
     """Reads the candidates on Reddit in order through `checker` (engine.live_check.LiveChecker), skipping those read
-    within `fresh`, until `limit` reads are made. `dry_run`: nothing is read; counts what would be. `midway`: called
-    once when half the budget is read (the run saves its checks then too, so a run cut short still leaves them)."""
+    within `fresh`, until `limit` reads are made or, with `minutes`, until that long after `started` (the checker's
+    clock; by default now), when no more reads start. `dry_run`: nothing is read; counts what would be. `midway`:
+    called once when half the reads are made or half the time is spent, whichever comes first (the run saves its checks
+    then too, so a run cut short still leaves them)."""
     run = Reading()
-    started = time.perf_counter()
+    began = time.perf_counter()
+    now = getattr(checker, "now", None) or (lambda: datetime.now(UTC))
+    started = started or now()
+    until = halfway = None
+    if minutes is not None:
+        until, halfway = started + timedelta(minutes=minutes), started + timedelta(minutes=minutes / 2)
     unknown_in_a_row = 0
     for candidate in candidates:
-        if run.stopped or run.read + run.would_read >= limit:
+        if not run.stopped and run.out_of_time is None and until is not None and not dry_run and now() >= until:
+            run.out_of_time = minutes
+        if run.stopped or run.out_of_time is not None or run.read + run.would_read >= limit:
             run.not_reached += 1
             continue
         if checker.checked_at(candidate.url, max_age=fresh) is not None:
@@ -302,12 +314,13 @@ def check_ahead(candidates: list[Candidate], checker, limit: int = PRECHECK_MAX_
         unknown_in_a_row = unknown_in_a_row + 1 if status == "unknown" else 0
         if unknown_in_a_row >= stop_after_unknown:
             run.stopped = True
-        if midway is not None and run.read == max(limit // 2, 1):
+        if midway is not None and (run.read == max(limit // 2, 1) or halfway is not None and now() >= halfway):
             midway()
+            midway = None
         if run.read % PROGRESS_EVERY == 0:
-            print(f"  read {run.read:,} of up to {limit:,} ({(time.perf_counter() - started) / 60:.1f} min)",
+            print(f"  read {run.read:,} of up to {limit:,} ({(time.perf_counter() - began) / 60:.1f} min)",
                   file=sys.stderr, flush=True)
-    run.seconds = time.perf_counter() - started
+    run.seconds = time.perf_counter() - began
     return run
 
 
@@ -336,8 +349,9 @@ def report(candidates: list[Candidate], run: Reading, requests: int, answered: i
     if run.read:
         lines.append(f"Read on Reddit now: {run.read:,} ({run.passing:,} passing, {run.gone:,} gone, {run.changed:,} "
                      f"changed, {run.unknown:,} unreadable).")
+    budget = "budget" if run.out_of_time is None else f"{run.out_of_time:g} minutes"
     lines.append(f"Skipped, read within {PRECHECK_FRESH_HOURS} hours: {run.fresh:,}. Not reached within this run's "
-                 f"budget: {run.not_reached:,}.")
+                 f"{budget}: {run.not_reached:,}.")
     if run.stopped:
         lines.append(f"Stopped early: {PRECHECK_STOP_AFTER_UNKNOWN} pages in a row couldn't be read (Reddit is "
                      "refusing reads); the rest wait for the next run.")
@@ -350,33 +364,41 @@ def _duration(seconds: float) -> str:
     return f"{seconds:.0f} s" if seconds < 120 else f"{seconds / 60:.1f} min"
 
 
-def options(argv: list[str]) -> tuple[int, bool] | None:
-    """(--limit N, --dry-run) from the command line; None when anything else is given."""
-    limit, dry_run, rest = PRECHECK_MAX_READS, False, list(argv)
+def options(argv: list[str]) -> tuple[int, int, bool] | None:
+    """(--limit N, --minutes M, --dry-run) from the command line; None when anything else is given."""
+    limit, minutes, dry_run, rest = PRECHECK_MAX_READS, PRECHECK_MAX_RUN_MINUTES, False, list(argv)
     while rest:
         arg = rest.pop(0)
         if arg == "--dry-run":
             dry_run = True
         elif arg == "--limit" and rest and rest[0].isdigit():
             limit = int(rest.pop(0))
+        elif arg == "--minutes" and rest and rest[0].isdigit() and int(rest[0]) > 0:
+            minutes = int(rest.pop(0))
         else:
             return None
-    return limit, dry_run
+    return limit, minutes, dry_run
 
 
-def run(requests: list[str], limit: int, dry_run: bool, library_dir: Path, checker, profiles) -> int:
+def run(requests: list[str], limit: int, dry_run: bool, library_dir: Path, checker, profiles,
+        minutes: float | None = None) -> int:
     """Works out the comments, reads them, and prints the report. With a bucket (the daily job on Google Cloud), it
     starts from the bundle of checks the last run left (engine.live_check.LiveChecker.load_bundle), so what is still
-    fresh isn't read again, and leaves a new one, midway and at the end (save_bundle): one object, a few calls a run."""
+    fresh isn't read again, and leaves a new one, midway and at the end (save_bundle): one object, a few calls a run.
+    With `minutes`, no read starts that long after the run started."""
     started = time.perf_counter()
+    began = (getattr(checker, "now", None) or (lambda: datetime.now(UTC)))()
     bucket = getattr(checker, "bucket", None)
     loaded = checker.load_bundle() if bucket is not None else 0
     found = _work_out(requests, library_dir, checker, profiles)
     working = time.perf_counter() - started
     print(f"Worked out {len(found.candidates):,} comments from {len(requests)} requests in {_duration(working)}; "
-          f"{'counting' if dry_run else 'reading'} up to {limit:,}.", file=sys.stderr, flush=True)
+          f"{'counting' if dry_run else 'reading'} up to {limit:,}"
+          f"{'' if minutes is None or dry_run else f' within {minutes:g} minutes of the start'}.", file=sys.stderr,
+          flush=True)
     save = None if bucket is None or dry_run else checker.save_bundle
-    reading = check_ahead(found.candidates, checker, limit=limit, dry_run=dry_run, midway=save)
+    reading = check_ahead(found.candidates, checker, limit=limit, dry_run=dry_run, midway=save, started=began,
+                          minutes=minutes)
     print(report(found.candidates, reading, len(requests), found.answered, working, reading.seconds, found.failed))
     if bucket is not None:
         saved = None if save is None else save()
@@ -394,14 +416,14 @@ def main(argv: list[str]) -> int:
     if parsed is None:
         print(__doc__)
         return 2
-    limit, dry_run = parsed
+    limit, minutes, dry_run = parsed
     requests = requests_to_check()
     # The products read on demand (14 Oct 2026; engine/on_demand.py): their threads into the library folder first, then
     # their answers checked ahead like the others, after them.
     read_on_demand = on_demand.precheck_types(os.environ, DEFAULT_LIBRARY_DIR)
     requests += [t for t in dict.fromkeys(read_on_demand) if t not in requests]
     return run(requests, limit, dry_run, DEFAULT_LIBRARY_DIR, checker_from_env(max_wait=PRECHECK_MAX_WAIT_SECONDS),
-               pipeline.cached_profiles())
+               pipeline.cached_profiles(), minutes=minutes)
 
 
 if __name__ == "__main__":

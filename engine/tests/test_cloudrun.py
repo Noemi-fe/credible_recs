@@ -101,17 +101,53 @@ def test_the_site_and_the_pre_check_share_the_bucket_and_the_image():
     assert "--args=-m,engine.precheck,--limit,${PRECHECK_LIMIT}" in job and "--max-retries 0" in job
 
 
-def test_the_pre_checks_reads_fit_in_its_time_and_reddits_pace():
+def _precheck_settings(script: str) -> tuple[int, int]:
+    """The pre-check's reads and minutes a run, as deploy.sh gives them to the job."""
     import re
 
-    from engine.config import LIVE_CHECK_BURST, LIVE_CHECK_REFILL_SECONDS, PRECHECK_MAX_READS
+    limit = int(re.search(r'PRECHECK_LIMIT="\$\{CREDIBLE_RECS_PRECHECK_LIMIT:-(\d+)\}"', script).group(1))
+    minutes = int(re.search(r'PRECHECK_MINUTES="\$\{CREDIBLE_RECS_PRECHECK_MINUTES:-(\d+)\}"', script).group(1))
+    assert "--limit,${PRECHECK_LIMIT},--minutes,${PRECHECK_MINUTES}" in _command(script, '$GCLOUD run jobs deploy')
+    return limit, minutes
+
+
+def test_the_pre_checks_run_fits_in_its_time():
+    # 14 Oct 2026: a run starts no read after its minutes (counted from its start, working out the answers included),
+    # and the last one may wait for Reddit's next 10 minutes; ten minutes more for starting and the bundle's last save.
+    import re
+
+    from engine.config import PRECHECK_MAX_READS, PRECHECK_MAX_RUN_MINUTES, PRECHECK_MAX_WAIT_SECONDS
 
     script = DEPLOY_SH.read_text(encoding="utf-8")
-    limit = int(re.search(r'PRECHECK_LIMIT="\$\{CREDIBLE_RECS_PRECHECK_LIMIT:-(\d+)\}"', script).group(1))
+    limit, minutes = _precheck_settings(script)
     hours = int(re.search(r"--task-timeout (\d+)h", _command(script, '$GCLOUD run jobs deploy')).group(1))
-    assert limit == PRECHECK_MAX_READS
-    reading = (limit - LIVE_CHECK_BURST) * LIVE_CHECK_REFILL_SECONDS  # seconds, at the live check's pace
-    assert reading + 30 * 60 < hours * 3600  # and half an hour to work out the answers on one processor
+    assert (limit, minutes) == (PRECHECK_MAX_READS, PRECHECK_MAX_RUN_MINUTES)
+    assert minutes * 60 + PRECHECK_MAX_WAIT_SECONDS + 10 * 60 < hours * 3600
+
+
+def test_the_jobs_stay_inside_cloud_runs_free_tier_in_the_longest_month():
+    # Free tiers only. Cloud Run jobs are billed per instance-second for their whole run, waiting included: 240,000
+    # vCPU-seconds and 450,000 GiB-seconds a month are free. The pre-check runs daily for at most its minutes plus the
+    # last read's wait and a minute to save; on-demand reading for at most ON_DEMAND_MONTH_SECONDS a month. 10% is kept
+    # in hand.
+    import re
+
+    from engine.config import ON_DEMAND_MONTH_SECONDS, PRECHECK_MAX_WAIT_SECONDS
+
+    script = DEPLOY_SH.read_text(encoding="utf-8")
+    _, minutes = _precheck_settings(script)
+    precheck = _command(script, '$GCLOUD run jobs deploy')
+    reader = _command(ON_DEMAND_SH.read_text(encoding="utf-8"), '$GCLOUD run jobs deploy')
+
+    def size(job: str) -> tuple[float, float]:  # vCPUs and GiB
+        memory = re.search(r"--memory (\d+)(Mi|Gi)", job)
+        return float(re.search(r"--cpu (\d+)", job).group(1)), int(memory.group(1)) / (1024 if memory.group(2) ==
+                                                                                           "Mi" else 1)
+
+    precheck_seconds = 31 * (minutes * 60 + PRECHECK_MAX_WAIT_SECONDS + 60)
+    (cpu, gib), (reader_cpu, reader_gib) = size(precheck), size(reader)
+    assert precheck_seconds * cpu + ON_DEMAND_MONTH_SECONDS * reader_cpu <= 0.9 * 240_000
+    assert precheck_seconds * gib + ON_DEMAND_MONTH_SECONDS * reader_gib <= 0.9 * 450_000
 
 
 def test_the_pre_check_runs_once_a_day_at_night_uk_time():

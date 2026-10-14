@@ -20,7 +20,8 @@ SERVICE="${CREDIBLE_RECS_GCP_SERVICE:-credible-recs}"
 JOB="${CREDIBLE_RECS_GCP_JOB:-credible-recs-precheck}"
 SCHEDULE="${JOB}-daily"
 BUCKET="${CREDIBLE_RECS_LIVE_CACHE_BUCKET:-credible-picks-live-checks}"
-PRECHECK_LIMIT="${CREDIBLE_RECS_PRECHECK_LIMIT:-1100}"
+PRECHECK_LIMIT="${CREDIBLE_RECS_PRECHECK_LIMIT:-2000}"
+PRECHECK_MINUTES="${CREDIBLE_RECS_PRECHECK_MINUTES:-75}"
 GCLOUD="${GCLOUD:-gcloud}"
 
 NUMBER="$($GCLOUD projects describe "$PROJECT" --format='value(projectNumber)')"
@@ -78,13 +79,14 @@ $GCLOUD run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --source "
     --set-secrets "HF_TOKEN=hf-token:latest" --quiet
 rm -rf "$(dirname "$BUNDLE")"
 
-# 4. The pre-check: a Cloud Run job on the image just deployed, reading at most PRECHECK_LIMIT comments a run (at the
-#    live check's pace, about 71 minutes for 1,100), never retried the same day. Billed for its whole run, sleeping
+# 4. The pre-check: a Cloud Run job on the image just deployed, reading at most PRECHECK_LIMIT comments a run and
+#    starting none PRECHECK_MINUTES after it started (about 1,700 reads at Reddit's pace, 14 Oct 2026), never retried
+#    the same day. Billed for its whole run, sleeping
 #    included, so it gets the least that works: 1 vCPU (a job's minimum) and 1.5 GiB (it peaked at 1.3 GB with the
 #    open model loaded, 13 Oct 2026; 0.2 GB without it).
 IMAGE="$($GCLOUD run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(spec.template.spec.containers[0].image)')"
 $GCLOUD run jobs deploy "$JOB" --project "$PROJECT" --region "$REGION" --image "$IMAGE" \
-    --command python --args=-m,engine.precheck,--limit,${PRECHECK_LIMIT} \
+    --command python --args=-m,engine.precheck,--limit,${PRECHECK_LIMIT},--minutes,${PRECHECK_MINUTES} \
     --tasks 1 --max-retries 0 --task-timeout 2h --memory 1536Mi --cpu 1 \
     --set-env-vars "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}${ON_DEMAND_PRECHECK_VARS}" --quiet
 $GCLOUD run jobs add-iam-policy-binding "$JOB" --project "$PROJECT" --region "$REGION" \
