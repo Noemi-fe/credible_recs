@@ -16,7 +16,10 @@ Built so far:
   eval/edge_cases/retrieval.json, re-ranking the saved candidate pool (no credits);
 - active ingredients (13 Oct 2026): the requests of eval/edge_cases/ingredients.json through the pipeline: module 1's
   routing as expected, what each answer shows with its forms, and whether every shown product has evidence it
-  contains the ingredient asked for (engine/ingredient_eval.py).
+  contains the ingredient asked for (engine/ingredient_eval.py);
+- needs (14 Oct 2026): the requests of eval/edge_cases/needs.json through the pipeline: how many of each answer's
+  first-reading threads are about the request's need, by title and by title or post, and the picks
+  (engine/need_eval.py).
 Still to come: the blind test's preference per rival (engine/blind_test.py tally, week 3).
 
 The numbers (10 Oct 2026): each section's scores are kept (engine.metrics.EvalResults) as the report prints them, and
@@ -50,6 +53,7 @@ from engine.metrics import (
     write_metrics,
 )
 from engine.ingredient_eval import ingredient_section
+from engine.need_eval import need_section
 from engine.slice_eval import slice_section
 from engine.query import parse_query
 from engine.query_eval import QueryCaseError, load_query_cases, report_lines, score_cases, summarize
@@ -105,6 +109,9 @@ def main() -> int:
 
     print()
     print(ingredient_section())
+
+    print()
+    print(need_section())
 
     print()
     print("\n".join(_metrics_lines(results, date.today())))

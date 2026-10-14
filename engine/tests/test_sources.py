@@ -1101,3 +1101,176 @@ def test_a_word_inside_another_products_name_doesnt_name_the_product():
     assert not mentions_product("Holy grail dry shampoo?", "shampoo")
     assert mentions_product("Dry shampoo vs regular shampoo for oily hair", "shampoo")
     assert mentions_product("Holy grail dry shampoo?", "dry shampoo")
+
+
+# --- The library's first reading is need-led (14 Oct 2026, Noemi's decision 3 of 14 Oct) ---
+# From her and a friend's tests of the live site: "shampoo for greasy hair" came back with generic and anti-dandruff
+# shampoos, and "dandruff shampoo that actually works" with clarifying shampoos from big curly-hair threads. The graded
+# order (post_score) gives a big thread up to 3 points for its size and a question mark half a point, and a need word in
+# the title 1.5, so big general threads filled the first reading, gave 3 picks, and the need-led wider reading never
+# ran. Now, for a request with needs (engine.needs.request_needs), the threads whose title or post talks about them
+# (in any of the need's words: "greasy" is "oily") come first, most needs first, then the rest, each in the graded
+# order. A thread whose title names another product type and not the one asked for doesn't count ("SPF for oily
+# skin?" is about sunscreen, even when its post names a moisturiser). A request without needs reads as before.
+
+def hair_thread(thread_id: str, title: str, body: str = "", num_comments: int = 40, community="HaircareScience") -> dict:
+    return make_thread(id=thread_id, community=community, category="haircare", title=title, body=body,
+                       url=f"https://www.reddit.com/r/{community}/comments/{thread_id}/post/", num_comments=num_comments,
+                       comments=[make_comment(f"{thread_id}c1", thread_id=thread_id, body="A shampoo I like.")])
+
+
+def skin_thread(thread_id: str, title: str, body: str = "", num_comments: int = 40) -> dict:
+    return make_thread(id=thread_id, category="skincare", title=title, body=body, num_comments=num_comments,
+                       url=f"https://www.reddit.com/r/SkincareAddiction/comments/{thread_id}/post/",
+                       comments=[make_comment(f"{thread_id}c1", thread_id=thread_id, body="A cream I like.")])
+
+
+GREASY_LIBRARY = [
+    hair_thread("1big001", "What's your holy grail shampoo?", num_comments=900),
+    hair_thread("1big002", "Best shampoo you have ever used?", num_comments=600),
+    hair_thread("1oily01", "Shampoo for an oily scalp", num_comments=12),
+    hair_thread("1post01", "Shampoo help please", body="My roots look greasy a day after washing.", num_comments=20),
+    hair_thread("1dry001", "Conditioner for oily roots and dry ends?", body="Which shampoo goes with it?",
+                num_comments=30),
+]
+
+
+def test_threads_about_the_requests_need_come_first_in_any_of_its_words(tmp_path):
+    source = local_source(tmp_path, GREASY_LIBRARY)
+    found = source.find_threads(parse_query("shampoo for greasy hair"), limit=10)
+    # "oily" and "greasy" name one need; the conditioner thread's title names another type, not a shampoo.
+    assert ids(found)[:2] == ["1post01", "1oily01"]
+    assert set(ids(found)[2:]) == {"1big001", "1big002", "1dry001"}
+
+
+def test_without_needs_the_graded_order_is_kept(tmp_path):
+    source = local_source(tmp_path, GREASY_LIBRARY)
+    found = source.find_threads(parse_query("shampoo"), limit=10)
+    from engine.query import parse_query as parse
+    from engine.sources import _thread_as_post, post_score
+
+    query = parse("shampoo")
+    graded = sorted(found, key=lambda t: post_score(query, _thread_as_post(t)), reverse=True)
+    assert ids(found) == ids(graded)
+
+
+def test_threads_about_more_of_the_needs_come_first(tmp_path):
+    source = local_source(tmp_path, [
+        hair_thread("1wavy01", "Shampoo for wavy hair?", num_comments=80, community="wavyhair"),
+        hair_thread("1both01", "Gentle shampoo for my 2b waves", num_comments=15, community="wavyhair"),
+        hair_thread("1gent01", "Gentle shampoo recs", num_comments=60),
+        hair_thread("1none01", "Shampoo haul", num_comments=300),
+    ])
+    found = source.find_threads(parse_query("gentle shampoo for wavy hair"), limit=10)
+    assert ids(found)[0] == "1both01"
+    assert set(ids(found)[1:3]) == {"1wavy01", "1gent01"} and ids(found)[3] == "1none01"
+
+
+def test_a_thread_titled_as_another_type_isnt_about_the_need_for_this_one(tmp_path):
+    source = local_source(tmp_path, [
+        skin_thread("1spf001", "SPF for oily skin?", body="I use a light moisturiser under it.", num_comments=90),
+        skin_thread("1moi001", "Moisturiser for oily skin", num_comments=10),
+        skin_thread("1moi002", "Best moisturiser ever?", num_comments=500),
+    ])
+    found = source.find_threads(parse_query("moisturiser for oily skin"), limit=10)
+    assert ids(found)[0] == "1moi001"
+    assert set(ids(found)[1:]) == {"1spf001", "1moi002"}
+
+
+def test_the_need_led_order_is_what_the_pipeline_reads_first(tmp_path):
+    # The first reading takes the first threads of this order: the pipeline reads LocalSource's order (engine.pipeline).
+    source = local_source(tmp_path, GREASY_LIBRARY)
+    assert ids(source.find_threads(parse_query("dandruff shampoo that actually works"), limit=10)) == ids(
+        source.find_threads(parse_query("shampoo"), limit=10))  # no thread here is about dandruff
+    dandruff = local_source(tmp_path / "d", GREASY_LIBRARY + [hair_thread("1flak01", "Flaky scalp, what shampoo?")])
+    assert ids(dandruff.find_threads(parse_query("dandruff shampoo that actually works"), limit=2))[0] == "1flak01"
+
+
+def test_an_ingredient_led_request_keeps_reading_the_threads_about_its_ingredient_first(tmp_path):
+    # Measured on the library, 14 Oct 2026: "salicylic acid for acne" names a need (acne), and need-led threads first
+    # put acne cleanser threads (a rinse-off form its answer can't show) ahead of the threads whose comments talk about
+    # salicylic acid most, and its one pick was lost. An ingredient-led request reads the threads about its ingredient
+    # first, as decided on 13 Oct 2026 (talk_points): the ingredient is what it asks for.
+    def thread(thread_id: str, title: str, talking: int, num_comments: int) -> dict:
+        comments = [make_comment(f"{thread_id}c{i}", thread_id=thread_id, body="Salicylic acid cleared my skin.")
+                    for i in range(talking)]
+        return make_thread(id=thread_id, category="skincare", title=title, num_comments=num_comments,
+                           url=f"https://www.reddit.com/r/SkincareAddiction/comments/{thread_id}/post/",
+                           comments=comments)
+
+    source = local_source(tmp_path, [thread("1acne01", "Cleanser for acne?", 5, 20),
+                                     thread("1sali01", "Salicylic acid recommendations?", 6, 40)])
+    query = parse_query("salicylic acid for acne")
+    assert query.ingredient_led and query.constraints.skin_types == ["acne-prone"]
+    assert ids(source.find_threads(query, limit=10))[0] == "1sali01"
+
+
+# --- Relevance and talking read a thread's comments in one go (latency, 13 Oct 2026) ---
+
+import random  # noqa: E402
+
+from engine.query import PRODUCT_TYPES  # noqa: E402
+from engine.sources import mentions_product, talking  # noqa: E402
+
+
+def relevance_one_by_one(thread: Thread, product_type: str) -> float:
+    """relevance as first written, every comment read on its own: the reference."""
+    score = 3 if mentions_product(thread.title, product_type) else 0
+    score += 1 if mentions_product(thread.body, product_type) else 0
+    talking = sum(mentions_product(c.body, product_type) for c in thread.comments)
+    return score + min(1, talking / 5)
+
+
+def test_relevance_and_talking_are_the_same_reading_the_comments_together():
+    # Comments that name products whole, with a slip, inside a longer name of something else ("tea pot", "dry
+    # shampoo"), split across two comments ("air" ending one, "fryer" starting the next), or not at all.
+    rng = random.Random(13)
+    bits = ["kettle", "kettles", "a tea pot", "teapot", "pot", "saucepan", "suncreen", "sunscreen", "moisturiser",
+            "moisturizr", "dry shampoo", "shampoo", "conditioner", "leave-in conditioner", "air", "fryer", "air fryer",
+            "salicylic acid", "bha", "chef's knife", "paring knife", "cast iron", "skillet", "nothing here", "great",
+            "I love it.", "\n", "rice cooker", "cleanser", "gleanser", "exfoliant", "toner", "serum", "dutch oven",
+            "KETTLE", "Sunscreens", "SUNCREENS", "\u017funscreen", "\u0130", "caf\u00e9", "tea-pot", "pot,", "(kettle)",
+            "frying pans", "pans", "sauce pans", "tea pots", "pots", "crock pot", "dry shampoos", "eye creams", "creams",
+            "Tea Kettles", "electric tea kettles", "\u212aettle"]
+    for n in range(60):
+        comments = [make_comment(f"c{n}x{i}", thread_id=f"1fake{n}",
+                                 body="so " + " ".join(rng.choice(bits) for _ in range(rng.randint(1, 6))))
+                    for i in range(rng.randint(0, 9))]
+        thread = Thread.model_validate(make_thread(id=f"1fake{n}", title=rng.choice(["Help", "Best kettle?"]),
+                                                   comments=comments, num_comments=len(comments)))
+        for product_type in [p.name for p in PRODUCT_TYPES] + ["air fryer", "salicylic acid product"]:
+            assert relevance(thread, product_type) == relevance_one_by_one(thread, product_type), (n, product_type)
+            assert type(relevance(thread, product_type)) is type(relevance_one_by_one(thread, product_type))
+            assert talking(thread, product_type) == sum(mentions_product(c.body, product_type) for c in thread.comments)
+
+
+# --- A request's word in a text, found without trying every word in turn (latency, 13 Oct 2026) ---
+
+import re  # noqa: E402
+
+from engine.sources import _stem, _title_has  # noqa: E402
+
+
+def title_has_word_by_word(lowered_title: str, word: str) -> bool:
+    """_title_has as first written, every candidate tried in turn: the reference."""
+    written = re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", lowered_title)
+    tokens = [re.sub(r"['-]", "", t) for t in written]
+    candidates = tokens + [a + b for a, b in zip(tokens, tokens[1:])]
+    candidates += [re.sub(r"['-]", "", re.sub(r"^anti-(?=[a-z])|(?<=[a-z])-free$", "", t)) for t in written
+                   if t.startswith("anti-") or t.endswith("-free")]
+    return any(t == word or _stem(t) == word or (len(word) >= 4 and t.startswith(word)) for t in candidates)
+
+
+def test_a_word_in_a_text_is_found_as_trying_every_word_found_it():
+    rng = random.Random(13)
+    bits = ["pour", "over", "pour-over", "pourover", "anti-dandruff", "dandruff", "sulfate-free", "sulfates", "free",
+            "lasts", "last", "lasting", "pfas", "pfas-free", "non-stick", "nonstick", "it's", "dont", "don't", "scalp",
+            "oily", "oil", "a", "an", "10", "years", "year", "anti-", "-free", "x-y-z", "co-wash", "ss", "class",
+            "classes", "dry", "drys", "sensitiv", ",", ".", "\n", "anti-a", "b-free"]
+    words = ["pourover", "dandruff", "sulfate", "last", "pfas", "nonstick", "scalp", "oily", "oil", "dry", "a", "10",
+             "year", "clas", "class", "free", "anti", "cowash", "dont", "its", "xyz", "sensitiv", "b", "s", "", "pour over",
+             "don't", "x-y"]
+    for _ in range(4000):
+        text = " ".join(rng.choice(bits) for _ in range(rng.randint(0, 12)))
+        word = rng.choice(words)
+        assert _title_has(text, word) == title_has_word_by_word(text, word), (text, word)

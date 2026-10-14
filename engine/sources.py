@@ -16,13 +16,16 @@ saves them.
 
 Candidate threads are ranked so buying advice beats popularity (rank_posts). For the library, ParseSource can also
 pick a mix of thread kinds (Noemi, 7 Oct 2026): advice threads give the picks, long-term-use threads the strongest
-evidence, warning threads the "skip these" list and the downsides (thread_kind, choose_mix).
+evidence, warning threads the "skip these" list and the downsides (thread_kind, choose_mix). The saved library is read
+need-led (14 Oct 2026): for a request with needs, the threads about them come first (LocalSource).
 """
 
 import json
 import math
 import re
-from datetime import UTC, datetime
+from bisect import bisect_right
+from collections import deque
+from datetime import UTC, date, datetime
 from functools import cache
 from pathlib import Path
 from typing import Protocol, runtime_checkable
@@ -32,10 +35,12 @@ from engine.bright_data import DISCOVER_POSTS_EACH, BrightDataError
 from engine.config import (
     ARCHIVE_DOWN_MINUTES,
     ARCHIVE_MAX_SEARCHES,
+    ARCHIVE_NEED_WORDS,
     ARCHIVE_OLDER_YEARS,
     ARCHIVE_OLDEST_FACTOR,
     ARCHIVE_POSTS_EACH,
     ARCHIVE_SEARCH_MAX_FAILURES,
+    ARCHIVE_SPLIT_DEPTH,
     BRIGHT_DATA_ADD_RECORD_RESERVE,
     BRIGHT_DATA_ADD_SEARCHES,
     BRIGHT_DATA_ADD_WARNING_SEARCHES,
@@ -49,8 +54,9 @@ from engine.config import (
     SKINCARE_RECENT_YEARS,
 )
 from engine.gold import load_threads
-from engine.ingredients import ingredient_type_name, ingredients_of_type, talk_words
-from engine.models import Thread
+from engine.ingredients import ingredient_type_name, ingredients_of_type, talk_words, wanted_types
+from engine.memo import Table
+from engine.models import Comment, Thread
 from engine.parse_reddit import ParseRedditClient
 from engine.query import LOOKALIKES, PRODUCT_TYPES, TITLE_WORDS, ParsedQuery
 from engine.text import one_edit_apart
@@ -96,10 +102,31 @@ def _product_pattern(product_type: str) -> re.Pattern:
 def _covering_pattern(product_type: str) -> re.Pattern:
     """Longer names that hold one of this product's words but name something else: the other product types' names and
     module 1's look-alike phrases ("tea pot" and "crock pot" hold "pot"; "dry shampoo" holds "shampoo")."""
-    name = product_type.strip().lower()
-    phrases = {k for p in PRODUCT_TYPES if p.name != name for k in p.keywords} | set(LOOKALIKES)
-    alternatives = "|".join(re.escape(x) for x in sorted(phrases, key=len, reverse=True))
+    alternatives = "|".join(re.escape(x) for x in sorted(_covering_phrases(product_type), key=len, reverse=True))
     return re.compile(rf"\b(?:{alternatives})s?\b", re.IGNORECASE)
+
+
+def _covering_phrases(product_type: str) -> set[str]:
+    name = product_type.strip().lower()
+    return {k for p in PRODUCT_TYPES if p.name != name for k in p.keywords} | set(LOOKALIKES)
+
+
+@cache
+def _never_covered(product_type: str) -> frozenset[str]:
+    """The ways a match of the product's names can read, in lowercase (a name, with or without its plural "s"), that no
+    longer name of something else holds (_covering_phrases, with or without their own "s"): a match reading so is
+    never inside one, so they needn't be looked for (latency, 13 Oct 2026: looking for them in every comment naming
+    the product was most of reading a thread). Empty for a product found by other patterns than its names' words (an
+    ingredient's, or a type the open model named)."""
+    if talk_words(product_type.strip()):
+        return frozenset()
+    known = {p.name: p.keywords + p.hints for p in PRODUCT_TYPES}
+    words = known.get(product_type.strip().lower())
+    if not words:
+        return frozenset()
+    longer = [text for phrase in _covering_phrases(product_type) for text in (phrase.lower(), phrase.lower() + "s")]
+    return frozenset(form for word in words for form in (word.lower(), word.lower() + "s")
+                     if not any(form in text for text in longer))
 
 
 def mentions_product(text: str, product_type: str, leave_aside: str = "") -> bool:
@@ -112,19 +139,57 @@ def mentions_product(text: str, product_type: str, leave_aside: str = "") -> boo
     `leave_aside`: one word that doesn't name the product on its own here, in any of its forms (singular, plural or a
     slip: "knife", "knives"): the last word of another type the text is said to be about, so "knife" in a comment
     about a paring knife doesn't name a chef's knife (13 Oct 2026). Longer names that hold it still count ("chef's
-    knife")."""
+    knife").
+
+    It depends on these three alone, so for a short text (a product's name, a type, a title) each answer is worked out
+    once and remembered (latency, 13 Oct 2026: an answer asks it of the same names thousands of times)."""
+    if len(text) > REMEMBERED_TEXT_LENGTH:
+        return _mentions_product(text, product_type, leave_aside)
+    key = (text, product_type, leave_aside)
+    found = _MENTIONS.get(key)
+    if found is None:
+        found = _MENTIONS.keep(key, _mentions_product(text, product_type, leave_aside))
+    return found
+
+
+# Texts at most this long have mentions_product's answers remembered: names, types, titles, a name with its quote.
+REMEMBERED_TEXT_LENGTH = 400
+_MENTIONS = Table()  # (text, product type, word left aside) -> mentions_product's answer
+
+
+def _mentions_product(text: str, product_type: str, leave_aside: str) -> bool:
     covers = None
+    never_covered = _never_covered(product_type)
     for match in _product_pattern(product_type).finditer(text):
         if leave_aside and _same_word_as(match.group(0), leave_aside):
             continue
+        if match.group(0).lower() in never_covered:
+            return True
         if covers is None:
             covers = [(c.start(), c.end()) for c in _covering_pattern(product_type).finditer(text)]
         if not any(s <= match.start() and match.end() <= e and e - s > match.end() - match.start() for s, e in covers):
             return True
-    long_names = [w for w in _product_words(product_type) if " " not in w and len(w) >= TYPO_MIN_LENGTH]
-    tokens = {t.removesuffix("s") for t in re.findall(r"[a-z]+", text.lower()) if len(t) >= TYPO_MIN_LENGTH - 1}
+    long_names = _long_names(product_type)
+    if not long_names:  # no name long enough to forgive a slip in: nothing more to look for (latency, 13 Oct 2026)
+        return False
+    # Only the words long enough to be a slip of one (the regular expression finds those alone, 13 Oct 2026; finding
+    # every word and keeping the long ones was most of reading a thread for retrieval).
+    tokens = {t.removesuffix("s") for t in _LONG_WORD.findall(text.lower())}
     tokens = {t for t in tokens if not (leave_aside and _same_word_as(t, leave_aside))}
-    return any(one_edit_apart(t, w) for t in tokens for w in long_names)
+    lengths = _slip_lengths(product_type)
+    return any(one_edit_apart(t, w) for t in tokens if len(t) in lengths for w in long_names)
+
+
+@cache
+def _long_names(product_type: str) -> tuple[str, ...]:
+    """The product's one-word names long enough that a slip in them is forgiven (mentions_product)."""
+    return tuple(w for w in _product_words(product_type) if " " not in w and len(w) >= TYPO_MIN_LENGTH)
+
+
+@cache
+def _slip_lengths(product_type: str) -> frozenset[int]:
+    """The lengths a word one letter added, dropped or changed from one of the product's long names has."""
+    return frozenset(len(w) + d for w in _long_names(product_type) for d in (-1, 0, 1))
 
 
 def _singular(word: str) -> str:
@@ -146,10 +211,14 @@ def _same_word_as(found: str, word: str) -> bool:
 
 # Typos are only forgiven in names this long: shorter ones have real neighbours ("cleaner" is one letter from "cleanser").
 TYPO_MIN_LENGTH = 9
+# A run of letters long enough to be a slip of such a name (a plural "s" left out after): the words mentions_product reads.
+_LONG_WORD = re.compile(f"[a-z]{{{TYPO_MIN_LENGTH - 1},}}")
 
 
+@cache
 def _product_words(product_type: str) -> tuple[str, ...]:
-    """The names a product is known by: module 1's keywords and hints, or its own whole name."""
+    """The names a product is known by: module 1's keywords and hints, or its own whole name. Worked out once per type
+    (latency, 13 Oct 2026)."""
     known = {p.name: p.keywords + p.hints for p in PRODUCT_TYPES}
     return known.get(product_type, (product_type.lower(),))
 
@@ -160,8 +229,83 @@ def relevance(thread: Thread, product_type: str) -> float:
     """3 points if the title names the product, 1 if the post body does, plus up to 1 for comments that do (full at 5)."""
     score = 3 if mentions_product(thread.title, product_type) else 0
     score += 1 if mentions_product(thread.body, product_type) else 0
-    talking = sum(mentions_product(c.body, product_type) for c in thread.comments)
+    talking = comments_naming(thread.comments, product_type)
     return score + min(1, talking / 5)
+
+
+def comments_naming(comments: list[Comment], product_type: str) -> int:
+    """How many of the comments name the product, as mentions_product reads each one.
+
+    Read in one go (latency, 13 Oct 2026: reading every comment of every thread on its own, once per product type, was
+    most of getting ready): their texts joined by a character no product's name pattern, look-alike phrase or slip can
+    match or run across (COMMENTS_APART), so each match of the joined text is a match of one comment, as finding it in
+    that comment alone would find it, and so is each longer name holding it and each long word (a slip). A comment
+    names the product when one of its matches isn't inside a longer name of something else, or one of its long words
+    is a slip of the product's long name."""
+    bodies = [c.body for c in comments]
+    if not bodies:
+        return 0
+    joined = COMMENTS_APART.join(bodies)
+    starts = _starts(bodies)
+    naming: set[int] = set()
+    covers: dict[int, list[tuple[int, int]]] = {}  # a comment -> the longer names in it, where they are in `joined`
+    never_covered = _never_covered(product_type)
+    for match in _product_pattern(product_type).finditer(joined):
+        at = bisect_right(starts, match.start()) - 1
+        if at in naming:
+            continue
+        if match.group(0).lower() in never_covered:
+            naming.add(at)
+            continue
+        if at not in covers:  # read in that comment alone, as mentions_product reads it
+            covers[at] = [(starts[at] + c.start(), starts[at] + c.end())
+                          for c in _covering_pattern(product_type).finditer(bodies[at])]
+        if not any(s <= match.start() and match.end() <= e and e - s > match.end() - match.start()
+                   for s, e in covers[at]):
+            naming.add(at)
+    long_names = _long_names(product_type)
+    if long_names and len(naming) < len(bodies):
+        lowered = [body.lower() for body in bodies]
+        low_starts = _starts(lowered)
+        slips: dict[str, bool] = {}  # each long word, once: whether it is a slip of a long name
+        for word in _LONG_WORD.finditer(COMMENTS_APART.join(lowered)):
+            token = word.group().removesuffix("s")
+            if token not in slips:
+                slips[token] = _a_slip_of(token, product_type)
+            if slips[token]:
+                naming.add(bisect_right(low_starts, word.start()) - 1)
+    return len(naming)
+
+
+def _a_slip_of(word: str, product_type: str) -> bool:
+    """Whether a word is one letter added, dropped or changed from one of the product's long names. A long name is at
+    least TYPO_MIN_LENGTH letters, so such a word keeps either its first 4 letters or its last 4: a quick look first."""
+    if len(word) not in _slip_lengths(product_type):
+        return False
+    starts, ends = _slip_ends(product_type)
+    return (word[:4] in starts or word[-4:] in ends) and any(one_edit_apart(word, name)
+                                                             for name in _long_names(product_type))
+
+
+@cache
+def _slip_ends(product_type: str) -> tuple[frozenset[str], frozenset[str]]:
+    """The first 4 and last 4 letters of the product's long names (_a_slip_of)."""
+    names = _long_names(product_type)
+    return frozenset(name[:4] for name in names), frozenset(name[-4:] for name in names)
+
+
+def _starts(texts: list[str]) -> list[int]:
+    """Where each text starts once they are joined by COMMENTS_APART."""
+    starts, at = [], 0
+    for text in texts:
+        starts.append(at)
+        at += len(text) + len(COMMENTS_APART)
+    return starts
+
+
+# What comments_naming joins comments with: a character no product's name pattern, look-alike phrase or slip can match
+# or run across (they read letters, digits, spaces and hyphens), so each comment's text is read as it is.
+COMMENTS_APART = "\x00"
 
 
 # --- Threads saved on this machine ---
@@ -179,8 +323,14 @@ class LocalSource:
     with the full list of problems (engine.gold.GoldSetError), rather than quietly leaving the thread out.
     `threads`: the folder's threads already read (the library kept in memory between answers, engine.library_cache;
     12 Oct 2026), so the folder isn't read again. `remembered`: where to keep what retrieval works out from them that
-    doesn't depend on the request (each thread's readable copy, and how much it is about each product), given with the
-    kept library so the next answer finds it done; by default, kept by this source alone.
+    doesn't depend on the request (each thread's readable copy, how much it is about each product, and whether its title
+    names another type), given with the kept library so the next answer finds it done; by default, kept by this source
+    alone.
+
+    The threads come in module 2's graded order, need-led since 14 Oct 2026 (Noemi's decision 3 of 14 Oct): for a
+    request with needs, the threads whose title or post talks about them come first, most needs first (_need_led), so an
+    answer's first reading (the pipeline's first PIPELINE_MAX_THREADS) is about what was asked, not about the biggest
+    general threads.
     """
 
     def __init__(self, folder: Path, skip_broken: bool = False, threads: list[Thread] | None = None,
@@ -211,8 +361,32 @@ class LocalSource:
                 if graded is not None:
                     graded += talk_points(self._talking(t, about)) if about else 0.0
                     scored.append(((graded, points, t.num_comments), t))
-        best = sorted(scored, key=lambda pair: pair[0], reverse=True)
-        return [t for _, t in best[:limit]]
+        best = [t for _, t in sorted(scored, key=lambda pair: pair[0], reverse=True)]
+        return self._need_led(best, query)[:limit]
+
+    def _need_led(self, threads: list[Thread], query: ParsedQuery) -> list[Thread]:
+        """The threads with those about the request's needs first, most needs first, each part in the order given
+        (14 Oct 2026, Noemi's decision 3: need-led thread choice). A thread is about a need when its title or post talks
+        about it in any of the need's words (engine.needs.thread_needs: "greasy" is "oily"), unless its title names
+        another type of product and not the one asked for. A request without needs keeps the order given: the graded
+        one, where a big general thread had outweighed a smaller one asking the request's exact question. So does an
+        ingredient-led request ("salicylic acid for acne"): its threads come with those whose comments talk about its
+        ingredient most first (talk_points, 13 Oct 2026), and on the library its need had put acne cleanser threads (a
+        rinse-off form its answer can't show) ahead of them, losing its one pick."""
+        from engine.needs import request_needs, thread_needs  # here: engine.needs builds on this module
+
+        needs = request_needs(query)
+        if not needs or query.ingredient_led:
+            return threads
+        titled = {t.id: self._titled_as_another_type(t, query) for t in threads}
+        return sorted(threads, key=lambda t: -len(thread_needs(t, needs, titled[t.id])))  # stable: the order given
+
+    def _titled_as_another_type(self, thread: Thread, query: ParsedQuery) -> bool:
+        """titled_as_another_type(thread.title, query), worked out once per thread and request type."""
+        key = ("titled as another type", thread.id, query.product_type)
+        if key not in self._remembered:
+            self._remembered[key] = titled_as_another_type(thread.title, query)
+        return self._remembered[key]
 
     def _readable(self, category: str) -> list[Thread]:
         """The category's threads without their deleted or removed comments, made once (latency, 12 Oct 2026). Copies:
@@ -237,9 +411,21 @@ class LocalSource:
         return self._remembered[key]
 
 
+def titled_as_another_type(title: str, query: ParsedQuery) -> bool:
+    """Whether a thread's title names another type of product of the request's category, and none it asks for
+    ("SPF for oily skin?" for a moisturiser request; for an ingredient-led request, any type that can carry its
+    ingredient is one it asks for: engine.ingredients.wanted_types). Its post may name the requested product in passing:
+    the thread is about the other one (14 Oct 2026)."""
+    wanted = set(wanted_types(query.product_type)) | {query.product_type}
+    if any(mentions_product(title, w) for w in wanted):
+        return False
+    return any(mentions_product(title, p.name) for p in PRODUCT_TYPES
+               if p.category == query.category and p.name not in wanted)
+
+
 def talking(thread: Thread, product_type: str) -> int:
     """How many of the thread's comments name the product (for an ingredient-led request, its ingredient)."""
-    return sum(mentions_product(c.body, product_type) for c in thread.comments)
+    return comments_naming(thread.comments, product_type)
 
 
 def talk_points(comments: int) -> float:
@@ -359,7 +545,7 @@ def usable_posts(query: ParsedQuery, posts: list[dict], min_comments: int) -> li
 def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searches: int = 4,
                    max_warning_searches: int = 4, raise_if_nothing: bool = False, posts_each: int = 25,
                    older_than_years: int | None = None, max_failures: int = 1, failed: list[str] | None = None,
-                   now: datetime | None = None) -> list[dict]:
+                   now: datetime | None = None, halved: list[str] | None = None, need_searches: int = 0) -> list[dict]:
     """Arctic Shift results, in rounds, each post once.
 
     1. The product's title words, term by term and subreddit by subreddit, up to `max_free_searches`, the newest
@@ -367,46 +553,112 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
     2. With `older_than_years`, round 1 covers only that many recent years, and the same searches run again for the
        years before, back to ARCHIVE_OLDEST_FACTOR times as far: big threads are often old ones (11 Oct 2026:
        haircare's were out of reach), and a search bounded by dates doesn't time out over a big subreddit's history.
-    3. Warning searches, so threads about failures and regrets are among the candidates: the first title word
+    3. With `need_searches` (the archive reader's rounds, 13 Oct 2026), the first title word with each of the request's
+       first `need_searches` need words ("conditioner curly"), subreddit by subreddit, over the whole history: the
+       threads asking the request's own question, however old, which round 1's newest 100 posts rarely reach.
+    4. Warning searches, so threads about failures and regrets are among the candidates: the first title word
        with each of WARNING_SEARCHES ("kettle died", "kettle regret"…), in the request's most specialist
        subreddit, up to `max_warning_searches`.
-    A busy or failing search is skipped and named in `failed`; `max_failures` of them end the round (1: the first
-    failure ends it, as Parse's source has it); results found before that are still used. With `raise_if_nothing`, a
-    round that ends before anything was found raises (ArcticShiftError), so a service that is down isn't mistaken for
-    a search that found nothing. Parse's paid search never runs warning searches: they would cost credits.
+    A busy or failing search is skipped and named in `failed`; `max_failures` of them in a row end the round (1: the
+    first failure ends it, as Parse's source has it); results found before that are still used. With
+    `raise_if_nothing`, a round that ends before anything was found raises (ArcticShiftError), so a service that is down
+    isn't mistaken for a search that found nothing. Parse's paid search never runs warning searches: they would cost
+    credits.
+    With `older_than_years` (the archive reader's rounds, 13 Oct 2026), a search Arctic Shift times out on is asked again
+    as the two halves of its span (an undated warning search as the two windows of round 2): the newer half of a
+    search's first timeout right away, every other half at the end of the round,
+    at most ARCHIVE_SPLIT_DEPTH times over, and named in `halved`; only a search that can't be split further is named
+    in `failed`. Each timeout still counts towards the failures in a row: a service that is down ends the round as soon.
+    A round ended by failures still uses the searches it had queued whose answers the client's 48-hour cache already
+    holds (cached_posts: no call).
     """
     terms = finder_terms(query.product_type)
     titles = [(subreddit, term) for term in terms for subreddit in query.subreddits][:max_free_searches]
     pairs: list[tuple[str, str, dict]] = [(subreddit, term, {}) for subreddit, term in titles]
+    windows: tuple[dict, dict] | None = None  # round 1's and round 2's spans, for halving an undated search
     if older_than_years:
         # Two date windows, each search bounded (12 Oct 2026: a search over a big subreddit's whole history timed out).
         now = now or datetime.now(UTC)
         split = _years_before(now, older_than_years).date().isoformat()
         oldest = _years_before(now, older_than_years * ARCHIVE_OLDEST_FACTOR).date().isoformat()
+        windows = ({"after": split}, {"after": oldest, "before": split})
         pairs = ([(subreddit, term, {"after": split}) for subreddit, term in titles]
                  + [(subreddit, term, {"after": oldest, "before": split}) for subreddit, term in titles])
+    needs = need_words(query)[:need_searches] if need_searches else []
+    pairs += [(subreddit, f"{terms[0]} {need}", {}) for need in needs for subreddit in query.subreddits][:max_free_searches]
     warnings = warning_words(query)[:max_warning_searches]
     pairs += [(query.subreddits[0], f"{terms[0]} {warning}", {}) for warning in warnings]
+    queue = deque((subreddit, term, dates, 0) for subreddit, term, dates in pairs)  # 0: not halved yet
     posts: dict[str, dict] = {}
-    failures = 0
-    for subreddit, term, dates in pairs:
+    failures = in_a_row = 0
+    ended_by: ArcticShiftError | None = None  # the failure that ended the round early, if one did
+    while queue:
+        subreddit, term, dates, times_halved = queue.popleft()
         try:
             found = finder.search_posts(subreddit, term, limit=posts_each, **dates)
         except ArcticShiftError as error:
             failures += 1
-            if failed is not None:
-                window = " ".join(f"{key} {value}" for key, value in dates.items())
-                failed.append(f"r/{subreddit} for \"{term}\"{f' ({window})' if window else ''}: {error}")
-            if failures >= max_failures:
-                if raise_if_nothing and not posts:
-                    raise
+            in_a_row += 1
+            window = " ".join(f"{key} {value}" for key, value in dates.items())
+            name = f"r/{subreddit} for \"{term}\"{f' ({window})' if window else ''}"
+            halves = (_halves(dates, now.date(), windows)
+                      if windows and times_halved < ARCHIVE_SPLIT_DEPTH and in_a_row < max_failures
+                      and _timed_out(error) else [])
+            if halves:
+                # The newer half of a search's first timeout is asked next: a shorter span is what tells a busy
+                # archive from one that is down. Every other half waits for the end of the round (13 Oct 2026), so a
+                # search that times out over any span can't end the round before the other subreddits are searched.
+                newer, older = ((subreddit, term, half, times_halved + 1) for half in halves)
+                if times_halved == 0:
+                    queue.appendleft(newer)
+                else:
+                    queue.append(newer)
+                queue.append(older)
+                if halved is not None:
+                    halved.append(name)
+            elif failed is not None:
+                failed.append(f"{name}: {error}")
+            if in_a_row >= max_failures:
+                ended_by = error
                 break
             continue
+        in_a_row = 0
         for post in found:
             posts.setdefault(_post_id(post), post)
+    if ended_by is not None:
+        # The searches still queued are used when the client's 48-hour cache already holds them: no call (13 Oct 2026).
+        cached_posts = getattr(finder, "cached_posts", None)
+        for subreddit, term, dates, _ in queue if cached_posts is not None else ():
+            for post in cached_posts(subreddit, term, limit=posts_each, **dates) or []:
+                posts.setdefault(_post_id(post), post)
+        if raise_if_nothing and not posts:
+            raise ended_by
     if raise_if_nothing and not posts and failures:
         raise ArcticShiftError(f"every archive search that ran failed ({failures})")
     return list(posts.values())
+
+
+def _timed_out(error: ArcticShiftError) -> bool:
+    """Whether Arctic Shift gave up on a search for time ("Timeout. Maybe slow down a bit"), or the answer didn't come in
+    time: what a shorter span of time helps with. Other errors (a refusal, a service that is down) aren't."""
+    words = str(error).lower()
+    return "timeout" in words or "timed out" in words
+
+
+def _halves(dates: dict, today: date, windows: tuple[dict, dict]) -> list[dict]:
+    """The two halves of a search's span of time, newer first; an undated search's are the two windows. None (an empty
+    list) for a span that can't be halved: one with no start, or under two days."""
+    if not dates:
+        return [dict(window) for window in windows]
+    if "after" not in dates:
+        return []
+    start = date.fromisoformat(dates["after"])
+    end = date.fromisoformat(dates["before"]) if "before" in dates else today
+    if (end - start).days < 2:
+        return []
+    middle = (start + (end - start) // 2).isoformat()
+    newer = {"after": middle} | ({"before": dates["before"]} if "before" in dates else {})
+    return [newer, {"after": dates["after"], "before": middle}]
 
 
 # --- From Arctic Shift's archive, for free (Noemi, 9 Oct 2026) ---
@@ -423,6 +675,10 @@ class ArchiveSource:
     The archive may still hold comments people later deleted on Reddit, so every thread it reads is marked read_from
     "arctic_shift", and answers don't quote it until a live check has read it on Reddit through Parse
     (`python -m engine.library check-live`).
+
+    `skip_ids`: threads never chosen or read, however well they rank (13 Oct 2026): `library add` passes the threads
+    already saved and the gold threads Noemi hasn't labelled, as it does for Bright Data, so the mix is made of the next
+    threads in line instead of the saved ones read again and written over.
     """
 
     def __init__(
@@ -431,6 +687,7 @@ class ArchiveSource:
         min_comments: int = 5,
         max_free_searches: int = ARCHIVE_MAX_SEARCHES,
         max_warning_searches: int = 4,
+        skip_ids: set[str] | None = None,
     ):
         # The Arctic Shift client that searches and reads. It is never built here, so code that gives none (a test
         # that passes no finder) can't reach the network: with None, nothing is found or read.
@@ -438,6 +695,7 @@ class ArchiveSource:
         self.min_comments = min_comments  # a thread with fewer comments has too little to learn from
         self.max_free_searches = max_free_searches
         self.max_warning_searches = max_warning_searches
+        self.skip_ids = set(skip_ids or ())
         self.notes: list[str] = []  # what the last search couldn't do, for `library add` to print
 
     def find_threads(self, query: ParsedQuery, limit: int = 3, mix: dict | None = None, fill: bool = True) -> list[Thread]:
@@ -457,16 +715,20 @@ class ArchiveSource:
         if query.status != "ok" or self.client is None:
             return []
         failed: list[str] = []
+        halved: list[str] = []
         try:
-            # Free searches, so every decided subreddit, 100 posts each, and older threads too (11 Oct 2026).
+            # Free searches, so every decided subreddit, 100 posts each, and older threads too (11 Oct 2026); a search
+            # that times out is asked again over shorter spans of time (13 Oct 2026).
             found = search_archive(self.client, query, self.max_free_searches, self.max_warning_searches,
                                    raise_if_nothing=True, posts_each=ARCHIVE_POSTS_EACH,
                                    older_than_years=ARCHIVE_OLDER_YEARS, max_failures=ARCHIVE_SEARCH_MAX_FAILURES,
-                                   failed=failed)
+                                   failed=failed, halved=halved, need_searches=ARCHIVE_NEED_WORDS)
         finally:
-            self.notes = [f"The archive's search in {search} failed; run the add again to retry it (searches that "
-                          "worked are cached for 48 hours)." for search in failed]
-        return usable_posts(query, found, self.min_comments)
+            self.notes = ([f"The archive's search in {search} timed out, so it was asked again over shorter spans of "
+                           "time." for search in halved]
+                          + [f"The archive's search in {search} failed; run the add again to retry it (searches that "
+                             "worked are cached for 48 hours)." for search in failed])
+        return [post for post in usable_posts(query, found, self.min_comments) if _post_id(post) not in self.skip_ids]
 
 
 # --- Through Bright Data: Reddit's own search, and reads (Noemi's request, 10 Oct 2026) ---
@@ -709,6 +971,8 @@ _STOPWORDS = {
     "actually", "really", "very", "good", "great", "nice", "best", "need", "want", "looking", "something", "some",
     "any", "skin", "hair", "under", "over", "less", "more", "max", "around", "about", "budget", "between", "than", "up",
     "pounds", "pound", "quid", "euros", "euro", "dollars", "bucks", "usd", "gbp", "eur",
+    # 14 Oct 2026: "that actually works" says how well, not what for; a scalp is to haircare what skin is to skincare.
+    "work", "worked", "working", "scalp",
 }
 
 
@@ -932,13 +1196,34 @@ def choose_mix(
 def _title_has(lowered_title: str, word: str) -> bool:
     """Whole words, two-word spellings ("pour over" for "pourover"), longer forms ("lasting" for "last"), and "anti-X"
     or "X-free" read as X, as need words read them ("anti-dandruff" has "dandruff", 11 Oct 2026). Other hyphenated
-    words aren't split: that moved a thread Noemi hadn't judged into b02's top 3 (12 Oct 2026)."""
-    written = re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", lowered_title)
-    tokens = [re.sub(r"['-]", "", t) for t in written]
+    words aren't split: that moved a thread Noemi hadn't judged into b02's top 3 (12 Oct 2026).
+
+    Found in one search rather than by trying every word in turn (latency, 13 Oct 2026: needs_met asks it of whole
+    comments): a word of 4 letters or more is found at the start of a candidate (which takes in the word itself and its
+    plural, _stem's only other form), a shorter one as a whole candidate."""
+    if not _PLAIN_WORD.fullmatch(word):  # a word as need_words never gives one: tried against each candidate
+        return any(t == word or _stem(t) == word or (len(word) >= 4 and t.startswith(word))
+                   for t in _title_words(lowered_title).split())
+    candidates = _title_words(lowered_title)
+    if len(word) >= 4:
+        return f" {word}" in candidates
+    return f" {word} " in candidates
+
+
+def _title_words(lowered_title: str) -> str:
+    """The candidates _title_has looks among, each after a space and followed by one: the words with their apostrophes
+    and hyphens left out, each two neighbouring words written as one, and "anti-X" and "X-free" as X."""
+    written = _TITLE_WORD.findall(lowered_title)
+    tokens = [t.replace("'", "").replace("-", "") for t in written]
     candidates = tokens + [a + b for a, b in zip(tokens, tokens[1:])]
-    candidates += [re.sub(r"['-]", "", re.sub(r"^anti-(?=[a-z])|(?<=[a-z])-free$", "", t)) for t in written
+    candidates += [_ANTI_OR_FREE.sub("", t).replace("'", "").replace("-", "") for t in written
                    if t.startswith("anti-") or t.endswith("-free")]
-    return any(t == word or _stem(t) == word or (len(word) >= 4 and t.startswith(word)) for t in candidates)
+    return " " + " ".join(candidates) + " "
+
+
+_TITLE_WORD = re.compile(r"[a-z0-9]+(?:['-][a-z0-9]+)*")
+_PLAIN_WORD = re.compile(r"[a-z0-9]+")  # what need_words gives: letters and digits only
+_ANTI_OR_FREE = re.compile(r"^anti-(?=[a-z])|(?<=[a-z])-free$")
 
 
 def _stem(word: str) -> str:

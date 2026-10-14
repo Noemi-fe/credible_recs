@@ -116,3 +116,85 @@ def test_the_products_own_name_is_not_a_need():
     # "dry shampoo" names a product, not dry skin (11 Oct 2026, from the shampoo builder's findings).
     assert names("dry shampoo that doesn't leave a white cast") == ["no white cast"]
     assert "dry" in names("moisturiser for dry skin")
+
+
+# --- Haircare needs, and kitchen needs in other words (14 Oct 2026: need-led thread choice) ---
+# From Noemi's and a friend's tests of the live site: "shampoo for greasy hair" asked about a need the engine read as
+# oily skin, through one word of it ("greasy"), so threads about an oily scalp didn't count; and "fine", "flat", "wavy" or
+# "frizzy" were words of the request found only as typed. A haircare request's needs are its own (config.HAIR_NEEDS),
+# in place of the skin types': "shiny" hair isn't greasy, a "flaky" scalp is dandruff, not dry hair.
+
+@pytest.mark.parametrize("request_text, expected", [
+    ("shampoo for greasy hair", ["oily hair"]),
+    ("shampoo for an oily scalp", ["oily hair"]),
+    ("dandruff shampoo that actually works", ["dandruff"]),  # "works" says how well, not what for
+    ("anti-dandruff shampoo for a flaky scalp", ["dandruff"]),
+    ("shampoo for an itchy scalp", ["itchy scalp"]),
+    ("gentle shampoo for wavy hair", ["gentle", "wavy"]),
+    ("shampoo for fine flat hair", ["fine hair"]),
+    ("shampoo for thin fine hair", ["fine hair"]),
+    ("conditioner for frizzy curly hair", ["frizzy", "curly"]),
+    ("conditioner for dry hair", ["dry hair"]),
+    ("conditioner for dry, damaged hair", ["dry hair", "damaged"]),
+    ("shampoo for colour-treated hair", ["colour-treated"]),
+    ("shampoo for dyed hair", ["colour-treated"]),
+    ("shampoo for a sensitive scalp", ["sensitive scalp"]),
+])
+def test_haircare_needs_are_named_in_the_words_people_use(request_text, expected):
+    assert names(request_text) == expected
+
+
+def test_the_skin_types_are_not_haircare_needs_and_skincare_keeps_them():
+    assert "oily" not in names("shampoo for greasy hair")
+    assert names("moisturiser for greasy skin") == ["oily"]
+    assert names("sunscreen for dry skin") == ["dry"]
+
+
+def test_a_comment_talks_about_a_haircare_need_in_its_own_words():
+    assert met("shampoo for greasy hair", "My roots get oily by lunchtime, this fixed it.") == ("oily hair",)
+    assert met("shampoo for greasy hair", "Way less grease between washes.") == ("oily hair",)
+    assert met("shampoo for greasy hair", "It left my hair so shiny and soft.") == ()  # shiny hair isn't greasy
+    assert met("dandruff shampoo", "The flakes were gone in a week.") == ("dandruff",)
+    assert met("conditioner for dry hair", "My ends felt like straw before this one.") == ("dry hair",)
+    assert met("conditioner for dry hair", "I love the strawberry scent.") == ()  # straw only as straw-like hair
+    assert met("shampoo for fine flat hair", "It never weighs my hair down.") == ("fine hair",)
+    assert met("shampoo for fine flat hair", "Gives me volume at the roots.") == ("fine hair",)
+    assert met("shampoo for fine flat hair", "It works fine for me.") == ()  # "fine" alone says how it works
+    assert met("conditioner for frizzy curly hair", "No frizz and my curls clump.") == ("frizzy", "curly")
+    assert met("gentle shampoo for wavy hair", "Great for my 2b waves.") == ("wavy",)
+    assert met("shampoo for dyed hair", "Kept my bleached blonde bright.") == ("colour-treated",)
+
+
+def test_needs_in_other_words_for_kitchen_requests():
+    assert names("kettle that's quiet") == ["quiet"]
+    assert met("kettle that's quiet", "It's so loud when it boils.") == ("quiet",)
+    assert met("kettle that's quiet", "It boils fast.") == ()
+    assert names("cast iron skillet for a glass top stove") == ["glass top stove"]
+    assert met("cast iron skillet for a glass top stove", "Fine on my ceramic hob, just lift it.") == ("glass top stove",)
+    assert met("cast iron skillet for a glass top stove", "Works on a glass-top, never slide it.") == ("glass top stove",)
+    assert met("cast iron skillet for a glass top stove", "Glass lids are handy.") == ()  # glass alone isn't the stove
+
+
+# --- Worked out once (latency, 13 Oct 2026) ---
+
+def test_a_comment_asked_again_about_the_same_needs_is_read_once(monkeypatch):
+    from engine import needs as needs_module
+
+    needs = request_needs(parse_query("gentle exfoliant for sensitive skin under £30"))
+    body = "Gentle enough for my sensitive skin, and I've used it for a year."
+    reads = []
+    real = needs_module._own_words
+    monkeypatch.setattr(needs_module, "_own_words", lambda text: reads.append(1) or real(text))
+    first = needs_met(body, needs)
+    assert needs_met(body, needs) == first == ("gentle", "sensitive")
+    assert len(reads) == 1
+    assert needs_met(body, needs, long_term_use=True) == first  # another question: read again
+    assert needs_met(body, needs[:1]) == ("gentle",)
+
+
+def test_two_requests_written_alike_keep_their_own_needs():
+    plain = parse_query("retinol for a beginner")
+    with_skin = plain.model_copy(update={"constraints": plain.constraints.model_copy(update={"skin_types": ["sensitive"]})})
+    assert [n.name for n in request_needs(plain)] == ["beginner"]
+    assert [n.name for n in request_needs(with_skin)] == ["beginner", "sensitive"]
+    assert [n.name for n in request_needs(plain)] == ["beginner"]

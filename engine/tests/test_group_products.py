@@ -310,8 +310,12 @@ def test_a_brand_pick_says_which_products_it_means():
 
 def test_a_product_type_the_open_model_names_gets_a_plural_too():
     # Types module 1 doesn't list (the open model's, 11 Oct 2026) follow English's usual rules.
-    for product_type, plural_ in [("air fryer", "air fryers"), ("dish brush", "dish brushes"), ("zester", "zesters"),
-                                  ("french press", "french presses"), ("wok", "woks"), ("rice cooker", "rice cookers")]:
+    # Changed on purpose 14 Oct 2026 (kitchen appliances, Noemi's decision 3): the air fryer, the French press and the
+    # rice cooker are module 1's own types now, with their plurals in config.PRODUCT_TYPE_PLURALS ("French presses");
+    # a garlic press, a sandwich press and a bread maker take their places here.
+    for product_type, plural_ in [("bread maker", "bread makers"), ("dish brush", "dish brushes"), ("zester", "zesters"),
+                                  ("garlic press", "garlic presses"), ("wok", "woks"),
+                                  ("sandwich press", "sandwich presses")]:
         assert plural(product_type) == plural_
     # Changed on purpose 12 Oct 2026 (Noemi's wording): a brand pick names the type itself, "<Brand> <type> line",
     # so the plural is no longer part of its name (it was "Ninja (their air fryers)").
@@ -615,3 +619,46 @@ def test_a_products_most_written_name_stays_shown_though_it_ends_like_the_type()
         ["Clinique all about eyes", "Clinique all about eyes", "Clinique All About Eyes", "Clinique All About Eyes Rich"])]
     groups = group_products(mentions, NO_ALIASES, product_type="eye cream")
     assert [g.name.lower() for g in groups] == ["clinique all about eyes"]
+
+
+# --- One index of a library's names, for every request's grouping (latency, 13 Oct 2026) ---
+
+from engine.group_products import library_name_index  # noqa: E402
+
+
+def test_grouping_with_the_librarys_name_index_gives_the_same_groups():
+    # Made-up names of brands, lines, models, types and slips: a request's mentions (any of the library's, and a part
+    # of them, as grouping again without another type's mentions does) grouped with and without the index, for the
+    # product types module 1 knows, none, and one the open model named (its bases aren't in the index: worked out).
+    rng = random.Random(13)
+    brands = ["Lodge", "lodge", "Fellow", "Stagg", "CeraVe", "Cerave", "Tiger", "Zojirushi", "Zojurushi", "Our Place"]
+    rest = ["", "kettle", "kettles", "electric kettle", "Stagg EKG", "cast iron skillet", "skillet", "pan", "pans",
+            "rice cooker", "SA cleanser", "Hydrating Cleanser", "cleanser", "moisturizing cream", "cream", "10 inch",
+            "12 inch skillet", "Corvo EKG", "titanium cookware", "Always Pan Pro", "dutch oven", "shampoo"]
+    library = []
+    for i in range(400):
+        name = f"{rng.choice(brands)} {rng.choice(rest)}".strip()
+        category = rng.choice(["kitchen", "skincare"])
+        library.append(ProductMention(f"t{i % 30}", f"c{i}", name, category, rng.choice(["recommend", "warn"]),
+                                      rng.choice([None, "electric kettle", "cast iron skillet", "cleanser"])))
+    index = library_name_index(library)
+    for product_type in [None, "electric kettle", "cast iron skillet", "rice cooker", "cleanser", "moisturiser",
+                         "air fryer"]:
+        for mentions in (library, library[:150], library[100:330]):
+            assert (group_products(mentions, product_type=product_type, index=index)
+                    == group_products(mentions, product_type=product_type)), product_type
+
+
+def test_a_request_of_a_known_type_takes_its_pairs_from_the_index(monkeypatch):
+    from engine import group_products as grouping
+
+    library = [kitchen("Fellow Stagg EKG", "c1"), kitchen("Fellow kettle", "c2"), kitchen("Fellow", "c3"),
+               kitchen("Lodge cast iron skillet", "c4"), kitchen("Lodge", "c5")]
+    index = library_name_index(library)
+    worked_out = []
+    real = grouping.match_candidates_and_open
+    monkeypatch.setattr(grouping, "match_candidates_and_open", lambda names: worked_out.append(1) or real(names))
+    with_index = group_products(library, product_type="electric kettle", index=index)
+    assert worked_out == []  # every name and base was in the index
+    assert with_index == group_products(library, product_type="electric kettle")
+    assert worked_out == [1]

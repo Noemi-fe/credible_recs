@@ -137,13 +137,16 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # support line and share line count in words.
     # Changed on purpose 13 Oct 2026 (active ingredients): each pick also has its "form" in an ingredient-led answer
     # ("pads", "toner"), or null.
+    # Changed on purpose 14 Oct 2026 (Noemi's night decision 1): each pick also has its "range", a brand line's link to
+    # its maker's page for its products of the type ({"text", "url", "checked", "checked_on"}), or null; and its price
+    # says whether it is a brand line's from price ("from_price").
     assert set(data["answer"]["picks"][0]) == {"rank", "product_key", "name", "reason", "support", "quotes",
                                                "downsides", "disagreement", "score", "breakdown", "price",
                                                "availability", "care", "cautions", "model", "model_price",
-                                               "downsides_share", "summary", "voices", "form"}
+                                               "downsides_share", "summary", "voices", "form", "range"}
     assert set(data["answer"]["picks"][0]["quotes"][0]) == {"text", "comment_id", "url", "badges"}
     assert set(data["answer"]["picks"][0]["price"]) == {"text", "amount", "currency", "shop", "url", "checked_on",
-                                                        "budget_status", "budget_note"}
+                                                        "budget_status", "budget_note", "from_price"}
 
 
 def test_every_card_has_at_least_two_quotes_each_linking_to_reddit(tmp_path):
@@ -331,11 +334,14 @@ def test_the_page_never_draws_data_as_html(tmp_path):
 def test_every_link_the_page_draws_goes_through_a_link_check(tmp_path):
     # Two kinds of link only (changed on purpose 9 Oct 2026, decision 11): a quote's comment on Reddit, and a price's
     # shop page. Each address is checked before it becomes a link; any other address is shown without one.
+    # Changed on purpose 14 Oct 2026 (Noemi's night decision 1): a third kind, a brand line's range page (the maker's
+    # page for its products of the type, from data/brand_lines.json), through its own check, rangeUrl
+    # (engine/tests/test_line_links.py).
     html = page(tmp_path)
     links = re.findall(r"href:\s*(\w+)", html)
     assert links, "the page should draw links"
     for name in links:
-        assert re.search(rf"const {name} = (redditUrl|shopUrl)\(", html), name
+        assert re.search(rf"const {name} = (redditUrl|shopUrl|rangeUrl)\(", html), name
 
 
 def test_a_shop_link_must_be_https_with_no_name_or_password(tmp_path):
@@ -530,9 +536,24 @@ def test_warming_up_answers_each_product_type_without_asking_reddit(tmp_path, mo
         (request, kwargs | {"in_turn": web._answers_lock.locked()})))
     web.warm_up(settled(library(tmp_path)))
     assert all(kwargs["in_turn"] for _, kwargs in asked)  # one at a time with visitors' answers
-    assert [request for request, _ in asked] == list(web.WARM_PRODUCT_TYPES)
+    assert [request for request, _ in asked] == web.warm_requests()
+    assert set(web.WARM_PRODUCT_TYPES) <= {request for request, _ in asked}  # every product type by its name too
     assert "electric kettle" in web.WARM_PRODUCT_TYPES and "shampoo" in web.WARM_PRODUCT_TYPES
     assert all("live_checker" not in kwargs and kwargs["live_check_required"] is False for _, kwargs in asked)
+
+
+def test_getting_ready_answers_the_likeliest_requests_first():
+    # 14 Oct 2026 (the coordinator, from the live site: getting ready reached 7 of 43 product types in its 120 s): the
+    # search page's example requests come first, then the latency requests, then the product types by name, each once.
+    # The examples carry needs, so warming them reads the threads their need-led readings use.
+    examples = [q["text"] for q in web.example_requests()]
+    latency = [q["text"] for q in json.loads(web.LATENCY_FILE.read_text(encoding="utf-8"))["queries"]]
+    warmed = web.warm_requests()
+    assert examples and warmed[:len(examples)] == examples
+    rest = [text for text in latency if text not in examples]
+    assert rest and warmed[len(examples):len(examples) + len(rest)] == rest
+    assert warmed[len(examples) + len(rest):] == [t for t in web.WARM_PRODUCT_TYPES if t not in examples + rest]
+    assert len(warmed) == len(set(warmed))
 
 
 def test_warming_up_stops_answering_product_types_once_its_time_is_up(tmp_path, monkeypatch, capsys):
@@ -557,9 +578,10 @@ def test_warming_up_stops_answering_product_types_once_its_time_is_up(tmp_path, 
     web.warm_up(settled(library(tmp_path)))
     assert web.ready.is_set()
     expected = -(-web.WARM_UP_ANSWERS_SECONDS // 40)  # answers started before the time was up
-    assert len(asked) == expected < len(web.WARM_PRODUCT_TYPES)
+    assert len(asked) == expected < len(web.warm_requests())
+    assert asked == web.warm_requests()[:expected]  # the likeliest first
     said = capsys.readouterr().out
-    assert f"left {len(web.WARM_PRODUCT_TYPES) - expected} product types for their first visitors" in said
+    assert f"left {len(web.warm_requests()) - expected} requests for their first visitors" in said
 
 
 def test_a_warmed_answer_leaves_every_answer_as_it_was(tmp_path):
@@ -606,9 +628,10 @@ def test_also_worth_a_look_comes_through_in_the_json(tmp_path):
     assert data["answer"]["worth_note"].startswith("2 credible voices each")
     # Changed on purpose 13 Oct 2026 (the UX builder): "voices", as for a pick (its credibility meter).
     # Changed on purpose 13 Oct 2026 (active ingredients): each item also has its "form", as picks do.
+    # Changed on purpose 14 Oct 2026 (Noemi's night decision 1): each item also has its "range", as picks do.
     assert set(data["answer"]["worth_a_look"][0]) == {"product_key", "name", "reason", "quotes", "downsides",
                                                      "downsides_share", "disagreement", "score", "breakdown", "price",
-                                                     "availability", "cautions", "summary", "voices", "form"}
+                                                     "availability", "cautions", "summary", "voices", "form", "range"}
 
 
 def test_the_page_draws_also_worth_a_look_and_summaries_with_the_answers_own_words(tmp_path):

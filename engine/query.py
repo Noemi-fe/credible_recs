@@ -166,6 +166,61 @@ PRODUCT_TYPES = (
     ProductType("leave-in conditioner", "haircare", ("leave-in conditioner", "leave in conditioner", "leave-in")),
     ProductType("hair mask", "haircare", ("hair mask", "hair masque", "deep conditioner", "deep conditioning mask")),
     ProductType("hair oil", "haircare", ("hair oil", "scalp oil", "hair serum")),
+    # Kitchen appliances (Noemi's decision 3 of 14 Oct 2026, after her and a friend's tests of the live site: "microwave"
+    # and "oven" returned nothing). The types, their words and their communities were chosen by Claude, reported to her.
+    # Seven were the open model's types until then (config.PRECHECK_MODEL_TYPES): the rules now route them without it.
+    # A longer name wins, as above: a "toaster oven" isn't a toaster nor an oven, a "rice cooker" isn't a pressure
+    # cooker, a "microwave oven" is a microwave. An air fryer oven is a countertop oven, so a toaster oven (the AI had
+    # typed 160 mentions so); an Instant Pot or a multicooker is a pressure cooker, a crock pot a slow cooker, a
+    # cafetiere a French press, a drip or filter coffee machine a coffee maker (a plain "coffee machine" stays an espresso
+    # machine). A range, a gas or electric cooker is only a clue to an oven: "a skillet for my gas range" is a skillet.
+    ProductType("microwave", "kitchen", ("microwave", "microwave oven", "combination microwave", "combi microwave",
+                                         "microwave air fryer", "air fryer microwave"),
+                subreddits=("Appliances", "BuyItForLife", "Cooking")),
+    ProductType("oven", "kitchen", ("oven", "wall oven", "built-in oven", "built in oven", "double oven", "single oven",
+                                    "range cooker", "range oven", "freestanding cooker", "electric oven", "gas oven",
+                                    "fan oven", "steam oven", "convection oven"),
+                ("gas range", "electric range", "induction range", "dual fuel range", "gas cooker", "electric cooker"),
+                subreddits=("Appliances", "BuyItForLife", "Cooking", "Baking")),
+    ProductType("toaster oven", "kitchen", ("toaster oven", "countertop oven", "counter top oven", "benchtop oven",
+                                            "mini oven", "air fryer oven", "air fry oven", "air-fryer oven",
+                                            "air fryer toaster oven", "toaster oven air fryer", "convection toaster oven",
+                                            "countertop convection oven"),
+                subreddits=("BuyItForLife", "Appliances", "Cooking")),
+    ProductType("air fryer", "kitchen", ("air fryer", "air-fryer", "airfryer"),
+                subreddits=("airfryer", "BuyItForLife", "Cooking")),
+    ProductType("blender", "kitchen", ("blender", "countertop blender", "high-speed blender", "high speed blender",
+                                       "personal blender", "bullet blender", "smoothie blender", "smoothie maker"),
+                subreddits=("BuyItForLife", "Cooking", "AskCulinary")),
+    ProductType("food processor", "kitchen", ("food processor", "food-processor", "mini chopper", "food chopper"),
+                subreddits=("BuyItForLife", "Cooking", "AskCulinary")),
+    ProductType("stand mixer", "kitchen", ("stand mixer", "stand-mixer", "standmixer", "kitchen mixer", "bowl-lift mixer",
+                                           "bowl lift mixer", "tilt-head mixer", "tilt head mixer", "planetary mixer",
+                                           "kitchenaid mixer", "kitchen aid mixer", "dough mixer"),
+                subreddits=("Baking", "BuyItForLife", "Cooking")),
+    ProductType("hand mixer", "kitchen", ("hand mixer", "handheld mixer", "hand-held mixer", "electric whisk"),
+                subreddits=("Baking", "BuyItForLife", "Cooking")),
+    ProductType("slow cooker", "kitchen", ("slow cooker", "slow-cooker", "crock pot", "crock-pot", "crockpot"),
+                subreddits=("slowcooking", "BuyItForLife", "Cooking")),
+    ProductType("rice cooker", "kitchen", ("rice cooker", "rice-cooker", "ricecooker", "rice maker"),
+                subreddits=("BuyItForLife", "Cooking", "AskCulinary")),
+    ProductType("pressure cooker", "kitchen", ("pressure cooker", "pressure-cooker", "multicooker", "multi-cooker",
+                                               "multi cooker", "instant pot", "instant-pot", "instantpot", "instapot"),
+                subreddits=("instantpot", "BuyItForLife", "Cooking")),
+    ProductType("coffee maker", "kitchen", ("coffee maker", "coffeemaker", "coffee-maker", "drip coffee machine",
+                                            "filter coffee machine", "drip machine", "drip brewer", "batch brewer",
+                                            "coffee brewer"),
+                subreddits=("Coffee", "BuyItForLife")),
+    ProductType("french press", "kitchen", ("french press", "cafetiere", "cafetière", "coffee press", "press pot"),
+                subreddits=("Coffee", "BuyItForLife")),
+    ProductType("toaster", "kitchen", ("toaster",), subreddits=("BuyItForLife", "Appliances", "Cooking")),
+    ProductType("waffle maker", "kitchen", ("waffle maker", "waffle iron", "waffle machine"),
+                subreddits=("BuyItForLife", "Cooking", "Baking")),
+    ProductType("juicer", "kitchen", ("juicer", "juice extractor", "juicing machine", "citrus press"),
+                subreddits=("juicing", "BuyItForLife", "Cooking")),
+    ProductType("kitchen scale", "kitchen", ("kitchen scale", "food scale", "baking scale", "coffee scale",
+                                             "cooking scale", "digital scale", "weighing scale"),
+                subreddits=("Baking", "Coffee", "BuyItForLife", "Cooking")),
 )
 
 # The short words people put in Reddit post titles for each product, used to find threads.
@@ -190,18 +245,42 @@ TITLE_WORDS = {
     "conditioner": ("conditioner",),
     "leave-in conditioner": ("leave-in", "leave in"),
     "hair mask": ("hair mask", "deep conditioner"),
+    # Kitchen appliances (14 Oct 2026).
+    "microwave": ("microwave",),
+    "oven": ("oven", "range cooker"),
+    "toaster oven": ("toaster oven", "countertop oven"),
+    "air fryer": ("air fryer", "airfryer"),
+    "blender": ("blender",),
+    "food processor": ("food processor",),
+    "stand mixer": ("stand mixer", "mixer"),
+    "hand mixer": ("hand mixer",),
+    "slow cooker": ("slow cooker", "crock pot", "crockpot"),
+    "rice cooker": ("rice cooker",),
+    "pressure cooker": ("pressure cooker", "instant pot", "multicooker"),
+    "coffee maker": ("coffee maker", "drip"),
+    "french press": ("french press",),
+    "toaster": ("toaster",),
+    "waffle maker": ("waffle maker", "waffle iron"),
+    "juicer": ("juicer",),
+    "kitchen scale": ("scale",),
 }
 
 # Things people shop for that this version doesn't cover. "-free" and "-safe" forms are requirements, not products.
-# Shampoo and conditioner moved into haircare on 11 Oct 2026; hair tools stay out.
+# Shampoo and conditioner moved into haircare on 11 Oct 2026; hair tools stay out. A bathroom scale isn't a kitchen
+# scale (14 Oct 2026). The dishwasher stays out, as Noemi's approved module 1 case q30 says (her call of 7 Oct 2026:
+# large appliances aren't kitchen gear), although her decision 3 of 14 Oct 2026 brought the microwave and the oven in:
+# whether it comes in too is her call (eval/RUNS.md, 14 Oct 2026).
 OUT_OF_SCOPE = (
     "laptop", "phone", "headphones", "earbuds", "tv", "monitor", "camera", "shoes", "trainers", "sneakers", "boots", "jacket",
     "mattress", "pillow", "vacuum", "hair dryer", "hairdryer", "straightener", "curling iron", "curling wand", "makeup",
     "make-up", "foundation", "mascara", "lipstick", "perfume", "fragrance", "dishwasher", "washing machine", "fridge", "car",
-    "bike", "chair", "desk", "watch", "toothbrush", "razor",
+    "bike", "chair", "desk", "watch", "toothbrush", "razor", "bathroom scale",
 )
-# Out of scope although they hold a product's name: an air conditioner isn't a hair conditioner.
-OUT_OF_SCOPE_LOOKALIKES = ("air conditioner", "air conditioning")
+# Out of scope although they hold a product's name: an air conditioner isn't a hair conditioner, and cleaning products
+# aren't the appliance they clean (14 Oct 2026; the extraction instructions put them under "other" too).
+OUT_OF_SCOPE_LOOKALIKES = ("air conditioner", "air conditioning", "oven cleaner", "microwave cleaner",
+                           "dishwasher tablet", "dishwasher pod", "dishwasher detergent", "dishwasher salt",
+                           "dishwasher cleaner", "rinse aid")
 
 # Phrases that hold a product's word, or an out-of-scope word, but name something else (11 Oct 2026): "cream" in "ice
 # cream maker" isn't a moisturiser, a "crock pot" isn't a saucepan, a "vacuum sealer" isn't a vacuum cleaner. They are
@@ -212,8 +291,17 @@ OUT_OF_SCOPE_LOOKALIKES = ("air conditioner", "air conditioning")
 # plural, which isn't the name and an "s".
 _OTHER_KNIVES = ("paring", "bread", "steak", "utility", "boning", "fillet", "filet", "carving", "butter", "pocket",
                  "cheese", "oyster", "tomato", "petty")
+# 14 Oct 2026 (kitchen appliances, Noemi's decision 3): a blender held in the hand (config.OTHER_KIND_WORDS) isn't a
+# blender, and a beauty or makeup blender is a sponge. A crock pot and an Instant Pot are no longer look-alikes: they
+# name a slow cooker and a pressure cooker.
+_OTHER_BLENDERS = ("immersion", "stick", "hand", "handheld", "hand-held", "beauty", "makeup", "make-up")
+# Where an oven, a microwave or a dishwasher is only the place something goes ("a pan to put in the oven", "oven-safe",
+# "dishwasher-safe"), or what goes with it ("oven gloves", "microwave popcorn", "toaster bags"). Never "for a" or "in an":
+# "looking for a microwave" and "what to look for in an oven" ask for one.
+_PLACES = tuple(f"{word} {the} {appliance}" for word in ("in", "into", "inside", "to", "from")
+                for the in ("the", "my", "your") for appliance in ("oven", "microwave", "dishwasher"))
 LOOKALIKES = (
-    "ice cream", "crock pot", "instant pot", "coffee pot", "sheet pan", "cake pan", "loaf pan", "roasting pan",
+    "ice cream", "coffee pot", "sheet pan", "cake pan", "loaf pan", "roasting pan",
     "baking pan", "muffin pan", "bundt pan", "pie pan", "tart pan", "sun hat", "sun lounger", "vacuum sealer",
     "vacuum flask", "vacuum-insulated", "vacuum insulated",
     # 13 Oct 2026: razor bumps and razor burn are skin, not a razor ("salicylic acid for razor bumps").
@@ -222,7 +310,22 @@ LOOKALIKES = (
     # a blister plaster; a dark spot, an age spot or a sun spot is a mark on the skin, not a spot to treat.
     "hydrocolloid bandage", "hydrocolloid plaster", "hydrocolloid dressing", "blister plaster", "blister patch",
     "dark spot", "age spot", "sun spot",
-) + tuple(f"{kind} {knife}" for kind in _OTHER_KNIVES for knife in ("knife", "knives"))
+    # 14 Oct 2026: what goes in, with or on an appliance isn't the appliance; a pizza oven or a toy oven isn't a kitchen
+    # oven.
+    "out of the oven", "stove to oven", "stovetop to oven", "hob to oven", "oven to table", "oven-to-table",
+    "oven safe", "oven-safe", "ovensafe", "oven proof", "oven-proof", "oven mitt", "oven glove", "oven thermometer",
+    "oven liner", "oven tray", "oven rack", "oven dish", "oven light", "oven bag", "oven chip", "oven temperature",
+    "oven temp", "pizza oven", "easy bake oven",
+    "microwave safe", "microwave-safe", "microwave popcorn", "microwave rice", "microwave meal", "microwave dinner",
+    "microwave cover", "microwave plate", "microwave bowl", "microwave container",
+    "dishwasher safe", "dishwasher-safe", "dishwasher proof", "dishwasher-proof", "through the dishwasher",
+    "toaster bag", "toaster pastry", "toaster pastries", "toaster strudel", "toaster waffle",
+    "air fryer liner", "air fryer paper", "air fryer recipe", "slow cooker liner", "slow cooker recipe",
+    "blender bottle", "blender sponge", "blender brush", "cooker hood",
+    # A coffee maker or an espresso machine with a grinder built in is still the machine.
+    "built-in grinder", "built in grinder", "integrated grinder", "with a grinder", "with grinder",
+) + _PLACES + tuple(f"{kind} {knife}" for kind in _OTHER_KNIVES for knife in ("knife", "knives")) + tuple(
+    f"{kind} blender" for kind in _OTHER_BLENDERS)
 
 # Words that place a vague request in a category, so the question can be more specific.
 CATEGORY_HINTS = {
@@ -277,9 +380,18 @@ def classify(text: str) -> Routing:
 
 
 def _set_aside(lowered: str, phrases: tuple[str, ...]) -> str:
-    """The text with every one of these phrases blanked out (same length, so positions don't move)."""
+    """The text with every one of these phrases blanked out (same length, so positions don't move). A phrase that starts
+    inside a product's name found before it stays (14 Oct 2026): "oven safe" in "a dutch oven safe to 260c" is part of
+    the Dutch oven's name, which is what the request asks for."""
+    named = [(m.start(), m.end()) for product in PRODUCT_TYPES for keyword in product.keywords
+             for m in re.finditer(rf"\b{re.escape(keyword)}s?\b", lowered)]
+
+    def blank(m: re.Match) -> str:
+        inside = any(start < m.start() < end for start, end in named)
+        return m.group(0) if inside else " " * len(m.group(0))
+
     for phrase in phrases:
-        lowered = re.sub(rf"\b{re.escape(phrase)}s?\b", lambda m: " " * len(m.group(0)), lowered)
+        lowered = re.sub(rf"\b{re.escape(phrase)}s?\b", blank, lowered)
     return lowered
 
 
@@ -366,8 +478,11 @@ def search_terms(product_type: str, constraints: Constraints) -> list[str]:
 
 # --- The whole of module 1 ---
 
-# Real words one letter away from a product or skin-type word: never "corrected" into it.
-_REAL_WORDS = {"cleaner", "cleaners"}
+# Real words one letter away from a product or skin-type word: never "corrected" into it. Since 14 Oct 2026 (kitchen
+# appliances) also "cooked" and "cooler" ("cooker"), "toasted" ("toaster"), "blended" and "bender" ("blender"), "juices",
+# "juiced" and "juicier" ("juicer"), "microwaved" ("microwave").
+_REAL_WORDS = {"cleaner", "cleaners", "cooked", "cooler", "coolers", "toasted", "blended", "bender", "juices", "juiced",
+               "juicier", "microwaved"}
 
 
 def correct_typos(text: str) -> str:

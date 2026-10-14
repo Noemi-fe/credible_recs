@@ -269,16 +269,23 @@ def test_hair_tools_and_air_conditioners_stay_out_of_scope():
 
 @pytest.mark.parametrize("text, not_this", [
     ("ice cream maker", "moisturiser"),
-    ("crock pot for stews", "saucepan"),
-    ("instant pot that lasts", "saucepan"),
+    ("coffee pot for camping", "saucepan"),
     ("sheet pan for roasting vegetables", "frying pan"),
     ("sun hat for the beach", "sunscreen"),
 ])
 def test_a_word_inside_another_products_name_is_not_that_product(text, not_this):
     # "cream" in "ice cream maker" isn't a moisturiser: without the open model, the rules ask instead of guessing.
+    # Changed on purpose 14 Oct 2026 (kitchen appliances, Noemi's decision 3): "crock pot for stews" and "instant pot
+    # that lasts" were examples here; they name a slow cooker and a pressure cooker now (below). "coffee pot" takes
+    # their place: still a look-alike.
     routing = classify(text)
     assert routing.product_type != not_this
     assert routing.status == "clarify"
+
+
+def test_a_crock_pot_and_an_instant_pot_are_appliances_not_saucepans():
+    assert classify("crock pot for stews").product_type == "slow cooker"
+    assert classify("instant pot that lasts").product_type == "pressure cooker"
 
 
 def test_a_vacuum_sealer_is_not_a_vacuum_cleaner():

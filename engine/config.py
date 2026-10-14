@@ -14,7 +14,10 @@ MENTION_CATEGORIES = THREAD_CATEGORIES + ("other",)
 SUBREDDITS: dict[str, tuple[str, ...]] = {
     # "acne" added by Noemi on 11 Oct 2026 (an agent had skipped r/acne threads for the acne-prone cleanser question).
     "skincare": ("SkincareAddiction", "AsianBeauty", "30PlusSkinCare", "SkincareAddictionUK", "acne"),
-    "kitchen": ("BuyItForLife", "AskCulinary", "chefknives", "Cooking", "castiron", "Coffee", "espresso", "tea"),
+    # The last six added on 14 Oct 2026 with the kitchen appliances (Noemi's decision 3 of 14 Oct; chosen by Claude,
+    # reported to her): appliance advice and repair (r/Appliances), and the communities of one appliance or use.
+    "kitchen": ("BuyItForLife", "AskCulinary", "chefknives", "Cooking", "castiron", "Coffee", "espresso", "tea",
+                "Appliances", "airfryer", "instantpot", "slowcooking", "Baking", "juicing"),
     # Chosen by Claude on 11 Oct 2026 (reported to Noemi): the science-minded and product-heavy haircare communities,
     # most general advice first.
     "haircare": ("HaircareScience", "curlyhair", "wavyhair", "Hair", "femalehairadvice", "malehairadvice", "Dandruff"),
@@ -266,7 +269,7 @@ BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE = True
 # cleanser cleanser line"; engine.group_products.brand_pick_name).
 BRAND_PICK_NAME = "{brand} {product_type} line"
 # A product type as a name shows it, when that isn't module 1's lowercase name: "Le Creuset Dutch oven line".
-PRODUCT_TYPE_SHOWN: dict[str, str] = {"dutch oven": "Dutch oven"}
+PRODUCT_TYPE_SHOWN: dict[str, str] = {"dutch oven": "Dutch oven", "french press": "French press"}
 # The plural of each product type (engine/query.py, PRODUCT_TYPES): for the name of a brand line left out because its
 # brand doesn't sell them ("Batiste doesn't sell shampoos", BRAND_LINE_NOT_SOLD), and for the words a price or facts
 # entry under a brand's name may add ("OXO kettles"; engine/pipeline.py, _type_words).
@@ -297,6 +300,24 @@ PRODUCT_TYPE_PLURALS: dict[str, str] = {
     "leave-in conditioner": "leave-in conditioners",
     "hair mask": "hair masks",
     "hair oil": "hair oils",
+    # Kitchen appliances (14 Oct 2026).
+    "microwave": "microwaves",
+    "oven": "ovens",
+    "toaster oven": "toaster ovens",
+    "air fryer": "air fryers",
+    "blender": "blenders",
+    "food processor": "food processors",
+    "stand mixer": "stand mixers",
+    "hand mixer": "hand mixers",
+    "slow cooker": "slow cookers",
+    "rice cooker": "rice cookers",
+    "pressure cooker": "pressure cookers",
+    "coffee maker": "coffee makers",
+    "french press": "French presses",
+    "toaster": "toasters",
+    "waffle maker": "waffle makers",
+    "juicer": "juicers",
+    "kitchen scale": "kitchen scales",
 }
 
 # Decision 11, budgets (engine/prices.py). Current prices live in data/prices.json, each with its shop and the day
@@ -373,9 +394,9 @@ PRECHECK_MAX_WAIT_SECONDS = 660
 PRECHECK_STOP_AFTER_UNKNOWN = 20
 # The open model's product types (engine.query_model) the library had threads about on 13 Oct 2026, from its request
 # log (data/library/requests.jsonl, which isn't in the Cloud Run image): checked ahead by their names, like module 1's
-# own types. Types the log names later are checked too wherever the log is.
-PRECHECK_MODEL_TYPES = ("air fryer", "slow cooker", "toaster", "blender", "food processor", "rice cooker", "stand mixer",
-                        "body wash")
+# own types. Types the log names later are checked too wherever the log is. Since 14 Oct 2026 the air fryer, slow
+# cooker, toaster, blender, food processor, rice cooker and stand mixer are module 1's own types (checked ahead as such).
+PRECHECK_MODEL_TYPES = ("body wash",)
 
 # --- Care tips (Noemi, 9 Oct 2026) ---
 # Alongside each pick, credible advice from its threads on looking after it ("descale it every 6 months"; extraction
@@ -486,6 +507,32 @@ NEEDS: dict[str, tuple[str, ...]] = {
     # Something that lasts. A mention with long-term use (module 5) talks about it too: it describes long use.
     "lasting": ("lasts", "lasted", "lasting", "outlast", "durab", "held up", "holds up", "died", "broke",
                 "stopped working", "fell apart"),
+    # 14 Oct 2026 (need-led thread choice, Noemi's decision 3 of 14 Oct; words chosen by Claude, reported to her): a quiet
+    # appliance, and a pan for a glass-top (ceramic) stove, said in the words people use. "glass" alone isn't one.
+    "quiet": ("quiet", "noise", "noisy", "loud", "silent", "silence"),
+    "glass top stove": ("glass top", "glass-top", "glasstop", "glass stove", "glass cooktop", "glass hob",
+                        "ceramic hob", "ceramic cooktop", "ceramic top", "ceramic stove", "smooth top", "smooth-top",
+                        "smoothtop"),
+}
+# A haircare request's needs (14 Oct 2026, need-led thread choice, Noemi's decision 3 of 14 Oct; words chosen by Claude,
+# reported to her), in place of the skin types': a scalp is oily, hair is dry, fine or frizzy, and the words differ
+# ("shiny" hair isn't greasy, a "flaky" scalp is dandruff, not dry hair). Found as NEEDS' words are: a word at the start
+# of a word, a phrase whole. "fine" or "dry" alone aren't words of them: "it works fine", "I let it air dry".
+HAIR_NEEDS: dict[str, tuple[str, ...]] = {
+    "oily hair": ("oily", "oili", "greas", "sebum"),
+    "dry hair": ("dry hair", "dry ends", "dry curls", "dry strands", "dry and", "dry,", "dry curly", "dry wavy",
+                 "dry frizzy", "dryness", "brittle", "like straw", "straw-like", "dehydrat", "parched"),
+    "dandruff": ("dandruff", "flak", "seborrh", "seb derm", "sebderm", "malassezia"),
+    "itchy scalp": ("itch",),
+    "sensitive scalp": NEEDS["sensitive"],
+    "fine hair": ("fine hair", "fine strands", "fine curly", "fine wavy", "fine straight", "fine flat", "fine thin",
+                  "fine and thin", "thin hair", "thin fine", "flat hair", "falls flat", "fall flat", "limp", "volum",
+                  "weigh", "lifeless"),
+    "frizzy": ("frizz", "flyaway", "fly-away", "fly away"),
+    "curly": ("curl", "coil", "ringlet", "3a", "3b", "3c", "4a", "4b", "4c"),
+    "wavy": ("wavy", "waves", "wavies", "2a", "2b", "2c"),
+    "colour-treated": ("colour-treated", "color-treated", "colour treated", "color treated", "coloured", "colored",
+                       "dye", "bleach", "highlight", "colour-safe", "color-safe", "colour safe", "color safe"),
 }
 # Other words of a request that name one of those needs: "first chef's knife", "will last decades", "lasts 10+ years".
 # Module 1's "lasts 10+ years" (min_years) names "lasting" as well.
@@ -872,9 +919,15 @@ COPIED_TEXT_MIN_WORDS = 20
 # v10 (13 Oct 2026, Noemi's decision 2) only added the "spot treatment" type's name to the list the AI types products
 # with, so every v9 extraction stays current (the AI had typed pimple patches in plain words, "pimple patch", which the
 # spot treatment type's words find), and v8 ones of skincare and kitchen threads, as under v9.
+# v11 (14 Oct 2026, Noemi's decision 3: kitchen appliances as product types) only added the appliances' names, and how
+# their usual kinds are typed, to that list: the AI had typed appliances in plain words ("air fryer", "rice cooker",
+# "multicooker", "air fryer oven"), which module 1's names and words find, so every v10 and v9 extraction stays current,
+# and v8 ones of skincare and kitchen threads.
 EXTRACT_STILL_CURRENT: dict[str, dict[str, tuple[str, ...]]] = {
     "extract-v9": {"extract-v8": ("skincare", "kitchen")},
     "extract-v10": {"extract-v9": THREAD_CATEGORIES, "extract-v8": ("skincare", "kitchen")},
+    "extract-v11": {"extract-v10": THREAD_CATEGORIES, "extract-v9": THREAD_CATEGORIES,
+                    "extract-v8": ("skincare", "kitchen")},
 }
 
 # --- Going live (Noemi, 11 Oct 2026) ---
@@ -912,11 +965,24 @@ USE_MAX_YEARS = 60
 # one ended the whole search: haircare's big threads, mostly years old, were out of reach. Its searches are free, so
 # now: up to ARCHIVE_MAX_SEARCHES title searches (every decided subreddit), ARCHIVE_POSTS_EACH posts each (the most
 # Arctic Shift gives), then the same searches again for posts from before ARCHIVE_OLDER_YEARS ago; a failed search is
-# skipped and named, and ARCHIVE_SEARCH_MAX_FAILURES of them end the round. Chosen by Claude, reported to Noemi.
+# skipped and named, and ARCHIVE_SEARCH_MAX_FAILURES of them end the round (in a row since 13 Oct 2026: a busy archive
+# fails some searches and answers others; one that is down fails every one). Chosen by Claude, reported to Noemi.
 ARCHIVE_MAX_SEARCHES = 16
 ARCHIVE_POSTS_EACH = 100
 ARCHIVE_OLDER_YEARS = 3
 ARCHIVE_SEARCH_MAX_FAILURES = 3
+# 13 Oct 2026 (the data round): Arctic Shift timed out on half the searches for "shampoo" over 3 years in the big
+# haircare subreddits, round after round, and answered one over the last year in 14 s. A search that times out is asked
+# again as the two halves of its span (an undated one as the two windows above): the newer half of its first timeout right
+# away, every other half at the end of the round, so one search that times out over any span can't end the round. At
+# most this many halvings: then it counts as failed. Chosen by Claude, reported to Noemi.
+ARCHIVE_SPLIT_DEPTH = 2
+# 13 Oct 2026 (the data round): Arctic Shift answers the newest 100 posts of a title search, so "conditioner" over 3 years
+# in r/curlyhair finds the last few months of small posts, and the threads asking a request's exact question ("best
+# conditioner for curly hair?", often years old and big) stayed out of reach. The archive's round also searches the
+# product's title word with each of the request's first ARCHIVE_NEED_WORDS need words ("conditioner curly"), in each of
+# its subreddits, over the whole history: few posts match both. Chosen by Claude, reported to Noemi.
+ARCHIVE_NEED_WORDS = 2
 # 12 Oct 2026: a title search over a big subreddit's whole history timed out, one bounded by dates didn't (r/curlyhair,
 # "conditioner": 35 s for the last 3 years, 11 s for the 6 before). So both rounds are bounded: the last
 # ARCHIVE_OLDER_YEARS years, then back to ARCHIVE_OLDEST_FACTOR times as far (9 years).

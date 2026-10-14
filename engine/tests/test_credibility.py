@@ -1077,3 +1077,34 @@ def test_copies_are_looked_for_once_per_thread_as_it_is(monkeypatch):
     assert calls == ["1fake01"]
     changed = thread.model_copy(update={"comments": [thread.comments[0]]})
     assert copy_groups(changed) == []  # the thread now holds other comments: looked at afresh
+
+
+# --- Which of a product's name words a sentence holds, found by looking them up (latency, 13 Oct 2026) ---
+
+import random  # noqa: E402
+
+from engine import credibility  # noqa: E402
+from engine.text import one_edit_apart  # noqa: E402
+
+
+def found_one_by_one(words: list[str], name_words: set[str]) -> frozenset[str]:
+    """The name words found among `words` as module 5 first worked it out, every word against every name word: the
+    reference the quicker one must always equal."""
+    def same(word: str, name_word: str) -> bool:
+        if word == name_word or word in (name_word + "s", name_word.removesuffix("s")):
+            return True
+        return len(name_word) >= 5 and word not in credibility.GENERIC_NAME_WORDS and one_edit_apart(word, name_word)
+
+    return frozenset(name_word for name_word in name_words if any(same(word, name_word) for word in words))
+
+
+def test_name_words_found_by_lookup_are_those_found_one_by_one():
+    rng = random.Random(13)
+    stems = ["lodge", "lodges", "lodg", "lodgee", "cerave", "ceraves", "cerav", "ceravee", "kettle", "kettles", "kettel",
+             "stagg", "staggs", "stag", "fellow", "fellows", "felow", "cleanser", "gleanser", "cleansers", "pan", "pans",
+             "s", "ss", "bha", "bhas", "ordinary", "ordinarys", "ordinry", "creuset", "creseut", "creusets", "a", "it"]
+    for _ in range(3000):
+        words = [rng.choice(stems) for _ in range(rng.randint(0, 12))]
+        name_words = {rng.choice(stems) for _ in range(rng.randint(0, 4))}
+        assert credibility._found_name_words(words, name_words) == found_one_by_one(words, name_words), (
+            words, name_words)

@@ -7,10 +7,12 @@ sensitive skin"). So the ranking counts such mentions more: the pipeline multipl
 config.NEED_MATCH_BOOST (off, 1.0, since 9 Oct 2026; see config). The minimum-evidence rule doesn't change: it counts credible mentions, not weights.
 
 A request's needs (request_needs), in the order the request gives them:
-- the needs of config.NEEDS that it names: by name or by one of the need's words ("new to retinol" names
-  "beginner", "doesn't leave a white cast" names "no white cast"); module 1's skin types ("sensitive") and must-haves
-  ("fragrance-free"); a few other words of config.NEED_REQUEST_WORDS ("first chef's knife" names "beginner", "will
-  last decades" names "lasting"); and module 1's "lasts 10+ years" (min_years), which names "lasting" too;
+- the needs of config.NEEDS that it names (for a haircare request, config.HAIR_NEEDS in place of the skin types, since
+  14 Oct 2026: "greasy hair" is an oily scalp, "fine flat hair" fine hair): by name or by one of the need's words
+  ("new to retinol" names "beginner", "doesn't leave a white cast" names "no white cast"); module 1's skin types
+  ("sensitive") and must-haves ("fragrance-free"); a few other words of config.NEED_REQUEST_WORDS ("first chef's knife"
+  names "beginner", "will last decades" names "lasting"); and module 1's "lasts 10+ years" (min_years), which names
+  "lasting" too;
 - every other specific word of the request (engine.sources.need_words: "pour-over", "PFAS", "winter"), each a need of
   its own, found in comments by that word alone. The words of config.NEED_IGNORED_WORDS ("leave", "cook", "burr")
   are left out: they are too common in comments to show anything.
@@ -20,15 +22,21 @@ of the need's words, at the start of a word: a word beginning finds its longer f
 "sensitivity"), and a phrase is found whole ("white cast", "white casts"). A request's own word is found the way
 module 2 finds it in a thread title: "pour over" and "pourover" both find "pour-over" (engine.sources._title_has).
 A mention with long-term use (module 5) also talks about "lasting": it describes long use.
+
+A thread talks about a need (thread_needs, 14 Oct 2026) when its title or post does, the same way, unless its title
+names another type of product and not the one asked for: the library's first reading reads such threads first
+(engine.sources.LocalSource).
 """
 
 import re
 from dataclasses import dataclass
 from functools import cache
 
-from engine.config import NEED_IGNORED_WORDS, NEED_REQUEST_WORDS, NEEDS
+from engine.config import HAIR_NEEDS, NEED_IGNORED_WORDS, NEED_REQUEST_WORDS, NEEDS
 from engine.credibility import _own_words
-from engine.query import PRODUCT_TYPES, ParsedQuery
+from engine.memo import Table
+from engine.models import Thread
+from engine.query import PRODUCT_TYPES, SKIN_TYPES, ParsedQuery
 from engine.sources import _stem, _title_has, need_words
 
 LASTING = "lasting"  # the need that long-term use also speaks to
@@ -43,21 +51,44 @@ class Need:
     request_word: str | None = None  # a word of the request, as module 2 matches it ("pourover"); None otherwise
 
 
+def needs_of(category: str | None) -> dict[str, tuple[str, ...]]:
+    """The needs a request of this category can name, with their words: config.NEEDS, and for haircare config.HAIR_NEEDS
+    in place of the skin types (14 Oct 2026: "greasy hair" is an oily scalp, not oily skin)."""
+    if category == "haircare":
+        return {need: words for need, words in NEEDS.items() if need not in SKIN_TYPES} | HAIR_NEEDS
+    return NEEDS
+
+
 def request_needs(query: ParsedQuery) -> tuple[Need, ...]:
     """The needs the request names, in the order it names them (a need module 1 found but the words don't show, last).
 
-    Nothing for a request module 1 didn't understand (a question or a polite no).
+    Nothing for a request module 1 didn't understand (a question or a polite no). They depend on the request alone, so
+    they are worked out once per request, known by everything module 1 read in it (latency, 13 Oct 2026: an answer asks
+    for them thousands of times, through engine.product_facts.request_asks).
     """
     if query.status != "ok":
         return ()
+    key = query.model_dump_json()
+    found = _REQUEST_NEEDS.get(key)
+    if found is None:
+        found = _REQUEST_NEEDS.keep(key, _request_needs(query))
+    return found
+
+
+_REQUEST_NEEDS = Table(limit=10_000)  # a request, as module 1 read it -> its needs
+_NEEDS_MET = Table()  # (comment, needs, long-term use) -> the needs it talks about
+
+
+def _request_needs(query: ParsedQuery) -> tuple[Need, ...]:
     text = _without_product_names(_plain(query.text), query.product_type)
+    needs = needs_of(query.category)
     found: dict[str, int] = {}  # need name -> where the request names it
 
     def name(need: str, at: int) -> None:
-        if need in NEEDS:
+        if need in needs:
             found[need] = min(at, found.get(need, at))
 
-    for need, words in NEEDS.items():
+    for need, words in needs.items():
         for word in (need,) + words:
             at = _first_at(text, word)
             if at is not None:
@@ -72,20 +103,40 @@ def request_needs(query: ParsedQuery) -> tuple[Need, ...]:
         at, typed = _as_typed(query.text, word)
         if word in NEED_REQUEST_WORDS:
             name(NEED_REQUEST_WORDS[word], at)
-        elif not _covered(word, found):
+        elif not _covered(word, found, needs):
             own_words.append((at, Need(typed, request_word=word)))
-    listed = [(at, Need(need, NEEDS[need])) for need, at in found.items()]
+    listed = [(at, Need(need, needs[need])) for need, at in found.items()]
     return tuple(need for _, need in sorted(listed + own_words, key=lambda pair: pair[0]))
+
+
+def thread_needs(thread: Thread, needs: tuple[Need, ...], titled_as_another_type: bool = False) -> tuple[str, ...]:
+    """The names of the request's needs a thread's title or post talks about, in the request's order (14 Oct 2026, the
+    library's need-led first reading: engine.sources.LocalSource). Nothing when `titled_as_another_type`: its title
+    names another type of product and not the one asked for (engine.sources.titled_as_another_type), so the thread is
+    about that one, whatever its post says ("SPF for oily skin?" is no moisturiser thread for oily skin)."""
+    if not needs or titled_as_another_type:
+        return ()
+    met = set(needs_met(thread.title, needs)) | set(needs_met(thread.body or "", needs))
+    return tuple(need.name for need in needs if need.name in met)
 
 
 def needs_met(body: str, needs: tuple[Need, ...], long_term_use: bool = False) -> tuple[str, ...]:
     """The names of the needs a comment talks about, in the request's order: an empty tuple when it talks about none.
 
     `body` is the comment as saved; only the writer's own words count, not quoted blocks. `long_term_use` is module
-    5's finding for this mention: long use also speaks to "lasting".
+    5's finding for this mention: long use also speaks to "lasting". It depends on these alone, so each is worked out
+    once (latency, 13 Oct 2026: a comment naming several products was read again for each).
     """
     if not needs:
         return ()
+    key = (body, needs, long_term_use)
+    found = _NEEDS_MET.get(key)
+    if found is None:
+        found = _NEEDS_MET.keep(key, _needs_met(body, needs, long_term_use))
+    return found
+
+
+def _needs_met(body: str, needs: tuple[Need, ...], long_term_use: bool) -> tuple[str, ...]:
     text = _own_words(body)
     met = []
     for need in needs:
@@ -144,7 +195,7 @@ def _as_typed(request: str, word: str) -> tuple[int, str]:
     return len(request), word
 
 
-def _covered(word: str, found: dict[str, int]) -> bool:
+def _covered(word: str, found: dict[str, int], needs: dict[str, tuple[str, ...]] = NEEDS) -> bool:
     """Whether a need word is already part of a need found, or is a word too common to show a need.
 
     "sensitive" is the need "sensitive" (one of its words begins it), "acneprone" is "acne-prone" (the name without its
@@ -155,7 +206,7 @@ def _covered(word: str, found: dict[str, int]) -> bool:
     for need in found:
         if word == re.sub(r"[\s-]", "", need):
             return True
-        for need_word in NEEDS[need]:
+        for need_word in needs[need]:
             if " " in need_word and word in need_word.split():
                 return True
             if " " not in need_word and word.startswith(need_word.replace("-", "")):

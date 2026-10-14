@@ -76,7 +76,7 @@ Two more steps happen only when the name is shown to a shopper (engine/pipeline.
 
 import re
 from collections import Counter, defaultdict
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from functools import lru_cache
 
@@ -84,8 +84,8 @@ from engine.config import BRAND_PICK_NAME, PRODUCT_TYPE_PLURALS, PRODUCT_TYPE_SH
 from engine.extract import CheckResult
 from engine.memo import register
 from engine.match_products import (
-    KIND_WORDS, Aliases, comparable, held_back_word, join_split_words, known_aliases, match_candidates, normalize_name,
-    own_words, product_words, same_words, written_alike,
+    KIND_WORDS, Aliases, _features, comparable, held_back_word, join_split_words, known_aliases,
+    match_candidates_and_open, normalize_name, own_words, product_words, same_words, same_words_looked_at, written_alike,
 )
 
 # Words that never tell two products apart, so a loose name equal to a product's name but for them names that product
@@ -146,36 +146,77 @@ def mentions_from_checked(checked: dict[str, CheckResult]) -> list[ProductMentio
     ]
 
 
+Words = tuple[str, ...]
+
+
 def group_of(groups: list[ProductGroup]) -> dict[ProductMention, ProductGroup]:
     """Each mention's group, so the pipeline can give every mention its product key and shown name."""
     return {m: g for g in groups for m in g.mentions}
 
 
 def group_products(mentions: list[ProductMention], aliases: dict[str, Aliases] | None = None,
-                   product_type: str | None = None) -> list[ProductGroup]:
+                   product_type: str | None = None, index: Mapping[str, "NameIndex"] | None = None) -> list[ProductGroup]:
     """The mentions gathered into product groups, biggest first (then by key).
 
     `aliases` is {category: known short names}; by default, the shipped list (engine/data/product_aliases.json).
     `product_type`: the requested type of product, when grouping for one request (engine/pipeline.py): a name made of
     another name and that type's words then names what that name names, in that type (the module docstring's "In one
-    request"). None groups names alone, as for the whole library.
+    request"). None groups names alone, as for the whole library. `index`: {category: NameIndex} of the library the
+    mentions come from (library_name_index, with the same short names), whose pairs of names stand in for working
+    them out again; the groups are the same with it or without.
     """
     aliases = known_aliases() if aliases is None else aliases
     by_category: dict[str, list[ProductMention]] = defaultdict(list)
     for m in mentions:
         by_category[m.category].append(m)
     groups = [g for category, ms in by_category.items()
-              for g in _group_category(category, ms, aliases.get(category, {}), product_type)]
+              for g in _group_category(category, ms, aliases.get(category, {}), product_type,
+                                       (index or {}).get(category))]
     return sorted(groups, key=lambda g: (-len(g.mentions), g.key))
 
 
-Words = tuple[str, ...]
+class NameIndex:
+    """The pairs of names the quick look leaves (engine.match_products.match_candidates_and_open), among all the names
+    of one category of a library's mentions and their names without each product type's words (their bases): worked
+    out once for the library, so a request's grouping takes its own names' pairs from it instead of working them out
+    again (latency, 13 Oct 2026: that was half of grouping, and grouping a third of a fresh answer)."""
+
+    def __init__(self, names: Iterable[Words]):
+        self.candidates, self.open_pairs = match_candidates_and_open(sorted(set(names)))
+
+    def among(self, names: list[Words]) -> tuple[dict[Words, set[Words]], set[tuple[Words, Words]]] | None:
+        """match_candidates_and_open(names), from the index: the candidates among `names` (and the pairs, in order,
+        the quick look leaves: the index's, a pair of them is asked about only when both are among `names`); None when
+        a name isn't in the index (a type the open model named has bases of its own)."""
+        candidates = self.candidates
+        if not all(name in candidates for name in names):
+            return None
+        among = set(names)
+        return {name: candidates[name] & among for name in dict.fromkeys(names)}, self.open_pairs
+
+
+def library_name_index(mentions: Iterable[ProductMention],
+                       aliases: dict[str, Aliases] | None = None) -> dict[str, NameIndex]:
+    """{category: NameIndex} for a library's mentions: every name, as grouping reads it (product_words, with these
+    short names: the shipped list by default), and its base in each of module 1's product types."""
+    from engine.query import PRODUCT_TYPES  # here: engine.query's own imports reach this module's
+
+    aliases = known_aliases() if aliases is None else aliases
+    names: dict[str, set[Words]] = defaultdict(set)
+    for m in mentions:
+        words = tuple(product_words(m.product, aliases.get(m.category, {})))
+        if words:
+            names[m.category].add(words)
+    every_type = [_type_words(p.name) for p in PRODUCT_TYPES]
+    return {category: NameIndex(own | {base for words in own for type_words in every_type
+                                       if (base := _without_type_words(words, type_words))})
+            for category, own in names.items()}
 
 
 def _group_category(category: str, mentions: list[ProductMention], aliases: Aliases,
-                    product_type: str | None = None) -> list[ProductGroup]:
+                    product_type: str | None = None, index: "NameIndex | None" = None) -> list[ProductGroup]:
     """Steps 1 to 5 of the module docstring, for the mentions of one category; with the requested `product_type`, the
-    steps of "In one request" too."""
+    steps of "In one request" too. `index`: the category's NameIndex, for the pairs of names that could match."""
     type_words = _type_words(product_type)
     by_words: dict[Words, list[ProductMention]] = defaultdict(list)  # step 1
     nameless: dict[str, list[ProductMention]] = defaultdict(list)  # filler words only
@@ -196,8 +237,11 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
     bases = {w: _without_type_words(w, type_words) for w in names} if type_words else {}
     # Step 2. Only pairs that could match are compared (engine.match_products.match_candidates; latency, 12 Oct 2026):
     # every pair that matches is among them, in the same order as before.
-    candidates = match_candidates(names + sorted({b for b in bases.values() if b}))
-    matches = {w: [v for v in sorted(candidates[w]) if v in by_words and _matching(w, v, alone)] for w in names}
+    universe = names + sorted({b for b in bases.values() if b})
+    found = index.among(universe) if index is not None else None
+    candidates, open_pairs = found if found is not None else match_candidates_and_open(universe)
+    matches = {w: [v for v in sorted(candidates[w]) if v in by_words and _matching(w, v, alone, open_pairs)]
+               for w in names}
     spelling = {w: w for w in names}  # each name -> the first of its spellings
     for w in names:
         for v in matches[w]:
@@ -210,7 +254,7 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
     # In one request: a name with the type's words fits, as its base, the longer names of products of the type (a.).
     # Never another way of writing the same brand and type ("TO sunscreens" for "TO sunscreen"), nor its own spellings.
     fits_as_base = {w: {v for v in sorted(candidates[base]) if v in by_words and v != w and _could_start(base, v)
-                        and _matching(base, v, alone) and _more_words(v, base)
+                        and _matching(base, v, alone, open_pairs) and _more_words(v, base)
                         and _of_the_type(v, by_words[v], product_type, type_words)
                         and not (bases.get(v) and _alike(bases[v], base))}
                     for w, base in bases.items() if base}
@@ -267,15 +311,34 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
     return groups
 
 
-def _matching(w: Words, v: Words, alone: set[str]) -> bool:
+def _matching(w: Words, v: Words, alone: set[str], open_pairs: set[tuple[Words, Words]]) -> bool:
     """Whether two names match (engine.match_products.same_words), or would but for a one-word name without its brand
     whose word is written alone as a name here (held_back_word): "Ballarini pans" and "Zwilling/Ballarini pans". Only
-    a name whose one word besides its kinds is written alone is asked about (latency, 13 Oct 2026)."""
-    if same_words(list(w), list(v)):
+    a name whose one word besides its kinds is written alone is asked about (latency, 13 Oct 2026). A pair the quick
+    look rules out (engine.match_products._cannot_match: 9 pairs in 10) is neither: both need every word of the
+    shorter name found in the longer one. `open_pairs` are the pairs (in order) of the names' candidates the quick look
+    leaves (engine.match_products.match_candidates_and_open): (w, v) is one of the candidates."""
+    if (w, v) not in open_pairs:
+        return False
+    if same_words_looked_at(w, v):
         return True
     return any(len(own) == 1 and own[0] in alone and own[0] in other
-               for own, other in ((own_words(list(w)), v), (own_words(list(v)), w))) and (
+               for own, other in ((_own_words(w), v), (_own_words(v), w))) and (
         held_back_word(list(w), list(v)) in alone)
+
+
+_OWN_WORDS: dict[Words, list[str]] = {}  # a name's words -> its words besides its kinds of product (own_words)
+register(_OWN_WORDS.clear)
+
+
+def _own_words(words: Words) -> list[str]:
+    """engine.match_products.own_words, worked out once per name (latency, 13 Oct 2026). Never changed by a caller."""
+    found = _OWN_WORDS.get(words)
+    if found is None:
+        if len(_OWN_WORDS) >= 200_000:
+            _OWN_WORDS.clear()
+        found = _OWN_WORDS[words] = own_words(list(words))
+    return found
 
 
 # --- In one request: a name with the requested type's words (13 Oct 2026) ---
@@ -436,12 +499,18 @@ def _without_brand_and_type(own: dict[Words, list[ProductMention]],
 def _fits_two_products(longer: set[Words]) -> bool:
     """Whether a set of longer names a name matches holds two that don't match each other: two products."""
     ordered = sorted(longer)
-    return any(not same_words(list(a), list(b)) for i, a in enumerate(ordered) for b in ordered[i + 1:])
+    return any(not same_words(a, b) for i, a in enumerate(ordered) for b in ordered[i + 1:])
 
 
 def _more_words(a: Words, b: Words) -> bool:
     """Whether name a has more words than name b, once made ready to compare (engine.match_products.comparable: words
-    one writes apart and the other as one joined, an "and" only one writes dropped)."""
+    one writes apart and the other as one joined, an "and" only one writes dropped). When comparable would change
+    neither (no words to join, an "and" in both or neither), their own words are counted at once (latency, 13 Oct
+    2026)."""
+    features_a, features_b = _features(a), _features(b)
+    if (features_a.has_and == features_b.has_and and features_a.runs.isdisjoint(features_b.words)
+            and features_b.runs.isdisjoint(features_a.words)):
+        return len(features_a.words) > len(features_b.words)
     words_a, words_b = comparable(list(a), list(b))
     return len(set(words_a)) > len(set(words_b))
 
@@ -547,10 +616,26 @@ def _shown_spelling(mentions: list[ProductMention], words: Words) -> str:
 
 def uk_name(name: str, shown: Mapping[str, str] = UK_BRAND_NAMES) -> str:
     """The name with each brand the UK knows by another name replaced, whole words only, in any case:
-    "Breville Smart Grinder Pro" -> "Sage Smart Grinder Pro" (decision 12)."""
+    "Breville Smart Grinder Pro" -> "Sage Smart Grinder Pro" (decision 12). With the shipped list of UK names, each
+    name is worked out once (latency, 13 Oct 2026: answers ask it of the same names thousands of times)."""
+    if shown is UK_BRAND_NAMES:
+        found = _UK_NAMES.get(name)
+        if found is None:
+            if len(_UK_NAMES) >= 200_000:
+                _UK_NAMES.clear()
+            found = _UK_NAMES[name] = _uk_name(name, shown)
+        return found
+    return _uk_name(name, shown)
+
+
+def _uk_name(name: str, shown: Mapping[str, str]) -> str:
     for brand, uk_brand in shown.items():
         name = re.sub(rf"(?<!\w){re.escape(brand)}(?!\w)", lambda _: uk_brand, name, flags=re.IGNORECASE)
     return name
+
+
+_UK_NAMES: dict[str, str] = {}  # a name -> as the UK knows it, with the shipped list (uk_name)
+register(_UK_NAMES.clear)
 
 
 def brand_pick_name(brand: str, product_type: str) -> str:
