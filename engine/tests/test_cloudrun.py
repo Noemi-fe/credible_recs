@@ -103,44 +103,43 @@ def test_the_site_and_the_pre_check_share_the_bucket_and_the_image():
     assert '"$PRECHECK_SECRETS"' in job and "HF_TOKEN" not in job
     assert 'PRECHECK_SECRETS="--set-secrets=BRIGHT_DATA_API_KEY=bright-data-key:latest"' in script
     assert "CREDIBLE_RECS_PRECHECK_BRIGHT_DATA=${PRECHECK_BRIGHT_DATA}" in job
-    assert "--args=-m,engine.precheck,--limit,${PRECHECK_LIMIT}" in job and "--max-retries 0" in job
+    # Changed on purpose, 14 Oct 2026 (the free-tier redesign): the job runs the plan, the site reads ahead.
+    assert "--args=-m,engine.precheck,--plan," in job and "--max-retries 0" in job
 
 
 def _precheck_settings(script: str) -> tuple[int, int]:
-    """The pre-check's reads and minutes a run, as deploy.sh gives them to the job."""
+    """The pre-check's minutes (no Bright Data read starts after them) and its task timeout in minutes, as deploy.sh
+    gives them to the job."""
     import re
 
-    limit = int(re.search(r'PRECHECK_LIMIT="\$\{CREDIBLE_RECS_PRECHECK_LIMIT:-(\d+)\}"', script).group(1))
     minutes = int(re.search(r'PRECHECK_MINUTES="\$\{CREDIBLE_RECS_PRECHECK_MINUTES:-(\d+)\}"', script).group(1))
-    assert "--limit,${PRECHECK_LIMIT},--minutes,${PRECHECK_MINUTES}" in _command(script, '$GCLOUD run jobs deploy')
-    return limit, minutes
+    job = _command(script, '$GCLOUD run jobs deploy')
+    assert "--args=-m,engine.precheck,--plan,--minutes,${PRECHECK_MINUTES}" in job
+    return minutes, int(re.search(r"--task-timeout (\d+)m", job).group(1))
 
 
 def test_the_pre_checks_run_fits_in_its_time():
-    # 14 Oct 2026: a run starts no read after its minutes (counted from its start, working out the answers included),
-    # and the last one may wait for Reddit's next 10 minutes; ten minutes more for starting and the bundle's last save.
-    import re
+    # Changed on purpose, 14 Oct 2026 (the free-tier redesign): the job reads nothing on the embed page; it starts no
+    # Bright Data read after its minutes, and one in flight may wait up to BRIGHT_DATA_MAX_WAIT_SECONDS for Bright
+    # Data's answer; five minutes more for starting and writing the plan.
+    from engine.config import BRIGHT_DATA_MAX_WAIT_SECONDS, PRECHECK_PLAN_MINUTES
 
-    from engine.config import PRECHECK_MAX_READS, PRECHECK_MAX_RUN_MINUTES, PRECHECK_MAX_WAIT_SECONDS
-
-    script = DEPLOY_SH.read_text(encoding="utf-8")
-    limit, minutes = _precheck_settings(script)
-    hours = int(re.search(r"--task-timeout (\d+)h", _command(script, '$GCLOUD run jobs deploy')).group(1))
-    assert (limit, minutes) == (PRECHECK_MAX_READS, PRECHECK_MAX_RUN_MINUTES)
-    assert minutes * 60 + PRECHECK_MAX_WAIT_SECONDS + 10 * 60 < hours * 3600
+    minutes, timeout = _precheck_settings(DEPLOY_SH.read_text(encoding="utf-8"))
+    assert minutes == PRECHECK_PLAN_MINUTES
+    assert minutes * 60 + BRIGHT_DATA_MAX_WAIT_SECONDS + 5 * 60 <= timeout * 60
 
 
 def test_the_jobs_stay_inside_cloud_runs_free_tier_in_the_longest_month():
     # Free tiers only. Cloud Run jobs are billed per instance-second for their whole run, waiting included: 240,000
-    # vCPU-seconds and 450,000 GiB-seconds a month are free. The pre-check runs daily for at most its minutes plus the
-    # last read's wait and a minute to save; on-demand reading for at most ON_DEMAND_MONTH_SECONDS a month. 10% is kept
-    # in hand.
+    # vCPU-seconds and 450,000 GiB-seconds a month are free. Changed on purpose, 14 Oct 2026 (the free-tier redesign):
+    # the pre-check runs daily for at most its task timeout (Cloud Run stops it there), the whole 31-day month;
+    # on-demand reading for at most ON_DEMAND_MONTH_SECONDS a month. 10% is kept in hand.
     import re
 
-    from engine.config import ON_DEMAND_MONTH_SECONDS, PRECHECK_MAX_WAIT_SECONDS
+    from engine.config import ON_DEMAND_MONTH_SECONDS
 
     script = DEPLOY_SH.read_text(encoding="utf-8")
-    _, minutes = _precheck_settings(script)
+    _, timeout = _precheck_settings(script)
     precheck = _command(script, '$GCLOUD run jobs deploy')
     reader = _command(ON_DEMAND_SH.read_text(encoding="utf-8"), '$GCLOUD run jobs deploy')
 
@@ -149,10 +148,38 @@ def test_the_jobs_stay_inside_cloud_runs_free_tier_in_the_longest_month():
         return float(re.search(r"--cpu (\d+)", job).group(1)), int(memory.group(1)) / (1024 if memory.group(2) ==
                                                                                            "Mi" else 1)
 
-    precheck_seconds = 31 * (minutes * 60 + PRECHECK_MAX_WAIT_SECONDS + 60)
+    precheck_seconds = 31 * timeout * 60
     (cpu, gib), (reader_cpu, reader_gib) = size(precheck), size(reader)
     assert precheck_seconds * cpu + ON_DEMAND_MONTH_SECONDS * reader_cpu <= 0.9 * 240_000
     assert precheck_seconds * gib + ON_DEMAND_MONTH_SECONDS * reader_gib <= 0.9 * 450_000
+    # The sums DEPLOY.md gives: 83,700 vCPU-seconds (35%) for the pre-check at most, 133,700 (56%) with on-demand's.
+    assert (precheck_seconds * cpu, precheck_seconds * cpu + ON_DEMAND_MONTH_SECONDS * reader_cpu) == (83_700, 133_700)
+
+
+def test_the_site_reads_ahead_within_a_third_of_its_own_free_tier():
+    # 14 Oct 2026 (the free-tier redesign): the site is billed only while it answers (request-billed: 180,000
+    # vCPU-seconds and 360,000 GiB-seconds free a month). Reading ahead adds at most READ_AHEAD_SECONDS (and a second for
+    # the last reads to come back) to each keep-warm ping, every 5 minutes (DEPLOY.md's schedule), on the site's size.
+    import re
+
+    from engine.config import READ_AHEAD_SECONDS
+
+    deploy = (Path(make_context.REPO_ROOT) / "deploy" / "cloudrun" / "DEPLOY.md").read_text(encoding="utf-8")
+    assert '--schedule "*/5 * * * *"' in deploy  # the keep-warm ping
+    site = _command(DEPLOY_SH.read_text(encoding="utf-8"), '$GCLOUD run deploy')
+    cpu = float(re.search(r"--cpu (\d+)", site).group(1))
+    gib = int(re.search(r"--memory (\d+)Gi", site).group(1))
+    seconds = 31 * 24 * 12 * (READ_AHEAD_SECONDS + 1)
+    assert seconds * cpu <= 180_000 / 3 and seconds * gib <= 360_000 / 3
+    assert seconds * cpu == 53_568  # DEPLOY.md's sum
+
+
+def test_the_bright_data_records_stay_well_inside_its_free_tier():
+    # The pre-check's records a month (30 a run, every day of a 31-day month): under a fifth of Bright Data's free
+    # 5,000, which it shares with the library's own reads.
+    from engine.config import BRIGHT_DATA_MONTHLY_RECORDS, PRECHECK_BRIGHT_DATA_RECORDS
+
+    assert 31 * PRECHECK_BRIGHT_DATA_RECORDS == 930 <= BRIGHT_DATA_MONTHLY_RECORDS / 5
 
 
 def test_the_kept_comments_reads_are_applied_to_the_library_before_it_is_bundled():

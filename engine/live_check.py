@@ -379,21 +379,60 @@ class LiveChecker:
 
     def saved_text(self, comment_url: str) -> tuple[datetime, str | None] | None:
         """When the comment was last read and its text as Reddit showed it then (None: the page had no comment on it),
-        from a check saved in the last 48 hours (an unreadable one: LIVE_CHECK_UNREADABLE_KEEP_HOURS); None when there
-        is none. Reddit isn't read. What verifies a slimmed library's kept comments (engine/verify.py, 13 Oct 2026)."""
-        entry = self._saved(embed_url(comment_url), MAX_AGE)
-        return None if entry is None else (datetime.fromisoformat(entry["fetched_at"]), entry["text"])
+        from a read saved in the last 48 hours, one that found no comment included (last_read); None when there is
+        none. Reddit isn't read. What verifies a slimmed library's kept comments (engine/verify.py, 13 Oct 2026)."""
+        last = self.last_read(comment_url)
+        return None if last is None else last[:2]
+
+    def last_read(self, comment_url: str) -> tuple[datetime, str | None, str | None] | None:
+        """The comment's latest read saved here in the last 48 hours, whatever it found: when, its text as Reddit showed
+        it (None: the page had no comment on it) and how it was made (None: the embed page; "bright_data"). A read that
+        found no comment counts here for 48 hours, though a check uses it for LIVE_CHECK_UNREADABLE_KEEP_HOURS only:
+        this says what was read when, for the reads ahead (engine/read_ahead.py) and the verification record
+        (engine/verify.py, 14 Oct 2026), never whether a quote may be shown. Reddit isn't read."""
+        entry = self._saved_here(_entry_name(embed_url(comment_url)))
+        if not self._younger(entry, MAX_AGE):
+            return None
+        return datetime.fromisoformat(entry["fetched_at"]), entry["text"], entry.get("via")
 
     def read_text(self, comment_url: str, max_age: timedelta = MAX_AGE) -> tuple[datetime, str | None] | None:
         """The comment as Reddit's embed page shows it, and when it was read: a check saved within `max_age`, else read
         now (at the same pace as every read). None when it couldn't be read now (an error, or a wait over max_wait):
         nothing was saved, and it is asked again another time."""
         max_age = min(max_age, MAX_AGE)
-        self._comment_text(comment_url, max_age)
-        saved = self.saved_text(comment_url)
-        if saved is None or self._clock() - saved[0] >= max_age:
-            return None  # this read saved nothing: an older check isn't this read
-        return saved
+        name = _entry_name(embed_url(comment_url))
+        entry = self._saved(embed_url(comment_url), max_age)
+        if entry is None:
+            before = self._saved_here(name)
+            self._comment_text(comment_url, max_age)
+            entry = self._saved_here(name)
+            if entry is None or entry == before:
+                return None  # this read saved nothing: an older read isn't this one
+        return datetime.fromisoformat(entry["fetched_at"]), entry["text"]
+
+    def read_if_free(self, comment_url: str, max_age: timedelta = MAX_AGE) -> str:
+        """One read ahead (engine/read_ahead.py, 14 Oct 2026), made only if Reddit's allowance lets it go at once: never
+        a wait. "fresh": a check saved within `max_age` is there, nothing read; "read": read now and saved (a page with
+        no comment on it included); "failed": an error or a refusal, nothing saved; "later": not read, since it would
+        have waited for Reddit's allowance."""
+        max_age = min(max_age, MAX_AGE)
+        name = _entry_name(embed_url(comment_url))
+        if self._saved(embed_url(comment_url), max_age) is not None:
+            return "fresh"
+        before = self._saved_here(name)
+        if self._comment_text(comment_url, max_age, wait=False) is _PUT_OFF:
+            return "later"
+        after = self._saved_here(name)
+        return "read" if after is not None and after != before else "failed"
+
+    def spare(self) -> float | None:
+        """The reads Reddit last said this address has left in its current 10 minutes, less those asked and not answered
+        yet; None when it hasn't said in these 10 minutes (no read yet, or they are over: the allowance is back)."""
+        with self._lock:
+            window = self._window
+            if window is None or self._clock() >= window.ends:
+                return None
+            return window.left - self._in_flight
 
     def _comment_text(self, comment_url: str, max_age: timedelta, wait: bool = True) -> str | None:
         """The comment's text as Reddit shows it now, from a check saved within `max_age` when there is one; None if
@@ -434,32 +473,74 @@ class LiveChecker:
             checks = json.loads(self.bucket.get(BUNDLE_NAME, generation) or b"")["checks"]
         except (ValueError, KeyError, TypeError):
             return 0  # a bundle that can't be read, or that changed again meanwhile: tried again next time
+        written = self.take_checks(checks)
+        self._bundle_generation = generation
+        return written
+
+    def take_checks(self, checks) -> int:
+        """Reads made elsewhere ({name: {"fetched_at", "text", "via"}}: the bundle's, the daily plan's), each written
+        into this machine's folder when its name and shape are a check's, it is under 48 hours old (a read that found no
+        comment too: last_read) and it is newer than this folder's own read of that comment. Nothing else of an entry is
+        kept. How many were written here."""
         written = 0
         for name, value in checks.items() if isinstance(checks, dict) else ():
             entry = _entry(json.dumps(value).encode("utf-8")) if _ENTRY_NAME.match(str(name)) else None
-            if not self._within(entry, MAX_AGE):
+            if not self._younger(entry, MAX_AGE):
                 continue
             here = self._saved_here(name)
             if here is not None and datetime.fromisoformat(here["fetched_at"]) >= datetime.fromisoformat(
                     entry["fetched_at"]):
                 continue
-            self._keep(name, json.dumps(entry, ensure_ascii=False).encode("utf-8"))
+            kept = {key: entry[key] for key in ("fetched_at", "text", "via") if key in entry}
+            self._keep(name, json.dumps(kept, ensure_ascii=False).encode("utf-8"))
             written += 1
-        self._bundle_generation = generation
         return written
 
     def save_bundle(self) -> int | None:
-        """Every check in this machine's folder under 48 hours old, written to the bucket as one object (the daily
-        pre-check does, mid-run and at the end; the site never does). How many it holds; None when it wasn't saved."""
+        """Every read in this machine's folder from the last 48 hours (a page with no comment on it included, so the
+        verification record learns of it: last_read), written to the bucket as one object, whatever version is there (a
+        pre-check run on its own writes it so). How many it holds; None when it wasn't saved."""
         if self.bucket is None:
             return None
+        data, count = self._bundle_data()
+        return count if self.bucket.put(BUNDLE_NAME, data) else None
+
+    def share_bundle(self) -> int | None:
+        """The same bundle written only over the version this checker last read or wrote (Cloud Storage's
+        ifGenerationMatch): how the site writes it, at most hourly (engine/read_ahead.py, 14 Oct 2026). When another
+        writer saved one meanwhile (a second server during a deploy), it is read in first (load_bundle: the newer of
+        each read) and written once more. How many reads it holds; None when it wasn't written."""
+        if self.bucket is None:
+            return None
+        for _ in range(2):
+            data, count = self._bundle_data()
+            generation = self.bucket.put_if(BUNDLE_NAME, data, self._bundle_generation)
+            if generation is None:
+                return None
+            if generation != Bucket.CHANGED:
+                self._bundle_generation = generation
+                return count
+            self.load_bundle()
+        return None
+
+    def checks_made(self, via: str) -> dict[str, dict]:
+        """The reads of the last 48 hours in this machine's folder made another way than the embed page (`via`:
+        "bright_data"), by name, as the bundle holds them: what the daily plan passes to the site."""
+        found = {}
+        for path in sorted(self.cache_dir.glob("*.json")) if self.cache_dir.is_dir() else ():
+            entry = self._saved_here(path.name)
+            if _ENTRY_NAME.match(path.name) and self._younger(entry, MAX_AGE) and entry.get("via") == via:
+                found[path.name] = {key: entry[key] for key in ("fetched_at", "text", "via") if key in entry}
+        return found
+
+    def _bundle_data(self) -> tuple[bytes, int]:
         checks = {}
         for path in sorted(self.cache_dir.glob("*.json")) if self.cache_dir.is_dir() else ():
             entry = self._saved_here(path.name)
-            if _ENTRY_NAME.match(path.name) and self._within(entry, MAX_AGE):
+            if _ENTRY_NAME.match(path.name) and self._younger(entry, MAX_AGE):
                 checks[path.name] = {key: entry[key] for key in ("fetched_at", "text", "via") if key in entry}
         data = json.dumps({"written_at": self._clock().isoformat(), "checks": checks}, ensure_ascii=False)
-        return len(checks) if self.bucket.put(BUNDLE_NAME, data.encode("utf-8")) else None
+        return data.encode("utf-8"), len(checks)
 
     def _saved(self, url: str, max_age: timedelta) -> dict | None:
         """The check of this page saved in this machine's folder within `max_age`; None when there is none."""
@@ -479,7 +560,11 @@ class LiveChecker:
             return False
         if entry["text"] is None:
             max_age = min(max_age, UNREADABLE_MAX_AGE)
-        return self._clock() - datetime.fromisoformat(entry["fetched_at"]) < max_age
+        return self._younger(entry, max_age)
+
+    def _younger(self, entry: dict | None, max_age: timedelta) -> bool:
+        """Whether a saved read is younger than `max_age`, whatever it found."""
+        return entry is not None and self._clock() - datetime.fromisoformat(entry["fetched_at"]) < max_age
 
     def _keep(self, name: str, data: bytes) -> None:
         """Saves a check in this machine's folder, whole under another name and then renamed: a check reading it at the
