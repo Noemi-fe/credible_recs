@@ -1694,6 +1694,20 @@
    "checked_on": "2026-10-14",
    "available": true,
    "note": "Wilfa has discontinued its Svart grinders (Wilfa UK's blog, 30 Jul 2026: the Svart Silver and the Svart Aroma Precision Black are final stock, sold while supplies last, and the Zense replaces them; https://wilfa.co.uk/blogs/news/wilfa-svart-and-uniform-grinders-are-being-discontinued-meet-zense-and-uniform-evo), and Wilfa UK's own shop lists no Svart grinder now. On 14 Oct a UK coffee shop still sells final stock: Peaberry & Leaf has the Svart Aroma (black) at £119, 21 in stock, and the silver Svart, which it sells as the Nymalt (WSCG-2), at £89, 4 in stock; so no one price fits the name. Sold out at Zealots Coffee, Balance Coffee, K+ Coffee and Doppio Coffee; none at Amazon UK (only the Uniform and the Svart Performance coffee maker), John Lewis, Lakeland or Harts of Stur. Once the last shop sells out it is no longer sold"
+  },
+  {
+   "product": "Azclear Action azelaic acid 20%",
+   "category": "skincare",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=azclear+action",
+   "checked_on": "2026-10-14",
+   "available": false,
+   "also_called": [
+    "Ego Azclear Action Medicated Lotion"
+   ],
+   "note": "an Australian pharmacy medicine (Ego Pharmaceuticals' Azclear Action Medicated Lotion, azelaic acid 20%), sold by Australian and New Zealand pharmacies (TerryWhite Chemmart, Chemist Warehouse NZ, where it is pharmacist-only); Amazon UK's search for it shows only other products; no UK shop found selling it"
   }
  ]
 }

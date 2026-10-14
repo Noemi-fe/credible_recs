@@ -1358,6 +1358,209 @@
     ],
     "checked_on": "2026-10-13"
    }
+  },
+  {
+   "product": "Paula's Choice 10% Azelaic Acid Booster",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.paulaschoice.co.uk/aa-booster/m7750.html"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid",
+     "salicylic acid"
+    ],
+    "sources": [
+     "https://www.paulaschoice.co.uk/aa-booster/m7750.html"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "The Ordinary Azelaic Acid Suspension 10%",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://theordinary.com/en-gb/azelaic-acid-suspension-10-brightening-cream-100407.html"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid"
+    ],
+    "form": "cream",
+    "sources": [
+     "https://theordinary.com/en-gb/azelaic-acid-suspension-10-brightening-cream-100407.html"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "The INKEY List 10% Azelaic Acid Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://uk.theinkeylist.com/products/redness-relief-solution"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid"
+    ],
+    "sources": [
+     "https://uk.theinkeylist.com/products/redness-relief-solution"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Anua Azelaic Acid 10 Hyaluron Redness Soothing Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://anua.com/products/azelaic-acid-10-hyaluron-redness-soothing-serum"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid",
+     "hyaluronic acid"
+    ],
+    "sources": [
+     "https://anua.com/products/azelaic-acid-10-hyaluron-redness-soothing-serum"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Boots Ingredients Clarifying Azelaic Acid Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.boots.com/boots-ingredients-clarifying-azelaic-acid-serum-30ml-10381181"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid"
+    ],
+    "sources": [
+     "https://www.boots.com/boots-ingredients-clarifying-azelaic-acid-serum-30ml-10381181"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Peach Slices Redness Relief Azelaic Acid Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.peachandlily.com/collections/acne/products/redness-relief-azelaic-acid-serum"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid"
+    ],
+    "sources": [
+     "https://www.peachandlily.com/collections/acne/products/redness-relief-azelaic-acid-serum"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Ecological Formulas Melazepam Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {},
+   "sources": [
+    "https://fullscript.com/catalog/products/melazepam-2-oz",
+    "https://www.spectrumsupplements.co.uk/supplement/melazepam-cream-2-ounces/"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid"
+    ],
+    "form": "cream",
+    "sources": [
+     "https://fullscript.com/catalog/products/melazepam-2-oz",
+     "https://www.spectrumsupplements.co.uk/supplement/melazepam-cream-2-ounces/"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Finacea (azelaic acid) 15% Gel",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "prescription_only": true
+   },
+   "sources": [
+    "https://www.medicines.org.uk/emc/product/240/smpc"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid"
+    ],
+    "form": "gel",
+    "sources": [
+     "https://www.medicines.org.uk/emc/product/240/smpc"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Skinoren (azelaic acid) 20% Cream",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "prescription_only": true
+   },
+   "sources": [
+    "https://www.medicines.org.uk/emc/product/285/smpc"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid"
+    ],
+    "form": "cream",
+    "sources": [
+     "https://www.medicines.org.uk/emc/product/285/smpc"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Q+A Azelaic Acid Balancing Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.qandaskin.com/products/azelaic-acid-balancing-serum"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid",
+     "zinc"
+    ],
+    "sources": [
+     "https://www.qandaskin.com/products/azelaic-acid-balancing-serum"
+    ],
+    "checked_on": "2026-10-14"
+   }
   }
  ]
 }
