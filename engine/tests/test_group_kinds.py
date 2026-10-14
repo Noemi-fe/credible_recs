@@ -283,3 +283,25 @@ def test_kind_sets_found_by_their_words_are_the_sets_found_one_by_one():
             note = KindMention(f"t{n}", f"c{i}", f"about {i}", rng.choice(["recommend", "warn"]))
             items.append((note, [rng.choice(stems) for _ in range(rng.randint(1, 3))]))
         assert kinds_module._same_kind_sets(items) == same_kind_sets_one_by_one(items), n
+
+
+# --- A text's kind words worked out once per text and list of known names (latency, 14 Oct 2026) ---
+
+def test_a_texts_kind_words_are_worked_out_once_per_list_of_known_names(monkeypatch):
+    # Writing an answer's "What to look for" asks the kind words of the same kinds, notes and names over and over
+    # (9,470 times for 32 answers), each trying every known name at every word.
+    from engine.match_products import known_aliases
+
+    written_out = []
+    real = kinds_module._write_out_anywhere
+    monkeypatch.setattr(kinds_module, "_write_out_anywhere",
+                        lambda words, aliases: written_out.append(1) or real(words, aliases))
+    known = known_aliases("kinds").get("kitchen", {})
+    texts = ["Teflon pans", "carbon steel pan", "a stainless-steel skillet", "Teflon pans"]
+    first = [kinds_module._kind_words(text, known) for text in texts]
+    assert len(written_out) == 3  # "Teflon pans" once
+    assert [kinds_module._kind_words(text, known) for text in texts] == first and len(written_out) == 3
+    first[0].append("changed")  # a caller changing the list changes nothing remembered
+    assert kinds_module._kind_words("Teflon pans", known) == first[0][:-1]
+    other = dict(known)  # another list of known names is another table
+    assert kinds_module._kind_words("Teflon pans", other) == first[0][:-1] and len(written_out) == 4

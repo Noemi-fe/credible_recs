@@ -95,7 +95,7 @@ def _product_pattern(product_type: str) -> re.Pattern:
     known = {p.name: p.keywords + p.hints for p in PRODUCT_TYPES}
     words = known.get(product_type.strip().lower())
     if words:
-        alternatives = "|".join(re.escape(word) for word in words)
+        alternatives = _alternation(list(words))
     else:
         alternatives = r"[\s-]?".join(re.escape(word) for word in product_type.lower().split()) or "(?!)"  # (?!): never
     return re.compile(rf"\b(?:{alternatives})s?\b", re.IGNORECASE)
@@ -105,8 +105,24 @@ def _product_pattern(product_type: str) -> re.Pattern:
 def _covering_pattern(product_type: str) -> re.Pattern:
     """Longer names that hold one of this product's words but name something else: the other product types' names and
     module 1's look-alike phrases ("tea pot" and "crock pot" hold "pot"; "dry shampoo" holds "shampoo")."""
-    alternatives = "|".join(re.escape(x) for x in sorted(_covering_phrases(product_type), key=len, reverse=True))
+    alternatives = _alternation(sorted(_covering_phrases(product_type), key=len, reverse=True))
     return re.compile(rf"\b(?:{alternatives})s?\b", re.IGNORECASE)
+
+
+def _alternation(phrases: list[str]) -> str:
+    """The phrases as one alternation of a regular expression, in their order, grouped by first letter: "a(?:pple|nt)|
+    b(?:ee)" for apple, ant, bee (latency, 14 Oct 2026: written one after another, the hundreds of longer names of other
+    things were tried one by one at every place of a comment, most of reading a thread; grouped, only the group of the
+    letter written there is tried, a tenth of the time). The same matches: at a place, only the phrases starting with
+    the letter written there can match, and they are tried in the same order. Not grouped when a phrase starts with
+    anything but an ASCII character: read case-blind, a letter such as the long s could start two groups."""
+    if not all(phrase and phrase[0].isascii() for phrase in phrases):
+        return "|".join(re.escape(phrase) for phrase in phrases)
+    groups: dict[str, list[str]] = {}
+    for phrase in phrases:
+        groups.setdefault(phrase[0].lower(), []).append(phrase)
+    return "|".join(re.escape(group[0][0]) + "(?:" + "|".join(re.escape(phrase[1:]) for phrase in group) + ")"
+                    for group in groups.values())
 
 
 def _covering_phrases(product_type: str) -> set[str]:
@@ -138,12 +154,12 @@ def _never_covered(product_type: str) -> frozenset[str]:
 _ODD_LETTERS = re.compile("[\u0130\u0131\u017f]")
 
 
-def _names_written(lowered: str | bytes, odd: bool, product_type: str) -> bool:
+def _names_written(lowered: str, odd: bool, product_type: str) -> bool:
     """A quick look before the product's pattern is searched for (latency, 14 Oct 2026): False only when none of its
-    names is written in the text at all, in any case (`lowered` is the text in lowercase, or that in UTF-8), so the
-    pattern can't match. True when it can't tell: a product found by other patterns than its names (an ingredient's, a
-    type the open model named), or a text with one of _ODD_LETTERS (`odd`)."""
-    names = _literal_names(product_type) if isinstance(lowered, str) else _literal_names_in_utf8(product_type)
+    names is written in the text at all, in any case (`lowered` is the text in lowercase), so the pattern can't match.
+    True when it can't tell: a product found by other patterns than its names (an ingredient's, a type the open model
+    named), or a text with one of _ODD_LETTERS (`odd`)."""
+    names = _literal_names(product_type)
     return names is None or odd or any(name in lowered for name in names)
 
 
@@ -208,11 +224,13 @@ REMEMBERED_TEXT_LENGTH = 400
 _MENTIONS = Table()  # (text, product type, word left aside) -> mentions_product's answer
 
 
-def _mentions_product(text: str, product_type: str, leave_aside: str) -> bool:
+def _named_by_pattern(text: str, lowered: str, odd: bool, product_type: str, leave_aside: str = "") -> bool:
+    """Whether the product's pattern finds one of its names in the text, other than inside a longer name of something
+    else (mentions_product, without its slips). `lowered`: the text in lowercase; `odd`: whether it holds one of
+    _ODD_LETTERS."""
     covers = None
     never_covered = _never_covered(product_type)
-    lowered, odd = text.lower(), bool(_ODD_LETTERS.search(text))
-    for match in (_product_pattern(product_type).finditer(text) if _names_written(lowered, odd, product_type) else ()):
+    for match in _product_pattern(product_type).finditer(text):
         if leave_aside and _same_word_as(match.group(0), leave_aside):
             continue
         form = match.group(0).lower()
@@ -222,6 +240,13 @@ def _mentions_product(text: str, product_type: str, leave_aside: str) -> bool:
             covers = [(c.start(), c.end()) for c in _covering_pattern(product_type).finditer(text)]
         if not any(s <= match.start() and match.end() <= e and e - s > match.end() - match.start() for s, e in covers):
             return True
+    return False
+
+
+def _mentions_product(text: str, product_type: str, leave_aside: str) -> bool:
+    lowered, odd = text.lower(), bool(_ODD_LETTERS.search(text))
+    if _names_written(lowered, odd, product_type) and _named_by_pattern(text, lowered, odd, product_type, leave_aside):
+        return True
     long_names = _long_names(product_type)
     if not long_names:  # no name long enough to forgive a slip in: nothing more to look for (latency, 13 Oct 2026)
         return False
@@ -292,36 +317,50 @@ class CommentsRead:
 
     comments: list[Comment]  # the very list read
     bodies: list[str]
-    starts: list[int]  # where each starts once they are joined by COMMENTS_APART
-    lowered: bytes  # their texts in lowercase, joined the same way, in UTF-8: a quarter of the memory of the text when
-    # it holds an emoji (Python then keeps every character in 4 bytes), and a name is in it just when it is in the text
+    lowered: bytes  # their texts in lowercase, joined by COMMENTS_APART, in UTF-8: a quarter of the memory of the text
+    # when it holds an emoji (Python then keeps every character in 4 bytes), and a name is in it just when it is in the
+    # text
+    lowered_starts: list[int]  # where each comment starts in `lowered`
     odd: frozenset[int]  # the comments holding one of _ODD_LETTERS
     long_words: dict[str, tuple[int, ...]]  # each long word in them (_LONG_WORD, in lowercase, a plural "s" left
     # out) -> the comments holding it
 
 
 def read_comments(comments: list[Comment]) -> CommentsRead:
-    """The comments read as comments_naming reads them whatever the product: where each starts once joined
-    (COMMENTS_APART), their texts in lowercase, the comments holding an odd letter, and their long words with the
+    """The comments read as comments_naming reads them whatever the product: their texts in lowercase, joined
+    (COMMENTS_APART), and where each starts there, the comments holding an odd letter, and their long words with the
     comments holding each (latency, 14 Oct 2026: done again for each product type, it was a third of reading the
-    library for them all). The joined texts themselves aren't kept: they are joined again only for a product one of
-    whose names is written in them. LocalSource keeps one for each thread it reads (keep_read)."""
+    library for them all). LocalSource keeps one for each thread it reads (keep_read)."""
     bodies = [c.body for c in comments]
-    joined, starts = COMMENTS_APART.join(bodies), _starts(bodies)
     lowered_bodies = [body.lower() for body in bodies]  # a lowercase text can be longer than its text ("\u0130")
     lowered, low_starts = COMMENTS_APART.join(lowered_bodies), _starts(lowered_bodies)
-    odd = frozenset(bisect_right(starts, m.start()) - 1 for m in _ODD_LETTERS.finditer(joined))
+    odd = frozenset(at for at, body in enumerate(bodies) if _ODD_LETTERS.search(body))
     long_words: dict[str, list[int]] = {}
     for word in _LONG_WORD.finditer(lowered):
         holding = long_words.setdefault(word.group().removesuffix("s"), [])
         at = bisect_right(low_starts, word.start()) - 1
         if not holding or holding[-1] != at:
             holding.append(at)
-    return CommentsRead(comments, bodies, starts, lowered.encode(), odd or _NONE,
+    encoded = [body.encode() for body in lowered_bodies]
+    return CommentsRead(comments, bodies, COMMENTS_APART.encode().join(encoded), _starts(encoded), odd or _NONE,
                         {w: tuple(at) for w, at in long_words.items()})
 
 
 _NONE: frozenset[int] = frozenset()
+
+
+def _comments_holding(read: CommentsRead, names: tuple[bytes, ...]) -> set[int]:
+    """The comments whose lowercase text holds one of these names (in UTF-8), looked for in all of them at once: after
+    a comment where one is found, the next search for it starts at the next comment."""
+    holding: set[int] = set()
+    starts, text, last = read.lowered_starts, read.lowered, len(read.lowered_starts) - 1
+    for name in names:
+        at = text.find(name)
+        while at != -1:
+            comment = bisect_right(starts, at) - 1
+            holding.add(comment)
+            at = text.find(name, starts[comment + 1]) if comment < last else -1
+    return holding
 
 
 def keep_read(read: CommentsRead) -> CommentsRead:
@@ -346,37 +385,21 @@ register(_KEPT_READS.clear)
 def comments_naming(comments: list[Comment], product_type: str) -> int:
     """How many of the comments name the product, as mentions_product reads each one.
 
-    Read in one go (latency, 13 Oct 2026: reading every comment of every thread on its own, once per product type, was
-    most of getting ready): their texts joined by a character no product's name pattern, look-alike phrase or slip can
-    match or run across (COMMENTS_APART), so each match of the joined text is a match of one comment, as finding it in
-    that comment alone would find it, and so is each longer name holding it and each long word (a slip). A comment
-    names the product when one of its matches isn't inside a longer name of something else, or one of its long words
-    is a slip of the product's long name. What this starts with is the same for every product (read_comments): it is
-    read from the reading kept of these comments, when there is one (keep_read)."""
+    Read together (latency, 13-14 Oct 2026: reading every comment of every thread on its own, once per product type, was
+    most of getting ready): the product's names are looked for as written, in lowercase, in all the comments at once
+    (their texts joined by a character no name, look-alike phrase or slip holds: COMMENTS_APART), and the product's
+    pattern is searched for only in the comments holding one, and in those holding one of _ODD_LETTERS (which the
+    lowercase text can't tell about): a comment holding none can't match. A comment names the product when one of its
+    matches isn't inside a longer name of something else, or one of its long words is a slip of the product's long
+    name. What this starts with is the same for every product (read_comments): it is read from the reading kept of
+    these comments, when there is one (keep_read)."""
     if not comments:
         return 0
     read = _kept_read(comments) or read_comments(comments)
-    bodies, starts = read.bodies, read.starts
-    naming: set[int] = set()
-    covers: dict[int, list[tuple[int, int]]] = {}  # a comment -> the longer names in it, where they are in `joined`
-    never_covered = _never_covered(product_type)
-    if _names_written(read.lowered, bool(read.odd), product_type):
-        joined = COMMENTS_APART.join(bodies)
-        for match in _product_pattern(product_type).finditer(joined):
-            at = bisect_right(starts, match.start()) - 1
-            if at in naming:
-                continue
-            form = match.group(0).lower()
-            if form in never_covered or (at not in covers and not _a_cover_written(form, bodies[at].lower(),
-                                                                                    at in read.odd, product_type)):
-                naming.add(at)
-                continue
-            if at not in covers:  # read in that comment alone, as mentions_product reads it
-                covers[at] = [(starts[at] + c.start(), starts[at] + c.end())
-                              for c in _covering_pattern(product_type).finditer(bodies[at])]
-            if not any(s <= match.start() and match.end() <= e and e - s > match.end() - match.start()
-                       for s, e in covers[at]):
-                naming.add(at)
+    bodies = read.bodies
+    names = _literal_names_in_utf8(product_type)
+    reading = range(len(bodies)) if names is None else sorted(_comments_holding(read, names) | read.odd)
+    naming = {at for at in reading if _named_by_pattern(bodies[at], bodies[at].lower(), at in read.odd, product_type)}
     if _long_names(product_type) and len(naming) < len(bodies):
         for word, holding in read.long_words.items():  # each long word once: is it a slip of a long name?
             if _a_slip_of(word, product_type):
@@ -401,8 +424,8 @@ def _slip_ends(product_type: str) -> tuple[frozenset[str], frozenset[str]]:
     return frozenset(name[:4] for name in names), frozenset(name[-4:] for name in names)
 
 
-def _starts(texts: list[str]) -> list[int]:
-    """Where each text starts once they are joined by COMMENTS_APART."""
+def _starts(texts: list[str] | list[bytes]) -> list[int]:
+    """Where each text starts once they are joined by COMMENTS_APART (one character, and one byte in UTF-8)."""
     starts, at = [], 0
     for text in texts:
         starts.append(at)

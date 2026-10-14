@@ -662,3 +662,22 @@ def test_a_request_of_a_known_type_takes_its_pairs_from_the_index(monkeypatch):
     assert worked_out == []  # every name and base was in the index
     assert with_index == group_products(library, product_type="electric kettle")
     assert worked_out == [1]
+
+
+# --- Whether a name adds words at the start of another, worked out once per pair (latency, 14 Oct 2026) ---
+
+def test_whether_a_name_adds_words_at_the_start_of_another_is_worked_out_once_per_pair(monkeypatch):
+    # Choosing each group's shown name asks it of every name of the group against the main one, and every answer
+    # grouping the same names asks again (38,204 times for 32 answers after getting ready).
+    from engine import group_products
+
+    joined = []
+    joining = group_products.join_split_words
+    monkeypatch.setattr(group_products, "join_split_words", lambda words, other: joined.append(1) or joining(words, other))
+    pairs = [(("fellow", "stagg", "ekg"), ("stagg", "ekg")), (("1zpresso", "jx", "pro"), ("jx", "pro")),
+             (("jx", "pro"), ("jx", "pro")), (("tir", "tir", "milk"), ("tirtir", "milk")), (("a", "b", "c"), ("c",))]
+    first = [group_products._adds_words_at_start(longer, name) for longer, name in pairs]
+    assert first == [True, True, False, False, True]
+    asked = len(joined)
+    assert [group_products._adds_words_at_start(longer, name) for longer, name in pairs] == first
+    assert len(joined) == asked  # each pair worked out once
