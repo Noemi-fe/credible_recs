@@ -239,3 +239,24 @@ def test_the_how_page_says_what_module_1_turns_away():
 
     words = METRIC_WORDING["request_outcome"][1]
     assert "outside skincare, haircare and kitchen gear" not in words and "a product we recommend" in words
+
+
+def test_on_demand_reading_keeps_a_general_requests_threads_in_the_general_category(tmp_path, monkeypatch):
+    # The job reads from the archive, whose reader names a thread's category by its community: r/BuyItForLife's is the
+    # kitchen's first. A thread read there for headphones must be a general thread, or answers would never read it.
+    from engine.tests import on_demand_fakes
+    from engine.tests.test_on_demand_job import queued, run, the_bundle
+    from engine.tests.fake_google import FakeGoogle
+
+    monkeypatch.setattr(on_demand_fakes, "TEAPOT_THREADS", {
+        "1head07": ("BuyItForLife", "Which headphones last for years?", [
+            ("h7a", "My Sennheiser headphones have lasted 9 years.", "Sennheiser HD 600")]),
+        "1head08": ("headphones", "Headphones that survive daily commuting?", [
+            ("h8a", "Sony headphones, 4 years of daily commuting so far.", "Sony WH-1000XM4")]),
+    })
+    google = FakeGoogle()
+    queued(google, "headphones that last")
+    run(tmp_path, google, fake_archive=on_demand_fakes.FakeArchive(threads=("1head07", "1head08")))
+    bundle = the_bundle(google)
+    assert sorted(bundle.threads) == ["1head07", "1head08"]
+    assert {Thread.model_validate_json(item.thread).category for item in bundle.threads.values()} == {"general"}
