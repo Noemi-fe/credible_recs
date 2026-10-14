@@ -162,6 +162,7 @@ from engine.config import (
     LIVE_CHECK_REQUIRED,
     LIVE_CHECK_SHOWN_DAYS,
     NEED_MATCH_BOOST,
+    NEED_RULE_IN_EVERY_READING,
     OTHER_NAME_NOTE,
     OTHER_KIND_WORDS,
     OTHER_TYPE_WORDS,
@@ -343,8 +344,9 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     "fetch more threads automatically before giving up"; built 11 Oct 2026), and keeps that wider answer only if it has
     more picks: the first threads are the ones closest to the request's needs. In the wider reading a pick also needs a
     credible recommendation that talks about what the request asks for, when it asks for something besides the product
-    (its needs, engine/needs.py): reading 48 shampoo threads had given every shampoo request the same popular picks.
-    `more_threads=None` never reads more. `brand_lines`: the brand-lines list (engine/brand_lines.py); None reads
+    (its needs, engine/needs.py): reading 48 shampoo threads had given every shampoo request the same popular picks. For
+    haircare it needs one in the first reading too (config.NEED_RULE_IN_EVERY_READING; Noemi's decision 4 of 14 Oct
+    2026). `more_threads=None` never reads more. `brand_lines`: the brand-lines list (engine/brand_lines.py); None reads
     data/brand_lines.json. `summaries`: the one-line summaries ({engine.summaries.summary_key: Summary}); None reads the
     library's summaries.json (none when there is no such file).
 
@@ -519,7 +521,8 @@ def _upvotes_change_nothing(scored, query: ParsedQuery, kind_notes, kinds, need_
             == marks(_ranked(scored, query, kind_notes, kinds, need_led, skip_only, True)))
 
 
-# Why a product found only in a wider reading isn't a pick (answer_request, 11 Oct 2026).
+# Why a product found only in a wider reading isn't a pick (answer_request, 11 Oct 2026), nor, since 14 Oct 2026, one in
+# any reading of a category of config.NEED_RULE_IN_EVERY_READING (haircare).
 WIDER_READING_SHORTFALL = "no credible recommendation talks about what you asked for"
 
 
@@ -527,11 +530,12 @@ def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
             skip_only: Mapping[str, str] | None = None, upvote_rule: bool = False) -> RankingResult:
     """Module 6's ranking. In a wider reading (`need_led`) of a request that asks for something besides the product, a
     product with no credible recommendation talking about it can't be a pick (answer_request), nor "Also worth a look"
-    (13 Oct 2026). `skip_only`: {product key: reason} of the brand lines a hard requirement keeps from being picks (a
+    (13 Oct 2026); in every reading for a category of config.NEED_RULE_IN_EVERY_READING (haircare: Noemi's decision 4 of
+    14 Oct 2026). `skip_only`: {product key: reason} of the brand lines a hard requirement keeps from being picks (a
     whole brand can't be checked): never a pick nor "Also worth a look", but listed under Skip these when their credible
     warnings put them there (Noemi's decision 1 of 13 Oct 2026). `upvote_rule`: with Noemi's upvote rule (14 Oct 2026)."""
     ranking = rank_products(scored, query.category, kind_notes, placements(kinds), upvote_rule=upvote_rule)
-    if need_led and request_needs(query):
+    if (need_led or query.category in NEED_RULE_IN_EVERY_READING) and request_needs(query):
         ranking.products = [replace(p, qualifies=False, shortfall=WIDER_READING_SHORTFALL, worth_a_look=False)
                             if (p.qualifies or p.worth_a_look) and not p.breakdown.credible_recommends_fitting_need
                             else p for p in ranking.products]

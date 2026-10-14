@@ -345,6 +345,13 @@ PIPELINE_MAX_THREADS = 16
 # to her). Shampoo advice is spread over many brands: its 16 most relevant threads gave no pick, 24 and 32 gave one,
 # 48 gave three (Nizoral, Neutrogena T-Gel, Head & Shoulders for an oily scalp).
 PIPELINE_MORE_THREADS = 48
+# In the wider reading a pick, and an Also worth a look item, needs a credible recommendation that talks about the
+# request's needs (11 Oct 2026); in these categories it needs one in every reading (Noemi's decision 4 of 14 Oct 2026,
+# morning: option B of the need-quality builder). Haircare's first reading is filled by big curly-hair threads, so its
+# popular picks needn't be about what was asked: on the frozen library "gentle shampoo for wavy hair" had picked an
+# anti-dandruff shampoo its writers used for a deep clean. Measured there before her decision: 2 answers change, the
+# blind test's (skincare and kitchen) not at all. An empty tuple keeps the rule to the wider reading, as before.
+NEED_RULE_IN_EVERY_READING = ("haircare",)
 # Brand-only picks (decided by Noemi, 9 Oct 2026, decision 9): a brand or line that fits several products ("Lodge",
 # "CeraVe") is ranked, under a name that says so ("Lodge cast iron skillet line", BRAND_PICK_NAME below), when its
 # threads make the product clear (BRAND_PICK_TITLE_SHARE below) or, since 12 Oct 2026, when the brand-lines list says
