@@ -7,10 +7,12 @@ sensitive skin"). So the ranking counts such mentions more: the pipeline multipl
 config.NEED_MATCH_BOOST (off, 1.0, since 9 Oct 2026; see config). The minimum-evidence rule doesn't change: it counts credible mentions, not weights.
 
 A request's needs (request_needs), in the order the request gives them:
-- the needs of config.NEEDS that it names: by name or by one of the need's words ("new to retinol" names
-  "beginner", "doesn't leave a white cast" names "no white cast"); module 1's skin types ("sensitive") and must-haves
-  ("fragrance-free"); a few other words of config.NEED_REQUEST_WORDS ("first chef's knife" names "beginner", "will
-  last decades" names "lasting"); and module 1's "lasts 10+ years" (min_years), which names "lasting" too;
+- the needs of config.NEEDS that it names (for a haircare request, config.HAIR_NEEDS in place of the skin types, since
+  14 Oct 2026: "greasy hair" is an oily scalp, "fine flat hair" fine hair): by name or by one of the need's words
+  ("new to retinol" names "beginner", "doesn't leave a white cast" names "no white cast"); module 1's skin types
+  ("sensitive") and must-haves ("fragrance-free"); a few other words of config.NEED_REQUEST_WORDS ("first chef's knife"
+  names "beginner", "will last decades" names "lasting"); and module 1's "lasts 10+ years" (min_years), which names
+  "lasting" too;
 - every other specific word of the request (engine.sources.need_words: "pour-over", "PFAS", "winter"), each a need of
   its own, found in comments by that word alone. The words of config.NEED_IGNORED_WORDS ("leave", "cook", "burr")
   are left out: they are too common in comments to show anything.
@@ -20,6 +22,10 @@ of the need's words, at the start of a word: a word beginning finds its longer f
 "sensitivity"), and a phrase is found whole ("white cast", "white casts"). A request's own word is found the way
 module 2 finds it in a thread title: "pour over" and "pourover" both find "pour-over" (engine.sources._title_has).
 A mention with long-term use (module 5) also talks about "lasting": it describes long use.
+
+A thread talks about a need (thread_needs, 14 Oct 2026) when its title or post does, the same way, unless its title
+names another type of product and not the one asked for: the library's first reading reads such threads first
+(engine.sources.LocalSource).
 """
 
 import re
@@ -90,9 +96,9 @@ def request_needs(query: ParsedQuery) -> tuple[Need, ...]:
 
 def thread_needs(thread: Thread, needs: tuple[Need, ...], titled_as_another_type: bool = False) -> tuple[str, ...]:
     """The names of the request's needs a thread's title or post talks about, in the request's order (14 Oct 2026, the
-    library's need-led first reading: engine.sources.LocalSource). None when `titled_as_another_type`: its title names
-    another type of product and not the one asked for (engine.sources.titled_as_another_type), so the thread is about
-    that one, whatever its post says ("SPF for oily skin?" is no moisturiser thread for oily skin)."""
+    library's need-led first reading: engine.sources.LocalSource). Nothing when `titled_as_another_type`: its title
+    names another type of product and not the one asked for (engine.sources.titled_as_another_type), so the thread is
+    about that one, whatever its post says ("SPF for oily skin?" is no moisturiser thread for oily skin)."""
     if not needs or titled_as_another_type:
         return ()
     met = set(needs_met(thread.title, needs)) | set(needs_met(thread.body or "", needs))
