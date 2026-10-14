@@ -432,6 +432,49 @@ def test_the_rule_never_stops_an_answer_reading_more_threads(tmp_path, monkeypat
     assert unverified_claims(on.answer, on.bodies) == []
 
 
+def test_with_the_rule_on_each_reading_reads_its_threads_once(tmp_path, monkeypatch):
+    # The reading kept is ranked again with the rule, from what it has read: its threads aren't read and grouped again
+    # (latency: a second reading had doubled a warm answer's time).
+    from engine import pipeline
+
+    root = wider_library(tmp_path)
+    calls = []
+    real = pipeline.group_products
+    monkeypatch.setattr(pipeline, "group_products", lambda *args, **kwargs: calls.append(1) or real(*args, **kwargs))
+    answer_request(REQUEST, library_dir=root, max_threads=2, more_threads=4)
+    off = len(calls)
+    upvote_rule(monkeypatch, "D")
+    calls.clear()
+    answer_request(REQUEST, library_dir=root, max_threads=2, more_threads=4)
+    assert len(calls) == off
+
+
+@pytest.mark.parametrize("variant", VARIANTS)
+def test_a_comment_gone_from_reddit_lifts_nothing(tmp_path, monkeypatch, variant):
+    # The Stagg's upvoted comment was deleted on Reddit since it was saved: the live check drops it, its vote no longer
+    # counts, and with one credible writer left the Stagg can't be lifted.
+    from engine.tests.test_pipeline import FakeLive, shown_comment_ids
+
+    upvote_rule(monkeypatch, variant)
+    result = answer_request(REQUEST, library_dir=kettle_library(tmp_path), live_checker=FakeLive(gone={"s11"}))
+    assert shown(result) == (["Zojirushi kettle"], [])
+    assert "s11" not in shown_comment_ids(result.answer) and result.live_dropped == {"gone": 1}
+    assert unverified_claims(result.answer, result.bodies) == []
+
+
+@pytest.mark.parametrize("variant", VARIANTS)
+def test_with_live_checks_the_lifted_pick_is_checked_like_every_pick(tmp_path, monkeypatch, variant):
+    from engine.answer import _every_quote
+    from engine.tests.test_pipeline import FakeLive, shown_comment_ids
+
+    upvote_rule(monkeypatch, variant)
+    live = FakeLive()
+    result = answer_request(REQUEST, library_dir=kettle_library(tmp_path), live_checker=live)
+    assert shown(result) == (["Zojirushi kettle", "Fellow Stagg kettle"], [])
+    assert {quote.url for _, quote in _every_quote(result.answer)} <= set(live.asked)
+    assert {"s11", "s22"} <= shown_comment_ids(result.answer)
+
+
 def test_the_reading_kept_is_ranked_with_the_rule(tmp_path, monkeypatch):
     # The first two threads alone (no wider reading to try): the Stagg, counted twice, fills the third place.
     upvote_rule(monkeypatch, "B")
