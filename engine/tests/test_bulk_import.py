@@ -12,7 +12,7 @@ import pytest
 
 zstandard = pytest.importorskip("zstandard")
 
-from engine import bulk_import, library, query, sources  # noqa: E402
+from engine import bulk_import, library, query  # noqa: E402
 from engine.bulk_import import (  # noqa: E402
     build_thread,
     delete_raw,
@@ -107,9 +107,9 @@ def test_only_the_decided_subreddits_files_are_read(tmp_path, lib):
     files = tmp_path / "files"
     write_subreddit(files, "BuyItForLife", [post("1aaa01", "Which electric kettle should I buy?")],
                     some_comments("1aaa01"))
-    write_subreddit(files, "Appliances", [post("1bbb01", "Which electric kettle should I buy?", sub="Appliances")])
+    write_subreddit(files, "cookware", [post("1bbb01", "Which electric kettle should I buy?", sub="cookware")])
     result = run(files, lib, dry_run=True)
-    assert result.skipped_files == ["Appliances_comments.zst", "Appliances_submissions.zst"]
+    assert result.skipped_files == ["cookware_comments.zst", "cookware_submissions.zst"]
     assert chosen_ids(result, "electric kettle") == {"1aaa01"}
 
 
@@ -127,7 +127,7 @@ GOOD = "Which electric kettle should I buy?"
     ("a score of 4", post("1x", GOOD, score=4)),
     ("a recurring thread", post("1x", "Weekly electric kettle questions thread")),
     ("of no kind the library mixes", post("1x", "Look at my new electric kettle")),
-    ("not about a product type", post("1x", "Which toaster should I buy?")),
+    ("not about a product type", post("1x", "Which spatula should I buy?")),
     ("outside the type's subreddits", post("1x", GOOD, sub="Cooking")),
 ])
 def test_a_post_that_isnt_a_good_candidate_is_never_chosen(tmp_path, lib, why, record):
@@ -241,28 +241,20 @@ def test_a_thread_about_two_types_is_chosen_once_and_counts_for_both(tmp_path, l
     assert result.saved == ["1both01"]
 
 
-def test_product_types_come_from_module_1_when_the_import_runs(tmp_path, lib, monkeypatch):
-    microwave = query.ProductType("microwave", "kitchen", ("microwave",), subreddits=("BuyItForLife",))
-    monkeypatch.setattr(query, "PRODUCT_TYPES", query.PRODUCT_TYPES + (microwave,))
-    monkeypatch.setattr(sources, "PRODUCT_TYPES", sources.PRODUCT_TYPES + (microwave,))
-    sources._product_pattern.cache_clear()
-    sources._covering_pattern.cache_clear()
-    try:
-        files = tmp_path / "files"
-        write_subreddit(files, "BuyItForLife", [post("1mic01", "Which microwave should I buy?")],
-                        some_comments("1mic01"))
-        assert chosen_ids(run(files, lib, dry_run=True), "microwave") == {"1mic01"}
-    finally:
-        sources._product_pattern.cache_clear()
-        sources._covering_pattern.cache_clear()
+def test_product_types_are_module_1s_as_it_stands_when_the_import_runs():
+    # module 1 builds its index of names when it is loaded, so a type merged in later is chosen for by the next run
+    problems = []
+    names = [q.product_type for q in bulk_import.type_queries(problems=problems)]
+    assert names == [p.name for p in query.PRODUCT_TYPES if not any(f"{p.name!r}" in problem for problem in problems)]
+    assert {"microwave", "air fryer", "electric kettle", "shampoo"} <= set(names)
 
 
 def test_a_type_named_on_the_command_line_is_found_by_its_whole_name(tmp_path, lib):
     files = tmp_path / "files"
-    posts = [post("1fry01", "Which air fryer should I buy?"), post("1air01", "Which air purifier should I buy?")]
+    posts = [post("1egg01", "Which egg cooker should I buy?"), post("1egg02", "Which egg should I cook first?")]
     write_subreddit(files, "BuyItForLife", posts, [c for p in posts for c in some_comments(p["id"])])
-    result = run(files, lib, dry_run=True, extra_types=[("air fryer", "kitchen")])
-    assert chosen_ids(result, "air fryer") == {"1fry01"}
+    result = run(files, lib, dry_run=True, extra_types=[("egg cooker", "kitchen")])
+    assert chosen_ids(result, "egg cooker") == {"1egg01"}
 
 
 # --- Building and saving the threads ---

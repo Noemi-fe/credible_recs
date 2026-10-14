@@ -136,13 +136,18 @@ def history_files(folder: Path) -> tuple[dict[str, dict[str, Path]], list[str]]:
         name = FILE_NAME.match(path.name)
         if not name or not path.is_file():
             continue
-        try:
-            category_for(name["subreddit"])
-        except ValueError:
+        if not categories_of(name["subreddit"]):
             skipped.append(path.name)
             continue
         found.setdefault(name["subreddit"], {})[name["part"]] = path
     return found, sorted(skipped)
+
+
+def categories_of(subreddit: str) -> tuple[str, ...]:
+    """The categories a subreddit is decided for, in config.THREAD_CATEGORIES' order: one for most, two or more for a
+    community shared by categories (r/BuyItForLife is the kitchen's and the general category's, 14 Oct 2026)."""
+    name = subreddit.strip().removeprefix("r/").lower()
+    return tuple(c for c in config.THREAD_CATEGORIES if name in {s.lower() for s in config.SUBREDDITS.get(c, ())})
 
 
 def _number(value) -> int | None:
@@ -205,15 +210,17 @@ def _gone(post: dict) -> bool:
             or str(post.get("selftext") or "").strip() in _GONE)
 
 
-def scan_submissions(path: str, category: str, subjects: tuple[str, ...], first_year: int = BULK_FIRST_YEAR,
+def scan_submissions(path: str, subjects: tuple[tuple[str, str], ...], first_year: int = BULK_FIRST_YEAR,
                      min_comments: int = BULK_MIN_COMMENTS, min_score: int = BULK_MIN_SCORE) -> tuple[list[dict], dict]:
     """The candidate posts of one submissions file, and how many posts each reason left out.
 
-    A candidate names one of `subjects` (title or text), is of a kind the library mixes for it, isn't removed, deleted
-    or recurring, was posted from `first_year` to the files' last day, and has real engagement, unless its numbers
-    hadn't settled when the archive saved it (then its comments are counted later). Each candidate keeps POST_FIELDS,
-    "about" (the subjects it names, each with its kind), "settled", and "file" and "source" (the file and the
-    subreddit as its name writes it)."""
+    A candidate names one of `subjects` ((category, subject) pairs: a product type, or an ingredient's type, with its
+    category, whose words judge its kind) in its title or text, is of a kind the library mixes for it, isn't removed,
+    deleted or recurring, was posted from `first_year` to the files' last day, and has real engagement, unless its
+    numbers hadn't settled when the archive saved it (then its comments are counted later). Each candidate keeps
+    POST_FIELDS, "about" (the subjects it names, each with its kind), "settled", and "file" and "source" (the file and
+    the subreddit as its name writes it)."""
+    categories = tuple(dict.fromkeys(category for category, _ in subjects))
     kept, left_out = [], Counter()
     first = datetime(first_year, 1, 1, tzinfo=UTC).timestamp()
     for line in read_lines(Path(path)):
@@ -235,7 +242,7 @@ def scan_submissions(path: str, category: str, subjects: tuple[str, ...], first_
             continue
         # Cheap and exact first: a title of no kind at all is of no kind for any type (a warning needs its words too),
         # and engagement doesn't depend on the type.
-        if thread_kind(post, category) not in THREAD_KINDS:
+        if not any(thread_kind(post, category) in THREAD_KINDS for category in categories):
             left_out["of no kind the library mixes"] += 1
             continue
         settled = _settled(record)
@@ -243,8 +250,8 @@ def scan_submissions(path: str, category: str, subjects: tuple[str, ...], first_
             left_out["too little engagement"] += 1
             continue
         kinds, title_words = {}, _long_words(title)
-        for subject in subjects:
-            if _names(title, body, subject, title_words):
+        for category, subject in subjects:
+            if subject not in kinds and _names(title, body, subject, title_words):
                 kind = thread_kind(post, category, subject)
                 if kind in THREAD_KINDS:
                     kinds[subject] = kind
@@ -300,14 +307,16 @@ def _run_all(function, jobs: list[tuple], workers: int) -> list:
 
 # --- Building a thread ---
 
-def build_thread(post: dict, comments: list[dict], read_at: datetime) -> Thread:
+def build_thread(post: dict, comments: list[dict], read_at: datetime, category: str | None = None) -> Thread:
     """The thread of a post and its comments from the files, in the shape of a thread read from Arctic Shift's API
-    (read_from "arctic_shift", never checked live): see the module's docstring."""
+    (read_from "arctic_shift", never checked live): see the module's docstring. `category`: the category of what it was
+    chosen for, which a community decided for several categories takes (engine.sources.for_request); by default its
+    community's first, as the API's reader names it."""
     post_id = post["id"]
     kept = _in_reddit_order(_connected([_comment_fields(c) for c in comments], post_id), post_id)
     fields = {name: post.get(name) for name in POST_FIELDS} | {"id": post_id}
     fields["num_comments"] = max(post.get("num_comments") or 0, len(kept))
-    return to_thread({"post": fields, "comments": kept}, category_for(str(post["subreddit"])), read_at,
+    return to_thread({"post": fields, "comments": kept}, category or category_for(str(post["subreddit"])), read_at,
                      read_from="arctic_shift")
 
 
@@ -477,7 +486,7 @@ def _choose_for_request(plan: RequestPlan, query: ParsedQuery, posts: list[dict]
     fresh = [p for p in pool if p["id"] not in chosen]
     picked = choose_mix(query, _ranked(query, fresh), total=total, mix=_kind_targets(total), fill=True) if total else []
     for post in picked:
-        chosen[post["id"]] = post
+        chosen[post["id"]] = post | {"category": query.category}
     plan.chosen = [p | {"kind": _kind_for(p, query)} for p in picked]
 
 
@@ -494,7 +503,7 @@ def _choose_for_type(plan: TypePlan, query: ParsedQuery, posts: list[dict], chos
     fresh = [p for p in candidates if p["id"] not in chosen and name in p["about"]]
     picked = choose_mix(query, _ranked(query, fresh), total=total, mix=shares, fill=False) if total else []
     for post in picked:
-        chosen[post["id"]] = post
+        chosen[post["id"]] = post | {"category": query.category}
     plan.chosen = [p | {"kind": p["about"][name]} for p in already + picked]
 
 
@@ -528,7 +537,7 @@ def import_dump(files_dir: Path, library_dir: Path = DEFAULT_LIBRARY_DIR, reques
     subjects = {category: tuple(dict.fromkeys(s for q in queries if q.category == category for s in _subjects(q)))
                 for category in config.THREAD_CATEGORIES}
 
-    jobs = [(str(paths["submissions"]), category_for(sub), subjects[category_for(sub)])
+    jobs = [(str(paths["submissions"]), tuple((c, s) for c in categories_of(sub) for s in subjects.get(c, ())))
             for sub, paths in files.items() if "submissions" in paths]
     posts, left_out = [], Counter()
     for found, counts in _run_all(scan_submissions, jobs, workers):
@@ -597,7 +606,7 @@ def _read_and_save(chosen: dict[str, dict], files: dict, threads_dir: Path, neve
     for post_id, post in chosen.items():
         if post["source"] not in readable:
             continue
-        thread = build_thread(post, comments.get(post_id, []), now)
+        thread = build_thread(post, comments.get(post_id, []), now, post.get("category"))
         if save_new(thread, threads_dir, never):
             result.saved.append(post_id)
             result.comments_saved += len(thread.comments)
