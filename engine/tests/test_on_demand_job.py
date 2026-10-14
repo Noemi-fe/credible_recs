@@ -246,3 +246,38 @@ def test_the_bundle_never_loses_a_change_made_meanwhile(tmp_path):
     run(tmp_path, google)
     assert sorted(the_bundle(google).threads) == sorted(TEAPOT_THREADS)
     assert len(the_bundle(google).extracted()) == 3
+
+
+def test_a_run_with_nothing_waiting_writes_nothing(tmp_path):
+    google = FakeGoogle()
+    report = run(tmp_path, google)
+    assert not report.ran and "nothing waits" in report.why_not
+    assert google.asked("POST") == []
+
+
+def test_threads_in_the_bundle_past_the_archives_keeping_time_are_let_go(tmp_path):
+    from engine.config import ARCHIVE_TEXT_KEPT_DAYS
+
+    google = FakeGoogle()
+    old = (NOW - timedelta(days=ARCHIVE_TEXT_KEPT_DAYS + 1)).isoformat()
+    google.put(NAME, THREADS, json.dumps(Bundle({
+        "1old001": on_demand.Item(thread="{}", extraction="{}", entry="kitchen/teapot/", product_type="teapot",
+                                  added_at=old),
+        "1new001": on_demand.Item(thread="{}", extraction="{}", entry="kitchen/teapot/", product_type="teapot",
+                                  added_at=NOW.isoformat())}).as_json()).encode())
+    queued(google, "stovetop kettle that whistles")
+    run(tmp_path, google, fake_archive=FakeArchive(threads=()))
+    assert "1old001" not in the_bundle(google).threads and "1new001" in the_bundle(google).threads
+
+
+def test_a_waiting_thread_that_cant_be_read_is_let_go_and_the_run_goes_on(tmp_path):
+    google = FakeGoogle()
+    queued(google, TEAPOT)
+    entry_key = the_queue(google).entries[0].key
+    google.put(NAME, THREADS, json.dumps(Bundle({"1bad001": on_demand.Item(
+        thread="not a thread", extraction=None, entry=entry_key, product_type="teapot",
+        added_at=NOW.isoformat())}).as_json()).encode())
+    report = run(tmp_path, google)
+    bundle = the_bundle(google)
+    assert "1bad001" not in bundle.threads and len(bundle.extracted()) == 3 and report.extracted == 3
+    assert the_queue(google).entries[0].status == "done"

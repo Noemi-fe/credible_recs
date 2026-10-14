@@ -462,6 +462,7 @@ class SiteReader:
         self._bundle_generation: str | None = None  # the bundle's version last written into the folder
         self._bundle_at: float | None = None
         self._written: dict[str, str] = {}  # thread id -> the fingerprint of the files written here from the bundle
+        self._read_on: dict[str, datetime] = {}  # thread id -> when the job read it from the archive (the bundle's)
         self._first_seen: dict[str, float] = {}  # entry key -> when this server first saw it waiting (memory only)
         self._last_start: float | None = None
         self._lock = threading.RLock()
@@ -495,6 +496,7 @@ class SiteReader:
                 if queue is None:
                     return Outcome(remember=False)
                 self._queue, self._queue_at = queue, self._clock()
+                self._first_seen[entry.key] = self._clock()  # queued (again) now: its wait starts now
             self._first_seen.setdefault(entry.key, self._clock())
             self._start_if_due(queue, now)
             return Outcome(self._state(queue, entry.key, now), remember=False)
@@ -550,7 +552,9 @@ class SiteReader:
         if found is None:
             return None
         self._queue, self._queue_at = found[0], self._clock()
-        for key in [e.key for e in self._queue.waiting()]:
+        waiting = {e.key for e in self._queue.waiting()}
+        self._first_seen = {key: at for key, at in self._first_seen.items() if key in waiting}
+        for key in waiting:
             self._first_seen.setdefault(key, self._clock())
         return self._queue
 
@@ -585,16 +589,23 @@ class SiteReader:
                 except (ValueError, TypeError, AttributeError):
                     return None
                 changed += write_threads(bundle, self.library_dir, self._written)
+                for tid in self._written:
+                    if tid in bundle.threads and _time(bundle.threads[tid].added_at) is not None:
+                        self._read_on[tid] = _time(bundle.threads[tid].added_at)
                 self._bundle_generation = generation
             return changed + self._let_go_of_old()
 
     def _let_go_of_old(self) -> int:
+        """Lets go of the threads taken from the bundle that the job read from the archive more than
+        ARCHIVE_TEXT_KEPT_DAYS ago (none of them is ever read live as a whole thread: their quotes are checked one by
+        one before they are shown); how many."""
         gone = 0
         for tid in list(self._written):
-            if _past_keeping(self.library_dir / "threads" / f"{tid}.json", self._now()):
+            read_on = self._read_on.get(tid)
+            if read_on is not None and (self._now() - read_on).days > ARCHIVE_TEXT_KEPT_DAYS:
                 for folder in ("extracted", "threads"):
                     (self.library_dir / folder / f"{tid}.json").unlink(missing_ok=True)
-                del self._written[tid]
+                del self._written[tid], self._read_on[tid]
                 gone += 1
         return gone
 
@@ -655,17 +666,11 @@ def _write_file(path: Path, text: str) -> None:
     partial.replace(path)
 
 
-def _past_keeping(path: Path, now: datetime) -> bool:
-    """Whether a thread file read from the archive has gone ARCHIVE_TEXT_KEPT_DAYS without a live check of the whole
-    thread (the library's retention rule, engine.library); a file that can't be read is let go too."""
-    from engine.models import Thread
-
-    try:
-        thread = Thread.model_validate_json(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return True
-    since = thread.last_checked_live() or thread.collected_at
-    return thread.read_from == "arctic_shift" and (now - since).days > ARCHIVE_TEXT_KEPT_DAYS
+def _past_keeping(item: Item, now: datetime) -> bool:
+    """Whether a thread the job read from the archive was read more than ARCHIVE_TEXT_KEPT_DAYS ago (the library's
+    keeping time for archive text not read live: engine.library). A thread whose date can't be read counts as past."""
+    read_on = _time(item.added_at)
+    return read_on is None or (now - read_on).days > ARCHIVE_TEXT_KEPT_DAYS
 
 
 def site_reader_from_env(environ, library_dir: Path) -> SiteReader | None:
@@ -753,6 +758,9 @@ def run_job(bucket: Bucket, library_dir: Path, archive, gemini, now=_now, clock=
     took: dict = {}
 
     def take(queue: Queue):
+        if not queue.waiting():
+            took["why"] = "nothing waits"
+            return False
         if queue.resting(now()):
             took["why"] = f"the queue rests until {queue.resting_until} ({queue.resting_why})"
             return False
@@ -770,6 +778,7 @@ def run_job(bucket: Bucket, library_dir: Path, archive, gemini, now=_now, clock=
     report.ran = True
     work = Path(work_dir) if work_dir is not None else Path(tempfile.mkdtemp(prefix="on-demand-"))
     try:
+        _let_go_of_old_threads(bundles, now(), report)
         _read_until_done(queues, bundles, Path(library_dir), archive, gemini, now, clock, started, work, report,
                          new_reading_seconds)
     except Exception as error:  # reported, and the queue let go of all the same: the next run starts afresh
@@ -830,6 +839,35 @@ def _read_until_done(queues: QueueStore, bundles: BundleStore, library_dir: Path
         _read_entry(entry, queue, bundle, queues, bundles, library_dir, archive, now, work, report)
 
 
+def _let_go_of_old_threads(bundles: BundleStore, now: datetime, report: RunReport) -> None:
+    """The bundle lets go of the threads read from the archive more than ARCHIVE_TEXT_KEPT_DAYS ago (a deploy has
+    usually baked them in long before)."""
+    gone: list[str] = []
+
+    def drop(bundle: Bundle):
+        gone[:] = [tid for tid, item in bundle.threads.items() if _past_keeping(item, now)]
+        for tid in gone:
+            del bundle.threads[tid]
+        if not gone:
+            return False
+
+    bundles.change(drop)
+    if gone:
+        report.notes.append(f"Let go of {len(gone)} thread(s) read from the archive over {ARCHIVE_TEXT_KEPT_DAYS} days "
+                            "ago.")
+
+
+def _change_entry(queues: QueueStore, key: str, change: Callable[[Entry], object]) -> None:
+    """Changes one entry of the queue, read afresh; nothing when it is gone."""
+    def edit(queue: Queue):
+        entry = queue.find(key)
+        if entry is None:
+            return False
+        change(entry)
+
+    queues.change(edit)
+
+
 def _rest(queues: QueueStore, until: datetime, why: str, report: RunReport) -> None:
     queues.change(lambda queue: queue.rest(until, why))
     report.resting = f"until {until.isoformat()} ({why})"
@@ -875,10 +913,10 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
     try:
         query = entry.query()
     except ValueError:
-        queues.change(lambda q: q.find(key).finish(moment, found=0, failed=True, note="no longer fits module 1"))
+        _change_entry(queues, key, lambda e: e.finish(moment, found=0, failed=True, note="no longer fits module 1"))
         return
     if entry.had + len(bundle.extracted(entry.product_type)) >= ON_DEMAND_MIN_THREADS:
-        queues.change(lambda q: q.find(key).finish(moment, found=0, note="enough threads about it already"))
+        _change_entry(queues, key, lambda e: e.finish(moment, found=0, note="enough threads about it already"))
         report.requests_done.append(entry.product_type)
         return
     source = ArchiveSource(archive)
@@ -887,13 +925,12 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
     except ArcticShiftError:
         report.failures += 1
 
-        def failed(q: Queue):
-            mine = q.find(key)
+        def failed(mine: Entry):
             mine.tries, mine.tried_at = mine.tries + 1, moment.isoformat()
             if mine.tries >= ON_DEMAND_MAX_TRIES:
                 mine.finish(moment, found=0, failed=True, note="the archive couldn't be searched")
 
-        queues.change(failed)
+        _change_entry(queues, key, failed)
         report.notes.append(f"Arctic Shift couldn't be searched for {entry.product_type}: tried again later.")
         return
     saved = {path.stem for path in (library_dir / "threads").glob("*.json")}
@@ -918,15 +955,12 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
     report.threads_read += len(read)
     report.requests_read.append(entry.product_type)
 
-    def mark(q: Queue):
-        mine = q.find(key)
-        if mine is None:
-            return False
+    def mark(mine: Entry):
         mine.read_at = moment.isoformat()
         if not read:
             mine.finish(moment, found=0, note="no new threads in the archive")
 
-    queues.change(mark)
+    _change_entry(queues, key, mark)
     if not read:
         report.requests_done.append(entry.product_type)
 
@@ -940,7 +974,13 @@ def _extract_one(tid: str, bundle: Bundle, queues: QueueStore, bundles: BundleSt
     from engine.models import Thread
 
     item = bundle.threads[tid]
-    thread = Thread.model_validate_json(item.thread)
+    try:
+        thread = Thread.model_validate_json(item.thread)
+    except ValueError:  # a thread file that doesn't load can never be extracted: let go, and the run goes on
+        bundles.change(lambda b: b.threads.pop(tid, None) and None)
+        report.failures += 1
+        report.notes.append("A thread waiting for Gemini couldn't be read: let go.")
+        return True
     parts = max(1, math.ceil(len(shown_comment_ids(thread)) / PART_COMMENTS))
     queue_found = queues.read()
     if queue_found is None:

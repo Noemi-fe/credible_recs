@@ -269,3 +269,18 @@ def test_without_its_job_the_site_queues_nothing(tmp_path):
     with pytest.raises(ValueError):
         on_demand.site_reader_from_env({on_demand.BUCKET_VAR: NAME, on_demand.JOB_VAR: "credible-recs-reader"},
                                        tmp_path)
+
+
+def test_a_request_queued_again_a_month_later_isnt_late_for_its_first_reading(tmp_path, monkeypatch):
+    clock = Clock()
+    monkeypatch.setattr(web, "live", LiveChecker(cache_dir=tmp_path / "checks", fetch=FakeEmbed(), clock=clock,
+                                                 sleep=clock.sleep))
+    site = Site(tmp_path, monkeypatch)
+    site.ask(TEAPOT)
+    site.job_reads()  # read: done, with 3 threads; their library is still under the bar here
+    site.reader.load_threads()
+    site.reader.min_threads = 6
+    site.ticks.now += 31 * 24 * 3600
+    site.now = NOW + timedelta(days=31)  # its wait is over: queued again
+    data = site.ask(TEAPOT)
+    assert data["on_demand"]["state"] == "reading" and data["on_demand"]["read_before"] is True
