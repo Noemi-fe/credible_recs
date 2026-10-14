@@ -2412,6 +2412,88 @@
     ],
     "checked_on": "2026-10-14"
    }
+  },
+  {
+   "product": "Acnecide 5% w/w Gel",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.acnecide.co.uk/products/product-acnecide-5-gel-30g"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "benzoyl peroxide"
+    ],
+    "form": "gel",
+    "sources": [
+     "https://www.acnecide.co.uk/products/product-acnecide-5-gel-30g"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Acne.org Treatment (Benzoyl Peroxide 2.5%)",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {},
+   "sources": [
+    "https://danielkern.org/product/treatment/"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "benzoyl peroxide"
+    ],
+    "form": "gel",
+    "sources": [
+     "https://danielkern.org/product/treatment/"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Dr. Song 2.5% Benzoyl Peroxide Advanced Acne Gel",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {},
+   "sources": [
+    "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4de9c366-c39c-4162-8359-c5dfc67ddaa5"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "benzoyl peroxide"
+    ],
+    "form": "gel",
+    "sources": [
+     "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4de9c366-c39c-4162-8359-c5dfc67ddaa5"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "AcneFree Terminator 10 Acne Spot Treatment",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {},
+   "sources": [
+    "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=c06778b6-0ed6-7d82-e053-2a95a90a2ef8"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "benzoyl peroxide"
+    ],
+    "form": "cream",
+    "sources": [
+     "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=c06778b6-0ed6-7d82-e053-2a95a90a2ef8"
+    ],
+    "checked_on": "2026-10-14"
+   }
   }
  ]
 }

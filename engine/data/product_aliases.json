@@ -52,7 +52,11 @@
       {"short": "Hero patches with the micro spikes", "full": "Hero Micropoint for Blemishes", "seen": ["Hero patches with the micro spikes"]},
       {"short": "microdart Mighty Patch", "full": "Hero Micropoint for Blemishes", "seen": ["microdart Mighty Patch", "Mighty Patch Micropoint for Blemishes"]},
       {"short": "Stridex red", "full": "Stridex Maximum Pads", "seen": ["Stridex red box", "stridex red box", "Stridex Red"]},
-      {"short": "Stridex in the red box", "full": "Stridex Maximum Pads", "seen": ["Stridex in the red box"]}
+      {"short": "Stridex in the red box", "full": "Stridex Maximum Pads", "seen": ["Stridex in the red box"]},
+      {"short": "acne.org BP", "full": "Acne.org Treatment (Benzoyl Peroxide 2.5%)", "seen": ["acne.org BP", "acne.org bp"]},
+      {"short": "Acne.org benzoyl peroxide cream", "full": "Acne.org Treatment (Benzoyl Peroxide 2.5%)", "seen": ["Acne.org benzoyl peroxide cream"]},
+      {"short": "Daniel Kern BP treatment", "full": "Acne.org Treatment (Benzoyl Peroxide 2.5%)", "seen": ["Daniel Kern BP treatment"]},
+      {"short": "Dr. Song 2.5% solution", "full": "Dr. Song 2.5% Benzoyl Peroxide Advanced Acne Gel", "seen": ["Dr. Song 2.5% solution", "Dr Song 2.5%"]}
     ],
     "kitchen": [
       {"short": "1Z", "full": "1Zpresso", "seen": ["1Z K plus", "1ZPresso K Plus"]},
