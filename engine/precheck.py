@@ -56,7 +56,13 @@ shared in the bundle. One its answer doesn't hold stays unreadable: Bright Data 
 direct replies only, so missing never means deleted. Such a check isn't read again on the embed page, and through Bright
 Data only after config.PRECHECK_BRIGHT_DATA_FRESH_HOURS. The site itself never calls Bright Data. With
 CREDIBLE_RECS_PRECHECK_BRIGHT_DATA=off (deploy.sh sets it when the key's secret, bright-data-key, isn't there; 14 Oct
-2026) the step is off: nothing is read through Bright Data, and the report says so in one line.
+2026) the step is off: nothing is read through Bright Data, and the report says so in one line. A thread Bright Data
+couldn't read is remembered (BrightDataMemory: in the bucket beside the plan, since each run on Google Cloud starts with
+an empty disk; on a computer, next to its checks) with Bright Data's status and error, which the report gives for each,
+and left for config.PRECHECK_BRIGHT_DATA_SKIP_DAYS so the records go to the next threads; one whose post is gone holds
+comments that can't be verified that way: taken as unverifiable for config.PRECHECK_BRIGHT_DATA_GONE_DAYS, they cost no
+record again and drop out of the answers worked out here, as they do for a visitor (14 Oct 2026, the coordinator: the
+same two threads had failed at every run).
 
 Keeping a slimmed library verified (Noemi, 13 Oct 2026: "Keep only comments we use"; engine/slim.py, engine/verify.py).
 After those reads, the comments the library's slimmed threads keep are verified one by one on the same embed page
@@ -101,7 +107,8 @@ from engine import on_demand, pipeline
 from engine.answer import Answer, ShownQuote, quotes_to_check
 from engine.config import (BRIGHT_DATA_BATCH_THREADS, LIBRARY_VERIFY_AGAIN_DAYS, LIBRARY_VERIFY_DAYS,
                            LIBRARY_VERIFY_READS, LIBRARY_VERIFY_RETRY_DAYS, PICKS_SHOWN,
-                           PRECHECK_BRIGHT_DATA_FRESH_HOURS, PRECHECK_BRIGHT_DATA_MAX_THREADS,
+                           PRECHECK_BRIGHT_DATA_FRESH_HOURS, PRECHECK_BRIGHT_DATA_GONE_DAYS,
+                           PRECHECK_BRIGHT_DATA_MAX_THREADS, PRECHECK_BRIGHT_DATA_SKIP_DAYS,
                            PRECHECK_BRIGHT_DATA_RECORDS, PRECHECK_FRESH_HOURS, PRECHECK_MAX_READS,
                            PRECHECK_MAX_RUN_MINUTES, PRECHECK_MAX_WAIT_SECONDS, PRECHECK_MODEL_TYPES,
                            PRECHECK_PLAN_MINUTES, PRECHECK_STOP_AFTER_UNKNOWN)
@@ -213,16 +220,20 @@ class _AsIfChecked:
     """The checker answers get while the pre-check works out what they show: a comment with a saved check is answered
     by it (one deleted or edited drops out, as it would for a visitor); one without is taken as passing, since it is
     about to be read, and so is one whose embed page showed no comment, since it is about to be verified through
-    Bright Data. Reddit is never read here."""
+    Bright Data. But not one of `unverifiable` (comment ids: a post Bright Data found gone held them, and their embed
+    page showed no comment; BrightDataMemory): it can't be verified, so it drops out as it does for a visitor, and what
+    shows instead is read ahead. Reddit is never read here."""
 
-    def __init__(self, live):
-        self.live = live
+    def __init__(self, live, unverifiable=frozenset()):
+        self.live, self.unverifiable = live, frozenset(unverifiable)
 
     def check(self, url: str, quote: str, wait: bool = True) -> LiveResult:
         saved = self.live.saved_check(url, quote)
-        if saved is None or saved.status == "unknown":
-            return LiveResult("ok", "not checked yet: taken as passing for now")
-        return saved
+        if saved is not None and saved.status != "unknown":
+            return saved
+        if [part for part in url.split("/") if part][-1] in self.unverifiable:
+            return LiveResult("unknown", "its post is gone and its embed page shows no comment: it can't be verified")
+        return LiveResult("ok", "not checked yet: taken as passing for now")
 
 
 @contextmanager
@@ -254,9 +265,9 @@ def comments_to_check(requests: list[str], library_dir: Path = DEFAULT_LIBRARY_D
     return _work_out(requests, library_dir, checker, profiles).candidates
 
 
-def _work_out(requests: list[str], library_dir: Path, checker, profiles) -> _Found:
+def _work_out(requests: list[str], library_dir: Path, checker, profiles, unverifiable=frozenset()) -> _Found:
     found = _Found()
-    as_if = _AsIfChecked(checker)
+    as_if = _AsIfChecked(checker, unverifiable)
     every: list[Candidate] = []
     with _answers_kept() as (written, write_answer):
         for number, request in enumerate(requests):
@@ -408,6 +419,135 @@ class BrightDataReading:
     problem: str | None = None  # an account problem (no key, no records left) that stopped the reads
     dry_run: bool = False
     off: bool = False  # the step is off (deployed without the key): nothing read through Bright Data
+    failures: list = field(default_factory=list)  # a Failure for each thread that couldn't be read now
+    skipped: int = 0  # threads left: Bright Data couldn't read them in the last PRECHECK_BRIGHT_DATA_SKIP_DAYS
+    skipped_gone: int = 0  # threads left: Bright Data found their post gone (BrightDataMemory)
+    batch_problem: str | None = None  # why the batch couldn't be read (its status and error), when it couldn't
+
+
+@dataclass(frozen=True)
+class Failure:
+    """Why one thread couldn't be read through Bright Data, in its words: never a comment's."""
+
+    post_id: str
+    status: str | None  # what Bright Data said of the job or answer ("ready", "failed", "running", "HTTP 500")
+    error: str | None  # its error, short ("dead_page: Page not reachable")
+    gone: bool  # the post itself is gone: its comments can't be verified that way
+    comments: int  # the comments it was asked for
+
+
+# --- What the Bright Data step remembers between runs (14 Oct 2026) ---
+
+BRIGHT_DATA_MEMORY_NAME = "bright_data.json"  # in the bucket under live_check/, beside the plan; on a computer, .cache/
+
+
+@dataclass(frozen=True)
+class Trouble:
+    """A thread Bright Data couldn't read: when, its status and error, whether the post is gone, and then the comments
+    that needed it (unverifiable while the entry lasts)."""
+
+    at: datetime
+    gone: bool
+    status: str | None
+    error: str | None
+    comments: tuple[str, ...] = ()
+
+
+class BrightDataMemory:
+    """The threads Bright Data couldn't read lately (see config.PRECHECK_BRIGHT_DATA_SKIP_DAYS): kept by the daily job
+    in the bucket beside the plan, since each of its runs starts with an empty disk; ids, dates and Bright Data's own
+    words only, a few dozen entries, each gone once its days are over."""
+
+    def __init__(self, entries: dict[str, Trouble] | None = None):
+        self.entries: dict[str, Trouble] = dict(entries or {})
+        self.held = bool(self.entries)  # it held entries when it was read: written again even if they all went
+
+    def lasts(self, trouble: Trouble) -> timedelta:
+        return timedelta(days=PRECHECK_BRIGHT_DATA_GONE_DAYS if trouble.gone else PRECHECK_BRIGHT_DATA_SKIP_DAYS)
+
+    def skipping(self, post_id: str, now: datetime) -> Trouble | None:
+        """The thread's trouble while it lasts: then it isn't asked for."""
+        trouble = self.entries.get(post_id)
+        return trouble if trouble is not None and now - trouble.at < self.lasts(trouble) else None
+
+    def unverifiable(self, now: datetime) -> frozenset[str]:
+        """The comments of posts found gone, while their entries last."""
+        return frozenset(cid for post_id, trouble in self.entries.items() if trouble.gone
+                         and self.skipping(post_id, now) for cid in trouble.comments)
+
+    def record(self, post_id: str, now: datetime, error, comments=()) -> None:
+        """A thread Bright Data couldn't read now (`error`: an engine.bright_data.BrightDataError)."""
+        self.entries[post_id] = Trouble(now, bool(getattr(error, "post_gone", False)), _brief(getattr(error, "status", None)),
+                                        _brief(getattr(error, "error", None)), tuple(dict.fromkeys(comments)))
+
+    def add_comments(self, post_id: str, comments) -> None:
+        """More comments of a post already found gone, as unverifiable as the others."""
+        trouble = self.entries[post_id]
+        self.entries[post_id] = dataclasses.replace(trouble, comments=tuple(dict.fromkeys((*trouble.comments, *comments))))
+
+    def prune(self, now: datetime) -> None:
+        self.entries = {post_id: t for post_id, t in self.entries.items() if self.skipping(post_id, now)}
+
+    def dumps(self, now: datetime) -> bytes:
+        threads = {post_id: {"at": t.at.isoformat(), "gone": t.gone, "status": t.status, "error": t.error,
+                             **({"comments": list(t.comments)} if t.comments else {})}
+                   for post_id, t in sorted(self.entries.items())}
+        return json.dumps({"written_at": now.isoformat(), "threads": threads}, ensure_ascii=False).encode("utf-8")
+
+    @classmethod
+    def loads(cls, data) -> "BrightDataMemory":
+        """As dumps wrote it; one that can't be read is empty, and an entry that can't be read is left out."""
+        try:
+            threads = json.loads(data)["threads"]
+        except (TypeError, ValueError, KeyError):
+            return cls()
+        entries = {}
+        for post_id, raw in threads.items() if isinstance(threads, dict) else ():
+            try:
+                comments = tuple(c for c in raw.get("comments", ()) if isinstance(c, str) and _ID.match(c))
+                if _ID.match(post_id):
+                    entries[post_id] = Trouble(datetime.fromisoformat(raw["at"]), bool(raw.get("gone")),
+                                               _brief(raw.get("status")), _brief(raw.get("error")), comments)
+            except (TypeError, ValueError, KeyError, AttributeError):
+                continue
+        return cls(entries)
+
+
+_ID = __import__("re").compile(r"^[A-Za-z0-9_-]{1,20}$")
+
+
+def _brief(text) -> str | None:
+    """Bright Data's words, on one line and short (100 characters), as the memory keeps them."""
+    if text is None:
+        return None
+    flat = " ".join(str(text).split())
+    return flat[:100]
+
+
+def load_bright_data_memory(checker) -> BrightDataMemory:
+    """The memory from the bucket (the daily job), else from beside this machine's checks (.cache/)."""
+    bucket = getattr(checker, "bucket", None)
+    if bucket is not None:
+        return BrightDataMemory.loads(bucket.get(BRIGHT_DATA_MEMORY_NAME))
+    try:
+        return BrightDataMemory.loads((Path(checker.cache_dir).parent / BRIGHT_DATA_MEMORY_NAME).read_bytes())
+    except OSError:
+        return BrightDataMemory()
+
+
+def save_bright_data_memory(checker, memory: BrightDataMemory, now: datetime) -> None:
+    """The memory written back, its entries over their days left out: to the bucket every run that has any (so the
+    bucket's 2-day rule never removes it while the job runs), else beside this machine's checks."""
+    memory.prune(now)
+    if not memory.entries and not memory.held:
+        return
+    bucket = getattr(checker, "bucket", None)
+    if bucket is not None:
+        bucket.put(BRIGHT_DATA_MEMORY_NAME, memory.dumps(now))
+    else:
+        local = Path(checker.cache_dir).parent / BRIGHT_DATA_MEMORY_NAME
+        local.parent.mkdir(parents=True, exist_ok=True)
+        local.write_bytes(memory.dumps(now))
 
 
 def needing_bright_data(candidates: list[Candidate], checker,
@@ -430,13 +570,17 @@ def needing_bright_data(candidates: list[Candidate], checker,
 def verify_through_bright_data(candidates: list[Candidate], checker, client_factory, library_dir: Path,
                                max_records: int = PRECHECK_BRIGHT_DATA_RECORDS,
                                max_threads: int = PRECHECK_BRIGHT_DATA_MAX_THREADS,
-                               dry_run: bool = False, until: datetime | None = None) -> BrightDataReading:
+                               dry_run: bool = False, until: datetime | None = None,
+                               memory: BrightDataMemory | None = None, remember=None) -> BrightDataReading:
     """Reads the threads of the comments needing_bright_data, the most useful first (_value_order), through Bright Data
     (`client_factory()`, an engine.bright_data.BrightDataClient, built only when there is something to read), within
     `max_records` (each thread's cost estimated from the library's copy: its post and its top-level comments) and
     `max_threads` a run, in one batch; and saves a check for each comment its answer holds (checker.keep_check).
     With no `client_factory` (None: the step is off, bright_data_from_env) it only counts the comments waiting. With
-    `until` (the checker's clock), nothing is asked of Bright Data after it: the plan run's minutes."""
+    `until` (the checker's clock), nothing is asked of Bright Data after it: the plan run's minutes. With `memory`
+    (BrightDataMemory), a thread Bright Data couldn't read lately is left, so the records go to the next ones, and one
+    that can't be read now is remembered with Bright Data's status and error (`remember()` is called after each, so a
+    run cut short keeps them)."""
     reading = BrightDataReading(dry_run=dry_run, off=client_factory is None)
     needed = needing_bright_data(candidates, checker)
     by_thread: dict[str, list[Candidate]] = {}
@@ -446,9 +590,18 @@ def verify_through_bright_data(candidates: list[Candidate], checker, client_fact
     if reading.off:
         return reading
     costs = {post_id: _records_estimate(Path(library_dir), post_id) for post_id in by_thread}
+    now = checker.now()
     chosen, spent = [], 0
     for post_id in sorted(by_thread, key=lambda t: _value_order(by_thread[t], costs[t])):
         comments, cost = by_thread[post_id], costs[post_id]
+        trouble = memory.skipping(post_id, now) if memory is not None else None
+        if trouble is not None:  # failed lately, or its post is gone: the records go to the next threads
+            if trouble.gone:
+                reading.skipped_gone += 1
+                memory.add_comments(post_id, [c.comment_id for c in comments])
+            else:
+                reading.skipped += 1
+            continue
         if cost is None or len(chosen) >= min(max_threads, BRIGHT_DATA_BATCH_THREADS) or spent + cost > max_records:
             reading.not_reached += 1
             continue
@@ -474,6 +627,7 @@ def verify_through_bright_data(candidates: list[Candidate], checker, client_fact
             reading.problem = str(error)
             return reading
         # Not the account: each thread is asked on its own below.
+        reading.batch_problem = f"{error.status or 'no answer'}: {error.error or 'no reason given'}"
     for number, (post_id, comments, _) in enumerate(chosen):
         if until is not None and checker.now() >= until:
             reading.not_reached += len(chosen) - number
@@ -485,6 +639,11 @@ def verify_through_bright_data(candidates: list[Candidate], checker, client_fact
                 reading.problem = str(error)
                 break
             reading.failed += 1
+            reading.failures.append(Failure(post_id, error.status, error.error, error.post_gone, len(comments)))
+            if memory is not None:
+                memory.record(post_id, now, error, [c.comment_id for c in comments])
+                if remember is not None:
+                    remember()
             continue
         reading.read += 1
         found = {comment.id: comment for comment in thread.comments}
@@ -532,6 +691,20 @@ def bright_data_report(reading: BrightDataReading) -> str:
             f"{reading.passing} passing, {reading.gone} gone, {reading.changed} changed, {reading.absent} not in its "
             f"answer (still unverified); {reading.not_reached} left for this run's budget"
             + (f"; {reading.failed} couldn't be read" if reading.failed else "") + ".")
+    if reading.batch_problem:
+        line += f"\nThe batch couldn't be read ({reading.batch_problem}): each thread was asked on its own."
+    if reading.failures:
+        whys = []
+        for failure in reading.failures:
+            why = f"{failure.status or 'no answer'}: {failure.error or 'no reason given'}"
+            then = (f"its post is gone: its {_n(failure.comments, 'comment')} can't be verified that way, not asked "
+                    f"again for {PRECHECK_BRIGHT_DATA_GONE_DAYS} days" if failure.gone else
+                    f"asked again in {PRECHECK_BRIGHT_DATA_SKIP_DAYS} days")
+            whys.append(f"{failure.post_id} ({why}; {then})")
+        line += "\nCouldn't be read: " + "; ".join(whys) + "."
+    if reading.skipped or reading.skipped_gone:
+        line += (f"\nLeft for now: {_n(reading.skipped, 'thread')} Bright Data couldn't read in the last "
+                 f"{PRECHECK_BRIGHT_DATA_SKIP_DAYS} days, {_n(reading.skipped_gone, 'thread')} whose post is gone.")
     if reading.problem:
         line += f"\nBright Data stopped: {reading.problem}"
     return line
@@ -788,7 +961,8 @@ def run(requests: list[str], limit: int, dry_run: bool, library_dir: Path, check
     began = (getattr(checker, "now", None) or (lambda: datetime.now(UTC)))()
     bucket = getattr(checker, "bucket", None)
     loaded = checker.load_bundle() if bucket is not None else 0
-    found = _work_out(requests, library_dir, checker, profiles)
+    memory = load_bright_data_memory(checker)
+    found = _work_out(requests, library_dir, checker, profiles, memory.unverifiable(began))
     working = time.perf_counter() - started
     print(f"Worked out {len(found.candidates):,} comments from {len(requests)} requests in {_duration(working)}; "
           f"{'counting' if dry_run else 'reading'} up to {limit:,}"
@@ -797,9 +971,12 @@ def run(requests: list[str], limit: int, dry_run: bool, library_dir: Path, check
     save = None if bucket is None or dry_run else checker.save_bundle
     reading = check_ahead(found.candidates, checker, limit=limit, dry_run=dry_run, midway=save, started=began,
                           minutes=minutes)
+    remember = None if dry_run else lambda: save_bright_data_memory(checker, memory, checker.now())
     through = verify_through_bright_data(found.candidates, checker, bright_data, library_dir,
                                          max_records=bright_data_records, max_threads=bright_data_threads,
-                                         dry_run=dry_run)
+                                         dry_run=dry_run, memory=memory, remember=remember)
+    if remember is not None and not through.off:
+        remember()
     print(report(found.candidates, reading, len(requests), found.answered, working, reading.seconds, found.failed))
     print(bright_data_report(through))
     until = None if minutes is None else began + timedelta(minutes=minutes)  # the same minutes as the reads above
@@ -845,7 +1022,8 @@ def plan_run(requests: list[str], library_dir: Path, checker, profiles, dry_run:
         ledger = Ledger.load(local)
         ledger.merge(Ledger.loads(bucket.get(LEDGER_NAME)))
     recorded = record_saved_checks(library_dir, checker, ledger, kept) if kept else 0
-    found = _work_out(requests, library_dir, checker, profiles)
+    memory = load_bright_data_memory(checker)  # what Bright Data couldn't read lately (each run's disk starts empty)
+    found = _work_out(requests, library_dir, checker, profiles, memory.unverifiable(now))
     due = due_for_verification(kept, ledger, now, verify_limit, exclude={c.comment_id for c in found.candidates})
     answers, verify = [c.url for c in found.candidates], [c.url for c in due.chosen]
     written = None
@@ -860,9 +1038,12 @@ def plan_run(requests: list[str], library_dir: Path, checker, profiles, dry_run:
     print(plan_report(found, len(requests), kept, due, loaded, recorded, after, time.perf_counter() - started, dry_run,
                       written))
     until = None if minutes is None else now + timedelta(minutes=minutes)
+    remember = None if dry_run else lambda: save_bright_data_memory(checker, memory, now)
     through = verify_through_bright_data(found.candidates, checker, bright_data, library_dir,
                                          max_records=bright_data_records, max_threads=bright_data_threads,
-                                         dry_run=dry_run, until=until)
+                                         dry_run=dry_run, until=until, memory=memory, remember=remember)
+    if remember is not None and not through.off:
+        remember()  # every run: so the bucket's 2-day rule never removes it while the job runs daily
     print(bright_data_report(through))
     if not dry_run and through.read:
         bucket.put(PLAN_NAME, plan_bytes(answers, verify, checker.checks_made("bright_data"), now))
