@@ -181,6 +181,7 @@ from engine.ingredients import shown as shown_ingredients
 from engine.library import DEFAULT_LIBRARY_DIR, checked_live_within
 from engine.library_cache import loaded as loaded_library
 from engine.match_products import known_aliases, normalize_name, product_words, same_product
+from engine.memo import Table
 from engine.models import Comment, Thread
 from engine.needs import Need, needs_met, request_needs
 from engine.prices import (
@@ -1335,14 +1336,15 @@ def _brand_model_products(ranking: RankingResult, groups: list[ProductGroup],
     """{brand pick's key: the ranked product that is its brand's most recommended model} (see _brand_models)."""
     by_key = {g.key: g for g in groups}
     found = {}
+    # The specific products with enough credible recommendations to be a brand's model, worked out once for every brand.
+    models = [(p, g) for p in ranking.products if (g := by_key.get(p.key)) is not None and not g.loose
+              and len(p.credible_recommendations) >= BRAND_MODEL_MIN_CREDIBLE]
     for brand in ranking.products:
         brand_group = by_key.get(brand.key)
         if brand_group is None or not brand_group.loose:
             continue
-        candidates = [p for p in ranking.products
-                      if (g := by_key.get(p.key)) is not None and not g.loose
-                      and len(p.credible_recommendations) >= BRAND_MODEL_MIN_CREDIBLE
-                      and _same_brand(brand_group, g) and _names_a_model(p.name, brand_group, product_type)]
+        candidates = [p for p, g in models
+                      if _same_brand(brand_group, g) and _names_a_model(p.name, brand_group, product_type)]
         if candidates:
             found[brand.key] = max(candidates, key=lambda p: (len(p.credible_recommendations), p.score))
     return found
@@ -1367,7 +1369,19 @@ def _same_brand(brand: ProductGroup, product: ProductGroup) -> bool:
     """Whether a specific product is one of a brand pick's own products: a name of the brand (as written, or as the UK
     knows it) is the first word or words of one of the product's names ("Victorinox" and "Victorinox chef's knife"), or
     module 4 says the two names mean the same product (engine.match_products.same_product: "CeraVe cleanser" and
-    "CeraVe Hydrating Cleanser")."""
+    "CeraVe Hydrating Cleanser"). It depends on the two groups' names alone, so each pair of groups is worked out once
+    (latency, 13 Oct 2026: an answer asks it of the same pairs from every brand rule)."""
+    key = (brand.category, frozenset(brand.names), frozenset(product.names), product.name)
+    found = _SAME_BRAND.get(key)
+    if found is None:
+        found = _SAME_BRAND.keep(key, _same_brand_of(brand, product))
+    return found
+
+
+_SAME_BRAND = Table()  # (category, a brand's names, a product's names, its name) -> _same_brand's answer
+
+
+def _same_brand_of(brand: ProductGroup, product: ProductGroup) -> bool:
     aliases = known_aliases().get(brand.category, {})
     brand_names = set(brand.names) | {uk_name(name) for name in brand.names}
     product_names = set(product.names) | {product.name}
