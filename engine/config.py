@@ -5,23 +5,143 @@ a label or a test pass: ask Noemi first. After a change, run `python -m engine.g
 that no longer fits is reported with its file and line.
 """
 
+import json
+from pathlib import Path
+
 # Categories the engine ranks. A product mention can also be "other" (outside every category).
 # "haircare" added on 11 Oct 2026 (Noemi: "i want to be able to ask about shampoo and receive some proper answers"):
-# products put on the hair or scalp. Hair tools (dryers, straighteners) stay out of scope.
-THREAD_CATEGORIES = ("skincare", "kitchen", "haircare")
+# products put on the hair or scalp. Hair tools (dryers, straighteners) were out of scope until 14 Oct 2026.
+# "general" added on 14 Oct 2026 (Noemi: "I want recs regardless of the category"; her plan's part 1): every other
+# product people buy and use, from robot vacuums and headphones to hiking boots, dog harnesses and baby carriers, in
+# departments (GENERAL_DEPARTMENTS below) that the page shows and that choose the communities of a product the rules
+# don't list. One engine category rather than one per department, chosen by Claude (reported to Noemi): answers count
+# only mentions and threads of the request's category, and the AI that reads threads can't be relied on to tell home
+# from tech, or outdoor from clothing, the same way module 1 does (a robot vacuum, a rain jacket, a smart lock), so
+# mentions would have been lost at those borders; inside one category the product type alone tells them apart. Still
+# out of scope, each with its own polite no (engine/query.py): services, places and advice that isn't about buying;
+# food and drink; medicines and supplements; books, films, music, games and apps; weapons, drugs, tobacco and vaping,
+# and adult products.
+THREAD_CATEGORIES = ("skincare", "kitchen", "haircare", "general")
 MENTION_CATEGORIES = THREAD_CATEGORIES + ("other",)
 
 SUBREDDITS: dict[str, tuple[str, ...]] = {
     # "acne" added by Noemi on 11 Oct 2026 (an agent had skipped r/acne threads for the acne-prone cleanser question).
     "skincare": ("SkincareAddiction", "AsianBeauty", "30PlusSkinCare", "SkincareAddictionUK", "acne"),
-    "kitchen": ("BuyItForLife", "AskCulinary", "chefknives", "Cooking", "castiron", "Coffee", "espresso", "tea"),
+    # The six after "tea" added on 14 Oct 2026 with the kitchen appliances (Noemi's decision 3 of 14 Oct; chosen by
+    # Claude, reported to her): appliance advice and repair (r/Appliances), and the communities of one appliance or use.
+    # The last five the same day with the general category's kitchen types (chosen by Claude, reported): knife
+    # sharpening, pizza ovens, and barbecues and smokers.
+    "kitchen": ("BuyItForLife", "AskCulinary", "chefknives", "Cooking", "castiron", "Coffee", "espresso", "tea",
+                "Appliances", "airfryer", "instantpot", "slowcooking", "Baking", "juicing",
+                "sharpening", "Pizza", "BBQ", "smoking", "grilling"),
     # Chosen by Claude on 11 Oct 2026 (reported to Noemi): the science-minded and product-heavy haircare communities,
     # most general advice first.
     "haircare": ("HaircareScience", "curlyhair", "wavyhair", "Hair", "femalehairadvice", "malehairadvice", "Dandruff"),
+    # The general category (14 Oct 2026). First the 32 communities of Noemi's plan for it (part 2: the ones whose
+    # history she approved downloading, r/BuyItForLife being the broad one), then the specialist ones of the types
+    # they don't cover well (phones, TVs, cameras, makeup, shaving, cats, cars, gardens...), chosen by Claude and
+    # reported to her: searched through Arctic Shift's API when a request is read on demand, never downloaded in bulk.
+    # Seven are shared with the other categories (r/Appliances, r/Coffee, hair and skin communities for hair tools and
+    # deodorants): a thread read from one of them for a request takes the request's category (engine/sources.py).
+    "general": (
+        "BuyItForLife", "headphones", "BudgetAudiophile", "MechanicalKeyboards", "SuggestALaptop", "laptops",
+        "Monitors", "HomeImprovement", "homeowners", "VacuumCleaners", "Mattress", "smarthome", "homeautomation",
+        "Tools", "HomeDecorating", "Frugal", "Ultralight", "CampingGear", "onebag", "HerOneBag", "bicycling",
+        "malefashionadvice", "femalefashionadvice", "frugalmalefashion", "goodyearwelt", "Boots", "RunningShoeGeeks",
+        "homegym", "NewParents", "beyondthebump", "dogs", "Watches",
+        # home
+        "AirPurifiers", "battlestations", "candles", "CleaningTips", "hvacadvice", "laundry", "malelivingspace",
+        "OfficeChairs", "Appliances",
+        # tech
+        "3Dprinting", "4kTV", "audiophile", "buildapc", "Cameras", "DataHoarder", "drones", "HomeNetworking",
+        "hometheater", "kindle", "MouseReview", "photography", "PickAnAndroidForMe", "printers", "projectors",
+        "smartwatch", "vinyl", "virtualreality",
+        # outdoor and travel
+        "bikecommuting", "birding", "ebikes", "EDC", "ElectricScooters", "Fishing", "flashlight", "golf", "hiking",
+        "Kayaking", "Paddleboarding", "whichbike",
+        # clothing and accessories
+        "ABraThatFits", "handbags", "rawdenim", "Sneakers", "suits",
+        # baby and kids
+        "BabyBumps", "babywearing", "CarSeats", "ExclusivelyPumping", "Mommit",
+        # pets
+        "Aquariums", "CatAdvice", "cats", "Dogtraining", "puppy101",
+        # sport and fitness
+        "bootroom", "boxing", "fitbit", "Fitness", "Garmin", "kettlebell", "powerlifting", "Rowing", "running",
+        "skateboarding", "Swimming", "tennis", "xxfitness", "yoga", "Zwift",
+        # tools and garden
+        "gardening", "lawncare", "MechanicAdvice", "woodworking",
+        # beauty and personal care
+        "drugstoreMUA", "Fragrance", "MakeupAddiction", "MakeupRehab", "malegrooming", "RedditLaqueristas",
+        "wicked_edge", "HaircareScience", "curlyhair", "Hair", "femalehairadvice", "SkincareAddiction",
+        # hobbies
+        "astronomy", "boardgames", "DigitalArt", "drums", "fountainpens", "Guitar", "notebooks", "pens", "piano",
+        "sewing", "telescopes",
+        # car
+        "AutoDetailing", "cars", "Dashcam", "electricvehicles", "Tires",
+        "Coffee",
+    ),
 }
+# The general category's departments (14 Oct 2026; chosen by Claude, reported to Noemi; the words shown are PROPOSED):
+# each product type of the category belongs to one (engine/data/product_types.json), and the page shows it above the
+# answer as the other categories' names are shown. For each: the name shown ("label"), the words a question about it
+# uses ("noun": "What kind of pet product are you after?") with its examples, the words that place a vague request in it
+# ("hints": "something for my dog"), and the communities searched for a product of it that module 1's rules don't list,
+# placed there by the open model ("communities", engine/query_model.py: an "eyelash curler"), broad ones first.
+GENERAL_DEPARTMENTS: dict[str, dict] = {
+    "home": {"label": "Home", "noun": "home", "examples": "a vacuum cleaner, a mattress or an air purifier",
+             "hints": ("home", "house", "bedroom", "living room", "bathroom", "cleaning", "laundry", "furniture",
+                       "decor"),
+             "communities": ("BuyItForLife", "HomeImprovement", "homeowners", "Frugal", "HomeDecorating")},
+    "tech": {"label": "Tech", "noun": "tech", "examples": "headphones, a laptop or a monitor",
+             "hints": ("tech", "gadget", "gadgets", "electronics", "gaming"),
+             "communities": ("BuyItForLife", "Frugal", "laptops", "smarthome")},
+    "outdoor": {"label": "Outdoor and travel", "noun": "outdoor or travel", "examples": "a tent, a suitcase or hiking boots",
+                "hints": ("camping", "hiking", "outdoor", "outdoors", "travel", "travelling", "traveling",
+                          "backpacking", "cycling"),
+                "communities": ("CampingGear", "Ultralight", "BuyItForLife", "onebag")},
+    "clothing": {"label": "Clothing and accessories", "noun": "clothing", "examples": "jeans, boots or a winter coat",
+                 "hints": ("clothes", "clothing", "outfit", "wardrobe", "fashion"),
+                 "communities": ("BuyItForLife", "malefashionadvice", "femalefashionadvice", "frugalmalefashion")},
+    "baby": {"label": "Baby and kids", "noun": "baby", "examples": "a stroller, a car seat or a baby carrier",
+             "hints": ("baby", "babies", "newborn", "toddler", "infant", "kids", "pregnancy", "pregnant", "nursery"),
+             "communities": ("NewParents", "beyondthebump", "BabyBumps", "BuyItForLife")},
+    "pets": {"label": "Pets", "noun": "pet", "examples": "a dog harness, a crate or a litter box",
+             "hints": ("dog", "puppy", "cat", "kitten", "pet"),
+             "communities": ("dogs", "cats", "BuyItForLife")},
+    "fitness": {"label": "Sport and fitness", "noun": "sport or fitness", "examples": "running shoes, dumbbells or a yoga mat",
+                "hints": ("gym", "home gym", "workout", "fitness", "exercise", "running", "sport", "sports",
+                          "lifting"),
+                "communities": ("homegym", "Fitness", "BuyItForLife")},
+    "tools": {"label": "Tools and garden", "noun": "tool or garden", "examples": "a drill, a lawn mower or a pressure washer",
+              "hints": ("diy", "garden", "gardening", "lawn", "workshop"),
+              "communities": ("Tools", "HomeImprovement", "BuyItForLife", "gardening")},
+    "beauty": {"label": "Beauty and personal care", "noun": "beauty or grooming",
+               "examples": "a hair dryer, a razor or a perfume",
+               "hints": ("makeup", "make-up", "beauty", "shaving", "grooming", "nails"),
+               "communities": ("BuyItForLife", "MakeupAddiction", "malegrooming", "SkincareAddiction")},
+    "hobbies": {"label": "Hobbies", "noun": "hobby", "examples": "a guitar, a board game or a fountain pen",
+                "hints": ("hobby", "hobbies", "crafts", "crafting"),
+                "communities": ("BuyItForLife", "Frugal")},
+    "car": {"label": "Car", "noun": "car", "examples": "a dash cam, tyres or a jump starter",
+            "hints": ("car", "vehicle", "driving"),
+            "communities": ("cars", "MechanicAdvice", "AutoDetailing", "BuyItForLife")},
+}
+# Module 1's product types beyond its first 43 (engine/query.py's own list), as data: 336 popular types of the general
+# category, plus large kitchen appliances, barbecues and cooking gear, and a few haircare types (14 Oct 2026, Noemi's
+# plan part 1, for the library prepared ahead in part 2; chosen by Claude, reported to Noemi). Left out on purpose,
+# because they changed answers about the first types (their names would have covered words those answers read):
+# body washes, body lotions and hand creams (moisturiser answers read their threads) and cookware sets (frying pan and
+# skillet answers do); and curl creams (found merging main, 14 Oct 2026: a leave-in conditioner answer's "what to look
+# for" names them, and a listed type's name there is another type's advice); the open model still places them.
+# Each with its plural, category and department, the names people use for it, its title words and its communities.
+PRODUCT_TYPES_FILE = Path(__file__).resolve().parent / "data" / "product_types.json"
+MORE_PRODUCT_TYPES: tuple[dict, ...] = tuple(json.loads(PRODUCT_TYPES_FILE.read_text(encoding="utf-8"))["types"])
 # Subreddits about one skin condition, {subreddit: the skin type that brings it in} (decided by Claude, 11 Oct 2026, when
 # Noemi added r/acne): searched first for a request about that condition, as the most specific, and not for others.
 CONDITION_SUBREDDITS: dict[str, str] = {"acne": "acne-prone"}
+# The product types made for one condition (13 Oct 2026, Noemi's decision 2: spot treatments become a type): their
+# condition's subreddit is searched first for them, whether or not the request names the condition ("pimple patches").
+CONDITION_PRODUCT_TYPES: dict[str, tuple[str, ...]] = {"acne": ("spot treatment",)}
 
 STANCE_VALUE: dict[str, int] = {"recommend": 1, "warn": -1, "neutral": 0}
 
@@ -225,6 +345,13 @@ PIPELINE_MAX_THREADS = 16
 # to her). Shampoo advice is spread over many brands: its 16 most relevant threads gave no pick, 24 and 32 gave one,
 # 48 gave three (Nizoral, Neutrogena T-Gel, Head & Shoulders for an oily scalp).
 PIPELINE_MORE_THREADS = 48
+# In the wider reading a pick, and an Also worth a look item, needs a credible recommendation that talks about the
+# request's needs (11 Oct 2026); in these categories it needs one in every reading (Noemi's decision 4 of 14 Oct 2026,
+# morning: option B of the need-quality builder). Haircare's first reading is filled by big curly-hair threads, so its
+# popular picks needn't be about what was asked: on the frozen library "gentle shampoo for wavy hair" had picked an
+# anti-dandruff shampoo its writers used for a deep clean. Measured there before her decision: 2 answers change, the
+# blind test's (skincare and kitchen) not at all. An empty tuple keeps the rule to the wider reading, as before.
+NEED_RULE_IN_EVERY_READING = ("haircare",)
 # Brand-only picks (decided by Noemi, 9 Oct 2026, decision 9): a brand or line that fits several products ("Lodge",
 # "CeraVe") is ranked, under a name that says so ("Lodge cast iron skillet line", BRAND_PICK_NAME below), when its
 # threads make the product clear (BRAND_PICK_TITLE_SHARE below) or, since 12 Oct 2026, when the brand-lines list says
@@ -263,7 +390,7 @@ BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE = True
 # cleanser cleanser line"; engine.group_products.brand_pick_name).
 BRAND_PICK_NAME = "{brand} {product_type} line"
 # A product type as a name shows it, when that isn't module 1's lowercase name: "Le Creuset Dutch oven line".
-PRODUCT_TYPE_SHOWN: dict[str, str] = {"dutch oven": "Dutch oven"}
+PRODUCT_TYPE_SHOWN: dict[str, str] = {"dutch oven": "Dutch oven", "french press": "French press"}
 # The plural of each product type (engine/query.py, PRODUCT_TYPES): for the name of a brand line left out because its
 # brand doesn't sell them ("Batiste doesn't sell shampoos", BRAND_LINE_NOT_SOLD), and for the words a price or facts
 # entry under a brand's name may add ("OXO kettles"; engine/pipeline.py, _type_words).
@@ -277,6 +404,7 @@ PRODUCT_TYPE_PLURALS: dict[str, str] = {
     "toner": "toners",
     "eye cream": "eye creams",
     "lip balm": "lip balms",
+    "spot treatment": "spot treatments",
     "stovetop kettle": "stovetop kettles",
     "electric kettle": "electric kettles",
     "chef knife": "chef knives",
@@ -293,7 +421,29 @@ PRODUCT_TYPE_PLURALS: dict[str, str] = {
     "leave-in conditioner": "leave-in conditioners",
     "hair mask": "hair masks",
     "hair oil": "hair oils",
+    # Kitchen appliances (14 Oct 2026).
+    "microwave": "microwaves",
+    "oven": "ovens",
+    "toaster oven": "toaster ovens",
+    "air fryer": "air fryers",
+    "blender": "blenders",
+    "food processor": "food processors",
+    "stand mixer": "stand mixers",
+    "hand mixer": "hand mixers",
+    "slow cooker": "slow cookers",
+    "rice cooker": "rice cookers",
+    "pressure cooker": "pressure cookers",
+    "coffee maker": "coffee makers",
+    "french press": "French presses",
+    "toaster": "toasters",
+    "waffle maker": "waffle makers",
+    "juicer": "juicers",
+    "kitchen scale": "kitchen scales",
 }
+# The types of engine/data/product_types.json (14 Oct 2026), each with its own plural, and a few shown with capitals
+# ("TV", "EV charger").
+PRODUCT_TYPE_PLURALS |= {entry["name"]: entry["plural"] for entry in MORE_PRODUCT_TYPES}
+PRODUCT_TYPE_SHOWN |= {entry["name"]: entry["shown"] for entry in MORE_PRODUCT_TYPES if "shown" in entry}
 
 # Decision 11, budgets (engine/prices.py). Current prices live in data/prices.json, each with its shop and the day
 # Claude looked it up. PROPOSED: a price checked more than this many days ago is still shown, with its date, but
@@ -358,10 +508,14 @@ LIVE_CHECK_UNREADABLE_KEEP_HOURS = 20
 # read less than PRECHECK_FRESH_HOURS ago is left as it is ("fresh for most of a day"), so after a run every check it
 # covers has 28 hours or more to go: the next day's run reads it again before it runs out, even a run that is late.
 PRECHECK_FRESH_HOURS = 20
-# Reddit reads one run makes at most: at the pace above (about 190 in each 10 minutes) about an hour, so the daily
-# job stays well inside Cloud Run's free tier. The answers of the 13 Oct 2026 library show 759 comments, hold 170 next in
-# line and 146 in the products behind the picks (1,075: all read), then 289 next after those (read as the budget allows).
-PRECHECK_MAX_READS = 1100
+# A run's budget, reads and time, whichever runs out first. Time (14 Oct 2026, Claude's call, reported to Noemi): a run
+# starts no read PRECHECK_MAX_RUN_MINUTES after it started (working out the answers included), so the job's bill stays
+# inside Cloud Run's free tier however fast Reddit lets it read (engine/tests/test_cloudrun.py does the sums: with
+# on-demand reading, at most 88% of the free vCPU-seconds in a 31-day month). Reads: a ceiling, about what Reddit allows
+# in that time. On 14 Oct 2026 a run read its 1,100 in 46 minutes (Reddit's headers let it go faster than the refill
+# pace) and left 459 of the 1,967 comments answers show or hold next in line unread; 75 minutes is about 1,700 reads.
+PRECHECK_MAX_READS = 2000
+PRECHECK_MAX_RUN_MINUTES = 75
 # Unlike a visitor's answer (LIVE_CHECK_MAX_WAIT_SECONDS), nobody waits on the pre-check: a read waits for Reddit's next
 # 10 minutes however long that is (13 Oct 2026).
 PRECHECK_MAX_WAIT_SECONDS = 660
@@ -369,9 +523,9 @@ PRECHECK_MAX_WAIT_SECONDS = 660
 PRECHECK_STOP_AFTER_UNKNOWN = 20
 # The open model's product types (engine.query_model) the library had threads about on 13 Oct 2026, from its request
 # log (data/library/requests.jsonl, which isn't in the Cloud Run image): checked ahead by their names, like module 1's
-# own types. Types the log names later are checked too wherever the log is.
-PRECHECK_MODEL_TYPES = ("air fryer", "slow cooker", "toaster", "blender", "food processor", "rice cooker", "stand mixer",
-                        "body wash")
+# own types. Types the log names later are checked too wherever the log is. Since 14 Oct 2026 the air fryer, slow
+# cooker, toaster, blender, food processor, rice cooker and stand mixer are module 1's own types (checked ahead as such).
+PRECHECK_MODEL_TYPES = ("body wash",)
 
 # --- Care tips (Noemi, 9 Oct 2026) ---
 # Alongside each pick, credible advice from its threads on looking after it ("descale it every 6 months"; extraction
@@ -502,6 +656,71 @@ NEEDS: dict[str, tuple[str, ...]] = {
     # Something that lasts. A mention with long-term use (module 5) talks about it too: it describes long use.
     "lasting": ("lasts", "lasted", "lasting", "outlast", "durab", "held up", "holds up", "died", "broke",
                 "stopped working", "fell apart"),
+    # 14 Oct 2026 (need-led thread choice, Noemi's decision 3 of 14 Oct; words chosen by Claude, reported to her): a quiet
+    # appliance, and a pan for a glass-top (ceramic) stove, said in the words people use. "glass" alone isn't one.
+    "quiet": ("quiet", "noise", "noisy", "loud", "silent", "silence"),
+    "glass top stove": ("glass top", "glass-top", "glasstop", "glass stove", "glass cooktop", "glass hob",
+                        "ceramic hob", "ceramic cooktop", "ceramic top", "ceramic stove", "smooth top", "smooth-top",
+                        "smoothtop"),
+    # 14 Oct 2026 (the need-quality builder; words chosen by Claude, reported to Noemi): a product that isn't drying,
+    # asked for after a negation ("a shampoo that isn't drying", "won't dry out my hair": NEGATED_NEEDS below). A comment
+    # talks about it when it says how drying a product is, either way ("too drying", "not drying at all", "dried out
+    # my ends"), or how stripping ("stripped", "stripping"); never "drying" alone, which is mostly air-drying or
+    # blow-drying hair.
+    "not drying": ("not drying", "isn't drying", "non-drying", "non drying", "less drying", "so drying", "too drying",
+                   "very drying", "bit drying", "little drying", "pretty drying", "quite drying", "super drying",
+                   "really drying", "incredibly drying", "extremely drying", "slightly drying", "kinda drying",
+                   "harsh and drying", "dries out", "dried out", "drying out", "dry out", "dries my", "dryness",
+                   "stripp"),
+    # A product that doesn't strip ("a cleanser that won't strip my skin"): a word of the request found as typed until
+    # 14 Oct 2026, a need of its own since, so a quote saying a product strips says the opposite (OPPOSITE_QUOTE_PATTERNS).
+    "strip": ("strip",),
+}
+# A need asked for by saying what a product mustn't do (14 Oct 2026, the need-quality builder; chosen by Claude, reported
+# to Noemi). A negation of NEGATIONS followed, at most NEGATION_REACH words later, by a word beginning with one of a
+# need's words here names that need, and that word names no other need: "dry" in "a shampoo that isn't drying" or
+# "doesn't leave my hair dry" isn't dry hair. A word just before a hair or skin word still describes it ("doesn't make my
+# dry hair worse" is about dry hair). Only drying so far: every other need's words already say it whichever way round
+# ("isn't greasy" is about greasiness, the oily need; "without frizz" the frizzy need; "doesn't leave a white cast" no
+# white cast; "isn't loud" quiet), and a negation is never a need of its own (engine.sources._STOPWORDS).
+NEGATED_NEEDS: dict[str, tuple[str, ...]] = {
+    "not drying": ("dry", "dries", "dried"),
+}
+NEGATIONS = ("not", "isn't", "isnt", "aren't", "arent", "doesn't", "doesnt", "don't", "dont", "won't", "wont",
+             "wouldn't", "shouldn't", "never", "no", "non", "without", "nor")
+NEGATION_REACH = 3  # words between the negation and the word it negates, at most ("doesn't leave my hair dry")
+# Hair types written together before "hair" each name their need (14 Oct 2026, the need-quality builder): "fine", "thin",
+# "flat", "limp" and "dry" alone aren't words of their needs ("it works fine", "let it air dry"), so "shampoo for fine
+# oily hair" found only the oily scalp, and "fine" became a word of its own, found in every comment saying something
+# works fine. In a list ending in one of HAIR_LIST_NOUNS ("fine oily hair", "thin, greasy hair", "very fine and
+# slightly oily hair") each word of HAIR_LIST_NEEDS names its need; HAIR_LIST_WORDS may sit in the list, naming none
+# themselves (or named by their need's own words: "oily", "curly").
+HAIR_LIST_NEEDS: dict[str, str] = {"fine": "fine hair", "thin": "fine hair", "flat": "fine hair", "limp": "fine hair",
+                                   "dry": "dry hair"}
+HAIR_LIST_WORDS = ("oily", "greasy", "curly", "wavy", "frizzy", "coloured", "colored", "dyed", "bleached", "damaged",
+                   "brittle", "thick", "coarse", "long", "short", "straight", "natural", "porous", "low porosity",
+                   "high porosity", "normal", "healthy", "very", "super", "really", "quite", "slightly", "extremely",
+                   "somewhat", "kinda", "a bit", "a little")
+HAIR_LIST_NOUNS = ("hair", "curls", "waves", "strands", "locks")
+# A haircare request's needs (14 Oct 2026, need-led thread choice, Noemi's decision 3 of 14 Oct; words chosen by Claude,
+# reported to her), in place of the skin types': a scalp is oily, hair is dry, fine or frizzy, and the words differ
+# ("shiny" hair isn't greasy, a "flaky" scalp is dandruff, not dry hair). Found as NEEDS' words are: a word at the start
+# of a word, a phrase whole. "fine" or "dry" alone aren't words of them: "it works fine", "I let it air dry".
+HAIR_NEEDS: dict[str, tuple[str, ...]] = {
+    "oily hair": ("oily", "oili", "greas", "sebum"),
+    "dry hair": ("dry hair", "dry ends", "dry curls", "dry strands", "dry and", "dry,", "dry curly", "dry wavy",
+                 "dry frizzy", "dryness", "brittle", "like straw", "straw-like", "dehydrat", "parched"),
+    "dandruff": ("dandruff", "flak", "seborrh", "seb derm", "sebderm", "malassezia"),
+    "itchy scalp": ("itch",),
+    "sensitive scalp": NEEDS["sensitive"],
+    "fine hair": ("fine hair", "fine strands", "fine curly", "fine wavy", "fine straight", "fine flat", "fine thin",
+                  "fine and thin", "thin hair", "thin fine", "flat hair", "falls flat", "fall flat", "limp", "volum",
+                  "weigh", "lifeless"),
+    "frizzy": ("frizz", "flyaway", "fly-away", "fly away"),
+    "curly": ("curl", "coil", "ringlet", "3a", "3b", "3c", "4a", "4b", "4c"),
+    "wavy": ("wavy", "waves", "wavies", "2a", "2b", "2c"),
+    "colour-treated": ("colour-treated", "color-treated", "colour treated", "color treated", "coloured", "colored",
+                       "dye", "bleach", "highlight", "colour-safe", "color-safe", "colour safe", "color safe"),
 }
 # Other words of a request that name one of those needs: "first chef's knife", "will last decades", "lasts 10+ years".
 # Module 1's "lasts 10+ years" (min_years) names "lasting" as well.
@@ -553,7 +772,7 @@ LIVE_CHECK_RECORD_RESERVE = 300
 # "available"), so it isn't kept twice.
 PRODUCT_FACT_VALUES: dict[str, tuple] = {
     "fragrance_free": (True, False),  # no added fragrance or perfume
-    "prescription_only": (True, False),  # sold in the UK only on a prescription (Tazorac, tretinoin, Differin)
+    "prescription_only": (True, False),  # sold in the UK only on a prescription (tretinoin, Differin, Duac, Finacea)
     "strength": ("gentle", "moderate", "strong"),  # how strong a retinoid or an exfoliant is
     "white_cast": (True, False),  # a sunscreen that leaves a white cast on the skin
     "finish": ("matte", "natural", "dewy"),  # how a sunscreen looks once on
@@ -567,11 +786,14 @@ PRODUCT_FACT_VALUES: dict[str, tuple] = {
     "sulfate_free": (True, False),  # a shampoo that cleans without sulfates (SLS, SLES, ALS...) (11 Oct 2026)
 }
 # The facts each product type (engine/query.py, PRODUCT_TYPES) can have. Every skincare product can say whether it is
-# fragrance-free and whether its maker warns against sensitive skin; only retinoids and exfoliants, the skincare sold in
-# prescription versions (tretinoin, adapalene, azelaic acid 15%+) and in strengths, can be prescription-only or have a
-# strength (10 Oct 2026: a moisturiser's "prescription_only: false" was always true and only asked researchers for busy
+# fragrance-free, whether its maker warns against sensitive skin and, since Noemi's decision 5 of 14 Oct 2026, whether it
+# is prescription-only (Duac, a clindamycin and benzoyl peroxide gel, is a spot treatment; Finacea's azelaic acid gel is
+# read as a cream); only retinoids and exfoliants come in strengths. Not knowing whether a product is prescription-only
+# is a requirement for retinoids and exfoliants only, the skincare mostly sold in prescription versions (the rule's
+# "confirm_types" below): for every other type the fact is recorded when an official source says so and never asked
+# for (10 Oct 2026: a moisturiser's "prescription_only: false" was always true and only asked researchers for busy
 # work). A type not listed (a chef knife, a coffee grinder) has no facts yet.
-PRODUCT_FACTS_FOR_SKINCARE = ("fragrance_free", "maker_warns_sensitive")
+PRODUCT_FACTS_FOR_SKINCARE = ("fragrance_free", "maker_warns_sensitive", "prescription_only")
 PRODUCT_FACTS_FOR_TREATMENTS = ("fragrance_free", "prescription_only", "strength", "maker_warns_sensitive")
 PRODUCT_FACTS_BY_TYPE: dict[str, tuple[str, ...]] = {
     "exfoliant": PRODUCT_FACTS_FOR_TREATMENTS,
@@ -583,6 +805,7 @@ PRODUCT_FACTS_BY_TYPE: dict[str, tuple[str, ...]] = {
     "toner": PRODUCT_FACTS_FOR_SKINCARE,
     "eye cream": PRODUCT_FACTS_FOR_SKINCARE,
     "lip balm": PRODUCT_FACTS_FOR_SKINCARE,
+    "spot treatment": PRODUCT_FACTS_FOR_SKINCARE,  # 13 Oct 2026 (Noemi's decision 2)
     "electric kettle": ("plastic_free_inside",),
     "stovetop kettle": ("plastic_free_inside",),
     "frying pan": ("pfas_free", "non_stick", "induction"),
@@ -599,8 +822,12 @@ PRODUCT_FACTS_BY_TYPE: dict[str, tuple[str, ...]] = {
 PRODUCT_FACT_RULES: dict[str, dict] = {
     "too strong": {"asks": ("beginner", "sensitive", "gentle"), "fact": "strength", "value": "strong", "hard": True,
                    "reason": "it is a strong formula, too strong for beginners or sensitive skin"},
+    # "confirm_types" (14 Oct 2026, Noemi's decision 5): the product types for which not knowing the fact is a
+    # requirement ("we couldn't confirm it's sold without a prescription"; a brand line can't be checked for it). Any
+    # skincare product can have the fact; a product whose facts say it is prescription-only also shows a note wherever it
+    # is shown (engine/answer.py, PRESCRIPTION_NOTE).
     "prescription only": {"asks": ("beginner", "sensitive", "gentle"), "fact": "prescription_only", "value": True,
-                          "hard": True,
+                          "hard": True, "confirm_types": ("retinoid", "exfoliant"),
                           "reason": "it is prescription-only: a strong treatment, not one for beginners or sensitive "
                                     "skin"},
     "fragrance": {"asks": ("fragrance-free",), "fact": "fragrance_free", "value": False, "hard": True,
@@ -771,8 +998,12 @@ PRICES_TODO_NEXT_IN_LINE = 3
 # check` enforces it: a mention whose type (in the AI's words) matches one of these, as whole words, is rejected.
 # Decided by Claude, reported to Noemi. "treatment" alone isn't here: a spot treatment is a product; nor "facial"
 # alone: a facial cleanser or oil is one.
-SERVICE_TYPE_PATTERNS = (r"laser", r"procedures?", r"microneedling", r"salon", r"clinic", r"in-office",
-                         r"(salon |spa )?facials?$")
+# Since 14 Oct 2026 (the general category) "laser" and "salon" count only as the whole type or before a treatment word:
+# a laser printer, a laser level and a salon hair dryer are products ("laser treatment" and "salon visit" still aren't).
+_TREATMENT = (r"(?:\s+(?:treatments?|resurfacing|therapy|facials?|toning|peels?|genesis|sessions?|hair removal"
+              r"|services?|visits?|appointments?))?$")
+SERVICE_TYPE_PATTERNS = (rf"laser{_TREATMENT}", r"procedures?", r"microneedling", rf"salon{_TREATMENT}", r"clinic",
+                         r"in-office", r"(salon |spa )?facials?$")
 
 # --- A brand pick names its most recommended model (10 Oct 2026) ---
 # Decided by Claude, reported to Noemi. Under a brand pick ("Victorinox chef knife line"), the answer names the model
@@ -836,6 +1067,76 @@ OPPOSITE_QUOTE_PATTERNS["lasting"] = (rf"\b{_FAILED}\b[^.!?]{{0,40}}?\b{_SOON}\b
                                       # Buy the cheapest and swap it for a new one when it fails (12 Oct 2026: a "Look for" note
                                       # said so for an air fryer that lasts).
                                       r"\breplace (it|them) (before|once|as soon as) (it|they)\b")
+# A product that isn't drying or stripping, and a gentle one (14 Oct 2026, the need-quality builder; chosen by
+# Claude, reported to Noemi). Found on the library: "shampoo for curly hair that isn't drying" picked a detox shampoo
+# and "gentle shampoo for wavy hair" an anti-dandruff one its writer used for a deep clean. A quote describing the
+# product as drying, stripping or harsh says the opposite, and so does one using it as a clarifying, detox or chelating
+# shampoo, or to get rid of buildup: such shampoos are made to strip the hair, used now and then, not every wash. Only
+# their shampoo forms: a skincare product's name that holds the word ("COSRX AHA/BHA Clarifying Treatment Toner") says
+# nothing about harshness. For these asks (OPPOSITE_NEGATED_IN_SENTENCE below), a negation among the
+# OPPOSITE_NEGATION_WINDOW words before a match, in its sentence (up to "but" or "because"), takes it back: "none of
+# the three ever stripped my face", "neither has ever dried my hair out", "it doesn't burn, smell or strip the skin",
+# "far less harsh".
+_DEGREE = (r"(?:so|too|very|really|pretty|quite|super|incredibly|extremely|kinda|kind of|a bit|a little|bit|little"
+           r"|somewhat|slightly|a tad|overly)")
+_BODY = r"(?:hair|skin|scalp|curls?|ends|strands|face|waves|roots)"
+_WHOSE = r"(?:my|your|the|our|her|his|their)"
+_DRYING = (rf"\b{_DEGREE} drying\b",  # "too drying", "pretty drying"
+           r"\b(?:is|was|are|were|be|been|being|it's|its|they're|feels?|felt|harsh and)\s+drying\b",
+           rf"\b(?:find|found|finds) (?:it|them|this) (?:{_DEGREE} )?drying\b",
+           rf"\bdr(?:y|ies|ied|ying) {_WHOSE} (?:\w+ )?{_BODY} out\b",  # "dried my hair out"
+           rf"\bdr(?:y|ies|ied|ying) out {_WHOSE} (?:\w+ )?{_BODY}\b",  # "dried out my ends"
+           r"\b(?:it|this|they|that|which) (?:really |totally |completely )?(?:dries|dried) (?:\w+ )?out\b",
+           rf"\b(?:left|leaves|leave|leaving|made|makes|make|making) {_WHOSE} {_BODY} (?:feel(?:ing)? )?(?:{_DEGREE} )?"
+           r"(?:dry|drier|dryer|like straw|crunchy|brittle)\b")
+_STRIPPING = (rf"\b{_DEGREE} stripping\b",
+              r"\b(?:is|was|are|were|be|been|it's|its|they're|feels?|felt|harsh and)\s+stripping\b",
+              rf"\b(?:find|found|finds) (?:it|them|this) (?:{_DEGREE} )?stripping\b",
+              rf"\bstrip(?:s|ped)? {_WHOSE} (?:\w+ )?(?:{_BODY}|colou?r|oils?|moisture)\b",  # "strips my skin"
+              r"\bstrip(?:s|ped)? (?:away|off|everything|all)\b",
+              rf"\b(?:left|leaves|leave|leaving|made|makes|make|feels?|felt|feeling) (?:{_WHOSE} {_BODY} )?"
+              rf"(?:feel(?:ing)? )?(?:{_DEGREE} )?stripped\b")
+_CLARIFYING = (r"\b(?:clarifying|detox|chelating|deep[- ]clean(?:ing|sing)?|purifying) (?:shampoo|wash|poo)s?\b",
+               r"\bfor clarifying\b", r"\b(?:i|to|we) clarify (?:with|once|every|weekly|monthly|twice|my|your|the)\b",
+               r"\bclarif(?:y|ies|ied|ying) (?:once a|every|weekly|monthly|twice)\b",
+               r"\b(?:for|to get|gives?|giving|get) (?:a |that |me a )?(?:really |good |nice |proper )?deep clean\b",
+               r"\b(?:for|removes?|removing|strips?|get rid of|gets rid of|cuts? through|clears?|lifts?) "
+               r"(?:all |the |my |any |of |product |hard water |mineral |silicone )*build[- ]?up\b")
+_HARSH = (rf"\b(?:{_DEGREE}|is|was|are|were|it's|its|they're|feels?|felt|find it|found it) harsh\b",
+          rf"\bharsh (?:on|for) {_WHOSE}\b")
+OPPOSITE_QUOTE_PATTERNS["not drying"] = _DRYING + _STRIPPING + _CLARIFYING
+OPPOSITE_QUOTE_PATTERNS["strip"] = _STRIPPING + _DRYING
+OPPOSITE_QUOTE_PATTERNS["gentle"] = _HARSH + _STRIPPING + _DRYING + _CLARIFYING
+# Haircare needs (14 Oct 2026, the same builder; asked for since then: engine.product_facts.request_asks): a shampoo for
+# colour-treated hair that strips or fades the colour, or a clarifying one (it lifts dye with the buildup); for dry hair
+# one that dries it; for greasy or fine hair one that leaves it greasy, heavy or flat; for frizz one that leaves more.
+# Only what the product does to the writer's hair: "my roots get greasy by noon" is the need itself.
+_COLOUR = (rf"\bstrip(?:s|ped|ping)? (?:{_WHOSE} |the |out )?(?:hair )?colou?r\b",
+           rf"\bfad(?:e|es|ed|ing) {_WHOSE} (?:hair )?colou?r\b")
+_HEAVY = (rf"\b(?:left|leaves|leave|leaving|made|makes|make|making) {_WHOSE} (?:hair|scalp|roots|curls|waves) "
+          rf"(?:feel(?:ing)? |look(?:ing)? )?(?:{_DEGREE} )?(?:greas(?:y|ier)|oil(?:y|ier)|heavy|heavier|flat|limp"
+          r"|weighed down)\b",
+          rf"\bweigh(?:s|ed|ing)? {_WHOSE} (?:\w+ )?(?:hair|curls|waves|roots) down\b",
+          rf"\b{_DEGREE} heavy\b")
+_FRIZZ = (rf"\b(?:left|leaves|leave|leaving|made|makes|make|making) {_WHOSE} (?:hair|curls?|waves|ends) "
+          rf"(?:feel(?:ing)? |look(?:ing)? )?(?:{_DEGREE} )?(?:frizz(?:y|ier)|puffy|poofy)\b",
+          r"\b(?:more|so much|lots of|a lot of|tons of|adds?|added|extra) frizz\b",
+          r"\bfrizzier\b")
+OPPOSITE_QUOTE_PATTERNS["colour-treated"] = _COLOUR + _CLARIFYING
+OPPOSITE_QUOTE_PATTERNS["dry hair"] = _DRYING + _STRIPPING + _CLARIFYING
+OPPOSITE_QUOTE_PATTERNS["oily hair"] = _HEAVY
+OPPOSITE_QUOTE_PATTERNS["fine hair"] = _HEAVY
+OPPOSITE_QUOTE_PATTERNS["frizzy"] = _FRIZZ
+OPPOSITE_NEGATED_IN_SENTENCE = ("not drying", "strip", "gentle", "colour-treated", "dry hair", "oily hair", "fine hair",
+                                "frizzy")
+# A thread whose title asks for the opposite kind of product (14 Oct 2026, the need-quality builder): "Which clarifying
+# shampoo for my curls?" is no thread about a shampoo that isn't drying, a gentle one, or one for dry or colour-treated
+# hair, however much its title and post talk about curls or dryness: its answers are clarifying shampoos. The library's
+# first reading reads it after every thread about the request's needs (engine.sources.LocalSource). Only the kind of
+# product: a title saying a product dried someone's hair ("this shampoo is so drying, help") is about the need.
+OPPOSITE_TITLE_PATTERNS: dict[str, tuple[str, ...]] = {ask: _CLARIFYING
+                                                       for ask in ("not drying", "gentle", "colour-treated", "dry hair")}
+OPPOSITE_NEGATION_WINDOW = 8
 
 # --- Quotes that say what the writer thinks come first (10 Oct 2026) ---
 # Decided by Claude, reported to Noemi. Found in b09: a writer listing the grinders they own (an Encore, a C2 at work
@@ -884,7 +1185,27 @@ COPIED_TEXT_MIN_WORDS = 20
 # Extraction instructions that only add a category leave the other categories' extractions as they were:
 # {current version: {older version: the thread categories it is still current for}}. v9 added haircare (its category
 # and product types) and changed nothing else, so skincare and kitchen threads extracted with v8 aren't done again.
-EXTRACT_STILL_CURRENT: dict[str, dict[str, tuple[str, ...]]] = {"extract-v9": {"extract-v8": ("skincare", "kitchen")}}
+# v10 (13 Oct 2026, Noemi's decision 2) only added the "spot treatment" type's name to the list the AI types products
+# with, so every v9 extraction stays current (the AI had typed pimple patches in plain words, "pimple patch", which the
+# spot treatment type's words find), and v8 ones of skincare and kitchen threads, as under v9.
+# v11 (14 Oct 2026, Noemi's decision 3: kitchen appliances as product types) only added the appliances' names, and how
+# their usual kinds are typed, to that list: the AI had typed appliances in plain words ("air fryer", "rice cooker",
+# "multicooker", "air fryer oven"), which module 1's names and words find, so every v10 and v9 extraction stays current,
+# and v8 ones of skincare and kitchen threads.
+# v12 (14 Oct 2026, Noemi's "recs regardless of the category") adds the general category, so a product outside skincare,
+# haircare and kitchen gear is "general" rather than "other", and lists module 1's new types. The three categories'
+# threads were read for their own products, and their answers rank their own category's mentions only, so whether a
+# laptop in a kettle thread was "other" or "general" changes nothing: their v11, v10 and v9 extractions stay current
+# (v8 ones of skincare and kitchen threads too); a general thread is extracted with v12. Decided by Claude, reported.
+_BEFORE_GENERAL = ("skincare", "kitchen", "haircare")
+EXTRACT_STILL_CURRENT: dict[str, dict[str, tuple[str, ...]]] = {
+    "extract-v9": {"extract-v8": ("skincare", "kitchen")},
+    "extract-v10": {"extract-v9": _BEFORE_GENERAL, "extract-v8": ("skincare", "kitchen")},
+    "extract-v11": {"extract-v10": _BEFORE_GENERAL, "extract-v9": _BEFORE_GENERAL,
+                    "extract-v8": ("skincare", "kitchen")},
+    "extract-v12": {"extract-v11": _BEFORE_GENERAL, "extract-v10": _BEFORE_GENERAL, "extract-v9": _BEFORE_GENERAL,
+                    "extract-v8": ("skincare", "kitchen")},
+}
 
 # --- Going live (Noemi, 11 Oct 2026) ---
 # Noemi approved putting the demo online as a Hugging Face Space, with GoatCounter visit counts, a "First time here?"
@@ -921,11 +1242,24 @@ USE_MAX_YEARS = 60
 # one ended the whole search: haircare's big threads, mostly years old, were out of reach. Its searches are free, so
 # now: up to ARCHIVE_MAX_SEARCHES title searches (every decided subreddit), ARCHIVE_POSTS_EACH posts each (the most
 # Arctic Shift gives), then the same searches again for posts from before ARCHIVE_OLDER_YEARS ago; a failed search is
-# skipped and named, and ARCHIVE_SEARCH_MAX_FAILURES of them end the round. Chosen by Claude, reported to Noemi.
+# skipped and named, and ARCHIVE_SEARCH_MAX_FAILURES of them end the round (in a row since 13 Oct 2026: a busy archive
+# fails some searches and answers others; one that is down fails every one). Chosen by Claude, reported to Noemi.
 ARCHIVE_MAX_SEARCHES = 16
 ARCHIVE_POSTS_EACH = 100
 ARCHIVE_OLDER_YEARS = 3
 ARCHIVE_SEARCH_MAX_FAILURES = 3
+# 13 Oct 2026 (the data round): Arctic Shift timed out on half the searches for "shampoo" over 3 years in the big
+# haircare subreddits, round after round, and answered one over the last year in 14 s. A search that times out is asked
+# again as the two halves of its span (an undated one as the two windows above): the newer half of its first timeout right
+# away, every other half at the end of the round, so one search that times out over any span can't end the round. At
+# most this many halvings: then it counts as failed. Chosen by Claude, reported to Noemi.
+ARCHIVE_SPLIT_DEPTH = 2
+# 13 Oct 2026 (the data round): Arctic Shift answers the newest 100 posts of a title search, so "conditioner" over 3 years
+# in r/curlyhair finds the last few months of small posts, and the threads asking a request's exact question ("best
+# conditioner for curly hair?", often years old and big) stayed out of reach. The archive's round also searches the
+# product's title word with each of the request's first ARCHIVE_NEED_WORDS need words ("conditioner curly"), in each of
+# its subreddits, over the whole history: few posts match both. Chosen by Claude, reported to Noemi.
+ARCHIVE_NEED_WORDS = 2
 # 12 Oct 2026: a title search over a big subreddit's whole history timed out, one bounded by dates didn't (r/curlyhair,
 # "conditioner": 35 s for the last 3 years, 11 s for the 6 before). So both rounds are bounded: the last
 # ARCHIVE_OLDER_YEARS years, then back to ARCHIVE_OLDEST_FACTOR times as far (9 years).
@@ -998,7 +1332,7 @@ SUMMARY_PEOPLE_WORDS = ("owner", "owners", "user", "users", "people", "person", 
 # The retinoid words that are module 1's own name for the retinoid type ("retinol", "retinoid") add no requirement:
 # Noemi decided on 7 Oct 2026 (eval/edge_cases/query.json, q05) that "retinol" means the generic retinoid, so the type
 # already is the requirement. The specific forms ("retinal", "tretinoin", "adapalene", "tazarotene") are required.
-_ACID_TYPES = ("exfoliant", "toner", "serum", "cleanser", "moisturiser")
+_ACID_TYPES = ("exfoliant", "toner", "serum", "cleanser", "moisturiser", "spot treatment")
 _SOOTHING_TYPES = ("moisturiser", "serum", "toner", "cleanser", "sunscreen", "eye cream")
 _RETINOID_TYPES = ("retinoid", "serum", "moisturiser", "eye cream")
 INGREDIENTS: dict[str, dict] = {
@@ -1019,7 +1353,7 @@ INGREDIENTS: dict[str, dict] = {
             "named": (r"pha", r"gluconolactone", r"lactobionic"), "actives": ("gluconolactone", "lactobionic acid"),
             "types": _ACID_TYPES},
     "azelaic acid": {"asked": (r"azelaic(?: acid)?",), "named": (r"azelaic",), "actives": ("azelaic acid",),
-                     "types": ("serum", "moisturiser", "exfoliant", "toner")},
+                     "types": ("serum", "moisturiser", "exfoliant", "toner", "spot treatment")},
     "niacinamide": {"asked": (r"niacinamide", r"nicotinamide", r"vitamin b3"),
                     "named": (r"niacinamide", r"nicotinamide"), "actives": ("niacinamide",),
                     "types": _SOOTHING_TYPES},
@@ -1027,7 +1361,8 @@ INGREDIENTS: dict[str, dict] = {
                   "named": (r"vitamin c", r"vit\.? c", r"ascorbic", r"ascorbyl", r"ascorbate"),
                   "actives": ("vitamin c",), "types": ("serum", "moisturiser", "toner", "eye cream", "sunscreen")},
     "benzoyl peroxide": {"asked": (r"benzoyl(?: peroxide)?", r"bpo"), "named": (r"benzoyl", r"bpo"),
-                         "actives": ("benzoyl peroxide",), "types": ("cleanser", "moisturiser", "serum")},
+                         "actives": ("benzoyl peroxide",),
+                         "types": ("cleanser", "moisturiser", "serum", "spot treatment")},
     "hyaluronic acid": {"asked": (r"hyaluronic(?: acid)?", r"sodium hyaluronate"),
                         "named": (r"hyaluronic", r"hyaluronate", r"ha"), "actives": ("hyaluronic acid",),
                         "types": _SOOTHING_TYPES},
@@ -1080,6 +1415,12 @@ INGREDIENT_NOT_ASKED_AFTER = (r"[- ]?free", r" alternatives?", r" dupes? for")
 INGREDIENT_NOT_CONFIRMED = "we couldn't confirm it contains {ingredient}"
 INGREDIENT_NOT_LISTED = "its maker doesn't list {ingredient} among its actives"
 INGREDIENT_BRAND_UNCHECKABLE = "a whole brand can't be checked for {ingredient}"
+# Why a product with the ingredient is left out of an ingredient-led request for its form (Noemi's decision 1 of 13 Oct
+# 2026; the pipeline's left_out_by_form). Wording decided by Claude.
+INGREDIENT_RINSE_OFF = "a rinse-off {noun}: ask for a {ingredient} {noun} to see these"
+INGREDIENT_FORM_UNKNOWN = "we couldn't confirm it's a leave-on form"
+INGREDIENT_NOT_FORM_ASKED = "not the form you asked for ({forms})"
+INGREDIENT_FORM_NOT_CONFIRMED = "we couldn't confirm it's the form you asked for ({forms})"
 # Choosing threads for an ingredient-led request (engine/sources.py, LocalSource): its products may be of any type, so a
 # thread's title rarely names them. Each comment that names the ingredient (or a related one) adds this many points to
 # the thread's grade (module 2's post_score), up to INGREDIENT_TALK_MAX: a thread where 6 comments name salicylic acid
@@ -1087,8 +1428,9 @@ INGREDIENT_BRAND_UNCHECKABLE = "a whole brand can't be checked for {ingredient}"
 INGREDIENT_TALK_POINTS = 0.5
 INGREDIENT_TALK_MAX = 3.0
 # The forms a formula may give (its maker's own description of what the product is), when its name doesn't say.
-INGREDIENT_FORMS = ("serum", "leave-on liquid", "toner", "pads", "essence", "cleanser", "rinse-off powder", "peel",
-                    "mask", "cream", "lotion", "gel", "oil", "balm", "sunscreen", "eye cream", "spot treatment")
+INGREDIENT_FORMS = ("serum", "leave-on liquid", "toner", "pads", "essence", "cream", "lotion", "gel", "oil", "balm",
+                    "sunscreen", "eye cream", "spot treatment", "patch", "sleeping mask",
+                    "cleanser", "rinse-off powder", "peel", "mask", "scrub")
 # The form shown with each product of an ingredient-led answer ("Form: pads"), from the first that gives one:
 # 1. its product-facts entry's formula "form" (INGREDIENT_FORMS);
 # 2. its own name, by these words (regular expressions on whole words of the lowercased name, in this order, so
@@ -1097,9 +1439,13 @@ INGREDIENT_FORMS = ("serum", "leave-on liquid", "toner", "pads", "essence", "cle
 INGREDIENT_FORM_WORDS: tuple[tuple[str, str], ...] = (
     (r"pads?", "pads"),
     (r"peel(?:ing)?", "peel"),
+    (r"(?:sleeping|overnight) (?:masks?|masques?|packs?)", "sleeping mask"),
+    (r"(?:pimple|acne|spot|zit|blemish|hydrocolloid) (?:patch(?:es)?|stickers?|dots?)|patch(?:es)?", "patch"),
+    (r"(?<!dark )(?<!age )(?<!sun )spot[- ](?:treatments?|gels?|creams?)", "spot treatment"),
     (r"toners?", "toner"),
     (r"essences?", "essence"),
     (r"serums?|ampoules?|boosters?", "serum"),
+    (r"scrubs?|polish", "scrub"),
     (r"cleansers?|cleansing|face ?wash|wash|foam|gleanser", "cleanser"),
     (r"liquids?|solutions?", "leave-on liquid"),
     (r"masks?|masques?", "mask"),
@@ -1110,10 +1456,170 @@ INGREDIENT_FORM_WORDS: tuple[tuple[str, str], ...] = (
     (r"gels?", "gel"),
     (r"oils?", "oil"),
     (r"balms?", "balm"),
-    (r"powders?", "powder"),
+    (r"powders?", "rinse-off powder"),
 )
+# Leave-on and rinse-off forms (Noemi's decision 1 of 13 Oct 2026): an ingredient-led request ("salicylic acid for
+# acne") shows leave-on forms only; a rinse-off form counts only when the request names it ("salicylic acid wash", or
+# a type: "salicylic acid cleanser"). Every form a name, a type or a formula can give is one or the other, except an
+# exfoliant whose name and facts don't say (a leave-on liquid or a rinse-off scrub): its form isn't known, so it is
+# left out of such a request, never guessed. RINSE_OFF_FORMS gives the word a request names each by ("a salicylic acid
+# powder"), for the reason a product is left out with.
+LEAVE_ON_FORMS = ("serum", "leave-on liquid", "toner", "pads", "essence", "cream", "moisturiser", "lotion", "gel",
+                  "oil", "balm", "sunscreen", "eye cream", "spot treatment", "patch", "sleeping mask",
+                  "retinoid treatment", "lip balm")
+RINSE_OFF_FORMS: dict[str, str] = {"cleanser": "cleanser", "rinse-off powder": "powder", "peel": "peel",
+                                   "mask": "mask", "scrub": "scrub"}
 PRODUCT_TYPE_FORMS: dict[str, str] = {
     "exfoliant": "exfoliant", "cleanser": "cleanser", "moisturiser": "moisturiser", "sunscreen": "sunscreen",
     "retinoid": "retinoid treatment", "serum": "serum", "toner": "toner", "eye cream": "eye cream",
-    "lip balm": "lip balm",
+    "lip balm": "lip balm", "spot treatment": "spot treatment",
 }
+
+# --- On-demand reading (Noemi's plan of 14 Oct 2026, part 3; values chosen by Claude, reported to Noemi) ---
+# engine/on_demand.py. A request module 1 understands, about a product type the library holds fewer extracted threads
+# about than this, is queued for a reading job (Arctic Shift's archive, Gemini's free allowance), and the site says so:
+# the library's own mix per product type.
+ON_DEMAND_MIN_THREADS = LIBRARY_THREADS_PER_PRODUCT
+# What the queue keeps of a request: its product type, category and subreddits (module 1's), and at most this many of its
+# need words (engine.sources.need_words: its own words less the product's name, filler words and numbers), for a
+# need-led choice of threads. Never the request as typed, never a time or an address (Noemi's rule of 11 Oct 2026).
+ON_DEMAND_NEED_WORDS = 3
+# At most this many requests wait at once: more are answered from what the library has, and asked about again later.
+# 20 since 14 Oct 2026 (10 before; the coordinator asked to raise it with the general category, whose types mostly have
+# no threads yet, so most of its requests queue; chosen by Claude, reported to Noemi): about two days of the job's
+# reading within Gemini's free allowance (about 11 products a day, at about 9 calls each), and their threads (6 each)
+# fit the bundle (ON_DEMAND_BUNDLE_MAX_THREADS) before a deploy takes them in. The free-tier sums don't change: the
+# job's time and its Gemini calls have caps of their own (ON_DEMAND_MONTH_SECONDS, ON_DEMAND_GEMINI_CALLS_A_DAY), and
+# the site never starts the job while the queue rests.
+ON_DEMAND_MAX_WAITING = 20
+# The queue remembers at most this many requests already read (the oldest are forgotten): each is read again, when its
+# library is still thin, after ON_DEMAND_READ_AGAIN_DAYS (Reddit may have more by then), or after ON_DEMAND_RETRY_DAYS
+# when its reading failed ON_DEMAND_MAX_TRIES times (Arctic Shift down, say), each try at least an hour apart.
+ON_DEMAND_MAX_DONE = 300
+ON_DEMAND_READ_AGAIN_DAYS = 30
+ON_DEMAND_RETRY_DAYS = 1
+ON_DEMAND_MAX_TRIES = 3
+ON_DEMAND_RETRY_MINUTES = 60
+# A thread whose extraction fails this many times (not for the daily limit) is let go.
+ON_DEMAND_EXTRACT_TRIES = 3
+# The job's time (Cloud Run jobs are billed for their whole run, waiting included; free tiers only): a run starts no new
+# request's reading after ON_DEMAND_NEW_READING_SECONDS (its task timeout, 45 minutes, leaves room to finish one), and
+# the runs of a month read for at most ON_DEMAND_MONTH_SECONDS, which with the daily pre-check keeps Cloud Run jobs
+# inside their free 240,000 vCPU-seconds a month (deploy/cloudrun/DEPLOY.md). Each run also counts
+# ON_DEMAND_START_SECONDS for starting up. A run holds the queue (its lease) for ON_DEMAND_LEASE_MINUTES at most: longer
+# than its task timeout, so a run cut short never keeps the next one out for long.
+ON_DEMAND_NEW_READING_SECONDS = 15 * 60
+ON_DEMAND_MONTH_SECONDS = 50_000
+ON_DEMAND_START_SECONDS = 30
+ON_DEMAND_LEASE_MINUTES = 50
+# Gemini calls a day the job may make (Gemini's free allowance only, Noemi's decision of 14 Oct 2026), leaving the rest
+# of the free daily allowance to Noemi's own bulk reading; a 429 for the day stops it sooner. The allowance resets at
+# midnight Pacific time: the job waits until GEMINI_RESET_HOUR_UTC (8 am UTC: midnight in winter, 1 am in summer), so
+# it never asks before the reset.
+ON_DEMAND_GEMINI_CALLS_A_DAY = 100
+GEMINI_RESET_HOUR_UTC = 8
+# The bundle holds at most this many threads not baked into the site's image yet: past it the job reads no new request
+# until a deploy takes them in (python -m engine.library pull-bucket, run by deploy/cloudrun/deploy.sh).
+ON_DEMAND_BUNDLE_MAX_THREADS = 300
+# What a visitor is told: the first request waiting is read in about ON_DEMAND_FIRST_MINUTES (the job starts at once:
+# about 6 minutes of Arctic Shift's paced searches and reads, then Gemini's extraction and the site's pick-up), each one
+# ahead of it about ON_DEMAND_EACH_MINUTES more; past ON_DEMAND_LATE_MINUTES of waiting (by the site's own clock, kept in
+# memory only) it is said to be taking longer than usual.
+ON_DEMAND_FIRST_MINUTES = 20
+ON_DEMAND_EACH_MINUTES = 15
+ON_DEMAND_LATE_MINUTES = 90
+# The site starts the job at most this often, when requests wait and no run holds the queue (the keep-warm ping, every 5
+# minutes, starts it again when a start failed), and reads the queue again at most this often when asked about a
+# request it knows is waiting.
+ON_DEMAND_START_EVERY_SECONDS = 300
+ON_DEMAND_QUEUE_FRESH_SECONDS = 60
+
+# --- Upvotes count more when credible mentions are few (Noemi, 14 Oct 2026; built switched off) ---
+# Noemi: "let's be reasonable. if we have few credible mentions, a highly upvoted comment (10+) counts more", and she
+# asked to see which picks it would change before it is turned on (the effect report: eval/RUNS.md, 14 Oct 2026). With
+# it on, a credible recommendation (CREDIBLE_VOICES, CREDIBLE_EVIDENCE: upvotes never make a comment credible) whose
+# comment has at least UPVOTE_MIN_SCORE upvotes (its score: upvotes minus downvotes) counts as two credible
+# recommendations toward the picks bar (MIN_CREDIBLE_MENTIONS) and Also worth a look's (WORTH_A_LOOK_CREDIBLE): never
+# more than two, never for a warning, and never in place of the second thread (MIN_THREADS still counts threads). The
+# score, the order's tie-breaks, Skip these and the mixed-opinions flag still count writers, and the answer says which
+# voices counted twice and for how many upvotes (engine/rank.py, engine/answer.py). Four variants, by the three
+# settings below (UPVOTE_ONLY_WHEN_SHORT, UPVOTE_TOP_OF_BIG_THREAD, UPVOTE_ONLY_TO_FILL):
+#   A: any product (False, False, False);
+#   B: only a product with fewer credible recommendations than the bar, and only as many as it needs, the most upvoted
+#      first: it can lift a product to the picks, never inflate one that qualifies (True, False, False);
+#   C: as B, and the comment must be among the top of a big thread, her earlier "needs to be a high quality thread":
+#      at least UPVOTE_THREAD_MIN_COMMENTS comments readable when it was read, and scoring higher than at least
+#      UPVOTE_THREAD_SHARE_BEATEN of the others, its top 10% (True, True, False);
+#   D: as C, and a product it lifts ranks after every product meeting the bar on its own, so it only fills a place the
+#      picks would leave empty, never takes one (True, True, True; added by Claude after the first effect run, where B
+#      and C put lifted shampoos in place of picks with three credible writers).
+# In every variant nothing leaves the answer (a lifted product its score keeps out of the picks stays under Also worth a
+# look) and how much an answer reads doesn't change (engine.pipeline.answer_request).
+# Decided (Noemi, 14 Oct 2026: "yes" to turning on variant D, as recommended after its effect report): the switch is on,
+# with D's values below (her "10+", the top 10% of a thread of 20+ comments, filling empty places only).
+UPVOTE_COUNTS_MORE = True
+UPVOTE_MIN_SCORE = 10  # Noemi's "10+"
+UPVOTE_ONLY_WHEN_SHORT = True
+UPVOTE_TOP_OF_BIG_THREAD = True
+UPVOTE_ONLY_TO_FILL = True
+UPVOTE_THREAD_MIN_COMMENTS = 20
+UPVOTE_THREAD_SHARE_BEATEN = 0.9
+
+# --- Bulk import from Arctic Shift's per-subreddit history files (Noemi, 14 Oct 2026; engine/bulk_import.py) ---
+# Noemi's decision 1 of 14 Oct 2026: threads are chosen on this machine from the per-subreddit files, only the chosen
+# ones enter the library, and the raw files are deleted within BULK_RAW_FILES_KEPT_HOURS of the download's start. The
+# values below were chosen by Claude (technical calls, reported to Noemi).
+# The files: Academic Torrents' "subreddits23" (every post and comment of a subreddit from June 2005 to December 2023,
+# from Pushshift and Arctic Shift), and the last day they hold.
+BULK_DUMP = "subreddits23 (Arctic Shift's per-subreddit history files, 2005-06 to 2023-12)"
+BULK_DUMP_LAST_DAY = "2023-12-31"
+BULK_RAW_FILES_KEPT_HOURS = 48
+# Real engagement: at least as many comments as module 2's small-thread bar (engine.sources.SMALL_THREAD, 15) and a
+# score of 5, so the community answered and didn't bury it. A post the archive saved within a day of its writing (much
+# of late 2023) had neither settled yet: its comments in the file are counted instead, and its score isn't asked for.
+BULK_MIN_COMMENTS = 15
+BULK_MIN_SCORE = 5
+# Posts from this year on: products and formulas change (module 2 already prefers recent skincare threads), and these
+# five years hold enough threads for every type but the smallest.
+BULK_FIRST_YEAR = 2019
+# How many threads a run adds. Each product type aims at BULK_TYPE_TARGET threads about it (its title or post names it,
+# as answers read them), split as the library's mix (LIBRARY_MIX: 18 advice, 6 long-term use, 12 warnings), and takes
+# only the kinds it is short of: the thinnest types and kinds first. At most BULK_MAX_NEW_PER_TYPE new threads per type
+# in one run, so the extraction backlog stays readable.
+BULK_TYPE_TARGET = 36
+BULK_MAX_NEW_PER_TYPE = 30
+# The general category's types (336 on 14 Oct 2026) aim at one library mix each in a run (LIBRARY_THREADS_PER_PRODUCT:
+# 3 advice, 1 long-term use, 2 warnings): the extracted threads at which the site stops queueing a request for
+# on-demand reading (ON_DEMAND_MIN_THREADS). 30 each would be about 10,000 threads, far more than can be extracted
+# before the archive text's retention (ARCHIVE_TEXT_KEPT_DAYS) removes it.
+BULK_GENERAL_TYPE_TARGET = LIBRARY_THREADS_PER_PRODUCT
+# A request given to the import (need-led choice, Noemi's decision 3 of 14 Oct 2026: "conditioner for curly hair") takes
+# up to this many threads asking about its needs, within its type's BULK_MAX_NEW_PER_TYPE.
+BULK_PER_REQUEST = 8
+
+# --- A comment that stands out in its thread (Noemi, 14 Oct 2026, after switching on variant D) ---
+# Noemi: "if a comment has a lot of upvotes compared to the size of the thread, i want it as a pick or worth a look". A
+# credible recommendation (CREDIBLE_VOICES, CREDIBLE_EVIDENCE: upvotes never make a comment credible) stands out in its
+# thread when its comment has at least STANDOUT_UPVOTES_PER_COMMENT upvotes for each comment of its thread readable when
+# it was read (3 for every 4) and at least STANDOUT_MIN_SCORE upvotes, in a thread of at least
+# STANDOUT_MIN_THREAD_COMMENTS comments; it names at most STANDOUT_MAX_PRODUCTS products (a whole routine or a review of
+# many shares its upvotes among them); and, when the request asks for anything besides the product (engine/needs.py),
+# it talks about that (engine/rank.py, stands_out). Its product, with more credible recommendations than credible
+# warnings and a score above zero, can then take a place left empty under Also worth a look even with that one credible
+# voice, and with a second credible writer, even from the same thread, it meets the picks bar (STANDOUT_FILLS_PICKS),
+# only to fill a place the products meeting it otherwise leave empty (RankingResult.qualifying): never the place of a
+# product that meets the rules without it, as for variant D. Variant D comes first: what it lifts, it lifts as before.
+# The answer says which comment stands out and by how much ("its comment has 74 upvotes in a 69-comment thread"), and
+# how much an answer reads doesn't change (engine.pipeline.answer_request). The measure and the values were chosen by a
+# breadth-first pass over six ways of measuring standing out on the library of 14 Oct 2026, quality first: the lowest
+# values that lifted nothing that made no sense (eval/RUNS.md, 14 Oct 2026). Switched on as Noemi asked; the values
+# PROPOSED by Claude.
+STANDOUT_ON = True
+STANDOUT_UPVOTES_PER_COMMENT = 0.75
+STANDOUT_MIN_SCORE = 25
+STANDOUT_MIN_THREAD_COMMENTS = 20
+STANDOUT_MAX_PRODUCTS = 5
+# Into the picks with a second credible writer even from one thread: her "as a pick", which sets aside, for this case
+# only, her night rule for the upvote rule that "a pick still needs credible recommendations across 2 threads". False
+# keeps that rule: then a standing-out comment earns a place under Also worth a look only. For Noemi to confirm.
+STANDOUT_FILLS_PICKS = True

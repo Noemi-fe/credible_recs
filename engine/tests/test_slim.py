@@ -256,10 +256,10 @@ def test_the_thread_is_found_for_every_known_product_type_as_before(whole, slimm
 
 
 def test_the_product_types_looked_for_include_the_ones_the_library_was_filled_for(tmp_path):
-    (tmp_path / "requests.jsonl").write_text(json.dumps({"status": "ok", "product_type": "waffle maker"}) + "\n"
+    (tmp_path / "requests.jsonl").write_text(json.dumps({"status": "ok", "product_type": "sourdough proofer"}) + "\n"
                                              + json.dumps({"status": "clarify", "product_type": None}) + "\n",
                                              encoding="utf-8")
-    assert "waffle maker" in known_types(tmp_path) and "waffle maker" not in known_types(tmp_path / "elsewhere")
+    assert "sourdough proofer" in known_types(tmp_path) and "sourdough proofer" not in known_types(tmp_path / "elsewhere")
 
 
 def test_the_comments_the_ai_read_are_counted_as_before(whole, slimmed):

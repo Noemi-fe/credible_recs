@@ -14,7 +14,9 @@ milliseconds; reading the library, seconds.
 One more care, as git takes with its own file times: a disk records modification times in steps (a few milliseconds
 on some systems), so a file rewritten twice within one step, at the same size, would look unchanged. A library with a
 file changed less than RECENT_SECONDS before it was read is therefore read again by the next answer, until its files
-have been still for that long.
+have been still for that long. A file dated further ahead of the clock than that is no change happening now
+(engine.memo.changed_just_now, 14 Oct 2026: the deploy's upload dates every file of the site's image an hour ahead in
+British Summer Time, and the library had been read again by every answer for the hour after each deploy).
 
 Nothing that reads the kept library may change it (answers make copies when they need to: engine.sources.
 without_unusable_comments, engine.profiles.with_profiles). engine/tests/test_library_cache.py checks that an answer
@@ -30,7 +32,7 @@ from pathlib import Path
 
 from engine.extract import CheckResult, check_extractions, extracted_dir
 from engine.gold import load_threads
-from engine.memo import register
+from engine.memo import changed_just_now, register
 from engine.models import Thread
 
 # How many libraries are kept at once (the web demo uses one; the tests make many small ones).
@@ -69,7 +71,7 @@ def loaded(threads_dir: Path) -> KeptLibrary:
             _kept.move_to_end(key)
             return found[1]
         library = _read(threads_dir)
-        if _newest_change(now) < started - RECENT_SECONDS * 1e9:
+        if not _changed_just_now(now, started):
             _kept[key] = (now, library)
             _kept.move_to_end(key)
             while len(_kept) > MAX_KEPT:
@@ -108,9 +110,11 @@ def _files(folder: Path) -> tuple | None:
     return tuple(sorted(found))
 
 
-def _newest_change(fingerprint: tuple) -> int:
-    """The latest modification time in a fingerprint, in nanoseconds (0 for empty folders)."""
-    return max((mtime for files in fingerprint if files for _, _, mtime, _ in files), default=0)
+def _changed_just_now(fingerprint: tuple, started: int) -> bool:
+    """Whether any file of a fingerprint may have been changing when reading began at `started` (nanoseconds):
+    engine.memo.changed_just_now, with this module's RECENT_SECONDS."""
+    return any(changed_just_now(mtime, started, RECENT_SECONDS)
+               for files in fingerprint if files for _, _, mtime, _ in files)
 
 
 def _read(threads_dir: Path) -> KeptLibrary:

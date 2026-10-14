@@ -29,7 +29,7 @@ import re
 from pathlib import Path
 
 from engine import answer, config
-from engine.group_products import brand_pick_name
+from engine.group_products import brand_pick_name, plural
 from engine.metrics import HEADLINE_KEYS, LOWER_IS_BETTER, METRICS_FILE, OTHER_KEYS, MetricEntry, MetricsError, load_metrics
 from engine.product_facts import unconfirmed_note
 
@@ -118,7 +118,8 @@ METRIC_WORDING: dict[str, tuple[str, str]] = {
                         "The rest are thrown away and never shown."),
     "request_outcome": ("Understanding the request",
                         "Of our test requests, the share it handled the right way: answer it, ask one question first, "
-                        "or say it's outside skincare, haircare and kitchen gear."),
+                        "or say politely that it isn't a product we recommend (a service, a place, food, a medicine "
+                        "or a book, say)."),
     "request_product": ("Spotting the product",
                         "Of the clear test requests, the share where it read the right kind of product (a kettle, a "
                         "sunscreen)."),
@@ -150,6 +151,45 @@ PUBLIC_SITE = ("<p>The site runs on Hugging Face, which may keep its own logs, a
                "flooding it, our server counts each address's requests for a short while, in memory only: addresses "
                "are never written down.</p>")
 
+# On-demand reading (14 Oct 2026; wording decided by Claude): on the live site, a request about a product we haven't
+# read about yet is noted for the reading job (engine/on_demand.py). The page says so only where it happens.
+ON_DEMAND_NOTE = ("<li><strong>Products we haven't read about yet.</strong> When you ask about one, we note the kind of "
+                  "product and up to {words} words of what you asked for, nothing else: never your request as typed, "
+                  "and nothing about you. A reading job uses the note to find Reddit threads about it, and it is kept "
+                  "so the same product isn't read again within a month.</li>")
+ON_DEMAND_EXCEPT = ", and the short note about a product we haven't read about yet"
+
+# Noemi's upvote rule (14 Oct 2026; wording decided by Claude): explained under the picks rule only while it is on
+# (config.UPVOTE_COUNTS_MORE), in the words of its variant: for any product (A), or only for one short of the bar (B, C,
+# D), with variant C's thread (UPVOTE_TOP_OF_BIG_THREAD) and variant D's empty places only (UPVOTE_ONLY_TO_FILL).
+UPVOTE_RULE = ("<p>{which} whose comment has at least {{{{config:UPVOTE_MIN_SCORE}}}} upvotes{thread} counts as two "
+               "toward this rule, never more{as_needed}.{fill} The extra count never stands in for the second thread, "
+               "upvotes never make a comment credible, and a warning always counts once. The pick's reason says which "
+               "voice counted twice and for how many upvotes; every other number counts people.</p>")
+UPVOTE_RULE_FILL = (" Such a product only takes a place the picks would otherwise leave empty: it never takes the place "
+                    "of one that meets this rule on its own.")
+UPVOTE_RULE_WHEN_SHORT = "When a product has fewer than {{config:MIN_CREDIBLE_MENTIONS}} credible recommendations, one"
+UPVOTE_RULE_ANY = "A credible recommendation"
+UPVOTE_RULE_AS_NEEDED = ", and only as many as the product needs to meet it"
+UPVOTE_RULE_THREAD = (", and that scored higher than {{config%:UPVOTE_THREAD_SHARE_BEATEN}} of the other comments in a "
+                      "thread of at least {{config:UPVOTE_THREAD_MIN_COMMENTS}} comments,")
+
+# A comment that stands out in its thread (Noemi, 14 Oct 2026; wording decided by Claude): explained under Also worth a
+# look only while it is on (config.STANDOUT_ON).
+STANDOUT_RULE = ("<p>A product can also be shown when one comment about it stands out in its thread: a credible "
+                 "recommendation whose comment has at least {{config:STANDOUT_MIN_SCORE}} upvotes, and at least "
+                 "{{config%:STANDOUT_UPVOTES_PER_COMMENT}} as many upvotes as its thread has comments, in a thread "
+                 "of at least {{config:STANDOUT_MIN_THREAD_COMMENTS}} comments. It must name at most "
+                 "{{config:STANDOUT_MAX_PRODUCTS}} products, and talk about what you asked for when you ask for "
+                 "more than the product. Its product can then take a place left empty under “{{worth_heading}}”, "
+                 "even when that comment is its only credible recommendation{picks}. It never takes the place of a "
+                 "product that meets the rules above. Upvotes never make a comment credible, the product needs more "
+                 "credible recommendations than credible warnings, and its reason says which comment stands out and "
+                 "by how much: “its comment has 74 upvotes in a 69-comment thread”.</p>")
+
+STANDOUT_RULE_PICKS = (", and with one more credible recommendation, even from the same thread, a place the picks "
+                       "would otherwise leave empty")
+
 MEASURED_ON = "Last measured on {date}."
 TARGETS_HEADING = "The targets we set"
 OTHER_HEADING = "Other checks"
@@ -169,11 +209,13 @@ OTHER_TYPE_EXAMPLES = 5
 _SLOT = re.compile(r"\{\{([^{}]+)\}\}")
 
 
-def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = False) -> str:
+def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = False, on_demand: bool = False) -> str:
     """The whole page, with the decided values from config and the results from `metrics_path`, read now.
 
     `counter`: GoatCounter's script when visits are counted (engine.web.counter_script), else "", and the privacy
     section says which. `public`: the page is served by the public site, so it also names the site's host.
+    `on_demand`: the site notes requests about products not read yet (engine/on_demand.py), and the privacy section
+    says what it keeps (14 Oct 2026).
     """
     slots = {
         "search_page_style": _search_page_style(),
@@ -182,9 +224,13 @@ def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = Fa
         "red_flags": _sign_list(RED_FLAGS),
         "honesty_signs": _sign_list(HONESTY_SIGNS),
         "hard_rules": _hard_rules(),
+        "upvote_rule": _upvote_rule(),
+        "standout_rule": _standout_rule(),
         "evaluation": evaluation_section(metrics_path),
         "visit_counting": VISITS_COUNTED if counter else VISITS_NOT_COUNTED,
         "public_site": PUBLIC_SITE if public else "",
+        "on_demand_note": ON_DEMAND_NOTE.format(words=_config_span("ON_DEMAND_NEED_WORDS")) if on_demand else "",
+        "on_demand_except": html.escape(ON_DEMAND_EXCEPT) if on_demand else "",
         "counter_script": counter,
     }
     texts = {
@@ -202,9 +248,13 @@ def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = Fa
         "mixed_opinions": answer.DISAGREEMENT.split(":")[0],
         "other_type_words": ", ".join(config.OTHER_TYPE_WORDS[:OTHER_TYPE_EXAMPLES]) + " and so on",
         "brand_pick_example": brand_pick_name("Lodge", "cast iron skillet"),  # "Lodge cast iron skillet line"
+        # A line's link to its maker's page (Noemi's night decision 1, 14 Oct 2026): "Browse Lodge cast iron skillets".
+        "range_example": answer.RANGE_LINK.format(brand="Lodge", products=plural("cast iron skillet")),
         "default_currency": answer.CURRENCY_SIGNS.get(config.BUDGET_DEFAULT_CURRENCY, config.BUDGET_DEFAULT_CURRENCY),
         "soft_note_example": _soft_note_example(),
         "unconfirmed_example": answer.CAUTION.format(reason=unconfirmed_note(["PFAS"])),
+        # Prescription-only products (Noemi's decision 5, 14 Oct 2026): the note they carry wherever they are shown.
+        "prescription_example": answer.PRESCRIPTION_NOTE,
     }
     return fill(TEMPLATE.read_text(encoding="utf-8"), texts, slots)
 
@@ -246,6 +296,25 @@ def _number(value: float) -> str:
 
 def _points(value: float) -> str:
     return f"{_number(value)} point" + ("" if value == 1 else "s")
+
+
+def _upvote_rule() -> str:
+    """The upvote rule under the picks rule (UPVOTE_RULE), in its variant's words, or "" while it is off."""
+    if not config.UPVOTE_COUNTS_MORE:
+        return ""
+    short = config.UPVOTE_ONLY_WHEN_SHORT
+    return fill(UPVOTE_RULE.format(which=UPVOTE_RULE_WHEN_SHORT if short else UPVOTE_RULE_ANY,
+                                   thread=UPVOTE_RULE_THREAD if config.UPVOTE_TOP_OF_BIG_THREAD else "",
+                                   as_needed=UPVOTE_RULE_AS_NEEDED if short else "",
+                                   fill=UPVOTE_RULE_FILL if config.UPVOTE_ONLY_TO_FILL else ""), {})
+
+
+def _standout_rule() -> str:
+    """A comment standing out in its thread (STANDOUT_RULE, 14 Oct 2026), or "" while it is off."""
+    if not config.STANDOUT_ON:
+        return ""
+    picks = STANDOUT_RULE_PICKS if config.STANDOUT_FILLS_PICKS else ""
+    return fill(STANDOUT_RULE.replace("{picks}", picks), {"worth_heading": answer.WORTH_HEADING})
 
 
 def _medium_red_flags() -> str:

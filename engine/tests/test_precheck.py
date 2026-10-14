@@ -198,7 +198,7 @@ def test_the_requests_checked_ahead_likeliest_first_each_once(tmp_path):
     lib = tmp_path / "library"
     lib.mkdir()
     (lib / "requests.jsonl").write_text("\n".join(json.dumps(line) for line in [
-        {"request": "a waffle maker", "status": "ok", "product_type": "waffle maker"},
+        {"request": "an ice cream maker", "status": "ok", "product_type": "ice cream maker"},
         {"request": "kettle", "status": "ok", "product_type": "electric kettle"},  # module 1's own: listed already
         {"request": "something", "status": "clarify", "product_type": None},
     ]) + "\n")
@@ -208,7 +208,8 @@ def test_the_requests_checked_ahead_likeliest_first_each_once(tmp_path):
     own = [p.name for p in PRODUCT_TYPES]
     assert found[:2] == ["electric kettle that lasts 10+ years", "air fryer that lasts"]  # the page's examples first
     assert found[2:2 + len(own)] == own
-    assert found[2 + len(own)] == "waffle maker"
+    # Changed on purpose 14 Oct 2026: the log's example was a waffle maker, module 1's own type since then.
+    assert found[2 + len(own)] == "ice cream maker"
     assert set(config.PRECHECK_MODEL_TYPES) <= set(found)
     assert len(found) == len(set(found))
 
@@ -315,15 +316,17 @@ def test_the_report_gives_the_counts_and_never_a_comments_words(tmp_path):
 
 
 @pytest.mark.parametrize("argv, expected", [
-    ([], (config.PRECHECK_MAX_READS, False)),
-    (["--limit", "40"], (40, False)),
-    (["--dry-run", "--limit", "7"], (7, True)),
+    ([], (config.PRECHECK_MAX_READS, config.PRECHECK_MAX_RUN_MINUTES, False)),
+    (["--limit", "40"], (40, config.PRECHECK_MAX_RUN_MINUTES, False)),
+    (["--dry-run", "--limit", "7"], (7, config.PRECHECK_MAX_RUN_MINUTES, True)),
+    (["--minutes", "30", "--limit", "7"], (7, 30, False)),
 ])
-def test_the_command_takes_a_limit_and_a_dry_run(argv, expected):
+def test_the_command_takes_a_limit_a_time_and_a_dry_run(argv, expected):
     assert precheck.options(argv) == expected
 
 
-@pytest.mark.parametrize("argv", [["--limit"], ["--limit", "many"], ["--limit", "-3"], ["--fast"], ["kettle"]])
+@pytest.mark.parametrize("argv", [["--limit"], ["--limit", "many"], ["--limit", "-3"], ["--minutes"],
+                                  ["--minutes", "0"], ["--fast"], ["kettle"]])
 def test_the_command_refuses_anything_else(argv, capsys):
     assert precheck.main(argv) == 2
     assert "python -m engine.precheck" in capsys.readouterr().out
@@ -335,7 +338,7 @@ def test_the_command_waits_for_reddits_next_10_minutes_rather_than_give_up(monke
     given = {}
     monkeypatch.setattr(precheck, "requests_to_check", lambda: [REQUEST])
     monkeypatch.setattr(precheck.pipeline, "cached_profiles", lambda: None)
-    monkeypatch.setattr(precheck, "run", lambda requests, limit, dry_run, library_dir, checker, profiles:
+    monkeypatch.setattr(precheck, "run", lambda requests, limit, dry_run, library_dir, checker, profiles, **times:
                         given.setdefault("checker", checker) and 0)
     assert precheck.main(["--dry-run"]) == 0
     assert given["checker"].max_wait > 600 > config.LIVE_CHECK_MAX_WAIT_SECONDS
@@ -356,6 +359,10 @@ def test_a_check_skipped_as_fresh_lasts_until_the_next_days_run_has_read_everyth
     # Skipped when under PRECHECK_FRESH_HOURS old; the next run, a day later, reads it again within PRECHECK_MAX_READS
     # reads at the live check's pace, before the 48 hours of the deletion rule run out.
     longest_run_hours = config.PRECHECK_MAX_READS * config.LIVE_CHECK_REFILL_SECONDS / 3600
+    assert config.PRECHECK_FRESH_HOURS + 24 + longest_run_hours < config.CACHE_MAX_AGE_HOURS
+    # And within its time (14 Oct 2026): no read starts after PRECHECK_MAX_RUN_MINUTES, and the last may wait for
+    # Reddit's next 10 minutes.
+    longest_run_hours = (config.PRECHECK_MAX_RUN_MINUTES * 60 + config.PRECHECK_MAX_WAIT_SECONDS) / 3600
     assert config.PRECHECK_FRESH_HOURS + 24 + longest_run_hours < config.CACHE_MAX_AGE_HOURS
     assert config.PRECHECK_FRESH_HOURS >= 12  # "fresh for most of a day": not read twice a day
 
@@ -424,3 +431,54 @@ def test_the_checks_are_saved_once_midway_through_a_run(tmp_path):
     saved.clear()
     check_ahead(found[:2], live_checker(tmp_path, FakeReddit()), limit=8, midway=lambda: saved.append(1))
     assert saved == []  # fewer reads than half the budget: the end of the run saves them
+
+
+class SlowReddit(FakeReddit):
+    """FakeReddit whose every read takes a minute of the clock's time."""
+
+    def __init__(self, clock):
+        super().__init__()
+        self.clock = clock
+
+    def __call__(self, url, headers):
+        self.clock.sleep(60)
+        return super().__call__(url, headers)
+
+
+def test_a_run_starts_no_read_once_its_time_is_spent(tmp_path):
+    # 14 Oct 2026: a run is bounded by time as well as by reads, so the job's bill stays inside Cloud Run's free tier
+    # however fast Reddit lets it read (a run that hit its 1,100 reads in 46 minutes had left 459 comments unread).
+    found = candidates(tmp_path)
+    clock = Clock()
+    reddit = SlowReddit(clock)
+    started = clock()
+    run = check_ahead(found, live_checker(tmp_path, reddit, clock), limit=100, started=started, minutes=2.5)
+    assert len(reddit.asked) == 3  # started at 0, 1 and 2 minutes; at 3 the 2.5 minutes are spent
+    assert (run.read, run.not_reached, run.out_of_time) == (3, len(found) - 3, 2.5)
+    assert "Not reached within this run's 2.5 minutes" in precheck.report(found, run, 1, 1, 0, run.seconds)
+
+
+def test_the_time_counts_from_the_runs_start_working_out_included(tmp_path):
+    found = candidates(tmp_path)
+    clock = Clock()
+    started = clock()
+    clock.sleep(120)  # two minutes working out the answers
+    run = check_ahead(found, live_checker(tmp_path, SlowReddit(clock), clock), limit=100, started=started, minutes=3)
+    assert run.read == 1
+
+
+def test_the_checks_are_saved_once_midway_through_a_runs_time(tmp_path):
+    found = candidates(tmp_path)
+    clock = Clock()
+    started, saved = clock(), []
+    check_ahead(found, live_checker(tmp_path, SlowReddit(clock), clock), limit=100, started=started, minutes=4,
+                midway=lambda: saved.append(clock()))
+    assert saved == [started + timedelta(minutes=2)]  # half the time spent, long before half of 100 reads
+
+
+def test_reads_the_whole_list_when_neither_the_reads_nor_the_time_run_out(tmp_path):
+    found = candidates(tmp_path)
+    clock = Clock()
+    run = check_ahead(found, live_checker(tmp_path, FakeReddit(), clock), limit=100, started=clock(), minutes=60)
+    assert (run.read, run.not_reached, run.out_of_time) == (len(found), 0, None)
+    assert "Not reached within this run's budget: 0." in precheck.report(found, run, 1, 1, 0, run.seconds)

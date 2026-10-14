@@ -131,7 +131,8 @@ def test_by_default_the_budget_keeps_a_reserve_for_live_checks():
 
 def test_a_request_module_1_cant_place_spends_nothing():
     client = FakeBrightData(KETTLE_POSTS)
-    assert BrightDataSource(client).find_raw_threads(parse_query("best laptop for uni"), limit=6) == []
+    # 14 Oct 2026: was "best laptop for uni", a product of the general category now.
+    assert BrightDataSource(client).find_raw_threads(parse_query("a good plumber near me"), limit=6) == []
     assert client.searches == [] and client.used == 0
 
 

@@ -109,3 +109,42 @@ def test_threads_about_an_ingredient_led_request_name_the_ingredient_or_a_relate
     assert mentions_product("Best salicylic acid serum?", "salicylic acid product")
     assert mentions_product("Which BHA do you use?", "salicylic acid product")  # a BHA thread is about it too
     assert not mentions_product("Best cleanser for acne?", "salicylic acid product")
+
+
+# --- Spot treatments (Noemi's decision 2 of 13 Oct 2026) and the forms a request names (decision 1) ---
+
+@pytest.mark.parametrize("text", [
+    "pimple patches for acne", "hydrocolloid patches", "spot treatment for acne", "best acne patch", "spot gel",
+    "zit stickers that actually work",
+])
+def test_spot_treatments_and_pimple_patches_are_a_skincare_type(text):
+    query = parse_query(text)
+    assert (query.status, query.category, query.product_type) == ("ok", "skincare", "spot treatment")
+    assert query.subreddits[0] == "acne"  # an acne product: r/acne first, whether or not the request says acne
+
+
+@pytest.mark.parametrize("text", [
+    "hydrocolloid bandages for a cut", "blister plasters for hiking", "dark spot serum", "a serum for dark spots",
+])
+def test_bandages_plasters_and_dark_spots_are_not_spot_treatments(text):
+    assert parse_query(text).product_type != "spot treatment"
+
+
+def test_an_ingredient_with_a_spot_treatment_keeps_the_type():
+    query = parse_query("salicylic acid spot treatment")
+    assert (query.product_type, query.constraints.ingredients, query.ingredient_led) == (
+        "spot treatment", ["salicylic acid"], False)
+
+
+@pytest.mark.parametrize("text, forms", [
+    ("salicylic acid for acne", []),
+    ("salicylic acid wash for my back", ["cleanser"]),
+    ("salicylic acid pads", ["pads"]),
+])
+def test_an_ingredient_led_request_keeps_the_forms_it_names(text, forms):
+    query = parse_query(text)
+    assert query.ingredient_led and query.constraints.forms == forms
+
+
+def test_a_typed_request_names_no_forms():
+    assert parse_query("salicylic acid cleanser").constraints.forms == []  # the type says it

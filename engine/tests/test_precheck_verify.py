@@ -194,11 +194,12 @@ def test_the_daily_budget_verifies_a_library_of_10000_kept_comments_well_within_
     assert config.LIBRARY_VERIFY_RETRY_DAYS * 2 < config.LIBRARY_VERIFY_DAYS  # an unreadable page gets two more tries
 
 
-def test_the_whole_run_fits_in_the_jobs_time_at_the_slowest_pace():
-    import re
-    from pathlib import Path
-
-    script = (Path(precheck.REPO_ROOT) / "deploy" / "cloudrun" / "deploy.sh").read_text(encoding="utf-8")
-    hours = int(re.search(r"--task-timeout (\d+)h", script).group(1))
-    reads = config.PRECHECK_MAX_READS + config.LIBRARY_VERIFY_READS - config.LIVE_CHECK_BURST
-    assert reads * config.LIVE_CHECK_REFILL_SECONDS + 30 * 60 < hours * 3600
+def test_no_verification_read_starts_after_the_runs_minutes(tmp_path):
+    # Changed on purpose 14 Oct 2026 (merging main's 2bb1678): a pre-check run starts no read PRECHECK_MAX_RUN_MINUTES
+    # after it started, which keeps the job inside Cloud Run's free tier (engine/tests/test_cloudrun.py does the sums).
+    # The kept comments' reads come out of the same minutes; they used to have a 3-hour timeout of their own.
+    root = slimmed_library(tmp_path)
+    reddit = FakeEmbed(root)
+    checker = checker_at(tmp_path, reddit, day(10))
+    reading = verify_kept(root, checker, Ledger(), limit=20, now=day(10), until=day(10) - timedelta(minutes=1))
+    assert reddit.asked == [] and reading.read == 0 and reading.not_reached == len(KEPT) and reading.out_of_time

@@ -213,7 +213,7 @@ def test_add_asks_the_source_for_at_most_limit_threads(tmp_path):
 
 @pytest.mark.parametrize("text, status, answer", [
     ("something for my face", "clarify", "question"),
-    ("a good laptop", "out_of_scope", "message"),
+    ("a good plumber near me", "out_of_scope", "message"),  # 14 Oct 2026: was "a good laptop", a product now
 ])
 def test_an_unclear_or_out_of_scope_request_fetches_and_saves_no_thread(tmp_path, monkeypatch, text, status, answer):
     source = FakeRawSource([kettle_thread("1a")])
@@ -554,7 +554,9 @@ def test_command_line_add_saves_and_prints_the_credits(tmp_path, capsys):
     assert log_lines(tmp_path)[0]["request"] == KETTLE
 
 
-@pytest.mark.parametrize("text", ["something for my face", "a good laptop"])
+# Changed on purpose 14 Oct 2026 (the general category, Noemi's "recs regardless of the category"): a laptop is a
+# product now, so a service is the example of a request module 1 turns away. Was: "a good laptop".
+@pytest.mark.parametrize("text", ["something for my face", "a good plumber near me"])
 def test_command_line_add_prints_the_question_or_the_polite_no(tmp_path, capsys, text):
     client = FakeParseClient()
     assert library.main(["add", text], client=client, folder=tmp_path) == 0
@@ -631,6 +633,20 @@ def test_command_line_coverage(tmp_path, capsys):
     out = capsys.readouterr().out
     assert re.search(r"electric kettle\s+1\n", out) and re.search(r"sunscreen\s+0\n", out)
     assert "Parse credits used this month: 0 of 200" in out
+
+
+def test_command_line_coverage_lists_the_taxonomys_types_only_when_they_have_threads(tmp_path, capsys):
+    # 14 Oct 2026 (the general category's 351 types): one line each for those with saved threads, then how many have
+    # none, instead of hundreds of zeros.
+    from engine.config import MORE_PRODUCT_TYPES
+
+    folder = library_with(tmp_path, kettle_thread("1k1"), kettle_thread("1h1", category="general",
+                                                                         title="Headphones that last?"))
+    assert library.main(["coverage"], client=FakeParseClient(), folder=folder) == 0
+    out = capsys.readouterr().out
+    assert re.search(r"  general\n    headphones\s+1\n", out) and not re.search(r"robot vacuum\s+0", out)
+    general = sum(entry["category"] == "general" for entry in MORE_PRODUCT_TYPES)
+    assert f"and {general - 1} more types with none yet" in out
 
 
 @pytest.mark.parametrize("argv", [[], ["add"], ["fetch"]])

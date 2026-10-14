@@ -6,7 +6,8 @@ lists change only when a researcher adds entries. Two small tools let each be wo
 - `FileMemo`: a file's contents as read (a list of entries, say), kept until the file changes. A file counts as
   changed when its size, modification time or identity on disk differs, or when it had changed less than
   RECENT_SECONDS before it was read: disks record times in steps of a few milliseconds, so a file rewritten twice in
-  one step at the same size would otherwise look unchanged (git takes the same care with its own file times).
+  one step at the same size would otherwise look unchanged (git takes the same care with its own file times). A time
+  further ahead of the clock than RECENT_SECONDS is no change happening now (changed_just_now, 14 Oct 2026).
 - `PerList`: answers worked out from one list, kept for as long as that very list is the one asked about. A list is
   known by its identity, not its contents, and kept with its answers, so a list made later can't be mistaken for it.
   The lists asked about are never changed once made; answers are worked out again for any other kind of collection.
@@ -25,6 +26,21 @@ from collections.abc import Callable
 from pathlib import Path
 
 RECENT_SECONDS = 2.0  # a file changed this recently when read is read again next time
+
+
+def changed_just_now(stamp_ns: int, started_ns: int, recent_seconds: float = RECENT_SECONDS) -> bool:
+    """Whether a file dated `stamp_ns` may have been changing when reading began at `started_ns` (both in nanoseconds
+    since 1970): dated within `recent_seconds` before then, or as far after (a disk's time steps, or a writer's clock a
+    moment ahead). Such a file isn't kept, so it is read again next time.
+
+    A time further ahead of the clock than that is no change happening now (14 Oct 2026): it was set, not stamped as
+    the file was written. The deploy's upload stores each file's time as the local time of the computer it runs on, and
+    the build reads it as UTC, so in British Summer Time every file of the site's image is dated an hour ahead; counted
+    as just changed, the library and the price, facts and brand-lines lists were read again by every answer for the
+    hour after each deploy (about 10 s an answer on Cloud Run). A file rewritten later still reads again: the disk dates
+    the rewrite now, so its time differs from the one kept."""
+    margin = recent_seconds * 1e9
+    return started_ns - margin <= stamp_ns <= started_ns + margin
 
 _forgetters: list[Callable[[], None]] = []
 
@@ -85,7 +101,7 @@ class FileMemo:
                 return found[1]
         value = read(path)  # raises as reading always did: a missing or broken file is never kept
         with self._lock:
-            if now is not None and now[1] < started - RECENT_SECONDS * 1e9:
+            if now is not None and not changed_just_now(now[1], started):
                 self._kept[key] = (now, value)
                 self._kept.move_to_end(key)
                 while len(self._kept) > self._keep:

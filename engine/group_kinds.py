@@ -43,7 +43,8 @@ from dataclasses import dataclass, field
 
 from engine.extract import CheckResult
 from engine.group_products import ProductGroup
-from engine.match_products import Aliases, join_split_words, known_aliases, plain_words
+from engine.match_products import Aliases, _features, join_split_words, known_aliases, plain_words
+from engine.memo import register
 
 # Step 2: a word that starts what the kind is for or how it is used.
 PURPOSE_WORDS = frozenset({
@@ -152,9 +153,37 @@ def kind_parts(about: str, product_type: str, aliases: Aliases, type_words: set[
 
 
 def _kind_words(text: str, aliases: Aliases) -> list[str]:
-    """Step 1: the words of a kind or a name, hyphens joined, plurals dropped, known names written out."""
-    words = [_singular(w) for w in plain_words(_HYPHEN_IN_WORD.sub("", text))]
-    return _write_out_anywhere(words, aliases)
+    """Step 1: the words of a kind or a name, hyphens joined, plurals dropped, known names written out.
+
+    Worked out once per text and list of known names (latency, 14 Oct 2026: an answer's "What to look for" asks it of
+    the same kinds, notes and names over and over). A list of known names is known by its identity, kept with its
+    answers (the shipped list is read once: known_aliases); the list handed back is a new one each time."""
+    table = _kind_words_table(aliases)
+    words = table.get(text)
+    if words is None:
+        words = table[text] = tuple(_write_out_anywhere([_singular(w) for w in plain_words(_HYPHEN_IN_WORD.sub("", text))],
+                                                        aliases))
+        if len(table) > MAX_KIND_TEXTS_REMEMBERED:
+            table.clear()
+    return list(words)
+
+
+def _kind_words_table(aliases: Aliases) -> dict[str, tuple[str, ...]]:
+    """The remembered kind words of texts under this list of known names (_kind_words)."""
+    found = _KIND_WORDS.get(id(aliases))
+    if found is not None and found[0] is aliases:
+        return found[1]
+    if len(_KIND_WORDS) >= MAX_KIND_LISTS_REMEMBERED:
+        _KIND_WORDS.pop(next(iter(_KIND_WORDS)))  # the list remembered first
+    table: dict[str, tuple[str, ...]] = {}
+    _KIND_WORDS[id(aliases)] = (aliases, table)
+    return table
+
+
+_KIND_WORDS: dict[int, tuple[Aliases, dict[str, tuple[str, ...]]]] = {}  # id(list) -> (the list, {text: kind words})
+MAX_KIND_LISTS_REMEMBERED = 16
+MAX_KIND_TEXTS_REMEMBERED = 100_000  # per list; a full table starts again
+register(_KIND_WORDS.clear)
 
 
 def _singular(word: str) -> str:
@@ -182,7 +211,12 @@ def _write_out_anywhere(words: list[str], aliases: Aliases) -> list[str]:
 
 
 def _same_kind(a: list[str], b: list[str]) -> bool:
-    """The same words, in any order, also when one writes as one word what the other splits in two."""
+    """The same words, in any order, also when one writes as one word what the other splits in two. When neither writes
+    as one word two or three neighbouring words of the other (engine.match_products: the runs of its words), nothing
+    joins, so their sets of words are compared at once (latency, 13 Oct 2026)."""
+    features_a, features_b = _features(a), _features(b)
+    if features_a.runs.isdisjoint(features_b.words) and features_b.runs.isdisjoint(features_a.words):
+        return features_a.words == features_b.words
     joined_a = join_split_words(a, b)
     return set(joined_a) == set(join_split_words(b, joined_a))
 
@@ -192,26 +226,40 @@ def _same_kind_sets(items: list[tuple[KindMention, list[str]]]) -> list[list[tup
 
     Many notes name the same kind in the same words ("cast iron" 40 times), so a set is compared by the different
     word lists it holds, and two word lists are compared once (latency, 12 Oct 2026: comparing every note with every
-    note took a second on a 26-thread answer). The sets, and the order of everything in them, are as before."""
-    sets: list[list[tuple[KindMention, list[str]]]] = []
-    kinds: list[set[tuple[str, ...]]] = []  # the different word lists of each set, in step with `sets`
-    known: dict[tuple[tuple[str, ...], tuple[str, ...]], bool] = {}
-
-    def same(a: tuple[str, ...], b: tuple[str, ...]) -> bool:
-        if (a, b) not in known:
-            known[(a, b)] = _same_kind(list(a), list(b))
-        return known[(a, b)]
-
+    note took a second on a 26-thread answer). Since 13 Oct 2026 the kinds a note is the same as are looked up rather
+    than compared with every set's: those with its very words (_same_kind, when no words can join), and those whose
+    words may join with its own, compared in full. The sets, and the order of everything in them, are as before: a
+    note's sets are joined into a new set after every other, the note first, then the sets' notes in their order."""
+    members: dict[int, list[tuple[KindMention, list[str]]]] = {}  # each set, by when it was made: the order of the sets
+    kinds: dict[int, set[tuple[str, ...]]] = {}  # the different word lists of each set
+    set_of: dict[tuple[str, ...], int] = {}  # each word list -> the set holding it
+    by_words: dict[frozenset[str], list[tuple[str, ...]]] = defaultdict(list)  # a word set -> the word lists with it
+    with_word: dict[str, list[tuple[str, ...]]] = defaultdict(list)  # a word -> the word lists with it
+    with_run: dict[str, list[tuple[str, ...]]] = defaultdict(list)  # a run of words written as one -> the word lists
+    made = 0
     for item in items:
         words = tuple(item[1])
-        matching = [i for i, held in enumerate(kinds) if any(same(words, other) for other in held)]
-        merged = [item] + [x for i in matching for x in sets[i]]
+        own = _features(words)
+        may_join = {other for run in own.runs for other in with_word.get(run, ())}
+        may_join |= {other for word in own.words for other in with_run.get(word, ())}
+        same = {other for other in by_words.get(own.words, ()) if other not in may_join}
+        same |= {other for other in may_join if _same_kind(list(words), list(other))}
+        matching = sorted({set_of[other] for other in same})
+        merged = [item] + [x for i in matching for x in members[i]]
         merged_kinds = {words}.union(*(kinds[i] for i in matching))
-        matching_sets = [sets[i] for i in matching]
-        keep = [i for i, s in enumerate(sets) if s not in matching_sets]  # as before: by what the sets hold
-        sets = [sets[i] for i in keep] + [merged]
-        kinds = [kinds[i] for i in keep] + [merged_kinds]
-    return sets
+        for i in matching:
+            del members[i], kinds[i]
+        members[made], kinds[made] = merged, merged_kinds
+        if words not in set_of:  # a word list seen for the first time: indexed
+            by_words[own.words].append(words)
+            for word in own.words:
+                with_word[word].append(words)
+            for run in own.runs:
+                with_run[run].append(words)
+        for kind in merged_kinds:
+            set_of[kind] = made
+        made += 1
+    return [members[i] for i in sorted(members)]
 
 
 def _make_group(members: list[tuple[KindMention, list[str]]], kinds_per_note: Counter) -> KindGroup:

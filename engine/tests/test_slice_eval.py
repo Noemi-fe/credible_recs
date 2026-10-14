@@ -14,10 +14,12 @@ def questions_file(tmp_path, texts):
 
 def test_each_question_is_answered_and_counted(tmp_path):
     lib = library(tmp_path)
-    results = score_questions(questions_file(tmp_path, [REQUEST, "best laptop for uni"]), lib)
-    kettle, laptop = results
+    # Changed on purpose 14 Oct 2026 (the general category): a laptop is a product now, so a service is the request
+    # module 1 turns away. Was: "best laptop for uni".
+    results = score_questions(questions_file(tmp_path, [REQUEST, "a good plumber near me"]), lib)
+    kettle, plumber = results
     assert (kettle.id, kettle.picks[:1], kettle.unverified) == ("b01", ["Zojirushi kettle"], 0)
-    assert laptop.status == "out_of_scope" and laptop.picks == []
+    assert plumber.status == "out_of_scope" and plumber.picks == []
 
 
 def test_the_summary_counts_full_answers_and_unverified_quotes(tmp_path):

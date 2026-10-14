@@ -94,8 +94,12 @@ def test_the_json_has_the_documented_shape(tmp_path):
                                "read_more": False}
     # Changed on purpose 13 Oct 2026 (active ingredients, the orchestrator's decision after Noemi's live test): the
     # query also says which ingredients every product shown must contain, and whether the request is ingredient-led.
+    # Changed on purpose 13 Oct 2026 (Noemi's decision 1 on forms): the query also says which forms an ingredient-led
+    # request names ("salicylic acid wash": cleanser).
+    # Changed on purpose 14 Oct 2026 (the general category): the query also says its department, which the page shows
+    # above a general answer ("tech"; null for the other categories).
     assert set(data["query"]) == {"status", "category", "product_type", "question", "message", "ingredients",
-                                  "ingredient_led"}
+                                  "ingredient_led", "forms", "department"}
     # Changed on purpose 9 Oct 2026 (decision 11, budgets): each pick has its price, and "left_out" counts the
     # products over the request's budget.
     # Changed on purpose 9 Oct 2026 (availability, Noemi's note): "left_out" also counts the products no longer sold.
@@ -106,8 +110,11 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # LEFT_OUT_NAMES_SHOWN each) and counts the brand or line names ranked as the brand's whole line ("ranked_as_lines").
     # Changed on purpose 13 Oct 2026 (active ingredients): "left_out" also counts the products without evidence they
     # contain the ingredient asked for ("no_ingredient").
+    # Changed on purpose 13 Oct 2026 (Noemi's decision 1): "left_out" also counts the products of an ingredient-led
+    # request left out for their form ("by_form"), and how many of them are rinse-off ("rinse_off").
     assert set(data["left_out"]) == {"other_type", "other_type_names", "loose", "loose_names", "ranked_as_lines",
-                                     "over_budget", "unavailable", "not_suited", "no_ingredient"}
+                                     "over_budget", "unavailable", "not_suited", "no_ingredient", "by_form",
+                                     "rinse_off"}
     assert isinstance(data["left_out"]["loose_names"], list) and isinstance(data["left_out"]["other_type_names"], list)
     # Changed on purpose 11 Oct 2026 (Noemi): the tips about the kind of product are shown once, in "care_note".
     # Changed on purpose 13 Oct 2026 (Noemi's decision 2): "worth_a_look", the products with two credible
@@ -132,13 +139,19 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # support line and share line count in words.
     # Changed on purpose 13 Oct 2026 (active ingredients): each pick also has its "form" in an ingredient-led answer
     # ("pads", "toner"), or null.
+    # Changed on purpose 14 Oct 2026 (Noemi's night decision 1): each pick also has its "range", a brand line's link to
+    # its maker's page for its products of the type ({"text", "url", "checked", "checked_on"}), or null; and its price
+    # says whether it is a brand line's from price ("from_price").
+    # Changed on purpose 14 Oct 2026 (Noemi's decision 5): each pick also has its "prescription" note, or null
+    # (engine/tests/test_prescription_note.py).
     assert set(data["answer"]["picks"][0]) == {"rank", "product_key", "name", "reason", "support", "quotes",
                                                "downsides", "disagreement", "score", "breakdown", "price",
                                                "availability", "care", "cautions", "model", "model_price",
-                                               "downsides_share", "summary", "voices", "form"}
+                                               "downsides_share", "summary", "voices", "form", "range",
+                                               "prescription"}
     assert set(data["answer"]["picks"][0]["quotes"][0]) == {"text", "comment_id", "url", "badges"}
     assert set(data["answer"]["picks"][0]["price"]) == {"text", "amount", "currency", "shop", "url", "checked_on",
-                                                        "budget_status", "budget_note"}
+                                                        "budget_status", "budget_note", "from_price"}
 
 
 def test_every_card_has_at_least_two_quotes_each_linking_to_reddit(tmp_path):
@@ -197,7 +210,8 @@ def test_a_vague_request_comes_back_as_module_1s_question(tmp_path):
 
 
 def test_an_out_of_scope_request_comes_back_as_module_1s_polite_no(tmp_path):
-    status, _, data = ask("running shoes for flat feet", kettle_library(tmp_path))
+    # 14 Oct 2026: was "running shoes for flat feet", a product of the general category now.
+    status, _, data = ask("a good plumber near me", kettle_library(tmp_path))
     assert status == 200 and data["query"]["status"] == "out_of_scope"
     assert data["query"]["message"] and data["answer"] is None
 
@@ -326,11 +340,14 @@ def test_the_page_never_draws_data_as_html(tmp_path):
 def test_every_link_the_page_draws_goes_through_a_link_check(tmp_path):
     # Two kinds of link only (changed on purpose 9 Oct 2026, decision 11): a quote's comment on Reddit, and a price's
     # shop page. Each address is checked before it becomes a link; any other address is shown without one.
+    # Changed on purpose 14 Oct 2026 (Noemi's night decision 1): a third kind, a brand line's range page (the maker's
+    # page for its products of the type, from data/brand_lines.json), through its own check, rangeUrl
+    # (engine/tests/test_line_links.py).
     html = page(tmp_path)
     links = re.findall(r"href:\s*(\w+)", html)
     assert links, "the page should draw links"
     for name in links:
-        assert re.search(rf"const {name} = (redditUrl|shopUrl)\(", html), name
+        assert re.search(rf"const {name} = (redditUrl|shopUrl|rangeUrl)\(", html), name
 
 
 def test_a_shop_link_must_be_https_with_no_name_or_password(tmp_path):
@@ -525,9 +542,186 @@ def test_warming_up_answers_each_product_type_without_asking_reddit(tmp_path, mo
         (request, kwargs | {"in_turn": web._answers_lock.locked()})))
     web.warm_up(settled(library(tmp_path)))
     assert all(kwargs["in_turn"] for _, kwargs in asked)  # one at a time with visitors' answers
-    assert [request for request, _ in asked] == list(web.WARM_PRODUCT_TYPES)
+    assert [request for request, _ in asked] == web.warm_requests()
+    assert set(web.WARM_PRODUCT_TYPES) <= {request for request, _ in asked}  # every product type by its name too
     assert "electric kettle" in web.WARM_PRODUCT_TYPES and "shampoo" in web.WARM_PRODUCT_TYPES
+    assert set(web.WARM_TAXONOMY_TYPES) <= {request for request, _ in asked}  # and the taxonomy's (14 Oct 2026)
     assert all("live_checker" not in kwargs and kwargs["live_check_required"] is False for _, kwargs in asked)
+
+
+def test_getting_ready_answers_the_examples_then_one_request_per_product_type():
+    # 14 Oct 2026 (the coordinator, from the live site: Cloud Run's one processor warmed 13 of 65 requests in getting
+    # ready's 120 s): the search page's example requests first (what a visitor clicks); then one request for each type
+    # not asked yet, its likeliest (the first latency request the rules place as that type, else the type's name): a
+    # type's first answer reads every thread of its category for it, the biggest part of a cold answer; then the rest,
+    # each once; the requests module 1 asks the open model about last (a reading of seconds that warms that very request
+    # only).
+    from engine.query import parse_query
+
+    class Asked:
+        def __init__(self):
+            self.asked = False
+
+        def read(self, text):
+            self.asked = True
+            return None
+
+    def placed(text):
+        stub = Asked()
+        query = parse_query(text, model=stub)
+        return (query.product_type if query.status == "ok" else None), stub.asked
+
+    examples = [q["text"] for q in web.example_requests()]
+    latency = [q["text"] for q in json.loads(web.LATENCY_FILE.read_text(encoding="utf-8"))["queries"]]
+    likely = list(dict.fromkeys(examples + latency))
+    warmed = web.warm_requests()
+    # 14 Oct 2026 (the general category): the taxonomy's types come after every one of these, by their names (the test
+    # below); what comes before them is as it was.
+    taxonomy = [name for name in web.WARM_TAXONOMY_TYPES if name not in likely]
+    assert taxonomy and warmed[len(warmed) - len(taxonomy):] == taxonomy
+    warmed = warmed[:len(warmed) - len(taxonomy)]
+    assert sorted(warmed) == sorted(dict.fromkeys(likely + list(web.WARM_PRODUCT_TYPES)))  # each once
+    assert examples and warmed[:len(examples)] == examples
+    every = list(dict.fromkeys(likely + list(web.WARM_PRODUCT_TYPES)))
+    where = {t: placed(t) for t in every}
+    asked = {where[t][0] for t in examples}
+    per_type = [next(t for t in every if where[t] == (p, False)) for p in web.WARM_PRODUCT_TYPES
+                if p not in asked and any(where[t] == (p, False) for t in every)]
+    assert warmed[len(examples):len(examples) + len(per_type)] == per_type
+    assert "anti-dandruff shampoo" in per_type and "shampoo" not in per_type  # a type's latency request, else its name
+    assert "toner" in per_type
+    first = warmed[:len(examples) + len(per_type)]
+    assert {where[t][0] for t in first} >= set(web.WARM_PRODUCT_TYPES) - {"serum"}  # every type the rules place alone
+    asks_model = [t for t in warmed if where[t][1]]
+    assert asks_model and warmed[-len(asks_model):] == asks_model  # "serum" and "something nice for my mum" last
+    assert "serum" in asks_model
+
+
+def test_getting_ready_answers_the_taxonomys_types_after_every_other_request():
+    # 14 Oct 2026 (the coordinator, merging the general category): module 1's first 43 types keep their place
+    # (WARM_PRODUCT_TYPES: the examples, then one request per type, then the rest, the open model's last), and the 351
+    # types of engine/data/product_types.json come after all of them, by their names, in the file's order
+    # (WARM_TAXONOMY_TYPES): they have almost no threads yet, so their answers warm little, and before the others they
+    # would keep the requests visitors ask most waiting for the keep-warm pings.
+    from engine.query import FIRST_PRODUCT_TYPES, PRODUCT_TYPES
+
+    assert web.WARM_PRODUCT_TYPES == tuple(p.name for p in FIRST_PRODUCT_TYPES)
+    assert web.WARM_TAXONOMY_TYPES == tuple(p.name for p in PRODUCT_TYPES[len(FIRST_PRODUCT_TYPES):])
+    assert len(web.WARM_TAXONOMY_TYPES) == 351 and "robot vacuum" in web.WARM_TAXONOMY_TYPES
+    warmed = web.warm_requests()
+    assert len(warmed) == len(set(warmed))  # each once
+    likely = {text for path in web.WARM_FIRST_FILES for text in web._requests_in(path)}
+    taxonomy = [name for name in web.WARM_TAXONOMY_TYPES if name not in likely]
+    assert warmed[len(warmed) - len(taxonomy):] == taxonomy
+    assert "serum" in warmed[:len(warmed) - len(taxonomy)]  # the open model's requests before them
+    assert warmed.index("electric kettle") < warmed.index("robot vacuum")
+
+
+def test_warming_up_stops_answering_product_types_once_its_time_is_up(tmp_path, monkeypatch, capsys):
+    # 13 Oct 2026: on Cloud Run a new server must say it is ready within the startup probe's 4 minutes, and the warm
+    # answers alone grew past that (a deploy failed). Once WARM_UP_ANSWERS_SECONDS have passed, the remaining product
+    # types are left for their first visitors and the server says it is ready.
+    from engine import query_model
+    from engine.tests.test_library_cache import settled
+    from engine.tests.test_pipeline import library
+
+    monkeypatch.setattr(query_model, "default_query_model", lambda: None)
+    monkeypatch.setattr(web, "ready", threading.Event())
+    now = [0.0]
+    monkeypatch.setattr(web.time, "perf_counter", lambda: now[0])
+    asked = []
+
+    def slow(request, library_dir, **kwargs):  # every warm answer takes 40 s
+        asked.append(request)
+        now[0] += 40
+
+    monkeypatch.setattr(web, "answer_request", slow)
+    web.warm_up(settled(library(tmp_path)))
+    assert web.ready.is_set()
+    expected = -(-web.WARM_UP_ANSWERS_SECONDS // 40)  # answers started before the time was up
+    assert len(asked) == expected < len(web.warm_requests())
+    assert asked == web.warm_requests()[:expected]  # the likeliest first
+    said = capsys.readouterr().out
+    assert f"left {len(web.warm_requests()) - expected} requests for their first visitors" in said
+
+
+def test_getting_ready_says_how_long_each_step_took(tmp_path, monkeypatch, capsys):
+    # 14 Oct 2026 (the coordinator): on Cloud Run getting ready warmed far fewer requests than on this Mac in its 120 s;
+    # each step before the warm answers now says its time in the server's window, so the slow one can be seen.
+    from engine import query_model
+
+    monkeypatch.setattr(query_model, "default_query_model", lambda: None)
+    monkeypatch.setattr(web, "ready", threading.Event())
+    web.warm_up(tmp_path / "no-library")
+    said = capsys.readouterr().out
+    for step in ("the open model", "the price list", "the facts list"):
+        assert re.search(rf"Getting ready: {step} took \d+\.\d s\.", said), step
+
+
+def _ready_with_requests_left(tmp_path, monkeypatch, takes: float = 40.0):
+    """A server that got ready with time for 3 warm answers of `takes` seconds each, the rest left (a clock that moves
+    only as answers take time); and the requests asked."""
+    from engine import query_model
+    from engine.tests.test_library_cache import settled
+    from engine.tests.test_pipeline import library
+
+    monkeypatch.setattr(query_model, "default_query_model", lambda: None)
+    monkeypatch.setattr(web, "ready", threading.Event())
+    monkeypatch.setattr(web, "_left_to_warm", [])
+    now = [0.0]
+    monkeypatch.setattr(web.time, "perf_counter", lambda: now[0])
+    asked = []
+
+    def slow(request, library_dir, **kwargs):
+        asked.append((request, web._answers_lock.locked()))
+        now[0] += takes
+
+    monkeypatch.setattr(web, "answer_request", slow)
+    root = settled(library(tmp_path))
+    web.warm_up(root)
+    return root, asked
+
+
+def test_each_ping_after_getting_ready_warms_a_slice_of_the_requests_left(tmp_path, monkeypatch, capsys):
+    # 14 Oct 2026 (the coordinator, from the live site: Cloud Run's one processor warmed 13 of 65 requests in getting
+    # ready's 120 s, and a request whose threads weren't warmed took ~8 s): Cloud Run gives a server its processor only
+    # while it answers someone, so a thread warming in the background would barely run. The keep-warm ping asks /ready
+    # every 5 minutes: each ping warms the next requests left, for up to WARM_MORE_SECONDS, until none are left.
+    root, asked = _ready_with_requests_left(tmp_path, monkeypatch)
+    warm = web.warm_requests()
+    done = -(-web.WARM_UP_ANSWERS_SECONDS // 40)
+    assert [r for r, _ in asked] == warm[:done]
+    capsys.readouterr()
+    slice_ = -(-web.WARM_MORE_SECONDS // 40)  # answers started before the slice's time was up
+    status, _, _ = web.handle_request("/ready", root)
+    assert status == 200
+    assert [r for r, _ in asked] == warm[:done + slice_]
+    assert f"warmed {slice_} more, {len(warm) - done - slice_} left" in capsys.readouterr().out
+    while web._left_to_warm:
+        web.handle_request("/ready", root)
+    assert [r for r, _ in asked] == warm  # every request warmed once, in order
+    assert all(in_turn for _, in_turn in asked)  # each takes its turn with visitors' answers
+    capsys.readouterr()
+    web.handle_request("/ready", root)  # nothing left: the ping only says it is ready
+    assert [r for r, _ in asked] == warm
+    assert "warmed" not in capsys.readouterr().out
+
+
+def test_a_ping_before_the_server_is_ready_warms_nothing(tmp_path, monkeypatch):
+    root, asked = _ready_with_requests_left(tmp_path, monkeypatch)
+    web.ready.clear()
+    before = list(asked)
+    assert web.handle_request("/ready", root)[0] == 503
+    assert asked == before
+
+
+def test_two_pings_at_once_warm_one_slice(tmp_path, monkeypatch):
+    # One slice at a time: a ping arriving while another warms says it is ready at once.
+    root, asked = _ready_with_requests_left(tmp_path, monkeypatch)
+    before = len(asked)
+    with web._warming:
+        assert web.handle_request("/ready", root)[0] == 200
+    assert len(asked) == before
 
 
 def test_a_warmed_answer_leaves_every_answer_as_it_was(tmp_path):
@@ -574,9 +768,12 @@ def test_also_worth_a_look_comes_through_in_the_json(tmp_path):
     assert data["answer"]["worth_note"].startswith("2 credible voices each")
     # Changed on purpose 13 Oct 2026 (the UX builder): "voices", as for a pick (its credibility meter).
     # Changed on purpose 13 Oct 2026 (active ingredients): each item also has its "form", as picks do.
+    # Changed on purpose 14 Oct 2026 (Noemi's night decision 1): each item also has its "range", as picks do.
+    # Changed on purpose 14 Oct 2026 (Noemi's decision 5): an item also has its "prescription" note, or null.
     assert set(data["answer"]["worth_a_look"][0]) == {"product_key", "name", "reason", "quotes", "downsides",
                                                      "downsides_share", "disagreement", "score", "breakdown", "price",
-                                                     "availability", "cautions", "summary", "voices", "form"}
+                                                     "availability", "cautions", "summary", "voices", "form", "range",
+                                                     "prescription"}
 
 
 def test_the_page_draws_also_worth_a_look_and_summaries_with_the_answers_own_words(tmp_path):

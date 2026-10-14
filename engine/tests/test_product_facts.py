@@ -212,12 +212,17 @@ def test_the_vocabulary_is_small_and_fits_module_1s_product_types():
         assert facts and set(facts) <= set(config.PRODUCT_FACT_VALUES), product_type
         if types[product_type] == "skincare":
             assert {"fragrance_free", "maker_warns_sensitive"} <= set(facts), product_type
-    # Only retinoids and exfoliants come in prescription versions and strengths (10 Oct 2026).
+    # Only retinoids and exfoliants come in strengths (10 Oct 2026).
     assert config.PRODUCT_FACTS_BY_TYPE["retinoid"] == ("fragrance_free", "prescription_only", "strength",
                                                         "maker_warns_sensitive")
     assert config.PRODUCT_FACTS_BY_TYPE["exfoliant"] == config.PRODUCT_FACTS_BY_TYPE["retinoid"]
+    assert [t for t, facts in config.PRODUCT_FACTS_BY_TYPE.items() if "strength" in facts] == ["exfoliant", "retinoid"]
+    # Changed on purpose 14 Oct 2026 (Noemi's decision 5): any skincare product can be prescription-only (Duac, a
+    # clindamycin and benzoyl peroxide gel, is a spot treatment); it had been retinoids' and exfoliants' only since 10
+    # Oct 2026. Only for them is not knowing it a requirement (the rule's "confirm_types"; engine/tests/test_prescription_note.py).
     assert [t for t, facts in config.PRODUCT_FACTS_BY_TYPE.items() if "prescription_only" in facts] == [
-        "exfoliant", "retinoid"]
+        t for t in config.PRODUCT_FACTS_BY_TYPE if types[t] == "skincare"]
+    assert RULES["prescription only"]["confirm_types"] == ("retinoid", "exfoliant")
     assert set(config.PRODUCT_FACTS_BY_TYPE["sunscreen"]) >= {"white_cast", "finish", "filters"}
     assert config.PRODUCT_FACTS_BY_TYPE["frying pan"] == ("pfas_free", "non_stick", "induction")
     assert config.PRODUCT_FACT_VALUES["strength"] == ("gentle", "moderate", "strong")
@@ -228,10 +233,14 @@ def test_the_vocabulary_is_small_and_fits_module_1s_product_types():
 def test_every_rule_reads_a_fact_of_the_vocabulary_and_asks_for_something_a_request_can_say():
     can_ask = set(SKIN_TYPES) | set(MUST_HAVES) | set(config.NEEDS) | set(config.PRODUCT_FACT_REQUEST_WORDS)
     for name, rule in RULES.items():
+        # Changed on purpose 14 Oct 2026 (Noemi's decision 5): "confirm_types", the product types for which not knowing
+        # the rule's fact is a requirement (the prescription-only fact can be set on any skincare product since then).
         assert {"asks", "fact", "value", "hard", "reason"} <= set(rule) <= {"asks", "fact", "value", "hard",
-                                                                           "reason", "confirm", "types"}, name
+                                                                           "reason", "confirm", "types",
+                                                                           "confirm_types"}, name
         assert isinstance(rule.get("confirm", True), bool), name
         assert set(rule.get("types", ())) <= {p.name for p in PRODUCT_TYPES}, name  # the types it applies to
+        assert set(rule.get("confirm_types", ())) <= {p.name for p in PRODUCT_TYPES}, name
         values = config.PRODUCT_FACT_VALUES[rule["fact"]]
         assert any(type(value) is type(rule["value"]) and value == rule["value"] for value in values), name
         assert rule["asks"] and set(rule["asks"]) <= can_ask, name
@@ -526,7 +535,9 @@ def by_name(question) -> dict[str, tuple[bool, list[str]]]:
 def test_todo_lists_the_candidates_still_missing_the_facts_that_matter(tmp_path):
     made_up = [known("Differin Gel", strength="gentle", prescription_only=False),  # has both: not listed
                known("CeraVe Resurfacing Retinol Serum", fragrance_free=True)]  # an entry, but neither fact
-    questions = questions_file(tmp_path, [BEGINNER, "best retinol", "best laptop for uni"])
+    # Changed on purpose 14 Oct 2026 (the general category): a laptop is a product now (with no facts kept for it), so
+    # a service is the request module 1 can't place. Was: "best laptop for uni".
+    questions = questions_file(tmp_path, [BEGINNER, "best retinol", "a good plumber near me"])
     beginner, best, laptop = product_facts.todo(questions, retinol_library(tmp_path), made_up, prices=[])
     assert (beginner.id, beginner.product_type, beginner.category) == ("b01", "retinoid", "skincare")
     assert beginner.facts_that_matter == ["strength", "prescription_only"]

@@ -1077,3 +1077,124 @@ def test_copies_are_looked_for_once_per_thread_as_it_is(monkeypatch):
     assert calls == ["1fake01"]
     changed = thread.model_copy(update={"comments": [thread.comments[0]]})
     assert copy_groups(changed) == []  # the thread now holds other comments: looked at afresh
+
+
+# --- Which of a product's name words a sentence holds, found by looking them up (latency, 13 Oct 2026) ---
+
+import random  # noqa: E402
+
+from engine import credibility  # noqa: E402
+from engine.text import one_edit_apart  # noqa: E402
+
+
+def found_one_by_one(words: list[str], name_words: set[str]) -> frozenset[str]:
+    """The name words found among `words` as module 5 first worked it out, every word against every name word: the
+    reference the quicker one must always equal."""
+    def same(word: str, name_word: str) -> bool:
+        if word == name_word or word in (name_word + "s", name_word.removesuffix("s")):
+            return True
+        return len(name_word) >= 5 and word not in credibility.GENERIC_NAME_WORDS and one_edit_apart(word, name_word)
+
+    return frozenset(name_word for name_word in name_words if any(same(word, name_word) for word in words))
+
+
+def test_name_words_found_by_lookup_are_those_found_one_by_one():
+    rng = random.Random(13)
+    stems = ["lodge", "lodges", "lodg", "lodgee", "cerave", "ceraves", "cerav", "ceravee", "kettle", "kettles", "kettel",
+             "stagg", "staggs", "stag", "fellow", "fellows", "felow", "cleanser", "gleanser", "cleansers", "pan", "pans",
+             "s", "ss", "bha", "bhas", "ordinary", "ordinarys", "ordinry", "creuset", "creseut", "creusets", "a", "it"]
+    for _ in range(3000):
+        words = [rng.choice(stems) for _ in range(rng.randint(0, 12))]
+        name_words = {rng.choice(stems) for _ in range(rng.randint(0, 4))}
+        assert credibility._found_name_words(words, name_words) == found_one_by_one(words, name_words), (
+            words, name_words)
+
+
+# --- Each sentence's name words worked out once per sentence and name (latency, 14 Oct 2026) ---
+
+def test_a_sentences_name_words_are_looked_up_once_for_every_product_of_its_comment(monkeypatch):
+    # Evidence scoring asks which name words each sentence of a comment holds, for each product the comment names (its
+    # own and the others'), and every answer reading the comment asks again. A made-up comment naming three pans.
+    from engine.match_products import normalize_name
+
+    looked_up = []
+    lookup = credibility._found_name_words
+    monkeypatch.setattr(credibility, "_found_name_words",
+                        lambda words, name_words: looked_up.append(tuple(words)) or lookup(words, name_words))
+    text = credibility._own_words("Had my Lodge for ten years. The Staub is nicer. Never tried a Le Creuset.")
+    products = ["Lodge", "Staub", "Le Creuset"]
+    contexts = [credibility._product_context(text, p, [o for o in products if o != p]) for p in products]
+    assert contexts == [["had my lodge for ten years."], ["the staub is nicer."], ["never tried a le creuset."]]
+    assert len(looked_up) == 3 * 3  # each sentence once for each product's name words
+    assert [credibility._product_context(text, p, [o for o in products if o != p]) for p in products] == contexts
+    assert len(looked_up) == 9  # the next answer finds them all
+    assert set(looked_up) == {tuple(normalize_name(s)) for s in credibility._sentences(text)}
+
+
+def test_a_sentences_name_words_found_once_are_those_found_one_by_one():
+    rng = random.Random(14)
+    stems = ["lodge", "lodges", "lodg", "cerave", "cerav", "kettle", "kettel", "stagg", "stag", "fellow", "felow",
+             "cleanser", "gleanser", "pan", "pans", "bha", "ordinary", "ordinry", "creuset", "creseut", "a", "it",
+             "Lodge's", "CeraVe", "KETTLES", "café", "the", "&amp;"]
+    for _ in range(2000):
+        sentence = " ".join(rng.choice(stems) for _ in range(rng.randint(0, 10)))
+        name = " ".join(rng.choice(stems) for _ in range(rng.randint(1, 3)))
+        name_words = credibility._name_words(name)
+        from engine.match_products import normalize_name
+
+        assert credibility._found_in_sentence(sentence, name_words) == found_one_by_one(
+            normalize_name(sentence), name_words), (sentence, name)
+        assert credibility._name_words(name) is name_words  # worked out once
+
+
+# --- Copies looked for only among comments that could share a run of words (latency, 14 Oct 2026) ---
+
+def copy_groups_run_by_run(thread: Thread) -> set[frozenset[str]]:
+    """_copy_groups as first written: every run of COPIED_TEXT_MIN_WORDS words of every comment listed. The reference."""
+    from itertools import combinations
+
+    size = config.COPIED_TEXT_MIN_WORDS
+    readable = {c.id: c for c in thread.comments if c.status == "ok"}
+    found_in: dict[tuple[str, ...], list[str]] = {}
+    for comment in readable.values():
+        words = credibility._WORD.findall(credibility._LINK.sub(" ", credibility._own_words(comment.body)))
+        for run in {tuple(words[start:start + size]) for start in range(len(words) - size + 1)}:
+            found_in.setdefault(run, []).append(comment.id)
+    pairs = {(a, b) for ids in found_in.values() for a, b in combinations(ids, 2)
+             if credibility._two_writers_copies(readable[a], readable[b])}
+    groups: list[set[str]] = []
+    for a, b in pairs:
+        joining = [g for g in groups if a in g or b in g]
+        merged = {a, b}.union(*joining)
+        groups = [g for g in groups if g not in joining] + [merged]
+    return {frozenset(g) for g in groups}
+
+
+def test_only_comments_holding_another_comments_run_of_words_are_read_run_by_run():
+    # A run of COPIED_TEXT_MIN_WORDS words two comments share holds, in each, a run of half as many starting at a
+    # multiple of that half: a comment holding none of another's such runs can't share one with it.
+    half = config.COPIED_TEXT_MIN_WORDS // 2
+    words = [f"w{i}" for i in range(3 * half)]
+    words_of = {"a": words, "b": ["x"] + words[3:3 + 2 * half], "c": [f"z{i}" for i in range(3 * half)],
+                "d": words[:half - 1] + ["y"] + words[half:2 * half - 1]}
+    assert credibility._could_share_a_run(words_of) == {"a", "b"}
+
+
+def test_copies_found_among_the_comments_that_could_share_a_run_are_those_found_run_by_run():
+    rng = random.Random(14)
+    vocabulary = [f"word{i}" for i in range(30)] + ["the", "a", "and", "it's", "kettle", "pan"]
+    for n in range(300):
+        passages = [" ".join(rng.choice(vocabulary) for _ in range(rng.randint(15, 45))) for _ in range(3)]
+        comments = []
+        for i in range(rng.randint(2, 8)):
+            passage = rng.choice(passages).split()
+            start = rng.randint(0, 10)
+            body = " ".join(rng.choice(vocabulary) for _ in range(rng.randint(0, 8))) + " " + " ".join(
+                passage[start:start + rng.randint(10, 40)])
+            author = rng.choice([None, "writer_one", "writer_two", "Writer_One", "writer_three"])
+            comments.append(make_comment(
+                f"c{i}x{n}", body=body.strip() or "ok", created_at=RECENT,
+                author=None if author is None else account(created=years_before(RECENT, 8), karma=1000, name=author),
+                parent_id=rng.choice([None, None, f"c{max(0, i - 1)}x{n}"]), status=rng.choice(["ok"] * 5 + ["removed"])))
+        thread = thread_of(*comments)
+        assert set(credibility._copy_groups(thread)) == copy_groups_run_by_run(thread), n

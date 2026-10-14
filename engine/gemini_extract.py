@@ -21,10 +21,15 @@ Command line:
         sends each thread (every thread in the folder when no id is given) and writes <out folder>/extracted/<id>.json,
         with <out folder>/threads/ linking to the threads read, so `python -m engine.extract check <out folder>/threads`
         checks them; then prints what was written, skipped or failed.
+
+The free allowance's daily limit (14 Oct 2026, for on-demand reading): a 429 that names Gemini's per-day quota can't
+pass before the day resets (midnight Pacific time), so it is never asked again after a pause (DailyLimitReached), and a
+batch stops there, naming the threads it didn't send, rather than failing each of them in turn.
 """
 
 import json
 import os
+import re
 import ssl
 import sys
 import time
@@ -64,6 +69,21 @@ class GeminiError(Exception):
         self.status = status  # the HTTP status Gemini answered, when it answered one
 
 
+class DailyLimitReached(GeminiError):
+    """Gemini's free allowance for the day is used up (a 429 naming its per-day quota): asking again before the day
+    resets, midnight Pacific time, only fails again."""
+
+
+# How a 429's answer names the daily quota: its QuotaFailure details give the quota's id, such as
+# "GenerateRequestsPerDayPerProjectPerModel-FreeTier" (a per-minute one says "PerMinute": waiting a little helps).
+_PER_DAY = re.compile(r"per[ _-]?day", re.IGNORECASE)
+
+
+def is_daily_limit(status: int | None, answer: str) -> bool:
+    """Whether Gemini's answer (its status and text) says the free allowance for the day is used up."""
+    return status == 429 and bool(_PER_DAY.search(answer or ""))
+
+
 def _key_from_env_file() -> str:
     return _read_env_file(REPO_ROOT / ".env").get(KEY_NAME, "")
 
@@ -75,8 +95,11 @@ def _post_json(url: str, headers: dict, body: bytes) -> dict:
         with urllib.request.urlopen(request, timeout=TIMEOUT, context=ssl.create_default_context(cafile=certifi.where())) as r:
             return json.load(r)
     except urllib.error.HTTPError as e:
-        detail = e.read().decode("utf-8", "replace")[:300]
-        raise GeminiError(f"Gemini answered {e.code}: {detail}", status=e.code) from None
+        answer = e.read().decode("utf-8", "replace")
+        if is_daily_limit(e.code, answer):  # the quota's id can sit past the first 300 characters
+            raise DailyLimitReached(f"Gemini answered {e.code}: the free allowance for the day is used up",
+                                    status=e.code) from None
+        raise GeminiError(f"Gemini answered {e.code}: {answer[:300]}", status=e.code) from None
     except (urllib.error.URLError, TimeoutError) as e:
         raise GeminiError(f"couldn't reach Gemini: {e}") from None
 
@@ -121,6 +144,10 @@ class GeminiClient:
                 answer = self._fetch(API.format(model=self.model), headers, json.dumps(body).encode("utf-8"))
                 break
             except GeminiError as e:
+                if isinstance(e, DailyLimitReached):
+                    raise
+                if is_daily_limit(e.status, str(e)):  # never asked again after a pause: it can't pass today
+                    raise DailyLimitReached(str(e), status=e.status) from None
                 if e.status not in BUSY_STATUSES or pause is None:
                     raise
                 self._sleep(pause)
@@ -136,6 +163,8 @@ class ExtractReport:
     written: list[str] = field(default_factory=list)  # thread ids whose extraction was written
     skipped: list[str] = field(default_factory=list)  # never sent: gold threads Noemi hasn't labelled yet
     failed: dict[str, str] = field(default_factory=dict)  # thread id -> why nothing was written
+    stopped: str | None = None  # why the batch stopped before its end (Gemini's daily limit), or None
+    not_sent: list[str] = field(default_factory=list)  # thread ids left for another day when it stopped
 
 
 def extract_threads(threads_dir: Path, out_dir: Path, client: GeminiClient, ids: Iterable[str] | None = None,
@@ -153,7 +182,7 @@ def extract_threads(threads_dir: Path, out_dir: Path, client: GeminiClient, ids:
     (Path(out_dir) / "threads").mkdir(parents=True, exist_ok=True)
     (Path(out_dir) / "extracted").mkdir(parents=True, exist_ok=True)
     report = ExtractReport()
-    for thread_id in wanted:
+    for number, thread_id in enumerate(wanted):
         if thread_id in never:
             report.skipped.append(thread_id)
             continue
@@ -180,6 +209,10 @@ def extract_threads(threads_dir: Path, out_dir: Path, client: GeminiClient, ids:
             data.update(thread_id=thread.id, instructions_version=version, extractor=f"gemini:{client.model}",
                         extracted_at=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"))
             Extraction.model_validate(data)
+        except DailyLimitReached:
+            report.stopped = "Gemini's free allowance for the day is used up: the rest wait for tomorrow"
+            report.not_sent = [tid for tid in wanted[number:] if tid not in never]
+            break
         except GeminiError as e:
             report.failed[thread_id] = str(e)
             continue
@@ -242,8 +275,10 @@ def main(argv: list[str]) -> int:
         print(f"Never sent (gold threads Noemi hasn't labelled yet): {', '.join(report.skipped)}")
     for thread_id, reason in report.failed.items():
         print(f"Failed {thread_id}: {reason}")
+    if report.stopped:
+        print(f"Stopped: {report.stopped}. Not sent ({len(report.not_sent)}): {', '.join(report.not_sent)}")
     print(f"Gemini calls: {client.calls} ({model}). Check the quotes with: python -m engine.extract check {out_dir}/threads")
-    return 1 if report.failed else 0
+    return 1 if report.failed or report.stopped else 0
 
 
 if __name__ == "__main__":

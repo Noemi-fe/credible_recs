@@ -9,8 +9,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# zstandard too, so the bulk import's tests can write and read made-up history files (engine/tests/test_bulk_import.py).
 dev = [
     "pytest>=8",
+    "zstandard>=0.23",
+]
+# Reading Arctic Shift's per-subreddit history files (Noemi, 14 Oct 2026; engine/bulk_import.py): zstandard-compressed
+# NDJSON. Only the import needs it; answers never do.
+dumps = [
+    "zstandard>=0.23",
 ]
 # Module 1's free open model (Noemi, 11 Oct 2026); without it, the rules work alone. The Space installs 0.3.18, the
 # version with prebuilt CPU wheels (deploy/huggingface/Dockerfile); this machine runs 0.3.16.

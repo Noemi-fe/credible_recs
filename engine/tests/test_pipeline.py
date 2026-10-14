@@ -173,6 +173,23 @@ def test_a_quote_saying_the_opposite_of_the_ask_gets_no_boost_for_talking_about_
     assert _needs_talked_about(favour, favour, white_cast, ("no white cast",)) == ("no white cast",)
 
 
+def test_a_quote_using_a_clarifying_shampoo_gets_no_credit_for_a_request_asking_for_one_that_isnt_drying():
+    # 14 Oct 2026 (the need-quality builder): a detox shampoo used once a month to strip buildup talks about drying, but
+    # against a request for a shampoo that isn't drying, so it never counts as a credible recommendation about the need
+    # (the wider reading's rule). All made up.
+    from engine.needs import request_needs
+    from engine.pipeline import _needs_talked_about
+    from engine.product_facts import request_asks
+    from engine.query import parse_query
+
+    query = parse_query("shampoo for curly hair that isn't drying")
+    needs, asks = request_needs(query), request_asks(query)
+    against = "Their detox shampoo is too drying for every wash, so I clarify with it monthly."
+    assert _needs_talked_about(against, against, needs, asks) == ()
+    favour = "Not drying at all on my curls."
+    assert _needs_talked_about(favour, favour, needs, asks) == ("curly", "not drying")
+
+
 class FakeProfiles:
     """Profiles as the cache would give them: every writer an old, active, well-regarded account."""
 

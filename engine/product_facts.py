@@ -34,7 +34,8 @@ isn't an active). An entry with a formula needs no other fact.
 
 The vocabulary (engine/config.py, "Product facts"): PRODUCT_FACT_VALUES lists every fact and the values it can take,
 PRODUCT_FACTS_BY_TYPE which facts each product type can have. In short:
-    every skincare product  fragrance_free: true/false, prescription_only: true/false
+    every skincare product  fragrance_free: true/false, prescription_only: true/false (any type since 14 Oct 2026,
+                            Noemi's decision 5; a requirement to confirm for retinoids and exfoliants only)
     retinoid, exfoliant     strength: "gentle" | "moderate" | "strong"
     sunscreen               white_cast: true/false, finish: "matte" | "natural" | "dewy",
                             filters: "mineral" | "chemical" | "hybrid"
@@ -95,6 +96,7 @@ from engine.config import (
     BRAND_PICK_UNCHECKABLE,
     INGREDIENT_ACTIVES,
     INGREDIENT_FORMS,
+    HAIR_NEEDS,
     HARD_REQUIREMENT_NAMES,
     NEEDS,
     PRODUCT_FACT_REQUEST_WORDS,
@@ -107,7 +109,7 @@ from engine.config import (
     THREAD_CATEGORIES,
 )
 from engine.match_products import known_aliases, product_words, same_product, written_alike
-from engine.memo import FileMemo, PerList
+from engine.memo import FileMemo, PerList, Table
 from engine.models import Record
 from engine.needs import request_needs
 from engine.query import MUST_HAVES, PRODUCT_TYPES, ParsedQuery
@@ -285,8 +287,24 @@ def request_asks(query: ParsedQuery) -> tuple[str, ...]:
     polite no)."""
     if query.status != "ok":
         return ()
+    key = query.model_dump_json()  # worked out once per request (latency, 13 Oct 2026), as request_needs is
+    found = _REQUEST_ASKS.get(key)
+    if found is None:
+        found = _REQUEST_ASKS.keep(key, _request_asks(query))
+    return found
+
+
+_REQUEST_ASKS = Table(limit=10_000)  # a request, as module 1 read it -> what it asks for
+
+
+def _request_asks(query: ParsedQuery) -> tuple[str, ...]:
     asks = list(query.constraints.skin_types) + list(query.constraints.must_haves)
-    asks += [need.name for need in request_needs(query) if need.name in NEEDS and need.name not in MUST_HAVES]
+    # Only the needs found by their words: a word of the request named like one ("dry" in "a dry scalp", a haircare
+    # request) isn't the skin type dry; and a haircare request's own needs too ("colour-treated"), so the rules of what
+    # says the opposite read them (config.OPPOSITE_QUOTE_PATTERNS; 14 Oct 2026).
+    asks += [need.name for need in request_needs(query)
+             if (need.name in NEEDS or need.name in HAIR_NEEDS) and need.name not in MUST_HAVES
+             and need.request_word is None]
     text = query.text.lower().replace("’", "'")
     asks += [ask for ask, patterns in PRODUCT_FACT_REQUEST_WORDS.items()
              if any(re.search(rf"\b{pattern}", text) for pattern in patterns)]
@@ -347,13 +365,23 @@ def _has(facts: ProductFacts, fact: str, value) -> bool:
 def facts_that_matter(query: ParsedQuery) -> list[str]:
     """The facts a rule reads for what this request asks, among those its product type can have, in the rule table's
     order: what to look up first for it. [] when no rule applies. A rule marked "confirm": False (a maker's warning,
-    recorded only when a maker's page says it) is never asked for."""
+    recorded only when a maker's page says it) is never asked for, nor one whose "confirm_types" leave the type out
+    (whether a moisturiser is prescription-only: 14 Oct 2026)."""
     asks = set(request_asks(query))
     allowed = PRODUCT_FACTS_BY_TYPE.get(query.product_type or "", ())
     matter = [rule["fact"] for rule in PRODUCT_FACT_RULES.values()
-              if asks & set(rule["asks"]) and rule["fact"] in allowed and rule.get("confirm", True)
+              if asks & set(rule["asks"]) and rule["fact"] in allowed and _to_confirm(rule, query.product_type)
               and _for_type(rule, query.product_type)]
     return list(dict.fromkeys(matter))
+
+
+def _to_confirm(rule: dict, product_type: str | None) -> bool:
+    """Whether not knowing a rule's fact is something to confirm for a product type: never for a rule marked
+    "confirm": False (a maker's warning, recorded only when a maker's page says it), and for a rule naming its
+    "confirm_types" only for those (14 Oct 2026, Noemi's decision 5: any skincare product can be prescription-only, but
+    only retinoids and exfoliants are mostly sold in prescription versions, so only for them is not knowing it a
+    requirement)."""
+    return rule.get("confirm", True) and ("confirm_types" not in rule or product_type in rule["confirm_types"])
 
 
 def hard_requirements(query: ParsedQuery, product_type: str | None = None) -> list[str]:
@@ -362,11 +390,14 @@ def hard_requirements(query: ParsedQuery, product_type: str | None = None) -> li
     (config.PRODUCT_FACTS_BY_TYPE). [] when none applies: "first chef's knife" asks for a beginner's strength, but a
     chef knife has no strength to check. A rule marked "confirm": False (a maker's warning) is never a requirement. A
     brand pick can't be checked for any of them (engine/pipeline.py). `product_type`: the type whose facts count, when
-    it isn't the request's (13 Oct 2026: a product of an ingredient-led request has a type of its own)."""
+    it isn't the request's (13 Oct 2026: a product of an ingredient-led request has a type of its own). A rule whose
+    "confirm_types" leave the type out is no requirement either (14 Oct 2026: a cleanser for sensitive skin needn't be
+    checked for a prescription, so its picks get no note and its brand lines stay)."""
     asks = set(request_asks(query))
-    allowed = PRODUCT_FACTS_BY_TYPE.get(product_type or query.product_type or "", ())
+    own = product_type or query.product_type
+    allowed = PRODUCT_FACTS_BY_TYPE.get(own or "", ())
     return [name for name, rule in PRODUCT_FACT_RULES.items()
-            if rule["hard"] and rule.get("confirm", True) and asks & set(rule["asks"]) and rule["fact"] in allowed]
+            if rule["hard"] and _to_confirm(rule, own) and asks & set(rule["asks"]) and rule["fact"] in allowed]
 
 
 def unconfirmed(query: ParsedQuery, facts: ProductFacts | None, product_type: str | None = None) -> list[str]:

@@ -638,16 +638,23 @@ def test_other_is_not_an_evidence_tag_for_the_ai():
     assert result.kept == [] and "unknown evidence tag" in reasons(result)[0]
 
 
-def test_the_current_instructions_are_v9_and_todo_lists_older_extractions(tmp_path):
+def test_the_current_instructions_are_v12_and_todo_lists_older_extractions(tmp_path):
     # Changed on purpose 11 Oct 2026 (care tips narrowed to looking after the product, Noemi): the instructions moved
     # from v7 to v8, so a v7 extraction is now the older one that `todo` lists. Was: v7 current, v6 listed (9 Oct).
     # Then v9 the same day (haircare added, Noemi): a v8 extraction of a skincare thread stays current
     # (config.EXTRACT_STILL_CURRENT), a v7 one is still listed.
-    assert current_instructions_version() == "extract-v9"
-    threads_dir = threads_folder(tmp_path, *(other_thread(i) for i in ("1aaaaa", "1bbbbb", "1ccccc")))
+    # Then v10 on 13 Oct 2026 (spot treatments a type, Noemi's decision 2): v9 extractions stay current, all of them.
+    # Then v11 on 14 Oct 2026 (kitchen appliances as types, Noemi's decision 3): v10 and v9 extractions stay current.
+    # Then v12 the same day (the general category, Noemi's "recs regardless of the category"): v11, v10 and v9
+    # extractions of skincare, kitchen and haircare threads stay current.
+    assert current_instructions_version() == "extract-v12"
+    threads_dir = threads_folder(tmp_path, *(other_thread(i) for i in ("1aaaaa", "1bbbbb", "1ccccc", "1dddddd",
+                                                                        "1eeeee")))
     write_extraction(threads_dir, make_extraction(thread_id="1aaaaa", instructions_version="extract-v7", mentions=[]))
     write_extraction(threads_dir, make_extraction(thread_id="1bbbbb", instructions_version="extract-v8", mentions=[]))
     write_extraction(threads_dir, make_extraction(thread_id="1ccccc", instructions_version="extract-v9", mentions=[]))
+    write_extraction(threads_dir, make_extraction(thread_id="1dddddd", instructions_version="extract-v10", mentions=[]))
+    write_extraction(threads_dir, make_extraction(thread_id="1eeeee", instructions_version="extract-v11", mentions=[]))
     assert todo(threads_dir, current_instructions_version()) == ["1aaaaa"]
 
 
@@ -682,12 +689,13 @@ def test_a_long_life_ending_in_a_failure_is_in_the_stance_rules():
     assert "tell a friend" in stance and "died after 14 years" in stance and "mentions flaws" in stance
 
 
-def test_the_output_example_is_a_valid_v9_extraction():
+def test_the_output_example_is_a_valid_v12_extraction():
     # Changed on purpose 11 Oct 2026 (care tips narrowed, Noemi): the example now follows v8. Was: "extract-v7".
-    # Then v9 the same day (haircare added). Was: "extract-v8".
+    # Then v9 the same day (haircare added). Was: "extract-v8". Then v10 on 13 Oct 2026 (spot treatments). Was v9.
+    # Then v11 on 14 Oct 2026 (kitchen appliances). Was v10. Then v12 the same day (the general category). Was v11.
     example = instructions_text().split("```json", 1)[1].split("```", 1)[0]
     data = json.loads(example)
-    assert data["instructions_version"] == "extract-v9"
+    assert data["instructions_version"] == "extract-v12"
     for item in data["mentions"]:
         loaded = ExtractedMention.model_validate(item | {"comment_id": "c1aaaa"})  # the example's ids are placeholders
         assert loaded.product_type and loaded.evidence and loaded.evidence_tags
@@ -920,8 +928,49 @@ def test_an_older_version_still_current_for_a_thread_category_is_not_listed(tmp_
 
 
 def test_v8_extractions_of_skincare_and_kitchen_threads_stay_current():
-    assert current_instructions_version() == "extract-v9"
+    # Changed on purpose 13 Oct 2026 (instructions v10, spot treatments a type): v10 only adds a product type's name, so
+    # every v9 extraction stays current, and v8 ones of skincare and kitchen threads as before.
+    # Changed on purpose 14 Oct 2026 (instructions v11, kitchen appliances as types): v11 only adds product types' names
+    # (the AI had typed the appliances in plain words that module 1's names and words find), so every v10 and v9
+    # extraction stays current, and v8 ones of skincare and kitchen threads as before.
+    # Changed on purpose 14 Oct 2026 (instructions v12, the general category): the three categories' v11, v10 and v9
+    # extractions stay current, v8 ones of skincare and kitchen threads as before; a general thread needs v12.
+    assert current_instructions_version() == "extract-v12"
     assert set(extract.STILL_CURRENT["extract-v9"]["extract-v8"]) == {"skincare", "kitchen"}
+    assert set(extract.STILL_CURRENT["extract-v10"]["extract-v9"]) == {"skincare", "kitchen", "haircare"}
+    assert set(extract.STILL_CURRENT["extract-v10"]["extract-v8"]) == {"skincare", "kitchen"}
+    for older in ("extract-v10", "extract-v9"):
+        assert set(extract.STILL_CURRENT["extract-v11"][older]) == {"skincare", "kitchen", "haircare"}
+    assert set(extract.STILL_CURRENT["extract-v11"]["extract-v8"]) == {"skincare", "kitchen"}
+    for older in ("extract-v11", "extract-v10", "extract-v9"):
+        assert set(extract.STILL_CURRENT["extract-v12"][older]) == {"skincare", "kitchen", "haircare"}
+    assert set(extract.STILL_CURRENT["extract-v12"]["extract-v8"]) == {"skincare", "kitchen"}
+
+
+def test_a_general_thread_extracted_before_v12_is_done_again(tmp_path):
+    # 14 Oct 2026: a general thread's products were "other" before v12, so its older extraction is never current.
+    general = other_thread("1ggggg") | {"category": "general", "community": "BuyItForLife",
+                                         "url": "https://www.reddit.com/r/BuyItForLife/comments/1ggggg/post/"}
+    threads_dir = threads_folder(tmp_path, general)
+    write_extraction(threads_dir, make_extraction(thread_id="1ggggg", instructions_version="extract-v11", mentions=[]))
+    assert todo(threads_dir, "extract-v12") == ["1ggggg"]
+
+
+def test_general_is_a_mention_category_and_the_instructions_define_it():
+    assert "general" in MENTION_CATEGORIES
+    category = " ".join(section(instructions_text(), "What counts as a product mention").split())
+    for rule in ('General (added 14 Oct 2026, instructions v12)', "a hair dryer or straightener is a tool, not haircare",
+                 "A water bottle, a travel mug or a flask is general", "Other is what is never ranked"):
+        assert rule in category, rule
+
+
+def test_the_instructions_say_how_appliances_are_typed():
+    # 14 Oct 2026: the usual names of the new types, as the AI had typed them, point at module 1's names.
+    product_type = " ".join(section(instructions_text(), "Product type").split())
+    for rule in ('an Instant Pot or another multicooker a "pressure cooker"', 'a crock pot a "slow cooker"',
+                 'an air fryer oven or another countertop oven a "toaster oven"', 'a cafetiere a "french press"',
+                 'a drip or filter coffee machine a "coffee maker"', 'a coffee or food scale a "kitchen scale"'):
+        assert rule in product_type, rule
 
 
 def test_haircare_is_a_mention_category():

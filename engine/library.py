@@ -13,8 +13,9 @@ Six jobs:
   Data instead (engine.sources.FallbackSource, BrightDataSource): no single service down or out of credits stops it
   (Noemi's request, 10 Oct 2026). `--reader archive` or `--reader bright_data` uses one of them only; `--reader parse`
   finds threads with Arctic Shift and reads them through Parse, as before, with Parse's own search as the backup when
-  Arctic Shift is busy. A copy read from the archive never replaces one already read on Reddit. Bright Data never
-  reads a thread already saved, or a gold thread Noemi hasn't labelled.
+  Arctic Shift is busy. A copy read from the archive never replaces one already read on Reddit. Neither the archive
+  nor Bright Data reads a thread already saved, or a gold thread Noemi hasn't labelled (the archive since 13 Oct 2026:
+  it had read saved threads again and written over them), so each add saves the next threads in line.
   Each product type gets a mix of thread kinds (Noemi, 7 Oct 2026), because each kind feeds a different later step:
   6 threads, 3 asking for advice (the picks), 1 about long-term use (the strongest evidence) and 2 warnings (the
   "skip these" list and the downsides), at most 2 from one subreddit. `--only warning` tops up one kind.
@@ -53,7 +54,8 @@ What is saved:
 - Each thread says where it was read (read_from: "parse", "arctic_shift" or "bright_data") and when Reddit itself was
   last read for it (checked_live_at). Files saved before 9 Oct 2026 have neither: they were read through Parse.
 - Unlike the hand-checked gold set, the library is managed by these commands, so saving a thread again
-  replaces the older copy (except an archive copy over one read on Reddit, as above).
+  replaces the older copy (except an archive copy over one read on Reddit, as above). On the command line `add`
+  never saves a thread again (above): check-live and refresh do.
 
 Credits (Parse free plan: 200 a month, 2 per call):
 - add costs nothing with the archive (tried first by default). Through Bright Data (when Arctic Shift fails, or
@@ -75,6 +77,9 @@ Credits (Parse free plan: 200 a month, 2 per call):
   less once they are archived (every 90 days).
 
 Command line:
+    python -m engine.library import-dump <files folder> [--dry-run] [--type "<name>:<category>"]... [--request "<request>"]...
+                                               choose threads in Arctic Shift's per-subreddit history files and save
+                                               them as new library threads (Noemi, 14 Oct 2026; engine/bulk_import.py)
     python -m engine.library add [--reader auto|archive|bright_data|parse] [--only warning|advice|long_term] [--limit N] "<request>"
                                                find and save the threads for one request (6 by default, as a mix;
                                                with --only, threads of that kind only); quotes are optional
@@ -86,6 +91,13 @@ Command line:
                                                fetch again the threads that are due (30 days, archived threads 90):
                                                through Bright Data by default, or through Parse
     python -m engine.library coverage          saved threads per product type, and of each kind
+    python -m engine.library pull-bucket [--bucket NAME]
+                                               the threads read on demand (engine/on_demand.py, 14 Oct 2026), from
+                                               the private bucket into this library: deploy/cloudrun/deploy.sh runs it
+                                               before building the site's image, through gcloud's sign-in
+    python -m engine.library forget-baked [--bucket NAME]
+                                               once the site is deployed: the bucket lets go of the threads read on
+                                               demand that the image now holds (deploy.sh runs it too)
     python -m engine.library slim [--dry-run] [--library DIR]
                                                keep only the comments answers use in each extracted thread
     python -m engine.library apply-checks [--ledger FILE]... [--checks DIR] [--dry-run] [--library DIR]
@@ -129,7 +141,7 @@ from engine.extract import ExtractionError
 from engine.gold import GoldSetError, GoldThreadError, load_threads, unlabelled_gold_ids
 from engine.models import Thread
 from engine.parse_reddit import REPO_ROOT, ParseAPIError, ParseRedditClient
-from engine.query import PRODUCT_TYPES, parse_query
+from engine.query import FIRST_PRODUCT_TYPES, PRODUCT_TYPES, parse_query
 from engine.sources import (
     THREAD_KINDS,
     ArchiveSource,
@@ -232,9 +244,21 @@ def bright_data_source(folder: Path, client: BrightDataClient | None, max_record
     """The Bright Data source for this library: it skips the threads already saved here (they are kept fresh by
     check-live and refresh, not read again by add) and the gold threads Noemi hasn't labelled yet, so no record is
     spent on either. With no client (a test that gives none), it finds nothing."""
+    return BrightDataSource(client, skip_ids=not_to_read(folder), max_records=max_records)
+
+
+def archive_source(folder: Path, client: ArcticShiftClient | None) -> ArchiveSource:
+    """The archive source for this library's `add` (13 Oct 2026): like Bright Data's, it skips the threads already saved
+    here and the gold threads Noemi hasn't labelled, so an add saves new threads, never the saved ones read again and
+    written over. With no client (a test that gives none), it finds nothing."""
+    return ArchiveSource(client, skip_ids=not_to_read(folder))
+
+
+def not_to_read(folder: Path) -> set[str]:
+    """The ids `add` never reads: the threads saved in this library and the gold threads Noemi hasn't labelled yet."""
     threads = Path(folder) / "threads"
     saved = {path.stem for path in threads.glob("*.json")} if threads.is_dir() else set()
-    return BrightDataSource(client, skip_ids=saved | unlabelled_gold_ids(), max_records=max_records)
+    return saved | unlabelled_gold_ids()
 
 
 def _live_copy(thread: Thread, folder: Path) -> Thread | None:
@@ -393,7 +417,7 @@ def refresh(
     failures_in_a_row = 0
     for n, old in enumerate(due):
         try:
-            new = _save(client.get_thread(old.community, old.id), folder)
+            new = _save(_as_saved(client.get_thread(old.community, old.id), old), folder)
         except ParseAPIError as e:
             result.failed[old.id] = str(e)
             failures_in_a_row += 1
@@ -427,6 +451,13 @@ def _refresh_through_bright_data(client: BrightDataClient, due: list[Thread], ma
     result.record_cap = read.record_cap
     result.records_used = read.records_used
     result.records_left = read.records_left
+
+
+def _as_saved(fresh: Thread, saved: Thread) -> Thread:
+    """A thread Parse has read again, in the category it was saved in (14 Oct 2026): Parse names the category by the
+    community alone, and a community can be two categories' (r/BuyItForLife: a headphones thread there is a general
+    one, engine.sources.for_request)."""
+    return fresh.model_copy(update={"category": saved.category})
 
 
 def is_due(thread: Thread, now: datetime) -> bool:
@@ -572,7 +603,7 @@ def _read_through_parse(client: ParseRedditClient, due: list[Thread], shown_due:
             result.not_tried = [t.id for t in due[n:]]
             break
         try:
-            new = _save(client.get_thread(old.community, old.id), folder)
+            new = _save(_as_saved(client.get_thread(old.community, old.id), old), folder)
         except ParseAPIError as e:
             result.failed[old.id] = str(e)
             failures_in_a_row += 1
@@ -822,9 +853,10 @@ def main(
     finder: ArcticShiftClient | None = None,
     shown: set[str] | None = None,
     bright_data: BrightDataClient | None = None,
+    bucket=None,
 ) -> int:
-    """`client`, `folder`, `finder`, `shown` and `bright_data` can be swapped for fakes, which is how the tests run the
-    command line.
+    """`client`, `folder`, `finder`, `shown`, `bright_data` and `bucket` (on-demand reading's, for pull-bucket and
+    forget-baked) can be swapped for fakes, which is how the tests run the command line.
 
     A real run (no client given) finds and reads threads with Arctic Shift, and check-live reads through Bright Data
     unless --reader parse is typed. A test that passes its own Parse client gets a finder, or a Bright Data client,
@@ -832,9 +864,17 @@ def main(
     through Parse unless told otherwise. `shown`: the threads answers quote, for check-live; None works them out from
     the blind-test questions (engine.slice_eval.threads_behind_answers).
     """
+    if argv and argv[0] == "import-dump":  # this machine's files only: no client, no credit, no network
+        from engine.bulk_import import main as bulk_main  # here: engine.bulk_import reads the library through this module
+
+        return bulk_main(["import", *argv[1:]], library_dir=folder)
     command = argv[0] if argv else None
     if command in ("slim", "apply-checks"):  # this machine's files only: no client, no credit, no network
         return _slim_or_apply(command, argv[1:], folder)
+    if command in ("pull-bucket", "forget-baked"):  # on-demand reading's threads (14 Oct 2026): no Parse, no archive
+        from engine.on_demand import pull_command  # imported here: on-demand reading saves threads through this module
+
+        return pull_command(command, argv[1:], folder, bucket)
     real_run = client is None  # a real run remembers an Arctic Shift outage; a test never writes that memo
     add_options = _add_options(argv[1:]) if command == "add" else None
     default_reader = LIVE_CHECK_READER if client is None or bright_data is not None else "parse"
@@ -861,16 +901,18 @@ def main(
             request, only, limit, reader = add_options
             # A test that gives no finder has no archive, and one that gives no Bright Data client has no Bright Data:
             # then that reader finds nothing, and never reaches the network.
+            # Through the archive or Bright Data, the threads already saved (and unlabelled gold threads) are never read
+            # again: check-live and refresh keep saved threads current (13 Oct 2026, archive_source).
             if reader == "parse":
                 source = ParseSource(client=client, finder=finder)
             elif reader == "archive":
-                source = ArchiveSource(finder)
+                source = archive_source(folder, finder)
             elif reader == "bright_data":
                 source = bright_data_source(folder, bright_data)
             else:  # auto: with no Bright Data client (a test), the archive alone, so its errors are reported as before
-                source = (FallbackSource(ArchiveSource(finder), bright_data_source(folder, bright_data),
+                source = (FallbackSource(archive_source(folder, finder), bright_data_source(folder, bright_data),
                                          memo=ARCHIVE_DOWN_MEMO if real_run else None)
-                          if bright_data is not None else ArchiveSource(finder))
+                          if bright_data is not None else archive_source(folder, finder))
             status = _print_add(add(request, source, folder, limit=limit, only=only, reader=reader))
             for note in getattr(source, "notes", []):
                 print(note)
@@ -1128,12 +1170,21 @@ def _print_check_live(result: LiveCheckResult) -> int:
 
 
 def _print_coverage(counts: dict[str, int], kinds: dict[str, dict[str, int]]) -> int:
+    """Module 1's first types each on a line; the taxonomy's (engine/data/product_types.json, 14 Oct 2026) only when they
+    have saved threads, then how many have none, so 351 types don't print as hundreds of zeros."""
     print("Saved threads per product type:")
+    first = {p.name for p in FIRST_PRODUCT_TYPES}
     for category in THREAD_CATEGORIES:
         print(f"  {category}")
+        empty = 0
         for product in PRODUCT_TYPES:
             if product.category == category:
-                print(f"    {product.name:<18} {counts[product.name]}")
+                if product.name in first or counts[product.name]:
+                    print(f"    {product.name:<18} {counts[product.name]}")
+                else:
+                    empty += 1
+        if empty:
+            print(f"    and {empty} more types with none yet")
     target = ", ".join(f"{KIND_NAMES[kind]} {LIBRARY_MIX.get(kind, 0)}" for kind in THREAD_KINDS)
     print(f"Threads of each kind, against the library's mix ({target}), for product types with saved threads:")
     covered = [product.name for product in PRODUCT_TYPES if counts[product.name]]

@@ -1,11 +1,11 @@
 {
-  "measured_on": "2026-10-13",
+  "measured_on": "2026-10-14",
   "metrics": {
     "quote_verification": {
       "value": 1.0,
       "target": 1.0,
-      "count": 256,
-      "out_of": 256,
+      "count": 264,
+      "out_of": 264,
       "threads": null
     },
     "extraction_precision": {
@@ -58,10 +58,10 @@
       "threads": null
     },
     "ai_quotes_found": {
-      "value": 0.9996427295462665,
+      "value": 0.9997055792727808,
       "target": null,
-      "count": 11192,
-      "out_of": 11196,
+      "count": 13582,
+      "out_of": 13586,
       "threads": null
     },
     "request_outcome": {
@@ -74,15 +74,15 @@
     "request_product": {
       "value": 1.0,
       "target": null,
-      "count": 22,
-      "out_of": 22,
+      "count": 25,
+      "out_of": 25,
       "threads": null
     },
     "request_details": {
       "value": 1.0,
       "target": null,
-      "count": 22,
-      "out_of": 22,
+      "count": 25,
+      "out_of": 25,
       "threads": null
     },
     "threads_fit": {
@@ -116,10 +116,10 @@
   },
   "end_to_end": {
     "questions": 10,
-    "with_all_picks": 8,
+    "with_all_picks": 9,
     "with_a_pick": 10,
     "picks_wanted": 3,
-    "quotes_shown": 256,
+    "quotes_shown": 264,
     "unverified_quotes_shown": 0,
     "threads_waiting_live_check": 0
   }

@@ -83,7 +83,9 @@ def test_an_ingredient_led_type_is_named_after_its_ingredients_and_read_back():
 
 
 def test_an_ingredient_led_request_may_show_every_type_that_carries_it():
-    assert wanted_types("salicylic acid product") == ("exfoliant", "toner", "serum", "cleanser", "moisturiser")
+    # Changed on purpose 13 Oct 2026 (Noemi's decision 2): spot treatments are a type that carries acids too.
+    assert wanted_types("salicylic acid product") == ("exfoliant", "toner", "serum", "cleanser", "moisturiser",
+                                                      "spot treatment")
     assert wanted_types("cleanser") == ("cleanser",)
     # Two ingredients: the types that can carry both.
     assert wanted_types("salicylic acid and vitamin C product") == ("toner", "serum", "moisturiser")
@@ -154,3 +156,61 @@ def test_a_writers_description_of_what_a_product_has_isnt_its_name():
     assert own_name("Kelp toner w/ BHA") == "Kelp toner"
     assert own_name("Kelp Salicylic Acid Toner") == "Kelp Salicylic Acid Toner"
     assert evidence("salicylic acid", own_name("Kelp Gleanser with salicylic acid"), None).contains is None
+
+
+# --- Forms (Noemi's decision 1 of 13 Oct 2026): leave-on forms only, unless the request names another ---
+
+@pytest.mark.parametrize("name, product_type, form", [
+    ("Acme Acne Pimple Master Patch", "pimple patch", "patch"),
+    ("Acme Hydrocolloid Acne Patches", "spot treatment", "patch"),
+    ("Acme Acne Spot Treatment Gel", "spot treatment", "spot treatment"),
+    ("Acme Spot", "spot treatment", "spot treatment"),  # its type says the form
+    ("Acme Lip Sleeping Mask", "lip balm", "sleeping mask"),
+    ("Acme Rice Polish", "exfoliant", "scrub"),
+    ("Acme exfoliating powder", "exfoliant", "rinse-off powder"),
+    ("Acme Clay Mask", "exfoliant", "mask"),
+    ("Acme AHA 30% + BHA 2% Peeling Solution", "exfoliant", "peel"),  # a peel, though its name says solution
+    ("Acme Dark Spot Serum", "serum", "serum"),  # a dark spot isn't a spot treatment
+])
+def test_more_forms_are_read_from_names(name, product_type, form):
+    assert form_of(name, product_type) == form
+
+
+@pytest.mark.parametrize("form, kind", [
+    ("serum", "leave-on"), ("leave-on liquid", "leave-on"), ("toner", "leave-on"), ("pads", "leave-on"),
+    ("essence", "leave-on"), ("cream", "leave-on"), ("moisturiser", "leave-on"), ("spot treatment", "leave-on"),
+    ("patch", "leave-on"), ("sleeping mask", "leave-on"),
+    ("cleanser", "rinse-off"), ("rinse-off powder", "rinse-off"), ("mask", "rinse-off"), ("peel", "rinse-off"),
+    ("scrub", "rinse-off"),
+    ("exfoliant", None), (None, None),  # an exfoliant may be a leave-on liquid or a rinse-off scrub: not known
+])
+def test_each_form_is_leave_on_rinse_off_or_not_known(form, kind):
+    from engine.ingredients import form_kind
+
+    assert form_kind(form) == kind
+
+
+def test_every_form_a_name_type_or_formula_can_give_is_known_to_be_leave_on_or_rinse_off():
+    from engine.config import INGREDIENT_FORM_WORDS, INGREDIENT_FORMS
+    from engine.ingredients import form_kind
+
+    for form in set(INGREDIENT_FORMS) | {form for _, form in INGREDIENT_FORM_WORDS}:
+        assert form_kind(form) is not None, form
+    assert [t for t, form in PRODUCT_TYPE_FORMS.items() if form_kind(form) is None] == ["exfoliant"]
+
+
+@pytest.mark.parametrize("text, forms", [
+    ("salicylic acid for acne", []),
+    ("salicylic acid wash for my back", ["cleanser"]),
+    ("a bha liquid for my nose", ["leave-on liquid"]),
+    ("salicylic acid pads", ["pads"]),
+    ("glycolic acid peel at home", ["peel"]),
+    ("pads with salicylic acid", ["pads"]),
+    ("salicylic acid 2% liquid", ["leave-on liquid"]),
+    ("salicylic acid that won't make my skin peel", []),  # "peel" here isn't the product's form
+    ("salicylic acid, I'm tired of washing my face twice", []),
+])
+def test_a_request_names_a_form_only_next_to_its_ingredient(text, forms):
+    from engine.ingredients import forms_named
+
+    assert forms_named(text, find_ingredients(text)) == forms

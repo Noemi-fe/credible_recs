@@ -121,16 +121,23 @@ def test_two_needs_get_one_question():
 
 
 def test_out_of_scope_gets_a_polite_no():
-    routing = classify("best laptop for uni")
+    # Changed on purpose 14 Oct 2026 (Noemi: "I want recs regardless of the category"): a laptop is a product of the
+    # general category now (engine/tests/test_query_general.py), so a service is the example of what stays out, and
+    # the polite no says what we recommend instead of naming three categories. Was: "best laptop for uni", "skincare,
+    # haircare and kitchen" in the message.
+    routing = classify("a good plumber near me")
     assert routing.status == "out_of_scope" and routing.category is None
-    assert "skincare, haircare and kitchen" in routing.message  # haircare: Noemi, 11 Oct 2026
+    assert "products you can buy" in routing.message
 
 
 def test_requirements_that_mention_other_products_are_not_out_of_scope():
     # "fragrance-free" and "dishwasher-safe" are requirements, not a perfume or a dishwasher.
-    assert classify("fragrance-free moisturiser").status == "ok"
-    assert classify("dishwasher-safe chef knife").status == "ok"
-    assert classify("dishwasher that's quiet").status == "out_of_scope"
+    assert classify("fragrance-free moisturiser").product_type == "moisturiser"
+    assert classify("dishwasher-safe chef knife").product_type == "chef knife"
+    # Changed on purpose 14 Oct 2026 (the general category): a dishwasher is a kitchen product type now, by Noemi's
+    # decision of 14 Oct, which supersedes her approved case q30 (eval/edge_cases/query.json; for her to confirm). Was:
+    # out of scope.
+    assert classify("dishwasher that's quiet").product_type == "dishwasher"
 
 
 # --- Requirements and search terms ---
@@ -187,7 +194,8 @@ def test_question_keeps_what_was_already_said():
 
 
 def test_out_of_scope_carries_nothing_else():
-    query = parse_query("best laptop for uni under £800")
+    # Changed on purpose 14 Oct 2026 (the general category): a laptop is a product now. Was: "best laptop for uni".
+    query = parse_query("cheap flights to lisbon under £80")
     assert query.status == "out_of_scope" and query.message
     assert query.constraints == Constraints() and query.search_terms == [] and query.subreddits == []
 
@@ -258,32 +266,43 @@ def test_a_vague_hair_request_asks_within_haircare():
     assert "shampoo" in routing.question
 
 
-def test_hair_tools_and_air_conditioners_stay_out_of_scope():
-    for text in ("best hair dryer", "hair straightener that lasts", "air conditioner for a small flat"):
+def test_hair_tools_and_air_conditioners_are_general_products_never_haircare():
+    # Changed on purpose 14 Oct 2026 (the general category): hair tools and air conditioners are products of the general
+    # category now (beauty and home), so they are no longer out of scope; an air conditioner is still never a hair
+    # conditioner, nor a hair dryer haircare. Was: all three out of scope, the message naming haircare.
+    for text, product_type in (("best hair dryer", "hair dryer"), ("hair straightener that lasts", "hair straightener"),
+                               ("air conditioner for a small flat", "air conditioner")):
         routing = classify(text)
-        assert routing.status == "out_of_scope", text
-        assert "haircare" in routing.message
+        assert (routing.status, routing.category, routing.product_type) == ("ok", "general", product_type), text
 
 
 # --- Words inside another product's name (11 Oct 2026) ---
 
 @pytest.mark.parametrize("text, not_this", [
     ("ice cream maker", "moisturiser"),
-    ("crock pot for stews", "saucepan"),
-    ("instant pot that lasts", "saucepan"),
+    ("coffee pot for camping", "saucepan"),
     ("sheet pan for roasting vegetables", "frying pan"),
     ("sun hat for the beach", "sunscreen"),
 ])
 def test_a_word_inside_another_products_name_is_not_that_product(text, not_this):
     # "cream" in "ice cream maker" isn't a moisturiser: without the open model, the rules ask instead of guessing.
+    # Changed on purpose 14 Oct 2026 (kitchen appliances, Noemi's decision 3): "crock pot for stews" and "instant pot
+    # that lasts" were examples here; they name a slow cooker and a pressure cooker now (below). "coffee pot" takes
+    # their place: still a look-alike.
     routing = classify(text)
     assert routing.product_type != not_this
     assert routing.status == "clarify"
 
 
+def test_a_crock_pot_and_an_instant_pot_are_appliances_not_saucepans():
+    assert classify("crock pot for stews").product_type == "slow cooker"
+    assert classify("instant pot that lasts").product_type == "pressure cooker"
+
+
 def test_a_vacuum_sealer_is_not_a_vacuum_cleaner():
     assert classify("vacuum sealer for sous vide").status == "clarify"
-    assert classify("best vacuum for pet hair").status == "out_of_scope"
+    # Changed on purpose 14 Oct 2026 (the general category): a vacuum cleaner is a product now. Was: out of scope.
+    assert classify("best vacuum for pet hair").product_type == "vacuum cleaner"
 
 
 def test_a_makeup_remover_is_a_cleanser_not_makeup():
@@ -291,7 +310,9 @@ def test_a_makeup_remover_is_a_cleanser_not_makeup():
     routing = classify("makeup remover for sensitive eyes")
     assert (routing.status, routing.product_type) == ("ok", "cleanser")
     assert classify("make-up remover").product_type == "cleanser"
-    assert classify("best mascara").status == "out_of_scope"
+    # Changed on purpose 14 Oct 2026 (the general category): mascara is a product of its beauty department now. Was:
+    # out of scope.
+    assert (classify("best mascara").category, classify("best mascara").product_type) == ("general", "mascara")
 
 
 # --- Tea kettles (12 Oct 2026, from the kitchen builder's findings) ---

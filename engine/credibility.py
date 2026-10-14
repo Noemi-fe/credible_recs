@@ -27,6 +27,10 @@ Two layers (the brief's "Credibility score v1", with Noemi's definitions from da
 A mention's weight (mention_weight) = voice value x evidence value x stance value, with the values in
 engine/config.py (VOICE_VALUE, EVIDENCE_VALUE, STANCE_VALUE): recommend counts plus, warn minus, neutral nothing.
 
+For Noemi's upvote rule (14 Oct 2026, switched off: config.UPVOTE_COUNTS_MORE), thread_upvotes also gives each comment's
+upvotes beside its thread's (its score, the thread's size, the share of its comments it beats): numbers only. Whether a
+credible recommendation then counts twice toward the picks bar is module 6's rule (engine/rank.py).
+
 Every result keeps its reasons in words ("2 years of use", "compares 4 alternatives", "flair says Dermatologist
 (not verified)"), so the answer can show why a voice counts. Tags come from config.VOICE_TAGS and
 config.EVIDENCE_TAGS, so the results compare directly with Noemi's labels (engine/credibility_eval.py).
@@ -43,6 +47,8 @@ What this version can't see yet:
 
 import html
 import re
+from bisect import bisect_left
+from collections import OrderedDict
 from collections.abc import Collection, Iterable
 from dataclasses import dataclass
 from functools import cache
@@ -53,7 +59,7 @@ from typing import Literal
 from engine import config
 from engine.extract import ExtractedAgreement
 from engine.match_products import normalize_name, same_product
-from engine.memo import Table
+from engine.memo import Table, register
 from engine.models import READABLE_ON_REDDIT, Author, Comment, Thread
 from engine.text import one_edit_apart
 
@@ -362,7 +368,8 @@ def copy_groups(thread: Thread) -> list[frozenset[str]]:
     Links don't count as words.
 
     Worked out once per thread, not comment by comment: every run of that many words is listed with the comments it
-    appears in, so a thread of hundreds of comments is read once. Returns the sets of comments that copy one another
+    appears in, so a thread of hundreds of comments is read once; since 14 Oct 2026 (latency) only the runs of the
+    comments that could share one (_could_share_a_run). Returns the sets of comments that copy one another
     (a comment copied by two others joins them in one set); copied_comment_ids and repeated_copies read them. Since 12
     Oct 2026 (latency) also remembered, by everything of the thread it reads, so the next answer reading the same
     thread doesn't work it out again.
@@ -391,11 +398,17 @@ def copy_pairs(thread: Thread) -> set[tuple[str, str]]:
     id order: what copy_groups joins into sets, and what a slimmed thread keeps of its copies (engine/slim.py)."""
     size = config.COPIED_TEXT_MIN_WORDS
     readable = {c.id: c for c in thread.comments if c.status == "ok"}
-    found_in: dict[tuple[str, ...], list[str]] = {}  # each run of `size` words: the comments that have it
+    words_of = {}  # the comments long enough to hold such a run: their words
     for comment in readable.values():
         words = _WORD.findall(_LINK.sub(" ", _own_words(comment.body)))
-        for run in {tuple(words[start:start + size]) for start in range(len(words) - size + 1)}:
-            found_in.setdefault(run, []).append(comment.id)
+        if len(words) >= size:
+            words_of[comment.id] = words
+    could = _could_share_a_run(words_of)
+    found_in: dict[tuple[str, ...], list[str]] = {}  # each run of `size` words: the comments that have it
+    for cid, words in words_of.items():
+        if cid in could:  # only those that could share one (latency, 14 Oct 2026: most comments of most threads can't)
+            for run in {tuple(words[start:start + size]) for start in range(len(words) - size + 1)}:
+                found_in.setdefault(run, []).append(cid)
     pairs = set()
     # The same passage gives many runs with the same comments: each set of comments is compared once.
     for sharing in {tuple(ids) for ids in found_in.values() if len(ids) > 1}:
@@ -422,6 +435,26 @@ def _groups_of(pairs: Iterable[tuple[str, str]]) -> list[frozenset[str]]:
     for cid in joined:
         groups.setdefault(root(cid), set()).add(cid)
     return [frozenset(group) for group in groups.values()]
+
+
+def _could_share_a_run(words_of: dict[str, list[str]]) -> set[str]:
+    """The comments that could share a run of COPIED_TEXT_MIN_WORDS words with another (`words_of`: each comment's
+    words), a quick look before every run of every comment is listed (latency, 14 Oct 2026). Such a run holds, in
+    each comment, a run of half as many words starting at a multiple of that half (any half + 1 places in a row hold
+    one), so only comments where one comment's runs starting there appear in another can share one."""
+    half = max(1, config.COPIED_TEXT_MIN_WORDS // 2)
+    starting_there: dict[tuple[str, ...], set[str]] = {}  # each run of `half` words starting at a multiple of `half`
+    for cid, words in words_of.items():
+        for start in range(0, len(words) - half + 1, half):
+            starting_there.setdefault(tuple(words[start:start + half]), set()).add(cid)
+    could: set[str] = set()
+    for cid, words in words_of.items():
+        for start in range(len(words) - half + 1):
+            holders = starting_there.get(tuple(words[start:start + half]))
+            if holders is not None and (len(holders) > 1 or cid not in holders):
+                could.add(cid)
+                could.update(holders)
+    return could
 
 
 def copied_comment_ids(thread: Thread, groups: list[frozenset[str]] | None = None) -> frozenset[str]:
@@ -464,25 +497,28 @@ def _copy_signs(comment: Comment, copied: Collection[str]) -> list[Sign]:
 # Endorsement: others back it up.
 
 def _endorsement_signs(comment: Comment, thread: Thread, agreements: Iterable[ExtractedAgreement]) -> list[Sign]:
-    """Upvotes relative to the rest of the thread (never absolute numbers), and replies that agree. The rest of the
+    """Upvotes relative to the rest of the thread (never absolute numbers), and replies that agree. What it reads of the
+    thread (its comments' scores, parents and writers) is worked out once per thread (_thread_facts). The rest of the
     thread is every comment readable on Reddit when it was read, also those whose words a slimmed thread doesn't keep
     (their scores stay: 13 Oct 2026)."""
     signs = []
-    others = [c.score for c in thread.comments if c.status in READABLE_ON_REDDIT and c.id != comment.id]
+    facts = _thread_facts(thread)
+    own = facts.ok_scores_of.get(comment.id, ())  # the comment's own score, left out of the others'
+    others = facts.ok_count - len(own)  # how many other readable comments there are
     if comment.score < config.DOWNVOTED_BELOW:
         signs.append(Sign("downvoted", f"downvoted (score {comment.score})", "red flag"))
     elif others and comment.score >= config.WELL_UPVOTED_MIN_SCORE:
-        below = sum(score < comment.score for score in others)
-        beaten = below / len(others)
+        below = bisect_left(facts.ok_scores, comment.score) - sum(score < comment.score for score in own)
+        beaten = below / others
         if beaten >= config.WELL_UPVOTED_SHARE_BEATEN:
             # Rounded down, so it never says "more than 100%" (the demo page did, 10 Oct 2026).
-            where = ("the top comment in this thread" if below == len(others)
-                     else f"more than {below * 100 // len(others)}% of this thread's comments")
+            where = ("the top comment in this thread" if below == others
+                     else f"more than {below * 100 // others}% of this thread's comments")
             signs.append(Sign("well upvoted", f"{comment.score} points, {where}", "good"))
-    parent_of = {c.id: c.parent_id for c in thread.comments}
+    parent_of = facts.parent_of
     # A reply by the writer themselves isn't someone else backing them up (review fixes, 9 Oct 2026). Only a reply
     # known to be theirs is left out: two deleted accounts can't be told apart.
-    writer_of = {c.id: c.author.name.casefold() for c in thread.comments if c.author is not None}
+    writer_of = facts.writer_of
     me = comment.author.name.casefold() if comment.author is not None else None
     agreeing = {
         a.comment_id for a in agreements
@@ -492,6 +528,70 @@ def _endorsement_signs(comment: Comment, thread: Thread, agreements: Iterable[Ex
         n = len(agreeing)
         signs.append(Sign("replies agree", f"{n} {'reply agrees' if n == 1 else 'replies agree'}", "good"))
     return signs
+
+
+@dataclass(frozen=True)
+class _ThreadFacts:
+    """What _endorsement_signs reads of a thread, worked out once per thread rather than once per comment."""
+
+    ok_scores: list[int]  # every readable comment's score, lowest first
+    ok_count: int
+    ok_scores_of: dict[str, tuple[int, ...]]  # a comment id -> the scores of the readable comments with that id
+    parent_of: dict[str, str | None]
+    writer_of: dict[str, str]  # a comment id -> its writer's name, casefolded (deleted accounts left out)
+
+
+_THREAD_FACTS: OrderedDict[int, tuple[Thread, _ThreadFacts]] = OrderedDict()  # id(thread) -> (the thread, its facts)
+THREADS_REMEMBERED = 512
+register(_THREAD_FACTS.clear)
+
+
+def _thread_facts(thread: Thread) -> _ThreadFacts:
+    """A thread's facts for _endorsement_signs, kept for the threads asked about lately (latency, 13 Oct 2026: every
+    scored comment read its whole thread again). A thread is known by its identity, kept with its facts, so another
+    thread made later can't be mistaken for it; threads are never changed once read (engine.library_cache)."""
+    found = _THREAD_FACTS.get(id(thread))
+    if found is not None and found[0] is thread:
+        _THREAD_FACTS.move_to_end(id(thread))
+        return found[1]
+    scores_of: dict[str, list[int]] = {}
+    for c in thread.comments:
+        if c.status in READABLE_ON_REDDIT:  # a slimmed thread's comments without their words count too (13 Oct 2026)
+            scores_of.setdefault(c.id, []).append(c.score)
+    ok_scores = sorted(score for scores in scores_of.values() for score in scores)
+    facts = _ThreadFacts(ok_scores, len(ok_scores), {cid: tuple(scores) for cid, scores in scores_of.items()},
+                         {c.id: c.parent_id for c in thread.comments},
+                         {c.id: c.author.name.casefold() for c in thread.comments if c.author is not None})
+    _THREAD_FACTS[id(thread)] = (thread, facts)
+    while len(_THREAD_FACTS) > THREADS_REMEMBERED:
+        _THREAD_FACTS.popitem(last=False)
+    return facts
+
+
+@dataclass(frozen=True)
+class Upvotes:
+    """A comment's upvotes beside its thread's, numbers only: what Noemi's upvote rule reads (14 Oct 2026: "if we have
+    few credible mentions, a highly upvoted comment (10+) counts more"; config.UPVOTE_*, the rule in engine/rank.py)."""
+
+    score: int  # the comment's score: upvotes minus downvotes
+    thread_comments: int  # the thread's comments readable when it was read, this one included
+    share_beaten: float  # the share of those others it scores higher than ("well upvoted" reads the same); 0 with none
+
+
+def thread_upvotes(thread: Thread) -> dict[str, Upvotes]:
+    """{comment id: Upvotes} for every readable comment of `thread`, read from the thread's facts (_thread_facts, worked
+    out once per thread): the same comments and the same share beaten as the "well upvoted" sign (_endorsement_signs).
+    A tie beats no one. A comment that isn't readable has no entry: it is never credible, so it never counts twice."""
+    facts = _thread_facts(thread)
+    found = {}
+    for comment in thread.comments:
+        own = facts.ok_scores_of.get(comment.id)
+        if own is None:
+            continue
+        others = facts.ok_count - len(own)
+        below = bisect_left(facts.ok_scores, comment.score) - sum(score < comment.score for score in own)
+        found[comment.id] = Upvotes(comment.score, facts.ok_count, below / others if others else 0.0)
+    return found
 
 
 # Recency: still true today.
@@ -534,6 +634,28 @@ CATEGORY_TERMS = {
         "cg method", "ketoconazole", "zinc pyrithione", "selenium sulfide", "piroctone olamine", "seborrheic",
         "malassezia", "film former", "cationic", "behentrimonium", "polyquaternium", "cuticle", "hygral fatigue",
         "heat protectant", "bond builder", "wet line", "cast",
+    ),
+    # The general category (14 Oct 2026; chosen by Claude, reported to Noemi): the specialist words of its departments'
+    # enthusiasts, each clearly a specialist's (audio, keyboards, screens, mattresses and vacuums, outdoor gear, boots
+    # and denim, watches, home gyms, child seats, tools, shaving and fragrance, cycling, car care). Three in a comment,
+    # as for the other categories.
+    "general": (
+        "soundstage", "imaging", "planar", "planars", "iem", "iems", "dac", "impedance", "sibilance", "sibilant",
+        "treble", "harman target", "frequency response", "eartips", "ear tips", "aptx", "ldac", "codec",
+        "keycaps", "keycap", "linear switches", "tactile switches", "hot-swap", "hotswap", "lubed", "stabilizers",
+        "pcb", "qmk", "polling rate", "thermals", "throttling", "refresh rate", "nits", "ips panel", "va panel",
+        "pwm", "srgb", "dci-p3", "ghosting", "backlight bleed", "suction", "hepa", "cyclonic", "brush roll",
+        "brushroll", "pocket springs", "edge support", "coil count", "motion isolation", "btu", "base weight",
+        "baseweight", "denier", "r-value", "fill power", "hydrostatic head", "dyneema", "gore-tex", "goretex", "dwr",
+        "ripstop", "silnylon", "vestibule", "goodyear welt", "goodyear welted", "blake stitch", "resole", "resoled",
+        "resoling", "toe box", "insole", "outsole", "midsole", "cork bed", "shell cordovan", "horween", "chromexcel",
+        "selvedge", "selvage", "raw denim", "sanforized", "heel drop", "stack height", "carbon plate", "pebax",
+        "nh35", "miyota", "lume", "sapphire crystal", "bezel", "lug to lug", "lug width", "caseback", "chronometer",
+        "power reserve", "knurling", "knurl", "j-hooks", "spotter arms", "bumper plates", "isofix", "rear facing",
+        "extended rear facing", "brushless", "torque", "chuck", "kickback", "amp hours", "battery platform",
+        "de blade", "blade gap", "lather", "silvertip", "sillage", "top notes", "base notes", "dry down", "drydown",
+        "groupset", "derailleur", "drivetrain", "tubeless", "parking mode", "supercapacitor", "clay bar",
+        "paint correction",
     ),
 }
 
@@ -951,7 +1073,12 @@ GENERIC_NAME_WORDS = frozenset({
     "treatment", "spray", "mousse", "masque", "styling", "bond", "keratin", "protein", "sulfate", "sulphate", "free",
     "argan", "air", "fryer", "fryers", "rice", "cooker", "cookers", "slow", "pressure", "processor", "food", "stand",
     "hand", "immersion", "basket",
-})
+}) | frozenset(
+    # The head nouns of the types of engine/data/product_types.json (14 Oct 2026): "headphones" in "Sony headphones"
+    # says what it is, not which one, as "kettle" does.
+    words[-1] for entry in config.MORE_PRODUCT_TYPES for name in (entry["name"], entry["plural"])
+    if (words := name.lower().split())
+) - {"head", "ring"}  # the shower head's and the smart ring's are brand words too: Head & Shoulders, Ring
 
 
 # Small words that join the words of a name ("lactic acid 10% with hyaluronic acid"), so they name nothing.
@@ -988,33 +1115,79 @@ def _product_context(text: str, product_name: str, others: list[str]) -> list[st
     return context
 
 
-def _name_words(product_name: str) -> set[str]:
-    """The words of a product name that can pick it out in a sentence: no generic words, no bare numbers."""
-    words = set()
-    for word in normalize_name(product_name):
-        has_letters = any(ch.isalpha() for ch in word)
-        long_enough = len(word) >= 3 or (has_letters and any(ch.isdigit() for ch in word))
-        if has_letters and long_enough and word not in GENERIC_NAME_WORDS | _NAME_JOINING_WORDS:
-            words.add(word)
-    return words
+def _name_words(product_name: str) -> frozenset[str]:
+    """The words of a product name that can pick it out in a sentence: no generic words, no bare numbers. Worked out
+    once per name (latency, 14 Oct 2026: evidence scoring asks it for each product a comment names, for every one)."""
+    found = _NAME_WORDS.get(product_name)
+    if found is None:
+        words = set()
+        for word in normalize_name(product_name):
+            has_letters = any(ch.isalpha() for ch in word)
+            long_enough = len(word) >= 3 or (has_letters and any(ch.isdigit() for ch in word))
+            if has_letters and long_enough and word not in GENERIC_NAME_WORDS | _NAME_JOINING_WORDS:
+                words.add(word)
+        found = _NAME_WORDS.keep(product_name, frozenset(words))
+    return found
 
 
-def _naming(sentence: str, mine: set[str], theirs: list[set[str]]) -> tuple[bool, bool]:
+_NAME_WORDS = Table()  # a product name -> _name_words's answer
+
+
+def _naming(sentence: str, mine: frozenset[str], theirs: list[frozenset[str]]) -> tuple[bool, bool]:
     """Whether a sentence names this product, and whether it names another one.
 
     A product is named when some of its name words appear. But when another product's words found there include
     all of its own and more, the sentence is about that other, more specific product: in "I like the Ordinary weekly
     peeling solution", "Ordinary" alone doesn't make it about the Ordinary's glycolic toner.
     """
-    words = normalize_name(sentence)
-    found = [_found_name_words(words, name_words) for name_words in [mine] + theirs]
+    found = [_found_in_sentence(sentence, name_words) for name_words in [mine] + theirs]
     named = [bool(f) and not any(f < other for other in found) for f in found]
     return named[0], any(named[1:])
 
 
+def _found_in_sentence(sentence: str, name_words: frozenset[str]) -> frozenset[str]:
+    """The name words a sentence holds (_found_name_words of its words), worked out once per sentence and name
+    (latency, 14 Oct 2026: evidence scoring asks it of every sentence of a comment for each product the comment names,
+    its own and the others', and every answer reading the comment asks again: 126,414 times for getting ready's
+    answers, 49,702 of them different)."""
+    key = (sentence, name_words)
+    found = _FOUND_IN_SENTENCE.get(key)
+    if found is None:
+        found = _FOUND_IN_SENTENCE.keep(key, _found_name_words(normalize_name(sentence), name_words))
+    return found
+
+
+_FOUND_IN_SENTENCE = Table()  # (a sentence, a name's words) -> the name words it holds
+
+
 def _found_name_words(words: list[str], name_words: set[str]) -> frozenset[str]:
-    """The name words that appear among `words`, give or take a plural "s" or a one-letter typo."""
-    return frozenset(name_word for name_word in name_words if any(_same_word(word, name_word) for word in words))
+    """The name words that appear among `words`, give or take a plural "s" or a one-letter typo (_same_word).
+
+    Looked up rather than compared with every word (latency, 13 Oct 2026: module 5 compared every word of every
+    sentence with every name word, three million times for the answers getting ready asks): the word itself, its plural
+    and its singular among the sentence's words, and only then a slip, among the words a letter longer or shorter or of
+    its length, which are the only ones a slip can be, and of those only the ones starting with the name word's first
+    two letters or ending with its last two (latency, 14 Oct 2026): a word one letter from a name word of 5 letters or
+    more always does, as the letter added, dropped or changed is either after its first two or before its last two."""
+    if not name_words:
+        return frozenset()
+    present = set(words)
+    found = []
+    by_length = None
+    for name_word in name_words:
+        if name_word in present or name_word + "s" in present or name_word.removesuffix("s") in present:
+            found.append(name_word)
+        elif len(name_word) >= 5:
+            if by_length is None:
+                by_length = {}
+                for word in present:
+                    if word not in GENERIC_NAME_WORDS:
+                        by_length.setdefault(len(word), []).append(word)
+            n, head, tail = len(name_word), name_word[:2], name_word[-2:]
+            if any((word.startswith(head) or word.endswith(tail)) and one_edit_apart(word, name_word)
+                   for size in (n - 1, n, n + 1) for word in by_length.get(size, ())):
+                found.append(name_word)
+    return frozenset(found)
 
 
 def _same_word(word: str, name_word: str) -> bool:
@@ -1062,7 +1235,8 @@ def _phrase_pattern(phrase: str) -> re.Pattern:
 
 
 def _has_any(text: str, phrases: Iterable[str]) -> bool:
-    return any(_phrase_pattern(phrase).search(text) for phrase in phrases)
+    # A phrase is looked for as whole words only where it is written at all (latency, 13 Oct 2026: a quick look first).
+    return any(phrase in text and _phrase_pattern(phrase).search(text) for phrase in phrases)
 
 
 _NEGATION = re.compile(r"\b(?:no|not|never|without|zero|any|nor|hardly|(?:does|do|did|is|was|has|have|wo|ca)n'?t|dont|doesnt|wont)\b")
@@ -1082,7 +1256,7 @@ def _found(pattern: re.Pattern, text: str) -> bool:
 def _first_phrase(text: str, phrases: Iterable[str]) -> str | None:
     """The first of `phrases` found in `text` without a negation just before it, or None."""
     for phrase in phrases:
-        if _found(_phrase_pattern(phrase), text):
+        if phrase in text and _found(_phrase_pattern(phrase), text):  # a quick look first, as in _has_any
             return phrase
     return None
 

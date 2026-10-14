@@ -36,17 +36,28 @@ def test_the_rules_go_first_and_the_model_isnt_asked_when_they_route_a_request()
     assert model.asked == []
 
 
+# Changed on purpose 14 Oct 2026 (kitchen appliances, Noemi's decision 3): the air fryer and the rice cooker, the
+# examples below until then, are module 1's own types now, routed by the rules without the model
+# (engine/tests/test_query_appliances.py). A bread maker is still one the rules don't know.
+
 def test_a_kitchen_product_the_rules_dont_know_becomes_a_product_type_of_its_own():
-    query = parse_query("air fryer that lasts, under £100", model=FakeModel({"category": "kitchen", "product": "air fryer"}))
-    assert (query.status, query.category, query.product_type) == ("ok", "kitchen", "air fryer")
+    query = parse_query("bread maker that lasts, under £100",
+                        model=FakeModel({"category": "kitchen", "product": "bread maker"}))
+    assert (query.status, query.category, query.product_type) == ("ok", "kitchen", "bread maker")
     assert query.subreddits == list(SUBREDDITS["kitchen"])
     assert query.constraints.budget.max == 100  # budgets and units are still read by the rules
-    assert query.search_terms and "air fryer" in query.search_terms[-1]
+    assert query.search_terms and "bread maker" in query.search_terms[-1]
 
 
 def test_a_plural_in_the_request_still_counts_as_its_own_words():
-    query = parse_query("best rice cookers for sushi rice", model=FakeModel({"category": "kitchen", "product": "rice cooker"}))
-    assert (query.status, query.product_type) == ("ok", "rice cooker")
+    query = parse_query("best bread makers for sourdough", model=FakeModel({"category": "kitchen", "product": "bread maker"}))
+    assert (query.status, query.product_type) == ("ok", "bread maker")
+
+
+def test_an_appliance_the_rules_route_never_asks_the_model():
+    model = FakeModel({"category": "kitchen", "product": "kettle"})
+    query = parse_query("air fryer that lasts, under £100", model=model)
+    assert (query.status, query.product_type) == ("ok", "air fryer") and model.asked == []
 
 
 def test_a_product_the_request_doesnt_name_is_never_used():
@@ -60,15 +71,19 @@ def test_a_generic_word_is_not_a_product():
     assert query.status == "clarify"
 
 
-def test_a_request_the_model_puts_outside_our_categories_gets_the_polite_no():
-    query = parse_query("best yoga mat for beginners", model=FakeModel({"category": "other", "product": "yoga mat"}))
-    assert query.status == "out_of_scope" and "skincare, haircare and kitchen" in query.message
+def test_a_request_the_model_finds_isnt_for_a_product_gets_the_polite_no():
+    # Changed on purpose 14 Oct 2026 (the general category): a yoga mat is a product the rules route now, and "other"
+    # means what isn't a product to buy and use. Was: "best yoga mat for beginners", the message naming 3 categories.
+    query = parse_query("a fun weekend away in york", model=FakeModel({"category": "other", "product": ""}))
+    assert query.status == "out_of_scope" and "products you can buy" in query.message
 
 
 def test_an_unclear_broken_or_failing_answer_leaves_the_rules_question():
-    for answer in ({"category": "unclear", "product": ""}, {"category": "garden", "product": "hose"}, "not json",
-                   None, RuntimeError("the model crashed")):
-        query = parse_query("best hose reel", model=FakeModel(answer))
+    # Changed on purpose 14 Oct 2026 (the general category): a hose reel is a garden hose the rules route now, so a
+    # label maker, which no type lists, takes its place. Was: "best hose reel".
+    for answer in ({"category": "unclear", "product": ""}, {"category": "garden", "product": "label maker"},
+                   "not json", None, RuntimeError("the model crashed")):
+        query = parse_query("best label maker", model=FakeModel(answer))
         assert query.status == "clarify", answer
 
 
@@ -80,7 +95,7 @@ def test_two_products_stay_a_question_and_the_model_isnt_asked():
 
 def test_without_a_model_nothing_changes():
     # Tests run with the real model turned off (conftest): the rules alone ask what kind of product.
-    assert parse_query("air fryer that lasts").status == "clarify"
+    assert parse_query("bread maker that lasts").status == "clarify"
 
 
 def test_a_word_for_a_category_or_a_place_is_not_a_product():
@@ -101,8 +116,10 @@ def test_a_lookalike_the_rules_leave_to_the_model_is_placed_by_it():
 
 
 def test_the_model_can_place_a_haircare_product():
-    query = parse_query("heat protectant spray for fine hair", model=FakeModel({"category": "haircare", "product": "heat protectant spray"}))
-    assert (query.status, query.category, query.product_type) == ("ok", "haircare", "heat protectant spray")
+    # Changed on purpose 14 Oct 2026 (the general category): a heat protectant is a haircare type the rules route now,
+    # so a scalp scrub, which no type lists, takes its place. Was: "heat protectant spray for fine hair".
+    query = parse_query("scalp scrub for build-up", model=FakeModel({"category": "haircare", "product": "scalp scrub"}))
+    assert (query.status, query.category, query.product_type) == ("ok", "haircare", "scalp scrub")
     assert query.subreddits == list(SUBREDDITS["haircare"])
 
 
@@ -170,4 +187,36 @@ def test_a_clue_word_the_model_agrees_with_stands():
     assert parse_query("stainless pot for soup", model=stainless).product_type == "saucepan"
     unsure = FakeModel({"category": "unclear", "product": ""})
     assert parse_query("pot for pasta", model=unsure).product_type == "saucepan"
-    assert parse_query("rice cooker with a non-stick pot", model=None).product_type == "saucepan"  # rules alone
+    # Changed on purpose 14 Oct 2026: the rice cooker is module 1's own type now, so the rules alone place "rice cooker
+    # with a non-stick pot" (it was a saucepan, by the clue word "pot"); a bread maker's pot is still a clue alone.
+    # Changed on purpose again the same day (the general category's context rule, engine.query._context_ranges): a
+    # word after "with a" says what the product has, not what is asked for, so the rules alone now ask about "bread
+    # maker with a non-stick pot" (the open model places the bread maker) instead of calling it a saucepan.
+    assert parse_query("bread maker with a non-stick pot", model=None).status == "clarify"  # rules alone
+    assert parse_query("bread maker with a non-stick pot",
+                       model=FakeModel({"category": "kitchen", "product": "bread maker"})).product_type == "bread maker"
+    assert parse_query("rice cooker with a non-stick pot", model=None).product_type == "rice cooker"
+
+
+class _Counting:
+    """A stand-in for llama.cpp that counts the readings it is asked for."""
+
+    def __init__(self):
+        self.calls = []
+
+    def create_chat_completion(self, messages, **_):
+        self.calls.append(messages[-1]["content"])
+        return {"choices": [{"message": {"content": '{"category": "kitchen", "product": "toaster"}'}}]}
+
+
+def test_a_request_read_before_is_answered_without_asking_the_model_again():
+    # Its answer for the same words never changes (temperature 0): the server gets ready by answering every product
+    # type, and a visitor asking one of them again needn't wait for the model (latency, 13 Oct 2026).
+    model = LlamaQueryModel(Path("not-loaded.gguf"))
+    model._llm = _Counting()
+    first = model.read("toaster")
+    first["product"] = "changed by the caller"
+    assert model.read("toaster") == {"category": "kitchen", "product": "toaster"}
+    assert model._llm.calls == ["toaster"]
+    model.read("best toaster for a small kitchen")
+    assert model._llm.calls == ["toaster", "best toaster for a small kitchen"]
