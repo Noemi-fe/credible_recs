@@ -173,13 +173,14 @@ def is_credible(item: ScoredMention | KindNote) -> bool:
     return True
 
 
-def counts_twice(mention: ScoredMention) -> bool:
+def counts_twice(mention: ScoredMention, rule: bool | None = None) -> bool:
     """Whether a mention's upvotes let it count as two credible recommendations toward the picks bar (Noemi, 14 Oct
-    2026), whatever the product: the rule is on (config.UPVOTE_COUNTS_MORE), the mention is a credible recommendation,
-    and its comment has at least UPVOTE_MIN_SCORE upvotes; with UPVOTE_TOP_OF_BIG_THREAD (variant C), its thread also
-    had at least UPVOTE_THREAD_MIN_COMMENTS readable comments, of which it scored higher than UPVOTE_THREAD_SHARE_BEATEN.
-    Which of a product's such mentions do count twice is _counted_twice's."""
-    if not config.UPVOTE_COUNTS_MORE or mention.stance != "recommend" or not is_credible(mention):
+    2026), whatever the product: the rule is on (`rule`; None follows config.UPVOTE_COUNTS_MORE), the mention is a
+    credible recommendation, and its comment has at least UPVOTE_MIN_SCORE upvotes; with UPVOTE_TOP_OF_BIG_THREAD
+    (variant C), its thread also had at least UPVOTE_THREAD_MIN_COMMENTS readable comments, of which it scored higher
+    than UPVOTE_THREAD_SHARE_BEATEN. Which of a product's such mentions do count twice is _counted_twice's."""
+    on = config.UPVOTE_COUNTS_MORE if rule is None else rule
+    if not on or mention.stance != "recommend" or not is_credible(mention):
         return False
     if mention.upvotes is None or mention.upvotes < config.UPVOTE_MIN_SCORE:
         return False
@@ -190,12 +191,12 @@ def counts_twice(mention: ScoredMention) -> bool:
     return True
 
 
-def _counted_twice(credible_recommends: list[ScoredMention]) -> tuple[ScoredMention, ...]:
+def _counted_twice(credible_recommends: list[ScoredMention], rule: bool | None = None) -> tuple[ScoredMention, ...]:
     """A product's credible recommendations that count twice toward the picks bar, the most upvoted first: every one
     counts_twice allows (variant A), or with UPVOTE_ONLY_WHEN_SHORT (variants B and C) only for a product with fewer
     than MIN_CREDIBLE_MENTIONS credible recommendations, and only as many as it is short of the bar, so the rule lifts
     a product with few credible mentions and never inflates one that meets the bar on its own."""
-    upvoted = sorted((m for m in credible_recommends if counts_twice(m)), key=lambda m: (-m.upvotes, m.comment_id))
+    upvoted = sorted((m for m in credible_recommends if counts_twice(m, rule)), key=lambda m: (-m.upvotes, m.comment_id))
     if config.UPVOTE_ONLY_WHEN_SHORT:
         upvoted = upvoted[:max(0, MIN_CREDIBLE_MENTIONS - len(credible_recommends))]
     return tuple(upvoted)
@@ -286,8 +287,11 @@ class RankingResult:
     @property
     def worth_a_look(self) -> list[ProductScore]:
         """The products for "Also worth a look", best first: two credible recommendations across two threads, so less
-        supported than a pick (Noemi's decision 2 of 13 Oct 2026). Never a pick."""
-        return [p for p in self.products if p.worth_a_look and not p.qualifies]
+        supported than a pick (Noemi's decision 2 of 13 Oct 2026). Never a pick: a product the upvote rule lifts to the
+        bar (14 Oct 2026) is one of them only when its score doesn't put it among the picks, so the rule never takes a
+        product out of the answer."""
+        picks = {p.key for p in self.picks}
+        return [p for p in self.products if p.worth_a_look and p.key not in picks]
 
     @property
     def skip_list(self) -> list[ProductScore]:
@@ -319,12 +323,14 @@ def rank_products(
     kind_notes: Iterable[KindNote] = (),
     placements: Mapping[str, Iterable[str]] | None = None,
     kind_bonus: float = KIND_BONUS,
+    upvote_rule: bool | None = None,
 ) -> RankingResult:
     """Ranks the products of one category, best first, by the rules at the top of this file.
 
     `category` is the request's category (ParsedQuery.category); mentions of other categories are left out.
     `placements` says which products belong to which kind: {kind key: [product keys]}.
     `kind_bonus` is there so different values can be tried; leave it out to use config.KIND_BONUS.
+    `upvote_rule`: whether Noemi's upvote rule applies (counts_twice); None follows config.UPVOTE_COUNTS_MORE.
     """
     _check_choice("category", category, THREAD_CATEGORIES)
     placements = {kind: set(products) for kind, products in (placements or {}).items()}
@@ -337,7 +343,7 @@ def rank_products(
     for mention in votes:
         by_product[mention.product_key].append(mention)
     products = [
-        _score_product(key, product_mentions, kinds, placements, leader, kind_bonus)
+        _score_product(key, product_mentions, kinds, placements, leader, kind_bonus, upvote_rule)
         for key, product_mentions in by_product.items()
     ]
     products.sort(key=_rank_order)
@@ -365,6 +371,7 @@ def _score_product(
     placements: dict[str, set[str]],
     leader: KindSupport | None,
     kind_bonus: float,
+    upvote_rule: bool | None = None,
 ) -> ProductScore:
     recommends = [m for m in mentions if m.stance == "recommend"]
     warnings = [m for m in mentions if m.stance == "warn"]
@@ -375,7 +382,7 @@ def _score_product(
     bonus = kind_bonus if leader is not None and kind is leader else 0.0
     credible_threads = len({m.thread_id for m in credible_recommends})
     # Toward the bar, a credible recommendation counted twice for its upvotes counts two (14 Oct 2026; off: none does).
-    twice = _counted_twice(credible_recommends)
+    twice = _counted_twice(credible_recommends, upvote_rule)
     counted = len(credible_recommends) + len(twice)
 
     on_skip_list = (
@@ -383,7 +390,9 @@ def _score_product(
     )
     disputed = bool(credible_recommends) and len(credible_warnings) >= DISAGREEMENT_MIN_CREDIBLE_WARNINGS
     shortfall = _shortfall(counted, credible_threads, points, on_skip_list, len(twice))
-    worth_a_look = (counted == WORTH_A_LOOK_CREDIBLE and credible_threads >= WORTH_A_LOOK_MIN_THREADS
+    # Also worth a look counts writers: a product the upvote rule lifts keeps its place there in case its score leaves it
+    # out of the picks (RankingResult.worth_a_look).
+    worth_a_look = (len(credible_recommends) == WORTH_A_LOOK_CREDIBLE and credible_threads >= WORTH_A_LOOK_MIN_THREADS
                     and points > 0 and not on_skip_list)
     breakdown = ScoreBreakdown(
         mention_points=points,
@@ -415,7 +424,7 @@ def _score_product(
         shortfall=shortfall,
         on_skip_list=on_skip_list,
         disputed=disputed,
-        worth_a_look=worth_a_look and shortfall is not None,
+        worth_a_look=worth_a_look and (shortfall is not None or bool(twice)),
         counted_twice=twice,
     )
 

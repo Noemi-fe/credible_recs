@@ -488,7 +488,10 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             picks[-1].model_price = (model_prices or {}).get(product.key)
             picks[-1].summary = _summary(product, _summary_of(product, summaries), check)
             picks[-1].form = forms.get(product.key)
-    worth = _worth_items(ranking, check, prices, cautions, summaries, worth_left_out, asks, needs, product_type)
+    # A product the upvote rule lifted (14 Oct 2026) may be an item and a pick shown: then it is a pick only.
+    shown_picks = {pick.product_key for pick in picks}
+    worth = _worth_items(ranking, check, prices, cautions, summaries, set(worth_left_out) | shown_picks, asks, needs,
+                         product_type)
     for item in worth:
         item.form = forms.get(item.product_key)
     skip = [_skip_item(product, check) for product in ranking.skip_list]
@@ -559,7 +562,9 @@ def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[s
         items.append(WorthALook(
             product_key=product.key,
             name=product.name,
-            reason=_reason(product, ranking),
+            # A product the upvote rule lifted to the bar but its score left out of the picks (14 Oct 2026) is shown
+            # here as it would be without the rule: the upvotes changed nothing for it, so nothing is said of them.
+            reason=_reason(product, ranking, upvotes=False),
             quotes=quotes,
             downsides=downsides,
             downsides_share=_downsides_share(product) if downsides else None,
@@ -571,7 +576,7 @@ def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[s
             availability=shown_availability(prices.get(product.key), price.url),
             cautions=[CAUTION.format(reason=reason) for reason in cautions.get(product.key, [])],
             summary=_summary(product, _summary_of(product, summaries), check),
-            voices=_voices(product),
+            voices=_voices(product, twice=False),
         ))
     return items
 
@@ -1078,7 +1083,7 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
     )
 
 
-def _voices(product: ProductScore, more_downsides: Iterable[ScoredMention] = ()) -> dict[str, int]:
+def _voices(product: ProductScore, more_downsides: Iterable[ScoredMention] = (), twice: bool = True) -> dict[str, int]:
     """The credible voices behind a pick or an "Also worth a look" item, as numbers for the page's credibility meter (13
     Oct 2026, the UX builder): its credible recommendations (as the reason counts them), of them the high and the medium
     voices (as the support line does), the writers who warned against it (_warned, as the share line and the
@@ -1086,15 +1091,15 @@ def _voices(product: ProductScore, more_downsides: Iterable[ScoredMention] = ())
     never disagrees with the words around it. Numbers only, like the breakdown; the score itself isn't in it.
 
     With Noemi's upvote rule (14 Oct 2026) the numbers stay the writers', and "twice" says how many of them counted
-    twice toward the picks bar for their upvotes, as the reason does: only when some did, so nothing changes while the
-    rule is off."""
+    twice toward the picks bar for their upvotes, as the reason does: only when some did (and `twice`, a pick's), so
+    nothing changes while the rule is off."""
     recommendations = product.credible_recommendations
     voices = {"recommend": len(recommendations),
               "high": sum(m.voice == "high" for m in recommendations),
               "medium": sum(m.voice == "medium" for m in recommendations),
               "warn": len(_warned(product, more_downsides)),
               "threads": product.breakdown.credible_threads}
-    if product.counted_twice:
+    if twice and product.counted_twice:
         voices["twice"] = len(product.counted_twice)
     return voices
 
@@ -1149,15 +1154,15 @@ def _as_sentence(tip: str) -> str:
     return tip if tip.endswith((".", "!", "?")) else tip + "."
 
 
-def _reason(product: ProductScore, ranking: RankingResult) -> str:
-    """The one-line reason: how many credible voices, how many after long-term use, how many talk about the request's
-    needs, and the kind if it leads."""
+def _reason(product: ProductScore, ranking: RankingResult, upvotes: bool = True) -> str:
+    """The one-line reason: how many credible voices, which counted twice for their upvotes (a pick's, `upvotes`), how
+    many after long-term use, how many talk about the request's needs, and the kind if it leads."""
     recommendations = product.credible_recommendations
     long_term = sum(m.evidence == "long-term use" for m in recommendations)
     has_bonus = product.breakdown.kind_bonus > 0 and ranking.leading_kind is not None
     return REASON.format(
         voices=_plural(len(recommendations), "credible voice"),
-        upvotes=_upvotes_clause(product.counted_twice),
+        upvotes=_upvotes_clause(product.counted_twice) if upvotes else "",
         long_term=REASON_LONG_TERM.format(n=long_term) if long_term else "",
         needs=_needs_clause(recommendations, [m.needs for p in ranking.products for m in p.mentions]),
         kind=REASON_KIND.format(kind=ranking.leading_kind.name) if has_bonus else "",

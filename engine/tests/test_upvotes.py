@@ -99,7 +99,7 @@ def test_a_credible_recommendation_with_enough_upvotes_counts_as_two(monkeypatch
     data = [mention("Kettle K", "t1", upvotes=config.UPVOTE_MIN_SCORE, **TOP), mention("Kettle K", "t2", upvotes=2)]
     result = rank_products(data, "kitchen")
     scored = result.products[0]
-    assert names(result.picks) == ["Kettle K"] and not scored.worth_a_look
+    assert names(result.picks) == ["Kettle K"] and result.worth_a_look == []  # a pick, so no longer an item
     assert scored.breakdown.credible_recommends == 2  # still two writers
     assert scored.breakdown.counted_twice == 1
     assert [m.upvotes for m in scored.counted_twice] == [config.UPVOTE_MIN_SCORE]
@@ -187,15 +187,62 @@ def test_variant_c_needs_the_top_of_a_big_thread(monkeypatch, more_comments, mor
     upvote_rule(monkeypatch, "C")
     size = config.UPVOTE_THREAD_MIN_COMMENTS + more_comments
     beaten = config.UPVOTE_THREAD_SHARE_BEATEN + more_beaten
-    scored = the_product([mention("Kettle K", "t1", upvotes=34, thread_comments=size, share_beaten=beaten),
-                          mention("Kettle K", "t2", upvotes=2)])
-    assert scored.qualifies is counts and scored.worth_a_look is not counts
+    result = rank_products([mention("Kettle K", "t1", upvotes=34, thread_comments=size, share_beaten=beaten),
+                            mention("Kettle K", "t2", upvotes=2)], "kitchen")
+    assert names(result.picks) == (["Kettle K"] if counts else [])
+    assert names(result.worth_a_look) == ([] if counts else ["Kettle K"])
 
 
 def test_variant_c_never_counts_a_comment_whose_thread_isnt_known(monkeypatch):
     upvote_rule(monkeypatch, "C")
     scored = the_product([mention("Kettle K", "t1", upvotes=34), mention("Kettle K", "t2", upvotes=2)])
     assert not scored.qualifies and scored.counted_twice == ()
+
+
+THREE_PICKS = ("Kettle A", "Kettle B", "Kettle C")
+
+
+def outranked() -> list:
+    """Three products with 4 credible recommendations each (4.0 points), and the Kettle K with 2 from 2 threads, one of
+    them with 34 upvotes at the top of a big thread (2.0 points)."""
+    return ([m for name in THREE_PICKS for m in mentions(4, name)]
+            + [mention("Kettle K", "t1", upvotes=34, **TOP), mention("Kettle K", "t2", upvotes=2)])
+
+
+@pytest.mark.parametrize("variant", VARIANTS)
+def test_a_lifted_product_outranked_by_three_picks_stays_worth_a_look(monkeypatch, variant):
+    # The rule only adds: a product it lifts to the bar that doesn't make the top 3 by its score stays where it was
+    # without the rule, under Also worth a look, and says nothing there about counting twice.
+    upvote_rule(monkeypatch, variant)
+    ranking = rank_products(outranked(), "kitchen")
+    assert names(ranking.picks) == list(THREE_PICKS)
+    assert product_named(ranking, "Kettle K").qualifies
+    assert names(ranking.worth_a_look) == ["Kettle K"]
+    answer = write_answer(ranking, bodies_for(*outranked_items(ranking)), "electric kettle")
+    (item,) = answer.worth_a_look
+    assert item.name == "Kettle K" and item.reason == "Recommended by 2 credible voices, 2 of them after long-term use."
+    assert "twice" not in item.voices
+
+
+def test_a_lifted_product_shown_as_a_pick_is_never_also_worth_a_look(monkeypatch):
+    # The Kettle B has no quote that passes the check, so the answer shows the next product that meets the bar instead:
+    # the Kettle K, lifted, which is then a pick only.
+    upvote_rule(monkeypatch, "B")
+    ranking = rank_products(outranked(), "kitchen")
+    bodies = {cid: body for cid, body in bodies_for(*outranked_items(ranking)).items()
+              if cid not in {m.comment_id for m in product_named(ranking, "Kettle B").mentions}}
+    answer = write_answer(ranking, bodies, "electric kettle")
+    assert names(answer.picks) == ["Kettle A", "Kettle C", "Kettle K"]
+    assert answer.picks[2].reason.startswith("Recommended by 2 credible voices (one counted twice for its 34 upvotes)")
+    assert answer.worth_a_look == []
+
+
+def product_named(ranking, name: str):
+    return next(p for p in ranking.products if p.name == name)
+
+
+def outranked_items(ranking) -> list:
+    return [m for p in ranking.products for m in p.mentions]
 
 
 @pytest.mark.parametrize("variant", VARIANTS)
@@ -278,18 +325,25 @@ def kettle_library(tmp_path: Path, big_thread: bool = True) -> Path:
     first += [(f"f{n:02d}", FILLER, 1 + n % 2, None) for n in range((25 if big_thread else 12) - len(first))]
     second = [("z3", ZOJI.format(years=8), 2, "Zojirushi kettle"), ("s2", STAGG.format(years=7), 3, "Fellow Stagg kettle"),
               ("g1", FILLER, 1, None)]
-    threads, extractions = [], {}
-    for thread_id, rows in (("1upv001", first), ("1upv002", second)):
+    return write_threads(tmp_path, {"1upv001": first, "1upv002": second})
+
+
+def write_threads(tmp_path: Path, threads: dict[str, list[tuple]], comments_on_reddit: dict[str, int] | None = None) -> Path:
+    """A made-up library of kettle threads, {thread id: [(comment id, text, score, product or None)]}: each text is also
+    its product's quote. `comments_on_reddit`: a thread's comment count as Reddit gives it, which module 2 ranks by."""
+    saved, extractions = [], {}
+    for thread_id, rows in threads.items():
         url = f"https://www.reddit.com/r/BuyItForLife/comments/{thread_id}/kettle/"
         comments = [make_comment(cid + thread_id[-1], thread_id=thread_id, body=body, score=score,
                                  url=f"https://www.reddit.com/r/BuyItForLife/comments/{thread_id}/comment/{cid}{thread_id[-1]}/")
                     for cid, body, score, _ in rows]
-        threads.append(make_thread(id=thread_id, community="BuyItForLife", category="kitchen",
-                                   title="Which electric kettle lasts?", body="My kettle died again.", url=url,
-                                   comments=comments))
+        size = {"num_comments": comments_on_reddit[thread_id]} if thread_id in (comments_on_reddit or {}) else {}
+        saved.append(make_thread(id=thread_id, community="BuyItForLife", category="kitchen",
+                                 title="Which electric kettle lasts?", body="My kettle died again.", url=url,
+                                 comments=comments, **size))
         extractions[thread_id] = [{"comment_id": cid + thread_id[-1], "product": product, "category": "kitchen",
                                    "stance": "recommend", "quote": body} for cid, body, _, product in rows if product]
-    root = write_gold(tmp_path / "library", threads, voices=None, mentions=None)
+    root = write_gold(tmp_path / "library", saved, voices=None, mentions=None)
     (root / "extracted").mkdir()
     for thread_id, mentions_ in extractions.items():
         (root / "extracted" / f"{thread_id}.json").write_text(json.dumps({
@@ -317,6 +371,45 @@ def test_through_the_pipeline_its_upvoted_praise_makes_the_stagg_a_pick(tmp_path
     assert stagg.reason.startswith("Recommended by 2 credible voices (one counted twice for its 34 upvotes)")
     assert stagg.voices["recommend"] == 2 and stagg.voices["twice"] == 1
     assert unverified_claims(result.answer, result.bodies) == []
+
+
+def wider_library(tmp_path: Path) -> Path:
+    """Four kettle threads. The first two (the most commented, so read first) give two picks, the Zojirushi and the Smeg
+    (five writers each), and the Fellow Stagg's two writers, one with 34 upvotes at the top of its thread; the other two
+    give a third pick, the Bonavita (five writers)."""
+    praise = lambda cid, name, years, score=3: (cid, f"My {name} kettle has lasted {years} years and still works "
+                                                     "perfectly.", score, f"{name} kettle")
+    first = ([praise(f"z{n}", "Zojirushi", 4 + n) for n in range(3)] + [praise(f"m{n}", "Smeg", 4 + n) for n in range(2)]
+             + [praise("s1", "Fellow Stagg", 5, 34)])
+    first += [(f"f{n:02d}", FILLER, 1, None) for n in range(25 - len(first))]
+    second = ([praise(f"z{n}", "Zojirushi", 4 + n) for n in range(3, 5)] + [praise(f"m{n}", "Smeg", 4 + n) for n in range(2, 5)]
+              + [praise("s2", "Fellow Stagg", 7)])
+    third = [praise(f"b{n}", "Bonavita", 4 + n) for n in range(3)] + [("h1", FILLER, 1, None)]
+    fourth = [praise(f"b{n}", "Bonavita", 4 + n) for n in range(3, 5)]
+    return write_threads(tmp_path, {"1upv001": first, "1upv002": second, "1upv003": third, "1upv004": fourth},
+                         {"1upv001": 500, "1upv002": 500, "1upv003": 30, "1upv004": 30})
+
+
+@pytest.mark.parametrize("variant", VARIANTS)
+def test_the_rule_never_stops_an_answer_reading_more_threads(tmp_path, monkeypatch, variant):
+    # Noemi, 7 Oct 2026: an answer short of picks reads more threads before giving up. Ranked with the rule, the first two
+    # threads would reach three picks, the Stagg counted twice, and the wider reading would never be read. So the rule
+    # never changes how much is read: which reading to keep is decided as without it, and the reading kept is ranked
+    # with it. Here the wider reading's three picks all outscore the Stagg, which stays under Also worth a look.
+    root = wider_library(tmp_path)
+    off = answer_request(REQUEST, library_dir=root, max_threads=2, more_threads=4)
+    assert off.read_more and "Bonavita kettle" in shown(off)[0] and shown(off)[1] == ["Fellow Stagg kettle"]
+    upvote_rule(monkeypatch, variant)
+    on = answer_request(REQUEST, library_dir=root, max_threads=2, more_threads=4)
+    assert on.read_more and shown(on) == shown(off)
+    assert unverified_claims(on.answer, on.bodies) == []
+
+
+def test_the_reading_kept_is_ranked_with_the_rule(tmp_path, monkeypatch):
+    # The first two threads alone (no wider reading to try): the Stagg, counted twice, fills the third place.
+    upvote_rule(monkeypatch, "B")
+    result = answer_request(REQUEST, library_dir=wider_library(tmp_path), max_threads=2, more_threads=None)
+    assert shown(result) == (["Zojirushi kettle", "Smeg kettle", "Fellow Stagg kettle"], [])
 
 
 def test_through_the_pipeline_variant_c_leaves_a_small_threads_top_comment_as_it_was(tmp_path, monkeypatch):
