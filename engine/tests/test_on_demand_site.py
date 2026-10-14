@@ -14,7 +14,10 @@ from urllib.parse import quote
 import pytest
 
 from engine import on_demand, web
-from engine.config import ARCHIVE_TEXT_KEPT_DAYS, ON_DEMAND_LATE_MINUTES, ON_DEMAND_MAX_WAITING
+from engine.config import (
+    ARCHIVE_TEXT_KEPT_DAYS, LIBRARY_THREADS_PER_PRODUCT, ON_DEMAND_BUNDLE_MAX_THREADS, ON_DEMAND_LATE_MINUTES,
+    ON_DEMAND_MAX_WAITING,
+)
 from engine.live_check import BUNDLE_RELOAD_SECONDS, Bucket
 from engine.on_demand import Bundle, JobStarter, Queue, QueueStore, SiteReader, entry_for, run_job
 from engine.query import parse_query
@@ -147,6 +150,20 @@ def test_a_full_queue_answers_with_what_the_library_has_and_asks_again_later(tmp
     data = site.ask(TEAPOT)
     assert "on_demand" not in data and len(site.queue().entries) == ON_DEMAND_MAX_WAITING
     assert web._answers == {}  # not remembered: asked about again next time
+
+
+def test_twenty_requests_may_wait_and_their_threads_fit_the_bundle(tmp_path, monkeypatch):
+    # 14 Oct 2026 (the coordinator, with the general category, most of whose requests queue; 10 before): about two days
+    # of the job's reading within Gemini's free allowance (about 11 products a day), and every waiting request's threads
+    # fit the bundle before a deploy takes them in. The 11th request waiting, turned away before, is queued.
+    assert ON_DEMAND_MAX_WAITING == 20
+    assert ON_DEMAND_MAX_WAITING * LIBRARY_THREADS_PER_PRODUCT <= ON_DEMAND_BUNDLE_MAX_THREADS
+    site = Site(tmp_path, monkeypatch)
+    entries = [on_demand.Entry(key=f"kitchen/gadget {n}/", category="kitchen", product_type=f"gadget {n}",
+                               subreddits=["BuyItForLife"]) for n in range(10)]
+    QueueStore(site.bucket).change(lambda q: q.entries.extend(entries))
+    data = site.ask(TEAPOT)
+    assert data["on_demand"]["state"] == "reading" and len(site.queue().waiting()) == 11
 
 
 def test_when_the_bucket_cant_be_reached_the_answer_isnt_remembered(tmp_path, monkeypatch):

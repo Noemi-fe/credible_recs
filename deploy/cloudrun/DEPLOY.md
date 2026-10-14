@@ -186,7 +186,9 @@ europe-west1 --project credible-picks`; its report (counts and product types, ne
 The job's limits, all in engine/config.py ("On-demand reading"): it starts no new reading after 15 minutes of a run and
 stops at 45; its runs read for at most 50,000 seconds a month (then the queue rests until the 1st); it makes at most 100
 Gemini calls a day of the free allowance, leaving the rest to Noemi's own bulk reading, and none more that day after
-Gemini's daily 429 (until 8 am UTC, when the allowance is surely back); at most 10 requests wait at once; a request
+Gemini's daily 429 (until 8 am UTC, when the allowance is surely back); at most 20 requests wait at once (10 until
+14 Oct 2026: with the general category most requests queue; 20 is about two days of the job's reading, and the
+sums below don't change, since the job's time and Gemini calls have caps of their own); a request
 whose archive search fails is tried again an hour later and set aside for a day after 3 tries; a product read once is
 read again only after 30 days, if its library is still thin then.
 

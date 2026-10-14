@@ -1337,7 +1337,13 @@ ON_DEMAND_MIN_THREADS = LIBRARY_THREADS_PER_PRODUCT
 # need-led choice of threads. Never the request as typed, never a time or an address (Noemi's rule of 11 Oct 2026).
 ON_DEMAND_NEED_WORDS = 3
 # At most this many requests wait at once: more are answered from what the library has, and asked about again later.
-ON_DEMAND_MAX_WAITING = 10
+# 20 since 14 Oct 2026 (10 before; the coordinator asked to raise it with the general category, whose types mostly have
+# no threads yet, so most of its requests queue; chosen by Claude, reported to Noemi): about two days of the job's
+# reading within Gemini's free allowance (about 11 products a day, at about 9 calls each), and their threads (6 each)
+# fit the bundle (ON_DEMAND_BUNDLE_MAX_THREADS) before a deploy takes them in. The free-tier sums don't change: the
+# job's time and its Gemini calls have caps of their own (ON_DEMAND_MONTH_SECONDS, ON_DEMAND_GEMINI_CALLS_A_DAY), and
+# the site never starts the job while the queue rests.
+ON_DEMAND_MAX_WAITING = 20
 # The queue remembers at most this many requests already read (the oldest are forgotten): each is read again, when its
 # library is still thin, after ON_DEMAND_READ_AGAIN_DAYS (Reddit may have more by then), or after ON_DEMAND_RETRY_DAYS
 # when its reading failed ON_DEMAND_MAX_TRIES times (Arctic Shift down, say), each try at least an hour apart.
