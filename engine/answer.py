@@ -7,7 +7,10 @@ write the one-line reasons, but only from the verified quotes, inside this same 
 What each pick shows (the brief):
 - the product name and a one-line reason it wins; when some of its credible recommendations talk about what the
   request asks for (engine/needs.py, 9 Oct 2026), the reason says how many and about what ("3 of them about sensitive
-  skin");
+  skin"); and with Noemi's upvote rule on (14 Oct 2026; off: config.UPVOTE_COUNTS_MORE), which of its credible voices
+  counted twice toward the picks bar and for how many upvotes ("(one counted twice for its 34 upvotes)"), while every
+  number of voices stays the number of writers (the meter's "voices" says how many counted twice) and the answer's
+  messages give the bar with its upvotes ("..., or 2 when one of them has 10 or more upvotes");
 - its credible support: how many high- and medium-credibility voices recommend it, across how many threads;
 - two or three quotes, the most credible first, each with its "why this voice counts" badges and a link to the
   comment;
@@ -105,6 +108,7 @@ from dataclasses import dataclass, field, replace
 from datetime import date
 from functools import cache
 
+from engine import config  # the upvote rule's settings, read as the answer is written (14 Oct 2026)
 from engine.brand_lines import BrandLine, is_source_page
 from engine.care_tips import CareTip, CareTips, is_repair, similar_tips, tips_by_agreement
 from engine.config import (
@@ -151,9 +155,21 @@ from engine.verify_quotes import find_quote, verify_quote
 # --- Wording users see: PROPOSED 9 Oct 2026, awaiting Noemi ---
 TITLE = "Top picks: {product_type}"
 TITLE_ANY = "Top picks"
-REASON = "Recommended by {voices}{long_term}{needs}{kind}."  # {needs} added 9 Oct 2026 (REASON_NEEDS below)
+# {needs} added 9 Oct 2026 (REASON_NEEDS below), {upvotes} 14 Oct 2026 (REASON_UPVOTES below)
+REASON = "Recommended by {voices}{upvotes}{long_term}{needs}{kind}."
 REASON_LONG_TERM = ", {n} of them after long-term use"
 REASON_KIND = "; credible voices favour its kind most ({kind})"
+# Noemi's upvote rule (14 Oct 2026; off unless config.UPVOTE_COUNTS_MORE; wording decided by Claude, from the
+# orchestrator's example): the reason says which of its credible voices counted twice toward the picks bar, and for how
+# many upvotes, right after the number of voices, which stays the number of writers: "Recommended by 2 credible voices
+# (one counted twice for its 34 upvotes), 2 of them after long-term use." Several: "(two counted twice for their upvotes:
+# 1,203 and 34)". The rule as the answer's messages give it (RULE): "..., or 2 when one of them has 10 or more upvotes",
+# with variant C's thread "and is in the top 10% of a thread of 20 or more comments".
+REASON_UPVOTES_ONE = " (one counted twice for its {upvotes} upvotes)"
+REASON_UPVOTES = " ({n} counted twice for their upvotes: {upvotes})"
+RULE_UPVOTES = ", or {fewer} when one of them has {score} or more upvotes"
+RULE_UPVOTES_THREAD = " and is in the top {top} of a thread of {comments} or more comments"
+NUMBER_WORDS = ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
 SUPPORT = "Backed by {voices}, across {threads}."
 DISAGREEMENT = "Mixed opinions: also warned against by {voices}."
 NO_DOWNSIDES = "No credible voice in these threads warned against it."
@@ -533,7 +549,10 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             picks[-1].summary = _summary(product, _summary_of(product, summaries), check)
             picks[-1].form = forms.get(product.key)
             picks[-1].range = shown_range(ranges.get(product.key))
-    worth = _worth_items(ranking, check, prices, cautions, summaries, worth_left_out, asks, needs, product_type)
+    # A product the upvote rule lifted (14 Oct 2026) may be an item and a pick shown: then it is a pick only.
+    shown_picks = {pick.product_key for pick in picks}
+    worth = _worth_items(ranking, check, prices, cautions, summaries, set(worth_left_out) | shown_picks, asks, needs,
+                         product_type)
     for item in worth:
         item.form = forms.get(item.product_key)
         item.range = shown_range(ranges.get(item.product_key))
@@ -605,7 +624,9 @@ def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[s
         items.append(WorthALook(
             product_key=product.key,
             name=product.name,
-            reason=_reason(product, ranking),
+            # A product the upvote rule lifted to the bar but its score left out of the picks (14 Oct 2026) is shown
+            # here as it would be without the rule: the upvotes changed nothing for it, so nothing is said of them.
+            reason=_reason(product, ranking, upvotes=False),
             quotes=quotes,
             downsides=downsides,
             downsides_share=_downsides_share(product) if downsides else None,
@@ -617,7 +638,7 @@ def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[s
             availability=shown_availability(prices.get(product.key), price.url),
             cautions=[CAUTION.format(reason=reason) for reason in cautions.get(product.key, [])],
             summary=_summary(product, _summary_of(product, summaries), check),
-            voices=_voices(product),
+            voices=_voices(product, twice=False),
         ))
     return items
 
@@ -649,8 +670,7 @@ def _mid_sentence(quote: str, body: str | None) -> bool:
 def _worth_note(picks: int) -> str:
     """The note under "Also worth a look": how much less support its products have than a pick."""
     voices = _plural(WORTH_A_LOOK_CREDIBLE, "credible voice")
-    rule = RULE.format(mentions=MIN_CREDIBLE_MENTIONS, threads=MIN_THREADS)
-    return (WORTH_NOTE if picks else WORTH_NOTE_NO_PICKS).format(voices=voices, rule=rule)
+    return (WORTH_NOTE if picks else WORTH_NOTE_NO_PICKS).format(voices=voices, rule=_rule())
 
 
 # --- One-line summaries (Noemi's decision 4 of 13 Oct 2026) ---
@@ -1155,18 +1175,25 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
     )
 
 
-def _voices(product: ProductScore, more_downsides: Iterable[ScoredMention] = ()) -> dict[str, int]:
+def _voices(product: ProductScore, more_downsides: Iterable[ScoredMention] = (), twice: bool = True) -> dict[str, int]:
     """The credible voices behind a pick or an "Also worth a look" item, as numbers for the page's credibility meter (13
     Oct 2026, the UX builder): its credible recommendations (as the reason counts them), of them the high and the medium
     voices (as the support line does), the writers who warned against it (_warned, as the share line and the
     mixed-opinions line do) and the threads with a credible recommendation (as the support line does). So the meter
-    never disagrees with the words around it. Numbers only, like the breakdown; the score itself isn't in it."""
+    never disagrees with the words around it. Numbers only, like the breakdown; the score itself isn't in it.
+
+    With Noemi's upvote rule (14 Oct 2026) the numbers stay the writers', and "twice" says how many of them counted
+    twice toward the picks bar for their upvotes, as the reason does: only when some did (and `twice`, a pick's), so
+    nothing changes while the rule is off."""
     recommendations = product.credible_recommendations
-    return {"recommend": len(recommendations),
-            "high": sum(m.voice == "high" for m in recommendations),
-            "medium": sum(m.voice == "medium" for m in recommendations),
-            "warn": len(_warned(product, more_downsides)),
-            "threads": product.breakdown.credible_threads}
+    voices = {"recommend": len(recommendations),
+              "high": sum(m.voice == "high" for m in recommendations),
+              "medium": sum(m.voice == "medium" for m in recommendations),
+              "warn": len(_warned(product, more_downsides)),
+              "threads": product.breakdown.credible_threads}
+    if twice and product.counted_twice:
+        voices["twice"] = len(product.counted_twice)
+    return voices
 
 
 def _warned(product: ProductScore, more_downsides: Iterable[ScoredMention] = ()) -> set[str]:
@@ -1219,18 +1246,44 @@ def _as_sentence(tip: str) -> str:
     return tip if tip.endswith((".", "!", "?")) else tip + "."
 
 
-def _reason(product: ProductScore, ranking: RankingResult) -> str:
-    """The one-line reason: how many credible voices, how many after long-term use, how many talk about the request's
-    needs, and the kind if it leads."""
+def _reason(product: ProductScore, ranking: RankingResult, upvotes: bool = True) -> str:
+    """The one-line reason: how many credible voices, which counted twice for their upvotes (a pick's, `upvotes`), how
+    many after long-term use, how many talk about the request's needs, and the kind if it leads."""
     recommendations = product.credible_recommendations
     long_term = sum(m.evidence == "long-term use" for m in recommendations)
     has_bonus = product.breakdown.kind_bonus > 0 and ranking.leading_kind is not None
     return REASON.format(
         voices=_plural(len(recommendations), "credible voice"),
+        upvotes=_upvotes_clause(product.counted_twice) if upvotes else "",
         long_term=REASON_LONG_TERM.format(n=long_term) if long_term else "",
         needs=_needs_clause(recommendations, [m.needs for p in ranking.products for m in p.mentions]),
         kind=REASON_KIND.format(kind=ranking.leading_kind.name) if has_bonus else "",
     )
+
+
+def _upvotes_clause(counted_twice: tuple[ScoredMention, ...]) -> str:
+    """" (one counted twice for its 34 upvotes)": which of a product's credible voices counted twice toward the picks bar
+    for their upvotes (Noemi's upvote rule, 14 Oct 2026), most upvoted first; "" when none did (always, while it is off)."""
+    if not counted_twice:
+        return ""
+    counts = [f"{m.upvotes:,}" for m in counted_twice]
+    if len(counts) == 1:
+        return REASON_UPVOTES_ONE.format(upvotes=counts[0])
+    n = NUMBER_WORDS[len(counts)] if len(counts) < len(NUMBER_WORDS) else str(len(counts))
+    return REASON_UPVOTES.format(n=n, upvotes=NEEDS_JOIN.join(counts[:-1]) + " and " + counts[-1])
+
+
+def _rule() -> str:
+    """The picks bar in words, for the answer's messages (RULE): with the upvote rule on (14 Oct 2026), also how a
+    product with one credible recommendation fewer meets it."""
+    rule = RULE.format(mentions=MIN_CREDIBLE_MENTIONS, threads=MIN_THREADS)
+    if not config.UPVOTE_COUNTS_MORE:
+        return rule
+    rule += RULE_UPVOTES.format(fewer=MIN_CREDIBLE_MENTIONS - 1, score=f"{config.UPVOTE_MIN_SCORE:,}")
+    if config.UPVOTE_TOP_OF_BIG_THREAD:
+        rule += RULE_UPVOTES_THREAD.format(top=f"{1 - config.UPVOTE_THREAD_SHARE_BEATEN:.0%}",
+                                           comments=f"{config.UPVOTE_THREAD_MIN_COMMENTS:,}")
+    return rule
 
 
 def _needs_clause(recommendations: list[ScoredMention], every_list: list[tuple[str, ...]]) -> str:
@@ -1609,7 +1662,7 @@ def _message(picks: int, product_type: str | None) -> str | None:
     """The honest message when fewer than 3 products have enough evidence, or None when there are 3."""
     if picks >= PICKS_SHOWN:
         return None
-    rule = RULE.format(mentions=MIN_CREDIBLE_MENTIONS, threads=MIN_THREADS)
+    rule = _rule()
     if picks == 0:
         return NO_PICKS.format(what=f"any {product_type}" if product_type else "a product", rule=rule)
     return FEWER_PICKS.format(products=_plural(picks, "product"), rule=rule, n=picks, wanted=PICKS_SHOWN)

@@ -27,6 +27,10 @@ Two layers (the brief's "Credibility score v1", with Noemi's definitions from da
 A mention's weight (mention_weight) = voice value x evidence value x stance value, with the values in
 engine/config.py (VOICE_VALUE, EVIDENCE_VALUE, STANCE_VALUE): recommend counts plus, warn minus, neutral nothing.
 
+For Noemi's upvote rule (14 Oct 2026, switched off: config.UPVOTE_COUNTS_MORE), thread_upvotes also gives each comment's
+upvotes beside its thread's (its score, the thread's size, the share of its comments it beats): numbers only. Whether a
+credible recommendation then counts twice toward the picks bar is module 6's rule (engine/rank.py).
+
 Every result keeps its reasons in words ("2 years of use", "compares 4 alternatives", "flair says Dermatologist
 (not verified)"), so the answer can show why a voice counts. Tags come from config.VOICE_TAGS and
 config.EVIDENCE_TAGS, so the results compare directly with Noemi's labels (engine/credibility_eval.py).
@@ -511,6 +515,32 @@ def _thread_facts(thread: Thread) -> _ThreadFacts:
     while len(_THREAD_FACTS) > THREADS_REMEMBERED:
         _THREAD_FACTS.popitem(last=False)
     return facts
+
+
+@dataclass(frozen=True)
+class Upvotes:
+    """A comment's upvotes beside its thread's, numbers only: what Noemi's upvote rule reads (14 Oct 2026: "if we have
+    few credible mentions, a highly upvoted comment (10+) counts more"; config.UPVOTE_*, the rule in engine/rank.py)."""
+
+    score: int  # the comment's score: upvotes minus downvotes
+    thread_comments: int  # the thread's comments readable when it was read, this one included
+    share_beaten: float  # the share of those others it scores higher than ("well upvoted" reads the same); 0 with none
+
+
+def thread_upvotes(thread: Thread) -> dict[str, Upvotes]:
+    """{comment id: Upvotes} for every readable comment of `thread`, read from the thread's facts (_thread_facts, worked
+    out once per thread): the same comments and the same share beaten as the "well upvoted" sign (_endorsement_signs).
+    A tie beats no one. A comment that isn't readable has no entry: it is never credible, so it never counts twice."""
+    facts = _thread_facts(thread)
+    found = {}
+    for comment in thread.comments:
+        own = facts.ok_scores_of.get(comment.id)
+        if own is None:
+            continue
+        others = facts.ok_count - len(own)
+        below = bisect_left(facts.ok_scores, comment.score) - sum(score < comment.score for score in own)
+        found[comment.id] = Upvotes(comment.score, facts.ok_count, below / others if others else 0.0)
+    return found
 
 
 # Recency: still true today.

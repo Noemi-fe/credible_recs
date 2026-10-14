@@ -35,8 +35,12 @@ def mention(
     badges: tuple[str, ...] = ("3 years of use",),
     key: str | None = None,
     written_as: str = "",
+    upvotes: int | None = None,
+    thread_comments: int | None = None,
+    share_beaten: float | None = None,
 ) -> ScoredMention:
-    """One scored mention. Each call gets a new comment id and a quote of its own, unless given."""
+    """One scored mention. Each call gets a new comment id and a quote of its own, unless given. `upvotes`,
+    `thread_comments` and `share_beaten` are its comment's upvotes beside its thread's (14 Oct 2026); unknown unless given."""
     comment = comment or f"c{next(_comment_ids)}"
     return ScoredMention(
         product_key=key or product.lower().replace(" ", "-"),
@@ -52,6 +56,9 @@ def mention(
         badges=badges,
         quote=quote or f"My {stance} for the {product}, from comment {comment}.",
         written_as=written_as,
+        upvotes=upvotes,
+        thread_comments=thread_comments,
+        share_beaten=share_beaten,
     )
 
 
