@@ -11,15 +11,16 @@ as data only. Only the decided subreddits' files are read (config.SUBREDDITS, as
 subreddit's files are named and left unread, so running the import again after Noemi decides one reads them.
 
 Choosing uses modules 1 and 2's own rules; nothing new decides what a good thread is:
-1. Which posts. A post about a product type (its title or post names it, engine.sources.mentions_product, with module
-   1's names, clues and look-alikes, as answers read threads), of a kind the library mixes (engine.sources.thread_kind:
-   advice, long-term use or a warning), in the type's own subreddits (module 1's routing: r/acne only for spot
-   treatments, for example), with real engagement (BULK_MIN_COMMENTS comments and a score of BULK_MIN_SCORE), not
-   removed or deleted, not a recurring thread, posted from BULK_FIRST_YEAR on, and not already in the library or the
-   gold set. The archive saved most posts weeks after they were written, but much of late 2023 within the hour, before
-   their score and comment count had settled: for a post saved within a day of its writing, its comments in the file
-   are counted instead, and its score isn't asked for. One limit of speed: a post's text (not its title) counts only
-   when it names the type exactly, without the one-letter slips titles are forgiven.
+1. Which posts. A post whose title names a product type (engine.sources.mentions_product, with module 1's names,
+   clues and look-alikes; answers also read a thread whose post alone names it, but the import keeps to the threads
+   most likely to be about it: a recipe thread whose post mentions a microwave isn't, 14 Oct 2026), of a kind the
+   library mixes (engine.sources.thread_kind: advice, long-term use or a warning), in the type's own subreddits
+   (module 1's routing: r/acne only for spot treatments, for example), with real engagement (BULK_MIN_COMMENTS
+   comments and a score of BULK_MIN_SCORE), not removed or deleted, not a recurring thread, not a kitchen recipe
+   thread, posted from BULK_FIRST_YEAR on, and not already in the library or the gold set. The archive saved most
+   posts weeks after they were written, but much of late 2023 within the hour, before their score and comment count
+   had settled: for a post saved within a day of its writing, its comments in the file are counted instead, and its
+   score isn't asked for.
 2. Which types. Module 1's product types as they are when the import runs (engine.query.PRODUCT_TYPES), so a type added
    later is picked up by running it again while the files are still here; `--type "air fryer:kitchen"` adds a type
    module 1 names only through its open model, found by its whole name, as answers find it.
@@ -30,7 +31,8 @@ Choosing uses modules 1 and 2's own rules; nothing new decides what a good threa
    so skincare and haircare threads from the last three years of the files come first), with at most a fair share from
    any one subreddit (engine.sources.choose_mix). A request given with `--request` (need-led choice, Noemi's decision 3
    of 14 Oct 2026: "conditioner for curly hair") first takes up to BULK_PER_REQUEST threads whose title or post talks
-   about its needs, ranked for it, within its type's cap. A thread about two types is read once and counts for both.
+   about its needs, ranked for it, whatever its type's cap: the type then counts them. A thread about two types is
+   read once and counts for both.
 
 Reading. The chosen threads' comments are collected from the comments files in one pass, and each thread is built as
 a thread read from Arctic Shift's API is (engine.arctic_shift.get_thread): the same fields kept, the same rules for
@@ -194,6 +196,19 @@ def _names(title: str, body: str, subject: str, title_words: set[str] | None = N
     return bool(body) and bool(_product_pattern(subject).search(body)) and mentions_product(body, subject)
 
 
+def _titled(title: str, subject: str, title_words: set[str]) -> bool:
+    """Whether the title names the subject, as engine.sources.mentions_product reads it; for speed, the full check runs
+    only where it can say yes (_names)."""
+    if _product_pattern(subject).search(title) or _could_be_a_slip(title_words, subject):
+        return mentions_product(title, subject)
+    return False
+
+
+# Kitchen threads asking for recipes are about food, not about choosing the gear their title names ("favourite Instant
+# Pot recipes?"): module 2 ranks them low (engine.sources._CARE), and the import leaves them out.
+_RECIPES = re.compile(r"\brecipes?\b", re.IGNORECASE)
+
+
 def _long_words(text: str) -> set[str]:
     """The words engine.sources.mentions_product forgives a slip in (as long as its long names, but one letter), each
     without a plural "s", as it reads them."""
@@ -216,8 +231,8 @@ def scan_submissions(path: str, subjects: tuple[tuple[str, str], ...], first_yea
     """The candidate posts of one submissions file, and how many posts each reason left out.
 
     A candidate names one of `subjects` ((category, subject) pairs: a product type, or an ingredient's type, with its
-    category, whose words judge its kind) in its title or text, is of a kind the library mixes for it, isn't removed,
-    deleted or recurring, was posted from `first_year` to the files' last day, and has real engagement, unless its
+    category, whose words judge its kind) in its title, is of a kind the library mixes for it, isn't removed, deleted,
+    recurring or a kitchen recipe thread, was posted from `first_year` to the files' last day, and has real engagement, unless its
     numbers hadn't settled when the archive saved it (then its comments are counted later). Each candidate keeps
     POST_FIELDS, "about" (the subjects it names, each with its kind), "settled", and "file" and "source" (the file and
     the subreddit as its name writes it)."""
@@ -237,7 +252,7 @@ def scan_submissions(path: str, subjects: tuple[tuple[str, str], ...], first_yea
         if not first <= post["created_utc"] <= LAST_DAY.timestamp():
             left_out[f"posted before {first_year}"] += 1
             continue
-        title, body = str(post["title"]), str(post.get("selftext") or "")
+        title = str(post["title"])
         if _RECURRING.search(title.lower()):
             left_out["a recurring thread"] += 1
             continue
@@ -252,7 +267,9 @@ def scan_submissions(path: str, subjects: tuple[tuple[str, str], ...], first_yea
             continue
         kinds, title_words = {}, _long_words(title)
         for category, subject in subjects:
-            if subject not in kinds and _names(title, body, subject, title_words):
+            if category == "kitchen" and _RECIPES.search(title):
+                continue
+            if subject not in kinds and _titled(title, subject, title_words):
                 kind = thread_kind(post, category, subject)
                 if kind in THREAD_KINDS:
                     kinds[subject] = kind
@@ -479,12 +496,12 @@ def _ranked(query: ParsedQuery, posts: list[dict]) -> list[dict]:
 
 
 def _choose_for_request(plan: RequestPlan, query: ParsedQuery, posts: list[dict], chosen: dict[str, dict]) -> None:
-    """Up to BULK_PER_REQUEST threads talking about the request's needs, ranked for it, as a mix of kinds."""
+    """Up to BULK_PER_REQUEST threads talking about the request's needs, ranked for it, as a mix of kinds; its type's
+    cap doesn't limit them (two requests about shampoo each get theirs), but counts them afterwards."""
     needs = need_words(query)
     pool = [p for p in _candidates(posts, query) if _talks_about_needs(p, needs)]
     plan.found = len(pool)
-    about_type = [p for p in chosen.values() if query.product_type in p["about"]]
-    total = min(BULK_PER_REQUEST, max(0, BULK_MAX_NEW_PER_TYPE - len(about_type)))
+    total = BULK_PER_REQUEST
     fresh = [p for p in pool if p["id"] not in chosen]
     picked = choose_mix(query, _ranked(query, fresh), total=total, mix=_kind_targets(total), fill=True) if total else []
     for post in picked:

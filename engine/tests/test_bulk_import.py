@@ -147,6 +147,16 @@ def test_advice_long_term_and_warning_threads_about_the_type_are_chosen(tmp_path
     assert plan.found == {"advice": 1, "long_term": 1, "warning": 1}
 
 
+def test_a_post_whose_title_doesnt_name_the_type_isnt_chosen(tmp_path, lib):
+    # answers read a thread whose post names the type, but the import keeps to threads whose title does: the ones
+    # whose comments are about it
+    files = tmp_path / "files"
+    posts = [post("1body01", "Which one should I buy?", selftext="Thinking of an electric kettle."),
+             post("1rcp001", "Favourite electric kettle recipes?")]
+    write_subreddit(files, "BuyItForLife", posts, [c for p in posts for c in some_comments(p["id"])])
+    assert not chosen_ids(run(files, lib, dry_run=True), "electric kettle")
+
+
 def test_a_post_named_by_a_look_alike_isnt_about_the_type(tmp_path, lib):
     files = tmp_path / "files"
     write_subreddit(files, "BuyItForLife", [post("1pot01", "Which crock pot should I buy?")], some_comments("1pot01"))
@@ -251,6 +261,18 @@ def test_a_dry_runs_choice_can_be_carried_out_later(tmp_path, lib):
     done = bulk_import.carry_out(planned, files, lib, now=NOW, never=set(), workers=1)
     assert done.saved == ["1adv01"] and not done.dry_run
     assert (lib / "threads" / "1adv01.json").exists() and (lib / "imports.jsonl").exists()
+
+
+def test_each_request_gets_its_own_threads_whatever_its_types_cap(tmp_path, lib, monkeypatch):
+    monkeypatch.setattr(bulk_import, "BULK_PER_REQUEST", 1)
+    monkeypatch.setattr(bulk_import, "BULK_MAX_NEW_PER_TYPE", 1)
+    files = tmp_path / "files"
+    posts = [post("1grs01", "Best shampoo for greasy hair?", sub="HaircareScience"),
+             post("1wvy01", "Best shampoo for wavy hair?", sub="HaircareScience")]
+    write_subreddit(files, "HaircareScience", posts,
+                    [c for p in posts for c in some_comments(p["id"], sub="HaircareScience")])
+    result = run(files, lib, dry_run=True, requests=["shampoo for greasy hair", "gentle shampoo for wavy hair"])
+    assert [[p["id"] for p in plan.chosen] for plan in result.requests] == [["1grs01"], ["1wvy01"]]
 
 
 def test_a_thread_about_two_types_is_chosen_once_and_counts_for_both(tmp_path, lib):
