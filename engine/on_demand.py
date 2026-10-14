@@ -12,8 +12,8 @@ How it works, in four parts:
    again. An entry holds only what finding threads needs (Noemi's rule of 11 Oct 2026: no access logs of visitors): the
    product type module 1 understood, its category and subreddits, and at most ON_DEMAND_NEED_WORDS of the request's need
    words (engine.sources.need_words: its own words less the product's name, filler words and numbers); never the
-   request as typed, never when it was asked, nothing about who asked. Requests with the same product and need words are
-   one entry. The site and the job both write the queue, each only over the version it read (Bucket.put_if), so
+   request as typed, never when it was asked (the job's own times say when it read), nothing about who asked. Requests
+   with the same product and need words are one entry. The site and the job both write the queue, each only over the version it read (Bucket.put_if), so
    neither loses the other's change.
 2. The job reads (run_job: `python -m engine.on_demand run`, the Cloud Run job credible-recs-reader). It holds the
    queue while it runs (a lease, so two runs never read the same request), and for each waiting request finds threads
@@ -30,9 +30,9 @@ How it works, in four parts:
    while a request it knows of waits, at most hourly otherwise), it asks the bundle's version (one small read) and
    downloads it only when it changed, writing the new threads into its library folder next to the baked ones (a baked
    thread is never overwritten). Answers read them like any other, and every quote shown is checked live on Reddit. A
-   thread taken from the bundle that was never checked live goes from the folder after ARCHIVE_TEXT_KEPT_DAYS, as
-   archive text does in the library. The daily pre-check loads them too, and checks ahead the answers about every
-   product read on demand (precheck_types).
+   thread taken from the bundle goes from the folder ARCHIVE_TEXT_KEPT_DAYS after the job read it from the archive,
+   as archive text not read live does in the library, and the bundle lets go of it then too. The daily pre-check
+   loads them too, and checks ahead the answers about every product read on demand (precheck_types).
 4. A deploy bakes them in (pull, forget_baked: `python -m engine.library pull-bucket` and `forget-baked`, run by
    deploy/cloudrun/deploy.sh): before the image is built, the bundle's threads come into data/library on Noemi's
    computer (a thread already there stays as it is), and once the site is deployed the bundle lets go of every thread
@@ -571,8 +571,8 @@ class SiteReader:
     def load_threads(self) -> int | None:
         """The bundle's threads, into the library folder: only when the bundle changed since it was last written here
         (one small question about its version first), only threads with their extraction, never over a baked thread,
-        and only those whose files changed. Then the folder's threads taken from the bundle that were never checked
-        live are let go after ARCHIVE_TEXT_KEPT_DAYS. How many threads were written or let go; None when the bucket
+        and only those whose files changed. Then the folder's threads taken from the bundle are let go
+        ARCHIVE_TEXT_KEPT_DAYS after the job read them. How many threads were written or let go; None when the bucket
         can't be read just now."""
         with self._lock:
             self._bundle_at = self._clock()
