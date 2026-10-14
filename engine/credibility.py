@@ -364,7 +364,8 @@ def copy_groups(thread: Thread) -> list[frozenset[str]]:
     Links don't count as words.
 
     Worked out once per thread, not comment by comment: every run of that many words is listed with the comments it
-    appears in, so a thread of hundreds of comments is read once. Returns the sets of comments that copy one another
+    appears in, so a thread of hundreds of comments is read once; since 14 Oct 2026 (latency) only the runs of the
+    comments that could share one (_could_share_a_run). Returns the sets of comments that copy one another
     (a comment copied by two others joins them in one set); copied_comment_ids and repeated_copies read them. Since 12
     Oct 2026 (latency) also remembered, by everything of the thread it reads, so the next answer reading the same
     thread doesn't work it out again.
@@ -379,11 +380,17 @@ def copy_groups(thread: Thread) -> list[frozenset[str]]:
 def _copy_groups(thread: Thread) -> list[frozenset[str]]:
     size = config.COPIED_TEXT_MIN_WORDS
     readable = {c.id: c for c in thread.comments if c.status == "ok"}
-    found_in: dict[tuple[str, ...], list[str]] = {}  # each run of `size` words: the comments that have it
+    words_of = {}  # the comments long enough to hold such a run: their words
     for comment in readable.values():
         words = _WORD.findall(_LINK.sub(" ", _own_words(comment.body)))
-        for run in {tuple(words[start:start + size]) for start in range(len(words) - size + 1)}:
-            found_in.setdefault(run, []).append(comment.id)
+        if len(words) >= size:
+            words_of[comment.id] = words
+    could = _could_share_a_run(words_of)
+    found_in: dict[tuple[str, ...], list[str]] = {}  # each run of `size` words: the comments that have it
+    for cid, words in words_of.items():
+        if cid in could:  # only those that could share one (latency, 14 Oct 2026: most comments of most threads can't)
+            for run in {tuple(words[start:start + size]) for start in range(len(words) - size + 1)}:
+                found_in.setdefault(run, []).append(cid)
     joined: dict[str, str] = {}  # each copy's set, by one comment standing for it (union-find)
 
     def root(cid: str) -> str:
@@ -402,6 +409,26 @@ def _copy_groups(thread: Thread) -> list[frozenset[str]]:
     for cid in joined:
         groups.setdefault(root(cid), set()).add(cid)
     return [frozenset(group) for group in groups.values()]
+
+
+def _could_share_a_run(words_of: dict[str, list[str]]) -> set[str]:
+    """The comments that could share a run of COPIED_TEXT_MIN_WORDS words with another (`words_of`: each comment's
+    words), a quick look before every run of every comment is listed (latency, 14 Oct 2026). Such a run holds, in
+    each comment, a run of half as many words starting at a multiple of that half (any half + 1 places in a row hold
+    one), so only comments where one comment's runs starting there appear in another can share one."""
+    half = max(1, config.COPIED_TEXT_MIN_WORDS // 2)
+    starting_there: dict[tuple[str, ...], set[str]] = {}  # each run of `half` words starting at a multiple of `half`
+    for cid, words in words_of.items():
+        for start in range(0, len(words) - half + 1, half):
+            starting_there.setdefault(tuple(words[start:start + half]), set()).add(cid)
+    could: set[str] = set()
+    for cid, words in words_of.items():
+        for start in range(len(words) - half + 1):
+            holders = starting_there.get(tuple(words[start:start + half]))
+            if holders is not None and (len(holders) > 1 or cid not in holders):
+                could.add(cid)
+                could.update(holders)
+    return could
 
 
 def copied_comment_ids(thread: Thread, groups: list[frozenset[str]] | None = None) -> frozenset[str]:

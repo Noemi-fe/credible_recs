@@ -1145,3 +1145,56 @@ def test_a_sentences_name_words_found_once_are_those_found_one_by_one():
         assert credibility._found_in_sentence(sentence, name_words) == found_one_by_one(
             normalize_name(sentence), name_words), (sentence, name)
         assert credibility._name_words(name) is name_words  # worked out once
+
+
+# --- Copies looked for only among comments that could share a run of words (latency, 14 Oct 2026) ---
+
+def copy_groups_run_by_run(thread: Thread) -> set[frozenset[str]]:
+    """_copy_groups as first written: every run of COPIED_TEXT_MIN_WORDS words of every comment listed. The reference."""
+    from itertools import combinations
+
+    size = config.COPIED_TEXT_MIN_WORDS
+    readable = {c.id: c for c in thread.comments if c.status == "ok"}
+    found_in: dict[tuple[str, ...], list[str]] = {}
+    for comment in readable.values():
+        words = credibility._WORD.findall(credibility._LINK.sub(" ", credibility._own_words(comment.body)))
+        for run in {tuple(words[start:start + size]) for start in range(len(words) - size + 1)}:
+            found_in.setdefault(run, []).append(comment.id)
+    pairs = {(a, b) for ids in found_in.values() for a, b in combinations(ids, 2)
+             if credibility._two_writers_copies(readable[a], readable[b])}
+    groups: list[set[str]] = []
+    for a, b in pairs:
+        joining = [g for g in groups if a in g or b in g]
+        merged = {a, b}.union(*joining)
+        groups = [g for g in groups if g not in joining] + [merged]
+    return {frozenset(g) for g in groups}
+
+
+def test_only_comments_holding_another_comments_run_of_words_are_read_run_by_run():
+    # A run of COPIED_TEXT_MIN_WORDS words two comments share holds, in each, a run of half as many starting at a
+    # multiple of that half: a comment holding none of another's such runs can't share one with it.
+    half = config.COPIED_TEXT_MIN_WORDS // 2
+    words = [f"w{i}" for i in range(3 * half)]
+    words_of = {"a": words, "b": ["x"] + words[3:3 + 2 * half], "c": [f"z{i}" for i in range(3 * half)],
+                "d": words[:half - 1] + ["y"] + words[half:2 * half - 1]}
+    assert credibility._could_share_a_run(words_of) == {"a", "b"}
+
+
+def test_copies_found_among_the_comments_that_could_share_a_run_are_those_found_run_by_run():
+    rng = random.Random(14)
+    vocabulary = [f"word{i}" for i in range(30)] + ["the", "a", "and", "it's", "kettle", "pan"]
+    for n in range(300):
+        passages = [" ".join(rng.choice(vocabulary) for _ in range(rng.randint(15, 45))) for _ in range(3)]
+        comments = []
+        for i in range(rng.randint(2, 8)):
+            passage = rng.choice(passages).split()
+            start = rng.randint(0, 10)
+            body = " ".join(rng.choice(vocabulary) for _ in range(rng.randint(0, 8))) + " " + " ".join(
+                passage[start:start + rng.randint(10, 40)])
+            author = rng.choice([None, "writer_one", "writer_two", "Writer_One", "writer_three"])
+            comments.append(make_comment(
+                f"c{i}x{n}", body=body.strip() or "ok", created_at=RECENT,
+                author=None if author is None else account(created=years_before(RECENT, 8), karma=1000, name=author),
+                parent_id=rng.choice([None, None, f"c{max(0, i - 1)}x{n}"]), status=rng.choice(["ok"] * 5 + ["removed"])))
+        thread = thread_of(*comments)
+        assert set(credibility._copy_groups(thread)) == copy_groups_run_by_run(thread), n
