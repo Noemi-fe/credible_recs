@@ -1007,28 +1007,49 @@ def _product_context(text: str, product_name: str, others: list[str]) -> list[st
     return context
 
 
-def _name_words(product_name: str) -> set[str]:
-    """The words of a product name that can pick it out in a sentence: no generic words, no bare numbers."""
-    words = set()
-    for word in normalize_name(product_name):
-        has_letters = any(ch.isalpha() for ch in word)
-        long_enough = len(word) >= 3 or (has_letters and any(ch.isdigit() for ch in word))
-        if has_letters and long_enough and word not in GENERIC_NAME_WORDS | _NAME_JOINING_WORDS:
-            words.add(word)
-    return words
+def _name_words(product_name: str) -> frozenset[str]:
+    """The words of a product name that can pick it out in a sentence: no generic words, no bare numbers. Worked out
+    once per name (latency, 14 Oct 2026: evidence scoring asks it for each product a comment names, for every one)."""
+    found = _NAME_WORDS.get(product_name)
+    if found is None:
+        words = set()
+        for word in normalize_name(product_name):
+            has_letters = any(ch.isalpha() for ch in word)
+            long_enough = len(word) >= 3 or (has_letters and any(ch.isdigit() for ch in word))
+            if has_letters and long_enough and word not in GENERIC_NAME_WORDS | _NAME_JOINING_WORDS:
+                words.add(word)
+        found = _NAME_WORDS.keep(product_name, frozenset(words))
+    return found
 
 
-def _naming(sentence: str, mine: set[str], theirs: list[set[str]]) -> tuple[bool, bool]:
+_NAME_WORDS = Table()  # a product name -> _name_words's answer
+
+
+def _naming(sentence: str, mine: frozenset[str], theirs: list[frozenset[str]]) -> tuple[bool, bool]:
     """Whether a sentence names this product, and whether it names another one.
 
     A product is named when some of its name words appear. But when another product's words found there include
     all of its own and more, the sentence is about that other, more specific product: in "I like the Ordinary weekly
     peeling solution", "Ordinary" alone doesn't make it about the Ordinary's glycolic toner.
     """
-    words = normalize_name(sentence)
-    found = [_found_name_words(words, name_words) for name_words in [mine] + theirs]
+    found = [_found_in_sentence(sentence, name_words) for name_words in [mine] + theirs]
     named = [bool(f) and not any(f < other for other in found) for f in found]
     return named[0], any(named[1:])
+
+
+def _found_in_sentence(sentence: str, name_words: frozenset[str]) -> frozenset[str]:
+    """The name words a sentence holds (_found_name_words of its words), worked out once per sentence and name
+    (latency, 14 Oct 2026: evidence scoring asks it of every sentence of a comment for each product the comment names,
+    its own and the others', and every answer reading the comment asks again: 126,414 times for getting ready's
+    answers, 49,702 of them different)."""
+    key = (sentence, name_words)
+    found = _FOUND_IN_SENTENCE.get(key)
+    if found is None:
+        found = _FOUND_IN_SENTENCE.keep(key, _found_name_words(normalize_name(sentence), name_words))
+    return found
+
+
+_FOUND_IN_SENTENCE = Table()  # (a sentence, a name's words) -> the name words it holds
 
 
 def _found_name_words(words: list[str], name_words: set[str]) -> frozenset[str]:
@@ -1037,7 +1058,9 @@ def _found_name_words(words: list[str], name_words: set[str]) -> frozenset[str]:
     Looked up rather than compared with every word (latency, 13 Oct 2026: module 5 compared every word of every
     sentence with every name word, three million times for the answers getting ready asks): the word itself, its plural
     and its singular among the sentence's words, and only then a slip, among the words a letter longer or shorter or of
-    its length, which are the only ones a slip can be."""
+    its length, which are the only ones a slip can be, and of those only the ones starting with the name word's first
+    two letters or ending with its last two (latency, 14 Oct 2026): a word one letter from a name word of 5 letters or
+    more always does, as the letter added, dropped or changed is either after its first two or before its last two."""
     if not name_words:
         return frozenset()
     present = set(words)
@@ -1052,8 +1075,9 @@ def _found_name_words(words: list[str], name_words: set[str]) -> frozenset[str]:
                 for word in present:
                     if word not in GENERIC_NAME_WORDS:
                         by_length.setdefault(len(word), []).append(word)
-            n = len(name_word)
-            if any(one_edit_apart(word, name_word) for size in (n - 1, n, n + 1) for word in by_length.get(size, ())):
+            n, head, tail = len(name_word), name_word[:2], name_word[-2:]
+            if any((word.startswith(head) or word.endswith(tail)) and one_edit_apart(word, name_word)
+                   for size in (n - 1, n, n + 1) for word in by_length.get(size, ())):
                 found.append(name_word)
     return frozenset(found)
 

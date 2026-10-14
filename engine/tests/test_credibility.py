@@ -1108,3 +1108,40 @@ def test_name_words_found_by_lookup_are_those_found_one_by_one():
         name_words = {rng.choice(stems) for _ in range(rng.randint(0, 4))}
         assert credibility._found_name_words(words, name_words) == found_one_by_one(words, name_words), (
             words, name_words)
+
+
+# --- Each sentence's name words worked out once per sentence and name (latency, 14 Oct 2026) ---
+
+def test_a_sentences_name_words_are_looked_up_once_for_every_product_of_its_comment(monkeypatch):
+    # Evidence scoring asks which name words each sentence of a comment holds, for each product the comment names (its
+    # own and the others'), and every answer reading the comment asks again. A made-up comment naming three pans.
+    from engine.match_products import normalize_name
+
+    looked_up = []
+    lookup = credibility._found_name_words
+    monkeypatch.setattr(credibility, "_found_name_words",
+                        lambda words, name_words: looked_up.append(tuple(words)) or lookup(words, name_words))
+    text = credibility._own_words("Had my Lodge for ten years. The Staub is nicer. Never tried a Le Creuset.")
+    products = ["Lodge", "Staub", "Le Creuset"]
+    contexts = [credibility._product_context(text, p, [o for o in products if o != p]) for p in products]
+    assert contexts == [["had my lodge for ten years."], ["the staub is nicer."], ["never tried a le creuset."]]
+    assert len(looked_up) == 3 * 3  # each sentence once for each product's name words
+    assert [credibility._product_context(text, p, [o for o in products if o != p]) for p in products] == contexts
+    assert len(looked_up) == 9  # the next answer finds them all
+    assert set(looked_up) == {tuple(normalize_name(s)) for s in credibility._sentences(text)}
+
+
+def test_a_sentences_name_words_found_once_are_those_found_one_by_one():
+    rng = random.Random(14)
+    stems = ["lodge", "lodges", "lodg", "cerave", "cerav", "kettle", "kettel", "stagg", "stag", "fellow", "felow",
+             "cleanser", "gleanser", "pan", "pans", "bha", "ordinary", "ordinry", "creuset", "creseut", "a", "it",
+             "Lodge's", "CeraVe", "KETTLES", "café", "the", "&amp;"]
+    for _ in range(2000):
+        sentence = " ".join(rng.choice(stems) for _ in range(rng.randint(0, 10)))
+        name = " ".join(rng.choice(stems) for _ in range(rng.randint(1, 3)))
+        name_words = credibility._name_words(name)
+        from engine.match_products import normalize_name
+
+        assert credibility._found_in_sentence(sentence, name_words) == found_one_by_one(
+            normalize_name(sentence), name_words), (sentence, name)
+        assert credibility._name_words(name) is name_words  # worked out once
