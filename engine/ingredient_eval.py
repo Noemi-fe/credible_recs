@@ -97,14 +97,18 @@ def score_cases(cases_path: Path = DEFAULT_CASES, library_dir: Path = DEFAULT_LI
             required = list(query.constraints.ingredients)
             reported = required or [f.ingredient for f in find_ingredients(case["text"])
                                     if TYPE_OWN_INGREDIENT.get(query.product_type or "") == f.ingredient]
-            items = ([("pick", p.name, p.form) for p in run.answer.picks]
-                     + [("worth", w.name, w.form) for w in run.answer.worth_a_look]
-                     + [("skip", s.name, s.form) for s in run.answer.skip])
-            for where, name, form in items:
-                form_ok = (form in query.constraints.forms if query.constraints.forms else form_kind(form) == "leave-on"
-                           ) if query.ingredient_led else None
-                result.shown.append(Shown(where, name, form, _evidence(name, query.category, facts, reported),
-                                          bool(required), form_ok))
+            items = ([("pick", p.name, p.form, p.product_key) for p in run.answer.picks]
+                     + [("worth", w.name, w.form, w.product_key) for w in run.answer.worth_a_look]
+                     + [("skip", s.name, s.form, s.product_key) for s in run.answer.skip])
+            for where, name, form, key in items:
+                form_ok = (all(f in query.constraints.forms for f in (form or "").split(" or ")) if query.constraints.forms
+                           else form_kind(form) == "leave-on") if query.ingredient_led else None
+                # A line is kept only when every product of it named has a facts entry confirming the ingredient (14
+                # Oct 2026): its evidence is theirs, checked again here.
+                line = run.lines_confirmed.get(key)
+                how = (_line_evidence(line, query.category, facts, reported) if line is not None
+                       else _evidence(name, query.category, facts, reported))
+                result.shown.append(Shown(where, name, form, how, bool(required), form_ok))
             result.message = run.answer.message
         results.append(result)
     return results
@@ -127,6 +131,20 @@ def _evidence(name: str, category: str, facts: list[ProductFacts], ingredients: 
     if all(f.contains for f in found):
         return "facts" if any(f.how == "facts" for f in found) else "name"
     return "none"
+
+
+def _line_evidence(entries: list[str], category: str, facts: list[ProductFacts], ingredients: list[str]) -> str:
+    """How we know a line shown contains every ingredient: "facts" when each of its products' entries (`entries`,
+    names) has a formula listing each; "none" otherwise; "-" when nothing is asked for."""
+    if not ingredients:
+        return "-"
+    by_name = {f.product: f for f in facts if f.category == category}
+    for name in entries:
+        entry = by_name.get(name)
+        actives = entry.formula.actives if entry is not None and entry.formula is not None else None
+        if actives is None or not all(evidence(i, entry.product, actives).contains for i in ingredients):
+            return "none"
+    return "facts" if entries else "none"
 
 
 def ingredient_lines(results: list[CaseResult]) -> list[str]:

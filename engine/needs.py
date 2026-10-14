@@ -43,8 +43,8 @@ from dataclasses import dataclass
 from functools import cache
 
 from engine.config import (
-    HAIR_LIST_NEEDS, HAIR_LIST_NOUNS, HAIR_LIST_WORDS, HAIR_NEEDS, NEED_IGNORED_WORDS, NEED_REQUEST_WORDS, NEEDS,
-    NEGATED_NEEDS, NEGATION_REACH, NEGATIONS,
+    HAIR_LIST_NEEDS, HAIR_LIST_NOUNS, HAIR_LIST_WORDS, HAIR_NEEDS, NEED_COMMENT_WORDS, NEED_IGNORED_WORDS,
+    NEED_LOOKALIKES, NEED_REQUEST_WORDS, NEEDS, NEGATED_NEEDS, NEGATION_REACH, NEGATIONS,
 )
 from engine.credibility import _own_words
 from engine.memo import Table
@@ -141,7 +141,7 @@ def thread_needs(thread: Thread, needs: tuple[Need, ...], titled_as_another_type
     about that one, whatever its post says ("SPF for oily skin?" is no moisturiser thread for oily skin)."""
     if not needs or titled_as_another_type:
         return ()
-    met = set(needs_met(thread.title, needs)) | set(_post_needs(thread, needs))
+    met = set(needs_met(thread.title, needs, thread=True)) | set(_post_needs(thread, needs))
     return tuple(need.name for need in needs if need.name in met)
 
 
@@ -150,7 +150,7 @@ def _post_needs(thread: Thread, needs: tuple[Need, ...]) -> tuple[str, ...]:
     needs noted before its post's words went (engine.models.WholeThread.post_need_words and post_list_words)."""
     facts = thread.whole_thread
     if facts is None:
-        return needs_met(thread.body or "", needs)
+        return needs_met(thread.body or "", needs, thread=True)
     words, listed, known = set(facts.post_need_words), set(facts.post_list_words), set(facts.post_words)
     return tuple(need.name for need in needs if (need.request_word in known if need.request_word is not None else (
         words.intersection(need.words) or listed.intersection(need.list_words))))
@@ -167,6 +167,8 @@ def post_need_words(body: str) -> list[str]:
     """The words of config's needs (every_config_need) a post's own words hold, found as needs_met finds them: what a
     slimmed thread keeps of its post for need-led reading (engine/slim.py). Config's words only, never the post's."""
     text = _own_words(body or "")
+    for name in NEED_LOOKALIKES:  # what a need's words say something else in (config.NEED_LOOKALIKES)
+        text = _without_lookalikes(text, name)
     vocabulary = sorted({word for need in every_config_need() for word in need.words})
     return [word for word in vocabulary if _first_at(text, word) is not None]
 
@@ -186,23 +188,24 @@ def post_request_words(body: str, vocabulary) -> list[str]:
                   if (f" {word}" in candidates if len(word) >= 4 else f" {word} " in candidates))
 
 
-def needs_met(body: str, needs: tuple[Need, ...], long_term_use: bool = False) -> tuple[str, ...]:
+def needs_met(body: str, needs: tuple[Need, ...], long_term_use: bool = False, thread: bool = False) -> tuple[str, ...]:
     """The names of the needs a comment talks about, in the request's order: an empty tuple when it talks about none.
 
     `body` is the comment as saved; only the writer's own words count, not quoted blocks. `long_term_use` is module
-    5's finding for this mention: long use also speaks to "lasting". It depends on these alone, so each is worked out
+    5's finding for this mention: long use also speaks to "lasting". `thread`: the body is a thread's title or post,
+    which config.NEED_COMMENT_WORDS never speak for (14 Oct 2026). It depends on these alone, so each is worked out
     once (latency, 13 Oct 2026: a comment naming several products was read again for each).
     """
     if not needs:
         return ()
-    key = (body, needs, long_term_use)
+    key = (body, needs, long_term_use, thread)
     found = _NEEDS_MET.get(key)
     if found is None:
-        found = _NEEDS_MET.keep(key, _needs_met(body, needs, long_term_use))
+        found = _NEEDS_MET.keep(key, _needs_met(body, needs, long_term_use, thread))
     return found
 
 
-def _needs_met(body: str, needs: tuple[Need, ...], long_term_use: bool) -> tuple[str, ...]:
+def _needs_met(body: str, needs: tuple[Need, ...], long_term_use: bool, thread: bool = False) -> tuple[str, ...]:
     text = _own_words(body)
     listed = None  # the words of hair types written together in the text, looked for once, when a need has some
     met = []
@@ -210,7 +213,9 @@ def _needs_met(body: str, needs: tuple[Need, ...], long_term_use: bool) -> tuple
         if need.request_word is not None:
             talks = _title_has(text, need.request_word)
         else:
-            talks = any(_first_at(text, word) is not None for word in need.words)
+            own = _without_lookalikes(text, need.name)  # "broke in my new pan" isn't about lasting (14 Oct 2026)
+            words = need.words if thread else need.words + NEED_COMMENT_WORDS.get(need.name, ())
+            talks = any(_first_at(own, word) is not None for word in words)
             talks = talks or (need.name == LASTING and long_term_use)
             if not talks and need.list_words:
                 listed = _hair_list_words(text) if listed is None else listed
@@ -227,6 +232,19 @@ def has_word(text: str, word: str) -> bool:
 
 
 # --- Helpers ---
+
+def _without_lookalikes(text: str, need: str) -> str:
+    """The text (lowercase) with the phrases that hold the need's words but say something else blanked out
+    (config.NEED_LOOKALIKES: "broke in my new pan" is seasoning, not lasting; 14 Oct 2026)."""
+    for pattern in _lookalike_patterns(need):
+        text = pattern.sub(lambda m: " " * len(m.group(0)), text)
+    return text
+
+
+@cache
+def _lookalike_patterns(need: str) -> tuple[re.Pattern, ...]:
+    return tuple(re.compile(p, re.IGNORECASE) for p in NEED_LOOKALIKES.get(need, ()))
+
 
 def _first_at(text: str, word: str) -> int | None:
     """Where `word` first starts in `text`, as has_word finds it; None when it isn't there."""

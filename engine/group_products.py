@@ -929,7 +929,7 @@ _UK_NAMES: dict[str, str] = {}  # a name -> as the UK knows it, with the shipped
 register(_UK_NAMES.clear)
 
 
-def brand_pick_name(brand: str, product_type: str) -> str:
+def brand_pick_name(brand: str, product_type: str, keep_ingredients: bool = False) -> str:
     """The name a brand or line is shown under when it is ranked as a pick, the brand's whole line of the requested
     type: "Lodge cast iron skillet line", "Zojirushi rice cooker line" (decision 9; Noemi's wording of 12 Oct 2026,
     config.BRAND_PICK_NAME; it was "Lodge (their cast iron skillets)"). Every line is shown so, also when its name
@@ -939,16 +939,21 @@ def brand_pick_name(brand: str, product_type: str) -> str:
     line", "Sage electric kettle line", "Lodge cast iron skillet line". Nor does a name say part of its type twice: its
     last words that are the type's own words, or a plural or slip of them, give way to the type ("Zojirushi cooker" is
     the "Zojirushi rice cooker line"; 12 Oct 2026), and so do filler words at its end ("aveeno one", "Haden brand"; 13
-    Oct 2026). A type is written as a name shows it (config.PRODUCT_TYPE_SHOWN): "Le Creuset Dutch oven line"."""
+    Oct 2026). A type is written as a name shows it (config.PRODUCT_TYPE_SHOWN): "Le Creuset Dutch oven line".
+    `keep_ingredients` (an answer naming an active ingredient, 14 Oct 2026): an ending that names an active ingredient
+    stays, as the line's own name ("Paula's Choice 2% BHA exfoliant line", not "Paula's Choice 2% exfoliant line")."""
+    from engine.ingredients import find_ingredients
     from engine.sources import mentions_product
 
     type_words = [[word] for word in product_words(product_type)]
     words = brand.split()
-    ending = next((k for k in range(1, len(words)) if mentions_product(" ".join(words[-k:]), product_type)), 0)
+    ending = next((k for k in range(1, len(words)) if mentions_product(" ".join(words[-k:]), product_type)
+                   and not (keep_ingredients and find_ingredients(" ".join(words[-k:])))), 0)
     if ending:
         words = words[:-ending]
     while len(words) > 1 and (words[-1].casefold() in TRAILING_FILLER
-                              or any(written_alike(product_words(words[-1]), word) for word in type_words)):
+                              or any(written_alike(product_words(words[-1]), word) for word in type_words)) and not (
+            keep_ingredients and find_ingredients(words[-1])):
         words.pop()
     return BRAND_PICK_NAME.format(brand=" ".join(words), product_type=PRODUCT_TYPE_SHOWN.get(product_type, product_type))
 

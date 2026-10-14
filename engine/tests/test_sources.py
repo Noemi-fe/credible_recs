@@ -1197,8 +1197,12 @@ def test_a_thread_titled_as_another_type_isnt_about_the_need_for_this_one(tmp_pa
 def test_the_need_led_order_is_what_the_pipeline_reads_first(tmp_path):
     # The first reading takes the first threads of this order: the pipeline reads LocalSource's order (engine.pipeline).
     source = local_source(tmp_path, GREASY_LIBRARY)
-    assert ids(source.find_threads(parse_query("dandruff shampoo that actually works"), limit=10)) == ids(
-        source.find_threads(parse_query("shampoo"), limit=10))  # no thread here is about dandruff
+    # Changed on purpose 14 Oct 2026 (b08's follow-up, test_a_thread_titled_as_another_type_comes_after_every_thread_
+    # about_the_product): no thread here is about dandruff, so the graded order is kept, but for the conditioner thread,
+    # titled as another type, which a request with needs now reads after every thread about the product.
+    dandruff = ids(source.find_threads(parse_query("dandruff shampoo that actually works"), limit=10))
+    graded = ids(source.find_threads(parse_query("shampoo"), limit=10))
+    assert dandruff == [t for t in graded if t != "1dry001"] + ["1dry001"]
     dandruff = local_source(tmp_path / "d", GREASY_LIBRARY + [hair_thread("1flak01", "Flaky scalp, what shampoo?")])
     assert ids(dandruff.find_threads(parse_query("dandruff shampoo that actually works"), limit=2))[0] == "1flak01"
 
@@ -1246,6 +1250,41 @@ def test_a_thread_titled_as_a_request_for_the_opposite_comes_after_every_thread_
     found = ids(source.find_threads(parse_query("shampoo for curly hair that isn't drying"), limit=10))
     assert found[0] == "1both01" and found[-1] == "1clar01"
     assert ids(source.find_threads(parse_query("clarifying shampoo for my curls"), limit=10))[0] == "1clar01"
+
+
+def bifl_thread(thread_id: str, title: str, num_comments: int = 40) -> dict:
+    return make_thread(id=thread_id, community="BuyItForLife", category="kitchen", title=title,
+                       url=f"https://www.reddit.com/r/BuyItForLife/comments/{thread_id}/post/", num_comments=num_comments,
+                       comments=[make_comment(f"{thread_id}c1", thread_id=thread_id, body="My cast iron skillet is fine.")])
+
+
+def test_a_thread_titled_as_another_type_comes_after_every_thread_about_the_product(tmp_path):
+    # Found when the library grew (14 Oct 2026, b08's follow-up): a thread titled as another type of product lost its
+    # needs but kept its place among the threads about none of them, by module 2's graded order, so big ones (about an
+    # enamelled Dutch oven, about a frying pan that lasts) took first-reading places from
+    # cast iron skillet recommendation threads, and b08's first reading fell short of picks whenever one more such thread
+    # was saved. Such a thread is about the other product: it is read after every thread about the requested one.
+    source = local_source(tmp_path, [
+        bifl_thread("1dut001", "Enamel coated cast iron dutch oven, is it any good?", num_comments=900),
+        bifl_thread("1fry001", "Want a frying pan to keep for decades", num_comments=700),
+        bifl_thread("1rec001", "Which cast iron skillet would you buy now?", num_comments=40),
+        bifl_thread("1new001", "Help me choose my first skillet", num_comments=20),
+    ])
+    found = ids(source.find_threads(parse_query("cast iron skillet for a beginner that will last decades"), limit=10))
+    assert found[:2] == ["1new001", "1rec001"]
+    assert set(found[2:]) == {"1dut001", "1fry001"}
+
+
+def test_a_title_naming_the_product_only_as_what_to_set_aside_is_about_the_others():
+    # Found in b08's follow-up: a request for lasting pots and pans "aside from cast iron" asks for any cookware but cast
+    # iron, and had counted as a cast iron skillet thread.
+    from engine.sources import titled_as_another_type
+
+    skillet = parse_query("cast iron skillet for a beginner that will last decades")
+    assert titled_as_another_type("Aside from cast iron, which pots and pans last a lifetime?", skillet)
+    assert titled_as_another_type("Pans that last, other than cast iron?", skillet)
+    assert not titled_as_another_type("Should I get a cast iron skillet or a carbon steel pan first?", skillet)
+    assert not titled_as_another_type("Best cast iron skillet besides Lodge?", skillet)  # it sets a brand aside
 
 
 def test_only_the_kind_of_product_makes_a_title_the_opposite():

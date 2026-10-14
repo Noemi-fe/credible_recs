@@ -356,8 +356,8 @@ def test_a_title_naming_the_requested_types_word_inside_another_types_name_is_ti
     from engine.sources import titled_as_another_type
 
     skillet = parse_query("cast iron skillet for a beginner that will last decades")
-    assert titled_as_another_type("Cast iron enamel dutch oven with a 3 year warranty. Worth it?", skillet)
-    assert titled_as_another_type("Is this cast iron dutch oven a good price?", skillet)
+    assert titled_as_another_type("Enamel coated cast iron dutch oven on sale, should I buy it?", skillet)
+    assert titled_as_another_type("Is a cast iron dutch oven worth the money?", skillet)
     assert not titled_as_another_type("Cast iron skillet or dutch oven for a first pan?", skillet)
     assert not titled_as_another_type("Cast iron vs enamel dutch oven for searing?", skillet)
     assert not titled_as_another_type("Best cast iron skillet for a beginner?", skillet)
@@ -456,3 +456,61 @@ def test_two_names_of_a_product_ending_in_the_type_and_in_its_synonym_are_one_pr
     assert names_by_group(groups) == [["Zephyra Glow Stick SPF 50"], ["Zephyra Veil SPF", "Zephyra! Veil Sunscreen"]]
     assert not any(g.loose for g in groups)
 
+
+
+def test_a_brand_line_written_with_a_size_first_steps_aside_for_its_brands_product():
+    # Found in b08's follow-up: "12" Lodge cast iron skillet line" and the product "10.25" Lodge" were both picks: the
+    # size written first hid their one brand from the fold, though Also worth a look already read past it
+    # (engine.pipeline._same_brand_sized). A line with its size first is its brand's line too.
+    def made_up_group(name: str, loose: bool) -> ProductGroup:
+        return ProductGroup(f"kitchen:{name.lower()}", name, "kitchen",
+                            [ProductMention("t1", f"c-{name}", name, "kitchen", "recommend")], loose)
+
+    product, sized, other = made_up_group('10.25" Ferrow', False), made_up_group('12" Ferrow', True), \
+        made_up_group("Smithson No. 10 skillet", False)
+    ranking = rank_products(scored(6, '10.25" Ferrow', key=product.key)
+                            + scored(5, "Smithson No. 10 skillet", key=other.key)
+                            + scored(4, '12" Ferrow cast iron skillet line', key=sized.key), "kitchen")
+    result = pipeline.PipelineResult(query=None)
+    folded = pipeline._fold_brand_picks(ranking, [product, sized, other], result, "cast iron skillet")
+    assert [p.name for p in folded.qualifying] == ['10.25" Ferrow', "Smithson No. 10 skillet"]
+    assert result.folded_brand_picks == [FoldedBrandPick('12" Ferrow cast iron skillet line', '10.25" Ferrow')]
+
+
+def test_a_brand_read_inside_another_brands_name_isnt_that_brand():
+    # Found in the name-levels follow-up (14 Oct 2026): the "crock pot slow cooker line" folded into the "Rival slow
+    # cooker line", as two lines of one brand fold: "crock pot" was read inside writers' "Rival Crock-Pot" as a product's
+    # name written without its brand is read inside its brand's ("Stagg" in "Fellow Stagg EKG"). Crock-Pot is a brand of
+    # its own, sold new in the UK; writers' "Rival Crock-Pot" is Rival's line ("crock pot" being a synonym of slow
+    # cooker, config.TYPE_SYNONYMS). Two lines are one brand's only when their names start with it.
+    def line(key: str, names: list[str]) -> ProductGroup:
+        return ProductGroup(f"kitchen:{key}", names[0], "kitchen",
+                            [typed(n, "slow cooker", f"{key}{i}") for i, n in enumerate(names)], loose=True)
+
+    rival = line("rival", ["Rival", "Rival Crock-Pot", "Rival crockpot"])
+    crockpot = line("crock pot", ["crock pot", "Crock-Pot", "Crock Pot slow cooker"])
+    sized = line("12 rival", ['12" Rival'])
+    ranking = rank_products(scored(8, "Rival slow cooker line", key=rival.key)
+                            + scored(5, "crock pot slow cooker line", key=crockpot.key)
+                            + scored(4, '12" Rival slow cooker line', key=sized.key), "kitchen")
+    result = pipeline.PipelineResult(query=None)
+    folded = pipeline._fold_brand_picks(ranking, [rival, crockpot, sized], result, "slow cooker")
+    assert [p.name for p in folded.qualifying] == ["Rival slow cooker line", "crock pot slow cooker line"]
+    assert result.folded_brand_picks == [FoldedBrandPick('12" Rival slow cooker line', "Rival slow cooker line")]
+
+
+def test_the_ordinarys_azelaic_acid_names_are_one_product():
+    # Found by the name-levels evaluation: writers' "TO Azelaic Acid 10%" and "The Ordinary azelaic acid suspension"
+    # didn't match each other, so their commonest name, "the ordinary azelaic acid", fitted two products and was left out
+    # of ingredient answers as a line. The Ordinary makes one azelaic acid product, its Azelaic Acid Suspension 10%: an
+    # alias writes the short names out (engine/data/product_aliases.json).
+    from engine.match_products import known_aliases, product_words
+
+    aliases = known_aliases()
+    mentions = [typed(n, t, f"c{i}", "skincare") for i, (n, t) in enumerate([
+        ("TO Azelaic Acid 10%", "serum"), ("The Ordinary azelaic acid suspension", "serum"),
+        ("the ordinary azelaic acid", "serum"), ("TO 10% Azelaic acid", "azelaic acid cream"),
+        ("The Ordinary's azelaic acid cream", "azelaic acid cream"), ("TO Azelaic Acid", "serum")])]
+    known = {"skincare": [tuple(product_words("The Ordinary Azelaic Acid Suspension 10%", aliases["skincare"]))]}
+    groups = group_products(mentions, aliases, known=known)  # an ingredient-led answer groups names without a type
+    assert len(groups) == 1 and not groups[0].loose

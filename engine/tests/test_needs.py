@@ -270,3 +270,35 @@ def test_two_requests_written_alike_keep_their_own_needs():
     assert [n.name for n in request_needs(plain)] == ["beginner"]
     assert [n.name for n in request_needs(with_skin)] == ["beginner", "sensitive"]
     assert [n.name for n in request_needs(plain)] == ["beginner"]
+
+
+def test_breaking_in_a_pan_isnt_about_lasting():
+    # Found in b08's follow-up (14 Oct 2026): r/castiron titles about having broken in a new pan with its first meals
+    # (seasoning it) had counted as threads about lasting, and took first-reading places from
+    # cast iron skillet recommendation threads as the library grew. Something that broke still talks about it.
+    request = "cast iron skillet for a beginner that will last decades"
+    assert met(request, "Broke in my new skillet with some chicken.") == ()
+    assert met(request, "My pan is nicely broken in now.") == ()
+    assert met(request, "Mine broke in half after two years.") == ("lasting",)
+    assert met(request, "The handle broke in the dishwasher.") == ("lasting",)
+    assert met(request, "It broke after a month.") == ("lasting",)
+
+
+def test_lasting_is_said_in_the_words_people_use():
+    # Found in b08's follow-up (14 Oct 2026): Field's credible recommendations said the pan would last forever, for a
+    # lifetime, for decades, as an heirloom or BIFL, and none counted as talking about lasting, so the wider reading's
+    # need rule left Field out of "cast iron skillet for a beginner that will last decades". Made-up comments.
+    request = "cast iron skillet for a beginner that will last decades"
+    for body in ("This pan will last forever.", "A lifetime pan.", "I've cooked on mine for a decade.",
+                 "It's an heirloom piece.", "Truly BIFL.", "Built to last.", "It'll be handed down for generations."):
+        assert met(request, body) == ("lasting",), body
+    for body in ("It takes forever to heat up.", "No forever chemicals in it.", "The last one I bought was cheap."):
+        assert met(request, body) == (), body
+
+
+def test_the_everyday_words_for_lasting_speak_for_comments_only():
+    # A thread's title or post saying them tells nothing apart: nearly every r/BuyItForLife thread does
+    # (config.NEED_COMMENT_WORDS). The need-led first reading reads threads by NEEDS' own words only.
+    needs = request_needs(parse_query("electric kettle that lasts 10+ years"))
+    assert needs_met("BIFL kettle that will last forever?", needs, thread=True) == ()
+    assert needs_met("BIFL kettle that will last forever?", needs) == ("lasting",)

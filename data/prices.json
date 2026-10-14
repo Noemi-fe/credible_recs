@@ -1804,6 +1804,46 @@
    "checked_on": "2026-10-14",
    "available": false,
    "note": "a US prescription cream for melasma (Galderma); the eMC has no Tri-Luma; a search found no UK pharmacy selling it"
+  },
+  {
+   "product": "Mad Hippie Vitamin C Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "price": 26.99,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/dp/B00DKF7XPW",
+   "checked_on": "2026-10-14",
+   "available": true,
+   "note": "30 ml, sold by Mad Hippie UK/EU Official (the brand's own store on Amazon), in stock, to add to the basket, RRP £29.99 (checked 14 Oct 2026, the name-levels follow-up: a pick of 'vitamin c serum under £20', which it is over); a UK shop found by search (PlantX) refused connections"
+  },
+  {
+   "product": "Rival",
+   "category": "kitchen",
+   "product_type": "slow cooker",
+   "price": null,
+   "currency": "GBP",
+   "shop": "eBay UK",
+   "url": "https://www.ebay.co.uk/sch/i.html?_nkw=rival+crock+pot",
+   "checked_on": "2026-10-14",
+   "available": true,
+   "second_hand": true,
+   "note": "Rival made the first Crock-Pot slow cookers; Crock-Pot slow cookers are sold new under their own name, Rival-branded ones aren't: on 14 Oct 2026 eBay UK lists 37 Rival Crock-Pots, pre-owned but for one old boxed unit (the name-levels follow-up, the orchestrator's item 3)"
+  },
+  {
+   "product": "CeraVe Skin Renewing Vitamin C Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "price": 22.5,
+   "currency": "GBP",
+   "shop": "Boots",
+   "url": "https://www.boots.com/cerave-skin-renewing-10-pure-vitamin-c-serum-with-ceramides-for-brighter-and-smoother-skin-30ml-10339895",
+   "checked_on": "2026-10-14",
+   "available": true,
+   "also_called": [
+    "CeraVe Skin Renewing 10% Pure Vitamin C Serum"
+   ],
+   "note": "30 ml, £22.50 on offer (was £30.00), to add to the basket (checked 14 Oct 2026, the name-levels follow-up: it had become the third pick of 'vitamin c serum under £20' once Mad Hippie's was priced over it)"
   }
  ]
 }

@@ -970,10 +970,10 @@
     "pfas_free": false
    },
    "sources": [
-    "https://www.scanpan.com/scanpan-nonstick",
+    "https://scanpan.co.uk/pages/faq",
     "https://scanpan.co.uk/collections/frying-pans"
    ],
-   "checked_on": "2026-10-11"
+   "checked_on": "2026-10-14"
   },
   {
    "product": "De Buyer carbon steel pans",
@@ -2491,6 +2491,55 @@
     "form": "cream",
     "sources": [
      "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=c06778b6-0ed6-7d82-e053-2a95a90a2ef8"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Scanpan CTX",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "non_stick": true,
+    "pfas_free": false
+   },
+   "sources": [
+    "https://scanpan.co.uk/pages/faq",
+    "https://scanpan.co.uk/products/ctx-stainless-steel-non-stick-frying-pan"
+   ],
+   "checked_on": "2026-10-14"
+  },
+  {
+   "product": "Ballarini non-stick pans",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "non_stick": true
+   },
+   "sources": [
+    "https://www.zwilling.com/uk/ballarini/cookware/",
+    "https://www.zwilling.com/uk/ballarini-ferrara-granitium-28-cm-aluminium-frying-pan-75001-856-0/75001-856-0.html",
+    "https://www.zwilling.com/uk/ballarini-salina-frying-pan-28-cm-aluminium-titanium-reinforced-ceramic-non-stick-coating/1030840.html"
+   ],
+   "checked_on": "2026-10-14"
+  },
+  {
+   "product": "Paula's Choice Skin Perfecting 2% BHA Gel Exfoliant",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "prescription_only": false
+   },
+   "sources": [
+    "https://www.paulaschoice.co.uk/skin-perfecting-bha-gel-exfoliant/m2040.html"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid"
+    ],
+    "sources": [
+     "https://www.paulaschoice.co.uk/skin-perfecting-bha-gel-exfoliant/m2040.html"
     ],
     "checked_on": "2026-10-14"
    }

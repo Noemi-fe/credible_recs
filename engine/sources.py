@@ -602,7 +602,11 @@ class LocalSource:
             return threads
         asks = request_asks(query)
         titled = {t.id: self._titled_as_another_type(t, query) or titled_as_the_opposite(t.title, asks) for t in threads}
-        return sorted(threads, key=lambda t: -len(thread_needs(t, needs, titled[t.id])))  # stable: the order given
+        # A thread titled as another type, or as the opposite kind of product, is about that product: it comes after
+        # every thread about the requested one, with or without its needs (b08's follow-up, 14 Oct 2026: among those
+        # about none of the needs, big ones (a thread asking about an enamelled Dutch oven) had kept their graded places
+        # and took first-reading places from cast iron skillet recommendation threads as the library grew).
+        return sorted(threads, key=lambda t: (titled[t.id], -len(thread_needs(t, needs, titled[t.id]))))  # stable
 
     def _titled_as_another_type(self, thread: Thread, query: ParsedQuery) -> bool:
         """titled_as_another_type(thread.title, query), worked out once per thread and request type."""
@@ -650,17 +654,38 @@ def titled_as_another_type(title: str, query: ParsedQuery) -> bool:
     ("SPF for oily skin?" for a moisturiser request; for an ingredient-led request, any type that can carry its
     ingredient is one it asks for: engine.ingredients.wanted_types). Its post may name the requested product in passing:
     the thread is about the other one (14 Oct 2026). A requested type's name written as part of another type's name
-    doesn't name it (name levels, 14 Oct 2026): "Cast iron enamel dutch oven" is a Dutch oven thread, not a skillet one
+    doesn't name it (name levels, 14 Oct 2026): a "cast iron (enamelled) dutch oven" is a Dutch oven thread, not a skillet one
     (b08 had read one so); "cast iron skillet or dutch oven" names both."""
     wanted = set(wanted_types(query.product_type)) | {query.product_type}
     others = [p for p in PRODUCT_TYPES if p.category == query.category and p.name not in wanted]
-    if any(mentions_product(_without_names_inside(title, w, query.category), w) for w in wanted):
+    if any(mentions_product(_without_names_set_aside(_without_names_inside(title, w, query.category), w), w)
+           for w in wanted):
         return False
     return any(mentions_product(title, p.name) for p in others)
 
 
 # Words that join two names rather than make one name of them ("cast iron or enamel dutch oven" names both).
 _JOINING_WORDS = r"and|or|vs|versus|with|to|for|over|than|from|n"
+
+
+# Words that set what follows them aside: "Aside from cast iron, which pans last?" asks for anything but cast iron.
+_SET_ASIDE = r"aside from|apart from|besides|other than|except(?: for)?|instead of|rather than"
+
+
+def _without_names_set_aside(title: str, product_type: str) -> str:
+    """The title without the product type's names written as what it sets aside (b08's follow-up, 14 Oct 2026): a
+    request for lasting pots and pans "aside from cast iron" asks about other cookware. A brand set aside ("best cast iron
+    skillet besides Lodge") isn't the type, so it stays."""
+    return _set_aside_pattern(product_type).sub(" ", title)
+
+
+@cache
+def _set_aside_pattern(product_type: str) -> re.Pattern:
+    own = next((p for p in PRODUCT_TYPES if p.name == product_type), None)
+    names = sorted({product_type, *(own.keywords if own else ())}, key=lambda n: (-len(n), n))
+    alternatives = "|".join(re.escape(name).replace(r"\ ", r"[\s-]+") for name in names)
+    return re.compile(rf"(?<![\w-])(?:{_SET_ASIDE})\s+(?:(?:a|an|the|my|your)\s+)?(?:{alternatives})(?:e?s)?(?![\w-])",
+                      re.IGNORECASE)
 
 
 def _without_names_inside(title: str, product_type: str, category: str) -> str:

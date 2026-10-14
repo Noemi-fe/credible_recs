@@ -51,3 +51,19 @@ def test_the_committed_cases_load_and_route_as_expected():
         assert (query.product_type, query.constraints.ingredients, query.ingredient_led, query.constraints.forms) == (
             expected["product_type"], expected["ingredients"], expected["ingredient_led"],
             expected.get("forms", [])), case["id"]
+
+
+def test_a_line_kept_for_its_products_facts_has_their_evidence(tmp_path):
+    # A line stays in an ingredient answer only when every product of it named has a facts entry confirming the
+    # ingredient (14 Oct 2026): its own name may not say the ingredient, so the evaluation checks those entries again.
+    from engine.tests.test_pipeline_ingredients import facts, wren_library
+
+    path = cases_file(tmp_path, [
+        {"id": "i01", "text": "salicylic acid for acne",
+         "expected": {"product_type": "salicylic acid product", "ingredients": ["salicylic acid"],
+                      "ingredient_led": True}}])
+    both = [facts("Wren 2% BHA Liquid", "exfoliant", ["salicylic acid"]),
+            facts("Wren 2% BHA Gel", "exfoliant", ["salicylic acid"])]
+    (result,) = score_cases(path, wren_library(tmp_path), profiles=None, live_checker=None, product_facts=both)
+    assert ("pick", "Wren 2% BHA exfoliant line", "gel or leave-on liquid", "facts", True) in [
+        (s.where, s.name, s.form, s.evidence, s.form_ok) for s in result.shown]

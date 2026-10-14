@@ -24,6 +24,20 @@
    "note": "Sage (Breville outside the UK, the name many writers use) sells three kettles on its UK site on 14 Oct 2026: the Compact Kettle Pure at £69.95, the Smart Kettle at £99.95 and the Soft Top Luxe at £119.95. From price: the Compact Kettle Pure (BKE395UK), to add to the cart. Its pages are drawn by script: read in a browser."
   },
   {
+   "brand": "Sage",
+   "category": "kitchen",
+   "product_type": "coffee grinder",
+   "sells": true,
+   "sources": ["https://www.sageappliances.com/en-gb/shop/coffee-grinders", "https://www.sageappliances.com/en-gb/product/bcg600?sku=BCG600SILUK"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.sageappliances.com/en-gb/shop/coffee-grinders",
+   "from_price": 149.95,
+   "from_price_shop": "Sage",
+   "from_price_url": "https://www.sageappliances.com/en-gb/product/bcg600?sku=BCG600SILUK",
+   "from_price_checked_on": "2026-10-14",
+   "note": "Sage (Breville outside the UK) sells two grinders on its UK site on 14 Oct 2026: the Dose Control Pro (BCG600SILUK) at £149.95, £20 off its usual £169.95, to add to the cart, and the Smart Grinder Pro at £209.95. From price: the Dose Control Pro at that price; at its usual £169.95 the line would be over a £150 budget, so check it again when the offer ends. Its pages are drawn by script: read in a browser."
+  },
+  {
    "brand": "Ninja",
    "category": "kitchen",
    "product_type": "electric kettle",
@@ -617,6 +631,21 @@
    "from_price_url": "https://www.lookfantastic.com/p/cosrx-acne-pimple-master-patch-24-patches/11401172/",
    "from_price_checked_on": "2026-10-14",
    "note": "COSRX's own Spot Care collection (pimple patches and a spot cream, in dollars), 14 Oct 2026. From price: Lookfantastic (an official UK stockist of COSRX, its page says), the Acne Pimple Master Patch (24 patches) at £5.99, to add to the basket, its cheapest COSRX spot treatment (AC Collection Acne Patch 26 £6.99, Clear Fit 18 £6.99, Master Patch Intensive 36 £13.99)."
+  },
+  {
+   "brand": "Crock-Pot",
+   "also_called": ["Crock Pot", "Crockpot"],
+   "category": "kitchen",
+   "product_type": "slow cooker",
+   "sells": true,
+   "sources": ["https://www.crockpot.co.uk/category/slow-cookers/", "https://www.amazon.co.uk/dp/B08FB994L8"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.crockpot.co.uk/category/slow-cookers/",
+   "from_price": 14.99,
+   "from_price_shop": "Amazon UK",
+   "from_price_url": "https://www.amazon.co.uk/dp/B08FB994L8",
+   "from_price_checked_on": "2026-10-14",
+   "note": "Crock-Pot's UK site (Sunbeam Products, Newell Brands) lists 14 slow cookers on 14 Oct 2026, 1.8 L to 7.5 L, without prices; its Where to Buy page sends shoppers to UK shops (Argos's and John Lewis's searches found none that day). From price: Amazon UK, shipped and sold by Amazon, the 1.8 L Slow Cooker (CSC080) at £14.99 (RRP £24.00), in stock, to add to the basket: the cheapest Crock-Pot slow cooker in its search (then the 6.5 L SCV655B at £31.99). Rival made the first Crock-Pots; Rival-branded ones are sold second-hand only (data/prices.json). Writers also say crock pot for any slow cooker (the name-levels follow-up, the orchestrator's item 3)."
   }
  ]
 }
