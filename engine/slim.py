@@ -62,7 +62,8 @@ from engine.ingredients import ingredient_type_name
 from engine.models import Thread, WholeThread, quote_fingerprint
 from engine.needs import Need, every_config_need, post_list_words, post_need_words, post_request_words, thread_needs
 from engine.query import PRODUCT_TYPES, TITLE_WORDS
-from engine.sources import _STOPWORDS, _stem, mentions_product, names_product, relevance, talking
+from engine.sources import (_STOPWORDS, _stem, keep_read, mentions_product, names_product, read_comments, relevance,
+                            talking)
 from engine.verify_quotes import find_quote
 
 PLACEHOLDERS = ("[deleted]", "[removed]")  # what Reddit shows in place of a post's or a comment's words
@@ -134,9 +135,6 @@ def known_words_of(*texts: str) -> frozenset[str]:
 
 
 _NO_LIBRARY = Path(__file__).resolve().parent / "no library"  # a folder that holds no request log
-# The guard reads up to this many of the request words a thread holds, and as many it doesn't, the way answers read
-# them (each read goes through the whole post again: all of them made slimming half as slow again, 14 Oct 2026).
-GUARD_WORDS = 40
 _TOKEN = re.compile(r"[a-z0-9]+(?:['-][a-z0-9]+)*")
 _WORD_ENDS = re.compile(r"^anti-(?=[a-z])|(?<=[a-z])-free$")  # as need_words reads "anti-dandruff" and "sulfate-free"
 
@@ -303,8 +301,8 @@ def _quoted_elsewhere(thread: Thread, extraction: Extraction, kept: set[str], dr
 
 def differences(whole: Thread, slimmed: Thread, extraction: Extraction, types, words=None) -> list[str]:
     """What answers would read differently in the slimmed copy than in the whole thread (empty: nothing). `words`: the
-    request words looked for (known_words): of those the whole thread's title or post holds (all of them noted, by
-    engine.needs.post_request_words), up to GUARD_WORDS are read the way answers read them, and as many others."""
+    request words looked for (known_words), of which every one the whole thread's title or post holds is read the way
+    answers read it, and as many others (and 20)."""
     found = []
     before, after = check_extraction(extraction, whole), check_extraction(extraction, slimmed)
     if _checked(before) != _checked(after):
@@ -319,17 +317,21 @@ def differences(whole: Thread, slimmed: Thread, extraction: Extraction, types, w
     if ((copied_comment_ids(slimmed) & kept, repeated_copies(slimmed) & kept)
             != (copied_comment_ids(whole) & kept, repeated_copies(whole) & kept)):
         found.append("the copies")
+    # Each copy's comments read once for every product type (engine.sources.keep_read), as the library's own reading
+    # does: read again for each of the 400-odd types, they were most of slimming's time (14 Oct 2026).
+    readings = keep_read(read_comments(whole.comments)), keep_read(read_comments(slimmed.comments))
     for product_type in types:
         if (relevance(slimmed, product_type), names_product(slimmed, product_type), talking(slimmed, product_type)) != (
                 relevance(whole, product_type), names_product(whole, product_type), talking(whole, product_type)):
             found.append(f"the relevance to {product_type}")
+    del readings
     if len(shown_comment_ids(slimmed)) != len(shown_comment_ids(whole)):
         found.append("the comments the AI read")
     if thread_needs(slimmed, every_config_need()) != thread_needs(whole, every_config_need()):
         found.append("the needs its title or post talks about")
     vocabulary = sorted(known_words() if words is None else words)
     held = post_request_words(f"{whole.title}\n{whole.body}", vocabulary)
-    asked = held[:GUARD_WORDS] + [w for w in vocabulary if w not in set(held)][:GUARD_WORDS]
+    asked = held + [w for w in vocabulary if w not in set(held)][:len(held) + 20]
     as_needs = tuple(Need(word, request_word=word) for word in asked)
     if thread_needs(slimmed, as_needs) != thread_needs(whole, as_needs):
         found.append("the request words its title or post holds")
