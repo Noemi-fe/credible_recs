@@ -48,6 +48,7 @@ from engine.config import (
     LIBRARY_MIX,
     LIBRARY_THREADS_PER_PRODUCT,
     MAX_THREADS_PER_SUBREDDIT,
+    OPPOSITE_TITLE_PATTERNS,
     INGREDIENT_TALK_MAX,
     INGREDIENT_TALK_POINTS,
     REFORMULATED_CATEGORIES,
@@ -365,21 +366,30 @@ class LocalSource:
         return self._need_led(best, query)[:limit]
 
     def _need_led(self, threads: list[Thread], query: ParsedQuery) -> list[Thread]:
-        """The threads with those about the request's needs first, most needs first, each part in the order given
-        (14 Oct 2026, Noemi's decision 3: need-led thread choice). A thread is about a need when its title or post talks
-        about it in any of the need's words (engine.needs.thread_needs: "greasy" is "oily"), unless its title names
-        another type of product and not the one asked for. A request without needs keeps the order given: the graded
+        """The threads with those about the request's needs first, most need points first, each part in the order
+        given (14 Oct 2026, Noemi's decision 3: need-led thread choice). A thread is about a need when its title or post
+        talks about it in any of the need's words (engine.needs.thread_needs: "greasy" is "oily"), unless its title
+        names another type of product and not the one asked for, or asks for the opposite kind of product
+        (titled_as_the_opposite: "Best clarifying shampoo?" for one that isn't drying). Its points add up the needs it
+        talks about, each counting by how rare it is among these threads (engine.needs.need_weights, 14 Oct 2026, the
+        need-quality builder): for "shampoo for curly hair that isn't drying", a thread about both comes first, then
+        one about drying, then the many about curls alone. A request without needs keeps the order given: the graded
         one, where a big general thread had outweighed a smaller one asking the request's exact question. So does an
         ingredient-led request ("salicylic acid for acne"): its threads come with those whose comments talk about its
         ingredient most first (talk_points, 13 Oct 2026), and on the library its need had put acne cleanser threads (a
         rinse-off form its answer can't show) ahead of them, losing its one pick."""
-        from engine.needs import request_needs, thread_needs  # here: engine.needs builds on this module
+        from engine.needs import need_weights, request_needs, thread_needs  # here: engine.needs builds on this module
+        from engine.product_facts import request_asks
 
         needs = request_needs(query)
         if not needs or query.ingredient_led:
             return threads
-        titled = {t.id: self._titled_as_another_type(t, query) for t in threads}
-        return sorted(threads, key=lambda t: -len(thread_needs(t, needs, titled[t.id])))  # stable: the order given
+        asks = request_asks(query)
+        talked = {t.id: thread_needs(t, needs, self._titled_as_another_type(t, query)
+                                     or titled_as_the_opposite(t.title, asks)) for t in threads}
+        weights = need_weights(needs, talked.values(), len(threads))
+        points = {tid: round(sum(weights[name] for name in names), 6) for tid, names in talked.items()}
+        return sorted(threads, key=lambda t: -points[t.id])  # stable: the order given breaks ties
 
     def _titled_as_another_type(self, thread: Thread, query: ParsedQuery) -> bool:
         """titled_as_another_type(thread.title, query), worked out once per thread and request type."""
@@ -421,6 +431,16 @@ def titled_as_another_type(title: str, query: ParsedQuery) -> bool:
         return False
     return any(mentions_product(title, p.name) for p in PRODUCT_TYPES
                if p.category == query.category and p.name not in wanted)
+
+
+def titled_as_the_opposite(title: str, asks: tuple[str, ...]) -> bool:
+    """Whether a thread's title asks for the opposite kind of product of one of the request's asks
+    (config.OPPOSITE_TITLE_PATTERNS: "Best clarifying shampoo?" for a shampoo that isn't drying; 14 Oct 2026)."""
+    patterns = [pattern for ask in asks for pattern in OPPOSITE_TITLE_PATTERNS.get(ask, ())]
+    if not patterns:
+        return False
+    lowered = " ".join((title or "").lower().replace("’", "'").split())
+    return any(re.search(pattern, lowered) for pattern in patterns)
 
 
 def talking(thread: Thread, product_type: str) -> int:

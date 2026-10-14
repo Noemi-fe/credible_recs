@@ -733,6 +733,46 @@ def test_what_says_the_opposite_of_a_request_that_asks_for_no_drying_no_strippin
     assert _says_the_opposite(quote, (ask,)) is against
 
 
+# Haircare needs (14 Oct 2026, the need-quality builder): a shampoo for colour-treated hair that strips or fades the
+# colour, or is a clarifying one (they lift dye with the buildup), says the opposite, and so does one for dry hair that
+# dries it; one for greasy or fine hair that leaves it greasy, heavy or flat; one for frizz that leaves more of it. A
+# writer describing their own hair ("my roots get greasy by noon") is the need, not the opposite. All made up.
+@pytest.mark.parametrize("ask, quote, against", [
+    ("colour-treated", "It stripped my colour within two washes.", True),
+    ("colour-treated", "Faded my red so fast, sadly.", False),  # what faded isn't said to be the colour: not read
+    ("colour-treated", "It faded my colour in a week.", True),
+    ("colour-treated", "A clarifying shampoo I use monthly.", True),
+    ("colour-treated", "It never strips my colour, even bleached.", False),
+    ("colour-treated", "Kept my blonde bright for months.", False),
+    ("dry hair", "Far too drying for my ends.", True),
+    ("dry hair", "My dry ends finally feel soft.", False),
+    ("oily hair", "It left my roots greasy by lunchtime.", True),
+    ("oily hair", "A bit too heavy for my scalp.", True),
+    ("oily hair", "My roots get greasy by noon, and this helps.", False),
+    ("oily hair", "Never makes my hair greasy.", False),
+    ("fine hair", "It weighs my hair down completely.", True),
+    ("fine hair", "It made my hair flat and limp.", True),
+    ("fine hair", "Never weighs my fine hair down.", False),
+    ("frizzy", "It made my hair frizzier than ever.", True),
+    ("frizzy", "It leaves my curls so frizzy.", True),
+    ("frizzy", "No more frizz since I switched.", False),
+    ("frizzy", "My hair is frizzy and this tames it.", False),
+])
+def test_what_says_the_opposite_of_a_haircare_request(ask, quote, against):
+    from engine.answer import _says_the_opposite
+
+    assert _says_the_opposite(quote, (ask,)) is against
+
+
+def test_a_haircare_need_is_asked_for_so_the_opposite_rules_read_it():
+    from engine.product_facts import request_asks
+    from engine.query import parse_query
+
+    assert request_asks(parse_query("shampoo for colour-treated hair")) == ("colour-treated",)
+    assert request_asks(parse_query("shampoo for fine oily hair")) == ("fine hair", "oily hair")
+    assert request_asks(parse_query("gentle shampoo for wavy hair")) == ("gentle", "wavy")
+
+
 # --- Prices and budgets (decision 11, Noemi, 9 Oct 2026) ---
 
 CHECKED = date(2026, 10, 9)

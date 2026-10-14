@@ -31,10 +31,12 @@ count in comments and titles too ("my fine, oily hair", "thin/greasy hair").
 
 A thread talks about a need (thread_needs, 14 Oct 2026) when its title or post does, the same way, unless its title
 names another type of product and not the one asked for: the library's first reading reads such threads first
-(engine.sources.LocalSource).
+(engine.sources.LocalSource), each need counting by how rare it is among the threads (need_weights, 14 Oct 2026).
 """
 
+import math
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import cache
 
@@ -139,6 +141,22 @@ def thread_needs(thread: Thread, needs: tuple[Need, ...], titled_as_another_type
         return ()
     met = set(needs_met(thread.title, needs)) | set(needs_met(thread.body or "", needs))
     return tuple(need.name for need in needs if need.name in met)
+
+
+def need_weights(needs: tuple[Need, ...], talked: Iterable[tuple[str, ...]], total: int) -> dict[str, float]:
+    """How much each of the request's needs counts in the library's first reading (14 Oct 2026, the need-quality
+    builder): by how rare it is among the `total` threads read for it, `talked` holding the needs each talks about
+    (thread_needs). A need k of them talk about weighs log((total + 1) / (k + 1)), the rarest 1 and the others in
+    proportion: in shampoo threads "curly" is everywhere and tells little, "isn't drying" picks out the threads that
+    talk about it. A need every thread talks about weighs 0: it tells none apart. When no thread talks about any, each
+    counts 1."""
+    counts = {need.name: 0 for need in needs}
+    for names in talked:
+        for name in set(names) & counts.keys():
+            counts[name] += 1
+    raw = {name: math.log((total + 1) / (k + 1)) for name, k in counts.items()}
+    top = max(raw.values(), default=0.0)
+    return {name: (weight / top if top > 0 else 1.0) for name, weight in raw.items()}
 
 
 def needs_met(body: str, needs: tuple[Need, ...], long_term_use: bool = False) -> tuple[str, ...]:

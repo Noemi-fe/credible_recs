@@ -947,7 +947,35 @@ _HARSH = (rf"\b(?:{_DEGREE}|is|was|are|were|it's|its|they're|feels?|felt|find it
 OPPOSITE_QUOTE_PATTERNS["not drying"] = _DRYING + _STRIPPING + _CLARIFYING
 OPPOSITE_QUOTE_PATTERNS["strip"] = _STRIPPING + _DRYING
 OPPOSITE_QUOTE_PATTERNS["gentle"] = _HARSH + _STRIPPING + _DRYING + _CLARIFYING
-OPPOSITE_NEGATED_IN_SENTENCE = ("not drying", "strip", "gentle")
+# Haircare needs (14 Oct 2026, the same builder; asked for since then: engine.product_facts.request_asks): a shampoo for
+# colour-treated hair that strips or fades the colour, or a clarifying one (it lifts dye with the buildup); for dry hair
+# one that dries it; for greasy or fine hair one that leaves it greasy, heavy or flat; for frizz one that leaves more.
+# Only what the product does to the writer's hair: "my roots get greasy by noon" is the need itself.
+_COLOUR = (rf"\bstrip(?:s|ped|ping)? (?:{_WHOSE} |the |out )?(?:hair )?colou?r\b",
+           rf"\bfad(?:e|es|ed|ing) {_WHOSE} (?:hair )?colou?r\b")
+_HEAVY = (rf"\b(?:left|leaves|leave|leaving|made|makes|make|making) {_WHOSE} (?:hair|scalp|roots|curls|waves) "
+          rf"(?:feel(?:ing)? |look(?:ing)? )?(?:{_DEGREE} )?(?:greas(?:y|ier)|oil(?:y|ier)|heavy|heavier|flat|limp"
+          r"|weighed down)\b",
+          rf"\bweigh(?:s|ed|ing)? {_WHOSE} (?:\w+ )?(?:hair|curls|waves|roots) down\b",
+          rf"\b{_DEGREE} heavy\b")
+_FRIZZ = (rf"\b(?:left|leaves|leave|leaving|made|makes|make|making) {_WHOSE} (?:hair|curls?|waves|ends) "
+          rf"(?:feel(?:ing)? |look(?:ing)? )?(?:{_DEGREE} )?(?:frizz(?:y|ier)|puffy|poofy)\b",
+          r"\b(?:more|so much|lots of|a lot of|tons of|adds?|added|extra) frizz\b",
+          r"\bfrizzier\b")
+OPPOSITE_QUOTE_PATTERNS["colour-treated"] = _COLOUR + _CLARIFYING
+OPPOSITE_QUOTE_PATTERNS["dry hair"] = _DRYING + _STRIPPING + _CLARIFYING
+OPPOSITE_QUOTE_PATTERNS["oily hair"] = _HEAVY
+OPPOSITE_QUOTE_PATTERNS["fine hair"] = _HEAVY
+OPPOSITE_QUOTE_PATTERNS["frizzy"] = _FRIZZ
+OPPOSITE_NEGATED_IN_SENTENCE = ("not drying", "strip", "gentle", "colour-treated", "dry hair", "oily hair", "fine hair",
+                                "frizzy")
+# A thread whose title asks for the opposite kind of product (14 Oct 2026, the need-quality builder): "Best clarifying
+# shampoo for curly hair?" is no thread about a shampoo that isn't drying, a gentle one, or one for dry or colour-treated
+# hair, however much its title and post talk about curls or dryness: its answers are clarifying shampoos. The library's
+# first reading reads it after every thread about the request's needs (engine.sources.LocalSource). Only the kind of
+# product: a title saying a product dried someone's hair ("this shampoo is so drying, help") is about the need.
+OPPOSITE_TITLE_PATTERNS: dict[str, tuple[str, ...]] = {ask: _CLARIFYING
+                                                       for ask in ("not drying", "gentle", "colour-treated", "dry hair")}
 OPPOSITE_NEGATION_WINDOW = 8
 
 # --- Quotes that say what the writer thinks come first (10 Oct 2026) ---
