@@ -709,6 +709,8 @@ _STOPWORDS = {
     "actually", "really", "very", "good", "great", "nice", "best", "need", "want", "looking", "something", "some",
     "any", "skin", "hair", "under", "over", "less", "more", "max", "around", "about", "budget", "between", "than", "up",
     "pounds", "pound", "quid", "euros", "euro", "dollars", "bucks", "usd", "gbp", "eur",
+    # 14 Oct 2026: "that actually works" says how well, not what for; a scalp is to haircare what skin is to skincare.
+    "work", "worked", "working", "scalp",
 }
 
 

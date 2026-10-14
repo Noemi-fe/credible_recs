@@ -507,6 +507,32 @@ NEEDS: dict[str, tuple[str, ...]] = {
     # Something that lasts. A mention with long-term use (module 5) talks about it too: it describes long use.
     "lasting": ("lasts", "lasted", "lasting", "outlast", "durab", "held up", "holds up", "died", "broke",
                 "stopped working", "fell apart"),
+    # 14 Oct 2026 (need-led thread choice, Noemi's decision 3 of 14 Oct; words chosen by Claude, reported to her): a quiet
+    # appliance, and a pan for a glass-top (ceramic) stove, said in the words people use. "glass" alone isn't one.
+    "quiet": ("quiet", "noise", "noisy", "loud", "silent", "silence"),
+    "glass top stove": ("glass top", "glass-top", "glasstop", "glass stove", "glass cooktop", "glass hob",
+                        "ceramic hob", "ceramic cooktop", "ceramic top", "ceramic stove", "smooth top", "smooth-top",
+                        "smoothtop"),
+}
+# A haircare request's needs (14 Oct 2026, need-led thread choice, Noemi's decision 3 of 14 Oct; words chosen by Claude,
+# reported to her), in place of the skin types': a scalp is oily, hair is dry, fine or frizzy, and the words differ
+# ("shiny" hair isn't greasy, a "flaky" scalp is dandruff, not dry hair). Found as NEEDS' words are: a word at the start
+# of a word, a phrase whole. "fine" or "dry" alone aren't words of them: "it works fine", "I let it air dry".
+HAIR_NEEDS: dict[str, tuple[str, ...]] = {
+    "oily hair": ("oily", "oili", "greas", "sebum"),
+    "dry hair": ("dry hair", "dry ends", "dry curls", "dry strands", "dry and", "dry,", "dry curly", "dry wavy",
+                 "dry frizzy", "dryness", "brittle", "like straw", "straw-like", "dehydrat", "parched"),
+    "dandruff": ("dandruff", "flak", "seborrh", "seb derm", "sebderm", "malassezia"),
+    "itchy scalp": ("itch",),
+    "sensitive scalp": NEEDS["sensitive"],
+    "fine hair": ("fine hair", "fine strands", "fine curly", "fine wavy", "fine straight", "fine flat", "fine thin",
+                  "fine and thin", "thin hair", "thin fine", "flat hair", "falls flat", "fall flat", "limp", "volum",
+                  "weigh", "lifeless"),
+    "frizzy": ("frizz", "flyaway", "fly-away", "fly away"),
+    "curly": ("curl", "coil", "ringlet", "3a", "3b", "3c", "4a", "4b", "4c"),
+    "wavy": ("wavy", "waves", "wavies", "2a", "2b", "2c"),
+    "colour-treated": ("colour-treated", "color-treated", "colour treated", "color treated", "coloured", "colored",
+                       "dye", "bleach", "highlight", "colour-safe", "color-safe", "colour safe", "color safe"),
 }
 # Other words of a request that name one of those needs: "first chef's knife", "will last decades", "lasts 10+ years".
 # Module 1's "lasts 10+ years" (min_years) names "lasting" as well.

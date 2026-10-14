@@ -216,6 +216,16 @@ NEED_LABELS: dict[str, str] = {
     # A request's own word that reads badly as typed ("won't strip my skin": "about gentleness or strip"); Claude,
     # 10 Oct 2026.
     "strip": "not stripping the skin",
+    # Haircare needs (config.HAIR_NEEDS) and kitchen needs in other words, 14 Oct 2026 (Claude). "oily hair", "dry
+    # hair", "dandruff" and "fine hair" read well as they are.
+    "frizzy": "frizz",
+    "curly": "curly hair",
+    "wavy": "wavy hair",
+    "colour-treated": "colour-treated hair",
+    "itchy scalp": "an itchy scalp",
+    "sensitive scalp": "a sensitive scalp",
+    "quiet": "noise",
+    "glass top stove": "glass-top stoves",
 }
 # The breakdown's line about needs: only shown when some credible mention talks about them.
 BREAKDOWN_NEEDS = ("About your request: {recommends} credible recommendations and {warnings} credible warnings talk "

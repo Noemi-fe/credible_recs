@@ -26,9 +26,9 @@ import re
 from dataclasses import dataclass
 from functools import cache
 
-from engine.config import NEED_IGNORED_WORDS, NEED_REQUEST_WORDS, NEEDS
+from engine.config import HAIR_NEEDS, NEED_IGNORED_WORDS, NEED_REQUEST_WORDS, NEEDS
 from engine.credibility import _own_words
-from engine.query import PRODUCT_TYPES, ParsedQuery
+from engine.query import PRODUCT_TYPES, SKIN_TYPES, ParsedQuery
 from engine.sources import _stem, _title_has, need_words
 
 LASTING = "lasting"  # the need that long-term use also speaks to
@@ -43,6 +43,14 @@ class Need:
     request_word: str | None = None  # a word of the request, as module 2 matches it ("pourover"); None otherwise
 
 
+def needs_of(category: str | None) -> dict[str, tuple[str, ...]]:
+    """The needs a request of this category can name, with their words: config.NEEDS, and for haircare config.HAIR_NEEDS
+    in place of the skin types (14 Oct 2026: "greasy hair" is an oily scalp, not oily skin)."""
+    if category == "haircare":
+        return {need: words for need, words in NEEDS.items() if need not in SKIN_TYPES} | HAIR_NEEDS
+    return NEEDS
+
+
 def request_needs(query: ParsedQuery) -> tuple[Need, ...]:
     """The needs the request names, in the order it names them (a need module 1 found but the words don't show, last).
 
@@ -51,13 +59,14 @@ def request_needs(query: ParsedQuery) -> tuple[Need, ...]:
     if query.status != "ok":
         return ()
     text = _without_product_names(_plain(query.text), query.product_type)
+    needs = needs_of(query.category)
     found: dict[str, int] = {}  # need name -> where the request names it
 
     def name(need: str, at: int) -> None:
-        if need in NEEDS:
+        if need in needs:
             found[need] = min(at, found.get(need, at))
 
-    for need, words in NEEDS.items():
+    for need, words in needs.items():
         for word in (need,) + words:
             at = _first_at(text, word)
             if at is not None:
@@ -72,9 +81,9 @@ def request_needs(query: ParsedQuery) -> tuple[Need, ...]:
         at, typed = _as_typed(query.text, word)
         if word in NEED_REQUEST_WORDS:
             name(NEED_REQUEST_WORDS[word], at)
-        elif not _covered(word, found):
+        elif not _covered(word, found, needs):
             own_words.append((at, Need(typed, request_word=word)))
-    listed = [(at, Need(need, NEEDS[need])) for need, at in found.items()]
+    listed = [(at, Need(need, needs[need])) for need, at in found.items()]
     return tuple(need for _, need in sorted(listed + own_words, key=lambda pair: pair[0]))
 
 
@@ -144,7 +153,7 @@ def _as_typed(request: str, word: str) -> tuple[int, str]:
     return len(request), word
 
 
-def _covered(word: str, found: dict[str, int]) -> bool:
+def _covered(word: str, found: dict[str, int], needs: dict[str, tuple[str, ...]] = NEEDS) -> bool:
     """Whether a need word is already part of a need found, or is a word too common to show a need.
 
     "sensitive" is the need "sensitive" (one of its words begins it), "acneprone" is "acne-prone" (the name without its
@@ -155,7 +164,7 @@ def _covered(word: str, found: dict[str, int]) -> bool:
     for need in found:
         if word == re.sub(r"[\s-]", "", need):
             return True
-        for need_word in NEEDS[need]:
+        for need_word in needs[need]:
             if " " in need_word and word in need_word.split():
                 return True
             if " " not in need_word and word.startswith(need_word.replace("-", "")):
