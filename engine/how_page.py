@@ -236,6 +236,8 @@ def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = Fa
         "default_currency": answer.CURRENCY_SIGNS.get(config.BUDGET_DEFAULT_CURRENCY, config.BUDGET_DEFAULT_CURRENCY),
         "soft_note_example": _soft_note_example(),
         "unconfirmed_example": answer.CAUTION.format(reason=unconfirmed_note(["PFAS"])),
+        # Prescription-only products (Noemi's decision 5, 14 Oct 2026): the note they carry wherever they are shown.
+        "prescription_example": answer.PRESCRIPTION_NOTE,
     }
     return fill(TEMPLATE.read_text(encoding="utf-8"), texts, slots)
 
