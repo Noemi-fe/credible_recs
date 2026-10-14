@@ -19,7 +19,9 @@ Built so far:
   contains the ingredient asked for (engine/ingredient_eval.py);
 - needs (14 Oct 2026): the requests of eval/edge_cases/needs.json through the pipeline: how many of each answer's
   first-reading threads are about the request's need, by title and by title or post, and the picks
-  (engine/need_eval.py).
+  (engine/need_eval.py);
+- the general category's routing (14 Oct 2026): module 1 on the made-up requests of eval/edge_cases/general.json,
+  by the rules alone and with the open model (engine/routing_eval.py).
 Still to come: the blind test's preference per rival (engine/blind_test.py tally, week 3).
 
 The numbers (10 Oct 2026): each section's scores are kept (engine.metrics.EvalResults) as the report prints them, and
@@ -54,6 +56,7 @@ from engine.metrics import (
 )
 from engine.ingredient_eval import ingredient_section
 from engine.need_eval import need_section
+from engine.routing_eval import routing_section
 from engine.slice_eval import slice_section
 from engine.query import parse_query
 from engine.query_eval import QueryCaseError, load_query_cases, report_lines, score_cases, summarize
@@ -112,6 +115,9 @@ def main() -> int:
 
     print()
     print(need_section())
+
+    print()
+    print(routing_section())
 
     print()
     print("\n".join(_metrics_lines(results, date.today())))
