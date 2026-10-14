@@ -113,7 +113,9 @@ def test_same_request_gives_the_same_result_from_both_sources(tmp_path):
     assert local == live  # same fields, same values, same comments dropped
 
 
-@pytest.mark.parametrize("text", ["something for my face", "a good laptop"])
+# Changed on purpose 14 Oct 2026 (the general category, Noemi's "recs regardless of the category"): a laptop is a
+# product now, so a service is the example of a request module 1 turns away. Was: "a good laptop".
+@pytest.mark.parametrize("text", ["something for my face", "a good plumber near me"])
 def test_unclear_or_out_of_scope_request_finds_nothing_and_does_nothing(tmp_path, text):
     query = parse_query(text)
     assert query.status != "ok"
@@ -361,7 +363,9 @@ def test_raw_threads_and_usable_threads_pick_the_same_threads_for_the_same_credi
     assert (raw_client.searches, raw_client.fetches) == (client.searches, client.fetches)
 
 
-@pytest.mark.parametrize("text", ["something for my face", "a good laptop"])
+# Changed on purpose 14 Oct 2026 (the general category, Noemi's "recs regardless of the category"): a laptop is a
+# product now, so a service is the example of a request module 1 turns away. Was: "a good laptop".
+@pytest.mark.parametrize("text", ["something for my face", "a good plumber near me"])
 def test_raw_threads_for_an_unclear_request_cost_nothing(text):
     client = FakeParseClient(posts=[post("1kettle")])
     assert ParseSource(client=client).find_raw_threads(parse_query(text)) == []

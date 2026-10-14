@@ -1,0 +1,8935 @@
+{
+ "about": "Module 1's product types beyond the first ones, as data (14 Oct 2026, Noemi's plan for recs regardless of the category, part 1; chosen by Claude, reported to Noemi). Each type: its name and plural, its category (general, or kitchen, skincare or haircare) and for the general category its department, the names people use for it (keywords; hints are weaker clues, used only when no name is found), the words people put in Reddit post titles about it (title_words), and the communities to search for it, most specific first. Loaded by engine/config.py and engine/query.py.",
+ "types": [
+  {
+   "name": "dishwasher",
+   "plural": "dishwashers",
+   "category": "kitchen",
+   "keywords": [
+    "dishwasher",
+    "dish washer",
+    "integrated dishwasher",
+    "slimline dishwasher",
+    "countertop dishwasher",
+    "built-in dishwasher"
+   ],
+   "title_words": [
+    "dishwasher"
+   ],
+   "subreddits": [
+    "Appliances",
+    "BuyItForLife",
+    "Cooking"
+   ]
+  },
+  {
+   "name": "fridge",
+   "plural": "fridges",
+   "category": "kitchen",
+   "keywords": [
+    "fridge",
+    "refrigerator",
+    "fridge freezer",
+    "fridge-freezer",
+    "american fridge",
+    "american style fridge",
+    "french door fridge",
+    "mini fridge",
+    "wine fridge",
+    "larder fridge"
+   ],
+   "title_words": [
+    "fridge",
+    "refrigerator"
+   ],
+   "subreddits": [
+    "Appliances",
+    "BuyItForLife",
+    "Cooking"
+   ]
+  },
+  {
+   "name": "freezer",
+   "plural": "freezers",
+   "category": "kitchen",
+   "keywords": [
+    "freezer",
+    "chest freezer",
+    "upright freezer",
+    "deep freezer",
+    "tall freezer"
+   ],
+   "title_words": [
+    "freezer"
+   ],
+   "subreddits": [
+    "Appliances",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "hob",
+   "plural": "hobs",
+   "category": "kitchen",
+   "keywords": [
+    "hob",
+    "induction hob",
+    "gas hob",
+    "ceramic hob",
+    "cooktop",
+    "induction cooktop",
+    "gas cooktop",
+    "portable induction hob",
+    "induction burner",
+    "portable induction cooktop"
+   ],
+   "title_words": [
+    "hob",
+    "cooktop"
+   ],
+   "subreddits": [
+    "Appliances",
+    "BuyItForLife",
+    "Cooking"
+   ]
+  },
+  {
+   "name": "cooker hood",
+   "plural": "cooker hoods",
+   "category": "kitchen",
+   "keywords": [
+    "cooker hood",
+    "range hood",
+    "extractor hood",
+    "cooker extractor",
+    "extractor fan for cooker"
+   ],
+   "title_words": [
+    "cooker hood",
+    "range hood"
+   ],
+   "subreddits": [
+    "Appliances",
+    "BuyItForLife",
+    "Cooking"
+   ]
+  },
+  {
+   "name": "wok",
+   "plural": "woks",
+   "category": "kitchen",
+   "keywords": [
+    "wok",
+    "carbon steel wok",
+    "cast iron wok",
+    "non-stick wok",
+    "nonstick wok"
+   ],
+   "title_words": [
+    "wok"
+   ],
+   "subreddits": [
+    "Cooking",
+    "AskCulinary",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "cookware set",
+   "plural": "cookware sets",
+   "category": "kitchen",
+   "keywords": [
+    "cookware set",
+    "pan set",
+    "pot set",
+    "cookware",
+    "cookware sets"
+   ],
+   "title_words": [
+    "cookware",
+    "cookware set"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Cooking",
+    "AskCulinary"
+   ]
+  },
+  {
+   "name": "knife sharpener",
+   "plural": "knife sharpeners",
+   "category": "kitchen",
+   "keywords": [
+    "knife sharpener",
+    "sharpening stone",
+    "whetstone",
+    "whet stone",
+    "honing rod",
+    "honing steel",
+    "pull-through sharpener",
+    "pull through sharpener",
+    "electric knife sharpener",
+    "knife sharpening system"
+   ],
+   "title_words": [
+    "sharpener",
+    "whetstone"
+   ],
+   "subreddits": [
+    "sharpening",
+    "chefknives",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "cutting board",
+   "plural": "cutting boards",
+   "category": "kitchen",
+   "keywords": [
+    "cutting board",
+    "chopping board",
+    "end grain board",
+    "end grain cutting board",
+    "wooden cutting board",
+    "chopping block"
+   ],
+   "title_words": [
+    "cutting board",
+    "chopping board"
+   ],
+   "subreddits": [
+    "chefknives",
+    "Cooking",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "pizza oven",
+   "plural": "pizza ovens",
+   "category": "kitchen",
+   "keywords": [
+    "pizza oven",
+    "outdoor pizza oven",
+    "ooni",
+    "indoor pizza oven",
+    "gas pizza oven"
+   ],
+   "title_words": [
+    "pizza oven"
+   ],
+   "subreddits": [
+    "Pizza",
+    "Cooking",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "barbecue",
+   "plural": "barbecues",
+   "category": "kitchen",
+   "keywords": [
+    "barbecue",
+    "bbq",
+    "barbeque",
+    "gas grill",
+    "charcoal grill",
+    "kettle grill",
+    "kettle bbq",
+    "pellet grill",
+    "pellet smoker",
+    "smoker",
+    "offset smoker",
+    "kamado",
+    "kamado grill",
+    "flat top grill",
+    "gas bbq",
+    "charcoal bbq",
+    "outdoor grill",
+    "propane grill"
+   ],
+   "title_words": [
+    "bbq",
+    "grill",
+    "smoker"
+   ],
+   "subreddits": [
+    "BBQ",
+    "smoking",
+    "grilling",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "moka pot",
+   "plural": "moka pots",
+   "category": "kitchen",
+   "keywords": [
+    "moka pot",
+    "stovetop espresso maker",
+    "stove top espresso maker",
+    "bialetti",
+    "moka"
+   ],
+   "title_words": [
+    "moka pot"
+   ],
+   "subreddits": [
+    "Coffee",
+    "espresso",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "milk frother",
+   "plural": "milk frothers",
+   "category": "kitchen",
+   "keywords": [
+    "milk frother",
+    "frother",
+    "milk foamer",
+    "electric milk frother",
+    "handheld frother"
+   ],
+   "title_words": [
+    "milk frother"
+   ],
+   "subreddits": [
+    "Coffee",
+    "espresso",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "body wash",
+   "plural": "body washes",
+   "category": "skincare",
+   "keywords": [
+    "body wash",
+    "shower gel",
+    "body cleanser",
+    "shower cream",
+    "body soap"
+   ],
+   "title_words": [
+    "body wash"
+   ],
+   "subreddits": [
+    "SkincareAddiction",
+    "30PlusSkinCare",
+    "SkincareAddictionUK"
+   ]
+  },
+  {
+   "name": "body lotion",
+   "plural": "body lotions",
+   "category": "skincare",
+   "keywords": [
+    "body lotion",
+    "body cream",
+    "body butter",
+    "body moisturiser",
+    "body moisturizer",
+    "body milk",
+    "body oil"
+   ],
+   "title_words": [
+    "body lotion"
+   ],
+   "subreddits": [
+    "SkincareAddiction",
+    "30PlusSkinCare",
+    "SkincareAddictionUK",
+    "AsianBeauty"
+   ]
+  },
+  {
+   "name": "hand cream",
+   "plural": "hand creams",
+   "category": "skincare",
+   "keywords": [
+    "hand cream",
+    "hand lotion",
+    "hand balm",
+    "hand moisturiser",
+    "hand moisturizer"
+   ],
+   "title_words": [
+    "hand cream"
+   ],
+   "subreddits": [
+    "SkincareAddiction",
+    "30PlusSkinCare",
+    "SkincareAddictionUK"
+   ]
+  },
+  {
+   "name": "curl cream",
+   "plural": "curl creams",
+   "category": "haircare",
+   "keywords": [
+    "curl cream",
+    "curl creme",
+    "curling cream",
+    "curl defining cream",
+    "styling cream"
+   ],
+   "title_words": [
+    "curl cream"
+   ],
+   "subreddits": [
+    "curlyhair",
+    "wavyhair",
+    "HaircareScience"
+   ]
+  },
+  {
+   "name": "hair gel",
+   "plural": "hair gels",
+   "category": "haircare",
+   "keywords": [
+    "hair gel",
+    "styling gel",
+    "curl gel",
+    "hair styling gel"
+   ],
+   "title_words": [
+    "hair gel"
+   ],
+   "subreddits": [
+    "curlyhair",
+    "wavyhair",
+    "HaircareScience"
+   ]
+  },
+  {
+   "name": "heat protectant",
+   "plural": "heat protectants",
+   "category": "haircare",
+   "keywords": [
+    "heat protectant",
+    "heat protection spray",
+    "heat protectant spray",
+    "thermal protectant",
+    "heat protection"
+   ],
+   "title_words": [
+    "heat protectant"
+   ],
+   "subreddits": [
+    "HaircareScience",
+    "Hair",
+    "femalehairadvice",
+    "curlyhair"
+   ]
+  },
+  {
+   "name": "hairspray",
+   "plural": "hairsprays",
+   "category": "haircare",
+   "keywords": [
+    "hairspray",
+    "hair spray",
+    "finishing spray",
+    "texture spray",
+    "texturizing spray",
+    "texturising spray",
+    "sea salt spray"
+   ],
+   "title_words": [
+    "hairspray"
+   ],
+   "subreddits": [
+    "HaircareScience",
+    "Hair",
+    "femalehairadvice",
+    "malehairadvice"
+   ]
+  },
+  {
+   "name": "vacuum cleaner",
+   "plural": "vacuum cleaners",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "vacuum cleaner",
+    "vacuum",
+    "hoover",
+    "cordless vacuum",
+    "stick vacuum",
+    "upright vacuum",
+    "canister vacuum",
+    "cylinder vacuum",
+    "handheld vacuum",
+    "hand vacuum",
+    "bagless vacuum",
+    "pet hair vacuum",
+    "cordless hoover",
+    "dyson vacuum"
+   ],
+   "title_words": [
+    "vacuum",
+    "hoover"
+   ],
+   "subreddits": [
+    "VacuumCleaners",
+    "BuyItForLife",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "robot vacuum",
+   "plural": "robot vacuums",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "robot vacuum",
+    "robot vacuum cleaner",
+    "robovac",
+    "robo vac",
+    "roomba",
+    "robot hoover",
+    "robotic vacuum",
+    "robot mop",
+    "robot vacuum and mop"
+   ],
+   "title_words": [
+    "robot vacuum",
+    "roomba",
+    "robovac"
+   ],
+   "subreddits": [
+    "VacuumCleaners",
+    "smarthome",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "carpet cleaner",
+   "plural": "carpet cleaners",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "carpet cleaner",
+    "carpet shampooer",
+    "carpet washer",
+    "upholstery cleaner",
+    "rug doctor",
+    "spot cleaner",
+    "carpet cleaning machine"
+   ],
+   "title_words": [
+    "carpet cleaner"
+   ],
+   "subreddits": [
+    "VacuumCleaners",
+    "CleaningTips",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "steam mop",
+   "plural": "steam mops",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "steam mop",
+    "steam cleaner",
+    "floor steamer"
+   ],
+   "title_words": [
+    "steam mop"
+   ],
+   "subreddits": [
+    "VacuumCleaners",
+    "CleaningTips",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "mop",
+   "plural": "mops",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "mop",
+    "spin mop",
+    "flat mop",
+    "microfibre mop",
+    "microfiber mop",
+    "spray mop"
+   ],
+   "title_words": [
+    "mop"
+   ],
+   "subreddits": [
+    "CleaningTips",
+    "BuyItForLife",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "mattress",
+   "plural": "mattresses",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "mattress",
+    "memory foam mattress",
+    "hybrid mattress",
+    "latex mattress",
+    "pocket sprung mattress",
+    "bed in a box",
+    "spring mattress",
+    "firm mattress"
+   ],
+   "title_words": [
+    "mattress"
+   ],
+   "subreddits": [
+    "Mattress",
+    "BuyItForLife",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "mattress topper",
+   "plural": "mattress toppers",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "mattress topper",
+    "topper",
+    "memory foam topper",
+    "bed topper",
+    "foam topper",
+    "mattress pad",
+    "featherbed topper"
+   ],
+   "title_words": [
+    "mattress topper"
+   ],
+   "subreddits": [
+    "Mattress",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "pillow",
+   "plural": "pillows",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "pillow",
+    "memory foam pillow",
+    "bed pillow",
+    "pillows for side sleepers",
+    "side sleeper pillow",
+    "orthopedic pillow",
+    "cervical pillow",
+    "down pillow",
+    "latex pillow"
+   ],
+   "title_words": [
+    "pillow"
+   ],
+   "subreddits": [
+    "Mattress",
+    "BuyItForLife",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "duvet",
+   "plural": "duvets",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "duvet",
+    "comforter",
+    "quilt",
+    "down duvet",
+    "down comforter",
+    "weighted blanket",
+    "summer duvet",
+    "winter duvet"
+   ],
+   "title_words": [
+    "duvet"
+   ],
+   "subreddits": [
+    "Mattress",
+    "BuyItForLife",
+    "HomeDecorating"
+   ]
+  },
+  {
+   "name": "bed sheets",
+   "plural": "bed sheets",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "bed sheets",
+    "sheets",
+    "bedsheets",
+    "bed sheet",
+    "sheet set",
+    "bedding",
+    "linen sheets",
+    "percale sheets",
+    "sateen sheets",
+    "fitted sheet",
+    "flat sheet",
+    "pillowcase",
+    "pillowcases",
+    "bamboo sheets",
+    "cotton sheets"
+   ],
+   "title_words": [
+    "sheets",
+    "bedding"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Mattress",
+    "HomeDecorating"
+   ]
+  },
+  {
+   "name": "duvet cover",
+   "plural": "duvet covers",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "duvet cover",
+    "comforter cover",
+    "quilt cover",
+    "bedding set"
+   ],
+   "title_words": [
+    "duvet cover"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "HomeDecorating"
+   ]
+  },
+  {
+   "name": "bed frame",
+   "plural": "bed frames",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "bed frame",
+    "platform bed",
+    "divan bed",
+    "divan",
+    "bunk bed",
+    "storage bed",
+    "headboard",
+    "ottoman bed",
+    "wooden bed frame",
+    "metal bed frame",
+    "bed base"
+   ],
+   "hints": [
+    "bed"
+   ],
+   "title_words": [
+    "bed frame",
+    "bed"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "HomeDecorating",
+    "Mattress"
+   ]
+  },
+  {
+   "name": "sofa",
+   "plural": "sofas",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "sofa",
+    "couch",
+    "sofa bed",
+    "sectional",
+    "settee",
+    "loveseat",
+    "sleeper sofa",
+    "corner sofa",
+    "futon",
+    "modular sofa"
+   ],
+   "title_words": [
+    "sofa",
+    "couch"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "HomeDecorating",
+    "malelivingspace"
+   ]
+  },
+  {
+   "name": "armchair",
+   "plural": "armchairs",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "armchair",
+    "recliner",
+    "reading chair",
+    "accent chair",
+    "lounge chair",
+    "recliner chair"
+   ],
+   "title_words": [
+    "armchair"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "HomeDecorating"
+   ]
+  },
+  {
+   "name": "office chair",
+   "plural": "office chairs",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "office chair",
+    "desk chair",
+    "ergonomic chair",
+    "gaming chair",
+    "computer chair",
+    "task chair",
+    "ergonomic office chair",
+    "herman miller aeron",
+    "aeron"
+   ],
+   "hints": [
+    "chair"
+   ],
+   "title_words": [
+    "office chair",
+    "desk chair",
+    "ergonomic chair"
+   ],
+   "subreddits": [
+    "OfficeChairs",
+    "BuyItForLife",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "standing desk",
+   "plural": "standing desks",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "standing desk",
+    "sit stand desk",
+    "sit-stand desk",
+    "height adjustable desk",
+    "adjustable desk",
+    "electric standing desk",
+    "standing desk converter",
+    "desk riser",
+    "motorised desk",
+    "motorized desk"
+   ],
+   "title_words": [
+    "standing desk"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "battlestations",
+    "OfficeChairs"
+   ]
+  },
+  {
+   "name": "desk",
+   "plural": "desks",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "desk",
+    "computer desk",
+    "writing desk",
+    "office desk",
+    "home office desk",
+    "gaming desk",
+    "l-shaped desk"
+   ],
+   "title_words": [
+    "desk"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "battlestations",
+    "HomeDecorating"
+   ]
+  },
+  {
+   "name": "dining table",
+   "plural": "dining tables",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "dining table",
+    "kitchen table",
+    "dining set",
+    "extendable dining table",
+    "dining room table",
+    "dining chairs",
+    "dining chair"
+   ],
+   "title_words": [
+    "dining table"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "HomeDecorating"
+   ]
+  },
+  {
+   "name": "bookshelf",
+   "plural": "bookshelves",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "bookshelf",
+    "bookcase",
+    "bookshelves",
+    "shelving unit",
+    "book shelf",
+    "billy bookcase"
+   ],
+   "title_words": [
+    "bookshelf"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "HomeDecorating"
+   ]
+  },
+  {
+   "name": "wardrobe",
+   "plural": "wardrobes",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "wardrobe",
+    "closet system",
+    "armoire",
+    "clothes rail",
+    "clothing rack",
+    "garment rack"
+   ],
+   "title_words": [
+    "wardrobe"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "HomeDecorating"
+   ]
+  },
+  {
+   "name": "chest of drawers",
+   "plural": "chests of drawers",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "chest of drawers",
+    "dresser",
+    "drawers",
+    "chest of drawer",
+    "bedroom dresser"
+   ],
+   "title_words": [
+    "chest of drawers"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "HomeDecorating"
+   ]
+  },
+  {
+   "name": "tv stand",
+   "plural": "tv stands",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "tv stand",
+    "tv unit",
+    "tv cabinet",
+    "media console",
+    "entertainment center",
+    "entertainment centre",
+    "media unit"
+   ],
+   "title_words": [
+    "tv stand"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "HomeDecorating"
+   ]
+  },
+  {
+   "name": "rug",
+   "plural": "rugs",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "rug",
+    "area rug",
+    "runner rug",
+    "washable rug",
+    "wool rug",
+    "living room rug",
+    "hallway runner"
+   ],
+   "title_words": [
+    "rug"
+   ],
+   "subreddits": [
+    "HomeDecorating",
+    "BuyItForLife",
+    "malelivingspace"
+   ]
+  },
+  {
+   "name": "curtains",
+   "plural": "curtains",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "curtains",
+    "curtain",
+    "blackout curtains",
+    "drapes",
+    "thermal curtains",
+    "curtain panels"
+   ],
+   "title_words": [
+    "curtains"
+   ],
+   "subreddits": [
+    "HomeDecorating",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "blinds",
+   "plural": "blinds",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "blinds",
+    "roller blinds",
+    "roller blind",
+    "blackout blinds",
+    "blackout blind",
+    "venetian blinds",
+    "roman blinds",
+    "cellular shades",
+    "window shades",
+    "plantation shutters"
+   ],
+   "title_words": [
+    "blinds"
+   ],
+   "subreddits": [
+    "HomeImprovement",
+    "HomeDecorating",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "lamp",
+   "plural": "lamps",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "lamp",
+    "floor lamp",
+    "table lamp",
+    "desk lamp",
+    "bedside lamp",
+    "reading lamp",
+    "standing lamp",
+    "gooseneck lamp",
+    "arc lamp"
+   ],
+   "title_words": [
+    "lamp"
+   ],
+   "subreddits": [
+    "HomeDecorating",
+    "BuyItForLife",
+    "malelivingspace"
+   ]
+  },
+  {
+   "name": "light bulb",
+   "plural": "light bulbs",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "light bulb",
+    "lightbulb",
+    "led bulb",
+    "led bulbs",
+    "light bulbs",
+    "filament bulb",
+    "dimmable bulb"
+   ],
+   "title_words": [
+    "bulb",
+    "light bulb"
+   ],
+   "subreddits": [
+    "HomeImprovement",
+    "BuyItForLife",
+    "smarthome"
+   ]
+  },
+  {
+   "name": "smart bulb",
+   "plural": "smart bulbs",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "smart bulb",
+    "smart bulbs",
+    "smart light",
+    "smart lights",
+    "smart lighting",
+    "wifi bulb",
+    "smart light bulb",
+    "philips hue",
+    "hue bulbs"
+   ],
+   "title_words": [
+    "smart bulb",
+    "hue"
+   ],
+   "subreddits": [
+    "smarthome",
+    "homeautomation"
+   ]
+  },
+  {
+   "name": "air purifier",
+   "plural": "air purifiers",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "air purifier",
+    "air purifiers",
+    "hepa purifier",
+    "hepa air purifier",
+    "air cleaner",
+    "air filtration unit"
+   ],
+   "title_words": [
+    "air purifier"
+   ],
+   "subreddits": [
+    "AirPurifiers",
+    "BuyItForLife",
+    "HomeImprovement"
+   ]
+  },
+  {
+   "name": "dehumidifier",
+   "plural": "dehumidifiers",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "dehumidifier",
+    "desiccant dehumidifier",
+    "compressor dehumidifier"
+   ],
+   "title_words": [
+    "dehumidifier"
+   ],
+   "subreddits": [
+    "HomeImprovement",
+    "homeowners",
+    "BuyItForLife",
+    "Appliances"
+   ]
+  },
+  {
+   "name": "humidifier",
+   "plural": "humidifiers",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "humidifier",
+    "cool mist humidifier",
+    "evaporative humidifier",
+    "ultrasonic humidifier"
+   ],
+   "title_words": [
+    "humidifier"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "HomeImprovement",
+    "AirPurifiers"
+   ]
+  },
+  {
+   "name": "air conditioner",
+   "plural": "air conditioners",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "air conditioner",
+    "air conditioning unit",
+    "air con",
+    "aircon",
+    "portable air conditioner",
+    "portable air con",
+    "portable ac",
+    "ac unit",
+    "window ac",
+    "window air conditioner",
+    "mini split",
+    "mini-split",
+    "split ac"
+   ],
+   "title_words": [
+    "air conditioner",
+    "air con",
+    "ac unit"
+   ],
+   "subreddits": [
+    "hvacadvice",
+    "HomeImprovement",
+    "homeowners",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "heat pump",
+   "plural": "heat pumps",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "heat pump",
+    "air source heat pump",
+    "ground source heat pump",
+    "ashp"
+   ],
+   "title_words": [
+    "heat pump"
+   ],
+   "subreddits": [
+    "hvacadvice",
+    "HomeImprovement",
+    "homeowners"
+   ]
+  },
+  {
+   "name": "fan",
+   "plural": "fans",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "fan",
+    "desk fan",
+    "tower fan",
+    "pedestal fan",
+    "floor fan",
+    "box fan",
+    "standing fan",
+    "bladeless fan",
+    "electric fan",
+    "oscillating fan",
+    "air circulator",
+    "bedroom fan"
+   ],
+   "hints": [
+    "fan"
+   ],
+   "title_words": [
+    "fan"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "HomeImprovement",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "ceiling fan",
+   "plural": "ceiling fans",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "ceiling fan",
+    "ceiling fans"
+   ],
+   "title_words": [
+    "ceiling fan"
+   ],
+   "subreddits": [
+    "HomeImprovement",
+    "homeowners",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "space heater",
+   "plural": "space heaters",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "space heater",
+    "electric heater",
+    "oil heater",
+    "oil filled radiator",
+    "oil-filled radiator",
+    "fan heater",
+    "convector heater",
+    "panel heater",
+    "infrared heater",
+    "portable heater",
+    "ceramic heater",
+    "radiator heater"
+   ],
+   "hints": [
+    "heater"
+   ],
+   "title_words": [
+    "heater",
+    "space heater"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "HomeImprovement",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "electric blanket",
+   "plural": "electric blankets",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "electric blanket",
+    "heated blanket",
+    "heated throw",
+    "heated mattress pad",
+    "electric throw",
+    "heated underblanket"
+   ],
+   "title_words": [
+    "electric blanket"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "smart thermostat",
+   "plural": "smart thermostats",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "smart thermostat",
+    "thermostat",
+    "nest thermostat",
+    "smart heating controls",
+    "wifi thermostat"
+   ],
+   "title_words": [
+    "thermostat"
+   ],
+   "subreddits": [
+    "smarthome",
+    "homeautomation",
+    "HomeImprovement"
+   ]
+  },
+  {
+   "name": "washing machine",
+   "plural": "washing machines",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "washing machine",
+    "washer",
+    "washer dryer",
+    "washer-dryer",
+    "front loader",
+    "top loader",
+    "laundry machine",
+    "front load washer",
+    "top load washer",
+    "washing machines"
+   ],
+   "title_words": [
+    "washing machine",
+    "washer"
+   ],
+   "subreddits": [
+    "Appliances",
+    "BuyItForLife",
+    "laundry",
+    "HomeImprovement"
+   ]
+  },
+  {
+   "name": "tumble dryer",
+   "plural": "tumble dryers",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "tumble dryer",
+    "clothes dryer",
+    "dryer",
+    "heat pump dryer",
+    "condenser dryer",
+    "vented dryer",
+    "electric dryer",
+    "gas dryer"
+   ],
+   "title_words": [
+    "dryer",
+    "tumble dryer"
+   ],
+   "subreddits": [
+    "Appliances",
+    "BuyItForLife",
+    "laundry"
+   ]
+  },
+  {
+   "name": "steam iron",
+   "plural": "steam irons",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "steam iron",
+    "clothes iron",
+    "steam generator iron",
+    "steam generator",
+    "iron for clothes",
+    "travel iron"
+   ],
+   "title_words": [
+    "iron"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "laundry",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "garment steamer",
+   "plural": "garment steamers",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "garment steamer",
+    "clothes steamer",
+    "handheld steamer",
+    "fabric steamer",
+    "clothing steamer"
+   ],
+   "title_words": [
+    "garment steamer"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "laundry",
+    "onebag"
+   ]
+  },
+  {
+   "name": "clothes airer",
+   "plural": "clothes airers",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "clothes airer",
+    "heated airer",
+    "drying rack",
+    "clothes horse",
+    "airer",
+    "clothes drying rack",
+    "heated clothes airer",
+    "laundry drying rack"
+   ],
+   "title_words": [
+    "clothes airer"
+   ],
+   "subreddits": [
+    "laundry",
+    "BuyItForLife",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "laundry detergent",
+   "plural": "laundry detergents",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "laundry detergent",
+    "washing powder",
+    "laundry pods",
+    "laundry liquid",
+    "washing liquid",
+    "laundry powder",
+    "detergent",
+    "washing detergent",
+    "laundry sheets"
+   ],
+   "title_words": [
+    "laundry detergent"
+   ],
+   "subreddits": [
+    "laundry",
+    "CleaningTips",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "dishwasher tablets",
+   "plural": "dishwasher tablets",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "dishwasher tablets",
+    "dishwasher tablet",
+    "dishwasher pods",
+    "dishwasher pod",
+    "dishwasher detergent",
+    "dishwasher tabs",
+    "dishwasher powder"
+   ],
+   "title_words": [
+    "dishwasher tablets"
+   ],
+   "subreddits": [
+    "CleaningTips",
+    "Frugal",
+    "Appliances"
+   ]
+  },
+  {
+   "name": "dish soap",
+   "plural": "dish soaps",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "dish soap",
+    "washing up liquid",
+    "washing-up liquid",
+    "dishwashing liquid",
+    "dish detergent",
+    "dishwashing soap"
+   ],
+   "title_words": [
+    "dish soap"
+   ],
+   "subreddits": [
+    "CleaningTips",
+    "Frugal",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "oven cleaner",
+   "plural": "oven cleaners",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "oven cleaner",
+    "oven cleaning spray",
+    "oven cleaning kit"
+   ],
+   "title_words": [
+    "oven cleaner"
+   ],
+   "subreddits": [
+    "CleaningTips",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "all-purpose cleaner",
+   "plural": "all-purpose cleaners",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "all-purpose cleaner",
+    "all purpose cleaner",
+    "multi-surface cleaner",
+    "multi surface cleaner",
+    "surface spray",
+    "cleaning spray",
+    "kitchen cleaner",
+    "bathroom cleaner"
+   ],
+   "title_words": [
+    "cleaner",
+    "cleaning spray"
+   ],
+   "subreddits": [
+    "CleaningTips",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "towel",
+   "plural": "towels",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "towel",
+    "towels",
+    "bath towel",
+    "bath towels",
+    "bath sheet",
+    "hand towel",
+    "beach towel",
+    "cotton towels",
+    "quick dry towel",
+    "microfibre towel",
+    "microfiber towel"
+   ],
+   "title_words": [
+    "towel"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "HomeDecorating",
+    "onebag"
+   ]
+  },
+  {
+   "name": "shower head",
+   "plural": "shower heads",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "shower head",
+    "showerhead",
+    "rainfall shower head",
+    "rain shower head",
+    "filtered shower head",
+    "handheld shower head",
+    "shower head filter"
+   ],
+   "title_words": [
+    "shower head"
+   ],
+   "subreddits": [
+    "HomeImprovement",
+    "BuyItForLife",
+    "homeowners"
+   ]
+  },
+  {
+   "name": "bidet",
+   "plural": "bidets",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "bidet",
+    "bidet attachment",
+    "bidet seat",
+    "washlet",
+    "toto washlet",
+    "bidet toilet seat",
+    "bidet sprayer"
+   ],
+   "title_words": [
+    "bidet"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "HomeImprovement"
+   ]
+  },
+  {
+   "name": "toilet",
+   "plural": "toilets",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "toilet",
+    "toilets",
+    "toilet seat",
+    "dual flush toilet",
+    "close coupled toilet"
+   ],
+   "title_words": [
+    "toilet"
+   ],
+   "subreddits": [
+    "HomeImprovement",
+    "homeowners",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "water filter",
+   "plural": "water filters",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "water filter",
+    "water filter jug",
+    "filter jug",
+    "brita",
+    "water filter pitcher",
+    "reverse osmosis",
+    "under sink filter",
+    "under sink water filter",
+    "countertop water filter",
+    "water purifier",
+    "whole house water filter"
+   ],
+   "title_words": [
+    "water filter"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "HomeImprovement",
+    "homeowners"
+   ]
+  },
+  {
+   "name": "smoke alarm",
+   "plural": "smoke alarms",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "smoke alarm",
+    "smoke detector",
+    "carbon monoxide alarm",
+    "carbon monoxide detector",
+    "co alarm",
+    "co detector",
+    "fire alarm",
+    "heat alarm"
+   ],
+   "title_words": [
+    "smoke alarm"
+   ],
+   "subreddits": [
+    "HomeImprovement",
+    "homeowners",
+    "smarthome"
+   ]
+  },
+  {
+   "name": "security camera",
+   "plural": "security cameras",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "security camera",
+    "cctv",
+    "outdoor camera",
+    "indoor camera",
+    "ip camera",
+    "wifi camera",
+    "home camera",
+    "home security camera",
+    "security cameras",
+    "cctv camera",
+    "poe camera",
+    "nanny cam"
+   ],
+   "title_words": [
+    "security camera",
+    "cctv"
+   ],
+   "subreddits": [
+    "homeautomation",
+    "smarthome",
+    "HomeImprovement"
+   ]
+  },
+  {
+   "name": "video doorbell",
+   "plural": "video doorbells",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "video doorbell",
+    "doorbell camera",
+    "smart doorbell",
+    "ring doorbell",
+    "doorbell",
+    "wireless doorbell"
+   ],
+   "title_words": [
+    "doorbell"
+   ],
+   "subreddits": [
+    "smarthome",
+    "homeautomation",
+    "HomeImprovement"
+   ]
+  },
+  {
+   "name": "smart lock",
+   "plural": "smart locks",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "smart lock",
+    "keyless lock",
+    "smart door lock",
+    "keypad lock",
+    "keyless door lock",
+    "smart deadbolt",
+    "fingerprint lock"
+   ],
+   "title_words": [
+    "smart lock"
+   ],
+   "subreddits": [
+    "smarthome",
+    "homeautomation",
+    "HomeImprovement"
+   ]
+  },
+  {
+   "name": "smart speaker",
+   "plural": "smart speakers",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "smart speaker",
+    "smart speakers",
+    "smart display",
+    "echo dot",
+    "amazon echo",
+    "google nest mini",
+    "google home",
+    "nest hub",
+    "homepod",
+    "echo show",
+    "alexa speaker"
+   ],
+   "title_words": [
+    "smart speaker",
+    "echo",
+    "google home"
+   ],
+   "subreddits": [
+    "smarthome",
+    "homeautomation",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "smart plug",
+   "plural": "smart plugs",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "smart plug",
+    "smart socket",
+    "wifi plug",
+    "smart plugs",
+    "smart outlet"
+   ],
+   "title_words": [
+    "smart plug"
+   ],
+   "subreddits": [
+    "smarthome",
+    "homeautomation"
+   ]
+  },
+  {
+   "name": "candle",
+   "plural": "candles",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "candle",
+    "scented candle",
+    "soy candle",
+    "beeswax candle",
+    "candles",
+    "candle brand"
+   ],
+   "title_words": [
+    "candle"
+   ],
+   "subreddits": [
+    "candles",
+    "HomeDecorating",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "diffuser",
+   "plural": "diffusers",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "diffuser",
+    "oil diffuser",
+    "essential oil diffuser",
+    "reed diffuser",
+    "aroma diffuser",
+    "aromatherapy diffuser"
+   ],
+   "title_words": [
+    "diffuser"
+   ],
+   "subreddits": [
+    "HomeDecorating",
+    "candles",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "mirror",
+   "plural": "mirrors",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "mirror",
+    "full length mirror",
+    "full-length mirror",
+    "wall mirror",
+    "floor mirror",
+    "vanity mirror",
+    "makeup mirror",
+    "bathroom mirror"
+   ],
+   "title_words": [
+    "mirror"
+   ],
+   "subreddits": [
+    "HomeDecorating",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "alarm clock",
+   "plural": "alarm clocks",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "alarm clock",
+    "sunrise alarm clock",
+    "sunrise alarm",
+    "wake up light",
+    "wake-up light",
+    "sunrise lamp",
+    "alarm clocks",
+    "digital alarm clock"
+   ],
+   "title_words": [
+    "alarm clock"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "plant pot",
+   "plural": "plant pots",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "plant pot",
+    "planter",
+    "planters",
+    "flower pot",
+    "plant pots",
+    "self watering pot",
+    "self-watering pot",
+    "indoor planter"
+   ],
+   "title_words": [
+    "planter",
+    "plant pot"
+   ],
+   "subreddits": [
+    "HomeDecorating",
+    "gardening",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "bin",
+   "plural": "bins",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "bin",
+    "kitchen bin",
+    "trash can",
+    "rubbish bin",
+    "garbage can",
+    "pedal bin",
+    "recycling bin",
+    "sensor bin",
+    "waste bin",
+    "dustbin",
+    "swing bin"
+   ],
+   "title_words": [
+    "bin",
+    "trash can"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Frugal",
+    "HomeImprovement"
+   ]
+  },
+  {
+   "name": "bathroom scale",
+   "plural": "bathroom scales",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "bathroom scale",
+    "bathroom scales",
+    "body scale",
+    "smart scale",
+    "body fat scale",
+    "scales for weight",
+    "body composition scale",
+    "personal scale"
+   ],
+   "title_words": [
+    "bathroom scale"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Fitness",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "white noise machine",
+   "plural": "white noise machines",
+   "category": "general",
+   "department": "home",
+   "keywords": [
+    "white noise machine",
+    "sound machine",
+    "white noise maker",
+    "noise machine",
+    "sleep sound machine"
+   ],
+   "title_words": [
+    "white noise",
+    "sound machine"
+   ],
+   "subreddits": [
+    "NewParents",
+    "BuyItForLife",
+    "beyondthebump"
+   ]
+  },
+  {
+   "name": "laptop",
+   "plural": "laptops",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "laptop",
+    "laptops",
+    "macbook",
+    "macbook air",
+    "macbook pro",
+    "chromebook",
+    "ultrabook",
+    "gaming laptop",
+    "2-in-1 laptop",
+    "notebook computer",
+    "thinkpad",
+    "work laptop",
+    "student laptop"
+   ],
+   "title_words": [
+    "laptop",
+    "macbook",
+    "chromebook"
+   ],
+   "subreddits": [
+    "SuggestALaptop",
+    "laptops",
+    "BuyItForLife",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "desktop computer",
+   "plural": "desktop computers",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "desktop computer",
+    "desktop pc",
+    "gaming pc",
+    "desktop",
+    "mini pc",
+    "prebuilt pc",
+    "prebuilt",
+    "all-in-one computer",
+    "all in one pc",
+    "imac",
+    "mac mini",
+    "home computer"
+   ],
+   "hints": [
+    "computer",
+    "pc"
+   ],
+   "title_words": [
+    "desktop",
+    "pc",
+    "computer"
+   ],
+   "subreddits": [
+    "buildapc",
+    "BuyItForLife",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "monitor",
+   "plural": "monitors",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "monitor",
+    "computer monitor",
+    "gaming monitor",
+    "ultrawide monitor",
+    "ultrawide",
+    "pc monitor",
+    "4k monitor",
+    "oled monitor",
+    "monitors",
+    "portable monitor",
+    "office monitor"
+   ],
+   "title_words": [
+    "monitor"
+   ],
+   "subreddits": [
+    "Monitors",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "monitor arm",
+   "plural": "monitor arms",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "monitor arm",
+    "monitor mount",
+    "monitor stand",
+    "monitor arms",
+    "dual monitor arm",
+    "vesa mount"
+   ],
+   "title_words": [
+    "monitor arm"
+   ],
+   "subreddits": [
+    "Monitors",
+    "battlestations",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "keyboard",
+   "plural": "keyboards",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "keyboard",
+    "mechanical keyboard",
+    "wireless keyboard",
+    "gaming keyboard",
+    "keeb",
+    "ergonomic keyboard",
+    "split keyboard",
+    "bluetooth keyboard",
+    "keyboards",
+    "65% keyboard",
+    "tkl keyboard"
+   ],
+   "title_words": [
+    "keyboard"
+   ],
+   "subreddits": [
+    "MechanicalKeyboards",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "mouse",
+   "plural": "computer mice",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "mouse",
+    "computer mouse",
+    "gaming mouse",
+    "wireless mouse",
+    "trackball",
+    "vertical mouse",
+    "ergonomic mouse",
+    "bluetooth mouse",
+    "computer mice",
+    "gaming mice",
+    "wireless mice"
+   ],
+   "title_words": [
+    "mouse"
+   ],
+   "subreddits": [
+    "MouseReview",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "headphones",
+   "plural": "headphones",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "headphones",
+    "headphone",
+    "noise cancelling headphones",
+    "noise-cancelling headphones",
+    "noise canceling headphones",
+    "over-ear headphones",
+    "over ear headphones",
+    "on-ear headphones",
+    "wireless headphones",
+    "bluetooth headphones",
+    "studio headphones",
+    "open-back headphones",
+    "open back headphones",
+    "closed-back headphones",
+    "anc headphones",
+    "planar headphones"
+   ],
+   "title_words": [
+    "headphones"
+   ],
+   "subreddits": [
+    "headphones",
+    "BudgetAudiophile",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "earbuds",
+   "plural": "earbuds",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "earbuds",
+    "earbud",
+    "earphones",
+    "in-ear headphones",
+    "in ear headphones",
+    "in-ear monitors",
+    "iems",
+    "iem",
+    "true wireless earbuds",
+    "wireless earbuds",
+    "airpods",
+    "airpods pro",
+    "bluetooth earbuds",
+    "noise cancelling earbuds",
+    "sports earbuds",
+    "earpods"
+   ],
+   "title_words": [
+    "earbuds",
+    "iem",
+    "earphones"
+   ],
+   "subreddits": [
+    "headphones",
+    "BudgetAudiophile",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "gaming headset",
+   "plural": "gaming headsets",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "gaming headset",
+    "headset",
+    "wireless headset",
+    "pc headset",
+    "headsets"
+   ],
+   "title_words": [
+    "gaming headset"
+   ],
+   "subreddits": [
+    "headphones",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "bluetooth speaker",
+   "plural": "bluetooth speakers",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "bluetooth speaker",
+    "portable speaker",
+    "wireless speaker",
+    "waterproof speaker",
+    "outdoor speaker",
+    "jbl speaker",
+    "boombox"
+   ],
+   "title_words": [
+    "bluetooth speaker",
+    "portable speaker"
+   ],
+   "subreddits": [
+    "BudgetAudiophile",
+    "headphones",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "speakers",
+   "plural": "speakers",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "speakers",
+    "speaker",
+    "bookshelf speakers",
+    "computer speakers",
+    "desktop speakers",
+    "powered speakers",
+    "active speakers",
+    "floorstanding speakers",
+    "stereo speakers",
+    "hifi speakers",
+    "studio monitors"
+   ],
+   "title_words": [
+    "speakers"
+   ],
+   "subreddits": [
+    "BudgetAudiophile",
+    "audiophile",
+    "hometheater"
+   ]
+  },
+  {
+   "name": "soundbar",
+   "plural": "soundbars",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "soundbar",
+    "sound bar",
+    "soundbars",
+    "dolby atmos soundbar"
+   ],
+   "title_words": [
+    "soundbar"
+   ],
+   "subreddits": [
+    "hometheater",
+    "BudgetAudiophile",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "av receiver",
+   "plural": "av receivers",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "av receiver",
+    "home theater receiver",
+    "home cinema receiver",
+    "stereo receiver",
+    "stereo amplifier",
+    "integrated amplifier",
+    "hifi amplifier"
+   ],
+   "title_words": [
+    "av receiver"
+   ],
+   "subreddits": [
+    "hometheater",
+    "BudgetAudiophile",
+    "audiophile"
+   ]
+  },
+  {
+   "name": "headphone amp",
+   "plural": "headphone amps",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "headphone amp",
+    "headphone amplifier",
+    "dac",
+    "dac amp",
+    "dac/amp",
+    "usb dac",
+    "portable dac",
+    "dongle dac"
+   ],
+   "title_words": [
+    "dac",
+    "headphone amp"
+   ],
+   "subreddits": [
+    "headphones",
+    "BudgetAudiophile",
+    "audiophile"
+   ]
+  },
+  {
+   "name": "turntable",
+   "plural": "turntables",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "turntable",
+    "record player",
+    "vinyl player",
+    "turntables",
+    "record deck"
+   ],
+   "title_words": [
+    "turntable"
+   ],
+   "subreddits": [
+    "vinyl",
+    "BudgetAudiophile",
+    "audiophile"
+   ]
+  },
+  {
+   "name": "radio",
+   "plural": "radios",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "radio",
+    "dab radio",
+    "digital radio",
+    "internet radio",
+    "portable radio",
+    "wifi radio",
+    "kitchen radio"
+   ],
+   "hints": [
+    "radio"
+   ],
+   "title_words": [
+    "radio"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "BudgetAudiophile"
+   ]
+  },
+  {
+   "name": "tv",
+   "plural": "TVs",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "tv",
+    "television",
+    "smart tv",
+    "oled tv",
+    "4k tv",
+    "qled tv",
+    "qled",
+    "oled television",
+    "tvs",
+    "televisions",
+    "gaming tv",
+    "65 inch tv",
+    "55 inch tv"
+   ],
+   "title_words": [
+    "tv",
+    "television"
+   ],
+   "subreddits": [
+    "4kTV",
+    "hometheater",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "projector",
+   "plural": "projectors",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "projector",
+    "home projector",
+    "portable projector",
+    "short throw projector",
+    "4k projector",
+    "home cinema projector",
+    "mini projector"
+   ],
+   "title_words": [
+    "projector"
+   ],
+   "subreddits": [
+    "projectors",
+    "hometheater"
+   ]
+  },
+  {
+   "name": "streaming device",
+   "plural": "streaming devices",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "streaming device",
+    "streaming stick",
+    "fire stick",
+    "firestick",
+    "fire tv stick",
+    "roku",
+    "apple tv",
+    "chromecast",
+    "streaming box",
+    "android tv box",
+    "google tv streamer",
+    "nvidia shield"
+   ],
+   "title_words": [
+    "fire stick",
+    "roku",
+    "chromecast",
+    "apple tv"
+   ],
+   "subreddits": [
+    "hometheater",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "tv mount",
+   "plural": "tv mounts",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "tv mount",
+    "tv wall mount",
+    "tv bracket",
+    "wall mount for tv",
+    "tv wall bracket"
+   ],
+   "title_words": [
+    "tv mount"
+   ],
+   "subreddits": [
+    "hometheater",
+    "HomeImprovement"
+   ]
+  },
+  {
+   "name": "phone",
+   "plural": "phones",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "phone",
+    "smartphone",
+    "mobile phone",
+    "cell phone",
+    "cellphone",
+    "android phone",
+    "iphone",
+    "pixel phone",
+    "flip phone",
+    "budget phone",
+    "phones",
+    "smartphones",
+    "android smartphone"
+   ],
+   "title_words": [
+    "phone",
+    "smartphone"
+   ],
+   "subreddits": [
+    "PickAnAndroidForMe",
+    "BuyItForLife",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "phone case",
+   "plural": "phone cases",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "phone case",
+    "iphone case",
+    "phone cover",
+    "phone cases",
+    "case for iphone",
+    "magsafe case",
+    "rugged case",
+    "pixel case",
+    "samsung case"
+   ],
+   "title_words": [
+    "phone case"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "PickAnAndroidForMe"
+   ]
+  },
+  {
+   "name": "screen protector",
+   "plural": "screen protectors",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "screen protector",
+    "tempered glass screen protector",
+    "privacy screen protector",
+    "screen protectors"
+   ],
+   "title_words": [
+    "screen protector"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "PickAnAndroidForMe"
+   ]
+  },
+  {
+   "name": "tablet",
+   "plural": "tablets",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "tablet",
+    "ipad",
+    "ipad air",
+    "ipad pro",
+    "ipad mini",
+    "android tablet",
+    "tablet computer",
+    "galaxy tab",
+    "fire tablet",
+    "samsung tablet",
+    "kids tablet",
+    "tablets for kids"
+   ],
+   "hints": [
+    "tablet"
+   ],
+   "title_words": [
+    "tablet",
+    "ipad"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Frugal",
+    "laptops"
+   ]
+  },
+  {
+   "name": "e-reader",
+   "plural": "e-readers",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "e-reader",
+    "ereader",
+    "e reader",
+    "kindle",
+    "kindle paperwhite",
+    "kobo",
+    "e-ink reader",
+    "ebook reader",
+    "e-book reader",
+    "eink tablet",
+    "e-ink tablet"
+   ],
+   "title_words": [
+    "e-reader",
+    "kindle",
+    "kobo"
+   ],
+   "subreddits": [
+    "kindle",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "smartwatch",
+   "plural": "smartwatches",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "smartwatch",
+    "smart watch",
+    "apple watch",
+    "galaxy watch",
+    "pixel watch",
+    "wear os watch",
+    "smartwatches",
+    "smart watches"
+   ],
+   "title_words": [
+    "smartwatch",
+    "smart watch",
+    "apple watch"
+   ],
+   "subreddits": [
+    "smartwatch",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "camera",
+   "plural": "cameras",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "camera",
+    "mirrorless camera",
+    "dslr",
+    "digital camera",
+    "point and shoot",
+    "point-and-shoot",
+    "compact camera",
+    "film camera",
+    "vlogging camera",
+    "instant camera",
+    "travel camera",
+    "beginner camera",
+    "cameras",
+    "full frame camera",
+    "polaroid camera"
+   ],
+   "title_words": [
+    "camera",
+    "mirrorless",
+    "dslr"
+   ],
+   "subreddits": [
+    "Cameras",
+    "photography",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "camera lens",
+   "plural": "camera lenses",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "camera lens",
+    "prime lens",
+    "zoom lens",
+    "telephoto lens",
+    "wide angle lens",
+    "wide-angle lens",
+    "macro lens",
+    "portrait lens",
+    "kit lens",
+    "lenses for",
+    "camera lenses"
+   ],
+   "hints": [
+    "lens"
+   ],
+   "title_words": [
+    "lens"
+   ],
+   "subreddits": [
+    "photography",
+    "Cameras"
+   ]
+  },
+  {
+   "name": "tripod",
+   "plural": "tripods",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "tripod",
+    "camera tripod",
+    "phone tripod",
+    "travel tripod",
+    "tripods",
+    "selfie stick"
+   ],
+   "title_words": [
+    "tripod"
+   ],
+   "subreddits": [
+    "photography",
+    "Cameras",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "action camera",
+   "plural": "action cameras",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "action camera",
+    "gopro",
+    "action cam",
+    "go pro",
+    "insta360",
+    "360 camera"
+   ],
+   "title_words": [
+    "action camera",
+    "gopro"
+   ],
+   "subreddits": [
+    "Cameras",
+    "photography"
+   ]
+  },
+  {
+   "name": "webcam",
+   "plural": "webcams",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "webcam",
+    "web camera",
+    "web cam",
+    "webcams",
+    "streaming camera"
+   ],
+   "title_words": [
+    "webcam"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "laptops"
+   ]
+  },
+  {
+   "name": "drone",
+   "plural": "drones",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "drone",
+    "camera drone",
+    "fpv drone",
+    "dji drone",
+    "mini drone",
+    "drones"
+   ],
+   "title_words": [
+    "drone"
+   ],
+   "subreddits": [
+    "drones",
+    "photography"
+   ]
+  },
+  {
+   "name": "printer",
+   "plural": "printers",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "printer",
+    "inkjet printer",
+    "laser printer",
+    "photo printer",
+    "all-in-one printer",
+    "all in one printer",
+    "home printer",
+    "printers",
+    "label printer",
+    "mono laser printer"
+   ],
+   "title_words": [
+    "printer"
+   ],
+   "subreddits": [
+    "printers",
+    "BuyItForLife",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "3d printer",
+   "plural": "3d printers",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "3d printer",
+    "3d printers",
+    "resin printer",
+    "fdm printer",
+    "bambu lab",
+    "3d printing machine"
+   ],
+   "title_words": [
+    "3d printer"
+   ],
+   "subreddits": [
+    "3Dprinting"
+   ]
+  },
+  {
+   "name": "wifi router",
+   "plural": "wifi routers",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "wifi router",
+    "router",
+    "mesh wifi",
+    "mesh router",
+    "mesh network",
+    "mesh system",
+    "wifi extender",
+    "wifi system",
+    "access point",
+    "wireless router",
+    "wifi booster",
+    "range extender",
+    "wi-fi router",
+    "mesh wi-fi"
+   ],
+   "title_words": [
+    "router",
+    "mesh",
+    "wifi"
+   ],
+   "subreddits": [
+    "HomeNetworking",
+    "smarthome",
+    "homeautomation"
+   ]
+  },
+  {
+   "name": "external hard drive",
+   "plural": "external hard drives",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "external hard drive",
+    "external drive",
+    "portable ssd",
+    "external ssd",
+    "hard drive",
+    "hdd",
+    "ssd",
+    "portable hard drive",
+    "usb drive",
+    "flash drive",
+    "usb stick",
+    "nas",
+    "nas drive"
+   ],
+   "title_words": [
+    "hard drive",
+    "ssd",
+    "external drive"
+   ],
+   "subreddits": [
+    "DataHoarder",
+    "buildapc",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "docking station",
+   "plural": "docking stations",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "docking station",
+    "usb-c hub",
+    "usb c hub",
+    "usb hub",
+    "laptop dock",
+    "thunderbolt dock",
+    "usb-c dock",
+    "usb c dock",
+    "laptop docking station",
+    "dock for laptop"
+   ],
+   "title_words": [
+    "docking station"
+   ],
+   "subreddits": [
+    "laptops",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "charger",
+   "plural": "chargers",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "charger",
+    "phone charger",
+    "wall charger",
+    "usb-c charger",
+    "usb c charger",
+    "fast charger",
+    "wireless charger",
+    "charging pad",
+    "gan charger",
+    "laptop charger",
+    "charging station",
+    "car charger",
+    "multi charger",
+    "usb charger",
+    "chargers"
+   ],
+   "title_words": [
+    "charger"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "power bank",
+   "plural": "power banks",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "power bank",
+    "portable charger",
+    "battery pack",
+    "portable battery",
+    "powerbank",
+    "magsafe battery",
+    "power banks",
+    "battery bank"
+   ],
+   "title_words": [
+    "power bank",
+    "battery pack"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "onebag",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "gaming console",
+   "plural": "gaming consoles",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "gaming console",
+    "console",
+    "games console",
+    "game console",
+    "video game console",
+    "ps5",
+    "playstation",
+    "playstation 5",
+    "xbox",
+    "xbox series x",
+    "xbox series s",
+    "nintendo switch",
+    "switch oled",
+    "switch lite",
+    "steam deck",
+    "handheld console",
+    "retro console"
+   ],
+   "title_words": [
+    "console",
+    "ps5",
+    "xbox",
+    "switch"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "game controller",
+   "plural": "game controllers",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "game controller",
+    "controller",
+    "gamepad",
+    "pro controller",
+    "xbox controller",
+    "ps5 controller",
+    "dualsense",
+    "pc controller",
+    "controllers"
+   ],
+   "title_words": [
+    "controller"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "vr headset",
+   "plural": "vr headsets",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "vr headset",
+    "virtual reality headset",
+    "meta quest",
+    "oculus",
+    "quest 3",
+    "oculus quest",
+    "vr headsets",
+    "vr goggles"
+   ],
+   "title_words": [
+    "vr headset"
+   ],
+   "subreddits": [
+    "virtualreality",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "microphone",
+   "plural": "microphones",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "microphone",
+    "usb microphone",
+    "mic",
+    "podcast mic",
+    "podcast microphone",
+    "condenser mic",
+    "condenser microphone",
+    "streaming mic",
+    "dynamic mic",
+    "lav mic",
+    "lavalier microphone",
+    "wireless mic",
+    "microphones"
+   ],
+   "title_words": [
+    "microphone",
+    "mic"
+   ],
+   "subreddits": [
+    "BudgetAudiophile",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "smart ring",
+   "plural": "smart rings",
+   "category": "general",
+   "department": "tech",
+   "keywords": [
+    "smart ring",
+    "oura ring",
+    "fitness ring",
+    "sleep tracking ring",
+    "smart rings"
+   ],
+   "title_words": [
+    "smart ring"
+   ],
+   "subreddits": [
+    "smartwatch",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "tent",
+   "plural": "tents",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "tent",
+    "backpacking tent",
+    "camping tent",
+    "ultralight tent",
+    "family tent",
+    "2 person tent",
+    "2-person tent",
+    "one person tent",
+    "pop up tent",
+    "pop-up tent",
+    "dome tent",
+    "tunnel tent",
+    "trekking pole tent",
+    "festival tent",
+    "tents"
+   ],
+   "title_words": [
+    "tent"
+   ],
+   "subreddits": [
+    "CampingGear",
+    "Ultralight",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "sleeping bag",
+   "plural": "sleeping bags",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "sleeping bag",
+    "backpacking quilt",
+    "camping quilt",
+    "down sleeping bag",
+    "synthetic sleeping bag",
+    "summer sleeping bag",
+    "winter sleeping bag",
+    "sleeping bags"
+   ],
+   "title_words": [
+    "sleeping bag"
+   ],
+   "subreddits": [
+    "Ultralight",
+    "CampingGear",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "sleeping pad",
+   "plural": "sleeping pads",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "sleeping pad",
+    "sleeping mat",
+    "camping mat",
+    "roll mat",
+    "foam pad",
+    "inflatable sleeping pad",
+    "self inflating mat",
+    "self-inflating mat",
+    "camping pad",
+    "therm-a-rest",
+    "thermarest"
+   ],
+   "title_words": [
+    "sleeping pad",
+    "sleeping mat"
+   ],
+   "subreddits": [
+    "Ultralight",
+    "CampingGear"
+   ]
+  },
+  {
+   "name": "air mattress",
+   "plural": "air mattresses",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "air mattress",
+    "airbed",
+    "air bed",
+    "blow up mattress",
+    "blow-up mattress",
+    "inflatable mattress",
+    "inflatable bed",
+    "camping air mattress"
+   ],
+   "title_words": [
+    "air mattress"
+   ],
+   "subreddits": [
+    "CampingGear",
+    "BuyItForLife",
+    "Mattress"
+   ]
+  },
+  {
+   "name": "hiking backpack",
+   "plural": "hiking backpacks",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "hiking backpack",
+    "backpacking pack",
+    "backpacking backpack",
+    "hiking pack",
+    "daypack",
+    "day pack",
+    "trekking backpack",
+    "hiking rucksack",
+    "hiking daypack",
+    "ultralight backpack",
+    "ultralight pack",
+    "hydration pack",
+    "trail pack"
+   ],
+   "title_words": [
+    "pack",
+    "backpack"
+   ],
+   "subreddits": [
+    "Ultralight",
+    "CampingGear",
+    "hiking"
+   ]
+  },
+  {
+   "name": "suitcase",
+   "plural": "suitcases",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "suitcase",
+    "luggage",
+    "carry-on",
+    "carry on",
+    "carry-on luggage",
+    "carry on luggage",
+    "cabin bag",
+    "cabin luggage",
+    "hard shell suitcase",
+    "hardside luggage",
+    "checked luggage",
+    "checked bag",
+    "roller bag",
+    "rolling luggage",
+    "trolley bag",
+    "carry-on suitcase",
+    "carry on suitcase",
+    "suitcases"
+   ],
+   "title_words": [
+    "suitcase",
+    "luggage",
+    "carry on"
+   ],
+   "subreddits": [
+    "onebag",
+    "HerOneBag",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "duffel bag",
+   "plural": "duffel bags",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "duffel bag",
+    "duffle bag",
+    "holdall",
+    "weekender bag",
+    "weekender",
+    "gym bag",
+    "travel duffel",
+    "duffel",
+    "duffle",
+    "sports bag",
+    "travel bag"
+   ],
+   "title_words": [
+    "duffel",
+    "duffle",
+    "weekender"
+   ],
+   "subreddits": [
+    "onebag",
+    "HerOneBag",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "packing cubes",
+   "plural": "packing cubes",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "packing cubes",
+    "packing cube",
+    "compression cubes",
+    "compression packing cubes"
+   ],
+   "title_words": [
+    "packing cubes"
+   ],
+   "subreddits": [
+    "onebag",
+    "HerOneBag"
+   ]
+  },
+  {
+   "name": "travel pillow",
+   "plural": "travel pillows",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "travel pillow",
+    "neck pillow",
+    "travel neck pillow",
+    "plane pillow",
+    "airplane pillow"
+   ],
+   "title_words": [
+    "travel pillow"
+   ],
+   "subreddits": [
+    "onebag",
+    "HerOneBag",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "travel adapter",
+   "plural": "travel adapters",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "travel adapter",
+    "plug adapter",
+    "universal adapter",
+    "universal travel adapter",
+    "travel plug",
+    "travel plug adapter",
+    "international adapter"
+   ],
+   "title_words": [
+    "travel adapter"
+   ],
+   "subreddits": [
+    "onebag",
+    "HerOneBag"
+   ]
+  },
+  {
+   "name": "water bottle",
+   "plural": "water bottles",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "water bottle",
+    "reusable water bottle",
+    "insulated water bottle",
+    "drink bottle",
+    "drinks bottle",
+    "steel water bottle",
+    "hydro flask",
+    "hydroflask",
+    "nalgene",
+    "filter water bottle",
+    "water bottles"
+   ],
+   "title_words": [
+    "water bottle"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "onebag",
+    "CampingGear"
+   ]
+  },
+  {
+   "name": "travel mug",
+   "plural": "travel mugs",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "travel mug",
+    "insulated mug",
+    "coffee tumbler",
+    "tumbler",
+    "thermos mug",
+    "keep cup",
+    "keepcup",
+    "reusable coffee cup",
+    "travel cup",
+    "stanley cup",
+    "insulated tumbler",
+    "travel mugs"
+   ],
+   "title_words": [
+    "travel mug"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Coffee",
+    "onebag"
+   ]
+  },
+  {
+   "name": "flask",
+   "plural": "flasks",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "flask",
+    "thermos",
+    "vacuum flask",
+    "insulated flask",
+    "food flask",
+    "food jar",
+    "thermos flask",
+    "food thermos",
+    "flasks"
+   ],
+   "title_words": [
+    "flask"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "CampingGear"
+   ]
+  },
+  {
+   "name": "hiking boots",
+   "plural": "hiking boots",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "hiking boots",
+    "hiking boot",
+    "walking boots",
+    "walking boot",
+    "trekking boots",
+    "hiking shoes",
+    "hiking shoe",
+    "backpacking boots",
+    "trail shoes",
+    "approach shoes",
+    "waterproof hiking boots",
+    "mountain boots"
+   ],
+   "title_words": [
+    "hiking boots",
+    "walking boots",
+    "hiking shoes"
+   ],
+   "subreddits": [
+    "CampingGear",
+    "Ultralight",
+    "BuyItForLife",
+    "Boots"
+   ]
+  },
+  {
+   "name": "rain jacket",
+   "plural": "rain jackets",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "rain jacket",
+    "waterproof jacket",
+    "raincoat",
+    "rain coat",
+    "hardshell jacket",
+    "hard shell jacket",
+    "shell jacket",
+    "gore-tex jacket",
+    "goretex jacket",
+    "rain shell",
+    "waterproof coat",
+    "rain jackets"
+   ],
+   "title_words": [
+    "rain jacket",
+    "raincoat",
+    "waterproof jacket"
+   ],
+   "subreddits": [
+    "CampingGear",
+    "Ultralight",
+    "BuyItForLife",
+    "malefashionadvice"
+   ]
+  },
+  {
+   "name": "down jacket",
+   "plural": "down jackets",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "down jacket",
+    "puffer jacket",
+    "puffer",
+    "puffer coat",
+    "puffy jacket",
+    "insulated jacket",
+    "down coat",
+    "synthetic jacket",
+    "down puffer",
+    "puffy"
+   ],
+   "title_words": [
+    "puffer",
+    "down jacket"
+   ],
+   "subreddits": [
+    "CampingGear",
+    "Ultralight",
+    "BuyItForLife",
+    "malefashionadvice"
+   ]
+  },
+  {
+   "name": "fleece",
+   "plural": "fleeces",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "fleece",
+    "fleece jacket",
+    "midlayer",
+    "mid layer",
+    "fleece pullover",
+    "polar fleece",
+    "fleeces"
+   ],
+   "title_words": [
+    "fleece"
+   ],
+   "subreddits": [
+    "CampingGear",
+    "Ultralight",
+    "BuyItForLife",
+    "malefashionadvice"
+   ]
+  },
+  {
+   "name": "headlamp",
+   "plural": "headlamps",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "headlamp",
+    "head torch",
+    "head lamp",
+    "headtorch",
+    "running headlamp"
+   ],
+   "title_words": [
+    "headlamp",
+    "head torch"
+   ],
+   "subreddits": [
+    "CampingGear",
+    "Ultralight",
+    "flashlight"
+   ]
+  },
+  {
+   "name": "flashlight",
+   "plural": "flashlights",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "flashlight",
+    "torch",
+    "edc flashlight",
+    "led flashlight",
+    "led torch",
+    "rechargeable torch",
+    "tactical flashlight",
+    "flashlights",
+    "torches"
+   ],
+   "title_words": [
+    "flashlight",
+    "torch"
+   ],
+   "subreddits": [
+    "flashlight",
+    "EDC",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "camping stove",
+   "plural": "camping stoves",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "camping stove",
+    "camp stove",
+    "backpacking stove",
+    "jetboil",
+    "canister stove",
+    "camping gas stove",
+    "portable stove",
+    "camping cooker",
+    "trangia"
+   ],
+   "title_words": [
+    "camping stove"
+   ],
+   "subreddits": [
+    "CampingGear",
+    "Ultralight"
+   ]
+  },
+  {
+   "name": "cooler",
+   "plural": "coolers",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "cooler",
+    "cool box",
+    "coolbox",
+    "cooler box",
+    "ice chest",
+    "yeti cooler",
+    "cool bag",
+    "cooler bag",
+    "electric cool box",
+    "coolers"
+   ],
+   "title_words": [
+    "cooler"
+   ],
+   "subreddits": [
+    "CampingGear",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "camping chair",
+   "plural": "camping chairs",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "camping chair",
+    "camp chair",
+    "folding chair",
+    "beach chair",
+    "backpacking chair",
+    "camping chairs",
+    "festival chair"
+   ],
+   "title_words": [
+    "camping chair"
+   ],
+   "subreddits": [
+    "CampingGear",
+    "BuyItForLife",
+    "Ultralight"
+   ]
+  },
+  {
+   "name": "hammock",
+   "plural": "hammocks",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "hammock",
+    "camping hammock",
+    "hammocks",
+    "hammock tent"
+   ],
+   "title_words": [
+    "hammock"
+   ],
+   "subreddits": [
+    "CampingGear",
+    "Ultralight",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "trekking poles",
+   "plural": "trekking poles",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "trekking poles",
+    "trekking pole",
+    "hiking poles",
+    "hiking pole",
+    "walking poles",
+    "walking pole",
+    "hiking sticks",
+    "walking sticks",
+    "nordic walking poles"
+   ],
+   "title_words": [
+    "trekking poles"
+   ],
+   "subreddits": [
+    "Ultralight",
+    "CampingGear",
+    "hiking"
+   ]
+  },
+  {
+   "name": "camping water filter",
+   "plural": "camping water filters",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "camping water filter",
+    "backpacking water filter",
+    "hiking water filter",
+    "portable water filter",
+    "water purifier bottle",
+    "sawyer squeeze",
+    "water filter for hiking",
+    "water filter for camping",
+    "water purification tablets"
+   ],
+   "title_words": [
+    "water filter"
+   ],
+   "subreddits": [
+    "Ultralight",
+    "CampingGear"
+   ]
+  },
+  {
+   "name": "binoculars",
+   "plural": "binoculars",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "binoculars",
+    "binocular",
+    "field glasses",
+    "bird watching binoculars",
+    "compact binoculars"
+   ],
+   "title_words": [
+    "binoculars"
+   ],
+   "subreddits": [
+    "birding",
+    "CampingGear",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "portable power station",
+   "plural": "portable power stations",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "portable power station",
+    "power station",
+    "solar generator",
+    "jackery",
+    "ecoflow",
+    "portable generator",
+    "solar power bank",
+    "camping battery"
+   ],
+   "title_words": [
+    "power station",
+    "generator"
+   ],
+   "subreddits": [
+    "CampingGear",
+    "BuyItForLife",
+    "homeowners"
+   ]
+  },
+  {
+   "name": "bicycle",
+   "plural": "bicycles",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "bicycle",
+    "bike",
+    "road bike",
+    "mountain bike",
+    "gravel bike",
+    "hybrid bike",
+    "commuter bike",
+    "folding bike",
+    "touring bike",
+    "city bike",
+    "cargo bike",
+    "bmx",
+    "mtb",
+    "bicycles",
+    "bikes",
+    "cyclocross bike"
+   ],
+   "title_words": [
+    "bike",
+    "bicycle"
+   ],
+   "subreddits": [
+    "bicycling",
+    "whichbike",
+    "bikecommuting",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "e-bike",
+   "plural": "e-bikes",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "e-bike",
+    "ebike",
+    "electric bike",
+    "electric bicycle",
+    "e bike",
+    "e-bikes",
+    "ebikes",
+    "electric mountain bike",
+    "emtb",
+    "electric cargo bike"
+   ],
+   "title_words": [
+    "ebike",
+    "e-bike",
+    "electric bike"
+   ],
+   "subreddits": [
+    "ebikes",
+    "bicycling",
+    "bikecommuting"
+   ]
+  },
+  {
+   "name": "bike helmet",
+   "plural": "bike helmets",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "bike helmet",
+    "cycling helmet",
+    "bicycle helmet",
+    "mips helmet",
+    "road bike helmet",
+    "mtb helmet",
+    "commuter helmet",
+    "bike helmets"
+   ],
+   "title_words": [
+    "bike helmet"
+   ],
+   "subreddits": [
+    "bicycling",
+    "bikecommuting",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "bike lock",
+   "plural": "bike locks",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "bike lock",
+    "bicycle lock",
+    "d-lock",
+    "d lock",
+    "u-lock",
+    "u lock",
+    "chain lock",
+    "kryptonite lock",
+    "folding lock",
+    "bike locks"
+   ],
+   "title_words": [
+    "bike lock"
+   ],
+   "subreddits": [
+    "bikecommuting",
+    "bicycling",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "bike light",
+   "plural": "bike lights",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "bike light",
+    "bike lights",
+    "bicycle light",
+    "bicycle lights",
+    "cycling light",
+    "cycling lights",
+    "front light",
+    "rear light",
+    "bike headlight"
+   ],
+   "title_words": [
+    "bike light"
+   ],
+   "subreddits": [
+    "bikecommuting",
+    "bicycling"
+   ]
+  },
+  {
+   "name": "electric scooter",
+   "plural": "electric scooters",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "electric scooter",
+    "e-scooter",
+    "escooter",
+    "e scooter",
+    "electric scooters",
+    "commuter scooter",
+    "electric kick scooter"
+   ],
+   "title_words": [
+    "electric scooter"
+   ],
+   "subreddits": [
+    "ElectricScooters"
+   ]
+  },
+  {
+   "name": "kayak",
+   "plural": "kayaks",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "kayak",
+    "inflatable kayak",
+    "sit on top kayak",
+    "sea kayak",
+    "fishing kayak",
+    "kayaks",
+    "canoe"
+   ],
+   "title_words": [
+    "kayak"
+   ],
+   "subreddits": [
+    "Kayaking",
+    "CampingGear"
+   ]
+  },
+  {
+   "name": "paddle board",
+   "plural": "paddle boards",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "paddle board",
+    "paddleboard",
+    "sup board",
+    "inflatable paddle board",
+    "isup",
+    "stand up paddle board",
+    "inflatable sup",
+    "paddle boards"
+   ],
+   "title_words": [
+    "paddle board"
+   ],
+   "subreddits": [
+    "Paddleboarding",
+    "Kayaking"
+   ]
+  },
+  {
+   "name": "fishing rod",
+   "plural": "fishing rods",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "fishing rod",
+    "fishing reel",
+    "rod and reel",
+    "spinning rod",
+    "fly rod",
+    "fishing pole",
+    "fishing rods",
+    "spinning reel",
+    "baitcaster"
+   ],
+   "title_words": [
+    "fishing rod"
+   ],
+   "subreddits": [
+    "Fishing",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "golf clubs",
+   "plural": "golf clubs",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "golf clubs",
+    "golf club",
+    "golf club set",
+    "golf irons",
+    "putter",
+    "golf driver",
+    "golf set",
+    "wedges",
+    "golf wedges",
+    "hybrid club"
+   ],
+   "title_words": [
+    "golf clubs",
+    "irons",
+    "putter",
+    "driver"
+   ],
+   "subreddits": [
+    "golf",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "jeans",
+   "plural": "jeans",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "jeans",
+    "denim",
+    "raw denim",
+    "selvedge jeans",
+    "selvage jeans",
+    "selvedge denim",
+    "denim jeans",
+    "straight leg jeans",
+    "slim jeans",
+    "skinny jeans",
+    "pair of jeans"
+   ],
+   "title_words": [
+    "jeans",
+    "denim"
+   ],
+   "subreddits": [
+    "rawdenim",
+    "malefashionadvice",
+    "femalefashionadvice",
+    "frugalmalefashion",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "t-shirt",
+   "plural": "t-shirts",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "t-shirt",
+    "t-shirts",
+    "t shirt",
+    "t shirts",
+    "tshirt",
+    "tshirts",
+    "tee",
+    "tees",
+    "plain t-shirt",
+    "white tee",
+    "white t-shirt",
+    "basic tee",
+    "graphic tee"
+   ],
+   "title_words": [
+    "t-shirt",
+    "tee",
+    "tshirt"
+   ],
+   "subreddits": [
+    "malefashionadvice",
+    "femalefashionadvice",
+    "frugalmalefashion",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "shirt",
+   "plural": "shirts",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "shirt",
+    "dress shirt",
+    "oxford shirt",
+    "button-down shirt",
+    "button down shirt",
+    "button-up shirt",
+    "flannel shirt",
+    "linen shirt",
+    "work shirt",
+    "polo shirt",
+    "shirts",
+    "ocbd"
+   ],
+   "title_words": [
+    "shirt"
+   ],
+   "subreddits": [
+    "malefashionadvice",
+    "femalefashionadvice",
+    "frugalmalefashion",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "hoodie",
+   "plural": "hoodies",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "hoodie",
+    "hoody",
+    "sweatshirt",
+    "pullover hoodie",
+    "zip hoodie",
+    "zip-up hoodie",
+    "crewneck sweatshirt",
+    "hoodies",
+    "sweatshirts"
+   ],
+   "title_words": [
+    "hoodie"
+   ],
+   "subreddits": [
+    "malefashionadvice",
+    "frugalmalefashion",
+    "femalefashionadvice",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "jumper",
+   "plural": "jumpers",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "jumper",
+    "sweater",
+    "knitwear",
+    "cardigan",
+    "wool sweater",
+    "cashmere sweater",
+    "merino jumper",
+    "wool jumper",
+    "cashmere jumper",
+    "merino sweater",
+    "jumpers",
+    "sweaters",
+    "knit sweater"
+   ],
+   "title_words": [
+    "sweater",
+    "jumper"
+   ],
+   "subreddits": [
+    "malefashionadvice",
+    "femalefashionadvice",
+    "frugalmalefashion",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "winter coat",
+   "plural": "winter coats",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "winter coat",
+    "coat",
+    "parka",
+    "overcoat",
+    "peacoat",
+    "pea coat",
+    "wool coat",
+    "trench coat",
+    "topcoat",
+    "winter jacket",
+    "warm coat",
+    "coats"
+   ],
+   "title_words": [
+    "coat",
+    "parka",
+    "overcoat"
+   ],
+   "subreddits": [
+    "malefashionadvice",
+    "femalefashionadvice",
+    "BuyItForLife",
+    "frugalmalefashion"
+   ]
+  },
+  {
+   "name": "jacket",
+   "plural": "jackets",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "jacket",
+    "leather jacket",
+    "denim jacket",
+    "bomber jacket",
+    "chore jacket",
+    "field jacket",
+    "trucker jacket",
+    "harrington jacket",
+    "jackets",
+    "work jacket",
+    "spring jacket",
+    "light jacket",
+    "shacket"
+   ],
+   "title_words": [
+    "jacket"
+   ],
+   "subreddits": [
+    "malefashionadvice",
+    "femalefashionadvice",
+    "frugalmalefashion",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "trousers",
+   "plural": "trousers",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "trousers",
+    "chinos",
+    "slacks",
+    "cargo pants",
+    "work trousers",
+    "work pants",
+    "hiking trousers",
+    "hiking pants",
+    "dress pants",
+    "suit trousers",
+    "linen trousers",
+    "wide leg trousers",
+    "khakis",
+    "fatigues"
+   ],
+   "hints": [
+    "pants"
+   ],
+   "title_words": [
+    "trousers",
+    "chinos",
+    "pants"
+   ],
+   "subreddits": [
+    "malefashionadvice",
+    "femalefashionadvice",
+    "frugalmalefashion",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "leggings",
+   "plural": "leggings",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "leggings",
+    "gym leggings",
+    "yoga pants",
+    "workout leggings",
+    "fleece lined leggings",
+    "running tights"
+   ],
+   "title_words": [
+    "leggings"
+   ],
+   "subreddits": [
+    "xxfitness",
+    "femalefashionadvice",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "underwear",
+   "plural": "underwear",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "underwear",
+    "boxers",
+    "boxer briefs",
+    "briefs",
+    "knickers",
+    "trunks",
+    "boxer shorts",
+    "merino underwear",
+    "period underwear",
+    "period pants"
+   ],
+   "title_words": [
+    "underwear"
+   ],
+   "subreddits": [
+    "malefashionadvice",
+    "femalefashionadvice",
+    "BuyItForLife",
+    "frugalmalefashion"
+   ]
+  },
+  {
+   "name": "socks",
+   "plural": "socks",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "socks",
+    "sock",
+    "hiking socks",
+    "merino socks",
+    "wool socks",
+    "running socks",
+    "compression socks",
+    "darn tough",
+    "ankle socks",
+    "dress socks",
+    "thermal socks"
+   ],
+   "title_words": [
+    "socks"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "malefashionadvice",
+    "Ultralight"
+   ]
+  },
+  {
+   "name": "bra",
+   "plural": "bras",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "bra",
+    "bras",
+    "sports bra",
+    "sports bras",
+    "bralette",
+    "nursing bra",
+    "underwire bra",
+    "wireless bra",
+    "t-shirt bra",
+    "minimiser bra"
+   ],
+   "title_words": [
+    "bra"
+   ],
+   "subreddits": [
+    "ABraThatFits",
+    "femalefashionadvice",
+    "xxfitness"
+   ]
+  },
+  {
+   "name": "pyjamas",
+   "plural": "pyjamas",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "pyjamas",
+    "pajamas",
+    "pjs",
+    "pyjama",
+    "sleepwear",
+    "loungewear",
+    "pajama set",
+    "pyjama set",
+    "nightwear"
+   ],
+   "title_words": [
+    "pyjamas"
+   ],
+   "subreddits": [
+    "femalefashionadvice",
+    "malefashionadvice",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "dress",
+   "plural": "dresses",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "dress",
+    "dresses",
+    "wedding guest dress",
+    "summer dress",
+    "maxi dress",
+    "midi dress",
+    "work dress",
+    "little black dress",
+    "wrap dress"
+   ],
+   "title_words": [
+    "dress"
+   ],
+   "subreddits": [
+    "femalefashionadvice",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "suit",
+   "plural": "suits",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "suit",
+    "men's suit",
+    "mens suit",
+    "wedding suit",
+    "tuxedo",
+    "suits",
+    "business suit",
+    "made to measure suit",
+    "tailored suit"
+   ],
+   "title_words": [
+    "suit"
+   ],
+   "subreddits": [
+    "malefashionadvice",
+    "suits",
+    "frugalmalefashion"
+   ]
+  },
+  {
+   "name": "swimwear",
+   "plural": "swimwear",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "swimwear",
+    "swimsuit",
+    "swimming costume",
+    "bikini",
+    "swim trunks",
+    "swim shorts",
+    "board shorts",
+    "one piece swimsuit",
+    "swimsuits",
+    "bathing suit"
+   ],
+   "title_words": [
+    "swimsuit",
+    "swimwear",
+    "swim trunks"
+   ],
+   "subreddits": [
+    "femalefashionadvice",
+    "malefashionadvice",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "base layer",
+   "plural": "base layers",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "base layer",
+    "thermal underwear",
+    "thermals",
+    "long johns",
+    "merino base layer",
+    "thermal base layer",
+    "base layers",
+    "thermal top",
+    "thermal leggings"
+   ],
+   "title_words": [
+    "base layer"
+   ],
+   "subreddits": [
+    "CampingGear",
+    "Ultralight",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "gloves",
+   "plural": "gloves",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "gloves",
+    "winter gloves",
+    "leather gloves",
+    "touchscreen gloves",
+    "ski gloves",
+    "glove",
+    "warm gloves",
+    "thermal gloves",
+    "mittens",
+    "cycling gloves"
+   ],
+   "title_words": [
+    "gloves"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "malefashionadvice",
+    "CampingGear"
+   ]
+  },
+  {
+   "name": "hat",
+   "plural": "hats",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "hat",
+    "beanie",
+    "baseball cap",
+    "bucket hat",
+    "wool hat",
+    "winter hat",
+    "flat cap",
+    "fedora",
+    "trucker hat",
+    "dad hat",
+    "hats",
+    "beanies",
+    "snapback"
+   ],
+   "title_words": [
+    "hat"
+   ],
+   "subreddits": [
+    "malefashionadvice",
+    "femalefashionadvice",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "scarf",
+   "plural": "scarves",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "scarf",
+    "scarves",
+    "wool scarf",
+    "cashmere scarf",
+    "winter scarf",
+    "silk scarf"
+   ],
+   "title_words": [
+    "scarf"
+   ],
+   "subreddits": [
+    "malefashionadvice",
+    "femalefashionadvice",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "sneakers",
+   "plural": "sneakers",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "sneakers",
+    "trainers",
+    "white sneakers",
+    "everyday sneakers",
+    "canvas shoes",
+    "plimsolls",
+    "white trainers",
+    "leather sneakers",
+    "minimalist sneakers",
+    "casual sneakers",
+    "sneaker",
+    "high tops",
+    "skate shoes"
+   ],
+   "title_words": [
+    "sneakers",
+    "trainers"
+   ],
+   "subreddits": [
+    "Sneakers",
+    "malefashionadvice",
+    "femalefashionadvice",
+    "frugalmalefashion",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "shoes",
+   "plural": "shoes",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "shoes",
+    "walking shoes",
+    "comfortable shoes",
+    "everyday shoes",
+    "work shoes",
+    "ballet flats",
+    "nursing shoes",
+    "shoes for standing all day",
+    "wide fit shoes",
+    "barefoot shoes",
+    "minimalist shoes"
+   ],
+   "hints": [
+    "shoes",
+    "shoe"
+   ],
+   "title_words": [
+    "shoes"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "femalefashionadvice",
+    "malefashionadvice"
+   ]
+  },
+  {
+   "name": "boots",
+   "plural": "boots",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "boots",
+    "boot",
+    "leather boots",
+    "chelsea boots",
+    "chelsea boot",
+    "winter boots",
+    "snow boots",
+    "ankle boots",
+    "combat boots",
+    "chukka boots",
+    "chukkas",
+    "lace up boots",
+    "service boots",
+    "moc toe boots",
+    "dr martens",
+    "doc martens",
+    "red wing boots",
+    "knee high boots"
+   ],
+   "title_words": [
+    "boots"
+   ],
+   "subreddits": [
+    "Boots",
+    "goodyearwelt",
+    "BuyItForLife",
+    "malefashionadvice",
+    "femalefashionadvice"
+   ]
+  },
+  {
+   "name": "work boots",
+   "plural": "work boots",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "work boots",
+    "steel toe boots",
+    "steel toe cap boots",
+    "safety boots",
+    "composite toe boots",
+    "work boot",
+    "safety shoes",
+    "steel toe shoes",
+    "steel toecap boots"
+   ],
+   "title_words": [
+    "work boots"
+   ],
+   "subreddits": [
+    "Boots",
+    "BuyItForLife",
+    "goodyearwelt"
+   ]
+  },
+  {
+   "name": "dress shoes",
+   "plural": "dress shoes",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "dress shoes",
+    "oxford shoes",
+    "oxfords",
+    "derby shoes",
+    "derbies",
+    "loafers",
+    "brogues",
+    "leather shoes",
+    "formal shoes",
+    "penny loafers",
+    "dress shoe",
+    "wedding shoes"
+   ],
+   "title_words": [
+    "dress shoes",
+    "loafers",
+    "oxfords"
+   ],
+   "subreddits": [
+    "goodyearwelt",
+    "malefashionadvice",
+    "BuyItForLife",
+    "frugalmalefashion"
+   ]
+  },
+  {
+   "name": "sandals",
+   "plural": "sandals",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "sandals",
+    "sandal",
+    "flip flops",
+    "flip-flops",
+    "sliders",
+    "birkenstocks",
+    "birkenstock",
+    "hiking sandals",
+    "walking sandals"
+   ],
+   "title_words": [
+    "sandals"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "malefashionadvice",
+    "femalefashionadvice"
+   ]
+  },
+  {
+   "name": "slippers",
+   "plural": "slippers",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "slippers",
+    "slipper",
+    "house shoes",
+    "house slippers",
+    "moccasins",
+    "slipper boots"
+   ],
+   "title_words": [
+    "slippers"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "malefashionadvice",
+    "femalefashionadvice"
+   ]
+  },
+  {
+   "name": "wellies",
+   "plural": "wellies",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "wellies",
+    "wellington boots",
+    "wellingtons",
+    "rain boots",
+    "rubber boots",
+    "muck boots",
+    "wellington",
+    "galoshes"
+   ],
+   "title_words": [
+    "wellies",
+    "rain boots"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Boots",
+    "CampingGear"
+   ]
+  },
+  {
+   "name": "watch",
+   "plural": "watches",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "watch",
+    "wristwatch",
+    "wrist watch",
+    "watches",
+    "automatic watch",
+    "mechanical watch",
+    "dive watch",
+    "diver watch",
+    "field watch",
+    "dress watch",
+    "quartz watch",
+    "chronograph",
+    "everyday watch",
+    "beater watch",
+    "seiko",
+    "g-shock",
+    "gshock",
+    "first watch",
+    "pilot watch"
+   ],
+   "hints": [
+    "watch"
+   ],
+   "title_words": [
+    "watch",
+    "watches"
+   ],
+   "subreddits": [
+    "Watches",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "wallet",
+   "plural": "wallets",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "wallet",
+    "wallets",
+    "card holder",
+    "cardholder",
+    "minimalist wallet",
+    "leather wallet",
+    "bifold wallet",
+    "bifold",
+    "money clip",
+    "slim wallet",
+    "card wallet",
+    "rfid wallet",
+    "travel wallet"
+   ],
+   "title_words": [
+    "wallet"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "malefashionadvice",
+    "EDC"
+   ]
+  },
+  {
+   "name": "handbag",
+   "plural": "handbags",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "handbag",
+    "handbags",
+    "tote bag",
+    "tote",
+    "crossbody bag",
+    "cross body bag",
+    "shoulder bag",
+    "leather bag",
+    "purse",
+    "work bag",
+    "clutch bag",
+    "bucket bag",
+    "belt bag",
+    "bum bag",
+    "fanny pack",
+    "sling bag"
+   ],
+   "title_words": [
+    "handbag",
+    "bag",
+    "tote"
+   ],
+   "subreddits": [
+    "femalefashionadvice",
+    "handbags",
+    "BuyItForLife",
+    "HerOneBag"
+   ]
+  },
+  {
+   "name": "backpack",
+   "plural": "backpacks",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "backpack",
+    "backpacks",
+    "rucksack",
+    "laptop backpack",
+    "school backpack",
+    "commuter backpack",
+    "everyday backpack",
+    "edc backpack",
+    "travel backpack",
+    "carry on backpack",
+    "carry-on backpack",
+    "one bag backpack",
+    "work backpack",
+    "school bag",
+    "bookbag",
+    "rucksacks",
+    "laptop rucksack"
+   ],
+   "title_words": [
+    "backpack",
+    "rucksack"
+   ],
+   "subreddits": [
+    "onebag",
+    "HerOneBag",
+    "BuyItForLife",
+    "EDC"
+   ]
+  },
+  {
+   "name": "laptop bag",
+   "plural": "laptop bags",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "laptop bag",
+    "laptop sleeve",
+    "laptop case",
+    "messenger bag",
+    "briefcase",
+    "laptop briefcase",
+    "computer bag",
+    "laptop tote"
+   ],
+   "title_words": [
+    "laptop bag"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "onebag",
+    "malefashionadvice"
+   ]
+  },
+  {
+   "name": "belt",
+   "plural": "belts",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "belt",
+    "leather belt",
+    "belts",
+    "full grain belt",
+    "dress belt",
+    "casual belt",
+    "work belt"
+   ],
+   "title_words": [
+    "belt"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "malefashionadvice"
+   ]
+  },
+  {
+   "name": "sunglasses",
+   "plural": "sunglasses",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "sunglasses",
+    "sunnies",
+    "polarized sunglasses",
+    "polarised sunglasses",
+    "sunglass",
+    "aviators",
+    "wayfarers",
+    "ray bans",
+    "ray-bans"
+   ],
+   "title_words": [
+    "sunglasses"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "malefashionadvice",
+    "femalefashionadvice"
+   ]
+  },
+  {
+   "name": "umbrella",
+   "plural": "umbrellas",
+   "category": "general",
+   "department": "clothing",
+   "keywords": [
+    "umbrella",
+    "golf umbrella",
+    "travel umbrella",
+    "compact umbrella",
+    "windproof umbrella",
+    "umbrellas",
+    "brolly"
+   ],
+   "title_words": [
+    "umbrella"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "onebag"
+   ]
+  },
+  {
+   "name": "stroller",
+   "plural": "strollers",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "stroller",
+    "pram",
+    "pushchair",
+    "buggy",
+    "travel system",
+    "jogging stroller",
+    "umbrella stroller",
+    "travel stroller",
+    "double stroller",
+    "strollers",
+    "prams",
+    "lightweight stroller",
+    "running stroller"
+   ],
+   "title_words": [
+    "stroller",
+    "pram",
+    "pushchair"
+   ],
+   "subreddits": [
+    "NewParents",
+    "beyondthebump",
+    "BabyBumps",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "car seat",
+   "plural": "car seats",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "car seat",
+    "infant car seat",
+    "baby car seat",
+    "booster seat",
+    "convertible car seat",
+    "child car seat",
+    "isofix car seat",
+    "toddler car seat",
+    "car seats",
+    "high back booster",
+    "rear facing car seat",
+    "extended rear facing"
+   ],
+   "title_words": [
+    "car seat"
+   ],
+   "subreddits": [
+    "CarSeats",
+    "NewParents",
+    "beyondthebump",
+    "BabyBumps"
+   ]
+  },
+  {
+   "name": "baby carrier",
+   "plural": "baby carriers",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "baby carrier",
+    "baby sling",
+    "baby wrap",
+    "sling carrier",
+    "ring sling",
+    "soft structured carrier",
+    "toddler carrier",
+    "hiking carrier",
+    "child carrier",
+    "ergobaby",
+    "baby carriers",
+    "babywearing"
+   ],
+   "title_words": [
+    "baby carrier"
+   ],
+   "subreddits": [
+    "babywearing",
+    "NewParents",
+    "beyondthebump"
+   ]
+  },
+  {
+   "name": "baby monitor",
+   "plural": "baby monitors",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "baby monitor",
+    "video baby monitor",
+    "video monitor",
+    "owlet",
+    "baby camera",
+    "baby monitors",
+    "audio monitor"
+   ],
+   "title_words": [
+    "baby monitor"
+   ],
+   "subreddits": [
+    "NewParents",
+    "beyondthebump",
+    "BabyBumps"
+   ]
+  },
+  {
+   "name": "cot",
+   "plural": "cots",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "cot",
+    "crib",
+    "cot bed",
+    "travel cot",
+    "bassinet",
+    "bedside crib",
+    "next to me crib",
+    "moses basket",
+    "pack n play",
+    "pack and play",
+    "playard",
+    "co-sleeper",
+    "side sleeper crib",
+    "cribs",
+    "cots"
+   ],
+   "title_words": [
+    "cot",
+    "crib",
+    "bassinet"
+   ],
+   "subreddits": [
+    "NewParents",
+    "beyondthebump",
+    "BabyBumps",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "high chair",
+   "plural": "high chairs",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "high chair",
+    "highchair",
+    "feeding chair",
+    "high chairs",
+    "tripp trapp",
+    "stokke tripp trapp"
+   ],
+   "title_words": [
+    "high chair"
+   ],
+   "subreddits": [
+    "NewParents",
+    "beyondthebump",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "baby bottle",
+   "plural": "baby bottles",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "baby bottle",
+    "baby bottles",
+    "feeding bottle",
+    "feeding bottles",
+    "anti-colic bottle",
+    "anti colic bottle",
+    "bottles for breastfed babies",
+    "sippy cup",
+    "straw cup"
+   ],
+   "title_words": [
+    "bottle",
+    "bottles"
+   ],
+   "subreddits": [
+    "NewParents",
+    "beyondthebump"
+   ]
+  },
+  {
+   "name": "breast pump",
+   "plural": "breast pumps",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "breast pump",
+    "breast pumps",
+    "wearable pump",
+    "wearable breast pump",
+    "electric breast pump",
+    "manual breast pump",
+    "haakaa",
+    "elvie",
+    "willow pump"
+   ],
+   "title_words": [
+    "breast pump"
+   ],
+   "subreddits": [
+    "ExclusivelyPumping",
+    "NewParents",
+    "beyondthebump",
+    "BabyBumps"
+   ]
+  },
+  {
+   "name": "nappies",
+   "plural": "nappies",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "nappies",
+    "nappy",
+    "diapers",
+    "diaper",
+    "reusable nappies",
+    "cloth diapers",
+    "cloth nappies",
+    "pull-ups",
+    "pull ups",
+    "swim nappies",
+    "baby wipes"
+   ],
+   "title_words": [
+    "nappies",
+    "diapers"
+   ],
+   "subreddits": [
+    "NewParents",
+    "beyondthebump",
+    "BabyBumps"
+   ]
+  },
+  {
+   "name": "changing bag",
+   "plural": "changing bags",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "changing bag",
+    "diaper bag",
+    "nappy bag",
+    "changing backpack",
+    "diaper backpack",
+    "baby bag"
+   ],
+   "title_words": [
+    "changing bag"
+   ],
+   "subreddits": [
+    "NewParents",
+    "beyondthebump",
+    "BabyBumps"
+   ]
+  },
+  {
+   "name": "baby bouncer",
+   "plural": "baby bouncers",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "baby bouncer",
+    "bouncer",
+    "baby rocker",
+    "baby swing",
+    "bouncy chair",
+    "jumperoo",
+    "baby bouncers",
+    "babybjorn bouncer",
+    "bouncer seat"
+   ],
+   "title_words": [
+    "baby bouncer"
+   ],
+   "subreddits": [
+    "NewParents",
+    "beyondthebump"
+   ]
+  },
+  {
+   "name": "play mat",
+   "plural": "play mats",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "play mat",
+    "baby play mat",
+    "play gym",
+    "activity gym",
+    "baby gym",
+    "foam play mat",
+    "playmat",
+    "activity mat",
+    "tummy time mat",
+    "playpen",
+    "play pen"
+   ],
+   "title_words": [
+    "play mat"
+   ],
+   "subreddits": [
+    "NewParents",
+    "beyondthebump"
+   ]
+  },
+  {
+   "name": "baby sleeping bag",
+   "plural": "baby sleeping bags",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "baby sleeping bag",
+    "sleep sack",
+    "grobag",
+    "sleeping bag for baby",
+    "toddler sleeping bag",
+    "wearable blanket",
+    "sleepsack"
+   ],
+   "title_words": [
+    "baby sleeping bag"
+   ],
+   "subreddits": [
+    "NewParents",
+    "beyondthebump",
+    "BabyBumps"
+   ]
+  },
+  {
+   "name": "swaddle",
+   "plural": "swaddles",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "swaddle",
+    "swaddle blanket",
+    "swaddle wrap",
+    "swaddles",
+    "muslin swaddle",
+    "zip swaddle",
+    "swaddle sack"
+   ],
+   "title_words": [
+    "swaddle"
+   ],
+   "subreddits": [
+    "NewParents",
+    "beyondthebump"
+   ]
+  },
+  {
+   "name": "baby gate",
+   "plural": "baby gates",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "baby gate",
+    "stair gate",
+    "safety gate",
+    "baby gates",
+    "pressure gate",
+    "stair gates",
+    "child gate"
+   ],
+   "title_words": [
+    "baby gate"
+   ],
+   "subreddits": [
+    "NewParents",
+    "beyondthebump",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "balance bike",
+   "plural": "balance bikes",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "balance bike",
+    "kids bike",
+    "toddler bike",
+    "children's bike",
+    "kids bicycle",
+    "first bike",
+    "kids bikes",
+    "balance bikes",
+    "child bike"
+   ],
+   "title_words": [
+    "balance bike"
+   ],
+   "subreddits": [
+    "NewParents",
+    "bicycling",
+    "Mommit"
+   ]
+  },
+  {
+   "name": "kids scooter",
+   "plural": "kids scooters",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "kids scooter",
+    "toddler scooter",
+    "micro scooter",
+    "children's scooter",
+    "kick scooter",
+    "scooter for kids"
+   ],
+   "title_words": [
+    "scooter"
+   ],
+   "subreddits": [
+    "NewParents",
+    "Mommit",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "potty",
+   "plural": "potties",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "potty",
+    "potty training seat",
+    "toilet training seat",
+    "potty seat",
+    "training potty",
+    "toddler toilet seat"
+   ],
+   "title_words": [
+    "potty"
+   ],
+   "subreddits": [
+    "NewParents",
+    "Mommit",
+    "beyondthebump"
+   ]
+  },
+  {
+   "name": "nursing pillow",
+   "plural": "nursing pillows",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "nursing pillow",
+    "feeding pillow",
+    "boppy",
+    "breastfeeding pillow",
+    "nursing cushion"
+   ],
+   "title_words": [
+    "nursing pillow"
+   ],
+   "subreddits": [
+    "NewParents",
+    "beyondthebump",
+    "BabyBumps"
+   ]
+  },
+  {
+   "name": "trampoline",
+   "plural": "trampolines",
+   "category": "general",
+   "department": "baby",
+   "keywords": [
+    "trampoline",
+    "garden trampoline",
+    "kids trampoline",
+    "trampolines",
+    "mini trampoline"
+   ],
+   "title_words": [
+    "trampoline"
+   ],
+   "subreddits": [
+    "Mommit",
+    "NewParents",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "dog harness",
+   "plural": "dog harnesses",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "dog harness",
+    "no pull harness",
+    "no-pull harness",
+    "puppy harness",
+    "dog harnesses",
+    "harness for dog",
+    "front clip harness",
+    "car harness for dogs"
+   ],
+   "hints": [
+    "harness"
+   ],
+   "title_words": [
+    "harness"
+   ],
+   "subreddits": [
+    "dogs",
+    "Dogtraining",
+    "puppy101",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "dog lead",
+   "plural": "dog leads",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "dog lead",
+    "dog leash",
+    "leash",
+    "lead for dog",
+    "retractable lead",
+    "retractable leash",
+    "slip lead",
+    "long line",
+    "dog leads",
+    "dog leashes",
+    "hands free leash",
+    "hands-free leash"
+   ],
+   "title_words": [
+    "leash",
+    "lead"
+   ],
+   "subreddits": [
+    "dogs",
+    "Dogtraining",
+    "puppy101",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "dog collar",
+   "plural": "dog collars",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "dog collar",
+    "puppy collar",
+    "martingale collar",
+    "dog collars",
+    "leather dog collar",
+    "flat collar",
+    "cat collar"
+   ],
+   "hints": [
+    "collar"
+   ],
+   "title_words": [
+    "collar"
+   ],
+   "subreddits": [
+    "dogs",
+    "Dogtraining",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "dog bed",
+   "plural": "dog beds",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "dog bed",
+    "orthopedic dog bed",
+    "orthopaedic dog bed",
+    "puppy bed",
+    "dog beds",
+    "chew proof dog bed",
+    "chew-proof dog bed",
+    "calming dog bed",
+    "pet bed",
+    "dog crate bed",
+    "cat bed"
+   ],
+   "title_words": [
+    "dog bed"
+   ],
+   "subreddits": [
+    "dogs",
+    "puppy101",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "dog crate",
+   "plural": "dog crates",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "dog crate",
+    "puppy crate",
+    "dog kennel",
+    "travel crate",
+    "wire crate",
+    "dog crates",
+    "crate for dog",
+    "puppy pen",
+    "dog playpen"
+   ],
+   "hints": [
+    "crate"
+   ],
+   "title_words": [
+    "crate"
+   ],
+   "subreddits": [
+    "dogs",
+    "puppy101",
+    "Dogtraining"
+   ]
+  },
+  {
+   "name": "dog toy",
+   "plural": "dog toys",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "dog toy",
+    "chew toy",
+    "dog toys",
+    "puzzle toy",
+    "tug toy",
+    "indestructible dog toy",
+    "kong",
+    "squeaky toy",
+    "dog chew toy",
+    "puppy toys",
+    "snuffle mat",
+    "lick mat"
+   ],
+   "title_words": [
+    "dog toy",
+    "toys"
+   ],
+   "subreddits": [
+    "dogs",
+    "puppy101",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "pet bowl",
+   "plural": "pet bowls",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "pet bowl",
+    "dog bowl",
+    "cat bowl",
+    "slow feeder",
+    "slow feeder bowl",
+    "dog bowls",
+    "cat bowls",
+    "raised dog bowl",
+    "elevated dog bowl",
+    "automatic feeder",
+    "pet feeder",
+    "cat feeder"
+   ],
+   "title_words": [
+    "bowl",
+    "feeder"
+   ],
+   "subreddits": [
+    "dogs",
+    "cats",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "pet water fountain",
+   "plural": "pet water fountains",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "pet water fountain",
+    "cat water fountain",
+    "pet fountain",
+    "cat fountain",
+    "dog water fountain",
+    "water fountain for cats"
+   ],
+   "title_words": [
+    "pet water fountain"
+   ],
+   "subreddits": [
+    "cats",
+    "CatAdvice"
+   ]
+  },
+  {
+   "name": "litter box",
+   "plural": "litter boxes",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "litter box",
+    "litter tray",
+    "litter pan",
+    "self-cleaning litter box",
+    "self cleaning litter box",
+    "litter robot",
+    "litter-robot",
+    "cat litter box",
+    "litter boxes",
+    "covered litter box",
+    "automatic litter box"
+   ],
+   "title_words": [
+    "litter box"
+   ],
+   "subreddits": [
+    "cats",
+    "CatAdvice"
+   ]
+  },
+  {
+   "name": "cat litter",
+   "plural": "cat litters",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "cat litter",
+    "clumping litter",
+    "tofu litter",
+    "crystal litter",
+    "wood litter",
+    "clay litter",
+    "litter for cats",
+    "unscented litter",
+    "pine litter"
+   ],
+   "hints": [
+    "litter"
+   ],
+   "title_words": [
+    "litter"
+   ],
+   "subreddits": [
+    "cats",
+    "CatAdvice"
+   ]
+  },
+  {
+   "name": "cat tree",
+   "plural": "cat trees",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "cat tree",
+    "cat tower",
+    "scratching post",
+    "cat scratcher",
+    "cat condo",
+    "cat trees",
+    "scratching posts",
+    "cat scratching post",
+    "cat climbing tree",
+    "cat shelves"
+   ],
+   "title_words": [
+    "cat tree",
+    "scratching post"
+   ],
+   "subreddits": [
+    "cats",
+    "CatAdvice"
+   ]
+  },
+  {
+   "name": "cat toy",
+   "plural": "cat toys",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "cat toy",
+    "cat toys",
+    "wand toy",
+    "cat wand",
+    "feather wand",
+    "kitten toys",
+    "interactive cat toy"
+   ],
+   "title_words": [
+    "cat toy"
+   ],
+   "subreddits": [
+    "cats",
+    "CatAdvice"
+   ]
+  },
+  {
+   "name": "pet carrier",
+   "plural": "pet carriers",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "pet carrier",
+    "cat carrier",
+    "dog carrier",
+    "pet travel carrier",
+    "cat carriers",
+    "airline pet carrier",
+    "dog car seat",
+    "pet car seat",
+    "dog backpack carrier"
+   ],
+   "title_words": [
+    "carrier"
+   ],
+   "subreddits": [
+    "cats",
+    "dogs",
+    "CatAdvice"
+   ]
+  },
+  {
+   "name": "pet brush",
+   "plural": "pet brushes",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "pet brush",
+    "dog brush",
+    "cat brush",
+    "deshedding tool",
+    "deshedding brush",
+    "furminator",
+    "slicker brush",
+    "grooming brush",
+    "pet grooming brush",
+    "undercoat rake",
+    "grooming glove",
+    "dog clippers",
+    "pet clippers",
+    "dog grooming clippers"
+   ],
+   "title_words": [
+    "brush",
+    "deshedding"
+   ],
+   "subreddits": [
+    "dogs",
+    "cats",
+    "CatAdvice"
+   ]
+  },
+  {
+   "name": "pet nail clippers",
+   "plural": "pet nail clippers",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "pet nail clippers",
+    "dog nail clippers",
+    "cat nail clippers",
+    "dog nail grinder",
+    "pet nail grinder",
+    "nail clippers for dogs",
+    "nail grinder for dogs",
+    "dog nail trimmer"
+   ],
+   "title_words": [
+    "nail clippers",
+    "nail grinder"
+   ],
+   "subreddits": [
+    "dogs",
+    "cats",
+    "puppy101"
+   ]
+  },
+  {
+   "name": "pet shampoo",
+   "plural": "pet shampoos",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "pet shampoo",
+    "dog shampoo",
+    "cat shampoo",
+    "puppy shampoo",
+    "dog conditioner"
+   ],
+   "title_words": [
+    "pet shampoo"
+   ],
+   "subreddits": [
+    "dogs",
+    "cats"
+   ]
+  },
+  {
+   "name": "pet camera",
+   "plural": "pet cameras",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "pet camera",
+    "dog camera",
+    "furbo",
+    "treat camera",
+    "cat camera",
+    "pet cam"
+   ],
+   "title_words": [
+    "pet camera"
+   ],
+   "subreddits": [
+    "dogs",
+    "cats",
+    "smarthome"
+   ]
+  },
+  {
+   "name": "pet tracker",
+   "plural": "pet trackers",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "pet tracker",
+    "gps dog collar",
+    "dog tracker",
+    "cat tracker",
+    "gps tracker for dog",
+    "gps tracker for cat",
+    "dog gps",
+    "fi collar",
+    "tractive",
+    "airtag holder"
+   ],
+   "title_words": [
+    "pet tracker"
+   ],
+   "subreddits": [
+    "dogs",
+    "cats",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "dog coat",
+   "plural": "dog coats",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "dog coat",
+    "dog jacket",
+    "dog raincoat",
+    "dog jumper",
+    "dog sweater",
+    "puppy coat",
+    "dog coats",
+    "waterproof dog coat"
+   ],
+   "title_words": [
+    "dog coat"
+   ],
+   "subreddits": [
+    "dogs",
+    "puppy101"
+   ]
+  },
+  {
+   "name": "aquarium",
+   "plural": "aquariums",
+   "category": "general",
+   "department": "pets",
+   "keywords": [
+    "aquarium",
+    "fish tank",
+    "aquariums",
+    "nano tank",
+    "betta tank",
+    "aquarium filter",
+    "fish tanks",
+    "aquarium heater"
+   ],
+   "title_words": [
+    "tank",
+    "aquarium"
+   ],
+   "subreddits": [
+    "Aquariums"
+   ]
+  },
+  {
+   "name": "running shoes",
+   "plural": "running shoes",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "running shoes",
+    "running shoe",
+    "running trainers",
+    "running sneakers",
+    "trail running shoes",
+    "trail runners",
+    "trail running shoe",
+    "marathon shoes",
+    "carbon plated shoes",
+    "racing shoes",
+    "daily trainer",
+    "stability shoes",
+    "cushioned running shoes"
+   ],
+   "title_words": [
+    "running shoes",
+    "trainer"
+   ],
+   "subreddits": [
+    "RunningShoeGeeks",
+    "running",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "yoga mat",
+   "plural": "yoga mats",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "yoga mat",
+    "exercise mat",
+    "pilates mat",
+    "workout mat",
+    "yoga mats",
+    "fitness mat",
+    "non slip yoga mat"
+   ],
+   "title_words": [
+    "yoga mat"
+   ],
+   "subreddits": [
+    "yoga",
+    "homegym",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "dumbbells",
+   "plural": "dumbbells",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "dumbbells",
+    "dumbbell",
+    "adjustable dumbbells",
+    "adjustable dumbbell",
+    "free weights",
+    "hand weights",
+    "dumbbell set",
+    "bowflex dumbbells",
+    "powerblock"
+   ],
+   "title_words": [
+    "dumbbells"
+   ],
+   "subreddits": [
+    "homegym",
+    "BuyItForLife",
+    "Fitness"
+   ]
+  },
+  {
+   "name": "kettlebell",
+   "plural": "kettlebells",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "kettlebell",
+    "kettlebells",
+    "adjustable kettlebell",
+    "competition kettlebell",
+    "kettle bell"
+   ],
+   "title_words": [
+    "kettlebell"
+   ],
+   "subreddits": [
+    "kettlebell",
+    "homegym",
+    "Fitness"
+   ]
+  },
+  {
+   "name": "barbell",
+   "plural": "barbells",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "barbell",
+    "olympic barbell",
+    "olympic bar",
+    "barbells",
+    "weightlifting bar",
+    "trap bar",
+    "hex bar",
+    "ez bar",
+    "ez curl bar"
+   ],
+   "title_words": [
+    "barbell"
+   ],
+   "subreddits": [
+    "homegym",
+    "powerlifting",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "weight plates",
+   "plural": "weight plates",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "weight plates",
+    "bumper plates",
+    "olympic plates",
+    "iron plates",
+    "weight plate",
+    "change plates",
+    "calibrated plates"
+   ],
+   "title_words": [
+    "plates",
+    "bumper plates"
+   ],
+   "subreddits": [
+    "homegym",
+    "powerlifting"
+   ]
+  },
+  {
+   "name": "squat rack",
+   "plural": "squat racks",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "squat rack",
+    "power rack",
+    "half rack",
+    "squat stand",
+    "squat stands",
+    "power cage",
+    "squat racks",
+    "wall mounted rack",
+    "folding rack",
+    "rogue rack"
+   ],
+   "title_words": [
+    "rack",
+    "squat rack",
+    "power rack"
+   ],
+   "subreddits": [
+    "homegym",
+    "powerlifting"
+   ]
+  },
+  {
+   "name": "weight bench",
+   "plural": "weight benches",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "weight bench",
+    "adjustable bench",
+    "workout bench",
+    "gym bench",
+    "flat bench",
+    "adjustable weight bench",
+    "fid bench",
+    "incline bench",
+    "weight benches"
+   ],
+   "title_words": [
+    "weight bench"
+   ],
+   "subreddits": [
+    "homegym",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "treadmill",
+   "plural": "treadmills",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "treadmill",
+    "walking pad",
+    "under desk treadmill",
+    "folding treadmill",
+    "treadmills",
+    "running machine",
+    "incline treadmill"
+   ],
+   "title_words": [
+    "treadmill"
+   ],
+   "subreddits": [
+    "homegym",
+    "running",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "exercise bike",
+   "plural": "exercise bikes",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "exercise bike",
+    "spin bike",
+    "stationary bike",
+    "indoor bike",
+    "indoor cycling bike",
+    "peloton",
+    "air bike",
+    "assault bike",
+    "recumbent bike",
+    "exercise bikes",
+    "spinning bike",
+    "peloton bike"
+   ],
+   "title_words": [
+    "exercise bike",
+    "spin bike",
+    "peloton"
+   ],
+   "subreddits": [
+    "homegym",
+    "BuyItForLife",
+    "Fitness"
+   ]
+  },
+  {
+   "name": "rowing machine",
+   "plural": "rowing machines",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "rowing machine",
+    "rower",
+    "erg",
+    "concept2",
+    "concept 2",
+    "indoor rower",
+    "rowing machines",
+    "rowers",
+    "water rower"
+   ],
+   "title_words": [
+    "rower",
+    "rowing machine"
+   ],
+   "subreddits": [
+    "homegym",
+    "Rowing",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "bike trainer",
+   "plural": "bike trainers",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "bike trainer",
+    "turbo trainer",
+    "smart trainer",
+    "indoor trainer",
+    "wahoo kickr",
+    "kickr",
+    "direct drive trainer",
+    "bike rollers",
+    "indoor bike trainer",
+    "smart bike trainer"
+   ],
+   "title_words": [
+    "trainer",
+    "turbo trainer",
+    "smart trainer"
+   ],
+   "subreddits": [
+    "Zwift",
+    "bicycling",
+    "homegym"
+   ]
+  },
+  {
+   "name": "resistance bands",
+   "plural": "resistance bands",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "resistance bands",
+    "resistance band",
+    "exercise bands",
+    "pull up bands",
+    "loop bands",
+    "booty bands",
+    "workout bands",
+    "therabands"
+   ],
+   "title_words": [
+    "resistance bands"
+   ],
+   "subreddits": [
+    "homegym",
+    "Fitness",
+    "xxfitness"
+   ]
+  },
+  {
+   "name": "pull-up bar",
+   "plural": "pull-up bars",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "pull-up bar",
+    "pull up bar",
+    "pullup bar",
+    "chin up bar",
+    "chin-up bar",
+    "doorway bar",
+    "doorway pull up bar",
+    "pull up bars"
+   ],
+   "title_words": [
+    "pull up bar",
+    "pull-up bar"
+   ],
+   "subreddits": [
+    "homegym",
+    "Fitness"
+   ]
+  },
+  {
+   "name": "foam roller",
+   "plural": "foam rollers",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "foam roller",
+    "massage roller",
+    "foam rollers",
+    "vibrating foam roller",
+    "massage ball",
+    "lacrosse ball"
+   ],
+   "title_words": [
+    "foam roller"
+   ],
+   "subreddits": [
+    "Fitness",
+    "running",
+    "homegym"
+   ]
+  },
+  {
+   "name": "massage gun",
+   "plural": "massage guns",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "massage gun",
+    "percussion massager",
+    "theragun",
+    "hypervolt",
+    "massage guns",
+    "percussion gun",
+    "deep tissue massager",
+    "mini massage gun"
+   ],
+   "title_words": [
+    "massage gun"
+   ],
+   "subreddits": [
+    "Fitness",
+    "running",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "fitness tracker",
+   "plural": "fitness trackers",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "fitness tracker",
+    "activity tracker",
+    "fitness band",
+    "fitbit",
+    "step counter",
+    "whoop band",
+    "fitness trackers",
+    "fitness watch"
+   ],
+   "title_words": [
+    "fitness tracker",
+    "fitbit"
+   ],
+   "subreddits": [
+    "fitbit",
+    "Garmin",
+    "BuyItForLife",
+    "Fitness"
+   ]
+  },
+  {
+   "name": "sports watch",
+   "plural": "sports watches",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "sports watch",
+    "running watch",
+    "gps watch",
+    "garmin watch",
+    "triathlon watch",
+    "multisport watch",
+    "gps running watch",
+    "garmin forerunner",
+    "forerunner",
+    "coros",
+    "suunto"
+   ],
+   "title_words": [
+    "running watch",
+    "gps watch",
+    "garmin"
+   ],
+   "subreddits": [
+    "Garmin",
+    "running",
+    "RunningShoeGeeks"
+   ]
+  },
+  {
+   "name": "heart rate monitor",
+   "plural": "heart rate monitors",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "heart rate monitor",
+    "chest strap",
+    "hrm",
+    "heart rate strap",
+    "chest strap heart rate monitor",
+    "polar h10",
+    "armband heart rate monitor"
+   ],
+   "title_words": [
+    "heart rate monitor"
+   ],
+   "subreddits": [
+    "Garmin",
+    "running",
+    "Fitness"
+   ]
+  },
+  {
+   "name": "boxing gloves",
+   "plural": "boxing gloves",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "boxing gloves",
+    "sparring gloves",
+    "mma gloves",
+    "bag gloves",
+    "training gloves",
+    "kickboxing gloves",
+    "muay thai gloves"
+   ],
+   "title_words": [
+    "boxing gloves"
+   ],
+   "subreddits": [
+    "boxing",
+    "homegym"
+   ]
+  },
+  {
+   "name": "punching bag",
+   "plural": "punching bags",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "punching bag",
+    "heavy bag",
+    "boxing bag",
+    "punch bag",
+    "punching bags",
+    "free standing punch bag",
+    "freestanding punching bag",
+    "speed bag"
+   ],
+   "title_words": [
+    "punching bag"
+   ],
+   "subreddits": [
+    "boxing",
+    "homegym"
+   ]
+  },
+  {
+   "name": "tennis racket",
+   "plural": "tennis rackets",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "tennis racket",
+    "tennis racquet",
+    "padel racket",
+    "padel racquet",
+    "badminton racket",
+    "squash racket",
+    "squash racquet",
+    "pickleball paddle",
+    "tennis rackets",
+    "racquet"
+   ],
+   "hints": [
+    "racket"
+   ],
+   "title_words": [
+    "racket",
+    "racquet"
+   ],
+   "subreddits": [
+    "tennis",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "football boots",
+   "plural": "football boots",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "football boots",
+    "soccer cleats",
+    "cleats",
+    "football cleats",
+    "astro turf trainers",
+    "astros",
+    "soccer boots",
+    "firm ground boots",
+    "rugby boots"
+   ],
+   "title_words": [
+    "football boots"
+   ],
+   "subreddits": [
+    "bootroom",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "skateboard",
+   "plural": "skateboards",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "skateboard",
+    "longboard",
+    "cruiser board",
+    "skateboards",
+    "penny board",
+    "complete skateboard"
+   ],
+   "title_words": [
+    "skateboard"
+   ],
+   "subreddits": [
+    "skateboarding",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "swimming goggles",
+   "plural": "swimming goggles",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "swimming goggles",
+    "swim goggles",
+    "goggles for swimming",
+    "anti fog goggles",
+    "swimming goggle"
+   ],
+   "title_words": [
+    "swimming goggles"
+   ],
+   "subreddits": [
+    "Swimming",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "jump rope",
+   "plural": "jump ropes",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "jump rope",
+    "skipping rope",
+    "speed rope",
+    "jump ropes",
+    "skipping ropes",
+    "weighted jump rope"
+   ],
+   "title_words": [
+    "jump rope"
+   ],
+   "subreddits": [
+    "homegym",
+    "Fitness"
+   ]
+  },
+  {
+   "name": "gym flooring",
+   "plural": "gym flooring",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "gym flooring",
+    "rubber flooring",
+    "gym mats",
+    "horse stall mats",
+    "rubber gym tiles",
+    "gym tiles",
+    "deadlift platform",
+    "rubber mats"
+   ],
+   "title_words": [
+    "flooring",
+    "stall mats",
+    "gym mats"
+   ],
+   "subreddits": [
+    "homegym"
+   ]
+  },
+  {
+   "name": "lifting belt",
+   "plural": "lifting belts",
+   "category": "general",
+   "department": "fitness",
+   "keywords": [
+    "lifting belt",
+    "weightlifting belt",
+    "lever belt",
+    "powerlifting belt",
+    "weight belt",
+    "lifting belts"
+   ],
+   "title_words": [
+    "lifting belt"
+   ],
+   "subreddits": [
+    "powerlifting",
+    "homegym",
+    "Fitness"
+   ]
+  },
+  {
+   "name": "drill",
+   "plural": "drills",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "drill",
+    "cordless drill",
+    "drill driver",
+    "combi drill",
+    "hammer drill",
+    "power drill",
+    "drills",
+    "brushless drill",
+    "sds drill",
+    "drill/driver"
+   ],
+   "title_words": [
+    "drill"
+   ],
+   "subreddits": [
+    "Tools",
+    "HomeImprovement",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "impact driver",
+   "plural": "impact drivers",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "impact driver",
+    "impact drivers",
+    "impact wrench",
+    "cordless impact driver"
+   ],
+   "title_words": [
+    "impact driver"
+   ],
+   "subreddits": [
+    "Tools",
+    "HomeImprovement"
+   ]
+  },
+  {
+   "name": "circular saw",
+   "plural": "circular saws",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "circular saw",
+    "track saw",
+    "plunge saw",
+    "cordless circular saw",
+    "circular saws"
+   ],
+   "title_words": [
+    "circular saw"
+   ],
+   "subreddits": [
+    "Tools",
+    "woodworking"
+   ]
+  },
+  {
+   "name": "mitre saw",
+   "plural": "mitre saws",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "mitre saw",
+    "miter saw",
+    "chop saw",
+    "sliding mitre saw",
+    "sliding miter saw",
+    "compound miter saw",
+    "mitre saws",
+    "miter saws"
+   ],
+   "title_words": [
+    "mitre saw",
+    "miter saw"
+   ],
+   "subreddits": [
+    "Tools",
+    "woodworking"
+   ]
+  },
+  {
+   "name": "table saw",
+   "plural": "table saws",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "table saw",
+    "jobsite table saw",
+    "cabinet saw",
+    "contractor saw",
+    "table saws",
+    "sawstop"
+   ],
+   "title_words": [
+    "table saw"
+   ],
+   "subreddits": [
+    "woodworking",
+    "Tools"
+   ]
+  },
+  {
+   "name": "jigsaw",
+   "plural": "jigsaws",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "jigsaw",
+    "jig saw",
+    "cordless jigsaw",
+    "jigsaws"
+   ],
+   "title_words": [
+    "jigsaw"
+   ],
+   "subreddits": [
+    "Tools",
+    "woodworking"
+   ]
+  },
+  {
+   "name": "angle grinder",
+   "plural": "angle grinders",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "angle grinder",
+    "angle grinders",
+    "cordless angle grinder",
+    "grinder for metal",
+    "cutting grinder"
+   ],
+   "title_words": [
+    "angle grinder"
+   ],
+   "subreddits": [
+    "Tools",
+    "HomeImprovement"
+   ]
+  },
+  {
+   "name": "sander",
+   "plural": "sanders",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "sander",
+    "orbital sander",
+    "random orbital sander",
+    "random orbit sander",
+    "belt sander",
+    "palm sander",
+    "detail sander",
+    "sanders",
+    "drywall sander",
+    "mouse sander"
+   ],
+   "title_words": [
+    "sander"
+   ],
+   "subreddits": [
+    "Tools",
+    "woodworking"
+   ]
+  },
+  {
+   "name": "multi-tool",
+   "plural": "multi-tools",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "multi-tool",
+    "multitool",
+    "multi tool",
+    "leatherman",
+    "pocket multitool",
+    "multi-tools",
+    "multitools"
+   ],
+   "title_words": [
+    "multitool",
+    "multi-tool",
+    "leatherman"
+   ],
+   "subreddits": [
+    "EDC",
+    "BuyItForLife",
+    "Tools"
+   ]
+  },
+  {
+   "name": "oscillating tool",
+   "plural": "oscillating tools",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "oscillating tool",
+    "oscillating multi-tool",
+    "oscillating multitool",
+    "oscillating multi tool",
+    "multi-cutter",
+    "oscillating saw"
+   ],
+   "title_words": [
+    "oscillating tool"
+   ],
+   "subreddits": [
+    "Tools",
+    "HomeImprovement"
+   ]
+  },
+  {
+   "name": "tool set",
+   "plural": "tool sets",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "tool set",
+    "tool kit",
+    "toolkit",
+    "socket set",
+    "mechanics tool set",
+    "mechanic tool set",
+    "spanner set",
+    "wrench set",
+    "tool box set",
+    "household tool kit",
+    "basic tool kit",
+    "home tool kit",
+    "starter tool kit",
+    "ratchet set"
+   ],
+   "title_words": [
+    "tool set",
+    "tool kit",
+    "socket set"
+   ],
+   "subreddits": [
+    "Tools",
+    "HomeImprovement",
+    "MechanicAdvice",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "screwdriver",
+   "plural": "screwdrivers",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "screwdriver",
+    "screwdrivers",
+    "electric screwdriver",
+    "cordless screwdriver",
+    "precision screwdriver",
+    "screwdriver set",
+    "ifixit kit",
+    "precision driver kit"
+   ],
+   "title_words": [
+    "screwdriver"
+   ],
+   "subreddits": [
+    "Tools",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "tape measure",
+   "plural": "tape measures",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "tape measure",
+    "measuring tape",
+    "laser measure",
+    "tape measures",
+    "laser distance measure"
+   ],
+   "title_words": [
+    "tape measure"
+   ],
+   "subreddits": [
+    "Tools",
+    "HomeImprovement"
+   ]
+  },
+  {
+   "name": "laser level",
+   "plural": "laser levels",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "laser level",
+    "line laser",
+    "cross line laser",
+    "self-levelling laser",
+    "self leveling laser",
+    "rotary laser",
+    "laser levels"
+   ],
+   "title_words": [
+    "laser level"
+   ],
+   "subreddits": [
+    "Tools",
+    "HomeImprovement"
+   ]
+  },
+  {
+   "name": "stud finder",
+   "plural": "stud finders",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "stud finder",
+    "stud detector",
+    "wall scanner",
+    "stud sensor",
+    "stud finders"
+   ],
+   "title_words": [
+    "stud finder"
+   ],
+   "subreddits": [
+    "HomeImprovement",
+    "Tools"
+   ]
+  },
+  {
+   "name": "shop vac",
+   "plural": "shop vacs",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "shop vac",
+    "wet dry vac",
+    "wet and dry vacuum",
+    "wet/dry vacuum",
+    "workshop vacuum",
+    "dust extractor",
+    "shop vacuum",
+    "wet dry vacuum",
+    "shop vacs"
+   ],
+   "title_words": [
+    "shop vac",
+    "dust extractor"
+   ],
+   "subreddits": [
+    "Tools",
+    "woodworking",
+    "HomeImprovement"
+   ]
+  },
+  {
+   "name": "pressure washer",
+   "plural": "pressure washers",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "pressure washer",
+    "power washer",
+    "jet washer",
+    "pressure washers",
+    "electric pressure washer",
+    "gas pressure washer"
+   ],
+   "title_words": [
+    "pressure washer"
+   ],
+   "subreddits": [
+    "HomeImprovement",
+    "homeowners",
+    "Tools"
+   ]
+  },
+  {
+   "name": "ladder",
+   "plural": "ladders",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "ladder",
+    "step ladder",
+    "extension ladder",
+    "telescopic ladder",
+    "ladders",
+    "step stool",
+    "little giant ladder",
+    "multi-position ladder"
+   ],
+   "title_words": [
+    "ladder"
+   ],
+   "subreddits": [
+    "HomeImprovement",
+    "homeowners",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "soldering iron",
+   "plural": "soldering irons",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "soldering iron",
+    "soldering station",
+    "soldering irons",
+    "soldering kit",
+    "pinecil",
+    "ts100"
+   ],
+   "title_words": [
+    "soldering iron"
+   ],
+   "subreddits": [
+    "Tools",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "multimeter",
+   "plural": "multimeters",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "multimeter",
+    "digital multimeter",
+    "multimeters",
+    "voltage tester",
+    "clamp meter"
+   ],
+   "title_words": [
+    "multimeter"
+   ],
+   "subreddits": [
+    "Tools",
+    "HomeImprovement"
+   ]
+  },
+  {
+   "name": "glue gun",
+   "plural": "glue guns",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "glue gun",
+    "hot glue gun",
+    "glue guns",
+    "cordless glue gun"
+   ],
+   "title_words": [
+    "glue gun"
+   ],
+   "subreddits": [
+    "Tools",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "lawn mower",
+   "plural": "lawn mowers",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "lawn mower",
+    "lawnmower",
+    "mower",
+    "push mower",
+    "ride on mower",
+    "ride-on mower",
+    "riding mower",
+    "cordless mower",
+    "cordless lawn mower",
+    "electric mower",
+    "petrol mower",
+    "reel mower",
+    "cylinder mower",
+    "lawn mowers",
+    "lawnmowers"
+   ],
+   "title_words": [
+    "mower",
+    "lawnmower",
+    "lawn mower"
+   ],
+   "subreddits": [
+    "lawncare",
+    "homeowners",
+    "BuyItForLife",
+    "HomeImprovement"
+   ]
+  },
+  {
+   "name": "robot lawn mower",
+   "plural": "robot lawn mowers",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "robot lawn mower",
+    "robot mower",
+    "robotic mower",
+    "robotic lawn mower",
+    "robotic lawnmower",
+    "robot lawnmower",
+    "automower"
+   ],
+   "title_words": [
+    "robot mower",
+    "robotic mower",
+    "automower"
+   ],
+   "subreddits": [
+    "lawncare",
+    "homeowners",
+    "smarthome"
+   ]
+  },
+  {
+   "name": "string trimmer",
+   "plural": "string trimmers",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "string trimmer",
+    "strimmer",
+    "weed eater",
+    "weed whacker",
+    "weed wacker",
+    "line trimmer",
+    "grass trimmer",
+    "edger",
+    "lawn edger",
+    "brush cutter",
+    "strimmers"
+   ],
+   "title_words": [
+    "trimmer",
+    "strimmer",
+    "weed eater"
+   ],
+   "subreddits": [
+    "lawncare",
+    "homeowners",
+    "Tools"
+   ]
+  },
+  {
+   "name": "hedge trimmer",
+   "plural": "hedge trimmers",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "hedge trimmer",
+    "hedge cutter",
+    "hedge trimmers",
+    "cordless hedge trimmer",
+    "hedge shears"
+   ],
+   "title_words": [
+    "hedge trimmer"
+   ],
+   "subreddits": [
+    "gardening",
+    "lawncare",
+    "homeowners"
+   ]
+  },
+  {
+   "name": "leaf blower",
+   "plural": "leaf blowers",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "leaf blower",
+    "leaf blowers",
+    "blower",
+    "leaf vacuum",
+    "backpack blower",
+    "cordless leaf blower",
+    "garden blower"
+   ],
+   "title_words": [
+    "leaf blower",
+    "blower"
+   ],
+   "subreddits": [
+    "lawncare",
+    "homeowners",
+    "Tools"
+   ]
+  },
+  {
+   "name": "chainsaw",
+   "plural": "chainsaws",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "chainsaw",
+    "chain saw",
+    "chainsaws",
+    "pole saw",
+    "electric chainsaw",
+    "cordless chainsaw",
+    "battery chainsaw"
+   ],
+   "title_words": [
+    "chainsaw"
+   ],
+   "subreddits": [
+    "homeowners",
+    "Tools",
+    "lawncare"
+   ]
+  },
+  {
+   "name": "garden hose",
+   "plural": "garden hoses",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "garden hose",
+    "hose",
+    "hosepipe",
+    "hose pipe",
+    "expandable hose",
+    "hose reel",
+    "garden hoses",
+    "hose nozzle",
+    "retractable hose",
+    "hoses"
+   ],
+   "title_words": [
+    "hose",
+    "hosepipe"
+   ],
+   "subreddits": [
+    "gardening",
+    "homeowners",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "pruners",
+   "plural": "pruners",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "pruners",
+    "secateurs",
+    "pruning shears",
+    "loppers",
+    "garden shears",
+    "bypass pruners",
+    "felco",
+    "pruning saw"
+   ],
+   "title_words": [
+    "pruners",
+    "secateurs"
+   ],
+   "subreddits": [
+    "gardening",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "garden furniture",
+   "plural": "garden furniture",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "garden furniture",
+    "patio furniture",
+    "outdoor furniture",
+    "garden bench",
+    "patio set",
+    "garden table",
+    "outdoor sofa",
+    "patio chairs",
+    "garden chairs",
+    "bistro set",
+    "outdoor dining set",
+    "adirondack chair",
+    "sun lounger"
+   ],
+   "title_words": [
+    "garden furniture",
+    "patio furniture",
+    "outdoor furniture"
+   ],
+   "subreddits": [
+    "gardening",
+    "HomeDecorating",
+    "BuyItForLife",
+    "homeowners"
+   ]
+  },
+  {
+   "name": "fire pit",
+   "plural": "fire pits",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "fire pit",
+    "firepit",
+    "chiminea",
+    "solo stove",
+    "smokeless fire pit",
+    "fire pits",
+    "fire bowl"
+   ],
+   "title_words": [
+    "fire pit",
+    "firepit"
+   ],
+   "subreddits": [
+    "homeowners",
+    "BuyItForLife",
+    "CampingGear"
+   ]
+  },
+  {
+   "name": "wheelbarrow",
+   "plural": "wheelbarrows",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "wheelbarrow",
+    "wheel barrow",
+    "garden cart",
+    "wheelbarrows"
+   ],
+   "title_words": [
+    "wheelbarrow"
+   ],
+   "subreddits": [
+    "gardening",
+    "homeowners",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "spade",
+   "plural": "spades",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "spade",
+    "shovel",
+    "garden spade",
+    "digging spade",
+    "garden fork",
+    "trowel",
+    "border spade",
+    "shovels",
+    "spades",
+    "hand trowel"
+   ],
+   "title_words": [
+    "spade",
+    "shovel"
+   ],
+   "subreddits": [
+    "gardening",
+    "BuyItForLife",
+    "homeowners"
+   ]
+  },
+  {
+   "name": "hair dryer",
+   "plural": "hair dryers",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "hair dryer",
+    "hairdryer",
+    "blow dryer",
+    "blowdryer",
+    "hair drier",
+    "blow drier",
+    "ionic hair dryer",
+    "travel hair dryer",
+    "dyson supersonic",
+    "supersonic",
+    "hair dryers"
+   ],
+   "title_words": [
+    "hair dryer",
+    "hairdryer",
+    "blow dryer"
+   ],
+   "subreddits": [
+    "HaircareScience",
+    "curlyhair",
+    "Hair",
+    "femalehairadvice",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "hair straightener",
+   "plural": "hair straighteners",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "hair straightener",
+    "straightener",
+    "flat iron",
+    "straightening iron",
+    "hair iron",
+    "straighteners",
+    "ghd",
+    "hair straighteners",
+    "flat irons",
+    "straightening brush",
+    "mini straightener"
+   ],
+   "title_words": [
+    "straightener",
+    "flat iron"
+   ],
+   "subreddits": [
+    "HaircareScience",
+    "curlyhair",
+    "Hair",
+    "femalehairadvice",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "curling iron",
+   "plural": "curling irons",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "curling iron",
+    "curling wand",
+    "curling tongs",
+    "hair curler",
+    "curler",
+    "hair curlers",
+    "curling irons",
+    "heated rollers",
+    "hot rollers",
+    "heatless curlers",
+    "wand curler"
+   ],
+   "title_words": [
+    "curling iron",
+    "curling wand",
+    "curler"
+   ],
+   "subreddits": [
+    "HaircareScience",
+    "curlyhair",
+    "Hair",
+    "femalehairadvice",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "hot air brush",
+   "plural": "hot air brushes",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "hot air brush",
+    "hair dryer brush",
+    "blow dry brush",
+    "blowout brush",
+    "volumizer brush",
+    "volumiser brush",
+    "airwrap",
+    "dyson airwrap",
+    "revlon one step",
+    "round brush dryer"
+   ],
+   "title_words": [
+    "hot air brush",
+    "airwrap",
+    "dryer brush"
+   ],
+   "subreddits": [
+    "HaircareScience",
+    "curlyhair",
+    "Hair",
+    "femalehairadvice",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "hair brush",
+   "plural": "hair brushes",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "hair brush",
+    "hairbrush",
+    "detangling brush",
+    "detangler brush",
+    "paddle brush",
+    "boar bristle brush",
+    "round brush",
+    "wet brush",
+    "tangle teezer",
+    "hair brushes",
+    "wide tooth comb",
+    "hair comb"
+   ],
+   "title_words": [
+    "brush",
+    "hairbrush"
+   ],
+   "subreddits": [
+    "HaircareScience",
+    "curlyhair",
+    "Hair",
+    "femalehairadvice"
+   ]
+  },
+  {
+   "name": "electric toothbrush",
+   "plural": "electric toothbrushes",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "electric toothbrush",
+    "toothbrush",
+    "sonic toothbrush",
+    "sonicare",
+    "oral-b",
+    "oral b",
+    "electric toothbrushes",
+    "toothbrushes",
+    "rechargeable toothbrush"
+   ],
+   "title_words": [
+    "toothbrush",
+    "sonicare",
+    "oral b"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "water flosser",
+   "plural": "water flossers",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "water flosser",
+    "waterpik",
+    "oral irrigator",
+    "water pick",
+    "water flossers",
+    "cordless water flosser"
+   ],
+   "title_words": [
+    "water flosser"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Frugal"
+   ]
+  },
+  {
+   "name": "razor",
+   "plural": "razors",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "razor",
+    "safety razor",
+    "double edge razor",
+    "double-edge razor",
+    "de razor",
+    "straight razor",
+    "cartridge razor",
+    "disposable razor",
+    "razors",
+    "shavette",
+    "womens razor",
+    "razor blades"
+   ],
+   "title_words": [
+    "razor"
+   ],
+   "subreddits": [
+    "wicked_edge",
+    "BuyItForLife",
+    "malegrooming"
+   ]
+  },
+  {
+   "name": "electric shaver",
+   "plural": "electric shavers",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "electric shaver",
+    "electric razor",
+    "foil shaver",
+    "rotary shaver",
+    "shaver",
+    "electric shavers",
+    "braun series",
+    "philips shaver",
+    "head shaver",
+    "bald head shaver"
+   ],
+   "title_words": [
+    "shaver",
+    "electric razor"
+   ],
+   "subreddits": [
+    "malegrooming",
+    "wicked_edge",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "beard trimmer",
+   "plural": "beard trimmers",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "beard trimmer",
+    "hair clippers",
+    "hair clipper",
+    "body groomer",
+    "body trimmer",
+    "nose hair trimmer",
+    "nose trimmer",
+    "beard trimmers",
+    "clippers",
+    "trimmer for beard",
+    "stubble trimmer",
+    "manscaper",
+    "bikini trimmer"
+   ],
+   "title_words": [
+    "trimmer",
+    "clippers"
+   ],
+   "subreddits": [
+    "malegrooming",
+    "wicked_edge",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "shaving cream",
+   "plural": "shaving creams",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "shaving cream",
+    "shaving soap",
+    "shave cream",
+    "shaving gel",
+    "shaving foam",
+    "shave soap",
+    "shave gel",
+    "pre-shave oil",
+    "shaving oil",
+    "aftershave balm",
+    "aftershave"
+   ],
+   "title_words": [
+    "shaving cream",
+    "shave soap",
+    "shaving soap"
+   ],
+   "subreddits": [
+    "wicked_edge",
+    "malegrooming"
+   ]
+  },
+  {
+   "name": "deodorant",
+   "plural": "deodorants",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "deodorant",
+    "antiperspirant",
+    "natural deodorant",
+    "deo",
+    "roll on deodorant",
+    "deodorant stick",
+    "aluminium free deodorant",
+    "aluminum free deodorant",
+    "deodorants"
+   ],
+   "title_words": [
+    "deodorant",
+    "antiperspirant"
+   ],
+   "subreddits": [
+    "malegrooming",
+    "SkincareAddiction",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "perfume",
+   "plural": "perfumes",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "perfume",
+    "cologne",
+    "eau de parfum",
+    "eau de toilette",
+    "edp",
+    "parfum",
+    "perfumes",
+    "colognes",
+    "signature scent",
+    "body mist",
+    "niche fragrance",
+    "designer fragrance"
+   ],
+   "hints": [
+    "fragrance",
+    "scent"
+   ],
+   "title_words": [
+    "perfume",
+    "cologne",
+    "fragrance"
+   ],
+   "subreddits": [
+    "Fragrance",
+    "malegrooming",
+    "femalefashionadvice"
+   ]
+  },
+  {
+   "name": "foundation",
+   "plural": "foundations",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "foundation",
+    "liquid foundation",
+    "powder foundation",
+    "skin tint",
+    "cushion foundation",
+    "full coverage foundation",
+    "foundations",
+    "tinted moisturizer for coverage",
+    "bb cushion"
+   ],
+   "title_words": [
+    "foundation"
+   ],
+   "subreddits": [
+    "MakeupAddiction",
+    "drugstoreMUA",
+    "MakeupRehab"
+   ]
+  },
+  {
+   "name": "concealer",
+   "plural": "concealers",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "concealer",
+    "under eye concealer",
+    "concealers",
+    "colour corrector",
+    "color corrector"
+   ],
+   "title_words": [
+    "concealer"
+   ],
+   "subreddits": [
+    "MakeupAddiction",
+    "drugstoreMUA",
+    "MakeupRehab"
+   ]
+  },
+  {
+   "name": "mascara",
+   "plural": "mascaras",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "mascara",
+    "waterproof mascara",
+    "tubing mascara",
+    "lengthening mascara",
+    "volumizing mascara",
+    "mascaras",
+    "lash primer"
+   ],
+   "title_words": [
+    "mascara"
+   ],
+   "subreddits": [
+    "MakeupAddiction",
+    "drugstoreMUA",
+    "MakeupRehab"
+   ]
+  },
+  {
+   "name": "lipstick",
+   "plural": "lipsticks",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "lipstick",
+    "liquid lipstick",
+    "lip tint",
+    "lip gloss",
+    "lip stain",
+    "lip liner",
+    "lipsticks",
+    "lip crayon",
+    "lip glosses"
+   ],
+   "title_words": [
+    "lipstick",
+    "lip gloss",
+    "lip tint"
+   ],
+   "subreddits": [
+    "MakeupAddiction",
+    "drugstoreMUA",
+    "MakeupRehab"
+   ]
+  },
+  {
+   "name": "eyeliner",
+   "plural": "eyeliners",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "eyeliner",
+    "liquid eyeliner",
+    "eye liner",
+    "pencil eyeliner",
+    "gel eyeliner",
+    "kohl",
+    "eyeliners"
+   ],
+   "title_words": [
+    "eyeliner"
+   ],
+   "subreddits": [
+    "MakeupAddiction",
+    "drugstoreMUA",
+    "MakeupRehab"
+   ]
+  },
+  {
+   "name": "eyeshadow",
+   "plural": "eyeshadows",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "eyeshadow",
+    "eyeshadow palette",
+    "eye shadow",
+    "eyeshadow palettes",
+    "eye palette",
+    "eyeshadows",
+    "cream eyeshadow"
+   ],
+   "title_words": [
+    "eyeshadow",
+    "palette"
+   ],
+   "subreddits": [
+    "MakeupAddiction",
+    "drugstoreMUA",
+    "MakeupRehab"
+   ]
+  },
+  {
+   "name": "blush",
+   "plural": "blushes",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "blush",
+    "blusher",
+    "cream blush",
+    "powder blush",
+    "liquid blush",
+    "bronzer",
+    "blushes"
+   ],
+   "title_words": [
+    "blush",
+    "bronzer"
+   ],
+   "subreddits": [
+    "MakeupAddiction",
+    "drugstoreMUA",
+    "MakeupRehab"
+   ]
+  },
+  {
+   "name": "setting spray",
+   "plural": "setting sprays",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "setting spray",
+    "setting powder",
+    "translucent powder",
+    "finishing powder",
+    "setting sprays",
+    "fixing spray",
+    "makeup setting spray",
+    "pressed powder",
+    "loose powder"
+   ],
+   "title_words": [
+    "setting spray",
+    "setting powder",
+    "powder"
+   ],
+   "subreddits": [
+    "MakeupAddiction",
+    "drugstoreMUA",
+    "MakeupRehab"
+   ]
+  },
+  {
+   "name": "makeup primer",
+   "plural": "makeup primers",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "makeup primer",
+    "face primer",
+    "pore primer",
+    "blurring primer",
+    "primer for makeup",
+    "foundation primer",
+    "eyeshadow primer",
+    "makeup primers"
+   ],
+   "title_words": [
+    "primer"
+   ],
+   "subreddits": [
+    "MakeupAddiction",
+    "drugstoreMUA",
+    "MakeupRehab"
+   ]
+  },
+  {
+   "name": "brow pencil",
+   "plural": "brow pencils",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "brow pencil",
+    "eyebrow pencil",
+    "brow gel",
+    "eyebrow gel",
+    "brow pomade",
+    "brow pen",
+    "eyebrow pen",
+    "brow pencils",
+    "brow wax",
+    "brow soap"
+   ],
+   "title_words": [
+    "brow",
+    "eyebrow"
+   ],
+   "subreddits": [
+    "MakeupAddiction",
+    "drugstoreMUA"
+   ]
+  },
+  {
+   "name": "makeup brush",
+   "plural": "makeup brushes",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "makeup brush",
+    "makeup brushes",
+    "foundation brush",
+    "make-up brushes",
+    "kabuki brush",
+    "blending brush",
+    "eyeshadow brushes",
+    "make up brushes"
+   ],
+   "title_words": [
+    "brush",
+    "brushes"
+   ],
+   "subreddits": [
+    "MakeupAddiction",
+    "drugstoreMUA",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "makeup sponge",
+   "plural": "makeup sponges",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "makeup sponge",
+    "beauty blender",
+    "beautyblender",
+    "makeup sponges",
+    "blending sponge",
+    "make-up sponge",
+    "makeup blender"
+   ],
+   "title_words": [
+    "sponge",
+    "beauty blender"
+   ],
+   "subreddits": [
+    "MakeupAddiction",
+    "drugstoreMUA"
+   ]
+  },
+  {
+   "name": "nail polish",
+   "plural": "nail polishes",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "nail polish",
+    "nail varnish",
+    "gel polish",
+    "gel nail polish",
+    "top coat",
+    "base coat",
+    "nail polishes",
+    "press on nails",
+    "press-on nails",
+    "nail lacquer"
+   ],
+   "title_words": [
+    "nail polish",
+    "top coat",
+    "gel polish"
+   ],
+   "subreddits": [
+    "RedditLaqueristas",
+    "MakeupAddiction"
+   ]
+  },
+  {
+   "name": "nail lamp",
+   "plural": "nail lamps",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "nail lamp",
+    "uv nail lamp",
+    "led nail lamp",
+    "gel lamp",
+    "uv lamp for nails",
+    "nail dryer",
+    "uv led lamp"
+   ],
+   "title_words": [
+    "nail lamp"
+   ],
+   "subreddits": [
+    "RedditLaqueristas"
+   ]
+  },
+  {
+   "name": "epilator",
+   "plural": "epilators",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "epilator",
+    "epilators",
+    "hair removal epilator",
+    "facial epilator"
+   ],
+   "title_words": [
+    "epilator"
+   ],
+   "subreddits": [
+    "SkincareAddiction",
+    "BuyItForLife",
+    "malegrooming"
+   ]
+  },
+  {
+   "name": "ipl device",
+   "plural": "ipl devices",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "ipl device",
+    "ipl",
+    "at-home laser hair removal",
+    "at home laser hair removal",
+    "ipl hair removal",
+    "laser hair removal device",
+    "home laser hair removal",
+    "ipl handset",
+    "braun silk expert",
+    "philips lumea",
+    "ulike"
+   ],
+   "title_words": [
+    "ipl"
+   ],
+   "subreddits": [
+    "SkincareAddiction",
+    "malegrooming",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "guitar",
+   "plural": "guitars",
+   "category": "general",
+   "department": "hobbies",
+   "keywords": [
+    "guitar",
+    "acoustic guitar",
+    "electric guitar",
+    "classical guitar",
+    "bass guitar",
+    "beginner guitar",
+    "guitars",
+    "acoustic guitars",
+    "electric guitars",
+    "travel guitar",
+    "ukulele"
+   ],
+   "title_words": [
+    "guitar"
+   ],
+   "subreddits": [
+    "Guitar",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "guitar amp",
+   "plural": "guitar amps",
+   "category": "general",
+   "department": "hobbies",
+   "keywords": [
+    "guitar amp",
+    "guitar amplifier",
+    "practice amp",
+    "bass amp",
+    "modelling amp",
+    "tube amp",
+    "guitar amps",
+    "headphone guitar amp"
+   ],
+   "hints": [
+    "amp"
+   ],
+   "title_words": [
+    "amp"
+   ],
+   "subreddits": [
+    "Guitar",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "digital piano",
+   "plural": "digital pianos",
+   "category": "general",
+   "department": "hobbies",
+   "keywords": [
+    "digital piano",
+    "keyboard piano",
+    "electric piano",
+    "stage piano",
+    "midi keyboard",
+    "weighted keyboard",
+    "digital pianos",
+    "piano keyboard",
+    "88 key keyboard",
+    "88-key keyboard"
+   ],
+   "hints": [
+    "piano"
+   ],
+   "title_words": [
+    "digital piano",
+    "keyboard"
+   ],
+   "subreddits": [
+    "piano",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "sewing machine",
+   "plural": "sewing machines",
+   "category": "general",
+   "department": "hobbies",
+   "keywords": [
+    "sewing machine",
+    "overlocker",
+    "serger",
+    "sewing machines",
+    "embroidery machine",
+    "beginner sewing machine"
+   ],
+   "title_words": [
+    "sewing machine"
+   ],
+   "subreddits": [
+    "sewing",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "board game",
+   "plural": "board games",
+   "category": "general",
+   "department": "hobbies",
+   "keywords": [
+    "board game",
+    "board games",
+    "boardgame",
+    "boardgames",
+    "card game",
+    "card games",
+    "party game",
+    "strategy board game",
+    "family board game",
+    "cooperative board game",
+    "tabletop game"
+   ],
+   "title_words": [
+    "board game",
+    "game"
+   ],
+   "subreddits": [
+    "boardgames"
+   ]
+  },
+  {
+   "name": "jigsaw puzzle",
+   "plural": "jigsaw puzzles",
+   "category": "general",
+   "department": "hobbies",
+   "keywords": [
+    "jigsaw puzzle",
+    "jigsaw puzzles",
+    "1000 piece puzzle",
+    "puzzle for adults"
+   ],
+   "title_words": [
+    "puzzle",
+    "jigsaw"
+   ],
+   "subreddits": [
+    "boardgames",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "fountain pen",
+   "plural": "fountain pens",
+   "category": "general",
+   "department": "hobbies",
+   "keywords": [
+    "fountain pen",
+    "fountain pens",
+    "pen",
+    "pens",
+    "ballpoint pen",
+    "gel pen",
+    "rollerball pen",
+    "everyday pen",
+    "edc pen",
+    "ballpoint",
+    "rollerball",
+    "gel pens"
+   ],
+   "title_words": [
+    "pen",
+    "fountain pen"
+   ],
+   "subreddits": [
+    "fountainpens",
+    "pens",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "notebook",
+   "plural": "notebooks",
+   "category": "general",
+   "department": "hobbies",
+   "keywords": [
+    "notebook",
+    "journal",
+    "planner",
+    "notepad",
+    "bullet journal",
+    "dot grid notebook",
+    "leuchtturm",
+    "moleskine",
+    "notebooks",
+    "journals",
+    "daily planner",
+    "diary"
+   ],
+   "title_words": [
+    "notebook",
+    "journal",
+    "planner"
+   ],
+   "subreddits": [
+    "notebooks",
+    "fountainpens",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "telescope",
+   "plural": "telescopes",
+   "category": "general",
+   "department": "hobbies",
+   "keywords": [
+    "telescope",
+    "telescopes",
+    "beginner telescope",
+    "dobsonian",
+    "refractor telescope",
+    "reflector telescope",
+    "smart telescope"
+   ],
+   "title_words": [
+    "telescope"
+   ],
+   "subreddits": [
+    "telescopes",
+    "astronomy"
+   ]
+  },
+  {
+   "name": "drawing tablet",
+   "plural": "drawing tablets",
+   "category": "general",
+   "department": "hobbies",
+   "keywords": [
+    "drawing tablet",
+    "graphics tablet",
+    "pen tablet",
+    "pen display",
+    "wacom",
+    "drawing tablets",
+    "art tablet",
+    "xp-pen",
+    "huion"
+   ],
+   "title_words": [
+    "drawing tablet"
+   ],
+   "subreddits": [
+    "DigitalArt",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "electronic drum kit",
+   "plural": "electronic drum kits",
+   "category": "general",
+   "department": "hobbies",
+   "keywords": [
+    "electronic drum kit",
+    "drum kit",
+    "electronic drums",
+    "e-drums",
+    "edrums",
+    "drum set",
+    "practice pad",
+    "electronic drum set"
+   ],
+   "title_words": [
+    "drum kit",
+    "drums"
+   ],
+   "subreddits": [
+    "drums",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "dash cam",
+   "plural": "dash cams",
+   "category": "general",
+   "department": "car",
+   "keywords": [
+    "dash cam",
+    "dashcam",
+    "dashboard camera",
+    "car camera",
+    "dash camera",
+    "dashcams",
+    "dash cams",
+    "front and rear dash cam"
+   ],
+   "title_words": [
+    "dash cam"
+   ],
+   "subreddits": [
+    "Dashcam",
+    "cars",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "car tyres",
+   "plural": "car tyres",
+   "category": "general",
+   "department": "car",
+   "keywords": [
+    "car tyres",
+    "tyres",
+    "tires",
+    "car tires",
+    "winter tyres",
+    "winter tires",
+    "all season tyres",
+    "all-season tyres",
+    "all season tires",
+    "all-season tires",
+    "summer tyres",
+    "tyre",
+    "tire",
+    "run flat tyres"
+   ],
+   "title_words": [
+    "tyres",
+    "tires"
+   ],
+   "subreddits": [
+    "Tires",
+    "cars",
+    "MechanicAdvice"
+   ]
+  },
+  {
+   "name": "jump starter",
+   "plural": "jump starters",
+   "category": "general",
+   "department": "car",
+   "keywords": [
+    "jump starter",
+    "jump pack",
+    "battery booster",
+    "jump starter pack",
+    "portable jump starter",
+    "car jump starter",
+    "booster pack",
+    "jump leads",
+    "jumper cables",
+    "jump cables"
+   ],
+   "title_words": [
+    "jump starter"
+   ],
+   "subreddits": [
+    "MechanicAdvice",
+    "cars",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "tyre inflator",
+   "plural": "tyre inflators",
+   "category": "general",
+   "department": "car",
+   "keywords": [
+    "tyre inflator",
+    "tire inflator",
+    "portable air compressor",
+    "car air compressor",
+    "tyre pump",
+    "tire pump",
+    "portable compressor",
+    "cordless inflator",
+    "digital tyre inflator",
+    "air compressor"
+   ],
+   "title_words": [
+    "inflator",
+    "compressor"
+   ],
+   "subreddits": [
+    "MechanicAdvice",
+    "cars",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "car vacuum",
+   "plural": "car vacuums",
+   "category": "general",
+   "department": "car",
+   "keywords": [
+    "car vacuum",
+    "handheld car vacuum",
+    "car hoover",
+    "car vacuum cleaner",
+    "cordless car vacuum"
+   ],
+   "title_words": [
+    "car vacuum"
+   ],
+   "subreddits": [
+    "AutoDetailing",
+    "cars",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "car phone mount",
+   "plural": "car phone mounts",
+   "category": "general",
+   "department": "car",
+   "keywords": [
+    "car phone mount",
+    "car phone holder",
+    "phone mount",
+    "phone holder for car",
+    "car mount",
+    "magsafe car mount",
+    "dashboard phone holder",
+    "vent phone mount",
+    "phone holder"
+   ],
+   "title_words": [
+    "phone mount",
+    "phone holder"
+   ],
+   "subreddits": [
+    "cars",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "car wax",
+   "plural": "car waxes",
+   "category": "general",
+   "department": "car",
+   "keywords": [
+    "car wax",
+    "car polish",
+    "paint sealant",
+    "ceramic spray",
+    "ceramic coating",
+    "car detailing products",
+    "spray wax",
+    "quick detailer"
+   ],
+   "title_words": [
+    "wax",
+    "sealant",
+    "ceramic coating"
+   ],
+   "subreddits": [
+    "AutoDetailing",
+    "cars"
+   ]
+  },
+  {
+   "name": "car shampoo",
+   "plural": "car shampoos",
+   "category": "general",
+   "department": "car",
+   "keywords": [
+    "car shampoo",
+    "car wash soap",
+    "car wash shampoo",
+    "snow foam",
+    "car soap",
+    "pre wash",
+    "car wash products"
+   ],
+   "title_words": [
+    "car shampoo",
+    "snow foam",
+    "car wash"
+   ],
+   "subreddits": [
+    "AutoDetailing",
+    "cars"
+   ]
+  },
+  {
+   "name": "roof box",
+   "plural": "roof boxes",
+   "category": "general",
+   "department": "car",
+   "keywords": [
+    "roof box",
+    "cargo box",
+    "roof top box",
+    "rooftop cargo box",
+    "car top carrier",
+    "roof boxes",
+    "thule box",
+    "roof bag"
+   ],
+   "title_words": [
+    "roof box"
+   ],
+   "subreddits": [
+    "cars",
+    "CampingGear",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "ev charger",
+   "plural": "ev chargers",
+   "category": "general",
+   "department": "car",
+   "keywords": [
+    "ev charger",
+    "home ev charger",
+    "electric car charger",
+    "ev home charger",
+    "wallbox",
+    "home charger for ev",
+    "ev charging point",
+    "home charging point",
+    "evse",
+    "level 2 charger"
+   ],
+   "title_words": [
+    "ev charger",
+    "charger"
+   ],
+   "subreddits": [
+    "electricvehicles",
+    "homeowners",
+    "HomeImprovement"
+   ]
+  },
+  {
+   "name": "obd scanner",
+   "plural": "obd scanners",
+   "category": "general",
+   "department": "car",
+   "keywords": [
+    "obd scanner",
+    "obd2 scanner",
+    "obd reader",
+    "obd2 reader",
+    "code reader",
+    "diagnostic scanner",
+    "car diagnostic tool",
+    "obdii scanner"
+   ],
+   "title_words": [
+    "obd scanner"
+   ],
+   "subreddits": [
+    "MechanicAdvice",
+    "cars"
+   ]
+  }
+ ]
+}

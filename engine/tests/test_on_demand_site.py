@@ -99,7 +99,8 @@ def test_a_request_the_library_covers_costs_no_call(tmp_path, monkeypatch):
     data = site.ask(REQUEST)  # the kettle library's own request
     assert "on_demand" not in data and len(data["answer"]["picks"]) == 3
     assert site.google.calls == []
-    for request in ("something nice for my mum", "best gaming laptop"):  # a question, a polite no
+    # 14 Oct 2026: the polite no was "best gaming laptop", a product of the general category now.
+    for request in ("something nice for my mum", "a good plumber near me"):  # a question, a polite no
         assert "on_demand" not in site.ask(request)
     assert site.google.calls == []
 

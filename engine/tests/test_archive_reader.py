@@ -401,7 +401,9 @@ def test_with_only_one_kind_asked_for_and_none_found_nothing_is_read():
     assert threads == [] and client.reads == []
 
 
-@pytest.mark.parametrize("text", ["something for my face", "a good laptop"])
+# Changed on purpose 14 Oct 2026 (the general category, Noemi's "recs regardless of the category"): a laptop is a
+# product now, so a service is the example of a request module 1 turns away. Was: "a good laptop".
+@pytest.mark.parametrize("text", ["something for my face", "a good plumber near me"])
 def test_an_unclear_request_searches_and_reads_nothing(text):
     client = FakeArchiveClient(kettle_posts())
     assert ArchiveSource(client).find_threads(parse_query(text)) == []

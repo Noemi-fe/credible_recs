@@ -327,8 +327,17 @@ def test_every_product_type_has_a_plural():
     assert set(config.PRODUCT_TYPE_PLURALS) == {p.name for p in PRODUCT_TYPES}
     assert config.PRODUCT_TYPE_PLURALS["chef knife"] == "chef knives"
     assert config.PRODUCT_TYPE_PLURALS["dutch oven"] == "Dutch ovens"
+    # Changed on purpose 14 Oct 2026 (the general category): a type named in the plural ("headphones", "jeans") or as a
+    # mass noun ("underwear", "garden furniture") is its own plural (engine/data/product_types.json); every other type's
+    # plural differs from its name and ends in "s", as module 1's first types' all do.
+    plural_names = {entry["name"] for entry in config.MORE_PRODUCT_TYPES if entry["plural"] == entry["name"]}
+    assert {"headphones", "jeans", "underwear", "garden furniture"} <= plural_names
+    irregular = {"mouse": "computer mice"}  # read as "We haven't read Reddit about computer mice yet"
     for name, plural in config.PRODUCT_TYPE_PLURALS.items():
-        assert plural.lower() != name.lower() and plural.endswith("s"), name
+        if name in irregular:
+            assert plural == irregular[name]
+        elif name not in plural_names:
+            assert plural.lower() != name.lower() and plural.endswith("s"), name
 
 
 def test_a_brand_pick_name_that_already_says_the_type_has_no_bracket():

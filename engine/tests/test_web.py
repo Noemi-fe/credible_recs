@@ -202,7 +202,8 @@ def test_a_vague_request_comes_back_as_module_1s_question(tmp_path):
 
 
 def test_an_out_of_scope_request_comes_back_as_module_1s_polite_no(tmp_path):
-    status, _, data = ask("running shoes for flat feet", kettle_library(tmp_path))
+    # 14 Oct 2026: was "running shoes for flat feet", a product of the general category now.
+    status, _, data = ask("a good plumber near me", kettle_library(tmp_path))
     assert status == 200 and data["query"]["status"] == "out_of_scope"
     assert data["query"]["message"] and data["answer"] is None
 

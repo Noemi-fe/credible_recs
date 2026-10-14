@@ -53,7 +53,7 @@ from engine.gold import load_threads
 from engine.ingredients import ingredient_type_name, ingredients_of_type, talk_words, wanted_types
 from engine.models import Thread
 from engine.parse_reddit import ParseRedditClient
-from engine.query import LOOKALIKES, PRODUCT_TYPES, TITLE_WORDS, ParsedQuery
+from engine.query import LOOKALIKES, PRODUCT_TYPES, TITLE_WORDS, ParsedQuery, name_pattern, plural_ending
 from engine.text import one_edit_apart
 
 
@@ -87,20 +87,25 @@ def _product_pattern(product_type: str) -> re.Pattern:
     known = {p.name: p.keywords + p.hints for p in PRODUCT_TYPES}
     words = known.get(product_type.strip().lower())
     if words:
-        alternatives = "|".join(re.escape(word) for word in words)
+        alternatives = "|".join(name_pattern(word) for word in words)
     else:
-        alternatives = r"[\s-]?".join(re.escape(word) for word in product_type.lower().split()) or "(?!)"  # (?!): never
-    return re.compile(rf"\b(?:{alternatives})s?\b", re.IGNORECASE)
+        own = product_type.lower().split()
+        alternatives = (r"[\s-]?".join(re.escape(word) for word in own) + plural_ending(own[-1])) if own else "(?!)"
+    return re.compile(rf"\b(?:{alternatives})\b", re.IGNORECASE)  # (?!): never
 
 
 @cache
 def _covering_pattern(product_type: str) -> re.Pattern:
     """Longer names that hold one of this product's words but name something else: the other product types' names and
-    module 1's look-alike phrases ("tea pot" and "crock pot" hold "pot"; "dry shampoo" holds "shampoo")."""
+    module 1's look-alike phrases ("tea pot" and "crock pot" hold "pot"; "dry shampoo" holds "shampoo"). Only those
+    holding one of the product's own words can hold a place where it is named, so only they are looked for (14 Oct 2026:
+    with the general category's 3,000 names, one pattern of them all had made every search several times slower)."""
     name = product_type.strip().lower()
+    own = _product_pattern(name)
     phrases = {k for p in PRODUCT_TYPES if p.name != name for k in p.keywords} | set(LOOKALIKES)
-    alternatives = "|".join(re.escape(x) for x in sorted(phrases, key=len, reverse=True))
-    return re.compile(rf"\b(?:{alternatives})s?\b", re.IGNORECASE)
+    phrases = {phrase for phrase in phrases if own.search(phrase)}
+    alternatives = "|".join(name_pattern(x) for x in sorted(phrases, key=len, reverse=True)) or "(?!)"
+    return re.compile(rf"\b(?:{alternatives})\b", re.IGNORECASE)
 
 
 def mentions_product(text: str, product_type: str, leave_aside: str = "") -> bool:
