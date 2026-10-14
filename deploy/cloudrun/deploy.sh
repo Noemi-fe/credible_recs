@@ -111,6 +111,11 @@ $GCLOUD run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --source "
     --set-env-vars "^;^CREDIBLE_RECS_ALLOWED_HOSTS=${HOSTS};CREDIBLE_RECS_GOATCOUNTER=noemix;CREDIBLE_RECS_FEEDBACK_REPO=Noemix/credible-recs-feedback;CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}${ON_DEMAND_SITE_VARS}" \
     --set-secrets "HF_TOKEN=hf-token:latest" --quiet
 rm -rf "$(dirname "$BUNDLE")"
+#    Only the newest site image is kept (Noemi, 14 Oct 2026, "Keep only the newest 1"): each image is about 1.15 GB,
+#    most of it the open model, and Artifact Registry's free tier is 0.5 GB. The policy (image_cleanup_policy.json) is
+#    applied after each deploy, since the first deploy is what creates the repository; Google runs it about once a day.
+$GCLOUD artifacts repositories set-cleanup-policies cloud-run-source-deploy --project "$PROJECT" --location "$REGION" \
+    --policy deploy/cloudrun/image_cleanup_policy.json --no-dry-run --quiet >/dev/null
 
 # 4. The pre-check: a Cloud Run job on the image just deployed, `python -m engine.precheck --plan` (14 Oct 2026): it
 #    reads nothing on Reddit's embed page itself, works out the plan the site reads ahead from, and verifies through
