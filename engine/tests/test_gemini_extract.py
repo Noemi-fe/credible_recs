@@ -171,3 +171,63 @@ def test_a_long_thread_is_read_in_parts_and_the_parts_joined(tmp_path):
     assert [len(ids) for ids in sent_ids] == [2, 2, 1]  # three parts, every comment in exactly one
     saved = json.loads((tmp_path / "out" / "extracted" / "1fake01.json").read_text(encoding="utf-8"))
     assert sorted(m["comment_id"] for m in saved["mentions"]) == [c["id"] for c in comments]
+
+
+# --- The free allowance's daily limit (on-demand reading, 14 Oct 2026) ---
+# Gemini's free tier has a daily limit per model. A 429 that names it can't pass before the day resets, so it is never
+# retried with pauses (they would only wait and fail again), and a batch stops there instead of failing every thread
+# after it: on-demand reading's job is billed while it waits, and comes back tomorrow.
+
+DAILY_429 = ('Gemini answered 429: {"error": {"code": 429, "status": "RESOURCE_EXHAUSTED", "details": [{"violations": '
+             '[{"quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier"}]}]}}')
+MINUTE_429 = ('Gemini answered 429: {"error": {"code": 429, "status": "RESOURCE_EXHAUSTED", "details": [{"violations": '
+              '[{"quotaId": "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"}]}]}}')
+
+
+def test_a_429_naming_the_daily_quota_is_the_daily_limit_and_a_per_minute_one_isnt():
+    from engine.gemini_extract import is_daily_limit
+
+    assert is_daily_limit(429, DAILY_429)
+    assert not is_daily_limit(429, MINUTE_429)  # waiting a minute helps: the usual pauses
+    assert not is_daily_limit(503, DAILY_429)
+
+
+def test_the_daily_limit_is_never_asked_again_after_a_pause():
+    from engine.gemini_extract import DailyLimitReached
+
+    calls, pauses = [], []
+
+    def fetch(url, headers, body):
+        calls.append(1)
+        raise GeminiError(DAILY_429, status=429)
+
+    client = GeminiClient(key="test-key", fetch=fetch, sleep=pauses.append, min_interval=0)
+    with pytest.raises(DailyLimitReached):
+        client.generate("system", "user")
+    assert len(calls) == 1 and pauses == []
+
+
+def test_a_batch_stops_at_the_daily_limit_and_says_which_threads_werent_sent(tmp_path):
+    from engine.gemini_extract import DailyLimitReached
+
+    from engine.tests.factories import make_comment
+
+    threads = [make_thread(id=f"1fake0{n}", url=f"https://www.reddit.com/r/SkincareAddiction/comments/1fake0{n}/x/",
+                           comments=[make_comment(f"c{n}aaaa", thread_id=f"1fake0{n}", body=f"{QUOTE} Gentle too.")])
+               for n in (1, 2, 3)]
+    write_gold(tmp_path, threads, voices=None, mentions=None)
+    sent = []
+
+    def fetch(url, headers, body):
+        user = json.loads(body)["contents"][0]["parts"][0]["text"]
+        sent.append(user.split()[1])
+        if len(sent) == 2:
+            raise DailyLimitReached(DAILY_429, status=429)
+        return {"candidates": [{"content": {"parts": [{"text": json.dumps(a_reply())}]}}]}
+
+    client = GeminiClient(key="test-key", model="gemini-test", fetch=fetch, sleep=lambda s: None, min_interval=0)
+    report = extract_threads(tmp_path / "threads", tmp_path / "out", client)
+    assert report.written == ["1fake01"] and sent == ["1fake01", "1fake02"]  # the third is never sent
+    assert report.stopped and "day" in report.stopped
+    assert report.not_sent == ["1fake02", "1fake03"] and report.failed == {}
+    assert not (tmp_path / "out" / "extracted" / "1fake02.json").exists()
