@@ -152,8 +152,9 @@ def test_the_jobs_stay_inside_cloud_runs_free_tier_in_the_longest_month():
     (cpu, gib), (reader_cpu, reader_gib) = size(precheck), size(reader)
     assert precheck_seconds * cpu + ON_DEMAND_MONTH_SECONDS * reader_cpu <= 0.9 * 240_000
     assert precheck_seconds * gib + ON_DEMAND_MONTH_SECONDS * reader_gib <= 0.9 * 450_000
-    # The sums DEPLOY.md gives: 83,700 vCPU-seconds (35%) for the pre-check at most, 133,700 (56%) with on-demand's.
-    assert (precheck_seconds * cpu, precheck_seconds * cpu + ON_DEMAND_MONTH_SECONDS * reader_cpu) == (83_700, 133_700)
+    # The sums DEPLOY.md gives: 102,300 vCPU-seconds (43%) for the pre-check at most, 152,300 (63%) with on-demand's
+    # (55 minutes since 14 Oct 2026: Bright Data's jobs may be waited for 20 minutes).
+    assert (precheck_seconds * cpu, precheck_seconds * cpu + ON_DEMAND_MONTH_SECONDS * reader_cpu) == (102_300, 152_300)
 
 
 def test_the_site_reads_ahead_within_a_third_of_its_own_free_tier():

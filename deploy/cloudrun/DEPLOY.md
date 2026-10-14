@@ -46,7 +46,8 @@ site a plan: a job is billed for its whole run, and two thirds of the old daily 
   Data, within 30 records a run (the most useful threads first), starting nothing 30 minutes after it started, and
   writes the plan again with a check for each comment it found there. It needs the Bright Data key, the Secret
   Manager secret `bright-data-key` (below; there since 14 Oct 2026): deployed without it, the job runs with this step
-  off. The site never calls Bright Data. Cloud Run stops a run at 45 minutes. Its report (counts and times, never a
+  off. The site never calls Bright Data. Cloud Run stops a run at 55 minutes (45 until 14 Oct 2026's evening, when a
+  Bright Data job, waited for up to 20 minutes since, had been cut off at 10). Its report (counts and times, never a
   comment's words) is in the job's logs.
 - **The site's reads ahead** (engine/read_ahead.py, 14 Oct 2026): at each keep-warm ping (every 5 minutes, below) the
   site reads the plan's comments that are due: an answer's comment once its last read is 40 hours old (so its check
@@ -101,7 +102,7 @@ and the 48-hour rule:
 
 - (a) the site reads at the keep-warm ping, the job only works out the plan (chosen). The site is billed only while
   it answers, and the ping comes every 5 minutes anyway: reads ahead at most 53,568 of the site's own 180,000 (30%;
-  about 7% for today's 4,340 reads a day), the job at most 83,700 (35%; 56% with on-demand's). Visitors keep 120 of
+  about 7% for today's 4,340 reads a day), the job at most 102,300 (43%; 63% with on-demand's). Visitors keep 120 of
   Reddit's 200 reads in each 10 minutes, and answers' checks are read again every 40 hours, so they never run out.
   Two more bucket calls an hour for the site. No new Cloud Scheduler job.
 - (b) several short job runs a night, from a list the first run stores. Each run still pays for its start (about a
@@ -227,7 +228,7 @@ The project number is `NUMBER` below (`gcloud projects describe credible-picks -
            --format='value(spec.template.spec.containers[0].image)')
        gcloud run jobs deploy credible-recs-precheck --project credible-picks --region europe-west1 --image "$IMAGE" \
            --command python --args=-m,engine.precheck,--plan,--minutes,30 \
-           --tasks 1 --max-retries 0 --task-timeout 45m --memory 1536Mi --cpu 1 \
+           --tasks 1 --max-retries 0 --task-timeout 55m --memory 1536Mi --cpu 1 \
            --set-env-vars CREDIBLE_RECS_LIVE_CACHE_BUCKET=credible-picks-live-checks,CREDIBLE_RECS_ON_DEMAND_BUCKET=credible-picks-on-demand,CREDIBLE_RECS_PRECHECK_BRIGHT_DATA=on \
            --set-secrets BRIGHT_DATA_API_KEY=bright-data-key:latest
        gcloud run jobs add-iam-policy-binding credible-recs-precheck --project credible-picks --region europe-west1 \
@@ -358,8 +359,9 @@ works: 1 vCPU (a job's minimum) and 1.5 GiB (on Noemi's computer it peaked at 1.
 waits for Reddit: a run is working out the answers (the whole plan run took 2.1 minutes on Noemi's computer for 439
 requests on 14 Oct 2026's library, slimmed; the old run's working out took 84 s on Cloud Run), the record and the plan, then Bright Data's batch (a few minutes on Bright Data's side
 when there is something to read), so a typical run should take 5 to 10 minutes, 9,300 to 18,600 vCPU-seconds a month
-(an estimate: the first runs' logs will say). Its bound is Cloud Run's 45-minute task timeout: 2,700 seconds a day,
-83,700 in a 31-day month, 83,700 vCPU-seconds and 125,550 GiB-seconds, 35% and 28% of the free tier for
+(an estimate: the first runs' logs will say; the first, on 14 Oct 2026, took 32 minutes, 29 of them waiting on Bright
+Data's two jobs, both cut off at the then 10-minute wait). Its bound is Cloud Run's 55-minute task timeout: 3,300
+seconds a day, 102,300 in a 31-day month, 102,300 vCPU-seconds and 153,450 GiB-seconds, 43% and 34% of the free tier for
 instance-billed work (240,000 vCPU-seconds and 450,000 GiB-seconds a month), where the old run's 87 minutes a day were
 161,820 and 242,730 (67% and 54%). So 0 EUR. If a run's log says the memory limit was exceeded, 2 GiB (`--memory 2Gi`)
 is still inside the free tier: 167,400 GiB-seconds, 37%. The schedule is the second of Cloud Scheduler's 3 free jobs
@@ -385,8 +387,9 @@ for its whole run, waiting included, on 1 vCPU and 1 GiB. One product takes abou
 Arctic Shift at its 10 s pace (20 title searches and about 15 reads for a kitchen type with no title words of its own,
 fewer for most), about 5 for Gemini (about 9 calls for 6 threads read in parts of 40 comments, each paced 6 s apart),
 and half a minute to start. Its runs are capped at 50,000 s a month (about 70 products), so the worst month is 50,000
-vCPU-seconds and 50,000 GiB-seconds; with the pre-check's at most 83,700 and 125,550 (14 Oct 2026; 161,820 and 242,730
-before), 133,700 of the free 240,000 vCPU-seconds (56%; 88% before) and 175,550 of the free 450,000 GiB-seconds (39%).
+vCPU-seconds and 50,000 GiB-seconds; with the pre-check's at most 102,300 and 153,450 (14 Oct 2026's evening; 83,700
+and 125,550 that afternoon, 161,820 and 242,730 before), 152,300 of the free 240,000 vCPU-seconds (63%; 88% before) and
+203,450 of the free 450,000 GiB-seconds (45%).
 There are no empty runs: nothing is scheduled,
 the job runs only when a request waits. Cloud Scheduler: no new job (the site starts the reading job, and the keep-warm
 ping starts it again when a start failed), so still 2 of the 3 free jobs. Gemini: free tier only, at most 100 calls a
