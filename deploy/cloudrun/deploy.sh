@@ -40,6 +40,24 @@ HOSTS="${SERVICE}-${NUMBER}.${REGION}.run.app"
 OLD="$($GCLOUD run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)' 2>/dev/null || true)"
 if [ -n "$OLD" ]; then HOSTS="$HOSTS,${OLD#https://}"; fi
 
+# The pre-check's Bright Data key (Noemi, 13 Oct 2026, "Use Bright Data": comments the embed page can't show are
+# verified through Bright Data): the Secret Manager secret bright-data-key, which Noemi creates (DEPLOY.md, The Bright
+# Data key; there since 14 Oct 2026). This script never makes or reads it. Were it missing, the job would deploy with
+# that verification off (PRECHECK_BRIGHT_DATA, which the job reads as CREDIBLE_RECS_PRECHECK_BRIGHT_DATA, and no secret
+# given to it), and one line says so: a missing key never stops a deploy (14 Oct 2026, as on-demand reading's Gemini
+# key, on_demand_secret).
+precheck_secret() {
+    if $GCLOUD secrets describe bright-data-key --project "$PROJECT" >/dev/null 2>&1; then
+        PRECHECK_BRIGHT_DATA=on
+        PRECHECK_SECRETS="--set-secrets=BRIGHT_DATA_API_KEY=bright-data-key:latest"
+    else
+        PRECHECK_BRIGHT_DATA=off
+        PRECHECK_SECRETS="--clear-secrets"
+        echo "The secret bright-data-key isn't there: the pre-check deploys with its Bright Data verification off (deploy/cloudrun/DEPLOY.md, The Bright Data key)." >&2
+    fi
+}
+precheck_secret  # PRECHECK_BRIGHT_DATA on or off, and the job's secrets with it
+
 # 1. The APIs the jobs, the schedule and the Gemini key need (nothing happens when they are on already).
 $GCLOUD services enable storage.googleapis.com cloudscheduler.googleapis.com secretmanager.googleapis.com \
     --project "$PROJECT"
@@ -98,11 +116,17 @@ rm -rf "$(dirname "$BUNDLE")"
 #    the same day. Billed for its whole run, sleeping
 #    included, so it gets the least that works: 1 vCPU (a job's minimum) and 1.5 GiB (it peaked at 1.3 GB with the
 #    open model loaded, 13 Oct 2026; 0.2 GB without it).
+#    Its one secret is the Bright Data key, which the account it runs as may read (when the secret is there).
+if [ "$PRECHECK_BRIGHT_DATA" = on ]; then
+    $GCLOUD secrets add-iam-policy-binding bright-data-key --project "$PROJECT" \
+        --member "serviceAccount:$RUNNER" --role roles/secretmanager.secretAccessor >/dev/null
+fi
 IMAGE="$($GCLOUD run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(spec.template.spec.containers[0].image)')"
 $GCLOUD run jobs deploy "$JOB" --project "$PROJECT" --region "$REGION" --image "$IMAGE" \
     --command python --args=-m,engine.precheck,--limit,${PRECHECK_LIMIT},--minutes,${PRECHECK_MINUTES} \
     --tasks 1 --max-retries 0 --task-timeout 2h --memory 1536Mi --cpu 1 \
-    --set-env-vars "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}${ON_DEMAND_PRECHECK_VARS}" --quiet
+    --set-env-vars "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}${ON_DEMAND_PRECHECK_VARS},CREDIBLE_RECS_PRECHECK_BRIGHT_DATA=${PRECHECK_BRIGHT_DATA}" \
+    "$PRECHECK_SECRETS" --quiet
 $GCLOUD run jobs add-iam-policy-binding "$JOB" --project "$PROJECT" --region "$REGION" \
     --member "serviceAccount:$RUNNER" --role roles/run.invoker >/dev/null
 #    And on-demand reading's job on the same image (on_demand.sh), which the site may start.

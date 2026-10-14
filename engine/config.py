@@ -526,6 +526,17 @@ PRECHECK_STOP_AFTER_UNKNOWN = 20
 # own types. Types the log names later are checked too wherever the log is. Since 14 Oct 2026 the air fryer, slow
 # cooker, toaster, blender, food processor, rice cooker and stand mixer are module 1's own types (checked ahead as such).
 PRECHECK_MODEL_TYPES = ("body wash",)
+# Comments the embed page can't show ("Not supported comment", about 1 in 8), verified through Bright Data by the
+# pre-check (Noemi, 13 Oct 2026: "Use Bright Data"): their threads are read as Reddit shows them now, likeliest to be
+# shown first. Its free tier is 5,000 records a month, shared with the library's own reads (3,972 used by 13 Oct 2026),
+# and a thread costs a record for its post and one for each top-level comment (14 for the median library thread, 49
+# at the 90th percentile). So a run reads at most PRECHECK_BRIGHT_DATA_RECORDS records (estimated from the library's
+# copy of each thread), in one batch of at most PRECHECK_BRIGHT_DATA_MAX_THREADS threads: at most 930 a month, under a
+# fifth of the free tier. A comment verified that way is read again after PRECHECK_BRIGHT_DATA_FRESH_HOURS (every other
+# daily run, just before its check runs out at 48 hours), never on the embed page meanwhile. Chosen by Claude, reported.
+PRECHECK_BRIGHT_DATA_RECORDS = 30
+PRECHECK_BRIGHT_DATA_MAX_THREADS = 20
+PRECHECK_BRIGHT_DATA_FRESH_HOURS = 40
 
 # --- Care tips (Noemi, 9 Oct 2026) ---
 # Alongside each pick, credible advice from its threads on looking after it ("descale it every 6 months"; extraction

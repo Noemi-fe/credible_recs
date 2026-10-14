@@ -357,6 +357,20 @@ class LiveChecker:
         """The checker's own time (what its 48 hours and its pacing count by)."""
         return self._clock()
 
+    def saved_entry(self, comment_url: str) -> dict | None:
+        """The comment's saved check as it was saved ({"fetched_at", "text"}, and "via" when it was made another way
+        than through the embed page), while it may still be used (48 hours; an unreadable one, text None, 20); None
+        otherwise. Reddit is never read for it."""
+        return self._saved(embed_url(comment_url), MAX_AGE)
+
+    def keep_check(self, comment_url: str, text: str, fetched_at: datetime, via: str) -> None:
+        """Saves a check made another way than through the embed page (the pre-check's reads through Bright Data, 13 Oct
+        2026): the comment's own text as Reddit showed it at `fetched_at`, never anything else of the page. It is used
+        like any check (the quote found word for word, "[deleted]" or "[removed]" gone, else changed), for 48 hours
+        from `fetched_at`, and goes into the bundle like any check."""
+        data = {"fetched_at": fetched_at.isoformat(), "text": text, "via": via}
+        self._keep(_entry_name(embed_url(comment_url)), json.dumps(data, ensure_ascii=False).encode("utf-8"))
+
     def checked_at(self, comment_url: str, max_age: timedelta = MAX_AGE) -> datetime | None:
         """When the comment was last read on Reddit, if a saved check made within `max_age` (48 hours at most) says
         so; None otherwise. Reddit is never read for it."""
@@ -443,7 +457,7 @@ class LiveChecker:
         for path in sorted(self.cache_dir.glob("*.json")) if self.cache_dir.is_dir() else ():
             entry = self._saved_here(path.name)
             if _ENTRY_NAME.match(path.name) and self._within(entry, MAX_AGE):
-                checks[path.name] = {"fetched_at": entry["fetched_at"], "text": entry["text"]}
+                checks[path.name] = {key: entry[key] for key in ("fetched_at", "text", "via") if key in entry}
         data = json.dumps({"written_at": self._clock().isoformat(), "checks": checks}, ensure_ascii=False)
         return len(checks) if self.bucket.put(BUNDLE_NAME, data.encode("utf-8")) else None
 

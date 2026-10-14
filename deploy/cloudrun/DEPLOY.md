@@ -35,9 +35,14 @@ rule is unchanged: a quote is shown only with a passing check from the last 48 h
   run before read its then budget of 1,100 in 46 minutes, after 84 s working out the answers, and left 459 of 1,967
   comments unread; 75 minutes is about 1,700 reads). Its report (counts and times, never a comment's words) is in the job's logs. On
   Noemi's computer on 13 Oct 2026 a run worked out 1,145 comments in 3.7 minutes and read 928 of them in 59 minutes
-  (872 passing, 2 deleted, 8 edited, 46 pages that couldn't be read). Since 13 Oct 2026 (Noemi: "Keep only comments we
-  use") it then verifies the comments the slimmed library keeps, up to 400 a run (config.LIBRARY_VERIFY_READS), those
-  verified longest ago first, about 26 minutes more (see "The slimmed library" below).
+  (872 passing, 2 deleted, 8 edited, 46 pages that couldn't be read). Then, for the comments whose embed page shows no
+  comment ("Not supported comment", about 1 in 8; Noemi, 13 Oct 2026: "Use Bright Data"), it reads their threads
+  through Bright Data, within 30 records a run (the most useful threads first), and saves a check for each comment it
+  finds there. It needs the Bright Data key, the Secret Manager secret `bright-data-key` (below; there since 14 Oct
+  2026): deployed without it, the job runs with this step off. The site never calls Bright Data. Since 13 Oct 2026
+  (Noemi: "Keep only comments we use") it then verifies the comments the slimmed library keeps, up to 400 a run
+  (config.LIBRARY_VERIFY_READS), those verified longest ago first, about 26 minutes more (see "The slimmed library"
+  below).
 - **The verification record** (`live_check/verified.json`, in the same bucket): for each comment the slimmed library
   keeps, its latest read on Reddit (when, and what it said: passing, deleted, removed, edited or unreadable) and its
   last passing read. Ids, dates and outcomes only, never a comment's words (about 1 MB for 10,000 comments). Written by
@@ -69,8 +74,9 @@ rule is unchanged: a quote is shown only with a passing check from the last 48 h
   CREDIBLE_RECS_FEEDBACK_REPO, CREDIBLE_RECS_LIVE_CACHE_BUCKET, CREDIBLE_RECS_ON_DEMAND_BUCKET and
   CREDIBLE_RECS_ON_DEMAND_JOB (`projects/credible-picks/locations/europe-west1/jobs/credible-recs-reader`, the job it
   starts; without it the site queues nothing); the secret HF_TOKEN. The pre-check job reads
-  CREDIBLE_RECS_LIVE_CACHE_BUCKET and CREDIBLE_RECS_ON_DEMAND_BUCKET; the reading job CREDIBLE_RECS_ON_DEMAND_BUCKET and
-  the secret GEM_API_KEY.
+  CREDIBLE_RECS_LIVE_CACHE_BUCKET, CREDIBLE_RECS_ON_DEMAND_BUCKET, CREDIBLE_RECS_PRECHECK_BRIGHT_DATA ("off" when it was
+  deployed without the Bright Data key) and the secret BRIGHT_DATA_API_KEY; the reading job
+  CREDIBLE_RECS_ON_DEMAND_BUCKET and the secret GEM_API_KEY.
 
 ## Updating the site
 
@@ -79,7 +85,8 @@ After committing (and after new threads are extracted), from the repository's ro
     sh deploy/cloudrun/deploy.sh
 
 It turns on-demand reading off for that deploy if the Gemini key's secret isn't there yet (below; the site deploys
-anyway and never says it has started reading), makes sure both buckets exist with their rules,
+anyway and never says it has started reading), and the pre-check's Bright Data verification off if the Bright Data
+key's isn't (the job deploys anyway), makes sure both buckets exist with their rules,
 brings the threads read on demand into data/library, applies the pre-check's verification record to the
 library, bundles the current commit with the library, builds the private
 image and deploys the site, then points the pre-check job and the reading job at the same image, makes sure the daily
@@ -119,10 +126,13 @@ budget, then apply its record (it is kept in .cache/verified.json):
 The project number is `NUMBER` below (`gcloud projects describe credible-picks --format='value(projectNumber)'`), and
 `RUNNER` is the account the site and the job run as, `NUMBER-compute@developer.gserviceaccount.com`.
 
-0. The Gemini key's secret turns on-demand reading on (Noemi creates it herself: "The Gemini key" below); without it
-   the script deploys the site with on-demand reading off, and it never makes or reads the secret:
+0. The two keys' secrets, which Noemi creates herself ("The Gemini key" and "The Bright Data key" below). The script
+   never makes or reads them; it only checks they are there, and without one it deploys anyway with that piece off:
+   on-demand reading without the Gemini key, the pre-check's Bright Data verification without the Bright Data key
+   (14 Oct 2026: a missing key never stops a deploy):
 
        gcloud secrets describe gemini-key --project credible-picks
+       gcloud secrets describe bright-data-key --project credible-picks
 
 1. The APIs: `gcloud services enable storage.googleapis.com cloudscheduler.googleapis.com secretmanager.googleapis.com
    --project credible-picks`
@@ -163,14 +173,18 @@ The project number is `NUMBER` below (`gcloud projects describe credible-picks -
    `CREDIBLE_RECS_ON_DEMAND_BUCKET=credible-picks-on-demand` and
    `CREDIBLE_RECS_ON_DEMAND_JOB=projects/credible-picks/locations/europe-west1/jobs/credible-recs-reader` in its settings
    (`gcloud run deploy credible-recs --source <bundle> ...`).
-4. The job, on the image the site now runs (create or update):
+4. The job, on the image the site now runs (create or update), allowed to read the Bright Data key (when its secret
+   isn't there: no grant, `CREDIBLE_RECS_PRECHECK_BRIGHT_DATA=off` and `--clear-secrets` instead of `--set-secrets`):
 
+       gcloud secrets add-iam-policy-binding bright-data-key --project credible-picks \
+           --member serviceAccount:RUNNER --role roles/secretmanager.secretAccessor
        IMAGE=$(gcloud run services describe credible-recs --region europe-west1 --project credible-picks \
            --format='value(spec.template.spec.containers[0].image)')
        gcloud run jobs deploy credible-recs-precheck --project credible-picks --region europe-west1 --image "$IMAGE" \
            --command python --args=-m,engine.precheck,--limit,2000,--minutes,75 \
            --tasks 1 --max-retries 0 --task-timeout 2h --memory 1536Mi --cpu 1 \
-           --set-env-vars CREDIBLE_RECS_LIVE_CACHE_BUCKET=credible-picks-live-checks,CREDIBLE_RECS_ON_DEMAND_BUCKET=credible-picks-on-demand
+           --set-env-vars CREDIBLE_RECS_LIVE_CACHE_BUCKET=credible-picks-live-checks,CREDIBLE_RECS_ON_DEMAND_BUCKET=credible-picks-on-demand,CREDIBLE_RECS_PRECHECK_BRIGHT_DATA=on \
+           --set-secrets BRIGHT_DATA_API_KEY=bright-data-key:latest
        gcloud run jobs add-iam-policy-binding credible-recs-precheck --project credible-picks --region europe-west1 \
            --member serviceAccount:RUNNER --role roles/run.invoker
 
@@ -251,6 +265,23 @@ When the key changes: the same command with `gcloud secrets versions add gemini-
 off for that deploy when it isn't (14 Oct 2026: a missing key must not stop the site's own deploys). Free use only: Noemi's key is on Gemini's free tier, and under Google's terms UK users' free use
 gets the paid-tier data terms (not used for training).
 
+## The Bright Data key
+
+The pre-check reads the key from the environment (BRIGHT_DATA_API_KEY), which Cloud Run fills from the Secret Manager
+secret `bright-data-key`. The secret exists: it was created on 14 Oct 2026, with Noemi's go-ahead, with the command
+below (version 1, in Belgium like the rest), the key taken from her .env by the project's own reader and handed
+straight to gcloud, never shown on screen or kept anywhere else. To create it again (if it were ever deleted), from
+the repository's root on her computer:
+
+    .venv/bin/python -c "import sys; from pathlib import Path; from engine.parse_reddit import _read_env_file; sys.stdout.write(_read_env_file(Path('.env'))['BRIGHT_DATA_API_KEY'])" | gcloud secrets create bright-data-key --project credible-picks --replication-policy user-managed --locations europe-west1 --data-file=-
+
+When the key changes: the same command with `gcloud secrets versions add bright-data-key --project credible-picks
+--data-file=-` after the pipe. deploy.sh never makes or reads it: it only checks it is there, and when it isn't, it
+deploys the job with its Bright Data verification off (`CREDIBLE_RECS_PRECHECK_BRIGHT_DATA=off`, no secret given to the
+job, no access granted) and says so in one line (14 Oct 2026: a missing key never stops a deploy); each run's report
+then says the step is off. Secret Manager's free tier covers it (6 secret versions and 10,000 reads a month: the job
+reads it once a run).
+
 ## Keeping it awake
 
 A server that has slept takes about a minute to get ready (engine/web.py's warm_up: 65 s on 13 Oct 2026), and Cloud
@@ -303,6 +334,16 @@ queue and the bundle afresh before every change: 63 for 3 threads in the tests),
 bundle's version (about 720 a month) and its every-5-minutes questions while a request waits (about 18 a product), the
 pre-check's few a run, about 10,500 in all, 0.004 USD; storage: only threads not baked in yet (about 35 KB each with
 its extraction, at most 300 threads, about 10 MB, 0.0002 USD a month). Under 0.02 USD a month in all.
+
+Bright Data (estimates, 13 Oct 2026; no money: the free tier is 5,000 records a month, and past it jobs simply stop).
+Reading a thread costs a record for its post and one for each top-level comment: 22 for the median thread the answers
+quote, 63 at the 90th percentile. The pre-check reads at most 30 records a run (PRECHECK_BRIGHT_DATA_RECORDS), so at most
+930 a month, under a fifth of the free records, leaving the rest to the library's own reads (3,972 were used in October
+by the 13th). That is about one thread a day: at 1 comment in 8, the answers' 1,288 comments hold about 161 the embed
+page can't show, in about 105 threads, and the shown ones alone about 89 in 68 threads (about 3,000 records). So the
+threads verifying the most shown comments for their records go first, a comment verified that way lasts 48 hours and is
+read again only every other run, and covering them all would need far more records than the free tier has: Noemi's
+call.
 
 The bucket (estimates, 13 Oct 2026), effectively nothing: Cloud Storage's free tier is for US regions only, so every
 operation is billed, but there are very few. Class A (writes): the pre-check's 2 a run, about 60 a month, 0.0003 USD

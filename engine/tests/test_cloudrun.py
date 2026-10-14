@@ -97,7 +97,12 @@ def test_the_site_and_the_pre_check_share_the_bucket_and_the_image():
     service = _command(script, '$GCLOUD run deploy')
     job = _command(script, '$GCLOUD run jobs deploy')
     assert "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}" in service and "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}" in job
-    assert '--image "$IMAGE"' in job and "--set-secrets" not in job  # the service's image; the job needs no secret
+    assert '--image "$IMAGE"' in job  # the service's image
+    # Its one secret is the Bright Data key (Noemi, 13 Oct 2026: "Use Bright Data"), never the feedback token. Changed on
+    # purpose 14 Oct 2026 (the orchestrator): given through PRECHECK_SECRETS, none when the key's secret isn't there.
+    assert '"$PRECHECK_SECRETS"' in job and "HF_TOKEN" not in job
+    assert 'PRECHECK_SECRETS="--set-secrets=BRIGHT_DATA_API_KEY=bright-data-key:latest"' in script
+    assert "CREDIBLE_RECS_PRECHECK_BRIGHT_DATA=${PRECHECK_BRIGHT_DATA}" in job
     assert "--args=-m,engine.precheck,--limit,${PRECHECK_LIMIT}" in job and "--max-retries 0" in job
 
 
@@ -293,3 +298,43 @@ def test_making_the_bundle_stamps_its_files(tmp_path, monkeypatch):
         subprocess.run(["git", "-C", str(repo), *command], check=True, env=env)
     make_context.make_context(tmp_path / "bundle", repo=repo)
     assert stamped == [tmp_path / "bundle"]
+
+
+def test_the_job_may_read_the_bright_data_key_which_the_script_never_reads_or_makes():
+    script = DEPLOY_SH.read_text(encoding="utf-8")
+    grant = _command(script, '$GCLOUD secrets add-iam-policy-binding')
+    assert "bright-data-key" in grant and "roles/secretmanager.secretAccessor" in grant and '"serviceAccount:$RUNNER"' in grant
+    assert script.index("$GCLOUD secrets add-iam-policy-binding") < script.index("$GCLOUD run jobs deploy")
+    # Changed on purpose 14 Oct 2026 (the orchestrator): granted when the secret is there (it is since that day).
+    before = script[:script.index("$GCLOUD secrets add-iam-policy-binding bright-data-key")]
+    assert before.rstrip().endswith('if [ "$PRECHECK_BRIGHT_DATA" = on ]; then')
+    # Noemi creates the secret herself (DEPLOY.md); the script only checks it is there, before building anything.
+    assert "secrets create" not in script and "versions access" not in script and "BRIGHT_DATA_API_KEY=$" not in script
+    assert script.index("$GCLOUD secrets describe bright-data-key") < script.index("-m deploy.cloudrun.make_context")
+    assert script.index("\nprecheck_secret ") < script.index("-m deploy.cloudrun.make_context")
+
+
+def _precheck_secret(tmp_path: Path, there: bool) -> tuple[list[str], str]:
+    """deploy.sh's precheck_secret run on its own, with a made-up gcloud whose `secrets describe` finds the secret or
+    not (nothing reaches Google): what it set, and what it said."""
+    import subprocess
+
+    script = DEPLOY_SH.read_text(encoding="utf-8")
+    start = script.index("precheck_secret() {")
+    function = script[start:script.index("\n}\n", start) + 3]
+    gcloud = tmp_path / "gcloud"
+    gcloud.write_text(f"#!/bin/sh\nexit {0 if there else 1}\n", encoding="utf-8")
+    gcloud.chmod(0o755)
+    shell = (f"set -eu\nGCLOUD={gcloud}\nPROJECT=made-up\n{function}"
+             'precheck_secret\necho "$PRECHECK_BRIGHT_DATA"\necho "$PRECHECK_SECRETS"\n')
+    done = subprocess.run(["sh", "-c", shell], capture_output=True, text=True, check=True)
+    return done.stdout.splitlines(), done.stderr
+
+
+def test_a_missing_bright_data_key_turns_the_step_off_says_so_once_and_never_stops_the_deploy(tmp_path):
+    # 14 Oct 2026 (the orchestrator): as on-demand reading's on_demand_secret, a missing key must never stop a deploy.
+    assert _precheck_secret(tmp_path, there=True) == (["on", "--set-secrets=BRIGHT_DATA_API_KEY=bright-data-key:latest"], "")
+    (state, secrets), said = _precheck_secret(tmp_path, there=False)
+    assert (state, secrets) == ("off", "--clear-secrets")  # no secret the job would fail to find
+    assert len(said.splitlines()) == 1 and "bright-data-key" in said and "off" in said
+    assert "exit 1" not in DEPLOY_SH.read_text(encoding="utf-8")
