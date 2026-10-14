@@ -24,6 +24,20 @@
    "note": "Sage (Breville outside the UK, the name many writers use) sells three kettles on its UK site on 14 Oct 2026: the Compact Kettle Pure at £69.95, the Smart Kettle at £99.95 and the Soft Top Luxe at £119.95. From price: the Compact Kettle Pure (BKE395UK), to add to the cart. Its pages are drawn by script: read in a browser."
   },
   {
+   "brand": "Sage",
+   "category": "kitchen",
+   "product_type": "coffee grinder",
+   "sells": true,
+   "sources": ["https://www.sageappliances.com/en-gb/shop/coffee-grinders", "https://www.sageappliances.com/en-gb/product/bcg600?sku=BCG600SILUK"],
+   "checked_on": "2026-10-14",
+   "range_page": "https://www.sageappliances.com/en-gb/shop/coffee-grinders",
+   "from_price": 149.95,
+   "from_price_shop": "Sage",
+   "from_price_url": "https://www.sageappliances.com/en-gb/product/bcg600?sku=BCG600SILUK",
+   "from_price_checked_on": "2026-10-14",
+   "note": "Sage (Breville outside the UK) sells two grinders on its UK site on 14 Oct 2026: the Dose Control Pro (BCG600SILUK) at £149.95, £20 off its usual £169.95, to add to the cart, and the Smart Grinder Pro at £209.95. From price: the Dose Control Pro at that price; at its usual £169.95 the line would be over a £150 budget, so check it again when the offer ends. Its pages are drawn by script: read in a browser."
+  },
+  {
    "brand": "Ninja",
    "category": "kitchen",
    "product_type": "electric kettle",

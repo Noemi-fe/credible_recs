@@ -275,7 +275,13 @@ def _find_facts(name: str, category: str, entries: Iterable[ProductFacts],
         exact = written_alike(product_words(e.product, aliases), words)  # the same name, but for slips
         return not exact, e.product_type != product_type, -e.checked_on.toordinal(), e.product.casefold()
 
-    return min(fits, key=preference)
+    best = min(fits, key=preference)
+    if not written_alike(product_words(best.product, aliases), words) and any(
+            not same_product(best.product, other.product, aliases) for other in fits if other is not best):
+        # A name fitting two products the list knows apart names neither (name levels, 14 Oct 2026): writers' "Paula's
+        # Choice 2% BHA" fits its liquid and its gel, and had taken the gel's entry, the more recently checked.
+        return None
+    return best
 
 
 # --- Facts against a request ---

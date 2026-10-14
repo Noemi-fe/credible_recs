@@ -334,3 +334,94 @@ def test_advice_in_an_ingredient_led_answer_keeps_to_its_forms():
 
     assert kinds(REQUEST) == ["BHA toner", "leave-on BHA"]
     assert kinds("salicylic acid wash", ["cleanser"]) == ["BHA cleanser", "leave-on BHA"]
+
+
+# --- A line whose every product named has the ingredient (the orchestrator's call, 14 Oct 2026) ---
+# The 13 Oct rule leaves out a line whose versions differ: a whole brand or range can't be checked for an ingredient.
+# When every product of the line named in the threads has a facts entry confirming the ingredient, its versions don't
+# differ in it, and the line stays: "a bha for blackheads" had lost Paula's Choice 2% BHA once writers named its gel
+# beside its liquid (two products, so "Paula's Choice 2% BHA" became their line).
+
+WREN = ("Wren 2% BHA", "exfoliant")  # the line: writers name it so, and its liquid and gel apart
+WREN_LIQUID = ("Wren 2% BHA Liquid", "exfoliant")
+WREN_GEL = ("Wren 2% BHA Gel", "exfoliant")
+
+
+def wren_library(tmp_path: Path) -> Path:
+    return write_library(tmp_path, {
+        "1wren01": ("Salicylic acid recommendations?", [
+            praise("w1", WREN, 2), praise("w2", WREN, 3), praise("w3", WREN_LIQUID, 2)]),
+        "1wren02": ("Salicylic acid for blackheads?", [praise("w4", WREN, 4), praise("w5", WREN_GEL, 3)]),
+    })
+
+
+def test_a_line_stays_when_every_product_of_it_named_has_the_ingredient(tmp_path):
+    both = [facts("Wren 2% BHA Liquid", "exfoliant", ["salicylic acid"]),
+            facts("Wren 2% BHA Gel", "exfoliant", ["salicylic acid"])]
+    result = answer_request(REQUEST, library_dir=wren_library(tmp_path), prices=[], product_facts=both, today=TODAY)
+    assert ("Wren 2% BHA exfoliant line", "gel or leave-on liquid") in picks(result)
+    assert unverified_claims(result.answer, result.bodies) == []
+
+
+def test_a_line_one_of_whose_products_isnt_confirmed_is_still_left_out(tmp_path):
+    one = [facts("Wren 2% BHA Liquid", "exfoliant", ["salicylic acid"])]  # nothing known of the gel: it may differ
+    result = answer_request(REQUEST, library_dir=wren_library(tmp_path), prices=[], product_facts=one, today=TODAY)
+    assert not any(name.startswith("Wren 2% BHA") and "line" in name for name, _ in picks(result))
+    assert "Wren 2% BHA" in " ".join(left_out(result))
+
+
+def test_a_name_fitting_two_known_products_takes_neither_entry_and_its_groups_other_names_decide(tmp_path):
+    # Found in the name-levels follow-up: once Paula's Choice's 2% BHA gel had a facts entry beside its liquid's, the
+    # writers' "Paula's Choice 2% BHA" (the name a group of its liquid's mentions was shown under) took the gel's entry,
+    # the more recently checked, and the liquid was shown as the gel. A name fitting two known products names neither
+    # (engine.product_facts.find_facts); the group's other names say which product it is.
+    from engine.product_facts import find_facts
+
+    both = [facts("Wren 2% BHA Liquid", "exfoliant", ["salicylic acid"]),
+            facts("Wren 2% BHA Gel", "exfoliant", ["salicylic acid"])]
+    assert find_facts("Wren 2% BHA", "skincare", both) is None
+    assert find_facts("Wren 2% BHA liquid", "skincare", both).product == "Wren 2% BHA Liquid"
+    library = write_library(tmp_path, {
+        "1wren01": ("Salicylic acid recommendations?", [
+            praise("w1", WREN, 2), praise("w2", WREN, 3), praise("w3", WREN_LIQUID, 2)]),
+        "1wren02": ("Salicylic acid for blackheads?", [praise("w4", WREN, 4)]),
+    })
+    result = answer_request(REQUEST, library_dir=library, prices=[], product_facts=both, today=TODAY)
+    assert ("Wren 2% BHA Liquid", "leave-on liquid") in picks(result)
+
+
+def test_a_line_whose_products_are_one_known_product_is_that_product(tmp_path):
+    # Found in the name-levels follow-up: writers' "Finacea" fitted their "Finacea Gel 15%" and "Finacea (15% azelaic
+    # acid)", two names of one product (both find its one facts entry), so it was a line, and once lines could stay in
+    # ingredient answers it was shown as "Finacea moisturiser line" in place of the gel. A line whose every product named
+    # finds the same facts entry is that product, ranked with it (as groups finding one entry are, 10 Oct 2026).
+    mirel, gel, named = ("Mirel", "moisturiser"), ("Mirel Gel 15%", "moisturiser"), ("Mirel (15% azelaic acid)", "serum")
+    library = write_library(tmp_path, {
+        "1mire01": ("Azelaic acid recommendations?", [
+            praise("m1", mirel, 2), praise("m2", mirel, 3), praise("m3", gel, 2)]),
+        "1mire02": ("Azelaic acid for redness?", [praise("m4", mirel, 4), praise("m5", named, 3)]),
+    })
+    entry = facts("Mirel (azelaic acid) 15% Gel", "moisturiser", ["azelaic acid"], "gel")
+    result = answer_request("azelaic acid product", library_dir=library, prices=[], product_facts=[entry], today=TODAY)
+    assert picks(result) == [("Mirel (azelaic acid) 15% Gel", "gel")]
+    assert result.lines_confirmed == {} and result.ranked_as_lines == []
+
+
+def test_a_line_with_one_product_named_is_still_left_out():
+    # Its versions can't be told not to differ from one of them (found in the follow-up: writers' "Paula's Choice" in
+    # salicylic acid cleanser threads, a line there since the library names several of its cleansers, while the one
+    # named in those threads has the acid, though the others don't).
+    from engine import pipeline
+    from engine.group_products import ProductGroup, ProductMention
+    from engine.query import parse_query
+
+    def group(name: str, loose: bool) -> ProductGroup:
+        return ProductGroup(f"skincare:{name.lower()}", name, "skincare",
+                            [ProductMention("t1", f"c-{name}", name, "skincare", "recommend", "cleanser")], loose)
+
+    line, sa, calm = group("Wren", True), group("Wren SA Cleanser", False), group("Wren Calm Cleanser", False)
+    query = parse_query("salicylic acid cleanser")
+    entries = [facts("Wren SA Cleanser", "cleanser", ["salicylic acid"], "cleanser"),
+               facts("Wren Calm Cleanser", "cleanser", ["salicylic acid"], "cleanser")]
+    assert pipeline._line_confirmed(line, [line, sa], query, entries, {}) is None
+    assert pipeline._line_confirmed(line, [line, sa, calm], query, entries, {}) is not None

@@ -193,7 +193,7 @@ from engine.ingredients import (
 from engine.ingredients import shown as shown_ingredients
 from engine.library import DEFAULT_LIBRARY_DIR, checked_live_within
 from engine.library_cache import loaded as loaded_library
-from engine.match_products import known_aliases, normalize_name, product_words, same_product
+from engine.match_products import known_aliases, normalize_name, product_words, same_product, written_alike
 from engine.memo import Table
 from engine.models import Comment, Thread
 from engine.needs import Need, needs_met, request_needs
@@ -277,6 +277,14 @@ class PipelineResult:
     # Products left out of a request naming an active ingredient (13 Oct 2026): no evidence they contain it, a formula
     # without it, or a brand pick (a whole brand can't be checked); name and reason.
     left_out_no_ingredient: list[NotSuited] = field(default_factory=list)
+    # The lines kept in an answer naming an active ingredient because every product of them named in the threads has a
+    # facts entry confirming it (14 Oct 2026, the orchestrator's call): {line's key: those entries' names}, and the
+    # forms its products take, joined ("gel or liquid"), {line's key: form}.
+    lines_confirmed: dict[str, list[str]] = field(default_factory=dict)
+    line_forms: dict[str, str] = field(default_factory=dict)
+    # The keys of the lines in such an answer whose products named are all one product the facts list knows: each is
+    # that product (14 Oct 2026; "Finacea", its "Gel 15%" and its "(15% azelaic acid)").
+    lines_as_one_product: set[str] = field(default_factory=set)
     # Products with the ingredient left out of an ingredient-led answer for their form (Noemi's decision 1, 13 Oct
     # 2026): rinse-off, form not known, or not the form the request names.
     left_out_by_form: list[LeftOutByForm] = field(default_factory=list)
@@ -445,12 +453,12 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     index = _name_index(library)  # the library's pairs of names that could match, worked out once (13 Oct 2026)
     product_facts = load_product_facts() if product_facts is None else product_facts
     known = _known_products(product_facts)  # names the facts list knows as one product each (14 Oct 2026)
-    ranges = _library_ranges(library)  # what the whole library names of each brand's products (14 Oct 2026)
-    groups = group_products(mentions, product_type=grouping_type, index=index, known=known, ranges=ranges)
+    brand_ranges = _library_ranges(library)  # what the whole library names of each brand's products (14 Oct 2026)
+    groups = group_products(mentions, product_type=grouping_type, index=index, known=known, ranges=brand_ranges)
     of_another_type = _of_another_type(groups, query, result)
     if of_another_type:  # grouped again without them, so they neither count for nor name a product (13 Oct 2026)
         groups = group_products([m for m in mentions if _typed(m) not in of_another_type], product_type=grouping_type,
-                                index=index, known=known, ranges=ranges)
+                                index=index, known=known, ranges=brand_ranges)
     brand_lines = load_brand_lines() if brand_lines is None else brand_lines
     kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads}, brand_lines)
     lines = {g.key for g in kept_groups if g.loose}  # the brand or line names kept as the brand's whole line
@@ -460,12 +468,13 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     prices = load_prices() if prices is None else prices
     kept_groups, price_checks = _within_budget(kept_groups, query, prices, today, result, brand_lines, types)
     kept_groups, cautions, formulas = _suited_to_request(kept_groups, query, product_facts, result, types)
+    lines -= result.lines_as_one_product  # lines whose products are one known product are that product (14 Oct 2026)
     kept_groups = _one_per_name(kept_groups)  # the names are final here: one item per name (13 Oct 2026)
     result.ranked_as_lines = [g.name for g in kept_groups if g.key in lines]
     _note_other_names(kept_groups, cautions)
     # What the answer says beyond the ranking, as write_answer's keywords: about the request's active ingredients (13 Oct
     # 2026), and which products its facts say are prescription-only in the UK (Noemi's decision 5 of 14 Oct 2026).
-    wording = {**_ingredient_wording(query, kept_groups, types, formulas),
+    wording = {**_ingredient_wording(query, kept_groups, types, formulas, result.line_forms),
                "prescription": _prescription_only(kept_groups, formulas)}
     kind_mentions = _kind_mentions(checked)
     kinds = group_kinds(kind_mentions, kept_groups, query.category, query.product_type or "")
@@ -923,7 +932,11 @@ def _groups_to_rank(groups: list[ProductGroup], query: ParsedQuery, result: Pipe
         if group.loose:
             line = _brand_line(group, query, brand_lines)
             if _clear_brand(group, query, titles, same_category, line, typed):
-                kept.append(replace(group, name=_line_name(group, line, query.product_type)))
+                # An ingredient-led request has no one type: the line is named by its own ("Paula's Choice 2% BHA
+                # exfoliant line"), not by the ingredient's (14 Oct 2026).
+                named_as = (_own_type(group, query) if query.ingredient_led else None) or query.product_type
+                kept.append(replace(group, name=_line_name(group, line, named_as,
+                                                           bool(query.constraints.ingredients))))
             else:
                 result.left_out_loose.append(uk_name(group.name))
                 if line is not None and not line.sells:
@@ -942,7 +955,7 @@ def _brand_line(group: ProductGroup, query: ParsedQuery, brand_lines: list[Brand
     return find_brand_line(names, group.category, query.product_type, brand_lines)
 
 
-def _line_name(group: ProductGroup, line: BrandLine | None, product_type: str) -> str:
+def _line_name(group: ProductGroup, line: BrandLine | None, product_type: str, keep_ingredients: bool = False) -> str:
     """The name a brand or line ranked as the brand's line is shown under (engine.group_products.brand_pick_name):
     "Lodge cast iron skillet line". The brand as its writers spelled it, as a UK shopper knows it; but a name its
     writers wrote all in lowercase ("head and shoulders") is shown as its maker writes it when the brand-lines list
@@ -950,7 +963,7 @@ def _line_name(group: ProductGroup, line: BrandLine | None, product_type: str) -
     brand = uk_name(group.name)
     if line is not None and brand == brand.lower():
         brand = line.brand
-    return brand_pick_name(brand, product_type)
+    return brand_pick_name(brand, product_type, keep_ingredients)
 
 
 def _clear_brand(group: ProductGroup, query: ParsedQuery, titles: dict[str, str], groups: list[ProductGroup],
@@ -1260,12 +1273,32 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
         own_type = (types or {}).get(group.key, query.product_type)
         if query.ingredient_led:
             requirements = hard_requirements(query, own_type)
+        one_product = None  # the facts entry a line's products all find: the line is that one product
         if group.loose and ingredients:
-            # A brand has many products: it can't be checked for an ingredient (13 Oct 2026).
-            reason = INGREDIENT_BRAND_UNCHECKABLE.format(ingredient=shown_ingredients(ingredients))
-            result.left_out_no_ingredient.append(NotSuited(group.name, reason))
-            continue
-        if group.loose:
+            # A brand has many products: it can't be checked for an ingredient (13 Oct 2026), unless every product of it
+            # named in the threads has a facts entry confirming the ingredient, so its versions don't differ in it (14
+            # Oct 2026, the orchestrator's call): "Paula's Choice 2% BHA", its liquid and its gel.
+            confirmed = _line_confirmed(group, groups, query, product_facts, types)
+            if confirmed is None:
+                reason = INGREDIENT_BRAND_UNCHECKABLE.format(ingredient=shown_ingredients(ingredients))
+                result.left_out_no_ingredient.append(NotSuited(group.name, reason))
+                continue
+            entries, form = confirmed
+            if len({entry.product for entry in entries}) == 1:
+                # Its products are one product the facts list knows ("Finacea": its "Gel 15%" and its "(15% azelaic
+                # acid)"): the line is that product, ranked with it as groups finding one entry are.
+                one_product = entries[0]
+                group = replace(group, loose=False)
+                result.lines_as_one_product.add(group.key)
+            else:
+                result.lines_confirmed[group.key] = list(dict.fromkeys(entry.product for entry in entries))
+                if form is not None:
+                    result.line_forms[group.key] = form
+                kept.append(group)
+                continue
+        if one_product is not None:
+            facts = one_product
+        elif group.loose:
             # A facts entry under the brand's own name speaks for the brand pick (late on 10 Oct 2026: GreenPan's FAQ
             # says all its pans are PFAS-free); without one, a whole brand can't be checked.
             facts = find_brand_facts(set(group.names) | {uk_name(n) for n in group.names}, group.category,
@@ -1280,9 +1313,7 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
                 kept.append(group)
                 continue
         else:
-            facts = find_facts(group.name, group.category, product_facts, own_type)
-            if facts is None and query.ingredient_led:
-                facts = find_facts(group.name, group.category, product_facts)
+            facts = _facts_of(group, product_facts, own_type, query.ingredient_led)
         found = conflicts(query, facts)
         hard = [c.reason for c in found if c.hard]
         if hard:
@@ -1327,6 +1358,57 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
         if soft:
             cautions[group.key] = soft
     return kept, cautions, found_facts
+
+
+def _facts_of(group: ProductGroup, product_facts: list[ProductFacts], own_type: str | None,
+              ingredient_led: bool = False) -> ProductFacts | None:
+    """A product's facts entry (engine.product_facts.find_facts): by the name it is shown under, of its own type (for an
+    ingredient-led request, of any type when none of its own is found); when that name fits two products the list knows
+    apart, by its other names, if they all point at one entry (name levels, 14 Oct 2026: a group of Paula's Choice's
+    2% BHA liquid, shown as writers' "Paula's Choice 2% BHA", is the liquid, though that name fits its gel too)."""
+    def lookup(name: str) -> ProductFacts | None:
+        found = find_facts(name, group.category, product_facts, own_type)
+        if found is None and ingredient_led:
+            found = find_facts(name, group.category, product_facts)
+        return found
+
+    facts = lookup(group.name)
+    if facts is None:
+        named = {entry.product: entry for name in group.names if (entry := lookup(name)) is not None}
+        if len(named) == 1:
+            facts = next(iter(named.values()))
+    return facts
+
+
+def _line_confirmed(line: ProductGroup, groups: list[ProductGroup], query: ParsedQuery,
+                    product_facts: list[ProductFacts], types: Mapping[str, str | None] | None
+                    ) -> tuple[list[ProductFacts], str | None] | None:
+    """For a line (a loose group) in an answer naming active ingredients (14 Oct 2026, the orchestrator's call): when
+    every product of it named in the threads (the other groups of its brand or line, as the fold finds them:
+    _same_brand_sized) has a facts entry whose formula confirms each ingredient, and for an ingredient-led request a
+    form it may show, those entries and the forms they take, joined ("gel or liquid": engine.ingredients.form_kind reads
+    each); otherwise None, and the line is left out as before (its versions may differ, or nothing is known of them).
+    A line with fewer than two of its products named here can't be told not to differ: one version says nothing of the
+    others ("Paula's Choice" in salicylic acid cleanser threads, a line there since the library names several of its
+    cleansers, while the one named in those threads has the acid)."""
+    ingredients = query.constraints.ingredients
+    products = [g for g in groups if g is not line and not g.loose and _same_brand_sized(line, g)]
+    if len(products) < 2:
+        return None
+    entries, forms = [], []
+    for product in products:
+        own_type = (types or {}).get(product.key, query.product_type)
+        facts = _facts_of(product, product_facts, own_type, query.ingredient_led)
+        if facts is None or facts.formula is None or _without_ingredient(product, facts, ingredients):
+            return None
+        if query.ingredient_led:
+            form = form_of(facts.product, own_type, _formula_form(facts))
+            if _form_left_out(facts.product, form, query) is not None:
+                return None
+            forms.append(form)
+        entries.append(facts)
+    shown = " or ".join(sorted(set(forms))) if forms else None
+    return entries, shown
 
 
 def _without_ingredient(group: ProductGroup, facts: ProductFacts | None, ingredients: list[str]) -> str | None:
@@ -1382,7 +1464,7 @@ def _form_left_out(name: str, form: str | None, query: ParsedQuery) -> LeftOutBy
 
 
 def _ingredient_wording(query: ParsedQuery, groups: list[ProductGroup], types: Mapping[str, str | None],
-                        found_facts: Mapping[str, ProductFacts]) -> dict:
+                        found_facts: Mapping[str, ProductFacts], line_forms: Mapping[str, str] | None = None) -> dict:
     """What the answer says about a request's active ingredients (13 Oct 2026), as write_answer's keywords: the
     ingredients' names, the forms an ingredient-led request names, and for an ingredient-led request each product's
     form ({product key: form}, engine.ingredients.form_of), from its entry's formula, its name or its own type. {} for
@@ -1392,7 +1474,8 @@ def _ingredient_wording(query: ParsedQuery, groups: list[ProductGroup], types: M
     forms = {}
     if query.ingredient_led:
         for group in groups:
-            forms[group.key] = form_of(group.name, types.get(group.key), _formula_form(found_facts.get(group.key)))
+            forms[group.key] = (line_forms or {}).get(group.key) or form_of(
+                group.name, types.get(group.key), _formula_form(found_facts.get(group.key)))
     return {"ingredient": shown_ingredients(query.constraints.ingredients), "forms": forms,
             "forms_asked": list(query.constraints.forms)}
 
@@ -1462,7 +1545,9 @@ def _fold_brand_picks(ranking: RankingResult, groups: list[ProductGroup], result
     Name levels (14 Oct 2026): a "product" none of whose names says more than the brand and the type ("lodge cast iron
     pan" next to the Lodge line; _the_line_itself) is the line written another way, not one of its products. The line
     never steps aside for it; the two fold as two lines of one brand do, the one ranked lower into the other (b08 had
-    lost its Lodge pick so)."""
+    lost its Lodge pick so). A line written with its size first ('12" Lodge cast iron skillet line') is its brand's line
+    too, as Also worth a look already read it (_same_brand_sized; b08's follow-up: it had been a pick next to the
+    product '10.25" Lodge')."""
     by_key = {g.key: g for g in groups}
     qualifying = [(p, by_key[p.key]) for p in ranking.qualifying if p.key in by_key]
     folded, keys = [], set()
@@ -1470,11 +1555,11 @@ def _fold_brand_picks(ranking: RankingResult, groups: list[ProductGroup], result
         shown = [(p, g) for p, g in qualifying if p.key not in keys][:PICKS_SHOWN]
         step = None
         for position, (product, group) in enumerate(shown):
-            if group.loose:
-                own = next((p for p, g in shown if not g.loose and _same_brand(group, g)
+            if group.loose:  # a size written first is no brand ('12" Lodge' is Lodge's): _same_brand_sized
+                own = next((p for p, g in shown if not g.loose and _same_brand_sized(group, g)
                             and not _the_line_itself(g, group, product_type)), None)
                 own = own or next((p for p, g in shown[:position]
-                                   if (g.loose and (_same_brand(g, group) or _same_brand(group, g)))
+                                   if (g.loose and _lines_of_one_brand(g, group))
                                    or _the_line_itself(g, group, product_type)), None)
             else:  # the line written another way, shown below the line: it folds into it
                 own = next((p for p, g in shown[:position] if g.loose and _the_line_itself(group, g, product_type)),
@@ -1488,6 +1573,22 @@ def _fold_brand_picks(ranking: RankingResult, groups: list[ProductGroup], result
         keys.add(step[0].key)
     result.folded_brand_picks = folded
     return replace(ranking, products=[p for p in ranking.products if p.key not in keys]) if keys else ranking
+
+
+def _lines_of_one_brand(a: ProductGroup, b: ProductGroup) -> bool:
+    """Whether two lines (loose groups) are one brand's, so the one ranked lower folds into the other: one's name holds
+    the other's brand (_same_brand_sized), and their names start with it (a size first aside). Not one read inside the
+    other's name after another brand (name levels' follow-up, 14 Oct 2026): writers' "Rival Crock-Pot" is Rival's line,
+    and the Crock-Pot line, a brand of its own sold new in the UK, had folded into it."""
+    if not (_same_brand_sized(a, b) or _same_brand_sized(b, a)):
+        return False
+    aliases = known_aliases().get(a.category, {})
+
+    def firsts(group: ProductGroup) -> set[str]:
+        return {words[0] for name in group.names
+                if (words := product_words(_without_leading_size(uk_name(name)), aliases))}
+
+    return any(written_alike([x], [y]) for x in firsts(a) for y in firsts(b))
 
 
 def _the_line_itself(product: ProductGroup, line: ProductGroup, product_type: str | None) -> bool:

@@ -232,6 +232,9 @@ def form_kind(form: str | None) -> str | None:
     """Whether a form is "leave-on" (a serum, a toner, pads, a cream, a spot treatment...) or "rinse-off" (a cleanser,
     a powder, a peel, a mask, a scrub), by config.LEAVE_ON_FORMS and RINSE_OFF_FORMS (Noemi's decision 1 of 13 Oct
     2026); None when it isn't known: an "exfoliant" whose name and facts don't say may be either."""
+    if form and " or " in form:  # a line's products' forms, joined ("gel or liquid"; 14 Oct 2026): all of one kind
+        kinds = {form_kind(part) for part in form.split(" or ")}
+        return kinds.pop() if len(kinds) == 1 else None
     if form in LEAVE_ON_FORMS:
         return "leave-on"
     if form in RINSE_OFF_FORMS:

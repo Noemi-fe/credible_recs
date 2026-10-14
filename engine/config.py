@@ -726,6 +726,28 @@ NEEDS: dict[str, tuple[str, ...]] = {
     # 14 Oct 2026, a need of its own since, so a quote saying a product strips says the opposite (OPPOSITE_QUOTE_PATTERNS).
     "strip": ("strip",),
 }
+# More words that show a comment talks about a need, never a thread's title or post (decided by Claude, 14 Oct 2026, b08's
+# follow-up; reported to Noemi): the words people use most for something that lasts ("will last forever", "a lifetime
+# pan", "for decades", "an heirloom", BIFL), which none of NEEDS' words caught, so the wider reading's need rule left out
+# Field from "cast iron skillet for a beginner that will last decades", though every one of its recommendations said
+# so. In a thread's title or post they tell nothing apart: nearly every r/BuyItForLife thread says them.
+NEED_COMMENT_WORDS: dict[str, tuple[str, ...]] = {
+    "lasting": ("forever", "lifetime", "decade", "heirloom", "bifl", "buy it for life", "for generations",
+                "will last", "built to last", "should last"),
+}
+# Phrases that hold a need's word but say something else, left aside before the need's words are looked for (decided by
+# Claude, 14 Oct 2026, b08's follow-up; reported to Noemi): "broke in my new cast iron" or a pan "nicely broken in" is a
+# pan seasoned with its first cooks, not one that broke, as "it broke in half" or "broke in the dishwasher" is. r/castiron
+# titles of that kind had counted as threads about lasting and taken first-reading places from recommendation threads.
+NEED_LOOKALIKES: dict[str, tuple[str, ...]] = {
+    "lasting": (r"(?<![a-z0-9])broken?\s+(?:it\s+|them\s+)?in(?![a-z0-9])(?!\s+(?:half|two|2|pieces?|three|3|parts?|"
+                r"bits|the\s+(?:dishwasher|oven|sink|middle|first|second)|transit|a\s+(?:year|month|week|day)|"
+                r"under|less|after|within|\d))",
+                # "forever" says how long something lasts, but not in "takes forever to heat" or PFAS's "forever
+                # chemicals" (non-stick threads talk about them a lot).
+                r"(?<![a-z0-9])(?:takes?|took|taking)\s+forever(?![a-z0-9])",
+                r"(?<![a-z0-9])forever[\s-]+chemicals?(?![a-z0-9])"),
+}
 # A need asked for by saying what a product mustn't do (14 Oct 2026, the need-quality builder; chosen by Claude, reported
 # to Noemi). A negation of NEGATIONS followed, at most NEGATION_REACH words later, by a word beginning with one of a
 # need's words here names that need, and that word names no other need: "dry" in "a shampoo that isn't drying" or
