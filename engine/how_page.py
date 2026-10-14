@@ -118,7 +118,8 @@ METRIC_WORDING: dict[str, tuple[str, str]] = {
                         "The rest are thrown away and never shown."),
     "request_outcome": ("Understanding the request",
                         "Of our test requests, the share it handled the right way: answer it, ask one question first, "
-                        "or say it's outside skincare, haircare and kitchen gear."),
+                        "or say politely that it isn't a product we recommend (a service, a place, food, a medicine "
+                        "or a book, say)."),
     "request_product": ("Spotting the product",
                         "Of the clear test requests, the share where it read the right kind of product (a kettle, a "
                         "sunscreen)."),

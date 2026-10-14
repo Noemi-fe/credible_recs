@@ -40,14 +40,16 @@ Routes:
 The JSON for /api/answer (200):
     {
       "query": {"status": "ok" | "clarify" | "out_of_scope",  module 1's outcome
-                "category": "skincare" | "kitchen" | null,
+                "category": "skincare" | "kitchen" | "haircare" | "general" | null,
                 "product_type": "electric kettle" | null,
                 "question": "..." | null,     the one clarifying question, when status is "clarify"
                 "message": "..." | null,      the polite no, when status is "out_of_scope"
                 "ingredients": [...],         the active ingredients every product shown contains (13 Oct 2026)
                 "ingredient_led": bool,       true when the request names ingredients and no product type
-                "forms": [...]},              the forms an ingredient-led request names ("salicylic acid wash":
+                "forms": [...],               the forms an ingredient-led request names ("salicylic acid wash":
                                               ["cleanser"]); [] for any other request (Noemi, 13 Oct 2026)
+                "department": "tech" | null}, the general category's department (config.GENERAL_DEPARTMENTS, 14 Oct
+                                              2026), which the page shows above the answer; null for the others
       "answer": null when status isn't "ok", else engine.answer.answer_to_dict(...):
                 {"category", "product_type",
                  "picks": [{"rank", "product_key", "name", "reason", "support",
@@ -240,7 +242,7 @@ from engine.live_check import BUNDLE_RELOAD_SECONDS
 from engine.metrics import METRICS_FILE
 from engine.parse_reddit import REPO_ROOT
 from engine.pipeline import PipelineResult, answer_request
-from engine.query import PRODUCT_TYPES
+from engine.query import FIRST_PRODUCT_TYPES, PRODUCT_TYPES
 
 HOST = "127.0.0.1"  # this computer only. Never "0.0.0.0", which would open the server to the whole network.
 PUBLIC_HOST = "0.0.0.0"  # public mode only: every network interface, so the Space's proxy can reach the server
@@ -487,7 +489,7 @@ def answer_json(result: PipelineResult) -> dict:
         "query": {"status": query.status, "category": query.category, "product_type": query.product_type,
                   "question": query.question, "message": query.message,
                   "ingredients": list(query.constraints.ingredients), "ingredient_led": query.ingredient_led,
-                  "forms": list(query.constraints.forms)},
+                  "forms": list(query.constraints.forms), "department": query.department},
         "answer": answer_to_dict(result.answer) if result.answer is not None else None,
         "threads_used": list(result.threads_used),
         # Names, a few of them for the page's footnote to give as examples (Noemi asked what its numbers count, 12 Oct
@@ -1085,8 +1087,10 @@ def warm_requests() -> list[str]:
       every thread of its category for it, the biggest part of a cold answer, which every later request of that type
       then finds done, however it is worded;
     - then the rest of the latency requests and the types' names: the threads their needs lead to;
-    - last, the requests module 1 asks the open model about ("serum", "something nice for my mum"): a reading of
-      seconds, which warms that very request only.
+    - then the requests module 1 asks the open model about ("serum", "something nice for my mum"): a reading of
+      seconds, which warms that very request only;
+    - last, the taxonomy's types by their names (WARM_TAXONOMY_TYPES, 14 Oct 2026, the coordinator's order for the
+      general category): they have almost no threads yet, so their answers warm little.
     What getting ready has no time for (WARM_UP_ANSWERS_SECONDS) is warmed a slice per keep-warm ping (warm_more)."""
     examples = _requests_in(WARM_FIRST_FILES[0]) if WARM_FIRST_FILES else []
     likely = [text for path in WARM_FIRST_FILES for text in _requests_in(path)]
@@ -1096,7 +1100,8 @@ def warm_requests() -> list[str]:
                 if (text := next((t for t in every if placed[t] == (product_type, False)), None)) is not None]
     lead = list(dict.fromkeys(examples + per_type))
     rest = [text for text in every if text not in lead]
-    return lead + [t for t in rest if not placed[t][1]] + [t for t in rest if placed[t][1]]
+    first = lead + [t for t in rest if not placed[t][1]] + [t for t in rest if placed[t][1]]
+    return first + [name for name in WARM_TAXONOMY_TYPES if name not in set(first)]
 
 
 def _placed_by_rules(text: str) -> tuple[str | None, bool]:
@@ -1129,9 +1134,12 @@ def _requests_in(path: Path) -> list[str]:
 # requests (each type's likeliest first).
 LATENCY_FILE = REPO_ROOT / "eval" / "edge_cases" / "latency_queries.json"
 WARM_FIRST_FILES = (EXAMPLES_FILE, LATENCY_FILE)
-# Then the product types: module 1's own (engine.query.PRODUCT_TYPES). The rules route each by its name (only "serum",
-# placed by a clue word, also gets the open model's view, as any request would).
-WARM_PRODUCT_TYPES = tuple(p.name for p in PRODUCT_TYPES)
+# Then the product types: module 1's own first 43 (engine.query.FIRST_PRODUCT_TYPES). The rules route each by its name
+# (only "serum", placed by a clue word, also gets the open model's view, as any request would).
+WARM_PRODUCT_TYPES = tuple(p.name for p in FIRST_PRODUCT_TYPES)
+# And after every other request, the 351 types of the taxonomy (engine/data/product_types.json, 14 Oct 2026; the
+# general category's, and a few kitchen and haircare ones), each by its name: the rules route each so.
+WARM_TAXONOMY_TYPES = tuple(p.name for p in PRODUCT_TYPES[len(FIRST_PRODUCT_TYPES):])
 WARM_ANSWER_STEP = "the answers' memory for"
 # Getting ready starts no more warm answers once this many seconds have passed (13 Oct 2026): Cloud Run's startup probe
 # waits 4 minutes for /ready (deploy/cloudrun/deploy.sh), and the warm answers alone had grown past that, so a deploy

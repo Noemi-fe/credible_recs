@@ -71,15 +71,19 @@ def test_a_generic_word_is_not_a_product():
     assert query.status == "clarify"
 
 
-def test_a_request_the_model_puts_outside_our_categories_gets_the_polite_no():
-    query = parse_query("best yoga mat for beginners", model=FakeModel({"category": "other", "product": "yoga mat"}))
-    assert query.status == "out_of_scope" and "skincare, haircare and kitchen" in query.message
+def test_a_request_the_model_finds_isnt_for_a_product_gets_the_polite_no():
+    # Changed on purpose 14 Oct 2026 (the general category): a yoga mat is a product the rules route now, and "other"
+    # means what isn't a product to buy and use. Was: "best yoga mat for beginners", the message naming 3 categories.
+    query = parse_query("a fun weekend away in york", model=FakeModel({"category": "other", "product": ""}))
+    assert query.status == "out_of_scope" and "products you can buy" in query.message
 
 
 def test_an_unclear_broken_or_failing_answer_leaves_the_rules_question():
-    for answer in ({"category": "unclear", "product": ""}, {"category": "garden", "product": "hose"}, "not json",
-                   None, RuntimeError("the model crashed")):
-        query = parse_query("best hose reel", model=FakeModel(answer))
+    # Changed on purpose 14 Oct 2026 (the general category): a hose reel is a garden hose the rules route now, so a
+    # label maker, which no type lists, takes its place. Was: "best hose reel".
+    for answer in ({"category": "unclear", "product": ""}, {"category": "garden", "product": "label maker"},
+                   "not json", None, RuntimeError("the model crashed")):
+        query = parse_query("best label maker", model=FakeModel(answer))
         assert query.status == "clarify", answer
 
 
@@ -112,8 +116,10 @@ def test_a_lookalike_the_rules_leave_to_the_model_is_placed_by_it():
 
 
 def test_the_model_can_place_a_haircare_product():
-    query = parse_query("heat protectant spray for fine hair", model=FakeModel({"category": "haircare", "product": "heat protectant spray"}))
-    assert (query.status, query.category, query.product_type) == ("ok", "haircare", "heat protectant spray")
+    # Changed on purpose 14 Oct 2026 (the general category): a heat protectant is a haircare type the rules route now,
+    # so a scalp scrub, which no type lists, takes its place. Was: "heat protectant spray for fine hair".
+    query = parse_query("scalp scrub for build-up", model=FakeModel({"category": "haircare", "product": "scalp scrub"}))
+    assert (query.status, query.category, query.product_type) == ("ok", "haircare", "scalp scrub")
     assert query.subreddits == list(SUBREDDITS["haircare"])
 
 
@@ -183,7 +189,12 @@ def test_a_clue_word_the_model_agrees_with_stands():
     assert parse_query("pot for pasta", model=unsure).product_type == "saucepan"
     # Changed on purpose 14 Oct 2026: the rice cooker is module 1's own type now, so the rules alone place "rice cooker
     # with a non-stick pot" (it was a saucepan, by the clue word "pot"); a bread maker's pot is still a clue alone.
-    assert parse_query("bread maker with a non-stick pot", model=None).product_type == "saucepan"  # rules alone
+    # Changed on purpose again the same day (the general category's context rule, engine.query._context_ranges): a
+    # word after "with a" says what the product has, not what is asked for, so the rules alone now ask about "bread
+    # maker with a non-stick pot" (the open model places the bread maker) instead of calling it a saucepan.
+    assert parse_query("bread maker with a non-stick pot", model=None).status == "clarify"  # rules alone
+    assert parse_query("bread maker with a non-stick pot",
+                       model=FakeModel({"category": "kitchen", "product": "bread maker"})).product_type == "bread maker"
     assert parse_query("rice cooker with a non-stick pot", model=None).product_type == "rice cooker"
 
 

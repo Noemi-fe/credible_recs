@@ -906,7 +906,7 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
     from engine.arctic_shift import ArcticShiftError
     from engine.gold import GoldThreadError, unlabelled_gold_ids
     from engine.library import _save
-    from engine.sources import ArchiveSource, choose_mix
+    from engine.sources import ArchiveSource, choose_mix, for_request
 
     moment = now()
     key = entry.key
@@ -941,7 +941,7 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
     for post in chosen:
         post_id = str(post["id"]).removeprefix("t3_")
         try:
-            thread = _save(archive.get_thread(post_id, post["subreddit"]), work)
+            thread = _save(for_request(archive.get_thread(post_id, post["subreddit"]), query), work)
         except (ArcticShiftError, ValueError, GoldThreadError):
             report.failures += 1
             continue

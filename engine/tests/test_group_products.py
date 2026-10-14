@@ -327,8 +327,17 @@ def test_every_product_type_has_a_plural():
     assert set(config.PRODUCT_TYPE_PLURALS) == {p.name for p in PRODUCT_TYPES}
     assert config.PRODUCT_TYPE_PLURALS["chef knife"] == "chef knives"
     assert config.PRODUCT_TYPE_PLURALS["dutch oven"] == "Dutch ovens"
+    # Changed on purpose 14 Oct 2026 (the general category): a type named in the plural ("headphones", "jeans") or as a
+    # mass noun ("underwear", "garden furniture") is its own plural (engine/data/product_types.json); every other type's
+    # plural differs from its name and ends in "s", as module 1's first types' all do.
+    plural_names = {entry["name"] for entry in config.MORE_PRODUCT_TYPES if entry["plural"] == entry["name"]}
+    assert {"headphones", "jeans", "underwear", "garden furniture"} <= plural_names
+    irregular = {"mouse": "computer mice"}  # read as "We haven't read Reddit about computer mice yet"
     for name, plural in config.PRODUCT_TYPE_PLURALS.items():
-        assert plural.lower() != name.lower() and plural.endswith("s"), name
+        if name in irregular:
+            assert plural == irregular[name]
+        elif name not in plural_names:
+            assert plural.lower() != name.lower() and plural.endswith("s"), name
 
 
 def test_a_brand_pick_name_that_already_says_the_type_has_no_bracket():
@@ -647,6 +656,24 @@ def test_grouping_with_the_librarys_name_index_gives_the_same_groups():
         for mentions in (library, library[:150], library[100:330]):
             assert (group_products(mentions, product_type=product_type, index=index)
                     == group_products(mentions, product_type=product_type)), product_type
+
+
+def test_a_categorys_index_holds_the_first_types_bases_and_its_own_taxonomy_types_only():
+    # 14 Oct 2026 (merging main): with the taxonomy's 351 types, every name's base in every type made getting ready's
+    # name index seven times slower. A category's index holds its names' bases in module 1's first 43 types (any
+    # request's, as before) and in the taxonomy's types of that category only; a request of another category's taxonomy
+    # type works these names' pairs out itself, as for a type the open model named: the same groups either way.
+    library = [typed("Work Sharp knife sharpener", "knife sharpener", "c1", "kitchen"),
+               typed("Work Sharp", "knife sharpener", "c2", "kitchen"), typed("Bose headphones", None, "c3", "kitchen"),
+               typed("Sony WH-1000XM5 headphones", "headphones", "c4", "general"),
+               typed("Sony", "headphones", "c5", "general")]
+    index = library_name_index(library)
+    assert ("work", "sharp") in index["kitchen"].candidates  # its base as a knife sharpener, a kitchen taxonomy type
+    assert ("bose",) not in index["kitchen"].candidates  # its base as headphones, a general type: not worked out here
+    assert ("sony", "wh", "1000xm5") in index["general"].candidates
+    for product_type in ("knife sharpener", "headphones", "electric kettle", None):
+        assert (group_products(library, product_type=product_type, index=index)
+                == group_products(library, product_type=product_type)), product_type
 
 
 def test_a_request_of_a_known_type_takes_its_pairs_from_the_index(monkeypatch):

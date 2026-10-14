@@ -14,7 +14,10 @@ from urllib.parse import quote
 import pytest
 
 from engine import on_demand, web
-from engine.config import ARCHIVE_TEXT_KEPT_DAYS, ON_DEMAND_LATE_MINUTES, ON_DEMAND_MAX_WAITING
+from engine.config import (
+    ARCHIVE_TEXT_KEPT_DAYS, LIBRARY_THREADS_PER_PRODUCT, ON_DEMAND_BUNDLE_MAX_THREADS, ON_DEMAND_LATE_MINUTES,
+    ON_DEMAND_MAX_WAITING,
+)
 from engine.live_check import BUNDLE_RELOAD_SECONDS, Bucket
 from engine.on_demand import Bundle, JobStarter, Queue, QueueStore, SiteReader, entry_for, run_job
 from engine.query import parse_query
@@ -99,7 +102,8 @@ def test_a_request_the_library_covers_costs_no_call(tmp_path, monkeypatch):
     data = site.ask(REQUEST)  # the kettle library's own request
     assert "on_demand" not in data and len(data["answer"]["picks"]) == 3
     assert site.google.calls == []
-    for request in ("something nice for my mum", "best gaming laptop"):  # a question, a polite no
+    # 14 Oct 2026: the polite no was "best gaming laptop", a product of the general category now.
+    for request in ("something nice for my mum", "a good plumber near me"):  # a question, a polite no
         assert "on_demand" not in site.ask(request)
     assert site.google.calls == []
 
@@ -146,6 +150,20 @@ def test_a_full_queue_answers_with_what_the_library_has_and_asks_again_later(tmp
     data = site.ask(TEAPOT)
     assert "on_demand" not in data and len(site.queue().entries) == ON_DEMAND_MAX_WAITING
     assert web._answers == {}  # not remembered: asked about again next time
+
+
+def test_twenty_requests_may_wait_and_their_threads_fit_the_bundle(tmp_path, monkeypatch):
+    # 14 Oct 2026 (the coordinator, with the general category, most of whose requests queue; 10 before): about two days
+    # of the job's reading within Gemini's free allowance (about 11 products a day), and every waiting request's threads
+    # fit the bundle before a deploy takes them in. The 11th request waiting, turned away before, is queued.
+    assert ON_DEMAND_MAX_WAITING == 20
+    assert ON_DEMAND_MAX_WAITING * LIBRARY_THREADS_PER_PRODUCT <= ON_DEMAND_BUNDLE_MAX_THREADS
+    site = Site(tmp_path, monkeypatch)
+    entries = [on_demand.Entry(key=f"kitchen/gadget {n}/", category="kitchen", product_type=f"gadget {n}",
+                               subreddits=["BuyItForLife"]) for n in range(10)]
+    QueueStore(site.bucket).change(lambda q: q.entries.extend(entries))
+    data = site.ask(TEAPOT)
+    assert data["on_demand"]["state"] == "reading" and len(site.queue().waiting()) == 11
 
 
 def test_when_the_bucket_cant_be_reached_the_answer_isnt_remembered(tmp_path, monkeypatch):
@@ -243,6 +261,7 @@ def test_getting_ready_takes_in_the_threads_read_on_demand_before_reading_the_li
         ("library", (site.library / "threads" / "1tea001.json").is_file())) or real_loaded(d))
     monkeypatch.setattr(query_model, "default_query_model", lambda: None)
     monkeypatch.setattr(web, "WARM_PRODUCT_TYPES", ())
+    monkeypatch.setattr(web, "WARM_TAXONOMY_TYPES", ())  # 14 Oct 2026: the taxonomy's types are warmed too
     monkeypatch.setattr(web, "WARM_FIRST_FILES", ())  # no warm answers at all: only the order of the readings counts
     web.warm_up(site.library)
     assert order and order[0] == ("library", True)

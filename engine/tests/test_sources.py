@@ -8,7 +8,7 @@ import pytest
 from engine.gold import DEFAULT_GOLD_DIR, GoldSetError
 from engine.models import Thread
 from engine.parse_reddit import ParseAPIError
-from engine.query import parse_query
+from engine.query import name_pattern, parse_query
 from engine.sources import LocalSource, ParseSource, Source, relevance, without_unusable_comments
 from engine.tests.factories import make_comment, make_thread, write_gold
 
@@ -113,7 +113,9 @@ def test_same_request_gives_the_same_result_from_both_sources(tmp_path):
     assert local == live  # same fields, same values, same comments dropped
 
 
-@pytest.mark.parametrize("text", ["something for my face", "a good laptop"])
+# Changed on purpose 14 Oct 2026 (the general category, Noemi's "recs regardless of the category"): a laptop is a
+# product now, so a service is the example of a request module 1 turns away. Was: "a good laptop".
+@pytest.mark.parametrize("text", ["something for my face", "a good plumber near me"])
 def test_unclear_or_out_of_scope_request_finds_nothing_and_does_nothing(tmp_path, text):
     query = parse_query(text)
     assert query.status != "ok"
@@ -361,7 +363,9 @@ def test_raw_threads_and_usable_threads_pick_the_same_threads_for_the_same_credi
     assert (raw_client.searches, raw_client.fetches) == (client.searches, client.fetches)
 
 
-@pytest.mark.parametrize("text", ["something for my face", "a good laptop"])
+# Changed on purpose 14 Oct 2026 (the general category, Noemi's "recs regardless of the category"): a laptop is a
+# product now, so a service is the example of a request module 1 turns away. Was: "a good laptop".
+@pytest.mark.parametrize("text", ["something for my face", "a good plumber near me"])
 def test_raw_threads_for_an_unclear_request_cost_nothing(text):
     client = FakeParseClient(posts=[post("1kettle")])
     assert ParseSource(client=client).find_raw_threads(parse_query(text)) == []
@@ -1423,8 +1427,10 @@ def test_names_grouped_by_their_first_letter_are_found_where_the_list_found_them
             text = rng.choice([" ", "", "-", ", "]).join(rng.choice([b, b.upper(), b.title(), b + "s"]) for b in bits)
             assert spans(grouped, text) == spans(flat, text), (product_type, text)
         words = sources._literal_names(product_type) or ()
-        own = flat_pattern(list(dict.fromkeys(w for p in PRODUCT_TYPES if p.name == product_type
-                                              for w in p.keywords + p.hints)))
+        # Changed on purpose 14 Oct 2026 (the general category): a product's names end in their own plural, as module 1
+        # reads them (engine.query.name_pattern: "batteries", "brushes"), so the list they are compared with does too.
+        names = list(dict.fromkeys(w for p in PRODUCT_TYPES if p.name == product_type for w in p.keywords + p.hints))
+        own = re.compile(rf"\b(?:{'|'.join(name_pattern(w) for w in names)})\b", re.IGNORECASE)
         for _ in range(100):
             text = " ".join(rng.choice(list(words) + ["x", "tea", "s"]) for _ in range(rng.randint(1, 5))) if words else ""
             assert spans(sources._product_pattern(product_type), text) == spans(own, text), (product_type, text)

@@ -5,23 +5,137 @@ a label or a test pass: ask Noemi first. After a change, run `python -m engine.g
 that no longer fits is reported with its file and line.
 """
 
+import json
+from pathlib import Path
+
 # Categories the engine ranks. A product mention can also be "other" (outside every category).
 # "haircare" added on 11 Oct 2026 (Noemi: "i want to be able to ask about shampoo and receive some proper answers"):
-# products put on the hair or scalp. Hair tools (dryers, straighteners) stay out of scope.
-THREAD_CATEGORIES = ("skincare", "kitchen", "haircare")
+# products put on the hair or scalp. Hair tools (dryers, straighteners) were out of scope until 14 Oct 2026.
+# "general" added on 14 Oct 2026 (Noemi: "I want recs regardless of the category"; her plan's part 1): every other
+# product people buy and use, from robot vacuums and headphones to hiking boots, dog harnesses and baby carriers, in
+# departments (GENERAL_DEPARTMENTS below) that the page shows and that choose the communities of a product the rules
+# don't list. One engine category rather than one per department, chosen by Claude (reported to Noemi): answers count
+# only mentions and threads of the request's category, and the AI that reads threads can't be relied on to tell home
+# from tech, or outdoor from clothing, the same way module 1 does (a robot vacuum, a rain jacket, a smart lock), so
+# mentions would have been lost at those borders; inside one category the product type alone tells them apart. Still
+# out of scope, each with its own polite no (engine/query.py): services, places and advice that isn't about buying;
+# food and drink; medicines and supplements; books, films, music, games and apps; weapons, drugs, tobacco and vaping,
+# and adult products.
+THREAD_CATEGORIES = ("skincare", "kitchen", "haircare", "general")
 MENTION_CATEGORIES = THREAD_CATEGORIES + ("other",)
 
 SUBREDDITS: dict[str, tuple[str, ...]] = {
     # "acne" added by Noemi on 11 Oct 2026 (an agent had skipped r/acne threads for the acne-prone cleanser question).
     "skincare": ("SkincareAddiction", "AsianBeauty", "30PlusSkinCare", "SkincareAddictionUK", "acne"),
-    # The last six added on 14 Oct 2026 with the kitchen appliances (Noemi's decision 3 of 14 Oct; chosen by Claude,
-    # reported to her): appliance advice and repair (r/Appliances), and the communities of one appliance or use.
+    # The six after "tea" added on 14 Oct 2026 with the kitchen appliances (Noemi's decision 3 of 14 Oct; chosen by
+    # Claude, reported to her): appliance advice and repair (r/Appliances), and the communities of one appliance or use.
+    # The last five the same day with the general category's kitchen types (chosen by Claude, reported): knife
+    # sharpening, pizza ovens, and barbecues and smokers.
     "kitchen": ("BuyItForLife", "AskCulinary", "chefknives", "Cooking", "castiron", "Coffee", "espresso", "tea",
-                "Appliances", "airfryer", "instantpot", "slowcooking", "Baking", "juicing"),
+                "Appliances", "airfryer", "instantpot", "slowcooking", "Baking", "juicing",
+                "sharpening", "Pizza", "BBQ", "smoking", "grilling"),
     # Chosen by Claude on 11 Oct 2026 (reported to Noemi): the science-minded and product-heavy haircare communities,
     # most general advice first.
     "haircare": ("HaircareScience", "curlyhair", "wavyhair", "Hair", "femalehairadvice", "malehairadvice", "Dandruff"),
+    # The general category (14 Oct 2026). First the 32 communities of Noemi's plan for it (part 2: the ones whose
+    # history she approved downloading, r/BuyItForLife being the broad one), then the specialist ones of the types
+    # they don't cover well (phones, TVs, cameras, makeup, shaving, cats, cars, gardens...), chosen by Claude and
+    # reported to her: searched through Arctic Shift's API when a request is read on demand, never downloaded in bulk.
+    # Seven are shared with the other categories (r/Appliances, r/Coffee, hair and skin communities for hair tools and
+    # deodorants): a thread read from one of them for a request takes the request's category (engine/sources.py).
+    "general": (
+        "BuyItForLife", "headphones", "BudgetAudiophile", "MechanicalKeyboards", "SuggestALaptop", "laptops",
+        "Monitors", "HomeImprovement", "homeowners", "VacuumCleaners", "Mattress", "smarthome", "homeautomation",
+        "Tools", "HomeDecorating", "Frugal", "Ultralight", "CampingGear", "onebag", "HerOneBag", "bicycling",
+        "malefashionadvice", "femalefashionadvice", "frugalmalefashion", "goodyearwelt", "Boots", "RunningShoeGeeks",
+        "homegym", "NewParents", "beyondthebump", "dogs", "Watches",
+        # home
+        "AirPurifiers", "battlestations", "candles", "CleaningTips", "hvacadvice", "laundry", "malelivingspace",
+        "OfficeChairs", "Appliances",
+        # tech
+        "3Dprinting", "4kTV", "audiophile", "buildapc", "Cameras", "DataHoarder", "drones", "HomeNetworking",
+        "hometheater", "kindle", "MouseReview", "photography", "PickAnAndroidForMe", "printers", "projectors",
+        "smartwatch", "vinyl", "virtualreality",
+        # outdoor and travel
+        "bikecommuting", "birding", "ebikes", "EDC", "ElectricScooters", "Fishing", "flashlight", "golf", "hiking",
+        "Kayaking", "Paddleboarding", "whichbike",
+        # clothing and accessories
+        "ABraThatFits", "handbags", "rawdenim", "Sneakers", "suits",
+        # baby and kids
+        "BabyBumps", "babywearing", "CarSeats", "ExclusivelyPumping", "Mommit",
+        # pets
+        "Aquariums", "CatAdvice", "cats", "Dogtraining", "puppy101",
+        # sport and fitness
+        "bootroom", "boxing", "fitbit", "Fitness", "Garmin", "kettlebell", "powerlifting", "Rowing", "running",
+        "skateboarding", "Swimming", "tennis", "xxfitness", "yoga", "Zwift",
+        # tools and garden
+        "gardening", "lawncare", "MechanicAdvice", "woodworking",
+        # beauty and personal care
+        "drugstoreMUA", "Fragrance", "MakeupAddiction", "MakeupRehab", "malegrooming", "RedditLaqueristas",
+        "wicked_edge", "HaircareScience", "curlyhair", "Hair", "femalehairadvice", "SkincareAddiction",
+        # hobbies
+        "astronomy", "boardgames", "DigitalArt", "drums", "fountainpens", "Guitar", "notebooks", "pens", "piano",
+        "sewing", "telescopes",
+        # car
+        "AutoDetailing", "cars", "Dashcam", "electricvehicles", "Tires",
+        "Coffee",
+    ),
 }
+# The general category's departments (14 Oct 2026; chosen by Claude, reported to Noemi; the words shown are PROPOSED):
+# each product type of the category belongs to one (engine/data/product_types.json), and the page shows it above the
+# answer as the other categories' names are shown. For each: the name shown ("label"), the words a question about it
+# uses ("noun": "What kind of pet product are you after?") with its examples, the words that place a vague request in it
+# ("hints": "something for my dog"), and the communities searched for a product of it that module 1's rules don't list,
+# placed there by the open model ("communities", engine/query_model.py: an "eyelash curler"), broad ones first.
+GENERAL_DEPARTMENTS: dict[str, dict] = {
+    "home": {"label": "Home", "noun": "home", "examples": "a vacuum cleaner, a mattress or an air purifier",
+             "hints": ("home", "house", "bedroom", "living room", "bathroom", "cleaning", "laundry", "furniture",
+                       "decor"),
+             "communities": ("BuyItForLife", "HomeImprovement", "homeowners", "Frugal", "HomeDecorating")},
+    "tech": {"label": "Tech", "noun": "tech", "examples": "headphones, a laptop or a monitor",
+             "hints": ("tech", "gadget", "gadgets", "electronics", "gaming"),
+             "communities": ("BuyItForLife", "Frugal", "laptops", "smarthome")},
+    "outdoor": {"label": "Outdoor and travel", "noun": "outdoor or travel", "examples": "a tent, a suitcase or hiking boots",
+                "hints": ("camping", "hiking", "outdoor", "outdoors", "travel", "travelling", "traveling",
+                          "backpacking", "cycling"),
+                "communities": ("CampingGear", "Ultralight", "BuyItForLife", "onebag")},
+    "clothing": {"label": "Clothing and accessories", "noun": "clothing", "examples": "jeans, boots or a winter coat",
+                 "hints": ("clothes", "clothing", "outfit", "wardrobe", "fashion"),
+                 "communities": ("BuyItForLife", "malefashionadvice", "femalefashionadvice", "frugalmalefashion")},
+    "baby": {"label": "Baby and kids", "noun": "baby", "examples": "a stroller, a car seat or a baby carrier",
+             "hints": ("baby", "babies", "newborn", "toddler", "infant", "kids", "pregnancy", "pregnant", "nursery"),
+             "communities": ("NewParents", "beyondthebump", "BabyBumps", "BuyItForLife")},
+    "pets": {"label": "Pets", "noun": "pet", "examples": "a dog harness, a crate or a litter box",
+             "hints": ("dog", "puppy", "cat", "kitten", "pet"),
+             "communities": ("dogs", "cats", "BuyItForLife")},
+    "fitness": {"label": "Sport and fitness", "noun": "sport or fitness", "examples": "running shoes, dumbbells or a yoga mat",
+                "hints": ("gym", "home gym", "workout", "fitness", "exercise", "running", "sport", "sports",
+                          "lifting"),
+                "communities": ("homegym", "Fitness", "BuyItForLife")},
+    "tools": {"label": "Tools and garden", "noun": "tool or garden", "examples": "a drill, a lawn mower or a pressure washer",
+              "hints": ("diy", "garden", "gardening", "lawn", "workshop"),
+              "communities": ("Tools", "HomeImprovement", "BuyItForLife", "gardening")},
+    "beauty": {"label": "Beauty and personal care", "noun": "beauty or grooming",
+               "examples": "a hair dryer, a razor or a perfume",
+               "hints": ("makeup", "make-up", "beauty", "shaving", "grooming", "nails"),
+               "communities": ("BuyItForLife", "MakeupAddiction", "malegrooming", "SkincareAddiction")},
+    "hobbies": {"label": "Hobbies", "noun": "hobby", "examples": "a guitar, a board game or a fountain pen",
+                "hints": ("hobby", "hobbies", "crafts", "crafting"),
+                "communities": ("BuyItForLife", "Frugal")},
+    "car": {"label": "Car", "noun": "car", "examples": "a dash cam, tyres or a jump starter",
+            "hints": ("car", "vehicle", "driving"),
+            "communities": ("cars", "MechanicAdvice", "AutoDetailing", "BuyItForLife")},
+}
+# Module 1's product types beyond its first 43 (engine/query.py's own list), as data: 336 popular types of the general
+# category, plus large kitchen appliances, barbecues and cooking gear, and a few haircare types (14 Oct 2026, Noemi's
+# plan part 1, for the library prepared ahead in part 2; chosen by Claude, reported to Noemi). Left out on purpose,
+# because they changed answers about the first types (their names would have covered words those answers read):
+# body washes, body lotions and hand creams (moisturiser answers read their threads) and cookware sets (frying pan and
+# skillet answers do); and curl creams (found merging main, 14 Oct 2026: a leave-in conditioner answer's "what to look
+# for" names them, and a listed type's name there is another type's advice); the open model still places them.
+# Each with its plural, category and department, the names people use for it, its title words and its communities.
+PRODUCT_TYPES_FILE = Path(__file__).resolve().parent / "data" / "product_types.json"
+MORE_PRODUCT_TYPES: tuple[dict, ...] = tuple(json.loads(PRODUCT_TYPES_FILE.read_text(encoding="utf-8"))["types"])
 # Subreddits about one skin condition, {subreddit: the skin type that brings it in} (decided by Claude, 11 Oct 2026, when
 # Noemi added r/acne): searched first for a request about that condition, as the most specific, and not for others.
 CONDITION_SUBREDDITS: dict[str, str] = {"acne": "acne-prone"}
@@ -319,6 +433,10 @@ PRODUCT_TYPE_PLURALS: dict[str, str] = {
     "juicer": "juicers",
     "kitchen scale": "kitchen scales",
 }
+# The types of engine/data/product_types.json (14 Oct 2026), each with its own plural, and a few shown with capitals
+# ("TV", "EV charger").
+PRODUCT_TYPE_PLURALS |= {entry["name"]: entry["plural"] for entry in MORE_PRODUCT_TYPES}
+PRODUCT_TYPE_SHOWN |= {entry["name"]: entry["shown"] for entry in MORE_PRODUCT_TYPES if "shown" in entry}
 
 # Decision 11, budgets (engine/prices.py). Current prices live in data/prices.json, each with its shop and the day
 # Claude looked it up. PROPOSED: a price checked more than this many days ago is still shown, with its date, but
@@ -842,8 +960,12 @@ PRICES_TODO_NEXT_IN_LINE = 3
 # check` enforces it: a mention whose type (in the AI's words) matches one of these, as whole words, is rejected.
 # Decided by Claude, reported to Noemi. "treatment" alone isn't here: a spot treatment is a product; nor "facial"
 # alone: a facial cleanser or oil is one.
-SERVICE_TYPE_PATTERNS = (r"laser", r"procedures?", r"microneedling", r"salon", r"clinic", r"in-office",
-                         r"(salon |spa )?facials?$")
+# Since 14 Oct 2026 (the general category) "laser" and "salon" count only as the whole type or before a treatment word:
+# a laser printer, a laser level and a salon hair dryer are products ("laser treatment" and "salon visit" still aren't).
+_TREATMENT = (r"(?:\s+(?:treatments?|resurfacing|therapy|facials?|toning|peels?|genesis|sessions?|hair removal"
+              r"|services?|visits?|appointments?))?$")
+SERVICE_TYPE_PATTERNS = (rf"laser{_TREATMENT}", r"procedures?", r"microneedling", rf"salon{_TREATMENT}", r"clinic",
+                         r"in-office", r"(salon |spa )?facials?$")
 
 # --- A brand pick names its most recommended model (10 Oct 2026) ---
 # Decided by Claude, reported to Noemi. Under a brand pick ("Victorinox chef knife line"), the answer names the model
@@ -1032,10 +1154,18 @@ COPIED_TEXT_MIN_WORDS = 20
 # their usual kinds are typed, to that list: the AI had typed appliances in plain words ("air fryer", "rice cooker",
 # "multicooker", "air fryer oven"), which module 1's names and words find, so every v10 and v9 extraction stays current,
 # and v8 ones of skincare and kitchen threads.
+# v12 (14 Oct 2026, Noemi's "recs regardless of the category") adds the general category, so a product outside skincare,
+# haircare and kitchen gear is "general" rather than "other", and lists module 1's new types. The three categories'
+# threads were read for their own products, and their answers rank their own category's mentions only, so whether a
+# laptop in a kettle thread was "other" or "general" changes nothing: their v11, v10 and v9 extractions stay current
+# (v8 ones of skincare and kitchen threads too); a general thread is extracted with v12. Decided by Claude, reported.
+_BEFORE_GENERAL = ("skincare", "kitchen", "haircare")
 EXTRACT_STILL_CURRENT: dict[str, dict[str, tuple[str, ...]]] = {
     "extract-v9": {"extract-v8": ("skincare", "kitchen")},
-    "extract-v10": {"extract-v9": THREAD_CATEGORIES, "extract-v8": ("skincare", "kitchen")},
-    "extract-v11": {"extract-v10": THREAD_CATEGORIES, "extract-v9": THREAD_CATEGORIES,
+    "extract-v10": {"extract-v9": _BEFORE_GENERAL, "extract-v8": ("skincare", "kitchen")},
+    "extract-v11": {"extract-v10": _BEFORE_GENERAL, "extract-v9": _BEFORE_GENERAL,
+                    "extract-v8": ("skincare", "kitchen")},
+    "extract-v12": {"extract-v11": _BEFORE_GENERAL, "extract-v10": _BEFORE_GENERAL, "extract-v9": _BEFORE_GENERAL,
                     "extract-v8": ("skincare", "kitchen")},
 }
 
@@ -1317,7 +1447,13 @@ ON_DEMAND_MIN_THREADS = LIBRARY_THREADS_PER_PRODUCT
 # need-led choice of threads. Never the request as typed, never a time or an address (Noemi's rule of 11 Oct 2026).
 ON_DEMAND_NEED_WORDS = 3
 # At most this many requests wait at once: more are answered from what the library has, and asked about again later.
-ON_DEMAND_MAX_WAITING = 10
+# 20 since 14 Oct 2026 (10 before; the coordinator asked to raise it with the general category, whose types mostly have
+# no threads yet, so most of its requests queue; chosen by Claude, reported to Noemi): about two days of the job's
+# reading within Gemini's free allowance (about 11 products a day, at about 9 calls each), and their threads (6 each)
+# fit the bundle (ON_DEMAND_BUNDLE_MAX_THREADS) before a deploy takes them in. The free-tier sums don't change: the
+# job's time and its Gemini calls have caps of their own (ON_DEMAND_MONTH_SECONDS, ON_DEMAND_GEMINI_CALLS_A_DAY), and
+# the site never starts the job while the queue rests.
+ON_DEMAND_MAX_WAITING = 20
 # The queue remembers at most this many requests already read (the oldest are forgotten): each is read again, when its
 # library is still thin, after ON_DEMAND_READ_AGAIN_DAYS (Reddit may have more by then), or after ON_DEMAND_RETRY_DAYS
 # when its reading failed ON_DEMAND_MAX_TRIES times (Arctic Shift down, say), each try at least an hour apart.

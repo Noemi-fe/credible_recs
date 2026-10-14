@@ -198,8 +198,12 @@ class NameIndex:
 def library_name_index(mentions: Iterable[ProductMention],
                        aliases: dict[str, Aliases] | None = None) -> dict[str, NameIndex]:
     """{category: NameIndex} for a library's mentions: every name, as grouping reads it (product_words, with these
-    short names: the shipped list by default), and its base in each of module 1's product types."""
-    from engine.query import PRODUCT_TYPES  # here: engine.query's own imports reach this module's
+    short names: the shipped list by default), and its base in each of module 1's first product types and in each type
+    of the taxonomy (engine/data/product_types.json) of the name's own category (14 Oct 2026: its base in all 351 of
+    the taxonomy's types had made the index seven times slower). A request of a taxonomy type grouping the names of
+    another category works their pairs out itself (NameIndex.among: a base not in the index), as for a type the open
+    model named."""
+    from engine.query import FIRST_PRODUCT_TYPES, PRODUCT_TYPES  # here: engine.query's own imports reach this module's
 
     aliases = known_aliases() if aliases is None else aliases
     names: dict[str, set[Words]] = defaultdict(set)
@@ -207,8 +211,11 @@ def library_name_index(mentions: Iterable[ProductMention],
         words = tuple(product_words(m.product, aliases.get(m.category, {})))
         if words:
             names[m.category].add(words)
-    every_type = [_type_words(p.name) for p in PRODUCT_TYPES]
-    return {category: NameIndex(own | {base for words in own for type_words in every_type
+    first = [_type_words(p.name) for p in FIRST_PRODUCT_TYPES]
+    more: dict[str, list[frozenset[str]]] = defaultdict(list)
+    for p in PRODUCT_TYPES[len(FIRST_PRODUCT_TYPES):]:
+        more[p.category].append(_type_words(p.name))
+    return {category: NameIndex(own | {base for words in own for type_words in first + more[category]
                                        if (base := _without_type_words(words, type_words))})
             for category, own in names.items()}
 

@@ -611,6 +611,28 @@ CATEGORY_TERMS = {
         "malassezia", "film former", "cationic", "behentrimonium", "polyquaternium", "cuticle", "hygral fatigue",
         "heat protectant", "bond builder", "wet line", "cast",
     ),
+    # The general category (14 Oct 2026; chosen by Claude, reported to Noemi): the specialist words of its departments'
+    # enthusiasts, each clearly a specialist's (audio, keyboards, screens, mattresses and vacuums, outdoor gear, boots
+    # and denim, watches, home gyms, child seats, tools, shaving and fragrance, cycling, car care). Three in a comment,
+    # as for the other categories.
+    "general": (
+        "soundstage", "imaging", "planar", "planars", "iem", "iems", "dac", "impedance", "sibilance", "sibilant",
+        "treble", "harman target", "frequency response", "eartips", "ear tips", "aptx", "ldac", "codec",
+        "keycaps", "keycap", "linear switches", "tactile switches", "hot-swap", "hotswap", "lubed", "stabilizers",
+        "pcb", "qmk", "polling rate", "thermals", "throttling", "refresh rate", "nits", "ips panel", "va panel",
+        "pwm", "srgb", "dci-p3", "ghosting", "backlight bleed", "suction", "hepa", "cyclonic", "brush roll",
+        "brushroll", "pocket springs", "edge support", "coil count", "motion isolation", "btu", "base weight",
+        "baseweight", "denier", "r-value", "fill power", "hydrostatic head", "dyneema", "gore-tex", "goretex", "dwr",
+        "ripstop", "silnylon", "vestibule", "goodyear welt", "goodyear welted", "blake stitch", "resole", "resoled",
+        "resoling", "toe box", "insole", "outsole", "midsole", "cork bed", "shell cordovan", "horween", "chromexcel",
+        "selvedge", "selvage", "raw denim", "sanforized", "heel drop", "stack height", "carbon plate", "pebax",
+        "nh35", "miyota", "lume", "sapphire crystal", "bezel", "lug to lug", "lug width", "caseback", "chronometer",
+        "power reserve", "knurling", "knurl", "j-hooks", "spotter arms", "bumper plates", "isofix", "rear facing",
+        "extended rear facing", "brushless", "torque", "chuck", "kickback", "amp hours", "battery platform",
+        "de blade", "blade gap", "lather", "silvertip", "sillage", "top notes", "base notes", "dry down", "drydown",
+        "groupset", "derailleur", "drivetrain", "tubeless", "parking mode", "supercapacitor", "clay bar",
+        "paint correction",
+    ),
 }
 
 
@@ -1027,7 +1049,12 @@ GENERIC_NAME_WORDS = frozenset({
     "treatment", "spray", "mousse", "masque", "styling", "bond", "keratin", "protein", "sulfate", "sulphate", "free",
     "argan", "air", "fryer", "fryers", "rice", "cooker", "cookers", "slow", "pressure", "processor", "food", "stand",
     "hand", "immersion", "basket",
-})
+}) | frozenset(
+    # The head nouns of the types of engine/data/product_types.json (14 Oct 2026): "headphones" in "Sony headphones"
+    # says what it is, not which one, as "kettle" does.
+    words[-1] for entry in config.MORE_PRODUCT_TYPES for name in (entry["name"], entry["plural"])
+    if (words := name.lower().split())
+) - {"head", "ring"}  # the shower head's and the smart ring's are brand words too: Head & Shoulders, Ring
 
 
 # Small words that join the words of a name ("lactic acid 10% with hyaluronic acid"), so they name nothing.

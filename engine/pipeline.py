@@ -135,12 +135,13 @@ from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from datetime import date
+from functools import cache
 from pathlib import Path
 
 from engine import config  # the upvote rule's switch, read for each request (14 Oct 2026)
 from engine.answer import (
-    Answer, _every_quote, comment_bodies, needed_quotes, quotes_to_check, render_markdown, says_the_opposite,
-    shown_availability, shown_price, without_unread, write_answer,
+    NO_THREADS, Answer, _every_quote, comment_bodies, needed_quotes, quotes_to_check, render_markdown,
+    says_the_opposite, shown_availability, shown_price, without_unread, write_answer,
 )
 from engine.brand_lines import BrandLine, find_brand_line, from_price_entry, load_brand_lines, not_sold_reason
 from engine.care_tips import CareTips, attach_care_tips, credible_care_tips
@@ -427,7 +428,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.comments_read = sum(len(shown_comment_ids(t)) for t in threads)  # what the AI read in them (12 Oct 2026)
     result.bodies = comment_bodies(threads)
 
-    mentions = _not_sets(_product_mentions(checked), result)
+    mentions = _not_sets(_product_mentions(checked), result, query.product_type)
     # Grouped for this request's type (13 Oct 2026): "Fellow kettle" in a kettle answer is Fellow's kettle line. An
     # ingredient-led request has no one type: its products are grouped as the library's are.
     grouping_type = None if query.ingredient_led else query.product_type
@@ -484,6 +485,10 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
         thread_of = {c.id: t.id for t in threads for c in t.comments}
         quoted = {thread_of.get(quote.comment_id) for _, quote in _every_quote(result.answer)}
         result.threads_quoted = [tid for tid in result.threads_used if tid in quoted]
+        if not (result.answer.picks or result.threads_used or result.waiting_live_check or result.not_extracted):
+            # Nothing saved is about it (14 Oct 2026): say that, not that the evidence fell short. Changed in place, so
+            # the answer stays the one module 7 wrote (the pre-check finds it by itself, engine/precheck.py).
+            result.answer.message = NO_THREADS.format(products=plural(query.product_type))
         return result
 
     readable = set(result.bodies)
@@ -666,18 +671,30 @@ _NAME_INDEX = ("name index",)  # where the library keeps it (engine.library_cach
 
 
 def _product_mentions(checked: dict[str, CheckResult]) -> list[ProductMention]:
-    return [ProductMention(tid, m.comment_id, m.product, m.category, m.stance, m.product_type, m.quote)
+    return [ProductMention(tid, m.comment_id, m.product, _category_of(m), m.stance, m.product_type, m.quote)
             for tid, res in checked.items() for m in res.kept]
 
 
-def _not_sets(mentions: list[ProductMention], result: PipelineResult) -> list[ProductMention]:
+_TYPE_CATEGORY = {p.name: p.category for p in PRODUCT_TYPES}
+_TYPE_NAMES = frozenset(_TYPE_CATEGORY)  # module 1's types, once (14 Oct 2026: 394 of them to build a set of each time)
+
+
+def _category_of(mention) -> str:
+    """The category a mention counts in (14 Oct 2026, the general category): module 1's for a product type it lists,
+    whatever the AI called it ("water bottle" is the general category's, even when the AI called it kitchen gear;
+    "dishwasher" the kitchen's, even when an older extraction said "other"), else the AI's own."""
+    return _TYPE_CATEGORY.get((mention.product_type or "").strip().lower(), mention.category)
+
+
+def _not_sets(mentions: list[ProductMention], result: PipelineResult,
+              requested: str | None = None) -> list[ProductMention]:
     """The mentions that aren't of a set, a block or a sharpener (config.OTHER_TYPE_WORDS, in the type the AI gave
     the mention): those are left out before grouping and named on the result, so a "Henckels knife block" never lends
     its votes to the writers' other Henckels mentions (10 Oct 2026). Any other type is decided for the whole product
-    by most of its mentions (_another_type)."""
+    by most of its mentions (_another_type). `requested`: the request's product type (_names_a_set)."""
     kept = []
     for mention in mentions:
-        if mention.product_type and _names_a_set(mention.product_type):
+        if mention.product_type and _names_a_set(mention.product_type, requested):
             if uk_name(mention.product) not in result.left_out_as_other_type:
                 result.left_out_as_other_type.append(uk_name(mention.product))
         else:
@@ -685,16 +702,54 @@ def _not_sets(mentions: list[ProductMention], result: PipelineResult) -> list[Pr
     return kept
 
 
-def _names_a_set(product_type: str) -> bool:
+def _names_a_set(product_type: str, requested: str | None = None) -> bool:
     """Whether a type in the AI's words names something that holds, sharpens, covers or bundles a product ("knife
     set", "knife blocks"), not the product: the word that says what it is, singular or plural, is in
     config.OTHER_TYPE_WORDS. That word is the last one ("knife stand"), or the one before "of" ("set of knives"):
-    a "stand mixer" is a mixer (11 Oct 2026, when its every mention had been dropped)."""
+    a "stand mixer" is a mixer (11 Oct 2026, when its every mention had been dropped).
+
+    A type ending with a name of one of module 1's types whose own name ends with that word is that product (14 Oct
+    2026, the general category: "sleeping bag", "down sleeping bag", "tool set", "tv stand"): with no request, or in a
+    request for it (`requested`, the request's product type). In any other request it is left out as a set is, as
+    before the taxonomy made it a type of its own: a "knife sharpener" in a chef knife request."""
     words = product_type.strip().lower().split()
     if not words:
         return False
     head = words[words.index("of") - 1] if "of" in words[1:] else words[-1]
-    return head in OTHER_TYPE_WORDS or head.removesuffix("s") in OTHER_TYPE_WORDS
+    if head not in OTHER_TYPE_WORDS and head.removesuffix("s") not in OTHER_TYPE_WORDS:
+        return False
+    named = _ends_with_a_type(product_type)
+    if named is None or named.name.split()[-1].removesuffix("s") != head.removesuffix("s"):
+        return True
+    return requested is not None and named.name != requested
+
+
+@cache
+def _ends_with_a_type(product_type: str):
+    """The module 1 type that a type in the AI's words ends with one of the names of (the longest such name, the first
+    type's when two are as long), or None: "down sleeping bag" ends with the sleeping bag's name, "frying pan set" with
+    the cookware set's ("pan set"), "gooseneck kettle" with the electric kettle's ("kettle"). 14 Oct 2026. Only the
+    names whose last word is the type's are looked at (_TYPE_ENDINGS): a name it ends with ends with that word."""
+    text = " " + " ".join(product_type.strip().lower().split())
+    best = None
+    for size, form, product in _TYPE_ENDINGS.get(text.rsplit(" ", 1)[-1], ()):
+        if text.endswith(" " + form) and (best is None or size > best[0]):
+            best = (size, product)
+    return best[1] if best else None
+
+
+def _type_endings() -> dict[str, list[tuple[int, str, object]]]:
+    """Each last word of module 1's names, with their plural "s" or "es" too -> (the name's length, that form, its
+    type), in the types' and names' own order."""
+    endings: dict[str, list[tuple[int, str, object]]] = {}
+    for product in PRODUCT_TYPES:
+        for keyword in product.keywords:
+            for form in (keyword, keyword + "s", keyword + "es"):
+                endings.setdefault(form.rsplit(" ", 1)[-1], []).append((len(keyword), form, product))
+    return endings
+
+
+_TYPE_ENDINGS = _type_endings()
 
 
 def _of_another_type(groups: list[ProductGroup], query: ParsedQuery, result: PipelineResult) -> set[tuple]:
@@ -893,11 +948,14 @@ def _another_type_by_ai(types: list[str], requested: str) -> bool:
     majority = counts[0][0]
     if majority == requested:
         return False
-    if majority in {p.name for p in PRODUCT_TYPES}:
+    if majority in _TYPE_NAMES:
         return True
-    if _names_a_set(majority):
+    if _names_a_set(majority, requested):
         return True
-    if requested not in {p.name for p in PRODUCT_TYPES}:
+    named = _ends_with_a_type(majority)  # 14 Oct 2026: a "frying pan set" is the cookware set's, not a frying pan
+    if named is not None and named.name != requested:
+        return True
+    if requested not in _TYPE_NAMES:
         return not _same_kind(majority, requested)
     return not mentions_product(majority, requested)
 
@@ -1448,7 +1506,9 @@ def _names_a_model(name: str, brand: ProductGroup, product_type: str | None) -> 
         return True
     brand_words = {w for n in list(brand.names) + [uk_name(n) for n in brand.names]
                    for w in re.findall(r"[a-z0-9][a-z0-9'-]*", n.lower())}
+    # The type's plural too (14 Oct 2026): "Ruffwear harnesses" names no model of a dog harness.
     generic = set(BRAND_MODEL_GENERIC_WORDS) | set((product_type or "").lower().split())
+    generic |= set(plural(product_type).lower().split()) if product_type else set()
     return any(w not in brand_words and w not in generic and w.rstrip("s") not in generic for w in words)
 
 
@@ -1513,7 +1573,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
         for m in res.kept:
             if m.comment_id in repeats:
                 continue
-            group = group_by_mention.get(ProductMention(tid, m.comment_id, m.product, m.category, m.stance))
+            group = group_by_mention.get(ProductMention(tid, m.comment_id, m.product, _category_of(m), m.stance))
             if group is None:
                 continue  # left out above: another category, another type, a loose name, or over budget
             comment = comments[m.comment_id]

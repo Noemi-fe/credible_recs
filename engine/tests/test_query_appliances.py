@@ -120,16 +120,26 @@ def test_a_look_alike_holding_an_appliances_word_isnt_the_appliance(text, not_th
     assert classify(text).product_type != not_this
 
 
-@pytest.mark.parametrize("text", ["oven cleaner that actually works", "dishwasher tablets that work",
-                                  "rinse aid for hard water", "a bathroom scale that's accurate"])
-def test_cleaning_products_and_bathroom_scales_are_out_of_scope(text):
-    assert classify(text).status == "out_of_scope"
+# Changed on purpose 14 Oct 2026 (the general category, Noemi's "recs regardless of the category"): cleaning products
+# and bathroom scales are products of the general category's home department now; a rinse aid, which no type lists, is
+# asked about (the open model may place it). Was: all four out of scope. They are still never the appliance they clean.
+@pytest.mark.parametrize("text, product_type", [("oven cleaner that actually works", "oven cleaner"),
+                                                ("dishwasher tablets that work", "dishwasher tablets"),
+                                                ("rinse aid for hard water", None),
+                                                ("a bathroom scale that's accurate", "bathroom scale")])
+def test_cleaning_products_and_bathroom_scales_are_the_general_categorys_not_the_appliances(text, product_type):
+    routing = classify(text)
+    assert routing.product_type == product_type
+    assert routing.product_type not in ("oven", "dishwasher", "kitchen scale")
+    if product_type:
+        assert (routing.category, routing.department) == ("general", "home")
 
 
-def test_a_dishwasher_stays_out_of_scope_as_noemis_case_q30_says():
-    # eval/edge_cases/query.json, q30 (her call of 7 Oct 2026: large appliances aren't kitchen gear). Her decision 3 of
-    # 14 Oct 2026 brought the microwave and the oven in; the dishwasher waits for her call on q30.
-    assert classify("quiet dishwasher for a small kitchen").status == "out_of_scope"
+def test_a_dishwasher_is_a_kitchen_appliance_since_the_general_category():
+    # Changed on purpose 14 Oct 2026: Noemi's "I want recs regardless of the category" supersedes her approved case q30
+    # of 7 Oct (eval/edge_cases/query.json: large appliances aren't kitchen gear), which isn't relabelled here: it is
+    # for her to confirm, and module 1's evaluation reads q30 as a miss until she does. Was: out of scope.
+    assert routed("quiet dishwasher for a small kitchen") == ("ok", "kitchen", "dishwasher")
     assert routed("dishwasher-safe chef knife") == ("ok", "kitchen", "chef knife")
 
 

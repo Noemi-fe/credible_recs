@@ -181,6 +181,10 @@ LOOK_FOR = "Look for"  # a kind credible voices recommend
 AVOID = "Avoid"  # a kind credible voices warn against
 RULE = "at least {mentions} credible recommendations across at least {threads} threads"
 NO_PICKS = "Not enough credible evidence to recommend {what} yet: a pick needs {rule}. We'd rather say so than guess."
+# When no saved thread is about the product at all (14 Oct 2026, the general category: most of its types have none yet;
+# wording decided by Claude, PROPOSED). On the live site on-demand reading then says it has started reading.
+NO_THREADS = ("We haven't read any Reddit threads about {products} yet, so there's nothing to recommend from. We'd "
+              "rather say so than guess.")
 FEWER_PICKS = "Enough credible evidence for only {products} ({rule}), so we show {n} instead of {wanted}."
 BADGE_VOICE = "{voice}-credibility voice"  # the badge when module 5 gave no reason in words
 QUOTES_HEADING = "In their words"

@@ -121,7 +121,7 @@ from engine.extract import ExtractionError
 from engine.gold import GoldSetError, GoldThreadError, load_threads, unlabelled_gold_ids
 from engine.models import Thread
 from engine.parse_reddit import REPO_ROOT, ParseAPIError, ParseRedditClient
-from engine.query import PRODUCT_TYPES, parse_query
+from engine.query import FIRST_PRODUCT_TYPES, PRODUCT_TYPES, parse_query
 from engine.sources import (
     THREAD_KINDS,
     ArchiveSource,
@@ -387,7 +387,7 @@ def refresh(
     failures_in_a_row = 0
     for n, old in enumerate(due):
         try:
-            new = _save(client.get_thread(old.community, old.id), folder)
+            new = _save(_as_saved(client.get_thread(old.community, old.id), old), folder)
         except ParseAPIError as e:
             result.failed[old.id] = str(e)
             failures_in_a_row += 1
@@ -421,6 +421,13 @@ def _refresh_through_bright_data(client: BrightDataClient, due: list[Thread], ma
     result.record_cap = read.record_cap
     result.records_used = read.records_used
     result.records_left = read.records_left
+
+
+def _as_saved(fresh: Thread, saved: Thread) -> Thread:
+    """A thread Parse has read again, in the category it was saved in (14 Oct 2026): Parse names the category by the
+    community alone, and a community can be two categories' (r/BuyItForLife: a headphones thread there is a general
+    one, engine.sources.for_request)."""
+    return fresh.model_copy(update={"category": saved.category})
 
 
 def is_due(thread: Thread, now: datetime) -> bool:
@@ -552,7 +559,7 @@ def _read_through_parse(client: ParseRedditClient, due: list[Thread], shown_due:
             result.not_tried = [t.id for t in due[n:]]
             break
         try:
-            new = _save(client.get_thread(old.community, old.id), folder)
+            new = _save(_as_saved(client.get_thread(old.community, old.id), old), folder)
         except ParseAPIError as e:
             result.failed[old.id] = str(e)
             failures_in_a_row += 1
@@ -1058,12 +1065,21 @@ def _print_check_live(result: LiveCheckResult) -> int:
 
 
 def _print_coverage(counts: dict[str, int], kinds: dict[str, dict[str, int]]) -> int:
+    """Module 1's first types each on a line; the taxonomy's (engine/data/product_types.json, 14 Oct 2026) only when they
+    have saved threads, then how many have none, so 351 types don't print as hundreds of zeros."""
     print("Saved threads per product type:")
+    first = {p.name for p in FIRST_PRODUCT_TYPES}
     for category in THREAD_CATEGORIES:
         print(f"  {category}")
+        empty = 0
         for product in PRODUCT_TYPES:
             if product.category == category:
-                print(f"    {product.name:<18} {counts[product.name]}")
+                if product.name in first or counts[product.name]:
+                    print(f"    {product.name:<18} {counts[product.name]}")
+                else:
+                    empty += 1
+        if empty:
+            print(f"    and {empty} more types with none yet")
     target = ", ".join(f"{KIND_NAMES[kind]} {LIBRARY_MIX.get(kind, 0)}" for kind in THREAD_KINDS)
     print(f"Threads of each kind, against the library's mix ({target}), for product types with saved threads:")
     covered = [product.name for product in PRODUCT_TYPES if counts[product.name]]
