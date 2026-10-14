@@ -361,6 +361,7 @@ def handle_request(path_and_query: str, library_dir: Path = DEFAULT_LIBRARY_DIR,
         if ready.is_set():
             reload_checks_if_due()
             reload_on_demand_if_due()
+            warm_more()  # the requests getting ready had no time for, a slice per keep-warm ping (14 Oct 2026)
         return (200 if ready.is_set() else 503), JSON, json.dumps({"ready": ready.is_set()}).encode("utf-8")
     if parts.path in METHODS:  # a route that takes another method: feedback is sent, never fetched
         return _error(405, WRONG_METHOD, allowed=METHODS[parts.path])
@@ -959,25 +960,54 @@ def warm_up(library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
         steps.insert(0, ("the pre-check's checks", _read_checks))
     if threads.is_dir():
         steps.insert(0, ("the library", lambda: loaded(threads)))
-        steps += [(f"{WARM_ANSWER_STEP} {request}", lambda request=request: warm_answer(request, library_dir))
-                  for request in warm_requests()]
     if on_demand is not None:  # first of all (14 Oct 2026): the library is then read once, with them
         steps.insert(0, ("the threads read on demand", on_demand.warm_up))
-    left = 0
     for name, step in steps:
-        if name.startswith(WARM_ANSWER_STEP) and time.perf_counter() - started >= WARM_UP_ANSWERS_SECONDS:
-            left += 1  # its first visitor works it out instead
+        _step(name, step)
+    left = []
+    for request in warm_requests() if threads.is_dir() else ():
+        if time.perf_counter() - started >= WARM_UP_ANSWERS_SECONDS:
+            left.append(request)  # warmed later, a slice per keep-warm ping (warm_more), or by its first visitor
             continue
-        try:
-            step()
-        except Exception as error:  # reported where the server runs; answers report it again when they need it
-            print(f"Getting ready: {name} couldn't be loaded ({type(error).__name__}: {error}).", file=sys.stderr,
-                  flush=True)
+        _step(f"{WARM_ANSWER_STEP} {request}", lambda request=request: warm_answer(request, library_dir))
     if left:
-        print(f"Getting ready: left {left} requests for their first visitors (time up after "
+        print(f"Getting ready: left {len(left)} requests for their first visitors (time up after "
               f"{WARM_UP_ANSWERS_SECONDS} s).", flush=True)
+    with _warming:
+        _left_to_warm[:] = left
+        _left_in[:] = [library_dir]
     ready.set()
     print(f"Ready for visitors: got ready in {time.perf_counter() - started:.1f} s.", flush=True)
+
+
+def _step(name: str, step) -> None:
+    """One step of getting ready; a problem is reported where the server runs, and never stops it: answers report it
+    again when they need it."""
+    try:
+        step()
+    except Exception as error:
+        print(f"Getting ready: {name} couldn't be loaded ({type(error).__name__}: {error}).", file=sys.stderr,
+              flush=True)
+
+
+def warm_more() -> None:
+    """The next of the requests getting ready had no time for (warm_up), warmed while the keep-warm ping asks /ready
+    (14 Oct 2026, the coordinator's request: on Cloud Run's one processor getting ready warmed 13 of 65 requests in its
+    time, and a request whose threads weren't warmed took ~8 s; Cloud Run gives a server its processor only while it
+    answers someone, so a thread warming in the background would barely run). Each ping warms the next ones for up to
+    WARM_MORE_SECONDS (an answer begun then ends), each taking its turn with visitors' answers as getting ready's do
+    (warm_answer), until none are left; one slice at a time (a ping arriving meanwhile only says it is ready)."""
+    if not _left_to_warm or not _warming.acquire(blocking=False):
+        return
+    try:
+        started, warmed = time.perf_counter(), 0
+        while _left_to_warm and time.perf_counter() - started < WARM_MORE_SECONDS:
+            request = _left_to_warm.pop(0)
+            _step(f"{WARM_ANSWER_STEP} {request}", lambda: warm_answer(request, _left_in[0]))
+            warmed += 1
+        print(f"Getting ready: warmed {warmed} more, {len(_left_to_warm)} left.", flush=True)
+    finally:
+        _warming.release()
 
 
 def _read_checks() -> None:
@@ -1066,8 +1096,16 @@ WARM_PRODUCT_TYPES = tuple(p.name for p in PRODUCT_TYPES)
 WARM_ANSWER_STEP = "the answers' memory for"
 # Getting ready starts no more warm answers once this many seconds have passed (13 Oct 2026): Cloud Run's startup probe
 # waits 4 minutes for /ready (deploy/cloudrun/deploy.sh), and the warm answers alone had grown past that, so a deploy
-# failed (the server before it kept serving). The product types left are worked out by their first visitors.
+# failed (the server before it kept serving). The requests left are warmed later, a slice per keep-warm ping
+# (warm_more), unless a visitor asks one first.
 WARM_UP_ANSWERS_SECONDS = 120
+# How long each keep-warm ping warms the requests left (warm_more, 14 Oct 2026): well inside the ping's attempt deadline
+# (180 s, deploy/cloudrun/deploy.sh), and short enough that a visitor waits at most one warm answer behind it.
+WARM_MORE_SECONDS = 40
+# The requests left (warm_more) and the library they are answered from, kept by warm_up; one slice at a time.
+_left_to_warm: list[str] = []
+_left_in: list[Path] = []
+_warming = threading.Lock()
 
 
 def serve(port: int = WEB_PORT, library_dir: Path = DEFAULT_LIBRARY_DIR, site: Site = LOCAL) -> None:
