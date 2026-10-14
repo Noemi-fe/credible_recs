@@ -326,6 +326,10 @@ LONG_TERM_MIN_MONTHS = 12  # from the guide: long-term use is a year or more
 PRODUCT_VARIANT_WORDS = frozenset({
     "pro", "max", "plus", "mini", "lite", "slim", "go",  # models
     "new", "newest", "old", "modern", "vintage", "antique",  # versions: a new formula, an old casting
+    # Added by Claude, 14 Oct 2026 (name levels; reported to Noemi): the Baratza Encore ESP is another grinder than the
+    # Encore (with it in the threads, "Baratza Encore" fitted two products and b09's first pick became a line), and
+    # Epiduo Forte another gel than Epiduo (a stronger adapalene).
+    "esp", "forte",
 })
 # The brief's target for module 4: at least this share of the labelled same-or-different pairs right.
 MATCHING_TARGET = 0.90
@@ -1330,6 +1334,34 @@ BRAND_LINE_NOT_SOLD = "{brand} doesn't sell {products}"
 # Suave and Aveda"). Chosen by Claude: a handful, so the footnote stays short.
 LEFT_OUT_NAMES_SHOWN = 3
 
+# --- Name levels: a brand, its line and its products (14 Oct 2026; engine/group_products.py, engine/pipeline.py) ---
+# Decided by Claude, as the orchestrator asked, and reported to Noemi. A name made of a brand and only the requested
+# type's words says no more than the brand in that type: it is the brand's line, never one of its products ("Victorinox
+# chef knife", "Sage kettle"; the 10 and 12 Oct rules for price and facts entries under a brand's name already read such
+# names so). The type's words are its name and plural; these are the other words writers use for a type, as whole
+# phrases (a plural too), found among the library's names of products of the type on 14 Oct 2026. b08 had lost its
+# Lodge pick to a writer's "lodge cast iron pan", taken for a Lodge product the Lodge line stepped aside for. Only words
+# that never tell a brand's products of the type apart: not a kind within the type ("non-stick pan", "night cream",
+# "vitamin c serum": a brand's niacinamide serum is often its one product), nor a form ("gel", "cream", "lotion").
+TYPE_SYNONYMS = {
+    "cast iron skillet": ("pan", "frying pan", "fry pan"),
+    "frying pan": ("skillet", "fry pan"),
+    "saucepan": ("pot", "pan", "sauce pan"),
+    "dutch oven": ("pot", "casserole", "cocotte"),
+    "electric kettle": ("tea kettle",),
+    "chef knife": ("kitchen knife",),
+    "coffee grinder": ("burr grinder", "hand grinder", "manual grinder"),
+    "espresso machine": ("espresso maker", "coffee machine"),
+    "slow cooker": ("crock pot", "crockpot"),
+    "pressure cooker": ("multicooker", "multi cooker"),
+    "air fryer": ("airfryer",),
+    "sunscreen": ("sun cream", "suncream", "sunblock", "sun screen", "spf"),
+    "spot treatment": ("patch", "sticker", "dot", "pimple patch", "acne patch", "zit patch", "blemish patch",
+                       "spot patch", "hydrocolloid patch", "pimple sticker", "acne sticker", "spot gel", "spot cream"),
+    "cleanser": ("face wash", "facial wash", "facial cleanser", "wash"),
+    "eye cream": ("eye serum", "under eye cream"),
+}
+
 # --- Also worth a look (Noemi's decision 2 of 13 Oct 2026) ---
 # "Picks rule: let's follow your suggestion." The top picks keep their bar (MIN_CREDIBLE_MENTIONS across MIN_THREADS);
 # products with exactly WORTH_A_LOOK_CREDIBLE credible recommendations, from at least WORTH_A_LOOK_MIN_THREADS threads,
@@ -1379,7 +1411,9 @@ SUMMARY_PEOPLE_WORDS = ("owner", "owners", "user", "users", "people", "person", 
 #   the vocabulary is INGREDIENT_ACTIVES below): a BHA is salicylic acid or betaine salicylate;
 # - "types": the product types (engine/query.py, PRODUCT_TYPES) that can carry it, read for an ingredient-led request;
 # - "related" (optional): other ingredients whose words also show a thread talks about it, for choosing threads (a
-#   thread about BHAs is about salicylic acid too), never as evidence.
+#   thread about BHAs is about salicylic acid too), never as evidence;
+# - "facts_types" (optional): more product types that can carry it, whose products count only when their facts entry's
+#   formula lists it (engine.ingredients.facts_types; 14 Oct 2026).
 # The retinoid words that are module 1's own name for the retinoid type ("retinol", "retinoid") add no requirement:
 # Noemi decided on 7 Oct 2026 (eval/edge_cases/query.json, q05) that "retinol" means the generic retinoid, so the type
 # already is the requirement. The specific forms ("retinal", "tretinoin", "adapalene", "tazarotene") are required.
@@ -1413,7 +1447,11 @@ INGREDIENTS: dict[str, dict] = {
                   "actives": ("vitamin c",), "types": ("serum", "moisturiser", "toner", "eye cream", "sunscreen")},
     "benzoyl peroxide": {"asked": (r"benzoyl(?: peroxide)?", r"bpo"), "named": (r"benzoyl", r"bpo"),
                          "actives": ("benzoyl peroxide",),
-                         "types": ("cleanser", "moisturiser", "serum", "spot treatment")},
+                         "types": ("cleanser", "moisturiser", "serum", "spot treatment"),
+                         # The orchestrator's decision of 14 Oct 2026: a retinoid counts too when its facts entry's
+                         # formula lists benzoyl peroxide (Epiduo: adapalene and benzoyl peroxide, prescription-only in
+                         # the UK), never by its name alone.
+                         "facts_types": ("retinoid",)},
     "hyaluronic acid": {"asked": (r"hyaluronic(?: acid)?", r"sodium hyaluronate"),
                         "named": (r"hyaluronic", r"hyaluronate", r"ha"), "actives": ("hyaluronic acid",),
                         "types": _SOOTHING_TYPES},

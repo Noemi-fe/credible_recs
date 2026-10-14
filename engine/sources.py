@@ -649,12 +649,38 @@ def titled_as_another_type(title: str, query: ParsedQuery) -> bool:
     """Whether a thread's title names another type of product of the request's category, and none it asks for
     ("SPF for oily skin?" for a moisturiser request; for an ingredient-led request, any type that can carry its
     ingredient is one it asks for: engine.ingredients.wanted_types). Its post may name the requested product in passing:
-    the thread is about the other one (14 Oct 2026)."""
+    the thread is about the other one (14 Oct 2026). A requested type's name written as part of another type's name
+    doesn't name it (name levels, 14 Oct 2026): "Cast iron enamel dutch oven" is a Dutch oven thread, not a skillet one
+    (b08 had read one so); "cast iron skillet or dutch oven" names both."""
     wanted = set(wanted_types(query.product_type)) | {query.product_type}
-    if any(mentions_product(title, w) for w in wanted):
+    others = [p for p in PRODUCT_TYPES if p.category == query.category and p.name not in wanted]
+    if any(mentions_product(_without_names_inside(title, w, query.category), w) for w in wanted):
         return False
-    return any(mentions_product(title, p.name) for p in PRODUCT_TYPES
-               if p.category == query.category and p.name not in wanted)
+    return any(mentions_product(title, p.name) for p in others)
+
+
+# Words that join two names rather than make one name of them ("cast iron or enamel dutch oven" names both).
+_JOINING_WORDS = r"and|or|vs|versus|with|to|for|over|than|from|n"
+
+
+def _without_names_inside(title: str, product_type: str, category: str) -> str:
+    """The title without the product type's names written as part of another type's name of its category, maybe with a
+    word between ("cast iron" in "cast iron (enamel) dutch oven"; name levels, 14 Oct 2026)."""
+    pattern = _inside_pattern(product_type, category)
+    return pattern.sub(" ", title) if pattern is not None else title
+
+
+@cache
+def _inside_pattern(product_type: str, category: str) -> re.Pattern | None:
+    own = next((p for p in PRODUCT_TYPES if p.name == product_type), None)
+    names = sorted({product_type, *(own.keywords if own else ())}, key=lambda n: (-len(n), n))
+    others = sorted({k for p in PRODUCT_TYPES if p.category == category and p.name != product_type
+                     for k in (p.name, *p.keywords) if not any(k == n for n in names)}, key=lambda n: (-len(n), n))
+    if not names or not others:
+        return None
+    alternatives = lambda ws: "|".join(re.escape(w).replace(r"\ ", r"[\s-]+") for w in ws)
+    return re.compile(rf"(?<![\w-])(?:{alternatives(names)})(?:[\s-]+(?!(?:{_JOINING_WORDS})\b)\w+)?[\s-]+"
+                      rf"(?={alternatives(others)})", re.IGNORECASE)
 
 
 def titled_as_the_opposite(title: str, asks: tuple[str, ...]) -> bool:

@@ -50,6 +50,28 @@ c. Loose groups whose names, without the type's words, are written alike are one
    a name that names it, not by its brand and the type ("Lancôme Génifique", not "Lancome eye creams").
 Without a requested type (the whole library, engine/matching_eval.py) names are grouped by these words alone.
 
+Name levels (14 Oct 2026; Claude's technical calls within Noemi's rules, reported to her): a brand, its line and its
+products are told apart the same way everywhere, so the 10 and 12 Oct price and facts rules (a name of the brand and
+the type speaks for the line) hold for grouping and folding too.
+- The type's other names count as its words (config.TYPE_SYNONYMS: "pan" for a cast iron skillet, "patches" for a spot
+  treatment): "lodge cast iron pan" in a cast iron skillet request says no more than "Lodge", so it is the Lodge line,
+  never a product of its own the line steps aside for (b08 had lost its Lodge pick that way), and the line is shown as
+  the brand. A brand of one word with the type's words is the line also when never written alone, if it starts two or
+  more products' names of the type ("Marlow pan" next to two Marlow pans).
+- A product of another of module 1's types, as the AI typed most of its mentions, is never one a name of the requested
+  type fits or joins: "Stratia" in an exfoliant answer is the Soft Touch AHA, whatever Stratia serum is also named. A
+  brand that fits no product of the type, but two of other types, is still the brand (loose); one of one word with a
+  product of its own here besides those of the type ("Nizoral conditioner") is a brand with a range, so its name alone
+  and with the type's words is its line even when one model of the type is named. engine/pipeline.py then takes a
+  brand's mentions of another type out of its line (a writer's Lodge Dutch ovens in a skillet answer).
+- A name the facts list knows as one product (engine.pipeline._known_products) is never made a line by longer names that
+  only add words to it ("... SPF50+ PA++++"), and two such names are never one product.
+- Without a requested type (ingredient-led requests read every type): a brand of one word written alone and with only
+  its own type's words ("Zitsticka" and "Zitsticka patches"), next to a model of that type, is the brand's line, which
+  joins none of its products; a line is left out of an ingredient answer, since its versions may differ.
+- A product is never shown by its brand alone ("Skinceuticals" for its vitamin C serum), nor a line by its brand and a
+  synonym of the type.
+
 The name shown: the most complete name (the most words) among the names written at least half as often as the
 group's most written name; on a tie, the one written more often. So "Sunday Riley water cream" (once) beats
 "Sunday Riley" (twice), but "Timemore C2 with titanium coated burrs" (once) doesn't beat "Timemore C2" (24 times).
@@ -78,9 +100,9 @@ import re
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
-from functools import lru_cache
+from functools import cache, lru_cache
 
-from engine.config import BRAND_PICK_NAME, PRODUCT_TYPE_PLURALS, PRODUCT_TYPE_SHOWN, UK_BRAND_NAMES
+from engine.config import BRAND_PICK_NAME, PRODUCT_TYPE_PLURALS, PRODUCT_TYPE_SHOWN, TYPE_SYNONYMS, UK_BRAND_NAMES
 from engine.extract import CheckResult
 from engine.memo import Table, register
 from engine.match_products import (
@@ -155,7 +177,8 @@ def group_of(groups: list[ProductGroup]) -> dict[ProductMention, ProductGroup]:
 
 
 def group_products(mentions: list[ProductMention], aliases: dict[str, Aliases] | None = None,
-                   product_type: str | None = None, index: Mapping[str, "NameIndex"] | None = None) -> list[ProductGroup]:
+                   product_type: str | None = None, index: Mapping[str, "NameIndex"] | None = None,
+                   known: Mapping[str, Iterable[Words]] | None = None) -> list[ProductGroup]:
     """The mentions gathered into product groups, biggest first (then by key).
 
     `aliases` is {category: known short names}; by default, the shipped list (engine/data/product_aliases.json).
@@ -163,7 +186,9 @@ def group_products(mentions: list[ProductMention], aliases: dict[str, Aliases] |
     another name and that type's words then names what that name names, in that type (the module docstring's "In one
     request"). None groups names alone, as for the whole library. `index`: {category: NameIndex} of the library the
     mentions come from (library_name_index, with the same short names), whose pairs of names stand in for working
-    them out again; the groups are the same with it or without.
+    them out again; the groups are the same with it or without. `known`: {category: [words]}, the names the facts list
+    knows as one product each (engine.pipeline._known_products; 14 Oct 2026): such a name is never a line, and two of
+    them are never one product ("Name levels" in the module docstring).
     """
     aliases = known_aliases() if aliases is None else aliases
     by_category: dict[str, list[ProductMention]] = defaultdict(list)
@@ -171,7 +196,7 @@ def group_products(mentions: list[ProductMention], aliases: dict[str, Aliases] |
         by_category[m.category].append(m)
     groups = [g for category, ms in by_category.items()
               for g in _group_category(category, ms, aliases.get(category, {}), product_type,
-                                       (index or {}).get(category))]
+                                       (index or {}).get(category), frozenset((known or {}).get(category, ())))]
     return sorted(groups, key=lambda g: (-len(g.mentions), g.key))
 
 
@@ -211,20 +236,23 @@ def library_name_index(mentions: Iterable[ProductMention],
         words = tuple(product_words(m.product, aliases.get(m.category, {})))
         if words:
             names[m.category].add(words)
-    first = [_type_words(p.name) for p in FIRST_PRODUCT_TYPES]
-    more: dict[str, list[frozenset[str]]] = defaultdict(list)
+    first = [(_type_words(p.name), _type_phrases(p.name)) for p in FIRST_PRODUCT_TYPES]
+    more: dict[str, list[tuple[frozenset[str], tuple[Words, ...]]]] = defaultdict(list)
     for p in PRODUCT_TYPES[len(FIRST_PRODUCT_TYPES):]:
-        more[p.category].append(_type_words(p.name))
-    return {category: NameIndex(own | {base for words in own for type_words in first + more[category]
-                                       if (base := _without_type_words(words, type_words))})
+        more[p.category].append((_type_words(p.name), _type_phrases(p.name)))
+    return {category: NameIndex(own | {base for words in own for type_words, phrases in first + more[category]
+                                       if (base := _without_type_words(words, type_words, phrases))})
             for category, own in names.items()}
 
 
 def _group_category(category: str, mentions: list[ProductMention], aliases: Aliases,
-                    product_type: str | None = None, index: "NameIndex | None" = None) -> list[ProductGroup]:
+                    product_type: str | None = None, index: "NameIndex | None" = None,
+                    known: frozenset[Words] = frozenset()) -> list[ProductGroup]:
     """Steps 1 to 5 of the module docstring, for the mentions of one category; with the requested `product_type`, the
-    steps of "In one request" too. `index`: the category's NameIndex, for the pairs of names that could match."""
+    steps of "In one request" too. `index`: the category's NameIndex, for the pairs of names that could match. `known`:
+    the names the facts list knows as one product each ("Name levels")."""
     type_words = _type_words(product_type)
+    phrases = _type_phrases(product_type)
     by_words: dict[Words, list[ProductMention]] = defaultdict(list)  # step 1
     nameless: dict[str, list[ProductMention]] = defaultdict(list)  # filler words only
     for m in mentions:
@@ -239,9 +267,10 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
     # and a kind of product matches a longer name that holds it later ("Zwilling/Ballarini non-stick pans"), as a
     # flavour wouldn't ("Chai shampoo"; engine.match_products.held_back_word, 13 Oct 2026).
     alone = {w[0] for w in names if len(w) == 1}
-    # The name each name is, without the requested type's words at its end: "fellow" for "fellow kettle" in a kettle
-    # request (None when it has none, or nothing else).
-    bases = {w: _without_type_words(w, type_words) for w in names} if type_words else {}
+    # The name each name is, without the requested type's words (or their synonyms, config.TYPE_SYNONYMS) at its end:
+    # "fellow" for "fellow kettle" in a kettle request, "lodge" for "lodge cast iron pan" in a cast iron skillet one
+    # (None when it has none, or nothing else).
+    bases = {w: _without_type_words(w, type_words, phrases) for w in names} if type_words else {}
     # Step 2. Only pairs that could match are compared (engine.match_products.match_candidates; latency, 12 Oct 2026):
     # every pair that matches is among them, in the same order as before.
     universe = names + sorted({b for b in bases.values() if b})
@@ -257,15 +286,28 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
     spellings: dict[Words, list[Words]] = defaultdict(list)
     for w in names:
         spellings[_root(spelling, w)].append(w)
+    # In one request, a product of another of module 1's types (as the AI typed most of its mentions) is never one of
+    # the products a name of the requested type fits, nor one it joins ("Name levels", 14 Oct 2026): "Stratia" in an
+    # exfoliant answer is the Soft Touch AHA, whatever Stratia serum is named too.
+    # A name some of whose mentions are of the requested type (a brand named for its skillets and its Dutch ovens) can
+    # only mean, for those, a product of that type: the others' mentions leave the answer (engine.pipeline).
+    of_another = {w: _of_another_type(by_words[w], product_type) for w in names} if product_type else {}
+    requested_side = ({s: any(not _of_another_type([m], product_type) for w in ws for m in by_words[w])
+                       for s, ws in spellings.items()} if product_type else {})
+
+    def same_side(s: Words, v: Words) -> bool:
+        return not product_type or not (requested_side[s] and of_another[v])
 
     # In one request: a name with the type's words fits, as its base, the longer names of products of the type (a.).
     # Never another way of writing the same brand and type ("TO sunscreens" for "TO sunscreen"), nor its own spellings.
+    type_heads = type_words | {phrase[-1] for phrase in phrases}  # words that end a name of the type
     fits_as_base = {w: {v for v in sorted(candidates[base]) if v in by_words and v != w and _could_start(base, v)
                         and _matching(base, v, alone, open_pairs) and _more_words(v, base)
-                        and _of_the_type(v, by_words[v], product_type, type_words)
+                        and _of_the_type(v, by_words[v], product_type, type_heads)
                         and not (bases.get(v) and _alike(bases[v], base))}
                     for w, base in bases.items() if base}
-    plainly_longer = {s: {v for w in ws for v in matches[w] if _more_words(v, w)} for s, ws in spellings.items()}
+    plainly_longer = {s: {v for w in ws for v in matches[w] if _more_words(v, w) and same_side(s, v)}
+                      for s, ws in spellings.items()}
     longer = {s: plainly_longer[s] | {v for w in ws for v in fits_as_base.get(w, ()) if _root(spelling, v) != s}
               for s, ws in spellings.items()}
     # What a name may join in step 4. A base that starts two or more other names here is a brand or a line ("Our Place"
@@ -275,17 +317,48 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
     joinable = {s: plainly_longer[s] | {v for w in ws if bases.get(w) not in brand_bases
                                         for v in fits_as_base.get(w, ()) if _root(spelling, v) != s}
                 for s, ws in spellings.items()}
-    loose = {s for s in spellings if _fits_two_products(longer[s])}  # step 3
+    # Step 3. A name fitting no product of the requested type here, but two of other types, is still a brand's name:
+    # loose, its line in this type, as before products of other types were set apart (a brand next to two of its
+    # products of other types). `several`: the names that fit two or more products here, whatever their types.
+    several = {s for s in spellings
+               if product_type and _fits_two_products({v for w in spellings[s] for v in matches[w] if _more_words(v, w)})}
+    loose = {s for s in spellings if _fits_two_products(longer[s]) or (not longer[s] and s in several)}
+    # A brand with a range here: one of its own products (a name starting with the brand's, of any type) besides its name
+    # with the type's words ("Nizoral conditioner" next to "Nizoral shampoo"), for step b. below.
+    ranged = {s for s in spellings if product_type and any(
+        len(v) > len(w) and _alike(v[:len(w)], w) and not (bases.get(v) and _alike(bases[v], w))
+        for w in spellings[s] for v in matches[w] if _more_words(v, w))}
     # In one request, a brand written alone and with the type's words is its line (b.): loose, joining no model in 5.
-    lines = (_lines_of_the_type(spellings, spelling, longer, bases, by_words, product_type, candidates) if type_words
-             else set())
+    # So is a brand's name with the type's words when the brand (one word: a line's name may be one product's, "CeraVe
+    # SA cleanser") starts two or more products' names of the type here, though never written alone ("Marlow pan"): it
+    # says no more than the brand ("Name levels", 14 Oct 2026).
+    own_lines, own_pairs = (set(), []) if type_words else _lines_of_their_own_types(spellings, spelling, by_words, known)
+    lines = (_lines_of_the_type(spellings, spelling, longer, bases, by_words, product_type, candidates, ranged)
+             | {s for s, ws in spellings.items()
+                if all(bases.get(w) in brand_bases and len(bases[w]) == 1 for w in ws)}
+             if type_words else own_lines)
     loose |= lines
+    # A name the facts list knows as one product is never made a line by names that only add words after its own
+    # ("Name levels"): "Anessa Perfect UV Sunscreen Skincare Milk" next to its "... SPF50+ PA++++" and its "... gold
+    # bottle with blue cap" is that one sunscreen. Other names that fit it still count as products, as for any name.
+    known_spellings = {s for s, ws in spellings.items() if any(w in known for w in ws)}
+    for s in known_spellings:
+        others = {v for v in longer[s] if not any(w in known and _alike(v[:len(w)], w) for w in spellings[s])}
+        if not _fits_two_products(others):
+            loose.discard(s)
+            lines.discard(s)
     parent = {s: s for s in spellings}
+    knows = {s: ({s} if s in known_spellings else set()) for s in spellings}  # each root -> the known names joined in it
     for s in spellings:  # step 4
         if s not in loose:
             for v in joinable[s]:
                 if _root(spelling, v) not in loose:
+                    a, b = _root(parent, s), _root(parent, _root(spelling, v))
+                    if a != b and knows[a] and knows[b]:
+                        continue  # two products the facts list knows apart are never one
                     _join(parent, s, _root(spelling, v))
+                    joined = _root(parent, s)
+                    knows[joined] = knows[a] | knows[b]
     # Step 5, longer loose names first, so a shorter one sees whether each loose name it fits found its product: one
     # still loose counts as a product of its own, since it fits several.
     for s in sorted(loose - lines, key=lambda s: (-len(s), s)):
@@ -296,6 +369,8 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
             products = {_root(parent, _root(spelling, v)) for v in named}
         if len(products) == 1:
             _join(parent, products.pop(), s)
+    for a, b in own_pairs:  # without a requested type, a brand alone and with its own type's words are one line
+        _join(parent, a, b)
 
     families: dict[Words, list[Words]] = defaultdict(list)  # each group's root -> the names judged together in it
     for s in spellings:
@@ -303,7 +378,7 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
     if type_words:  # in one request, a brand's lines with and without the type's words are one line
         families = _one_line_per_base(families, loose, spellings, bases)
     members = [({w: by_words[w] for s in ss for w in spellings[s]}, all(s in loose for s in ss)) for ss in families.values()]
-    shown = [_shown_words(own if not type_words else _without_the_type(own, type_words) if is_loose
+    shown = [_shown_words(own if not type_words else _without_the_type(own, type_words, bases) if is_loose
                           else _without_brand_and_type(own, bases))
              for own, is_loose in members]
     taken = set(by_words) | set(shown)  # names no group may take as its brand-first name: they are names already
@@ -362,6 +437,19 @@ def _type_words(product_type: str | None) -> frozenset[str]:
     return frozenset(normalize_name(product_type)) | frozenset(normalize_name(plural(product_type)))
 
 
+@lru_cache(maxsize=1024)
+def _type_phrases(product_type: str | None) -> tuple[Words, ...]:
+    """The other names writers use for a type (config.TYPE_SYNONYMS: "pan" for a cast iron skillet), each as its words
+    and with its plural ("pans", "frying pans", "patches"), longest first ("Name levels", 14 Oct 2026)."""
+    found = set()
+    for phrase in TYPE_SYNONYMS.get((product_type or "").strip().lower(), ()):
+        for form in (phrase, plural(phrase)):
+            words = tuple(normalize_name(form))
+            if words:
+                found.add(words)
+    return tuple(sorted(found, key=lambda w: (-len(w), w)))
+
+
 @lru_cache(maxsize=65536)
 def _is_type_word(word: str, type_words: frozenset[str]) -> bool:
     """Whether a word is one of the type's words, maybe with a spelling slip ("moisturizer" for "moisturiser")."""
@@ -379,16 +467,66 @@ for _remembered in (_is_type_word, _alike):
     register(_remembered.cache_clear)  # engine.memo.forget_all empties them
 
 
-def _without_type_words(words: Words, type_words: frozenset[str]) -> Words | None:
-    """A name without the type's words at its end ("fellow kettle" -> fellow), or None when it has none there, or
-    nothing else that names something."""
+def _without_type_words(words: Words, type_words: frozenset[str], phrases: tuple[Words, ...] = ()) -> Words | None:
+    """A name without the type's words, or their synonyms (`phrases`, _type_phrases), at its end ("fellow kettle" ->
+    fellow; "lodge cast iron pan" -> lodge in a cast iron skillet request), or None when it has none there, or nothing
+    else that names something."""
     end = len(words)
-    while end and _is_type_word(words[end - 1], type_words):
-        end -= 1
+    while end:
+        if _is_type_word(words[end - 1], type_words):
+            end -= 1
+            continue
+        size = next((len(p) for p in phrases if len(p) <= end and _alike(words[end - len(p):end], p)), 0)
+        if not size:
+            break
+        end -= size
     base = words[:end]
     if end == len(words) or not base or not any(any(ch.isalpha() for ch in w) for w in base):
         return None
     return base
+
+
+@cache
+def _module_one_types() -> dict[str, str]:
+    """{a name of one of module 1's types, or one of its keywords, in lowercase: that type}: what an AI type written in
+    module 1's own words names ("pimple patch" is a spot treatment)."""
+    from engine.query import PRODUCT_TYPES  # here: engine.query's own imports reach this module
+
+    found: dict[str, str] = {}
+    for p in PRODUCT_TYPES:
+        found.setdefault(p.name, p.name)
+    for p in PRODUCT_TYPES:
+        for keyword in p.keywords:
+            found.setdefault(keyword.lower(), p.name)
+    return found
+
+
+def _ai_type(mentions: list[ProductMention]) -> str | None:
+    """The type the AI gave most of these mentions, in lowercase, or None with none or a tie (the AI isn't sure)."""
+    types = Counter(m.product_type.strip().lower() for m in mentions if m.product_type)
+    if not types:
+        return None
+    (top, n), *rest = types.most_common()
+    return None if rest and rest[0][1] == n else top
+
+
+def _module_one_type(mentions: list[ProductMention]) -> str | None:
+    """The one of module 1's types most of these mentions are of, as the AI typed them in module 1's own words (its type
+    names and keywords: "pimple patch" is a spot treatment), or None with none, a tie or another type."""
+    types = Counter(_module_one_types().get(t, t) for m in mentions if m.product_type
+                    for t in [m.product_type.strip().lower()])
+    if not types:
+        return None
+    (top, n), *rest = types.most_common()
+    return top if top in _module_one_types() and not (rest and rest[0][1] == n) else None
+
+
+def _of_another_type(mentions: list[ProductMention], product_type: str) -> bool:
+    """Whether the AI typed most of these mentions as another of module 1's types than the requested one ("serum" in an
+    exfoliant request, "dutch oven" in a cast iron skillet one): such a product is never one a name of the requested
+    type fits ("Name levels", 14 Oct 2026). A type in the AI's own words ("gooseneck kettle") isn't sure enough."""
+    top = _ai_type(mentions)
+    return top is not None and top != product_type.strip().lower() and _module_one_types().get(top) == top
 
 
 def _of_the_type(words: Words, mentions: list[ProductMention], product_type: str, type_words: frozenset[str]) -> bool:
@@ -433,14 +571,18 @@ def _brand_bases(bases: dict[Words, Words | None], by_words: dict[Words, list[Pr
 def _lines_of_the_type(spellings: dict[Words, list[Words]], spelling: dict[Words, Words],
                        longer: dict[Words, set[Words]], bases: dict[Words, Words | None],
                        by_words: dict[Words, list[ProductMention]], product_type: str,
-                       candidates: dict[Words, set[Words]]) -> set[Words]:
+                       candidates: dict[Words, set[Words]], ranged: set[Words] = frozenset()) -> set[Words]:
     """The spellings of a brand (or line) written alone and with the type's words ("Tiger" and "Tiger rice cooker" in a
     rice cooker request), when it fits at least one model of that type: writers who name a brand both ways speak of its
     line, so it is a line even when one model alone is named (it would otherwise join that model, as a brand alone
     joins its one product). A model of the type is the name with words after it, of that type by the AI's types for its
     mentions or, with none, by its name saying no other kind of product ("Suave Naturals ocean breeze conditioner" isn't
-    one in a shampoo request; "Neutrogena T-Gel", the brand before "T-Gel", is T-Gel itself, not a model of it)."""
-    type_words = _type_words(product_type)
+    one in a shampoo request; "Neutrogena T-Gel", the brand before "T-Gel", is T-Gel itself, not a model of it). With
+    no model named, they stay one product, as a brand alone joins its one product: the line may have only that one;
+    unless the brand, of one word, has another product of its own here, of another type (`ranged`, 14 Oct 2026): it is a
+    brand with a range, as it was before products of other types were set apart ("Nizoral" and "Nizoral shampoo", next
+    to a Nizoral conditioner, in a shampoo answer)."""
+    type_words = _type_words(product_type) | {phrase[-1] for phrase in _type_phrases(product_type)}
     with_base: dict[Words, list[Words]] = defaultdict(list)  # a base -> the names that are it and the type's words
     for v, base in bases.items():
         if base:
@@ -457,9 +599,41 @@ def _lines_of_the_type(spellings: dict[Words, list[Words]], spelling: dict[Words
                   and any(len(v) > len(w) and _alike(v[:len(w)], w) for w in ws)
                   and not (bases.get(v) and any(_alike(bases[v], w) for w in ws))
                   and _of_the_type(v, by_words[v], product_type, type_words)]
-        if models:
+        if models or (s in ranged and any(len(w) == 1 for w in ws)):  # a brand of one word: not a product's name
             found |= {s} | typed_forms
     return found
+
+
+def _lines_of_their_own_types(spellings: dict[Words, list[Words]], spelling: dict[Words, Words],
+                              by_words: dict[Words, list[ProductMention]],
+                              known: frozenset[Words] = frozenset()) -> tuple[set[Words], list[tuple[Words, Words]]]:
+    """Without a requested type ("Name levels", 14 Oct 2026; an ingredient-led request reads products of every type):
+    the spellings of a brand written alone here and of that brand with only the words of the type the AI gave the name
+    ("Zitsticka" and "Zitsticka patches", a spot treatment), when the brand fits a model of that type here ("Zitsticka
+    Killa kit"), and the pairs of them, each pair one line of the brand, as step b. of "In one request" says: such a name
+    says no more than the brand, so it never joins one of the brand's products. Only a brand of one word: a line's name
+    with the type may be its one product's ("CeraVe SA cleanser"). A name the facts list knows as one product (`known`)
+    is never one."""
+    found, pairs = set(), []
+    by_first: dict[str, list[Words]] = defaultdict(list)
+    for v in by_words:
+        by_first[v[0]].append(v)
+    for s, ws in spellings.items():
+        for w in ws:
+            own = _module_one_type(by_words[w])
+            base = _without_type_words(w, _type_words(own), _type_phrases(own)) if own else None
+            if not base or len(base) != 1 or w in known:
+                continue
+            brand = next((v for v in by_words if len(v) == 1 and _alike(v, base)), None)
+            model = brand is not None and any(
+                len(v) > 1 and _alike(v[:1], base) and _module_one_type(by_words[v]) == own
+                and not _alike(_without_type_words(v, _type_words(own), _type_phrases(own)) or v, base)
+                for v0 in {base[0], brand[0]} for v in by_first.get(v0, ()))
+            if not model or brand in known:
+                continue
+            found |= {s, _root(spelling, brand)}
+            pairs.append((s, _root(spelling, brand)))
+    return found, pairs
 
 
 def _one_line_per_base(families: dict[Words, list[Words]], loose: set[Words], spellings: dict[Words, list[Words]],
@@ -479,12 +653,14 @@ def _one_line_per_base(families: dict[Words, list[Words]], loose: set[Words], sp
     return merged
 
 
-def _without_the_type(own: dict[Words, list[ProductMention]],
-                      type_words: frozenset[str]) -> dict[Words, list[ProductMention]]:
-    """A loose group's names without any of the type's words, when it has any: the line is shown as its brand ("Fellow",
-    then "Fellow electric kettle line" in the answer), not as one of its names with the type ("Fellow kettle", or
-    "cast iron Lodge" in a cast iron skillet answer)."""
-    plain = {w: ms for w, ms in own.items() if not any(_is_type_word(word, type_words) for word in w)}
+def _without_the_type(own: dict[Words, list[ProductMention]], type_words: frozenset[str],
+                      bases: Mapping[Words, Words | None] | None = None) -> dict[Words, list[ProductMention]]:
+    """A loose group's names without any of the type's words, nor a synonym of the type at their end (`bases`), when it
+    has any: the line is shown as its brand ("Fellow", then "Fellow electric kettle line" in the answer), not as one of
+    its names with the type ("Fellow kettle", "Lodge cast iron pan", or "cast iron Lodge" in a cast iron skillet
+    answer)."""
+    plain = {w: ms for w, ms in own.items()
+             if not any(_is_type_word(word, type_words) for word in w) and not (bases or {}).get(w)}
     return plain or own
 
 
@@ -499,7 +675,13 @@ def _without_brand_and_type(own: dict[Words, list[ProductMention]],
         return bool(base) and any(len(v) > len(base) and len(own[v]) >= len(own[w])
                                   and written_alike(list(v[:len(base)]), list(base))
                                   for v in own if v != w and not bases.get(v))
-    kept = {w: ms for w, ms in own.items() if not brand_and_type(w)}
+
+    def brand_alone(w: Words) -> bool:
+        # The brand written alone (one word starting another of its names), whatever how often (name levels, 14 Oct
+        # 2026): a brand alone that joined its one product here is shown by the product's name ("Skinceuticals CE
+        # Ferulic"), not as a bare "Skinceuticals", which reads as a brand pick that was never checked as one.
+        return len(w) == 1 and any(len(v) > 1 and _alike(v[:1], w) and not bases.get(v) for v in own)
+    kept = {w: ms for w, ms in own.items() if not brand_and_type(w) and not brand_alone(w)}
     return kept or own
 
 

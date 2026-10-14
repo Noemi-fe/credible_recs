@@ -83,7 +83,9 @@
       {"short": "Virtuoso", "full": "Baratza Virtuoso", "seen": ["Virtuoso", "Baratza Virtuoso"]},
       {"short": "Fibrox", "full": "Victorinox Fibrox", "seen": ["Fibrox", "fibrox chef knife", "Victorinox Fibrox"]},
       {"short": "Hario Slim", "full": "Hario Mini Slim", "seen": ["Hario slim hand grinder", "Hario Mini-Slim (MSS-1)"]},
-      {"short": "Field Company", "full": "Field", "seen": ["Field Company", "Field 10in", "Field skillet"]}
+      {"short": "Field Company", "full": "Field", "seen": ["Field Company", "Field 10in", "Field skillet"]},
+      {"short": "IP", "full": "Instant Pot", "seen": ["IP", "Instant Pot Duo Crisp"]},
+      {"short": "Instapot", "full": "Instant Pot", "seen": ["instapot", "InstaPot", "Instapot slow cooker"]}
     ]
   },
   "kinds": {

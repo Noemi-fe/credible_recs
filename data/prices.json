@@ -840,6 +840,33 @@
    "note": "Niche's UK store sells two grinders, the Niche Zero (£559) and the Niche Duo (£649 to £749), so no one price fits the name; both are over a £150 budget"
   },
   {
+   "product": "Niche Zero",
+   "category": "kitchen",
+   "product_type": "coffee grinder",
+   "price": 559.0,
+   "currency": "GBP",
+   "shop": "Niche Coffee",
+   "url": "https://www.nichecoffee.co.uk/products/niche-zero",
+   "checked_on": "2026-10-14",
+   "available": true,
+   "note": "the maker's UK store: £559.00 inc. VAT, add to basket, shipped within 7 days (checked 14 Oct 2026, name levels: b09 showed the Niche Zero under £150, its group no longer the brand-level entry above)"
+  },
+  {
+   "product": "Fellow Ode Brew Grinder Gen 2",
+   "category": "kitchen",
+   "product_type": "coffee grinder",
+   "price": 287.5,
+   "currency": "GBP",
+   "shop": "Rave Coffee",
+   "url": "https://ravecoffee.co.uk/products/fellow-ode-brew-grinder-gen-2",
+   "checked_on": "2026-10-14",
+   "available": true,
+   "also_called": [
+    "Fellow Ode"
+   ],
+   "note": "the Ode sold now (Gen 2): from £287.50 at Rave Coffee, add to cart (Bella Barista lists it at £279 but 'Coming Soon'); a writer's Ode with aftermarket SSP burrs costs at least this (checked 14 Oct 2026, name levels: b09 under £150 had shown it)"
+  },
+  {
    "product": "Eureka Mignon Filtro Silent Filter Coffee Grinder",
    "category": "kitchen",
    "price": 149.0,

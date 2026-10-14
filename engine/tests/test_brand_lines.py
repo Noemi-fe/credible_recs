@@ -293,7 +293,10 @@ def test_a_brand_whose_mentions_say_another_type_stays_out_whatever_the_list_say
                 mention["product_type"] = "dutch oven"
         path.write_text(json.dumps(extraction), encoding="utf-8")
     result = run(tmp_path, [line("Pansmith")], library=library)
-    assert "Pansmith cast iron skillet line" not in ranked(result) and "Pansmith" in result.left_out_loose
+    # Changed on purpose 14 Oct 2026 (name levels, engine/tests/test_name_levels.py): a brand's mentions of another type
+    # now leave its line one by one, whatever most of them are, so they are named among the mentions of another type
+    # rather than with the brand names left out. It stays out all the same.
+    assert "Pansmith cast iron skillet line" not in ranked(result) and "Pansmith" in result.mentions_of_another_type
 
 
 def test_brand_picks_switched_off_leave_every_brand_out_whatever_the_list_says(tmp_path, monkeypatch):
