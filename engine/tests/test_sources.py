@@ -1078,6 +1078,19 @@ def test_haircare_need_words():
     assert need_words(parse_query("leave-in conditioner for curly hair")) == ["curly"]  # its own name, hyphen and all
 
 
+def test_a_negation_is_never_a_need_word():
+    # 14 Oct 2026 (the need-quality builder), found on the library: "shampoo for curly hair that isn't drying" read
+    # "isn't" as a need, so every thread whose post said "isn't" counted as talking about it. "doesn't", "won't" and
+    # "without" were left out already; "out" ("won't dry out my hair") says nothing on its own either.
+    from engine.sources import need_words
+
+    assert need_words(parse_query("shampoo for curly hair that isn't drying")) == ["curly", "drying"]
+    assert need_words(parse_query("shampoo that is not drying")) == ["drying"]
+    assert need_words(parse_query("kettle that is never loud and isnt slow")) == ["loud", "slow"]
+    assert need_words(parse_query("shampoo that won't dry out my hair")) == ["dry"]
+    assert need_words(parse_query("sunscreen with no white cast")) == ["white", "cast"]
+
+
 def test_a_hyphenated_title_word_matches_its_parts():
     # "Anti-dandruff shampoo recs?" is about dandruff, and "recs" asks for recommendations.
     from engine.sources import rank_posts

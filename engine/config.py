@@ -513,7 +513,43 @@ NEEDS: dict[str, tuple[str, ...]] = {
     "glass top stove": ("glass top", "glass-top", "glasstop", "glass stove", "glass cooktop", "glass hob",
                         "ceramic hob", "ceramic cooktop", "ceramic top", "ceramic stove", "smooth top", "smooth-top",
                         "smoothtop"),
+    # 14 Oct 2026 (the need-quality builder; words chosen by Claude, reported to Noemi): a product that isn't drying,
+    # asked for after a negation ("a shampoo that isn't drying", "won't dry out my hair": NEGATED_NEEDS below). A comment
+    # talks about it when it says how drying a product is, either way ("too drying", "not drying at all", "dried out
+    # my ends"), or how stripping ("stripped", "stripping"); never "drying" alone, which is mostly air-drying or
+    # blow-drying hair.
+    "not drying": ("not drying", "isn't drying", "non-drying", "non drying", "less drying", "so drying", "too drying",
+                   "very drying", "bit drying", "little drying", "pretty drying", "quite drying", "super drying",
+                   "really drying", "incredibly drying", "extremely drying", "slightly drying", "kinda drying",
+                   "harsh and drying", "dries out", "dried out", "drying out", "dry out", "dries my", "dryness",
+                   "stripp"),
 }
+# A need asked for by saying what a product mustn't do (14 Oct 2026, the need-quality builder; chosen by Claude, reported
+# to Noemi). A negation of NEGATIONS followed, at most NEGATION_REACH words later, by a word beginning with one of a
+# need's words here names that need, and that word names no other need: "dry" in "a shampoo that isn't drying" or
+# "doesn't leave my hair dry" isn't dry hair. A word just before a hair or skin word still describes it ("doesn't make my
+# dry hair worse" is about dry hair). Only drying so far: every other need's words already say it whichever way round
+# ("isn't greasy" is about greasiness, the oily need; "without frizz" the frizzy need; "doesn't leave a white cast" no
+# white cast; "isn't loud" quiet), and a negation is never a need of its own (engine.sources._STOPWORDS).
+NEGATED_NEEDS: dict[str, tuple[str, ...]] = {
+    "not drying": ("dry", "dries", "dried"),
+}
+NEGATIONS = ("not", "isn't", "isnt", "aren't", "arent", "doesn't", "doesnt", "don't", "dont", "won't", "wont",
+             "wouldn't", "shouldn't", "never", "no", "non", "without", "nor")
+NEGATION_REACH = 3  # words between the negation and the word it negates, at most ("doesn't leave my hair dry")
+# Hair types written together before "hair" each name their need (14 Oct 2026, the need-quality builder): "fine", "thin",
+# "flat", "limp" and "dry" alone aren't words of their needs ("it works fine", "let it air dry"), so "shampoo for fine
+# oily hair" found only the oily scalp, and "fine" became a word of its own, found in every comment saying something
+# works fine. In a list ending in one of HAIR_LIST_NOUNS ("fine oily hair", "thin, greasy hair", "very fine and
+# slightly oily hair") each word of HAIR_LIST_NEEDS names its need; HAIR_LIST_WORDS may sit in the list, naming none
+# themselves (or named by their need's own words: "oily", "curly").
+HAIR_LIST_NEEDS: dict[str, str] = {"fine": "fine hair", "thin": "fine hair", "flat": "fine hair", "limp": "fine hair",
+                                   "dry": "dry hair"}
+HAIR_LIST_WORDS = ("oily", "greasy", "curly", "wavy", "frizzy", "coloured", "colored", "dyed", "bleached", "damaged",
+                   "brittle", "thick", "coarse", "long", "short", "straight", "natural", "porous", "low porosity",
+                   "high porosity", "normal", "healthy", "very", "super", "really", "quite", "slightly", "extremely",
+                   "somewhat", "kinda", "a bit", "a little")
+HAIR_LIST_NOUNS = ("hair", "curls", "waves", "strands", "locks")
 # A haircare request's needs (14 Oct 2026, need-led thread choice, Noemi's decision 3 of 14 Oct; words chosen by Claude,
 # reported to her), in place of the skin types': a scalp is oily, hair is dry, fine or frizzy, and the words differ
 # ("shiny" hair isn't greasy, a "flaky" scalp is dandruff, not dry hair). Found as NEEDS' words are: a word at the start

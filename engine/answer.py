@@ -249,6 +249,7 @@ NEED_LABELS: dict[str, str] = {
     "sensitive scalp": "a sensitive scalp",
     "quiet": "noise",
     "glass top stove": "glass-top stoves",
+    "not drying": "drying",  # "a shampoo that isn't drying" (14 Oct 2026, Claude), as "no white cast" is "white cast"
 }
 # The breakdown's line about needs: only shown when some credible mention talks about them.
 BREAKDOWN_NEEDS = ("About your request: {recommends} credible recommendations and {warnings} credible warnings talk "

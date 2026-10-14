@@ -297,7 +297,10 @@ _REQUEST_ASKS = Table(limit=10_000)  # a request, as module 1 read it -> what it
 
 def _request_asks(query: ParsedQuery) -> tuple[str, ...]:
     asks = list(query.constraints.skin_types) + list(query.constraints.must_haves)
-    asks += [need.name for need in request_needs(query) if need.name in NEEDS and need.name not in MUST_HAVES]
+    # Only the needs found by their words: a word of the request named like one ("dry" in "a dry scalp", a haircare
+    # request) isn't the skin type dry (14 Oct 2026).
+    asks += [need.name for need in request_needs(query)
+             if need.name in NEEDS and need.name not in MUST_HAVES and need.request_word is None]
     text = query.text.lower().replace("’", "'")
     asks += [ask for ask, patterns in PRODUCT_FACT_REQUEST_WORDS.items()
              if any(re.search(rf"\b{pattern}", text) for pattern in patterns)]

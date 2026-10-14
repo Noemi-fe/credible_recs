@@ -973,6 +973,13 @@ _STOPWORDS = {
     "pounds", "pound", "quid", "euros", "euro", "dollars", "bucks", "usd", "gbp", "eur",
     # 14 Oct 2026: "that actually works" says how well, not what for; a scalp is to haircare what skin is to skincare.
     "work", "worked", "working", "scalp",
+    # 14 Oct 2026 (the need-quality builder): a negation says nothing on its own ("a shampoo that isn't drying" had a
+    # need "isn't", found in every thread whose post said it), nor does "out" ("won't dry out my hair"); what a negation
+    # asks for is read by engine.needs (config.NEGATED_NEEDS).
+    "isnt", "not", "no", "never", "arent", "wasnt", "werent", "didnt", "wouldnt", "shouldnt", "cant", "cannot", "nor",
+    "out",
+    # ... nor how much ("very fine and slightly oily hair", "isn't too heavy").
+    "too", "so", "slightly", "extremely", "super", "quite", "somewhat", "kinda", "fairly", "bit", "little",
 }
 
 
