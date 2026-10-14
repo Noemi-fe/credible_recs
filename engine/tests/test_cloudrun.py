@@ -107,3 +107,81 @@ def test_the_pre_check_runs_once_a_day_at_night_uk_time():
     assert '--schedule "0 4 * * *"' in schedule and '--time-zone "Europe/London"' in schedule
     assert '--oauth-service-account-email "$RUNNER"' in schedule and "jobs/${JOB}:run" in schedule
     assert "roles/run.invoker" in _command(script, '$GCLOUD run jobs add-iam-policy-binding')
+
+
+# --- On-demand reading (Noemi's plan of 14 Oct 2026, part 3): its bucket, its job and the Gemini key ---
+
+ON_DEMAND_SH = Path(make_context.REPO_ROOT) / "deploy" / "cloudrun" / "on_demand.sh"
+ON_DEMAND_LIFECYCLE = Path(make_context.REPO_ROOT) / "deploy" / "cloudrun" / "on_demand_lifecycle.json"
+
+
+def test_the_threads_read_on_demand_go_from_the_bucket_after_the_archives_keeping_time():
+    import json
+
+    from engine.config import ARCHIVE_TEXT_KEPT_DAYS
+
+    rules = json.loads(ON_DEMAND_LIFECYCLE.read_text(encoding="utf-8"))
+    assert rules == {"rule": [{"action": {"type": "Delete"}, "condition": {"age": ARCHIVE_TEXT_KEPT_DAYS}}]}
+
+
+def test_the_on_demand_bucket_is_private_and_keeps_nothing_deleted():
+    script = ON_DEMAND_SH.read_text(encoding="utf-8")
+    create = _command(script, '$GCLOUD storage buckets create')
+    for flag in ('"gs://$ON_DEMAND_BUCKET"', "--uniform-bucket-level-access", "--public-access-prevention",
+                 "--soft-delete-duration 0", "--lifecycle-file deploy/cloudrun/on_demand_lifecycle.json",
+                 '--location "$REGION"'):
+        assert flag in create
+    update = _command(script, '$GCLOUD storage buckets update')
+    for flag in ("--public-access-prevention", "--clear-soft-delete",
+                 "--lifecycle-file deploy/cloudrun/on_demand_lifecycle.json"):
+        assert flag in update
+    grant = _command(script, '$GCLOUD storage buckets add-iam-policy-binding')
+    assert '"gs://$ON_DEMAND_BUCKET"' in grant and "roles/storage.objectUser" in grant
+
+
+def test_the_gemini_key_is_checked_for_never_made_or_read_and_its_absence_stops_the_deploy():
+    script = ON_DEMAND_SH.read_text(encoding="utf-8")
+    assert "$GCLOUD secrets describe gemini-key" in script and "exit 1" in script
+    assert "secrets create" not in script and "versions access" not in script  # Noemi makes it, nobody reads it
+    grant = _command(script, '$GCLOUD secrets add-iam-policy-binding gemini-key')
+    assert '"serviceAccount:$RUNNER"' in grant and "roles/secretmanager.secretAccessor" in grant
+    deploy = DEPLOY_SH.read_text(encoding="utf-8")
+    assert ". deploy/cloudrun/on_demand.sh" in deploy
+    assert deploy.index("\non_demand_secret ") < deploy.index("-m deploy.cloudrun.make_context")  # before any build
+
+
+def test_the_reading_job_runs_on_the_sites_image_with_the_key_and_the_site_may_start_it():
+    script = ON_DEMAND_SH.read_text(encoding="utf-8")
+    job = _command(script, '$GCLOUD run jobs deploy')
+    assert '--image "$IMAGE"' in job and "--args=-m,engine.on_demand,run" in job and "--max-retries 0" in job
+    assert '--set-secrets "GEM_API_KEY=gemini-key:latest"' in job
+    assert "CREDIBLE_RECS_ON_DEMAND_BUCKET=${ON_DEMAND_BUCKET}" in job
+    assert "roles/run.invoker" in _command(script, '$GCLOUD run jobs add-iam-policy-binding')
+    assert "scheduler" not in script  # no schedule of its own: the site starts it, the keep-warm ping again
+
+
+def test_the_reading_jobs_timeout_covers_a_run_and_its_lease_outlasts_it():
+    import re
+
+    from engine.config import ON_DEMAND_LEASE_MINUTES, ON_DEMAND_NEW_READING_SECONDS
+
+    job = _command(ON_DEMAND_SH.read_text(encoding="utf-8"), '$GCLOUD run jobs deploy')
+    minutes = int(re.search(r"--task-timeout (\d+)m", job).group(1))
+    assert ON_DEMAND_NEW_READING_SECONDS / 60 + 15 <= minutes < ON_DEMAND_LEASE_MINUTES  # one more reading fits
+
+
+def test_the_site_and_the_pre_check_know_the_bucket_and_the_site_knows_the_job():
+    script = DEPLOY_SH.read_text(encoding="utf-8")
+    service = _command(script, '$GCLOUD run deploy')
+    assert "CREDIBLE_RECS_ON_DEMAND_BUCKET=${ON_DEMAND_BUCKET}" in service
+    assert "CREDIBLE_RECS_ON_DEMAND_JOB=${READER_JOB_NAME}" in service
+    assert "CREDIBLE_RECS_ON_DEMAND_BUCKET=${ON_DEMAND_BUCKET}" in _command(script, '$GCLOUD run jobs deploy')
+    names = ON_DEMAND_SH.read_text(encoding="utf-8")
+    assert 'READER_JOB_NAME="projects/${PROJECT}/locations/${REGION}/jobs/${READER_JOB}"' in names
+
+
+def test_a_deploy_bakes_in_the_threads_read_on_demand_and_then_the_bucket_lets_them_go():
+    script = DEPLOY_SH.read_text(encoding="utf-8")
+    pull = script.index("-m engine.library pull-bucket")
+    assert pull < script.index("-m deploy.cloudrun.make_context") < script.index("$GCLOUD run deploy")
+    assert script.index("$GCLOUD run deploy") < script.index("-m engine.library forget-baked")
