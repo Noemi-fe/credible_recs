@@ -98,10 +98,31 @@ def _product_pattern(product_type: str) -> re.Pattern:
 def _covering_pattern(product_type: str) -> re.Pattern:
     """Longer names that hold one of this product's words but name something else: the other product types' names and
     module 1's look-alike phrases ("tea pot" and "crock pot" hold "pot"; "dry shampoo" holds "shampoo")."""
-    name = product_type.strip().lower()
-    phrases = {k for p in PRODUCT_TYPES if p.name != name for k in p.keywords} | set(LOOKALIKES)
-    alternatives = "|".join(re.escape(x) for x in sorted(phrases, key=len, reverse=True))
+    alternatives = "|".join(re.escape(x) for x in sorted(_covering_phrases(product_type), key=len, reverse=True))
     return re.compile(rf"\b(?:{alternatives})s?\b", re.IGNORECASE)
+
+
+def _covering_phrases(product_type: str) -> set[str]:
+    name = product_type.strip().lower()
+    return {k for p in PRODUCT_TYPES if p.name != name for k in p.keywords} | set(LOOKALIKES)
+
+
+@cache
+def _never_covered(product_type: str) -> frozenset[str]:
+    """The ways a match of the product's names can read, in lowercase (a name, with or without its plural "s"), that no
+    longer name of something else holds (_covering_phrases, with or without their own "s"): a match reading so is
+    never inside one, so they needn't be looked for (latency, 13 Oct 2026: looking for them in every comment naming
+    the product was most of reading a thread). Empty for a product found by other patterns than its names' words (an
+    ingredient's, or a type the open model named)."""
+    if talk_words(product_type.strip()):
+        return frozenset()
+    known = {p.name: p.keywords + p.hints for p in PRODUCT_TYPES}
+    words = known.get(product_type.strip().lower())
+    if not words:
+        return frozenset()
+    longer = [text for phrase in _covering_phrases(product_type) for text in (phrase.lower(), phrase.lower() + "s")]
+    return frozenset(form for word in words for form in (word.lower(), word.lower() + "s")
+                     if not any(form in text for text in longer))
 
 
 def mentions_product(text: str, product_type: str, leave_aside: str = "") -> bool:
@@ -134,9 +155,12 @@ _MENTIONS = Table()  # (text, product type, word left aside) -> mentions_product
 
 def _mentions_product(text: str, product_type: str, leave_aside: str) -> bool:
     covers = None
+    never_covered = _never_covered(product_type)
     for match in _product_pattern(product_type).finditer(text):
         if leave_aside and _same_word_as(match.group(0), leave_aside):
             continue
+        if match.group(0).lower() in never_covered:
+            return True
         if covers is None:
             covers = [(c.start(), c.end()) for c in _covering_pattern(product_type).finditer(text)]
         if not any(s <= match.start() and match.end() <= e and e - s > match.end() - match.start() for s, e in covers):
@@ -221,9 +245,13 @@ def comments_naming(comments: list[Comment], product_type: str) -> int:
     starts = _starts(bodies)
     naming: set[int] = set()
     covers: dict[int, list[tuple[int, int]]] = {}  # a comment -> the longer names in it, where they are in `joined`
+    never_covered = _never_covered(product_type)
     for match in _product_pattern(product_type).finditer(joined):
         at = bisect_right(starts, match.start()) - 1
         if at in naming:
+            continue
+        if match.group(0).lower() in never_covered:
+            naming.add(at)
             continue
         if at not in covers:  # read in that comment alone, as mentions_product reads it
             covers[at] = [(starts[at] + c.start(), starts[at] + c.end())

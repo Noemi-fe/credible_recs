@@ -1127,7 +1127,9 @@ def test_relevance_and_talking_are_the_same_reading_the_comments_together():
             "moisturizr", "dry shampoo", "shampoo", "conditioner", "leave-in conditioner", "air", "fryer", "air fryer",
             "salicylic acid", "bha", "chef's knife", "paring knife", "cast iron", "skillet", "nothing here", "great",
             "I love it.", "\n", "rice cooker", "cleanser", "gleanser", "exfoliant", "toner", "serum", "dutch oven",
-            "KETTLE", "Sunscreens", "SUNCREENS", "\u017funscreen", "\u0130", "caf\u00e9", "tea-pot", "pot,", "(kettle)"]
+            "KETTLE", "Sunscreens", "SUNCREENS", "\u017funscreen", "\u0130", "caf\u00e9", "tea-pot", "pot,", "(kettle)",
+            "frying pans", "pans", "sauce pans", "tea pots", "pots", "crock pot", "dry shampoos", "eye creams", "creams",
+            "Tea Kettles", "electric tea kettles", "\u212aettle"]
     for n in range(60):
         comments = [make_comment(f"c{n}x{i}", thread_id=f"1fake{n}",
                                  body="so " + " ".join(rng.choice(bits) for _ in range(rng.randint(1, 6))))
