@@ -690,6 +690,49 @@ def test_what_says_the_opposite_of_a_request(ask, quote, against):
     assert _says_the_opposite(quote, (ask,)) is against
 
 
+# A product that isn't drying, one that doesn't strip, and a gentle one (14 Oct 2026, the need-quality builder): found on
+# the library, "shampoo for curly hair that isn't drying" picked a detox shampoo and "gentle shampoo for wavy hair" an
+# anti-dandruff one its writer used for a deep clean. A quote describing a product as drying, stripping or harsh, or as a
+# clarifying or detox shampoo (made to strip buildup), says the opposite; a negation earlier in its sentence takes it
+# back ("none of the three ever stripped my face", "neither has ever dried my hair out"), and the name of a skincare product that
+# holds the word ("clarifying toner") says nothing about harshness. All quotes made up.
+@pytest.mark.parametrize("ask, quote, against", [
+    ("not drying", "Way too drying on my curls.", True),
+    ("not drying", "It dried out my ends within a week.", True),
+    ("not drying", "It made my ends feel like straw.", True),
+    ("not drying", "Their detox shampoo comes out every few weeks for me.", True),
+    ("not drying", "Great clarifying shampoo for when I swim.", True),
+    ("not drying", "I clarify with it every few weeks to get rid of buildup.", True),
+    ("not drying", "Not drying at all, even on my curls.", False),
+    ("not drying", "Honestly I never found it drying.", False),
+    ("not drying", "It wasn't very drying compared with my old one.", False),
+    ("not drying", "Much less drying than my old one.", False),
+    ("not drying", "Neither of them has ever dried my hair out.", False),
+    ("not drying", "After washing I simply leave it to air dry.", False),
+    ("not drying", "To clarify, I only reach for it twice weekly.", False),
+    ("strip", "This foam is so stripping on me.", True),
+    ("strip", "It strips my skin and leaves it tight.", True),
+    ("strip", "My face felt stripped after every wash.", True),
+    ("strip", "It doesn't strip my face at all.", False),
+    ("strip", "None of the three ever stripped my face.", False),
+    ("strip", "It removes everything without ever making my face feel stripped.", False),
+    ("strip", "Lovely, it doesn't burn, smell or strip the skin.", False),
+    ("strip", "I wouldn't reach for it each morning because it strips my skin.", True),
+    ("strip", "Not great for makeup, but it strips my skin.", True),  # a negation before "but" is about something else
+    ("gentle", "A bit harsh on my cheeks, but it works.", True),
+    ("gentle", "Once a week it gives me a proper deep clean.", True),
+    ("gentle", "My go-to clarifying shampoo.", True),
+    ("gentle", "It never feels harsh, but it is a clarifying shampoo, so only weekly.", True),
+    ("gentle", "So gentle, and not harsh at all.", False),
+    ("gentle", "Far less harsh than my last one.", False),
+    ("gentle", "The cosrx clarifying toner is lovely on my skin.", False),
+])
+def test_what_says_the_opposite_of_a_request_that_asks_for_no_drying_no_stripping_or_gentleness(ask, quote, against):
+    from engine.answer import _says_the_opposite
+
+    assert _says_the_opposite(quote, (ask,)) is against
+
+
 # --- Prices and budgets (decision 11, Noemi, 9 Oct 2026) ---
 
 CHECKED = date(2026, 10, 9)

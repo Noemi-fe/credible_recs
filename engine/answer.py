@@ -113,6 +113,8 @@ from engine.config import (
     CARE_TIPS_PER_PICK,
     DOWNSIDES_PER_PICK,
     LOOK_FOR_NOTES,
+    OPPOSITE_NEGATED_IN_SENTENCE,
+    OPPOSITE_NEGATION_WINDOW,
     OPPOSITE_QUOTE_PATTERNS,
     OTHER_KIND_WORDS,
     QUOTE_VIEW_WORDS,
@@ -237,7 +239,7 @@ NEED_LABELS: dict[str, str] = {
     "home cook": "home cooking",
     "lasting": "how long it lasts",
     # A request's own word that reads badly as typed ("won't strip my skin": "about gentleness or strip"); Claude,
-    # 10 Oct 2026.
+    # 10 Oct 2026. A need of its own since 14 Oct 2026, for hair too (NEED_LABELS_BY_CATEGORY below).
     "strip": "not stripping the skin",
     # Haircare needs (config.HAIR_NEEDS) and kitchen needs in other words, 14 Oct 2026 (Claude). "oily hair", "dry
     # hair", "dandruff" and "fine hair" read well as they are.
@@ -251,6 +253,8 @@ NEED_LABELS: dict[str, str] = {
     "glass top stove": "glass-top stoves",
     "not drying": "drying",  # "a shampoo that isn't drying" (14 Oct 2026, Claude), as "no white cast" is "white cast"
 }
+# A need whose words differ by category (14 Oct 2026, Claude): "a shampoo that doesn't strip my hair".
+NEED_LABELS_BY_CATEGORY: dict[str, dict[str, str]] = {"haircare": {"strip": "not stripping the hair"}}
 # The breakdown's line about needs: only shown when some credible mention talks about them.
 BREAKDOWN_NEEDS = ("About your request: {recommends} credible recommendations and {warnings} credible warnings talk "
                    "about what you asked for (each counts {boost} times as much)")
@@ -873,15 +877,42 @@ def says_the_opposite(quote: str, asks: Iterable[str]) -> bool:
 
 def _says_the_opposite(quote: str, asks: Iterable[str]) -> bool:
     """Whether the quote says the opposite of one of the request's asks (config.OPPOSITE_QUOTE_PATTERNS): "it leaves a
-    white cast" for "no white cast", "smells lovely" for "fragrance-free"."""
+    white cast" for "no white cast", "smells lovely" for "fragrance-free", "way too drying" for "not drying" (14 Oct
+    2026). For the asks of config.OPPOSITE_NEGATED_IN_SENTENCE, a match with a negation just before it in its sentence
+    doesn't count (_negated_before: "none of the three ever stripped my face")."""
     asks = tuple(asks)
     key = (quote, asks)
     found = _SAYS_THE_OPPOSITE.get(key)
     if found is None:
         text = " ".join(quote.lower().replace("’", "'").split())
-        found = _SAYS_THE_OPPOSITE.keep(key, any(re.search(pattern, text) for ask in asks
-                                                 for pattern in OPPOSITE_QUOTE_PATTERNS.get(ask, ())))
+        found = _SAYS_THE_OPPOSITE.keep(key, any(_opposite_in(text, pattern, ask in OPPOSITE_NEGATED_IN_SENTENCE)
+                                                 for ask in asks for pattern in OPPOSITE_QUOTE_PATTERNS.get(ask, ())))
     return found
+
+
+def _opposite_in(text: str, pattern: str, unless_negated: bool) -> bool:
+    """Whether `pattern` is found in the quote's `text`, and, `unless_negated`, once with no negation just before it."""
+    if not unless_negated:
+        return re.search(pattern, text) is not None
+    return any(not _negated_before(text, match.start()) for match in re.finditer(pattern, text))
+
+
+# A word that negates what follows it: "not", "no", "none", "neither", "without", "less", any "...n't" ("doesn't",
+# "wasn't") and the same written without an apostrophe ("doesnt", "wasnt").
+_NEGATION_WORD = re.compile(r"(?:not|no|non|none|never|neither|nor|without|less|hardly|cannot|\w+n't"
+                            r"|(?:is|are|was|were|does|do|did|has|have|had|would|could|should|wo|ca)nt)")
+# Where a sentence's part ends for a negation: a full stop, a question or exclamation mark, a semicolon, or "but",
+# "though", "although", "however", "because" ("not a daily one for me, but it strips my hair", "I wouldn't reach for it
+# each morning because it strips my skin").
+_CLAUSE_END = re.compile(r"[.!?;]|\b(?:but|though|although|however|because)\b")
+
+
+def _negated_before(text: str, at: int) -> bool:
+    """Whether a negation is among the config.OPPOSITE_NEGATION_WINDOW words just before `at` in its sentence's part:
+    "neither has ever dried my hair out", "it doesn't burn, smell or strip the skin" (14 Oct 2026)."""
+    part = _CLAUSE_END.split(text[:at])[-1]
+    words = [word.strip(",/()\"'*-:") for word in part.split()][-OPPOSITE_NEGATION_WINDOW:]
+    return any(_NEGATION_WORD.fullmatch(word) for word in words)
 
 
 def _names_product(quote: str, name: str, category: str, written_as: str = "") -> bool:
@@ -1225,12 +1256,13 @@ def _reason(product: ProductScore, ranking: RankingResult) -> str:
     return REASON.format(
         voices=_plural(len(recommendations), "credible voice"),
         long_term=REASON_LONG_TERM.format(n=long_term) if long_term else "",
-        needs=_needs_clause(recommendations, [m.needs for p in ranking.products for m in p.mentions]),
+        needs=_needs_clause(recommendations, [m.needs for p in ranking.products for m in p.mentions], ranking.category),
         kind=REASON_KIND.format(kind=ranking.leading_kind.name) if has_bonus else "",
     )
 
 
-def _needs_clause(recommendations: list[ScoredMention], every_list: list[tuple[str, ...]]) -> str:
+def _needs_clause(recommendations: list[ScoredMention], every_list: list[tuple[str, ...]],
+                  category: str | None = None) -> str:
     """", 3 of them about sensitive skin": how many credible recommendations talk about the request's needs, and which
     needs, in the request's order; "" when none does. `every_list` holds the needs of every mention ranked: each lists
     them in the request's order, so together they show that order.
@@ -1243,7 +1275,8 @@ def _needs_clause(recommendations: list[ScoredMention], every_list: list[tuple[s
         return ""
     mine = {need for needs in fitting for need in needs}
     ordered = [need for need in _in_request_order(fitting + every_list) if need in mine]
-    named = list(dict.fromkeys(NEED_LABELS.get(need, need) for need in ordered))
+    labels = NEED_LABELS | NEED_LABELS_BY_CATEGORY.get(category or "", {})
+    named = list(dict.fromkeys(labels.get(need, need) for need in ordered))
     listed = NEEDS_JOIN.join(named[:-1]) + NEEDS_JOIN_LAST + named[-1] if len(named) > 1 else named[0]
     return REASON_NEEDS.format(n=len(fitting), needs=listed)
 

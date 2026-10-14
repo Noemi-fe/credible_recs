@@ -225,7 +225,7 @@ def test_hair_types_written_together_each_name_their_need(request_text, expected
 
 def test_a_comment_or_title_names_hair_types_written_together_too():
     assert met("shampoo for fine oily hair", "My fine, oily hair loves this one.") == ("fine hair", "oily hair")
-    assert met("shampoo for fine oily hair", "Holy grail for thin/greasy hair?") == ("fine hair", "oily hair")
+    assert met("shampoo for fine oily hair", "Any picks for thin/greasy hair here?") == ("fine hair", "oily hair")
     assert met("shampoo for fine oily hair", "It works fine on my oily roots.") == ("oily hair",)  # fine says how
 
 

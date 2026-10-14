@@ -523,6 +523,9 @@ NEEDS: dict[str, tuple[str, ...]] = {
                    "really drying", "incredibly drying", "extremely drying", "slightly drying", "kinda drying",
                    "harsh and drying", "dries out", "dried out", "drying out", "dry out", "dries my", "dryness",
                    "stripp"),
+    # A product that doesn't strip ("a cleanser that won't strip my skin"): a word of the request found as typed until
+    # 14 Oct 2026, a need of its own since, so a quote saying a product strips says the opposite (OPPOSITE_QUOTE_PATTERNS).
+    "strip": ("strip",),
 }
 # A need asked for by saying what a product mustn't do (14 Oct 2026, the need-quality builder; chosen by Claude, reported
 # to Noemi). A negation of NEGATIONS followed, at most NEGATION_REACH words later, by a word beginning with one of a
@@ -904,6 +907,48 @@ OPPOSITE_QUOTE_PATTERNS["lasting"] = (rf"\b{_FAILED}\b[^.!?]{{0,40}}?\b{_SOON}\b
                                       # Buy the cheapest and swap it for a new one when it fails (12 Oct 2026: a "Look for" note
                                       # said so for an air fryer that lasts).
                                       r"\breplace (it|them) (before|once|as soon as) (it|they)\b")
+# A product that isn't drying, one that doesn't strip, and a gentle one (14 Oct 2026, the need-quality builder; chosen by
+# Claude, reported to Noemi). Found on the library: "shampoo for curly hair that isn't drying" picked a detox shampoo
+# and "gentle shampoo for wavy hair" an anti-dandruff one its writer used for a deep clean. A quote describing the
+# product as drying, stripping or harsh says the opposite, and so does one using it as a clarifying, detox or chelating
+# shampoo, or to get rid of buildup: such shampoos are made to strip the hair, used now and then, not every wash. Only
+# their shampoo forms: a skincare product's name that holds the word ("COSRX AHA/BHA Clarifying Treatment Toner") says
+# nothing about harshness. For these asks (OPPOSITE_NEGATED_IN_SENTENCE below), a negation among the
+# OPPOSITE_NEGATION_WINDOW words before a match, in its sentence (up to "but" or "because"), takes it back: "none of
+# the three ever stripped my face", "neither has ever dried my hair out", "it doesn't burn, smell or strip the skin",
+# "far less harsh".
+_DEGREE = (r"(?:so|too|very|really|pretty|quite|super|incredibly|extremely|kinda|kind of|a bit|a little|bit|little"
+           r"|somewhat|slightly|a tad|overly)")
+_BODY = r"(?:hair|skin|scalp|curls?|ends|strands|face|waves|roots)"
+_WHOSE = r"(?:my|your|the|our|her|his|their)"
+_DRYING = (rf"\b{_DEGREE} drying\b",  # "too drying", "pretty drying"
+           r"\b(?:is|was|are|were|be|been|being|it's|its|they're|feels?|felt|harsh and)\s+drying\b",
+           rf"\b(?:find|found|finds) (?:it|them|this) (?:{_DEGREE} )?drying\b",
+           rf"\bdr(?:y|ies|ied|ying) {_WHOSE} (?:\w+ )?{_BODY} out\b",  # "dried my hair out"
+           rf"\bdr(?:y|ies|ied|ying) out {_WHOSE} (?:\w+ )?{_BODY}\b",  # "dried out my ends"
+           r"\b(?:it|this|they|that|which) (?:really |totally |completely )?(?:dries|dried) (?:\w+ )?out\b",
+           rf"\b(?:left|leaves|leave|leaving|made|makes|make|making) {_WHOSE} {_BODY} (?:feel(?:ing)? )?(?:{_DEGREE} )?"
+           r"(?:dry|drier|dryer|like straw|crunchy|brittle)\b")
+_STRIPPING = (rf"\b{_DEGREE} stripping\b",
+              r"\b(?:is|was|are|were|be|been|it's|its|they're|feels?|felt|harsh and)\s+stripping\b",
+              rf"\b(?:find|found|finds) (?:it|them|this) (?:{_DEGREE} )?stripping\b",
+              rf"\bstrip(?:s|ped)? {_WHOSE} (?:\w+ )?(?:{_BODY}|colou?r|oils?|moisture)\b",  # "strips my skin"
+              r"\bstrip(?:s|ped)? (?:away|off|everything|all)\b",
+              rf"\b(?:left|leaves|leave|leaving|made|makes|make|feels?|felt|feeling) (?:{_WHOSE} {_BODY} )?"
+              rf"(?:feel(?:ing)? )?(?:{_DEGREE} )?stripped\b")
+_CLARIFYING = (r"\b(?:clarifying|detox|chelating|deep[- ]clean(?:ing|sing)?|purifying) (?:shampoo|wash|poo)s?\b",
+               r"\bfor clarifying\b", r"\b(?:i|to|we) clarify (?:with|once|every|weekly|monthly|twice|my|your|the)\b",
+               r"\bclarif(?:y|ies|ied|ying) (?:once a|every|weekly|monthly|twice)\b",
+               r"\b(?:for|to get|gives?|giving|get) (?:a |that |me a )?(?:really |good |nice |proper )?deep clean\b",
+               r"\b(?:for|removes?|removing|strips?|get rid of|gets rid of|cuts? through|clears?|lifts?) "
+               r"(?:all |the |my |any |of |product |hard water |mineral |silicone )*build[- ]?up\b")
+_HARSH = (rf"\b(?:{_DEGREE}|is|was|are|were|it's|its|they're|feels?|felt|find it|found it) harsh\b",
+          rf"\bharsh (?:on|for) {_WHOSE}\b")
+OPPOSITE_QUOTE_PATTERNS["not drying"] = _DRYING + _STRIPPING + _CLARIFYING
+OPPOSITE_QUOTE_PATTERNS["strip"] = _STRIPPING + _DRYING
+OPPOSITE_QUOTE_PATTERNS["gentle"] = _HARSH + _STRIPPING + _DRYING + _CLARIFYING
+OPPOSITE_NEGATED_IN_SENTENCE = ("not drying", "strip", "gentle")
+OPPOSITE_NEGATION_WINDOW = 8
 
 # --- Quotes that say what the writer thinks come first (10 Oct 2026) ---
 # Decided by Claude, reported to Noemi. Found in b09: a writer listing the grinders they own (an Encore, a C2 at work
