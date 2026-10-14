@@ -88,6 +88,7 @@ class PingReading:
     left: int = 0  # due, left for the next pings (this ping's reads, time or Reddit's allowance ran out)
     kept_for_visitors: bool = False  # stopped: Reddit said fewer than READ_AHEAD_KEEP reads are left
     put_off: bool = False  # stopped: the next read would have waited for Reddit's allowance
+    reddit_failing: bool = False  # stopped: every read of a batch failed (Reddit isn't answering now)
     new_plan: bool = False  # a new plan was taken in
     shared: int | None = None  # reads written to the bucket's bundle at this ping (None: not written)
 
@@ -208,12 +209,13 @@ class ReadAhead:
                     self._look(url)
                 done += len(batch)
                 for outcome in outcomes:
-                    if outcome == "later":
-                        done -= 1  # not read: still due
-                    else:
+                    if outcome != "later":  # "later": not read, still due
                         setattr(reading, outcome, getattr(reading, outcome) + 1)
                 if "later" in outcomes:
                     reading.put_off = True
+                    break
+                if all(outcome == "failed" for outcome in outcomes):
+                    reading.reddit_failing = True  # Reddit isn't answering now: the next ping tries again
                     break
         reading.left = len(due) - reading.read - reading.failed - reading.fresh
         self._unshared += reading.read
@@ -246,7 +248,8 @@ def report(reading: PingReading, plan: Plan | None) -> str:
                      f"{len(plan.checks):,} checks through Bright Data)")
     if reading.due or reading.read or reading.failed:
         stopped = ("; stopped to keep Reddit's reads for visitors" if reading.kept_for_visitors else
-                   "; stopped: the next read would have waited" if reading.put_off else "")
+                   "; stopped: the next read would have waited" if reading.put_off else
+                   "; stopped: Reddit isn't answering just now" if reading.reddit_failing else "")
         failed = f" ({reading.failed} couldn't be read)" if reading.failed else ""
         parts.append(f"{reading.read} read{failed} of {reading.due:,} due, {reading.left:,} left for the next pings"
                      f"{stopped}")

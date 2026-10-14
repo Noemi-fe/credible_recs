@@ -25,7 +25,10 @@ So a page Reddit redesigns can never wipe the library in one go.
 
 Where the reads come from:
 - the daily pre-check (engine/precheck.py: a Cloud Run job): the comments answers would show, then the kept comments
-  verified longest ago, within config.LIBRARY_VERIFY_READS a day. Every read is recorded in the verification record
+  verified longest ago, within config.LIBRARY_VERIFY_READS a day. Since 14 Oct 2026 (the free-tier redesign) the job
+  lists them in its plan and the site reads them over the day (engine/read_ahead.py); the job's next run records what
+  each read said, from the bundle the site shares (each read is in it for 48 hours, a page with no comment included).
+  Every read is recorded in the verification record
   (Ledger): each kept comment's latest read (when, and its outcome) and its last pass. Ids, dates and outcomes only,
   never anyone's words, so it outlives the 48-hour checks: it is kept in the live checks' bucket next to their bundle
   (live_check/verified.json, written again every run, so the bucket's 2-day rule only removes it if the job stops) and

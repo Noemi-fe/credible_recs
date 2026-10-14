@@ -6,6 +6,10 @@ restarts. So the pre-check writes every check it holds that is under 48 hours ol
 site reads that bundle into its own folder as it gets ready and then at most once an hour, only when it has changed. The
 site never writes to the bucket: its own checks stay in its folder. The 48-hour rule holds for every entry, wherever it
 is read from. Every call to Google here goes to a made-up stand-in: no test reaches the network.
+
+Since 14 Oct 2026 (the free-tier redesign) the site reads ahead and is the bundle's writer, and the daily job reads it
+(engine/tests/test_live_check_reads.py and test_read_ahead.py); the bundle's shape and the 48-hour rule tested here are
+the same.
 """
 
 import json

@@ -201,6 +201,20 @@ def test_a_read_ahead_never_waits_for_reddit(scene):
     assert scene.clock.now == started and reading.read < 9 and reading.put_off
 
 
+def test_when_reddit_doesnt_answer_a_ping_stops_after_one_batch(scene):
+    scene.plan(answers=range(1, 30))
+
+    def down(url, headers):
+        scene.reddit.asked.append(url)
+        raise TimeoutError("timed out")
+
+    ahead = scene.site()
+    scene.live._fetch = down
+    reading = ahead.on_ping()
+    assert reading.reddit_failing and reading.failed == config.READ_AHEAD_PARALLEL and reading.read == 0
+    assert len(scene.reddit.asked) == config.READ_AHEAD_PARALLEL and scene.live.last_read(link(1)) is None
+
+
 def test_a_ping_arriving_while_another_reads_does_nothing(scene):
     scene.plan(answers=[1])
     ahead = scene.site()
