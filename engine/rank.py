@@ -236,9 +236,6 @@ class ScoreBreakdown:
     # Credible mentions whose comment talks about the request's needs (9 Oct 2026); each weighs NEED_MATCH_BOOST times.
     credible_recommends_fitting_need: int = 0
     credible_warnings_fitting_need: int = 0
-    # Of its credible recommendations, those counted twice toward the picks bar for their upvotes (Noemi's upvote rule,
-    # 14 Oct 2026; 0 while it is off): the bar counts credible_recommends + counted_twice.
-    counted_twice: int = 0
 
 
 @dataclass
@@ -256,7 +253,9 @@ class ProductScore:
     # WORTH_A_LOOK_MIN_THREADS threads, mention points above zero, not on the skip list (Noemi, 13 Oct 2026).
     worth_a_look: bool = False
     # The credible recommendations counted twice toward the picks bar for their upvotes, the most upvoted first (Noemi's
-    # upvote rule, 14 Oct 2026; _counted_twice): empty while the rule is off. The answer says which and how many upvotes.
+    # upvote rule, 14 Oct 2026; _counted_twice): empty while the rule is off. The bar counts the credible recommendations
+    # and these once more. The answer says which and for how many upvotes (the reason, and the meter's "twice"); the
+    # score breakdown doesn't hold them, so an answer's JSON is as before while the rule is off.
     counted_twice: tuple[ScoredMention, ...] = ()
 
     @property
@@ -430,7 +429,6 @@ def _score_product(
         credible_threads=credible_threads,
         credible_recommends_fitting_need=sum(bool(m.needs) for m in credible_recommends),
         credible_warnings_fitting_need=sum(bool(m.needs) for m in credible_warnings),
-        counted_twice=len(twice),
     )
     return ProductScore(
         key=key,

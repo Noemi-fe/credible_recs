@@ -93,7 +93,7 @@ def test_off_by_default_upvotes_change_nothing():
     assert config.UPVOTE_COUNTS_MORE is False
     scored = the_product([mention("Kettle K", "t1", upvotes=500, **TOP), mention("Kettle K", "t2", upvotes=2)])
     assert not scored.qualifies and scored.worth_a_look
-    assert scored.counted_twice == () and scored.breakdown.counted_twice == 0
+    assert scored.counted_twice == ()
 
 
 @pytest.mark.parametrize("variant", VARIANTS)
@@ -104,7 +104,7 @@ def test_a_credible_recommendation_with_enough_upvotes_counts_as_two(monkeypatch
     scored = result.products[0]
     assert names(result.picks) == ["Kettle K"] and result.worth_a_look == []  # a pick, so no longer an item
     assert scored.breakdown.credible_recommends == 2  # still two writers
-    assert scored.breakdown.counted_twice == 1
+    assert len(scored.counted_twice) == 1
     assert [m.upvotes for m in scored.counted_twice] == [config.UPVOTE_MIN_SCORE]
 
 
@@ -128,7 +128,7 @@ def test_the_extra_count_never_replaces_the_second_thread(monkeypatch, variant):
 def test_one_comment_counts_at_most_twice(monkeypatch, variant):
     upvote_rule(monkeypatch, variant)
     scored = the_product([mention("Kettle K", "t1", upvotes=5000, **TOP)])
-    assert scored.breakdown.credible_recommends == 1 and scored.breakdown.counted_twice == 1
+    assert scored.breakdown.credible_recommends == 1 and len(scored.counted_twice) == 1
     assert not scored.qualifies and not scored.worth_a_look  # two at most, and from one thread
 
 
@@ -169,7 +169,7 @@ def test_b_and_c_never_inflate_a_product_that_already_qualifies(monkeypatch, var
     upvote_rule(monkeypatch, variant)
     scored = the_product([mention("Kettle K", "t1", upvotes=34, **TOP), mention("Kettle K", "t2", upvotes=120, **TOP),
                           mention("Kettle K", "t1", upvotes=3)])
-    assert scored.qualifies and scored.counted_twice == () and scored.breakdown.counted_twice == 0
+    assert scored.qualifies and scored.counted_twice == ()
 
 
 @pytest.mark.parametrize("variant", ["B", "C"])
@@ -293,7 +293,7 @@ def test_the_reason_says_which_voice_counted_twice_and_for_how_many_upvotes(monk
                            "long-term use.")
     assert pick.support == "Backed by 2 high-credibility voices, across 2 threads."
     assert pick.voices == {"recommend": 2, "high": 2, "medium": 0, "warn": 0, "threads": 2, "twice": 1}
-    assert pick.breakdown.credible_recommends == 2 and pick.breakdown.counted_twice == 1
+    assert pick.breakdown.credible_recommends == 2
     assert unverified_claims(answer, bodies) == []
 
 
@@ -306,11 +306,26 @@ def test_two_counted_twice_are_both_named(monkeypatch):
     assert pick.voices["recommend"] == 3 and pick.voices["twice"] == 2
 
 
+def test_the_answers_json_gains_nothing_with_the_rule_off_and_only_twice_with_it_on(monkeypatch):
+    # With the switch off an answer is byte for byte what it was (the coordinator's check against main, 14 Oct 2026); on,
+    # the count of voices counted twice lives in the meter's "twice" and the reason, never in the score's breakdown.
+    from engine.answer import answer_to_dict
+
+    items = [mention("Kettle K", "t1", upvotes=34, **TOP), mention("Kettle K", "t2", upvotes=2)] + mentions(3, "Kettle W")
+    off = answer_to_dict(answer_for(items)[0])
+    assert off["worth_a_look"] and all("twice" not in item["voices"] for item in off["picks"] + off["worth_a_look"])
+    assert all("counted_twice" not in item["breakdown"] for item in off["picks"] + off["worth_a_look"])
+    upvote_rule(monkeypatch, "D")
+    on = answer_to_dict(answer_for(items)[0])
+    assert [pick["voices"].get("twice") for pick in on["picks"]] == [None, 1]
+    assert all("counted_twice" not in pick["breakdown"] for pick in on["picks"])
+
+
 def test_with_the_rule_off_the_words_and_numbers_are_as_before():
     answer, _ = answer_for([mention("Kettle K", "t1", upvotes=900, **TOP)] + mentions(2, "Kettle K", upvotes=500))
     pick = answer.picks[0]
     assert pick.reason == "Recommended by 3 credible voices, 3 of them after long-term use."
-    assert "twice" not in pick.voices and pick.breakdown.counted_twice == 0
+    assert "twice" not in pick.voices
 
 
 @pytest.mark.parametrize("variant, more", [
