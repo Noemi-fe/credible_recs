@@ -649,9 +649,11 @@ BRIGHT_DATA_COMMENTS_DATASET = "gd_lvzdpsdlw09j6t702"
 BRIGHT_DATA_POSTS_DATASET = "gd_lvz8ah06191smkebj4"
 # A job runs on Bright Data's side (a 5-comment thread took about a minute). Its progress is asked every this many
 # seconds, and after this many seconds the client stops waiting: asking again for the same thread picks the job up
-# instead of paying for a new one.
+# instead of paying for a new one. 20 minutes since 14 Oct 2026 (Claude's call, reported to Noemi): that day a
+# 3-comment thread's comments job took 9.6 minutes on Bright Data's side, and the daily job's two reads were both cut
+# off at the old 10 (on Google Cloud each run starts with an empty disk, so a job cut off is never picked up again).
 BRIGHT_DATA_POLL_SECONDS = 10
-BRIGHT_DATA_MAX_WAIT_SECONDS = 600
+BRIGHT_DATA_MAX_WAIT_SECONDS = 1200
 # Before a comments job, its cost is checked against the month's records left: at most the post's comment count.
 # When the post couldn't be read first, that count is unknown, and the job is assumed to cost up to this many records.
 BRIGHT_DATA_RECORDS_IF_UNKNOWN = 500

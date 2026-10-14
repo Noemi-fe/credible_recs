@@ -114,8 +114,8 @@ rm -rf "$(dirname "$BUNDLE")"
 
 # 4. The pre-check: a Cloud Run job on the image just deployed, `python -m engine.precheck --plan` (14 Oct 2026): it
 #    reads nothing on Reddit's embed page itself, works out the plan the site reads ahead from, and verifies through
-#    Bright Data the comments the embed page can't show, starting nothing PRECHECK_MINUTES after it started; 45 minutes
-#    at most a run, never retried the same day. Billed for its whole run, so it gets the least that works: 1 vCPU (a
+#    Bright Data the comments the embed page can't show, starting nothing PRECHECK_MINUTES after it started; 55 minutes
+#    at most a run (one Bright Data job in flight may be waited for 20 minutes), never retried the same day. Billed for its whole run, so it gets the least that works: 1 vCPU (a
 #    job's minimum) and 1.5 GiB (it peaked at 1.3 GB with the open model loaded, 13 Oct 2026; 0.2 GB without it).
 #    Its one secret is the Bright Data key, which the account it runs as may read (when the secret is there).
 if [ "$PRECHECK_BRIGHT_DATA" = on ]; then
@@ -125,7 +125,7 @@ fi
 IMAGE="$($GCLOUD run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(spec.template.spec.containers[0].image)')"
 $GCLOUD run jobs deploy "$JOB" --project "$PROJECT" --region "$REGION" --image "$IMAGE" \
     --command python --args=-m,engine.precheck,--plan,--minutes,${PRECHECK_MINUTES} \
-    --tasks 1 --max-retries 0 --task-timeout 45m --memory 1536Mi --cpu 1 \
+    --tasks 1 --max-retries 0 --task-timeout 55m --memory 1536Mi --cpu 1 \
     --set-env-vars "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}${ON_DEMAND_PRECHECK_VARS},CREDIBLE_RECS_PRECHECK_BRIGHT_DATA=${PRECHECK_BRIGHT_DATA}" \
     "$PRECHECK_SECRETS" --quiet
 $GCLOUD run jobs add-iam-policy-binding "$JOB" --project "$PROJECT" --region "$REGION" \
