@@ -62,7 +62,6 @@ Command line:
     python -m engine.bulk_import delete-raw <folder>   delete them (the history files and the download's part files)
 """
 
-import html
 import io
 import json
 import os
@@ -111,6 +110,7 @@ from engine.sources import (
     need_words,
     rank_posts,
     thread_kind,
+    unescaped,
 )
 
 DEFAULT_LIBRARY_DIR = REPO_ROOT / "data" / "library"
@@ -275,7 +275,7 @@ _ASKS_FOR_RECOMMENDATIONS = re.compile(
 
 
 def _asks_for_recommendations(post: dict) -> bool:
-    return bool(_ASKS_FOR_RECOMMENDATIONS.search(html.unescape(str(post.get("title") or ""))))
+    return bool(_ASKS_FOR_RECOMMENDATIONS.search(unescaped(str(post.get("title") or ""))))
 
 
 def _without(title: str, subject: str) -> bool:
@@ -330,9 +330,10 @@ def scan_submissions(path: str, subjects: tuple[tuple[str, str], ...], first_yea
             left_out[f"posted before {first_year}"] += 1
             continue
         # The files write "&" as "&amp;" (Reddit's HTML codes), whose letters name nothing ("amp" isn't a guitar amp):
-        # the post is judged as it reads, and kept as the files write it, as the library keeps every thread.
-        readable = post | {"title": html.unescape(str(post["title"])),
-                           "selftext": html.unescape(str(post.get("selftext") or ""))}
+        # the post is judged as it reads (engine.sources.unescaped, as answers read names), and kept as the files write
+        # it, as the library keeps every thread.
+        readable = post | {"title": unescaped(str(post["title"])),
+                           "selftext": unescaped(str(post.get("selftext") or ""))}
         title = readable["title"]
         if _RECURRING.search(title.lower()):
             left_out["a recurring thread"] += 1
@@ -561,7 +562,7 @@ def _have(threads: list[Thread], name: str, category: str) -> dict[str, int]:
     """The library's threads about a type (title or post names it), by kind."""
     counts = Counter()
     for thread in threads:
-        if thread.category == category and _names(html.unescape(thread.title), html.unescape(thread.body or ""), name):
+        if thread.category == category and _names(unescaped(thread.title), unescaped(thread.body or ""), name):
             kind = thread_kind({"title": thread.title}, category, name)
             if kind in THREAD_KINDS:
                 counts[kind] += 1
@@ -635,7 +636,7 @@ def _saved_category(post: dict, category_of: dict[str, str]) -> str:
     if len(found) == 1:
         return found.pop()
     if len(found) > 1:
-        reading = parse_query(html.unescape(str(post["title"])), model=None)
+        reading = parse_query(unescaped(str(post["title"])), model=None)
         if reading.status == "ok" and reading.category in found:
             return reading.category
         own = category_for(str(post["subreddit"]))
