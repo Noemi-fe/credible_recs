@@ -83,8 +83,7 @@ Use one of these names, written exactly as here, when it fits:
   "blender", "food processor", "stand mixer", "hand mixer", "slow cooker", "rice cooker", "pressure cooker",
   "coffee maker", "french press", "toaster", "waffle maker", "juicer", "kitchen scale"
 - more kitchen gear (added 14 Oct 2026, instructions v12): "dishwasher", "fridge", "freezer", "hob", "cooker hood",
-  "wok", "cookware set", "knife sharpener", "cutting board", "pizza oven", "barbecue", "moka pot", "milk frother"
-- more skincare (v12): "body wash", "body lotion", "hand cream"
+  "wok", "knife sharpener", "cutting board", "pizza oven", "barbecue", "moka pot", "milk frother"
 - more haircare (v12): "curl cream", "hair gel", "heat protectant", "hairspray"
 - general, home (v12): "vacuum cleaner", "robot vacuum", "carpet cleaner", "steam mop", "mop", "mattress",
   "mattress topper", "pillow", "duvet", "bed sheets", "duvet cover", "bed frame", "sofa", "armchair", "office chair",
@@ -136,7 +135,6 @@ Use one of these names, written exactly as here, when it fits:
   "fountain pen", "notebook", "telescope", "drawing tablet", "electronic drum kit"
 - general, car (v12): "dash cam", "car tyres", "jump starter", "tyre inflator", "car vacuum", "car phone mount",
   "car wax", "car shampoo", "roof box", "ev charger", "obd scanner"
-
 Otherwise write a short lowercase type in plain words ("face mask", "bread maker", "makeup remover", "ice cream
 maker", "eyelash curler"). The names cover their usual kinds: a gyuto or santoku is a "chef knife", a non-stick or carbon
 steel pan a "frying pan", an essence a "toner", a retinol or tretinoin a "retinoid", a spot gel or cream and a pimple or

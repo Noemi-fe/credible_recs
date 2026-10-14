@@ -126,9 +126,12 @@ GENERAL_DEPARTMENTS: dict[str, dict] = {
             "hints": ("car", "vehicle", "driving"),
             "communities": ("cars", "MechanicAdvice", "AutoDetailing", "BuyItForLife")},
 }
-# Module 1's product types beyond its first 53 (engine/query.py's own list), as data: about 350 popular types of the
-# general category, plus large kitchen appliances, barbecues and cooking gear, and a few skincare and haircare types
-# (14 Oct 2026, Noemi's plan part 1, for the library prepared ahead in part 2; chosen by Claude, reported to Noemi).
+# Module 1's product types beyond its first 53 (engine/query.py's own list), as data: 336 popular types of the general
+# category, plus large kitchen appliances, barbecues and cooking gear, and a few haircare types (14 Oct 2026, Noemi's
+# plan part 1, for the library prepared ahead in part 2; chosen by Claude, reported to Noemi). Left out on purpose,
+# because they changed answers about the first types (their names would have covered words those answers read):
+# body washes, body lotions and hand creams (moisturiser answers read their threads) and cookware sets (frying pan and
+# skillet answers do); the open model still places them.
 # Each with its plural, category and department, the names people use for it, its title words and its communities.
 PRODUCT_TYPES_FILE = Path(__file__).resolve().parent / "data" / "product_types.json"
 MORE_PRODUCT_TYPES: tuple[dict, ...] = tuple(json.loads(PRODUCT_TYPES_FILE.read_text(encoding="utf-8"))["types"])
@@ -1310,8 +1313,6 @@ PRODUCT_TYPE_FORMS: dict[str, str] = {
     "exfoliant": "exfoliant", "cleanser": "cleanser", "moisturiser": "moisturiser", "sunscreen": "sunscreen",
     "retinoid": "retinoid treatment", "serum": "serum", "toner": "toner", "eye cream": "eye cream",
     "lip balm": "lip balm", "spot treatment": "spot treatment",
-    # The skincare types of engine/data/product_types.json (14 Oct 2026): a body wash rinses off, the others stay on.
-    "body wash": "cleanser", "body lotion": "lotion", "hand cream": "cream",
 }
 
 # --- On-demand reading (Noemi's plan of 14 Oct 2026, part 3; values chosen by Claude, reported to Noemi) ---

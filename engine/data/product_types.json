@@ -135,27 +135,6 @@
    ]
   },
   {
-   "name": "cookware set",
-   "plural": "cookware sets",
-   "category": "kitchen",
-   "keywords": [
-    "cookware set",
-    "pan set",
-    "pot set",
-    "cookware",
-    "cookware sets"
-   ],
-   "title_words": [
-    "cookware",
-    "cookware set"
-   ],
-   "subreddits": [
-    "BuyItForLife",
-    "Cooking",
-    "AskCulinary"
-   ]
-  },
-  {
    "name": "knife sharpener",
    "plural": "knife sharpeners",
    "category": "kitchen",
@@ -297,69 +276,6 @@
     "Coffee",
     "espresso",
     "BuyItForLife"
-   ]
-  },
-  {
-   "name": "body wash",
-   "plural": "body washes",
-   "category": "skincare",
-   "keywords": [
-    "body wash",
-    "shower gel",
-    "body cleanser",
-    "shower cream",
-    "body soap"
-   ],
-   "title_words": [
-    "body wash"
-   ],
-   "subreddits": [
-    "SkincareAddiction",
-    "30PlusSkinCare",
-    "SkincareAddictionUK"
-   ]
-  },
-  {
-   "name": "body lotion",
-   "plural": "body lotions",
-   "category": "skincare",
-   "keywords": [
-    "body lotion",
-    "body cream",
-    "body butter",
-    "body moisturiser",
-    "body moisturizer",
-    "body milk",
-    "body oil"
-   ],
-   "title_words": [
-    "body lotion"
-   ],
-   "subreddits": [
-    "SkincareAddiction",
-    "30PlusSkinCare",
-    "SkincareAddictionUK",
-    "AsianBeauty"
-   ]
-  },
-  {
-   "name": "hand cream",
-   "plural": "hand creams",
-   "category": "skincare",
-   "keywords": [
-    "hand cream",
-    "hand lotion",
-    "hand balm",
-    "hand moisturiser",
-    "hand moisturizer"
-   ],
-   "title_words": [
-    "hand cream"
-   ],
-   "subreddits": [
-    "SkincareAddiction",
-    "30PlusSkinCare",
-    "SkincareAddictionUK"
    ]
   },
   {
