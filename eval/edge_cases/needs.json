@@ -1,28 +1,316 @@
 {
   "approved": false,
-  "approved_note": "Drafted by Claude on 14 Oct 2026 for need-led thread choice (Noemi's decision 3 of 14 Oct 2026, after her and a friend's tests of the live site); made-up wording; not yet checked by Noemi. 'judge' lists the words (regular expressions, matched at the start of a word in a thread's lowercased title or post) that show a thread is about the request's need, chosen apart from the engine's own need words (config.NEEDS) so the engine doesn't grade itself. engine/need_eval.py reports, for each answer's first reading (its first 16 threads), how many threads are about the need by title, and by title or post, then the picks and Also worth a look.",
+  "approved_note": "Drafted by Claude on 14 Oct 2026 for need-led thread choice (Noemi's decision 3 of 14 Oct 2026, after her and a friend's tests of the live site); made-up wording; not yet checked by Noemi. 'judge' lists the words (regular expressions, matched at the start of a word in a thread's lowercased title or post) that show a thread is about the request's need, chosen apart from the engine's own need words (config.NEEDS) so the engine doesn't grade itself. engine/need_eval.py reports, for each answer's first reading (its first 16 threads), how many threads are about the need by title, and by title or post, then the picks and Also worth a look. Added by Claude later on 14 Oct 2026 (the need-quality builder): cases n11-n15, the requests of that builder's before/after table, made-up wording; an optional 'judge_each' ({need: judge words}) judges each need of a request with several apart, so the report counts first-reading threads about every one of them; an optional 'opposite' lists the words of the opposite of what a request asks (a clarifying or detox shampoo for one that isn't drying), so the report counts first-reading threads titled with one and shown products named with one.",
   "cases": [
-    {"id": "n01", "text": "shampoo for greasy hair", "judge": ["greas", "oily", "oili", "sebum"],
-     "why": "Noemi's live test: generic and anti-dandruff shampoos came back. Greasy and oily are one need."},
-    {"id": "n02", "text": "dandruff shampoo that actually works", "judge": ["dandruff", "flak", "seb ?derm", "seborrh"],
-     "why": "Found by the data builder: clarifying shampoos picked from big curly-hair threads."},
-    {"id": "n03", "text": "gentle shampoo for wavy hair", "judge": ["wavy", "waves", "2[abc]\\b", "gentle", "mild"],
-     "why": "Two needs, a hair type and a quality."},
-    {"id": "n04", "text": "shampoo for fine flat hair",
-     "judge": ["fine (hair|strands)", "thin hair", "flat", "limp", "volum", "weigh(s|ed|ing)? (it |my hair |hair )?down"],
-     "why": "Fine and flat are one need, said in two words."},
-    {"id": "n05", "text": "conditioner for frizzy curly hair", "judge": ["frizz", "curl", "coil"],
-     "why": "Two hair needs, in a conditioner request."},
-    {"id": "n06", "text": "moisturiser for oily skin", "judge": ["oily", "oili", "greas", "shiny", "shine"],
-     "why": "The library's moisturiser threads are mostly about dry skin (b04)."},
-    {"id": "n07", "text": "sunscreen for dry skin", "judge": ["dry", "dehydrat", "flaky"],
-     "why": "The library's sunscreen threads are mostly about oily skin (b02)."},
-    {"id": "n08", "text": "cleanser for sensitive skin", "judge": ["sensitiv", "irritat", "reactive", "redness", "rosacea"],
-     "why": "A skin type that many cleanser threads ask about."},
-    {"id": "n09", "text": "cast iron skillet for a glass top stove",
-     "judge": ["glass[- ]?top", "glass (stove|cooktop|hob)", "ceramic (hob|cooktop|top|stove)", "smooth[- ]?top"],
-     "why": "A kitchen need in three words, none of them a need on its own."},
-    {"id": "n10", "text": "kettle that's quiet", "judge": ["quiet", "nois", "loud", "silent"],
-     "why": "A kitchen need the library may hold no thread about."}
+    {
+      "id": "n01",
+      "text": "shampoo for greasy hair",
+      "judge": [
+        "greas",
+        "oily",
+        "oili",
+        "sebum"
+      ],
+      "why": "Noemi's live test: generic and anti-dandruff shampoos came back. Greasy and oily are one need."
+    },
+    {
+      "id": "n02",
+      "text": "dandruff shampoo that actually works",
+      "judge": [
+        "dandruff",
+        "flak",
+        "seb ?derm",
+        "seborrh"
+      ],
+      "why": "Found by the data builder: clarifying shampoos picked from big curly-hair threads."
+    },
+    {
+      "id": "n03",
+      "text": "gentle shampoo for wavy hair",
+      "judge": [
+        "wavy",
+        "waves",
+        "2[abc]\\b",
+        "gentle",
+        "mild"
+      ],
+      "why": "Two needs, a hair type and a quality.",
+      "judge_each": {
+        "gentle": [
+          "gentle",
+          "mild",
+          "harsh",
+          "strip",
+          "sul(f|ph)ate[- ]free"
+        ],
+        "wavy": [
+          "wavy",
+          "waves",
+          "wavies",
+          "2[abc]\\b"
+        ]
+      },
+      "opposite": [
+        "clarif",
+        "detox",
+        "deep[- ]?clean",
+        "chelat",
+        "build-?up"
+      ]
+    },
+    {
+      "id": "n04",
+      "text": "shampoo for fine flat hair",
+      "judge": [
+        "fine (hair|strands)",
+        "thin hair",
+        "flat",
+        "limp",
+        "volum",
+        "weigh(s|ed|ing)? (it |my hair |hair )?down"
+      ],
+      "why": "Fine and flat are one need, said in two words."
+    },
+    {
+      "id": "n05",
+      "text": "conditioner for frizzy curly hair",
+      "judge": [
+        "frizz",
+        "curl",
+        "coil"
+      ],
+      "why": "Two hair needs, in a conditioner request.",
+      "judge_each": {
+        "frizzy": [
+          "frizz",
+          "fly ?away",
+          "puff"
+        ],
+        "curly": [
+          "curl",
+          "coil",
+          "ringlet",
+          "3[abc]\\b",
+          "4[abc]\\b"
+        ]
+      }
+    },
+    {
+      "id": "n06",
+      "text": "moisturiser for oily skin",
+      "judge": [
+        "oily",
+        "oili",
+        "greas",
+        "shiny",
+        "shine"
+      ],
+      "why": "The library's moisturiser threads are mostly about dry skin (b04)."
+    },
+    {
+      "id": "n07",
+      "text": "sunscreen for dry skin",
+      "judge": [
+        "dry",
+        "dehydrat",
+        "flaky"
+      ],
+      "why": "The library's sunscreen threads are mostly about oily skin (b02)."
+    },
+    {
+      "id": "n08",
+      "text": "cleanser for sensitive skin",
+      "judge": [
+        "sensitiv",
+        "irritat",
+        "reactive",
+        "redness",
+        "rosacea"
+      ],
+      "why": "A skin type that many cleanser threads ask about."
+    },
+    {
+      "id": "n09",
+      "text": "cast iron skillet for a glass top stove",
+      "judge": [
+        "glass[- ]?top",
+        "glass (stove|cooktop|hob)",
+        "ceramic (hob|cooktop|top|stove)",
+        "smooth[- ]?top"
+      ],
+      "why": "A kitchen need in three words, none of them a need on its own."
+    },
+    {
+      "id": "n10",
+      "text": "kettle that's quiet",
+      "judge": [
+        "quiet",
+        "nois",
+        "loud",
+        "silent"
+      ],
+      "why": "A kitchen need the library may hold no thread about."
+    },
+    {
+      "id": "n11",
+      "text": "shampoo for curly hair that isn't drying",
+      "judge": [
+        "curl",
+        "coil",
+        "ringlet",
+        "3[abc]\\b",
+        "4[abc]\\b",
+        "dry",
+        "drie",
+        "moistur",
+        "hydrat",
+        "strip"
+      ],
+      "judge_each": {
+        "curly": [
+          "curl",
+          "coil",
+          "ringlet",
+          "3[abc]\\b",
+          "4[abc]\\b"
+        ],
+        "not drying": [
+          "dry",
+          "drie",
+          "moistur",
+          "hydrat",
+          "strip",
+          "gentle",
+          "harsh",
+          "brittle",
+          "straw"
+        ]
+      },
+      "opposite": [
+        "clarif",
+        "detox",
+        "deep[- ]?clean",
+        "chelat",
+        "build-?up"
+      ],
+      "why": "A broad need and a specific one said as a negation; clarifying and detox shampoos are made to strip hair."
+    },
+    {
+      "id": "n12",
+      "text": "shampoo for fine oily hair",
+      "judge": [
+        "fine",
+        "thin",
+        "flat",
+        "limp",
+        "volum",
+        "greas",
+        "oily",
+        "oili",
+        "sebum"
+      ],
+      "judge_each": {
+        "fine": [
+          "fine (hair|strands|curl|wav|straight|,|/|and|oily|greasy)",
+          "thin",
+          "flat",
+          "limp",
+          "volum"
+        ],
+        "oily": [
+          "greas",
+          "oily",
+          "oili",
+          "sebum"
+        ]
+      },
+      "why": "Two hair types written together; 'fine' alone is no need ('it works fine')."
+    },
+    {
+      "id": "n13",
+      "text": "shampoo for colour-treated hair",
+      "judge": [
+        "colou?r",
+        "dye",
+        "bleach",
+        "highlight",
+        "blond",
+        "toner",
+        "fade"
+      ],
+      "opposite": [
+        "clarif",
+        "detox",
+        "chelat"
+      ],
+      "why": "Clarifying shampoos fade dyed hair, the opposite of what it asks."
+    },
+    {
+      "id": "n14",
+      "text": "sunscreen for dry skin that doesn't leave a white cast",
+      "judge": [
+        "dry",
+        "dehydrat",
+        "flaky",
+        "tight",
+        "white cast",
+        "cast",
+        "ashy",
+        "chalky",
+        "mineral",
+        "zinc"
+      ],
+      "judge_each": {
+        "dry": [
+          "dry",
+          "dehydrat",
+          "flaky",
+          "tight"
+        ],
+        "white cast": [
+          "white cast",
+          "cast",
+          "ashy",
+          "chalky",
+          "mineral",
+          "zinc"
+        ]
+      },
+      "why": "A skin type and a must-have; the library's sunscreen threads are mostly about oily skin."
+    },
+    {
+      "id": "n15",
+      "text": "cleanser for sensitive skin that doesn't strip",
+      "judge": [
+        "sensitiv",
+        "irritat",
+        "reactive",
+        "redness",
+        "rosacea",
+        "eczema",
+        "strip",
+        "tight"
+      ],
+      "judge_each": {
+        "sensitive": [
+          "sensitiv",
+          "irritat",
+          "reactive",
+          "redness",
+          "rosacea",
+          "eczema"
+        ],
+        "not stripping": [
+          "strip",
+          "tight",
+          "dry",
+          "gentle",
+          "harsh",
+          "barrier",
+          "squeaky"
+        ]
+      },
+      "why": "A skin type and what the cleanser mustn't do."
+    }
   ]
 }

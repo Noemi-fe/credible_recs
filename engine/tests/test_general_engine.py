@@ -308,3 +308,22 @@ def test_the_type_a_name_ends_with_is_found_as_a_full_search_finds_it():
     types += ["frying pan set", "gooseneck kettle", "  Down   Sleeping  Bag ", "", "pan set", "set", "notatype"]
     for product_type in types:
         assert _ends_with_a_type(product_type) == full_search(product_type), product_type
+
+
+def test_names_grouped_by_first_letter_with_their_plural_endings_find_what_they_found_one_by_one():
+    # 14 Oct 2026 (merging main's names grouped by first letter, engine.sources._alternation): every module 1 name with
+    # its plural ending (engine.query.name_pattern: "brushes", "potties"), grouped, matches where and as the names one
+    # after another did.
+    import re
+
+    from engine.query import PRODUCT_TYPES, name_pattern
+    from engine.sources import _alternation
+
+    names = [k for p in PRODUCT_TYPES for k in p.keywords + p.hints]
+    grouped = re.compile(rf"\b(?:{_alternation(names, name_pattern)})\b", re.IGNORECASE)
+    one_by_one = re.compile(rf"\b(?:{'|'.join(name_pattern(n) for n in names)})\b", re.IGNORECASE)
+    for text in ("Two dish brushes and a travel potty, then potties for the twins.",
+                 "My Kettles broke; the french presses lasted. A hair dryer, three Hair Dryers.",
+                 "Robot vacuums vs a stick vacuum: e-readers, 3D printers and a TV-stand.",
+                 "nothing to see here", "Boxes of glasses, watches and benches."):
+        assert ([m.span() for m in grouped.finditer(text)] == [m.span() for m in one_by_one.finditer(text)]), text

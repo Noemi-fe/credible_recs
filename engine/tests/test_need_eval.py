@@ -77,3 +77,31 @@ def test_the_committed_cases_load_and_each_has_judge_words():
     assert {"shampoo for greasy hair", "dandruff shampoo that actually works", "kettle that's quiet"} <= texts
     for case in cases:
         assert case["judge"] and all(isinstance(word, str) and word for word in case["judge"]), case["id"]
+
+
+# --- Every need, and the opposite (14 Oct 2026, the need-quality builder) ---
+# A request with several needs ("shampoo for curly hair that isn't drying") is best read from threads about all of them,
+# and never from threads asking for the opposite ("Best clarifying shampoo?"), nor answered with a product named as
+# the opposite (a clarifying or detox shampoo). Each case may judge each need apart ("judge_each") and list the
+# opposite's words ("opposite"), matched like judge words.
+
+def test_a_case_counts_threads_about_every_need_and_threads_and_picks_named_as_the_opposite(tmp_path):
+    root = hair_library(tmp_path)
+    path = cases_file(tmp_path, [{
+        "id": "n11", "text": "shampoo for curly hair that isn't drying", "judge": ["curl", "dry"],
+        "judge_each": {"curly": ["curl"], "drying": ["dry", "moistur"]}, "opposite": ["clear", "clarif"]}])
+    [result] = score_cases(path, root, profiles=None, live_checker=None)
+    # 1hair03's post is about curls only; no thread is about curls and drying; none is titled as the opposite.
+    assert result.about_every_need == 0 and result.titled_opposite == 0
+    # What the answer shows named with an opposite word ("Clear" here) is counted.
+    assert result.named_opposite == sum("Clear" in name for name in result.picks + result.worth)
+    lines = need_lines([result])
+    assert "about every need 0/" in lines[0] and "titled as the opposite 0" in lines[0]
+
+
+def test_a_case_without_each_need_judged_counts_none_for_every_need():
+    from engine.need_eval import CaseResult
+
+    plain = CaseResult("n01", GREASY, first=["a", "b"])
+    assert plain.about_every_need == 0 and plain.titled_opposite == 0 and plain.named_opposite == 0
+    assert "about every need" not in need_lines([plain])[0]

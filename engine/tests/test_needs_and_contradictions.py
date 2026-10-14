@@ -225,6 +225,21 @@ def test_a_need_typed_as_a_verb_gets_words_that_read_well():
     assert wording.NEED_LABELS["strip"] == "not stripping the skin"
 
 
+def test_not_stripping_reads_well_for_hair_too():
+    # 14 Oct 2026 (the need-quality builder): "a shampoo that doesn't strip my hair" is a need of its own now; its
+    # reason says the hair, not the skin. Made-up mentions.
+    import dataclasses
+
+    from engine.answer import write_answer
+    from engine.rank import rank_products
+    from engine.tests.ranking_factories import bodies_for, mentions
+
+    shampoos = mentions(3, "Acme Gentle Shampoo", threads=("t1", "t2"))
+    with_needs = [dataclasses.replace(m, category="haircare", needs=("strip",)) for m in shampoos]
+    pick = write_answer(rank_products(with_needs, "haircare"), bodies_for(*with_needs)).picks[0]
+    assert pick.reason.endswith("3 of them about not stripping the hair.")
+
+
 def test_haircare_and_kitchen_needs_get_words_that_read_well():
     # 14 Oct 2026 (need-led thread choice): "3 of them about frizz or curly hair", never "about frizzy or curly".
     assert wording.NEED_LABELS["frizzy"] == "frizz" and wording.NEED_LABELS["curly"] == "curly hair"

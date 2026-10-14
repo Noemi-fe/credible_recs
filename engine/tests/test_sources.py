@@ -8,7 +8,7 @@ import pytest
 from engine.gold import DEFAULT_GOLD_DIR, GoldSetError
 from engine.models import Thread
 from engine.parse_reddit import ParseAPIError
-from engine.query import parse_query
+from engine.query import name_pattern, parse_query
 from engine.sources import LocalSource, ParseSource, Source, relevance, without_unusable_comments
 from engine.tests.factories import make_comment, make_thread, write_gold
 
@@ -1082,6 +1082,19 @@ def test_haircare_need_words():
     assert need_words(parse_query("leave-in conditioner for curly hair")) == ["curly"]  # its own name, hyphen and all
 
 
+def test_a_negation_is_never_a_need_word():
+    # 14 Oct 2026 (the need-quality builder), found on the library: "shampoo for curly hair that isn't drying" read
+    # "isn't" as a need, so every thread whose post said "isn't" counted as talking about it. "doesn't", "won't" and
+    # "without" were left out already; "out" ("won't dry out my hair") says nothing on its own either.
+    from engine.sources import need_words
+
+    assert need_words(parse_query("shampoo for curly hair that isn't drying")) == ["curly", "drying"]
+    assert need_words(parse_query("shampoo that is not drying")) == ["drying"]
+    assert need_words(parse_query("kettle that is never loud and isnt slow")) == ["loud", "slow"]
+    assert need_words(parse_query("shampoo that won't dry out my hair")) == ["dry"]
+    assert need_words(parse_query("sunscreen with no white cast")) == ["white", "cast"]
+
+
 def test_a_hyphenated_title_word_matches_its_parts():
     # "Anti-dandruff shampoo recs?" is about dandruff, and "recs" asks for recommendations.
     from engine.sources import rank_posts
@@ -1209,6 +1222,43 @@ def test_an_ingredient_led_request_keeps_reading_the_threads_about_its_ingredien
     assert ids(source.find_threads(query, limit=10))[0] == "1sali01"
 
 
+# --- A thread asking for the opposite kind of product is no thread about the need (14 Oct 2026, the need-quality builder) ---
+# Found on the library: "shampoo for curly hair that isn't drying" read among its first threads the biggest curly-hair one,
+# asking for a clarifying shampoo for curls (made to strip the hair), whose answers gave the request a detox shampoo. A
+# thread whose title asks for the opposite kind of product (config.OPPOSITE_TITLE_PATTERNS) has no need of the request,
+# however much its title and post talk about curls or dryness. Measured on the frozen library (live checks on): first-
+# reading threads titled as a clarifying request 3 -> 0 of the 15 need requests', products shown named as clarifying or
+# detox for a request asking for a shampoo that isn't drying, a gentle one or one for colour-treated hair 4 -> 0.
+
+CURLY_LIBRARY = [
+    hair_thread("1curl01", "Best shampoo for curly hair?", num_comments=300, community="curlyhair"),
+    hair_thread("1curl02", "Curly girl shampoo recs", num_comments=200, community="curlyhair"),
+    hair_thread("1dry001", "Shampoo that won't dry out my hair?", num_comments=12),
+    hair_thread("1both01", "Shampoo for curls that isn't drying?", num_comments=15, community="curlyhair"),
+    hair_thread("1clar01", "Which clarifying shampoo for my curls?", body="My curls feel dry and coated.",
+                num_comments=400, community="curlyhair"),
+]
+
+
+def test_a_thread_titled_as_a_request_for_the_opposite_comes_after_every_thread_about_the_need(tmp_path):
+    # Its title holds "curly" and its post "dry", but it asks for a clarifying shampoo: made to strip the hair.
+    source = local_source(tmp_path, CURLY_LIBRARY)
+    found = ids(source.find_threads(parse_query("shampoo for curly hair that isn't drying"), limit=10))
+    assert found[0] == "1both01" and found[-1] == "1clar01"
+    assert ids(source.find_threads(parse_query("clarifying shampoo for my curls"), limit=10))[0] == "1clar01"
+
+
+def test_only_the_kind_of_product_makes_a_title_the_opposite():
+    # A title saying a product dried someone's hair is about the need; one asking for a clarifying shampoo isn't.
+    from engine.sources import titled_as_the_opposite
+
+    asks = ("not drying",)
+    assert titled_as_the_opposite("Which clarifying shampoo for curls?", asks)
+    assert titled_as_the_opposite("Detox shampoo recommendations", asks)
+    assert not titled_as_the_opposite("My shampoo is so drying, help", asks)
+    assert not titled_as_the_opposite("Which clarifying shampoo for curls?", ("oily hair",))  # clarifying suits oily hair
+
+
 # --- Relevance and talking read a thread's comments in one go (latency, 13 Oct 2026) ---
 
 import random  # noqa: E402
@@ -1282,8 +1332,9 @@ def test_a_threads_comments_read_once_name_each_product_as_reading_them_for_it_a
             "air", "fryer", "air fryer", "airfyer", "microwve", "salicylic acid", "bha", "chef's knife", "paring knife",
             "cast iron", "skillet", "nothing here", "I love it.", "\n", "rice cooker", "cleanser", "gleanser",
             "exfoliant", "exfolient", "toner", "serum", "dutch oven", "KETTLE", "Sunscreens", "SUNCREENS",
-            "ſunscreen", "İ", "café", "tea-pot", "pot,", "(kettle)", "crock pot", "Kettle",
-            "MOISTURIZERS", "pressure cooker", "presure cooker", "food processors"]
+            "\u017funscreen", "\u0130", "caf\u00e9", "tea-pot", "pot,", "(kettle)", "crock pot", "\u212aettle",
+            "MOISTURIZERS", "pressure cooker", "presure cooker", "food processors", "cafeti\u00e8re",
+            "CAFETI\u00c8RES", "french press", "kettle kettle", "tea kettles", "a pot of tea"]
     types = [p.name for p in PRODUCT_TYPES] + ["air fryer", "salicylic acid product"]
     for n in range(60):
         comments = [make_comment(f"c{n}x{i}", thread_id=f"1fake{n}",
@@ -1345,3 +1396,56 @@ def test_a_word_in_a_text_is_found_as_trying_every_word_found_it():
         text = " ".join(rng.choice(bits) for _ in range(rng.randint(0, 12)))
         word = rng.choice(words)
         assert _title_has(text, word) == title_has_word_by_word(text, word), (text, word)
+
+
+# --- Long lists of names grouped by their first letter (latency, 14 Oct 2026) ---
+
+def flat_pattern(phrases: list[str]) -> re.Pattern:
+    """The phrases one alternative after another, as retrieval's patterns were first written: the reference."""
+    return re.compile(rf"\b(?:{'|'.join(re.escape(x) for x in phrases)})s?\b", re.IGNORECASE)
+
+
+def spans(pattern: re.Pattern, text: str) -> list[tuple[int, int]]:
+    return [m.span() for m in pattern.finditer(text)]
+
+
+def test_names_grouped_by_their_first_letter_are_found_where_the_list_found_them():
+    # The longer names of other things (every other type's names and module 1's look-alike phrases, hundreds of them)
+    # were one alternative after another, which a regular expression tries one by one at every place of a comment:
+    # most of reading a thread. Grouped by first letter, it tries only the group of the letter written there.
+    from engine import sources
+
+    assert sources._alternation(["apple", "ant", "Bee", "b-c", "a"]) == "a(?:pple|nt|)|B(?:ee|\\-c)"
+    rng = random.Random(15)
+    for product_type in [p.name for p in PRODUCT_TYPES] + ["air fryer"]:
+        phrases = sorted(sources._covering_phrases(product_type), key=len, reverse=True)
+        flat, grouped = flat_pattern(phrases), sources._covering_pattern(product_type)
+        assert grouped.pattern != flat.pattern
+        words = [w for x in phrases for w in x.split()] + ["s", "S", "ſ", "ı", "İ", "K", "-", "'"]
+        for _ in range(300):
+            bits = [rng.choice(phrases + words) for _ in range(rng.randint(1, 6))]
+            text = rng.choice([" ", "", "-", ", "]).join(rng.choice([b, b.upper(), b.title(), b + "s"]) for b in bits)
+            assert spans(grouped, text) == spans(flat, text), (product_type, text)
+        words = sources._literal_names(product_type) or ()
+        # Changed on purpose 14 Oct 2026 (the general category): a product's names end in their own plural, as module 1
+        # reads them (engine.query.name_pattern: "batteries", "brushes"), so the list they are compared with does too.
+        names = list(dict.fromkeys(w for p in PRODUCT_TYPES if p.name == product_type for w in p.keywords + p.hints))
+        own = re.compile(rf"\b(?:{'|'.join(name_pattern(w) for w in names)})\b", re.IGNORECASE)
+        for _ in range(100):
+            text = " ".join(rng.choice(list(words) + ["x", "tea", "s"]) for _ in range(rng.randint(1, 5))) if words else ""
+            assert spans(sources._product_pattern(product_type), text) == spans(own, text), (product_type, text)
+
+
+def test_made_up_lists_grouped_by_their_first_letter_find_what_they_found():
+    from engine import sources
+
+    rng = random.Random(16)
+    letters = ["a", "b", "A", "ab", "ba", "a b", "a-b", "b's", "1", "1a", "s", "as", "sa"]
+    for _ in range(3000):
+        phrases = list(dict.fromkeys(rng.choice(letters) + rng.choice(["", "a", "b", "s", " a"])
+                                     for _ in range(rng.randint(1, 8))))
+        text = " ".join(rng.choice(letters + ["c", "ı", "ſ", "İ"]) for _ in range(rng.randint(0, 8)))
+        grouped = re.compile(rf"\b(?:{sources._alternation(phrases)})s?\b", re.IGNORECASE)
+        assert spans(grouped, text) == spans(flat_pattern(phrases), text), (phrases, text)
+    # A phrase starting with anything but an ASCII character isn't grouped: case-blind, it could start two groups
+    assert sources._alternation(["ſx", "sx"]) == "ſx|sx"

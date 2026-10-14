@@ -712,3 +712,38 @@ def test_the_candidates_are_the_pairs_the_quick_look_leaves_either_way_round():
     same_candidates, open_pairs = match_products.match_candidates_and_open(names)
     assert same_candidates == candidates
     assert open_pairs == {(a, b) for a in names for b in candidates[a] if not match_products._cannot_match(a, b)}
+
+
+# --- A text's plain form: accents dropped only from a text that has any (latency, 14 Oct 2026) ---
+
+def plain_text_letter_by_letter(text: str) -> str:
+    """_plain_text as first written, every character checked for an accent: the reference."""
+    import html
+    import unicodedata
+
+    text = html.unescape(text)
+    return "".join(ch for ch in unicodedata.normalize("NFKD", text) if not unicodedata.combining(ch)).lower()
+
+
+def test_a_text_without_accents_is_lowercased_without_checking_each_letter(monkeypatch):
+    # 37,590 of the 38,847 texts getting ready's answers write in their plain form have no accent, nor any character
+    # that splits into one: their every letter was checked for one.
+    import unicodedata
+
+    checked = []
+    combining = unicodedata.combining
+    monkeypatch.setattr(unicodedata, "combining", lambda ch: checked.append(ch) or combining(ch))
+    assert match_products._plain_text("The Fellow STAGG &amp; a 1.7L kettle") == "the fellow stagg & a 1.7l kettle"
+    assert checked == []
+    assert match_products._plain_text("Crème brûlée") == "creme brulee"
+    assert checked
+
+
+def test_a_texts_plain_form_is_the_same_checking_only_texts_with_accents():
+    rng = random.Random(14)
+    bits = ["Café", "café", "&eacute;", "&amp;", "&#233;", "naïve", "ＡＢ", "Ω", "Å",
+            "ß", "İ", "ſ", "ﬁ", "½", "x²", "Mañana", "KETTLE", "kettle", "1.7L", " ",
+            "’", "\U0001f600", "æ", "́", "اَ", "가"]
+    for _ in range(3000):
+        text = "".join(rng.choice(bits) for _ in range(rng.randint(0, 6)))
+        assert match_products._plain_text(text) == plain_text_letter_by_letter(text), text

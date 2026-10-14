@@ -44,6 +44,7 @@ from dataclasses import dataclass, field
 from engine.extract import CheckResult
 from engine.group_products import ProductGroup
 from engine.match_products import Aliases, _features, join_split_words, known_aliases, plain_words
+from engine.memo import register
 
 # Step 2: a word that starts what the kind is for or how it is used.
 PURPOSE_WORDS = frozenset({
@@ -152,9 +153,37 @@ def kind_parts(about: str, product_type: str, aliases: Aliases, type_words: set[
 
 
 def _kind_words(text: str, aliases: Aliases) -> list[str]:
-    """Step 1: the words of a kind or a name, hyphens joined, plurals dropped, known names written out."""
-    words = [_singular(w) for w in plain_words(_HYPHEN_IN_WORD.sub("", text))]
-    return _write_out_anywhere(words, aliases)
+    """Step 1: the words of a kind or a name, hyphens joined, plurals dropped, known names written out.
+
+    Worked out once per text and list of known names (latency, 14 Oct 2026: an answer's "What to look for" asks it of
+    the same kinds, notes and names over and over). A list of known names is known by its identity, kept with its
+    answers (the shipped list is read once: known_aliases); the list handed back is a new one each time."""
+    table = _kind_words_table(aliases)
+    words = table.get(text)
+    if words is None:
+        words = table[text] = tuple(_write_out_anywhere([_singular(w) for w in plain_words(_HYPHEN_IN_WORD.sub("", text))],
+                                                        aliases))
+        if len(table) > MAX_KIND_TEXTS_REMEMBERED:
+            table.clear()
+    return list(words)
+
+
+def _kind_words_table(aliases: Aliases) -> dict[str, tuple[str, ...]]:
+    """The remembered kind words of texts under this list of known names (_kind_words)."""
+    found = _KIND_WORDS.get(id(aliases))
+    if found is not None and found[0] is aliases:
+        return found[1]
+    if len(_KIND_WORDS) >= MAX_KIND_LISTS_REMEMBERED:
+        _KIND_WORDS.pop(next(iter(_KIND_WORDS)))  # the list remembered first
+    table: dict[str, tuple[str, ...]] = {}
+    _KIND_WORDS[id(aliases)] = (aliases, table)
+    return table
+
+
+_KIND_WORDS: dict[int, tuple[Aliases, dict[str, tuple[str, ...]]]] = {}  # id(list) -> (the list, {text: kind words})
+MAX_KIND_LISTS_REMEMBERED = 16
+MAX_KIND_TEXTS_REMEMBERED = 100_000  # per list; a full table starts again
+register(_KIND_WORDS.clear)
 
 
 def _singular(word: str) -> str:
