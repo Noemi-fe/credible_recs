@@ -43,7 +43,7 @@ from dataclasses import dataclass, field
 
 from engine.extract import CheckResult
 from engine.group_products import ProductGroup
-from engine.match_products import Aliases, join_split_words, known_aliases, plain_words
+from engine.match_products import Aliases, _features, join_split_words, known_aliases, plain_words
 
 # Step 2: a word that starts what the kind is for or how it is used.
 PURPOSE_WORDS = frozenset({
@@ -182,7 +182,12 @@ def _write_out_anywhere(words: list[str], aliases: Aliases) -> list[str]:
 
 
 def _same_kind(a: list[str], b: list[str]) -> bool:
-    """The same words, in any order, also when one writes as one word what the other splits in two."""
+    """The same words, in any order, also when one writes as one word what the other splits in two. When neither writes
+    as one word two or three neighbouring words of the other (engine.match_products: the runs of its words), nothing
+    joins, so their sets of words are compared at once (latency, 13 Oct 2026)."""
+    features_a, features_b = _features(a), _features(b)
+    if features_a.runs.isdisjoint(features_b.words) and features_b.runs.isdisjoint(features_a.words):
+        return features_a.words == features_b.words
     joined_a = join_split_words(a, b)
     return set(joined_a) == set(join_split_words(b, joined_a))
 

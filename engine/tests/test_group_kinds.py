@@ -224,3 +224,27 @@ def test_each_pair_of_kind_names_is_compared_once(monkeypatch):
     sets = group_kinds._same_kind_sets(items)
     assert len(sets) == 2
     assert len(calls) == len(set(calls))  # never the same two names twice
+
+
+# --- Two kinds compared with a quick look first (latency, 13 Oct 2026) ---
+
+import random  # noqa: E402
+
+from engine import group_kinds as kinds_module  # noqa: E402
+from engine.match_products import join_split_words  # noqa: E402
+
+
+def same_kind_by_joining(a: list[str], b: list[str]) -> bool:
+    """_same_kind as first written, joining words both ways every time: the reference."""
+    joined_a = join_split_words(a, b)
+    return set(joined_a) == set(join_split_words(b, joined_a))
+
+
+def test_two_kinds_compare_the_same_with_the_quick_look():
+    rng = random.Random(13)
+    stems = ["cast", "iron", "castiron", "carbon", "steel", "carbonsteel", "non", "stick", "nonstick", "pan", "hand",
+             "grinder", "handgrinder", "a", "b", "ab", "abc", "c", "bc"]
+    for _ in range(5000):
+        a = [rng.choice(stems) for _ in range(rng.randint(1, 4))]
+        b = [rng.choice(stems) for _ in range(rng.randint(1, 4))]
+        assert kinds_module._same_kind(a, b) == same_kind_by_joining(a, b), (a, b)

@@ -28,6 +28,7 @@ from functools import cache
 
 from engine.config import NEED_IGNORED_WORDS, NEED_REQUEST_WORDS, NEEDS
 from engine.credibility import _own_words
+from engine.memo import Table
 from engine.query import PRODUCT_TYPES, ParsedQuery
 from engine.sources import _stem, _title_has, need_words
 
@@ -46,10 +47,24 @@ class Need:
 def request_needs(query: ParsedQuery) -> tuple[Need, ...]:
     """The needs the request names, in the order it names them (a need module 1 found but the words don't show, last).
 
-    Nothing for a request module 1 didn't understand (a question or a polite no).
+    Nothing for a request module 1 didn't understand (a question or a polite no). They depend on the request alone, so
+    they are worked out once per request, known by everything module 1 read in it (latency, 13 Oct 2026: an answer asks
+    for them thousands of times, through engine.product_facts.request_asks).
     """
     if query.status != "ok":
         return ()
+    key = query.model_dump_json()
+    found = _REQUEST_NEEDS.get(key)
+    if found is None:
+        found = _REQUEST_NEEDS.keep(key, _request_needs(query))
+    return found
+
+
+_REQUEST_NEEDS = Table(limit=10_000)  # a request, as module 1 read it -> its needs
+_NEEDS_MET = Table()  # (comment, needs, long-term use) -> the needs it talks about
+
+
+def _request_needs(query: ParsedQuery) -> tuple[Need, ...]:
     text = _without_product_names(_plain(query.text), query.product_type)
     found: dict[str, int] = {}  # need name -> where the request names it
 
@@ -82,10 +97,19 @@ def needs_met(body: str, needs: tuple[Need, ...], long_term_use: bool = False) -
     """The names of the needs a comment talks about, in the request's order: an empty tuple when it talks about none.
 
     `body` is the comment as saved; only the writer's own words count, not quoted blocks. `long_term_use` is module
-    5's finding for this mention: long use also speaks to "lasting".
+    5's finding for this mention: long use also speaks to "lasting". It depends on these alone, so each is worked out
+    once (latency, 13 Oct 2026: a comment naming several products was read again for each).
     """
     if not needs:
         return ()
+    key = (body, needs, long_term_use)
+    found = _NEEDS_MET.get(key)
+    if found is None:
+        found = _NEEDS_MET.keep(key, _needs_met(body, needs, long_term_use))
+    return found
+
+
+def _needs_met(body: str, needs: tuple[Need, ...], long_term_use: bool) -> tuple[str, ...]:
     text = _own_words(body)
     met = []
     for need in needs:
