@@ -1549,6 +1549,11 @@ BULK_FIRST_YEAR = 2019
 # in one run, so the extraction backlog stays readable.
 BULK_TYPE_TARGET = 36
 BULK_MAX_NEW_PER_TYPE = 30
+# The general category's types (336 on 14 Oct 2026) aim at one library mix each in a run (LIBRARY_THREADS_PER_PRODUCT:
+# 3 advice, 1 long-term use, 2 warnings): the extracted threads at which the site stops queueing a request for
+# on-demand reading (ON_DEMAND_MIN_THREADS). 30 each would be about 10,000 threads, far more than can be extracted
+# before the archive text's retention (ARCHIVE_TEXT_KEPT_DAYS) removes it.
+BULK_GENERAL_TYPE_TARGET = LIBRARY_THREADS_PER_PRODUCT
 # A request given to the import (need-led choice, Noemi's decision 3 of 14 Oct 2026: "conditioner for curly hair") takes
 # up to this many threads asking about its needs, within its type's BULK_MAX_NEW_PER_TYPE.
 BULK_PER_REQUEST = 8

@@ -232,6 +232,27 @@ def test_a_request_takes_the_threads_asking_about_its_needs(tmp_path, lib, monke
     assert [p["id"] for p in request.chosen] == ["1curl01"]
 
 
+def test_a_general_type_takes_one_library_mix_in_a_run(tmp_path, lib):
+    files = tmp_path / "files"
+    posts = [post(f"1hp{n:03}", f"Which headphones should I buy, take {n}?", num_comments=20 + n) for n in range(9)]
+    write_subreddit(files, "BuyItForLife", posts, [c for p in posts for c in some_comments(p["id"])])
+    result = run(files, lib)
+    plan = result.type_plan("headphones")
+    # its 3 advice threads (no other kind is found), of which at most 2 from one community (engine.sources.choose_mix)
+    assert plan.category == "general" and len(plan.chosen) == 2
+    assert {t.category for t in load_threads(lib / "threads")} == {"general"}  # not r/BuyItForLife's first, kitchen
+
+
+def test_a_dry_runs_choice_can_be_carried_out_later(tmp_path, lib):
+    files = tmp_path / "files"
+    write_subreddit(files, "BuyItForLife", [post("1adv01", GOOD)], tree_comments())
+    planned = run(files, lib, dry_run=True)
+    assert list((lib / "threads").iterdir()) == []
+    done = bulk_import.carry_out(planned, files, lib, now=NOW, never=set(), workers=1)
+    assert done.saved == ["1adv01"] and not done.dry_run
+    assert (lib / "threads" / "1adv01.json").exists() and (lib / "imports.jsonl").exists()
+
+
 def test_a_thread_about_two_types_is_chosen_once_and_counts_for_both(tmp_path, lib):
     files = tmp_path / "files"
     both = post("1both01", "Which cleanser and moisturiser should I buy?", sub="SkincareAddiction")

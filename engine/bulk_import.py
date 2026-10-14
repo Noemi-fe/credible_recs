@@ -76,6 +76,7 @@ from engine.config import (
     BULK_DUMP,
     BULK_DUMP_LAST_DAY,
     BULK_FIRST_YEAR,
+    BULK_GENERAL_TYPE_TARGET,
     BULK_MAX_NEW_PER_TYPE,
     BULK_MIN_COMMENTS,
     BULK_MIN_SCORE,
@@ -395,6 +396,7 @@ class ImportResult:
     missing_comments: list[str] = field(default_factory=list)  # subreddits whose comments file isn't there
     posts_read: int = 0  # candidates found before engagement was counted and the library's threads left out
     left_out: dict[str, int] = field(default_factory=dict)  # posts left out, by reason
+    chosen: dict[str, dict] = field(default_factory=dict)  # every new thread chosen: post id -> post, in choosing order
     saved: list[str] = field(default_factory=list)  # new thread files written
     already_there: list[str] = field(default_factory=list)  # chosen, but a file appeared meanwhile: left as it was
     comments_saved: int = 0
@@ -486,7 +488,8 @@ def _choose_for_request(plan: RequestPlan, query: ParsedQuery, posts: list[dict]
     fresh = [p for p in pool if p["id"] not in chosen]
     picked = choose_mix(query, _ranked(query, fresh), total=total, mix=_kind_targets(total), fill=True) if total else []
     for post in picked:
-        chosen[post["id"]] = post | {"category": query.category}
+        post["category"] = query.category
+        chosen[post["id"]] = post
     plan.chosen = [p | {"kind": _kind_for(p, query)} for p in picked]
 
 
@@ -498,12 +501,14 @@ def _choose_for_type(plan: TypePlan, query: ParsedQuery, posts: list[dict], chos
     plan.found = {kind: sum(p["about"][name] == kind for p in candidates if name in p["about"]) for kind in THREAD_KINDS}
     already = [p for p in chosen.values() if name in p["about"]]
     have = Counter(plan.have) + Counter(p["about"][name] for p in already)
-    shares = {kind: max(0, target - have[kind]) for kind, target in _kind_targets(BULK_TYPE_TARGET).items()}
+    target = BULK_GENERAL_TYPE_TARGET if plan.category == "general" else BULK_TYPE_TARGET
+    shares = {kind: max(0, aim - have[kind]) for kind, aim in _kind_targets(target).items()}
     total = min(max(0, BULK_MAX_NEW_PER_TYPE - len(already)), sum(shares.values()))
     fresh = [p for p in candidates if p["id"] not in chosen and name in p["about"]]
     picked = choose_mix(query, _ranked(query, fresh), total=total, mix=shares, fill=False) if total else []
     for post in picked:
-        chosen[post["id"]] = post | {"category": query.category}
+        post["category"] = query.category
+        chosen[post["id"]] = post
     plan.chosen = [p | {"kind": p["about"][name]} for p in already + picked]
 
 
@@ -561,9 +566,23 @@ def import_dump(files_dir: Path, library_dir: Path = DEFAULT_LIBRARY_DIR, reques
     for plan, parsed in sorted(plans, key=lambda pair: sum(pair[0].have.values())):  # the thinnest first
         _choose_for_type(plan, parsed, posts, chosen)
     result.types = [plan for plan, _ in plans]
-    if not dry_run and chosen:
-        _read_and_save(chosen, files, threads_dir, never, now, workers, result)
-        _log(result, chosen, Path(library_dir), now)
+    result.chosen = chosen
+    if not dry_run:
+        carry_out(result, files_dir, library_dir, now, never, workers)
+    return result
+
+
+def carry_out(result: ImportResult, files_dir: Path, library_dir: Path = DEFAULT_LIBRARY_DIR,
+              now: datetime | None = None, never: Iterable[str] | None = None, workers: int = WORKERS) -> ImportResult:
+    """Reads and saves the threads a run chose (a dry run's, say, once looked over), and logs them; returns the result,
+    now saying what was saved."""
+    now = now or datetime.now(UTC)
+    never = _gold_ids() if never is None else set(never)
+    result.dry_run = False
+    if result.chosen:
+        files, _ = history_files(Path(files_dir))
+        _read_and_save(result.chosen, files, Path(library_dir) / "threads", never, now, workers, result)
+        _log(result, result.chosen, Path(library_dir), now)
     return result
 
 
