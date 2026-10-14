@@ -42,6 +42,7 @@ The rules, in plain words:
   UPVOTE_MIN_SCORE upvotes counts as two toward the two rules above (counts_twice; the variants are config's). Only a
   credible recommendation: upvotes never make a comment credible, and a warning counts once. One comment counts at most
   twice, and the threads are still counted as threads, so the extra count never stands in for the second thread: in
+  practice it lifts a product with 2 credible recommendations from 2 threads (one of them with the upvotes) to the
   picks. A writer counted once (the strongest of their mentions) is counted twice only by that mention's own comment.
   Everything else still counts writers: the score, the ties below, the skip-these list and the disagreement flag. A
   lifted product takes its place among the picks by its score, or with config.UPVOTE_ONLY_TO_FILL (variant D) only a
