@@ -155,6 +155,9 @@ class PriceCheck:
     status: PriceStatus
     budget: Budget | None = None  # the request's budget, when it has one that can be checked
     availability: Price | None = None  # the entry that says whether it is sold (find_availability); None: not checked
+    # True when `price` is a brand line's from price (data/brand_lines.json; Noemi's night decision 1, 14 Oct 2026): the
+    # cheapest UK price of the brand's products of the type, shown as "From £X at <shop>, checked <date>".
+    from_price: bool = False
 
 
 # --- The list ---

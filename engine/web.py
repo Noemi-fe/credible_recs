@@ -55,12 +55,19 @@ The JSON for /api/answer (200):
                             "downsides": [same shape as quotes], "disagreement": "..." | null,
                             "score", "breakdown": {every number behind the score (engine.rank.ScoreBreakdown)},
                             "price": {"text",                  "£120 at <shop>, checked 9 Oct 2026" or
-                                                               "Price not checked yet"
+                                                               "Price not checked yet"; for a brand line, its
+                                                               from price: "From £25 at <shop>, checked 14 Oct
+                                                               2026"
                                       "amount", "currency", "shop", "checked_on",   null when not known
                                       "url",                   the shop's own page, https only, or null
                                       "budget_status",         "within" | "unknown" | "other currency" |
                                                                "out of date", or null without a budget
-                                      "budget_note"},          the same in words, or null
+                                      "budget_note",           the same in words, or null ("From £25, within
+                                                               your budget (up to £100)." for a line)
+                                      "from_price"},           true when the amount is a brand line's from price
+                                                               (Noemi's night decision 1, 14 Oct 2026): the
+                                                               cheapest UK price of its products of the type,
+                                                               researched in data/brand_lines.json; else false
                             "availability": {"text",           "Sold at <shop>, checked 9 Oct 2026",
                                                                "Sold second-hand only: <shop>, checked
                                                                10 Oct 2026" (10 Oct 2026), or
@@ -92,6 +99,15 @@ The JSON for /api/answer (200):
                                        "warn": n,              recommendations, of them the high and medium voices, the
                                        "threads": n}           writers who warned (as the share line counts them) and
                                                                the threads with a credible recommendation
+                            "range": {"text",                  a brand line's link to its maker's page for its products
+                                      "url",                   of the type, or an official UK stockist's (Noemi's night
+                                      "checked",               decision 1, 14 Oct 2026): "Browse Victorinox chef
+                                      "checked_on"}            knives", the entry's range page exactly as
+                                                               data/brand_lines.json writes it (https only, one of its
+                                                               sources, never Reddit's, never from a comment), and
+                                                               "checked 14 Oct 2026" / "2026-10-14", the day its sources
+                                                               were read; null for any other pick, and for a line whose
+                                                               entry has no range page
                            }],
                  "look_for": [{"kind", "advice", "quote": {same shape}}],
                  "skip": [{"product_key", "name", "reason", "quotes": [...]}],
@@ -99,7 +115,7 @@ The JSON for /api/answer (200):
                                                     (Noemi, 11 Oct 2026); [] when there are none
                  "worth_a_look": [{"product_key", "name", "reason", "quotes", "downsides", "downsides_share",
                                    "disagreement", "score", "breakdown", "price", "availability", "cautions",
-                                   "summary", "voices"}],
+                                   "summary", "voices", "range"}],
                                   "Also worth a look" (Noemi's decision 2, 13 Oct 2026): up to 3 products with 2
                                   credible recommendations across at least 2 threads, best first, shown apart after the
                                   picks and never among them; the same shapes as a pick's fields, with 1 or 2 quotes,
@@ -758,6 +774,8 @@ def answer_wording() -> dict[str, str]:
         "summary_note": wording.SUMMARY_NOTE,
         # Active ingredients (13 Oct 2026): the label of each product's form in an ingredient-led answer.
         "form_label": wording.FORM_LABEL,
+        # Brand lines (14 Oct 2026): a line's from price as an amount alone ("From £25"), in "At a glance" and its row.
+        "price_from_amount": wording.PRICE_FROM_AMOUNT,
     }
 
 
