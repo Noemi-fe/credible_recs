@@ -37,6 +37,14 @@ The rules, in plain words:
   (config.WORTH_A_LOOK_CREDIBLE), from at least 2 different threads (WORTH_A_LOOK_MIN_THREADS), a score above zero and
   not on the skip-these list is shown apart from the picks, as less supported. It is never a pick, and, as for picks,
   the kind bonus never helps it in.
+- Upvotes (Noemi, 14 Oct 2026: "if we have few credible mentions, a highly upvoted comment (10+) counts more"), only
+  while config.UPVOTE_COUNTS_MORE is on (it is off): a credible recommendation whose comment has at least
+  UPVOTE_MIN_SCORE upvotes counts as two toward the two rules above (counts_twice; the variants are config's). Only a
+  credible recommendation: upvotes never make a comment credible, and a warning counts once. One comment counts at most
+  twice, and the threads are still counted as threads, so the extra count never stands in for the second thread: in
+  practice it lifts a product with 2 credible recommendations from 2 threads (one of them with the upvotes) to the
+  picks. A writer counted once (the strongest of their mentions) is counted twice only by that mention's own comment.
+  Everything else still counts writers: the score, the ties below, the skip-these list and the disagreement flag.
 - Kind support: each kind's support is the sum of the weights of its credible notes. If the best-supported kind
   has at least 2 credible recommending notes and at least twice the support of the next kind, its products
   get a bonus (config.KIND_BONUS, shown in the score breakdown).
@@ -51,6 +59,7 @@ from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 
+from engine import config  # the upvote rule's settings, read when ranking (14 Oct 2026), so they can be switched
 from engine.config import (
     CREDIBLE_EVIDENCE,
     CREDIBLE_VOICES,
@@ -101,6 +110,12 @@ class ScoredMention:
     # The product's name as this comment's writer wrote it (module 3: "my Stagg"), which names the product in a quote
     # as well as the name shown does (engine/answer.py; 10 Oct 2026). Empty when not known.
     written_as: str = ""
+    # Its comment's upvotes beside its thread's (module 5, engine.credibility.thread_upvotes; 14 Oct 2026), for Noemi's
+    # upvote rule (counts_twice): its score (upvotes minus downvotes), how many of its thread's comments were readable
+    # when it was read (itself included), and the share of the others it scored higher than. None when not known.
+    upvotes: int | None = None
+    thread_comments: int | None = None
+    share_beaten: float | None = None
 
     def __post_init__(self):
         object.__setattr__(self, "badges", tuple(self.badges))  # a list given by the pipeline is fine too
@@ -158,6 +173,34 @@ def is_credible(item: ScoredMention | KindNote) -> bool:
     return True
 
 
+def counts_twice(mention: ScoredMention) -> bool:
+    """Whether a mention's upvotes let it count as two credible recommendations toward the picks bar (Noemi, 14 Oct
+    2026), whatever the product: the rule is on (config.UPVOTE_COUNTS_MORE), the mention is a credible recommendation,
+    and its comment has at least UPVOTE_MIN_SCORE upvotes; with UPVOTE_TOP_OF_BIG_THREAD (variant C), its thread also
+    had at least UPVOTE_THREAD_MIN_COMMENTS readable comments, of which it scored higher than UPVOTE_THREAD_SHARE_BEATEN.
+    Which of a product's such mentions do count twice is _counted_twice's."""
+    if not config.UPVOTE_COUNTS_MORE or mention.stance != "recommend" or not is_credible(mention):
+        return False
+    if mention.upvotes is None or mention.upvotes < config.UPVOTE_MIN_SCORE:
+        return False
+    if config.UPVOTE_TOP_OF_BIG_THREAD:
+        return (mention.thread_comments is not None and mention.share_beaten is not None
+                and mention.thread_comments >= config.UPVOTE_THREAD_MIN_COMMENTS
+                and mention.share_beaten >= config.UPVOTE_THREAD_SHARE_BEATEN)
+    return True
+
+
+def _counted_twice(credible_recommends: list[ScoredMention]) -> tuple[ScoredMention, ...]:
+    """A product's credible recommendations that count twice toward the picks bar, the most upvoted first: every one
+    counts_twice allows (variant A), or with UPVOTE_ONLY_WHEN_SHORT (variants B and C) only for a product with fewer
+    than MIN_CREDIBLE_MENTIONS credible recommendations, and only as many as it is short of the bar, so the rule lifts
+    a product with few credible mentions and never inflates one that meets the bar on its own."""
+    upvoted = sorted((m for m in credible_recommends if counts_twice(m)), key=lambda m: (-m.upvotes, m.comment_id))
+    if config.UPVOTE_ONLY_WHEN_SHORT:
+        upvoted = upvoted[:max(0, MIN_CREDIBLE_MENTIONS - len(credible_recommends))]
+    return tuple(upvoted)
+
+
 # --- What comes out ---
 
 @dataclass
@@ -182,6 +225,9 @@ class ScoreBreakdown:
     # Credible mentions whose comment talks about the request's needs (9 Oct 2026); each weighs NEED_MATCH_BOOST times.
     credible_recommends_fitting_need: int = 0
     credible_warnings_fitting_need: int = 0
+    # Of its credible recommendations, those counted twice toward the picks bar for their upvotes (Noemi's upvote rule,
+    # 14 Oct 2026; 0 while it is off): the bar counts credible_recommends + counted_twice.
+    counted_twice: int = 0
 
 
 @dataclass
@@ -198,6 +244,9 @@ class ProductScore:
     # Shown under "Also worth a look": exactly WORTH_A_LOOK_CREDIBLE credible recommendations, from at least
     # WORTH_A_LOOK_MIN_THREADS threads, mention points above zero, not on the skip list (Noemi, 13 Oct 2026).
     worth_a_look: bool = False
+    # The credible recommendations counted twice toward the picks bar for their upvotes, the most upvoted first (Noemi's
+    # upvote rule, 14 Oct 2026; _counted_twice): empty while the rule is off. The answer says which and how many upvotes.
+    counted_twice: tuple[ScoredMention, ...] = ()
 
     @property
     def credible_recommendations(self) -> list[ScoredMention]:
@@ -325,13 +374,16 @@ def _score_product(
     kind = _kind_of(key, kinds, placements, leader)
     bonus = kind_bonus if leader is not None and kind is leader else 0.0
     credible_threads = len({m.thread_id for m in credible_recommends})
+    # Toward the bar, a credible recommendation counted twice for its upvotes counts two (14 Oct 2026; off: none does).
+    twice = _counted_twice(credible_recommends)
+    counted = len(credible_recommends) + len(twice)
 
     on_skip_list = (
         len(credible_warnings) >= SKIP_MIN_CREDIBLE_WARNINGS and len(credible_warnings) > len(credible_recommends)
     )
     disputed = bool(credible_recommends) and len(credible_warnings) >= DISAGREEMENT_MIN_CREDIBLE_WARNINGS
-    shortfall = _shortfall(len(credible_recommends), credible_threads, points, on_skip_list)
-    worth_a_look = (len(credible_recommends) == WORTH_A_LOOK_CREDIBLE and credible_threads >= WORTH_A_LOOK_MIN_THREADS
+    shortfall = _shortfall(counted, credible_threads, points, on_skip_list, len(twice))
+    worth_a_look = (counted == WORTH_A_LOOK_CREDIBLE and credible_threads >= WORTH_A_LOOK_MIN_THREADS
                     and points > 0 and not on_skip_list)
     breakdown = ScoreBreakdown(
         mention_points=points,
@@ -351,6 +403,7 @@ def _score_product(
         credible_threads=credible_threads,
         credible_recommends_fitting_need=sum(bool(m.needs) for m in credible_recommends),
         credible_warnings_fitting_need=sum(bool(m.needs) for m in credible_warnings),
+        counted_twice=len(twice),
     )
     return ProductScore(
         key=key,
@@ -363,16 +416,19 @@ def _score_product(
         on_skip_list=on_skip_list,
         disputed=disputed,
         worth_a_look=worth_a_look and shortfall is not None,
+        counted_twice=twice,
     )
 
 
-def _shortfall(credible: int, threads: int, points: float, on_skip_list: bool) -> str | None:
-    """Why a product can't be a pick, in words, or None when it meets the minimum-evidence rule."""
+def _shortfall(credible: int, threads: int, points: float, on_skip_list: bool, twice: int = 0) -> str | None:
+    """Why a product can't be a pick, in words, or None when it meets the minimum-evidence rule. `credible` counts the
+    credible recommendations as the bar does, `twice` of them counted twice for their upvotes (14 Oct 2026)."""
     reasons = []
     if on_skip_list:
         reasons.append("more credible warnings than recommendations (on the skip-these list)")
     if credible < MIN_CREDIBLE_MENTIONS:
-        reasons.append(f"{credible} of {MIN_CREDIBLE_MENTIONS} credible recommendations")
+        counted = f" ({twice} counted twice for {'its' if twice == 1 else 'their'} upvotes)" if twice else ""
+        reasons.append(f"{credible} of {MIN_CREDIBLE_MENTIONS} credible recommendations{counted}")
     if threads < MIN_THREADS:
         reasons.append(f"credible recommendations in {threads} of {MIN_THREADS} threads")
     if points <= 0:

@@ -158,6 +158,19 @@ ON_DEMAND_NOTE = ("<li><strong>Products we haven't read about yet.</strong> When
                   "so the same product isn't read again within a month.</li>")
 ON_DEMAND_EXCEPT = ", and the short note about a product we haven't read about yet"
 
+# Noemi's upvote rule (14 Oct 2026; wording decided by Claude): explained under the picks rule only while it is on
+# (config.UPVOTE_COUNTS_MORE), in the words of its variant: for any product (A), or only for one short of the bar (B, C),
+# and with variant C's thread (UPVOTE_TOP_OF_BIG_THREAD).
+UPVOTE_RULE = ("<p>{which} whose comment has at least {{{{config:UPVOTE_MIN_SCORE}}}} upvotes{thread} counts as two "
+               "toward this rule, never more{as_needed}. It never stands in for the second thread, upvotes never make a "
+               "comment credible, and a warning always counts once. The pick's reason says which voice counted twice "
+               "and for how many upvotes; every other number counts people.</p>")
+UPVOTE_RULE_WHEN_SHORT = "When a product has fewer than {{config:MIN_CREDIBLE_MENTIONS}} credible recommendations, one"
+UPVOTE_RULE_ANY = "A credible recommendation"
+UPVOTE_RULE_AS_NEEDED = ", and only as many as the product needs"
+UPVOTE_RULE_THREAD = (", and that scored higher than {{config%:UPVOTE_THREAD_SHARE_BEATEN}} of the other comments in a "
+                      "thread of at least {{config:UPVOTE_THREAD_MIN_COMMENTS}} comments,")
+
 MEASURED_ON = "Last measured on {date}."
 TARGETS_HEADING = "The targets we set"
 OTHER_HEADING = "Other checks"
@@ -192,6 +205,7 @@ def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = Fa
         "red_flags": _sign_list(RED_FLAGS),
         "honesty_signs": _sign_list(HONESTY_SIGNS),
         "hard_rules": _hard_rules(),
+        "upvote_rule": _upvote_rule(),
         "evaluation": evaluation_section(metrics_path),
         "visit_counting": VISITS_COUNTED if counter else VISITS_NOT_COUNTED,
         "public_site": PUBLIC_SITE if public else "",
@@ -258,6 +272,16 @@ def _number(value: float) -> str:
 
 def _points(value: float) -> str:
     return f"{_number(value)} point" + ("" if value == 1 else "s")
+
+
+def _upvote_rule() -> str:
+    """The upvote rule under the picks rule (UPVOTE_RULE), in its variant's words, or "" while it is off."""
+    if not config.UPVOTE_COUNTS_MORE:
+        return ""
+    short = config.UPVOTE_ONLY_WHEN_SHORT
+    return fill(UPVOTE_RULE.format(which=UPVOTE_RULE_WHEN_SHORT if short else UPVOTE_RULE_ANY,
+                                   thread=UPVOTE_RULE_THREAD if config.UPVOTE_TOP_OF_BIG_THREAD else "",
+                                   as_needed=UPVOTE_RULE_AS_NEEDED if short else ""), {})
 
 
 def _medium_red_flags() -> str:

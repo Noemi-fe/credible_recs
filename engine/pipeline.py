@@ -79,7 +79,8 @@ look for" notes that name no kind (notes_without_kind, engine.group_kinds step 5
 can't use. threads_quoted names the threads the answer's quotes come from: the ones whose live checks matter most.
 
 Each mention carries its writer's name (lowercased), so the ranking counts one writer once per product, however
-many comments or threads they praise it in (engine.rank).
+many comments or threads they praise it in (engine.rank). Since 14 Oct 2026 it also carries its comment's upvotes beside
+its thread's (engine.credibility.thread_upvotes), for Noemi's upvote rule, which is off (engine.rank.counts_twice).
 
 Two ranking changes of 9 Oct 2026 are worked out here, in _score, before module 6 ranks:
 - needs: a mention whose comment talks about what the request asks for (engine/needs.py: "sensitive skin", "a
@@ -169,7 +170,7 @@ from engine.config import (
 from engine.contradictions import contradicting_writers
 from engine.credibility import (
     VoiceScore, badges, copied_comment_ids, copy_groups, mention_weight, repeated_copies, score_evidence, score_voice,
-    with_ai_evidence,
+    thread_upvotes, with_ai_evidence,
 )
 from engine.extract import CheckResult, shown_comment_ids
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
@@ -1389,6 +1390,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
         groups = copy_groups(thread)  # once per thread: it reads the whole thread
         # Copies count once (Noemi, 11 Oct 2026): the later copies' mentions and notes are left out.
         copied, repeats = copied_comment_ids(thread, groups), repeated_copies(thread, groups)
+        upvotes = thread_upvotes(thread)  # each comment's beside the thread's, for the upvote rule (14 Oct 2026)
         voices = {}
 
         def voice_of(comment: Comment) -> VoiceScore:
@@ -1411,12 +1413,16 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                                         m.evidence_tags)
             met = _needs_talked_about(m.quote, comment.body, needs, asks, evidence.level == "long-term use")
             weight = mention_weight(voice, evidence, m.stance) * (NEED_MATCH_BOOST if met else 1)
+            standing = upvotes.get(m.comment_id)
             scored.append(ScoredMention(
                 product_key=group.key, product_name=group.name, category=group.category, thread_id=tid,
                 comment_id=m.comment_id, comment_url=str(comment.url), stance=m.stance,
                 weight=weight, voice=voice.level, evidence=evidence.level,
                 quote=m.quote, badges=badges(voice, evidence), author=_writer(comment), needs=met,
                 written_as=m.product,
+                upvotes=standing.score if standing else None,
+                thread_comments=standing.thread_comments if standing else None,
+                share_beaten=standing.share_beaten if standing else None,
             ))
         for n in res.kept_notes:
             if n.comment_id in repeats:

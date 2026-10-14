@@ -27,6 +27,10 @@ Two layers (the brief's "Credibility score v1", with Noemi's definitions from da
 A mention's weight (mention_weight) = voice value x evidence value x stance value, with the values in
 engine/config.py (VOICE_VALUE, EVIDENCE_VALUE, STANCE_VALUE): recommend counts plus, warn minus, neutral nothing.
 
+For Noemi's upvote rule (14 Oct 2026, switched off: config.UPVOTE_COUNTS_MORE), thread_upvotes also gives each comment's
+upvotes beside its thread's (its score, the thread's size, the share of its comments it beats): numbers only. Whether a
+credible recommendation then counts twice toward the picks bar is module 6's rule (engine/rank.py).
+
 Every result keeps its reasons in words ("2 years of use", "compares 4 alternatives", "flair says Dermatologist
 (not verified)"), so the answer can show why a voice counts. Tags come from config.VOICE_TAGS and
 config.EVIDENCE_TAGS, so the results compare directly with Noemi's labels (engine/credibility_eval.py).
@@ -43,6 +47,7 @@ What this version can't see yet:
 
 import html
 import re
+from bisect import bisect_left
 from collections.abc import Collection, Iterable
 from dataclasses import dataclass
 from functools import cache
@@ -468,6 +473,30 @@ def _endorsement_signs(comment: Comment, thread: Thread, agreements: Iterable[Ex
         n = len(agreeing)
         signs.append(Sign("replies agree", f"{n} {'reply agrees' if n == 1 else 'replies agree'}", "good"))
     return signs
+
+
+@dataclass(frozen=True)
+class Upvotes:
+    """A comment's upvotes beside its thread's, numbers only: what Noemi's upvote rule reads (14 Oct 2026: "if we have
+    few credible mentions, a highly upvoted comment (10+) counts more"; config.UPVOTE_*, the rule in engine/rank.py)."""
+
+    score: int  # the comment's score: upvotes minus downvotes
+    thread_comments: int  # the thread's comments readable when it was read, this one included
+    share_beaten: float  # the share of those others it scores higher than ("well upvoted" reads the same); 0 with none
+
+
+def thread_upvotes(thread: Thread) -> dict[str, Upvotes]:
+    """{comment id: Upvotes} for every comment of `thread` readable when it was read, worked out once per thread.
+
+    The same comments the "well upvoted" sign compares a comment with (_endorsement_signs): those not deleted or removed
+    (so also one whose words the library doesn't keep, by its score). A tie beats no one. A deleted or removed comment
+    has no entry: it is never credible, so it never counts twice.
+    """
+    readable = [c for c in thread.comments if c.status not in ("deleted", "removed")]
+    scores = sorted(c.score for c in readable)
+    others = len(readable) - 1
+    return {c.id: Upvotes(c.score, len(readable), bisect_left(scores, c.score) / others if others else 0.0)
+            for c in readable}
 
 
 # Recency: still true today.
