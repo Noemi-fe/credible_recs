@@ -1265,6 +1265,52 @@ def test_relevance_and_talking_are_the_same_reading_the_comments_together():
                 assert mentions_product(comment.body, product_type) == mentions_by_scanning(comment.body, product_type)
 
 
+def test_a_threads_comments_read_once_name_each_product_as_reading_them_for_it_alone():
+    # Latency, 14 Oct 2026: what reading a thread's comments for a product starts with (joining them, writing them in
+    # lowercase, finding the odd letters and the long words) is the same for every product, so it is done once a thread
+    # and kept (keep_read, as LocalSource keeps it), and every product's reading starts from it. Comments as above.
+    from engine import sources
+    from engine.sources import comments_naming, keep_read, read_comments
+
+    rng = random.Random(14)
+    bits = ["kettle", "kettles", "a tea pot", "teapot", "pot", "saucepan", "suncreen", "sunscreen", "moisturiser",
+            "moisturizr", "moisturisers", "dry shampoo", "shampoo", "conditioner", "condtioner", "leave-in conditioner",
+            "air", "fryer", "air fryer", "airfyer", "microwve", "salicylic acid", "bha", "chef's knife", "paring knife",
+            "cast iron", "skillet", "nothing here", "I love it.", "\n", "rice cooker", "cleanser", "gleanser",
+            "exfoliant", "exfolient", "toner", "serum", "dutch oven", "KETTLE", "Sunscreens", "SUNCREENS",
+            "ſunscreen", "İ", "café", "tea-pot", "pot,", "(kettle)", "crock pot", "Kettle",
+            "MOISTURIZERS", "pressure cooker", "presure cooker", "food processors"]
+    types = [p.name for p in PRODUCT_TYPES] + ["air fryer", "salicylic acid product"]
+    for n in range(60):
+        comments = [make_comment(f"c{n}x{i}", thread_id=f"1fake{n}",
+                                 body="so " + " ".join(rng.choice(bits) for _ in range(rng.randint(1, 6))))
+                    for i in range(rng.randint(0, 9))]
+        thread = Thread.model_validate(make_thread(id=f"1fake{n}", title=rng.choice(["Help", "Best kettle?"]),
+                                                   comments=comments, num_comments=len(comments)))
+        read = keep_read(read_comments(thread.comments))
+        assert sources._kept_read(thread.comments) is read  # found by those very comments
+        assert sources._kept_read(list(thread.comments)) is None  # and only by them
+        for product_type in rng.sample(types, len(types)):  # in any order: the reading is the same for each
+            alone = sum(mentions_by_scanning(c.body, product_type) for c in thread.comments)
+            assert comments_naming(thread.comments, product_type) == alone, (n, product_type)
+            assert relevance(thread, product_type) == relevance_one_by_one(thread, product_type), (n, product_type)
+
+
+def test_a_threads_comments_are_read_once_whatever_product_is_asked_about(tmp_path, monkeypatch):
+    from engine import sources
+
+    sizes = []
+    reading = sources.read_comments
+    monkeypatch.setattr(sources, "read_comments", lambda comments: sizes.append(len(comments)) or reading(comments))
+    source = local_source(tmp_path, [
+        kitchen_thread("1ket001", "Best kettle?", comments=["My kettle lasted ten years.", "A teapot is better."]),
+        kitchen_thread("1pan001", "Pans that last?", comments=["This saucepan is great."]),
+    ])
+    for request in ("electric kettle", "teapot", "saucepan", "frying pan"):
+        source.find_threads(parse_query(request), limit=5)
+    assert sorted(sizes) == [1, 2]  # each thread once, for all four products
+
+
 # --- A request's word in a text, found without trying every word in turn (latency, 13 Oct 2026) ---
 
 import re  # noqa: E402
