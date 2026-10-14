@@ -94,7 +94,7 @@ def _product_pattern(product_type: str) -> re.Pattern:
     known = {p.name: p.keywords + p.hints for p in PRODUCT_TYPES}
     words = known.get(product_type.strip().lower())
     if words:
-        alternatives = "|".join(re.escape(word) for word in words)
+        alternatives = _alternation(list(words))
     else:
         alternatives = r"[\s-]?".join(re.escape(word) for word in product_type.lower().split()) or "(?!)"  # (?!): never
     return re.compile(rf"\b(?:{alternatives})s?\b", re.IGNORECASE)
@@ -104,9 +104,24 @@ def _product_pattern(product_type: str) -> re.Pattern:
 def _covering_pattern(product_type: str) -> re.Pattern:
     """Longer names that hold one of this product's words but name something else: the other product types' names and
     module 1's look-alike phrases ("tea pot" and "crock pot" hold "pot"; "dry shampoo" holds "shampoo")."""
-    alternatives = "|".join(re.escape(x) for x in sorted(_covering_phrases(product_type), key=len, reverse=True))
+    alternatives = _alternation(sorted(_covering_phrases(product_type), key=len, reverse=True))
     return re.compile(rf"\b(?:{alternatives})s?\b", re.IGNORECASE)
 
+
+def _alternation(phrases: list[str]) -> str:
+    """The phrases as one alternation of a regular expression, in their order, grouped by first letter: "a(?:pple|nt)|
+    b(?:ee)" for apple, ant, bee (latency, 14 Oct 2026: written one after another, the hundreds of longer names of other
+    things were tried one by one at every place of a comment, most of reading a thread; grouped, only the group of the
+    letter written there is tried, a tenth of the time). The same matches: at a place, only the phrases starting with
+    the letter written there can match, and they are tried in the same order. Not grouped when a phrase starts with
+    anything but an ASCII character: read case-blind, a letter such as the long s could start two groups."""
+    if not all(phrase and phrase[0].isascii() for phrase in phrases):
+        return "|".join(re.escape(phrase) for phrase in phrases)
+    groups: dict[str, list[str]] = {}
+    for phrase in phrases:
+        groups.setdefault(phrase[0].lower(), []).append(phrase)
+    return "|".join(re.escape(group[0][0]) + "(?:" + "|".join(re.escape(phrase[1:]) for phrase in group) + ")"
+                    for group in groups.values())
 
 
 def _covering_phrases(product_type: str) -> set[str]:

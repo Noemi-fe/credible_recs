@@ -1342,3 +1342,54 @@ def test_a_word_in_a_text_is_found_as_trying_every_word_found_it():
         text = " ".join(rng.choice(bits) for _ in range(rng.randint(0, 12)))
         word = rng.choice(words)
         assert _title_has(text, word) == title_has_word_by_word(text, word), (text, word)
+
+
+# --- Long lists of names grouped by their first letter (latency, 14 Oct 2026) ---
+
+def flat_pattern(phrases: list[str]) -> re.Pattern:
+    """The phrases one alternative after another, as retrieval's patterns were first written: the reference."""
+    return re.compile(rf"\b(?:{'|'.join(re.escape(x) for x in phrases)})s?\b", re.IGNORECASE)
+
+
+def spans(pattern: re.Pattern, text: str) -> list[tuple[int, int]]:
+    return [m.span() for m in pattern.finditer(text)]
+
+
+def test_names_grouped_by_their_first_letter_are_found_where_the_list_found_them():
+    # The longer names of other things (every other type's names and module 1's look-alike phrases, hundreds of them)
+    # were one alternative after another, which a regular expression tries one by one at every place of a comment:
+    # most of reading a thread. Grouped by first letter, it tries only the group of the letter written there.
+    from engine import sources
+
+    assert sources._alternation(["apple", "ant", "Bee", "b-c", "a"]) == "a(?:pple|nt|)|B(?:ee|\\-c)"
+    rng = random.Random(15)
+    for product_type in [p.name for p in PRODUCT_TYPES] + ["air fryer"]:
+        phrases = sorted(sources._covering_phrases(product_type), key=len, reverse=True)
+        flat, grouped = flat_pattern(phrases), sources._covering_pattern(product_type)
+        assert grouped.pattern != flat.pattern
+        words = [w for x in phrases for w in x.split()] + ["s", "S", "ſ", "ı", "İ", "K", "-", "'"]
+        for _ in range(300):
+            bits = [rng.choice(phrases + words) for _ in range(rng.randint(1, 6))]
+            text = rng.choice([" ", "", "-", ", "]).join(rng.choice([b, b.upper(), b.title(), b + "s"]) for b in bits)
+            assert spans(grouped, text) == spans(flat, text), (product_type, text)
+        words = sources._literal_names(product_type) or ()
+        own = flat_pattern(list(dict.fromkeys(w for p in PRODUCT_TYPES if p.name == product_type
+                                              for w in p.keywords + p.hints)))
+        for _ in range(100):
+            text = " ".join(rng.choice(list(words) + ["x", "tea", "s"]) for _ in range(rng.randint(1, 5))) if words else ""
+            assert spans(sources._product_pattern(product_type), text) == spans(own, text), (product_type, text)
+
+
+def test_made_up_lists_grouped_by_their_first_letter_find_what_they_found():
+    from engine import sources
+
+    rng = random.Random(16)
+    letters = ["a", "b", "A", "ab", "ba", "a b", "a-b", "b's", "1", "1a", "s", "as", "sa"]
+    for _ in range(3000):
+        phrases = list(dict.fromkeys(rng.choice(letters) + rng.choice(["", "a", "b", "s", " a"])
+                                     for _ in range(rng.randint(1, 8))))
+        text = " ".join(rng.choice(letters + ["c", "ı", "ſ", "İ"]) for _ in range(rng.randint(0, 8)))
+        grouped = re.compile(rf"\b(?:{sources._alternation(phrases)})s?\b", re.IGNORECASE)
+        assert spans(grouped, text) == spans(flat_pattern(phrases), text), (phrases, text)
+    # A phrase starting with anything but an ASCII character isn't grouped: case-blind, it could start two groups
+    assert sources._alternation(["ſx", "sx"]) == "ſx|sx"
