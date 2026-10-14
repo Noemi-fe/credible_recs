@@ -19,7 +19,7 @@ site a plan: a job is billed for its whole run, and two thirds of the old daily 
 - **The image** (the code, the saved library of Reddit threads, the open model): private, in the project's own
   Artifact Registry. Built by Cloud Build from a bundle made on Noemi's computer (deploy/cloudrun/make_context.py), so
   the library is never in this public repository and never public anywhere.
-- **The live checks' bucket** (`credible-picks-live-checks`, CREDIBLE_RECS_LIVE_CACHE_BUCKET): three objects.
+- **The live checks' bucket** (`credible-picks-live-checks`, CREDIBLE_RECS_LIVE_CACHE_BUCKET): four objects.
   - `live_check/bundle.json`: what Reddit's embed page said about each comment read in the last 48 hours (its text and
     when it was read, nothing else; about 3 MB once the site reads ahead), a page that showed no comment included (used
     for 20 hours, known for 48). Written by the site, at most once an hour and only over the version it last read or
@@ -30,6 +30,12 @@ site a plan: a job is billed for its whole run, and two thirds of the old daily 
     the job's checks through Bright Data. The site asks for its version at most once an hour (a small metadata read) and
     downloads it only when it changed.
   - `live_check/verified.json`: the verification record (below).
+  - `live_check/bright_data.json` (14 Oct 2026): the threads the job's Bright Data step couldn't read lately, since each
+    of its runs starts with an empty disk: for each, when, Bright Data's status and error ("ready: dead_page: Page not
+    reachable"), whether the post itself is gone, and then the ids of the comments that needed it. Ids, dates and
+    Bright Data's words only, a few dozen entries (under 25 KB for 100). Written by the job after each thread that fails
+    and at the end of every run that holds any (so the 2-day rule never removes it while the job runs), read as it
+    starts.
   Private: uniform bucket-level access, public access prevention, readable and writable only by the project's compute
   service account (the site and the jobs run as it). In europe-west1. Every object is deleted once it is 2 days old
   (deploy/cloudrun/live_cache_lifecycle.json; Google runs these deletions about once a day, so one can stay up to a day
@@ -44,7 +50,12 @@ site a plan: a job is billed for its whole run, and two thirds of the old daily 
   own left out), and writes the record and the plan. Then, for the comments whose embed page shows no comment ("Not
   supported comment", about 1 in 8; Noemi, 13 Oct 2026: "Use Bright Data"), it reads their threads through Bright
   Data, within 30 records a run (the most useful threads first), starting nothing 30 minutes after it started, and
-  writes the plan again with a check for each comment it found there. It needs the Bright Data key, the Secret
+  writes the plan again with a check for each comment it found there. A thread Bright Data couldn't read is left for 7
+  days (config.PRECHECK_BRIGHT_DATA_SKIP_DAYS), so the next run's records go to the next threads (until 14 Oct 2026's
+  evening each run chose, and failed on, the same two); one whose post is gone (removed, deleted, its page no longer
+  there) holds comments that can't be verified that way: they are taken as unverifiable for 30 days (no record spent on
+  them again), and the plan reads what answers show instead. The report names each thread that couldn't be read, with
+  Bright Data's status and error. It needs the Bright Data key, the Secret
   Manager secret `bright-data-key` (below; there since 14 Oct 2026): deployed without it, the job runs with this step
   off. The site never calls Bright Data. Cloud Run stops a run at 55 minutes (45 until 14 Oct 2026's evening, when a
   Bright Data job, waited for up to 20 minutes since, had been cut off at 10). Its report (counts and times, never a
@@ -420,9 +431,10 @@ call. (Since the site reads ahead, the job still finds such comments: a read tha
 
 The bucket (estimates, 14 Oct 2026, with the site reading ahead), effectively nothing: Cloud Storage's free tier is for US
 regions only, so every operation is billed, but there are very few. Class A (writes): the site's bundle at most once an
-hour, about 720 a month, and the job's record and plan, 2 or 3 a run, about 90: about 810 a month, 0.004 USD at 0.005
-USD per 1,000. Class B (reads): the site's hourly question about the plan's version, about 720 a month, a download a day
-(31) and its bundle as it gets ready, and the job's bundle and record, about 4 a run (124): about 900 a month, 0.0004
+hour, about 720 a month, and the job's record, plan and Bright Data memory, 3 or 4 a run, about 120: about 840 a month,
+0.004 USD at 0.005 USD per 1,000. Class B (reads): the site's hourly question about the plan's version, about 720 a
+month, a download a day (31) and its bundle as it gets ready, and the job's bundle, record and memory, about 5 a run
+(155): about 930 a month, 0.0004
 USD at 0.0004 USD per 1,000 (before: the site asked about the bundle hourly instead; the job wrote it twice a run).
 Storage: the bundle about 3 MB, the plan about 0.6 MB (2,260 answers' comments and 3,000 to verify), the record 1 to
 4 MB, under 0.0002 USD a month. Reading and

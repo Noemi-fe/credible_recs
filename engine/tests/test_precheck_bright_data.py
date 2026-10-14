@@ -45,24 +45,31 @@ class EmbedPage(FakeReddit):
 
 class FakeBrightData:
     """Stands in for engine.bright_data.BrightDataClient: each thread as Reddit shows it now, from the made-up comments
-    (`now` changes a comment's text: "[deleted]", an edit; `missing` leaves it out, as a reply too deep would be)."""
+    (`now` changes a comment's text: "[deleted]", an edit; `missing` leaves it out, as a reply too deep would be;
+    `fails_for` {thread id: the BrightDataError reading it raises}; `asked`: every thread asked for, read or not)."""
 
-    def __init__(self, clock, now=None, missing=(), fails=None):
+    def __init__(self, clock, now=None, missing=(), fails=None, fails_for=None, batch_fails=None):
         self.clock, self.now, self.missing, self.fails = clock, dict(now or {}), set(missing), fails
+        self.fails_for, self.batch_fails = dict(fails_for or {}), batch_fails
         self.prefetched: list[list[tuple[str, int]]] = []
         self.read: list[str] = []
+        self.asked: list[str] = []
         self.records = 0
 
     def prefetch(self, threads, batch=config.BRIGHT_DATA_BATCH_THREADS):
         self.prefetched.append(list(threads))
-        if self.fails is not None:
-            raise self.fails
+        if self.fails is not None or self.batch_fails is not None:
+            raise self.fails or self.batch_fails
         return len(threads)
 
     def get_thread(self, link):
         if self.fails is not None:
             raise self.fails
         thread_id = link.split("/comments/")[1].split("/")[0]
+        self.asked.append(thread_id)
+        if thread_id in self.fails_for:
+            self.records += 1  # Bright Data's error record
+            raise self.fails_for[thread_id]
         self.read.append(thread_id)
         comments = []
         for cid, tid, _, _, body in COMMENTS:

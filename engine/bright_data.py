@@ -117,11 +117,19 @@ class BrightDataError(Exception):
 
     `account_problem` is True when the trouble is the account, not this thread (a refused key, no records left this
     month): every other thread would fail the same way, so a caller reading many threads should stop asking.
+    Since 14 Oct 2026 (the daily plan's Bright Data step failed on the same threads at every run without saying why):
+    `status` is what Bright Data said of the job or the answer ("ready", "failed", "running", "HTTP 500"; None when it
+    couldn't be reached), `error` its error in its own words, short and on one line (an error record's code and
+    message: "dead_page: Page not reachable"), and `post_gone` whether the post itself is gone (Reddit shows it removed
+    or deleted, or Bright Data says its page is no longer there), so its comments can't be read through Bright Data
+    however often it is asked. Never a comment's words.
     """
 
-    def __init__(self, message: str, account_problem: bool = False):
+    def __init__(self, message: str, account_problem: bool = False, status: str | None = None,
+                 error: str | None = None, post_gone: bool = False):
         super().__init__(message)
         self.account_problem = account_problem
+        self.status, self.error, self.post_gone = status, error, post_gone
 
 
 @dataclass
@@ -198,8 +206,10 @@ class BrightDataClient:
         link = _post_link(post_url, community, post_id)
         self.last_read = notes = ReadNotes()
 
+        post_records: list = []
         try:
-            post = _the_post(self._records(BRIGHT_DATA_POSTS_DATASET, link, community, post_id, most_records=1)[1], post_id)
+            post_records = self._records(BRIGHT_DATA_POSTS_DATASET, link, community, post_id, most_records=1)[1]
+            post = _the_post(post_records, post_id)
         except BrightDataError as e:
             if e.account_problem:
                 raise
@@ -214,10 +224,16 @@ class BrightDataClient:
         comments, notes.left_out, errors = flatten_comments(records, community, post_id)
         if not comments and reported != 0:
             # Never hand back an empty thread for one that has comments: a refresh would think they were all deleted.
+            gone = post_gone([*records, *post_records], post)
             if errors:
-                raise BrightDataError(f"Bright Data couldn't read the comments of {link}: {errors[0]}")
+                raise BrightDataError(f"Bright Data couldn't read the comments of {link}: {errors[0]}", status="ready",
+                                      error=error_of(records), post_gone=gone)
             said = f", but the post has {reported}" if reported else ""
-            raise BrightDataError(f"Bright Data returned no comments for {link}{said}; nothing was saved")
+            about_post = error_of(post_records)
+            raise BrightDataError(f"Bright Data returned no comments for {link}{said}; nothing was saved",
+                                  status="ready", error=_short("no comments" + (f"; the post: {about_post}"
+                                                                                if about_post else "")),
+                                  post_gone=gone)
         return to_thread(post, comments, records, link, community, category, fetched_at)
 
     def discover(self, searches: list[tuple[str, str]], posts_each: int = DISCOVER_POSTS_EACH) -> list[FoundPost]:
@@ -401,7 +417,8 @@ class BrightDataClient:
         status, data, text = self._ask("POST", url, key, f"starting the {name} job", json.dumps(inputs).encode())
         snapshot_id = data.get("snapshot_id") if status == 200 and isinstance(data, dict) else None
         if not isinstance(snapshot_id, str) or not _SAFE_ID.match(snapshot_id):
-            raise BrightDataError(f"Bright Data answered {status} to starting the {name} job, with no job to wait for: {text}")
+            raise BrightDataError(f"Bright Data answered {status} to starting the {name} job, with no job to wait for: {text}",
+                                  status=f"HTTP {status}", error=_short(text))
         return snapshot_id
 
     def _wait_and_download(self, snapshot_id: str, key: str, name: str, cache_file: Path) -> list:
@@ -416,7 +433,8 @@ class BrightDataClient:
                 cache_file.unlink(missing_ok=True)  # a failed job is never picked up again
                 self._log(name, snapshot_id, 0, "failed")
                 reason = progress.get("error") or progress.get("message") or "no reason given"
-                raise BrightDataError(f"Bright Data's {name} job {snapshot_id} failed: {str(reason)[:300]}")
+                raise BrightDataError(f"Bright Data's {name} job {snapshot_id} failed: {str(reason)[:300]}",
+                                      status="failed", error=_short(reason))
             if self._clock() >= deadline:
                 raise self._too_slow(name, snapshot_id)
 
@@ -428,7 +446,8 @@ class BrightDataClient:
             if status == 200 and isinstance(data, list):
                 return data
             if status != 202:
-                raise BrightDataError(f"Bright Data answered {status} to {what}, not a list of records: {text}")
+                raise BrightDataError(f"Bright Data answered {status} to {what}, not a list of records: {text}",
+                                      status=f"HTTP {status}", error=_short(text))
             if self._clock() >= deadline:
                 raise self._too_slow(name, snapshot_id)
             self._sleep(BRIGHT_DATA_POLL_SECONDS)
@@ -438,7 +457,8 @@ class BrightDataClient:
         self._log(name, snapshot_id, 0, "too slow")
         return BrightDataError(
             f"Bright Data's {name} job {snapshot_id} took longer than {BRIGHT_DATA_MAX_WAIT_SECONDS} seconds; asking "
-            f"again for this thread within 48 hours picks the job up instead of paying for a new one"
+            f"again for this thread within 48 hours picks the job up instead of paying for a new one",
+            status="running", error=f"took longer than {BRIGHT_DATA_MAX_WAIT_SECONDS} s",
         )
 
     def _progress(self, snapshot_id: str, key: str) -> dict:
@@ -578,6 +598,42 @@ def flatten_comments(records: list, community: str, post_id: str) -> tuple[list[
             parent_id = said if said in seen and said != comment_id else None
         comments.append(_to_comment(item, comment_id, parent_id, created_at, community, post_id))
     return comments, left_out, errors
+
+
+# What an error record or a post's own record says when the post itself is gone: Bright Data's code for a page that is
+# no longer there, its words for one removed, deleted or not found, and Reddit's placeholders for a post's text.
+_GONE_CODES = ("dead_page",)
+_GONE_WORDS = re.compile(r"\b(?:removed|deleted|not found|no longer (?:exists|available)|does ?n[o']?t exist)\b", re.I)
+_GONE_TEXTS = ("[removed]", "[deleted]")
+
+
+def error_of(records: list) -> str | None:
+    """The first error record's error, in Bright Data's words, short and on one line ("dead_page: Page not
+    reachable": its code, then its message); None when there is none. An error record holds no comment."""
+    for record in records:
+        if isinstance(record, dict) and not _COMMENT_FIELDS & record.keys() and (
+                record.get("error") or record.get("error_code")):
+            parts = [str(part) for part in (record.get("error_code"), record.get("error")) if part]
+            return _short(": ".join(dict.fromkeys(parts)))
+    return None
+
+
+def post_gone(records: list, post: dict | None) -> bool:
+    """Whether Bright Data's answer says the post itself is gone: an error record with its dead-page code or saying the
+    post is removed, deleted or not found, or the post's own record showing Reddit's "[removed]" or "[deleted]"."""
+    for record in records:
+        if isinstance(record, dict) and not _COMMENT_FIELDS & record.keys():
+            if str(record.get("error_code") or "").lower() in _GONE_CODES or _GONE_WORDS.search(
+                    str(record.get("error") or "")):
+                return True
+    text = post.get("description") if isinstance(post, dict) else None
+    return isinstance(text, str) and text.strip() in _GONE_TEXTS
+
+
+def _short(text, limit: int = 100) -> str:
+    """Bright Data's words about a problem, on one line and at most `limit` characters."""
+    flat = " ".join(str(text).split())
+    return flat if len(flat) <= limit else flat[:limit - 1] + "…"
 
 
 def found_posts(records: list, subreddits: list[str]) -> list[FoundPost]:

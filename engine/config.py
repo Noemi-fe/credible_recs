@@ -571,6 +571,15 @@ PRECHECK_MODEL_TYPES = ("body wash",)
 PRECHECK_BRIGHT_DATA_RECORDS = 30
 PRECHECK_BRIGHT_DATA_MAX_THREADS = 20
 PRECHECK_BRIGHT_DATA_FRESH_HOURS = 40
+# Threads Bright Data couldn't read (14 Oct 2026, the coordinator: each run on Google Cloud starts with an empty disk,
+# so the day's two runs chose the same two threads, failed on them, and read no other). The job remembers them in the
+# bucket beside the plan (engine.precheck.BrightDataMemory): one that failed isn't asked again for
+# PRECHECK_BRIGHT_DATA_SKIP_DAYS, so the run's records go to the next threads; one whose post is gone (removed, deleted,
+# its page no longer there) holds comments that can't be verified that way, taken as unverifiable for
+# PRECHECK_BRIGHT_DATA_GONE_DAYS (as long as a kept comment may go unverified) without a record spent on them again.
+# Chosen by Claude, reported.
+PRECHECK_BRIGHT_DATA_SKIP_DAYS = 7
+PRECHECK_BRIGHT_DATA_GONE_DAYS = 30
 
 # --- Care tips (Noemi, 9 Oct 2026) ---
 # Alongside each pick, credible advice from its threads on looking after it ("descale it every 6 months"; extraction
