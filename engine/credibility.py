@@ -43,6 +43,8 @@ What this version can't see yet:
 
 import html
 import re
+from bisect import bisect_left
+from collections import OrderedDict
 from collections.abc import Collection, Iterable
 from dataclasses import dataclass
 from functools import cache
@@ -53,7 +55,7 @@ from typing import Literal
 from engine import config
 from engine.extract import ExtractedAgreement
 from engine.match_products import normalize_name, same_product
-from engine.memo import Table
+from engine.memo import Table, register
 from engine.models import Author, Comment, Thread
 from engine.text import one_edit_apart
 
@@ -442,23 +444,26 @@ def _copy_signs(comment: Comment, copied: Collection[str]) -> list[Sign]:
 # Endorsement: others back it up.
 
 def _endorsement_signs(comment: Comment, thread: Thread, agreements: Iterable[ExtractedAgreement]) -> list[Sign]:
-    """Upvotes relative to the rest of the thread (never absolute numbers), and replies that agree."""
+    """Upvotes relative to the rest of the thread (never absolute numbers), and replies that agree. What it reads of the
+    thread (its comments' scores, parents and writers) is worked out once per thread (_thread_facts)."""
     signs = []
-    others = [c.score for c in thread.comments if c.status == "ok" and c.id != comment.id]
+    facts = _thread_facts(thread)
+    own = facts.ok_scores_of.get(comment.id, ())  # the comment's own score, left out of the others'
+    others = facts.ok_count - len(own)  # how many other readable comments there are
     if comment.score < config.DOWNVOTED_BELOW:
         signs.append(Sign("downvoted", f"downvoted (score {comment.score})", "red flag"))
     elif others and comment.score >= config.WELL_UPVOTED_MIN_SCORE:
-        below = sum(score < comment.score for score in others)
-        beaten = below / len(others)
+        below = bisect_left(facts.ok_scores, comment.score) - sum(score < comment.score for score in own)
+        beaten = below / others
         if beaten >= config.WELL_UPVOTED_SHARE_BEATEN:
             # Rounded down, so it never says "more than 100%" (the demo page did, 10 Oct 2026).
-            where = ("the top comment in this thread" if below == len(others)
-                     else f"more than {below * 100 // len(others)}% of this thread's comments")
+            where = ("the top comment in this thread" if below == others
+                     else f"more than {below * 100 // others}% of this thread's comments")
             signs.append(Sign("well upvoted", f"{comment.score} points, {where}", "good"))
-    parent_of = {c.id: c.parent_id for c in thread.comments}
+    parent_of = facts.parent_of
     # A reply by the writer themselves isn't someone else backing them up (review fixes, 9 Oct 2026). Only a reply
     # known to be theirs is left out: two deleted accounts can't be told apart.
-    writer_of = {c.id: c.author.name.casefold() for c in thread.comments if c.author is not None}
+    writer_of = facts.writer_of
     me = comment.author.name.casefold() if comment.author is not None else None
     agreeing = {
         a.comment_id for a in agreements
@@ -468,6 +473,44 @@ def _endorsement_signs(comment: Comment, thread: Thread, agreements: Iterable[Ex
         n = len(agreeing)
         signs.append(Sign("replies agree", f"{n} {'reply agrees' if n == 1 else 'replies agree'}", "good"))
     return signs
+
+
+@dataclass(frozen=True)
+class _ThreadFacts:
+    """What _endorsement_signs reads of a thread, worked out once per thread rather than once per comment."""
+
+    ok_scores: list[int]  # every readable comment's score, lowest first
+    ok_count: int
+    ok_scores_of: dict[str, tuple[int, ...]]  # a comment id -> the scores of the readable comments with that id
+    parent_of: dict[str, str | None]
+    writer_of: dict[str, str]  # a comment id -> its writer's name, casefolded (deleted accounts left out)
+
+
+_THREAD_FACTS: OrderedDict[int, tuple[Thread, _ThreadFacts]] = OrderedDict()  # id(thread) -> (the thread, its facts)
+THREADS_REMEMBERED = 512
+register(_THREAD_FACTS.clear)
+
+
+def _thread_facts(thread: Thread) -> _ThreadFacts:
+    """A thread's facts for _endorsement_signs, kept for the threads asked about lately (latency, 13 Oct 2026: every
+    scored comment read its whole thread again). A thread is known by its identity, kept with its facts, so another
+    thread made later can't be mistaken for it; threads are never changed once read (engine.library_cache)."""
+    found = _THREAD_FACTS.get(id(thread))
+    if found is not None and found[0] is thread:
+        _THREAD_FACTS.move_to_end(id(thread))
+        return found[1]
+    scores_of: dict[str, list[int]] = {}
+    for c in thread.comments:
+        if c.status == "ok":
+            scores_of.setdefault(c.id, []).append(c.score)
+    ok_scores = sorted(score for scores in scores_of.values() for score in scores)
+    facts = _ThreadFacts(ok_scores, len(ok_scores), {cid: tuple(scores) for cid, scores in scores_of.items()},
+                         {c.id: c.parent_id for c in thread.comments},
+                         {c.id: c.author.name.casefold() for c in thread.comments if c.author is not None})
+    _THREAD_FACTS[id(thread)] = (thread, facts)
+    while len(_THREAD_FACTS) > THREADS_REMEMBERED:
+        _THREAD_FACTS.popitem(last=False)
+    return facts
 
 
 # Recency: still true today.

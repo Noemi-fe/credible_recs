@@ -1138,3 +1138,35 @@ def test_relevance_and_talking_are_the_same_reading_the_comments_together():
             assert relevance(thread, product_type) == relevance_one_by_one(thread, product_type), (n, product_type)
             assert type(relevance(thread, product_type)) is type(relevance_one_by_one(thread, product_type))
             assert talking(thread, product_type) == sum(mentions_product(c.body, product_type) for c in thread.comments)
+
+
+# --- A request's word in a text, found without trying every word in turn (latency, 13 Oct 2026) ---
+
+import re  # noqa: E402
+
+from engine.sources import _stem, _title_has  # noqa: E402
+
+
+def title_has_word_by_word(lowered_title: str, word: str) -> bool:
+    """_title_has as first written, every candidate tried in turn: the reference."""
+    written = re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", lowered_title)
+    tokens = [re.sub(r"['-]", "", t) for t in written]
+    candidates = tokens + [a + b for a, b in zip(tokens, tokens[1:])]
+    candidates += [re.sub(r"['-]", "", re.sub(r"^anti-(?=[a-z])|(?<=[a-z])-free$", "", t)) for t in written
+                   if t.startswith("anti-") or t.endswith("-free")]
+    return any(t == word or _stem(t) == word or (len(word) >= 4 and t.startswith(word)) for t in candidates)
+
+
+def test_a_word_in_a_text_is_found_as_trying_every_word_found_it():
+    rng = random.Random(13)
+    bits = ["pour", "over", "pour-over", "pourover", "anti-dandruff", "dandruff", "sulfate-free", "sulfates", "free",
+            "lasts", "last", "lasting", "pfas", "pfas-free", "non-stick", "nonstick", "it's", "dont", "don't", "scalp",
+            "oily", "oil", "a", "an", "10", "years", "year", "anti-", "-free", "x-y-z", "co-wash", "ss", "class",
+            "classes", "dry", "drys", "sensitiv", ",", ".", "\n", "anti-a", "b-free"]
+    words = ["pourover", "dandruff", "sulfate", "last", "pfas", "nonstick", "scalp", "oily", "oil", "dry", "a", "10",
+             "year", "clas", "class", "free", "anti", "cowash", "dont", "its", "xyz", "sensitiv", "b", "s", "", "pour over",
+             "don't", "x-y"]
+    for _ in range(4000):
+        text = " ".join(rng.choice(bits) for _ in range(rng.randint(0, 12)))
+        word = rng.choice(words)
+        assert _title_has(text, word) == title_has_word_by_word(text, word), (text, word)

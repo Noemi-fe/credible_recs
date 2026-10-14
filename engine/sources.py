@@ -1044,13 +1044,34 @@ def choose_mix(
 def _title_has(lowered_title: str, word: str) -> bool:
     """Whole words, two-word spellings ("pour over" for "pourover"), longer forms ("lasting" for "last"), and "anti-X"
     or "X-free" read as X, as need words read them ("anti-dandruff" has "dandruff", 11 Oct 2026). Other hyphenated
-    words aren't split: that moved a thread Noemi hadn't judged into b02's top 3 (12 Oct 2026)."""
-    written = re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", lowered_title)
-    tokens = [re.sub(r"['-]", "", t) for t in written]
+    words aren't split: that moved a thread Noemi hadn't judged into b02's top 3 (12 Oct 2026).
+
+    Found in one search rather than by trying every word in turn (latency, 13 Oct 2026: needs_met asks it of whole
+    comments): a word of 4 letters or more is found at the start of a candidate (which takes in the word itself and its
+    plural, _stem's only other form), a shorter one as a whole candidate."""
+    if not _PLAIN_WORD.fullmatch(word):  # a word as need_words never gives one: tried against each candidate
+        return any(t == word or _stem(t) == word or (len(word) >= 4 and t.startswith(word))
+                   for t in _title_words(lowered_title).split())
+    candidates = _title_words(lowered_title)
+    if len(word) >= 4:
+        return f" {word}" in candidates
+    return f" {word} " in candidates
+
+
+def _title_words(lowered_title: str) -> str:
+    """The candidates _title_has looks among, each after a space and followed by one: the words with their apostrophes
+    and hyphens left out, each two neighbouring words written as one, and "anti-X" and "X-free" as X."""
+    written = _TITLE_WORD.findall(lowered_title)
+    tokens = [t.replace("'", "").replace("-", "") for t in written]
     candidates = tokens + [a + b for a, b in zip(tokens, tokens[1:])]
-    candidates += [re.sub(r"['-]", "", re.sub(r"^anti-(?=[a-z])|(?<=[a-z])-free$", "", t)) for t in written
+    candidates += [_ANTI_OR_FREE.sub("", t).replace("'", "").replace("-", "") for t in written
                    if t.startswith("anti-") or t.endswith("-free")]
-    return any(t == word or _stem(t) == word or (len(word) >= 4 and t.startswith(word)) for t in candidates)
+    return " " + " ".join(candidates) + " "
+
+
+_TITLE_WORD = re.compile(r"[a-z0-9]+(?:['-][a-z0-9]+)*")
+_PLAIN_WORD = re.compile(r"[a-z0-9]+")  # what need_words gives: letters and digits only
+_ANTI_OR_FREE = re.compile(r"^anti-(?=[a-z])|(?<=[a-z])-free$")
 
 
 def _stem(word: str) -> str:
