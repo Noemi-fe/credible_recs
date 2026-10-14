@@ -7,21 +7,28 @@ text) is never public, and never in this repository. What goes in:
 - data/library's threads/*.json, extracted/*.json, profiles.json and summaries.json (the picks' one-line summaries,
   13 Oct 2026), the files answers read (not the request log, the candidate lists or the summaries' to-do list);
 - deploy/cloudrun/Dockerfile, as the bundle's Dockerfile.
-check_bundle then refuses a bundle holding a secret file or a cache, whatever put it there.
+Every file is then dated a day before the bundle was made (stamp_files, 14 Oct 2026), and check_bundle refuses a bundle
+holding a secret file or a cache, whatever put it there.
 
     python -m deploy.cloudrun.make_context <empty or new folder>
 """
 
+import io
+import os
 import shutil
 import subprocess
 import sys
 import tarfile
-import io
+import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LIBRARY_PATTERNS = ("threads/*.json", "extracted/*.json", "profiles.json", "summaries.json")
 FORBIDDEN = (".env", ".cache", "models", ".git")  # secrets, caches, the 1.1 GB model (downloaded at build) and history
+
+
+# How long before the bundle is made its files are dated (stamp_files): longer than any time zone is ahead of UTC (14 h).
+BUNDLE_STAMP_AGE_SECONDS = 24 * 3600
 
 
 class BundleError(Exception):
@@ -42,6 +49,25 @@ def copy_library(library: Path, dest: Path) -> int:
             shutil.copy2(path, target)
             count += 1
     return count
+
+
+def bundle_stamp(made: float) -> float:
+    """The time every file of a bundle made at `made` (seconds since 1970) is dated: a day before, in whole seconds."""
+    return float(int(made - BUNDLE_STAMP_AGE_SECONDS))
+
+
+def stamp_files(bundle: Path, made: float) -> None:
+    """Dates every file and folder of the bundle bundle_stamp(made) (14 Oct 2026). gcloud's upload stores each file's
+    time as this computer's local time (in two-second steps, as ZIP files do) and the build reads it as UTC, so in
+    British Summer Time the site's files were dated an hour ahead of when they were written; the server took the
+    library's newest files for ones still changing and read the whole library again for every answer, for the hour
+    after each deploy (engine.memo.changed_just_now, which now also lets such times be). Dated a day before, no time
+    zone's shift can date a file ahead of the server's clock. Nothing reads these times but the server's own checks for
+    a changed file, which only compare them."""
+    stamp = bundle_stamp(made)
+    for path in sorted(Path(bundle).rglob("*"), key=lambda p: len(p.parts), reverse=True):  # folders after their files
+        os.utime(path, (stamp, stamp), follow_symlinks=False)
+    os.utime(bundle, (stamp, stamp))
 
 
 def check_bundle(bundle: Path) -> None:
@@ -65,6 +91,7 @@ def make_context(dest: Path, repo: Path = REPO_ROOT) -> dict:
     threads = copy_library(repo / "data" / "library", dest / "data" / "library")
     shutil.copy2(repo / "deploy" / "cloudrun" / "Dockerfile", dest / "Dockerfile")
     (dest / ".gcloudignore").write_text("# everything in this bundle is meant for the build\n", encoding="utf-8")
+    stamp_files(dest, time.time())
     check_bundle(dest)
     return {"library files": threads, "files": sum(1 for p in dest.rglob("*") if p.is_file())}
 
