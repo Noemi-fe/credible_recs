@@ -82,7 +82,7 @@ from functools import lru_cache
 
 from engine.config import BRAND_PICK_NAME, PRODUCT_TYPE_PLURALS, PRODUCT_TYPE_SHOWN, UK_BRAND_NAMES
 from engine.extract import CheckResult
-from engine.memo import register
+from engine.memo import Table, register
 from engine.match_products import (
     KIND_WORDS, Aliases, _features, comparable, held_back_word, join_split_words, known_aliases,
     match_candidates_and_open, normalize_name, own_words, product_words, same_words, same_words_looked_at, written_alike,
@@ -590,10 +590,19 @@ def _with_brand_before(main: Words, own: dict[Words, list[ProductMention]], ever
 
 
 def _adds_words_at_start(longer: Words, name: Words) -> bool:
-    """Whether `longer` is `name` with words added at its start: 1zpresso jx pro for jx pro."""
-    a = join_split_words(list(longer), list(name))
-    b = join_split_words(list(name), a)
-    return len(a) > len(b) and a[-len(b):] == b
+    """Whether `longer` is `name` with words added at its start: 1zpresso jx pro for jx pro. Worked out once per pair
+    of names (latency, 14 Oct 2026: choosing each group's shown name asks it of every name of the group, and every
+    answer grouping the same names asks again)."""
+    key = (longer, name)
+    found = _ADDS_AT_START.get(key)
+    if found is None:
+        a = join_split_words(list(longer), list(name))
+        b = join_split_words(list(name), a)
+        found = _ADDS_AT_START.keep(key, len(a) > len(b) and a[-len(b):] == b)
+    return found
+
+
+_ADDS_AT_START = Table()  # (a name's words, another's) -> whether the first is the second with words added at its start
 
 
 def _shown_spelling(mentions: list[ProductMention], words: Words) -> str:
