@@ -182,7 +182,8 @@ from engine.credibility import (
 from engine.extract import CheckResult, shown_comment_ids
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
 from engine.group_products import (
-    ProductGroup, ProductMention, brand_pick_name, group_of, group_products, library_name_index, plural, uk_name,
+    LibraryRanges, ProductGroup, ProductMention, brand_pick_name, group_of, group_products, library_name_index,
+    library_ranges, plural, uk_name,
 )
 from engine.gold import DEFAULT_GOLD_DIR
 from engine.ingredients import evidence as ingredient_evidence
@@ -444,11 +445,12 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     index = _name_index(library)  # the library's pairs of names that could match, worked out once (13 Oct 2026)
     product_facts = load_product_facts() if product_facts is None else product_facts
     known = _known_products(product_facts)  # names the facts list knows as one product each (14 Oct 2026)
-    groups = group_products(mentions, product_type=grouping_type, index=index, known=known)
+    ranges = _library_ranges(library)  # what the whole library names of each brand's products (14 Oct 2026)
+    groups = group_products(mentions, product_type=grouping_type, index=index, known=known, ranges=ranges)
     of_another_type = _of_another_type(groups, query, result)
     if of_another_type:  # grouped again without them, so they neither count for nor name a product (13 Oct 2026)
         groups = group_products([m for m in mentions if _typed(m) not in of_another_type], product_type=grouping_type,
-                                index=index, known=known)
+                                index=index, known=known, ranges=ranges)
     brand_lines = load_brand_lines() if brand_lines is None else brand_lines
     kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads}, brand_lines)
     lines = {g.key for g in kept_groups if g.loose}  # the brand or line names kept as the brand's whole line
@@ -748,6 +750,18 @@ def _name_index(library) -> dict:
 
 
 _NAME_INDEX = ("name index",)  # where the library keeps it (engine.library_cache.KeptLibrary.remembered)
+
+
+def _library_ranges(library) -> LibraryRanges:
+    """What the whole library names of each brand's products, by type (engine.group_products.LibraryRanges; name
+    levels, 14 Oct 2026), worked out on the library's first answer and kept with it, as the name index is."""
+    found = library.remembered.get(_RANGES)
+    if found is None:
+        found = library.remembered[_RANGES] = library_ranges(_product_mentions(library.checked))
+    return found
+
+
+_RANGES = ("library ranges",)  # where the library keeps them (engine.library_cache.KeptLibrary.remembered)
 
 
 def _product_mentions(checked: dict[str, CheckResult]) -> list[ProductMention]:

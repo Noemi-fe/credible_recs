@@ -15,6 +15,9 @@ for a specific Lodge product, and the Lodge line stepped aside for it. The rules
    line's type: its mentions of the requested type still count, as that line.
 4. A model's other versions ("ESP", "Forte") are other products, and a name the facts list knows as one product is
    never a line, whatever descriptions writers add to it; two products the facts list knows apart are never joined.
+5. Found by the evaluation runs: a name that fits products of other types too joins its one product of the requested
+   type only when the whole library names no other of its products of that type, and is never the name that product is
+   shown by; two names of one product that end in the type and in its synonym are one product.
 
 Every library, product, writer and quote here is made up; no test reads data/.
 """
@@ -376,3 +379,80 @@ def test_a_brand_alone_joined_to_its_one_product_is_shown_by_the_products_name()
         ["Solvane", "Solvane", "Solvane", "Solvane", "Solvane C E Ferulic", "Solvane C E Ferulic", "Solvane CE Ferulic"])]
     groups = group_products(mentions, NO_ALIASES, product_type="serum")
     assert [(g.name, g.loose) for g in groups] == [("Solvane C E Ferulic", False)]
+
+
+# --- Found by the evaluation runs (name levels, 14 Oct 2026) ---
+
+def test_the_librarys_names_tell_how_many_products_of_a_type_a_brand_has():
+    # What the whole library names of each brand (engine.group_products.LibraryRanges): two or more of its products of a
+    # type that don't match each other are a range; a name that only adds the type's words or words that never name a
+    # model ("Orvel shampoo", "Lumora shampoos") is no product of its own.
+    from engine.group_products import library_ranges
+
+    library = [typed(n, t, f"c{i}", "haircare") for i, (n, t) in enumerate([
+        ("Lumora Detox Shampoo", "shampoo"), ("Lumora Volume Shampoo", "shampoo"), ("Lumora shampoos", "shampoo"),
+        ("Orvel Daily Shampoo", "shampoo"), ("Orvel shampoo", "shampoo"), ("Orvel Rich Conditioner", "conditioner"),
+        ("Mad Wren vitamin c serum", "serum"), ("Mad Wren hydrating serum", "serum")])]
+    ranges = library_ranges(library, NO_ALIASES)
+    assert ranges.several("haircare", ("lumora",), "shampoo")
+    assert not ranges.several("haircare", ("orvel",), "shampoo")
+    assert not ranges.several("haircare", ("orvel",), "conditioner")
+    assert ranges.several("haircare", ("mad", "wren"), "serum")
+    assert not ranges.several("skincare", ("lumora",), "shampoo")
+
+
+def test_a_name_fitting_products_of_other_types_joins_its_one_product_only_if_the_library_names_no_other():
+    # Found by the need eval: "Nexxus" in a colour-treated shampoo answer had joined the one Nexxus shampoo its threads
+    # named, a detox shampoo (the opposite of what was asked), once the Nexxus conditioner there no longer made it fit
+    # two products, though the library names three Nexxus shampoos. With the library's ranges, such a name is its line
+    # here; with no other of its products of the type in the library ("Stratia" and its one exfoliant), it joins it.
+    from engine.group_products import library_ranges
+
+    mentions = [typed(n, t, f"c{i}", "haircare") for i, (n, t) in enumerate([
+        ("Lumora", "shampoo"), ("Lumora Detox Shampoo", "shampoo"), ("Lumora Silk Conditioner", "conditioner")])]
+    elsewhere = [typed(n, "shampoo", f"e{i}", "haircare", "1fake09") for i, n in enumerate(
+        ["Lumora Colour Care Shampoo", "Lumora Volume Shampoo"])]
+    groups = group_products(mentions, NO_ALIASES, product_type="shampoo",
+                            ranges=library_ranges(mentions + elsewhere, NO_ALIASES))
+    assert ["Lumora"] in loose_names(groups) and ["Lumora Detox Shampoo"] in names_by_group(groups)
+    groups = group_products(mentions, NO_ALIASES, product_type="shampoo", ranges=library_ranges(mentions, NO_ALIASES))
+    assert ["Lumora", "Lumora Detox Shampoo"] in names_by_group(groups)
+    assert not any(g.loose for g in groups)
+
+
+def test_the_answers_library_ranges_come_from_every_saved_thread(tmp_path):
+    # The ranges are the whole library's, worked out once with it (engine.pipeline._library_ranges), not the answer's
+    # threads' alone.
+    from engine.library_cache import loaded
+
+    library = write_library(tmp_path, {
+        "1fake01": ("Corbel or not?", [("c1", "Corbel No. 8 skillet", "cast iron skillet", "Great pan.", "recommend")]),
+        "1fake02": ("Old pans", [("c2", "Corbel No. 10 skillet", "cast iron skillet", "Great pan.", "recommend"),
+                                 ("c3", "Corbel Dutch oven", "dutch oven", "Great pot.", "recommend")])})
+    ranges = pipeline._library_ranges(loaded(library / "threads"))
+    assert ranges.several("kitchen", ("corbel",), "cast iron skillet")
+    assert not ranges.several("kitchen", ("corbel",), "dutch oven")
+
+
+def test_a_brand_of_two_words_joined_to_its_one_product_is_shown_by_the_products_name():
+    # Found by the ingredient eval: "Mad Hippie", written alone most often, had joined the brand's one vitamin C serum in a
+    # vitamin C serum answer (its night cream is a moisturiser), and the product was shown as "Mad Hippie", whose name no
+    # longer said vitamin C: it was left out for want of evidence. A name that fits products of other types too is a
+    # brand or a line: never the name a product is shown by.
+    mentions = [typed(n, t, f"c{i}", "skincare") for i, (n, t) in enumerate([
+        ("Mad Wren", "serum"), ("Mad Wren", "serum"), ("Mad Wren", "serum"), ("Mad Wren vitamin c serum", "serum"),
+        ("mad wren vitamin c", "serum"), ("Mad Wren triple c night cream", "moisturiser")])]
+    groups = group_products(mentions, NO_ALIASES, product_type="serum")
+    assert ("Mad Wren vitamin c serum", False) in [(g.name, g.loose) for g in groups]
+
+
+def test_two_names_of_a_product_ending_in_the_type_and_in_its_synonym_are_one_product():
+    # Found by the need eval: "Super Goop Unseen SPF" and "Supergoop! Unseen Sunscreen" had been one product until "spf"
+    # became a synonym of sunscreen (config.TYPE_SYNONYMS): each then said no more than "Supergoop Unseen" in a sunscreen
+    # answer, so neither fitted the other as a longer name, and they were two.
+    mentions = [typed(n, "sunscreen", f"c{i}", "skincare") for i, n in enumerate(
+        ["Zephyra! Veil Sunscreen", "Zephyra! Veil Sunscreen", "Zephyra Veil SPF", "Zephyra Glow Stick SPF 50"])]
+    groups = group_products(mentions, NO_ALIASES, product_type="sunscreen")
+    assert names_by_group(groups) == [["Zephyra Glow Stick SPF 50"], ["Zephyra Veil SPF", "Zephyra! Veil Sunscreen"]]
+    assert not any(g.loose for g in groups)
+
