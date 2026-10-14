@@ -129,6 +129,7 @@ from engine.needs import LASTING, Need, needs_met
 from engine.prices import PriceCheck
 from engine.credibility import GENERIC_NAME_WORDS
 from engine.match_products import FILLER_WORDS, known_aliases
+from engine.memo import Table
 from engine.rank import KindNote, ProductScore, RankingResult, ScoredMention, ScoreBreakdown, is_credible
 from engine.query import PRODUCT_TYPES
 from engine.sources import mentions_product
@@ -1335,7 +1336,16 @@ def _named_types(kind: str, category: str) -> set[str]:
     """The types of product a kind's own name names (12 Oct 2026), of module 1's product types of its category, before a
     word saying what it is for ("for", "instead", "with": engine.group_kinds): by one of the type's names, the longest
     where one holds another ("dry shampoo", not "shampoo"), or by a word sharing the stem of a one-word one
-    ("cleansing", a cleanser's). "retinol eye cream" names a retinoid and an eye cream; "AHA" names none."""
+    ("cleansing", a cleanser's). "retinol eye cream" names a retinoid and an eye cream; "AHA" names none. Worked out
+    once per kind and category (latency, 13 Oct 2026); a new set each time."""
+    key = (kind, category)
+    found = _NAMED_TYPES.get(key)
+    if found is None:
+        found = _NAMED_TYPES.keep(key, frozenset(_named_types_of(kind, category)))
+    return set(found)
+
+
+def _named_types_of(kind: str, category: str) -> set[str]:
     words = re.findall(r"[a-z0-9][a-z0-9'-]*", _plain(kind))
     cut = next((i for i, w in enumerate(words) if w in PURPOSE_WORDS), len(words))
     text = " ".join(words[:cut])
@@ -1365,7 +1375,20 @@ def _another_kind_of(kind: str, product_type: str) -> bool:
 def _own_names(category: str, product_type: str, request: str) -> set[str]:
     """The words the request's own product goes by: its type's name, and the type's names the request uses ("retinol"
     for a retinoid), read the way kinds are (engine.group_kinds); since 13 Oct 2026 also the words of the active
-    ingredients it asks for and their related ones' ("BHA" in a salicylic acid answer is what was asked for)."""
+    ingredients it asks for and their related ones' ("BHA" in a salicylic acid answer is what was asked for). Worked out
+    once per request (latency, 13 Oct 2026: it was worked out again for every kind); a new set each time."""
+    key = (category, product_type, request)
+    found = _OWN_NAMES.get(key)
+    if found is None:
+        found = _OWN_NAMES.keep(key, frozenset(_own_names_of(category, product_type, request)))
+    return set(found)
+
+
+_OWN_NAMES = Table(limit=10_000)  # (category, product type, request) -> the words its own product goes by
+_NAMED_TYPES = Table()  # (kind, category) -> the product types its name names
+
+
+def _own_names_of(category: str, product_type: str, request: str) -> set[str]:
     aliases = known_aliases("kinds").get(category, {})
     own = set(_kind_words(product_type, aliases))
     asked = list(ingredients_of_type(product_type)) + [f.ingredient for f in find_ingredients(request)]

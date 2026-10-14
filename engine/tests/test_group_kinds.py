@@ -248,3 +248,38 @@ def test_two_kinds_compare_the_same_with_the_quick_look():
         a = [rng.choice(stems) for _ in range(rng.randint(1, 4))]
         b = [rng.choice(stems) for _ in range(rng.randint(1, 4))]
         assert kinds_module._same_kind(a, b) == same_kind_by_joining(a, b), (a, b)
+
+
+def same_kind_sets_one_by_one(items):
+    """_same_kind_sets as first written (12 Oct 2026): every new note compared with every set's kinds. The reference."""
+    sets, kinds, known = [], [], {}
+
+    def same(a, b):
+        if (a, b) not in known:
+            known[(a, b)] = same_kind_by_joining(list(a), list(b))
+        return known[(a, b)]
+
+    for item in items:
+        words = tuple(item[1])
+        matching = [i for i, held in enumerate(kinds) if any(same(words, other) for other in held)]
+        merged = [item] + [x for i in matching for x in sets[i]]
+        merged_kinds = {words}.union(*(kinds[i] for i in matching))
+        matching_sets = [sets[i] for i in matching]
+        keep = [i for i, s in enumerate(sets) if s not in matching_sets]
+        sets = [sets[i] for i in keep] + [merged]
+        kinds = [kinds[i] for i in keep] + [merged_kinds]
+    return sets
+
+
+def test_kind_sets_found_by_their_words_are_the_sets_found_one_by_one():
+    # The same sets, holding the same notes in the same order, with words written as one or apart, repeated kinds,
+    # the same words in another order, and notes that join two sets.
+    rng = random.Random(14)
+    stems = ["cast", "iron", "castiron", "carbon", "steel", "carbonsteel", "non", "stick", "nonstick", "hand",
+             "grinder", "handgrinder", "a", "b", "ab", "abc", "c", "bc", "enameled"]
+    for n in range(300):
+        items = []
+        for i in range(rng.randint(0, 40)):
+            note = KindMention(f"t{n}", f"c{i}", f"about {i}", rng.choice(["recommend", "warn"]))
+            items.append((note, [rng.choice(stems) for _ in range(rng.randint(1, 3))]))
+        assert kinds_module._same_kind_sets(items) == same_kind_sets_one_by_one(items), n
