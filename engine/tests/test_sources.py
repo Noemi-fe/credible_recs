@@ -1101,3 +1101,40 @@ def test_a_word_inside_another_products_name_doesnt_name_the_product():
     assert not mentions_product("Holy grail dry shampoo?", "shampoo")
     assert mentions_product("Dry shampoo vs regular shampoo for oily hair", "shampoo")
     assert mentions_product("Holy grail dry shampoo?", "dry shampoo")
+
+
+# --- Relevance and talking read a thread's comments in one go (latency, 13 Oct 2026) ---
+
+import random  # noqa: E402
+
+from engine.query import PRODUCT_TYPES  # noqa: E402
+from engine.sources import mentions_product, talking  # noqa: E402
+
+
+def relevance_one_by_one(thread: Thread, product_type: str) -> float:
+    """relevance as first written, every comment read on its own: the reference."""
+    score = 3 if mentions_product(thread.title, product_type) else 0
+    score += 1 if mentions_product(thread.body, product_type) else 0
+    talking = sum(mentions_product(c.body, product_type) for c in thread.comments)
+    return score + min(1, talking / 5)
+
+
+def test_relevance_and_talking_are_the_same_reading_the_comments_together():
+    # Comments that name products whole, with a slip, inside a longer name of something else ("tea pot", "dry
+    # shampoo"), split across two comments ("air" ending one, "fryer" starting the next), or not at all.
+    rng = random.Random(13)
+    bits = ["kettle", "kettles", "a tea pot", "teapot", "pot", "saucepan", "suncreen", "sunscreen", "moisturiser",
+            "moisturizr", "dry shampoo", "shampoo", "conditioner", "leave-in conditioner", "air", "fryer", "air fryer",
+            "salicylic acid", "bha", "chef's knife", "paring knife", "cast iron", "skillet", "nothing here", "great",
+            "I love it.", "\n", "rice cooker", "cleanser", "gleanser", "exfoliant", "toner", "serum", "dutch oven",
+            "KETTLE", "Sunscreens", "SUNCREENS", "\u017funscreen", "\u0130", "caf\u00e9", "tea-pot", "pot,", "(kettle)"]
+    for n in range(60):
+        comments = [make_comment(f"c{n}x{i}", thread_id=f"1fake{n}",
+                                 body="so " + " ".join(rng.choice(bits) for _ in range(rng.randint(1, 6))))
+                    for i in range(rng.randint(0, 9))]
+        thread = Thread.model_validate(make_thread(id=f"1fake{n}", title=rng.choice(["Help", "Best kettle?"]),
+                                                   comments=comments, num_comments=len(comments)))
+        for product_type in [p.name for p in PRODUCT_TYPES] + ["air fryer", "salicylic acid product"]:
+            assert relevance(thread, product_type) == relevance_one_by_one(thread, product_type), (n, product_type)
+            assert type(relevance(thread, product_type)) is type(relevance_one_by_one(thread, product_type))
+            assert talking(thread, product_type) == sum(mentions_product(c.body, product_type) for c in thread.comments)
