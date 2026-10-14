@@ -423,3 +423,97 @@ def test_the_how_page_shows_a_brand_line_and_how_brands_are_checked(tmp_path, mo
     assert '"Lodge cast iron skillet line"' in text
     assert "(their" not in text
     assert "on the maker's pages or a big shop's, that the brand sells the kind of product you asked for" in text
+
+
+# --- Read once while unchanged (latency, 13 Oct 2026) ---
+
+def test_an_unchanged_list_is_read_once_and_a_changed_one_again(tmp_path):
+    import os
+    import time
+
+    path = write_lines(tmp_path, [entry()])
+    past = time.time_ns() - 60 * 10**9  # as if written a minute ago: a file changed just now is read again
+    os.utime(path, ns=(past, past))
+    first = load_brand_lines(path)
+    assert load_brand_lines(path) is first
+    write_lines(tmp_path, [entry(sells=False)])
+    assert [line.sells for line in load_brand_lines(path)] == [False]
+
+
+# --- Range pages and from prices (Noemi's night decision 1, 14 Oct 2026) ---
+# "first chef's knife under £100 for a home cook" showed three brand lines and no product link at all: a line has no
+# single price, so it was never priced, and never linked to a shop. Now an entry may name the page its answers link to
+# (the maker's page for its products of that type, or an official UK stockist's), and where and when its from price
+# was found, so answers can show "From £X at <shop>, checked <date>".
+
+def priced_entry(**overrides) -> dict:
+    """A made-up entry with a range page and a from price, each one of its sources."""
+    return entry(**{"sources": ["https://maker.example/skillets", "https://shop.example/pansmith-no-8"],
+                    "range_page": "https://maker.example/skillets", "from_price": 34.5,
+                    "from_price_shop": "Made-up Cookshop", "from_price_url": "https://shop.example/pansmith-no-8",
+                    "from_price_checked_on": "2026-10-14"} | overrides)
+
+
+def test_an_entry_may_name_its_range_page_and_where_and_when_its_from_price_was_found(tmp_path):
+    [loaded] = load_brand_lines(write_lines(tmp_path, [priced_entry()]))
+    assert loaded.range_page == "https://maker.example/skillets" and loaded.range_shop is None
+    assert (loaded.from_price, loaded.from_price_shop, loaded.from_price_url, loaded.from_price_checked_on) == (
+        34.5, "Made-up Cookshop", "https://shop.example/pansmith-no-8", date(2026, 10, 14))
+
+
+def test_a_range_page_may_be_an_official_stockists_named_as_shown(tmp_path):
+    [loaded] = load_brand_lines(write_lines(tmp_path, [priced_entry(range_page="https://shop.example/pansmith-no-8",
+                                                                    range_shop="Made-up Cookshop")]))
+    assert (loaded.range_page, loaded.range_shop) == ("https://shop.example/pansmith-no-8", "Made-up Cookshop")
+
+
+def test_both_stay_optional(tmp_path):
+    # An entry without them loads as before; so does a from price on its own (12 Oct 2026: it only ever left a line out
+    # under a budget below it), which answers then don't show, since they couldn't say where it was found.
+    [plain, bare] = load_brand_lines(write_lines(tmp_path, [entry(), entry(brand="Potco", from_price=120.0)]))
+    assert plain.range_page is None and plain.from_price is None and plain.from_price_shop is None
+    assert bare.from_price == 120.0 and (bare.from_price_shop, bare.from_price_url, bare.from_price_checked_on) == (
+        None, None, None)
+
+
+@pytest.mark.parametrize("bad", [
+    {"range_page": "https://maker.example/elsewhere"},  # not one of its sources: answers link only to pages read
+    {"range_page": "http://maker.example/skillets"},
+    {"range_page": "https://maker.example/skillets/"},  # exactly as among the sources, never another spelling
+    {"range_page": None, "range_shop": "Made-up Cookshop"},  # a stockist's name with no page
+    {"range_shop": ""},
+    {"from_price_shop": None},  # a from price shown needs its shop, its page and its day together
+    {"from_price_url": None},
+    {"from_price_checked_on": None},
+    {"from_price": None},  # where and when, with no price
+    {"from_price_url": "https://shop.example/elsewhere"},  # not one of its sources
+    {"from_price_shop": ""},
+    {"from_price_checked_on": "14 Oct 2026"},
+    {"from_price": 0},
+    {"from_price": -3.0},
+    {"from_price": "34.50"},
+])
+def test_a_malformed_range_page_or_from_price_is_refused_naming_where_it_is(tmp_path, bad):
+    with pytest.raises(BrandLinesError) as refused:
+        load_brand_lines(write_lines(tmp_path, [priced_entry(), priced_entry(brand="Potco", **bad)]))
+    assert "entry 2" in str(refused.value)
+
+
+def test_every_from_price_in_the_committed_list_says_where_and_when_it_was_found():
+    # Noemi's decision: researched, sourced and dated. Each from price names its shop, the page it was read on (one of
+    # the entry's sources: a UK shop's or the maker's UK page, never Reddit) and the day; each range page is one of the
+    # entry's sources, https only.
+    for line_ in load_brand_lines():
+        if line_.from_price is not None:
+            assert line_.from_price_shop and line_.from_price_checked_on, line_.brand
+            assert line_.from_price_url in line_.sources, line_.brand
+        if line_.range_page is not None:
+            assert line_.range_page in line_.sources and line_.range_page.startswith("https://"), line_.brand
+
+
+def test_a_brand_in_the_committed_list_that_sells_the_type_has_a_range_page_or_says_why_not():
+    # Every brand-line pick should link to its maker's page for the type (14 Oct 2026); when no page could be found or
+    # read, the researcher says so in the note, for whoever checks the list next.
+    for line_ in load_brand_lines():
+        if line_.sells and line_.range_page is None:
+            assert "no range page" in (line_.note or "").casefold(), line_.brand

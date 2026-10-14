@@ -196,3 +196,27 @@ def test_a_clue_word_the_model_agrees_with_stands():
     assert parse_query("bread maker with a non-stick pot",
                        model=FakeModel({"category": "kitchen", "product": "bread maker"})).product_type == "bread maker"
     assert parse_query("rice cooker with a non-stick pot", model=None).product_type == "rice cooker"
+
+
+class _Counting:
+    """A stand-in for llama.cpp that counts the readings it is asked for."""
+
+    def __init__(self):
+        self.calls = []
+
+    def create_chat_completion(self, messages, **_):
+        self.calls.append(messages[-1]["content"])
+        return {"choices": [{"message": {"content": '{"category": "kitchen", "product": "toaster"}'}}]}
+
+
+def test_a_request_read_before_is_answered_without_asking_the_model_again():
+    # Its answer for the same words never changes (temperature 0): the server gets ready by answering every product
+    # type, and a visitor asking one of them again needn't wait for the model (latency, 13 Oct 2026).
+    model = LlamaQueryModel(Path("not-loaded.gguf"))
+    model._llm = _Counting()
+    first = model.read("toaster")
+    first["product"] = "changed by the caller"
+    assert model.read("toaster") == {"category": "kitchen", "product": "toaster"}
+    assert model._llm.calls == ["toaster"]
+    model.read("best toaster for a small kitchen")
+    assert model._llm.calls == ["toaster", "best toaster for a small kitchen"]

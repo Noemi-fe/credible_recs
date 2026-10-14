@@ -134,9 +134,11 @@ def test_items_are_in_the_json_and_the_text():
     # Changed on purpose 13 Oct 2026 (the UX builder): "voices", the credible voices behind it as numbers, for the
     # page's credibility meter (engine/tests/test_web_ux.py).
     # Changed on purpose 13 Oct 2026 (active ingredients): each item also has its "form" in an ingredient-led answer.
+    # Changed on purpose 14 Oct 2026 (Noemi's night decision 1): each item also has its "range", a brand line's link to
+    # its maker's page for the type, or null (engine/tests/test_line_links.py).
     assert set(data["worth_a_look"][0]) == {"product_key", "name", "reason", "quotes", "downsides", "downsides_share",
                                            "disagreement", "score", "breakdown", "price", "availability", "cautions",
-                                           "summary", "voices", "form"}
+                                           "summary", "voices", "form", "range"}
     text = render_markdown(answer)
     assert f"## {wording.WORTH_HEADING}" in text and answer.worth_note in text
     assert text.index("Tojiro DP Gyuto") < text.index(wording.WORTH_HEADING) < text.index("Misono UX10")

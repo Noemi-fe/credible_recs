@@ -149,3 +149,63 @@ def test_an_escaped_emphasis_mark_is_formatting_too():
     assert verify_quote(body, "I eat a lot of eggs.")
     assert verify_quote(body, "I eat a \\*lot\\* of eggs.")
     assert not verify_quote("Save it in C:\\games please.", "Save it in C:games please.")
+
+
+# --- The plain form, worked out run by run (latency, 13 Oct 2026) ---
+
+import html  # noqa: E402
+import random  # noqa: E402
+
+from engine import verify_quotes  # noqa: E402
+
+
+def plain_one_by_one(text: str) -> tuple[str, list[tuple[int, int]]]:
+    """The plain form as the guardrail first worked it out, one character at a time: the reference the quicker one
+    must always equal."""
+    chars, origins, i = [], [], 0
+    while i < len(text):
+        if text[i] == "\\" and i + 1 < len(text) and text[i + 1] in verify_quotes.EMPHASIS_MARKS:
+            i += 1
+            continue
+        entity = verify_quotes._ENTITY.match(text, i) if text[i] == "&" else None
+        if entity and html.unescape(entity.group()) != entity.group():
+            pieces, end = html.unescape(entity.group()), entity.end()
+        else:
+            pieces, end = text[i], i + 1
+        for char in pieces:
+            char = verify_quotes.CURLY_TO_STRAIGHT.get(char, char)
+            if char in verify_quotes.EMPHASIS_MARKS:
+                continue
+            if char.isspace():
+                if chars and chars[-1] == " ":
+                    origins[-1] = (origins[-1][0], end)
+                    continue
+                char = " "
+            chars.append(char)
+            origins.append((i, end))
+        i = end
+    return "".join(chars), origins
+
+
+TRICKY_TEXTS = [
+    "", " ", "  ", "a", "a b", "a  b", " a ", "a\n\nb", "a \n b", "\ta\t", "I've used it.", "**great** kettle",
+    "a \\*lot\\* of eggs", "a \\", "\\", "\\\\*", "5 &amp; 6", "&gt; quoted", "&#39;s", "&#x27;s", "&foo; bar",
+    "&amp;amp;", "& alone", "&", "it’s “great” ‘really’ ‛odd", "__under__ ~~struck~~ _it_", "a b", "a  b",
+    "a　　b", "a\x1cb", "a\x1f b", "a​b", "éclair", "x&nbsp;y", "x &nbsp; y", "x&#32;&#32;y",
+    "end with space ", "*", "* *", "_ _", "~", "a*b*c", "line one\r\nline two", "tab\tand  two  spaces",
+]
+
+
+@pytest.mark.parametrize("text", TRICKY_TEXTS)
+def test_the_plain_form_is_the_same_worked_out_run_by_run(text):
+    assert verify_quotes._plain(text) == plain_one_by_one(text)
+
+
+def test_the_plain_form_is_the_same_on_made_up_texts():
+    rng = random.Random(13)
+    pieces = ["a", "b", "word", "Word", " ", "  ", "\n", "\t", " ", " ", "\x1c", "*", "**", "_", "~", "\\",
+              "&", "&amp;", "&gt;", "&#39;", "&#x27;", "&nbsp;", "&foo;", "’", "‘", "‛", "“", "”", ".", ",", "?", "é",
+              "é", "1", "2%", ";", "#", ">"]
+    for _ in range(3000):
+        text = "".join(rng.choice(pieces) for _ in range(rng.randint(0, 30)))
+        assert verify_quotes._plain(text) == plain_one_by_one(text), repr(text)

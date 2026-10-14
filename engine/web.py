@@ -57,12 +57,19 @@ The JSON for /api/answer (200):
                             "downsides": [same shape as quotes], "disagreement": "..." | null,
                             "score", "breakdown": {every number behind the score (engine.rank.ScoreBreakdown)},
                             "price": {"text",                  "£120 at <shop>, checked 9 Oct 2026" or
-                                                               "Price not checked yet"
+                                                               "Price not checked yet"; for a brand line, its
+                                                               from price: "From £25 at <shop>, checked 14 Oct
+                                                               2026"
                                       "amount", "currency", "shop", "checked_on",   null when not known
                                       "url",                   the shop's own page, https only, or null
                                       "budget_status",         "within" | "unknown" | "other currency" |
                                                                "out of date", or null without a budget
-                                      "budget_note"},          the same in words, or null
+                                      "budget_note",           the same in words, or null ("From £25, within
+                                                               your budget (up to £100)." for a line)
+                                      "from_price"},           true when the amount is a brand line's from price
+                                                               (Noemi's night decision 1, 14 Oct 2026): the
+                                                               cheapest UK price of its products of the type,
+                                                               researched in data/brand_lines.json; else false
                             "availability": {"text",           "Sold at <shop>, checked 9 Oct 2026",
                                                                "Sold second-hand only: <shop>, checked
                                                                10 Oct 2026" (10 Oct 2026), or
@@ -94,6 +101,15 @@ The JSON for /api/answer (200):
                                        "warn": n,              recommendations, of them the high and medium voices, the
                                        "threads": n}           writers who warned (as the share line counts them) and
                                                                the threads with a credible recommendation
+                            "range": {"text",                  a brand line's link to its maker's page for its products
+                                      "url",                   of the type, or an official UK stockist's (Noemi's night
+                                      "checked",               decision 1, 14 Oct 2026): "Browse Victorinox chef
+                                      "checked_on"}            knives", the entry's range page exactly as
+                                                               data/brand_lines.json writes it (https only, one of its
+                                                               sources, never Reddit's, never from a comment), and
+                                                               "checked 14 Oct 2026" / "2026-10-14", the day its sources
+                                                               were read; null for any other pick, and for a line whose
+                                                               entry has no range page
                            }],
                  "look_for": [{"kind", "advice", "quote": {same shape}}],
                  "skip": [{"product_key", "name", "reason", "quotes": [...]}],
@@ -101,7 +117,7 @@ The JSON for /api/answer (200):
                                                     (Noemi, 11 Oct 2026); [] when there are none
                  "worth_a_look": [{"product_key", "name", "reason", "quotes", "downsides", "downsides_share",
                                    "disagreement", "score", "breakdown", "price", "availability", "cautions",
-                                   "summary", "voices"}],
+                                   "summary", "voices", "range"}],
                                   "Also worth a look" (Noemi's decision 2, 13 Oct 2026): up to 3 products with 2
                                   credible recommendations across at least 2 threads, best first, shown apart after the
                                   picks and never among them; the same shapes as a pick's fields, with 1 or 2 quotes,
@@ -347,6 +363,7 @@ def handle_request(path_and_query: str, library_dir: Path = DEFAULT_LIBRARY_DIR,
         if ready.is_set():
             reload_checks_if_due()
             reload_on_demand_if_due()
+            warm_more()  # the requests getting ready had no time for, a slice per keep-warm ping (14 Oct 2026)
         return (200 if ready.is_set() else 503), JSON, json.dumps({"ready": ready.is_set()}).encode("utf-8")
     if parts.path in METHODS:  # a route that takes another method: feedback is sent, never fetched
         return _error(405, WRONG_METHOD, allowed=METHODS[parts.path])
@@ -760,6 +777,8 @@ def answer_wording() -> dict[str, str]:
         "summary_note": wording.SUMMARY_NOTE,
         # Active ingredients (13 Oct 2026): the label of each product's form in an ingredient-led answer.
         "form_label": wording.FORM_LABEL,
+        # Brand lines (14 Oct 2026): a line's from price as an amount alone ("From £25"), in "At a glance" and its row.
+        "price_from_amount": wording.PRICE_FROM_AMOUNT,
     }
 
 
@@ -943,25 +962,54 @@ def warm_up(library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
         steps.insert(0, ("the pre-check's checks", _read_checks))
     if threads.is_dir():
         steps.insert(0, ("the library", lambda: loaded(threads)))
-        steps += [(f"{WARM_ANSWER_STEP} {name}", lambda name=name: warm_answer(name, library_dir))
-                  for name in WARM_PRODUCT_TYPES]
     if on_demand is not None:  # first of all (14 Oct 2026): the library is then read once, with them
         steps.insert(0, ("the threads read on demand", on_demand.warm_up))
-    left = 0
     for name, step in steps:
-        if name.startswith(WARM_ANSWER_STEP) and time.perf_counter() - started >= WARM_UP_ANSWERS_SECONDS:
-            left += 1  # its first visitor works it out instead
+        _step(name, step)
+    left = []
+    for request in warm_requests() if threads.is_dir() else ():
+        if time.perf_counter() - started >= WARM_UP_ANSWERS_SECONDS:
+            left.append(request)  # warmed later, a slice per keep-warm ping (warm_more), or by its first visitor
             continue
-        try:
-            step()
-        except Exception as error:  # reported where the server runs; answers report it again when they need it
-            print(f"Getting ready: {name} couldn't be loaded ({type(error).__name__}: {error}).", file=sys.stderr,
-                  flush=True)
+        _step(f"{WARM_ANSWER_STEP} {request}", lambda request=request: warm_answer(request, library_dir))
     if left:
-        print(f"Getting ready: left {left} product types for their first visitors (time up after "
+        print(f"Getting ready: left {len(left)} requests for their first visitors (time up after "
               f"{WARM_UP_ANSWERS_SECONDS} s).", flush=True)
+    with _warming:
+        _left_to_warm[:] = left
+        _left_in[:] = [library_dir]
     ready.set()
     print(f"Ready for visitors: got ready in {time.perf_counter() - started:.1f} s.", flush=True)
+
+
+def _step(name: str, step) -> None:
+    """One step of getting ready; a problem is reported where the server runs, and never stops it: answers report it
+    again when they need it."""
+    try:
+        step()
+    except Exception as error:
+        print(f"Getting ready: {name} couldn't be loaded ({type(error).__name__}: {error}).", file=sys.stderr,
+              flush=True)
+
+
+def warm_more() -> None:
+    """The next of the requests getting ready had no time for (warm_up), warmed while the keep-warm ping asks /ready
+    (14 Oct 2026, the coordinator's request: on Cloud Run's one processor getting ready warmed 13 of 65 requests in its
+    time, and a request whose threads weren't warmed took ~8 s; Cloud Run gives a server its processor only while it
+    answers someone, so a thread warming in the background would barely run). Each ping warms the next ones for up to
+    WARM_MORE_SECONDS (an answer begun then ends), each taking its turn with visitors' answers as getting ready's do
+    (warm_answer), until none are left; one slice at a time (a ping arriving meanwhile only says it is ready)."""
+    if not _left_to_warm or not _warming.acquire(blocking=False):
+        return
+    try:
+        started, warmed = time.perf_counter(), 0
+        while _left_to_warm and time.perf_counter() - started < WARM_MORE_SECONDS:
+            request = _left_to_warm.pop(0)
+            _step(f"{WARM_ANSWER_STEP} {request}", lambda: warm_answer(request, _left_in[0]))
+            warmed += 1
+        print(f"Getting ready: warmed {warmed} more, {len(_left_to_warm)} left.", flush=True)
+    finally:
+        _warming.release()
 
 
 def _read_checks() -> None:
@@ -1009,26 +1057,89 @@ def reload_on_demand_if_due() -> None:
               file=sys.stderr, flush=True)
 
 
-def warm_answer(product_type: str, library_dir: Path) -> None:
-    """One answer about a product type, worked out and thrown away while the server gets ready (latency, 12 Oct
-    2026), so what answers keep between requests is ready for the first visitors: retrieval's reading of each thread,
-    what each comment's words show, the name matching, the price and facts lookups (engine.memo). Nothing is shown and
-    Reddit is never asked: no live check, and every thread read as answers checked live read them
+def warm_answer(request: str, library_dir: Path) -> None:
+    """One answer to a request (warm_requests), worked out and thrown away while the server gets ready (latency, 12
+    Oct 2026), so what answers keep between requests is ready for the first visitors: retrieval's reading of each
+    thread, what each comment's words show, the name matching, the price and facts lookups (engine.memo). Nothing is
+    shown and Reddit is never asked: no live check, and every thread read as answers checked live read them
     (live_check_required=False). The answers themselves are never kept. It takes its turn with visitors' answers
     (_answers_lock), so a visitor arriving meanwhile waits for one of these at most, rather than sharing the processor
     with all of them."""
     with _answers_lock:
-        answer_request(product_type, library_dir, profiles=profiles, live_check_required=False)
+        answer_request(request, library_dir, profiles=profiles, live_check_required=False)
 
 
-# The product types answered while getting ready: module 1's own (engine.query.PRODUCT_TYPES). The rules route each by
-# its name (only "serum", placed by a clue word, also gets the open model's view, as any request would).
+def warm_requests() -> list[str]:
+    """The requests answered while getting ready (14 Oct 2026, the coordinator's requests after the live site's getting
+    ready reached 7, then 13, of its requests in its time), each once, in the order that takes the most cold work away
+    soonest (measured on this Mac: eval/LATENCY.md):
+
+    - the search page's example requests (the first of WARM_FIRST_FILES): what a visitor clicks, word for word;
+    - then one request for each product type not asked yet (WARM_PRODUCT_TYPES' order), its likeliest: the first of the
+      latency requests that module 1's rules place as that type, else the type's own name. A type's first answer reads
+      every thread of its category for it, the biggest part of a cold answer, which every later request of that type
+      then finds done, however it is worded;
+    - then the rest of the latency requests and the types' names: the threads their needs lead to;
+    - last, the requests module 1 asks the open model about ("serum", "something nice for my mum"): a reading of
+      seconds, which warms that very request only.
+    What getting ready has no time for (WARM_UP_ANSWERS_SECONDS) is warmed a slice per keep-warm ping (warm_more)."""
+    examples = _requests_in(WARM_FIRST_FILES[0]) if WARM_FIRST_FILES else []
+    likely = [text for path in WARM_FIRST_FILES for text in _requests_in(path)]
+    every = list(dict.fromkeys(likely + list(WARM_PRODUCT_TYPES)))
+    placed = {text: _placed_by_rules(text) for text in every}
+    per_type = [text for product_type in WARM_PRODUCT_TYPES
+                if (text := next((t for t in every if placed[t] == (product_type, False)), None)) is not None]
+    lead = list(dict.fromkeys(examples + per_type))
+    rest = [text for text in every if text not in lead]
+    return lead + [t for t in rest if not placed[t][1]] + [t for t in rest if placed[t][1]]
+
+
+def _placed_by_rules(text: str) -> tuple[str | None, bool]:
+    """The product type module 1 places a request as (None for a question or a polite no), and whether it would ask the
+    open model about it: module 1 run with a stand-in that only notes being asked, so its rules alone decide."""
+    from engine.query import parse_query
+
+    class _Noting:
+        asked = False
+
+        def read(self, text: str):
+            self.asked = True
+            return None
+
+    noting = _Noting()
+    query = parse_query(text, model=noting)
+    return (query.product_type if query.status == "ok" else None), noting.asked
+
+
+def _requests_in(path: Path) -> list[str]:
+    """The requests of a file of requests: the blind-test questions ("questions") or the latency requests ("queries");
+    none when there is no such file."""
+    if not Path(path).is_file():
+        return []
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    return [item["text"] for item in data.get("questions", data.get("queries", []))]
+
+
+# The requests answered first while getting ready (warm_requests): the search page's examples, then the latency
+# requests (each type's likeliest first).
+LATENCY_FILE = REPO_ROOT / "eval" / "edge_cases" / "latency_queries.json"
+WARM_FIRST_FILES = (EXAMPLES_FILE, LATENCY_FILE)
+# Then the product types: module 1's own (engine.query.PRODUCT_TYPES). The rules route each by its name (only "serum",
+# placed by a clue word, also gets the open model's view, as any request would).
 WARM_PRODUCT_TYPES = tuple(p.name for p in PRODUCT_TYPES)
 WARM_ANSWER_STEP = "the answers' memory for"
 # Getting ready starts no more warm answers once this many seconds have passed (13 Oct 2026): Cloud Run's startup probe
 # waits 4 minutes for /ready (deploy/cloudrun/deploy.sh), and the warm answers alone had grown past that, so a deploy
-# failed (the server before it kept serving). The product types left are worked out by their first visitors.
+# failed (the server before it kept serving). The requests left are warmed later, a slice per keep-warm ping
+# (warm_more), unless a visitor asks one first.
 WARM_UP_ANSWERS_SECONDS = 120
+# How long each keep-warm ping warms the requests left (warm_more, 14 Oct 2026): well inside the ping's attempt deadline
+# (180 s, deploy/cloudrun/deploy.sh), and short enough that a visitor waits at most one warm answer behind it.
+WARM_MORE_SECONDS = 40
+# The requests left (warm_more) and the library they are answered from, kept by warm_up; one slice at a time.
+_left_to_warm: list[str] = []
+_left_in: list[Path] = []
+_warming = threading.Lock()
 
 
 def serve(port: int = WEB_PORT, library_dir: Path = DEFAULT_LIBRARY_DIR, site: Site = LOCAL) -> None:

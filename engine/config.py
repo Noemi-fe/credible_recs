@@ -1094,11 +1094,24 @@ USE_MAX_YEARS = 60
 # one ended the whole search: haircare's big threads, mostly years old, were out of reach. Its searches are free, so
 # now: up to ARCHIVE_MAX_SEARCHES title searches (every decided subreddit), ARCHIVE_POSTS_EACH posts each (the most
 # Arctic Shift gives), then the same searches again for posts from before ARCHIVE_OLDER_YEARS ago; a failed search is
-# skipped and named, and ARCHIVE_SEARCH_MAX_FAILURES of them end the round. Chosen by Claude, reported to Noemi.
+# skipped and named, and ARCHIVE_SEARCH_MAX_FAILURES of them end the round (in a row since 13 Oct 2026: a busy archive
+# fails some searches and answers others; one that is down fails every one). Chosen by Claude, reported to Noemi.
 ARCHIVE_MAX_SEARCHES = 16
 ARCHIVE_POSTS_EACH = 100
 ARCHIVE_OLDER_YEARS = 3
 ARCHIVE_SEARCH_MAX_FAILURES = 3
+# 13 Oct 2026 (the data round): Arctic Shift timed out on half the searches for "shampoo" over 3 years in the big
+# haircare subreddits, round after round, and answered one over the last year in 14 s. A search that times out is asked
+# again as the two halves of its span (an undated one as the two windows above): the newer half of its first timeout right
+# away, every other half at the end of the round, so one search that times out over any span can't end the round. At
+# most this many halvings: then it counts as failed. Chosen by Claude, reported to Noemi.
+ARCHIVE_SPLIT_DEPTH = 2
+# 13 Oct 2026 (the data round): Arctic Shift answers the newest 100 posts of a title search, so "conditioner" over 3 years
+# in r/curlyhair finds the last few months of small posts, and the threads asking a request's exact question ("best
+# conditioner for curly hair?", often years old and big) stayed out of reach. The archive's round also searches the
+# product's title word with each of the request's first ARCHIVE_NEED_WORDS need words ("conditioner curly"), in each of
+# its subreddits, over the whole history: few posts match both. Chosen by Claude, reported to Noemi.
+ARCHIVE_NEED_WORDS = 2
 # 12 Oct 2026: a title search over a big subreddit's whole history timed out, one bounded by dates didn't (r/curlyhair,
 # "conditioner": 35 s for the last 3 years, 11 s for the 6 before). So both rounds are bounded: the last
 # ARCHIVE_OLDER_YEARS years, then back to ARCHIVE_OLDEST_FACTOR times as far (9 years).

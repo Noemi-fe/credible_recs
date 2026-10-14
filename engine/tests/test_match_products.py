@@ -630,3 +630,85 @@ def test_candidates_hold_every_match_among_made_up_names():
 def test_names_with_no_first_letters_in_common_are_not_compared():
     names = [("zojirushi", "kettle"), ("bonavita", "gooseneck"), ("cerave", "cleanser")]
     assert candidate_pairs(names) == set()
+
+
+# --- A quick, sure no for pairs of names that can't match (latency, 13 Oct 2026) ---
+
+from engine import match_products  # noqa: E402
+
+
+def test_a_quick_no_is_never_wrong_on_tricky_names():
+    # Every pair the quick look rules out is one the full comparison rejects too: joined words ("soon jung" and
+    # "soonjung"), an "and" only one writes, slips in the first word, plurals and doubled letters among them.
+    for a in TRICKY_NAMES:
+        for b in TRICKY_NAMES:
+            if match_products._cannot_match(a, b):
+                assert not match_products._same_words(list(a), list(b)), (a, b)
+
+
+def test_a_quick_no_is_never_wrong_on_made_up_names():
+    rng = random.Random(13)
+    stems = ["soon", "jung", "soonjung", "cera", "ve", "cerave", "kettle", "kettles", "kettel", "pan", "pans", "and",
+             "creuset", "creseut", "lodge", "lodgee", "max", "jmax", "j", "2", "22", "bha", "bhas", "salicylic",
+             "salicyclic", "hur", "hurr", "mat", "matt", "a", "spf", "50", "spf50", "fab", "fabs", "tir", "tirtir"]
+    names = sorted({tuple(rng.choice(stems) for _ in range(rng.randint(1, 4))) for _ in range(500)})
+    ruled_out = 0
+    for a in names:
+        for b in names:
+            if match_products._cannot_match(a, b):
+                ruled_out += 1
+                assert not match_products._same_words(list(a), list(b)), (a, b)
+    assert ruled_out > len(names) ** 2 // 2  # most pairs are settled by the quick look
+
+
+def test_names_that_need_a_closer_look_still_get_one():
+    # The quick look never rules out a pair whose words compare only once joined, or once an "and" is dropped.
+    assert not match_products._cannot_match(("soon", "jung", "cream"), ("soonjung", "cream"))
+    assert match_products.same_words(["soon", "jung", "cream"], ["soonjung", "cream"])
+    assert not match_products._cannot_match(("black", "and", "decker"), ("black", "decker"))
+    assert match_products.same_words(["black", "and", "decker"], ["black", "decker"])
+    assert not match_products._cannot_match(("zojurushi",), ("zojirushi", "kettle"))  # a slip of a long word
+
+
+def test_a_pair_ruled_out_by_the_quick_look_is_not_remembered():
+    before = len(match_products._SAME)
+    assert not match_products.same_words(["zojirushi", "kettle"], ["bonavita", "gooseneck"])
+    assert not match_products.same_words(("cerave", "hydrating", "cleanser"), ("cerave", "sa", "cleanser"))
+    assert len(match_products._SAME) == before
+
+
+def test_a_pair_ruled_out_by_the_quick_look_has_no_held_back_word_either():
+    # Grouping asks held_back_word only of pairs the quick look leaves (engine.group_products._matching): a word held
+    # back needs every other word found, so a pair ruled out can never have one.
+    rng = random.Random(14)
+    stems = ["ballarini", "zwilling", "pans", "pan", "nonstick", "chai", "shampoo", "ecoslay", "spice", "coconut",
+             "milk", "and", "neutrogena", "t", "gel", "tgel", "mugwort", "cream", "essence", "creams", "ballarinis"]
+    names = sorted({tuple(rng.choice(stems) for _ in range(rng.randint(1, 4))) for _ in range(400)})
+    names = [name for name in names if set(name) != {"and"}]  # a name of "and" alone isn't one (and stops the matcher)
+    held_back = 0
+    for a in names:
+        for b in names:
+            word = held_back_word(list(a), list(b))
+            held_back += word is not None
+            if match_products._cannot_match(a, b):
+                assert word is None, (a, b)
+    assert held_back > 20
+
+
+def test_the_candidates_are_the_pairs_the_quick_look_leaves_either_way_round():
+    # match_candidates finds them from an index of the names' words without looking at every pair: the same pairs as
+    # looking at every pair, among made-up names with joined words, "and"s, slips, plurals and short words.
+    rng = random.Random(15)
+    stems = ["soon", "jung", "soonjung", "cera", "ve", "cerave", "kettle", "kettles", "kettel", "pan", "pans", "and",
+             "creuset", "creseut", "lodge", "lodgee", "max", "jmax", "j", "2", "22", "bha", "bhas", "hur", "hurr", "a",
+             "spf", "50", "spf50", "fab", "fabs", "tir", "tirtir", "black", "decker", "blackdecker"]
+    names = sorted({tuple(rng.choice(stems) for _ in range(rng.randint(1, 4))) for _ in range(600)})
+    candidates = match_candidates(names)
+    for a in names:
+        left = {b for b in names if b != a and (not match_products._cannot_match(a, b)
+                                                 or not match_products._cannot_match(b, a))}
+        assert candidates[a] == left, a
+    # And the pairs, in order, the quick look leaves: the only ones grouping asks more about.
+    same_candidates, open_pairs = match_products.match_candidates_and_open(names)
+    assert same_candidates == candidates
+    assert open_pairs == {(a, b) for a in names for b in candidates[a] if not match_products._cannot_match(a, b)}

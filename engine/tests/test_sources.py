@@ -1207,3 +1207,141 @@ def test_an_ingredient_led_request_keeps_reading_the_threads_about_its_ingredien
     query = parse_query("salicylic acid for acne")
     assert query.ingredient_led and query.constraints.skin_types == ["acne-prone"]
     assert ids(source.find_threads(query, limit=10))[0] == "1sali01"
+
+
+# --- Relevance and talking read a thread's comments in one go (latency, 13 Oct 2026) ---
+
+import random  # noqa: E402
+
+from engine.query import PRODUCT_TYPES  # noqa: E402
+from engine.sources import mentions_product, talking  # noqa: E402
+
+
+def mentions_by_scanning(text: str, product_type: str, leave_aside: str = "") -> bool:
+    """mentions_product as first written (12-13 Oct 2026): every match checked against every longer name of the text,
+    every word tried for a slip. The reference the quicker one must always equal."""
+    from engine import sources
+
+    covers = None
+    for match in sources._product_pattern(product_type).finditer(text):
+        if leave_aside and sources._same_word_as(match.group(0), leave_aside):
+            continue
+        if covers is None:
+            covers = [(c.start(), c.end()) for c in sources._covering_pattern(product_type).finditer(text)]
+        if not any(s <= match.start() and match.end() <= e and e - s > match.end() - match.start() for s, e in covers):
+            return True
+    long_names = [w for w in sources._product_words(product_type) if " " not in w and len(w) >= sources.TYPO_MIN_LENGTH]
+    tokens = {t.removesuffix("s") for t in re.findall(r"[a-z]+", text.lower()) if len(t) >= sources.TYPO_MIN_LENGTH - 1}
+    tokens = {t for t in tokens if not (leave_aside and sources._same_word_as(t, leave_aside))}
+    return any(sources.one_edit_apart(t, w) for t in tokens for w in long_names)
+
+
+def relevance_one_by_one(thread: Thread, product_type: str) -> float:
+    """relevance as first written, every comment read on its own: the reference."""
+    score = 3 if mentions_by_scanning(thread.title, product_type) else 0
+    score += 1 if mentions_by_scanning(thread.body, product_type) else 0
+    talking = sum(mentions_by_scanning(c.body, product_type) for c in thread.comments)
+    return score + min(1, talking / 5)
+
+
+def test_relevance_and_talking_are_the_same_reading_the_comments_together():
+    # Comments that name products whole, with a slip, inside a longer name of something else ("tea pot", "dry
+    # shampoo"), split across two comments ("air" ending one, "fryer" starting the next), or not at all.
+    rng = random.Random(13)
+    bits = ["kettle", "kettles", "a tea pot", "teapot", "pot", "saucepan", "suncreen", "sunscreen", "moisturiser",
+            "moisturizr", "dry shampoo", "shampoo", "conditioner", "leave-in conditioner", "air", "fryer", "air fryer",
+            "salicylic acid", "bha", "chef's knife", "paring knife", "cast iron", "skillet", "nothing here", "great",
+            "I love it.", "\n", "rice cooker", "cleanser", "gleanser", "exfoliant", "toner", "serum", "dutch oven",
+            "KETTLE", "Sunscreens", "SUNCREENS", "\u017funscreen", "\u0130", "caf\u00e9", "tea-pot", "pot,", "(kettle)",
+            "frying pans", "pans", "sauce pans", "tea pots", "pots", "crock pot", "dry shampoos", "eye creams", "creams",
+            "Tea Kettles", "electric tea kettles", "\u212aettle"]
+    for n in range(60):
+        comments = [make_comment(f"c{n}x{i}", thread_id=f"1fake{n}",
+                                 body="so " + " ".join(rng.choice(bits) for _ in range(rng.randint(1, 6))))
+                    for i in range(rng.randint(0, 9))]
+        thread = Thread.model_validate(make_thread(id=f"1fake{n}", title=rng.choice(["Help", "Best kettle?"]),
+                                                   comments=comments, num_comments=len(comments)))
+        for product_type in [p.name for p in PRODUCT_TYPES] + ["air fryer", "salicylic acid product"]:
+            assert relevance(thread, product_type) == relevance_one_by_one(thread, product_type), (n, product_type)
+            assert type(relevance(thread, product_type)) is type(relevance_one_by_one(thread, product_type))
+            assert talking(thread, product_type) == sum(mentions_by_scanning(c.body, product_type) for c in thread.comments)
+            for comment in thread.comments:
+                assert mentions_product(comment.body, product_type) == mentions_by_scanning(comment.body, product_type)
+
+
+def test_a_threads_comments_read_once_name_each_product_as_reading_them_for_it_alone():
+    # Latency, 14 Oct 2026: what reading a thread's comments for a product starts with (joining them, writing them in
+    # lowercase, finding the odd letters and the long words) is the same for every product, so it is done once a thread
+    # and kept (keep_read, as LocalSource keeps it), and every product's reading starts from it. Comments as above.
+    from engine import sources
+    from engine.sources import comments_naming, keep_read, read_comments
+
+    rng = random.Random(14)
+    bits = ["kettle", "kettles", "a tea pot", "teapot", "pot", "saucepan", "suncreen", "sunscreen", "moisturiser",
+            "moisturizr", "moisturisers", "dry shampoo", "shampoo", "conditioner", "condtioner", "leave-in conditioner",
+            "air", "fryer", "air fryer", "airfyer", "microwve", "salicylic acid", "bha", "chef's knife", "paring knife",
+            "cast iron", "skillet", "nothing here", "I love it.", "\n", "rice cooker", "cleanser", "gleanser",
+            "exfoliant", "exfolient", "toner", "serum", "dutch oven", "KETTLE", "Sunscreens", "SUNCREENS",
+            "ſunscreen", "İ", "café", "tea-pot", "pot,", "(kettle)", "crock pot", "Kettle",
+            "MOISTURIZERS", "pressure cooker", "presure cooker", "food processors"]
+    types = [p.name for p in PRODUCT_TYPES] + ["air fryer", "salicylic acid product"]
+    for n in range(60):
+        comments = [make_comment(f"c{n}x{i}", thread_id=f"1fake{n}",
+                                 body="so " + " ".join(rng.choice(bits) for _ in range(rng.randint(1, 6))))
+                    for i in range(rng.randint(0, 9))]
+        thread = Thread.model_validate(make_thread(id=f"1fake{n}", title=rng.choice(["Help", "Best kettle?"]),
+                                                   comments=comments, num_comments=len(comments)))
+        read = keep_read(read_comments(thread.comments))
+        assert sources._kept_read(thread.comments) is read  # found by those very comments
+        assert sources._kept_read(list(thread.comments)) is None  # and only by them
+        for product_type in rng.sample(types, len(types)):  # in any order: the reading is the same for each
+            alone = sum(mentions_by_scanning(c.body, product_type) for c in thread.comments)
+            assert comments_naming(thread.comments, product_type) == alone, (n, product_type)
+            assert relevance(thread, product_type) == relevance_one_by_one(thread, product_type), (n, product_type)
+
+
+def test_a_threads_comments_are_read_once_whatever_product_is_asked_about(tmp_path, monkeypatch):
+    from engine import sources
+
+    sizes = []
+    reading = sources.read_comments
+    monkeypatch.setattr(sources, "read_comments", lambda comments: sizes.append(len(comments)) or reading(comments))
+    source = local_source(tmp_path, [
+        kitchen_thread("1ket001", "Best kettle?", comments=["My kettle lasted ten years.", "A teapot is better."]),
+        kitchen_thread("1pan001", "Pans that last?", comments=["This saucepan is great."]),
+    ])
+    for request in ("electric kettle", "teapot", "saucepan", "frying pan"):
+        source.find_threads(parse_query(request), limit=5)
+    assert sorted(sizes) == [1, 2]  # each thread once, for all four products
+
+
+# --- A request's word in a text, found without trying every word in turn (latency, 13 Oct 2026) ---
+
+import re  # noqa: E402
+
+from engine.sources import _stem, _title_has  # noqa: E402
+
+
+def title_has_word_by_word(lowered_title: str, word: str) -> bool:
+    """_title_has as first written, every candidate tried in turn: the reference."""
+    written = re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", lowered_title)
+    tokens = [re.sub(r"['-]", "", t) for t in written]
+    candidates = tokens + [a + b for a, b in zip(tokens, tokens[1:])]
+    candidates += [re.sub(r"['-]", "", re.sub(r"^anti-(?=[a-z])|(?<=[a-z])-free$", "", t)) for t in written
+                   if t.startswith("anti-") or t.endswith("-free")]
+    return any(t == word or _stem(t) == word or (len(word) >= 4 and t.startswith(word)) for t in candidates)
+
+
+def test_a_word_in_a_text_is_found_as_trying_every_word_found_it():
+    rng = random.Random(13)
+    bits = ["pour", "over", "pour-over", "pourover", "anti-dandruff", "dandruff", "sulfate-free", "sulfates", "free",
+            "lasts", "last", "lasting", "pfas", "pfas-free", "non-stick", "nonstick", "it's", "dont", "don't", "scalp",
+            "oily", "oil", "a", "an", "10", "years", "year", "anti-", "-free", "x-y-z", "co-wash", "ss", "class",
+            "classes", "dry", "drys", "sensitiv", ",", ".", "\n", "anti-a", "b-free"]
+    words = ["pourover", "dandruff", "sulfate", "last", "pfas", "nonstick", "scalp", "oily", "oil", "dry", "a", "10",
+             "year", "clas", "class", "free", "anti", "cowash", "dont", "its", "xyz", "sensitiv", "b", "s", "", "pour over",
+             "don't", "x-y"]
+    for _ in range(4000):
+        text = " ".join(rng.choice(bits) for _ in range(rng.randint(0, 12)))
+        word = rng.choice(words)
+        assert _title_has(text, word) == title_has_word_by_word(text, word), (text, word)

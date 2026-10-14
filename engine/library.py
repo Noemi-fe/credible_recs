@@ -13,8 +13,9 @@ Four jobs:
   Data instead (engine.sources.FallbackSource, BrightDataSource): no single service down or out of credits stops it
   (Noemi's request, 10 Oct 2026). `--reader archive` or `--reader bright_data` uses one of them only; `--reader parse`
   finds threads with Arctic Shift and reads them through Parse, as before, with Parse's own search as the backup when
-  Arctic Shift is busy. A copy read from the archive never replaces one already read on Reddit. Bright Data never
-  reads a thread already saved, or a gold thread Noemi hasn't labelled.
+  Arctic Shift is busy. A copy read from the archive never replaces one already read on Reddit. Neither the archive
+  nor Bright Data reads a thread already saved, or a gold thread Noemi hasn't labelled (the archive since 13 Oct 2026:
+  it had read saved threads again and written over them), so each add saves the next threads in line.
   Each product type gets a mix of thread kinds (Noemi, 7 Oct 2026), because each kind feeds a different later step:
   6 threads, 3 asking for advice (the picks), 1 about long-term use (the strongest evidence) and 2 warnings (the
   "skip these" list and the downsides), at most 2 from one subreddit. `--only warning` tops up one kind.
@@ -43,7 +44,8 @@ What is saved:
 - Each thread says where it was read (read_from: "parse", "arctic_shift" or "bright_data") and when Reddit itself was
   last read for it (checked_live_at). Files saved before 9 Oct 2026 have neither: they were read through Parse.
 - Unlike the hand-checked gold set, the library is managed by these commands, so saving a thread again
-  replaces the older copy (except an archive copy over one read on Reddit, as above).
+  replaces the older copy (except an archive copy over one read on Reddit, as above). On the command line `add`
+  never saves a thread again (above): check-live and refresh do.
 
 Credits (Parse free plan: 200 a month, 2 per call):
 - add costs nothing with the archive (tried first by default). Through Bright Data (when Arctic Shift fails, or
@@ -222,9 +224,21 @@ def bright_data_source(folder: Path, client: BrightDataClient | None, max_record
     """The Bright Data source for this library: it skips the threads already saved here (they are kept fresh by
     check-live and refresh, not read again by add) and the gold threads Noemi hasn't labelled yet, so no record is
     spent on either. With no client (a test that gives none), it finds nothing."""
+    return BrightDataSource(client, skip_ids=not_to_read(folder), max_records=max_records)
+
+
+def archive_source(folder: Path, client: ArcticShiftClient | None) -> ArchiveSource:
+    """The archive source for this library's `add` (13 Oct 2026): like Bright Data's, it skips the threads already saved
+    here and the gold threads Noemi hasn't labelled, so an add saves new threads, never the saved ones read again and
+    written over. With no client (a test that gives none), it finds nothing."""
+    return ArchiveSource(client, skip_ids=not_to_read(folder))
+
+
+def not_to_read(folder: Path) -> set[str]:
+    """The ids `add` never reads: the threads saved in this library and the gold threads Noemi hasn't labelled yet."""
     threads = Path(folder) / "threads"
     saved = {path.stem for path in threads.glob("*.json")} if threads.is_dir() else set()
-    return BrightDataSource(client, skip_ids=saved | unlabelled_gold_ids(), max_records=max_records)
+    return saved | unlabelled_gold_ids()
 
 
 def _live_copy(thread: Thread, folder: Path) -> Thread | None:
@@ -835,16 +849,18 @@ def main(
             request, only, limit, reader = add_options
             # A test that gives no finder has no archive, and one that gives no Bright Data client has no Bright Data:
             # then that reader finds nothing, and never reaches the network.
+            # Through the archive or Bright Data, the threads already saved (and unlabelled gold threads) are never read
+            # again: check-live and refresh keep saved threads current (13 Oct 2026, archive_source).
             if reader == "parse":
                 source = ParseSource(client=client, finder=finder)
             elif reader == "archive":
-                source = ArchiveSource(finder)
+                source = archive_source(folder, finder)
             elif reader == "bright_data":
                 source = bright_data_source(folder, bright_data)
             else:  # auto: with no Bright Data client (a test), the archive alone, so its errors are reported as before
-                source = (FallbackSource(ArchiveSource(finder), bright_data_source(folder, bright_data),
+                source = (FallbackSource(archive_source(folder, finder), bright_data_source(folder, bright_data),
                                          memo=ARCHIVE_DOWN_MEMO if real_run else None)
-                          if bright_data is not None else ArchiveSource(finder))
+                          if bright_data is not None else archive_source(folder, finder))
             status = _print_add(add(request, source, folder, limit=limit, only=only, reader=reader))
             for note in getattr(source, "notes", []):
                 print(note)

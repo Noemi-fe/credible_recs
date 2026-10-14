@@ -244,6 +244,7 @@ def test_getting_ready_takes_in_the_threads_read_on_demand_before_reading_the_li
         ("library", (site.library / "threads" / "1tea001.json").is_file())) or real_loaded(d))
     monkeypatch.setattr(query_model, "default_query_model", lambda: None)
     monkeypatch.setattr(web, "WARM_PRODUCT_TYPES", ())
+    monkeypatch.setattr(web, "WARM_FIRST_FILES", ())  # no warm answers at all: only the order of the readings counts
     web.warm_up(site.library)
     assert order and order[0] == ("library", True)
 
