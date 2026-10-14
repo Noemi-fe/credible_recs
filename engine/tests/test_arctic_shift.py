@@ -1,5 +1,6 @@
 """The Arctic Shift finder. Every test uses a fake service: no network."""
 
+import http.client
 import json
 from datetime import UTC, datetime, timedelta
 from urllib.parse import parse_qs, urlparse
@@ -279,3 +280,69 @@ def test_no_answer_at_all_is_an_arctic_shift_error(monkeypatch):
     monkeypatch.setattr(arctic_shift.urllib.request, "urlopen", times_out)
     with pytest.raises(ArcticShiftError):
         arctic_shift._http_get("https://arctic-shift.photon-reddit.com/api/users/search?author=x", {})
+
+
+@pytest.mark.parametrize("dropped", [
+    http.client.RemoteDisconnected("Remote end closed connection without response"),
+    ConnectionResetError("Connection reset by peer"),
+    http.client.IncompleteRead(b"partial"),
+])
+def test_a_dropped_connection_is_an_arctic_shift_error(monkeypatch, dropped):
+    # 13 Oct 2026: the archive closed a connection without answering, and the warm-up run crashed on
+    # http.client.RemoteDisconnected instead of carrying on with its other searches.
+    def drops(*args, **kwargs):
+        raise dropped
+    monkeypatch.setattr(arctic_shift.urllib.request, "urlopen", drops)
+    with pytest.raises(ArcticShiftError):
+        arctic_shift._http_get("https://arctic-shift.photon-reddit.com/api/posts/search?subreddit=x&title=y", {})
+
+
+def test_purging_carries_on_when_another_client_removed_a_file(tmp_path, monkeypatch):
+    # 14 Oct 2026: two clients share the cache folder; one purged a stale answer between the other's listing of the
+    # folder and its reading of that file, and the second client crashed on FileNotFoundError while starting.
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    (cache / "gone.json").write_text(json.dumps({"fetched_at": "2020-01-01T00:00:00+00:00", "posts": []}))
+    (cache / "stale.json").write_text(json.dumps({"fetched_at": "2020-01-01T00:00:00+00:00", "posts": []}))
+    real_read = arctic_shift.Path.read_text
+
+    def vanishing(self, *args, **kwargs):
+        if self.name == "gone.json":
+            self.unlink()  # the other client's purge got there first
+            raise FileNotFoundError(str(self))
+        return real_read(self, *args, **kwargs)
+
+    monkeypatch.setattr(arctic_shift.Path, "read_text", vanishing)
+    make_client(tmp_path)  # purges on start: must not raise
+    assert not (cache / "stale.json").exists()
+
+
+def test_two_clients_deleting_the_same_stale_answer_never_crash(tmp_path, monkeypatch):
+    # 14 Oct 2026 (the coordinator, after builders' runs shared main's cache folder): two clients starting together both
+    # read the same stale answer, and the other one deletes it between this one's reading and its deleting.
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    stale = cache / "twice.json"
+    stale.write_text(json.dumps({"fetched_at": "2020-01-01T00:00:00+00:00", "posts": []}))
+    real_unlink = arctic_shift.Path.unlink
+
+    def other_client_first(self, *args, **kwargs):
+        if self.name == "twice.json" and self.exists():
+            real_unlink(self)  # the other client's purge got there first
+        return real_unlink(self, *args, **kwargs)
+
+    monkeypatch.setattr(arctic_shift.Path, "unlink", other_client_first)
+    make_client(tmp_path)  # purges on start: must not raise
+    assert not stale.exists()
+
+
+def test_a_cached_answer_another_client_is_still_writing_is_asked_again(tmp_path):
+    # A file cut short (being written by another client, or left by a killed one) is no answer: the search is asked
+    # again instead of crashing on the JSON.
+    service = FakeService()
+    client = make_client(tmp_path, service)
+    client.search_posts("BuyItForLife", "kettle")
+    for path in (tmp_path / "cache").glob("*.json"):
+        path.write_text('{"fetched_at": "2026-10-1')
+    assert len(client.search_posts("BuyItForLife", "kettle")) == 2
+    assert len(service.requests) == 2

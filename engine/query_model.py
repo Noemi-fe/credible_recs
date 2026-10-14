@@ -7,30 +7,37 @@ Hugging Face Space, through llama.cpp (the llama-cpp-python package). No call le
 The rules stay first (engine/query.py): the model is asked only when they find no product type and no out-of-scope
 word, never when they name two products. It answers in two fixed fields,
 
-    {"category": "skincare" | "kitchen" | "haircare" | "other" | "unclear",
+    {"category": "skincare" | "kitchen" | "haircare" | <a department of the general category> | "other" | "unclear",
      "product": "<the kind of product, in the request's words>"}
 
-and code checks the answer before anything is used (routed_by_model):
-- "other": the polite no, as for a laptop;
-- "skincare", "kitchen" or "haircare": the product must be written in the request itself, a plural aside ("rice
+where the general category's departments (config.GENERAL_DEPARTMENTS: "home", "tech", "outdoor", "clothing", "baby",
+"pets", "fitness", "tools", "beauty", "hobbies", "car") stand for the general category since 14 Oct 2026 (Noemi's
+"I want recs regardless of the category"), and code checks the answer before anything is used (routed_by_model):
+- "other": the polite no for what isn't a product to buy and use (a service, a place, advice, food or drink, a
+  medicine, a book, a film, a game or an app, anything harmful); until 14 Oct 2026 also every product outside
+  skincare, haircare and kitchen gear, as a laptop was;
+- a category or a department: the product must be written in the request itself, a plural aside ("rice
   cookers"), so a vague "something nice for my mum" never becomes a "gift set"; words that name no product ("gadget",
-  "stuff") or only a category or a place ("kitchen gadget", "hair products") don't count. A product the rules route,
-  in the same category, when it is written alone is routed as they route it; any other becomes a product type of its
-  own, read from its category's decided subreddits ("air fryer", "curl cream");
+  "stuff") or only a category, a place or an animal ("kitchen gadget", "hair products", "dog") don't count. A product
+  the rules route by its name, or by a clue word in the same category, when it is written alone is routed as they route
+  it; any other becomes a product type of its own, read from its category's decided subreddits ("bread maker", "curl
+  cream"), or for the general category from its department's communities ("eyelash curler": beauty's);
 - anything else, a broken answer, or a model that fails: the rules' question stands.
 Budgets, skin types, sizes and the rest are always read by the rules (the brief: "AI turns the query into structured
 fields; rules handle budget and units").
 """
 
+import copy
 import json
 import os
 import re
 import threading
+from collections import OrderedDict
 from functools import cache
 from pathlib import Path
 from typing import Protocol
 
-from engine.config import SUBREDDITS, THREAD_CATEGORIES
+from engine.config import GENERAL_DEPARTMENTS, SUBREDDITS, THREAD_CATEGORIES
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MODEL_PATH = REPO_ROOT / "models" / "qwen2.5-1.5b-instruct" / "qwen2.5-1.5b-instruct-q4_k_m.gguf"
@@ -44,31 +51,47 @@ NO_PRODUCT_WORDS = frozenset({
     "something", "gadget", "gadgets", "tool", "tools", "set", "one", "kit", "essentials", "routine",
     "kitchen", "kitchenware", "cookware", "cooking", "baking", "appliance", "appliances", "equipment", "gear",
     "accessory", "accessories", "utensil", "utensils", "skincare", "skin", "face", "beauty", "haircare", "hair", "care",
+    # The general category's departments and places (14 Oct 2026): "tech stuff", "home gear", "baby things"; and
+    # animals, which aren't products ("something for my dog").
+    "tech", "electronics", "home", "house", "garden", "outdoor", "outdoors", "camping", "travel", "clothes",
+    "clothing", "fashion", "baby", "babies", "kids", "pet", "pets", "dog", "dogs", "cat", "cats", "puppy", "kitten",
+    "fitness", "gym", "sport", "sports", "hobby", "hobbies", "diy", "office", "bedroom", "bathroom", "garage",
 })
+# The model's categories (14 Oct 2026): the three categories, then the general category's departments.
+MODEL_CATEGORIES = ("skincare", "haircare", "kitchen") + tuple(GENERAL_DEPARTMENTS)
 
 SYSTEM = (
     "You sort shopping requests. Answer with JSON only, as {\"category\": ..., \"product\": ...}.\n"
     "category: \"skincare\" for products put on the skin (cleansers, creams, serums, sunscreens, lotions); \"haircare\" "
     "for products put on the hair or scalp (shampoos, conditioners, hair masks, oils, curl creams, gels, sprays); "
     "\"kitchen\" for anything used to cook, bake, prepare or serve food and drink, including every kitchen appliance "
-    "(pans, pots, knives, kettles, toasters, blenders, mixers, microwaves, rice cookers, coffee and tea gear); \"other\" "
-    "for anything else (phones, computers, clothes, make-up, hair dryers and straighteners, furniture, cars, sport); "
-    "\"unclear\" when the request doesn't say what kind of product it wants.\n"
+    "(pans, pots, knives, kettles, toasters, blenders, mixers, microwaves, dishwashers, fridges, coffee and tea gear); "
+    "for any other product people buy and use, its department: \"home\" (furniture, bedding, cleaning, laundry, "
+    "heating, lighting, smart home), \"tech\" (computers, phones, audio, TVs, cameras, gaming), \"outdoor\" (camping, "
+    "hiking, cycling, travel gear and luggage), \"clothing\" (clothes, shoes, bags, watches, accessories), \"baby\" "
+    "(baby and kids' gear), \"pets\" (things for pets), \"fitness\" (sport and exercise equipment), \"tools\" (tools, "
+    "DIY and garden), \"beauty\" (make-up, perfume, hair dryers and straighteners, shaving, toothbrushes), "
+    "\"hobbies\" (instruments, board games, crafts, stationery), \"car\" (cars and car accessories); \"other\" for "
+    "anything that isn't a product to buy and use (a service, a place, advice, food or drink, a medicine, a book, film, "
+    "game or app); \"unclear\" when the request doesn't say what kind of product it wants.\n"
     "product: the kind of product asked for, copied from the request in its own words, singular, without brands or "
     "describing words (\"air fryer\", \"rice cooker\", \"body lotion\"); \"\" when unclear."
 )
+# The 14 Oct 2026 examples: a laptop is a tech product now (it was "other"), and a service is "other".
 EXAMPLES = (
     ("air fryer that lasts", {"category": "kitchen", "product": "air fryer"}),
     ("best toaster for a small kitchen", {"category": "kitchen", "product": "toaster"}),
     ("something nice for my mum", {"category": "unclear", "product": ""}),
-    ("best gaming laptop under 800", {"category": "other", "product": "laptop"}),
+    ("best gaming laptop under 800", {"category": "tech", "product": "laptop"}),
+    ("a good plumber near me", {"category": "other", "product": ""}),
     ("body lotion for eczema", {"category": "skincare", "product": "body lotion"}),
     ("curl cream for 3a curls", {"category": "haircare", "product": "curl cream"}),
+    ("eyelash curler that doesn't pinch", {"category": "beauty", "product": "eyelash curler"}),
 )
 SCHEMA = {
     "type": "object",
     "properties": {
-        "category": {"type": "string", "enum": ["skincare", "kitchen", "haircare", "other", "unclear"]},
+        "category": {"type": "string", "enum": [*MODEL_CATEGORIES, "other", "unclear"]},
         "product": {"type": "string"},
     },
     "required": ["category", "product"],
@@ -86,12 +109,19 @@ class LlamaQueryModel:
     server loads it as it starts (load; latency, 12 Oct 2026), so its first visitor doesn't wait for it.
 
     One request at a time: the web server answers requests in parallel threads, and llama.cpp can't be used by two at
-    once, so the others wait their turn (a second or two each)."""
+    once, so the others wait their turn (a second or two each).
+
+    Its reading of the same words never changes (temperature 0), so each request's is kept (latency, 13 Oct 2026, the
+    last READINGS_KEPT): the server gets ready by answering every product type, "serum" through the model, and a visitor
+    asking one of them again doesn't wait for it."""
+
+    READINGS_KEPT = 1_000
 
     def __init__(self, path: Path = DEFAULT_MODEL_PATH):
         self.path = Path(path)
         self._llm = None
         self._lock = threading.Lock()
+        self._readings: OrderedDict[str, object] = OrderedDict()
 
     def load(self) -> None:
         """Loads the model now, if it isn't loaded yet."""
@@ -106,6 +136,10 @@ class LlamaQueryModel:
         return self._llm
 
     def read(self, text: str) -> object:
+        with self._lock:
+            if text in self._readings:
+                self._readings.move_to_end(text)
+                return copy.deepcopy(self._readings[text])  # a copy: a caller changing it changes nothing kept
         messages = [{"role": "system", "content": SYSTEM}]
         for request, answer in EXAMPLES:
             messages += [{"role": "user", "content": request}, {"role": "assistant", "content": json.dumps(answer)}]
@@ -114,9 +148,14 @@ class LlamaQueryModel:
             out = self._loaded().create_chat_completion(messages=messages, temperature=0, max_tokens=60,
                                                         response_format={"type": "json_object", "schema": SCHEMA})
         try:
-            return json.loads(out["choices"][0]["message"]["content"])
+            reading = json.loads(out["choices"][0]["message"]["content"])
         except (KeyError, IndexError, TypeError, json.JSONDecodeError):
-            return None
+            reading = None
+        with self._lock:
+            self._readings[text] = copy.deepcopy(reading)
+            while len(self._readings) > self.READINGS_KEPT:
+                self._readings.popitem(last=False)
+        return reading
 
 
 def find_default_model() -> QueryModel | None:
@@ -150,11 +189,15 @@ def routed_by_model(text: str, model: QueryModel):
     product = " ".join(re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", str(answer.get("product") or "").lower()))
     if category == "other":
         return Routing("out_of_scope", message=OUT_OF_SCOPE_MESSAGE)
+    department = category if category in GENERAL_DEPARTMENTS else None
+    category = "general" if department else category
     if category not in THREAD_CATEGORIES or not product or set(product.split()) <= NO_PRODUCT_WORDS:
         return None
     if not re.search(rf"\b{re.escape(product)}(?:s|es)?\b", text.lower()):
         return None  # only the request's own words: never a product the shopper didn't name
     known = classify(product)
-    if known.status == "ok" and known.category == category:
-        return known  # "pan" is the rules' frying pan
+    if known.status == "ok" and (known.category == category or not known.clues):
+        return known  # "pan" is the rules' frying pan; "kettle" the kitchen's, whatever the model said
+    if department:
+        return Routing("ok", "general", product, GENERAL_DEPARTMENTS[department]["communities"], department=department)
     return Routing("ok", category, product, SUBREDDITS[category])  # "curl cream" isn't the rules' moisturiser

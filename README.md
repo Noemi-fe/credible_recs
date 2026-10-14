@@ -3,7 +3,7 @@
 Credibility-ranked product recommendations from public Reddit discussions.
 Free, non-commercial research prototype: read-only, links back to every source comment.
 
-It returns three picks for skincare, haircare and kitchen gear, ranked by how credible the recommenders are rather than by how popular a product is.
+It returns three picks for almost any product people buy and use (skincare, haircare and kitchen gear, and since 14 Oct 2026 a general category: home, tech, outdoor, clothing, baby, pets, fitness, tools, beauty, hobbies and car gear), ranked by how credible the recommenders are rather than by how popular a product is.
 
 Read `CLAUDE.md` for how the build works, and `eval/RUNS.md` for every measured result.
 
@@ -11,6 +11,7 @@ Read `CLAUDE.md` for how the build works, and `eval/RUNS.md` for every measured 
 
 1. **Understanding the request** (`engine/query.py`): a typed need becomes a category, a product type, limits
    (budget, size, SPF, years, skin type) and search terms. A vague request gets one question instead of a guess.
+   The product types beyond the first ones are data: `engine/data/product_types.json`.
 2. **Finding threads** (`engine/sources.py`, `engine/library.py`): threads are found for free through the Arctic
    Shift archive and read through the Parse reddit.com API, then ranked so buying advice and long-term use beat
    popularity. A library of saved threads, refreshed monthly, is what answers are prepared from.

@@ -170,12 +170,22 @@ class Bucket:
     (check ahead, 13 Oct 2026). Plain HTTPS calls to Cloud Storage's JSON API, with the access token Cloud Run's metadata
     server gives the service account, kept until shortly before it runs out. A problem never stops a check: it is said
     once in the server's window (never with the token), and the bucket is left alone for BUCKET_REST_SECONDS.
-    `request` and `clock` (seconds) can be swapped for fakes, which is how the tests avoid the network."""
+    `request` and `clock` (seconds) can be swapped for fakes, which is how the tests avoid the network.
 
-    def __init__(self, name: str, request=_http_request, clock=time.monotonic):
+    Since 14 Oct 2026 on-demand reading uses it too (engine/on_demand.py): `prefix` is the folder its objects are in
+    (BUCKET_PREFIX for the live checks); `token`, where the access token comes from when it isn't Cloud Run's metadata
+    server (Noemi's computer: gcloud), as a function giving the token and the seconds it lasts; and put_if saves an
+    object only over the version a writer last read, so two writers never lose each other's changes."""
+
+    CHANGED = "changed"  # put_if: another writer saved the object first (a generation is a number, never this)
+
+    def __init__(self, name: str, request=_http_request, clock=time.monotonic, prefix: str = BUCKET_PREFIX,
+                 token=None):
         self.name = name
+        self.prefix = prefix
         self._request = request
         self._clock = clock
+        self._token_source = token
         self._token: str | None = None
         self._token_until = 0.0
         self._resting_until = 0.0
@@ -185,8 +195,42 @@ class Bucket:
     def generation(self, name: str) -> str | None:
         """The object's generation (Cloud Storage's number for each version of it), from a small metadata read; None
         when there is none (or the bucket can't be read just now)."""
-        path = url_quote(BUCKET_PREFIX + name, safe="")
+        return self.lookup(name)[1]
+
+    def lookup(self, name: str) -> tuple[bool, str | None]:
+        """Whether the bucket answered, and the object's generation (None when there is no such object): one small
+        metadata read, as generation, telling "there is none yet" from "the bucket can't be read just now"."""
+        path = url_quote(self.prefix + name, safe="")
         status, body = self._call("GET", f"{STORAGE_API}/b/{url_quote(self.name, safe='')}/o/{path}?fields=generation")
+        if status == 404:
+            return True, None
+        if status != 200:
+            return False, None
+        try:
+            return True, str(json.loads(body)["generation"])
+        except (ValueError, KeyError, TypeError):
+            return False, None
+
+    def get(self, name: str, generation: str | None = None) -> bytes | None:
+        """The object's content (that version of it, when `generation` is given), or None when there is none (or the
+        bucket can't be read just now)."""
+        path = url_quote(self.prefix + name, safe="")
+        version = f"&generation={url_quote(generation, safe='')}" if generation else ""
+        status, body = self._call("GET", f"{STORAGE_API}/b/{url_quote(self.name, safe='')}/o/{path}?alt=media{version}")
+        return body if status == 200 else None
+
+    def put(self, name: str, data: bytes) -> bool:
+        """Saves the object whole (a new version replaces the old one); whether it was saved."""
+        return self._upload(name, data)[0] == 200
+
+    def put_if(self, name: str, data: bytes, generation: str | None) -> str | None:
+        """Saves the object whole, only if it is still at `generation` (None: only if there is no such object yet), so
+        a writer never overwrites a change it hasn't read (Cloud Storage's ifGenerationMatch). Its new generation; or
+        Bucket.CHANGED when another writer saved it first (read it again and redo the change); or None when the
+        bucket couldn't be reached."""
+        status, body = self._upload(name, data, generation or "0")
+        if status == 412:
+            return self.CHANGED
         if status != 200:
             return None
         try:
@@ -194,20 +238,11 @@ class Bucket:
         except (ValueError, KeyError, TypeError):
             return None
 
-    def get(self, name: str, generation: str | None = None) -> bytes | None:
-        """The object's content (that version of it, when `generation` is given), or None when there is none (or the
-        bucket can't be read just now)."""
-        path = url_quote(BUCKET_PREFIX + name, safe="")
-        version = f"&generation={url_quote(generation, safe='')}" if generation else ""
-        status, body = self._call("GET", f"{STORAGE_API}/b/{url_quote(self.name, safe='')}/o/{path}?alt=media{version}")
-        return body if status == 200 else None
-
-    def put(self, name: str, data: bytes) -> bool:
-        """Saves the object whole (a new version replaces the old one); whether it was saved."""
-        path = url_quote(BUCKET_PREFIX + name, safe="")
-        status, _ = self._call("POST", f"{UPLOAD_API}/b/{url_quote(self.name, safe='')}/o?uploadType=media&name={path}",
-                               data, {"Content-Type": "application/json; charset=utf-8"})
-        return status == 200
+    def _upload(self, name: str, data: bytes, if_generation: str | None = None) -> tuple[int | None, bytes]:
+        path = url_quote(self.prefix + name, safe="")
+        condition = f"&ifGenerationMatch={url_quote(if_generation, safe='')}" if if_generation is not None else ""
+        return self._call("POST", f"{UPLOAD_API}/b/{url_quote(self.name, safe='')}/o?uploadType=media&name={path}"
+                                  f"{condition}", data, {"Content-Type": "application/json; charset=utf-8"})
 
     def _call(self, method: str, url: str, body: bytes | None = None,
               headers: dict | None = None) -> tuple[int | None, bytes]:
@@ -223,9 +258,14 @@ class Bucket:
         if status == 401:
             with self._lock:
                 self._token = None  # run out early: the next call asks for a new one
-        if status not in (200, 404):
+        if status not in (200, 404, 412):  # 412: a write over a version that moved on (put_if), an answer
             self._failed(f"HTTP {status}")
         return status, data
+
+    def access_token(self) -> str | None:
+        """The service account's access token, for other calls to Google from this program (on-demand reading starts
+        its job with it); None when there is none just now."""
+        return self._access_token()
 
     def _access_token(self) -> str | None:
         with self._lock:
@@ -235,10 +275,14 @@ class Bucket:
             if self._token is not None and now < self._token_until:
                 return self._token
         try:
-            status, data = self._request("GET", METADATA_TOKEN_URL, {"Metadata-Flavor": "Google"}, None,
-                                         timeout=BUCKET_TIMEOUT)
-            answer = json.loads(data) if status == 200 else None
-            token, lasts = (answer["access_token"], float(answer["expires_in"])) if answer else (None, 0.0)
+            if self._token_source is not None:
+                token, lasts = self._token_source()
+                status = 200
+            else:
+                status, data = self._request("GET", METADATA_TOKEN_URL, {"Metadata-Flavor": "Google"}, None,
+                                             timeout=BUCKET_TIMEOUT)
+                answer = json.loads(data) if status == 200 else None
+                token, lasts = (answer["access_token"], float(answer["expires_in"])) if answer else (None, 0.0)
         except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException, ValueError, KeyError,
                 TypeError) as error:
             self._failed(f"no access token ({type(error).__name__})")

@@ -31,7 +31,17 @@
       {"short": "Beauty of Joseon ginseng retinal eye cream", "full": "Beauty of Joseon Revive Eye Serum", "seen": ["BoJ ginseng + retinal eye cream", "Beauty of Joseon Revive Eye Serum Ginseng + Retinal"]},
       {"short": "Etude House Mild Airy Finish", "full": "Etude House Sunprise Mild Airy Finish", "seen": ["Etude Mild airy finish sunscreen", "Etude House Sunprise Mild Airy Finish"]},
       {"short": "Beauty Pie encapsulated retinol", "full": "Beauty Pie Super Retinol", "seen": ["Beauty Pie encapsulated retinol", "Beauty Pie Super Retinol line"]},
-      {"short": "House of Hur weightless sunscreen", "full": "House of Hur Weightless Sun Fluid", "seen": ["House of Hurr Weightless Sunscreen", "Houe of Hur weightless sunscreen", "House of Hur Weightless Sun Fluid"]}
+      {"short": "House of Hur weightless sunscreen", "full": "House of Hur Weightless Sun Fluid", "seen": ["House of Hurr Weightless Sunscreen", "Houe of Hur weightless sunscreen", "House of Hur Weightless Sun Fluid"]},
+      {"short": "Melazepam", "full": "Ecological Formulas Melazepam Cream", "seen": ["Melazepam", "Ecological Formulas Melazepam Cream"]},
+      {"short": "Q+A Aza", "full": "Q+A Azelaic Acid Balancing Serum", "seen": ["Q+a Aza"]},
+      {"short": "COSRX dual essence", "full": "COSRX Advanced Snail Radiance Dual Essence", "seen": ["COSRX dual essence with snail mucin and niacinimide"]},
+      {"short": "Maelove Glowmaker", "full": "Maelove Glow Maker Vitamin C Serum", "seen": ["Maelove the glowmaker vit C serum", "Maelove Glowmaker", "Maelove Glow Maker"]},
+      {"short": "Rohto Melano CC serum", "full": "Rohto Melano CC Intensive Anti-Spot Essence", "seen": ["Rohto Melano CC serum"]},
+      {"short": "Melano CC serum", "full": "Rohto Melano CC Intensive Anti-Spot Essence", "seen": ["Melano CC serum"]},
+      {"short": "Melano CC vitamin C essence", "full": "Rohto Melano CC Intensive Anti-Spot Essence", "seen": ["melano cc vitamin c essence"]},
+      {"short": "Axs-y", "full": "AXIS-Y", "seen": ["Axs-y dark spot correcting glow serum"]},
+      {"short": "Axis Y glow corrector serum", "full": "AXIS-Y Dark Spot Correcting Glow Serum", "seen": ["Axis Y glow corrector serum"]},
+      {"short": "Mentholatum Acnes Sealing Jelly", "full": "Mentholatum Acnes Medicated Sealing Jell", "seen": ["Mentholatum Acnes Sealing Jelly", "mentholatum acnes sealing jelly", "Mentholatum Acnes Medicated Sealing Jell"]}
     ],
     "kitchen": [
       {"short": "1Z", "full": "1Zpresso", "seen": ["1Z K plus", "1ZPresso K Plus"]},

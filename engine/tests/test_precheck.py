@@ -198,7 +198,7 @@ def test_the_requests_checked_ahead_likeliest_first_each_once(tmp_path):
     lib = tmp_path / "library"
     lib.mkdir()
     (lib / "requests.jsonl").write_text("\n".join(json.dumps(line) for line in [
-        {"request": "a waffle maker", "status": "ok", "product_type": "waffle maker"},
+        {"request": "an ice cream maker", "status": "ok", "product_type": "ice cream maker"},
         {"request": "kettle", "status": "ok", "product_type": "electric kettle"},  # module 1's own: listed already
         {"request": "something", "status": "clarify", "product_type": None},
     ]) + "\n")
@@ -208,7 +208,8 @@ def test_the_requests_checked_ahead_likeliest_first_each_once(tmp_path):
     own = [p.name for p in PRODUCT_TYPES]
     assert found[:2] == ["electric kettle that lasts 10+ years", "air fryer that lasts"]  # the page's examples first
     assert found[2:2 + len(own)] == own
-    assert found[2 + len(own)] == "waffle maker"
+    # Changed on purpose 14 Oct 2026: the log's example was a waffle maker, module 1's own type since then.
+    assert found[2 + len(own)] == "ice cream maker"
     assert set(config.PRECHECK_MODEL_TYPES) <= set(found)
     assert len(found) == len(set(found))
 

@@ -43,7 +43,10 @@ Every step is a module of its own; this file only passes each one's output to th
   availability check is kept, and its answer says so. A product no longer made but sold second-hand only ("second_hand":
   true: vintage Griswold and Wagner cast iron) counts as sold, and its answer says "Sold second-hand only" (Noemi's
   decision, 10 Oct 2026). Brand picks are never priced or checked (named in not_priced), except that a brand pick
-  shows the second-hand line when the newest entry under the brand's own name ("Griswold") says so.
+  shows the second-hand line when the newest entry under the brand's own name ("Griswold") says so. Since Noemi's night
+  decision 1 of 14 Oct 2026, a line whose brand-lines entry gives a from price with where and when it was found has
+  that as its price (the cheapest UK price of its products of the type), which also says it is sold there; and the
+  answer links each line to its entry's range page (the maker's page for its products of the type).
 - product facts (decided by Claude, 9 Oct 2026; engine/product_facts.py, data/product_facts.json): right after the
   budget step, a product whose checked facts clash with what the request asks for is left out by a hard rule ("retinol
   for a beginner with sensitive skin" leaves out a strong, prescription-only retinoid) and listed with the reason
@@ -79,7 +82,8 @@ look for" notes that name no kind (notes_without_kind, engine.group_kinds step 5
 can't use. threads_quoted names the threads the answer's quotes come from: the ones whose live checks matter most.
 
 Each mention carries its writer's name (lowercased), so the ranking counts one writer once per product, however
-many comments or threads they praise it in (engine.rank).
+many comments or threads they praise it in (engine.rank). Since 14 Oct 2026 it also carries its comment's upvotes beside
+its thread's (engine.credibility.thread_upvotes), for Noemi's upvote rule, which is off (engine.rank.counts_twice).
 
 Two ranking changes of 9 Oct 2026 are worked out here, in _score, before module 6 ranks:
 - needs: a mention whose comment talks about what the request asks for (engine/needs.py: "sensitive skin", "a
@@ -131,13 +135,15 @@ from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from datetime import date
+from functools import cache
 from pathlib import Path
 
+from engine import config  # the upvote rule's switch, read for each request (14 Oct 2026)
 from engine.answer import (
-    Answer, _every_quote, comment_bodies, needed_quotes, quotes_to_check, render_markdown, says_the_opposite,
-    shown_availability, shown_price, without_unread, write_answer,
+    NO_THREADS, Answer, _every_quote, comment_bodies, needed_quotes, quotes_to_check, render_markdown,
+    says_the_opposite, shown_availability, shown_price, without_unread, write_answer,
 )
-from engine.brand_lines import BrandLine, find_brand_line, load_brand_lines, not_sold_reason
+from engine.brand_lines import BrandLine, find_brand_line, from_price_entry, load_brand_lines, not_sold_reason
 from engine.care_tips import CareTips, attach_care_tips, credible_care_tips
 from engine.config import (
     BRAND_MODEL_GENERIC_WORDS,
@@ -169,11 +175,13 @@ from engine.config import (
 from engine.contradictions import contradicting_writers
 from engine.credibility import (
     VoiceScore, badges, copied_comment_ids, copy_groups, mention_weight, repeated_copies, score_evidence, score_voice,
-    with_ai_evidence,
+    thread_upvotes, with_ai_evidence,
 )
 from engine.extract import CheckResult, shown_comment_ids
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
-from engine.group_products import ProductGroup, ProductMention, brand_pick_name, group_of, group_products, plural, uk_name
+from engine.group_products import (
+    ProductGroup, ProductMention, brand_pick_name, group_of, group_products, library_name_index, plural, uk_name,
+)
 from engine.gold import DEFAULT_GOLD_DIR
 from engine.ingredients import evidence as ingredient_evidence
 from engine.ingredients import form_kind, form_of, ingredient_type_name, own_name, rinse_off_word, wanted_types
@@ -181,6 +189,7 @@ from engine.ingredients import shown as shown_ingredients
 from engine.library import DEFAULT_LIBRARY_DIR, checked_live_within
 from engine.library_cache import loaded as loaded_library
 from engine.match_products import known_aliases, normalize_name, product_words, same_product
+from engine.memo import Table
 from engine.models import Comment, Thread
 from engine.needs import Need, needs_met, request_needs
 from engine.prices import (
@@ -290,6 +299,10 @@ class PipelineResult:
     # reported, never quietly dropped (11 Oct 2026).
     skipped_files: list[str] = field(default_factory=list)
     read_more: bool = False  # the first threads gave too few picks, so more were read (answer_request, 11 Oct 2026)
+    # The same reading ranked with Noemi's upvote rule (14 Oct 2026), when asked for (_answer's upvotes_too): what
+    # answer_request returns for the reading it keeps. None otherwise, and when the rule changes nothing in its ranking
+    # (the answer is this one).
+    with_upvotes: "PipelineResult | None" = field(default=None, repr=False, compare=False)
 
     def text(self) -> str:
         """The answer as Markdown, or module 1's question or polite no."""
@@ -334,29 +347,41 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     `more_threads=None` never reads more. `brand_lines`: the brand-lines list (engine/brand_lines.py); None reads
     data/brand_lines.json. `summaries`: the one-line summaries ({engine.summaries.summary_key: Summary}); None reads the
     library's summaries.json (none when there is no such file).
+
+    Noemi's upvote rule (14 Oct 2026; off unless config.UPVOTE_COUNTS_MORE) never changes how much is read: ranked with
+    it, a first reading short of picks could reach three with products it lifts and never read on, where the wider
+    reading's picks talk about what was asked (on the library: Nizoral and Head & Shoulders for a dandruff shampoo). So
+    which reading to keep is decided as with the rule off, and the reading kept is then ranked with it, from what it has
+    read (_answer's upvotes_too: its threads aren't read again).
     """
     query = parse_query(request)
+    upvotes = config.UPVOTE_COUNTS_MORE
     reading = dict(library_dir=library_dir, profiles=profiles, prices=prices, today=today,
                    live_check_required=live_check_required, live_checker=live_checker, product_facts=product_facts,
-                   brand_lines=brand_lines, summaries=summaries)
+                   brand_lines=brand_lines, summaries=summaries, upvotes_too=upvotes)
     result = _answer(query, max_threads=max_threads, **reading)
-    if (more_threads is None or more_threads <= max_threads or result.answer is None
+    if not (more_threads is None or more_threads <= max_threads or result.answer is None
             or len(result.answer.picks) >= PICKS_SHOWN or result.threads_available <= len(result.threads_used)):
-        return result
-    wider = _answer(query, max_threads=more_threads, need_led=True, **reading)
-    if len(wider.answer.picks) <= len(result.answer.picks):
-        return result
-    wider.read_more = True
-    return wider
+        wider = _answer(query, max_threads=more_threads, need_led=True, **reading)
+        if len(wider.answer.picks) > len(result.answer.picks):
+            wider.read_more = True
+            result = wider
+    if upvotes and result.with_upvotes is not None:
+        result.with_upvotes.read_more = result.read_more
+        result = result.with_upvotes
+    return result
 
 
 def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, prices: list[Price] | None,
             today: date | None, live_check_required: bool | None, live_checker,
             product_facts: list[ProductFacts] | None, need_led: bool = False,
             brand_lines: list[BrandLine] | None = None,
-            summaries: Mapping[str, Summary] | None = None) -> PipelineResult:
+            summaries: Mapping[str, Summary] | None = None, upvotes_too: bool = False) -> PipelineResult:
     """One reading of the library for an understood request, with at most `max_threads` threads (answer_request).
     `need_led`: the wider reading's rule, a pick needs a credible recommendation that talks about the request's needs.
+    `upvotes_too`: the reading is also ranked with Noemi's upvote rule (engine.rank.counts_twice), from what it has read
+    and the comments its live checks dropped, into result.with_upvotes (14 Oct 2026); the result itself is ranked
+    without it, so answer_request can decide which reading to keep as with the rule off.
 
     `profiles`: where writers' standing comes from (an object with user_stats and comment_flairs, such as
     engine.profiles.StoredProfiles); None leaves the writers as saved, known by name only.
@@ -403,17 +428,21 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.comments_read = sum(len(shown_comment_ids(t)) for t in threads)  # what the AI read in them (12 Oct 2026)
     result.bodies = comment_bodies(threads)
 
-    mentions = _not_sets(_product_mentions(checked), result)
+    mentions = _not_sets(_product_mentions(checked), result, query.product_type)
     # Grouped for this request's type (13 Oct 2026): "Fellow kettle" in a kettle answer is Fellow's kettle line. An
     # ingredient-led request has no one type: its products are grouped as the library's are.
     grouping_type = None if query.ingredient_led else query.product_type
-    groups = group_products(mentions, product_type=grouping_type)
+    index = _name_index(library)  # the library's pairs of names that could match, worked out once (13 Oct 2026)
+    groups = group_products(mentions, product_type=grouping_type, index=index)
     of_another_type = _of_another_type(groups, query, result)
     if of_another_type:  # grouped again without them, so they neither count for nor name a product (13 Oct 2026)
-        groups = group_products([m for m in mentions if _typed(m) not in of_another_type], product_type=grouping_type)
+        groups = group_products([m for m in mentions if _typed(m) not in of_another_type], product_type=grouping_type,
+                                index=index)
     brand_lines = load_brand_lines() if brand_lines is None else brand_lines
     kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads}, brand_lines)
     lines = {g.key for g in kept_groups if g.loose}  # the brand or line names kept as the brand's whole line
+    # Their brand-lines entries, whose range pages the answer links to (Noemi's night decision 1, 14 Oct 2026).
+    ranges = {g.key: line for g in kept_groups if g.loose and (line := _brand_line(g, query, brand_lines)) is not None}
     types = {g.key: _own_type(g, query) for g in kept_groups}  # each product's own type (13 Oct 2026)
     prices = load_prices() if prices is None else prices
     kept_groups, price_checks = _within_budget(kept_groups, query, prices, today, result, brand_lines, types)
@@ -430,28 +459,64 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.contradicting_writers = sorted(contradicting_writers(groups, {c.id: c for t in threads for c in t.comments}))
     scored, kind_notes = _score(threads, checked, kept_groups, kinds, request_needs(query),
                                 set(result.contradicting_writers), request_asks(query))
-    result.ranking, more_downsides = _fold_brand_skips(
-        _fold_brand_picks(_ranked(scored, query, kind_notes, kinds, need_led, result.skip_only), kept_groups, result),
-        kept_groups, result)
-    unsuited_kinds = _unsuited_kinds(result.ranking.kinds, query, product_facts)
-    folded = {item.name for item in result.folded_brand_picks}
-    care = _care_tips(threads, checked, [g for g in kept_groups if g.name not in folded], kinds, query)
-    models, model_prices = _brand_models(result.ranking, kept_groups, query.product_type, price_checks)
     if summaries is None:
         loaded = load_summaries(Path(library_dir) / SUMMARIES_FILE)
         summaries = loaded.entries
         result.skipped_files.extend(loaded.problems)
-    result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
-                                 models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
-                                 request_needs(query), query.text, summaries,
-                                 _worth_left_out(result.ranking, kept_groups), **wording)
-    if live_checker is not None:
-        _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions, kept_groups,
-                    unsuited_kinds, need_led, summaries, wording)
-    thread_of = {c.id: t.id for t in threads for c in t.comments}
-    quoted = {thread_of.get(quote.comment_id) for _, quote in _every_quote(result.answer)}
-    result.threads_quoted = [tid for tid in result.threads_used if tid in quoted]
+
+    def rank_and_write(result: PipelineResult, scored: list[ScoredMention], kind_notes: list[KindNote],
+                       upvote_rule: bool) -> PipelineResult:
+        """Modules 6 and 7 for this reading: the ranking, the answer, and the live checks of what it shows."""
+        result.ranking, more_downsides = _fold_brand_skips(
+            _fold_brand_picks(_ranked(scored, query, kind_notes, kinds, need_led, result.skip_only, upvote_rule),
+                              kept_groups, result),
+            kept_groups, result)
+        unsuited_kinds = _unsuited_kinds(result.ranking.kinds, query, product_facts)
+        folded = {item.name for item in result.folded_brand_picks}
+        care = _care_tips(threads, checked, [g for g in kept_groups if g.name not in folded], kinds, query)
+        models, model_prices = _brand_models(result.ranking, kept_groups, query.product_type, price_checks)
+        result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
+                                     models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
+                                     request_needs(query), query.text, summaries,
+                                     _worth_left_out(result.ranking, kept_groups), **wording, ranges=ranges)
+        if live_checker is not None:
+            _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions,
+                        kept_groups, unsuited_kinds, need_led, summaries, wording, ranges, upvote_rule=upvote_rule)
+        thread_of = {c.id: t.id for t in threads for c in t.comments}
+        quoted = {thread_of.get(quote.comment_id) for _, quote in _every_quote(result.answer)}
+        result.threads_quoted = [tid for tid in result.threads_used if tid in quoted]
+        if not (result.answer.picks or result.threads_used or result.waiting_live_check or result.not_extracted):
+            # Nothing saved is about it (14 Oct 2026): say that, not that the evidence fell short. Changed in place, so
+            # the answer stays the one module 7 wrote (the pre-check finds it by itself, engine/precheck.py).
+            result.answer.message = NO_THREADS.format(products=plural(query.product_type))
+        return result
+
+    readable = set(result.bodies)
+    rank_and_write(result, scored, kind_notes, upvote_rule=False)
+    if upvotes_too:
+        # The same reading, ranked with Noemi's upvote rule (14 Oct 2026). The comments its live checks dropped (gone,
+        # changed or unreadable on Reddit) stay dropped, so their votes and notes count for nothing here either; anything
+        # new it shows is checked live as usual (the checker remembers the rest). When the rule changes nothing in the
+        # ranking, the answer is the same: it isn't written again.
+        dropped = readable - set(result.bodies)
+        scored = [m for m in scored if m.comment_id not in dropped]
+        kind_notes = [n for n in kind_notes if n.comment_id not in dropped]
+        if not _upvotes_change_nothing(scored, query, kind_notes, kinds, need_led, result.skip_only):
+            again = replace(result, live_dropped=dict(result.live_dropped), live_put_off=0)
+            result.with_upvotes = rank_and_write(again, scored, kind_notes, upvote_rule=True)
     return result
+
+
+def _upvotes_change_nothing(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
+                            skip_only: Mapping[str, str]) -> bool:
+    """Whether Noemi's upvote rule (14 Oct 2026) leaves a reading's ranking as it is: every product meets the bar, is an
+    Also worth a look item or neither, as without the rule, and none that meets it has a voice counted twice (which its
+    reason would say). The rest of a ranking doesn't depend on the rule, so its answer would be the same."""
+    def marks(ranking: RankingResult) -> list[tuple]:
+        return [(p.key, p.qualifies, p.worth_a_look, p.qualifies and bool(p.counted_twice)) for p in ranking.products]
+
+    return (marks(_ranked(scored, query, kind_notes, kinds, need_led, skip_only, False))
+            == marks(_ranked(scored, query, kind_notes, kinds, need_led, skip_only, True)))
 
 
 # Why a product found only in a wider reading isn't a pick (answer_request, 11 Oct 2026).
@@ -459,13 +524,13 @@ WIDER_READING_SHORTFALL = "no credible recommendation talks about what you asked
 
 
 def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
-            skip_only: Mapping[str, str] | None = None) -> RankingResult:
+            skip_only: Mapping[str, str] | None = None, upvote_rule: bool = False) -> RankingResult:
     """Module 6's ranking. In a wider reading (`need_led`) of a request that asks for something besides the product, a
     product with no credible recommendation talking about it can't be a pick (answer_request), nor "Also worth a look"
     (13 Oct 2026). `skip_only`: {product key: reason} of the brand lines a hard requirement keeps from being picks (a
     whole brand can't be checked): never a pick nor "Also worth a look", but listed under Skip these when their credible
-    warnings put them there (Noemi's decision 1 of 13 Oct 2026)."""
-    ranking = rank_products(scored, query.category, kind_notes, placements(kinds))
+    warnings put them there (Noemi's decision 1 of 13 Oct 2026). `upvote_rule`: with Noemi's upvote rule (14 Oct 2026)."""
+    ranking = rank_products(scored, query.category, kind_notes, placements(kinds), upvote_rule=upvote_rule)
     if need_led and request_needs(query):
         ranking.products = [replace(p, qualifies=False, shortfall=WIDER_READING_SHORTFALL, worth_a_look=False)
                             if (p.qualifies or p.worth_a_look) and not p.breakdown.credible_recommends_fitting_need
@@ -479,7 +544,8 @@ def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
 def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds, query, price_checks, care,
                 cautions=None, groups: list[ProductGroup] = (), unsuited_kinds: frozenset[str] = frozenset(),
                 need_led: bool = False, summaries: Mapping[str, Summary] | None = None,
-                wording: Mapping | None = None) -> None:
+                wording: Mapping | None = None, ranges: Mapping[str, BrandLine] | None = None,
+                upvote_rule: bool = False) -> None:
     """Checks every quote about to be shown against Reddit itself; drops the comments that fail and answers again.
     Since 13 Oct 2026 the quotes a shown summary cites are checked too (engine.answer.quotes_to_check): a summary never
     stands on a comment deleted or changed since.
@@ -519,13 +585,14 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         failed |= new
         result.bodies = {cid: body for cid, body in result.bodies.items() if cid not in failed}
         ranking = _ranked([m for m in scored if m.comment_id not in failed], query,
-                          [n for n in kind_notes if n.comment_id not in failed], kinds, need_led, result.skip_only)
+                          [n for n in kind_notes if n.comment_id not in failed], kinds, need_led, result.skip_only,
+                          upvote_rule)
         result.ranking, more_downsides = _fold_brand_skips(_fold_brand_picks(ranking, groups, result), groups, result)
         models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks)
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
                                      request_needs(query), query.text, summaries,
-                                     _worth_left_out(result.ranking, groups), **(wording or {}))
+                                     _worth_left_out(result.ranking, groups), **(wording or {}), ranges=ranges)
 
 
 def _checked_together(live_checker, quotes, may_wait: set[str] | None = None) -> dict[tuple[str, str], object]:
@@ -591,19 +658,43 @@ def _about_the_request(thread: Thread, query: ParsedQuery) -> bool:
 
 # --- Module 4: products and kinds ---
 
+def _name_index(library) -> dict:
+    """The pairs of names that could match among all the library's mentions (engine.group_products.library_name_index),
+    worked out on the library's first answer and kept with it (engine.library_cache: gone when it is read again)."""
+    found = library.remembered.get(_NAME_INDEX)
+    if found is None:
+        found = library.remembered[_NAME_INDEX] = library_name_index(_product_mentions(library.checked))
+    return found
+
+
+_NAME_INDEX = ("name index",)  # where the library keeps it (engine.library_cache.KeptLibrary.remembered)
+
+
 def _product_mentions(checked: dict[str, CheckResult]) -> list[ProductMention]:
-    return [ProductMention(tid, m.comment_id, m.product, m.category, m.stance, m.product_type, m.quote)
+    return [ProductMention(tid, m.comment_id, m.product, _category_of(m), m.stance, m.product_type, m.quote)
             for tid, res in checked.items() for m in res.kept]
 
 
-def _not_sets(mentions: list[ProductMention], result: PipelineResult) -> list[ProductMention]:
+_TYPE_CATEGORY = {p.name: p.category for p in PRODUCT_TYPES}
+_TYPE_NAMES = frozenset(_TYPE_CATEGORY)  # module 1's types, once (14 Oct 2026: 394 of them to build a set of each time)
+
+
+def _category_of(mention) -> str:
+    """The category a mention counts in (14 Oct 2026, the general category): module 1's for a product type it lists,
+    whatever the AI called it ("water bottle" is the general category's, even when the AI called it kitchen gear;
+    "dishwasher" the kitchen's, even when an older extraction said "other"), else the AI's own."""
+    return _TYPE_CATEGORY.get((mention.product_type or "").strip().lower(), mention.category)
+
+
+def _not_sets(mentions: list[ProductMention], result: PipelineResult,
+              requested: str | None = None) -> list[ProductMention]:
     """The mentions that aren't of a set, a block or a sharpener (config.OTHER_TYPE_WORDS, in the type the AI gave
     the mention): those are left out before grouping and named on the result, so a "Henckels knife block" never lends
     its votes to the writers' other Henckels mentions (10 Oct 2026). Any other type is decided for the whole product
-    by most of its mentions (_another_type)."""
+    by most of its mentions (_another_type). `requested`: the request's product type (_names_a_set)."""
     kept = []
     for mention in mentions:
-        if mention.product_type and _names_a_set(mention.product_type):
+        if mention.product_type and _names_a_set(mention.product_type, requested):
             if uk_name(mention.product) not in result.left_out_as_other_type:
                 result.left_out_as_other_type.append(uk_name(mention.product))
         else:
@@ -611,16 +702,54 @@ def _not_sets(mentions: list[ProductMention], result: PipelineResult) -> list[Pr
     return kept
 
 
-def _names_a_set(product_type: str) -> bool:
+def _names_a_set(product_type: str, requested: str | None = None) -> bool:
     """Whether a type in the AI's words names something that holds, sharpens, covers or bundles a product ("knife
     set", "knife blocks"), not the product: the word that says what it is, singular or plural, is in
     config.OTHER_TYPE_WORDS. That word is the last one ("knife stand"), or the one before "of" ("set of knives"):
-    a "stand mixer" is a mixer (11 Oct 2026, when its every mention had been dropped)."""
+    a "stand mixer" is a mixer (11 Oct 2026, when its every mention had been dropped).
+
+    A type ending with a name of one of module 1's types whose own name ends with that word is that product (14 Oct
+    2026, the general category: "sleeping bag", "down sleeping bag", "tool set", "tv stand"): with no request, or in a
+    request for it (`requested`, the request's product type). In any other request it is left out as a set is, as
+    before the taxonomy made it a type of its own: a "knife sharpener" in a chef knife request."""
     words = product_type.strip().lower().split()
     if not words:
         return False
     head = words[words.index("of") - 1] if "of" in words[1:] else words[-1]
-    return head in OTHER_TYPE_WORDS or head.removesuffix("s") in OTHER_TYPE_WORDS
+    if head not in OTHER_TYPE_WORDS and head.removesuffix("s") not in OTHER_TYPE_WORDS:
+        return False
+    named = _ends_with_a_type(product_type)
+    if named is None or named.name.split()[-1].removesuffix("s") != head.removesuffix("s"):
+        return True
+    return requested is not None and named.name != requested
+
+
+@cache
+def _ends_with_a_type(product_type: str):
+    """The module 1 type that a type in the AI's words ends with one of the names of (the longest such name, the first
+    type's when two are as long), or None: "down sleeping bag" ends with the sleeping bag's name, "frying pan set" with
+    the cookware set's ("pan set"), "gooseneck kettle" with the electric kettle's ("kettle"). 14 Oct 2026. Only the
+    names whose last word is the type's are looked at (_TYPE_ENDINGS): a name it ends with ends with that word."""
+    text = " " + " ".join(product_type.strip().lower().split())
+    best = None
+    for size, form, product in _TYPE_ENDINGS.get(text.rsplit(" ", 1)[-1], ()):
+        if text.endswith(" " + form) and (best is None or size > best[0]):
+            best = (size, product)
+    return best[1] if best else None
+
+
+def _type_endings() -> dict[str, list[tuple[int, str, object]]]:
+    """Each last word of module 1's names, with their plural "s" or "es" too -> (the name's length, that form, its
+    type), in the types' and names' own order."""
+    endings: dict[str, list[tuple[int, str, object]]] = {}
+    for product in PRODUCT_TYPES:
+        for keyword in product.keywords:
+            for form in (keyword, keyword + "s", keyword + "es"):
+                endings.setdefault(form.rsplit(" ", 1)[-1], []).append((len(keyword), form, product))
+    return endings
+
+
+_TYPE_ENDINGS = _type_endings()
 
 
 def _of_another_type(groups: list[ProductGroup], query: ParsedQuery, result: PipelineResult) -> set[tuple]:
@@ -679,10 +808,11 @@ def _groups_to_rank(groups: list[ProductGroup], query: ParsedQuery, result: Pipe
     {thread id: title} for the threads read; `brand_lines` the brand-lines list (engine/brand_lines.py)."""
     kept = []
     same_category = [g for g in groups if g.category == query.category]
+    typed: dict = {}  # once worked out, the names of these groups that name the requested type (_typed_names)
     for group in same_category:  # the ranking only looks at the request's category anyway
         if group.loose:
             line = _brand_line(group, query, brand_lines)
-            if _clear_brand(group, query, titles, same_category, line):
+            if _clear_brand(group, query, titles, same_category, line, typed):
                 kept.append(replace(group, name=_line_name(group, line, query.product_type)))
             else:
                 result.left_out_loose.append(uk_name(group.name))
@@ -714,7 +844,7 @@ def _line_name(group: ProductGroup, line: BrandLine | None, product_type: str) -
 
 
 def _clear_brand(group: ProductGroup, query: ParsedQuery, titles: dict[str, str], groups: list[ProductGroup],
-                 line: BrandLine | None = None) -> bool:
+                 line: BrandLine | None = None, typed: dict | None = None) -> bool:
     """Whether a brand or line name clearly means the requested product (decision 9), so it is ranked as the brand's
     whole line. It must name something, and none of its names, nor most of the AI's types for its mentions, may say
     another type of product. Then the brand-lines entry for it decides, when there is one (`line`, 12 Oct 2026): yes
@@ -722,7 +852,8 @@ def _clear_brand(group: ProductGroup, query: ParsedQuery, titles: dict[str, str]
     BRAND_PICK_TITLE_SHARE of its mentions are in threads whose title names the requested product, and
     (BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE) one of its own products named in the threads is of that type. "Lodge" in
     "Best cast iron skillet?" threads, next to "Lodge Blacklock skillet", is clear. `groups` are every product group of
-    the request's category."""
+    the request's category. `typed`: where _has_a_product_of_the_type keeps the groups' names that name the type, the
+    first time it needs them, for the other brands of the same groups (latency, 13 Oct 2026)."""
     if not PIPELINE_BRAND_PICKS or not normalize_name(group.name) or _another_type(group, query):
         return False  # a name made of filler words only ("the one") names nothing
     if line is not None:
@@ -730,19 +861,28 @@ def _clear_brand(group: ProductGroup, query: ParsedQuery, titles: dict[str, str]
     in_titled = sum(mentions_product(titles.get(m.thread_id, ""), query.product_type) for m in group.mentions)
     if in_titled <= BRAND_PICK_TITLE_SHARE * len(group.mentions):
         return False
-    return not BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE or _has_a_product_of_the_type(group, query, groups)
+    return not BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE or _has_a_product_of_the_type(group, query, groups, typed)
 
 
-def _has_a_product_of_the_type(brand: ProductGroup, query: ParsedQuery, groups: list[ProductGroup]) -> bool:
+def _has_a_product_of_the_type(brand: ProductGroup, query: ParsedQuery, groups: list[ProductGroup],
+                               typed: dict | None = None) -> bool:
     """Whether a name of the brand, or of one of its products named in these threads (a name that holds the brand's,
-    such as "Griswold skillet" for "Griswold"), names the requested type of product."""
-    if any(mentions_product(name, query.product_type) for name in brand.names):
+    such as "Griswold skillet" for "Griswold"), names the requested type of product. The groups' names that name the
+    type are listed once for every brand of the same groups (kept in `typed`, a dict, when given: _typed_names)."""
+    own_names = list(brand.names)
+    if any(mentions_product(name, query.product_type) for name in own_names):
         return True
     aliases = known_aliases().get(brand.category, {})
-    return any(
-        mentions_product(name, query.product_type) and any(same_product(own, name, aliases) for own in brand.names)
-        for other in groups if other is not brand for name in other.names
-    )
+    typed = {} if typed is None else typed
+    if "names" not in typed:
+        typed["names"] = _typed_names(groups, query.product_type)
+    return any(any(same_product(own, name, aliases) for own in own_names)
+               for other, name in typed["names"] if other is not brand)
+
+
+def _typed_names(groups: list[ProductGroup], product_type: str) -> list[tuple[ProductGroup, str]]:
+    """Each group with each of its names that names the product type (engine.sources.mentions_product), in order."""
+    return [(group, name) for group in groups for name in group.names if mentions_product(name, product_type)]
 
 
 def _another_type(group: ProductGroup, query: ParsedQuery) -> bool:
@@ -808,11 +948,14 @@ def _another_type_by_ai(types: list[str], requested: str) -> bool:
     majority = counts[0][0]
     if majority == requested:
         return False
-    if majority in {p.name for p in PRODUCT_TYPES}:
+    if majority in _TYPE_NAMES:
         return True
-    if _names_a_set(majority):
+    if _names_a_set(majority, requested):
         return True
-    if requested not in {p.name for p in PRODUCT_TYPES}:
+    named = _ends_with_a_type(majority)  # 14 Oct 2026: a "frying pan set" is the cookware set's, not a frying pan
+    if named is not None and named.name != requested:
+        return True
+    if requested not in _TYPE_NAMES:
         return not _same_kind(majority, requested)
     return not mentions_product(majority, requested)
 
@@ -864,7 +1007,11 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
     pick carries that entry, so its answer shows the second-hand line instead of "Availability not checked yet". Late on
     10 Oct 2026: when the newest entry under the brand's name, alone or followed only by the product type's words
     ("OXO kettle"), says it isn't sold, the brand pick is left out (OXO's kettles are 120 V models: one OXO kettle with
-    no type word in its name had kept "Oxo (their electric kettles)" in b06).
+    no type word in its name had kept "Oxo (their electric kettles)" in b06). Since 14 Oct 2026 (Noemi's night
+    decision 1) a brand line's from price, from its brand-lines entry with where and when it was found
+    (engine.brand_lines.from_price_entry), is its price, checked against the budget like any (PriceCheck.from_price),
+    and says where it is sold unless a second-hand entry does; it is still named in not_priced (never priced from the
+    price list), unless it is over the budget.
 
     `types`: each product's own type ({product key: type}, _own_type), which its price entries are looked up by; by
     default the request's (13 Oct 2026: an ingredient-led request has products of several types).
@@ -886,6 +1033,7 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
                  and (a := find_availability(g.name, g.category, prices, type_of(g))) is not None
                  and a.available is True]
     for group in groups:
+        from_price = None
         if group.loose:
             # An entry under the brand ("Griswold", "OXO kettle"): second-hand only is shown; not sold leaves the brand
             # pick out, unless one of its own products here is known to be sold, which proves the brand is.
@@ -898,15 +1046,22 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
                 continue
             result.not_priced.append(group.name)
             sold = sold if sold is not None and sold.second_hand else None
+            # Its from price (Noemi's night decision 1, 14 Oct 2026): the brand-lines entry's cheapest UK price of the
+            # brand's products of the type, with where and when it was found, which also says the line is sold there.
+            from_price = from_price_entry(find_brand_line(set(group.names) | {uk_name(n) for n in group.names},
+                                                          group.category, type_of(group), brand_lines), group.name)
+            sold = sold or from_price
         else:
             sold = find_availability(group.name, group.category, prices, type_of(group))
         if sold is not None and sold.available is False:
             result.left_out_unavailable.append(group.name)
             continue
-        price = None if group.loose else find_price(group.name, group.category, prices, currency, type_of(group))
-        check = check_price(price, budget, today)
+        price = from_price if group.loose else find_price(group.name, group.category, prices, currency, type_of(group))
+        check = replace(check_price(price, budget, today), from_price=from_price is not None)
         if check.status == "over":
             result.left_out_over_budget.append(group.name)
+            if group.loose:  # a line whose cheapest product is over the budget: not ranked after all
+                result.not_priced.remove(group.name)
         else:
             kept.append(group)
             checks[group.key] = replace(check, availability=sold)
@@ -915,7 +1070,9 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
     # this type) above the budget, even its cheapest product is over, so it is left out as over budget. No from price,
     # or one within the budget, keeps it (b07's Wüsthof sells cheaper knives than the Classic its writers name). So is
     # a product of that brand with no price of its own (13 Oct 2026: "Comandante with Red Clix" in b09's Also worth a
-    # look): it costs at least its brand's cheapest.
+    # look): it costs at least its brand's cheapest. Since 14 Oct 2026 a from price with where and when it was found is
+    # the line's own price above, so this catches the rest: one recorded without them, or checked over
+    # PRICE_MAX_AGE_DAYS ago (never used to keep a line, whatever its age, as on 12 Oct).
     over_from = budget is not None and budget.max is not None and budget.currency == "GBP"
     for group in [g for g in kept if over_from and (g.loose or checks[g.key].status == "unknown")]:
         line = find_brand_line(set(group.names) | {uk_name(n) for n in group.names}, group.category, type_of(group),
@@ -1324,14 +1481,15 @@ def _brand_model_products(ranking: RankingResult, groups: list[ProductGroup],
     """{brand pick's key: the ranked product that is its brand's most recommended model} (see _brand_models)."""
     by_key = {g.key: g for g in groups}
     found = {}
+    # The specific products with enough credible recommendations to be a brand's model, worked out once for every brand.
+    models = [(p, g) for p in ranking.products if (g := by_key.get(p.key)) is not None and not g.loose
+              and len(p.credible_recommendations) >= BRAND_MODEL_MIN_CREDIBLE]
     for brand in ranking.products:
         brand_group = by_key.get(brand.key)
         if brand_group is None or not brand_group.loose:
             continue
-        candidates = [p for p in ranking.products
-                      if (g := by_key.get(p.key)) is not None and not g.loose
-                      and len(p.credible_recommendations) >= BRAND_MODEL_MIN_CREDIBLE
-                      and _same_brand(brand_group, g) and _names_a_model(p.name, brand_group, product_type)]
+        candidates = [p for p, g in models
+                      if _same_brand(brand_group, g) and _names_a_model(p.name, brand_group, product_type)]
         if candidates:
             found[brand.key] = max(candidates, key=lambda p: (len(p.credible_recommendations), p.score))
     return found
@@ -1348,7 +1506,9 @@ def _names_a_model(name: str, brand: ProductGroup, product_type: str | None) -> 
         return True
     brand_words = {w for n in list(brand.names) + [uk_name(n) for n in brand.names]
                    for w in re.findall(r"[a-z0-9][a-z0-9'-]*", n.lower())}
+    # The type's plural too (14 Oct 2026): "Ruffwear harnesses" names no model of a dog harness.
     generic = set(BRAND_MODEL_GENERIC_WORDS) | set((product_type or "").lower().split())
+    generic |= set(plural(product_type).lower().split()) if product_type else set()
     return any(w not in brand_words and w not in generic and w.rstrip("s") not in generic for w in words)
 
 
@@ -1356,7 +1516,19 @@ def _same_brand(brand: ProductGroup, product: ProductGroup) -> bool:
     """Whether a specific product is one of a brand pick's own products: a name of the brand (as written, or as the UK
     knows it) is the first word or words of one of the product's names ("Victorinox" and "Victorinox chef's knife"), or
     module 4 says the two names mean the same product (engine.match_products.same_product: "CeraVe cleanser" and
-    "CeraVe Hydrating Cleanser")."""
+    "CeraVe Hydrating Cleanser"). It depends on the two groups' names alone, so each pair of groups is worked out once
+    (latency, 13 Oct 2026: an answer asks it of the same pairs from every brand rule)."""
+    key = (brand.category, frozenset(brand.names), frozenset(product.names), product.name)
+    found = _SAME_BRAND.get(key)
+    if found is None:
+        found = _SAME_BRAND.keep(key, _same_brand_of(brand, product))
+    return found
+
+
+_SAME_BRAND = Table()  # (category, a brand's names, a product's names, its name) -> _same_brand's answer
+
+
+def _same_brand_of(brand: ProductGroup, product: ProductGroup) -> bool:
     aliases = known_aliases().get(brand.category, {})
     brand_names = set(brand.names) | {uk_name(name) for name in brand.names}
     product_names = set(product.names) | {product.name}
@@ -1389,6 +1561,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
         groups = copy_groups(thread)  # once per thread: it reads the whole thread
         # Copies count once (Noemi, 11 Oct 2026): the later copies' mentions and notes are left out.
         copied, repeats = copied_comment_ids(thread, groups), repeated_copies(thread, groups)
+        upvotes = thread_upvotes(thread)  # each comment's beside the thread's, for the upvote rule (14 Oct 2026)
         voices = {}
 
         def voice_of(comment: Comment) -> VoiceScore:
@@ -1400,7 +1573,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
         for m in res.kept:
             if m.comment_id in repeats:
                 continue
-            group = group_by_mention.get(ProductMention(tid, m.comment_id, m.product, m.category, m.stance))
+            group = group_by_mention.get(ProductMention(tid, m.comment_id, m.product, _category_of(m), m.stance))
             if group is None:
                 continue  # left out above: another category, another type, a loose name, or over budget
             comment = comments[m.comment_id]
@@ -1411,12 +1584,16 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                                         m.evidence_tags)
             met = _needs_talked_about(m.quote, comment.body, needs, asks, evidence.level == "long-term use")
             weight = mention_weight(voice, evidence, m.stance) * (NEED_MATCH_BOOST if met else 1)
+            standing = upvotes.get(m.comment_id)
             scored.append(ScoredMention(
                 product_key=group.key, product_name=group.name, category=group.category, thread_id=tid,
                 comment_id=m.comment_id, comment_url=str(comment.url), stance=m.stance,
                 weight=weight, voice=voice.level, evidence=evidence.level,
                 quote=m.quote, badges=badges(voice, evidence), author=_writer(comment), needs=met,
                 written_as=m.product,
+                upvotes=standing.score if standing else None,
+                thread_comments=standing.thread_comments if standing else None,
+                share_beaten=standing.share_beaten if standing else None,
             ))
         for n in res.kept_notes:
             if n.comment_id in repeats:

@@ -61,6 +61,7 @@ iron" when only "cast iron" has notes) goes with that broader kind's products.
 import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
+from typing import NamedTuple
 
 from engine.config import (
     CARE_TIP_REPAIR_WORDS,
@@ -74,6 +75,7 @@ from engine.extract import CheckResult
 from engine.group_kinds import KindGroup, kind_parts
 from engine.group_products import ProductGroup
 from engine.match_products import Aliases, join_split_words, known_aliases, plain_words, product_words, same_words
+from engine.memo import Table
 from engine.models import Thread
 
 
@@ -250,16 +252,34 @@ def similar_tips(a: str, b: str) -> bool:
 
 
 def _alike(a: str, b: str, words_a: set[str], words_b: set[str]) -> bool:
-    """similar_tips, with each tip's words (_content_words) worked out once."""
-    if same_tip(a, b) or (_no_metal_utensils(a) and _no_metal_utensils(b)):
+    """similar_tips, with each tip's words (_content_words) worked out once, and what same_tip, _no_metal_utensils and
+    _says_no read of each tip worked out once per tip (latency, 13 Oct 2026: a pick's tips are compared pair by pair)."""
+    tip_a, tip_b = _tip_facts(a), _tip_facts(b)
+    if tip_a.words == tip_b.words or (tip_a.no_metal_utensils and tip_b.no_metal_utensils):
         return True
-    if _says_no(a) != _says_no(b):
+    if tip_a.says_no != tip_b.says_no:
         return False
     numbers_a, numbers_b = _numbers(words_a), _numbers(words_b)
     if numbers_a and numbers_b and numbers_a != numbers_b:
         return False
     shared = len(words_a & words_b)
     return shared >= CARE_TIP_SHARED_WORDS and 2 * shared >= CARE_TIP_SHARED_SHARE * (len(words_a) + len(words_b))
+
+
+class _TipFacts(NamedTuple):
+    words: tuple[str, ...]  # same_tip's words (_tip_words)
+    no_metal_utensils: bool
+    says_no: bool
+
+
+def _tip_facts(tip: str) -> _TipFacts:
+    found = _TIP_FACTS.get(tip)
+    if found is None:
+        found = _TIP_FACTS.keep(tip, _TipFacts(tuple(_tip_words(tip)), _no_metal_utensils(tip), _says_no(tip)))
+    return found
+
+
+_TIP_FACTS = Table()  # a tip -> what _alike reads of it
 
 
 _UTENSILS = re.compile(r"\b(utensils?|spatulas?|spoons?|tongs|whisks?|turners?)\b")

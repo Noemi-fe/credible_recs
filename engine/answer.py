@@ -7,7 +7,10 @@ write the one-line reasons, but only from the verified quotes, inside this same 
 What each pick shows (the brief):
 - the product name and a one-line reason it wins; when some of its credible recommendations talk about what the
   request asks for (engine/needs.py, 9 Oct 2026), the reason says how many and about what ("3 of them about sensitive
-  skin");
+  skin"); and with Noemi's upvote rule on (14 Oct 2026; off: config.UPVOTE_COUNTS_MORE), which of its credible voices
+  counted twice toward the picks bar and for how many upvotes ("(one counted twice for its 34 upvotes)"), while every
+  number of voices stays the number of writers (the meter's "voices" says how many counted twice) and the answer's
+  messages give the bar with its upvotes ("..., or 2 when one of them has 10 or more upvotes");
 - its credible support: how many high- and medium-credibility voices recommend it, across how many threads;
 - two or three quotes, the most credible first, each with its "why this voice counts" badges and a link to the
   comment;
@@ -24,6 +27,14 @@ What each pick shows (the brief):
   pipeline leaves them out. A product no longer made but sold second-hand only (vintage cast iron) says "Sold
   second-hand only: <shop>, checked <date>" with the same link (Noemi's decision, 10 Oct 2026), and so does a brand
   pick whose brand's own name has such an entry ("Griswold");
+- for a brand-line pick (Noemi's night decision 1, 14 Oct 2026; the knife answer's three lines showed no link at all):
+  its from price, researched in data/brand_lines.json, the cheapest UK price of its products of the type, "From £25 at
+  John Lewis, checked 14 Oct 2026", with the shop's link; within a budget, "From £25, within your budget (up to £100)."
+  (a line whose from price is over the budget never gets here); and since the researcher found it on sale there, "Sold
+  at John Lewis, checked 14 Oct 2026". Then a link to its maker's page for its products of the type, or an official UK
+  stockist's: "Browse Victorinox chef knives", "checked 14 Oct 2026" (shown_range). Both come from the brand-lines
+  list, never from a comment, and change nothing about which products are picks. A line under "Also worth a look" shows
+  them too;
 - "How to take care of it" (Noemi, 9 Oct 2026; named so on 11 Oct 2026, and since then only the pick's own tips, the
   tips about its kind of product being shown once, in a note at the end): up to CARE_TIPS_PER_PICK credible care tips
   ("descale every 6 months"), each with its verified quote. Since 10 Oct 2026 (decided by Claude, as Noemi asked) the advice
@@ -95,7 +106,10 @@ import re
 from collections.abc import Callable, Collection, Iterable, Iterator, Mapping
 from dataclasses import dataclass, field, replace
 from datetime import date
+from functools import cache
 
+from engine import config  # the upvote rule's settings, read as the answer is written (14 Oct 2026)
+from engine.brand_lines import BrandLine, is_source_page
 from engine.care_tips import CareTip, CareTips, is_repair, similar_tips, tips_by_agreement
 from engine.config import (
     BRAND_PICK_MODEL,
@@ -103,6 +117,8 @@ from engine.config import (
     CARE_TIPS_PER_PICK,
     DOWNSIDES_PER_PICK,
     LOOK_FOR_NOTES,
+    OPPOSITE_NEGATED_IN_SENTENCE,
+    OPPOSITE_NEGATION_WINDOW,
     OPPOSITE_QUOTE_PATTERNS,
     OTHER_KIND_WORDS,
     QUOTE_VIEW_WORDS,
@@ -121,6 +137,7 @@ from engine.config import (
 )
 from engine.extract import _as_written, _in_quoted_block, _own_words_in_quote_format
 from engine.group_kinds import PURPOSE_WORDS, _kind_words, kind_parts
+from engine.group_products import plural
 from engine.ingredients import (
     TYPE_OWN_INGREDIENT, find_ingredients, form_kind, form_of, ingredient_type_name, ingredients_of_type, talk_words,
 )
@@ -129,8 +146,9 @@ from engine.needs import LASTING, Need, needs_met
 from engine.prices import PriceCheck
 from engine.credibility import GENERIC_NAME_WORDS
 from engine.match_products import FILLER_WORDS, known_aliases
+from engine.memo import Table
 from engine.rank import KindNote, ProductScore, RankingResult, ScoredMention, ScoreBreakdown, is_credible
-from engine.query import PRODUCT_TYPES
+from engine.query import LOOKALIKES, PRODUCT_TYPES
 from engine.sources import mentions_product
 from engine.summaries import Summary, shown_problems, summary_key, text_problems
 from engine.text import one_edit_apart
@@ -139,9 +157,21 @@ from engine.verify_quotes import find_quote, verify_quote
 # --- Wording users see: PROPOSED 9 Oct 2026, awaiting Noemi ---
 TITLE = "Top picks: {product_type}"
 TITLE_ANY = "Top picks"
-REASON = "Recommended by {voices}{long_term}{needs}{kind}."  # {needs} added 9 Oct 2026 (REASON_NEEDS below)
+# {needs} added 9 Oct 2026 (REASON_NEEDS below), {upvotes} 14 Oct 2026 (REASON_UPVOTES below)
+REASON = "Recommended by {voices}{upvotes}{long_term}{needs}{kind}."
 REASON_LONG_TERM = ", {n} of them after long-term use"
 REASON_KIND = "; credible voices favour its kind most ({kind})"
+# Noemi's upvote rule (14 Oct 2026; off unless config.UPVOTE_COUNTS_MORE; wording decided by Claude, from the
+# orchestrator's example): the reason says which of its credible voices counted twice toward the picks bar, and for how
+# many upvotes, right after the number of voices, which stays the number of writers: "Recommended by 2 credible voices
+# (one counted twice for its 34 upvotes), 2 of them after long-term use." Several: "(two counted twice for their upvotes:
+# 1,203 and 34)". The rule as the answer's messages give it (RULE): "..., or 2 when one of them has 10 or more upvotes",
+# with variant C's thread "and is in the top 10% of a thread of 20 or more comments".
+REASON_UPVOTES_ONE = " (one counted twice for its {upvotes} upvotes)"
+REASON_UPVOTES = " ({n} counted twice for their upvotes: {upvotes})"
+RULE_UPVOTES = ", or {fewer} when one of them has {score} or more upvotes"
+RULE_UPVOTES_THREAD = " and is in the top {top} of a thread of {comments} or more comments"
+NUMBER_WORDS = ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
 SUPPORT = "Backed by {voices}, across {threads}."
 DISAGREEMENT = "Mixed opinions: also warned against by {voices}."
 NO_DOWNSIDES = "No credible voice in these threads warned against it."
@@ -151,6 +181,10 @@ LOOK_FOR = "Look for"  # a kind credible voices recommend
 AVOID = "Avoid"  # a kind credible voices warn against
 RULE = "at least {mentions} credible recommendations across at least {threads} threads"
 NO_PICKS = "Not enough credible evidence to recommend {what} yet: a pick needs {rule}. We'd rather say so than guess."
+# When no saved thread is about the product at all (14 Oct 2026, the general category: most of its types have none yet;
+# wording decided by Claude, PROPOSED). On the live site on-demand reading then says it has started reading.
+NO_THREADS = ("We haven't read any Reddit threads about {products} yet, so there's nothing to recommend from. We'd "
+              "rather say so than guess.")
 FEWER_PICKS = "Enough credible evidence for only {products} ({rule}), so we show {n} instead of {wanted}."
 BADGE_VOICE = "{voice}-credibility voice"  # the badge when module 5 gave no reason in words
 QUOTES_HEADING = "In their words"
@@ -174,6 +208,18 @@ BUDGET_WHY_UNKNOWN = "no price checked yet"
 BUDGET_WHY_CURRENCY = "its price is in {currency}"
 BUDGET_WHY_OLD = "its price was checked over {days} days ago, so it may have changed"
 CURRENCY_SIGNS = {"GBP": "£", "EUR": "€", "USD": "$"}
+# Brand lines (Noemi's night decision 1, 14 Oct 2026; wording decided by Claude from her example, reported to her). A
+# line has many products, so no single price: it shows its from price, the cheapest UK price of its products of the
+# type (data/brand_lines.json), and a link to its maker's page for them (or an official UK stockist's), with the day
+# its sources were read: "Browse Victorinox chef knives", "checked 14 Oct 2026". Her example said "Victorinox's"; the
+# brand stays as its maker writes it, since some entries are a line of a brand and read badly as a possessive
+# ("Instant Vortex Plus' air fryers"), and a stockist's page says whose it is ("... at <shop>").
+PRICE_FROM = "From {amount} at {shop}, checked {date}"
+PRICE_FROM_AMOUNT = "From {amount}"  # the amount alone, as the page's "At a glance" and an item's row show it
+BUDGET_WITHIN_FROM = "From {amount}, within your budget (up to {max})."
+RANGE_LINK = "Browse {brand} {products}"
+RANGE_LINK_AT = "Browse {brand} {products} at {shop}"  # an official UK stockist's page
+RANGE_CHECKED = "checked {date}"
 # Care tips (Noemi, 9 Oct 2026). Renamed by Noemi on 11 Oct 2026 (was "How to make it last"): only care of the product
 # itself. A pick shows the tips about itself; tips about its kind of product are shown once, in a note at the end
 # (CARE_NOTE_HEADING, filled with the request's product type; CARE_NOTE_HEADING_ANY without one).
@@ -213,9 +259,22 @@ NEED_LABELS: dict[str, str] = {
     "home cook": "home cooking",
     "lasting": "how long it lasts",
     # A request's own word that reads badly as typed ("won't strip my skin": "about gentleness or strip"); Claude,
-    # 10 Oct 2026.
+    # 10 Oct 2026. A need of its own since 14 Oct 2026, for hair too (NEED_LABELS_BY_CATEGORY below).
     "strip": "not stripping the skin",
+    # Haircare needs (config.HAIR_NEEDS) and kitchen needs in other words, 14 Oct 2026 (Claude). "oily hair", "dry
+    # hair", "dandruff" and "fine hair" read well as they are.
+    "frizzy": "frizz",
+    "curly": "curly hair",
+    "wavy": "wavy hair",
+    "colour-treated": "colour-treated hair",
+    "itchy scalp": "an itchy scalp",
+    "sensitive scalp": "a sensitive scalp",
+    "quiet": "noise",
+    "glass top stove": "glass-top stoves",
+    "not drying": "drying",  # "a shampoo that isn't drying" (14 Oct 2026, Claude), as "no white cast" is "white cast"
 }
+# A need whose words differ by category (14 Oct 2026, Claude): "a shampoo that doesn't strip my hair".
+NEED_LABELS_BY_CATEGORY: dict[str, dict[str, str]] = {"haircare": {"strip": "not stripping the hair"}}
 # The breakdown's line about needs: only shown when some credible mention talks about them.
 BREAKDOWN_NEEDS = ("About your request: {recommends} credible recommendations and {warnings} credible warnings talk "
                    "about what you asked for (each counts {boost} times as much)")
@@ -281,6 +340,20 @@ class ShownPrice:
     checked_on: str | None  # the day the price was looked up, as "2026-10-09"
     budget_status: str | None  # "within", "unknown", "other currency" or "out of date"; None without a budget
     budget_note: str | None  # the same in words, for the shopper; None without a budget
+    # True when it is a brand line's from price (14 Oct 2026): the cheapest UK price of its products of the type,
+    # "From £25 at John Lewis, checked 14 Oct 2026"; False for a product's own price, or none.
+    from_price: bool = False
+
+
+@dataclass(frozen=True)
+class ShownRange:
+    """A brand line's link to its maker's page for its products of the type, or an official UK stockist's, as shown
+    (Noemi's night decision 1, 14 Oct 2026): from data/brand_lines.json, never from a comment."""
+
+    text: str  # "Browse Victorinox chef knives" (RANGE_LINK), or "... at <shop>" for a stockist's page
+    url: str  # the entry's range page, exactly as the list writes it: https only, one of its sources, never Reddit
+    checked: str  # "checked 14 Oct 2026": the day the entry's sources were read
+    checked_on: str  # the same day, as "2026-10-14"
 
 
 @dataclass(frozen=True)
@@ -343,6 +416,9 @@ class Pick:
     # The credible voices behind it as numbers, for the page's credibility meter (13 Oct 2026, the UX builder; _voices):
     # {"recommend", "high", "medium", "warn", "threads"}, the writers its reason, support and share lines count.
     voices: dict[str, int] = field(default_factory=dict)
+    # For a brand-line pick: the link to its maker's page for its products of the type (14 Oct 2026); None otherwise,
+    # and for a line whose entry has no range page.
+    range: ShownRange | None = None
 
 
 @dataclass
@@ -364,6 +440,7 @@ class WorthALook:
     summary: ShownSummary | None = None
     form: str | None = None  # as a pick's
     voices: dict[str, int] = field(default_factory=dict)  # as a pick's (13 Oct 2026, the UX builder)
+    range: ShownRange | None = None  # as a pick's (14 Oct 2026): a brand line's link to its maker's page
 
 
 @dataclass
@@ -425,7 +502,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
                  unsuited_kinds: Collection[str] = (), needs: tuple[Need, ...] = (), request: str = "",
                  summaries: Mapping[str, Summary] | None = None, worth_left_out: Collection[str] = (),
                  ingredient: str | None = None, forms: Mapping[str, str | None] | None = None,
-                 forms_asked: Collection[str] = ()) -> Answer:
+                 forms_asked: Collection[str] = (), ranges: Mapping[str, BrandLine] | None = None) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -447,8 +524,12 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     `ingredient` names the active ingredients the request asks for (13 Oct 2026; every product here contains them, the
     pipeline made sure), and `forms` is each product's form ({product key: form}) in an ingredient-led answer;
     `forms_asked` the forms an ingredient-led request names ("salicylic acid wash": cleanser), for its note.
+    `ranges` ({product key: brand-lines entry}, 14 Oct 2026) are the entries of the products ranked as a brand's line:
+    each such pick and "Also worth a look" item links to its entry's range page (shown_range). A line's from price
+    comes in `prices`, like any price (PriceCheck.from_price).
     """
     check = _QuoteCheck(bodies)
+    ranges = ranges or {}
     forms = forms or {}
     models = models or {}
     prices = prices or {}
@@ -472,9 +553,14 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             picks[-1].model_price = (model_prices or {}).get(product.key)
             picks[-1].summary = _summary(product, _summary_of(product, summaries), check)
             picks[-1].form = forms.get(product.key)
-    worth = _worth_items(ranking, check, prices, cautions, summaries, worth_left_out, asks, needs, product_type)
+            picks[-1].range = shown_range(ranges.get(product.key))
+    # A product the upvote rule lifted (14 Oct 2026) may be an item and a pick shown: then it is a pick only.
+    shown_picks = {pick.product_key for pick in picks}
+    worth = _worth_items(ranking, check, prices, cautions, summaries, set(worth_left_out) | shown_picks, asks, needs,
+                         product_type)
     for item in worth:
         item.form = forms.get(item.product_key)
+        item.range = shown_range(ranges.get(item.product_key))
     skip = [_skip_item(product, check) for product in ranking.skip_list]
     for item in skip:
         if item is not None:
@@ -543,7 +629,9 @@ def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[s
         items.append(WorthALook(
             product_key=product.key,
             name=product.name,
-            reason=_reason(product, ranking),
+            # A product the upvote rule lifted to the bar but its score left out of the picks (14 Oct 2026) is shown
+            # here as it would be without the rule: the upvotes changed nothing for it, so nothing is said of them.
+            reason=_reason(product, ranking, upvotes=False),
             quotes=quotes,
             downsides=downsides,
             downsides_share=_downsides_share(product) if downsides else None,
@@ -555,7 +643,7 @@ def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[s
             availability=shown_availability(prices.get(product.key), price.url),
             cautions=[CAUTION.format(reason=reason) for reason in cautions.get(product.key, [])],
             summary=_summary(product, _summary_of(product, summaries), check),
-            voices=_voices(product),
+            voices=_voices(product, twice=False),
         ))
     return items
 
@@ -587,8 +675,7 @@ def _mid_sentence(quote: str, body: str | None) -> bool:
 def _worth_note(picks: int) -> str:
     """The note under "Also worth a look": how much less support its products have than a pick."""
     voices = _plural(WORTH_A_LOOK_CREDIBLE, "credible voice")
-    rule = RULE.format(mentions=MIN_CREDIBLE_MENTIONS, threads=MIN_THREADS)
-    return (WORTH_NOTE if picks else WORTH_NOTE_NO_PICKS).format(voices=voices, rule=rule)
+    return (WORTH_NOTE if picks else WORTH_NOTE_NO_PICKS).format(voices=voices, rule=_rule())
 
 
 # --- One-line summaries (Noemi's decision 4 of 13 Oct 2026) ---
@@ -761,10 +848,15 @@ def _not_the_type(quote: str, product_type: str | None) -> bool:
     like it's a 'moisturizer'" (b04, 12 Oct 2026), by the type's name or one of module 1's names for it."""
     if not product_type:
         return False
-    names = {product_type, *(k for p in PRODUCT_TYPES if p.name == product_type for k in p.keywords)}
-    text = _plain(quote)
-    return any(re.search(rf"(?:\bnot\b|n't\b)[^.!?]{{0,30}}?\b(?:an?|real|really)\W+{re.escape(name)}s?\b", text)
-               for name in names)
+    key = (quote, product_type)
+    found = _NOT_THE_TYPE.get(key)
+    if found is None:
+        names = {product_type, *(k for p in PRODUCT_TYPES if p.name == product_type for k in p.keywords)}
+        text = _plain(quote)
+        found = _NOT_THE_TYPE.keep(key, any(
+            re.search(rf"(?:\bnot\b|n't\b)[^.!?]{{0,30}}?\b(?:an?|real|really)\W+{re.escape(name)}s?\b", text)
+            for name in names))
+    return found
 
 
 def _says_something(m: ScoredMention) -> bool:
@@ -786,9 +878,20 @@ _I_LIKE = re.compile(r"\bi (?:(?:really|also|do|still|just|honestly|actually|gen
 def _gives_a_view(quote: str) -> bool:
     """Whether the quote says what the writer thinks or went through (config.QUOTE_VIEW_WORDS: "great", "recommend",
     "lasted"..., or "I like"), rather than only that they own it."""
-    text = " ".join(re.findall(r"[a-z0-9']+", quote.lower().replace("’", "'")))
-    return (any(re.search(rf"(?<![a-z0-9']){re.escape(word)}(?![a-z0-9'])", text) for word in QUOTE_VIEW_WORDS)
-            or bool(_I_LIKE.search(text)))
+    found = _GIVES_A_VIEW.get(quote)
+    if found is None:
+        text = " ".join(re.findall(r"[a-z0-9']+", quote.lower().replace("’", "'")))
+        found = _GIVES_A_VIEW.keep(quote, any(re.search(rf"(?<![a-z0-9']){re.escape(word)}(?![a-z0-9'])", text)
+                                              for word in QUOTE_VIEW_WORDS) or bool(_I_LIKE.search(text)))
+    return found
+
+
+# What a quote shows, worked out once per quote (latency, 13 Oct 2026: an answer asks the same of each quote over and
+# over, as it orders, widens and picks them): each depends on the words it is given alone.
+_GIVES_A_VIEW = Table()  # quote -> _gives_a_view
+_NAMES_PRODUCT = Table()  # (quote, name, category, writer's name) -> _names_product
+_SAYS_THE_OPPOSITE = Table()  # (quote, asks) -> _says_the_opposite
+_NOT_THE_TYPE = Table()  # (quote, product type) -> _not_the_type
 
 
 def says_the_opposite(quote: str, asks: Iterable[str]) -> bool:
@@ -798,9 +901,42 @@ def says_the_opposite(quote: str, asks: Iterable[str]) -> bool:
 
 def _says_the_opposite(quote: str, asks: Iterable[str]) -> bool:
     """Whether the quote says the opposite of one of the request's asks (config.OPPOSITE_QUOTE_PATTERNS): "it leaves a
-    white cast" for "no white cast", "smells lovely" for "fragrance-free"."""
-    text = " ".join(quote.lower().replace("’", "'").split())
-    return any(re.search(pattern, text) for ask in asks for pattern in OPPOSITE_QUOTE_PATTERNS.get(ask, ()))
+    white cast" for "no white cast", "smells lovely" for "fragrance-free", "way too drying" for "not drying" (14 Oct
+    2026). For the asks of config.OPPOSITE_NEGATED_IN_SENTENCE, a match with a negation just before it in its sentence
+    doesn't count (_negated_before: "none of the three ever stripped my face")."""
+    asks = tuple(asks)
+    key = (quote, asks)
+    found = _SAYS_THE_OPPOSITE.get(key)
+    if found is None:
+        text = " ".join(quote.lower().replace("’", "'").split())
+        found = _SAYS_THE_OPPOSITE.keep(key, any(_opposite_in(text, pattern, ask in OPPOSITE_NEGATED_IN_SENTENCE)
+                                                 for ask in asks for pattern in OPPOSITE_QUOTE_PATTERNS.get(ask, ())))
+    return found
+
+
+def _opposite_in(text: str, pattern: str, unless_negated: bool) -> bool:
+    """Whether `pattern` is found in the quote's `text`, and, `unless_negated`, once with no negation just before it."""
+    if not unless_negated:
+        return re.search(pattern, text) is not None
+    return any(not _negated_before(text, match.start()) for match in re.finditer(pattern, text))
+
+
+# A word that negates what follows it: "not", "no", "none", "neither", "without", "less", any "...n't" ("doesn't",
+# "wasn't") and the same written without an apostrophe ("doesnt", "wasnt").
+_NEGATION_WORD = re.compile(r"(?:not|no|non|none|never|neither|nor|without|less|hardly|cannot|\w+n't"
+                            r"|(?:is|are|was|were|does|do|did|has|have|had|would|could|should|wo|ca)nt)")
+# Where a sentence's part ends for a negation: a full stop, a question or exclamation mark, a semicolon, or "but",
+# "though", "although", "however", "because" ("not a daily one for me, but it strips my hair", "I wouldn't reach for it
+# each morning because it strips my skin").
+_CLAUSE_END = re.compile(r"[.!?;]|\b(?:but|though|although|however|because)\b")
+
+
+def _negated_before(text: str, at: int) -> bool:
+    """Whether a negation is among the config.OPPOSITE_NEGATION_WINDOW words just before `at` in its sentence's part:
+    "neither has ever dried my hair out", "it doesn't burn, smell or strip the skin" (14 Oct 2026)."""
+    part = _CLAUSE_END.split(text[:at])[-1]
+    words = [word.strip(",/()\"'*-:") for word in part.split()][-OPPOSITE_NEGATION_WINDOW:]
+    return any(_NEGATION_WORD.fullmatch(word) for word in words)
 
 
 def _names_product(quote: str, name: str, category: str, written_as: str = "") -> bool:
@@ -812,6 +948,14 @@ def _names_product(quote: str, name: str, category: str, written_as: str = "") -
     aside, and never a common product word such as "gooseneck"): "Stagg" for a kettle shown as "Fellow Stagg EKG"
     (b06, 10 Oct 2026, night: its writers' quotes had stopped naming it once the shown name took its brand). A name that
     is an everyday short word too (COMMON_SHORT_WORDS: "TO" for The Ordinary) names it only in capitals (12 Oct 2026)."""
+    key = (quote, name, category, written_as)
+    found = _NAMES_PRODUCT.get(key)
+    if found is None:
+        found = _NAMES_PRODUCT.keep(key, _names_product_of(quote, name, category, written_as))
+    return found
+
+
+def _names_product_of(quote: str, name: str, category: str, written_as: str) -> bool:
     text = " ".join(re.findall(r"[a-z0-9][a-z0-9'-]*", quote.lower().replace("’", "'")))
     name_words = _name_words(name)
     if not name_words:
@@ -1063,18 +1207,25 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
     )
 
 
-def _voices(product: ProductScore, more_downsides: Iterable[ScoredMention] = ()) -> dict[str, int]:
+def _voices(product: ProductScore, more_downsides: Iterable[ScoredMention] = (), twice: bool = True) -> dict[str, int]:
     """The credible voices behind a pick or an "Also worth a look" item, as numbers for the page's credibility meter (13
     Oct 2026, the UX builder): its credible recommendations (as the reason counts them), of them the high and the medium
     voices (as the support line does), the writers who warned against it (_warned, as the share line and the
     mixed-opinions line do) and the threads with a credible recommendation (as the support line does). So the meter
-    never disagrees with the words around it. Numbers only, like the breakdown; the score itself isn't in it."""
+    never disagrees with the words around it. Numbers only, like the breakdown; the score itself isn't in it.
+
+    With Noemi's upvote rule (14 Oct 2026) the numbers stay the writers', and "twice" says how many of them counted
+    twice toward the picks bar for their upvotes, as the reason does: only when some did (and `twice`, a pick's), so
+    nothing changes while the rule is off."""
     recommendations = product.credible_recommendations
-    return {"recommend": len(recommendations),
-            "high": sum(m.voice == "high" for m in recommendations),
-            "medium": sum(m.voice == "medium" for m in recommendations),
-            "warn": len(_warned(product, more_downsides)),
-            "threads": product.breakdown.credible_threads}
+    voices = {"recommend": len(recommendations),
+              "high": sum(m.voice == "high" for m in recommendations),
+              "medium": sum(m.voice == "medium" for m in recommendations),
+              "warn": len(_warned(product, more_downsides)),
+              "threads": product.breakdown.credible_threads}
+    if twice and product.counted_twice:
+        voices["twice"] = len(product.counted_twice)
+    return voices
 
 
 def _warned(product: ProductScore, more_downsides: Iterable[ScoredMention] = ()) -> set[str]:
@@ -1127,21 +1278,48 @@ def _as_sentence(tip: str) -> str:
     return tip if tip.endswith((".", "!", "?")) else tip + "."
 
 
-def _reason(product: ProductScore, ranking: RankingResult) -> str:
-    """The one-line reason: how many credible voices, how many after long-term use, how many talk about the request's
-    needs, and the kind if it leads."""
+def _reason(product: ProductScore, ranking: RankingResult, upvotes: bool = True) -> str:
+    """The one-line reason: how many credible voices, which counted twice for their upvotes (a pick's, `upvotes`), how
+    many after long-term use, how many talk about the request's needs, and the kind if it leads."""
     recommendations = product.credible_recommendations
     long_term = sum(m.evidence == "long-term use" for m in recommendations)
     has_bonus = product.breakdown.kind_bonus > 0 and ranking.leading_kind is not None
     return REASON.format(
         voices=_plural(len(recommendations), "credible voice"),
+        upvotes=_upvotes_clause(product.counted_twice) if upvotes else "",
         long_term=REASON_LONG_TERM.format(n=long_term) if long_term else "",
-        needs=_needs_clause(recommendations, [m.needs for p in ranking.products for m in p.mentions]),
+        needs=_needs_clause(recommendations, [m.needs for p in ranking.products for m in p.mentions], ranking.category),
         kind=REASON_KIND.format(kind=ranking.leading_kind.name) if has_bonus else "",
     )
 
 
-def _needs_clause(recommendations: list[ScoredMention], every_list: list[tuple[str, ...]]) -> str:
+def _upvotes_clause(counted_twice: tuple[ScoredMention, ...]) -> str:
+    """" (one counted twice for its 34 upvotes)": which of a product's credible voices counted twice toward the picks bar
+    for their upvotes (Noemi's upvote rule, 14 Oct 2026), most upvoted first; "" when none did (always, while it is off)."""
+    if not counted_twice:
+        return ""
+    counts = [f"{m.upvotes:,}" for m in counted_twice]
+    if len(counts) == 1:
+        return REASON_UPVOTES_ONE.format(upvotes=counts[0])
+    n = NUMBER_WORDS[len(counts)] if len(counts) < len(NUMBER_WORDS) else str(len(counts))
+    return REASON_UPVOTES.format(n=n, upvotes=NEEDS_JOIN.join(counts[:-1]) + " and " + counts[-1])
+
+
+def _rule() -> str:
+    """The picks bar in words, for the answer's messages (RULE): with the upvote rule on (14 Oct 2026), also how a
+    product with one credible recommendation fewer meets it."""
+    rule = RULE.format(mentions=MIN_CREDIBLE_MENTIONS, threads=MIN_THREADS)
+    if not config.UPVOTE_COUNTS_MORE:
+        return rule
+    rule += RULE_UPVOTES.format(fewer=MIN_CREDIBLE_MENTIONS - 1, score=f"{config.UPVOTE_MIN_SCORE:,}")
+    if config.UPVOTE_TOP_OF_BIG_THREAD:
+        rule += RULE_UPVOTES_THREAD.format(top=f"{1 - config.UPVOTE_THREAD_SHARE_BEATEN:.0%}",
+                                           comments=f"{config.UPVOTE_THREAD_MIN_COMMENTS:,}")
+    return rule
+
+
+def _needs_clause(recommendations: list[ScoredMention], every_list: list[tuple[str, ...]],
+                  category: str | None = None) -> str:
     """", 3 of them about sensitive skin": how many credible recommendations talk about the request's needs, and which
     needs, in the request's order; "" when none does. `every_list` holds the needs of every mention ranked: each lists
     them in the request's order, so together they show that order.
@@ -1154,7 +1332,8 @@ def _needs_clause(recommendations: list[ScoredMention], every_list: list[tuple[s
         return ""
     mine = {need for needs in fitting for need in needs}
     ordered = [need for need in _in_request_order(fitting + every_list) if need in mine]
-    named = list(dict.fromkeys(NEED_LABELS.get(need, need) for need in ordered))
+    labels = NEED_LABELS | NEED_LABELS_BY_CATEGORY.get(category or "", {})
+    named = list(dict.fromkeys(labels.get(need, need) for need in ordered))
     listed = NEEDS_JOIN.join(named[:-1]) + NEEDS_JOIN_LAST + named[-1] if len(named) > 1 else named[0]
     return REASON_NEEDS.format(n=len(fitting), needs=listed)
 
@@ -1308,6 +1487,8 @@ def _another_types_advice(kind: str, notes: list[KindNote], category: str, produ
     listed = product_type in {p.name for p in PRODUCT_TYPES}
     if not listed and _another_kind_of(kind, product_type):
         return True
+    if listed and _a_lookalike_of(kind, product_type):
+        return True
     if category in ("skincare", "haircare") or not listed:
         named = _named_types(kind, category)
         if named:
@@ -1335,7 +1516,16 @@ def _named_types(kind: str, category: str) -> set[str]:
     """The types of product a kind's own name names (12 Oct 2026), of module 1's product types of its category, before a
     word saying what it is for ("for", "instead", "with": engine.group_kinds): by one of the type's names, the longest
     where one holds another ("dry shampoo", not "shampoo"), or by a word sharing the stem of a one-word one
-    ("cleansing", a cleanser's). "retinol eye cream" names a retinoid and an eye cream; "AHA" names none."""
+    ("cleansing", a cleanser's). "retinol eye cream" names a retinoid and an eye cream; "AHA" names none. Worked out
+    once per kind and category (latency, 13 Oct 2026); a new set each time."""
+    key = (kind, category)
+    found = _NAMED_TYPES.get(key)
+    if found is None:
+        found = _NAMED_TYPES.keep(key, frozenset(_named_types_of(kind, category)))
+    return set(found)
+
+
+def _named_types_of(kind: str, category: str) -> set[str]:
     words = re.findall(r"[a-z0-9][a-z0-9'-]*", _plain(kind))
     cut = next((i for i, w in enumerate(words) if w in PURPOSE_WORDS), len(words))
     text = " ".join(words[:cut])
@@ -1349,6 +1539,25 @@ def _named_types(kind: str, category: str) -> set[str]:
             named += [(word.start(), word.end(), p.name) for p in types
                       if any(_same_word(word.group(), name) for name in (p.name, *p.keywords) if " " not in name)]
     return {name for _, _, name in named}
+
+
+def _a_lookalike_of(kind: str, product_type: str) -> bool:
+    """Whether a kind's name holds one of module 1's look-alikes of a listed type (engine.query.LOOKALIKES): a phrase
+    holding one of the type's own words that names something else (14 Oct 2026). An "immersion blender" in a blender
+    answer, a "bread knife" in a chef's knife one (the other kinds of knife, 13 Oct 2026), a "sheet pan" in a frying pan
+    one: advice about another product, as an immersion blender was for a blender when it was the open model's type."""
+    pattern = _lookalikes_of(product_type)
+    return pattern is not None and bool(pattern.search(_plain(kind)))
+
+
+@cache
+def _lookalikes_of(product_type: str) -> re.Pattern | None:
+    """Module 1's look-alikes holding one of the type's own words (its names and clue words), as one pattern."""
+    words = {w for p in PRODUCT_TYPES if p.name == product_type for w in p.keywords + p.hints}
+    phrases = [phrase for phrase in LOOKALIKES if any(re.search(rf"\b{re.escape(w)}s?\b", phrase) for w in words)]
+    if not phrases:
+        return None
+    return re.compile(rf"\b(?:{'|'.join(re.escape(phrase) for phrase in phrases)})s?\b")
 
 
 def _another_kind_of(kind: str, product_type: str) -> bool:
@@ -1365,7 +1574,20 @@ def _another_kind_of(kind: str, product_type: str) -> bool:
 def _own_names(category: str, product_type: str, request: str) -> set[str]:
     """The words the request's own product goes by: its type's name, and the type's names the request uses ("retinol"
     for a retinoid), read the way kinds are (engine.group_kinds); since 13 Oct 2026 also the words of the active
-    ingredients it asks for and their related ones' ("BHA" in a salicylic acid answer is what was asked for)."""
+    ingredients it asks for and their related ones' ("BHA" in a salicylic acid answer is what was asked for). Worked out
+    once per request (latency, 13 Oct 2026: it was worked out again for every kind); a new set each time."""
+    key = (category, product_type, request)
+    found = _OWN_NAMES.get(key)
+    if found is None:
+        found = _OWN_NAMES.keep(key, frozenset(_own_names_of(category, product_type, request)))
+    return set(found)
+
+
+_OWN_NAMES = Table(limit=10_000)  # (category, product type, request) -> the words its own product goes by
+_NAMED_TYPES = Table()  # (kind, category) -> the product types its name names
+
+
+def _own_names_of(category: str, product_type: str, request: str) -> set[str]:
     aliases = known_aliases("kinds").get(category, {})
     own = set(_kind_words(product_type, aliases))
     asked = list(ingredients_of_type(product_type)) + [f.ingredient for f in find_ingredients(request)]
@@ -1474,23 +1696,44 @@ def _message(picks: int, product_type: str | None) -> str | None:
     """The honest message when fewer than 3 products have enough evidence, or None when there are 3."""
     if picks >= PICKS_SHOWN:
         return None
-    rule = RULE.format(mentions=MIN_CREDIBLE_MENTIONS, threads=MIN_THREADS)
+    rule = _rule()
     if picks == 0:
         return NO_PICKS.format(what=f"any {product_type}" if product_type else "a product", rule=rule)
     return FEWER_PICKS.format(products=_plural(picks, "product"), rule=rule, n=picks, wanted=PICKS_SHOWN)
 
 
 def shown_price(check: PriceCheck | None) -> ShownPrice:
-    """A product's price as the shopper sees it: amount, shop and date when known, and how it meets the budget."""
+    """A product's price as the shopper sees it: amount, shop and date when known, and how it meets the budget. A brand
+    line's from price (14 Oct 2026) says so: "From £25 at John Lewis, checked 14 Oct 2026"."""
     budget_status = None if check is None or check.status == "no budget" else check.status
     budget_note = _budget_note(check) if budget_status else None
     price = check.price if check is not None else None
     if price is None:
         return ShownPrice(PRICE_UNKNOWN, None, None, None, None, None, budget_status, budget_note)
-    text = PRICE.format(amount=_money(price.price, price.currency), shop=price.shop, date=_day(price.checked_on))
+    wording = PRICE_FROM if check.from_price else PRICE
+    text = wording.format(amount=_money(price.price, price.currency), shop=price.shop, date=_day(price.checked_on))
     url = price.url if price.url.startswith("https://") else None  # the price list allows https only; checked again
     return ShownPrice(text, price.price, price.currency, price.shop, url, price.checked_on.isoformat(),
-                      budget_status, budget_note)
+                      budget_status, budget_note, check.from_price)
+
+
+def shown_range(line: BrandLine | None) -> ShownRange | None:
+    """A brand line's link to its entry's range page (Noemi's night decision 1, 14 Oct 2026): "Browse Victorinox chef
+    knives" (the brand as its maker writes it, the type as a name shows it), with the day its sources were read; "...
+    at <shop>" when the page is an official UK stockist's. None when
+    there is no entry, it says the brand doesn't sell the type, or it has no range page. The page is shown exactly as
+    the list writes it, and only when it is still one of the entry's sources and a page the list allows (https, never
+    Reddit: engine.brand_lines.is_source_page), checked again here as the shop links are."""
+    if line is None or not line.sells or line.range_page is None:
+        return None
+    if line.range_page not in line.sources or not is_source_page(line.range_page):
+        return None
+    brand, products = line.brand, plural(line.product_type)
+    text = (RANGE_LINK_AT.format(brand=brand, products=products, shop=line.range_shop) if line.range_shop
+            else RANGE_LINK.format(brand=brand, products=products))
+    return ShownRange(text, line.range_page, RANGE_CHECKED.format(date=_day(line.checked_on)),
+                      line.checked_on.isoformat())
+
 
 
 def shown_availability(check: PriceCheck | None, price_url: str | None = None) -> ShownAvailability:
@@ -1515,6 +1758,8 @@ def shown_availability(check: PriceCheck | None, price_url: str | None = None) -
 def _budget_note(check: PriceCheck) -> str:
     """How the price meets the budget, in words: within it, or why it wasn't checked against it."""
     most = _money(check.budget.max, check.budget.currency)
+    if check.status == "within" and check.from_price:  # a brand line's cheapest product of the type (14 Oct 2026)
+        return BUDGET_WITHIN_FROM.format(amount=_money(check.price.price, check.price.currency), max=most)
     if check.status == "within":
         return BUDGET_WITHIN.format(max=most)
     why = {
@@ -1690,7 +1935,7 @@ def _render_pick(pick: Pick) -> list[str]:
         lines += [BRAND_PICK_MODEL.format(model=pick.model) + price, ""]
     lines += _render_summary(pick.summary)
     lines += [pick.reason, "", f"**{SUPPORT_LABEL}:** {pick.support}", ""]
-    lines += _render_price(pick.price) + _render_availability(pick.availability)
+    lines += _render_price(pick.price) + _render_availability(pick.availability) + _render_range(pick.range)
     for caution in pick.cautions:
         lines += [caution, ""]
     if pick.disagreement:
@@ -1725,6 +1970,7 @@ def _render_worth(item: WorthALook) -> list[str]:
         lines += _render_price(item.price)
     if item.availability.available is not None:
         lines += _render_availability(item.availability)
+    lines += _render_range(item.range)
     for caution in item.cautions:
         lines += [caution, ""]
     if item.disagreement:
@@ -1758,6 +2004,12 @@ def _render_availability(availability: ShownAvailability) -> list[str]:
     """The availability line, with the shop's link when there is one."""
     link = f" · [{PRICE_LINK_TEXT}]({availability.url})" if availability.url else ""
     return [f"{availability.text}{link}", ""]
+
+
+def _render_range(range_: ShownRange | None) -> list[str]:
+    """A brand line's link to its maker's page for the type, and the day it was checked (14 Oct 2026); nothing for
+    any other product."""
+    return [f"[{range_.text}]({range_.url}) · {range_.checked}", ""] if range_ is not None else []
 
 
 def _one_line(text: str) -> str:

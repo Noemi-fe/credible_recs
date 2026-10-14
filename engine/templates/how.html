@@ -155,7 +155,7 @@ h3.group { font-size: 12.5px; font-weight: 650; text-transform: uppercase; lette
     <li>at least {{config:MIN_CREDIBLE_MENTIONS}} credible recommendations,</li>
     <li>from at least {{config:MIN_THREADS}} different threads,</li>
     <li>and a score above zero.</li>
-  </ul>
+  </ul>{{upvote_rule}}
   <p>The {{config:PICKS_SHOWN}} products with the highest scores are shown. If fewer have enough evidence, we show fewer and say so: we'd rather say "not enough evidence yet" than guess.</p>
   <p>When credible voices clearly prefer one kind of product (at least {{config:KIND_LEAD_RATIO}} times the support of the next kind, say Japanese chef knives over German ones), products of that kind get a bonus of {{config:KIND_BONUS}}.</p>
   <p>Each pick shows {{config:MIN_QUOTES_PER_PICK}} to {{config:QUOTES_PER_PICK}} quotes from the people who back it, each with a link to its comment and checked word for word again just before it's shown.</p>
@@ -168,9 +168,9 @@ h3.group { font-size: 12.5px; font-weight: 650; text-transform: uppercase; lette
   <h2 id="left-out">What gets left out</h2>
   <ul>
     <li><strong>Something else.</strong> A knife block or a sharpener isn't a chef knife: anything that holds, sharpens or bundles a product ({{other_type_words}}) doesn't count for the product itself.</li>
-    <li><strong>A brand on its own.</strong> "Lodge" alone could mean many products. It counts only when we've checked, on the maker's pages or a big shop's, that the brand sells the kind of product you asked for, or, for a brand not checked yet, when its threads make clear which products they mean. It is then ranked as the brand's whole line, such as "{{brand_pick_example}}". A brand we found doesn't sell that kind of product never counts: its writers must mean something else it makes.</li>
+    <li><strong>A brand on its own.</strong> "Lodge" alone could mean many products. It counts only when we've checked, on the maker's pages or a big shop's, that the brand sells the kind of product you asked for, or, for a brand not checked yet, when its threads make clear which products they mean. It is then ranked as the brand's whole line, such as "{{brand_pick_example}}". A brand we found doesn't sell that kind of product never counts: its writers must mean something else it makes. A line has no single price, so it links to the maker's page for that kind of product, such as "{{range_example}}" (or to an official UK stockist's), and shows its "From" price: the cheapest price we found for that kind of product of the brand, on the maker's UK site, at its official UK stockist or at a big UK shop, with the shop and the day we checked.</li>
     <li><strong>Not sold in the UK.</strong> If we found a product isn't sold to UK shoppers, it's left out. Each pick says where it's sold and when we checked, or that we haven't checked yet.</li>
-    <li><strong>Over your budget.</strong> Left out when we checked its price in the last {{config:PRICE_MAX_AGE_DAYS}} days. An older price is shown with its date, but never used to leave a product out. A budget with no currency is taken to be in {{default_currency}}.</li>
+    <li><strong>Over your budget.</strong> Left out when we checked its price in the last {{config:PRICE_MAX_AGE_DAYS}} days. An older price is shown with its date, but never used to leave a product out. A brand's line is left out when even its cheapest product of that kind is over your budget. A budget with no currency is taken to be in {{default_currency}}.</li>
     <li><strong>Without the ingredient you asked for.</strong> When you name an active ingredient, such as salicylic acid, every product shown must contain it: its maker's list of actives, which we look up on the maker's page, or its own name says so. A writer saying so isn't enough, and a brand on its own can't be checked. If you name no kind of product, every leave-on kind that can carry the ingredient competes (a serum, a liquid, a toner, pads, a cream, a spot treatment), and each product shows its form, such as “{{form_label}}: pads”. A cleanser or another rinse-off form shows when you ask for it by name, such as “salicylic acid cleanser” or “salicylic acid wash”.</li>
     <li><strong>Facts that clash with your request.</strong> For some products we look up a few facts on the maker's or a shop's page, such as whether it has added fragrance or whether a pan is PFAS-free. A product is left out when:
       {{hard_rules}}
@@ -195,8 +195,9 @@ h3.group { font-size: 12.5px; font-weight: 650; text-transform: uppercase; lette
     <li><strong>Feedback, if you send it.</strong> Under each answer you can say whether it was useful and add a comment. We keep your choice, your comment, the request the answer was for, the kind of product and the kind of answer, and the time. Please don't put personal details in a comment.</li>
     <li><strong>“First time here?”</strong> We keep your yes or no and the time, to count new and returning visitors. Your browser remembers that it asked you (in its own storage, not a cookie), so we don't ask again.</li>
     <li><strong>Your recent searches.</strong> Your browser keeps your last few searches in its own storage, on this device only, so you can run them again with one click. That list is never sent to us, and the Clear button next to it removes it.</li>
+    {{on_demand_note}}
   </ul>
-  <p><strong>What we don't collect.</strong> No names, accounts or IP addresses, no cookies, no adverts and no tracking across websites. Your searches aren't saved by us, except the request you send with feedback.</p>
+  <p><strong>What we don't collect.</strong> No names, accounts or IP addresses, no cookies, no adverts and no tracking across websites. Your searches aren't saved by us, except the request you send with feedback{{on_demand_except}}.</p>
   {{public_site}}
 </section>
 

@@ -95,6 +95,7 @@ from engine.config import (
     BRAND_PICK_UNCHECKABLE,
     INGREDIENT_ACTIVES,
     INGREDIENT_FORMS,
+    HAIR_NEEDS,
     HARD_REQUIREMENT_NAMES,
     NEEDS,
     PRODUCT_FACT_REQUEST_WORDS,
@@ -107,7 +108,7 @@ from engine.config import (
     THREAD_CATEGORIES,
 )
 from engine.match_products import known_aliases, product_words, same_product, written_alike
-from engine.memo import FileMemo, PerList
+from engine.memo import FileMemo, PerList, Table
 from engine.models import Record
 from engine.needs import request_needs
 from engine.query import MUST_HAVES, PRODUCT_TYPES, ParsedQuery
@@ -285,8 +286,24 @@ def request_asks(query: ParsedQuery) -> tuple[str, ...]:
     polite no)."""
     if query.status != "ok":
         return ()
+    key = query.model_dump_json()  # worked out once per request (latency, 13 Oct 2026), as request_needs is
+    found = _REQUEST_ASKS.get(key)
+    if found is None:
+        found = _REQUEST_ASKS.keep(key, _request_asks(query))
+    return found
+
+
+_REQUEST_ASKS = Table(limit=10_000)  # a request, as module 1 read it -> what it asks for
+
+
+def _request_asks(query: ParsedQuery) -> tuple[str, ...]:
     asks = list(query.constraints.skin_types) + list(query.constraints.must_haves)
-    asks += [need.name for need in request_needs(query) if need.name in NEEDS and need.name not in MUST_HAVES]
+    # Only the needs found by their words: a word of the request named like one ("dry" in "a dry scalp", a haircare
+    # request) isn't the skin type dry; and a haircare request's own needs too ("colour-treated"), so the rules of what
+    # says the opposite read them (config.OPPOSITE_QUOTE_PATTERNS; 14 Oct 2026).
+    asks += [need.name for need in request_needs(query)
+             if (need.name in NEEDS or need.name in HAIR_NEEDS) and need.name not in MUST_HAVES
+             and need.request_word is None]
     text = query.text.lower().replace("’", "'")
     asks += [ask for ask, patterns in PRODUCT_FACT_REQUEST_WORDS.items()
              if any(re.search(rf"\b{pattern}", text) for pattern in patterns)]

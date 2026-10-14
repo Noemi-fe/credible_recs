@@ -526,7 +526,9 @@ def by_name(question) -> dict[str, tuple[bool, list[str]]]:
 def test_todo_lists_the_candidates_still_missing_the_facts_that_matter(tmp_path):
     made_up = [known("Differin Gel", strength="gentle", prescription_only=False),  # has both: not listed
                known("CeraVe Resurfacing Retinol Serum", fragrance_free=True)]  # an entry, but neither fact
-    questions = questions_file(tmp_path, [BEGINNER, "best retinol", "best laptop for uni"])
+    # Changed on purpose 14 Oct 2026 (the general category): a laptop is a product now (with no facts kept for it), so
+    # a service is the request module 1 can't place. Was: "best laptop for uni".
+    questions = questions_file(tmp_path, [BEGINNER, "best retinol", "a good plumber near me"])
     beginner, best, laptop = product_facts.todo(questions, retinol_library(tmp_path), made_up, prices=[])
     assert (beginner.id, beginner.product_type, beginner.category) == ("b01", "retinoid", "skincare")
     assert beginner.facts_that_matter == ["strength", "prescription_only"]

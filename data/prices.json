@@ -1682,6 +1682,68 @@
    "checked_on": "2026-10-12",
    "available": true,
    "note": "writers' 'Klorane dry shampoo for dark hair' fits both of Klorane's tinted dry shampoos for brown to dark hair, which cost the same at Lookfantastic: this one (nettle, for oily hair), £11.50, in stock on 12 Oct, and the Extra-Gentle Tinted Dry Shampoo with Oat and Ceramide, £11.50, out of stock"
+  },
+  {
+   "product": "Wilfa Svart",
+   "category": "kitchen",
+   "product_type": "coffee grinder",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Peaberry & Leaf",
+   "url": "https://peaberryandleaf.co.uk/shop-all/brewing-equipment/wilfa-svart-aroma-precision-coffee-grinder-black/",
+   "checked_on": "2026-10-14",
+   "available": true,
+   "note": "Wilfa has discontinued its Svart grinders (Wilfa UK's blog, 30 Jul 2026: the Svart Silver and the Svart Aroma Precision Black are final stock, sold while supplies last, and the Zense replaces them; https://wilfa.co.uk/blogs/news/wilfa-svart-and-uniform-grinders-are-being-discontinued-meet-zense-and-uniform-evo), and Wilfa UK's own shop lists no Svart grinder now. On 14 Oct a UK coffee shop still sells final stock: Peaberry & Leaf has the Svart Aroma (black) at £119, 21 in stock, and the silver Svart, which it sells as the Nymalt (WSCG-2), at £89, 4 in stock; so no one price fits the name. Sold out at Zealots Coffee, Balance Coffee, K+ Coffee and Doppio Coffee; none at Amazon UK (only the Uniform and the Svart Performance coffee maker), John Lewis, Lakeland or Harts of Stur. Once the last shop sells out it is no longer sold"
+  },
+  {
+   "product": "Azclear Action azelaic acid 20%",
+   "category": "skincare",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=azclear+action",
+   "checked_on": "2026-10-14",
+   "available": false,
+   "also_called": [
+    "Ego Azclear Action Medicated Lotion"
+   ],
+   "note": "an Australian pharmacy medicine (Ego Pharmaceuticals' Azclear Action Medicated Lotion, azelaic acid 20%), sold by Australian and New Zealand pharmacies (TerryWhite Chemmart, Chemist Warehouse NZ, where it is pharmacist-only); Amazon UK's search for it shows only other products; no UK shop found selling it"
+  },
+  {
+   "product": "Goodal Green Tangerine Vita C Dark Spot Care Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "price": 28.99,
+   "currency": "GBP",
+   "shop": "Superdrug",
+   "url": "https://www.superdrug.com/skin/face-skin-care/face-serums/goodal-green-tangerine-vita-c-dark-spot-care-serum/p/856899",
+   "checked_on": "2026-10-14",
+   "available": true,
+   "note": "the 40 ml bottle (£724.75 a litre), in stock online on 14 Oct, with a 3 for 2 offer on selected Goodal"
+  },
+  {
+   "product": "Maelove Glow Maker Vitamin C Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "price": 28.0,
+   "currency": "GBP",
+   "shop": "Healf",
+   "url": "https://healf.com/en-uk/products/maelove-glow-maker-vitamin-c-serum",
+   "checked_on": "2026-10-14",
+   "available": true,
+   "note": "the 30 ml bottle, one-time purchase (£25.20 only with a subscription), in stock with next-day delivery on 14 Oct; a US brand, sold in the UK by Healf"
+  },
+  {
+   "product": "Rohto Melano CC Intensive Anti-Spot Essence",
+   "category": "skincare",
+   "product_type": "serum",
+   "price": 11.89,
+   "currency": "GBP",
+   "shop": "Japanese Taste",
+   "url": "https://japanesetaste.co.uk/products/melano-cc-intensive-anti-spot-brightening-essence-vitamin-c-20ml",
+   "checked_on": "2026-10-14",
+   "available": true,
+   "note": "the 20 ml bottle, in stock on 14 Oct; a Japanese import, sold by Japanese Taste's UK store"
   }
  ]
 }

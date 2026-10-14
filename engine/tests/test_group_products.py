@@ -310,8 +310,12 @@ def test_a_brand_pick_says_which_products_it_means():
 
 def test_a_product_type_the_open_model_names_gets_a_plural_too():
     # Types module 1 doesn't list (the open model's, 11 Oct 2026) follow English's usual rules.
-    for product_type, plural_ in [("air fryer", "air fryers"), ("dish brush", "dish brushes"), ("zester", "zesters"),
-                                  ("french press", "french presses"), ("wok", "woks"), ("rice cooker", "rice cookers")]:
+    # Changed on purpose 14 Oct 2026 (kitchen appliances, Noemi's decision 3): the air fryer, the French press and the
+    # rice cooker are module 1's own types now, with their plurals in config.PRODUCT_TYPE_PLURALS ("French presses");
+    # a garlic press, a sandwich press and a bread maker take their places here.
+    for product_type, plural_ in [("bread maker", "bread makers"), ("dish brush", "dish brushes"), ("zester", "zesters"),
+                                  ("garlic press", "garlic presses"), ("wok", "woks"),
+                                  ("sandwich press", "sandwich presses")]:
         assert plural(product_type) == plural_
     # Changed on purpose 12 Oct 2026 (Noemi's wording): a brand pick names the type itself, "<Brand> <type> line",
     # so the plural is no longer part of its name (it was "Ninja (their air fryers)").
@@ -323,8 +327,17 @@ def test_every_product_type_has_a_plural():
     assert set(config.PRODUCT_TYPE_PLURALS) == {p.name for p in PRODUCT_TYPES}
     assert config.PRODUCT_TYPE_PLURALS["chef knife"] == "chef knives"
     assert config.PRODUCT_TYPE_PLURALS["dutch oven"] == "Dutch ovens"
+    # Changed on purpose 14 Oct 2026 (the general category): a type named in the plural ("headphones", "jeans") or as a
+    # mass noun ("underwear", "garden furniture") is its own plural (engine/data/product_types.json); every other type's
+    # plural differs from its name and ends in "s", as module 1's first types' all do.
+    plural_names = {entry["name"] for entry in config.MORE_PRODUCT_TYPES if entry["plural"] == entry["name"]}
+    assert {"headphones", "jeans", "underwear", "garden furniture"} <= plural_names
+    irregular = {"mouse": "computer mice"}  # read as "We haven't read Reddit about computer mice yet"
     for name, plural in config.PRODUCT_TYPE_PLURALS.items():
-        assert plural.lower() != name.lower() and plural.endswith("s"), name
+        if name in irregular:
+            assert plural == irregular[name]
+        elif name not in plural_names:
+            assert plural.lower() != name.lower() and plural.endswith("s"), name
 
 
 def test_a_brand_pick_name_that_already_says_the_type_has_no_bracket():
@@ -615,3 +628,83 @@ def test_a_products_most_written_name_stays_shown_though_it_ends_like_the_type()
         ["Clinique all about eyes", "Clinique all about eyes", "Clinique All About Eyes", "Clinique All About Eyes Rich"])]
     groups = group_products(mentions, NO_ALIASES, product_type="eye cream")
     assert [g.name.lower() for g in groups] == ["clinique all about eyes"]
+
+
+# --- One index of a library's names, for every request's grouping (latency, 13 Oct 2026) ---
+
+from engine.group_products import library_name_index  # noqa: E402
+
+
+def test_grouping_with_the_librarys_name_index_gives_the_same_groups():
+    # Made-up names of brands, lines, models, types and slips: a request's mentions (any of the library's, and a part
+    # of them, as grouping again without another type's mentions does) grouped with and without the index, for the
+    # product types module 1 knows, none, and one the open model named (its bases aren't in the index: worked out).
+    rng = random.Random(13)
+    brands = ["Lodge", "lodge", "Fellow", "Stagg", "CeraVe", "Cerave", "Tiger", "Zojirushi", "Zojurushi", "Our Place"]
+    rest = ["", "kettle", "kettles", "electric kettle", "Stagg EKG", "cast iron skillet", "skillet", "pan", "pans",
+            "rice cooker", "SA cleanser", "Hydrating Cleanser", "cleanser", "moisturizing cream", "cream", "10 inch",
+            "12 inch skillet", "Corvo EKG", "titanium cookware", "Always Pan Pro", "dutch oven", "shampoo"]
+    library = []
+    for i in range(400):
+        name = f"{rng.choice(brands)} {rng.choice(rest)}".strip()
+        category = rng.choice(["kitchen", "skincare"])
+        library.append(ProductMention(f"t{i % 30}", f"c{i}", name, category, rng.choice(["recommend", "warn"]),
+                                      rng.choice([None, "electric kettle", "cast iron skillet", "cleanser"])))
+    index = library_name_index(library)
+    for product_type in [None, "electric kettle", "cast iron skillet", "rice cooker", "cleanser", "moisturiser",
+                         "air fryer"]:
+        for mentions in (library, library[:150], library[100:330]):
+            assert (group_products(mentions, product_type=product_type, index=index)
+                    == group_products(mentions, product_type=product_type)), product_type
+
+
+def test_a_categorys_index_holds_the_first_types_bases_and_its_own_taxonomy_types_only():
+    # 14 Oct 2026 (merging main): with the taxonomy's 351 types, every name's base in every type made getting ready's
+    # name index seven times slower. A category's index holds its names' bases in module 1's first 43 types (any
+    # request's, as before) and in the taxonomy's types of that category only; a request of another category's taxonomy
+    # type works these names' pairs out itself, as for a type the open model named: the same groups either way.
+    library = [typed("Work Sharp knife sharpener", "knife sharpener", "c1", "kitchen"),
+               typed("Work Sharp", "knife sharpener", "c2", "kitchen"), typed("Bose headphones", None, "c3", "kitchen"),
+               typed("Sony WH-1000XM5 headphones", "headphones", "c4", "general"),
+               typed("Sony", "headphones", "c5", "general")]
+    index = library_name_index(library)
+    assert ("work", "sharp") in index["kitchen"].candidates  # its base as a knife sharpener, a kitchen taxonomy type
+    assert ("bose",) not in index["kitchen"].candidates  # its base as headphones, a general type: not worked out here
+    assert ("sony", "wh", "1000xm5") in index["general"].candidates
+    for product_type in ("knife sharpener", "headphones", "electric kettle", None):
+        assert (group_products(library, product_type=product_type, index=index)
+                == group_products(library, product_type=product_type)), product_type
+
+
+def test_a_request_of_a_known_type_takes_its_pairs_from_the_index(monkeypatch):
+    from engine import group_products as grouping
+
+    library = [kitchen("Fellow Stagg EKG", "c1"), kitchen("Fellow kettle", "c2"), kitchen("Fellow", "c3"),
+               kitchen("Lodge cast iron skillet", "c4"), kitchen("Lodge", "c5")]
+    index = library_name_index(library)
+    worked_out = []
+    real = grouping.match_candidates_and_open
+    monkeypatch.setattr(grouping, "match_candidates_and_open", lambda names: worked_out.append(1) or real(names))
+    with_index = group_products(library, product_type="electric kettle", index=index)
+    assert worked_out == []  # every name and base was in the index
+    assert with_index == group_products(library, product_type="electric kettle")
+    assert worked_out == [1]
+
+
+# --- Whether a name adds words at the start of another, worked out once per pair (latency, 14 Oct 2026) ---
+
+def test_whether_a_name_adds_words_at_the_start_of_another_is_worked_out_once_per_pair(monkeypatch):
+    # Choosing each group's shown name asks it of every name of the group against the main one, and every answer
+    # grouping the same names asks again (38,204 times for 32 answers after getting ready).
+    from engine import group_products
+
+    joined = []
+    joining = group_products.join_split_words
+    monkeypatch.setattr(group_products, "join_split_words", lambda words, other: joined.append(1) or joining(words, other))
+    pairs = [(("fellow", "stagg", "ekg"), ("stagg", "ekg")), (("1zpresso", "jx", "pro"), ("jx", "pro")),
+             (("jx", "pro"), ("jx", "pro")), (("tir", "tir", "milk"), ("tirtir", "milk")), (("a", "b", "c"), ("c",))]
+    first = [group_products._adds_words_at_start(longer, name) for longer, name in pairs]
+    assert first == [True, True, False, False, True]
+    asked = len(joined)
+    assert [group_products._adds_words_at_start(longer, name) for longer, name in pairs] == first
+    assert len(joined) == asked  # each pair worked out once

@@ -228,7 +228,16 @@
     "https://global.oliveyoung.com/product/detail?prdtNo=GA240121573",
     "https://www.yesstyle.com/en/aestura-ato-barrier-365-cream-mini-45ml/info.html/pid.1133349503"
    ],
-   "checked_on": "2026-10-09"
+   "checked_on": "2026-10-09",
+   "formula": {
+    "actives": [
+     "ceramides"
+    ],
+    "sources": [
+     "https://int.aestura.com/products/atobarrier365-cream"
+    ],
+    "checked_on": "2026-10-14"
+   }
   },
   {
    "product": "It's Skin Red Ginseng Lotion d'Escargot",
@@ -679,13 +688,14 @@
    "category": "kitchen",
    "product_type": "frying pan",
    "facts": {
-    "non_stick": true
+    "non_stick": true,
+    "pfas_free": false
    },
    "sources": [
     "https://www.tefal.com/weoweyouthebest/pan-manufacturing-secret",
     "https://blog.tefal.co.uk/2024/04/16/the-non-stick-material-ptfe-of-tefal-pans-everything-you-need-to-know/"
    ],
-   "checked_on": "2026-10-10"
+   "checked_on": "2026-10-14"
   },
   {
    "product": "All-Clad stainless steel frying pan",
@@ -1356,6 +1366,940 @@
      "https://www.cerave.co.uk/skincare/cleansers/sa-smoothing-cleanser"
     ],
     "checked_on": "2026-10-13"
+   }
+  },
+  {
+   "product": "Paula's Choice 10% Azelaic Acid Booster",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.paulaschoice.co.uk/aa-booster/m7750.html"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid",
+     "salicylic acid"
+    ],
+    "sources": [
+     "https://www.paulaschoice.co.uk/aa-booster/m7750.html"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "The Ordinary Azelaic Acid Suspension 10%",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://theordinary.com/en-gb/azelaic-acid-suspension-10-brightening-cream-100407.html"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid"
+    ],
+    "form": "cream",
+    "sources": [
+     "https://theordinary.com/en-gb/azelaic-acid-suspension-10-brightening-cream-100407.html"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "The INKEY List 10% Azelaic Acid Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://uk.theinkeylist.com/products/redness-relief-solution"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid"
+    ],
+    "sources": [
+     "https://uk.theinkeylist.com/products/redness-relief-solution"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Anua Azelaic Acid 10 Hyaluron Redness Soothing Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://anua.com/products/azelaic-acid-10-hyaluron-redness-soothing-serum"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid",
+     "hyaluronic acid"
+    ],
+    "sources": [
+     "https://anua.com/products/azelaic-acid-10-hyaluron-redness-soothing-serum"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Boots Ingredients Clarifying Azelaic Acid Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.boots.com/boots-ingredients-clarifying-azelaic-acid-serum-30ml-10381181"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid"
+    ],
+    "sources": [
+     "https://www.boots.com/boots-ingredients-clarifying-azelaic-acid-serum-30ml-10381181"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Peach Slices Redness Relief Azelaic Acid Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.peachandlily.com/collections/acne/products/redness-relief-azelaic-acid-serum"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid"
+    ],
+    "sources": [
+     "https://www.peachandlily.com/collections/acne/products/redness-relief-azelaic-acid-serum"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Ecological Formulas Melazepam Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {},
+   "sources": [
+    "https://fullscript.com/catalog/products/melazepam-2-oz",
+    "https://www.spectrumsupplements.co.uk/supplement/melazepam-cream-2-ounces/"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid"
+    ],
+    "form": "cream",
+    "sources": [
+     "https://fullscript.com/catalog/products/melazepam-2-oz",
+     "https://www.spectrumsupplements.co.uk/supplement/melazepam-cream-2-ounces/"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Finacea (azelaic acid) 15% Gel",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "prescription_only": true
+   },
+   "sources": [
+    "https://www.medicines.org.uk/emc/product/240/smpc"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid"
+    ],
+    "form": "gel",
+    "sources": [
+     "https://www.medicines.org.uk/emc/product/240/smpc"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Skinoren (azelaic acid) 20% Cream",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "prescription_only": true
+   },
+   "sources": [
+    "https://www.medicines.org.uk/emc/product/285/smpc"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid"
+    ],
+    "form": "cream",
+    "sources": [
+     "https://www.medicines.org.uk/emc/product/285/smpc"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Q+A Azelaic Acid Balancing Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.qandaskin.com/products/azelaic-acid-balancing-serum"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "azelaic acid",
+     "zinc"
+    ],
+    "sources": [
+     "https://www.qandaskin.com/products/azelaic-acid-balancing-serum"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "The Ordinary Niacinamide 10% + Zinc 1%",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://theordinary.com/en-gb/niacinamide-10-zinc-1-serum-100436.html"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "niacinamide",
+     "zinc"
+    ],
+    "sources": [
+     "https://theordinary.com/en-gb/niacinamide-10-zinc-1-serum-100436.html"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Beauty of Joseon Glow Serum: Propolis + Niacinamide",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://beautyofjoseon.com/products/glow-serum-propolis-niacinamide"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "niacinamide",
+     "betaine salicylate"
+    ],
+    "sources": [
+     "https://beautyofjoseon.com/products/glow-serum-propolis-niacinamide"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "numbuzin No.3 Skin Softening Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://us.numbuzin.com/products/no-3-skin-softening-serum-1",
+    "https://www.boots.com/numbuzin-no3-skin-softening-serum-50ml-10367803"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "niacinamide"
+    ],
+    "sources": [
+     "https://us.numbuzin.com/products/no-3-skin-softening-serum-1",
+     "https://www.boots.com/numbuzin-no3-skin-softening-serum-50ml-10367803"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "COSRX Advanced Snail Radiance Dual Essence",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.cosrx.com/products/advanced-snail-radiance-dual-essence"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "snail mucin",
+     "niacinamide"
+    ],
+    "sources": [
+     "https://www.cosrx.com/products/advanced-snail-radiance-dual-essence"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "SKIN1004 Madagascar Centella Tone Brightening Capsule Ampoule",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.skin1004.com/products/skin1004-madagascar-centella-tone-brightening-capsule-ampoule"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "niacinamide",
+     "vitamin c",
+     "centella asiatica"
+    ],
+    "sources": [
+     "https://www.skin1004.com/products/skin1004-madagascar-centella-tone-brightening-capsule-ampoule"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "PURITO SEOUL Wonder Releaf Centella Serum Unscented (formerly Centella Unscented Serum)",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://purito.com/product/wonder-releaf-centella-serum-unscented/"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "centella asiatica"
+    ],
+    "sources": [
+     "https://purito.com/product/wonder-releaf-centella-serum-unscented/"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Cos De BAHA TN Tranexamic Acid 5% Niacinamide 5% Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.yesstyle.com/en/cos-de-baha-tn-tranexamic-acid-niacinamide-serum-30ml/info.html/pid.1108026110",
+    "https://www.superdrug.com/skin/face-skin-care/face-serums/cos-de-baha-tn-tranexamic-acid-niacinamide-serum-30ml/p/mp-00334528"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "niacinamide",
+     "hyaluronic acid"
+    ],
+    "sources": [
+     "https://www.yesstyle.com/en/cos-de-baha-tn-tranexamic-acid-niacinamide-serum-30ml/info.html/pid.1108026110",
+     "https://www.superdrug.com/skin/face-skin-care/face-serums/cos-de-baha-tn-tranexamic-acid-niacinamide-serum-30ml/p/mp-00334528"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Goodal Green Tangerine Vita C Dark Spot Care Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.superdrug.com/skin/face-skin-care/face-serums/goodal-green-tangerine-vita-c-dark-spot-care-serum/p/856899",
+    "https://clubclio.co.kr/shop/goodsView/0000003511"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "vitamin c",
+     "niacinamide"
+    ],
+    "sources": [
+     "https://www.superdrug.com/skin/face-skin-care/face-serums/goodal-green-tangerine-vita-c-dark-spot-care-serum/p/856899",
+     "https://clubclio.co.kr/shop/goodsView/0000003511"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Rohto Melano CC Intensive Anti-Spot Essence",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://jp.rohto.com/melanocc/essence/"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "vitamin c"
+    ],
+    "sources": [
+     "https://jp.rohto.com/melanocc/essence/"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Rohto Melano CC Premium Intensive Anti-Spot Essence",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://jp.rohto.com/melanocc/premium-essence/"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "vitamin c"
+    ],
+    "sources": [
+     "https://jp.rohto.com/melanocc/premium-essence/"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Maelove Glow Maker Vitamin C Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.maelove.com/products/the-glow-maker"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "vitamin c",
+     "hyaluronic acid"
+    ],
+    "sources": [
+     "https://www.maelove.com/products/the-glow-maker"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "CeraVe Skin Renewing Vitamin C Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.cerave.co.uk/skincare/serums/skin-renewing-vitamin-c-serum"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "vitamin c",
+     "ceramides",
+     "hyaluronic acid",
+     "niacinamide"
+    ],
+    "sources": [
+     "https://www.cerave.co.uk/skincare/serums/skin-renewing-vitamin-c-serum"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Geek & Gorgeous C-Glow",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.geekandgorgeous.com/products/c-glow"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "vitamin c"
+    ],
+    "sources": [
+     "https://www.geekandgorgeous.com/products/c-glow"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "COSRX Advanced Snail 96 Mucin Power Essence",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.cosrx.com/products/advanced-snail-96-mucin-power-essence-new-original"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "snail mucin",
+     "hyaluronic acid"
+    ],
+    "sources": [
+     "https://www.cosrx.com/products/advanced-snail-96-mucin-power-essence-new-original"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "COSRX Advanced Snail 92 All in one Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {},
+   "sources": [
+    "https://www.cosrx.com/products/advanced-snail-92-all-in-one-cream_cpnp-1"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "snail mucin",
+     "hyaluronic acid"
+    ],
+    "sources": [
+     "https://www.cosrx.com/products/advanced-snail-92-all-in-one-cream_cpnp-1"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "SKIN1004 Madagascar Centella Ampoule",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.skin1004.com/products/skin1004-madagascar-centella-ampoule"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "centella asiatica"
+    ],
+    "sources": [
+     "https://www.skin1004.com/products/skin1004-madagascar-centella-ampoule"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "AXIS-Y Dark Spot Correcting Glow Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://axis-y.com/products/dark-spot-correcting-glow-serum"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "niacinamide"
+    ],
+    "sources": [
+     "https://axis-y.com/products/dark-spot-correcting-glow-serum"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Good Molecules Discoloration Correcting Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.goodmolecules.com/s/good-molecules-discoloration-correcting-serum-30ml"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "niacinamide"
+    ],
+    "sources": [
+     "https://www.goodmolecules.com/s/good-molecules-discoloration-correcting-serum-30ml"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "numbuzin No.5+ Glutathione Vitamin Concentrated Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://us.numbuzin.com/products/no-5-vitamin-concentrated-serum"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "vitamin c",
+     "niacinamide",
+     "ceramides"
+    ],
+    "sources": [
+     "https://us.numbuzin.com/products/no-5-vitamin-concentrated-serum"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Pixi Glow Tonic",
+   "category": "skincare",
+   "product_type": "toner",
+   "facts": {},
+   "sources": [
+    "https://www.pixibeauty.com/collections/glow-tonic/products/glow-tonic-250ml"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "glycolic acid"
+    ],
+    "sources": [
+     "https://www.pixibeauty.com/collections/glow-tonic/products/glow-tonic-250ml"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "The Ordinary Glycolic Acid 7% Exfoliating Toner",
+   "category": "skincare",
+   "product_type": "toner",
+   "facts": {},
+   "sources": [
+    "https://theordinary.com/en-gb/glycolic-acid-7-exfoliating-toner-100418.html"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "glycolic acid"
+    ],
+    "sources": [
+     "https://theordinary.com/en-gb/glycolic-acid-7-exfoliating-toner-100418.html"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Paula's Choice Skin Perfecting 8% AHA Gel Exfoliant",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {},
+   "sources": [
+    "https://www.paulaschoice.co.uk/skin-perfecting-aha-gel-exfoliant/m1900.html"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "glycolic acid"
+    ],
+    "sources": [
+     "https://www.paulaschoice.co.uk/skin-perfecting-aha-gel-exfoliant/m1900.html"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Mario Badescu Drying Lotion",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {},
+   "sources": [
+    "https://www.mariobadescu.com/products/drying-lotion",
+    "https://www.lookfantastic.com/p/mario-badescu-drying-lotion-29ml/13311832/"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid",
+     "sulfur",
+     "zinc"
+    ],
+    "form": "spot treatment",
+    "sources": [
+     "https://www.mariobadescu.com/products/drying-lotion",
+     "https://www.lookfantastic.com/p/mario-badescu-drying-lotion-29ml/13311832/"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Clinique Anti-Blemish Solutions Clinical Advanced Clearing Gel",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {},
+   "sources": [
+    "https://www.clinique.co.uk/product/1672/29793/skin-care/anti-blemish-solutions/treatment-specialists/anti-blemish-solutions-clinical-clearing-gel"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid"
+    ],
+    "form": "gel",
+    "sources": [
+     "https://www.clinique.co.uk/product/1672/29793/skin-care/anti-blemish-solutions/treatment-specialists/anti-blemish-solutions-clinical-clearing-gel"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "ZitSticka KILLA Kit Deep Zit Microdart Patches",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {},
+   "sources": [
+    "https://zitsticka.com/products/killa-sticka"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid",
+     "niacinamide",
+     "hyaluronic acid"
+    ],
+    "form": "patch",
+    "sources": [
+     "https://zitsticka.com/products/killa-sticka"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Mentholatum Acnes Medicated Sealing Jell",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {},
+   "sources": [
+    "https://rohto.com.np/product/sealing-gel-tube-with-box/",
+    "https://www.yesstyle.com/en/rohto-mentholatum-acnes-medicated-sealing-jell-18g/info.html/pid.1114344304"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid"
+    ],
+    "form": "spot treatment",
+    "sources": [
+     "https://rohto.com.np/product/sealing-gel-tube-with-box/",
+     "https://www.yesstyle.com/en/rohto-mentholatum-acnes-medicated-sealing-jell-18g/info.html/pid.1114344304"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Mizon Acence Blemish Out Pink Spot",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {},
+   "sources": [
+    "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=6c608fab-615e-4e58-baf3-cbc936dd8702"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid"
+    ],
+    "sources": [
+     "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=6c608fab-615e-4e58-baf3-cbc936dd8702"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "The INKEY List Salicylic Acid Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {},
+   "sources": [
+    "https://uk.theinkeylist.com/products/salicylic-acid-cleanser"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid",
+     "zinc"
+    ],
+    "sources": [
+     "https://uk.theinkeylist.com/products/salicylic-acid-cleanser"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Paula's Choice CLEAR Pore Normalizing Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {},
+   "sources": [
+    "https://www.paulaschoice.com/clear-pore-normalizing-cleanser/600.html",
+    "https://www.paulaschoice.co.uk/clear-pore-normalizing-cleanser/m6001.html"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid"
+    ],
+    "sources": [
+     "https://www.paulaschoice.com/clear-pore-normalizing-cleanser/600.html",
+     "https://www.paulaschoice.co.uk/clear-pore-normalizing-cleanser/m6001.html"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Clean & Clear Persa-Gel 10",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {},
+   "sources": [
+    "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ec5d1347-bee9-4dbd-9778-ff7519b60041"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "benzoyl peroxide"
+    ],
+    "sources": [
+     "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ec5d1347-bee9-4dbd-9778-ff7519b60041"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Innisfree Volcanic BHA Pore Cleansing Foam",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {},
+   "sources": [
+    "https://us.innisfree.com/products/volcanic-bha-pore-cleansing-foam"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid",
+     "glycolic acid",
+     "lactic acid"
+    ],
+    "sources": [
+     "https://us.innisfree.com/products/volcanic-bha-pore-cleansing-foam"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "SKIN1004 Tea-Trica BHA Foam",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {},
+   "sources": [
+    "https://www.skin1004.com/products/tea-trica-bha-foam"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid",
+     "centella asiatica"
+    ],
+    "sources": [
+     "https://www.skin1004.com/products/tea-trica-bha-foam"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "The INKEY List Glycolic Acid Toner",
+   "category": "skincare",
+   "product_type": "toner",
+   "facts": {},
+   "sources": [
+    "https://uk.theinkeylist.com/products/glycolic-acid-toner"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "glycolic acid"
+    ],
+    "sources": [
+     "https://uk.theinkeylist.com/products/glycolic-acid-toner"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "COSRX Low pH Good Morning Gel Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {},
+   "sources": [
+    "https://www.cosrx.com/products/low-ph-good-morning-gel-cleanser"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "betaine salicylate"
+    ],
+    "sources": [
+     "https://www.cosrx.com/products/low-ph-good-morning-gel-cleanser"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Epiduo (adapalene 0.1% / benzoyl peroxide 2.5%) Gel",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "prescription_only": true
+   },
+   "sources": [
+    "https://www.medicines.org.uk/emc/product/451/smpc"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "adapalene",
+     "benzoyl peroxide"
+    ],
+    "form": "gel",
+    "sources": [
+     "https://www.medicines.org.uk/emc/product/451/smpc"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Tazorac (tazarotene) cream and gel",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "prescription_only": true
+   },
+   "sources": [
+    "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=021744d1-a6d7-4ad6-99c2-7187c24e64c6",
+    "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4e4e4b81-420e-4492-8a74-80b692a80057"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "tazarotene"
+    ],
+    "sources": [
+     "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=021744d1-a6d7-4ad6-99c2-7187c24e64c6",
+     "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4e4e4b81-420e-4492-8a74-80b692a80057"
+    ],
+    "checked_on": "2026-10-14"
    }
   }
  ]

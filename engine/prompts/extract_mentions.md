@@ -1,4 +1,4 @@
-Version: extract-v10
+Version: extract-v12
 
 # Finding product mentions in one Reddit thread
 
@@ -53,11 +53,17 @@ comment text it prints.
   are strengths and sizes named separately, even with one verdict ("Mandelic acid 5%" and "Mandelic acid 10%"
   in a list are two mentions).
 - Only comments count, not the post's own title or text.
-- Category: "skincare", "kitchen", "haircare" or "other". Haircare (added 11 Oct 2026, instructions v9) is anything
-  put on the hair or scalp: shampoo, conditioner, hair masks, hair oils, leave-ins, curl creams, gels, mousses, heat
-  protectants, scalp treatments. Other is anything outside skincare, haircare and kitchen gear, even in one of their
-  threads: a humidifier, a laptop, a hair dryer or straightener (a tool, not haircare), a box-cutter "utility knife",
-  makeup (primer, powder, foundation), cleaning products and cooking fats (dish soap, oven cleaner, Crisco). Makeup
+- Category: "skincare", "kitchen", "haircare", "general" or "other". Haircare (added 11 Oct 2026, instructions v9) is
+  anything put on the hair or scalp: shampoo, conditioner, hair masks, hair oils, leave-ins, curl creams, gels,
+  mousses, heat protectants, scalp treatments. Kitchen is anything used to cook, bake, prepare or serve food and drink,
+  kitchen appliances included (a dishwasher, a fridge, a barbecue or a pizza oven too). General (added 14 Oct 2026,
+  instructions v12) is every other product people buy and use, even in one of the other categories' threads: home and
+  cleaning (a humidifier, a vacuum, dish soap, oven cleaner), tech (a laptop, headphones), outdoor and travel gear,
+  clothing, shoes, bags and watches, baby and kids, pets, sport and fitness, tools and garden (a box-cutter "utility
+  knife"), beauty and personal care (a hair dryer or straightener is a tool, not haircare; makeup such as primer,
+  powder or foundation; perfume, razors, toothbrushes), hobbies (instruments, board games, pens) and car accessories.
+  A water bottle, a travel mug or a flask is general. Other is what is never ranked: food and drink and cooking fats
+  (Crisco, coffee beans, wine), medicines and supplements, books, films, music, games and apps, and services. Makeup
   sold as sun protection (a BB cream or tinted product with SPF) is skincare. A body wash is skincare; a 2-in-1
   shampoo and body wash is haircare.
 
@@ -73,13 +79,81 @@ Use one of these names, written exactly as here, when it fits:
 - kitchen: "stovetop kettle", "electric kettle", "chef knife", "cast iron skillet", "frying pan", "saucepan",
   "dutch oven", "espresso machine", "coffee grinder", "teapot"
 - haircare: "shampoo", "dry shampoo", "conditioner", "leave-in conditioner", "hair mask", "hair oil"
-
-Otherwise write a short lowercase type in plain words ("face mask", "toaster", "makeup remover", "air fryer", "curl
-cream"). The names cover their usual kinds: a gyuto or santoku is a "chef knife", a non-stick or carbon steel pan a
-"frying pan", an essence a "toner", a retinol or tretinoin a "retinoid", a spot gel or cream and a pimple or acne
-patch (hydrocolloid ones too) a "spot treatment" (a plain hydrocolloid bandage or plaster isn't one: "bandage"), a
-clarifying, anti-dandruff or sulfate-free shampoo or a co-wash a "shampoo", a deep conditioner a "hair mask", a hair serum a "hair oil". Sun protection wins over the form: anything with SPF or
-"UV" in its name, or sold to protect from the sun ("Biore UV Aqua Rich Watery Essence"), is a "sunscreen".
+- kitchen appliances (added 14 Oct 2026, instructions v11): "microwave", "oven", "toaster oven", "air fryer",
+  "blender", "food processor", "stand mixer", "hand mixer", "slow cooker", "rice cooker", "pressure cooker",
+  "coffee maker", "french press", "toaster", "waffle maker", "juicer", "kitchen scale"
+- more kitchen gear (added 14 Oct 2026, instructions v12): "dishwasher", "fridge", "freezer", "hob", "cooker hood",
+  "wok", "knife sharpener", "cutting board", "pizza oven", "barbecue", "moka pot", "milk frother"
+- more haircare (v12): "hair gel", "heat protectant", "hairspray"
+- general, home (v12): "vacuum cleaner", "robot vacuum", "carpet cleaner", "steam mop", "mop", "mattress",
+  "mattress topper", "pillow", "duvet", "bed sheets", "duvet cover", "bed frame", "sofa", "armchair", "office chair",
+  "standing desk", "desk", "dining table", "bookshelf", "wardrobe", "chest of drawers", "tv stand", "rug", "curtains",
+  "blinds", "lamp", "light bulb", "smart bulb", "air purifier", "dehumidifier", "humidifier", "air conditioner",
+  "heat pump", "fan", "ceiling fan", "space heater", "electric blanket", "smart thermostat", "washing machine",
+  "tumble dryer", "steam iron", "garment steamer", "clothes airer", "laundry detergent", "dishwasher tablets",
+  "dish soap", "oven cleaner", "all-purpose cleaner", "towel", "shower head", "bidet", "toilet", "water filter",
+  "smoke alarm", "security camera", "video doorbell", "smart lock", "smart speaker", "smart plug", "candle",
+  "diffuser", "mirror", "alarm clock", "plant pot", "bin", "bathroom scale", "white noise machine"
+- general, tech (v12): "laptop", "desktop computer", "monitor", "monitor arm", "keyboard", "mouse", "headphones",
+  "earbuds", "gaming headset", "bluetooth speaker", "speakers", "soundbar", "av receiver", "headphone amp",
+  "turntable", "radio", "tv", "projector", "streaming device", "tv mount", "phone", "phone case", "screen protector",
+  "tablet", "e-reader", "smartwatch", "camera", "camera lens", "tripod", "action camera", "webcam", "drone",
+  "printer", "3d printer", "wifi router", "external hard drive", "docking station", "charger", "power bank",
+  "gaming console", "game controller", "vr headset", "microphone", "smart ring"
+- general, outdoor and travel (v12): "tent", "sleeping bag", "sleeping pad", "air mattress", "hiking backpack",
+  "suitcase", "duffel bag", "packing cubes", "travel pillow", "travel adapter", "water bottle", "travel mug", "flask",
+  "hiking boots", "rain jacket", "down jacket", "fleece", "headlamp", "flashlight", "camping stove", "cooler",
+  "camping chair", "hammock", "trekking poles", "camping water filter", "binoculars", "portable power station",
+  "bicycle", "e-bike", "bike helmet", "bike lock", "bike light", "electric scooter", "kayak", "paddle board",
+  "fishing rod", "golf clubs"
+- general, clothing and accessories (v12): "jeans", "t-shirt", "shirt", "hoodie", "jumper", "winter coat", "jacket",
+  "trousers", "leggings", "underwear", "socks", "bra", "pyjamas", "dress", "suit", "swimwear", "base layer", "gloves",
+  "hat", "scarf", "sneakers", "shoes", "boots", "work boots", "dress shoes", "sandals", "slippers", "wellies",
+  "watch", "wallet", "handbag", "backpack", "laptop bag", "belt", "sunglasses", "umbrella"
+- general, baby and kids (v12): "stroller", "car seat", "baby carrier", "baby monitor", "cot", "high chair",
+  "baby bottle", "breast pump", "nappies", "changing bag", "baby bouncer", "play mat", "baby sleeping bag", "swaddle",
+  "baby gate", "balance bike", "kids scooter", "potty", "nursing pillow", "trampoline"
+- general, pets (v12): "dog harness", "dog lead", "dog collar", "dog bed", "dog crate", "dog toy", "pet bowl",
+  "pet water fountain", "litter box", "cat litter", "cat tree", "cat toy", "pet carrier", "pet brush",
+  "pet nail clippers", "pet shampoo", "pet camera", "pet tracker", "dog coat", "aquarium"
+- general, sport and fitness (v12): "running shoes", "yoga mat", "dumbbells", "kettlebell", "barbell",
+  "weight plates", "squat rack", "weight bench", "treadmill", "exercise bike", "rowing machine", "bike trainer",
+  "resistance bands", "pull-up bar", "foam roller", "massage gun", "fitness tracker", "sports watch",
+  "heart rate monitor", "boxing gloves", "punching bag", "tennis racket", "football boots", "skateboard",
+  "swimming goggles", "jump rope", "gym flooring", "lifting belt"
+- general, tools and garden (v12): "drill", "impact driver", "circular saw", "mitre saw", "table saw", "jigsaw",
+  "angle grinder", "sander", "multi-tool", "oscillating tool", "tool set", "screwdriver", "tape measure",
+  "laser level", "stud finder", "shop vac", "pressure washer", "ladder", "soldering iron", "multimeter", "glue gun",
+  "lawn mower", "robot lawn mower", "string trimmer", "hedge trimmer", "leaf blower", "chainsaw", "garden hose",
+  "pruners", "garden furniture", "fire pit", "wheelbarrow", "spade"
+- general, beauty and personal care (v12): "hair dryer", "hair straightener", "curling iron", "hot air brush",
+  "hair brush", "electric toothbrush", "water flosser", "razor", "electric shaver", "beard trimmer", "shaving cream",
+  "deodorant", "perfume", "foundation", "concealer", "mascara", "lipstick", "eyeliner", "eyeshadow", "blush",
+  "setting spray", "makeup primer", "brow pencil", "makeup brush", "makeup sponge", "nail polish", "nail lamp",
+  "epilator", "ipl device"
+- general, hobbies (v12): "guitar", "guitar amp", "digital piano", "sewing machine", "board game", "jigsaw puzzle",
+  "fountain pen", "notebook", "telescope", "drawing tablet", "electronic drum kit"
+- general, car (v12): "dash cam", "car tyres", "jump starter", "tyre inflator", "car vacuum", "car phone mount",
+  "car wax", "car shampoo", "roof box", "ev charger", "obd scanner"
+Otherwise write a short lowercase type in plain words ("face mask", "bread maker", "makeup remover", "ice cream
+maker", "eyelash curler"). The names cover their usual kinds: a gyuto or santoku is a "chef knife", a non-stick or carbon
+steel pan a "frying pan", an essence a "toner", a retinol or tretinoin a "retinoid", a spot gel or cream and a pimple or
+acne patch (hydrocolloid ones too) a "spot treatment" (a plain hydrocolloid bandage or plaster isn't one: "bandage"), a
+clarifying, anti-dandruff or sulfate-free shampoo or a co-wash a "shampoo", a deep conditioner a "hair mask", a hair
+serum a "hair oil"; a microwave oven or combination microwave a "microwave", a range, range cooker or wall oven an
+"oven", an air fryer oven or another countertop oven a "toaster oven", an Instant Pot or another multicooker a
+"pressure cooker", a crock pot a "slow cooker", a pressure rice cooker a "rice cooker", a drip or filter coffee machine
+a "coffee maker" (an espresso or bean-to-cup machine is an "espresso machine"), a cafetiere a "french press", a coffee
+or food scale a "kitchen scale"; an immersion, stick or hand blender isn't a "blender" ("immersion blender"), nor a hand
+mixer a "stand mixer". Sun protection wins over the form: anything with SPF or "UV" in its name, or sold to protect
+from the sun ("Biore UV Aqua Rich Watery Essence"), is a "sunscreen". The general names cover their usual kinds too:
+AirPods or IEMs are "earbuds", over-ear or noise-cancelling ones "headphones"; a Roomba is a "robot vacuum", a stick,
+cordless or handheld vacuum a "vacuum cleaner"; a Kindle or a Kobo an "e-reader"; a MacBook or a Chromebook a
+"laptop"; an Apple Watch a "smartwatch", a Garmin running watch a "sports watch"; a pram or a pushchair a
+"stroller"; a strimmer a "string trimmer"; a puffer a "down jacket", a shell or a raincoat a "rain jacket"; trainers
+for everyday wear "sneakers", for running "running shoes"; a sleeping mat a "sleeping pad", a backpacking quilt a
+"sleeping bag"; a daypack for walks a "hiking backpack", one for work, school or travel a "backpack"; a BBQ, a grill
+or a smoker a "barbecue"; a whetstone or a honing rod a "knife sharpener".
 
 When you're not sure (Noemi, 9 Oct 2026): assume a product is of the thread's type unless the comment or its name
 says otherwise. If you still can't tell what a product is, or whether a name is a real product at all, look it up
@@ -207,7 +281,7 @@ comment (there's no one left to credit), and agreement with a comment other than
 ```json
 {
   "thread_id": "<the thread's id>",
-  "instructions_version": "extract-v10",
+  "instructions_version": "extract-v12",
   "extracted_at": "<now, ISO 8601 in UTC, e.g. 2026-10-08T10:00:00Z>",
   "extractor": "claude-code",
   "mentions": [

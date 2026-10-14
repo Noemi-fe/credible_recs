@@ -224,3 +224,84 @@ def test_each_pair_of_kind_names_is_compared_once(monkeypatch):
     sets = group_kinds._same_kind_sets(items)
     assert len(sets) == 2
     assert len(calls) == len(set(calls))  # never the same two names twice
+
+
+# --- Two kinds compared with a quick look first (latency, 13 Oct 2026) ---
+
+import random  # noqa: E402
+
+from engine import group_kinds as kinds_module  # noqa: E402
+from engine.match_products import join_split_words  # noqa: E402
+
+
+def same_kind_by_joining(a: list[str], b: list[str]) -> bool:
+    """_same_kind as first written, joining words both ways every time: the reference."""
+    joined_a = join_split_words(a, b)
+    return set(joined_a) == set(join_split_words(b, joined_a))
+
+
+def test_two_kinds_compare_the_same_with_the_quick_look():
+    rng = random.Random(13)
+    stems = ["cast", "iron", "castiron", "carbon", "steel", "carbonsteel", "non", "stick", "nonstick", "pan", "hand",
+             "grinder", "handgrinder", "a", "b", "ab", "abc", "c", "bc"]
+    for _ in range(5000):
+        a = [rng.choice(stems) for _ in range(rng.randint(1, 4))]
+        b = [rng.choice(stems) for _ in range(rng.randint(1, 4))]
+        assert kinds_module._same_kind(a, b) == same_kind_by_joining(a, b), (a, b)
+
+
+def same_kind_sets_one_by_one(items):
+    """_same_kind_sets as first written (12 Oct 2026): every new note compared with every set's kinds. The reference."""
+    sets, kinds, known = [], [], {}
+
+    def same(a, b):
+        if (a, b) not in known:
+            known[(a, b)] = same_kind_by_joining(list(a), list(b))
+        return known[(a, b)]
+
+    for item in items:
+        words = tuple(item[1])
+        matching = [i for i, held in enumerate(kinds) if any(same(words, other) for other in held)]
+        merged = [item] + [x for i in matching for x in sets[i]]
+        merged_kinds = {words}.union(*(kinds[i] for i in matching))
+        matching_sets = [sets[i] for i in matching]
+        keep = [i for i, s in enumerate(sets) if s not in matching_sets]
+        sets = [sets[i] for i in keep] + [merged]
+        kinds = [kinds[i] for i in keep] + [merged_kinds]
+    return sets
+
+
+def test_kind_sets_found_by_their_words_are_the_sets_found_one_by_one():
+    # The same sets, holding the same notes in the same order, with words written as one or apart, repeated kinds,
+    # the same words in another order, and notes that join two sets.
+    rng = random.Random(14)
+    stems = ["cast", "iron", "castiron", "carbon", "steel", "carbonsteel", "non", "stick", "nonstick", "hand",
+             "grinder", "handgrinder", "a", "b", "ab", "abc", "c", "bc", "enameled"]
+    for n in range(300):
+        items = []
+        for i in range(rng.randint(0, 40)):
+            note = KindMention(f"t{n}", f"c{i}", f"about {i}", rng.choice(["recommend", "warn"]))
+            items.append((note, [rng.choice(stems) for _ in range(rng.randint(1, 3))]))
+        assert kinds_module._same_kind_sets(items) == same_kind_sets_one_by_one(items), n
+
+
+# --- A text's kind words worked out once per text and list of known names (latency, 14 Oct 2026) ---
+
+def test_a_texts_kind_words_are_worked_out_once_per_list_of_known_names(monkeypatch):
+    # Writing an answer's "What to look for" asks the kind words of the same kinds, notes and names over and over
+    # (9,470 times for 32 answers), each trying every known name at every word.
+    from engine.match_products import known_aliases
+
+    written_out = []
+    real = kinds_module._write_out_anywhere
+    monkeypatch.setattr(kinds_module, "_write_out_anywhere",
+                        lambda words, aliases: written_out.append(1) or real(words, aliases))
+    known = known_aliases("kinds").get("kitchen", {})
+    texts = ["Teflon pans", "carbon steel pan", "a stainless-steel skillet", "Teflon pans"]
+    first = [kinds_module._kind_words(text, known) for text in texts]
+    assert len(written_out) == 3  # "Teflon pans" once
+    assert [kinds_module._kind_words(text, known) for text in texts] == first and len(written_out) == 3
+    first[0].append("changed")  # a caller changing the list changes nothing remembered
+    assert kinds_module._kind_words("Teflon pans", known) == first[0][:-1]
+    other = dict(known)  # another list of known names is another table
+    assert kinds_module._kind_words("Teflon pans", other) == first[0][:-1] and len(written_out) == 4
