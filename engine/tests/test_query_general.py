@@ -125,6 +125,17 @@ def test_each_name_of_a_general_type_finds_that_type():
             assert classify(f"recommendations for a {keyword}").product_type == entry["name"], keyword
 
 
+def test_a_types_look_alikes_hold_its_words_and_are_set_aside():
+    # Kept with their types as data (part 2 chooses threads with them too): each holds one of its type's words.
+    for entry in MORE_PRODUCT_TYPES:
+        words = entry["keywords"] + entry.get("hints", [])
+        for phrase in entry.get("lookalikes", []):
+            assert any(re.search(rf"\b{re.escape(w.removesuffix('s'))}s?\b", phrase) for w in words), (entry["name"],
+                                                                                                        phrase)
+            assert phrase in LOOKALIKES, phrase
+    assert sum(len(entry.get("lookalikes", [])) for entry in MORE_PRODUCT_TYPES) >= 100
+
+
 def test_a_look_alike_is_never_a_products_own_name():
     # Set aside before products are looked for, a look-alike that is a name would hide its own product.
     names = {k for product in PRODUCT_TYPES for k in product.keywords}
@@ -265,6 +276,12 @@ def test_food_health_and_media_get_their_own_polite_no(text, message):
                                   "best vape for beginners", "weed grinder that lasts", "a good bong"])
 def test_harmful_items_are_refused_whatever_else_the_request_names(text):
     assert (classify(text).status, classify(text).message) == ("out_of_scope", HARMFUL_MESSAGE)
+
+
+@pytest.mark.parametrize("text", ["my secret weapon for frizz is a silk pillowcase", "a tobacco vanille dupe",
+                                  "a noise suppressor pedal for my guitar", "rifle paper co notebook"])
+def test_a_harmful_word_in_an_everyday_phrase_isnt_refused(text):
+    assert classify(text).message != HARMFUL_MESSAGE
 
 
 @pytest.mark.parametrize("text, product_type", [

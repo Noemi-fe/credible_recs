@@ -323,7 +323,8 @@ HARMFUL_LOOKALIKES = (
     "foam gun", "label gun", "price gun", "temperature gun", "thermometer gun", "radar gun", "percussion gun",
     "gunmetal", "gun metal", "pistol grip", "weed eater", "weed whacker", "weed wacker", "weed killer", "weed barrier",
     "weed membrane", "weed puller", "weed burner", "cigarette lighter", "cigar box", "dry herb dehydrator",
-    "nicotine patch", "nicotine patches", "nicotine gum", "nicotine replacement",
+    "nicotine patch", "nicotine patches", "nicotine gum", "nicotine replacement", "secret weapon", "tobacco vanille",
+    "tobacco vanilla", "tobacco oud", "noise suppressor", "rifle paper",
 )
 HEALTH = (
     "medicine", "medication", "meds", "pills", "painkiller", "ibuprofen", "paracetamol", "acetaminophen", "aspirin",
@@ -430,41 +431,12 @@ FIRST_LOOKALIKES = (
 ) + _PLACES + tuple(f"{kind} {knife}" for kind in _OTHER_KNIVES for knife in ("knife", "knives")) + tuple(
     f"{kind} blender" for kind in _OTHER_BLENDERS)
 # 14 Oct 2026 (the general category): phrases that hold a new type's word but are something else, an accessory of it or
-# a service ("phone plan", "tv show", "laptop stand", "mouse mat", "life jacket", "bike pump", "guitar lessons"). Set
-# aside like the others, so the request is asked about, placed by the open model, or found out of scope by its own
-# words (a phone plan is a service).
-_GENERAL_LOOKALIKES = (
-    # tech
-    "phone plan", "phone contract", "phone deal", "phone provider", "phone network", "phone stand", "phone grip",
-    "phone ring", "phone strap", "phone lanyard", "phone signal", "tv show", "tv series", "tv licence", "tv license",
-    "tv aerial", "tv antenna", "tv remote", "laptop stand", "laptop cooler", "laptop cooling pad", "laptop skin",
-    "laptop lock", "lap desk", "blood pressure monitor", "glucose monitor", "air quality monitor", "keyboard tray",
-    "keyboard cover", "mouse trap", "mouse mat", "mouse pad", "mouse bungee", "speaker stand", "speaker wire",
-    "speaker cable", "headphone stand", "headphone jack", "headphone adapter", "camera bag", "camera strap",
-    "trail camera", "printer ink", "printer paper", "printer toner", "toner cartridge", "ink cartridge", "wood router",
-    "plunge router", "router table", "router bit", "console table", "midi controller", "charge controller",
-    "motion controller", "watch strap", "watch band", "watch box", "watch winder", "kindle book", "kindle unlimited",
-    "to watch", "watch out", "watch tv", "watching",
-    # home
-    "dryer sheet", "dryer ball", "dryer vent", "washer fluid", "baking sheet", "cookie sheet", "sheet mask",
-    "cake topper", "throw pillow", "pillow spray", "paper towel", "kitchen roll", "towel rail", "heated towel rail",
-    "shower curtain", "heat lamp", "rear view mirror", "wing mirror", "bin bag", "compost bin", "storage bin",
-    "toilet paper", "toilet roll", "toilet brush", "toilet cleaner", "mattress protector", "rug pad", "sofa cover",
-    "desk mat", "desk organiser", "desk organizer", "massage chair", "water heater", "pool heater", "hot water bottle",
-    "bottle warmer", "hair diffuser", "diffuser attachment", "snow blower", "cling film", "window film",
-    # clothing
-    "life jacket", "jacket potato", "coat hanger", "coat rack", "coat hook", "dress code", "suit bag", "suit carrier",
-    "hard hat", "car boot", "boot dryer", "boot polish", "shoe polish", "shoe rack", "shoe horn", "seat belt",
-    "timing belt", "conveyor belt",
-    # outdoor, sport, baby
-    "climbing harness", "camping cot", "personal trainer", "bike rack", "bike pump", "bike saddle", "bike seat",
-    "bike shorts", "bike computer", "bike bag", "bike stand", "bike tyre", "bike tire", "bicycle tyre", "bicycle tire",
-    "car seat cover",
-    # beauty
-    "eyelash curler", "nail clippers", "razor scooter",
-    # services holding a product's word
-    "guitar lessons", "piano lessons", "golf lessons", "tennis lessons", "swimming lessons", "yoga class",
-    "secret weapon",
+# a service ("phone plan", "tv show", "laptop stand", "mouse mat", "life jacket", "bike pump", "guitar lessons"), kept
+# with their types in engine/data/product_types.json ("lookalikes"). Set aside like the others, so the request is asked
+# about, placed by the open model, or found out of scope by its own words (a phone plan is a service). And one holding
+# a first type's word: a toner cartridge isn't a toner.
+_GENERAL_LOOKALIKES = tuple(phrase for entry in MORE_PRODUCT_TYPES for phrase in entry.get("lookalikes", ())) + (
+    "toner cartridge",
 )
 # A phrase that is a product's own name is no look-alike (14 Oct 2026: "pizza oven", "vacuum sealer" and "beauty blender"
 # are names of the general category's types, or of the kitchen's); the longer name wins as it always has.

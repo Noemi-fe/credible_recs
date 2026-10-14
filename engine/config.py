@@ -432,11 +432,10 @@ PRODUCT_TYPE_PLURALS: dict[str, str] = {
     "juicer": "juicers",
     "kitchen scale": "kitchen scales",
 }
-# The types of engine/data/product_types.json (14 Oct 2026), each with its own plural, and a few shown with capitals.
+# The types of engine/data/product_types.json (14 Oct 2026), each with its own plural, and a few shown with capitals
+# ("TV", "EV charger").
 PRODUCT_TYPE_PLURALS |= {entry["name"]: entry["plural"] for entry in MORE_PRODUCT_TYPES}
-PRODUCT_TYPE_SHOWN |= {"tv": "TV", "av receiver": "AV receiver", "3d printer": "3D printer", "vr headset": "VR headset",
-                       "ipl device": "IPL device", "ev charger": "EV charger", "obd scanner": "OBD scanner",
-                       "wifi router": "Wi-Fi router", "e-reader": "e-reader"}
+PRODUCT_TYPE_SHOWN |= {entry["name"]: entry["shown"] for entry in MORE_PRODUCT_TYPES if "shown" in entry}
 
 # Decision 11, budgets (engine/prices.py). Current prices live in data/prices.json, each with its shop and the day
 # Claude looked it up. PROPOSED: a price checked more than this many days ago is still shown, with its date, but

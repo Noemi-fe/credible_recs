@@ -1,5 +1,5 @@
 {
- "about": "Module 1's product types beyond the first ones, as data (14 Oct 2026, Noemi's plan for recs regardless of the category, part 1; chosen by Claude, reported to Noemi). Each type: its name and plural, its category (general, or kitchen, skincare or haircare) and for the general category its department, the names people use for it (keywords; hints are weaker clues, used only when no name is found), the words people put in Reddit post titles about it (title_words), and the communities to search for it, most specific first. Loaded by engine/config.py and engine/query.py.",
+ "about": "Module 1's product types beyond the first ones, as data (14 Oct 2026, Noemi's plan for recs regardless of the category, part 1; chosen by Claude, reported to Noemi). Each type: its name and plural, its category (general, or kitchen, skincare or haircare) and for the general category its department, the names people use for it (keywords; hints are weaker clues, used only when no name is found), the words people put in Reddit post titles about it (title_words), the communities to search for it, most specific first, and where obvious its look-alikes (phrases that hold its words but name something else, set aside by module 1) and the name shown when it isn't the lowercase one. Loaded by engine/config.py and engine/query.py.",
  "types": [
   {
    "name": "dishwasher",
@@ -505,6 +505,9 @@
     "Mattress",
     "BuyItForLife",
     "Frugal"
+   ],
+   "lookalikes": [
+    "mattress protector"
    ]
   },
   {
@@ -527,6 +530,9 @@
    "subreddits": [
     "Mattress",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "cake topper"
    ]
   },
   {
@@ -552,6 +558,10 @@
     "Mattress",
     "BuyItForLife",
     "Frugal"
+   ],
+   "lookalikes": [
+    "throw pillow",
+    "pillow spray"
    ]
   },
   {
@@ -608,6 +618,11 @@
     "BuyItForLife",
     "Mattress",
     "HomeDecorating"
+   ],
+   "lookalikes": [
+    "baking sheet",
+    "cookie sheet",
+    "sheet mask"
    ]
   },
   {
@@ -685,6 +700,9 @@
     "BuyItForLife",
     "HomeDecorating",
     "malelivingspace"
+   ],
+   "lookalikes": [
+    "sofa cover"
    ]
   },
   {
@@ -736,6 +754,9 @@
     "OfficeChairs",
     "BuyItForLife",
     "Frugal"
+   ],
+   "lookalikes": [
+    "massage chair"
    ]
   },
   {
@@ -785,6 +806,12 @@
     "BuyItForLife",
     "battlestations",
     "HomeDecorating"
+   ],
+   "lookalikes": [
+    "desk mat",
+    "desk organiser",
+    "desk organizer",
+    "lap desk"
    ]
   },
   {
@@ -914,6 +941,9 @@
     "HomeDecorating",
     "BuyItForLife",
     "malelivingspace"
+   ],
+   "lookalikes": [
+    "rug pad"
    ]
   },
   {
@@ -935,6 +965,9 @@
    "subreddits": [
     "HomeDecorating",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "shower curtain"
    ]
   },
   {
@@ -986,6 +1019,9 @@
     "HomeDecorating",
     "BuyItForLife",
     "malelivingspace"
+   ],
+   "lookalikes": [
+    "heat lamp"
    ]
   },
   {
@@ -1230,6 +1266,10 @@
     "BuyItForLife",
     "HomeImprovement",
     "Frugal"
+   ],
+   "lookalikes": [
+    "water heater",
+    "pool heater"
    ]
   },
   {
@@ -1300,6 +1340,9 @@
     "BuyItForLife",
     "laundry",
     "HomeImprovement"
+   ],
+   "lookalikes": [
+    "washer fluid"
    ]
   },
   {
@@ -1325,6 +1368,11 @@
     "Appliances",
     "BuyItForLife",
     "laundry"
+   ],
+   "lookalikes": [
+    "dryer sheet",
+    "dryer ball",
+    "dryer vent"
    ]
   },
   {
@@ -1531,6 +1579,11 @@
     "BuyItForLife",
     "HomeDecorating",
     "onebag"
+   ],
+   "lookalikes": [
+    "paper towel",
+    "towel rail",
+    "heated towel rail"
    ]
   },
   {
@@ -1597,6 +1650,12 @@
     "HomeImprovement",
     "homeowners",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "toilet paper",
+    "toilet roll",
+    "toilet brush",
+    "toilet cleaner"
    ]
   },
   {
@@ -1815,6 +1874,10 @@
     "HomeDecorating",
     "candles",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "hair diffuser",
+    "diffuser attachment"
    ]
   },
   {
@@ -1838,6 +1901,10 @@
    "subreddits": [
     "HomeDecorating",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "rear view mirror",
+    "wing mirror"
    ]
   },
   {
@@ -1914,6 +1981,11 @@
     "BuyItForLife",
     "Frugal",
     "HomeImprovement"
+   ],
+   "lookalikes": [
+    "bin bag",
+    "compost bin",
+    "storage bin"
    ]
   },
   {
@@ -1992,6 +2064,13 @@
     "laptops",
     "BuyItForLife",
     "Frugal"
+   ],
+   "lookalikes": [
+    "laptop stand",
+    "laptop cooler",
+    "laptop cooling pad",
+    "laptop skin",
+    "laptop lock"
    ]
   },
   {
@@ -2052,6 +2131,11 @@
    "subreddits": [
     "Monitors",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "blood pressure monitor",
+    "glucose monitor",
+    "air quality monitor"
    ]
   },
   {
@@ -2100,6 +2184,10 @@
    "subreddits": [
     "MechanicalKeyboards",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "keyboard tray",
+    "keyboard cover"
    ]
   },
   {
@@ -2126,6 +2214,12 @@
    "subreddits": [
     "MouseReview",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "mouse trap",
+    "mouse mat",
+    "mouse pad",
+    "mouse bungee"
    ]
   },
   {
@@ -2158,6 +2252,11 @@
     "headphones",
     "BudgetAudiophile",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "headphone stand",
+    "headphone jack",
+    "headphone adapter"
    ]
   },
   {
@@ -2263,6 +2362,11 @@
     "BudgetAudiophile",
     "audiophile",
     "hometheater"
+   ],
+   "lookalikes": [
+    "speaker stand",
+    "speaker wire",
+    "speaker cable"
    ]
   },
   {
@@ -2306,7 +2410,8 @@
     "hometheater",
     "BudgetAudiophile",
     "audiophile"
-   ]
+   ],
+   "shown": "AV receiver"
   },
   {
    "name": "headphone amp",
@@ -2407,6 +2512,16 @@
     "4kTV",
     "hometheater",
     "BuyItForLife"
+   ],
+   "shown": "TV",
+   "lookalikes": [
+    "tv show",
+    "tv series",
+    "tv licence",
+    "tv license",
+    "tv aerial",
+    "tv antenna",
+    "tv remote"
    ]
   },
   {
@@ -2509,6 +2624,19 @@
     "PickAnAndroidForMe",
     "BuyItForLife",
     "Frugal"
+   ],
+   "lookalikes": [
+    "phone plan",
+    "phone contract",
+    "phone deal",
+    "phone provider",
+    "phone network",
+    "phone stand",
+    "phone grip",
+    "phone ring",
+    "phone strap",
+    "phone lanyard",
+    "phone signal"
    ]
   },
   {
@@ -2612,6 +2740,10 @@
    "subreddits": [
     "kindle",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "kindle book",
+    "kindle unlimited"
    ]
   },
   {
@@ -2670,6 +2802,11 @@
     "Cameras",
     "photography",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "camera bag",
+    "camera strap",
+    "trail camera"
    ]
   },
   {
@@ -2810,6 +2947,11 @@
     "printers",
     "BuyItForLife",
     "Frugal"
+   ],
+   "lookalikes": [
+    "printer ink",
+    "printer paper",
+    "printer toner"
    ]
   },
   {
@@ -2830,7 +2972,8 @@
    ],
    "subreddits": [
     "3Dprinting"
-   ]
+   ],
+   "shown": "3D printer"
   },
   {
    "name": "wifi router",
@@ -2862,6 +3005,13 @@
     "HomeNetworking",
     "smarthome",
     "homeautomation"
+   ],
+   "shown": "Wi-Fi router",
+   "lookalikes": [
+    "wood router",
+    "plunge router",
+    "router table",
+    "router bit"
    ]
   },
   {
@@ -3008,6 +3158,9 @@
    "subreddits": [
     "BuyItForLife",
     "Frugal"
+   ],
+   "lookalikes": [
+    "console table"
    ]
   },
   {
@@ -3032,6 +3185,11 @@
    "subreddits": [
     "BuyItForLife",
     "Frugal"
+   ],
+   "lookalikes": [
+    "midi controller",
+    "charge controller",
+    "motion controller"
    ]
   },
   {
@@ -3055,7 +3213,8 @@
    "subreddits": [
     "virtualreality",
     "BuyItForLife"
-   ]
+   ],
+   "shown": "VR headset"
   },
   {
    "name": "microphone",
@@ -3394,6 +3553,9 @@
     "BuyItForLife",
     "onebag",
     "CampingGear"
+   ],
+   "lookalikes": [
+    "hot water bottle"
    ]
   },
   {
@@ -3829,6 +3991,20 @@
     "whichbike",
     "bikecommuting",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "bike rack",
+    "bike pump",
+    "bike saddle",
+    "bike seat",
+    "bike shorts",
+    "bike computer",
+    "bike bag",
+    "bike stand",
+    "bike tyre",
+    "bike tire",
+    "bicycle tyre",
+    "bicycle tire"
    ]
   },
   {
@@ -4228,6 +4404,11 @@
     "femalefashionadvice",
     "BuyItForLife",
     "frugalmalefashion"
+   ],
+   "lookalikes": [
+    "coat hanger",
+    "coat rack",
+    "coat hook"
    ]
   },
   {
@@ -4258,6 +4439,10 @@
     "femalefashionadvice",
     "frugalmalefashion",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "life jacket",
+    "jacket potato"
    ]
   },
   {
@@ -4445,6 +4630,9 @@
    "subreddits": [
     "femalefashionadvice",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "dress code"
    ]
   },
   {
@@ -4470,6 +4658,10 @@
     "malefashionadvice",
     "suits",
     "frugalmalefashion"
+   ],
+   "lookalikes": [
+    "suit bag",
+    "suit carrier"
    ]
   },
   {
@@ -4578,6 +4770,9 @@
     "malefashionadvice",
     "femalefashionadvice",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "hard hat"
    ]
   },
   {
@@ -4632,6 +4827,9 @@
     "femalefashionadvice",
     "frugalmalefashion",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "personal trainer"
    ]
   },
   {
@@ -4663,6 +4861,11 @@
     "BuyItForLife",
     "femalefashionadvice",
     "malefashionadvice"
+   ],
+   "lookalikes": [
+    "shoe polish",
+    "shoe rack",
+    "shoe horn"
    ]
   },
   {
@@ -4699,6 +4902,11 @@
     "BuyItForLife",
     "malefashionadvice",
     "femalefashionadvice"
+   ],
+   "lookalikes": [
+    "car boot",
+    "boot dryer",
+    "boot polish"
    ]
   },
   {
@@ -4865,6 +5073,15 @@
    "subreddits": [
     "Watches",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "watch strap",
+    "watch band",
+    "watch box",
+    "watch winder",
+    "to watch",
+    "watch out",
+    "watch tv"
    ]
   },
   {
@@ -5010,6 +5227,11 @@
    "subreddits": [
     "BuyItForLife",
     "malefashionadvice"
+   ],
+   "lookalikes": [
+    "seat belt",
+    "timing belt",
+    "conveyor belt"
    ]
   },
   {
@@ -5118,6 +5340,9 @@
     "NewParents",
     "beyondthebump",
     "BabyBumps"
+   ],
+   "lookalikes": [
+    "car seat cover"
    ]
   },
   {
@@ -5203,6 +5428,9 @@
     "beyondthebump",
     "BabyBumps",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "camping cot"
    ]
   },
   {
@@ -5583,6 +5811,9 @@
     "Dogtraining",
     "puppy101",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "climbing harness"
    ]
   },
   {
@@ -7355,6 +7586,9 @@
     "lawncare",
     "homeowners",
     "Tools"
+   ],
+   "lookalikes": [
+    "snow blower"
    ]
   },
   {
@@ -7624,6 +7858,9 @@
     "Hair",
     "femalehairadvice",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "eyelash curler"
    ]
   },
   {
@@ -7759,6 +7996,9 @@
     "wicked_edge",
     "BuyItForLife",
     "malegrooming"
+   ],
+   "lookalikes": [
+    "razor scooter"
    ]
   },
   {
@@ -7816,6 +8056,9 @@
     "malegrooming",
     "wicked_edge",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "nail clippers"
    ]
   },
   {
@@ -8291,7 +8534,8 @@
     "SkincareAddiction",
     "malegrooming",
     "BuyItForLife"
-   ]
+   ],
+   "shown": "IPL device"
   },
   {
    "name": "guitar",
@@ -8317,6 +8561,9 @@
    "subreddits": [
     "Guitar",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "guitar lessons"
    ]
   },
   {
@@ -8372,6 +8619,9 @@
    "subreddits": [
     "piano",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "piano lessons"
    ]
   },
   {
@@ -8822,7 +9072,8 @@
     "electricvehicles",
     "homeowners",
     "HomeImprovement"
-   ]
+   ],
+   "shown": "EV charger"
   },
   {
    "name": "obd scanner",
@@ -8845,7 +9096,8 @@
    "subreddits": [
     "MechanicAdvice",
     "cars"
-   ]
+   ],
+   "shown": "OBD scanner"
   }
  ]
 }
