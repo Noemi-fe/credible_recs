@@ -8,11 +8,16 @@ READER_JOB="${CREDIBLE_RECS_GCP_READER_JOB:-credible-recs-reader}"
 READER_JOB_NAME="projects/${PROJECT}/locations/${REGION}/jobs/${READER_JOB}"  # what the site starts (jobs:run)
 
 # The Gemini key, the Secret Manager secret gemini-key, which Noemi creates herself (DEPLOY.md, "The Gemini key"). This
-# script never makes or reads it; it stops before anything is built when it isn't there yet.
+# script never makes or reads it. When it isn't there yet, on-demand reading stays off for this deploy (14 Oct 2026, the
+# orchestrator: a missing key must not stop the site's own deploys): ON_DEMAND is "off", the site gets none of its
+# settings (so it never says it has started reading), and no bucket, job or pull is touched; the next deploy after the
+# key exists turns it on.
 on_demand_secret() {
-    if ! $GCLOUD secrets describe gemini-key --project "$PROJECT" >/dev/null 2>&1; then
-        echo "The secret gemini-key isn't there yet: create it first (deploy/cloudrun/DEPLOY.md, The Gemini key)." >&2
-        exit 1
+    if $GCLOUD secrets describe gemini-key --project "$PROJECT" >/dev/null 2>&1; then
+        ON_DEMAND=on
+    else
+        ON_DEMAND=off
+        echo "The secret gemini-key isn't there yet: on-demand reading stays off for this deploy (deploy/cloudrun/DEPLOY.md, The Gemini key)." >&2
     fi
 }
 

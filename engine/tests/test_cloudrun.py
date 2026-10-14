@@ -139,15 +139,21 @@ def test_the_on_demand_bucket_is_private_and_keeps_nothing_deleted():
     assert '"gs://$ON_DEMAND_BUCKET"' in grant and "roles/storage.objectUser" in grant
 
 
-def test_the_gemini_key_is_checked_for_never_made_or_read_and_its_absence_stops_the_deploy():
+def test_the_gemini_key_is_checked_for_never_made_or_read_and_its_absence_turns_on_demand_off():
+    # Changed on purpose, 14 Oct 2026 (the orchestrator): a missing key first stopped the whole deploy; it must not stop
+    # the site's own deploys, so it turns on-demand reading off for that deploy (the site then never says it started).
     script = ON_DEMAND_SH.read_text(encoding="utf-8")
-    assert "$GCLOUD secrets describe gemini-key" in script and "exit 1" in script
+    assert "$GCLOUD secrets describe gemini-key" in script and "ON_DEMAND=off" in script and "exit 1" not in script
     assert "secrets create" not in script and "versions access" not in script  # Noemi makes it, nobody reads it
     grant = _command(script, '$GCLOUD secrets add-iam-policy-binding gemini-key')
     assert '"serviceAccount:$RUNNER"' in grant and "roles/secretmanager.secretAccessor" in grant
     deploy = DEPLOY_SH.read_text(encoding="utf-8")
     assert ". deploy/cloudrun/on_demand.sh" in deploy
     assert deploy.index("\non_demand_secret ") < deploy.index("-m deploy.cloudrun.make_context")  # before any build
+    for step in ("on_demand_bucket", "on_demand_job", "-m engine.library pull-bucket", "-m engine.library forget-baked"):
+        line = next(text for text in deploy.splitlines() if step in text and not text.lstrip().startswith("#"))
+        before = deploy[:deploy.index(line)]
+        assert before.rstrip().endswith('if [ "$ON_DEMAND" = on ]; then') or 'if [ "$ON_DEMAND" = on ]; then ' + step in line
 
 
 def test_the_reading_job_runs_on_the_sites_image_with_the_key_and_the_site_may_start_it():
@@ -173,9 +179,11 @@ def test_the_reading_jobs_timeout_covers_a_run_and_its_lease_outlasts_it():
 def test_the_site_and_the_pre_check_know_the_bucket_and_the_site_knows_the_job():
     script = DEPLOY_SH.read_text(encoding="utf-8")
     service = _command(script, '$GCLOUD run deploy')
-    assert "CREDIBLE_RECS_ON_DEMAND_BUCKET=${ON_DEMAND_BUCKET}" in service
-    assert "CREDIBLE_RECS_ON_DEMAND_JOB=${READER_JOB_NAME}" in service
-    assert "CREDIBLE_RECS_ON_DEMAND_BUCKET=${ON_DEMAND_BUCKET}" in _command(script, '$GCLOUD run jobs deploy')
+    # 14 Oct 2026: the settings come through ON_DEMAND_SITE_VARS / ON_DEMAND_PRECHECK_VARS, empty while it is off.
+    assert "${ON_DEMAND_SITE_VARS}" in service and "${ON_DEMAND_PRECHECK_VARS}" in _command(script, '$GCLOUD run jobs deploy')
+    assert "CREDIBLE_RECS_ON_DEMAND_BUCKET=${ON_DEMAND_BUCKET}" in script.split('ON_DEMAND_SITE_VARS="', 1)[1].split("\n")[0]
+    assert "CREDIBLE_RECS_ON_DEMAND_JOB=${READER_JOB_NAME}" in script.split('ON_DEMAND_SITE_VARS="', 1)[1].split("\n")[0]
+    assert "CREDIBLE_RECS_ON_DEMAND_BUCKET=${ON_DEMAND_BUCKET}" in script.split('ON_DEMAND_PRECHECK_VARS="', 1)[1].split("\n")[0]
     names = ON_DEMAND_SH.read_text(encoding="utf-8")
     assert 'READER_JOB_NAME="projects/${PROJECT}/locations/${REGION}/jobs/${READER_JOB}"' in names
 

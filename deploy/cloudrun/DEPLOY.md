@@ -67,7 +67,8 @@ After committing (and after new threads are extracted), from the repository's ro
 
     sh deploy/cloudrun/deploy.sh
 
-It stops at once if the Gemini key's secret isn't there yet (below), makes sure both buckets exist with their rules,
+It turns on-demand reading off for that deploy if the Gemini key's secret isn't there yet (below; the site deploys
+anyway and never says it has started reading), makes sure both buckets exist with their rules,
 brings the threads read on demand into data/library, bundles the current commit with the library, builds the private
 image and deploys the site, then points the pre-check job and the reading job at the same image, makes sure the daily
 schedule exists, lets the on-demand bucket go of the threads the image now holds, and prints the address. Safe to run
@@ -78,8 +79,8 @@ again: each step creates what is missing and sets again what is there.
 The project number is `NUMBER` below (`gcloud projects describe credible-picks --format='value(projectNumber)'`), and
 `RUNNER` is the account the site and the job run as, `NUMBER-compute@developer.gserviceaccount.com`.
 
-0. The Gemini key's secret must be there (Noemi creates it herself: "The Gemini key" below); otherwise the script
-   stops before building anything, and it never makes or reads the secret:
+0. The Gemini key's secret turns on-demand reading on (Noemi creates it herself: "The Gemini key" below); without it
+   the script deploys the site with on-demand reading off, and it never makes or reads the secret:
 
        gcloud secrets describe gemini-key --project credible-picks
 
@@ -199,8 +200,8 @@ the rest):
     .venv/bin/python -c "import sys; from pathlib import Path; from engine.parse_reddit import _read_env_file; sys.stdout.write(_read_env_file(Path('.env'))['GEM_API_KEY'])" | gcloud secrets create gemini-key --project credible-picks --replication-policy user-managed --locations europe-west1 --data-file=-
 
 When the key changes: the same command with `gcloud secrets versions add gemini-key --project credible-picks
---data-file=-` after the pipe. deploy.sh never makes or reads it: it only checks it is there, and stops before building
-anything when it isn't. Free use only: Noemi's key is on Gemini's free tier, and under Google's terms UK users' free use
+--data-file=-` after the pipe. deploy.sh never makes or reads it: it only checks it is there, and leaves on-demand reading
+off for that deploy when it isn't (14 Oct 2026: a missing key must not stop the site's own deploys). Free use only: Noemi's key is on Gemini's free tier, and under Google's terms UK users' free use
 gets the paid-tier data terms (not used for training).
 
 ## Keeping it awake
