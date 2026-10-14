@@ -50,6 +50,7 @@ from engine.config import (
     LIBRARY_MIX,
     LIBRARY_THREADS_PER_PRODUCT,
     MAX_THREADS_PER_SUBREDDIT,
+    OPPOSITE_TITLE_PATTERNS,
     INGREDIENT_TALK_MAX,
     INGREDIENT_TALK_POINTS,
     REFORMULATED_CATEGORIES,
@@ -474,17 +475,27 @@ class LocalSource:
         """The threads with those about the request's needs first, most needs first, each part in the order given
         (14 Oct 2026, Noemi's decision 3: need-led thread choice). A thread is about a need when its title or post talks
         about it in any of the need's words (engine.needs.thread_needs: "greasy" is "oily"), unless its title names
-        another type of product and not the one asked for. A request without needs keeps the order given: the graded
-        one, where a big general thread had outweighed a smaller one asking the request's exact question. So does an
-        ingredient-led request ("salicylic acid for acne"): its threads come with those whose comments talk about its
-        ingredient most first (talk_points, 13 Oct 2026), and on the library its need had put acne cleanser threads (a
-        rinse-off form its answer can't show) ahead of them, losing its one pick."""
+        another type of product and not the one asked for, or (since 14 Oct 2026, the need-quality builder) asks for
+        the opposite kind of product (titled_as_the_opposite: "Which clarifying shampoo for my curls?" for one that
+        isn't drying). A request without needs keeps the order given: the graded one, where a big general thread had
+        outweighed a smaller one asking the request's exact question. So does an ingredient-led request ("salicylic
+        acid for acne"): its threads come with those whose comments talk about its ingredient most first (talk_points,
+        13 Oct 2026), and on the library its need had put acne cleanser threads (a rinse-off form its answer can't show)
+        ahead of them, losing its one pick.
+
+        Tried and not kept (14 Oct 2026, measured on the frozen library): counting each need by how rare it is among the
+        threads (log((N+1)/(k+1)), so a thread about drying alone came before the many about curls alone) read 4 more
+        threads about the specific need of 96, but no answer got better, two haircare answers got slightly worse and a
+        blind-test answer read a cast-iron repair thread; nor adding need points to the graded score, which at every
+        weight tried (1.5 to 8 a title need) read fewer threads about the needs."""
         from engine.needs import request_needs, thread_needs  # here: engine.needs builds on this module
+        from engine.product_facts import request_asks
 
         needs = request_needs(query)
         if not needs or query.ingredient_led:
             return threads
-        titled = {t.id: self._titled_as_another_type(t, query) for t in threads}
+        asks = request_asks(query)
+        titled = {t.id: self._titled_as_another_type(t, query) or titled_as_the_opposite(t.title, asks) for t in threads}
         return sorted(threads, key=lambda t: -len(thread_needs(t, needs, titled[t.id])))  # stable: the order given
 
     def _titled_as_another_type(self, thread: Thread, query: ParsedQuery) -> bool:
@@ -538,6 +549,16 @@ def titled_as_another_type(title: str, query: ParsedQuery) -> bool:
         return False
     return any(mentions_product(title, p.name) for p in PRODUCT_TYPES
                if p.category == query.category and p.name not in wanted)
+
+
+def titled_as_the_opposite(title: str, asks: tuple[str, ...]) -> bool:
+    """Whether a thread's title asks for the opposite kind of product of one of the request's asks
+    (config.OPPOSITE_TITLE_PATTERNS: "Best clarifying shampoo?" for a shampoo that isn't drying; 14 Oct 2026)."""
+    patterns = [pattern for ask in asks for pattern in OPPOSITE_TITLE_PATTERNS.get(ask, ())]
+    if not patterns:
+        return False
+    lowered = " ".join((title or "").lower().replace("’", "'").split())
+    return any(re.search(pattern, lowered) for pattern in patterns)
 
 
 def talking(thread: Thread, product_type: str) -> int:
@@ -1090,6 +1111,13 @@ _STOPWORDS = {
     "pounds", "pound", "quid", "euros", "euro", "dollars", "bucks", "usd", "gbp", "eur",
     # 14 Oct 2026: "that actually works" says how well, not what for; a scalp is to haircare what skin is to skincare.
     "work", "worked", "working", "scalp",
+    # 14 Oct 2026 (the need-quality builder): a negation says nothing on its own ("a shampoo that isn't drying" had a
+    # need "isn't", found in every thread whose post said it), nor does "out" ("won't dry out my hair"); what a negation
+    # asks for is read by engine.needs (config.NEGATED_NEEDS).
+    "isnt", "not", "no", "never", "arent", "wasnt", "werent", "didnt", "wouldnt", "shouldnt", "cant", "cannot", "nor",
+    "out",
+    # ... nor how much ("very fine and slightly oily hair", "isn't too heavy").
+    "too", "so", "slightly", "extremely", "super", "quite", "somewhat", "kinda", "fairly", "bit", "little",
 }
 
 

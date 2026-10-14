@@ -175,6 +175,78 @@ def test_needs_in_other_words_for_kitchen_requests():
     assert met("cast iron skillet for a glass top stove", "Glass lids are handy.") == ()  # glass alone isn't the stove
 
 
+# --- What a request asks a product not to do, and hair types written together (14 Oct 2026, the need-quality builder) ---
+# Found on the library: "shampoo for curly hair that isn't drying" read "isn't" as a need of its own and "drying" as a
+# word found as typed (in comments about air-drying too), and nothing knew it asked for a shampoo that isn't drying;
+# "shampoo for fine oily hair" read "fine" as a word of its own, so a comment saying a shampoo works fine talked about it.
+
+@pytest.mark.parametrize("request_text, expected", [
+    ("shampoo for curly hair that isn't drying", ["curly", "not drying"]),
+    ("shampoo that is not drying", ["not drying"]),
+    ("a non-drying shampoo for my curls", ["not drying", "curly"]),
+    ("shampoo that won't dry out my hair", ["not drying"]),
+    ("shampoo that doesn't leave my hair dry", ["not drying"]),
+    ("cleanser that doesn't dry my skin out", ["not drying"]),
+    ("cleanser that isn't drying", ["not drying"]),
+    ("shampoo for dry hair that isn't drying", ["dry hair", "not drying"]),
+])
+def test_drying_after_a_negation_asks_for_a_product_that_isnt_drying(request_text, expected):
+    assert names(request_text) == expected
+
+
+@pytest.mark.parametrize("request_text, expected", [
+    ("moisturiser that isn't greasy", ["oily"]),  # greasiness either way round: the oily need's words
+    ("kettle that isn't loud", ["quiet"]),
+    ("sunscreen with no white cast", ["no white cast"]),
+    ("cleanser for sensitive skin that doesn't strip", ["sensitive", "strip"]),
+    ("conditioner that is never heavy", ["heavy"]),
+])
+def test_a_negation_is_never_a_need_of_its_own(request_text, expected):
+    assert names(request_text) == expected
+
+
+def test_drying_without_a_negation_is_still_dry_skin_or_hair():
+    assert names("moisturiser for dry skin") == ["dry"]
+    assert names("conditioner for dry hair") == ["dry hair"]
+    assert names("conditioner for dry frizzy hair") == ["dry hair", "frizzy"]
+
+
+@pytest.mark.parametrize("request_text, expected", [
+    ("shampoo for fine oily hair", ["fine hair", "oily hair"]),
+    ("shampoo for fine, oily hair", ["fine hair", "oily hair"]),
+    ("shampoo for thin greasy hair", ["fine hair", "oily hair"]),
+    ("conditioner for dry fine hair", ["dry hair", "fine hair"]),
+    ("shampoo for oily fine curly hair", ["oily hair", "fine hair", "curly"]),
+    ("shampoo for very fine and slightly oily hair", ["fine hair", "oily hair"]),
+])
+def test_hair_types_written_together_each_name_their_need(request_text, expected):
+    assert names(request_text) == expected
+
+
+def test_a_comment_or_title_names_hair_types_written_together_too():
+    assert met("shampoo for fine oily hair", "My fine, oily hair loves this one.") == ("fine hair", "oily hair")
+    assert met("shampoo for fine oily hair", "Any picks for thin/greasy hair here?") == ("fine hair", "oily hair")
+    assert met("shampoo for fine oily hair", "It works fine on my oily roots.") == ("oily hair",)  # fine says how
+
+
+def test_a_comment_talks_about_drying_when_it_says_how_drying_a_product_is():
+    request = "shampoo for curly hair that isn't drying"
+    assert met(request, "Not drying at all, even on my curls.") == ("curly", "not drying")
+    assert met(request, "Way too drying for me.") == ("not drying",)
+    assert met(request, "It dried out my ends in a week.") == ("not drying",)
+    assert met(request, "I let it air dry overnight.") == ()  # drying hair isn't a drying product
+    assert met(request, "Blow drying takes forever.") == ()
+
+
+def test_a_request_word_named_like_a_skin_type_is_not_asked_for_as_one():
+    # "dry" typed in a haircare request ("a dry scalp") is a word of its own there, never the skin type dry, which only
+    # the skincare needs' rules ask about (engine.product_facts.request_asks: a light moisturiser's note).
+    from engine.product_facts import request_asks
+
+    assert "dry" not in request_asks(parse_query("shampoo for a dry scalp"))
+    assert "not drying" in request_asks(parse_query("shampoo for curly hair that isn't drying"))
+
+
 # --- Worked out once (latency, 13 Oct 2026) ---
 
 def test_a_comment_asked_again_about_the_same_needs_is_read_once(monkeypatch):

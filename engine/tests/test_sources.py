@@ -1078,6 +1078,19 @@ def test_haircare_need_words():
     assert need_words(parse_query("leave-in conditioner for curly hair")) == ["curly"]  # its own name, hyphen and all
 
 
+def test_a_negation_is_never_a_need_word():
+    # 14 Oct 2026 (the need-quality builder), found on the library: "shampoo for curly hair that isn't drying" read
+    # "isn't" as a need, so every thread whose post said "isn't" counted as talking about it. "doesn't", "won't" and
+    # "without" were left out already; "out" ("won't dry out my hair") says nothing on its own either.
+    from engine.sources import need_words
+
+    assert need_words(parse_query("shampoo for curly hair that isn't drying")) == ["curly", "drying"]
+    assert need_words(parse_query("shampoo that is not drying")) == ["drying"]
+    assert need_words(parse_query("kettle that is never loud and isnt slow")) == ["loud", "slow"]
+    assert need_words(parse_query("shampoo that won't dry out my hair")) == ["dry"]
+    assert need_words(parse_query("sunscreen with no white cast")) == ["white", "cast"]
+
+
 def test_a_hyphenated_title_word_matches_its_parts():
     # "Anti-dandruff shampoo recs?" is about dandruff, and "recs" asks for recommendations.
     from engine.sources import rank_posts
@@ -1203,6 +1216,43 @@ def test_an_ingredient_led_request_keeps_reading_the_threads_about_its_ingredien
     query = parse_query("salicylic acid for acne")
     assert query.ingredient_led and query.constraints.skin_types == ["acne-prone"]
     assert ids(source.find_threads(query, limit=10))[0] == "1sali01"
+
+
+# --- A thread asking for the opposite kind of product is no thread about the need (14 Oct 2026, the need-quality builder) ---
+# Found on the library: "shampoo for curly hair that isn't drying" read among its first threads the biggest curly-hair one,
+# asking for a clarifying shampoo for curls (made to strip the hair), whose answers gave the request a detox shampoo. A
+# thread whose title asks for the opposite kind of product (config.OPPOSITE_TITLE_PATTERNS) has no need of the request,
+# however much its title and post talk about curls or dryness. Measured on the frozen library (live checks on): first-
+# reading threads titled as a clarifying request 3 -> 0 of the 15 need requests', products shown named as clarifying or
+# detox for a request asking for a shampoo that isn't drying, a gentle one or one for colour-treated hair 4 -> 0.
+
+CURLY_LIBRARY = [
+    hair_thread("1curl01", "Best shampoo for curly hair?", num_comments=300, community="curlyhair"),
+    hair_thread("1curl02", "Curly girl shampoo recs", num_comments=200, community="curlyhair"),
+    hair_thread("1dry001", "Shampoo that won't dry out my hair?", num_comments=12),
+    hair_thread("1both01", "Shampoo for curls that isn't drying?", num_comments=15, community="curlyhair"),
+    hair_thread("1clar01", "Which clarifying shampoo for my curls?", body="My curls feel dry and coated.",
+                num_comments=400, community="curlyhair"),
+]
+
+
+def test_a_thread_titled_as_a_request_for_the_opposite_comes_after_every_thread_about_the_need(tmp_path):
+    # Its title holds "curly" and its post "dry", but it asks for a clarifying shampoo: made to strip the hair.
+    source = local_source(tmp_path, CURLY_LIBRARY)
+    found = ids(source.find_threads(parse_query("shampoo for curly hair that isn't drying"), limit=10))
+    assert found[0] == "1both01" and found[-1] == "1clar01"
+    assert ids(source.find_threads(parse_query("clarifying shampoo for my curls"), limit=10))[0] == "1clar01"
+
+
+def test_only_the_kind_of_product_makes_a_title_the_opposite():
+    # A title saying a product dried someone's hair is about the need; one asking for a clarifying shampoo isn't.
+    from engine.sources import titled_as_the_opposite
+
+    asks = ("not drying",)
+    assert titled_as_the_opposite("Which clarifying shampoo for curls?", asks)
+    assert titled_as_the_opposite("Detox shampoo recommendations", asks)
+    assert not titled_as_the_opposite("My shampoo is so drying, help", asks)
+    assert not titled_as_the_opposite("Which clarifying shampoo for curls?", ("oily hair",))  # clarifying suits oily hair
 
 
 # --- Relevance and talking read a thread's comments in one go (latency, 13 Oct 2026) ---
