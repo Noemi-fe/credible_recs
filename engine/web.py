@@ -40,14 +40,16 @@ Routes:
 The JSON for /api/answer (200):
     {
       "query": {"status": "ok" | "clarify" | "out_of_scope",  module 1's outcome
-                "category": "skincare" | "kitchen" | null,
+                "category": "skincare" | "kitchen" | "haircare" | "general" | null,
                 "product_type": "electric kettle" | null,
                 "question": "..." | null,     the one clarifying question, when status is "clarify"
                 "message": "..." | null,      the polite no, when status is "out_of_scope"
                 "ingredients": [...],         the active ingredients every product shown contains (13 Oct 2026)
                 "ingredient_led": bool,       true when the request names ingredients and no product type
-                "forms": [...]},              the forms an ingredient-led request names ("salicylic acid wash":
+                "forms": [...],               the forms an ingredient-led request names ("salicylic acid wash":
                                               ["cleanser"]); [] for any other request (Noemi, 13 Oct 2026)
+                "department": "tech" | null}, the general category's department (config.GENERAL_DEPARTMENTS, 14 Oct
+                                              2026), which the page shows above the answer; null for the others
       "answer": null when status isn't "ok", else engine.answer.answer_to_dict(...):
                 {"category", "product_type",
                  "picks": [{"rank", "product_key", "name", "reason", "support",
@@ -467,7 +469,7 @@ def answer_json(result: PipelineResult) -> dict:
         "query": {"status": query.status, "category": query.category, "product_type": query.product_type,
                   "question": query.question, "message": query.message,
                   "ingredients": list(query.constraints.ingredients), "ingredient_led": query.ingredient_led,
-                  "forms": list(query.constraints.forms)},
+                  "forms": list(query.constraints.forms), "department": query.department},
         "answer": answer_to_dict(result.answer) if result.answer is not None else None,
         "threads_used": list(result.threads_used),
         # Names, a few of them for the page's footnote to give as examples (Noemi asked what its numbers count, 12 Oct

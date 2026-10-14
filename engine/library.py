@@ -373,7 +373,7 @@ def refresh(
     failures_in_a_row = 0
     for n, old in enumerate(due):
         try:
-            new = _save(client.get_thread(old.community, old.id), folder)
+            new = _save(_as_saved(client.get_thread(old.community, old.id), old), folder)
         except ParseAPIError as e:
             result.failed[old.id] = str(e)
             failures_in_a_row += 1
@@ -407,6 +407,13 @@ def _refresh_through_bright_data(client: BrightDataClient, due: list[Thread], ma
     result.record_cap = read.record_cap
     result.records_used = read.records_used
     result.records_left = read.records_left
+
+
+def _as_saved(fresh: Thread, saved: Thread) -> Thread:
+    """A thread Parse has read again, in the category it was saved in (14 Oct 2026): Parse names the category by the
+    community alone, and a community can be two categories' (r/BuyItForLife: a headphones thread there is a general
+    one, engine.sources.for_request)."""
+    return fresh.model_copy(update={"category": saved.category})
 
 
 def is_due(thread: Thread, now: datetime) -> bool:
@@ -538,7 +545,7 @@ def _read_through_parse(client: ParseRedditClient, due: list[Thread], shown_due:
             result.not_tried = [t.id for t in due[n:]]
             break
         try:
-            new = _save(client.get_thread(old.community, old.id), folder)
+            new = _save(_as_saved(client.get_thread(old.community, old.id), old), folder)
         except ParseAPIError as e:
             result.failed[old.id] = str(e)
             failures_in_a_row += 1

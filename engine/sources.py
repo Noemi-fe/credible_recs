@@ -48,6 +48,7 @@ from engine.config import (
     INGREDIENT_TALK_POINTS,
     REFORMULATED_CATEGORIES,
     SKINCARE_RECENT_YEARS,
+    SUBREDDITS,
 )
 from engine.gold import load_threads
 from engine.ingredients import ingredient_type_name, ingredients_of_type, talk_words, wanted_types
@@ -69,6 +70,18 @@ class Source(Protocol):
 def without_unusable_comments(thread: Thread) -> Thread:
     """A copy of the thread without deleted or removed comments. The thread passed in is left as it was."""
     return thread.model_copy(update={"comments": [c for c in thread.comments if c.status not in ("deleted", "removed")]})
+
+
+def for_request(thread: Thread, query: ParsedQuery) -> Thread:
+    """The thread as it is kept for the request it was read for (14 Oct 2026, the general category): one from a
+    community decided for several categories takes the request's (r/BuyItForLife is the kitchen's and the general
+    category's: a thread read there for headphones is a general thread), since a reader names the category by the
+    community alone (engine.parse_reddit.category_for: the first that has it). One from a community of the request's
+    category only, or of none of it, keeps its own."""
+    if (query.category and thread.category != query.category
+            and thread.community.lower() in {s.lower() for s in SUBREDDITS.get(query.category, ())}):
+        return thread.model_copy(update={"category": query.category})
+    return thread
 
 
 @cache
@@ -303,6 +316,8 @@ WARNING_SEARCHES = {
     "kitchen": ("died", "broke", "regret", "avoid"),
     "skincare": ("irritation", "broke me out", "regret", "avoid"),
     "haircare": ("ruined", "falling out", "regret", "avoid"),
+    # 14 Oct 2026: the general category's products fail as kitchen gear does (headphones, boots, vacuums...).
+    "general": ("died", "broke", "regret", "avoid"),
 }
 # Product types that fail in their own words (10 Oct 2026): "skillet died" found only "broke in my new skillet" (its
 # first use). Used before the category's words.
@@ -361,7 +376,7 @@ class ParseSource:
             return []
         ranked = self.rank_candidates(query)
         chosen = ranked[:limit] if mix is None else choose_mix(query, ranked, total=limit, mix=mix, fill=fill)
-        return [self.client.get_thread(p["subreddit"], _post_id(p)) for p in chosen]
+        return [for_request(self.client.get_thread(p["subreddit"], _post_id(p)), query) for p in chosen]
 
     def rank_candidates(self, query: ParsedQuery) -> list[dict]:
         """Every candidate post from the searches, best first, without fetching any thread."""
@@ -498,7 +513,7 @@ class ArchiveSource:
             return []
         ranked = self.rank_candidates(query)
         chosen = ranked[:limit] if mix is None else choose_mix(query, ranked, total=limit, mix=mix, fill=fill)
-        return [self.client.get_thread(_post_id(p), p["subreddit"]) for p in chosen]
+        return [for_request(self.client.get_thread(_post_id(p), p["subreddit"]), query) for p in chosen]
 
     def rank_candidates(self, query: ParsedQuery) -> list[dict]:
         """Every candidate post from the archive's searches, best first, without reading any thread."""
@@ -575,7 +590,7 @@ class BrightDataSource:
             planned.append(post)
             spent += most
         self._read_together(planned)
-        return [self.client.get_thread(post["url"]) for post in planned]
+        return [for_request(self.client.get_thread(post["url"]), query) for post in planned]
 
     def _read_together(self, posts: list[dict]) -> None:
         """Reads the chosen threads in batches when the client can (BrightDataClient.prefetch), so each read after it
@@ -740,6 +755,9 @@ _RECURRING = re.compile(
 # Threads about looking after kitchen gear rather than choosing it: cleaning, seasoning, restoring, sharpening.
 # "Easy to clean" is a buying need, so cleaning counts only as "cleaning" or "how I clean". Kitchen only: in
 # skincare "restoring" is what a product does ("barrier restoring cream").
+# The categories of gear people use rather than put on (14 Oct 2026: the general category too), whose care and use
+# threads ("how to clean...", "restoring...", "tips") aren't buying advice.
+_GEAR = ("kitchen", "general")
 _CARE = re.compile(
     r"\b(cleaning|how (i|to|do you|do i|should i|we) (clean|season)|seasoning|re-?season\w*"
     r"|restor(e|ed|es|ing|ation)|sharpen\w*"
@@ -797,7 +815,8 @@ def rank_posts(query: ParsedQuery, posts: list[dict], now: datetime | None = Non
     - in the most specialist subreddit: 0.5;
     - skincare only, posted more than 3 years (SKINCARE_RECENT_YEARS) before `now`: minus 1.5, since formulas
       change. `now` is the real clock unless a test gives one; kitchen threads can be any age;
-    - shop news (announcements, "guess the price", price drops, sales, deals) and, for kitchen gear, threads about
+    - shop news (announcements, "guess the price", price drops, sales, deals) and, for kitchen gear and the general
+      category's (14 Oct 2026), threads about
       looking after or using it (cleaning, seasoning, restoring, sharpening, tips, recipes), unless the
       title has advice words: minus 2.
       They rank lower rather than being left out, since some still hold useful experience (Noemi, 7 Oct 2026).
@@ -842,7 +861,7 @@ def _post_score(query: ParsedQuery, post: dict, needs: list[str], too_old: datet
     score -= 2.0 if (post.get("num_comments") or 0) < SMALL_THREAD else 0.0
     score += 0.5 if query.subreddits and _subreddit(post) == query.subreddits[0].lower() else 0.0
     score -= 1.5 if query.category in REFORMULATED_CATEGORIES and _posted_before(post, too_old) else 0.0
-    if not _ADVICE.search(lowered) and (_SHOP_NEWS.search(lowered) or (query.category == "kitchen" and _CARE.search(lowered))):
+    if not _ADVICE.search(lowered) and (_SHOP_NEWS.search(lowered) or (query.category in _GEAR and _CARE.search(lowered))):
         score -= 2.0
     return score
 
@@ -899,6 +918,8 @@ _WARNINGS = {
         r"|reactions?|burn(?:s|ed|t|ing)?|rash(?:es)?|(?:broke|breaking) me out)\b"
     ),
 }
+# The general category's products (14 Oct 2026) break, die, crack, peel, leak and rust as kitchen gear does.
+_WARNINGS["general"] = _WARNINGS["kitchen"]
 _ANY_WARNING = re.compile(rf"\b(?:{_SHARED_WARNINGS})\b")  # for a category without its own words
 # Long-term use, as ranking reads it, plus follow-ups: "ten years later", "Update: my pan after…".
 _LONG_TERM_KIND = re.compile(_LONG_TERM.pattern + r"|\b(years later|update[sd]?)\b")
@@ -929,7 +950,7 @@ def _is_warning(lowered_title: str, category: str, product_type: str | None) -> 
     """A warning names the product (when we know which) and isn't a care project ("sandblasted it since it rusted")."""
     if not _WARNINGS.get(category, _ANY_WARNING).search(lowered_title):
         return False
-    if category == "kitchen" and _CARE.search(lowered_title):
+    if category in _GEAR and _CARE.search(lowered_title):
         return False
     return product_type is None or mentions_product(lowered_title, product_type)
 

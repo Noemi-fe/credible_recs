@@ -21,15 +21,20 @@
 const LABELS = {
   pageTitle: "Credible picks",
   heading: "Credible picks",
-  kicker: "Skincare · Haircare · Kitchen",
+  // Since 14 Oct 2026 (Noemi: "I want recs regardless of the category"; wording decided by Claude, PROPOSED): any
+  // product people buy and use, not only skincare, haircare and kitchen gear.
+  kicker: "Skincare · Kitchen · Tech · Home · and more",
   heroTitle: "Product picks from the people who really know.",
-  intro: "Three picks for skincare, haircare and kitchen gear, ranked by how credible the people recommending them are on Reddit, not by how popular a product is. Every quote is checked word for word against its comment.",
+  intro: "Three picks for almost anything you buy and use, from moisturisers and kettles to headphones and hiking boots, ranked by how credible the people recommending them are on Reddit, not by how popular a product is. Every quote is checked word for word against its comment.",
   searchLabel: "What are you looking for?",
   searchPlaceholder: "e.g. electric kettle that lasts 10+ years",
   searchHint: "Say what it is and anything that matters: budget, skin type, how long it should last.",
   searchButton: "Find picks",
   examplesHeading: "Try an example",
-  categories: { skincare: "Skincare", haircare: "Haircare", kitchen: "Kitchen" },
+  categories: { skincare: "Skincare", haircare: "Haircare", kitchen: "Kitchen", general: "More products" },
+  // The general category's departments (14 Oct 2026), shown above its answers in place of a category: as
+  // config.GENERAL_DEPARTMENTS names them.
+  departments: { home: "Home", tech: "Tech", outdoor: "Outdoor and travel", clothing: "Clothing and accessories", baby: "Baby and kids", pets: "Pets", fitness: "Sport and fitness", tools: "Tools and garden", beauty: "Beauty and personal care", hobbies: "Hobbies", car: "Car" },
   // Recent searches (13 Oct 2026): kept in this browser's own storage only, never sent anywhere; Clear removes them.
   recentHeading: "Your recent searches",
   recentNote: "Kept in this browser only.",
@@ -866,7 +871,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
     "search": "A search was made",
     "answer-ok": "Answer: picks",
     "answer-clarify": "Answer: one question first",
-    "answer-out-of-scope": "Answer: outside skincare and kitchen",
+    "answer-out-of-scope": "Answer: not a product we recommend",
     "feedback-useful": "Feedback: useful",
     "feedback-not-useful": "Feedback: not useful",
     "first-time-yes": "First time here: yes",
@@ -1402,9 +1407,10 @@ details[open] > summary .icon { transform: rotate(180deg); }
       note ? el("dd", { class: "note" }, note) : null, extra || null);
   }
 
-  /** The answer's title, its category, and its tools: copy its link, open every card's details. */
-  function answerHead(title, category, withTools) {
-    const kicker = LABELS.categories[category];
+  /** The answer's title, its category (for the general category, its department: 14 Oct 2026), and its tools: copy
+      its link, open every card's details. */
+  function answerHead(title, query, withTools) {
+    const kicker = (query.department && LABELS.departments[query.department]) || LABELS.categories[query.category];
     return el("div", { class: "answer-head" },
       el("div", {}, kicker ? el("p", { class: "kicker" }, kicker) : null, el("h2", { class: "answer-title", id: "answer-title" }, title)),
       withTools ? el("div", { class: "tools" }, copyLinkButton(), openAllButton()) : null);
@@ -1469,7 +1475,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
     const ingredient = query.ingredient_led && answer.ingredient ? answer.ingredient : null;
     // Being read on demand (14 Oct 2026): said first, under the title; with nothing read yet, the "not enough
     // evidence" message would be about threads that aren't there, so it is left out.
-    const parts = [answerHead(title, query.category, answer.picks.length > 0),
+    const parts = [answerHead(title, query, answer.picks.length > 0),
       data.on_demand ? onDemandNotice(data.on_demand, request) : null,
       answer.ingredient_note ? withIcon("check", el("p", { class: "ingredient-note" }, answer.ingredient_note)) : null,
       readingStrip(data.reading, ingredient)];

@@ -96,8 +96,10 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # query also says which ingredients every product shown must contain, and whether the request is ingredient-led.
     # Changed on purpose 13 Oct 2026 (Noemi's decision 1 on forms): the query also says which forms an ingredient-led
     # request names ("salicylic acid wash": cleanser).
+    # Changed on purpose 14 Oct 2026 (the general category): the query also says its department, which the page shows
+    # above a general answer ("tech"; null for the other categories).
     assert set(data["query"]) == {"status", "category", "product_type", "question", "message", "ingredients",
-                                  "ingredient_led", "forms"}
+                                  "ingredient_led", "forms", "department"}
     # Changed on purpose 9 Oct 2026 (decision 11, budgets): each pick has its price, and "left_out" counts the
     # products over the request's budget.
     # Changed on purpose 9 Oct 2026 (availability, Noemi's note): "left_out" also counts the products no longer sold.
