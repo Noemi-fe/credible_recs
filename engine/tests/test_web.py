@@ -596,7 +596,7 @@ def test_getting_ready_answers_the_examples_then_one_request_per_product_type():
 
 def test_getting_ready_answers_the_taxonomys_types_after_every_other_request():
     # 14 Oct 2026 (the coordinator, merging the general category): module 1's first 43 types keep their place
-    # (WARM_PRODUCT_TYPES: the examples, then one request per type, then the rest, the open model's last), and the 352
+    # (WARM_PRODUCT_TYPES: the examples, then one request per type, then the rest, the open model's last), and the 351
     # types of engine/data/product_types.json come after all of them, by their names, in the file's order
     # (WARM_TAXONOMY_TYPES): they have almost no threads yet, so their answers warm little, and before the others they
     # would keep the requests visitors ask most waiting for the keep-warm pings.
@@ -604,7 +604,7 @@ def test_getting_ready_answers_the_taxonomys_types_after_every_other_request():
 
     assert web.WARM_PRODUCT_TYPES == tuple(p.name for p in FIRST_PRODUCT_TYPES)
     assert web.WARM_TAXONOMY_TYPES == tuple(p.name for p in PRODUCT_TYPES[len(FIRST_PRODUCT_TYPES):])
-    assert len(web.WARM_TAXONOMY_TYPES) == 352 and "robot vacuum" in web.WARM_TAXONOMY_TYPES
+    assert len(web.WARM_TAXONOMY_TYPES) == 351 and "robot vacuum" in web.WARM_TAXONOMY_TYPES
     warmed = web.warm_requests()
     assert len(warmed) == len(set(warmed))  # each once
     likely = {text for path in web.WARM_FIRST_FILES for text in web._requests_in(path)}

@@ -46,7 +46,7 @@ def routed(text: str) -> tuple:
     ("air conditioner for a small flat", "general", "air conditioner", "home"),
     ("oven cleaner that actually works", "general", "oven cleaner", "home"),
     ("best barbecue under £300", "kitchen", "barbecue", None),
-    ("curl cream for 3a curls", "haircare", "curl cream", None),
+    ("hair gel that doesn't flake", "haircare", "hair gel", None),
 ])
 def test_products_outside_the_first_three_categories_get_a_product_type(text, category, product_type, department):
     assert routed(text) == ("ok", category, product_type, department)
@@ -88,8 +88,11 @@ def test_the_taxonomy_holds_about_300_types_across_departments():
     by_department = {d: sum(t["department"] == d for t in general) for d in GENERAL_DEPARTMENTS}
     assert all(n >= 10 for n in by_department.values()), by_department
     assert {t["category"] for t in MORE_PRODUCT_TYPES} == {"general", "kitchen", "haircare"}
-    # Left out on purpose (config.MORE_PRODUCT_TYPES): their names covered words the first types' answers read.
-    assert not {"body wash", "body lotion", "hand cream", "cookware set"} & {t["name"] for t in MORE_PRODUCT_TYPES}
+    # Left out on purpose (config.MORE_PRODUCT_TYPES): their names covered words the first types' answers read, or
+    # (curl cream, 14 Oct 2026, found merging main) a first type's advice names them: the open model still places them.
+    assert not ({"body wash", "body lotion", "hand cream", "cookware set", "curl cream"}
+                & {t["name"] for t in MORE_PRODUCT_TYPES})
+    assert routed("curl cream for 3a curls")[0] == "clarify"  # the rules' question; the open model places it, as before
 
 
 def test_every_type_of_the_taxonomy_is_well_formed():

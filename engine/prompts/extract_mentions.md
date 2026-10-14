@@ -84,7 +84,7 @@ Use one of these names, written exactly as here, when it fits:
   "coffee maker", "french press", "toaster", "waffle maker", "juicer", "kitchen scale"
 - more kitchen gear (added 14 Oct 2026, instructions v12): "dishwasher", "fridge", "freezer", "hob", "cooker hood",
   "wok", "knife sharpener", "cutting board", "pizza oven", "barbecue", "moka pot", "milk frother"
-- more haircare (v12): "curl cream", "hair gel", "heat protectant", "hairspray"
+- more haircare (v12): "hair gel", "heat protectant", "hairspray"
 - general, home (v12): "vacuum cleaner", "robot vacuum", "carpet cleaner", "steam mop", "mop", "mattress",
   "mattress topper", "pillow", "duvet", "bed sheets", "duvet cover", "bed frame", "sofa", "armchair", "office chair",
   "standing desk", "desk", "dining table", "bookshelf", "wardrobe", "chest of drawers", "tv stand", "rug", "curtains",

@@ -131,7 +131,8 @@ GENERAL_DEPARTMENTS: dict[str, dict] = {
 # plan part 1, for the library prepared ahead in part 2; chosen by Claude, reported to Noemi). Left out on purpose,
 # because they changed answers about the first types (their names would have covered words those answers read):
 # body washes, body lotions and hand creams (moisturiser answers read their threads) and cookware sets (frying pan and
-# skillet answers do); the open model still places them.
+# skillet answers do); and curl creams (found merging main, 14 Oct 2026: a leave-in conditioner answer's "what to look
+# for" names them, and a listed type's name there is another type's advice); the open model still places them.
 # Each with its plural, category and department, the names people use for it, its title words and its communities.
 PRODUCT_TYPES_FILE = Path(__file__).resolve().parent / "data" / "product_types.json"
 MORE_PRODUCT_TYPES: tuple[dict, ...] = tuple(json.loads(PRODUCT_TYPES_FILE.read_text(encoding="utf-8"))["types"])

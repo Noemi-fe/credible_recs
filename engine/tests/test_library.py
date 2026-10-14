@@ -636,7 +636,7 @@ def test_command_line_coverage(tmp_path, capsys):
 
 
 def test_command_line_coverage_lists_the_taxonomys_types_only_when_they_have_threads(tmp_path, capsys):
-    # 14 Oct 2026 (the general category's 352 types): one line each for those with saved threads, then how many have
+    # 14 Oct 2026 (the general category's 351 types): one line each for those with saved threads, then how many have
     # none, instead of hundreds of zeros.
     from engine.config import MORE_PRODUCT_TYPES
 

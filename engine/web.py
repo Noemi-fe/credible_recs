@@ -1133,7 +1133,7 @@ WARM_FIRST_FILES = (EXAMPLES_FILE, LATENCY_FILE)
 # Then the product types: module 1's own first 43 (engine.query.FIRST_PRODUCT_TYPES). The rules route each by its name
 # (only "serum", placed by a clue word, also gets the open model's view, as any request would).
 WARM_PRODUCT_TYPES = tuple(p.name for p in FIRST_PRODUCT_TYPES)
-# And after every other request, the 352 types of the taxonomy (engine/data/product_types.json, 14 Oct 2026; the
+# And after every other request, the 351 types of the taxonomy (engine/data/product_types.json, 14 Oct 2026; the
 # general category's, and a few kitchen and haircare ones), each by its name: the rules route each so.
 WARM_TAXONOMY_TYPES = tuple(p.name for p in PRODUCT_TYPES[len(FIRST_PRODUCT_TYPES):])
 WARM_ANSWER_STEP = "the answers' memory for"

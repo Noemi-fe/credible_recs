@@ -279,26 +279,6 @@
    ]
   },
   {
-   "name": "curl cream",
-   "plural": "curl creams",
-   "category": "haircare",
-   "keywords": [
-    "curl cream",
-    "curl creme",
-    "curling cream",
-    "curl defining cream",
-    "styling cream"
-   ],
-   "title_words": [
-    "curl cream"
-   ],
-   "subreddits": [
-    "curlyhair",
-    "wavyhair",
-    "HaircareScience"
-   ]
-  },
-  {
    "name": "hair gel",
    "plural": "hair gels",
    "category": "haircare",

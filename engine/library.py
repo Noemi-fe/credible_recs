@@ -1066,7 +1066,7 @@ def _print_check_live(result: LiveCheckResult) -> int:
 
 def _print_coverage(counts: dict[str, int], kinds: dict[str, dict[str, int]]) -> int:
     """Module 1's first types each on a line; the taxonomy's (engine/data/product_types.json, 14 Oct 2026) only when they
-    have saved threads, then how many have none, so 352 types don't print as hundreds of zeros."""
+    have saved threads, then how many have none, so 351 types don't print as hundreds of zeros."""
     print("Saved threads per product type:")
     first = {p.name for p in FIRST_PRODUCT_TYPES}
     for category in THREAD_CATEGORIES:
