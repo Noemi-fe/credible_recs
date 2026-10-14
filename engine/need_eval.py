@@ -11,6 +11,11 @@ made-up requests of eval/edge_cases/needs.json:
   words (config.NEEDS), so the engine doesn't grade itself;
 - what the answer shows: its picks and "Also worth a look", and how many threads it read (more than the first reading
   when the wider reading ran).
+Since 14 Oct 2026 (the need-quality builder) a case may also judge each of its needs apart ("judge_each": {need: judge
+words}): its first-reading threads about every one of them are counted, since a thread about curly hair alone tells a
+request for a curly-hair shampoo that isn't drying less than one about both; and list the words of the opposite of what
+it asks ("opposite": "clarif", "detox" for a shampoo that isn't drying): its first-reading threads titled with one, and
+the products its answer shows named with one, are counted, since those ask for or are the opposite.
 Answers run as the end-to-end evaluation's do (engine.slice_eval): writers' profiles from the cache and every shown
 quote checked live. Nothing here is Reddit text: thread ids, counts and product names only.
 
@@ -45,6 +50,10 @@ class CaseResult:
     threads_read: int = 0  # every thread the answer read (the wider reading's, when it ran)
     read_more: bool = False  # the wider reading ran and was kept
     message: str | None = None  # the answer's honest message, when it has fewer than 3 picks
+    each_judged: bool = False  # the case judges each of its needs apart ("judge_each")
+    about_every_need: int = 0  # first-reading threads whose title or post is about every one of them
+    titled_opposite: int = 0  # first-reading threads whose title holds a word of the case's "opposite"
+    named_opposite: int = 0  # picks and "Also worth a look" items whose name holds one
 
 
 def about_the_need(text: str, judge: list[str]) -> bool:
@@ -67,16 +76,22 @@ def score_cases(cases_path: Path = DEFAULT_CASES, library_dir: Path = DEFAULT_LI
         first = run.threads_used[:max_threads]
         result = CaseResult(case["id"], case["text"], [n.name for n in request_needs(run.query)], first,
                             threads_read=len(run.threads_used), read_more=run.read_more)
-        judge = case["judge"]
+        judge, each, opposite = case["judge"], case.get("judge_each") or {}, case.get("opposite") or []
+        result.each_judged = bool(each)
         for thread_id in first:
             thread = threads[thread_id]
             by_title = about_the_need(thread.title, judge)
             result.about_by_title += by_title
             result.about_by_title_or_post += by_title or about_the_need(thread.body, judge)
+            result.about_every_need += bool(each) and all(
+                about_the_need(thread.title, words) or about_the_need(thread.body, words) for words in each.values())
+            result.titled_opposite += bool(opposite) and about_the_need(thread.title, opposite)
         if run.answer is not None:
             result.picks = [p.name for p in run.answer.picks]
             result.worth = [w.name for w in run.answer.worth_a_look]
             result.message = run.answer.message
+            result.named_opposite = sum(bool(opposite) and about_the_need(name, opposite)
+                                        for name in result.picks + result.worth)
         results.append(result)
     return results
 
@@ -87,12 +102,20 @@ def need_lines(results: list[CaseResult]) -> list[str]:
     titled = sum(r.about_by_title for r in results)
     posted = sum(r.about_by_title_or_post for r in results)
     full = sum(len(r.picks) >= 3 for r in results)
+    each = [r for r in results if r.each_judged]
+    every = (f"; about every need {sum(r.about_every_need for r in each)}/{sum(len(r.first) for r in each)} (the "
+             f"{len(each)} with each need judged), titled as the opposite {sum(r.titled_opposite for r in results)}, "
+             f"shown named as the opposite {sum(r.named_opposite for r in results)}") if each else ""
     lines = [f"{len(results)} requests: first-reading threads about the need {posted}/{read} by title or post, "
-             f"{titled}/{read} by title; {full} with 3 picks"]
+             f"{titled}/{read} by title; {full} with 3 picks{every}"]
     for r in results:
         wider = f"; read {r.threads_read} threads (the wider reading)" if r.read_more else ""
+        every = f", about every need {r.about_every_need}" if r.each_judged else ""
+        opposite = (f"; titled as the opposite {r.titled_opposite}, shown named as the opposite {r.named_opposite}"
+                    if r.titled_opposite or r.named_opposite else "")
         lines.append(f"  {r.id} {r.text!r}: needs {', '.join(r.needs) or 'none'}; first reading {len(r.first)} threads, "
-                     f"about the need {r.about_by_title_or_post} by title or post ({r.about_by_title} by title){wider}")
+                     f"about the need {r.about_by_title_or_post} by title or post ({r.about_by_title} by title){every}"
+                     f"{wider}{opposite}")
         lines.append(f"    picks: {', '.join(r.picks) or 'none'}" + (f" ({r.message})" if r.message and not r.picks
                                                                        else ""))
         if r.worth:
