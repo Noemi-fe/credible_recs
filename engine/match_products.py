@@ -234,9 +234,12 @@ def plain_words(text: str) -> list[str]:
 
 def _plain_text(text: str) -> str:
     """The text in lowercase, with HTML codes turned back into characters and accents dropped."""
-    text = html.unescape(text)
-    # Split accented letters into the letter and its accent, then drop the accent.
-    return "".join(ch for ch in unicodedata.normalize("NFKD", text) if not unicodedata.combining(ch)).lower()
+    # Split accented letters into the letter and its accent, then drop the accent. A text that is plain ASCII once split
+    # has no accent to drop, so it isn't read letter by letter (latency, 14 Oct 2026: most texts are).
+    text = unicodedata.normalize("NFKD", html.unescape(text))
+    if text.isascii():
+        return text.lower()
+    return "".join(ch for ch in text if not unicodedata.combining(ch)).lower()
 
 
 def product_words(name: str, aliases: Aliases = NO_ALIASES) -> list[str]:
