@@ -39,11 +39,16 @@ unreadable pages in a row). The report gives counts and times only, never a comm
 
 --dry-run works out the comments and says how many would be read and how many are fresh, reading nothing on Reddit.
 On Google Cloud a Cloud Run job runs it once a day (deploy/cloudrun/DEPLOY.md).
+
+The products read on demand (14 Oct 2026; engine/on_demand.py): with CREDIBLE_RECS_ON_DEMAND_BUCKET set, the command
+first takes the threads read on demand into its library folder, and checks ahead the answers about every product type
+in on-demand reading's queue, after the requests above.
 """
 
 import dataclasses
 import inspect
 import json
+import os
 import sys
 import time
 from contextlib import contextmanager
@@ -51,7 +56,7 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from pathlib import Path
 
-from engine import pipeline
+from engine import on_demand, pipeline
 from engine.answer import Answer, ShownQuote, quotes_to_check
 from engine.config import (PICKS_SHOWN, PRECHECK_FRESH_HOURS, PRECHECK_MAX_READS, PRECHECK_MAX_WAIT_SECONDS,
                            PRECHECK_MODEL_TYPES, PRECHECK_STOP_AFTER_UNKNOWN)
@@ -390,8 +395,13 @@ def main(argv: list[str]) -> int:
         print(__doc__)
         return 2
     limit, dry_run = parsed
-    return run(requests_to_check(), limit, dry_run, DEFAULT_LIBRARY_DIR,
-               checker_from_env(max_wait=PRECHECK_MAX_WAIT_SECONDS), pipeline.cached_profiles())
+    requests = requests_to_check()
+    # The products read on demand (14 Oct 2026; engine/on_demand.py): their threads into the library folder first, then
+    # their answers checked ahead like the others, after them.
+    read_on_demand = on_demand.precheck_types(os.environ, DEFAULT_LIBRARY_DIR)
+    requests += [t for t in dict.fromkeys(read_on_demand) if t not in requests]
+    return run(requests, limit, dry_run, DEFAULT_LIBRARY_DIR, checker_from_env(max_wait=PRECHECK_MAX_WAIT_SECONDS),
+               pipeline.cached_profiles())
 
 
 if __name__ == "__main__":

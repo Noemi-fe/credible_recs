@@ -177,7 +177,7 @@ def test_the_threads_the_job_read_come_in_and_the_next_ask_answers_with_them(tmp
     assert sorted(data["threads_used"]) == ["1tea001", "1tea002", "1tea003"]
     for pick in data["answer"]["picks"]:  # every quote word for word in its comment (the server refuses any other)
         assert pick["quotes"] and all(find_quote(body_of(q["comment_id"]), q["text"]) for q in pick["quotes"])
-    assert (site.library / "threads" / "1tea001.json").is_file() and (site.library / "extracted" / "1tea001.json").is_file()
+    assert all((site.library / folder / "1tea001.json").is_file() for folder in ("threads", "extracted"))
 
 
 def test_a_baked_thread_is_never_overwritten_by_the_bundle(tmp_path, monkeypatch):

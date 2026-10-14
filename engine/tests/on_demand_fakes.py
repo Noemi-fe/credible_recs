@@ -44,7 +44,7 @@ def comment_url(thread_id: str, comment_id: str) -> str:
 
 
 def body_of(comment_id: str) -> str:
-    return next(body for _, (_, _, comments) in TEAPOT_THREADS.items() for cid, body, _ in comments if cid == comment_id)
+    return next(body for _, _, comments in TEAPOT_THREADS.values() for cid, body, _ in comments if cid == comment_id)
 
 
 class FakeArchive:

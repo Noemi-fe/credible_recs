@@ -102,13 +102,15 @@ PREFIX = "on_demand/"  # the bucket's objects are under this prefix
 QUEUE_NAME = "queue.json"
 THREADS_NAME = "threads.json"
 RUN_API = "https://run.googleapis.com/v2/"
-_JOB_NAME = re.compile(r"projects/[a-z][a-z0-9-]{4,28}[a-z0-9]/locations/[a-z0-9-]+/jobs/[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?")
+_JOB_NAME = re.compile(r"projects/[a-z][a-z0-9-]{4,28}[a-z0-9]/locations/[a-z0-9-]+"
+                       r"/jobs/[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?")
 CHANGE_TRIES = 5  # a write over a version another writer moved on is redone from a fresh read this many times at most
 
 # --- Wording visitors see (decided by Claude, 14 Oct 2026; PROPOSED, like the page's other new words) ---
 # The answer says what is happening in the page's own style; {about} is the product type's plural ("teapots").
 READING_NEW = "We haven't read Reddit about {about} yet, so we've started: check back {when}."
-READING_MORE = "We've read only a little on Reddit about {about} so far, so we've started reading more: check back {when}."
+READING_MORE = ("We've read only a little on Reddit about {about} so far, so we've started reading more: check back "
+                "{when}.")
 WAITING_NEW = ("We haven't read Reddit about {about} yet. It's on our list, but our free reading allowance is used up "
                "for now: check back {when}.")
 WAITING_MORE = ("We've read only a little on Reddit about {about} so far. Reading more is on our list, but our free "
@@ -217,7 +219,8 @@ class Queue:
     lease_until: str | None = None  # a run holds the queue until then (UTC)
     resting_until: str | None = None  # no reading until then: Gemini's daily allowance, or the month's time, used up
     resting_why: str | None = None  # "gemini", "month" or "full" (the bundle waits for a deploy)
-    # {"month": "2026-10", "seconds": the job's runs this month, "day": Gemini's day, "gemini_calls": its calls that day}
+    # {"month": "2026-10", "seconds": the job's runs this month, "day": Gemini's day, "gemini_calls": its calls that
+    # day}
     usage: dict = field(default_factory=dict)
     last_run: dict | None = None  # the last run's report, in counts
 
@@ -679,13 +682,14 @@ def site_reader_from_env(environ, library_dir: Path) -> SiteReader | None:
     return SiteReader(bucket, library_dir, job=JobStarter(job, bucket))
 
 
-def precheck_types(environ, library_dir: Path) -> list[str]:
+def precheck_types(environ, library_dir: Path, bucket: Bucket | None = None) -> list[str]:
     """For the daily pre-check, with CREDIBLE_RECS_ON_DEMAND_BUCKET set: the threads read on demand written into its
-    library folder, and the product types of the queue (its answers about them are checked ahead). [] without it."""
+    library folder, and the product types of the queue (its answers about them are checked ahead). [] without it.
+    `bucket` can be a fake (the tests)."""
     name = (environ.get(BUCKET_VAR) or "").strip()
     if not name:
         return []
-    reader = SiteReader(Bucket(name, prefix=PREFIX), library_dir)
+    reader = SiteReader(bucket or Bucket(name, prefix=PREFIX), library_dir)
     if reader.load_threads() is None:
         print(f"The threads read on demand couldn't be read from {name}: checked ahead without them.",
               file=sys.stderr, flush=True)
@@ -1138,8 +1142,9 @@ def status_text(queue: Queue, now: datetime) -> str:
     if queue.leased(now):
         lines.append(f"A run holds the queue until {queue.lease_until}.")
     usage = queue.usage_now(now)
-    lines.append(f"This month: {float(usage.get('seconds', 0)) / 3600:.1f} h of {ON_DEMAND_MONTH_SECONDS / 3600:.1f} h; "
-                 f"Gemini today: {usage.get('gemini_calls', 0)} of {ON_DEMAND_GEMINI_CALLS_A_DAY} calls.")
+    hours = float(usage.get("seconds", 0)) / 3600
+    lines.append(f"This month: {hours:.1f} h of {ON_DEMAND_MONTH_SECONDS / 3600:.1f} h; Gemini today: "
+                 f"{usage.get('gemini_calls', 0)} of {ON_DEMAND_GEMINI_CALLS_A_DAY} calls.")
     if queue.last_run:
         lines.append(f"Last run: {queue.last_run}.")
     return "\n".join(lines)
