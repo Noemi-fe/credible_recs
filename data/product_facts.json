@@ -228,7 +228,16 @@
     "https://global.oliveyoung.com/product/detail?prdtNo=GA240121573",
     "https://www.yesstyle.com/en/aestura-ato-barrier-365-cream-mini-45ml/info.html/pid.1133349503"
    ],
-   "checked_on": "2026-10-09"
+   "checked_on": "2026-10-09",
+   "formula": {
+    "actives": [
+     "ceramides"
+    ],
+    "sources": [
+     "https://int.aestura.com/products/atobarrier365-cream"
+    ],
+    "checked_on": "2026-10-14"
+   }
   },
   {
    "product": "It's Skin Red Ginseng Lotion d'Escargot",
@@ -1940,6 +1949,309 @@
     ],
     "sources": [
      "https://us.numbuzin.com/products/no-5-vitamin-concentrated-serum"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Pixi Glow Tonic",
+   "category": "skincare",
+   "product_type": "toner",
+   "facts": {},
+   "sources": [
+    "https://www.pixibeauty.com/collections/glow-tonic/products/glow-tonic-250ml"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "glycolic acid"
+    ],
+    "sources": [
+     "https://www.pixibeauty.com/collections/glow-tonic/products/glow-tonic-250ml"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "The Ordinary Glycolic Acid 7% Exfoliating Toner",
+   "category": "skincare",
+   "product_type": "toner",
+   "facts": {},
+   "sources": [
+    "https://theordinary.com/en-gb/glycolic-acid-7-exfoliating-toner-100418.html"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "glycolic acid"
+    ],
+    "sources": [
+     "https://theordinary.com/en-gb/glycolic-acid-7-exfoliating-toner-100418.html"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Paula's Choice Skin Perfecting 8% AHA Gel Exfoliant",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {},
+   "sources": [
+    "https://www.paulaschoice.co.uk/skin-perfecting-aha-gel-exfoliant/m1900.html"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "glycolic acid"
+    ],
+    "sources": [
+     "https://www.paulaschoice.co.uk/skin-perfecting-aha-gel-exfoliant/m1900.html"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Mario Badescu Drying Lotion",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {},
+   "sources": [
+    "https://www.mariobadescu.com/products/drying-lotion",
+    "https://www.lookfantastic.com/p/mario-badescu-drying-lotion-29ml/13311832/"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid",
+     "sulfur",
+     "zinc"
+    ],
+    "form": "spot treatment",
+    "sources": [
+     "https://www.mariobadescu.com/products/drying-lotion",
+     "https://www.lookfantastic.com/p/mario-badescu-drying-lotion-29ml/13311832/"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Clinique Anti-Blemish Solutions Clinical Advanced Clearing Gel",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {},
+   "sources": [
+    "https://www.clinique.co.uk/product/1672/29793/skin-care/anti-blemish-solutions/treatment-specialists/anti-blemish-solutions-clinical-clearing-gel"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid"
+    ],
+    "form": "gel",
+    "sources": [
+     "https://www.clinique.co.uk/product/1672/29793/skin-care/anti-blemish-solutions/treatment-specialists/anti-blemish-solutions-clinical-clearing-gel"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "ZitSticka KILLA Kit Deep Zit Microdart Patches",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {},
+   "sources": [
+    "https://zitsticka.com/products/killa-sticka"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid",
+     "niacinamide",
+     "hyaluronic acid"
+    ],
+    "form": "patch",
+    "sources": [
+     "https://zitsticka.com/products/killa-sticka"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Mentholatum Acnes Medicated Sealing Jell",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {},
+   "sources": [
+    "https://rohto.com.np/product/sealing-gel-tube-with-box/",
+    "https://www.yesstyle.com/en/rohto-mentholatum-acnes-medicated-sealing-jell-18g/info.html/pid.1114344304"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid"
+    ],
+    "form": "spot treatment",
+    "sources": [
+     "https://rohto.com.np/product/sealing-gel-tube-with-box/",
+     "https://www.yesstyle.com/en/rohto-mentholatum-acnes-medicated-sealing-jell-18g/info.html/pid.1114344304"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Mizon Acence Blemish Out Pink Spot",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {},
+   "sources": [
+    "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=6c608fab-615e-4e58-baf3-cbc936dd8702"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid"
+    ],
+    "sources": [
+     "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=6c608fab-615e-4e58-baf3-cbc936dd8702"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "The INKEY List Salicylic Acid Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {},
+   "sources": [
+    "https://uk.theinkeylist.com/products/salicylic-acid-cleanser"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid",
+     "zinc"
+    ],
+    "sources": [
+     "https://uk.theinkeylist.com/products/salicylic-acid-cleanser"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Paula's Choice CLEAR Pore Normalizing Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {},
+   "sources": [
+    "https://www.paulaschoice.com/clear-pore-normalizing-cleanser/600.html",
+    "https://www.paulaschoice.co.uk/clear-pore-normalizing-cleanser/m6001.html"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid"
+    ],
+    "sources": [
+     "https://www.paulaschoice.com/clear-pore-normalizing-cleanser/600.html",
+     "https://www.paulaschoice.co.uk/clear-pore-normalizing-cleanser/m6001.html"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Clean & Clear Persa-Gel 10",
+   "category": "skincare",
+   "product_type": "spot treatment",
+   "facts": {},
+   "sources": [
+    "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ec5d1347-bee9-4dbd-9778-ff7519b60041"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "benzoyl peroxide"
+    ],
+    "sources": [
+     "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ec5d1347-bee9-4dbd-9778-ff7519b60041"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Innisfree Volcanic BHA Pore Cleansing Foam",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {},
+   "sources": [
+    "https://us.innisfree.com/products/volcanic-bha-pore-cleansing-foam"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid",
+     "glycolic acid",
+     "lactic acid"
+    ],
+    "sources": [
+     "https://us.innisfree.com/products/volcanic-bha-pore-cleansing-foam"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "SKIN1004 Tea-Trica BHA Foam",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {},
+   "sources": [
+    "https://www.skin1004.com/products/tea-trica-bha-foam"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "salicylic acid",
+     "centella asiatica"
+    ],
+    "sources": [
+     "https://www.skin1004.com/products/tea-trica-bha-foam"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "The INKEY List Glycolic Acid Toner",
+   "category": "skincare",
+   "product_type": "toner",
+   "facts": {},
+   "sources": [
+    "https://uk.theinkeylist.com/products/glycolic-acid-toner"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "glycolic acid"
+    ],
+    "sources": [
+     "https://uk.theinkeylist.com/products/glycolic-acid-toner"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "COSRX Low pH Good Morning Gel Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {},
+   "sources": [
+    "https://www.cosrx.com/products/low-ph-good-morning-gel-cleanser"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "betaine salicylate"
+    ],
+    "sources": [
+     "https://www.cosrx.com/products/low-ph-good-morning-gel-cleanser"
     ],
     "checked_on": "2026-10-14"
    }

@@ -40,7 +40,8 @@
       {"short": "Melano CC serum", "full": "Rohto Melano CC Intensive Anti-Spot Essence", "seen": ["Melano CC serum"]},
       {"short": "Melano CC vitamin C essence", "full": "Rohto Melano CC Intensive Anti-Spot Essence", "seen": ["melano cc vitamin c essence"]},
       {"short": "Axs-y", "full": "AXIS-Y", "seen": ["Axs-y dark spot correcting glow serum"]},
-      {"short": "Axis Y glow corrector serum", "full": "AXIS-Y Dark Spot Correcting Glow Serum", "seen": ["Axis Y glow corrector serum"]}
+      {"short": "Axis Y glow corrector serum", "full": "AXIS-Y Dark Spot Correcting Glow Serum", "seen": ["Axis Y glow corrector serum"]},
+      {"short": "Mentholatum Acnes Sealing Jelly", "full": "Mentholatum Acnes Medicated Sealing Jell", "seen": ["Mentholatum Acnes Sealing Jelly", "mentholatum acnes sealing jelly", "Mentholatum Acnes Medicated Sealing Jell"]}
     ],
     "kitchen": [
       {"short": "1Z", "full": "1Zpresso", "seen": ["1Z K plus", "1ZPresso K Plus"]},
