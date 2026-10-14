@@ -1231,7 +1231,7 @@ CURLY_LIBRARY = [
     hair_thread("1curl02", "Curly girl shampoo recs", num_comments=200, community="curlyhair"),
     hair_thread("1dry001", "Shampoo that won't dry out my hair?", num_comments=12),
     hair_thread("1both01", "Shampoo for curls that isn't drying?", num_comments=15, community="curlyhair"),
-    hair_thread("1clar01", "Best clarifying shampoo for curly hair?", body="My curls feel dry and coated.",
+    hair_thread("1clar01", "Which clarifying shampoo for my curls?", body="My curls feel dry and coated.",
                 num_comments=400, community="curlyhair"),
 ]
 
@@ -1241,7 +1241,7 @@ def test_a_thread_titled_as_a_request_for_the_opposite_comes_after_every_thread_
     source = local_source(tmp_path, CURLY_LIBRARY)
     found = ids(source.find_threads(parse_query("shampoo for curly hair that isn't drying"), limit=10))
     assert found[0] == "1both01" and found[-1] == "1clar01"
-    assert ids(source.find_threads(parse_query("clarifying shampoo for curly hair"), limit=10))[0] == "1clar01"
+    assert ids(source.find_threads(parse_query("clarifying shampoo for my curls"), limit=10))[0] == "1clar01"
 
 
 def test_only_the_kind_of_product_makes_a_title_the_opposite():
@@ -1249,10 +1249,10 @@ def test_only_the_kind_of_product_makes_a_title_the_opposite():
     from engine.sources import titled_as_the_opposite
 
     asks = ("not drying",)
-    assert titled_as_the_opposite("Best clarifying shampoo for curls?", asks)
+    assert titled_as_the_opposite("Which clarifying shampoo for curls?", asks)
     assert titled_as_the_opposite("Detox shampoo recommendations", asks)
     assert not titled_as_the_opposite("My shampoo is so drying, help", asks)
-    assert not titled_as_the_opposite("Best clarifying shampoo for curls?", ("oily hair",))  # clarifying suits oily hair
+    assert not titled_as_the_opposite("Which clarifying shampoo for curls?", ("oily hair",))  # clarifying suits oily hair
 
 
 # --- Relevance and talking read a thread's comments in one go (latency, 13 Oct 2026) ---

@@ -907,7 +907,7 @@ OPPOSITE_QUOTE_PATTERNS["lasting"] = (rf"\b{_FAILED}\b[^.!?]{{0,40}}?\b{_SOON}\b
                                       # Buy the cheapest and swap it for a new one when it fails (12 Oct 2026: a "Look for" note
                                       # said so for an air fryer that lasts).
                                       r"\breplace (it|them) (before|once|as soon as) (it|they)\b")
-# A product that isn't drying, one that doesn't strip, and a gentle one (14 Oct 2026, the need-quality builder; chosen by
+# A product that isn't drying or stripping, and a gentle one (14 Oct 2026, the need-quality builder; chosen by
 # Claude, reported to Noemi). Found on the library: "shampoo for curly hair that isn't drying" picked a detox shampoo
 # and "gentle shampoo for wavy hair" an anti-dandruff one its writer used for a deep clean. A quote describing the
 # product as drying, stripping or harsh says the opposite, and so does one using it as a clarifying, detox or chelating
@@ -969,8 +969,8 @@ OPPOSITE_QUOTE_PATTERNS["fine hair"] = _HEAVY
 OPPOSITE_QUOTE_PATTERNS["frizzy"] = _FRIZZ
 OPPOSITE_NEGATED_IN_SENTENCE = ("not drying", "strip", "gentle", "colour-treated", "dry hair", "oily hair", "fine hair",
                                 "frizzy")
-# A thread whose title asks for the opposite kind of product (14 Oct 2026, the need-quality builder): "Best clarifying
-# shampoo for curly hair?" is no thread about a shampoo that isn't drying, a gentle one, or one for dry or colour-treated
+# A thread whose title asks for the opposite kind of product (14 Oct 2026, the need-quality builder): "Which clarifying
+# shampoo for my curls?" is no thread about a shampoo that isn't drying, a gentle one, or one for dry or colour-treated
 # hair, however much its title and post talk about curls or dryness: its answers are clarifying shampoos. The library's
 # first reading reads it after every thread about the request's needs (engine.sources.LocalSource). Only the kind of
 # product: a title saying a product dried someone's hair ("this shampoo is so drying, help") is about the need.

@@ -690,7 +690,7 @@ def test_what_says_the_opposite_of_a_request(ask, quote, against):
     assert _says_the_opposite(quote, (ask,)) is against
 
 
-# A product that isn't drying, one that doesn't strip, and a gentle one (14 Oct 2026, the need-quality builder): found on
+# A product that isn't drying or stripping, and a gentle one (14 Oct 2026, the need-quality builder): found on
 # the library, "shampoo for curly hair that isn't drying" picked a detox shampoo and "gentle shampoo for wavy hair" an
 # anti-dandruff one its writer used for a deep clean. A quote describing a product as drying, stripping or harsh, or as a
 # clarifying or detox shampoo (made to strip buildup), says the opposite; a negation earlier in its sentence takes it

@@ -370,7 +370,7 @@ class LocalSource:
         (14 Oct 2026, Noemi's decision 3: need-led thread choice). A thread is about a need when its title or post talks
         about it in any of the need's words (engine.needs.thread_needs: "greasy" is "oily"), unless its title names
         another type of product and not the one asked for, or (since 14 Oct 2026, the need-quality builder) asks for
-        the opposite kind of product (titled_as_the_opposite: "Best clarifying shampoo for curly hair?" for one that
+        the opposite kind of product (titled_as_the_opposite: "Which clarifying shampoo for my curls?" for one that
         isn't drying). A request without needs keeps the order given: the graded one, where a big general thread had
         outweighed a smaller one asking the request's exact question. So does an ingredient-led request ("salicylic
         acid for acne"): its threads come with those whose comments talk about its ingredient most first (talk_points,
