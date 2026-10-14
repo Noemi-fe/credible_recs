@@ -1540,3 +1540,30 @@ UPVOTE_TOP_OF_BIG_THREAD = True
 UPVOTE_ONLY_TO_FILL = True
 UPVOTE_THREAD_MIN_COMMENTS = 20
 UPVOTE_THREAD_SHARE_BEATEN = 0.9
+
+# --- A comment that stands out in its thread (Noemi, 14 Oct 2026, after switching on variant D) ---
+# Noemi: "if a comment has a lot of upvotes compared to the size of the thread, i want it as a pick or worth a look". A
+# credible recommendation (CREDIBLE_VOICES, CREDIBLE_EVIDENCE: upvotes never make a comment credible) stands out in its
+# thread when its comment has at least STANDOUT_UPVOTES_PER_COMMENT upvotes for each comment of its thread readable when
+# it was read (3 for every 4) and at least STANDOUT_MIN_SCORE upvotes, in a thread of at least
+# STANDOUT_MIN_THREAD_COMMENTS comments; it names at most STANDOUT_MAX_PRODUCTS products (a whole routine or a review of
+# many shares its upvotes among them); and, when the request asks for anything besides the product (engine/needs.py),
+# it talks about that (engine/rank.py, stands_out). Its product, with more credible recommendations than credible
+# warnings and a score above zero, can then take a place left empty under Also worth a look even with that one credible
+# voice, and with a second credible writer, even from the same thread, it meets the picks bar (STANDOUT_FILLS_PICKS),
+# only to fill a place the products meeting it otherwise leave empty (RankingResult.qualifying): never the place of a
+# product that meets the rules without it, as for variant D. Variant D comes first: what it lifts, it lifts as before.
+# The answer says which comment stands out and by how much ("its comment has 74 upvotes in a 69-comment thread"), and
+# how much an answer reads doesn't change (engine.pipeline.answer_request). The measure and the values were chosen by a
+# breadth-first pass over six ways of measuring standing out on the library of 14 Oct 2026, quality first: the lowest
+# values that lifted nothing that made no sense (eval/RUNS.md, 14 Oct 2026). Switched on as Noemi asked; the values
+# PROPOSED by Claude.
+STANDOUT_ON = True
+STANDOUT_UPVOTES_PER_COMMENT = 0.75
+STANDOUT_MIN_SCORE = 25
+STANDOUT_MIN_THREAD_COMMENTS = 20
+STANDOUT_MAX_PRODUCTS = 5
+# Into the picks with a second credible writer even from one thread: her "as a pick", which sets aside, for this case
+# only, her night rule for the upvote rule that "a pick still needs credible recommendations across 2 threads". False
+# keeps that rule: then a standing-out comment earns a place under Also worth a look only. For Noemi to confirm.
+STANDOUT_FILLS_PICKS = True
