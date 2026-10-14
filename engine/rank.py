@@ -42,9 +42,11 @@ The rules, in plain words:
   UPVOTE_MIN_SCORE upvotes counts as two toward the two rules above (counts_twice; the variants are config's). Only a
   credible recommendation: upvotes never make a comment credible, and a warning counts once. One comment counts at most
   twice, and the threads are still counted as threads, so the extra count never stands in for the second thread: in
-  practice it lifts a product with 2 credible recommendations from 2 threads (one of them with the upvotes) to the
   picks. A writer counted once (the strongest of their mentions) is counted twice only by that mention's own comment.
-  Everything else still counts writers: the score, the ties below, the skip-these list and the disagreement flag.
+  Everything else still counts writers: the score, the ties below, the skip-these list and the disagreement flag. A
+  lifted product takes its place among the picks by its score, or with config.UPVOTE_ONLY_TO_FILL (variant D) only a
+  place the products meeting the rule on their own leave empty (RankingResult.qualifying); one that doesn't make the
+  picks stays under Also worth a look, so the rule never takes a product out of the answer.
 - Kind support: each kind's support is the sum of the weights of its credible notes. If the best-supported kind
   has at least 2 credible recommending notes and at least twice the support of the next kind, its products
   get a bonus (config.KIND_BONUS, shown in the score breakdown).
@@ -191,6 +193,13 @@ def counts_twice(mention: ScoredMention, rule: bool | None = None) -> bool:
     return True
 
 
+def lifted(product: "ProductScore") -> bool:
+    """Whether a product meets the minimum-evidence rule only thanks to Noemi's upvote rule: fewer credible
+    recommendations than the bar, made up by some counted twice for their upvotes (14 Oct 2026)."""
+    return product.qualifies and bool(product.counted_twice) and (
+        product.breakdown.credible_recommends < MIN_CREDIBLE_MENTIONS)
+
+
 def _counted_twice(credible_recommends: list[ScoredMention], rule: bool | None = None) -> tuple[ScoredMention, ...]:
     """A product's credible recommendations that count twice toward the picks bar, the most upvoted first: every one
     counts_twice allows (variant A), or with UPVOTE_ONLY_WHEN_SHORT (variants B and C) only for a product with fewer
@@ -273,11 +282,18 @@ class RankingResult:
     kinds: list[KindSupport] = field(default_factory=list)  # best supported first
     leading_kind: KindSupport | None = None  # the kind whose products get the bonus, if one leads by far
     kind_notes: list[KindNote] = field(default_factory=list)  # one per writer and kind, for "what to look for"
+    # Noemi's upvote rule with config.UPVOTE_ONLY_TO_FILL (variant D, 14 Oct 2026): the products it lifts to the bar come
+    # after every product that meets it on its own, so they only fill places the picks would leave empty.
+    fill_only: bool = False
 
     @property
     def qualifying(self) -> list[ProductScore]:
-        """Every product that meets the minimum-evidence rule, best first."""
-        return [p for p in self.products if p.qualifies]
+        """Every product that meets the minimum-evidence rule, best first; with `fill_only`, those the upvote rule lifted
+        to it after the others."""
+        found = [p for p in self.products if p.qualifies]
+        if self.fill_only:
+            found = [p for p in found if not lifted(p)] + [p for p in found if lifted(p)]
+        return found
 
     @property
     def picks(self) -> list[ProductScore]:
@@ -347,7 +363,8 @@ def rank_products(
         for key, product_mentions in by_product.items()
     ]
     products.sort(key=_rank_order)
-    return RankingResult(category, products, kinds, leader, notes)
+    on = config.UPVOTE_COUNTS_MORE if upvote_rule is None else upvote_rule
+    return RankingResult(category, products, kinds, leader, notes, fill_only=on and config.UPVOTE_ONLY_TO_FILL)
 
 
 def _one_per_comment(items: Iterable, key_of: Callable) -> list:

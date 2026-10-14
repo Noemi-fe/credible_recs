@@ -1200,11 +1200,17 @@ ON_DEMAND_QUEUE_FRESH_SECONDS = 60
 #      first: it can lift a product to the picks, never inflate one that qualifies (True, False);
 #   C: as B, and the comment must be among the top of a big thread, her earlier "needs to be a high quality thread":
 #      at least UPVOTE_THREAD_MIN_COMMENTS comments readable when it was read, and scoring higher than at least
-#      UPVOTE_THREAD_SHARE_BEATEN of the others, its top 10% (True, True).
+#      UPVOTE_THREAD_SHARE_BEATEN of the others, its top 10% (True, True);
+#   D: as C, and a product it lifts ranks after every product meeting the bar on its own, so it only fills a place the
+#      picks would leave empty, never takes one (UPVOTE_ONLY_TO_FILL True; added by Claude after the first effect run,
+#      where B and C put lifted shampoos in place of picks with three credible writers).
+# In every variant nothing leaves the answer (a lifted product its score keeps out of the picks stays under Also worth a
+# look) and how much an answer reads doesn't change (engine.pipeline.answer_request).
 # PROPOSED (Claude, 14 Oct 2026): every value but her "10+", and which variant, wait for Noemi; the switch stays off.
 UPVOTE_COUNTS_MORE = False
 UPVOTE_MIN_SCORE = 10  # Noemi's "10+"
 UPVOTE_ONLY_WHEN_SHORT = True
-UPVOTE_TOP_OF_BIG_THREAD = False
+UPVOTE_TOP_OF_BIG_THREAD = True
+UPVOTE_ONLY_TO_FILL = True
 UPVOTE_THREAD_MIN_COMMENTS = 20
 UPVOTE_THREAD_SHARE_BEATEN = 0.9

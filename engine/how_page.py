@@ -159,12 +159,14 @@ ON_DEMAND_NOTE = ("<li><strong>Products we haven't read about yet.</strong> When
 ON_DEMAND_EXCEPT = ", and the short note about a product we haven't read about yet"
 
 # Noemi's upvote rule (14 Oct 2026; wording decided by Claude): explained under the picks rule only while it is on
-# (config.UPVOTE_COUNTS_MORE), in the words of its variant: for any product (A), or only for one short of the bar (B, C),
-# and with variant C's thread (UPVOTE_TOP_OF_BIG_THREAD).
+# (config.UPVOTE_COUNTS_MORE), in the words of its variant: for any product (A), or only for one short of the bar (B, C,
+# D), with variant C's thread (UPVOTE_TOP_OF_BIG_THREAD) and variant D's empty places only (UPVOTE_ONLY_TO_FILL).
 UPVOTE_RULE = ("<p>{which} whose comment has at least {{{{config:UPVOTE_MIN_SCORE}}}} upvotes{thread} counts as two "
-               "toward this rule, never more{as_needed}. It never stands in for the second thread, upvotes never make a "
-               "comment credible, and a warning always counts once. The pick's reason says which voice counted twice "
-               "and for how many upvotes; every other number counts people.</p>")
+               "toward this rule, never more{as_needed}.{fill} It never stands in for the second thread, upvotes never "
+               "make a comment credible, and a warning always counts once. The pick's reason says which voice counted "
+               "twice and for how many upvotes; every other number counts people.</p>")
+UPVOTE_RULE_FILL = (" Such a product only takes a place the picks would otherwise leave empty: it never takes the place "
+                    "of one that meets this rule on its own.")
 UPVOTE_RULE_WHEN_SHORT = "When a product has fewer than {{config:MIN_CREDIBLE_MENTIONS}} credible recommendations, one"
 UPVOTE_RULE_ANY = "A credible recommendation"
 UPVOTE_RULE_AS_NEEDED = ", and only as many as the product needs"
@@ -281,7 +283,8 @@ def _upvote_rule() -> str:
     short = config.UPVOTE_ONLY_WHEN_SHORT
     return fill(UPVOTE_RULE.format(which=UPVOTE_RULE_WHEN_SHORT if short else UPVOTE_RULE_ANY,
                                    thread=UPVOTE_RULE_THREAD if config.UPVOTE_TOP_OF_BIG_THREAD else "",
-                                   as_needed=UPVOTE_RULE_AS_NEEDED if short else ""), {})
+                                   as_needed=UPVOTE_RULE_AS_NEEDED if short else "",
+                                   fill=UPVOTE_RULE_FILL if config.UPVOTE_ONLY_TO_FILL else ""), {})
 
 
 def _medium_red_flags() -> str:

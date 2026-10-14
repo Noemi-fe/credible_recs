@@ -4,13 +4,14 @@ have few credible mentions, a highly upvoted comment (10+) counts more".
 Today a product becomes a pick with 3 credible recommendations across 2 threads (Noemi's decisions 4-8 of 9 Oct 2026),
 and 2 across 2 threads make "Also worth a look" (her decision 2 of 13 Oct 2026). With config.UPVOTE_COUNTS_MORE on, a
 credible recommendation whose comment has at least config.UPVOTE_MIN_SCORE upvotes counts as two toward that bar, in one
-of three variants (engine/rank.py):
+of four variants (engine/rank.py):
 - A: for any product (UPVOTE_ONLY_WHEN_SHORT off);
 - B: only for a product short of the bar, and only as far as the bar (UPVOTE_ONLY_WHEN_SHORT on);
-- C: as B, and only for a comment in the top of a big thread (UPVOTE_TOP_OF_BIG_THREAD on).
+- C: as B, and only for a comment in the top of a big thread (UPVOTE_TOP_OF_BIG_THREAD on);
+- D: as C, and a product it lifts only fills a place the picks would leave empty (UPVOTE_ONLY_TO_FILL on).
 In every variant only a comment that is already a credible recommendation counts more (never a warning), one comment
-counts at most twice, a pick still needs credible recommendations from 2 different threads, and the answer says so
-openly while its numbers stay the writers'.
+counts at most twice, a pick still needs credible recommendations from 2 different threads, nothing leaves the answer,
+how much an answer reads doesn't change, and the answer says so openly while its numbers stay the writers'.
 
 Every thread, comment and product here is made up; no test reads data/ or reaches the network.
 """
@@ -32,18 +33,20 @@ from engine.tests.ranking_factories import bodies_for, mention, mentions
 from engine.tests.test_how_page import get_how, text_of
 from engine.tests.test_web_public import function_body, page_text
 
-# {variant: (UPVOTE_ONLY_WHEN_SHORT, UPVOTE_TOP_OF_BIG_THREAD)}
-VARIANTS = {"A": (False, False), "B": (True, False), "C": (True, True)}
+# {variant: (UPVOTE_ONLY_WHEN_SHORT, UPVOTE_TOP_OF_BIG_THREAD, UPVOTE_ONLY_TO_FILL)}
+VARIANTS = {"A": (False, False, False), "B": (True, False, False), "C": (True, True, False), "D": (True, True, True)}
+BY_SCORE = ("A", "B", "C")  # the variants in which a lifted product takes its place by its score
 # The top of a big thread: a comment every variant lets count twice.
 TOP = {"thread_comments": 40, "share_beaten": 0.95}
 
 
 def upvote_rule(monkeypatch, variant: str) -> None:
     """Turns the rule on, in one variant."""
-    only_when_short, top_of_big_thread = VARIANTS[variant]
+    only_when_short, top_of_big_thread, only_to_fill = VARIANTS[variant]
     monkeypatch.setattr(config, "UPVOTE_COUNTS_MORE", True)
     monkeypatch.setattr(config, "UPVOTE_ONLY_WHEN_SHORT", only_when_short)
     monkeypatch.setattr(config, "UPVOTE_TOP_OF_BIG_THREAD", top_of_big_thread)
+    monkeypatch.setattr(config, "UPVOTE_ONLY_TO_FILL", only_to_fill)
 
 
 def names(products) -> list[str]:
@@ -245,12 +248,35 @@ def outranked_items(ranking) -> list:
     return [m for p in ranking.products for m in p.mentions]
 
 
-@pytest.mark.parametrize("variant", VARIANTS)
+def lifted_and_weaker() -> list:
+    """The Kettle K lifted (2.0 points), the Kettle W meeting the bar on its own with three weaker voices (1.08)."""
+    return ([mention("Kettle K", "t1", upvotes=34, **TOP), mention("Kettle K", "t2", upvotes=2)]
+            + mentions(3, "Kettle W", voice="medium", evidence="short-term use"))
+
+
+@pytest.mark.parametrize("variant", BY_SCORE)
 def test_a_lifted_product_takes_its_place_by_its_score_like_any_pick(monkeypatch, variant):
     upvote_rule(monkeypatch, variant)
-    data = ([mention("Kettle K", "t1", upvotes=34, **TOP), mention("Kettle K", "t2", upvotes=2)]
-            + mentions(3, "Kettle W", voice="medium", evidence="short-term use"))
-    assert names(rank_products(data, "kitchen").picks) == ["Kettle K", "Kettle W"]  # 2.0 points against 1.08
+    assert names(rank_products(lifted_and_weaker(), "kitchen").picks) == ["Kettle K", "Kettle W"]
+
+
+def test_variant_d_puts_a_lifted_product_after_every_product_meeting_the_bar_on_its_own(monkeypatch):
+    upvote_rule(monkeypatch, "D")
+    assert names(rank_products(lifted_and_weaker(), "kitchen").picks) == ["Kettle W", "Kettle K"]
+
+
+@pytest.mark.parametrize("variant", VARIANTS)
+def test_with_three_products_meeting_the_bar_variant_d_changes_nothing(monkeypatch, variant):
+    # Three products meet the bar on their own, each with three weaker voices (1.08 points), and the lifted Kettle K
+    # outscores them: it takes the third place by its score in A, B and C, and in D it fills no place, so it stays an item.
+    upvote_rule(monkeypatch, variant)
+    data = lifted_and_weaker()[:2] + [m for name in THREE_PICKS
+                                      for m in mentions(3, name, voice="medium", evidence="short-term use")]
+    ranking = rank_products(data, "kitchen")
+    if variant == "D":
+        assert names(ranking.picks) == list(THREE_PICKS) and names(ranking.worth_a_look) == ["Kettle K"]
+    else:
+        assert names(ranking.picks) == ["Kettle K", "Kettle A", "Kettle B"] and ranking.worth_a_look == []
 
 
 # --- Module 7: the answer says so, and its numbers stay the writers' ---
@@ -291,6 +317,7 @@ def test_with_the_rule_off_the_words_and_numbers_are_as_before():
     ("A", ", or 2 when one of them has 10 or more upvotes"),
     ("B", ", or 2 when one of them has 10 or more upvotes"),
     ("C", ", or 2 when one of them has 10 or more upvotes and is in the top 10% of a thread of 20 or more comments"),
+    ("D", ", or 2 when one of them has 10 or more upvotes and is in the top 10% of a thread of 20 or more comments"),
 ])
 def test_the_answers_messages_give_the_rule_with_its_upvotes(monkeypatch, variant, more):
     upvote_rule(monkeypatch, variant)
@@ -433,6 +460,9 @@ def test_the_how_page_explains_the_rule_only_when_it_is_on(tmp_path, monkeypatch
     upvote_rule(monkeypatch, "C")
     html = get_how(tmp_path, monkeypatch)
     assert 'data-config="UPVOTE_THREAD_MIN_COMMENTS"' in html and 'data-config="UPVOTE_THREAD_SHARE_BEATEN"' in html
+    assert "never takes the place" not in text_of(html)
+    upvote_rule(monkeypatch, "D")
+    assert "never takes the place of one that meets this rule on its own" in text_of(get_how(tmp_path, monkeypatch))
 
 
 def test_the_pages_meter_says_how_many_of_its_writers_counted_twice(tmp_path):
