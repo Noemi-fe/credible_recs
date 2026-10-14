@@ -1561,6 +1561,388 @@
     ],
     "checked_on": "2026-10-14"
    }
+  },
+  {
+   "product": "The Ordinary Niacinamide 10% + Zinc 1%",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://theordinary.com/en-gb/niacinamide-10-zinc-1-serum-100436.html"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "niacinamide",
+     "zinc"
+    ],
+    "sources": [
+     "https://theordinary.com/en-gb/niacinamide-10-zinc-1-serum-100436.html"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Beauty of Joseon Glow Serum: Propolis + Niacinamide",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://beautyofjoseon.com/products/glow-serum-propolis-niacinamide"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "niacinamide",
+     "betaine salicylate"
+    ],
+    "sources": [
+     "https://beautyofjoseon.com/products/glow-serum-propolis-niacinamide"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "numbuzin No.3 Skin Softening Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://us.numbuzin.com/products/no-3-skin-softening-serum-1",
+    "https://www.boots.com/numbuzin-no3-skin-softening-serum-50ml-10367803"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "niacinamide"
+    ],
+    "sources": [
+     "https://us.numbuzin.com/products/no-3-skin-softening-serum-1",
+     "https://www.boots.com/numbuzin-no3-skin-softening-serum-50ml-10367803"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "COSRX Advanced Snail Radiance Dual Essence",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.cosrx.com/products/advanced-snail-radiance-dual-essence"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "snail mucin",
+     "niacinamide"
+    ],
+    "sources": [
+     "https://www.cosrx.com/products/advanced-snail-radiance-dual-essence"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "SKIN1004 Madagascar Centella Tone Brightening Capsule Ampoule",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.skin1004.com/products/skin1004-madagascar-centella-tone-brightening-capsule-ampoule"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "niacinamide",
+     "vitamin c",
+     "centella asiatica"
+    ],
+    "sources": [
+     "https://www.skin1004.com/products/skin1004-madagascar-centella-tone-brightening-capsule-ampoule"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "PURITO SEOUL Wonder Releaf Centella Serum Unscented (formerly Centella Unscented Serum)",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://purito.com/product/wonder-releaf-centella-serum-unscented/"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "centella asiatica"
+    ],
+    "sources": [
+     "https://purito.com/product/wonder-releaf-centella-serum-unscented/"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Cos De BAHA TN Tranexamic Acid 5% Niacinamide 5% Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.yesstyle.com/en/cos-de-baha-tn-tranexamic-acid-niacinamide-serum-30ml/info.html/pid.1108026110",
+    "https://www.superdrug.com/skin/face-skin-care/face-serums/cos-de-baha-tn-tranexamic-acid-niacinamide-serum-30ml/p/mp-00334528"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "niacinamide",
+     "hyaluronic acid"
+    ],
+    "sources": [
+     "https://www.yesstyle.com/en/cos-de-baha-tn-tranexamic-acid-niacinamide-serum-30ml/info.html/pid.1108026110",
+     "https://www.superdrug.com/skin/face-skin-care/face-serums/cos-de-baha-tn-tranexamic-acid-niacinamide-serum-30ml/p/mp-00334528"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Goodal Green Tangerine Vita C Dark Spot Care Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.superdrug.com/skin/face-skin-care/face-serums/goodal-green-tangerine-vita-c-dark-spot-care-serum/p/856899",
+    "https://clubclio.co.kr/shop/goodsView/0000003511"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "vitamin c",
+     "niacinamide"
+    ],
+    "sources": [
+     "https://www.superdrug.com/skin/face-skin-care/face-serums/goodal-green-tangerine-vita-c-dark-spot-care-serum/p/856899",
+     "https://clubclio.co.kr/shop/goodsView/0000003511"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Rohto Melano CC Intensive Anti-Spot Essence",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://jp.rohto.com/melanocc/essence/"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "vitamin c"
+    ],
+    "sources": [
+     "https://jp.rohto.com/melanocc/essence/"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Rohto Melano CC Premium Intensive Anti-Spot Essence",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://jp.rohto.com/melanocc/premium-essence/"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "vitamin c"
+    ],
+    "sources": [
+     "https://jp.rohto.com/melanocc/premium-essence/"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Maelove Glow Maker Vitamin C Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.maelove.com/products/the-glow-maker"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "vitamin c",
+     "hyaluronic acid"
+    ],
+    "sources": [
+     "https://www.maelove.com/products/the-glow-maker"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "CeraVe Skin Renewing Vitamin C Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.cerave.co.uk/skincare/serums/skin-renewing-vitamin-c-serum"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "vitamin c",
+     "ceramides",
+     "hyaluronic acid",
+     "niacinamide"
+    ],
+    "sources": [
+     "https://www.cerave.co.uk/skincare/serums/skin-renewing-vitamin-c-serum"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Geek & Gorgeous C-Glow",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.geekandgorgeous.com/products/c-glow"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "vitamin c"
+    ],
+    "sources": [
+     "https://www.geekandgorgeous.com/products/c-glow"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "COSRX Advanced Snail 96 Mucin Power Essence",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.cosrx.com/products/advanced-snail-96-mucin-power-essence-new-original"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "snail mucin",
+     "hyaluronic acid"
+    ],
+    "sources": [
+     "https://www.cosrx.com/products/advanced-snail-96-mucin-power-essence-new-original"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "COSRX Advanced Snail 92 All in one Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {},
+   "sources": [
+    "https://www.cosrx.com/products/advanced-snail-92-all-in-one-cream_cpnp-1"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "snail mucin",
+     "hyaluronic acid"
+    ],
+    "sources": [
+     "https://www.cosrx.com/products/advanced-snail-92-all-in-one-cream_cpnp-1"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "SKIN1004 Madagascar Centella Ampoule",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.skin1004.com/products/skin1004-madagascar-centella-ampoule"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "centella asiatica"
+    ],
+    "sources": [
+     "https://www.skin1004.com/products/skin1004-madagascar-centella-ampoule"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "AXIS-Y Dark Spot Correcting Glow Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://axis-y.com/products/dark-spot-correcting-glow-serum"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "niacinamide"
+    ],
+    "sources": [
+     "https://axis-y.com/products/dark-spot-correcting-glow-serum"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Good Molecules Discoloration Correcting Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.goodmolecules.com/s/good-molecules-discoloration-correcting-serum-30ml"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "niacinamide"
+    ],
+    "sources": [
+     "https://www.goodmolecules.com/s/good-molecules-discoloration-correcting-serum-30ml"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "numbuzin No.5+ Glutathione Vitamin Concentrated Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://us.numbuzin.com/products/no-5-vitamin-concentrated-serum"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "vitamin c",
+     "niacinamide",
+     "ceramides"
+    ],
+    "sources": [
+     "https://us.numbuzin.com/products/no-5-vitamin-concentrated-serum"
+    ],
+    "checked_on": "2026-10-14"
+   }
   }
  ]
 }
