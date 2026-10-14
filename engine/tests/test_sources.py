@@ -1278,8 +1278,9 @@ def test_a_threads_comments_read_once_name_each_product_as_reading_them_for_it_a
             "air", "fryer", "air fryer", "airfyer", "microwve", "salicylic acid", "bha", "chef's knife", "paring knife",
             "cast iron", "skillet", "nothing here", "I love it.", "\n", "rice cooker", "cleanser", "gleanser",
             "exfoliant", "exfolient", "toner", "serum", "dutch oven", "KETTLE", "Sunscreens", "SUNCREENS",
-            "ſunscreen", "İ", "café", "tea-pot", "pot,", "(kettle)", "crock pot", "Kettle",
-            "MOISTURIZERS", "pressure cooker", "presure cooker", "food processors"]
+            "\u017funscreen", "\u0130", "caf\u00e9", "tea-pot", "pot,", "(kettle)", "crock pot", "\u212aettle",
+            "MOISTURIZERS", "pressure cooker", "presure cooker", "food processors", "cafeti\u00e8re",
+            "CAFETI\u00c8RES", "french press", "kettle kettle", "tea kettles", "a pot of tea"]
     types = [p.name for p in PRODUCT_TYPES] + ["air fryer", "salicylic acid product"]
     for n in range(60):
         comments = [make_comment(f"c{n}x{i}", thread_id=f"1fake{n}",
