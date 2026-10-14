@@ -133,7 +133,7 @@ $GCLOUD run jobs add-iam-policy-binding "$JOB" --project "$PROJECT" --region "$R
 #    And on-demand reading's job on the same image (on_demand.sh), which the site may start.
 if [ "$ON_DEMAND" = on ]; then on_demand_job; fi
 
-# 6. Once a day at 4 am UK time, when the site is quietest, Cloud Scheduler starts the job.
+# 5. Once a day at 4 am UK time, when the site is quietest, Cloud Scheduler starts the job.
 if $GCLOUD scheduler jobs describe "$SCHEDULE" --project "$PROJECT" --location "$REGION" >/dev/null 2>&1; then
     VERB=update
 else

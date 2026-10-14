@@ -615,12 +615,13 @@ ARCHIVE_TEXT_KEPT_DAYS = LIVE_CHECK_ALL_DAYS + 7
 # Noemi's "about 37 days": the week left over covers a missed run or a deploy a few days late.
 LIBRARY_VERIFY_DAYS = 30
 # The kept comments verified longest ago that the daily plan asks the site to read (engine/read_ahead.py), after the
-# comments answers would show. 400 a run of the daily job on 13 Oct 2026 (about 26 minutes of its run); 1,500 a day
-# since 14 Oct 2026, when the site took the reads over (each about a tenth of a second of its time): sized on a copy of
-# that day's library slimmed (17,335 kept comments, 15,130 of them outside the answers, each then read every 10 days)
-# and on the whole library once the bulk import is extracted (about 36,000 kept, about 33,500 outside the answers, each
-# read every 22 days, a week inside LIBRARY_VERIFY_DAYS).
-LIBRARY_VERIFY_READS = 1500
+# comments answers would show. 400 a run of the daily job on 13 Oct 2026 (about 26 minutes of its run); 3,000 a day
+# since 14 Oct 2026, when the site took the reads over (each about a tenth of a second of its time). Sized on a copy of
+# that day's library slimmed: 17,335 kept comments, 12,356 of them never verified, read from the archive on 11 to 14 Oct
+# (so due by 10 to 13 Nov), and with the 846 threads still to extract about 31,000 never verified: 11 days at 3,000 a
+# day, oldest first, so a migration in late October still verifies every one in time. After that, about 36,000 kept
+# comments (about 33,500 outside the answers) are each read every 12 days, well inside LIBRARY_VERIFY_DAYS.
+LIBRARY_VERIFY_READS = 3000
 # A kept comment verified within this many days isn't read again by that pass (the comments answers show still are,
 # daily): with a library smaller than its budget, it doesn't spend reads verifying again what is a few days old.
 LIBRARY_VERIFY_AGAIN_DAYS = 7

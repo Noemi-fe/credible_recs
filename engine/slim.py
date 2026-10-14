@@ -134,6 +134,9 @@ def known_words_of(*texts: str) -> frozenset[str]:
 
 
 _NO_LIBRARY = Path(__file__).resolve().parent / "no library"  # a folder that holds no request log
+# The guard reads up to this many of the request words a thread holds, and as many it doesn't, the way answers read
+# them (each read goes through the whole post again: all of them made slimming half as slow again, 14 Oct 2026).
+GUARD_WORDS = 40
 _TOKEN = re.compile(r"[a-z0-9]+(?:['-][a-z0-9]+)*")
 _WORD_ENDS = re.compile(r"^anti-(?=[a-z])|(?<=[a-z])-free$")  # as need_words reads "anti-dandruff" and "sulfate-free"
 
@@ -300,8 +303,8 @@ def _quoted_elsewhere(thread: Thread, extraction: Extraction, kept: set[str], dr
 
 def differences(whole: Thread, slimmed: Thread, extraction: Extraction, types, words=None) -> list[str]:
     """What answers would read differently in the slimmed copy than in the whole thread (empty: nothing). `words`: the
-    request words looked for (known_words), of which every one the whole thread's title or post holds is compared,
-    and as many others."""
+    request words looked for (known_words): of those the whole thread's title or post holds (all of them noted, by
+    engine.needs.post_request_words), up to GUARD_WORDS are read the way answers read them, and as many others."""
     found = []
     before, after = check_extraction(extraction, whole), check_extraction(extraction, slimmed)
     if _checked(before) != _checked(after):
@@ -325,8 +328,8 @@ def differences(whole: Thread, slimmed: Thread, extraction: Extraction, types, w
     if thread_needs(slimmed, every_config_need()) != thread_needs(whole, every_config_need()):
         found.append("the needs its title or post talks about")
     vocabulary = sorted(known_words() if words is None else words)
-    held = set(post_request_words(f"{whole.title}\n{whole.body}", vocabulary))
-    asked = sorted(held) + [w for w in vocabulary if w not in held][:len(held) + 20]
+    held = post_request_words(f"{whole.title}\n{whole.body}", vocabulary)
+    asked = held[:GUARD_WORDS] + [w for w in vocabulary if w not in set(held)][:GUARD_WORDS]
     as_needs = tuple(Need(word, request_word=word) for word in asked)
     if thread_needs(slimmed, as_needs) != thread_needs(whole, as_needs):
         found.append("the request words its title or post holds")

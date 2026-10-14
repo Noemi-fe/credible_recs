@@ -93,6 +93,16 @@ allowance lasts, and over 100 s once it is spent.
 | 13 Oct 2026 | With Also worth a look and summaries (merged that day): reads paced by what Reddit's rate-limit headers say is left (at once while 50+ are left beyond 10 kept, then spread over the rest of the 10 minutes), and the comments only Also worth a look or a summary quote never wait (revision 00011) | 7.96 / 109.71 | 1.89 / 4.91 | 3.76 / 107.63 | 0.10 / 0.14 | n/a | 20 to 35 | yes, with a fix: the first 5 answers took 4.3 to 9.0 s (from the 4th, 50 to 80 s before), and when reads ran short the answers kept their 3 picks and left Also worth a look out (5 to 11 comments put off). But spread over a long rest of the 10 minutes a read waited up to 20 s (answers 6 to 8: 21, 110 and 93 s), so spread-out reads are now never slower than one every 4 s, and a visitor's read never waits over 60 s for the next 10 minutes (e8ba80b) |
 | 13 Oct 2026 | Check ahead: the daily pre-check job's checks in the bucket's bundle (1,099 after two runs: 53 min, then 5 min for the day's new picks), read by the server as it gets ready; plus the first-hand fix, the refill cap and 60 s wait limit (revision 00014) | 2.76 / 5.22 | 2.60 / 5.05 | 0.04 / 0.08 | 0.14 / 0.22 | 0.08 / 0.09 | 20 to 36 | yes: no fresh answer waited on Reddit (every quote shown already checked within 48 hours), all 8 under 5.3 s, and every answer kept Also worth a look (none put off). From 60.12 / 80.08 s this morning. What's left is the engine's own work (p50 2.6 s, against 1.34 in revision 00009, before Also worth a look, summaries and the first-hand rules) |
 
+Since 14 Oct 2026 (the free-tier redesign, engine/read_ahead.py) the site reads ahead itself, at Cloud Scheduler's
+keep-warm ping, from the daily job's plan, instead of the job reading at night. For visitors: an answer's comments are
+read again 40 hours after their last read, so a planned request's checks never run out (with the daily run, a check
+was 20 to 44 hours old); reading ahead takes at most 40 of Reddit's 200 reads at a ping, and none while fewer than 120
+are left in its 10 minutes, so a fresh answer (10 to 40 reads) still reads at once. For the ping itself, measured on
+Noemi's computer with made-up files (no network): finding what is due among 4,500 planned comments takes about 1 ms
+(each one's last read is kept in memory; 0.36 s when read from the folder at each ping, which was tried first), and 0.3 s
+once a day to look them up as a new plan comes in; the reads themselves stop 5 seconds into a ping. The live site's
+times after the deploy are for eval/live_latency.py.
+
 ## The engine's own work (13 Oct 2026, evening)
 
 Also worth a look, the one-line summaries and their checks, the first-hand rules, name grouping that knows the requested

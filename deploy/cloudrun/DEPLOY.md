@@ -39,8 +39,8 @@ site a plan: a job is billed for its whole run, and two thirds of the old daily 
   `python -m engine.precheck --plan --minutes 30`, started by Cloud Scheduler (`credible-recs-precheck-daily`) at 4 am UK
   time; since 14 Oct 2026 it reads nothing on Reddit's embed page itself. It reads the bundle, records in the
   verification record what each of the site's reads of a kept comment said, works out the comments answers would show
-  (about 2,200 from 439 requests on 14 Oct 2026's library: 65 s on Noemi's computer; the old run on Cloud Run took 84 s
-  for 1,967) and the kept comments due (oldest first, at most 1,500 a day: config.LIBRARY_VERIFY_READS, the answers'
+  (2,260 from 439 requests on a copy of 14 Oct 2026's library, slimmed: the whole plan run took 2.1 minutes on Noemi's
+  computer; the old run's working out took 84 s on Cloud Run for 1,967) and the kept comments due (oldest first, at most 3,000 a day: config.LIBRARY_VERIFY_READS, the answers'
   own left out), and writes the record and the plan. Then, for the comments whose embed page shows no comment ("Not
   supported comment", about 1 in 8; Noemi, 13 Oct 2026: "Use Bright Data"), it reads their threads through Bright
   Data, within 30 records a run (the most useful threads first), starting nothing 30 minutes after it started, and
@@ -95,20 +95,20 @@ site a plan: a job is billed for its whole run, and two thirds of the old daily 
 The daily job read ahead itself until 14 Oct 2026: 75 minutes of reads a day, plus up to 11 waiting for Reddit's next
 10 minutes, about 80% of it asleep between reads (Reddit's embed pages answer about 200 reads in 10 minutes from one
 address), and a job is billed for all of it: 161,820 vCPU-seconds a month, 88% of the jobs' free tier with on-demand
-reading's 50,000, while about 3,700 reads a day were wanted once the slimmed library is verified (the answers' 2,229
-comments and 1,500 kept comments). Compared on cost (vCPU-seconds a month, worst month), visitors' waits, simplicity
+reading's 50,000, while about 5,200 reads a day were wanted once the slimmed library is verified (the answers' 2,229
+comments and 3,000 kept comments). Compared on cost (vCPU-seconds a month, worst month), visitors' waits, simplicity
 and the 48-hour rule:
 
 - (a) the site reads at the keep-warm ping, the job only works out the plan (chosen). The site is billed only while
   it answers, and the ping comes every 5 minutes anyway: reads ahead at most 53,568 of the site's own 180,000 (30%;
-  about 5% for today's 2,840 reads a day), the job at most 83,700 (35%; 56% with on-demand's). Visitors keep 120 of
+  about 7% for today's 4,340 reads a day), the job at most 83,700 (35%; 56% with on-demand's). Visitors keep 120 of
   Reddit's 200 reads in each 10 minutes, and answers' checks are read again every 40 hours, so they never run out.
   Two more bucket calls an hour for the site. No new Cloud Scheduler job.
 - (b) several short job runs a night, from a list the first run stores. Each run still pays for its start (about a
-  minute with the image and the library) and Reddit's 200 reads in 10 minutes cap each one, so 3,700 reads a day are
-  about 20 runs, roughly 20 to 45 minutes a day: 37,000 to 84,000 vCPU-seconds plus the planning run (up to 83,700),
-  about 50% to 90% with on-demand's, growing with every read, and the last free Cloud Scheduler job used. Checks read
-  at night only, 20 to 30 hours old by evening.
+  minute with the image and the library) and Reddit's 200 reads in 10 minutes cap each one, so 5,200 reads a day are
+  about 28 runs, roughly 30 to 60 minutes a day: 52,000 to 117,000 vCPU-seconds, plus the planning run and on-demand's
+  about 110,000 to 190,000 (45% to 80%), growing with every read, and the last free Cloud Scheduler job used. Checks
+  read at night only, 20 to 30 hours old by evening.
 - (c) lower tiers read less often (the comments behind the picks every other day). Saves about 370 reads a day of a
   daily run's, but the run is paid by its minutes, which Reddit's pace sets, and verifying the slimmed library needs
   the reads anyway. Folded into (a) as its order: what is likeliest to be shown is read first, so when reads run short
@@ -145,7 +145,7 @@ comment must be verified on Reddit (its embed page, free) within 30 days, or it 
 (engine/verify.py). The library is baked into the image, and the checks happen in the cloud, so the two meet at each
 deploy:
 
-1. every day the pre-check job lists in its plan the kept comments verified longest ago (1,500), the site reads them
+1. every day the pre-check job lists in its plan the kept comments verified longest ago (3,000), the site reads them
    over the day (its reads ahead), and the next run records what each read said in `live_check/verified.json`;
 2. `deploy.sh` copies that record to a temporary file (`gcloud storage cp`) and runs
    `python -m engine.library apply-checks --ledger <it>` before bundling: each passing comment gets its date, and a
@@ -355,8 +355,8 @@ The pre-check (14 Oct 2026, the free-tier redesign; engine/tests/test_cloudrun.p
 settings). A job is billed per instance-second for its whole run, waiting included, so it runs with the least that
 works: 1 vCPU (a job's minimum) and 1.5 GiB (on Noemi's computer it peaked at 1.3 GB with module 1's open model loaded;
 0.2 GB without it, but without the model the open model's product types would not be checked ahead). It no longer
-waits for Reddit: a run is working out the answers (65 s on Noemi's computer for 439 requests on 14 Oct 2026; the old
-run's took 84 s on Cloud Run), the record and the plan, then Bright Data's batch (a few minutes on Bright Data's side
+waits for Reddit: a run is working out the answers (the whole plan run took 2.1 minutes on Noemi's computer for 439
+requests on 14 Oct 2026's library, slimmed; the old run's working out took 84 s on Cloud Run), the record and the plan, then Bright Data's batch (a few minutes on Bright Data's side
 when there is something to read), so a typical run should take 5 to 10 minutes, 9,300 to 18,600 vCPU-seconds a month
 (an estimate: the first runs' logs will say). Its bound is Cloud Run's 45-minute task timeout: 2,700 seconds a day,
 83,700 in a 31-day month, 83,700 vCPU-seconds and 125,550 GiB-seconds, 35% and 28% of the free tier for
@@ -371,10 +371,12 @@ once, each mostly waiting on Reddit's answer (about 0.3 s), so about a tenth of 
 ping starts no read 5 seconds after it began, so at most about 6 seconds a ping with the last reads' answers: 288 pings
 a day, at most 53,568 vCPU-seconds and 107,136 GiB-seconds in a 31-day month on the site's 1 vCPU and 2 GiB, 30% of
 each. What is due on 14 Oct 2026's library, slimmed (17,335 kept comments): the answers' 2,229 comments once every 40
-hours (about 1,340 a day) and up to 1,500 kept comments to verify, about 2,840 reads a day, 10 a ping, about a second
-of each: about 8,800 vCPU-seconds a month, 5%. With the whole library extracted (about 36,000 kept comments) the reads
-stay about the same (the 1,500 a day are the budget; each kept comment is then read every 22 days, a week inside the
-30-day deadline). 2,840 reads a day are a quarter of what the pings may read (40 a ping, 11,520 a day). Finding what is
+hours (about 1,340 a day) and up to 3,000 kept comments to verify, about 4,340 reads a day, 15 a ping, about 1.5
+seconds of each: about 13,400 vCPU-seconds a month, 7%. 12,356 of the kept comments were never verified (read from the
+archive on 11 to 14 Oct, so due by 10 to 13 Nov), about 31,000 once the 846 threads still to extract are slimmed: 11
+days at 3,000 a day, oldest first. With the whole library extracted (about 36,000 kept comments) the reads stay the
+same (the 3,000 a day are the budget; each kept comment is then read every 12 days, well inside the 30-day deadline).
+4,340 reads a day are 38% of what the pings may read (40 a ping, 11,520 a day). Finding what is
 due takes about a millisecond a ping (each comment's last read is kept in memory, read from the folder in 0.3 s once a
 day as the new plan comes in).
 
@@ -417,6 +419,7 @@ hour, about 720 a month, and the job's record and plan, 2 or 3 a run, about 90: 
 USD per 1,000. Class B (reads): the site's hourly question about the plan's version, about 720 a month, a download a day
 (31) and its bundle as it gets ready, and the job's bundle and record, about 4 a run (124): about 900 a month, 0.0004
 USD at 0.0004 USD per 1,000 (before: the site asked about the bundle hourly instead; the job wrote it twice a run).
-Storage: the bundle about 3 MB, the plan about 0.4 MB, the record 1 to 3 MB, under 0.0002 USD a month. Reading and
+Storage: the bundle about 3 MB, the plan about 0.6 MB (2,260 answers' comments and 3,000 to verify), the record 1 to
+4 MB, under 0.0002 USD a month. Reading and
 writing from Cloud Run in the same region is free. Under 0.005 USD a month in all; with the image's storage, about 0.10
 EUR a month, under the 1 EUR alert.
