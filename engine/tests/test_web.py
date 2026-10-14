@@ -137,13 +137,16 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # support line and share line count in words.
     # Changed on purpose 13 Oct 2026 (active ingredients): each pick also has its "form" in an ingredient-led answer
     # ("pads", "toner"), or null.
+    # Changed on purpose 14 Oct 2026 (Noemi's night decision 1): each pick also has its "range", a brand line's link to
+    # its maker's page for its products of the type ({"text", "url", "checked", "checked_on"}), or null; and its price
+    # says whether it is a brand line's from price ("from_price").
     assert set(data["answer"]["picks"][0]) == {"rank", "product_key", "name", "reason", "support", "quotes",
                                                "downsides", "disagreement", "score", "breakdown", "price",
                                                "availability", "care", "cautions", "model", "model_price",
-                                               "downsides_share", "summary", "voices", "form"}
+                                               "downsides_share", "summary", "voices", "form", "range"}
     assert set(data["answer"]["picks"][0]["quotes"][0]) == {"text", "comment_id", "url", "badges"}
     assert set(data["answer"]["picks"][0]["price"]) == {"text", "amount", "currency", "shop", "url", "checked_on",
-                                                        "budget_status", "budget_note"}
+                                                        "budget_status", "budget_note", "from_price"}
 
 
 def test_every_card_has_at_least_two_quotes_each_linking_to_reddit(tmp_path):
@@ -606,9 +609,10 @@ def test_also_worth_a_look_comes_through_in_the_json(tmp_path):
     assert data["answer"]["worth_note"].startswith("2 credible voices each")
     # Changed on purpose 13 Oct 2026 (the UX builder): "voices", as for a pick (its credibility meter).
     # Changed on purpose 13 Oct 2026 (active ingredients): each item also has its "form", as picks do.
+    # Changed on purpose 14 Oct 2026 (Noemi's night decision 1): each item also has its "range", as picks do.
     assert set(data["answer"]["worth_a_look"][0]) == {"product_key", "name", "reason", "quotes", "downsides",
                                                      "downsides_share", "disagreement", "score", "breakdown", "price",
-                                                     "availability", "cautions", "summary", "voices", "form"}
+                                                     "availability", "cautions", "summary", "voices", "form", "range"}
 
 
 def test_the_page_draws_also_worth_a_look_and_summaries_with_the_answers_own_words(tmp_path):

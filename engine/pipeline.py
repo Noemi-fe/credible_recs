@@ -43,7 +43,10 @@ Every step is a module of its own; this file only passes each one's output to th
   availability check is kept, and its answer says so. A product no longer made but sold second-hand only ("second_hand":
   true: vintage Griswold and Wagner cast iron) counts as sold, and its answer says "Sold second-hand only" (Noemi's
   decision, 10 Oct 2026). Brand picks are never priced or checked (named in not_priced), except that a brand pick
-  shows the second-hand line when the newest entry under the brand's own name ("Griswold") says so.
+  shows the second-hand line when the newest entry under the brand's own name ("Griswold") says so. Since Noemi's night
+  decision 1 of 14 Oct 2026, a line whose brand-lines entry gives a from price with where and when it was found has
+  that as its price (the cheapest UK price of its products of the type), which also says it is sold there; and the
+  answer links each line to its entry's range page (the maker's page for its products of the type).
 - product facts (decided by Claude, 9 Oct 2026; engine/product_facts.py, data/product_facts.json): right after the
   budget step, a product whose checked facts clash with what the request asks for is left out by a hard rule ("retinol
   for a beginner with sensitive skin" leaves out a strong, prescription-only retinoid) and listed with the reason
@@ -137,7 +140,7 @@ from engine.answer import (
     Answer, _every_quote, comment_bodies, needed_quotes, quotes_to_check, render_markdown, says_the_opposite,
     shown_availability, shown_price, without_unread, write_answer,
 )
-from engine.brand_lines import BrandLine, find_brand_line, load_brand_lines, not_sold_reason
+from engine.brand_lines import BrandLine, find_brand_line, from_price_entry, load_brand_lines, not_sold_reason
 from engine.care_tips import CareTips, attach_care_tips, credible_care_tips
 from engine.config import (
     BRAND_MODEL_GENERIC_WORDS,
@@ -414,6 +417,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     brand_lines = load_brand_lines() if brand_lines is None else brand_lines
     kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads}, brand_lines)
     lines = {g.key for g in kept_groups if g.loose}  # the brand or line names kept as the brand's whole line
+    # Their brand-lines entries, whose range pages the answer links to (Noemi's night decision 1, 14 Oct 2026).
+    ranges = {g.key: line for g in kept_groups if g.loose and (line := _brand_line(g, query, brand_lines)) is not None}
     types = {g.key: _own_type(g, query) for g in kept_groups}  # each product's own type (13 Oct 2026)
     prices = load_prices() if prices is None else prices
     kept_groups, price_checks = _within_budget(kept_groups, query, prices, today, result, brand_lines, types)
@@ -444,10 +449,10 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                  models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
                                  request_needs(query), query.text, summaries,
-                                 _worth_left_out(result.ranking, kept_groups), **wording)
+                                 _worth_left_out(result.ranking, kept_groups), **wording, ranges=ranges)
     if live_checker is not None:
         _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions, kept_groups,
-                    unsuited_kinds, need_led, summaries, wording)
+                    unsuited_kinds, need_led, summaries, wording, ranges)
     thread_of = {c.id: t.id for t in threads for c in t.comments}
     quoted = {thread_of.get(quote.comment_id) for _, quote in _every_quote(result.answer)}
     result.threads_quoted = [tid for tid in result.threads_used if tid in quoted]
@@ -479,7 +484,7 @@ def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
 def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds, query, price_checks, care,
                 cautions=None, groups: list[ProductGroup] = (), unsuited_kinds: frozenset[str] = frozenset(),
                 need_led: bool = False, summaries: Mapping[str, Summary] | None = None,
-                wording: Mapping | None = None) -> None:
+                wording: Mapping | None = None, ranges: Mapping[str, BrandLine] | None = None) -> None:
     """Checks every quote about to be shown against Reddit itself; drops the comments that fail and answers again.
     Since 13 Oct 2026 the quotes a shown summary cites are checked too (engine.answer.quotes_to_check): a summary never
     stands on a comment deleted or changed since.
@@ -525,7 +530,7 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
                                      request_needs(query), query.text, summaries,
-                                     _worth_left_out(result.ranking, groups), **(wording or {}))
+                                     _worth_left_out(result.ranking, groups), **(wording or {}), ranges=ranges)
 
 
 def _checked_together(live_checker, quotes, may_wait: set[str] | None = None) -> dict[tuple[str, str], object]:
@@ -864,7 +869,11 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
     pick carries that entry, so its answer shows the second-hand line instead of "Availability not checked yet". Late on
     10 Oct 2026: when the newest entry under the brand's name, alone or followed only by the product type's words
     ("OXO kettle"), says it isn't sold, the brand pick is left out (OXO's kettles are 120 V models: one OXO kettle with
-    no type word in its name had kept "Oxo (their electric kettles)" in b06).
+    no type word in its name had kept "Oxo (their electric kettles)" in b06). Since 14 Oct 2026 (Noemi's night
+    decision 1) a brand line's from price, from its brand-lines entry with where and when it was found
+    (engine.brand_lines.from_price_entry), is its price, checked against the budget like any (PriceCheck.from_price),
+    and says where it is sold unless a second-hand entry does; it is still named in not_priced (never priced from the
+    price list), unless it is over the budget.
 
     `types`: each product's own type ({product key: type}, _own_type), which its price entries are looked up by; by
     default the request's (13 Oct 2026: an ingredient-led request has products of several types).
@@ -886,6 +895,7 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
                  and (a := find_availability(g.name, g.category, prices, type_of(g))) is not None
                  and a.available is True]
     for group in groups:
+        from_price = None
         if group.loose:
             # An entry under the brand ("Griswold", "OXO kettle"): second-hand only is shown; not sold leaves the brand
             # pick out, unless one of its own products here is known to be sold, which proves the brand is.
@@ -898,15 +908,22 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
                 continue
             result.not_priced.append(group.name)
             sold = sold if sold is not None and sold.second_hand else None
+            # Its from price (Noemi's night decision 1, 14 Oct 2026): the brand-lines entry's cheapest UK price of the
+            # brand's products of the type, with where and when it was found, which also says the line is sold there.
+            from_price = from_price_entry(find_brand_line(set(group.names) | {uk_name(n) for n in group.names},
+                                                          group.category, type_of(group), brand_lines), group.name)
+            sold = sold or from_price
         else:
             sold = find_availability(group.name, group.category, prices, type_of(group))
         if sold is not None and sold.available is False:
             result.left_out_unavailable.append(group.name)
             continue
-        price = None if group.loose else find_price(group.name, group.category, prices, currency, type_of(group))
-        check = check_price(price, budget, today)
+        price = from_price if group.loose else find_price(group.name, group.category, prices, currency, type_of(group))
+        check = replace(check_price(price, budget, today), from_price=from_price is not None)
         if check.status == "over":
             result.left_out_over_budget.append(group.name)
+            if group.loose:  # a line whose cheapest product is over the budget: not ranked after all
+                result.not_priced.remove(group.name)
         else:
             kept.append(group)
             checks[group.key] = replace(check, availability=sold)
@@ -915,7 +932,9 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
     # this type) above the budget, even its cheapest product is over, so it is left out as over budget. No from price,
     # or one within the budget, keeps it (b07's Wüsthof sells cheaper knives than the Classic its writers name). So is
     # a product of that brand with no price of its own (13 Oct 2026: "Comandante with Red Clix" in b09's Also worth a
-    # look): it costs at least its brand's cheapest.
+    # look): it costs at least its brand's cheapest. Since 14 Oct 2026 a from price with where and when it was found is
+    # the line's own price above, so this catches the rest: one recorded without them, or checked over
+    # PRICE_MAX_AGE_DAYS ago (never used to keep a line, whatever its age, as on 12 Oct).
     over_from = budget is not None and budget.max is not None and budget.currency == "GBP"
     for group in [g for g in kept if over_from and (g.loose or checks[g.key].status == "unknown")]:
         line = find_brand_line(set(group.names) | {uk_name(n) for n in group.names}, group.category, type_of(group),

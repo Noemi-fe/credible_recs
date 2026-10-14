@@ -84,6 +84,7 @@ from engine.config import BRAND_LINE_NOT_SOLD, THREAD_CATEGORIES
 from engine.group_products import plural
 from engine.match_products import comparable, known_aliases, product_words, written_alike
 from engine.models import Record
+from engine.prices import Price
 from engine.query import PRODUCT_TYPES
 
 DEFAULT_BRAND_LINES = Path(__file__).resolve().parents[1] / "data" / "brand_lines.json"
@@ -236,3 +237,28 @@ def not_sold_reason(line: BrandLine) -> str:
     """Why a brand or line name is left out when the list says its brand doesn't sell the kind of product asked for,
     in words (config.BRAND_LINE_NOT_SOLD): "Batiste doesn't sell shampoos"."""
     return BRAND_LINE_NOT_SOLD.format(brand=line.brand, products=plural(line.product_type))
+
+
+# --- Range pages and from prices (Noemi's night decision 1, 14 Oct 2026) ---
+
+def is_source_page(url: str) -> bool:
+    """Whether a page may be a source of the list, and so be linked to: https, with a web address, no spaces, name or
+    password in it, and never Reddit's (_source_page). Answers check a range page with it again before showing it."""
+    try:
+        _source_page(url)
+    except ValueError:
+        return False
+    return True
+
+
+def from_price_entry(line: BrandLine | None, name: str) -> Price | None:
+    """A brand line's from price as a price-list entry under the line's name, for the budget check and its price line:
+    the cheapest UK price of the brand's products of the type, the shop and the page it was read on, the day, and that
+    the shop sells it (the researcher found it on sale there). None without an entry that sells the type, a from price,
+    or where and when it was found: such a from price is never shown, and only leaves the line out under a budget
+    below it (engine.pipeline._within_budget)."""
+    if line is None or not line.sells or line.from_price is None or line.from_price_shop is None:
+        return None
+    return Price(product=name, category=line.category, price=line.from_price, currency="GBP", shop=line.from_price_shop,
+                 url=line.from_price_url, checked_on=line.from_price_checked_on, available=True,
+                 product_type=line.product_type)
