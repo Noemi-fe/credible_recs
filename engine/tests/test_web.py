@@ -530,9 +530,24 @@ def test_warming_up_answers_each_product_type_without_asking_reddit(tmp_path, mo
         (request, kwargs | {"in_turn": web._answers_lock.locked()})))
     web.warm_up(settled(library(tmp_path)))
     assert all(kwargs["in_turn"] for _, kwargs in asked)  # one at a time with visitors' answers
-    assert [request for request, _ in asked] == list(web.WARM_PRODUCT_TYPES)
+    assert [request for request, _ in asked] == web.warm_requests()
+    assert set(web.WARM_PRODUCT_TYPES) <= {request for request, _ in asked}  # every product type by its name too
     assert "electric kettle" in web.WARM_PRODUCT_TYPES and "shampoo" in web.WARM_PRODUCT_TYPES
     assert all("live_checker" not in kwargs and kwargs["live_check_required"] is False for _, kwargs in asked)
+
+
+def test_getting_ready_answers_the_likeliest_requests_first():
+    # 14 Oct 2026 (the coordinator, from the live site: getting ready reached 7 of 43 product types in its 120 s): the
+    # search page's example requests come first, then the latency requests, then the product types by name, each once.
+    # The examples carry needs, so warming them reads the threads their need-led readings use.
+    examples = [q["text"] for q in web.example_requests()]
+    latency = [q["text"] for q in json.loads(web.LATENCY_FILE.read_text(encoding="utf-8"))["queries"]]
+    warmed = web.warm_requests()
+    assert examples and warmed[:len(examples)] == examples
+    rest = [text for text in latency if text not in examples]
+    assert rest and warmed[len(examples):len(examples) + len(rest)] == rest
+    assert warmed[len(examples) + len(rest):] == [t for t in web.WARM_PRODUCT_TYPES if t not in examples + rest]
+    assert len(warmed) == len(set(warmed))
 
 
 def test_warming_up_stops_answering_product_types_once_its_time_is_up(tmp_path, monkeypatch, capsys):
@@ -557,9 +572,10 @@ def test_warming_up_stops_answering_product_types_once_its_time_is_up(tmp_path, 
     web.warm_up(settled(library(tmp_path)))
     assert web.ready.is_set()
     expected = -(-web.WARM_UP_ANSWERS_SECONDS // 40)  # answers started before the time was up
-    assert len(asked) == expected < len(web.WARM_PRODUCT_TYPES)
+    assert len(asked) == expected < len(web.warm_requests())
+    assert asked == web.warm_requests()[:expected]  # the likeliest first
     said = capsys.readouterr().out
-    assert f"left {len(web.WARM_PRODUCT_TYPES) - expected} product types for their first visitors" in said
+    assert f"left {len(web.warm_requests()) - expected} requests for their first visitors" in said
 
 
 def test_a_warmed_answer_leaves_every_answer_as_it_was(tmp_path):

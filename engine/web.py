@@ -941,8 +941,8 @@ def warm_up(library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
         steps.insert(0, ("the pre-check's checks", _read_checks))
     if threads.is_dir():
         steps.insert(0, ("the library", lambda: loaded(threads)))
-        steps += [(f"{WARM_ANSWER_STEP} {name}", lambda name=name: warm_answer(name, library_dir))
-                  for name in WARM_PRODUCT_TYPES]
+        steps += [(f"{WARM_ANSWER_STEP} {request}", lambda request=request: warm_answer(request, library_dir))
+                  for request in warm_requests()]
     if on_demand is not None:  # first of all (14 Oct 2026): the library is then read once, with them
         steps.insert(0, ("the threads read on demand", on_demand.warm_up))
     left = 0
@@ -956,7 +956,7 @@ def warm_up(library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
             print(f"Getting ready: {name} couldn't be loaded ({type(error).__name__}: {error}).", file=sys.stderr,
                   flush=True)
     if left:
-        print(f"Getting ready: left {left} product types for their first visitors (time up after "
+        print(f"Getting ready: left {left} requests for their first visitors (time up after "
               f"{WARM_UP_ANSWERS_SECONDS} s).", flush=True)
     ready.set()
     print(f"Ready for visitors: got ready in {time.perf_counter() - started:.1f} s.", flush=True)
@@ -1007,20 +1007,43 @@ def reload_on_demand_if_due() -> None:
               file=sys.stderr, flush=True)
 
 
-def warm_answer(product_type: str, library_dir: Path) -> None:
-    """One answer about a product type, worked out and thrown away while the server gets ready (latency, 12 Oct
-    2026), so what answers keep between requests is ready for the first visitors: retrieval's reading of each thread,
-    what each comment's words show, the name matching, the price and facts lookups (engine.memo). Nothing is shown and
-    Reddit is never asked: no live check, and every thread read as answers checked live read them
+def warm_answer(request: str, library_dir: Path) -> None:
+    """One answer to a request (warm_requests), worked out and thrown away while the server gets ready (latency, 12
+    Oct 2026), so what answers keep between requests is ready for the first visitors: retrieval's reading of each
+    thread, what each comment's words show, the name matching, the price and facts lookups (engine.memo). Nothing is
+    shown and Reddit is never asked: no live check, and every thread read as answers checked live read them
     (live_check_required=False). The answers themselves are never kept. It takes its turn with visitors' answers
     (_answers_lock), so a visitor arriving meanwhile waits for one of these at most, rather than sharing the processor
     with all of them."""
     with _answers_lock:
-        answer_request(product_type, library_dir, profiles=profiles, live_check_required=False)
+        answer_request(request, library_dir, profiles=profiles, live_check_required=False)
 
 
-# The product types answered while getting ready: module 1's own (engine.query.PRODUCT_TYPES). The rules route each by
-# its name (only "serum", placed by a clue word, also gets the open model's view, as any request would).
+def warm_requests() -> list[str]:
+    """The requests answered while getting ready, the likeliest first (14 Oct 2026, the coordinator's request after the
+    live site's getting ready reached 7 of 43 product types in its time): the search page's example requests, then the
+    latency requests (WARM_FIRST_FILES), then every product type by its name (WARM_PRODUCT_TYPES), each once. The
+    examples carry needs, so warming them reads the threads their need-led readings use; what is left when the time is
+    up (WARM_UP_ANSWERS_SECONDS) is worked out by its first visitor."""
+    first = [text for path in WARM_FIRST_FILES for text in _requests_in(path)]
+    return list(dict.fromkeys(first + list(WARM_PRODUCT_TYPES)))
+
+
+def _requests_in(path: Path) -> list[str]:
+    """The requests of a file of requests: the blind-test questions ("questions") or the latency requests ("queries");
+    none when there is no such file."""
+    if not Path(path).is_file():
+        return []
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    return [item["text"] for item in data.get("questions", data.get("queries", []))]
+
+
+# The requests answered first while getting ready (warm_requests): the search page's examples, then the latency
+# requests.
+LATENCY_FILE = REPO_ROOT / "eval" / "edge_cases" / "latency_queries.json"
+WARM_FIRST_FILES = (EXAMPLES_FILE, LATENCY_FILE)
+# Then the product types: module 1's own (engine.query.PRODUCT_TYPES). The rules route each by its name (only "serum",
+# placed by a clue word, also gets the open model's view, as any request would).
 WARM_PRODUCT_TYPES = tuple(p.name for p in PRODUCT_TYPES)
 WARM_ANSWER_STEP = "the answers' memory for"
 # Getting ready starts no more warm answers once this many seconds have passed (13 Oct 2026): Cloud Run's startup probe
