@@ -1014,11 +1014,12 @@ def test_a_product_name_one_letter_off_still_counts():
     ("Broke student coffee routine (or dealing with a cheap grinder)", "coffee grinder", "kitchen"),  # money
     ("I sandblasted my cast iron skillet since it rusted", "cast iron skillet", "kitchen"),  # a care project
     ("Avoid the crowds: my kitchen tour", "electric kettle", "kitchen"),  # doesn't name the product
-    # "Breaking in" a pan is its first use, not a failure (found through Bright Data's search, 10 Oct 2026).
-    ("Broke in my new cast iron for Sunday dinner chicken pot pie", "cast iron skillet", "kitchen"),
-    ("Broke in my new (and first) cast iron skillet with some chicken. Turned out great!", "cast iron skillet", "kitchen"),
+    # "Breaking in" a pan is its first use, not a failure (found through Bright Data's search, 10 Oct 2026; made-up
+    # titles of the same kind since 14 Oct 2026: the repo is public).
+    ("Broke in the new cast iron with a Sunday roast", "cast iron skillet", "kitchen"),
+    ("Broke in my first cast iron skillet with roast potatoes, came out great!", "cast iron skillet", "kitchen"),
     # Regretting NOT doing something, or having no regrets, isn't a warning (10 Oct 2026).
-    ("Will I regret not using retinol?", "retinoid", "skincare"),
+    ("Would I regret not starting retinol now?", "retinoid", "skincare"),
     ("No regrets: my cast iron skillet after 10 years", "cast iron skillet", "kitchen"),
 ])
 def test_these_are_not_warnings(title, product_type, category):
@@ -1033,7 +1034,7 @@ def test_these_are_not_warnings(title, product_type, category):
     ("Scratched non-stick frying pan after a month", "frying pan", "kitchen"),
     ("Grinder broke in a year, avoid", "coffee grinder", "kitchen"),
     ("Cast iron skillet broke in the first week", "cast iron skillet", "kitchen"),
-    ("Less than 3 years old electric kettle flaking/chipped already?", "electric kettle", "kitchen"),
+    ("Electric kettle under 3 years old and the inside is flaking/chipping already?", "electric kettle", "kitchen"),
     ("Non-stick pan peeling after six months", "frying pan", "kitchen"),
     ("This moisturizer gave me a rash", "moisturiser", "skincare"),
 ])
