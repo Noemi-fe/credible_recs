@@ -754,7 +754,11 @@ def test_the_price_turns_into_json():
     prices = {"tojiro-dp-gyuto": PriceCheck(shop_price(amount=90.0), "within", UNDER_100)}
     data = json.loads(json.dumps(answer_to_dict(write_answer(ranking, bodies, prices=prices))))
     price = data["picks"][0]["price"]
-    assert set(price) == {"text", "amount", "currency", "shop", "url", "checked_on", "budget_status", "budget_note"}
+    # Changed on purpose 14 Oct 2026 (Noemi's night decision 1): a price also says whether it is a brand line's from
+    # price ("from_price"), the cheapest UK price of its products of the type (engine/tests/test_line_links.py).
+    assert set(price) == {"text", "amount", "currency", "shop", "url", "checked_on", "budget_status", "budget_note",
+                          "from_price"}
+    assert price["from_price"] is False
     assert price["amount"] == 90.0 and price["budget_status"] == "within" and price["checked_on"] == "2026-10-09"
     assert data["picks"][1]["price"]["text"] == wording.PRICE_UNKNOWN
 
