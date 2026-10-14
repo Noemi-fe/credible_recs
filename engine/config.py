@@ -1131,3 +1131,30 @@ PRODUCT_TYPE_FORMS: dict[str, str] = {
     "retinoid": "retinoid treatment", "serum": "serum", "toner": "toner", "eye cream": "eye cream",
     "lip balm": "lip balm", "spot treatment": "spot treatment",
 }
+
+# --- Bulk import from Arctic Shift's per-subreddit history files (Noemi, 14 Oct 2026; engine/bulk_import.py) ---
+# Noemi's decision 1 of 14 Oct 2026: threads are chosen on this machine from the per-subreddit files, only the chosen
+# ones enter the library, and the raw files are deleted within BULK_RAW_FILES_KEPT_HOURS of the download's start. The
+# values below were chosen by Claude (technical calls, reported to Noemi).
+# The files: Academic Torrents' "subreddits23" (every post and comment of a subreddit from June 2005 to December 2023,
+# from Pushshift and Arctic Shift), and the last day they hold.
+BULK_DUMP = "subreddits23 (Arctic Shift's per-subreddit history files, 2005-06 to 2023-12)"
+BULK_DUMP_LAST_DAY = "2023-12-31"
+BULK_RAW_FILES_KEPT_HOURS = 48
+# Real engagement: at least as many comments as module 2's small-thread bar (engine.sources.SMALL_THREAD, 15) and a
+# score of 5, so the community answered and didn't bury it. A post the archive saved within a day of its writing (much
+# of late 2023) had neither settled yet: its comments in the file are counted instead, and its score isn't asked for.
+BULK_MIN_COMMENTS = 15
+BULK_MIN_SCORE = 5
+# Posts from this year on: products and formulas change (module 2 already prefers recent skincare threads), and these
+# five years hold enough threads for every type but the smallest.
+BULK_FIRST_YEAR = 2019
+# How many threads a run adds. Each product type aims at BULK_TYPE_TARGET threads about it (its title or post names it,
+# as answers read them), split as the library's mix (LIBRARY_MIX: 18 advice, 6 long-term use, 12 warnings), and takes
+# only the kinds it is short of: the thinnest types and kinds first. At most BULK_MAX_NEW_PER_TYPE new threads per type
+# in one run, so the extraction backlog stays readable.
+BULK_TYPE_TARGET = 36
+BULK_MAX_NEW_PER_TYPE = 30
+# A request given to the import (need-led choice, Noemi's decision 3 of 14 Oct 2026: "conditioner for curly hair") takes
+# up to this many threads asking about its needs, within its type's BULK_MAX_NEW_PER_TYPE.
+BULK_PER_REQUEST = 8

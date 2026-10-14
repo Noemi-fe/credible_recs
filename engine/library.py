@@ -65,6 +65,9 @@ Credits (Parse free plan: 200 a month, 2 per call):
   less once they are archived (every 90 days).
 
 Command line:
+    python -m engine.library import-dump <files folder> [--dry-run] [--type "<name>:<category>"]... [--request "<request>"]...
+                                               choose threads in Arctic Shift's per-subreddit history files and save
+                                               them as new library threads (Noemi, 14 Oct 2026; engine/bulk_import.py)
     python -m engine.library add [--reader auto|archive|bright_data|parse] [--only warning|advice|long_term] [--limit N] "<request>"
                                                find and save the threads for one request (6 by default, as a mix;
                                                with --only, threads of that kind only); quotes are optional
@@ -789,6 +792,10 @@ def main(
     through Parse unless told otherwise. `shown`: the threads answers quote, for check-live; None works them out from
     the blind-test questions (engine.slice_eval.threads_behind_answers).
     """
+    if argv and argv[0] == "import-dump":  # this machine's files only: no client, no credit, no network
+        from engine.bulk_import import main as bulk_main  # here: engine.bulk_import reads the library through this module
+
+        return bulk_main(["import", *argv[1:]], library_dir=folder)
     command = argv[0] if argv else None
     real_run = client is None  # a real run remembers an Arctic Shift outage; a test never writes that memo
     add_options = _add_options(argv[1:]) if command == "add" else None
