@@ -542,18 +542,47 @@ def test_warming_up_answers_each_product_type_without_asking_reddit(tmp_path, mo
     assert all("live_checker" not in kwargs and kwargs["live_check_required"] is False for _, kwargs in asked)
 
 
-def test_getting_ready_answers_the_likeliest_requests_first():
-    # 14 Oct 2026 (the coordinator, from the live site: getting ready reached 7 of 43 product types in its 120 s): the
-    # search page's example requests come first, then the latency requests, then the product types by name, each once.
-    # The examples carry needs, so warming them reads the threads their need-led readings use.
+def test_getting_ready_answers_the_examples_then_one_request_per_product_type():
+    # 14 Oct 2026 (the coordinator, from the live site: Cloud Run's one processor warmed 13 of 65 requests in getting
+    # ready's 120 s): the search page's example requests first (what a visitor clicks); then one request for each type
+    # not asked yet, its likeliest (the first latency request the rules place as that type, else the type's name): a
+    # type's first answer reads every thread of its category for it, the biggest part of a cold answer; then the rest,
+    # each once; the requests module 1 asks the open model about last (a reading of seconds that warms that very request
+    # only).
+    from engine.query import parse_query
+
+    class Asked:
+        def __init__(self):
+            self.asked = False
+
+        def read(self, text):
+            self.asked = True
+            return None
+
+    def placed(text):
+        stub = Asked()
+        query = parse_query(text, model=stub)
+        return (query.product_type if query.status == "ok" else None), stub.asked
+
     examples = [q["text"] for q in web.example_requests()]
     latency = [q["text"] for q in json.loads(web.LATENCY_FILE.read_text(encoding="utf-8"))["queries"]]
+    likely = list(dict.fromkeys(examples + latency))
     warmed = web.warm_requests()
+    assert sorted(warmed) == sorted(dict.fromkeys(likely + list(web.WARM_PRODUCT_TYPES)))  # each once
     assert examples and warmed[:len(examples)] == examples
-    rest = [text for text in latency if text not in examples]
-    assert rest and warmed[len(examples):len(examples) + len(rest)] == rest
-    assert warmed[len(examples) + len(rest):] == [t for t in web.WARM_PRODUCT_TYPES if t not in examples + rest]
-    assert len(warmed) == len(set(warmed))
+    every = list(dict.fromkeys(likely + list(web.WARM_PRODUCT_TYPES)))
+    where = {t: placed(t) for t in every}
+    asked = {where[t][0] for t in examples}
+    per_type = [next(t for t in every if where[t] == (p, False)) for p in web.WARM_PRODUCT_TYPES
+                if p not in asked and any(where[t] == (p, False) for t in every)]
+    assert warmed[len(examples):len(examples) + len(per_type)] == per_type
+    assert "anti-dandruff shampoo" in per_type and "shampoo" not in per_type  # a type's latency request, else its name
+    assert "toner" in per_type
+    first = warmed[:len(examples) + len(per_type)]
+    assert {where[t][0] for t in first} >= set(web.WARM_PRODUCT_TYPES) - {"serum"}  # every type the rules place alone
+    asks_model = [t for t in warmed if where[t][1]]
+    assert asks_model and warmed[-len(asks_model):] == asks_model  # "serum" and "something nice for my mum" last
+    assert "serum" in asks_model
 
 
 def test_warming_up_stops_answering_product_types_once_its_time_is_up(tmp_path, monkeypatch, capsys):
@@ -582,6 +611,72 @@ def test_warming_up_stops_answering_product_types_once_its_time_is_up(tmp_path, 
     assert asked == web.warm_requests()[:expected]  # the likeliest first
     said = capsys.readouterr().out
     assert f"left {len(web.warm_requests()) - expected} requests for their first visitors" in said
+
+
+def _ready_with_requests_left(tmp_path, monkeypatch, takes: float = 40.0):
+    """A server that got ready with time for 3 warm answers of `takes` seconds each, the rest left (a clock that moves
+    only as answers take time); and the requests asked."""
+    from engine import query_model
+    from engine.tests.test_library_cache import settled
+    from engine.tests.test_pipeline import library
+
+    monkeypatch.setattr(query_model, "default_query_model", lambda: None)
+    monkeypatch.setattr(web, "ready", threading.Event())
+    monkeypatch.setattr(web, "_left_to_warm", [])
+    now = [0.0]
+    monkeypatch.setattr(web.time, "perf_counter", lambda: now[0])
+    asked = []
+
+    def slow(request, library_dir, **kwargs):
+        asked.append((request, web._answers_lock.locked()))
+        now[0] += takes
+
+    monkeypatch.setattr(web, "answer_request", slow)
+    root = settled(library(tmp_path))
+    web.warm_up(root)
+    return root, asked
+
+
+def test_each_ping_after_getting_ready_warms_a_slice_of_the_requests_left(tmp_path, monkeypatch, capsys):
+    # 14 Oct 2026 (the coordinator, from the live site: Cloud Run's one processor warmed 13 of 65 requests in getting
+    # ready's 120 s, and a request whose threads weren't warmed took ~8 s): Cloud Run gives a server its processor only
+    # while it answers someone, so a thread warming in the background would barely run. The keep-warm ping asks /ready
+    # every 5 minutes: each ping warms the next requests left, for up to WARM_MORE_SECONDS, until none are left.
+    root, asked = _ready_with_requests_left(tmp_path, monkeypatch)
+    warm = web.warm_requests()
+    done = -(-web.WARM_UP_ANSWERS_SECONDS // 40)
+    assert [r for r, _ in asked] == warm[:done]
+    capsys.readouterr()
+    slice_ = -(-web.WARM_MORE_SECONDS // 40)  # answers started before the slice's time was up
+    status, _, _ = web.handle_request("/ready", root)
+    assert status == 200
+    assert [r for r, _ in asked] == warm[:done + slice_]
+    assert f"warmed {slice_} more, {len(warm) - done - slice_} left" in capsys.readouterr().out
+    while web._left_to_warm:
+        web.handle_request("/ready", root)
+    assert [r for r, _ in asked] == warm  # every request warmed once, in order
+    assert all(in_turn for _, in_turn in asked)  # each takes its turn with visitors' answers
+    capsys.readouterr()
+    web.handle_request("/ready", root)  # nothing left: the ping only says it is ready
+    assert [r for r, _ in asked] == warm
+    assert "warmed" not in capsys.readouterr().out
+
+
+def test_a_ping_before_the_server_is_ready_warms_nothing(tmp_path, monkeypatch):
+    root, asked = _ready_with_requests_left(tmp_path, monkeypatch)
+    web.ready.clear()
+    before = list(asked)
+    assert web.handle_request("/ready", root)[0] == 503
+    assert asked == before
+
+
+def test_two_pings_at_once_warm_one_slice(tmp_path, monkeypatch):
+    # One slice at a time: a ping arriving while another warms says it is ready at once.
+    root, asked = _ready_with_requests_left(tmp_path, monkeypatch)
+    before = len(asked)
+    with web._warming:
+        assert web.handle_request("/ready", root)[0] == 200
+    assert len(asked) == before
 
 
 def test_a_warmed_answer_leaves_every_answer_as_it_was(tmp_path):
