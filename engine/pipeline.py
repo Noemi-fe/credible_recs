@@ -428,7 +428,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.comments_read = sum(len(shown_comment_ids(t)) for t in threads)  # what the AI read in them (12 Oct 2026)
     result.bodies = comment_bodies(threads)
 
-    mentions = _not_sets(_product_mentions(checked), result)
+    mentions = _not_sets(_product_mentions(checked), result, query.product_type)
     # Grouped for this request's type (13 Oct 2026): "Fellow kettle" in a kettle answer is Fellow's kettle line. An
     # ingredient-led request has no one type: its products are grouped as the library's are.
     grouping_type = None if query.ingredient_led else query.product_type
@@ -685,14 +685,15 @@ def _category_of(mention) -> str:
     return _TYPE_CATEGORY.get((mention.product_type or "").strip().lower(), mention.category)
 
 
-def _not_sets(mentions: list[ProductMention], result: PipelineResult) -> list[ProductMention]:
+def _not_sets(mentions: list[ProductMention], result: PipelineResult,
+              requested: str | None = None) -> list[ProductMention]:
     """The mentions that aren't of a set, a block or a sharpener (config.OTHER_TYPE_WORDS, in the type the AI gave
     the mention): those are left out before grouping and named on the result, so a "Henckels knife block" never lends
     its votes to the writers' other Henckels mentions (10 Oct 2026). Any other type is decided for the whole product
-    by most of its mentions (_another_type)."""
+    by most of its mentions (_another_type). `requested`: the request's product type (_names_a_set)."""
     kept = []
     for mention in mentions:
-        if mention.product_type and _names_a_set(mention.product_type):
+        if mention.product_type and _names_a_set(mention.product_type, requested):
             if uk_name(mention.product) not in result.left_out_as_other_type:
                 result.left_out_as_other_type.append(uk_name(mention.product))
         else:
@@ -700,22 +701,26 @@ def _not_sets(mentions: list[ProductMention], result: PipelineResult) -> list[Pr
     return kept
 
 
-def _names_a_set(product_type: str) -> bool:
+def _names_a_set(product_type: str, requested: str | None = None) -> bool:
     """Whether a type in the AI's words names something that holds, sharpens, covers or bundles a product ("knife
     set", "knife blocks"), not the product: the word that says what it is, singular or plural, is in
     config.OTHER_TYPE_WORDS. That word is the last one ("knife stand"), or the one before "of" ("set of knives"):
-    a "stand mixer" is a mixer (11 Oct 2026, when its every mention had been dropped)."""
+    a "stand mixer" is a mixer (11 Oct 2026, when its every mention had been dropped).
+
+    A type ending with a name of one of module 1's types whose own name ends with that word is that product (14 Oct
+    2026, the general category: "sleeping bag", "down sleeping bag", "tool set", "tv stand"): with no request, or in a
+    request for it (`requested`, the request's product type). In any other request it is left out as a set is, as
+    before the taxonomy made it a type of its own: a "knife sharpener" in a chef knife request."""
     words = product_type.strip().lower().split()
     if not words:
         return False
     head = words[words.index("of") - 1] if "of" in words[1:] else words[-1]
     if head not in OTHER_TYPE_WORDS and head.removesuffix("s") not in OTHER_TYPE_WORDS:
         return False
-    # 14 Oct 2026 (the general category): a type ending with a name of one of module 1's types whose own name ends with
-    # that word is that product ("sleeping bag", "down sleeping bag", "punching bag", "tool set", "tv stand", "phone
-    # case", "drum set"), not something holding another.
     named = _ends_with_a_type(product_type)
-    return named is None or named.name.split()[-1].removesuffix("s") != head.removesuffix("s")
+    if named is None or named.name.split()[-1].removesuffix("s") != head.removesuffix("s"):
+        return True
+    return requested is not None and named.name != requested
 
 
 @cache
@@ -931,7 +936,7 @@ def _another_type_by_ai(types: list[str], requested: str) -> bool:
         return False
     if majority in {p.name for p in PRODUCT_TYPES}:
         return True
-    if _names_a_set(majority):
+    if _names_a_set(majority, requested):
         return True
     named = _ends_with_a_type(majority)  # 14 Oct 2026: a "frying pan set" is the cookware set's, not a frying pan
     if named is not None and named.name != requested:

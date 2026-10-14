@@ -12,8 +12,9 @@ from pathlib import Path
 from engine import config
 from engine.answer import unverified_claims
 from engine.credibility import CATEGORY_TERMS, GENERIC_NAME_WORDS, score_voice
+from engine.group_products import ProductMention
 from engine.models import Thread
-from engine.pipeline import _names_a_set, answer_request
+from engine.pipeline import PipelineResult, _names_a_set, _not_sets, answer_request
 from engine.query import parse_query
 from engine.sources import ArchiveSource, for_request, thread_kind, warning_words
 from engine.tests.factories import make_comment, make_thread, write_gold
@@ -146,6 +147,21 @@ def test_a_type_whose_name_ends_with_a_set_word_is_a_product_not_a_set():
         assert not _names_a_set(product_type), product_type
     for product_type in ("knife set", "knife block", "lego set", "bike rack"):
         assert _names_a_set(product_type), product_type
+
+
+def test_a_type_with_a_set_word_is_spared_only_in_its_own_request():
+    # 14 Oct 2026 (found merging main, comparing every answer's JSON): in a chef knife request a "knife sharpener"
+    # mention is left out before grouping, as before the taxonomy made the knife sharpener a type of its own; kept,
+    # its "Rada sharpener" had made "Rada" a brand of two products, and the knife answer counted one brand line more.
+    assert _names_a_set("knife sharpener", "chef knife")
+    assert _names_a_set("sleeping bag", "tent")
+    assert not _names_a_set("knife sharpener", "knife sharpener")
+    assert not _names_a_set("down sleeping bag", "sleeping bag")
+    result = PipelineResult(parse_query("first chef's knife under £100 for a home cook"))
+    mentions = [ProductMention("t1", "c1", "Rada Knives", "kitchen", "recommend", "chef knife"),
+                ProductMention("t1", "c1", "Rada sharpener", "kitchen", "recommend", "knife sharpener")]
+    assert [m.product for m in _not_sets(mentions, result, "chef knife")] == ["Rada Knives"]
+    assert result.left_out_as_other_type == ["Rada sharpener"]
 
 
 # --- Credibility: the same rules, the general category's specialist words ---
