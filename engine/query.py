@@ -133,7 +133,7 @@ class ProductType:
     department: str | None = None  # the general category's department (config.GENERAL_DEPARTMENTS); None otherwise
 
 
-_FIRST_PRODUCT_TYPES = (
+FIRST_PRODUCT_TYPES = (
     ProductType("exfoliant", "skincare", ("exfoliant", "exfoliator", "exfoliating", "exfoliate", "peeling solution", "peel"),
                 ("aha", "bha", "pha", "salicylic", "glycolic", "lactic acid", "mandelic")),
     ProductType("cleanser", "skincare", ("cleanser", "face wash", "facial wash", "cleansing oil", "cleansing balm", "micellar",
@@ -242,7 +242,7 @@ _FIRST_PRODUCT_TYPES = (
 # general category's, each in its department, and more kitchen, skincare and haircare ones. A longer name still wins
 # over a shorter one inside it: "robot vacuum" isn't a vacuum cleaner, "hiking boots" aren't boots, "dog bed" isn't a
 # bed. Names are written as they are typed; hints are weaker clues, as above ("watch", "chair", "fan").
-PRODUCT_TYPES = _FIRST_PRODUCT_TYPES + tuple(
+PRODUCT_TYPES = FIRST_PRODUCT_TYPES + tuple(
     ProductType(entry["name"], entry["category"], tuple(entry["keywords"]), tuple(entry.get("hints", ())),
                 tuple(entry["subreddits"]), entry.get("department"))
     for entry in MORE_PRODUCT_TYPES
@@ -403,7 +403,7 @@ _OTHER_BLENDERS = ("immersion", "stick", "hand", "handheld", "hand-held", "beaut
 # "looking for a microwave" and "what to look for in an oven" ask for one.
 _PLACES = tuple(f"{word} {the} {appliance}" for word in ("in", "into", "inside", "to", "from")
                 for the in ("the", "my", "your") for appliance in ("oven", "microwave", "dishwasher"))
-_LOOKALIKES_BEFORE = (
+FIRST_LOOKALIKES = (
     "ice cream", "coffee pot", "sheet pan", "cake pan", "loaf pan", "roasting pan",
     "baking pan", "muffin pan", "bundt pan", "pie pan", "tart pan", "sun hat", "sun lounger", "vacuum sealer",
     "vacuum flask", "vacuum-insulated", "vacuum insulated",
@@ -469,7 +469,7 @@ _GENERAL_LOOKALIKES = (
 # A phrase that is a product's own name is no look-alike (14 Oct 2026: "pizza oven", "vacuum sealer" and "beauty blender"
 # are names of the general category's types, or of the kitchen's); the longer name wins as it always has.
 _KEYWORDS = frozenset(k for product in PRODUCT_TYPES for k in product.keywords)
-LOOKALIKES = tuple(phrase for phrase in dict.fromkeys(_LOOKALIKES_BEFORE + _GENERAL_LOOKALIKES)
+LOOKALIKES = tuple(phrase for phrase in dict.fromkeys(FIRST_LOOKALIKES + _GENERAL_LOOKALIKES)
                    if phrase not in _KEYWORDS and phrase.removesuffix("s") not in _KEYWORDS)
 
 # Words that place a vague request in a category, so the question can be more specific.
@@ -826,8 +826,8 @@ def _typo_vocabulary() -> tuple[frozenset[str], dict[str, tuple[str, ...]]]:
     def long_words(texts: Iterable[str]) -> set[str]:
         return {w for text in texts for w in text.split() if len(w) >= 6}
 
-    first = {p.name for p in _FIRST_PRODUCT_TYPES}
-    targets = long_words(k for p in _FIRST_PRODUCT_TYPES for k in p.keywords + p.hints)
+    first = {p.name for p in FIRST_PRODUCT_TYPES}
+    targets = long_words(k for p in FIRST_PRODUCT_TYPES for k in p.keywords + p.hints)
     targets |= long_words(t for name, words in TITLE_WORDS.items() if name in first for t in words)
     targets |= {s for s in SKIN_TYPES if len(s) >= 6 and "-" not in s}
     # The active ingredients' words too (13 Oct 2026): "azeliac" is azelaic.

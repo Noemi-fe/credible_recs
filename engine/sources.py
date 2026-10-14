@@ -54,7 +54,10 @@ from engine.gold import load_threads
 from engine.ingredients import ingredient_type_name, ingredients_of_type, talk_words, wanted_types
 from engine.models import Thread
 from engine.parse_reddit import ParseRedditClient
-from engine.query import LOOKALIKES, PRODUCT_TYPES, TITLE_WORDS, ParsedQuery, name_pattern, plural_ending
+from engine.query import (
+    FIRST_LOOKALIKES, FIRST_PRODUCT_TYPES, LOOKALIKES, PRODUCT_TYPES, TITLE_WORDS, ParsedQuery, name_pattern,
+    plural_ending,
+)
 from engine.text import one_edit_apart
 
 
@@ -110,13 +113,20 @@ def _product_pattern(product_type: str) -> re.Pattern:
 @cache
 def _covering_pattern(product_type: str) -> re.Pattern:
     """Longer names that hold one of this product's words but name something else: the other product types' names and
-    module 1's look-alike phrases ("tea pot" and "crock pot" hold "pot"; "dry shampoo" holds "shampoo"). Only those
-    holding one of the product's own words can hold a place where it is named, so only they are looked for (14 Oct 2026:
-    with the general category's 3,000 names, one pattern of them all had made every search several times slower)."""
+    module 1's look-alike phrases ("tea pot" and "crock pot" hold "pot"; "dry shampoo" holds "shampoo").
+
+    Since 14 Oct 2026 (the general category's 3,000 names, which in one pattern had made every search several times
+    slower), the names of engine/data/product_types.json's types and the general look-alikes count only when they hold
+    one of the product's own words: only those can hold a place where it is named. The first types' names and
+    look-alikes all count, as before, so what the first types' answers read doesn't move (the pattern finds names one
+    after another, and one can end where another would have started: "under eye cream" holds "under eye", an eye
+    cream's name, and "cream" counts for a moisturiser)."""
     name = product_type.strip().lower()
     own = _product_pattern(name)
-    phrases = {k for p in PRODUCT_TYPES if p.name != name for k in p.keywords} | set(LOOKALIKES)
-    phrases = {phrase for phrase in phrases if own.search(phrase)}
+    first = {k for p in FIRST_PRODUCT_TYPES if p.name != name for k in p.keywords} | set(FIRST_LOOKALIKES)
+    more = {k for p in PRODUCT_TYPES[len(FIRST_PRODUCT_TYPES):] if p.name != name for k in p.keywords}
+    more |= set(LOOKALIKES) - set(FIRST_LOOKALIKES)
+    phrases = first | {phrase for phrase in more if own.search(phrase)}
     alternatives = "|".join(name_pattern(x) for x in sorted(phrases, key=len, reverse=True)) or "(?!)"
     return re.compile(rf"\b(?:{alternatives})\b", re.IGNORECASE)
 
