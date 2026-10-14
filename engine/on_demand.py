@@ -1104,7 +1104,7 @@ def pull_command(command: str, argv: list[str], library_dir: Path, bucket: Bucke
     if argv[:1] == ["--bucket"] and len(argv) == 2:
         name = argv[1]
     elif argv:
-        print(__doc__)
+        print(f"python -m engine.library {command} [--bucket NAME]   (the bucket: {DEFAULT_BUCKET} by default)")
         return 2
     bucket = bucket or Bucket(name, prefix=PREFIX, token=gcloud_token)
     if command == "pull-bucket":
