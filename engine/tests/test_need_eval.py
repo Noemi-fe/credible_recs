@@ -105,3 +105,17 @@ def test_a_case_without_each_need_judged_counts_none_for_every_need():
     plain = CaseResult("n01", GREASY, first=["a", "b"])
     assert plain.about_every_need == 0 and plain.titled_opposite == 0 and plain.named_opposite == 0
     assert "about every need" not in need_lines([plain])[0]
+
+
+def test_a_slimmed_threads_post_is_judged_by_title_only_and_the_report_says_how_many(tmp_path):
+    # 13 Oct 2026 (Noemi: "Keep only comments we use"): a slimmed thread keeps its title but not its post's words, and
+    # the judge words are the eval's own, so its post can't be judged: the report says how many were judged by title.
+    from engine.slim import slim_library
+
+    root = hair_library(tmp_path)
+    assert len(slim_library(root, gold_ids=set()).slimmed) == 3
+    path = cases_file(tmp_path, [{"id": "n01", "text": GREASY, "judge": ["greas", "oily", "oili"]}])
+    [result] = score_cases(path, root, profiles=None, live_checker=None)
+    assert sorted(result.first) == ["1hair01", "1hair02", "1hair03"]  # need-led as before: the noted need words
+    assert result.slimmed == 3 and (result.about_by_title, result.about_by_title_or_post) == (1, 1)
+    assert "(3 slimmed: their posts' words are gone, judged by title only)" in need_lines([result])[0]

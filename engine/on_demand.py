@@ -1015,7 +1015,8 @@ def _extract_one(tid: str, bundle: Bundle, queues: QueueStore, bundles: BundleSt
         report.quotes_kept += len(checked.kept)
         report.quotes_dropped += len(checked.rejected)
         report.extracted += 1
-        slim_text, why = slimmed(thread, extraction, item.product_type, library_dir, now())
+        needs = [word for word in item.entry.rsplit("/", 1)[-1].split("+") if word]  # its request's (key_of)
+        slim_text, why = slimmed(thread, extraction, item.product_type, library_dir, now(), needs)
         if slim_text is None:
             report.whole += 1
             if why and why not in report.notes:
@@ -1047,18 +1048,21 @@ def _extract_one(tid: str, bundle: Bundle, queues: QueueStore, bundles: BundleSt
     return True
 
 
-def slimmed(thread, extraction, product_type: str, library_dir: Path, now: datetime) -> tuple[str | None, str | None]:
+def slimmed(thread, extraction, product_type: str, library_dir: Path, now: datetime,
+            needs: list[str] = ()) -> tuple[str | None, str | None]:
     """The thread file's text with only the comments answers use (Noemi, 13 Oct 2026: "Keep only comments we use"),
     through engine.slim (branch lean-library) when it is here and the slimmed copy reads the same as the whole one
-    (its own guard, engine.slim.differences); else (None, why): the thread is kept whole."""
+    (its own guard, engine.slim.differences); else (None, why): the thread is kept whole. Its post is searched for the
+    words the engine knows and the queued request's own (`needs`), as need-led reading will look for them."""
     try:
         slim = importlib.import_module("engine.slim")
     except ImportError:
         return None, "engine.slim isn't here yet (branch lean-library): threads are kept whole."
     try:
         types = tuple(dict.fromkeys((*slim.known_types(library_dir), product_type)))
-        copy = slim.slim_thread(thread, extraction, types, now)
-        if slim.differences(thread, copy, extraction, types):
+        words = slim.known_words(library_dir) | slim.known_words_of(product_type, *needs)
+        copy = slim.slim_thread(thread, extraction, types, now, words)
+        if slim.differences(thread, copy, extraction, types, words):
             return None, "A thread would read differently slimmed: kept whole."
         return slim.thread_json(copy).decode("utf-8"), None
     except Exception as error:  # a thread the slimming refuses stays whole, as engine.slim leaves such threads

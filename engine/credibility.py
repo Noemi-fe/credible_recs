@@ -60,7 +60,7 @@ from engine import config
 from engine.extract import ExtractedAgreement
 from engine.match_products import normalize_name, same_product
 from engine.memo import Table, register
-from engine.models import Author, Comment, Thread
+from engine.models import READABLE_ON_REDDIT, Author, Comment, Thread
 from engine.text import one_edit_apart
 
 # --- What the scores look like ---
@@ -373,7 +373,14 @@ def copy_groups(thread: Thread) -> list[frozenset[str]]:
     (a comment copied by two others joins them in one set); copied_comment_ids and repeated_copies read them. Since 12
     Oct 2026 (latency) also remembered, by everything of the thread it reads, so the next answer reading the same
     thread doesn't work it out again.
+
+    A slimmed thread (engine/slim.py, 13 Oct 2026) no longer holds the words of most of its comments: its pairs of
+    copies were worked out from the whole thread first (engine.models.WholeThread.copies), and its sets are made from
+    those, leaving out a comment Reddit has since shown deleted or removed, as reading the whole thread again would.
     """
+    if thread.whole_thread is not None:
+        readable = {c.id for c in thread.comments if c.status in READABLE_ON_REDDIT}
+        return _groups_of(pair for pair in thread.whole_thread.copies if set(pair) <= readable)
     key = (thread.id, config.COPIED_TEXT_MIN_WORDS,
            tuple((c.id, c.status, c.parent_id, c.author.name if c.author else None, c.body) for c in thread.comments))
     if key not in _COPIES:
@@ -382,6 +389,13 @@ def copy_groups(thread: Thread) -> list[frozenset[str]]:
 
 
 def _copy_groups(thread: Thread) -> list[frozenset[str]]:
+    """A whole thread's sets of copies, worked out from its words (copy_groups remembers them)."""
+    return _groups_of(copy_pairs(thread))
+
+
+def copy_pairs(thread: Thread) -> set[tuple[str, str]]:
+    """Every pair of the thread's readable comments that are two writers' copies (see copy_groups), each pair once, in
+    id order: what copy_groups joins into sets, and what a slimmed thread keeps of its copies (engine/slim.py)."""
     size = config.COPIED_TEXT_MIN_WORDS
     readable = {c.id: c for c in thread.comments if c.status == "ok"}
     words_of = {}  # the comments long enough to hold such a run: their words
@@ -395,20 +409,28 @@ def _copy_groups(thread: Thread) -> list[frozenset[str]]:
         if cid in could:  # only those that could share one (latency, 14 Oct 2026: most comments of most threads can't)
             for run in {tuple(words[start:start + size]) for start in range(len(words) - size + 1)}:
                 found_in.setdefault(run, []).append(cid)
-    joined: dict[str, str] = {}  # each copy's set, by one comment standing for it (union-find)
+    pairs = set()
+    # The same passage gives many runs with the same comments: each set of comments is compared once.
+    for sharing in {tuple(ids) for ids in found_in.values() if len(ids) > 1}:
+        for first, second in combinations(sharing, 2):
+            if _two_writers_copies(readable[first], readable[second]):
+                pairs.add(tuple(sorted((first, second))))
+    return pairs
+
+
+def _groups_of(pairs: Iterable[tuple[str, str]]) -> list[frozenset[str]]:
+    """The sets of comments the pairs join (union-find): a comment copied by two others joins them in one set."""
+    joined: dict[str, str] = {}  # each copy's set, by one comment standing for it
 
     def root(cid: str) -> str:
         while joined.get(cid, cid) != cid:
             cid = joined[cid]
         return cid
 
-    # The same passage gives many runs with the same comments: each set of comments is compared once.
-    for sharing in {tuple(ids) for ids in found_in.values() if len(ids) > 1}:
-        for first, second in combinations(sharing, 2):
-            if _two_writers_copies(readable[first], readable[second]):
-                joined.setdefault(first, first)
-                joined.setdefault(second, second)
-                joined[root(first)] = root(second)
+    for first, second in pairs:
+        joined.setdefault(first, first)
+        joined.setdefault(second, second)
+        joined[root(first)] = root(second)
     groups: dict[str, set[str]] = {}
     for cid in joined:
         groups.setdefault(root(cid), set()).add(cid)
@@ -476,7 +498,9 @@ def _copy_signs(comment: Comment, copied: Collection[str]) -> list[Sign]:
 
 def _endorsement_signs(comment: Comment, thread: Thread, agreements: Iterable[ExtractedAgreement]) -> list[Sign]:
     """Upvotes relative to the rest of the thread (never absolute numbers), and replies that agree. What it reads of the
-    thread (its comments' scores, parents and writers) is worked out once per thread (_thread_facts)."""
+    thread (its comments' scores, parents and writers) is worked out once per thread (_thread_facts). The rest of the
+    thread is every comment readable on Reddit when it was read, also those whose words a slimmed thread doesn't keep
+    (their scores stay: 13 Oct 2026)."""
     signs = []
     facts = _thread_facts(thread)
     own = facts.ok_scores_of.get(comment.id, ())  # the comment's own score, left out of the others'
@@ -532,7 +556,7 @@ def _thread_facts(thread: Thread) -> _ThreadFacts:
         return found[1]
     scores_of: dict[str, list[int]] = {}
     for c in thread.comments:
-        if c.status == "ok":
+        if c.status in READABLE_ON_REDDIT:  # a slimmed thread's comments without their words count too (13 Oct 2026)
             scores_of.setdefault(c.id, []).append(c.score)
     ok_scores = sorted(score for scores in scores_of.values() for score in scores)
     facts = _ThreadFacts(ok_scores, len(ok_scores), {cid: tuple(scores) for cid, scores in scores_of.items()},

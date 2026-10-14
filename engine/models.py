@@ -9,6 +9,7 @@ Rules about a single object live here. Rules about how objects connect (a reply 
 comment, a label points to a real comment) live in engine/gold.py.
 """
 
+import hashlib
 import re
 from datetime import UTC, datetime
 from typing import Annotated, ClassVar, Literal
@@ -75,7 +76,15 @@ class Comment(Record):
     created_at: UtcDatetime
     score: int  # upvotes minus downvotes; can be negative
     url: WebUrl
-    status: Literal["ok", "deleted", "removed"] = "ok"
+    # "not_kept" (Noemi, 13 Oct 2026: "Keep only comments we use"; engine/slim.py): the comment was there on Reddit
+    # when the thread was last read, but the library keeps neither its words nor its writer, because no answer uses
+    # them (or a kept comment that wasn't verified on Reddit in time). Its id, what it replies to, its date, score and
+    # link stay, so the thread keeps its shape and its scores.
+    status: Literal["ok", "deleted", "removed", "not_kept"] = "ok"
+    # For a comment a slimmed thread keeps: when Reddit last showed it saying what the library holds (its embed page,
+    # or a read of the whole thread on Reddit). None when it never was: a comment read from the archive and not
+    # verified yet. Text not verified within config.LIBRARY_VERIFY_DAYS is dropped (engine/verify.py).
+    verified_at: UtcDatetime | None = None
 
     @model_validator(mode="after")
     def _readable_comment_has_text(self) -> "Comment":
@@ -84,7 +93,55 @@ class Comment(Record):
                 raise ValueError("body is empty; a comment with status 'ok' needs its text")
             if self.body.strip() in ("[deleted]", "[removed]"):
                 raise ValueError(f"body is {self.body.strip()!r} but status is 'ok'; set status to 'deleted' or 'removed'")
+        if self.status == "not_kept" and (self.body or self.author is not None):
+            raise ValueError("a comment the library doesn't keep holds no words and no writer: body \"\", author null")
+        if self.verified_at is not None and self.status != "ok":
+            raise ValueError(f"verified_at is for a comment the library keeps, not one that is {self.status}")
         return self
+
+
+# Comments that were readable on Reddit when the thread was last read: the ones kept whole ("ok") and the ones whose
+# words the library doesn't keep ("not_kept"). Scores, reply counts and copies are counted over both (13 Oct 2026).
+READABLE_ON_REDDIT = ("ok", "not_kept")
+
+
+class WholeThread(Record):
+    """What a slimmed thread's whole copy said, worked out before the words of the comments no answer uses were dropped
+    (Noemi, 13 Oct 2026: "Keep only comments we use"; engine/slim.py). The scoring reads these facts where it read the
+    whole thread. Ids, dates, product types and fingerprints only: never anyone's words, and no writer's name but those
+    of comments the thread keeps whole."""
+
+    slimmed_at: UtcDatetime
+    # The extraction the kept comments were chosen from: its instructions version and when it was made. A newer
+    # extraction can't change what was kept: the words it would need are gone.
+    extraction: str
+    # The product types (engine.slim.known_types) the post named: module 2 finds a thread by its title or its post.
+    post_names: list[str] = []
+    # The words of config's needs the post held (engine.needs.post_need_words; config's words, not the post's), and
+    # those of hair types written together (post_list_words): need-led reading reads a thread about the request's needs
+    # first, by its title or its post (14 Oct 2026).
+    post_need_words: list[str] = []
+    post_list_words: list[str] = []
+    # The words the engine knows (engine.slim.known_words) the post held as a request's own word is found
+    # (engine.needs.post_request_words): the engine's words, not the post's.
+    post_words: list[str] = []
+    # {comment id: the product types it named}, for the comments whose words aren't kept: module 2's count of the
+    # comments naming a product.
+    comment_names: dict[Id, list[str]] = {}
+    # Pairs of comments with the same run of words under two writers' names (engine.credibility.copy_groups): the
+    # "copied text" red flag, and copies count once. Only the pairs that reach a kept comment.
+    copies: list[tuple[Id, Id]] = []
+    # {writer of a kept comment: their first comment in the thread}, when that comment isn't kept: a writer's "active
+    # since" is checked against it (engine.profiles).
+    first_seen: dict[str, UtcDatetime] = {}
+    # The fingerprints (quote_fingerprint) of the extraction's quotes in a quoted block that were found in words not
+    # kept: someone else's words, never the kept comment's own (engine.extract).
+    quoted_elsewhere: list[str] = []
+
+
+def quote_fingerprint(quote: str) -> str:
+    """A short fingerprint of a quote, as WholeThread.quoted_elsewhere keeps it: never the quote itself."""
+    return hashlib.sha256(quote.encode("utf-8")).hexdigest()[:16]
 
 
 class Thread(Record):
@@ -108,11 +165,29 @@ class Thread(Record):
     # When Reddit itself was last read for this thread (a "live check"). None when it never was: a thread read from
     # the archive and not checked yet, or an older file, whose collected_at already says when Parse read it.
     checked_live_at: UtcDatetime | None = None
+    # Set once the thread is slimmed (Noemi, 13 Oct 2026: "Keep only comments we use"; engine/slim.py): it keeps its
+    # title and only the comments answers use, each verified on Reddit one by one, plus these facts of the whole
+    # thread. None: the thread is whole, as read.
+    whole_thread: WholeThread | None = None
 
     @field_validator("community")
     @classmethod
     def _drop_r_prefix(cls, community: str) -> str:
         return community.strip().removeprefix("r/")
+
+    @model_validator(mode="after")
+    def _a_slimmed_post_keeps_no_words(self) -> "Thread":
+        if self.whole_thread is not None:
+            if self.author is not None:
+                raise ValueError("a slimmed thread keeps no post writer: author null")
+            if self.body.strip() not in ("", "[deleted]", "[removed]"):
+                raise ValueError("a slimmed thread keeps its title, not its post's words: body \"\"")
+        return self
+
+    @property
+    def slimmed(self) -> bool:
+        """Whether the thread keeps only the comments answers use (whole_thread)."""
+        return self.whole_thread is not None
 
     def last_checked_live(self) -> datetime | None:
         """When Reddit itself was last read for this thread, or None if it never was.

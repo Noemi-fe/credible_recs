@@ -197,10 +197,11 @@ A library refresh needs a restart to show.
 Getting ready (latency, 12 Oct 2026): as it starts, the server reads the library, the price and facts lists, loads
 the open model, and works out (and throws away) one answer per product type without live checks, so what answers keep
 between requests is ready (warm_up). All in the background: the page is there at once, and the first visitor doesn't
-wait for any of it. On the live site (CREDIBLE_RECS_LIVE_CACHE_BUCKET set) it first reads the daily pre-check's checks
-from the bucket's one bundle into its folder, and again at most once an hour, only when the bundle has changed, when
-Cloud Scheduler's keep-warm ping asks /ready (reload_checks_if_due; 13 Oct 2026: Cloud Run gives a server its
-processor only while it answers a request). It never writes to the bucket: its own checks stay in its folder.
+wait for any of it. On the live site (CREDIBLE_RECS_LIVE_CACHE_BUCKET set) it first reads the checks of the last 48
+hours from the bucket's one bundle into its folder, and the daily plan of what to read ahead. Since 14 Oct 2026 (the
+free-tier redesign; engine/read_ahead.py) the site reads ahead itself, a few comments each time Cloud Scheduler's
+keep-warm ping asks /ready (Cloud Run gives a server its processor only while it answers a request), and writes what
+it read to the bundle at most once an hour (read_ahead_on_ping).
 
 On-demand reading (Noemi's plan of 14 Oct 2026, part 3; engine/on_demand.py): on the live site, with its own bucket and
 job (CREDIBLE_RECS_ON_DEMAND_BUCKET, CREDIBLE_RECS_ON_DEMAND_JOB), a request whose product the library has too few
@@ -242,7 +243,6 @@ from engine.config import (BRAND_PICK_MODEL, FEEDBACK_MAX_BODY_BYTES, FEEDBACK_M
                            PICKS_SHOWN, RATE_LIMIT_ANSWERS, RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS, WEB_MAX_REQUEST_CHARS,
                            WEB_PORT)
 from engine.library import DEFAULT_LIBRARY_DIR
-from engine.live_check import BUNDLE_RELOAD_SECONDS
 from engine.metrics import METRICS_FILE
 from engine.parse_reddit import REPO_ROOT
 from engine.pipeline import PipelineResult, answer_request
@@ -343,9 +343,9 @@ _answers_lock = threading.Lock()
 # visitors' answers and held them up to 30 s, with the processor Cloud Run gives a server only while it answers
 # someone. While it starts, Cloud Run gives it the processor in full, and keeps visitors on the server before it.
 ready = threading.Event()
-# When the pre-check's bundle was last read (warm_up, then reload_checks_if_due), by _clock; None: not yet.
-_checks_read_at: float | None = None
-_checks_lock = threading.Lock()
+# The site's reads ahead (engine/read_ahead.py, 14 Oct 2026): set by the command line when the live checker has the
+# bucket; None otherwise and in the tests, which give their own.
+read_ahead = None
 
 
 # --- Routing: one GET request in, one response out ---
@@ -368,7 +368,7 @@ def handle_request(path_and_query: str, library_dir: Path = DEFAULT_LIBRARY_DIR,
         return answer_response(request, Path(library_dir), quiet=site.public)
     if parts.path == READY_PATH:
         if ready.is_set():
-            reload_checks_if_due()
+            read_ahead_on_ping()
             reload_on_demand_if_due()
             warm_more()  # the requests getting ready had no time for, a slice per keep-warm ping (14 Oct 2026)
         return (200 if ready.is_set() else 503), JSON, json.dumps({"ready": ready.is_set()}).encode("utf-8")
@@ -950,8 +950,9 @@ def warm_up(library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
     """Everything answers keep in memory, made ready before the first request needs it (latency, 12 Oct 2026): the
     library read and checked (engine.library_cache), the price and facts lists, and the open model loaded (a few
     seconds each). A problem is reported in the server's window and never stops it: the answer that needs the missing
-    piece reports it as before. On the live site, first of all, the daily pre-check's checks (engine/precheck.py), read
-    from the bucket's bundle into this server's folder (engine.live_check.LiveChecker.load_bundle; 13 Oct 2026)."""
+    piece reports it as before. On the live site, first of all, the checks of the last 48 hours, read from the bucket's
+    bundle into this server's folder (engine.live_check.LiveChecker.load_bundle; 13 Oct 2026), and the daily plan of
+    what to read ahead (engine/read_ahead.py; 14 Oct 2026)."""
     from engine.library_cache import loaded
     from engine.prices import load_prices
     from engine.product_facts import load_product_facts
@@ -1027,31 +1028,25 @@ def warm_more() -> None:
 
 
 def _read_checks() -> None:
-    """The pre-check's bundle read into this server's folder (engine.live_check.LiveChecker.load_bundle), and when."""
-    global _checks_read_at
-    _checks_read_at = _clock()
+    """The bucket's bundle read into this server's folder (engine.live_check.LiveChecker.load_bundle), then the daily
+    plan of what to read ahead, with its checks through Bright Data (engine.read_ahead.ReadAhead.reload_plan_if_due)."""
     live.load_bundle()
+    if read_ahead is not None:
+        read_ahead.reload_plan_if_due()
 
 
-def reload_checks_if_due() -> None:
-    """On the live site (a live checker with a bucket), the pre-check's bundle read again when the last reading is
-    BUNDLE_RELOAD_SECONDS old: one small question about its version, and a download only when the daily run has written
-    a new one. /ready asks, so Cloud Scheduler's keep-warm ping every 5 minutes drives it, while Cloud Run gives the
-    server its processor (13 Oct 2026: a background thread waiting an hour between requests would barely run). One
-    reading at a time; a problem is reported, tried again an hour later, and never stops the ping."""
-    if live is None or getattr(live, "bucket", None) is None:
+def read_ahead_on_ping() -> None:
+    """On the live site (a live checker with the bucket), Cloud Scheduler's keep-warm ping reads ahead (engine/
+    read_ahead.py, 14 Oct 2026): a new plan when due (asked at most hourly), the comments due read within the ping's
+    limits, and what was read written to the bundle at most hourly. Since then the site no longer reads the bundle again
+    each hour: it writes it, and reads another writer's version only before writing over it. A problem is reported and
+    never stops the ping."""
+    if read_ahead is None:
         return
-    if _checks_read_at is not None and _clock() - _checks_read_at < BUNDLE_RELOAD_SECONDS:
-        return
-    if not _checks_lock.acquire(blocking=False):
-        return  # another request is reading it now
     try:
-        _read_checks()
-    except Exception as error:  # reported where the server runs; checks go on with what the folder holds
-        print(f"The pre-check's checks couldn't be read again ({type(error).__name__}: {error}).", file=sys.stderr,
-              flush=True)
-    finally:
-        _checks_lock.release()
+        read_ahead.on_ping()
+    except Exception as error:  # reported where the server runs; answers go on reading what they need
+        print(f"Reading ahead failed ({type(error).__name__}: {error}).", file=sys.stderr, flush=True)
 
 
 def reload_on_demand_if_due() -> None:
@@ -1204,7 +1199,7 @@ def _options(argv: list[str]) -> tuple[int, Path] | None:
 
 
 def main(argv: list[str]) -> int:
-    global profiles, live, store, on_demand
+    global profiles, live, store, on_demand, read_ahead
     public = "--public" in argv
     options = _options([arg for arg in argv if arg != "--public"])
     if options is None:
@@ -1232,6 +1227,10 @@ def main(argv: list[str]) -> int:
     from engine.pipeline import live_checker
 
     live = live_checker()
+    if getattr(live, "bucket", None) is not None:  # the live site: it reads ahead (engine/read_ahead.py)
+        from engine.read_ahead import ReadAhead
+
+        read_ahead = ReadAhead(live)
     from engine.on_demand import site_reader_from_env
 
     try:

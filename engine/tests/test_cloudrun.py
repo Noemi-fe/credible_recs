@@ -97,45 +97,49 @@ def test_the_site_and_the_pre_check_share_the_bucket_and_the_image():
     service = _command(script, '$GCLOUD run deploy')
     job = _command(script, '$GCLOUD run jobs deploy')
     assert "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}" in service and "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}" in job
-    assert '--image "$IMAGE"' in job and "--set-secrets" not in job  # the service's image; the job needs no secret
-    assert "--args=-m,engine.precheck,--limit,${PRECHECK_LIMIT}" in job and "--max-retries 0" in job
+    assert '--image "$IMAGE"' in job  # the service's image
+    # Its one secret is the Bright Data key (Noemi, 13 Oct 2026: "Use Bright Data"), never the feedback token. Changed on
+    # purpose 14 Oct 2026 (the orchestrator): given through PRECHECK_SECRETS, none when the key's secret isn't there.
+    assert '"$PRECHECK_SECRETS"' in job and "HF_TOKEN" not in job
+    assert 'PRECHECK_SECRETS="--set-secrets=BRIGHT_DATA_API_KEY=bright-data-key:latest"' in script
+    assert "CREDIBLE_RECS_PRECHECK_BRIGHT_DATA=${PRECHECK_BRIGHT_DATA}" in job
+    # Changed on purpose, 14 Oct 2026 (the free-tier redesign): the job runs the plan, the site reads ahead.
+    assert "--args=-m,engine.precheck,--plan," in job and "--max-retries 0" in job
 
 
 def _precheck_settings(script: str) -> tuple[int, int]:
-    """The pre-check's reads and minutes a run, as deploy.sh gives them to the job."""
+    """The pre-check's minutes (no Bright Data read starts after them) and its task timeout in minutes, as deploy.sh
+    gives them to the job."""
     import re
 
-    limit = int(re.search(r'PRECHECK_LIMIT="\$\{CREDIBLE_RECS_PRECHECK_LIMIT:-(\d+)\}"', script).group(1))
     minutes = int(re.search(r'PRECHECK_MINUTES="\$\{CREDIBLE_RECS_PRECHECK_MINUTES:-(\d+)\}"', script).group(1))
-    assert "--limit,${PRECHECK_LIMIT},--minutes,${PRECHECK_MINUTES}" in _command(script, '$GCLOUD run jobs deploy')
-    return limit, minutes
+    job = _command(script, '$GCLOUD run jobs deploy')
+    assert "--args=-m,engine.precheck,--plan,--minutes,${PRECHECK_MINUTES}" in job
+    return minutes, int(re.search(r"--task-timeout (\d+)m", job).group(1))
 
 
 def test_the_pre_checks_run_fits_in_its_time():
-    # 14 Oct 2026: a run starts no read after its minutes (counted from its start, working out the answers included),
-    # and the last one may wait for Reddit's next 10 minutes; ten minutes more for starting and the bundle's last save.
-    import re
+    # Changed on purpose, 14 Oct 2026 (the free-tier redesign): the job reads nothing on the embed page; it starts no
+    # Bright Data read after its minutes, and one in flight may wait up to BRIGHT_DATA_MAX_WAIT_SECONDS for Bright
+    # Data's answer; five minutes more for starting and writing the plan.
+    from engine.config import BRIGHT_DATA_MAX_WAIT_SECONDS, PRECHECK_PLAN_MINUTES
 
-    from engine.config import PRECHECK_MAX_READS, PRECHECK_MAX_RUN_MINUTES, PRECHECK_MAX_WAIT_SECONDS
-
-    script = DEPLOY_SH.read_text(encoding="utf-8")
-    limit, minutes = _precheck_settings(script)
-    hours = int(re.search(r"--task-timeout (\d+)h", _command(script, '$GCLOUD run jobs deploy')).group(1))
-    assert (limit, minutes) == (PRECHECK_MAX_READS, PRECHECK_MAX_RUN_MINUTES)
-    assert minutes * 60 + PRECHECK_MAX_WAIT_SECONDS + 10 * 60 < hours * 3600
+    minutes, timeout = _precheck_settings(DEPLOY_SH.read_text(encoding="utf-8"))
+    assert minutes == PRECHECK_PLAN_MINUTES
+    assert minutes * 60 + BRIGHT_DATA_MAX_WAIT_SECONDS + 5 * 60 <= timeout * 60
 
 
 def test_the_jobs_stay_inside_cloud_runs_free_tier_in_the_longest_month():
     # Free tiers only. Cloud Run jobs are billed per instance-second for their whole run, waiting included: 240,000
-    # vCPU-seconds and 450,000 GiB-seconds a month are free. The pre-check runs daily for at most its minutes plus the
-    # last read's wait and a minute to save; on-demand reading for at most ON_DEMAND_MONTH_SECONDS a month. 10% is kept
-    # in hand.
+    # vCPU-seconds and 450,000 GiB-seconds a month are free. Changed on purpose, 14 Oct 2026 (the free-tier redesign):
+    # the pre-check runs daily for at most its task timeout (Cloud Run stops it there), the whole 31-day month;
+    # on-demand reading for at most ON_DEMAND_MONTH_SECONDS a month. 10% is kept in hand.
     import re
 
-    from engine.config import ON_DEMAND_MONTH_SECONDS, PRECHECK_MAX_WAIT_SECONDS
+    from engine.config import ON_DEMAND_MONTH_SECONDS
 
     script = DEPLOY_SH.read_text(encoding="utf-8")
-    _, minutes = _precheck_settings(script)
+    _, timeout = _precheck_settings(script)
     precheck = _command(script, '$GCLOUD run jobs deploy')
     reader = _command(ON_DEMAND_SH.read_text(encoding="utf-8"), '$GCLOUD run jobs deploy')
 
@@ -144,10 +148,48 @@ def test_the_jobs_stay_inside_cloud_runs_free_tier_in_the_longest_month():
         return float(re.search(r"--cpu (\d+)", job).group(1)), int(memory.group(1)) / (1024 if memory.group(2) ==
                                                                                            "Mi" else 1)
 
-    precheck_seconds = 31 * (minutes * 60 + PRECHECK_MAX_WAIT_SECONDS + 60)
+    precheck_seconds = 31 * timeout * 60
     (cpu, gib), (reader_cpu, reader_gib) = size(precheck), size(reader)
     assert precheck_seconds * cpu + ON_DEMAND_MONTH_SECONDS * reader_cpu <= 0.9 * 240_000
     assert precheck_seconds * gib + ON_DEMAND_MONTH_SECONDS * reader_gib <= 0.9 * 450_000
+    # The sums DEPLOY.md gives: 83,700 vCPU-seconds (35%) for the pre-check at most, 133,700 (56%) with on-demand's.
+    assert (precheck_seconds * cpu, precheck_seconds * cpu + ON_DEMAND_MONTH_SECONDS * reader_cpu) == (83_700, 133_700)
+
+
+def test_the_site_reads_ahead_within_a_third_of_its_own_free_tier():
+    # 14 Oct 2026 (the free-tier redesign): the site is billed only while it answers (request-billed: 180,000
+    # vCPU-seconds and 360,000 GiB-seconds free a month). Reading ahead adds at most READ_AHEAD_SECONDS (and a second for
+    # the last reads to come back) to each keep-warm ping, every 5 minutes (DEPLOY.md's schedule), on the site's size.
+    import re
+
+    from engine.config import READ_AHEAD_SECONDS
+
+    deploy = (Path(make_context.REPO_ROOT) / "deploy" / "cloudrun" / "DEPLOY.md").read_text(encoding="utf-8")
+    assert '--schedule "*/5 * * * *"' in deploy  # the keep-warm ping
+    site = _command(DEPLOY_SH.read_text(encoding="utf-8"), '$GCLOUD run deploy')
+    cpu = float(re.search(r"--cpu (\d+)", site).group(1))
+    gib = int(re.search(r"--memory (\d+)Gi", site).group(1))
+    seconds = 31 * 24 * 12 * (READ_AHEAD_SECONDS + 1)
+    assert seconds * cpu <= 180_000 / 3 and seconds * gib <= 360_000 / 3
+    assert seconds * cpu == 53_568  # DEPLOY.md's sum
+
+
+def test_the_bright_data_records_stay_well_inside_its_free_tier():
+    # The pre-check's records a month (30 a run, every day of a 31-day month): under a fifth of Bright Data's free
+    # 5,000, which it shares with the library's own reads.
+    from engine.config import BRIGHT_DATA_MONTHLY_RECORDS, PRECHECK_BRIGHT_DATA_RECORDS
+
+    assert 31 * PRECHECK_BRIGHT_DATA_RECORDS == 930 <= BRIGHT_DATA_MONTHLY_RECORDS / 5
+
+
+def test_the_kept_comments_reads_are_applied_to_the_library_before_it_is_bundled():
+    # Noemi, 13 Oct 2026 ("Keep only comments we use"): the image holds the library, so the pre-check's record of its
+    # reads of the kept comments (in the bucket, next to the bundle) is applied before the bundle is made.
+    script = DEPLOY_SH.read_text(encoding="utf-8")
+    fetch = script.index('$GCLOUD storage cp "gs://$BUCKET/live_check/verified.json"')
+    apply = script.index("-m engine.library apply-checks --ledger")
+    assert fetch < apply < script.index("-m deploy.cloudrun.make_context")
+    assert script.count("-m engine.library apply-checks") == 2  # with the record, or this machine's checks alone
 
 
 def test_the_pre_check_runs_once_a_day_at_night_uk_time():
@@ -283,3 +325,43 @@ def test_making_the_bundle_stamps_its_files(tmp_path, monkeypatch):
         subprocess.run(["git", "-C", str(repo), *command], check=True, env=env)
     make_context.make_context(tmp_path / "bundle", repo=repo)
     assert stamped == [tmp_path / "bundle"]
+
+
+def test_the_job_may_read_the_bright_data_key_which_the_script_never_reads_or_makes():
+    script = DEPLOY_SH.read_text(encoding="utf-8")
+    grant = _command(script, '$GCLOUD secrets add-iam-policy-binding')
+    assert "bright-data-key" in grant and "roles/secretmanager.secretAccessor" in grant and '"serviceAccount:$RUNNER"' in grant
+    assert script.index("$GCLOUD secrets add-iam-policy-binding") < script.index("$GCLOUD run jobs deploy")
+    # Changed on purpose 14 Oct 2026 (the orchestrator): granted when the secret is there (it is since that day).
+    before = script[:script.index("$GCLOUD secrets add-iam-policy-binding bright-data-key")]
+    assert before.rstrip().endswith('if [ "$PRECHECK_BRIGHT_DATA" = on ]; then')
+    # Noemi creates the secret herself (DEPLOY.md); the script only checks it is there, before building anything.
+    assert "secrets create" not in script and "versions access" not in script and "BRIGHT_DATA_API_KEY=$" not in script
+    assert script.index("$GCLOUD secrets describe bright-data-key") < script.index("-m deploy.cloudrun.make_context")
+    assert script.index("\nprecheck_secret ") < script.index("-m deploy.cloudrun.make_context")
+
+
+def _precheck_secret(tmp_path: Path, there: bool) -> tuple[list[str], str]:
+    """deploy.sh's precheck_secret run on its own, with a made-up gcloud whose `secrets describe` finds the secret or
+    not (nothing reaches Google): what it set, and what it said."""
+    import subprocess
+
+    script = DEPLOY_SH.read_text(encoding="utf-8")
+    start = script.index("precheck_secret() {")
+    function = script[start:script.index("\n}\n", start) + 3]
+    gcloud = tmp_path / "gcloud"
+    gcloud.write_text(f"#!/bin/sh\nexit {0 if there else 1}\n", encoding="utf-8")
+    gcloud.chmod(0o755)
+    shell = (f"set -eu\nGCLOUD={gcloud}\nPROJECT=made-up\n{function}"
+             'precheck_secret\necho "$PRECHECK_BRIGHT_DATA"\necho "$PRECHECK_SECRETS"\n')
+    done = subprocess.run(["sh", "-c", shell], capture_output=True, text=True, check=True)
+    return done.stdout.splitlines(), done.stderr
+
+
+def test_a_missing_bright_data_key_turns_the_step_off_says_so_once_and_never_stops_the_deploy(tmp_path):
+    # 14 Oct 2026 (the orchestrator): as on-demand reading's on_demand_secret, a missing key must never stop a deploy.
+    assert _precheck_secret(tmp_path, there=True) == (["on", "--set-secrets=BRIGHT_DATA_API_KEY=bright-data-key:latest"], "")
+    (state, secrets), said = _precheck_secret(tmp_path, there=False)
+    assert (state, secrets) == ("off", "--clear-secrets")  # no secret the job would fail to find
+    assert len(said.splitlines()) == 1 and "bright-data-key" in said and "off" in said
+    assert "exit 1" not in DEPLOY_SH.read_text(encoding="utf-8")

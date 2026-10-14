@@ -505,6 +505,9 @@ LIVE_CHECK_MAX_WAIT_SECONDS = 60
 # reads, 13 Oct 2026) is kept as unreadable (when, and no text) this long, so answers and the pre-check stop reading it
 # again; its quote is never shown meanwhile. As long as the pre-check's PRECHECK_FRESH_HOURS, so each day's run reads
 # it once. A page Reddit refused or failed on (429, 5xx, a timeout) is never kept. Decided by Claude, 13 Oct 2026.
+# Since 14 Oct 2026 such a read is still known, and shared in the bundle, for 48 hours like any read (the verification
+# record and the site's reads ahead need to know it was made: engine.live_check.LiveChecker.last_read); it is used for
+# this long only.
 LIVE_CHECK_UNREADABLE_KEEP_HOURS = 20
 # Checking ahead (Noemi's decision of 13 Oct 2026: "check ahead"): the comments answers would show are read live in
 # advance, daily, within the same limits (engine/precheck.py). The numbers are Claude's, reported to Noemi. A comment
@@ -512,11 +515,13 @@ LIVE_CHECK_UNREADABLE_KEEP_HOURS = 20
 # covers has 28 hours or more to go: the next day's run reads it again before it runs out, even a run that is late.
 PRECHECK_FRESH_HOURS = 20
 # A run's budget, reads and time, whichever runs out first. Time (14 Oct 2026, Claude's call, reported to Noemi): a run
-# starts no read PRECHECK_MAX_RUN_MINUTES after it started (working out the answers included), so the job's bill stays
-# inside Cloud Run's free tier however fast Reddit lets it read (engine/tests/test_cloudrun.py does the sums: with
-# on-demand reading, at most 88% of the free vCPU-seconds in a 31-day month). Reads: a ceiling, about what Reddit allows
-# in that time. On 14 Oct 2026 a run read its 1,100 in 46 minutes (Reddit's headers let it go faster than the refill
-# pace) and left 459 of the 1,967 comments answers show or hold next in line unread; 75 minutes is about 1,700 reads.
+# starts no read PRECHECK_MAX_RUN_MINUTES after it started (working out the answers included), so the job's bill stayed
+# inside Cloud Run's free tier however fast Reddit lets it read (with on-demand reading, at most 88% of the free
+# vCPU-seconds in a 31-day month). Reads: a ceiling, about what Reddit allows in that time. On 14 Oct 2026 a run read
+# its 1,100 in 46 minutes (Reddit's headers let it go faster than the refill pace) and left 459 of the 1,967 comments
+# answers show or hold next in line unread; 75 minutes is about 1,700 reads. Since the free-tier redesign the same day
+# the job runs the plan instead (`--plan`: the site reads ahead, below), and these bound a run that reads itself, on
+# Noemi's computer say.
 PRECHECK_MAX_READS = 2000
 PRECHECK_MAX_RUN_MINUTES = 75
 # Unlike a visitor's answer (LIVE_CHECK_MAX_WAIT_SECONDS), nobody waits on the pre-check: a read waits for Reddit's next
@@ -524,11 +529,44 @@ PRECHECK_MAX_RUN_MINUTES = 75
 PRECHECK_MAX_WAIT_SECONDS = 660
 # A run stops after this many unreadable pages in a row: Reddit is refusing reads (its allowance used from elsewhere).
 PRECHECK_STOP_AFTER_UNKNOWN = 20
+# Reading ahead on the site (14 Oct 2026, the coordinator's free-tier task; engine/read_ahead.py; the values are Claude's,
+# reported to Noemi). A Cloud Run job is billed for its whole run, sleeping included, and two thirds of the daily run's
+# 87 minutes were spent waiting for Reddit's allowance; the site is billed only while it answers, and Cloud Scheduler's
+# keep-warm ping asks it every 5 minutes anyway. So the daily job only works out what to read (`python -m engine.precheck
+# --plan`) and the site reads it, a few comments at each ping: at most READ_AHEAD_PER_PING, starting none
+# READ_AHEAD_SECONDS after the ping began (so its worst month is about 30% of the site's free tier, and a typical one
+# about 5%), READ_AHEAD_PARALLEL at once, never waiting on Reddit, and never while Reddit says fewer than
+# READ_AHEAD_KEEP reads are left in its 10 minutes: those are visitors' answers' (at most about 80 of each 200 go to
+# reading ahead). An answer's comment is read again once its last read is READ_AHEAD_AGAIN_HOURS old, so its check
+# never runs out at 48 hours (each comment about 0.6 reads a day, against one a day for the daily run). The site looks
+# for a new plan at most every PLAN_RELOAD_SECONDS, and writes what it read to the bucket's bundle at most every
+# BUNDLE_SHARE_SECONDS: about two calls an hour.
+READ_AHEAD_PER_PING = 40
+READ_AHEAD_SECONDS = 5
+READ_AHEAD_PARALLEL = 4
+READ_AHEAD_KEEP = 120
+READ_AHEAD_AGAIN_HOURS = 40
+PLAN_RELOAD_SECONDS = 3600
+BUNDLE_SHARE_SECONDS = 3600
+# The daily plan run (`--plan`): a run starts no Bright Data read this many minutes after it started (working out the
+# answers takes a few), so with the job's 45-minute timeout its worst month stays well inside the jobs' free tier.
+PRECHECK_PLAN_MINUTES = 30
 # The open model's product types (engine.query_model) the library had threads about on 13 Oct 2026, from its request
 # log (data/library/requests.jsonl, which isn't in the Cloud Run image): checked ahead by their names, like module 1's
 # own types. Types the log names later are checked too wherever the log is. Since 14 Oct 2026 the air fryer, slow
 # cooker, toaster, blender, food processor, rice cooker and stand mixer are module 1's own types (checked ahead as such).
 PRECHECK_MODEL_TYPES = ("body wash",)
+# Comments the embed page can't show ("Not supported comment", about 1 in 8), verified through Bright Data by the
+# pre-check (Noemi, 13 Oct 2026: "Use Bright Data"): their threads are read as Reddit shows them now, likeliest to be
+# shown first. Its free tier is 5,000 records a month, shared with the library's own reads (3,972 used by 13 Oct 2026),
+# and a thread costs a record for its post and one for each top-level comment (14 for the median library thread, 49
+# at the 90th percentile). So a run reads at most PRECHECK_BRIGHT_DATA_RECORDS records (estimated from the library's
+# copy of each thread), in one batch of at most PRECHECK_BRIGHT_DATA_MAX_THREADS threads: at most 930 a month, under a
+# fifth of the free tier. A comment verified that way is read again after PRECHECK_BRIGHT_DATA_FRESH_HOURS (every other
+# daily run, just before its check runs out at 48 hours), never on the embed page meanwhile. Chosen by Claude, reported.
+PRECHECK_BRIGHT_DATA_RECORDS = 30
+PRECHECK_BRIGHT_DATA_MAX_THREADS = 20
+PRECHECK_BRIGHT_DATA_FRESH_HOURS = 40
 
 # --- Care tips (Noemi, 9 Oct 2026) ---
 # Alongside each pick, credible advice from its threads on looking after it ("descale it every 6 months"; extraction
@@ -570,6 +608,29 @@ LIVE_CHECK_REQUIRED = True
 # PROPOSED: the 7 days of grace, so one missed monthly run doesn't empty threads straight away. False turns it off.
 ARCHIVE_TEXT_RETENTION = True
 ARCHIVE_TEXT_KEPT_DAYS = LIVE_CHECK_ALL_DAYS + 7
+
+# --- Keep only the comments answers use (Noemi, 13 Oct 2026: "Keep only comments we use"; engine/slim.py) ---
+# A slimmed thread keeps its title and the comments its extraction points to, and each of them is verified on Reddit's
+# embed page one by one (engine/verify.py); the thread-level rules above (14 days, monthly checks, 37 days) apply to
+# whole threads only (not extracted yet, or gold-set threads). The values below were chosen by Claude, reported.
+# A kept comment not verified on Reddit within this many calendar days (since its last passing read; never verified:
+# since its thread was read from the archive) loses its words and its mentions. 30, as the monthly check above, inside
+# Noemi's "about 37 days": the week left over covers a missed run or a deploy a few days late.
+LIBRARY_VERIFY_DAYS = 30
+# The kept comments verified longest ago that the daily plan asks the site to read (engine/read_ahead.py), after the
+# comments answers would show. 400 a run of the daily job on 13 Oct 2026 (about 26 minutes of its run); 3,000 a day
+# since 14 Oct 2026, when the site took the reads over (each about a tenth of a second of its time). Sized on a copy of
+# that day's library slimmed: 17,335 kept comments, 12,356 of them never verified, read from the archive on 11 to 14 Oct
+# (so due by 10 to 13 Nov), and with the 846 threads still to extract about 31,000 never verified: 11 days at 3,000 a
+# day, oldest first, so a migration in late October still verifies every one in time. After that, about 36,000 kept
+# comments (about 33,500 outside the answers) are each read every 12 days, well inside LIBRARY_VERIFY_DAYS.
+LIBRARY_VERIFY_READS = 3000
+# A kept comment verified within this many days isn't read again by that pass (the comments answers show still are,
+# daily): with a library smaller than its budget, it doesn't spend reads verifying again what is a few days old.
+LIBRARY_VERIFY_AGAIN_DAYS = 7
+# An embed page that showed no comment ("Not supported comment") is tried again only after this many days: such a
+# comment usually stays unreadable there, and each try would take a read from the comments that can pass.
+LIBRARY_VERIFY_RETRY_DAYS = 10
 # LIVE_CHECK_ROUNDS (3), how many times an answer was written again after the live check dropped comments, is gone
 # (12 Oct 2026): an answer written after the third round was shown with its new quotes unchecked. It is now written
 # again until every quote it shows has passed (engine.pipeline._check_live).

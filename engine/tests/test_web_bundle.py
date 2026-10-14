@@ -1,7 +1,9 @@
-"""The site reads the daily pre-check's checks from the bucket's one bundle (check ahead, 13 Oct 2026; free tiers only):
-as it gets ready, then at most once an hour, when Cloud Scheduler's keep-warm ping asks /ready (Cloud Run gives a
-server its processor only while it answers a request, so a background thread waiting an hour would barely run). It
-never writes to the bucket. No test reaches the network.
+"""The site reads the checks of the last 48 hours from the bucket's one bundle as it gets ready (check ahead, 13 Oct
+2026; free tiers only). Since 14 Oct 2026 (the free-tier redesign, engine/read_ahead.py) it reads ahead itself when
+Cloud Scheduler's keep-warm ping asks /ready (Cloud Run gives a server its processor only while it answers a request,
+so a background thread waiting between requests would barely run), and writes the bundle at most hourly; it no longer
+reads the bundle again each hour (engine/tests/test_read_ahead.py has the reads and the writes). No test reaches the
+network.
 """
 
 import threading
@@ -9,7 +11,6 @@ import threading
 import pytest
 
 from engine import web
-from engine.live_check import BUNDLE_RELOAD_SECONDS
 
 
 class FakeLive:
@@ -45,12 +46,27 @@ def ping(clock_now: float) -> int:
     return web.handle_request("/ready")[0]
 
 
+class FakeAhead:
+    """The site's reads ahead, whose pings and plan readings are counted (and can fail)."""
+
+    def __init__(self, fails=False):
+        self.fails, self.pings, self.plans = fails, [], []
+
+    def on_ping(self):
+        self.pings.append(1)
+        if self.fails:
+            raise OSError("the disk is full")
+
+    def reload_plan_if_due(self):
+        self.plans.append(1)
+
+
 @pytest.fixture
 def ready_site(monkeypatch):
     monkeypatch.setattr(web, "ready", threading.Event())
     web.ready.set()
     monkeypatch.setattr(web, "_clock", web._clock)
-    monkeypatch.setattr(web, "_checks_read_at", None)
+    monkeypatch.setattr(web, "read_ahead", None)
 
 
 def test_without_a_bucket_nothing_is_read_and_nothing_reloads(tmp_path, monkeypatch, ready_site):
@@ -65,30 +81,37 @@ def test_without_a_bucket_nothing_is_read_and_nothing_reloads(tmp_path, monkeypa
     assert ping(20_000.0) == 200
 
 
-def test_the_keep_warm_ping_reads_the_checks_again_at_most_once_an_hour(tmp_path, monkeypatch, ready_site):
+def test_the_keep_warm_ping_reads_ahead_and_the_bundle_is_read_only_as_the_server_gets_ready(tmp_path, monkeypatch,
+                                                                                              ready_site):
+    # Changed on purpose, 14 Oct 2026 (the free-tier redesign): the ping read the job's bundle again at most hourly; the
+    # site now reads ahead at every ping and is the bundle's writer, so it reads the bundle only as it gets ready (and
+    # another writer's version just before writing over it: engine.live_check.LiveChecker.share_bundle).
     from engine import query_model
 
-    live = FakeLive()
+    live, ahead = FakeLive(), FakeAhead()
     monkeypatch.setattr(web, "live", live)
+    monkeypatch.setattr(web, "read_ahead", ahead)
     monkeypatch.setattr(query_model, "default_query_model", lambda: None)
     web._clock = lambda: 1_000.0
     web.warm_up(tmp_path / "no-library")
-    assert len(live.loads) == 1  # as it got ready
-    assert ping(1_000.0 + 300) == 200 and len(live.loads) == 1  # 5 minutes on: not due
-    assert ping(1_000.0 + BUNDLE_RELOAD_SECONDS) == 200 and len(live.loads) == 2
-    assert ping(1_000.0 + BUNDLE_RELOAD_SECONDS + 300) == 200 and len(live.loads) == 2
+    assert len(live.loads) == 1 and len(ahead.plans) == 1  # as it got ready: the checks, then the plan
+    for minutes in (5, 10, 65, 125):
+        assert ping(1_000.0 + 60 * minutes) == 200
+    assert len(ahead.pings) == 4 and len(live.loads) == 1
 
 
-def test_a_failed_reading_is_reported_and_the_ping_still_says_ready(monkeypatch, capsys, ready_site):
-    live = FakeLive(fails=True)
-    monkeypatch.setattr(web, "live", live)
-    assert ping(5_000.0) == 200 and len(live.loads) == 1
+def test_a_failed_reading_ahead_is_reported_and_the_ping_still_says_ready(monkeypatch, capsys, ready_site):
+    ahead = FakeAhead(fails=True)
+    monkeypatch.setattr(web, "live", FakeLive())
+    monkeypatch.setattr(web, "read_ahead", ahead)
+    assert ping(5_000.0) == 200 and len(ahead.pings) == 1
     assert "full" in capsys.readouterr().err
-    assert ping(5_000.0 + 60) == 200 and len(live.loads) == 1  # tried again in an hour, not at every ping
+    assert ping(5_000.0 + 300) == 200 and len(ahead.pings) == 2  # the next ping reads ahead again
 
 
 def test_a_server_still_getting_ready_reads_nothing_when_pinged(monkeypatch, ready_site):
-    live = FakeLive()
+    live, ahead = FakeLive(), FakeAhead()
     monkeypatch.setattr(web, "live", live)
+    monkeypatch.setattr(web, "read_ahead", ahead)
     web.ready.clear()
-    assert ping(5_000.0) == 503 and live.loads == []  # warm_up reads them itself
+    assert ping(5_000.0) == 503 and live.loads == [] and ahead.pings == []  # warm_up reads them itself

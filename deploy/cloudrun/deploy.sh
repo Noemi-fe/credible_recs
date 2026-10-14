@@ -1,8 +1,10 @@
 #!/bin/sh
 # Builds and deploys the site to Google Cloud Run in Noemi's project (deploy/cloudrun/DEPLOY.md), with the daily
 # pre-check of the quotes answers show (engine/precheck.py, Noemi's decision of 13 Oct 2026: "check ahead") as a Cloud
-# Run job on the same image, and the private bucket it shares its checks with the site through (one object, written
-# by the job twice a run, read by the site at most hourly). Run from the repository's root after committing:
+# Run job on the same image, and the private bucket the job and the site share through. Since 14 Oct 2026 (the
+# free-tier redesign) the job works out what to read and leaves the site a plan there (live_check/plan.json, daily);
+# the site reads ahead at Cloud Scheduler's keep-warm ping (engine/read_ahead.py) and writes what it read to the
+# bucket's bundle (live_check/bundle.json, at most hourly). Run from the repository's root after committing:
 #     sh deploy/cloudrun/deploy.sh
 # It bundles the current commit with the saved library (deploy/cloudrun/make_context.py), has Cloud Build turn it into
 # a private image, and deploys it: public site, one server at most, none when idle (the free tier). A new server gets
@@ -20,8 +22,7 @@ SERVICE="${CREDIBLE_RECS_GCP_SERVICE:-credible-recs}"
 JOB="${CREDIBLE_RECS_GCP_JOB:-credible-recs-precheck}"
 SCHEDULE="${JOB}-daily"
 BUCKET="${CREDIBLE_RECS_LIVE_CACHE_BUCKET:-credible-picks-live-checks}"
-PRECHECK_LIMIT="${CREDIBLE_RECS_PRECHECK_LIMIT:-2000}"
-PRECHECK_MINUTES="${CREDIBLE_RECS_PRECHECK_MINUTES:-75}"
+PRECHECK_MINUTES="${CREDIBLE_RECS_PRECHECK_MINUTES:-30}"
 GCLOUD="${GCLOUD:-gcloud}"
 
 NUMBER="$($GCLOUD projects describe "$PROJECT" --format='value(projectNumber)')"
@@ -39,6 +40,24 @@ HOSTS="${SERVICE}-${NUMBER}.${REGION}.run.app"
 # The service's older-style address too, once it exists.
 OLD="$($GCLOUD run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)' 2>/dev/null || true)"
 if [ -n "$OLD" ]; then HOSTS="$HOSTS,${OLD#https://}"; fi
+
+# The pre-check's Bright Data key (Noemi, 13 Oct 2026, "Use Bright Data": comments the embed page can't show are
+# verified through Bright Data): the Secret Manager secret bright-data-key, which Noemi creates (DEPLOY.md, The Bright
+# Data key; there since 14 Oct 2026). This script never makes or reads it. Were it missing, the job would deploy with
+# that verification off (PRECHECK_BRIGHT_DATA, which the job reads as CREDIBLE_RECS_PRECHECK_BRIGHT_DATA, and no secret
+# given to it), and one line says so: a missing key never stops a deploy (14 Oct 2026, as on-demand reading's Gemini
+# key, on_demand_secret).
+precheck_secret() {
+    if $GCLOUD secrets describe bright-data-key --project "$PROJECT" >/dev/null 2>&1; then
+        PRECHECK_BRIGHT_DATA=on
+        PRECHECK_SECRETS="--set-secrets=BRIGHT_DATA_API_KEY=bright-data-key:latest"
+    else
+        PRECHECK_BRIGHT_DATA=off
+        PRECHECK_SECRETS="--clear-secrets"
+        echo "The secret bright-data-key isn't there: the pre-check deploys with its Bright Data verification off (deploy/cloudrun/DEPLOY.md, The Bright Data key)." >&2
+    fi
+}
+precheck_secret  # PRECHECK_BRIGHT_DATA on or off, and the job's secrets with it
 
 # 1. The APIs the jobs, the schedule and the Gemini key need (nothing happens when they are on already).
 $GCLOUD services enable storage.googleapis.com cloudscheduler.googleapis.com secretmanager.googleapis.com \
@@ -68,6 +87,20 @@ if [ "$ON_DEMAND" = on ]; then
     CREDIBLE_RECS_ON_DEMAND_BUCKET="$ON_DEMAND_BUCKET" GCLOUD="$GCLOUD" .venv/bin/python -m engine.library pull-bucket \
         || echo "The threads read on demand weren't pulled: the site still loads them from the bucket." >&2
 fi
+#    Then the library as the daily pre-check last verified it (Noemi, 13 Oct 2026: "Keep only comments we use"): the job
+#    reads the comments the slimmed threads keep on Reddit's embed page and records each read (when, and what it said:
+#    ids, dates and outcomes, no words) in the bucket's live_check/verified.json. Applied here, before bundling, so the
+#    image built next reflects it: each passing comment gets its date, and one found deleted or edited, or not verified
+#    within 30 days, loses its words and its mentions (engine/verify.py). With no record yet, this machine's checks of
+#    the last 48 hours and the 30-day deadline are applied alone. A library not slimmed yet is left as it is.
+RECORD="$(mktemp -d)/verified.json"
+if $GCLOUD storage cp "gs://$BUCKET/live_check/verified.json" "$RECORD" --project "$PROJECT" --quiet 2>/dev/null; then
+    .venv/bin/python -m engine.library apply-checks --ledger "$RECORD"
+else
+    echo "No verification record in gs://$BUCKET yet (the pre-check hasn't run): this machine's checks only." >&2
+    .venv/bin/python -m engine.library apply-checks
+fi
+rm -rf "$(dirname "$RECORD")"
 BUNDLE="$(mktemp -d)/bundle"
 .venv/bin/python -m deploy.cloudrun.make_context "$BUNDLE"
 $GCLOUD run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --source "$BUNDLE" \
@@ -79,16 +112,22 @@ $GCLOUD run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --source "
     --set-secrets "HF_TOKEN=hf-token:latest" --quiet
 rm -rf "$(dirname "$BUNDLE")"
 
-# 4. The pre-check: a Cloud Run job on the image just deployed, reading at most PRECHECK_LIMIT comments a run and
-#    starting none PRECHECK_MINUTES after it started (about 1,700 reads at Reddit's pace, 14 Oct 2026), never retried
-#    the same day. Billed for its whole run, sleeping
-#    included, so it gets the least that works: 1 vCPU (a job's minimum) and 1.5 GiB (it peaked at 1.3 GB with the
-#    open model loaded, 13 Oct 2026; 0.2 GB without it).
+# 4. The pre-check: a Cloud Run job on the image just deployed, `python -m engine.precheck --plan` (14 Oct 2026): it
+#    reads nothing on Reddit's embed page itself, works out the plan the site reads ahead from, and verifies through
+#    Bright Data the comments the embed page can't show, starting nothing PRECHECK_MINUTES after it started; 45 minutes
+#    at most a run, never retried the same day. Billed for its whole run, so it gets the least that works: 1 vCPU (a
+#    job's minimum) and 1.5 GiB (it peaked at 1.3 GB with the open model loaded, 13 Oct 2026; 0.2 GB without it).
+#    Its one secret is the Bright Data key, which the account it runs as may read (when the secret is there).
+if [ "$PRECHECK_BRIGHT_DATA" = on ]; then
+    $GCLOUD secrets add-iam-policy-binding bright-data-key --project "$PROJECT" \
+        --member "serviceAccount:$RUNNER" --role roles/secretmanager.secretAccessor >/dev/null
+fi
 IMAGE="$($GCLOUD run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(spec.template.spec.containers[0].image)')"
 $GCLOUD run jobs deploy "$JOB" --project "$PROJECT" --region "$REGION" --image "$IMAGE" \
-    --command python --args=-m,engine.precheck,--limit,${PRECHECK_LIMIT},--minutes,${PRECHECK_MINUTES} \
-    --tasks 1 --max-retries 0 --task-timeout 2h --memory 1536Mi --cpu 1 \
-    --set-env-vars "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}${ON_DEMAND_PRECHECK_VARS}" --quiet
+    --command python --args=-m,engine.precheck,--plan,--minutes,${PRECHECK_MINUTES} \
+    --tasks 1 --max-retries 0 --task-timeout 45m --memory 1536Mi --cpu 1 \
+    --set-env-vars "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}${ON_DEMAND_PRECHECK_VARS},CREDIBLE_RECS_PRECHECK_BRIGHT_DATA=${PRECHECK_BRIGHT_DATA}" \
+    "$PRECHECK_SECRETS" --quiet
 $GCLOUD run jobs add-iam-policy-binding "$JOB" --project "$PROJECT" --region "$REGION" \
     --member "serviceAccount:$RUNNER" --role roles/run.invoker >/dev/null
 #    And on-demand reading's job on the same image (on_demand.sh), which the site may start.

@@ -46,6 +46,8 @@ each); the 48-thread answer under 10 s uncached.
 | 12 Oct 2026 | `--live`, first try (real Reddit, empty cache; 8 reads at once, 0.1 s apart, no budget) | 0.69 / 30.00 | n/a | 3.80 / 31.81 | n/a | n/a | 5 | no: after about 200 reads Reddit answered 429 Too Many Requests (its limit: 200 reads in 10 minutes from one address), unread pages dropped their quotes, and the new product types lost every pick (a first attempt had also stopped on a page cut off halfway) | led to two fixes: a cut-off page drops its quote (d8e47b2); a read budget under Reddit's limit (19cfed9) |
 | 12 Oct 2026 | All kept changes, stand-in checks | 0.37 / 1.75 | 1.10 / 3.23 | 1.20 / 3.34 | 1.26 / 3.41 after 26.50 | 2.02 | 4.9 | yes | final: every target met |
 | 12 Oct 2026 | All kept changes, `--live` (real Reddit, empty cache, the 22 requests one after another) | 0.62 / 30.21 | n/a | 68.00 / 103.82 | n/a | n/a | 5 | no, as expected: 10 of 22 differ where Reddit changed since the snapshot (comments deleted, edited, or whose embed page no longer shows them; 7 of 40 such pages checked by hand); every quote shown passed its live check | b01 2.06 s and b02 3.23 s while the burst of 40 reads lasted; then every fresh answer waited for Reddit's budget (a read every 4 s): 22 fresh answers need about 800 reads, 4 windows of 10 minutes. Repeats: 0.2 to 0.7 s (cached checks) |
+| 13 Oct 2026 | Keep only the comments answers use (branch lean-library), measured on a copy of the 13 Oct library instead of the snapshot, `--runs 2 --no-cold`: first the whole copy, its answers saved as this pair's baseline | 0.90 / 1.57 | 1.84 / 2.88 | 2.49 / 17.54 | n/a | 2.33 | 15.0 | yes (it saved the pair's baseline) | the pair's baseline |
+| 13 Oct 2026 | The same copy slimmed (`python -m engine.library slim`: 413 threads, 10,132 comments kept whole, 8,070 reduced to stubs without words or writers) | 0.61 / 1.42 | 1.84 / 2.74 | 1.82 / 2.99 | n/a | 2.36 | 10.8 | yes: 22 of 22 | yes: nothing slower (the whole copy's first-ask p95 was module 1's open model loading on a busier machine); getting ready 21.9 s, was 43.5 s |
 
 ## The live site (Google Cloud Run)
 
@@ -90,6 +92,16 @@ with no read at all), not live checks. Without it, a fresh answer needs 26 reads
 allowance lasts, and over 100 s once it is spent.
 | 13 Oct 2026 | With Also worth a look and summaries (merged that day): reads paced by what Reddit's rate-limit headers say is left (at once while 50+ are left beyond 10 kept, then spread over the rest of the 10 minutes), and the comments only Also worth a look or a summary quote never wait (revision 00011) | 7.96 / 109.71 | 1.89 / 4.91 | 3.76 / 107.63 | 0.10 / 0.14 | n/a | 20 to 35 | yes, with a fix: the first 5 answers took 4.3 to 9.0 s (from the 4th, 50 to 80 s before), and when reads ran short the answers kept their 3 picks and left Also worth a look out (5 to 11 comments put off). But spread over a long rest of the 10 minutes a read waited up to 20 s (answers 6 to 8: 21, 110 and 93 s), so spread-out reads are now never slower than one every 4 s, and a visitor's read never waits over 60 s for the next 10 minutes (e8ba80b) |
 | 13 Oct 2026 | Check ahead: the daily pre-check job's checks in the bucket's bundle (1,099 after two runs: 53 min, then 5 min for the day's new picks), read by the server as it gets ready; plus the first-hand fix, the refill cap and 60 s wait limit (revision 00014) | 2.76 / 5.22 | 2.60 / 5.05 | 0.04 / 0.08 | 0.14 / 0.22 | 0.08 / 0.09 | 20 to 36 | yes: no fresh answer waited on Reddit (every quote shown already checked within 48 hours), all 8 under 5.3 s, and every answer kept Also worth a look (none put off). From 60.12 / 80.08 s this morning. What's left is the engine's own work (p50 2.6 s, against 1.34 in revision 00009, before Also worth a look, summaries and the first-hand rules) |
+
+Since 14 Oct 2026 (the free-tier redesign, engine/read_ahead.py) the site reads ahead itself, at Cloud Scheduler's
+keep-warm ping, from the daily job's plan, instead of the job reading at night. For visitors: an answer's comments are
+read again 40 hours after their last read, so a planned request's checks never run out (with the daily run, a check
+was 20 to 44 hours old); reading ahead takes at most 40 of Reddit's 200 reads at a ping, and none while fewer than 120
+are left in its 10 minutes, so a fresh answer (10 to 40 reads) still reads at once. For the ping itself, measured on
+Noemi's computer with made-up files (no network): finding what is due among 4,500 planned comments takes about 1 ms
+(each one's last read is kept in memory; 0.36 s when read from the folder at each ping, which was tried first), and 0.3 s
+once a day to look them up as a new plan comes in; the reads themselves stop 5 seconds into a ping. The live site's
+times after the deploy are for eval/live_latency.py.
 
 ## The engine's own work (13 Oct 2026, evening)
 

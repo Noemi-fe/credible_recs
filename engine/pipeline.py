@@ -218,7 +218,7 @@ from engine.product_facts import (
 from engine.profiles import ProfileStore, StoredProfiles, with_profiles
 from engine.query import PRODUCT_TYPES, ParsedQuery, parse_query
 from engine.rank import KindNote, RankingResult, ScoredMention, rank_products
-from engine.sources import LocalSource, mentions_product
+from engine.sources import LocalSource, mentions_product, names_product
 from engine.summaries import SUMMARIES_FILE, Summary, load_summaries
 
 
@@ -426,6 +426,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.threads_available = len(usable)
     threads = usable[:max_threads]
     checked = {t.id: every_checked[t.id] for t in threads}
+    if not exempt:  # the same rule, comment by comment, in slimmed threads (13 Oct 2026)
+        checked = {t.id: _recently_verified(checked[t.id], t, today) if t.slimmed else checked[t.id] for t in threads}
     if profiles is not None:
         threads = [with_profiles(t, profiles, _commented(checked[t.id])).thread for t in threads]
     result.threads_used = [t.id for t in threads]
@@ -643,8 +645,41 @@ def _checked_together(live_checker, quotes, may_wait: set[str] | None = None) ->
 
 def _checked_live_recently(thread: Thread, today: date) -> bool:
     """Whether an answer may quote the thread: Reddit itself was read for it in the last LIVE_CHECK_SHOWN_DAYS days, or
-    it is a gold-set thread."""
+    it is a gold-set thread. A slimmed thread's kept comments are verified one by one: it may be quoted when one of them
+    was verified in that time, and then only those (_recently_verified); with none, it waits as a whole thread would.
+    One that keeps no comment at all has nothing to verify: its own last live read counts, as for a whole thread."""
+    kept = [c for c in thread.comments if c.status == "ok"] if thread.slimmed else []
+    if kept:
+        return any(c.verified_at is not None and (today - c.verified_at.date()).days <= LIVE_CHECK_SHOWN_DAYS
+                   for c in kept)
     return thread.read_from == "gold" or checked_live_within(thread, LIVE_CHECK_SHOWN_DAYS, today)
+
+
+def _recently_verified(checked: CheckResult, thread: Thread, today: date) -> CheckResult:
+    """A slimmed thread's checked extraction with only what rests on comments verified on Reddit in the last
+    LIVE_CHECK_SHOWN_DAYS days (Comment.verified_at, calendar days as for threads): the 14-day rule, comment by comment
+    (13 Oct 2026). A reply that takes its product from the comment above needs that comment verified too."""
+    comments = {c.id: c for c in thread.comments}
+
+    def verified(comment_id: str | None) -> bool:
+        comment = comments.get(comment_id)
+        return (comment is not None and comment.verified_at is not None
+                and (today - comment.verified_at.date()).days <= LIVE_CHECK_SHOWN_DAYS)
+
+    def usable(item) -> bool:
+        if not verified(item.comment_id):
+            return False
+        if getattr(item, "refers_to", None) in ("parent", "earlier"):
+            above = comments.get(comments[item.comment_id].parent_id)
+            if item.refers_to == "earlier" and above is not None:
+                above = comments.get(above.parent_id)
+            return above is not None and verified(above.id)
+        return True
+
+    return replace(checked, kept=[m for m in checked.kept if usable(m)],
+                   kept_notes=[n for n in checked.kept_notes if usable(n)],
+                   kept_agreements=[a for a in checked.kept_agreements if usable(a)],
+                   kept_care=[c for c in checked.kept_care if usable(c)])
 
 
 def _in_gold_set(threads_dir: Path) -> bool:
@@ -653,8 +688,9 @@ def _in_gold_set(threads_dir: Path) -> bool:
 
 
 def _about_the_product(thread: Thread, product_type: str) -> bool:
-    """Whether the thread's title or post names the product. Its comments don't count: they can mention it in passing."""
-    return mentions_product(thread.title, product_type) or mentions_product(thread.body, product_type)
+    """Whether the thread's title or post names the product. Its comments don't count: they can mention it in passing.
+    A slimmed thread's post is read by what its words named (engine.sources.names_product, 13 Oct 2026)."""
+    return names_product(thread, product_type)
 
 
 def _about_the_request(thread: Thread, query: ParsedQuery) -> bool:

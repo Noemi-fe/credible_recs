@@ -31,7 +31,11 @@ count in comments and titles too ("my fine, oily hair", "thin/greasy hair").
 
 A thread talks about a need (thread_needs, 14 Oct 2026) when its title or post does, the same way, unless its title
 names another type of product and not the one asked for: the library's first reading reads such threads first
-(engine.sources.LocalSource).
+(engine.sources.LocalSource). A slimmed thread keeps no words of its post (engine/slim.py, Noemi's "Keep only comments
+we use"): which of config's need words its post held were noted before they went (post_need_words, post_list_words),
+and which of the words the engine knows (engine.slim.known_words: every checked request's words, the product types',
+ingredients' and needs' own) it held as a request's own word is found (post_request_words), so it talks about those as
+before; a request's word the engine didn't know then is looked for in its title only.
 """
 
 import re
@@ -46,7 +50,7 @@ from engine.credibility import _own_words
 from engine.memo import Table
 from engine.models import Thread
 from engine.query import PRODUCT_TYPES, SKIN_TYPES, ParsedQuery
-from engine.sources import _stem, _title_has, need_words
+from engine.sources import _stem, _title_has, _title_words, need_words
 
 LASTING = "lasting"  # the need that long-term use also speaks to
 
@@ -137,8 +141,49 @@ def thread_needs(thread: Thread, needs: tuple[Need, ...], titled_as_another_type
     about that one, whatever its post says ("SPF for oily skin?" is no moisturiser thread for oily skin)."""
     if not needs or titled_as_another_type:
         return ()
-    met = set(needs_met(thread.title, needs)) | set(needs_met(thread.body or "", needs))
+    met = set(needs_met(thread.title, needs)) | set(_post_needs(thread, needs))
     return tuple(need.name for need in needs if need.name in met)
+
+
+def _post_needs(thread: Thread, needs: tuple[Need, ...]) -> tuple[str, ...]:
+    """The needs the thread's post talks about: from its words, or for a slimmed thread from the words of config's
+    needs noted before its post's words went (engine.models.WholeThread.post_need_words and post_list_words)."""
+    facts = thread.whole_thread
+    if facts is None:
+        return needs_met(thread.body or "", needs)
+    words, listed, known = set(facts.post_need_words), set(facts.post_list_words), set(facts.post_words)
+    return tuple(need.name for need in needs if (need.request_word in known if need.request_word is not None else (
+        words.intersection(need.words) or listed.intersection(need.list_words))))
+
+
+def every_config_need() -> tuple[Need, ...]:
+    """Every need of config.NEEDS and config.HAIR_NEEDS with its words (a hair need with the words that name it in hair
+    types written together too), as a request of either category names them: what slimming notes a post held."""
+    return tuple(Need(name, words) for name, words in NEEDS.items()) + tuple(
+        Need(name, words, list_words=_list_words(name)) for name, words in HAIR_NEEDS.items())
+
+
+def post_need_words(body: str) -> list[str]:
+    """The words of config's needs (every_config_need) a post's own words hold, found as needs_met finds them: what a
+    slimmed thread keeps of its post for need-led reading (engine/slim.py). Config's words only, never the post's."""
+    text = _own_words(body or "")
+    vocabulary = sorted({word for need in every_config_need() for word in need.words})
+    return [word for word in vocabulary if _first_at(text, word) is not None]
+
+
+def post_list_words(body: str) -> list[str]:
+    """The words of config.HAIR_LIST_NEEDS a post's hair types written together hold ("fine" in "fine, oily hair")."""
+    return sorted(_hair_list_words(_own_words(body or "")))
+
+
+def post_request_words(body: str, vocabulary) -> list[str]:
+    """The words of `vocabulary` (words as engine.sources.need_words gives a request's: letters and digits only) that
+    a post's own words hold as needs_met finds a request's word in them (engine.sources._title_has: whole words, two
+    words written as one, longer forms), worked out once for the post: what a slimmed thread keeps of its post for a
+    request's own words (engine/slim.py)."""
+    candidates = _title_words(_own_words(body or ""))
+    return sorted(word for word in set(vocabulary)
+                  if (f" {word}" in candidates if len(word) >= 4 else f" {word} " in candidates))
 
 
 def needs_met(body: str, needs: tuple[Need, ...], long_term_use: bool = False) -> tuple[str, ...]:

@@ -5,7 +5,15 @@ Why. Before an answer shows a quote, its comment is read live through Reddit's e
 fresh answer needs 20 to 40 such reads, and Reddit's embed pages allow about 200 reads in 10 minutes from one address:
 once that allowance is used, each read waits its turn (one every 4 s), and a fresh answer took a minute or two. The
 rule doesn't change: a quote is shown only with a passing live check from the last 48 hours. What changes is when the
-check is made: mostly here, ahead of time, so answers find it saved.
+check is made: mostly ahead of time, so answers find it saved.
+
+Who reads (14 Oct 2026, the free-tier redesign). On Google Cloud the daily job no longer reads the embed page itself: a
+Cloud Run job is billed for its whole run, and two thirds of its run went on waiting for Reddit's allowance. With
+--plan (deploy.sh runs it so) it works out what to read and leaves the site a plan in the bucket (plan_run): the
+comments below, likeliest first, then the slimmed library's kept comments due to be verified, and its checks through
+Bright Data; the site, billed only while it answers, reads them a few at each keep-warm ping (engine/read_ahead.py) and
+shares what it read through the bucket's bundle, which the next run starts from. Without --plan (on Noemi's computer,
+say) a run reads them itself, as below.
 
 What is read, worked out without reading Reddit (comments_to_check):
 1. the requests (requests_to_check): the search page's example requests (the blind-test questions), the latency eval's
@@ -36,9 +44,41 @@ end. A comment read less than config.PRECHECK_FRESH_HOURS ago is skipped; an old
 day's answers never find its check expired. A run stops when Reddit stops answering (config.PRECHECK_STOP_AFTER_UNKNOWN
 unreadable pages in a row). The report gives counts and times only, never a comment's words.
 
-    python -m engine.precheck [--limit N] [--minutes M] [--dry-run]
+Comments the embed page can't show (Noemi, 13 Oct 2026: "Use Bright Data"). For about 1 comment in 8 the embed page
+holds no comment ("Not supported comment", likely comments with photos): it is kept as unreadable and never shown. After
+the embed reads, the comments needed here whose check is that kind are verified through Bright Data instead
+(verify_through_bright_data): their threads are read as Reddit shows them now (engine/bright_data.py, its pacing and
+monthly records), the likeliest to be shown first, in one batch of at most config.PRECHECK_BRIGHT_DATA_MAX_THREADS
+threads and config.PRECHECK_BRIGHT_DATA_RECORDS records a run (estimated from the library's copy of each thread: its
+post and its top-level comments). Each comment found gets a normal check, its own text as Reddit shows it now, saved
+when Bright Data read it (via "bright_data"), used like any other (found word for word, gone, changed) for 48 hours, and
+shared in the bundle. One its answer doesn't hold stays unreadable: Bright Data returns top-level comments and their
+direct replies only, so missing never means deleted. Such a check isn't read again on the embed page, and through Bright
+Data only after config.PRECHECK_BRIGHT_DATA_FRESH_HOURS. The site itself never calls Bright Data. With
+CREDIBLE_RECS_PRECHECK_BRIGHT_DATA=off (deploy.sh sets it when the key's secret, bright-data-key, isn't there; 14 Oct
+2026) the step is off: nothing is read through Bright Data, and the report says so in one line.
 
---dry-run works out the comments and says how many would be read and how many are fresh, reading nothing on Reddit.
+Keeping a slimmed library verified (Noemi, 13 Oct 2026: "Keep only comments we use"; engine/slim.py, engine/verify.py).
+After those reads, the comments the library's slimmed threads keep are verified one by one on the same embed page
+(verify_kept): first, what today's checks already say about them is recorded (the comments just read, the bundle's);
+then the kept comments verified longest ago are read, oldest first (a comment never verified counts from the day its
+thread was read), within a budget of their own (--verify N, default config.LIBRARY_VERIFY_READS), each one at most
+every config.LIBRARY_VERIFY_AGAIN_DAYS; a comment found deleted or edited isn't read again (the next deploy drops it),
+and a page with no comment on it is tried again after config.LIBRARY_VERIFY_RETRY_DAYS. Every read goes into the
+verification record (engine.verify.Ledger: when, and what it said; ids, dates and outcomes only, never any words): on
+this machine (.cache/verified.json) and, with a bucket, next to the bundle (live_check/verified.json). The library
+itself is never changed here: it is baked into the site's image, so `python -m engine.library apply-checks` applies the
+record before each deploy (deploy/cloudrun/deploy.sh).
+
+    python -m engine.precheck [--limit N] [--minutes M] [--verify N] [--dry-run]
+    python -m engine.precheck --plan [--minutes M] [--verify N] [--dry-run]
+
+--plan (the daily job on Google Cloud, with CREDIBLE_RECS_LIVE_CACHE_BUCKET): the plan for the site, read nothing on the
+embed page; --minutes is then when the Bright Data step starts nothing more (config.PRECHECK_PLAN_MINUTES), and --verify
+how many kept comments the plan asks the site to read (config.LIBRARY_VERIFY_READS).
+
+--dry-run works out the comments and says how many would be read and how many are fresh, reading nothing on Reddit,
+and how many comments and threads would be read through Bright Data, and about how many records that would use.
 On Google Cloud a Cloud Run job runs it once a day (deploy/cloudrun/DEPLOY.md).
 
 The products read on demand (14 Oct 2026; engine/on_demand.py): with CREDIBLE_RECS_ON_DEMAND_BUCKET set, the command
@@ -59,12 +99,18 @@ from pathlib import Path
 
 from engine import on_demand, pipeline
 from engine.answer import Answer, ShownQuote, quotes_to_check
-from engine.config import (PICKS_SHOWN, PRECHECK_FRESH_HOURS, PRECHECK_MAX_READS, PRECHECK_MAX_RUN_MINUTES,
-                           PRECHECK_MAX_WAIT_SECONDS, PRECHECK_MODEL_TYPES, PRECHECK_STOP_AFTER_UNKNOWN)
+from engine.config import (BRIGHT_DATA_BATCH_THREADS, LIBRARY_VERIFY_AGAIN_DAYS, LIBRARY_VERIFY_DAYS,
+                           LIBRARY_VERIFY_READS, LIBRARY_VERIFY_RETRY_DAYS, PICKS_SHOWN,
+                           PRECHECK_BRIGHT_DATA_FRESH_HOURS, PRECHECK_BRIGHT_DATA_MAX_THREADS,
+                           PRECHECK_BRIGHT_DATA_RECORDS, PRECHECK_FRESH_HOURS, PRECHECK_MAX_READS,
+                           PRECHECK_MAX_RUN_MINUTES, PRECHECK_MAX_WAIT_SECONDS, PRECHECK_MODEL_TYPES,
+                           PRECHECK_PLAN_MINUTES, PRECHECK_STOP_AFTER_UNKNOWN)
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.live_check import LiveResult, checker_from_env
-from engine.parse_reddit import REPO_ROOT
+from engine.parse_reddit import REPO_ROOT, parse_thread_url
 from engine.query import PRODUCT_TYPES
+from engine.read_ahead import PLAN_NAME, plan_bytes
+from engine.verify import FAILED, LEDGER_NAME, KeptComment, Ledger, kept_comments, outcome, record_saved_checks
 
 QUESTIONS_FILE = REPO_ROOT / "eval" / "blind_test" / "questions.json"  # the search page's example requests
 LATENCY_FILE = REPO_ROOT / "eval" / "edge_cases" / "latency_queries.json"
@@ -103,6 +149,7 @@ class Reading:
     changed: int = 0  # edited: a quote no longer found
     unknown: int = 0  # the page couldn't be read
     fresh: int = 0  # skipped: read less than PRECHECK_FRESH_HOURS ago
+    via_bright_data: int = 0  # skipped: verified through Bright Data (its embed page shows no comment)
     would_read: int = 0  # a dry run: what would have been read
     not_reached: int = 0  # left for lack of reads or time in this run's budget
     out_of_time: float | None = None  # the run's minutes, when they ran out before its reads
@@ -165,13 +212,17 @@ def _logged_types(log: Path) -> list[str]:
 class _AsIfChecked:
     """The checker answers get while the pre-check works out what they show: a comment with a saved check is answered
     by it (one deleted or edited drops out, as it would for a visitor); one without is taken as passing, since it is
-    about to be read. Reddit is never read here."""
+    about to be read, and so is one whose embed page showed no comment, since it is about to be verified through
+    Bright Data. Reddit is never read here."""
 
     def __init__(self, live):
         self.live = live
 
     def check(self, url: str, quote: str, wait: bool = True) -> LiveResult:
-        return self.live.saved_check(url, quote) or LiveResult("ok", "not checked yet: taken as passing for now")
+        saved = self.live.saved_check(url, quote)
+        if saved is None or saved.status == "unknown":
+            return LiveResult("ok", "not checked yet: taken as passing for now")
+        return saved
 
 
 @contextmanager
@@ -302,6 +353,10 @@ def check_ahead(candidates: list[Candidate], checker, limit: int = PRECHECK_MAX_
         if run.stopped or run.out_of_time is not None or run.read + run.would_read >= limit:
             run.not_reached += 1
             continue
+        entry = checker.saved_entry(candidate.url)
+        if entry is not None and entry.get("via") == "bright_data":  # its embed page shows no comment: never read there
+            run.via_bright_data += 1
+            continue
         if checker.checked_at(candidate.url, max_age=fresh) is not None:
             run.fresh += 1
             continue
@@ -334,6 +389,342 @@ def _read(candidate: Candidate, checker, fresh: timedelta) -> str:
     return "passing"
 
 
+# --- Comments the embed page can't show, through Bright Data ---
+
+@dataclass
+class BrightDataReading:
+    """What a run verified through Bright Data, in counts."""
+
+    needed: int = 0  # comments whose embed page shows no comment (or whose Bright Data check is due again)
+    threads: int = 0  # the threads they are in
+    read: int = 0  # threads read through Bright Data now (a dry run: would be)
+    records: int = 0  # records Bright Data delivered (a dry run: the estimate)
+    passing: int = 0
+    gone: int = 0
+    changed: int = 0
+    absent: int = 0  # not in Bright Data's answer: still unverified, never shown
+    not_reached: int = 0  # threads left for this run's budget (or whose size isn't known)
+    failed: int = 0  # threads Bright Data couldn't read
+    problem: str | None = None  # an account problem (no key, no records left) that stopped the reads
+    dry_run: bool = False
+    off: bool = False  # the step is off (deployed without the key): nothing read through Bright Data
+
+
+def needing_bright_data(candidates: list[Candidate], checker,
+                        fresh: timedelta = timedelta(hours=PRECHECK_BRIGHT_DATA_FRESH_HOURS)) -> list[Candidate]:
+    """The candidates whose latest read of the last 48 hours (engine.live_check.LiveChecker.last_read: the site's
+    reads ahead are up to a day old when the daily job runs) found no comment on the embed page, or that were verified
+    through Bright Data more than `fresh` ago, likeliest to be shown first."""
+    needed = []
+    now = checker.now()
+    for candidate in candidates:
+        last = checker.last_read(candidate.url)
+        if last is None:
+            continue
+        at, text, via = last
+        if text is None and via is None or via == "bright_data" and now - at >= fresh:
+            needed.append(candidate)
+    return needed
+
+
+def verify_through_bright_data(candidates: list[Candidate], checker, client_factory, library_dir: Path,
+                               max_records: int = PRECHECK_BRIGHT_DATA_RECORDS,
+                               max_threads: int = PRECHECK_BRIGHT_DATA_MAX_THREADS,
+                               dry_run: bool = False, until: datetime | None = None) -> BrightDataReading:
+    """Reads the threads of the comments needing_bright_data, the most useful first (_value_order), through Bright Data
+    (`client_factory()`, an engine.bright_data.BrightDataClient, built only when there is something to read), within
+    `max_records` (each thread's cost estimated from the library's copy: its post and its top-level comments) and
+    `max_threads` a run, in one batch; and saves a check for each comment its answer holds (checker.keep_check).
+    With no `client_factory` (None: the step is off, bright_data_from_env) it only counts the comments waiting. With
+    `until` (the checker's clock), nothing is asked of Bright Data after it: the plan run's minutes."""
+    reading = BrightDataReading(dry_run=dry_run, off=client_factory is None)
+    needed = needing_bright_data(candidates, checker)
+    by_thread: dict[str, list[Candidate]] = {}
+    for candidate in needed:
+        by_thread.setdefault(parse_thread_url(candidate.url)[1], []).append(candidate)
+    reading.needed, reading.threads = len(needed), len(by_thread)
+    if reading.off:
+        return reading
+    costs = {post_id: _records_estimate(Path(library_dir), post_id) for post_id in by_thread}
+    chosen, spent = [], 0
+    for post_id in sorted(by_thread, key=lambda t: _value_order(by_thread[t], costs[t])):
+        comments, cost = by_thread[post_id], costs[post_id]
+        if cost is None or len(chosen) >= min(max_threads, BRIGHT_DATA_BATCH_THREADS) or spent + cost > max_records:
+            reading.not_reached += 1
+            continue
+        chosen.append((post_id, comments, cost))
+        spent += cost
+    if dry_run or not chosen:
+        reading.read, reading.records = (len(chosen), spent) if dry_run else (0, 0)
+        return reading
+    if until is not None and checker.now() >= until:
+        reading.not_reached += len(chosen)
+        return reading
+    from engine.bright_data import BrightDataError
+
+    client = client_factory()
+    if client is None:
+        reading.problem = "no Bright Data client"
+        return reading
+    before = client.records_used_this_month()
+    try:
+        client.prefetch([(comments[0].url, max(cost - 1, 1)) for _, comments, cost in chosen])
+    except BrightDataError as error:
+        if error.account_problem:
+            reading.problem = str(error)
+            return reading
+        # Not the account: each thread is asked on its own below.
+    for number, (post_id, comments, _) in enumerate(chosen):
+        if until is not None and checker.now() >= until:
+            reading.not_reached += len(chosen) - number
+            break
+        try:
+            thread = client.get_thread(comments[0].url)
+        except BrightDataError as error:
+            if error.account_problem:
+                reading.problem = str(error)
+                break
+            reading.failed += 1
+            continue
+        reading.read += 1
+        found = {comment.id: comment for comment in thread.comments}
+        for candidate in comments:
+            comment = found.get(candidate.comment_id)
+            if comment is None:
+                reading.absent += 1  # Bright Data returns top-level comments and direct replies only: not deleted
+                continue
+            checker.keep_check(candidate.url, comment.body, thread.collected_at, "bright_data")
+            outcomes = [checker.saved_check(candidate.url, quote) for quote in candidate.quotes]
+            status = next((o.status for o in outcomes if not o.show), "passing")  # "gone" or "changed" when not
+            setattr(reading, status, getattr(reading, status) + 1)
+    reading.records = client.records_used_this_month() - before
+    return reading
+
+
+def _value_order(comments: list[Candidate], cost: int | None) -> tuple:
+    """Which threads are read first: those whose comments are likeliest to be shown (the best tier, a pick's own quotes
+    first), then those that verify the most comments for their records, then by their likeliest comment."""
+    return (min(c.tier for c in comments), min(c.section for c in comments),
+            (cost if cost is not None else float("inf")) / len(comments), min(c.order for c in comments))
+
+
+def _records_estimate(library_dir: Path, post_id: str) -> int | None:
+    """What reading a thread through Bright Data should cost, from the library's copy of it: a record for its post and
+    one for each top-level comment; None when the library doesn't hold it."""
+    try:
+        thread = json.loads((library_dir / "threads" / f"{post_id}.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return 1 + sum(1 for comment in thread.get("comments", []) if not comment.get("parent_id"))
+
+
+def bright_data_report(reading: BrightDataReading) -> str:
+    """The Bright Data reads in a line or two: counts only."""
+    head = (f"{_n(reading.needed, 'comment')} the embed page can't show, in {_n(reading.threads, 'thread')}")
+    if reading.off:
+        return (f"Bright Data: off (deployed without its key, the secret bright-data-key: deploy/cloudrun/DEPLOY.md); "
+                f"{head}, not verified that way.")
+    if reading.dry_run:
+        return (f"Bright Data (dry run): {head}; would read {_n(reading.read, 'thread')}, about "
+                f"{_n(reading.records, 'record')} (at most {PRECHECK_BRIGHT_DATA_RECORDS} a run); "
+                f"{reading.not_reached} left for this run's budget.")
+    line = (f"Bright Data: {head}; {_n(reading.read, 'thread')} read ({_n(reading.records, 'record')}): "
+            f"{reading.passing} passing, {reading.gone} gone, {reading.changed} changed, {reading.absent} not in its "
+            f"answer (still unverified); {reading.not_reached} left for this run's budget"
+            + (f"; {reading.failed} couldn't be read" if reading.failed else "") + ".")
+    if reading.problem:
+        line += f"\nBright Data stopped: {reading.problem}"
+    return line
+
+
+def _n(count: int, word: str) -> str:
+    return f"{count:,} {word}{'' if count == 1 else 's'}"
+
+
+def _bright_data_client():
+    """The real Bright Data client (key BRIGHT_DATA_API_KEY, from the environment or .env), built the way the library
+    builds it, so the tests' guard against real clients (engine/tests/conftest.py) covers it too."""
+    from engine import library
+
+    return library.BrightDataClient()
+
+
+def bright_data_from_env(environ=os.environ):
+    """What builds the run's Bright Data client: None (the step is off) when CREDIBLE_RECS_PRECHECK_BRIGHT_DATA is "off",
+    as deploy.sh deploys the job when the key's secret isn't there (14 Oct 2026: a missing key never stops a deploy)."""
+    return None if environ.get("CREDIBLE_RECS_PRECHECK_BRIGHT_DATA", "").strip().lower() == "off" else _bright_data_client
+
+
+# --- Keeping a slimmed library verified (13 Oct 2026) ---
+
+@dataclass
+class VerifyReading:
+    """What a run did for the comments slimmed threads keep, in counts (never their words)."""
+
+    kept: int = 0  # comments the library's slimmed threads keep
+    recorded: int = 0  # whose check of the last 48 hours (made today, or in the bundle) was recorded without a read
+    due: int = 0  # not verified within LIBRARY_VERIFY_AGAIN_DAYS, so to read
+    read: int = 0  # read on Reddit now
+    passing: int = 0
+    deleted: int = 0
+    removed: int = 0
+    changed: int = 0
+    unreadable: int = 0  # the page showed no comment: tried again after LIBRARY_VERIFY_RETRY_DAYS
+    unknown: int = 0  # couldn't be read now (an error, Reddit refusing): left for the next run
+    gone_already: int = 0  # found deleted or edited before: not read again, the next deploy drops them
+    waiting_retry: int = 0  # unreadable less than LIBRARY_VERIFY_RETRY_DAYS ago
+    not_reached: int = 0  # due, but left for lack of reads in this run's budget
+    would_read: int = 0  # a dry run: what would have been read
+    stopped: bool = False  # Reddit stopped answering
+    out_of_time: bool = False  # the run's minutes ran out first (no read starts after them)
+    dry_run: bool = False
+    never_verified: int = 0  # after the run: kept comments no read has passed yet
+    oldest_days: int | None = None  # after the run: days since the oldest kept comment was verified (or read)
+    expiring: int = 0  # after the run: would go past LIBRARY_VERIFY_DAYS within a week unless read meanwhile
+
+
+def verify_kept(library_dir: Path, checker, ledger: Ledger, limit: int = LIBRARY_VERIFY_READS,
+                now: datetime | None = None, dry_run: bool = False, kept: list[KeptComment] | None = None,
+                again: timedelta = timedelta(days=LIBRARY_VERIFY_AGAIN_DAYS),
+                retry: timedelta = timedelta(days=LIBRARY_VERIFY_RETRY_DAYS),
+                stop_after_unknown: int = PRECHECK_STOP_AFTER_UNKNOWN, until: datetime | None = None) -> VerifyReading:
+    """Verifies the kept comments of the library's slimmed threads (see the module's docstring), recording every read
+    in `ledger` (engine.verify.Ledger). `checker`: engine.live_check.LiveChecker. The library isn't changed. With
+    `until` (the checker's clock), no read starts after it: the run's minutes (PRECHECK_MAX_RUN_MINUTES)."""
+    clock = getattr(checker, "now", None) or (lambda: datetime.now(UTC))
+    now = now or datetime.now(UTC)
+    kept = kept_comments(library_dir) if kept is None else kept
+    reading = VerifyReading(kept=len(kept), dry_run=dry_run)
+    reading.recorded = record_saved_checks(library_dir, checker, ledger, kept)  # what today's checks say: no read
+    due = due_for_verification(kept, ledger, now, again=again, retry=retry)
+    reading.due, reading.gone_already, reading.waiting_retry = due.due, due.gone_already, due.waiting_retry
+    unknown_in_a_row = 0
+    for comment in due.chosen:
+        if not dry_run and until is not None and not reading.out_of_time and clock() >= until:
+            reading.out_of_time = True
+        if reading.stopped or reading.out_of_time or reading.read + reading.would_read >= limit:
+            reading.not_reached += 1
+            continue
+        if dry_run:
+            reading.would_read += 1
+            continue
+        got = checker.read_text(comment.url)
+        reading.read += 1
+        if got is None:
+            reading.unknown += 1
+            unknown_in_a_row += 1
+        else:
+            status = outcome(got[1], comment.quotes)
+            ledger.record(comment.comment_id, got[0], status)
+            setattr(reading, status, getattr(reading, status) + 1)
+            unknown_in_a_row = unknown_in_a_row + 1 if status == "unreadable" else 0
+        if unknown_in_a_row >= stop_after_unknown:
+            reading.stopped = True
+    _after_the_run(kept, ledger, now, reading)
+    return reading
+
+
+@dataclass
+class Due:
+    """The kept comments due to be verified, longest unverified first (chosen: within the limit), and those not."""
+
+    chosen: list[KeptComment] = field(default_factory=list)
+    due: int = 0  # due, chosen or not
+    not_reached: int = 0  # due, beyond the limit
+    gone_already: int = 0  # found deleted or edited before: not read again, the next deploy drops them
+    waiting_retry: int = 0  # unreadable less than LIBRARY_VERIFY_RETRY_DAYS ago
+
+
+def due_for_verification(kept: list[KeptComment], ledger: Ledger, now: datetime, limit: int | None = None,
+                         exclude=frozenset(), again: timedelta = timedelta(days=LIBRARY_VERIFY_AGAIN_DAYS),
+                         retry: timedelta = timedelta(days=LIBRARY_VERIFY_RETRY_DAYS)) -> Due:
+    """The kept comments not verified within `again` (a comment never verified counts from the day its thread was
+    read), longest unverified first, then by thread and place in it; at most `limit` chosen. Left out: those in
+    `exclude` (comment ids: the answers' own comments, read anyway), those found deleted or edited since their last
+    pass, and those whose page showed no comment less than `retry` ago."""
+    result, due = Due(), []
+    for comment in kept:
+        if comment.comment_id in exclude:
+            continue
+        entry, last = ledger.get(comment.comment_id), _last_verified(comment, ledger)
+        if entry is not None and entry.outcome in FAILED and (last is None or entry.at > last):
+            result.gone_already += 1
+        elif entry is not None and entry.outcome == "unreadable" and (last is None or entry.at > last) and (
+                now - entry.at < retry):
+            result.waiting_retry += 1
+        elif last is None or now - last >= again:
+            due.append(((last or comment.collected_at), comment.thread_id, comment.order, comment))
+    due.sort(key=lambda item: item[:3])
+    ordered = [item[3] for item in due]
+    result.due, result.chosen = len(ordered), ordered if limit is None else ordered[:limit]
+    result.not_reached = result.due - len(result.chosen)
+    return result
+
+
+def _last_verified(comment: KeptComment, ledger: Ledger) -> datetime | None:
+    """A kept comment's last passing read: its thread file's, or the record's when newer."""
+    entry = ledger.get(comment.comment_id)
+    found = [d for d in (comment.verified_at, entry.passed if entry is not None else None) if d is not None]
+    return max(found) if found else None
+
+
+def _after_the_run(kept: list[KeptComment], ledger: Ledger, now: datetime, reading: VerifyReading) -> None:
+    """How verified the kept comments are once the run is over: never verified, the oldest, and those about to go."""
+    ages = []
+    for comment in kept:
+        last = _last_verified(comment, ledger)
+        reading.never_verified += last is None
+        days = (now.date() - (last or comment.collected_at).date()).days
+        ages.append(days)
+        reading.expiring += LIBRARY_VERIFY_DAYS - 7 < days <= LIBRARY_VERIFY_DAYS
+    reading.oldest_days = max(ages) if ages else None
+
+
+def verify_step(library_dir: Path, checker, dry_run: bool, limit: int = LIBRARY_VERIFY_READS,
+                now: datetime | None = None, until: datetime | None = None) -> VerifyReading:
+    """The run's second part: the verification record read (this machine's, next to the checks, and the bucket's),
+    the kept comments verified (verify_kept), and the record written back (not on a dry run). Nothing is read or
+    written, the bucket not even asked, when the library has no slimmed thread."""
+    now = now or datetime.now(UTC)
+    kept = kept_comments(library_dir)
+    if not kept:
+        return VerifyReading(dry_run=dry_run)
+    local = Path(checker.cache_dir).parent / LEDGER_NAME
+    ledger = Ledger.load(local)
+    bucket = getattr(checker, "bucket", None)
+    if bucket is not None:
+        ledger.merge(Ledger.loads(bucket.get(LEDGER_NAME)))
+    reading = verify_kept(library_dir, checker, ledger, limit, now, dry_run, kept, until=until)
+    if not dry_run:
+        ledger.keep_only({comment.comment_id for comment in kept})
+        ledger.save(local, now)
+        if bucket is not None:
+            bucket.put(LEDGER_NAME, ledger.dumps(now))
+    return reading
+
+
+def verify_report(reading: VerifyReading) -> str:
+    """The kept comments' part of the run in a few lines: counts only."""
+    if reading.dry_run:
+        done = f"would read {reading.would_read:,} now"
+    else:
+        done = (f"read {reading.read:,} now ({reading.passing:,} passing, {reading.deleted + reading.removed:,} "
+                f"deleted, {reading.changed:,} edited, {reading.unreadable:,} unreadable, {reading.unknown:,} couldn't "
+                "be read now)")
+    lines = [f"Kept comments of slimmed threads: {reading.kept:,} kept comments, each to be verified on Reddit within "
+             f"{LIBRARY_VERIFY_DAYS} days. From today's checks: {reading.recorded:,}; due: {reading.due:,}; {done}; "
+             f"left for the next runs: {reading.not_reached:,}.",
+             f"Found deleted or edited before (the next deploy drops them): {reading.gone_already:,}; unreadable, "
+             f"tried again after {LIBRARY_VERIFY_RETRY_DAYS} days: {reading.waiting_retry:,}. After this run: "
+             f"{reading.never_verified:,} never verified, the oldest verified {reading.oldest_days} days ago, "
+             f"{reading.expiring:,} due to go within a week unless read."]
+    if reading.stopped:
+        lines.append(f"Stopped early: {PRECHECK_STOP_AFTER_UNKNOWN} pages in a row couldn't be read.")
+    if reading.out_of_time:
+        lines.append("Stopped at the run's minutes: the rest wait for the next run.")
+    return "\n".join(lines)
+
+
 # --- The report and the command ---
 
 def report(candidates: list[Candidate], run: Reading, requests: int, answered: int, seconds_working: float,
@@ -349,9 +740,11 @@ def report(candidates: list[Candidate], run: Reading, requests: int, answered: i
     if run.read:
         lines.append(f"Read on Reddit now: {run.read:,} ({run.passing:,} passing, {run.gone:,} gone, {run.changed:,} "
                      f"changed, {run.unknown:,} unreadable).")
+    via = f"; verified through Bright Data, never read on the embed page: {run.via_bright_data:,}" if (
+        run.via_bright_data) else ""
     budget = "budget" if run.out_of_time is None else f"{run.out_of_time:g} minutes"
-    lines.append(f"Skipped, read within {PRECHECK_FRESH_HOURS} hours: {run.fresh:,}. Not reached within this run's "
-                 f"{budget}: {run.not_reached:,}.")
+    lines.append(f"Skipped, read within {PRECHECK_FRESH_HOURS} hours: {run.fresh:,}{via}. Not reached within this "
+                 f"run's {budget}: {run.not_reached:,}.")
     if run.stopped:
         lines.append(f"Stopped early: {PRECHECK_STOP_AFTER_UNKNOWN} pages in a row couldn't be read (Reddit is "
                      "refusing reads); the rest wait for the next run.")
@@ -381,11 +774,16 @@ def options(argv: list[str]) -> tuple[int, int, bool] | None:
 
 
 def run(requests: list[str], limit: int, dry_run: bool, library_dir: Path, checker, profiles,
-        minutes: float | None = None) -> int:
-    """Works out the comments, reads them, and prints the report. With a bucket (the daily job on Google Cloud), it
-    starts from the bundle of checks the last run left (engine.live_check.LiveChecker.load_bundle), so what is still
-    fresh isn't read again, and leaves a new one, midway and at the end (save_bundle): one object, a few calls a run.
-    With `minutes`, no read starts that long after the run started."""
+        minutes: float | None = None, verify_limit: int = LIBRARY_VERIFY_READS,
+        bright_data=_bright_data_client, bright_data_records: int = PRECHECK_BRIGHT_DATA_RECORDS,
+        bright_data_threads: int = PRECHECK_BRIGHT_DATA_MAX_THREADS) -> int:
+    """Works out the comments, reads them on the embed page, then those it can't show through Bright Data
+    (`bright_data`: builds the client, only when there is something to read; None: that step is off), and prints the
+    report. With a bucket (the daily job on Google Cloud), it starts from the bundle of checks the last run left
+    (engine.live_check.LiveChecker.load_bundle), so what is still fresh isn't read again, and leaves a new one, midway
+    and at the end (save_bundle): one object, a few calls a run. With `minutes`, no read starts that long after the run
+    started. Then the kept comments of slimmed threads are verified, within `verify_limit` reads (verify_step), and the
+    verification record written (one more object, when the library has slimmed threads)."""
     started = time.perf_counter()
     began = (getattr(checker, "now", None) or (lambda: datetime.now(UTC)))()
     bucket = getattr(checker, "bucket", None)
@@ -399,7 +797,15 @@ def run(requests: list[str], limit: int, dry_run: bool, library_dir: Path, check
     save = None if bucket is None or dry_run else checker.save_bundle
     reading = check_ahead(found.candidates, checker, limit=limit, dry_run=dry_run, midway=save, started=began,
                           minutes=minutes)
+    through = verify_through_bright_data(found.candidates, checker, bright_data, library_dir,
+                                         max_records=bright_data_records, max_threads=bright_data_threads,
+                                         dry_run=dry_run)
     print(report(found.candidates, reading, len(requests), found.answered, working, reading.seconds, found.failed))
+    print(bright_data_report(through))
+    until = None if minutes is None else began + timedelta(minutes=minutes)  # the same minutes as the reads above
+    verified = verify_step(library_dir, checker, dry_run, verify_limit, until=until)
+    if verified.kept:
+        print(verify_report(verified))
     if bucket is not None:
         saved = None if save is None else save()
         written = ("not written: a dry run" if save is None else f"{saved:,} written to it at the end" if saved
@@ -411,8 +817,90 @@ def run(requests: list[str], limit: int, dry_run: bool, library_dir: Path, check
     return 0
 
 
+# --- The daily plan for the site (14 Oct 2026, the free-tier redesign; engine/read_ahead.py) ---
+
+def plan_run(requests: list[str], library_dir: Path, checker, profiles, dry_run: bool = False,
+             minutes: float | None = None, verify_limit: int = LIBRARY_VERIFY_READS, bright_data=_bright_data_client,
+             bright_data_records: int = PRECHECK_BRIGHT_DATA_RECORDS,
+             bright_data_threads: int = PRECHECK_BRIGHT_DATA_MAX_THREADS) -> int:
+    """The daily job since 14 Oct 2026: it works out what the site reads ahead, and reads nothing on the embed page
+    itself (see engine/read_ahead.py). With the bucket only (`checker`'s): it starts from the bundle the site shares,
+    takes into the verification record what each read of the last 48 hours said about a kept comment (a page with no
+    comment included), works out the comments answers would show, chooses the kept comments due (verify_limit, less the
+    answers' own), and writes the record and the plan; then it verifies through Bright Data the comments the embed page
+    can't show, starting nothing `minutes` after it started, and writes the plan again with those checks. A dry run
+    writes nothing. 2 without a bucket."""
+    bucket = getattr(checker, "bucket", None)
+    if bucket is None:
+        print("The plan is for the site, through the live checks' bucket: set CREDIBLE_RECS_LIVE_CACHE_BUCKET.",
+              file=sys.stderr)
+        return 2
+    started = time.perf_counter()
+    now = checker.now()
+    loaded = checker.load_bundle()
+    kept = kept_comments(library_dir)
+    local = Path(checker.cache_dir).parent / LEDGER_NAME
+    ledger = Ledger()
+    if kept:
+        ledger = Ledger.load(local)
+        ledger.merge(Ledger.loads(bucket.get(LEDGER_NAME)))
+    recorded = record_saved_checks(library_dir, checker, ledger, kept) if kept else 0
+    found = _work_out(requests, library_dir, checker, profiles)
+    due = due_for_verification(kept, ledger, now, verify_limit, exclude={c.comment_id for c in found.candidates})
+    answers, verify = [c.url for c in found.candidates], [c.url for c in due.chosen]
+    written = None
+    if not dry_run:
+        if kept:
+            ledger.keep_only({comment.comment_id for comment in kept})
+            ledger.save(local, now)
+            bucket.put(LEDGER_NAME, ledger.dumps(now))
+        written = bucket.put(PLAN_NAME, plan_bytes(answers, verify, checker.checks_made("bright_data"), now))
+    after = VerifyReading()
+    _after_the_run(kept, ledger, now, after)
+    print(plan_report(found, len(requests), kept, due, loaded, recorded, after, time.perf_counter() - started, dry_run,
+                      written))
+    until = None if minutes is None else now + timedelta(minutes=minutes)
+    through = verify_through_bright_data(found.candidates, checker, bright_data, library_dir,
+                                         max_records=bright_data_records, max_threads=bright_data_threads,
+                                         dry_run=dry_run, until=until)
+    print(bright_data_report(through))
+    if not dry_run and through.read:
+        bucket.put(PLAN_NAME, plan_bytes(answers, verify, checker.checks_made("bright_data"), now))
+    if bucket.problems:
+        print(f"The bucket failed {bucket.problems} time(s) (said above).")
+    return 0
+
+
+def plan_report(found: _Found, requests: int, kept: list[KeptComment], due: Due, loaded: int, recorded: int,
+                after: VerifyReading, seconds: float, dry_run: bool, written: bool | None) -> str:
+    """The plan in a few lines: counts and times only, never a comment's words."""
+    by_tier = [sum(1 for c in found.candidates if c.tier == tier) for tier in range(len(TIERS))]
+    tiers = ", ".join(f"{n:,} {words}" for n, words in zip(by_tier, TIERS))
+    failures = f", {found.failed} failed (named above)" if found.failed else ""
+    head = "Plan for the site (dry run)" if dry_run else "Plan for the site"
+    lines = [f"{head}: {len(found.candidates):,} answers' comments ({tiers}) from {requests} requests "
+             f"({found.answered} answered{failures}), worked out in {_duration(seconds)}; then {len(due.chosen):,} kept "
+             f"comments to verify, of {due.due:,} due."]
+    if kept:
+        lines.append(f"Kept comments of slimmed threads: {len(kept):,}, each to be verified on Reddit within "
+                     f"{LIBRARY_VERIFY_DAYS} days. The site's reads of the last 48 hours: {loaded:,} taken from the "
+                     f"bucket's bundle, {recorded:,} of kept comments recorded. Found deleted or edited before (the next "
+                     f"deploy drops them): {due.gone_already:,}; unreadable, tried again after "
+                     f"{LIBRARY_VERIFY_RETRY_DAYS} days: {due.waiting_retry:,}. Now {after.never_verified:,} never "
+                     f"verified, the oldest verified {after.oldest_days} days ago, {after.expiring:,} due to go within a "
+                     "week unless read.")
+    if dry_run:
+        lines.append("Nothing written: a dry run.")
+    elif not written:
+        lines.append("The plan couldn't be written: the site reads yesterday's until the next run.")
+    return "\n".join(lines)
+
+
 def main(argv: list[str]) -> int:
-    parsed = options(argv)
+    argv, verify = _verify_option(argv)
+    plan = "--plan" in argv
+    argv = [arg for arg in argv if arg != "--plan"]
+    parsed = options(argv) if verify is not None else None
     if parsed is None:
         print(__doc__)
         return 2
@@ -422,8 +910,26 @@ def main(argv: list[str]) -> int:
     # their answers checked ahead like the others, after them.
     read_on_demand = on_demand.precheck_types(os.environ, DEFAULT_LIBRARY_DIR)
     requests += [t for t in dict.fromkeys(read_on_demand) if t not in requests]
+    if plan:  # the daily job since 14 Oct 2026: the site reads ahead (engine/read_ahead.py)
+        minutes = minutes if "--minutes" in argv else PRECHECK_PLAN_MINUTES
+        return plan_run(requests, DEFAULT_LIBRARY_DIR, checker_from_env(), pipeline.cached_profiles(),
+                        dry_run=dry_run, minutes=minutes, bright_data=bright_data_from_env(), **verify)
     return run(requests, limit, dry_run, DEFAULT_LIBRARY_DIR, checker_from_env(max_wait=PRECHECK_MAX_WAIT_SECONDS),
-               pipeline.cached_profiles(), minutes=minutes)
+               pipeline.cached_profiles(), minutes=minutes, bright_data=bright_data_from_env(), **verify)
+
+
+def _verify_option(argv: list[str]) -> tuple[list[str], dict | None]:
+    """The arguments without `--verify N`, and {"verify_limit": N} for run ({} when not typed: its default,
+    LIBRARY_VERIFY_READS); None when N isn't a number."""
+    rest = list(argv)
+    if "--verify" not in rest:
+        return rest, {}
+    at = rest.index("--verify")
+    if at + 1 >= len(rest) or not rest[at + 1].isdigit():
+        return rest, None
+    verify_limit = int(rest[at + 1])
+    del rest[at:at + 2]
+    return rest, {"verify_limit": verify_limit}
 
 
 if __name__ == "__main__":
