@@ -28,6 +28,7 @@ from functools import cache
 
 from engine.config import HAIR_NEEDS, NEED_IGNORED_WORDS, NEED_REQUEST_WORDS, NEEDS
 from engine.credibility import _own_words
+from engine.models import Thread
 from engine.query import PRODUCT_TYPES, SKIN_TYPES, ParsedQuery
 from engine.sources import _stem, _title_has, need_words
 
@@ -85,6 +86,17 @@ def request_needs(query: ParsedQuery) -> tuple[Need, ...]:
             own_words.append((at, Need(typed, request_word=word)))
     listed = [(at, Need(need, needs[need])) for need, at in found.items()]
     return tuple(need for _, need in sorted(listed + own_words, key=lambda pair: pair[0]))
+
+
+def thread_needs(thread: Thread, needs: tuple[Need, ...], titled_as_another_type: bool = False) -> tuple[str, ...]:
+    """The names of the request's needs a thread's title or post talks about, in the request's order (14 Oct 2026, the
+    library's need-led first reading: engine.sources.LocalSource). None when `titled_as_another_type`: its title names
+    another type of product and not the one asked for (engine.sources.titled_as_another_type), so the thread is about
+    that one, whatever its post says ("SPF for oily skin?" is no moisturiser thread for oily skin)."""
+    if not needs or titled_as_another_type:
+        return ()
+    met = set(needs_met(thread.title, needs)) | set(needs_met(thread.body or "", needs))
+    return tuple(need.name for need in needs if need.name in met)
 
 
 def needs_met(body: str, needs: tuple[Need, ...], long_term_use: bool = False) -> tuple[str, ...]:
