@@ -173,7 +173,9 @@ from engine.credibility import (
 )
 from engine.extract import CheckResult, shown_comment_ids
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
-from engine.group_products import ProductGroup, ProductMention, brand_pick_name, group_of, group_products, plural, uk_name
+from engine.group_products import (
+    ProductGroup, ProductMention, brand_pick_name, group_of, group_products, library_name_index, plural, uk_name,
+)
 from engine.gold import DEFAULT_GOLD_DIR
 from engine.ingredients import evidence as ingredient_evidence
 from engine.ingredients import form_kind, form_of, ingredient_type_name, own_name, rinse_off_word, wanted_types
@@ -408,10 +410,12 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     # Grouped for this request's type (13 Oct 2026): "Fellow kettle" in a kettle answer is Fellow's kettle line. An
     # ingredient-led request has no one type: its products are grouped as the library's are.
     grouping_type = None if query.ingredient_led else query.product_type
-    groups = group_products(mentions, product_type=grouping_type)
+    index = _name_index(library)  # the library's pairs of names that could match, worked out once (13 Oct 2026)
+    groups = group_products(mentions, product_type=grouping_type, index=index)
     of_another_type = _of_another_type(groups, query, result)
     if of_another_type:  # grouped again without them, so they neither count for nor name a product (13 Oct 2026)
-        groups = group_products([m for m in mentions if _typed(m) not in of_another_type], product_type=grouping_type)
+        groups = group_products([m for m in mentions if _typed(m) not in of_another_type], product_type=grouping_type,
+                                index=index)
     brand_lines = load_brand_lines() if brand_lines is None else brand_lines
     kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads}, brand_lines)
     lines = {g.key for g in kept_groups if g.loose}  # the brand or line names kept as the brand's whole line
@@ -591,6 +595,18 @@ def _about_the_request(thread: Thread, query: ParsedQuery) -> bool:
 
 
 # --- Module 4: products and kinds ---
+
+def _name_index(library) -> dict:
+    """The pairs of names that could match among all the library's mentions (engine.group_products.library_name_index),
+    worked out on the library's first answer and kept with it (engine.library_cache: gone when it is read again)."""
+    found = library.remembered.get(_NAME_INDEX)
+    if found is None:
+        found = library.remembered[_NAME_INDEX] = library_name_index(_product_mentions(library.checked))
+    return found
+
+
+_NAME_INDEX = ("name index",)  # where the library keeps it (engine.library_cache.KeptLibrary.remembered)
+
 
 def _product_mentions(checked: dict[str, CheckResult]) -> list[ProductMention]:
     return [ProductMention(tid, m.comment_id, m.product, m.category, m.stance, m.product_type, m.quote)

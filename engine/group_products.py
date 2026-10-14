@@ -76,7 +76,7 @@ Two more steps happen only when the name is shown to a shopper (engine/pipeline.
 
 import re
 from collections import Counter, defaultdict
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from functools import lru_cache
 
@@ -146,36 +146,77 @@ def mentions_from_checked(checked: dict[str, CheckResult]) -> list[ProductMentio
     ]
 
 
+Words = tuple[str, ...]
+
+
 def group_of(groups: list[ProductGroup]) -> dict[ProductMention, ProductGroup]:
     """Each mention's group, so the pipeline can give every mention its product key and shown name."""
     return {m: g for g in groups for m in g.mentions}
 
 
 def group_products(mentions: list[ProductMention], aliases: dict[str, Aliases] | None = None,
-                   product_type: str | None = None) -> list[ProductGroup]:
+                   product_type: str | None = None, index: Mapping[str, "NameIndex"] | None = None) -> list[ProductGroup]:
     """The mentions gathered into product groups, biggest first (then by key).
 
     `aliases` is {category: known short names}; by default, the shipped list (engine/data/product_aliases.json).
     `product_type`: the requested type of product, when grouping for one request (engine/pipeline.py): a name made of
     another name and that type's words then names what that name names, in that type (the module docstring's "In one
-    request"). None groups names alone, as for the whole library.
+    request"). None groups names alone, as for the whole library. `index`: {category: NameIndex} of the library the
+    mentions come from (library_name_index, with the same short names), whose pairs of names stand in for working
+    them out again; the groups are the same with it or without.
     """
     aliases = known_aliases() if aliases is None else aliases
     by_category: dict[str, list[ProductMention]] = defaultdict(list)
     for m in mentions:
         by_category[m.category].append(m)
     groups = [g for category, ms in by_category.items()
-              for g in _group_category(category, ms, aliases.get(category, {}), product_type)]
+              for g in _group_category(category, ms, aliases.get(category, {}), product_type,
+                                       (index or {}).get(category))]
     return sorted(groups, key=lambda g: (-len(g.mentions), g.key))
 
 
-Words = tuple[str, ...]
+class NameIndex:
+    """The pairs of names the quick look leaves (engine.match_products.match_candidates_and_open), among all the names
+    of one category of a library's mentions and their names without each product type's words (their bases): worked
+    out once for the library, so a request's grouping takes its own names' pairs from it instead of working them out
+    again (latency, 13 Oct 2026: that was half of grouping, and grouping a third of a fresh answer)."""
+
+    def __init__(self, names: Iterable[Words]):
+        self.candidates, self.open_pairs = match_candidates_and_open(sorted(set(names)))
+
+    def among(self, names: list[Words]) -> tuple[dict[Words, set[Words]], set[tuple[Words, Words]]] | None:
+        """match_candidates_and_open(names), from the index: the candidates among `names` (and the pairs, in order,
+        the quick look leaves: the index's, a pair of them is asked about only when both are among `names`); None when
+        a name isn't in the index (a type the open model named has bases of its own)."""
+        candidates = self.candidates
+        if not all(name in candidates for name in names):
+            return None
+        among = set(names)
+        return {name: candidates[name] & among for name in dict.fromkeys(names)}, self.open_pairs
+
+
+def library_name_index(mentions: Iterable[ProductMention],
+                       aliases: dict[str, Aliases] | None = None) -> dict[str, NameIndex]:
+    """{category: NameIndex} for a library's mentions: every name, as grouping reads it (product_words, with these
+    short names: the shipped list by default), and its base in each of module 1's product types."""
+    from engine.query import PRODUCT_TYPES  # here: engine.query's own imports reach this module's
+
+    aliases = known_aliases() if aliases is None else aliases
+    names: dict[str, set[Words]] = defaultdict(set)
+    for m in mentions:
+        words = tuple(product_words(m.product, aliases.get(m.category, {})))
+        if words:
+            names[m.category].add(words)
+    every_type = [_type_words(p.name) for p in PRODUCT_TYPES]
+    return {category: NameIndex(own | {base for words in own for type_words in every_type
+                                       if (base := _without_type_words(words, type_words))})
+            for category, own in names.items()}
 
 
 def _group_category(category: str, mentions: list[ProductMention], aliases: Aliases,
-                    product_type: str | None = None) -> list[ProductGroup]:
+                    product_type: str | None = None, index: "NameIndex | None" = None) -> list[ProductGroup]:
     """Steps 1 to 5 of the module docstring, for the mentions of one category; with the requested `product_type`, the
-    steps of "In one request" too."""
+    steps of "In one request" too. `index`: the category's NameIndex, for the pairs of names that could match."""
     type_words = _type_words(product_type)
     by_words: dict[Words, list[ProductMention]] = defaultdict(list)  # step 1
     nameless: dict[str, list[ProductMention]] = defaultdict(list)  # filler words only
@@ -196,7 +237,9 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
     bases = {w: _without_type_words(w, type_words) for w in names} if type_words else {}
     # Step 2. Only pairs that could match are compared (engine.match_products.match_candidates; latency, 12 Oct 2026):
     # every pair that matches is among them, in the same order as before.
-    candidates, open_pairs = match_candidates_and_open(names + sorted({b for b in bases.values() if b}))
+    universe = names + sorted({b for b in bases.values() if b})
+    found = index.among(universe) if index is not None else None
+    candidates, open_pairs = found if found is not None else match_candidates_and_open(universe)
     matches = {w: [v for v in sorted(candidates[w]) if v in by_words and _matching(w, v, alone, open_pairs)]
                for w in names}
     spelling = {w: w for w in names}  # each name -> the first of its spellings
