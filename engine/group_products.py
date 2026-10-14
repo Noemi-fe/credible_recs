@@ -84,8 +84,8 @@ from engine.config import BRAND_PICK_NAME, PRODUCT_TYPE_PLURALS, PRODUCT_TYPE_SH
 from engine.extract import CheckResult
 from engine.memo import register
 from engine.match_products import (
-    KIND_WORDS, Aliases, _cannot_match, comparable, held_back_word, join_split_words, known_aliases, match_candidates,
-    normalize_name, own_words, product_words, same_words, written_alike,
+    KIND_WORDS, Aliases, _features, comparable, held_back_word, join_split_words, known_aliases,
+    match_candidates_and_open, normalize_name, own_words, product_words, same_words, same_words_looked_at, written_alike,
 )
 
 # Words that never tell two products apart, so a loose name equal to a product's name but for them names that product
@@ -196,8 +196,9 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
     bases = {w: _without_type_words(w, type_words) for w in names} if type_words else {}
     # Step 2. Only pairs that could match are compared (engine.match_products.match_candidates; latency, 12 Oct 2026):
     # every pair that matches is among them, in the same order as before.
-    candidates = match_candidates(names + sorted({b for b in bases.values() if b}))
-    matches = {w: [v for v in sorted(candidates[w]) if v in by_words and _matching(w, v, alone)] for w in names}
+    candidates, open_pairs = match_candidates_and_open(names + sorted({b for b in bases.values() if b}))
+    matches = {w: [v for v in sorted(candidates[w]) if v in by_words and _matching(w, v, alone, open_pairs)]
+               for w in names}
     spelling = {w: w for w in names}  # each name -> the first of its spellings
     for w in names:
         for v in matches[w]:
@@ -210,7 +211,7 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
     # In one request: a name with the type's words fits, as its base, the longer names of products of the type (a.).
     # Never another way of writing the same brand and type ("TO sunscreens" for "TO sunscreen"), nor its own spellings.
     fits_as_base = {w: {v for v in sorted(candidates[base]) if v in by_words and v != w and _could_start(base, v)
-                        and _matching(base, v, alone) and _more_words(v, base)
+                        and _matching(base, v, alone, open_pairs) and _more_words(v, base)
                         and _of_the_type(v, by_words[v], product_type, type_words)
                         and not (bases.get(v) and _alike(bases[v], base))}
                     for w, base in bases.items() if base}
@@ -267,15 +268,16 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
     return groups
 
 
-def _matching(w: Words, v: Words, alone: set[str]) -> bool:
+def _matching(w: Words, v: Words, alone: set[str], open_pairs: set[tuple[Words, Words]]) -> bool:
     """Whether two names match (engine.match_products.same_words), or would but for a one-word name without its brand
     whose word is written alone as a name here (held_back_word): "Ballarini pans" and "Zwilling/Ballarini pans". Only
     a name whose one word besides its kinds is written alone is asked about (latency, 13 Oct 2026). A pair the quick
     look rules out (engine.match_products._cannot_match: 9 pairs in 10) is neither: both need every word of the
-    shorter name found in the longer one."""
-    if _cannot_match(w, v):
+    shorter name found in the longer one. `open_pairs` are the pairs (in order) of the names' candidates the quick look
+    leaves (engine.match_products.match_candidates_and_open): (w, v) is one of the candidates."""
+    if (w, v) not in open_pairs:
         return False
-    if same_words(w, v):
+    if same_words_looked_at(w, v):
         return True
     return any(len(own) == 1 and own[0] in alone and own[0] in other
                for own, other in ((_own_words(w), v), (_own_words(v), w))) and (
@@ -459,7 +461,13 @@ def _fits_two_products(longer: set[Words]) -> bool:
 
 def _more_words(a: Words, b: Words) -> bool:
     """Whether name a has more words than name b, once made ready to compare (engine.match_products.comparable: words
-    one writes apart and the other as one joined, an "and" only one writes dropped)."""
+    one writes apart and the other as one joined, an "and" only one writes dropped). When comparable would change
+    neither (no words to join, an "and" in both or neither), their own words are counted at once (latency, 13 Oct
+    2026)."""
+    features_a, features_b = _features(a), _features(b)
+    if (features_a.has_and == features_b.has_and and features_a.runs.isdisjoint(features_b.words)
+            and features_b.runs.isdisjoint(features_a.words)):
+        return len(features_a.words) > len(features_b.words)
     words_a, words_b = comparable(list(a), list(b))
     return len(set(words_a)) > len(set(words_b))
 
@@ -565,10 +573,26 @@ def _shown_spelling(mentions: list[ProductMention], words: Words) -> str:
 
 def uk_name(name: str, shown: Mapping[str, str] = UK_BRAND_NAMES) -> str:
     """The name with each brand the UK knows by another name replaced, whole words only, in any case:
-    "Breville Smart Grinder Pro" -> "Sage Smart Grinder Pro" (decision 12)."""
+    "Breville Smart Grinder Pro" -> "Sage Smart Grinder Pro" (decision 12). With the shipped list of UK names, each
+    name is worked out once (latency, 13 Oct 2026: answers ask it of the same names thousands of times)."""
+    if shown is UK_BRAND_NAMES:
+        found = _UK_NAMES.get(name)
+        if found is None:
+            if len(_UK_NAMES) >= 200_000:
+                _UK_NAMES.clear()
+            found = _UK_NAMES[name] = _uk_name(name, shown)
+        return found
+    return _uk_name(name, shown)
+
+
+def _uk_name(name: str, shown: Mapping[str, str]) -> str:
     for brand, uk_brand in shown.items():
         name = re.sub(rf"(?<!\w){re.escape(brand)}(?!\w)", lambda _: uk_brand, name, flags=re.IGNORECASE)
     return name
+
+
+_UK_NAMES: dict[str, str] = {}  # a name -> as the UK knows it, with the shipped list (uk_name)
+register(_UK_NAMES.clear)
 
 
 def brand_pick_name(brand: str, product_type: str) -> str:

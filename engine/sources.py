@@ -50,6 +50,7 @@ from engine.config import (
     SKINCARE_RECENT_YEARS,
 )
 from engine.gold import load_threads
+from engine.memo import Table
 from engine.ingredients import ingredient_type_name, ingredients_of_type, talk_words
 from engine.models import Comment, Thread
 from engine.parse_reddit import ParseRedditClient
@@ -113,7 +114,25 @@ def mentions_product(text: str, product_type: str, leave_aside: str = "") -> boo
     `leave_aside`: one word that doesn't name the product on its own here, in any of its forms (singular, plural or a
     slip: "knife", "knives"): the last word of another type the text is said to be about, so "knife" in a comment
     about a paring knife doesn't name a chef's knife (13 Oct 2026). Longer names that hold it still count ("chef's
-    knife")."""
+    knife").
+
+    It depends on these three alone, so for a short text (a product's name, a type, a title) each answer is worked out
+    once and remembered (latency, 13 Oct 2026: an answer asks it of the same names thousands of times)."""
+    if len(text) > REMEMBERED_TEXT_LENGTH:
+        return _mentions_product(text, product_type, leave_aside)
+    key = (text, product_type, leave_aside)
+    found = _MENTIONS.get(key)
+    if found is None:
+        found = _MENTIONS.keep(key, _mentions_product(text, product_type, leave_aside))
+    return found
+
+
+# Texts at most this long have mentions_product's answers remembered: names, types, titles, a name with its quote.
+REMEMBERED_TEXT_LENGTH = 400
+_MENTIONS = Table()  # (text, product type, word left aside) -> mentions_product's answer
+
+
+def _mentions_product(text: str, product_type: str, leave_aside: str) -> bool:
     covers = None
     for match in _product_pattern(product_type).finditer(text):
         if leave_aside and _same_word_as(match.group(0), leave_aside):

@@ -679,10 +679,11 @@ def _groups_to_rank(groups: list[ProductGroup], query: ParsedQuery, result: Pipe
     {thread id: title} for the threads read; `brand_lines` the brand-lines list (engine/brand_lines.py)."""
     kept = []
     same_category = [g for g in groups if g.category == query.category]
+    typed: dict = {}  # once worked out, the names of these groups that name the requested type (_typed_names)
     for group in same_category:  # the ranking only looks at the request's category anyway
         if group.loose:
             line = _brand_line(group, query, brand_lines)
-            if _clear_brand(group, query, titles, same_category, line):
+            if _clear_brand(group, query, titles, same_category, line, typed):
                 kept.append(replace(group, name=_line_name(group, line, query.product_type)))
             else:
                 result.left_out_loose.append(uk_name(group.name))
@@ -714,7 +715,7 @@ def _line_name(group: ProductGroup, line: BrandLine | None, product_type: str) -
 
 
 def _clear_brand(group: ProductGroup, query: ParsedQuery, titles: dict[str, str], groups: list[ProductGroup],
-                 line: BrandLine | None = None) -> bool:
+                 line: BrandLine | None = None, typed: dict | None = None) -> bool:
     """Whether a brand or line name clearly means the requested product (decision 9), so it is ranked as the brand's
     whole line. It must name something, and none of its names, nor most of the AI's types for its mentions, may say
     another type of product. Then the brand-lines entry for it decides, when there is one (`line`, 12 Oct 2026): yes
@@ -722,7 +723,8 @@ def _clear_brand(group: ProductGroup, query: ParsedQuery, titles: dict[str, str]
     BRAND_PICK_TITLE_SHARE of its mentions are in threads whose title names the requested product, and
     (BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE) one of its own products named in the threads is of that type. "Lodge" in
     "Best cast iron skillet?" threads, next to "Lodge Blacklock skillet", is clear. `groups` are every product group of
-    the request's category."""
+    the request's category. `typed`: where _has_a_product_of_the_type keeps the groups' names that name the type, the
+    first time it needs them, for the other brands of the same groups (latency, 13 Oct 2026)."""
     if not PIPELINE_BRAND_PICKS or not normalize_name(group.name) or _another_type(group, query):
         return False  # a name made of filler words only ("the one") names nothing
     if line is not None:
@@ -730,19 +732,28 @@ def _clear_brand(group: ProductGroup, query: ParsedQuery, titles: dict[str, str]
     in_titled = sum(mentions_product(titles.get(m.thread_id, ""), query.product_type) for m in group.mentions)
     if in_titled <= BRAND_PICK_TITLE_SHARE * len(group.mentions):
         return False
-    return not BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE or _has_a_product_of_the_type(group, query, groups)
+    return not BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE or _has_a_product_of_the_type(group, query, groups, typed)
 
 
-def _has_a_product_of_the_type(brand: ProductGroup, query: ParsedQuery, groups: list[ProductGroup]) -> bool:
+def _has_a_product_of_the_type(brand: ProductGroup, query: ParsedQuery, groups: list[ProductGroup],
+                               typed: dict | None = None) -> bool:
     """Whether a name of the brand, or of one of its products named in these threads (a name that holds the brand's,
-    such as "Griswold skillet" for "Griswold"), names the requested type of product."""
-    if any(mentions_product(name, query.product_type) for name in brand.names):
+    such as "Griswold skillet" for "Griswold"), names the requested type of product. The groups' names that name the
+    type are listed once for every brand of the same groups (kept in `typed`, a dict, when given: _typed_names)."""
+    own_names = list(brand.names)
+    if any(mentions_product(name, query.product_type) for name in own_names):
         return True
     aliases = known_aliases().get(brand.category, {})
-    return any(
-        mentions_product(name, query.product_type) and any(same_product(own, name, aliases) for own in brand.names)
-        for other in groups if other is not brand for name in other.names
-    )
+    typed = {} if typed is None else typed
+    if "names" not in typed:
+        typed["names"] = _typed_names(groups, query.product_type)
+    return any(any(same_product(own, name, aliases) for own in own_names)
+               for other, name in typed["names"] if other is not brand)
+
+
+def _typed_names(groups: list[ProductGroup], product_type: str) -> list[tuple[ProductGroup, str]]:
+    """Each group with each of its names that names the product type (engine.sources.mentions_product), in order."""
+    return [(group, name) for group in groups for name in group.names if mentions_product(name, product_type)]
 
 
 def _another_type(group: ProductGroup, query: ParsedQuery) -> bool:

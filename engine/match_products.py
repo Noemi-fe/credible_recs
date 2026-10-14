@@ -314,6 +314,11 @@ def same_words(words_a: list[str], words_b: list[str]) -> bool:
     (_cannot_match, 13 Oct 2026), and those are never remembered: the memory keeps only the pairs worth it."""
     if _cannot_match(words_a, words_b):
         return False
+    return same_words_looked_at(words_a, words_b)
+
+
+def same_words_looked_at(words_a, words_b) -> bool:
+    """same_words for a pair the quick look leaves (_cannot_match is False): compared once and remembered."""
     key = (tuple(words_a), tuple(words_b))
     found = _SAME.get(key)
     if found is None:
@@ -413,6 +418,12 @@ def _same_words(words_a: list[str], words_b: list[str]) -> bool:
 
 
 def match_candidates(names: Iterable[tuple[str, ...]]) -> dict[tuple[str, ...], set[tuple[str, ...]]]:
+    """For each name, the names among `names` it could match (match_candidates_and_open)."""
+    return match_candidates_and_open(names)[0]
+
+
+def match_candidates_and_open(names: Iterable[tuple[str, ...]]) -> tuple[dict[tuple[str, ...], set[tuple[str, ...]]],
+                                                                         set[tuple[tuple[str, ...], tuple[str, ...]]]]:
     """For each name (its words, as product_words gives them), the names among `names` it could match: the pairs the
     quick look (_cannot_match) doesn't rule out, one way round or the other, so grouping (engine/group_products.py)
     compares only these. Every pair that matches by same_words, has a held-back word or is written alike is among them
@@ -427,7 +438,9 @@ def match_candidates(names: Iterable[tuple[str, ...]]) -> dict[tuple[str, ...], 
     shorter; pairs where the other is the shorter are found from the other's side. An "and" only one of two names
     writes is left out of both (comparable), so a name's "and" never needs finding, its first word is any of its words,
     and each name is listed under its first word and its first word but "and". Words written apart that may join into
-    one of the other's ("soon jung", "soonjung") keep the pair. Each pair found is then asked the quick look itself."""
+    one of the other's ("soon jung", "soonjung") keep the pair. Each pair found is then asked the quick look itself,
+    both ways round. Also the pairs, in order, the quick look leaves (a, b): grouping asks no more about them
+    (engine.group_products._matching)."""
     names = list(dict.fromkeys(names))
     by_word: dict[str, set] = defaultdict(set)  # a word -> the names with it
     by_length: dict[tuple[str, int], set] = defaultdict(set)  # a word's first letter and length -> the names with one
@@ -452,6 +465,7 @@ def match_candidates(names: Iterable[tuple[str, ...]]) -> dict[tuple[str, ...], 
         return found
 
     candidates: dict[tuple[str, ...], set[tuple[str, ...]]] = {name: set() for name in names}
+    open_pairs: set[tuple[tuple[str, ...], tuple[str, ...]]] = set()
     for name in names:
         features = _features(name)
         words = list(dict.fromkeys(features.without_and if features.has_and else name))
@@ -463,10 +477,17 @@ def match_candidates(names: Iterable[tuple[str, ...]]) -> dict[tuple[str, ...], 
         for run in features.runs:
             found |= by_word.get(run, set())
         for other in found:
-            if other != name and (not _cannot_match(name, other) or not _cannot_match(other, name)):
+            if other == name or other in candidates[name]:
+                continue  # the same name, or a pair already found from the other's side
+            forth, back = not _cannot_match(name, other), not _cannot_match(other, name)
+            if forth:
+                open_pairs.add((name, other))
+            if back:
+                open_pairs.add((other, name))
+            if forth or back:
                 candidates[name].add(other)
                 candidates[other].add(name)
-    return candidates
+    return candidates, open_pairs
 
 
 def written_alike(words_a: list[str], words_b: list[str]) -> bool:

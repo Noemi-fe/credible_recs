@@ -708,3 +708,7 @@ def test_the_candidates_are_the_pairs_the_quick_look_leaves_either_way_round():
         left = {b for b in names if b != a and (not match_products._cannot_match(a, b)
                                                  or not match_products._cannot_match(b, a))}
         assert candidates[a] == left, a
+    # And the pairs, in order, the quick look leaves: the only ones grouping asks more about.
+    same_candidates, open_pairs = match_products.match_candidates_and_open(names)
+    assert same_candidates == candidates
+    assert open_pairs == {(a, b) for a in names for b in candidates[a] if not match_products._cannot_match(a, b)}
