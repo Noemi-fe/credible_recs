@@ -1068,13 +1068,45 @@ def warm_answer(request: str, library_dir: Path) -> None:
 
 
 def warm_requests() -> list[str]:
-    """The requests answered while getting ready, the likeliest first (14 Oct 2026, the coordinator's request after the
-    live site's getting ready reached 7 of 43 product types in its time): the search page's example requests, then the
-    latency requests (WARM_FIRST_FILES), then every product type by its name (WARM_PRODUCT_TYPES), each once. The
-    examples carry needs, so warming them reads the threads their need-led readings use; what is left when the time is
-    up (WARM_UP_ANSWERS_SECONDS) is worked out by its first visitor."""
-    first = [text for path in WARM_FIRST_FILES for text in _requests_in(path)]
-    return list(dict.fromkeys(first + list(WARM_PRODUCT_TYPES)))
+    """The requests answered while getting ready (14 Oct 2026, the coordinator's requests after the live site's getting
+    ready reached 7, then 13, of its requests in its time), each once, in the order that takes the most cold work away
+    soonest (measured on this Mac: eval/LATENCY.md):
+
+    - the search page's example requests (the first of WARM_FIRST_FILES): what a visitor clicks, word for word;
+    - then one request for each product type not asked yet (WARM_PRODUCT_TYPES' order), its likeliest: the first of the
+      latency requests that module 1's rules place as that type, else the type's own name. A type's first answer reads
+      every thread of its category for it, the biggest part of a cold answer, which every later request of that type
+      then finds done, however it is worded;
+    - then the rest of the latency requests and the types' names: the threads their needs lead to;
+    - last, the requests module 1 asks the open model about ("serum", "something nice for my mum"): a reading of
+      seconds, which warms that very request only.
+    What getting ready has no time for (WARM_UP_ANSWERS_SECONDS) is warmed a slice per keep-warm ping (warm_more)."""
+    examples = _requests_in(WARM_FIRST_FILES[0]) if WARM_FIRST_FILES else []
+    likely = [text for path in WARM_FIRST_FILES for text in _requests_in(path)]
+    every = list(dict.fromkeys(likely + list(WARM_PRODUCT_TYPES)))
+    placed = {text: _placed_by_rules(text) for text in every}
+    per_type = [text for product_type in WARM_PRODUCT_TYPES
+                if (text := next((t for t in every if placed[t] == (product_type, False)), None)) is not None]
+    lead = list(dict.fromkeys(examples + per_type))
+    rest = [text for text in every if text not in lead]
+    return lead + [t for t in rest if not placed[t][1]] + [t for t in rest if placed[t][1]]
+
+
+def _placed_by_rules(text: str) -> tuple[str | None, bool]:
+    """The product type module 1 places a request as (None for a question or a polite no), and whether it would ask the
+    open model about it: module 1 run with a stand-in that only notes being asked, so its rules alone decide."""
+    from engine.query import parse_query
+
+    class _Noting:
+        asked = False
+
+        def read(self, text: str):
+            self.asked = True
+            return None
+
+    noting = _Noting()
+    query = parse_query(text, model=noting)
+    return (query.product_type if query.status == "ok" else None), noting.asked
 
 
 def _requests_in(path: Path) -> list[str]:
@@ -1087,7 +1119,7 @@ def _requests_in(path: Path) -> list[str]:
 
 
 # The requests answered first while getting ready (warm_requests): the search page's examples, then the latency
-# requests.
+# requests (each type's likeliest first).
 LATENCY_FILE = REPO_ROOT / "eval" / "edge_cases" / "latency_queries.json"
 WARM_FIRST_FILES = (EXAMPLES_FILE, LATENCY_FILE)
 # Then the product types: module 1's own (engine.query.PRODUCT_TYPES). The rules route each by its name (only "serum",

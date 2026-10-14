@@ -542,18 +542,47 @@ def test_warming_up_answers_each_product_type_without_asking_reddit(tmp_path, mo
     assert all("live_checker" not in kwargs and kwargs["live_check_required"] is False for _, kwargs in asked)
 
 
-def test_getting_ready_answers_the_likeliest_requests_first():
-    # 14 Oct 2026 (the coordinator, from the live site: getting ready reached 7 of 43 product types in its 120 s): the
-    # search page's example requests come first, then the latency requests, then the product types by name, each once.
-    # The examples carry needs, so warming them reads the threads their need-led readings use.
+def test_getting_ready_answers_the_examples_then_one_request_per_product_type():
+    # 14 Oct 2026 (the coordinator, from the live site: Cloud Run's one processor warmed 13 of 65 requests in getting
+    # ready's 120 s): the search page's example requests first (what a visitor clicks); then one request for each type
+    # not asked yet, its likeliest (the first latency request the rules place as that type, else the type's name): a
+    # type's first answer reads every thread of its category for it, the biggest part of a cold answer; then the rest,
+    # each once; the requests module 1 asks the open model about last (a reading of seconds that warms that very request
+    # only).
+    from engine.query import parse_query
+
+    class Asked:
+        def __init__(self):
+            self.asked = False
+
+        def read(self, text):
+            self.asked = True
+            return None
+
+    def placed(text):
+        stub = Asked()
+        query = parse_query(text, model=stub)
+        return (query.product_type if query.status == "ok" else None), stub.asked
+
     examples = [q["text"] for q in web.example_requests()]
     latency = [q["text"] for q in json.loads(web.LATENCY_FILE.read_text(encoding="utf-8"))["queries"]]
+    likely = list(dict.fromkeys(examples + latency))
     warmed = web.warm_requests()
+    assert sorted(warmed) == sorted(dict.fromkeys(likely + list(web.WARM_PRODUCT_TYPES)))  # each once
     assert examples and warmed[:len(examples)] == examples
-    rest = [text for text in latency if text not in examples]
-    assert rest and warmed[len(examples):len(examples) + len(rest)] == rest
-    assert warmed[len(examples) + len(rest):] == [t for t in web.WARM_PRODUCT_TYPES if t not in examples + rest]
-    assert len(warmed) == len(set(warmed))
+    every = list(dict.fromkeys(likely + list(web.WARM_PRODUCT_TYPES)))
+    where = {t: placed(t) for t in every}
+    asked = {where[t][0] for t in examples}
+    per_type = [next(t for t in every if where[t] == (p, False)) for p in web.WARM_PRODUCT_TYPES
+                if p not in asked and any(where[t] == (p, False) for t in every)]
+    assert warmed[len(examples):len(examples) + len(per_type)] == per_type
+    assert "anti-dandruff shampoo" in per_type and "shampoo" not in per_type  # a type's latency request, else its name
+    assert "toner" in per_type
+    first = warmed[:len(examples) + len(per_type)]
+    assert {where[t][0] for t in first} >= set(web.WARM_PRODUCT_TYPES) - {"serum"}  # every type the rules place alone
+    asks_model = [t for t in warmed if where[t][1]]
+    assert asks_model and warmed[-len(asks_model):] == asks_model  # "serum" and "something nice for my mum" last
+    assert "serum" in asks_model
 
 
 def test_warming_up_stops_answering_product_types_once_its_time_is_up(tmp_path, monkeypatch, capsys):
