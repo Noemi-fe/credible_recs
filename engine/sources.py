@@ -16,7 +16,8 @@ saves them.
 
 Candidate threads are ranked so buying advice beats popularity (rank_posts). For the library, ParseSource can also
 pick a mix of thread kinds (Noemi, 7 Oct 2026): advice threads give the picks, long-term-use threads the strongest
-evidence, warning threads the "skip these" list and the downsides (thread_kind, choose_mix).
+evidence, warning threads the "skip these" list and the downsides (thread_kind, choose_mix). The saved library is read
+need-led (14 Oct 2026): for a request with needs, the threads about them come first (LocalSource).
 """
 
 import json
@@ -49,7 +50,7 @@ from engine.config import (
     SKINCARE_RECENT_YEARS,
 )
 from engine.gold import load_threads
-from engine.ingredients import ingredient_type_name, ingredients_of_type, talk_words
+from engine.ingredients import ingredient_type_name, ingredients_of_type, talk_words, wanted_types
 from engine.models import Thread
 from engine.parse_reddit import ParseRedditClient
 from engine.query import LOOKALIKES, PRODUCT_TYPES, TITLE_WORDS, ParsedQuery
@@ -179,8 +180,14 @@ class LocalSource:
     with the full list of problems (engine.gold.GoldSetError), rather than quietly leaving the thread out.
     `threads`: the folder's threads already read (the library kept in memory between answers, engine.library_cache;
     12 Oct 2026), so the folder isn't read again. `remembered`: where to keep what retrieval works out from them that
-    doesn't depend on the request (each thread's readable copy, and how much it is about each product), given with the
-    kept library so the next answer finds it done; by default, kept by this source alone.
+    doesn't depend on the request (each thread's readable copy, how much it is about each product, and whether its title
+    names another type), given with the kept library so the next answer finds it done; by default, kept by this source
+    alone.
+
+    The threads come in module 2's graded order, need-led since 14 Oct 2026 (Noemi's decision 3 of 14 Oct): for a
+    request with needs, the threads whose title or post talks about them come first, most needs first (_need_led), so an
+    answer's first reading (the pipeline's first PIPELINE_MAX_THREADS) is about what was asked, not about the biggest
+    general threads.
     """
 
     def __init__(self, folder: Path, skip_broken: bool = False, threads: list[Thread] | None = None,
@@ -211,8 +218,32 @@ class LocalSource:
                 if graded is not None:
                     graded += talk_points(self._talking(t, about)) if about else 0.0
                     scored.append(((graded, points, t.num_comments), t))
-        best = sorted(scored, key=lambda pair: pair[0], reverse=True)
-        return [t for _, t in best[:limit]]
+        best = [t for _, t in sorted(scored, key=lambda pair: pair[0], reverse=True)]
+        return self._need_led(best, query)[:limit]
+
+    def _need_led(self, threads: list[Thread], query: ParsedQuery) -> list[Thread]:
+        """The threads with those about the request's needs first, most needs first, each part in the order given
+        (14 Oct 2026, Noemi's decision 3: need-led thread choice). A thread is about a need when its title or post talks
+        about it in any of the need's words (engine.needs.thread_needs: "greasy" is "oily"), unless its title names
+        another type of product and not the one asked for. A request without needs keeps the order given: the graded
+        one, where a big general thread had outweighed a smaller one asking the request's exact question. So does an
+        ingredient-led request ("salicylic acid for acne"): its threads come with those whose comments talk about its
+        ingredient most first (talk_points, 13 Oct 2026), and on the library its need had put acne cleanser threads (a
+        rinse-off form its answer can't show) ahead of them, losing its one pick."""
+        from engine.needs import request_needs, thread_needs  # here: engine.needs builds on this module
+
+        needs = request_needs(query)
+        if not needs or query.ingredient_led:
+            return threads
+        titled = {t.id: self._titled_as_another_type(t, query) for t in threads}
+        return sorted(threads, key=lambda t: -len(thread_needs(t, needs, titled[t.id])))  # stable: the order given
+
+    def _titled_as_another_type(self, thread: Thread, query: ParsedQuery) -> bool:
+        """titled_as_another_type(thread.title, query), worked out once per thread and request type."""
+        key = ("titled as another type", thread.id, query.product_type)
+        if key not in self._remembered:
+            self._remembered[key] = titled_as_another_type(thread.title, query)
+        return self._remembered[key]
 
     def _readable(self, category: str) -> list[Thread]:
         """The category's threads without their deleted or removed comments, made once (latency, 12 Oct 2026). Copies:
@@ -235,6 +266,18 @@ class LocalSource:
         if key not in self._remembered:
             self._remembered[key] = talking(thread, product_type)
         return self._remembered[key]
+
+
+def titled_as_another_type(title: str, query: ParsedQuery) -> bool:
+    """Whether a thread's title names another type of product of the request's category, and none it asks for
+    ("SPF for oily skin?" for a moisturiser request; for an ingredient-led request, any type that can carry its
+    ingredient is one it asks for: engine.ingredients.wanted_types). Its post may name the requested product in passing:
+    the thread is about the other one (14 Oct 2026)."""
+    wanted = set(wanted_types(query.product_type)) | {query.product_type}
+    if any(mentions_product(title, w) for w in wanted):
+        return False
+    return any(mentions_product(title, p.name) for p in PRODUCT_TYPES
+               if p.category == query.category and p.name not in wanted)
 
 
 def talking(thread: Thread, product_type: str) -> int:
@@ -709,6 +752,8 @@ _STOPWORDS = {
     "actually", "really", "very", "good", "great", "nice", "best", "need", "want", "looking", "something", "some",
     "any", "skin", "hair", "under", "over", "less", "more", "max", "around", "about", "budget", "between", "than", "up",
     "pounds", "pound", "quid", "euros", "euro", "dollars", "bucks", "usd", "gbp", "eur",
+    # 14 Oct 2026: "that actually works" says how well, not what for; a scalp is to haircare what skin is to skincare.
+    "work", "worked", "working", "scalp",
 }
 
 

@@ -223,3 +223,12 @@ def test_a_need_typed_as_a_verb_gets_words_that_read_well():
     from engine import answer as wording
 
     assert wording.NEED_LABELS["strip"] == "not stripping the skin"
+
+
+def test_haircare_and_kitchen_needs_get_words_that_read_well():
+    # 14 Oct 2026 (need-led thread choice): "3 of them about frizz or curly hair", never "about frizzy or curly".
+    assert wording.NEED_LABELS["frizzy"] == "frizz" and wording.NEED_LABELS["curly"] == "curly hair"
+    assert wording.NEED_LABELS["wavy"] == "wavy hair" and wording.NEED_LABELS["colour-treated"] == "colour-treated hair"
+    assert wording.NEED_LABELS["itchy scalp"] == "an itchy scalp"
+    assert wording.NEED_LABELS["sensitive scalp"] == "a sensitive scalp"
+    assert wording.NEED_LABELS["quiet"] == "noise" and wording.NEED_LABELS["glass top stove"] == "glass-top stoves"
