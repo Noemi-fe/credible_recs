@@ -607,7 +607,10 @@ def test_getting_ready_answers_the_taxonomys_types_after_every_other_request():
 
     assert web.WARM_PRODUCT_TYPES == tuple(p.name for p in FIRST_PRODUCT_TYPES)
     assert web.WARM_TAXONOMY_TYPES == tuple(p.name for p in PRODUCT_TYPES[len(FIRST_PRODUCT_TYPES):])
-    assert len(web.WARM_TAXONOMY_TYPES) == 351 and "robot vacuum" in web.WARM_TAXONOMY_TYPES
+    # Changed on purpose 14 Oct 2026 (the routing audit): 47 more types (kitchen knives, grinders, bakeware and gadgets;
+    # pocket, outdoor, whittling and craft knives, box cutters; camping cookware). Was: 351. Getting ready still starts
+    # no warm answer after WARM_UP_ANSWERS_SECONDS, so its time doesn't grow: the types left are warmed by the pings.
+    assert len(web.WARM_TAXONOMY_TYPES) == 398 and "robot vacuum" in web.WARM_TAXONOMY_TYPES
     warmed = web.warm_requests()
     assert len(warmed) == len(set(warmed))  # each once
     likely = {text for path in web.WARM_FIRST_FILES for text in web._requests_in(path)}

@@ -279,9 +279,9 @@ def test_hair_tools_and_air_conditioners_are_general_products_never_haircare():
 # --- Words inside another product's name (11 Oct 2026) ---
 
 @pytest.mark.parametrize("text, not_this", [
-    ("ice cream maker", "moisturiser"),
+    ("ice cream scoop", "moisturiser"),
     ("coffee pot for camping", "saucepan"),
-    ("sheet pan for roasting vegetables", "frying pan"),
+    ("dust pan and brush", "frying pan"),
     ("sun hat for the beach", "sunscreen"),
 ])
 def test_a_word_inside_another_products_name_is_not_that_product(text, not_this):
@@ -289,9 +289,16 @@ def test_a_word_inside_another_products_name_is_not_that_product(text, not_this)
     # Changed on purpose 14 Oct 2026 (kitchen appliances, Noemi's decision 3): "crock pot for stews" and "instant pot
     # that lasts" were examples here; they name a slow cooker and a pressure cooker now (below). "coffee pot" takes
     # their place: still a look-alike.
+    # Changed on purpose again the same day (the routing audit): an ice cream maker and a sheet pan are module 1's own
+    # types now (below), so an ice cream scoop and a dust pan take their places: still look-alikes.
     routing = classify(text)
     assert routing.product_type != not_this
     assert routing.status == "clarify"
+
+
+def test_an_ice_cream_maker_and_a_sheet_pan_are_kitchen_types_of_their_own():
+    assert classify("ice cream maker").product_type == "ice cream maker"
+    assert classify("sheet pan for roasting vegetables").product_type == "baking tray"
 
 
 def test_a_crock_pot_and_an_instant_pot_are_appliances_not_saucepans():
@@ -300,7 +307,10 @@ def test_a_crock_pot_and_an_instant_pot_are_appliances_not_saucepans():
 
 
 def test_a_vacuum_sealer_is_not_a_vacuum_cleaner():
-    assert classify("vacuum sealer for sous vide").status == "clarify"
+    # Changed on purpose 14 Oct 2026 (the routing audit): a vacuum sealer is a kitchen type of its own now (the open
+    # model had put it in the general category's home department). Was: the rules asked.
+    routing = classify("vacuum sealer for sous vide")
+    assert (routing.status, routing.category, routing.product_type) == ("ok", "kitchen", "vacuum sealer")
     # Changed on purpose 14 Oct 2026 (the general category): a vacuum cleaner is a product now. Was: out of scope.
     assert classify("best vacuum for pet hair").product_type == "vacuum cleaner"
 

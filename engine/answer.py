@@ -153,7 +153,7 @@ from engine.credibility import GENERIC_NAME_WORDS
 from engine.match_products import FILLER_WORDS, known_aliases
 from engine.memo import Table
 from engine.rank import KindNote, ProductScore, RankingResult, ScoredMention, ScoreBreakdown, is_credible
-from engine.query import LOOKALIKES, PRODUCT_TYPES
+from engine.query import LOOKALIKE_PHRASES, PRODUCT_TYPES
 from engine.sources import mentions_product
 from engine.summaries import Summary, shown_problems, summary_key, text_problems
 from engine.text import one_edit_apart
@@ -1613,19 +1613,24 @@ def _named_types_of(kind: str, category: str) -> set[str]:
 
 
 def _a_lookalike_of(kind: str, product_type: str) -> bool:
-    """Whether a kind's name holds one of module 1's look-alikes of a listed type (engine.query.LOOKALIKES): a phrase
-    holding one of the type's own words that names something else (14 Oct 2026). An "immersion blender" in a blender
-    answer, a "bread knife" in a chef's knife one (the other kinds of knife, 13 Oct 2026), a "sheet pan" in a frying pan
-    one: advice about another product, as an immersion blender was for a blender when it was the open model's type."""
+    """Whether a kind's name holds one of module 1's look-alikes of a listed type (engine.query.LOOKALIKE_PHRASES): a
+    phrase holding one of the type's own words that names something else (14 Oct 2026). An "immersion blender" in a
+    blender answer, a "bread knife" in a chef's knife one (the other kinds of knife, 13 Oct 2026), a "sheet pan" in a
+    frying pan one: advice about another product, as an immersion blender was for a blender when it was the open model's
+    type."""
     pattern = _lookalikes_of(product_type)
     return pattern is not None and bool(pattern.search(_plain(kind)))
 
 
 @cache
 def _lookalikes_of(product_type: str) -> re.Pattern | None:
-    """Module 1's look-alikes holding one of the type's own words (its names and clue words), as one pattern."""
+    """Module 1's look-alikes holding one of the type's own words (its names and clue words), as one pattern. Every
+    phrase module 1 knows as one (engine.query.LOOKALIKE_PHRASES), also those that are other types' names now (14 Oct
+    2026, the routing audit: an immersion blender, a bread knife, a sheet pan), never one of the type's own names."""
+    own = {k for p in PRODUCT_TYPES if p.name == product_type for k in p.keywords}
     words = {w for p in PRODUCT_TYPES if p.name == product_type for w in p.keywords + p.hints}
-    phrases = [phrase for phrase in LOOKALIKES if any(re.search(rf"\b{re.escape(w)}s?\b", phrase) for w in words)]
+    phrases = [phrase for phrase in LOOKALIKE_PHRASES if phrase not in own and phrase.removesuffix("s") not in own
+               and any(re.search(rf"\b{re.escape(w)}s?\b", phrase) for w in words)]
     if not phrases:
         return None
     return re.compile(rf"\b(?:{'|'.join(re.escape(phrase) for phrase in phrases)})s?\b")

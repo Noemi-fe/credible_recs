@@ -36,7 +36,8 @@
     "french door fridge",
     "mini fridge",
     "wine fridge",
-    "larder fridge"
+    "larder fridge",
+    "wine cooler"
    ],
    "title_words": [
     "fridge",
@@ -279,6 +280,1059 @@
    ]
   },
   {
+   "name": "paring knife",
+   "plural": "paring knives",
+   "category": "kitchen",
+   "keywords": [
+    "paring knife",
+    "paring knives",
+    "petty knife",
+    "petty knives",
+    "peeling knife",
+    "peeling knives",
+    "bird's beak knife",
+    "birds beak knife",
+    "tourne knife",
+    "kitchen utility knife",
+    "kitchen utility knives",
+    "utility kitchen knife"
+   ],
+   "title_words": [
+    "paring knife",
+    "paring",
+    "petty"
+   ],
+   "subreddits": [
+    "chefknives",
+    "Cooking",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "bread knife",
+   "plural": "bread knives",
+   "category": "kitchen",
+   "keywords": [
+    "bread knife",
+    "bread knives",
+    "serrated bread knife",
+    "serrated bread knives",
+    "serrated knife",
+    "serrated knives",
+    "bread slicing knife"
+   ],
+   "title_words": [
+    "bread knife",
+    "serrated"
+   ],
+   "subreddits": [
+    "chefknives",
+    "Cooking",
+    "BuyItForLife",
+    "Baking"
+   ]
+  },
+  {
+   "name": "cleaver",
+   "plural": "cleavers",
+   "category": "kitchen",
+   "keywords": [
+    "cleaver",
+    "cleavers",
+    "meat cleaver",
+    "meat cleavers",
+    "chinese cleaver",
+    "chinese cleavers",
+    "vegetable cleaver",
+    "vegetable cleavers",
+    "chinese chef knife",
+    "chinese chef's knife",
+    "chinese chefs knife",
+    "cai dao",
+    "bone cleaver",
+    "butcher cleaver"
+   ],
+   "title_words": [
+    "cleaver"
+   ],
+   "subreddits": [
+    "chefknives",
+    "Cooking",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "steak knife",
+   "plural": "steak knives",
+   "category": "kitchen",
+   "keywords": [
+    "steak knife",
+    "steak knives",
+    "steak knife set",
+    "steak knife sets"
+   ],
+   "title_words": [
+    "steak knife",
+    "steak knives"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "chefknives",
+    "Cooking"
+   ]
+  },
+  {
+   "name": "boning knife",
+   "plural": "boning knives",
+   "category": "kitchen",
+   "keywords": [
+    "boning knife",
+    "boning knives",
+    "deboning knife",
+    "deboning knives",
+    "honesuki",
+    "breaking knife"
+   ],
+   "title_words": [
+    "boning knife",
+    "honesuki"
+   ],
+   "subreddits": [
+    "chefknives",
+    "Cooking",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "fillet knife",
+   "plural": "fillet knives",
+   "category": "kitchen",
+   "keywords": [
+    "fillet knife",
+    "fillet knives",
+    "filleting knife",
+    "filleting knives",
+    "filet knife",
+    "filet knives",
+    "fish fillet knife",
+    "deba",
+    "deba knife"
+   ],
+   "title_words": [
+    "fillet knife",
+    "filleting"
+   ],
+   "subreddits": [
+    "chefknives",
+    "Cooking",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "carving knife",
+   "plural": "carving knives",
+   "category": "kitchen",
+   "keywords": [
+    "carving knife",
+    "carving knives",
+    "slicing knife",
+    "slicing knives",
+    "slicer knife",
+    "brisket knife",
+    "brisket slicer",
+    "sujihiki",
+    "carving set",
+    "ham knife",
+    "salmon knife",
+    "granton slicer"
+   ],
+   "title_words": [
+    "carving knife",
+    "slicing knife",
+    "slicer",
+    "sujihiki"
+   ],
+   "subreddits": [
+    "chefknives",
+    "Cooking",
+    "BuyItForLife",
+    "BBQ"
+   ]
+  },
+  {
+   "name": "nakiri",
+   "plural": "nakiris",
+   "category": "kitchen",
+   "keywords": [
+    "nakiri",
+    "nakiris",
+    "nakiri knife",
+    "nakiri knives",
+    "usuba",
+    "usuba knife"
+   ],
+   "title_words": [
+    "nakiri"
+   ],
+   "subreddits": [
+    "chefknives",
+    "Cooking"
+   ]
+  },
+  {
+   "name": "pepper grinder",
+   "plural": "pepper grinders",
+   "category": "kitchen",
+   "keywords": [
+    "pepper grinder",
+    "pepper grinders",
+    "pepper mill",
+    "pepper mills",
+    "peppermill",
+    "peppermills",
+    "salt grinder",
+    "salt grinders",
+    "salt mill",
+    "salt mills",
+    "salt and pepper grinder",
+    "salt and pepper grinders",
+    "salt and pepper mill",
+    "salt and pepper mills",
+    "electric pepper grinder",
+    "electric salt and pepper grinder"
+   ],
+   "title_words": [
+    "pepper grinder",
+    "pepper mill",
+    "salt and pepper"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Cooking",
+    "AskCulinary"
+   ]
+  },
+  {
+   "name": "spice grinder",
+   "plural": "spice grinders",
+   "category": "kitchen",
+   "keywords": [
+    "spice grinder",
+    "spice grinders",
+    "spice mill",
+    "spice mills",
+    "electric spice grinder"
+   ],
+   "title_words": [
+    "spice grinder"
+   ],
+   "subreddits": [
+    "Cooking",
+    "AskCulinary",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "meat grinder",
+   "plural": "meat grinders",
+   "category": "kitchen",
+   "keywords": [
+    "meat grinder",
+    "meat grinders",
+    "meat mincer",
+    "meat mincers",
+    "mincer",
+    "mincers",
+    "mincing machine",
+    "electric mincer",
+    "electric meat grinder",
+    "sausage stuffer",
+    "sausage maker"
+   ],
+   "title_words": [
+    "meat grinder",
+    "mincer"
+   ],
+   "subreddits": [
+    "Cooking",
+    "AskCulinary",
+    "smoking",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "baking tray",
+   "plural": "baking trays",
+   "category": "kitchen",
+   "keywords": [
+    "baking tray",
+    "baking trays",
+    "sheet pan",
+    "sheet pans",
+    "baking sheet",
+    "baking sheets",
+    "cookie sheet",
+    "cookie sheets",
+    "half sheet pan",
+    "half sheet pans",
+    "quarter sheet pan",
+    "sheet tray",
+    "roasting tin",
+    "roasting tins",
+    "roasting tray",
+    "roasting trays",
+    "roasting pan",
+    "roasting pans",
+    "oven tray",
+    "pizza pan",
+    "pizza pans",
+    "pizza tray",
+    "jelly roll pan"
+   ],
+   "title_words": [
+    "sheet pan",
+    "baking tray",
+    "baking sheet",
+    "roasting tin"
+   ],
+   "subreddits": [
+    "Baking",
+    "Cooking",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "cake tin",
+   "plural": "cake tins",
+   "category": "kitchen",
+   "keywords": [
+    "cake tin",
+    "cake tins",
+    "cake pan",
+    "cake pans",
+    "springform pan",
+    "springform pans",
+    "springform tin",
+    "springform",
+    "loaf tin",
+    "loaf tins",
+    "loaf pan",
+    "loaf pans",
+    "muffin tin",
+    "muffin tins",
+    "muffin pan",
+    "muffin pans",
+    "cupcake tin",
+    "cupcake pan",
+    "bundt pan",
+    "bundt pans",
+    "bundt tin",
+    "pie dish",
+    "pie dishes",
+    "pie tin",
+    "pie pan",
+    "pie pans",
+    "tart tin",
+    "tart pan",
+    "brownie pan",
+    "brownie tin",
+    "9x13 pan",
+    "baking tin",
+    "baking tins",
+    "baking pan",
+    "baking pans",
+    "sandwich tin"
+   ],
+   "title_words": [
+    "cake tin",
+    "cake pan",
+    "loaf tin",
+    "springform",
+    "muffin tin",
+    "bundt"
+   ],
+   "subreddits": [
+    "Baking",
+    "BuyItForLife",
+    "Cooking"
+   ]
+  },
+  {
+   "name": "bread maker",
+   "plural": "bread makers",
+   "category": "kitchen",
+   "keywords": [
+    "bread maker",
+    "bread makers",
+    "breadmaker",
+    "breadmakers",
+    "bread machine",
+    "bread machines",
+    "bread making machine"
+   ],
+   "title_words": [
+    "bread maker",
+    "bread machine",
+    "breadmaker"
+   ],
+   "subreddits": [
+    "Baking",
+    "BuyItForLife",
+    "Cooking",
+    "Appliances"
+   ]
+  },
+  {
+   "name": "ice cream maker",
+   "plural": "ice cream makers",
+   "category": "kitchen",
+   "keywords": [
+    "ice cream maker",
+    "ice cream makers",
+    "ice cream machine",
+    "ice cream machines",
+    "gelato maker",
+    "frozen yogurt maker",
+    "ninja creami",
+    "creami"
+   ],
+   "title_words": [
+    "ice cream maker",
+    "ice cream machine",
+    "creami"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Cooking",
+    "Baking"
+   ]
+  },
+  {
+   "name": "sandwich maker",
+   "plural": "sandwich makers",
+   "category": "kitchen",
+   "keywords": [
+    "sandwich maker",
+    "sandwich makers",
+    "toastie maker",
+    "toastie makers",
+    "toasted sandwich maker",
+    "sandwich toaster",
+    "sandwich toasters",
+    "panini press",
+    "panini maker",
+    "panini grill",
+    "sandwich press",
+    "toastie machine",
+    "jaffle maker",
+    "jaffle iron"
+   ],
+   "title_words": [
+    "sandwich maker",
+    "toastie maker",
+    "panini press",
+    "sandwich toaster"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Cooking",
+    "Appliances"
+   ]
+  },
+  {
+   "name": "electric grill",
+   "plural": "electric grills",
+   "category": "kitchen",
+   "keywords": [
+    "electric grill",
+    "electric grills",
+    "indoor grill",
+    "indoor grills",
+    "contact grill",
+    "contact grills",
+    "george foreman grill",
+    "health grill",
+    "smokeless grill",
+    "electric griddle",
+    "electric griddles",
+    "raclette grill",
+    "raclette",
+    "teppanyaki grill"
+   ],
+   "title_words": [
+    "electric grill",
+    "indoor grill",
+    "george foreman",
+    "griddle"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Cooking",
+    "Appliances"
+   ]
+  },
+  {
+   "name": "pasta maker",
+   "plural": "pasta makers",
+   "category": "kitchen",
+   "keywords": [
+    "pasta maker",
+    "pasta makers",
+    "pasta machine",
+    "pasta machines",
+    "pasta roller",
+    "pasta rollers",
+    "pasta extruder",
+    "electric pasta maker"
+   ],
+   "title_words": [
+    "pasta maker",
+    "pasta machine"
+   ],
+   "subreddits": [
+    "Cooking",
+    "AskCulinary",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "soda maker",
+   "plural": "soda makers",
+   "category": "kitchen",
+   "keywords": [
+    "soda maker",
+    "soda makers",
+    "sodastream",
+    "soda stream",
+    "sparkling water maker",
+    "sparkling water makers",
+    "soda machine",
+    "carbonator",
+    "aarke"
+   ],
+   "title_words": [
+    "sodastream",
+    "soda maker",
+    "sparkling water"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Appliances"
+   ]
+  },
+  {
+   "name": "ice maker",
+   "plural": "ice makers",
+   "category": "kitchen",
+   "keywords": [
+    "ice maker",
+    "ice makers",
+    "countertop ice maker",
+    "nugget ice maker",
+    "ice machine",
+    "ice machines",
+    "ice maker machine"
+   ],
+   "title_words": [
+    "ice maker"
+   ],
+   "subreddits": [
+    "Appliances",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "popcorn maker",
+   "plural": "popcorn makers",
+   "category": "kitchen",
+   "keywords": [
+    "popcorn maker",
+    "popcorn makers",
+    "popcorn machine",
+    "popcorn machines",
+    "popcorn popper",
+    "popcorn poppers",
+    "air popper",
+    "popcorn kettle",
+    "whirley pop",
+    "stovetop popcorn popper"
+   ],
+   "title_words": [
+    "popcorn maker",
+    "popcorn machine",
+    "popper"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Cooking"
+   ]
+  },
+  {
+   "name": "sous vide cooker",
+   "plural": "sous vide cookers",
+   "category": "kitchen",
+   "keywords": [
+    "sous vide cooker",
+    "sous vide cookers",
+    "sous vide",
+    "sous-vide",
+    "sous vide machine",
+    "sous vide circulator",
+    "immersion circulator",
+    "immersion circulators",
+    "sous vide stick",
+    "anova precision cooker"
+   ],
+   "title_words": [
+    "sous vide",
+    "immersion circulator"
+   ],
+   "subreddits": [
+    "Cooking",
+    "AskCulinary",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "vacuum sealer",
+   "plural": "vacuum sealers",
+   "category": "kitchen",
+   "keywords": [
+    "vacuum sealer",
+    "vacuum sealers",
+    "food vacuum sealer",
+    "vacuum packer",
+    "vacuum packing machine",
+    "vacuum sealing machine",
+    "chamber vacuum sealer",
+    "foodsaver"
+   ],
+   "title_words": [
+    "vacuum sealer"
+   ],
+   "subreddits": [
+    "Cooking",
+    "BuyItForLife",
+    "smoking"
+   ]
+  },
+  {
+   "name": "immersion blender",
+   "plural": "immersion blenders",
+   "category": "kitchen",
+   "keywords": [
+    "immersion blender",
+    "immersion blenders",
+    "hand blender",
+    "hand blenders",
+    "stick blender",
+    "stick blenders",
+    "handheld blender",
+    "handheld blenders",
+    "hand-held blender",
+    "bamix"
+   ],
+   "title_words": [
+    "immersion blender",
+    "hand blender",
+    "stick blender"
+   ],
+   "subreddits": [
+    "Cooking",
+    "BuyItForLife",
+    "AskCulinary"
+   ]
+  },
+  {
+   "name": "deep fryer",
+   "plural": "deep fryers",
+   "category": "kitchen",
+   "keywords": [
+    "deep fryer",
+    "deep fryers",
+    "deep fat fryer",
+    "deep fat fryers",
+    "deep-fat fryer",
+    "electric deep fryer",
+    "chip fryer"
+   ],
+   "title_words": [
+    "deep fryer",
+    "deep fat fryer"
+   ],
+   "subreddits": [
+    "Cooking",
+    "BuyItForLife",
+    "AskCulinary"
+   ]
+  },
+  {
+   "name": "food dehydrator",
+   "plural": "food dehydrators",
+   "category": "kitchen",
+   "keywords": [
+    "food dehydrator",
+    "food dehydrators",
+    "dehydrator",
+    "dehydrators",
+    "food dryer",
+    "food dryers"
+   ],
+   "title_words": [
+    "dehydrator"
+   ],
+   "subreddits": [
+    "Cooking",
+    "BuyItForLife",
+    "smoking"
+   ]
+  },
+  {
+   "name": "mandoline",
+   "plural": "mandolines",
+   "category": "kitchen",
+   "keywords": [
+    "mandoline",
+    "mandolines",
+    "mandoline slicer",
+    "mandoline slicers",
+    "mandolin slicer",
+    "mandolin slicers",
+    "benriner"
+   ],
+   "title_words": [
+    "mandoline",
+    "mandolin"
+   ],
+   "subreddits": [
+    "Cooking",
+    "AskCulinary",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "meat thermometer",
+   "plural": "meat thermometers",
+   "category": "kitchen",
+   "keywords": [
+    "meat thermometer",
+    "meat thermometers",
+    "instant read thermometer",
+    "instant read thermometers",
+    "instant-read thermometer",
+    "probe thermometer",
+    "probe thermometers",
+    "cooking thermometer",
+    "food thermometer",
+    "kitchen thermometer",
+    "bbq thermometer",
+    "grill thermometer",
+    "wireless meat thermometer",
+    "thermapen",
+    "candy thermometer",
+    "sugar thermometer",
+    "oven thermometer"
+   ],
+   "title_words": [
+    "thermometer",
+    "thermapen"
+   ],
+   "subreddits": [
+    "Cooking",
+    "BBQ",
+    "smoking",
+    "AskCulinary",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "garlic press",
+   "plural": "garlic presses",
+   "category": "kitchen",
+   "keywords": [
+    "garlic press",
+    "garlic presses",
+    "garlic crusher",
+    "garlic crushers"
+   ],
+   "title_words": [
+    "garlic press"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Cooking"
+   ]
+  },
+  {
+   "name": "salad spinner",
+   "plural": "salad spinners",
+   "category": "kitchen",
+   "keywords": [
+    "salad spinner",
+    "salad spinners",
+    "salad dryer"
+   ],
+   "title_words": [
+    "salad spinner"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Cooking"
+   ]
+  },
+  {
+   "name": "can opener",
+   "plural": "can openers",
+   "category": "kitchen",
+   "keywords": [
+    "can opener",
+    "can openers",
+    "tin opener",
+    "tin openers",
+    "electric can opener"
+   ],
+   "title_words": [
+    "can opener",
+    "tin opener"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Cooking"
+   ]
+  },
+  {
+   "name": "peeler",
+   "plural": "peelers",
+   "category": "kitchen",
+   "keywords": [
+    "peeler",
+    "peelers",
+    "vegetable peeler",
+    "vegetable peelers",
+    "potato peeler",
+    "y-peeler",
+    "y peeler",
+    "speed peeler"
+   ],
+   "title_words": [
+    "peeler"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Cooking",
+    "AskCulinary"
+   ]
+  },
+  {
+   "name": "grater",
+   "plural": "graters",
+   "category": "kitchen",
+   "keywords": [
+    "grater",
+    "graters",
+    "cheese grater",
+    "cheese graters",
+    "box grater",
+    "microplane",
+    "zester",
+    "zesters",
+    "rasp grater"
+   ],
+   "title_words": [
+    "grater",
+    "microplane"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Cooking",
+    "AskCulinary"
+   ]
+  },
+  {
+   "name": "mixing bowl",
+   "plural": "mixing bowls",
+   "category": "kitchen",
+   "keywords": [
+    "mixing bowl",
+    "mixing bowls"
+   ],
+   "title_words": [
+    "mixing bowl"
+   ],
+   "subreddits": [
+    "Baking",
+    "BuyItForLife",
+    "Cooking"
+   ]
+  },
+  {
+   "name": "food storage container",
+   "plural": "food storage containers",
+   "category": "kitchen",
+   "keywords": [
+    "food storage container",
+    "food storage containers",
+    "food container",
+    "food containers",
+    "meal prep container",
+    "meal prep containers",
+    "glass food containers",
+    "glass storage containers",
+    "tupperware",
+    "pyrex containers"
+   ],
+   "title_words": [
+    "food storage",
+    "containers",
+    "tupperware"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Cooking"
+   ]
+  },
+  {
+   "name": "cutlery",
+   "plural": "cutlery",
+   "category": "kitchen",
+   "keywords": [
+    "cutlery",
+    "cutlery set",
+    "flatware",
+    "flatware set",
+    "silverware",
+    "silverware set",
+    "butter knife",
+    "butter knives",
+    "table knife",
+    "table knives",
+    "dinner knife",
+    "dinner knives",
+    "fish knife",
+    "fish knives"
+   ],
+   "title_words": [
+    "cutlery",
+    "flatware",
+    "silverware"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Cooking"
+   ]
+  },
+  {
+   "name": "dinnerware",
+   "plural": "dinnerware",
+   "category": "kitchen",
+   "keywords": [
+    "dinnerware",
+    "dinnerware set",
+    "dinner set",
+    "dinner sets",
+    "dinner plate",
+    "dinner plates",
+    "side plates",
+    "crockery",
+    "crockery set"
+   ],
+   "title_words": [
+    "dinnerware",
+    "plates",
+    "dinner set"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Cooking"
+   ]
+  },
+  {
+   "name": "wine glass",
+   "plural": "wine glasses",
+   "category": "kitchen",
+   "keywords": [
+    "wine glass",
+    "wine glasses",
+    "champagne glasses",
+    "champagne flutes",
+    "whisky glass",
+    "whisky glasses",
+    "whiskey glasses",
+    "beer glasses",
+    "pint glasses",
+    "cocktail glasses",
+    "drinking glasses",
+    "glassware"
+   ],
+   "title_words": [
+    "wine glasses",
+    "glasses",
+    "glassware"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Cooking"
+   ]
+  },
+  {
+   "name": "cocktail shaker",
+   "plural": "cocktail shakers",
+   "category": "kitchen",
+   "keywords": [
+    "cocktail shaker",
+    "cocktail shakers",
+    "boston shaker",
+    "cobbler shaker"
+   ],
+   "title_words": [
+    "cocktail shaker",
+    "shaker"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Cooking"
+   ]
+  },
+  {
+   "name": "wine opener",
+   "plural": "wine openers",
+   "category": "kitchen",
+   "keywords": [
+    "wine opener",
+    "wine openers",
+    "corkscrew",
+    "corkscrews",
+    "electric wine opener",
+    "waiter's friend",
+    "wine key"
+   ],
+   "title_words": [
+    "corkscrew",
+    "wine opener"
+   ],
+   "subreddits": [
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "kitchen scissors",
+   "plural": "kitchen scissors",
+   "category": "kitchen",
+   "keywords": [
+    "kitchen scissors",
+    "kitchen shears",
+    "poultry shears"
+   ],
+   "title_words": [
+    "kitchen scissors",
+    "kitchen shears"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Cooking"
+   ]
+  },
+  {
    "name": "hair gel",
    "plural": "hair gels",
    "category": "haircare",
@@ -370,6 +1424,13 @@
     "VacuumCleaners",
     "BuyItForLife",
     "Frugal"
+   ],
+   "lookalikes": [
+    "pool vacuum",
+    "vacuum storage",
+    "vacuum pump",
+    "vacuum tube",
+    "vacuum chamber"
    ]
   },
   {
@@ -476,7 +1537,8 @@
     "pocket sprung mattress",
     "bed in a box",
     "spring mattress",
-    "firm mattress"
+    "firm mattress",
+    "pillow top mattress"
    ],
    "title_words": [
     "mattress"
@@ -588,7 +1650,9 @@
     "pillowcase",
     "pillowcases",
     "bamboo sheets",
-    "cotton sheets"
+    "cotton sheets",
+    "pillow case",
+    "pillow cases"
    ],
    "title_words": [
     "sheets",
@@ -600,8 +1664,6 @@
     "HomeDecorating"
    ],
    "lookalikes": [
-    "baking sheet",
-    "cookie sheet",
     "sheet mask"
    ]
   },
@@ -653,6 +1715,14 @@
     "BuyItForLife",
     "HomeDecorating",
     "Mattress"
+   ],
+   "lookalikes": [
+    "garden bed",
+    "raised bed",
+    "flower bed",
+    "bed bug",
+    "bed rail",
+    "camp bed"
    ]
   },
   {
@@ -696,7 +1766,8 @@
     "reading chair",
     "accent chair",
     "lounge chair",
-    "recliner chair"
+    "recliner chair",
+    "rocking chair"
    ],
    "title_words": [
     "armchair"
@@ -736,7 +1807,14 @@
     "Frugal"
    ],
    "lookalikes": [
-    "massage chair"
+    "massage chair",
+    "shower chair",
+    "bath chair",
+    "bean bag chair",
+    "deck chair",
+    "egg chair",
+    "swing chair",
+    "hanging chair"
    ]
   },
   {
@@ -856,6 +1934,12 @@
    "subreddits": [
     "BuyItForLife",
     "HomeDecorating"
+   ],
+   "lookalikes": [
+    "capsule wardrobe",
+    "wardrobe essentials",
+    "wardrobe basics",
+    "wardrobe staples"
    ]
   },
   {
@@ -1196,6 +2280,14 @@
     "BuyItForLife",
     "HomeImprovement",
     "Frugal"
+   ],
+   "lookalikes": [
+    "pc fan",
+    "case fan",
+    "cpu fan",
+    "gpu fan",
+    "radiator fan",
+    "laptop fan"
    ]
   },
   {
@@ -1249,7 +2341,10 @@
    ],
    "lookalikes": [
     "water heater",
-    "pool heater"
+    "pool heater",
+    "patio heater",
+    "outdoor heater",
+    "garden heater"
    ]
   },
   {
@@ -1352,7 +2447,12 @@
    "lookalikes": [
     "dryer sheet",
     "dryer ball",
-    "dryer vent"
+    "dryer vent",
+    "shoe dryer",
+    "hand dryer",
+    "glove dryer",
+    "dish dryer",
+    "helmet dryer"
    ]
   },
   {
@@ -1420,6 +2520,9 @@
     "laundry",
     "BuyItForLife",
     "Frugal"
+   ],
+   "lookalikes": [
+    "dish drying rack"
    ]
   },
   {
@@ -2085,6 +3188,11 @@
     "buildapc",
     "BuyItForLife",
     "Frugal"
+   ],
+   "lookalikes": [
+    "computer glasses",
+    "desktop organiser",
+    "desktop organizer"
    ]
   },
   {
@@ -2115,7 +3223,13 @@
    "lookalikes": [
     "blood pressure monitor",
     "glucose monitor",
-    "air quality monitor"
+    "air quality monitor",
+    "co2 monitor",
+    "carbon dioxide monitor",
+    "tyre pressure monitor",
+    "tire pressure monitor",
+    "energy monitor",
+    "monitor light"
    ]
   },
   {
@@ -2462,6 +3576,11 @@
    "subreddits": [
     "BuyItForLife",
     "BudgetAudiophile"
+   ],
+   "lookalikes": [
+    "radio controlled",
+    "radio-controlled",
+    "radio control"
    ]
   },
   {
@@ -2524,6 +3643,12 @@
    "subreddits": [
     "projectors",
     "hometheater"
+   ],
+   "lookalikes": [
+    "projector screen",
+    "star projector",
+    "galaxy projector",
+    "night light projector"
    ]
   },
   {
@@ -2543,7 +3668,8 @@
     "streaming box",
     "android tv box",
     "google tv streamer",
-    "nvidia shield"
+    "nvidia shield",
+    "tv box"
    ],
    "title_words": [
     "fire stick",
@@ -2991,7 +4117,12 @@
     "wood router",
     "plunge router",
     "router table",
-    "router bit"
+    "router bit",
+    "trim router",
+    "palm router",
+    "cnc router",
+    "router for woodworking",
+    "router for wood"
    ]
   },
   {
@@ -3274,6 +4405,9 @@
     "CampingGear",
     "Ultralight",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "grow tent"
    ]
   },
   {
@@ -3340,7 +4474,8 @@
     "blow-up mattress",
     "inflatable mattress",
     "inflatable bed",
-    "camping air mattress"
+    "camping air mattress",
+    "camping mattress"
    ],
    "title_words": [
     "air mattress"
@@ -3750,6 +4885,132 @@
     "flashlight",
     "EDC",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "blow torch",
+    "kitchen torch",
+    "butane torch",
+    "cooking torch",
+    "culinary torch",
+    "propane torch",
+    "gas torch",
+    "welding torch",
+    "plumbing torch",
+    "creme brulee torch"
+   ]
+  },
+  {
+   "name": "pocket knife",
+   "plural": "pocket knives",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "pocket knife",
+    "pocket knives",
+    "pocketknife",
+    "pocketknives",
+    "folding knife",
+    "folding knives",
+    "edc knife",
+    "edc knives",
+    "penknife",
+    "penknives",
+    "pen knife",
+    "pen knives",
+    "jack knife",
+    "jackknife",
+    "swiss army knife",
+    "swiss army knives",
+    "lock knife",
+    "lockback knife",
+    "lockback",
+    "slip joint knife",
+    "slipjoint knife",
+    "keychain knife",
+    "keyring knife",
+    "multitool knife",
+    "multi tool knife",
+    "multi-tool knife",
+    "spyderco knife",
+    "benchmade knife",
+    "opinel knife",
+    "kershaw knife",
+    "civivi knife",
+    "buck knife",
+    "gerber knife",
+    "folder knife"
+   ],
+   "title_words": [
+    "pocket knife",
+    "folding knife",
+    "edc knife",
+    "swiss army",
+    "penknife",
+    "pocketknife",
+    "folder"
+   ],
+   "subreddits": [
+    "EDC",
+    "knives",
+    "BuyItForLife",
+    "CampingGear"
+   ]
+  },
+  {
+   "name": "outdoor knife",
+   "plural": "outdoor knives",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "outdoor knife",
+    "outdoor knives",
+    "fixed blade knife",
+    "fixed blade knives",
+    "fixed-blade knife",
+    "fixed blade",
+    "hunting knife",
+    "hunting knives",
+    "survival knife",
+    "survival knives",
+    "bushcraft knife",
+    "bushcraft knives",
+    "camping knife",
+    "camping knives",
+    "camp knife",
+    "sheath knife",
+    "belt knife",
+    "skinning knife",
+    "skinning knives",
+    "gutting knife",
+    "fishing knife",
+    "fishing knives",
+    "dive knife",
+    "dive knives",
+    "diving knife",
+    "diving knives",
+    "scuba knife",
+    "hiking knife",
+    "backpacking knife",
+    "mora knife",
+    "mora knives",
+    "morakniv",
+    "field knife"
+   ],
+   "title_words": [
+    "fixed blade",
+    "hunting knife",
+    "survival knife",
+    "bushcraft knife",
+    "camping knife",
+    "mora"
+   ],
+   "subreddits": [
+    "Bushcraft",
+    "knives",
+    "CampingGear",
+    "BuyItForLife",
+    "EDC",
+    "Fishing"
    ]
   },
   {
@@ -3766,7 +5027,10 @@
     "camping gas stove",
     "portable stove",
     "camping cooker",
-    "trangia"
+    "trangia",
+    "alcohol stove",
+    "spirit stove",
+    "meths stove"
    ],
    "title_words": [
     "camping stove"
@@ -3774,6 +5038,45 @@
    "subreddits": [
     "CampingGear",
     "Ultralight"
+   ]
+  },
+  {
+   "name": "camping cookware",
+   "plural": "camping cookware",
+   "category": "general",
+   "department": "outdoor",
+   "keywords": [
+    "camping cookware",
+    "camp cookware",
+    "camping pot",
+    "camping pots",
+    "camping pan",
+    "camping pans",
+    "camping kettle",
+    "camping kettles",
+    "camp kettle",
+    "backpacking pot",
+    "backpacking pots",
+    "backpacking cookware",
+    "titanium pot",
+    "titanium pots",
+    "mess tin",
+    "mess tins",
+    "billy can",
+    "billycan",
+    "backpacking kettle",
+    "hiking kettle"
+   ],
+   "title_words": [
+    "cookware",
+    "pot",
+    "cook kit",
+    "mess tin"
+   ],
+   "subreddits": [
+    "CampingGear",
+    "Ultralight",
+    "BuyItForLife"
    ]
   },
   {
@@ -3799,6 +5102,11 @@
    "subreddits": [
     "CampingGear",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "cpu cooler",
+    "air cooler",
+    "water cooler"
    ]
   },
   {
@@ -3984,7 +5292,11 @@
     "bike tyre",
     "bike tire",
     "bicycle tyre",
-    "bicycle tire"
+    "bicycle tire",
+    "dirt bike",
+    "motor bike",
+    "quad bike",
+    "pit bike"
    ]
   },
   {
@@ -4388,7 +5700,8 @@
    "lookalikes": [
     "coat hanger",
     "coat rack",
-    "coat hook"
+    "coat hook",
+    "lab coat"
    ]
   },
   {
@@ -4641,7 +5954,17 @@
    ],
    "lookalikes": [
     "suit bag",
-    "suit carrier"
+    "suit carrier",
+    "wet suit",
+    "dry suit",
+    "ski suit",
+    "snow suit",
+    "boiler suit",
+    "jump suit",
+    "track suit",
+    "body suit",
+    "sweat suit",
+    "flight suit"
    ]
   },
   {
@@ -4659,7 +5982,9 @@
     "board shorts",
     "one piece swimsuit",
     "swimsuits",
-    "bathing suit"
+    "bathing suit",
+    "swim suit",
+    "swim suits"
    ],
    "title_words": [
     "swimsuit",
@@ -5868,7 +7193,9 @@
     "calming dog bed",
     "pet bed",
     "dog crate bed",
-    "cat bed"
+    "cat bed",
+    "dog mattress",
+    "dog pillow"
    ],
    "title_words": [
     "dog bed"
@@ -5953,7 +7280,10 @@
     "elevated dog bowl",
     "automatic feeder",
     "pet feeder",
-    "cat feeder"
+    "cat feeder",
+    "dog food bowl",
+    "cat food bowl",
+    "food bowl"
    ],
    "title_words": [
     "bowl",
@@ -6156,7 +7486,9 @@
     "pet nail grinder",
     "nail clippers for dogs",
     "nail grinder for dogs",
-    "dog nail trimmer"
+    "dog nail trimmer",
+    "nail grinder",
+    "nail grinders"
    ],
    "title_words": [
     "nail clippers",
@@ -7165,6 +8497,40 @@
    ]
   },
   {
+   "name": "box cutter",
+   "plural": "box cutters",
+   "category": "general",
+   "department": "tools",
+   "keywords": [
+    "box cutter",
+    "box cutters",
+    "boxcutter",
+    "stanley knife",
+    "stanley knives",
+    "retractable knife",
+    "retractable knives",
+    "retractable utility knife",
+    "snap-off knife",
+    "snap off knife",
+    "snap-off blade knife",
+    "carpet knife",
+    "carpet knives",
+    "folding utility knife",
+    "olfa knife"
+   ],
+   "title_words": [
+    "box cutter",
+    "stanley knife",
+    "utility knife"
+   ],
+   "subreddits": [
+    "Tools",
+    "BuyItForLife",
+    "HomeImprovement",
+    "EDC"
+   ]
+  },
+  {
    "name": "oscillating tool",
    "plural": "oscillating tools",
    "category": "general",
@@ -7858,7 +9224,10 @@
     "airwrap",
     "dyson airwrap",
     "revlon one step",
-    "round brush dryer"
+    "round brush dryer",
+    "dryer brush",
+    "blow dryer brush",
+    "blow-dry brush"
    ],
    "title_words": [
     "hot air brush",
@@ -8570,6 +9939,9 @@
    "subreddits": [
     "Guitar",
     "BuyItForLife"
+   ],
+   "lookalikes": [
+    "car amp"
    ]
   },
   {
@@ -8587,7 +9959,10 @@
     "digital pianos",
     "piano keyboard",
     "88 key keyboard",
-    "88-key keyboard"
+    "88-key keyboard",
+    "musical keyboard",
+    "music keyboard",
+    "electronic keyboard"
    ],
    "hints": [
     "piano"
@@ -8801,6 +10176,70 @@
    ]
   },
   {
+   "name": "whittling knife",
+   "plural": "whittling knives",
+   "category": "general",
+   "department": "hobbies",
+   "keywords": [
+    "whittling knife",
+    "whittling knives",
+    "wood carving knife",
+    "wood carving knives",
+    "woodcarving knife",
+    "spoon carving knife",
+    "spoon carving knives",
+    "hook knife",
+    "hook knives",
+    "chip carving knife",
+    "sloyd knife",
+    "carving knife for wood"
+   ],
+   "title_words": [
+    "whittling",
+    "wood carving",
+    "carving knife"
+   ],
+   "subreddits": [
+    "Whittling",
+    "woodworking",
+    "Bushcraft",
+    "BuyItForLife"
+   ]
+  },
+  {
+   "name": "craft knife",
+   "plural": "craft knives",
+   "category": "general",
+   "department": "hobbies",
+   "keywords": [
+    "craft knife",
+    "craft knives",
+    "hobby knife",
+    "hobby knives",
+    "x-acto knife",
+    "xacto knife",
+    "exacto knife",
+    "x-acto",
+    "xacto",
+    "exacto",
+    "precision knife",
+    "swivel knife",
+    "craft scalpel",
+    "scalpel knife"
+   ],
+   "title_words": [
+    "craft knife",
+    "x-acto",
+    "xacto",
+    "hobby knife"
+   ],
+   "subreddits": [
+    "BuyItForLife",
+    "Tools",
+    "Frugal"
+   ]
+  },
+  {
    "name": "dash cam",
    "plural": "dash cams",
    "category": "general",
@@ -8853,6 +10292,16 @@
     "Tires",
     "cars",
     "MechanicAdvice"
+   ],
+   "lookalikes": [
+    "tyre iron",
+    "tire iron",
+    "tyre lever",
+    "tire lever",
+    "tyre pressure gauge",
+    "tire pressure gauge",
+    "tyre pressure monitor",
+    "tire pressure monitor"
    ]
   },
   {
