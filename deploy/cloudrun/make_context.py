@@ -29,10 +29,14 @@ class BundleError(Exception):
 
 
 def copy_library(library: Path, dest: Path) -> int:
-    """Copies the library files answers read into `dest`; returns how many."""
+    """Copies the library files answers read into `dest`; returns how many. A thread with no extraction yet is left out
+    (14 Oct 2026: answers never use one, and the bulk import left 1,133 waiting): it ships once extracted."""
     count = 0
+    extracted = {p.name for p in (Path(library) / "extracted").glob("*.json")}
     for pattern in LIBRARY_PATTERNS:
         for path in sorted(Path(library).glob(pattern)):
+            if path.parent.name == "threads" and path.name not in extracted:
+                continue
             target = Path(dest) / path.relative_to(library)
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(path, target)

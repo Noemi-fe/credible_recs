@@ -29,6 +29,19 @@ def test_the_bundle_holds_the_library_the_answers_read_and_nothing_else_of_it(tm
                       "data/library/threads/1abc.json"]  # the one-line summaries too (13 Oct 2026), not their to-do list
 
 
+def test_the_bundle_leaves_out_threads_not_extracted_yet(tmp_path):
+    # 14 Oct 2026 (the orchestrator, after the bulk import added 1,133 threads awaiting extraction): answers never use a
+    # thread with no extraction, so the image doesn't carry it (the server reads and checks fewer files as it starts);
+    # it ships once extracted. Gold-set threads aren't in the library folder at all.
+    repo = a_repo(tmp_path)
+    waiting = repo / "data" / "library" / "threads" / "1zzz.json"
+    waiting.write_text("{}", encoding="utf-8")
+    out = tmp_path / "bundle"
+    make_context.copy_library(repo / "data" / "library", out / "data" / "library")
+    assert not (out / "data" / "library" / "threads" / "1zzz.json").exists()
+    assert (out / "data" / "library" / "threads" / "1abc.json").exists()
+
+
 def test_a_bundle_with_a_secret_or_a_cache_is_refused(tmp_path):
     out = tmp_path / "bundle"
     out.mkdir()
