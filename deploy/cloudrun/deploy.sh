@@ -57,7 +57,10 @@ $GCLOUD storage buckets add-iam-policy-binding "gs://$BUCKET" --project "$PROJEC
 #    And on-demand reading's bucket (on_demand.sh): the queue and the threads read on demand, deleted at 37 days.
 if [ "$ON_DEMAND" = on ]; then on_demand_bucket; fi
 
-# 3. The site: public, one server at most, none when idle (the free tier). First the threads read on demand come into
+# 3. The site: public, one server at most, none when idle (the free tier).
+#    On Cloud Run's second-generation environment (14 Oct 2026, measured: getting ready warmed all 65 requests in 40.9 s
+#    there, against 19 of 65 in 122 s on the first generation, whose sandbox makes the engine's many small file reads
+#    slow); same price. First the threads read on demand come into
 #    data/library (through gcloud's sign-in), so the image holds them; when that fails they stay in the bucket, where
 #    the site finds them as it gets ready.
 if [ "$ON_DEMAND" = on ]; then
@@ -68,6 +71,7 @@ BUNDLE="$(mktemp -d)/bundle"
 .venv/bin/python -m deploy.cloudrun.make_context "$BUNDLE"
 $GCLOUD run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --source "$BUNDLE" \
     --allow-unauthenticated --memory 2Gi --cpu 1 --cpu-boost --max-instances 1 --min-instances 0 \
+    --execution-environment gen2 \
     --concurrency 8 --timeout 300 \
     --startup-probe "httpGet.path=/ready,httpGet.port=8080,periodSeconds=3,timeoutSeconds=2,failureThreshold=80" \
     --set-env-vars "^;^CREDIBLE_RECS_ALLOWED_HOSTS=${HOSTS};CREDIBLE_RECS_GOATCOUNTER=noemix;CREDIBLE_RECS_FEEDBACK_REPO=Noemix/credible-recs-feedback;CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}${ON_DEMAND_SITE_VARS}" \
