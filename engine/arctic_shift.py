@@ -258,10 +258,15 @@ class ArcticShiftClient:
     def _cached(self, key: dict, name: str):
         """The answer saved under `key` if it is younger than 48 hours, otherwise MISSING."""
         cache_file = self._cache_file(key)
-        if cache_file.exists():
+        try:
             entry = json.loads(cache_file.read_text(encoding="utf-8"))
-            if self._clock() - datetime.fromisoformat(entry["fetched_at"]) < MAX_AGE:
-                return entry[name]
+            fetched_at = datetime.fromisoformat(entry["fetched_at"])
+        except (FileNotFoundError, ValueError, KeyError):
+            # Not there, or not readable: another client sharing the folder may be writing it or have just purged it,
+            # or a killed run left it cut short (14 Oct 2026). Then it is no answer, and the question is asked again.
+            return MISSING
+        if self._clock() - fetched_at < MAX_AGE and name in entry:
+            return entry[name]
         return MISSING
 
     def _save(self, key: dict, name: str, value) -> None:
@@ -276,10 +281,12 @@ class ArcticShiftClient:
         for path in self.cache_dir.glob("*.json"):
             try:
                 fetched_at = datetime.fromisoformat(json.loads(path.read_text(encoding="utf-8"))["fetched_at"])
+            except FileNotFoundError:
+                continue  # another client sharing the folder purged it first (14 Oct 2026)
             except (ValueError, KeyError):
                 fetched_at = None
             if fetched_at is None or self._clock() - fetched_at >= MAX_AGE:
-                path.unlink()
+                path.unlink(missing_ok=True)
 
 
 # --- Reading a thread: from the archive's tree of comments to a flat list ---
