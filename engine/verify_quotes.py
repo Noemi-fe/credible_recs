@@ -23,6 +23,8 @@ import html
 import re
 import unicodedata
 
+from engine.memo import Table
+
 CURLY_TO_STRAIGHT = {"’": "'", "‘": "'", "‛": "'", "“": '"', "”": '"'}
 EMPHASIS_MARKS = frozenset("*_~")  # markdown for **bold**, *italics* or _italics_, and ~~strikethrough~~
 _ENTITY = re.compile(r"&(?:#[0-9]+|#[xX][0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]*);")  # &amp; &gt; &#39; &#x27;
@@ -33,7 +35,23 @@ def find_quote(body: str, quote: str) -> tuple[int, int] | None:
 
     The answer is (start, end), character positions in the body exactly as written, so body[start:end] is the
     matching text with its original formatting. An empty quote, or one made only of spaces, is never found.
+
+    It depends on the two texts alone, so each pair's answer is remembered (latency, 13 Oct 2026: writing an answer
+    checks each quote it shows four times, and every answer the same quotes again); a comment that changes is another
+    text, checked afresh.
     """
+    key = (body, quote)
+    found = _FOUND.get(key, _NOT_YET)
+    if found is _NOT_YET:
+        found = _FOUND.keep(key, _find_quote(body, quote))
+    return found
+
+
+_FOUND = Table()  # (body, quote) -> find_quote's answer
+_NOT_YET = object()  # what _FOUND gives for a pair it doesn't hold (None is an answer: not found)
+
+
+def _find_quote(body: str, quote: str) -> tuple[int, int] | None:
     wanted, _ = _plain(quote)
     wanted = wanted.strip(" ")
     if not wanted:
