@@ -186,6 +186,40 @@ def test_buying_questions_with_tips_or_favourites_are_still_chosen(tmp_path, lib
     assert chosen_ids(run(files, lib, dry_run=True), type_name) == {"1buy001"}
 
 
+@pytest.mark.parametrize("title, type_name", [
+    ("My parents' microwave looks scorched inside - should I be concerned?", "microwave"),
+    ("Is my damaged microwave still safe to use?", "microwave"),
+    ("My electric kettle stopped working after a year, why?", "electric kettle"),
+    ("Our dishwasher won't drain, how do I fix it?", "dishwasher"),
+])
+def test_a_question_about_a_fault_with_ones_own_unit_isnt_chosen(tmp_path, lib, title, type_name):
+    files = tmp_path / "files"
+    write_subreddit(files, "BuyItForLife", [post("1flt001", title)], some_comments("1flt001"))
+    result = run(files, lib, dry_run=True)
+    assert not chosen_ids(result, type_name)
+    assert result.left_out.get("a question about a fault with someone's own unit") == 1
+
+
+@pytest.mark.parametrize("title, type_name", [
+    ("My electric kettle stopped working after a year - which one should I buy?", "electric kettle"),
+    ("Our microwave died after 2 years. Recommendations for one that lasts?", "microwave"),
+    ("Is a ceramic frying pan safe? Which one would you recommend?", "frying pan"),
+])
+def test_a_fault_or_safety_question_that_asks_what_to_buy_is_still_chosen(tmp_path, lib, title, type_name):
+    files = tmp_path / "files"
+    write_subreddit(files, "BuyItForLife", [post("1buy002", title)], some_comments("1buy002"))
+    assert chosen_ids(run(files, lib, dry_run=True), type_name) == {"1buy002"}
+
+
+def test_threads_asking_for_recommendations_are_chosen_before_other_questions(tmp_path, lib, monkeypatch):
+    monkeypatch.setattr(bulk_import, "BULK_MAX_NEW_PER_TYPE", 1)
+    files = tmp_path / "files"
+    posts = [post("1q00001", "Should I bother with an electric kettle in a tiny flat?", num_comments=300, score=900),
+             post("1r00001", "Which electric kettle would you recommend?", num_comments=20)]
+    write_subreddit(files, "BuyItForLife", posts, [c for p in posts for c in some_comments(p["id"])])
+    assert chosen_ids(run(files, lib, dry_run=True), "electric kettle") == {"1r00001"}
+
+
 def test_a_post_named_by_a_look_alike_isnt_about_the_type(tmp_path, lib):
     files = tmp_path / "files"
     write_subreddit(files, "BuyItForLife", [post("1pot01", "Which crock pot should I buy?")], some_comments("1pot01"))
@@ -326,7 +360,7 @@ def test_an_html_code_in_a_title_names_no_type(tmp_path, lib):
 @pytest.mark.parametrize("title, category", [
     ("Which gloves last for working in a freezer?", "general"),
     ("Which French press lasts? Mine fits in my carry on bag", "kitchen"),
-    ("My freezer stopped working after a year, is it the fan?", "kitchen"),  # module 1 reads neither: the community's
+    ("My freezer stopped working after a year and the fan is noisy", "kitchen"),  # module 1 reads neither: the community's
 ])
 def test_a_thread_about_two_categories_types_takes_the_one_module_1_reads_in_its_title(tmp_path, lib, title,
                                                                                         category):

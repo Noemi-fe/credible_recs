@@ -18,7 +18,9 @@ Choosing uses modules 1 and 2's own rules; nothing new decides what a good threa
    (module 1's routing: r/acne only for spot treatments, for example), with real engagement (BULK_MIN_COMMENTS
    comments and a score of BULK_MIN_SCORE), not removed or deleted, not a recurring thread or a general megathread
    ("what's the one gadget..."), not a kitchen thread about food or using the gear (recipes, what to cook, tips) nor one
-   about doing without the type, posted from BULK_FIRST_YEAR on, and not already in the library or the gold set. The
+   about doing without the type, not a question about a fault or safety issue with someone's own unit ("is my damaged
+   microwave safe?", "my kettle stopped working, why?") unless it also asks what to buy, posted from BULK_FIRST_YEAR
+   on, and not already in the library or the gold set. The
    archive saved most posts weeks after they were written, but much of late 2023 within the hour, before their score
    and comment count had settled: for a post saved within a day of its writing, its comments in the file are counted
    instead, and its score isn't asked for.
@@ -28,8 +30,9 @@ Choosing uses modules 1 and 2's own rules; nothing new decides what a good threa
 3. How many. Each type aims at BULK_TYPE_TARGET threads about it, split as the library's mix (LIBRARY_MIX: advice 3,
    long-term use 1, warnings 2), and takes only the kinds it is short of, counting what the library already holds: the
    thinnest types and kinds get the most. At most BULK_MAX_NEW_PER_TYPE new threads per type in one run. Each kind
-   takes the best posts first, in module 2's graded order (engine.sources.rank_posts, judged as of the files' last day,
-   so skincare and haircare threads from the last three years of the files come first), with at most a fair share from
+   takes the best posts first: the threads asking for recommendations (which, best, recommend, vs...) before the rest,
+   each in module 2's graded order (engine.sources.rank_posts, judged as of the files' last day, so skincare and
+   haircare threads from the last three years of the files come first), with at most a fair share from
    any one subreddit (engine.sources.choose_mix). A request given with `--request` (need-led choice, Noemi's decision 3
    of 14 Oct 2026: "conditioner for curly hair") first takes up to BULK_PER_REQUEST threads whose title or post talks
    about its needs, ranked for it, whatever its type's cap: the type then counts them. A thread about two types is
@@ -236,6 +239,45 @@ _MEGATHREAD = re.compile(
 _WITHOUT = re.compile(r"\bwithout (using )?(a|an|my|the)\s+", re.IGNORECASE)
 
 
+# A question about a fault or safety issue with someone's own unit ("Is my damaged microwave safe?", "My kettle stopped
+# working, why?", "Our dishwasher won't drain, how do I fix it?") is a problem thread, not advice: its comments are about
+# that unit, rarely about which one to buy (the latency investigator's finding, approved 14 Oct 2026). One that also
+# asks what to buy ("...which one should I get?") is still a buying thread. Gear only (kitchen and general): "my scalp
+# itches, why?" is a haircare need.
+_OWN_UNIT = re.compile(
+    r"\b(my|mine|our|ours|(parents?|mum|mom|dad|wife|husband|partner|roommate|landlord|grandma|grandparents?|family)"
+    r"['’]?s?)\b", re.IGNORECASE)
+_FAULT = re.compile(
+    r"\b(safe|safety|unsafe|dangerous|concern(ed|ing)?|worried|normal|what['’]?s wrong|wrong with|stopped working"
+    r"|not working|isn['’]?t working|won['’]?t (turn on|start|work|heat|drain|close|open|spin)"
+    r"|doesn['’]?t (work|heat|turn on|drain)|not heating|broke|broken|damaged|cracked|leak\w*|spark\w*|smok\w*"
+    r"|smell\w*|noise|noisy|error|tripp\w*|fix|repair\w*|scorch\w*|melt\w*)\b", re.IGNORECASE)
+_QUESTION = re.compile(r"\?|^\s*(is|are|can|could|should|why|what|how|does|do|did|any ?one|help)\b", re.IGNORECASE)
+_ASKS_TO_BUY = re.compile(
+    r"\b(recommend\w*|suggest\w*|recs?|which|best|buy|buying|replacement|replace it|new one|worth|alternatives?"
+    r"|looking for|bifl|buy it for life|brand|model)\b", re.IGNORECASE)
+_FAULT_CATEGORIES = ("kitchen", "general")
+
+
+def _fault_question(title: str) -> bool:
+    """Whether the title asks about a fault or safety issue with the writer's own unit, and not what to buy."""
+    return bool(_OWN_UNIT.search(title) and _FAULT.search(title) and _QUESTION.search(title)
+                and not _ASKS_TO_BUY.search(title))
+
+
+# Threads asking for recommendations carry about twice the product mentions per comment of other threads (the
+# investigator's count, 14 Oct 2026: 54 against 27 per 100 comments), so each kind takes them first.
+_ASKS_FOR_RECOMMENDATIONS = re.compile(
+    r"\b(recommend\w*|suggest\w*|recs?|which|best|looking for|favou?rites?|holy grail|hg|worth (it|the money|buying)"
+    r"|alternatives?|vs|versus|bifl|buy it for life|dupes?|options"
+    r"|what (\w+ ){0,3}(should|do|would|did) (i|you) (buy|get|use|recommend)|(should|do) i (buy|get)"
+    r"|(buy|get) (a |an |the )?(new|good))\b", re.IGNORECASE)
+
+
+def _asks_for_recommendations(post: dict) -> bool:
+    return bool(_ASKS_FOR_RECOMMENDATIONS.search(html.unescape(str(post.get("title") or ""))))
+
+
 def _without(title: str, subject: str) -> bool:
     """Whether the title asks about doing without the subject ("rice without a rice cooker"): a thread about its
     absence isn't about choosing one."""
@@ -266,7 +308,8 @@ def scan_submissions(path: str, subjects: tuple[tuple[str, str], ...], first_yea
 
     A candidate names one of `subjects` ((category, subject) pairs: a product type, or an ingredient's type, with its
     category, whose words judge its kind) in its title, is of a kind the library mixes for it, isn't removed, deleted,
-    recurring, a megathread or a kitchen food or usage thread, was posted from `first_year` to the files' last day, and has real engagement, unless its
+    recurring, a megathread, a kitchen food or usage thread or a question about a fault with the writer's own unit (gear
+    only), was posted from `first_year` to the files' last day, and has real engagement, unless its
     numbers hadn't settled when the archive saved it (then its comments are counted later). Each candidate keeps
     POST_FIELDS, "about" (the subjects it names, each with its kind), "settled", and "file" and "source" (the file and
     the subreddit as its name writes it)."""
@@ -297,6 +340,10 @@ def scan_submissions(path: str, subjects: tuple[tuple[str, str], ...], first_yea
         if _MEGATHREAD.search(title):
             left_out["a general megathread"] += 1
             continue
+        fault = _fault_question(title)
+        if fault and all(category in _FAULT_CATEGORIES for category in categories):
+            left_out["a question about a fault with someone's own unit"] += 1
+            continue
         # Cheap and exact first: a title of no kind at all is of no kind for any type (a warning needs its words too),
         # and engagement doesn't depend on the type.
         if not any(thread_kind(readable, category) in THREAD_KINDS for category in categories):
@@ -306,16 +353,22 @@ def scan_submissions(path: str, subjects: tuple[tuple[str, str], ...], first_yea
         if settled and (post["num_comments"] < min_comments or post["score"] < min_score):
             left_out["too little engagement"] += 1
             continue
-        kinds, title_words = {}, _long_words(title)
+        kinds, title_words, faulty = {}, _long_words(title), False
         for category, subject in subjects:
             if (category == "kitchen" and _FOOD_OR_USE.search(title)) or _without(title, subject):
                 continue
             if subject not in kinds and _titled(title, subject, title_words):
+                if fault and category in _FAULT_CATEGORIES:
+                    faulty = True
+                    continue
                 kind = thread_kind(readable, category, subject)
                 if kind in THREAD_KINDS:
                     kinds[subject] = kind
         if not kinds:
-            left_out["about no product type, or of no kind the library mixes for it"] += 1
+            if faulty:
+                left_out["a question about a fault with someone's own unit"] += 1
+            else:
+                left_out["about no product type, or of no kind the library mixes for it"] += 1
             continue
         kept.append(post | {"about": kinds, "settled": settled, "file": Path(path).name,
                             "source": FILE_NAME.match(Path(path).name)["subreddit"]})
@@ -532,8 +585,9 @@ def _talks_about_needs(post: dict, needs: list[str]) -> bool:
 
 
 def _ranked(query: ParsedQuery, posts: list[dict]) -> list[dict]:
-    """Module 2's graded order (engine.sources.rank_posts), judged as of the files' last day."""
-    return rank_posts(query, posts, now=LAST_DAY)
+    """The threads asking for recommendations first, then the rest, each in module 2's graded order
+    (engine.sources.rank_posts), judged as of the files' last day."""
+    return sorted(rank_posts(query, posts, now=LAST_DAY), key=lambda post: not _asks_for_recommendations(post))
 
 
 def _choose_for_request(plan: RequestPlan, query: ParsedQuery, posts: list[dict], chosen: dict[str, dict]) -> None:
