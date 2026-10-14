@@ -310,8 +310,12 @@ def test_a_brand_pick_says_which_products_it_means():
 
 def test_a_product_type_the_open_model_names_gets_a_plural_too():
     # Types module 1 doesn't list (the open model's, 11 Oct 2026) follow English's usual rules.
-    for product_type, plural_ in [("air fryer", "air fryers"), ("dish brush", "dish brushes"), ("zester", "zesters"),
-                                  ("french press", "french presses"), ("wok", "woks"), ("rice cooker", "rice cookers")]:
+    # Changed on purpose 14 Oct 2026 (kitchen appliances, Noemi's decision 3): the air fryer, the French press and the
+    # rice cooker are module 1's own types now, with their plurals in config.PRODUCT_TYPE_PLURALS ("French presses");
+    # a garlic press, a sandwich press and a bread maker take their places here.
+    for product_type, plural_ in [("bread maker", "bread makers"), ("dish brush", "dish brushes"), ("zester", "zesters"),
+                                  ("garlic press", "garlic presses"), ("wok", "woks"),
+                                  ("sandwich press", "sandwich presses")]:
         assert plural(product_type) == plural_
     # Changed on purpose 12 Oct 2026 (Noemi's wording): a brand pick names the type itself, "<Brand> <type> line",
     # so the plural is no longer part of its name (it was "Ninja (their air fryers)").

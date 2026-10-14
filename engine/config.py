@@ -14,7 +14,10 @@ MENTION_CATEGORIES = THREAD_CATEGORIES + ("other",)
 SUBREDDITS: dict[str, tuple[str, ...]] = {
     # "acne" added by Noemi on 11 Oct 2026 (an agent had skipped r/acne threads for the acne-prone cleanser question).
     "skincare": ("SkincareAddiction", "AsianBeauty", "30PlusSkinCare", "SkincareAddictionUK", "acne"),
-    "kitchen": ("BuyItForLife", "AskCulinary", "chefknives", "Cooking", "castiron", "Coffee", "espresso", "tea"),
+    # The last six added on 14 Oct 2026 with the kitchen appliances (Noemi's decision 3 of 14 Oct; chosen by Claude,
+    # reported to her): appliance advice and repair (r/Appliances), and the communities of one appliance or use.
+    "kitchen": ("BuyItForLife", "AskCulinary", "chefknives", "Cooking", "castiron", "Coffee", "espresso", "tea",
+                "Appliances", "airfryer", "instantpot", "slowcooking", "Baking", "juicing"),
     # Chosen by Claude on 11 Oct 2026 (reported to Noemi): the science-minded and product-heavy haircare communities,
     # most general advice first.
     "haircare": ("HaircareScience", "curlyhair", "wavyhair", "Hair", "femalehairadvice", "malehairadvice", "Dandruff"),
@@ -266,7 +269,7 @@ BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE = True
 # cleanser cleanser line"; engine.group_products.brand_pick_name).
 BRAND_PICK_NAME = "{brand} {product_type} line"
 # A product type as a name shows it, when that isn't module 1's lowercase name: "Le Creuset Dutch oven line".
-PRODUCT_TYPE_SHOWN: dict[str, str] = {"dutch oven": "Dutch oven"}
+PRODUCT_TYPE_SHOWN: dict[str, str] = {"dutch oven": "Dutch oven", "french press": "French press"}
 # The plural of each product type (engine/query.py, PRODUCT_TYPES): for the name of a brand line left out because its
 # brand doesn't sell them ("Batiste doesn't sell shampoos", BRAND_LINE_NOT_SOLD), and for the words a price or facts
 # entry under a brand's name may add ("OXO kettles"; engine/pipeline.py, _type_words).
@@ -297,6 +300,24 @@ PRODUCT_TYPE_PLURALS: dict[str, str] = {
     "leave-in conditioner": "leave-in conditioners",
     "hair mask": "hair masks",
     "hair oil": "hair oils",
+    # Kitchen appliances (14 Oct 2026).
+    "microwave": "microwaves",
+    "oven": "ovens",
+    "toaster oven": "toaster ovens",
+    "air fryer": "air fryers",
+    "blender": "blenders",
+    "food processor": "food processors",
+    "stand mixer": "stand mixers",
+    "hand mixer": "hand mixers",
+    "slow cooker": "slow cookers",
+    "rice cooker": "rice cookers",
+    "pressure cooker": "pressure cookers",
+    "coffee maker": "coffee makers",
+    "french press": "French presses",
+    "toaster": "toasters",
+    "waffle maker": "waffle makers",
+    "juicer": "juicers",
+    "kitchen scale": "kitchen scales",
 }
 
 # Decision 11, budgets (engine/prices.py). Current prices live in data/prices.json, each with its shop and the day
@@ -373,9 +394,9 @@ PRECHECK_MAX_WAIT_SECONDS = 660
 PRECHECK_STOP_AFTER_UNKNOWN = 20
 # The open model's product types (engine.query_model) the library had threads about on 13 Oct 2026, from its request
 # log (data/library/requests.jsonl, which isn't in the Cloud Run image): checked ahead by their names, like module 1's
-# own types. Types the log names later are checked too wherever the log is.
-PRECHECK_MODEL_TYPES = ("air fryer", "slow cooker", "toaster", "blender", "food processor", "rice cooker", "stand mixer",
-                        "body wash")
+# own types. Types the log names later are checked too wherever the log is. Since 14 Oct 2026 the air fryer, slow
+# cooker, toaster, blender, food processor, rice cooker and stand mixer are module 1's own types (checked ahead as such).
+PRECHECK_MODEL_TYPES = ("body wash",)
 
 # --- Care tips (Noemi, 9 Oct 2026) ---
 # Alongside each pick, credible advice from its threads on looking after it ("descale it every 6 months"; extraction
@@ -872,9 +893,15 @@ COPIED_TEXT_MIN_WORDS = 20
 # v10 (13 Oct 2026, Noemi's decision 2) only added the "spot treatment" type's name to the list the AI types products
 # with, so every v9 extraction stays current (the AI had typed pimple patches in plain words, "pimple patch", which the
 # spot treatment type's words find), and v8 ones of skincare and kitchen threads, as under v9.
+# v11 (14 Oct 2026, Noemi's decision 3: kitchen appliances as product types) only added the appliances' names, and how
+# their usual kinds are typed, to that list: the AI had typed appliances in plain words ("air fryer", "rice cooker",
+# "multicooker", "air fryer oven"), which module 1's names and words find, so every v10 and v9 extraction stays current,
+# and v8 ones of skincare and kitchen threads.
 EXTRACT_STILL_CURRENT: dict[str, dict[str, tuple[str, ...]]] = {
     "extract-v9": {"extract-v8": ("skincare", "kitchen")},
     "extract-v10": {"extract-v9": THREAD_CATEGORIES, "extract-v8": ("skincare", "kitchen")},
+    "extract-v11": {"extract-v10": THREAD_CATEGORIES, "extract-v9": THREAD_CATEGORIES,
+                    "extract-v8": ("skincare", "kitchen")},
 }
 
 # --- Going live (Noemi, 11 Oct 2026) ---

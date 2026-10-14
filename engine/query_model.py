@@ -16,7 +16,8 @@ and code checks the answer before anything is used (routed_by_model):
   cookers"), so a vague "something nice for my mum" never becomes a "gift set"; words that name no product ("gadget",
   "stuff") or only a category or a place ("kitchen gadget", "hair products") don't count. A product the rules route,
   in the same category, when it is written alone is routed as they route it; any other becomes a product type of its
-  own, read from its category's decided subreddits ("air fryer", "curl cream");
+  own, read from its category's decided subreddits ("bread maker", "curl cream"; the air fryer and the other kitchen
+  appliances of engine.query.PRODUCT_TYPES are module 1's own types since 14 Oct 2026);
 - anything else, a broken answer, or a model that fails: the rules' question stands.
 Budgets, skin types, sizes and the rest are always read by the rules (the brief: "AI turns the query into structured
 fields; rules handle budget and units").
