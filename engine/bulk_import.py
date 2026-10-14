@@ -58,6 +58,7 @@ Command line:
     python -m engine.bulk_import delete-raw <folder>   delete them (the history files and the download's part files)
 """
 
+import html
 import io
 import json
 import os
@@ -252,13 +253,17 @@ def scan_submissions(path: str, subjects: tuple[tuple[str, str], ...], first_yea
         if not first <= post["created_utc"] <= LAST_DAY.timestamp():
             left_out[f"posted before {first_year}"] += 1
             continue
-        title = str(post["title"])
+        # The files write "&" as "&amp;" (Reddit's HTML codes), whose letters name nothing ("amp" isn't a guitar amp):
+        # the post is judged as it reads, and kept as the files write it, as the library keeps every thread.
+        readable = post | {"title": html.unescape(str(post["title"])),
+                           "selftext": html.unescape(str(post.get("selftext") or ""))}
+        title = readable["title"]
         if _RECURRING.search(title.lower()):
             left_out["a recurring thread"] += 1
             continue
         # Cheap and exact first: a title of no kind at all is of no kind for any type (a warning needs its words too),
         # and engagement doesn't depend on the type.
-        if not any(thread_kind(post, category) in THREAD_KINDS for category in categories):
+        if not any(thread_kind(readable, category) in THREAD_KINDS for category in categories):
             left_out["of no kind the library mixes"] += 1
             continue
         settled = _settled(record)
@@ -270,7 +275,7 @@ def scan_submissions(path: str, subjects: tuple[tuple[str, str], ...], first_yea
             if category == "kitchen" and _RECIPES.search(title):
                 continue
             if subject not in kinds and _titled(title, subject, title_words):
-                kind = thread_kind(post, category, subject)
+                kind = thread_kind(readable, category, subject)
                 if kind in THREAD_KINDS:
                     kinds[subject] = kind
         if not kinds:
@@ -467,7 +472,7 @@ def _have(threads: list[Thread], name: str, category: str) -> dict[str, int]:
     """The library's threads about a type (title or post names it), by kind."""
     counts = Counter()
     for thread in threads:
-        if thread.category == category and _names(thread.title, thread.body, name):
+        if thread.category == category and _names(html.unescape(thread.title), html.unescape(thread.body or ""), name):
             kind = thread_kind({"title": thread.title}, category, name)
             if kind in THREAD_KINDS:
                 counts[kind] += 1
@@ -505,7 +510,7 @@ def _choose_for_request(plan: RequestPlan, query: ParsedQuery, posts: list[dict]
     fresh = [p for p in pool if p["id"] not in chosen]
     picked = choose_mix(query, _ranked(query, fresh), total=total, mix=_kind_targets(total), fill=True) if total else []
     for post in picked:
-        post["category"] = query.category
+        post.setdefault("category", query.category)
         chosen[post["id"]] = post
     plan.chosen = [p | {"kind": _kind_for(p, query)} for p in picked]
 
@@ -524,9 +529,29 @@ def _choose_for_type(plan: TypePlan, query: ParsedQuery, posts: list[dict], chos
     fresh = [p for p in candidates if p["id"] not in chosen and name in p["about"]]
     picked = choose_mix(query, _ranked(query, fresh), total=total, mix=shares, fill=False) if total else []
     for post in picked:
-        post["category"] = query.category
+        post.setdefault("category", query.category)
         chosen[post["id"]] = post
     plan.chosen = [p | {"kind": p["about"][name]} for p in already + picked]
+
+
+def _saved_category(post: dict, category_of: dict[str, str]) -> str:
+    """The category a chosen thread is saved in, which the answers that read it are of (engine.sources.LocalSource reads
+    a request's category only): its types' category. A thread about types of two categories, from a community they
+    share (r/BuyItForLife's "Which gloves last for working in a freezer?": a freezer and gloves), is saved in the one
+    module 1 reads in its title, as a request typed so would be answered; when module 1 reads none of them there, in
+    the community's own (the first decided for it, as a reader names it: engine.parse_reddit.category_for), not in
+    whichever chose it first (the thinnest types choose first)."""
+    found = {category_of[subject] for subject in post["about"] if subject in category_of}
+    if len(found) == 1:
+        return found.pop()
+    if len(found) > 1:
+        reading = parse_query(html.unescape(str(post["title"])), model=None)
+        if reading.status == "ok" and reading.category in found:
+            return reading.category
+        own = category_for(str(post["subreddit"]))
+        if own in found:
+            return own
+    return post["category"]
 
 
 # --- The whole import ---
@@ -582,6 +607,9 @@ def import_dump(files_dir: Path, library_dir: Path = DEFAULT_LIBRARY_DIR, reques
     plans = [(TypePlan(q.product_type, q.category, _have(library_threads, q.product_type, q.category)), q) for q in types]
     for plan, parsed in sorted(plans, key=lambda pair: sum(pair[0].have.values())):  # the thinnest first
         _choose_for_type(plan, parsed, posts, chosen)
+    category_of = {subject: category for category, found in subjects.items() for subject in found}
+    for post in chosen.values():
+        post["category"] = _saved_category(post, category_of)
     result.types = [plan for plan, _ in plans]
     result.chosen = chosen
     if not dry_run:

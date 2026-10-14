@@ -284,6 +284,32 @@ def test_a_thread_about_two_types_is_chosen_once_and_counts_for_both(tmp_path, l
     assert result.saved == ["1both01"]
 
 
+def test_an_html_code_in_a_title_names_no_type(tmp_path, lib):
+    # the files write "&" as "&amp;", and its letters are no guitar amp, which "amp" names
+    files = tmp_path / "files"
+    write_subreddit(files, "BuyItForLife", [post("1amp01", "Which saucepan &amp; lid should I buy?")],
+                    some_comments("1amp01"))
+    result = run(files, lib, dry_run=True)
+    assert chosen_ids(result, "saucepan") == {"1amp01"}
+    assert set(result.chosen["1amp01"]["about"]) == {"saucepan"}
+
+
+@pytest.mark.parametrize("title, category", [
+    ("Which gloves last for working in a freezer?", "general"),
+    ("Which French press lasts? Mine fits in my carry on bag", "kitchen"),
+    ("My freezer stopped working after a year, is it the fan?", "kitchen"),  # module 1 reads neither: the community's
+])
+def test_a_thread_about_two_categories_types_takes_the_one_module_1_reads_in_its_title(tmp_path, lib, title,
+                                                                                        category):
+    # whichever type chose it first (the thinnest go first), a thread is saved where answers about its title read
+    files = tmp_path / "files"
+    write_subreddit(files, "BuyItForLife", [post("1two01", title)], some_comments("1two01"))
+    result = run(files, lib)
+    assert len(result.chosen["1two01"]["about"]) == 2
+    (thread,) = load_threads(lib / "threads")
+    assert thread.category == category
+
+
 def test_product_types_are_module_1s_as_it_stands_when_the_import_runs():
     # module 1 builds its index of names when it is loaded, so a type merged in later is chosen for by the next run
     problems = []
