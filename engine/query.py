@@ -295,7 +295,7 @@ _OTHER_KNIVES = ("paring", "bread", "steak", "utility", "boning", "fillet", "fil
 # blender, and a beauty or makeup blender is a sponge. A crock pot and an Instant Pot are no longer look-alikes: they
 # name a slow cooker and a pressure cooker.
 _OTHER_BLENDERS = ("immersion", "stick", "hand", "handheld", "hand-held", "beauty", "makeup", "make-up")
-# Where an oven, a microwave or a dishwasher is only the place something goes ("a pan that can go in the oven", "oven-safe",
+# Where an oven, a microwave or a dishwasher is only the place something goes ("a pan to put in the oven", "oven-safe",
 # "dishwasher-safe"), or what goes with it ("oven gloves", "microwave popcorn", "toaster bags"). Never "for a" or "in an":
 # "looking for a microwave" and "what to look for in an oven" ask for one.
 _PLACES = tuple(f"{word} {the} {appliance}" for word in ("in", "into", "inside", "to", "from")

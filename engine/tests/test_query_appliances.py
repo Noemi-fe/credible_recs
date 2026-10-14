@@ -81,7 +81,7 @@ def test_appliances_are_routed_by_the_rules(text, product_type):
 
 @pytest.mark.parametrize("text, product_type", [
     ("dutch oven for sourdough", "dutch oven"),  # its own type: a longer name wins
-    ("a pan that can go in the oven", "frying pan"),  # the oven is where it goes
+    ("a pan to put in the oven", "frying pan"),  # the oven is where it goes
     ("oven-safe frying pan", "frying pan"),
     ("oven safe skillet for cornbread", "cast iron skillet"),
     ("skillet that goes from stove to oven", "cast iron skillet"),
