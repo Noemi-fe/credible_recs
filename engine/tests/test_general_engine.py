@@ -260,3 +260,12 @@ def test_on_demand_reading_keeps_a_general_requests_threads_in_the_general_categ
     bundle = the_bundle(google)
     assert sorted(bundle.threads) == ["1head07", "1head08"]
     assert {Thread.model_validate_json(item.thread).category for item in bundle.threads.values()} == {"general"}
+
+
+def test_a_brand_name_with_a_general_types_plural_names_no_model():
+    # "Most named model: Ruffwear harnesses" would name no model at all (14 Oct 2026: a type's plural is generic too).
+    from engine.pipeline import _names_a_model
+    from engine.tests.test_pick_polish import group
+
+    assert not _names_a_model("Ruffwear harnesses", group("Ruffwear", loose=True), "dog harness")
+    assert _names_a_model("Ruffwear Front Range harness", group("Ruffwear", loose=True), "dog harness")

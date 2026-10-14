@@ -1387,7 +1387,9 @@ def _names_a_model(name: str, brand: ProductGroup, product_type: str | None) -> 
         return True
     brand_words = {w for n in list(brand.names) + [uk_name(n) for n in brand.names]
                    for w in re.findall(r"[a-z0-9][a-z0-9'-]*", n.lower())}
+    # The type's plural too (14 Oct 2026): "Ruffwear harnesses" names no model of a dog harness.
     generic = set(BRAND_MODEL_GENERIC_WORDS) | set((product_type or "").lower().split())
+    generic |= set(plural(product_type).lower().split()) if product_type else set()
     return any(w not in brand_words and w not in generic and w.rstrip("s") not in generic for w in words)
 
 
