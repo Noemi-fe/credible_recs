@@ -173,6 +173,7 @@ MAX_NAMES_REMEMBERED = 200_000  # per table; a full table starts again (a long-r
 for _table in (_NORMALIZED, _WORDS_BY_LIST, _WORDS_NO_ALIASES, _FEATURES, _SLIP_KEYS):
     register(_table.clear)  # engine.memo.forget_all empties them
 _SAME = Table()  # (words, words) -> whether they name the same product (same_words)
+_PLAIN_WORDS = Table()  # a text -> its words (plain_words)
 _HELD_BACK = Table()  # (words, words) -> held_back_word's word, or "" for none
 
 
@@ -222,8 +223,13 @@ def _without_negated_models(words: list[str]) -> list[str]:
 
 
 def plain_words(text: str) -> list[str]:
-    """Every word of a text, lowercase, without accents or punctuation, and with no word left out."""
-    return _WORD.findall(_APOSTROPHES.sub("", _plain_text(text)))
+    """Every word of a text, lowercase, without accents or punctuation, and with no word left out. Each text's words are
+    worked out once (latency, 13 Oct 2026: care tips and kinds compare the same texts over and over); the list handed
+    back is a new one each time, so a caller changing it changes nothing remembered."""
+    words = _PLAIN_WORDS.get(text)
+    if words is None:
+        words = _PLAIN_WORDS.keep(text, tuple(_WORD.findall(_APOSTROPHES.sub("", _plain_text(text)))))
+    return list(words)
 
 
 def _plain_text(text: str) -> str:
