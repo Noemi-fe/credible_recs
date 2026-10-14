@@ -743,6 +743,8 @@ def answer_wording() -> dict[str, str]:
         "summary_note": wording.SUMMARY_NOTE,
         # Active ingredients (13 Oct 2026): the label of each product's form in an ingredient-led answer.
         "form_label": wording.FORM_LABEL,
+        # Brand lines (14 Oct 2026): a line's from price as an amount alone ("From £25"), in "At a glance" and its row.
+        "price_from_amount": wording.PRICE_FROM_AMOUNT,
     }
 
 

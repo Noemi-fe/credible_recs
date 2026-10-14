@@ -15,6 +15,7 @@ Every brand entry, page, shop and library here is made up (but for Victorinox, t
 """
 
 import json
+import re
 from datetime import date, timedelta
 
 import pytest
@@ -229,3 +230,47 @@ def test_the_wording_decided_by_claude_from_noemis_example():
     assert wording.RANGE_LINK == "Browse {brand} {products}"
     assert wording.PRICE_FROM == "From {amount} at {shop}, checked {date}"
     assert wording.BUDGET_WITHIN_FROM == "From {amount}, within your budget (up to {max})."
+
+
+# --- The page (engine/templates/search.html) ---
+
+def page_html() -> str:
+    from engine import web
+
+    return web.search_page().decode("utf-8")
+
+
+def test_the_page_draws_a_lines_range_link_through_a_check_of_its_own():
+    html = page_html()
+    body = re.search(r"function rangeLine\(range\) \{(.*?)\n  \}", html, re.DOTALL).group(1)
+    assert "const address = rangeUrl(range.url);" in body
+    assert "range.text" in body and "range.checked" in body  # the answer's own words, drawn as text
+    assert "rangeLine(pick.range)" in html and "rangeLine(item.range)" in html  # picks and Also worth a look
+
+
+def test_a_range_link_must_be_https_with_no_name_or_password_and_never_reddits():
+    check = re.search(r"function rangeUrl\(address\) \{(.*?)\n  \}", page_html(), re.DOTALL).group(1)
+    assert 'url.protocol === "https:"' in check and "http:" not in check.replace("https:", "")
+    assert "url.username" in check and "url.password" in check
+    assert '"reddit.com"' in check and '"redd.it"' in check  # writers aren't makers: never a Reddit page
+
+
+def test_the_page_says_from_wherever_it_shows_a_lines_amount_alone():
+    html = page_html()
+    settings = json.loads(re.search(r'<script type="application/json" id="settings">(.*?)</script>', html,
+                                    re.DOTALL).group(1))
+    assert settings["wording"]["price_from_amount"] == wording.PRICE_FROM_AMOUNT == "From {amount}"
+    body = re.search(r"function priceAmount\(price\) \{(.*?)\n  \}", html, re.DOTALL).group(1)
+    assert "price.from_price" in body and "WORDING.price_from_amount" in body
+
+
+# --- The how page ---
+
+def test_the_how_page_says_how_a_brand_line_is_linked_and_priced(tmp_path, monkeypatch):
+    from engine.tests.test_how_page import get_how, text_of
+
+    text = text_of(get_how(tmp_path, monkeypatch))
+    assert "links to the maker's page for that kind of product, such as \"Browse Lodge's cast iron skillets\"" in text
+    assert "its \"From\" price: the cheapest price we found for that kind of product of the brand" in text
+    assert "with the shop and the day we checked" in text
+    assert "A brand's line is left out when even its cheapest product of that kind is over your budget." in text

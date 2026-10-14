@@ -334,11 +334,14 @@ def test_the_page_never_draws_data_as_html(tmp_path):
 def test_every_link_the_page_draws_goes_through_a_link_check(tmp_path):
     # Two kinds of link only (changed on purpose 9 Oct 2026, decision 11): a quote's comment on Reddit, and a price's
     # shop page. Each address is checked before it becomes a link; any other address is shown without one.
+    # Changed on purpose 14 Oct 2026 (Noemi's night decision 1): a third kind, a brand line's range page (the maker's
+    # page for its products of the type, from data/brand_lines.json), through its own check, rangeUrl
+    # (engine/tests/test_line_links.py).
     html = page(tmp_path)
     links = re.findall(r"href:\s*(\w+)", html)
     assert links, "the page should draw links"
     for name in links:
-        assert re.search(rf"const {name} = (redditUrl|shopUrl)\(", html), name
+        assert re.search(rf"const {name} = (redditUrl|shopUrl|rangeUrl)\(", html), name
 
 
 def test_a_shop_link_must_be_https_with_no_name_or_password(tmp_path):
