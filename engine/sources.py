@@ -20,6 +20,7 @@ evidence, warning threads the "skip these" list and the downsides (thread_kind, 
 need-led (14 Oct 2026): for a request with needs, the threads about them come first (LocalSource).
 """
 
+import html
 import json
 import math
 import re
@@ -81,6 +82,20 @@ class Source(Protocol):
 def without_unusable_comments(thread: Thread) -> Thread:
     """A copy of the thread without deleted or removed comments. The thread passed in is left as it was."""
     return thread.model_copy(update={"comments": [c for c in thread.comments if c.status not in ("deleted", "removed")]})
+
+
+def unescaped(text: str) -> str:
+    """The text as read for names and words (14 Oct 2026, found by the bulk-import builder): HTML's character codes,
+    which Reddit's titles, posts and comments keep ("pots &amp; pans", "&gt;" before a quoted line), written as their
+    characters, as many times over as they were written ("&amp;amp;"), and a no-break space as a space. Read as they
+    were, "&" and ";" are word boundaries, so "&amp;" held the word "amp", a guitar amp's name. Only for finding names
+    and words: quotes are still checked against the comment as written (engine/verify_quotes.py reads the codes too)."""
+    while "&" in text:
+        plain = html.unescape(text)
+        if plain == text:
+            break
+        text = plain
+    return text.replace("\xa0", " ")
 
 
 def for_request(thread: Thread, query: ParsedQuery) -> Thread:
@@ -287,6 +302,7 @@ def _named_by_pattern(text: str, lowered: str, odd: bool, product_type: str, lea
 
 
 def _mentions_product(text: str, product_type: str, leave_aside: str) -> bool:
+    text = unescaped(text)
     lowered, odd = text.lower(), bool(_ODD_LETTERS.search(text))
     if _names_written(lowered, odd, product_type) and _named_by_pattern(text, lowered, odd, product_type, leave_aside):
         return True
@@ -374,7 +390,7 @@ def read_comments(comments: list[Comment]) -> CommentsRead:
     (COMMENTS_APART), and where each starts there, the comments holding an odd letter, and their long words with the
     comments holding each (latency, 14 Oct 2026: done again for each product type, it was a third of reading the
     library for them all). LocalSource keeps one for each thread it reads (keep_read)."""
-    bodies = [c.body for c in comments]
+    bodies = [unescaped(c.body) for c in comments]  # as mentions_product reads them (14 Oct 2026)
     lowered_bodies = [body.lower() for body in bodies]  # a lowercase text can be longer than its text ("\u0130")
     lowered, low_starts = COMMENTS_APART.join(lowered_bodies), _starts(lowered_bodies)
     odd = frozenset(at for at, body in enumerate(bodies) if _ODD_LETTERS.search(body))
@@ -1432,7 +1448,7 @@ def _title_has(lowered_title: str, word: str) -> bool:
 def _title_words(lowered_title: str) -> str:
     """The candidates _title_has looks among, each after a space and followed by one: the words with their apostrophes
     and hyphens left out, each two neighbouring words written as one, and "anti-X" and "X-free" as X."""
-    written = _TITLE_WORD.findall(lowered_title)
+    written = _TITLE_WORD.findall(unescaped(lowered_title))  # HTML's codes as their characters (14 Oct 2026)
     tokens = [t.replace("'", "").replace("-", "") for t in written]
     candidates = tokens + [a + b for a, b in zip(tokens, tokens[1:])]
     candidates += [_ANTI_OR_FREE.sub("", t).replace("'", "").replace("-", "") for t in written
