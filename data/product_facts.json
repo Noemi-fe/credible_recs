@@ -2255,6 +2255,52 @@
     ],
     "checked_on": "2026-10-14"
    }
+  },
+  {
+   "product": "Epiduo (adapalene 0.1% / benzoyl peroxide 2.5%) Gel",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "prescription_only": true
+   },
+   "sources": [
+    "https://www.medicines.org.uk/emc/product/451/smpc"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "adapalene",
+     "benzoyl peroxide"
+    ],
+    "form": "gel",
+    "sources": [
+     "https://www.medicines.org.uk/emc/product/451/smpc"
+    ],
+    "checked_on": "2026-10-14"
+   }
+  },
+  {
+   "product": "Tazorac (tazarotene) cream and gel",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "facts": {
+    "prescription_only": true
+   },
+   "sources": [
+    "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=021744d1-a6d7-4ad6-99c2-7187c24e64c6",
+    "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4e4e4b81-420e-4492-8a74-80b692a80057"
+   ],
+   "checked_on": "2026-10-14",
+   "formula": {
+    "actives": [
+     "tazarotene"
+    ],
+    "sources": [
+     "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=021744d1-a6d7-4ad6-99c2-7187c24e64c6",
+     "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4e4e4b81-420e-4492-8a74-80b692a80057"
+    ],
+    "checked_on": "2026-10-14"
+   }
   }
  ]
 }
