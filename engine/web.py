@@ -966,7 +966,11 @@ def warm_up(library_dir: Path = DEFAULT_LIBRARY_DIR) -> None:
     if on_demand is not None:  # first of all (14 Oct 2026): the library is then read once, with them
         steps.insert(0, ("the threads read on demand", on_demand.warm_up))
     for name, step in steps:
+        step_started = time.perf_counter()
         _step(name, step)
+        # Each step's time, in the server's window (14 Oct 2026: on Cloud Run getting ready warmed far fewer requests
+        # than on this Mac in its time; this shows which step takes it).
+        print(f"Getting ready: {name} took {time.perf_counter() - step_started:.1f} s.", flush=True)
     left = []
     for request in warm_requests() if threads.is_dir() else ():
         if time.perf_counter() - started >= WARM_UP_ANSWERS_SECONDS:
