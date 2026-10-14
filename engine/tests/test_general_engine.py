@@ -285,3 +285,26 @@ def test_a_brand_name_with_a_general_types_plural_names_no_model():
 
     assert not _names_a_model("Ruffwear harnesses", group("Ruffwear", loose=True), "dog harness")
     assert _names_a_model("Ruffwear Front Range harness", group("Ruffwear", loose=True), "dog harness")
+
+
+def test_the_type_a_name_ends_with_is_found_as_a_full_search_finds_it():
+    # 14 Oct 2026 (merging main): with the taxonomy, looking through every name of every type for each of the AI's types
+    # took a second of getting ready; the names are now looked up by their last word, the same type found.
+    from engine.pipeline import _ends_with_a_type
+    from engine.query import PRODUCT_TYPES
+
+    def full_search(product_type):
+        text = " " + " ".join(product_type.strip().lower().split())
+        best = None
+        for product in PRODUCT_TYPES:
+            for keyword in product.keywords:
+                if any(text.endswith(" " + form) for form in (keyword, keyword + "s", keyword + "es")):
+                    if best is None or len(keyword) > best[0]:
+                        best = (len(keyword), product)
+        return best[1] if best else None
+
+    names = [k for p in PRODUCT_TYPES for k in p.keywords][::60]  # every 60th name: the full search is slow
+    types = names + [n + "s" for n in names] + [n + "es" for n in names] + [f"down {n}" for n in names]
+    types += ["frying pan set", "gooseneck kettle", "  Down   Sleeping  Bag ", "", "pan set", "set", "notatype"]
+    for product_type in types:
+        assert _ends_with_a_type(product_type) == full_search(product_type), product_type

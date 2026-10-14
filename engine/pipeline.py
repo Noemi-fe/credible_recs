@@ -676,6 +676,7 @@ def _product_mentions(checked: dict[str, CheckResult]) -> list[ProductMention]:
 
 
 _TYPE_CATEGORY = {p.name: p.category for p in PRODUCT_TYPES}
+_TYPE_NAMES = frozenset(_TYPE_CATEGORY)  # module 1's types, once (14 Oct 2026: 394 of them to build a set of each time)
 
 
 def _category_of(mention) -> str:
@@ -725,17 +726,30 @@ def _names_a_set(product_type: str, requested: str | None = None) -> bool:
 
 @cache
 def _ends_with_a_type(product_type: str):
-    """The module 1 type that a type in the AI's words ends with one of the names of (the longest such name), or None:
-    "down sleeping bag" ends with the sleeping bag's name, "frying pan set" with the cookware set's ("pan set"),
-    "gooseneck kettle" with the electric kettle's ("kettle"). 14 Oct 2026."""
+    """The module 1 type that a type in the AI's words ends with one of the names of (the longest such name, the first
+    type's when two are as long), or None: "down sleeping bag" ends with the sleeping bag's name, "frying pan set" with
+    the cookware set's ("pan set"), "gooseneck kettle" with the electric kettle's ("kettle"). 14 Oct 2026. Only the
+    names whose last word is the type's are looked at (_TYPE_ENDINGS): a name it ends with ends with that word."""
     text = " " + " ".join(product_type.strip().lower().split())
     best = None
+    for size, form, product in _TYPE_ENDINGS.get(text.rsplit(" ", 1)[-1], ()):
+        if text.endswith(" " + form) and (best is None or size > best[0]):
+            best = (size, product)
+    return best[1] if best else None
+
+
+def _type_endings() -> dict[str, list[tuple[int, str, object]]]:
+    """Each last word of module 1's names, with their plural "s" or "es" too -> (the name's length, that form, its
+    type), in the types' and names' own order."""
+    endings: dict[str, list[tuple[int, str, object]]] = {}
     for product in PRODUCT_TYPES:
         for keyword in product.keywords:
-            if any(text.endswith(" " + form) for form in (keyword, keyword + "s", keyword + "es")):
-                if best is None or len(keyword) > best[0]:
-                    best = (len(keyword), product)
-    return best[1] if best else None
+            for form in (keyword, keyword + "s", keyword + "es"):
+                endings.setdefault(form.rsplit(" ", 1)[-1], []).append((len(keyword), form, product))
+    return endings
+
+
+_TYPE_ENDINGS = _type_endings()
 
 
 def _of_another_type(groups: list[ProductGroup], query: ParsedQuery, result: PipelineResult) -> set[tuple]:
@@ -934,14 +948,14 @@ def _another_type_by_ai(types: list[str], requested: str) -> bool:
     majority = counts[0][0]
     if majority == requested:
         return False
-    if majority in {p.name for p in PRODUCT_TYPES}:
+    if majority in _TYPE_NAMES:
         return True
     if _names_a_set(majority, requested):
         return True
     named = _ends_with_a_type(majority)  # 14 Oct 2026: a "frying pan set" is the cookware set's, not a frying pan
     if named is not None and named.name != requested:
         return True
-    if requested not in {p.name for p in PRODUCT_TYPES}:
+    if requested not in _TYPE_NAMES:
         return not _same_kind(majority, requested)
     return not mentions_product(majority, requested)
 
