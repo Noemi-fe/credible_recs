@@ -1218,22 +1218,17 @@ def test_an_ingredient_led_request_keeps_reading_the_threads_about_its_ingredien
     assert ids(source.find_threads(query, limit=10))[0] == "1sali01"
 
 
-# --- A rarer need counts more, and a thread asking for the opposite is no thread about the need (14 Oct 2026, the
-# need-quality builder) ---
-# Found on the library: "shampoo for curly hair that isn't drying" read 16 big curly-hair threads first, the biggest
-# asking for a clarifying shampoo for curls, because "curly" is in nearly every shampoo thread, so a thread about the
-# specific need (drying) counted no more than any curly one, and a request for the opposite counted as one about the
-# request. Now each need counts by how rare it is among the threads (engine.needs.need_weights: the rarest 1, one most
-# threads talk about little), and a thread whose title asks for the opposite kind of product (config.
-# OPPOSITE_TITLE_PATTERNS: a clarifying or detox shampoo, for a request asking for one that isn't drying) has none.
-# Measured on the frozen library (live checks off): first-reading threads about every need of the 6 requests with
-# several 43 -> 44 of 96, about their specific need 59 -> 63, titled as a clarifying request 2 -> 0; adding need points
-# to the graded score instead, at any weight from 1.5 to 8 a title need, read fewer threads about the needs.
+# --- A thread asking for the opposite kind of product is no thread about the need (14 Oct 2026, the need-quality builder) ---
+# Found on the library: "shampoo for curly hair that isn't drying" read among its first threads the biggest curly-hair one,
+# asking for a clarifying shampoo for curls (made to strip the hair), whose answers gave the request a detox shampoo. A
+# thread whose title asks for the opposite kind of product (config.OPPOSITE_TITLE_PATTERNS) has no need of the request,
+# however much its title and post talk about curls or dryness. Measured on the frozen library (live checks on): first-
+# reading threads titled as a clarifying request 3 -> 0 of the 15 need requests', products shown named as clarifying or
+# detox for a request asking for a shampoo that isn't drying, a gentle one or one for colour-treated hair 4 -> 0.
 
 CURLY_LIBRARY = [
     hair_thread("1curl01", "Best shampoo for curly hair?", num_comments=300, community="curlyhair"),
     hair_thread("1curl02", "Curly girl shampoo recs", num_comments=200, community="curlyhair"),
-    hair_thread("1curl03", "Shampoo for my 3b curls?", num_comments=100, community="curlyhair"),
     hair_thread("1dry001", "Shampoo that won't dry out my hair?", num_comments=12),
     hair_thread("1both01", "Shampoo for curls that isn't drying?", num_comments=15, community="curlyhair"),
     hair_thread("1clar01", "Best clarifying shampoo for curly hair?", body="My curls feel dry and coated.",
@@ -1241,31 +1236,23 @@ CURLY_LIBRARY = [
 ]
 
 
-def test_a_thread_about_the_rarer_need_comes_before_threads_about_only_the_common_one(tmp_path):
-    source = local_source(tmp_path, CURLY_LIBRARY)
-    found = ids(source.find_threads(parse_query("shampoo for curly hair that isn't drying"), limit=10))
-    assert found[:2] == ["1both01", "1dry001"]  # both needs, then the rarer one alone
-    assert set(found[2:5]) == {"1curl01", "1curl02", "1curl03"}  # the common need alone
-
-
 def test_a_thread_titled_as_a_request_for_the_opposite_comes_after_every_thread_about_the_need(tmp_path):
     # Its title holds "curly" and its post "dry", but it asks for a clarifying shampoo: made to strip the hair.
     source = local_source(tmp_path, CURLY_LIBRARY)
     found = ids(source.find_threads(parse_query("shampoo for curly hair that isn't drying"), limit=10))
-    assert found[-1] == "1clar01"
+    assert found[0] == "1both01" and found[-1] == "1clar01"
     assert ids(source.find_threads(parse_query("clarifying shampoo for curly hair"), limit=10))[0] == "1clar01"
 
 
-def test_need_weights_count_a_need_by_how_rare_it_is_among_the_threads():
-    from engine.needs import Need, need_weights
+def test_only_the_kind_of_product_makes_a_title_the_opposite():
+    # A title saying a product dried someone's hair is about the need; one asking for a clarifying shampoo isn't.
+    from engine.sources import titled_as_the_opposite
 
-    curly, drying = Need("curly"), Need("not drying")
-    talked = [("curly",), ("curly",), ("curly",), ("curly", "not drying"), (), (), (), ()]
-    weights = need_weights((curly, drying), talked, len(talked))
-    assert weights["not drying"] == 1.0 and 0 < weights["curly"] < 0.5
-    assert need_weights((curly, drying), talked[:4], 4)["curly"] == 0.0  # every thread talks about it: it tells none apart
-    assert need_weights((curly,), [("curly",)], 1) == {"curly": 1.0}  # one need: it counts in full
-    assert need_weights((curly, drying), [(), ()], 2) == {"curly": 1.0, "not drying": 1.0}  # no thread: all alike
+    asks = ("not drying",)
+    assert titled_as_the_opposite("Best clarifying shampoo for curls?", asks)
+    assert titled_as_the_opposite("Detox shampoo recommendations", asks)
+    assert not titled_as_the_opposite("My shampoo is so drying, help", asks)
+    assert not titled_as_the_opposite("Best clarifying shampoo for curls?", ("oily hair",))  # clarifying suits oily hair
 
 
 # --- Relevance and talking read a thread's comments in one go (latency, 13 Oct 2026) ---
