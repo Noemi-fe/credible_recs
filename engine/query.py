@@ -22,8 +22,8 @@ from typing import Literal
 from pydantic import Field, model_validator
 
 from engine.config import (
-    CONDITION_PRODUCT_TYPES, CONDITION_SUBREDDITS, GENERAL_DEPARTMENTS, INGREDIENTS, MORE_PRODUCT_TYPES, SUBREDDITS,
-    THREAD_CATEGORIES,
+    CONDITION_PRODUCT_TYPES, CONDITION_SUBREDDITS, GENERAL_DEPARTMENTS, HARMFUL_KNIVES, INGREDIENTS, MORE_PRODUCT_TYPES,
+    SUBREDDITS, THREAD_CATEGORIES,
 )
 from engine.ingredients import (
     TYPE_OWN_INGREDIENT, blanked, find_ingredients, forms_named, ingredient_type_name, ingredients_of_type,
@@ -329,6 +329,7 @@ HARMFUL = (
     "vaporizer", "vaporiser", "e-cigarette", "e-cig", "ecig", "juul", "nicotine", "cigarette", "cigar", "tobacco",
     "rolling papers", "shisha", "hookah", "kratom", "psilocybin", "magic mushrooms", "shrooms", "lsd", "cocaine",
     "mdma", "ketamine", "anabolic steroid", "sarms", "sex toy", "dildo", "vibrator", "fleshlight", "butt plug",
+    *HARMFUL_KNIVES,  # the weapon-like knives, Noemi's decision of 15 Oct 2026 (engine/config.py)
 )
 # Products holding a harmful word, set aside before HARMFUL is looked for.
 HARMFUL_LOOKALIKES = (
@@ -339,8 +340,8 @@ HARMFUL_LOOKALIKES = (
     "weed membrane", "weed puller", "weed burner", "cigarette lighter", "cigar box", "dry herb dehydrator",
     "nicotine patch", "nicotine patches", "nicotine gum", "nicotine replacement", "secret weapon", "tobacco vanille",
     "tobacco vanilla", "tobacco oud", "noise suppressor", "rifle paper",
-    # 14 Oct 2026, the routing audit: tools and garden products refused as weapons or drugs. HARMFUL itself is
-    # unchanged (Noemi's decision 6 of 14 Oct 2026; additions she may make are proposed in config.PROPOSED_HARMFUL).
+    # 14 Oct 2026, the routing audit: tools and garden products refused as weapons or drugs (HARMFUL gained the
+    # weapon-like knives on 15 Oct 2026, Noemi's decision: config.HARMFUL_KNIVES).
     "rivet gun", "riveting gun", "airbrush gun", "tattoo gun", "icing gun", "cookie gun", "hose gun", "grout gun",
     "sealant gun", "silicone gun", "mastic gun", "shotgun mic", "shotgun microphone", "weed control", "weed fabric",
     "weed brush", "weed sprayer", "weed suppressant", "weed suppressing",
@@ -427,7 +428,7 @@ OUT_OF_SCOPE_LOOKALIKES = ()
 # and their names win as the longer ones. The rest are set aside here, so the open model places them, never the chef
 # knife: a plain "utility knife" (a box cutter or a small kitchen knife), knives for other trades (putty, palette,
 # drywall, linoleum), an electric knife, Japanese slicers no type lists, and the weapon-like knives HARMFUL doesn't name
-# (zombie, karambit, bowie...: whether they join its polite no is Noemi's call, config.PROPOSED_HARMFUL).
+# (zombie, karambit, bowie...: since 15 Oct 2026 HARMFUL refuses them first, Noemi's decision, config.HARMFUL_KNIVES).
 _OTHER_KNIVES = ("paring", "bread", "steak", "utility", "boning", "fillet", "filet", "carving", "butter", "pocket",
                  "cheese", "oyster", "tomato", "petty", "grapefruit", "electric", "sushi", "sashimi", "yanagiba",
                  "putty", "palette", "drywall", "taping", "filling", "decorating", "linoleum", "lino", "zombie",

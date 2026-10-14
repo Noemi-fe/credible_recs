@@ -129,12 +129,20 @@ def test_a_weapon_the_list_names_is_still_the_polite_no(text):
 
 @pytest.mark.parametrize("text", ["zombie knife", "karambit knife", "bowie knife", "trench knife", "knuckle knife",
                                   "gravity knife", "otf knife", "automatic knife", "stiletto knife", "boot knife",
-                                  "neck knife", "credit card knife", "hidden knife"])
-def test_a_weapon_like_knife_the_list_doesnt_name_is_never_a_chef_knife(text):
-    # Whether these join the polite no (engine.query.HARMFUL) is Noemi's call (config.PROPOSED_HARMFUL); until then the
-    # rules set them aside, so no answer recommends chef knives for them.
+                                  "neck knife", "credit card knife", "hidden knife", "a karambit", "push dagger",
+                                  "best dagger", "concealed knife", "fighting knife"])
+def test_a_weapon_like_knife_is_the_polite_no(text):
+    # Changed on purpose 15 Oct 2026 (Noemi: "yes to all your recommendations"): the weapon-like knives the routing
+    # audit proposed (config.HARMFUL_KNIVES) join the polite no; until then the rules only set them aside, so no
+    # answer recommended chef knives for them. Never a chef knife either way.
     routing = classify(text)
-    assert routing.product_type is None and routing.message != HARMFUL_MESSAGE
+    assert routing.product_type is None and (routing.status, routing.message) == ("out_of_scope", HARMFUL_MESSAGE)
+
+
+@pytest.mark.parametrize("text", ["machete for clearing brambles", "machete", "a good machete for the garden"])
+def test_a_machete_is_a_garden_tool_not_a_weapon(text):
+    # Noemi, 15 Oct 2026: a machete is a garden tool, a product.
+    assert classify(text).message != HARMFUL_MESSAGE
 
 
 # --- Grinders ---

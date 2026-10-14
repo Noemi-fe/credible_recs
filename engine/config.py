@@ -1746,14 +1746,12 @@ STANDOUT_MAX_PRODUCTS = 5
 # keeps that rule: then a standing-out comment earns a place under Also worth a look only. For Noemi to confirm.
 STANDOUT_FILLS_PICKS = True
 
-# --- Module 1: weapon-like knives the polite no doesn't name yet (14 Oct 2026, the routing audit) ---
-# PROPOSED by Claude, for Noemi to decide (her decision 6 of 14 Oct 2026 keeps weapons a polite no exactly as
-# engine.query.HARMFUL lists them). Until 14 Oct 2026 each of these was taken for the kitchen's chef knife; the rules
-# now set them aside (engine.query._OTHER_KNIVES), so the open model places them, which can make one a general product
-# of its own. Proposed: refuse them as HARMFUL refuses a combat knife. Some can't be sold in the UK at all (zombie
-# knives, gravity knives, push daggers, knives disguised as an everyday object such as a credit card knife); the others
-# are sold mostly as fighting or concealed-carry knives. Not used by the code: nothing changes until she says.
-PROPOSED_HARMFUL = (
+# --- Module 1: weapon-like knives get the polite no (Noemi, 15 Oct 2026: "yes to all your recommendations") ---
+# Proposed by the routing audit on 14 Oct 2026, decided by Noemi on 15 Oct: refused as engine.query.HARMFUL refuses a
+# combat knife. Until 14 Oct 2026 each was taken for the kitchen's chef knife. Some can't be sold in the UK at all
+# (zombie knives, gravity knives, push daggers, knives disguised as an everyday object such as a credit card knife); the
+# others are sold mostly as fighting or concealed-carry knives. A machete is a garden tool, a product (her same answer).
+HARMFUL_KNIVES = (
     "zombie knife", "karambit", "push dagger", "gravity knife", "knuckle knife", "trench knife", "otf knife",
     "automatic knife", "stiletto knife", "credit card knife", "hidden knife", "concealed knife", "boot knife",
     "neck knife", "bowie knife", "fighting knife", "dagger",
