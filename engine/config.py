@@ -345,6 +345,13 @@ PIPELINE_MAX_THREADS = 16
 # to her). Shampoo advice is spread over many brands: its 16 most relevant threads gave no pick, 24 and 32 gave one,
 # 48 gave three (Nizoral, Neutrogena T-Gel, Head & Shoulders for an oily scalp).
 PIPELINE_MORE_THREADS = 48
+# In the wider reading a pick, and an Also worth a look item, needs a credible recommendation that talks about the
+# request's needs (11 Oct 2026); in these categories it needs one in every reading (Noemi's decision 4 of 14 Oct 2026,
+# morning: option B of the need-quality builder). Haircare's first reading is filled by big curly-hair threads, so its
+# popular picks needn't be about what was asked: on the frozen library "gentle shampoo for wavy hair" had picked an
+# anti-dandruff shampoo its writers used for a deep clean. Measured there before her decision: 2 answers change, the
+# blind test's (skincare and kitchen) not at all. An empty tuple keeps the rule to the wider reading, as before.
+NEED_RULE_IN_EVERY_READING = ("haircare",)
 # Brand-only picks (decided by Noemi, 9 Oct 2026, decision 9): a brand or line that fits several products ("Lodge",
 # "CeraVe") is ranked, under a name that says so ("Lodge cast iron skillet line", BRAND_PICK_NAME below), when its
 # threads make the product clear (BRAND_PICK_TITLE_SHARE below) or, since 12 Oct 2026, when the brand-lines list says
@@ -741,7 +748,7 @@ LIVE_CHECK_RECORD_RESERVE = 300
 # "available"), so it isn't kept twice.
 PRODUCT_FACT_VALUES: dict[str, tuple] = {
     "fragrance_free": (True, False),  # no added fragrance or perfume
-    "prescription_only": (True, False),  # sold in the UK only on a prescription (Tazorac, tretinoin, Differin)
+    "prescription_only": (True, False),  # sold in the UK only on a prescription (tretinoin, Differin, Duac, Finacea)
     "strength": ("gentle", "moderate", "strong"),  # how strong a retinoid or an exfoliant is
     "white_cast": (True, False),  # a sunscreen that leaves a white cast on the skin
     "finish": ("matte", "natural", "dewy"),  # how a sunscreen looks once on
@@ -755,11 +762,14 @@ PRODUCT_FACT_VALUES: dict[str, tuple] = {
     "sulfate_free": (True, False),  # a shampoo that cleans without sulfates (SLS, SLES, ALS...) (11 Oct 2026)
 }
 # The facts each product type (engine/query.py, PRODUCT_TYPES) can have. Every skincare product can say whether it is
-# fragrance-free and whether its maker warns against sensitive skin; only retinoids and exfoliants, the skincare sold in
-# prescription versions (tretinoin, adapalene, azelaic acid 15%+) and in strengths, can be prescription-only or have a
-# strength (10 Oct 2026: a moisturiser's "prescription_only: false" was always true and only asked researchers for busy
+# fragrance-free, whether its maker warns against sensitive skin and, since Noemi's decision 5 of 14 Oct 2026, whether it
+# is prescription-only (Duac, a clindamycin and benzoyl peroxide gel, is a spot treatment; Finacea's azelaic acid gel is
+# read as a cream); only retinoids and exfoliants come in strengths. Not knowing whether a product is prescription-only
+# is a requirement for retinoids and exfoliants only, the skincare mostly sold in prescription versions (the rule's
+# "confirm_types" below): for every other type the fact is recorded when an official source says so and never asked
+# for (10 Oct 2026: a moisturiser's "prescription_only: false" was always true and only asked researchers for busy
 # work). A type not listed (a chef knife, a coffee grinder) has no facts yet.
-PRODUCT_FACTS_FOR_SKINCARE = ("fragrance_free", "maker_warns_sensitive")
+PRODUCT_FACTS_FOR_SKINCARE = ("fragrance_free", "maker_warns_sensitive", "prescription_only")
 PRODUCT_FACTS_FOR_TREATMENTS = ("fragrance_free", "prescription_only", "strength", "maker_warns_sensitive")
 PRODUCT_FACTS_BY_TYPE: dict[str, tuple[str, ...]] = {
     "exfoliant": PRODUCT_FACTS_FOR_TREATMENTS,
@@ -788,8 +798,12 @@ PRODUCT_FACTS_BY_TYPE: dict[str, tuple[str, ...]] = {
 PRODUCT_FACT_RULES: dict[str, dict] = {
     "too strong": {"asks": ("beginner", "sensitive", "gentle"), "fact": "strength", "value": "strong", "hard": True,
                    "reason": "it is a strong formula, too strong for beginners or sensitive skin"},
+    # "confirm_types" (14 Oct 2026, Noemi's decision 5): the product types for which not knowing the fact is a
+    # requirement ("we couldn't confirm it's sold without a prescription"; a brand line can't be checked for it). Any
+    # skincare product can have the fact; a product whose facts say it is prescription-only also shows a note wherever it
+    # is shown (engine/answer.py, PRESCRIPTION_NOTE).
     "prescription only": {"asks": ("beginner", "sensitive", "gentle"), "fact": "prescription_only", "value": True,
-                          "hard": True,
+                          "hard": True, "confirm_types": ("retinoid", "exfoliant"),
                           "reason": "it is prescription-only: a strong treatment, not one for beginners or sensitive "
                                     "skin"},
     "fragrance": {"asks": ("fragrance-free",), "fact": "fragrance_free", "value": False, "hard": True,

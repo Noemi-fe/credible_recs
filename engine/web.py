@@ -104,6 +104,10 @@ The JSON for /api/answer (200):
                                                                with Noemi's upvote rule on (14 Oct 2026; off), when
                                                                some of those writers counted twice toward the picks bar
                                                                for their upvotes (the reason says which)
+                            "prescription": "Prescription-only in the UK: ask a doctor or pharmacist." | null,
+                                                               on a product whose checked facts say it is sold in the UK
+                                                               only on a prescription (Noemi's decision 5, 14 Oct 2026);
+                                                               "worth_a_look" and "skip" items have it too
                             "range": {"text",                  a brand line's link to its maker's page for its products
                                       "url",                   of the type, or an official UK stockist's (Noemi's night
                                       "checked",               decision 1, 14 Oct 2026): "Browse Victorinox chef
@@ -115,12 +119,12 @@ The JSON for /api/answer (200):
                                                                entry has no range page
                            }],
                  "look_for": [{"kind", "advice", "quote": {same shape}}],
-                 "skip": [{"product_key", "name", "reason", "quotes": [...]}],
+                 "skip": [{"product_key", "name", "reason", "quotes": [...], "prescription"}],
                  "care_note": [{"tip", "quote"}],   care tips about the kind of product, shown once at the end
                                                     (Noemi, 11 Oct 2026); [] when there are none
                  "worth_a_look": [{"product_key", "name", "reason", "quotes", "downsides", "downsides_share",
                                    "disagreement", "score", "breakdown", "price", "availability", "cautions",
-                                   "summary", "voices", "range"}],
+                                   "summary", "voices", "range", "prescription"}],
                                   "Also worth a look" (Noemi's decision 2, 13 Oct 2026): up to 3 products with 2
                                   credible recommendations across at least 2 threads, best first, shown apart after the
                                   picks and never among them; the same shapes as a pick's fields, with 1 or 2 quotes,
@@ -782,6 +786,9 @@ def answer_wording() -> dict[str, str]:
         "form_label": wording.FORM_LABEL,
         # Brand lines (14 Oct 2026): a line's from price as an amount alone ("From £25"), in "At a glance" and its row.
         "price_from_amount": wording.PRICE_FROM_AMOUNT,
+        # Prescription-only products (Noemi's decision 5, 14 Oct 2026): the tag on a row under the picks before it is
+        # opened, and on a pick's row "At a glance"; the note itself comes with each product ("prescription").
+        "prescription_tag": wording.PRESCRIPTION_TAG,
     }
 
 

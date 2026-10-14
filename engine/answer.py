@@ -46,6 +46,9 @@ What each pick shows (the brief):
 - cautions (product facts, decided by Claude, 9 Oct 2026): when a checked fact suits the request less well by a soft
   rule (engine/product_facts.py: a rich moisturiser for oily skin), "Note: <the reason>." under the pick's price lines.
   Products whose facts clash by a hard rule never get here: the pipeline leaves them out.
+- prescription-only (Noemi's decision 5 of 14 Oct 2026): a product whose checked facts say it is sold in the UK only on
+  a prescription says so under its price lines, PRESCRIPTION_NOTE, and so does such an "Also worth a look" item or
+  skipped product. (A request for a beginner, a gentle product or sensitive skin never gets such a product.)
 - "In short:" (Noemi's decision 4 of 13 Oct 2026, to try and judge): a one-line summary of what its credible voices
   say, in our words, written ahead of time (engine/summaries.py, data/library/summaries.json). It is shown only when
   every check passes: its text (one sentence, at most SUMMARY_MAX_WORDS words, no quotation marks), every comment it
@@ -302,6 +305,14 @@ AVAILABILITY_SECOND_HAND = "Sold second-hand only: {shop}, checked {date}"
 # "Note: its texture is rich, which can feel heavy on oily or acne-prone skin." The reasons themselves are the rule
 # table's (config.PRODUCT_FACT_RULES), decided by Claude the same day.
 CAUTION = "Note: {reason}."
+# Prescription-only products (Noemi's decision 5 of 14 Oct 2026; wording decided by Claude from the coordinator's
+# example, in the answer's way of saying a fact and what to do). A product whose checked facts say it is sold in the UK
+# only on a prescription (data/product_facts.json, "prescription_only") says so wherever it is shown: a pick and an "Also
+# worth a look" item under their price lines, a "Skip these" item under its reason; on the page a row under the picks,
+# and a pick's row "At a glance", also carry the tag. Such a product is still never offered for a beginner, a gentle
+# product or sensitive skin (config.PRODUCT_FACT_RULES, "prescription only"): the note is for every other answer.
+PRESCRIPTION_NOTE = "Prescription-only in the UK: ask a doctor or pharmacist."
+PRESCRIPTION_TAG = "Prescription-only"
 # Also worth a look (Noemi's decision 2 of 13 Oct 2026; wording decided by Claude). The note under the heading says how
 # much less support its products have: "2 credible voices each: less evidence than the picks above, which need at least
 # 3 credible recommendations across at least 2 threads." With no picks above, WORTH_NOTE_NO_PICKS.
@@ -436,6 +447,8 @@ class Pick:
     # For a brand-line pick: the link to its maker's page for its products of the type (14 Oct 2026); None otherwise,
     # and for a line whose entry has no range page.
     range: ShownRange | None = None
+    # PRESCRIPTION_NOTE when its checked facts say it is prescription-only in the UK (14 Oct 2026); None otherwise.
+    prescription: str | None = None
 
 
 @dataclass
@@ -458,6 +471,7 @@ class WorthALook:
     form: str | None = None  # as a pick's
     voices: dict[str, int] = field(default_factory=dict)  # as a pick's (13 Oct 2026, the UX builder)
     range: ShownRange | None = None  # as a pick's (14 Oct 2026): a brand line's link to its maker's page
+    prescription: str | None = None  # as a pick's (14 Oct 2026)
 
 
 @dataclass
@@ -467,6 +481,7 @@ class SkipItem:
     reason: str
     quotes: list[ShownQuote]  # credible warnings, at least 1
     form: str | None = None  # as a pick's
+    prescription: str | None = None  # as a pick's (14 Oct 2026)
 
 
 @dataclass
@@ -519,7 +534,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
                  unsuited_kinds: Collection[str] = (), needs: tuple[Need, ...] = (), request: str = "",
                  summaries: Mapping[str, Summary] | None = None, worth_left_out: Collection[str] = (),
                  ingredient: str | None = None, forms: Mapping[str, str | None] | None = None,
-                 forms_asked: Collection[str] = (), ranges: Mapping[str, BrandLine] | None = None) -> Answer:
+                 forms_asked: Collection[str] = (), ranges: Mapping[str, BrandLine] | None = None,
+                 prescription: Collection[str] = ()) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -543,7 +559,9 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     `forms_asked` the forms an ingredient-led request names ("salicylic acid wash": cleanser), for its note.
     `ranges` ({product key: brand-lines entry}, 14 Oct 2026) are the entries of the products ranked as a brand's line:
     each such pick and "Also worth a look" item links to its entry's range page (shown_range). A line's from price
-    comes in `prices`, like any price (PriceCheck.from_price).
+    comes in `prices`, like any price (PriceCheck.from_price). `prescription` (14 Oct 2026, Noemi's decision 5) are the
+    keys of the products whose checked facts say they are prescription-only in the UK: each such pick, item and skipped
+    product says so (PRESCRIPTION_NOTE). It never changes which products are shown.
     """
     check = _QuoteCheck(bodies)
     ranges = ranges or {}
@@ -571,6 +589,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             picks[-1].summary = _summary(product, _summary_of(product, summaries), check)
             picks[-1].form = forms.get(product.key)
             picks[-1].range = shown_range(ranges.get(product.key))
+            picks[-1].prescription = _prescription(product.key, prescription)
     # A product the upvote rule lifted (14 Oct 2026) may be an item and a pick shown: then it is a pick only.
     shown_picks = {pick.product_key for pick in picks}
     worth = _worth_items(ranking, check, prices, cautions, summaries, set(worth_left_out) | shown_picks, asks, needs,
@@ -578,10 +597,12 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     for item in worth:
         item.form = forms.get(item.product_key)
         item.range = shown_range(ranges.get(item.product_key))
+        item.prescription = _prescription(item.product_key, prescription)
     skip = [_skip_item(product, check) for product in ranking.skip_list]
     for item in skip:
         if item is not None:
             item.form = forms.get(item.product_key)
+            item.prescription = _prescription(item.product_key, prescription)
     look_for = _look_for(ranking, check, product_type, unsuited_kinds, request, asks, [pick.name for pick in picks],
                          forms_asked)
     care_note = _care_note([care.get(pick.product_key) for pick in picks], picks, check)
@@ -605,6 +626,11 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
         ingredient_note=_ingredient_note(product_type, ingredient, forms_asked),
         title=answer_title(product_type, ingredient),
     )
+
+
+def _prescription(key: str, prescription: Collection[str]) -> str | None:
+    """PRESCRIPTION_NOTE for a product whose checked facts say it is prescription-only in the UK, else None."""
+    return PRESCRIPTION_NOTE if key in prescription else None
 
 
 def answer_title(product_type: str | None, ingredient: str | None = None) -> str:
@@ -1960,6 +1986,7 @@ def render_markdown(answer: Answer) -> str:
         for item in answer.skip:
             form = f" ({FORM_LABEL.lower()}: {item.form})" if item.form else ""
             lines.append(f"- **{item.name}**{form}**:** {item.reason}")
+            lines += [f"  - {item.prescription}"] if item.prescription else []
             lines += [f"  - {_render_quote_inline(quote)}" for quote in item.quotes]
         lines.append("")
     if answer.care_note:
@@ -1982,6 +2009,7 @@ def _render_pick(pick: Pick) -> list[str]:
     lines += _render_summary(pick.summary)
     lines += [pick.reason, "", f"**{SUPPORT_LABEL}:** {pick.support}", ""]
     lines += _render_price(pick.price) + _render_availability(pick.availability) + _render_range(pick.range)
+    lines += [pick.prescription, ""] if pick.prescription else []
     for caution in pick.cautions:
         lines += [caution, ""]
     if pick.disagreement:
@@ -2017,6 +2045,7 @@ def _render_worth(item: WorthALook) -> list[str]:
     if item.availability.available is not None:
         lines += _render_availability(item.availability)
     lines += _render_range(item.range)
+    lines += [item.prescription, ""] if item.prescription else []
     for caution in item.cautions:
         lines += [caution, ""]
     if item.disagreement:
