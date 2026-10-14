@@ -23,10 +23,12 @@ Budgets, skin types, sizes and the rest are always read by the rules (the brief:
 fields; rules handle budget and units").
 """
 
+import copy
 import json
 import os
 import re
 import threading
+from collections import OrderedDict
 from functools import cache
 from pathlib import Path
 from typing import Protocol
@@ -87,12 +89,19 @@ class LlamaQueryModel:
     server loads it as it starts (load; latency, 12 Oct 2026), so its first visitor doesn't wait for it.
 
     One request at a time: the web server answers requests in parallel threads, and llama.cpp can't be used by two at
-    once, so the others wait their turn (a second or two each)."""
+    once, so the others wait their turn (a second or two each).
+
+    Its reading of the same words never changes (temperature 0), so each request's is kept (latency, 13 Oct 2026, the
+    last READINGS_KEPT): the server gets ready by answering every product type, "serum" through the model, and a visitor
+    asking one of them again doesn't wait for it."""
+
+    READINGS_KEPT = 1_000
 
     def __init__(self, path: Path = DEFAULT_MODEL_PATH):
         self.path = Path(path)
         self._llm = None
         self._lock = threading.Lock()
+        self._readings: OrderedDict[str, object] = OrderedDict()
 
     def load(self) -> None:
         """Loads the model now, if it isn't loaded yet."""
@@ -107,6 +116,10 @@ class LlamaQueryModel:
         return self._llm
 
     def read(self, text: str) -> object:
+        with self._lock:
+            if text in self._readings:
+                self._readings.move_to_end(text)
+                return copy.deepcopy(self._readings[text])  # a copy: a caller changing it changes nothing kept
         messages = [{"role": "system", "content": SYSTEM}]
         for request, answer in EXAMPLES:
             messages += [{"role": "user", "content": request}, {"role": "assistant", "content": json.dumps(answer)}]
@@ -115,9 +128,14 @@ class LlamaQueryModel:
             out = self._loaded().create_chat_completion(messages=messages, temperature=0, max_tokens=60,
                                                         response_format={"type": "json_object", "schema": SCHEMA})
         try:
-            return json.loads(out["choices"][0]["message"]["content"])
+            reading = json.loads(out["choices"][0]["message"]["content"])
         except (KeyError, IndexError, TypeError, json.JSONDecodeError):
-            return None
+            reading = None
+        with self._lock:
+            self._readings[text] = copy.deepcopy(reading)
+            while len(self._readings) > self.READINGS_KEPT:
+                self._readings.popitem(last=False)
+        return reading
 
 
 def find_default_model() -> QueryModel | None:

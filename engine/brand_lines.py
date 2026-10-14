@@ -66,6 +66,7 @@ from pydantic import AfterValidator, Field, StrictBool, ValidationError, model_v
 from engine.config import BRAND_LINE_NOT_SOLD, THREAD_CATEGORIES
 from engine.group_products import plural
 from engine.match_products import comparable, known_aliases, product_words, written_alike
+from engine.memo import FileMemo
 from engine.models import Record
 from engine.query import PRODUCT_TYPES
 
@@ -125,7 +126,17 @@ class BrandLine(Record):
 
 def load_brand_lines(path: Path = DEFAULT_BRAND_LINES) -> list[BrandLine]:
     """Every entry of the brand-lines list (data/brand_lines.json by default). A malformed file or entry, or a second
-    entry for the same brand, category and product type, raises BrandLinesError naming the entry and the problem."""
+    entry for the same brand, category and product type, raises BrandLinesError naming the entry and the problem.
+
+    Read once and kept while the file is unchanged, as the price and facts lists are (engine.memo; latency, 13 Oct
+    2026: every answer read and checked it again); every caller gets the same list, which none may change."""
+    return _LOADED.get(Path(path), _read_brand_lines)
+
+
+_LOADED = FileMemo()  # the brand-lines lists read, kept while their files are unchanged
+
+
+def _read_brand_lines(path: Path) -> list[BrandLine]:
     try:
         entries = json.loads(Path(path).read_text(encoding="utf-8"))["brand_lines"]
     except (OSError, json.JSONDecodeError, KeyError, TypeError) as e:

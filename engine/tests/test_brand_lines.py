@@ -423,3 +423,18 @@ def test_the_how_page_shows_a_brand_line_and_how_brands_are_checked(tmp_path, mo
     assert '"Lodge cast iron skillet line"' in text
     assert "(their" not in text
     assert "on the maker's pages or a big shop's, that the brand sells the kind of product you asked for" in text
+
+
+# --- Read once while unchanged (latency, 13 Oct 2026) ---
+
+def test_an_unchanged_list_is_read_once_and_a_changed_one_again(tmp_path):
+    import os
+    import time
+
+    path = write_lines(tmp_path, [entry()])
+    past = time.time_ns() - 60 * 10**9  # as if written a minute ago: a file changed just now is read again
+    os.utime(path, ns=(past, past))
+    first = load_brand_lines(path)
+    assert load_brand_lines(path) is first
+    write_lines(tmp_path, [entry(sells=False)])
+    assert [line.sells for line in load_brand_lines(path)] == [False]

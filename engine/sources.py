@@ -23,6 +23,7 @@ need-led (14 Oct 2026): for a request with needs, the threads about them come fi
 import json
 import math
 import re
+from bisect import bisect_right
 from datetime import UTC, datetime
 from functools import cache
 from pathlib import Path
@@ -51,7 +52,8 @@ from engine.config import (
 )
 from engine.gold import load_threads
 from engine.ingredients import ingredient_type_name, ingredients_of_type, talk_words, wanted_types
-from engine.models import Thread
+from engine.memo import Table
+from engine.models import Comment, Thread
 from engine.parse_reddit import ParseRedditClient
 from engine.query import LOOKALIKES, PRODUCT_TYPES, TITLE_WORDS, ParsedQuery
 from engine.text import one_edit_apart
@@ -97,10 +99,31 @@ def _product_pattern(product_type: str) -> re.Pattern:
 def _covering_pattern(product_type: str) -> re.Pattern:
     """Longer names that hold one of this product's words but name something else: the other product types' names and
     module 1's look-alike phrases ("tea pot" and "crock pot" hold "pot"; "dry shampoo" holds "shampoo")."""
-    name = product_type.strip().lower()
-    phrases = {k for p in PRODUCT_TYPES if p.name != name for k in p.keywords} | set(LOOKALIKES)
-    alternatives = "|".join(re.escape(x) for x in sorted(phrases, key=len, reverse=True))
+    alternatives = "|".join(re.escape(x) for x in sorted(_covering_phrases(product_type), key=len, reverse=True))
     return re.compile(rf"\b(?:{alternatives})s?\b", re.IGNORECASE)
+
+
+def _covering_phrases(product_type: str) -> set[str]:
+    name = product_type.strip().lower()
+    return {k for p in PRODUCT_TYPES if p.name != name for k in p.keywords} | set(LOOKALIKES)
+
+
+@cache
+def _never_covered(product_type: str) -> frozenset[str]:
+    """The ways a match of the product's names can read, in lowercase (a name, with or without its plural "s"), that no
+    longer name of something else holds (_covering_phrases, with or without their own "s"): a match reading so is
+    never inside one, so they needn't be looked for (latency, 13 Oct 2026: looking for them in every comment naming
+    the product was most of reading a thread). Empty for a product found by other patterns than its names' words (an
+    ingredient's, or a type the open model named)."""
+    if talk_words(product_type.strip()):
+        return frozenset()
+    known = {p.name: p.keywords + p.hints for p in PRODUCT_TYPES}
+    words = known.get(product_type.strip().lower())
+    if not words:
+        return frozenset()
+    longer = [text for phrase in _covering_phrases(product_type) for text in (phrase.lower(), phrase.lower() + "s")]
+    return frozenset(form for word in words for form in (word.lower(), word.lower() + "s")
+                     if not any(form in text for text in longer))
 
 
 def mentions_product(text: str, product_type: str, leave_aside: str = "") -> bool:
@@ -113,19 +136,57 @@ def mentions_product(text: str, product_type: str, leave_aside: str = "") -> boo
     `leave_aside`: one word that doesn't name the product on its own here, in any of its forms (singular, plural or a
     slip: "knife", "knives"): the last word of another type the text is said to be about, so "knife" in a comment
     about a paring knife doesn't name a chef's knife (13 Oct 2026). Longer names that hold it still count ("chef's
-    knife")."""
+    knife").
+
+    It depends on these three alone, so for a short text (a product's name, a type, a title) each answer is worked out
+    once and remembered (latency, 13 Oct 2026: an answer asks it of the same names thousands of times)."""
+    if len(text) > REMEMBERED_TEXT_LENGTH:
+        return _mentions_product(text, product_type, leave_aside)
+    key = (text, product_type, leave_aside)
+    found = _MENTIONS.get(key)
+    if found is None:
+        found = _MENTIONS.keep(key, _mentions_product(text, product_type, leave_aside))
+    return found
+
+
+# Texts at most this long have mentions_product's answers remembered: names, types, titles, a name with its quote.
+REMEMBERED_TEXT_LENGTH = 400
+_MENTIONS = Table()  # (text, product type, word left aside) -> mentions_product's answer
+
+
+def _mentions_product(text: str, product_type: str, leave_aside: str) -> bool:
     covers = None
+    never_covered = _never_covered(product_type)
     for match in _product_pattern(product_type).finditer(text):
         if leave_aside and _same_word_as(match.group(0), leave_aside):
             continue
+        if match.group(0).lower() in never_covered:
+            return True
         if covers is None:
             covers = [(c.start(), c.end()) for c in _covering_pattern(product_type).finditer(text)]
         if not any(s <= match.start() and match.end() <= e and e - s > match.end() - match.start() for s, e in covers):
             return True
-    long_names = [w for w in _product_words(product_type) if " " not in w and len(w) >= TYPO_MIN_LENGTH]
-    tokens = {t.removesuffix("s") for t in re.findall(r"[a-z]+", text.lower()) if len(t) >= TYPO_MIN_LENGTH - 1}
+    long_names = _long_names(product_type)
+    if not long_names:  # no name long enough to forgive a slip in: nothing more to look for (latency, 13 Oct 2026)
+        return False
+    # Only the words long enough to be a slip of one (the regular expression finds those alone, 13 Oct 2026; finding
+    # every word and keeping the long ones was most of reading a thread for retrieval).
+    tokens = {t.removesuffix("s") for t in _LONG_WORD.findall(text.lower())}
     tokens = {t for t in tokens if not (leave_aside and _same_word_as(t, leave_aside))}
-    return any(one_edit_apart(t, w) for t in tokens for w in long_names)
+    lengths = _slip_lengths(product_type)
+    return any(one_edit_apart(t, w) for t in tokens if len(t) in lengths for w in long_names)
+
+
+@cache
+def _long_names(product_type: str) -> tuple[str, ...]:
+    """The product's one-word names long enough that a slip in them is forgiven (mentions_product)."""
+    return tuple(w for w in _product_words(product_type) if " " not in w and len(w) >= TYPO_MIN_LENGTH)
+
+
+@cache
+def _slip_lengths(product_type: str) -> frozenset[int]:
+    """The lengths a word one letter added, dropped or changed from one of the product's long names has."""
+    return frozenset(len(w) + d for w in _long_names(product_type) for d in (-1, 0, 1))
 
 
 def _singular(word: str) -> str:
@@ -147,10 +208,14 @@ def _same_word_as(found: str, word: str) -> bool:
 
 # Typos are only forgiven in names this long: shorter ones have real neighbours ("cleaner" is one letter from "cleanser").
 TYPO_MIN_LENGTH = 9
+# A run of letters long enough to be a slip of such a name (a plural "s" left out after): the words mentions_product reads.
+_LONG_WORD = re.compile(f"[a-z]{{{TYPO_MIN_LENGTH - 1},}}")
 
 
+@cache
 def _product_words(product_type: str) -> tuple[str, ...]:
-    """The names a product is known by: module 1's keywords and hints, or its own whole name."""
+    """The names a product is known by: module 1's keywords and hints, or its own whole name. Worked out once per type
+    (latency, 13 Oct 2026)."""
     known = {p.name: p.keywords + p.hints for p in PRODUCT_TYPES}
     return known.get(product_type, (product_type.lower(),))
 
@@ -161,8 +226,83 @@ def relevance(thread: Thread, product_type: str) -> float:
     """3 points if the title names the product, 1 if the post body does, plus up to 1 for comments that do (full at 5)."""
     score = 3 if mentions_product(thread.title, product_type) else 0
     score += 1 if mentions_product(thread.body, product_type) else 0
-    talking = sum(mentions_product(c.body, product_type) for c in thread.comments)
+    talking = comments_naming(thread.comments, product_type)
     return score + min(1, talking / 5)
+
+
+def comments_naming(comments: list[Comment], product_type: str) -> int:
+    """How many of the comments name the product, as mentions_product reads each one.
+
+    Read in one go (latency, 13 Oct 2026: reading every comment of every thread on its own, once per product type, was
+    most of getting ready): their texts joined by a character no product's name pattern, look-alike phrase or slip can
+    match or run across (COMMENTS_APART), so each match of the joined text is a match of one comment, as finding it in
+    that comment alone would find it, and so is each longer name holding it and each long word (a slip). A comment
+    names the product when one of its matches isn't inside a longer name of something else, or one of its long words
+    is a slip of the product's long name."""
+    bodies = [c.body for c in comments]
+    if not bodies:
+        return 0
+    joined = COMMENTS_APART.join(bodies)
+    starts = _starts(bodies)
+    naming: set[int] = set()
+    covers: dict[int, list[tuple[int, int]]] = {}  # a comment -> the longer names in it, where they are in `joined`
+    never_covered = _never_covered(product_type)
+    for match in _product_pattern(product_type).finditer(joined):
+        at = bisect_right(starts, match.start()) - 1
+        if at in naming:
+            continue
+        if match.group(0).lower() in never_covered:
+            naming.add(at)
+            continue
+        if at not in covers:  # read in that comment alone, as mentions_product reads it
+            covers[at] = [(starts[at] + c.start(), starts[at] + c.end())
+                          for c in _covering_pattern(product_type).finditer(bodies[at])]
+        if not any(s <= match.start() and match.end() <= e and e - s > match.end() - match.start()
+                   for s, e in covers[at]):
+            naming.add(at)
+    long_names = _long_names(product_type)
+    if long_names and len(naming) < len(bodies):
+        lowered = [body.lower() for body in bodies]
+        low_starts = _starts(lowered)
+        slips: dict[str, bool] = {}  # each long word, once: whether it is a slip of a long name
+        for word in _LONG_WORD.finditer(COMMENTS_APART.join(lowered)):
+            token = word.group().removesuffix("s")
+            if token not in slips:
+                slips[token] = _a_slip_of(token, product_type)
+            if slips[token]:
+                naming.add(bisect_right(low_starts, word.start()) - 1)
+    return len(naming)
+
+
+def _a_slip_of(word: str, product_type: str) -> bool:
+    """Whether a word is one letter added, dropped or changed from one of the product's long names. A long name is at
+    least TYPO_MIN_LENGTH letters, so such a word keeps either its first 4 letters or its last 4: a quick look first."""
+    if len(word) not in _slip_lengths(product_type):
+        return False
+    starts, ends = _slip_ends(product_type)
+    return (word[:4] in starts or word[-4:] in ends) and any(one_edit_apart(word, name)
+                                                             for name in _long_names(product_type))
+
+
+@cache
+def _slip_ends(product_type: str) -> tuple[frozenset[str], frozenset[str]]:
+    """The first 4 and last 4 letters of the product's long names (_a_slip_of)."""
+    names = _long_names(product_type)
+    return frozenset(name[:4] for name in names), frozenset(name[-4:] for name in names)
+
+
+def _starts(texts: list[str]) -> list[int]:
+    """Where each text starts once they are joined by COMMENTS_APART."""
+    starts, at = [], 0
+    for text in texts:
+        starts.append(at)
+        at += len(text) + len(COMMENTS_APART)
+    return starts
+
+
+# What comments_naming joins comments with: a character no product's name pattern, look-alike phrase or slip can match
+# or run across (they read letters, digits, spaces and hyphens), so each comment's text is read as it is.
+COMMENTS_APART = "\x00"
 
 
 # --- Threads saved on this machine ---
@@ -282,7 +422,7 @@ def titled_as_another_type(title: str, query: ParsedQuery) -> bool:
 
 def talking(thread: Thread, product_type: str) -> int:
     """How many of the thread's comments name the product (for an ingredient-led request, its ingredient)."""
-    return sum(mentions_product(c.body, product_type) for c in thread.comments)
+    return comments_naming(thread.comments, product_type)
 
 
 def talk_points(comments: int) -> float:
@@ -977,13 +1117,34 @@ def choose_mix(
 def _title_has(lowered_title: str, word: str) -> bool:
     """Whole words, two-word spellings ("pour over" for "pourover"), longer forms ("lasting" for "last"), and "anti-X"
     or "X-free" read as X, as need words read them ("anti-dandruff" has "dandruff", 11 Oct 2026). Other hyphenated
-    words aren't split: that moved a thread Noemi hadn't judged into b02's top 3 (12 Oct 2026)."""
-    written = re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", lowered_title)
-    tokens = [re.sub(r"['-]", "", t) for t in written]
+    words aren't split: that moved a thread Noemi hadn't judged into b02's top 3 (12 Oct 2026).
+
+    Found in one search rather than by trying every word in turn (latency, 13 Oct 2026: needs_met asks it of whole
+    comments): a word of 4 letters or more is found at the start of a candidate (which takes in the word itself and its
+    plural, _stem's only other form), a shorter one as a whole candidate."""
+    if not _PLAIN_WORD.fullmatch(word):  # a word as need_words never gives one: tried against each candidate
+        return any(t == word or _stem(t) == word or (len(word) >= 4 and t.startswith(word))
+                   for t in _title_words(lowered_title).split())
+    candidates = _title_words(lowered_title)
+    if len(word) >= 4:
+        return f" {word}" in candidates
+    return f" {word} " in candidates
+
+
+def _title_words(lowered_title: str) -> str:
+    """The candidates _title_has looks among, each after a space and followed by one: the words with their apostrophes
+    and hyphens left out, each two neighbouring words written as one, and "anti-X" and "X-free" as X."""
+    written = _TITLE_WORD.findall(lowered_title)
+    tokens = [t.replace("'", "").replace("-", "") for t in written]
     candidates = tokens + [a + b for a, b in zip(tokens, tokens[1:])]
-    candidates += [re.sub(r"['-]", "", re.sub(r"^anti-(?=[a-z])|(?<=[a-z])-free$", "", t)) for t in written
+    candidates += [_ANTI_OR_FREE.sub("", t).replace("'", "").replace("-", "") for t in written
                    if t.startswith("anti-") or t.endswith("-free")]
-    return any(t == word or _stem(t) == word or (len(word) >= 4 and t.startswith(word)) for t in candidates)
+    return " " + " ".join(candidates) + " "
+
+
+_TITLE_WORD = re.compile(r"[a-z0-9]+(?:['-][a-z0-9]+)*")
+_PLAIN_WORD = re.compile(r"[a-z0-9]+")  # what need_words gives: letters and digits only
+_ANTI_OR_FREE = re.compile(r"^anti-(?=[a-z])|(?<=[a-z])-free$")
 
 
 def _stem(word: str) -> str:

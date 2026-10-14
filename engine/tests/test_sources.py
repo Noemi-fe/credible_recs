@@ -1203,3 +1203,74 @@ def test_an_ingredient_led_request_keeps_reading_the_threads_about_its_ingredien
     query = parse_query("salicylic acid for acne")
     assert query.ingredient_led and query.constraints.skin_types == ["acne-prone"]
     assert ids(source.find_threads(query, limit=10))[0] == "1sali01"
+
+
+# --- Relevance and talking read a thread's comments in one go (latency, 13 Oct 2026) ---
+
+import random  # noqa: E402
+
+from engine.query import PRODUCT_TYPES  # noqa: E402
+from engine.sources import mentions_product, talking  # noqa: E402
+
+
+def relevance_one_by_one(thread: Thread, product_type: str) -> float:
+    """relevance as first written, every comment read on its own: the reference."""
+    score = 3 if mentions_product(thread.title, product_type) else 0
+    score += 1 if mentions_product(thread.body, product_type) else 0
+    talking = sum(mentions_product(c.body, product_type) for c in thread.comments)
+    return score + min(1, talking / 5)
+
+
+def test_relevance_and_talking_are_the_same_reading_the_comments_together():
+    # Comments that name products whole, with a slip, inside a longer name of something else ("tea pot", "dry
+    # shampoo"), split across two comments ("air" ending one, "fryer" starting the next), or not at all.
+    rng = random.Random(13)
+    bits = ["kettle", "kettles", "a tea pot", "teapot", "pot", "saucepan", "suncreen", "sunscreen", "moisturiser",
+            "moisturizr", "dry shampoo", "shampoo", "conditioner", "leave-in conditioner", "air", "fryer", "air fryer",
+            "salicylic acid", "bha", "chef's knife", "paring knife", "cast iron", "skillet", "nothing here", "great",
+            "I love it.", "\n", "rice cooker", "cleanser", "gleanser", "exfoliant", "toner", "serum", "dutch oven",
+            "KETTLE", "Sunscreens", "SUNCREENS", "\u017funscreen", "\u0130", "caf\u00e9", "tea-pot", "pot,", "(kettle)",
+            "frying pans", "pans", "sauce pans", "tea pots", "pots", "crock pot", "dry shampoos", "eye creams", "creams",
+            "Tea Kettles", "electric tea kettles", "\u212aettle"]
+    for n in range(60):
+        comments = [make_comment(f"c{n}x{i}", thread_id=f"1fake{n}",
+                                 body="so " + " ".join(rng.choice(bits) for _ in range(rng.randint(1, 6))))
+                    for i in range(rng.randint(0, 9))]
+        thread = Thread.model_validate(make_thread(id=f"1fake{n}", title=rng.choice(["Help", "Best kettle?"]),
+                                                   comments=comments, num_comments=len(comments)))
+        for product_type in [p.name for p in PRODUCT_TYPES] + ["air fryer", "salicylic acid product"]:
+            assert relevance(thread, product_type) == relevance_one_by_one(thread, product_type), (n, product_type)
+            assert type(relevance(thread, product_type)) is type(relevance_one_by_one(thread, product_type))
+            assert talking(thread, product_type) == sum(mentions_product(c.body, product_type) for c in thread.comments)
+
+
+# --- A request's word in a text, found without trying every word in turn (latency, 13 Oct 2026) ---
+
+import re  # noqa: E402
+
+from engine.sources import _stem, _title_has  # noqa: E402
+
+
+def title_has_word_by_word(lowered_title: str, word: str) -> bool:
+    """_title_has as first written, every candidate tried in turn: the reference."""
+    written = re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", lowered_title)
+    tokens = [re.sub(r"['-]", "", t) for t in written]
+    candidates = tokens + [a + b for a, b in zip(tokens, tokens[1:])]
+    candidates += [re.sub(r"['-]", "", re.sub(r"^anti-(?=[a-z])|(?<=[a-z])-free$", "", t)) for t in written
+                   if t.startswith("anti-") or t.endswith("-free")]
+    return any(t == word or _stem(t) == word or (len(word) >= 4 and t.startswith(word)) for t in candidates)
+
+
+def test_a_word_in_a_text_is_found_as_trying_every_word_found_it():
+    rng = random.Random(13)
+    bits = ["pour", "over", "pour-over", "pourover", "anti-dandruff", "dandruff", "sulfate-free", "sulfates", "free",
+            "lasts", "last", "lasting", "pfas", "pfas-free", "non-stick", "nonstick", "it's", "dont", "don't", "scalp",
+            "oily", "oil", "a", "an", "10", "years", "year", "anti-", "-free", "x-y-z", "co-wash", "ss", "class",
+            "classes", "dry", "drys", "sensitiv", ",", ".", "\n", "anti-a", "b-free"]
+    words = ["pourover", "dandruff", "sulfate", "last", "pfas", "nonstick", "scalp", "oily", "oil", "dry", "a", "10",
+             "year", "clas", "class", "free", "anti", "cowash", "dont", "its", "xyz", "sensitiv", "b", "s", "", "pour over",
+             "don't", "x-y"]
+    for _ in range(4000):
+        text = " ".join(rng.choice(bits) for _ in range(rng.randint(0, 12)))
+        word = rng.choice(words)
+        assert _title_has(text, word) == title_has_word_by_word(text, word), (text, word)

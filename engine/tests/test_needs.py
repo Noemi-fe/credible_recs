@@ -173,3 +173,28 @@ def test_needs_in_other_words_for_kitchen_requests():
     assert met("cast iron skillet for a glass top stove", "Fine on my ceramic hob, just lift it.") == ("glass top stove",)
     assert met("cast iron skillet for a glass top stove", "Works on a glass-top, never slide it.") == ("glass top stove",)
     assert met("cast iron skillet for a glass top stove", "Glass lids are handy.") == ()  # glass alone isn't the stove
+
+
+# --- Worked out once (latency, 13 Oct 2026) ---
+
+def test_a_comment_asked_again_about_the_same_needs_is_read_once(monkeypatch):
+    from engine import needs as needs_module
+
+    needs = request_needs(parse_query("gentle exfoliant for sensitive skin under £30"))
+    body = "Gentle enough for my sensitive skin, and I've used it for a year."
+    reads = []
+    real = needs_module._own_words
+    monkeypatch.setattr(needs_module, "_own_words", lambda text: reads.append(1) or real(text))
+    first = needs_met(body, needs)
+    assert needs_met(body, needs) == first == ("gentle", "sensitive")
+    assert len(reads) == 1
+    assert needs_met(body, needs, long_term_use=True) == first  # another question: read again
+    assert needs_met(body, needs[:1]) == ("gentle",)
+
+
+def test_two_requests_written_alike_keep_their_own_needs():
+    plain = parse_query("retinol for a beginner")
+    with_skin = plain.model_copy(update={"constraints": plain.constraints.model_copy(update={"skin_types": ["sensitive"]})})
+    assert [n.name for n in request_needs(plain)] == ["beginner"]
+    assert [n.name for n in request_needs(with_skin)] == ["beginner", "sensitive"]
+    assert [n.name for n in request_needs(plain)] == ["beginner"]

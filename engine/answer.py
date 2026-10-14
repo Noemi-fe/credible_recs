@@ -130,6 +130,7 @@ from engine.needs import LASTING, Need, needs_met
 from engine.prices import PriceCheck
 from engine.credibility import GENERIC_NAME_WORDS
 from engine.match_products import FILLER_WORDS, known_aliases
+from engine.memo import Table
 from engine.rank import KindNote, ProductScore, RankingResult, ScoredMention, ScoreBreakdown, is_credible
 from engine.query import LOOKALIKES, PRODUCT_TYPES
 from engine.sources import mentions_product
@@ -772,10 +773,15 @@ def _not_the_type(quote: str, product_type: str | None) -> bool:
     like it's a 'moisturizer'" (b04, 12 Oct 2026), by the type's name or one of module 1's names for it."""
     if not product_type:
         return False
-    names = {product_type, *(k for p in PRODUCT_TYPES if p.name == product_type for k in p.keywords)}
-    text = _plain(quote)
-    return any(re.search(rf"(?:\bnot\b|n't\b)[^.!?]{{0,30}}?\b(?:an?|real|really)\W+{re.escape(name)}s?\b", text)
-               for name in names)
+    key = (quote, product_type)
+    found = _NOT_THE_TYPE.get(key)
+    if found is None:
+        names = {product_type, *(k for p in PRODUCT_TYPES if p.name == product_type for k in p.keywords)}
+        text = _plain(quote)
+        found = _NOT_THE_TYPE.keep(key, any(
+            re.search(rf"(?:\bnot\b|n't\b)[^.!?]{{0,30}}?\b(?:an?|real|really)\W+{re.escape(name)}s?\b", text)
+            for name in names))
+    return found
 
 
 def _says_something(m: ScoredMention) -> bool:
@@ -797,9 +803,20 @@ _I_LIKE = re.compile(r"\bi (?:(?:really|also|do|still|just|honestly|actually|gen
 def _gives_a_view(quote: str) -> bool:
     """Whether the quote says what the writer thinks or went through (config.QUOTE_VIEW_WORDS: "great", "recommend",
     "lasted"..., or "I like"), rather than only that they own it."""
-    text = " ".join(re.findall(r"[a-z0-9']+", quote.lower().replace("’", "'")))
-    return (any(re.search(rf"(?<![a-z0-9']){re.escape(word)}(?![a-z0-9'])", text) for word in QUOTE_VIEW_WORDS)
-            or bool(_I_LIKE.search(text)))
+    found = _GIVES_A_VIEW.get(quote)
+    if found is None:
+        text = " ".join(re.findall(r"[a-z0-9']+", quote.lower().replace("’", "'")))
+        found = _GIVES_A_VIEW.keep(quote, any(re.search(rf"(?<![a-z0-9']){re.escape(word)}(?![a-z0-9'])", text)
+                                              for word in QUOTE_VIEW_WORDS) or bool(_I_LIKE.search(text)))
+    return found
+
+
+# What a quote shows, worked out once per quote (latency, 13 Oct 2026: an answer asks the same of each quote over and
+# over, as it orders, widens and picks them): each depends on the words it is given alone.
+_GIVES_A_VIEW = Table()  # quote -> _gives_a_view
+_NAMES_PRODUCT = Table()  # (quote, name, category, writer's name) -> _names_product
+_SAYS_THE_OPPOSITE = Table()  # (quote, asks) -> _says_the_opposite
+_NOT_THE_TYPE = Table()  # (quote, product type) -> _not_the_type
 
 
 def says_the_opposite(quote: str, asks: Iterable[str]) -> bool:
@@ -810,8 +827,14 @@ def says_the_opposite(quote: str, asks: Iterable[str]) -> bool:
 def _says_the_opposite(quote: str, asks: Iterable[str]) -> bool:
     """Whether the quote says the opposite of one of the request's asks (config.OPPOSITE_QUOTE_PATTERNS): "it leaves a
     white cast" for "no white cast", "smells lovely" for "fragrance-free"."""
-    text = " ".join(quote.lower().replace("’", "'").split())
-    return any(re.search(pattern, text) for ask in asks for pattern in OPPOSITE_QUOTE_PATTERNS.get(ask, ()))
+    asks = tuple(asks)
+    key = (quote, asks)
+    found = _SAYS_THE_OPPOSITE.get(key)
+    if found is None:
+        text = " ".join(quote.lower().replace("’", "'").split())
+        found = _SAYS_THE_OPPOSITE.keep(key, any(re.search(pattern, text) for ask in asks
+                                                 for pattern in OPPOSITE_QUOTE_PATTERNS.get(ask, ())))
+    return found
 
 
 def _names_product(quote: str, name: str, category: str, written_as: str = "") -> bool:
@@ -823,6 +846,14 @@ def _names_product(quote: str, name: str, category: str, written_as: str = "") -
     aside, and never a common product word such as "gooseneck"): "Stagg" for a kettle shown as "Fellow Stagg EKG"
     (b06, 10 Oct 2026, night: its writers' quotes had stopped naming it once the shown name took its brand). A name that
     is an everyday short word too (COMMON_SHORT_WORDS: "TO" for The Ordinary) names it only in capitals (12 Oct 2026)."""
+    key = (quote, name, category, written_as)
+    found = _NAMES_PRODUCT.get(key)
+    if found is None:
+        found = _NAMES_PRODUCT.keep(key, _names_product_of(quote, name, category, written_as))
+    return found
+
+
+def _names_product_of(quote: str, name: str, category: str, written_as: str) -> bool:
     text = " ".join(re.findall(r"[a-z0-9][a-z0-9'-]*", quote.lower().replace("’", "'")))
     name_words = _name_words(name)
     if not name_words:
@@ -1348,7 +1379,16 @@ def _named_types(kind: str, category: str) -> set[str]:
     """The types of product a kind's own name names (12 Oct 2026), of module 1's product types of its category, before a
     word saying what it is for ("for", "instead", "with": engine.group_kinds): by one of the type's names, the longest
     where one holds another ("dry shampoo", not "shampoo"), or by a word sharing the stem of a one-word one
-    ("cleansing", a cleanser's). "retinol eye cream" names a retinoid and an eye cream; "AHA" names none."""
+    ("cleansing", a cleanser's). "retinol eye cream" names a retinoid and an eye cream; "AHA" names none. Worked out
+    once per kind and category (latency, 13 Oct 2026); a new set each time."""
+    key = (kind, category)
+    found = _NAMED_TYPES.get(key)
+    if found is None:
+        found = _NAMED_TYPES.keep(key, frozenset(_named_types_of(kind, category)))
+    return set(found)
+
+
+def _named_types_of(kind: str, category: str) -> set[str]:
     words = re.findall(r"[a-z0-9][a-z0-9'-]*", _plain(kind))
     cut = next((i for i, w in enumerate(words) if w in PURPOSE_WORDS), len(words))
     text = " ".join(words[:cut])
@@ -1397,7 +1437,20 @@ def _another_kind_of(kind: str, product_type: str) -> bool:
 def _own_names(category: str, product_type: str, request: str) -> set[str]:
     """The words the request's own product goes by: its type's name, and the type's names the request uses ("retinol"
     for a retinoid), read the way kinds are (engine.group_kinds); since 13 Oct 2026 also the words of the active
-    ingredients it asks for and their related ones' ("BHA" in a salicylic acid answer is what was asked for)."""
+    ingredients it asks for and their related ones' ("BHA" in a salicylic acid answer is what was asked for). Worked out
+    once per request (latency, 13 Oct 2026: it was worked out again for every kind); a new set each time."""
+    key = (category, product_type, request)
+    found = _OWN_NAMES.get(key)
+    if found is None:
+        found = _OWN_NAMES.keep(key, frozenset(_own_names_of(category, product_type, request)))
+    return set(found)
+
+
+_OWN_NAMES = Table(limit=10_000)  # (category, product type, request) -> the words its own product goes by
+_NAMED_TYPES = Table()  # (kind, category) -> the product types its name names
+
+
+def _own_names_of(category: str, product_type: str, request: str) -> set[str]:
     aliases = known_aliases("kinds").get(category, {})
     own = set(_kind_words(product_type, aliases))
     asked = list(ingredients_of_type(product_type)) + [f.ingredient for f in find_ingredients(request)]
