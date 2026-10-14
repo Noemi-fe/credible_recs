@@ -10,7 +10,9 @@ What each pick shows (the brief):
   skin"); and with Noemi's upvote rule on (14 Oct 2026; off: config.UPVOTE_COUNTS_MORE), which of its credible voices
   counted twice toward the picks bar and for how many upvotes ("(one counted twice for its 34 upvotes)"), while every
   number of voices stays the number of writers (the meter's "voices" says how many counted twice) and the answer's
-  messages give the bar with its upvotes ("..., or 2 when one of them has 10 or more upvotes");
+  messages give the bar with its upvotes ("..., or 2 when one of them has 10 or more upvotes"); and when a comment
+  standing out in its thread is why it is shown (14 Oct 2026; config.STANDOUT_ON), which comment and by how much
+  ("(one comment has 205 upvotes in a 270-comment thread)"), the same for an "Also worth a look" item;
 - its credible support: how many high- and medium-credibility voices recommend it, across how many threads;
 - two or three quotes, the most credible first, each with its "why this voice counts" badges and a link to the
   comment;
@@ -171,6 +173,16 @@ REASON_UPVOTES_ONE = " (one counted twice for its {upvotes} upvotes)"
 REASON_UPVOTES = " ({n} counted twice for their upvotes: {upvotes})"
 RULE_UPVOTES = ", or {fewer} when one of them has {score} or more upvotes"
 RULE_UPVOTES_THREAD = " and is in the top {top} of a thread of {comments} or more comments"
+# A comment that stands out in its thread (Noemi, 14 Oct 2026, after switching on variant D; off unless
+# config.STANDOUT_ON; wording decided by Claude, from the orchestrator's example): a product shown only thanks to it
+# says which comment, and by how much, right after its number of voices, which stays the number of writers:
+# "Recommended by 1 credible voice (its comment has 74 upvotes in a 69-comment thread)"; with more writers, "(one
+# comment has ...)".
+# The note under Also worth a look is WORTH_NOTE_STANDOUT when such an item is shown, and the rule in the answer's
+# messages adds RULE_STANDOUT when such a pick is: in an answer it changes nothing in, every word stays as it was.
+REASON_STANDOUT_ONE = " (its comment has {upvotes} upvotes in a {comments}-comment thread)"
+REASON_STANDOUT = " (one comment has {upvotes} upvotes in a {comments}-comment thread)"
+RULE_STANDOUT = ", or {fewer}, even from one thread, when one of them stands out in its thread"
 NUMBER_WORDS = ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
 SUPPORT = "Backed by {voices}, across {threads}."
 DISAGREEMENT = "Mixed opinions: also warned against by {voices}."
@@ -296,6 +308,11 @@ CAUTION = "Note: {reason}."
 WORTH_HEADING = "Also worth a look"
 WORTH_NOTE = "{voices} each: less evidence than the picks above, which need {rule}."
 WORTH_NOTE_NO_PICKS = "{voices} each: less evidence than a pick needs ({rule})."
+# With an item shown thanks to a comment standing out in its thread (14 Oct 2026; see REASON_STANDOUT above).
+WORTH_NOTE_STANDOUT = ("{voices} each, or one comment that stands out in its thread: less evidence than the picks "
+                       "above, which need {rule}.")
+WORTH_NOTE_STANDOUT_NO_PICKS = ("{voices} each, or one comment that stands out in its thread: less evidence than a "
+                                "pick needs ({rule}).")
 # One-line summaries (Noemi's decision 4 of 13 Oct 2026; wording decided by Claude): shown under a pick's name as
 # "In short: <summary>", with the note saying it is ours and not a quote.
 SUMMARY_LABEL = "In short:"
@@ -568,18 +585,22 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     look_for = _look_for(ranking, check, product_type, unsuited_kinds, request, asks, [pick.name for pick in picks],
                          forms_asked)
     care_note = _care_note([care.get(pick.product_key) for pick in picks], picks, check)
+    # Shown thanks to a comment standing out in its thread (14 Oct 2026): the messages and the note say how.
+    standing_out = {p.key for p in ranking.products if p.by_standout}
+    standout_pick = any(pick.product_key in standing_out for pick in picks)
+    standout_item = any(item.product_key in standing_out for item in worth)
     return Answer(
         category=ranking.category,
         product_type=product_type,
         picks=picks,
         look_for=look_for,
         skip=[item for item in skip if item is not None],
-        message=_message(len(picks), product_type),
+        message=_message(len(picks), product_type, standout_pick),
         needs_more_threads=len(picks) < PICKS_SHOWN,
         quotes_dropped=check.dropped,
         care_note=care_note,
         worth_a_look=worth,
-        worth_note=_worth_note(len(picks)) if worth else None,
+        worth_note=_worth_note(len(picks), standout_item, standout_pick) if worth else None,
         ingredient=ingredient,
         ingredient_note=_ingredient_note(product_type, ingredient, forms_asked),
         title=answer_title(product_type, ingredient),
@@ -614,7 +635,8 @@ def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[s
                  cautions: Mapping[str, list[str]], summaries: Mapping[str, Summary], left_out: Collection[str],
                  asks: tuple[str, ...], needs: tuple[Need, ...], product_type: str | None) -> list[WorthALook]:
     """Up to WORTH_A_LOOK_SHOWN products with two credible recommendations across two threads (ranking.worth_a_look),
-    best first, those in `left_out` aside; each with its verified quotes (_worth_quotes), or left out without one."""
+    best first, then those shown thanks to a comment standing out in its thread (14 Oct 2026), those in `left_out`
+    aside; each with its verified quotes (_worth_quotes), or left out without one."""
     items: list[WorthALook] = []
     for product in ranking.worth_a_look:
         if len(items) == WORTH_A_LOOK_SHOWN:
@@ -630,7 +652,8 @@ def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[s
             product_key=product.key,
             name=product.name,
             # A product the upvote rule lifted to the bar but its score left out of the picks (14 Oct 2026) is shown
-            # here as it would be without the rule: the upvotes changed nothing for it, so nothing is said of them.
+            # here as it would be without the rule: the upvotes changed nothing for it, so nothing is said of them. One
+            # shown here thanks to a comment standing out in its thread says so (_reason).
             reason=_reason(product, ranking, upvotes=False),
             quotes=quotes,
             downsides=downsides,
@@ -672,10 +695,16 @@ def _mid_sentence(quote: str, body: str | None) -> bool:
     return bool(before) and not before.endswith((".", "!", "?", "…", ":", ";"))
 
 
-def _worth_note(picks: int) -> str:
-    """The note under "Also worth a look": how much less support its products have than a pick."""
+def _worth_note(picks: int, standout_item: bool = False, standout_pick: bool = False) -> str:
+    """The note under "Also worth a look": how much less support its products have than a pick; with an item shown
+    thanks to a comment standing out in its thread (`standout_item`, 14 Oct 2026), that it can be one such comment, and
+    with such a pick (`standout_pick`) the rule says how it meets the bar."""
     voices = _plural(WORTH_A_LOOK_CREDIBLE, "credible voice")
-    return (WORTH_NOTE if picks else WORTH_NOTE_NO_PICKS).format(voices=voices, rule=_rule())
+    if standout_item:
+        wording = WORTH_NOTE_STANDOUT if picks else WORTH_NOTE_STANDOUT_NO_PICKS
+    else:
+        wording = WORTH_NOTE if picks else WORTH_NOTE_NO_PICKS
+    return wording.format(voices=voices, rule=_rule(standout_pick))
 
 
 # --- One-line summaries (Noemi's decision 4 of 13 Oct 2026) ---
@@ -1279,14 +1308,19 @@ def _as_sentence(tip: str) -> str:
 
 
 def _reason(product: ProductScore, ranking: RankingResult, upvotes: bool = True) -> str:
-    """The one-line reason: how many credible voices, which counted twice for their upvotes (a pick's, `upvotes`), how
-    many after long-term use, how many talk about the request's needs, and the kind if it leads."""
+    """The one-line reason: how many credible voices, which counted twice for their upvotes (a pick's, `upvotes`) or
+    which comment stands out in its thread when that is why it is shown (14 Oct 2026), how many after long-term use,
+    how many talk about the request's needs, and the kind if it leads."""
     recommendations = product.credible_recommendations
     long_term = sum(m.evidence == "long-term use" for m in recommendations)
     has_bonus = product.breakdown.kind_bonus > 0 and ranking.leading_kind is not None
+    if product.by_standout:
+        clause = _standout_clause(product)
+    else:
+        clause = _upvotes_clause(product.counted_twice) if upvotes else ""
     return REASON.format(
         voices=_plural(len(recommendations), "credible voice"),
-        upvotes=_upvotes_clause(product.counted_twice) if upvotes else "",
+        upvotes=clause,
         long_term=REASON_LONG_TERM.format(n=long_term) if long_term else "",
         needs=_needs_clause(recommendations, [m.needs for p in ranking.products for m in p.mentions], ranking.category),
         kind=REASON_KIND.format(kind=ranking.leading_kind.name) if has_bonus else "",
@@ -1305,16 +1339,27 @@ def _upvotes_clause(counted_twice: tuple[ScoredMention, ...]) -> str:
     return REASON_UPVOTES.format(n=n, upvotes=NEEDS_JOIN.join(counts[:-1]) + " and " + counts[-1])
 
 
-def _rule() -> str:
+def _standout_clause(product: ProductScore) -> str:
+    """" (its comment has 74 upvotes in a 69-comment thread)": the most upvoted of a product's comments standing out in
+    their threads (14 Oct 2026), its upvotes and its thread's readable comments; "(one comment has ...)" with more
+    credible writers."""
+    top = product.standouts[0]
+    wording = REASON_STANDOUT_ONE if len(product.credible_recommendations) == 1 else REASON_STANDOUT
+    return wording.format(upvotes=f"{top.upvotes:,}", comments=f"{top.thread_comments:,}")
+
+
+def _rule(standout_pick: bool = False) -> str:
     """The picks bar in words, for the answer's messages (RULE): with the upvote rule on (14 Oct 2026), also how a
-    product with one credible recommendation fewer meets it."""
+    product with one credible recommendation fewer meets it; with a pick shown thanks to a comment standing out in its
+    thread (`standout_pick`, 14 Oct 2026), how that one did."""
     rule = RULE.format(mentions=MIN_CREDIBLE_MENTIONS, threads=MIN_THREADS)
-    if not config.UPVOTE_COUNTS_MORE:
-        return rule
-    rule += RULE_UPVOTES.format(fewer=MIN_CREDIBLE_MENTIONS - 1, score=f"{config.UPVOTE_MIN_SCORE:,}")
-    if config.UPVOTE_TOP_OF_BIG_THREAD:
-        rule += RULE_UPVOTES_THREAD.format(top=f"{1 - config.UPVOTE_THREAD_SHARE_BEATEN:.0%}",
-                                           comments=f"{config.UPVOTE_THREAD_MIN_COMMENTS:,}")
+    if config.UPVOTE_COUNTS_MORE:
+        rule += RULE_UPVOTES.format(fewer=MIN_CREDIBLE_MENTIONS - 1, score=f"{config.UPVOTE_MIN_SCORE:,}")
+        if config.UPVOTE_TOP_OF_BIG_THREAD:
+            rule += RULE_UPVOTES_THREAD.format(top=f"{1 - config.UPVOTE_THREAD_SHARE_BEATEN:.0%}",
+                                               comments=f"{config.UPVOTE_THREAD_MIN_COMMENTS:,}")
+    if standout_pick:
+        rule += RULE_STANDOUT.format(fewer=MIN_CREDIBLE_MENTIONS - 1)
     return rule
 
 
@@ -1692,11 +1737,12 @@ def _about_the_type(kind: str, notes: list[KindNote], product_type: str | None) 
     return not product_type or mentions_product(" ".join([kind] + [n.quote for n in notes]), product_type)
 
 
-def _message(picks: int, product_type: str | None) -> str | None:
-    """The honest message when fewer than 3 products have enough evidence, or None when there are 3."""
+def _message(picks: int, product_type: str | None, standout_pick: bool = False) -> str | None:
+    """The honest message when fewer than 3 products have enough evidence, or None when there are 3. With a pick shown
+    thanks to a comment standing out in its thread (14 Oct 2026), the rule says how that one met the bar."""
     if picks >= PICKS_SHOWN:
         return None
-    rule = _rule()
+    rule = _rule(standout_pick)
     if picks == 0:
         return NO_PICKS.format(what=f"any {product_type}" if product_type else "a product", rule=rule)
     return FEWER_PICKS.format(products=_plural(picks, "product"), rule=rule, n=picks, wanted=PICKS_SHOWN)

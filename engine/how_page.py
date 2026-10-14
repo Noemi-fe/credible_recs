@@ -174,6 +174,22 @@ UPVOTE_RULE_AS_NEEDED = ", and only as many as the product needs to meet it"
 UPVOTE_RULE_THREAD = (", and that scored higher than {{config%:UPVOTE_THREAD_SHARE_BEATEN}} of the other comments in a "
                       "thread of at least {{config:UPVOTE_THREAD_MIN_COMMENTS}} comments,")
 
+# A comment that stands out in its thread (Noemi, 14 Oct 2026; wording decided by Claude): explained under Also worth a
+# look only while it is on (config.STANDOUT_ON).
+STANDOUT_RULE = ("<p>A product can also be shown when one comment about it stands out in its thread: a credible "
+                 "recommendation whose comment has at least {{config:STANDOUT_MIN_SCORE}} upvotes, and at least "
+                 "{{config%:STANDOUT_UPVOTES_PER_COMMENT}} as many upvotes as its thread has comments, in a thread "
+                 "of at least {{config:STANDOUT_MIN_THREAD_COMMENTS}} comments. It must name at most "
+                 "{{config:STANDOUT_MAX_PRODUCTS}} products, and talk about what you asked for when you ask for "
+                 "more than the product. Its product can then take a place left empty under “{{worth_heading}}”, "
+                 "even when that comment is its only credible recommendation{picks}. It never takes the place of a "
+                 "product that meets the rules above. Upvotes never make a comment credible, the product needs more "
+                 "credible recommendations than credible warnings, and its reason says which comment stands out and "
+                 "by how much: “its comment has 74 upvotes in a 69-comment thread”.</p>")
+
+STANDOUT_RULE_PICKS = (", and with one more credible recommendation, even from the same thread, a place the picks "
+                       "would otherwise leave empty")
+
 MEASURED_ON = "Last measured on {date}."
 TARGETS_HEADING = "The targets we set"
 OTHER_HEADING = "Other checks"
@@ -209,6 +225,7 @@ def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = Fa
         "honesty_signs": _sign_list(HONESTY_SIGNS),
         "hard_rules": _hard_rules(),
         "upvote_rule": _upvote_rule(),
+        "standout_rule": _standout_rule(),
         "evaluation": evaluation_section(metrics_path),
         "visit_counting": VISITS_COUNTED if counter else VISITS_NOT_COUNTED,
         "public_site": PUBLIC_SITE if public else "",
@@ -288,6 +305,14 @@ def _upvote_rule() -> str:
                                    thread=UPVOTE_RULE_THREAD if config.UPVOTE_TOP_OF_BIG_THREAD else "",
                                    as_needed=UPVOTE_RULE_AS_NEEDED if short else "",
                                    fill=UPVOTE_RULE_FILL if config.UPVOTE_ONLY_TO_FILL else ""), {})
+
+
+def _standout_rule() -> str:
+    """A comment standing out in its thread (STANDOUT_RULE, 14 Oct 2026), or "" while it is off."""
+    if not config.STANDOUT_ON:
+        return ""
+    picks = STANDOUT_RULE_PICKS if config.STANDOUT_FILLS_PICKS else ""
+    return fill(STANDOUT_RULE.replace("{picks}", picks), {"worth_heading": answer.WORTH_HEADING})
 
 
 def _medium_red_flags() -> str:

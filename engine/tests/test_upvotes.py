@@ -40,6 +40,14 @@ BY_SCORE = ("A", "B", "C")  # the variants in which a lifted product takes its p
 TOP = {"thread_comments": 40, "share_beaten": 0.95}
 
 
+@pytest.fixture(autouse=True)
+def _the_upvote_rule_alone(monkeypatch):
+    # These tests are about the upvote rule alone (its variants A to D): the comment that stands out in its thread
+    # (Noemi, 14 Oct 2026; engine/tests/test_standout.py) is switched off here, so a well upvoted comment lifts a
+    # product only by counting twice (added on purpose with that rule).
+    monkeypatch.setattr(config, "STANDOUT_ON", False)
+
+
 def upvote_rule(monkeypatch, variant: str) -> None:
     """Turns the rule on, in one variant."""
     only_when_short, top_of_big_thread, only_to_fill = VARIANTS[variant]
