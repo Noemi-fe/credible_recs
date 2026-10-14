@@ -293,8 +293,9 @@ class PipelineResult:
     skipped_files: list[str] = field(default_factory=list)
     read_more: bool = False  # the first threads gave too few picks, so more were read (answer_request, 11 Oct 2026)
     # The same reading ranked with Noemi's upvote rule (14 Oct 2026), when asked for (_answer's upvotes_too): what
-    # answer_request returns for the reading it keeps. None otherwise.
-    with_upvotes: "PipelineResult | None" = field(default=None, repr=False)
+    # answer_request returns for the reading it keeps. None otherwise, and when the rule changes nothing in its ranking
+    # (the answer is this one).
+    with_upvotes: "PipelineResult | None" = field(default=None, repr=False, compare=False)
 
     def text(self) -> str:
         """The answer as Markdown, or module 1's question or polite no."""
@@ -480,12 +481,27 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     if upvotes_too:
         # The same reading, ranked with Noemi's upvote rule (14 Oct 2026). The comments its live checks dropped (gone,
         # changed or unreadable on Reddit) stay dropped, so their votes and notes count for nothing here either; anything
-        # new it shows is checked live as usual (the checker remembers the rest).
+        # new it shows is checked live as usual (the checker remembers the rest). When the rule changes nothing in the
+        # ranking, the answer is the same: it isn't written again.
         dropped = readable - set(result.bodies)
-        again = replace(result, live_dropped=dict(result.live_dropped), live_put_off=0)
-        result.with_upvotes = rank_and_write(again, [m for m in scored if m.comment_id not in dropped],
-                                             [n for n in kind_notes if n.comment_id not in dropped], upvote_rule=True)
+        scored = [m for m in scored if m.comment_id not in dropped]
+        kind_notes = [n for n in kind_notes if n.comment_id not in dropped]
+        if not _upvotes_change_nothing(scored, query, kind_notes, kinds, need_led, result.skip_only):
+            again = replace(result, live_dropped=dict(result.live_dropped), live_put_off=0)
+            result.with_upvotes = rank_and_write(again, scored, kind_notes, upvote_rule=True)
     return result
+
+
+def _upvotes_change_nothing(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
+                            skip_only: Mapping[str, str]) -> bool:
+    """Whether Noemi's upvote rule (14 Oct 2026) leaves a reading's ranking as it is: every product meets the bar, is an
+    Also worth a look item or neither, as without the rule, and none that meets it has a voice counted twice (which its
+    reason would say). The rest of a ranking doesn't depend on the rule, so its answer would be the same."""
+    def marks(ranking: RankingResult) -> list[tuple]:
+        return [(p.key, p.qualifies, p.worth_a_look, p.qualifies and bool(p.counted_twice)) for p in ranking.products]
+
+    return (marks(_ranked(scored, query, kind_notes, kinds, need_led, skip_only, False))
+            == marks(_ranked(scored, query, kind_notes, kinds, need_led, skip_only, True)))
 
 
 # Why a product found only in a wider reading isn't a pick (answer_request, 11 Oct 2026).

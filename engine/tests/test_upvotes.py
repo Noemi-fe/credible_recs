@@ -449,6 +449,24 @@ def test_with_the_rule_on_each_reading_reads_its_threads_once(tmp_path, monkeypa
     assert len(calls) == off
 
 
+def test_with_the_rule_on_an_answer_it_changes_nothing_in_is_written_once(tmp_path, monkeypatch):
+    # The Zojirushi meets the bar on its own and nothing else can be lifted: ranked with the rule, the reading would give
+    # the same answer, so it isn't written again.
+    from engine import pipeline
+    from engine.tests.test_pipeline import library
+
+    root = library(tmp_path)
+    calls = []
+    real = pipeline.write_answer
+    monkeypatch.setattr(pipeline, "write_answer", lambda *args, **kwargs: calls.append(1) or real(*args, **kwargs))
+    off = answer_request(REQUEST, library_dir=root)
+    written = len(calls)
+    upvote_rule(monkeypatch, "D")
+    calls.clear()
+    on = answer_request(REQUEST, library_dir=root)
+    assert len(calls) == written and shown(on) == shown(off) and on.answer.picks[0].reason == off.answer.picks[0].reason
+
+
 @pytest.mark.parametrize("variant", VARIANTS)
 def test_a_comment_gone_from_reddit_lifts_nothing(tmp_path, monkeypatch, variant):
     # The Stagg's upvoted comment was deleted on Reddit since it was saved: the live check drops it, its vote no longer
