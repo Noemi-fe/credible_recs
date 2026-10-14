@@ -335,7 +335,8 @@ def handle_request(path_and_query: str, library_dir: Path = DEFAULT_LIBRARY_DIR,
     if parts.path == "/":
         return 200, HTML, search_page(site)
     if parts.path == "/how":  # read now: a new evaluation run shows at once
-        page = how_page.page(METRICS_FILE, counter=counter_script(site.goatcounter), public=site.public)
+        page = how_page.page(METRICS_FILE, counter=counter_script(site.goatcounter), public=site.public,
+                             on_demand=on_demand is not None)
         return 200, HTML, page.encode("utf-8")
     if parts.path == "/api/answer":
         request = parse_qs(parts.query).get("q", [""])[0]
