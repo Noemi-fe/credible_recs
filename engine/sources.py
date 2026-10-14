@@ -126,6 +126,45 @@ def _never_covered(product_type: str) -> frozenset[str]:
                      if not any(form in text for text in longer))
 
 
+# The letters a case-blind pattern reads as an ASCII letter that lower() doesn't write as one: dotted and dotless i and
+# the long s (every other one lower() writes as its ASCII letter: checked over every character, 14 Oct 2026). A text
+# holding one is read by the patterns alone, never by the quick looks below.
+_ODD_LETTERS = re.compile("[\u0130\u0131\u017f]")
+
+
+def _names_written(lowered: str, text: str, product_type: str) -> bool:
+    """A quick look before the product's pattern is searched for (latency, 14 Oct 2026): False only when none of its
+    names is written in the text at all, in any case (`lowered` is text.lower()), so the pattern can't match. True when
+    it can't tell: a product found by other patterns than its names (an ingredient's, a type the open model named), or a
+    text with one of _ODD_LETTERS."""
+    names = _literal_names(product_type)
+    return names is None or bool(_ODD_LETTERS.search(text)) or any(name in lowered for name in names)
+
+
+@cache
+def _literal_names(product_type: str) -> tuple[str, ...] | None:
+    """The product's names in lowercase, when its pattern is those names alone (_product_pattern); None otherwise."""
+    if talk_words(product_type.strip()):
+        return None
+    known = {p.name: p.keywords + p.hints for p in PRODUCT_TYPES}
+    words = known.get(product_type.strip().lower())
+    return tuple(word.lower() for word in words) if words else None
+
+
+def _a_cover_written(form: str, lowered: str, text: str, product_type: str) -> bool:
+    """Whether a longer name of something else holding this match (`form`: its text in lowercase) is written in the
+    text at all, in any case: a quick look before the longer names are searched for (latency, 14 Oct 2026). When none
+    is, the match can't be inside one. True when it can't tell (a text with one of _ODD_LETTERS)."""
+    return bool(_ODD_LETTERS.search(text)) or any(phrase in lowered for phrase in _phrases_holding(product_type, form))
+
+
+@cache
+def _phrases_holding(product_type: str, form: str) -> tuple[str, ...]:
+    """The longer names of something else (_covering_phrases, in lowercase) that hold this text, as written or with their
+    plural "s": the only ones a match reading so can be inside."""
+    return tuple(phrase for phrase in (p.lower() for p in _covering_phrases(product_type)) if form in phrase + "s")
+
+
 def mentions_product(text: str, product_type: str, leave_aside: str = "") -> bool:
     """True if the text names the product, allowing one wrong letter in long names ("suncreen" for "sunscreen").
 
@@ -157,10 +196,13 @@ _MENTIONS = Table()  # (text, product type, word left aside) -> mentions_product
 def _mentions_product(text: str, product_type: str, leave_aside: str) -> bool:
     covers = None
     never_covered = _never_covered(product_type)
-    for match in _product_pattern(product_type).finditer(text):
+    lowered = text.lower()
+    for match in (_product_pattern(product_type).finditer(text) if _names_written(lowered, text, product_type)
+                  else ()):
         if leave_aside and _same_word_as(match.group(0), leave_aside):
             continue
-        if match.group(0).lower() in never_covered:
+        form = match.group(0).lower()
+        if form in never_covered or (covers is None and not _a_cover_written(form, lowered, text, product_type)):
             return True
         if covers is None:
             covers = [(c.start(), c.end()) for c in _covering_pattern(product_type).finditer(text)]
@@ -171,7 +213,7 @@ def _mentions_product(text: str, product_type: str, leave_aside: str) -> bool:
         return False
     # Only the words long enough to be a slip of one (the regular expression finds those alone, 13 Oct 2026; finding
     # every word and keeping the long ones was most of reading a thread for retrieval).
-    tokens = {t.removesuffix("s") for t in _LONG_WORD.findall(text.lower())}
+    tokens = {t.removesuffix("s") for t in _LONG_WORD.findall(lowered)}
     tokens = {t for t in tokens if not (leave_aside and _same_word_as(t, leave_aside))}
     lengths = _slip_lengths(product_type)
     return any(one_edit_apart(t, w) for t in tokens if len(t) in lengths for w in long_names)
@@ -244,25 +286,28 @@ def comments_naming(comments: list[Comment], product_type: str) -> int:
         return 0
     joined = COMMENTS_APART.join(bodies)
     starts = _starts(bodies)
+    lowered = [body.lower() for body in bodies]
     naming: set[int] = set()
     covers: dict[int, list[tuple[int, int]]] = {}  # a comment -> the longer names in it, where they are in `joined`
     never_covered = _never_covered(product_type)
-    for match in _product_pattern(product_type).finditer(joined):
-        at = bisect_right(starts, match.start()) - 1
-        if at in naming:
-            continue
-        if match.group(0).lower() in never_covered:
-            naming.add(at)
-            continue
-        if at not in covers:  # read in that comment alone, as mentions_product reads it
-            covers[at] = [(starts[at] + c.start(), starts[at] + c.end())
-                          for c in _covering_pattern(product_type).finditer(bodies[at])]
-        if not any(s <= match.start() and match.end() <= e and e - s > match.end() - match.start()
-                   for s, e in covers[at]):
-            naming.add(at)
+    if _names_written(COMMENTS_APART.join(lowered), joined, product_type):
+        for match in _product_pattern(product_type).finditer(joined):
+            at = bisect_right(starts, match.start()) - 1
+            if at in naming:
+                continue
+            form = match.group(0).lower()
+            if form in never_covered or (at not in covers and not _a_cover_written(form, lowered[at], bodies[at],
+                                                                                    product_type)):
+                naming.add(at)
+                continue
+            if at not in covers:  # read in that comment alone, as mentions_product reads it
+                covers[at] = [(starts[at] + c.start(), starts[at] + c.end())
+                              for c in _covering_pattern(product_type).finditer(bodies[at])]
+            if not any(s <= match.start() and match.end() <= e and e - s > match.end() - match.start()
+                       for s, e in covers[at]):
+                naming.add(at)
     long_names = _long_names(product_type)
     if long_names and len(naming) < len(bodies):
-        lowered = [body.lower() for body in bodies]
         low_starts = _starts(lowered)
         slips: dict[str, bool] = {}  # each long word, once: whether it is a slip of a long name
         for word in _LONG_WORD.finditer(COMMENTS_APART.join(lowered)):

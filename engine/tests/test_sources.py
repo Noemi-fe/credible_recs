@@ -1213,11 +1213,30 @@ from engine.query import PRODUCT_TYPES  # noqa: E402
 from engine.sources import mentions_product, talking  # noqa: E402
 
 
+def mentions_by_scanning(text: str, product_type: str, leave_aside: str = "") -> bool:
+    """mentions_product as first written (12-13 Oct 2026): every match checked against every longer name of the text,
+    every word tried for a slip. The reference the quicker one must always equal."""
+    from engine import sources
+
+    covers = None
+    for match in sources._product_pattern(product_type).finditer(text):
+        if leave_aside and sources._same_word_as(match.group(0), leave_aside):
+            continue
+        if covers is None:
+            covers = [(c.start(), c.end()) for c in sources._covering_pattern(product_type).finditer(text)]
+        if not any(s <= match.start() and match.end() <= e and e - s > match.end() - match.start() for s, e in covers):
+            return True
+    long_names = [w for w in sources._product_words(product_type) if " " not in w and len(w) >= sources.TYPO_MIN_LENGTH]
+    tokens = {t.removesuffix("s") for t in re.findall(r"[a-z]+", text.lower()) if len(t) >= sources.TYPO_MIN_LENGTH - 1}
+    tokens = {t for t in tokens if not (leave_aside and sources._same_word_as(t, leave_aside))}
+    return any(sources.one_edit_apart(t, w) for t in tokens for w in long_names)
+
+
 def relevance_one_by_one(thread: Thread, product_type: str) -> float:
     """relevance as first written, every comment read on its own: the reference."""
-    score = 3 if mentions_product(thread.title, product_type) else 0
-    score += 1 if mentions_product(thread.body, product_type) else 0
-    talking = sum(mentions_product(c.body, product_type) for c in thread.comments)
+    score = 3 if mentions_by_scanning(thread.title, product_type) else 0
+    score += 1 if mentions_by_scanning(thread.body, product_type) else 0
+    talking = sum(mentions_by_scanning(c.body, product_type) for c in thread.comments)
     return score + min(1, talking / 5)
 
 
@@ -1241,7 +1260,9 @@ def test_relevance_and_talking_are_the_same_reading_the_comments_together():
         for product_type in [p.name for p in PRODUCT_TYPES] + ["air fryer", "salicylic acid product"]:
             assert relevance(thread, product_type) == relevance_one_by_one(thread, product_type), (n, product_type)
             assert type(relevance(thread, product_type)) is type(relevance_one_by_one(thread, product_type))
-            assert talking(thread, product_type) == sum(mentions_product(c.body, product_type) for c in thread.comments)
+            assert talking(thread, product_type) == sum(mentions_by_scanning(c.body, product_type) for c in thread.comments)
+            for comment in thread.comments:
+                assert mentions_product(comment.body, product_type) == mentions_by_scanning(comment.body, product_type)
 
 
 # --- A request's word in a text, found without trying every word in turn (latency, 13 Oct 2026) ---
