@@ -248,6 +248,24 @@ def test_threads_in_the_library_and_gold_threads_are_never_chosen(tmp_path, lib)
     assert chosen_ids(result, "electric kettle") == {"1new001"}
 
 
+def test_a_thread_imported_before_and_set_aside_is_never_chosen_again(tmp_path, lib):
+    # Noemi, 14 Oct 2026: off-topic imports are moved to set_aside/ or deleted, and imports.jsonl keeps their ids so they
+    # are never imported again
+    files = tmp_path / "files"
+    posts = [post("1gone01", GOOD), post("1aside1", GOOD), post("1new001", GOOD)]
+    write_subreddit(files, "BuyItForLife", posts, [c for p in posts for c in some_comments(p["id"])])
+    logged = {"at": "2026-10-14T10:51:30+00:00", "thread_id": "1gone01", "set_aside": "a general megathread",
+              "to": "data/library/set_aside/", "extraction_moved": False}
+    (lib / "imports.jsonl").write_text(json.dumps(logged) + "\n", encoding="utf-8")
+    aside = make_thread(id="1aside1", community="BuyItForLife", category="kitchen", title="Kettle?", comments=[],
+                        url="https://www.reddit.com/r/BuyItForLife/comments/1aside1/x/")
+    (lib / "set_aside" / "threads").mkdir(parents=True)
+    (lib / "set_aside" / "threads" / "1aside1.json").write_text(json.dumps(aside), encoding="utf-8")
+    result = run(files, lib, dry_run=True)
+    assert chosen_ids(result, "electric kettle") == {"1new001"}
+    assert result.left_out["already in the library, set aside before or in the gold set"] == 2
+
+
 def test_spot_treatments_read_r_acne_and_other_skincare_types_dont(tmp_path, lib):
     files = tmp_path / "files"
     posts = [post("1spot01", "Which pimple patches actually work?", sub="acne"),
