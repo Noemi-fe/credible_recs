@@ -195,14 +195,21 @@ class Bucket:
     def generation(self, name: str) -> str | None:
         """The object's generation (Cloud Storage's number for each version of it), from a small metadata read; None
         when there is none (or the bucket can't be read just now)."""
+        return self.lookup(name)[1]
+
+    def lookup(self, name: str) -> tuple[bool, str | None]:
+        """Whether the bucket answered, and the object's generation (None when there is no such object): one small
+        metadata read, as generation, telling "there is none yet" from "the bucket can't be read just now"."""
         path = url_quote(self.prefix + name, safe="")
         status, body = self._call("GET", f"{STORAGE_API}/b/{url_quote(self.name, safe='')}/o/{path}?fields=generation")
+        if status == 404:
+            return True, None
         if status != 200:
-            return None
+            return False, None
         try:
-            return str(json.loads(body)["generation"])
+            return True, str(json.loads(body)["generation"])
         except (ValueError, KeyError, TypeError):
-            return None
+            return False, None
 
     def get(self, name: str, generation: str | None = None) -> bytes | None:
         """The object's content (that version of it, when `generation` is given), or None when there is none (or the

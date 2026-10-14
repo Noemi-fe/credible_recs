@@ -1131,3 +1131,56 @@ PRODUCT_TYPE_FORMS: dict[str, str] = {
     "retinoid": "retinoid treatment", "serum": "serum", "toner": "toner", "eye cream": "eye cream",
     "lip balm": "lip balm", "spot treatment": "spot treatment",
 }
+
+# --- On-demand reading (Noemi's plan of 14 Oct 2026, part 3; values chosen by Claude, reported to Noemi) ---
+# engine/on_demand.py. A request module 1 understands, about a product type the library holds fewer extracted threads
+# about than this, is queued for a reading job (Arctic Shift's archive, Gemini's free allowance), and the site says so:
+# the library's own mix per product type.
+ON_DEMAND_MIN_THREADS = LIBRARY_THREADS_PER_PRODUCT
+# What the queue keeps of a request: its product type, category and subreddits (module 1's), and at most this many of its
+# need words (engine.sources.need_words: its own words less the product's name, filler words and numbers), for a
+# need-led choice of threads. Never the request as typed, never a time or an address (Noemi's rule of 11 Oct 2026).
+ON_DEMAND_NEED_WORDS = 3
+# At most this many requests wait at once: more are answered from what the library has, and asked about again later.
+ON_DEMAND_MAX_WAITING = 10
+# The queue remembers at most this many requests already read (the oldest are forgotten): each is read again, when its
+# library is still thin, after ON_DEMAND_READ_AGAIN_DAYS (Reddit may have more by then), or after ON_DEMAND_RETRY_DAYS
+# when its reading failed ON_DEMAND_MAX_TRIES times (Arctic Shift down, say), each try at least an hour apart.
+ON_DEMAND_MAX_DONE = 300
+ON_DEMAND_READ_AGAIN_DAYS = 30
+ON_DEMAND_RETRY_DAYS = 1
+ON_DEMAND_MAX_TRIES = 3
+ON_DEMAND_RETRY_MINUTES = 60
+# A thread whose extraction fails this many times (not for the daily limit) is let go.
+ON_DEMAND_EXTRACT_TRIES = 3
+# The job's time (Cloud Run jobs are billed for their whole run, waiting included; free tiers only): a run starts no new
+# request's reading after ON_DEMAND_NEW_READING_SECONDS (its task timeout, 45 minutes, leaves room to finish one), and
+# the runs of a month read for at most ON_DEMAND_MONTH_SECONDS, which with the daily pre-check keeps Cloud Run jobs
+# inside their free 240,000 vCPU-seconds a month (deploy/cloudrun/DEPLOY.md). Each run also counts
+# ON_DEMAND_START_SECONDS for starting up. A run holds the queue (its lease) for ON_DEMAND_LEASE_MINUTES at most: longer
+# than its task timeout, so a run cut short never keeps the next one out for long.
+ON_DEMAND_NEW_READING_SECONDS = 15 * 60
+ON_DEMAND_MONTH_SECONDS = 50_000
+ON_DEMAND_START_SECONDS = 30
+ON_DEMAND_LEASE_MINUTES = 50
+# Gemini calls a day the job may make (Gemini's free allowance only, Noemi's decision of 14 Oct 2026), leaving the rest
+# of the free daily allowance to Noemi's own bulk reading; a 429 for the day stops it sooner. The allowance resets at
+# midnight Pacific time: the job waits until GEMINI_RESET_HOUR_UTC (8 am UTC: midnight in winter, 1 am in summer), so
+# it never asks before the reset.
+ON_DEMAND_GEMINI_CALLS_A_DAY = 100
+GEMINI_RESET_HOUR_UTC = 8
+# The bundle holds at most this many threads not baked into the site's image yet: past it the job reads no new request
+# until a deploy takes them in (python -m engine.library pull-bucket, run by deploy/cloudrun/deploy.sh).
+ON_DEMAND_BUNDLE_MAX_THREADS = 300
+# What a visitor is told: the first request waiting is read in about ON_DEMAND_FIRST_MINUTES (the job starts at once:
+# about 6 minutes of Arctic Shift's paced searches and reads, then Gemini's extraction and the site's pick-up), each one
+# ahead of it about ON_DEMAND_EACH_MINUTES more; past ON_DEMAND_LATE_MINUTES of waiting (by the site's own clock, kept in
+# memory only) it is said to be taking longer than usual.
+ON_DEMAND_FIRST_MINUTES = 20
+ON_DEMAND_EACH_MINUTES = 15
+ON_DEMAND_LATE_MINUTES = 90
+# The site starts the job at most this often, when requests wait and no run holds the queue (the keep-warm ping, every 5
+# minutes, starts it again when a start failed), and reads the queue again at most this often when asked about a
+# request it knows is waiting.
+ON_DEMAND_START_EVERY_SECONDS = 300
+ON_DEMAND_QUEUE_FRESH_SECONDS = 60

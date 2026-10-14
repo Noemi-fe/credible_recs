@@ -20,7 +20,8 @@ class FakeGoogle:
         self.calls: list[tuple[str, str]] = []
         self.jobs_started: list[str] = []
         self.job_status = 200  # what starting a job answers (403: the account may not start it)
-        self.before_write = None  # called before each write is applied: a test makes another writer win the race
+        self.before_write = None  # called before the next write is applied: a test makes another writer win the race
+        self.before_writing: dict[str, object] = {}  # the same, before the next write of one object (by its name)
         self._generation = 1000
 
     def __call__(self, method, url, headers, body=None, timeout=None):
@@ -62,6 +63,8 @@ class FakeGoogle:
             if self.before_write is not None:
                 hook, self.before_write = self.before_write, None
                 hook()
+            if name in self.before_writing:
+                self.before_writing.pop(name)()
             if "ifGenerationMatch" in query:
                 wanted = query["ifGenerationMatch"][0]
                 now = str(self.objects[(bucket, name)][0]) if (bucket, name) in self.objects else "0"
