@@ -77,7 +77,7 @@ import json
 import re
 import unicodedata
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from functools import cache
 from pathlib import Path
 from typing import NamedTuple
@@ -452,52 +452,88 @@ def match_candidates_and_open(names: Iterable[tuple[str, ...]]) -> tuple[dict[tu
     both ways round. Also the pairs, in order, the quick look leaves (a, b): grouping asks no more about them
     (engine.group_products._matching)."""
     names = list(dict.fromkeys(names))
-    by_word: dict[str, set] = defaultdict(set)  # a word -> the names with it
-    by_length: dict[tuple[str, int], set] = defaultdict(set)  # a word's first letter and length -> the names with one
-    by_start: dict[tuple[str, int], set] = defaultdict(set)  # the same, for names' first words (and first but "and")
-    for name in names:
-        for word in name:
-            by_word[word].add(name)
-            by_length[(word[:1], len(word))].add(name)
-        for word in {*name[:1], *_features(name).without_and[:1]}:
-            by_start[(word[:1], len(word))].add(name)
-    covers: dict[tuple[str, bool], set] = {}
-
-    def cover(word: str, first: bool) -> set:
-        """The names `word` could be found in (as a first word: slipped only at their start)."""
-        found = covers.get((word, first))
-        if found is None:
-            index = by_start if first else by_length
-            found = set(by_word.get(word, ()))
-            for key in _slip_keys(word):
-                found |= index.get(key, set())
-            covers[(word, first)] = found
-        return found
-
     candidates: dict[tuple[str, ...], set[tuple[str, ...]]] = {name: set() for name in names}
     open_pairs: set[tuple[tuple[str, ...], tuple[str, ...]]] = set()
-    for name in names:
-        features = _features(name)
-        words = list(dict.fromkeys(features.without_and if features.has_and else name))
-        if words:
-            lists = sorted((cover(word, i == 0 and not features.has_and) for i, word in enumerate(words)), key=len)
-            found = lists[0].intersection(*lists[1:])
-        else:  # no word to tell by (an empty name, or "and" alone): every name
-            found = set(names)
-        for run in features.runs:
-            found |= by_word.get(run, set())
-        for other in found:
-            if other == name or other in candidates[name]:
-                continue  # the same name, or a pair already found from the other's side
-            forth, back = not _cannot_match(name, other), not _cannot_match(other, name)
-            if forth:
-                open_pairs.add((name, other))
-            if back:
-                open_pairs.add((other, name))
-            if forth or back:
-                candidates[name].add(other)
-                candidates[other].add(name)
+    for i, j, forth, back in candidate_pairs(names):
+        a, b = names[i], names[j]
+        candidates[a].add(b)
+        candidates[b].add(a)
+        if forth:
+            open_pairs.add((a, b))
+        if back:
+            open_pairs.add((b, a))
     return candidates, open_pairs
+
+
+def candidate_pairs(names: list[tuple[str, ...]]) -> Iterator[tuple[int, int, bool, bool]]:
+    """Each pair of `names` (by their places in it, each name once) that the quick look leaves one way round or both,
+    once: (i, j, whether it leaves names[i] before names[j], whether it leaves names[j] before names[i]); what
+    match_candidates_and_open and the library's name index (engine.group_products.NameIndex) keep, each its own way.
+
+    Found as match_candidates_and_open's docstring says, from the index of the names' words. Since 15 Oct 2026 without
+    keeping, for each word, every name it could be found in (with ~1,950 threads that was a gigabyte while the library's
+    index was built: the live site ran out of memory at 2 GiB): a word's names are the union of a few lists the index
+    keeps anyway (_could_be_in), and a name's candidates are the names of its words' unions, worked out for that name
+    and let go. A pair is looked at once: from the first of its two names whose candidates hold the other (_holds)."""
+    by_word: dict[str, set[int]] = defaultdict(set)  # a word -> the names with it
+    by_length: dict[tuple[str, int], set[int]] = defaultdict(set)  # a word's first letter and length -> the names
+    by_start: dict[tuple[str, int], set[int]] = defaultdict(set)  # the same, for names' first words (and first but "and")
+    for i, name in enumerate(names):
+        for word in name:
+            by_word[word].add(i)
+            by_length[(word[:1], len(word))].add(i)
+        for word in {*name[:1], *_features(name).without_and[:1]}:
+            by_start[(word[:1], len(word))].add(i)
+    everyone = range(len(names))
+    listed: dict[int, tuple[list[list[set[int]]], frozenset[str]] | None] = {}  # references to the lists above only
+
+    def lists_of(i: int) -> tuple[list[list[set[int]]], frozenset[str]] | None:
+        """For each of a name's words, the lists whose union is the names it could be found in; and its runs. None for
+        a name with no word to tell by (an empty name, or "and" alone): every name is then one of its candidates."""
+        if i not in listed:
+            features = _features(names[i])
+            words = list(dict.fromkeys(features.without_and if features.has_and else names[i]))
+            listed[i] = None if not words else (
+                [_could_be_in(word, k == 0 and not features.has_and, by_word, by_start, by_length)
+                 for k, word in enumerate(words)], features.runs)
+        return listed[i]
+
+    def holds(i: int, j: int) -> bool:
+        """Whether names[j] is one of names[i]'s candidates (as `found` below works them out for names[i])."""
+        found = lists_of(i)
+        if found is None:
+            return True
+        word_lists, runs = found
+        return (all(any(j in part for part in parts) for parts in word_lists)
+                or any(j in by_word.get(run, ()) for run in runs))
+
+    for i, name in enumerate(names):
+        own = lists_of(i)
+        if own is None:
+            found: Iterable[int] = everyone
+        else:
+            word_lists, runs = own
+            word_lists = sorted(word_lists, key=lambda parts: sum(map(len, parts)))
+            found = set().union(*word_lists[0])
+            for parts in word_lists[1:]:
+                found = {j for j in found if any(j in part for part in parts)}
+            for run in runs:
+                found |= by_word.get(run, set())
+        for j in found:
+            if j == i or (j < i and holds(j, i)):
+                continue  # the same name, or a pair already looked at from the other's side
+            other = names[j]
+            forth, back = not _cannot_match(name, other), not _cannot_match(other, name)
+            if forth or back:
+                yield i, j, forth, back
+
+
+def _could_be_in(word: str, first: bool, by_word, by_start, by_length) -> list[set[int]]:
+    """The lists of the names `word` could be found in (as a first word: slipped only at their start): those with the
+    word, and those with a word of one of its slips' first letters and lengths (_slip_keys)."""
+    index = by_start if first else by_length
+    parts = [by_word.get(word)] + [index.get(key) for key in _slip_keys(word)]
+    return [part for part in parts if part]
 
 
 def written_alike(words_a: list[str], words_b: list[str]) -> bool:

@@ -388,6 +388,13 @@ PROFILE_FAILURES_IN_A_ROW_TO_STOP = 3
 # The search page and its JSON API (engine/web.py), served on this machine only. PROPOSED, for Noemi to approve.
 WEB_PORT = 8765  # the local address is http://127.0.0.1:8765/; `python -m engine.web --port N` picks another
 WEB_MAX_REQUEST_CHARS = 300  # a longer request is refused (400): a real need fits in far fewer words
+# How many product types' work the answers' memory keeps (engine.memo.TypeWindow, 15 Oct 2026; Claude's call, a
+# technical value): once answers have asked about more types since it last did, the site and the daily plan job forget
+# what answers worked out (engine.memo.forget_answers), keeping the library and what it worked out of itself. With
+# ~1,950 threads the live site had run out of memory at 2 GiB as it warmed ~480 requests, every type's work kept. 64
+# holds getting ready's requests (the examples, the latency set and one request per first type: 56 types) and the
+# types visitors ask next; a type asked after its work was forgotten is worked out again, a cold answer of its type.
+ANSWERS_KEPT_TYPES = 64
 
 # --- Decisions of 9 Oct 2026 ---
 # Noemi approved 13 recommendations on 9 Oct 2026 (CLAUDE.md, "Decisions of 9 Oct 2026"). What she decided says so;
@@ -556,10 +563,14 @@ PRECHECK_STOP_AFTER_UNKNOWN = 20
 # reading ahead). An answer's comment is read again once its last read is READ_AHEAD_AGAIN_HOURS old, so its check
 # never runs out at 48 hours (each comment about 0.6 reads a day, against one a day for the daily run). The site looks
 # for a new plan at most every PLAN_RELOAD_SECONDS, and writes what it read to the bucket's bundle at most every
-# BUNDLE_SHARE_SECONDS: about two calls an hour.
+# BUNDLE_SHARE_SECONDS: about two calls an hour. READ_AHEAD_PARALLEL 8 since 15 Oct 2026 (Claude, the coordinator's
+# task; was 4): at 4 at once a ping read about 20 in its 5 seconds (each batch about a second on Reddit's side), 5,760 a
+# day, while about 7,650 fell due (the plan's ~7,750 answers' comments every 40 hours and LIBRARY_VERIFY_READS a day);
+# at 8, as many at once as an answer reads (LIVE_CHECK_PARALLEL), a ping reaches its 40: 11,520 a day, with no more of
+# Reddit's reads (at most 80 of each 10 minutes' 200, as before) and no more billed seconds.
 READ_AHEAD_PER_PING = 40
 READ_AHEAD_SECONDS = 5
-READ_AHEAD_PARALLEL = 4
+READ_AHEAD_PARALLEL = 8
 READ_AHEAD_KEEP = 120
 READ_AHEAD_AGAIN_HOURS = 40
 PLAN_RELOAD_SECONDS = 3600

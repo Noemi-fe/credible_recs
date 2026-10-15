@@ -681,6 +681,87 @@ def test_a_categorys_index_holds_the_first_types_bases_and_its_own_taxonomy_type
                 == group_products(library, product_type=product_type)), product_type
 
 
+def test_the_index_asks_each_name_only_the_types_that_can_give_it_a_base(monkeypatch):
+    # 15 Oct 2026 (getting ready on the live site took 199 s of its probe's 240): with ~1,950 threads the index was most
+    # of a cold first answer, every general name's base worked out in each of ~385 types. A name has a base in a type
+    # only when its last word is one of the type's words, as written or with a spelling slip, or a synonym of the type
+    # ends it: so only those types are asked, and the index holds exactly what asking every type gives.
+    from engine import group_products as grouping
+    from engine.query import FIRST_PRODUCT_TYPES
+
+    names = ["Fellow Stagg EKG kettle", "Fellow kettel", "Lodge cast iron pan", "Zojirushi", "Sony WH-1000XM5 headphones",
+             "Sony headphone", "Bose QC45", "Work Sharp knife sharpener", "Our Place Always Pan", "CeraVe cleanser",
+             "Anker charger", "Anker chargers", "Patagonia jacket", "Hoka running shoes", "Osprey backpack"]
+    library = [typed(name, None, f"c{i}", category) for i, name in enumerate(names) for category in ("general", "kitchen")]
+    calls = []
+    real = grouping._without_type_words
+    monkeypatch.setattr(grouping, "_without_type_words", lambda *args: calls.append(1) or real(*args))
+    index = library_name_index(library)
+    types = [(grouping._type_words(p.name), grouping._type_phrases(p.name)) for p in PRODUCT_TYPES
+             if p in FIRST_PRODUCT_TYPES or p.category == "general"]
+    asked = len(calls)
+    from engine.match_products import known_aliases, product_words
+
+    every = {tuple(product_words(n, known_aliases().get("general", {}))) for n in names}
+    every |= {base for words in set(every) for type_words, phrases in types
+              if (base := real(words, type_words, phrases))}
+    assert set(index["general"].candidates) == every
+    assert asked < len(names) * len(types) / 4  # each name asks a few types, not all of them (2 categories: < 1/2)
+
+
+def _many_names(seed: int = 7, count: int = 2500) -> list[tuple[str, ...]]:
+    """Made-up names sharing brands, words and slips, so that many pairs are candidates."""
+    rng = random.Random(seed)
+    brands = ["sony", "sonos", "sage", "shark", "smeg", "salter", "tefal", "tower", "lodge", "lodgee", "cerave", "cera",
+              "zojirushi", "zojurushi", "fellow", "fellows", "bosch", "breville", "oxo", "ninja", "ninjas"]
+    words = ["kettle", "kettles", "pan", "pans", "cream", "cleanser", "pro", "max", "mini", "plus", "2", "22", "x", "xl",
+             "blender", "mixer", "stand", "air", "fryer", "steel", "cast", "iron", "and", "co", "classic", "one"]
+    return sorted({(rng.choice(brands),) + tuple(rng.choice(words) for _ in range(rng.randint(0, 3)))
+                   for _ in range(count)})
+
+
+def test_the_index_keeps_its_pairs_in_a_small_part_of_the_memory_of_sets():
+    # 15 Oct 2026: with ~1,950 threads the library's index held 3.6 million candidate links and 3.55 million open pairs
+    # as sets of names: about 470 MB kept, and building it went a gigabyte above the library (the live site ran out of
+    # memory at 2 GiB). It keeps each name's candidates as an array of numbers, with a byte for whether the quick look
+    # leaves the pair that way round, and builds them without keeping every word's names at once.
+    import tracemalloc
+
+    from engine.group_products import NameIndex
+    from engine.match_products import match_candidates_and_open
+
+    names = _many_names()
+    tracemalloc.start()
+    plain = match_candidates_and_open(names)
+    as_sets = tracemalloc.get_traced_memory()[0]
+    tracemalloc.stop()
+    links = sum(map(len, plain[0].values()))
+    del plain
+    tracemalloc.start()
+    index = NameIndex(names)
+    kept, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    assert links > 40_000 and len(index.candidates) == len(names)
+    assert kept < as_sets / 4, (kept, as_sets)
+
+
+def test_the_indexs_pairs_among_a_requests_names_are_the_pairs_worked_out_for_them():
+    from engine.group_products import NameIndex
+    from engine.match_products import _cannot_match, match_candidates_and_open
+
+    names = _many_names(count=800)
+    index = NameIndex(names)
+    every, _ = match_candidates_and_open(names)
+    rng = random.Random(3)
+    for part in (names, rng.sample(names, 200), rng.sample(names, 40)):
+        among = set(part)
+        candidates, open_pairs = index.among(part)
+        assert candidates == {name: every[name] & among for name in part}
+        asked = {(a, b) for a in part for b in candidates[a]}
+        assert {pair for pair in asked if pair in open_pairs} == {(a, b) for a, b in asked if not _cannot_match(a, b)}
+    assert index.among(part + [("not", "in", "the", "library")]) is None
+
+
 def test_a_request_of_a_known_type_takes_its_pairs_from_the_index(monkeypatch):
     from engine import group_products as grouping
 

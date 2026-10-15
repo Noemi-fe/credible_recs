@@ -545,7 +545,10 @@ def test_warming_up_answers_each_product_type_without_asking_reddit(tmp_path, mo
     assert [request for request, _ in asked] == web.warm_requests()
     assert set(web.WARM_PRODUCT_TYPES) <= {request for request, _ in asked}  # every product type by its name too
     assert "electric kettle" in web.WARM_PRODUCT_TYPES and "shampoo" in web.WARM_PRODUCT_TYPES
-    assert set(web.WARM_TAXONOMY_TYPES) <= {request for request, _ in asked}  # and the taxonomy's (14 Oct 2026)
+    # Changed on purpose 15 Oct 2026 (the coordinator: warm only what pays, the taxonomy's names warm little): the
+    # taxonomy's types by their names are no longer warmed (was: every one, after the others); test_answers_memory.py.
+    likely = {text for path in web.WARM_FIRST_FILES for text in web._requests_in(path)}
+    assert not (set(web.WARM_TAXONOMY_TYPES) - likely) & {request for request, _ in asked}
     assert all("live_checker" not in kwargs and kwargs["live_check_required"] is False for _, kwargs in asked)
 
 
@@ -575,11 +578,11 @@ def test_getting_ready_answers_the_examples_then_one_request_per_product_type():
     latency = [q["text"] for q in json.loads(web.LATENCY_FILE.read_text(encoding="utf-8"))["queries"]]
     likely = list(dict.fromkeys(examples + latency))
     warmed = web.warm_requests()
-    # 14 Oct 2026 (the general category): the taxonomy's types come after every one of these, by their names (the test
-    # below); what comes before them is as it was.
+    # 14 Oct 2026 (the general category): the taxonomy's types came after every one of these, by their names. Changed
+    # on purpose 15 Oct 2026 (the coordinator: warm only what pays): they aren't warmed (the test below); what came before
+    # them is as it was.
     taxonomy = [name for name in web.WARM_TAXONOMY_TYPES if name not in likely]
-    assert taxonomy and warmed[len(warmed) - len(taxonomy):] == taxonomy
-    warmed = warmed[:len(warmed) - len(taxonomy)]
+    assert taxonomy and not set(taxonomy) & set(warmed)
     assert sorted(warmed) == sorted(dict.fromkeys(likely + list(web.WARM_PRODUCT_TYPES)))  # each once
     assert examples and warmed[:len(examples)] == examples
     every = list(dict.fromkeys(likely + list(web.WARM_PRODUCT_TYPES)))
@@ -597,12 +600,14 @@ def test_getting_ready_answers_the_examples_then_one_request_per_product_type():
     assert "serum" in asks_model
 
 
-def test_getting_ready_answers_the_taxonomys_types_after_every_other_request():
+def test_getting_ready_leaves_the_taxonomys_types_to_their_first_visitors():
     # 14 Oct 2026 (the coordinator, merging the general category): module 1's first 43 types keep their place
     # (WARM_PRODUCT_TYPES: the examples, then one request per type, then the rest, the open model's last), and the 351
-    # types of engine/data/product_types.json come after all of them, by their names, in the file's order
-    # (WARM_TAXONOMY_TYPES): they have almost no threads yet, so their answers warm little, and before the others they
-    # would keep the requests visitors ask most waiting for the keep-warm pings.
+    # types of engine/data/product_types.json came after all of them, by their names, in the file's order
+    # (WARM_TAXONOMY_TYPES): they have almost no threads yet, so their answers warm little. Changed on purpose 15 Oct
+    # 2026 (the coordinator, after the live site ran out of memory at 2 GiB warming ~480 requests): they aren't warmed.
+    # The general category's own work (its readable threads, each thread's comments read) is done by the latency set's
+    # general request, and the answers' memory keeps ANSWERS_KEPT_TYPES types' work, fewer than the 398.
     from engine.query import FIRST_PRODUCT_TYPES, PRODUCT_TYPES
 
     assert web.WARM_PRODUCT_TYPES == tuple(p.name for p in FIRST_PRODUCT_TYPES)
@@ -615,9 +620,12 @@ def test_getting_ready_answers_the_taxonomys_types_after_every_other_request():
     assert len(warmed) == len(set(warmed))  # each once
     likely = {text for path in web.WARM_FIRST_FILES for text in web._requests_in(path)}
     taxonomy = [name for name in web.WARM_TAXONOMY_TYPES if name not in likely]
-    assert warmed[len(warmed) - len(taxonomy):] == taxonomy
-    assert "serum" in warmed[:len(warmed) - len(taxonomy)]  # the open model's requests before them
-    assert warmed.index("electric kettle") < warmed.index("robot vacuum")
+    assert not set(taxonomy) & set(warmed) and "robot vacuum" not in warmed
+    assert "serum" in warmed and "electric kettle" in warmed
+    from engine.pipeline import request_kind
+    from engine.config import ANSWERS_KEPT_TYPES
+
+    assert len({request_kind(text) for text in warmed}) <= ANSWERS_KEPT_TYPES  # the memory keeps them all
 
 
 def test_warming_up_stops_answering_product_types_once_its_time_is_up(tmp_path, monkeypatch, capsys):
@@ -714,6 +722,10 @@ def test_a_slice_of_warming_stops_as_soon_as_a_visitor_is_waiting(tmp_path, monk
     # 14 Oct 2026, measured on the live site just after a deploy: a visitor's answer queued 31 s behind a warming
     # slice. Each warmed answer takes its turn (_answers_lock), but Python's lock isn't fair: the slice took it back for
     # its next request before the visitor's thread woke. So a slice starts no answer while a visitor is waiting.
+    # Changed on purpose 15 Oct 2026: getting ready warms 65 requests since then (no more the taxonomy's names), all of
+    # them in its time at a second each, so the test names more requests than that, to have some left for the pings.
+    many = [f"made-up request {n}" for n in range(200)]
+    monkeypatch.setattr(web, "warm_requests", lambda: many)
     root, asked = _ready_with_requests_left(tmp_path, monkeypatch, takes=1.0)
     monkeypatch.setattr(web, "_visitors_waiting", 0)
     before, inner = len(asked), web.answer_request

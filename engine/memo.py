@@ -16,6 +16,15 @@ lists change only when a researcher adds entries. Two small tools let each be wo
 
 Every memory here, and the others like it (engine.library_cache, engine.match_products), registers a way to empty it:
 `forget_all` empties them all, so each test starts from nothing (engine/tests/conftest.py).
+
+Bounded since 15 Oct 2026. Answers kept what they worked out for every product type asked: with ~1,950 threads the live
+site ran out of memory at 2 GiB every 20 to 40 minutes as it warmed ~480 requests, and the daily plan job needed 3 GiB.
+So each memory says, as it registers, whether it holds what answers worked out (the default) or what was read from
+files (the library, the price, facts and brand-lines lists): `forget_answers` empties the first kind only, and a kept
+library lets go of what it worked out for one request's product type but keeps what it worked out of itself, whatever
+the request (engine.library_cache). A `TypeWindow` forgets them once answers have asked about more than its size of
+product types since the last time: the plan job and the site keep at most that many types' work, whatever the number
+of types, and the answers are the same (each memory only remembers what a function of what it is given gives).
 """
 
 import os
@@ -43,17 +52,53 @@ def changed_just_now(stamp_ns: int, started_ns: int, recent_seconds: float = REC
     return started_ns - margin <= stamp_ns <= started_ns + margin
 
 _forgetters: list[Callable[[], None]] = []
+_answers_forgetters: list[Callable[[], None]] = []
+# Where a kept library's `remembered` (engine.library_cache.KeptLibrary) keeps what answers worked out for one request's
+# product type, apart from what the library worked out of itself: forget_answers drops it (15 Oct 2026).
+REQUEST_WORK = ("worked out for requests",)
 
 
-def register(forget: Callable[[], None]) -> None:
-    """Adds a way to empty one memory to what forget_all empties."""
+def register(forget: Callable[[], None], answers: bool = True) -> None:
+    """Adds a way to empty one memory to what forget_all empties; and, when it holds what answers worked out
+    (`answers`, the default) rather than what was read from files, to what forget_answers empties."""
     _forgetters.append(forget)
+    if answers:
+        _answers_forgetters.append(forget)
 
 
 def forget_all() -> None:
     """Empties every memory of worked-out answers: the next answers work everything out again."""
     for forget in _forgetters:
         forget()
+
+
+def forget_answers() -> None:
+    """Empties every memory of what answers worked out, keeping what was read from files and what a kept library
+    worked out of itself whatever the request (see the module docstring): the next answers work out their requests'
+    parts again, as for a product type not asked before."""
+    for forget in _answers_forgetters:
+        forget()
+
+
+class TypeWindow:
+    """Forgets the answers' memory (forget_answers) once answers have asked about more than `size` product types since
+    it last did (15 Oct 2026): `answered(kind)` is told each answer's type, before its answer is worked out."""
+
+    def __init__(self, size: int):
+        self.size = size
+        self.kinds: set = set()
+        self.forgot = 0  # how many times it forgot (for reports)
+        self._lock = threading.Lock()
+
+    def answered(self, kind) -> None:
+        with self._lock:
+            if kind in self.kinds:
+                return
+            if len(self.kinds) >= self.size:
+                forget_answers()
+                self.kinds.clear()
+                self.forgot += 1
+            self.kinds.add(kind)
 
 
 class Table(dict):
@@ -88,7 +133,7 @@ class FileMemo:
         self._kept: OrderedDict[str, tuple[tuple, object]] = OrderedDict()
         self._keep = keep
         self._lock = threading.Lock()
-        register(self.forget)
+        register(self.forget, answers=False)  # what was read: forget_answers keeps it
 
     def get(self, path: Path, read: Callable[[Path], object]) -> object:
         key = str(Path(path).resolve())

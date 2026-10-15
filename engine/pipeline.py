@@ -393,6 +393,16 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     return result
 
 
+def request_kind(request: str) -> tuple:
+    """What an answer to `request` works out is kept under, for the answers' memory (engine.memo.TypeWindow, 15 Oct
+    2026): its product type as module 1 reads it, with its category and whether it is ingredient-led; a request module 1
+    doesn't place has one of its own (its status), since it works nothing out."""
+    query = parse_query(request)
+    if query.status != "ok":
+        return (query.status,)
+    return query.category, query.product_type, query.ingredient_led
+
+
 def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, prices: list[Price] | None,
             today: date | None, live_check_required: bool | None, live_checker,
             product_facts: list[ProductFacts] | None, need_led: bool = False,

@@ -62,8 +62,8 @@ site a plan: a job is billed for its whole run, and two thirds of the old daily 
   comment's words) is in the job's logs.
 - **The site's reads ahead** (engine/read_ahead.py, 14 Oct 2026): at each keep-warm ping (every 5 minutes, below) the
   site reads the plan's comments that are due: an answer's comment once its last read is 40 hours old (so its check
-  never runs out at 48 hours), or that has none; a comment to verify not read in the last 48 hours. At most 40 a ping, 4
-  at once, none starting 5 seconds after the ping began, never a read that would wait for Reddit's allowance, and none
+  never runs out at 48 hours), or that has none; a comment to verify not read in the last 48 hours. At most 40 a ping, 8
+  at once (4 until 15 Oct 2026), none starting 5 seconds after the ping began, never a read that would wait for Reddit's allowance, and none
   while Reddit says fewer than 120 reads are left in its 10 minutes (those are visitors' answers'). Each ping's counts
   are in the site's logs ("Reading ahead: ...").
 - **The verification record** (`live_check/verified.json`, in the same bucket): for each comment the slimmed library
@@ -404,7 +404,11 @@ seconds of each: about 13,400 vCPU-seconds a month, 7%. 12,356 of the kept comme
 archive on 11 to 14 Oct, so due by 10 to 13 Nov), about 31,000 once the 846 threads still to extract are slimmed: 11
 days at 3,000 a day, oldest first. With the whole library extracted (about 36,000 kept comments) the reads stay the
 same (the 3,000 a day are the budget; each kept comment is then read every 12 days, well inside the 30-day deadline).
-4,340 reads a day are 38% of what the pings may read (40 a ping, 11,520 a day). Finding what is
+4,340 reads a day are 38% of what the pings may read (40 a ping, 11,520 a day). On 15 Oct 2026, with ~1,950 threads,
+about 7,650 were due a day (the plan's ~7,750 answers' comments every 40 hours and 3,000 kept comments), and the pings
+read 20 each (4 at once, each batch about a second on Reddit's side), 5,760 a day; now 8 at once (as an answer reads),
+so a ping reaches its 40 in its 5 seconds: 11,520 a day, a third more than is due, with the same reads of Reddit (at
+most 80 of each 10 minutes' 200) and the same billed seconds. Finding what is
 due takes about a millisecond a ping (each comment's last read is kept in memory, read from the folder in 0.3 s once a
 day as the new plan comes in).
 

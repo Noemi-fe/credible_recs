@@ -180,7 +180,9 @@ def test_at_most_its_reads_a_ping(scene):
 def test_no_read_starts_after_its_seconds(scene):
     scene.plan(answers=range(1, 30))
     scene.ticks.step = 1.0  # each look at the clock a second later
-    reading = scene.site().on_ping()
+    # Changed on purpose 15 Oct 2026: 4 at once named here, as the setting was then (it is 8 since: 29 comments would
+    # all be read within its 5 looks at the clock, and the test would no longer test its seconds).
+    reading = scene.site(parallel=4).on_ping()
     assert 0 < reading.read < 29 and reading.left == 29 - reading.read
 
 
@@ -311,3 +313,20 @@ def test_two_pings_in_reddits_10_minutes_leave_visitors_their_share():
     # (Its cost: engine/tests/test_cloudrun.py.)
     assert config.READ_AHEAD_PER_PING * 2 + config.READ_AHEAD_KEEP <= 200
     assert config.READ_AHEAD_KEEP >= 40 * 3  # three fresh answers' worth (an answer reads 10 to 40 comments)
+
+
+def test_a_day_of_pings_reads_what_falls_due_with_room_to_spare():
+    # 15 Oct 2026 (the coordinator): the live site read 20 a ping, 4 at once in its 5 seconds (each batch about a second
+    # on Reddit's side: 5 batches), so 5,760 a day, while about 7,650 fell due: the plan's 7,752 answers' comments each
+    # every READ_AHEAD_AGAIN_HOURS, and LIBRARY_VERIFY_READS kept comments a day. Now as many at once as an answer reads
+    # (LIVE_CHECK_PARALLEL): READ_AHEAD_PER_PING a ping, within Reddit's share (the test above) and the ping's seconds
+    # (its cost: engine/tests/test_cloudrun.py), covering what falls due with a third to spare.
+    from math import ceil
+
+    pings_a_day, batch_seconds, plan_answers = 24 * 12, 1.0, 7_752  # the live site's numbers, 15 Oct 2026
+    per_ping = min(config.READ_AHEAD_PER_PING,
+                   config.READ_AHEAD_PARALLEL * ceil(config.READ_AHEAD_SECONDS / batch_seconds))
+    due_a_day = plan_answers * 24 / config.READ_AHEAD_AGAIN_HOURS + config.LIBRARY_VERIFY_READS
+    assert per_ping == config.READ_AHEAD_PER_PING == 40
+    assert per_ping * pings_a_day >= 1.33 * due_a_day  # 11,520 a day against 7,651
+    assert config.READ_AHEAD_PARALLEL <= config.LIVE_CHECK_PARALLEL  # no more at once than an answer reads
