@@ -761,6 +761,29 @@ def test_a_pick_with_a_facts_entry_is_shown_under_the_entrys_name(tmp_path, skin
     assert names(without.answer.picks)[0] == "cerave resurfacing retinol serum"
 
 
+def test_a_product_shown_under_its_facts_entrys_name_is_checked_against_the_price_list_under_that_name(
+        tmp_path, skincare_need_rule_set_aside):
+    # Found 15 Oct 2026 (the facts researcher), in "retinoid": writers' "Tazorac .05%" and "Tazorac" were one product,
+    # which found its facts entry by its other name and was shown under the entry's name. The price list says that
+    # product isn't sold in the UK, but its entry fits the entry's name and not the writers' name with a strength, the
+    # only one checked, so a product the price list leaves out was shown under Also worth a look.
+    from engine.prices import Price
+
+    lib = write_library(tmp_path, ("Which retinoid works best?", "Best retinoid for acne scars?"),
+                        {"Tazorac .05%": 3, "Tazorac": 3, "Differin Gel": 3, "CeraVe Resurfacing Retinol Serum": 3},
+                        product_type="retinoid")
+    tazorac = known("Tazorac (tazarotene) cream and gel", prescription_only=True)
+    unsold = Price(product="Tazorac (tazarotene)", category="skincare", price=None, currency="GBP",
+                   shop="Made-up Register", url="https://register.example/tazarotene", checked_on=TODAY,
+                   available=False)
+    unchecked = answer_request("retinoid", library_dir=lib, prices=[], product_facts=[tazorac], today=TODAY)
+    assert "Tazorac (tazarotene) cream and gel" in names(unchecked.answer.picks)  # shown under its entry's name
+    result = answer_request("retinoid", library_dir=lib, prices=[unsold], product_facts=[tazorac], today=TODAY)
+    assert "Tazorac (tazarotene) cream and gel" not in names(result.answer.picks) + names(result.answer.worth_a_look)
+    assert "Tazorac (tazarotene) cream and gel" in result.left_out_unavailable
+    assert set(names(result.answer.picks)) == {"Differin Gel", "CeraVe Resurfacing Retinol Serum"}
+
+
 def test_groups_that_find_the_same_facts_entry_are_one_product(tmp_path):
     # Found in b02, 10 Oct 2026: "Biore watery essence" and "Biore aqua rich" stayed apart in grouping, but both found
     # the entry "Biore UV Aqua Rich Watery Essence SPF50" and were shown under its name, one as a pick and the other

@@ -92,8 +92,9 @@ DEFAULT_ALIASES = Path(__file__).resolve().parent / "data" / "product_aliases.js
 LEADING_WORDS = ("the", "a", "my")
 # Dropped anywhere: words people add around a name that aren't part of it ("the Victorinox one", "Le Creuset brand",
 # "peeling solution by the ordinary"; "by" and "from" added 9 Oct 2026; "refurbished" on 10 Oct 2026: a refurbished
-# unit is the same product, "Baratza Virtuoso+ (refurbished)").
-FILLER_WORDS = frozenset({"one", "ones", "brand", "the", "my", "their", "by", "from", "refurbished"})
+# unit is the same product, "Baratza Virtuoso+ (refurbished)"; "used" on 15 Oct 2026, for the same reason: writers'
+# "used Vitamix" was listed beside the Vitamix line).
+FILLER_WORDS = frozenset({"one", "ones", "brand", "the", "my", "their", "by", "from", "refurbished", "used"})
 # "&" is punctuation, so dropped; "and" written out is dropped too when only one of two names has it (comparable).
 AND = "and"
 # A one-letter typo, or two swapped letters, is only forgiven in words at least this long.

@@ -954,12 +954,14 @@
    "product_type": "frying pan",
    "facts": {
     "pfas_free": true,
-    "non_stick": false
+    "non_stick": false,
+    "induction": true
    },
    "sources": [
-    "https://www.greenpan.us/collections/merten-storck-carbon-steel"
+    "https://www.greenpan.us/collections/merten-storck-carbon-steel",
+    "https://www.greenpan.us/products/merten-storck-carbon-steel-8-10-and-12-frypan-set-1"
    ],
-   "checked_on": "2026-10-10"
+   "checked_on": "2026-10-15"
   },
   {
    "product": "Scanpan non-stick pans",
@@ -1011,12 +1013,14 @@
    "product_type": "retinoid",
    "facts": {
     "prescription_only": false,
-    "fragrance_free": true
+    "fragrance_free": true,
+    "strength": "gentle"
    },
    "sources": [
-    "https://bywishtrend.com/products/vitamin-a-mazing-bakuchiol-night-cream"
+    "https://bywishtrend.com/products/vitamin-a-mazing-bakuchiol-night-cream",
+    "https://www.medik8.com/products/crystal-retinal"
    ],
-   "checked_on": "2026-10-10",
+   "checked_on": "2026-10-15",
    "formula": {
     "actives": [
      "retinal",
@@ -1332,11 +1336,15 @@
    "product": "Isntree Chestnut BHA 2% Clear Liquid",
    "category": "skincare",
    "product_type": "exfoliant",
-   "facts": {},
+   "facts": {
+    "strength": "moderate",
+    "prescription_only": false,
+    "fragrance_free": true
+   },
    "sources": [
     "https://www.yesstyle.com/en/isntree-chestnut-bha-2-clear-liquid-100ml/info.html/pid.1115329665"
    ],
-   "checked_on": "2026-10-13",
+   "checked_on": "2026-10-15",
    "formula": {
     "actives": [
      "salicylic acid"
@@ -1352,11 +1360,13 @@
    "product": "CeraVe SA Smoothing Cleanser",
    "category": "skincare",
    "product_type": "cleanser",
-   "facts": {},
+   "facts": {
+    "fragrance_free": true
+   },
    "sources": [
     "https://www.cerave.co.uk/skincare/cleansers/sa-smoothing-cleanser"
    ],
-   "checked_on": "2026-10-13",
+   "checked_on": "2026-10-15",
    "formula": {
     "actives": [
      "salicylic acid",
@@ -1373,11 +1383,13 @@
    "product": "Paula's Choice 10% Azelaic Acid Booster",
    "category": "skincare",
    "product_type": "serum",
-   "facts": {},
+   "facts": {
+    "fragrance_free": true
+   },
    "sources": [
     "https://www.paulaschoice.co.uk/aa-booster/m7750.html"
    ],
-   "checked_on": "2026-10-14",
+   "checked_on": "2026-10-15",
    "formula": {
     "actives": [
      "azelaic acid",
@@ -1996,11 +2008,15 @@
    "product": "Paula's Choice Skin Perfecting 8% AHA Gel Exfoliant",
    "category": "skincare",
    "product_type": "exfoliant",
-   "facts": {},
+   "facts": {
+    "strength": "moderate",
+    "prescription_only": false,
+    "maker_warns_sensitive": true
+   },
    "sources": [
     "https://www.paulaschoice.co.uk/skin-perfecting-aha-gel-exfoliant/m1900.html"
    ],
-   "checked_on": "2026-10-14",
+   "checked_on": "2026-10-15",
    "formula": {
     "actives": [
      "glycolic acid"
@@ -2395,12 +2411,15 @@
    "product": "Stridex Maximum Pads",
    "category": "skincare",
    "product_type": "exfoliant",
-   "facts": {},
+   "facts": {
+    "strength": "moderate",
+    "prescription_only": false,
+    "fragrance_free": false
+   },
    "sources": [
-    "https://stridex.com/product/stridex-maximum/",
-    "https://www.stylevana.com/en_US/stridex-alcohol-free-maximum-pads-2-salicylic-acid-red-55pcs13332.html"
+    "https://stridex.com/product/stridex-maximum/"
    ],
-   "checked_on": "2026-10-14",
+   "checked_on": "2026-10-15",
    "formula": {
     "actives": [
      "salicylic acid"
@@ -2722,6 +2741,546 @@
    },
    "sources": [
     "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0da54fe1-c99f-4a2d-9ee5-2dc24005096c"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Prequel Multi-Acid Milk Peel",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "strength": "strong",
+    "maker_warns_sensitive": true,
+    "prescription_only": false,
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://prequelskin.com/products/multi-acid-milk-aha-peel"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Geek & Gorgeous Calm Down",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "facts": {
+    "strength": "gentle",
+    "prescription_only": false,
+    "fragrance_free": true,
+    "maker_warns_sensitive": false
+   },
+   "sources": [
+    "https://www.geekandgorgeous.com/products/calm-down"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Mary&May Idebenone Blackberry Intense Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true,
+    "texture": "rich"
+   },
+   "sources": [
+    "https://marynmay.com/products/mary-may-idebenone-blackberry-intense-cream-70ml"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Weleda Skin Food Original Ultra-Rich Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": false,
+    "texture": "rich"
+   },
+   "sources": [
+    "https://www.weleda.co.uk/category/skin-food/by-range/original-97"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Beauty of Joseon Relief Sun: Rice + Niacinamide (formerly Rice + Probiotics)",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "facts": {
+    "white_cast": false,
+    "filters": "chemical",
+    "fragrance_free": true,
+    "finish": "dewy"
+   },
+   "sources": [
+    "https://ie.beautyofjoseon.com/products/relief-sun-rice-probiotics-spf50-pa-uk"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Beauty of Joseon Relief Sun Aqua-Fresh: Rice + B5",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "facts": {
+    "white_cast": false,
+    "filters": "chemical",
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://ie.beautyofjoseon.com/products/relief-sun-aqua-fresh-rice-b5-spf50-pa-uk"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Supergoop Unseen Sunscreen",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "facts": {
+    "white_cast": false
+   },
+   "sources": [
+    "https://supergoop.com/products/unseen-sunscreen-spf-50"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "CeraVe Hydrating Foaming Oil Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.cerave.co.uk/skincare/moisturisers/hydrating-foaming-oil-cleanser"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "CeraVe Foaming Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.cerave.co.uk/skincare/cleansers/foaming-cleanser"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Bioderma Sensibio H2O",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.bioderma.co.uk/p/sensibio-h2o-micellar-water"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Simple Kind to Skin Micellar Cleansing Water",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://shop.rowlandspharmacy.co.uk/products/simple-kind-to-skin-micellar-cleansing-water-200-ml"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Lush Honey Trap Lip Balm",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false,
+    "fragrance_free": false
+   },
+   "sources": [
+    "https://www.lush.com/uk/en/p/honey-trap-lip-balm-tube"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "DHC Lip Cream",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://www.dhccare.com/products/lip-cream"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "KLAVUU Nourishing Care Lip Sleeping Pack",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false,
+    "fragrance_free": false
+   },
+   "sources": [
+    "https://nudieglow.com/products/klavuu-nourishing-care-lip-sleeping-pack"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "CARE:NEL Berry Lip Night Mask",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false,
+    "fragrance_free": false
+   },
+   "sources": [
+    "https://www.vitacost.com/products/care-nel-lip-night-mask-berry-23-g-125248"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Glossier Balm Dotcom",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://uk.glossier.com/products/balm-dotcom"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "OUAI Detox Shampoo",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "facts": {
+    "sulfate_free": true
+   },
+   "sources": [
+    "https://theouai.co.uk/products/detox-shampoo",
+    "https://theouai.com/products/detox-shampoo-travel"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "L'Oréal EverPure Sulfate Free Bond Repair Shampoo",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "facts": {
+    "sulfate_free": true
+   },
+   "sources": [
+    "https://www.lorealparisusa.com/hair-care-hair-style/shampoo/sulfate-free-bond-strengthening-color-care-shampoo"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Innersense Pure Harmony Hairbath",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "facts": {
+    "sulfate_free": true
+   },
+   "sources": [
+    "https://innersensebeauty.com/products/pure-harmony"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Ouidad Water Works Clarifying Shampoo",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "facts": {
+    "sulfate_free": true
+   },
+   "sources": [
+    "https://ouidad.com/products/water-works-clarifying-shampoo"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Verb Ghost line",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "facts": {
+    "sulfate_free": true
+   },
+   "sources": [
+    "https://verbproducts.com/products/ghost-shampoo"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Alberto VO5 Kiwi Lime Squeeze Clarifying Shampoo",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "facts": {
+    "sulfate_free": false
+   },
+   "sources": [
+    "https://www.walmart.com/ip/Alberto-VO5-Kiwi-Lime-Clarifying-Nourishing-Daily-Hair-Shampoo-with-Vitamin-E-C-15-fl-oz/23555061",
+    "https://www.vo5haircare.com/shampoo/kiwi-lime-squeeze"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Blue Diamond pans",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true,
+    "non_stick": true
+   },
+   "sources": [
+    "https://bluediamondshopping.com/pages/faqs"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Caraway frying pans",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true,
+    "induction": true
+   },
+   "sources": [
+    "https://www.carawayhome.com/products/fry-pan",
+    "https://www.carawayhome.com/products/stainless-steel-fry-pan"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "IKEA VARDAGEN carbon steel frying pan",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true,
+    "non_stick": false,
+    "induction": true
+   },
+   "sources": [
+    "https://www.ikea.com/gb/en/p/vardagen-frying-pan-carbon-steel-60581345/"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Solidteknics US-ION wrought iron pan",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true,
+    "non_stick": false,
+    "induction": true
+   },
+   "sources": [
+    "https://solidteknics.com/pages/frequently-asked-questions",
+    "https://www.insidehook.com/chicago/solidteknics-american-made-wrought-iron-skillet"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Sam's Club restaurant non-stick pans",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": false,
+    "non_stick": true,
+    "induction": false
+   },
+   "sources": [
+    "https://www.samsclub.com/ip/members-mark-8-aluminum-nonstick-restaurant-fry-pan/7874204529"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "SKIN1004 Madagascar Centella Soothing Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true,
+    "texture": "light"
+   },
+   "sources": [
+    "https://www.skin1004.com/products/skin1004-madagascar-centella-soothing-cream"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Matfer Bourgeat Black Carbon Steel Frying Pan",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true,
+    "non_stick": false,
+    "induction": true
+   },
+   "sources": [
+    "https://matferbourgeatusa.com/education/black-steel-guide/"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "OUAI Fine Hair Shampoo",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "facts": {
+    "sulfate_free": true
+   },
+   "sources": [
+    "https://theouai.co.uk/products/fine-hair-shampoo"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Clinique Moisture Surge Lip Hydro-Plump Treatment",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://www.clinique.co.uk/products/moisture-surge-lip-hydro-plump-treatment"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Etude House Ginger Sugar Essential Lip Balm",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false,
+    "fragrance_free": false
+   },
+   "sources": [
+    "https://sokoglam.com/products/etude-ginger-sugar-essential-lip-balm"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "The Body Shop Hemp Lip Rescue Stick (formerly Hemp Lip Protector)",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://thebodyshop.ca/products/hemp-lip-rescue-stick"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Blistex Medicated Lip Balm",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": true
+   },
+   "sources": [
+    "https://blistex.com/product/medicated-lip-balm/"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Frudia Mango Honey Lip Sleep Mask",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false,
+    "fragrance_free": false
+   },
+   "sources": [
+    "https://www.hollandandbarrett.com/shop/product/frudia-mango-honey-lip-sleep-mask-10g-6100029006",
+    "https://wcosmetics.com.au/products/frudia-mango-honey-lip-mask"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Avène Cold Cream Nourishing Lip Balm",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://www.notino.co.uk/avene/cold-cream-lip-balm-with-nourishing-effect/p-16130965/"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Burt's Bees Beeswax Lip Balm",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://www.burtsbees.co.uk/product/beeswax-lip-balm/"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Lypsyl lip balm",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": true
+   },
+   "sources": [
+    "https://www.lypsyl.co.uk/",
+    "https://www.ocado.com/products/lypsyl-original-lip-balm/300403011"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Naturium Phyto-Glow Lip Mask",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://naturium.com/products/phyto-glow-lip-mask"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Lanolips 101 Ointment Multipurpose Superbalm",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://lanolips.co.uk/products/101-ointment-multipurpose-superbalm"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Fresh Sugar Recovery Lip Mask Advanced Therapy",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false,
+    "fragrance_free": false
+   },
+   "sources": [
+    "https://www.sephora.com/product/fresh-sugar-recovery-lip-mask-advanced-therapy-P474832"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Elizabeth Arden Eight Hour Cream Skin Protectant",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://elizabetharden.co.uk/products/eight-hour-cream-skin-protectant"
    ],
    "checked_on": "2026-10-15"
   }

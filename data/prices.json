@@ -1844,6 +1844,75 @@
     "CeraVe Skin Renewing 10% Pure Vitamin C Serum"
    ],
    "note": "30 ml, £22.50 on offer (was £30.00), to add to the basket (checked 14 Oct 2026, the name-levels follow-up: it had become the third pick of 'vitamin c serum under £20' once Mad Hippie's was priced over it)"
+  },
+  {
+   "product": "Martha Stewart Collection",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Macy's",
+   "url": "https://www.macys.com/customer-service/articles/our-products",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Martha Stewart Collection from Macy's"
+   ],
+   "note": "Macy's own line, sold only by Macy's; its help page (read 15 Oct 2026) says its international shipping has been paused since 17 Dec 2025 and orders need US billing and delivery addresses; Amazon UK's search shows bedding branded 'Martha Stewart', not 'Martha Stewart Collection'; no UK shop found selling it"
+  },
+  {
+   "product": "Parent's Choice baby bottles",
+   "category": "general",
+   "product_type": "baby bottle",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=parent%27s+choice+baby+bottles",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Parents Choice bottles"
+   ],
+   "note": "Walmart's own baby brand, sold by Walmart US; Amazon UK's search shows only other brands' bottles (NUK, Tommee Tippee); no UK shop found selling it"
+  },
+  {
+   "product": "Kirkland Signature Hygro Cotton towel",
+   "category": "general",
+   "product_type": "towel",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Costco UK",
+   "url": "https://www.costco.co.uk/search?text=kirkland%20signature%20towel",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "a Costco US own-brand bath towel; Costco UK's search shows Kirkland Signature microfibre cloths and kitchen roll only, its cotton towels being Grandeur's; Amazon UK's search shows the microfibre cloths only; no UK shop found selling it"
+  },
+  {
+   "product": "Member's Mark Aluminum Nonstick Restaurant Fry Pan",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/dp/B07CKF4691",
+   "checked_on": "2026-10-15",
+   "available": true,
+   "also_called": [
+    "Sam's Club restaurant non-stick pans",
+    "Sam's Club restaurant quality non-stick pans"
+   ],
+   "note": "Sam's Club's own brand, which Sam's Club sells only in the US; Amazon UK lists it from an importing seller: the 8-inch at £58.46 on 15 Oct 2026, delivered 4 to 9 Nov, and the older Bakers & Chefs 10-inch at £88.17; writers name no size, so no one price fits the name"
+  },
+  {
+   "product": "Trader Joe's lip mask",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=trader+joe%27s+lip+mask",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Trader Joe's own-brand lip masks (vanilla, cinnamon roll, watermelon and other flavours), sold in Trader Joe's US stores; Amazon UK's search shows only other brands' lip masks; no UK shop found selling them"
   }
  ]
 }
