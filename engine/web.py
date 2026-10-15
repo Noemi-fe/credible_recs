@@ -1169,8 +1169,11 @@ WARM_ANSWER_STEP = "the answers' memory for"
 # Getting ready starts no more warm answers once this many seconds have passed (13 Oct 2026): Cloud Run's startup probe
 # waits 4 minutes for /ready (deploy/cloudrun/deploy.sh), and the warm answers alone had grown past that, so a deploy
 # failed (the server before it kept serving). The requests left are warmed later, a slice per keep-warm ping
-# (warm_more), unless a visitor asks one first.
-WARM_UP_ANSWERS_SECONDS = 120
+# (warm_more), unless a visitor asks one first. 90 since 15 Oct 2026: counted from the start of getting ready (the
+# library's reading included), the answer under way when the time is up still ends, and with the library grown to
+# ~1,950 threads a server got ready in 168.5 s with 120; 90 keeps the probe's 4 minutes far off, and the pings (which
+# give way to visitors) warm the rest.
+WARM_UP_ANSWERS_SECONDS = 90
 # How long each keep-warm ping warms the requests left (warm_more, 14 Oct 2026): well inside the ping's attempt deadline
 # (180 s, deploy/cloudrun/deploy.sh), and short enough that a visitor waits at most one warm answer behind it.
 WARM_MORE_SECONDS = 40
