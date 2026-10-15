@@ -85,6 +85,12 @@ class Comment(Record):
     # or a read of the whole thread on Reddit). None when it never was: a comment read from the archive and not
     # verified yet. Text not verified within config.LIBRARY_VERIFY_DAYS is dropped (engine/verify.py).
     verified_at: UtcDatetime | None = None
+    # For a kept comment found edited on Reddit that kept Reddit's current text and the items whose quotes are still
+    # found in it word for word (Noemi's decision 3 of 15 Oct 2026; engine/verify.py): how the read whose text it now
+    # holds was made, and so what its body is. "embed": Reddit's embed page, whose formatting is read as plain words, so what
+    # was a quoted block, a list or a link can't be told from the rest (answers never widen its quotes); "bright_data":
+    # its thread read through Bright Data, as written. None: the words as its thread was read.
+    edited: Literal["embed", "bright_data"] | None = None
 
     @model_validator(mode="after")
     def _readable_comment_has_text(self) -> "Comment":
@@ -97,6 +103,8 @@ class Comment(Record):
             raise ValueError("a comment the library doesn't keep holds no words and no writer: body \"\", author null")
         if self.verified_at is not None and self.status != "ok":
             raise ValueError(f"verified_at is for a comment the library keeps, not one that is {self.status}")
+        if self.edited is not None and self.status != "ok":
+            raise ValueError(f"edited is for a comment the library keeps, not one that is {self.status}")
         return self
 
 

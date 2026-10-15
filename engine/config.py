@@ -1043,10 +1043,12 @@ CARE_TIP_REPAIR_WORDS = (
 # --- Facts we couldn't confirm (10 Oct 2026) ---
 # Decided by Claude (the orchestrator) on 10 Oct 2026, as Noemi asked, and reported to her. When a request has a hard
 # requirement (engine.product_facts.hard_requirements: "without PFAS") and a pick's facts don't say whether it meets it
-# ("OXO non-stick pan": OXO sells both PTFE and ceramic pans), the pick keeps its place and shows a note under it:
-# "Note: we couldn't confirm it's PFAS-free or that it's non-stick." Leaving such picks out would empty most answers;
-# showing them silently would mislead. A note never changes the ranking. The wording is shown to users: each rule's
-# words fit "we couldn't confirm ..."; several are joined with commas, a last "or", and "that" before all but the first.
+# ("OXO non-stick pan": OXO sells both PTFE and ceramic pans), the pick shows a note under it: "Note: we couldn't
+# confirm it's PFAS-free or that it's non-stick." Leaving such picks out would empty most answers; showing them silently
+# would mislead. Until 15 Oct 2026 such a pick kept its place; since Noemi's decision 1 of 15 Oct 2026 it ranks after
+# the products whose facts or name confirm the must-have, fewer unconfirmed first (engine.rank), still with its note.
+# The wording is shown to users: each rule's words fit "we couldn't confirm ..."; several are joined with commas, a
+# last "or", and "that" before all but the first.
 UNCONFIRMED_NOTE = "we couldn't confirm {facts}"
 UNCONFIRMED_FACT_NAMES: dict[str, str] = {
     "too strong": "it's gentle enough for beginners or sensitive skin",

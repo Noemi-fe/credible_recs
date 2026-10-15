@@ -23,6 +23,23 @@ unreadable page proves nothing either way: the comment just isn't verified by it
 show through Bright Data instead: Noemi's "Use Bright Data" decision), and its words go only when the deadline passes.
 So a page Reddit redesigns can never wipe the library in one go.
 
+Edited comments keep what still verifies (Noemi's decision 3 of 15 Oct 2026). A comment found edited keeps Reddit's
+current text, and only the items whose quotes are still found in it word for word (and that the extraction's checks
+kept before); the rest go, as before. Its current text is the one a read showed, never words from anywhere else: the
+text of the read that found it edited, or of a newer read, as this machine's checks or the bucket's bundle hold it
+(`reads`: the site's reads of the last 48 hours, which deploy.sh fetches next to the record and deletes once applied).
+Without such a read (none of the last 48 hours, or the record knows a newer one whose text isn't at hand), or with no
+item left, it goes as before. Its verified_at is the read's, so the 30-day deadline counts from it, and its `edited`
+says how the read was made: "embed" (the embed page, whose formatting is read as plain words: answers never widen its
+quotes, engine/answer.py) or "bright_data" (as written). A reply that takes its product from such a comment (refers_to)
+follows the same rule: its item stays only while the comment above keeps an item of the same product (module 4's
+names), so still says it word for word; a comment nothing points to any more loses its words, as slimming would have
+it. The daily plan lists such comments to be read again like answers' comments (every 40 hours, engine/read_ahead.py)
+until a deploy applies them, so a read with their current text is always in the bundle (engine/precheck.py). A read
+whose text holds the very words the library holds, formatting aside (a link's address, bold and italics, punctuation
+and spacing: same_words), isn't an edit at all: it verifies the comment whole, which keeps its words and items (until
+15 Oct 2026 the embed page's formatting was read as spaces, and such reads stay in the bundle for 48 hours).
+
 Where the reads come from:
 - the daily pre-check (engine/precheck.py: a Cloud Run job): the comments answers would show, then the kept comments
   verified longest ago, within config.LIBRARY_VERIFY_READS a day. Since 14 Oct 2026 (the free-tier redesign) the job
@@ -34,13 +51,17 @@ Where the reads come from:
   (live_check/verified.json, written again every run, so the bucket's 2-day rule only removes it if the job stops) and
   on the machine that ran it (.cache/verified.json);
 - the checks made on this machine in the last 48 hours (.cache/live_check: a pre-check run here, or answers' own).
+- the site's reads of the last 48 hours, from the bucket's bundle (15 Oct 2026; `--bundle FILE`): what each read said,
+  recorded like this machine's, and the text a comment found edited keeps.
 The library is baked into the site's image when it is deployed from Noemi's computer, so the reads are applied there
-before each deploy (deploy/cloudrun/deploy.sh fetches the bucket's record): `python -m engine.library apply-checks`
-stamps each passing comment's verified_at and drops what failed or ran out. check-live applies the deadline too.
+before each deploy (deploy/cloudrun/deploy.sh fetches the bucket's record and bundle): `python -m engine.library
+apply-checks` stamps each passing comment's verified_at and drops what failed or ran out. check-live applies the
+deadline too.
 
-    python -m engine.library apply-checks [--ledger FILE]... [--checks DIR] [--dry-run] [--library DIR]
+    python -m engine.library apply-checks [--ledger FILE]... [--checks DIR] [--bundle FILE] [--dry-run] [--library DIR]
 """
 
+import html
 import json
 import re
 from dataclasses import dataclass, field, replace
@@ -48,9 +69,10 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from engine.config import LIBRARY_VERIFY_DAYS
-from engine.extract import Extraction, extracted_dir
+from engine.extract import Extraction, check_extraction, extracted_dir
+from engine.match_products import known_aliases, same_product
 from engine.models import Thread
-from engine.slim import PLACEHOLDERS, known_types, names_in, thread_json, write_file
+from engine.slim import PLACEHOLDERS, _source_of, kept_comment_ids, known_types, names_in, thread_json, write_file
 from engine.verify_quotes import find_quote
 
 OUTCOMES = ("passing", "deleted", "removed", "changed", "unreadable")
@@ -235,8 +257,14 @@ class ApplyResult:
     threads: int = 0  # slimmed threads looked at
     kept: int = 0  # comments they kept whole before
     stamped: int = 0  # given a newer verified_at
-    dropped: dict[str, int] = field(default_factory=dict)  # by why: deleted, removed, changed, expired
+    # by why: deleted, removed, changed, expired; and "not used": a comment nothing points to any more, once the items
+    # of a reply that took its product from an edited comment went (15 Oct 2026)
+    dropped: dict[str, int] = field(default_factory=dict)
     items_removed: int = 0  # mentions, notes, care tips and agreements removed from the extractions
+    # Found edited on Reddit and kept Reddit's current text with the items still found in it word for word (Noemi's
+    # decision 3 of 15 Oct 2026), and how many items those are.
+    edited: int = 0
+    items_after_edit: int = 0
     changed_threads: list[str] = field(default_factory=list)
     problems: dict[str, str] = field(default_factory=dict)
     dry_run: bool = False
@@ -253,16 +281,21 @@ def expired(comment, thread: Thread, now: datetime) -> bool:
     return (now.date() - since.date()).days > LIBRARY_VERIFY_DAYS
 
 
-def apply_checks(folder: Path, ledger: Ledger, now: datetime | None = None, dry_run: bool = False) -> ApplyResult:
+def apply_checks(folder: Path, ledger: Ledger, now: datetime | None = None, dry_run: bool = False,
+                 reads=()) -> ApplyResult:
     """Applies the record's reads to the library's slimmed threads (see the module's docstring), then the deadline.
     Whole threads (not extracted yet, or gold-set threads) are never touched. With `dry_run`, counts and writes
-    nothing. The thread file is written first, then the extraction, each whole."""
+    nothing. The thread file is written first, then the extraction, each whole. `reads`: the live checkers
+    (engine.live_check.LiveChecker; Reddit is never read here) whose reads of the last 48 hours give a comment found
+    edited its current text (this machine's checks, the bucket's bundle: Noemi's decision 3 of 15 Oct 2026); with none,
+    such a comment goes as before."""
     now = now or datetime.now(UTC)
     result = ApplyResult(dry_run=dry_run)
     types = None  # known_types, worked out once there is something to drop
     for path, thread, raw, extraction in slimmed_threads(folder, result.problems):
         result.threads += 1
-        stamps, drops = {}, {}
+        stamps, drops, texts = {}, {}, {}
+        quotes = None  # verification_quotes, worked out once one of the thread's comments is found edited
         for comment in thread.comments:
             if comment.status != "ok":
                 continue
@@ -273,23 +306,44 @@ def apply_checks(folder: Path, ledger: Ledger, now: datetime | None = None, dry_
                 verified = stamps[comment.id] = entry.passed
             if entry is not None and entry.outcome in FAILED and (verified is None or entry.at > verified):
                 drops[comment.id] = entry.outcome
+                if entry.outcome == "changed" and reads:
+                    quotes = verification_quotes(thread, extraction) if quotes is None else quotes
+                    found = current_text(comment.url, entry.at, quotes.get(comment.id, ()), reads)
+                    if found is not None and same_words(comment.body, found[1]):
+                        # Formatting aside, Reddit shows the very words the library holds: it wasn't edited, and the
+                        # read verifies it whole (a read made before the embed page's formatting fix of 15 Oct 2026).
+                        del drops[comment.id]
+                        stamps[comment.id] = max(found[0], verified) if verified is not None else found[0]
+                    elif found is not None:
+                        texts[comment.id] = found
             elif expired(comment.model_copy(update={"verified_at": verified}), thread, now):
                 drops[comment.id] = "expired"
         for comment_id in drops:
             stamps.pop(comment_id, None)
+        # Edited comments keep Reddit's current text and the items still found in it (Noemi, 15 Oct 2026); a comment
+        # nothing points to once the items that went are gone loses its words too.
+        edits, raw, removed_now, unused = (_kept_after_edit(thread, raw, extraction, texts) if texts
+                                           else ({}, raw, 0, set()))
+        for comment_id in edits:
+            del drops[comment_id]
+        drops |= {comment_id: "not used" for comment_id in unused if comment_id not in drops}
         # Items of a comment the thread no longer keeps whole (a run stopped between its two files) go too.
         status = {c.id: c.status for c in thread.comments}
         left_over = {item.comment_id for item in [*extraction.mentions, *extraction.notes, *extraction.agreements,
                                                   *extraction.care] if status.get(item.comment_id, "ok") != "ok"}
-        if not stamps and not drops and not left_over:
+        if not stamps and not drops and not left_over and not edits:
             continue
         if drops and types is None:
             types = known_types(folder)
-        new_thread, new_raw, removed = _applied(thread, raw, stamps, drops, types or (), left_over)
+        new_thread, new_raw, removed = _applied(thread, raw, stamps, drops, types or (), left_over, edits)
+        removed += removed_now
         result.stamped += len(stamps)
         for why in drops.values():
             result.dropped[why] = result.dropped.get(why, 0) + 1
         result.items_removed += removed
+        result.edited += len(edits)
+        result.items_after_edit += sum(1 for kind in _KINDS for item in new_raw.get(kind) or []
+                                       if isinstance(item, dict) and item.get("comment_id") in edits)
         result.changed_threads.append(thread.id)
         if not dry_run:
             write_file(path, thread_json(new_thread))
@@ -299,10 +353,93 @@ def apply_checks(folder: Path, ledger: Ledger, now: datetime | None = None, dry_
     return result
 
 
+_KINDS = ("mentions", "notes", "agreements", "care")  # the extraction's items, each pointing to its comment
+_LINK = re.compile(r"\[([^\]]*)\]\([^)\s]*\)")  # a markdown link, which the embed page shows as its words only
+_ESCAPED = re.compile(r"\\(\S)")  # Reddit's backslash before a markdown character: "\[", "\*"
+_WORD = re.compile(r"[^\W_]+")
+
+
+def same_words(body: str, text: str) -> bool:
+    """Whether a read's text holds the very words a comment's body does, in the same order, formatting aside: a link's
+    address (the embed page shows its words only), bold and italics, escapes, entities, punctuation and spacing (15 Oct
+    2026). Until that day's fix the embed page's formatting was read as spaces ("solid**.**" as "solid ."), so such a
+    read made a comment look edited when not one word had changed; it verifies the comment whole instead."""
+    def words(value: str) -> list[str]:
+        return _WORD.findall(html.unescape(_ESCAPED.sub(r"\1", _LINK.sub(r"\1", value))).lower())
+
+    return bool(text) and words(body) == words(text)
+
+
+def current_text(url: str, since: datetime, quotes, reads) -> tuple[datetime, str, str] | None:
+    """Reddit's current text of a kept comment found edited (Noemi's decision 3 of 15 Oct 2026), as (when it was read,
+    the text, how: "embed" or "bright_data"): the newest of `reads`' last reads of it in the last 48 hours
+    (engine.live_check.LiveChecker.last_read), when it was made at `since` (the read the record's outcome comes from)
+    or later, holds a comment and says it was edited too (`quotes`: those the library holds of it). None otherwise: no
+    read with words is at hand, the record knows a newer read than any here, or the newest says something else."""
+    found = [read for checker in reads if (read := checker.last_read(url)) is not None]
+    if not found:
+        return None
+    at, text, via = max(found, key=lambda read: read[0])
+    if text is None or at < since or outcome(text, quotes) != "changed":
+        return None
+    return at, text, via or "embed"
+
+
+def _kept_after_edit(thread: Thread, raw: dict, extraction: Extraction,
+                     texts: dict[str, tuple[datetime, str, str]]) -> tuple[dict, dict, int, set[str]]:
+    """The edited comments that keep Reddit's current text ({comment id: (read at, text, via)}, from `texts`), the
+    extraction file's data without the items that go, how many went, and the comments nothing points to any more
+    (Noemi's decision 3 of 15 Oct 2026). An item of an edited comment stays when the extraction's checks kept it and its
+    quote is found word for word in the text; a reply's mention taking its product from an edited comment (refers_to)
+    stays when that comment keeps a mention of the same product (module 4's names). An edited comment left with no item
+    isn't one of them: it goes whole, as before, and the replies taking their product from it stay as they were (the
+    extraction's check rejects them, saying their source was edited). Every other item stays as it is."""
+    checked = check_extraction(extraction, thread)
+    passed = {id(item) for group in (checked.kept, checked.kept_notes, checked.kept_agreements, checked.kept_care)
+              for item in group}
+    comments = {c.id: c for c in thread.comments}
+    items = [(kind, index, item) for kind in _KINDS for index, item in enumerate(getattr(extraction, kind))]
+    edited = set(texts)
+
+    def source_of(item):
+        return _source_of(item, comments) if getattr(item, "refers_to", None) in ("parent", "earlier") else None
+
+    while True:
+        verdict: dict[int, bool] = {}
+
+        def stays(item) -> bool:
+            if id(item) in verdict:
+                return verdict[id(item)]
+            verdict[id(item)] = False  # a source is always further up the thread: no item waits on itself
+            ok = item.comment_id not in edited or (id(item) in passed and find_quote(texts[item.comment_id][1],
+                                                                                     item.quote) is not None)
+            source = source_of(item)
+            if ok and source is not None and source.id in edited:
+                aliases = known_aliases().get(item.category, {})
+                ok = any(stays(other) for other in extraction.mentions
+                         if other.comment_id == source.id and same_product(other.product, item.product, aliases))
+            verdict[id(item)] = ok
+            return ok
+
+        empty = {cid for cid in edited if not any(stays(item) for _, _, item in items if item.comment_id == cid)}
+        if not empty:
+            break
+        edited -= empty  # nothing of it is still found: it goes whole, as before
+    going = {(kind, index) for kind, index, item in items if not stays(item)
+             and (item.comment_id in edited or ((source := source_of(item)) is not None and source.id in edited))}
+    new_raw = dict(raw)
+    for kind in _KINDS:
+        if isinstance(raw.get(kind), list):
+            new_raw[kind] = [item for index, item in enumerate(raw[kind]) if (kind, index) not in going]
+    unused = kept_comment_ids(thread, extraction) - kept_comment_ids(thread, Extraction.model_validate(new_raw))
+    return {cid: texts[cid] for cid in edited}, new_raw, len(going), unused - edited
+
+
 def _applied(thread: Thread, raw: dict, stamps: dict, drops: dict, types,
-             left_over: set[str] = frozenset()) -> tuple[Thread, dict, int]:
+             left_over: set[str] = frozenset(), edits: dict | None = None) -> tuple[Thread, dict, int]:
     """The thread with its new stamps and drops, its extraction file's data without the items of the dropped comments
-    (and of `left_over`: comments it already didn't keep whole), and how many items were removed."""
+    (and of `left_over`: comments it already didn't keep whole), and how many items were removed. `edits`: the comments
+    found edited that keep Reddit's current text ({comment id: (read at, text, how it was read)}; 15 Oct 2026)."""
     facts = thread.whole_thread
     names, first_seen, gone_why = dict(facts.comment_names), dict(facts.first_seen), dict(facts.dropped)
     staying = [c for c in thread.comments if c.status == "ok" and c.id not in drops and c.author is not None]
@@ -315,7 +452,7 @@ def _applied(thread: Thread, raw: dict, stamps: dict, drops: dict, types,
         why = drops.get(comment.id)
         if why in ("deleted", "removed"):  # gone from Reddit: a stub, as Reddit shows it
             comment = comment.model_copy(update={"status": why, "body": f"[{why}]", "author": None,
-                                                 "verified_at": None})
+                                                 "verified_at": None, "edited": None})
         elif why is not None:  # edited, or not verified in time: still on Reddit as far as we know
             if found := names_in(comment.body, types):
                 names[comment.id] = found
@@ -326,7 +463,10 @@ def _applied(thread: Thread, raw: dict, stamps: dict, drops: dict, types,
                                                               kept_since[name]):
                 first_seen[name] = comment.created_at
             comment = comment.model_copy(update={"status": "not_kept", "body": "", "author": None,
-                                                 "verified_at": None})
+                                                 "verified_at": None, "edited": None})
+        elif comment.id in (edits or {}):  # Reddit's current text, as the read showed it (15 Oct 2026)
+            at, text, via = edits[comment.id]
+            comment = comment.model_copy(update={"body": text, "verified_at": at, "edited": via})
         elif comment.id in stamps:
             comment = comment.model_copy(update={"verified_at": stamps[comment.id]})
         comments.append(comment)
@@ -357,7 +497,10 @@ class Restored:
 
     thread_id: str
     comment_id: str
-    outcome: str  # "passing": put back; else what Reddit's page says now ("changed"...), or why nothing was read
+    # "passing": put back whole; "edited": put back with Reddit's current text and the items still found in it (Noemi's
+    # decision 3 of 15 Oct 2026); else what Reddit's page says now ("changed": none of its quotes is still there,
+    # "deleted"...), or why nothing was read
+    outcome: str
     items: int = 0  # its items put back in the extraction file
     read_at: datetime | None = None
 
@@ -370,9 +513,15 @@ def restore_words(folder: Path, backup, pairs, checker, dry_run: bool = False) -
     one): the comment's words and writer, and its items back in the extraction file, checked as they were then; its
     verified_at is the read, so the next deploy's apply-checks keeps it (a recorded "changed" is older). The thread's
     facts that hang on which comments are kept are worked out again (the product types listed for comments not kept,
-    writers' first comments). A comment Reddit shows edited, deleted or removed, or that slimming never kept, is left
-    as it is. Made for 15 Oct 2026, when formatting had made a check take 7 comments as edited."""
-    from engine.slim import _first_seen_dropped, kept_comment_ids
+    writers' first comments). Made for 15 Oct 2026, when formatting had made a check take 7 comments as edited.
+
+    Since Noemi's decision 3 of 15 Oct 2026, a comment Reddit shows edited is put back as apply_checks keeps one: with
+    Reddit's current text, as the read shows it, and only those of its items (from the backup) still found in it word
+    for word, a reply taking its product from it keeping its item only while it keeps a mention of that product
+    (_kept_after_edit; outcome "edited"). One whose words Reddit shows unchanged, formatting aside (same_words), is
+    put back whole, as one passing. One none of whose quotes is still found, or that Reddit shows deleted or removed, or
+    that slimming never kept, is left as it is."""
+    from engine.slim import _first_seen_dropped
 
     whole_of, raw_of = _backup_reader(backup)
     done = []
@@ -400,7 +549,9 @@ def restore_words(folder: Path, backup, pairs, checker, dry_run: bool = False) -
             done.append(Restored(thread_id, comment_id, "couldn't be read now"))
             continue
         said = outcome(read[1], verification_quotes(whole, old_extraction)[comment_id])
-        if said != "passing":
+        if said == "changed" and same_words(original.body, read[1]):
+            said = "passing"  # formatting aside, the very words it had (a link's address, bold, spacing: same_words)
+        if said not in ("passing", "changed"):
             done.append(Restored(thread_id, comment_id, said, read_at=read[0]))
             continue
         comments = [original.model_copy(update={"verified_at": read[0]}) if c.id == comment_id else c
@@ -410,28 +561,48 @@ def restore_words(folder: Path, backup, pairs, checker, dry_run: bool = False) -
             update={"comment_names": {k: v for k, v in facts.comment_names.items() if k != comment_id},
                     "first_seen": _first_seen_dropped(whole, {c.id for c in comments if c.status == "ok"}),
                     "dropped": {k: v for k, v in facts.dropped.items() if k != comment_id}})}).model_dump())
-        new_raw, back = dict(raw), 0
-        for kind in ("mentions", "notes", "agreements", "care"):
+        new_raw = dict(raw)
+        for kind in _KINDS:
             old_items, now_items = old_raw.get(kind) or [], raw.get(kind) or []
-            back += sum(1 for i in old_items if i.get("comment_id") == comment_id and i not in now_items)
             new_raw[kind] = [i for i in old_items if i.get("comment_id") == comment_id or i in now_items] + [
                 i for i in now_items if i not in old_items]
-        if _items_checked(old_extraction, whole, comment_id) != _items_checked(
+        if said == "changed":  # Reddit's current text, and only the items still found in it (15 Oct 2026)
+            last = checker.last_read(original.url)
+            via = (last[2] if last is not None and last[0] == read[0] else None) or "embed"
+            edits, new_raw, _, unused = _kept_after_edit(restored, new_raw, Extraction.model_validate(new_raw),
+                                                         {comment_id: (read[0], read[1], via)})
+            if comment_id not in edits:
+                done.append(Restored(thread_id, comment_id, "changed", read_at=read[0]))
+                continue
+            restored, new_raw, _ = _applied(restored, new_raw, {}, {cid: "not used" for cid in unused},
+                                            known_types(folder) if unused else (), edits=edits)
+            check = check_extraction(Extraction.model_validate(new_raw), restored)
+            if any(item.comment_id == comment_id for _, items in _rejected(check) for item, _ in items):
+                done.append(Restored(thread_id, comment_id, "its items wouldn't be checked as before slimming",
+                                     read_at=read[0]))
+                continue
+        elif _items_checked(old_extraction, whole, comment_id) != _items_checked(
                 Extraction.model_validate(new_raw), restored, comment_id):
             done.append(Restored(thread_id, comment_id, "its items wouldn't be checked as before slimming",
                                  read_at=read[0]))
             continue
+        back = sum(1 for kind in _KINDS for i in new_raw.get(kind) or []
+                   if i.get("comment_id") == comment_id and i not in (raw.get(kind) or []))
         if not dry_run:
             write_file(thread_path, thread_json(restored))
             write_file(extraction_path, (json.dumps(new_raw, ensure_ascii=False, indent=1) + "\n").encode("utf-8"))
-        done.append(Restored(thread_id, comment_id, "passing", back, read[0]))
+        done.append(Restored(thread_id, comment_id, "passing" if said == "passing" else "edited", back, read[0]))
     return done
+
+
+def _rejected(check) -> list[tuple[str, list]]:
+    """The items a check of an extraction rejected, by kind, with why."""
+    return [("mentions", check.rejected), ("notes", check.rejected_notes), ("agreements", check.rejected_agreements),
+            ("care", check.rejected_care)]
 
 
 def _items_checked(extraction: Extraction, thread: Thread, comment_id: str) -> tuple:
     """A comment's items as the extraction's check takes them: those kept, and those rejected with why."""
-    from engine.extract import check_extraction
-
     result = check_extraction(extraction, thread)
     kept = [i.model_dump_json() for group in (result.kept, result.kept_notes, result.kept_agreements, result.kept_care)
             for i in group if i.comment_id == comment_id]
@@ -469,9 +640,12 @@ def report(result: ApplyResult) -> str:
     d = result.dropped
     lines = [f"Kept comments in {result.threads} slimmed thread(s): {result.kept:,}; stamped with a newer passing check "
              f"on Reddit: {result.stamped:,}.",
+             f"Found edited on Reddit: {result.edited} kept Reddit's current text, with the {result.items_after_edit} "
+             f"item(s) still found in it word for word.",
              f"Words and mentions dropped: deleted on Reddit: {d.get('deleted', 0)}, removed on Reddit: "
              f"{d.get('removed', 0)}, edited: {d.get('changed', 0)}, not verified within {LIBRARY_VERIFY_DAYS} days: "
-             f"{d.get('expired', 0)} (items removed from the extractions: {result.items_removed})."]
+             f"{d.get('expired', 0)}, no longer used: {d.get('not used', 0)} (items removed from the extractions: "
+             f"{result.items_removed})."]
     if result.dry_run:
         lines.append("Dry run: nothing written.")
     for thread_id, why in result.problems.items():

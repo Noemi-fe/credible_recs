@@ -10,8 +10,9 @@ check is made: mostly ahead of time, so answers find it saved.
 Who reads (14 Oct 2026, the free-tier redesign). On Google Cloud the daily job no longer reads the embed page itself: a
 Cloud Run job is billed for its whole run, and two thirds of its run went on waiting for Reddit's allowance. With
 --plan (deploy.sh runs it so) it works out what to read and leaves the site a plan in the bucket (plan_run): the
-comments below, likeliest first, then the slimmed library's kept comments due to be verified, and its checks through
-Bright Data; the site, billed only while it answers, reads them a few at each keep-warm ping (engine/read_ahead.py) and
+comments below, likeliest first, then the slimmed library's kept comments due to be verified, those found edited (read
+again until a deploy keeps their current text: 15 Oct 2026), and its checks through Bright Data; the site, billed only
+while it answers, reads them a few at each keep-warm ping (engine/read_ahead.py) and
 shares what it read through the bucket's bundle, which the next run starts from. Without --plan (on Noemi's computer,
 say) a run reads them itself, as below.
 
@@ -69,8 +70,10 @@ After those reads, the comments the library's slimmed threads keep are verified 
 (verify_kept): first, what today's checks already say about them is recorded (the comments just read, the bundle's);
 then the kept comments verified longest ago are read, oldest first (a comment never verified counts from the day its
 thread was read), within a budget of their own (--verify N, default config.LIBRARY_VERIFY_READS), each one at most
-every config.LIBRARY_VERIFY_AGAIN_DAYS; a comment found deleted or edited isn't read again (the next deploy drops it),
-and a page with no comment on it is tried again after config.LIBRARY_VERIFY_RETRY_DAYS. Every read goes into the
+every config.LIBRARY_VERIFY_AGAIN_DAYS; a comment found deleted or removed isn't read again (the next deploy drops it),
+one found edited is read again first, until a deploy keeps Reddit's current text and the items still found in it
+(Noemi's decision 3 of 15 Oct 2026; in the plan, like an answer's comment: engine/read_ahead.py), and a page with no
+comment on it is tried again after config.LIBRARY_VERIFY_RETRY_DAYS. Every read goes into the
 verification record (engine.verify.Ledger: when, and what it said; ids, dates and outcomes only, never any words): on
 this machine (.cache/verified.json) and, with a bucket, next to the bundle (live_check/verified.json). The library
 itself is never changed here: it is baked into the site's image, so `python -m engine.library apply-checks` applies the
@@ -745,7 +748,7 @@ class VerifyReading:
     changed: int = 0
     unreadable: int = 0  # the page showed no comment: tried again after LIBRARY_VERIFY_RETRY_DAYS
     unknown: int = 0  # couldn't be read now (an error, Reddit refusing): left for the next run
-    gone_already: int = 0  # found deleted or edited before: not read again, the next deploy drops them
+    gone_already: int = 0  # found deleted or removed before: not read again, the next deploy drops them
     waiting_retry: int = 0  # unreadable less than LIBRARY_VERIFY_RETRY_DAYS ago
     not_reached: int = 0  # due, but left for lack of reads in this run's budget
     would_read: int = 0  # a dry run: what would have been read
@@ -773,7 +776,8 @@ def verify_kept(library_dir: Path, checker, ledger: Ledger, limit: int = LIBRARY
     due = due_for_verification(kept, ledger, now, again=again, retry=retry)
     reading.due, reading.gone_already, reading.waiting_retry = due.due, due.gone_already, due.waiting_retry
     unknown_in_a_row = 0
-    for comment in due.chosen:
+    # Those found edited first (15 Oct 2026): a read of the last 48 hours gives apply-checks their current text.
+    for comment in due.edited + due.chosen:
         if not dry_run and until is not None and not reading.out_of_time and clock() >= until:
             reading.out_of_time = True
         if reading.stopped or reading.out_of_time or reading.read + reading.would_read >= limit:
@@ -805,8 +809,11 @@ class Due:
     chosen: list[KeptComment] = field(default_factory=list)
     due: int = 0  # due, chosen or not
     not_reached: int = 0  # due, beyond the limit
-    gone_already: int = 0  # found deleted or edited before: not read again, the next deploy drops them
+    gone_already: int = 0  # found deleted or removed before: not read again, the next deploy drops them
     waiting_retry: int = 0  # unreadable less than LIBRARY_VERIFY_RETRY_DAYS ago
+    # Found edited since their last pass (15 Oct 2026, Noemi's decision 3): read again like answers' comments until a
+    # deploy applies them, so the bundle always holds Reddit's current text for it (engine/verify.py, read_ahead.py).
+    edited: list[KeptComment] = field(default_factory=list)
 
 
 def due_for_verification(kept: list[KeptComment], ledger: Ledger, now: datetime, limit: int | None = None,
@@ -814,14 +821,17 @@ def due_for_verification(kept: list[KeptComment], ledger: Ledger, now: datetime,
                          retry: timedelta = timedelta(days=LIBRARY_VERIFY_RETRY_DAYS)) -> Due:
     """The kept comments not verified within `again` (a comment never verified counts from the day its thread was
     read), longest unverified first, then by thread and place in it; at most `limit` chosen. Left out: those in
-    `exclude` (comment ids: the answers' own comments, read anyway), those found deleted or edited since their last
-    pass, and those whose page showed no comment less than `retry` ago."""
+    `exclude` (comment ids: the answers' own comments, read anyway), those found deleted or removed since their last
+    pass, and those whose page showed no comment less than `retry` ago. Those found edited since their last pass are
+    listed apart (edited), outside the limit: there are few, and each is read again only while it waits for a deploy."""
     result, due = Due(), []
     for comment in kept:
         if comment.comment_id in exclude:
             continue
         entry, last = ledger.get(comment.comment_id), _last_verified(comment, ledger)
-        if entry is not None and entry.outcome in FAILED and (last is None or entry.at > last):
+        if entry is not None and entry.outcome == "changed" and (last is None or entry.at > last):
+            result.edited.append(comment)
+        elif entry is not None and entry.outcome in FAILED and (last is None or entry.at > last):
             result.gone_already += 1
         elif entry is not None and entry.outcome == "unreadable" and (last is None or entry.at > last) and (
                 now - entry.at < retry):
@@ -888,7 +898,7 @@ def verify_report(reading: VerifyReading) -> str:
     lines = [f"Kept comments of slimmed threads: {reading.kept:,} kept comments, each to be verified on Reddit within "
              f"{LIBRARY_VERIFY_DAYS} days. From today's checks: {reading.recorded:,}; due: {reading.due:,}; {done}; "
              f"left for the next runs: {reading.not_reached:,}.",
-             f"Found deleted or edited before (the next deploy drops them): {reading.gone_already:,}; unreadable, "
+             f"Found deleted or removed before (the next deploy drops them): {reading.gone_already:,}; unreadable, "
              f"tried again after {LIBRARY_VERIFY_RETRY_DAYS} days: {reading.waiting_retry:,}. After this run: "
              f"{reading.never_verified:,} never verified, the oldest verified {reading.oldest_days} days ago, "
              f"{reading.expiring:,} due to go within a week unless read."]
@@ -1027,13 +1037,14 @@ def plan_run(requests: list[str], library_dir: Path, checker, profiles, dry_run:
     found = _work_out(requests, library_dir, checker, profiles, memory.unverifiable(now))
     due = due_for_verification(kept, ledger, now, verify_limit, exclude={c.comment_id for c in found.candidates})
     answers, verify = [c.url for c in found.candidates], [c.url for c in due.chosen]
+    edited = [c.url for c in due.edited]  # read again like answers' comments until a deploy applies them (15 Oct 2026)
     written = None
     if not dry_run:
         if kept:
             ledger.keep_only({comment.comment_id for comment in kept})
             ledger.save(local, now)
             bucket.put(LEDGER_NAME, ledger.dumps(now))
-        written = bucket.put(PLAN_NAME, plan_bytes(answers, verify, checker.checks_made("bright_data"), now))
+        written = bucket.put(PLAN_NAME, plan_bytes(answers, verify, checker.checks_made("bright_data"), now, edited))
     after = VerifyReading()
     _after_the_run(kept, ledger, now, after)
     print(plan_report(found, len(requests), kept, due, loaded, recorded, after, time.perf_counter() - started, dry_run,
@@ -1047,7 +1058,7 @@ def plan_run(requests: list[str], library_dir: Path, checker, profiles, dry_run:
         remember()  # every run: so the bucket's 2-day rule never removes it while the job runs daily
     print(bright_data_report(through))
     if not dry_run and through.read:
-        bucket.put(PLAN_NAME, plan_bytes(answers, verify, checker.checks_made("bright_data"), now))
+        bucket.put(PLAN_NAME, plan_bytes(answers, verify, checker.checks_made("bright_data"), now, edited))
     if bucket.problems:
         print(f"The bucket failed {bucket.problems} time(s) (said above).")
     return 0
@@ -1066,8 +1077,9 @@ def plan_report(found: _Found, requests: int, kept: list[KeptComment], due: Due,
     if kept:
         lines.append(f"Kept comments of slimmed threads: {len(kept):,}, each to be verified on Reddit within "
                      f"{LIBRARY_VERIFY_DAYS} days. The site's reads of the last 48 hours: {loaded:,} taken from the "
-                     f"bucket's bundle, {recorded:,} of kept comments recorded. Found deleted or edited before (the next "
-                     f"deploy drops them): {due.gone_already:,}; unreadable, tried again after "
+                     f"bucket's bundle, {recorded:,} of kept comments recorded. Found deleted or removed before (the "
+                     f"next deploy drops them): {due.gone_already:,}; found edited (read again until the next deploy "
+                     f"keeps what still verifies): {len(due.edited):,}; unreadable, tried again after "
                      f"{LIBRARY_VERIFY_RETRY_DAYS} days: {due.waiting_retry:,}. Now {after.never_verified:,} never "
                      f"verified, the oldest verified {after.oldest_days} days ago, {after.expiring:,} due to go within a "
                      "week unless read.")

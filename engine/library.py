@@ -43,8 +43,11 @@ Six jobs:
 - apply-checks (engine/verify.py): each comment a slimmed thread keeps is verified on Reddit's embed page by the daily
   pre-check (engine/precheck.py, which records each read: when, and what it said); this applies those reads before a
   deploy: passing comments get their date, and a comment found deleted or edited, or not verified within
-  LIBRARY_VERIFY_DAYS (30), loses its words and its mentions. check-live and refresh never read a slimmed thread again
-  (no Bright Data record, no Parse credit); check-live applies the 30-day deadline to its comments.
+  LIBRARY_VERIFY_DAYS (30), loses its words and its mentions; since Noemi's decision 3 of 15 Oct 2026 one found edited
+  keeps Reddit's current text, as a read of the last 48 hours showed it (this machine's, or the site's from the
+  bucket's bundle, --bundle), and the items still found in it word for word. check-live and refresh never read a
+  slimmed thread again (no Bright Data record, no Parse credit); check-live applies the 30-day deadline to its
+  comments.
 
 What is saved:
 - Threads as fetched, but a deleted or removed comment only as a stub: its status, "[deleted]" or "[removed]"
@@ -100,15 +103,18 @@ Command line:
                                                demand that the image now holds (deploy.sh runs it too)
     python -m engine.library slim [--dry-run] [--library DIR]
                                                keep only the comments answers use in each extracted thread
-    python -m engine.library apply-checks [--ledger FILE]... [--checks DIR] [--dry-run] [--library DIR]
+    python -m engine.library apply-checks [--ledger FILE]... [--checks DIR] [--bundle FILE] [--dry-run] [--library DIR]
                                                apply the kept comments' reads on Reddit (the pre-check's record in
                                                FILE, this machine's .cache/verified.json and the checks of the last
-                                               48 hours in DIR, .cache/live_check by default) and the 30-day deadline
+                                               48 hours in DIR, .cache/live_check by default, and the site's in the
+                                               bucket's bundle FILE) and the 30-day deadline
     python -m engine.library restore-words --backup PATH [--dry-run] [--library DIR] <thread>:<comment> ...
                                                give back their words, from the backup made before slimming (a folder
                                                or its .tgz), to kept comments verification dropped, when Reddit's
                                                embed page, read again now, passes the check (engine.verify.
-                                               restore_words: 15 Oct 2026, a formatting slip had taken 7 as edited)
+                                               restore_words: 15 Oct 2026, a formatting slip had taken 7 as edited);
+                                               one Reddit shows edited gets its current text and the items still
+                                               found in it (Noemi's decision 3 of 15 Oct 2026)
 """
 
 import inspect
@@ -951,8 +957,12 @@ def main(
 
 def _slim_or_apply(command: str, words: list[str], folder: Path) -> int:
     """`slim` and `apply-checks` (Noemi, 13 Oct 2026: "Keep only comments we use"; engine/slim.py, engine/verify.py).
-    Both read and write this machine's library only, and print counts, never anyone's words."""
-    options = _file_options(words, ("--library", "--ledger", "--checks") if command == "apply-checks" else ("--library",))
+    Both read and write this machine's library only, and print counts, never anyone's words. `apply-checks --bundle
+    FILE` (15 Oct 2026) takes the site's reads of the last 48 hours from the bucket's bundle, fetched by deploy.sh: into
+    a temporary folder only (each read under 48 hours old, as the live checker takes a bundle in), deleted once applied;
+    a comment found edited keeps the text Reddit showed in them (Noemi's decision 3 of 15 Oct 2026)."""
+    named = ("--library", "--ledger", "--checks", "--bundle") if command == "apply-checks" else ("--library",)
+    options = _file_options(words, named)
     if options is None:
         print(__doc__)
         return 2
@@ -963,17 +973,31 @@ def _slim_or_apply(command: str, words: list[str], folder: Path) -> int:
 
         print(report(slim_library(folder, dry_run="--dry-run" in flags)))
         return 0
+    import tempfile
+
     from engine.live_check import DEFAULT_CACHE_DIR, LiveChecker
-    from engine.verify import LEDGER_NAME, Ledger, apply_checks, record_saved_checks, report
+    from engine.verify import LEDGER_NAME, Ledger, apply_checks, kept_comments, record_saved_checks, report
 
     checks = Path(values["--checks"][-1]) if "--checks" in values else DEFAULT_CACHE_DIR
     ledger = Ledger.load(checks.parent / LEDGER_NAME)  # this machine's pre-check runs, next to its checks, if any
     for path in values.get("--ledger", []):
         ledger.merge(Ledger.load(Path(path)))  # the bucket's record, fetched by deploy.sh
-    taken = record_saved_checks(folder, LiveChecker(cache_dir=checks), ledger)
-    print(f"Verification record: {len(ledger.entries):,} kept comments' latest reads ({taken:,} from this machine's "
-          "checks of the last 48 hours).")
-    print(report(apply_checks(folder, ledger, dry_run="--dry-run" in flags)))
+    here, kept = LiveChecker(cache_dir=checks), kept_comments(folder)  # the kept comments, worked out once
+    taken = record_saved_checks(folder, here, ledger, kept)
+    with tempfile.TemporaryDirectory(prefix="site-reads-") as site_reads:
+        reads, from_site = [here], 0
+        for path in values.get("--bundle", []):
+            bundled = LiveChecker(cache_dir=Path(site_reads) / f"bundle{len(reads)}")
+            try:
+                bundled.take_checks(json.loads(Path(path).read_text(encoding="utf-8")).get("checks"))
+            except (OSError, ValueError, AttributeError):
+                print(f"The bundle {path} couldn't be read: this machine's checks only.")
+                continue
+            from_site += record_saved_checks(folder, bundled, ledger, kept)
+            reads.append(bundled)
+        print(f"Verification record: {len(ledger.entries):,} kept comments' latest reads ({taken:,} from this "
+              f"machine's checks of the last 48 hours, {from_site:,} from the site's).")
+        print(report(apply_checks(folder, ledger, dry_run="--dry-run" in flags, reads=reads)))
     return 0
 
 
@@ -993,10 +1017,13 @@ def _restore_words(words: list[str], folder: Path) -> int:
     done = restore_words(folder, Path(values["--backup"][-1]), pairs, LiveChecker(cache_dir=DEFAULT_CACHE_DIR),
                          dry_run="--dry-run" in flags)
     for r in done:
+        verb = "would get" if "--dry-run" in flags else "got"
         if r.outcome == "passing":
-            verb = "would get" if "--dry-run" in flags else "got"
             print(f"{r.thread_id}:{r.comment_id}: Reddit shows it word for word (read {r.read_at:%d %b %H:%M} UTC): "
                   f"{verb} its words back, and {r.items} item(s) in its extraction.")
+        elif r.outcome == "edited":
+            print(f"{r.thread_id}:{r.comment_id}: Reddit shows it edited (read {r.read_at:%d %b %H:%M} UTC): {verb} "
+                  f"Reddit's current text, and the {r.items} item(s) still found in it word for word.")
         else:
             print(f"{r.thread_id}:{r.comment_id}: left as it is ({r.outcome}).")
     return 0

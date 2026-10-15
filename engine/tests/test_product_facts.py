@@ -434,7 +434,10 @@ def test_a_product_with_no_facts_is_never_left_out(tmp_path, skincare_need_rule_
     only_differin = [known("Differin Gel", strength="gentle", prescription_only=False)]
     result = answer_request(BEGINNER, library_dir=retinol_library(tmp_path), prices=[], product_facts=only_differin,
                             today=TODAY)
-    assert names(result.answer.picks)[0] == "Tazorac" and result.left_out_not_suited == []
+    # Changed on purpose 15 Oct 2026 (Noemi's decision 1 of 15 Oct: under a must-have, a product whose facts confirm it
+    # ranks above one they can't confirm; engine/tests/test_confirmed_first.py): Tazorac, whose facts aren't known, is
+    # still shown, now after Differin Gel, whose facts say it is gentle and sold without a prescription. It was first.
+    assert names(result.answer.picks)[:2] == ["Differin Gel", "Tazorac"] and result.left_out_not_suited == []
 
 
 def test_a_soft_clash_keeps_the_product_and_shows_a_caution_under_its_pick(tmp_path, skincare_need_rule_set_aside):
@@ -645,6 +648,7 @@ def test_command_line_todo_explains_itself_when_used_wrongly(tmp_path, capsys, a
 # warning is a fact of its own, which leaves the product out of a request for sensitive skin. And a pick whose facts
 # can't be confirmed for a hard requirement ("OXO non-stick pan": OXO sells PTFE and ceramic pans) stays, with a note
 # saying what we couldn't confirm, rather than being left out (answers would empty) or shown silently (misleading).
+# Since Noemi's decision 1 of 15 Oct 2026 it ranks after the products confirmed (engine/tests/test_confirmed_first.py).
 
 from engine.product_facts import NotSuited, hard_requirements, unconfirmed, unconfirmed_note  # noqa: E402
 from engine.tests.test_pick_polish import pan_library  # noqa: E402

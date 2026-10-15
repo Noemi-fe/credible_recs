@@ -71,6 +71,15 @@ The rules, in plain words:
 - Kind support: each kind's support is the sum of the weights of its credible notes. If the best-supported kind
   has at least 2 credible recommending notes and at least twice the support of the next kind, its products
   get a bonus (config.KIND_BONUS, shown in the score breakdown).
+- Confirmed first under a must-have (Noemi's decision 1 of 15 Oct 2026): when the request asks for something a
+  product's facts can settle (engine.product_facts.hard_requirements: SPF for a lip balm, PFAS-free or non-stick for a
+  pan, sulfate-free for a shampoo...), the pipeline says how many of those must-haves each product's facts and name
+  leave unconfirmed (`unconfirmed`), and fewer rank first, whatever the score: a lip balm whose name says SPF 25 before
+  one sold with and without SPF. The rest of the order is as below. The rules above don't change, so confirmation never
+  makes a pick: it orders the products that meet the bar, those listed under Also worth a look, and in each group the
+  confirmed come first. Those the upvote rule or a standing-out comment lift still come after every product meeting
+  the bar on its own (RankingResult.qualifying), confirmed or not: they only fill places left empty. Until then (the
+  rules of 10 and 11 Oct 2026) a product we couldn't confirm kept its place, with a note; the note stays.
 - Ties, decided the same way every time: higher score first (differences under one millionth are rounding
   noise, so they count as a tie), then more credible recommendations, then more threads with one, then more
   high voices recommending it, then the name in alphabetical order.
@@ -316,6 +325,11 @@ class ProductScore:
     # then says which comment stands out and by how much; like counted_twice, neither is in the score breakdown.
     standouts: tuple[ScoredMention, ...] = ()
     by_standout: bool = False
+    # How many of the request's must-haves its facts and name leave unconfirmed (Noemi's decision 1 of 15 Oct 2026):
+    # fewer rank first. 0 for a product they confirm, and for every product of a request without a must-have. Like
+    # counted_twice it isn't in the score breakdown: the answer says it in the product's note ("we couldn't
+    # confirm...").
+    unconfirmed: int = 0
 
     @property
     def credible_recommendations(self) -> list[ScoredMention]:
@@ -414,6 +428,7 @@ def rank_products(
     kind_bonus: float = KIND_BONUS,
     upvote_rule: bool | None = None,
     standout_rule: bool | None = None,
+    unconfirmed: Mapping[str, int] | None = None,
 ) -> RankingResult:
     """Ranks the products of one category, best first, by the rules at the top of this file.
 
@@ -423,6 +438,8 @@ def rank_products(
     `upvote_rule`: whether Noemi's upvote rule applies (counts_twice); None follows config.UPVOTE_COUNTS_MORE.
     `standout_rule`: whether a comment standing out in its thread lifts its product (stands_out); None follows
     config.STANDOUT_ON.
+    `unconfirmed`: {product key: how many of the request's must-haves its facts leave unconfirmed} (Noemi's decision 1
+    of 15 Oct 2026): fewer rank first. None, or a product not in it, is 0.
     """
     _check_choice("category", category, THREAD_CATEGORIES)
     placements = {kind: set(products) for kind, products in (placements or {}).items()}
@@ -438,6 +455,8 @@ def rank_products(
         _score_product(key, product_mentions, kinds, placements, leader, kind_bonus, upvote_rule, standout_rule)
         for key, product_mentions in by_product.items()
     ]
+    for product in products:
+        product.unconfirmed = max(0, (unconfirmed or {}).get(product.key, 0))
     products.sort(key=_rank_order)
     on = config.UPVOTE_COUNTS_MORE if upvote_rule is None else upvote_rule
     return RankingResult(category, products, kinds, leader, notes, fill_only=on and config.UPVOTE_ONLY_TO_FILL)
@@ -559,9 +578,11 @@ def _count(mentions: list[ScoredMention], level: str, levels: tuple[str, ...]) -
 
 
 def _rank_order(product: ProductScore) -> tuple:
-    """The sort order: best first, ties broken as described at the top of this file."""
+    """The sort order: best first, ties broken as described at the top of this file. Fewer must-haves left unconfirmed
+    come first (Noemi's decision 1 of 15 Oct 2026; 0 for every product of a request without one)."""
     b = product.breakdown
     return (
+        product.unconfirmed,
         -product.score,
         -b.credible_recommends,
         -b.credible_threads,
