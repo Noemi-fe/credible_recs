@@ -93,12 +93,23 @@ fi
 #    image built next reflects it: each passing comment gets its date, and one found deleted or edited, or not verified
 #    within 30 days, loses its words and its mentions (engine/verify.py). With no record yet, this machine's checks of
 #    the last 48 hours and the 30-day deadline are applied alone. A library not slimmed yet is left as it is.
+#    Since 15 Oct 2026 (Noemi's decision 3: a comment found edited keeps Reddit's current text and the items still found
+#    in it word for word) the site's reads of the last 48 hours come too, the bucket's live_check/bundle.json (what
+#    Reddit's embed page showed of each comment read, for 48 hours at most): its text is what such a comment keeps.
+#    One more call to the bucket a deploy; the copy is in the same temporary folder as the record, deleted once applied.
 RECORD="$(mktemp -d)/verified.json"
+READS="$(dirname "$RECORD")/bundle.json"
+if $GCLOUD storage cp "gs://$BUCKET/live_check/bundle.json" "$READS" --project "$PROJECT" --quiet 2>/dev/null; then
+    BUNDLE_READS="--bundle $READS"
+else
+    BUNDLE_READS=""
+    echo "No bundle of the site's reads in gs://$BUCKET: a comment found edited loses its words, as before." >&2
+fi
 if $GCLOUD storage cp "gs://$BUCKET/live_check/verified.json" "$RECORD" --project "$PROJECT" --quiet 2>/dev/null; then
-    .venv/bin/python -m engine.library apply-checks --ledger "$RECORD"
+    .venv/bin/python -m engine.library apply-checks --ledger "$RECORD" $BUNDLE_READS
 else
     echo "No verification record in gs://$BUCKET yet (the pre-check hasn't run): this machine's checks only." >&2
-    .venv/bin/python -m engine.library apply-checks
+    .venv/bin/python -m engine.library apply-checks $BUNDLE_READS
 fi
 rm -rf "$(dirname "$RECORD")"
 BUNDLE="$(mktemp -d)/bundle"

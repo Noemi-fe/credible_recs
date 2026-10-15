@@ -546,6 +546,13 @@ def comment_bodies(threads: Iterable[Thread]) -> dict[str, str]:
     return {c.id: c.body for thread in threads for c in thread.comments if c.status == "ok"}
 
 
+def flattened_comments(threads: Iterable[Thread]) -> frozenset[str]:
+    """The ids of the readable comments whose words are Reddit's embed page's text (Comment.edited "embed": found edited,
+    they kept Reddit's current text; Noemi's decision 3 of 15 Oct 2026): its formatting read as plain words, so a quoted
+    block, a list or a heading can't be told from the writer's own sentences, and their quotes are never widened."""
+    return frozenset(c.id for thread in threads for c in thread.comments if c.status == "ok" and c.edited == "embed")
+
+
 # --- Writing the answer ---
 
 def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type: str | None = None,
@@ -557,7 +564,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
                  summaries: Mapping[str, Summary] | None = None, worth_left_out: Collection[str] = (),
                  ingredient: str | None = None, forms: Mapping[str, str | None] | None = None,
                  forms_asked: Collection[str] = (), ranges: Mapping[str, BrandLine] | None = None,
-                 prescription: Collection[str] = ()) -> Answer:
+                 prescription: Collection[str] = (), flattened: Collection[str] = ()) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -583,9 +590,11 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     each such pick and "Also worth a look" item links to its entry's range page (shown_range). A line's from price
     comes in `prices`, like any price (PriceCheck.from_price). `prescription` (14 Oct 2026, Noemi's decision 5) are the
     keys of the products whose checked facts say they are prescription-only in the UK: each such pick, item and skipped
-    product says so (PRESCRIPTION_NOTE). It never changes which products are shown.
+    product says so (PRESCRIPTION_NOTE). It never changes which products are shown. `flattened` (15 Oct 2026) are the
+    comments whose words are Reddit's embed page's text (flattened_comments): their quotes are shown as they are, never
+    widened to the sentences before them.
     """
-    check = _QuoteCheck(bodies)
+    check = _QuoteCheck(bodies, flattened)
     ranges = ranges or {}
     forms = forms or {}
     models = models or {}
@@ -732,8 +741,8 @@ def _worth_quotes(product: ProductScore, check: "_QuoteCheck", asks: tuple[str, 
     widened to stand on its own where its comment allows. Only quotes that say something about it: with no minimum to
     make up, a bare mention, a garbled quote, one that says nothing about it, one that still leans on the thread or one
     that starts mid-sentence (_mid_sentence) is never shown."""
-    mentions, leaning = _standing(product.credible_recommendations, check.bodies, _names_its_product)
-    ordered = _naming_first(_with_a_view(mentions, check.bodies), asks, needs, leaning, product_type)
+    mentions, leaning = _standing(product.credible_recommendations, check.widen, _names_its_product)
+    ordered = _naming_first(_with_a_view(mentions, check.widen), asks, needs, leaning, product_type)
     good = [m for m in ordered if m.comment_id not in leaning and _says_something(m)
             and not (_bare_mention(m) or _garbled(m.quote) or _mid_sentence(m.quote, check.bodies.get(m.comment_id)))]
     return check.first(good, WORTH_A_LOOK_QUOTES)
@@ -824,8 +833,12 @@ def _care_note(tips: Iterable[CareTips | None], picks: list[Pick], check: "_Quot
 class _QuoteCheck:
     """Checks quotes against the comments as they are now, and counts the ones dropped."""
 
-    def __init__(self, bodies: Mapping[str, str]):
+    def __init__(self, bodies: Mapping[str, str], flattened: Collection[str] = ()):
         self.bodies = bodies
+        # The comments whose quotes may be widened to the sentences before them (_standing, _with_a_view): all but those
+        # whose words are Reddit's embed page's text (`flattened`: an edited comment's, Noemi's decision 3 of 15 Oct
+        # 2026), where a quoted block of someone else's words, a list or a heading reads like the writer's own sentences.
+        self.widen = {cid: body for cid, body in bodies.items() if cid not in flattened} if flattened else bodies
         self.dropped = 0
 
     def first(self, items: Iterable[ScoredMention | KindNote | CareTip], limit: int) -> list[ShownQuote]:
@@ -1242,8 +1255,8 @@ def _pick_quotes(product: ProductScore, check: _QuoteCheck, asks: tuple[str, ...
     its comment allows (_standing), and a bare mention to the view or advice before it (_with_a_view). Quotes that say
     something about it come first; a bare mention or a garbled quote (_garbled), a quote that says nothing about it
     (_says_something) and, last, one that still leans on the thread only make up MIN_QUOTES_PER_PICK."""
-    mentions, leaning = _standing(product.credible_recommendations, check.bodies, _names_its_product)
-    ordered = _naming_first(_with_a_view(mentions, check.bodies), asks, needs, leaning, product_type)
+    mentions, leaning = _standing(product.credible_recommendations, check.widen, _names_its_product)
+    ordered = _naming_first(_with_a_view(mentions, check.widen), asks, needs, leaning, product_type)
     standing = [m for m in ordered if m.comment_id not in leaning]
 
     def filler(m: ScoredMention) -> bool:
@@ -1265,7 +1278,7 @@ def _warning_quotes(groups: Iterable[Iterable[ScoredMention]], check: _QuoteChec
     shown only when no other is: a pick's downsides are never hidden."""
     ordered, leaning = [], set()
     for group in groups:
-        mentions, group_leaning = _standing(group, check.bodies, _names_its_product)
+        mentions, group_leaning = _standing(group, check.widen, _names_its_product)
         ordered += _naming_first(mentions, needs=needs, leaning=group_leaning)
         leaning |= group_leaning
     shown = check.first([m for m in ordered if m.comment_id not in leaning], limit)
@@ -1543,7 +1556,7 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
     for kind, advice, notes in candidates:
         if len(items) == LOOK_FOR_NOTES:
             break
-        notes = _advice_notes(kind.name, advice, notes, check.bodies, ranking.category, product_type, asks, picks)
+        notes = _advice_notes(kind.name, advice, notes, check.widen, ranking.category, product_type, asks, picks)
         used = {item.quote.comment_id: i for i, item in enumerate(items) if item.advice == advice}
         quote = check.first([n for n in notes if n.comment_id not in used], 1)
         if not quote:

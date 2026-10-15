@@ -24,11 +24,13 @@ site a plan: a job is billed for its whole run, and two thirds of the old daily 
     when it was read, nothing else; about 3 MB once the site reads ahead), a page that showed no comment included (used
     for 20 hours, known for 48). Written by the site, at most once an hour and only over the version it last read or
     wrote (another writer's, say a second server during a deploy, is read in first); read by the site as it gets ready
-    (its disk starts empty at every restart) and by the daily job as it starts.
+    (its disk starts empty at every restart), by the daily job as it starts, and by deploy.sh (15 Oct 2026: the text
+    a comment found edited keeps).
   - `live_check/plan.json`: what the site should read ahead, from the daily job: the links of the comments answers would
-    show or hold next in line, likeliest first; the links of the slimmed library's kept comments due to be verified; and
-    the job's checks through Bright Data. The site asks for its version at most once an hour (a small metadata read) and
-    downloads it only when it changed.
+    show or hold next in line, likeliest first; the links of the slimmed library's kept comments due to be verified;
+    those of the kept comments found edited, read again like answers' comments until a deploy applies them (15 Oct
+    2026); and the job's checks through Bright Data. The site asks for its version at most once an hour (a small
+    metadata read) and downloads it only when it changed.
   - `live_check/verified.json`: the verification record (below).
   - `live_check/bright_data.json` (14 Oct 2026): the threads the job's Bright Data step couldn't read lately, since each
     of its runs starts with an empty disk: for each, when, Bright Data's status and error ("ready: dead_page: Page not
@@ -164,6 +166,15 @@ deploy:
    comment found deleted or edited, or not verified within 30 days, loses its words and its mentions, in
    data/library on this computer; the image built next holds the result. With no record yet (before the pre-check's
    first run), this computer's checks of the last 48 hours and the 30-day deadline are applied alone.
+   Since 15 Oct 2026 (Noemi's decision 3: a comment edited on Reddit keeps Reddit's current text and only the items
+   whose quotes are still found in it word for word) it copies the site's reads of the last 48 hours too, the bundle
+   (`live_check/bundle.json`), into the same temporary folder, and passes it (`--bundle <it>`): a comment found edited
+   keeps the text the read that found it so showed (or a newer read's), with its verification date, and the items
+   still found in it; a reply taking its product from it keeps its item only while it still names that product. The
+   copy is read into a temporary folder of its own (reads under 48 hours old only) and both are deleted once applied.
+   Without a read of the last 48 hours, such a comment loses its words and items as before; so the plan lists the
+   comments found edited for the site to read again every 40 hours, like answers' comments, until a deploy applies
+   them (`live_check/plan.json`'s "edited").
 
 So deploy at least every couple of weeks: the image keeps what the last deploy applied, and a comment the pre-check
 finds deleted is dropped from the image at the next deploy (until then answers never show it: every quote shown is
@@ -231,12 +242,15 @@ The project number is `NUMBER` below (`gcloud projects describe credible-picks -
 
        CREDIBLE_RECS_ON_DEMAND_BUCKET=credible-picks-on-demand .venv/bin/python -m engine.library pull-bucket
 
-   Then the verification record applied to the library (13 Oct 2026), before it is bundled:
+   Then the verification record applied to the library (13 Oct 2026), before it is bundled, with the site's reads of
+   the last 48 hours (15 Oct 2026: the text a comment found edited keeps):
 
-       gcloud storage cp gs://credible-picks-live-checks/live_check/verified.json <a temporary file>
-       .venv/bin/python -m engine.library apply-checks --ledger <that file>
+       gcloud storage cp gs://credible-picks-live-checks/live_check/verified.json <a temporary folder>/verified.json
+       gcloud storage cp gs://credible-picks-live-checks/live_check/bundle.json <a temporary folder>/bundle.json
+       .venv/bin/python -m engine.library apply-checks --ledger <folder>/verified.json --bundle <folder>/bundle.json
 
-   (with no record there yet, `apply-checks` alone). Then the site, as before, with `CREDIBLE_RECS_LIVE_CACHE_BUCKET=credible-picks-live-checks`,
+   (with no record there yet, `apply-checks --bundle <file>` alone; with no bundle, without `--bundle`), then the
+   temporary folder deleted. Then the site, as before, with `CREDIBLE_RECS_LIVE_CACHE_BUCKET=credible-picks-live-checks`,
    `CREDIBLE_RECS_ON_DEMAND_BUCKET=credible-picks-on-demand` and
    `CREDIBLE_RECS_ON_DEMAND_JOB=projects/credible-picks/locations/europe-west1/jobs/credible-recs-reader` in its settings
    (`gcloud run deploy credible-recs --source <bundle> ...`).
@@ -449,7 +463,7 @@ regions only, so every operation is billed, but there are very few. Class A (wri
 hour, about 720 a month, and the job's record, plan and Bright Data memory, 3 or 4 a run, about 120: about 840 a month,
 0.004 USD at 0.005 USD per 1,000. Class B (reads): the site's hourly question about the plan's version, about 720 a
 month, a download a day (31) and its bundle as it gets ready, and the job's bundle, record and memory, about 5 a run
-(155): about 930 a month, 0.0004
+(155), and each deploy's record and bundle (2 a deploy, since 15 Oct 2026): about 1,000 a month, 0.0004
 USD at 0.0004 USD per 1,000 (before: the site asked about the bundle hourly instead; the job wrote it twice a run).
 Storage: the bundle about 3 MB, the plan about 0.6 MB (2,260 answers' comments and 3,000 to verify), the record 1 to
 4 MB, under 0.0002 USD a month. Reading and

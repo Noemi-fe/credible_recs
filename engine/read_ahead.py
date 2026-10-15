@@ -14,9 +14,11 @@ to read (`python -m engine.precheck --plan`), and the site reads it, a few comme
   embed page can't show). Links and those checks only. The site asks for its version at most once an hour
   (config.PLAN_RELOAD_SECONDS), downloads it only when it changed, and takes its checks into its folder.
 - At each ping the site reads the plan's comments that are due, in the plan's order: an answer's comment whose last
-  read is config.READ_AHEAD_AGAIN_HOURS old, or that has none, so its check never runs out at 48 hours; a comment to
-  verify that hasn't been read in the last 48 hours (the job records the read, and lists it again only when it is due
-  once more). A comment verified through Bright Data is left to the job, and a page that showed no comment is read
+  read is config.READ_AHEAD_AGAIN_HOURS old, or that has none, so its check never runs out at 48 hours; a kept comment
+  found edited on Reddit, the same way, until a deploy has applied it (15 Oct 2026, Noemi's decision 3: it keeps
+  Reddit's current text and the items still found in it, taken from the bundle, which so always holds a read of it);
+  a comment to verify that hasn't been read in the last 48 hours (the job records the read, and lists it again only
+  when it is due once more). A comment verified through Bright Data is left to the job, and a page that showed no comment is read
   again only as an answer's comment is, 40 hours on. At most config.READ_AHEAD_PER_PING reads a ping,
   config.READ_AHEAD_PARALLEL at once, none starting config.READ_AHEAD_SECONDS after the ping began, never one that would
   wait for Reddit's allowance, and none while Reddit says fewer than config.READ_AHEAD_KEEP reads are left in its 10
@@ -55,12 +57,15 @@ class Plan:
     answers: tuple[str, ...]  # the comments answers would show or hold next in line, likeliest to be shown first
     verify: tuple[str, ...]  # kept comments due to be verified, longest unverified first
     checks: dict  # its reads through Bright Data, by name, as the bundle holds them
+    # Kept comments found edited on Reddit since their last pass (15 Oct 2026): read again like answers' comments, so the
+    # bundle always holds Reddit's current text for the next deploy to keep (engine/verify.py). None in an older plan.
+    edited: tuple[str, ...] = ()
 
 
-def plan_bytes(answers: list[str], verify: list[str], checks: dict, now: datetime) -> bytes:
+def plan_bytes(answers: list[str], verify: list[str], checks: dict, now: datetime, edited: list[str] = ()) -> bytes:
     """A plan as the job writes it to the bucket."""
     return json.dumps({"written_at": now.isoformat(), "answers": list(answers), "verify": list(verify),
-                       "checks": checks}, ensure_ascii=False).encode("utf-8")
+                       "checks": checks, "edited": list(edited)}, ensure_ascii=False).encode("utf-8")
 
 
 def read_plan(data: bytes | None) -> Plan | None:
@@ -69,12 +74,13 @@ def read_plan(data: bytes | None) -> Plan | None:
         raw = json.loads(data)
         written_at = datetime.fromisoformat(raw["written_at"])
         answers, verify, checks = raw["answers"], raw["verify"], raw.get("checks") or {}
-    except (TypeError, ValueError, KeyError):
+        edited = raw.get("edited") or []
+    except (TypeError, ValueError, KeyError, AttributeError):
         return None
-    if not isinstance(answers, list) or not isinstance(verify, list) or not isinstance(checks, dict):
+    if not all(isinstance(items, list) for items in (answers, verify, edited)) or not isinstance(checks, dict):
         return None
     links = lambda items: tuple(i for i in items if isinstance(i, str) and _COMMENT_LINK.match(i))
-    return Plan(written_at, links(answers), links(verify), checks)
+    return Plan(written_at, links(answers), links(verify), checks, links(edited))
 
 
 @dataclass
@@ -156,7 +162,7 @@ class ReadAhead:
         self.plan, self._plan_generation = plan, generation
         self._unshared += self.checker.take_checks(plan.checks)
         self._last = {}
-        for url in dict.fromkeys(plan.answers + plan.verify):
+        for url in dict.fromkeys(plan.answers + plan.edited + plan.verify):
             self._look(url)
         return True
 
@@ -179,7 +185,7 @@ class ReadAhead:
             return known if known is not None and now - known[0] < MAX_AGE else None
 
         due, seen = [], set()
-        for url in self.plan.answers:
+        for url in self.plan.answers + self.plan.edited:  # an edited comment as an answer's (15 Oct 2026)
             read = last(url)
             if url not in seen and (read is None or read[1] is None and now - read[0] >= self.again):
                 due.append(url)
@@ -222,8 +228,8 @@ class ReadAhead:
         return reading
 
     def _read_one(self, url: str) -> str:
-        max_age = self.again if self.plan is not None and url in self.plan.answers else MAX_AGE
-        return self.checker.read_if_free(url, max_age)
+        again = self.plan is not None and (url in self.plan.answers or url in self.plan.edited)
+        return self.checker.read_if_free(url, self.again if again else MAX_AGE)
 
     def share_if_due(self) -> int | None:
         """Every read of the last 48 hours written to the bucket's bundle, at most once every share_seconds and only
@@ -244,7 +250,8 @@ def report(reading: PingReading, plan: Plan | None) -> str:
     """One ping's reads ahead in a line: counts only, never a comment's words."""
     parts = []
     if reading.new_plan and plan is not None:
-        parts.append(f"a new plan ({len(plan.answers):,} answers' comments, {len(plan.verify):,} to verify, "
+        edited = f", {len(plan.edited):,} found edited" if plan.edited else ""
+        parts.append(f"a new plan ({len(plan.answers):,} answers' comments{edited}, {len(plan.verify):,} to verify, "
                      f"{len(plan.checks):,} checks through Bright Data)")
     if reading.due or reading.read or reading.failed:
         stopped = ("; stopped to keep Reddit's reads for visitors" if reading.kept_for_visitors else

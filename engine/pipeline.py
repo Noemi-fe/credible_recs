@@ -143,8 +143,8 @@ from pathlib import Path
 
 from engine import config  # the upvote rule's switch, read for each request (14 Oct 2026)
 from engine.answer import (
-    NO_THREADS, Answer, _every_quote, comment_bodies, needed_quotes, quotes_to_check, render_markdown,
-    says_the_opposite, shown_availability, shown_price, without_unread, write_answer,
+    NO_THREADS, Answer, _every_quote, comment_bodies, flattened_comments, needed_quotes, quotes_to_check,
+    render_markdown, says_the_opposite, shown_availability, shown_price, without_unread, write_answer,
 )
 from engine.brand_lines import BrandLine, find_brand_line, from_price_entry, load_brand_lines, not_sold_reason
 from engine.care_tips import CareTips, attach_care_tips, credible_care_tips
@@ -482,9 +482,11 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.ranked_as_lines = [g.name for g in kept_groups if g.key in lines]
     _note_other_names(kept_groups, cautions)
     # What the answer says beyond the ranking, as write_answer's keywords: about the request's active ingredients (13 Oct
-    # 2026), and which products its facts say are prescription-only in the UK (Noemi's decision 5 of 14 Oct 2026).
+    # 2026), and which products its facts say are prescription-only in the UK (Noemi's decision 5 of 14 Oct 2026); and
+    # which comments' words are Reddit's embed page's text (found edited, they kept Reddit's current text: Noemi's
+    # decision 3 of 15 Oct 2026), whose quotes are never widened.
     wording = {**_ingredient_wording(query, kept_groups, types, formulas, result.line_forms),
-               "prescription": _prescription_only(kept_groups, formulas)}
+               "prescription": _prescription_only(kept_groups, formulas), "flattened": flattened_comments(threads)}
     kind_mentions = _kind_mentions(checked)
     kinds = group_kinds(kind_mentions, kept_groups, query.category, query.product_type or "")
     with_a_kind = kinds_of(kinds)
