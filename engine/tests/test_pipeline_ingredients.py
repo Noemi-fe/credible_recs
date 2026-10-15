@@ -112,7 +112,7 @@ def by_form(result) -> dict[str, str]:
     return {item.name: item.reason for item in result.left_out_by_form}
 
 
-def test_an_ingredient_led_answer_shows_leave_on_products_with_the_ingredient(tmp_path):
+def test_an_ingredient_led_answer_shows_leave_on_products_with_the_ingredient(tmp_path, skincare_need_rule_set_aside):
     # Changed on purpose 13 Oct 2026 (Noemi's decision 1: leave-on forms only): the cleanser was a pick. A spot
     # treatment (decision 2) is a leave-on form like the serum.
     result = ask(tmp_path)
@@ -137,7 +137,7 @@ def test_a_product_whose_form_isnt_known_is_left_out(tmp_path):
     assert not next(item for item in result.left_out_by_form if item.name == "Gilt Salicylic Acid").rinse_off
 
 
-def test_a_request_naming_a_form_gets_that_form_rinse_off_or_not(tmp_path):
+def test_a_request_naming_a_form_gets_that_form_rinse_off_or_not(tmp_path, skincare_need_rule_set_aside):
     wash = ask(tmp_path, "salicylic acid wash")
     assert wash.query.ingredient_led and wash.query.constraints.forms == ["cleanser"]
     assert picks(wash) == [("Bloom Salicylic Cleanser", "cleanser")]
@@ -163,7 +163,8 @@ def test_a_formula_from_the_makers_page_is_evidence_and_gives_the_form(tmp_path)
     assert picks(asked) == [("Corra Glow Powder", "rinse-off powder")]
 
 
-def test_a_formula_without_the_ingredient_leaves_the_product_out_whatever_its_name(tmp_path):
+def test_a_formula_without_the_ingredient_leaves_the_product_out_whatever_its_name(
+        tmp_path, skincare_need_rule_set_aside):
     result = ask(tmp_path, product_facts=[facts("Dune BHA Liquid", "exfoliant", ["betaine salicylate"])])
     assert left_out(result)["Dune BHA Liquid"] == "its maker doesn't list salicylic acid among its actives"
     bha = ask(tmp_path / "bha", "a bha for blackheads",
@@ -171,7 +172,7 @@ def test_a_formula_without_the_ingredient_leaves_the_product_out_whatever_its_na
     assert ("Dune BHA Liquid", "leave-on liquid") in picks(bha)  # betaine salicylate is a BHA
 
 
-def test_also_worth_a_look_and_the_skip_list_hold_the_ingredient_too(tmp_path):
+def test_also_worth_a_look_and_the_skip_list_hold_the_ingredient_too(tmp_path, skincare_need_rule_set_aside):
     # Changed on purpose 13 Oct 2026 (Noemi's decision 1): the peel on the skip list is rinse-off, so a leave-on gel
     # was added to hold its place.
     result = ask(tmp_path)
@@ -187,7 +188,7 @@ def test_threads_that_never_name_the_ingredient_are_not_read(tmp_path):
     assert "Gale Cream" not in [p.name for p in result.ranking.products]
 
 
-def test_the_answer_says_the_ingredient_and_each_products_form(tmp_path):
+def test_the_answer_says_the_ingredient_and_each_products_form(tmp_path, skincare_need_rule_set_aside):
     result = ask(tmp_path)
     assert result.answer.ingredient == "salicylic acid"
     text = render_markdown(result.answer)
@@ -207,13 +208,13 @@ def test_a_type_named_with_the_ingredient_keeps_its_type(tmp_path):
     assert render_markdown(result.answer).startswith("# Top picks: cleanser with salicylic acid\n")
 
 
-def test_a_request_without_an_ingredient_is_unchanged(tmp_path):
+def test_a_request_without_an_ingredient_is_unchanged(tmp_path, skincare_need_rule_set_aside):
     result = ask(tmp_path, "cleanser for acne")
     assert [pick.name for pick in result.answer.picks] == ["Bloom Salicylic Cleanser", "Fern Gentle Cleanser"]
     assert result.left_out_no_ingredient == [] and result.answer.ingredient is None
 
 
-def test_the_page_gets_the_ingredient_and_how_many_were_left_out(tmp_path):
+def test_the_page_gets_the_ingredient_and_how_many_were_left_out(tmp_path, skincare_need_rule_set_aside):
     result = ask(tmp_path)
     data = web.answer_json(result)
     assert data["answer"]["ingredient"] == "salicylic acid"
@@ -355,7 +356,7 @@ def wren_library(tmp_path: Path) -> Path:
     })
 
 
-def test_a_line_stays_when_every_product_of_it_named_has_the_ingredient(tmp_path):
+def test_a_line_stays_when_every_product_of_it_named_has_the_ingredient(tmp_path, skincare_need_rule_set_aside):
     both = [facts("Wren 2% BHA Liquid", "exfoliant", ["salicylic acid"]),
             facts("Wren 2% BHA Gel", "exfoliant", ["salicylic acid"])]
     result = answer_request(REQUEST, library_dir=wren_library(tmp_path), prices=[], product_facts=both, today=TODAY)
@@ -370,7 +371,8 @@ def test_a_line_one_of_whose_products_isnt_confirmed_is_still_left_out(tmp_path)
     assert "Wren 2% BHA" in " ".join(left_out(result))
 
 
-def test_a_name_fitting_two_known_products_takes_neither_entry_and_its_groups_other_names_decide(tmp_path):
+def test_a_name_fitting_two_known_products_takes_neither_entry_and_its_groups_other_names_decide(
+        tmp_path, skincare_need_rule_set_aside):
     # Found in the name-levels follow-up: once Paula's Choice's 2% BHA gel had a facts entry beside its liquid's, the
     # writers' "Paula's Choice 2% BHA" (the name a group of its liquid's mentions was shown under) took the gel's entry,
     # the more recently checked, and the liquid was shown as the gel. A name fitting two known products names neither

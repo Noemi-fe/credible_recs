@@ -13,7 +13,7 @@ def cases_file(tmp_path, cases):
     return path
 
 
-def test_each_case_reports_its_routing_picks_forms_and_evidence(tmp_path):
+def test_each_case_reports_its_routing_picks_forms_and_evidence(tmp_path, skincare_need_rule_set_aside):
     path = cases_file(tmp_path, [
         {"id": "i01", "text": "salicylic acid for acne",
          "expected": {"product_type": "salicylic acid product", "ingredients": ["salicylic acid"],
@@ -53,7 +53,7 @@ def test_the_committed_cases_load_and_route_as_expected():
             expected.get("forms", [])), case["id"]
 
 
-def test_a_line_kept_for_its_products_facts_has_their_evidence(tmp_path):
+def test_a_line_kept_for_its_products_facts_has_their_evidence(tmp_path, skincare_need_rule_set_aside):
     # A line stays in an ingredient answer only when every product of it named has a facts entry confirming the
     # ingredient (14 Oct 2026): its own name may not say the ingredient, so the evaluation checks those entries again.
     from engine.tests.test_pipeline_ingredients import facts, wren_library

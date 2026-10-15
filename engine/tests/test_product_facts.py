@@ -405,14 +405,15 @@ def test_the_facts_that_matter_for_a_request(request_text, facts):
 
 # --- The pipeline ---
 
-def test_without_facts_the_strong_prescription_retinoid_is_picked_first(tmp_path):
+def test_without_facts_the_strong_prescription_retinoid_is_picked_first(tmp_path, skincare_need_rule_set_aside):
     # The problem these facts fix: the ranking reads only Reddit.
     result = answer_request(BEGINNER, library_dir=retinol_library(tmp_path), prices=[], product_facts=[], today=TODAY)
     assert names(result.answer.picks) == ["Tazorac", "CeraVe Resurfacing Retinol Serum", "Differin Gel"]
     assert result.left_out_not_suited == []
 
 
-def test_a_product_whose_facts_clash_with_the_request_is_left_out_and_listed_with_the_reason(tmp_path):
+def test_a_product_whose_facts_clash_with_the_request_is_left_out_and_listed_with_the_reason(
+        tmp_path, skincare_need_rule_set_aside):
     result = answer_request(BEGINNER, library_dir=retinol_library(tmp_path), prices=[], product_facts=[TAZORAC],
                             today=TODAY)
     assert names(result.answer.picks) == ["CeraVe Resurfacing Retinol Serum", "Differin Gel",
@@ -429,14 +430,14 @@ def test_the_same_product_is_kept_when_the_request_doesnt_ask_for_gentleness(tmp
     assert names(result.answer.picks)[0] == "Tazorac" and result.left_out_not_suited == []
 
 
-def test_a_product_with_no_facts_is_never_left_out(tmp_path):
+def test_a_product_with_no_facts_is_never_left_out(tmp_path, skincare_need_rule_set_aside):
     only_differin = [known("Differin Gel", strength="gentle", prescription_only=False)]
     result = answer_request(BEGINNER, library_dir=retinol_library(tmp_path), prices=[], product_facts=only_differin,
                             today=TODAY)
     assert names(result.answer.picks)[0] == "Tazorac" and result.left_out_not_suited == []
 
 
-def test_a_soft_clash_keeps_the_product_and_shows_a_caution_under_its_pick(tmp_path):
+def test_a_soft_clash_keeps_the_product_and_shows_a_caution_under_its_pick(tmp_path, skincare_need_rule_set_aside):
     lib = moisturiser_library(tmp_path)
     without = answer_request("moisturiser for oily skin", library_dir=lib, prices=[], product_facts=[], today=TODAY)
     result = answer_request("moisturiser for oily skin", library_dir=lib, prices=[], product_facts=[RICH], today=TODAY)
@@ -462,7 +463,7 @@ def test_a_brand_pick_has_no_single_product_so_its_facts_are_never_looked_up(tmp
     assert "Lodge cast iron skillet line" not in [item.name for item in result.left_out_not_suited]
 
 
-def test_cautions_stay_when_the_live_check_writes_the_answer_again(tmp_path):
+def test_cautions_stay_when_the_live_check_writes_the_answer_again(tmp_path, skincare_need_rule_set_aside):
     lib = moisturiser_library(tmp_path)
     before = answer_request("moisturiser for oily skin", library_dir=lib, prices=[], product_facts=[RICH], today=TODAY)
     vanicream = next(pick for pick in before.answer.picks if pick.name == "Vanicream Facial Moisturiser")
@@ -503,7 +504,8 @@ def fresh_answers():
     web.clear_answer_cache()
 
 
-def test_products_not_suited_are_counted_and_cautions_reach_the_cards(tmp_path, monkeypatch, fresh_answers):
+def test_products_not_suited_are_counted_and_cautions_reach_the_cards(
+        tmp_path, monkeypatch, fresh_answers, skincare_need_rule_set_aside):
     scented = known("Vanicream Facial Moisturiser", product_type="moisturiser", fragrance_free=False)
     monkeypatch.setattr(web, "answer_request", lambda request, library_dir: answer_request(
         request, library_dir, prices=[], product_facts=[RICH, scented], today=TODAY))
@@ -671,7 +673,7 @@ def test_a_product_its_maker_says_isnt_for_sensitive_skin_doesnt_suit_a_request_
     assert conflicts(parse_query("gentle exfoliant"), MANDELIC) == []  # gentle isn't sensitive skin
 
 
-def test_the_maker_warning_leaves_the_product_out_of_a_sensitive_skin_answer(tmp_path):
+def test_the_maker_warning_leaves_the_product_out_of_a_sensitive_skin_answer(tmp_path, skincare_need_rule_set_aside):
     lib = write_library(tmp_path, ("Gentle exfoliant for sensitive skin?", "Which exfoliant do you use?"),
                         {"Mandelic Acid Serum": 4, "Lactic Acid Toner": 3, "PHA Toner": 3, "Azelaic Acid Gel": 3})
     result = answer_request(SENSITIVE, library_dir=lib, prices=[], product_facts=[MANDELIC], today=TODAY)
@@ -735,7 +737,7 @@ def test_a_pick_whose_required_facts_arent_known_keeps_its_place_with_a_note(tmp
     assert all(pick.cautions == [] for pick in lasts.answer.picks)
 
 
-def test_a_soft_clash_comes_before_the_note(tmp_path):
+def test_a_soft_clash_comes_before_the_note(tmp_path, skincare_need_rule_set_aside):
     lib = moisturiser_library(tmp_path)
     result = answer_request("fragrance-free moisturiser for oily skin", library_dir=lib, prices=[],
                             product_facts=[RICH], today=TODAY)
@@ -748,7 +750,7 @@ def test_a_soft_clash_comes_before_the_note(tmp_path):
 # with a facts entry is shown under the entry's name, which the researcher took from the maker's own page. Price
 # entries aren't used: their names carry a size or a colour ("Timemore C2 - White", "(180g)").
 
-def test_a_pick_with_a_facts_entry_is_shown_under_the_entrys_name(tmp_path):
+def test_a_pick_with_a_facts_entry_is_shown_under_the_entrys_name(tmp_path, skincare_need_rule_set_aside):
     lib = write_library(tmp_path, ("Retinol for a beginner with sensitive skin?", "Which retinol should I start with?"),
                         {"cerave resurfacing retinol serum": 4, "Differin Gel": 3, "inkey list retinol": 3})
     proper = [known("CeraVe Resurfacing Retinol Serum", strength="gentle", prescription_only=False)]
@@ -808,7 +810,7 @@ def test_an_unsuited_kind_gives_no_look_for_but_can_still_be_avoided():
         assert [item.kind for item in look_for] == shown
 
 
-def test_a_renamed_pick_keeps_its_cautions(tmp_path):
+def test_a_renamed_pick_keeps_its_cautions(tmp_path, skincare_need_rule_set_aside):
     lib = write_library(tmp_path, ("Moisturiser for oily skin?", "Which moisturiser do you swear by?"),
                         {"cerave moisturising cream": 3, "Vanicream Facial Moisturiser": 3,
                          "La Roche-Posay Toleriane Double Repair": 3})

@@ -63,6 +63,9 @@ What each pick shows (the brief):
   acid" and its own note (INGREDIENT_NOTE).
 Under the picks: "Also worth a look" (Noemi's decision 2 of 13 Oct 2026): up to WORTH_A_LOOK_SHOWN products with two
 credible recommendations across two threads (engine.rank), in their own section, labelled as less supported (WORTH_NOTE).
+Since her decision 4 of 15 Oct 2026, the products that meet the picks bar on their own but rank below the top 3 come
+first there (engine.rank.RankingResult.past_the_picks), each labelled as meeting the bar (MEETS_BAR; WorthALook.meets_bar),
+with a pick's reason line, and the note says how many meet it (WORTH_NOTE_BAR...). The section keeps its size.
 Each shows its reason line, price, cautions, one or two verified quotes that say something about it (never a bare
 mention, a garbled quote or one leaning on the thread: there is no minimum to make up), and known downsides only when
 credible voices warn against it; an item with no such quote gives its place to the next. They are never picks. Then
@@ -324,6 +327,20 @@ WORTH_NOTE_STANDOUT = ("{voices} each, or one comment that stands out in its thr
                        "above, which need {rule}.")
 WORTH_NOTE_STANDOUT_NO_PICKS = ("{voices} each, or one comment that stands out in its thread: less evidence than a "
                                 "pick needs ({rule}).")
+# Products past the picks (Noemi's decision 4 of 15 Oct 2026; wording decided by Claude, PROPOSED): a product that meets
+# the picks bar on its own but ranks below the top 3 comes first under Also worth a look, labelled MEETS_BAR (its row's
+# tag on the page, a line under its name in the text). The note under the heading says it first: WORTH_NOTE_BAR_ONE when
+# it is the only item, WORTH_NOTE_BAR_EACH when every item is one, else WORTH_NOTE_BAR_FIRST(_ONE) and the others after
+# "then" (WORTH_NOTE_BAR_REST, or WORTH_NOTE_BAR_REST_STANDOUT with an item a standing-out comment puts there). {rule} is
+# the bar they meet on their own (RULE: never the upvote rule's other way to it).
+MEETS_BAR = "Meets the bar for a pick"
+WORTH_NOTE_BAR_ONE = "It meets the bar for a pick ({rule}) but ranks below the top {picks}."
+WORTH_NOTE_BAR_EACH = "Each meets the bar for a pick ({rule}) but ranks below the top {picks}."
+WORTH_NOTE_BAR_FIRST_ONE = "The first meets the bar for a pick ({rule}) but ranks below the top {picks}; then {rest}"
+WORTH_NOTE_BAR_FIRST = "The first {n} meet the bar for a pick ({rule}) but rank below the top {picks}; then {rest}"
+WORTH_NOTE_BAR_REST = "{voices} each: less evidence than a pick needs."
+WORTH_NOTE_BAR_REST_STANDOUT = ("{voices} each, or one comment that stands out in its thread: less evidence than a "
+                                "pick needs.")
 # One-line summaries (Noemi's decision 4 of 13 Oct 2026; wording decided by Claude): shown under a pick's name as
 # "In short: <summary>", with the note saying it is ours and not a quote.
 SUMMARY_LABEL = "In short:"
@@ -472,6 +489,9 @@ class WorthALook:
     voices: dict[str, int] = field(default_factory=dict)  # as a pick's (13 Oct 2026, the UX builder)
     range: ShownRange | None = None  # as a pick's (14 Oct 2026): a brand line's link to its maker's page
     prescription: str | None = None  # as a pick's (14 Oct 2026)
+    # True when it meets the picks bar on its own but ranks below the top 3 (Noemi's decision 4 of 15 Oct 2026): shown
+    # first, labelled MEETS_BAR, with a pick's reason line. False for an item less supported than a pick.
+    meets_bar: bool = False
 
 
 @dataclass
@@ -610,6 +630,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     standing_out = {p.key for p in ranking.products if p.by_standout}
     standout_pick = any(pick.product_key in standing_out for pick in picks)
     standout_item = any(item.product_key in standing_out for item in worth)
+    bar_items = sum(item.meets_bar for item in worth)  # past the picks, shown first (Noemi's decision 4, 15 Oct 2026)
     return Answer(
         category=ranking.category,
         product_type=product_type,
@@ -621,7 +642,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
         quotes_dropped=check.dropped,
         care_note=care_note,
         worth_a_look=worth,
-        worth_note=_worth_note(len(picks), standout_item, standout_pick) if worth else None,
+        worth_note=_worth_note(len(picks), standout_item, standout_pick, bar_items, len(worth)) if worth else None,
         ingredient=ingredient,
         ingredient_note=_ingredient_note(product_type, ingredient, forms_asked),
         title=answer_title(product_type, ingredient),
@@ -660,10 +681,13 @@ def _ingredient_note(product_type: str | None, ingredient: str | None,
 def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[str, PriceCheck],
                  cautions: Mapping[str, list[str]], summaries: Mapping[str, Summary], left_out: Collection[str],
                  asks: tuple[str, ...], needs: tuple[Need, ...], product_type: str | None) -> list[WorthALook]:
-    """Up to WORTH_A_LOOK_SHOWN products with two credible recommendations across two threads (ranking.worth_a_look),
-    best first, then those shown thanks to a comment standing out in its thread (14 Oct 2026), those in `left_out`
-    aside; each with its verified quotes (_worth_quotes), or left out without one."""
+    """Up to WORTH_A_LOOK_SHOWN products of ranking.worth_a_look, in its order, those in `left_out` aside: first those
+    that meet the picks bar on their own but rank below the top 3 (Noemi's decision 4 of 15 Oct 2026), each labelled so
+    (meets_bar) and with a pick's reason line and voices; then those with two credible recommendations across two
+    threads, best first; then those shown thanks to a comment standing out in its thread (14 Oct 2026). Each with its
+    verified quotes (_worth_quotes), or left out without one."""
     items: list[WorthALook] = []
+    past = {p.key for p in ranking.past_the_picks}
     for product in ranking.worth_a_look:
         if len(items) == WORTH_A_LOOK_SHOWN:
             break
@@ -674,13 +698,15 @@ def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[s
             continue
         downsides = _warning_quotes((product.credible_warnings,), check, DOWNSIDES_PER_PICK, needs)
         price = shown_price(prices.get(product.key))
+        meets_bar = product.key in past
         items.append(WorthALook(
             product_key=product.key,
             name=product.name,
             # A product the upvote rule lifted to the bar but its score left out of the picks (14 Oct 2026) is shown
             # here as it would be without the rule: the upvotes changed nothing for it, so nothing is said of them. One
-            # shown here thanks to a comment standing out in its thread says so (_reason).
-            reason=_reason(product, ranking, upvotes=False),
+            # shown here thanks to a comment standing out in its thread says so (_reason). One meeting the bar on its
+            # own has a pick's reason, as a pick would say it.
+            reason=_reason(product, ranking, upvotes=meets_bar),
             quotes=quotes,
             downsides=downsides,
             downsides_share=_downsides_share(product) if downsides else None,
@@ -692,7 +718,8 @@ def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[s
             availability=shown_availability(prices.get(product.key), price.url),
             cautions=[CAUTION.format(reason=reason) for reason in cautions.get(product.key, [])],
             summary=_summary(product, _summary_of(product, summaries), check),
-            voices=_voices(product, twice=False),
+            voices=_voices(product, twice=meets_bar),
+            meets_bar=meets_bar,
         ))
     return items
 
@@ -721,11 +748,22 @@ def _mid_sentence(quote: str, body: str | None) -> bool:
     return bool(before) and not before.endswith((".", "!", "?", "…", ":", ";"))
 
 
-def _worth_note(picks: int, standout_item: bool = False, standout_pick: bool = False) -> str:
+def _worth_note(picks: int, standout_item: bool = False, standout_pick: bool = False, bar_items: int = 0,
+                items: int = 0) -> str:
     """The note under "Also worth a look": how much less support its products have than a pick; with an item shown
     thanks to a comment standing out in its thread (`standout_item`, 14 Oct 2026), that it can be one such comment, and
-    with such a pick (`standout_pick`) the rule says how it meets the bar."""
+    with such a pick (`standout_pick`) the rule says how it meets the bar. With `bar_items` of its `items` meeting the
+    bar on their own but ranked below the top 3 (Noemi's decision 4 of 15 Oct 2026), shown first, it says that first,
+    and the bar they meet (WORTH_NOTE_BAR...)."""
     voices = _plural(WORTH_A_LOOK_CREDIBLE, "credible voice")
+    if bar_items:
+        bar = dict(rule=RULE.format(mentions=MIN_CREDIBLE_MENTIONS, threads=MIN_THREADS), picks=PICKS_SHOWN)
+        if bar_items == items:
+            return (WORTH_NOTE_BAR_ONE if items == 1 else WORTH_NOTE_BAR_EACH).format(**bar)
+        rest = (WORTH_NOTE_BAR_REST_STANDOUT if standout_item else WORTH_NOTE_BAR_REST).format(voices=voices)
+        if bar_items == 1:
+            return WORTH_NOTE_BAR_FIRST_ONE.format(rest=rest, **bar)
+        return WORTH_NOTE_BAR_FIRST.format(n=bar_items, rest=rest, **bar)
     if standout_item:
         wording = WORTH_NOTE_STANDOUT if picks else WORTH_NOTE_STANDOUT_NO_PICKS
     else:
@@ -1921,9 +1959,11 @@ def needed_quotes(answer: Answer) -> list[ShownQuote]:
     return [quote for where, quote in _every_quote(answer) if not where.startswith("worth a look")]
 
 
-def without_unread(answer: Answer, comment_ids: set[str]) -> Answer:
+def without_unread(answer: Answer, comment_ids: set[str], standing_out: Collection[str] = ()) -> Answer:
     """The answer without what stands on these comments, which the live check put off (13 Oct 2026): an "Also worth a
-    look" item quoting one (in its quotes or downsides), and a summary citing one. Nothing else changes."""
+    look" item quoting one (in its quotes or downsides), and a summary citing one. Nothing else changes but the note
+    under Also worth a look, worked out again when an item leaves it (15 Oct 2026: it counts the items meeting the picks
+    bar), with `standing_out` the keys of the products shown thanks to a comment standing out in its thread."""
     def unread(quotes) -> bool:
         return any(quote.comment_id in comment_ids for quote in quotes)
 
@@ -1931,8 +1971,13 @@ def without_unread(answer: Answer, comment_ids: set[str]) -> Answer:
         return replace(shown, summary=None) if shown.summary is not None and unread(shown.summary.sources) else shown
 
     worth = [summary_read(item) for item in answer.worth_a_look if not unread((*item.quotes, *item.downsides))]
+    note = answer.worth_note
+    if len(worth) < len(answer.worth_a_look):
+        note = _worth_note(len(answer.picks), any(item.product_key in standing_out for item in worth),
+                           any(pick.product_key in standing_out for pick in answer.picks),
+                           sum(item.meets_bar for item in worth), len(worth))
     return replace(answer, picks=[summary_read(pick) for pick in answer.picks], worth_a_look=worth,
-                   worth_note=answer.worth_note if worth else None)
+                   worth_note=note if worth else None)
 
 
 def shown_quotes(answer: Answer) -> list[ShownQuote]:
@@ -2042,9 +2087,11 @@ def _render_summary(summary: ShownSummary | None) -> list[str]:
 
 
 def _render_worth(item: WorthALook) -> list[str]:
-    """An "Also worth a look" item: its name, summary, reason, price (when known, or with a budget), where it is sold
-    (when checked), cautions, quotes and, only when credible voices warn against it, its downsides."""
-    lines = [f"### {item.name}", ""] + _render_form(item.form) + _render_summary(item.summary) + [item.reason, ""]
+    """An "Also worth a look" item: its name, MEETS_BAR when it meets the picks bar (15 Oct 2026), summary, reason,
+    price (when known, or with a budget), where it is sold (when checked), cautions, quotes and, only when credible voices
+    warn against it, its downsides."""
+    lines = [f"### {item.name}", ""] + ([f"**{MEETS_BAR}**", ""] if item.meets_bar else [])
+    lines += _render_form(item.form) + _render_summary(item.summary) + [item.reason, ""]
     if item.price.amount is not None or item.price.budget_note:  # lighter than a pick: what is known, or the budget's
         lines += _render_price(item.price)
     if item.availability.available is not None:

@@ -113,7 +113,7 @@ def test_a_prescription_only_product_of_any_type_still_never_suits_a_gentle_or_s
 
 # --- The note, wherever the product is shown ---
 
-def test_the_note_shows_on_a_pick_an_item_and_a_skip_of_any_type(tmp_path):
+def test_the_note_shows_on_a_pick_an_item_and_a_skip_of_any_type(tmp_path, skincare_need_rule_set_aside):
     result = ask(tmp_path)
     assert [pick.name for pick in result.answer.picks] == [ACME[0], KIRI[0]]
     assert notes(result.answer) == {ACME[0]: None, KIRI[0]: NOTE, IRIS[0]: NOTE, OPAL[0]: NOTE}
@@ -140,14 +140,14 @@ def test_a_request_for_sensitive_skin_still_leaves_them_out(tmp_path):
     assert NOTE not in notes(result.answer).values()
 
 
-def test_the_note_stays_when_the_live_check_writes_the_answer_again(tmp_path):
+def test_the_note_stays_when_the_live_check_writes_the_answer_again(tmp_path, skincare_need_rule_set_aside):
     result = ask(tmp_path, live_checker=FakeLive(gone={"a1"}))  # one of the serum's quotes, read again and gone
     assert result.live_dropped == {"gone": 1}
     assert notes(result.answer)[KIRI[0]] == NOTE and notes(result.answer)[IRIS[0]] == NOTE
     assert notes(result.answer)[ACME[0]] is None
 
 
-def test_the_note_turns_into_json_and_markdown(tmp_path):
+def test_the_note_turns_into_json_and_markdown(tmp_path, skincare_need_rule_set_aside):
     result = ask(tmp_path)
     data = json.loads(json.dumps(answer_to_dict(result.answer)))
     assert [pick["prescription"] for pick in data["picks"]] == [None, NOTE]

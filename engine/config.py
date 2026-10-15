@@ -358,7 +358,19 @@ PIPELINE_MORE_THREADS = 48
 # popular picks needn't be about what was asked: on the frozen library "gentle shampoo for wavy hair" had picked an
 # anti-dandruff shampoo its writers used for a deep clean. Measured there before her decision: 2 answers change, the
 # blind test's (skincare and kitchen) not at all. An empty tuple keeps the rule to the wider reading, as before.
-NEED_RULE_IN_EVERY_READING = ("haircare",)
+# Skincare since Noemi's decision 3 of 15 Oct 2026 ("a bha for blackheads" had shown a microdart patch none of whose
+# credible comments talk about blackheads).
+NEED_RULE_IN_EVERY_READING = ("haircare", "skincare")
+# The rule judges a pick by the needs a comment can talk about (engine.needs.judged_needs; 15 Oct 2026, Claude's call
+# within Noemi's rule, reported to her), not by the words that say what the product is or holds: an active ingredient
+# the request names, asked for (the ingredient rule checks it against the maker's list) or asked to leave out (writers
+# say either way whether a cream holds it), a single letter ("w/o"), or a size, a number with one of these units or a
+# unit on its own ("15ml", "28cm", "1.7 fl oz", "10 inch"). Judged by those words too, on the frozen library with
+# skincare in the rule, "need an eye cream 15ml max £35" had lost its three picks, its one need being "15ml", "vitamin c
+# serum under £20" a vitamin C serum whose writers call it by its name, and "moisturiser without niacinamide" had picked
+# creams whose writers say they hold it.
+NEED_SIZE_UNITS = ("ml", "millilitre", "milliliter", "cl", "l", "litre", "liter", "fl", "floz", "oz", "ounce", "g",
+                   "kg", "lb", "lbs", "mm", "cm", "inch", "inche", "inches", "qt", "quart", "pint", "gallon")
 # Brand-only picks (decided by Noemi, 9 Oct 2026, decision 9): a brand or line that fits several products ("Lodge",
 # "CeraVe") is ranked, under a name that says so ("Lodge cast iron skillet line", BRAND_PICK_NAME below), when its
 # threads make the product clear (BRAND_PICK_TITLE_SHARE below) or, since 12 Oct 2026, when the brand-lines list says

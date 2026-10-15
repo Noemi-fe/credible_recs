@@ -284,6 +284,8 @@ def test_variant_d_puts_a_lifted_product_after_every_product_meeting_the_bar_on_
 def test_with_three_products_meeting_the_bar_variant_d_changes_nothing(monkeypatch, variant):
     # Three products meet the bar on their own, each with three weaker voices (1.08 points), and the lifted Kettle K
     # outscores them: it takes the third place by its score in A, B and C, and in D it fills no place, so it stays an item.
+    # Changed on purpose 15 Oct 2026 (Noemi's decision 4): in A, B and C the Kettle C, meeting the bar on its own but
+    # ranked 4th, now heads Also worth a look (it was shown nowhere).
     upvote_rule(monkeypatch, variant)
     data = lifted_and_weaker()[:2] + [m for name in THREE_PICKS
                                       for m in mentions(3, name, voice="medium", evidence="short-term use")]
@@ -291,7 +293,8 @@ def test_with_three_products_meeting_the_bar_variant_d_changes_nothing(monkeypat
     if variant == "D":
         assert names(ranking.picks) == list(THREE_PICKS) and names(ranking.worth_a_look) == ["Kettle K"]
     else:
-        assert names(ranking.picks) == ["Kettle K", "Kettle A", "Kettle B"] and ranking.worth_a_look == []
+        assert names(ranking.picks) == ["Kettle K", "Kettle A", "Kettle B"]
+        assert names(ranking.worth_a_look) == ["Kettle C"]
 
 
 # --- Module 7: the answer says so, and its numbers stay the writers' ---

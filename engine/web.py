@@ -124,11 +124,14 @@ The JSON for /api/answer (200):
                                                     (Noemi, 11 Oct 2026); [] when there are none
                  "worth_a_look": [{"product_key", "name", "reason", "quotes", "downsides", "downsides_share",
                                    "disagreement", "score", "breakdown", "price", "availability", "cautions",
-                                   "summary", "voices", "range", "prescription"}],
-                                  "Also worth a look" (Noemi's decision 2, 13 Oct 2026): up to 3 products with 2
-                                  credible recommendations across at least 2 threads, best first, shown apart after the
-                                  picks and never among them; the same shapes as a pick's fields, with 1 or 2 quotes,
-                                  and downsides only when credible voices warn against it; [] when there are none
+                                   "summary", "voices", "range", "prescription", "meets_bar"}],
+                                  "Also worth a look" (Noemi's decision 2, 13 Oct 2026): up to 3 products, shown apart
+                                  after the picks and never among them: first those that meet the picks bar but rank
+                                  below the top 3, best first ("meets_bar": true, her decision 4 of 15 Oct 2026; the
+                                  page tags them with the wording's "meets_bar"), then those with 2 credible
+                                  recommendations across at least 2 threads, best first ("meets_bar": false); the same
+                                  shapes as a pick's fields, with 1 or 2 quotes, and downsides only when credible voices
+                                  warn against it; [] when there are none
                  "worth_note": "2 credible voices each: ...",   the words under its heading, or null without items
                  "message": the honest "not enough evidence" message, or null when there are 3 picks,
                  "needs_more_threads", "quotes_dropped",
@@ -792,6 +795,8 @@ def answer_wording() -> dict[str, str]:
         "masked_words": list(wording.MASKED_WORDS),
         # "Also worth a look" (Noemi, 13 Oct 2026); the note under it comes with each answer ("worth_note").
         "worth_heading": wording.WORTH_HEADING,
+        # The tag of an item there that meets the picks bar but ranks below the top 3 (Noemi's decision 4, 15 Oct 2026).
+        "meets_bar": wording.MEETS_BAR,
         # One-line summaries (Noemi, 13 Oct 2026): "In short:" and the note saying it is ours, not a quote.
         "summary_label": wording.SUMMARY_LABEL,
         "summary_note": wording.SUMMARY_NOTE,

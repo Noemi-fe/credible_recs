@@ -554,6 +554,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
 .tag { display: inline-block; padding: 1px 9px; border-radius: 999px; background: var(--fam-soft); color: var(--fam); font-size: 13px;
   font-weight: 600; white-space: nowrap; }
 .tag.warned, .tag.rx { background: var(--warn-soft); color: var(--warn); }
+.tag.bar { background: var(--accent-soft); color: var(--accent); }
 .zone-panel .form-chip { margin: 0; }
 .zone-panel .summary { font-size: 15.5px; }
 .zone-panel .quote { background: var(--surface); border-left-color: var(--fam); }
@@ -1163,6 +1164,12 @@ details[open] > summary .icon { transform: rotate(180deg); }
     return text ? el("span", { class: "tag rx" }, WORDING.prescription_tag) : null;
   }
 
+  /** The tag of an "Also worth a look" row whose product meets the picks bar but ranks below the top 3 (Noemi's
+      decision 4 of 15 Oct 2026), in the answer's words, in the accent colours of a pick. Nothing for any other row. */
+  function barTag(meets) {
+    return meets ? el("span", { class: "tag bar" }, WORDING.meets_bar) : null;
+  }
+
   /** A line with an icon in front, its words wrapped so they flow beside it. */
   function withIcon(name, line) {
     line.replaceChildren(...[icon(name), el("span", {}, ...line.childNodes)].filter(Boolean));
@@ -1336,13 +1343,14 @@ details[open] > summary .icon { transform: rotate(180deg); }
   let worthCards = 0;  // numbers each item's heading, so its row is labelled by it
 
   /** One "Also worth a look" item (Noemi, 13 Oct 2026): a compact row, plainly not a pick (round two, the same day: no
-      card, no meter), with how much backs it as a tag and its price when known. Opened: its summary, reason, price (when
+      card, no meter), with how much backs it as a tag and its price when known; first, when it meets the picks bar but
+      ranks below the top 3 (her decision 4 of 15 Oct 2026), a tag saying so. Opened: its summary, reason, price (when
       known, or with a budget), where it is sold (when checked), cautions and one or two quotes; its downsides only when
       credible voices warn against it. */
   function worthCard(item) {
     const nameId = "worth-" + (++worthCards);
     const head = [el("h4", { id: nameId, class: "row-name" }, item.name), formChip(item.form)];
-    const tags = [...worthTag(item.voices), prescriptionTag(item.prescription),
+    const tags = [barTag(item.meets_bar), ...worthTag(item.voices), prescriptionTag(item.prescription),
       item.price.amount !== null ? el("span", { class: "row-price" }, priceAmount(item.price)) : null];
     return row(icon("eye", "row-mark"), head, tags,
       summaryLine(item.summary),

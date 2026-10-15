@@ -143,9 +143,11 @@ def test_items_are_in_the_json_and_the_text():
     # its maker's page for the type, or null (engine/tests/test_line_links.py).
     # Changed on purpose 14 Oct 2026 (Noemi's decision 5): each item also has its "prescription" note, or null
     # (engine/tests/test_prescription_note.py).
+    # Changed on purpose 15 Oct 2026 (Noemi's decision 4): each item also says whether it meets the picks bar but ranks
+    # below the top 3 ("meets_bar"; engine/tests/test_past_the_picks.py).
     assert set(data["worth_a_look"][0]) == {"product_key", "name", "reason", "quotes", "downsides", "downsides_share",
                                            "disagreement", "score", "breakdown", "price", "availability", "cautions",
-                                           "summary", "voices", "form", "range", "prescription"}
+                                           "summary", "voices", "form", "range", "prescription", "meets_bar"}
     text = render_markdown(answer)
     assert f"## {wording.WORTH_HEADING}" in text and answer.worth_note in text
     assert text.index("Tojiro DP Gyuto") < text.index(wording.WORTH_HEADING) < text.index("Misono UX10")

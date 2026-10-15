@@ -174,6 +174,17 @@ UPVOTE_RULE_AS_NEEDED = ", and only as many as the product needs to meet it"
 UPVOTE_RULE_THREAD = (", and that scored higher than {{config%:UPVOTE_THREAD_SHARE_BEATEN}} of the other comments in a "
                       "thread of at least {{config:UPVOTE_THREAD_MIN_COMMENTS}} comments,")
 
+# The need rule (11 Oct 2026; in every answer for haircare since Noemi's decision 4 of 14 Oct 2026 and for skincare since
+# her decision 3 of 15 Oct 2026; wording decided by Claude, PROPOSED): a pick, or an Also worth a look item, needs a
+# credible recommendation that talks about what the request asks for besides the product (engine.pipeline._ranked,
+# engine.needs.judged_needs). {where} is NEED_RULE_EVERY with config.NEED_RULE_IN_EVERY_READING's categories, or
+# NEED_RULE_WIDER alone when there are none.
+NEED_RULE = ("<p>When you ask for more than the product, such as a skin type, a concern or a must-have, at least one of "
+             "those credible recommendations must also talk about it{where}. An ingredient or a size you name isn't "
+             "counted here: whether a product holds an ingredient is checked against its maker's list instead.</p>")
+NEED_RULE_EVERY = ": in every answer for {categories}, and for anything else{wider}"
+NEED_RULE_WIDER = " when we read more threads than usual"
+
 # A comment that stands out in its thread (Noemi, 14 Oct 2026; wording decided by Claude): explained under Also worth a
 # look only while it is on (config.STANDOUT_ON).
 STANDOUT_RULE = ("<p>A product can also be shown when one comment about it stands out in its thread: a credible "
@@ -225,6 +236,7 @@ def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = Fa
         "honesty_signs": _sign_list(HONESTY_SIGNS),
         "hard_rules": _hard_rules(),
         "upvote_rule": _upvote_rule(),
+        "need_rule": _need_rule(),
         "standout_rule": _standout_rule(),
         "evaluation": evaluation_section(metrics_path),
         "visit_counting": VISITS_COUNTED if counter else VISITS_NOT_COUNTED,
@@ -243,6 +255,7 @@ def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = Fa
         "credible_evidence": " or ".join(config.CREDIBLE_EVIDENCE),
         "skip_heading": answer.SKIP_HEADING,
         "worth_heading": answer.WORTH_HEADING,  # "Also worth a look" (Noemi, 13 Oct 2026)
+        "meets_bar": answer.MEETS_BAR,  # an item there meeting the picks bar (Noemi's decision 4 of 15 Oct 2026)
         "summary_label": answer.SUMMARY_LABEL,  # "In short:" (Noemi, 13 Oct 2026)
         "form_label": answer.FORM_LABEL,  # "Form" (active ingredients, 13 Oct 2026)
         "mixed_opinions": answer.DISAGREEMENT.split(":")[0],
@@ -307,6 +320,16 @@ def _upvote_rule() -> str:
                                    thread=UPVOTE_RULE_THREAD if config.UPVOTE_TOP_OF_BIG_THREAD else "",
                                    as_needed=UPVOTE_RULE_AS_NEEDED if short else "",
                                    fill=UPVOTE_RULE_FILL if config.UPVOTE_ONLY_TO_FILL else ""), {})
+
+
+def _need_rule() -> str:
+    """The need rule under the picks rule (NEED_RULE): where it holds in every answer (config.NEED_RULE_IN_EVERY_READING),
+    and that it holds for the rest when more threads are read."""
+    categories = config.NEED_RULE_IN_EVERY_READING
+    if not categories:
+        return NEED_RULE.format(where=html.escape(NEED_RULE_WIDER))
+    named = ", ".join(categories[:-1]) + " and " + categories[-1] if len(categories) > 1 else categories[0]
+    return NEED_RULE.format(where=html.escape(NEED_RULE_EVERY.format(categories=named, wider=NEED_RULE_WIDER)))
 
 
 def _standout_rule() -> str:

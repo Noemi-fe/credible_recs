@@ -61,6 +61,13 @@ The rules, in plain words:
   rule's variant: after the products meeting the bar on their own (RankingResult.qualifying), and after the items with
   two credible recommendations across two threads (RankingResult.worth_a_look). The upvote rule comes first: a product
   it lifts is lifted as before. Everything else still counts writers.
+- Products past the picks (Noemi's decision 4 of 15 Oct 2026): a product that meets the minimum-evidence rule on its
+  own (not thanks to the upvote rule or a standing-out comment) but ranks below the top 3 is listed first under Also
+  worth a look, best first (RankingResult.past_the_picks), labelled as meeting the bar (engine/answer.py). Until then it
+  was shown nowhere, while products with two credible recommendations were shown there. The section keeps its size
+  (config.WORTH_A_LOOK_SHOWN): these come first, then the items with two credible recommendations across two threads,
+  then those a standing-out comment puts there. One the upvote rule or a standing-out comment lifts to the bar isn't one
+  of them: it only fills places left empty, as above.
 - Kind support: each kind's support is the sum of the weights of its credible notes. If the best-supported kind
   has at least 2 credible recommending notes and at least twice the support of the next kind, its products
   get a bonus (config.KIND_BONUS, shown in the score breakdown).
@@ -219,6 +226,13 @@ def lifted(product: "ProductScore") -> bool:
         product.breakdown.credible_recommends < MIN_CREDIBLE_MENTIONS)
 
 
+def on_its_own(product: "ProductScore") -> bool:
+    """Whether a product meets the minimum-evidence rule on its own: neither the upvote rule (lifted) nor a comment
+    standing out in its thread (by_standout) is why it does. Such a product ranked below the top 3 heads Also worth a look
+    (Noemi's decision 4 of 15 Oct 2026; RankingResult.past_the_picks)."""
+    return product.qualifies and not lifted(product) and not product.by_standout
+
+
 def stands_out(mention: ScoredMention, rule: bool | None = None) -> bool:
     """Whether a mention's comment stands out in its thread (Noemi, 14 Oct 2026: "if a comment has a lot of upvotes
     compared to the size of the thread, i want it as a pick or worth a look"): the rule is on (`rule`; None follows
@@ -346,16 +360,27 @@ class RankingResult:
         return self.qualifying[:PICKS_SHOWN]
 
     @property
-    def worth_a_look(self) -> list[ProductScore]:
-        """The products for "Also worth a look", best first: two credible recommendations across two threads, so less
-        supported than a pick (Noemi's decision 2 of 13 Oct 2026), or a comment standing out in its thread (14 Oct
-        2026). Never a pick: a product the upvote rule or a standing-out comment lifts to the bar (14 Oct 2026) is one
-        of them only when its place doesn't put it among the picks, so the rules never take a product out of the
-        answer. Those shown thanks to a standing-out comment come after the others, so they only fill places left
-        empty there too."""
+    def past_the_picks(self) -> list[ProductScore]:
+        """The products that meet the minimum-evidence rule on their own (on_its_own) but rank below the top 3, best
+        first: listed first under "Also worth a look", labelled as meeting the bar (Noemi's decision 4 of 15 Oct 2026).
+        One lifted to the bar by the upvote rule or a standing-out comment isn't one of them, whatever its place: it
+        stays the item it was without those rules."""
         picks = {p.key for p in self.picks}
-        found = [p for p in self.products if p.worth_a_look and p.key not in picks]
-        return [p for p in found if not p.by_standout] + [p for p in found if p.by_standout]
+        return [p for p in self.products if on_its_own(p) and p.key not in picks]
+
+    @property
+    def worth_a_look(self) -> list[ProductScore]:
+        """The products for "Also worth a look", best first: first those that meet the bar on their own but rank below
+        the top 3 (past_the_picks, Noemi's decision 4 of 15 Oct 2026), then those with two credible recommendations
+        across two threads, so less supported than a pick (her decision 2 of 13 Oct 2026), then those a comment
+        standing out in its thread puts there (14 Oct 2026). Never a pick: a product the upvote rule or a standing-out
+        comment lifts to the bar (14 Oct 2026) is one of them only when its place doesn't put it among the picks, so
+        the rules never take a product out of the answer. Those shown thanks to a standing-out comment come after the
+        others, so they only fill places left empty there too."""
+        past = self.past_the_picks
+        shown = {p.key for p in self.picks} | {p.key for p in past}
+        found = [p for p in self.products if p.worth_a_look and p.key not in shown]
+        return past + [p for p in found if not p.by_standout] + [p for p in found if p.by_standout]
 
     @property
     def skip_list(self) -> list[ProductScore]:

@@ -806,10 +806,13 @@ def test_also_worth_a_look_comes_through_in_the_json(tmp_path):
     # Changed on purpose 13 Oct 2026 (active ingredients): each item also has its "form", as picks do.
     # Changed on purpose 14 Oct 2026 (Noemi's night decision 1): each item also has its "range", as picks do.
     # Changed on purpose 14 Oct 2026 (Noemi's decision 5): an item also has its "prescription" note, or null.
+    # Changed on purpose 15 Oct 2026 (Noemi's decision 4): an item also says whether it meets the picks bar ("meets_bar":
+    # false here; engine/tests/test_past_the_picks.py).
     assert set(data["answer"]["worth_a_look"][0]) == {"product_key", "name", "reason", "quotes", "downsides",
                                                      "downsides_share", "disagreement", "score", "breakdown", "price",
                                                      "availability", "cautions", "summary", "voices", "form", "range",
-                                                     "prescription"}
+                                                     "prescription", "meets_bar"}
+    assert data["answer"]["worth_a_look"][0]["meets_bar"] is False
 
 
 def test_the_page_draws_also_worth_a_look_and_summaries_with_the_answers_own_words(tmp_path):

@@ -43,10 +43,11 @@ from dataclasses import dataclass
 from functools import cache
 
 from engine.config import (
-    HAIR_LIST_NEEDS, HAIR_LIST_NOUNS, HAIR_LIST_WORDS, HAIR_NEEDS, NEED_COMMENT_WORDS, NEED_IGNORED_WORDS,
-    NEED_LOOKALIKES, NEED_REQUEST_WORDS, NEEDS, NEGATED_NEEDS, NEGATION_REACH, NEGATIONS,
+    HAIR_LIST_NEEDS, HAIR_LIST_NOUNS, HAIR_LIST_WORDS, HAIR_NEEDS, INGREDIENTS, NEED_COMMENT_WORDS, NEED_IGNORED_WORDS,
+    NEED_LOOKALIKES, NEED_REQUEST_WORDS, NEED_SIZE_UNITS, NEEDS, NEGATED_NEEDS, NEGATION_REACH, NEGATIONS,
 )
 from engine.credibility import _own_words
+from engine.ingredients import _whole as _whole_words
 from engine.memo import Table
 from engine.models import Thread
 from engine.query import PRODUCT_TYPES, SKIN_TYPES, ParsedQuery
@@ -132,6 +133,45 @@ def _request_needs(query: ParsedQuery) -> tuple[Need, ...]:
     listed = [(at, Need(need, needs[need], list_words=_list_words(need) if query.category == "haircare" else ()))
               for need, at in found.items()]
     return tuple(need for _, need in sorted(listed + own_words, key=lambda pair: pair[0]))
+
+
+def judged_needs(query: ParsedQuery) -> tuple[Need, ...]:
+    """The request's needs (request_needs) that the need rule judges a pick by (engine.pipeline._ranked: a pick needs a
+    credible recommendation that talks about one of them; 15 Oct 2026, with skincare's readings in the rule, Noemi's
+    decision 3): every need but a word that says what the product is or holds, which comments' words can't settle:
+    - a word of an active ingredient the request names (config.INGREDIENTS): one it asks for ("vitamin c serum":
+      "vitamin", "c") is the product asked for, checked against the maker's list of actives (engine/ingredients.py), and
+      so is one it asks to leave out ("moisturiser without niacinamide"): writers say either way whether a cream holds
+      it, and on the frozen library the rule had picked two creams whose writers say they do;
+    - a size (config.NEED_SIZE_UNITS: "15ml", "28cm", "1.7 fl oz"), which nobody's praise is about;
+    - a single letter ("w" of "w/o"), which names nothing.
+    They stay needs everywhere else (the threads read first, the reason's "2 of them about ..."), as before."""
+    named = _ingredient_words(_plain(query.text))
+    return tuple(need for need in request_needs(query) if need.request_word is None or not (
+        need.request_word in named or _is_size(need.request_word) or len(need.request_word) == 1))
+
+
+@cache
+def _ingredient_words(text: str) -> frozenset[str]:
+    """The words of every active ingredient a request (lowercase) names, asked for or not (config.INGREDIENTS' "asked",
+    found as engine.ingredients finds them), as need words are written (engine.sources.need_words: no hyphens or
+    apostrophes, a plural "s" trimmed)."""
+    words = set()
+    for key, entry in INGREDIENTS.items():
+        if any(_whole_words(pattern).search(text) for pattern in entry["asked"]):
+            for written in (key, *entry["asked"]):
+                words |= {_stem(word) for word in re.findall(r"[a-z0-9]+", written.lower())}
+    return frozenset(words)
+
+
+_SIZE = re.compile(r"\d+(?:{units}|in)|(?:{units})".replace("{units}", "|".join(
+    sorted(map(re.escape, NEED_SIZE_UNITS), key=len, reverse=True))))
+
+
+def _is_size(word: str) -> bool:
+    """Whether a need word (as engine.sources.need_words writes it) only says a size: "15ml", "7l" (of "1.7l"),
+    "210mm", "2qt", or a unit on its own ("fl", "oz", "inch", "quart")."""
+    return _SIZE.fullmatch(word) is not None
 
 
 def thread_needs(thread: Thread, needs: tuple[Need, ...], titled_as_another_type: bool = False) -> tuple[str, ...]:
