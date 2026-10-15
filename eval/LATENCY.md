@@ -202,3 +202,9 @@ On Cloud Run's one processor (about 3.5 times this Mac's main cores: 63.9 s ther
 dated ahead, 17.7 s here), the 11:30 library should get ready in about a minute, every warm request done. The same
 branch reads HTML's character codes as their characters in retrieval (2bfc7e5: "&amp;" had named a guitar amp), which
 changes none of these answers.
+
+15 Oct 2026, the live site after part 2 (library ~1,950 threads, slimmed; revision credible-recs-00056): getting ready
+read the library in 30.9 s and said ready after 168.5 s (the 120 s limit counts from the start, and the answer under
+way when it is up still ends); Cloud Run's startup probe allows 240 s. WARM_UP_ANSWERS_SECONDS is now 90 (6511263): the
+keep-warm pings warm the rest, giving way to visitors (7fc9980). Fresh answers right after the deploy, 6 requests:
+p50 1.18 s, p95 2.36 s, queued at most 0.94 s.
