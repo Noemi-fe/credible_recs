@@ -5166,6 +5166,394 @@
    ],
    "checked_on": "2026-10-15",
    "note": "Still made: MSR's maker, Cascade Designs, sells the Titan Kettle 900 mL (US$64.95) and 1400 mL (US$74.95) on its US store; its EU and GB paths now return 404. MSR gear is usually stocked by UK outdoor shops, but none could be checked before stopping, so UK sale is unconfirmed."
+  },
+  {
+   "product": "Suave Essentials Daily Clarifying Shampoo",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "page": "https://www.suave.com/products/essentials-daily-clarifying-shampoo",
+   "shop": "Suave Brands Co.",
+   "sources": [
+    "https://www.suave.com/products/essentials-daily-clarifying-shampoo",
+    "https://www.suave.com/sitemap_products_1.xml?from=8808550924600&to=10775543382328"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://www.suave.com/sitemap_products_1.xml?from=8808550924600&to=10775543382328; the page names it \"Essentials Daily Clarifying Shampoo\"; USD 1.94 on the page."
+  },
+  {
+   "product": "Franklin Sensors ProSensor M210",
+   "category": "general",
+   "product_type": "stud finder",
+   "page": "https://franklinsensors.com/prosensor-m210-stud-finder/",
+   "shop": "Franklin Sensors",
+   "image": "https://franklinsensors.com/wp-content/uploads/2022/12/Franklin-Sensors-LogoBlack-NEW-305.png",
+   "image_page": "https://franklinsensors.com/prosensor-m210-stud-finder/",
+   "sources": [
+    "https://franklinsensors.com/prosensor-m210-stud-finder/",
+    "https://franklinsensors.com/page-sitemap.xml"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://franklinsensors.com/page-sitemap.xml; the page names it \"ProSensor M210 Stud Finder\"; USD 59.99 on the page."
+  },
+  {
+   "product": "Giovanni Smooth as silk conditioner",
+   "category": "haircare",
+   "product_type": "conditioner",
+   "page": "https://giovannicosmetics.com/products/smooth-as-silk-deeper-moisture-conditioner-travel",
+   "shop": "Giovanni Cosmetics",
+   "image": "https://giovannicosmetics.com/cdn/shop/files/SASC2oz-scaled.jpg?v=1734044106",
+   "image_page": "https://giovannicosmetics.com/products/smooth-as-silk-deeper-moisture-conditioner-travel",
+   "sources": [
+    "https://giovannicosmetics.com/products/smooth-as-silk-deeper-moisture-conditioner-travel",
+    "https://giovannicosmetics.com/sitemap_products_1.xml?from=8316263268508&to=9287704608924"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://giovannicosmetics.com/sitemap_products_1.xml?from=8316263268508&to=9287704608924; the page names it \"SMOOTH AS SILK™ DEEPER MOISTURE CONDITIONER (TRAVEL SIZE)\"; USD 2.99 on the page."
+  },
+  {
+   "product": "Graco Turn2Me",
+   "category": "general",
+   "product_type": "car seat",
+   "page": "https://gracobaby.eu/en/turn2me-grow-i-size-r129-3-in-1-rotating-car-seat",
+   "shop": "Graco",
+   "image": "https://dd.gracobaby.eu/media/catalog/product/p/1/p1-graco-turn2me-grow-i-size-r129-car-seat-rotating-seat-three-quarter-angle-prod1.jpg?width=265&height=265&store=en&image-type=image",
+   "image_page": "https://gracobaby.eu/en/turn2me-grow-i-size-r129-3-in-1-rotating-car-seat",
+   "sources": [
+    "https://gracobaby.eu/en/turn2me-grow-i-size-r129-3-in-1-rotating-car-seat",
+    "https://gracobaby.eu/pub/sitemap/sitemap_en.xml"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://gracobaby.eu/pub/sitemap/sitemap_en.xml; the page names it \"Turn2Me™ Grow i-Size R129\"; EUR 269 on the page."
+  },
+  {
+   "product": "SKIN1004 Madagascar Centella Soothing Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "page": "https://www.skin1004.com/products/skin1004-madagascar-centella-soothing-cream",
+   "shop": "SKIN1004",
+   "sources": [
+    "https://www.skin1004.com/products/skin1004-madagascar-centella-soothing-cream",
+    "https://www.skin1004.com/sitemap_products_1.xml?from=6947241361565&to=10332686254326"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://www.skin1004.com/sitemap_products_1.xml?from=6947241361565&to=10332686254326; the page names it \"Madagascar Centella Soothing Cream | Skin Care | SKIN1004\"; USD 7.5 on the page."
+  },
+  {
+   "product": "Spyderco sharpmaker",
+   "category": "kitchen",
+   "product_type": "knife sharpener",
+   "page": "https://spyderco.com/products/tri-angle-sharpmaker%C2%AE",
+   "shop": "Spyderco",
+   "sources": [
+    "https://spyderco.com/products/tri-angle-sharpmaker%C2%AE",
+    "https://spyderco.com/sitemap_products_1.xml?from=7791309094956&to=8537363152940"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://spyderco.com/sitemap_products_1.xml?from=7791309094956&to=8537363152940; the page names it \"Tri-Angle Sharpmaker®\"; USD 127 on the page."
+  },
+  {
+   "product": "Taylor Stitch Heavy Bag Henleys",
+   "category": "general",
+   "product_type": "shirt",
+   "page": "https://www.taylorstitch.com/products/heavy-bag-henley-in-engine",
+   "shop": "Taylor Stitch",
+   "sources": [
+    "https://www.taylorstitch.com/products/heavy-bag-henley-in-engine",
+    "https://www.taylorstitch.com/sitemap_products_2.xml?from=2399973081165&to=6719026626637"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://www.taylorstitch.com/sitemap_products_2.xml?from=2399973081165&to=6719026626637; the page names it \"The Heavy Bag Henley in Engine\"; USD 45 on the page; it says out of stock or discontinued."
+  },
+  {
+   "product": "CeraVe Healing Ointment",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "page": "https://www.cerave.com/skincare/moisturizers/healing-ointment",
+   "shop": "CeraVe",
+   "image": "https://www.cerave.com/-/media/project/loreal/brand-sites/cerave/americas/us/products/healing-ointment/healing-ointment-pdp-resizes/700x785/ho_12oz_texture_r3-700x785-v1.jpg?rev=b864af138575475bbff9a180056be693",
+   "image_page": "https://www.cerave.com/skincare/moisturizers/healing-ointment",
+   "sources": [
+    "https://www.cerave.com/skincare/moisturizers/healing-ointment",
+    "https://a82962.sitemaphosting.com/4034207/sitemap.xml"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://a82962.sitemaphosting.com/4034207/sitemap.xml; the page names it \"Healing Ointment\"."
+  },
+  {
+   "product": "Paula’s choice BHA salicylic acid 9% treatment",
+   "category": "skincare",
+   "product_type": null,
+   "page": "https://www.paulaschoice.com/skin-perfecting-bha-9-treatment/773.html",
+   "shop": "Paula’s choice",
+   "image": "https://www.paulaschoice.com/on/demandware.static/-/Library-Sites-paulachoice/default/dw5dd89f2a/share.jpg",
+   "image_page": "https://www.paulaschoice.com/skin-perfecting-bha-9-treatment/773.html",
+   "sources": [
+    "https://www.paulaschoice.com/skin-perfecting-bha-9-treatment/773.html",
+    "https://www.paulaschoice.com/sitemap_0.xml"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://www.paulaschoice.com/sitemap_0.xml; the page names it \"BHA 9 Treatment\"; USD 45 on the page."
+  },
+  {
+   "product": "Tocobo Lip Mask",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "page": "https://tocobo.us/products/lip-mask-4-options",
+   "shop": "TOCOBO US",
+   "sources": [
+    "https://tocobo.us/products/lip-mask-4-options",
+    "https://tocobo.us/sitemap_products_1.xml?from=7476484964588&to=15414435217644"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://tocobo.us/sitemap_products_1.xml?from=7476484964588&to=15414435217644; the page names it \"Lip Mask (4 Options)\"; USD 19 on the page."
+  },
+  {
+   "product": "Aussie Instant Freeze gel",
+   "category": "haircare",
+   "product_type": "hair gel",
+   "page": "https://aussie.com/en-us/instant-freeze-gel",
+   "shop": "Aussie EN-US",
+   "image": "https://images.ctfassets.net/r62kv71tcwon/3XPrGZkFTI5KSmMf3haIAm/28a749e4f4263f9e12ea4059c3ed4db4/Social_Share_Image.jpg?fm=png&w=600",
+   "image_page": "https://aussie.com/en-us/instant-freeze-gel",
+   "sources": [
+    "https://aussie.com/en-us/instant-freeze-gel",
+    "https://aussie.com/en-us/sitemap.xml"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://aussie.com/en-us/sitemap.xml; the page names it \"INSTANT FREEZE GEL \".; image: a smaller size of the maker's image (224 KB instead of 763 KB)"
+  },
+  {
+   "product": "Bialetti Brikka",
+   "category": "kitchen",
+   "product_type": "moka pot",
+   "page": "https://www.bialetti.com/us_en/brikka-moka-pot-espresso-with-crema.html",
+   "shop": "Bialetti",
+   "image": "https://www.bialetti.com/media/catalog/product/4/c/4cups-0007328png-min_2.png?format=jpeg",
+   "image_page": "https://www.bialetti.com/us_en/brikka-moka-pot-espresso-with-crema.html",
+   "sources": [
+    "https://www.bialetti.com/us_en/brikka-moka-pot-espresso-with-crema.html",
+    "https://www.bialetti.com/media/sitemap/sitemap_us_en.xml"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://www.bialetti.com/media/sitemap/sitemap_us_en.xml; the page names it \"Bialetti Brikka Moka Pot – Crema-Rich Stovetop Espresso Maker\"; USD 79.99 on the page; it says out of stock or discontinued."
+  },
+  {
+   "product": "Big Agnes Skyline UL",
+   "category": "general",
+   "product_type": "camping chair",
+   "page": "https://www.bigagnes.com/products/skyline-ul-chair",
+   "shop": "Big Agnes",
+   "sources": [
+    "https://www.bigagnes.com/products/skyline-ul-chair",
+    "https://www.bigagnes.com/sitemap_products_1.xml?from=7641301221625&to=15298853404921"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://www.bigagnes.com/sitemap_products_1.xml?from=7641301221625&to=15298853404921; the page names it \"Skyline UL Chair\"; USD 199.95 on the page."
+  },
+  {
+   "product": "Cabeau Evolution S3",
+   "category": "general",
+   "product_type": "travel pillow",
+   "page": "https://cabeau.co.uk/products/evolution-s3-neck-pillow",
+   "shop": "Cabeau",
+   "sources": [
+    "https://cabeau.co.uk/products/evolution-s3-neck-pillow",
+    "https://cabeau.co.uk/sitemap_products_1.xml?from=3525988384854&to=14852250566959"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://cabeau.co.uk/sitemap_products_1.xml?from=3525988384854&to=14852250566959; the page names it \"Evolution S3® Neck Pillow\"; GBP 34.99 on the page."
+  },
+  {
+   "product": "Cerave anti-dandruff shampoo",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "page": "https://www.cerave.com/haircare/shampoo/anti-dandruff-hydrating-shampoo",
+   "shop": "Cerave",
+   "image": "https://www.cerave.com/-/media/project/loreal/brand-sites/cerave/americas/us/haircare/hair-packshot/dandruff-shampoo_front.jpg?rev=e1b55ebf0369497798dfe8565ffe0cf6",
+   "image_page": "https://www.cerave.com/haircare/shampoo/anti-dandruff-hydrating-shampoo",
+   "sources": [
+    "https://www.cerave.com/haircare/shampoo/anti-dandruff-hydrating-shampoo",
+    "https://a82962.sitemaphosting.com/4034207/sitemap.xml"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://a82962.sitemaphosting.com/4034207/sitemap.xml; the page names it \"Anti-Dandruff Hydrating Shampoo\"."
+  },
+  {
+   "product": "CeraVe Eye Repair Cream",
+   "category": "skincare",
+   "product_type": "eye cream",
+   "page": "https://www.cerave.co.uk/skincare/moisturisers/eye-repair-cream",
+   "shop": "cerave",
+   "image": "https://www.cerave.co.uk/-/media/project/loreal/brand-sites/cerave/emea/uk/products/am-facial-moisturising-lotion-spf50/eye-repire-cream/eye-repair-cream-1-sm.jpg?rev=-1",
+   "image_page": "https://www.cerave.co.uk/skincare/moisturisers/eye-repair-cream",
+   "sources": [
+    "https://www.cerave.co.uk/skincare/moisturisers/eye-repair-cream",
+    "https://www.cerave.co.uk/sitemap.xml"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://www.cerave.co.uk/sitemap.xml; the page names it \"CeraVe Eye Repair Cream\"."
+  },
+  {
+   "product": "COSRX Advanced Snail Radiance Dual Essence",
+   "category": "skincare",
+   "product_type": null,
+   "page": "https://www.cosrx.com/products/advanced-snail-radiance-dual-essence",
+   "shop": "COSRX Official",
+   "sources": [
+    "https://www.cosrx.com/products/advanced-snail-radiance-dual-essence",
+    "https://www.cosrx.com/sitemap_products_1.xml?from=6101921824924&to=10309980192984"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://www.cosrx.com/sitemap_products_1.xml?from=6101921824924&to=10309980192984; the page names it \"Advanced Snail Radiance Dual Essence\"; USD 28 on the page."
+  },
+  {
+   "product": "Coterie diapers",
+   "category": "general",
+   "product_type": "nappies",
+   "page": "https://www.coterie.com/products/the-diaper",
+   "shop": "Coterie",
+   "image": "https://cdn.sanity.io/images/e4q6bkl9/production/0a6d3ce27e3373f2d2b52d13c5c151b263d7fa25-1240x1240.png?rect=0,295,1240,651&w=1200&h=630",
+   "image_page": "https://www.coterie.com/products/the-diaper",
+   "sources": [
+    "https://www.coterie.com/products/the-diaper",
+    "https://coterie.com/sitemap-0.xml"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://coterie.com/sitemap-0.xml; the page names it \"The Diaper\"; USD 95 on the page."
+  },
+  {
+   "product": "dogbed4less waterproof memory foam beds",
+   "category": "general",
+   "product_type": "dog bed",
+   "page": "https://www.dogbed4less.com/products/3-inches-waterproof-memory-foam-platform-dog-bed-with-6-sizes",
+   "shop": "Dogbed4less",
+   "sources": [
+    "https://www.dogbed4less.com/products/3-inches-waterproof-memory-foam-platform-dog-bed-with-6-sizes",
+    "https://www.dogbed4less.com/sitemap_products_1.xml?from=8322224454&to=7732533559414"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://www.dogbed4less.com/sitemap_products_1.xml?from=8322224454&to=7732533559414; the page names it \"3 Inches Waterproof Memory Foam Platform Dog Crate Bed with 6 Sizes\"."
+  },
+  {
+   "product": "Giovanni tea tree triple treat",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "page": "https://giovannicosmetics.com/products/tea-tree-triple-treat-invigorating-shampoo-travel",
+   "shop": "Giovanni Cosmetics",
+   "image": "https://giovannicosmetics.com/cdn/shop/files/TTTS2Oz-scaled.jpg?v=1734044108",
+   "image_page": "https://giovannicosmetics.com/products/tea-tree-triple-treat-invigorating-shampoo-travel",
+   "sources": [
+    "https://giovannicosmetics.com/products/tea-tree-triple-treat-invigorating-shampoo-travel",
+    "https://giovannicosmetics.com/sitemap_products_1.xml?from=8316263268508&to=9287704608924"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://giovannicosmetics.com/sitemap_products_1.xml?from=8316263268508&to=9287704608924; the page names it \"TEA TREE TRIPLE TREAT™ INVIGORATING SHAMPOO (TRAVEL SIZE)\"; USD 2.99 on the page."
+  },
+  {
+   "product": "Infantino Flip 4-in-1 Convertible Baby Carrier",
+   "category": "general",
+   "product_type": "baby carrier",
+   "page": "https://infantino.com/products/flip-4-in-1-convertible-carrier",
+   "shop": "Infantino",
+   "sources": [
+    "https://infantino.com/products/flip-4-in-1-convertible-carrier",
+    "https://infantino.com/sitemap_products_1.xml?from=365905271&to=15404656951584"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://infantino.com/sitemap_products_1.xml?from=365905271&to=15404656951584; the page names it \"Flip™ 4-in-1 Convertible Carrier - Black\"."
+  },
+  {
+   "product": "iUNIK Beta-Glucan Power Moisture Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "page": "https://www.iunik.com/products/beta-glucan-power-moisture-serum",
+   "shop": "IUNIK GLOBAL",
+   "sources": [
+    "https://www.iunik.com/products/beta-glucan-power-moisture-serum",
+    "https://www.iunik.com/sitemap_products_1.xml?from=10375277773073&to=15409025057041"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://www.iunik.com/sitemap_products_1.xml?from=10375277773073&to=15409025057041; the page names it \"Beta Glucan Power Moisture Serum\"; USD 21 on the page."
+  },
+  {
+   "product": "Kinky Curly Come Clean",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "page": "https://kinky-curly.com/products/come-clean-shampoo",
+   "shop": "Kinky-Curly Hair Care",
+   "sources": [
+    "https://kinky-curly.com/products/come-clean-shampoo",
+    "https://kinky-curly.com/sitemap_products_1.xml?from=5779915440293&to=5976580620453"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://kinky-curly.com/sitemap_products_1.xml?from=5779915440293&to=5976580620453; the page names it \"COME CLEAN SHAMPOO\"; USD 12 on the page."
+  },
+  {
+   "product": "Nvidia Shield TV Pro",
+   "category": "general",
+   "product_type": "streaming device",
+   "page": "https://www.nvidia.com/en-gb/shield/shield-tv-pro/",
+   "shop": "NVIDIA",
+   "image": "https://www.nvidia.com/content/dam/en-zz/Solutions/SHIELD/specs/shield-tv-pro/nvidia-shield-tv-pro-og-image-1200x630.jpg",
+   "image_page": "https://www.nvidia.com/en-gb/shield/shield-tv-pro/",
+   "sources": [
+    "https://www.nvidia.com/en-gb/shield/shield-tv-pro/",
+    "https://www.nvidia.com/en-gb/en-gb.sitemap.xml"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://www.nvidia.com/en-gb/en-gb.sitemap.xml; the page names it \"NVIDIA SHIELD TV PRO, best streaming media device today\"."
+  },
+  {
+   "product": "Rumpl Stuffable Pillow Case",
+   "category": "general",
+   "product_type": "travel pillow",
+   "page": "https://www.rumpl.com/products/stuffable-pillowcase-deepwater",
+   "shop": "Rumpl",
+   "sources": [
+    "https://www.rumpl.com/products/stuffable-pillowcase-deepwater",
+    "https://www.rumpl.com/sitemap_products_1.xml?from=1393265279048&to=15060356792683"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://www.rumpl.com/sitemap_products_1.xml?from=1393265279048&to=15060356792683; the page names it \"Stuffable Pillowcase - Deepwater\"; USD 29.95 on the page."
+  },
+  {
+   "product": "Singer Heavy Duty 4432",
+   "category": "general",
+   "product_type": "sewing machine",
+   "page": "https://www.singer.com/products/singer-heavy-duty-4432-sewing-machine",
+   "shop": "Singer",
+   "sources": [
+    "https://www.singer.com/products/singer-heavy-duty-4432-sewing-machine",
+    "https://www.singer.com/sitemap_products_1.xml?from=8980572045591&to=14790350537074"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://www.singer.com/sitemap_products_1.xml?from=8980572045591&to=14790350537074; the page names it \"SINGER® Heavy Duty 4432 Sewing Machine\"; USD 209.99 on the page."
+  },
+  {
+   "product": "Torriden Dive In Soothing Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "page": "https://torriden.us/products/dive-in-soothing-cream",
+   "shop": "Torriden",
+   "sources": [
+    "https://torriden.us/products/dive-in-soothing-cream",
+    "https://torriden.us/sitemap_products_1.xml?from=14730333389166&to=15191420567918"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://torriden.us/sitemap_products_1.xml?from=14730333389166&to=15191420567918; the page names it \"DIVE IN Soothing Cream\"; USD 27 on the page."
+  },
+  {
+   "product": "Torriden DIVE-IN Soothing Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "page": "https://torriden.us/products/dive-in-soothing-cream",
+   "shop": "Torriden",
+   "sources": [
+    "https://torriden.us/products/dive-in-soothing-cream",
+    "https://torriden.us/sitemap_products_1.xml?from=14730333389166&to=15191420567918"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Found by engine.maker_pages in the sitemap https://torriden.us/sitemap_products_1.xml?from=14730333389166&to=15191420567918; the page names it \"DIVE IN Soothing Cream\"; USD 27 on the page."
   }
  ]
 }

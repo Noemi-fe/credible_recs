@@ -10194,6 +10194,22 @@
     "https://www.brother.co.uk/printers/laser-printers/mono-laser-all-in-one"
    ],
    "note": "Generic name read as Brother's mono laser all-in-one range (Brother UK lists about 26). From price: Brother's UK store, DCP-1610W at £178.80 (out of stock today); search results show the DCP-L1660W at £198.19 SRP. Image: the DCP-1610W's, from the store's product data (no share image)."
+  },
+  {
+   "product": "Cabeau Evolution S3",
+   "category": "general",
+   "product_type": "travel pillow",
+   "price": 34.99,
+   "currency": "GBP",
+   "shop": "Cabeau",
+   "url": "https://cabeau.co.uk/products/evolution-s3-neck-pillow",
+   "checked_on": "2026-10-15",
+   "available": true,
+   "sources": [
+    "https://cabeau.co.uk/products/evolution-s3-neck-pillow",
+    "https://cabeau.co.uk/sitemap_products_1.xml?from=3525988384854&to=14852250566959"
+   ],
+   "note": "Found by engine.maker_pages in the sitemap https://cabeau.co.uk/sitemap_products_1.xml?from=3525988384854&to=14852250566959; the page names it \"Evolution S3® Neck Pillow\"; GBP 34.99 on the page."
   }
  ]
 }

@@ -43,7 +43,7 @@ from pathlib import Path
 from typing import Callable, Iterable
 from urllib.parse import unquote, urljoin, urlsplit
 
-from engine.buyable import _maker_of
+from engine.buyable import _maker_of, _names_site
 from engine.links import is_direct_page, is_linkable
 
 AGENT = "credible-recs-maker-pages/1.0 (reads makers' sitemaps and product pages; github.com/Noemi-fe/credible_recs)"
@@ -74,6 +74,14 @@ COUNTRY_LABEL = re.compile(r"^[a-z]{2}$")
 LOCALE_PART = re.compile(r"^(?:[a-z]{2}|[a-z]{2}[-_][a-z]{2})$")
 OURS = {"uk", "gb", "en-gb", "en_gb", "gb-en", "gb_en", "uk-en", "uk_en", "en-uk", "en_uk"}
 NEUTRAL = {"en", "us", "en-us", "en_us", "us-en", "us_en", "eu", "int", "global", "intl", "www"}
+# Another country's own sites (knirps.de); .co, .io, .me, .tv and the like are used anywhere.
+ABROAD_ENDINGS = {"de", "fr", "it", "es", "nl", "be", "at", "ch", "se", "no", "dk", "fi", "pl", "pt", "ie", "cz", "hu",
+                  "gr", "ro", "au", "nz", "ca", "jp", "kr", "cn", "tw", "hk", "sg", "in", "br", "mx", "ar", "za", "ru"}
+# A page for a part of a product, or something sold with it ("Duo Crisp 60 Dehydrating Tray", "Motor Filter for
+# Synergy"), unless the product's own name says so.
+PART_WORDS = {"tray", "trays", "filter", "filters", "case", "cases", "cover", "covers", "replacement", "replacements",
+              "spare", "spares", "part", "parts", "refill", "refills", "accessory", "accessories", "attachment",
+              "attachments", "lid", "lids", "strap", "straps", "charger", "adapter", "infuser", "pouch"}
 LOC = re.compile(r"<loc>\s*(.*?)\s*</loc>", re.DOTALL)
 LD_JSON = re.compile(r"<script[^>]*application/ld\+json[^>]*>(.*?)</script>", re.DOTALL | re.IGNORECASE)
 META = re.compile(r"<meta\s[^>]*>", re.IGNORECASE)
@@ -254,7 +262,8 @@ def country_of(url: str) -> str:
     label = host.split(".")[0]
     if host.endswith(".uk") or first in OURS or label in OURS:
         return "uk"
-    if (COUNTRY_LABEL.match(label) and label not in NEUTRAL) or (LOCALE_PART.match(first) and first not in NEUTRAL):
+    if ((COUNTRY_LABEL.match(label) and label not in NEUTRAL) or (LOCALE_PART.match(first) and first not in NEUTRAL)
+            or host.rsplit(".", 1)[-1] in ABROAD_ENDINGS):
         return "abroad"
     return "any"
 
@@ -386,16 +395,21 @@ def find_product(product: dict, known_hosts: Iterable[str], sites: Sites, sitema
         found = candidates(sitemaps[host], words, product_type)
         if not found:
             why.append(f"{host}: no page holds {' '.join(words)} ({len(sitemaps[host])} pages)")
-        needed = [w for w in words if w not in GENERIC] or words
         for page, sitemap in found:
             response = sites.read(page)
             if response is None or response.status != 200 or not is_direct_page(response.url):
                 why.append(f"{page}: not read ({response.status if response else 'no answer or robots.txt'})")
                 continue
             facts = read_page(response.body.decode("utf-8", "replace"), response.url)
-            named = next((n for n in facts.names if holds(words_of(n), needed)), None)
-            if not facts.is_product or named is None or country_of(response.url) == "abroad":
-                why.append(f"{page}: {'not a product page' if not facts.is_product else 'abroad' if named else 'named ' + (facts.names or ['nothing'])[0][:50]}")
+            # Its own name holds every model word (a page's address may leave out GENERIC ones, its name never: a
+            # sun cream isn't its maker's sun serum), and no part's word the product's name hasn't.
+            own = set(words_of(name))
+            named = next((n for n in facts.names if holds(words_of(n), words)
+                          and not (PART_WORDS & set(words_of(n))) - own), None)
+            elsewhere = not _names_site(brand, _host(response.url))  # a sitemap may list another site's pages
+            if not facts.is_product or named is None or country_of(response.url) == "abroad" or elsewhere:
+                why.append(f"{page}: " + ("not a product page" if not facts.is_product else "another site" if
+                           elsewhere else "abroad" if named else "named " + (facts.names or ["nothing"])[0][:50]))
                 continue
             return _finding(product, brand, response.url, sitemap, named, facts, today)
     return None

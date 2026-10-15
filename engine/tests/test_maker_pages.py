@@ -197,3 +197,24 @@ def test_a_plural_matches_its_singular_and_a_site_without_sitemaps_in_robots_txt
     web = FakeWeb(answers)
     assert find_product(JACKET, ["www.nanopuff.example"], sites(web), {}, DAY)["status"] == "sold_new"
     assert "https://www.nanopuff.example/wp-sitemap.xml" not in web.asked  # the first found will do
+
+
+def test_a_part_another_sites_page_another_countrys_site_or_a_name_missing_a_word_isnt_the_products_page():
+    from engine.maker_pages import country_of
+    assert country_of("https://knirps.de/8800501001-knirps-us-050-case.html") == "abroad"
+    tray = {"name": "Nanopuff Duo Crisp", "type": "air fryer", "category": "kitchen"}
+    for slug, text in [("duo-crisp-dehydrating-tray", page("Duo Crisp 60 Dehydrating Tray"))]:  # a part
+        web = FakeWeb(site(**{slug.replace("-", "_"): text}) | {"https://www.nanopuff.example/sitemap-products.xml": (
+            200, f"<urlset><url><loc>https://www.nanopuff.example/products/{slug}</loc></url></urlset>")})
+        assert find_product(tray, ["www.nanopuff.example"], sites(web), {}, DAY) is None
+    cream = {"name": "Nanopuff Sun Cream", "type": "sunscreen", "category": "skincare"}
+    web = FakeWeb(site(sun_serum=page("Sun Serum")) | {"https://www.nanopuff.example/sitemap-products.xml": (
+        200, "<urlset><url><loc>https://www.nanopuff.example/products/sun-serum</loc></url></urlset>")})
+    assert find_product(cream, ["www.nanopuff.example"], sites(web), {}, DAY) is None  # its address may skip "cream"
+    elsewhere = site() | {"https://www.nanopuff.example/sitemap-products.xml": (
+        200, "<urlset><url><loc>https://shop.example/products/nano-puff-jacket</loc></url></urlset>"),
+        "https://shop.example/robots.txt": (200, ""), "https://shop.example/products/nano-puff-jacket": (
+        200, page("Nano Puff Jacket"))}
+    why = []
+    assert find_product(JACKET, ["www.nanopuff.example"], sites(FakeWeb(elsewhere)), {}, DAY, why) is None
+    assert "another site" in why[-1]
