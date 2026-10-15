@@ -396,7 +396,9 @@ The site's reads ahead (14 Oct 2026). The site is billed by request, under its o
 once, each mostly waiting on Reddit's answer (about 0.3 s), so about a tenth of a second of the site's time a read. A
 ping starts no read 5 seconds after it began, so at most about 6 seconds a ping with the last reads' answers: 288 pings
 a day, at most 53,568 vCPU-seconds and 107,136 GiB-seconds in a 31-day month on the site's 1 vCPU and 2 GiB, 30% of
-each. What is due on 14 Oct 2026's library, slimmed (17,335 kept comments): the answers' 2,229 comments once every 40
+each. Since 15 Oct 2026 the site runs at 4 GiB, a stopgap: at 2 GiB it ran out of memory every 20 to 40 minutes with
+~1,950 threads, the open model and its warmed answers, so reading ahead's GiB-seconds are at most 214,272 (60%) until
+the site's memory is brought back down. What is due on 14 Oct 2026's library, slimmed (17,335 kept comments): the answers' 2,229 comments once every 40
 hours (about 1,340 a day) and up to 3,000 kept comments to verify, about 4,340 reads a day, 15 a ping, about 1.5
 seconds of each: about 13,400 vCPU-seconds a month, 7%. 12,356 of the kept comments were never verified (read from the
 archive on 11 to 14 Oct, so due by 10 to 13 Nov), about 31,000 once the 846 threads still to extract are slimmed: 11

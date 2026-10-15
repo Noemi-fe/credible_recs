@@ -202,7 +202,11 @@ def test_the_site_reads_ahead_within_a_third_of_its_own_free_tier():
     cpu = float(re.search(r"--cpu (\d+)", site).group(1))
     gib = int(re.search(r"--memory (\d+)Gi", site).group(1))
     seconds = 31 * 24 * 12 * (READ_AHEAD_SECONDS + 1)
-    assert seconds * cpu <= 180_000 / 3 and seconds * gib <= 360_000 / 3
+    # Changed on purpose 15 Oct 2026: the site runs at 4 GiB, a stopgap (at 2 GiB it ran out of memory every 20 to 40
+    # minutes with ~1,950 threads, the open model and its warmed answers), so reading ahead's GiB-seconds rise from a
+    # third of the free tier to 60% at most (214,272 of 360,000); its vCPU-seconds stay under a third. Bringing the
+    # site's memory back down is in CLAUDE.md's follow-ups.
+    assert seconds * cpu <= 180_000 / 3 and seconds * gib <= 360_000 * 0.6
     assert seconds * cpu == 53_568  # DEPLOY.md's sum
 
 

@@ -104,7 +104,7 @@ rm -rf "$(dirname "$RECORD")"
 BUNDLE="$(mktemp -d)/bundle"
 .venv/bin/python -m deploy.cloudrun.make_context "$BUNDLE"
 $GCLOUD run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --source "$BUNDLE" \
-    --allow-unauthenticated --memory 2Gi --cpu 1 --cpu-boost --max-instances 1 --min-instances 0 \
+    --allow-unauthenticated --memory 4Gi --cpu 1 --cpu-boost --max-instances 1 --min-instances 0 \
     --execution-environment gen2 \
     --concurrency 8 --timeout 300 \
     --startup-probe "httpGet.path=/ready,httpGet.port=8080,periodSeconds=3,timeoutSeconds=2,failureThreshold=80" \
