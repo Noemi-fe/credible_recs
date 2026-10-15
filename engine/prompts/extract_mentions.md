@@ -1,4 +1,4 @@
-Version: extract-v13
+Version: extract-v14
 
 # Finding product mentions in one Reddit thread
 
@@ -31,6 +31,13 @@ comment text it prints.
 - Skip a product named only in passing, when the comment says nothing about it: no verdict, no use of it, no
   question about it. The poster's list of the gear they own, "V60" used only as the name of a brewing method ("for
   V60 and AeroPress") and snacks in a story are not mentions.
+- A warning that rests only on the maker's ethics (Noemi, 15 Oct 2026, instructions v14) isn't a mention: skip it.
+  That is a warning about how the maker treats animals (animal welfare or testing), its labour practices, its or its
+  owners' politics or conduct, or a boycott ("I won't buy from them after what their founder said"), that says
+  nothing about the product itself. When the same comment also judges the product, list the mention for that
+  judgement only: its stance, evidence and quote come from what it says about the product, never from the ethics ("it
+  broke me out, and I don't support their testing anyway" is a warning quoting "it broke me out"; "it works wonders,
+  but I stopped buying it over the owner's views" is a recommendation quoting "it works wonders").
 - A product named only in a link counts: take its name from the link's words. Never open a link. If the link's
   words don't say what it is, skip it.
 - A store brand counts when it's clear which product it is ("the Walgreens one" under a comment about glycolic
@@ -155,7 +162,10 @@ serum a "hair oil"; a microwave oven or combination microwave a "microwave", a r
 a "coffee maker" (an espresso or bean-to-cup machine is an "espresso machine"), a cafetiere a "french press", a coffee
 or food scale a "kitchen scale"; an immersion, stick or hand blender isn't a "blender" ("immersion blender"), nor a hand
 mixer a "stand mixer". Sun protection wins over the form: anything with SPF or "UV" in its name, or sold to protect
-from the sun ("Biore UV Aqua Rich Watery Essence"), is a "sunscreen". The general names cover their usual kinds too:
+from the sun ("Biore UV Aqua Rich Watery Essence"), is a "sunscreen". Lips are the exception (Noemi, 15 Oct 2026,
+instructions v14): a product for the lips with SPF, or sold to protect them from the sun (a lip balm, lip treatment, lip
+oil, lip mask or tinted lip balm, a lip gloss or a chapstick with SPF), is a "lip balm", as one without SPF is. The
+general names cover their usual kinds too:
 AirPods or IEMs are "earbuds", over-ear or noise-cancelling ones "headphones"; a Roomba is a "robot vacuum", a stick,
 cordless or handheld vacuum a "vacuum cleaner"; a Kindle or a Kobo an "e-reader"; a MacBook or a Chromebook a
 "laptop"; an Apple Watch a "smartwatch", a Garmin running watch a "sports watch"; a pram or a pushchair a
@@ -299,7 +309,7 @@ comment (there's no one left to credit), and agreement with a comment other than
 ```json
 {
   "thread_id": "<the thread's id>",
-  "instructions_version": "extract-v13",
+  "instructions_version": "extract-v14",
   "extracted_at": "<now, ISO 8601 in UTC, e.g. 2026-10-08T10:00:00Z>",
   "extractor": "claude-code",
   "mentions": [

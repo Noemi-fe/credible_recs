@@ -1261,7 +1261,8 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
     hard_requirements), it is left out of the picks and named on the result, since a whole brand can't be checked (10
     Oct 2026), but kept for Skip these only (result.skip_only; Noemi's decision 1 of 13 Oct 2026: listed there when its
     credible warnings put it there); otherwise it is kept. A kept product whose facts don't say whether it meets a hard requirement gets a note after its
-    soft reasons: "we couldn't confirm it's PFAS-free" (engine.product_facts.unconfirmed, 10 Oct 2026). A kept product
+    soft reasons: "we couldn't confirm it's PFAS-free" (engine.product_facts.unconfirmed, 10 Oct 2026), unless the names
+    it is shown under say so (15 Oct 2026: a lip balm named "... SPF 25" has SPF; engine.product_facts.name_facts). A kept product
     with a facts entry is shown under the entry's name, taken from the maker's page, rather than as writers spelled it
     (10 Oct 2026); its key stays, so its price check and cautions still find it. An entry under a brand's own name
     speaks for the brand's whole line, so its pick is shown as that line: "GreenPan frying pan line" (12 Oct 2026).
@@ -1363,7 +1364,9 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
             kept.append(replace(group, name=name, loose=False))
             found_facts[group.key] = facts
         soft = [c.reason for c in found if not c.hard]
-        missing = unconfirmed(query, facts, own_type if query.ingredient_led else None)
+        # The names it is shown under can confirm a requirement too (15 Oct 2026: a lip balm named "... SPF 25").
+        shown = (group.name,) + ((facts.product,) if facts is not None else ())
+        missing = unconfirmed(query, facts, own_type if query.ingredient_led else None, names=shown)
         if missing:
             soft.append(unconfirmed_note(missing))
         if soft:

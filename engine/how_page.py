@@ -82,6 +82,7 @@ ASKS_WORDS: dict[str, str] = {
     "non-stick": "non-stick",
     "plastic-free": "plastic-free",
     "sulfate-free": "sulfate-free",
+    "SPF": "a lip balm with SPF",  # 15 Oct 2026 (Noemi's decision 2; wording PROPOSED)
     "induction-compatible": "something that works on induction",
     "oily": "something for oily skin",
     "dry": "something for dry skin",

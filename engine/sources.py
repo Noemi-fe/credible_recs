@@ -64,8 +64,8 @@ from engine.memo import Table, register
 from engine.models import Comment, Thread
 from engine.parse_reddit import ParseRedditClient
 from engine.query import (
-    FIRST_LOOKALIKES, FIRST_PRODUCT_TYPES, LOOKALIKES, PRODUCT_TYPES, TITLE_WORDS, ParsedQuery, name_pattern,
-    plural_ending,
+    FIRST_LOOKALIKES, FIRST_PRODUCT_TYPES, LIP_SUN_PROTECTION, LOOKALIKES, PRODUCT_TYPES, TITLE_WORDS, ParsedQuery,
+    name_pattern, plural_ending,
 )
 from engine.text import one_edit_apart
 
@@ -1296,8 +1296,12 @@ def need_words(query: ParsedQuery) -> list[str]:
     # An ingredient-led request's ingredients are its product (13 Oct 2026): "beta hydroxy acid" is no need.
     product_words |= {w for pattern in talk_words(query.product_type) for w in re.findall(r"[a-z0-9]+", pattern)}
     product_words |= {re.sub(r"['-]", "", w) for w in product_words}  # "leave-in" is "leavein" below
-    words = []
-    for token in re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", query.text.lower()):
+    words, text = [], query.text.lower()
+    if query.product_type == "lip balm":
+        # Sun protection for the lips is a lip balm with SPF (15 Oct 2026, Noemi's decision 2): the words naming the
+        # product in "spf for my lips" or "lip oil with spf" are no needs, only the SPF it asks for (engine.query).
+        text = LIP_SUN_PROTECTION.sub(" lip balm spf ", text)
+    for token in re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", text):
         # "anti-dandruff" asks about dandruff and "sulfate-free" about sulfates (11 Oct 2026), as people write them.
         token = re.sub(r"^anti-(?=[a-z])|(?<=[a-z])-free$", "", token)
         word = _stem(re.sub(r"['-]", "", token))
