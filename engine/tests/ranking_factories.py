@@ -41,11 +41,13 @@ def mention(
     products_named: int = 1,
     needs: tuple[str, ...] = (),
     needs_asked: bool = False,
+    others_of_another_type: tuple[str, ...] = (),
 ) -> ScoredMention:
     """One scored mention. Each call gets a new comment id and a quote of its own, unless given. `upvotes`,
     `thread_comments` and `share_beaten` are its comment's upvotes beside its thread's (14 Oct 2026); unknown unless given.
     `products_named`: how many products its comment names; `needs`: the request's needs it talks about, of those asked
-    when `needs_asked` (a comment standing out in its thread, 14 Oct 2026)."""
+    when `needs_asked` (a comment standing out in its thread, 14 Oct 2026). `others_of_another_type`: its comment's other
+    products of another type, with the same stance (15 Oct 2026)."""
     comment = comment or f"c{next(_comment_ids)}"
     return ScoredMention(
         product_key=key or product.lower().replace(" ", "-"),
@@ -67,6 +69,7 @@ def mention(
         products_named=products_named,
         needs=needs,
         needs_asked=needs_asked,
+        others_of_another_type=others_of_another_type,
     )
 
 

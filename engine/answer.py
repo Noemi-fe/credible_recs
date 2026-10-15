@@ -139,7 +139,14 @@ from engine.config import (
     OPPOSITE_NEGATED_IN_SENTENCE,
     OPPOSITE_NEGATION_WINDOW,
     OPPOSITE_QUOTE_PATTERNS,
+    HAIR_NEEDS,
+    NEEDS,
     OTHER_KIND_WORDS,
+    QUOTE_ADVICE_AGAINST_PATTERNS,
+    QUOTE_FAILURE_PATTERNS,
+    QUOTE_PRAISE_PATTERNS,
+    QUOTE_STANCE_NEGATION_WINDOW,
+    QUOTE_STANCE_PEOPLE_WORDS,
     QUOTE_VIEW_WORDS,
     MIN_CREDIBLE_MENTIONS,
     MIN_QUOTES_PER_PICK,
@@ -832,7 +839,9 @@ def _worth_quotes(product: ProductScore, check: "_QuoteCheck", asks: tuple[str, 
     ordered = _naming_first(_with_a_view(mentions, check.widen), asks, needs, leaning, product_type)
     good = [m for m in ordered if m.comment_id not in leaning and _says_something(m)
             and not (_bare_mention(m) or _garbled(m.quote) or _mid_sentence(m.quote, check.bodies.get(m.comment_id)))]
-    return check.first(good, WORTH_A_LOOK_QUOTES)
+    # A quote about another product of its comment (15 Oct 2026) only when the item has no other.
+    return (check.first([m for m in good if not _about_another_product(m)], WORTH_A_LOOK_QUOTES)
+            or check.first([m for m in good if _about_another_product(m)], 1))
 
 
 def _mid_sentence(quote: str, body: str | None) -> bool:
@@ -1020,19 +1029,36 @@ def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
     need ("it did nothing for my oily skin", 15 Oct 2026), after every other (_says_the_opposite). Each is still shown when
     there's room. Since 12 Oct 2026 the quotes of `leaning` (comment ids: quotes that lean on the thread, _standing) come
     after all of these, and a quote saying the product isn't really the `product_type` asked for (that it
-    isn't really a moisturiser) counts as saying the opposite of the request (_not_the_type)."""
+    isn't really a moisturiser) counts as saying the opposite of the request (_not_the_type).
+
+    Since 15 Oct 2026 (Noemi's decision 4: a quote must be the most coherent part of its comment for the stance it backs)
+    a quote whose own words carry its stance gives a view (carries_its_stance: "never had a single issue" for a
+    recommendation, "the lid cracked within a month" for a warning), and one whose words read against it
+    (reads_against_its_stance: a recommendation's quote telling only of a failure, even after a long life; a warning's
+    only praising) comes after every other quote, before only those saying the opposite of the request and those leaning
+    on the thread. The order changes, never a quote's words. So does a quote about another product of its comment
+    (_about_another_product: the writer's carbon steel skillet in a cast iron pick).
+
+    Then the most informative for the request first (15 Oct 2026, the coordinator's trial comparison with ChatGPT and
+    Vetted: testers see a pick's first quotes): within each tier, a quote talking about what the request asks for, then
+    one saying why otherwise (_says_why: which need, how long, a view with something behind it), then the rest, and a
+    bare like last ("I love the X": _bare_like), which doesn't count as a view."""
     ordered = _most_credible_first(items)
 
     # 0: names it and gives a view; 1: only names it; 2: only gives a view; 3: neither (10 Oct 2026, night: b04 showed a
     # writer still looking for a richer cream before one who swears by it, neither naming it).
     def tier(m: ScoredMention) -> int:
-        names, view = _names_product(m.quote, m.product_name, m.category, m.written_as), _gives_a_view(m.quote)
+        names = _names_product(m.quote, m.product_name, m.category, m.written_as)
+        view = (_gives_a_view(m.quote) or carries_its_stance(m.quote, m.stance, _its_names(m))) and not _bare_like(m)
         return 0 if names and view else 1 if names else 2 if view else 3
 
     # Within a tier, quotes that themselves talk about what the request asks for come first (10 Oct 2026, late: a kettle
-    # pick led with a comment about its handle, not one of its writers' years of use). The quote, not its comment.
-    def about_the_ask(m: ScoredMention) -> bool:
-        return bool(needs and needs_met(m.quote, needs, m.evidence == "long-term use"))
+    # pick led with a comment about its handle, not one of its writers' years of use). The quote, not its comment. Then
+    # (15 Oct 2026) those that say why otherwise, the rest, and bare likes last.
+    def informative(m: ScoredMention) -> int:
+        if needs and needs_met(m.quote, needs, m.evidence == "long-term use"):
+            return 0
+        return 1 if _says_why(m) else 3 if _bare_like(m) else 2
 
     # A recommendation whose quote says its product didn't help with one of the needs ("it did nothing for my oily
     # skin") talks about it against the request too (engine.needs.said_not_to_help, 15 Oct 2026); a warning's doesn't.
@@ -1040,7 +1066,10 @@ def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
         return (_says_the_opposite(m.quote, asks) or _not_the_type(m.quote, product_type)
                 or (m.stance == "recommend" and bool(said_not_to_help(m.quote, needs))))
 
-    return sorted(ordered, key=lambda m: (m.comment_id in leaning, opposite(m), tier(m), not about_the_ask(m)))
+    def against(m: ScoredMention) -> bool:
+        return reads_against_its_stance(m.quote, m.stance, _its_names(m)) or _about_another_product(m)
+
+    return sorted(ordered, key=lambda m: (m.comment_id in leaning, opposite(m), against(m), tier(m), informative(m)))
 
 
 def _not_the_type(quote: str, product_type: str | None) -> bool:
@@ -1062,10 +1091,11 @@ def _not_the_type(quote: str, product_type: str | None) -> bool:
 def _says_something(m: ScoredMention) -> bool:
     """Whether a quote names its product, gives a view, or points at it ("it", "this one", "mine"). One that does none
     of these (b08, 10 Oct 2026: a one-line reply about sticking with cast iron was shown for two vintage brands; the
-    comment named them in a sentence the AI didn't quote) is shown only to make up a pick's MIN_QUOTES_PER_PICK."""
+    comment named them in a sentence the AI didn't quote) is shown only to make up a pick's MIN_QUOTES_PER_PICK. Since
+    15 Oct 2026 words carrying its stance say something too ("no issues after two winters": carries_its_stance)."""
     text = " ".join(re.findall(r"[a-z0-9']+", m.quote.lower().replace("’", "'")))
     return (_names_product(m.quote, m.product_name, m.category, m.written_as) or _gives_a_view(m.quote)
-            or bool(_POINTS_AT_IT.search(text)))
+            or bool(_POINTS_AT_IT.search(text)) or carries_its_stance(m.quote, m.stance, _its_names(m)))
 
 
 # Words that point at a product already named ("I'm on my fifth bottle of it", "I've had mine for years").
@@ -1137,6 +1167,304 @@ def _negated_before(text: str, at: int) -> bool:
     part = _CLAUSE_END.split(text[:at])[-1]
     words = [word.strip(",/()\"'*-:") for word in part.split()][-OPPOSITE_NEGATION_WINDOW:]
     return any(_NEGATION_WORD.fullmatch(word) for word in words)
+
+
+# --- Quotes coherent with their stance (Noemi's decision 4 of 15 Oct 2026) ---
+
+def carries_its_stance(quote: str, stance: str, names: Iterable[str] = ()) -> bool:
+    """Whether the quote's own words carry the stance it backs: a recommendation's praise, how it held up or an
+    endorsement ("still going strong", "never had a single issue", "get the X"), a warning's failure, complaint or
+    advice against ("the lid cracked", "not worth it", "avoid it"). `names`: the product's names, whose words together
+    say nothing ("Perfect Gel" is no praise). See config.QUOTE_FAILURE_PATTERNS."""
+    words = _stance_words(quote, tuple(names))
+    return words.positive if stance == "recommend" else words.negative if stance == "warn" else False
+
+
+def reads_against_its_stance(quote: str, stance: str, names: Iterable[str] = ()) -> bool:
+    """Whether the quote's own words read against the stance it backs: a recommendation's quote telling only of a
+    failure or a complaint ("we had it 14 years and then the backlight gave out"), a warning's quote only praising ("I
+    loved it at first"). Not when the words turn after them ("the handle broke, but they sent a new one"; "great the
+    first day, but since then it rides up"): the quote ends on its stance."""
+    words = _stance_words(quote, tuple(names))
+    if stance == "recommend":
+        return words.negative and not words.positive and not words.turns_after_negative
+    if stance == "warn":
+        return words.positive and not words.negative and not words.turns_after_positive
+    return False
+
+
+@dataclass(frozen=True)
+class _StanceWords:
+    """What a quote's words tell, read once: something gone wrong or advice against it (negative: a failure, a
+    complaint, praise taken back), praise or how it held up (positive: praise, a failure taken back), and whether the
+    quote turns ("but", "until", "then"...) after the last of each."""
+
+    negative: bool
+    positive: bool
+    turns_after_negative: bool
+    turns_after_positive: bool
+
+
+# Each family as one pattern, read in one pass (latency: one pass per pattern took about 0.6 ms a quote).
+_FAILURES = re.compile("|".join(f"(?:{pattern})" for pattern in QUOTE_FAILURE_PATTERNS))
+_ADVICE_AGAINST = re.compile("|".join(f"(?:{pattern})" for pattern in QUOTE_ADVICE_AGAINST_PATTERNS))
+_PRAISE = re.compile("|".join(f"(?:{pattern})" for pattern in QUOTE_PRAISE_PATTERNS))
+# A negation word, as _NEGATION_WORD, with "zero", "nobody", "nothing", "barely" ("zero regrets", "barely ever had
+# leaks", "nothing has broken"), and never "not" after "why" ("why not just get the X?"). "Less" takes back praise only
+# ("less durable"), "minimal" a failure only ("minimal pilling").
+_STANCE_NEGATION = re.compile(r"(?:not|no|non|none|never|neither|nor|without|hardly|barely|rarely|seldom|cannot|zero"
+                              r"|nobody|nothing|\w+n't"
+                              r"|(?:is|are|was|were|does|do|did|has|have|had|would|could|should|wo|ca)nt)")
+_PRAISE_ONLY_NEGATION = frozenset({"less"})
+_FAILURE_ONLY_NEGATION = frozenset({"minimal"})
+# Where a part of a sentence ends for a negation (config.QUOTE_STANCE_NEGATION_WINDOW): as _CLAUSE_END, and "until",
+# "then", or a comma before a new subject ("Not Ring, it's junk").
+_STANCE_PART_END = re.compile(r"[.!?;]|\b(?:but|though|although|however|because|until|till|then)\b"
+                              r"|,\s+(?=(?:it|it's|its|they|they're|i|i'm|i've|we|we're|you|you're|this|that|which"
+                              r"|so)\b)")
+_STANCE_LIST = re.compile(r"or|nor|and")
+# Words that don't use up the negation's window: "barely ever had leaks", "never even once broke", "never had any
+# rust", "not at all disappointed", "didn't seem very comfortable", "not nearly as durable", and "that" after "all"
+# ("isn't all that bad").
+_NOT_COUNTED = frozenset({"ever", "even", "once", "really", "actually", "honestly", "truly", "yet", "still", "so",
+                          "far", "any", "single", "all", "as", "nearly", "very", "at", "too", "quite", "much"})
+_A_WISH = re.compile(r"\b(?:wish|wished|if only|hopefully|hoping)\b")  # "I wish mine held up this well": no praise
+_WANTED_TO = re.compile(r"\b(?:wanted|wanting|want|hoped|hoping) to\s+(?:really\s+)?$")  # "I so wanted to love it"
+# Praise that is other people's, not the writer's: "most people love it", "everyone swears by it", "I've heard great
+# things".
+_OTHERS_PRAISE = re.compile(r"\b(?:people|everyone|everybody|folks|others|reviewers|saw|seen|heard)"
+                            r"(?:\s+(?:all|really|just|always|seem to|seems to|tend to))?\s+$")
+# A complaint word said of the state that sends the writer to the product, not of the product: "when my lips get really
+# bad, I use it". A word among this many before it in its part of the sentence makes it so.
+_COMPLAINT_WORD = re.compile(r"bad|terrible|awful|horrible|horrendous|dreadful|worst")
+_A_CONDITION = re.compile(r"when|whenever|if")
+_CONDITION_WORDS = 5
+_STANCE_TURN = re.compile(r"\b(?:but|however|though|although|until|till|then|except|unfortunately|sadly|yet|before)\b")
+# A failure that may come, not one that came: a present-tense one after "if", "when", "once"... ("if it ever breaks").
+_PRESENT_FAILURE = re.compile(r"(?:dies|breaks|fails|quits|leaks|cracks|rusts|warps|chips|gives out|goes out"
+                              r"|stops working|wears out|falls apart|craps out)\b")
+_MAYBE_LATER = re.compile(r"if|when|whenever|once|unless|until|before|eventually")
+_PEOPLE_WORDS = frozenset(QUOTE_STANCE_PEOPLE_WORDS)
+_STANCE_WORDS = Table()  # (quote, names) -> _StanceWords
+
+
+def _stance_words(quote: str, names: tuple[str, ...]) -> _StanceWords:
+    key = (quote, names)
+    found = _STANCE_WORDS.get(key)
+    if found is None:
+        found = _STANCE_WORDS.keep(key, _stance_words_of(_without_names(" ".join(_plain(quote).split()), names)))
+    return found
+
+
+def _stance_words_of(text: str) -> _StanceWords:
+    negative = positive = False
+    last_negative = last_positive = -1
+    for pattern, praise in ((_FAILURES, False), (_ADVICE_AGAINST, None), (_PRAISE, True)):
+        for match in pattern.finditer(text):
+            if _someones_death(text, match) or _may_come(text, match):
+                continue
+            if praise is True and _OTHERS_PRAISE.search(text, 0, match.start()):
+                continue
+            if praise is False and _a_condition(text, match):
+                continue
+            # "So far so good" is said whole: an earlier "without" doesn't take it back.
+            negated = (not match.group(0).startswith("so far")
+                       and _stance_negated(text, match.start(), praise is True))
+            if praise is None and negated:  # advice against taken back says nothing either way
+                continue
+            if (praise is None) or (praise is negated):  # a failure or advice against, or praise taken back
+                negative, last_negative = True, max(last_negative, match.end())
+            else:  # praise, or a failure taken back: how it held up
+                positive, last_positive = True, max(last_positive, match.end())
+    return _StanceWords(negative, positive, _turns_after(text, last_negative), _turns_after(text, last_positive))
+
+
+def _stance_negated(text: str, at: int, praise: bool) -> bool:
+    """Whether a negation is among the config.QUOTE_STANCE_NEGATION_WINDOW words just before `at` in its part of the
+    sentence (twice as many when "or", "nor" or "and" are among them); for praise, also a wish anywhere before it in
+    that part."""
+    part = _STANCE_PART_END.split(text[:at])[-1]
+    if praise and (_A_WISH.search(part) or _WANTED_TO.search(part)):
+        return True
+    raw = [w.strip(",/()\"'*-:") for w in part.split()]
+    words = [word for i, word in enumerate(raw)
+             if word not in _NOT_COUNTED and not (word == "that" and i > 0 and raw[i - 1] == "all")]
+    size = QUOTE_STANCE_NEGATION_WINDOW
+    if words and _STANCE_LIST.fullmatch(words[-1]):  # the list's last item: "didn't chip, crack or warp"
+        size *= 2
+    start, near = max(len(words) - size, 0), len(words) - QUOTE_STANCE_NEGATION_WINDOW
+    only = _PRAISE_ONLY_NEGATION if praise else _FAILURE_ONLY_NEGATION
+    # "Nothing" reaches only the window itself, never across a list; "more or less" is "about".
+    return any((_STANCE_NEGATION.fullmatch(word) or word in only) and not (word == "nothing" and i < near)
+               and not (word == "not" and i > 0 and words[i - 1] == "why")
+               and not (word == "less" and i > 0 and words[i - 1] == "or")
+               for i, word in enumerate(words[start:], start))
+
+
+def _a_condition(text: str, match: re.Match) -> bool:
+    """Whether a complaint word tells of the state that sends the writer to the product ("when my lips get really bad,
+    I use it"), not of the product."""
+    if not _COMPLAINT_WORD.fullmatch(match.group(0)):
+        return False
+    part = _STANCE_PART_END.split(text[:match.start()])[-1]
+    before = [word.strip(",/()\"'*-:") for word in part.split()][-_CONDITION_WORDS:]
+    return any(_A_CONDITION.fullmatch(word) for word in before)
+
+
+def _someones_death(text: str, match: re.Match) -> bool:
+    """Whether "died" or "dies" tells of a person's or a pet's death ("my grandma died and left me her pans")."""
+    if match.group(0) not in ("died", "dies", "dying"):
+        return False
+    before = [word.strip(",/()\"'*-:").removesuffix("'s") for word in text[:match.start()].split()][-2:]
+    return any(word in _PEOPLE_WORDS for word in before)
+
+
+def _may_come(text: str, match: re.Match) -> bool:
+    """Whether a failure is one that may come ("if it ever breaks", "when it finally gives out"), not one that came."""
+    if not _PRESENT_FAILURE.search(match.group(0)):
+        return False
+    before = [word.strip(",/()\"'*-:") for word in text[:match.start()].split()][-3:]
+    return any(_MAYBE_LATER.fullmatch(word) for word in before)
+
+
+def _turns_after(text: str, at: int) -> bool:
+    return at >= 0 and _STANCE_TURN.search(text, at) is not None
+
+
+def _without_names(text: str, names: tuple[str, ...]) -> str:
+    """The text with each run of two or more words of the product's names put as "it": the name says nothing of the
+    product ("the Perfect Gel did nothing for me" is no praise). One word of a name alone is the writer's own ("it's
+    perfect")."""
+    words = {word.removesuffix("'s") for name in names for word in _NAME_TOKEN.findall(_plain(name))}
+    if not words:
+        return text
+    spans, run = [], []
+    for token in _NAME_TOKEN.finditer(text):
+        if token.group().removesuffix("'s") in words and (
+                not run or _NAME_JOIN.fullmatch(text[run[-1].end():token.start()])):
+            run.append(token)
+            continue
+        if len(run) >= 2:
+            spans.append((run[0].start(), run[-1].end()))
+        run = [token] if token.group().removesuffix("'s") in words else []
+    if len(run) >= 2:
+        spans.append((run[0].start(), run[-1].end()))
+    for start, end in reversed(spans):
+        text = text[:start] + "it" + text[end:]
+    return text
+
+
+_NAME_TOKEN = re.compile(r"[a-z0-9]+(?:'[a-z]+)?")
+_NAME_JOIN = re.compile(r"[\s-]*")
+
+
+def _its_names(m: ScoredMention) -> tuple[str, ...]:
+    """The product's names a quote may hold: the name it is shown under, and its writer's own."""
+    return tuple(name for name in (m.product_name, m.written_as) if name)
+
+
+# --- The most informative for the request first (15 Oct 2026, the coordinator's trial comparison) ---
+
+def _about_another_product(m: ScoredMention) -> bool:
+    """Whether the quote is about another product of its comment: one of the comment's other products of another type,
+    with the same stance (module 3's: ScoredMention.others_of_another_type), named in it (names_another_product)."""
+    return names_another_product(m.quote, _its_names(m), m.others_of_another_type)
+
+
+def names_another_product(quote: str, names: Iterable[str], others: Iterable[str]) -> bool:
+    """Whether the quote names one of `others` (products of another type, as their writer wrote them) by the words of
+    its name that the product's own `names` don't have: its first one that isn't a generic product word (its brand:
+    "Matfer"), or, when it has none (the same brand), all of them ("carbon steel" for a writer's "Lodge carbon steel
+    skillet" in a "Lodge cast iron" quote; never "steel pan" for a Matfer carbon steel pan)."""
+    own = {word for name in names for word in _split_words(name)}
+    words = set(_split_words(quote))
+    for other in others:
+        distinct = [w for w in dict.fromkeys(_split_words(other)) if w not in own and w not in FILLER_WORDS
+                    and w != "and"]
+        brand = next((w for w in distinct if w not in GENERIC_NAME_WORDS), None)
+        if (brand in words) if brand is not None else (bool(distinct) and all(w in words for w in distinct)):
+            return True
+    return False
+
+
+def _says_why(m: ScoredMention) -> bool:
+    """Whether the quote says why, beyond liking it: which need it suits, in the words of any need (config.NEEDS and
+    HAIR_NEEDS: "my dry, sensitive skin", "no breakouts"), how long the writer has had it ("for 12 years", "since 2015",
+    a grandmother's pan), or a view with something behind it: at least WHY_WORDS words besides its names, small words
+    and likes ("it pours so nicely and feels well built")."""
+    found = _SAYS_WHY.get((m.quote, m.stance, _its_names(m)))
+    if found is None:
+        text = " ".join(_plain(m.quote).split())
+        found = _names_a_need(text) or bool(_HOW_LONG.search(text))
+        if not found and (_gives_a_view(m.quote) or carries_its_stance(m.quote, m.stance, _its_names(m))):
+            found = len(_content_words(m.quote, _its_names(m))) >= WHY_WORDS
+        _SAYS_WHY.keep((m.quote, m.stance, _its_names(m)), found)
+    return found
+
+
+def _bare_like(m: ScoredMention) -> bool:
+    """Whether the quote only likes the product ("I love the Acme cleanser", "Oddly, I really like the Cream to Foam",
+    "The best I've tried is from Acme!!!"): a like, and no word besides its names, small words and likes. One word can
+    be the reason ("great, very sharp")."""
+    text = " ".join(_plain(m.quote).split())
+    return bool(_A_LIKE.search(text)) and not _content_words(m.quote, _its_names(m))
+
+
+def _content_words(quote: str, names: tuple[str, ...]) -> list[str]:
+    """The quote's words besides the product's names, small words (_SMALL_WORDS) and likes (_LIKE_WORDS)."""
+    own = {word for name in names for word in _split_words(name)}
+    return [word for word in _split_words(quote) if word not in own and word not in _SMALL_WORDS
+            and word not in _LIKE_WORDS]
+
+
+def _split_words(text: str) -> list[str]:
+    """A text's words, lowercase, split at hyphens too ("Cream-to-Foam"), a possessive "'s" dropped."""
+    return [word.removesuffix("'s") for word in _NAME_TOKEN.findall(_plain(text))]
+
+
+WHY_WORDS = 3  # a view with at least this many words besides names, small words and likes says why (15 Oct 2026)
+# Any need's words, as engine.needs finds them: a word at a word's start ("sensitiv" in "sensitivity"), a phrase whole.
+_NEED_WORDS = frozenset(w.lower() for words in (*NEEDS.values(), *HAIR_NEEDS.values()) for w in words
+                        if re.fullmatch(r"[a-z0-9]+", w.lower()))
+_NEED_PHRASES = tuple((w.lower(), re.compile(rf"(?<![a-z0-9]){re.escape(w.lower())}s?(?![a-z0-9])"))
+                      for words in (*NEEDS.values(), *HAIR_NEEDS.values()) for w in words
+                      if not re.fullmatch(r"[a-z0-9]+", w.lower()))
+_NEED_WORD_LENGTHS = sorted({len(w) for w in _NEED_WORDS})
+
+
+def _names_a_need(text: str) -> bool:
+    """Whether a lowercase text holds any need's words (config.NEEDS, HAIR_NEEDS), as engine.needs finds them."""
+    for token in re.findall(r"[a-z0-9]+", text):
+        if any(token[:n] in _NEED_WORDS for n in _NEED_WORD_LENGTHS if n <= len(token)):
+            return True
+    return any(phrase in text and pattern.search(text) for phrase, pattern in _NEED_PHRASES)
+_HOW_LONG = re.compile(
+    r"\b(?:\d+|a|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty"
+    r"|a few|a couple(?: of)?|several|many)\+? (?:years?|yrs?|months?|decades?|winters?|summers?)\b|\bdecades?\b"
+    r"|\bsince (?:19|20)\d\d\b|\b(?:in|from|back in) (?:19|20)\d\d\b|\bfor (?:years|ages|decades|a long time)\b"
+    r"|\b(?:great[- ])?grand(?:mother|father|ma|pa|parents?)(?:'s)?\b|\binherited\b|\bheirloom\b"
+    r"|\b(?:handed|passed) down\b")
+_A_LIKE = re.compile(r"\b(?:lov(?:e|ed|es|ing)|lik(?:e|ed|es)|best|favou?rite|fave|great|amazing|awesome|obsessed|hg"
+                     r"|holy grail)\b")
+_SMALL_WORDS = frozenset({
+    "i", "i'm", "i've", "i'd", "i'll", "im", "ive", "me", "my", "mine", "we", "our", "us", "you", "your", "it", "it's",
+    "its", "this", "that", "these", "those", "they", "them", "their", "the", "a", "an", "and", "or", "so", "to", "of",
+    "in", "on", "at", "for", "from", "by", "with", "is", "are", "was", "were", "be", "been", "am", "has", "have", "had",
+    "do", "does", "did", "just", "really", "very", "too", "also", "still", "absolutely", "totally", "honestly", "oddly",
+    "personally", "definitely", "seriously", "literally", "pretty", "quite", "much", "lol", "omg", "one", "ones",
+    "brand", "stuff", "product", "thing", "things", "all", "now", "here", "there", "what", "which", "who", "s",
+    "but", "not", "no", "nor", "if", "as", "than", "then", "when", "while", "because", "about", "more", "less", "can",
+    "could", "would", "will", "should", "may", "might", "must", "how", "why", "where", "any", "some", "every", "each",
+    "other", "others", "another", "same", "such", "out", "up", "down", "over", "again", "ever", "yet", "both", "either",
+    "way", "lot", "bit", "kind", "sort", "t", "don", "isn", "wasn", "didn", "doesn",
+    # Having or trying it says nothing more ("The best I've tried").
+    "tried", "try", "trying", "used", "use", "using", "own", "owned", "got", "get", "bought", "buy", "found", "find",
+    "picked", "go", "went", "ve", "ll", "d", "m"})
+_LIKE_WORDS = frozenset({
+    "love", "loved", "loves", "loving", "like", "liked", "likes", "great", "best", "amazing", "awesome", "good",
+    "favourite", "favorite", "fave", "fan", "big", "huge", "hg", "holy", "grail", "nice", "lovely", "fantastic",
+    "excellent", "perfect", "recommend", "recommended", "obsessed", "loveeee", "loove"})
+_SAYS_WHY = Table()  # (quote, stance, names) -> _says_why
 
 
 def _names_product(quote: str, name: str, category: str, written_as: str = "") -> bool:
@@ -1351,8 +1679,8 @@ def _pick_quotes(product: ProductScore, check: _QuoteCheck, asks: tuple[str, ...
     ordered = _naming_first(_with_a_view(mentions, check.widen), asks, needs, leaning, product_type)
     standing = [m for m in ordered if m.comment_id not in leaning]
 
-    def filler(m: ScoredMention) -> bool:
-        return _bare_mention(m) or _garbled(m.quote)
+    def filler(m: ScoredMention) -> bool:  # since 15 Oct 2026 also a quote about another product of its comment
+        return _bare_mention(m) or _garbled(m.quote) or _about_another_product(m)
 
     quotes = check.first([m for m in standing if _says_something(m) and not filler(m)], QUOTES_PER_PICK)
     for rest in ([m for m in standing if _says_something(m) and filler(m)],

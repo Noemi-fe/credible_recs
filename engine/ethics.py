@@ -1,15 +1,20 @@
 """Ethics-only warnings (Noemi's decision 5 of 15 Oct 2026): a warning that rests only on a maker's ethics (animal
 welfare, labour practices, politics, a boycott) and says nothing about the product itself counts for nothing (it isn't
-a warning); a comment that also judges the product counts for that judgement only.
+a warning); a comment that also judges the product counts for that judgement only. Since her decision 2 of the same
+afternoon the rule goes both ways: a recommendation resting only on a maker's ethics, eco claims, identity or origin
+("buy them, they're cruelty-free", "made in the USA") counts for nothing either, with the same exception.
 
-Extraction instructions v14 say so for new extractions (engine/prompts/extract_mentions.md). For the extractions made
-before, this module helps a person do it by hand, in two steps:
+Extraction instructions v14 (warnings) and v15 (recommendations) say so for new extractions
+(engine/prompts/extract_mentions.md). For the extractions made before, this module helps a person do it by hand, in two
+steps:
 
 1. candidates: the warnings (product mentions and "what to look for" notes with stance warn) whose quote or comment
    holds a word of an ethics keyword family (FAMILIES: animal welfare, ethics, labour, boycotts, politics and owners,
-   the environment). Keywords only find candidates: most are about the product ("parts and labour are costly", "made
-   cheaply since it was bought out"), so each is judged from its quote and its comment. Only ids, names and the
-   families found are printed, never anyone's words.
+   the environment); with `--stance recommend`, the recommendations whose quote or comment holds a word of those
+   families or of PRAISE_FAMILIES (eco claims, who owns or runs the maker, where it is made). Keywords only find
+   candidates: most are about the product ("parts and labour are costly", "made cheaply since it was bought out", "made
+   in Japan, and the steel holds an edge for months"), so each is judged from its quote and its comment. Only ids,
+   names and the families found are printed, never anyone's words.
 2. apply: the decisions, a JSON list of ids and names (Decision): "remove" an ethics-only item; "requote" a mixed one,
    so it keeps its judgement of the product with its own quote (and, when the judgement left is the other way, its
    stance: "it worked wonders, but I quit buying from them over the founder's views" is a recommendation). Every
@@ -23,7 +28,7 @@ before, this module helps a person do it by hand, in two steps:
 Files changed at or after a time are only listed (candidates: marked newer; apply: left_for_later): on 15 Oct 2026
 three extractors, told the rule that night, were still publishing new files, which wait until their lists finish.
 
-    python -m engine.ethics candidates [--since ISO-TIME] [--library DIR]
+    python -m engine.ethics candidates [--stance warn|recommend] [--since ISO-TIME] [--library DIR]
     python -m engine.ethics apply DECISIONS.json [--write] [--before ISO-TIME] [--library DIR]
 """
 
@@ -59,13 +64,36 @@ FAMILIES: dict[str, str] = {
                 r"\bbillionaire|\bconservative\b|\bliberal\b|\bwoke\b|\bmonopol",
     "environment": r"greenwash|sustainab|\benvironment|palm oil|\bplanet\b|carbon footprint",
 }
+# For recommendations (Noemi's decision 2 of 15 Oct 2026, afternoon), FAMILIES and these: eco claims, who owns or runs
+# the maker, where it is made (chosen by Claude the same day, from her examples and the library's praise).
+PRAISE_FAMILIES: dict[str, str] = {
+    "eco": r"\beco[- ]?friendly\b|\beco[- ]conscious\b|\brecycl|\bplastic[- ]free\b|\bzero[- ]waste\b|\brefill"
+           r"|\bcompostable\b|\bbiodegradable\b|\bb[- ]?corp\b|\bcarbon[- ]neutral\b|\borganic\b|\bfair[- ]?trade\b"
+           r"|\bethically (?:made|sourced|produced)\b|\bleaping bunny\b|\bpeta\b|\bgives? back\b|\bcharit",
+    "identity": r"\b(?:black|woman|women|female|minority|veteran|vet|lgbtq?\+?|queer|indigenous|native|asian|latin[ao]x?"
+                r"|disabled|family|employee|worker)[- ](?:owned|founded|run|led)\b|\bsmall (?:family )?business(?:es)?\b"
+                r"|\bindependent (?:brand|business|company|shop|maker)s?\b|\bindie (?:brand|business|company)\b"
+                r"|\bmom[- ]and[- ]pop\b|\blocal (?:business|company|maker|brand|shop)s?\b"
+                r"|\bsupport(?:ing)? (?:small|local|independent|indie|family|women|woman|black|minority|veteran|american"
+                r"|british)\b",
+    "origin": r"\bmade in (?:the )?(?:usa|us|u\.s\.a?\.?|america|uk|u\.k\.|britain|great britain|england|scotland|wales"
+              r"|ireland|japan|germany|italy|france|sweden|canada|korea|portugal|spain|europe|the eu|australia"
+              r"|new zealand|switzerland|denmark|norway|finland|taiwan|mexico)\b"
+              r"|\b(?:american|us|usa|british|uk|english|scottish|japanese|german|italian|french|swedish|canadian|korean"
+              r"|european|swiss|local(?:ly)?)[- ](?:made|built|manufactured|sourced|produced)\b"
+              r"|\bmade (?:locally|domestically|here)\b|\bbuy (?:american|british|local)\b"
+              r"|\bdomestic(?:ally)? (?:made|produced|manufactured)\b",
+}
 _FAMILIES = {name: re.compile(pattern) for name, pattern in FAMILIES.items()}
+_FAMILIES_OF = {"warn": _FAMILIES,
+                "recommend": _FAMILIES | {name: re.compile(pattern) for name, pattern in PRAISE_FAMILIES.items()}}
 _KINDS = {"mention": ("mentions", "product"), "note": ("notes", "about")}  # kind -> (the file's list, its name field)
 
 
 @dataclass(frozen=True)
 class Candidate:
-    """A warning to judge: ids, its name and the keyword families found, never its words."""
+    """A warning (or, with stance "recommend", a recommendation) to judge: ids, its name and the keyword families
+    found, never its words."""
 
     thread_id: str
     comment_id: str
@@ -74,11 +102,17 @@ class Candidate:
     families: tuple[str, ...]  # in FAMILIES' order
     in_quote: bool  # a keyword in the quote itself, not only elsewhere in the comment
     newer: bool  # its extraction file changed at or after `since`
+    stance: str = "warn"  # "warn", or "recommend" (15 Oct 2026, afternoon)
 
 
-def candidates(library_dir: Path = DEFAULT_LIBRARY_DIR, since: datetime | None = None) -> list[Candidate]:
+def candidates(library_dir: Path = DEFAULT_LIBRARY_DIR, since: datetime | None = None,
+               stance: str = "warn") -> list[Candidate]:
     """Every warning of the library's extractions whose quote or comment holds an ethics keyword (see the module's
-    docstring), in file order. `since` (local time) marks those in files changed at or after it as newer."""
+    docstring), in file order; with `stance` "recommend", every recommendation whose quote or comment holds an ethics,
+    eco, identity or origin keyword. `since` (local time) marks those in files changed at or after it as newer."""
+    if stance not in _FAMILIES_OF:
+        raise ValueError(f"stance must be one of {', '.join(_FAMILIES_OF)}: {stance!r}")
+    families_of = _FAMILIES_OF[stance]
     library_dir, found = Path(library_dir), []
     cutoff = since.timestamp() if since is not None else None
     for path in sorted((library_dir / "extracted").glob("*.json")):
@@ -92,15 +126,15 @@ def candidates(library_dir: Path = DEFAULT_LIBRARY_DIR, since: datetime | None =
         newer = cutoff is not None and path.stat().st_mtime >= cutoff
         for kind, (field_name, name_field) in _KINDS.items():
             for item in data.get(field_name) or []:
-                if not isinstance(item, dict) or item.get("stance") != "warn":
+                if not isinstance(item, dict) or item.get("stance") != stance:
                     continue
                 quote = str(item.get("quote") or "").lower()
                 words = quote + "\n" + str(bodies.get(item.get("comment_id"), "")).lower()
-                families = tuple(name for name, pattern in _FAMILIES.items() if pattern.search(words))
+                families = tuple(name for name, pattern in families_of.items() if pattern.search(words))
                 if families:
                     found.append(Candidate(str(data.get("thread_id", path.stem)), str(item.get("comment_id")), kind,
                                            str(item.get(name_field)), families,
-                                           any(_FAMILIES[name].search(quote) for name in families), newer))
+                                           any(families_of[name].search(quote) for name in families), newer, stance))
     return found
 
 
@@ -272,7 +306,10 @@ def report(result: ApplyResult) -> str:
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="python -m engine.ethics", description=__doc__.split("\n\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
-    find = sub.add_parser("candidates", help="list warnings with ethics keywords (ids, names, families)")
+    find = sub.add_parser("candidates", help="list warnings (or recommendations) with ethics keywords (ids, names, "
+                                              "families)")
+    find.add_argument("--stance", choices=tuple(_FAMILIES_OF), default="warn",
+                      help="warn (the default) or recommend: praise resting on ethics, eco claims, identity or origin")
     find.add_argument("--since", type=datetime.fromisoformat, default=None,
                       help="mark candidates in files changed at or after this local time (ISO) as newer")
     find.add_argument("--library", type=Path, default=DEFAULT_LIBRARY_DIR)
@@ -284,9 +321,11 @@ def main(argv: list[str]) -> int:
     run.add_argument("--library", type=Path, default=DEFAULT_LIBRARY_DIR)
     args = parser.parse_args(argv)
     if args.command == "candidates":
-        found = candidates(args.library, args.since)
+        found = candidates(args.library, args.since, args.stance)
         newer = sum(c.newer for c in found)
-        print(f"{len(found)} warning(s) with ethics keywords to judge"
+        what = ("warning(s) with ethics keywords" if args.stance == "warn"
+                else "recommendation(s) with ethics, eco, identity or origin keywords")
+        print(f"{len(found)} {what} to judge"
               + (f", {newer} in files changed since {args.since.isoformat()}" if args.since else "") + ":")
         for c in found:
             print(f"  {c.thread_id} {c.comment_id} {c.kind} [{c.name}] families={','.join(c.families)}"

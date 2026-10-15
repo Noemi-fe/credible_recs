@@ -243,3 +243,103 @@ def test_a_file_another_process_writes_meanwhile_is_left_to_it(tmp_path, monkeyp
     assert result.removed == [] and result.left_for_later == [REMOVE_ACME]
     assert "claude-code-2" in path.read_text(encoding="utf-8")
     assert (root / "threads" / f"{TID}.json").read_bytes() == thread_before
+
+
+# --- Ethics-only praise (Noemi's decision 2 of 15 Oct 2026, afternoon: her ethics rule goes both ways) ---
+# A recommendation resting only on a maker's ethics, eco claims, identity or origin counts for nothing, as an
+# ethics-only warning does; a comment that also judges the product counts for that judgement only. All made up.
+
+PID = "1boot01"
+ORIGIN = "Buy American, get the Liberty boots: made in the USA."
+STILL_WARM = "Ten years on, my Corvid coat is still warm, and it's cruelty-free too."
+OWNED = "Support a woman-owned business and get the Ivy shoes."
+SOFTEST = "The Pinecrest sheets are the softest I've slept on, and the brand is B Corp certified."
+PLAIN = "The Brightline parka kept me warm for six winters, buy it."
+ENGLAND = "Made in England, and the Wexford knife holds an edge for months."
+TREATS = "Avoid Acme coats, the company treats animals badly."
+LOOK_FOR = "Look for cruelty-free brands."
+
+
+def praise_comment(comment_id: str, body: str) -> dict:
+    return make_comment(comment_id, thread_id=PID, body=body,
+                        url=f"https://www.reddit.com/r/BuyItForLife/comments/{PID}/comment/{comment_id}/")
+
+
+def praise_mention(comment_id: str, product: str, stance: str, quote: str) -> dict:
+    return {"comment_id": comment_id, "product": product, "category": "general", "product_type": "boots",
+            "stance": stance, "evidence": "short-term use", "evidence_tags": ["short-term use"], "quote": quote}
+
+
+def praise_library(tmp_path: Path) -> Path:
+    bodies = {"p1origin": ORIGIN, "p2warm": STILL_WARM, "p3owned": OWNED, "p4soft": SOFTEST, "p5plain": PLAIN,
+              "p6england": ENGLAND, "p7treats": TREATS, "p8look": LOOK_FOR}
+    comments = [praise_comment(comment_id, body) for comment_id, body in bodies.items()]
+    thread = make_thread(id=PID, community="BuyItForLife", category="general", title="Things that last?",
+                         body="Looking for gear that lasts.", comments=comments, num_comments=len(comments),
+                         url=f"https://www.reddit.com/r/BuyItForLife/comments/{PID}/things/")
+    root = write_gold(tmp_path / "library", [thread], voices=None, mentions=None)
+    (root / "extracted").mkdir()
+    (root / "extracted" / f"{PID}.json").write_text(json.dumps({
+        "thread_id": PID, "instructions_version": "extract-v14", "extracted_at": "2026-10-15T10:00:00Z",
+        "extractor": "claude-code",
+        "mentions": [praise_mention("p1origin", "Liberty boots", "recommend", ORIGIN),
+                     praise_mention("p2warm", "Corvid coat", "recommend", STILL_WARM),
+                     praise_mention("p3owned", "Ivy shoes", "recommend", OWNED),
+                     praise_mention("p4soft", "Pinecrest sheets", "recommend", SOFTEST),
+                     praise_mention("p5plain", "Brightline parka", "recommend", PLAIN),
+                     praise_mention("p6england", "Wexford knife", "recommend", ENGLAND),
+                     praise_mention("p7treats", "Acme coats", "warn", TREATS)],
+        "notes": [{"comment_id": "p8look", "about": "cruelty-free brands", "stance": "recommend", "quote": LOOK_FOR}],
+    }, indent=1), encoding="utf-8")
+    result = slim.slim_library(root, now=NOW, gold_ids=set())
+    assert result.slimmed == [PID], result
+    return root
+
+
+def test_with_stance_recommend_the_candidates_are_praise_resting_on_ethics_eco_identity_or_origin_words(tmp_path):
+    root = praise_library(tmp_path)
+    found = {(c.comment_id, c.kind, c.name): c for c in candidates(root, stance="recommend")}
+    assert set(found) == {("p1origin", "mention", "Liberty boots"), ("p2warm", "mention", "Corvid coat"),
+                          ("p3owned", "mention", "Ivy shoes"), ("p4soft", "mention", "Pinecrest sheets"),
+                          ("p6england", "mention", "Wexford knife"), ("p8look", "note", "cruelty-free brands")}
+    assert "origin" in found[("p1origin", "mention", "Liberty boots")].families
+    assert "animal" in found[("p2warm", "mention", "Corvid coat")].families
+    assert "identity" in found[("p3owned", "mention", "Ivy shoes")].families
+    assert "eco" in found[("p4soft", "mention", "Pinecrest sheets")].families
+    assert all(c.stance == "recommend" for c in found.values())
+    # A recommendation about the product alone is never one, and the warnings stay the default's.
+    assert {c.comment_id for c in candidates(root)} == {"p7treats"}
+    assert all(c.stance == "warn" for c in candidates(root))
+
+
+def test_the_candidates_command_lists_recommendations_by_ids_and_families_never_words(tmp_path, capsys):
+    root = praise_library(tmp_path)
+    assert ethics.main(["candidates", "--stance", "recommend", "--library", str(root)]) == 0
+    out = capsys.readouterr().out
+    assert "recommendation(s)" in out and f"{PID} p1origin mention [Liberty boots]" in out and "origin" in out
+    assert "p7treats" not in out
+    for words in (ORIGIN, STILL_WARM, OWNED, SOFTEST, ENGLAND, "made in the USA", "woman-owned"):
+        assert words not in out, words
+
+
+def test_an_ethics_only_recommendation_is_removed_and_a_mixed_one_keeps_its_judgement_of_the_product(tmp_path):
+    root = praise_library(tmp_path)
+    decisions = [Decision(PID, "p1origin", "mention", "Liberty boots", "remove"),
+                 Decision(PID, "p3owned", "mention", "Ivy shoes", "remove"),
+                 Decision(PID, "p8look", "note", "cruelty-free brands", "remove"),
+                 Decision(PID, "p2warm", "mention", "Corvid coat", "requote",
+                          quote="Ten years on, my Corvid coat is still warm"),
+                 Decision(PID, "p6england", "mention", "Wexford knife", "requote",
+                          quote="the Wexford knife holds an edge for months")]
+    result = apply(root, decisions, write=True)
+    assert result.refused == {} and len(result.removed) == 3 and len(result.requoted) == 2
+    data = json.loads((root / "extracted" / f"{PID}.json").read_text(encoding="utf-8"))
+    by_comment = {m["comment_id"]: m for m in data["mentions"]}
+    assert set(by_comment) == {"p2warm", "p4soft", "p5plain", "p6england", "p7treats"} and data["notes"] == []
+    assert by_comment["p2warm"]["quote"] == "Ten years on, my Corvid coat is still warm"
+    assert by_comment["p2warm"]["stance"] == by_comment["p6england"]["stance"] == "recommend"
+    thread = Thread.model_validate_json((root / "threads" / f"{PID}.json").read_bytes())
+    stubs = {c.id for c in thread.comments if c.status == "not_kept"}
+    assert {"p1origin", "p3owned", "p8look"} <= stubs and not {"p2warm", "p6england"} & stubs
+    checked = check_extraction(Extraction.model_validate(data), thread)
+    assert checked.rejected == [] and len(checked.kept) == 5

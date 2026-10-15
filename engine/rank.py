@@ -154,10 +154,15 @@ class ScoredMention:
     # engine/needs.py), so that `needs` empty means the comment doesn't talk about what was asked.
     products_named: int = 1
     needs_asked: bool = False
+    # Its comment's other products of another type, with the same stance (module 3's mentions and types; 15 Oct 2026),
+    # as written: a quote naming one of them is about another product (engine/answer.py: "my Lodge carbon steel skillet
+    # has replaced my cast iron" for a cast iron pick).
+    others_of_another_type: tuple[str, ...] = ()
 
     def __post_init__(self):
         object.__setattr__(self, "badges", tuple(self.badges))  # a list given by the pipeline is fine too
         object.__setattr__(self, "needs", tuple(self.needs))
+        object.__setattr__(self, "others_of_another_type", tuple(self.others_of_another_type))
         _check_choice("category", self.category, MENTION_CATEGORIES)
         _check_choice("voice", self.voice, VOICE_LEVELS)
         _check_choice("evidence", self.evidence, EVIDENCE_LEVELS)
