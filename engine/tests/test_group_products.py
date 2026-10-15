@@ -697,6 +697,7 @@ def test_the_index_asks_each_name_only_the_types_that_can_give_it_a_base(monkeyp
     real = grouping._without_type_words
     monkeypatch.setattr(grouping, "_without_type_words", lambda *args: calls.append(1) or real(*args))
     index = library_name_index(library)
+    index["general"], index["kitchen"]  # each category's made when first asked for (the test below)
     types = [(grouping._type_words(p.name), grouping._type_phrases(p.name)) for p in PRODUCT_TYPES
              if p in FIRST_PRODUCT_TYPES or p.category == "general"]
     asked = len(calls)
@@ -707,6 +708,32 @@ def test_the_index_asks_each_name_only_the_types_that_can_give_it_a_base(monkeyp
               if (base := real(words, type_words, phrases))}
     assert set(index["general"].candidates) == every
     assert asked < len(names) * len(types) / 4  # each name asks a few types, not all of them (2 categories: < 1/2)
+
+
+def test_a_categorys_index_is_made_when_an_answer_of_it_first_needs_it(monkeypatch):
+    # 15 Oct 2026 (getting ready on the live site took 199 s of its probe's 240): the library's index was made for every
+    # category on the first answer, whatever it asked, and the general category's (~22,000 names and bases with ~1,950
+    # threads) was two thirds of it. Now each category's is made the first time a grouping of its names needs it, and
+    # kept: a category's first answer makes its own, and the groups are the same.
+    from engine import group_products as grouping
+
+    made = []
+    real = grouping.NameIndex.__init__
+    monkeypatch.setattr(grouping.NameIndex, "__init__", lambda self, names: made.append(1) or real(self, names))
+    kettles = [kitchen("Fellow Stagg EKG", "c1"), kitchen("Fellow kettle", "c2"), kitchen("Fellow", "c3")]
+    headphones = [typed("Sony WH-1000XM5 headphones", "headphones", "c4", "general"),
+                  typed("Sony", "headphones", "c5", "general")]
+    index = library_name_index(kettles + headphones)
+    assert made == [] and sorted(index) == ["general", "kitchen"] and "general" in index and made == []
+    assert index.get("haircare") is None and "haircare" not in index
+    groups = group_products(kettles, product_type="electric kettle", index=index)
+    assert len(made) == 1  # the kitchen's only
+    assert groups == group_products(kettles, product_type="electric kettle")
+    assert group_products(kettles, product_type="electric kettle", index=index) == groups and len(made) == 1
+    general = index["general"]
+    assert len(made) == 2 and index["general"] is general
+    assert group_products(headphones, product_type="headphones", index=index) == group_products(
+        headphones, product_type="headphones")
 
 
 def _many_names(seed: int = 7, count: int = 2500) -> list[tuple[str, ...]]:

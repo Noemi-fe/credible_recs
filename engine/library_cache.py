@@ -70,6 +70,12 @@ def loaded(threads_dir: Path) -> KeptLibrary:
         if found is not None and found[0] == now:
             _kept.move_to_end(key)
             return found[1]
+        if found is not None:
+            # Let go first, with what it worked out (15 Oct 2026, the live site's memory): read while the old one was
+            # still kept, the library was in memory twice for a while (with ~1,950 threads, about 430 MB more).
+            del _kept[key]
+            found[1].remembered.clear()
+            found = None
         library = _read(threads_dir)
         if not _changed_just_now(now, started):
             _kept[key] = (now, library)

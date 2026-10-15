@@ -407,7 +407,7 @@ same (the 3,000 a day are the budget; each kept comment is then read every 12 da
 4,340 reads a day are 38% of what the pings may read (40 a ping, 11,520 a day). On 15 Oct 2026, with ~1,950 threads,
 about 7,650 were due a day (the plan's ~7,750 answers' comments every 40 hours and 3,000 kept comments), and the pings
 read 20 each (4 at once, each batch about a second on Reddit's side), 5,760 a day; now 8 at once (as an answer reads),
-so a ping reaches its 40 in its 5 seconds: 11,520 a day, a third more than is due, with the same reads of Reddit (at
+so a ping reaches its 40 in its 5 seconds: 11,520 a day, half as much again as is due, with the same reads of Reddit (at
 most 80 of each 10 minutes' 200) and the same billed seconds. Finding what is
 due takes about a millisecond a ping (each comment's last read is kept in memory, read from the folder in 0.3 s once a
 day as the new plan comes in).

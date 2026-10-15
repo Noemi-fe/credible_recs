@@ -103,6 +103,7 @@ Two more steps happen only when the name is shown to a shopper (engine/pipeline.
 """
 
 import re
+import threading
 from array import array
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping
@@ -283,13 +284,13 @@ class _Candidates(Mapping):
 
 
 def library_name_index(mentions: Iterable[ProductMention],
-                       aliases: dict[str, Aliases] | None = None) -> dict[str, NameIndex]:
+                       aliases: dict[str, Aliases] | None = None) -> "LibraryNameIndex":
     """{category: NameIndex} for a library's mentions: every name, as grouping reads it (product_words, with these
     short names: the shipped list by default), and its base in each of module 1's first product types and in each type
     of the taxonomy (engine/data/product_types.json) of the name's own category (14 Oct 2026: its base in all 351 of
     the taxonomy's types had made the index seven times slower). A request of a taxonomy type grouping the names of
     another category works their pairs out itself (NameIndex.among: a base not in the index), as for a type the open
-    model named."""
+    model named. Each category's NameIndex is made when a grouping first asks for it (LibraryNameIndex)."""
     from engine.query import FIRST_PRODUCT_TYPES, PRODUCT_TYPES  # here: engine.query's own imports reach this module's
 
     aliases = known_aliases() if aliases is None else aliases
@@ -302,7 +303,40 @@ def library_name_index(mentions: Iterable[ProductMention],
     more: dict[str, list[tuple[frozenset[str], tuple[Words, ...]]]] = defaultdict(list)
     for p in PRODUCT_TYPES[len(FIRST_PRODUCT_TYPES):]:
         more[p.category].append((_type_words(p.name), _type_phrases(p.name)))
-    return {category: NameIndex(own | _bases(own, first + more[category])) for category, own in names.items()}
+    return LibraryNameIndex(dict(names), {category: first + more[category] for category in names})
+
+
+class LibraryNameIndex(Mapping):
+    """{category: NameIndex} of a library's names (library_name_index), each category's made the first time a grouping
+    of its names asks for it, and kept (15 Oct 2026: made all at once, on the first answer whatever it asked, it was most
+    of getting ready on the live site, two thirds of it the general category's ~22,000 names and bases). A grouping
+    holding even a few of a category's names makes that category's (a skincare answer whose threads name a general
+    product makes the general one). A category with no names has none (get gives None)."""
+
+    def __init__(self, names: dict[str, set[Words]], types: dict[str, list[tuple[frozenset[str], tuple[Words, ...]]]]):
+        self._names = names  # {category: its names}
+        self._types = types  # {category: the types whose bases its index holds}
+        self._made: dict[str, NameIndex] = {}
+        self._lock = threading.Lock()
+
+    def __getitem__(self, category: str) -> NameIndex:
+        made = self._made.get(category)
+        if made is None:
+            own = self._names[category]  # KeyError for a category without names: Mapping.get gives None
+            with self._lock:
+                made = self._made.get(category)
+                if made is None:
+                    made = self._made[category] = NameIndex(own | _bases(own, self._types[category]))
+        return made
+
+    def __contains__(self, category) -> bool:
+        return category in self._names
+
+    def __iter__(self):
+        return iter(self._names)
+
+    def __len__(self) -> int:
+        return len(self._names)
 
 
 def _bases(names: Iterable[Words], types: list[tuple[frozenset[str], tuple[Words, ...]]]) -> set[Words]:

@@ -67,6 +67,38 @@ def test_the_kept_library_stays_with_its_own_work_and_loses_one_requests(tmp_pat
     assert again.text() == first.text() and again.threads_used == first.threads_used
 
 
+def test_a_library_read_again_lets_the_old_one_go_before_reading(tmp_path, monkeypatch):
+    # A library whose files changed (threads read on demand coming in, say) was read again while the old one, with all
+    # it had worked out of itself (its name index, each thread's comments read), was still kept: for a while two
+    # libraries in memory. Now the old one is let go, and what it worked out emptied, before the new one is read.
+    import gc
+    import json
+    import weakref
+
+    from engine.tests.test_pipeline import ZOJI_1, comment, kettle_thread
+
+    root = settled(library(tmp_path))
+    answer_request(REQUEST, library_dir=root)
+    old = library_cache.loaded(root / "threads")
+    remembered = old.remembered
+    assert remembered
+    gone = weakref.ref(old)
+    del old
+    thread = kettle_thread("1kett03", [comment("k3aaaa", "1kett03", ZOJI_1.replace("6 years", "7 years"))])
+    (root / "threads" / "1kett03.json").write_text(json.dumps(thread), encoding="utf-8")
+    seen, real = [], library_cache._read
+
+    def reading(folder):
+        gc.collect()
+        seen.append((gone() is None, len(remembered)))
+        return real(folder)
+
+    monkeypatch.setattr(library_cache, "_read", reading)
+    new = library_cache.loaded(root / "threads")
+    assert seen == [(True, 0)]
+    assert "1kett03" in [t.id for t in new.threads]
+
+
 def test_a_type_window_forgets_once_answers_asked_about_its_size_of_types(monkeypatch):
     forgot = []
     monkeypatch.setattr(memo, "forget_answers", lambda: forgot.append(1))
