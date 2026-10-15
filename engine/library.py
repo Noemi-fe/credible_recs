@@ -976,14 +976,14 @@ def _slim_or_apply(command: str, words: list[str], folder: Path) -> int:
     import tempfile
 
     from engine.live_check import DEFAULT_CACHE_DIR, LiveChecker
-    from engine.verify import LEDGER_NAME, Ledger, apply_checks, record_saved_checks, report
+    from engine.verify import LEDGER_NAME, Ledger, apply_checks, kept_comments, record_saved_checks, report
 
     checks = Path(values["--checks"][-1]) if "--checks" in values else DEFAULT_CACHE_DIR
     ledger = Ledger.load(checks.parent / LEDGER_NAME)  # this machine's pre-check runs, next to its checks, if any
     for path in values.get("--ledger", []):
         ledger.merge(Ledger.load(Path(path)))  # the bucket's record, fetched by deploy.sh
-    here = LiveChecker(cache_dir=checks)
-    taken = record_saved_checks(folder, here, ledger)
+    here, kept = LiveChecker(cache_dir=checks), kept_comments(folder)  # the kept comments, worked out once
+    taken = record_saved_checks(folder, here, ledger, kept)
     with tempfile.TemporaryDirectory(prefix="site-reads-") as site_reads:
         reads, from_site = [here], 0
         for path in values.get("--bundle", []):
@@ -993,7 +993,7 @@ def _slim_or_apply(command: str, words: list[str], folder: Path) -> int:
             except (OSError, ValueError, AttributeError):
                 print(f"The bundle {path} couldn't be read: this machine's checks only.")
                 continue
-            from_site += record_saved_checks(folder, bundled, ledger)
+            from_site += record_saved_checks(folder, bundled, ledger, kept)
             reads.append(bundled)
         print(f"Verification record: {len(ledger.entries):,} kept comments' latest reads ({taken:,} from this "
               f"machine's checks of the last 48 hours, {from_site:,} from the site's).")
