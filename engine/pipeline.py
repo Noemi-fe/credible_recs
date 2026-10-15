@@ -56,7 +56,10 @@ Every step is a module of its own; this file only passes each one's output to th
   product_facts.hard_requirements), brand picks are left out too, listed with the reason "a whole brand can't be
   checked for PFAS or a non-stick coating" (decided by Claude, 10 Oct 2026, as Noemi asked), whatever the brand-lines
   list says it sells. Since Noemi's decision 1 of 13 Oct 2026 such a line is still ranked, never as a pick nor "Also
-  worth a look", so its credible warnings can list it under Skip these (skip_only).
+  worth a look", so its credible warnings can list it under Skip these (skip_only). A product whose facts can't
+  confirm a hard requirement is kept with a note ("we couldn't confirm it's PFAS-free"), and since Noemi's decision 1
+  of 15 Oct 2026 it ranks after the products whose facts or name confirm it (unconfirmed; engine.rank): until then it
+  kept its place.
 - only threads checked live on Reddit in the last LIVE_CHECK_SHOWN_DAYS (14) days are quoted (Noemi, 9 Oct 2026): a
   thread read from Arctic Shift's archive may still hold comments people deleted on Reddit since, so it counts from
   the day a live check read it on Reddit (checked_live_at); a thread read through Parse counts from the day it was
@@ -274,6 +277,10 @@ class PipelineResult:
     # The brand lines among them kept in the ranking for Skip these only, {product key: reason} (Noemi's decision 1 of
     # 13 Oct 2026: never a pick, but listed under Skip these when their credible warnings put them there).
     skip_only: dict[str, str] = field(default_factory=dict)
+    # {product key: how many of the request's must-haves (engine.product_facts.hard_requirements) its facts and the names
+    # it is shown under can't confirm}, for the products noted "we couldn't confirm ..." (Noemi's decision 1 of 15 Oct
+    # 2026): they rank after those confirmed, fewer first (engine.rank). Empty for a request without a must-have.
+    unconfirmed: dict[str, int] = field(default_factory=dict)
     # Products left out of a request naming an active ingredient (13 Oct 2026): no evidence they contain it, a formula
     # without it, or a brand pick (a whole brand can't be checked); name and reason.
     left_out_no_ingredient: list[NotSuited] = field(default_factory=list)
@@ -494,7 +501,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
                        upvote_rule: bool) -> PipelineResult:
         """Modules 6 and 7 for this reading: the ranking, the answer, and the live checks of what it shows."""
         result.ranking, more_downsides = _fold_brand_skips(
-            _fold_brand_picks(_ranked(scored, query, kind_notes, kinds, need_led, result.skip_only, upvote_rule),
+            _fold_brand_picks(_ranked(scored, query, kind_notes, kinds, need_led, result.skip_only, upvote_rule,
+                                      result.unconfirmed),
                               kept_groups, result, query.product_type),
             kept_groups, result)
         unsuited_kinds = _unsuited_kinds(result.ranking.kinds, query, product_facts)
@@ -527,14 +535,15 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
         dropped = readable - set(result.bodies)
         scored = [m for m in scored if m.comment_id not in dropped]
         kind_notes = [n for n in kind_notes if n.comment_id not in dropped]
-        if not _upvotes_change_nothing(scored, query, kind_notes, kinds, need_led, result.skip_only):
+        if not _upvotes_change_nothing(scored, query, kind_notes, kinds, need_led, result.skip_only,
+                                       result.unconfirmed):
             again = replace(result, live_dropped=dict(result.live_dropped), live_put_off=0)
             result.with_upvotes = rank_and_write(again, scored, kind_notes, upvote_rule=True)
     return result
 
 
 def _upvotes_change_nothing(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
-                            skip_only: Mapping[str, str]) -> bool:
+                            skip_only: Mapping[str, str], unconfirmed: Mapping[str, int] | None = None) -> bool:
     """Whether Noemi's upvote rules (14 Oct 2026: counting twice, and a comment standing out in its thread) leave a
     reading's ranking as it is: every product meets the bar, is an Also worth a look item or neither, as without them,
     none that meets it has a voice counted twice, and none is shown thanks to a comment standing out (which its reason
@@ -543,8 +552,8 @@ def _upvotes_change_nothing(scored, query: ParsedQuery, kind_notes, kinds, need_
         return [(p.key, p.qualifies, p.worth_a_look, p.qualifies and bool(p.counted_twice),
                  p.by_standout and (p.qualifies or p.worth_a_look)) for p in ranking.products]
 
-    return (marks(_ranked(scored, query, kind_notes, kinds, need_led, skip_only, False))
-            == marks(_ranked(scored, query, kind_notes, kinds, need_led, skip_only, True)))
+    return (marks(_ranked(scored, query, kind_notes, kinds, need_led, skip_only, False, unconfirmed))
+            == marks(_ranked(scored, query, kind_notes, kinds, need_led, skip_only, True, unconfirmed)))
 
 
 # Why a product found only in a wider reading isn't a pick (answer_request, 11 Oct 2026), nor, since 14 Oct 2026, one in
@@ -553,7 +562,8 @@ WIDER_READING_SHORTFALL = "no credible recommendation talks about what you asked
 
 
 def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
-            skip_only: Mapping[str, str] | None = None, upvote_rule: bool = False) -> RankingResult:
+            skip_only: Mapping[str, str] | None = None, upvote_rule: bool = False,
+            unconfirmed: Mapping[str, int] | None = None) -> RankingResult:
     """Module 6's ranking. In a wider reading (`need_led`) of a request that asks for something besides the product, a
     product with no credible recommendation talking about it can't be a pick (answer_request), nor "Also worth a look"
     (13 Oct 2026); in every reading for a category of config.NEED_RULE_IN_EVERY_READING (haircare: Noemi's decision 4 of
@@ -562,10 +572,12 @@ def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
     `skip_only`: {product key: reason} of the brand lines a hard requirement keeps from being picks (a whole brand can't
     be checked): never a pick nor "Also worth a look", but listed under Skip these when their credible warnings put them
     there (Noemi's decision 1 of 13 Oct 2026). `upvote_rule`: with Noemi's upvote rules (14 Oct 2026), as config sets
-    them: counting twice (config.UPVOTE_COUNTS_MORE) and a comment standing out (config.STANDOUT_ON)."""
+    them: counting twice (config.UPVOTE_COUNTS_MORE) and a comment standing out (config.STANDOUT_ON). `unconfirmed`:
+    {product key: how many of the request's must-haves its facts can't confirm} (PipelineResult.unconfirmed): those
+    products rank after the confirmed ones (Noemi's decision 1 of 15 Oct 2026; engine.rank)."""
     ranking = rank_products(scored, query.category, kind_notes, placements(kinds),
                             upvote_rule=upvote_rule and config.UPVOTE_COUNTS_MORE,
-                            standout_rule=upvote_rule and config.STANDOUT_ON)
+                            standout_rule=upvote_rule and config.STANDOUT_ON, unconfirmed=unconfirmed)
     judged = {need.name for need in judged_needs(query)}
     if (need_led or query.category in NEED_RULE_IN_EVERY_READING) and judged:
         ranking.products = [replace(p, qualifies=False, shortfall=WIDER_READING_SHORTFALL, worth_a_look=False)
@@ -630,7 +642,7 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         result.bodies = {cid: body for cid, body in result.bodies.items() if cid not in failed}
         ranking = _ranked([m for m in scored if m.comment_id not in failed], query,
                           [n for n in kind_notes if n.comment_id not in failed], kinds, need_led, result.skip_only,
-                          upvote_rule)
+                          upvote_rule, result.unconfirmed)
         result.ranking, more_downsides = _fold_brand_skips(
             _fold_brand_picks(ranking, groups, result, query.product_type), groups, result)
         models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks)
@@ -1290,7 +1302,9 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
     Oct 2026), but kept for Skip these only (result.skip_only; Noemi's decision 1 of 13 Oct 2026: listed there when its
     credible warnings put it there); otherwise it is kept. A kept product whose facts don't say whether it meets a hard requirement gets a note after its
     soft reasons: "we couldn't confirm it's PFAS-free" (engine.product_facts.unconfirmed, 10 Oct 2026), unless the names
-    it is shown under say so (15 Oct 2026: a lip balm named "... SPF 25" has SPF; engine.product_facts.name_facts). A kept product
+    it is shown under say so (15 Oct 2026: a lip balm named "... SPF 25" has SPF; engine.product_facts.name_facts), and
+    since Noemi's decision 1 of 15 Oct 2026 ranks after the products confirmed (how many it can't confirm goes in
+    result.unconfirmed, which every ranking of the answer is given: engine.rank). A kept product
     with a facts entry is shown under the entry's name, taken from the maker's page, rather than as writers spelled it
     (10 Oct 2026); its key stays, so its price check and cautions still find it. An entry under a brand's own name
     speaks for the brand's whole line, so its pick is shown as that line: "GreenPan frying pan line" (12 Oct 2026).
@@ -1397,6 +1411,7 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
         missing = unconfirmed(query, facts, own_type if query.ingredient_led else None, names=shown)
         if missing:
             soft.append(unconfirmed_note(missing))
+            result.unconfirmed[group.key] = len(missing)  # ranked after the confirmed (Noemi, 15 Oct 2026)
         if soft:
             cautions[group.key] = soft
     return kept, cautions, found_facts

@@ -45,7 +45,9 @@ What each pick shows (the brief):
   such heading.
 - cautions (product facts, decided by Claude, 9 Oct 2026): when a checked fact suits the request less well by a soft
   rule (engine/product_facts.py: a rich moisturiser for oily skin), "Note: <the reason>." under the pick's price lines.
-  Products whose facts clash by a hard rule never get here: the pipeline leaves them out.
+  Products whose facts clash by a hard rule never get here: the pipeline leaves them out. One whose facts can't confirm
+  a must-have says so ("Note: we couldn't confirm it has SPF.") and, since Noemi's decision 1 of 15 Oct 2026, comes
+  after the products whose facts confirm it, in the picks and under Also worth a look alike (engine/rank.py).
 - prescription-only (Noemi's decision 5 of 14 Oct 2026): a product whose checked facts say it is sold in the UK only on
   a prescription says so under its price lines, PRESCRIPTION_NOTE, and so does such an "Also worth a look" item or
   skipped product. (A request for a beginner, a gentle product or sensitive skin never gets such a product.)

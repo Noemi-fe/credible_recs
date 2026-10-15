@@ -1,7 +1,8 @@
 """SPF lip balms (Noemi's decision 2 of 15 Oct 2026): lips are an exception to her 9 Oct rule "sun protection wins over
 the form". A product for the lips with SPF is a lip balm, and "with SPF" is a checked requirement of a lip balm
 request, as PFAS-free is of a pan's: the product's name says SPF, or its facts entry (from the maker's page) does; a
-pick whose facts can't confirm it keeps its place with a note; a whole brand can't be checked, so its line is left out.
+pick whose facts can't confirm it keeps a note (and since Noemi's decision 1 of 15 Oct 2026 ranks after those confirmed:
+engine/tests/test_confirmed_first.py); a whole brand can't be checked, so its line is left out.
 
 Before this, extraction instructions v6 to v13 typed anything with SPF as a sunscreen, so "lip balm with spf" showed
 lip balms without SPF and the library's SPF lip balms were counted as sunscreens. engine/lip_balms.py re-types them.
