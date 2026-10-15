@@ -102,3 +102,56 @@ def test_what_counts_as_saying_something_changed():
         assert says_something_changed(text), text
     for text in ("Avoid it, it's terrible.", "Way too harsh for my skin.", "The lid is flimsy.", "Not worth the money."):
         assert not says_something_changed(text), text
+
+
+# --- Change-of-mind wording (15 Oct 2026) ---
+# Found on the library's flagged writers: 34 writer-product pairs flagged across the 632 requests of the evals and the
+# pre-check, of which about a dozen were writers reporting a change over time in words CHANGE_WORDS lacked (a doorbell
+# camera fine at first that lately missed recordings; work boots whose older pair had lasted years while the newer one
+# cracked within months). The sentences below are made up, each saying such a change in the same kind of words.
+
+import pytest  # noqa: E402
+
+
+@pytest.mark.parametrize("text", [
+    "It was great when I first got it, but lately it keeps dropping the connection.",
+    "It has started to lose suction.",
+    "At first it was fine, then the handle came loose.",
+    "I went through two of them over a few years; the glass cracks eventually.",
+    "The pair I bought last year cracked at the sole within weeks.",
+    "My stone is worn out now, so next time I'll buy two separate ones.",
+    "The oven part crapped out on me during a bake.",
+    "The newer model has a much worse mic than the older model.",
+    "After using it for a bit, it's a disappointment.",
+    "Even mine has started degrading at the seams.",
+    "Mine only lasted three years, then I bought the cheap one.",
+    "I gave it away and switched to a bigger pot.",
+    "The quality went downhill when they moved the factory.",
+    "Recently it won't hold a charge.",
+])
+def test_a_change_over_time_said_in_other_words_is_an_update(text):
+    assert says_something_changed(text), text
+
+
+@pytest.mark.parametrize("text", [
+    "They clamp pretty hard and get uncomfortable on long wears.",
+    "It's quite good, but too thick for me.",  # "quite" isn't "quit"
+    "It rips the colour out of my hair fast.",
+    "If we're talking that price, not really.",
+    "I want to love them, but they rub when they get wet.",
+    "It works great on ceramics, just not on a lid that sees boiling water.",
+])
+def test_a_complaint_that_tells_no_change_still_isnt_an_update(text):
+    assert not says_something_changed(text), text
+
+
+def test_a_recommendations_words_never_excuse_a_warning():
+    # Recommendations say "it has lasted 6 years", "never broke me out", "it changed my skin": the same words as an
+    # update, for long use. Only a warning's words say that something changed (here the change is about something else).
+    said = comments(("c1", "shampoo_fan", "My hair texture changed when we moved. Anyway, the Dandy Shampoo is the best."),
+                    ("c2", "shampoo_fan", "The Dandy Shampoo strips colour fast."))
+    shampoo = ProductGroup("haircare:dandy", "Dandy Shampoo", "haircare", [
+        ProductMention("t1", "c1", "Dandy Shampoo", "haircare", "recommend", quote="the Dandy Shampoo is the best."),
+        ProductMention("t2", "c2", "Dandy Shampoo", "haircare", "warn", quote="The Dandy Shampoo strips colour fast."),
+    ])
+    assert contradicting_writers([shampoo], said) == {"shampoo_fan"}

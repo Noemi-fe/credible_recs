@@ -882,9 +882,29 @@ NO_HELP_LEADS = ("and", "but", "though", "sadly", "unfortunately", "honestly", "
 # voice in every mention they make (so none of them is credible). Their warning says something changed when its own
 # words hold one of these (word beginnings, as for needs above), or "after" a number of days, weeks, months or years
 # ("after 6 months", engine/contradictions.py): an update is honest, not a contradiction.
+# The groups added 15 Oct 2026 (Claude, reported to Noemi), judged one by one on the library's flagged writers (34
+# writer-product pairs over the 632 requests of the evals and the pre-check): about a dozen reported a change over time
+# or a failure in words the list lacked (a device fine at first that lately missed things, boots that cracked within
+# months where an older pair had lasted years, a stone worn out, a newer model worse than the older one, a pot given
+# away). None of the flagged pairs that were real contradictions (a downside said in another comment: too thick, too
+# tight, strips colour) holds one of them. "quit" only as "quit working" or "quit on": a word beginning, it would find
+# "quite".
 CHANGE_WORDS = (
     "died", "broke", "stopped", "fail", "reformulat", "new formula", "change", "changing", "no longer", "anymore",
     "any more", "used to", "update", "edit", "developed a reaction", "developed an allergy",
+    # Over time.
+    "at first", "when i first", "when we first", "first got", "first bought", "initially", "in the beginning",
+    "started", "starting to", "began", "begun", "lately", "recently", "these days", "nowadays", "over time",
+    "over the years", "over the months", "over a couple", "over a few", "over the past", "eventually", "since then",
+    "ever since", "after using", "after a while", "after some time", "after trying", "after a few", "after more use",
+    # A failure or wear that happened.
+    "cracked", "chipped", "wore out", "worn out", "wears out", "wearing out", "fell apart", "falls apart",
+    "fallen apart", "gave out", "gives out", "crapped out", "craps out", "crap out", "rusted", "warped", "degrad",
+    "peeled", "lasted", "leaked", "quit working", "quit on",
+    # Moving on from it, or a new version of it.
+    "switched", "gave it away", "got rid of", "returned it", "replaced it", "went back to", "moved on", "newer model",
+    "new model", "new version", "newer version", "older model", "older version", "old version", "downhill",
+    "quality went down", "quality has gone down",
 )
 
 # --- Upkeep and availability (9 Oct 2026) ---
