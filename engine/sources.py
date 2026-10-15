@@ -48,6 +48,8 @@ from engine.config import (
     BRIGHT_DATA_ADD_SEARCHES,
     BRIGHT_DATA_ADD_WARNING_SEARCHES,
     BRIGHT_DATA_MONTHLY_RECORDS,
+    FAST_MOVING_TYPES,
+    FAST_MOVING_YEARS,
     LIBRARY_MIX,
     LIBRARY_THREADS_PER_PRODUCT,
     MAX_THREADS_PER_SUBREDDIT,
@@ -598,15 +600,19 @@ class LocalSource:
         from engine.product_facts import request_asks
 
         needs = request_needs(query)
+        span = newest_first_spans(threads) if query.product_type in FAST_MOVING_TYPES else {}
         if not needs or query.ingredient_led:
-            return threads
+            return sorted(threads, key=lambda t: span[t.id]) if span else threads  # stable
         asks = request_asks(query)
         titled = {t.id: self._titled_as_another_type(t, query) or titled_as_the_opposite(t.title, asks) for t in threads}
         # A thread titled as another type, or as the opposite kind of product, is about that product: it comes after
         # every thread about the requested one, with or without its needs (b08's follow-up, 14 Oct 2026: among those
         # about none of the needs, big ones (a thread asking about an enamelled Dutch oven) had kept their graded places
-        # and took first-reading places from cast iron skillet recommendation threads as the library grew).
-        return sorted(threads, key=lambda t: (titled[t.id], -len(thread_needs(t, needs, titled[t.id]))))  # stable
+        # and took first-reading places from cast iron skillet recommendation threads as the library grew). For a
+        # fast-moving product, the newest threads come first among those, the needs leading within each year (15 Oct
+        # 2026, Noemi's decision 1 of the late afternoon).
+        return sorted(threads, key=lambda t: (titled[t.id], span.get(t.id, 0),
+                                              -len(thread_needs(t, needs, titled[t.id]))))  # stable
 
     def _titled_as_another_type(self, thread: Thread, query: ParsedQuery) -> bool:
         """titled_as_another_type(thread.title, query), worked out once per thread and request type."""
@@ -647,6 +653,21 @@ class LocalSource:
         if kept is None or kept.comments is not thread.comments:
             kept = self._remembered[key] = read_comments(thread.comments)
         keep_read(kept)
+
+
+def newest_first_spans(threads: list[Thread]) -> dict[str, int]:
+    """For a fast-moving product (config.FAST_MOVING_TYPES; Noemi's decision 1 of 15 Oct 2026, late afternoon: its
+    models are replaced every year or two, so an old thread's picks go out of sale), how far back each thread is, in
+    spans of config.FAST_MOVING_YEARS counted back from the newest of them: {thread id: 0 for the newest span, 1 for the
+    one before...}. Module 2 reads the threads span by span, newest first, each span in its graded and need-led order
+    (LocalSource._need_led), as its graded order already prefers recent threads for skincare and haircare, whose
+    formulas change. Counted from the newest thread rather than from today, so a library whose newest thread about the
+    product is two years old still reads its newest first."""
+    if not threads:
+        return {}
+    newest = max(t.created_at for t in threads)
+    span_days = 365.25 * FAST_MOVING_YEARS
+    return {t.id: int((newest - t.created_at).days // span_days) for t in threads}
 
 
 def titled_as_another_type(title: str, query: ParsedQuery) -> bool:

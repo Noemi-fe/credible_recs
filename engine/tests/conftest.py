@@ -52,6 +52,30 @@ def _no_real_brand_lines(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_product_pages(monkeypatch):
+    # The same for data/product_pages.json (15 Oct 2026): real products' pages and makers' images, which the answers
+    # link and the page's security policy lets in. Tests about pages and images pass their own.
+    from engine import web
+
+    monkeypatch.setattr(pipeline, "load_product_pages", lambda *args, **kwargs: [])
+    monkeypatch.setattr(web, "load_product_pages", lambda *args, **kwargs: [])
+
+
+@pytest.fixture(autouse=True)
+def _no_real_lists_written(monkeypatch, tmp_path):
+    # Found on 15 Oct 2026: an importer test that named no brand-lines list wrote into the real data/brand_lines.json.
+    # The importer (engine/buyable.py) reads its default lists when called; in tests they are empty copies, so a test
+    # can never change the committed lists, however it calls the importer.
+    from engine import buyable
+
+    for name, key in (("DEFAULT_PRICES", "prices"), ("DEFAULT_PRODUCT_PAGES", "pages"),
+                      ("DEFAULT_BRAND_LINES", "brand_lines")):
+        copy = tmp_path / f"real-{key}-stand-in.json"
+        copy.write_text(f'{{"{key}": []}}\n', encoding="utf-8")
+        monkeypatch.setattr(buyable, name, copy)
+
+
+@pytest.fixture(autouse=True)
 def _no_real_summaries(monkeypatch, tmp_path):
     # The one-line summaries (13 Oct 2026) live in data/library/summaries.json, and the sense evaluation reads them from
     # there whatever library it answers on: in tests, from a file that isn't there. Tests about summaries pass their own.

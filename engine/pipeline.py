@@ -46,7 +46,15 @@ Every step is a module of its own; this file only passes each one's output to th
   shows the second-hand line when the newest entry under the brand's own name ("Griswold") says so. Since Noemi's night
   decision 1 of 14 Oct 2026, a line whose brand-lines entry gives a from price with where and when it was found has
   that as its price (the cheapest UK price of its products of the type), which also says it is sold there; and the
-  answer links each line to its entry's range page (the maker's page for its products of the type).
+  answer links each line to its entry's range page (the maker's page for its products of the type). Since Noemi's
+  decisions of 15 Oct 2026 (late afternoon: a pick must be on sale in the UK now), sold second-hand only counts only
+  for things people buy vintage on purpose (engine.prices.counts_as_sold): anything else so sold is left out and
+  named, as a discontinued model is; and an entry under the name the answer shows a product under counts as one under
+  its writers' name (_sold_under_shown_name), since researchers record what answers show (engine/buyable.py).
+- each product's own page and its maker's image (Noemi's decisions 2 and 3 of 15 Oct 2026, engine/product_pages.py,
+  data/product_pages.json), found by the name it is shown under, then its writers' name (_pages): the answer links it
+  and shows the image; nothing is linked for a product not researched, and nothing here changes which products are
+  shown.
 - product facts (decided by Claude, 9 Oct 2026; engine/product_facts.py, data/product_facts.json): right after the
   budget step, a product whose checked facts clash with what the request asks for is left out by a hard rule ("retinol
   for a beginner with sensitive skin" leaves out a strong, prescription-only retinoid) and listed with the reason
@@ -204,11 +212,13 @@ from engine.prices import (
     Price,
     PriceCheck,
     check_price,
+    counts_as_sold,
     find_availability,
     find_brand_entry,
     find_price,
     load_prices,
 )
+from engine.product_pages import ProductPage, find_page, load_product_pages
 from engine.product_facts import (
     NotSuited,
     ProductFacts,
@@ -355,7 +365,8 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
                    product_facts: list[ProductFacts] | None = None,
                    more_threads: int | None = PIPELINE_MORE_THREADS,
                    brand_lines: list[BrandLine] | None = None,
-                   summaries: Mapping[str, Summary] | None = None) -> PipelineResult:
+                   summaries: Mapping[str, Summary] | None = None,
+                   product_pages: list[ProductPage] | None = None) -> PipelineResult:
     """Runs modules 1 to 7 on the saved library and returns everything each step decided.
 
     The answer reads the `max_threads` most relevant threads first. When they give fewer than PICKS_SHOWN picks and the
@@ -367,7 +378,8 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     haircare it needs one in the first reading too (config.NEED_RULE_IN_EVERY_READING; Noemi's decision 4 of 14 Oct
     2026). `more_threads=None` never reads more. `brand_lines`: the brand-lines list (engine/brand_lines.py); None reads
     data/brand_lines.json. `summaries`: the one-line summaries ({engine.summaries.summary_key: Summary}); None reads the
-    library's summaries.json (none when there is no such file).
+    library's summaries.json (none when there is no such file). `product_pages`: the products' own pages and makers'
+    images (engine/product_pages.py, 15 Oct 2026); None reads data/product_pages.json.
 
     Noemi's upvote rule (14 Oct 2026; off unless config.UPVOTE_COUNTS_MORE) never changes how much is read: ranked with
     it, a first reading short of picks could reach three with products it lifts and never read on, where the wider
@@ -380,7 +392,7 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     upvotes = config.UPVOTE_COUNTS_MORE or config.STANDOUT_ON
     reading = dict(library_dir=library_dir, profiles=profiles, prices=prices, today=today,
                    live_check_required=live_check_required, live_checker=live_checker, product_facts=product_facts,
-                   brand_lines=brand_lines, summaries=summaries, upvotes_too=upvotes)
+                   brand_lines=brand_lines, summaries=summaries, upvotes_too=upvotes, product_pages=product_pages)
     result = _answer(query, max_threads=max_threads, **reading)
     if not (more_threads is None or more_threads <= max_threads or result.answer is None
             or len(result.answer.picks) >= PICKS_SHOWN or result.threads_available <= len(result.threads_used)):
@@ -398,7 +410,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
             today: date | None, live_check_required: bool | None, live_checker,
             product_facts: list[ProductFacts] | None, need_led: bool = False,
             brand_lines: list[BrandLine] | None = None,
-            summaries: Mapping[str, Summary] | None = None, upvotes_too: bool = False) -> PipelineResult:
+            summaries: Mapping[str, Summary] | None = None, upvotes_too: bool = False,
+            product_pages: list[ProductPage] | None = None) -> PipelineResult:
     """One reading of the library for an understood request, with at most `max_threads` threads (answer_request).
     `need_led`: the wider reading's rule, a pick needs a credible recommendation that talks about the request's needs.
     `upvotes_too`: the reading is also ranked with Noemi's upvote rules (engine.rank.counts_twice, stands_out, as config
@@ -414,6 +427,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     `brand_lines`: the brand-lines list (engine/brand_lines.py); None reads data/brand_lines.json.
     `summaries`: the one-line summaries; None reads the library's summaries.json, whose broken entries are left out and
     named in skipped_files.
+    `product_pages`: the products' own pages and makers' images (engine/product_pages.py); None reads
+    data/product_pages.json.
     `live_check_required`: None follows LIVE_CHECK_REQUIRED (on). False uses every thread whatever its last live
     check: only to see what answers would quote once every thread is checked (engine.slice_eval.threads_behind_answers).
     `live_checker` (engine.live_check.LiveChecker): every quote about to be shown is checked against the comment on
@@ -476,17 +491,20 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     kept_groups, price_checks = _within_budget(kept_groups, query, prices, today, result, brand_lines, types)
     named_before = {g.key: g.name for g in kept_groups if not g.loose}  # the names the price list was asked about
     kept_groups, cautions, formulas = _suited_to_request(kept_groups, query, product_facts, result, types)
-    kept_groups = _sold_under_shown_name(kept_groups, named_before, query, prices, price_checks, result, types)
+    kept_groups = _sold_under_shown_name(kept_groups, named_before, query, prices, price_checks, result, types, today)
     lines -= result.lines_as_one_product  # lines whose products are one known product are that product (14 Oct 2026)
     kept_groups = _one_per_name(kept_groups)  # the names are final here: one item per name (13 Oct 2026)
     result.ranked_as_lines = [g.name for g in kept_groups if g.key in lines]
     _note_other_names(kept_groups, cautions)
     # What the answer says beyond the ranking, as write_answer's keywords: about the request's active ingredients (13 Oct
-    # 2026), and which products its facts say are prescription-only in the UK (Noemi's decision 5 of 14 Oct 2026); and
-    # which comments' words are Reddit's embed page's text (found edited, they kept Reddit's current text: Noemi's
-    # decision 3 of 15 Oct 2026), whose quotes are never widened.
+    # 2026), which products its facts say are prescription-only in the UK (Noemi's decision 5 of 14 Oct 2026), which
+    # comments' words are Reddit's embed page's text (found edited, they kept Reddit's current text: Noemi's decision 3
+    # of 15 Oct 2026), whose quotes are never widened, and each product's own page and its maker's image (Noemi's
+    # decisions of 15 Oct 2026, late afternoon).
+    product_pages = load_product_pages() if product_pages is None else product_pages
     wording = {**_ingredient_wording(query, kept_groups, types, formulas, result.line_forms),
-               "prescription": _prescription_only(kept_groups, formulas), "flattened": flattened_comments(threads)}
+               "prescription": _prescription_only(kept_groups, formulas), "flattened": flattened_comments(threads),
+               "pages": _pages(kept_groups, named_before, query, product_pages, types)}
     kind_mentions = _kind_mentions(checked)
     kinds = group_kinds(kind_mentions, kept_groups, query.category, query.product_type or "")
     with_a_kind = kinds_of(kinds)
@@ -1174,21 +1192,17 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
     default the request's (13 Oct 2026: an ingredient-led request has products of several types).
     """
     type_of = lambda g: (types or {}).get(g.key, query.product_type)
-    budget = query.constraints.budget
-    if budget is not None and budget.max is not None and budget.currency is None:
-        # "under 100": module 1 doesn't guess a currency, but the shoppers are in the UK (Noemi, 9 Oct 2026).
-        budget = budget.model_copy(update={"currency": BUDGET_DEFAULT_CURRENCY})
-        query = query.model_copy(update={"constraints": query.constraints.model_copy(update={"budget": budget})})
+    budget = _budget(query)
     currency = budget.currency if budget else None
     product_type = query.product_type
+    # Sold to UK shoppers now (engine.prices.counts_as_sold; Noemi, 15 Oct 2026): sold second-hand only counts only for
+    # things people buy vintage on purpose.
     not_sold = [g for g in groups if not g.loose
-                and (a := find_availability(g.name, g.category, prices, type_of(g))) is not None
-                and a.available is False]
+                and counts_as_sold(find_availability(g.name, g.category, prices, type_of(g))) is False]
     kept, checks = [], {}
     type_words = _type_words(query.product_type)
     sold_here = [g for g in groups if not g.loose
-                 and (a := find_availability(g.name, g.category, prices, type_of(g))) is not None
-                 and a.available is True]
+                 and counts_as_sold(find_availability(g.name, g.category, prices, type_of(g))) is True]
     for group in groups:
         from_price = None
         if group.loose:
@@ -1196,13 +1210,14 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
             # pick out, unless one of its own products here is known to be sold, which proves the brand is.
             sold = find_brand_entry(set(group.names) | {uk_name(n) for n in group.names}, group.category, prices,
                                     type_words, query.product_type)
-            unsold_brand = (sold is not None and sold.available is False
-                            and not any(_same_brand(group, g) for g in sold_here))
+            unsold_brand = (counts_as_sold(sold) is False and not any(_same_brand(group, g) for g in sold_here))
             if unsold_brand or _only_unsold_products(group, groups, not_sold):
                 result.left_out_unavailable.append(group.name)
                 continue
             result.not_priced.append(group.name)
-            sold = sold if sold is not None and sold.second_hand else None
+            # Shown only when second-hand and bought vintage on purpose (15 Oct 2026): another brand sold second-hand
+            # only that one of its own products here proves is sold says nothing shown.
+            sold = sold if sold is not None and sold.second_hand and counts_as_sold(sold) else None
             # Its from price (Noemi's night decision 1, 14 Oct 2026): the brand-lines entry's cheapest UK price of the
             # brand's products of the type, with where and when it was found, which also says the line is sold there.
             from_price = from_price_entry(find_brand_line(set(group.names) | {uk_name(n) for n in group.names},
@@ -1210,7 +1225,7 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
             sold = sold or from_price
         else:
             sold = find_availability(group.name, group.category, prices, type_of(group))
-        if sold is not None and sold.available is False:
+        if counts_as_sold(sold) is False:
             result.left_out_unavailable.append(group.name)
             continue
         price = from_price if group.loose else find_price(group.name, group.category, prices, currency, type_of(group))
@@ -1245,28 +1260,70 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
 
 def _sold_under_shown_name(groups: list[ProductGroup], named_before: Mapping[str, str], query: ParsedQuery,
                            prices: list[Price], checks: dict[str, PriceCheck], result: PipelineResult,
-                           types: Mapping[str, str | None] | None = None) -> list[ProductGroup]:
-    """The products still sold under the name the answer shows them under (15 Oct 2026, the facts researcher).
+                           types: Mapping[str, str | None] | None = None,
+                           today: date | None = None) -> list[ProductGroup]:
+    """The products still sold under the name the answer shows them under (15 Oct 2026, the facts researcher), with
+    what the price list says under that name.
 
     _within_budget asks the price list about each product under its writers' name, and only then may the facts step
     show it under its facts entry's name (_suited_to_request). When the writers' name found no entry saying whether it
     is sold, the entry the shown name finds decides: one saying it isn't sold leaves it out as unavailable, as if writers
     had called it that. Found in "retinoid": writers' "Tazorac .05%" (with "Tazorac") found the facts entry "Tazorac
     (tazarotene) cream and gel" by its other name, but the price list's entry saying it isn't sold in the UK fits only
-    the shown name, not the writers' with its strength. A product its writers' name found sold, and one nothing is
-    known of, are kept as they were; a brand line is never asked about here (its own check is under its brand)."""
+    the shown name, not the writers' with its strength. Since 15 Oct 2026 (researchers record findings under the names
+    answers show: engine/buyable.py) the same goes for an entry saying it is sold, which the answer then shows, and for
+    a price: one found under the shown name only is its price, checked against the budget like any (over it, the
+    product is left out). A product its writers' name found sold or priced, and one nothing is known of, are kept as
+    they were; a brand line is never asked about here (its own check is under its brand)."""
     kept = []
+    budget = _budget(query)
     for group in groups:
         before = named_before.get(group.key)
         check = checks.get(group.key)
+        product_type = (types or {}).get(group.key, query.product_type)
         if before is not None and before != group.name and (check is None or check.availability is None):
-            sold = find_availability(group.name, group.category, prices, (types or {}).get(group.key, query.product_type))
-            if sold is not None and sold.available is False:
+            sold = find_availability(group.name, group.category, prices, product_type)
+            if counts_as_sold(sold) is False:
                 result.left_out_unavailable.append(group.name)
                 checks.pop(group.key, None)
                 continue
+            if sold is not None and check is not None:
+                check = checks[group.key] = replace(check, availability=sold)
+        if before is not None and before != group.name and check is not None and check.price is None:
+            price = find_price(group.name, group.category, prices, budget.currency if budget else None, product_type)
+            if price is not None:
+                priced = replace(check_price(price, budget, today or _today()), availability=check.availability)
+                if priced.status == "over":
+                    result.left_out_over_budget.append(group.name)
+                    checks.pop(group.key, None)
+                    continue
+                checks[group.key] = priced
         kept.append(group)
     return kept
+
+
+def _budget(query: ParsedQuery):
+    """The request's budget as prices are checked against it: "under 100" has no currency, and module 1 doesn't guess
+    one, but the shoppers are in the UK (Noemi, 9 Oct 2026), so it is in BUDGET_DEFAULT_CURRENCY."""
+    budget = query.constraints.budget
+    if budget is not None and budget.max is not None and budget.currency is None:
+        budget = budget.model_copy(update={"currency": BUDGET_DEFAULT_CURRENCY})
+    return budget
+
+
+def _pages(groups: list[ProductGroup], named_before: Mapping[str, str], query: ParsedQuery,
+           pages: list[ProductPage], types: Mapping[str, str | None] | None = None) -> dict[str, ProductPage]:
+    """Each product's own page and its maker's image ({product key: entry of data/product_pages.json}; Noemi's decisions
+    of 15 Oct 2026, late afternoon), found by the name the answer shows it under, then by its writers' name
+    (engine.product_pages.find_page); a brand line by its line's name. Products with none aren't in it: a product not
+    researched shows no link."""
+    found = {}
+    for group in groups:
+        names = [group.name, named_before.get(group.key)]
+        page = find_page(names, group.category, (types or {}).get(group.key, query.product_type), pages)
+        if page is not None:
+            found[group.key] = page
+    return found
 
 
 def _type_words(product_type: str | None) -> tuple[str, ...]:

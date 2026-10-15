@@ -25,8 +25,11 @@ with the code. Its format:
                  "second_hand": true,                 optional, only with "available": true: the product is no
                                                       longer made and is sold only second-hand (on eBay UK, or by a
                                                       UK vintage dealer); left out otherwise
-                 "note": "..."}]}                     optional: what the researcher found out, for whoever checks
+                 "note": "...",                       optional: what the researcher found out, for whoever checks
                                                       the list; never shown in an answer (10 Oct 2026)
+                 "sources": ["https://..."]}]}        optional (15 Oct 2026): the pages read for it, `url` among them,
+                                                      https and never Reddit's; written by `python -m engine.buyable
+                                                      import` from researchers' findings; never shown
 
 An entry must give a price, or say whether the product is available, or both. A malformed entry stops the request with
 its number and the problem (PriceError), rather than being skipped; so does "second_hand": true without
@@ -35,7 +38,10 @@ its number and the problem (PriceError), rather than being skipped; so does "sec
 Sold second-hand only (Noemi's decision, 10 Oct 2026): a vintage product no longer made, sold only second-hand (cast
 iron by Griswold and Wagner, out of production for decades), counts as sold to UK shoppers, and its answer says so:
 "Sold second-hand only: eBay UK, checked 10 Oct 2026". Such an entry's price is usually null: second-hand prices vary
-from one pan to the next, so `todo` never asks for one.
+from one pan to the next, so `todo` never asks for one. Since her decisions of 15 Oct 2026 (late afternoon: a pick
+must be on sale in the UK now), that counts only for things people buy vintage on purpose, the brands of
+config.SECOND_HAND_VINTAGE (bought_vintage): anything else sold second-hand only (a used 2011 laptop) counts as not
+sold (counts_as_sold), and is left out and named.
 
 How a product finds its price (find_price): an entry with a price, of the same category (and of the request's product
 type, when the entry names one), whose name means the same product, by module 4's rules (engine.match_products.same_product, with the category's known short names, so "Sage"
@@ -87,10 +93,12 @@ from urllib.parse import urlsplit
 
 from pydantic import AfterValidator, Field, StrictBool, ValidationError, model_validator
 
-from engine.config import PRICE_MAX_AGE_DAYS, PRICES_TODO_NEXT_IN_LINE, THREAD_CATEGORIES
+from engine.config import PRICE_MAX_AGE_DAYS, PRICES_TODO_NEXT_IN_LINE, SECOND_HAND_VINTAGE, THREAD_CATEGORIES
+from engine.links import is_linkable
 from engine.match_products import known_aliases, product_words, same_product, written_alike
 from engine.memo import FileMemo, PerList
 from engine.models import Record
+from engine.name_index import NameIndex
 from engine.query import Budget
 
 DEFAULT_PRICES = Path(__file__).resolve().parents[1] / "data" / "prices.json"
@@ -108,6 +116,14 @@ def _shop_page(url: str) -> str:
     unsafe = parts.username or parts.password or any(c.isspace() for c in url)
     if not url.startswith("https://") or not parts.hostname or unsafe:
         raise ValueError("a shop link must start with https:// and have no spaces, name or password in it")
+    return url
+
+
+def _source_page(url: str) -> str:
+    """A page a researcher read: https, with no spaces, name or password in it, and never Reddit's."""
+    if not is_linkable(url):
+        raise ValueError("a source must start with https://, have no spaces, name or password in it, and never be "
+                         "Reddit's")
     return url
 
 
@@ -137,6 +153,9 @@ class Price(Record):
     # What the researcher found out about the entry ("the only glass kettle Sage sells in the UK"), for whoever checks
     # the list: never shown in an answer, so it stays out of the shop's name (10 Oct 2026).
     note: str | None = None
+    # The pages the researcher read for it, when there were others than `url` (15 Oct 2026, entries written by
+    # `python -m engine.buyable import`): https, never Reddit's. Never shown.
+    sources: list[Annotated[str, AfterValidator(_source_page)]] = []
 
     @model_validator(mode="after")
     def _says_something(self) -> "Price":
@@ -261,10 +280,41 @@ def find_brand_second_hand(names: Iterable[str], category: str, prices: Iterable
 
     A brand no longer made at all can have an entry under its own name saying it is sold second-hand only ("Griswold":
     the foundry closed in 1957), and then the brand pick shows it. The newest entry under the brand's own name decides
-    (find_brand_entry, with no type words); it is returned only when it says second-hand.
+    (find_brand_entry, with no type words); it is returned only when it says second-hand, and only for a brand people
+    buy vintage on purpose (counts_as_sold, 15 Oct 2026).
     """
     entry = find_brand_entry(names, category, prices)
-    return entry if entry is not None and entry.second_hand else None
+    return entry if entry is not None and entry.second_hand and counts_as_sold(entry) else None
+
+
+# --- Sold to UK shoppers now (Noemi's decisions of 15 Oct 2026, late afternoon) ---
+
+def bought_vintage(name: str, category: str) -> bool:
+    """Whether a product is one people buy vintage on purpose, so being sold second-hand only counts as sold (Noemi's
+    rule of 10 Oct 2026, kept on 15 Oct): its name holds one of its category's vintage brands or products
+    (config.SECOND_HAND_VINTAGE), as writers write them ("Griswold No. 8 skillet", "vintage pre 1970s Griswold or Wagner
+    Ware skillet", "AKG K240 Sextetts"), spelling slips and plurals forgiven."""
+    aliases = known_aliases().get(category, {})
+    words = product_words(name, aliases)
+    for brand in SECOND_HAND_VINTAGE.get(category, ()):
+        known = product_words(brand, aliases)
+        if known and any(written_alike(words[i:i + len(known)], known) for i in range(len(words) - len(known) + 1)):
+            return True
+    return False
+
+
+def counts_as_sold(entry: Price | None) -> bool | None:
+    """Whether an entry says its product is on sale to UK shoppers now (a pick must be: Noemi, 15 Oct 2026): True for
+    a shop selling it (out of stock for now still counts), and for one selling it second-hand only when people buy it
+    vintage on purpose (bought_vintage); False for one no longer sold, and for any other product sold second-hand only
+    (a used 2011 laptop isn't on sale now); None when the entry doesn't say (not checked, never guessed)."""
+    if entry is None or entry.available is None:
+        return None
+    if not entry.available:
+        return False
+    if entry.second_hand:
+        return any(bought_vintage(name, entry.category) for name in [entry.product, *entry.also_called])
+    return True
 
 
 def _newest_check_first(p: Price) -> tuple:
@@ -284,11 +334,30 @@ def entries_for(name: str, category: str, prices: Iterable[Price], product_type:
     if table is not None and key in table:
         return list(table[key])
     aliases = known_aliases().get(category, {})
-    found = [p for p in prices if p.category == category and _of_type(p, product_type)
+    found = [p for p in _could_match(name, category, prices, aliases) if _of_type(p, product_type)
              and any(same_product(known, name, aliases) for known in [p.product, *p.also_called])]
     if table is not None:
         table[key] = tuple(found)
     return found
+
+
+def _could_match(name: str, category: str, prices: Iterable[Price], aliases) -> list[Price]:
+    """The category's entries, in the list's order, that could be the same product as `name` (engine.name_index: an
+    index of their words, kept with the list, leaves out only entries module 4's rule can't match; 15 Oct 2026, as
+    researchers' findings grew the list past 1,000 entries). For anything but a list or tuple, every entry of the
+    category."""
+    table = _INDEXES.of(prices)
+    if table is None:
+        return [p for p in prices if p.category == category]
+    found = table.get(category)
+    if found is None:
+        of_category = [p for p in prices if p.category == category]
+        found = table[category] = (of_category, NameIndex([[p.product, *p.also_called] for p in of_category], aliases))
+    of_category, index = found
+    return [of_category[i] for i in index.candidates(name)]
+
+
+_INDEXES = PerList()  # each list's NameIndex, by category
 
 
 def _of_type(entry: Price, product_type: str | None) -> bool:

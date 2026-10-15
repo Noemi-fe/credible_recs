@@ -73,7 +73,10 @@ def test_a_lookup_is_worked_out_once_per_list(monkeypatch):
     for _ in range(3):
         find_availability("Zojirushi kettle", "kitchen", prices)
         find_price("Zojirushi kettle", "kitchen", prices)
-    assert len(calls) == 2  # one comparison per entry, once
+    # Changed on purpose 15 Oct 2026 (the buyable-picks builder: an index of the list's words, engine/name_index.py, as
+    # researchers' findings grew the list past 1,000 entries): an entry that can't be the product ("Dualit kettle", no
+    # "Zojirushi" in it) isn't compared at all. It was 2, one comparison per entry; still once, however often it is asked.
+    assert len(calls) == 1
 
 
 def test_many_lists_are_each_answered_rightly():

@@ -63,6 +63,7 @@ const LABELS = {
   newTab: "(opens Reddit in a new tab)",
   shopNewTab: "(opens the shop's page in a new tab)",  // added 9 Oct 2026 (decision 11, budgets)
   rangeNewTab: "(opens the maker's page in a new tab)",  // added 14 Oct 2026 (a brand line's range link)
+  pageNewTab: "(opens its page in a new tab)",  // 15 Oct 2026 (PROPOSED)
   // What the answer read (13 Oct 2026, from Noemi's testing: "Based on 16 Reddit threads ... of 25 threads saved about
   // exfoliant" confused her). [one, many] forms, with the number drawn large above them.
   readingHeading: "What this answer read",
@@ -122,7 +123,8 @@ const LABELS = {
   listAnd: " and ",
   rankedAsLines: ["1 brand or line name was ranked as a brand's whole line instead.", "{n} brand or line names were ranked as brands' whole lines instead."],
   leftOutBudget: "Over your budget, so left out: {n}.",  // added 9 Oct 2026 (decision 11, budgets)
-  leftOutUnavailable: "No longer sold, so left out: {n}.",  // added 9 Oct 2026 (availability; wording decided by Claude)
+  // Added 9 Oct 2026 (availability; wording decided by Claude); named since 15 Oct 2026 (PROPOSED).
+  leftOutUnavailable: "Not on sale in the UK now, so left out: {n}{names}.",
   leftOutNotSuited: "Not suited to your request, so left out: {n}.",  // added 9 Oct 2026 (product facts; wording decided by Claude)
   // Added 13 Oct 2026 (active ingredients; wording decided by Claude): products we couldn't confirm contain the
   // ingredient asked for, or whose maker's actives don't include it.
@@ -482,6 +484,10 @@ button { font: inherit; color: inherit; }
 .range-link .icon { width: 14px; height: 14px; margin-left: 3px; vertical-align: -2px; }
 .range-checked { color: var(--muted); font-size: 14px; }
 .row-body > .fact.range { margin-top: 6px; }
+/* A maker's product image (15 Oct 2026). */
+.thumb { flex: none; margin-left: auto; }
+.thumb img { display: block; width: 72px; height: 72px; object-fit: contain; border-radius: 10px; background: #fff; border: 1px solid var(--line); }
+.row-body > .thumb { margin: 0; }
 .budget.within { color: var(--accent); font-weight: 600; }
 .caution, .flag { display: flex; gap: 10px; align-items: flex-start; margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--warn-soft);
   color: var(--text); font-size: 14.5px; }
@@ -642,6 +648,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
   .rank { width: 38px; height: 38px; font-size: 19px; }
   .card-head { gap: 12px; }
   .card-head h3 { margin-top: 4px; }
+  .thumb img { width: 56px; height: 56px; }
   .zone-panel { padding: 16px 14px 12px; }
   .fam-care { padding-bottom: 16px; }
   .section-head h3 { font-size: 19px; }
@@ -754,7 +761,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
       address from data/prices.json or a brand line's from price in data/brand_lines.json, as the server sends it),
       and since 14 Oct 2026 a brand line's range page, the maker's page for its products of the type (rangeUrl: https
       only, never Reddit's, the address data/brand_lines.json records, as the server sends it). Any other address is
-      shown without a link.
+      shown without a link. Since 15 Oct 2026 a product's own page and its maker's image go through rangeUrl too.
    5. Since 11 Oct 2026 (going live): under every answer, "Was this useful?" (feedbackForm); once per browser, "First
       time here?" (firstTimeQuestion). Both send to this site's server only (sendFeedback). When visit counting is on,
       a few events are counted by fixed names (track), never anything typed.
@@ -846,7 +853,8 @@ details[open] > summary .icon { transform: rotate(180deg); }
 
   /** The address, if it is a safe range page for a brand line (Noemi's night decision 1, 14 Oct 2026): https only, with
       no name or password in it, and never a Reddit page (writers aren't makers); otherwise null. The server only ever
-      sends the page data/brand_lines.json records for the line, never an address from a comment. */
+      sends the page data/brand_lines.json records for the line, never an address from a comment. Also a product's
+      own page and its maker's image (15 Oct 2026). */
   function rangeUrl(address) {
     let url;
     if (!address) return null;
@@ -1147,6 +1155,31 @@ details[open] > summary .icon { transform: rotate(180deg); }
     return el("p", { class: "fact range" }, icon("grid"), el("span", {}, link, el("span", { class: "range-checked" }, " · " + range.checked)));
   }
 
+  /** A product's own page (Noemi, 15 Oct 2026): "See it at Apple" and the day checked, the answer's words. */
+  function pageLine(page) {
+    if (!page) return null;
+    const address = rangeUrl(page.url);
+    if (!address) return null;
+    return el("p", { class: "fact range" }, icon("store"), el("span", {}, el("a", { href: address, target: "_blank",
+      rel: "noopener noreferrer", class: "range-link" }, page.text, el("span", { class: "visually-hidden" }, " " + LABELS.pageNewTab),
+      icon("external")), el("span", { class: "range-checked" }, " · " + page.checked)));
+  }
+
+  /** A product's image from its maker's page, linked to it (Noemi, 15 Oct 2026): loaded only near the screen, with no
+      referrer, so the maker never sees the search; gone if it can't load. */
+  function productImage(image) {
+    if (!image) return null;
+    const src = rangeUrl(image.url);
+    const page = rangeUrl(image.page);
+    if (!src || !page) return null;
+    const picture = el("img", { alt: image.alt, loading: "lazy", decoding: "async", referrerpolicy: "no-referrer",
+      width: "72", height: "72", src });
+    const link = el("a", { href: page, target: "_blank", rel: "noopener noreferrer", referrerpolicy: "no-referrer",
+      class: "thumb" }, picture, el("span", { class: "visually-hidden" }, " " + LABELS.pageNewTab));
+    picture.addEventListener("error", () => link.remove());
+    return link;
+  }
+
   /** A pick's cautions (product facts, 9 Oct 2026): each "Note: ..." from the answer, drawn as text only. */
   function cautionLines(cautions) {
     return (cautions || []).map((text) => withIcon("info", el("p", { class: "caution" }, text)));
@@ -1266,12 +1299,13 @@ details[open] > summary .icon { transform: rotate(180deg); }
           el("h3", { id: nameId }, el("span", { class: "visually-hidden" }, fill(LABELS.rank, { rank: pick.rank }) + " "), pick.name),
           formChip(pick.form),
           pick.model ? el("p", { class: "model" }, WORDING.brand_model.replace("{model}", pick.model)
-            + (pick.model_price ? " (" + pick.model_price + ")" : "")) : null)),
+            + (pick.model_price ? " (" + pick.model_price + ")" : "")) : null),
+        productImage(pick.image)),
       el("div", { class: "card-body" },
         el("div", { class: "card-main" },
           summaryLine(pick.summary),
           trustBox(pick, true),
-          ...priceLines(pick.price), availabilityLine(pick.availability), rangeLine(pick.range),
+          ...priceLines(pick.price), availabilityLine(pick.availability), rangeLine(pick.range), pageLine(pick.link),
           prescriptionLine(pick.prescription),
           ...cautionLines(pick.cautions),
           pick.disagreement && withIcon("alert", el("p", { class: "flag" }, pick.disagreement))),
@@ -1353,12 +1387,13 @@ details[open] > summary .icon { transform: rotate(180deg); }
     const tags = [barTag(item.meets_bar), ...worthTag(item.voices), prescriptionTag(item.prescription),
       item.price.amount !== null ? el("span", { class: "row-price" }, priceAmount(item.price)) : null];
     return row(icon("eye", "row-mark"), head, tags,
+      productImage(item.image),
       summaryLine(item.summary),
       el("p", { class: "reason" }, item.reason),
       // Its price only when known or when the request has a budget, where it is sold only when checked.
       ...(item.price.amount !== null || item.price.budget_note ? priceLines(item.price) : []),
       item.availability && item.availability.available !== null ? availabilityLine(item.availability) : null,
-      rangeLine(item.range),
+      rangeLine(item.range), pageLine(item.link),
       prescriptionLine(item.prescription),
       ...cautionLines(item.cautions),
       item.disagreement && withIcon("alert", el("p", { class: "flag" }, item.disagreement)),
@@ -1563,7 +1598,9 @@ details[open] > summary .icon { transform: rotate(180deg); }
     const answer = data.answer;
     if (!answer || !data.left_out) return null;
     const overBudget = data.left_out.over_budget ? " " + fill(LABELS.leftOutBudget, { n: data.left_out.over_budget }) : "";
-    const unavailable = data.left_out.unavailable ? " " + fill(LABELS.leftOutUnavailable, { n: data.left_out.unavailable }) : "";
+    const named = data.left_out.unavailable_names || [];
+    const unavailable = data.left_out.unavailable ? " " + fill(LABELS.leftOutUnavailable, { n: data.left_out.unavailable,
+      names: named.length ? fill(LABELS.leftOutExamples, { names: listed(named) }) : "" }) : "";
     const notSuited = data.left_out.not_suited ? " " + fill(LABELS.leftOutNotSuited, { n: data.left_out.not_suited }) : "";
     const noIngredient = data.left_out.no_ingredient && answer.ingredient
       ? " " + fill(LABELS.leftOutNoIngredient, { n: data.left_out.no_ingredient, ingredient: answer.ingredient }) : "";
