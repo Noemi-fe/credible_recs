@@ -308,3 +308,23 @@ def test_every_way_of_asking_for_sun_protection_for_the_lips_asks_what_lip_balm_
     assert [need.name.lower() for need in request_needs(parse_query(text))] == ["spf"], text  # named as typed
     assert [need.name for need in request_needs(parse_query(SPF_REQUEST))] == ["spf"]
     assert [need.name for need in request_needs(parse_query("tinted lip balm with spf"))] == ["tinted", "spf"]
+
+
+def test_a_file_another_process_writes_meanwhile_is_left_to_it(tmp_path, monkeypatch):
+    # The library is shared with the extractors: a file changed between this command's read and its write is never
+    # written over, only listed.
+    root = retype_library(tmp_path)
+    path = root / "extracted" / "1lips01.json"
+    real = lip_balms.extraction_bytes
+
+    def meanwhile(data, like=""):
+        path.write_text(like.replace("claude-code", "claude-code-2"), encoding="utf-8")  # someone else's write
+        later = datetime(2026, 10, 15, 3, 0).timestamp()
+        os.utime(path, (later, later))
+        return real(data, like=like)
+
+    monkeypatch.setattr(lip_balms, "extraction_bytes", meanwhile)
+    monkeypatch.setattr(lip_balms, "_in_place", lambda *args: None)
+    result = retype(root, write=True)
+    assert result.retyped == [] and [r.comment_id for r in result.left_for_later] == ["l1balm"]
+    assert "claude-code-2" in path.read_text(encoding="utf-8")

@@ -151,8 +151,9 @@ class ApplyResult:
 def apply(library_dir: Path, decisions: Iterable[Decision], write: bool = False,
           before: datetime | None = None) -> ApplyResult:
     """Applies the decisions to the library's extractions, a thread at a time (see the module's docstring). With
-    `write` False (the default) nothing is written. A thread's extraction changed at or after `before` (local time) is
-    left alone and its decisions listed in left_for_later. The thread file is written first, then the extraction."""
+    `write` False (the default) nothing is written. A thread's extraction changed at or after `before` (local time), or
+    either of its files changed by another process while this one was at it, is left alone and its decisions listed
+    in left_for_later. The thread file is written first, then the extraction."""
     library_dir, result = Path(library_dir), ApplyResult(dry_run=not write)
     cutoff = before.timestamp() if before is not None else None
     by_thread: dict[str, list[Decision]] = {}
@@ -167,6 +168,7 @@ def apply(library_dir: Path, decisions: Iterable[Decision], write: bool = False,
         if cutoff is not None and path.stat().st_mtime >= cutoff:
             result.left_for_later.extend(theirs)
             continue
+        stamps = path.stat().st_mtime_ns, thread_path.stat().st_mtime_ns  # to leave alone files written meanwhile
         text = path.read_text(encoding="utf-8")
         data = json.loads(text)
         thread = Thread.model_validate_json(thread_path.read_bytes())
@@ -186,13 +188,17 @@ def apply(library_dir: Path, decisions: Iterable[Decision], write: bool = False,
 
             types = known_types(library_dir) if types is None else types
             new_thread, new, _ = _applied(thread, new, {}, {comment_id: "not used" for comment_id in lost}, types)
+        if write:
+            new_bytes = extraction_bytes(new, like=text)
+            if (path.stat().st_mtime_ns, thread_path.stat().st_mtime_ns) != stamps:  # another process's: theirs
+                result.left_for_later.extend(theirs)
+                continue
+            if new_thread is not None:
+                write_file(thread_path, thread_json(new_thread))
+            write_file(path, new_bytes)
         result.removed += [d for d in theirs if d.action == "remove"]
         result.requoted += [d for d in theirs if d.action == "requote"]
         result.stubbed += [(thread_id, comment_id) for comment_id in sorted(lost)]
-        if write:
-            if new_thread is not None:
-                write_file(thread_path, thread_json(new_thread))
-            write_file(path, extraction_bytes(new, like=text))
     return result
 
 

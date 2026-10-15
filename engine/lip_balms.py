@@ -72,12 +72,14 @@ class RetypeResult:
 
 def retype(library_dir: Path = DEFAULT_LIBRARY_DIR, write: bool = False, before: datetime | None = None) -> RetypeResult:
     """Re-types the library's lip products typed sunscreen as lip balms (see the module's docstring). With `write`
-    False (the default) it only says what it would change. A file changed at or after `before` (local time) is left
-    alone, its mentions listed in left_for_later. Each file is written whole, then swapped in."""
+    False (the default) it only says what it would change. A file changed at or after `before` (local time), or by
+    another process while this one was at it, is left alone, its mentions listed in left_for_later. Each file is
+    written whole, then swapped in."""
     result = RetypeResult(dry_run=not write)
     cutoff = before.timestamp() if before is not None else None
     for path in sorted((Path(library_dir) / "extracted").glob("*.json")):
         try:
+            stamp = path.stat().st_mtime_ns  # to leave alone a file another process writes meanwhile
             text = path.read_text(encoding="utf-8")
             data = json.loads(text)
             mentions = data["mentions"]
@@ -95,10 +97,14 @@ def retype(library_dir: Path = DEFAULT_LIBRARY_DIR, write: bool = False, before:
         places = {i for i, m in enumerate(mentions) if any(m is f for f in found)}
         for mention in found:
             mention["product_type"] = LIP_TYPE
+        if write:
+            new = _in_place(text, places, data) or extraction_bytes(data, like=text)
+            if path.stat().st_mtime_ns != stamp:  # written by another process since it was read: theirs
+                result.left_for_later.extend(changes)
+                continue
+            write_file(path, new)
         result.retyped.extend(changes)
         result.files_changed.append(thread_id)
-        if write:
-            write_file(path, _in_place(text, places, data) or extraction_bytes(data, like=text))
     return result
 
 

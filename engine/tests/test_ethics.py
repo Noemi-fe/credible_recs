@@ -222,3 +222,24 @@ def test_decisions_load_from_a_file_of_ids_and_names(tmp_path):
         {"thread_id": TID, "comment_id": "e3mixed", "kind": "mention", "name": "Zenith jacket", "action": "requote",
          "quote": "Avoid the Zenith jacket, the zip broke in a month"}]), encoding="utf-8")
     assert ethics.load_decisions(path) == [REMOVE_ACME, REQUOTE_ZENITH]
+
+
+def test_a_file_another_process_writes_meanwhile_is_left_to_it(tmp_path, monkeypatch):
+    # The library is shared with the extractors: a file changed between this command's read and its write is never
+    # written over; its decisions are left for later.
+    root = coat_library(tmp_path)
+    path = root / "extracted" / f"{TID}.json"
+    real = ethics.extraction_bytes
+
+    def meanwhile(data, like=""):
+        path.write_text(like.replace("claude-code", "claude-code-2"), encoding="utf-8")  # someone else's write
+        later = datetime(2026, 10, 15, 3, 0).timestamp()
+        os.utime(path, (later, later))
+        return real(data, like=like)
+
+    monkeypatch.setattr(ethics, "extraction_bytes", meanwhile)
+    thread_before = (root / "threads" / f"{TID}.json").read_bytes()
+    result = apply(root, [REMOVE_ACME], write=True)
+    assert result.removed == [] and result.left_for_later == [REMOVE_ACME]
+    assert "claude-code-2" in path.read_text(encoding="utf-8")
+    assert (root / "threads" / f"{TID}.json").read_bytes() == thread_before
