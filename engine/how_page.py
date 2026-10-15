@@ -255,6 +255,7 @@ def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = Fa
         "credible_evidence": " or ".join(config.CREDIBLE_EVIDENCE),
         "skip_heading": answer.SKIP_HEADING,
         "worth_heading": answer.WORTH_HEADING,  # "Also worth a look" (Noemi, 13 Oct 2026)
+        "meets_bar": answer.MEETS_BAR,  # an item there meeting the picks bar (Noemi's decision 4 of 15 Oct 2026)
         "summary_label": answer.SUMMARY_LABEL,  # "In short:" (Noemi, 13 Oct 2026)
         "form_label": answer.FORM_LABEL,  # "Form" (active ingredients, 13 Oct 2026)
         "mixed_opinions": answer.DISAGREEMENT.split(":")[0],

@@ -620,7 +620,9 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
                 result.live_dropped[outcome.status] = result.live_dropped.get(outcome.status, 0) + 1
         if not new:
             if put_off:
-                result.answer, result.live_put_off = without_unread(result.answer, put_off), len(put_off)
+                standing_out = {p.key for p in result.ranking.products if p.by_standout}
+                result.answer = without_unread(result.answer, put_off, standing_out)
+                result.live_put_off = len(put_off)
             return
         failed |= new
         result.bodies = {cid: body for cid, body in result.bodies.items() if cid not in failed}

@@ -364,13 +364,14 @@ def test_a_wider_reading_reads_the_most_threads_an_answer_can(tmp_path, monkeypa
 
 
 def test_todo_covers_every_product_that_qualifies_not_only_those_shown(tmp_path):
-    # Four kettles qualify; the answer shows three. The fourth can still be shown, for a request whose budget or must-haves
-    # leave one of the three out, so it needs a summary too.
+    # Seven kettles qualify; the answer shows six: three picks and, since Noemi's decision 4 of 15 Oct 2026, three under
+    # Also worth a look as meeting the bar (changed on purpose: four kettles, and three shown, before). The seventh can
+    # still be shown, for a request whose budget or must-haves leave one of the others out, so it needs a summary too.
     from engine.tests.test_web import kettle_library
 
-    lib = kettle_library(tmp_path, praised=("Zojirushi", "Fellow Stagg", "Bonavita", "Smeg"))
+    praised = ("Zojirushi", "Fellow Stagg", "Bonavita", "Smeg", "Dualit", "Sage", "Cosori")
+    lib = kettle_library(tmp_path, praised=praised)
     found = {item.key: item for item in summaries.todo([summaries.Request("k01", REQUEST)], lib)}
-    assert {"kitchen:zojirushi kettle", "kitchen:fellow stagg kettle", "kitchen:bonavita kettle",
-            "kitchen:smeg kettle"} <= set(found)
+    assert {f"kitchen:{brand.lower()} kettle" for brand in praised} <= set(found)
     shown_in_answer = [key for key, item in found.items() if any(m["shown"] for m in item.credible)]
-    assert len(shown_in_answer) == 3
+    assert len(shown_in_answer) == 6

@@ -123,7 +123,14 @@ def test_the_products_behind_the_picks_are_checked_ahead(tmp_path):
     found = comments_to_check([REQUEST], library_dir=lib, checker=live_checker(tmp_path, FakeReddit()))
     assert {c.comment_id for c in found if c.comment_id[0] == letter} == {cid for cid, *_ in COMMENTS
                                                                           if cid[0] == letter}
-    assert all(c.tier > 0 for c in found if c.comment_id[0] == letter)
+    # Changed on purpose 15 Oct 2026 (Noemi's decision 4): the product behind the picks meets the bar, so it heads Also
+    # worth a look: the quotes it shows there are checked ahead with the answer's (tier 0), never as a pick's own
+    # (section 1), and its other comments come next in line.
+    item = next(item for item in answer.worth_a_look if item.name == behind)
+    assert item.meets_bar
+    shown_there = {quote.comment_id for quote in item.quotes}
+    assert all(c.tier == 0 and c.section == 1 for c in found if c.comment_id in shown_there)
+    assert all(c.tier > 0 for c in found if c.comment_id[0] == letter and c.comment_id not in shown_there)
 
 
 def test_also_worth_a_look_and_the_comments_a_summary_cites_are_checked_ahead(tmp_path):
@@ -144,7 +151,8 @@ def test_also_worth_a_look_and_the_comments_a_summary_cites_are_checked_ahead(tm
     answer = answer_request(REQUEST, library_dir=lib, live_checker=AllPass()).answer
     assert [q.comment_id for q in next(p for p in answer.picks if p.name == "Zojirushi kettle").summary.sources] == \
         unquoted[-1:]
-    assert [item.name for item in answer.worth_a_look] == ["Russell Hobbs kettle"]
+    # Changed on purpose 15 Oct 2026 (Noemi's decision 4): the Cosori kettle, meeting the bar but ranked 4th, comes first.
+    assert [item.name for item in answer.worth_a_look] == ["Cosori kettle", "Russell Hobbs kettle"]
     found = comments_to_check([REQUEST], library_dir=lib, checker=live_checker(tmp_path, FakeReddit()))
     shown = {c.comment_id for c in found if c.tier == 0}
     assert {"r1aaaa", "r2aaaa"} <= shown and unquoted[-1] in shown
