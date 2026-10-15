@@ -250,7 +250,7 @@ The project number is `NUMBER` below (`gcloud projects describe credible-picks -
            --format='value(spec.template.spec.containers[0].image)')
        gcloud run jobs deploy credible-recs-precheck --project credible-picks --region europe-west1 --image "$IMAGE" \
            --command python --args=-m,engine.precheck,--plan,--minutes,30 \
-           --tasks 1 --max-retries 0 --task-timeout 55m --memory 1536Mi --cpu 1 \
+           --tasks 1 --max-retries 0 --task-timeout 55m --memory 2Gi --cpu 1 \
            --set-env-vars CREDIBLE_RECS_LIVE_CACHE_BUCKET=credible-picks-live-checks,CREDIBLE_RECS_ON_DEMAND_BUCKET=credible-picks-on-demand,CREDIBLE_RECS_PRECHECK_BRIGHT_DATA=on \
            --set-secrets BRIGHT_DATA_API_KEY=bright-data-key:latest
        gcloud run jobs add-iam-policy-binding credible-recs-precheck --project credible-picks --region europe-west1 \
@@ -376,14 +376,15 @@ nothing. The budget alert emails Noemi at 50% and 100% of 1 EUR.
 
 The pre-check (14 Oct 2026, the free-tier redesign; engine/tests/test_cloudrun.py does these sums from deploy.sh's own
 settings). A job is billed per instance-second for its whole run, waiting included, so it runs with the least that
-works: 1 vCPU (a job's minimum) and 1.5 GiB (on Noemi's computer it peaked at 1.3 GB with module 1's open model loaded;
+works: 1 vCPU (a job's minimum) and 2 GiB (1.5 GiB until 15 Oct 2026, when the 4 am run ran out of memory with ~2,000
+threads, 394 of them not yet slimmed; on Noemi's computer it had peaked at 1.3 GB with module 1's open model loaded;
 0.2 GB without it, but without the model the open model's product types would not be checked ahead). It no longer
 waits for Reddit: a run is working out the answers (the whole plan run took 2.1 minutes on Noemi's computer for 439
 requests on 14 Oct 2026's library, slimmed; the old run's working out took 84 s on Cloud Run), the record and the plan, then Bright Data's batch (a few minutes on Bright Data's side
 when there is something to read), so a typical run should take 5 to 10 minutes, 9,300 to 18,600 vCPU-seconds a month
 (an estimate: the first runs' logs will say; the first, on 14 Oct 2026, took 32 minutes, 29 of them waiting on Bright
 Data's two jobs, both cut off at the then 10-minute wait). Its bound is Cloud Run's 55-minute task timeout: 3,300
-seconds a day, 102,300 in a 31-day month, 102,300 vCPU-seconds and 153,450 GiB-seconds, 43% and 34% of the free tier for
+seconds a day, 102,300 in a 31-day month, 102,300 vCPU-seconds and 204,600 GiB-seconds, 43% and 45% of the free tier for
 instance-billed work (240,000 vCPU-seconds and 450,000 GiB-seconds a month), where the old run's 87 minutes a day were
 161,820 and 242,730 (67% and 54%). So 0 EUR. If a run's log says the memory limit was exceeded, 2 GiB (`--memory 2Gi`)
 is still inside the free tier: 167,400 GiB-seconds, 37%. The schedule is the second of Cloud Scheduler's 3 free jobs
@@ -411,9 +412,9 @@ for its whole run, waiting included, on 1 vCPU and 1 GiB. One product takes abou
 Arctic Shift at its 10 s pace (20 title searches and about 15 reads for a kitchen type with no title words of its own,
 fewer for most), about 5 for Gemini (about 9 calls for 6 threads read in parts of 40 comments, each paced 6 s apart),
 and half a minute to start. Its runs are capped at 50,000 s a month (about 70 products), so the worst month is 50,000
-vCPU-seconds and 50,000 GiB-seconds; with the pre-check's at most 102,300 and 153,450 (14 Oct 2026's evening; 83,700
+vCPU-seconds and 50,000 GiB-seconds; with the pre-check's at most 102,300 and 204,600 (15 Oct 2026, at 2 GiB; 83,700
 and 125,550 that afternoon, 161,820 and 242,730 before), 152,300 of the free 240,000 vCPU-seconds (63%; 88% before) and
-203,450 of the free 450,000 GiB-seconds (45%).
+254,600 of the free 450,000 GiB-seconds (57%).
 There are no empty runs: nothing is scheduled,
 the job runs only when a request waits. Cloud Scheduler: no new job (the site starts the reading job, and the keep-warm
 ping starts it again when a start failed), so still 2 of the 3 free jobs. Gemini: free tier only, at most 100 calls a
