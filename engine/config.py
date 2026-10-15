@@ -1294,9 +1294,10 @@ QUOTE_FAILURE_PATTERNS = (
     r"\b(?:died|dies)\b|\bdying\b(?! (?:to|for|of)\b)",
     r"\b(?:is|was|went|now|totally|completely|already|it's|its) dead\b(?! (?:simple|easy|quiet|silent|on|cent(?:re|er)"
     r"|level|straight|sharp|accurate|even|serious|set|reliable)\b)|\bdead (?:pixels?|battery|on arrival)\b|\bdoa\b",
-    r"(?<!was )(?<!am )(?<!i'm )(?<!im )(?<!were )(?<!being )(?<!so )(?<!too )(?<!flat )\bbroke\b"
+    r"(?<!was )(?<!am )(?<!i'm )(?<!im )(?<!were )(?<!being )(?<!so )(?<!too )(?<!flat )(?<!a )\bbroke\b"
     r"(?! in\b(?! (?:about |around |only |just |under |less than )?(?:a |an |one |two |three |\d|a few |a couple )))"
-    r"(?! the bank)(?! (?:college|uni|grad|student)s?\b)",
+    r"(?! the bank)(?! (?:college|uni|grad|student)s?\b)"
+    r"(?! down and (?:i |we )?(?:bought|got|ordered|purchased|caved|splurged|found|went|picked)\b)",
     r"\bbroken\b(?! in\b)(?![- ]in\b)(?! skin\b)(?! out\b)",
     r"\b(?:it|they|this|that|which|mine|handles?|lids?) breaks\b(?! (?:everything|it|them|stuff|things|food|grease|oil"
     r"|makeup|down|up|the|in)\b)|\bbreaks (?:easily|apart|off)\b",
@@ -1307,22 +1308,27 @@ QUOTE_FAILURE_PATTERNS = (
     r"\b(?:crapped|conked|pooped|petered|fizzled|konked) out\b|\bbit the dust\b|\bkicked the bucket\b"
     r"|\bs(?:hat|hit) the bed\b|\bpacked in\b|\bself[- ]destruct\w*",
     r"\b(?:fell|falls|falling|came|comes|coming) (?:apart|loose|undone)\b|\bf(?:ell|alls|alling) to pieces\b",
-    r"\bsnapped\b(?! (?:up|it up|them up|one up)\b)",
+    r"\bsnapped\b(?! (?:up|it up|them up|one up|on|off|in|into|together|shut|closed|back)\b)",
     r"\bcrack(?:ed|s|ing)?\b(?! (?:lips?|skin|heels?|hands?|feet|foot|fingers?|knuckles?|corners?|cuticles?|nipples?"
     r"|(?:black )?pepper(?:corns?)?|eggs?|open|under|and (?:bought|got|ordered|purchased|caved)|down|up|on)\b)"
     r"(?<!like crack)",
     r"\bchip(?:ped|ping)\b(?! in\b)",
-    r"\bpeel(?:ed|ing)\b(?! (?:solution|gel|pads?|serum|toner|mask|lotion|liquid|cream|ampoule|essence)\b)",
+    r"(?<!eyes )(?<!from )(?<!stop )(?<!stops )(?<!dry and )\bpeel(?:ed|ing)\b(?! (?:solution|gel|pads?|serum|toner|mask"
+    r"|lotion|liquid|cream|ampoule|essence|eggs?|vegetables|veggies|potatoes|fruits?|apples?|carrots?|skin|lips"
+    r"|on accutane)\b)",
     r"\brust(?:ed|ing|s|y)\b",
     r"\bwarp(?:ed|ing|s)\b(?![- ](?:resistant|proof|free)\b)",
     r"\bleak(?:ed|ing|s|y)?\b(?![- ]?(?:proof|free|resistant)\b)",
     r"\b(?:burn(?:ed|t)|blew|blown) (?:out|up)\b|\bblew a fuse\b|\bshort[- ]?circuit(?:ed)?\b",
     r"\b(?:wore|worn) (?:out|off|through)\b|\bwearing (?:out|through)\b|\bbrittle\b",
-    r"\b(?:a|has a|have a|got a|wore a) holes?\b|\bholes in\b",
+    r"\b(?:a|has a|have a|got a|wore a) holes?\b|(?<!vent )(?<!air )(?<!drainage )(?<!unnoticeable )(?<!hundred )"
+    r"\bholes in\b(?! (?:concrete|the walls?|walls|wood|the loaf|the top|the bottom)\b)",
     r"\bpills? (?:very |so |really )?(?:easily|quickly|fast|badly|after)\b|\bpill(?:ed|ing)\b",
     r"\b(?:defective|faulty|malfunction(?:ed|ing|s)?)\b",
     r"\b(?:had|have|needed|need) to (?:be )?replace(?:d)?\b|\bneeded replacing\b",
-    r"\b(?:didn't|did not|doesn't|does not|don't|do not|never|dont|didnt|doesnt) (?:really |even )?work(?:ed|s)?\b"
+    r"\b(?:didn't|did not|doesn't|does not|don't|do not|dont|didnt|doesnt) do (?:a |an )?(?:great|good|very good"
+    r"|decent|nice) job\b"
+    r"|\b(?:didn't|did not|doesn't|does not|don't|do not|never|dont|didnt|doesnt) (?:really |even )?work(?:ed|s)?\b"
     r"|\b(?:never|didn't|did not|doesn't|does not) (?:really )?do (?:anything|much|a thing)\b"
     r"|\bnever did (?:anything|much)\b"
     r"|\b(?:did|does|do) nothing\b|\b(?:can't|cannot|couldn't|could not) handle\b",
@@ -1330,59 +1336,88 @@ QUOTE_FAILURE_PATTERNS = (
     # Sent back, regretted.
     r"\breturn(?:ed|ing) (?:it|them|mine|one|both|the)\b|\b(?:sent|took) (?:it|them|mine|one|both) back\b"
     r"|\b(?:got|get|asked for|requested) a refund\b|\brefunded\b",
-    r"(?<!only )(?<!biggest )\bregret(?:s|ted|ting)?\b(?! not\b)(?! waiting\b)",
-    r"(?<!be )\bdisappoint(?:ed|ing|ment|s)?\b|\bwaste of (?:money|time|cash)\b|\ba waste\b|\bmistakes?\b",
+    r"(?<!only )(?<!biggest )(?<!say i )\bregret(?:s|ted|ting)?\b(?! not\b)(?! waiting\b)(?![- ]free\b)(?! nothing\b)"
+    r"(?! (?:getting rid|selling|giving|tossing|returning|parting)\b)",
+    r"(?<!be )\bdisappoint(?:ed|ing|ment|s)?\b|\bwaste of (?:money|time|cash)\b|\ba waste\b"
+    r"|(?<!made the )(?<!made a )(?<!of )\bmistakes?\b(?! of\b)",
     # Complaints.
     r"\b(?:terrible|awful|horrible|horrendous|dreadful|abysmal|rubbish|junk|pathetic|useless|flimsy|crappy|shitty)\b"
-    r"|\bpiece of (?:crap|junk|garbage|shit)\b|(?<!holy )\bcrap\b|\bgarbage\b(?! disposals?\b)|\bme+h+\b",
-    r"\bworst\b(?! case\b)|\bhat(?:e|ed|es|ing)\b|\bsuck(?:s|ed|y)?\b|\bbad\b",
+    r"(?! (?:lot|tire)\b)(?! (?:\w+[ /])?(?:acne|chapped|dryness|irritation|eczema|rosacea|dandruff|breakouts?|skin"
+    r"|pimples?|lips|flakes|puller|sunburn|cystic|cracked)\b)"
+    r"|\bpiece of (?:crap|junk|garbage|shit)\b|(?<!holy )(?<!with )(?<!much )\bcrap\b(?! out of\b)|\bgarbage\b(?! disposals?\b)"
+    r"|\bme+h+\b|\buncomfortable\b",
+    r"\bworst\b(?! (?:case|of|bout|that|we've|i've had)\b)"
+    r"|(?<!would )(?<!i'd )(?<!id )(?<!who )\bhat(?:e|ed|es|ing)\b(?! to (?:see|be without|lose|give)\b)"
+    r"(?! (?:when|being|feeling)\b)"
+    r"|\bsuck(?:s|ed|y)?\b(?! (?:it |them |everything |anything |all )?(?:up|out|in|away|on)\b)(?! like a champ\b)"
+    r"|(?<!my )\bbad\b(?![- ]?ass)(?! boys?\b)(?! (?:\w+ )?(?:acne|rosacea|eczema|skin|breakouts?|dandruff|dryness"
+    r"|flak\w+|sunburns?|feet|knees?|backs?|habits?|weather|winters?|roads|sidewalks)\b)",
     r"\b(?:shit|crap|crappy|shitty|poor|low|cheap|bad|terrible|awful) quality\b|\bpoorly (?:made|built|designed)\b"
     r"|\bcheaply made\b|\b(?:poor|bad|terrible|awful|horrible) (?:experience|customer service|service|support)\b",
     r"\b(?:downsides?|drawbacks?)\b|\b(?:the )?(?:only )?(?:problem|issue|complaint) (?:is|was)\b"
     r"|\b(?:have|had|having|has) (?:some |a few |many |lots of |a lot of |constant |so many )?(?:issues?|problems?"
-    r"|trouble)\b|\b(?:hard|difficult|a pain|impossible) to (?:clean|use|open|close|remove|wash)\b",
+    r"|trouble)\b|\b(?:many|so many|lots of|a lot of|constant|endless|numerous) (?:issues|problems)\b"
+    r"|\b(?:would|will|always|kept|keep|constantly|often|regularly) blow(?:ing)? out\b|\b(?:hard|difficult|a pain|impossible) to (?:clean|use|open|close|remove|wash)\b",
     r"\b(?:don't|didn't|do not|did not|dont|didnt|never) (?:really )?like[sd]?\b"
     r"|\b(?:couldn't|could not|didn't|did not|don't|do not) care for\b",
-    r"\b(?:changed|ruined) (?:the|their|its) formula\b|\breformulat\w+|\bused to (?:be |love|like)",
-    r"\bswitch(?:ed|ing) (?:away )?from\b",
+    r"\b(?:changed|ruined) (?:the|their|its) formula\b|\breformulat\w+|\bused to (?:be |love|like)"
+    r"|\bused to (?:work|do) (?:great|well|fine|perfectly|for me|wonders|so well|really well)\b",
+    r"\bswitch(?:ed|ing) (?:away )?from\b(?![^.!?;]*\bto\b)",
+    r"\bleast (?:favou?rite|impressed)\b|\bunimpressed\b|\bf(?:allen|ell) out of love\b",
     # Bad reactions (skincare, haircare). Not breakouts or irritated skin alone: they are what a request can be about.
     r"\bbr(?:oke|eaks?|eaking) (?:me|my skin|my face) out\b|\bmade me break out\b|\bclogged (?:my )?pores\b"
     r"|\b(?:caused|causes|causing) (?:breakouts?|a rash|irritation|milia)\b"
     r"|\b(?:gave|gives|giving) me (?:a )?(?:rash|hives|bumps|breakouts?|milia|cystic acne|a reaction|dermatitis)\b",
     r"\b(?:irritated|irritating|burned|burnt|stung|stings|itchy|itched) (?:my|me)\b|\ballergic reaction\b"
-    r"|(?<!minimal )(?<!little )(?<!barely any )(?<!very little )\bwhite cast\b|\bblow ?outs?\b",
+    r"|(?<!minimal )(?<!little )(?<!barely any )(?<!very little )\bwhite cast\b"
+    r"|\b(?:constant|frequent|so many|lots of|tons of|multiple|several|daily|endless|non-?stop|always|more) blow ?outs?\b"
+    r"|\bblow ?outs? (?:every|with every|all the time|constantly|daily|each)\b"
+    r"|\b(?:had|have|having|get|got|getting) (?:a )?blow ?outs?\b(?! (?:pouch|pocket|flap|protection)\b)",
 )
 # Advice against it.
 QUOTE_ADVICE_AGAINST_PATTERNS = (
     r"\bavoid (?:it|them|this|that|these|those|at all costs|like the plague)\b|\b(?:i'd|i would|you should|definitely"
     r"|strongly) avoid\b|\b(?:steer clear of|stay away from)\b",
     r"(?<!if you )\b(?:don't|do not|never|wouldn't|would not|won't) (?:buy|get|bother with)\b"
-    r"(?! (?:another|anything else|any other|others|a different|better|much better|any better|rid|to)\b)",
+    r"(?! (?:another|anything else|any other|others|a different|better|much better|any better|rid|to)\b)"
+    r"(?! (?:\w+ )?without\b)",
     r"\b(?:wouldn't|would not|don't|do not|can't|cannot|won't|couldn't|could not|never) recommend\b"
     r"(?! (?:\w+ ){0,4}?(?:enough|highly enough)\b)(?! (?:it |them |this |these )?more\b)"
     r"|\brecommend (?:not|against|avoiding)\b",
-    r"\bnot (?:worth|recommended)\b|\bover(?:rated|hyped|priced)\b|\bskip (?:it|this|them|that|the)\b",
+    r"\bnot (?:worth|recommended)\b|\bover(?:rated|hyped|priced)\b|\bskip (?:it|this|them|that|the)\b"
+    r"(?! (?:first|second|third|next|last|extra|whole|steps?|line|queue|hassle|wait|middle ?man|fancy|trendy|expensive"
+    r"|useless|cheap|cheaper|plastic|gimmicky)\b)|\bsave your (?:money|cash)\b",
+    r"\b(?:not sure|unsure) (?:if |that |whether )?i(?:'d| would)? recommend\b"
+    r"|\b(?:can't|cannot) say i(?:'d| would)? recommend\b",
     r"\b(?:recommend|suggest|get|buy|go with|choose) (?:a different|something else|something different)\b",
 )
 # Praise, how it held up, and endorsements. Not how long it lasted alone ("we had it 14 years"): a long life ending in
 # a failure reads as the failure (Noemi's example). Not a wish ("I'd love to try it", "I wish mine held up this well").
 QUOTE_PRAISE_PATTERNS = (
-    r"(?<!would )(?<!i'd )(?<!you'd )\blov(?:e|ed|es|ing)\b(?! to (?:know|hear|see|try|get|have|find|own|buy)\b)"
+    r"(?<!would )(?<!i'd )(?<!you'd )(?<!out of )\blov(?:e|ed|es|ing)\b(?! to (?:know|hear|see|try|get|have|find|own|buy)\b)"
     r"|\blovely\b",
     r"\bgreat\b(?![- ]?grand)(?! deal\b)(?! many\b)",
     r"\b(?:really|very|so|pretty|super|incredibly|quite|damn|darn) good\b"
     r"|\bgood (?:quality|value|buy|purchase|investment|choice|stuff|product|one|ones)\b"
     r"|\b(?:is|are|it's|its|they're|was|were) (?:very |really |so |pretty )?good\b",
     r"(?<!at )\bbest\b(?! (?:way|practice|of luck|guess|case|before|by)\b)",
-    r"\brecommend(?:ed|s|ing)?\b",
+    r"(?<!sure i would )(?<!sure i'd )(?<!say i would )(?<!say i'd )(?<!sure i )(?<!say i )\brecommend(?:ed|s|ing)?\b",
     r"\b(?:excellent|amazing|fantastic|awesome|brilliant|superb|outstanding|wonderful|incredible|phenomenal|stellar"
-    r"|terrific|exceptional|flawless(?:ly)?|perfect(?:ly)?|solid|sturdy|durable|reliable|dependable|robust)\b",
+    r"|terrific|exceptional|flawless(?:ly)?|perfect(?:ly)?|solid|sturdy|durable|reliable|dependable|robust|effective"
+    r"|invincible)\b",
     r"\bwell[- ](?:made|built|designed)\b|\bbuilt like a tank\b|\bindestructible\b|\bbulletproof\b"
     r"|\ba (?:beast|tank|workhorse)\b|\bworkhorse\b",
-    r"\b(?:a )?(?:big |huge )?fan\b(?! of (?:the|their|this) (?:idea|concept)\b)|\bage[sd]? well\b|\bholy grail\b"
-    r"|\bhg\b|\bswear by\b|\bfavou?rites?\b|\bgo[- ]to\b|\bgame[- ]?changer\b",
-    r"\b(?:happy|pleased|satisfied|impressed) with\b|\bimpressed\b|\bhappy\b(?! (?:to|birthday|accident)\b)",
-    r"\bworth (?:it|every|the (?:money|price|cost|investment|splurge|extra))\b",
+    r"\b(?:a (?:big |huge |massive )?|such a (?:big |huge )?|big |huge |massive |biggest )fan\b(?! (?:blades?|motor|noise"
+    r"|speed|setting|would|that|inside"
+    r"|of (?:the|their|this) (?:idea|concept))\b)|\bfans? of\b(?! (?:the|their|this) (?:idea|concept)\b)"
+    r"|\bage[sd]? well\b|\bholy grail\b|\bhg\b|\bswear by\b|(?<!least )\bfavou?rites?\b|\bgo[- ]to\b|\bgame[- ]?changer\b",
+    r"\b(?:happy|pleased|satisfied) with\b|(?<!least )\bimpress(?:ed|ive)\b|\bhappy\b(?! (?:to|birthday|accident)\b)"
+    r"|\bhappier\b|\bso far,? so good\b|\b(?:couldn't|could not|can't|cannot) be (?:any )?(?:more )?(?:happier|happy|pleased"
+    r"|satisfied)\b|\bnothing short of (?:amazing|perfect|perfection|incredible|excellent|fantastic|brilliant|great|awesome"
+    r"|phenomenal|stellar|a (?:miracle|dream))\b"
+    r"|\b(?:buy|bought|give|gave|gift|gifted) (?:them|it|one|these|those) (?:as|for) (?:a )?(?:gifts?|presents?"
+    r"|wedding presents?|christmas presents?|birthday presents?)\b",
+    r"\bworth (?:it|every|the (?:money|price|cost|investment|splurge|extra)|a (?:try|shot|look))\b",
     r"\b(?:would|will|i'd|i'll) (?:buy|get|purchase) (?:it |them |one |another |this )?again\b"
     r"|\bbought (?:another|a second|two more|the same|a backup|a spare|a replacement of the same)\b"
     r"|\brepurchas\w+\b|\bre-?bought\b|\bon my (?:second|third|fourth|fifth|sixth|\w+th) (?:bottle|tube|jar|tub|one)\b"
@@ -1392,41 +1427,59 @@ QUOTE_PRAISE_PATTERNS = (
     r"|my (?:go-?to|favou?rite|daily)|the best|love)\b",
     r"\b(?:held|holds|holding) up\b|\bgoing strong\b|\bstood the test of time\b|\b(?:as good as|like|as \w+ as) "
     r"(?:brand )?new\b|\blast(?:s|ed)? (?:forever|a lifetime|for ever|for ages|ages|a (?:really |very )?long time)\b"
-    r"|\btakes? a beating\b|\bstill (?:looks|feels|doing its job|does its job|does the job)\b|\boutlast(?:ed|s|ing)?\b"
+    r"|\btakes? a beating\b|\bstill (?:looks|doing its job|does its job|does the job)\b"
+    r"|\bstill feels? (?:new|like new|brand new|great|good|amazing|solid|sturdy|soft|nice)\b|\boutlast(?:ed|s|ing)?\b"
     r"|\b(?:always|keep|kept|still) (?:go|going|went|come|coming|came) back to\b|\bwork(?:s|ed)? (?:for me|for us|on me)\b",
     # What didn't go wrong, said in one go ("won't break", "never had a single issue", "not a single one has died").
     r"\b(?:won't|wont|doesn't|doesnt|don't|dont|didn't|didnt|never|can't|cant|hasn't|hasnt|haven't|havent) "
-    r"(?:ever |once )?(?:break|crack|chip|rust|warp|leak|peel|fail|die|wear out|fall apart|let (?:me|us) down)\b",
+    r"(?:ever |once )?(?:break(?! in\b)|crack|chip|rust|warp|leak|peel|fail|die|wear out|fall apart|let (?:me|us) down)\b",
     r"\bnever (?:failed|let me down|disappointed|had (?:a|an|any) (?:issues?|problems?|complaints?))\b"
     r"|\bnever (?:once )?had (?:it|one|them|mine) (?:fail|break|crack|die|leak|rust|warp|chip|peel)\b"
     r"|\b(?:can't|cannot|cant) imagine (?:it|them|one) (?:ever )?(?:failing|breaking|dying|wearing out)\b",
     r"\b(?:no|zero|without (?:a|an|any)|not (?:a|one)|haven't had (?:a|an|any)|have not had (?:a|an|any)"
-    r"|never had (?:a|an|any)) (?:single )?(?:issues?|problems?|complaints?|trouble|regrets)\b",
+    r"|never had (?:a|an|any)) (?:single )?(?:issues?|problems?|complaints?|trouble|regrets|leaks?|blow ?outs?|rust"
+    r"|cracks?|chips?)\b"
+    r"|\bnone of (?:them|mine|ours|the \w+) (?:have|has|ever|had) (?:ever )?(?:broken|broke|died|failed|burned out"
+    r"|burnt out|cracked|leaked|rusted|warped|worn out)\b",
     r"\bnot (?:a |one )?(?:single )?(?:one )?(?:of them )?(?:has |have |had )?(?:ever )?(?:died|failed|broken|broke"
     r"|cracked|leaked|rusted|warped)\b",
-    r"\b(?:can't|cannot|can not) (?:go wrong|beat|fault)\b|\bhard to beat\b|\bwon't regret\b|\bsuccess(?:ful)?\b",
+    r"\b(?:can't|cannot|can not) (?:go wrong|beat|best|fault)\b|\bhard to beat\b|\bwon't regret\b|\bsuccess(?:ful)?\b",
     r"\bnever (?:buy|get|need|want|use|look at) (?:another|anything else|any other|others|a different)\b"
     r"|\b(?:won't|wont|will not) (?:buy|get|use|need) (?:another|anything else|any other|others)\b"
-    r"|\bnever (?:get rid of|part with|go back)\b",
+    r"|\bnever (?:get rid of|part with|go back(?! to\b))\b",
     r"\b(?:can't|cannot|can not) recommend (?:\w+ ){0,4}?(?:enough|highly enough)\b"
     r"|\b(?:can't|cannot|can not) recommend (?:it |them |this |these )?more\b"
     r"|\b(?:won't|wont|will not|wouldn't|would not|can't|cannot) (?:get|find) (?:any |much )?better\b"
     r"|\b(?:won't|wont|wouldn't|wouldnt|will not|would not|never|not) be disappointed\b"
     r"|\b(?:don't|dont|do not) think (?:you'?d|you would|you'?ll|you will) be disappointed\b",
-    r"\bbetter than\b|\b(?:so|much|way|far|a lot|miles) better\b|\bhelped\b|\bnothing (?:beats|compares|comes close)\b"
+    r"\bbetter than\b|\b(?:so|much|way|far|a lot|miles) better\b|\bhelped\b"
+    r"|\bnothing (?:else )?(?:beats|compares|comes close)\b|\bnothing (?:\w+ )?better\b"
+    r"|\bnothing else (?:has )?(?:works?|worked|helps?|helped|does it)\b|\bthere(?:'s| is) no better\b"
+    r"|\bno better \w+ than\b"
     r"|\bsaved my (?:skin|life|lips|hair|face|hands|feet)\b|\blife ?saver\b|\bhands down\b|\b(?:is |are )?the goat\b"
     r"|\bquality (?:product|stuff|build|item|piece)\b|\bcomfortable\b|\bcomfy\b|\bcute\b"
-    r"|\b(?:switched|switching|upgraded|moved) to\b"
+    r"|\b(?:switched|switching|upgraded|moved) to\b|\b(?:stick|stuck|sticking|sticks) with\b"
     r"|\b(?:never|don't imagine|can't imagine|doubt) (?:i'll|i will|i'd|i would) (?:ever )?(?:buy|need) another\b",
     r"\bwork(?:s|ed)? (?:well|great|perfectly|fine|wonders|like a charm|a treat|beautifully|flawlessly|really well"
     r"|so well)\b"
     r"|\bdoes (?:the job|what it says)\b|\bgets the job done\b",
+    r"\bthe way to go\b|\bstands? (?:by|behind) (?:their|its|it|them|the|our)\b|\bno questions asked\b"
+    r"|\beasy to (?:clean|use|maintain|repair|fix|care for|sharpen|assemble|set up)\b|\beasy (?:fix|repair)\b"
+    r"|\bsaviou?r\b|\bcured (?:my|it|the|her|his)\b|\bheal(?:ed|s)\b(?! me\b)"
+    r"|\bclear(?:ed|s) (?:it |them |my (?:\w+ )?(?:skin|acne|face|breakouts?) )?up\b"
+    r"|\bgot rid of (?:my|the|all (?:of )?my) (?:\w+ )?(?:acne|breakouts?|dandruff|eczema|flakes|frizz|redness|itch\w*"
+    r"|dryness|pimples?|spots|blackheads|smell|odou?r|fleas|stains?)\b|\bnot once (?:has|did|have) (?:it|they|mine)\b|\blast(?:s|ed)? (?:much |way |a lot |far )?longer\b"
+    r"|\bmade (?:a |such a )?(?:huge|big|massive|noticeable|real|significant) difference\b|\ba world of difference\b"
+    r"|\b(?:would|i'd|id) (?:really )?hate to (?:be without|lose|give up|part with)\b"
+    r"|\bregret(?:ted)? (?:getting rid of|selling|giving (?:it |them )?away|tossing|returning|parting with)\b"
+    r"|\bregret[- ]free\b|\bregret nothing\b|\b(?:can't|cannot) say i regret\b"
+    r"|\breplaced (?:it|them|mine) with (?:the same|another)\b",
     r"\b(?:really|very|so|super|pretty) nice\b|\bi like[sd]?\b(?! to\b)|\bi (?:really|also|still|do|just|absolutely"
     r"|honestly|actually|genuinely|personally|definitely|quite|kinda|kind of) like[sd]?\b(?! to\b)"
     r"|\benjoy(?:ed|ing|s)?\b",
     # An endorsement: "Get the Zojirushi", "..., just buy a Lodge", "you should go for the C2".
     r"(?:^|[.!?,;:]\s+|\b(?:just|definitely|so|then|i'd|i would|you should|you could|you'll want to|i'd say))\s*"
-    r"(?:get|buy|grab|go for|go with|pick up)\b",
+    r"(?:get|buy|grab|go for|go with|pick up)\b(?! (?:something|a different|anything|one with)\b)",
 )
 # A negation among this many words just before a match, in its part of the sentence, takes it back ("never broke",
 # "isn't worth it"), or this many twice over when the words between hold "or", "nor" or "and" ("didn't chip, crack or

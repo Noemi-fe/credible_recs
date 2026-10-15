@@ -288,6 +288,101 @@ def test_what_carries_a_quotes_stance_and_what_reads_against_it(stance, quote, c
     assert reads_against_its_stance(quote, stance) is against
 
 
+# Refined from reading the library's 1,402 candidates by hand (15 Oct 2026): words that looked like a failure, a complaint
+# or praise and weren't one, a negation that reaches past "a", "all that", "very"..., and common ways of saying either.
+@pytest.mark.parametrize("stance, quote, carries, against", [
+    # A negation reaches past small words: "never had a leak", "isn't all that bad", "not at all disappointed".
+    ("recommend", "Never had a leak with these bottles.", True, False),
+    ("recommend", "Ten years in and nothing has broken.", True, False),
+    ("recommend", "Two years on, I've got nothing bad to say about it.", True, False),
+    ("recommend", "Honestly it isn't all that bad for the price.", True, False),
+    ("recommend", "Not at all disappointed with it.", True, False),
+    ("recommend", "Very minimal pilling after a year of wear.", True, False),
+    ("warn", "The new handle didn't seem very comfortable.", True, False),
+    ("warn", "It doesn't do a great job on burnt rice.", True, False),
+    ("warn", "These are less durable than the old ones.", True, False),
+    # A wish, or other people's opinion, isn't the writer's praise.
+    ("warn", "I so wanted to love these leggings, but they sag.", True, False),
+    ("warn", "Most people love it.", False, False),
+    # Words that look like a failure or a complaint and aren't one.
+    ("recommend", "I finally broke down and bought one last spring.", False, False),
+    ("recommend", "I made the mistake of lending it to my brother.", False, False),
+    ("recommend", "It sucks up dog hair in seconds.", False, False),
+    ("recommend", "Thing is a bad ass little saw.", False, False),
+    ("recommend", "It got me through the worst of the winter.", False, False),
+    ("recommend", "Got them from Crappy Tire ages ago.", False, False),
+    ("recommend", "There's an awful lot to it.", False, False),
+    ("recommend", "I have bad rosacea and use it daily.", False, False),
+    ("recommend", "When my lips get really bad, this is what I reach for.", False, False),
+    ("recommend", "You can skip the second rinse with it.", False, False),
+    ("recommend", "I switched from a cheap one to this and it's quieter.", False, False),
+    ("recommend", "The side pocket stopped most blowouts.", False, False),
+    ("recommend", "The lid has a ring of small vent holes in it.", False, False),
+    ("recommend", "Easiest peeling eggs you'll ever make.", False, False),
+    ("warn", "The fan inside got loud after a year.", False, False),
+    ("warn", "My skin still feels tight after using it.", False, False),
+    ("recommend", "I have switched to the Acme from my old brand.", True, False),  # "to" names what it backs
+    ("warn", "I could never go back to these after trying the Acme.", False, False),
+    # Common ways of saying it held up, or that it's good.
+    ("recommend", "It cleared up my horrible hormonal acne in weeks.", True, False),
+    ("recommend", "I would hate to be without it now.", True, False),
+    ("recommend", "I really regret selling mine.", True, False),
+    ("recommend", "A regret-free purchase.", True, False),
+    ("recommend", "Can't say I regret it one bit.", True, False),
+    ("recommend", "Cast iron is the way to go.", True, False),
+    ("recommend", "They stand behind their tools, no questions asked.", True, False),
+    ("recommend", "Easy to clean and it pours well.", True, False),
+    ("recommend", "The cord cracked once, pretty easy fix.", True, False),
+    ("recommend", "Not once has it failed me.", True, False),
+    ("recommend", "It lasts longer than any I've had.", True, False),
+    ("recommend", "It made a huge difference to my mornings.", True, False),
+    ("recommend", "My daily pour-over. Can't best it.", True, False),
+    ("recommend", "My life saviour for dry hands.", True, False),
+    ("recommend", "It healed my split heels overnight.", True, False),
+    # Common ways of saying it went wrong.
+    ("warn", "It used to work great, now it barely heats.", True, False),
+    ("warn", "My least favourite of the three.", True, False),
+    ("warn", "I was unimpressed by it.", True, False),
+    ("warn", "Save your money on this one.", True, False),
+    ("warn", "I'm not sure I would recommend it.", True, False),
+    ("warn", "I've fallen out of love with them.", True, False),
+    # Found again in the new quotes chosen by hand.
+    ("recommend", "None of ours have burned out in six years.", True, False),
+    ("recommend", "I'd never buy one without a cutlery tray.", False, False),
+    ("warn", "If I replaced it I'd get something with a bigger window.", False, False),
+    ("recommend", "The pom-pom snapped on and off easily.", False, False),
+    ("recommend", "Bit of a white cast, but worth a try.", True, False),
+    ("warn", "Never had much success with these.", True, False),
+    ("warn", "I've heard great things about it.", False, False),
+    ("recommend", "Returned the old ones for these and much happier.", True, False),
+    ("warn", "So stiff they just didn't break in.", False, False),
+    ("warn", "They were uncomfortable from day one.", True, False),
+    ("recommend", "The bag is always stuffed with crap.", False, False),
+    ("recommend", "The only issue was a bulb; impressive build.", True, False),
+    ("recommend", "Picked the model without a motor and so far so good.", True, False),
+    ("recommend", "We give them as wedding presents now.", True, False),
+    ("recommend", "We got the basic one and couldn't be happier.", True, False),
+    ("recommend", "Apart from that, it's been nothing short of perfect.", True, False),
+    # Found again in the candidates the readings above add.
+    ("recommend", "Seconding these: nothing else works for me.", True, False),
+    ("recommend", "First wash with nothing else on and I'm happy so far.", True, False),
+    ("recommend", "Effective at blocking noise, if less comfortable than my old ones.", True, False),
+    ("recommend", "Lots of people rave about the others. We stick with these.", True, False),
+    ("warn", "Many issues with mine, though the company stands behind it.", True, False),
+    ("warn", "They would blow out on us every week.", True, False),
+    ("warn", "Got rid of my old set for this reason.", False, False),
+    ("recommend", "Mine is more or less invincible; the new ones feel less reliable.", True, False),
+    ("warn", "That fridge cured me of buying on looks.", False, False),
+    ("recommend", "There's no better kettle than this one.", True, False),
+    ("warn", "I've never been a big fan, honestly.", True, False),
+    ("recommend", "If price was not a concern I would pick up the Acme.", True, False),
+    ("recommend", "Mine has no screen and no extras I don't want and it's the best.", True, False),
+])
+def test_refined_readings_of_what_carries_a_quotes_stance(stance, quote, carries, against):
+    assert carries_its_stance(quote, stance) is carries
+    assert reads_against_its_stance(quote, stance) is against
+
+
 def test_a_product_named_with_praise_words_isnt_praise():
     # "Perfect Gel", "Great Barrier Relief": the product's own name (two or more of its words together) says nothing.
     quote = "The Perfect Gel did nothing for my face."

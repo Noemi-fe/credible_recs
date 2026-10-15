@@ -1102,21 +1102,36 @@ class _StanceWords:
 _FAILURES = re.compile("|".join(f"(?:{pattern})" for pattern in QUOTE_FAILURE_PATTERNS))
 _ADVICE_AGAINST = re.compile("|".join(f"(?:{pattern})" for pattern in QUOTE_ADVICE_AGAINST_PATTERNS))
 _PRAISE = re.compile("|".join(f"(?:{pattern})" for pattern in QUOTE_PRAISE_PATTERNS))
-# A negation word, as _NEGATION_WORD, with "zero", "nobody", "barely" ("zero regrets", "barely ever had leaks"), not
-# "less", and never "not" after "why" ("why not just get the X?").
+# A negation word, as _NEGATION_WORD, with "zero", "nobody", "nothing", "barely" ("zero regrets", "barely ever had
+# leaks", "nothing has broken"), and never "not" after "why" ("why not just get the X?"). "Less" takes back praise only
+# ("less durable"), "minimal" a failure only ("minimal pilling").
 _STANCE_NEGATION = re.compile(r"(?:not|no|non|none|never|neither|nor|without|hardly|barely|rarely|seldom|cannot|zero"
-                              r"|nobody|\w+n't|(?:is|are|was|were|does|do|did|has|have|had|would|could|should|wo|ca)nt"
-                              r")")
+                              r"|nobody|nothing|\w+n't"
+                              r"|(?:is|are|was|were|does|do|did|has|have|had|would|could|should|wo|ca)nt)")
+_PRAISE_ONLY_NEGATION = frozenset({"less"})
+_FAILURE_ONLY_NEGATION = frozenset({"minimal"})
 # Where a part of a sentence ends for a negation (config.QUOTE_STANCE_NEGATION_WINDOW): as _CLAUSE_END, and "until",
 # "then", or a comma before a new subject ("Not Ring, it's junk").
 _STANCE_PART_END = re.compile(r"[.!?;]|\b(?:but|though|although|however|because|until|till|then)\b"
                               r"|,\s+(?=(?:it|it's|its|they|they're|i|i'm|i've|we|we're|you|you're|this|that|which"
                               r"|so)\b)")
 _STANCE_LIST = re.compile(r"or|nor|and")
-# Words that don't use up the negation's window: "barely ever had leaks", "never even once broke".
+# Words that don't use up the negation's window: "barely ever had leaks", "never even once broke", "never had any
+# rust", "not at all disappointed", "didn't seem very comfortable", "not nearly as durable", and "that" after "all"
+# ("isn't all that bad").
 _NOT_COUNTED = frozenset({"ever", "even", "once", "really", "actually", "honestly", "truly", "yet", "still", "so",
-                          "far"})
+                          "far", "any", "single", "all", "as", "nearly", "very", "at", "too", "quite", "much"})
 _A_WISH = re.compile(r"\b(?:wish|wished|if only|hopefully|hoping)\b")  # "I wish mine held up this well": no praise
+_WANTED_TO = re.compile(r"\b(?:wanted|wanting|want|hoped|hoping) to\s+(?:really\s+)?$")  # "I so wanted to love it"
+# Praise that is other people's, not the writer's: "most people love it", "everyone swears by it", "I've heard great
+# things".
+_OTHERS_PRAISE = re.compile(r"\b(?:people|everyone|everybody|folks|others|reviewers|saw|seen|heard)"
+                            r"(?:\s+(?:all|really|just|always|seem to|seems to|tend to))?\s+$")
+# A complaint word said of the state that sends the writer to the product, not of the product: "when my lips get really
+# bad, I use it". A word among this many before it in its part of the sentence makes it so.
+_COMPLAINT_WORD = re.compile(r"bad|terrible|awful|horrible|horrendous|dreadful|worst")
+_A_CONDITION = re.compile(r"when|whenever|if")
+_CONDITION_WORDS = 5
 _STANCE_TURN = re.compile(r"\b(?:but|however|though|although|until|till|then|except|unfortunately|sadly|yet|before)\b")
 # A failure that may come, not one that came: a present-tense one after "if", "when", "once"... ("if it ever breaks").
 _PRESENT_FAILURE = re.compile(r"(?:dies|breaks|fails|quits|leaks|cracks|rusts|warps|chips|gives out|goes out"
@@ -1141,7 +1156,13 @@ def _stance_words_of(text: str) -> _StanceWords:
         for match in pattern.finditer(text):
             if _someones_death(text, match) or _may_come(text, match):
                 continue
-            negated = _stance_negated(text, match.start(), praise is True)
+            if praise is True and _OTHERS_PRAISE.search(text, 0, match.start()):
+                continue
+            if praise is False and _a_condition(text, match):
+                continue
+            # "So far so good" is said whole: an earlier "without" doesn't take it back.
+            negated = (not match.group(0).startswith("so far")
+                       and _stance_negated(text, match.start(), praise is True))
             if praise is None and negated:  # advice against taken back says nothing either way
                 continue
             if (praise is None) or (praise is negated):  # a failure or advice against, or praise taken back
@@ -1156,15 +1177,31 @@ def _stance_negated(text: str, at: int, praise: bool) -> bool:
     sentence (twice as many when "or", "nor" or "and" are among them); for praise, also a wish anywhere before it in
     that part."""
     part = _STANCE_PART_END.split(text[:at])[-1]
-    if praise and _A_WISH.search(part):
+    if praise and (_A_WISH.search(part) or _WANTED_TO.search(part)):
         return True
-    words = [word for word in (w.strip(",/()\"'*-:") for w in part.split()) if word not in _NOT_COUNTED]
+    raw = [w.strip(",/()\"'*-:") for w in part.split()]
+    words = [word for i, word in enumerate(raw)
+             if word not in _NOT_COUNTED and not (word == "that" and i > 0 and raw[i - 1] == "all")]
     size = QUOTE_STANCE_NEGATION_WINDOW
-    if any(_STANCE_LIST.fullmatch(word) for word in words[-size:]):  # "didn't chip, crack or warp"
+    if words and _STANCE_LIST.fullmatch(words[-1]):  # the list's last item: "didn't chip, crack or warp"
         size *= 2
-    start = max(len(words) - size, 0)
-    return any(_STANCE_NEGATION.fullmatch(word) and not (word == "not" and i > 0 and words[i - 1] == "why")
+    start, near = max(len(words) - size, 0), len(words) - QUOTE_STANCE_NEGATION_WINDOW
+    only = _PRAISE_ONLY_NEGATION if praise else _FAILURE_ONLY_NEGATION
+    # "Nothing" reaches only the window itself, never across a list; "more or less" is "about".
+    return any((_STANCE_NEGATION.fullmatch(word) or word in only) and not (word == "nothing" and i < near)
+               and not (word == "not" and i > 0 and words[i - 1] == "why")
+               and not (word == "less" and i > 0 and words[i - 1] == "or")
                for i, word in enumerate(words[start:], start))
+
+
+def _a_condition(text: str, match: re.Match) -> bool:
+    """Whether a complaint word tells of the state that sends the writer to the product ("when my lips get really bad,
+    I use it"), not of the product."""
+    if not _COMPLAINT_WORD.fullmatch(match.group(0)):
+        return False
+    part = _STANCE_PART_END.split(text[:match.start()])[-1]
+    before = [word.strip(",/()\"'*-:") for word in part.split()][-_CONDITION_WORDS:]
+    return any(_A_CONDITION.fullmatch(word) for word in before)
 
 
 def _someones_death(text: str, match: re.Match) -> bool:
