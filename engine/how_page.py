@@ -269,9 +269,9 @@ def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = Fa
         "unconfirmed_example": answer.CAUTION.format(reason=unconfirmed_note(["PFAS"])),
         # Prescription-only products (Noemi's decision 5, 14 Oct 2026): the note they carry wherever they are shown.
         "prescription_example": answer.PRESCRIPTION_NOTE,
-        # Buyable picks (Noemi's decisions of 15 Oct 2026, late afternoon): the vintage brands whose second-hand sales
-        # count, and a product's own link as cards show it.
-        "vintage_example": " and ".join(config.SECOND_HAND_VINTAGE.get("kitchen", ())),
+        # Buyable picks (Noemi's decisions of 15 Oct 2026, late afternoon): her own examples of what people buy vintage
+        # on purpose (the first two of the kitchen's list), and a product's own link as cards show it.
+        "vintage_example": " and ".join(config.SECOND_HAND_VINTAGE.get("kitchen", ())[:2]),
         "page_link_example": answer.PRODUCT_LINK.format(shop="John Lewis"),
     }
     return fill(TEMPLATE.read_text(encoding="utf-8"), texts, slots)

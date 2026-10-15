@@ -403,3 +403,19 @@ def test_the_server_sends_the_image_hosts_with_its_pages_only(tmp_path, monkeypa
     finally:
         server.shutdown()
         server.server_close()
+
+
+@pytest.mark.parametrize("name, category, vintage", [
+    ("Griswold cast iron skillet", "kitchen", True),  # her rule of 10 Oct 2026
+    ("Wagner 1891 skillet", "kitchen", True),
+    ("Hobart-era KitchenAid stand mixer", "kitchen", True),  # bought vintage on purpose; UK 240 V ones exist
+    ("IBM Model M", "general", True),  # a collectors' keyboard, bought used on purpose; works here with an adapter
+    ("vintage Sunbeam Radiant Control toaster", "kitchen", False),  # bought vintage in the US, 110-120 V
+    ("Rival crock pot", "kitchen", False),  # American 120 V crock pots
+    ("Dell Latitude 5300 13.3 Touchscreen", "general", False),  # a used laptop is just old
+    ("Griswold cast iron skillet", "general", False),  # each category's own list
+])
+def test_what_people_buy_vintage_on_purpose_and_can_use_here(name, category, vintage):
+    from engine.prices import bought_vintage
+
+    assert bought_vintage(name, category) is vintage
