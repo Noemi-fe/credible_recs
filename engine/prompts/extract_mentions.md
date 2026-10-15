@@ -1,4 +1,4 @@
-Version: extract-v14
+Version: extract-v15
 
 # Finding product mentions in one Reddit thread
 
@@ -38,6 +38,16 @@ comment text it prints.
   judgement only: its stance, evidence and quote come from what it says about the product, never from the ethics ("it
   broke me out, and I don't support their testing anyway" is a warning quoting "it broke me out"; "it works wonders,
   but I stopped buying it over the owner's views" is a recommendation quoting "it works wonders").
+- A recommendation that rests only on the maker's ethics, eco claims, identity or origin (Noemi, 15 Oct 2026,
+  instructions v15) isn't a mention either: skip it, as an ethics-only warning. That is praise for how the maker treats
+  animals or people (cruelty-free, vegan, fair trade, good wages), for green claims (sustainable, recyclable,
+  plastic-free, B Corp), for who owns or runs it (black-owned, woman-owned, a small family business) or for where it is
+  made (made in the USA, British-made, local), that says nothing about the product itself ("buy them, they're
+  cruelty-free", "I only buy American-made knives", "support a small business and get theirs"). When the same comment
+  also judges the product, list the mention for that judgement only: its stance, evidence and quote come from what it
+  says about the product, never from the ethics, eco claims, identity or origin ("it's cruelty-free and has lasted me ten
+  years" is a recommendation quoting "has lasted me ten years"; "made in Sheffield, and it holds an edge for months"
+  quotes "it holds an edge for months").
 - A product named only in a link counts: take its name from the link's words. Never open a link. If the link's
   words don't say what it is, skip it.
 - A store brand counts when it's clear which product it is ("the Walgreens one" under a comment about glycolic
@@ -212,7 +222,8 @@ Tricky cases:
     stopped using it, or they'd buy something else next time ("next time I'd pay a bit more for a better one").
   - A failure after a long life (Noemi, 9 Oct 2026) is recommend, with evidence "long-term use" and the tag
     "mentions flaws": "my Panasonic died after 14 years" in a thread about kettles that last praises how long it
-    lasted. A failure after a short life stays warn ("died after a year").
+    lasted, so quote it for its long life (see The quote). A failure after a short life stays warn ("died after a
+    year").
   - A failure the writer caused themselves (a cast iron pan cracked on an induction hob, "learned that the hard
     way") is neutral: it isn't the product's fault.
 - Sarcasm counts as what it means: "great if you like breakouts" is warn.
@@ -257,6 +268,14 @@ Tags, as many as fit (at least one), spelled exactly as here:
   sentence that shows the judgement ("Love it!" alone is too thin when a fuller sentence exists). At most 50
   words; when one sentence runs longer, quote an unbroken part of it that shows the judgement. One quote may
   serve several products when a single sentence judges them all.
+- Choose the quote that carries the mention's stance (Noemi, 15 Oct 2026, instructions v15): the most significant part
+  of the comment for that stance. A recommendation is quoted where the comment recommends (praise, how long it lasted,
+  how it held up), a warning where it warns (what went wrong, advice against it). A failure after a long life is a
+  recommendation (see Stance), so quote its long life, ending before the failure when the words allow ("I had my
+  Panasonic for 14 years", from "I had my Panasonic for 14 years and then it died"), and when the comment also says how
+  the writer's current one is holding up, that is usually the better quote. Never quote a recommendation by a failure
+  or a complaint when the comment has words that recommend it, nor a warning by praise ("I loved it at first") when it
+  has words that warn. The quote still names the product or points at it ("mine", "it").
 
 ## Notes: advice about a kind of product
 
@@ -309,7 +328,7 @@ comment (there's no one left to credit), and agreement with a comment other than
 ```json
 {
   "thread_id": "<the thread's id>",
-  "instructions_version": "extract-v14",
+  "instructions_version": "extract-v15",
   "extracted_at": "<now, ISO 8601 in UTC, e.g. 2026-10-08T10:00:00Z>",
   "extractor": "claude-code",
   "mentions": [

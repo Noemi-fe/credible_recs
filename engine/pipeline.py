@@ -1893,6 +1893,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                 thread_comments=standing.thread_comments if standing else None,
                 share_beaten=standing.share_beaten if standing else None,
                 products_named=named[m.comment_id], needs_asked=bool(needs),
+                others_of_another_type=_others_of_another_type(m, res.kept),
             ))
         for n in res.kept_notes:
             if n.comment_id in repeats:
@@ -1907,6 +1908,24 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                     voice=voice.level, quote=n.quote, badges=badges(voice, evidence), author=_writer(comment),
                 ))
     return scored, notes
+
+
+def _others_of_another_type(mention, kept) -> tuple[str, ...]:
+    """The names of a mention's comment's other products of another type with the same stance, as module 3 wrote them
+    (15 Oct 2026, the coordinator's trial: a cast iron pick's quote praised the writer's carbon steel skillet, typed as a
+    frying pan, which had replaced their cast iron). Types are module 3's: another when neither is the other's own kind
+    (_same_kind: a "skillet" is a cast iron skillet's); a mention with no type tells nothing."""
+    own = (mention.product_type or "").strip().lower()
+    if not own:
+        return ()
+    found = []
+    for other in kept:
+        theirs = (other.product_type or "").strip().lower()
+        if (other.comment_id != mention.comment_id or other.product == mention.product or other.stance != mention.stance
+                or not theirs or _same_kind(theirs, own) or _same_kind(own, theirs)):
+            continue
+        found.append(other.product)
+    return tuple(dict.fromkeys(found))
 
 
 def _products_named(res: CheckResult) -> dict[str, int]:

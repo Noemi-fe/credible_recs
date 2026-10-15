@@ -1274,6 +1274,173 @@ QUOTE_VIEW_WORDS = ("great", "love", "loved", "loving", "recommend", "recommende
                     "decade", "decades", "never failed")
 # Not "like": "features like a scale" isn't a view.
 
+# --- Quotes coherent with their stance (Noemi's decision 4 of 15 Oct 2026) ---
+# "Quotes shown must be the most significant and coherent part of the comment for the stance they back: a recommendation
+# is quoted where the comment recommends (praise, how long it lasted, how it held up), a warning where it warns." Her
+# example: a TV pick's first quote told of the 14 years the writer's last TV of its brand lasted before its picture went
+# out, where the same comment says their current one is holding up well. So among a product's quotes, those whose own
+# words carry the stance they back come first, and one whose words read against it (a recommendation's telling of a
+# failure or a complaint, a warning's praising) comes after every other, before only those saying the opposite of the
+# request and those leaning on the thread (engine.answer._naming_first); the words read here also find the library's
+# incoherent quotes to judge (engine/quote_coherence.py). Chosen by Claude from a reading of the library's quotes
+# (technical values, reported to Noemi): lowercase regular expressions, found in a quote's words, a product's own name
+# aside ("Perfect Gel", "Great Barrier Relief": two or more of its words together).
+# What went wrong, as the writer tells it: the product broke, died, stopped working, went out, cracked, peeled, leaked,
+# wore out, was sent back; a bad reaction; a complaint ("hard to clean", "the only problem is"). Not a person dying,
+# breaking a pan in, being broke, cracked lips or pepper, a failure that may come ("if it ever breaks").
+QUOTE_FAILURE_PATTERNS = (
+    r"\b(?:stop(?:s|ped|ping)?|quit(?:s|ting)?) (?:working|heating|boiling|charging|holding|grinding|turning on"
+    r"|switching on|spinning|cooling|running|sealing|closing|locking|pumping|cutting|functioning|responding)\b",
+    r"\b(?:died|dies)\b|\bdying\b(?! (?:to|for|of)\b)",
+    r"\b(?:is|was|went|now|totally|completely|already|it's|its) dead\b(?! (?:simple|easy|quiet|silent|on|cent(?:re|er)"
+    r"|level|straight|sharp|accurate|even|serious|set|reliable)\b)|\bdead (?:pixels?|battery|on arrival)\b|\bdoa\b",
+    r"(?<!was )(?<!am )(?<!i'm )(?<!im )(?<!were )(?<!being )(?<!so )(?<!too )(?<!flat )\bbroke\b"
+    r"(?! in\b(?! (?:about |around |only |just |under |less than )?(?:a |an |one |two |three |\d|a few |a couple )))"
+    r"(?! the bank)(?! (?:college|uni|grad|student)s?\b)",
+    r"\bbroken\b(?! in\b)(?![- ]in\b)(?! skin\b)(?! out\b)",
+    r"\b(?:it|they|this|that|which|mine|handles?|lids?) breaks\b(?! (?:everything|it|them|stuff|things|food|grease|oil"
+    r"|makeup|down|up|the|in)\b)|\bbreaks (?:easily|apart|off)\b",
+    r"\bfail(?:ed|s|ing)\b(?! to\b)|\bfailures?\b",
+    r"\b(?:gave|gives|giving|give) out\b|\bgave up the ghost\b|\bgave up on me\b",
+    r"\b(?:went|goes|going|gone) (?:out|kaput|belly up|haywire|dark|black)\b"
+    r"(?! (?:and|to|of|for|there|shopping|looking|searching|today|yesterday|tonight|together|with|again|later)\b)",
+    r"\b(?:crapped|conked|pooped|petered|fizzled|konked) out\b|\bbit the dust\b|\bkicked the bucket\b"
+    r"|\bs(?:hat|hit) the bed\b|\bpacked in\b|\bself[- ]destruct\w*",
+    r"\b(?:fell|falls|falling|came|comes|coming) (?:apart|loose|undone)\b|\bf(?:ell|alls|alling) to pieces\b",
+    r"\bsnapped\b(?! (?:up|it up|them up|one up)\b)",
+    r"\bcrack(?:ed|s|ing)?\b(?! (?:lips?|skin|heels?|hands?|feet|foot|fingers?|knuckles?|corners?|cuticles?|nipples?"
+    r"|(?:black )?pepper(?:corns?)?|eggs?|open|under|and (?:bought|got|ordered|purchased|caved)|down|up|on)\b)"
+    r"(?<!like crack)",
+    r"\bchip(?:ped|ping)\b(?! in\b)",
+    r"\bpeel(?:ed|ing)\b(?! (?:solution|gel|pads?|serum|toner|mask|lotion|liquid|cream|ampoule|essence)\b)",
+    r"\brust(?:ed|ing|s|y)\b",
+    r"\bwarp(?:ed|ing|s)\b(?![- ](?:resistant|proof|free)\b)",
+    r"\bleak(?:ed|ing|s|y)?\b(?![- ]?(?:proof|free|resistant)\b)",
+    r"\b(?:burn(?:ed|t)|blew|blown) (?:out|up)\b|\bblew a fuse\b|\bshort[- ]?circuit(?:ed)?\b",
+    r"\b(?:wore|worn) (?:out|off|through)\b|\bwearing (?:out|through)\b|\bbrittle\b",
+    r"\b(?:a|has a|have a|got a|wore a) holes?\b|\bholes in\b",
+    r"\bpills? (?:very |so |really )?(?:easily|quickly|fast|badly|after)\b|\bpill(?:ed|ing)\b",
+    r"\b(?:defective|faulty|malfunction(?:ed|ing|s)?)\b",
+    r"\b(?:had|have|needed|need) to (?:be )?replace(?:d)?\b|\bneeded replacing\b",
+    r"\b(?:didn't|did not|doesn't|does not|don't|do not|never|dont|didnt|doesnt) (?:really |even )?work(?:ed|s)?\b"
+    r"|\b(?:never|didn't|did not|doesn't|does not) (?:really )?do (?:anything|much|a thing)\b"
+    r"|\bnever did (?:anything|much)\b"
+    r"|\b(?:did|does|do) nothing\b|\b(?:can't|cannot|couldn't|could not) handle\b",
+    r"\b(?:don't|doesn't|didn't|won't|wouldn't|never) (?:really |even )?last\b",
+    # Sent back, regretted.
+    r"\breturn(?:ed|ing) (?:it|them|mine|one|both|the)\b|\b(?:sent|took) (?:it|them|mine|one|both) back\b"
+    r"|\b(?:got|get|asked for|requested) a refund\b|\brefunded\b",
+    r"(?<!only )(?<!biggest )\bregret(?:s|ted|ting)?\b(?! not\b)(?! waiting\b)",
+    r"(?<!be )\bdisappoint(?:ed|ing|ment|s)?\b|\bwaste of (?:money|time|cash)\b|\ba waste\b|\bmistakes?\b",
+    # Complaints.
+    r"\b(?:terrible|awful|horrible|horrendous|dreadful|abysmal|rubbish|junk|pathetic|useless|flimsy|crappy|shitty)\b"
+    r"|\bpiece of (?:crap|junk|garbage|shit)\b|(?<!holy )\bcrap\b|\bgarbage\b(?! disposals?\b)|\bme+h+\b",
+    r"\bworst\b(?! case\b)|\bhat(?:e|ed|es|ing)\b|\bsuck(?:s|ed|y)?\b|\bbad\b",
+    r"\b(?:shit|crap|crappy|shitty|poor|low|cheap|bad|terrible|awful) quality\b|\bpoorly (?:made|built|designed)\b"
+    r"|\bcheaply made\b|\b(?:poor|bad|terrible|awful|horrible) (?:experience|customer service|service|support)\b",
+    r"\b(?:downsides?|drawbacks?)\b|\b(?:the )?(?:only )?(?:problem|issue|complaint) (?:is|was)\b"
+    r"|\b(?:have|had|having|has) (?:some |a few |many |lots of |a lot of |constant |so many )?(?:issues?|problems?"
+    r"|trouble)\b|\b(?:hard|difficult|a pain|impossible) to (?:clean|use|open|close|remove|wash)\b",
+    r"\b(?:don't|didn't|do not|did not|dont|didnt|never) (?:really )?like[sd]?\b"
+    r"|\b(?:couldn't|could not|didn't|did not|don't|do not) care for\b",
+    r"\b(?:changed|ruined) (?:the|their|its) formula\b|\breformulat\w+|\bused to (?:be |love|like)",
+    r"\bswitch(?:ed|ing) (?:away )?from\b",
+    # Bad reactions (skincare, haircare). Not breakouts or irritated skin alone: they are what a request can be about.
+    r"\bbr(?:oke|eaks?|eaking) (?:me|my skin|my face) out\b|\bmade me break out\b|\bclogged (?:my )?pores\b"
+    r"|\b(?:caused|causes|causing) (?:breakouts?|a rash|irritation|milia)\b"
+    r"|\b(?:gave|gives|giving) me (?:a )?(?:rash|hives|bumps|breakouts?|milia|cystic acne|a reaction|dermatitis)\b",
+    r"\b(?:irritated|irritating|burned|burnt|stung|stings|itchy|itched) (?:my|me)\b|\ballergic reaction\b"
+    r"|(?<!minimal )(?<!little )(?<!barely any )(?<!very little )\bwhite cast\b|\bblow ?outs?\b",
+)
+# Advice against it.
+QUOTE_ADVICE_AGAINST_PATTERNS = (
+    r"\bavoid (?:it|them|this|that|these|those|at all costs|like the plague)\b|\b(?:i'd|i would|you should|definitely"
+    r"|strongly) avoid\b|\b(?:steer clear of|stay away from)\b",
+    r"(?<!if you )\b(?:don't|do not|never|wouldn't|would not|won't) (?:buy|get|bother with)\b"
+    r"(?! (?:another|anything else|any other|others|a different|better|much better|any better|rid|to)\b)",
+    r"\b(?:wouldn't|would not|don't|do not|can't|cannot|won't|couldn't|could not|never) recommend\b"
+    r"(?! (?:\w+ ){0,4}?(?:enough|highly enough)\b)(?! (?:it |them |this |these )?more\b)"
+    r"|\brecommend (?:not|against|avoiding)\b",
+    r"\bnot (?:worth|recommended)\b|\bover(?:rated|hyped|priced)\b|\bskip (?:it|this|them|that|the)\b",
+    r"\b(?:recommend|suggest|get|buy|go with|choose) (?:a different|something else|something different)\b",
+)
+# Praise, how it held up, and endorsements. Not how long it lasted alone ("we had it 14 years"): a long life ending in
+# a failure reads as the failure (Noemi's example). Not a wish ("I'd love to try it", "I wish mine held up this well").
+QUOTE_PRAISE_PATTERNS = (
+    r"(?<!would )(?<!i'd )(?<!you'd )\blov(?:e|ed|es|ing)\b(?! to (?:know|hear|see|try|get|have|find|own|buy)\b)"
+    r"|\blovely\b",
+    r"\bgreat\b(?![- ]?grand)(?! deal\b)(?! many\b)",
+    r"\b(?:really|very|so|pretty|super|incredibly|quite|damn|darn) good\b"
+    r"|\bgood (?:quality|value|buy|purchase|investment|choice|stuff|product|one|ones)\b"
+    r"|\b(?:is|are|it's|its|they're|was|were) (?:very |really |so |pretty )?good\b",
+    r"(?<!at )\bbest\b(?! (?:way|practice|of luck|guess|case|before|by)\b)",
+    r"\brecommend(?:ed|s|ing)?\b",
+    r"\b(?:excellent|amazing|fantastic|awesome|brilliant|superb|outstanding|wonderful|incredible|phenomenal|stellar"
+    r"|terrific|exceptional|flawless(?:ly)?|perfect(?:ly)?|solid|sturdy|durable|reliable|dependable|robust)\b",
+    r"\bwell[- ](?:made|built|designed)\b|\bbuilt like a tank\b|\bindestructible\b|\bbulletproof\b"
+    r"|\ba (?:beast|tank|workhorse)\b|\bworkhorse\b",
+    r"\b(?:a )?(?:big |huge )?fan\b(?! of (?:the|their|this) (?:idea|concept)\b)|\bage[sd]? well\b|\bholy grail\b"
+    r"|\bhg\b|\bswear by\b|\bfavou?rites?\b|\bgo[- ]to\b|\bgame[- ]?changer\b",
+    r"\b(?:happy|pleased|satisfied|impressed) with\b|\bimpressed\b|\bhappy\b(?! (?:to|birthday|accident)\b)",
+    r"\bworth (?:it|every|the (?:money|price|cost|investment|splurge|extra))\b",
+    r"\b(?:would|will|i'd|i'll) (?:buy|get|purchase) (?:it |them |one |another |this )?again\b"
+    r"|\bbought (?:another|a second|two more|the same|a backup|a spare|a replacement of the same)\b"
+    r"|\brepurchas\w+\b|\bre-?bought\b|\bon my (?:second|third|fourth|fifth|sixth|\w+th) (?:bottle|tube|jar|tub|one)\b"
+    r"|\b(?:will|would|'ll|'d|i'll|i'd|we'll|we'd) (?:\w+ )?(?:buy|purchase|get) another\b",
+    r"\bstill (?:going|works|working|kick(?:s|ing)?|alive|running|in use|use (?:it|them|mine)|using (?:it|them|mine)"
+    r"|have (?:it|them|mine)|has (?:it|them)|looks? (?:new|great|good|brand new|amazing)|holding up|holds up"
+    r"|my (?:go-?to|favou?rite|daily)|the best|love)\b",
+    r"\b(?:held|holds|holding) up\b|\bgoing strong\b|\bstood the test of time\b|\b(?:as good as|like|as \w+ as) "
+    r"(?:brand )?new\b|\blast(?:s|ed)? (?:forever|a lifetime|for ever|for ages|ages|a (?:really |very )?long time)\b"
+    r"|\btakes? a beating\b|\bstill (?:looks|feels|doing its job|does its job|does the job)\b|\boutlast(?:ed|s|ing)?\b"
+    r"|\b(?:always|keep|kept|still) (?:go|going|went|come|coming|came) back to\b|\bwork(?:s|ed)? (?:for me|for us|on me)\b",
+    # What didn't go wrong, said in one go ("won't break", "never had a single issue", "not a single one has died").
+    r"\b(?:won't|wont|doesn't|doesnt|don't|dont|didn't|didnt|never|can't|cant|hasn't|hasnt|haven't|havent) "
+    r"(?:ever |once )?(?:break|crack|chip|rust|warp|leak|peel|fail|die|wear out|fall apart|let (?:me|us) down)\b",
+    r"\bnever (?:failed|let me down|disappointed|had (?:a|an|any) (?:issues?|problems?|complaints?))\b"
+    r"|\bnever (?:once )?had (?:it|one|them|mine) (?:fail|break|crack|die|leak|rust|warp|chip|peel)\b"
+    r"|\b(?:can't|cannot|cant) imagine (?:it|them|one) (?:ever )?(?:failing|breaking|dying|wearing out)\b",
+    r"\b(?:no|zero|without (?:a|an|any)|not (?:a|one)|haven't had (?:a|an|any)|have not had (?:a|an|any)"
+    r"|never had (?:a|an|any)) (?:single )?(?:issues?|problems?|complaints?|trouble|regrets)\b",
+    r"\bnot (?:a |one )?(?:single )?(?:one )?(?:of them )?(?:has |have |had )?(?:ever )?(?:died|failed|broken|broke"
+    r"|cracked|leaked|rusted|warped)\b",
+    r"\b(?:can't|cannot|can not) (?:go wrong|beat|fault)\b|\bhard to beat\b|\bwon't regret\b|\bsuccess(?:ful)?\b",
+    r"\bnever (?:buy|get|need|want|use|look at) (?:another|anything else|any other|others|a different)\b"
+    r"|\b(?:won't|wont|will not) (?:buy|get|use|need) (?:another|anything else|any other|others)\b"
+    r"|\bnever (?:get rid of|part with|go back)\b",
+    r"\b(?:can't|cannot|can not) recommend (?:\w+ ){0,4}?(?:enough|highly enough)\b"
+    r"|\b(?:can't|cannot|can not) recommend (?:it |them |this |these )?more\b"
+    r"|\b(?:won't|wont|will not|wouldn't|would not|can't|cannot) (?:get|find) (?:any |much )?better\b"
+    r"|\b(?:won't|wont|wouldn't|wouldnt|will not|would not|never|not) be disappointed\b"
+    r"|\b(?:don't|dont|do not) think (?:you'?d|you would|you'?ll|you will) be disappointed\b",
+    r"\bbetter than\b|\b(?:so|much|way|far|a lot|miles) better\b|\bhelped\b|\bnothing (?:beats|compares|comes close)\b"
+    r"|\bsaved my (?:skin|life|lips|hair|face|hands|feet)\b|\blife ?saver\b|\bhands down\b|\b(?:is |are )?the goat\b"
+    r"|\bquality (?:product|stuff|build|item|piece)\b|\bcomfortable\b|\bcomfy\b|\bcute\b"
+    r"|\b(?:switched|switching|upgraded|moved) to\b"
+    r"|\b(?:never|don't imagine|can't imagine|doubt) (?:i'll|i will|i'd|i would) (?:ever )?(?:buy|need) another\b",
+    r"\bwork(?:s|ed)? (?:well|great|perfectly|fine|wonders|like a charm|a treat|beautifully|flawlessly|really well"
+    r"|so well)\b"
+    r"|\bdoes (?:the job|what it says)\b|\bgets the job done\b",
+    r"\b(?:really|very|so|super|pretty) nice\b|\bi like[sd]?\b(?! to\b)|\bi (?:really|also|still|do|just|absolutely"
+    r"|honestly|actually|genuinely|personally|definitely|quite|kinda|kind of) like[sd]?\b(?! to\b)"
+    r"|\benjoy(?:ed|ing|s)?\b",
+    # An endorsement: "Get the Zojirushi", "..., just buy a Lodge", "you should go for the C2".
+    r"(?:^|[.!?,;:]\s+|\b(?:just|definitely|so|then|i'd|i would|you should|you could|you'll want to|i'd say))\s*"
+    r"(?:get|buy|grab|go for|go with|pick up)\b",
+)
+# A negation among this many words just before a match, in its part of the sentence, takes it back ("never broke",
+# "isn't worth it"), or this many twice over when the words between hold "or", "nor" or "and" ("didn't chip, crack or
+# warp"), not counting "ever", "even", "once", "really" and the like ("barely ever had leaks"). The part ends at a full
+# stop, a semicolon, "but", "though", "because", "until", "then"..., or a comma before a new subject ("Not Ring, it's
+# junk"). Two words: wider windows took back what a negation before them said of something else ("I don't like how
+# low quality it is").
+QUOTE_STANCE_NEGATION_WINDOW = 2
+# Before "died" or "dies", one of these among the two words just before makes it someone's death, not the product's.
+QUOTE_STANCE_PEOPLE_WORDS = ("grandma", "grandpa", "grandmother", "grandfather", "grandparents", "granny", "gran",
+                             "nan", "nana", "mother", "father", "mom", "mum", "dad", "parent", "parents", "aunt",
+                             "uncle", "husband", "wife", "partner", "friend", "brother", "sister", "son", "daughter",
+                             "neighbor", "neighbour", "dog", "cat", "he", "she")
+
 # --- Bright Data as a full source (10 Oct 2026) ---
 # Noemi's request of 10 Oct 2026. `library add` can find threads with Reddit's own search through Bright Data (inside
 # the request's decided subreddits) and read them through Bright Data, and `library refresh` reads through it too, so
@@ -1345,6 +1512,16 @@ EXTRACT_STILL_CURRENT: dict[str, dict[str, tuple[str, ...]]] = {
     "extract-v14": {"extract-v13": THREAD_CATEGORIES, "extract-v12": THREAD_CATEGORIES,
                     "extract-v11": _BEFORE_GENERAL, "extract-v10": _BEFORE_GENERAL, "extract-v9": _BEFORE_GENERAL,
                     "extract-v8": ("skincare", "kitchen")},
+    # v15 (15 Oct 2026, Noemi's decisions 2 and 4 of that afternoon) adds two rules: a recommendation resting only on a
+    # maker's ethics, eco claims, identity or origin is no mention, as an ethics-only warning isn't; and a quote carries
+    # its mention's stance (a recommendation quoted where the comment recommends, a long-life failure for its long life,
+    # a warning where it warns). Both are brought to the older extractions by command, judged one by one, rather than by
+    # extracting the library again: `python -m engine.ethics candidates --stance recommend`, then `apply`, and `python -m
+    # engine.quote_coherence candidates`, then `apply`. So every v14 extraction stays current, of all four categories,
+    # and the older ones as under v14. Decided by Claude, reported.
+    "extract-v15": {"extract-v14": THREAD_CATEGORIES, "extract-v13": THREAD_CATEGORIES,
+                    "extract-v12": THREAD_CATEGORIES, "extract-v11": _BEFORE_GENERAL, "extract-v10": _BEFORE_GENERAL,
+                    "extract-v9": _BEFORE_GENERAL, "extract-v8": ("skincare", "kitchen")},
 }
 
 # --- Going live (Noemi, 11 Oct 2026) ---
