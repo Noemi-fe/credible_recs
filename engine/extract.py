@@ -65,6 +65,7 @@ from engine.config import (
     EVIDENCE_TAGS,
     EXTRACT_MAX_COMMENTS,
     EXTRACT_STILL_CURRENT as STILL_CURRENT,
+    LIBRARY_VERIFY_DAYS,
     MENTION_CATEGORIES,
     QUOTE_MAX_WORDS,
     SERVICE_TYPE_PATTERNS,
@@ -228,7 +229,8 @@ def check_extraction(extraction: Extraction, thread: Thread) -> CheckResult:
         if reason is None and mention.refers_to == "earlier" and not _reply_to_a_reply(comments[mention.comment_id], comments):
             reason = f"comment {mention.comment_id} refers to a comment further up, but it isn't a reply to a reply"
         if reason is None and mention.refers_to in ("parent", "earlier"):
-            reason = _named_in_unreadable_comment(mention, comments)
+            reason = _named_in_unreadable_comment(mention, comments,
+                                                  thread.whole_thread.dropped if thread.whole_thread else {})
         if reason is None:
             reason = _unknown_evidence_tags(mention)
         if reason is None:
@@ -349,18 +351,28 @@ def _own_words_in_quote_format(body: str, quote: str, elsewhere: Iterable[str]) 
     return all(find_quote(text, quote) is None for text in elsewhere)
 
 
-def _named_in_unreadable_comment(mention: ExtractedMention, comments: dict) -> str | None:
+def _named_in_unreadable_comment(mention: ExtractedMention, comments: dict, dropped: dict | None = None) -> str | None:
     """Why a mention that takes its product from a comment above can't be kept, or None.
 
     "parent" takes it from the comment above, "earlier" from the one above that (review fixes, 9 Oct 2026). If that
     comment was deleted or removed, the product is named only in text that is gone: nothing can check it, and the
-    deletion rule says gone text isn't used.
+    deletion rule says gone text isn't used. So too when a slimmed thread no longer keeps its words: `dropped` (the
+    thread's whole_thread.dropped) says when that is because it was found edited on Reddit, or wasn't verified there in
+    time, after slimming kept it (15 Oct 2026: else a stub verification left looked like one slimming did).
     """
     above = comments.get(comments[mention.comment_id].parent_id)
     if mention.refers_to == "earlier" and above is not None:
         above = comments.get(above.parent_id)
     if above is None:
         return f"comment {mention.comment_id} takes its product from a comment above that isn't in the thread"
+    why = (dropped or {}).get(above.id) if above.status == "not_kept" else None
+    if why == "changed":
+        return (f"comment {mention.comment_id} takes its product from comment {above.id}, which was edited on Reddit "
+                f"since it was read (its words were dropped from the library), so the product can't be checked")
+    if why == "expired":
+        return (f"comment {mention.comment_id} takes its product from comment {above.id}, which wasn't verified on "
+                f"Reddit within {LIBRARY_VERIFY_DAYS} days (its words were dropped from the library), so the product "
+                f"can't be checked")
     if above.status == "not_kept":
         return (f"comment {mention.comment_id} takes its product from comment {above.id}, whose words aren't kept "
                 f"in the library, so the product can't be checked")

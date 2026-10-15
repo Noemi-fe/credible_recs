@@ -137,6 +137,9 @@ class WholeThread(Record):
     # The fingerprints (quote_fingerprint) of the extraction's quotes in a quoted block that were found in words not
     # kept: someone else's words, never the kept comment's own (engine.extract).
     quoted_elsewhere: list[str] = []
+    # {comment id: why it lost its words after it was slimmed}: "changed", found edited on Reddit, or "expired", not
+    # verified there in time (engine.verify.apply_checks), so a reply taking its product from it says so (15 Oct 2026).
+    dropped: dict[Id, Literal["changed", "expired"]] = {}
 
 
 def quote_fingerprint(quote: str) -> str:

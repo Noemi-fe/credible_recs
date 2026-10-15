@@ -130,6 +130,31 @@ def test_the_comments_the_extraction_points_to_are_kept_with_the_one_a_reply_tak
     assert kept_comment_ids(whole, extraction) == KEPT
 
 
+def test_a_source_with_no_item_of_its_own_is_kept_through_a_parent_and_through_an_earlier_chain(extraction, types):
+    # 15 Oct 2026 (the coordinator, after the migration: replies whose product source had become a stub). Slimming was
+    # not the cause (verification dropped those sources since, found edited on Reddit: engine/tests/test_verify.py), and
+    # this pins it: the comment a reply takes its product from is kept whole, with no item of its own, for "parent" and
+    # for "earlier" (the reply's parent's parent), and so is each comment it takes it from in turn.
+    thread = whole_thread_dict()
+    thread["comments"] += [c("s30top", "olga_t", "The Bodum one, every morning for six years.", 5),
+                           c("s31mid", "pete_t", "Same here.", 2, parent_id="s30top"),
+                           c("s32low", "quin_t", "Mine is nine years old now.", 3, parent_id="s31mid")]
+    more = extraction_dict()
+    more["mentions"] += [{"comment_id": "s32low", "product": "Bodum kettle", "category": "kitchen",
+                          "stance": "recommend", "quote": "Mine is nine years old now.",
+                          "product_type": "electric kettle", "refers_to": "earlier"},
+                         {"comment_id": "s31mid", "product": "Bodum kettle", "category": "kitchen",
+                          "stance": "recommend", "quote": "Same here.", "product_type": "electric kettle",
+                          "refers_to": "parent"}]
+    whole, extraction = Thread.model_validate(thread), Extraction.model_validate(more)
+    kept = kept_comment_ids(whole, extraction)
+    assert {"s30top", "s31mid", "s32low"} <= kept  # s30top has no item: kept as both replies' source
+    slimmed = slim_thread(whole, extraction, types, NOW)
+    assert by_id(slimmed)["s30top"].status == "ok"
+    reasons = {m.comment_id: why for m, why in check_extraction(extraction, slimmed).rejected}
+    assert "s32low" not in reasons and "s31mid" not in reasons
+
+
 def test_every_other_comment_keeps_its_shape_but_not_its_words_or_writer(whole, slimmed):
     before, after = by_id(whole), by_id(slimmed)
     assert list(after) == list(before)  # every comment, in the same order
