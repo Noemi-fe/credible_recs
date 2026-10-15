@@ -3050,13 +3050,12 @@
    "shop": "eBay UK",
    "url": "https://www.ebay.co.uk/sch/i.html?_nkw=macbook+pro+2011",
    "checked_on": "2026-10-15",
-   "available": true,
-   "second_hand": true,
+   "available": false,
    "also_called": [
     "late 2011 MBP",
     "2011 MBP"
    ],
-   "note": "MacBook Pros of 2010 and 2011, which Apple stopped making in 2012; eBay UK lists 255 used ones; named as writers name them so that no entry covers the current MacBook Pro"
+   "note": "MacBook Pros of 2010 and 2011, which Apple stopped making in 2012: not sold new, eBay UK lists only used ones (255); a discontinued model is left out, not shown as second-hand (Noemi's decision of 15 Oct 2026, late afternoon: second-hand counts only for things bought vintage on purpose); named as writers name them so that no entry covers the current MacBook Pro"
   },
   {
    "product": "Singer 201K",
