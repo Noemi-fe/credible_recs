@@ -144,11 +144,31 @@ def judged_needs(query: ParsedQuery) -> tuple[Need, ...]:
       so is one it asks to leave out ("moisturiser without niacinamide"): writers say either way whether a cream holds
       it, and on the frozen library the rule had picked two creams whose writers say they do;
     - a size (config.NEED_SIZE_UNITS: "15ml", "28cm", "1.7 fl oz"), which nobody's praise is about;
-    - a single letter ("w" of "w/o"), which names nothing.
+    - a single letter ("w" of "w/o"), which names nothing;
+    - in a category whose every reading follows the rule (config.NEED_RULE_IN_EVERY_READING: skincare and haircare), a
+      word of a checked requirement the request asks for (engine.product_facts.hard_requirements: SPF in a lip balm
+      request, Noemi's decision 2 of 15 Oct 2026; "sulfate" in a sulfate-free one), which the product's facts settle,
+      as they settle an ingredient (15 Oct 2026, the orchestrator, merging decisions 2 and 3). Kitchen and general
+      requests keep these words in their wider reading's rule, as before (a PFAS-free pan's voices still talk about it).
     They stay needs everywhere else (the threads read first, the reason's "2 of them about ..."), as before."""
-    named = _ingredient_words(_plain(query.text))
+    named = _ingredient_words(_plain(query.text)) | _requirement_words(query)
     return tuple(need for need in request_needs(query) if need.request_word is None or not (
         need.request_word in named or _is_size(need.request_word) or len(need.request_word) == 1))
+
+
+def _requirement_words(query: ParsedQuery) -> frozenset[str]:
+    """The words of the checked requirements the request asks for (their rules' "asks", config.PRODUCT_FACT_RULES), as
+    need words are written: "spf" for a lip balm with SPF, "sulfate" and "free" for a sulfate-free shampoo."""
+    from engine.config import NEED_RULE_IN_EVERY_READING, PRODUCT_FACT_RULES
+    from engine.product_facts import hard_requirements  # here: engine.product_facts builds on this module
+
+    if query.category not in NEED_RULE_IN_EVERY_READING:
+        return frozenset()
+    words = set()
+    for name in hard_requirements(query):
+        for asked in PRODUCT_FACT_RULES[name]["asks"]:
+            words |= {_stem(word) for word in re.findall(r"[a-z0-9]+", asked.lower())}
+    return frozenset(words)
 
 
 @cache

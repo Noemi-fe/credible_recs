@@ -153,7 +153,9 @@ def test_a_lip_balm_with_spf_request_shows_lip_balms_with_spf_first_and_notes_th
     assert picks["Mystery Overnight Lip Balm"].cautions == ["Note: we couldn't confirm it has SPF."]
 
 
-def test_a_lip_balm_request_not_asking_for_spf_is_as_before(tmp_path):
+def test_a_lip_balm_request_not_asking_for_spf_is_as_before(tmp_path, skincare_need_rule_set_aside):
+    # The need rule set aside (15 Oct 2026, merging Noemi's decisions 2 and 3): this test is about SPF, and its made-up
+    # comments don't talk about very dry lips, which skincare's need rule asks of a pick in every reading since then.
     lib = lip_library(tmp_path)
     without = answer_request("lip balm for very dry lips", library_dir=lib, prices=[], product_facts=[], today=TODAY)
     result = answer_request("lip balm for very dry lips", library_dir=lib, prices=[], product_facts=FACTS, today=TODAY)

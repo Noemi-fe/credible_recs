@@ -319,7 +319,8 @@ def _applied(thread: Thread, raw: dict, stamps: dict, drops: dict, types,
         elif why is not None:  # edited, or not verified in time: still on Reddit as far as we know
             if found := names_in(comment.body, types):
                 names[comment.id] = found
-            gone_why[comment.id] = why
+            if why in ("changed", "expired"):  # a verification's reason (WholeThread.dropped); "not used" has none:
+                gone_why[comment.id] = why     # engine.ethics's removals leave a stub like slimming's (15 Oct 2026)
             name = comment.author.name if comment.author is not None else None
             if name in kept_since and comment.created_at < min(first_seen.get(name, kept_since[name]),
                                                               kept_since[name]):

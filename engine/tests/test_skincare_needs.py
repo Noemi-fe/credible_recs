@@ -196,3 +196,24 @@ def test_the_how_page_says_a_pick_must_talk_about_what_you_asked_for_and_where(t
     monkeypatch.setattr(config, "NEED_RULE_IN_EVERY_READING", ())
     assert ("at least one of those credible recommendations must also talk about it when we read more threads than "
             "usual.") in text_of(get_how(tmp_path, monkeypatch))
+
+
+# --- A need its checked requirement settles isn't judged by comments (15 Oct 2026) ---
+
+@pytest.mark.parametrize("request_text, settled", [
+    ("lip balm with spf", "spf"),  # Noemi's decision 2: the lip balm's facts or its name say whether it has SPF
+    ("sulfate-free shampoo for curly hair", "sulfate"),  # the shampoo's facts say whether it is sulfate-free
+])
+def test_a_need_a_checked_requirement_settles_is_not_judged_by_comments(request_text, settled):
+    # As for an active ingredient: the facts check settles it (engine/product_facts.py), and nobody's praise has to say
+    # it as well. It stays a need everywhere else (the threads read first, the reason's "about ...").
+    query = parse_query(request_text, model=None)
+    assert settled in {need.name for need in request_needs(query)}
+    assert settled not in {need.name for need in judged_needs(query)}
+
+
+def test_the_requests_other_needs_are_still_judged():
+    query = parse_query("sulfate-free shampoo for curly hair", model=None)
+    assert "curly" in {need.name for need in judged_needs(query)}
+    query = parse_query("lip balm for very dry lips", model=None)
+    assert "dry" in {need.name for need in judged_needs(query)}
