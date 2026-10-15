@@ -147,14 +147,17 @@ def test_the_pre_checks_run_fits_in_its_time():
     assert minutes * 60 + BRIGHT_DATA_MAX_WAIT_SECONDS + 5 * 60 <= timeout * 60
 
 
-def test_the_pre_check_has_room_for_the_open_model_and_the_grown_library():
-    # 15 Oct 2026: the 4 am plan run was killed for running out of memory at 1.5 GiB (the open model, about 1.1 GB,
-    # with a library of ~2,000 threads, 394 of them not yet slimmed). 2 GiB, inside the free tier (the test below).
+def test_the_pre_check_has_room_for_the_grown_library():
+    # 15 Oct 2026: the plan run was killed for running out of memory at 1.5 GiB, then at 2 GiB (a library of ~2,000
+    # threads; working out its 486 requests peaked at 2.97 GB on Noemi's computer with the open model, 2.25 GB without).
+    # So 3 GiB, inside the free tier (the test below), and the open model off: the rules place 484 of the 486 requests
+    # ("body wash" and a vague request are the two left), and the model alone is about 0.7 GB.
     import re
 
     job = _command(DEPLOY_SH.read_text(encoding="utf-8"), '$GCLOUD run jobs deploy')
     amount, unit = re.search(r"--memory (\d+)(Mi|Gi)", job).groups()
-    assert int(amount) / (1024 if unit == "Mi" else 1) >= 2
+    assert int(amount) / (1024 if unit == "Mi" else 1) >= 3
+    assert "CREDIBLE_RECS_QUERY_MODEL=off" in job
 
 
 def test_the_jobs_stay_inside_cloud_runs_free_tier_in_the_longest_month():

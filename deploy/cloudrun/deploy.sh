@@ -121,8 +121,9 @@ $GCLOUD artifacts repositories set-cleanup-policies cloud-run-source-deploy --pr
 #    reads nothing on Reddit's embed page itself, works out the plan the site reads ahead from, and verifies through
 #    Bright Data the comments the embed page can't show, starting nothing PRECHECK_MINUTES after it started; 55 minutes
 #    at most a run (one Bright Data job in flight may be waited for 20 minutes), never retried the same day. Billed for its whole run, so it gets the least that works: 1 vCPU (a
-#    job's minimum) and 2 GiB (it peaked at 1.3 GB with the open model loaded, 13 Oct 2026; 0.2 GB without it; 1.5 GiB
-#    ran out on 15 Oct 2026 with ~2,000 threads, 394 not yet slimmed).
+#    job's minimum) and 3 GiB with the open model off (15 Oct 2026: it ran out of memory at 1.5 and at 2 GiB with
+#    ~2,000 threads; working out the 486 requests peaked at 2.97 GB with the model, 2.25 GB without, on Noemi's computer;
+#    the rules place 484 of them, so the model isn't loaded).
 #    Its one secret is the Bright Data key, which the account it runs as may read (when the secret is there).
 if [ "$PRECHECK_BRIGHT_DATA" = on ]; then
     $GCLOUD secrets add-iam-policy-binding bright-data-key --project "$PROJECT" \
@@ -131,8 +132,8 @@ fi
 IMAGE="$($GCLOUD run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(spec.template.spec.containers[0].image)')"
 $GCLOUD run jobs deploy "$JOB" --project "$PROJECT" --region "$REGION" --image "$IMAGE" \
     --command python --args=-m,engine.precheck,--plan,--minutes,${PRECHECK_MINUTES} \
-    --tasks 1 --max-retries 0 --task-timeout 55m --memory 2Gi --cpu 1 \
-    --set-env-vars "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}${ON_DEMAND_PRECHECK_VARS},CREDIBLE_RECS_PRECHECK_BRIGHT_DATA=${PRECHECK_BRIGHT_DATA}" \
+    --tasks 1 --max-retries 0 --task-timeout 55m --memory 3Gi --cpu 1 \
+    --set-env-vars "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}${ON_DEMAND_PRECHECK_VARS},CREDIBLE_RECS_PRECHECK_BRIGHT_DATA=${PRECHECK_BRIGHT_DATA},CREDIBLE_RECS_QUERY_MODEL=off" \
     "$PRECHECK_SECRETS" --quiet
 $GCLOUD run jobs add-iam-policy-binding "$JOB" --project "$PROJECT" --region "$REGION" \
     --member "serviceAccount:$RUNNER" --role roles/run.invoker >/dev/null
