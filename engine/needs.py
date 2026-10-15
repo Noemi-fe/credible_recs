@@ -45,6 +45,7 @@ from functools import cache
 from engine.config import (
     HAIR_LIST_NEEDS, HAIR_LIST_NOUNS, HAIR_LIST_WORDS, HAIR_NEEDS, INGREDIENTS, NEED_COMMENT_WORDS, NEED_IGNORED_WORDS,
     NEED_LOOKALIKES, NEED_REQUEST_WORDS, NEED_SIZE_UNITS, NEEDS, NEGATED_NEEDS, NEGATION_REACH, NEGATIONS,
+    NO_HELP_LEADS, NO_HELP_PATTERNS, NO_HELP_POINTERS,
 )
 from engine.credibility import _own_words
 from engine.ingredients import _whole as _whole_words
@@ -286,6 +287,53 @@ def _needs_met(body: str, needs: tuple[Need, ...], long_term_use: bool, thread: 
         if talks:
             met.append(need.name)
     return tuple(met)
+
+
+def said_not_to_help(quote: str, needs: tuple[Need, ...]) -> tuple[str, ...]:
+    """The names of the needs a quote says its own product didn't help with, in the request's order (15 Oct 2026;
+    config.NO_HELP_PATTERNS): "it did nothing for my oily skin", "doesn't help redness much", "I bought it for my dark
+    spots, which it didn't help with". The quote's own product only: in the phrase's clause (up to a full stop, "but",
+    "though", "however"...), the words before it are none or point at it ("it", "this one", "which it":
+    config.NO_HELP_POINTERS), so "the other cream did nothing for my oily skin" says nothing of this one. The engine
+    gives such a recommendation no credit for talking about those needs (engine.pipeline._score), and shows its quote
+    after the others (engine.answer); a warning keeps them."""
+    if not needs:
+        return ()
+    said: set[str] = set()
+    for clause in _CLAUSE_END.split(_own_words(quote)):
+        for match in _no_help().finditer(clause):
+            before = clause[:match.start()]
+            pointer = _pointer(before)
+            if pointer is None:
+                continue
+            said.update(needs_met(clause[match.end():], needs))  # "... nothing for my oily skin"
+            if pointer and pointer.split()[0] in ("which", "that"):  # "my oily skin, which it didn't help with"
+                said.update(needs_met(before[:before.rfind(pointer.split()[0])], needs))
+    return tuple(need.name for need in needs if need.name in said)
+
+
+_CLAUSE_END = re.compile(r"[.!?;:\n]|(?<![a-z0-9'])(?:but|though|although|however|yet|whereas)(?![a-z0-9'])")
+
+
+@cache
+def _no_help() -> re.Pattern:
+    return re.compile(r"(?<![a-z0-9'])(?:" + "|".join(f"(?:{p})" for p in NO_HELP_PATTERNS) + ")")
+
+
+def _pointer(before: str) -> str | None:
+    """The words pointing at the quote's own product that end `before` (config.NO_HELP_POINTERS), "" when only words
+    leading into a clause (config.NO_HELP_LEADS) or nothing come before; None when something else does (another
+    product, a person)."""
+    words = re.findall(r"[a-z0-9']+", before)
+    while words and words[0] in NO_HELP_LEADS:
+        words = words[1:]
+    if not words:
+        return ""
+    for size in (2, 1):
+        tail = " ".join(words[-size:])
+        if len(words) >= size and tail in NO_HELP_POINTERS:
+            return tail
+    return None
 
 
 def has_word(text: str, word: str) -> bool:

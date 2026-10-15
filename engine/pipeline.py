@@ -202,7 +202,7 @@ from engine.library_cache import loaded as loaded_library
 from engine.match_products import known_aliases, normalize_name, product_words, same_product, written_alike
 from engine.memo import Table
 from engine.models import Comment, Thread
-from engine.needs import Need, judged_needs, needs_met
+from engine.needs import Need, judged_needs, needs_met, said_not_to_help
 from engine.prices import (
     Price,
     PriceCheck,
@@ -1890,7 +1890,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
             # First-hand use needs the AI's reading to agree when it says no use (13 Oct 2026; with_ai_evidence).
             evidence = with_ai_evidence(score_evidence(comment, m.product, m.stance, others), m.evidence,
                                         m.evidence_tags)
-            met = _needs_talked_about(m.quote, comment.body, needs, asks, evidence.level == "long-term use")
+            met = _needs_talked_about(m.quote, comment.body, needs, asks, evidence.level == "long-term use", m.stance)
             weight = mention_weight(voice, evidence, m.stance) * (NEED_MATCH_BOOST if met else 1)
             standing = upvotes.get(m.comment_id)
             scored.append(ScoredMention(
@@ -1930,12 +1930,20 @@ def _products_named(res: CheckResult) -> dict[str, int]:
 
 
 def _needs_talked_about(quote: str, body: str, needs: tuple[Need, ...], asks: tuple[str, ...],
-                        long_term_use: bool = False) -> tuple[str, ...]:
+                        long_term_use: bool = False, stance: str = "recommend") -> tuple[str, ...]:
     """The request's needs a comment talks about (engine.needs.needs_met), for NEED_MATCH_BOOST; none when the
     mention's quote says the opposite of what the request asks (engine.answer.says_the_opposite: "it will give you a
     white cast" for a no-white-cast request; b02, 11 Oct 2026). Such a comment talks about the need, but against the
-    request."""
-    return () if says_the_opposite(quote, asks) else needs_met(body, needs, long_term_use)
+    request. So does a recommendation whose quote says its product didn't help with a need (engine.needs.
+    said_not_to_help, 15 Oct 2026: "it did nothing for my oily skin"): that need isn't among those it talks about. A
+    warning's not helping is what it warns about, so it keeps them."""
+    if says_the_opposite(quote, asks):
+        return ()
+    met = needs_met(body, needs, long_term_use)
+    if stance != "recommend" or not met:
+        return met
+    against = said_not_to_help(quote, needs)
+    return tuple(need for need in met if need not in against)
 
 
 def _as_low(voice: VoiceScore) -> VoiceScore:

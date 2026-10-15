@@ -152,7 +152,7 @@ from engine.ingredients import (
     TYPE_OWN_INGREDIENT, find_ingredients, form_kind, form_of, ingredient_type_name, ingredients_of_type, talk_words,
 )
 from engine.models import Thread
-from engine.needs import LASTING, Need, needs_met
+from engine.needs import LASTING, Need, needs_met, said_not_to_help
 from engine.prices import PriceCheck
 from engine.credibility import GENERIC_NAME_WORDS
 from engine.match_products import FILLER_WORDS, known_aliases
@@ -917,7 +917,8 @@ def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
     """The most credible first, but the quotes that name their product and give a view before those that only name
     it, those before the ones that only give a view, and those before the rest; within each, those whose comment talks about what the request asks for first (10 Oct 2026: out of context, a line that only opens a list of other products the
     writer has had no trouble with says little, and so does a list of the grinders someone owns), and a quote that says the opposite of what
-    the request asks ("does leave a white cast") after every other (_says_the_opposite). Each is still shown when
+    the request asks ("does leave a white cast"), or a recommendation's quote saying its product didn't help with a
+    need ("it did nothing for my oily skin", 15 Oct 2026), after every other (_says_the_opposite). Each is still shown when
     there's room. Since 12 Oct 2026 the quotes of `leaning` (comment ids: quotes that lean on the thread, _standing) come
     after all of these, and a quote saying the product isn't really the `product_type` asked for (that it
     isn't really a moisturiser) counts as saying the opposite of the request (_not_the_type)."""
@@ -934,8 +935,11 @@ def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
     def about_the_ask(m: ScoredMention) -> bool:
         return bool(needs and needs_met(m.quote, needs, m.evidence == "long-term use"))
 
+    # A recommendation whose quote says its product didn't help with one of the needs ("it did nothing for my oily
+    # skin") talks about it against the request too (engine.needs.said_not_to_help, 15 Oct 2026); a warning's doesn't.
     def opposite(m: ScoredMention) -> bool:
-        return _says_the_opposite(m.quote, asks) or _not_the_type(m.quote, product_type)
+        return (_says_the_opposite(m.quote, asks) or _not_the_type(m.quote, product_type)
+                or (m.stance == "recommend" and bool(said_not_to_help(m.quote, needs))))
 
     return sorted(ordered, key=lambda m: (m.comment_id in leaning, opposite(m), tier(m), not about_the_ask(m)))
 
