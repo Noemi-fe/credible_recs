@@ -221,3 +221,19 @@ def test_a_typed_entry_never_prices_or_sells_another_type():
     assert find_price("KitchenAid Artisan stand mixer", "kitchen", [mixer], product_type="stand mixer") == mixer
     untyped = Price.model_validate(entry(product="KitchenAid Artisan stand mixer", category="kitchen", price=459.0))
     assert find_price("KitchenAid Artisan stand mixer", "kitchen", [untyped], product_type="blender") == untyped
+
+
+def test_a_brand_written_only_with_the_types_words_finds_the_entry_under_its_name():
+    # Found by the UK availability pass (15 Oct 2026): a brand pick whose writers only ever wrote the brand with the
+    # type's words ("Ridgeline Outfitters t-shirt") found no entry under the brand's own name, since its names were taken
+    # whole as the brand's. Without the type's words at their end they are the brand's name, as an entry's own name may
+    # add them ("OXO kettle"). Other words still make another name: "Ridgeline Outfitters Workwear" is another line.
+    from engine.prices import find_brand_entry
+
+    brand = Price.model_validate(entry(product="Ridgeline Outfitters", category="general", price=None,
+                                       available=False))
+    t_shirt = ("t-shirt", "t-shirts")
+    assert find_brand_entry(["Ridgeline Outfitters t-shirt"], "general", [brand], t_shirt, "t-shirt") == brand
+    assert find_brand_entry(["Ridgeline Outfitters t-shirts"], "general", [brand], t_shirt, "t-shirt") == brand
+    assert find_brand_entry(["Ridgeline Outfitters Workwear"], "general", [brand], t_shirt, "t-shirt") is None
+    assert find_brand_entry(["t-shirt"], "general", [brand], t_shirt, "t-shirt") is None

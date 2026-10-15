@@ -292,8 +292,21 @@ def test_the_uk_name_sage_is_shown_rather_than_breville():
 
 
 def test_the_uk_names_come_from_the_config():
-    assert config.UK_BRAND_NAMES == {"Breville": "Sage"}
+    # Changed on purpose 15 Oct 2026 (the UK availability pass, the orchestrator's rule: a brand sold in the UK under
+    # another name follows decision 12): Tempur-Pedic is TEMPUR outside North America, written by writers four ways.
+    assert config.UK_BRAND_NAMES == {"Breville": "Sage", "Tempur-Pedic": "TEMPUR", "Tempur Pedic": "TEMPUR",
+                                     "Tempurpedic": "TEMPUR", "Temperpedic": "TEMPUR"}
     assert uk_name("Fellow Stagg", {"Fellow": "Made-up UK Brand"}) == "Made-up UK Brand Stagg"
+
+
+def test_the_uk_name_tempur_is_shown_rather_than_tempur_pedic():
+    # Tempur-Pedic doesn't ship outside the US; the same maker sells TEMPUR mattresses and pillows in the UK.
+    assert uk_name("Tempur-Pedic") == "TEMPUR"
+    assert uk_name("tempurpedic pillow") == "TEMPUR pillow"
+    assert uk_name("Temperpedic") == "TEMPUR"
+    assert uk_name("Tempur Pedic mattress") == "TEMPUR mattress"
+    assert brand_pick_name(uk_name("Tempur-Pedic"), "mattress") == "TEMPUR mattress line"
+    assert uk_name("Tempur Cloud") == "Tempur Cloud"  # already the UK name
 
 
 def test_a_brand_pick_says_which_products_it_means():

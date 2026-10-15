@@ -1913,6 +1913,1163 @@
    "checked_on": "2026-10-15",
    "available": false,
    "note": "Trader Joe's own-brand lip masks (vanilla, cinnamon roll, watermelon and other flavours), sold in Trader Joe's US stores; Amazon UK's search shows only other brands' lip masks; no UK shop found selling them"
+  },
+  {
+   "product": "AprilAire",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=aprilaire+dehumidifier",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "whole-house humidity and air products sold through US and Canadian HVAC dealers; Amazon UK's search shows only other brands' dehumidifiers; no UK shop found"
+  },
+  {
+   "product": "Danby",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=danby+dehumidifier",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "a Canadian appliance brand for North America; Amazon UK's search shows only other brands; no UK shop found"
+  },
+  {
+   "product": "Frigidaire",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=frigidaire+dehumidifier",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Electrolux's North American brand; Amazon UK's search shows only other brands' dehumidifiers; no UK shop found selling its dehumidifiers, washers or air conditioners"
+  },
+  {
+   "product": "GE",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=GE+dehumidifier",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "GE Appliances"
+   ],
+   "note": "GE Appliances (Haier) sells in North America: Amazon UK's searches for GE dehumidifiers, washing machines and LED light bulbs show only other brands; no UK shop found"
+  },
+  {
+   "product": "Maytag",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=maytag+washing+machine",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Whirlpool's North American brand: Amazon UK lists only a commercial coin-op Maytag top loader (£2,199); no domestic Maytag washing machine found for UK shoppers"
+  },
+  {
+   "product": "Mockingbird",
+   "category": "general",
+   "product_type": "stroller",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=mockingbird+stroller",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "a US stroller sold from hellomockingbird.com; Amazon UK's search shows only other brands' pushchairs; no UK shop found"
+  },
+  {
+   "product": "Sleep Number",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=sleep+number+bed",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "sold through Sleep Number's own US stores and sleepnumber.com; Amazon UK's search shows only other brands; no UK shop found"
+  },
+  {
+   "product": "Leesa",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "The Mattress Guide",
+   "url": "https://www.themattressguide.co.uk/leesa-mattress-review/",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "the UK review site says Leesa no longer sells in Britain; Amazon UK's search for a Leesa hybrid mattress shows only other brands"
+  },
+  {
+   "product": "Avocado Green mattress",
+   "category": "general",
+   "product_type": "mattress",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Avocado",
+   "url": "https://help.avocadogreenmattress.ca/en/articles/6246503-where-do-avocado-mattresses-ship-from",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Avocado Green"
+   ],
+   "note": "Avocado ships its mattresses from its Los Angeles factory to the US and Canada (its help centres); Amazon UK lists only its pillow and mattress protector"
+  },
+  {
+   "product": "WinkBeds",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=winkbed+mattress",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "WinkBed",
+    "Wink Bed"
+   ],
+   "note": "mattresses made to order and delivered in the US; Amazon UK's search shows only other brands; no UK shop found"
+  },
+  {
+   "product": "Neato",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "TechCrunch",
+   "url": "https://techcrunch.com/2023/05/01/neato-robotics-is-being-shut-down-after-18-years/",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Neato Robotics was shut down by its parent, Vorwerk, in 2023; no Neato robot vacuum is made any more"
+  },
+  {
+   "product": "Coterie",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=coterie+diapers",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "a US nappy brand sold from its own US site; Amazon UK's search shows only other brands"
+  },
+  {
+   "product": "Amcrest",
+   "category": "general",
+   "product_type": "video doorbell",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=amcrest+video+doorbell",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Amazon UK's search shows only other brands' doorbells (Tapo, Reolink); no UK shop found"
+  },
+  {
+   "product": "Article",
+   "category": "general",
+   "product_type": "sofa",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Article",
+   "url": "https://www.article.com/help-center/delivery",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "the Vancouver furniture maker delivers across Canada and the contiguous US only (its delivery page)"
+  },
+  {
+   "product": "Casper",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "WhatMattress",
+   "url": "https://www.whatmattress.uk/have-casper-uk-stopped-trading/",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Casper stopped trading in the UK (the UK review site's report); no UK shop found selling its pillows or mattresses"
+  },
+  {
+   "product": "Coop Home Goods",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=coop+home+goods+eden+pillow",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "a US pillow maker; Amazon UK's search shows only other brands' pillows; no UK shop found"
+  },
+  {
+   "product": "Cree",
+   "category": "general",
+   "product_type": "light bulb",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=cree+led+bulb",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Cree's household LED bulbs are sold in North America; Amazon UK's search shows only other brands' bulbs"
+  },
+  {
+   "product": "Duluth Trading",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=duluth+trading+flannel+shirt",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Duluth Trading Company",
+    "Duluth Buck Naked"
+   ],
+   "note": "sold from Duluth Trading's US stores and site (its pages refused our reader); Amazon UK's searches for its flannels and Buck Naked underwear show only other brands; forwarding guides tell overseas buyers to use a US address"
+  },
+  {
+   "product": "Eley",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=eley+hose+reel",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "a US hose and hose reel maker; Amazon UK's search shows only other brands (Hozelock)"
+  },
+  {
+   "product": "Feit",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=feit+electric+led+bulb",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Feit Electric"
+   ],
+   "note": "Feit Electric sells in North America; Amazon UK's search shows only other brands' bulbs"
+  },
+  {
+   "product": "Flexsteel",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Flexsteel",
+   "url": "https://www.flexsteel.com/pages/store-locator",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Flex Steel"
+   ],
+   "note": "a US furniture maker selling through its dealers (its store locator); no UK shop found"
+  },
+  {
+   "product": "Flexzilla",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=flexzilla+garden+hose",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "a US hose brand; Amazon UK's search shows only other brands' hoses"
+  },
+  {
+   "product": "Garnet Hill",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Garnet Hill",
+   "url": "https://www.garnethill.com/shipping-rates/content",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "its shipping page says it does not ship outside the United States"
+  },
+  {
+   "product": "Honest",
+   "category": "general",
+   "product_type": "nappies",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=honest+company+nappies",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "The Honest Company"
+   ],
+   "note": "The Honest Company's nappies are sold in the US; Amazon UK lists only its imported wipes and other brands' nappies"
+  },
+  {
+   "product": "Huggies",
+   "category": "general",
+   "product_type": "nappies",
+   "price": null,
+   "currency": "GBP",
+   "shop": "BBC News",
+   "url": "https://www.bbc.co.uk/news/business-20068925",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Kimberly-Clark stopped selling Huggies nappies in most of Europe in 2012; Huggies UK sells wipes, Pull-Ups and DryNites only"
+  },
+  {
+   "product": "Kirkland",
+   "category": "general",
+   "product_type": "dish soap",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Costco UK",
+   "url": "https://www.costco.co.uk/search?text=kirkland%20signature%20washing%20up%20liquid",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Kirkland Signature"
+   ],
+   "note": "Costco UK's search shows Kirkland laundry liquids and fabric conditioner, no Kirkland washing-up liquid"
+  },
+  {
+   "product": "Levolor",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=levolor+blinds",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Levelor"
+   ],
+   "note": "Newell's North American blinds brand; Amazon UK's search shows only other brands"
+  },
+  {
+   "product": "Lovesac",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Lovesac",
+   "url": "https://www.lovesac.com/help-center?a=Shipping-Information---id--Lyt5pt3NQ0GN95eW1awmfw",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Lovesac ships within the contiguous United States (its shipping help page) and sells from US showrooms; no UK shop found"
+  },
+  {
+   "product": "Old Navy",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Old Navy",
+   "url": "https://oldnavy.gap.com/customerService/info.do?cid=83040",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "its international shipping page says it does not support international shipping; it has no UK shops"
+  },
+  {
+   "product": "Polywood",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=polywood+adirondack+chair",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Poly wood",
+    "POLYWOOD"
+   ],
+   "note": "a US outdoor furniture maker selling through US dealers; Amazon UK's search shows only other brands"
+  },
+  {
+   "product": "Porter-Cable",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=porter+cable+oscillating+tool",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Porter Cable"
+   ],
+   "note": "a US tool brand: Amazon UK lists only an import of a 3-amp (120 V) corded multi-tool, not for UK mains"
+  },
+  {
+   "product": "Harbor Freight",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Harbor Freight",
+   "url": "https://go.harborfreight.com/does-harbor-freight-tools-ship-internationally/",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Harbor Freight's own page: it does not ship outside the United States"
+  },
+  {
+   "product": "Portland",
+   "category": "general",
+   "product_type": "pressure washer",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Harbor Freight",
+   "url": "https://go.harborfreight.com/does-harbor-freight-tools-ship-internationally/",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Portland is Harbor Freight's own pressure washer brand; Harbor Freight does not ship outside the US"
+  },
+  {
+   "product": "Purex",
+   "category": "general",
+   "product_type": "laundry detergent",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=purex+laundry+detergent",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Henkel's North American laundry brand; Amazon UK's search shows only other brands"
+  },
+  {
+   "product": "Riccar",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=riccar+vacuum",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "a US vacuum maker; Amazon UK's search shows only other brands and bags"
+  },
+  {
+   "product": "Simplicity",
+   "category": "general",
+   "product_type": "vacuum cleaner",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=riccar+vacuum",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Riccar's sister US vacuum brand: Amazon UK lists only Simplicity bags from an import seller, no vacuums"
+  },
+  {
+   "product": "Room & Board",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Room & Board",
+   "url": "https://www.roomandboard.com/customer-service/delivery",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Room and Board"
+   ],
+   "note": "the US furniture shop delivers in the US (its delivery page: a US flat rate); no UK shop found"
+  },
+  {
+   "product": "St. John's Bay",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Reship",
+   "url": "https://www.reship.com/blog/how-to-shop-jc-penney-internationally",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "JCPenney's own brand; JCPenney has no UK shop and overseas buyers use forwarding services (Reship's guide)"
+  },
+  {
+   "product": "Sun Joe",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=sun+joe+spx3000+pressure+washer",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "SunJoe"
+   ],
+   "note": "Sun Joe's pressure washers are US 120 V models: Amazon UK lists only a replacement hose for the SPX3000"
+  },
+  {
+   "product": "Sunbeam",
+   "category": "general",
+   "product_type": "electric blanket",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=sunbeam+heated+blanket",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Sunbeam's electric blankets are North American 120 V models; Amazon UK's search shows only other brands (Snuggledown)"
+  },
+  {
+   "product": "Walmart",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "BBC News",
+   "url": "https://www.bbc.co.uk/news/business-54383131",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Great Value"
+   ],
+   "note": "Walmart's own brands (Great Value, Mainstays) are sold in its US stores; Walmart has had no UK shop since it sold Asda (BBC, 2020; completed February 2021)"
+  },
+  {
+   "product": "Home Decorators Collection",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=home+decorators+collection+ceiling+fan",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Home Depot's own brand, sold in the US and Canada; Amazon UK's search shows only other brands' fans"
+  },
+  {
+   "product": "Ozark Trail",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=ozark+trail+cooler",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Walmart's own outdoor brand: Amazon UK lists only an import of its 1-gallon jug, no cooler"
+  },
+  {
+   "product": "Norchill",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=norchill+cooler",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "a US soft cooler brand; Amazon UK's search shows only other brands"
+  },
+  {
+   "product": "Nested Bean",
+   "category": "general",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=nested+bean+zen+sack",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "a US baby sleep brand; Amazon UK's search shows only other brands' sleeping bags"
+  },
+  {
+   "product": "Evenflo",
+   "category": "general",
+   "product_type": "car seat",
+   "price": null,
+   "currency": "GBP",
+   "shop": "GOV.UK",
+   "url": "https://www.gov.uk/child-car-seats-the-rules",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Evenflo's car seats are US models: Amazon UK lists only imports of the Gold Revolve360; gov.uk says only seats labelled E with R129 or ECE R44 can be used in the UK"
+  },
+  {
+   "product": "Carolina work boots",
+   "category": "general",
+   "product_type": "work boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=carolina+work+boots",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Carolina"
+   ],
+   "note": "a US work boot maker; Amazon UK's search shows only other brands (V12)"
+  },
+  {
+   "product": "Gorilla ladder",
+   "category": "general",
+   "product_type": "ladder",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=gorilla+ladder",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Gorilla Ladders is a US brand; Amazon UK's search shows only other brands' ladders"
+  },
+  {
+   "product": "Audio-Technica ATH-M50",
+   "category": "general",
+   "product_type": "headphones",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=audio-technica+ath-m50",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Amazon UK lists only the M50x (£127), M50xWH and M50xBT2: the original M50 was replaced by the M50x (detachable cable) in 2014"
+  },
+  {
+   "product": "Dell Latitude 5300",
+   "category": "general",
+   "product_type": "laptop",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=dell+latitude+5300",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Dell Latitude 5300 13.3 Touchscreen"
+   ],
+   "note": "a 2019 model Dell no longer sells; Amazon UK lists only 'Amazon Renewed' refurbished units"
+  },
+  {
+   "product": "Blueair Blue Pure 211+",
+   "category": "general",
+   "product_type": "air purifier",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Blueair UK",
+   "url": "https://www.blueair.co.uk/products/blue-211i-max",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Blue air 211+",
+    "BlueAir 211+"
+   ],
+   "note": "Blueair UK sells the Blue Pure 211i Max, its successor; Amazon UK's search for the 211+ shows the 211i Max and other models"
+  },
+  {
+   "product": "CHI Compact 1875 Ionic",
+   "category": "general",
+   "product_type": "hair dryer",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=chi+1875+compact+hair+dryer",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Chi Compact 1875 Ionic"
+   ],
+   "note": "a US 1875 W (120 V) dryer; Amazon UK's search shows only other brands"
+  },
+  {
+   "product": "Apple AirPods (1st generation)",
+   "category": "general",
+   "product_type": "earbuds",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=apple+airpods+1st+generation",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Gen 1 AirPods",
+    "AirPods gen 1"
+   ],
+   "note": "Apple replaced them in 2019; Amazon UK shows only renewed 2nd-generation and later AirPods"
+  },
+  {
+   "product": "Graco FastAction Jogger travel system",
+   "category": "general",
+   "product_type": "stroller",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=graco+fastaction+jogger+travel+system",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "a US travel system; Amazon UK's Graco travel systems are other models (Near2Me, Tavira, Revaya)"
+  },
+  {
+   "product": "Graco Slim Snacker",
+   "category": "general",
+   "product_type": "high chair",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=graco+slim+snacker+high+chair",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "a US high chair; Amazon UK lists Graco's UK high chairs (Presti, Snack N' Stow) instead"
+  },
+  {
+   "product": "Husky adjustable height work table",
+   "category": "general",
+   "product_type": "standing desk",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=husky+adjustable+height+work+table",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Husky is Home Depot's own tool brand; Amazon UK's search shows only other brands' desks and benches"
+  },
+  {
+   "product": "Midea Cube",
+   "category": "general",
+   "product_type": "dehumidifier",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=midea+cube+dehumidifier",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "a US Midea model; Amazon UK's search shows only other brands' dehumidifiers"
+  },
+  {
+   "product": "Philips Sonicare Series 2",
+   "category": "general",
+   "product_type": "electric toothbrush",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=philips+sonicare+2+series",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Philips Sonicare 2 Series"
+   ],
+   "note": "the old 2 Series (HX6211) is no longer made; Amazon UK's search shows the current 3100 and 4100 Series"
+  },
+  {
+   "product": "Sony WF-1000XM3",
+   "category": "general",
+   "product_type": "earbuds",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=sony+wf-1000xm3",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "replaced by the WF-1000XM4 in 2021; Amazon UK's search shows the XM4, XM5 and XM6 and other Sony models"
+  },
+  {
+   "product": "Toshiba TDDP5013ES2",
+   "category": "general",
+   "product_type": "dehumidifier",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=toshiba+tddp5013es2+dehumidifier",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Toshiba 50 Pint TDDP5013ES2"
+   ],
+   "note": "a US 50-pint model; Amazon UK's search shows only other brands"
+  },
+  {
+   "product": "Viofo A129 Plus Duo",
+   "category": "general",
+   "product_type": "dash cam",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=viofo+a129+plus+duo",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Viofo A-129 Plus Duo"
+   ],
+   "note": "Amazon UK's search shows only its successors (A229 Plus, A229 Pro) and other models"
+  },
+  {
+   "product": "Viofo A119 V2",
+   "category": "general",
+   "product_type": "dash cam",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=viofo+a119+v2",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "replaced by the A119 V3 and then the A119 Mini; Amazon UK's search shows the A119 Mini 2"
+  },
+  {
+   "product": "Whirlpool Duet",
+   "category": "general",
+   "product_type": "washing machine",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=whirlpool+duet+washer",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Whirlpool Duet washer"
+   ],
+   "note": "a US Whirlpool model; Amazon UK's search shows only spare parts for it"
+  },
+  {
+   "product": "Xiaomi Roborock S5",
+   "category": "general",
+   "product_type": "robot vacuum",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=roborock+s5",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "the 2018 S5 is no longer sold; Amazon UK's search shows current Roborock models (Q10 S5, Qrevo)"
+  },
+  {
+   "product": "RIDGID 12 Gal. 5.0-Peak HP NXT Wet/Dry Shop Vacuum",
+   "category": "general",
+   "product_type": "shop vac",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=ridgid+wet+dry+vac",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "30 gallon RIDGID corded shop vac"
+   ],
+   "note": "Home Depot's RIDGID wet/dry vacs are US 120 V models: Amazon UK lists only an import of the 6-gallon NXT"
+  },
+  {
+   "product": "Anker PowerCore 20100mAh",
+   "category": "general",
+   "product_type": "power bank",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=anker+powercore+20100",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Amazon UK's search shows other Anker power banks (Prime 20,100mAh, PowerCore 26800), not this one"
+  },
+  {
+   "product": "Anker PowerCore Fusion 5000",
+   "category": "general",
+   "product_type": "power bank",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=anker+powercore+fusion+5000",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Amazon UK's search shows other power banks and cables for it, not the Fusion 5000"
+  },
+  {
+   "product": "Apple iPad Air 2",
+   "category": "general",
+   "product_type": "tablet",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Apple UK",
+   "url": "https://www.apple.com/uk/ipad-air/specs/",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "a 2014 iPad Apple stopped selling in 2017; Apple UK's iPad Air page lists only the current model"
+  },
+  {
+   "product": "Baby Merlin's Magic Sleepsuit",
+   "category": "general",
+   "product_type": "baby sleeping bag",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=baby+merlin%27s+magic+sleepsuit",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "baby merlins magic sleep suit",
+    "Magic Merlin sleep suit"
+   ],
+   "note": "a US product; Amazon UK's search shows only other brands' sleepsuits"
+  },
+  {
+   "product": "Blink XT2",
+   "category": "general",
+   "product_type": "security camera",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=blink+xt2+camera",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Amazon UK lists the XT2 with no price (unavailable); Blink sells its Outdoor cameras instead"
+  },
+  {
+   "product": "Bose SoundLink Mini",
+   "category": "general",
+   "product_type": "bluetooth speaker",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=bose+soundlink+mini",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Amazon UK lists the SoundLink Mini II with no price (unavailable); Bose sells the SoundLink Flex and Micro instead"
+  },
+  {
+   "product": "Brother HL-2040",
+   "category": "general",
+   "product_type": "printer",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=brother+hl-2040",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Brother HL 2040"
+   ],
+   "note": "long discontinued; Amazon UK's search shows only current Brother lasers (HL-L2400DW, HL-L2445DW)"
+  },
+  {
+   "product": "Caterpillar Second Shift Steel Toe Work Boot",
+   "category": "general",
+   "product_type": "work boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=caterpillar+second+shift+steel+toe+boot",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "a US CAT model; Amazon UK's search shows CAT's UK safety boots (Granite)"
+  },
+  {
+   "product": "Chromecast with Google TV",
+   "category": "general",
+   "product_type": "streaming device",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=chromecast+with+google+tv",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Google replaced it with the Google TV Streamer in 2024; Amazon UK's search shows the Streamer"
+  },
+  {
+   "product": "ecobee3",
+   "category": "general",
+   "product_type": "smart thermostat",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=ecobee+smart+thermostat",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "ecobee 3"
+   ],
+   "note": "the 2015 ecobee3 was replaced by later models; Amazon UK lists only an import of the current Smart Thermostat Premium (£214)"
+  },
+  {
+   "product": "Eddie Bauer diaper backpack",
+   "category": "general",
+   "product_type": "changing bag",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=eddie+bauer+diaper+bag+backpack",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Eddie Bauer's baby gear is a US licence; Amazon UK's search shows only other brands' changing bags"
+  },
+  {
+   "product": "Google Pixel 3",
+   "category": "general",
+   "product_type": "phone",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Google Store UK",
+   "url": "https://store.google.com/gb/?hl=en-GB",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Pixel 3",
+    "Pixel 3 XL"
+   ],
+   "note": "a 2018 phone Google stopped selling in 2019; Google Store UK sells only current Pixels"
+  },
+  {
+   "product": "Honeywell MN4CFSWW9",
+   "category": "general",
+   "product_type": "air conditioner",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=honeywell+mn4cfsww9",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Honeywell Classic Portable Air Conditioner MN4CFSWW9"
+   ],
+   "note": "Amazon UK's search finds nothing: a US 115 V model"
+  },
+  {
+   "product": "JBL Charge 3",
+   "category": "general",
+   "product_type": "bluetooth speaker",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=jbl+charge+3",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "replaced; Amazon UK's search shows only the Charge 5, 6 and Essential 2"
+  },
+  {
+   "product": "JBL Flip 4",
+   "category": "general",
+   "product_type": "bluetooth speaker",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=jbl+flip+4",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "replaced; Amazon UK's search shows only the Flip 7, Flip Essential 3 and other models"
+  },
+  {
+   "product": "LG C1 OLED",
+   "category": "general",
+   "product_type": "tv",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=lg+c1+oled+tv",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "LG's 2021 OLED; Amazon UK's search shows only LG's current B6, C6 and G6 OLEDs and others"
+  },
+  {
+   "product": "LG C2 OLED",
+   "category": "general",
+   "product_type": "tv",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=lg+c2+oled+tv",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "LG's 2022 OLED; Amazon UK's search shows only LG's current B5 and C6 OLEDs and others"
+  },
+  {
+   "product": "Samsung Xpress M2020",
+   "category": "general",
+   "product_type": "printer",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=samsung+xpress+m2020+printer",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "m2020 samsung",
+    "Samsung m2020"
+   ],
+   "note": "Samsung sold its printer business to HP in 2017; Amazon UK's search shows only toner for it"
+  },
+  {
+   "product": "Moen Inspire Chrome Shower Head 2.5-GPM",
+   "category": "general",
+   "product_type": "shower head",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=moen+inspire+shower+head",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "a US fitting (2.5 GPM, US threads); Amazon UK's search shows only other brands"
+  },
+  {
+   "product": "Google Nest Protect",
+   "category": "general",
+   "product_type": "smoke alarm",
+   "price": null,
+   "currency": "GBP",
+   "shop": "PCMag UK",
+   "url": "https://uk.pcmag.com/home-security/157319/google-discontinues-nest-protect-smart-smoke-alarm",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "also_called": [
+    "Nest Protect",
+    "Nest smoke detector",
+    "Nest smoke alarm"
+   ],
+   "note": "Google discontinued the Nest Protect on 25 Feb 2025; Amazon UK's search shows only other brands' alarms"
+  },
+  {
+   "product": "Nitecore MT20A",
+   "category": "general",
+   "product_type": "flashlight",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=nitecore+mt20a",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "Amazon UK's search shows other Nitecore lights (MT2A Pro, P20iX), not the MT20A"
+  },
+  {
+   "product": "Red Wing 2406",
+   "category": "general",
+   "product_type": "work boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=red+wing+2406+boot",
+   "checked_on": "2026-10-15",
+   "available": false,
+   "note": "a US Red Wing work boot; Amazon UK's search shows other Red Wing boots (the UK Petroking range, 8131)"
+  },
+  {
+   "product": "IBM Model M",
+   "category": "general",
+   "product_type": "keyboard",
+   "price": null,
+   "currency": "GBP",
+   "shop": "eBay UK",
+   "url": "https://www.ebay.co.uk/sch/i.html?_nkw=ibm+model+m+keyboard",
+   "checked_on": "2026-10-15",
+   "available": true,
+   "second_hand": true,
+   "note": "made from 1985 into the 1990s; eBay UK lists 161 used keyboards"
+  },
+  {
+   "product": "MBPs from late 2010-2011",
+   "category": "general",
+   "product_type": "laptop",
+   "price": null,
+   "currency": "GBP",
+   "shop": "eBay UK",
+   "url": "https://www.ebay.co.uk/sch/i.html?_nkw=macbook+pro+2011",
+   "checked_on": "2026-10-15",
+   "available": true,
+   "second_hand": true,
+   "also_called": [
+    "late 2011 MBP",
+    "2011 MBP"
+   ],
+   "note": "MacBook Pros of 2010 and 2011, which Apple stopped making in 2012; eBay UK lists 255 used ones; named as writers name them so that no entry covers the current MacBook Pro"
+  },
+  {
+   "product": "Singer 201K",
+   "category": "general",
+   "product_type": "sewing machine",
+   "price": null,
+   "currency": "GBP",
+   "shop": "eBay UK",
+   "url": "https://www.ebay.co.uk/sch/i.html?_nkw=singer+201k+sewing+machine",
+   "checked_on": "2026-10-15",
+   "available": true,
+   "second_hand": true,
+   "note": "a 1950s Singer machine; eBay UK lists 462 used ones"
   }
  ]
 }

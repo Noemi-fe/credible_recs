@@ -241,11 +241,20 @@ def find_brand_entry(names: Iterable[str], category: str, prices: Iterable[Price
     request's product type: "OXO kettle" for "Oxo" in a kettle request; late on 10 Oct 2026), so it speaks for all the
     brand's products of that type. An entry for one of the brand's products ("Griswold No. 8 skillet", "OXO Cordless
     Glass Electric Kettle") isn't. Of those that say whether it is sold, the newest check decides, as in
-    find_availability.
+    find_availability. A name of the brand pick's that ends in the type's words is the brand's name without them too
+    (15 Oct 2026, the UK availability pass: a line its writers only ever wrote as "Duluth Trading t-shirt" had found no
+    entry under "Duluth Trading").
     """
     aliases = known_aliases().get(category, {})
-    brand = {tuple(product_words(name, aliases)) for name in names} - {()}
     extra = {word for words in type_words for word in product_words(words, aliases)}
+    brand = set()
+    for name in names:
+        words = tuple(product_words(name, aliases))
+        brand.add(words)
+        while words and words[-1] in extra:
+            words = words[:-1]
+        brand.add(words)
+    brand -= {()}
 
     def under_brand(known: str) -> bool:
         words = tuple(product_words(known, aliases))

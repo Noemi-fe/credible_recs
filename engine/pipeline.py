@@ -1560,12 +1560,21 @@ def _unsuited_kinds(kinds, query: ParsedQuery, product_facts: list[ProductFacts]
 
 def _note_other_names(groups: list[ProductGroup], cautions: dict[str, list[str]]) -> None:
     """Adds a note to each product shown by its UK name whose writers used another one (UK_BRAND_NAMES: a "Sage"
-    pick whose quotes say "Breville"), so the quotes make sense (10 Oct 2026)."""
+    pick whose quotes say "Breville"), so the quotes make sense (10 Oct 2026). One note per UK name, under the first of
+    its other names in UK_BRAND_NAMES (the maker's own spelling), however many of its spellings writers used (15 Oct
+    2026: TEMPUR, which writers call Tempur-Pedic four ways)."""
+    canonical: dict[str, str] = {}
+    for brand, uk_brand in UK_BRAND_NAMES.items():
+        canonical.setdefault(uk_brand, brand)
     for group in groups:
+        noted: set[str] = set()
         for brand, uk_brand in UK_BRAND_NAMES.items():
+            if uk_brand in noted:
+                continue
             if uk_brand.lower() in group.name.lower() and any(
                     re.search(rf"(?<!\w){re.escape(brand)}(?!\w)", name, re.IGNORECASE) for name in group.names):
-                cautions.setdefault(group.key, []).append(OTHER_NAME_NOTE.format(brand=brand))
+                cautions.setdefault(group.key, []).append(OTHER_NAME_NOTE.format(brand=canonical[uk_brand]))
+                noted.add(uk_brand)
 
 
 # --- A brand pick steps aside for its own product (decided by Claude, 10 Oct 2026) ---

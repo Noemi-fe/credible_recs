@@ -323,6 +323,19 @@ def test_a_pick_known_by_another_name_outside_the_uk_says_so(tmp_path):
     assert all(pick.cautions == [] for pick in zoji)
 
 
+def test_a_uk_name_written_several_ways_gets_one_note():
+    # 15 Oct 2026 (the UK availability pass): TEMPUR is the UK name of Tempur-Pedic, which writers spell four ways
+    # (config.UK_BRAND_NAMES). A line whose writers used two of them gets the note once, under the maker's spelling.
+    from engine.group_products import ProductGroup, ProductMention
+
+    mentions = [ProductMention("t1", f"c{i}", name, "general", "recommend", product_type="mattress")
+                for i, name in enumerate(["Temperpedic", "Tempur-Pedic", "tempurpedic"])]
+    group = ProductGroup("general:tempur pedic", "TEMPUR", "general", mentions, loose=True)
+    cautions: dict[str, list[str]] = {}
+    pipeline._note_other_names([group], cautions)
+    assert cautions == {group.key: ["sold as Tempur-Pedic outside the UK, so writers often call it Tempur-Pedic"]}
+
+
 @pytest.mark.parametrize("product_type, requested, other", [
     ("knife set", "chef knife", True),
     ("knife sets", "chef knife", True),

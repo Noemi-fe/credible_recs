@@ -472,7 +472,11 @@ PRICE_MAX_AGE_DAYS = 30
 # Decision 12, names shown to a UK audience (decided by Noemi, 9 Oct 2026): {brand word: the word shown}. Sage is
 # Breville's UK and EU brand; the alias list (engine/data/product_aliases.json) already treats the two as one product,
 # and the answer shows the UK name. Quotes are never changed: a quote that says "Breville" keeps it.
-UK_BRAND_NAMES: dict[str, str] = {"Breville": "Sage"}
+# 15 Oct 2026 (the UK availability pass; the orchestrator's rule that a brand sold in the UK under another name follows
+# this decision): Tempur-Pedic is TEMPUR outside North America (Tempur-Pedic's help page: it doesn't ship outside the
+# US; tempur.com sells TEMPUR mattresses and pillows in the UK), in the four ways writers spell it.
+UK_BRAND_NAMES: dict[str, str] = {"Breville": "Sage", "Tempur-Pedic": "TEMPUR", "Tempur Pedic": "TEMPUR",
+                                  "Tempurpedic": "TEMPUR", "Temperpedic": "TEMPUR"}
 # Under a pick shown by its UK name, a note says why its quotes use the other one (Claude, 10 Oct 2026). Shown as a
 # note ("Note: ...") like the product-facts cautions.
 OTHER_NAME_NOTE = "sold as {brand} outside the UK, so writers often call it {brand}"
