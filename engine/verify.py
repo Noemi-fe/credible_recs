@@ -35,7 +35,10 @@ quotes, engine/answer.py) or "bright_data" (as written). A reply that takes its 
 follows the same rule: its item stays only while the comment above keeps an item of the same product (module 4's
 names), so still says it word for word; a comment nothing points to any more loses its words, as slimming would have
 it. The daily plan lists such comments to be read again like answers' comments (every 40 hours, engine/read_ahead.py)
-until a deploy applies them, so a read with their current text is always in the bundle (engine/precheck.py).
+until a deploy applies them, so a read with their current text is always in the bundle (engine/precheck.py). A read
+whose text holds the very words the library holds, formatting aside (a link's address, bold and italics, punctuation
+and spacing: same_words), isn't an edit at all: it verifies the comment whole, which keeps its words and items (until
+15 Oct 2026 the embed page's formatting was read as spaces, and such reads stay in the bundle for 48 hours).
 
 Where the reads come from:
 - the daily pre-check (engine/precheck.py: a Cloud Run job): the comments answers would show, then the kept comments
@@ -58,6 +61,7 @@ deadline too.
     python -m engine.library apply-checks [--ledger FILE]... [--checks DIR] [--bundle FILE] [--dry-run] [--library DIR]
 """
 
+import html
 import json
 import re
 from dataclasses import dataclass, field, replace
@@ -304,7 +308,13 @@ def apply_checks(folder: Path, ledger: Ledger, now: datetime | None = None, dry_
                 drops[comment.id] = entry.outcome
                 if entry.outcome == "changed" and reads:
                     quotes = verification_quotes(thread, extraction) if quotes is None else quotes
-                    if (found := current_text(comment.url, entry.at, quotes.get(comment.id, ()), reads)) is not None:
+                    found = current_text(comment.url, entry.at, quotes.get(comment.id, ()), reads)
+                    if found is not None and same_words(comment.body, found[1]):
+                        # Formatting aside, Reddit shows the very words the library holds: it wasn't edited, and the
+                        # read verifies it whole (a read made before the embed page's formatting fix of 15 Oct 2026).
+                        del drops[comment.id]
+                        stamps[comment.id] = max(found[0], verified) if verified is not None else found[0]
+                    elif found is not None:
                         texts[comment.id] = found
             elif expired(comment.model_copy(update={"verified_at": verified}), thread, now):
                 drops[comment.id] = "expired"
@@ -344,6 +354,20 @@ def apply_checks(folder: Path, ledger: Ledger, now: datetime | None = None, dry_
 
 
 _KINDS = ("mentions", "notes", "agreements", "care")  # the extraction's items, each pointing to its comment
+_LINK = re.compile(r"\[([^\]]*)\]\([^)\s]*\)")  # a markdown link, which the embed page shows as its words only
+_ESCAPED = re.compile(r"\\(\S)")  # Reddit's backslash before a markdown character: "\[", "\*"
+_WORD = re.compile(r"[^\W_]+")
+
+
+def same_words(body: str, text: str) -> bool:
+    """Whether a read's text holds the very words a comment's body does, in the same order, formatting aside: a link's
+    address (the embed page shows its words only), bold and italics, escapes, entities, punctuation and spacing (15 Oct
+    2026). Until that day's fix the embed page's formatting was read as spaces ("solid**.**" as "solid ."), so such a
+    read made a comment look edited when not one word had changed; it verifies the comment whole instead."""
+    def words(value: str) -> list[str]:
+        return _WORD.findall(html.unescape(_ESCAPED.sub(r"\1", _LINK.sub(r"\1", value))).lower())
+
+    return bool(text) and words(body) == words(text)
 
 
 def current_text(url: str, since: datetime, quotes, reads) -> tuple[datetime, str, str] | None:
@@ -494,8 +518,9 @@ def restore_words(folder: Path, backup, pairs, checker, dry_run: bool = False) -
     Since Noemi's decision 3 of 15 Oct 2026, a comment Reddit shows edited is put back as apply_checks keeps one: with
     Reddit's current text, as the read shows it, and only those of its items (from the backup) still found in it word
     for word, a reply taking its product from it keeping its item only while it keeps a mention of that product
-    (_kept_after_edit; outcome "edited"). One none of whose quotes is still found, or that Reddit shows deleted or
-    removed, or that slimming never kept, is left as it is."""
+    (_kept_after_edit; outcome "edited"). One whose words Reddit shows unchanged, formatting aside (same_words), is
+    put back whole, as one passing. One none of whose quotes is still found, or that Reddit shows deleted or removed, or
+    that slimming never kept, is left as it is."""
     from engine.slim import _first_seen_dropped
 
     whole_of, raw_of = _backup_reader(backup)
@@ -524,6 +549,8 @@ def restore_words(folder: Path, backup, pairs, checker, dry_run: bool = False) -
             done.append(Restored(thread_id, comment_id, "couldn't be read now"))
             continue
         said = outcome(read[1], verification_quotes(whole, old_extraction)[comment_id])
+        if said == "changed" and same_words(original.body, read[1]):
+            said = "passing"  # formatting aside, the very words it had (a link's address, bold, spacing: same_words)
         if said not in ("passing", "changed"):
             done.append(Restored(thread_id, comment_id, said, read_at=read[0]))
             continue

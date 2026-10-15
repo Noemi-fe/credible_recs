@@ -18,6 +18,8 @@ The rules it keeps:
   read with its current text is always in the bundle;
 - an edited comment's words are its embed page's text, whose formatting is read as plain words: its quotes are never
   widened to the sentences before them (a quoted block of someone else's words can't be told from the rest);
+- a read showing the very words the library holds, formatting aside (a link's address, bold, spacing), is no edit: it
+  verifies the comment whole (until 15 Oct 2026 the embed page's formatting was read as spaces);
 - restore-words (the backup's items for comments verification dropped since slimming) gives back the items still found
   in Reddit's current text, under the same rule.
 
@@ -183,6 +185,31 @@ def test_the_newest_read_with_text_decides_wherever_it_was_made(tmp_path):
     assert comment(root, "s1kept").verified_at == now - timedelta(hours=5)
 
 
+def test_a_read_with_the_same_words_formatting_aside_verifies_the_comment_whole(tmp_path):
+    # Found measuring the next deploy (15 Oct 2026): until that day's fix the embed page's bold, italics and links were
+    # read with a space in their place ("**Rinse** it" as "Rinse it", but "solid**.**" as "solid ."), and such reads are
+    # in the bundle for 48 hours. A comment Reddit shows with the very words the library holds, links, emphasis and
+    # spacing aside, wasn't edited: it keeps its words and every item, verified by the read.
+    root = library_with_two_items(tmp_path)
+    shown = f"{ZOJI[:-1]} . {RINSE}"  # the full stop after a bold word, read with a space before it
+    ledger, reads, now = edited_read(root, tmp_path, "s1kept", shown)
+    result = apply_checks(root, ledger, now=now, reads=[reads])
+    kept = comment(root, "s1kept")
+    assert (kept.status, kept.body, kept.edited) == ("ok", f"{ZOJI} {RINSE}", None)  # its own words, as they were
+    assert kept.verified_at == now - timedelta(hours=3)
+    assert len(items_of(extraction_of(root), "s1kept")) == 2
+    assert (result.edited, result.dropped, result.items_removed, result.stamped) == (0, {}, 0, 1)
+
+
+def test_one_word_changed_is_an_edit(tmp_path):
+    root = library_with_two_items(tmp_path)
+    shown = f"{ZOJI} {RINSE.replace('month', 'week')}"
+    ledger, reads, now = edited_read(root, tmp_path, "s1kept", shown)
+    apply_checks(root, ledger, now=now, reads=[reads])
+    kept = comment(root, "s1kept")
+    assert (kept.body, kept.edited) == (shown, "embed") and len(items_of(extraction_of(root), "s1kept")) == 1
+
+
 def test_a_read_through_bright_data_keeps_its_text_as_written(tmp_path):
     root = library_with_two_items(tmp_path)
     shown = f"{ZOJI}\n\n{EDIT}"
@@ -330,6 +357,26 @@ def test_the_deploy_fetches_the_sites_reads_next_to_the_record_and_deletes_them_
 
 
 # --- restore-words: the backup's items, under the same rule ---
+
+def test_restore_words_gives_back_a_comment_whose_words_are_the_same_formatting_aside(tmp_path):
+    root = a_library(tmp_path, [two_item_thread()], {TID: two_item_extraction()})
+    backup = tmp_path / "backup" / "library"
+    import shutil
+
+    shutil.copytree(root, backup)
+    assert slim_library(root, now=SLIMMED, gold_ids=set()).slimmed == [TID]
+    ledger = Ledger()
+    ledger.record("s1kept", day(8), "changed")
+    apply_checks(root, ledger, now=day(8))
+    clock = Clock()
+    clock.now = day(9)
+    checker = LiveChecker(cache_dir=tmp_path / "checks", fetch=Embed(f"{ZOJI[:-1]} . {RINSE}"), clock=clock,
+                          sleep=clock.sleep, min_interval=0)
+    [restored] = restore_words(root, backup, [(TID, "s1kept")], checker)
+    assert (restored.outcome, restored.items) == ("passing", 2)
+    kept = comment(root, "s1kept")
+    assert (kept.body, kept.edited, kept.verified_at) == (f"{ZOJI} {RINSE}", None, day(9))
+
 
 def test_restore_words_gives_back_the_items_still_found_in_reddits_current_text(tmp_path):
     root = a_library(tmp_path, [two_item_thread()], {TID: two_item_extraction()})

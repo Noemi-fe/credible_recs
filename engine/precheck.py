@@ -10,8 +10,9 @@ check is made: mostly ahead of time, so answers find it saved.
 Who reads (14 Oct 2026, the free-tier redesign). On Google Cloud the daily job no longer reads the embed page itself: a
 Cloud Run job is billed for its whole run, and two thirds of its run went on waiting for Reddit's allowance. With
 --plan (deploy.sh runs it so) it works out what to read and leaves the site a plan in the bucket (plan_run): the
-comments below, likeliest first, then the slimmed library's kept comments due to be verified, and its checks through
-Bright Data; the site, billed only while it answers, reads them a few at each keep-warm ping (engine/read_ahead.py) and
+comments below, likeliest first, then the slimmed library's kept comments due to be verified, those found edited (read
+again until a deploy keeps their current text: 15 Oct 2026), and its checks through Bright Data; the site, billed only
+while it answers, reads them a few at each keep-warm ping (engine/read_ahead.py) and
 shares what it read through the bucket's bundle, which the next run starts from. Without --plan (on Noemi's computer,
 say) a run reads them itself, as below.
 
