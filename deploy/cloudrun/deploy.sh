@@ -96,9 +96,12 @@ fi
 #    Since 15 Oct 2026 (Noemi's decision 3: a comment found edited keeps Reddit's current text and the items still found
 #    in it word for word) the site's reads of the last 48 hours come too, the bucket's live_check/bundle.json (what
 #    Reddit's embed page showed of each comment read, for 48 hours at most): its text is what such a comment keeps.
-#    One more call to the bucket a deploy; the copy is in the same temporary folder as the record, deleted once applied.
-RECORD="$(mktemp -d)/verified.json"
-READS="$(dirname "$RECORD")/bundle.json"
+#    One more call to the bucket a deploy; the copy is in the same temporary folder as the record, deleted once applied,
+#    and on the way out should a step fail (it holds comments' words: never left behind).
+READS_DIR="$(mktemp -d)"
+trap 'rm -rf "$READS_DIR"' EXIT
+RECORD="$READS_DIR/verified.json"
+READS="$READS_DIR/bundle.json"
 if $GCLOUD storage cp "gs://$BUCKET/live_check/bundle.json" "$READS" --project "$PROJECT" --quiet 2>/dev/null; then
     BUNDLE_READS="--bundle $READS"
 else
@@ -111,7 +114,7 @@ else
     echo "No verification record in gs://$BUCKET yet (the pre-check hasn't run): this machine's checks only." >&2
     .venv/bin/python -m engine.library apply-checks $BUNDLE_READS
 fi
-rm -rf "$(dirname "$RECORD")"
+rm -rf "$READS_DIR"
 BUNDLE="$(mktemp -d)/bundle"
 .venv/bin/python -m deploy.cloudrun.make_context "$BUNDLE"
 $GCLOUD run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --source "$BUNDLE" \

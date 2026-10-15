@@ -319,10 +319,12 @@ def test_the_deploy_fetches_the_sites_reads_next_to_the_record_and_deletes_them_
     from engine.tests.test_cloudrun import DEPLOY_SH
 
     script = DEPLOY_SH.read_text(encoding="utf-8")
-    fetch = script.index('$GCLOUD storage cp "gs://$BUCKET/live_check/bundle.json"')
+    fetch = script.index('$GCLOUD storage cp "gs://$BUCKET/live_check/bundle.json" "$READS"')
     apply = script.index("-m engine.library apply-checks --ledger")
-    assert fetch < apply < script.index('rm -rf "$(dirname "$RECORD")"') < script.index("-m deploy.cloudrun.make_context")
+    assert fetch < apply < script.index('rm -rf "$READS_DIR"\n') < script.index("-m deploy.cloudrun.make_context")
     assert script.count("$BUNDLE_READS") >= 2  # with the record, or without it
+    # The copy holds comments' words: it goes even when a step fails.
+    assert script.index("trap 'rm -rf \"$READS_DIR\"' EXIT") < fetch
 
 
 # --- restore-words: the backup's items, under the same rule ---
