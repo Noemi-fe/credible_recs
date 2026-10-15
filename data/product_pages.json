@@ -4748,6 +4748,424 @@
    ],
    "checked_on": "2026-10-15",
    "note": "Merkur (Solingen, Germany) safety razors are stocked by UK shaving specialists: Connaught Shaving, a UK shop, has a Merkur page under its safety razors (its products load by script, so no price could be read). Merkur's own site didn't load and other UK shops refused automated reads, so no range page from the maker, price or image."
+  },
+  {
+   "product": "Australian Gold Botanical SPF 50",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "page": "https://www.superdrug.com/skin/sun-care/sun-protection-creams/australian-gold-botanical-sunscreen-tinted-face-spf-50-89ml/p/mp-00076001",
+   "shop": "Superdrug",
+   "sources": [
+    "https://www.superdrug.com/skin/sun-care/sun-protection-creams/australian-gold-botanical-sunscreen-tinted-face-spf-50-89ml/p/mp-00076001",
+    "https://www.superdrug.com/skin/sun-care/sun-protection-creams/australian-gold-botanical-mineral-lotion-spf-50-147ml/p/mp-00076011",
+    "https://www.amazon.co.uk/dp/B0869952Q3",
+    "https://www.ebay.co.uk/p/932161605"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "A US brand with no UK distributor found. Only third-party listings: Superdrug's marketplace lists the Botanical Tinted Face SPF 50 (89 ml) and the Botanical Mineral Lotion SPF 50 (147 ml, £27.50 per search results), but its pages refuse automated reads; Amazon UK's tinted face listing has no featured offer today; eBay UK has imports. The shown name doesn't say which Botanical SPF 50 (tinted face cream or body lotion). The maker's site redirected this reader to its Canadian site, so no image."
+  },
+  {
+   "product": "babyliss nano titanium 1\" flat iron",
+   "category": "general",
+   "product_type": "hair straightener",
+   "page": "https://babylisspro.com/nano-titanium-1-inch-ultra-slim-flat-iron/BNT4070T.html",
+   "shop": "BaBylissPRO",
+   "sources": [
+    "https://babylisspro.com/nano-titanium-1-inch-ultra-slim-flat-iron/BNT4070T.html",
+    "https://www.beautyflash.co.uk/babyliss-pro-nano-titanium-straightener.html"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "BaBylissPRO Nano Titanium is a US salon line (BaBylissPRO, Conair), several 1-inch models. In the UK only a small salon supplier, Beautyflash, lists a 'BaByliss Pro Nano Titanium straightener' with a UK plug (dual voltage, 130-230 C), per search results; whether it is the same 1-inch iron isn't clear. No big UK shop found."
+  },
+  {
+   "product": "Bellman stovetop milk steamer",
+   "category": "kitchen",
+   "product_type": "milk frother",
+   "page": "https://www.amazon.co.uk/Bellman-Stovetop-Milk-Steamer-50SS/dp/B0CKL2LWFY",
+   "shop": "Amazon UK",
+   "sources": [
+    "https://www.amazon.co.uk/Bellman-Stovetop-Milk-Steamer-50SS/dp/B0CKL2LWFY",
+    "https://www.ebay.co.uk/itm/157621364754"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Bellman (Taiwan) 50SS stovetop milk steamer (also sold as CX-25S). No UK shop found selling it: Amazon UK's listing is currently unavailable and eBay UK has a few listings, per search results. Sold in Australia, Canada and the US."
+  },
+  {
+   "product": "brother all in one black and white laser printer",
+   "category": "general",
+   "product_type": "printer",
+   "page": "https://www.brother.co.uk/printers/laser-printers/mono-laser-all-in-one",
+   "shop": "Brother UK",
+   "image": "https://bie-p-001-delivery.sitecorecontenthub.cloud/api/public/content/fe76b5e973f04f369337780885abc6ce?v=59919359",
+   "image_page": "https://store.brother.co.uk/devices/laser/dcp/dcp1610w",
+   "sources": [
+    "https://www.brother.co.uk/printers/laser-printers/mono-laser-all-in-one",
+    "https://store.brother.co.uk/devices/laser/dcp/dcp1610w"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Generic name read as Brother's mono laser all-in-one range (Brother UK lists about 26). From price: Brother's UK store, DCP-1610W at £178.80 (out of stock today); search results show the DCP-L1660W at £198.19 SRP. Image: the DCP-1610W's, from the store's product data (no share image)."
+  },
+  {
+   "product": "graco slim snacker",
+   "category": "general",
+   "product_type": "high chair",
+   "page": "https://www.gracobaby.com/shop/home-and-gear/high-chairs/slim-snacker-highchair/SAP_1927570.html",
+   "shop": "Graco",
+   "sources": [
+    "https://www.gracobaby.com/shop/home-and-gear/high-chairs/slim-snacker-highchair/SAP_1927570.html",
+    "https://www.u-buy.co.uk/product/2G14VIY-graco-slim-snacker-highchair"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "A US Graco model (out of stock even on Graco's US site, per search results); not sold by Graco in the UK. Only import sites (U-Buy) list it for UK buyers."
+  },
+  {
+   "product": "Janome threadbangers",
+   "category": "general",
+   "product_type": "sewing machine",
+   "page": "https://www.janome.co.uk/",
+   "shop": "Janome UK",
+   "sources": [
+    "https://www.janome.co.uk/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Odd name: 'threadbangers' isn't a Janome model (probably words from the writer's sentence). Janome sells sewing machines in the UK (Janome UK & Ireland's own site), but the shown name names no machine, so no product page or price."
+  },
+  {
+   "product": "Klymit Static V",
+   "category": "general",
+   "product_type": "sleeping pad",
+   "page": "https://klymit.com/products/static-v-luxe-sl-camping-sleeping-pad",
+   "shop": "Klymit",
+   "image": "https://klymit.com/cdn/shop/products/Klymit_StaticVLuxeSL_06LLBL01D_Front_v1_2000x2000_f5d7be88-10c4-4a8d-bf3a-511450fb4d5c.jpg?crop=center&height=1200&v=1579042992&width=1200",
+   "image_page": "https://klymit.com/products/static-v-luxe-sl-camping-sleeping-pad",
+   "sources": [
+    "https://klymit.com/products/static-v-luxe-sl-camping-sleeping-pad",
+    "https://klymit.com/search/suggest.json?q=static%20v&resources%5Btype%5D=product",
+    "https://klymit.com/products/static-v-luxe-sl-camping-sleeping-pad?country=GB"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Klymit (US) sells the Static V family on its US store, which shows dollars with the UK market chosen (the plain Static V page redirects; Static V Lite Eco US$53.99, Luxe SL US$99.99). No UK shop confirmed (the web-search budget had run out). Image is the Static V Luxe SL, not the plain Static V."
+  },
+  {
+   "product": "Kristin Ess Deep Clean Clarifying Shampoo",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "page": "https://www.amazon.co.uk/dp/B084F2M6PJ",
+   "shop": "Amazon UK",
+   "sources": [
+    "https://www.amazon.co.uk/dp/B084F2M6PJ"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "A US brand. Its only UK listing found (Amazon UK, a third-party import on 12 Oct per data/prices.json) has no featured offer today. No UK shop sells it."
+  },
+  {
+   "product": "Leatherman Wave",
+   "category": "general",
+   "product_type": "multi-tool",
+   "page": "https://www.leatherman.com/products/wave",
+   "shop": "Leatherman",
+   "image": "https://www.leatherman.com/cdn/shop/files/wave_20260402201902_5dib.jpg?crop=center&height=1200&v=1777562829&width=1200",
+   "image_page": "https://www.leatherman.com/products/wave",
+   "sources": [
+    "https://www.leatherman.com/products/wave",
+    "https://www.leatherman.com/products/wave?country=GB",
+    "https://www.leatherman.com/search/suggest.json?q=wave&resources%5Btype%5D=product"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Read as the Leatherman Wave+ (the current Wave). Leatherman's own store shows dollars even with the UK market chosen (US$129.95), John Lewis doesn't sell it, and no UK shop page could be found without web search (the budget had run out). Likely sold by UK outdoor and knife shops, unconfirmed."
+  },
+  {
+   "product": "Nemo Moonlite",
+   "category": "general",
+   "product_type": "camping chair",
+   "page": "https://www.nemoequipment.com/products/moonlite-reclining-camp-chair",
+   "shop": "NEMO Equipment",
+   "image": "https://cdn.shopify.com/s/files/1/0582/1136/9133/files/suaofi3uquzngws46087.jpg?v=1776198382",
+   "image_page": "https://www.nemoequipment.com/products/moonlite-reclining-camp-chair",
+   "sources": [
+    "https://www.nemoequipment.com/products/moonlite-reclining-camp-chair",
+    "https://www.nemoequipment.com/products/moonlite-reclining-camp-chair?country=GB",
+    "https://www.nemoequipment.com/search/suggest.json?q=moonlite&resources%5Btype%5D=product"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Now the Moonlite Reclining Camp Chair (US$169.95 on NEMO's US store, which shows no price with the UK market chosen). No UK shop confirmed (the web-search budget had run out)."
+  },
+  {
+   "product": "Nvidia Shield TV",
+   "category": "general",
+   "product_type": "streaming device",
+   "page": "https://www.nvidia.com/en-gb/shield/",
+   "shop": "NVIDIA UK",
+   "sources": [
+    "https://www.nvidia.com/en-gb/shield/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "NVIDIA still has a UK SHIELD TV page, but it sends shoppers to regional retail partners and no UK shop page could be checked (the web-search budget had run out). The 2019 model may be hard to find new."
+  },
+  {
+   "product": "Randolph Engineering Aviators",
+   "category": "general",
+   "product_type": "sunglasses",
+   "page": "https://www.randolphusa.com/products/aviator-gunmetal-american-gray",
+   "shop": "Randolph USA",
+   "sources": [
+    "https://www.randolphusa.com/products/aviator-gunmetal-american-gray",
+    "https://www.randolphusa.com/search/suggest.json?q=aviator&resources%5Btype%5D=product",
+    "https://www.randolphusa.com/products/aviator-gunmetal-american-gray?country=GB"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Randolph Engineering (US) sells its Aviators (US$265 to $285) on its own store, which still shows dollars with the UK market chosen; UK shipping and UK stockists unconfirmed."
+  },
+  {
+   "product": "woolino sleep sacks",
+   "category": "general",
+   "product_type": "baby sleeping bag",
+   "page": "https://www.woolino.com/products/4-season-baby-sleep-bag-with-feet-merino-wool-organic-cotton-sheep",
+   "shop": "Woolino",
+   "image": "https://www.woolino.com/cdn/shop/files/1-BabySleepBagWITHFEETSheep.jpg?v=1758523735",
+   "image_page": "https://www.woolino.com/products/4-season-baby-sleep-bag-with-feet-merino-wool-organic-cotton-sheep",
+   "sources": [
+    "https://www.woolino.com/products/4-season-baby-sleep-bag-with-feet-merino-wool-organic-cotton-sheep",
+    "https://www.woolino.com/search/suggest.json?q=sleep%20bag&resources%5Btype%5D=product",
+    "https://www.woolino.com/products/4-season-baby-sleep-bag-with-feet-merino-wool-organic-cotton-sheep?country=GB"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Woolino (US) merino sleep bags (US$93 to $109); its store shows no price with the UK market chosen, so UK shipping is unconfirmed; no UK shop found."
+  },
+  {
+   "product": "Yogasleep Dohm Classic",
+   "category": "general",
+   "product_type": "white noise machine",
+   "page": "https://yogasleep.com/products/dohmclassic",
+   "shop": "Yogasleep",
+   "image": "https://yogasleep.com/cdn/shop/files/DohmClassicWhite_ISO_2028_001.jpg?v=1729193887",
+   "image_page": "https://yogasleep.com/products/dohmclassic",
+   "sources": [
+    "https://yogasleep.com/products/dohmclassic",
+    "https://yogasleep.com/search/suggest.json?q=dohm&resources%5Btype%5D=product",
+    "https://yogasleep.com/products/dohmclassic?country=GB",
+    "https://www.johnlewis.com/search?search-term=yogasleep"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Yogasleep (US) sells the Dohm Classic at US$49.99; its store shows no price with the UK market chosen and John Lewis doesn't list it. A UK-plug version's UK sale is unconfirmed."
+  },
+  {
+   "product": "Ergo Baby Omni Air 360",
+   "category": "general",
+   "product_type": "baby carrier",
+   "page": "https://www.johnlewis.com/ergobaby-omni-deluxe-mesh-baby-carrier/p113381862",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/ergobaby-omni-deluxe-mesh-baby-carrier/p113381862",
+    "https://www.johnlewis.com/search?search-term=ergobaby%20omni"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "The Omni 360 Cool Air Mesh (which 'Omni Air 360' probably means) wasn't found; John Lewis sells its successor-style Omni Deluxe Mesh at £199.90. Whether the named model is still sold is unconfirmed."
+  },
+  {
+   "product": "Kose Speedy oil cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "page": "https://www.amazon.co.uk/dp/B0CT488VKV",
+   "shop": "Amazon UK",
+   "sources": [
+    "https://www.amazon.co.uk/dp/B0CT488VKV"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Kose Softymo Speedy Cleansing Oil 240 ml: the Amazon UK listing data/prices.json used on 10 Oct (third-party seller) has no featured offer today; Skin Cupid no longer sells it (10 Oct note). No UK shop confirmed today."
+  },
+  {
+   "product": "Stridex Maximum Pads",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "page": "https://stridex.com/product/stridex-maximum/",
+   "shop": "Stridex",
+   "image": "https://stridex.com/wp-content/uploads/2022/08/Stridex-Max-90ct-Front-updated-copy-2.png",
+   "image_page": "https://stridex.com/product/stridex-maximum/",
+   "sources": [
+    "https://stridex.com/product/stridex-maximum/",
+    "https://www.u-buy.co.uk/product/414OILNL4-stridex-pads-maximum-strength-55-ct",
+    "https://www.onbuy.com/ie/p/stridex-maximum-alcohol-free-55-soft-touch-pads~p222633814/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "A US over-the-counter acne pad (2% salicylic acid). No big UK shop sells it (no Boots, Superdrug or Amazon UK listing found); UK buyers only find US-stock import sites (Ubuy UK, 55 pads about £20 plus VAT at checkout; OnBuy dispatched from the US). product_page is the maker's US page; its image is the page's product image (JSON-LD), the page has no og:image. www.stridex.com serves a certificate for another host; stridex.com works."
+  },
+  {
+   "product": "Caraway frying pans",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "page": "https://www.carawayhome.com/products/fry-pan",
+   "shop": "Caraway",
+   "image": "https://cdn.shopify.com/s/files/1/0258/6273/3906/files/fry-pan_black_hero.jpg?v=1785827500&width=1200&height=630&crop=center",
+   "image_page": "https://www.carawayhome.com/products/fry-pan",
+   "sources": [
+    "https://www.carawayhome.com/products/fry-pan",
+    "https://www.u-buy.co.uk/product/Q02JGO5FS-caraway-fry-pan-and-saute-pan-duo-10-5-ceramic-frying-pan-and-12-deep-saute-pan-with-lid-non-stick-non-toxic-oven-safe-black",
+    "https://www.crateandbarrel.com/caraway-stainless-steel-10.5-fry-pan/s664330"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "A US brand sold by its own US store (ceramic fry pan US$125 to US$135) and US shops (Target, Crate & Barrel, Costco US). No UK store (carawayhome.co.uk doesn't resolve) and no big UK shop found; UK buyers only find US-stock import sites (Ubuy UK, VAT at checkout). product_page is the maker's US page."
+  },
+  {
+   "product": "Acne.org Treatment (Benzoyl Peroxide 2.5%)",
+   "category": "skincare",
+   "product_type": null,
+   "page": "https://danielkern.org/treatment-out-of-stock/",
+   "shop": "DanielKern.org",
+   "image": "https://danielkern.org/wp-content/uploads/2021/10/Treatment-8.webp",
+   "image_page": "https://danielkern.org/",
+   "sources": [
+    "https://danielkern.org/treatment-out-of-stock/",
+    "https://danielkern.org/",
+    "https://www.acne.org/store",
+    "https://danielkern.org/shipping-info/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Sold only by its maker's US store (acne.org/store now redirects to DanielKern.org), priced in US dollars and shipped internationally with duties and taxes on the buyer; no UK shop sells it. On 15 Oct its page says the 2.5% Treatment is sold out, more expected in a couple of months. The image is from the store's home page (its product page shows no image while sold out)."
+  },
+  {
+   "product": "Bialetti Venus",
+   "category": "kitchen",
+   "product_type": "moka pot",
+   "page": "https://www.bialetti.com/it_en/venus.html",
+   "shop": "Bialetti",
+   "image": "https://www.bialetti.com/media/catalog/product/v/e/venus_frontale_da_6.png?format=jpeg",
+   "image_page": "https://www.bialetti.com/it_en/venus.html",
+   "sources": [
+    "https://www.bialetti.com/it_en/venus.html",
+    "https://www.bialetti.com/uk/",
+    "https://www.lakeland.co.uk/search?q=bialetti%20venus"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Still made: Bialetti's own European store sells the Venus (stainless steel, induction-ready) at €39.90, in stock on 15 Oct. But Bialetti has no UK store (its UK paths fall back to the US store), Lakeland's search found no Venus, and Argos, John Lewis and Amazon UK's search refused automated reads, so a UK seller couldn't be confirmed today. product_page is the maker's EU page."
+  },
+  {
+   "product": "Boos block",
+   "category": "kitchen",
+   "product_type": "cutting board",
+   "page": "https://www.johnboos.com/products/maple-cutting-boards-1-1-2-thick-r-board-series",
+   "shop": "John Boos",
+   "image": "https://cdn.shopify.com/s/files/1/0880/5521/8461/files/R01_TD_PDP.jpg?v=1730315609",
+   "image_page": "https://www.johnboos.com/products/maple-cutting-boards-1-1-2-thick-r-board-series",
+   "sources": [
+    "https://www.johnboos.com/products/maple-cutting-boards-1-1-2-thick-r-board-series",
+    "https://www.johnboos.com/shipping-delivery",
+    "https://www.kitchenknives.co.uk/catalogsearch/result/?q=boos",
+    "https://www.boroughkitchen.com/search?q=john+boos&type=product"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "A US maker (John Boos & Co.): its shipping page says it doesn't offer international shipping, and two UK kitchen specialists (Borough Kitchen, KitchenKnives.co.uk) stock none. The maple R-Board (US$94.95 to US$154.95) stands for 'Boos block'; product_page is the maker's US page."
+  },
+  {
+   "product": "C-H Hanson Magnetic Stud Finder 03040",
+   "category": "general",
+   "product_type": "stud finder",
+   "page": "https://www.chhanson.com/magnetic-stud-finder.html",
+   "shop": "C.H. Hanson",
+   "image": "https://www.chhanson.com/media/catalog/product/cache/076f9899252f96a35ac0eccc70f559df/c/h/chhanson-3040-magnetic-stud-finder.jpg",
+   "image_page": "https://www.chhanson.com/magnetic-stud-finder.html",
+   "sources": [
+    "https://www.chhanson.com/magnetic-stud-finder.html"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Still made: C.H. Hanson's own (US) page lists the Magnetic Stud Finder, model 3040 (UPC 081834030401). No UK seller could be checked: the shared web-search budget ran out and Amazon UK's search refuses automated reads, so whether it is on sale new in the UK is unknown."
+  },
+  {
+   "product": "Crescent Lufkin Shockforce G2 Nite Eye",
+   "category": "general",
+   "product_type": "tape measure",
+   "page": "https://www.crescenttool.com/all-tools/measuring-layout/tape-measures/l1325b-02-1-14-x-25-shockforce-nite-eyetm-tape-measure",
+   "shop": "Crescent",
+   "image": "https://www.crescenttool.com/sites/crescenttool/files/styles/large/public/pim_images/CT_L1325B-02_MAIN_01.jpg?itok=Z76XnjjK",
+   "image_page": "https://www.crescenttool.com/all-tools/measuring-layout/tape-measures/l1325b-02-1-14-x-25-shockforce-nite-eyetm-tape-measure",
+   "sources": [
+    "https://www.crescenttool.com/all-tools/measuring-layout/tape-measures/l1325b-02-1-14-x-25-shockforce-nite-eyetm-tape-measure",
+    "https://www.crescenttool.com/",
+    "https://www.toolstation.com/search?q=lufkin%20shockforce"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Still made: Crescent's (US) site lists the SHOCKFORCE NITE EYE tape measure (L1325B-02, 1-1/4\" x 25', imperial; now branded Crescent rather than Crescent Lufkin). No UK seller could be confirmed: Toolstation's search loads by script and Screwfix refused, and the web-search budget ran out. A UK buyer would likely want a metric/imperial version."
+  },
+  {
+   "product": "Evenflo Revolve360",
+   "category": "general",
+   "product_type": "car seat",
+   "page": "https://www.evenflo.com/pages/revolve-360",
+   "shop": "Evenflo",
+   "sources": [
+    "https://www.evenflo.com/pages/revolve-360"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "A US car seat (Evenflo's own store, prices in US$), made to US rules; car seats used in the UK must meet UN R44/R129, and no UK-approved Revolve360 or UK seller exists. Not sold in the UK. The maker page's og:image is Evenflo's logo, so no image."
+  },
+  {
+   "product": "Gorilla Carts garden cart",
+   "category": "general",
+   "product_type": "wheelbarrow",
+   "page": "https://gorillamade.com/carts/",
+   "shop": "Gorilla Made",
+   "sources": [
+    "https://gorillamade.com/carts/",
+    "https://www.gorillacarts.com/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Gorilla Carts is a US brand (gorillacarts.com now redirects to Gorilla Made, which lists its carts). No UK site or UK seller could be checked (web-search budget used up); likely sold in the UK only through import listings, so status is unknown."
+  },
+  {
+   "product": "Happy Baby carrier",
+   "category": "general",
+   "product_type": "baby carrier",
+   "page": "https://happybabycarriers.com/products/versa-baby-carrier",
+   "shop": "Happy Baby Carriers",
+   "image": "https://happybabycarriers.com/cdn/shop/files/clay-versa-tan-ring.jpg?crop=center&height=1200&v=1717013498&width=1200",
+   "image_page": "https://happybabycarriers.com/products/versa-baby-carrier",
+   "sources": [
+    "https://happybabycarriers.com/products/versa-baby-carrier",
+    "https://happybabycarriers.com/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Read as Happy Baby Carriers, a small US carrier maker (the name could also mean another brand). Its own store prices only in US dollars, even with the UK selected (Versa carrier US$209), and no UK seller is known; not sold in the UK as far as could be checked."
+  },
+  {
+   "product": "IKEA stainless steel tea kettle",
+   "category": "kitchen",
+   "product_type": "stovetop kettle",
+   "page": "https://www.ikea.com/us/en/p/vattentaet-kettle-stainless-steel-black-10612504/",
+   "shop": "IKEA",
+   "sources": [
+    "https://www.ikea.com/us/en/p/vattentaet-kettle-stainless-steel-black-10612504/",
+    "https://sik.search.blue.cdtapps.com/gb/en/search-result-page?q=kettle&size=12&types=PRODUCT",
+    "https://sik.search.blue.cdtapps.com/us/en/search-result-page?q=kettle&size=12&types=PRODUCT"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "IKEA's stainless steel stovetop kettle today is the VATTENTÄT (2 qt, US$24.99 at IKEA US). IKEA UK's own search finds no stovetop kettle (not VATTENTÄT either) and its UK product URL falls back to the catalogue, so IKEA doesn't sell it in the UK. product_page is IKEA US's page."
+  },
+  {
+   "product": "Little Seed Farm",
+   "category": "general",
+   "product_type": "deodorant",
+   "page": "https://littleseedfarm.com/collections/deodorant",
+   "shop": "Little Seed Farm",
+   "sources": [
+    "https://littleseedfarm.com/collections/deodorant",
+    "https://littleseedfarm.com/pages/shipping-returns"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "A small US maker (Tennessee) selling its deodorants from its own US-dollar store; no UK seller or UK pricing found, and its shipping page didn't say whether it ships abroad. UK availability unknown, likely not sold in the UK."
+  },
+  {
+   "product": "MSR Titan Kettle",
+   "category": "general",
+   "product_type": "camping cookware",
+   "page": "https://cascadedesigns.com/products/titan-kettle-900ml",
+   "shop": "Cascade Designs",
+   "sources": [
+    "https://cascadedesigns.com/products/titan-kettle-900ml",
+    "https://cascadedesigns.com/products.json?limit=250",
+    "https://www.msrgear.com/eu/en/titan-kettle/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Still made: MSR's maker, Cascade Designs, sells the Titan Kettle 900 mL (US$64.95) and 1400 mL (US$74.95) on its US store; its EU and GB paths now return 404. MSR gear is usually stocked by UK outdoor shops, but none could be checked before stopping, so UK sale is unconfirmed."
   }
  ]
 }

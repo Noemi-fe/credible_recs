@@ -30,9 +30,10 @@ How each becomes entries (plan_finding):
                        ("second_hand": true), shown "Sold second-hand only"; for anything else not sold
     not_sold_uk        not sold here ("available": false, "not_in_uk": true): shown with "Not sold in the UK" (15 Oct)
     discontinued       the same
-    unsure             nothing: the product stays as it was, "Availability not checked yet"
+    unsure             no entry: the product stays as it was, "Availability not checked yet"
 - the product pages list (data/product_pages.json, engine/product_pages.py) gets its own page and its maker's image, for
-  a product on sale only (one left out is never linked).
+  a product answers show: on sale, sold abroad (its page there) or not checked yet (Claude, 15 Oct 2026, evening, after
+  Noemi's decision to show products sold only abroad); one left out (discontinued) is never linked.
 Names: an entry is named as the answer shows the product, so the pipeline finds it as it finds every entry of these
 lists (module 4's word rules, the category's short names, the name the facts list gives it). A brand's line ("MacBook
 laptop line") is recorded in the price list under its brand followed by its type ("MacBook laptop"), the form an entry
@@ -166,6 +167,12 @@ def plan_finding(finding: Finding, shops: dict[str, str] | None = None) -> Plan:
         else:
             plan.problems.append(f"a source that can't be used (https only, no name or password, never Reddit): {url}")
     if finding.status == "unsure":
+        # Nothing about where it is sold, so no price-list entry; but its own page is its page all the same (Claude,
+        # 15 Oct 2026, evening: every product an answer shows may link its own page, engine.maker_pages's too).
+        page = _checked(finding.product_page, "product_page", plan, direct=True)
+        if page is not None and sources and line_parts(finding.name, finding.type) is None:
+            page_site, _ = _page_site(finding, page, None, (finding.shop or "").strip(), None, shops or {})
+            plan.page = _page_entry(finding, page, page_site, sources, plan, _own_type(finding.type))
         return plan
     if not sources:
         plan.refused = True
@@ -237,6 +244,8 @@ def plan_finding(finding: Finding, shops: dict[str, str] | None = None) -> Plan:
                     "available": False}
     if finding.status == "not_sold_uk":  # sold abroad: shown with a note (Noemi, 15 Oct 2026, evening)
         entry["not_in_uk"] = True
+        if not line_brand:  # and linked to its own page there, as every product an answer shows may be
+            plan.page = _page_entry(finding, page, page_site, sources, plan, product_type)
     plan.prices.append(_with_sources(entry, sources, note))
     return plan
 

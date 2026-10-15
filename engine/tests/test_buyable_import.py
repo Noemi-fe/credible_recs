@@ -126,9 +126,27 @@ def test_sold_second_hand_only_counts_as_sold_only_for_what_people_buy_vintage_o
     assert report.not_vintage == ["Dell Latitude 5300 13.3 Touchscreen"]
 
 
-def test_unsure_records_nothing(tmp_path):
-    report, prices, pages = run(tmp_path, finding(name="Legion Y540", status="unsure"))
-    assert prices == [] and pages == [] and report.unsure == ["Legion Y540"]
+def test_unsure_records_no_price_entry_but_its_own_page(tmp_path):
+    # Changed on purpose 15 Oct 2026 (evening; it recorded nothing): Noemi's answers now show products sold only abroad
+    # and products not checked yet, so a finding unsure where it is sold still gives the product its own page.
+    report, prices, [page] = run(tmp_path, finding(name="Legion Y540", status="unsure"))
+    assert prices == [] and report.unsure == ["Legion Y540"]
+    assert (page.product, page.page, page.shop) == ("Legion Y540", "https://asus.example/uk/rog-laptops/", "ASUS")
+    (tmp_path / "none").mkdir()
+    report, prices, pages = run(tmp_path / "none", finding(name="Legion Y540", status="unsure", product_page=None))
+    assert prices == [] and pages == []
+
+
+def test_a_product_sold_only_abroad_links_its_own_page_there(tmp_path):
+    stridex = finding(name="Stridex Maximum Pads", type="exfoliant", category="skincare", status="not_sold_uk",
+                      product_page="https://stridex.example/product/maximum/", shop="Stridex", price_gbp=None,
+                      price_url=None, image_url="https://stridex.example/img/maximum.png",
+                      image_page="https://stridex.example/product/maximum/",
+                      sources=["https://stridex.example/product/maximum/"])
+    report, [price], [page] = run(tmp_path, stridex)
+    assert (price.available, price.not_in_uk) == (False, True)
+    assert (page.page, page.image, page.shop) == ("https://stridex.example/product/maximum/",
+                                                  "https://stridex.example/img/maximum.png", "Stridex")
 
 
 # --- Names: each reaches the product as the answer finds it ---

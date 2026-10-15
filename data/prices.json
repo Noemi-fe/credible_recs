@@ -10178,6 +10178,22 @@
    ],
    "note": "not sold to UK shoppers: Mockingbird (US) sells its strollers direct from hellomockingbird.com; its FAQ says 'We currently ship to all 50 U.S. states', with no mention of shipping abroad, and no UK seller is known. Not sold in the UK.",
    "not_in_uk": true
+  },
+  {
+   "product": "brother all in one black and white laser printer",
+   "category": "general",
+   "product_type": "printer",
+   "price": 178.8,
+   "currency": "GBP",
+   "shop": "Brother",
+   "url": "https://store.brother.co.uk/devices/laser/dcp/dcp1610w",
+   "checked_on": "2026-10-15",
+   "available": true,
+   "sources": [
+    "https://store.brother.co.uk/devices/laser/dcp/dcp1610w",
+    "https://www.brother.co.uk/printers/laser-printers/mono-laser-all-in-one"
+   ],
+   "note": "Generic name read as Brother's mono laser all-in-one range (Brother UK lists about 26). From price: Brother's UK store, DCP-1610W at £178.80 (out of stock today); search results show the DCP-L1660W at £198.19 SRP. Image: the DCP-1610W's, from the store's product data (no share image)."
   }
  ]
 }
