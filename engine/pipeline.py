@@ -467,7 +467,9 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     types = {g.key: _own_type(g, query) for g in kept_groups}  # each product's own type (13 Oct 2026)
     prices = load_prices() if prices is None else prices
     kept_groups, price_checks = _within_budget(kept_groups, query, prices, today, result, brand_lines, types)
+    named_before = {g.key: g.name for g in kept_groups if not g.loose}  # the names the price list was asked about
     kept_groups, cautions, formulas = _suited_to_request(kept_groups, query, product_facts, result, types)
+    kept_groups = _sold_under_shown_name(kept_groups, named_before, query, prices, price_checks, result, types)
     lines -= result.lines_as_one_product  # lines whose products are one known product are that product (14 Oct 2026)
     kept_groups = _one_per_name(kept_groups)  # the names are final here: one item per name (13 Oct 2026)
     result.ranked_as_lines = [g.name for g in kept_groups if g.key in lines]
@@ -1225,6 +1227,32 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
                 result.not_priced.remove(group.name)
             result.left_out_over_budget.append(group.name)
     return kept, checks
+
+
+def _sold_under_shown_name(groups: list[ProductGroup], named_before: Mapping[str, str], query: ParsedQuery,
+                           prices: list[Price], checks: dict[str, PriceCheck], result: PipelineResult,
+                           types: Mapping[str, str | None] | None = None) -> list[ProductGroup]:
+    """The products still sold under the name the answer shows them under (15 Oct 2026, the facts researcher).
+
+    _within_budget asks the price list about each product under its writers' name, and only then may the facts step
+    show it under its facts entry's name (_suited_to_request). When the writers' name found no entry saying whether it
+    is sold, the entry the shown name finds decides: one saying it isn't sold leaves it out as unavailable, as if writers
+    had called it that. Found in "retinoid": writers' "Tazorac .05%" (with "Tazorac") found the facts entry "Tazorac
+    (tazarotene) cream and gel" by its other name, but the price list's entry saying it isn't sold in the UK fits only
+    the shown name, not the writers' with its strength. A product its writers' name found sold, and one nothing is
+    known of, are kept as they were; a brand line is never asked about here (its own check is under its brand)."""
+    kept = []
+    for group in groups:
+        before = named_before.get(group.key)
+        check = checks.get(group.key)
+        if before is not None and before != group.name and (check is None or check.availability is None):
+            sold = find_availability(group.name, group.category, prices, (types or {}).get(group.key, query.product_type))
+            if sold is not None and sold.available is False:
+                result.left_out_unavailable.append(group.name)
+                checks.pop(group.key, None)
+                continue
+        kept.append(group)
+    return kept
 
 
 def _type_words(product_type: str | None) -> tuple[str, ...]:
