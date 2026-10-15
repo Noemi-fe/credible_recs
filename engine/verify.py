@@ -44,7 +44,7 @@ stamps each passing comment's verified_at and drops what failed or ran out. chec
 import json
 import re
 from dataclasses import dataclass, field, replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from engine.config import LIBRARY_VERIFY_DAYS
@@ -304,7 +304,7 @@ def _applied(thread: Thread, raw: dict, stamps: dict, drops: dict, types,
     """The thread with its new stamps and drops, its extraction file's data without the items of the dropped comments
     (and of `left_over`: comments it already didn't keep whole), and how many items were removed."""
     facts = thread.whole_thread
-    names, first_seen = dict(facts.comment_names), dict(facts.first_seen)
+    names, first_seen, gone_why = dict(facts.comment_names), dict(facts.first_seen), dict(facts.dropped)
     staying = [c for c in thread.comments if c.status == "ok" and c.id not in drops and c.author is not None]
     kept_since = {}
     for comment in staying:
@@ -319,6 +319,7 @@ def _applied(thread: Thread, raw: dict, stamps: dict, drops: dict, types,
         elif why is not None:  # edited, or not verified in time: still on Reddit as far as we know
             if found := names_in(comment.body, types):
                 names[comment.id] = found
+            gone_why[comment.id] = why
             name = comment.author.name if comment.author is not None else None
             if name in kept_since and comment.created_at < min(first_seen.get(name, kept_since[name]),
                                                               kept_since[name]):
@@ -331,7 +332,8 @@ def _applied(thread: Thread, raw: dict, stamps: dict, drops: dict, types,
     first_seen = {name: when for name, when in first_seen.items() if name in kept_since}  # no other writer stays
     new_thread = Thread.model_validate(thread.model_copy(update={
         "comments": comments,
-        "whole_thread": facts.model_copy(update={"comment_names": names, "first_seen": first_seen})}).model_dump())
+        "whole_thread": facts.model_copy(update={"comment_names": names, "first_seen": first_seen,
+                                                 "dropped": gone_why})}).model_dump())
     new_raw, removed, gone = dict(raw), 0, set(drops) | set(left_over)
     for kind in ("mentions", "notes", "agreements", "care"):
         if isinstance(raw.get(kind), list):
@@ -344,6 +346,121 @@ def expire(folder: Path, now: datetime | None = None, dry_run: bool = False) -> 
     """The deadline alone (check-live runs it): kept comments not verified within LIBRARY_VERIFY_DAYS lose their words
     and mentions."""
     return apply_checks(folder, Ledger(), now, dry_run)
+
+
+# --- Words verification dropped by mistake, put back from the backup (15 Oct 2026) ---
+
+@dataclass(frozen=True)
+class Restored:
+    """What restore_words did for one comment: ids and counts only."""
+
+    thread_id: str
+    comment_id: str
+    outcome: str  # "passing": put back; else what Reddit's page says now ("changed"...), or why nothing was read
+    items: int = 0  # its items put back in the extraction file
+    read_at: datetime | None = None
+
+
+def restore_words(folder: Path, backup, pairs, checker, dry_run: bool = False) -> list[Restored]:
+    """Gives back their words the comments of `pairs` ((thread id, comment id)) that slimming kept and verification
+    then dropped (not_kept since), when Reddit's embed page, read now through `checker` (an
+    engine.live_check.LiveChecker; a read of the last hour counts), passes the check of every quote the comment backed.
+    From `backup`, the library as it was before slimming (a folder holding threads/ and extracted/, or the .tgz made of
+    one): the comment's words and writer, and its items back in the extraction file, checked as they were then; its
+    verified_at is the read, so the next deploy's apply-checks keeps it (a recorded "changed" is older). The thread's
+    facts that hang on which comments are kept are worked out again (the product types listed for comments not kept,
+    writers' first comments). A comment Reddit shows edited, deleted or removed, or that slimming never kept, is left
+    as it is. Made for 15 Oct 2026, when formatting had made a check take 7 comments as edited."""
+    from engine.slim import _first_seen_dropped, kept_comment_ids
+
+    whole_of, raw_of = _backup_reader(backup)
+    done = []
+    for thread_id, comment_id in pairs:
+        thread_path = Path(folder) / "threads" / f"{thread_id}.json"
+        extraction_path = extracted_dir(thread_path.parent) / thread_path.name
+        whole_bytes, old_bytes = whole_of(thread_id), raw_of(thread_id)
+        try:
+            current = Thread.model_validate_json(thread_path.read_bytes())
+            raw = json.loads(extraction_path.read_text(encoding="utf-8"))
+            whole = Thread.model_validate_json(whole_bytes) if whole_bytes is not None else None
+            old_raw = json.loads(old_bytes) if old_bytes is not None else None
+            old_extraction = Extraction.model_validate(old_raw) if old_raw is not None else None
+        except (OSError, ValueError):
+            done.append(Restored(thread_id, comment_id, "not dropped by verification"))
+            continue
+        now = {c.id: c for c in current.comments}
+        if (whole is None or old_extraction is None or not current.slimmed or comment_id not in now
+                or now[comment_id].status != "not_kept" or comment_id not in kept_comment_ids(whole, old_extraction)):
+            done.append(Restored(thread_id, comment_id, "not dropped by verification"))
+            continue
+        original = next(c for c in whole.comments if c.id == comment_id)
+        read = checker.read_text(original.url, max_age=timedelta(hours=1))
+        if read is None:
+            done.append(Restored(thread_id, comment_id, "couldn't be read now"))
+            continue
+        said = outcome(read[1], verification_quotes(whole, old_extraction)[comment_id])
+        if said != "passing":
+            done.append(Restored(thread_id, comment_id, said, read_at=read[0]))
+            continue
+        comments = [original.model_copy(update={"verified_at": read[0]}) if c.id == comment_id else c
+                    for c in current.comments]
+        facts = current.whole_thread
+        restored = Thread.model_validate(current.model_copy(update={"comments": comments, "whole_thread": facts.model_copy(
+            update={"comment_names": {k: v for k, v in facts.comment_names.items() if k != comment_id},
+                    "first_seen": _first_seen_dropped(whole, {c.id for c in comments if c.status == "ok"}),
+                    "dropped": {k: v for k, v in facts.dropped.items() if k != comment_id}})}).model_dump())
+        new_raw, back = dict(raw), 0
+        for kind in ("mentions", "notes", "agreements", "care"):
+            old_items, now_items = old_raw.get(kind) or [], raw.get(kind) or []
+            back += sum(1 for i in old_items if i.get("comment_id") == comment_id and i not in now_items)
+            new_raw[kind] = [i for i in old_items if i.get("comment_id") == comment_id or i in now_items] + [
+                i for i in now_items if i not in old_items]
+        if _items_checked(old_extraction, whole, comment_id) != _items_checked(
+                Extraction.model_validate(new_raw), restored, comment_id):
+            done.append(Restored(thread_id, comment_id, "its items wouldn't be checked as before slimming",
+                                 read_at=read[0]))
+            continue
+        if not dry_run:
+            write_file(thread_path, thread_json(restored))
+            write_file(extraction_path, (json.dumps(new_raw, ensure_ascii=False, indent=1) + "\n").encode("utf-8"))
+        done.append(Restored(thread_id, comment_id, "passing", back, read[0]))
+    return done
+
+
+def _items_checked(extraction: Extraction, thread: Thread, comment_id: str) -> tuple:
+    """A comment's items as the extraction's check takes them: those kept, and those rejected with why."""
+    from engine.extract import check_extraction
+
+    result = check_extraction(extraction, thread)
+    kept = [i.model_dump_json() for group in (result.kept, result.kept_notes, result.kept_agreements, result.kept_care)
+            for i in group if i.comment_id == comment_id]
+    rejected = [(i.model_dump_json(), why) for group in (result.rejected, result.rejected_notes,
+                                                          result.rejected_agreements, result.rejected_care)
+                for i, why in group if i.comment_id == comment_id]
+    return kept, rejected
+
+
+def _backup_reader(backup):
+    """(whole thread's bytes, extraction file's bytes) by thread id, from a backup folder or its .tgz (None: not in it)."""
+    backup = Path(backup)
+    if backup.is_dir():
+        def read(kind):
+            def of(thread_id):
+                path = backup / kind / f"{thread_id}.json"
+                return path.read_bytes() if path.is_file() else None
+            return of
+        return read("threads"), read("extracted")
+    import tarfile
+
+    archive = tarfile.open(backup, "r:*")
+    members = {m.name: m for m in archive.getmembers() if m.isfile()}
+
+    def member(kind):
+        def of(thread_id):
+            name = next((n for n in members if n.endswith(f"{kind}/{thread_id}.json")), None)
+            return archive.extractfile(members[name]).read() if name else None
+        return of
+    return member("threads"), member("extracted")
 
 
 def report(result: ApplyResult) -> str:

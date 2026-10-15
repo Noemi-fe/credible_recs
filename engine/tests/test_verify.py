@@ -352,3 +352,28 @@ def test_command_line_slim_and_apply_checks(tmp_path, capsys):
 def test_command_line_slim_and_apply_checks_explain_themselves_when_used_wrongly(tmp_path, capsys, argv):
     assert library.main(argv, folder=tmp_path) == 2
     assert "slim" in capsys.readouterr().out
+
+
+
+# --- A reply whose product source lost its words (15 Oct 2026) ---
+
+def test_a_reply_whose_source_was_found_edited_is_rejected_saying_so(tmp_path):
+    # The coordinator found 5 such replies after the migration, rejected "whose words aren't kept in the library":
+    # their sources had been kept, then found edited on Reddit. The reason now says what happened, so a stub left by
+    # slimming isn't taken for one left by verification.
+    root = slimmed_library(tmp_path)
+    ledger = Ledger()
+    ledger.record("s4source", day(3), "changed")  # the comment s5reply takes its product from
+    apply_checks(root, ledger, now=day(3))
+    reasons = {m.comment_id: why for m, why in check_extraction(extraction_of(root), thread_of(root)).rejected}
+    assert "s4source" in reasons["s5reply"] and "edited on Reddit" in reasons["s5reply"]
+    assert thread_of(root).whole_thread.dropped == {"s4source": "changed"}  # why its words went: no words kept
+
+
+def test_a_reply_whose_source_went_unverified_too_long_is_rejected_saying_so(tmp_path):
+    root = slimmed_library(tmp_path)
+    ledger = Ledger()
+    ledger.record("s5reply", day(LIBRARY_VERIFY_DAYS), "passing")  # the reply itself is verified; its source isn't
+    apply_checks(root, ledger, now=day(LIBRARY_VERIFY_DAYS + 2))
+    reasons = {m.comment_id: why for m, why in check_extraction(extraction_of(root), thread_of(root)).rejected}
+    assert f"wasn't verified on Reddit within {LIBRARY_VERIFY_DAYS} days" in reasons["s5reply"]

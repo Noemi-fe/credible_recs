@@ -104,6 +104,11 @@ Command line:
                                                apply the kept comments' reads on Reddit (the pre-check's record in
                                                FILE, this machine's .cache/verified.json and the checks of the last
                                                48 hours in DIR, .cache/live_check by default) and the 30-day deadline
+    python -m engine.library restore-words --backup PATH [--dry-run] [--library DIR] <thread>:<comment> ...
+                                               give back their words, from the backup made before slimming (a folder
+                                               or its .tgz), to kept comments verification dropped, when Reddit's
+                                               embed page, read again now, passes the check (engine.verify.
+                                               restore_words: 15 Oct 2026, a formatting slip had taken 7 as edited)
 """
 
 import inspect
@@ -871,6 +876,8 @@ def main(
     command = argv[0] if argv else None
     if command in ("slim", "apply-checks"):  # this machine's files only: no client, no credit, no network
         return _slim_or_apply(command, argv[1:], folder)
+    if command == "restore-words":  # this machine's files, and one embed-page read a comment
+        return _restore_words(argv[1:], folder)
     if command in ("pull-bucket", "forget-baked"):  # on-demand reading's threads (14 Oct 2026): no Parse, no archive
         from engine.on_demand import pull_command  # imported here: on-demand reading saves threads through this module
 
@@ -968,6 +975,36 @@ def _slim_or_apply(command: str, words: list[str], folder: Path) -> int:
           "checks of the last 48 hours).")
     print(report(apply_checks(folder, ledger, dry_run="--dry-run" in flags)))
     return 0
+
+
+def _restore_words(words: list[str], folder: Path) -> int:
+    """`restore-words` (engine.verify.restore_words): ids and outcomes printed, never anyone's words."""
+    pairs = [tuple(word.split(":", 1)) for word in words if ":" in word and not word.startswith("--")]
+    options = _file_options([w for w in words if w.startswith("--") or w in _option_values(words)],
+                            ("--backup", "--library"))
+    if options is None or "--backup" not in options[1] or not pairs:
+        print(__doc__)
+        return 2
+    flags, values = options
+    folder = Path(values["--library"][-1]) if "--library" in values else folder
+    from engine.live_check import DEFAULT_CACHE_DIR, LiveChecker
+    from engine.verify import restore_words
+
+    done = restore_words(folder, Path(values["--backup"][-1]), pairs, LiveChecker(cache_dir=DEFAULT_CACHE_DIR),
+                         dry_run="--dry-run" in flags)
+    for r in done:
+        if r.outcome == "passing":
+            verb = "would get" if "--dry-run" in flags else "got"
+            print(f"{r.thread_id}:{r.comment_id}: Reddit shows it word for word (read {r.read_at:%d %b %H:%M} UTC): "
+                  f"{verb} its words back, and {r.items} item(s) in its extraction.")
+        else:
+            print(f"{r.thread_id}:{r.comment_id}: left as it is ({r.outcome}).")
+    return 0
+
+
+def _option_values(words: list[str]) -> set[str]:
+    """The words that are the value of an option typed before them ("--backup PATH")."""
+    return {words[i + 1] for i, word in enumerate(words[:-1]) if word in ("--backup", "--library")}
 
 
 def _file_options(words: list[str], named: tuple[str, ...]) -> tuple[set[str], dict[str, list[str]]] | None:

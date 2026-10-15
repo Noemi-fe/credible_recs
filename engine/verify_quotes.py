@@ -10,7 +10,9 @@ other. Only differences that are formatting, not words, are tolerated:
 - curly apostrophes and quote marks equal straight ones (’ ‘ ‛ as ', and “ ” as ");
 - HTML entities equal their characters: Reddit stores "&" as "&amp;" and ">" as "&gt;";
 - the markdown symbols for bold, italics and strikethrough (* _ ~) are ignored, so "**great** kettle" contains
-  "great kettle", and so is a backslash escaping one ("a \\*lot\\* of eggs" contains "a lot of eggs"; 10 Oct 2026).
+  "great kettle", and so is a backslash escaping one ("a \\*lot\\* of eggs" contains "a lot of eggs"; 10 Oct 2026),
+  and Reddit's superscript mark (^: "^nine years" shows as a raised "nine years"; 15 Oct 2026, its embed page shows
+  the words without it).
 A quote must also start and end on whole words: "like it" is not in "I dislike it", because a cut word can flip
 the meaning.
 
@@ -26,7 +28,7 @@ import unicodedata
 from engine.memo import Table
 
 CURLY_TO_STRAIGHT = {"’": "'", "‘": "'", "‛": "'", "“": '"', "”": '"'}
-EMPHASIS_MARKS = frozenset("*_~")  # markdown for **bold**, *italics* or _italics_, and ~~strikethrough~~
+EMPHASIS_MARKS = frozenset("*_~^")  # markdown for **bold**, *italics* or _italics_, ~~strikethrough~~ and ^superscript
 _ENTITY = re.compile(r"&(?:#[0-9]+|#[xX][0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]*);")  # &amp; &gt; &#39; &#x27;
 
 

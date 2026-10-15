@@ -177,6 +177,17 @@ itself, at Reddit's pace) with a bigger verification budget, then apply its reco
     .venv/bin/python -m engine.precheck --limit 0 --verify 2000
     .venv/bin/python -m engine.library apply-checks
 
+A comment verification dropped can be given its words back while the backup made before slimming is kept (15 Oct
+2026: until 21 Oct, the deletion rule), but only when Reddit still shows it word for word: the command reads each one
+again on the embed page and puts back only those that pass (its words, writer and items from the backup, today's read
+as its verification, so the next deploy keeps it), and says what Reddit shows of the others (`--dry-run` first):
+
+    .venv/bin/python -m engine.library restore-words --backup ~/credible-recs-backups/library-before-slim-20261014-2211.tgz --dry-run <thread>:<comment> ...
+
+`extract check` names a reply whose product source lost its words: "which was edited on Reddit since it was read" or
+"which wasn't verified on Reddit within 30 days" for a source verification dropped (since 15 Oct 2026; earlier drops
+say "whose words aren't kept in the library", as a source slimming didn't keep would, which no thread has).
+
 ### The commands it runs, in order
 
 The project number is `NUMBER` below (`gcloud projects describe credible-picks --format='value(projectNumber)'`), and

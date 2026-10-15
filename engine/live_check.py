@@ -109,6 +109,12 @@ WINDOW_MARGIN_SECONDS = 1.0
 # The comment's text on the embed page: <div class="text-14"><div ... class="inline-block ..."> text </div></div>.
 _BODY = re.compile(r'<div class="text-14">\s*<div[^>]*class="inline-block[^"]*"[^>]*>(.*?)</div>\s*</div>', re.S)
 _TAG = re.compile(r"<[^>]+>")
+# The tags that separate words: paragraphs, line breaks, list items, quoted blocks, headings, code blocks, tables, rules.
+# Every other tag only formats what is inside it (bold, italics, strikethrough, a link, a superscript, inline code), so
+# it is taken out with nothing in its place (15 Oct 2026: read as a space, "<strong>Zojirushi</strong>: it" had become
+# "Zojirushi : it", and a comment whose quote held "**Zojirushi**:" was taken as edited).
+_BLOCK_TAG = re.compile(r"</?(?:p|br|div|li|ul|ol|blockquote|h[1-6]|pre|table|thead|tbody|tfoot|tr|td|th|hr|figure)"
+                        r"\b[^>]*>", re.I)
 _GONE = ("[deleted]", "[removed]")
 _PUT_OFF = object()  # _comment_text: not read, since reading it would have waited (check's wait=False)
 
@@ -455,7 +461,7 @@ class LiveChecker:
             unreadable = {"fetched_at": fetched_at.isoformat(), "text": None}
             self._keep(_entry_name(url), json.dumps(unreadable).encode("utf-8"))
             return None
-        text = html.unescape(" ".join(_TAG.sub(" ", found.group(1)).split()))
+        text = html.unescape(" ".join(_TAG.sub("", _BLOCK_TAG.sub(" ", found.group(1))).split()))
         data = json.dumps({"fetched_at": fetched_at.isoformat(), "text": text}, ensure_ascii=False).encode("utf-8")
         self._keep(_entry_name(url), data)
         return text
