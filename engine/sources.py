@@ -1304,8 +1304,11 @@ def need_words(query: ParsedQuery) -> list[str]:
     for token in re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", text):
         # "anti-dandruff" asks about dandruff and "sulfate-free" about sulfates (11 Oct 2026), as people write them.
         token = re.sub(r"^anti-(?=[a-z])|(?<=[a-z])-free$", "", token)
-        word = _stem(re.sub(r"['-]", "", token))
-        if word.isdigit() or word in _STOPWORDS or word in product_words or word in words:
+        plain = re.sub(r"['-]", "", token)
+        word = _stem(plain)
+        # A stopword as written, too (15 Oct 2026): the plural trim made "bucks" and "dollars" "buck" and "dollar",
+        # which the stopwords don't hold, so a budget's own word was a need ("about how long it lasts or bucks").
+        if word.isdigit() or word in _STOPWORDS or plain in _STOPWORDS or word in product_words or word in words:
             continue
         words.append(word)
     return words

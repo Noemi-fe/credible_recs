@@ -87,7 +87,13 @@ its thread's (engine.credibility.thread_upvotes), for Noemi's upvote rule, which
 
 Two ranking changes of 9 Oct 2026 are worked out here, in _score, before module 6 ranks:
 - needs: a mention whose comment talks about what the request asks for (engine/needs.py: "sensitive skin", "a
-  beginner", "pour-over") weighs NEED_MATCH_BOOST times (off, 1.0, for now) as much, a recommendation or a warning alike;
+  beginner", "pour-over") weighs NEED_MATCH_BOOST times (off, 1.0, for now) as much, a recommendation or a warning alike.
+  Since 15 Oct 2026 what a mention talks about is judged by the needs a comment can talk about (engine.needs.
+  judged_needs), the need rule's: not a word of an active ingredient the request names, a size, a single letter or, in
+  skincare and haircare, a checked requirement's word. So everything the answer says or shows about them goes by the
+  rule's needs: the reason's "2 of them about ...", the breakdown's counts, the quotes about them shown first, and
+  whether a comment standing out in its thread talks about what was asked. Every writer of a vitamin C serum names it,
+  so its reason had said "3 of them about vitamin or c". The threads read first still go by every need (engine.sources);
 - writers who contradict themselves (Noemi's rule; engine/contradictions.py): a writer who recommends a product and
   warns against it in another comment of the threads read, without saying what changed, counts as a low voice in
   every mention and note they make, so none of it is credible. They are named on the result (contradicting_writers)
@@ -196,7 +202,7 @@ from engine.library_cache import loaded as loaded_library
 from engine.match_products import known_aliases, normalize_name, product_words, same_product, written_alike
 from engine.memo import Table
 from engine.models import Comment, Thread
-from engine.needs import Need, judged_needs, needs_met, request_needs
+from engine.needs import Need, judged_needs, needs_met
 from engine.prices import (
     Price,
     PriceCheck,
@@ -483,7 +489,9 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     with_a_kind = kinds_of(kinds)
     result.notes_without_kind = [n.about for n in kind_mentions if n not in with_a_kind]
     result.contradicting_writers = sorted(contradicting_writers(groups, {c.id: c for t in threads for c in t.comments}))
-    scored, kind_notes = _score(threads, checked, kept_groups, kinds, request_needs(query),
+    # What a comment talks about of the request is judged by the needs a comment can talk about (15 Oct 2026): the need
+    # rule's, so the reason, the breakdown and the quotes shown first say no more than the rule judges.
+    scored, kind_notes = _score(threads, checked, kept_groups, kinds, judged_needs(query),
                                 set(result.contradicting_writers), request_asks(query))
     if summaries is None:
         loaded = load_summaries(Path(library_dir) / SUMMARIES_FILE)
@@ -503,7 +511,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
         models, model_prices = _brand_models(result.ranking, kept_groups, query.product_type, price_checks)
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
-                                     request_needs(query), query.text, summaries,
+                                     judged_needs(query), query.text, summaries,
                                      _worth_left_out(result.ranking, kept_groups), **wording, ranges=ranges)
         if live_checker is not None:
             _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions,
@@ -636,7 +644,7 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks)
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
-                                     request_needs(query), query.text, summaries,
+                                     judged_needs(query), query.text, summaries,
                                      _worth_left_out(result.ranking, groups), **(wording or {}), ranges=ranges)
 
 
@@ -1844,9 +1852,11 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
            contradicting: set[str] = frozenset(), asks: tuple[str, ...] = ()) -> tuple[list[ScoredMention], list[KindNote]]:
     """A weight for every product mention and kind note of the threads read (module 5), ready for the ranking.
 
-    `needs` are the request's needs (engine.needs.request_needs): a product mention whose comment talks about one of
-    them weighs NEED_MATCH_BOOST times as much. `contradicting` are the writers who contradict themselves
-    (engine.contradictions): every mention and note of theirs counts as a low voice.
+    `needs` are the request's needs a comment can talk about (engine.needs.judged_needs, since 15 Oct 2026; every need
+    of engine.needs.request_needs before): a product mention whose comment talks about one of them weighs
+    NEED_MATCH_BOOST times as much, and they are the needs the mention carries (ScoredMention.needs). `contradicting`
+    are the writers who contradict themselves (engine.contradictions): every mention and note of theirs counts as a low
+    voice.
     """
     by_id = {t.id: t for t in threads}
     group_by_mention = group_of(groups)

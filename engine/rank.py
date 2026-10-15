@@ -128,7 +128,8 @@ class ScoredMention:
     badges: tuple[str, ...] = ()  # "why this voice counts", in words: "3 years of use", "expert flair"
     author: str | None = None  # the writer's name, lowercased, so one writer counts once; None for a deleted account
     # The request's needs its comment talks about ("sensitive", "beginner", "pour-over"; engine/needs.py), in the
-    # request's order; empty when it talks about none.
+    # request's order; empty when it talks about none. Since 15 Oct 2026 only the needs a comment can talk about
+    # (engine.needs.judged_needs): never the ingredient, size or checked requirement the request names.
     needs: tuple[str, ...] = ()
     # The product's name as this comment's writer wrote it (module 3: "my Stagg"), which names the product in a quote
     # as well as the name shown does (engine/answer.py; 10 Oct 2026). Empty when not known.

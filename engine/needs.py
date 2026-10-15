@@ -150,7 +150,10 @@ def judged_needs(query: ParsedQuery) -> tuple[Need, ...]:
       request, Noemi's decision 2 of 15 Oct 2026; "sulfate" in a sulfate-free one), which the product's facts settle,
       as they settle an ingredient (15 Oct 2026, the orchestrator, merging decisions 2 and 3). Kitchen and general
       requests keep these words in their wider reading's rule, as before (a PFAS-free pan's voices still talk about it).
-    They stay needs everywhere else (the threads read first, the reason's "2 of them about ..."), as before."""
+    Since 15 Oct 2026 everything an answer says or shows about the request's needs goes by these too (engine.pipeline's
+    _score and write_answer): the reason's "2 of them about ...", the breakdown's counts, the quotes about them shown
+    first, and whether a comment standing out in its thread talks about what was asked; a vitamin C serum's reason had
+    said "3 of them about vitamin or c". They stay needs for the threads read first (engine.sources), as before."""
     named = _ingredient_words(_plain(query.text)) | _requirement_words(query)
     return tuple(need for need in request_needs(query) if need.request_word is None or not (
         need.request_word in named or _is_size(need.request_word) or len(need.request_word) == 1))
@@ -410,12 +413,15 @@ def _covered(word: str, found: dict[str, int], needs: dict[str, tuple[str, ...]]
     """Whether a need word is already part of a need found, or is a word too common to show a need.
 
     "sensitive" is the need "sensitive" (one of its words begins it), "acneprone" is "acne-prone" (the name without its
-    hyphen), "white" and "cast" are words of the phrase "white cast".
+    hyphen), "white" and "cast" are words of the phrase "white cast". So is a word of the need's own name (15 Oct 2026):
+    "acne prone", "fragrance free" and "stainless steel" each name their need, and "prone", "free" or "steel" had been a
+    need of its own, found in any comment saying it ("sulfate free", "free shipping") and listed in the reason ("about
+    acne-prone skin or prone").
     """
     if word in NEED_IGNORED_WORDS:
         return True
     for need in found:
-        if word == re.sub(r"[\s-]", "", need):
+        if word == re.sub(r"[\s-]", "", need) or word in re.split(r"[\s-]+", need):
             return True
         for need_word in needs[need]:
             if " " in need_word and word in need_word.split():

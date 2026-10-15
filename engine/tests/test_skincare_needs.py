@@ -206,7 +206,8 @@ def test_the_how_page_says_a_pick_must_talk_about_what_you_asked_for_and_where(t
 ])
 def test_a_need_a_checked_requirement_settles_is_not_judged_by_comments(request_text, settled):
     # As for an active ingredient: the facts check settles it (engine/product_facts.py), and nobody's praise has to say
-    # it as well. It stays a need everywhere else (the threads read first, the reason's "about ...").
+    # it as well. It stays a need for the threads read first (since 15 Oct 2026 the reason's "about ..." goes by the
+    # judged needs: engine/tests/test_reason_needs.py).
     query = parse_query(request_text, model=None)
     assert settled in {need.name for need in request_needs(query)}
     assert settled not in {need.name for need in judged_needs(query)}
