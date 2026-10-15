@@ -522,6 +522,15 @@ def test_refurbished_is_filler():
     assert same_product("refurbished Virtuoso", "Baratza Virtuoso", load_aliases()["kitchen"])
 
 
+def test_used_is_filler():
+    # A used unit is the same product, as a refurbished one is (15 Oct 2026: writers' "used Vitamix" and "used
+    # Zojirushi" were listed beside their brands' own lines, and "used Kenmore Elite dishwasher" apart from the Kenmore
+    # Elite). The word goes wherever it is written.
+    assert normalize_name("used Vitamix") == ["vitamix"]
+    assert normalize_name("Speed Queen washer (used)") == ["speed", "queen", "washer"]
+    assert same_product("used Kenmore Elite dishwasher", "Kenmore Elite dishwasher")
+
+
 def test_a_short_name_already_written_out_with_a_slip_is_left_alone():
     # "Ettude Houde" is Etude House misspelled, not Etude followed by a word "houde".
     aliases = make_aliases({"Etude": "Etude House"})
