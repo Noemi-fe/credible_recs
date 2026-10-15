@@ -50,7 +50,8 @@
    "url": "https://dmd-browser.nhsbsa.nhs.uk/vmp/view/3762",
    "checked_on": "2026-10-09",
    "available": false,
-   "note": "NHSBSA"
+   "note": "NHSBSA",
+   "not_in_uk": true
   },
   {
    "product": "Stratia Lipid Gold (formerly Liquid Gold)",
@@ -84,7 +85,8 @@
    "also_called": [
     "Cuisinart CPK-17 PerfecTemp 1.7-Liter Stainless"
    ],
-   "note": "a US-voltage import only, not for UK mains"
+   "note": "a US-voltage import only, not for UK mains",
+   "not_in_uk": true
   },
   {
    "product": "Sage the Compact Kettle Pure",
@@ -114,7 +116,8 @@
    "shop": "The English Coffee Company",
    "url": "https://englishcoffeecompany.co.uk/products/1zpresso-jx-pro-s-manual-coffee-grinder",
    "checked_on": "2026-10-09",
-   "available": false
+   "available": false,
+   "not_in_uk": true
   },
   {
    "product": "1Zpresso J-Max",
@@ -462,7 +465,8 @@
    "also_called": [
     "Cuisinart Digital Goose Neck Kettle"
    ],
-   "note": "no UK shop found selling it: Amazon UK lists Cuisinart's UK kettles but no gooseneck, and John Lewis stocks no Cuisinart kettles; it is a North American model"
+   "note": "no UK shop found selling it: Amazon UK lists Cuisinart's UK kettles but no gooseneck, and John Lewis stocks no Cuisinart kettles; it is a North American model",
+   "not_in_uk": true
   },
   {
    "product": "OXO Brew Conical Burr Coffee Grinder",
@@ -473,7 +477,8 @@
    "url": "https://www.amazon.co.uk/dp/B07CSKGLMM",
    "checked_on": "2026-10-10",
    "available": false,
-   "note": "only 120 V imports for US mains, not usable on UK mains; John Lewis sells OXO's manual grinder, not this electric one"
+   "note": "only 120 V imports for US mains, not usable on UK mains; John Lewis sells OXO's manual grinder, not this electric one",
+   "not_in_uk": true
   },
   {
    "product": "Comandante C40 MK4",
@@ -559,7 +564,8 @@
    "url": "https://www.lookfantastic.com/p/eltamd-uv-clear-broad-spectrum-spf46-48g/11370303/",
    "checked_on": "2026-10-10",
    "available": false,
-   "note": "Lookfantastic's page for it now opens its 'Do Not Stock' page; Amazon UK lists only lookalikes; Dermstore (US) sells it at US$45 but reportedly ships only within the US; no UK shop found with it"
+   "note": "Lookfantastic's page for it now opens its 'Do Not Stock' page; Amazon UK lists only lookalikes; Dermstore (US) sells it at US$45 but reportedly ships only within the US; no UK shop found with it",
+   "not_in_uk": true
   },
   {
    "product": "Rohto Skin Aqua UV Super Moisture Milk SPF50+ PA++++",
@@ -584,7 +590,8 @@
    "also_called": [
     "The INKEY List Retinol Serum"
    ],
-   "note": "no longer on The INKEY List's UK or US store (its product page is gone); the brand now sells a Starter Retinol Serum (£13) and an Advanced 0.2% Retinal Serum (£18) instead; Lookfantastic and Cult Beauty still show the 30ml at £14, sold out"
+   "note": "no longer on The INKEY List's UK or US store (its product page is gone); the brand now sells a Starter Retinol Serum (£13) and an Advanced 0.2% Retinal Serum (£18) instead; Lookfantastic and Cult Beauty still show the 30ml at £14, sold out",
+   "not_in_uk": true
   },
   {
    "product": "K-Secret SEOUL 1988 Cream: Retinal Liposome 1% + Fermented Rice 50ml",
@@ -715,7 +722,8 @@
    "url": "https://www.amazon.co.uk/s?k=timemore+chestnut+c2+max",
    "checked_on": "2026-10-10",
    "available": false,
-   "note": "no UK shop found selling it: Amazon UK lists the C2S and C3S Max but not the C2 Max, and Redber sells only the C2; Timemore's own store no longer lists it (its product page is gone; it now sells the C3, C3S and C5)"
+   "note": "no UK shop found selling it: Amazon UK lists the C2S and C3S Max but not the C2 Max, and Redber sells only the C2; Timemore's own store no longer lists it (its product page is gone; it now sells the C3, C3S and C5)",
+   "not_in_uk": true
   },
   {
    "product": "KINGrinder K2 Hand Coffee Grinder",
@@ -740,7 +748,8 @@
    "url": "https://www.amazon.co.uk/s?k=helor+101+grinder",
    "checked_on": "2026-10-10",
    "available": false,
-   "note": "no UK shop found selling it new: Amazon UK lists none, and Helor's own site (helor.com) does not load"
+   "note": "no UK shop found selling it new: Amazon UK lists none, and Helor's own site (helor.com) does not load",
+   "not_in_uk": true
   },
   {
    "product": "Circulon pans",
@@ -815,7 +824,8 @@
    "also_called": [
     "1Zpresso K-Plus"
    ],
-   "note": "1Zpresso's UK distributor sells the newer K-Ultra (£229), not the K-Plus, and 1Zpresso's own store no longer lists the K-Plus"
+   "note": "1Zpresso's UK distributor sells the newer K-Ultra (£229), not the K-Plus, and 1Zpresso's own store no longer lists the K-Plus",
+   "not_in_uk": true
   },
   {
    "product": "1zpresso X-Pro",
@@ -826,7 +836,8 @@
    "url": "https://sigmacoffee.co.uk/search?q=1zpresso&type=product",
    "checked_on": "2026-10-10",
    "available": false,
-   "note": "1Zpresso's UK distributor sells the newer X-Ultra (£145, sold out on 10 Oct), not the X-Pro, and 1Zpresso's own store no longer lists the X-Pro"
+   "note": "1Zpresso's UK distributor sells the newer X-Ultra (£145, sold out on 10 Oct), not the X-Pro, and 1Zpresso's own store no longer lists the X-Pro",
+   "not_in_uk": true
   },
   {
    "product": "niche",
@@ -1033,7 +1044,8 @@
    "url": "https://www.ebay.com/p/15054407876",
    "checked_on": "2026-10-10",
    "available": false,
-   "note": "a US model: eBay's US catalogue lists the Cosmopolitan 1.3L glass kettle as BV07001US, 120 V, sold out, so not usable on UK mains; no UK shop found selling it: The English Coffee Company, Coffee World and Coffee Omega, which sell Bonavita in the UK, list only its 1L Variable Temp kettle (and Coffee Omega a stovetop gooseneck)"
+   "note": "a US model: eBay's US catalogue lists the Cosmopolitan 1.3L glass kettle as BV07001US, 120 V, sold out, so not usable on UK mains; no UK shop found selling it: The English Coffee Company, Coffee World and Coffee Omega, which sell Bonavita in the UK, list only its 1L Variable Temp kettle (and Coffee Omega a stovetop gooseneck)",
+   "not_in_uk": true
   },
   {
    "product": "OXO kettle",
@@ -1044,7 +1056,8 @@
    "url": "https://www.johnlewis.com/search?search-term=oxo",
    "checked_on": "2026-10-10",
    "available": false,
-   "note": "OXO's electric kettles are 120 V North American models, not usable on UK mains: eBay UK's catalogue page for the OXO Cordless Glass Electric Kettle (8710300) gives 120 V, sold out; no UK shop found selling one: none of John Lewis's 150 OXO products (search 'oxo') or Lakeland's 191 OXO products is a kettle, electric or stovetop"
+   "note": "OXO's electric kettles are 120 V North American models, not usable on UK mains: eBay UK's catalogue page for the OXO Cordless Glass Electric Kettle (8710300) gives 120 V, sold out; no UK shop found selling one: none of John Lewis's 150 OXO products (search 'oxo') or Lakeland's 191 OXO products is a kettle, electric or stovetop",
+   "not_in_uk": true
   },
   {
    "product": "Zojirushi kettle",
@@ -1168,7 +1181,8 @@
    "url": "https://clumsygoat.co.uk/products/fellow-corvo-ekg-coffee-pouring-kettle-matte-black",
    "checked_on": "2026-10-10",
    "available": false,
-   "note": "the original Corvo EKG (not the Pro), UK 3-pin plug: Clumsy Goat still lists it (£149.00, was £175.00) but both colours are sold out; Fellow's own Corvo EKG page now offers only the Corvo EKG Pro and Pro Studio Edition, and its store has only spare kettle bodies for the original; Borough Kitchen's Corvo EKG pages are gone (404), and Borough Kitchen and Coffee Beautiful sell only the Corvo EKG Pro (£159 to £195); so no UK shop checked sells the original new"
+   "note": "the original Corvo EKG (not the Pro), UK 3-pin plug: Clumsy Goat still lists it (£149.00, was £175.00) but both colours are sold out; Fellow's own Corvo EKG page now offers only the Corvo EKG Pro and Pro Studio Edition, and its store has only spare kettle bodies for the original; Borough Kitchen's Corvo EKG pages are gone (404), and Borough Kitchen and Coffee Beautiful sell only the Corvo EKG Pro (£159 to £195); so no UK shop checked sells the original new",
+   "not_in_uk": true
   },
   {
    "product": "Knock Aergrind",
@@ -1378,7 +1392,8 @@
    "url": "https://www.amazon.co.uk/s?k=zojirushi+neuro+fuzzy",
    "checked_on": "2026-10-12",
    "available": false,
-   "note": "a 120 V model only (Zojirushi's own page: NS-ZCC10 120 volts / 680 watts, NS-ZCC18 120 volts / 1,000 watts), not for UK mains: Amazon UK lists only US imports (NS-ZCC10 £362.45, NS-ZCC18 £328.07 on 12 Oct) and WAFUU JAPAN's UK store sells the NS-ZCC10 'for overseas use' at 120 V (£151); no 220-240 V Neuro Fuzzy found for UK shoppers"
+   "note": "a 120 V model only (Zojirushi's own page: NS-ZCC10 120 volts / 680 watts, NS-ZCC18 120 volts / 1,000 watts), not for UK mains: Amazon UK lists only US imports (NS-ZCC10 £362.45, NS-ZCC18 £328.07 on 12 Oct) and WAFUU JAPAN's UK store sells the NS-ZCC10 'for overseas use' at 120 V (£151); no 220-240 V Neuro Fuzzy found for UK shoppers",
+   "not_in_uk": true
   },
   {
    "product": "Zojirushi rice cooker",
@@ -1402,7 +1417,8 @@
    "url": "https://vitamix.co.uk/collections/blenders",
    "checked_on": "2026-10-12",
    "available": false,
-   "note": "not sold to UK shoppers: Vitamix's UK store sells the Explorian E310 (£429), E510 (£449) and E520 (£499) and the Ascent A2500i (£679) and A3500i (£829), John Lewis the E310, A2500i and A3500i, and Amazon UK's search for it shows only other Vitamix blenders; no UK shop found selling the 5200 or its 230 V version, the TNC 5200"
+   "note": "not sold to UK shoppers: Vitamix's UK store sells the Explorian E310 (£429), E510 (£449) and E520 (£499) and the Ascent A2500i (£679) and A3500i (£829), John Lewis the E310, A2500i and A3500i, and Amazon UK's search for it shows only other Vitamix blenders; no UK shop found selling the 5200 or its 230 V version, the TNC 5200",
+   "not_in_uk": true
   },
   {
    "product": "Vitamix blender",
@@ -1462,7 +1478,8 @@
    "url": "https://www.amazon.co.uk/s?k=cuisinart+cpt-142",
    "checked_on": "2026-10-12",
    "available": false,
-   "note": "a North American model (sold by US shops such as Macy's and Kohl's): Amazon UK lists only dust covers that fit it, and John Lewis stocks no Cuisinart toasters; no UK shop found selling it"
+   "note": "a North American model (sold by US shops such as Macy's and Kohl's): Amazon UK lists only dust covers that fit it, and John Lewis stocks no Cuisinart toasters; no UK shop found selling it",
+   "not_in_uk": true
   },
   {
    "product": "Ankarsrum Assistent Original",
@@ -1492,7 +1509,8 @@
    "also_called": [
     "KitchenAid Commercial Series 8-Qt Bowl Lift Stand Mixer KSM8990ER"
    ],
-   "note": "a US commercial mixer: Amazon UK sells it only from Amazon US (£1,026.39 on 12 Oct) with 'Voltage 120', so not for UK mains; KitchenAid UK's stand mixers go up to 6.6 L bowl-lift models (Artisan 5KSM70SHX, Heavy Duty 5KSM70JPX), with no 8-quart (7.6 L) commercial model"
+   "note": "a US commercial mixer: Amazon UK sells it only from Amazon US (£1,026.39 on 12 Oct) with 'Voltage 120', so not for UK mains; KitchenAid UK's stand mixers go up to 6.6 L bowl-lift models (Artisan 5KSM70SHX, Heavy Duty 5KSM70JPX), with no 8-quart (7.6 L) commercial model",
+   "not_in_uk": true
   },
   {
    "product": "KitchenAid Artisan Tilt-Head Stand Mixer 4.7L 5KSM125",
@@ -1570,7 +1588,8 @@
    "url": "https://www.amazon.co.uk/s?k=dr+dans+cortibalm",
    "checked_on": "2026-10-12",
    "available": false,
-   "note": "a US 1% hydrocortisone lip balm sold by US shops (Walmart, US pharmacies); Amazon UK's search shows only other lip balms; no UK shop found selling it"
+   "note": "a US 1% hydrocortisone lip balm sold by US shops (Walmart, US pharmacies); Amazon UK's search shows only other lip balms; no UK shop found selling it",
+   "not_in_uk": true
   },
   {
    "product": "Malin+Goetz Lip Moisturizer",
@@ -1597,7 +1616,8 @@
    "also_called": [
     "L'Oréal EverPure Clarifying Shampoo"
    ],
-   "note": "a US product, sold by L'Oréal Paris USA as the EverPure Sulfate-Free Clarifying Shampoo (L'Oréal Paris Canada calls it EverPure Clarify Shampoo): Amazon UK lists only imported EverPure Volume shampoo and an EverPure Bonding set from other sellers, not this one; L'Oréal Paris UK's site couldn't be read (a bot check); no UK shop found selling it; named without 'Paris' so that writers' bare 'L'Oréal Paris' (hair masks) doesn't find it"
+   "note": "a US product, sold by L'Oréal Paris USA as the EverPure Sulfate-Free Clarifying Shampoo (L'Oréal Paris Canada calls it EverPure Clarify Shampoo): Amazon UK lists only imported EverPure Volume shampoo and an EverPure Bonding set from other sellers, not this one; L'Oréal Paris UK's site couldn't be read (a bot check); no UK shop found selling it; named without 'Paris' so that writers' bare 'L'Oréal Paris' (hair masks) doesn't find it",
+   "not_in_uk": true
   },
   {
    "product": "L'Oréal Paris",
@@ -1734,7 +1754,8 @@
    "also_called": [
     "Ego Azclear Action Medicated Lotion"
    ],
-   "note": "an Australian pharmacy medicine (Ego Pharmaceuticals' Azclear Action Medicated Lotion, azelaic acid 20%), sold by Australian and New Zealand pharmacies (TerryWhite Chemmart, Chemist Warehouse NZ, where it is pharmacist-only); Amazon UK's search for it shows only other products; no UK shop found selling it"
+   "note": "an Australian pharmacy medicine (Ego Pharmaceuticals' Azclear Action Medicated Lotion, azelaic acid 20%), sold by Australian and New Zealand pharmacies (TerryWhite Chemmart, Chemist Warehouse NZ, where it is pharmacist-only); Amazon UK's search for it shows only other products; no UK shop found selling it",
+   "not_in_uk": true
   },
   {
    "product": "Goodal Green Tangerine Vita C Dark Spot Care Serum",
@@ -1781,7 +1802,8 @@
    "url": "https://www.medicines.org.uk/emc/search?q=altreno",
    "checked_on": "2026-10-14",
    "available": false,
-   "note": "a US prescription tretinoin lotion (Ortho Dermatologics); the eMC, the UK's product information for licensed medicines, has no Altreno and no tretinoin-only skin product (its tretinoin products are Aknemycin Plus and Treclin, combinations, and capsules); a search found only US pharmacies selling it"
+   "note": "a US prescription tretinoin lotion (Ortho Dermatologics); the eMC, the UK's product information for licensed medicines, has no Altreno and no tretinoin-only skin product (its tretinoin products are Aknemycin Plus and Treclin, combinations, and capsules); a search found only US pharmacies selling it",
+   "not_in_uk": true
   },
   {
    "product": "BenzaClin (clindamycin 1% / benzoyl peroxide 5%) Gel",
@@ -1792,7 +1814,8 @@
    "url": "https://www.medicines.org.uk/emc/search?q=benzaclin",
    "checked_on": "2026-10-14",
    "available": false,
-   "note": "a US prescription gel; the eMC has no BenzaClin: the UK's licensed clindamycin and benzoyl peroxide gel is Duac Once Daily (prescription-only; on the eMC, and sold on prescription by Pharmacy2U)"
+   "note": "a US prescription gel; the eMC has no BenzaClin: the UK's licensed clindamycin and benzoyl peroxide gel is Duac Once Daily (prescription-only; on the eMC, and sold on prescription by Pharmacy2U)",
+   "not_in_uk": true
   },
   {
    "product": "Tri-Luma (fluocinolone, hydroquinone 4%, tretinoin 0.05%) Cream",
@@ -1803,7 +1826,8 @@
    "url": "https://www.medicines.org.uk/emc/search?q=tri-luma",
    "checked_on": "2026-10-14",
    "available": false,
-   "note": "a US prescription cream for melasma (Galderma); the eMC has no Tri-Luma; a search found no UK pharmacy selling it"
+   "note": "a US prescription cream for melasma (Galderma); the eMC has no Tri-Luma; a search found no UK pharmacy selling it",
+   "not_in_uk": true
   },
   {
    "product": "Mad Hippie Vitamin C Serum",
@@ -1857,7 +1881,8 @@
    "also_called": [
     "Martha Stewart Collection from Macy's"
    ],
-   "note": "Macy's own line, sold only by Macy's; its help page (read 15 Oct 2026) says its international shipping has been paused since 17 Dec 2025 and orders need US billing and delivery addresses; Amazon UK's search shows bedding branded 'Martha Stewart', not 'Martha Stewart Collection'; no UK shop found selling it"
+   "note": "Macy's own line, sold only by Macy's; its help page (read 15 Oct 2026) says its international shipping has been paused since 17 Dec 2025 and orders need US billing and delivery addresses; Amazon UK's search shows bedding branded 'Martha Stewart', not 'Martha Stewart Collection'; no UK shop found selling it",
+   "not_in_uk": true
   },
   {
    "product": "Parent's Choice baby bottles",
@@ -1872,7 +1897,8 @@
    "also_called": [
     "Parents Choice bottles"
    ],
-   "note": "Walmart's own baby brand, sold by Walmart US; Amazon UK's search shows only other brands' bottles (NUK, Tommee Tippee); no UK shop found selling it"
+   "note": "Walmart's own baby brand, sold by Walmart US; Amazon UK's search shows only other brands' bottles (NUK, Tommee Tippee); no UK shop found selling it",
+   "not_in_uk": true
   },
   {
    "product": "Kirkland Signature Hygro Cotton towel",
@@ -1884,7 +1910,8 @@
    "url": "https://www.costco.co.uk/search?text=kirkland%20signature%20towel",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "a Costco US own-brand bath towel; Costco UK's search shows Kirkland Signature microfibre cloths and kitchen roll only, its cotton towels being Grandeur's; Amazon UK's search shows the microfibre cloths only; no UK shop found selling it"
+   "note": "a Costco US own-brand bath towel; Costco UK's search shows Kirkland Signature microfibre cloths and kitchen roll only, its cotton towels being Grandeur's; Amazon UK's search shows the microfibre cloths only; no UK shop found selling it",
+   "not_in_uk": true
   },
   {
    "product": "Member's Mark Aluminum Nonstick Restaurant Fry Pan",
@@ -1912,7 +1939,8 @@
    "url": "https://www.amazon.co.uk/s?k=trader+joe%27s+lip+mask",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Trader Joe's own-brand lip masks (vanilla, cinnamon roll, watermelon and other flavours), sold in Trader Joe's US stores; Amazon UK's search shows only other brands' lip masks; no UK shop found selling them"
+   "note": "Trader Joe's own-brand lip masks (vanilla, cinnamon roll, watermelon and other flavours), sold in Trader Joe's US stores; Amazon UK's search shows only other brands' lip masks; no UK shop found selling them",
+   "not_in_uk": true
   },
   {
    "product": "AprilAire",
@@ -1923,7 +1951,8 @@
    "url": "https://www.amazon.co.uk/s?k=aprilaire+dehumidifier",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "whole-house humidity and air products sold through US and Canadian HVAC dealers; Amazon UK's search shows only other brands' dehumidifiers; no UK shop found"
+   "note": "whole-house humidity and air products sold through US and Canadian HVAC dealers; Amazon UK's search shows only other brands' dehumidifiers; no UK shop found",
+   "not_in_uk": true
   },
   {
    "product": "Danby",
@@ -1934,7 +1963,8 @@
    "url": "https://www.amazon.co.uk/s?k=danby+dehumidifier",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "a Canadian appliance brand for North America; Amazon UK's search shows only other brands; no UK shop found"
+   "note": "a Canadian appliance brand for North America; Amazon UK's search shows only other brands; no UK shop found",
+   "not_in_uk": true
   },
   {
    "product": "Frigidaire",
@@ -1945,7 +1975,8 @@
    "url": "https://www.amazon.co.uk/s?k=frigidaire+dehumidifier",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Electrolux's North American brand; Amazon UK's search shows only other brands' dehumidifiers; no UK shop found selling its dehumidifiers, washers or air conditioners"
+   "note": "Electrolux's North American brand; Amazon UK's search shows only other brands' dehumidifiers; no UK shop found selling its dehumidifiers, washers or air conditioners",
+   "not_in_uk": true
   },
   {
    "product": "GE",
@@ -1959,7 +1990,8 @@
    "also_called": [
     "GE Appliances"
    ],
-   "note": "GE Appliances (Haier) sells in North America: Amazon UK's searches for GE dehumidifiers, washing machines and LED light bulbs show only other brands; no UK shop found"
+   "note": "GE Appliances (Haier) sells in North America: Amazon UK's searches for GE dehumidifiers, washing machines and LED light bulbs show only other brands; no UK shop found",
+   "not_in_uk": true
   },
   {
    "product": "Maytag",
@@ -1970,7 +2002,8 @@
    "url": "https://www.amazon.co.uk/s?k=maytag+washing+machine",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Whirlpool's North American brand: Amazon UK lists only a commercial coin-op Maytag top loader (£2,199); no domestic Maytag washing machine found for UK shoppers"
+   "note": "Whirlpool's North American brand: Amazon UK lists only a commercial coin-op Maytag top loader (£2,199); no domestic Maytag washing machine found for UK shoppers",
+   "not_in_uk": true
   },
   {
    "product": "Mockingbird",
@@ -1982,7 +2015,8 @@
    "url": "https://www.amazon.co.uk/s?k=mockingbird+stroller",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "a US stroller sold from hellomockingbird.com; Amazon UK's search shows only other brands' pushchairs; no UK shop found"
+   "note": "a US stroller sold from hellomockingbird.com; Amazon UK's search shows only other brands' pushchairs; no UK shop found",
+   "not_in_uk": true
   },
   {
    "product": "Sleep Number",
@@ -1993,7 +2027,8 @@
    "url": "https://www.amazon.co.uk/s?k=sleep+number+bed",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "sold through Sleep Number's own US stores and sleepnumber.com; Amazon UK's search shows only other brands; no UK shop found"
+   "note": "sold through Sleep Number's own US stores and sleepnumber.com; Amazon UK's search shows only other brands; no UK shop found",
+   "not_in_uk": true
   },
   {
    "product": "Leesa",
@@ -2004,7 +2039,8 @@
    "url": "https://www.themattressguide.co.uk/leesa-mattress-review/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "the UK review site says Leesa no longer sells in Britain; Amazon UK's search for a Leesa hybrid mattress shows only other brands"
+   "note": "the UK review site says Leesa no longer sells in Britain; Amazon UK's search for a Leesa hybrid mattress shows only other brands",
+   "not_in_uk": true
   },
   {
    "product": "Avocado Green mattress",
@@ -2019,7 +2055,8 @@
    "also_called": [
     "Avocado Green"
    ],
-   "note": "Avocado ships its mattresses from its Los Angeles factory to the US and Canada (its help centres); Amazon UK lists only its pillow and mattress protector"
+   "note": "Avocado ships its mattresses from its Los Angeles factory to the US and Canada (its help centres); Amazon UK lists only its pillow and mattress protector",
+   "not_in_uk": true
   },
   {
    "product": "WinkBeds",
@@ -2034,7 +2071,8 @@
     "WinkBed",
     "Wink Bed"
    ],
-   "note": "mattresses made to order and delivered in the US; Amazon UK's search shows only other brands; no UK shop found"
+   "note": "mattresses made to order and delivered in the US; Amazon UK's search shows only other brands; no UK shop found",
+   "not_in_uk": true
   },
   {
    "product": "Neato",
@@ -2045,7 +2083,8 @@
    "url": "https://techcrunch.com/2023/05/01/neato-robotics-is-being-shut-down-after-18-years/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Neato Robotics was shut down by its parent, Vorwerk, in 2023; no Neato robot vacuum is made any more"
+   "note": "Neato Robotics was shut down by its parent, Vorwerk, in 2023; no Neato robot vacuum is made any more",
+   "not_in_uk": true
   },
   {
    "product": "Coterie",
@@ -2056,7 +2095,8 @@
    "url": "https://www.amazon.co.uk/s?k=coterie+diapers",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "a US nappy brand sold from its own US site; Amazon UK's search shows only other brands"
+   "note": "a US nappy brand sold from its own US site; Amazon UK's search shows only other brands",
+   "not_in_uk": true
   },
   {
    "product": "Amcrest",
@@ -2068,7 +2108,8 @@
    "url": "https://www.amazon.co.uk/s?k=amcrest+video+doorbell",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Amazon UK's search shows only other brands' doorbells (Tapo, Reolink); no UK shop found"
+   "note": "Amazon UK's search shows only other brands' doorbells (Tapo, Reolink); no UK shop found",
+   "not_in_uk": true
   },
   {
    "product": "Article",
@@ -2080,7 +2121,8 @@
    "url": "https://www.article.com/help-center/delivery",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "the Vancouver furniture maker delivers across Canada and the contiguous US only (its delivery page)"
+   "note": "the Vancouver furniture maker delivers across Canada and the contiguous US only (its delivery page)",
+   "not_in_uk": true
   },
   {
    "product": "Casper",
@@ -2091,7 +2133,8 @@
    "url": "https://www.whatmattress.uk/have-casper-uk-stopped-trading/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Casper stopped trading in the UK (the UK review site's report); no UK shop found selling its pillows or mattresses"
+   "note": "Casper stopped trading in the UK (the UK review site's report); no UK shop found selling its pillows or mattresses",
+   "not_in_uk": true
   },
   {
    "product": "Coop Home Goods",
@@ -2102,7 +2145,8 @@
    "url": "https://www.amazon.co.uk/s?k=coop+home+goods+eden+pillow",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "a US pillow maker; Amazon UK's search shows only other brands' pillows; no UK shop found"
+   "note": "a US pillow maker; Amazon UK's search shows only other brands' pillows; no UK shop found",
+   "not_in_uk": true
   },
   {
    "product": "Cree",
@@ -2114,7 +2158,8 @@
    "url": "https://www.amazon.co.uk/s?k=cree+led+bulb",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Cree's household LED bulbs are sold in North America; Amazon UK's search shows only other brands' bulbs"
+   "note": "Cree's household LED bulbs are sold in North America; Amazon UK's search shows only other brands' bulbs",
+   "not_in_uk": true
   },
   {
    "product": "Duluth Trading",
@@ -2129,7 +2174,8 @@
     "Duluth Trading Company",
     "Duluth Buck Naked"
    ],
-   "note": "sold from Duluth Trading's US stores and site (its pages refused our reader); Amazon UK's searches for its flannels and Buck Naked underwear show only other brands; forwarding guides tell overseas buyers to use a US address"
+   "note": "sold from Duluth Trading's US stores and site (its pages refused our reader); Amazon UK's searches for its flannels and Buck Naked underwear show only other brands; forwarding guides tell overseas buyers to use a US address",
+   "not_in_uk": true
   },
   {
    "product": "Eley",
@@ -2140,7 +2186,8 @@
    "url": "https://www.amazon.co.uk/s?k=eley+hose+reel",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "a US hose and hose reel maker; Amazon UK's search shows only other brands (Hozelock)"
+   "note": "a US hose and hose reel maker; Amazon UK's search shows only other brands (Hozelock)",
+   "not_in_uk": true
   },
   {
    "product": "Feit",
@@ -2154,7 +2201,8 @@
    "also_called": [
     "Feit Electric"
    ],
-   "note": "Feit Electric sells in North America; Amazon UK's search shows only other brands' bulbs"
+   "note": "Feit Electric sells in North America; Amazon UK's search shows only other brands' bulbs",
+   "not_in_uk": true
   },
   {
    "product": "Flexsteel",
@@ -2168,7 +2216,8 @@
    "also_called": [
     "Flex Steel"
    ],
-   "note": "a US furniture maker selling through its dealers (its store locator); no UK shop found"
+   "note": "a US furniture maker selling through its dealers (its store locator); no UK shop found",
+   "not_in_uk": true
   },
   {
    "product": "Flexzilla",
@@ -2179,7 +2228,8 @@
    "url": "https://www.amazon.co.uk/s?k=flexzilla+garden+hose",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "a US hose brand; Amazon UK's search shows only other brands' hoses"
+   "note": "a US hose brand; Amazon UK's search shows only other brands' hoses",
+   "not_in_uk": true
   },
   {
    "product": "Garnet Hill",
@@ -2190,7 +2240,8 @@
    "url": "https://www.garnethill.com/shipping-rates/content",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "its shipping page says it does not ship outside the United States"
+   "note": "its shipping page says it does not ship outside the United States",
+   "not_in_uk": true
   },
   {
    "product": "Honest",
@@ -2205,7 +2256,8 @@
    "also_called": [
     "The Honest Company"
    ],
-   "note": "The Honest Company's nappies are sold in the US; Amazon UK lists only its imported wipes and other brands' nappies"
+   "note": "The Honest Company's nappies are sold in the US; Amazon UK lists only its imported wipes and other brands' nappies",
+   "not_in_uk": true
   },
   {
    "product": "Huggies",
@@ -2217,7 +2269,8 @@
    "url": "https://www.bbc.co.uk/news/business-20068925",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Kimberly-Clark stopped selling Huggies nappies in most of Europe in 2012; Huggies UK sells wipes, Pull-Ups and DryNites only"
+   "note": "Kimberly-Clark stopped selling Huggies nappies in most of Europe in 2012; Huggies UK sells wipes, Pull-Ups and DryNites only",
+   "not_in_uk": true
   },
   {
    "product": "Kirkland",
@@ -2232,7 +2285,8 @@
    "also_called": [
     "Kirkland Signature"
    ],
-   "note": "Costco UK's search shows Kirkland laundry liquids and fabric conditioner, no Kirkland washing-up liquid"
+   "note": "Costco UK's search shows Kirkland laundry liquids and fabric conditioner, no Kirkland washing-up liquid",
+   "not_in_uk": true
   },
   {
    "product": "Levolor",
@@ -2246,7 +2300,8 @@
    "also_called": [
     "Levelor"
    ],
-   "note": "Newell's North American blinds brand; Amazon UK's search shows only other brands"
+   "note": "Newell's North American blinds brand; Amazon UK's search shows only other brands",
+   "not_in_uk": true
   },
   {
    "product": "Lovesac",
@@ -2257,7 +2312,8 @@
    "url": "https://www.lovesac.com/help-center?a=Shipping-Information---id--Lyt5pt3NQ0GN95eW1awmfw",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Lovesac ships within the contiguous United States (its shipping help page) and sells from US showrooms; no UK shop found"
+   "note": "Lovesac ships within the contiguous United States (its shipping help page) and sells from US showrooms; no UK shop found",
+   "not_in_uk": true
   },
   {
    "product": "Old Navy",
@@ -2268,7 +2324,8 @@
    "url": "https://oldnavy.gap.com/customerService/info.do?cid=83040",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "its international shipping page says it does not support international shipping; it has no UK shops"
+   "note": "its international shipping page says it does not support international shipping; it has no UK shops",
+   "not_in_uk": true
   },
   {
    "product": "Polywood",
@@ -2283,7 +2340,8 @@
     "Poly wood",
     "POLYWOOD"
    ],
-   "note": "a US outdoor furniture maker selling through US dealers; Amazon UK's search shows only other brands"
+   "note": "a US outdoor furniture maker selling through US dealers; Amazon UK's search shows only other brands",
+   "not_in_uk": true
   },
   {
    "product": "Porter-Cable",
@@ -2297,7 +2355,8 @@
    "also_called": [
     "Porter Cable"
    ],
-   "note": "a US tool brand: Amazon UK lists only an import of a 3-amp (120 V) corded multi-tool, not for UK mains"
+   "note": "a US tool brand: Amazon UK lists only an import of a 3-amp (120 V) corded multi-tool, not for UK mains",
+   "not_in_uk": true
   },
   {
    "product": "Harbor Freight",
@@ -2308,7 +2367,8 @@
    "url": "https://go.harborfreight.com/does-harbor-freight-tools-ship-internationally/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Harbor Freight's own page: it does not ship outside the United States"
+   "note": "Harbor Freight's own page: it does not ship outside the United States",
+   "not_in_uk": true
   },
   {
    "product": "Portland",
@@ -2320,7 +2380,8 @@
    "url": "https://go.harborfreight.com/does-harbor-freight-tools-ship-internationally/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Portland is Harbor Freight's own pressure washer brand; Harbor Freight does not ship outside the US"
+   "note": "Portland is Harbor Freight's own pressure washer brand; Harbor Freight does not ship outside the US",
+   "not_in_uk": true
   },
   {
    "product": "Purex",
@@ -2332,7 +2393,8 @@
    "url": "https://www.amazon.co.uk/s?k=purex+laundry+detergent",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Henkel's North American laundry brand; Amazon UK's search shows only other brands"
+   "note": "Henkel's North American laundry brand; Amazon UK's search shows only other brands",
+   "not_in_uk": true
   },
   {
    "product": "Riccar",
@@ -2343,7 +2405,8 @@
    "url": "https://www.amazon.co.uk/s?k=riccar+vacuum",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "a US vacuum maker; Amazon UK's search shows only other brands and bags"
+   "note": "a US vacuum maker; Amazon UK's search shows only other brands and bags",
+   "not_in_uk": true
   },
   {
    "product": "Simplicity Synergy",
@@ -2355,7 +2418,8 @@
    "url": "https://www.amazon.co.uk/s?k=simplicity+synergy+vacuum",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "a US upright by Riccar's sister brand: Amazon UK's search for it shows only bags, tool kits and covers for the Synergy, no Synergy vacuum (other Simplicity models, the Scout and Jill canisters, are listed as imports, so the entry is the Synergy's, not the brand's)"
+   "note": "a US upright by Riccar's sister brand: Amazon UK's search for it shows only bags, tool kits and covers for the Synergy, no Synergy vacuum (other Simplicity models, the Scout and Jill canisters, are listed as imports, so the entry is the Synergy's, not the brand's)",
+   "not_in_uk": true
   },
   {
    "product": "Room & Board",
@@ -2369,7 +2433,8 @@
    "also_called": [
     "Room and Board"
    ],
-   "note": "the US furniture shop delivers in the US (its delivery page: a US flat rate); no UK shop found"
+   "note": "the US furniture shop delivers in the US (its delivery page: a US flat rate); no UK shop found",
+   "not_in_uk": true
   },
   {
    "product": "St. John's Bay",
@@ -2380,7 +2445,8 @@
    "url": "https://www.reship.com/blog/how-to-shop-jc-penney-internationally",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "JCPenney's own brand; JCPenney has no UK shop and overseas buyers use forwarding services (Reship's guide)"
+   "note": "JCPenney's own brand; JCPenney has no UK shop and overseas buyers use forwarding services (Reship's guide)",
+   "not_in_uk": true
   },
   {
    "product": "Sun Joe",
@@ -2394,7 +2460,8 @@
    "also_called": [
     "SunJoe"
    ],
-   "note": "Sun Joe's pressure washers are US 120 V models: Amazon UK lists only a replacement hose for the SPX3000"
+   "note": "Sun Joe's pressure washers are US 120 V models: Amazon UK lists only a replacement hose for the SPX3000",
+   "not_in_uk": true
   },
   {
    "product": "Sunbeam",
@@ -2406,7 +2473,8 @@
    "url": "https://www.amazon.co.uk/s?k=sunbeam+heated+blanket",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Sunbeam's electric blankets are North American 120 V models; Amazon UK's search shows only other brands (Snuggledown)"
+   "note": "Sunbeam's electric blankets are North American 120 V models; Amazon UK's search shows only other brands (Snuggledown)",
+   "not_in_uk": true
   },
   {
    "product": "Walmart",
@@ -2420,7 +2488,8 @@
    "also_called": [
     "Great Value"
    ],
-   "note": "Walmart's own brands (Great Value, Mainstays) are sold in its US stores; Walmart has had no UK shop since it sold Asda (BBC, 2020; completed February 2021)"
+   "note": "Walmart's own brands (Great Value, Mainstays) are sold in its US stores; Walmart has had no UK shop since it sold Asda (BBC, 2020; completed February 2021)",
+   "not_in_uk": true
   },
   {
    "product": "Home Decorators Collection",
@@ -2431,7 +2500,8 @@
    "url": "https://www.amazon.co.uk/s?k=home+decorators+collection+ceiling+fan",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Home Depot's own brand, sold in the US and Canada; Amazon UK's search shows only other brands' fans"
+   "note": "Home Depot's own brand, sold in the US and Canada; Amazon UK's search shows only other brands' fans",
+   "not_in_uk": true
   },
   {
    "product": "Ozark Trail",
@@ -2442,7 +2512,8 @@
    "url": "https://www.amazon.co.uk/s?k=ozark+trail+cooler",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Walmart's own outdoor brand: Amazon UK lists only an import of its 1-gallon jug, no cooler"
+   "note": "Walmart's own outdoor brand: Amazon UK lists only an import of its 1-gallon jug, no cooler",
+   "not_in_uk": true
   },
   {
    "product": "Norchill",
@@ -2453,7 +2524,8 @@
    "url": "https://www.amazon.co.uk/s?k=norchill+cooler",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "a US soft cooler brand; Amazon UK's search shows only other brands"
+   "note": "a US soft cooler brand; Amazon UK's search shows only other brands",
+   "not_in_uk": true
   },
   {
    "product": "Nested Bean",
@@ -2464,7 +2536,8 @@
    "url": "https://www.amazon.co.uk/s?k=nested+bean+zen+sack",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "a US baby sleep brand; Amazon UK's search shows only other brands' sleeping bags"
+   "note": "a US baby sleep brand; Amazon UK's search shows only other brands' sleeping bags",
+   "not_in_uk": true
   },
   {
    "product": "Evenflo",
@@ -2476,7 +2549,8 @@
    "url": "https://www.gov.uk/child-car-seats-the-rules",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Evenflo's car seats are US models: Amazon UK lists only imports of the Gold Revolve360; gov.uk says only seats labelled E with R129 or ECE R44 can be used in the UK"
+   "note": "Evenflo's car seats are US models: Amazon UK lists only imports of the Gold Revolve360; gov.uk says only seats labelled E with R129 or ECE R44 can be used in the UK",
+   "not_in_uk": true
   },
   {
    "product": "Carolina work boots",
@@ -2491,7 +2565,8 @@
    "also_called": [
     "Carolina"
    ],
-   "note": "a US work boot maker; Amazon UK's search shows only other brands (V12)"
+   "note": "a US work boot maker; Amazon UK's search shows only other brands (V12)",
+   "not_in_uk": true
   },
   {
    "product": "Gorilla ladder",
@@ -2503,7 +2578,8 @@
    "url": "https://www.amazon.co.uk/s?k=gorilla+ladder",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Gorilla Ladders is a US brand; Amazon UK's search shows only other brands' ladders"
+   "note": "Gorilla Ladders is a US brand; Amazon UK's search shows only other brands' ladders",
+   "not_in_uk": true
   },
   {
    "product": "Audio-Technica ATH-M50",
@@ -2530,7 +2606,8 @@
    "also_called": [
     "Dell Latitude 5300 13.3 Touchscreen"
    ],
-   "note": "a 2019 model Dell no longer sells; Amazon UK lists only 'Amazon Renewed' refurbished units"
+   "note": "a 2019 model Dell no longer sells; Amazon UK lists only 'Amazon Renewed' refurbished units",
+   "not_in_uk": true
   },
   {
    "product": "Blueair Blue Pure 211+",
@@ -2561,7 +2638,8 @@
    "also_called": [
     "Chi Compact 1875 Ionic"
    ],
-   "note": "a US 1875 W (120 V) dryer; Amazon UK's search shows only other brands"
+   "note": "a US 1875 W (120 V) dryer; Amazon UK's search shows only other brands",
+   "not_in_uk": true
   },
   {
    "product": "Apple AirPods (1st generation)",
@@ -2577,7 +2655,8 @@
     "Gen 1 AirPods",
     "AirPods gen 1"
    ],
-   "note": "Apple replaced them in 2019; Amazon UK shows only renewed 2nd-generation and later AirPods"
+   "note": "Apple replaced them in 2019; Amazon UK shows only renewed 2nd-generation and later AirPods",
+   "not_in_uk": true
   },
   {
    "product": "Graco FastAction Jogger travel system",
@@ -2589,7 +2668,8 @@
    "url": "https://www.amazon.co.uk/s?k=graco+fastaction+jogger+travel+system",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "a US travel system; Amazon UK's Graco travel systems are other models (Near2Me, Tavira, Revaya)"
+   "note": "a US travel system; Amazon UK's Graco travel systems are other models (Near2Me, Tavira, Revaya)",
+   "not_in_uk": true
   },
   {
    "product": "Graco Slim Snacker",
@@ -2601,7 +2681,8 @@
    "url": "https://www.amazon.co.uk/s?k=graco+slim+snacker+high+chair",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "a US high chair; Amazon UK lists Graco's UK high chairs (Presti, Snack N' Stow) instead"
+   "note": "a US high chair; Amazon UK lists Graco's UK high chairs (Presti, Snack N' Stow) instead",
+   "not_in_uk": true
   },
   {
    "product": "Husky adjustable height work table",
@@ -2613,7 +2694,8 @@
    "url": "https://www.amazon.co.uk/s?k=husky+adjustable+height+work+table",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Husky is Home Depot's own tool brand; Amazon UK's search shows only other brands' desks and benches"
+   "note": "Husky is Home Depot's own tool brand; Amazon UK's search shows only other brands' desks and benches",
+   "not_in_uk": true
   },
   {
    "product": "Midea Cube",
@@ -2625,7 +2707,8 @@
    "url": "https://www.amazon.co.uk/s?k=midea+cube+dehumidifier",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "a US Midea model; Amazon UK's search shows only other brands' dehumidifiers"
+   "note": "a US Midea model; Amazon UK's search shows only other brands' dehumidifiers",
+   "not_in_uk": true
   },
   {
    "product": "Philips Sonicare Series 2",
@@ -2667,7 +2750,8 @@
    "also_called": [
     "Toshiba 50 Pint TDDP5013ES2"
    ],
-   "note": "a US 50-pint model; Amazon UK's search shows only other brands"
+   "note": "a US 50-pint model; Amazon UK's search shows only other brands",
+   "not_in_uk": true
   },
   {
    "product": "Viofo A129 Plus Duo",
@@ -2709,7 +2793,8 @@
    "also_called": [
     "Whirlpool Duet washer"
    ],
-   "note": "a US Whirlpool model; Amazon UK's search shows only spare parts for it"
+   "note": "a US Whirlpool model; Amazon UK's search shows only spare parts for it",
+   "not_in_uk": true
   },
   {
    "product": "Xiaomi Roborock S5",
@@ -2736,7 +2821,8 @@
    "also_called": [
     "30 gallon RIDGID corded shop vac"
    ],
-   "note": "Home Depot's RIDGID wet/dry vacs are US 120 V models: Amazon UK lists only an import of the 6-gallon NXT"
+   "note": "Home Depot's RIDGID wet/dry vacs are US 120 V models: Amazon UK lists only an import of the 6-gallon NXT",
+   "not_in_uk": true
   },
   {
    "product": "Anker PowerCore 20100mAh",
@@ -2748,7 +2834,8 @@
    "url": "https://www.amazon.co.uk/s?k=anker+powercore+20100",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Amazon UK's search shows other Anker power banks (Prime 20,100mAh, PowerCore 26800), not this one"
+   "note": "Amazon UK's search shows other Anker power banks (Prime 20,100mAh, PowerCore 26800), not this one",
+   "not_in_uk": true
   },
   {
    "product": "Anker PowerCore Fusion 5000",
@@ -2788,7 +2875,8 @@
     "baby merlins magic sleep suit",
     "Magic Merlin sleep suit"
    ],
-   "note": "a US product; Amazon UK's search shows only other brands' sleepsuits"
+   "note": "a US product; Amazon UK's search shows only other brands' sleepsuits",
+   "not_in_uk": true
   },
   {
    "product": "Blink XT2",
@@ -2800,7 +2888,8 @@
    "url": "https://www.amazon.co.uk/s?k=blink+xt2+camera",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Amazon UK lists the XT2 with no price (unavailable); Blink sells its Outdoor cameras instead"
+   "note": "Amazon UK lists the XT2 with no price (unavailable); Blink sells its Outdoor cameras instead",
+   "not_in_uk": true
   },
   {
    "product": "Bose SoundLink Mini",
@@ -2839,7 +2928,8 @@
    "url": "https://www.amazon.co.uk/s?k=caterpillar+second+shift+steel+toe+boot",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "a US CAT model; Amazon UK's search shows CAT's UK safety boots (Granite)"
+   "note": "a US CAT model; Amazon UK's search shows CAT's UK safety boots (Granite)",
+   "not_in_uk": true
   },
   {
    "product": "Chromecast with Google TV",
@@ -2878,7 +2968,8 @@
    "url": "https://www.amazon.co.uk/s?k=eddie+bauer+diaper+bag+backpack",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Eddie Bauer's baby gear is a US licence; Amazon UK's search shows only other brands' changing bags"
+   "note": "Eddie Bauer's baby gear is a US licence; Amazon UK's search shows only other brands' changing bags",
+   "not_in_uk": true
   },
   {
    "product": "Google Pixel 3",
@@ -2909,7 +3000,8 @@
    "also_called": [
     "Honeywell Classic Portable Air Conditioner MN4CFSWW9"
    ],
-   "note": "Amazon UK's search finds nothing: a US 115 V model"
+   "note": "Amazon UK's search finds nothing: a US 115 V model",
+   "not_in_uk": true
   },
   {
    "product": "JBL Charge 3",
@@ -2973,7 +3065,8 @@
     "m2020 samsung",
     "Samsung m2020"
    ],
-   "note": "Samsung sold its printer business to HP in 2017; Amazon UK's search shows only toner for it"
+   "note": "Samsung sold its printer business to HP in 2017; Amazon UK's search shows only toner for it",
+   "not_in_uk": true
   },
   {
    "product": "Moen Inspire Chrome Shower Head 2.5-GPM",
@@ -2985,7 +3078,8 @@
    "url": "https://www.amazon.co.uk/s?k=moen+inspire+shower+head",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "a US fitting (2.5 GPM, US threads); Amazon UK's search shows only other brands"
+   "note": "a US fitting (2.5 GPM, US threads); Amazon UK's search shows only other brands",
+   "not_in_uk": true
   },
   {
    "product": "Google Nest Protect",
@@ -3014,7 +3108,8 @@
    "url": "https://www.amazon.co.uk/s?k=nitecore+mt20a",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "Amazon UK's search shows other Nitecore lights (MT2A Pro, P20iX), not the MT20A"
+   "note": "Amazon UK's search shows other Nitecore lights (MT2A Pro, P20iX), not the MT20A",
+   "not_in_uk": true
   },
   {
    "product": "Red Wing 2406",
@@ -3026,7 +3121,8 @@
    "url": "https://www.amazon.co.uk/s?k=red+wing+2406+boot",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "a US Red Wing work boot; Amazon UK's search shows other Red Wing boots (the UK Petroking range, 8131)"
+   "note": "a US Red Wing work boot; Amazon UK's search shows other Red Wing boots (the UK Petroking range, 8131)",
+   "not_in_uk": true
   },
   {
    "product": "IBM Model M",
@@ -3203,7 +3299,8 @@
     "https://www.walmart.com/c/kp/kiwi-kitchen",
     "https://www.hungryonion.org/t/kiwi-knife-how-much-you-paid-for-it-how-good-has-it-been/30634"
    ],
-   "note": "not sold to UK shoppers: Kiwi is a Thai knife brand (e.g. the No. 21 8-inch Thai chef's knife) sold through US (Walmart), Thai and German marketplaces; no UK shop or UK maker page found in two searches. Amazon UK and eBay UK block reading from here, so marketplace imports there can't be ruled out, but no big UK shop sells it."
+   "note": "not sold to UK shoppers: Kiwi is a Thai knife brand (e.g. the No. 21 8-inch Thai chef's knife) sold through US (Walmart), Thai and German marketplaces; no UK shop or UK maker page found in two searches. Amazon UK and eBay UK block reading from here, so marketplace imports there can't be ruled out, but no big UK shop sells it.",
+   "not_in_uk": true
   },
   {
    "product": "Ballarini non-stick pans",
@@ -3487,7 +3584,8 @@
     "https://herocosmetics.us/products/mighty-patch-for-early-stage-blemishes",
     "https://wellbefore.com/products/hero-cosmetics-mighty-patch-micropoint-for-blemishes"
    ],
-   "note": "not sold to UK shoppers: Hero's own UK store sells only the Mighty Patch Original, Invisible+, Surface, Nose and Duo and its Rescue Balms; no Micropoint. No Boots or other UK listing found; US shops (Target, Walmart, Amazon US) sell it."
+   "note": "not sold to UK shoppers: Hero's own UK store sells only the Mighty Patch Original, Invisible+, Surface, Nose and Duo and its Rescue Balms; no Micropoint. No Boots or other UK listing found; US shops (Target, Walmart, Amazon US) sell it.",
+   "not_in_uk": true
   },
   {
    "product": "Lodge dutch oven",
@@ -3635,7 +3733,8 @@
     "https://www.suave.com/products/essentials-daily-clarifying-shampoo",
     "https://www.amazon.co.uk/dp/B00FENR1W8"
    ],
-   "note": "not sold to UK shoppers: A US shampoo (Unilever's Suave, not sold by Unilever in the UK). Its only UK listing is a third-party import on Amazon UK under the old name 'Suave Naturals Daily Clarifying Shampoo' (seller CNKG DEALER, 1 left on 12 Oct), which isn't Amazon or the brand; no UK shop sells it."
+   "note": "not sold to UK shoppers: A US shampoo (Unilever's Suave, not sold by Unilever in the UK). Its only UK listing is a third-party import on Amazon UK under the old name 'Suave Naturals Daily Clarifying Shampoo' (seller CNKG DEALER, 1 left on 12 Oct), which isn't Amazon or the brand; no UK shop sells it.",
+   "not_in_uk": true
   },
   {
    "product": "Acaia Lunar",
@@ -3685,7 +3784,8 @@
     "https://libertymountain.com/new-items/ntn23349-king-kong-chair.html",
     "https://www.backcountry.com/alps-mountaineering-king-kong-chair-almz0ba"
    ],
-   "note": "not sold to UK shoppers: A US camping chair (ALPS Mountaineering, Liberty Mountain); only US shops list it, no UK retailer found."
+   "note": "not sold to UK shoppers: A US camping chair (ALPS Mountaineering, Liberty Mountain); only US shops list it, no UK retailer found.",
+   "not_in_uk": true
   },
   {
    "product": "American Giant hoodie",
@@ -3697,7 +3797,8 @@
    "url": "https://pxlnv.com/linklog/the-greatest-sweatshirt-known-to-man/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: A US clothing brand sold through its own US shop; no UK stockist or UK shipping found (UK buyers use parcel forwarders)."
+   "note": "not sold to UK shoppers: A US clothing brand sold through its own US shop; no UK stockist or UK shipping found (UK buyers use parcel forwarders).",
+   "not_in_uk": true
   },
   {
    "product": "Anker charger",
@@ -3802,7 +3903,8 @@
    "url": "https://www.babylist.com/gp/halo-baby-merlin-s-magic-sleepsuit/77872/2732883",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Baby Merlin's Magic Sleepsuit (now under HALO) is sold by US shops (Babylist, Amazon US); no UK stockist found."
+   "note": "not sold to UK shoppers: Baby Merlin's Magic Sleepsuit (now under HALO) is sold by US shops (Babylist, Amazon US); no UK stockist found.",
+   "not_in_uk": true
   },
   {
    "product": "Belkin charger",
@@ -3883,7 +3985,8 @@
     "https://www.u-buy.co.uk/product/T44WXPH02-bob-gear-revolution-flex-3-0-jogging-stroller-graphite-black-opens-in-a-new-window-or-tab",
     "https://www.nordiccapital.com/insights/press-releases/britax-acquires-bob-trailers-inc/"
    ],
-   "note": "not sold to UK shoppers: BOB Gear (Britax) jogging strollers are sold in the US and Canada; the old UK site bobgear.co.uk no longer answers, and the only UK listings are US imports through Ubuy ('not available locally')."
+   "note": "not sold to UK shoppers: BOB Gear (Britax) jogging strollers are sold in the US and Canada; the old UK site bobgear.co.uk no longer answers, and the only UK listings are US imports through Ubuy ('not available locally').",
+   "not_in_uk": true
   },
   {
    "product": "bowflex dumbbells",
@@ -3966,7 +4069,8 @@
     "https://www.viessmann.co.uk/en/latest-news/VCS-to-launch-new-residential-air-source-heat-pump-at-InstallerSHOW-2026.html",
     "https://www.toshiba-aircon.co.uk/en/news/bus-expansion-signals-new-era-for-uk-residential-air-conditioning.html"
    ],
-   "note": "not sold to UK shoppers: Carrier doesn't sell home heat pumps under its own name in the UK; its UK home heat pumps come as Viessmann and Toshiba (Carrier Solutions UK). Also an installed product, not a shop item."
+   "note": "not sold to UK shoppers: Carrier doesn't sell home heat pumps under its own name in the UK; its UK home heat pumps come as Viessmann and Toshiba (Carrier Solutions UK). Also an installed product, not a shop item.",
+   "not_in_uk": true
   },
   {
    "product": "Chacos sandals",
@@ -4072,7 +4176,8 @@
    "url": "https://www.craftsman.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Craftsman (Stanley Black & Decker's US brand, sold at Lowe's and Ace) isn't sold in the UK, and US hoses use US thread fittings."
+   "note": "not sold to UK shoppers: Craftsman (Stanley Black & Decker's US brand, sold at Lowe's and Ace) isn't sold in the UK, and US hoses use US thread fittings.",
+   "not_in_uk": true
   },
   {
    "product": "Crock-Pot slow cooker",
@@ -4208,7 +4313,8 @@
    "url": "https://www.eleyhosereels.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Eley is a US maker of hose reels and hoses selling from its own US site; no UK seller known (US hose threads differ from UK fittings)."
+   "note": "not sold to UK shoppers: Eley is a US maker of hose reels and hoses selling from its own US site; no UK seller known (US hose threads differ from UK fittings).",
+   "not_in_uk": true
   },
   {
    "product": "ENO hammock",
@@ -4262,7 +4368,8 @@
    "url": "https://www.feit.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Feit Electric is a US lighting brand (Costco, Home Depot); its bulbs are made for US sockets and 120 V. No UK seller known."
+   "note": "not sold to UK shoppers: Feit Electric is a US lighting brand (Costco, Home Depot); its bulbs are made for US sockets and 120 V. No UK seller known.",
+   "not_in_uk": true
   },
   {
    "product": "Fisher Space Pen refill",
@@ -4294,7 +4401,8 @@
     "https://www.u-buy.co.uk/product/Q4VINVYG-franklin-sensors-prosensor-m210-stud-finder-with-13-sensors-wood-metal-stud-detector-wall-scanner-live-wire-detection-made-in-the-usa",
     "https://wcsafety.com/collections/jobsite-equipment/products/franklin-sensors-prosensor-m210-stud-finder-with-live-wire"
    ],
-   "note": "not sold to UK shoppers: A US stud finder; UK listings found are US imports through Ubuy only, no UK shop."
+   "note": "not sold to UK shoppers: A US stud finder; UK listings found are US imports through Ubuy only, no UK shop.",
+   "not_in_uk": true
   },
   {
    "product": "G502 wireless",
@@ -4318,7 +4426,8 @@
    "url": "https://www.geappliances.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: GE Appliances (Haier's US business) sells in North America only; its microwaves are 120 V. Not sold in the UK."
+   "note": "not sold to UK shoppers: GE Appliances (Haier's US business) sells in North America only; its microwaves are 120 V. Not sold in the UK.",
+   "not_in_uk": true
   },
   {
    "product": "Gen 1 AirPods",
@@ -4354,7 +4463,8 @@
    "url": "https://www.gracobaby.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: A US Graco travel system (FastAction jogger with a US infant car seat); Graco's European range is different, and US car seats aren't approved for UK use. Not sold in the UK."
+   "note": "not sold to UK shoppers: A US Graco travel system (FastAction jogger with a US infant car seat); Graco's European range is different, and US car seats aren't approved for UK use. Not sold in the UK.",
+   "not_in_uk": true
   },
   {
    "product": "greenworks lawn mower",
@@ -4382,7 +4492,8 @@
    "url": "https://www.hamiltonbeach.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Hamilton Beach's microwaves are US (120 V) models sold in North America; no UK range or UK seller known."
+   "note": "not sold to UK shoppers: Hamilton Beach's microwaves are US (120 V) models sold in North America; no UK range or UK seller known.",
+   "not_in_uk": true
   },
   {
    "product": "Helinox camping chair",
@@ -4438,7 +4549,8 @@
    "url": "https://www.infantoptics.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Infant Optics (DXR-8) is a US brand; its site mentions no UK or international sales, and no UK shop was found earlier in this round."
+   "note": "not sold to UK shoppers: Infant Optics (DXR-8) is a US brand; its site mentions no UK or international sales, and no UK shop was found earlier in this round.",
+   "not_in_uk": true
   },
   {
    "product": "Jackery 300",
@@ -4466,7 +4578,8 @@
    "url": "https://www.jennair.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: JennAir (Whirlpool's US luxury brand) ranges are North American 240 V/60 Hz split-phase appliances, not sold in the UK."
+   "note": "not sold to UK shoppers: JennAir (Whirlpool's US luxury brand) ranges are North American 240 V/60 Hz split-phase appliances, not sold in the UK.",
+   "not_in_uk": true
   },
   {
    "product": "Kenmore fridge",
@@ -4478,7 +4591,8 @@
    "url": "https://www.kenmore.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Kenmore is a US appliance brand (Sears/Transformco); not sold in the UK."
+   "note": "not sold to UK shoppers: Kenmore is a US appliance brand (Sears/Transformco); not sold in the UK.",
+   "not_in_uk": true
   },
   {
    "product": "kindle e-reader",
@@ -4550,7 +4664,8 @@
    "url": "https://www.levolor.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Levolor (spelt 'Levelor' in the shown name) is a US blinds brand sold at US stores; not sold in the UK. Name misspelt."
+   "note": "not sold to UK shoppers: Levolor (spelt 'Levelor' in the shown name) is a US blinds brand sold at US stores; not sold in the UK. Name misspelt.",
+   "not_in_uk": true
   },
   {
    "product": "LG tumble dryer",
@@ -4658,7 +4773,8 @@
    "url": "https://www.mypillow.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: MyPillow is sold by its US company in the US; no UK shop or UK site known (its site refuses reading here)."
+   "note": "not sold to UK shoppers: MyPillow is sold by its US company in the US; no UK shop or UK site known (its site refuses reading here).",
+   "not_in_uk": true
   },
   {
    "product": "Nest Protect",
@@ -4774,7 +4890,8 @@
    "url": "https://www.ebay.co.uk/sch/i.html?_nkw=rival+crock+pot",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Rival-branded slow cookers aren't sold new in the UK (the Crock-Pot brand is, separately); eBay UK has only used Rival Crock-Pots (price list, 14 Oct), and they aren't something bought vintage on purpose, so second-hand doesn't count."
+   "note": "not sold to UK shoppers: Rival-branded slow cookers aren't sold new in the UK (the Crock-Pot brand is, separately); eBay UK has only used Rival Crock-Pots (price list, 14 Oct), and they aren't something bought vintage on purpose, so second-hand doesn't count.",
+   "not_in_uk": true
   },
   {
    "product": "Ryobi 18V inflator",
@@ -5045,7 +5162,8 @@
    "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=c06778b6-0ed6-7d82-e053-2a95a90a2ef8",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: A US over-the-counter 10% benzoyl peroxide cream (AcneFree, US drug label); not sold in the UK, where 10% benzoyl peroxide products are pharmacy medicines under other names."
+   "note": "not sold to UK shoppers: A US over-the-counter 10% benzoyl peroxide cream (AcneFree, US drug label); not sold in the UK, where 10% benzoyl peroxide products are pharmacy medicines under other names.",
+   "not_in_uk": true
   },
   {
    "product": "Philips air fryer",
@@ -5129,7 +5247,8 @@
    "url": "https://www.cerave.co.uk/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: CeraVe's UK site lists no hair products; its anti-dandruff shampoo is a US product."
+   "note": "not sold to UK shoppers: CeraVe's UK site lists no hair products; its anti-dandruff shampoo is a US product.",
+   "not_in_uk": true
   },
   {
    "product": "compound sliding 12\" Dewalt",
@@ -5377,7 +5496,8 @@
    "url": "https://www.sharkninja.co.uk/kitchen/cooking-appliances",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: The Ninja Coffee Bar is a US (120 V) coffee maker; SharkNinja UK doesn't sell it."
+   "note": "not sold to UK shoppers: The Ninja Coffee Bar is a US (120 V) coffee maker; SharkNinja UK doesn't sell it.",
+   "not_in_uk": true
   },
   {
    "product": "Ninja Foodi flip air fry oven (SP101)",
@@ -5549,7 +5669,8 @@
     "https://fieldcompany.com/policies/shipping-policy",
     "https://fieldcompany.com/products/no-10-cast-iron-skillet"
    ],
-   "note": "not sold to UK shoppers: US maker; its shipping policy covers delivery within the contiguous US only, and no UK shop was found selling it (brand_lines.json, 14 Oct, found none either). Product page is the maker's US range page; image is its No.10 skillet ($215)."
+   "note": "not sold to UK shoppers: US maker; its shipping policy covers delivery within the contiguous US only, and no UK shop was found selling it (brand_lines.json, 14 Oct, found none either). Product page is the maker's US range page; image is its No.10 skillet ($215).",
+   "not_in_uk": true
   },
   {
    "product": "Prequel Gleanser Non-Drying Glycerin Cleanser",
@@ -5941,7 +6062,8 @@
     "https://www.amazon.co.uk/Tiger-JAX-T10U-K-5-5-Cup-Uncooked-Stainless/dp/B00HLSIINU",
     "https://www.amazon.co.uk/Tiger-JBV-S18U-Microcomputer-Controlled-Cooked/dp/B01L9SD3K0"
    ],
-   "note": "not sold to UK shoppers: Tiger's regional sites cover Japan, South-East Asia, Korea, Australia and the US, not the UK (data/brand_lines.json, 14 Oct). Amazon UK has only import listings from other sellers, mostly 100-120 V models (JAX-T10U, JNP-1500, JBV-S18U: need a step-down transformer; several currently unavailable); search results also show a 240 V 'for overseas' JAX-S10A at about £248 from a third-party seller, not checked. No big UK shop sells Tiger."
+   "note": "not sold to UK shoppers: Tiger's regional sites cover Japan, South-East Asia, Korea, Australia and the US, not the UK (data/brand_lines.json, 14 Oct). Amazon UK has only import listings from other sellers, mostly 100-120 V models (JAX-T10U, JNP-1500, JBV-S18U: need a step-down transformer; several currently unavailable); search results also show a 240 V 'for overseas' JAX-S10A at about £248 from a third-party seller, not checked. No big UK shop sells Tiger.",
+   "not_in_uk": true
   },
   {
    "product": "vintage Sunbeam Radiant Control toaster",
@@ -5957,7 +6079,8 @@
     "https://www.etsy.com/market/sunbeam_radiant_control_toaster",
     "https://www.etsy.com/listing/1847553363/summer-sale-sunbeam-t-35-radiant-control"
    ],
-   "note": "sold second-hand only, which counts only for things people buy vintage on purpose (Noemi, 15 Oct 2026): A 1940s-60s US toaster (Radiant Control T-20 and T-35 models), bought vintage on purpose; sold second-hand on Etsy and eBay, mostly by US sellers (about $95 to $235 for tested working ones). Caution for UK shoppers: it is a 110-120 V US appliance, so it needs a step-down transformer here. No maker page or image (Sunbeam no longer makes it)."
+   "note": "sold second-hand only, which counts only for things people buy vintage on purpose (Noemi, 15 Oct 2026): A 1940s-60s US toaster (Radiant Control T-20 and T-35 models), bought vintage on purpose; sold second-hand on Etsy and eBay, mostly by US sellers (about $95 to $235 for tested working ones). Caution for UK shoppers: it is a 110-120 V US appliance, so it needs a step-down transformer here. No maker page or image (Sunbeam no longer makes it).",
+   "not_in_uk": true
   },
   {
    "product": "Anua Azelaic Acid 10 Hyaluron Redness Soothing Serum",
@@ -6007,7 +6130,8 @@
     "https://www.ocado.com/products/glac-au-smartwater-258226011",
     "https://www.tesco.com/shop/en-GB/products/287040956"
    ],
-   "note": "not sold to UK shoppers: Odd pick: bottled water (Glaceau Smartwater) whose empty 1 L bottle people reuse as a light water bottle. The 1 L size is the US one: Amazon UK's 1 L six-pack is currently unavailable; UK shops sell Smartwater in 600 ml (Tesco) and 850 ml (Ocado, about £1.30) bottles, per search results (Ocado's page refuses automated reads). It is also a drink, which the general category's polite no covers."
+   "note": "not sold to UK shoppers: Odd pick: bottled water (Glaceau Smartwater) whose empty 1 L bottle people reuse as a light water bottle. The 1 L size is the US one: Amazon UK's 1 L six-pack is currently unavailable; UK shops sell Smartwater in 600 ml (Tesco) and 850 ml (Ocado, about £1.30) bottles, per search results (Ocado's page refuses automated reads). It is also a drink, which the general category's polite no covers.",
+   "not_in_uk": true
   },
   {
    "product": "AirPods Pro earbuds",
@@ -6041,7 +6165,8 @@
     "https://www.amazon.co.uk/All-Clad-WD824D51-Gourmet-Removable-Stainless/dp/B09F74MPCL",
     "https://www.amazon.co.uk/All-Clad-99011GT-2-Square-Belgian-Electrics/dp/B00BFCZRSC"
    ],
-   "note": "not sold to UK shoppers: All-Clad's waffle makers are US kitchen electrics (110-120 V; its US store, dollars: the 4-slice Gourmet at $269.99). Amazon UK has only US-spec imports (WD824D51 listed at 110 V; 99011GT at 120 V, currently unavailable), per search results. No UK shop sells a UK-voltage All-Clad waffle maker."
+   "note": "not sold to UK shoppers: All-Clad's waffle makers are US kitchen electrics (110-120 V; its US store, dollars: the 4-slice Gourmet at $269.99). Amazon UK has only US-spec imports (WD824D51 listed at 110 V; 99011GT at 120 V, currently unavailable), per search results. No UK shop sells a UK-voltage All-Clad waffle maker.",
+   "not_in_uk": true
   },
   {
    "product": "Altra running shoes",
@@ -6125,7 +6250,8 @@
     "https://shop.aprilaire.com/collections/dehumidifier/model-1830",
     "https://www.u-buy.co.uk/brand/aprilaire"
    ],
-   "note": "not sold to UK shoppers: US whole-home dehumidifiers (110-120 V), sold through US installers; no UK distributor found. Only an import site (U-Buy) lists one for UK buyers (E080 at about £1,591 plus charges, needing a step-down transformer), per search results."
+   "note": "not sold to UK shoppers: US whole-home dehumidifiers (110-120 V), sold through US installers; no UK distributor found. Only an import site (U-Buy) lists one for UK buyers (E080 at about £1,591 plus charges, needing a step-down transformer), per search results.",
+   "not_in_uk": true
   },
   {
    "product": "Arm and Hammer laundry detergent",
@@ -6173,7 +6299,8 @@
     "https://august.com/blogs/home/august-at-ifa-introducing-august-software-in-yale-emea-products",
     "https://www.gearbrain.com/amp/yale-access-features-locks-europe-2640183240"
    ],
-   "note": "not sold to UK shoppers: August smart locks fit US deadbolts and aren't sold in the UK under the August name; in Europe August's software comes as Yale Access in Yale's own locks (August's 2019 announcement). No UK shop sells August locks."
+   "note": "not sold to UK shoppers: August smart locks fit US deadbolts and aren't sold in the UK under the August name; in Europe August's software comes as Yale Access in Yale's own locks (August's 2019 announcement). No UK shop sells August locks.",
+   "not_in_uk": true
   },
   {
    "product": "Bialetti Moka Express",
@@ -6206,7 +6333,8 @@
     "https://www.amazon.co.uk/BLACK-DECKER-TO1787SS-Functions-Stainless/dp/B0CKLXZRMC",
     "https://www.amazon.co.uk/Convection-Countertop-Stainless-Black-TO2050S/dp/B0198COQ00"
    ],
-   "note": "not sold to UK shoppers: BLACK+DECKER countertop toaster ovens (TO1787SS, TO2050S, TO3290XSD...) are US 120 V models; Amazon UK shows only US-spec import listings, several currently unavailable, per search results. No UK BLACK+DECKER toaster oven range or big UK shop found."
+   "note": "not sold to UK shoppers: BLACK+DECKER countertop toaster ovens (TO1787SS, TO2050S, TO3290XSD...) are US 120 V models; Amazon UK shows only US-spec import listings, several currently unavailable, per search results. No UK BLACK+DECKER toaster oven range or big UK shop found.",
+   "not_in_uk": true
   },
   {
    "product": "Bodum french press",
@@ -6417,7 +6545,8 @@
     "https://www.u-buy.co.uk/product/MCY35S59Y-cool-cut-out-pillow-cool-pillow",
     "https://www.walmart.com/ip/656166438"
    ],
-   "note": "not sold to UK shoppers: A US brand sold through its own US store, Amazon US and Walmart; no UK shop or UK shipping found. Only an import site (U-Buy) lists an Eden pillow for UK buyers (about £290 plus charges, per search results)."
+   "note": "not sold to UK shoppers: A US brand sold through its own US store, Amazon US and Walmart; no UK shop or UK shipping found. Only an import site (U-Buy) lists an Eden pillow for UK buyers (about £290 plus charges, per search results).",
+   "not_in_uk": true
   },
   {
    "product": "COSRX AHA/BHA Clarifying Treatment Toner",
@@ -6556,7 +6685,8 @@
    "url": "https://www.duluthtrading.com/content/shipping",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Duluth Trading Co. (US): its shipping page covers the US, Alaska, Hawaii, US territories and APO/FPO only; no UK shop sells it."
+   "note": "not sold to UK shoppers: Duluth Trading Co. (US): its shipping page covers the US, Alaska, Hawaii, US territories and APO/FPO only; no UK shop sells it.",
+   "not_in_uk": true
   },
   {
    "product": "Dyson hair dryer",
@@ -6724,7 +6854,8 @@
     "https://www.geappliances.com/appliance/GE-50-Pint-ENERGY-STAR-Smart-Portable-Dehumidifier-with-Smart-Dry-for-Wet-Spaces-AWHL50LD",
     "https://www.geappliances.com/appliance/GE-22-Pint-Portable-Dehumidifier-with-Smart-Dry-for-Damp-Spaces-ADYR22LC"
    ],
-   "note": "not sold to UK shoppers: GE Appliances dehumidifiers are US appliances sold in North America (its own pages price them in dollars, several marked no longer manufactured, per search results); no UK range or UK shop sells them."
+   "note": "not sold to UK shoppers: GE Appliances dehumidifiers are US appliances sold in North America (its own pages price them in dollars, several marked no longer manufactured, per search results); no UK range or UK shop sells them.",
+   "not_in_uk": true
   },
   {
    "product": "Google pixel 3",
@@ -6756,7 +6887,8 @@
     "https://www.gracobaby.com/shop/home-and-gear/high-chairs/slim-snacker-highchair/SAP_1927570.html",
     "https://www.u-buy.co.uk/product/2G14VIY-graco-slim-snacker-highchair"
    ],
-   "note": "not sold to UK shoppers: A US Graco model (out of stock even on Graco's US site, per search results); not sold by Graco in the UK. Only import sites (U-Buy) list it for UK buyers."
+   "note": "not sold to UK shoppers: A US Graco model (out of stock even on Graco's US site, per search results); not sold by Graco in the UK. Only import sites (U-Buy) list it for UK buyers.",
+   "not_in_uk": true
   },
   {
    "product": "Helly Hansen rain jacket",
@@ -7071,7 +7203,8 @@
    "url": "https://www.mrcoffee.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Mr. Coffee is a US brand of 120 V drip coffee makers (its US site); no UK range or UK shop found."
+   "note": "not sold to UK shoppers: Mr. Coffee is a US brand of 120 V drip coffee makers (its US site); no UK range or UK shop found.",
+   "not_in_uk": true
   },
   {
    "product": "Nest smart thermostat",
@@ -7190,7 +7323,8 @@
    "url": "https://www.purex.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Purex is a US laundry brand (Henkel's US site); not sold in UK shops (from knowledge; no UK range found)."
+   "note": "not sold to UK shoppers: Purex is a US laundry brand (Henkel's US site); not sold in UK shops (from knowledge; no UK range found).",
+   "not_in_uk": true
   },
   {
    "product": "Reolink security camera",
@@ -7214,7 +7348,8 @@
    "url": "https://www.ridgid.com/us/en/12-gallon-5-0-peak-hp-nxt-wet-dry-vac",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: A US model: RIDGID's 12-gallon wet/dry vacs are 120 V and sold in North America (its page is on RIDGID's US site, which refused automated reads); no UK seller found."
+   "note": "not sold to UK shoppers: A US model: RIDGID's 12-gallon wet/dry vacs are 120 V and sold in North America (its page is on RIDGID's US site, which refused automated reads); no UK seller found.",
+   "not_in_uk": true
   },
   {
    "product": "Ryobi drill",
@@ -7365,7 +7500,8 @@
    "url": "https://www.sunbeam.com/sleep-and-warming/electric-blankets/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Sunbeam electric blankets are US 120 V products (Sunbeam's US site, which refused automated reads); no UK Sunbeam blanket range is known (UK brands are others). Not verified today."
+   "note": "not sold to UK shoppers: Sunbeam electric blankets are US 120 V products (Sunbeam's US site, which refused automated reads); no UK Sunbeam blanket range is known (UK brands are others). Not verified today.",
+   "not_in_uk": true
   },
   {
    "product": "Tempur-Pedic mattress",
@@ -7580,7 +7716,8 @@
    "url": "https://www.paulaschoice.co.uk/search?q=bha%209",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Paula's Choice BHA 9 (9% salicylic acid) isn't on Paula's Choice UK's site (its search shows no BHA 9). UK cosmetics rules cap salicylic acid in leave-on products at 2% (from knowledge), which would explain it."
+   "note": "not sold to UK shoppers: Paula's Choice BHA 9 (9% salicylic acid) isn't on Paula's Choice UK's site (its search shows no BHA 9). UK cosmetics rules cap salicylic acid in leave-on products at 2% (from knowledge), which would explain it.",
+   "not_in_uk": true
   },
   {
    "product": "vintage Toastmaster 1B14 toaster",
@@ -7592,7 +7729,8 @@
    "url": "https://www.etsy.com/market/toastmaster_toaster",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "sold second-hand only, which counts only for things people buy vintage on purpose (Noemi, 15 Oct 2026): A vintage US Toastmaster (1B14, 1940s-50s), bought second-hand on purpose; Toastmaster no longer makes it (from knowledge). US 110-120 V, so UK use needs a transformer. Etsy's listings page refused automated reads, so no listing was checked today."
+   "note": "sold second-hand only, which counts only for things people buy vintage on purpose (Noemi, 15 Oct 2026): A vintage US Toastmaster (1B14, 1940s-50s), bought second-hand on purpose; Toastmaster no longer makes it (from knowledge). US 110-120 V, so UK use needs a transformer. Etsy's listings page refused automated reads, so no listing was checked today.",
+   "not_in_uk": true
   },
   {
    "product": "6 or 7 quart bowl lift Kitchen Aid",
@@ -7621,7 +7759,8 @@
    "url": "https://www.acnomel.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Acnomel (sulfur and resorcinol acne cream) is a US over-the-counter drug; it isn't a UK-licensed product and no UK shop is known to sell it (from knowledge; its site didn't answer this reader and the web-search budget had run out)."
+   "note": "not sold to UK shoppers: Acnomel (sulfur and resorcinol acne cream) is a US over-the-counter drug; it isn't a UK-licensed product and no UK shop is known to sell it (from knowledge; its site didn't answer this reader and the web-search budget had run out).",
+   "not_in_uk": true
   },
   {
    "product": "AKG K240 Sextetts",
@@ -7746,7 +7885,8 @@
     "https://www.casper.com/uk/",
     "https://www.johnlewis.com/search?search-term=casper%20pillow"
    ],
-   "note": "not sold to UK shoppers: Casper's UK store address now returns 404 (Casper left the UK, from knowledge) and John Lewis doesn't list Casper pillows."
+   "note": "not sold to UK shoppers: Casper's UK store address now returns 404 (Casper left the UK, from knowledge) and John Lewis doesn't list Casper pillows.",
+   "not_in_uk": true
   },
   {
    "product": "Columbia fleece",
@@ -7867,7 +8007,8 @@
    "url": "https://www.eddiebauer.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Eddie Bauer baby gear (nappy backpacks) is a US licence sold at US shops (from knowledge); Eddie Bauer's US site ships in the US. No UK seller known."
+   "note": "not sold to UK shoppers: Eddie Bauer baby gear (nappy backpacks) is a US licence sold at US shops (from knowledge); Eddie Bauer's US site ships in the US. No UK seller known.",
+   "not_in_uk": true
   },
   {
    "product": "Ego 16\" chainsaw",
@@ -7911,7 +8052,8 @@
    "url": "https://www.frigidaire.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Frigidaire (Electrolux's North American brand) ovens and ranges are US/Canada appliances (its site is US); no UK range (from knowledge; not checked further after the web-search budget ran out)."
+   "note": "not sold to UK shoppers: Frigidaire (Electrolux's North American brand) ovens and ranges are US/Canada appliances (its site is US); no UK range (from knowledge; not checked further after the web-search budget ran out).",
+   "not_in_uk": true
   },
   {
    "product": "Hario stovetop kettle",
@@ -7939,7 +8081,8 @@
    "url": "https://www.homedepot.com/b/Lighting-Ceiling-Fans/Home-Decorators-Collection/N-5yc1vZbvlqZ4j",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Home Decorators Collection is The Home Depot's own US brand (US ceiling fans, 120 V; its Home Depot page refused automated reads); not sold in the UK (from knowledge)."
+   "note": "not sold to UK shoppers: Home Decorators Collection is The Home Depot's own US brand (US ceiling fans, 120 V; its Home Depot page refused automated reads); not sold in the UK (from knowledge).",
+   "not_in_uk": true
   },
   {
    "product": "Honeywell Classic Portable Air Conditioner MN4CFSWW9",
@@ -7951,7 +8094,8 @@
    "url": "https://www.honeywellpluggedin.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: The Honeywell MN4CFSWW9 is a US 115 V portable air conditioner (Honeywell's US portable-AC licensee's site refused automated reads); UK Honeywell portable ACs are different models. Not checked further after the web-search budget ran out."
+   "note": "not sold to UK shoppers: The Honeywell MN4CFSWW9 is a US 115 V portable air conditioner (Honeywell's US portable-AC licensee's site refused automated reads); UK Honeywell portable ACs are different models. Not checked further after the web-search budget ran out.",
+   "not_in_uk": true
   },
   {
    "product": "Icebreaker base layer",
@@ -8200,7 +8344,8 @@
    "url": "https://www.oxo.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: The OXO Brew Barista Brain 9-cup is a US 120 V coffee maker (OXO's US site refused automated reads); OXO's electrics aren't sold in the UK (data/brand_lines.json's 10 Oct note says the same of OXO kettles)."
+   "note": "not sold to UK shoppers: The OXO Brew Barista Brain 9-cup is a US 120 V coffee maker (OXO's US site refused automated reads); OXO's electrics aren't sold in the UK (data/brand_lines.json's 10 Oct note says the same of OXO kettles).",
+   "not_in_uk": true
   },
   {
    "product": "Pampers Swaddlers",
@@ -8212,7 +8357,8 @@
    "url": "https://www.pampers.co.uk/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Swaddlers is a US Pampers range; Pampers UK sells other ranges (e.g. Premium Protection), from knowledge (Pampers UK's site loads; its range wasn't checked line by line)."
+   "note": "not sold to UK shoppers: Swaddlers is a US Pampers range; Pampers UK sells other ranges (e.g. Premium Protection), from knowledge (Pampers UK's site loads; its range wasn't checked line by line).",
+   "not_in_uk": true
   },
   {
    "product": "Paula's Choice Skin Perfecting 8% AHA Gel Exfoliant",
@@ -8252,7 +8398,8 @@
    "url": "https://www.harborfreight.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Portland is Harbor Freight's own US tool brand (sold only in its US stores and site, which refused automated reads); 120 V pressure washers. Not sold in the UK (from knowledge)."
+   "note": "not sold to UK shoppers: Portland is Harbor Freight's own US tool brand (sold only in its US stores and site, which refused automated reads); 120 V pressure washers. Not sold in the UK (from knowledge).",
+   "not_in_uk": true
   },
   {
    "product": "Robot Coupe",
@@ -8364,7 +8511,8 @@
    "url": "https://www.johnlewis.com/search?search-term=toshiba%20dehumidifier",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: The Toshiba TDDP5013ES2 is a US 50-pint (115 V) dehumidifier (US capacity rating); John Lewis lists no Toshiba dehumidifiers and no UK version is known (from knowledge)."
+   "note": "not sold to UK shoppers: The Toshiba TDDP5013ES2 is a US 50-pint (115 V) dehumidifier (US capacity rating); John Lewis lists no Toshiba dehumidifiers and no UK version is known (from knowledge).",
+   "not_in_uk": true
   },
   {
    "product": "U-bolt Pro z wave lock",
@@ -8376,7 +8524,8 @@
    "url": "https://www.u-tec.com/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: The Ultraloq U-Bolt Pro Z-Wave is a US deadbolt smart lock (U-tec's site didn't answer this reader); it doesn't fit typical UK euro-cylinder doors and no UK seller is known (from knowledge)."
+   "note": "not sold to UK shoppers: The Ultraloq U-Bolt Pro Z-Wave is a US deadbolt smart lock (U-tec's site didn't answer this reader); it doesn't fit typical UK euro-cylinder doors and no UK seller is known (from knowledge).",
+   "not_in_uk": true
   },
   {
    "product": "UniFi Protect",
@@ -8480,7 +8629,8 @@
     "https://www.u-buy.co.uk/product/414OILNL4-stridex-pads-maximum-strength-55-ct",
     "https://www.onbuy.com/ie/p/stridex-maximum-alcohol-free-55-soft-touch-pads~p222633814/"
    ],
-   "note": "not sold to UK shoppers: A US over-the-counter acne pad (2% salicylic acid). No big UK shop sells it (no Boots, Superdrug or Amazon UK listing found); UK buyers only find US-stock import sites (Ubuy UK, 55 pads about £20 plus VAT at checkout; OnBuy dispatched from the US). product_page is the maker's US page; its image is the page's product image (JSON-LD), the page has no og:image. www.stridex.com serves a certificate for another host; stridex.com works."
+   "note": "not sold to UK shoppers: A US over-the-counter acne pad (2% salicylic acid). No big UK shop sells it (no Boots, Superdrug or Amazon UK listing found); UK buyers only find US-stock import sites (Ubuy UK, 55 pads about £20 plus VAT at checkout; OnBuy dispatched from the US). product_page is the maker's US page; its image is the page's product image (JSON-LD), the page has no og:image. www.stridex.com serves a certificate for another host; stridex.com works.",
+   "not_in_uk": true
   },
   {
    "product": "innisfree Retinol Cica Moisture Recovery Serum",
@@ -8699,7 +8849,8 @@
     "https://www.u-buy.co.uk/product/Q02JGO5FS-caraway-fry-pan-and-saute-pan-duo-10-5-ceramic-frying-pan-and-12-deep-saute-pan-with-lid-non-stick-non-toxic-oven-safe-black",
     "https://www.crateandbarrel.com/caraway-stainless-steel-10.5-fry-pan/s664330"
    ],
-   "note": "not sold to UK shoppers: A US brand sold by its own US store (ceramic fry pan US$125 to US$135) and US shops (Target, Crate & Barrel, Costco US). No UK store (carawayhome.co.uk doesn't resolve) and no big UK shop found; UK buyers only find US-stock import sites (Ubuy UK, VAT at checkout). product_page is the maker's US page."
+   "note": "not sold to UK shoppers: A US brand sold by its own US store (ceramic fry pan US$125 to US$135) and US shops (Target, Crate & Barrel, Costco US). No UK store (carawayhome.co.uk doesn't resolve) and no big UK shop found; UK buyers only find US-stock import sites (Ubuy UK, VAT at checkout). product_page is the maker's US page.",
+   "not_in_uk": true
   },
   {
    "product": "First Aid Beauty Ultra Repair Cream",
@@ -8800,7 +8951,8 @@
     "https://danielkern.org/treatment-out-of-stock/",
     "https://danielkern.org/shipping-info/"
    ],
-   "note": "not sold to UK shoppers: Sold only by its maker's US store (acne.org/store now redirects to DanielKern.org), priced in US dollars and shipped internationally with duties and taxes on the buyer; no UK shop sells it. On 15 Oct its page says the 2.5% Treatment is sold out, more expected in a couple of months. The image is from the store's home page (its product page shows no image while sold out)."
+   "note": "not sold to UK shoppers: Sold only by its maker's US store (acne.org/store now redirects to DanielKern.org), priced in US dollars and shipped internationally with duties and taxes on the buyer; no UK shop sells it. On 15 Oct its page says the 2.5% Treatment is sold out, more expected in a couple of months. The image is from the store's home page (its product page shows no image while sold out).",
+   "not_in_uk": true
   },
   {
    "product": "Aroma rice cooker",
@@ -8817,7 +8969,8 @@
     "https://www.aromaco.com/wp-content/uploads/2021/08/ARC-302NG_manual.pdf",
     "https://www.ebay.com/p/20024231889"
    ],
-   "note": "not sold to UK shoppers: A US maker: Aroma's rice cookers are 120 V models (its manuals say to use only a 120 V AC outlet), not for UK mains; no UK seller or UK-plug model found (data/brand_lines.json, 14 Oct, found none either). The range page is the maker's US one; aromaco.com refuses automated reads, so no image."
+   "note": "not sold to UK shoppers: A US maker: Aroma's rice cookers are 120 V models (its manuals say to use only a 120 V AC outlet), not for UK mains; no UK seller or UK-plug model found (data/brand_lines.json, 14 Oct, found none either). The range page is the maker's US one; aromaco.com refuses automated reads, so no image.",
+   "not_in_uk": true
   },
   {
    "product": "Blendtec blender",
@@ -9104,7 +9257,8 @@
    "url": "https://www.article.com/faq",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: A North American furniture retailer: its FAQ says it only offers standard shipping to customers in Canada and the contiguous US (plus Hawaii, Alaska and Puerto Rico at extra cost); its store has US and Canada sites only. Not sold in the UK."
+   "note": "not sold to UK shoppers: A North American furniture retailer: its FAQ says it only offers standard shipping to customers in Canada and the contiguous US (plus Hawaii, Alaska and Puerto Rico at extra cost); its store has US and Canada sites only. Not sold in the UK.",
+   "not_in_uk": true
   },
   {
    "product": "Asko dishwasher",
@@ -9213,7 +9367,8 @@
     "https://www.kitchenknives.co.uk/catalogsearch/result/?q=boos",
     "https://www.boroughkitchen.com/search?q=john+boos&type=product"
    ],
-   "note": "not sold to UK shoppers: A US maker (John Boos & Co.): its shipping page says it doesn't offer international shipping, and two UK kitchen specialists (Borough Kitchen, KitchenKnives.co.uk) stock none. The maple R-Board (US$94.95 to US$154.95) stands for 'Boos block'; product_page is the maker's US page."
+   "note": "not sold to UK shoppers: A US maker (John Boos & Co.): its shipping page says it doesn't offer international shipping, and two UK kitchen specialists (Borough Kitchen, KitchenKnives.co.uk) stock none. The maple R-Board (US$94.95 to US$154.95) stands for 'Boos block'; product_page is the maker's US page.",
+   "not_in_uk": true
   },
   {
    "product": "Bose soundlink mini",
@@ -9353,7 +9508,8 @@
     "https://www.cuisinart.co.uk/cooking/air-fryer/",
     "https://www.cuisinart.co.uk/cuisinart-tri-zone-13.6l-air-fryer-oven-AFT13XSSU.html"
    ],
-   "note": "not sold to UK shoppers: Cuisinart's toaster ovens are US (120 V) models; Cuisinart UK's own store has no toaster or countertop oven category (its Cooking range is air fryers, pizza ovens, grills and sandwich makers). The nearest UK product is the Tri Zone 13.6L Air Fryer & Oven (two air-fryer baskets plus a 5 L flat oven drawer), £199.99, out of stock on 15 Oct: an air fryer rather than a toaster oven."
+   "note": "not sold to UK shoppers: Cuisinart's toaster ovens are US (120 V) models; Cuisinart UK's own store has no toaster or countertop oven category (its Cooking range is air fryers, pizza ovens, grills and sandwich makers). The nearest UK product is the Tri Zone 13.6L Air Fryer & Oven (two air-fryer baskets plus a 5 L flat oven drawer), £199.99, out of stock on 15 Oct: an air fryer rather than a toaster oven.",
+   "not_in_uk": true
   },
   {
    "product": "Danners work boots",
@@ -9370,7 +9526,8 @@
     "https://global.danner.com/",
     "https://global.danner.com/men/work"
    ],
-   "note": "not sold to UK shoppers: Danner (US) has no UK store or UK domain; its 'Ship to' switch leads to a global store (global.danner.com, 'Worldwide delivery made easy'), priced in US dollars, so UK buyers can order from abroad but no UK seller was found (UK shops couldn't be searched: web-search budget used up). The range page is that global store's men's work boots."
+   "note": "not sold to UK shoppers: Danner (US) has no UK store or UK domain; its 'Ship to' switch leads to a global store (global.danner.com, 'Worldwide delivery made easy'), priced in US dollars, so UK buyers can order from abroad but no UK seller was found (UK shops couldn't be searched: web-search budget used up). The range page is that global store's men's work boots.",
+   "not_in_uk": true
   },
   {
    "product": "Dawn dish soap",
@@ -9382,7 +9539,8 @@
    "url": "https://dawn-dish.com/en-us/",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Dawn is Procter & Gamble's North American washing-up liquid (its site is US-only); in the UK P&G sells Fairy instead, a different formula. Imported Dawn turns up from third-party sellers and American-goods shops, but no UK shop sells it as a stocked line."
+   "note": "not sold to UK shoppers: Dawn is Procter & Gamble's North American washing-up liquid (its site is US-only); in the UK P&G sells Fairy instead, a different formula. Imported Dawn turns up from third-party sellers and American-goods shops, but no UK shop sells it as a stocked line.",
+   "not_in_uk": true
   },
   {
    "product": "Dermalogica Daily Microfoliant",
@@ -9456,7 +9614,8 @@
    "url": "https://www.duluthtrading.com/content/shipping",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: A US workwear retailer that sells its own brand only: its shipping page says it doesn't ship to countries other than the US and Canada. Not sold in the UK."
+   "note": "not sold to UK shoppers: A US workwear retailer that sells its own brand only: its shipping page says it doesn't ship to countries other than the US and Canada. Not sold in the UK.",
+   "not_in_uk": true
   },
   {
    "product": "Eddie Bauer down jacket",
@@ -9472,7 +9631,8 @@
     "https://www.eddiebauer.eu/",
     "https://www.eddiebauer.com/"
    ],
-   "note": "not sold to UK shoppers: Eddie Bauer sells in North America; its European site (eddiebauer.eu) says 'Launching in Europe 2027' and only invites retailer enquiries, and eddiebauer.co.uk doesn't resolve. Not sold in the UK now."
+   "note": "not sold to UK shoppers: Eddie Bauer sells in North America; its European site (eddiebauer.eu) says 'Launching in Europe 2027' and only invites retailer enquiries, and eddiebauer.co.uk doesn't resolve. Not sold in the UK now.",
+   "not_in_uk": true
   },
   {
    "product": "Ego string trimmer",
@@ -9552,7 +9712,8 @@
    "url": "https://www.evenflo.com/pages/revolve-360",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: A US car seat (Evenflo's own store, prices in US$), made to US rules; car seats used in the UK must meet UN R44/R129, and no UK-approved Revolve360 or UK seller exists. Not sold in the UK. The maker page's og:image is Evenflo's logo, so no image."
+   "note": "not sold to UK shoppers: A US car seat (Evenflo's own store, prices in US$), made to US rules; car seats used in the UK must meet UN R44/R129, and no UK-approved Revolve360 or UK seller exists. Not sold in the UK. The maker page's og:image is Evenflo's logo, so no image.",
+   "not_in_uk": true
   },
   {
    "product": "Frigidaire dehumidifier",
@@ -9568,7 +9729,8 @@
     "https://www.frigidaire.com/en/c/home-comfort/dehumidifiers",
     "https://www.frigidaire.co.uk/"
    ],
-   "note": "not sold to UK shoppers: Frigidaire is Electrolux's North American brand; its dehumidifiers are 115 V US/Canadian models, and Electrolux sells its own brands (Electrolux, AEG) in the UK. frigidaire.co.uk doesn't resolve and frigidaire.com refused the connection here. Not sold in the UK."
+   "note": "not sold to UK shoppers: Frigidaire is Electrolux's North American brand; its dehumidifiers are 115 V US/Canadian models, and Electrolux sells its own brands (Electrolux, AEG) in the UK. frigidaire.co.uk doesn't resolve and frigidaire.com refused the connection here. Not sold in the UK.",
+   "not_in_uk": true
   },
   {
    "product": "GE fridge",
@@ -9585,7 +9747,8 @@
     "https://www.geappliances.co.uk/",
     "https://www.haier-europe.com/en_GB/"
    ],
-   "note": "not sold to UK shoppers: GE Appliances (owned by Haier) sells its fridges in North America (geappliances.com); it has no UK site (geappliances.co.uk doesn't resolve), and Haier's UK store sells Haier, Hoover and Candy, not GE. Not sold in the UK."
+   "note": "not sold to UK shoppers: GE Appliances (owned by Haier) sells its fridges in North America (geappliances.com); it has no UK site (geappliances.co.uk doesn't resolve), and Haier's UK store sells Haier, Hoover and Candy, not GE. Not sold in the UK.",
+   "not_in_uk": true
   },
   {
    "product": "Girlfriend Collective leggings",
@@ -9613,7 +9776,8 @@
    "url": "https://www.halosleep.com/pages/shipping-and-returns",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: HALO (US) ships only to the 50 US states and Washington, D.C. ('we do not ship to Canada or Puerto Rico'), and no UK seller is known. Not sold in the UK."
+   "note": "not sold to UK shoppers: HALO (US) ships only to the 50 US states and Washington, D.C. ('we do not ship to Canada or Puerto Rico'), and no UK seller is known. Not sold in the UK.",
+   "not_in_uk": true
   },
   {
    "product": "Happy Baby carrier",
@@ -9629,7 +9793,8 @@
     "https://happybabycarriers.com/",
     "https://happybabycarriers.com/products/versa-baby-carrier"
    ],
-   "note": "not sold to UK shoppers: Read as Happy Baby Carriers, a small US carrier maker (the name could also mean another brand). Its own store prices only in US dollars, even with the UK selected (Versa carrier US$209), and no UK seller is known; not sold in the UK as far as could be checked."
+   "note": "not sold to UK shoppers: Read as Happy Baby Carriers, a small US carrier maker (the name could also mean another brand). Its own store prices only in US dollars, even with the UK selected (Versa carrier US$209), and no UK seller is known; not sold in the UK as far as could be checked.",
+   "not_in_uk": true
   },
   {
    "product": "Hennessy hammock",
@@ -9674,7 +9839,8 @@
    "url": "https://www.homedepot.com/b/Husky/N-5yc1vZrd",
    "checked_on": "2026-10-15",
    "available": false,
-   "note": "not sold to UK shoppers: Husky is The Home Depot's own tool and storage brand, sold by Home Depot in the US and Canada; Home Depot has no UK presence. Home Depot's site refused automated reads (403), so this rests on that brand ownership. Not sold in the UK."
+   "note": "not sold to UK shoppers: Husky is The Home Depot's own tool and storage brand, sold by Home Depot in the US and Canada; Home Depot has no UK presence. Home Depot's site refused automated reads (403), so this rests on that brand ownership. Not sold in the UK.",
+   "not_in_uk": true
   },
   {
    "product": "Ikea french press",
@@ -9708,7 +9874,8 @@
     "https://sik.search.blue.cdtapps.com/us/en/search-result-page?q=kettle&size=12&types=PRODUCT",
     "https://www.ikea.com/us/en/p/vattentaet-kettle-stainless-steel-black-10612504/"
    ],
-   "note": "not sold to UK shoppers: IKEA's stainless steel stovetop kettle today is the VATTENTÄT (2 qt, US$24.99 at IKEA US). IKEA UK's own search finds no stovetop kettle (not VATTENTÄT either) and its UK product URL falls back to the catalogue, so IKEA doesn't sell it in the UK. product_page is IKEA US's page."
+   "note": "not sold to UK shoppers: IKEA's stainless steel stovetop kettle today is the VATTENTÄT (2 qt, US$24.99 at IKEA US). IKEA UK's own search finds no stovetop kettle (not VATTENTÄT either) and its UK product URL falls back to the catalogue, so IKEA doesn't sell it in the UK. product_page is IKEA US's page.",
+   "not_in_uk": true
   },
   {
    "product": "Innersense Pure Harmony Hairbath",
@@ -9928,7 +10095,8 @@
     "https://www.lovesac.com/faq",
     "https://www.lovesac.com/help-center?a=International-Shipping---id--MlMnX1GIToCFEFoOKK17qw"
    ],
-   "note": "not sold to UK shoppers: Lovesac (US) sells Sactionals from its own US stores and site; its help centre says 'At this time we do not offer international shipping'. Not sold in the UK."
+   "note": "not sold to UK shoppers: Lovesac (US) sells Sactionals from its own US stores and site; its help centre says 'At this time we do not offer international shipping'. Not sold in the UK.",
+   "not_in_uk": true
   },
   {
    "product": "M12 Fuel Surge",
@@ -10008,7 +10176,8 @@
     "https://hellomockingbird.com/",
     "https://hellomockingbird.com/pages/faq"
    ],
-   "note": "not sold to UK shoppers: Mockingbird (US) sells its strollers direct from hellomockingbird.com; its FAQ says 'We currently ship to all 50 U.S. states', with no mention of shipping abroad, and no UK seller is known. Not sold in the UK."
+   "note": "not sold to UK shoppers: Mockingbird (US) sells its strollers direct from hellomockingbird.com; its FAQ says 'We currently ship to all 50 U.S. states', with no mention of shipping abroad, and no UK seller is known. Not sold in the UK.",
+   "not_in_uk": true
   }
  ]
 }

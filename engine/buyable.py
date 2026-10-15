@@ -28,7 +28,7 @@ How each becomes entries (plan_finding):
                        the lists don't know is left for a look rather than shown under the wrong name)
     second_hand_only   for a product people buy vintage on purpose (engine.prices.bought_vintage): sold second-hand only
                        ("second_hand": true), shown "Sold second-hand only"; for anything else not sold
-    not_sold_uk        not sold ("available": false): left out of answers and named
+    not_sold_uk        not sold here ("available": false, "not_in_uk": true): shown with "Not sold in the UK" (15 Oct)
     discontinued       the same
     unsure             nothing: the product stays as it was, "Availability not checked yet"
 - the product pages list (data/product_pages.json, engine/product_pages.py) gets its own page and its maker's image, for
@@ -235,6 +235,8 @@ def plan_finding(finding: Finding, shops: dict[str, str] | None = None) -> Plan:
     note = NOTE_START[finding.status] + (f": {finding.note}" if finding.note else "")
     entry = base | {"price": None, "currency": "GBP", "shop": shop, "url": sources[0], "checked_on": checked,
                     "available": False}
+    if finding.status == "not_sold_uk":  # sold abroad: shown with a note (Noemi, 15 Oct 2026, evening)
+        entry["not_in_uk"] = True
     plan.prices.append(_with_sources(entry, sources, note))
     return plan
 

@@ -87,10 +87,10 @@ def laptop_library(tmp_path: Path, threads: dict | None = None) -> Path:
 
 def entry(product: str, available: bool | None = True, price: float | None = None, second_hand: bool = False,
           url: str | None = None, shop: str = "Big Shop", checked_on: date = DAY, product_type: str | None = "laptop",
-          category: str = "general") -> Price:
+          category: str = "general", not_in_uk: bool = False) -> Price:
     return Price(product=product, category=category, product_type=product_type, price=price, currency="GBP",
                  shop=shop, url=url or f"https://shop.example/{product.lower().replace(' ', '-')}",
-                 checked_on=checked_on, available=available, second_hand=second_hand)
+                 checked_on=checked_on, available=available, second_hand=second_hand, not_in_uk=not_in_uk)
 
 
 def page(product: str, image: bool = True, url: str = ROG_PAGE, shop: str = "ASUS", product_type: str | None = "laptop",
@@ -133,6 +133,26 @@ def test_a_discontinued_model_is_left_out_and_named(tmp_path):
     # The next products take their places: what is on sale moves up.
     assert ROG in picks and DELL in picks + items and AIR in picks + items
     assert unverified_claims(result.answer, result.bodies) == []
+
+
+def test_a_product_not_sold_in_the_uk_but_not_discontinued_stays_with_a_note(tmp_path):
+    # Noemi, 15 Oct 2026 (evening): "i'm okay with products being sold only outside the uk (like only us). if they're a
+    # stronger pick, let's show them with a note about availability. reddit is an american platform". A product not sold
+    # in the UK keeps the place its evidence gives it, with a note; a discontinued one is still left out and named.
+    result = laptops(tmp_path, prices=[entry(LEGION, available=False, not_in_uk=True), entry(MBP, available=False)])
+    picks, items = names(result)
+    assert LEGION in picks + items and MBP not in picks + items
+    assert result.left_out_unavailable == [MBP]
+    note = shown(result, LEGION).availability
+    assert note.text.startswith("Not sold in the UK") and note.available is False
+    assert unverified_claims(result.answer, result.bodies) == []
+
+
+def test_not_in_the_uk_keeps_a_product_and_goes_only_with_available_false():
+    assert counts_as_sold(entry(AIR, available=False, not_in_uk=True)) is True
+    assert counts_as_sold(entry(AIR, available=False)) is False  # discontinued: left out, as before
+    with pytest.raises(ValueError):
+        entry(AIR, available=True, not_in_uk=True)
 
 
 def test_a_laptop_sold_only_used_isnt_on_sale_now_but_vintage_cast_iron_is():

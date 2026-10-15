@@ -93,17 +93,19 @@ def test_a_product_sold_new_without_a_price_is_still_sold_there(tmp_path):
     assert page.page == "https://asus.example/uk/rog-laptops/"
 
 
-@pytest.mark.parametrize("status", ["discontinued", "not_sold_uk"])
-def test_a_discontinued_model_or_one_not_sold_to_uk_shoppers_is_marked_not_sold(tmp_path, status):
-    # The laptop answer's first pick, from old BuyItForLife threads.
+@pytest.mark.parametrize("status, not_in_uk", [("discontinued", False), ("not_sold_uk", True)])
+def test_a_discontinued_model_or_one_not_sold_to_uk_shoppers_is_marked_not_sold(tmp_path, status, not_in_uk):
+    # The laptop answer's first pick, from old BuyItForLife threads. Changed on purpose 15 Oct 2026 (evening, Noemi: a
+    # product sold only outside the UK is shown with a note about availability): "not_sold_uk" is marked not_in_uk, so
+    # it stays in answers; "discontinued" isn't, so it is still left out.
     gone = finding(name="MBPs from late 2010-2011", status=status, product_page=None, shop="Apple", price_gbp=None,
                    price_url=None, image_url=None, image_page=None,
                    sources=["https://maker.example/uk/support/vintage-and-obsolete-products/"])
     report, [price], pages = run(tmp_path, gone)
-    assert (price.product, price.available, price.price, price.second_hand, price.shop, price.url) == (
+    assert (price.product, price.available, price.price, price.second_hand, price.shop, price.url, price.not_in_uk) == (
         "MBPs from late 2010-2011", False, None, False, "Apple",
-        "https://maker.example/uk/support/vintage-and-obsolete-products/")
-    assert pages == []  # never linked: it is left out of answers
+        "https://maker.example/uk/support/vintage-and-obsolete-products/", not_in_uk)
+    assert pages == []  # never linked: no UK page was found for either
     assert report.statuses[status] == 1
 
 

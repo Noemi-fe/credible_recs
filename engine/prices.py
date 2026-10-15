@@ -147,6 +147,11 @@ class Price(Record):
     # True: no longer made and sold only second-hand (on eBay UK, or by a UK vintage dealer), which counts as sold
     # (Noemi, 10 Oct 2026); so only with "available": true. False (left out): sold new, or not checked. JSON true/false.
     second_hand: StrictBool = False
+    # True, only with "available": false: not sold to UK shoppers, but not known to be discontinued (sold abroad, mostly
+    # in the US): Noemi, 15 Oct 2026 (evening): "i'm okay with products being sold only outside the uk (like only us). if
+    # they're a stronger pick, let's show them with a note about availability". Such a product stays in answers with
+    # AVAILABILITY_NOT_IN_UK; one no longer made (no not_in_uk) is still left out and named. JSON true/false.
+    not_in_uk: StrictBool = False
     # Other names the same product goes by, when the shop's name and the one people use don't match by the word rules
     # ("Cuisinart CPK-17P1 PerfecTemp Cordless..." at the shop, "Cuisinart CPK-17 PerfecTemp" on Reddit; 9 Oct 2026).
     also_called: list[str] = []
@@ -161,6 +166,8 @@ class Price(Record):
     def _says_something(self) -> "Price":
         if self.second_hand and self.available is not True:
             raise ValueError('"second_hand": true needs "available": true: a product sold second-hand is still sold')
+        if self.not_in_uk and self.available is not False:
+            raise ValueError('"not_in_uk": true needs "available": false: it says where a product that is not sold here is')
         if self.price is None and self.available is None:
             raise ValueError('an entry needs a price, or "available": true or false (or both)')
         return self
@@ -316,11 +323,13 @@ def counts_as_sold(entry: Price | None) -> bool | None:
     """Whether an entry says its product is on sale to UK shoppers now (a pick must be: Noemi, 15 Oct 2026): True for
     a shop selling it (out of stock for now still counts), and for one selling it second-hand only when people buy it
     vintage on purpose (bought_vintage); False for one no longer sold, and for any other product sold second-hand only
-    (a used 2011 laptop isn't on sale now); None when the entry doesn't say (not checked, never guessed)."""
+    (a used 2011 laptop isn't on sale now); None when the entry doesn't say (not checked, never guessed). Since Noemi's
+    decision of 15 Oct 2026 (evening), a product not sold in the UK but not known to be discontinued (not_in_uk) counts
+    too: it stays in answers, with a note saying so."""
     if entry is None or entry.available is None:
         return None
     if not entry.available:
-        return False
+        return entry.not_in_uk
     if entry.second_hand:
         return any(bought_vintage(name, entry.category) for name in [entry.product, *entry.also_called])
     return True

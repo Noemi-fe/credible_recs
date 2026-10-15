@@ -321,6 +321,9 @@ BREAKDOWN_NEEDS = ("About your request: {recommends} credible recommendations an
 AVAILABILITY = "Sold at {shop}, checked {date}"
 AVAILABILITY_UNKNOWN = "Availability not checked yet"
 AVAILABILITY_GONE = "No longer sold, checked {date}"  # never shown through the pipeline, which leaves such products out
+# A product not sold to UK shoppers but not discontinued (sold abroad, mostly in the US), shown with this note (Noemi,
+# 15 Oct 2026, evening). Wording PROPOSED.
+AVAILABILITY_NOT_IN_UK = "Not sold in the UK, checked {date}"
 # Sold second-hand only: a product no longer made (Griswold and Wagner cast iron), sold only second-hand, on eBay UK or
 # by a UK vintage dealer. Noemi's decision of 10 Oct 2026: such products count as available, and the answer says so.
 AVAILABILITY_SECOND_HAND = "Sold second-hand only: {shop}, checked {date}"
@@ -2304,8 +2307,8 @@ def shown_availability(check: PriceCheck | None, price_url: str | None = None) -
         return NOT_CHECKED
     day = _day(sold.checked_on)
     if sold.available is False:
-        return ShownAvailability(AVAILABILITY_GONE.format(date=day), False, sold.shop, None,
-                                 sold.checked_on.isoformat())
+        wording = AVAILABILITY_NOT_IN_UK if getattr(sold, "not_in_uk", False) else AVAILABILITY_GONE
+        return ShownAvailability(wording.format(date=day), False, sold.shop, None, sold.checked_on.isoformat())
     # https only, checked again, and never a search (direct links only, 15 Oct 2026: "Sold second-hand only: eBay UK"
     # had linked to an eBay search).
     url = sold.url if is_direct_page(sold.url) and sold.url != price_url else None
