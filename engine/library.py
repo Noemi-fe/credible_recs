@@ -45,8 +45,9 @@ Six jobs:
   deploy: passing comments get their date, and a comment found deleted or edited, or not verified within
   LIBRARY_VERIFY_DAYS (30), loses its words and its mentions; since Noemi's decision 3 of 15 Oct 2026 one found edited
   keeps Reddit's current text, as a read of the last 48 hours showed it (this machine's, or the site's from the
-  bucket's bundle, --bundle), and the items still found in it word for word. check-live and refresh never read a slimmed thread again
-  (no Bright Data record, no Parse credit); check-live applies the 30-day deadline to its comments.
+  bucket's bundle, --bundle), and the items still found in it word for word. check-live and refresh never read a
+  slimmed thread again (no Bright Data record, no Parse credit); check-live applies the 30-day deadline to its
+  comments.
 
 What is saved:
 - Threads as fetched, but a deleted or removed comment only as a stub: its status, "[deleted]" or "[removed]"
@@ -994,8 +995,8 @@ def _slim_or_apply(command: str, words: list[str], folder: Path) -> int:
                 continue
             from_site += record_saved_checks(folder, bundled, ledger)
             reads.append(bundled)
-        print(f"Verification record: {len(ledger.entries):,} kept comments' latest reads ({taken:,} from this machine's "
-              f"checks of the last 48 hours, {from_site:,} from the site's).")
+        print(f"Verification record: {len(ledger.entries):,} kept comments' latest reads ({taken:,} from this "
+              f"machine's checks of the last 48 hours, {from_site:,} from the site's).")
         print(report(apply_checks(folder, ledger, dry_run="--dry-run" in flags, reads=reads)))
     return 0
 

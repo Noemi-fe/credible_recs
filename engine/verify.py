@@ -253,8 +253,8 @@ class ApplyResult:
     threads: int = 0  # slimmed threads looked at
     kept: int = 0  # comments they kept whole before
     stamped: int = 0  # given a newer verified_at
-    # by why: deleted, removed, changed, expired; and "not used": a comment nothing points to any more, once the items of
-    # a reply that took its product from an edited comment went (15 Oct 2026)
+    # by why: deleted, removed, changed, expired; and "not used": a comment nothing points to any more, once the items
+    # of a reply that took its product from an edited comment went (15 Oct 2026)
     dropped: dict[str, int] = field(default_factory=dict)
     items_removed: int = 0  # mentions, notes, care tips and agreements removed from the extractions
     # Found edited on Reddit and kept Reddit's current text with the items still found in it word for word (Noemi's

@@ -18,8 +18,8 @@ to read (`python -m engine.precheck --plan`), and the site reads it, a few comme
   found edited on Reddit, the same way, until a deploy has applied it (15 Oct 2026, Noemi's decision 3: it keeps
   Reddit's current text and the items still found in it, taken from the bundle, which so always holds a read of it);
   a comment to verify that hasn't been read in the last 48 hours (the job records the read, and lists it again only
-  when it is due once more). A comment verified through Bright Data is left to the job, and a page that showed no comment is read
-  again only as an answer's comment is, 40 hours on. At most config.READ_AHEAD_PER_PING reads a ping,
+  when it is due once more). A comment verified through Bright Data is left to the job, and a page that showed no
+  comment is read again only as an answer's comment is, 40 hours on. At most config.READ_AHEAD_PER_PING reads a ping,
   config.READ_AHEAD_PARALLEL at once, none starting config.READ_AHEAD_SECONDS after the ping began, never one that would
   wait for Reddit's allowance, and none while Reddit says fewer than config.READ_AHEAD_KEEP reads are left in its 10
   minutes: those are visitors' answers'.
@@ -57,8 +57,9 @@ class Plan:
     answers: tuple[str, ...]  # the comments answers would show or hold next in line, likeliest to be shown first
     verify: tuple[str, ...]  # kept comments due to be verified, longest unverified first
     checks: dict  # its reads through Bright Data, by name, as the bundle holds them
-    # Kept comments found edited on Reddit since their last pass (15 Oct 2026): read again like answers' comments, so the
-    # bundle always holds Reddit's current text for the next deploy to keep (engine/verify.py). None in an older plan.
+    # Kept comments found edited on Reddit since their last pass (15 Oct 2026): read again like answers' comments, so
+    # the bundle always holds Reddit's current text for the next deploy to keep (engine/verify.py). Empty in an older
+    # plan.
     edited: tuple[str, ...] = ()
 
 

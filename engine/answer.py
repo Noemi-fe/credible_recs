@@ -547,9 +547,10 @@ def comment_bodies(threads: Iterable[Thread]) -> dict[str, str]:
 
 
 def flattened_comments(threads: Iterable[Thread]) -> frozenset[str]:
-    """The ids of the readable comments whose words are Reddit's embed page's text (Comment.edited "embed": found edited,
-    they kept Reddit's current text; Noemi's decision 3 of 15 Oct 2026): its formatting read as plain words, so a quoted
-    block, a list or a heading can't be told from the writer's own sentences, and their quotes are never widened."""
+    """The ids of the readable comments whose words are Reddit's embed page's text (Comment.edited "embed": found
+    edited, they kept Reddit's current text; Noemi's decision 3 of 15 Oct 2026): its formatting read as plain words, so
+    a quoted block, a list or a heading can't be told from the writer's own sentences, and their quotes are never
+    widened."""
     return frozenset(c.id for thread in threads for c in thread.comments if c.status == "ok" and c.edited == "embed")
 
 
@@ -837,7 +838,8 @@ class _QuoteCheck:
         self.bodies = bodies
         # The comments whose quotes may be widened to the sentences before them (_standing, _with_a_view): all but those
         # whose words are Reddit's embed page's text (`flattened`: an edited comment's, Noemi's decision 3 of 15 Oct
-        # 2026), where a quoted block of someone else's words, a list or a heading reads like the writer's own sentences.
+        # 2026), where a quoted block of someone else's words, a list or a heading reads like the writer's own
+        # sentences.
         self.widen = {cid: body for cid, body in bodies.items() if cid not in flattened} if flattened else bodies
         self.dropped = 0
 

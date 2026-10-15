@@ -277,9 +277,9 @@ class PipelineResult:
     # The brand lines among them kept in the ranking for Skip these only, {product key: reason} (Noemi's decision 1 of
     # 13 Oct 2026: never a pick, but listed under Skip these when their credible warnings put them there).
     skip_only: dict[str, str] = field(default_factory=dict)
-    # {product key: how many of the request's must-haves (engine.product_facts.hard_requirements) its facts and the names
-    # it is shown under can't confirm}, for the products noted "we couldn't confirm ..." (Noemi's decision 1 of 15 Oct
-    # 2026): they rank after those confirmed, fewer first (engine.rank). Empty for a request without a must-have.
+    # {product key: how many of the request's must-haves (engine.product_facts.hard_requirements) its facts and the
+    # names it is shown under can't confirm}, for the products noted "we couldn't confirm ..." (Noemi's decision 1 of 15
+    # Oct 2026): they rank after those confirmed, fewer first (engine.rank). Empty for a request without a must-have.
     unconfirmed: dict[str, int] = field(default_factory=dict)
     # Products left out of a request naming an active ingredient (13 Oct 2026): no evidence they contain it, a formula
     # without it, or a brand pick (a whole brand can't be checked); name and reason.

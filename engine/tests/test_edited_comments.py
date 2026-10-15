@@ -52,7 +52,8 @@ EDIT = "Edit: it survived the move too."
 
 def two_item_thread() -> dict:
     """The slimming tests' kettle thread, with two items on each of two comments: the Zojirushi comment holds its
-    mention and a care tip; the comment a reply takes the Fellow Stagg EKG from holds its own mention of it and a note."""
+    mention and a care tip; the comment a reply takes the Fellow Stagg EKG from holds its own mention of it and a
+    note."""
     thread = whole_thread_dict()
     for cm in thread["comments"]:
         if cm["id"] == "s1kept":
@@ -121,7 +122,8 @@ def test_an_edited_comment_keeps_reddits_current_text_and_the_items_still_found_
     assert [m.comment_id for m in check.kept if m.comment_id == "s1kept"] == ["s1kept"]
     assert (result.edited, result.items_after_edit, result.items_removed, result.dropped) == (1, 1, 1, {})
     assert "s1kept" not in thread_of(root).whole_thread.dropped
-    assert RINSE not in (root / "threads" / f"{TID}.json").read_text() + (root / "extracted" / f"{TID}.json").read_text()
+    files = (root / "threads" / f"{TID}.json").read_text() + (root / "extracted" / f"{TID}.json").read_text()
+    assert RINSE not in files
 
 
 def test_its_next_read_verifies_the_items_it_kept(tmp_path):

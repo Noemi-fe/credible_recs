@@ -327,7 +327,8 @@ class ProductScore:
     by_standout: bool = False
     # How many of the request's must-haves its facts and name leave unconfirmed (Noemi's decision 1 of 15 Oct 2026):
     # fewer rank first. 0 for a product they confirm, and for every product of a request without a must-have. Like
-    # counted_twice it isn't in the score breakdown: the answer says it in the product's note ("we couldn't confirm...").
+    # counted_twice it isn't in the score breakdown: the answer says it in the product's note ("we couldn't
+    # confirm...").
     unconfirmed: int = 0
 
     @property

@@ -85,9 +85,9 @@ class Comment(Record):
     # or a read of the whole thread on Reddit). None when it never was: a comment read from the archive and not
     # verified yet. Text not verified within config.LIBRARY_VERIFY_DAYS is dropped (engine/verify.py).
     verified_at: UtcDatetime | None = None
-    # For a kept comment found edited on Reddit that kept Reddit's current text and the items whose quotes are still found
-    # in it word for word (Noemi's decision 3 of 15 Oct 2026; engine/verify.py): how the read whose text it now holds
-    # was made, and so what its body is. "embed": Reddit's embed page, whose formatting is read as plain words, so what
+    # For a kept comment found edited on Reddit that kept Reddit's current text and the items whose quotes are still
+    # found in it word for word (Noemi's decision 3 of 15 Oct 2026; engine/verify.py): how the read whose text it now
+    # holds was made, and so what its body is. "embed": Reddit's embed page, whose formatting is read as plain words, so what
     # was a quoted block, a list or a link can't be told from the rest (answers never widen its quotes); "bright_data":
     # its thread read through Bright Data, as written. None: the words as its thread was read.
     edited: Literal["embed", "bright_data"] | None = None

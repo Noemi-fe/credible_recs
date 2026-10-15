@@ -647,8 +647,8 @@ def test_command_line_todo_explains_itself_when_used_wrongly(tmp_path, capsys, a
 # The Ordinary's Mandelic Acid is gentle by strength, but its maker's page says not to use it on sensitive skin: that
 # warning is a fact of its own, which leaves the product out of a request for sensitive skin. And a pick whose facts
 # can't be confirmed for a hard requirement ("OXO non-stick pan": OXO sells PTFE and ceramic pans) stays, with a note
-# saying what we couldn't confirm, rather than being left out (answers would empty) or shown silently (misleading). Since
-# Noemi's decision 1 of 15 Oct 2026 it ranks after the products confirmed (engine/tests/test_confirmed_first.py).
+# saying what we couldn't confirm, rather than being left out (answers would empty) or shown silently (misleading).
+# Since Noemi's decision 1 of 15 Oct 2026 it ranks after the products confirmed (engine/tests/test_confirmed_first.py).
 
 from engine.product_facts import NotSuited, hard_requirements, unconfirmed, unconfirmed_note  # noqa: E402
 from engine.tests.test_pick_polish import pan_library  # noqa: E402

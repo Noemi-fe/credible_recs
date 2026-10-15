@@ -163,11 +163,13 @@ def test_a_pan_confirmed_pfas_free_and_non_stick_comes_first_then_the_one_confir
     lib = pans(tmp_path)
     without = answer_request(PAN, library_dir=lib, prices=[], product_facts=[], today=TODAY)
     assert names(without.answer.picks) == ["Misen frying pan", "Corra frying pan", "GreenPan Valencia frying pan"]
-    facts = [pan("GreenPan Valencia frying pan", pfas_free=True, non_stick=True), pan("Corra frying pan", non_stick=True)]
+    facts = [pan("GreenPan Valencia frying pan", pfas_free=True, non_stick=True),
+             pan("Corra frying pan", non_stick=True)]
     result = answer_request(PAN, library_dir=lib, prices=[], product_facts=facts, today=TODAY)
     assert names(result.answer.picks) == ["GreenPan Valencia frying pan", "Corra frying pan", "Misen frying pan"]
     notes = {pick.name: pick.cautions for pick in result.answer.picks}
-    assert notes == {"GreenPan Valencia frying pan": [], "Corra frying pan": ["Note: we couldn't confirm it's PFAS-free."],
+    assert notes == {"GreenPan Valencia frying pan": [],
+                     "Corra frying pan": ["Note: we couldn't confirm it's PFAS-free."],
                      "Misen frying pan": ["Note: we couldn't confirm it's PFAS-free or that it's non-stick."]}
     # A request without the must-haves ranks the same pans by their support alone.
     lasts = answer_request("frying pan that lasts", library_dir=lib, prices=[], product_facts=facts, today=TODAY)
