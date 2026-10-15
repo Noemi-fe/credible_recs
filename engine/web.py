@@ -254,13 +254,15 @@ from urllib.parse import parse_qs, urlsplit
 from engine import answer as wording
 from engine import feedback, how_page
 from engine.answer import answer_to_dict, unverified_claims
-from engine.config import (BRAND_PICK_MODEL, FEEDBACK_MAX_BODY_BYTES, FEEDBACK_MAX_COMMENT_CHARS, LEFT_OUT_NAMES_SHOWN,
+from engine.config import (ANSWERS_KEPT_TYPES, BRAND_PICK_MODEL, FEEDBACK_MAX_BODY_BYTES, FEEDBACK_MAX_COMMENT_CHARS,
+                           LEFT_OUT_NAMES_SHOWN,
                            PICKS_SHOWN, RATE_LIMIT_ANSWERS, RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS, WEB_MAX_REQUEST_CHARS,
                            WEB_PORT)
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.metrics import METRICS_FILE
 from engine.parse_reddit import REPO_ROOT
-from engine.pipeline import PipelineResult, answer_request
+from engine import memo
+from engine.pipeline import PipelineResult, answer_request, request_kind
 from engine.product_pages import ProductPagesError, image_sources, load_product_pages
 from engine.query import FIRST_PRODUCT_TYPES, PRODUCT_TYPES
 
@@ -342,6 +344,10 @@ _answers: dict[tuple[str, str], tuple[float, tuple[int, str, bytes]]] = {}  # ke
 # well within the 48 hours Reddit content may be kept, and short enough that a comment deleted today leaves the
 # answers by tomorrow. Chosen by Claude, reported to Noemi.
 ANSWER_KEEP_HOURS = 24
+# What answers worked out is kept for at most ANSWERS_KEPT_TYPES product types (15 Oct 2026; engine.memo.TypeWindow):
+# every answer worked out here, a visitor's or a warm one, says its type first. With ~1,950 threads the live site had
+# run out of memory at 2 GiB, every type's work kept as it warmed ~480 requests.
+_window = memo.TypeWindow(ANSWERS_KEPT_TYPES)
 _clock = time.monotonic
 # Where writers' standing comes from (engine.pipeline's `profiles`): the command line sets the Arctic Shift cache
 # (engine.profiles.CachedOnly, never a call); None, as in the tests, leaves writers known by name only.
@@ -423,6 +429,7 @@ def answer_response(request: str, library_dir: Path, quiet: bool = False) -> tup
         remembered = _answers.get(key)
         if remembered is None or _clock() - remembered[0] >= ANSWER_KEEP_HOURS * 3600:
             try:
+                _window.answered(request_kind(request))
                 response, whole = _fresh_answer(request, library_dir, quiet)
             except Exception:  # a broken library file, say: reported in the server's window, never sent
                 _report_failure(quiet)
@@ -1129,6 +1136,7 @@ def warm_answer(request: str, library_dir: Path) -> None:
     (_answers_lock), so a visitor arriving meanwhile waits for one of these at most, rather than sharing the processor
     with all of them."""
     with _answers_lock:
+        _window.answered(request_kind(request))
         answer_request(request, library_dir, profiles=profiles, live_check_required=False)
 
 
@@ -1144,9 +1152,12 @@ def warm_requests() -> list[str]:
       then finds done, however it is worded;
     - then the rest of the latency requests and the types' names: the threads their needs lead to;
     - then the requests module 1 asks the open model about ("serum", "something nice for my mum"): a reading of
-      seconds, which warms that very request only;
-    - last, the taxonomy's types by their names (WARM_TAXONOMY_TYPES, 14 Oct 2026, the coordinator's order for the
-      general category): they have almost no threads yet, so their answers warm little.
+      seconds, which warms that very request only.
+    Not the taxonomy's types by their names (WARM_TAXONOMY_TYPES), warmed last from 14 Oct 2026 until 15 Oct 2026 (the
+    coordinator: warm only what pays): they have almost no threads yet, so their answers warm little, the latency set's
+    general request already does the general category's own work (its readable threads, each thread's comments read),
+    and the answers' memory keeps ANSWERS_KEPT_TYPES types' work (_window), fewer than their 398: warming them had
+    filled the memory (the live site ran out of it at 2 GiB). Each is worked out for its first visitor.
     What getting ready has no time for (WARM_UP_ANSWERS_SECONDS) is warmed a slice per keep-warm ping (warm_more)."""
     examples = _requests_in(WARM_FIRST_FILES[0]) if WARM_FIRST_FILES else []
     likely = [text for path in WARM_FIRST_FILES for text in _requests_in(path)]
@@ -1156,8 +1167,7 @@ def warm_requests() -> list[str]:
                 if (text := next((t for t in every if placed[t] == (product_type, False)), None)) is not None]
     lead = list(dict.fromkeys(examples + per_type))
     rest = [text for text in every if text not in lead]
-    first = lead + [t for t in rest if not placed[t][1]] + [t for t in rest if placed[t][1]]
-    return first + [name for name in WARM_TAXONOMY_TYPES if name not in set(first)]
+    return lead + [t for t in rest if not placed[t][1]] + [t for t in rest if placed[t][1]]
 
 
 def _placed_by_rules(text: str) -> tuple[str | None, bool]:

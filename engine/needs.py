@@ -45,6 +45,7 @@ from functools import cache
 from engine.config import (
     HAIR_LIST_NEEDS, HAIR_LIST_NOUNS, HAIR_LIST_WORDS, HAIR_NEEDS, INGREDIENTS, NEED_COMMENT_WORDS, NEED_IGNORED_WORDS,
     NEED_LOOKALIKES, NEED_REQUEST_WORDS, NEED_SIZE_UNITS, NEEDS, NEGATED_NEEDS, NEGATION_REACH, NEGATIONS,
+    NO_HELP_LEADS, NO_HELP_PATTERNS, NO_HELP_POINTERS,
 )
 from engine.credibility import _own_words
 from engine.ingredients import _whole as _whole_words
@@ -150,7 +151,10 @@ def judged_needs(query: ParsedQuery) -> tuple[Need, ...]:
       request, Noemi's decision 2 of 15 Oct 2026; "sulfate" in a sulfate-free one), which the product's facts settle,
       as they settle an ingredient (15 Oct 2026, the orchestrator, merging decisions 2 and 3). Kitchen and general
       requests keep these words in their wider reading's rule, as before (a PFAS-free pan's voices still talk about it).
-    They stay needs everywhere else (the threads read first, the reason's "2 of them about ..."), as before."""
+    Since 15 Oct 2026 everything an answer says or shows about the request's needs goes by these too (engine.pipeline's
+    _score and write_answer): the reason's "2 of them about ...", the breakdown's counts, the quotes about them shown
+    first, and whether a comment standing out in its thread talks about what was asked; a vitamin C serum's reason had
+    said "3 of them about vitamin or c". They stay needs for the threads read first (engine.sources), as before."""
     named = _ingredient_words(_plain(query.text)) | _requirement_words(query)
     return tuple(need for need in request_needs(query) if need.request_word is None or not (
         need.request_word in named or _is_size(need.request_word) or len(need.request_word) == 1))
@@ -285,6 +289,53 @@ def _needs_met(body: str, needs: tuple[Need, ...], long_term_use: bool, thread: 
     return tuple(met)
 
 
+def said_not_to_help(quote: str, needs: tuple[Need, ...]) -> tuple[str, ...]:
+    """The names of the needs a quote says its own product didn't help with, in the request's order (15 Oct 2026;
+    config.NO_HELP_PATTERNS): "it did nothing for my oily skin", "doesn't help redness much", "I bought it for my dark
+    spots, which it didn't help with". The quote's own product only: in the phrase's clause (up to a full stop, "but",
+    "though", "however"...), the words before it are none or point at it ("it", "this one", "which it":
+    config.NO_HELP_POINTERS), so "the other cream did nothing for my oily skin" says nothing of this one. The engine
+    gives such a recommendation no credit for talking about those needs (engine.pipeline._score), and shows its quote
+    after the others (engine.answer); a warning keeps them."""
+    if not needs:
+        return ()
+    said: set[str] = set()
+    for clause in _CLAUSE_END.split(_own_words(quote)):
+        for match in _no_help().finditer(clause):
+            before = clause[:match.start()]
+            pointer = _pointer(before)
+            if pointer is None:
+                continue
+            said.update(needs_met(clause[match.end():], needs))  # "... nothing for my oily skin"
+            if pointer and pointer.split()[0] in ("which", "that"):  # "my oily skin, which it didn't help with"
+                said.update(needs_met(before[:before.rfind(pointer.split()[0])], needs))
+    return tuple(need.name for need in needs if need.name in said)
+
+
+_CLAUSE_END = re.compile(r"[.!?;:\n]|(?<![a-z0-9'])(?:but|though|although|however|yet|whereas)(?![a-z0-9'])")
+
+
+@cache
+def _no_help() -> re.Pattern:
+    return re.compile(r"(?<![a-z0-9'])(?:" + "|".join(f"(?:{p})" for p in NO_HELP_PATTERNS) + ")")
+
+
+def _pointer(before: str) -> str | None:
+    """The words pointing at the quote's own product that end `before` (config.NO_HELP_POINTERS), "" when only words
+    leading into a clause (config.NO_HELP_LEADS) or nothing come before; None when something else does (another
+    product, a person)."""
+    words = re.findall(r"[a-z0-9']+", before)
+    while words and words[0] in NO_HELP_LEADS:
+        words = words[1:]
+    if not words:
+        return ""
+    for size in (2, 1):
+        tail = " ".join(words[-size:])
+        if len(words) >= size and tail in NO_HELP_POINTERS:
+            return tail
+    return None
+
+
 def has_word(text: str, word: str) -> bool:
     """Whether `text` (lowercase) holds `word` at the start of a word, or the phrase `word` whole (a plural "s"
     may follow)."""
@@ -410,12 +461,15 @@ def _covered(word: str, found: dict[str, int], needs: dict[str, tuple[str, ...]]
     """Whether a need word is already part of a need found, or is a word too common to show a need.
 
     "sensitive" is the need "sensitive" (one of its words begins it), "acneprone" is "acne-prone" (the name without its
-    hyphen), "white" and "cast" are words of the phrase "white cast".
+    hyphen), "white" and "cast" are words of the phrase "white cast". So is a word of the need's own name (15 Oct 2026):
+    "acne prone", "fragrance free" and "stainless steel" each name their need, and "prone", "free" or "steel" had been a
+    need of its own, found in any comment saying it ("sulfate free", "free shipping") and listed in the reason ("about
+    acne-prone skin or prone").
     """
     if word in NEED_IGNORED_WORDS:
         return True
     for need in found:
-        if word == re.sub(r"[\s-]", "", need):
+        if word == re.sub(r"[\s-]", "", need) or word in re.split(r"[\s-]+", need):
             return True
         for need_word in needs[need]:
             if " " in need_word and word in need_word.split():

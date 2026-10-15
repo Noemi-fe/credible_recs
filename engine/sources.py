@@ -62,7 +62,7 @@ from engine.config import (
 )
 from engine.gold import load_threads
 from engine.ingredients import ingredient_type_name, ingredients_of_type, talk_words, wanted_types
-from engine.memo import Table, register
+from engine.memo import REQUEST_WORK, Table, register
 from engine.models import Comment, Thread
 from engine.parse_reddit import ParseRedditClient
 from engine.query import (
@@ -464,7 +464,7 @@ def _kept_read(comments: list[Comment]) -> CommentsRead | None:
 # The readings kept (keep_read), by their comments' identity. Weakly: a reading goes when its keeper lets it go (a
 # library read again), and it holds its comments, so another list can't take their identity while it is here.
 _KEPT_READS: weakref.WeakValueDictionary[int, CommentsRead] = weakref.WeakValueDictionary()
-register(_KEPT_READS.clear)
+register(_KEPT_READS.clear, answers=False)  # it keeps the readings a kept library keeps: forget_answers leaves them
 
 
 def comments_naming(comments: list[Comment], product_type: str) -> int:
@@ -614,12 +614,17 @@ class LocalSource:
         return sorted(threads, key=lambda t: (titled[t.id], span.get(t.id, 0),
                                               -len(thread_needs(t, needs, titled[t.id]))))  # stable
 
+    def _for_requests(self) -> dict:
+        """Where what is worked out for one request's product type is kept, apart from what is worked out of the
+        threads whatever the request (engine.memo.REQUEST_WORK, 15 Oct 2026: engine.memo.forget_answers drops it)."""
+        return self._remembered.setdefault(REQUEST_WORK, {})
+
     def _titled_as_another_type(self, thread: Thread, query: ParsedQuery) -> bool:
         """titled_as_another_type(thread.title, query), worked out once per thread and request type."""
-        key = ("titled as another type", thread.id, query.product_type)
-        if key not in self._remembered:
-            self._remembered[key] = titled_as_another_type(thread.title, query)
-        return self._remembered[key]
+        key, kept = ("titled as another type", thread.id, query.product_type), self._for_requests()
+        if key not in kept:
+            kept[key] = titled_as_another_type(thread.title, query)
+        return kept[key]
 
     def _readable(self, category: str) -> list[Thread]:
         """The category's threads without their deleted or removed comments, made once (latency, 12 Oct 2026). Copies:
@@ -631,19 +636,19 @@ class LocalSource:
 
     def _relevance(self, thread: Thread, product_type: str) -> float:
         """relevance(thread, product_type), worked out once per thread and product (latency, 12 Oct 2026)."""
-        key = ("relevance", thread.id, product_type)
-        if key not in self._remembered:
+        key, kept = ("relevance", thread.id, product_type), self._for_requests()
+        if key not in kept:
             self._keep_read(thread)
-            self._remembered[key] = relevance(thread, product_type)
-        return self._remembered[key]
+            kept[key] = relevance(thread, product_type)
+        return kept[key]
 
     def _talking(self, thread: Thread, product_type: str) -> int:
         """talking(thread, product_type), worked out once per thread and product."""
-        key = ("talking", thread.id, product_type)
-        if key not in self._remembered:
+        key, kept = ("talking", thread.id, product_type), self._for_requests()
+        if key not in kept:
             self._keep_read(thread)
-            self._remembered[key] = talking(thread, product_type)
-        return self._remembered[key]
+            kept[key] = talking(thread, product_type)
+        return kept[key]
 
     def _keep_read(self, thread: Thread) -> None:
         """The thread's comments read once whatever the product (read_comments; latency, 14 Oct 2026), kept with what is
@@ -1325,8 +1330,11 @@ def need_words(query: ParsedQuery) -> list[str]:
     for token in re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", text):
         # "anti-dandruff" asks about dandruff and "sulfate-free" about sulfates (11 Oct 2026), as people write them.
         token = re.sub(r"^anti-(?=[a-z])|(?<=[a-z])-free$", "", token)
-        word = _stem(re.sub(r"['-]", "", token))
-        if word.isdigit() or word in _STOPWORDS or word in product_words or word in words:
+        plain = re.sub(r"['-]", "", token)
+        word = _stem(plain)
+        # A stopword as written, too (15 Oct 2026): the plural trim made "bucks" and "dollars" "buck" and "dollar",
+        # which the stopwords don't hold, so a budget's own word was a need ("about how long it lasts or bucks").
+        if word.isdigit() or word in _STOPWORDS or plain in _STOPWORDS or word in product_words or word in words:
             continue
         words.append(word)
     return words

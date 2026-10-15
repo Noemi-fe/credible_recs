@@ -16,9 +16,15 @@ What counts:
   is flimsy") is honest, not a contradiction. Neutral mentions take no side, so they never count;
 - without saying something changed: an update is honest. A warning says something changed when the writer's own
   words (not a quoted block) report a change over time or an event: words of config.CHANGE_WORDS ("died", "broke",
-  "reformulated", "no longer", "used to", "update", "edit", "developed a reaction"…) or "after" a number of days,
-  weeks, months or years ("after 6 months", "after a couple of years"). It is enough that one of the writer's warnings
-  about the product says so: a later "yeah, avoid it" continues the same story.
+  "reformulated", "no longer", "used to", "update", "edit", "developed a reaction"…; since 15 Oct 2026 also words for
+  a change over time, a failure or wear, moving on from it or a new version of it: "at first", "started", "lately",
+  "eventually", "cracked", "worn out", "lasted", "switched", "newer model"…, judged on the library's flagged writers)
+  or "after" a number of days, weeks, months or years
+  ("after 6 months", "after a couple of years"). It is enough that one of the writer's warnings about the product says
+  so: a later "yeah, avoid it" continues the same story. A recommendation's words are never read for it: they use
+  the same words for long use ("it has lasted 6 years", "never broke me out", "it stopped my breakouts"), so a writer
+  who tells the change only in their recommendation (a battery that gave out in its fourth year, a speaker still worth
+  buying) and only concludes in the warning is still flagged (15 Oct 2026: 2 of the library's 34 flagged pairs).
 
 Who contradicts themselves is kept on the pipeline's result for reports (as a count), never shown to users.
 """

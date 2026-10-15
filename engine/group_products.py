@@ -103,6 +103,8 @@ Two more steps happen only when the name is shown to a shopper (engine/pipeline.
 """
 
 import re
+import threading
+from array import array
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
@@ -114,7 +116,7 @@ from engine.config import (
 from engine.extract import CheckResult
 from engine.memo import Table, register
 from engine.match_products import (
-    KIND_WORDS, Aliases, _features, comparable, held_back_word, join_split_words, known_aliases,
+    KIND_WORDS, Aliases, _features, candidate_pairs, comparable, held_back_word, join_split_words, known_aliases,
     match_candidates_and_open, normalize_name, own_words, product_words, same_words, same_words_looked_at, written_alike,
 )
 
@@ -216,30 +218,79 @@ class NameIndex:
     """The pairs of names the quick look leaves (engine.match_products.match_candidates_and_open), among all the names
     of one category of a library's mentions and their names without each product type's words (their bases): worked
     out once for the library, so a request's grouping takes its own names' pairs from it instead of working them out
-    again (latency, 13 Oct 2026: that was half of grouping, and grouping a third of a fresh answer)."""
+    again (latency, 13 Oct 2026: that was half of grouping, and grouping a third of a fresh answer).
+
+    Kept small since 15 Oct 2026 (the live site ran out of memory at 2 GiB): with ~1,950 threads the index held 3.6
+    million candidate links and 3.55 million pairs the quick look leaves, as sets of names, about 470 MB. Now each name
+    is a number, its candidates an array of numbers, and a byte for each says whether the quick look leaves the pair
+    with this name first (about 25 MB). A request's pairs are read from them (among): the same as before."""
 
     def __init__(self, names: Iterable[Words]):
-        self.candidates, self.open_pairs = match_candidates_and_open(sorted(set(names)))
+        self._names = sorted(set(names))
+        self._number = {name: n for n, name in enumerate(self._names)}
+        self._links = [array("I") for _ in self._names]  # each name's candidates, by number
+        self._ways = [bytearray() for _ in self._names]  # for each, whether the quick look leaves (this name, it)
+        for i, j, forth, back in candidate_pairs(self._names):
+            self._links[i].append(j)
+            self._ways[i].append(forth)
+            self._links[j].append(i)
+            self._ways[j].append(back)
+
+    @property
+    def candidates(self) -> Mapping[Words, set[Words]]:
+        """{name: the names it could match}, every name of the index's (as match_candidates_and_open gives them)."""
+        return _Candidates(self)
 
     def among(self, names: list[Words]) -> tuple[dict[Words, set[Words]], set[tuple[Words, Words]]] | None:
-        """match_candidates_and_open(names), from the index: the candidates among `names` (and the pairs, in order,
-        the quick look leaves: the index's, a pair of them is asked about only when both are among `names`); None when
-        a name isn't in the index (a type the open model named has bases of its own)."""
-        candidates = self.candidates
-        if not all(name in candidates for name in names):
+        """match_candidates_and_open(names), from the index: the candidates among `names`, and the pairs among them,
+        in order, the quick look leaves (all a request's grouping asks about); None when a name isn't in the index (a
+        type the open model named has bases of its own)."""
+        number = self._number
+        if not all(name in number for name in names):
             return None
-        among = set(names)
-        return {name: candidates[name] & among for name in dict.fromkeys(names)}, self.open_pairs
+        wanted = {number[name]: name for name in names}
+        candidates: dict[Words, set[Words]] = {}
+        open_pairs: set[tuple[Words, Words]] = set()
+        for name in dict.fromkeys(names):
+            n, found = number[name], set()
+            for other_number, way in zip(self._links[n], self._ways[n]):
+                other = wanted.get(other_number)
+                if other is not None:
+                    found.add(other)
+                    if way:
+                        open_pairs.add((name, other))
+            candidates[name] = found
+        return candidates, open_pairs
+
+
+class _Candidates(Mapping):
+    """A NameIndex's candidates as a mapping, worked out from its arrays when asked."""
+
+    def __init__(self, index: NameIndex):
+        self._index = index
+
+    def __getitem__(self, name: Words) -> set[Words]:
+        index = self._index
+        return {index._names[n] for n in index._links[index._number[name]]}
+
+    def __iter__(self):
+        return iter(self._index._names)
+
+    def __len__(self) -> int:
+        return len(self._index._names)
+
+    def __contains__(self, name) -> bool:
+        return name in self._index._number
 
 
 def library_name_index(mentions: Iterable[ProductMention],
-                       aliases: dict[str, Aliases] | None = None) -> dict[str, NameIndex]:
+                       aliases: dict[str, Aliases] | None = None) -> "LibraryNameIndex":
     """{category: NameIndex} for a library's mentions: every name, as grouping reads it (product_words, with these
     short names: the shipped list by default), and its base in each of module 1's first product types and in each type
     of the taxonomy (engine/data/product_types.json) of the name's own category (14 Oct 2026: its base in all 351 of
     the taxonomy's types had made the index seven times slower). A request of a taxonomy type grouping the names of
     another category works their pairs out itself (NameIndex.among: a base not in the index), as for a type the open
-    model named."""
+    model named. Each category's NameIndex is made when a grouping first asks for it (LibraryNameIndex)."""
     from engine.query import FIRST_PRODUCT_TYPES, PRODUCT_TYPES  # here: engine.query's own imports reach this module's
 
     aliases = known_aliases() if aliases is None else aliases
@@ -252,9 +303,68 @@ def library_name_index(mentions: Iterable[ProductMention],
     more: dict[str, list[tuple[frozenset[str], tuple[Words, ...]]]] = defaultdict(list)
     for p in PRODUCT_TYPES[len(FIRST_PRODUCT_TYPES):]:
         more[p.category].append((_type_words(p.name), _type_phrases(p.name)))
-    return {category: NameIndex(own | {base for words in own for type_words, phrases in first + more[category]
-                                       if (base := _without_type_words(words, type_words, phrases))})
-            for category, own in names.items()}
+    return LibraryNameIndex(dict(names), {category: first + more[category] for category in names})
+
+
+class LibraryNameIndex(Mapping):
+    """{category: NameIndex} of a library's names (library_name_index), each category's made the first time a grouping
+    of its names asks for it, and kept (15 Oct 2026: made all at once, on the first answer whatever it asked, it was most
+    of getting ready on the live site, two thirds of it the general category's ~22,000 names and bases). A grouping
+    holding even a few of a category's names makes that category's (a skincare answer whose threads name a general
+    product makes the general one). A category with no names has none (get gives None)."""
+
+    def __init__(self, names: dict[str, set[Words]], types: dict[str, list[tuple[frozenset[str], tuple[Words, ...]]]]):
+        self._names = names  # {category: its names}
+        self._types = types  # {category: the types whose bases its index holds}
+        self._made: dict[str, NameIndex] = {}
+        self._lock = threading.Lock()
+
+    def __getitem__(self, category: str) -> NameIndex:
+        made = self._made.get(category)
+        if made is None:
+            own = self._names[category]  # KeyError for a category without names: Mapping.get gives None
+            with self._lock:
+                made = self._made.get(category)
+                if made is None:
+                    made = self._made[category] = NameIndex(own | _bases(own, self._types[category]))
+        return made
+
+    def __contains__(self, category) -> bool:
+        return category in self._names
+
+    def __iter__(self):
+        return iter(self._names)
+
+    def __len__(self) -> int:
+        return len(self._names)
+
+
+def _bases(names: Iterable[Words], types: list[tuple[frozenset[str], tuple[Words, ...]]]) -> set[Words]:
+    """Every name's base in each of these types (_without_type_words), asking each name only the types that can give it
+    one (15 Oct 2026: with ~1,950 threads, asking all ~385 of the general category's types for each of its names was most
+    of a cold first answer, and of getting ready). A name has a base in a type only when its last word is one of the
+    type's words, as written or with a spelling slip (_is_type_word: a slip keeps the first letter and the length within
+    one), or when the type has synonyms (_type_phrases: a few), which may end it: so those types alone are asked, and
+    the bases are exactly those of asking every type."""
+    holding: dict[str, list[int]] = defaultdict(list)  # a type's word -> the types it is a word of
+    by_start: dict[tuple[str, int], set[str]] = defaultdict(set)  # (first letter, length) -> the types' words
+    with_phrases = []
+    for number, (type_words, phrases) in enumerate(types):
+        for word in type_words:
+            holding[word].append(number)
+            by_start[(word[:1], len(word))].add(word)
+        if phrases:
+            with_phrases.append(number)
+    found: set[Words] = set()
+    for words in names:
+        last = words[-1]
+        alike = {word for size in (len(last) - 1, len(last), len(last) + 1) for word in by_start.get((last[:1], size), ())
+                 if word == last or written_alike([last], [word])}
+        for number in sorted({n for word in alike for n in holding[word]} | set(with_phrases)):
+            type_words, phrases = types[number]
+            if base := _without_type_words(words, type_words, phrases):
+                found.add(base)
+    return found
 
 
 class LibraryRanges:

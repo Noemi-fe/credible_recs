@@ -388,6 +388,13 @@ PROFILE_FAILURES_IN_A_ROW_TO_STOP = 3
 # The search page and its JSON API (engine/web.py), served on this machine only. PROPOSED, for Noemi to approve.
 WEB_PORT = 8765  # the local address is http://127.0.0.1:8765/; `python -m engine.web --port N` picks another
 WEB_MAX_REQUEST_CHARS = 300  # a longer request is refused (400): a real need fits in far fewer words
+# How many product types' work the answers' memory keeps (engine.memo.TypeWindow, 15 Oct 2026; Claude's call, a
+# technical value): once answers have asked about more types since it last did, the site and the daily plan job forget
+# what answers worked out (engine.memo.forget_answers), keeping the library and what it worked out of itself. With
+# ~1,950 threads the live site had run out of memory at 2 GiB as it warmed ~480 requests, every type's work kept. 64
+# holds getting ready's requests (the examples, the latency set and one request per first type: 56 types) and the
+# types visitors ask next; a type asked after its work was forgotten is worked out again, a cold answer of its type.
+ANSWERS_KEPT_TYPES = 64
 
 # --- Decisions of 9 Oct 2026 ---
 # Noemi approved 13 recommendations on 9 Oct 2026 (CLAUDE.md, "Decisions of 9 Oct 2026"). What she decided says so;
@@ -556,10 +563,14 @@ PRECHECK_STOP_AFTER_UNKNOWN = 20
 # reading ahead). An answer's comment is read again once its last read is READ_AHEAD_AGAIN_HOURS old, so its check
 # never runs out at 48 hours (each comment about 0.6 reads a day, against one a day for the daily run). The site looks
 # for a new plan at most every PLAN_RELOAD_SECONDS, and writes what it read to the bucket's bundle at most every
-# BUNDLE_SHARE_SECONDS: about two calls an hour.
+# BUNDLE_SHARE_SECONDS: about two calls an hour. READ_AHEAD_PARALLEL 8 since 15 Oct 2026 (Claude, the coordinator's
+# task; was 4): at 4 at once a ping read about 20 in its 5 seconds (each batch about a second on Reddit's side), 5,760 a
+# day, while about 7,650 fell due (the plan's ~7,750 answers' comments every 40 hours and LIBRARY_VERIFY_READS a day);
+# at 8, as many at once as an answer reads (LIVE_CHECK_PARALLEL), a ping reaches its 40: 11,520 a day, with no more of
+# Reddit's reads (at most 80 of each 10 minutes' 200, as before) and no more billed seconds.
 READ_AHEAD_PER_PING = 40
 READ_AHEAD_SECONDS = 5
-READ_AHEAD_PARALLEL = 4
+READ_AHEAD_PARALLEL = 8
 READ_AHEAD_KEEP = 120
 READ_AHEAD_AGAIN_HOURS = 40
 PLAN_RELOAD_SECONDS = 3600
@@ -698,19 +709,33 @@ NEED_MATCH_BOOST = 1.0
 NEEDS: dict[str, tuple[str, ...]] = {
     # Skin types (engine/query.py, SKIN_TYPES).
     # A reaction, or the lack of one, talks about sensitive skin too ("doesn't cause a rash", "no redness"; 10 Oct
-    # 2026, late: b01's Stratia quote wasn't counted).
+    # 2026, late: b01's Stratia quote wasn't counted). Since 15 Oct 2026 (Claude, reported to Noemi) redness counts
+    # only as a reaction or its absence ("no redness", "it caused redness": NEED_COMMENT_WORDS below): redness a
+    # product treats isn't sensitive skin (exfoliant pads a writer used to clear bumps and redness on their underarms
+    # had made them a pick for a gentle exfoliant for sensitive skin), and a request about redness asks about redness
+    # itself ("azelaic acid for redness", a need found as typed).
     "sensitive": ("sensitiv", "reactive", "easily irritated", "irritated easily", "irritates easily", "irritat",
-                  "rash", "redness", "sting"),
+                  "rash", "sting"),
     "dry": ("dry", "dries", "dehydrated", "flaky"),
-    "oily": ("oily", "greasy", "shiny"),
-    "combination": ("combination", "combo skin"),
-    "acne-prone": ("acne", "breakout", "break out", "broke me out", "breaks me out", "pimple"),
+    # 15 Oct 2026 (Claude, reported to Noemi): the words skincare writers use for oily skin besides "oily" (sebum,
+    # sebaceous filaments, oiliness, oil control, mattifying, greasiness): a voice saying a niacinamide serum helped
+    # with sebaceous pores hadn't talked about oily skin. "oil" alone stays no word of it (a cleansing oil), and so
+    # does "grease" (a kitchen request's grease splatter); "oil control sunscreen" asks for oily skin, not "oil" and
+    # "control".
+    "oily": ("oily", "oiliness", "oilier", "oiliest", "greasy", "greasiness", "shiny", "sebum", "sebac", "oil control",
+             "oil-control", "controls oil", "control oil", "controlling oil", "mattif", "shine control"),
+    "combination": ("combination", "combo skin", "t-zone", "t zone", "tzone"),  # "an oily t-zone": 15 Oct 2026
+    # 15 Oct 2026 (Claude): "broke out", "breaking out", blemishes and zits too.
+    "acne-prone": ("acne", "breakout", "break out", "broke me out", "breaks me out", "broke out", "breaks out",
+                   "breaking out", "broken out", "pimple", "blemish", "zit"),
     "normal": ("normal skin",),
-    "mature": ("mature", "anti-aging", "anti-ageing", "anti aging", "anti ageing", "wrinkle", "fine line"),
+    "mature": ("mature", "anti-aging", "anti-ageing", "anti aging", "anti ageing", "aging", "ageing", "wrinkle",
+               "fine line"),  # "aging skin": 15 Oct 2026
     # Must-haves (engine/query.py, MUST_HAVES): a comment about the thing itself talks about the need, for or against.
     "fragrance-free": ("fragrance", "unscented", "scent", "perfume"),
-    "non-comedogenic": ("comedogenic", "clog"),
-    "no white cast": ("white cast",),
+    "non-comedogenic": ("comedo", "noncomedogenic", "clog"),  # closed comedones are clogged pores: 15 Oct 2026
+    # The cast in other colours and spellings (15 Oct 2026); "no cast" in comments only (NEED_COMMENT_WORDS).
+    "no white cast": ("white cast", "white-cast", "whitecast", "purple cast", "grey cast", "gray cast", "blue cast"),
     "cruelty-free": ("cruelty",),
     "vegan": ("vegan",),
     "reef-safe": ("reef",),
@@ -747,6 +772,9 @@ NEEDS: dict[str, tuple[str, ...]] = {
     # 14 Oct 2026, a need of its own since, so a quote saying a product strips says the opposite (OPPOSITE_QUOTE_PATTERNS).
     "strip": ("strip",),
 }
+_SENSITIVE_IN_COMMENTS = ("no redness", "any redness", "zero redness", "without redness", "without any redness",
+                          "caused redness", "causes redness", "cause redness", "causing redness", "more redness",
+                          "extra redness", "increased redness", "rosacea", "eczema", "react")
 # More words that show a comment talks about a need, never a thread's title or post (decided by Claude, 14 Oct 2026, b08's
 # follow-up; reported to Noemi): the words people use most for something that lasts ("will last forever", "a lifetime
 # pan", "for decades", "an heirloom", BIFL), which none of NEEDS' words caught, so the wider reading's need rule left out
@@ -755,6 +783,16 @@ NEEDS: dict[str, tuple[str, ...]] = {
 NEED_COMMENT_WORDS: dict[str, tuple[str, ...]] = {
     "lasting": ("forever", "lifetime", "decade", "heirloom", "bifl", "buy it for life", "for generations",
                 "will last", "built to last", "should last"),
+    # 15 Oct 2026 (Claude, reported to Noemi), each in comments only, so a request in these words keeps its own need:
+    # redness as a reaction to the product, or its absence, the skin conditions that go with sensitive skin and "my
+    # skin reacts" (a request about redness, rosacea or eczema asks about that itself, and a pan that "doesn't react
+    # with tomatoes" isn't for sensitive skin); the forms of dry skin the words missed; a smell, which is a scent (but a
+    # litter box that "doesn't smell" isn't a fragrance-free one); "no cast", but not "no cast iron" (NEED_LOOKALIKES).
+    "sensitive": _SENSITIVE_IN_COMMENTS,
+    "sensitive scalp": _SENSITIVE_IN_COMMENTS,
+    "dry": ("dehydration", "flaking", "flakes", "flakey", "flakiness"),
+    "fragrance-free": ("smell",),
+    "no white cast": ("no cast", "any cast", "a cast", "zero cast", "without a cast"),
 }
 # Phrases that hold a need's word but say something else, left aside before the need's words are looked for (decided by
 # Claude, 14 Oct 2026, b08's follow-up; reported to Noemi): "broke in my new cast iron" or a pan "nicely broken in" is a
@@ -768,6 +806,8 @@ NEED_LOOKALIKES: dict[str, tuple[str, ...]] = {
                 # chemicals" (non-stick threads talk about them a lot).
                 r"(?<![a-z0-9])(?:takes?|took|taking)\s+forever(?![a-z0-9])",
                 r"(?<![a-z0-9])forever[\s-]+chemicals?(?![a-z0-9])"),
+    # "no cast" and "a cast" are no white cast, but not in "no cast iron" (15 Oct 2026).
+    "no white cast": (r"(?<![a-z0-9])cast[\s-]*irons?(?![a-z0-9])",),
 }
 # A need asked for by saying what a product mustn't do (14 Oct 2026, the need-quality builder; chosen by Claude, reported
 # to Noemi). A negation of NEGATIONS followed, at most NEGATION_REACH words later, by a word beginning with one of a
@@ -823,15 +863,59 @@ NEED_REQUEST_WORDS: dict[str, str] = {
 # Words of a request too common in comments to show a need: "doesn't leave a white cast", "for a home cook", and
 # "burr coffee grinder" (the kind of grinder nearly every grinder comment is about).
 NEED_IGNORED_WORDS = ("leave", "cook", "burr")
+# A recommendation saying its product didn't help with a need (15 Oct 2026, Claude, reported to Noemi; engine.needs.
+# said_not_to_help): "it did nothing for my oily skin", "doesn't help redness much", "I bought it for my dark spots,
+# which it didn't help with". It talks about the need, but against it, like a quote saying the opposite of the request
+# (OPPOSITE_QUOTE_PATTERNS): the mention gets no credit for talking about it (never the need rule's recommendation
+# about it, nor one the reason counts), and among equally clear quotes it is shown last. Only the quote's own product:
+# the words before the phrase, in its clause, are none or point at it (NO_HELP_POINTERS: "it", "this one", "which it"),
+# so "the other cream did nothing for my oily skin, this one did" is about another product, and its writer, who has the
+# need and compared, still talks about it. A warning keeps its need: not helping is what it warns about.
+NO_HELP_PATTERNS = (
+    r"(?:didn't|didnt|did not|doesn't|doesnt|does not|don't|dont|do not|won't|wont|will not|wouldn't|wouldnt|never|"
+    r"hasn't|hasnt|has not|haven't|havent|have not|wasn't|wasnt|was not|isn't|isnt|is not)\s+"
+    r"(?:really\s+|even\s+|actually\s+|seem\s+to\s+|seemed\s+to\s+|ever\s+|quite\s+|much\s+|always\s+)?"
+    r"(?:help(?:ed|s|ing)?|work(?:ed|s|ing)?\s+(?:for|on)|do\s+(?:much|anything|a\s+thing)|make\s+(?:a|any|much)\s+"
+    r"difference|improve[sd]?|fix(?:ed)?|clear(?:ed)?)(?![a-z])",
+    r"(?:did|does|do)\s+(?:absolutely\s+|literally\s+|basically\s+)?nothing\s+(?:for|to|about|with)(?![a-z])",
+    r"no\s+(?:real\s+|noticeable\s+|visible\s+)?(?:difference|improvement|change)\s+(?:in|to|for|with)(?![a-z])",
+)
+# What may stand before such a phrase in its clause, when it is about the quote's own product: nothing, or one of these
+# (each may follow "and", "but", "sadly"...: NO_HELP_LEADS), as the clause's last words before it.
+NO_HELP_POINTERS = ("it", "this", "this one", "that", "that one", "they", "these", "those", "which", "which it",
+                    "that it", "which they", "it just", "it really", "it honestly", "it sadly", "it unfortunately",
+                    "it also", "it still", "it actually", "it personally", "they just", "they really", "this just")
+NO_HELP_LEADS = ("and", "but", "though", "sadly", "unfortunately", "honestly", "however", "also", "personally",
+                 "although", "just", "still")
 
 # 2. Writers who contradict themselves (Noemi's rule, 9 Oct 2026). A writer who recommends a product in one comment and
 # warns against it in another, in any of the request's threads, without saying something changed, counts as a low
 # voice in every mention they make (so none of them is credible). Their warning says something changed when its own
 # words hold one of these (word beginnings, as for needs above), or "after" a number of days, weeks, months or years
 # ("after 6 months", engine/contradictions.py): an update is honest, not a contradiction.
+# The groups added 15 Oct 2026 (Claude, reported to Noemi), judged one by one on the library's flagged writers (34
+# writer-product pairs over the 632 requests of the evals and the pre-check): about a dozen reported a change over time
+# or a failure in words the list lacked (a device fine at first that lately missed things, boots that cracked within
+# months where an older pair had lasted years, a stone worn out, a newer model worse than the older one, a pot given
+# away). None of the flagged pairs that were real contradictions (a downside said in another comment: too thick, too
+# tight, strips colour) holds one of them. "quit" only as "quit working" or "quit on": a word beginning, it would find
+# "quite".
 CHANGE_WORDS = (
     "died", "broke", "stopped", "fail", "reformulat", "new formula", "change", "changing", "no longer", "anymore",
     "any more", "used to", "update", "edit", "developed a reaction", "developed an allergy",
+    # Over time.
+    "at first", "when i first", "when we first", "first got", "first bought", "initially", "in the beginning",
+    "started", "starting to", "began", "begun", "lately", "recently", "these days", "nowadays", "over time",
+    "over the years", "over the months", "over a couple", "over a few", "over the past", "eventually", "since then",
+    "ever since", "after using", "after a while", "after some time", "after trying", "after a few", "after more use",
+    # A failure or wear that happened.
+    "cracked", "chipped", "wore out", "worn out", "wears out", "wearing out", "fell apart", "falls apart",
+    "fallen apart", "gave out", "gives out", "crapped out", "craps out", "crap out", "rusted", "warped", "degrad",
+    "peeled", "lasted", "leaked", "quit working", "quit on",
+    # Moving on from it, or a new version of it.
+    "switched", "gave it away", "got rid of", "returned it", "replaced it", "went back to", "moved on", "newer model",
+    "new model", "new version", "newer version", "older model", "older version", "old version", "downhill",
+    "quality went down", "quality has gone down",
 )
 
 # --- Upkeep and availability (9 Oct 2026) ---

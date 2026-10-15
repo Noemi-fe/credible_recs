@@ -491,3 +491,21 @@ def test_reads_the_whole_list_when_neither_the_reads_nor_the_time_run_out(tmp_pa
     run = check_ahead(found, live_checker(tmp_path, FakeReddit(), clock), limit=100, started=clock(), minutes=60)
     assert (run.read, run.not_reached, run.out_of_time) == (len(found), 0, None)
     assert "Not reached within this run's budget: 0." in precheck.report(found, run, 1, 1, 0, run.seconds)
+
+
+def test_working_out_forgets_the_answers_memory_every_so_many_types_and_finds_the_same_comments(tmp_path, monkeypatch):
+    # 15 Oct 2026: the plan job's working out kept every product type's work, so its memory grew with the types (2.25 GB
+    # for 486 requests over ~1,950 threads, the open model off). It now forgets what answers worked out once it has asked
+    # about more than ANSWERS_KEPT_TYPES types since it last did (engine.memo.TypeWindow), keeping the library, and finds
+    # the same comments in the same order.
+    from engine import memo
+
+    lib = library(tmp_path)
+    requests = [REQUEST, "electric kettle", "frying pan", "chef knife", REQUEST, "toaster"]
+    whole = comments_to_check(requests, library_dir=lib, checker=live_checker(tmp_path / "a", FakeReddit()))
+    memo.forget_all()
+    forgot, real = [], memo.forget_answers
+    monkeypatch.setattr(memo, "forget_answers", lambda: forgot.append(1) or real())
+    monkeypatch.setattr(precheck, "ANSWERS_KEPT_TYPES", 1)
+    assert comments_to_check(requests, library_dir=lib, checker=live_checker(tmp_path / "b", FakeReddit())) == whole
+    assert len(forgot) == 4  # electric kettle, then frying pan, chef knife, electric kettle again and toaster

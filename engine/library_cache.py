@@ -32,7 +32,7 @@ from pathlib import Path
 
 from engine.extract import CheckResult, check_extractions, extracted_dir
 from engine.gold import load_threads
-from engine.memo import changed_just_now, register
+from engine.memo import REQUEST_WORK, changed_just_now, register
 from engine.models import Thread
 
 # How many libraries are kept at once (the web demo uses one; the tests make many small ones).
@@ -70,6 +70,12 @@ def loaded(threads_dir: Path) -> KeptLibrary:
         if found is not None and found[0] == now:
             _kept.move_to_end(key)
             return found[1]
+        if found is not None:
+            # Let go first, with what it worked out (15 Oct 2026, the live site's memory): read while the old one was
+            # still kept, the library was in memory twice for a while (with ~1,950 threads, about 430 MB more).
+            del _kept[key]
+            found[1].remembered.clear()
+            found = None
         library = _read(threads_dir)
         if not _changed_just_now(now, started):
             _kept[key] = (now, library)
@@ -87,7 +93,22 @@ def forget() -> None:
         _kept.clear()
 
 
-register(forget)  # engine.memo.forget_all empties it too
+register(forget, answers=False)  # engine.memo.forget_all empties it too; forget_answers keeps what was read
+
+# A kept library's `remembered` keeps what answers worked out for one request's product type under REQUEST_WORK
+# (engine.memo; 15 Oct 2026; engine.sources.LocalSource: each thread's relevance to a type, its talk about an ingredient,
+# whether its title names another type): forget_request_work drops it, keeping what the library worked out of itself
+# whatever the request (each thread's comments read, each category's readable threads, the name index, the ranges).
+
+
+def forget_request_work() -> None:
+    """What every kept library worked out for requests' product types, dropped (engine.memo.forget_answers)."""
+    with _lock:
+        for _, library in _kept.values():
+            library.remembered.pop(REQUEST_WORK, None)
+
+
+register(forget_request_work)  # what answers worked out: engine.memo.forget_answers empties it
 
 
 def fingerprint(threads_dir: Path) -> tuple:

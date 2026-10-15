@@ -7,7 +7,9 @@ write the one-line reasons, but only from the verified quotes, inside this same 
 What each pick shows (the brief):
 - the product name and a one-line reason it wins; when some of its credible recommendations talk about what the
   request asks for (engine/needs.py, 9 Oct 2026), the reason says how many and about what ("3 of them about sensitive
-  skin"); and with Noemi's upvote rule on (14 Oct 2026; off: config.UPVOTE_COUNTS_MORE), which of its credible voices
+  skin"), by the needs a comment can talk about (engine.needs.judged_needs, since 15 Oct 2026: never the ingredient,
+  size or checked requirement the request names, so a vitamin C serum's reason no longer says "about vitamin or c");
+  and with Noemi's upvote rule on (14 Oct 2026; off: config.UPVOTE_COUNTS_MORE), which of its credible voices
   counted twice toward the picks bar and for how many upvotes ("(one counted twice for its 34 upvotes)"), while every
   number of voices stays the number of writers (the meter's "voices" says how many counted twice) and the answer's
   messages give the bar with its upvotes ("..., or 2 when one of them has 10 or more upvotes"); and when a comment
@@ -161,7 +163,7 @@ from engine.ingredients import (
 from engine.links import is_direct_page, is_linkable, is_search_page
 from engine.models import Thread
 from engine.product_pages import ProductPage
-from engine.needs import LASTING, Need, needs_met
+from engine.needs import LASTING, Need, needs_met, said_not_to_help
 from engine.prices import PriceCheck
 from engine.credibility import GENERIC_NAME_WORDS
 from engine.match_products import FILLER_WORDS, known_aliases
@@ -258,9 +260,10 @@ CARE_NOTE_HEADING_ANY = "How to take care of it"
 # Needs (9 Oct 2026; wording decided by Claude, as Noemi asked). The reason line says how many of the credible
 # recommendations talk about what the request asks for, and about what: "Recommended by 5 credible voices, 3 of them
 # about sensitive skin." It says "about", not "with sensitive skin": the rule finds comments that talk about a need,
-# not writers who have it. Needs come from engine/needs.py; one not listed here is shown as the request typed it
-# ("pour-over", "PFAS"). Several are listed with commas and a last "or": "2 of them about starting out or sensitive
-# skin", "3 of them about starting out, home cooking or pour-over".
+# not writers who have it. Needs come from engine/needs.py, the ones a comment can talk about (judged_needs, since 15
+# Oct 2026: "3 of them about vitamin or c" named a vitamin C serum's own ingredient); one not listed here is shown as the
+# request typed it ("pour-over", "PFAS"). Several are listed with commas and a last "or": "2 of them about starting out
+# or sensitive skin", "3 of them about starting out, home cooking or pour-over".
 REASON_NEEDS = ", {n} of them about {needs}"
 NEEDS_JOIN = ", "
 NEEDS_JOIN_LAST = " or "
@@ -625,8 +628,9 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     out. `asks` is what the request asks
     for (engine.product_facts.request_asks): a quote saying the opposite is shown last. `more_downsides` ({pick key:
     credible warnings}) are warnings about a pick's own brand or line, shown under it after its own. `unsuited_kinds`
-    are the keys of kinds that give no "Look for" (engine.pipeline._unsuited_kinds). `needs` (engine.needs.request_needs):
-    among equally clear quotes, those talking about them come first. `request` is the request as typed: the product it
+    are the keys of kinds that give no "Look for" (engine.pipeline._unsuited_kinds). `needs` (the needs a comment can
+    talk about, engine.needs.judged_needs, since 15 Oct 2026): among equally clear quotes, those talking about them come
+    first. `request` is the request as typed: the product it
     names ("retinol") is no advice about what to look for. `summaries` ({engine.summaries.summary_key: Summary}) are
     the one-line summaries written ahead of time: each is shown on its pick or item only when every check passes.
     `worth_left_out` are the keys of products the pipeline leaves out of "Also worth a look" (its brand rules).
@@ -800,7 +804,7 @@ def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[s
             # here as it would be without the rule: the upvotes changed nothing for it, so nothing is said of them. One
             # shown here thanks to a comment standing out in its thread says so (_reason). One meeting the bar on its
             # own has a pick's reason, as a pick would say it.
-            reason=_reason(product, ranking, upvotes=meets_bar),
+            reason=_reason(product, ranking, upvotes=meets_bar, order=tuple(need.name for need in needs)),
             quotes=quotes,
             downsides=downsides,
             downsides_share=_downsides_share(product) if downsides else None,
@@ -1012,7 +1016,8 @@ def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
     """The most credible first, but the quotes that name their product and give a view before those that only name
     it, those before the ones that only give a view, and those before the rest; within each, those whose comment talks about what the request asks for first (10 Oct 2026: out of context, a line that only opens a list of other products the
     writer has had no trouble with says little, and so does a list of the grinders someone owns), and a quote that says the opposite of what
-    the request asks ("does leave a white cast") after every other (_says_the_opposite). Each is still shown when
+    the request asks ("does leave a white cast"), or a recommendation's quote saying its product didn't help with a
+    need ("it did nothing for my oily skin", 15 Oct 2026), after every other (_says_the_opposite). Each is still shown when
     there's room. Since 12 Oct 2026 the quotes of `leaning` (comment ids: quotes that lean on the thread, _standing) come
     after all of these, and a quote saying the product isn't really the `product_type` asked for (that it
     isn't really a moisturiser) counts as saying the opposite of the request (_not_the_type)."""
@@ -1029,8 +1034,11 @@ def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
     def about_the_ask(m: ScoredMention) -> bool:
         return bool(needs and needs_met(m.quote, needs, m.evidence == "long-term use"))
 
+    # A recommendation whose quote says its product didn't help with one of the needs ("it did nothing for my oily
+    # skin") talks about it against the request too (engine.needs.said_not_to_help, 15 Oct 2026); a warning's doesn't.
     def opposite(m: ScoredMention) -> bool:
-        return _says_the_opposite(m.quote, asks) or _not_the_type(m.quote, product_type)
+        return (_says_the_opposite(m.quote, asks) or _not_the_type(m.quote, product_type)
+                or (m.stance == "recommend" and bool(said_not_to_help(m.quote, needs))))
 
     return sorted(ordered, key=lambda m: (m.comment_id in leaning, opposite(m), tier(m), not about_the_ask(m)))
 
@@ -1382,7 +1390,7 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
         rank=rank,
         product_key=product.key,
         name=product.name,
-        reason=_reason(product, ranking),
+        reason=_reason(product, ranking, order=tuple(need.name for need in needs)),
         support=_support(product),
         quotes=quotes,
         downsides=downsides,
@@ -1470,10 +1478,11 @@ def _as_sentence(tip: str) -> str:
     return tip if tip.endswith((".", "!", "?")) else tip + "."
 
 
-def _reason(product: ProductScore, ranking: RankingResult, upvotes: bool = True) -> str:
+def _reason(product: ProductScore, ranking: RankingResult, upvotes: bool = True, order: tuple[str, ...] = ()) -> str:
     """The one-line reason: how many credible voices, which counted twice for their upvotes (a pick's, `upvotes`) or
     which comment stands out in its thread when that is why it is shown (14 Oct 2026), how many after long-term use,
-    how many talk about the request's needs, and the kind if it leads."""
+    how many talk about the request's needs (named in `order`, the request's own, when given), and the kind if it
+    leads."""
     recommendations = product.credible_recommendations
     long_term = sum(m.evidence == "long-term use" for m in recommendations)
     has_bonus = product.breakdown.kind_bonus > 0 and ranking.leading_kind is not None
@@ -1485,7 +1494,8 @@ def _reason(product: ProductScore, ranking: RankingResult, upvotes: bool = True)
         voices=_plural(len(recommendations), "credible voice"),
         upvotes=clause,
         long_term=REASON_LONG_TERM.format(n=long_term) if long_term else "",
-        needs=_needs_clause(recommendations, [m.needs for p in ranking.products for m in p.mentions], ranking.category),
+        needs=_needs_clause(recommendations, [m.needs for p in ranking.products for m in p.mentions], ranking.category,
+                            order),
         kind=REASON_KIND.format(kind=ranking.leading_kind.name) if has_bonus else "",
     )
 
@@ -1527,10 +1537,13 @@ def _rule(standout_pick: bool = False) -> str:
 
 
 def _needs_clause(recommendations: list[ScoredMention], every_list: list[tuple[str, ...]],
-                  category: str | None = None) -> str:
+                  category: str | None = None, order: tuple[str, ...] = ()) -> str:
     """", 3 of them about sensitive skin": how many credible recommendations talk about the request's needs, and which
-    needs, in the request's order; "" when none does. `every_list` holds the needs of every mention ranked: each lists
-    them in the request's order, so together they show that order.
+    needs, in the request's order; "" when none does. `order` is the request's needs in its own order (write_answer's
+    `needs`): since 15 Oct 2026 the needs are named in it, since the mentions alone can't always show it (each lists its
+    needs in the request's order, but when none talks about two of them, which comes first was a guess: "about acne-prone
+    skin or combination skin" for a request asking about combination skin first). Without it, `every_list`, the needs of
+    every mention ranked, shows that order as well as it can.
 
     Nothing is said twice: long-term use talks about "lasting" (engine/needs.py), and the reason already says how many
     recommendations come after long-term use, so those don't count again for "how long it lasts".
@@ -1539,7 +1552,8 @@ def _needs_clause(recommendations: list[ScoredMention], every_list: list[tuple[s
     if not fitting:
         return ""
     mine = {need for needs in fitting for need in needs}
-    ordered = [need for need in _in_request_order(fitting + every_list) if need in mine]
+    ordered = [need for need in order if need in mine]
+    ordered += [need for need in _in_request_order(fitting + every_list) if need in mine and need not in ordered]
     labels = NEED_LABELS | NEED_LABELS_BY_CATEGORY.get(category or "", {})
     named = list(dict.fromkeys(labels.get(need, need) for need in ordered))
     listed = NEEDS_JOIN.join(named[:-1]) + NEEDS_JOIN_LAST + named[-1] if len(named) > 1 else named[0]
