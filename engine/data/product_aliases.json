@@ -25,6 +25,7 @@
       {"short": "CeraVe Hydrating Cleanser", "full": "CeraVe Hydrating Facial Cleanser", "seen": ["Cerave hydrating cleanser", "CeraVe Hydrating Cleanser", "Cerave hydrating facial cleanser"]},
       {"short": "Paula's Choice 2% Liquid Exfoliant", "full": "Paula's Choice Skin Perfecting 2% BHA Liquid Exfoliant", "seen": ["Paula’s Choice 2% Liquid Exfoliant", "Paula's Choice 2% BHA Skin Perfecting Liquid"]},
       {"short": "Isntree 2% BHA", "full": "Isntree Chestnut BHA 2% Clear Liquid", "seen": ["Isntree 2% BHA exfoliant", "Isntree 2% bha chestnut toner"]},
+      {"short": "Rohto Mentholatum", "full": "Mentholatum", "seen": ["Rohto Mentholatum Acnes", "Rohto Mentholatum Acnes Patches", "Mentholatum Acnes Medicated Sealing Jell", "Rohto Mentholatum Melty Cream Lip SPF 25"]},
       {"short": "Mighty Patch", "full": "Hero Mighty Patches", "seen": ["Mighty Patch", "mighty patch", "Hero Mighty Patches", "Hero mighty patches"]},
       {"short": "The Ordinary Azelaic Acid", "full": "The Ordinary Azelaic Acid Suspension 10%", "seen": ["TO Azelaic Acid", "TO azelaic acid", "the ordinary azelaic acid", "TO Azelaic Acid 10%", "The Ordinary azelaic acid suspension", "The Ordinary's azelaic acid cream"]},
       {"short": "The Ordinary 10% Azelaic Acid", "full": "The Ordinary Azelaic Acid Suspension 10%", "seen": ["TO 10% Azelaic acid"]},
@@ -93,7 +94,24 @@
       {"short": "LC", "full": "Le Creuset", "seen": ["LC", "LC Dutch oven", "LC dutch ovens and braisers with glass lids", "LC braiser", "LC frying pans", "LC signature line"]},
       {"short": "kitchen aide", "full": "KitchenAid", "seen": ["kitchen aide", "Kitchen aide", "Kitchen Aide hand held"]},
       {"short": "Made in Japan Zojirushi", "full": "Zojirushi", "seen": ["Made in Japan Zojirushi", "used Made in Japan Zojirushi"]},
-      {"short": "Matfer CS", "full": "Matfer carbon steel", "seen": ["Matfer CS", "Matfer carbon steel"]}
+      {"short": "Matfer CS", "full": "Matfer carbon steel", "seen": ["Matfer CS", "Matfer carbon steel"]},
+      {"short": "KitchenAid Pro", "full": "KitchenAid Professional", "seen": ["KitchenAid Pro stand mixer", "KitchenAid Pro 5 Plus", "KitchenAid Professional 5 Plus", "KitchenAid Pro HD", "Kitchenaid Professional HD", "KitchenAid Professional 600"]},
+      {"short": "Kitchen Aid Pro", "full": "KitchenAid Professional", "seen": ["kitchen aid pro", "KitchenAid Professional"]}
+    ],
+    "general": [
+      {"short": "Braun S7", "full": "Braun Series 7", "seen": ["Braun S7", "Braun series 7", "Braun Series 7"]},
+      {"short": "Braun S9", "full": "Braun Series 9", "seen": ["Braun s9", "Braun Series 9 Pro"]},
+      {"short": "Owlet camera", "full": "Owlet Cam", "seen": ["owlet camera", "Owlet Camera", "owlet camera monitor", "owlet cam", "Owlet Cam"]},
+      {"short": "Portland Leather Company", "full": "Portland Leather Goods", "seen": ["Portland Leather Company", "Portland Leather Company tote", "Portland Leather Goods", "Portland Leather Goods purse"]},
+      {"short": "Portland Leather Co", "full": "Portland Leather Goods", "seen": ["Portland Leather Co", "Portland Leather Co.", "Portland Leather Co bag", "Portland Leather Goods"]},
+      {"short": "Portland Leather", "full": "Portland Leather Goods", "seen": ["Portland Leather", "Portland Leather tote", "Portland leather goods bag"]},
+      {"short": "Roomba", "full": "iRobot Roomba", "seen": ["Roomba", "Roombas", "irobot roomba", "iRobot"]},
+      {"short": "Alexa Echo", "full": "Amazon Echo", "seen": ["Alexa Echo"]},
+      {"short": "Alexa", "full": "Amazon Echo", "seen": ["Alexa", "Alexa speaker"]},
+      {"short": "Capilene", "full": "Patagonia Capilene", "seen": ["capilene", "Capilene lightweight", "Capilene daily", "Patagonia Capilene"]},
+      {"short": "lightweight capilene", "full": "Patagonia Capilene Lightweight", "seen": ["lightweight capilene", "lightweight capilene base layer", "Patagonia lightweight capilene"]},
+      {"short": "Thermal Weight Capilene", "full": "Patagonia Capilene Thermal Weight", "seen": ["Thermal Weight Capilene", "Patagonia capilene Thermal weight"]},
+      {"short": "Pillow Guy", "full": "MyPillow", "seen": ["Pillow Guy", "MyPillow"]}
     ]
   },
   "kinds": {

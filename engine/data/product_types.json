@@ -1598,6 +1598,7 @@
    ],
    "subreddits": [
     "Mattress",
+    "Bedding",
     "BuyItForLife",
     "Frugal"
    ],
@@ -1626,6 +1627,7 @@
    ],
    "subreddits": [
     "Mattress",
+    "Bedding",
     "BuyItForLife",
     "HomeDecorating"
    ]
@@ -1660,6 +1662,7 @@
    ],
    "subreddits": [
     "BuyItForLife",
+    "Bedding",
     "Mattress",
     "HomeDecorating"
    ],
@@ -1682,6 +1685,7 @@
     "duvet cover"
    ],
    "subreddits": [
+    "Bedding",
     "BuyItForLife",
     "HomeDecorating"
    ]
@@ -1712,9 +1716,10 @@
     "bed"
    ],
    "subreddits": [
+    "furniture",
     "BuyItForLife",
-    "HomeDecorating",
-    "Mattress"
+    "Mattress",
+    "HomeDecorating"
    ],
    "lookalikes": [
     "garden bed",
@@ -1747,9 +1752,10 @@
     "couch"
    ],
    "subreddits": [
+    "furniture",
     "BuyItForLife",
-    "HomeDecorating",
-    "malelivingspace"
+    "malelivingspace",
+    "HomeDecorating"
    ],
    "lookalikes": [
     "sofa cover"
@@ -1773,7 +1779,9 @@
     "armchair"
    ],
    "subreddits": [
+    "furniture",
     "BuyItForLife",
+    "malelivingspace",
     "HomeDecorating"
    ]
   },
@@ -1890,7 +1898,9 @@
     "dining table"
    ],
    "subreddits": [
+    "furniture",
     "BuyItForLife",
+    "malelivingspace",
     "HomeDecorating"
    ]
   },
@@ -1911,6 +1921,7 @@
     "bookshelf"
    ],
    "subreddits": [
+    "furniture",
     "BuyItForLife",
     "HomeDecorating"
    ]
@@ -1932,6 +1943,7 @@
     "wardrobe"
    ],
    "subreddits": [
+    "furniture",
     "BuyItForLife",
     "HomeDecorating"
    ],
@@ -1958,6 +1970,7 @@
     "chest of drawers"
    ],
    "subreddits": [
+    "furniture",
     "BuyItForLife",
     "HomeDecorating"
    ]
@@ -1980,6 +1993,7 @@
     "tv stand"
    ],
    "subreddits": [
+    "furniture",
     "BuyItForLife",
     "HomeDecorating"
    ]
@@ -2027,8 +2041,10 @@
     "curtains"
    ],
    "subreddits": [
-    "HomeDecorating",
-    "BuyItForLife"
+    "BuyItForLife",
+    "malelivingspace",
+    "HomeImprovement",
+    "HomeDecorating"
    ],
    "lookalikes": [
     "shower curtain"
@@ -2080,9 +2096,11 @@
     "lamp"
    ],
    "subreddits": [
-    "HomeDecorating",
+    "Lighting",
+    "furniture",
+    "malelivingspace",
     "BuyItForLife",
-    "malelivingspace"
+    "HomeDecorating"
    ],
    "lookalikes": [
     "heat lamp"
@@ -4496,11 +4514,10 @@
     "backpacking pack",
     "backpacking backpack",
     "hiking pack",
-    "daypack",
-    "day pack",
     "trekking backpack",
     "hiking rucksack",
     "hiking daypack",
+    "hiking day pack",
     "ultralight backpack",
     "ultralight pack",
     "hydration pack",
@@ -6475,17 +6492,30 @@
     "school bag",
     "bookbag",
     "rucksacks",
-    "laptop rucksack"
+    "laptop rucksack",
+    "daypack",
+    "day pack",
+    "daypacks",
+    "day packs",
+    "packable daypack",
+    "travel daypack"
    ],
    "title_words": [
     "backpack",
-    "rucksack"
+    "rucksack",
+    "daypack",
+    "day pack"
    ],
    "subreddits": [
     "onebag",
+    "backpacks",
     "HerOneBag",
     "BuyItForLife",
     "EDC"
+   ],
+   "lookalikes": [
+    "backpack sprayer",
+    "backpack sprayers"
    ]
   },
   {

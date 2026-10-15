@@ -200,7 +200,7 @@ from engine.extract import CheckResult, shown_comment_ids
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
 from engine.group_products import (
     LibraryRanges, ProductGroup, ProductMention, brand_pick_name, group_of, group_products, library_name_index,
-    library_ranges, plural, uk_name,
+    library_ranges, maker_spelling, plural, uk_name,
 )
 from engine.gold import DEFAULT_GOLD_DIR
 from engine.ingredients import evidence as ingredient_evidence
@@ -210,7 +210,9 @@ from engine.ingredients import (
 from engine.ingredients import shown as shown_ingredients
 from engine.library import DEFAULT_LIBRARY_DIR, checked_live_within
 from engine.library_cache import loaded as loaded_library
-from engine.match_products import known_aliases, normalize_name, product_words, same_product, written_alike
+from engine.match_products import (
+    LINE_WORDS, known_aliases, normalize_name, plain_words, product_words, same_product, written_alike,
+)
 from engine.memo import Table
 from engine.models import Comment, Thread
 from engine.needs import Need, judged_needs, needs_met, said_not_to_help
@@ -277,6 +279,9 @@ class PipelineResult:
     # 2026; _of_another_type): the product itself stays in, so it isn't in left_out_as_other_type.
     mentions_of_another_type: list[str] = field(default_factory=list)
     left_out_loose: list[str] = field(default_factory=list)  # brand or line names (and names that name nothing)
+    # Names that name no one product (15 Oct 2026; engine.group_products: a kind written without a maker, "SA cleanser",
+    # or two models at once, "JBL Flip 4, 5, or 6"): never ranked, nor counted among the brand or line names.
+    left_out_generic: list[str] = field(default_factory=list)
     # Brand or line names left out because the brand-lines list says their brand doesn't sell the requested type of
     # product, with that reason (12 Oct 2026); they are in left_out_loose too.
     brands_not_selling: list[NotSuited] = field(default_factory=list)
@@ -498,12 +503,14 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
         groups = group_products([m for m in mentions if _typed(m) not in of_another_type], product_type=grouping_type,
                                 index=index, known=known, ranges=brand_ranges)
     brand_lines = load_brand_lines() if brand_lines is None else brand_lines
-    kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads}, brand_lines)
+    prices = load_prices() if prices is None else prices
+    # The price and facts lists write their products as their makers do: a name in their words is shown so (15 Oct 2026).
+    makers, curated = _spelling_lists(brand_lines, prices, product_facts, query.category)
+    kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads}, brand_lines, curated, makers)
     lines = {g.key for g in kept_groups if g.loose}  # the brand or line names kept as the brand's whole line
     # Their brand-lines entries, whose range pages the answer links to (Noemi's night decision 1, 14 Oct 2026).
     ranges = {g.key: line for g in kept_groups if g.loose and (line := _brand_line(g, query, brand_lines)) is not None}
     types = {g.key: _own_type(g, query) for g in kept_groups}  # each product's own type (13 Oct 2026)
-    prices = load_prices() if prices is None else prices
     kept_groups, price_checks = _within_budget(kept_groups, query, prices, today, result, brand_lines, types)
     named_before = {g.key: g.name for g in kept_groups if not g.loose}  # the names the price list was asked about
     kept_groups, cautions, formulas = _suited_to_request(kept_groups, query, product_facts, result, types)
@@ -799,6 +806,8 @@ def _known_products(product_facts: list[ProductFacts]) -> dict[str, list[tuple[s
     aliases = known_aliases()
     known: dict[str, list[tuple[str, ...]]] = {}
     for entry in product_facts:
+        if _named_as_a_line(entry.product):
+            continue  # "Medik8 Crystal Retinal line" (its six strengths): the line, never one product (15 Oct 2026)
         words = tuple(product_words(entry.product, aliases.get(entry.category, {})))
         brand = ProductGroup(f"{entry.category}:{words[:1]}", entry.product.split()[0], entry.category,
                              [ProductMention("facts", "facts", entry.product.split()[0], entry.category, "neutral")])
@@ -810,6 +819,13 @@ def _known_products(product_facts: list[ProductFacts]) -> dict[str, list[tuple[s
 
 
 _KNOWN: dict[int, tuple[list, dict]] = {}  # id(facts list) -> (the list, _known_products' answer for it)
+
+
+def _named_as_a_line(name: str) -> bool:
+    """Whether a name ends in a word naming a line ("Medik8 Crystal Retinal line", "... series": engine.match_products.
+    LINE_WORDS, which the words of a name leave out at its end since 15 Oct 2026)."""
+    words = plain_words(name)
+    return len(words) > 1 and words[-1] in LINE_WORDS
 
 
 def _name_index(library) -> dict:
@@ -983,16 +999,46 @@ def _kind_mentions(checked: dict[str, CheckResult]) -> list[KindMention]:
     return [KindMention(tid, n.comment_id, n.about, n.stance) for tid, res in checked.items() for n in res.kept_notes]
 
 
+def _spelling_lists(brand_lines: list[BrandLine], prices: list[Price], product_facts: list[ProductFacts],
+                    category: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """(the brand-lines list's brands, the price and facts lists' products' names) of a category, for
+    engine.group_products.maker_spelling: worked out once per three lists and kept with them, so answers pass it the
+    same lists (it remembers its names by them; latency, 15 Oct 2026)."""
+    key = (id(brand_lines), id(prices), id(product_facts), category)
+    found = _SPELLING_LISTS.get(key)
+    if found is None or found[0] is not brand_lines or found[1] is not prices or found[2] is not product_facts:
+        if len(_SPELLING_LISTS) >= 16:
+            _SPELLING_LISTS.clear()
+        makers = tuple(sorted({line.brand for line in brand_lines if line.category == category}))
+        curated = tuple(sorted({p.product for p in prices if p.category == category}
+                               | {f.product for f in product_facts if f.category == category}))
+        found = _SPELLING_LISTS[key] = (brand_lines, prices, product_facts, makers, curated)
+    return found[3], found[4]
+
+
+_SPELLING_LISTS: dict[tuple, tuple] = {}  # (the lists' ids, category) -> (the lists, the brands, the names)
+
+
 def _groups_to_rank(groups: list[ProductGroup], query: ParsedQuery, result: PipelineResult,
-                    titles: dict[str, str], brand_lines: list[BrandLine] = ()) -> list[ProductGroup]:
+                    titles: dict[str, str], brand_lines: list[BrandLine] = (),
+                    curated: tuple[str, ...] = (), makers: tuple[str, ...] | None = None) -> list[ProductGroup]:
     """The product groups worth ranking for this request, each under the name to show; the others are named on the
     result. Every name is shown as a UK shopper knows it ("Sage", not "Breville": decision 12). `titles` is
     {thread id: title} for the threads read; `brand_lines` the brand-lines list (engine/brand_lines.py)."""
     kept = []
     same_category = [g for g in groups if g.category == query.category]
     typed: dict = {}  # once worked out, the names of these groups that name the requested type (_typed_names)
+    # Each name with its brand written as its maker writes it (15 Oct 2026: "Philips Avent", not writers' "Phillips
+    # Avent"; engine.group_products.maker_spelling), the brand-lines list's brands among the known spellings.
+    # `curated`: the price and facts lists' products' names, as their makers write them; `makers`: the brand-lines
+    # list's brands (_spelling_lists), worked out here when not given.
+    if makers is None:
+        makers = tuple(sorted({line.brand for line in brand_lines if line.category == query.category}))
+    same_category = [replace(g, name=maker_spelling(g.name, g.category, makers, curated)) for g in same_category]
     for group in same_category:  # the ranking only looks at the request's category anyway
-        if group.loose:
+        if group.generic:  # it names no one product (15 Oct 2026): neither a product nor a brand's line
+            result.left_out_generic.append(uk_name(group.name))
+        elif group.loose:
             line = _brand_line(group, query, brand_lines)
             if _clear_brand(group, query, titles, same_category, line, typed):
                 # An ingredient-led request has no one type: the line is named by its own ("Paula's Choice 2% BHA
@@ -1025,7 +1071,7 @@ def _line_name(group: ProductGroup, line: BrandLine | None, product_type: str, k
     has an entry for it ("Head & Shoulders shampoo line"; 12 Oct 2026)."""
     brand = uk_name(group.name)
     if line is not None and brand == brand.lower():
-        brand = line.brand
+        brand = uk_name(line.brand)
     return brand_pick_name(brand, product_type, keep_ingredients)
 
 
@@ -1228,7 +1274,8 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
             # pick out, unless one of its own products here is known to be sold, which proves the brand is.
             sold = find_brand_entry(set(group.names) | {uk_name(n) for n in group.names}, group.category, prices,
                                     type_words, query.product_type)
-            unsold_brand = (counts_as_sold(sold) is False and not any(_same_brand(group, g) for g in sold_here))
+            unsold_brand = (counts_as_sold(sold) is False
+                            and not any(_same_brand(group, g, as_written=True) for g in sold_here))
             if unsold_brand or _only_unsold_products(group, groups, not_sold):
                 result.left_out_unavailable.append(group.name)
                 continue
@@ -1357,10 +1404,10 @@ def _only_unsold_products(brand: ProductGroup, groups: list[ProductGroup], not_s
     is at least one. A product not checked yet counts as maybe sold. The few unsold products are looked at first
     (13 Oct 2026, the live site's engine time: comparing every brand with every product took 0.6 s an answer, almost
     always to find no unsold product of the brand); the same answer, for `not_sold` drawn from `groups`."""
-    if not any(_same_brand(brand, g) for g in not_sold if not g.loose):
+    if not any(_same_brand(brand, g, as_written=True) for g in not_sold if not g.loose):
         return False
     unsold = {id(g) for g in not_sold}
-    return not any(id(g) not in unsold and not g.loose and _same_brand(brand, g) for g in groups)
+    return not any(id(g) not in unsold and not g.loose and _same_brand(brand, g, as_written=True) for g in groups)
 
 
 # --- Product facts (decided by Claude, 9 Oct 2026) ---
@@ -1479,7 +1526,9 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
         if facts is None:
             kept.append(group)
         else:  # a brand pick whose entry is under its brand's name is still the brand's line (12 Oct 2026)
-            name = brand_pick_name(facts.product, query.product_type) if group.loose else facts.product
+            # As the UK knows it (15 Oct 2026: the facts list names Aquaphor's ointment as its American maker does).
+            shown_as = uk_name(facts.product)
+            name = brand_pick_name(shown_as, query.product_type) if group.loose else shown_as
             kept.append(replace(group, name=name, loose=False))
             found_facts[group.key] = facts
         soft = [c.reason for c in found if not c.hard]
@@ -1652,12 +1701,23 @@ def _unsuited_kinds(kinds, query: ParsedQuery, product_facts: list[ProductFacts]
 
 def _note_other_names(groups: list[ProductGroup], cautions: dict[str, list[str]]) -> None:
     """Adds a note to each product shown by its UK name whose writers used another one (UK_BRAND_NAMES: a "Sage"
-    pick whose quotes say "Breville"), so the quotes make sense (10 Oct 2026)."""
+    pick whose quotes say "Breville"), so the quotes make sense (10 Oct 2026). One note per UK name, under the first of
+    its other names in UK_BRAND_NAMES (the maker's own spelling), however many of its spellings writers used (15 Oct
+    2026: TEMPUR, which writers call Tempur-Pedic four ways)."""
+    canonical: dict[str, str] = {}
+    for brand, uk_brand in UK_BRAND_NAMES.items():
+        canonical.setdefault(uk_brand, brand)
     for group in groups:
+        noted: set[str] = set()
+        noted_brands: list[str] = []  # a brand inside one noted already ("Aquaphor" in "Aquaphor Healing Ointment") isn't
         for brand, uk_brand in UK_BRAND_NAMES.items():
+            if uk_brand in noted or any(brand.casefold() in other.casefold() for other in noted_brands):
+                continue
             if uk_brand.lower() in group.name.lower() and any(
                     re.search(rf"(?<!\w){re.escape(brand)}(?!\w)", name, re.IGNORECASE) for name in group.names):
-                cautions.setdefault(group.key, []).append(OTHER_NAME_NOTE.format(brand=brand))
+                cautions.setdefault(group.key, []).append(OTHER_NAME_NOTE.format(brand=canonical[uk_brand]))
+                noted.add(uk_brand)
+                noted_brands.append(brand)
 
 
 # --- A brand pick steps aside for its own product (decided by Claude, 10 Oct 2026) ---
@@ -1901,25 +1961,32 @@ def _names_a_model(name: str, brand: ProductGroup, product_type: str | None) -> 
     return any(w not in brand_words and w not in generic and w.rstrip("s") not in generic for w in words)
 
 
-def _same_brand(brand: ProductGroup, product: ProductGroup) -> bool:
+def _same_brand(brand: ProductGroup, product: ProductGroup, as_written: bool = False) -> bool:
     """Whether a specific product is one of a brand pick's own products: a name of the brand (as written, or as the UK
     knows it) is the first word or words of one of the product's names ("Victorinox" and "Victorinox chef's knife"), or
     module 4 says the two names mean the same product (engine.match_products.same_product: "CeraVe cleanser" and
     "CeraVe Hydrating Cleanser"). It depends on the two groups' names alone, so each pair of groups is worked out once
-    (latency, 13 Oct 2026: an answer asks it of the same pairs from every brand rule)."""
-    key = (brand.category, frozenset(brand.names), frozenset(product.names), product.name)
+    (latency, 13 Oct 2026: an answer asks it of the same pairs from every brand rule).
+
+    A line's names without the requested type's words count as its brand's names too (ProductGroup.bases, 15 Oct
+    2026): "LL Bean sheets", always written so, is LL Bean's line in a bed sheets answer, so "LL Bean Percale Pima
+    Cotton" is one of its products (it had been a pick while the line was listed under Skip these). `as_written`: by
+    the names as written only, for the rules on what is sold (_within_budget): a line its writers name thirty times
+    isn't taken for its one unsold model there."""
+    bases = () if as_written else brand.bases
+    key = (brand.category, frozenset(brand.names), bases, frozenset(product.names), product.name)
     found = _SAME_BRAND.get(key)
     if found is None:
-        found = _SAME_BRAND.keep(key, _same_brand_of(brand, product))
+        found = _SAME_BRAND.keep(key, _same_brand_of(brand, product, bases))
     return found
 
 
-_SAME_BRAND = Table()  # (category, a brand's names, a product's names, its name) -> _same_brand's answer
+_SAME_BRAND = Table()  # (category, a brand's names, its bases, a product's names, its name) -> _same_brand's answer
 
 
-def _same_brand_of(brand: ProductGroup, product: ProductGroup) -> bool:
+def _same_brand_of(brand: ProductGroup, product: ProductGroup, bases: tuple[str, ...] = ()) -> bool:
     aliases = known_aliases().get(brand.category, {})
-    brand_names = set(brand.names) | {uk_name(name) for name in brand.names}
+    brand_names = set(brand.names) | {uk_name(name) for name in brand.names} | set(bases)
     product_names = set(product.names) | {product.name}
     for name in brand_names:
         words = normalize_name(name)

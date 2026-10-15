@@ -323,6 +323,19 @@ def test_a_pick_known_by_another_name_outside_the_uk_says_so(tmp_path):
     assert all(pick.cautions == [] for pick in zoji)
 
 
+def test_a_uk_name_written_several_ways_gets_one_note():
+    # 15 Oct 2026 (the UK availability pass): TEMPUR is the UK name of Tempur-Pedic, which writers spell four ways
+    # (config.UK_BRAND_NAMES). A line whose writers used two of them gets the note once, under the maker's spelling.
+    from engine.group_products import ProductGroup, ProductMention
+
+    mentions = [ProductMention("t1", f"c{i}", name, "general", "recommend", product_type="mattress")
+                for i, name in enumerate(["Temperpedic", "Tempur-Pedic", "tempurpedic"])]
+    group = ProductGroup("general:tempur pedic", "TEMPUR", "general", mentions, loose=True)
+    cautions: dict[str, list[str]] = {}
+    pipeline._note_other_names([group], cautions)
+    assert cautions == {group.key: ["sold as Tempur-Pedic outside the UK, so writers often call it Tempur-Pedic"]}
+
+
 @pytest.mark.parametrize("product_type, requested, other", [
     ("knife set", "chef knife", True),
     ("knife sets", "chef knife", True),
@@ -977,3 +990,18 @@ def test_an_answer_counts_the_threads_and_comments_it_read(tmp_path):
     assert sorted(result.threads_used) == ["1kett01", "1kett02"]
     assert result.comments_read == 7  # 4 + 3 readable comments
     assert result.threads_available == 2
+
+
+def test_a_product_and_its_brand_known_by_other_uk_names_get_one_note():
+    # Aquaphor's ointment is the Eucerin Aquaphor Soothing Skin Balm in the UK (config.UK_BRAND_NAMES): one note, under
+    # the product's other name, not a second one for its brand's.
+    from engine.group_products import ProductGroup, ProductMention, uk_name
+
+    names = ["Aquaphor Healing Ointment", "Aquaphor", "aquaphor healing ointment"]
+    group = ProductGroup("skincare:aquaphor healing ointment", uk_name("Aquaphor Healing Ointment"), "skincare",
+                         [ProductMention("t1", f"c{i}", n, "skincare", "recommend") for i, n in enumerate(names)])
+    cautions: dict[str, list[str]] = {}
+    pipeline._note_other_names([group], cautions)
+    assert group.name == "Eucerin Aquaphor Soothing Skin Balm"
+    assert cautions == {group.key: ["sold as Aquaphor Healing Ointment outside the UK, so writers often call it "
+                                    "Aquaphor Healing Ointment"]}

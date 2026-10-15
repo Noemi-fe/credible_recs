@@ -52,6 +52,13 @@ SUBREDDITS: dict[str, tuple[str, ...]] = {
         # home
         "AirPurifiers", "battlestations", "candles", "CleaningTips", "hvacadvice", "laundry", "malelivingspace",
         "OfficeChairs", "Appliances",
+        # 15 Oct 2026 (the general-quality builder, chosen by Claude, reported to Noemi): where people ask which
+        # furniture, lamps and bedding to buy, searched before r/HomeDecorating, whose threads are mostly decorating
+        # talk (sofas, armchairs, lamps, curtains, dining tables and bed sheets had got no threads from it). Each checked
+        # on Arctic Shift that day: it exists and had 25 new posts in two days. Not chosen: r/InteriorDesign and
+        # r/interiordecorating (room layouts), r/IKEA (one maker's products), r/femalelivingspace (the archive doesn't
+        # know it).
+        "furniture", "Lighting", "Bedding",
         # tech
         "3Dprinting", "4kTV", "audiophile", "buildapc", "Cameras", "DataHoarder", "drones", "HomeNetworking",
         "hometheater", "kindle", "MouseReview", "photography", "PickAnAndroidForMe", "printers", "projectors",
@@ -64,6 +71,8 @@ SUBREDDITS: dict[str, tuple[str, ...]] = {
         "knives", "Bushcraft", "Whittling",
         # clothing and accessories
         "ABraThatFits", "handbags", "rawdenim", "Sneakers", "suits",
+        # 15 Oct 2026 (the general-quality builder, as for the home communities above): backpacks of every kind
+        "backpacks",
         # baby and kids
         "BabyBumps", "babywearing", "CarSeats", "ExclusivelyPumping", "Mommit",
         # pets
@@ -330,6 +339,9 @@ PRODUCT_VARIANT_WORDS = frozenset({
     # Encore (with it in the threads, "Baratza Encore" fitted two products and b09's first pick became a line), and
     # Epiduo Forte another gel than Epiduo (a stronger adapalene).
     "esp", "forte",
+    # Added by Claude, 15 Oct 2026 (the general-quality builder; reported to Noemi): the Sawyer Squeeze Micro is another
+    # filter than the Squeeze, as a "mini" is another model (the camping water filter answer's Squeeze held it).
+    "micro",
 })
 # The brief's target for module 4: at least this share of the labelled same-or-different pairs right.
 MATCHING_TARGET = 0.90
@@ -479,10 +491,42 @@ PRICE_MAX_AGE_DAYS = 30
 # Decision 12, names shown to a UK audience (decided by Noemi, 9 Oct 2026): {brand word: the word shown}. Sage is
 # Breville's UK and EU brand; the alias list (engine/data/product_aliases.json) already treats the two as one product,
 # and the answer shows the UK name. Quotes are never changed: a quote that says "Breville" keeps it.
-UK_BRAND_NAMES: dict[str, str] = {"Breville": "Sage"}
+# 15 Oct 2026 (the UK availability pass; the orchestrator's rule that a brand sold in the UK under another name follows
+# this decision): Tempur-Pedic is TEMPUR outside North America (Tempur-Pedic's help page: it doesn't ship outside the
+# US; tempur.com sells TEMPUR mattresses and pillows in the UK), in the four ways writers spell it.
+# Aquaphor (15 Oct 2026, the second product researcher's finding, checked on eucerin.co.uk, Boots and Superdrug that
+# day): sold in the UK under Eucerin, its Healing Ointment as the Eucerin Aquaphor Soothing Skin Balm. A product's UK
+# name comes before its brand's, and a UK name that adds words before the brand ("Eucerin") is never added twice.
+UK_BRAND_NAMES: dict[str, str] = {"Breville": "Sage", "Tempur-Pedic": "TEMPUR", "Tempur Pedic": "TEMPUR",
+                                  "Tempurpedic": "TEMPUR", "Temperpedic": "TEMPUR",
+                                  "Aquaphor Healing Ointment": "Eucerin Aquaphor Soothing Skin Balm",
+                                  "Aquaphor": "Eucerin Aquaphor"}
 # Under a pick shown by its UK name, a note says why its quotes use the other one (Claude, 10 Oct 2026). Shown as a
 # note ("Note: ...") like the product-facts cautions.
 OTHER_NAME_NOTE = "sold as {brand} outside the UK, so writers often call it {brand}"
+# Brands as their makers write them, shown in place of writers' misspellings of them (15 Oct 2026, the general-quality
+# builder, from the product researcher's list: "Phillips Avent", "Levelor", "LL Beans", "Mountain Hardware", "Simple
+# Human", "Audio -Technica"; Claude's call, reported to Noemi). Answers also take a brand's spelling from the short
+# names' full names (engine/data/product_aliases.json) and the brand-lines list; these are the ones neither has. A
+# brand whose name is an everyday word others spell the same way is listed with its line ("Philips Avent", never a bare
+# "Philips": "Phillips screwdriver" is a kind of screwdriver). engine.group_products.maker_spelling.
+MAKER_SPELLINGS: dict[str, tuple[str, ...]] = {
+    "general": ("Philips Avent", "Philips Sonicare", "Philips Hue", "Philips Norelco", "Philips OneBlade", "Levolor",
+                "L.L.Bean", "Mountain Hardwear", "simplehuman", "Audio-Technica"),
+}
+# Shops that sell other makers' products under those makers' names (15 Oct 2026, the general-quality builder, Claude's
+# call, reported): "Hisense model from Costco" was shown as a pick, "cotton sheets from Costco" under Also worth a look.
+# Where a product was bought is no part of its name (engine.match_products.product_words drops a shop's name at a
+# name's end), and a shop's name with words that name no maker of its own ("Costco sheets", "Target bath towel") names
+# no one product (engine.group_products). Not here: makers that are also their own shops (IKEA, Muji, Uniqlo), shops'
+# own brands (Kirkland, Great Value, Amazon Basics), Amazon (it makes the Echo and the Kindle), and the British shops
+# whose name is their own brand's (Argos, John Lewis, Tesco, Aldi, Boots). Written as product_words writes them.
+SHOPS = ("costco", "target", "walmart", "home depot", "lowes", "best buy", "kohls", "macys", "tj maxx", "tjmaxx",
+         "marshalls", "homegoods", "sams club", "bed bath and beyond", "wayfair", "overstock", "ebay", "etsy",
+         "aliexpress", "temu",
+         # the second product researcher's (15 Oct 2026): Korean beauty shops ("Olive young spot treatment line"; Olive
+         # Young's own patches are Care Plus's)
+         "olive young", "yesstyle", "stylevana")
 
 # --- Voice rubric (Noemi, 9 Oct 2026): red flags are counted, not any-one-is-low ---
 # Two red flags or more make a voice low; exactly one caps it at medium, whatever the good signs.
@@ -1171,7 +1215,10 @@ NAME_FACT_REFUSALS: dict[str, tuple[str, ...]] = {
 # "immersion blender" or a "stick blender" isn't a blender, a "hand mixer" isn't a mixer. Chosen by Claude, reported.
 OTHER_KIND_WORDS = ("immersion", "stick", "hand", "handheld")
 OTHER_TYPE_WORDS = ("set", "block", "sharpener", "stand", "rack", "holder", "roll", "bag", "case", "cover", "lid", "kit",
-                    "bundle", "strip", "guard", "sheath")
+                    "bundle", "strip", "guard", "sheath",
+                    # 15 Oct 2026 (the general-quality builder): a pen refill is no pen ("Fisher Space Pen refill" had
+                    # been a fountain pen pick)
+                    "refill")
 
 # --- The blind test (engine/blind_test.py, 10 Oct 2026) ---
 # From the brief's protocol: each tester gets 5 of the 10 questions, and the target is at least 60% preference
@@ -1531,6 +1578,26 @@ TYPE_SYNONYMS = {
                        "spot patch", "hydrocolloid patch", "pimple sticker", "acne sticker", "spot gel", "spot cream"),
     "cleanser": ("face wash", "facial wash", "facial cleanser", "wash"),
     "eye cream": ("eye serum", "under eye cream"),
+    # The general category's (15 Oct 2026, the general-quality builder; Claude's call, reported to Noemi): the American
+    # names its mostly American writers use for types named the British way, and plain other names, each found among the
+    # library's names of the type after two or more brands, most after three or more ("Viair compressor" beside the
+    # Viair 88P, "Portland Leather Co bag" beside its handbag line). Kinds within a type stay out ("tote", "parka").
+    "jumper": ("sweater",),
+    "trousers": ("pants",),
+    "washing machine": ("washer",),
+    "handbag": ("bag", "purse"),
+    "t-shirt": ("tee", "tshirt"),
+    "nappies": ("diaper",),
+    "barbell": ("bar",),
+    "sofa": ("couch",),
+    "duvet": ("comforter",),
+    "hair straightener": ("flat iron",),
+    "security camera": ("camera", "cam"),
+    "tyre inflator": ("compressor", "air compressor"),
+    "smoke alarm": ("smoke detector",),
+    "baby sleeping bag": ("sleep sack",),
+    "changing bag": ("diaper bag",),
+    "wellies": ("boots",),
 }
 
 # --- Also worth a look (Noemi's decision 2 of 13 Oct 2026) ---

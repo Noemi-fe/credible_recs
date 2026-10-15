@@ -10,7 +10,8 @@ How two names are compared. Each is first turned into a list of words (normalize
 turned back into characters ("&amp;" into "&"), accents dropped ("Avène" as "avene"), apostrophes dropped inside
 a word ("Paula's" as "paulas"), every other punctuation mark treated as a space, and filler words left out. Then,
 when a category's list of known short names is given (product_words), a short name at the start of a name is
-written out in full: "TO sunscreen" becomes "the ordinary sunscreen", "Sage" (the UK name) becomes "Breville".
+written out in full: "TO sunscreen" becomes "the ordinary sunscreen", "Sage" (the UK name) becomes "Breville", and a
+"line" or "series" at its end is dropped ("Verb Ghost line" is the Verb Ghost line: LINE_WORDS, 15 Oct 2026).
 Also "non" and the model word after it are dropped: "1zpresso JX (non pro)" is the plain JX (10 Oct 2026).
 Then two names mean the same product when:
 - their words are the same; or
@@ -82,7 +83,7 @@ from functools import cache
 from pathlib import Path
 from typing import NamedTuple
 
-from engine.config import MENTION_CATEGORIES, PRODUCT_VARIANT_WORDS
+from engine.config import MENTION_CATEGORIES, PRODUCT_VARIANT_WORDS, SHOPS
 from engine.memo import Table, register
 from engine.text import one_edit_apart
 
@@ -95,6 +96,19 @@ LEADING_WORDS = ("the", "a", "my")
 # unit is the same product, "Baratza Virtuoso+ (refurbished)"; "used" on 15 Oct 2026, for the same reason: writers'
 # "used Vitamix" was listed beside the Vitamix line).
 FILLER_WORDS = frozenset({"one", "ones", "brand", "the", "my", "their", "by", "from", "refurbished", "used"})
+# Dropped from the end of a product's name only (product_words; 15 Oct 2026, the general-quality builder): a name
+# ending in "line" or "series" names the line of what comes before it ("Verb Ghost line", "Verb Ghost product line",
+# "JBL Flip series"), so it is grouped as that name written alone is (writers' "Verb Ghost line" had been shown beside
+# "Verb Ghost Shampoo"). Inside a name the word is its own ("cross line laser", "Braun Series 7"). "product" goes with
+# a "line" after it. normalize_name keeps it: a summary's key is the shown name's words ("Lodge cast iron skillet
+# line").
+LINE_WORDS = frozenset({"line", "lines", "series"})
+# Also dropped from the end of a product's name (15 Oct 2026, the same builder, from a product researcher's list): where
+# it was bought, a shop's name (config.SHOPS: "Hisense model from Costco", "KitchenAid Pro 6-quart (Costco)"; "from" is
+# a filler word, an "at" before the shop goes with it), and then a "model" left at its end ("Hisense model", a model of
+# the brand's).
+MODEL_WORDS = frozenset({"model", "models"})
+_SHOP_WORDS = tuple(sorted((tuple(shop.split()) for shop in SHOPS), key=len, reverse=True))
 # "&" is punctuation, so dropped; "and" written out is dropped too when only one of two names has it (comparable).
 AND = "and"
 # A one-letter typo, or two swapped letters, is only forgiven in words at least this long.
@@ -158,6 +172,27 @@ def _normalize_name(name: str) -> list[str]:
     while words and words[0] in LEADING_WORDS:
         words.pop(0)
     return _without_negated_models(_without_size_units([word for word in words if word not in FILLER_WORDS]))
+
+
+def _without_line_word(words: list[str]) -> list[str]:
+    """`words` without what ends a name but names nothing of its own (LINE_WORDS, MODEL_WORDS, a shop's name), each as
+    often as it comes: "verb ghost product line" -> verb ghost (a "product" goes with its "line"), "hisense model costco"
+    -> hisense. A name is never left empty: a name of such a word alone keeps it."""
+    while len(words) > 1:
+        shop = next((s for s in _SHOP_WORDS if len(words) > len(s) and tuple(words[-len(s):]) == s), None)
+        if shop is not None:
+            words = words[:-len(shop)]
+            if len(words) > 1 and words[-1] == "at":
+                words = words[:-1]
+        elif words[-1] in LINE_WORDS:
+            words = words[:-1]
+            if len(words) > 1 and words[-1] in ("product", "products"):
+                words = words[:-1]
+        elif words[-1] in MODEL_WORDS:
+            words = words[:-1]
+        else:
+            break
+    return words
 
 
 # --- Names already worked out (latency, 12 Oct 2026) ---
@@ -264,9 +299,9 @@ def _product_words(name: str, aliases: Aliases) -> list[str]:
     if spelled == words and words and _written_possessive(words[0], name):
         unpossessive = [words[0][:-1], *words[1:]]
         if (spelled := spell_out(unpossessive, aliases)) != unpossessive:
-            return spelled
-        return words
-    return spelled
+            return _without_line_word(spelled)
+        return _without_line_word(words)
+    return _without_line_word(spelled)
 
 
 def _written_possessive(word: str, name: str) -> bool:
@@ -690,6 +725,10 @@ def _spelling_slip(x: str, y: str) -> bool:
     if _letter_doubled(shorter, longer):
         return True
     if len(shorter) < TYPO_MIN_LENGTH or x[0] != y[0]:
+        return False
+    if any(ch.isdigit() for ch in x + y):
+        # A model code a character apart is another model (15 Oct 2026: the Sony WF-1000XM3 had fitted the XM4, a
+        # KitchenAid KDTM604KPS the KDTM704KPS): only its plural is forgiven, above.
         return False
     return one_edit_apart(x, y) or _letters_moved(x, y)
 
