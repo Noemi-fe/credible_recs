@@ -990,3 +990,18 @@ def test_an_answer_counts_the_threads_and_comments_it_read(tmp_path):
     assert sorted(result.threads_used) == ["1kett01", "1kett02"]
     assert result.comments_read == 7  # 4 + 3 readable comments
     assert result.threads_available == 2
+
+
+def test_a_product_and_its_brand_known_by_other_uk_names_get_one_note():
+    # Aquaphor's ointment is the Eucerin Aquaphor Soothing Skin Balm in the UK (config.UK_BRAND_NAMES): one note, under
+    # the product's other name, not a second one for its brand's.
+    from engine.group_products import ProductGroup, ProductMention, uk_name
+
+    names = ["Aquaphor Healing Ointment", "Aquaphor", "aquaphor healing ointment"]
+    group = ProductGroup("skincare:aquaphor healing ointment", uk_name("Aquaphor Healing Ointment"), "skincare",
+                         [ProductMention("t1", f"c{i}", n, "skincare", "recommend") for i, n in enumerate(names)])
+    cautions: dict[str, list[str]] = {}
+    pipeline._note_other_names([group], cautions)
+    assert group.name == "Eucerin Aquaphor Soothing Skin Balm"
+    assert cautions == {group.key: ["sold as Aquaphor Healing Ointment outside the UK, so writers often call it "
+                                    "Aquaphor Healing Ointment"]}

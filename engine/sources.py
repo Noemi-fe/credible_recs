@@ -1296,6 +1296,9 @@ def need_words(query: ParsedQuery) -> list[str]:
     # An ingredient-led request's ingredients are its product (13 Oct 2026): "beta hydroxy acid" is no need.
     product_words |= {w for pattern in talk_words(query.product_type) for w in re.findall(r"[a-z0-9]+", pattern)}
     product_words |= {re.sub(r"['-]", "", w) for w in product_words}  # "leave-in" is "leavein" below
+    # Trimmed as the request's words are (15 Oct 2026): "headphones", a type's own name, had become the need "headphone"
+    # ("1 of them about headphones" in a headphones answer's reasons).
+    product_words |= {_stem(w) for w in product_words}
     words, text = [], query.text.lower()
     if query.product_type == "lip balm":
         # Sun protection for the lips is a lip balm with SPF (15 Oct 2026, Noemi's decision 2): the words naming the

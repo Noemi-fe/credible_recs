@@ -294,8 +294,12 @@ def test_the_uk_name_sage_is_shown_rather_than_breville():
 def test_the_uk_names_come_from_the_config():
     # Changed on purpose 15 Oct 2026 (the UK availability pass, the orchestrator's rule: a brand sold in the UK under
     # another name follows decision 12): Tempur-Pedic is TEMPUR outside North America, written by writers four ways.
+    # And again that day (the second product researcher's finding, the same rule): Aquaphor is sold in the UK under
+    # Eucerin, its Healing Ointment as the Eucerin Aquaphor Soothing Skin Balm.
     assert config.UK_BRAND_NAMES == {"Breville": "Sage", "Tempur-Pedic": "TEMPUR", "Tempur Pedic": "TEMPUR",
-                                     "Tempurpedic": "TEMPUR", "Temperpedic": "TEMPUR"}
+                                     "Tempurpedic": "TEMPUR", "Temperpedic": "TEMPUR",
+                                     "Aquaphor Healing Ointment": "Eucerin Aquaphor Soothing Skin Balm",
+                                     "Aquaphor": "Eucerin Aquaphor"}
     assert uk_name("Fellow Stagg", {"Fellow": "Made-up UK Brand"}) == "Made-up UK Brand Stagg"
 
 

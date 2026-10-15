@@ -78,6 +78,32 @@ the type speaks for the line) hold for grouping and folding too.
 - A product is never shown by its brand alone ("Skinceuticals" for its vitamin C serum), nor a line by its brand and a
   synonym of the type.
 
+Names that name no one product, and models written without their brand (15 Oct 2026, the general-quality builder;
+Claude's technical calls within the name-levels rules, reported to Noemi; found in the day's answers):
+- A name giving two or more models ("JBL Flip 4, 5, or 6", "6 or 7 quart bowl lift Kitchen Aid": _gives_alternatives)
+  names no one product: it is a group of its own, flagged generic, and joins nothing. The JBL Flip 4 had held the Flip
+  5's mentions through it.
+- So is a kind the whole library writes only after two or more makers' names (LibraryRanges.generic: "SA cleanser" after
+  CeraVe's, COSRX's and Clinique's), whichever makers an answer's threads name: a bare type-word name never joins a
+  brand's product, so it never joins two brands' products into one (CeraVe's and COSRX's SA cleansers had been one
+  product through it, by the facts entry its name then found). The answers never rank such a group, nor list it as a
+  brand or a line (engine/pipeline.py).
+- A model's one-word name written without its brand ("wave", "squeeze", "Mobius") is that name with a brand before it
+  ("Leatherman Wave", "Sawyer Squeeze", "Audeze Mobius"; _add_brands_before): each had been a pick or a skip of its own
+  beside it. A name of two words or more already fitted so ("Flip 5" and "JBL Flip 5"). Not when two makers' names end
+  with it: it fits two products, so it is loose, as any such name.
+- A name ending in "line" or "series" is the name before it (engine.match_products.LINE_WORDS: "Verb Ghost line" is
+  grouped as "Verb Ghost" is, and had been shown beside "Verb Ghost Shampoo").
+From two product researchers' lists of shown names, the same day:
+- A shop is no maker (config.SHOPS): where a product was bought is no part of its name ("Hisense model from Costco" is
+  Hisense's; engine.match_products.product_words), and a shop's name with nothing of a maker's own after it ("Costco
+  sheets", "Target bath towel", "Olive Young patches") names no one product. A shop's own brand has its own name
+  ("Kirkland").
+- A brand's initials written in capitals at a name's start are the brand, when one name here has them ("AG hoodie" is
+  American Giant's: _expand_initials).
+- A brand is shown as its maker writes it (maker_spelling: "Philips Avent", not writers' "Phillips Avent"), and a name
+  the price or facts list writes is shown as it writes it ("Mad Hippie Vitamin C Serum").
+
 The name shown: the most complete name (the most words) among the names written at least half as often as the
 group's most written name; on a tie, the one written more often. So "Sunday Riley water cream" (once) beats
 "Sunday Riley" (twice), but "Timemore C2 with titanium coated burrs" (once) doesn't beat "Timemore C2" (24 times).
@@ -109,20 +135,23 @@ from dataclasses import dataclass, field
 from functools import cache, lru_cache
 
 from engine.config import (
-    BRAND_MODEL_GENERIC_WORDS, BRAND_PICK_NAME, PRODUCT_TYPE_PLURALS, PRODUCT_TYPE_SHOWN, TYPE_SYNONYMS, UK_BRAND_NAMES,
+    BRAND_MODEL_GENERIC_WORDS, BRAND_PICK_NAME, MAKER_SPELLINGS, PRODUCT_TYPE_PLURALS, PRODUCT_TYPE_SHOWN,
+    PRODUCT_VARIANT_WORDS, SHOPS, TYPE_SYNONYMS, UK_BRAND_NAMES,
 )
 from engine.extract import CheckResult
 from engine.memo import Table, register
 from engine.match_products import (
-    KIND_WORDS, Aliases, _features, comparable, held_back_word, join_split_words, known_aliases,
-    match_candidates_and_open, normalize_name, own_words, product_words, same_words, same_words_looked_at, written_alike,
+    DEFAULT_ALIASES, KIND_WORDS, PACK_SIZE, Aliases, _features, comparable, held_back_word, join_split_words, known_aliases,
+    match_candidates_and_open, normalize_name, own_words, plain_words, product_words, same_words, same_words_looked_at,
+    written_alike,
 )
 
 # Words that never tell two products apart, so a loose name equal to a product's name but for them names that product
 # (step 5): "Cetaphil gentle cleanser" is the Cetaphil Gentle Skin Cleanser, not its Gentle Foaming Cleanser.
 UNTELLING_WORDS = frozenset({"skin"})
 # Words at a brand pick's name's end that say nothing about it ("aveeno one", "Haden brand"): left out of its shown name.
-TRAILING_FILLER = frozenset({"one", "ones", "brand"})
+# Also a line written as a line ("Verb Ghost line", "Verb Ghost product line", 15 Oct 2026): the pick says "line" once.
+TRAILING_FILLER = frozenset({"one", "ones", "brand", "line", "lines", "series", "product", "products"})
 
 
 @dataclass(frozen=True)
@@ -155,6 +184,14 @@ class ProductGroup:
     # True when the name is a brand or product line that fits more than one product ("CeraVe", "Lodge cast iron"):
     # its mentions can't count for any one product.
     loose: bool = False
+    # True when the name names no one product (15 Oct 2026; "Names that name no one product" in the module docstring): a
+    # kind written without a maker ("SA cleanser") or two models at once ("JBL Flip 4, 5, or 6"). Such a group is also
+    # loose; it joins nothing, and answers never rank it, nor list it as a brand or a line.
+    generic: bool = False
+    # A brand's or a line's names without the requested type's words, each as its words ("ll bean" for "LL Bean
+    # sheets"), in one request (15 Oct 2026): the brand rules (engine/pipeline.py) read them as the brand's names
+    # too, so a line its writers always write with the type's words still has its brand's products.
+    bases: tuple[str, ...] = ()
 
     @property
     def names(self) -> Counter:
@@ -264,9 +301,16 @@ class LibraryRanges:
     they do: its threads may name one Nexxus shampoo where the library names three. Built once for the library
     (library_ranges; engine.pipeline keeps it with the library), each brand and type worked out when first asked."""
 
-    def __init__(self, names: Mapping[str, Mapping[str, list[tuple[Words, str]]]]):
+    def __init__(self, names: Mapping[str, Mapping[str, list[tuple[Words, str]]]],
+                 every_name: Mapping[str, Mapping[Words, str | None]] | None = None):
         self._names = names  # {category: {a name's first word: [(its words, its type), ...]}}
         self._asked: dict[tuple[str, Words, str], bool] = {}
+        # {category: {every name's words: the type the AI gave most of its mentions, lowercase, or None}}: for brand
+        # and generic (15 Oct 2026).
+        self._every = every_name or {}
+        self._index: dict[str, "_NamesOf"] = {}
+        self._generic: dict[tuple[str, Words], bool] = {}
+        self._brand: dict[tuple[str, str], bool] = {}
 
     def several(self, category: str, brand: Words, product_type: str) -> bool:
         """Whether the library names two or more of `brand`'s products of `product_type` in `category`. A name that adds
@@ -287,23 +331,118 @@ class LibraryRanges:
             found = self._asked[key] = len(products) > 1 and _fits_two_products(products)
         return found
 
+    def _of(self, category: str) -> "_NamesOf":
+        """The category's names, indexed once (latency, 15 Oct 2026: scanning every name with the same last word, for
+        each name, had taken minutes over a whole library)."""
+        found = self._index.get(category)
+        if found is None:
+            found = self._index[category] = _NamesOf(self._every.get(category, {}))
+        return found
+
+    def brand(self, category: str, word: str) -> bool:
+        """Whether the library writes `word` as a brand's (15 Oct 2026): alone as a name, or first in two or more names
+        that don't match each other; never a word that names no maker ("original", "vintage": config.
+        BRAND_MODEL_GENERIC_WORDS), nor one without a letter (a size)."""
+        key = (category, word)
+        found = self._brand.get(key)
+        if found is None:
+            names = self._of(category)
+            found = _could_be_a_maker(word) and (word in names.alone
+                                                 or _fits_two_products(set(names.by_first.get(word, ()))))
+            self._brand[key] = found
+        return found
+
+    def generic(self, category: str, words: Words) -> bool:
+        """Whether a name names no one product (15 Oct 2026; "Names that name no one product" in the module docstring):
+        the library writes it only after the names of two or more makers, each written alone as a name here, in names of
+        its own type (as the AI typed most of their mentions) that add no model word ("SA cleanser", after "CeraVe" and
+        "COSRX"; not "Soft Peel" after Aveline's name only), and never first in another name (a brand's or a line's). A
+        maker and its line are one maker ("Dell XPS 9570" and "XPS 9570", "Milwaukee Sawzall" and "M12 Sawzall" when
+        a name starts "Milwaukee M12"), and so are a name and its short form ("lulu" and "lululemon")."""
+        key = (category, words)
+        found = self._generic.get(key)
+        if found is None:
+            found = self._generic[key] = self._is_generic(category, words)
+        return found
+
+    def _is_generic(self, category: str, words: Words) -> bool:
+        names = self._of(category)
+        if not words or words in names.starts:
+            return False
+        types = self._every.get(category, {})
+        makers: list[Words] = []
+        for v, maker in names.ends.get(words, ()):
+            if types.get(v) != types.get(words) or set(maker) & PRODUCT_VARIANT_WORDS:
+                continue
+            if not (_could_be_a_maker(maker[0]) and maker[0] in names.alone):
+                continue
+            if not any(_one_maker(maker, other, names.starts) for other in makers):
+                makers.append(maker)
+                if len(makers) > 1:
+                    return True
+        return False
+
+
+class _NamesOf:
+    """One category's names, indexed for LibraryRanges.brand and .generic: the words written alone as a name, the
+    longer names by their first word, every start of a longer name (its first word or words), and for every end of a
+    longer name (its last word or words) the names with it and the words before it."""
+
+    def __init__(self, names: Iterable[Words]):
+        self.alone: set[str] = set()
+        self.starts: set[Words] = set()
+        by_first: dict[str, list[Words]] = defaultdict(list)
+        ends: dict[Words, list[tuple[Words, Words]]] = defaultdict(list)
+        for words in names:
+            if len(words) == 1:
+                self.alone.add(words[0])
+                continue
+            by_first[words[0]].append(words)
+            for k in range(1, len(words)):
+                self.starts.add(words[:k])
+                ends[words[k:]].append((words, words[:k]))
+        self.by_first = dict(by_first)
+        self.ends = dict(ends)
+
+
+def _could_be_a_maker(word: str) -> bool:
+    """A word that could be a maker's name: one with a letter that isn't a description (BRAND_MODEL_GENERIC_WORDS)."""
+    return word not in _NOT_MAKERS and any(ch.isalpha() for ch in word)
+
+
+_NOT_MAKERS = frozenset(BRAND_MODEL_GENERIC_WORDS)
+
+
+def _one_maker(a: Words, b: Words, starts: set[Words] = frozenset()) -> bool:
+    """Whether two makers' names, the words before one model's name, are one maker: written alike, one's words all
+    among the other's (a maker and its line: "dell xps 15" and "xps"), one written before the other at the start of a
+    name (`starts`: "ubiquiti unifi ..." makes UniFi Ubiquiti's line, "milwaukee m12 ..." M12 Milwaukee's), or one's
+    first word the start of the other's ("lulu", "lululemon")."""
+    if _alike(a, b) or set(a) <= set(b) or set(b) <= set(a) or a + b in starts or b + a in starts:
+        return True
+    x, y = sorted((a[0], b[0]), key=len)
+    return len(x) >= 3 and y.startswith(x)
+
 
 def library_ranges(mentions: Iterable[ProductMention], aliases: dict[str, Aliases] | None = None) -> LibraryRanges:
     """The LibraryRanges of a library's mentions: each name of two or more words, as grouping reads it (product_words,
     with these short names: the shipped list by default), with the one of module 1's types the AI gave most of its
-    mentions (_module_one_type; a name with none, or a tie, is left out)."""
+    mentions (_module_one_type; a name with none, or a tie, is left out); and every name with the type the AI gave most
+    of its mentions, in its own words (for brand and generic)."""
     aliases = known_aliases() if aliases is None else aliases
     by_name: dict[tuple[str, Words], list[ProductMention]] = defaultdict(list)
     for m in mentions:
         words = tuple(product_words(m.product, aliases.get(m.category, {})))
-        if len(words) > 1:
+        if words:
             by_name[(m.category, words)].append(m)
     names: dict[str, dict[str, list[tuple[Words, str]]]] = defaultdict(lambda: defaultdict(list))
+    every: dict[str, dict[Words, str | None]] = defaultdict(dict)
     for (category, words), ms in sorted(by_name.items()):
-        own = _module_one_type(ms)
+        every[category][words] = _ai_type(ms)
+        own = _module_one_type(ms) if len(words) > 1 else None
         if own is not None:
             names[category][words[0]].append((words, own))
-    return LibraryRanges({category: dict(firsts) for category, firsts in names.items()})
+    return LibraryRanges({category: dict(firsts) for category, firsts in names.items()}, dict(every))
 
 
 def _group_category(category: str, mentions: list[ProductMention], aliases: Aliases,
@@ -324,6 +463,12 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
             by_words[words].append(m)
         else:
             nameless[m.product.strip().lower()].append(m)
+    _expand_initials(by_words, type_words)
+    # Names that name no one product (15 Oct 2026): two models at once, a shop's name with no maker's own after it, or
+    # a kind the whole library writes only after two or more makers' names (`ranges`, LibraryRanges.generic). Each is a
+    # group of its own, joining nothing.
+    generic = {w: by_words.pop(w) for w in sorted(by_words)
+               if _gives_alternatives(w) or _a_shops_name(w) or (ranges is not None and ranges.generic(category, w))}
 
     names = sorted(by_words)
     # Words written alone as a name: brands, or lines writers name on their own ("Ballarini"). A name of one such word
@@ -341,6 +486,7 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
     candidates, open_pairs = found if found is not None else match_candidates_and_open(universe)
     matches = {w: [v for v in sorted(candidates[w]) if v in by_words and _matching(w, v, alone, open_pairs)]
                for w in names}
+    _add_brands_before(matches, names, candidates, by_words, alone, type_words, category, ranges)
     spelling = {w: w for w in names}  # each name -> the first of its spellings
     for w in names:
         for v in matches[w]:
@@ -473,16 +619,109 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
     shown = [_shown_words(own if not type_words else _without_the_type(own, type_words, bases) if is_loose
                           else _without_brand_and_type(own, bases, brand_names))
              for own, is_loose in members]
-    taken = set(by_words) | set(shown)  # names no group may take as its brand-first name: they are names already
+    taken = set(by_words) | set(generic) | set(shown)  # names no group may take as its brand-first name: names already
     groups = []
     for (own, is_loose), words in zip(members, shown):
         with_brand = _with_brand_before(words, own, by_words, taken)
         if with_brand:
             taken.add(with_brand[0])
-        groups.append(_make_group(category, own, is_loose, with_brand or (words, _shown_spelling(own[words], words))))
+        line_bases = tuple(sorted({" ".join(bases[w]) for w in own if bases.get(w)})) if is_loose else ()
+        groups.append(_make_group(category, own, is_loose, with_brand or (words, _shown_spelling(own[words], words)),
+                                  bases=line_bases))
     groups += [ProductGroup(f"{category}:{name}", ms[0].product, category, list(ms), loose=True)
                for name, ms in nameless.items()]
+    groups += [_make_group(category, {w: ms}, True, (w, _shown_spelling(ms, w)), generic=True)
+               for w, ms in generic.items()]
     return groups
+
+
+_SHOP_WORDS = tuple(sorted((tuple(shop.split()) for shop in SHOPS), key=len, reverse=True))
+
+
+def _a_shops_name(words: Words) -> bool:
+    """Whether a name starts with a shop's name (config.SHOPS: "Costco sheets", "Target bath towel", a bare "Costco";
+    15 Oct 2026): a shop sells other makers' products, so its name says where a product was bought, not which one. A
+    shop's own brand has a name of its own ("Kirkland sheets"), which isn't one of them."""
+    return any(words[:len(shop)] == shop for shop in _SHOP_WORDS)
+
+
+# Words left out of a brand's initials ("BB&B" for Bed Bath & Beyond) and the most letters initials have.
+_INITIALS_SKIPPED = frozenset({"and", "of", "the"})
+_MOST_INITIALS = 5
+# Short forms writers put in capitals that are no brand's initials: active ingredients ("SA cleanser", "BP wash", "HA
+# serum"), sun protection ("UV", "SPF", "PA") and everyday ones ("LED", "USB", "TV"), so "UV Clear" never becomes an
+# "Ultra Violette Clear" next to that brand.
+_NOT_INITIALS = frozenset({"sa", "bha", "aha", "pha", "bp", "ha", "vc", "uv", "spf", "pa", "led", "lcd", "oled", "usb",
+                           "ac", "dc", "tv", "hd", "uk", "us", "eu", "xl", "xxl", "diy", "edc", "bifl", "ul", "ok"})
+
+
+def _expand_initials(by_words: dict[Words, list[ProductMention]], type_words: frozenset[str]) -> None:
+    """A brand's initials written in capitals, at a name's start, are that brand ("AG hoodie" is American Giant's, as
+    "AG" alone is; 15 Oct 2026, from the product researcher's list): when exactly one name here of two to five words,
+    written as a name of its own, has those initials (its words' first letters, as written, with or without "the", "and"
+    and "of": "TNF" for The North Face), every name starting with them, written in capitals in at least one of its
+    mentions, is written with that name instead. Initials in small letters may be a word ("ag", "uv"), and initials two
+    names here share are neither's. Changes `by_words` in place."""
+    expansions: dict[str, set[Words]] = defaultdict(set)
+    for words, ms in by_words.items():
+        if 2 <= len(words) <= _MOST_INITIALS:
+            for m in ms[:3]:
+                written = [w for w in plain_words(m.product) if w]
+                for kept in (written, [w for w in written if w not in _INITIALS_SKIPPED]):
+                    if 2 <= len(kept) <= _MOST_INITIALS:
+                        expansions["".join(w[0] for w in kept)].add(words)
+    rewrite = {}
+    for words, ms in by_words.items():
+        initials = words[0]
+        if (len(initials) < 2 or len(initials) > _MOST_INITIALS or not initials.isalpha() or initials in KIND_WORDS
+                or initials in _NOT_INITIALS or _is_type_word(initials, type_words)
+                or len(expansions.get(initials, ())) != 1):
+            continue
+        if any((m.product.strip().split() or [""])[0].strip(".,;:()") == initials.upper() for m in ms):
+            (name,) = expansions[initials]
+            if not _alike(words[:len(name)], name):
+                rewrite[words] = name + words[1:]
+    for old, new in rewrite.items():
+        by_words[new] = by_words.get(new, []) + by_words.pop(old)
+
+
+def _gives_alternatives(words: Words) -> bool:
+    """Whether a name gives two or more models (15 Oct 2026): an "or" after its first word ("JBL Flip 4, 5, or 6",
+    "6 or 7 quart bowl lift Kitchen Aid", "vintage Wagner or Griswold"). An "or" first is a brand's (Outdoor Research's
+    "OR Helium"); one in a list of what a product lacks ("with no ice maker or water dispenser") or before "similar"
+    ("King (or similar) whetstone") gives none."""
+    for i, word in enumerate(words):
+        if word == "or" and 0 < i < len(words) - 1:
+            if words[i + 1] in ("similar", "equivalent") or any(w in ("no", "without") for w in words[:i]):
+                continue
+            return True
+    return False
+
+
+def _add_brands_before(matches: dict[Words, list[Words]], names: list[Words], candidates: Mapping[Words, set[Words]],
+                       by_words: Mapping[Words, list[ProductMention]], alone: set[str], type_words: frozenset[str],
+                       category: str, ranges: "LibraryRanges | None") -> None:
+    """A model's one-word name written without its brand matches its name with a brand before it (15 Oct 2026, the
+    general category's answers: "wave" and "Leatherman Wave", "squeeze" and "Sawyer Squeeze" had each been a pick): the
+    longer name is the word with words before it, the first a brand's (written alone as a name here, or a brand in the
+    whole library, LibraryRanges.brand) and none a model word ("mini squeeze" is another filter). Not a word that starts
+    a longer name here (a brand or a line's name, which fits its products by starting them), a kind of product or the
+    requested type's word ("kettle" is no model of "Fellow kettle"), nor one with no letter. Fitting two such names, two
+    makers' models, it stays loose, as any name fitting two products. Changes `matches` in place."""
+    starts = {w[0] for w in names if len(w) > 1}
+    for w in names:
+        word = w[0]
+        if (len(w) != 1 or word in starts or not _could_be_a_maker(word) or word in KIND_WORDS
+                or word.removesuffix("s") in KIND_WORDS or _is_type_word(word, type_words)):
+            continue
+        for v in sorted(candidates.get(w, ())):
+            maker = v[:-1]
+            if (v in by_words and len(v) > 1 and v not in matches[w] and _alike(v[-1:], w)
+                    and not set(maker) & PRODUCT_VARIANT_WORDS and _could_be_a_maker(maker[0])
+                    and (maker[0] in alone or (ranges is not None and ranges.brand(category, maker[0])))):
+                matches[w].append(v)
+                if w not in matches[v]:
+                    matches[v].append(w)
 
 
 def _matching(w: Words, v: Words, alone: set[str], open_pairs: set[tuple[Words, Words]]) -> bool:
@@ -823,11 +1062,11 @@ def _join(parent: dict[Words, Words], a: Words, b: Words) -> None:
 # --- The name shown ---
 
 def _make_group(category: str, by_words: dict[Words, list[ProductMention]], loose: bool,
-                shown: tuple[Words, str]) -> ProductGroup:
+                shown: tuple[Words, str], generic: bool = False, bases: tuple[str, ...] = ()) -> ProductGroup:
     """The group of these names, shown as `shown`: (the words its key is made of, the name as it is shown)."""
     words, name = shown
     mentions = sorted((m for ms in by_words.values() for m in ms), key=lambda m: (m.thread_id, m.comment_id, m.product))
-    return ProductGroup(f"{category}:{' '.join(words)}", name, category, mentions, loose)
+    return ProductGroup(f"{category}:{' '.join(words)}", name, category, mentions, loose, generic, bases)
 
 
 def _shown_words(by_words: dict[Words, list[ProductMention]]) -> Words:
@@ -921,12 +1160,127 @@ def uk_name(name: str, shown: Mapping[str, str] = UK_BRAND_NAMES) -> str:
 
 def _uk_name(name: str, shown: Mapping[str, str]) -> str:
     for brand, uk_brand in shown.items():
-        name = re.sub(rf"(?<!\w){re.escape(brand)}(?!\w)", lambda _: uk_brand, name, flags=re.IGNORECASE)
+        # A UK name that is the brand with words before it ("Eucerin Aquaphor") isn't added where they are written.
+        before = uk_brand[:-len(brand)] if uk_brand.casefold().endswith(brand.casefold()) else ""
+
+        def replaced(match: re.Match, uk_brand=uk_brand, before=before) -> str:
+            start = match.start()
+            if before and match.string[max(0, start - len(before)):start].casefold() == before.casefold():
+                return match.group(0)
+            return uk_brand
+
+        name = re.sub(rf"(?<!\w){re.escape(brand)}(?!\w)", replaced, name, flags=re.IGNORECASE)
     return name
 
 
 _UK_NAMES: dict[str, str] = {}  # a name -> as the UK knows it, with the shipped list (uk_name)
 register(_UK_NAMES.clear)
+
+
+def maker_spelling(name: str, category: str, more: tuple[str, ...] = (), whole: tuple[str, ...] = ()) -> str:
+    """See _maker_spelling. Each name is worked out once per category and pair of lists given (latency, 15 Oct 2026: an
+    answer asks it of a thousand names, the next answer of most of the same; the lists are kept with their answers, so
+    one made again in the place of a forgotten one is never mistaken for it)."""
+    key = (category, id(more), id(whole))
+    kept = _SPELLED.get(key)
+    if kept is None or kept[0] is not more or kept[1] is not whole:
+        if len(_SPELLED) >= 16:
+            _SPELLED.clear()
+        kept = _SPELLED[key] = (more, whole, {})
+    done = kept[2]
+    found = done.get(name)
+    if found is None:
+        if len(done) >= 200_000:
+            done.clear()
+        found = done[name] = _maker_spelling(name, category, tuple(more), tuple(whole))
+    return found
+
+
+_SPELLED: dict[tuple[str, int, int], tuple[tuple, tuple, dict[str, str]]] = {}
+register(_SPELLED.clear)
+
+
+def _maker_spelling(name: str, category: str, more: tuple[str, ...] = (), whole: tuple[str, ...] = ()) -> str:
+    """The name with its brand written as its maker writes it (15 Oct 2026, from a product researcher's list of names
+    shown misspelled: "Phillips Avent", "Levelor", "LL Beans", "Mountain Hardware", "Simple Human", "Kitchen Aide"):
+    when the name's first one to three words are a known spelling's words, but written otherwise (a slip, another
+    spacing or punctuation, a short name: engine.match_products.product_words), they are replaced by it. Known
+    spellings: config.MAKER_SPELLINGS, the full names of the category's short names (engine/data/product_aliases.json:
+    "KitchenAid", "Le Creuset") and `more` (the brand-lines list's brands). A brand written only in other capitals is
+    left as written, and never a name the UK knows by another (UK_BRAND_NAMES: uk_name runs after this).
+
+    `whole`: names the price list and the facts list write as their makers do (15 Oct 2026, the second product
+    researcher's "Mad Hippie vitamin c serum" beside "Mad Hippie Vitamin C Serum"): a name with one of their words, in
+    other capitals or another writing, is shown as they write it."""
+    tokens = name.split()
+    aliases = known_aliases().get(category, {})
+    if whole:
+        found = _whole_spellings(category, whole).get(tuple(product_words(name, aliases)))
+        if found is not None and not (found == found.lower() and name != name.lower()):
+            return found  # never in small letters a name written with capitals ("niche" for "Niche")
+    folded, by_letter = _maker_spellings(category, more)
+    if any(" ".join(tokens[:size]).casefold() in folded for size in range(1, min(3, len(tokens)) + 1)):
+        return name  # its brand is written as its maker writes it, but for capitals: left as it is
+    for size in range(min(3, len(tokens)), 0, -1):
+        run = " ".join(tokens[:size])
+        words = tuple(product_words(run, aliases))
+        if not words:
+            continue
+        rest = set(plain_words(" ".join(tokens[size:])))
+        # A slip keeps a word's first letter, so only spellings starting with the same letter can be it (latency).
+        for spelling, known in by_letter.get(words[0][:1], ()):
+            if known == words or written_alike(known, words):
+                # A short name's other words written after it aren't written twice ("Field Company", "Encore
+                # Baratza burr grinder").
+                if rest & (set(plain_words(spelling)) - set(plain_words(run))):
+                    return name
+                return " ".join([spelling, *tokens[size:]])
+    return name
+
+
+@lru_cache(maxsize=64)
+def _maker_spellings(category: str,
+                     more: tuple[str, ...]) -> tuple[frozenset[str], dict[str, tuple[tuple[str, Words], ...]]]:
+    """The known spellings of maker_spelling, without the names the UK knows by another: (each in small letters, {the
+    first letter of its words: (spelling, its words), longest first}). Worked out once per category and list."""
+    import json
+
+    found = list(MAKER_SPELLINGS.get(category, ())) + list(more)
+    try:
+        listed = json.loads(DEFAULT_ALIASES.read_text(encoding="utf-8")).get("products", {}).get(category, [])
+        found += [entry["full"] for entry in listed]
+    except (OSError, ValueError, AttributeError, KeyError, TypeError):
+        pass  # a broken alias file is reported where it is loaded (known_aliases)
+    kept = sorted({f for f in found if f and f not in UK_BRAND_NAMES}, key=lambda f: (-len(f.split()), f))
+    aliases = known_aliases().get(category, {})
+    by_letter: dict[str, list[tuple[str, Words]]] = defaultdict(list)
+    for spelling in kept:
+        words = tuple(product_words(spelling, aliases))
+        if words:
+            by_letter[words[0][:1]].append((spelling, words))
+    return frozenset(k.casefold() for k in kept), {letter: tuple(v) for letter, v in by_letter.items()}
+
+
+register(_maker_spellings.cache_clear)
+
+
+@lru_cache(maxsize=16)
+def _whole_spellings(category: str, whole: tuple[str, ...]) -> dict[Words, str]:
+    """{a curated name's words: the name}, for maker_spelling's `whole`; a name whose words two entries share, written
+    two ways, is left out (no one writing to prefer), and so is one that says the pack size priced ("... 60ml": the
+    product is no one size; engine.match_products.PACK_SIZE)."""
+    aliases = known_aliases().get(category, {})
+    found: dict[Words, set[str]] = defaultdict(set)
+    for entry in whole:
+        if PACK_SIZE.search(entry):
+            continue
+        words = tuple(product_words(entry, aliases))
+        if words:
+            found[words].add(entry)
+    return {words: next(iter(entries)) for words, entries in found.items() if len(entries) == 1}
+
+
+register(_whole_spellings.cache_clear)
 
 
 def brand_pick_name(brand: str, product_type: str, keep_ingredients: bool = False) -> str:
