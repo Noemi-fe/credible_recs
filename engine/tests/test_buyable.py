@@ -410,7 +410,10 @@ def test_the_server_sends_the_image_hosts_with_its_pages_only(tmp_path, monkeypa
     ("Wagner 1891 skillet", "kitchen", True),
     ("Hobart-era KitchenAid stand mixer", "kitchen", True),  # bought vintage on purpose; UK 240 V ones exist
     ("IBM Model M", "general", True),  # a collectors' keyboard, bought used on purpose; works here with an adapter
+    ("vintage pre 1970s Griswold or Wagner Ware skillet", "kitchen", True),  # the brand anywhere in the name
+    ("AKG K240 Sextetts", "general", True),  # vintage headphones bought on purpose; no mains voltage to mind
     ("vintage Sunbeam Radiant Control toaster", "kitchen", False),  # bought vintage in the US, 110-120 V
+    ("vintage Toastmaster 1B14 toaster", "kitchen", False),
     ("Rival crock pot", "kitchen", False),  # American 120 V crock pots
     ("Dell Latitude 5300 13.3 Touchscreen", "general", False),  # a used laptop is just old
     ("Griswold cast iron skillet", "general", False),  # each category's own list

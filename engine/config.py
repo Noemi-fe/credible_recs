@@ -1818,13 +1818,15 @@ HARMFUL_KNIVES = (
 # people buy vintage on purpose (her rule of 10 Oct 2026): the brands or products below, by category, whose old ones
 # people seek out and UK shoppers can use; any other product sold second-hand only counts as not sold
 # (engine.prices.counts_as_sold). Claude's calls, reported: besides her Griswold and Wagner cast iron, the Hobart-era
-# KitchenAid stand mixers (made by Hobart until 1986, sought second-hand; UK 240 V ones exist) and IBM's Model M
-# keyboard (bought used on purpose by collectors; it works here with an adapter), from the first findings; but not
-# American mains appliances only made for 110-120 V, though people buy some vintage on purpose in the US: Rival's crock
-# pots and the Sunbeam Radiant Control toaster (a UK shopper needs a step-down transformer, as OXO's 120 V kettles aren't
-# sold here), so Rival's line now leaves the slow cooker answer.
+# KitchenAid stand mixers (made by Hobart until 1986, sought second-hand; UK 240 V ones exist), IBM's Model M keyboard
+# (bought used on purpose by collectors; it works here with an adapter) and AKG's K240 Sextett headphones (the vintage
+# K240, sought for its sound; no mains voltage to mind), from the first findings; but not American mains appliances
+# made for 110-120 V only, though people buy some vintage on purpose in the US: Rival's crock pots, and Sunbeam's Radiant
+# Control and Toastmaster's toasters (a UK shopper needs a step-down transformer, as OXO's 120 V kettles aren't sold
+# here), so Rival's line now leaves the slow cooker answer. A name holding one of these counts ("vintage pre 1970s
+# Griswold or Wagner Ware skillet").
 SECOND_HAND_VINTAGE = {"kitchen": ("Griswold", "Wagner", "Hobart-era KitchenAid", "Hobart KitchenAid"),
-                       "general": ("IBM Model M",)}
+                       "general": ("IBM Model M", "AKG K240 Sextett")}
 # (2) Newest threads first for fast-moving products: types whose models are replaced every year or two, so a thread's
 # picks go out of sale as it ages (Claude's list, reported to Noemi). For these, module 2's first reading reads the
 # threads newest first, FAST_MOVING_YEARS at a time counted back from the newest thread about the product, each span in

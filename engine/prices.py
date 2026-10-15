@@ -291,12 +291,16 @@ def find_brand_second_hand(names: Iterable[str], category: str, prices: Iterable
 
 def bought_vintage(name: str, category: str) -> bool:
     """Whether a product is one people buy vintage on purpose, so being sold second-hand only counts as sold (Noemi's
-    rule of 10 Oct 2026, kept on 15 Oct): its name starts with one of its category's vintage brands
-    (config.SECOND_HAND_VINTAGE: "Griswold No. 8 skillet", "Wagner 1891 skillet")."""
+    rule of 10 Oct 2026, kept on 15 Oct): its name holds one of its category's vintage brands or products
+    (config.SECOND_HAND_VINTAGE), as writers write them ("Griswold No. 8 skillet", "vintage pre 1970s Griswold or Wagner
+    Ware skillet", "AKG K240 Sextetts"), spelling slips and plurals forgiven."""
     aliases = known_aliases().get(category, {})
     words = product_words(name, aliases)
-    brands = [product_words(brand, aliases) for brand in SECOND_HAND_VINTAGE.get(category, ())]
-    return any(brand and words[:len(brand)] == brand for brand in brands)
+    for brand in SECOND_HAND_VINTAGE.get(category, ()):
+        known = product_words(brand, aliases)
+        if known and any(written_alike(words[i:i + len(known)], known) for i in range(len(words) - len(known) + 1)):
+            return True
+    return False
 
 
 def counts_as_sold(entry: Price | None) -> bool | None:
