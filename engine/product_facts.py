@@ -42,7 +42,12 @@ PRODUCT_FACTS_BY_TYPE which facts each product type can have. In short:
     moisturiser, cleanser   texture: "light" | "rich"
     kettles                 plastic_free_inside: true/false
     frying pan, saucepan    pfas_free: true/false, non_stick: true/false, induction: true/false
+    lip balm                spf: true/false (15 Oct 2026, Noemi's decision 2: a lip product with SPF is a lip balm, and
+                            "with SPF" is a checked requirement, as PFAS-free is)
 Whether a product is still sold isn't a fact here: the price list says it (engine/prices.py), so it isn't kept twice.
+A product's own name can state a fact too (name_facts, config.NAME_FACT_WORDS; 15 Oct 2026): a lip balm named "... SPF
+25" has SPF, as the name it is shown under says which active ingredient it holds (engine/ingredients.py). A name never
+says a fact is false, and the maker's page wins: a name that says SPF never takes the entry of a version without it.
 A malformed entry, an unknown fact (a typo such as "fragance_free" would otherwise silently drop the fact) or a value
 outside the vocabulary stops the request with the entry's number and the problem (ProductFactsError).
 
@@ -98,6 +103,8 @@ from engine.config import (
     INGREDIENT_FORMS,
     HAIR_NEEDS,
     HARD_REQUIREMENT_NAMES,
+    NAME_FACT_REFUSALS,
+    NAME_FACT_WORDS,
     NEEDS,
     PRODUCT_FACT_REQUEST_WORDS,
     PRODUCT_FACT_RULES,
@@ -266,7 +273,7 @@ def _find_facts(name: str, category: str, entries: Iterable[ProductFacts],
                 product_type: str | None) -> ProductFacts | None:
     aliases = known_aliases().get(category, {})
     fits = [e for e in entries if e.category == category and same_product(e.product, name, aliases)
-            and (product_type is None or e.product_type == product_type)]
+            and (product_type is None or e.product_type == product_type) and not _contradicts(name, e)]
     if not fits:
         return None
     words = product_words(name, aliases)
@@ -282,6 +289,34 @@ def _find_facts(name: str, category: str, entries: Iterable[ProductFacts],
         # Choice 2% BHA" fits its liquid and its gel, and had taken the gel's entry, the more recently checked.
         return None
     return best
+
+
+def _contradicts(name: str, entry: ProductFacts) -> bool:
+    """Whether a name states a fact (name_facts) the entry gives the other way (15 Oct 2026): a maker may sell a lip balm
+    with and without SPF under one name ("Lip Repair", "Lip Repair + Protect SPF 30"), and module 4 reads a writer's
+    "Lip Repair SPF" as either, so the name's own words decide between them."""
+    return any(fact in entry.facts and entry.facts[fact] != value
+               for fact, value in name_facts(name, entry.product_type).items())
+
+
+def name_facts(name: str, product_type: str | None) -> dict[str, bool]:
+    """The facts a product's own name states (15 Oct 2026, Noemi's decision 2: "the product's name says SPF"), as {fact:
+    True}: each fact of config.NAME_FACT_WORDS its words say, among those its product type can have (config.
+    PRODUCT_FACTS_BY_TYPE: a lip balm named "... SPF 25" has SPF). Words saying the fact is absent ("no SPF", "SPF-free":
+    config.NAME_FACT_REFUSALS) are left out first, and a name never states a fact is false. {} for a type without such
+    facts (a sunscreen's SPF is what it is)."""
+    allowed = PRODUCT_FACTS_BY_TYPE.get(product_type or "", ())
+    text = name.lower().replace("’", "'")
+    found = {}
+    for fact, patterns in NAME_FACT_WORDS.items():
+        if fact not in allowed:
+            continue
+        plain = text
+        for refusal in NAME_FACT_REFUSALS.get(fact, ()):
+            plain = re.sub(refusal, " ", plain)
+        if any(re.search(rf"\b{pattern}", plain) for pattern in patterns):
+            found[fact] = True
+    return found
 
 
 # --- Facts against a request ---
@@ -406,13 +441,17 @@ def hard_requirements(query: ParsedQuery, product_type: str | None = None) -> li
             if rule["hard"] and _to_confirm(rule, own) and asks & set(rule["asks"]) and rule["fact"] in allowed]
 
 
-def unconfirmed(query: ParsedQuery, facts: ProductFacts | None, product_type: str | None = None) -> list[str]:
-    """The hard requirements of this request (hard_requirements) whose fact the product's entry doesn't give, in the
+def unconfirmed(query: ParsedQuery, facts: ProductFacts | None, product_type: str | None = None,
+                names: Iterable[str] = ()) -> list[str]:
+    """The hard requirements of this request (hard_requirements) whose fact neither the product's entry gives nor its
+    `names` state (name_facts: the names it is shown under; 15 Oct 2026, a lip balm named "... SPF 25" has SPF), in the
     rule table's order: what we couldn't confirm about it (10 Oct 2026). All of them when nothing is known (`facts`
-    None); a fact known to clash is a reason to leave the product out (conflicts), not something unconfirmed.
+    None, no names); a fact known to clash is a reason to leave the product out (conflicts), not something unconfirmed.
     `product_type`: as in hard_requirements."""
     requirements = hard_requirements(query, product_type)
-    known = facts.facts if facts is not None else {}
+    known = set(facts.facts) if facts is not None else set()
+    for name in names:
+        known |= set(name_facts(name, product_type or query.product_type))
     return [name for name in requirements if PRODUCT_FACT_RULES[name]["fact"] not in known]
 
 

@@ -865,6 +865,7 @@ PRODUCT_FACT_VALUES: dict[str, tuple] = {
     "induction": (True, False),  # works on an induction hob
     "maker_warns_sensitive": (True, False),  # the maker's own page says not to use it on sensitive skin (10 Oct 2026)
     "sulfate_free": (True, False),  # a shampoo that cleans without sulfates (SLS, SLES, ALS...) (11 Oct 2026)
+    "spf": (True, False),  # a lip balm with sun protection, any SPF (15 Oct 2026, Noemi's decision 2: SPF lip balms)
 }
 # The facts each product type (engine/query.py, PRODUCT_TYPES) can have. Every skincare product can say whether it is
 # fragrance-free, whether its maker warns against sensitive skin and, since Noemi's decision 5 of 14 Oct 2026, whether it
@@ -885,7 +886,9 @@ PRODUCT_FACTS_BY_TYPE: dict[str, tuple[str, ...]] = {
     "serum": PRODUCT_FACTS_FOR_SKINCARE,
     "toner": PRODUCT_FACTS_FOR_SKINCARE,
     "eye cream": PRODUCT_FACTS_FOR_SKINCARE,
-    "lip balm": PRODUCT_FACTS_FOR_SKINCARE,
+    # 15 Oct 2026 (Noemi's decision 2): "with SPF" is a checked requirement of a lip balm, as PFAS-free is of a pan. A
+    # sunscreen has SPF by what it is, and a moisturiser's isn't asked for, so neither has the fact.
+    "lip balm": PRODUCT_FACTS_FOR_SKINCARE + ("spf",),
     "spot treatment": PRODUCT_FACTS_FOR_SKINCARE,  # 13 Oct 2026 (Noemi's decision 2)
     "electric kettle": ("plastic_free_inside",),
     "stovetop kettle": ("plastic_free_inside",),
@@ -941,15 +944,26 @@ PRODUCT_FACT_RULES: dict[str, dict] = {
     # Shoulders, which has sulfates. A requirement like PFAS-free: left out when its facts say it has sulfates.
     "sulfates": {"asks": ("sulfate-free",), "fact": "sulfate_free", "value": False, "hard": True,
                  "reason": "it has sulfates"},
+    # Noemi's decision 2 of 15 Oct 2026: a lip product with SPF is a lip balm, and "with SPF" is a checked requirement,
+    # as PFAS-free is. Only a lip balm can have the fact, so a sunscreen or moisturiser request naming SPF asks for
+    # nothing to check. Besides a facts entry from the maker's page, a lip balm's own name can say it has SPF
+    # (NAME_FACT_WORDS below: "... SPF 25"). Wording PROPOSED.
+    "no SPF": {"asks": ("SPF",), "fact": "spf", "value": False, "hard": True, "reason": "it has no SPF"},
 }
 # Words of a request that ask for something module 1 doesn't find on its own: regular expressions, found at the start
 # of a word in the request (lowercased). "doesn't leave a white cast" asks for no white cast (module 1 finds only "no"
 # or "without a white cast"); "without PFAS" and "PFAS-free" ask for PFAS-free; "non-stick" asks for non-stick, unless
 # a word just before it says the opposite ("not non-stick", "instead of non-stick").
+_NOT_REFUSED = "(?<!non-)" + "".join(f"(?<!{before} )" for before in ("no", "not", "non", "without", "without a",
+                                                                         "without an", "without any", "free of"))
 PRODUCT_FACT_REQUEST_WORDS: dict[str, tuple[str, ...]] = {
     "no white cast": (r"white cast",),
     "PFAS-free": (r"pfas",),
     "sulfate-free": (r"sul(?:f|ph)ate[- ]?free", r"(?<=no )sul(?:f|ph)ates?", r"(?<=without )sul(?:f|ph)ates?"),
+    # 15 Oct 2026 (Noemi's decision 2): "with SPF", "spf lip balm", "lip balm with sunscreen" ask for SPF; "without
+    # SPF", "no SPF" and "SPF-free" don't. It is a requirement only of the types that can have the fact (lip balms).
+    "SPF": tuple(rf"{_NOT_REFUSED}{words}" for words in (r"spf(?![- ]?free)", r"sun ?screen", r"sun ?block",
+                                                         r"sun ?cream", r"sun protection", r"uv protection")),
     "non-stick": (r"(?<!not )(?<!not a )(?<!no )(?<!without )(?<!avoid )(?<!instead of )(?<!rather than )"
                   r"(?<!other than )non[- ]?stick",),
 }
@@ -983,6 +997,7 @@ HARD_REQUIREMENT_NAMES: dict[str, str] = {
     "not induction": "working on an induction hob",
     "maker warns sensitive": "a maker's warning against sensitive skin",
     "sulfates": "sulfates",
+    "no SPF": "SPF",  # "a whole brand can't be checked for SPF" (15 Oct 2026; wording PROPOSED)
 }
 #
 # 3. Care tips most writers agree on come first (engine/care_tips.py, tips_by_agreement). Two tips say the same thing
@@ -1031,6 +1046,20 @@ UNCONFIRMED_FACT_NAMES: dict[str, str] = {
     "plastic": "no plastic touches the water",
     "not induction": "it works on an induction hob",
     "sulfates": "it's sulfate-free",
+    "no SPF": "it has SPF",  # "we couldn't confirm it has SPF" (15 Oct 2026; wording PROPOSED)
+}
+# What a product's own name can say about its facts (15 Oct 2026, Noemi's decision 2: "the product's name says SPF"),
+# as the name it is shown under says which active ingredient it holds (INGREDIENTS above). Regular expressions, found
+# at the start of a word of the name (lowercased), for the types that can have the fact (PRODUCT_FACTS_BY_TYPE): a lip
+# balm named "... SPF 25", "... with sunscreen" or "UV lip 50+ PA++++" has SPF. A name saying the fact is absent ("no
+# SPF", "without SPF", "SPF-free") says nothing (NAME_FACT_REFUSALS: the words are left out first). A name never says
+# a fact is false, and an entry from the maker's page wins over a name: a name that says SPF never takes the entry of a
+# version without it (engine.product_facts.find_facts), since a maker may sell a lip balm with and without SPF.
+NAME_FACT_WORDS: dict[str, tuple[str, ...]] = {
+    "spf": (r"spf", r"sun ?screen", r"sun ?block", r"sun protection", r"uv(?![a-z])", r"pa\+"),
+}
+NAME_FACT_REFUSALS: dict[str, tuple[str, ...]] = {
+    "spf": (r"(?:no|non|without|zero)[- ](?:an? |any )?spf", r"spf[- ]free\b"),
 }
 
 # --- Sets, blocks and sharpeners aren't the product (10 Oct 2026) ---
@@ -1293,6 +1322,17 @@ EXTRACT_STILL_CURRENT: dict[str, dict[str, tuple[str, ...]]] = {
     # v12 extraction stays current, general threads' too, and the older ones as under v12. Decided by Claude, reported.
     "extract-v13": {"extract-v12": THREAD_CATEGORIES, "extract-v11": _BEFORE_GENERAL, "extract-v10": _BEFORE_GENERAL,
                     "extract-v9": _BEFORE_GENERAL, "extract-v8": ("skincare", "kitchen")},
+    # v14 (15 Oct 2026, Noemi's decisions 2 and 5 of 15 Oct) adds two rules. A product for the lips with SPF is a "lip
+    # balm", not a "sunscreen" (lips are an exception to her 9 Oct rule "sun protection wins over the form"), and a
+    # warning resting only on a maker's ethics (animal welfare, labour, politics, a boycott) is no mention. Both are
+    # brought to the older extractions by command rather than by extracting the library again: `python -m
+    # engine.lip_balms retype` re-types the lip products typed sunscreen, judged by their names, and the ethics-only
+    # warnings were found by keyword and judged one by one (`python -m engine.ethics candidates`, then `apply`). So
+    # every v13 extraction stays current, of all four categories (three extractors were writing v13 files when v14
+    # came), and the older ones as under v13. Decided by Claude, reported.
+    "extract-v14": {"extract-v13": THREAD_CATEGORIES, "extract-v12": THREAD_CATEGORIES,
+                    "extract-v11": _BEFORE_GENERAL, "extract-v10": _BEFORE_GENERAL, "extract-v9": _BEFORE_GENERAL,
+                    "extract-v8": ("skincare", "kitchen")},
 }
 
 # --- Going live (Noemi, 11 Oct 2026) ---

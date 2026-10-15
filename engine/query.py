@@ -511,6 +511,30 @@ LOOKALIKE_PHRASES = tuple(dict.fromkeys(FIRST_LOOKALIKES + _GENERAL_LOOKALIKES))
 LOOKALIKES = tuple(phrase for phrase in LOOKALIKE_PHRASES
                    if phrase not in _KEYWORDS and phrase.removesuffix("s") not in _KEYWORDS)
 
+# Sun protection for the lips is a lip balm (Noemi's decision 2 of 15 Oct 2026: lips are an exception to her 9 Oct rule
+# "sun protection wins over the form"; extraction instructions v14 type such products as lip balms). A phrase asking for
+# it ("lip sunscreen", "spf for my lips", "lip oil with spf", "spf lip gloss") names the lip balm type, in place of the
+# sunscreen or the lip product named inside it, and the request asks for SPF, a checked requirement of lip balms
+# (config.PRODUCT_FACT_REQUEST_WORDS, "SPF"). A sunscreen request that only mentions the lips ("a sunscreen that doesn't
+# sting my lips") or the face and the lips stays a sunscreen's. Chosen by Claude, reported.
+# The longer forms first, so a phrase holds the whole name ("spf lip gloss", not "spf lip").
+_LIP_FORMS = (r"(?:lip glosses|lip (?:balm|oil|gloss|treatment|mask|tint|butter|serum|stick|care|product|protector|"
+              r"protectant|moisturi[sz]er)s?|lipbalms?|lipsticks?|lipglosse?s?|chap ?sticks?|lip ?screens?|lips?)")
+_SUN_WORDS = r"(?:spf\s*\d*\+?|sun ?screens?|sun ?blocks?|sun ?creams?|suncreams?|sun protection|uv protection)"
+LIP_SUN_PROTECTION = re.compile(
+    rf"\b{_LIP_FORMS}\s+(?:with|that has|that have|containing|w/?)\s+(?:an?\s+|some\s+|good\s+|built[- ]in\s+)?"
+    rf"{_SUN_WORDS}(?![a-z])"
+    rf"|\b{_SUN_WORDS}(?:\s+sticks?)?\s+(?:for|on)\s+(?:my\s+|the\s+|your\s+|our\s+)?lips\b"
+    rf"|\blip\s+{_SUN_WORDS}(?![a-z])"
+    rf"|\b{_SUN_WORDS}\s+{_LIP_FORMS}\b")
+_LIP_BALM = next(product for product in PRODUCT_TYPES if product.name == "lip balm")
+
+
+def _lip_sun_protection(lowered: str) -> list[tuple[int, int, ProductType]]:
+    """(start, end, the lip balm type) of each phrase asking for sun protection for the lips (LIP_SUN_PROTECTION)."""
+    return [(m.start(), m.end(), _LIP_BALM) for m in LIP_SUN_PROTECTION.finditer(lowered)]
+
+
 # Words that place a vague request in a category, so the question can be more specific.
 CATEGORY_HINTS = {
     "skincare": ("skin", "face", "acne", "wrinkles", "pores", "skincare", "complexion"),
@@ -565,6 +589,10 @@ def classify(text: str) -> Routing:
     every_name = _find_matches(aside, strong=True)
     owners = [(s, e) for s, e, _ in every_name if _accessory_after(aside, e)]  # "ipad" in "ipad case"
     named = [m for m in every_name if (m[0], m[1]) not in owners]
+    lips = _lip_sun_protection(aside)  # "lip sunscreen" is a lip balm (15 Oct 2026), not the sunscreen inside it
+    if lips:
+        named = sorted([m for m in named if not any(m[0] < e and s < m[1] for s, e, _ in lips)] + lips,
+                       key=lambda match: match[0])
     turned = _reversed_name(aside)
     if turned is not None and not any(s <= turned[0] and turned[1] <= e and e - s > turned[1] - turned[0]
                                        for s, e, _ in named):  # "robot vacuum for pet hair" is a robot vacuum

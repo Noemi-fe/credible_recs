@@ -175,6 +175,17 @@ def extracted_dir(threads_dir: Path) -> Path:
     return Path(threads_dir).parent / "extracted"
 
 
+def extraction_bytes(data: dict, like: str = "") -> bytes:
+    """An extraction file's data as its file holds it (UTF-8 JSON), laid out like `like`, the file's text before (its
+    indent, and whether it ends with a new line; one space and a new line when there is none): a command changing a
+    few fields of a file (engine/lip_balms.py, engine/ethics.py; 15 Oct 2026) leaves the rest of it as it was."""
+    lines = like.split("\n", 2)
+    second = lines[1] if len(lines) > 1 else ""
+    indent = (len(second) - len(second.lstrip(" "))) or 1
+    end = "\n" if not like or like.endswith("\n") else ""
+    return (json.dumps(data, ensure_ascii=False, indent=indent) + end).encode("utf-8")
+
+
 # --- The guardrail: checking one extraction against its thread ---
 
 @dataclass

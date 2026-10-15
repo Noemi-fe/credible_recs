@@ -2543,6 +2543,187 @@
     ],
     "checked_on": "2026-10-14"
    }
+  },
+  {
+   "product": "Aquaphor Healing Ointment",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://www.aquaphorus.com/products/aquaphor-repairing-ointment/aquaphor-healing-ointment-14oz"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Laneige Lip Sleeping Mask",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://int.laneige.com/products/lip-sleeping-mask"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Tocobo Lip Mask",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://tocobo.us/products/lip-mask-4-options"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Jack Black Intense Therapy Lip Balm SPF 25",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": true
+   },
+   "sources": [
+    "https://getjackblack.com/products/intense-therapy-lip-balm-spf-25-with-shea-butter-vitamin-e",
+    "https://getjackblack.com/collections/lips-eyes"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "CeraVe Healing Ointment",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://www.cerave.com/skincare/moisturizers/healing-ointment"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Lansinoh HPA Lanolin",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://www.lansinoh.co.uk/products/hpa-lanolin"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "La Roche-Posay Cicaplast Lips",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://africa.laroche-posay.com/en-za/cicaplast/cicaplast-levres"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Torriden Solid In Lip Essence",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://torriden.us/products/solid-in-lip-essence-set"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Blistex Relief Cream",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://www.blistex.co.uk/blistex-relief-cream"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Ole Henriksen Pout Preserve Peptide Lip Treatment",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://olehenriksen.com/products/pout-preserve-hydrating-peptide-lip-treatment"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Weleda Everon lip balm",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://www.weleda.co.uk/product/e/everon-lip-balm"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Etude Ginger Sugar Overnight Lip Mask",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://int.etude.com/shop/category/lip/ginger-sugar-overnight-lip-mask-23g/"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Dr. Lipp Original Nipple Balm",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://lookfantastic.com/p/dr.lipp-s-original-nipple-balm-for-lips/10804751"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Aquaphor Lip Repair",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://www.aquaphorus.com/products/aquaphor/aquaphor-lip-repair"
+   ],
+   "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Neosporin Lip Health Overnight Renewal Therapy",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "spf": false
+   },
+   "sources": [
+    "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0da54fe1-c99f-4a2d-9ee5-2dc24005096c"
+   ],
+   "checked_on": "2026-10-15"
   }
  ]
 }
