@@ -3701,6 +3701,1053 @@
    ],
    "checked_on": "2026-10-15",
    "note": "WORX 20V (Power Share) cordless grass trimmers are sold in the UK: B&Q, WG157E.9 25 cm bare tool at £59.99 (WG163E.9 30 cm £87.99). WORX's UK site address tried returned 404."
+  },
+  {
+   "product": "innisfree Retinol Cica Moisture Recovery Serum",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "page": "https://www.cultbeauty.co.uk/p/innisfree-retinol-cica-moisture-recovery-serum-30ml/15227995/",
+   "shop": "Cult Beauty",
+   "image": "https://us.innisfree.com/cdn/shop/files/01_IF_RC-S_Packshot_2024_01_1080x1080_97dfceff-1091-4bc8-9aa7-691f6c878225_1.jpg?v=1759872787",
+   "image_page": "https://us.innisfree.com/products/retinol-cica-moisture-recovery-serum",
+   "sources": [
+    "https://www.cultbeauty.co.uk/p/innisfree-retinol-cica-moisture-recovery-serum-30ml/15227995/",
+    "https://us.innisfree.com/products/retinol-cica-moisture-recovery-serum",
+    "https://www.spacenk.com/uk/skincare/treatment/serums/retinol-cica-moisture-recovery-serum-MUK200049251.html"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "30 ml, £33.00 at Cult Beauty, out of stock on 15 Oct; Space NK UK lists it reduced to £23.10 (an offer), also out of stock. innisfree has no UK store; the image is from its US store (in stock there at US$37)."
+  },
+  {
+   "product": "CeraVe Hydrating Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "page": "https://www.cerave.co.uk/skincare/cleansers/hydrating-cleanser",
+   "shop": "CeraVe",
+   "image": "https://www.cerave.co.uk/-/media/project/loreal/brand-sites/cerave/emea/uk/products/hydrating-cleanser-latest/hydrating-cleanser1l-1-sm.jpg?rev=-1",
+   "image_page": "https://www.cerave.co.uk/skincare/cleansers/hydrating-cleanser",
+   "sources": [
+    "https://www.cerave.co.uk/skincare/cleansers/hydrating-cleanser",
+    "https://www.lookfantastic.com/p/cerave-hydrating-cleanser-with-hyaluronic-acid-for-normal-to-dry-skin-236ml/11798700/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "CeraVe UK calls it the Hydrating Facial Cleanser (normal to dry skin). 236 ml £12.50 at Lookfantastic, in stock on 15 Oct (473 ml £14.80). CeraVe UK's own site links to shops rather than selling. Its og:image shows the 1 L bottle."
+  },
+  {
+   "product": "Timemore C2",
+   "category": "kitchen",
+   "product_type": "coffee grinder",
+   "page": "https://www.redber.co.uk/products/timemore-manual-c2-grinder-silver",
+   "shop": "Redber Coffee",
+   "sources": [
+    "https://www.redber.co.uk/products/timemore-manual-c2-grinder-silver",
+    "https://www.timemore.com/products.json?limit=250",
+    "https://www.homegrounds.co/timemore-c2-review/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Redber Coffee (a UK roaster) sells the Timemore Manual C2 new, £64.95, in stock on 15 Oct. Timemore itself no longer sells the plain C2: it was upgraded to the C2S in 2023 and Timemore's own store now lists the C3/C3s, C5, S3 and Nano 3 only (its C2, C2S and C2 MAX pages are gone), so UK stock may run out. No maker page for the C2, so no image."
+  },
+  {
+   "product": "Isntree Chestnut BHA 2% Clear Liquid",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "page": "https://skinsider.co.uk/isntree-chestnut-bha-2-clear-liquid/",
+   "shop": "Skinsider",
+   "sources": [
+    "https://skinsider.co.uk/isntree-chestnut-bha-2-clear-liquid/",
+    "https://en.isntree.com/",
+    "https://isntree.com/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "100 ml, £18.00 at Skinsider, a UK K-beauty shop (not a big chain), out of stock on 15 Oct; no big UK shop (Boots, Lookfantastic, Cult Beauty) found selling it, so status rests on that specialist shop. No maker image: Isntree's English store (en.isntree.com) says the shop isn't set up, and its Korean store's product search loads by script, so no product page could be read."
+  },
+  {
+   "product": "CeraVe Hydrating Cream-to-Foam Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "page": "https://www.cerave.co.uk/skincare/cleansers/hydrating-cream-to-foam-cleanser",
+   "shop": "CeraVe",
+   "image": "https://www.cerave.co.uk/-/media/project/loreal/brand-sites/cerave/emea/uk/products/hydrating-cream-to-foam-cleanser-236ml/hyrating-cream-to-foam-cleanser-1-lg.jpg?rev=-1",
+   "image_page": "https://www.cerave.co.uk/skincare/cleansers/hydrating-cream-to-foam-cleanser",
+   "sources": [
+    "https://www.cerave.co.uk/skincare/cleansers/hydrating-cream-to-foam-cleanser",
+    "https://www.cultbeauty.co.uk/p/cerave-hydrating-cream-to-foam-cleanser-with-amino-acids-for-normal-to-dry-skin-236ml/12667341/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "236 ml £14.50 at Cult Beauty, in stock on 15 Oct. CeraVe UK's site links to shops rather than selling."
+  },
+  {
+   "product": "Dualit electric kettle line",
+   "category": "kitchen",
+   "product_type": "electric kettle",
+   "page": "https://www.dualit.com/collections/kettles",
+   "shop": "Dualit",
+   "image": "https://www.dualit.com/cdn/shop/collections/Classic_Kettle_Test.jpg?v=1773328997",
+   "image_page": "https://www.dualit.com/collections/kettles",
+   "sources": [
+    "https://www.dualit.com/collections/kettles",
+    "https://www.dualit.com/products/studio-kettle",
+    "https://www.dualit.com/products/classic-kettle"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: Dualit's own UK store sells seven electric kettles on 15 Oct, all in stock: Studio £64.99 (the from price), 1L Jug £69.99, Lite Jug £94.99, Architect, Pour Over and 2 Litre Dome £99.99, Classic £164.99. The image is the kettles page's own (a Classic Kettle)."
+  },
+  {
+   "product": "Anessa Perfect UV Sunscreen Skincare Milk",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "page": "https://japanesetaste.co.uk/products/shiseido-anessa-perfect-uv-sunscreen-skincare-milk-spf50-60ml",
+   "shop": "Japanese Taste",
+   "image": "https://www.shiseido.co.jp/anessa/products/suncare/perfect_uv_sm/img/og.png",
+   "image_page": "https://www.shiseido.co.jp/anessa/products/suncare/perfect_uv_sm/",
+   "sources": [
+    "https://japanesetaste.co.uk/products/shiseido-anessa-perfect-uv-sunscreen-skincare-milk-spf50-60ml",
+    "https://www.shiseido.co.jp/anessa/products/suncare/perfect_uv_sm/",
+    "https://www.yesstyle.com/en/shiseido-anessa-perfect-uv-sunscreen-skincare-milk-spf-50-pa-2024/info.html/pid.1127278830"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Sold to UK shoppers only by import shops, not by a UK chain: Japanese Taste's UK store, 60 ml (Skincare Milk NA), £29.73, in stock on 15 Oct; YesStyle (ships from Hong Kong) had the 2024 edition at £17.66 on 10 Oct and shows it in stock today (its £ price couldn't be read from here). Shiseido doesn't sell Anessa on its UK site. Image from Shiseido Japan's Anessa page (Perfect UV Skincare Milk NA)."
+  },
+  {
+   "product": "GreenPan frying pan line",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "page": "https://greenpan.co.uk/collections/frypans",
+   "shop": "GreenPan",
+   "image": "https://greenpan.co.uk/cdn/shop/files/CC001656-001-01-GP_UK_P_PH02760_082_dd50ee0f-e177-4b33-9b5d-67db757dcd94_medium.jpg?v=1789498776",
+   "image_page": "https://greenpan.co.uk/products/memphis-ceramic-nonstick-20cm-frypan",
+   "sources": [
+    "https://greenpan.co.uk/collections/frypans",
+    "https://greenpan.co.uk/products/memphis-ceramic-nonstick-20cm-frypan"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: GreenPan's UK store sells many ceramic non-stick frying pans; the cheapest single pan is the Memphis 20 cm at £30.90, in stock on 15 Oct (as data/brand_lines.json's from price of 14 Oct). The frypans page's og:image is a generic social image, so the image is the Memphis 20 cm's own (its og:image, made https)."
+  },
+  {
+   "product": "Sage coffee grinder line",
+   "category": "kitchen",
+   "product_type": "coffee grinder",
+   "page": "https://www.sageappliances.com/en-gb/shop/coffee-grinders",
+   "shop": "Sage",
+   "image": "https://assets.sageappliances.com/cdn-cgi/image/width=600,format=auto/BCG600/BCG600SILUK/pdp_emea_sil.png?pdp",
+   "image_page": "https://www.sageappliances.com/en-gb/product/bcg600?sku=BCG600SILUK",
+   "sources": [
+    "https://www.sageappliances.com/en-gb/shop/coffee-grinders",
+    "https://www.sageappliances.com/en-gb/product/bcg600?sku=BCG600SILUK"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: Sage UK's coffee grinders (Breville outside the UK). From £169.95, the Dose Control Pro's usual price (silver in stock on 15 Oct); it is on offer at £149.95 on 15 Oct, as data/brand_lines.json's from price of 14 Oct says. The grinders page's og:image shows an espresso machine, so the image is the Dose Control Pro's own.; image: a smaller size of the maker's image (54 KB instead of 514 KB)"
+  },
+  {
+   "product": "Shun chef knife line",
+   "category": "kitchen",
+   "product_type": "chef knife",
+   "page": "https://www.kitchenknives.co.uk/by-brand/kai-shun-knives/kai-shun-classic/chefs_knives/",
+   "shop": "KitchenKnives.co.uk",
+   "sources": [
+    "https://www.kitchenknives.co.uk/by-brand/kai-shun-knives/kai-shun-classic/chefs_knives/",
+    "https://www.kitchenknives.co.uk/by-brand/kai-shun-knives/",
+    "https://www.kitchenknives.co.uk/kai-shun-kai-dm-0723-chef-s-knife-6-15cm/",
+    "https://www.kitchenknives.co.uk/kai-shun-kai-dm-0706-chef-s-knife-8-20cm/",
+    "https://harrods.com/en-gb/p/kai-shun-classic-chefs-knife-000000000001405549"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: Shun (made by KAI) has no UK store of its own; KitchenKnives.co.uk, which calls itself KAI Shun's UK distributor, sells the Shun Classic, Premier and other series. From £164.95: the Shun Classic 15 cm chef's knife (DM-0723), in stock on 15 Oct; the 20 cm DM-0706 is £184.95 (list £236). Harrods lists the Classic chef's knife in store only. No maker image: KAI Europe's site didn't connect and Shun's US pages load by script."
+  },
+  {
+   "product": "Aveeno Calm + Restore Nourishing Oat Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "page": "https://www.aveeno.co.uk/face/calm-restore-nourishing-oat-cleanser",
+   "shop": "Aveeno",
+   "image": "https://images.ctfassets.net/j7jv1vcgqjb4/1qgqC2Izsy81vJTrswlGc0/13f0646fa3984bde654d9ae3bf691247/baa5169378325ac91d547fa294ecf4e1-en-gb",
+   "image_page": "https://www.aveeno.co.uk/face/calm-restore-nourishing-oat-cleanser",
+   "sources": [
+    "https://www.aveeno.co.uk/face/calm-restore-nourishing-oat-cleanser",
+    "https://groceries.morrisons.com/products/aveeno-face-calm-restore-nourishing-oat-face-wash-cleanser-200ml/112544029",
+    "https://asset.sephora.co.uk/p/Aveeno-Face-Calm--Restore-Nourishing-Oat-Cleanser-200ml"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "200 ml at Morrisons: usual price £8.00, on offer at £7.00 (an offer, with a minimum order) and in stock on 15 Oct. Holland & Barrett (£10.49 on 10 Oct) and Boots blocked automated reads today. Aveeno UK's own page links to shops rather than selling."
+  },
+  {
+   "product": "First Aid Beauty Ultra Repair Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "page": "https://www.lookfantastic.com/p/first-aid-beauty-ultra-repair-cream-170g/17691057/",
+   "shop": "Lookfantastic",
+   "image": "https://www.firstaidbeauty.com/cdn/shop/files/NEWSEALS-URC-6oz-Lead-FAB-US.png?v=1783522954&width=600",
+   "image_page": "https://www.firstaidbeauty.com/products/ultra-repair-cream-intense-hydration",
+   "sources": [
+    "https://www.lookfantastic.com/p/first-aid-beauty-ultra-repair-cream-170g/17691057/",
+    "https://www.firstaidbeauty.com/products/ultra-repair-cream-intense-hydration",
+    "https://boots.com/first-aid-beauty-ultra-repair-cream-170g-10344787"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "170 g: Lookfantastic's RRP £35.00, on offer at £26.25 and in stock on 15 Oct; Boots also sells the 170 g (page blocked today). First Aid Beauty has no UK store; the image is from its US store (6 oz, the same 170 g tub).; image: a smaller size of the maker's image (270 KB instead of 851 KB)"
+  },
+  {
+   "product": "Misen",
+   "category": "kitchen",
+   "product_type": "chef knife",
+   "page": "https://misen.com/products/chefs-knife",
+   "shop": "Misen",
+   "image": "https://misen.com/cdn/shop/files/Misen2-Web-PDP-Chef_s_Knife-8in-Blue-Gallery-1.png?v=1775249697",
+   "image_page": "https://misen.com/products/chefs-knife",
+   "sources": [
+    "https://misen.com/products/chefs-knife",
+    "https://misen.com/pages/shipping"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Brand pick (chef knife): Misen's own store ships to the UK and prices for UK shoppers in £, duties and taxes included at checkout (its shipping page; orders ship from Utah and Pennsylvania). Its 8\" Chef's Knife (ACUTO440) is £114.00 with the UK selected, all four colours available on 15 Oct. No UK shop found; Ubuy UK resells other Misen knives from US stock."
+  },
+  {
+   "product": "Rohto Melano CC Intensive Anti-Spot Essence",
+   "category": "skincare",
+   "product_type": "serum",
+   "page": "https://japanesetaste.co.uk/products/melano-cc-intensive-anti-spot-brightening-essence-vitamin-c-20ml",
+   "shop": "Japanese Taste",
+   "image": "https://jp.rohto.com/-/media/com/melanocc/essence/img_169658_01.jpg?sc_lang=ja-jp",
+   "image_page": "https://jp.rohto.com/melanocc/essence",
+   "sources": [
+    "https://japanesetaste.co.uk/products/melano-cc-intensive-anti-spot-brightening-essence-vitamin-c-20ml",
+    "https://jp.rohto.com/melanocc/essence"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "20 ml (its usual size), £11.89 at Japanese Taste's UK store, a Japanese import shop (not a UK chain), in stock on 15 Oct. Rohto sells it in Japan only; its Japanese page's og:image is the Rohto logo, so the image is the page's own product photo."
+  },
+  {
+   "product": "Paula's Choice 2% BHA Skin Perfecting Liquid",
+   "category": "skincare",
+   "product_type": null,
+   "page": "https://www.paulaschoice.co.uk/skin-perfecting-bha-liquid-exfoliant/m2010.html",
+   "shop": "Paula's Choice",
+   "image": "https://media.paulaschoice-eu.com/image/upload/f_auto,q_auto,dpr_auto/c_fill,w_300,h_300/products/images/2010-Lifestyle?_i=AG",
+   "image_page": "https://www.paulaschoice.co.uk/skin-perfecting-bha-liquid-exfoliant/m2010.html",
+   "sources": [
+    "https://www.paulaschoice.co.uk/skin-perfecting-bha-liquid-exfoliant/m2010.html",
+    "https://www.paulaschoice.co.uk/skin-perfecting-bha-liquid-exfoliant/m2010.html?dwvar_m2010_size=fullsize",
+    "https://www.cultbeauty.co.uk/p/paula-s-choice-skin-perfecting-2-bha-liquid-exfoliant-118ml/11174178/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Paula's Choice UK now calls it the Skin Perfecting 2% BHA Exfoliating Toner: full size (118 ml) £36.00 on its own UK store, which shows it sold out on 15 Oct; Cult Beauty has the 118 ml at £36.00 in stock (a 30 ml trial size is £13)."
+  },
+  {
+   "product": "Blendtec blender line",
+   "category": "kitchen",
+   "product_type": "blender",
+   "page": "https://blendtecuk.com/products/domestic/",
+   "shop": "Blendtec UK",
+   "image": "https://cdn11.bigcommerce.com/s-6hlo6y4rrd/products/113/images/382/Total_Blender_Black_1__22790.1746522128.386.513.jpg?c=1",
+   "image_page": "https://blendtecuk.com/blendtec-total-blender-with-wildside-jar-in-black/",
+   "sources": [
+    "https://blendtecuk.com/products/domestic/",
+    "https://blendtecuk.com/blendtec-total-blender-with-wildside-jar-in-black/",
+    "https://blendtecuk.com/blendtec-classic-575-blender-in-red/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: Blendtec UK's domestic blenders on 15 Oct: Total with WildSide+ jar and Classic 575 £499, Designer 650 and Prosumer £649, Professional 800 £1,299 (£1,099 on offer). From £499 at the usual price; the Classic 575 in black is on offer at £439. The range page has no og:image, so the image is the Total Blender's own."
+  },
+  {
+   "product": "COSRX Salicylic Acid Daily Gentle Cleanser (SA cleanser)",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "page": "https://www.cosrx.com/products/salicylic-acid-daily-gentle-cleanser",
+   "shop": "COSRX",
+   "image": "https://www.cosrx.com/cdn/shop/products/salicyliccleanser_thum_1200x1200.jpg?v=1624581751",
+   "image_page": "https://www.cosrx.com/products/salicylic-acid-daily-gentle-cleanser",
+   "sources": [
+    "https://www.cosrx.com/products/salicylic-acid-daily-gentle-cleanser",
+    "https://www.skincupid.co.uk/products/salicylic-acid-daily-gentle-cleanser-150ml"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "COSRX's official global store sells to the UK in £ (United Kingdom (GBP) in its currency list): 150 ml £13.00, in stock on 15 Oct (the 50 ml is a mini). Skin Cupid, a UK K-beauty shop, had it at £12.95 on 10 Oct."
+  },
+  {
+   "product": "Gaggia Classic",
+   "category": "kitchen",
+   "product_type": "espresso machine",
+   "page": "https://www.gaggiadirect.com/classic-range.html#!/Gaggia-Classic-E24-BRASS-BOILER-GREY-240V-Manual-Espresso-Coffee-Machine/p/703898977",
+   "shop": "Gaggia UK",
+   "image": "https://d2j6dbq0eux0bg.cloudfront.net/images/1529056/products/703898977/1452521838.jpg",
+   "image_page": "https://gaggia.company.site/Gaggia-Classic-E24-BRASS-BOILER-GREY-240V-Manual-Espresso-Coffee-Machine-p703898977",
+   "sources": [
+    "https://www.gaggiadirect.com/classic-range.html#!/Gaggia-Classic-E24-BRASS-BOILER-GREY-240V-Manual-Espresso-Coffee-Machine/p/703898977",
+    "https://gaggia.company.site/Gaggia-Classic-E24-BRASS-BOILER-GREY-240V-Manual-Espresso-Coffee-Machine-p703898977",
+    "https://www.gaggiadirect.com/classic-range.html",
+    "https://www.which.co.uk/reviews/coffee-machines/gaggia-classic-e24-ri9481-11"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "The Classic sold now is the Classic E24 (2024): Gaggia UK's own shop (gaggiadirect.com, its UK office in Elland) sells the Classic E24 [Brass Boiler] 240V, grey (RI9481/16E), £499.00 inc. VAT on 15 Oct. The shop is an embedded store, so its page was read through the same store's plain page (gaggia.company.site), where the image comes from."
+  },
+  {
+   "product": "Le Creuset Dutch oven line",
+   "category": "kitchen",
+   "product_type": "dutch oven",
+   "page": "https://www.lecreuset.co.uk/en_GB/c/cooking-and-baking/cooking/casseroles",
+   "shop": "Le Creuset",
+   "sources": [
+    "https://www.lecreuset.co.uk/en_GB/c/cooking-and-baking/cooking/casseroles",
+    "https://www.lecreuset.co.uk/en_GB/p/cast-iron-round-casserole/CI1177.html"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: Le Creuset UK's Casseroles (the UK name for Dutch ovens). Le Creuset's UK and US sites refused every automated read on 15 Oct (an Incapsula wall), so the range page and from price are data/brand_lines.json's, read on 14 Oct: the Cast Iron Round Casserole from £229 (18 cm) to £529 (34 cm). No maker image could be read."
+  },
+  {
+   "product": "Maui Moisture Lightweight Hydration + Hibiscus Water conditioner",
+   "category": "haircare",
+   "product_type": "conditioner",
+   "page": "https://www.boots.com/maui-moisture-weightless-hydration-hibiscus-water-conditioner-385ml-10261102",
+   "shop": "Boots",
+   "image": "https://images.ctfassets.net/th7up0brotb1/5Q3fIP6itEfCDx9lYNLeDv/3d08a2f34658ddfae5ebdbe64a1c6190/LightweightHydration_HibiscusWaterConditioner_Product_1-en-us.webp",
+   "image_page": "https://www.mauimoisture.com/products/lightweight-hydration-hibiscus-water-conditioner",
+   "sources": [
+    "https://www.boots.com/maui-moisture-weightless-hydration-hibiscus-water-conditioner-385ml-10261102",
+    "https://www.mauimoisture.com/products/lightweight-hydration-hibiscus-water-conditioner"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Sold in the UK as Maui Moisture Weightless Hydration + Hibiscus Water Conditioner, 385 ml, at Boots: usual price £8.99, £5.99 on offer, temporarily unavailable online. Boots blocked direct reads on 15 Oct, so price and stock come from the search engine's copy of that page. Maui Moisture has no UK site (mauimoisture.co.uk doesn't resolve); the image is from its US page."
+  },
+  {
+   "product": "Ninja blender line",
+   "category": "kitchen",
+   "product_type": "blender",
+   "page": "https://www.sharkninja.co.uk/kitchen/blenders-food-prep/blenders",
+   "shop": "SharkNinja UK",
+   "sources": [
+    "https://www.sharkninja.co.uk/kitchen/blenders-food-prep/blenders",
+    "https://www.sharkninja.co.uk/ninja-blast-cordless-portable-blender-denim-blue-bc151uknv/BC151UKNV.html"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: SharkNinja UK's Blenders category. From £54.99: the Ninja Blast Cordless Portable Blender (Denim Blue in stock on 15 Oct), as data/brand_lines.json's from price; the cheapest full-size jug blender is dearer. The image is the blenders page's own og:image (a Ninja blender, CB350UK).; image left out: 2.7 MB, over 500 KB, and no smaller size of it on the maker's server"
+  },
+  {
+   "product": "OUAI Detox Shampoo",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "page": "https://theouai.co.uk/products/detox-shampoo",
+   "shop": "OUAI",
+   "image": "https://theouai.co.uk/cdn/shop/files/Update_2_DetoxShampoo_260611-17-23_Site_Asset_PDP_Product_Thumbnail_1440x1780_11_1024x1024.jpg?v=1786742517",
+   "image_page": "https://theouai.co.uk/products/detox-shampoo",
+   "sources": [
+    "https://theouai.co.uk/products/detox-shampoo"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "OUAI's UK store: full size (10 fl oz, 300 ml) £30.00, in stock on 15 Oct; the 3 fl oz travel size (£14) isn't counted."
+  },
+  {
+   "product": "The Ordinary Azelaic Acid Suspension 10%",
+   "category": "skincare",
+   "product_type": null,
+   "page": "https://theordinary.com/en-gb/azelaic-acid-suspension-10-exfoliator-100407.html",
+   "shop": "The Ordinary",
+   "image": "https://theordinary.com/dw/image/v2/BFKJ_PRD/on/demandware.static/-/Sites-deciem-master/default/dwedfce090/Images/products/The%20Ordinary/rdn-azelaic-acid-suspension-10pct-100ml.png?sw=900&sh=900&sm=fit",
+   "image_page": "https://theordinary.com/en-gb/azelaic-acid-suspension-10-exfoliator-100407.html",
+   "sources": [
+    "https://theordinary.com/en-gb/azelaic-acid-suspension-10-exfoliator-100407.html",
+    "https://www.cultbeauty.co.uk/p/the-ordinary-azelaic-acid-suspension-10-30ml/15236645/",
+    "https://www.lookfantastic.com/p/the-ordinary-azelaic-acid-suspension-10-30ml/15236645/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "30 ml (its usual size) £11.10 at Cult Beauty, in stock on 15 Oct; Lookfantastic has it at £10.99. The Ordinary's own UK store sells 30 ml and 100 ml; its page shows the 100 ml at £27.40 (the 30 ml price loads by script). The maker page's og:image is a generic banner, so the image is its product image (JSON-LD)."
+  },
+  {
+   "product": "Typhur Dome",
+   "category": "kitchen",
+   "product_type": "air fryer",
+   "page": "https://uk.typhur.com/products/dome-air-fryer",
+   "shop": "Typhur",
+   "image": "https://cdn.shopify.com/s/files/1/0809/4757/7116/files/Dome2.0_-Dome2.0-_4.png?v=1739435943",
+   "image_page": "https://uk.typhur.com/products/dome-air-fryer",
+   "sources": [
+    "https://uk.typhur.com/products/dome-air-fryer"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Typhur's UK store sells the Dome as the Dome 2 only (Classic Silver AF03, Graphite Gray AF05; the first Dome isn't listed): usual price £499.00, on offer at £399.00 on 15 Oct, low stock. The page's og:image is Typhur's logo, so the image is its first product photo."
+  },
+  {
+   "product": "Vitamix blender line",
+   "category": "kitchen",
+   "product_type": "blender",
+   "page": "https://vitamix.co.uk/collections/blenders",
+   "shop": "Vitamix UK",
+   "image": "https://vitamix.co.uk/cdn/shop/files/E310_Black_Front_1.4L_48oz_-800x1200-cb6eae5.jpg?v=1777625882",
+   "image_page": "https://vitamix.co.uk/products/explorian-e310",
+   "sources": [
+    "https://vitamix.co.uk/collections/blenders",
+    "https://vitamix.co.uk/products/explorian-e310"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: Vitamix UK's store sells eight blenders on 15 Oct, from the Explorian E310 at £429 (in stock) to the Ascent A3500i Gourmet Bundle at £899; the E320 is new since 14 Oct (£449). The blenders page's og:image is a lifestyle photo, so the image is the E310's own."
+  },
+  {
+   "product": "CeraVe SA Smoothing Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "page": "https://www.cerave.co.uk/skincare/cleansers/sa-smoothing-cleanser",
+   "shop": "CeraVe",
+   "image": "https://www.cerave.co.uk/-/media/project/loreal/brand-sites/cerave/emea/uk/products/sa-smoothing-cleanser-236ml/sa-smoothing-cleanser-473ml-2-sm.jpg?rev=-1",
+   "image_page": "https://www.cerave.co.uk/skincare/cleansers/sa-smoothing-cleanser",
+   "sources": [
+    "https://www.cerave.co.uk/skincare/cleansers/sa-smoothing-cleanser",
+    "https://www.lookfantastic.com/p/cerave-sa-smoothing-cleanser-with-salicylic-acid-for-dry-rough-bumpy-skin-236ml/12207663/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "CeraVe UK calls it the Renewing SA Smoothing Cleanser. 236 ml at Lookfantastic: £14.50 in stock on 15 Oct (a 25% offer was shown on the page too); 473 ml £23.50. CeraVe UK's own site links to shops rather than selling."
+  },
+  {
+   "product": "Sage Bambino Plus",
+   "category": "kitchen",
+   "product_type": "espresso machine",
+   "page": "https://www.sageappliances.com/en-gb/product/bes500",
+   "shop": "Sage",
+   "image": "https://assets.sageappliances.com/cdn-cgi/image/width=600,format=auto/BES500/SES500BSS4EEU1/pdp_1300px.png?pdp",
+   "image_page": "https://www.sageappliances.com/en-gb/product/bes500",
+   "sources": [
+    "https://www.sageappliances.com/en-gb/product/bes500"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Sage UK (Breville outside the UK): the Bambino Plus, brushed stainless steel (SES500BSS4GUK1), £399.95, in stock on 15 Oct; Black Truffle sold out; a special edition is £799.95.; image: a smaller size of the maker's image (73 KB instead of 657 KB)"
+  },
+  {
+   "product": "70 qt Coleman Xtreme",
+   "category": "general",
+   "product_type": "cooler",
+   "page": "https://www.charlies.co.uk/coleman-70qt-xtreme-cool-box-66l/",
+   "shop": "Charlies",
+   "sources": [
+    "https://www.charlies.co.uk/coleman-70qt-xtreme-cool-box-66l/",
+    "https://www.towsure.com/coleman-xtreme-70qt-cool-box",
+    "https://www.jacksonsofoldarley.co.uk/products/coleman-xtreme-70qt-cool-box",
+    "https://www.coleman.eu/cool-boxes.html"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Sold in the UK as the Coleman 70QT Xtreme Cool Box, 66 L (2000037214): £119.99 at Charlies (Charles Trading, a UK outdoor and DIY retailer), in stock on 15 Oct (RRP £149.99); Towsure and Jacksons of Oldarley list it too (Towsure blocked automated reads). No maker image: Coleman UK's site (colemanuk.co.uk) refuses automated reads and Coleman's European site loads its products by script."
+  },
+  {
+   "product": "Alessi 9090 (Richard Sapper)",
+   "category": "kitchen",
+   "product_type": "moka pot",
+   "page": "https://uk.alessi.com/products/9090-espresso-coffee-maker",
+   "shop": "Alessi",
+   "image": "https://uk.alessi.com/cdn/shop/products/01_9090.jpg?v=1652871209",
+   "image_page": "https://uk.alessi.com/products/9090-espresso-coffee-maker",
+   "sources": [
+    "https://uk.alessi.com/products/9090-espresso-coffee-maker"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Alessi's UK store sells the 9090 in four sizes, all in stock on 15 Oct: 1 cup £150, 3 cups £170, 6 cups £190, 10 cups £250; the price given is the smallest (a from price)."
+  },
+  {
+   "product": "Amazon Basics packing cubes line",
+   "category": "general",
+   "product_type": "packing cubes",
+   "page": "https://www.amazon.co.uk/dp/B014VBIEZQ",
+   "shop": "Amazon UK",
+   "image": "https://m.media-amazon.com/images/I/71ON7bxyl2L._AC_SL1500_.jpg",
+   "image_page": "https://www.amazon.co.uk/dp/B014VBIEZQ",
+   "sources": [
+    "https://www.amazon.co.uk/dp/B014VBIEZQ"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Amazon Basics packing cubes are now sold as Amazon Essentials ('Previously Amazon Basics, now Amazon Essentials'): the 4-piece set, grey, sold and shipped by Amazon, in stock on 15 Oct. Amazon showed £10.41 to this non-UK reader (prices without UK VAT, as its RRPs show), so the UK price is £12.49 with 20% VAT. Amazon is the maker here, so the image is from its own product page. No separate range page; this is the main set."
+  },
+  {
+   "product": "Andis foil shaver",
+   "category": "general",
+   "product_type": "electric shaver",
+   "page": "https://andis-uk.com/products/andis-profoil-lithium-shaver-ts-1",
+   "shop": "Andis UK",
+   "image": "https://andis-uk.com/cdn/shop/files/17235-profoil-lithium-titanium-foil-shaver-ts-1-straight-1.jpg?v=1774719759",
+   "image_page": "https://andis-uk.com/products/andis-profoil-lithium-shaver-ts-1",
+   "sources": [
+    "https://andis-uk.com/products/andis-profoil-lithium-shaver-ts-1",
+    "https://www.andis.com/About/InternationalDistributors",
+    "https://andis-uk.com/products/andis-profoil-plus-ii-shaver"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Writers name no model; Andis's best-known foil shaver is the ProFoil Lithium (TS-1). Andis UK (Styling Products UK Ltd, Andis's UK distributor per andis.com) sells it at £79.99, in stock on 15 Oct; the ProFoil Plus II is £99.99."
+  },
+  {
+   "product": "Apple phone line",
+   "category": "general",
+   "product_type": "phone",
+   "page": "https://www.apple.com/uk/iphone/",
+   "shop": "Apple",
+   "image": "https://www.apple.com/v/iphone/home/ck/images/meta/iphone__bh930eyjnj0i_og.png?202610130836",
+   "image_page": "https://www.apple.com/uk/iphone/",
+   "sources": [
+    "https://www.apple.com/uk/iphone/",
+    "https://www.apple.com/uk/shop/buy-iphone"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: Apple UK's iPhones on 15 Oct: iPhone 17e from £699 (the from price), iPhone 16 from £799, iPhone 17 from £899, iPhone Air from £1,099, iPhone 18 Pro and Pro Max from £1,199, iPhone Duo from £1,999 (pre-order, out 16 Oct). A fast-moving type: the newest threads matter most."
+  },
+  {
+   "product": "Aran Sweater Market wool sweater",
+   "category": "general",
+   "product_type": "jumper",
+   "page": "https://www.aran.com/aran-crew-neck-sweater",
+   "shop": "Aran Sweater Market",
+   "image": "https://cdn11.bigcommerce.com/s-scgdirr/products/28108/images/158128/C580_-_Army_Green__47621.1791834476.560.850.jpg?c=2",
+   "image_page": "https://www.aran.com/aran-crew-neck-sweater",
+   "sources": [
+    "https://www.aran.com/aran-crew-neck-sweater",
+    "https://www.aran.com/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "The maker (Aran Sweater Market, Ireland; aransweatermarket.com redirects to aran.com) sells online with a Pound Sterling option and ships from Ireland. Writers name no model; its Mens Aran Crew Neck Sweater shows £74.33 with sterling selected, but whether a UK buyer pays UK VAT or duty on top couldn't be confirmed from here, so no price is given."
+  },
+  {
+   "product": "Baby Bjorn bouncer",
+   "category": "general",
+   "product_type": "baby bouncer",
+   "page": "https://www.babybjorn.co.uk/products/baby-bouncers/bouncer-bliss/light-beige-3d-jersey-light-grey/",
+   "shop": "BabyBjörn",
+   "sources": [
+    "https://www.babybjorn.co.uk/products/baby-bouncers/bouncer-bliss/light-beige-3d-jersey-light-grey/",
+    "https://www.babybjorn.co.uk/products/baby-bouncers/",
+    "https://www.babybjorn.co.uk/products/baby-bouncers/bouncer-begin/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Writers name no model; BabyBjörn's UK store sells the Bouncer Bliss (the classic; light beige 3D jersey £209.90, in stock on 15 Oct; prices vary by fabric) and the Bouncer Begin (£185.90). Its bouncers page is the range: https://www.babybjorn.co.uk/products/baby-bouncers/; image left out: 1.1 MB, over 500 KB, and no smaller size of it on the maker's server"
+  },
+  {
+   "product": "Batiste dry shampoo line",
+   "category": "haircare",
+   "product_type": "dry shampoo",
+   "page": "https://www.batiste-hair.eu/en/our-products/all-products/",
+   "shop": "Batiste",
+   "image": "https://www.batiste-hair.eu/en/wp-content/uploads/sites/2/2022/02/12294_Batiste_200ml_CORE_ORIGINAL_Can_Mockup_NO_SHADOW_v8-215x1024.png",
+   "image_page": "https://www.batiste-hair.eu/en/our-products/all-products/",
+   "sources": [
+    "https://www.batiste-hair.eu/en/our-products/all-products/",
+    "https://groceries.morrisons.com/products/batiste-original-dry-shampoo/105042557",
+    "https://groceries.morrisons.com/products/batiste-original-dry-shampoo/111860311"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: Batiste's European site (it covers the UK; its page links to UK grocers such as Asda and Co-op) lists every range. From £3.35: the Original Dry Shampoo 200 ml at Morrisons, in stock on 15 Oct (Buy 2 for £5 offer); 350 ml £5.20. The image is the range page's 200 ml Original can."
+  },
+  {
+   "product": "Black Diamond Distance Carbon Z",
+   "category": "general",
+   "product_type": "trekking poles",
+   "page": "https://eu.blackdiamondequipment.com/products/distance-carbon-z-poles",
+   "shop": "Black Diamond",
+   "image": "https://eu.blackdiamondequipment.com/cdn/shop/files/112554_4007_Distance_Carbon_Z_Poles_Desert_Sky_01_622857ca-a05f-48ea-8705-5eec4ed0102c.jpg?v=1745428470",
+   "image_page": "https://eu.blackdiamondequipment.com/products/distance-carbon-z-poles",
+   "sources": [
+    "https://eu.blackdiamondequipment.com/products/distance-carbon-z-poles"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Black Diamond's European store (blackdiamondequipment.com/en_GB redirects there; it has a United Kingdom £ option): Distance Carbon Z Poles £150 with the UK selected, sizes 105-120 cm in stock on 15 Oct. The FKT version is a different, dearer pole."
+  },
+  {
+   "product": "Blunt umbrella",
+   "category": "general",
+   "product_type": "umbrella",
+   "page": "https://bluntumbrellas.co.uk/products/2020-blunt-metro",
+   "shop": "Blunt",
+   "image": "https://bluntumbrellas.co.uk/cdn/shop/files/ProductCard_Template_Metro_0020_Metro_side_Yellow.png?v=1689227951",
+   "image_page": "https://bluntumbrellas.co.uk/products/2020-blunt-metro",
+   "sources": [
+    "https://bluntumbrellas.co.uk/products/2020-blunt-metro",
+    "https://bluntumbrellas.co.uk/collections/all-umbrellas"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Writers name no model; BLUNT's own UK store sells its core umbrellas: the Metro (compact) £75, the Classic £85 and the Exec £99, in stock on 15 Oct (special editions £80 to £95). The Metro is given."
+  },
+  {
+   "product": "Brita pitcher",
+   "category": "general",
+   "product_type": "water filter",
+   "page": "https://www.brita.co.uk/water-filter-system/water-filter-jugs/marella",
+   "shop": "BRITA",
+   "sources": [
+    "https://www.brita.co.uk/water-filter-system/water-filter-jugs/marella",
+    "https://www.brita.co.uk/water-filter-system/water-filter-jugs"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Writers name no model (in the UK a pitcher is a 'water filter jug'); BRITA UK's own store sells several, the Marella being its standard one: £19.99 to £20.99 by colour, in stock on 15 Oct. The page has no og:image, so the image is its product image (JSON-LD).; image left out: its size couldn't be checked: the server doesn't give it"
+  },
+  {
+   "product": "Brother B&W laser printer",
+   "category": "general",
+   "product_type": "printer",
+   "page": "https://store.brother.co.uk/devices/laser/hl/hll2400dw",
+   "shop": "Brother",
+   "sources": [
+    "https://store.brother.co.uk/devices/laser/hl/hll2400dw",
+    "https://www.brother.co.uk/printers/laser-printers/mono-laser-printers"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Writers name no model; Brother UK sells a range of mono laser printers (https://www.brother.co.uk/printers/laser-printers/mono-laser-printers). Given: its basic A4 mono laser, the HL-L2400DW, £133.42 inc. VAT on Brother's UK store, out of stock there on 15 Oct (other models from DCP-L1660W up).; image left out: 1.4 MB, over 500 KB, and no smaller size of it on the maker's server"
+  },
+  {
+   "product": "Cetaphil Gentle Skin Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "page": "https://www.cetaphil.co.uk/cleansers/gentle-skin-cleanser/5020465202554.html",
+   "shop": "Cetaphil",
+   "image": "https://www.cetaphil.co.uk/dw/image/v2/bggn_prd/on/demandware.static/-/Sites-galderma-uk-m-catalog/default/dwddf7d4dd/REVIVE%202026/Gentle%20Skin%20Cleanser/GSC%20473%201.jpg?sw=900&sh=900&sm=fit&q=85",
+   "image_page": "https://www.cetaphil.co.uk/cleansers/gentle-skin-cleanser/5020465202554.html",
+   "sources": [
+    "https://www.cetaphil.co.uk/cleansers/gentle-skin-cleanser/5020465202554.html",
+    "https://www.lookfantastic.com/p/cetaphil-gentle-skin-cleanser-wash-236ml/13908195/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "236 ml £11.50 at Lookfantastic, in stock on 15 Oct (also 473 ml £17 and 1 L £27.50). Cetaphil UK's own page shows it in stock; its og:image is the Cetaphil logo, so the image is its product photo (JSON-LD, the 473 ml bottle)."
+  },
+  {
+   "product": "chef's choice electric knife sharpener line",
+   "category": "kitchen",
+   "product_type": "knife sharpener",
+   "page": "https://www.kitchenknives.co.uk/knife-sharpeners/electric-knife-sharpeners/",
+   "shop": "KitchenKnives.co.uk",
+   "image": "https://cdn.shopify.com/s/files/1/0064/4877/5232/collections/eb27f537213a1c69a9dd9561687deaf0.jpg?v=1615834299",
+   "image_page": "https://chefschoice.com/collections/electric-knife-sharpeners",
+   "sources": [
+    "https://www.kitchenknives.co.uk/knife-sharpeners/electric-knife-sharpeners/",
+    "https://chefschoice.com/collections/electric-knife-sharpeners",
+    "https://www.kitchenknives.co.uk/by-brand/chefschoice/",
+    "https://www.kitchenknives.co.uk/model-dcb220-dc-powered-electric-sharpener-with-battery-2-stage-20-dizor-grey-with-gift-box/",
+    "https://www.kitchenknives.co.uk/chef-schoice-electric-knife-sharpener-angle-select-15201-brushed/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: Chef'sChoice (EdgeCraft, US) has no UK store; KitchenKnives.co.uk sells its electric sharpeners: from £115 (the battery-powered DCB220 2-stage, in stock on 15 Oct) to the Angle Select 15201 at £227.95; a mains model at £190 is out of stock. product_page is that shop's electric sharpeners page (its Chef'sChoice brand page: https://www.kitchenknives.co.uk/by-brand/chefschoice/). Image from the maker's US electric sharpeners page."
+  },
+  {
+   "product": "Clinique all about eyes",
+   "category": "skincare",
+   "product_type": "eye cream",
+   "page": "https://www.clinique.co.uk/products/all-about-eyes-eye-cream-with-vitamin-c",
+   "shop": "Clinique",
+   "image": "https://www.clinique.co.uk/cdn/shop/files/cl_prod_4769_UK_3000x3000_0_df3b438c-c4c2-479c-bbfd-70cb7a803b00.jpg?v=1791860756",
+   "image_page": "https://www.clinique.co.uk/products/all-about-eyes-eye-cream-with-vitamin-c",
+   "sources": [
+    "https://www.clinique.co.uk/products/all-about-eyes-eye-cream-with-vitamin-c",
+    "https://www.clinique.co.uk/products/all-about-eyes%E2%84%A2-eye-cream-with-vitamin-c-15-0-ml-1"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Clinique UK now sells the classic All About Eyes as All About Eyes Eye Cream With Vitamin C: 15 ml £36.00 (in stock on 15 Oct), 30 ml £60.00 (out of stock). The All About Eyes Rich, Serum De-Puffing and Brightening Serum are other products."
+  },
+  {
+   "product": "Comandante coffee grinder line",
+   "category": "kitchen",
+   "product_type": "coffee grinder",
+   "page": "https://comandantegrinder.com/",
+   "shop": "Comandante",
+   "image": "https://comandantegrinder.com/cdn/shop/files/c40-nitro-blade-mk4-black.jpg?v=1741195167&width=2048",
+   "image_page": "https://comandantegrinder.com/products/c40-mk4-nitro-blade-black",
+   "sources": [
+    "https://comandantegrinder.com/",
+    "https://comandantegrinder.com/products/c40-mk4-nitro-blade-black",
+    "https://clumsygoat.co.uk/products/comandante-c40-coffee-grinder"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: Comandante's own site (all grinders: C40, C60, X25; data/brand_lines.json's range page) sells in euros (C40 MK4 €259, out of stock). UK: Clumsy Goat's C40 MK4 Nitro Blade usually £249, on sale at £219, sold out in every colour on 15 Oct (its structured data shows £182.50, the price before VAT). The image is the maker's C40 MK4 black."
+  },
+  {
+   "product": "COSRX Full Fit Propolis Synergy Toner",
+   "category": "skincare",
+   "product_type": "toner",
+   "page": "https://www.cosrx.com/products/full-fit-propolis-synergy-toner_cpnp",
+   "shop": "COSRX",
+   "image": "https://www.cosrx.com/cdn/shop/files/full-fit-propolis-synergy-toner-cosrx-official-1_1200x1200.jpg?v=1724835425",
+   "image_page": "https://www.cosrx.com/products/full-fit-propolis-synergy-toner_cpnp",
+   "sources": [
+    "https://www.cosrx.com/products/full-fit-propolis-synergy-toner_cpnp"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "COSRX's official global store, with the UK selected, sells its UK/EU-notified version (the '_cpnp' page; the plain page is the US one): 150 ml £22.00, in stock on 15 Oct."
+  },
+  {
+   "product": "Dermalogica Daily Microfoliant",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "page": "https://www.dermalogica.co.uk/products/daily-microfoliant",
+   "shop": "Dermalogica",
+   "image": "https://www.dermalogica.co.uk/cdn/shop/files/Daily_Microfoliant_-_2.6oz_FRONT_1.jpg?v=1738943256",
+   "image_page": "https://www.dermalogica.co.uk/products/daily-microfoliant",
+   "sources": [
+    "https://www.dermalogica.co.uk/products/daily-microfoliant"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Dermalogica UK's own store: 74 g £65.00 (the usual full size, the 10 Oct rule), in stock on 15 Oct; also 40 g £45, a 13 g travel size £19 and a 74 g refill £58."
+  },
+  {
+   "product": "DeWalt leaf blower line",
+   "category": "general",
+   "product_type": "leaf blower",
+   "page": "https://www.dewalt.co.uk/en-gb/products/outdoor/leaf-blowers",
+   "shop": "DeWalt",
+   "image": "https://bynder.sbdinc.com/asset/546702c9-cc67-4251-988c-941785e72a0e/thumbnail/webimage-DCBL772B_1",
+   "image_page": "https://www.dewalt.co.uk/en-gb/products/outdoor/leaf-blowers",
+   "sources": [
+    "https://www.dewalt.co.uk/en-gb/products/outdoor/leaf-blowers",
+    "https://www.dewalt.co.uk/en-gb/product/dcmbl562n-xj/18v-xr-brushless-blower-tool-only"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: DeWalt UK's Leaf Blowers page lists UK models (-GB and -XJ SKUs): the 18V XR Brushless Blower DCMBL562 (tool only or with a 5Ah battery), 18V XR Compact Blower DCV100, and 54V FLEXVOLT blowers incl. a backpack blower. DeWalt UK doesn't sell direct, and the big UK tool shops (Screwfix, Toolstation, Amazon search) couldn't be read, so no from price. Image: the range page's own og:image."
+  },
+  {
+   "product": "Differin retinoid line",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "page": "https://www.theindependentpharmacy.co.uk/acne/differin",
+   "shop": "The Independent Pharmacy",
+   "sources": [
+    "https://www.theindependentpharmacy.co.uk/acne/differin",
+    "https://www.medicines.org.uk/emc/search?q=differin",
+    "https://www.medicines.org.uk/emc/product/921/smpc",
+    "https://www.medicines.org.uk/emc/product/920/smpc",
+    "https://www.theindependentpharmacy.co.uk/acne/differin-gel"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Prescription-only in the UK: the eMC lists Differin Gel and Differin Cream (adapalene 0.1%, Galderma), the only two UK Differin products. UK online pharmacies supply them after a consultation: The Independent Pharmacy's Differin Gel from £29.95 (in stock on 15 Oct). Differin's US over-the-counter gel isn't sold in the UK. No maker image: Galderma has no consumer page for a UK prescription medicine."
+  },
+  {
+   "product": "Dr. Brown’s baby bottle line",
+   "category": "general",
+   "product_type": "baby bottle",
+   "page": "https://www.drbrowns.co.uk/collections/bottle-feeding",
+   "shop": "Dr Brown's UK",
+   "image": "https://www.drbrowns.co.uk/cdn/shop/files/270ml_Single_Bottle_OOP__00315.1661520585.1280.1280_1200x1200.jpg?v=1736157709",
+   "image_page": "https://www.drbrowns.co.uk/products/dr-browns-options-anti-colic-270ml-baby-bottle",
+   "sources": [
+    "https://www.drbrowns.co.uk/collections/bottle-feeding",
+    "https://www.drbrowns.co.uk/products/dr-browns-options-anti-colic-270ml-baby-bottle"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: Dr Brown's UK store (drbrowns.co.uk, run with Baby-Central) sells the Options+ anti-colic bottles: from £9.29 for one 270 ml bottle (out of stock on 15 Oct; out of stock still counts), twin packs from £16.49 in stock, glass twin pack £19.99."
+  },
+  {
+   "product": "Ego string trimmer line",
+   "category": "general",
+   "product_type": "string trimmer",
+   "page": "https://egopowerplus.co.uk/products/line-trimmers-brush-cutters",
+   "shop": "EGO Power+",
+   "image": "https://egopowerplus.co.uk/sites/default/files/2026-06/ST1300E-S_EGOEU_LINE-TRIMMER_MAIN_01.png",
+   "image_page": "https://egopowerplus.co.uk/products/line-trimmers-brush-cutters/st1300e-s-33cm-line-trimmer",
+   "sources": [
+    "https://egopowerplus.co.uk/products/line-trimmers-brush-cutters",
+    "https://egopowerplus.co.uk/products/line-trimmers-brush-cutters/st1300e-s-33cm-line-trimmer"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: EGO Power+ UK's Grass Trimmers & Brush Cutters (UK site; it sells through stockists). From £149: the ST1300E-S 33 cm line trimmer, RRP £149.00 tool only (battery and charger extra; the ST1301E-S kit includes them). The range page's og:image is EGO's logo artwork, so the image is the ST1300E-S's own."
+  },
+  {
+   "product": "Elvie breast pump line",
+   "category": "general",
+   "product_type": "breast pump",
+   "page": "https://uk.elvie.com/collections/electric-breast-pumps",
+   "shop": "Elvie",
+   "image": "https://uk.elvie.com/cdn/shop/files/elvie_pump_single_pdp_hero_2.jpg?v=1784206733&width=1024",
+   "image_page": "https://uk.elvie.com/products/elvie-pump",
+   "sources": [
+    "https://uk.elvie.com/collections/electric-breast-pumps",
+    "https://uk.elvie.com/products/elvie-pump",
+    "https://uk.elvie.com/products/elvie-stride",
+    "https://uk.elvie.com/products/elvie-stride-2"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: Elvie (a UK brand) sells its pumps on its own UK store, all on offer on 15 Oct: Elvie Stride single £70 (46% off; the double £114.50, regular £229), Stride 2 single £119 (regular £169), the wearable Elvie Pump from £199 (single) to £369. The from price is an offer price; the single Stride's regular price isn't shown. Also a manual pump (Elvie Wave). Image: the Elvie Pump's own."
+  },
+  {
+   "product": "Epiduo (adapalene 0.1% / benzoyl peroxide 2.5%) Gel",
+   "category": "skincare",
+   "product_type": null,
+   "page": "https://www.theindependentpharmacy.co.uk/acne/epiduo-gel",
+   "shop": "The Independent Pharmacy",
+   "sources": [
+    "https://www.theindependentpharmacy.co.uk/acne/epiduo-gel",
+    "https://www.medicines.org.uk/emc/product/451/smpc"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Prescription-only in the UK (eMC: Epiduo 0.1%/2.5% Gel, Galderma; an Epiduo 0.3%/2.5% also exists). UK online pharmacies supply it after a consultation: The Independent Pharmacy, Epiduo 0.1%/2.5% Gel £39.99, in stock on 15 Oct. No maker image: Galderma has no consumer page for a UK prescription medicine."
+  },
+  {
+   "product": "Eufy baby monitor line",
+   "category": "general",
+   "product_type": "baby monitor",
+   "page": "https://www.eufy.com/uk/collections/baby-monitor",
+   "shop": "eufy",
+   "image": "https://cdn.shopify.com/s/files/1/0504/1094/6753/files/T6310_eufy_Richimage_US_TD01_EN_1200_1500_V2.png?v=1790751486&width=600",
+   "image_page": "https://www.eufy.com/uk/products/e6310221",
+   "sources": [
+    "https://www.eufy.com/uk/collections/baby-monitor",
+    "https://www.eufy.com/uk/products/e6310221",
+    "https://www.eufy.com/uk/products/e8352221",
+    "https://www.eufy.com/uk/products/e8354121"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: eufy's UK store sells its baby monitors on 15 Oct: from the C10 4.5\" monitor with 2K camera at £114.99, the E20 £169 and the E21 4K £249 (in stock). The range page has no og:image, so the image is the C10's own.; image: a smaller size of the maker's image (221 KB instead of 2.3 MB)"
+  },
+  {
+   "product": "Girlfriend Collective leggings line",
+   "category": "general",
+   "product_type": "leggings",
+   "page": "https://girlfriend.com/collections/leggings",
+   "shop": "Girlfriend Collective",
+   "image": "https://girlfriend.com/cdn/shop/files/4008_4007_HRLegging_M_Black_8_web.jpg?v=1744659543",
+   "image_page": "https://girlfriend.com/products/black-compressive-high-rise-legging",
+   "sources": [
+    "https://girlfriend.com/collections/leggings",
+    "https://girlfriend.com/products/black-compressive-high-rise-legging"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: Girlfriend Collective (US) sells to UK shoppers from its own store in £ when the UK is selected: its classic Compressive High-Rise Legging £83 (black, in stock on 15 Oct); its leggings run about £68 to £99. Ships from abroad; no UK shop checked."
+  },
+  {
+   "product": "Hennessy hammock line",
+   "category": "general",
+   "product_type": "hammock",
+   "page": "https://hennessyhammock.co.uk/",
+   "shop": "Hennessy Hammock UK",
+   "image": "https://cdn.shopify.com/s/files/1/2560/7034/products/scout-zip-web.jpg?v=1630437395",
+   "image_page": "https://hennessyhammock.co.uk/products/scout-zip",
+   "sources": [
+    "https://hennessyhammock.co.uk/",
+    "https://hennessyhammock.co.uk/products/scout-zip",
+    "https://hennessyhammock.com/pages/shipping"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: Hennessy Hammock (Canada) runs a UK store (hennessyhammock.co.uk, linked from its shipping page) that is all hammocks and their flies and parts. From £99.95: the Scout Zip camping hammock, in stock on 15 Oct (Expedition, Explorer, Safari and 4Season models up to about £290; a Leaf Lounger without bug net is listed at £59.95, and 'Odds and Ends' sale items cost less)."
+  },
+  {
+   "product": "Hilti",
+   "category": "general",
+   "product_type": "laser level",
+   "page": "https://www.hilti.co.uk/c/CLS_MEA_TOOL_INSERT_7127/CLS_MEA_LASER_LAYOUT_TOOLS_7127",
+   "shop": "Hilti",
+   "sources": [
+    "https://www.hilti.co.uk/c/CLS_MEA_TOOL_INSERT_7127/CLS_MEA_LASER_LAYOUT_TOOLS_7127",
+    "https://www.hilti.co.uk/c/CLS_MEA_TOOL_INSERT_7127"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "A brand pick (laser level): Hilti UK sells laser layout tools direct on hilti.co.uk (line, multiline, combi and rotating lasers, optical levels). Its product prices load by script and Hilti's trade prices are often shown before VAT, so no price is given; the page's og:image is Hilti's logo, so no image."
+  },
+  {
+   "product": "Ikea French press line",
+   "category": "kitchen",
+   "product_type": "french press",
+   "page": "https://www.ikea.com/gb/en/cat/coffee-makers-accessories-20622/",
+   "shop": "IKEA",
+   "image": "https://www.ikea.com/gb/en/images/products/upphetta-coffee-tea-maker-glass-stainless-steel__0713350_pe729456_s5.jpg",
+   "image_page": "https://www.ikea.com/gb/en/p/upphetta-coffee-tea-maker-glass-stainless-steel-60241389/",
+   "sources": [
+    "https://www.ikea.com/gb/en/cat/coffee-makers-accessories-20622/",
+    "https://www.ikea.com/gb/en/p/upphetta-coffee-tea-maker-glass-stainless-steel-60241389/",
+    "https://www.ikea.com/gb/en/p/ikea-365-coffee-tea-maker-clear-glass-stainless-steel-20532724/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: IKEA UK sells two cafetières (IKEA calls them coffee/tea makers): UPPHETTA £10 (in stock on 15 Oct) and IKEA 365+ £12. product_page is IKEA UK's Coffee makers & accessories category."
+  },
+  {
+   "product": "Innersense Pure Harmony Hairbath",
+   "category": "haircare",
+   "product_type": "shampoo",
+   "page": "https://www.cultbeauty.co.uk/p/innersense-pure-harmony-hairbath-various-sizes/13318543/",
+   "shop": "Cult Beauty",
+   "image": "https://innersensebeauty.com/cdn/shop/files/PureHairbathRetail.jpg?v=1709165523",
+   "image_page": "https://innersensebeauty.com/products/pure-harmony",
+   "sources": [
+    "https://www.cultbeauty.co.uk/p/innersense-pure-harmony-hairbath-various-sizes/13318543/",
+    "https://innersensebeauty.com/products/pure-harmony"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "295 ml £28.00 at Cult Beauty (946 ml £68), in stock on 15 Oct. Innersense's own store prices in US dollars (its en-gb pages fall back to the US store), so the UK seller is Cult Beauty; the image is from the maker's page."
+  },
+  {
+   "product": "iron masters dumbbells line",
+   "category": "general",
+   "product_type": "dumbbells",
+   "page": "https://ironmaster.co.uk/",
+   "shop": "Ironmaster UK",
+   "image": "https://ironmaster.co.uk/cdn/shop/files/ironmaster-quick-lock-dumbbell-45-lbs-set.jpg?v=1782392339",
+   "image_page": "https://ironmaster.co.uk/products/quick-lock-dumbbell-set-45-lbs-20-kg",
+   "sources": [
+    "https://ironmaster.co.uk/",
+    "https://ironmaster.co.uk/products/quick-lock-dumbbell-set-45-lbs-20-kg"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "The name means Ironmaster (US maker of Quick-Lock adjustable dumbbells). Ironmaster UK's own store sells them in £, taxes included: from the Quick-Lock set 45 lb (20 kg), regular £519, on sale at £449 on 15 Oct; the 75 lb set £649."
+  },
+  {
+   "product": "KeepCup glass",
+   "category": "general",
+   "product_type": "travel mug",
+   "page": "https://uk.keepcup.com/collections/brew",
+   "shop": "KeepCup",
+   "image": "https://uk.keepcup.com/cdn/shop/files/Brew_M_12oz_Pashmak_Pink_BPAS12.png?v=1785390893",
+   "image_page": "https://uk.keepcup.com/products/brew-m-12oz-pashmak-pink-copy",
+   "sources": [
+    "https://uk.keepcup.com/collections/brew",
+    "https://uk.keepcup.com/products/brew-m-12oz-pashmak-pink-copy"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "KeepCup's glass cups are its Brew range, sold on its own UK store: Brew M 12 oz £22.00 (in stock on 15 Oct), S 8 oz £20, glass espresso cup £18; Brew Cork versions too. product_page is the Brew collection."
+  },
+  {
+   "product": "Kirkland nappies line",
+   "category": "general",
+   "product_type": "nappies",
+   "page": "https://www.costco.co.uk/Grocery-Household/Grocery-Delivery/Kirkland-Signature-Nappies-Size-1-192-Pack/p/1920490",
+   "shop": "Costco UK",
+   "image": "https://www.costco.co.uk/medias/sys_master/images/h97/h9c/415755836653598.jpg",
+   "image_page": "https://www.costco.co.uk/Grocery-Household/Grocery-Delivery/Kirkland-Signature-Nappies-Size-1-192-Pack/p/1920490",
+   "sources": [
+    "https://www.costco.co.uk/Grocery-Household/Grocery-Delivery/Kirkland-Signature-Nappies-Size-1-192-Pack/p/1920490",
+    "https://www.costco.co.uk/rest/v2/uk/products/search?query=nappies&fields=FULL&pageSize=10"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Kirkland Signature is Costco's own brand; Costco UK sells Kirkland Signature Nappies (members only): from £21.99 (Size 1, 192 pack; Size 2, 174 pack), sizes 3 and 4 £26.99, in stock for grocery delivery on 15 Oct. Costco is the maker, so the image is its own."
+  },
+  {
+   "product": "KitchenAid Professional (bowl-lift)",
+   "category": "kitchen",
+   "product_type": "stand mixer",
+   "page": "https://www.kitchenaid.co.uk/mixers/large/859711645250/mixer-bowl-lift-5-2l-heavy-duty-5ksm55sxx-matte-black",
+   "shop": "KitchenAid",
+   "image": "https://www.whirlpool.com/is/image/content/dam/emea/kitchenaid/image/product-shot/kit/SDZD5I_5KSM55SXXxBM_-_Matte_Black_-_Kit.jpg?icc=sRGB&wid=1200&hei=630&fit=crop&fmt=jpg",
+   "image_page": "https://www.kitchenaid.co.uk/mixers/large/859711645250/mixer-bowl-lift-5-2l-heavy-duty-5ksm55sxx-matte-black",
+   "sources": [
+    "https://www.kitchenaid.co.uk/mixers/large/859711645250/mixer-bowl-lift-5-2l-heavy-duty-5ksm55sxx-matte-black",
+    "https://www.kitchenaid.co.uk/all-mixers",
+    "https://www.kitchenaid.co.uk/mixers/large/859711689310/mixer-bowl-lift-5-6l-artisan-5ksm60spx-matte-black"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "The US 'Professional' bowl-lift mixers are 120 V; KitchenAid UK sells its own bowl-lift range: the Heavy Duty 5.2 L (5KSM55SXX) £699.00, in stock on 15 Oct (the closest to the US Professional 5 Plus), the Artisan bowl-lift 5.6 L (5KSM60SPX) £749 (on offer at £599.20) and 6.6 L models. The image is KitchenAid's own (served from parent Whirlpool's image library). Note: that image host (whirlpool.com) answered this checker with 403, though KitchenAid's own page uses it; test it from the site before relying on it."
+  },
+  {
+   "product": "Kobo e-reader line",
+   "category": "general",
+   "product_type": "e-reader",
+   "page": "https://www.kobo.com/gb/en/ereaders",
+   "shop": "Kobo",
+   "sources": [
+    "https://www.kobo.com/gb/en/ereaders"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Rakuten Kobo sells its eReaders to UK shoppers on its own UK store (kobo.com/gb/en). The store answered automated reads with a challenge page, so the current models and from price couldn't be read today; no image either."
+  },
+  {
+   "product": "Le Creuset enamel kettle",
+   "category": "kitchen",
+   "product_type": "stovetop kettle",
+   "page": "https://www.hartsofstur.com/le-creuset-meringue-kone-kettle-40101027160000.html",
+   "shop": "Harts of Stur",
+   "sources": [
+    "https://www.hartsofstur.com/le-creuset-meringue-kone-kettle-40101027160000.html",
+    "https://www.hartsofstur.com/drink/tea/stovetop-kettles.html",
+    "https://www.hartsofstur.com/le-creuset-meringue-traditional-kettle-40102027160000.html"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Le Creuset's enamelled steel stovetop kettles are sold in the UK: at Harts of Stur (a large UK cookware shop) the Kone Kettle is £109 and the Traditional Kettle £135, in stock on 15 Oct (also a Cloche kettle). Le Creuset's own UK site refused automated reads, so no maker page or image."
+  },
+  {
+   "product": "LectroFan travel",
+   "category": "general",
+   "product_type": "white noise machine",
+   "page": "https://www.soundofsleep.co.uk/product/lectrofan-micro2/",
+   "shop": "Sound Of Sleep UK",
+   "image": "https://www.soundofsleep.co.uk/wp-content/uploads/2019/05/Lectrofan-Micro2-2.jpg",
+   "image_page": "https://www.soundofsleep.co.uk/product/lectrofan-micro2/",
+   "sources": [
+    "https://www.soundofsleep.co.uk/product/lectrofan-micro2/",
+    "https://www.soundofsleep.co.uk/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Read as LectroFan's travel model, the LectroFan Micro2 (portable, rechargeable). Sound Of Sleep UK (the UK site of LectroFan's maker's Sound of Sleep brand) sells it at £49.95, in stock on 15 Oct; it also sells the LectroFan and LectroFan Evo."
+  },
+  {
+   "product": "Life Fitness treadmill",
+   "category": "general",
+   "product_type": "treadmill",
+   "page": "https://shop-uk.lifefitness.com/products/t3-treadmill",
+   "shop": "Life Fitness",
+   "image": "https://shop-uk.lifefitness.com/cdn/shop/files/products_T3-Treadmill-Go-L_1200x1200.jpg?v=1777932464",
+   "image_page": "https://shop-uk.lifefitness.com/products/t3-treadmill",
+   "sources": [
+    "https://shop-uk.lifefitness.com/products/t3-treadmill",
+    "https://www.lifefitness.com/en-gb/catalog/cardio/treadmills",
+    "https://shop-uk.lifefitness.com/collections/treadmills"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Writers name no model; Life Fitness's UK home shop sells treadmills from £3,145 (the T3 with Go console, and the F3 folding, in stock on 15 Oct) up to the Club Series+ (£10,195+) and Symbio Runner. The T3 is given."
+  },
+  {
+   "product": "Linoto bed sheets line",
+   "category": "general",
+   "product_type": "bed sheets",
+   "page": "https://www.linoto.com/",
+   "shop": "Linoto",
+   "image": "https://www.linoto.com/cdn/shop/files/cobalt_set_2025_JEAP_A.jpg?v=1754328659&width=600",
+   "image_page": "https://www.linoto.com/products/cobalt-linen-sheet-set",
+   "sources": [
+    "https://www.linoto.com/",
+    "https://www.linoto.com/products/cobalt-linen-sheet-set"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Linoto (linen made in New York) sells to UK shoppers from its own store in £ (United Kingdom (GBP) in its currency list), shipped from the US: a Queen linen sheet set (fitted, flat, two pillow slips) £502 with the UK selected, Cal King £578. US bed sizes (Queen, Cal King, Euro King), not UK sizes.; image: a smaller size of the maker's image (76 KB instead of 1.8 MB)"
+  },
+  {
+   "product": "M12 Fuel Surge",
+   "category": "general",
+   "product_type": "impact driver",
+   "page": "https://uk.milwaukeetool.eu/en-gb/m12-fuel-surge-1-4-hex-hydraulic-impact-driver/m12-fqid/",
+   "shop": "Milwaukee",
+   "image": "https://static.milwaukeetool.eu/remote.axd/milwaukee-media-images.s3.amazonaws.com/hi/M12_FQID-202X--Hero_1.jpg?v=8E8DA9FCFD1DC9870983C16AFA772564",
+   "image_page": "https://uk.milwaukeetool.eu/en-gb/m12-fuel-surge-1-4-hex-hydraulic-impact-driver/m12-fqid/",
+   "sources": [
+    "https://uk.milwaukeetool.eu/en-gb/m12-fuel-surge-1-4-hex-hydraulic-impact-driver/m12-fqid/",
+    "https://uk.milwaukeetool.eu/en-gb/power-tools/fastening/impact-drivers/"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Milwaukee Tool UK lists the M12 FUEL SURGE 1/4\" Hex Hydraulic Impact Driver (M12 FQID) on its UK site; Milwaukee sells through UK dealers, not direct, and the big UK tool shops couldn't be read (Screwfix, Toolstation, Amazon search), so no price. The page's og:image is a generic Milwaukee tile, so the image is its product hero shot."
+  },
+  {
+   "product": "Maelove Glow Maker Vitamin C Serum",
+   "category": "skincare",
+   "product_type": null,
+   "page": "https://healf.com/en-uk/products/maelove-glow-maker-vitamin-c-serum",
+   "shop": "Healf",
+   "image": "https://maelove.com/cdn/shop/files/gm_no_badge.jpg?v=1767122615",
+   "image_page": "https://maelove.com/products/glow-maker-vitamin-c-serum",
+   "sources": [
+    "https://healf.com/en-uk/products/maelove-glow-maker-vitamin-c-serum",
+    "https://maelove.com/products/glow-maker-vitamin-c-serum"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "30 ml £28.00 at Healf (a UK wellness shop), one-time purchase, in stock on 15 Oct (£25.20 only with a subscription). Maelove's own store is in US dollars (US$32.95); the image is from its page."
+  },
+  {
+   "product": "Makita impact driver line",
+   "category": "general",
+   "product_type": "impact driver",
+   "page": "https://www.makitauk.com/products/impact-drivers-lxt-18v-18vx2",
+   "shop": "Makita UK",
+   "image": "https://fi.makitamedia.com/images/3_Makita/301_machines/3011_a_GS1/30118_PNG_web/DTD153RFE_C2L0.png",
+   "image_page": "https://www.makitauk.com/products/impact-drivers-lxt-18v-18vx2",
+   "sources": [
+    "https://www.makitauk.com/products/impact-drivers-lxt-18v-18vx2",
+    "https://www.makitauk.com/products/screwdrivers-and-impact-wrenches"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Range: Makita UK lists impact drivers in CXT 12V, LXT 14.4V and 18V, G-series 18V and XGT 40V ranges; the range page given is its 18V LXT impact drivers (DTD129, DTD152, DTD156 to DTD172 and more). Makita UK sells through dealers, and the big UK tool shops couldn't be read, so no from price. Image: the range page's og:image (a DTD153 kit)."
+  },
+  {
+   "product": "Merkur razor line",
+   "category": "general",
+   "product_type": "razor",
+   "page": "https://www.connaughtshaving.com/merkurs.html",
+   "shop": "Connaught Shaving",
+   "sources": [
+    "https://www.connaughtshaving.com/merkurs.html",
+    "https://www.connaughtshaving.com/safetyrazors.html"
+   ],
+   "checked_on": "2026-10-15",
+   "note": "Merkur (Solingen, Germany) safety razors are stocked by UK shaving specialists: Connaught Shaving, a UK shop, has a Merkur page under its safety razors (its products load by script, so no price could be read). Merkur's own site didn't load and other UK shops refused automated reads, so no range page from the maker, price or image."
   }
  ]
 }
