@@ -283,7 +283,10 @@ def test_the_page_draws_the_availability_line_as_text_with_its_link_checked():
     assert "...priceLines(pick.price), availabilityLine(pick.availability)," in html
     body = re.search(r"function availabilityLine\(availability\) \{(.*?)\n  \}", html, re.DOTALL).group(1)
     assert "const shop = shopUrl(availability.url);" in body and "availability.text" in body
-    assert 'leftOutUnavailable: "No longer sold, so left out: {n}."' in html
+    # Changed on purpose 15 Oct 2026 (Noemi: a pick must be on sale in the UK now, and a discontinued model is left out
+    # and named): the footnote names a few of them (engine/tests/test_buyable.py). It said "No longer sold, so left out:
+    # {n}."
+    assert 'leftOutUnavailable: "Not on sale in the UK now, so left out: {n}{names}."' in html
     assert "data.left_out.unavailable" in html
 
 

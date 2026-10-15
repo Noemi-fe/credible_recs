@@ -117,6 +117,16 @@ The JSON for /api/answer (200):
                                                                "checked 14 Oct 2026" / "2026-10-14", the day its sources
                                                                were read; null for any other pick, and for a line whose
                                                                entry has no range page
+                            "link": {"text", "url", "shop",    its own page, its maker's or a big UK shop's (Noemi's
+                                     "checked", "checked_on"}  decision 3 of 15 Oct 2026, late afternoon): "See it at
+                                                               Apple", the page data/product_pages.json records (https,
+                                                               never Reddit's, never a search), "checked 15 Oct 2026";
+                                                               null when not researched, or when its price or
+                                                               availability line, or its range link, already links
+                            "image": {"url", "alt", "page"}    a small image from its maker's own page (her decision
+                                                               2): the image's address, its text (the product's name)
+                                                               and the maker's page it links to; null without one. The
+                                                               page loads it lazily, with no referrer
                            }],
                  "look_for": [{"kind", "advice", "quote": {same shape}}],
                  "skip": [{"product_key", "name", "reason", "quotes": [...], "prescription"}],
@@ -124,7 +134,7 @@ The JSON for /api/answer (200):
                                                     (Noemi, 11 Oct 2026); [] when there are none
                  "worth_a_look": [{"product_key", "name", "reason", "quotes", "downsides", "downsides_share",
                                    "disagreement", "score", "breakdown", "price", "availability", "cautions",
-                                   "summary", "voices", "range", "prescription", "meets_bar"}],
+                                   "summary", "voices", "range", "prescription", "meets_bar", "link", "image"}],
                                   "Also worth a look" (Noemi's decision 2, 13 Oct 2026): up to 3 products, shown apart
                                   after the picks and never among them: first those that meet the picks bar but rank
                                   below the top 3, best first ("meets_bar": true, her decision 4 of 15 Oct 2026; the
@@ -152,6 +162,8 @@ The JSON for /api/answer (200):
                                                    of names (products), never of mentions or threads,
                    "over_budget": n,               products whose known price is over the request's budget
                    "unavailable": n,               products the price list says are no longer sold (9 Oct 2026),
+                   "unavailable_names": [...],     and up to LEFT_OUT_NAMES_SHOWN of them (15 Oct 2026: a pick must be
+                                                   on sale in the UK now; a discontinued model is left out and named),
                    "not_suited": n,                products whose checked facts clash with the request (9 Oct 2026),
                    "no_ingredient": n,             products without evidence they contain the active ingredients
                                                    asked for, or whose maker's actives don't (13 Oct 2026),
@@ -249,6 +261,7 @@ from engine.library import DEFAULT_LIBRARY_DIR
 from engine.metrics import METRICS_FILE
 from engine.parse_reddit import REPO_ROOT
 from engine.pipeline import PipelineResult, answer_request
+from engine.product_pages import ProductPagesError, image_sources, load_product_pages
 from engine.query import FIRST_PRODUCT_TYPES, PRODUCT_TYPES
 
 HOST = "127.0.0.1"  # this computer only. Never "0.0.0.0", which would open the server to the whole network.
@@ -271,7 +284,8 @@ GZIP_MIN_BYTES = 1024
 # Sent with every response. The page may load and call nothing but this server: no outside scripts, styles, fonts
 # or images, and no requests elsewhere. Its links still open, in a new tab: to Reddit, and to a shop's own page for a
 # price or for where a product is sold (https only, from data/prices.json; decision 11 and availability, 9 Oct 2026).
-# Exactly what local mode sends; security_headers adds GoatCounter when visits are counted, and the Space's page.
+# Exactly what local mode sends; security_headers adds GoatCounter when visits are counted, the Space's page, and
+# since 15 Oct 2026 the makers' images answers may show (their hosts only, https only).
 HEADERS = {
     "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
                                "connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
@@ -520,6 +534,8 @@ def answer_json(result: PipelineResult) -> dict:
                      "ranked_as_lines": len(result.ranked_as_lines),
                      "over_budget": len(result.left_out_over_budget),
                      "unavailable": len(result.left_out_unavailable),
+                     # Named (Noemi, 15 Oct 2026: a discontinued model is left out and named), a few of them.
+                     "unavailable_names": list(dict.fromkeys(result.left_out_unavailable))[:LEFT_OUT_NAMES_SHOWN],
                      "not_suited": len(result.left_out_not_suited),
                      "no_ingredient": len(result.left_out_no_ingredient),
                      "by_form": len(result.left_out_by_form),
@@ -734,22 +750,37 @@ def counter_script(code: str | None) -> str:
             f"""data-goatcounter-settings='{{"allow_frame": true}}' async src="{GOATCOUNTER_SCRIPT}/count.js"></script>""")
 
 
-def security_headers(site: Site = LOCAL) -> dict[str, str]:
-    """The headers sent with every response: exactly HEADERS in local mode without visit counts. Counting lets in
-    GoatCounter's script and its counting address, and nothing else; the public site may also be shown inside the
-    Space's page on huggingface.co."""
-    if not site.public and site.goatcounter is None:
+def security_headers(site: Site = LOCAL, page: bool = True) -> dict[str, str]:
+    """The headers sent with every response: exactly HEADERS in local mode without visit counts and without makers'
+    images. Counting lets in GoatCounter's script and its counting address, and nothing else; the public site may also
+    be shown inside the Space's page on huggingface.co. Since 15 Oct 2026 (Noemi's decision 2 of the late afternoon:
+    a small image from each pick's maker's page) a page's images may come from the hosts of the images
+    data/product_pages.json lists, over https, and from nowhere else: no other host, no data: or other scheme
+    (makers_image_sources). `page`: False for a response that isn't a page (the API's JSON), which loads no image, so
+    the list of hosts, a few kilobytes as research grows, isn't sent with it."""
+    makers = makers_image_sources() if page else ()
+    if not site.public and site.goatcounter is None and not makers:
         return dict(HEADERS)
-    scripts, connections, images = "'unsafe-inline'", "'self'", ""
+    scripts, connections, images = "'unsafe-inline'", "'self'", list(makers)
     if site.goatcounter is not None:
         counter = f"https://{site.goatcounter}.goatcounter.com"
         scripts += f" {GOATCOUNTER_SCRIPT}"
         connections += f" {counter}"
-        images = f"img-src {counter}; "  # GoatCounter's fallback when a browser won't send its count another way
+        images.insert(0, counter)  # GoatCounter's fallback when a browser won't send its count another way
+    images = f"img-src {' '.join(images)}; " if images else ""
     frames = HUGGING_FACE if site.public else "'none'"
     policy = (f"default-src 'none'; script-src {scripts}; style-src 'unsafe-inline'; {images}connect-src {connections}; "
               f"form-action 'self'; base-uri 'none'; frame-ancestors {frames}")
     return {**HEADERS, "Content-Security-Policy": policy}
+
+
+def makers_image_sources() -> tuple[str, ...]:
+    """The origins of the makers' images answers may show (engine.product_pages.image_sources): "https://<host>" each.
+    None when the list can't be read: answers can't show its images then either, and the page still works."""
+    try:
+        return image_sources(load_product_pages())
+    except ProductPagesError:
+        return ()
 
 
 # --- The page ---
@@ -874,7 +905,7 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
-        for name, value in security_headers(self.server.site).items():
+        for name, value in security_headers(self.server.site, page=content_type.startswith("text/html")).items():
             self.send_header(name, value)
         if status == 405 and path in METHODS:
             self.send_header("Allow", METHODS[path])

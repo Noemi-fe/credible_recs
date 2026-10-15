@@ -1808,3 +1808,34 @@ HARMFUL_KNIVES = (
     "automatic knife", "stiletto knife", "credit card knife", "hidden knife", "concealed knife", "boot knife",
     "neck knife", "bowie knife", "fighting knife", "dagger",
 )
+
+# --- Buyable picks, makers' images and direct links (Noemi's decisions of 15 Oct 2026, late afternoon) ---
+# From the live laptop answer, whose first pick was 2010-2011 MacBook Pros, read from old threads, with no price and no
+# link ("what's the point of recommending it if i can't buy it?"). (1) A pick must be on sale in the UK now; whether it
+# is comes from researched data (data/prices.json, which `python -m engine.buyable import` fills from researchers'
+# findings), never guessed: a product found not sold to UK shoppers, or discontinued, is left out and named
+# (engine.pipeline's left_out_unavailable, the page's "About this answer"). Sold second-hand only counts only for things
+# people buy vintage on purpose (her rule of 10 Oct 2026): the brands below, by category, whose old products people
+# seek out; any other product sold second-hand only counts as not sold (engine.prices.counts_as_sold). Claude's call,
+# reported: American mains appliances are not on the list, though people buy some vintage on purpose in the US: Rival's
+# crock pots, and the first findings' vintage Sunbeam Radiant Control toaster (110-120 V: a UK shopper needs a
+# step-down transformer, as OXO's 120 V kettles aren't sold here), so Rival's line now leaves the slow cooker answer.
+SECOND_HAND_VINTAGE = {"kitchen": ("Griswold", "Wagner")}
+# (2) Newest threads first for fast-moving products: types whose models are replaced every year or two, so a thread's
+# picks go out of sale as it ages (Claude's list, reported to Noemi). For these, module 2's first reading reads the
+# threads newest first, FAST_MOVING_YEARS at a time counted back from the newest thread about the product, each span in
+# module 2's graded and need-led order (engine.sources.LocalSource._need_led); a thread titled as another type still
+# comes last. Every type here is a general one, so kitchen, skincare and haircare answers read as before.
+FAST_MOVING_TYPES = (
+    "laptop", "desktop computer", "monitor", "headphones", "earbuds", "gaming headset", "bluetooth speaker", "soundbar",
+    "tv", "projector", "streaming device", "phone", "tablet", "e-reader", "smartwatch", "smart ring", "camera",
+    "action camera", "webcam", "drone", "printer", "3d printer", "wifi router", "gaming console", "vr headset",
+    "drawing tablet", "smart speaker", "robot vacuum", "robot lawn mower", "security camera", "video doorbell",
+    "fitness tracker", "sports watch", "dash cam",
+)
+FAST_MOVING_YEARS = 1
+# (3) Direct links only: a shop's or a search engine's results page is never linked (engine.links.is_search_page): its
+# path has one of these steps ("/search", eBay's "/sch/", Amazon's "/s"), or its query names the words searched for.
+SEARCH_PAGE_PATH_STEPS = ("search", "sitesearch", "searchresults", "sch", "s", "find", "results")
+SEARCH_PAGE_QUERY_KEYS = ("q", "k", "query", "search", "searchterm", "search-term", "search_term", "search_query",
+                          "searchquery", "text", "_nkw", "keyword", "keywords", "term", "kw")

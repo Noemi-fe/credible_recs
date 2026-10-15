@@ -112,9 +112,12 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # contain the ingredient asked for ("no_ingredient").
     # Changed on purpose 13 Oct 2026 (Noemi's decision 1): "left_out" also counts the products of an ingredient-led
     # request left out for their form ("by_form"), and how many of them are rinse-off ("rinse_off").
+    # Changed on purpose 15 Oct 2026 (Noemi's decisions of the late afternoon: a pick must be on sale in the UK now, and
+    # a discontinued model is left out and named): "left_out" also gives a few of the names left out as not on sale
+    # ("unavailable_names"; engine/tests/test_buyable.py).
     assert set(data["left_out"]) == {"other_type", "other_type_names", "loose", "loose_names", "ranked_as_lines",
-                                     "over_budget", "unavailable", "not_suited", "no_ingredient", "by_form",
-                                     "rinse_off"}
+                                     "over_budget", "unavailable", "unavailable_names", "not_suited", "no_ingredient",
+                                     "by_form", "rinse_off"}
     assert isinstance(data["left_out"]["loose_names"], list) and isinstance(data["left_out"]["other_type_names"], list)
     # Changed on purpose 11 Oct 2026 (Noemi): the tips about the kind of product are shown once, in "care_note".
     # Changed on purpose 13 Oct 2026 (Noemi's decision 2): "worth_a_look", the products with two credible
@@ -144,11 +147,13 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # says whether it is a brand line's from price ("from_price").
     # Changed on purpose 14 Oct 2026 (Noemi's decision 5): each pick also has its "prescription" note, or null
     # (engine/tests/test_prescription_note.py).
+    # Changed on purpose 15 Oct 2026 (Noemi's decisions 2 and 3 of the late afternoon): each pick also has its "link" to
+    # its own page and its maker's "image", or null (engine/tests/test_buyable.py).
     assert set(data["answer"]["picks"][0]) == {"rank", "product_key", "name", "reason", "support", "quotes",
                                                "downsides", "disagreement", "score", "breakdown", "price",
                                                "availability", "care", "cautions", "model", "model_price",
                                                "downsides_share", "summary", "voices", "form", "range",
-                                               "prescription"}
+                                               "prescription", "link", "image"}
     assert set(data["answer"]["picks"][0]["quotes"][0]) == {"text", "comment_id", "url", "badges"}
     assert set(data["answer"]["picks"][0]["price"]) == {"text", "amount", "currency", "shop", "url", "checked_on",
                                                         "budget_status", "budget_note", "from_price"}
@@ -808,10 +813,12 @@ def test_also_worth_a_look_comes_through_in_the_json(tmp_path):
     # Changed on purpose 14 Oct 2026 (Noemi's decision 5): an item also has its "prescription" note, or null.
     # Changed on purpose 15 Oct 2026 (Noemi's decision 4): an item also says whether it meets the picks bar ("meets_bar":
     # false here; engine/tests/test_past_the_picks.py).
+    # Changed on purpose 15 Oct 2026 (Noemi's decisions 2 and 3 of the late afternoon): an item also has its "link" and
+    # "image", as picks do.
     assert set(data["answer"]["worth_a_look"][0]) == {"product_key", "name", "reason", "quotes", "downsides",
                                                      "downsides_share", "disagreement", "score", "breakdown", "price",
                                                      "availability", "cautions", "summary", "voices", "form", "range",
-                                                     "prescription", "meets_bar"}
+                                                     "prescription", "meets_bar", "link", "image"}
     assert data["answer"]["worth_a_look"][0]["meets_bar"] is False
 
 

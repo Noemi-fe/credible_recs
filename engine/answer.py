@@ -37,6 +37,13 @@ What each pick shows (the brief):
   stockist's: "Browse Victorinox chef knives", "checked 14 Oct 2026" (shown_range). Both come from the brand-lines
   list, never from a comment, and change nothing about which products are picks. A line under "Also worth a look" shows
   them too;
+- its own page and its maker's image (Noemi's decisions 2 and 3 of 15 Oct 2026, late afternoon: "could we add a little
+  image of the prod with the link?"; direct links only): when researched (data/product_pages.json), a direct link to
+  its own page, its maker's or a big UK shop's, "See it at Apple", "checked 15 Oct 2026" (shown_link; only when no line
+  above links to that page already, nor a range link to the line's), and a small image from its maker's own page,
+  linked to that page, its text the product's name (shown_image). No link ever goes to a search, here or in the price
+  and availability lines (engine.links.is_direct_page): "Sold second-hand only: eBay UK" had linked to an eBay search,
+  and now has no link. An "Also worth a look" item shows them too. The text answer carries the link, never the image;
 - "How to take care of it" (Noemi, 9 Oct 2026; named so on 11 Oct 2026, and since then only the pick's own tips, the
   tips about its kind of product being shown once, in a note at the end): up to CARE_TIPS_PER_PICK credible care tips
   ("descale every 6 months"), each with its verified quote. Since 10 Oct 2026 (decided by Claude, as Noemi asked) the advice
@@ -149,7 +156,9 @@ from engine.group_products import plural
 from engine.ingredients import (
     TYPE_OWN_INGREDIENT, find_ingredients, form_kind, form_of, ingredient_type_name, ingredients_of_type, talk_words,
 )
+from engine.links import is_direct_page, is_linkable, is_search_page
 from engine.models import Thread
+from engine.product_pages import ProductPage
 from engine.needs import LASTING, Need, needs_met
 from engine.prices import PriceCheck
 from engine.credibility import GENERIC_NAME_WORDS
@@ -303,6 +312,14 @@ AVAILABILITY_GONE = "No longer sold, checked {date}"  # never shown through the 
 # Sold second-hand only: a product no longer made (Griswold and Wagner cast iron), sold only second-hand, on eBay UK or
 # by a UK vintage dealer. Noemi's decision of 10 Oct 2026: such products count as available, and the answer says so.
 AVAILABILITY_SECOND_HAND = "Sold second-hand only: {shop}, checked {date}"
+# Products' own pages and their makers' images (Noemi's decisions 2 and 3 of 15 Oct 2026, late afternoon; wording
+# decided by Claude, PROPOSED): a direct link to the product's own page, its maker's or a big UK shop's, with the day it
+# was read ("See it at Apple", "checked 15 Oct 2026"); and a small image from its maker's own page, linked to that
+# page, whose text for anyone who can't see it is the product's name. A price or availability line already linking to
+# the same page, or a line's range link, is its link: no second one. Shoppers' links never go to a search.
+PRODUCT_LINK = "See it at {shop}"
+PRODUCT_LINK_CHECKED = "checked {date}"
+IMAGE_ALT = "{name}"
 # Product facts (9 Oct 2026). Wording DECIDED by Claude on 9 Oct 2026, as Noemi asked, and reported to her. A soft
 # clash between a product's checked facts and the request (engine/product_facts.py) is shown under the pick as
 # "Note: its texture is rich, which can feel heavy on oily or acne-prone skin." The reasons themselves are the rule
@@ -402,6 +419,28 @@ class ShownRange:
 
 
 @dataclass(frozen=True)
+class ShownLink:
+    """A product's direct link to its own page, its maker's or a big UK shop's, as shown (Noemi's decision 3 of 15 Oct
+    2026, late afternoon): from data/product_pages.json, never from a comment, never a search."""
+
+    text: str  # "See it at Apple" (PRODUCT_LINK)
+    url: str  # its own page, exactly as the list writes it: https only, never Reddit's, never a search
+    shop: str  # the maker's or shop's plain name
+    checked: str  # "checked 15 Oct 2026": the day its page was read
+    checked_on: str  # the same day, as "2026-10-15"
+
+
+@dataclass(frozen=True)
+class ShownImage:
+    """A small image of the product from its maker's own product page, linked to that page (Noemi's decision 2 of 15 Oct
+    2026, late afternoon). The page loads it only when its card is on screen and sends no referrer."""
+
+    url: str  # the image's address on the maker's site: https only, never Reddit's
+    alt: str  # its text for anyone who can't see it: the product's name as shown (IMAGE_ALT)
+    page: str  # the maker's page it is on, which it links to
+
+
+@dataclass(frozen=True)
 class ShownAvailability:
     """Whether a pick is known to be sold, as shown, from the price list (engine/prices.py). Not checked: only text."""
 
@@ -466,6 +505,10 @@ class Pick:
     range: ShownRange | None = None
     # PRESCRIPTION_NOTE when its checked facts say it is prescription-only in the UK (14 Oct 2026); None otherwise.
     prescription: str | None = None
+    # Its own page and its maker's image, when researched (Noemi's decisions of 15 Oct 2026, late afternoon): the link
+    # only when no price or availability line links to that page already, nor a range link to the line's; else None.
+    link: ShownLink | None = None
+    image: ShownImage | None = None
 
 
 @dataclass
@@ -492,6 +535,8 @@ class WorthALook:
     # True when it meets the picks bar on its own but ranks below the top 3 (Noemi's decision 4 of 15 Oct 2026): shown
     # first, labelled MEETS_BAR, with a pick's reason line. False for an item less supported than a pick.
     meets_bar: bool = False
+    link: ShownLink | None = None  # as a pick's (15 Oct 2026)
+    image: ShownImage | None = None
 
 
 @dataclass
@@ -555,7 +600,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
                  summaries: Mapping[str, Summary] | None = None, worth_left_out: Collection[str] = (),
                  ingredient: str | None = None, forms: Mapping[str, str | None] | None = None,
                  forms_asked: Collection[str] = (), ranges: Mapping[str, BrandLine] | None = None,
-                 prescription: Collection[str] = ()) -> Answer:
+                 prescription: Collection[str] = (), pages: Mapping[str, ProductPage] | None = None) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -581,9 +626,12 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     each such pick and "Also worth a look" item links to its entry's range page (shown_range). A line's from price
     comes in `prices`, like any price (PriceCheck.from_price). `prescription` (14 Oct 2026, Noemi's decision 5) are the
     keys of the products whose checked facts say they are prescription-only in the UK: each such pick, item and skipped
-    product says so (PRESCRIPTION_NOTE). It never changes which products are shown.
+    product says so (PRESCRIPTION_NOTE). It never changes which products are shown. `pages` ({product key: entry of
+    data/product_pages.json}, 15 Oct 2026) are the researched pages of the products: each such pick and item links to
+    its own page (shown_link) and shows its maker's image (shown_image). They never change which products are shown.
     """
     check = _QuoteCheck(bodies)
+    pages = pages or {}
     ranges = ranges or {}
     forms = forms or {}
     models = models or {}
@@ -610,6 +658,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             picks[-1].form = forms.get(product.key)
             picks[-1].range = shown_range(ranges.get(product.key))
             picks[-1].prescription = _prescription(product.key, prescription)
+            _with_page(picks[-1], pages.get(product.key))
     # A product the upvote rule lifted (14 Oct 2026) may be an item and a pick shown: then it is a pick only.
     shown_picks = {pick.product_key for pick in picks}
     worth = _worth_items(ranking, check, prices, cautions, summaries, set(worth_left_out) | shown_picks, asks, needs,
@@ -618,6 +667,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
         item.form = forms.get(item.product_key)
         item.range = shown_range(ranges.get(item.product_key))
         item.prescription = _prescription(item.product_key, prescription)
+        _with_page(item, pages.get(item.product_key))
     skip = [_skip_item(product, check) for product in ranking.skip_list]
     for item in skip:
         if item is not None:
@@ -652,6 +702,37 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
 def _prescription(key: str, prescription: Collection[str]) -> str | None:
     """PRESCRIPTION_NOTE for a product whose checked facts say it is prescription-only in the UK, else None."""
     return PRESCRIPTION_NOTE if key in prescription else None
+
+
+def _with_page(shown: "Pick | WorthALook", page: ProductPage | None) -> None:
+    """A pick's or item's own page and its maker's image (15 Oct 2026), from its entry in data/product_pages.json: the
+    link only when no line of it links to that page already (its price, where it is sold) and it has no range link."""
+    already = {shown.price.url, shown.availability.url}
+    shown.link = shown_link(page) if shown.range is None else None
+    if shown.link is not None and shown.link.url in already:
+        shown.link = None
+    shown.image = shown_image(page, shown.name)
+
+
+def shown_link(page: ProductPage | None) -> ShownLink | None:
+    """A product's direct link to its own page: "See it at Apple", with the day its page was read. None without an
+    entry, and for a page that isn't one of the entry's sources or isn't a direct page (https, never Reddit's, never a
+    search: engine.links.is_direct_page), checked again here as the list does when it loads."""
+    if page is None or page.page not in page.sources or not is_direct_page(page.page):
+        return None
+    return ShownLink(PRODUCT_LINK.format(shop=page.shop), page.page, page.shop,
+                     PRODUCT_LINK_CHECKED.format(date=_day(page.checked_on)), page.checked_on.isoformat())
+
+
+def shown_image(page: ProductPage | None, name: str) -> ShownImage | None:
+    """A product's image from its maker's own page, linked to that page, its text the product's name. None without an
+    entry or an image, and for addresses that fail their checks (https, never Reddit's; the maker's page one of the
+    entry's sources)."""
+    if page is None or page.image is None or page.image_page is None or page.image_page not in page.sources:
+        return None
+    if not (is_linkable(page.image) and is_linkable(page.image_page)):
+        return None
+    return ShownImage(page.image, IMAGE_ALT.format(name=name), page.image_page)
 
 
 def answer_title(product_type: str | None, ingredient: str | None = None) -> str:
@@ -1827,7 +1908,8 @@ def shown_price(check: PriceCheck | None) -> ShownPrice:
         return ShownPrice(PRICE_UNKNOWN, None, None, None, None, None, budget_status, budget_note)
     wording = PRICE_FROM if check.from_price else PRICE
     text = wording.format(amount=_money(price.price, price.currency), shop=price.shop, date=_day(price.checked_on))
-    url = price.url if price.url.startswith("https://") else None  # the price list allows https only; checked again
+    # The price list allows https only; checked again, and never a search (direct links only, 15 Oct 2026).
+    url = price.url if is_direct_page(price.url) else None
     return ShownPrice(text, price.price, price.currency, price.shop, url, price.checked_on.isoformat(),
                       budget_status, budget_note, check.from_price)
 
@@ -1841,7 +1923,7 @@ def shown_range(line: BrandLine | None) -> ShownRange | None:
     Reddit: engine.brand_lines.is_source_page), checked again here as the shop links are."""
     if line is None or not line.sells or line.range_page is None:
         return None
-    if line.range_page not in line.sources or not is_source_page(line.range_page):
+    if line.range_page not in line.sources or not is_source_page(line.range_page) or is_search_page(line.range_page):
         return None
     brand, products = line.brand, plural(line.product_type)
     text = (RANGE_LINK_AT.format(brand=brand, products=products, shop=line.range_shop) if line.range_shop
@@ -1864,7 +1946,9 @@ def shown_availability(check: PriceCheck | None, price_url: str | None = None) -
     if sold.available is False:
         return ShownAvailability(AVAILABILITY_GONE.format(date=day), False, sold.shop, None,
                                  sold.checked_on.isoformat())
-    url = sold.url if sold.url.startswith("https://") and sold.url != price_url else None  # https only; checked again
+    # https only, checked again, and never a search (direct links only, 15 Oct 2026: "Sold second-hand only: eBay UK"
+    # had linked to an eBay search).
+    url = sold.url if is_direct_page(sold.url) and sold.url != price_url else None
     wording = AVAILABILITY_SECOND_HAND if sold.second_hand else AVAILABILITY
     return ShownAvailability(wording.format(shop=sold.shop, date=day), True, sold.shop, url,
                              sold.checked_on.isoformat(), sold.second_hand)
@@ -2059,6 +2143,7 @@ def _render_pick(pick: Pick) -> list[str]:
     lines += _render_summary(pick.summary)
     lines += [pick.reason, "", f"**{SUPPORT_LABEL}:** {pick.support}", ""]
     lines += _render_price(pick.price) + _render_availability(pick.availability) + _render_range(pick.range)
+    lines += _render_link(pick.link)
     lines += [pick.prescription, ""] if pick.prescription else []
     for caution in pick.cautions:
         lines += [caution, ""]
@@ -2096,7 +2181,7 @@ def _render_worth(item: WorthALook) -> list[str]:
         lines += _render_price(item.price)
     if item.availability.available is not None:
         lines += _render_availability(item.availability)
-    lines += _render_range(item.range)
+    lines += _render_range(item.range) + _render_link(item.link)
     lines += [item.prescription, ""] if item.prescription else []
     for caution in item.cautions:
         lines += [caution, ""]
@@ -2137,6 +2222,12 @@ def _render_range(range_: ShownRange | None) -> list[str]:
     """A brand line's link to its maker's page for the type, and the day it was checked (14 Oct 2026); nothing for
     any other product."""
     return [f"[{range_.text}]({range_.url}) · {range_.checked}", ""] if range_ is not None else []
+
+
+def _render_link(link: ShownLink | None) -> list[str]:
+    """A product's direct link to its own page, and the day it was read (15 Oct 2026); nothing without one. The text
+    answer carries no images."""
+    return [f"[{link.text}]({link.url}) · {link.checked}", ""] if link is not None else []
 
 
 def _one_line(text: str) -> str:
