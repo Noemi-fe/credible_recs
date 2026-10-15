@@ -47,10 +47,20 @@ Writing: new entries are added at the end of each list, in the list's own layout
 added twice (importing the same findings again adds nothing) and none is ever changed or deleted. A finding that says
 otherwise than an entry of the same product and day is imported and reported, for a look by hand.
 
+Images (the coordinator, 15 Oct 2026: lazy loading doesn't help a phone opening a card with a 5 MB image): each image is
+checked as it is imported, from its server's headers alone (check_image): one of at most config.IMAGE_MAX_BYTES is kept;
+a bigger one gives way to a smaller size of the same image on the maker's own server, asked for the way its image server
+takes a width (smaller_sizes); else it is left out, and so is one whose size can't be checked (a server refusing tools
+isn't asked again as if by a browser). Why goes in the page's note. A page already imported is never checked again.
+
+A brand line on sale (its researcher: product_page is the maker's UK range page, the price a "from" price) also goes to
+the brand-lines list (data/brand_lines.json): a new entry with its range page and from price, or the line's entry given
+a range page it lacks and a from price it lacks or has older; that list keeps its own layout.
+
 Command line:
-    python -m engine.buyable import <found-*.jsonl>... [--write]   checks the findings and says what they would add;
-                                                                   --write adds it to data/prices.json and
-                                                                   data/product_pages.json
+    python -m engine.buyable import <found-*.jsonl>... [--write] [--no-image-check]
+        checks the findings (and each image's size, over the network) and says what they would add; --write adds it to
+        data/prices.json, data/product_pages.json and data/brand_lines.json
 """
 
 import json
@@ -62,14 +72,16 @@ from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 from typing import Literal
-from urllib.parse import urlsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from engine.brand_lines import DEFAULT_BRAND_LINES
-from engine.config import PRODUCT_TYPE_SHOWN, THREAD_CATEGORIES
+from engine.brand_lines import DEFAULT_BRAND_LINES, BrandLine, find_brand_line
+from engine.config import (
+    IMAGE_CHECK_TIMEOUT_SECONDS, IMAGE_MAX_BYTES, IMAGE_SMALLER_WIDTH, PRODUCT_TYPE_SHOWN, THREAD_CATEGORIES,
+)
 from engine.links import is_direct_page, is_linkable, is_search_page
-from engine.match_products import product_words
+from engine.match_products import known_aliases, product_words
 from engine.prices import DEFAULT_PRICES, Price, bought_vintage
 from engine.product_pages import DEFAULT_PRODUCT_PAGES, ProductPage
 from engine.query import PRODUCT_TYPES
@@ -115,6 +127,8 @@ class Plan:
     refused: bool = False  # nothing can be recorded: no source left
     not_vintage: bool = False  # sold second-hand only, but not bought vintage on purpose: recorded as not sold
     line_price: bool = False  # a line's price, not recorded as its own (its from price is data/brand_lines.json's)
+    # For a line on sale: its brand, type, range page and from price (price, shop, page), for data/brand_lines.json.
+    line: dict | None = None
 
 
 @dataclass
@@ -131,6 +145,9 @@ class Report:
     not_vintage: list[str] = field(default_factory=list)
     lines: list[str] = field(default_factory=list)  # brand lines, recorded under their brand
     line_prices: list[str] = field(default_factory=list)  # lines whose price wasn't recorded as the line's own
+    lines_updated: int = 0  # brand-lines entries added or given a range page or a newer from price
+    images: dict = field(default_factory=lambda: {"kept": 0, "smaller": 0, "dropped": 0})
+    images_dropped: list[str] = field(default_factory=list)  # "<product>: <why>"
 
 
 # --- One finding ---
@@ -170,14 +187,14 @@ def plan_finding(finding: Finding, shops: dict[str, str] | None = None) -> Plan:
     if finding.status == "sold_new":
         price, price_shop = None, None
         if price_url is not None:
-            price_shop = _price_site(price_url, page, shop, page_is_makers, shops)
+            price_shop = _price_site(price_url, page, shop, shops)
             if price_shop is None:
                 plan.problems.append(f"price_url: a shop the lists don't name yet ({_host(price_url)}): the price "
                                      "is left for a look")
                 price_url = None
             elif line_brand:
                 # Sold there; but a line has many products, so no single price: its "From £X" is the brand-lines
-                # list's job.
+                # list's job (its researcher: a line's price is a from price).
                 plan.line_price = True
             else:
                 price = finding.price_gbp
@@ -196,6 +213,15 @@ def plan_finding(finding: Finding, shops: dict[str, str] | None = None) -> Plan:
         entry |= {"checked_on": checked, "available": True}
         plan.prices.append(_with_sources(entry, sources, finding.note))
         plan.page = _page_entry(finding, page, page_site, sources, plan, product_type)
+        if line_brand:
+            # Its researcher: a line's product page is its range page (the maker's UK range page, or a stockist's,
+            # which then names it).
+            plan.line = {"brand": line_brand, "category": finding.category, "product_type": product_type,
+                         "range_page": page, "range_shop": None if page is None or page_is_makers else page_site,
+                         "from_price": float(finding.price_gbp) if plan.line_price else None,
+                         "from_price_shop": price_shop if plan.line_price else None,
+                         "from_price_url": price_url if plan.line_price else None,
+                         "checked_on": checked, "sources": sources}
         return plan
     shop = shop or page_site or _shops_name(sources[0], shops) or _host(sources[0])
     if finding.status == "second_hand_only" and bought_vintage(product, finding.category):
@@ -234,16 +260,20 @@ def _page_site(finding: Finding, page: str | None, price_url: str | None, shop: 
     return _shops_name(page, shops) or host, maker is not None
 
 
-def _price_site(price_url: str, page: str | None, shop: str, page_is_makers: bool, shops: dict[str, str]) -> str | None:
-    """The shop a price was read at: the finding's shop when the price is on the product page's own site, or when the
-    product page is its maker's (then "shop" names where it is sold); else the name the lists already give that site;
-    None when they give none (the price is then left for a look rather than shown under the wrong shop's name)."""
+def _price_site(price_url: str, page: str | None, shop: str, shops: dict[str, str]) -> str | None:
+    """The shop a price was read at. Its researchers name it in "shop" (the coordinator, 15 Oct 2026: "shop" is the shop
+    the price came from, or the product page's owner when there is no price). So: the finding's shop when the price is
+    on the product page's own site; else the name the lists already give the price's site, for the same shop to be
+    named alike everywhere; else the finding's shop, unless it plainly names the product page's own site while the
+    price is on another (then which is meant is left for a look rather than shown under the wrong shop's name)."""
     if page is not None and _host(price_url) == _host(page):
         return shop or None
     known = _shops_name(price_url, shops)
     if known is not None:
         return known
-    return shop if page_is_makers and shop and not _names_site(shop, _host(page)) else None
+    if not shop or (page is not None and _names_site(shop, _host(page))):
+        return None
+    return shop
 
 
 def _page_at(shop: str, urls: list[str | None], shops: dict[str, str]) -> str | None:
@@ -256,7 +286,12 @@ def _names_site(name: str, host: str) -> bool:
     """Whether a name spells one of a site's labels ("Wüsthof UK" at wusthof.co.uk, "ASUS" at asus.com)."""
     letters = _letters(name)
     return len(letters) >= 3 and any(len(label) >= 3 and (label.startswith(letters) or letters.startswith(label))
-                                     for label in host.split("."))
+                                     for label in _labels(host))
+
+
+def _labels(host: str) -> list[str]:
+    """A site's address in words: its labels, hyphens aside ("subzero-wolf.co.uk": subzerowolf, co, uk)."""
+    return [label.replace("-", "") for label in host.split(".")]
 
 
 def _maker_of(name: str, host: str, whole: bool = False) -> str | None:
@@ -264,7 +299,7 @@ def _maker_of(name: str, host: str, whole: bool = False) -> str | None:
     first words (up to four) whose letters are one of the address's labels, or begin it ("Lodge" at lodgecastiron.com,
     "Beauty of Joseon" at beautyofjoseon.com, "innisfree" at us.innisfree.com, "Wüsthof" at wusthof.co.uk). `whole`:
     the name is a brand already (a line's), so only all of it counts. None when nothing matches."""
-    labels = [label for label in host.split(".") if len(label) >= 3]
+    labels = [label for label in _labels(host) if len(label) >= 3]
     words = name.split()
     tried = [len(words)] if whole else range(min(4, len(words)), 0, -1)
     for k in tried:
@@ -277,7 +312,7 @@ def _maker_of(name: str, host: str, whole: bool = False) -> str | None:
 def _letters(text: str) -> str:
     """Lowercase letters and digits only, accents taken off and "&" spelled "and" ("Wüsthof" -> "wusthof",
     "Holland & Barrett" -> "hollandandbarrett")."""
-    plain = unicodedata.normalize("NFKD", text.lower().replace("&", "and"))
+    plain = unicodedata.normalize("NFKD", text.lower().replace("&", "and").replace("+", "and"))
     return re.sub(r"[^a-z0-9]", "", "".join(c for c in plain if not unicodedata.combining(c)))
 
 
@@ -368,6 +403,132 @@ def _shops_name(url: str, shops: dict[str, str]) -> str | None:
     return shops.get(_host(url))
 
 
+# --- Images: checked as they are imported (the coordinator, 15 Oct 2026) ---
+
+@dataclass(frozen=True)
+class ImageFacts:
+    """What an image's server says of it, from its headers alone: its size in bytes and kind, the address it ends at
+    (after redirects), or the problem in words when it wouldn't say."""
+
+    size: int | None
+    content_type: str | None
+    url: str | None
+    problem: str | None
+
+
+@dataclass(frozen=True)
+class ImageCheck:
+    """An image as it is kept: `url` the image to show (the one researched, or a smaller size of it on the maker's own
+    server), or None when it is left out; `reason` says why it was left out or changed, for the page's note."""
+
+    url: str | None
+    size: int | None
+    reason: str | None
+
+
+IMAGE_CHECKER = "credible-recs-image-check/1.0 (asks image servers for an image's size only)"
+
+
+def head_image(url: str) -> ImageFacts:
+    """An image's size and kind, from its server's headers: a HEAD request, else a request for its first byte only
+    (whose answer gives the whole size). Never the image itself, and as the tool it is: a server that refuses tools
+    isn't asked again as if by a browser. The network is used here only, as findings are imported; tests give their
+    own stand-in."""
+    import ssl
+    import urllib.error
+    import urllib.request
+
+    import certifi
+
+    # Python from python.org on macOS has no certificates of its own; certifi brings the standard set (as
+    # engine/bright_data.py does).
+    context = ssl.create_default_context(cafile=certifi.where())
+    for method, headers in (("HEAD", {}), ("GET", {"Range": "bytes=0-0"})):
+        request = urllib.request.Request(url, method=method, headers={"User-Agent": IMAGE_CHECKER, **headers})
+        try:
+            with urllib.request.urlopen(request, timeout=IMAGE_CHECK_TIMEOUT_SECONDS, context=context) as response:
+                kind = (response.headers.get("Content-Type") or "").split(";")[0].strip().lower() or None
+                size = _whole_size(response.headers)
+                if size is not None or method == "GET":
+                    return ImageFacts(size, kind, response.geturl(), None)
+        except urllib.error.HTTPError as e:
+            if method == "GET" or e.code not in (400, 403, 405, 501):
+                problem = "refuses automated requests" if e.code in (401, 403) else "isn't there"
+                return ImageFacts(None, None, None, f"{problem} ({e.code})")
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
+            return ImageFacts(None, None, None, f"couldn't be reached ({type(e).__name__})")
+    return ImageFacts(None, None, None, "its size isn't given")
+
+
+def _whole_size(headers) -> int | None:
+    found = re.fullmatch(r"bytes \d+-\d+/(\d+)", (headers.get("Content-Range") or "").strip())
+    if found:
+        return int(found.group(1))
+    length = (headers.get("Content-Length") or "").strip()
+    return int(length) if length.isdigit() and not headers.get("Content-Range") else None
+
+
+def check_image(url: str, head=head_image) -> ImageCheck:
+    """An image kept as it is when its server says it is at most IMAGE_MAX_BYTES; else a smaller size of the same image
+    on the maker's own server (smaller_sizes) when one is; else left out, with why. One whose server won't say, or that
+    isn't an image, is left out too: never guessed."""
+    facts = head(url)
+    if facts.problem is not None:
+        return ImageCheck(None, None, f"its size couldn't be checked: the server {facts.problem}")
+    if not (facts.content_type or "").startswith("image/"):
+        return ImageCheck(None, None, f"not an image ({facts.content_type or 'no kind given'})")
+    if facts.size is None:
+        return ImageCheck(None, None, "its size couldn't be checked: the server doesn't give it")
+    shown = facts.url if facts.url and is_linkable(facts.url) else url
+    if facts.size <= IMAGE_MAX_BYTES:
+        return ImageCheck(shown, facts.size, None if shown == url else f"the image's address after redirects: {shown}")
+    for smaller in smaller_sizes(shown):
+        other = head(smaller)
+        if (other.problem is None and (other.content_type or "").startswith("image/") and other.size is not None
+                and other.size <= IMAGE_MAX_BYTES and _host(other.url or smaller) == _host(shown)):
+            return ImageCheck(other.url or smaller, other.size, f"a smaller size of the maker's image ({_bytes(other.size)} "
+                                                                 f"instead of {_bytes(facts.size)})")
+    return ImageCheck(None, facts.size, f"{_bytes(facts.size)}, over {_bytes(IMAGE_MAX_BYTES)}, and no smaller size of "
+                                         "it on the maker's server")
+
+
+def smaller_sizes(url: str, width: int = IMAGE_SMALLER_WIDTH) -> list[str]:
+    """The same image, `width` pixels wide, as its image server takes a width (Shopify's "width", Scene7's "wid",
+    Salesforce Commerce's "sw", Sitecore's "mw", Cloudflare's "width=" step, imgix's, Contentful's and Sanity's "w"),
+    on its own server only; a plain "width" for any other."""
+    parts = urlsplit(url)
+    host, path = (parts.hostname or "").lower(), parts.path
+    if "/cdn-cgi/image/" in path:
+        options = re.sub(r"(?<=[/,])width=\d+", f"width={width}", path) if "width=" in path else path.replace(
+            "/cdn-cgi/image/", f"/cdn-cgi/image/width={width},", 1)
+        return [urlunsplit(parts._replace(path=options))]
+    if "/cdn/shop/" in path or host == "cdn.shopify.com":
+        keys = ["width"]
+    elif "/is/image/" in path:
+        keys = ["wid"]
+    elif "demandware.static" in url or "/dw/image/" in path:
+        keys = ["sw"]
+    elif "/-/media/" in path:
+        keys = ["mw"]
+    elif host.endswith(("imgix.net", "images.ctfassets.net", "cdn.sanity.io")):
+        keys = ["w"]
+    else:
+        keys = ["width"]
+    return [_with_query(parts, key, str(width)) for key in keys]
+
+
+def _with_query(parts, key: str, value: str) -> str:
+    query = [(k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True) if k != key] + [(key, value)]
+    return urlunsplit(parts._replace(query=urlencode(query, safe=":/,")))
+
+
+def _bytes(size: int) -> str:
+    """Sizes as people say them: "42 KB", "3.4 MB" (decimal, as servers and phones count them)."""
+    if size >= 1_000_000:
+        return f"{size / 1_000_000:.1f}".rstrip("0").rstrip(".") + " MB"
+    return f"{round(size / 1000)} KB"
+
+
 # --- The lists ---
 
 def known_shops(prices: list[dict], pages: list[dict], brand_lines: list[dict] = ()) -> dict[str, str]:
@@ -398,17 +559,24 @@ def read_findings(paths: list[Path], report: Report) -> list[Finding]:
     return findings
 
 
-def import_findings(paths: list[Path], prices_path: Path = DEFAULT_PRICES, pages_path: Path = DEFAULT_PRODUCT_PAGES,
-                    write: bool = False, brand_lines_path: Path = DEFAULT_BRAND_LINES) -> Report:
-    """Checks the findings in `paths` and adds what they say to the price list and the product pages list (only with
-    `write`); returns what was found and added, and every problem."""
+def import_findings(paths: list[Path], prices_path: Path | None = None, pages_path: Path | None = None,
+                    write: bool = False, brand_lines_path: Path | None = None, image_head=None) -> Report:
+    """Checks the findings in `paths` and adds what they say to the price list, the product pages list and, for brand
+    lines on sale, the brand-lines list (only with `write`); returns what was found and added, and every problem.
+    The lists are data/prices.json, data/product_pages.json and data/brand_lines.json unless given (DEFAULT_PRICES,
+    DEFAULT_PRODUCT_PAGES and DEFAULT_BRAND_LINES, read when called: the tests point them at copies).
+    `image_head`: how an image's size is asked of its server (head_image, which uses the network; the command line
+    passes it); None checks no image."""
+    prices_path = Path(prices_path or DEFAULT_PRICES)
+    pages_path = Path(pages_path or DEFAULT_PRODUCT_PAGES)
+    brand_lines_path = Path(brand_lines_path or DEFAULT_BRAND_LINES)
     report = Report()
     prices_data = json.loads(Path(prices_path).read_text(encoding="utf-8"))
     pages_data = json.loads(Path(pages_path).read_text(encoding="utf-8"))
-    lines_data = (json.loads(Path(brand_lines_path).read_text(encoding="utf-8"))["brand_lines"]
-                  if Path(brand_lines_path).is_file() else [])
-    prices, pages = prices_data["prices"], pages_data["pages"]
-    shops = known_shops(prices, pages, lines_data)
+    lines_file = Path(brand_lines_path).is_file()
+    lines_data = json.loads(Path(brand_lines_path).read_text(encoding="utf-8")) if lines_file else {"brand_lines": []}
+    prices, pages, lines = prices_data["prices"], pages_data["pages"], lines_data["brand_lines"]
+    shops = known_shops(prices, pages, lines)
     seen_prices = {_price_key(p) for p in prices}
     seen_pages = {_page_key(p) for p in pages}
     for where, finding in read_findings(paths, report):
@@ -443,24 +611,136 @@ def import_findings(paths: list[Path], prices_path: Path = DEFAULT_PRICES, pages
             prices.append(entry)
             seen_prices.add(key)
             report.added_prices += 1
+        if plan.line is not None and _update_line(lines, plan.line, finding, report, where):
+            report.lines_updated += 1
         if plan.page is not None:
+            key = _page_key(plan.page)
+            if key in seen_pages:  # already imported: its image was checked then
+                report.already_there += 1
+                continue
+            page = _with_checked_image(plan.page, image_head, report) if image_head is not None else plan.page
             try:
-                ProductPage.model_validate(plan.page)
+                ProductPage.model_validate(page)
             except ValidationError as e:
                 report.problems.append(f"{where} {finding.name}: a product page that wouldn't load, not added "
                                        f"({_problems(e)})")
                 continue
-            key = _page_key(plan.page)
-            if key in seen_pages:
-                report.already_there += 1
-            else:
-                pages.append(plan.page)
-                seen_pages.add(key)
-                report.added_pages += 1
+            pages.append(page)
+            seen_pages.add(key)
+            report.added_pages += 1
     if write:
         _write(prices_path, prices_data)
         _write(pages_path, pages_data)
+        if lines_file and report.lines_updated:
+            _write_brand_lines(brand_lines_path, lines_data)
     return report
+
+
+def _with_checked_image(page: dict, image_head, report: Report) -> dict:
+    """The page entry with its image checked (check_image): kept, a smaller size of it, or left out with why, in the
+    entry's note (never shown)."""
+    if page.get("image") is None:
+        return page
+    checked = check_image(page["image"], image_head)
+    page = dict(page)
+    if checked.url is None:
+        report.images["dropped"] += 1
+        report.images_dropped.append(f"{page['product']}: {checked.reason}")
+        page.pop("image", None)
+        page.pop("image_page", None)
+        page["note"] = "; ".join(filter(None, [page.get("note"), f"image left out: {checked.reason}"]))
+        return page
+    report.images["smaller" if checked.url != page["image"] else "kept"] += 1
+    if checked.url != page["image"]:
+        page["image"] = checked.url
+        page["note"] = "; ".join(filter(None, [page.get("note"), f"image: {checked.reason}"]))
+    return page
+
+
+def _update_line(lines: list[dict], line: dict, finding: Finding, report: Report, where: str) -> bool:
+    """A brand line on sale (its researcher: its maker's UK range page, and a "from" price) in the brand-lines list
+    (engine/brand_lines.py): a new entry saying the brand sells the type, with its range page and from price; or, for
+    the line's entry already there, its range page when it has none, and a from price when it has none or an older
+    one. Whether the brand sells the type is never changed: an entry saying it doesn't is left for a look. True when
+    the list changed."""
+    aliases = known_aliases().get(line["category"], {})
+    loaded = []
+    for entry in lines:
+        try:
+            loaded.append(BrandLine.model_validate(entry))
+        except ValidationError:
+            loaded.append(None)
+    existing = find_brand_line([line["brand"]], line["category"], line["product_type"],
+                               [entry for entry in loaded if entry is not None])
+    sources = lambda entry, *urls: list(dict.fromkeys([*entry.get("sources", []), *[u for u in urls if u]]))
+    if existing is None:
+        if line["range_page"] is None and line["from_price"] is None:
+            return False
+        entry = {"brand": line["brand"], "category": line["category"], "product_type": line["product_type"],
+                 "sells": True, "sources": sources({}, line["range_page"], line["from_price_url"], *line["sources"]),
+                 "checked_on": line["checked_on"]}
+        if line["range_page"] is not None:
+            entry["range_page"] = line["range_page"]
+            if line["range_shop"]:
+                entry["range_shop"] = line["range_shop"]
+        if line["from_price"] is not None:
+            entry |= {"from_price": line["from_price"], "from_price_shop": line["from_price_shop"],
+                      "from_price_url": line["from_price_url"], "from_price_checked_on": line["checked_on"]}
+        entry["note"] = "From the research findings of " + line["checked_on"] + (
+            f": {finding.note}" if finding.note else ".") + (
+            "" if line["range_page"] is not None else " No range page: the finding gives none.")
+        try:
+            BrandLine.model_validate(entry)
+        except ValidationError as e:
+            report.problems.append(f"{where} {finding.name}: a brand-lines entry that wouldn't load, not added "
+                                   f"({_problems(e)})")
+            return False
+        lines.append(entry)
+        return True
+    entry = lines[loaded.index(existing)]
+    if not existing.sells:
+        report.problems.append(f"{where} {finding.name}: the brand-lines list says {existing.brand} doesn't sell "
+                               f"{line['product_type']}s, yet it was found on sale: for a look by hand")
+        return False
+    changed = dict(entry)
+    if existing.range_page is None and line["range_page"] is not None:
+        changed |= {"range_page": line["range_page"], "sources": sources(changed, line["range_page"]),
+                    "checked_on": max(existing.checked_on.isoformat(), line["checked_on"])}
+        if line["range_shop"]:
+            changed["range_shop"] = line["range_shop"]
+    newer = existing.from_price_checked_on is None or existing.from_price_checked_on.isoformat() < line["checked_on"]
+    if line["from_price"] is not None and (existing.from_price is None or newer):
+        changed |= {"from_price": line["from_price"], "from_price_shop": line["from_price_shop"],
+                    "from_price_url": line["from_price_url"], "from_price_checked_on": line["checked_on"],
+                    "sources": sources(changed, line["from_price_url"])}
+    if changed == entry:
+        return False
+    try:
+        BrandLine.model_validate(changed)
+    except ValidationError as e:
+        report.problems.append(f"{where} {finding.name}: the brand-lines entry wouldn't load changed, left as it was "
+                               f"({_problems(e)})")
+        return False
+    entry.clear()
+    entry.update(_in_brand_lines_order(changed))
+    return True
+
+
+_BRAND_LINE_ORDER = ("brand", "also_called", "category", "product_type", "sells", "sources", "checked_on", "range_page",
+                     "range_shop", "from_price", "from_price_shop", "from_price_url", "from_price_checked_on", "note")
+
+
+def _in_brand_lines_order(entry: dict) -> dict:
+    return {key: entry[key] for key in _BRAND_LINE_ORDER if key in entry} | {
+        key: value for key, value in entry.items() if key not in _BRAND_LINE_ORDER}
+
+
+def _write_brand_lines(path: Path, data: dict) -> None:
+    """The brand-lines list in its own layout: as the price list's, but a list of addresses on one line."""
+    text = json.dumps(data, indent=1, ensure_ascii=False)
+    text = re.sub(r'\[\n\s*((?:"(?:[^"\\]|\\.)*",\n\s*)*"(?:[^"\\]|\\.)*")\n\s*\]',
+                  lambda m: "[" + re.sub(r",\n\s*", ", ", m.group(1)) + "]", text)
+    Path(path).write_text(text + "\n", encoding="utf-8")
 
 
 def _problems(error: ValidationError) -> str:
@@ -474,8 +754,8 @@ def _price_key(entry: dict) -> tuple:
 
 
 def _page_key(entry: dict) -> tuple:
-    return tuple(json.dumps(entry.get(k)) for k in ("product", "category", "product_type", "page", "shop", "image",
-                                                    "image_page", "checked_on"))
+    """A page entry's identity: its product and page on a day (its image may change as it is checked)."""
+    return tuple(json.dumps(entry.get(k)) for k in ("product", "category", "product_type", "page", "shop", "checked_on"))
 
 
 def _same_day_product(a: dict, b: dict) -> bool:
@@ -499,8 +779,9 @@ def main(argv: list[str]) -> int:
         print(__doc__)
         return 2
     write = "--write" in argv
-    paths = [Path(a) for a in argv[1:] if a != "--write"]
-    report = import_findings(paths, DEFAULT_PRICES, DEFAULT_PRODUCT_PAGES, write=write)
+    check = "--no-image-check" not in argv
+    paths = [Path(a) for a in argv[1:] if not a.startswith("--")]
+    report = import_findings(paths, write=write, image_head=head_image if check else None)
     print("Findings: " + ", ".join(f"{report.statuses[s]} {s}" for s in STATUSES))
     verb = "Added" if write else "Would add (run again with --write to add them)"
     print(f"{verb}: {report.added_prices} price-list entries, {report.added_pages} product pages; "
@@ -508,10 +789,17 @@ def main(argv: list[str]) -> int:
     for heading, names in (("Unsure, nothing recorded", report.unsure), ("Refused, no source left", report.refused),
                            ("Sold second-hand only but not bought vintage on purpose, recorded as not sold",
                             report.not_vintage), ("Brand lines, recorded under their brand", report.lines),
-                           ("Lines' prices not recorded as the line's own (a line's from price is data/brand_lines.json's)",
-                            report.line_prices)):
+                           ("Lines' prices, recorded as their from prices in data/brand_lines.json (never as a line's "
+                            "own price in the price list)", report.line_prices)):
         if names:
             print(f"{heading} ({len(names)}): {', '.join(names)}")
+    if check:
+        print(f"Images: {report.images['kept']} kept, {report.images['smaller']} at a smaller size of the maker's own, "
+              f"{report.images['dropped']} left out (why, in each page's note):")
+        for dropped in report.images_dropped:
+            print(f"  {dropped}")
+    if report.lines_updated:
+        print(f"Brand lines: {report.lines_updated} entries added or given a range page or a newer from price.")
     if report.problems:
         print(f"Problems ({len(report.problems)}):")
         for problem in report.problems:

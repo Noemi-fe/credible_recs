@@ -47,9 +47,29 @@ def lists(tmp_path, prices=(), pages=()):
     return prices_path, pages_path
 
 
+def test_no_test_ever_writes_the_committed_lists(tmp_path):
+    # The importer's default lists are stand-ins in tests (engine/tests/conftest.py): found on 15 Oct 2026, when a line
+    # test that named no brand-lines list had changed the real data/brand_lines.json.
+    from engine.brand_lines import DEFAULT_BRAND_LINES as REAL_BRAND_LINES
+    from engine.prices import DEFAULT_PRICES as REAL_PRICES
+    from engine.product_pages import DEFAULT_PRODUCT_PAGES as REAL_PAGES
+
+    before = [path.read_bytes() for path in (REAL_PRICES, REAL_PAGES, REAL_BRAND_LINES)]
+    line = finding(name="Victorinox chef knife line", type="chef knife", category="kitchen", shop="Victorinox",
+                   product_page="https://victorinox.example/en-GB/chefs-knives", price_gbp=25.0,
+                   price_url="https://victorinox.example/en-GB/chefs-knives", image_url=..., image_page=...,
+                   sources=["https://victorinox.example/en-GB/chefs-knives"])
+    import_findings([written(tmp_path, line)], write=True)
+    assert [path.read_bytes() for path in (REAL_PRICES, REAL_PAGES, REAL_BRAND_LINES)] == before
+    assert buyable.DEFAULT_BRAND_LINES != REAL_BRAND_LINES
+
+
 def run(tmp_path, *findings, prices=(), pages=()):
     prices_path, pages_path = lists(tmp_path, prices, pages)
-    report = import_findings([written(tmp_path, *findings)], prices_path, pages_path, write=True)
+    lines_path = tmp_path / "brand_lines.json"
+    lines_path.write_text('{"brand_lines": []}\n', encoding="utf-8")
+    report = import_findings([written(tmp_path, *findings)], prices_path, pages_path, write=True,
+                             brand_lines_path=lines_path)
     return report, load_prices(prices_path), load_product_pages(pages_path)
 
 
@@ -254,8 +274,10 @@ def test_the_command_line_reads_the_findings_and_writes_only_when_asked(tmp_path
     monkeypatch.setattr(buyable, "DEFAULT_PRICES", prices_path)
     monkeypatch.setattr(buyable, "DEFAULT_PRODUCT_PAGES", pages_path)
     found = written(tmp_path, finding())
+    monkeypatch.setattr(buyable, "head_image", fake_heads({"https://img.asus.example/rog.png": 40_000}))
     assert buyable.main(["import", str(found)]) == 0
-    assert load_prices(prices_path) == [] and "--write" in capsys.readouterr().out
+    printed = capsys.readouterr().out
+    assert load_prices(prices_path) == [] and "--write" in printed and "Images: 1 kept" in printed
     assert buyable.main(["import", str(found), "--write"]) == 0
     assert len(load_prices(prices_path)) == 1 and len(load_product_pages(pages_path)) == 1
     assert buyable.main([]) == 2
@@ -378,3 +400,146 @@ def test_without_a_price_a_makers_page_is_still_named_for_its_maker_and_where_it
     # "Sold at Holland & Barrett" points at a page of Holland & Barrett ("&" spelled "and" in its address).
     assert plan.prices[0]["shop"] == "Holland & Barrett"
     assert plan.prices[0]["url"] == "https://www.hollandandbarrett.example/shop/product/cerave-hydrating-cleanser"
+
+
+# --- Images checked as they are imported (the coordinator, 15 Oct 2026: a phone opening a card with a 5 MB image) ---
+
+from engine.buyable import ImageFacts, check_image, smaller_sizes  # noqa: E402
+
+
+def fake_heads(sizes: dict[str, object]):
+    """A stand-in for asking a server for an image's headers: {url: size in bytes, or an error in words}."""
+    asked = []
+
+    def head(url):
+        asked.append(url)
+        found = sizes.get(url, "not found (404)")
+        if isinstance(found, str):
+            return ImageFacts(None, None, url, found)
+        return ImageFacts(found, "image/jpeg", url, None)
+
+    head.asked = asked
+    return head
+
+
+def test_an_image_under_the_limit_is_kept_as_it_is():
+    checked = check_image("https://img.maker.example/a.jpg", fake_heads({"https://img.maker.example/a.jpg": 42_000}))
+    assert (checked.url, checked.size, checked.reason) == ("https://img.maker.example/a.jpg", 42_000, None)
+
+
+def test_a_big_image_gives_way_to_a_smaller_size_of_it_on_the_makers_own_server():
+    big = "https://maker.example/cdn/shop/files/kettle.jpg?v=17"
+    smaller = "https://maker.example/cdn/shop/files/kettle.jpg?v=17&width=600"
+    assert smaller in smaller_sizes(big)  # Shopify's servers take a width
+    checked = check_image(big, fake_heads({big: 5_400_000, smaller: 61_000}))
+    assert checked.url == smaller and checked.size == 61_000 and "smaller size" in checked.reason
+
+
+def test_a_big_image_with_no_smaller_size_is_dropped_and_why_is_recorded():
+    big = "https://img.maker.example/toaster.png"
+    checked = check_image(big, fake_heads({big: 3_400_000}))
+    assert checked.url is None and "3.4 MB" in checked.reason and "no smaller size" in checked.reason
+
+
+@pytest.mark.parametrize("answer, why", [
+    ("refuses automated requests (403)", "couldn't be checked"),
+    ("not found (404)", "couldn't be checked"),
+])
+def test_an_image_that_cant_be_checked_is_dropped_never_guessed(answer, why):
+    checked = check_image("https://img.maker.example/shoe.jpg", fake_heads({"https://img.maker.example/shoe.jpg": answer}))
+    assert checked.url is None and why in checked.reason
+
+
+@pytest.mark.parametrize("url, smaller", [
+    ("https://s7d1.scene7.com/is/image/maker/kettle", "https://s7d1.scene7.com/is/image/maker/kettle?wid=600"),
+    ("https://www.maker.example/dw/image/v2/AAAA/on/demandware.static/k.jpg?sw=2000",
+     "https://www.maker.example/dw/image/v2/AAAA/on/demandware.static/k.jpg?sw=600"),
+    ("https://www.maker.example/-/media/products/k.jpg?rev=1", "https://www.maker.example/-/media/products/k.jpg?rev=1&mw=600"),
+    ("https://assets.maker.example/cdn-cgi/image/width=1300,format=auto/k.png",
+     "https://assets.maker.example/cdn-cgi/image/width=600,format=auto/k.png"),
+])
+def test_smaller_sizes_are_asked_for_the_way_each_image_server_takes_them(url, smaller):
+    assert smaller in smaller_sizes(url)
+    assert all(candidate.split("/")[2] == url.split("/")[2] for candidate in smaller_sizes(url))  # its own server only
+
+
+def test_imported_images_are_checked_and_a_dropped_ones_reason_kept_in_the_pages_note(tmp_path):
+    prices_path, pages_path = lists(tmp_path)
+    found = written(tmp_path, finding())  # its image: https://img.asus.example/rog.png
+    report = import_findings([found], prices_path, pages_path, write=True,
+                             image_head=fake_heads({"https://img.asus.example/rog.png": 2_000_000}))
+    [page] = load_product_pages(pages_path)
+    assert page.image is None and "image left out" in page.note and "2 MB" in page.note
+    assert report.images == {"kept": 0, "smaller": 0, "dropped": 1}
+    # Imported again: nothing is asked of the network for a page already in the list, and nothing is added twice.
+    head = fake_heads({})
+    again = import_findings([found], prices_path, pages_path, write=True, image_head=head)
+    assert head.asked == [] and again.added_pages == 0
+
+
+# --- A brand line's range page and from price (its researcher: the maker's UK range page, and a "from" price) ---
+
+def brand_lines_file(tmp_path, entries=()):
+    path = tmp_path / "brand_lines.json"
+    path.write_text(json.dumps({"brand_lines": list(entries)}, indent=1) + "\n", encoding="utf-8")
+    return path
+
+
+def test_a_lines_range_page_and_from_price_go_to_its_brand_lines_entry(tmp_path):
+    from engine.brand_lines import load_brand_lines
+
+    prices_path, pages_path = lists(tmp_path)
+    lines_path = brand_lines_file(tmp_path)
+    line = finding(name="Cosori air fryer line", type="air fryer", category="kitchen", shop="Argos",
+                   product_page="https://cosori.example/uk/air-fryers/", price_gbp=59.99,
+                   price_url="https://www.argos.example/product/123", image_url="https://cosori.example/img/af.jpg",
+                   image_page="https://cosori.example/uk/air-fryers/af/", sources=["https://cosori.example/uk/air-fryers/"])
+    report = import_findings([written(tmp_path, line)], prices_path, pages_path, write=True, brand_lines_path=lines_path,
+                             image_head=fake_heads({"https://cosori.example/img/af.jpg": 80_000}))
+    [entry] = load_brand_lines(lines_path)
+    assert (entry.brand, entry.product_type, entry.sells, entry.range_page) == (
+        "Cosori", "air fryer", True, "https://cosori.example/uk/air-fryers/")
+    assert (entry.from_price, entry.from_price_shop, entry.from_price_url) == (
+        59.99, "Argos", "https://www.argos.example/product/123")
+    assert report.lines_updated == 1
+
+
+def test_a_lines_existing_entry_keeps_its_range_page_and_takes_a_newer_from_price(tmp_path):
+    from engine.brand_lines import load_brand_lines
+
+    old = {"brand": "Cosori", "category": "kitchen", "product_type": "air fryer", "sells": True,
+           "sources": ["https://cosori.example/uk/range-old/", "https://shop.example/old"], "checked_on": "2026-10-14",
+           "range_page": "https://cosori.example/uk/range-old/", "from_price": 69.99, "from_price_shop": "Old Shop",
+           "from_price_url": "https://shop.example/old", "from_price_checked_on": "2026-10-14", "note": "Made up."}
+    prices_path, pages_path = lists(tmp_path)
+    lines_path = brand_lines_file(tmp_path, [old])
+    line = finding(name="Cosori air fryer line", type="air fryer", category="kitchen", shop="Argos",
+                   product_page="https://cosori.example/uk/air-fryers/", price_gbp=59.99,
+                   price_url="https://www.argos.example/product/123", image_url=..., image_page=...,
+                   sources=["https://cosori.example/uk/air-fryers/"])
+    import_findings([written(tmp_path, line)], prices_path, pages_path, write=True, brand_lines_path=lines_path,
+                    image_head=fake_heads({}))
+    [entry] = load_brand_lines(lines_path)
+    assert entry.range_page == "https://cosori.example/uk/range-old/"  # a researched range page stays as it was
+    assert (entry.from_price, entry.from_price_shop, entry.from_price_checked_on) == (59.99, "Argos", date(2026, 10, 15))
+    assert "https://shop.example/old" in entry.sources and "https://www.argos.example/product/123" in entry.sources
+
+
+def test_a_lines_range_page_at_a_stockist_names_it_and_one_without_a_page_says_so(tmp_path):
+    from engine.brand_lines import load_brand_lines
+
+    prices_path, pages_path = lists(tmp_path)
+    lines_path = brand_lines_file(tmp_path)
+    shun = finding(name="Shun chef knife line", type="chef knife", category="kitchen", shop="Knife Shop",
+                   product_page="https://knifeshop.example/by-brand/kai-shun/", price_gbp=164.95,
+                   price_url="https://knifeshop.example/kai-shun-chef/p1", image_url=..., image_page=...,
+                   sources=["https://knifeshop.example/by-brand/kai-shun/"])
+    cetaphil = finding(name="Cetaphil cleanser line", type="cleanser", category="skincare", shop="Boots",
+                       product_page=None, price_gbp=11.49, price_url="https://www.boots.example/cetaphil-gentle/p2",
+                       image_url=..., image_page=..., sources=["https://www.boots.example/cetaphil-gentle/p2"])
+    import_findings([written(tmp_path, shun, cetaphil)], prices_path, pages_path, write=True,
+                    brand_lines_path=lines_path, image_head=fake_heads({}))
+    by_brand = {line.brand: line for line in load_brand_lines(lines_path)}
+    assert (by_brand["Shun"].range_page, by_brand["Shun"].range_shop) == (
+        "https://knifeshop.example/by-brand/kai-shun/", "Knife Shop")
+    assert by_brand["Cetaphil"].range_page is None and "no range page" in by_brand["Cetaphil"].note.casefold()

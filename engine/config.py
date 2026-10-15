@@ -1843,3 +1843,12 @@ FAST_MOVING_YEARS = 1
 SEARCH_PAGE_PATH_STEPS = ("search", "sitesearch", "searchresults", "sch", "s", "find", "results")
 SEARCH_PAGE_QUERY_KEYS = ("q", "k", "query", "search", "searchterm", "search-term", "search_term", "search_query",
                           "searchquery", "text", "_nkw", "keyword", "keywords", "term", "kw")
+# (4) Makers' images checked as they are imported (the coordinator, 15 Oct 2026: lazy loading doesn't help a phone that
+# opens a card with a 5 MB image): `python -m engine.buyable import` asks each image's server for its size (headers only,
+# never the image itself, as an honest tool: never pretending to be a browser), keeps one of at most IMAGE_MAX_BYTES,
+# else asks the maker's own server for a smaller size of the same image (IMAGE_SMALLER_WIDTH pixels wide, the way its
+# image server takes a width), else leaves the image out and records why in the page's note; one whose size can't be
+# checked is left out too, never guessed.
+IMAGE_MAX_BYTES = 500_000  # about 500 KB, as phones and servers count them
+IMAGE_SMALLER_WIDTH = 600
+IMAGE_CHECK_TIMEOUT_SECONDS = 15
