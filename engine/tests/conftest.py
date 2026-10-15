@@ -101,3 +101,14 @@ def _nothing_remembered_from_another_test():
     from engine import memo
 
     memo.forget_all()
+
+
+@pytest.fixture
+def skincare_need_rule_set_aside(monkeypatch):
+    """Since 15 Oct 2026 (Noemi's decision 3) a skincare pick, or "Also worth a look" item, needs a credible
+    recommendation that talks about the request's needs in every reading, as a haircare one does
+    (engine/tests/test_skincare_needs.py). The tests that ask for this fixture are about something else (product facts,
+    active ingredients, prescription notes, how needs weigh, the wider reading): their made-up comments don't talk about
+    their requests' needs, so for them skincare's first reading is as it was before that day."""
+    monkeypatch.setattr(pipeline, "NEED_RULE_IN_EVERY_READING",
+                        tuple(category for category in pipeline.NEED_RULE_IN_EVERY_READING if category != "skincare"))

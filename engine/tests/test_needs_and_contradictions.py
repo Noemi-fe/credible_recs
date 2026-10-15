@@ -51,7 +51,8 @@ def product(result, name):
 
 # --- Needs ---
 
-def test_a_mention_that_talks_about_the_need_outranks_an_equally_credible_generic_one(tmp_path, monkeypatch):
+def test_a_mention_that_talks_about_the_need_outranks_an_equally_credible_generic_one(
+        tmp_path, monkeypatch, skincare_need_rule_set_aside):
     # Changed 9 Oct 2026: the boost is switched off by default (word rules made a real answer worse), so this test
     # sets it to test the mechanism itself.
     import engine.pipeline
@@ -71,7 +72,7 @@ def test_a_mention_that_talks_about_the_need_outranks_an_equally_credible_generi
     assert unverified_claims(fitting.answer, fitting.bodies) == []
 
 
-def test_a_warning_that_talks_about_the_need_weighs_more(tmp_path):
+def test_a_warning_that_talks_about_the_need_weighs_more(tmp_path, skincare_need_rule_set_aside):
     rows = ALPHA + BETA + [
         ("r2cccc", "Alpha Retinol", "warn", "I used Alpha Retinol for a month and it was way too harsh for my skin."),
         ("r2dddd", "Beta Retinol", "warn", "I used Beta Retinol for a month and it was way too harsh for my sensitive skin."),
@@ -85,7 +86,7 @@ def test_a_warning_that_talks_about_the_need_weighs_more(tmp_path):
     assert [p.name for p in result.answer.picks] == ["Alpha Retinol", "Beta Retinol"]
 
 
-def test_the_reason_says_how_many_credible_voices_talk_about_the_need(tmp_path):
+def test_the_reason_says_how_many_credible_voices_talk_about_the_need(tmp_path, skincare_need_rule_set_aside):
     rows = ALPHA + BETA[:1] + [
         ("r1dddd", "Beta Retinol", "recommend", "As a beginner I started with Beta Retinol 2 years ago, no irritation."),
         BETA_SENSITIVE,

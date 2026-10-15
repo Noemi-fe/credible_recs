@@ -88,8 +88,10 @@ def test_an_item_whose_brand_is_on_the_skip_list_is_left_out(tmp_path):
     assert worth(result) == ["Misono UX10 gyuto"]
 
 
-def test_in_a_wider_reading_an_item_needs_a_recommendation_about_the_requests_needs():
+def test_in_a_wider_reading_an_item_needs_a_recommendation_about_the_requests_needs(skincare_need_rule_set_aside):
     # As for picks (11 Oct 2026): reading more threads had given every shampoo request the same popular products.
+    # Changed on purpose 15 Oct 2026 (Noemi's decision 3): skincare's first reading follows the rule too, so this test
+    # of the wider reading sets that aside (engine/tests/test_skincare_needs.py tests skincare's first reading).
     query = parse_query("gentle exfoliant for sensitive skin")
     plain = [mention("Made-up Exfoliant", thread, category="skincare") for thread in ("t1", "t2")]
     fitting = [mention("Other Exfoliant", "t1", category="skincare"),
@@ -105,7 +107,8 @@ def test_for_haircare_a_pick_needs_a_recommendation_about_the_requests_needs_in_
     # Noemi's decision 4 of 14 Oct 2026 (morning; option B of the need-quality builder): in haircare, where big
     # curly-hair threads fill even the first reading, the wider reading's rule holds in every reading. On the library the
     # gentle-wavy shampoo answer's first reading had picked an anti-dandruff shampoo whose writers said nothing about
-    # gentleness or waves. Skincare and kitchen first readings are unchanged. All made up.
+    # gentleness or waves. Kitchen first readings are unchanged (skincare's too until Noemi's decision 3 of 15 Oct 2026,
+    # engine/tests/test_skincare_needs.py). All made up.
     hair = parse_query("gentle shampoo for wavy hair")
     plain = [mention("Made-up Shampoo", thread, category="haircare") for thread in ("t1", "t2", "t1")]
     fitting = [mention("Other Shampoo", thread, category="haircare") for thread in ("t1", "t2", "t2")]
@@ -114,9 +117,12 @@ def test_for_haircare_a_pick_needs_a_recommendation_about_the_requests_needs_in_
     assert [p.name for p in first.picks] == ["Other Shampoo"]
     made_up = next(p for p in first.products if p.name == "Made-up Shampoo")
     assert made_up.shortfall == pipeline.WIDER_READING_SHORTFALL
-    skin = parse_query("gentle exfoliant for sensitive skin")
-    as_skin = [dataclasses.replace(m, category="skincare") for m in plain + fitting]
-    assert {p.name for p in pipeline._ranked(as_skin, skin, [], [], need_led=False).picks} == {
+    # Changed on purpose 15 Oct 2026 (Noemi's decision 3): this was a skincare request, whose first reading follows the
+    # rule since then; a kitchen one's still doesn't.
+    pan = parse_query("frying pan that lasts")
+    as_kitchen = [dataclasses.replace(m, category="kitchen", needs=("lasting",) if m.needs else ())
+                  for m in plain + fitting]
+    assert {p.name for p in pipeline._ranked(as_kitchen, pan, [], [], need_led=False).picks} == {
         "Made-up Shampoo", "Other Shampoo"}
     # The config value names the categories: without haircare, its first reading is as before.
     monkeypatch.setattr(pipeline, "NEED_RULE_IN_EVERY_READING", ())
@@ -124,10 +130,11 @@ def test_for_haircare_a_pick_needs_a_recommendation_about_the_requests_needs_in_
         "Made-up Shampoo", "Other Shampoo"}
 
 
-def test_the_need_rule_holds_in_every_reading_for_haircare_only():
+def test_the_need_rule_holds_in_every_reading_for_haircare_and_skincare():
+    # Changed on purpose 15 Oct 2026 (Noemi's decision 3: skincare's readings follow it too); it was haircare only.
     from engine.config import NEED_RULE_IN_EVERY_READING
 
-    assert NEED_RULE_IN_EVERY_READING == ("haircare",)
+    assert NEED_RULE_IN_EVERY_READING == ("haircare", "skincare")
 
 
 # --- One-line summaries, read from the library ---

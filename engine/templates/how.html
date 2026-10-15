@@ -155,7 +155,7 @@ h3.group { font-size: 12.5px; font-weight: 650; text-transform: uppercase; lette
     <li>at least {{config:MIN_CREDIBLE_MENTIONS}} credible recommendations,</li>
     <li>from at least {{config:MIN_THREADS}} different threads,</li>
     <li>and a score above zero.</li>
-  </ul>{{upvote_rule}}
+  </ul>{{upvote_rule}}{{need_rule}}
   <p>The {{config:PICKS_SHOWN}} products with the highest scores are shown. If fewer have enough evidence, we show fewer and say so: we'd rather say "not enough evidence yet" than guess.</p>
   <p>When credible voices clearly prefer one kind of product (at least {{config:KIND_LEAD_RATIO}} times the support of the next kind, say Japanese chef knives over German ones), products of that kind get a bonus of {{config:KIND_BONUS}}.</p>
   <p>Each pick shows {{config:MIN_QUOTES_PER_PICK}} to {{config:QUOTES_PER_PICK}} quotes from the people who back it, each with a link to its comment and checked word for word again just before it's shown.</p>

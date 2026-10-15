@@ -196,7 +196,7 @@ from engine.library_cache import loaded as loaded_library
 from engine.match_products import known_aliases, normalize_name, product_words, same_product, written_alike
 from engine.memo import Table
 from engine.models import Comment, Thread
-from engine.needs import Need, needs_met, request_needs
+from engine.needs import Need, judged_needs, needs_met, request_needs
 from engine.prices import (
     Price,
     PriceCheck,
@@ -546,7 +546,7 @@ def _upvotes_change_nothing(scored, query: ParsedQuery, kind_notes, kinds, need_
 
 
 # Why a product found only in a wider reading isn't a pick (answer_request, 11 Oct 2026), nor, since 14 Oct 2026, one in
-# any reading of a category of config.NEED_RULE_IN_EVERY_READING (haircare).
+# any reading of a category of config.NEED_RULE_IN_EVERY_READING (haircare; skincare too since 15 Oct 2026).
 WIDER_READING_SHORTFALL = "no credible recommendation talks about what you asked for"
 
 
@@ -555,21 +555,30 @@ def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
     """Module 6's ranking. In a wider reading (`need_led`) of a request that asks for something besides the product, a
     product with no credible recommendation talking about it can't be a pick (answer_request), nor "Also worth a look"
     (13 Oct 2026); in every reading for a category of config.NEED_RULE_IN_EVERY_READING (haircare: Noemi's decision 4 of
-    14 Oct 2026). `skip_only`: {product key: reason} of the brand lines a hard requirement keeps from being picks (a
-    whole brand can't be checked): never a pick nor "Also worth a look", but listed under Skip these when their credible
-    warnings put them there (Noemi's decision 1 of 13 Oct 2026). `upvote_rule`: with Noemi's upvote rules (14 Oct 2026),
-    as config sets them: counting twice (config.UPVOTE_COUNTS_MORE) and a comment standing out (config.STANDOUT_ON)."""
+    14 Oct 2026; skincare: her decision 3 of 15 Oct 2026). What it asks for besides the product are its needs that a
+    comment can talk about (engine.needs.judged_needs, 15 Oct 2026): not an active ingredient it names, nor a size.
+    `skip_only`: {product key: reason} of the brand lines a hard requirement keeps from being picks (a whole brand can't
+    be checked): never a pick nor "Also worth a look", but listed under Skip these when their credible warnings put them
+    there (Noemi's decision 1 of 13 Oct 2026). `upvote_rule`: with Noemi's upvote rules (14 Oct 2026), as config sets
+    them: counting twice (config.UPVOTE_COUNTS_MORE) and a comment standing out (config.STANDOUT_ON)."""
     ranking = rank_products(scored, query.category, kind_notes, placements(kinds),
                             upvote_rule=upvote_rule and config.UPVOTE_COUNTS_MORE,
                             standout_rule=upvote_rule and config.STANDOUT_ON)
-    if (need_led or query.category in NEED_RULE_IN_EVERY_READING) and request_needs(query):
+    judged = {need.name for need in judged_needs(query)}
+    if (need_led or query.category in NEED_RULE_IN_EVERY_READING) and judged:
         ranking.products = [replace(p, qualifies=False, shortfall=WIDER_READING_SHORTFALL, worth_a_look=False)
-                            if (p.qualifies or p.worth_a_look) and not p.breakdown.credible_recommends_fitting_need
+                            if (p.qualifies or p.worth_a_look) and not _talks_about(p, judged)
                             else p for p in ranking.products]
     if skip_only:
         ranking.products = [replace(p, qualifies=False, worth_a_look=False, shortfall=skip_only[p.key])
                             if p.key in skip_only and (p.qualifies or p.worth_a_look) else p for p in ranking.products]
     return ranking
+
+
+def _talks_about(product, needs: set[str]) -> bool:
+    """Whether one of a product's credible recommendations talks about one of these needs (their names: the need rule's,
+    engine.needs.judged_needs)."""
+    return any(needs.intersection(m.needs) for m in product.credible_recommendations)
 
 
 def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds, query, price_checks, care,
