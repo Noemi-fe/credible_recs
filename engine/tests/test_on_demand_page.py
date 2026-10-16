@@ -45,7 +45,9 @@ def test_the_privacy_section_says_what_on_demand_reading_keeps_only_where_it_hap
 
     words = text_of(how_page.page(write(tmp_path), public=True, on_demand=True))
     assert "Products we haven't read about yet." in words and "never your request as typed" in words
-    assert "Your searches aren't saved by us, except the request you send with feedback, and the short note" in words
+    # Changed on purpose 16 Oct 2026 (Noemi's decision 5): the sentence says what is true of IP addresses too (was "Your
+    # searches aren't saved by us, except ...").
+    assert "we don't save your searches, except the request you send with feedback, and the short note" in words
     plain = text_of(how_page.page(write(tmp_path)))
     assert "Products we haven't read about yet." not in plain
-    assert "Your searches aren't saved by us, except the request you send with feedback." in plain
+    assert "we don't save your searches, except the request you send with feedback." in plain

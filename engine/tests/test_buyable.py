@@ -393,7 +393,10 @@ def test_the_how_page_says_images_load_from_the_makers_site_which_sees_the_addre
 
 def test_the_how_page_says_what_isnt_on_sale_is_left_out_and_named_and_links_are_direct():
     html = how_page()
-    assert "Not on sale in the UK now." in html and "discontinued model, it's left out and named" in html
+    # Changed on purpose 16 Oct 2026 (the website review): since Noemi's revision of 15 Oct (evening) only a discontinued
+    # model is left out and named; one sold only outside the UK stays, with its note (was "Not on sale in the UK now.").
+    assert "No longer sold." in html and "A discontinued model is left out and named under the answer" in html
+    assert "A product sold only outside the UK stays in, with a note" in html
     assert "vintage on purpose, such as Griswold and Wagner cast iron" in html
     assert "“See it at John Lewis”" in html and "We never link to a search" in html
 
