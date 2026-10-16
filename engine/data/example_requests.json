@@ -1,0 +1,15 @@
+{
+  "note": "The search page's example requests (engine/web.py, example_requests), grouped on the page by category. Since 16 Oct 2026 (Noemi's decision 7) they are not the blind-test questions (eval/blind_test/questions.json), which a tester trying the site first could have recognised, nor about the blind test's kinds of product: chosen by Claude from the requests the 16 Oct sweep answered with a full top 3, skincare and kitchen first. Wording PROPOSED, for Noemi.",
+  "examples": [
+    {"text": "vitamin c serum", "category": "skincare"},
+    {"text": "pimple patches for acne", "category": "skincare"},
+    {"text": "lip balm that actually works for chapped lips", "category": "skincare"},
+    {"text": "eye cream for dark circles", "category": "skincare"},
+    {"text": "espresso machine for a beginner", "category": "kitchen"},
+    {"text": "stand mixer for bread dough", "category": "kitchen"},
+    {"text": "blender for smoothies with frozen fruit", "category": "kitchen"},
+    {"text": "dutch oven that won't chip", "category": "kitchen"},
+    {"text": "air fryer for a small kitchen", "category": "kitchen"},
+    {"text": "conditioner for frizzy curly hair", "category": "haircare"}
+  ]
+}

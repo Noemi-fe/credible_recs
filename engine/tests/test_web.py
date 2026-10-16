@@ -388,8 +388,32 @@ def test_the_page_carries_the_answers_own_headings_and_the_example_requests(tmp_
     settings = json.loads(re.search(r'<script type="application/json" id="settings">(.*?)</script>', html, re.DOTALL).group(1))
     assert settings["wording"]["quotes_heading"] == QUOTES_HEADING
     assert settings["maxChars"] == WEB_MAX_REQUEST_CHARS
-    assert "burr coffee grinder for pour-over under £150" in [example["text"] for example in settings["examples"]]
+    # Changed on purpose 16 Oct 2026 (Noemi's decision 7): the examples were the blind-test questions ("burr coffee
+    # grinder for pour-over under £150" was one); they are other requests now (the test below).
+    assert settings["examples"] == web.example_requests() and "vitamin c serum" in [e["text"] for e in settings["examples"]]
     assert "PROPOSED" in html  # the page's own new wording is marked for Noemi's review
+
+
+def test_the_sites_examples_are_never_the_blind_test_questions_nor_about_their_kinds_of_product():
+    # Noemi's decision 7 of 16 Oct 2026: the examples were the 10 blind-test questions, so a tester who tried the site
+    # first could recognise our answers. They are other requests, about other kinds of product, each in its category,
+    # placed by module 1's rules alone (getting ready warms them first, word for word, without the open model).
+    from engine.query import parse_query
+
+    examples = web.example_requests()
+    questions = json.loads((Path(web.REPO_ROOT) / "eval" / "blind_test" / "questions.json").read_text(
+        encoding="utf-8"))["questions"]
+    assert web.EXAMPLES_FILE.name == "example_requests.json"
+    data = json.loads(web.EXAMPLES_FILE.read_text(encoding="utf-8"))
+    assert "PROPOSED" in data["note"]
+    same = {" ".join(q["text"].lower().split()) for q in questions}
+    tested = {web._placed_by_rules(q["text"])[0] for q in questions}
+    assert len(examples) >= 8 and {e["category"] for e in examples} >= {"skincare", "kitchen"}
+    for example in examples:
+        assert " ".join(example["text"].lower().split()) not in same, example
+        product_type, asks_model = web._placed_by_rules(example["text"])
+        assert product_type and product_type not in tested and not asks_model, example
+        assert parse_query(example["text"]).category == example["category"], example
 
 
 # --- The server ---

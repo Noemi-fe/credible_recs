@@ -19,9 +19,10 @@
     python -m engine.blind_test packets <answers folder> <testers.csv> [--seed N]
         testers.csv has the columns tester,category: skincare or kitchen (the tester gets that category's questions)
         or any (the questions fewest testers have so far). Each tester gets 5 questions; for each one, the three
-        answers to show (shown/<tool>/<id>.md) named only A, B and C, in an order balanced across testers. Writes
-        packets/<tester>.md, the same as a plain page to give the tester (packets/<tester>.html), and key.json
-        (which letter is which tool). Each question asks which answer the tester
+        answers to show (shown/<tool>/<id>.md) named only A, B and C, in an order balanced across the question's
+        testers. Writes packets/<tester>.md, the same as a plain page to give the tester (packets/<tester>.html), and
+        key.json (which letter is which tool); each question shows its code, and the packet the tester's, for the
+        response form (eval/blind_test/RUNBOOK.md, 16 Oct 2026). Each question asks which answer the tester
         would trust with their own money, and which least, so every response ranks all three. Refuses, writing
         nothing, while an answer to show is empty, names a tool ("ChatGPT", "Vetted"...) or has a pick longer than
         BLIND_TEST_WORDS_PER_PICK words.
@@ -116,9 +117,10 @@ _PICK_HEADING = re.compile(r"^\*\*\d+\. .+\*\*$")
 def shown_from_ours(data: dict | None, words: int = BLIND_TEST_WORDS_PER_PICK) -> str:
     """Our answer (engine.answer.answer_to_dict) in the template every tool's answer is shown in. Per pick: its name,
     its reason, its first two quotes with the badge that says what backs them (the writer's use when there is one),
-    its first downside, its cautions and its price when known, at most `words` words, cut at a word. Our words only:
-    the support line, score breakdown, care tips, links and availability are left out. With no picks, the answer's
-    own message."""
+    its first downside, its cautions, that it is sold second-hand only or not sold in the UK (with the day that was
+    checked) or is prescription-only (Noemi's decision 7 of 16 Oct 2026), and its price when known, at most `words`
+    words, cut at a word, the notes never. Our words only: the support line, score breakdown, care tips, links and
+    where it is sold are left out. With no picks, the answer's own message."""
     if data is None:
         return "No answer."
     if not data.get("picks"):
@@ -131,6 +133,12 @@ def _shown_pick(pick: dict, words: int) -> str:
     availability = pick.get("availability") or {}
     if availability.get("second_hand"):  # vintage, sold second-hand only (Noemi, 10 Oct 2026): testers should know
         fixed.append("Sold second-hand only.")
+    elif availability.get("available") is False and availability.get("text"):
+        # Sold only outside the UK (Noemi, 15 Oct 2026, evening): "Not sold in the UK, checked 15 Oct 2026". Kept, with
+        # its day, by her decision 7 of 16 Oct 2026, as the second-hand note is: testers should know.
+        fixed.append(availability["text"].rstrip(".") + ".")
+    if pick.get("prescription"):  # prescription-only in the UK (14 Oct 2026): kept too (her decision 7 of 16 Oct 2026)
+        fixed.append(pick["prescription"])
     price = pick.get("price") or {}
     if price.get("amount") is not None and price.get("text"):
         fixed.append(f"Price: {price['text'].split(', checked')[0]}")
@@ -259,12 +267,17 @@ def assign_questions(testers: list[Tester], questions: list[dict],
     return assigned
 
 
-def order_for(tester_index: int, question_index: int, seed: int) -> tuple[str, ...]:
-    """The order of the three tools for one tester and question (A first). The six possible orders, shuffled once by
-    the seed, are taken in turn, so across six testers each order comes up once and no tool sits first more often."""
+def order_for(earlier: int, question_index: int, seed: int) -> tuple[str, ...]:
+    """The order of the three tools for one tester and question (A first), `earlier` being how many testers before this
+    one have the question. The six possible orders, shuffled once by the seed, are taken in turn for each question,
+    from a place of its own, so across six of its testers each order comes up once and no tool sits first more often;
+    a tester's own questions get different orders too.
+
+    Changed 16 Oct 2026 (the website review): it took the tester's row in testers.csv, so with rows alternating by
+    category (the runbook's example) a question's testers were every other row and got 3 of the 6 orders."""
     orders = list(permutations(TOOLS))
     random.Random(seed).shuffle(orders)
-    return orders[(tester_index + question_index) % len(orders)]
+    return orders[(earlier + question_index) % len(orders)]
 
 
 def build_packets(folder: Path, questions_path: Path, testers: list[Tester], seed: int,
@@ -296,19 +309,26 @@ def build_packets(folder: Path, questions_path: Path, testers: list[Tester], see
     index = {q["id"]: i for i, q in enumerate(questions)}
     texts = {q["id"]: q["text"] for q in questions}
     key: dict[str, dict] = {}
+    earlier = {qid: 0 for qid in needed}  # testers so far with each question (order_for)
     (folder / "packets").mkdir(exist_ok=True)
-    for tester_index, tester in enumerate(testers):
+    for tester in testers:
         key[tester.id] = {}
         lines = [f"# Blind test: {tester.id}", "",
                  "For each question below there are three answers, from three different tools, in no particular "
                  "order. Read all three, then say which one you would trust with your own money, which one you "
-                 "would trust least, how confident you are from 1 to 5, and, if you like, why.", ""]
+                 "would trust least, how confident you are from 1 to 5, and, if you like, why.", "",
+                 f"In the response form, give your tester code, {tester.id}, and each question's code, in brackets "
+                 "after its number.", ""]
         for number, qid in enumerate(assigned[tester.id], start=1):
-            order = order_for(tester_index, index[qid], seed)
+            order = order_for(earlier[qid], index[qid], seed)
+            earlier[qid] += 1
             key[tester.id][qid] = dict(zip(LETTERS, order))
-            lines += [f'## Question {number}: "{texts[qid]}"', ""]
+            # Its code (16 Oct 2026, Noemi's decision 7): the response form asks for it (eval/blind_test/RUNBOOK.md).
+            lines += [f'## Question {number} ({qid}): "{texts[qid]}"', ""]
             for letter, tool in zip(LETTERS, order):
-                lines += [f"### Answer {letter}", "", answers[(tool, qid)], ""]
+                # Line by line (16 Oct 2026, the website review: handed over as one line, an answer's picks ran
+                # together into one paragraph on the packet's page).
+                lines += [f"### Answer {letter}", "", *answers[(tool, qid)].splitlines(), ""]
             lines += ["**Which would you trust with your own money?** A / B / C", "",
                       "**And which would you trust least?** A / B / C", "",
                       "**How confident are you, from 1 to 5?**", "", "**Why? (optional)**", "", "---", ""]
@@ -324,13 +344,14 @@ _PAGE_STYLE = ("body{font:17px/1.5 system-ui,sans-serif;max-width:42rem;margin:0
 
 
 def packet_page(tester: str, lines: list[str]) -> str:
-    """A tester's packet as a plain, phone-friendly web page, from its Markdown lines: headings, paragraphs, **bold**
-    and rules only. Every text is escaped, so an answer can never add its own HTML."""
+    """A tester's packet as a plain, phone-friendly web page, from its Markdown lines: headings, paragraphs (a blank line
+    between them), **bold** and rules only. A line break inside a paragraph stays one (the template's second piece of
+    evidence sits on the line under the first). Every text is escaped, so an answer can never add its own HTML."""
     body, paragraph = [], []
 
     def flush():
         if paragraph:
-            body.append(f"<p>{_bold(' '.join(paragraph))}</p>")
+            body.append(f"<p>{'<br>'.join(_bold(line) for line in paragraph)}</p>")
             paragraph.clear()
 
     for line in lines:

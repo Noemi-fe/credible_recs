@@ -278,7 +278,9 @@ from engine.query import FIRST_PRODUCT_TYPES, PRODUCT_TYPES
 HOST = "127.0.0.1"  # this computer only. Never "0.0.0.0", which would open the server to the whole network.
 PUBLIC_HOST = "0.0.0.0"  # public mode only: every network interface, so the Space's proxy can reach the server
 PAGE_TEMPLATE = Path(__file__).resolve().parent / "templates" / "search.html"
-EXAMPLES_FILE = REPO_ROOT / "eval" / "blind_test" / "questions.json"  # the 10 approved blind-test questions
+# The search page's example requests: since 16 Oct 2026 (Noemi's decision 7) not the blind-test questions
+# (eval/blind_test/questions.json), which a tester trying the site first could have recognised.
+EXAMPLES_FILE = Path(__file__).resolve().parent / "data" / "example_requests.json"
 ALLOWED_HOSTS_VAR = "CREDIBLE_RECS_ALLOWED_HOSTS"  # public mode: the host names the site answers for
 GOATCOUNTER_VAR = "CREDIBLE_RECS_GOATCOUNTER"  # Noemi's GoatCounter site code; unset, visits aren't counted
 GOATCOUNTER_SCRIPT = "https://gc.zgo.at"  # where GoatCounter's script comes from
@@ -907,12 +909,13 @@ def answer_wording() -> dict[str, str]:
     }
 
 
-def example_requests(path: Path = EXAMPLES_FILE) -> list[dict[str, str]]:
-    """The blind-test questions, offered as examples: [{"text", "category"}]. None if the file isn't there."""
+def example_requests(path: Path | None = None) -> list[dict[str, str]]:
+    """The search page's example requests (EXAMPLES_FILE): [{"text", "category"}]. None if the file isn't there."""
+    path = Path(path or EXAMPLES_FILE)
     if not path.is_file():
         return []
-    questions = json.loads(path.read_text(encoding="utf-8"))["questions"]
-    return [{"text": q["text"], "category": q["category"]} for q in questions]
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return [{"text": item["text"], "category": item["category"]} for item in data.get("examples", data.get("questions", []))]
 
 
 def _script_json(data: dict) -> str:
@@ -1250,12 +1253,12 @@ def _placed_by_rules(text: str) -> tuple[str | None, bool]:
 
 
 def _requests_in(path: Path) -> list[str]:
-    """The requests of a file of requests: the blind-test questions ("questions") or the latency requests ("queries");
-    none when there is no such file."""
+    """The requests of a file of requests: the search page's examples ("examples"), the blind-test questions
+    ("questions") or the latency requests ("queries"); none when there is no such file."""
     if not Path(path).is_file():
         return []
     data = json.loads(Path(path).read_text(encoding="utf-8"))
-    return [item["text"] for item in data.get("questions", data.get("queries", []))]
+    return [item["text"] for item in data.get("examples", data.get("questions", data.get("queries", [])))]
 
 
 # The requests answered first while getting ready (warm_requests): the search page's examples, then the latency
