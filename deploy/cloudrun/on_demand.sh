@@ -7,12 +7,27 @@ ON_DEMAND_BUCKET="${CREDIBLE_RECS_ON_DEMAND_BUCKET:-credible-picks-on-demand}"
 READER_JOB="${CREDIBLE_RECS_GCP_READER_JOB:-credible-recs-reader}"
 READER_JOB_NAME="projects/${PROJECT}/locations/${REGION}/jobs/${READER_JOB}"  # what the site starts (jobs:run)
 
+# The switch (Noemi's decision 6 of 16 Oct 2026: on-demand reading is off for the interviews, since Gemini's free
+# allowance reads about one product a day and "check back in about 20 minutes" isn't true; Claude reads the likely
+# products ahead instead). On only when CREDIBLE_RECS_ON_DEMAND is "on" for the deploy, else off, whatever else it says:
+#     CREDIBLE_RECS_ON_DEMAND=on sh deploy/cloudrun/deploy.sh
+# Off, a deploy is the one without the Gemini key below: the site gets none of on-demand reading's settings, so it answers
+# a product it hasn't read about with the honest no-threads message and never queues a request or starts the reading
+# job, and the pre-check doesn't look at the queue. Nothing is deleted: the code, the bucket (its objects go at 37 days
+# as always) and the job stay, and the next deploy with the setting turns it on again.
+ON_DEMAND_SWITCH="${CREDIBLE_RECS_ON_DEMAND:-off}"
+
 # The Gemini key, the Secret Manager secret gemini-key, which Noemi creates herself (DEPLOY.md, "The Gemini key"). This
 # script never makes or reads it. When it isn't there yet, on-demand reading stays off for this deploy (14 Oct 2026, the
 # orchestrator: a missing key must not stop the site's own deploys): ON_DEMAND is "off", the site gets none of its
 # settings (so it never says it has started reading), and no bucket, job or pull is touched; the next deploy after the
-# key exists turns it on.
+# key exists turns it on. Looked for only when the switch is on.
 on_demand_secret() {
+    if [ "$ON_DEMAND_SWITCH" != on ]; then
+        ON_DEMAND=off
+        echo "On-demand reading is off for this deploy (Noemi's decision 6 of 16 Oct 2026); CREDIBLE_RECS_ON_DEMAND=on sh deploy/cloudrun/deploy.sh turns it on (deploy/cloudrun/DEPLOY.md, On-demand reading)." >&2
+        return 0
+    fi
     if $GCLOUD secrets describe gemini-key --project "$PROJECT" >/dev/null 2>&1; then
         ON_DEMAND=on
     else
