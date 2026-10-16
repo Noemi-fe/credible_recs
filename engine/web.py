@@ -33,7 +33,10 @@ Routes:
     GET  /how                    the how-we-score page (engine/how_page.py): how an answer is made and scored, in plain
                                  words, and the latest evaluation results, read from eval/metrics.json each time it is
                                  opened (10 Oct 2026); and what is collected about visitors (11 Oct 2026)
-    GET  /api/answer?q=<request> the answer to one request, as JSON
+    POST /api/answer             the answer to one request, as JSON; the request in the JSON body, {"request": "..."}
+                                 (Noemi's decision 5 of 16 Oct 2026: it was GET /api/answer?q=<request>, and Google
+                                 Cloud Run's request log keeps every address it is asked, with the visitor's IP address
+                                 and browser, for 30 days; it never keeps a body). GET /api/answer says how to ask (405)
     POST /api/feedback           "Was this useful?" or "First time here?" (engine/feedback.py; 11 Oct 2026)
     anything else                404; a known route asked the wrong way, 405
 
@@ -190,17 +193,23 @@ The JSON for /api/answer (200):
                                                                isn't remembered. Absent for every other answer.
     }
 
+POST /api/answer takes one JSON object (Content-Type: application/json, at most ANSWER_MAX_BODY_BYTES), {"request":
+"<the request as typed>"}; other names in it are ignored, and without "request" the request is empty. Any caller may ask
+(eval/live_latency.py does), but a page on another website can't make a browser send it: JSON can't be posted across
+sites without the browser first asking this server for leave, which it never gives.
+
 POST /api/feedback takes one JSON object (Content-Type: application/json, at most FEEDBACK_MAX_BODY_BYTES) in one of
 the two shapes engine/feedback.py describes, and answers {"saved": true}. It is taken only from this site's own page:
 the Origin header the browser adds (or, when it sends none, its Referer) must name this server's host.
 
 An error is {"error": "<plain words>", "code": "<one word for programs>"}:
-    400 empty_request, request_too_long (over WEB_MAX_REQUEST_CHARS characters); bad_length, bad_json, bad_feedback
+    400 empty_request, request_too_long (over WEB_MAX_REQUEST_CHARS characters); bad_length, bad_json, bad_feedback,
+        bad_body (an answer's body that isn't {"request": "<text>"})
     403 wrong_host        a request not addressed to this server
         cross_site        feedback not sent from this site's own page
     404 not_found
     405 method_not_allowed (with an Allow header)
-    411 length_required, 413 too_large, 415 not_json   (feedback)
+    411 length_required, 413 too_large, 415 not_json   (feedback, and since 16 Oct 2026 answers)
     429 too_many_requests (public mode only, with a Retry-After header in seconds)
     500 quote_not_verified (the answer is refused), engine_failed (details in the server's window, never sent)
     503 feedback_unavailable (the feedback couldn't be kept just now)
@@ -249,7 +258,7 @@ from collections import OrderedDict, deque
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import urlsplit
 
 from engine import answer as wording
 from engine import feedback, how_page
@@ -299,8 +308,8 @@ HEADERS = {
 # The API's errors: a code for programs, and plain words for whoever calls the API (the page has its own wording).
 EMPTY_REQUEST = ("empty_request", "Type what you're looking for: the request is empty.")
 TOO_LONG = ("request_too_long", "The request is {n} characters long; the limit is {limit}.")
-NOT_FOUND = ("not_found", "Nothing here. The search page is at /, how we score at /how, and answers at "
-                          "/api/answer?q=<request>.")
+NOT_FOUND = ("not_found", 'Nothing here. The search page is at /, how we score at /how, and answers come from POST '
+                          '/api/answer with the request in a JSON body, {{"request": "..."}}.')
 WRONG_HOST = ("wrong_host", "This server only answers requests addressed to 127.0.0.1 or localhost.")
 REFUSED = ("quote_not_verified",
            "This answer was not shown: a quote in it could not be checked word for word against its comment.")
@@ -317,11 +326,28 @@ BAD_JSON = ("bad_json", "The feedback isn't one valid JSON value (or a name in i
 BAD_FEEDBACK = ("bad_feedback", "{reason}")
 FEEDBACK_UNAVAILABLE = ("feedback_unavailable", "Feedback can't be kept just now. Please try again later.")
 TOO_MANY = ("too_many_requests", "Too many requests in a short time. Please try again in {seconds} seconds.")
+# Asking for an answer (Noemi's decision 5 of 16 Oct 2026): the request comes in a POST's JSON body, never in the address,
+# so no log of addresses (Google Cloud Run keeps one for 30 days) holds what people type. The feedback's checks, in
+# words about the request. Every message goes through str.format (_error), so a brace that is a word is doubled.
+ASK_WITH_POST = ("method_not_allowed", 'Ask for an answer with POST /api/answer, the request in a JSON body, '
+                                       '{{"request": "..."}}, and the header Content-Type: application/json. An '
+                                       "address is kept in the web host's logs; a body isn't.")
+ANSWER_NOT_JSON = ("not_json", 'Send the request as JSON, {{"request": "..."}}, with the header Content-Type: '
+                               "application/json.")
+ANSWER_NO_LENGTH = ("length_required", "Say how long the body is, with a Content-Length header.")
+ANSWER_TOO_LARGE = ("too_large", "The body is limited to {limit} bytes.")
+ANSWER_BAD_JSON = ("bad_json", "The body isn't one valid JSON value (or a name in it appears twice).")
+BAD_ANSWER_BODY = ("bad_body", 'Send one JSON object with the request as text: {{"request": "..."}}.')
 
+ANSWER_PATH = "/api/answer"
 FEEDBACK_PATH = "/api/feedback"
 READY_PATH = "/ready"  # whether the server has got ready (warm_up): Cloud Run's startup probe asks it
-METHODS = {"/": "GET", "/how": "GET", "/api/answer": "GET", READY_PATH: "GET",
-           FEEDBACK_PATH: "POST"}  # each route and how it is asked
+METHODS = {"/": "GET", "/how": "GET", ANSWER_PATH: "POST", READY_PATH: "GET",
+           FEEDBACK_PATH: "POST"}  # each route and how it is asked (answers with POST since 16 Oct 2026)
+# POST /api/answer's body at most (16 Oct 2026): room for a request of WEB_MAX_REQUEST_CHARS characters however JSON writes
+# it (a \u escape is 6 bytes a character, 12 for one outside the Basic Multilingual Plane), with its name and quotes. A
+# longer request in a body that fits gets request_too_long, as before.
+ANSWER_MAX_BODY_BYTES = 12 * WEB_MAX_REQUEST_CHARS + 64
 
 
 @dataclass(frozen=True)
@@ -397,9 +423,8 @@ def handle_request(path_and_query: str, library_dir: Path = DEFAULT_LIBRARY_DIR,
         page = how_page.page(METRICS_FILE, counter=counter_script(site.goatcounter), public=site.public,
                              on_demand=on_demand is not None)
         return 200, HTML, page.encode("utf-8")
-    if parts.path == "/api/answer":
-        request = parse_qs(parts.query).get("q", [""])[0]
-        return answer_response(request, Path(library_dir), quiet=site.public)
+    if parts.path == ANSWER_PATH:  # asked with POST since 16 Oct 2026 (handle_answer): an address is logged, a body isn't
+        return _error(405, ASK_WITH_POST)
     if parts.path == READY_PATH:
         if ready.is_set():
             read_ahead_on_ping()
@@ -581,19 +606,9 @@ def handle_feedback(content_type: str | None, content_length: str | None, read) 
     Only JSON is taken: a form on another website can send nothing else without the browser first asking this server
     for leave, which it never gives.
     """
-    if (content_type or "").split(";")[0].strip().lower() != "application/json":
-        return _error(415, NOT_JSON)
-    if content_length is None:
-        return _error(411, NO_LENGTH)
-    if not re.fullmatch(r"[0-9]{1,9}", content_length.strip()):
-        return _error(400, BAD_LENGTH)
-    size = int(content_length)
-    if size > FEEDBACK_MAX_BODY_BYTES:
-        return _error(413, TOO_LARGE, limit=FEEDBACK_MAX_BODY_BYTES)
-    try:
-        data = json.loads(read(size).decode("utf-8"), object_pairs_hook=_no_repeated_names)
-    except (ValueError, RecursionError):  # not UTF-8, not JSON, a name given twice, or nested too deep to read
-        return _error(400, BAD_JSON)
+    data, refused = _json_body(content_type, content_length, read, FEEDBACK_MAX_BODY_BYTES, _FEEDBACK_BODY)
+    if refused is not None:
+        return refused
     try:
         record = feedback.parse_record(data)
     except feedback.FeedbackError as error:
@@ -606,6 +621,50 @@ def handle_feedback(content_type: str | None, content_length: str | None, read) 
         print(f"Feedback not kept ({type(error).__name__}).", file=sys.stderr)
         return _error(503, FEEDBACK_UNAVAILABLE)
     return 200, JSON, _json_bytes({"saved": True})
+
+
+# The words of each POST route's refusals of a body (16 Oct 2026: the answer's route takes a body too).
+_FEEDBACK_BODY = {"not_json": NOT_JSON, "length_required": NO_LENGTH, "too_large": TOO_LARGE, "bad_json": BAD_JSON}
+_ANSWER_BODY = {"not_json": ANSWER_NOT_JSON, "length_required": ANSWER_NO_LENGTH, "too_large": ANSWER_TOO_LARGE,
+                "bad_json": ANSWER_BAD_JSON}
+
+
+def _json_body(content_type: str | None, content_length: str | None, read, limit: int,
+               words: dict[str, tuple[str, str]]) -> tuple[object, tuple[int, str, bytes] | None]:
+    """A POST's body as one JSON value, and None; or None and the error to send (in the route's `words`). The body is
+    read (`read(n)`) only once it is known to be JSON of at most `limit` bytes, so an oversized one is never read."""
+    if (content_type or "").split(";")[0].strip().lower() != "application/json":
+        return None, _error(415, words["not_json"])
+    if content_length is None:
+        return None, _error(411, words["length_required"])
+    if not re.fullmatch(r"[0-9]{1,9}", content_length.strip()):
+        return None, _error(400, BAD_LENGTH)
+    size = int(content_length)
+    if size > limit:
+        return None, _error(413, words["too_large"], limit=limit)
+    try:
+        return json.loads(read(size).decode("utf-8"), object_pairs_hook=_no_repeated_names), None
+    except (ValueError, RecursionError):  # not UTF-8, not JSON, a name given twice, or nested too deep to read
+        return None, _error(400, words["bad_json"])
+
+
+# --- Asking for an answer: one POST request in, one response out (16 Oct 2026) ---
+
+def handle_answer(content_type: str | None, content_length: str | None, read, library_dir: Path = DEFAULT_LIBRARY_DIR,
+                  site: Site = LOCAL) -> tuple[int, str, bytes]:
+    """POST /api/answer (Noemi's decision 5 of 16 Oct 2026): the answer to the request in the JSON body, {"request":
+    "..."}, exactly as GET /api/answer?q=<request> gave it until then; or an error. The request travels in the body
+    because Google Cloud Run's request log keeps every address the site is asked (with the visitor's IP address and
+    browser, for 30 days) and never a body: what people type is in no log. `read(n)` reads the body, and is called only
+    once it is known to be JSON of a sensible size. Other names in the object are ignored, and a body without "request"
+    is an empty request (as an address without q= was)."""
+    data, refused = _json_body(content_type, content_length, read, ANSWER_MAX_BODY_BYTES, _ANSWER_BODY)
+    if refused is not None:
+        return refused
+    request = data.get("request", "") if isinstance(data, dict) else None
+    if not isinstance(request, str):
+        return _error(400, BAD_ANSWER_BODY)
+    return answer_response(request, Path(library_dir), quiet=site.public)
 
 
 def _no_repeated_names(pairs: list[tuple[str, object]]) -> dict:
@@ -865,8 +924,8 @@ def _script_json(data: dict) -> str:
 # --- The server ---
 
 class _Handler(BaseHTTPRequestHandler):
-    """Turns each request into a call to handle_request (GET) or handle_feedback (POST), and its result into an HTTP
-    response. This is local mode; _PublicHandler changes what the public site needs."""
+    """Turns each request into a call to handle_request (GET), or handle_answer or handle_feedback (POST), and its result
+    into an HTTP response. This is local mode; _PublicHandler changes what the public site needs."""
 
     server_version = "credible-recs-demo"
     _wrong_host = WRONG_HOST
@@ -875,14 +934,17 @@ class _Handler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         if path != READY_PATH and not self._addressed_here():  # Cloud Run's probe names no site: it learns only this
             return self._send(*_error(403, self._wrong_host))
-        if path == "/api/answer" and self._held_back("answers"):
-            return
         self._send(*handle_request(self.path, self.server.library_dir, self.server.site), path=path)
 
     def do_POST(self):
         path = urlsplit(self.path).path
         if not self._addressed_here():
             return self._send(*_error(403, self._wrong_host))
+        if path == ANSWER_PATH:  # since 16 Oct 2026 (Noemi's decision 5): the request in the body, never in the address
+            if self._held_back("answers"):
+                return
+            return self._send(*handle_answer(self.headers.get("Content-Type"), self.headers.get("Content-Length"),
+                                             self.rfile.read, self.server.library_dir, self.server.site))
         if path != FEEDBACK_PATH:
             refused = _error(405, WRONG_METHOD, allowed=METHODS[path]) if path in METHODS else _error(404, NOT_FOUND)
             return self._send(*refused, path=path)

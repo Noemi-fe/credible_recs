@@ -9,7 +9,6 @@ Every service is a made-up stand-in (engine/tests/fake_google.py, on_demand_fake
 import json
 import threading
 from datetime import timedelta
-from urllib.parse import quote
 
 import pytest
 
@@ -26,7 +25,7 @@ from engine.live_check import LiveChecker
 from engine.tests.on_demand_fakes import NOW, FakeArchive, FakeEmbed, FakeGemini, Ticks, archive, body_of, gemini
 from engine.tests.test_live_check import Clock
 from engine.verify_quotes import find_quote
-from engine.tests.test_web import REQUEST, kettle_library
+from engine.tests.test_web import REQUEST, kettle_library, post_answer
 
 NAME = "credible-test-on-demand"
 JOB = "projects/credible-picks/locations/europe-west1/jobs/credible-recs-reader"
@@ -49,7 +48,7 @@ class Site:
         monkeypatch.setattr(web, "on_demand", self.reader)
 
     def ask(self, request: str) -> dict:
-        status, _, body = web.handle_request(f"/api/answer?q={quote(request)}", self.library)
+        status, _, body = post_answer(request, self.library)  # a POST since 16 Oct 2026 (Noemi's decision 5)
         assert status == 200
         return json.loads(body)
 

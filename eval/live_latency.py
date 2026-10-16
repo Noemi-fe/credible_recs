@@ -19,7 +19,6 @@ import ssl
 import statistics
 import sys
 import time
-import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -36,11 +35,17 @@ def requests_to_ask() -> list[str]:
     return [item["text"] if isinstance(item, dict) else item for item in items]
 
 
+def answer_request_for(url: str, request: str) -> urllib.request.Request:
+    """The site's API call for one request: a POST with the request in its JSON body, as the page asks since 16 Oct 2026
+    (Noemi's decision 5: never in the address, which Cloud Run's request log keeps)."""
+    return urllib.request.Request(f"{url}/api/answer", data=json.dumps({"request": request}).encode("utf-8"),
+                                  headers={"Content-Type": "application/json"}, method="POST")
+
+
 def ask(url: str, request: str) -> dict:
     started = time.perf_counter()
     context = ssl.create_default_context(cafile=certifi.where())
-    with urllib.request.urlopen(f"{url}/api/answer?q={urllib.parse.quote(request)}", timeout=600,
-                                context=context) as response:
+    with urllib.request.urlopen(answer_request_for(url, request), timeout=600, context=context) as response:
         data = json.load(response)
     timing = data.get("timing") or {}
     total = timing.get("total_s")

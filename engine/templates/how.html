@@ -15,6 +15,11 @@
   is typed into this page's text.
   "Your privacy" (11 Oct 2026, going live; wording decided by Claude): what it says about visit counts, and the public
   site's note about its host, are in engine/how_page.py, since they change with how the site runs.
+  16 Oct 2026 (Noemi's decisions 5 to 7 and the website review; the new wording PROPOSED, for Noemi): the privacy section
+  says what Google Cloud Run's request logs keep and that feedback is kept privately (it had said no IP addresses were
+  kept and that the site ran on Hugging Face); a quote's check is from the 48 hours before its answer, usually made ahead
+  of time (it had said "just before" it is shown); each kept comment is read again within its days (it had said whole
+  threads are read again); a product sold only outside the UK is shown with its note (it had said it is left out).
 -->
 {{search_page_style}}
 <style>
@@ -95,9 +100,9 @@ h3.group { font-size: 12.5px; font-weight: 650; text-transform: uppercase; lette
   {{communities}}
   <p>We read the threads through third-party services that collect public Reddit posts. People can delete or change what they wrote, so we keep checking:</p>
   <ul>
-    <li>Just before a quote is shown, we read that comment again on Reddit itself. If it was deleted, removed or edited so the quote isn't there any more, or if Reddit can't be reached to check it, the quote is never shown, and that comment's opinion no longer counts.</li>
+    <li>Before a quote is shown, we read that comment again on Reddit itself, usually ahead of time: an answer only uses checks from the last {{config:CACHE_MAX_AGE_HOURS}} hours, and is shown for a day at most before it is made again, with fresh checks. If the comment was deleted, removed or edited so the quote isn't there any more, or if Reddit can't be reached to check it, the quote is never shown, and that comment's opinion no longer counts.</li>
     <li>When answers are made without that live check (in our offline tests), they only use threads we have re-read on Reddit in the last {{config:LIVE_CHECK_SHOWN_DAYS}} days.</li>
-    <li>Every {{config:LIBRARY_REFRESH_DAYS}} days the saved threads are read again, and comments deleted since then are dropped.</li>
+    <li>We keep only the comments answers use, and read each one again on Reddit at least every {{config:LIBRARY_VERIFY_DAYS}} days. One deleted or removed since, or one we couldn't check in that time, loses its words and no longer counts; one edited keeps only what it still says.</li>
   </ul>
 </section>
 
@@ -158,7 +163,7 @@ h3.group { font-size: 12.5px; font-weight: 650; text-transform: uppercase; lette
   </ul>{{upvote_rule}}{{need_rule}}
   <p>The {{config:PICKS_SHOWN}} products with the highest scores are shown. If fewer have enough evidence, we show fewer and say so: we'd rather say "not enough evidence yet" than guess.</p>
   <p>When credible voices clearly prefer one kind of product (at least {{config:KIND_LEAD_RATIO}} times the support of the next kind, say Japanese chef knives over German ones), products of that kind get a bonus of {{config:KIND_BONUS}}.</p>
-  <p>Each pick shows {{config:MIN_QUOTES_PER_PICK}} to {{config:QUOTES_PER_PICK}} quotes from the people who back it, each with a link to its comment and checked word for word again just before it's shown.</p>
+  <p>Each pick shows {{config:MIN_QUOTES_PER_PICK}} to {{config:QUOTES_PER_PICK}} quotes from the people who back it, each with a link to its comment and checked word for word again on Reddit, as above.</p>
   <p>When we've looked a product up, its card links to its own page, its maker's or a big UK shop's, with the day we checked, such as “{{page_link_example}}”, and may show a small image from its maker's page. We never link to a search: a product we haven't looked up yet has no link.</p>
   <p>Products with {{config:WORTH_A_LOOK_CREDIBLE}} credible recommendations from at least {{config:WORTH_A_LOOK_MIN_THREADS}} different threads aren't picks, but up to {{config:WORTH_A_LOOK_SHOWN}} of them are shown apart, under “{{worth_heading}}”, marked as less supported than the picks, each with its own checked quotes. A product that meets the bar but ranks below the top {{config:PICKS_SHOWN}} is listed there first, marked “{{meets_bar}}”, within those {{config:WORTH_A_LOOK_SHOWN}} places.</p>{{standout_rule}}
   <p>Some picks have a one-line summary of what their credible voices say, after “{{summary_label}}”. It is in our words, never a quote: an AI writes it ahead of time from the comments, and code checks it before it's shown. Every comment it draws on must be one of that product's credible voices in this answer, checked word for word like a quote; every number in it must be written in those comments; and it must mention a downside when credible voices warned against the product. A summary that fails a check isn't shown.</p>
@@ -170,7 +175,7 @@ h3.group { font-size: 12.5px; font-weight: 650; text-transform: uppercase; lette
   <ul>
     <li><strong>Something else.</strong> A knife block or a sharpener isn't a chef knife: anything that holds, sharpens or bundles a product ({{other_type_words}}) doesn't count for the product itself.</li>
     <li><strong>A brand on its own.</strong> "Lodge" alone could mean many products. It counts only when we've checked, on the maker's pages or a big shop's, that the brand sells the kind of product you asked for, or, for a brand not checked yet, when its threads make clear which products they mean. It is then ranked as the brand's whole line, such as "{{brand_pick_example}}". A brand we found doesn't sell that kind of product never counts: its writers must mean something else it makes. A line has no single price, so it links to the maker's page for that kind of product, such as "{{range_example}}" (or to an official UK stockist's), and shows its "From" price: the cheapest price we found for that kind of product of the brand, on the maker's UK site, at its official UK stockist or at a big UK shop, with the shop and the day we checked.</li>
-    <li><strong>Not on sale in the UK now.</strong> If we found a product isn't sold to UK shoppers, or is a discontinued model, it's left out and named under the answer. A product sold only second-hand counts only when people buy it vintage on purpose, such as {{vintage_example}} cast iron. Each pick says where it's sold and when we checked, or that we haven't checked yet: we never guess.</li>
+    <li><strong>No longer sold.</strong> A discontinued model is left out and named under the answer. A product sold only outside the UK stays in, with a note saying so and when we checked, such as “{{not_in_uk_example}}”. A product sold only second-hand counts only when people buy it vintage on purpose, such as {{vintage_example}} cast iron. Each pick says where it's sold and when we checked, or that we haven't checked yet: we never guess.</li>
     <li><strong>Over your budget.</strong> Left out when we checked its price in the last {{config:PRICE_MAX_AGE_DAYS}} days. An older price is shown with its date, but never used to leave a product out. A brand's line is left out when even its cheapest product of that kind is over your budget. A budget with no currency is taken to be in {{default_currency}}.</li>
     <li><strong>Without the ingredient you asked for.</strong> When you name an active ingredient, such as salicylic acid, every product shown must contain it: its maker's list of actives, which we look up on the maker's page, or its own name says so. A writer saying so isn't enough, and a brand on its own can't be checked. If you name no kind of product, every leave-on kind that can carry the ingredient competes (a serum, a liquid, a toner, pads, a cream, a spot treatment), and each product shows its form, such as “{{form_label}}: pads”. A cleanser or another rinse-off form shows when you ask for it by name, such as “salicylic acid cleanser” or “salicylic acid wash”.</li>
     <li><strong>Facts that clash with your request.</strong> For some products we look up a few facts on the maker's or a shop's page, such as whether it has added fragrance or whether a pan is PFAS-free. A product is left out when:
@@ -191,16 +196,17 @@ h3.group { font-size: 12.5px; font-weight: 650; text-transform: uppercase; lette
 
 <section class="privacy" aria-labelledby="privacy">
   <h2 id="privacy">Your privacy</h2>
-  <p>We collect as little as we can, and nothing that says who you are.</p>
+  <p>We collect as little as we can, and never your name.</p>
   <ul>
     <li>{{visit_counting}}</li>
-    <li><strong>Feedback, if you send it.</strong> Under each answer you can say whether it was useful and add a comment. We keep your choice, your comment, the request the answer was for, the kind of product and the kind of answer, and the time. Please don't put personal details in a comment.</li>
+    <li><strong>Feedback, if you send it.</strong> Under each answer you can say whether it was useful and add a comment. We keep your choice, your comment, the request the answer was for, the kind of product and the kind of answer, and the time, privately: only we can read them. Please don't put personal details in a comment.</li>
     <li><strong>“First time here?”</strong> We keep your yes or no and the time, to count new and returning visitors. Your browser remembers that it asked you (in its own storage, not a cookie), so we don't ask again.</li>
     <li><strong>Your recent searches.</strong> Your browser keeps your last few searches in its own storage, on this device only, so you can run them again with one click. That list is never sent to us, and the Clear button next to it removes it.</li>
     <li><strong>Product images.</strong> Some answers show a small image of a product from its maker's own page. Your browser loads it from the maker's site, only when that part of the answer is about to come on screen, so the maker sees your IP address, as any website you visit does, but never what you searched for: we send it no referrer, and nothing you type is in the image's address.</li>
+    {{request_logs}}
     {{on_demand_note}}
   </ul>
-  <p><strong>What we don't collect.</strong> No names, accounts or IP addresses, no cookies, no adverts and no tracking across websites. Your searches aren't saved by us, except the request you send with feedback{{on_demand_except}}.</p>
+  <p><strong>What we don't collect.</strong> No names or accounts, no cookies, no adverts and no tracking across websites. We never write down your IP address ourselves, and we don't save your searches, except the request you send with feedback{{on_demand_except}}.</p>
   {{public_site}}
 </section>
 

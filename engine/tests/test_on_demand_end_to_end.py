@@ -9,7 +9,6 @@ covers the product too, and a deploy bakes the threads in and empties the bucket
 import json
 import shutil
 import threading
-from urllib.parse import quote
 
 from engine import on_demand, web
 from engine.live_check import Bucket, LiveChecker
@@ -18,7 +17,7 @@ from engine.tests.fake_google import FakeGoogle
 from engine.tests.on_demand_fakes import (MISQUOTED, NOW, FakeArchive, FakeEmbed, FakeGemini, Ticks, archive, body_of,
                                           gemini)
 from engine.tests.test_live_check import Clock
-from engine.tests.test_web import kettle_library
+from engine.tests.test_web import kettle_library, post_answer
 from engine.verify_quotes import find_quote
 
 NAME = "credible-test-on-demand"
@@ -46,7 +45,7 @@ def test_a_product_not_read_yet_is_queued_read_checked_and_answered_with_verifie
     web.clear_answer_cache()
 
     def ask() -> dict:
-        status, _, body = web.handle_request(f"/api/answer?q={quote(REQUEST)}", site_library)
+        status, _, body = post_answer(REQUEST, site_library)  # a POST since 16 Oct 2026 (Noemi's decision 5)
         assert status == 200
         return json.loads(body)
 

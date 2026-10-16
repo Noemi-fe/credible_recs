@@ -416,8 +416,11 @@ def test_the_server_sends_the_image_hosts_with_its_pages_only(tmp_path, monkeypa
     try:
         with urllib.request.urlopen(f"{base}/", timeout=10) as response:
             assert "img-src https://img.asus.example;" in response.headers["Content-Security-Policy"]
-        with pytest.raises(urllib.error.HTTPError) as empty:  # an empty request: the API's JSON error
-            urllib.request.urlopen(f"{base}/api/answer?q=", timeout=10)
+        # An empty request: the API's JSON error (asked with a POST since 16 Oct 2026, Noemi's decision 5).
+        empty_request = urllib.request.Request(f"{base}/api/answer", data=b'{"request": ""}', method="POST",
+                                               headers={"Content-Type": "application/json"})
+        with pytest.raises(urllib.error.HTTPError) as empty:
+            urllib.request.urlopen(empty_request, timeout=10)
         assert empty.value.headers["Content-Type"].startswith("application/json")
         assert empty.value.headers["Content-Security-Policy"] == web.HEADERS["Content-Security-Policy"]
     finally:
