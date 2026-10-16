@@ -186,6 +186,26 @@ def test_a_product_named_as_what_the_request_is_for_isnt_the_product_asked_for(t
     assert classify(text).product_type == product_type
 
 
+# 16 Oct 2026 (the interview-fixes builder): what a product is easy, gentle or kind on, or won't dull or blunt, is what
+# it is for: "cutting board that's easy on knives" (an interviewee request) had asked "the cutting board or the chef
+# knife?"; "easy on my knives" already worked.
+@pytest.mark.parametrize("text", [
+    "cutting board that's easy on knives",
+    "cutting board that's easy on my knives",
+    "cutting board gentle on knives",
+    "cutting board kind to knives",
+    "cutting board that is kind to my knives",
+    "cutting board that won't dull my knife",
+    "chopping board that won't blunt my knives",
+    "cutting board that doesn't dull knives",
+    "cutting board safe for knives",
+    "cutting board that's soft on knife edges",
+])
+def test_what_a_product_is_easy_on_or_wont_dull_is_what_it_is_for(text):
+    query = parse_query(text)
+    assert (query.status, query.product_type) == ("ok", "cutting board"), query.question
+
+
 @pytest.mark.parametrize("text, product_type", [
     ("a bed for my dog", "dog bed"),
     ("toys for my cat", "cat toy"),

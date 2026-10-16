@@ -203,6 +203,22 @@ def test_a_requested_types_word_inside_another_types_name_doesnt_name_it():
     assert not pipeline._mention_of_another_type(said, "cast iron skillet")
 
 
+def test_a_bare_knife_doesnt_make_another_kind_of_knife_a_chef_knife():
+    # 16 Oct 2026 (the interview-fixes builder): b07's Kiwi line had its second thread from mentions the AI typed as a
+    # nakiri whose names and quotes said "knives". "knife" alone is a chef's knife as people mean it in "a good knife"
+    # (13 Oct 2026), but not when the AI says the knife is another kind (a look-alike since 13 Oct 2026); a fuller name
+    # of the requested type still says so. Made-up names and quotes.
+    nakiri = ProductMention("t1", "c1", "Tamaki knives", "kitchen", "recommend", product_type="nakiri",
+                            quote="Tamaki knives are cheap and sharp, I use mine for veg every day.")
+    assert pipeline._mention_of_another_type(nakiri, "chef knife")
+    named = ProductMention("t1", "c2", "Tamaki", "kitchen", "recommend", product_type="nakiri",
+                           quote="Their nakiri is great and my Tamaki chef's knife does the rest.")
+    assert not pipeline._mention_of_another_type(named, "chef knife")
+    plain = ProductMention("t1", "c3", "Tamaki knives", "kitchen", "recommend", product_type="chef knife",
+                           quote="Tamaki knives are cheap and sharp.")
+    assert not pipeline._mention_of_another_type(plain, "chef knife")
+
+
 # --- 4. Models' versions, and what the facts list knows ---
 
 def test_a_models_esp_and_forte_versions_are_other_products():

@@ -470,16 +470,21 @@ def test_a_brand_pick_is_left_out_when_the_list_says_the_brands_products_of_the_
     library = oxo_library(tmp_path)
     run = lambda prices: answer_request("electric kettle that lasts", library_dir=library, prices=prices,
                                         product_facts=[], today=TODAY)
-    assert OXO in names(run([]))
+    # Changed on purpose 16 Oct 2026 (the interview-fixes builder, item 7): with an entry written "OXO ..." in the price
+    # list, the writers' "Oxo" is shown as the list writes it ("OXO electric kettle line"), so names are compared
+    # whatever their capitals; the rule tested is unchanged.
+    folded = lambda found: [name.casefold() for name in found]
+    oxo = OXO.casefold()
+    assert oxo in folded(names(run([])))
     result = run([listed("OXO kettle", available=False)])
-    assert OXO not in names(result) and OXO in result.left_out_unavailable
+    assert oxo not in folded(names(result)) and oxo in folded(result.left_out_unavailable)
     # One model's entry doesn't speak for the brand, nor does a name with other words ("OXO stovetop kettle").
     for entry in ("OXO Cordless Glass Electric Kettle", "OXO stovetop kettle"):
-        assert OXO in names(run([listed(entry, available=False)])), entry
+        assert oxo in folded(names(run([listed(entry, available=False)]))), entry
     # The newest entry under the brand decides: sold again since.
     newer = listed("OXO electric kettle", available=True, checked_on=TODAY)
     older = listed("OXO kettle", available=False, checked_on=TODAY - timedelta(days=30))
-    assert OXO in names(run([older, newer]))
+    assert oxo in folded(names(run([older, newer])))
 
 
 # --- 5. Two brand picks of the same brand (decided by Claude, 10 Oct 2026) ---

@@ -108,11 +108,15 @@ def test_kitchen_and_general_first_readings_are_unchanged(request_text, category
     ("niacinamide-free moisturiser for dry skin", ["dry"]),
     # A size says which bottle, not what it should do.
     ("need an eye cream 15ml max £35", []),
-    ("daily moisturizer w spf30+ for dry skin, 1.7 fl oz, $25 or less", ["daily", "spf30", "dry"]),
+    # Changed on purpose 16 Oct 2026 (the interview-fixes builder): "daily" is filler, found in nearly any comment ("I
+    # use it daily"); was ["daily", "spf30", "dry"].
+    ("daily moisturizer w spf30+ for dry skin, 1.7 fl oz, $25 or less", ["spf30", "dry"]),
     # Nor a single letter: "w/o" says "without", and "w" or "o" names nothing a comment could talk about.
     ("toner w/o alcohol for combination/normal skin", ["alcohol", "combination", "normal"]),
     ("1.7l kettle under £40", []),
-    ("28cm frying pan, non stick but pfas free, £30-60", ["non", "stick", "pfas", "free"]),
+    # Changed on purpose 16 Oct 2026 (the interview-fixes builder): "non stick" is one need (config.NEED_PHRASES) and
+    # "pfas free" asks about PFAS, as "pfas-free" does; was ["non", "stick", "pfas", "free"].
+    ("28cm frying pan, non stick but pfas free, £30-60", ["non stick", "pfas"]),
     ("10 inch cast iron skillet that lasts", ["lasting"]),
 ])
 def test_the_rule_judges_the_needs_a_comment_can_talk_about(request_text, judged):

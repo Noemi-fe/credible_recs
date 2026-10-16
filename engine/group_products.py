@@ -1239,15 +1239,17 @@ _ADDS_AT_START = Table()  # (a name's words, another's) -> whether the first is 
 def _shown_spelling(mentions: list[ProductMention], words: Words) -> str:
     """Of the spellings of one name (`words`): one that says those words as they are, with no short name or slip to
     write out ("House of Hur Weightless Sun Fluid", not "House of Hurr Weightless Sunscreen"; 10 Oct 2026), then the
-    most complete as written (letters and digits: "The Ordinary" rather than "TO"), then the most common, then one with
-    capital letters (but not all capitals), then the first alphabetically."""
+    most complete as written (letters and digits: "The Ordinary" rather than "TO"), then one with capital letters (but
+    not all capitals), then the most common, then the first alphabetically. Capitals came after the most common until
+    16 Oct 2026 (the interview-fixes builder): "kindle e-reader line" was shown because 16 writers wrote "kindle" and 15
+    "Kindle"."""
     counts = Counter(m.product for m in mentions)
 
     def preference(spelling: str):
         as_written = normalize_name(spelling)
         letters = len("".join(as_written))
         capitalised = spelling != spelling.lower() and spelling != spelling.upper()
-        return tuple(as_written) == words, letters, counts[spelling], capitalised
+        return tuple(as_written) == words, letters, capitalised, counts[spelling]
 
     return max(sorted(counts), key=preference)
 
@@ -1316,8 +1318,14 @@ def _maker_spelling(name: str, category: str, more: tuple[str, ...] = (), whole:
     when the name's first one to three words are a known spelling's words, but written otherwise (a slip, another
     spacing or punctuation, a short name: engine.match_products.product_words), they are replaced by it. Known
     spellings: config.MAKER_SPELLINGS, the full names of the category's short names (engine/data/product_aliases.json:
-    "KitchenAid", "Le Creuset") and `more` (the brand-lines list's brands). A brand written only in other capitals is
-    left as written, and never a name the UK knows by another (UK_BRAND_NAMES: uk_name runs after this).
+    "KitchenAid", "Le Creuset") and `more` (the brand-lines list's brands). Never a name the UK knows by another
+    (UK_BRAND_NAMES: uk_name runs after this).
+
+    Since 16 Oct 2026 (the interview-fixes builder) a brand written only in other capitals is shown as they write it
+    too ("Cosrx" as "COSRX", "kitchenaid" as "KitchenAid"; it had been left as written, and 58 names shown in the day's
+    answers had their brand in small letters or other capitals), the longest such beginning first; and so is a first
+    word that the price and facts lists' names (`whole`) begin with, written one way there ("kindle paperwhite" as
+    "Kindle paperwhite"), though never into small letters from those names.
 
     `whole`: names the price list and the facts list write as their makers do (15 Oct 2026, the second product
     researcher's "Mad Hippie vitamin c serum" beside "Mad Hippie Vitamin C Serum"): a name with one of their words, in
@@ -1328,9 +1336,12 @@ def _maker_spelling(name: str, category: str, more: tuple[str, ...] = (), whole:
         found = _whole_spellings(category, whole).get(tuple(product_words(name, aliases)))
         if found is not None and not (found == found.lower() and name != name.lower()):
             return found  # never in small letters a name written with capitals ("niche" for "Niche")
-    folded, by_letter = _maker_spellings(category, more)
-    if any(" ".join(tokens[:size]).casefold() in folded for size in range(1, min(3, len(tokens)) + 1)):
-        return name  # its brand is written as its maker writes it, but for capitals: left as it is
+    folded, by_letter, spelled = _maker_spellings(category, more)
+    for size in range(min(3, len(tokens)), 0, -1):
+        run = " ".join(tokens[:size])
+        known = spelled.get(_folded(run))
+        if known is not None:  # written as its maker writes it, but perhaps for capitals
+            return name if known == run else " ".join([known, *tokens[size:]])
     for size in range(min(3, len(tokens)), 0, -1):
         run = " ".join(tokens[:size])
         words = tuple(product_words(run, aliases))
@@ -1345,14 +1356,39 @@ def _maker_spelling(name: str, category: str, more: tuple[str, ...] = (), whole:
                 if rest & (set(plain_words(spelling)) - set(plain_words(run))):
                     return name
                 return " ".join([spelling, *tokens[size:]])
+    if whole and tokens:
+        known = _curated_beginnings(whole).get(_folded(tokens[0]))
+        if known is not None and not (known == known.lower() and tokens[0] != tokens[0].lower()):
+            return " ".join([known, *tokens[1:]])
     return name
 
 
+def _folded(text: str) -> str:
+    """A name's beginning as maker_spelling compares it: in small letters, with curly apostrophes made straight."""
+    return text.replace("’", "'").casefold()
+
+
+@lru_cache(maxsize=16)
+def _curated_beginnings(whole: tuple[str, ...]) -> dict[str, str]:
+    """{the first word of the price and facts lists' names, folded: as they write it}, for first words written one way
+    only there (16 Oct 2026): the brand, as their makers write it ("Kindle", "COSRX")."""
+    found: dict[str, set[str]] = defaultdict(set)
+    for entry in whole:
+        if entry.split():
+            found[_folded(entry.split()[0])].add(entry.split()[0])
+    return {key: next(iter(spellings)) for key, spellings in found.items() if len(spellings) == 1}
+
+
+register(_curated_beginnings.cache_clear)
+
+
 @lru_cache(maxsize=64)
-def _maker_spellings(category: str,
-                     more: tuple[str, ...]) -> tuple[frozenset[str], dict[str, tuple[tuple[str, Words], ...]]]:
+def _maker_spellings(category: str, more: tuple[str, ...]) -> tuple[frozenset[str],
+                                                                   dict[str, tuple[tuple[str, Words], ...]],
+                                                                   dict[str, str]]:
     """The known spellings of maker_spelling, without the names the UK knows by another: (each in small letters, {the
-    first letter of its words: (spelling, its words), longest first}). Worked out once per category and list."""
+    first letter of its words: (spelling, its words), longest first}, {each folded (_folded): the spelling}).
+    Worked out once per category and list."""
     import json
 
     found = list(MAKER_SPELLINGS.get(category, ())) + list(more)
@@ -1368,7 +1404,11 @@ def _maker_spellings(category: str,
         words = tuple(product_words(spelling, aliases))
         if words:
             by_letter[words[0][:1]].append((spelling, words))
-    return frozenset(k.casefold() for k in kept), {letter: tuple(v) for letter, v in by_letter.items()}
+    spelled: dict[str, str] = {}
+    for spelling in found:  # config's first, then the brand-lines list's, then the short names' full names
+        if spelling and spelling not in UK_BRAND_NAMES:
+            spelled.setdefault(_folded(spelling), spelling)
+    return frozenset(k.casefold() for k in kept), {letter: tuple(v) for letter, v in by_letter.items()}, spelled
 
 
 register(_maker_spellings.cache_clear)

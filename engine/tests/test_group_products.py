@@ -203,6 +203,15 @@ def test_the_spelling_shown_is_the_most_common_and_a_short_name_is_shown_written
     assert sorted(g.name for g in groups) == ["Lodge", "The Ordinary lactic acid"]
 
 
+def test_a_spelling_with_capitals_is_shown_before_a_commoner_one_in_small_letters():
+    # 16 Oct 2026 (the interview-fixes builder): "kindle e-reader line" had been shown because 16 writers wrote "kindle"
+    # and 15 "Kindle"; the writers' capitals come first, the most common of them shown.
+    groups = group([mention("le creuset", category="kitchen", comment_id=f"c{i}") for i in range(3)]
+                   + [mention("Le Creuset", category="kitchen", comment_id="c8"),
+                      mention("LE CREUSET", category="kitchen", comment_id="c9")])
+    assert [g.name for g in groups] == ["Le Creuset"]
+
+
 def test_keys_name_the_category_and_the_product():
     groups = group([mention("CeraVe SA Cleanser"), kitchen("Lodge")])
     assert sorted(g.key for g in groups) == ["kitchen:lodge", "skincare:cerave sa cleanser"]
