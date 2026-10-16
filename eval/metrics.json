@@ -1,11 +1,11 @@
 {
-  "measured_on": "2026-10-15",
+  "measured_on": "2026-10-16",
   "metrics": {
     "quote_verification": {
       "value": 1.0,
       "target": 1.0,
-      "count": 245,
-      "out_of": 245,
+      "count": 253,
+      "out_of": 253,
       "threads": null
     },
     "extraction_precision": {
@@ -58,10 +58,10 @@
       "threads": null
     },
     "ai_quotes_found": {
-      "value": 0.9997621991819652,
+      "value": 0.9993665273026733,
       "target": null,
-      "count": 63063,
-      "out_of": 63078,
+      "count": 63104,
+      "out_of": 63144,
       "threads": null
     },
     "request_outcome": {
@@ -119,7 +119,7 @@
     "with_all_picks": 10,
     "with_a_pick": 10,
     "picks_wanted": 3,
-    "quotes_shown": 245,
+    "quotes_shown": 253,
     "unverified_quotes_shown": 0,
     "threads_waiting_live_check": 0
   }
