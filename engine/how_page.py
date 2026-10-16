@@ -148,9 +148,22 @@ VISITS_COUNTED = ("<strong>Visit counts.</strong> We count visits with GoatCount
                   "it got, which feedback button was pressed, and the answer to “First time here?”. Never what you "
                   "typed.")
 VISITS_NOT_COUNTED = "<strong>Visit counts.</strong> Visits aren't counted at the moment."
-PUBLIC_SITE = ("<p>The site runs on Hugging Face, which may keep its own logs, as any web host does. To stop anyone "
-               "flooding it, our server counts each address's requests for a short while, in memory only: addresses "
-               "are never written down.</p>")
+# The public site's host and its logs (Noemi's decision 5 of 16 Oct 2026; wording PROPOSED): since 12 Oct 2026 the site
+# runs on Google Cloud Run, whose request logs keep each request's time, address asked for, IP address and browser (and
+# the website that linked there, when the browser says) in Cloud Logging's _Default bucket for its default 30 days (no
+# exclusion or other keeping time is set: the website review of 16 Oct 2026). The request people type is in the body of
+# a POST, which those logs never keep, and after the page's "#", which browsers never send. It had said the site ran on
+# Hugging Face and kept no IP addresses.
+REQUEST_LOG_DAYS = 30
+REQUEST_LOGS = ("<li><strong>Google's request logs.</strong> The site runs on Google Cloud Run, which logs every request "
+                "made to it, as web hosts do: the time, the part of the site asked for, your IP address and your "
+                "browser, and the website you came from if your browser says, kept for {days} days. What you type is "
+                "never in those logs: your search travels inside the request, not in its address, and it stays in "
+                "this page's address only after the “#”, which your browser never sends.</li>")
+PUBLIC_SITE = ("<p>To stop anyone flooding the site, our server counts each address's requests for a short while, in "
+               "memory only: it never writes them down.</p>")
+# A product sold only outside the UK (Noemi, 15 Oct 2026, evening) stays in answers with this note; an example day.
+NOT_IN_UK_EXAMPLE_DAY = "15 Oct 2026"
 
 # On-demand reading (14 Oct 2026; wording decided by Claude): on the live site, a request about a product we haven't
 # read about yet is noted for the reading job (engine/on_demand.py). The page says so only where it happens.
@@ -225,7 +238,8 @@ def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = Fa
     """The whole page, with the decided values from config and the results from `metrics_path`, read now.
 
     `counter`: GoatCounter's script when visits are counted (engine.web.counter_script), else "", and the privacy
-    section says which. `public`: the page is served by the public site, so it also names the site's host.
+    section says which. `public`: the page is served by the public site, so it also names the site's host and what its
+    request logs keep (16 Oct 2026).
     `on_demand`: the site notes requests about products not read yet (engine/on_demand.py), and the privacy section
     says what it keeps (14 Oct 2026).
     """
@@ -242,6 +256,7 @@ def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = Fa
         "evaluation": evaluation_section(metrics_path),
         "visit_counting": VISITS_COUNTED if counter else VISITS_NOT_COUNTED,
         "public_site": PUBLIC_SITE if public else "",
+        "request_logs": REQUEST_LOGS.format(days=REQUEST_LOG_DAYS) if public else "",
         "on_demand_note": ON_DEMAND_NOTE.format(words=_config_span("ON_DEMAND_NEED_WORDS")) if on_demand else "",
         "on_demand_except": html.escape(ON_DEMAND_EXCEPT) if on_demand else "",
         "counter_script": counter,
@@ -273,6 +288,8 @@ def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = Fa
         # on purpose (the first two of the kitchen's list), and a product's own link as cards show it.
         "vintage_example": " and ".join(config.SECOND_HAND_VINTAGE.get("kitchen", ())[:2]),
         "page_link_example": answer.PRODUCT_LINK.format(shop="John Lewis"),
+        # A product sold only outside the UK (Noemi, 15 Oct 2026, evening): shown with this note, not left out.
+        "not_in_uk_example": answer.AVAILABILITY_NOT_IN_UK.format(date=NOT_IN_UK_EXAMPLE_DAY),
     }
     return fill(TEMPLATE.read_text(encoding="utf-8"), texts, slots)
 

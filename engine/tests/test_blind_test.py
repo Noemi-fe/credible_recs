@@ -212,6 +212,35 @@ def test_a_pick_sold_second_hand_only_says_so():
     assert "Sold second-hand only." in shown and "eBay" not in shown
 
 
+NOT_IN_UK = {"text": "Not sold in the UK, checked 15 Oct 2026", "available": False, "shop": None, "url": None,
+             "checked_on": "2026-10-15", "second_hand": False}
+PRESCRIPTION = "Prescription-only in the UK: ask a doctor or pharmacist."
+
+
+def test_a_pick_not_sold_in_the_uk_keeps_its_note_with_the_day_it_was_checked():
+    # Noemi's decision 7 of 16 Oct 2026: as a pick sold second-hand only says so (10 Oct 2026), one sold only outside the
+    # UK says so in the packets too (b06's and b09's third picks would have lost it), with the day it was checked.
+    shown = shown_from_ours({"picks": [pick(1, "Cuisinart CPK-17", availability=NOT_IN_UK)]})
+    assert "\n\nNot sold in the UK, checked 15 Oct 2026.\n\nPrice: £45.00 at John Lewis" in shown
+
+
+def test_a_prescription_only_pick_keeps_its_note():
+    shown = shown_from_ours({"picks": [pick(1, "Finacea", prescription=PRESCRIPTION)]})
+    assert f"\n\n{PRESCRIPTION}\n\nPrice:" in shown
+    assert PRESCRIPTION not in shown_from_ours({"picks": [pick(1, "Finacea", prescription=None)]})
+
+
+def test_the_notes_are_kept_whole_within_the_words_a_pick_may_have():
+    long_quote = " ".join(f"word{i}" for i in range(200))
+    shown = shown_from_ours({"picks": [pick(1, "Finacea", quotes=[quote(long_quote, "2 years of use")],
+                                            cautions=["Note: we couldn't confirm it's fragrance-free."],
+                                            availability=NOT_IN_UK, prescription=PRESCRIPTION)]})
+    for note in ("Note: we couldn't confirm it's fragrance-free.", "Not sold in the UK, checked 15 Oct 2026.",
+                 PRESCRIPTION):
+        assert note in shown
+    assert blind_test.words_per_pick(shown) == [90]  # FORMAT.md's limit: the quote is cut, never a note
+
+
 def test_with_no_picks_our_answer_says_so_in_its_own_words():
     assert shown_from_ours({"picks": [], "message": "Not enough credible evidence to recommend a kettle yet."}) == (
         "Not enough credible evidence to recommend a kettle yet.")
@@ -301,10 +330,92 @@ def test_each_packet_is_also_a_plain_web_page_testers_can_open(tmp_path, monkeyp
     build_packets(folder, questions_file(tmp_path), [Tester("T01", "skincare")], seed=1)
     page = (folder / "packets" / "T01.html").read_text(encoding="utf-8")
     assert page.startswith("<!doctype html>") and '<meta name="viewport"' in page
-    assert "<h2>Question 1: &quot;gentle exfoliant for sensitive skin under £30&quot;</h2>" in page
+    # Changed on purpose 16 Oct 2026 (Noemi's decision 7): each question shows its code for the response form (was
+    # "Question 1: ...").
+    assert "<h2>Question 1 (b01): &quot;gentle exfoliant for sensitive skin under £30&quot;</h2>" in page
     assert "<h3>Answer A</h3>" in page and "<h3>Answer C</h3>" in page
     assert "<strong>1. A &lt;b&gt;bold&lt;/b&gt; product</strong> &amp; more" in page
     assert "**" not in page and "<b>bold</b>" not in page
+
+
+def test_each_answer_on_a_packet_page_keeps_its_paragraphs(tmp_path, monkeypatch):
+    # The website review of 16 Oct 2026: build_packets handed packet_page each answer as one line, so its three picks ran
+    # together as one paragraph (the tests above use one-line answers).
+    folder = fake_capture(tmp_path, monkeypatch)
+    three = shown_from_ours({"picks": [pick(1, "Dualit Classic Kettle"), pick(2, "Sage Compact Kettle"),
+                                       pick(3, "Bosch Styline Kettle")]})
+    for tool in blind_test.TOOLS:
+        for q in QUESTIONS:
+            (folder / "shown" / tool / f"{q['id']}.md").write_text(three + "\n", encoding="utf-8")
+    build_packets(folder, questions_file(tmp_path), [Tester("T01", "skincare")], seed=1)
+    page = (folder / "packets" / "T01.html").read_text(encoding="utf-8")
+    answer_a = page[page.index("<h3>Answer A</h3>"):page.index("<h3>Answer B</h3>")]
+    assert answer_a.count("<p><strong>") == 3  # each pick's name opens its own paragraph
+    assert "<p><strong>2. Sage Compact Kettle</strong></p>" in answer_a
+    assert "<p>&quot;Mine has lasted five years and still boils fast.&quot; (five years of use)</p>" in answer_a
+    assert "<p>Price: £45.00 at John Lewis</p>" in answer_a
+    md = (folder / "packets" / "T01.md").read_text(encoding="utf-8")
+    assert three in md  # the Markdown packet holds each answer exactly as shown
+
+
+def test_a_line_break_inside_a_paragraph_is_kept_on_the_page():
+    # The template puts a second piece of evidence on the line under the first: shown as a new line, not run on.
+    page = blind_test.packet_page("T01", ['"First quote." (2 years of use)', '"Second quote." (1 year of use)', ""])
+    assert "<p>&quot;First quote.&quot; (2 years of use)<br>&quot;Second quote.&quot; (1 year of use)</p>" in page
+
+
+TEN = [{"id": f"b{n:02}", "category": "skincare" if n <= 5 else "kitchen", "text": f"made-up question {n}"}
+       for n in range(1, 11)]
+
+
+def test_with_testers_alternating_categories_every_question_gets_its_orders_in_turn(tmp_path):
+    # The website review of 16 Oct 2026: order_for followed the tester's row in testers.csv, so with rows alternating by
+    # category (as in the runbook's example) each question got 3 of the 6 orders (b01's dry run: ChatGPT first 4 times,
+    # ours once, Vetted never). The orders now go round per question: its testers so far, then the next.
+    from collections import Counter
+
+    folder = tmp_path / "day"
+    for tool in blind_test.TOOLS:
+        (folder / "shown" / tool).mkdir(parents=True)
+    fill_shown(folder, TEN)
+    testers = [Tester(f"T{n:02}", "skincare" if n % 2 else "kitchen") for n in range(1, 11)]
+    key = build_packets(folder, questions_file(tmp_path, TEN), testers, seed=3)
+    for q in TEN:
+        orders = [tuple(key[t][q["id"]][letter] for letter in "ABC") for t in key if q["id"] in key[t]]
+        assert len(orders) == 5 and len(set(orders)) == 5, q["id"]  # five testers, five different orders
+        firsts = Counter(order[0] for order in orders)
+        assert set(firsts) == set(blind_test.TOOLS) and max(firsts.values()) <= 2, (q["id"], firsts)
+    for tester in key:  # and a tester's own five questions don't repeat an order either
+        orders = [tuple(letters[letter] for letter in "ABC") for letters in key[tester].values()]
+        assert len(set(orders)) == len(orders) == 5, tester
+
+
+def test_each_question_in_a_packet_shows_its_code_for_the_response_form(tmp_path, monkeypatch):
+    # Noemi's decision 7 of 16 Oct 2026: she makes the response form (eval/blind_test/RUNBOOK.md); each response names
+    # its tester and its question, so the packet says both.
+    folder = fake_capture(tmp_path, monkeypatch)
+    fill_shown(folder)
+    build_packets(folder, questions_file(tmp_path), [Tester("T01", "skincare")], seed=1)
+    packet = (folder / "packets" / "T01.md").read_text(encoding="utf-8")
+    assert '## Question 1 (b01): "gentle exfoliant for sensitive skin under £30"' in packet
+    assert '## Question 2 (b02): "sunscreen for oily skin"' in packet
+    assert "your tester code, T01," in packet and "each question's code" in packet
+
+
+def test_the_runbooks_response_form_gives_every_column_the_tally_reads(tmp_path):
+    # The form's export (one row per tester and question) becomes responses.csv once its first line is these columns;
+    # a column the tally doesn't read, such as the form's own Timestamp, is ignored.
+    runbook = (Path(blind_test.__file__).resolve().parents[1] / "eval" / "blind_test" / "RUNBOOK.md").read_text(
+        encoding="utf-8")
+    assert "Timestamp,tester,question,choice,least,confidence,comment" in runbook
+    for field in ("tester", "question", "choice", "least", "confidence", "comment"):
+        assert f"`{field}`" in runbook, field
+    path = tmp_path / "responses.csv"
+    path.write_text("Timestamp,tester,question,choice,least,confidence,comment\n"
+                    "20/10/2026 18:02:11,T01,b01,B,C,4,made-up reason\n", encoding="utf-8")
+    (response,) = load_responses(path)
+    assert (response.tester, response.question, response.choice, response.least, response.confidence) == (
+        "T01", "b01", "B", "C", "4")
 
 
 def test_packets_are_refused_while_an_answer_to_show_is_missing(tmp_path, monkeypatch):

@@ -138,8 +138,9 @@ After committing (and after new threads are extracted), from the repository's ro
 
     sh deploy/cloudrun/deploy.sh
 
-It turns on-demand reading off for that deploy if the Gemini key's secret isn't there yet (below; the site deploys
-anyway and never says it has started reading), and the pre-check's Bright Data verification off if the Bright Data
+It deploys on-demand reading off unless asked (since 16 Oct 2026, below), turns it off for that deploy if the Gemini
+key's secret isn't there yet (below; the site deploys anyway and never says it has started reading), and the pre-check's
+Bright Data verification off if the Bright Data
 key's isn't (the job deploys anyway), makes sure both buckets exist with their rules,
 brings the threads read on demand into data/library, applies the pre-check's verification record to the
 library, bundles the current commit with the library, builds the private
@@ -308,6 +309,19 @@ answers' worth (an answer reads 10 to 40 comments) stays for visitors. The site'
 archive, the bucket) aren't Reddit's.
 
 ## On-demand reading
+
+**Off for the interviews** (Noemi's decision 6 of 16 Oct 2026): Gemini's free allowance reads about one product a day,
+so "check back in about 20 minutes" isn't true; Claude reads the likely products ahead instead. Every deploy leaves it
+off unless it is asked for, with one setting:
+
+    CREDIBLE_RECS_ON_DEMAND=on sh deploy/cloudrun/deploy.sh
+
+Off, the site gets none of its settings (CREDIBLE_RECS_ON_DEMAND_BUCKET, CREDIBLE_RECS_ON_DEMAND_JOB): a product it
+hasn't read about gets the honest no-threads message ("We haven't read any Reddit threads about teapots yet..."),
+nothing is queued, the reading job is never started, and the pre-check doesn't look at the queue. Nothing is deleted:
+the code, the bucket (whose objects go at 37 days, as always) and the job stay, and the job is moved to the site's image
+again by the first deploy with it on. To make on the default again, change `ON_DEMAND_SWITCH`'s default in
+deploy/cloudrun/on_demand.sh from off to on.
 
 Since 14 Oct 2026 (Noemi: "I want recs regardless of the category"; the plan's part 3). A request module 1 understands,
 about a product the library holds fewer than 6 extracted threads about, is queued, and the answer says so in the

@@ -183,12 +183,17 @@ def test_the_how_page_says_recent_searches_stay_in_the_browser(tmp_path):
 
 # --- Sent compressed (13 Oct 2026): the redesigned page is bigger, so it travels gzipped to browsers that take it ---
 
-def fetch_raw(server, path: str, accept_encoding: str | None):
+def fetch_raw(server, path: str, accept_encoding: str | None, body: dict | None = None):
+    """A GET, or with `body` a POST of it as JSON (how answers are asked for since 16 Oct 2026, Noemi's decision 5)."""
+    import json
     import urllib.error
     import urllib.request
 
     headers = {"Accept-Encoding": accept_encoding} if accept_encoding else {}
-    request = urllib.request.Request(f"http://127.0.0.1:{server.server_address[1]}{path}", headers=headers)
+    data = None if body is None else json.dumps(body).encode("utf-8")
+    if data is not None:
+        headers["Content-Type"] = "application/json"
+    request = urllib.request.Request(f"http://127.0.0.1:{server.server_address[1]}{path}", data=data, headers=headers)
     try:
         with urllib.request.urlopen(request, timeout=20) as response:
             return dict(response.headers), response.read()
@@ -199,21 +204,21 @@ def fetch_raw(server, path: str, accept_encoding: str | None):
 def test_pages_and_answers_travel_gzipped_to_browsers_that_take_it(tmp_path):
     import gzip
     import threading
-    from urllib.parse import quote
 
     server = web.make_server(port=0, library_dir=kettle_library(tmp_path))
     threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.01}, daemon=True).start()
     try:
-        for path in ("/", "/how", f"/api/answer?q={quote(REQUEST)}"):
-            headers, body = fetch_raw(server, path, "gzip, deflate, br")
+        # The answer asked with a POST since 16 Oct 2026 (Noemi's decision 5; was GET /api/answer?q=).
+        for path, sent in (("/", None), ("/how", None), ("/api/answer", {"request": REQUEST})):
+            headers, body = fetch_raw(server, path, "gzip, deflate, br", sent)
             assert headers["Content-Encoding"] == "gzip" and headers["Vary"] == "Accept-Encoding", path
             assert int(headers["Content-Length"]) == len(body)
-            plain_headers, plain = fetch_raw(server, path, None)
+            plain_headers, plain = fetch_raw(server, path, None, sent)
             assert "Content-Encoding" not in plain_headers and gzip.decompress(body) == plain, path
             assert len(body) < len(plain) / 2, path
         headers, _ = fetch_raw(server, "/", "br;q=1, gzip;q=0")  # refused by the browser: sent as it is
         assert "Content-Encoding" not in headers
-        headers, _ = fetch_raw(server, "/api/answer?q=", "gzip")  # a small error isn't worth compressing
+        headers, _ = fetch_raw(server, "/api/answer", "gzip", {"request": ""})  # a small error isn't worth compressing
         assert "Content-Encoding" not in headers
     finally:
         server.shutdown()

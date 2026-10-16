@@ -5,6 +5,7 @@ files (as in test_pipeline.py), so no test reads data/.
 """
 
 import dataclasses
+import io
 import json
 import re
 import threading
@@ -12,7 +13,7 @@ import urllib.error
 import urllib.request
 from datetime import date
 from pathlib import Path
-from urllib.parse import quote, urlparse
+from urllib.parse import urlparse
 
 import pytest
 
@@ -57,9 +58,17 @@ def kettle_library(tmp_path: Path, praised: tuple[str, ...] = ("Zojirushi", "Fel
     return root
 
 
+def post_answer(request: str, library_dir: Path, site: web.Site = web.LOCAL) -> tuple[int, str, bytes]:
+    """POST /api/answer for one request, as the page sends it: (status, content type, body). Since 16 Oct 2026 (Noemi's
+    decision 5) the request travels in the JSON body, never in the address; these tests asked GET /api/answer?q= until
+    then, which now says how to ask instead (test_request_privacy.py)."""
+    body = json.dumps({"request": request}, ensure_ascii=False).encode("utf-8")
+    return web.handle_answer("application/json", str(len(body)), io.BytesIO(body).read, library_dir, site)
+
+
 def ask(request: str, library_dir: Path) -> tuple[int, str, dict]:
-    """GET /api/answer for one request: (status, content type, the JSON body)."""
-    status, content_type, body = web.handle_request(f"/api/answer?q={quote(request)}", library_dir)
+    """POST /api/answer for one request: (status, content type, the JSON body)."""
+    status, content_type, body = post_answer(request, library_dir)
     return status, content_type, json.loads(body)
 
 
@@ -71,7 +80,7 @@ def fresh_cache():
     web.clear_answer_cache()
 
 
-# --- GET /api/answer ---
+# --- POST /api/answer (GET until 16 Oct 2026: Noemi's decision 5 took the request out of the address) ---
 
 def test_a_known_request_comes_back_as_three_cards_in_json(tmp_path):
     status, content_type, data = ask(REQUEST, kettle_library(tmp_path))
@@ -231,15 +240,19 @@ def test_an_unverifiable_quote_makes_the_endpoint_refuse(tmp_path, monkeypatch):
         return result
 
     monkeypatch.setattr(web, "answer_request", answer_with_a_planted_quote)
-    status, content_type, body = web.handle_request(f"/api/answer?q={quote(REQUEST)}", kettle_library(tmp_path))
+    status, content_type, body = post_answer(REQUEST, kettle_library(tmp_path))
     assert status == 500 and content_type.startswith("application/json")
     assert planted.encode() not in body and b"Zojirushi" not in body  # nothing from the answer is shown
     assert json.loads(body)["error"] and json.loads(body)["code"] == "quote_not_verified"
 
 
-@pytest.mark.parametrize("path", ["/api/answer", "/api/answer?q=", "/api/answer?q=%20%20%20", "/api/answer?other=kettle"])
-def test_an_empty_request_is_refused(tmp_path, path):
-    status, content_type, body = web.handle_request(path, kettle_library(tmp_path))
+# Changed on purpose 16 Oct 2026 (Noemi's decision 5): the request comes in the body, so the empty ones are bodies (were
+# the addresses /api/answer, ?q=, ?q=%20%20%20 and ?other=kettle).
+@pytest.mark.parametrize("sent", [{}, {"request": ""}, {"request": "   "}, {"other": "kettle"}])
+def test_an_empty_request_is_refused(tmp_path, sent):
+    data = json.dumps(sent).encode("utf-8")
+    status, content_type, body = web.handle_answer("application/json", str(len(data)), io.BytesIO(data).read,
+                                                   kettle_library(tmp_path))
     assert status == 400 and content_type.startswith("application/json") and json.loads(body)["error"]
     assert json.loads(body)["code"] == "empty_request"
 
@@ -262,8 +275,8 @@ def test_answers_are_remembered_for_the_life_of_the_process(tmp_path, monkeypatc
 
     monkeypatch.setattr(web, "answer_request", counting)
     library_dir = kettle_library(tmp_path)
-    first = web.handle_request(f"/api/answer?q={quote(REQUEST)}", library_dir)
-    again = web.handle_request(f"/api/answer?q={quote('  ' + REQUEST + ' ')}", library_dir)  # same words, extra spaces
+    first = post_answer(REQUEST, library_dir)
+    again = post_answer('  ' + REQUEST + ' ', library_dir)  # same words, extra spaces
     assert first == again and calls == [REQUEST]
 
 
@@ -280,8 +293,8 @@ def test_an_answer_that_left_something_out_for_reddits_allowance_is_worked_out_a
 
     monkeypatch.setattr(web, "answer_request", counting)
     library_dir = kettle_library(tmp_path)
-    first = web.handle_request(f"/api/answer?q={quote(REQUEST)}", library_dir)
-    web.handle_request(f"/api/answer?q={quote(REQUEST)}", library_dir)
+    first = post_answer(REQUEST, library_dir)
+    post_answer(REQUEST, library_dir)
     assert first[0] == 200 and calls == [REQUEST, REQUEST]
     assert json.loads(first[2])["timing"]["put_off"] == 1
 
@@ -299,17 +312,17 @@ def test_a_remembered_answer_is_worked_out_again_after_its_time(tmp_path, monkey
     monkeypatch.setattr(web, "answer_request", counting)
     monkeypatch.setattr(web, "_clock", lambda: clock[0])
     library_dir = kettle_library(tmp_path)
-    web.handle_request(f"/api/answer?q={quote(REQUEST)}", library_dir)
+    post_answer(REQUEST, library_dir)
     clock[0] += web.ANSWER_KEEP_HOURS * 3600 - 1
-    web.handle_request(f"/api/answer?q={quote(REQUEST)}", library_dir)
+    post_answer(REQUEST, library_dir)
     assert calls == [REQUEST]
     clock[0] += 2
-    web.handle_request(f"/api/answer?q={quote(REQUEST)}", library_dir)
+    post_answer(REQUEST, library_dir)
     assert calls == [REQUEST, REQUEST]
 
 
 def test_a_missing_library_is_an_error_not_a_crash(tmp_path):
-    status, _, body = web.handle_request(f"/api/answer?q={quote(REQUEST)}", tmp_path / "no-library")
+    status, _, body = post_answer(REQUEST, tmp_path / "no-library")
     assert status == 500 and json.loads(body)["code"] == "engine_failed"
 
 
@@ -375,8 +388,32 @@ def test_the_page_carries_the_answers_own_headings_and_the_example_requests(tmp_
     settings = json.loads(re.search(r'<script type="application/json" id="settings">(.*?)</script>', html, re.DOTALL).group(1))
     assert settings["wording"]["quotes_heading"] == QUOTES_HEADING
     assert settings["maxChars"] == WEB_MAX_REQUEST_CHARS
-    assert "burr coffee grinder for pour-over under £150" in [example["text"] for example in settings["examples"]]
+    # Changed on purpose 16 Oct 2026 (Noemi's decision 7): the examples were the blind-test questions ("burr coffee
+    # grinder for pour-over under £150" was one); they are other requests now (the test below).
+    assert settings["examples"] == web.example_requests() and "vitamin c serum" in [e["text"] for e in settings["examples"]]
     assert "PROPOSED" in html  # the page's own new wording is marked for Noemi's review
+
+
+def test_the_sites_examples_are_never_the_blind_test_questions_nor_about_their_kinds_of_product():
+    # Noemi's decision 7 of 16 Oct 2026: the examples were the 10 blind-test questions, so a tester who tried the site
+    # first could recognise our answers. They are other requests, about other kinds of product, each in its category,
+    # placed by module 1's rules alone (getting ready warms them first, word for word, without the open model).
+    from engine.query import parse_query
+
+    examples = web.example_requests()
+    questions = json.loads((Path(web.REPO_ROOT) / "eval" / "blind_test" / "questions.json").read_text(
+        encoding="utf-8"))["questions"]
+    assert web.EXAMPLES_FILE.name == "example_requests.json"
+    data = json.loads(web.EXAMPLES_FILE.read_text(encoding="utf-8"))
+    assert "PROPOSED" in data["note"]
+    same = {" ".join(q["text"].lower().split()) for q in questions}
+    tested = {web._placed_by_rules(q["text"])[0] for q in questions}
+    assert len(examples) >= 8 and {e["category"] for e in examples} >= {"skincare", "kitchen"}
+    for example in examples:
+        assert " ".join(example["text"].lower().split()) not in same, example
+        product_type, asks_model = web._placed_by_rules(example["text"])
+        assert product_type and product_type not in tested and not asks_model, example
+        assert parse_query(example["text"]).category == example["category"], example
 
 
 # --- The server ---
@@ -394,7 +431,10 @@ def test_the_server_answers_over_http_and_only_when_addressed_to_this_machine(tm
     threading.Thread(target=server.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{server.server_address[1]}"
     try:
-        with urllib.request.urlopen(f"{base}/api/answer?q={quote(REQUEST)}", timeout=10) as response:
+        # Asked as the page asks since 16 Oct 2026 (Noemi's decision 5): a POST, the request in its body (was a GET).
+        asked = urllib.request.Request(f"{base}/api/answer", data=json.dumps({"request": REQUEST}).encode("utf-8"),
+                                       headers={"Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(asked, timeout=10) as response:
             assert response.status == 200 and len(json.loads(response.read())["answer"]["picks"]) == 3
         with urllib.request.urlopen(f"{base}/", timeout=10) as response:
             assert "default-src 'none'" in response.headers["Content-Security-Policy"]
@@ -444,7 +484,7 @@ def test_an_unverifiable_care_quote_makes_the_endpoint_refuse(tmp_path, monkeypa
         return result
 
     monkeypatch.setattr(web, "answer_request", answer_with_a_planted_care_quote)
-    status, _, body = web.handle_request(f"/api/answer?q={quote(REQUEST)}", care_library(tmp_path))
+    status, _, body = post_answer(REQUEST, care_library(tmp_path))
     assert status == 500 and json.loads(body)["code"] == "quote_not_verified"
     assert planted.encode() not in body and DESCALE.encode() not in body
 

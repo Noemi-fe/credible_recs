@@ -751,7 +751,8 @@ details[open] > summary .icon { transform: rotate(180deg); }
 
 <script>
 /* How this page works, in short:
-   1. The search box sends the request to this computer's server (/api/answer?q=...) and shows a loading line, then,
+   1. The search box sends the request to this site's server (a POST to /api/answer, the request in its body: never in
+      an address, which web hosts log; Noemi's decision 5 of 16 Oct 2026) and shows a loading line, then,
       if the answer takes more than a moment, the answer's shape (grey blocks) where it will appear.
    2. The server answers with JSON (its shape is described at the top of engine/web.py).
    3. The page draws the answer. Every piece of text from the answer is added as plain text (never as HTML),
@@ -1695,7 +1696,12 @@ details[open] > summary .icon { transform: rotate(180deg); }
   async function fetchAnswer(request, signal) {
     let response;
     try {
-      response = await fetch("/api/answer?q=" + encodeURIComponent(request), { headers: { Accept: "application/json" }, signal });
+      response = await fetch("/api/answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ request }),
+        signal,
+      });
     } catch (error) {
       if (signal.aborted) return null;  // a newer search cancelled this one: nothing to show
       return [errorNotice("offline", request)];  // no reply at all: the server isn't running

@@ -232,7 +232,10 @@ def test_the_decided_values_on_the_page_equal_configs(tmp_path, monkeypatch):
                  "EVIDENCE_VALUE.no first-hand use", "EVIDENCE_HONESTY_BONUS", "VOICE_HIGH_MIN_GOOD_SIGNS",
                  "VOICE_LOW_MIN_RED_FLAGS", "PAID_PROMOTION_RED_FLAGS", "SKIP_MIN_CREDIBLE_WARNINGS",
                  "DISAGREEMENT_MIN_CREDIBLE_WARNINGS", "KIND_LEAD_RATIO", "KIND_BONUS", "LIVE_CHECK_SHOWN_DAYS",
-                 "LIBRARY_REFRESH_DAYS", "QUOTE_MAX_WORDS", "EXTRACT_MAX_COMMENTS", "NEW_ACCOUNT_DAYS",
+                 # Changed on purpose 16 Oct 2026 (the website review): each kept comment is read again within
+                 # LIBRARY_VERIFY_DAYS (was: whole threads every LIBRARY_REFRESH_DAYS), and a shown quote's check is
+                 # from the last CACHE_MAX_AGE_HOURS.
+                 "LIBRARY_VERIFY_DAYS", "CACHE_MAX_AGE_HOURS", "QUOTE_MAX_WORDS", "EXTRACT_MAX_COMMENTS", "NEW_ACCOUNT_DAYS",
                  "ESTABLISHED_ACCOUNT_YEARS", "VOICE_RECENT_YEARS", "PRICE_MAX_AGE_DAYS", "MIN_QUOTES_PER_PICK",
                  "QUOTES_PER_PICK"):
         assert name in shown, name
@@ -325,9 +328,15 @@ def test_the_search_page_links_to_how(tmp_path):
 def test_the_page_says_plainly_what_is_collected_and_what_is_not(tmp_path, monkeypatch):
     words = text_of(get_how(tmp_path, monkeypatch))
     assert "Your privacy" in words
-    for said in ("No names, accounts or IP addresses", "no cookies", "Please don't put personal details in a comment",
-                 "First time here?", "not a cookie", "Your searches aren't saved"):
+    # Changed on purpose 16 Oct 2026 (Noemi's decision 5): the page said "No names, accounts or IP addresses" and "Your
+    # searches aren't saved", while Google Cloud Run's request log kept every request's words, IP address and browser
+    # for 30 days. The request has left the address, and the page says what is true: we never write IP addresses down
+    # ourselves, Google's logs keep them (the public site's note, below), and feedback is kept privately.
+    for said in ("No names or accounts", "no cookies", "Please don't put personal details in a comment",
+                 "First time here?", "not a cookie", "We never write down your IP address ourselves",
+                 "we don't save your searches, except the request you send with feedback", "only we can read them"):
         assert said in words, said
+    assert "IP addresses, no cookies" not in words
     assert "Visits aren't counted at the moment." in words  # GoatCounter stays off until Noemi gives its code
     assert "GoatCounter" not in words
 
@@ -341,10 +350,47 @@ def test_with_visit_counting_on_the_page_names_goatcounter_and_loads_its_script(
     assert html.count(script) == 1
 
 
-def test_on_the_public_site_the_page_names_its_host_and_the_memory_only_limit(tmp_path):
+def test_on_the_public_site_the_page_names_its_host_its_logs_and_the_memory_only_limit(tmp_path):
+    # Changed on purpose 16 Oct 2026 (Noemi's decision 5): the site runs on Google Cloud Run, not on Hugging Face (since
+    # 12 Oct), and the page now says what Cloud Run's request logs keep, and that what people type is never in them.
     words = text_of(how_page.page(write(tmp_path), public=True))
-    assert "Hugging Face" in words and "in memory only" in words
-    assert "Hugging Face" not in text_of(how_page.page(write(tmp_path)))
+    assert "Google Cloud Run" in words and "in memory only" in words
+    assert "your IP address and your browser" in words and f"kept for {how_page.REQUEST_LOG_DAYS} days" in words
+    assert "What you type is never in those logs" in words
+    assert how_page.REQUEST_LOG_DAYS == 30  # Cloud Logging's default for the bucket Cloud Run's request logs go to
+    local = text_of(how_page.page(write(tmp_path)))
+    assert "Hugging Face" not in words and "Hugging Face" not in local
+    assert "Google Cloud Run" not in local  # this computer's own server keeps no such log
+
+
+# --- What the page says about checks and availability (16 Oct 2026, the website review) ---
+
+def test_quotes_are_said_to_be_checked_ahead_within_the_48_hours_not_just_before(tmp_path, monkeypatch):
+    html = get_how(tmp_path, monkeypatch)
+    words = text_of(html)
+    assert "just before" not in words.lower()
+    assert 'data-config="CACHE_MAX_AGE_HOURS"' in html and "usually ahead of time" in words
+    assert f"only uses checks from the last {config.CACHE_MAX_AGE_HOURS} hours" in words
+    # A remembered answer is made again after a day (web.ANSWER_KEEP_HOURS), and the page says so.
+    assert web.ANSWER_KEEP_HOURS == 24 and "shown for a day at most" in words
+
+
+def test_each_kept_comment_is_said_to_be_read_again_within_its_days(tmp_path, monkeypatch):
+    html = get_how(tmp_path, monkeypatch)
+    words = text_of(html)
+    assert 'data-config="LIBRARY_VERIFY_DAYS"' in html and 'data-config="LIBRARY_REFRESH_DAYS"' not in html
+    assert f"at least every {config.LIBRARY_VERIFY_DAYS} days" in words
+    assert "saved threads are read again" not in words
+
+
+def test_a_product_sold_only_abroad_is_said_to_be_shown_with_its_note(tmp_path, monkeypatch):
+    # Noemi, 15 Oct 2026 (evening): a product sold only outside the UK stays, with its note; a discontinued one is left
+    # out and named. The page had said both were left out.
+    words = text_of(get_how(tmp_path, monkeypatch))
+    note = answer.AVAILABILITY_NOT_IN_UK.split(",")[0]
+    assert f"“{note}, checked" in words and "stays in, with a note" in words
+    assert "A discontinued model is left out and named under the answer" in words
+    assert "isn't sold to UK shoppers, or is a discontinued model, it's left out" not in words
 
 
 def test_also_worth_a_look_and_the_summaries_are_explained(tmp_path, monkeypatch):

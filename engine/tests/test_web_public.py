@@ -13,14 +13,13 @@ import threading
 import urllib.error
 import urllib.request
 from pathlib import Path
-from urllib.parse import quote
 
 import pytest
 
 from engine import feedback, pipeline, web
 from engine.config import (FEEDBACK_MAX_BODY_BYTES, FEEDBACK_MAX_COMMENT_CHARS, FEEDBACK_MAX_PRODUCT_TYPE_CHARS,
                            RATE_LIMIT_ANSWERS, RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS, WEB_MAX_REQUEST_CHARS)
-from engine.tests.test_web import REQUEST, kettle_library
+from engine.tests.test_web import REQUEST, kettle_library, post_answer
 
 USEFUL = {"kind": "answer_feedback", "request": "electric kettle that lasts 10+ years", "verdict": "useful",
           "comment": "Clear and quick, thanks.", "product_type": "electric kettle", "status": "ok"}
@@ -156,7 +155,7 @@ def test_a_remembered_answer_comes_back_at_once_while_a_new_one_is_worked_out(tm
     # On the public site a new answer can take a minute (every quote is checked live on Reddit, a few seconds apart).
     # Answers are still worked out one at a time, but one already remembered never waits behind it.
     library_dir = kettle_library(tmp_path)
-    assert web.handle_request(f"/api/answer?q={quote(REQUEST)}", library_dir)[0] == 200  # remembered
+    assert post_answer(REQUEST, library_dir)[0] == 200  # remembered
     started, release = threading.Event(), threading.Event()
 
     def slow(request, library_dir):
@@ -226,6 +225,11 @@ def own_origin(server) -> str:
     return f"http://127.0.0.1:{server.server_address[1]}"
 
 
+# Asking for an answer as the page does since 16 Oct 2026 (Noemi's decision 5): a POST with the request in a JSON body.
+ASKED = {"Content-Type": "application/json"}
+EMPTY = {"request": ""}
+
+
 def test_the_local_page_can_send_feedback(local_server, fake_store):
     status, _, data = send(local_server, "/api/feedback", USEFUL,
                            {"Content-Type": "application/json", "Origin": own_origin(local_server)})
@@ -252,7 +256,9 @@ def test_feedback_addressed_to_another_host_is_refused(local_server, fake_store)
     assert status == 403 and data["code"] == "wrong_host" and fake_store.records == []
 
 
-@pytest.mark.parametrize("path, status, allow", [("/", 405, "GET"), ("/api/answer", 405, "GET"), ("/nope", 404, None)])
+# Changed on purpose 16 Oct 2026 (Noemi's decision 5): answers are asked for with a POST now (test_request_privacy.py),
+# so /how stands in for /api/answer as a page that takes GET only.
+@pytest.mark.parametrize("path, status, allow", [("/", 405, "GET"), ("/how", 405, "GET"), ("/nope", 404, None)])
 def test_a_post_anywhere_else_is_not_allowed_or_not_found(local_server, path, status, allow):
     got, headers, data = send(local_server, path, USEFUL,
                               {"Content-Type": "application/json", "Origin": own_origin(local_server)})
@@ -262,7 +268,7 @@ def test_a_post_anywhere_else_is_not_allowed_or_not_found(local_server, path, st
 
 def test_local_mode_has_no_rate_limit(local_server):
     local_server.limits["answers"] = web.RateLimiter(1, 600)  # even a tiny limit is never applied here
-    assert [send(local_server, "/api/answer?q=")[0] for _ in range(3)] == [400, 400, 400]
+    assert [send(local_server, "/api/answer", EMPTY, ASKED)[0] for _ in range(3)] == [400, 400, 400]
 
 
 def test_the_local_security_policy_is_unchanged():
@@ -297,14 +303,14 @@ def public_send(server, path: str, body=None, client: str = "203.0.113.7", heade
 
 @pytest.mark.parametrize("host", [HOST, HOST + ":443", HOST.upper()])
 def test_public_mode_answers_requests_for_its_own_host(public_server, host):
-    status, _, data = public_send(public_server, f"/api/answer?q={quote(REQUEST)}", headers={"Host": host})
+    status, _, data = public_send(public_server, "/api/answer", {"request": REQUEST}, headers={"Host": host, **ASKED})
     assert status == 200 and len(data["answer"]["picks"]) == 3
 
 
 @pytest.mark.parametrize("host", ["evil.example", "127.0.0.1:{port}", "localhost:{port}", ""])
 def test_public_mode_refuses_any_other_host(public_server, host):
     host = host.format(port=public_server.server_address[1])
-    status, _, data = public_send(public_server, "/api/answer?q=kettle", headers={"Host": host})
+    status, _, data = public_send(public_server, "/api/answer", {"request": "kettle"}, headers={"Host": host, **ASKED})
     assert status == 403 and data["code"] == "wrong_host"
     assert "127.0.0.1" not in data["error"]  # the public site's own words
 
@@ -323,7 +329,8 @@ def test_the_ready_check_answers_cloud_runs_probe_whatever_host_it_names(public_
 
 def test_a_refused_host_is_named_once_in_the_servers_window_so_the_list_can_be_fixed(public_server, capfd):
     for _ in range(3):
-        public_send(public_server, "/api/answer?q=kettle", headers={"Host": "internal-proxy.example:7860"})
+        public_send(public_server, "/api/answer", {"request": "kettle"},
+                    headers={"Host": "internal-proxy.example:7860", **ASKED})
     said = capfd.readouterr().err
     assert said.count("internal-proxy.example:7860") == 1 and "CREDIBLE_RECS_ALLOWED_HOSTS" in said
     assert "203.0.113.7" not in said  # never who sent it
@@ -339,10 +346,13 @@ def test_public_feedback_must_come_from_the_sites_own_page(public_server, fake_s
 
 def test_each_visitor_may_ask_only_so_many_answers_in_a_while(public_server):
     public_server.limits["answers"] = web.RateLimiter(2, 600)
-    assert [public_send(public_server, "/api/answer?q=")[0] for _ in range(2)] == [400, 400]  # refused or not, it counts
-    status, headers, data = public_send(public_server, "/api/answer?q=")
+    # Asked with a POST since 16 Oct 2026 (Noemi's decision 5), the request in the body (was GET /api/answer?q=).
+    asks = [public_send(public_server, "/api/answer", EMPTY, headers=ASKED)[0] for _ in range(2)]
+    assert asks == [400, 400]  # refused or not, it counts
+    status, headers, data = public_send(public_server, "/api/answer", EMPTY, headers=ASKED)
     assert status == 429 and data["code"] == "too_many_requests" and int(headers["Retry-After"]) > 0
-    assert public_send(public_server, "/api/answer?q=", client="198.51.100.4")[0] == 400  # another visitor isn't held up
+    other = public_send(public_server, "/api/answer", EMPTY, client="198.51.100.4", headers=ASKED)
+    assert other[0] == 400  # another visitor isn't held up
 
 
 def test_pages_are_never_rate_limited(public_server):
@@ -378,7 +388,7 @@ def test_the_visitor_is_the_last_public_address_the_proxy_names():
 
 
 def test_public_mode_keeps_no_log_of_addresses_or_requests(public_server, capfd):
-    public_send(public_server, "/api/answer?q=kettle%20for%20my%20flat")
+    public_send(public_server, "/api/answer", {"request": "kettle for my flat"}, headers=ASKED)
     captured = capfd.readouterr()
     assert "203.0.113.7" not in captured.err + captured.out and "for my flat" not in captured.err + captured.out
 

@@ -4,6 +4,10 @@ Noemi's decision, 10 Oct 2026 (brief, blind test protocol step 3: "names removed
 shuffled"). Every answer a tester reads, ours, Vetted's and ChatGPT's, is put into the same plain template, **in the
 tool's own words**. Nothing is reworded. Words are only cut, and only by these rules.
 
+Noemi's decision 7 of 16 Oct 2026: a pick's note that it isn't sold in the UK (with the day that was checked), that it
+is sold second-hand only, or that it needs a prescription is kept (rule 7). Until then the template dropped "Not sold
+in the UK" (b06's and b09's third picks would have lost it) and the prescription-only note.
+
 ## The template
 
 ```
@@ -17,6 +21,8 @@ tool's own words**. Nothing is reworded. Words are only cut, and only by these r
 Downside: <the tool's own words, if it gave one>
 
 Note: <a caution, if the tool gave one>
+
+<that it isn't sold in the UK, is sold second-hand only, or needs a prescription, if the tool said so>
 
 Price: <the price, if the tool gave one>
 ```
@@ -38,12 +44,18 @@ Then `**2. ...**` and `**3. ...**`, and nothing before, between or after the pic
    become one sentence, joined with commas, in the tool's order.
 6. **What is dropped.** Our score breakdown, our care tips and our "how many voices" support line, which have no
    counterpart in the rivals' answers. The rivals' general advice that isn't about one of the three picks.
+7. **Where it can't be bought new, kept** (Noemi's decision 7 of 16 Oct 2026). A pick's note that it isn't sold in the
+   UK, with the day that was checked ("Not sold in the UK, checked 15 Oct 2026."), that it is sold second-hand only
+   ("Sold second-hand only."), or that it needs a prescription ("Prescription-only in the UK: ask a doctor or
+   pharmacist.") is kept whole, on its own line before the price, for every tool that says so: testers should know
+   before they trust a pick with their money. It counts toward the 90 words; the reason or the evidence is cut instead.
 
 ## Who does what
 
 - `python -m engine.blind_test capture` saves our raw answers on the day the rivals are asked.
-- Noemi asks Vetted and ChatGPT the same questions that day, with the wording in capture.json, pastes each answer into
-  raw/vetted/<id>.md and raw/chatgpt/<id>.md, and keeps a screenshot of each in screenshots/.
+- Noemi asks Vetted and ChatGPT the same questions that day, with the wording in capture.json, as a UK shopper
+  (RUNBOOK.md, "Ask as a UK shopper"), pastes each answer into raw/vetted/<id>.md and raw/chatgpt/<id>.md, and keeps a
+  screenshot of each in screenshots/.
 - `python -m engine.blind_test shown <answers folder>` writes our answers into shown/ours/ with the template,
   automatically.
 - Claude puts each rival answer into the template by these rules, in shown/vetted/ and shown/chatgpt/, and Noemi

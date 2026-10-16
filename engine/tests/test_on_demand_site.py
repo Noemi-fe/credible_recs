@@ -9,7 +9,6 @@ Every service is a made-up stand-in (engine/tests/fake_google.py, on_demand_fake
 import json
 import threading
 from datetime import timedelta
-from urllib.parse import quote
 
 import pytest
 
@@ -26,7 +25,7 @@ from engine.live_check import LiveChecker
 from engine.tests.on_demand_fakes import NOW, FakeArchive, FakeEmbed, FakeGemini, Ticks, archive, body_of, gemini
 from engine.tests.test_live_check import Clock
 from engine.verify_quotes import find_quote
-from engine.tests.test_web import REQUEST, kettle_library
+from engine.tests.test_web import REQUEST, kettle_library, post_answer
 
 NAME = "credible-test-on-demand"
 JOB = "projects/credible-picks/locations/europe-west1/jobs/credible-recs-reader"
@@ -49,7 +48,7 @@ class Site:
         monkeypatch.setattr(web, "on_demand", self.reader)
 
     def ask(self, request: str) -> dict:
-        status, _, body = web.handle_request(f"/api/answer?q={quote(request)}", self.library)
+        status, _, body = post_answer(request, self.library)  # a POST since 16 Oct 2026 (Noemi's decision 5)
         assert status == 200
         return json.loads(body)
 
@@ -304,3 +303,20 @@ def test_a_request_queued_again_a_month_later_isnt_late_for_its_first_reading(tm
     site.now = NOW + timedelta(days=31)  # its wait is over: queued again
     data = site.ask(TEAPOT)
     assert data["on_demand"]["state"] == "reading" and data["on_demand"]["read_before"] is True
+
+
+def test_switched_off_an_unread_product_gets_the_no_threads_message_and_no_reading_starts(tmp_path, monkeypatch):
+    # Noemi's decision 6 of 16 Oct 2026: on-demand reading is off for the interviews. A deploy without
+    # CREDIBLE_RECS_ON_DEMAND=on gives the site none of its settings (deploy/cloudrun/on_demand.sh), so the site has no
+    # reader: nothing is queued or started, and the answer is the honest no-threads message, worked out like any other.
+    from engine.answer import NO_THREADS
+
+    assert on_demand.site_reader_from_env({}, tmp_path) is None
+    monkeypatch.setattr(web, "on_demand", None)
+    library = kettle_library(tmp_path)
+    status, _, body = post_answer(TEAPOT, library)
+    data = json.loads(body)
+    assert status == 200 and "on_demand" not in data and data["answer"]["picks"] == []
+    assert data["answer"]["message"] == NO_THREADS.format(products="teapots")
+    how = web.handle_request("/how", library)[2].decode("utf-8")
+    assert "Products we haven't read about yet" not in how  # the privacy section's note is only for when it is on
