@@ -91,7 +91,9 @@ def test_obvious_missing_words_of_other_needs(request_text, body, need):
 @pytest.mark.parametrize("request_text, needs", [
     # Words that only comments use for a need, so a request in them keeps its own word.
     ("litter box that doesn't smell", ["smell"]),
-    ("moisturiser for rosacea", ["rosacea"]),
+    # Changed on purpose 16 Oct 2026 (the interview-fixes builder, the orchestrator's item): rosacea reads as sensitive
+    # skin, so its rules apply ("retinol for someone with rosacea" had picked Differin Gel); was ["rosacea"].
+    ("moisturiser for rosacea", ["sensitive"]),
     ("frying pan that won't react with tomatoes", ["react", "tomatoes"]),
     # Nor does a kitchen request's cast iron name the white cast.
     ("a cast iron kettle", ["cast", "iron"]),

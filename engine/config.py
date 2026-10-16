@@ -770,11 +770,13 @@ NEEDS: dict[str, tuple[str, ...]] = {
              "oil-control", "controls oil", "control oil", "controlling oil", "mattif", "shine control"),
     "combination": ("combination", "combo skin", "t-zone", "t zone", "tzone"),  # "an oily t-zone": 15 Oct 2026
     # 15 Oct 2026 (Claude): "broke out", "breaking out", blemishes and zits too.
+    # "break me out" (16 Oct 2026: "sunscreen that doesn't break me out" had a need "break").
     "acne-prone": ("acne", "breakout", "break out", "broke me out", "breaks me out", "broke out", "breaks out",
-                   "breaking out", "broken out", "pimple", "blemish", "zit"),
+                   "breaking out", "broken out", "pimple", "blemish", "zit", "break me out", "breaking me out"),
     "normal": ("normal skin",),
+    # "aging skin": 15 Oct 2026; a decade of life ("night cream for my 40s"), 16 Oct 2026 (the interview-fixes builder).
     "mature": ("mature", "anti-aging", "anti-ageing", "anti aging", "anti ageing", "aging", "ageing", "wrinkle",
-               "fine line"),  # "aging skin": 15 Oct 2026
+               "fine line", "40s", "50s", "60s", "over 40", "over 50", "older skin"),
     # Must-haves (engine/query.py, MUST_HAVES): a comment about the thing itself talks about the need, for or against.
     "fragrance-free": ("fragrance", "unscented", "scent", "perfume"),
     "non-comedogenic": ("comedo", "noncomedogenic", "clog"),  # closed comedones are clogged pores: 15 Oct 2026
@@ -903,10 +905,26 @@ HAIR_NEEDS: dict[str, tuple[str, ...]] = {
 # Module 1's "lasts 10+ years" (min_years) names "lasting" as well.
 NEED_REQUEST_WORDS: dict[str, str] = {
     "first": "beginner", "last": "lasting", "year": "lasting", "decade": "lasting", "lifetime": "lasting",
+    # 16 Oct 2026 (the interview-fixes builder, Claude's call, reported to Noemi): rosacea is sensitive skin (the
+    # sensitive-skin rules apply: no strong or prescription-only retinoid for "retinol for someone with rosacea", which
+    # had picked Differin Gel), replacing the call of 15 Oct that a request about rosacea asks about rosacea itself;
+    # comments about rosacea already talked about sensitive skin (NEED_COMMENT_WORDS).
+    "rosacea": "sensitive",
 }
 # Words of a request too common in comments to show a need: "doesn't leave a white cast", "for a home cook", and
-# "burr coffee grinder" (the kind of grinder nearly every grinder comment is about).
-NEED_IGNORED_WORDS = ("leave", "cook", "burr")
+# "burr coffee grinder" (the kind of grinder nearly every grinder comment is about); "kitchen", which nearly every
+# kitchen comment says (16 Oct 2026: "wine cooler for the kitchen" had a need "kitchen"; a small kitchen is a need of
+# its own, NEED_PHRASES).
+NEED_IGNORED_WORDS = ("leave", "cook", "burr", "kitchen")
+# Two words of a request that make one need (16 Oct 2026, the interview-fixes builder; Claude's choice, reported to
+# Noemi), named whole in the reason ("about dark circles", not "about dark or circles"; "about pour over", whose "over"
+# is no need word). Comments and titles are still found by each word, as before: found only as the two words together,
+# readings were stricter (the espresso machine answer read fewer threads about steam wands and lost its machines with
+# one). One written with a hyphen ("pour-over", "non-stick") was one word already.
+NEED_PHRASES = ("non stick", "pour over", "dark circles", "dark spots", "dark marks", "dark eye circles", "back pain",
+                "neck pain", "joint pain", "flat feet", "wide feet", "steam wand", "brown rice", "frozen fruit",
+                "small kitchen", "small space", "home gym", "car boot", "pressure sensor", "side sleeper",
+                "back sleeper", "stomach sleeper", "loose leaf", "battery life", "noise cancelling", "noise canceling")
 # A recommendation saying its product didn't help with a need (15 Oct 2026, Claude, reported to Noemi; engine.needs.
 # said_not_to_help): "it did nothing for my oily skin", "doesn't help redness much", "I bought it for my dark spots,
 # which it didn't help with". It talks about the need, but against it, like a quote saying the opposite of the request
@@ -1096,9 +1114,17 @@ PRODUCT_FACT_RULES: dict[str, dict] = {
 # a word just before it says the opposite ("not non-stick", "instead of non-stick").
 _NOT_REFUSED = "(?<!non-)" + "".join(f"(?<!{before} )" for before in ("no", "not", "non", "without", "without a",
                                                                          "without an", "without any", "free of"))
+# 16 Oct 2026 (the interview-fixes builder, Claude's call, reported to Noemi): Teflon is PTFE, a PFAS (her rule of 11 Oct
+# 2026), so refusing Teflon, PTFE or PFOA ("without teflon", "no ptfe", "teflon-free", "pfoa free") or naming forever
+# chemicals asks for PFAS-free too; "a teflon pan" doesn't. Every PFAS-free pan is also free of PFOA, so reading a
+# PFOA-free ask as PFAS-free only leaves out PTFE pans made without PFOA, which that shopper is most likely avoiding.
+_PFAS_WORDS = r"(?:teflon|ptfe|pfoa)"
+_REFUSED_BEFORE = "(?:" + "|".join(f"(?<={before} )" for before in (
+    "no", "not", "non", "without", "without any", "free of", "free from", "avoid", "avoiding", "isn't", "isnt",
+    "aren't", "not a", "not made with", "instead of", "rather than", "other than")) + "|(?<=non-))"
 PRODUCT_FACT_REQUEST_WORDS: dict[str, tuple[str, ...]] = {
     "no white cast": (r"white cast",),
-    "PFAS-free": (r"pfas",),
+    "PFAS-free": (r"pfas", rf"{_REFUSED_BEFORE}{_PFAS_WORDS}", rf"{_PFAS_WORDS}[- ]?free", r"forever[- ]chemicals?"),
     "sulfate-free": (r"sul(?:f|ph)ate[- ]?free", r"(?<=no )sul(?:f|ph)ates?", r"(?<=without )sul(?:f|ph)ates?"),
     # 15 Oct 2026 (Noemi's decision 2): "with SPF", "spf lip balm", "lip balm with sunscreen" ask for SPF; "without
     # SPF", "no SPF" and "SPF-free" don't. It is a requirement only of the types that can have the fact (lip balms).
@@ -1382,8 +1408,22 @@ OPPOSITE_QUOTE_PATTERNS["dry hair"] = _DRYING + _STRIPPING + _CLARIFYING
 OPPOSITE_QUOTE_PATTERNS["oily hair"] = _HEAVY
 OPPOSITE_QUOTE_PATTERNS["fine hair"] = _HEAVY
 OPPOSITE_QUOTE_PATTERNS["frizzy"] = _FRIZZ
+# PFAS-free (16 Oct 2026, the interview-fixes builder; Claude's call, reported to Noemi): Teflon is PTFE, a PFAS (her rule
+# of 11 Oct 2026), so a quote recommending a Teflon or PTFE pan ("just buy a cheap teflon pan", "PTFE pans are fine") or
+# saying the pan is one ("the coating is PTFE", "teflon-coated") says the opposite of a PFAS-free ask (b10's Ballarini
+# pick had quoted advice to buy a cheap Teflon pan); "teflon-free" and "PTFE-free" don't, nor a negation before it.
+_TEFLON = r"(?:teflon|ptfe)(?![- ]?free)"
+OPPOSITE_QUOTE_PATTERNS["PFAS-free"] = (
+    rf"\b(?:buy|get|go with|grab|use|stick with|stick to|recommend|try|pick up|choose)\b(?:\s+[a-z']+){{0,4}}?\s+"
+    rf"{_TEFLON}\b",
+    rf"\b{_TEFLON}\b(?:\s+[a-z-]+){{0,2}}?\s+(?:is|are|'s)\s+(?:perfectly\s+|totally\s+|completely\s+|really\s+)?"
+    rf"(?:fine|safe|great|good|ok|okay|best|the way to go)\b",
+    rf"\b(?:it's|it is|they're|they are|coating is|coating's)\s+(?:a\s+|just\s+)?{_TEFLON}\b",
+    rf"\b{_TEFLON}[- ]?coat(?:ed|ing)\b",
+    rf"\bcoated (?:with|in) {_TEFLON}\b",
+)
 OPPOSITE_NEGATED_IN_SENTENCE = ("not drying", "strip", "gentle", "colour-treated", "dry hair", "oily hair", "fine hair",
-                                "frizzy")
+                                "frizzy", "PFAS-free")
 # A thread whose title asks for the opposite kind of product (14 Oct 2026, the need-quality builder): "Which clarifying
 # shampoo for my curls?" is no thread about a shampoo that isn't drying, a gentle one, or one for dry or colour-treated
 # hair, however much its title and post talk about curls or dryness: its answers are clarifying shampoos. The library's

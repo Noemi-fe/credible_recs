@@ -780,10 +780,18 @@ _SEEKING = ("looking", "searching", "shopping", "hunting", "recommendations", "r
             "opinions", "thoughts", "reviews")
 _SEEKING_AFTER = ("buying", "choosing", "getting", "picking", "finding", "purchasing", "selecting", "replacing",
                   "upgrading")
+# Since 16 Oct 2026 (the interview-fixes builder) also what a product is easy, gentle or kind on, or won't dull, blunt or
+# damage, with or without "my" or "the": "cutting board that's easy on knives" or "won't blunt my knives" asks for a
+# cutting board, not for a knife too.
 _CONTEXT_MARKER = re.compile(
     r"\b(?P<word>for|with|without|compatible with|that fits|to fit|fits|fitting)\s+"
     r"(?:(?:my|our|your|his|her|their|a|an|the|this|that)\s+)?"
-    r"|\b(?:on|in|into|onto|to|under|inside)\s+(?:my|our|your|his|her|their|a|an|the)\s+")
+    r"|\b(?:on|in|into|onto|to|under|inside)\s+(?:my|our|your|his|her|their|a|an|the)\s+"
+    r"|\b(?:easy|easier|gentle|gentler|kind|kinder|soft|softer|hard|harsh|rough|safe)\s+(?:on|to)\s+"
+    r"(?:(?:my|our|your|his|her|their|a|an|the)\s+)?"
+    r"|\b(?:won['’]?t|will not|doesn['’]?t|does not|don['’]?t|do not|never|without)\s+"
+    r"(?:dull|blunt|damage|scratch|ruin|chip|wreck|destroy|hurt)(?:s|ed|ing)?\s+"
+    r"(?:(?:my|our|your|his|her|their|a|an|the)\s+)?")
 _CLAUSE_BREAK = re.compile(r"[,;/&.?!()]|\b(?:and|or|but|vs|versus|plus|then|also|if)\b")
 CONTEXT_WORDS = 3  # a product's name may start this many words into what a product is for: "for my new sony camera"
 

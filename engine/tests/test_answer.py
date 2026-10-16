@@ -690,6 +690,28 @@ def test_what_says_the_opposite_of_a_request(ask, quote, against):
     assert _says_the_opposite(quote, (ask,)) is against
 
 
+# 16 Oct 2026 (the interview-fixes builder): in a PFAS-free answer, a quote recommending a Teflon (PTFE) pan, or saying
+# the pan is one, says the opposite of the ask (b10's third pick had quoted advice to buy a cheap Teflon pan). Made-up
+# text.
+@pytest.mark.parametrize("quote, against", [
+    ("Honestly just buy a cheap teflon pan and swap it for a new one when it wears.", True),
+    ("Get a decent PTFE pan for eggs, nothing beats it.", True),
+    ("Teflon is perfectly safe as long as you don't overheat it.", True),
+    ("PTFE pans are fine for most people.", True),
+    ("The coating is PTFE, so treat it gently.", True),
+    ("It's a Teflon-coated pan that works great.", True),
+    ("I wanted something without teflon, and this ceramic one is great.", False),
+    ("I would never buy a teflon pan again.", False),
+    ("It's PTFE-free and still slick after a year.", False),
+    ("My old teflon pan flaked, so I replaced it with this.", False),
+    ("No teflon, no worries, and eggs slide right off.", False),
+])
+def test_a_teflon_recommendation_says_the_opposite_of_pfas_free(quote, against):
+    from engine.answer import _says_the_opposite
+
+    assert _says_the_opposite(quote, ("PFAS-free",)) is against
+
+
 # A product that isn't drying or stripping, and a gentle one (14 Oct 2026, the need-quality builder): found on
 # the library, "shampoo for curly hair that isn't drying" picked a detox shampoo and "gentle shampoo for wavy hair" an
 # anti-dandruff one its writer used for a deep clean. A quote describing a product as drying, stripping or harsh, or as a

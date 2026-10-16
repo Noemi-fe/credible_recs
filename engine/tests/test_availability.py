@@ -183,6 +183,28 @@ def test_a_brand_pick_is_never_checked_for_availability(tmp_path):
     assert "Lodge cast iron skillet line" not in result.left_out_unavailable
 
 
+def test_a_brand_line_researched_as_not_sold_in_the_uk_says_so(tmp_path):
+    # 16 Oct 2026 (the interview-fixes builder): b07's Kiwi and b08's Field lines, whose entries under the brand say they
+    # aren't sold in the UK, showed "Availability not checked yet"; a line says "Not sold in the UK, checked <date>" as a
+    # product does (Noemi, 15 Oct 2026, evening), and stays in the answer.
+    lodge = Price(product="Lodge", category="kitchen", price=None, currency="GBP", shop="Made-up US Shop",
+                  url="https://shop.example/lodge", checked_on=TODAY, available=False, not_in_uk=True)
+    result = answer_request("cast iron skillet that lasts", library_dir=skillet_library(tmp_path), today=TODAY,
+                            prices=[lodge])
+    [pick] = [p for p in result.answer.picks if p.name == "Lodge cast iron skillet line"]
+    assert pick.availability.text.startswith("Not sold in the UK, checked") and pick.availability.available is False
+    assert "Lodge cast iron skillet line" not in result.left_out_unavailable
+
+
+def test_a_brand_line_is_not_said_to_be_abroad_only_when_one_of_its_products_here_is_sold_in_the_uk(tmp_path):
+    lodge = Price(product="Lodge", category="kitchen", price=None, currency="GBP", shop="Made-up US Shop",
+                  url="https://shop.example/lodge", checked_on=TODAY, available=False, not_in_uk=True)
+    result = answer_request("cast iron skillet that lasts", library_dir=skillet_library(tmp_path), today=TODAY,
+                            prices=[lodge, listed("Lodge Blacklock skillet")])
+    [pick] = [p for p in result.answer.picks if p.name == "Lodge cast iron skillet line"]
+    assert pick.availability.text == wording.AVAILABILITY_UNKNOWN
+
+
 # --- The answer ---
 
 def knife(available: bool | None = True, price: float | None = None, url: str = "https://shop.example/tojiro-dp-gyuto",

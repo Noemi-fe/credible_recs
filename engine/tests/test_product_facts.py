@@ -131,6 +131,18 @@ def test_the_committed_facts_list_is_valid():
     assert all(e.sources and all(s.startswith("https://") for s in e.sources) and e.checked_on for e in loaded)
 
 
+def test_greenpans_frying_pans_are_confirmed_pfas_free_and_non_stick():
+    # 16 Oct 2026 (the interview-fixes builder): GreenPan UK's frying-pan pages list only ceramic non-stick frying pans
+    # (its one uncoated item there is a stainless steel set, another type), and its FAQ says its non-stick coating is
+    # Thermolon ceramic, with no PFAS including PTFE; b10's first pick had said "we couldn't confirm it's non-stick".
+    from engine.product_facts import find_brand_facts, unconfirmed
+
+    entry = find_brand_facts(["GreenPan"], "kitchen", load_product_facts(), ["frying", "pan"], "frying pan")
+    assert entry is not None and entry.facts == {"pfas_free": True, "non_stick": True}
+    assert entry.checked_on == date(2026, 10, 16) and all("greenpan.co.uk" in s for s in entry.sources)
+    assert unconfirmed(parse_query("non-stick frying pan without PFAS that actually lasts"), entry) == []
+
+
 def test_an_entry_loads_with_its_facts_sources_and_date(tmp_path):
     [loaded] = load_product_facts(write_facts(tmp_path, [entry()]))
     assert (loaded.product, loaded.category, loaded.product_type) == ("Galderma Differin Gel", "skincare", "retinoid")
@@ -294,6 +306,31 @@ def test_the_uk_name_finds_the_us_name():
 ])
 def test_what_a_request_asks_for(request_text, asks):
     assert asks <= set(request_asks(parse_query(request_text)))
+
+
+# 16 Oct 2026 (the interview-fixes builder): Teflon is PTFE, and PTFE is a PFAS (Noemi's rule of 11 Oct 2026), so a
+# request refusing Teflon, PTFE or PFOA, or naming forever chemicals, asks for PFAS-free. "non stick pan without teflon
+# that lasts" (an interviewee request) had picked PTFE pans.
+@pytest.mark.parametrize("request_text", [
+    "non stick pan without teflon that lasts",
+    "frying pan with no teflon",
+    "teflon-free frying pan",
+    "teflon free non stick pan",
+    "non-stick pan that isn't teflon",
+    "ptfe-free frying pan",
+    "frying pan with no ptfe",
+    "frying pan without any ptfe or pfoa",
+    "pfoa-free non stick pan",
+    "frying pan without forever chemicals",
+    "non stick pan, worried about forever chemicals",
+])
+def test_refusing_teflon_ptfe_or_pfoa_asks_for_pfas_free(request_text):
+    assert "PFAS-free" in request_asks(parse_query(request_text))
+
+
+def test_a_teflon_pan_asked_for_isnt_a_pfas_free_one():
+    for text in ("teflon frying pan that lasts", "best ptfe non stick pan", "is teflon safe? frying pan"):
+        assert "PFAS-free" not in request_asks(parse_query(text)), text
 
 
 def test_a_request_doesnt_ask_for_what_it_only_mentions():
@@ -877,3 +914,20 @@ def test_a_facts_entry_of_another_type_is_never_used():
     shampoo = known("L'Oréal EverPure Clarifying Shampoo", category="haircare", product_type="shampoo", sulfate_free=True)
     assert find_facts("L'Oréal EverPure Clarifying Shampoo", "haircare", [shampoo], "hair mask") is None
     assert find_facts("L'Oréal EverPure Clarifying Shampoo", "haircare", [shampoo], "shampoo") == shampoo
+
+
+def test_curated_entries_are_named_as_their_products_not_as_lines():
+    # 16 Oct 2026 (the interview-fixes builder): a pick with a facts entry is shown under the entry's name, so the
+    # entries "Verb Ghost line" (its source is the Ghost Shampoo's page) and "COSRX Salicylic Acid Daily Gentle Cleanser
+    # (SA cleanser)" had been shown so in shampoo and cleanser answers. Writers' short name still finds the cleanser.
+    facts = load_product_facts()
+    names = {entry.product for entry in facts}
+    assert "Verb Ghost Shampoo" in names and "Verb Ghost line" not in names
+    assert "COSRX Salicylic Acid Daily Gentle Cleanser" in names and not any("(SA cleanser)" in n for n in names)
+    for listed in ("prices.json", "product_pages.json"):
+        raw = json.loads((DEFAULT_PRODUCT_FACTS.parent / listed).read_text(encoding="utf-8"))
+        assert not any("(SA cleanser)" in entry["product"] for entry in next(iter(raw.values()))), listed
+    found = find_facts("COSRX SA cleanser", "skincare", facts, product_type="cleanser")
+    assert found is not None and found.product == "COSRX Salicylic Acid Daily Gentle Cleanser"
+    ghost = find_facts("Verb Ghost", "haircare", facts, product_type="shampoo")
+    assert ghost is not None and ghost.product == "Verb Ghost Shampoo"

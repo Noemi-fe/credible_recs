@@ -1312,6 +1312,14 @@ _STOPWORDS = {
     "out",
     # ... nor how much ("very fine and slightly oily hair", "isn't too heavy").
     "too", "so", "slightly", "extremely", "super", "quite", "somewhat", "kinda", "fairly", "bit", "little",
+    # 16 Oct 2026 (the interview-fixes builder): filler the reviews found in reason lines ("about someone", "about
+    # makes", "about steam, wand or at", "about enameled or from"), each found in nearly any comment: who it is for,
+    # what a product does in general, how much to spend, how quickly, "X free" (X-free asks about X, as "-free" does),
+    # numbers in words and "easy" ("easy on the eyes": the eyes are the need).
+    "someone", "somebody", "anyone", "person", "people", "makes", "make", "fixes", "fix", "handles", "well", "quickly",
+    "at", "least", "willing", "spend", "spending", "proper", "from", "which", "recommend", "recommendation", "vs",
+    "versus", "all", "free", "pls", "please", "plz", "similar", "daily", "pretty", "easy", "uk", "one", "two", "three",
+    "four", "five", "six", "seven", "eight", "nine", "ten",
 }
 
 
@@ -1325,6 +1333,10 @@ def need_words(query: ParsedQuery) -> list[str]:
     # Trimmed as the request's words are (15 Oct 2026): "headphones", a type's own name, had become the need "headphone"
     # ("1 of them about headphones" in a headphones answer's reasons).
     product_words |= {_stem(w) for w in product_words}
+    # Their plurals too (16 Oct 2026): "lips" in a lip balm request, "knives" in a knife sharpener's, which the plural
+    # trim leaves as they are (short words, "fe" to "ves").
+    plurals = {w + "s" for w in product_words} | {w[:-2] + "ves" for w in product_words if w.endswith("fe")}
+    product_words |= plurals | {_stem(w) for w in plurals}
     words, text = [], query.text.lower()
     if query.product_type == "lip balm":
         # Sun protection for the lips is a lip balm with SPF (15 Oct 2026, Noemi's decision 2): the words naming the
@@ -1558,8 +1570,35 @@ def _title_has(lowered_title: str, word: str) -> bool:
                    for t in _title_words(lowered_title).split())
     candidates = _title_words(lowered_title)
     if len(word) >= 4:
-        return f" {word}" in candidates
+        return any(f" {form}" in candidates for form in spelling_variants(word))
     return f" {word} " in candidates
+
+
+@cache
+def spelling_variants(word: str) -> tuple[str, ...]:
+    """The beginnings a need word of 4 letters or more is found by, in British and US spellings (16 Oct 2026, the
+    interview-fixes builder: "a vitamin c serum that doesn't oxidise" found 1 pick, "oxidize" 3, since most writers
+    spell it the US way): -ise and -ize ("oxidis", "oxidiz", and "oxidat" for oxidation), -our and -or ("colour",
+    "color"), -lling and -ling ("cancel" for cancelling, canceling and cancellation). Other words are found by
+    themselves only."""
+    found = _ISE.fullmatch(word)
+    if found:
+        root = found.group("root")
+        forms = [root + "is", root + "iz"]
+        return tuple(forms + [root + "at"] if found.group("end") in ("e", "es", "ed", "ing") else forms)
+    found = _OUR.fullmatch(word)
+    if found:
+        root = found.group("root")
+        return root + "our", root + "or"
+    found = _DOUBLE_L.fullmatch(word)
+    if found:
+        return (found.group("root") + "l",)
+    return (word,)
+
+
+_ISE = re.compile(r"(?P<root>[a-z]{3,}?)i[sz](?P<end>e|es|ed|er|ers|ing|ation|ations)")
+_OUR = re.compile(r"(?P<root>[a-z]*[aeiou][b-df-hj-np-tv-z])ou?r(?P<end>s|ed|ing|ful|less|ite|ites|able)?")
+_DOUBLE_L = re.compile(r"(?P<root>[a-z]{3,}[aeiou])ll?(?P<end>ing|ed|er|ers|ation)")
 
 
 def _title_words(lowered_title: str) -> str:

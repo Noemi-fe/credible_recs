@@ -647,13 +647,15 @@
    "category": "kitchen",
    "product_type": "frying pan",
    "facts": {
-    "pfas_free": true
+    "pfas_free": true,
+    "non_stick": true
    },
    "sources": [
     "https://greenpan.co.uk/pages/faqs",
-    "https://greenpan.co.uk/collections/frying-pans"
+    "https://greenpan.co.uk/collections/frying-pans",
+    "https://greenpan.co.uk/collections/frying-pans?page=3"
    ],
-   "checked_on": "2026-10-10"
+   "checked_on": "2026-10-16"
   },
   {
    "product": "OXO non-stick pan",
@@ -1047,7 +1049,7 @@
    "checked_on": "2026-10-10"
   },
   {
-   "product": "COSRX Salicylic Acid Daily Gentle Cleanser (SA cleanser)",
+   "product": "COSRX Salicylic Acid Daily Gentle Cleanser",
    "category": "skincare",
    "product_type": "cleanser",
    "facts": {
@@ -3002,7 +3004,7 @@
    "checked_on": "2026-10-15"
   },
   {
-   "product": "Verb Ghost line",
+   "product": "Verb Ghost Shampoo",
    "category": "haircare",
    "product_type": "shampoo",
    "facts": {

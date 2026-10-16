@@ -241,7 +241,7 @@ from engine.product_facts import (
     uncheckable_brand_reason,
 )
 from engine.profiles import ProfileStore, StoredProfiles, with_profiles
-from engine.query import PRODUCT_TYPES, ParsedQuery, parse_query
+from engine.query import _OTHER_KNIVES as OTHER_KNIVES, PRODUCT_TYPES, ParsedQuery, parse_query
 from engine.rank import KindNote, RankingResult, ScoredMention, rank_products
 from engine.sources import LocalSource, mentions_product, names_product
 from engine.summaries import SUMMARIES_FILE, Summary, load_summaries
@@ -983,7 +983,27 @@ def _mention_of_another_type(mention: ProductMention, requested: str) -> bool:
     # line had counted a writer's Lodge Dutch ovens so.
     words = re.sub(rf"(?<!\w)(?:(?:{_requested_words(requested)})[\s-]+)*{re.escape(product_type)}(?:s|es)?(?!\w)", " ",
                    words, flags=re.IGNORECASE)
-    return not mentions_product(words, requested, leave_aside=product_type.split()[-1])
+    return not mentions_product(words, requested, leave_aside=_word_left_aside(product_type, requested))
+
+
+def _word_left_aside(product_type: str, requested: str) -> str:
+    """The word that doesn't name the requested type on its own in a mention the AI typed as `product_type`: the last
+    word of the AI's type ("knife" of a paring knife); and "knife" for a chef knife when the AI's type is another kind
+    of knife named without the word (16 Oct 2026, the interview-fixes builder: "knife" alone is a chef's knife, as
+    people mean it in "a good knife", but "Kiwi knives" the AI typed as a nakiri is the nakiri, and b07's Kiwi line had
+    taken a second thread from such mentions; other kinds of knife are look-alikes of chef knives since 13 Oct 2026). A
+    fuller name of the requested type ("chef's knife") still says it is one."""
+    words = product_type.split()
+    if requested == "chef knife" and "knife" not in words and any(word in _KNIFE_KINDS for word in words):
+        return "knife"
+    return words[-1]
+
+
+# Kinds of knife that are no chef's knife, as the AI names them without the word "knife": Japanese and other kitchen
+# knives (16 Oct 2026), with module 1's other knives (engine.query: paring, bread, steak...). Not the gyuto and santoku,
+# which are chef knives, nor the bunka and kiritsuke, all-purpose knives writers recommend as one.
+_KNIFE_KINDS = frozenset(OTHER_KNIVES) | {"nakiri", "usuba", "deba", "petty", "sujihiki", "honesuki", "cleaver",
+                                          "yanagiba", "takohiki", "mukimono"}
 
 
 @cache
@@ -1261,12 +1281,12 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
     product_type = query.product_type
     # Sold to UK shoppers now (engine.prices.counts_as_sold; Noemi, 15 Oct 2026): sold second-hand only counts only for
     # things people buy vintage on purpose.
-    not_sold = [g for g in groups if not g.loose
-                and counts_as_sold(find_availability(g.name, g.category, prices, type_of(g))) is False]
+    entries = {id(g): find_availability(g.name, g.category, prices, type_of(g)) for g in groups if not g.loose}
+    not_sold = [g for g in groups if not g.loose and counts_as_sold(entries[id(g)]) is False]
     kept, checks = [], {}
     type_words = _type_words(query.product_type)
-    sold_here = [g for g in groups if not g.loose
-                 and counts_as_sold(find_availability(g.name, g.category, prices, type_of(g))) is True]
+    sold_here = [g for g in groups if not g.loose and counts_as_sold(entries[id(g)]) is True]
+    in_the_uk = [g for g in sold_here if entries[id(g)].available]  # not a product sold only abroad
     for group in groups:
         from_price = None
         if group.loose:
@@ -1281,15 +1301,21 @@ def _within_budget(groups: list[ProductGroup], query: ParsedQuery, prices: list[
                 continue
             result.not_priced.append(group.name)
             # Shown only when second-hand and bought vintage on purpose (15 Oct 2026): another brand sold second-hand
-            # only that one of its own products here proves is sold says nothing shown.
-            sold = sold if sold is not None and sold.second_hand and counts_as_sold(sold) else None
+            # only that one of its own products here proves is sold says nothing shown. Since 16 Oct 2026 (the
+            # interview-fixes builder) also when it says the brand isn't sold in the UK (not_in_uk, Noemi's rule of 15
+            # Oct 2026, evening: b07's Kiwi and b08's Field lines had shown "Availability not checked yet"), unless one
+            # of its own products here is known to be sold in the UK, which proves the brand is.
+            abroad = (sold is not None and sold.not_in_uk
+                      and not any(_same_brand(group, g, as_written=True) for g in in_the_uk))
+            sold = sold if sold is not None and (abroad or sold.second_hand and counts_as_sold(sold)) else None
             # Its from price (Noemi's night decision 1, 14 Oct 2026): the brand-lines entry's cheapest UK price of the
-            # brand's products of the type, with where and when it was found, which also says the line is sold there.
+            # brand's products of the type, with where and when it was found, which also says the line is sold there
+            # (so it wins over an entry saying the brand isn't sold in the UK).
             from_price = from_price_entry(find_brand_line(set(group.names) | {uk_name(n) for n in group.names},
                                                           group.category, type_of(group), brand_lines), group.name)
-            sold = sold or from_price
+            sold = from_price if abroad and from_price is not None else sold or from_price
         else:
-            sold = find_availability(group.name, group.category, prices, type_of(group))
+            sold = entries[id(group)]
         if counts_as_sold(sold) is False:
             result.left_out_unavailable.append(group.name)
             continue
