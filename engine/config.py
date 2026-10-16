@@ -917,11 +917,10 @@ NEED_REQUEST_WORDS: dict[str, str] = {
 # its own, NEED_PHRASES).
 NEED_IGNORED_WORDS = ("leave", "cook", "burr", "kitchen")
 # Two words of a request that make one need (16 Oct 2026, the interview-fixes builder; Claude's choice, reported to
-# Noemi): found in comments and titles as the two words together, written as one or with a hyphen ("pour over",
-# "pour-over", "pourover"), and named whole in the reason ("about dark circles", not "about dark or circles"). Each word
-# alone says something else ("back" in "came back", "dark" in "dark spots", "non" in anything). One written with a
-# hyphen ("pour-over", "non-stick") was one word already. Not here: pairs whose second word alone finds the need, which
-# the pair would make stricter ("large pores": writers say "pores", "enlarged pores").
+# Noemi), named whole in the reason ("about dark circles", not "about dark or circles"; "about pour over", whose "over"
+# is no need word). Comments and titles are still found by each word, as before: found only as the two words together,
+# readings were stricter (the espresso machine answer read fewer threads about steam wands and lost its machines with
+# one). One written with a hyphen ("pour-over", "non-stick") was one word already.
 NEED_PHRASES = ("non stick", "pour over", "dark circles", "dark spots", "dark marks", "dark eye circles", "back pain",
                 "neck pain", "joint pain", "flat feet", "wide feet", "steam wand", "brown rice", "frozen fruit",
                 "small kitchen", "small space", "home gym", "car boot", "pressure sensor", "side sleeper",

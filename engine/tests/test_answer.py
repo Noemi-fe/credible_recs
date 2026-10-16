@@ -694,7 +694,7 @@ def test_what_says_the_opposite_of_a_request(ask, quote, against):
 # the pan is one, says the opposite of the ask (b10's third pick had quoted advice to buy a cheap Teflon pan). Made-up
 # text.
 @pytest.mark.parametrize("quote, against", [
-    ("Honestly just buy a cheap teflon pan and replace it every couple of years.", True),
+    ("Honestly just buy a cheap teflon pan and swap it for a new one when it wears.", True),
     ("Get a decent PTFE pan for eggs, nothing beats it.", True),
     ("Teflon is perfectly safe as long as you don't overheat it.", True),
     ("PTFE pans are fine for most people.", True),

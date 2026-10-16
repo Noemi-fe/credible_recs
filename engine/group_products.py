@@ -1397,7 +1397,12 @@ def _maker_spellings(category: str, more: tuple[str, ...]) -> tuple[frozenset[st
         found += [entry["full"] for entry in listed]
     except (OSError, ValueError, AttributeError, KeyError, TypeError):
         pass  # a broken alias file is reported where it is loaded (known_aliases)
-    kept = sorted({f for f in found if f and f not in UK_BRAND_NAMES}, key=lambda f: (-len(f.split()), f))
+    # A spelling in small letters only is the maker's own style when config writes it so ("simplehuman"); in the
+    # brand-lines list it is a researcher's way of writing it ("shark", "all clad", 16 Oct 2026), never a reason to
+    # write a name in small letters.
+    deliberate = set(MAKER_SPELLINGS.get(category, ()))
+    found = [f for f in found if f and (f != f.lower() or f in deliberate or not any(c.isalpha() for c in f))]
+    kept = sorted({f for f in found if f not in UK_BRAND_NAMES}, key=lambda f: (-len(f.split()), f))
     aliases = known_aliases().get(category, {})
     by_letter: dict[str, list[tuple[str, Words]]] = defaultdict(list)
     for spelling in kept:
@@ -1406,7 +1411,7 @@ def _maker_spellings(category: str, more: tuple[str, ...]) -> tuple[frozenset[st
             by_letter[words[0][:1]].append((spelling, words))
     spelled: dict[str, str] = {}
     for spelling in found:  # config's first, then the brand-lines list's, then the short names' full names
-        if spelling and spelling not in UK_BRAND_NAMES:
+        if spelling not in UK_BRAND_NAMES:
             spelled.setdefault(_folded(spelling), spelling)
     return frozenset(k.casefold() for k in kept), {letter: tuple(v) for letter, v in by_letter.items()}, spelled
 

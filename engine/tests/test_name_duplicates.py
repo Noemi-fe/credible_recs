@@ -350,14 +350,18 @@ def test_a_brand_in_other_capitals_is_shown_as_the_lists_write_it():
 
     assert maker_spelling("Cosrx spot treatment", "skincare", more=("COSRX",)) == "COSRX spot treatment"
     assert maker_spelling("paula’s choice 2% BHA", "skincare", more=("Paula's Choice",)) == "Paula's Choice 2% BHA"
+    # Small letters come only from config's own spellings (a maker's style: "Simple Human" is "simplehuman", above).
     assert maker_spelling("innisfree serum", "skincare", more=("innisfree",)) == "innisfree serum"
-    assert maker_spelling("Innisfree serum", "skincare", more=("innisfree",)) == "innisfree serum"  # the maker's style
+    assert maker_spelling("Innisfree serum", "skincare", more=("innisfree",)) == "Innisfree serum"
     assert maker_spelling("kindle paperwhite", "general", whole=("Kindle Paperwhite Signature Edition",)) == (
         "Kindle paperwhite")  # the brand: its first word
     assert maker_spelling("kindle e-reader", "general", whole=("Kindle Paperwhite Signature Edition",)) == (
         "Kindle e-reader")
     assert maker_spelling("Brisa serum", "skincare", whole=("brisa gel",)) == "Brisa serum"
     assert maker_spelling("laifen swift", "general") == "laifen swift"  # no list writes it: as written
+    # A brand the brand-lines list writes in small letters only is no maker's style: never a reason for small letters.
+    assert maker_spelling("Shark robot vacuum", "general", more=("shark",)) == "Shark robot vacuum"
+    assert maker_spelling("shark robot vacuum", "general", more=("shark",)) == "shark robot vacuum"
 
 
 def test_answers_show_the_makers_spelling():

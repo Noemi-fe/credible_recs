@@ -132,7 +132,8 @@ def test_a_budgets_word_is_no_need_word_for_the_threads_either():
 # split in two. Requests below are the interviewees' kind; every comment is made up.
 
 def judged(request_text: str) -> list[str]:
-    return [need.name for need in judged_needs(parse_query(request_text, model=None))]
+    """The judged needs as the reason line names them: a word of two that make one need by both (Need.label)."""
+    return list(dict.fromkeys(need.label or need.name for need in judged_needs(parse_query(request_text, model=None))))
 
 
 @pytest.mark.parametrize("request_text, needs", [
@@ -144,17 +145,18 @@ def judged(request_text: str) -> list[str]:
     ("enameled dutch oven 5.5 quart, from 100 to 200 euro", ["enameled"]),
     ("lip balm that actually fixes cracked lips, less than 5 dollars", ["cracked"]),
     ("cutting board that's easy on knives", ["knives"]),
-    ("wine cooler for the kitchen", []),
-    # The product's own names and clue words are no needs: a night cream's "night" and "cream", a sunscreen's "spf", a
-    # cleansing oil's "oil", a fridge freezer's "freezer", a safety razor's "safety", a knife sharpener's "knives".
+    ("knife sharpener for japanese knives", ["japanese"]),  # the type's own word, in the plural
+    # In skincare and haircare the product's own names and clue words are no needs: a night cream's "night" and
+    # "cream", a sunscreen's "spf", a cleansing oil's "cleansing" and "oil", a wash's "wash".
     ("night cream for my 40s", ["mature"]),
     ("spf for sensitive skin with no white cast", ["sensitive", "no white cast"]),
     ("double cleansing oil for beginners", ["double", "beginner"]),
-    ("fridge freezer that's quiet", ["quiet"]),
-    ("safety razor for a beginner", ["beginner"]),
-    ("knife sharpener for japanese knives", ["japanese"]),
+    ("pimple patches for acne", ["acne-prone"]),
     ("salicylic acid wash", []),
-    # Two words that make one need stay whole, shown as typed.
+    # In kitchen and general requests a kind the type's names hold stays a need: it is what they ask ("gaming").
+    ("best gaming laptop under 800", ["gaming"]),
+    ("fridge freezer that's quiet", ["freezer", "quiet"]),
+    # Two words that make one need are named whole, as typed; "kitchen" alone is no need.
     ("eye cream for dark circles", ["dark circles"]),
     ("burr grinder for pour over, 150 or less, im in the uk", ["pour over"]),
     ("rice cooker that makes good brown rice", ["brown rice"]),
@@ -162,6 +164,7 @@ def judged(request_text: str) -> list[str]:
     ("a mattress for back pain", ["back pain"]),
     ("running shoes for flat feet", ["flat feet"]),
     ("air fryer for a small kitchen", ["small kitchen"]),
+    ("wine cooler for the kitchen", ["wine", "cooler"]),
     ("28cm frying pan, non stick but pfas free, £30-60", ["non stick", "pfas"]),
     # Written as one word, as before.
     ("burr coffee grinder for pour-over under £150", ["pour-over"]),
@@ -171,14 +174,23 @@ def test_only_words_that_say_what_is_asked_are_judged_needs(request_text, needs)
     assert judged(request_text) == needs
 
 
-def test_a_two_word_need_is_found_whole_in_comments():
+def test_two_words_that_make_one_need_are_named_whole_and_found_by_their_words():
     needs = judged_needs(parse_query("eye cream for dark circles", model=None))
-    assert needs_met("It made my dark circles much lighter.", needs) == ("dark circles",)
-    assert needs_met("Darkcircles gone, honestly.", needs) == ("dark circles",)
-    assert needs_met("The tube is dark and the circles on the lid wear off.", needs) == ()
-    pour = judged_needs(parse_query("coffee grinder for pour over under £150", model=None))
-    assert needs_met("Great for pour-over, and the grind is even.", pour) == ("pour over",)
-    assert needs_met("I pour the beans in from the top.", pour) == ()
+    assert [(need.name, need.label) for need in needs] == [("dark", "dark circles"), ("circles", "dark circles")]
+    assert needs_met("It made my dark circles much lighter.", needs) == ("dark", "circles")  # as before
+
+
+def test_the_reason_names_two_words_that_make_one_need_whole(tmp_path):
+    vela = ("Vela Eye Cream", "eye cream")
+    library = write_library(tmp_path, {
+        "1eye01": ("Eye cream for dark circles?", [used("v1", vela, 2, "my dark circles are much lighter"),
+                                                  used("v2", vela, 3, "the circles under my eyes faded")]),
+        "1eye02": ("Which eye cream do you use?", [used("v3", vela, 4, "it helped my dark circles")]),
+    })
+    result = answer("eye cream for dark circles", library)
+    [pick] = result.answer.picks
+    assert pick.reason.endswith("3 of them about dark circles."), pick.reason
+    assert unverified_claims(result.answer, result.bodies) == []
 
 
 @pytest.mark.parametrize("request_text, body", [

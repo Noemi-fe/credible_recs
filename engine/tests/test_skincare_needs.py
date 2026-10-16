@@ -114,9 +114,9 @@ def test_kitchen_and_general_first_readings_are_unchanged(request_text, category
     # Nor a single letter: "w/o" says "without", and "w" or "o" names nothing a comment could talk about.
     ("toner w/o alcohol for combination/normal skin", ["alcohol", "combination", "normal"]),
     ("1.7l kettle under £40", []),
-    # Changed on purpose 16 Oct 2026 (the interview-fixes builder): "non stick" is one need (config.NEED_PHRASES) and
-    # "pfas free" asks about PFAS, as "pfas-free" does; was ["non", "stick", "pfas", "free"].
-    ("28cm frying pan, non stick but pfas free, £30-60", ["non stick", "pfas"]),
+    # Changed on purpose 16 Oct 2026 (the interview-fixes builder): "pfas free" asks about PFAS, as "pfas-free" does
+    # ("free" is filler); was ["non", "stick", "pfas", "free"]. ("non" and "stick" are named "non stick" in the reason.)
+    ("28cm frying pan, non stick but pfas free, £30-60", ["non", "stick", "pfas"]),
     ("10 inch cast iron skillet that lasts", ["lasting"]),
 ])
 def test_the_rule_judges_the_needs_a_comment_can_talk_about(request_text, judged):

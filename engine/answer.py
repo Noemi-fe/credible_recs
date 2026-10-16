@@ -814,7 +814,8 @@ def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[s
             # here as it would be without the rule: the upvotes changed nothing for it, so nothing is said of them. One
             # shown here thanks to a comment standing out in its thread says so (_reason). One meeting the bar on its
             # own has a pick's reason, as a pick would say it.
-            reason=_reason(product, ranking, upvotes=meets_bar, order=tuple(need.name for need in needs)),
+            reason=_reason(product, ranking, upvotes=meets_bar, order=tuple(need.name for need in needs),
+                           shown=_need_labels(needs)),
             quotes=quotes,
             downsides=downsides,
             downsides_share=_downsides_share(product) if downsides else None,
@@ -1721,7 +1722,7 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
         rank=rank,
         product_key=product.key,
         name=product.name,
-        reason=_reason(product, ranking, order=tuple(need.name for need in needs)),
+        reason=_reason(product, ranking, order=tuple(need.name for need in needs), shown=_need_labels(needs)),
         support=_support(product),
         quotes=quotes,
         downsides=downsides,
@@ -1809,7 +1810,14 @@ def _as_sentence(tip: str) -> str:
     return tip if tip.endswith((".", "!", "?")) else tip + "."
 
 
-def _reason(product: ProductScore, ranking: RankingResult, upvotes: bool = True, order: tuple[str, ...] = ()) -> str:
+def _need_labels(needs: Iterable[Need]) -> dict[str, str]:
+    """{a need's name: how the answer names it}, for needs named otherwise than by their name: two words that make one
+    need, named whole (engine.needs.Need.label, 16 Oct 2026: "about dark circles", not "about dark or circles")."""
+    return {need.name: need.label for need in needs if need.label}
+
+
+def _reason(product: ProductScore, ranking: RankingResult, upvotes: bool = True, order: tuple[str, ...] = (),
+            shown: Mapping[str, str] | None = None) -> str:
     """The one-line reason: how many credible voices, which counted twice for their upvotes (a pick's, `upvotes`) or
     which comment stands out in its thread when that is why it is shown (14 Oct 2026), how many after long-term use,
     how many talk about the request's needs (named in `order`, the request's own, when given), and the kind if it
@@ -1826,7 +1834,7 @@ def _reason(product: ProductScore, ranking: RankingResult, upvotes: bool = True,
         upvotes=clause,
         long_term=REASON_LONG_TERM.format(n=long_term) if long_term else "",
         needs=_needs_clause(recommendations, [m.needs for p in ranking.products for m in p.mentions], ranking.category,
-                            order),
+                            order, shown),
         kind=REASON_KIND.format(kind=ranking.leading_kind.name) if has_bonus else "",
     )
 
@@ -1868,7 +1876,7 @@ def _rule(standout_pick: bool = False) -> str:
 
 
 def _needs_clause(recommendations: list[ScoredMention], every_list: list[tuple[str, ...]],
-                  category: str | None = None, order: tuple[str, ...] = ()) -> str:
+                  category: str | None = None, order: tuple[str, ...] = (), shown: Mapping[str, str] | None = None) -> str:
     """", 3 of them about sensitive skin": how many credible recommendations talk about the request's needs, and which
     needs, in the request's order; "" when none does. `order` is the request's needs in its own order (write_answer's
     `needs`): since 15 Oct 2026 the needs are named in it, since the mentions alone can't always show it (each lists its
@@ -1885,7 +1893,7 @@ def _needs_clause(recommendations: list[ScoredMention], every_list: list[tuple[s
     mine = {need for needs in fitting for need in needs}
     ordered = [need for need in order if need in mine]
     ordered += [need for need in _in_request_order(fitting + every_list) if need in mine and need not in ordered]
-    labels = NEED_LABELS | NEED_LABELS_BY_CATEGORY.get(category or "", {})
+    labels = NEED_LABELS | NEED_LABELS_BY_CATEGORY.get(category or "", {}) | dict(shown or {})
     named = list(dict.fromkeys(labels.get(need, need) for need in ordered))
     listed = NEEDS_JOIN.join(named[:-1]) + NEEDS_JOIN_LAST + named[-1] if len(named) > 1 else named[0]
     return REASON_NEEDS.format(n=len(fitting), needs=listed)

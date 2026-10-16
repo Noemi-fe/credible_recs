@@ -39,7 +39,7 @@ before; a request's word the engine didn't know then is looked for in its title 
 """
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import cache
 
 from engine.config import (
@@ -52,7 +52,7 @@ from engine.ingredients import _whole as _whole_words
 from engine.memo import Table
 from engine.models import Thread
 from engine.query import PRODUCT_TYPES, SKIN_TYPES, ParsedQuery
-from engine.sources import _STOPWORDS, _stem, _title_has, _title_words, need_words
+from engine.sources import _stem, _title_has, _title_words, need_words
 
 LASTING = "lasting"  # the need that long-term use also speaks to
 
@@ -66,9 +66,10 @@ class Need:
     request_word: str | None = None  # a word of the request, as module 2 matches it ("pourover"); None otherwise
     # The words of config.HAIR_LIST_NEEDS that name it in hair types written together ("fine" in "fine oily hair").
     list_words: tuple[str, ...] = ()
-    # For two words that make one need (config.NEED_PHRASES): its words, as need words are written, less stopwords;
-    # a slimmed thread's post talks about it when it held them all (its post's words are gone; 16 Oct 2026).
-    parts: tuple[str, ...] = ()
+    # How the answer names it, when not by its name: a word of two that make one need (config.NEED_PHRASES, 16 Oct
+    # 2026) is named by both, as typed ("dark circles" for "dark" and for "circles"); None otherwise. Words only: it says
+    # nothing of which comments talk about it, so it is no part of which need this is.
+    label: str | None = field(default=None, compare=False)
 
 
 def needs_of(category: str | None) -> dict[str, tuple[str, ...]]:
@@ -109,11 +110,7 @@ def _request_needs(query: ParsedQuery) -> tuple[Need, ...]:
 
     # What it asks a product not to do first (14 Oct 2026): those words name no other need ("dry" in "isn't drying").
     text, negated = _without_negated(_without_product_names(_plain(query.text), query.product_type))
-    # Two words that make one need (config.NEED_PHRASES, 16 Oct 2026) first, so their words name no other need ("noise"
-    # in "noise cancelling" isn't a quiet product).
     phrases = _phrases(text)
-    for at, end, _, _ in phrases:
-        text = text[:at] + " " * (end - at) + text[end:]
     for need, at in negated:
         name(need, at)
     if query.category == "haircare":
@@ -130,26 +127,20 @@ def _request_needs(query: ParsedQuery) -> tuple[Need, ...]:
     if query.constraints.min_years:
         name(LASTING, end)
     own_words: list[tuple[int, Need]] = []
-    # Two words that make one need (config.NEED_PHRASES, 16 Oct 2026): "dark circles" is one need, named as typed and
-    # found as the two words together (or written as one), and neither word is a need alone. Found where the product's
-    # names aren't ("noise cancelling headphones" names the product).
-    in_phrases: set[str] = set()
-    for at, end, joined, parts in phrases:
-        if joined not in in_phrases:
-            own_words.append((at, Need(query.text[at:end], request_word=joined,
-                                       parts=tuple(p for p in parts if p not in _STOPWORDS))))
-        in_phrases |= set(parts) | {joined}
+    # Two words that make one need (config.NEED_PHRASES, 16 Oct 2026) are named whole ("about dark circles", not "about
+    # dark or circles"; "about pour over", whose "over" is no need word), where the product's names aren't ("noise
+    # cancelling headphones" names the product). Comments are still found by each word: found as the two words together
+    # only, the espresso machine answer had read fewer threads about steam wands and lost its machines with one.
+    labels = {part: query.text[at:end] for at, end, parts in phrases for part in parts}
     # The request's own words, less those a negation took ("drying" in "isn't drying"): the same length, so where each
     # word is doesn't move.
     rest = query if not negated else query.model_copy(update={"text": _without_negated(_plain(query.text))[0]})
     for word in need_words(rest):
-        if word in in_phrases:
-            continue
         at, typed = _as_typed(query.text, word)
         if word in NEED_REQUEST_WORDS:
             name(NEED_REQUEST_WORDS[word], at)
         elif not _covered(word, found, needs):
-            own_words.append((at, Need(typed, request_word=word)))
+            own_words.append((at, Need(typed, request_word=word, label=labels.get(word))))
     listed = [(at, Need(need, needs[need], list_words=_list_words(need) if query.category == "haircare" else ()))
               for need, at in found.items()]
     return tuple(need for _, need in sorted(listed + own_words, key=lambda pair: pair[0]))
@@ -180,14 +171,20 @@ def judged_needs(query: ParsedQuery) -> tuple[Need, ...]:
 
 
 def _product_name_words(query: ParsedQuery) -> frozenset[str]:
-    """The words of the request that name the product asked for (16 Oct 2026, the interview-fixes builder; the decided
-    rule of 11 Oct 2026 that the product's own name is never a need), as need words are written: each of its type's
-    names and clue words the request uses (module 1's keywords and hints, config.TYPE_SYNONYMS: "night cream" for a
-    moisturiser, "cleansing oil" for a cleanser, "spf" for a sunscreen, "fridge freezer" for a fridge), and the words
-    of a form it names next to an ingredient ("wash" in "salicylic acid wash"). Reason lines had said "about night or
-    cream" and "about spf"; in skincare and haircare, where every pick needs a credible recommendation about a need, a
-    word nearly every comment says ("cream", "oil", which also begins "oily") had let every product through. They stay
-    needs for the threads read first (engine.sources), as before: "noise cancelling" picks out headphone threads."""
+    """In a category whose every reading follows the need rule (config.NEED_RULE_IN_EVERY_READING: skincare and
+    haircare), the words of the request that name the product asked for (16 Oct 2026, the interview-fixes builder; the
+    decided rule of 11 Oct 2026 that the product's own name is never a need), as need words are written: each of its
+    type's names and clue words the request uses (module 1's keywords and hints, config.TYPE_SYNONYMS: "night cream"
+    for a moisturiser, "cleansing oil" for a cleanser, "spf" for a sunscreen, "patches" for a spot treatment), and the
+    words of a form it names next to an ingredient ("wash" in "salicylic acid wash"). Reason lines had said "about
+    night or cream" and "about spf", and a word nearly every comment says ("cream", "oil", which also begins "oily")
+    had let every product through the rule. Kitchen and general requests keep them: a kind named in the type's names is
+    what they ask ("gaming" in "gaming laptop": without it, a comment standing out in its thread had lifted a MacBook Pro
+    into "best gaming laptop under 800"). They stay needs for the threads read first (engine.sources), as before."""
+    from engine.config import NEED_RULE_IN_EVERY_READING
+
+    if query.category not in NEED_RULE_IN_EVERY_READING:
+        return frozenset()
     product = next((p for p in PRODUCT_TYPES if p.name == query.product_type), None)
     names = list(product.keywords + product.hints) if product else []
     names += list(TYPE_SYNONYMS.get(query.product_type or "", ()))
@@ -207,14 +204,13 @@ def _named_words(text: str, patterns: tuple[str, ...]) -> frozenset[str]:
     return frozenset(words)
 
 
-def _phrases(text: str) -> list[tuple[int, int, str, tuple[str, ...]]]:
+def _phrases(text: str) -> list[tuple[int, int, tuple[str, ...]]]:
     """The two-word needs of config.NEED_PHRASES a request (lowercase, the product's names blanked) holds, written with a
-    space: (where it starts, where it ends, its words written as one as need words are, its words as need words)."""
+    space: (where it starts, where it ends, its words as need words are written)."""
     found = []
     for phrase in NEED_PHRASES:
         for match in _phrase_pattern(phrase).finditer(text):
-            parts = tuple(_stem(word) for word in match.group(0).split())
-            found.append((match.start(), match.end(), "".join(parts), parts))
+            found.append((match.start(), match.end(), tuple(_stem(word) for word in match.group(0).split())))
     return found
 
 
@@ -280,10 +276,8 @@ def _post_needs(thread: Thread, needs: tuple[Need, ...]) -> tuple[str, ...]:
     if facts is None:
         return needs_met(thread.body or "", needs, thread=True)
     words, listed, known = set(facts.post_need_words), set(facts.post_list_words), set(facts.post_words)
-    return tuple(need.name for need in needs if (
-        (need.request_word in known or bool(need.parts) and known.issuperset(need.parts))
-        if need.request_word is not None else (
-            words.intersection(need.words) or listed.intersection(need.list_words))))
+    return tuple(need.name for need in needs if (need.request_word in known if need.request_word is not None else (
+        words.intersection(need.words) or listed.intersection(need.list_words))))
 
 
 def every_config_need() -> tuple[Need, ...]:
