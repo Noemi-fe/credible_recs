@@ -125,11 +125,6 @@ $GCLOUD run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --source "
     --set-env-vars "^;^CREDIBLE_RECS_ALLOWED_HOSTS=${HOSTS};CREDIBLE_RECS_GOATCOUNTER=noemix;CREDIBLE_RECS_FEEDBACK_REPO=Noemix/credible-recs-feedback;CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}${ON_DEMAND_SITE_VARS}" \
     --set-secrets "HF_TOKEN=hf-token:latest" --quiet
 rm -rf "$(dirname "$BUNDLE")"
-#    Only the newest site image is kept (Noemi, 14 Oct 2026, "Keep only the newest 1"): each image is about 1.15 GB,
-#    most of it the open model, and Artifact Registry's free tier is 0.5 GB. The policy (image_cleanup_policy.json) is
-#    applied after each deploy, since the first deploy is what creates the repository; Google runs it about once a day.
-$GCLOUD artifacts repositories set-cleanup-policies cloud-run-source-deploy --project "$PROJECT" --location "$REGION" \
-    --policy deploy/cloudrun/image_cleanup_policy.json --no-dry-run --quiet >/dev/null
 
 # 4. The pre-check: a Cloud Run job on the image just deployed, `python -m engine.precheck --plan` (14 Oct 2026): it
 #    reads nothing on Reddit's embed page itself, works out the plan the site reads ahead from, and verifies through
@@ -170,5 +165,24 @@ if [ "$ON_DEMAND" = on ]; then
     CREDIBLE_RECS_ON_DEMAND_BUCKET="$ON_DEMAND_BUCKET" GCLOUD="$GCLOUD" .venv/bin/python -m engine.library forget-baked \
         || echo "The bucket kept the threads read on demand: the next deploy lets them go." >&2
 fi
+
+# 7. Every job runs the site's image (16 Oct 2026: revision 60's deploy stopped before the jobs step, and the cleanup
+#    policy then deleted the image the jobs still ran, so the plan job and the reader failed with "Image not found"
+#    for a day). A job left on another image is moved to the site's, before the policy below is applied.
+for J in "$JOB" $( [ "$ON_DEMAND" = on ] && echo "$READER_JOB" ); do
+    JOB_IMAGE="$($GCLOUD run jobs describe "$J" --region "$REGION" --project "$PROJECT" \
+        --format='value(spec.template.spec.template.spec.containers[0].image)')"
+    if [ "$JOB_IMAGE" != "$IMAGE" ]; then
+        echo "The job $J ran $JOB_IMAGE, not the site's image: moved to $IMAGE." >&2
+        $GCLOUD run jobs update "$J" --region "$REGION" --project "$PROJECT" --image "$IMAGE" --quiet >/dev/null
+    fi
+done
+
+# 8. Only the newest site image is kept (Noemi, 14 Oct 2026, "Keep only the newest 1"): each image is about 1.15 GB,
+#    most of it the open model, and Artifact Registry's free tier is 0.5 GB. The policy (image_cleanup_policy.json) is
+#    applied last, once every job runs the new image (step 7), since the first deploy is what creates the repository;
+#    Google runs it about once a day.
+$GCLOUD artifacts repositories set-cleanup-policies cloud-run-source-deploy --project "$PROJECT" --location "$REGION" \
+    --policy deploy/cloudrun/image_cleanup_policy.json --no-dry-run --quiet >/dev/null
 
 $GCLOUD run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)'

@@ -401,3 +401,14 @@ def test_a_missing_bright_data_key_turns_the_step_off_says_so_once_and_never_sto
     assert (state, secrets) == ("off", "--clear-secrets")  # no secret the job would fail to find
     assert len(said.splitlines()) == 1 and "bright-data-key" in said and "off" in said
     assert "exit 1" not in DEPLOY_SH.read_text(encoding="utf-8")
+
+
+def test_the_image_cleanup_comes_after_every_job_runs_the_new_image():
+    # 16 Oct 2026: revision 60's deploy stopped before the jobs step and the keep-newest-image policy then deleted the
+    # image the plan job and the reader still ran ("Image not found" for a day). The policy is applied last, after
+    # every job left on another image is moved to the site's.
+    script = DEPLOY_SH.read_text(encoding="utf-8")
+    cleanup = script.index("set-cleanup-policies")
+    assert script.index('run jobs deploy "$JOB"') < cleanup
+    assert script.index("on_demand_job; fi") < cleanup
+    assert script.index('if [ "$JOB_IMAGE" != "$IMAGE" ]') < cleanup
