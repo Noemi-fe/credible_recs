@@ -59,6 +59,17 @@ PRODUCTS = [
     ("Sennheiser HD650", "headphones", 249.99, "Sennheiser UK"),
     ("other box defender", "phone case", 42.99, "OtterBox UK"),
     ("Berkey water filter", "water filter", 535.78, "Amazon UK"),
+    # The e-readers, earbuds, keyboard, webcam and smartwatch the new threads bring (18 Oct 2026).
+    ("basic in matcha green", "e-reader", 134.99, "John Lewis"),
+    ("Kobo Libra Colour", "e-reader", 239.0, "Currys"),
+    ("Clara BW", "e-reader", 149.0, "Currys"),
+    ("Kindle Colorsoft", "e-reader", 239.99, "Amazon UK"),
+    ("Colorsoft", "e-reader", 239.99, "Amazon UK"),
+    ("Kindle Scribe", "e-reader", 449.0, "Amazon UK"),
+    ("Shure SE215", "earbuds", 98.0, "Amazon UK"),
+    ("GMMK Pro", "keyboard", 139.99, "Glorious"),
+    ("Logitech brio 4k", "webcam", 79.99, "John Lewis"),
+    ("Amazfit Balance 2", "smartwatch", 299.0, "Amazon UK"),
 ]
 
 # (brand as the line's name starts, product type, from price in pounds, shop as shown)
@@ -93,6 +104,8 @@ LINES = [
     ("DUNLOPILLOW", "pillow", 64.99, "Bensons for Beds"),
     ("Kirby", "vacuum cleaner", 3195.0, "Kirby"),
     ("Linoto", "bed sheets", 191.0, "Linoto"),
+    ("JLab", "earbuds", 8.0, "JLab"),
+    ("Anker Soundcore", "bluetooth speaker", 24.99, "soundcore"),
 ]
 
 # Sold in the UK, a range rather than one model, so no single price (name as the answer shows it, type, shop as shown).
@@ -131,6 +144,8 @@ DISCONTINUED = [
     ("Soundcore Liberty Air Pro 2", "earbuds"),
     ("2014 MacBook Air", "laptop"),
     ("Altec Lansing H2O", "bluetooth speaker"),
+    ("Oasis 8th gen and up", "e-reader"),
+    ("Kindle Oasis", "e-reader"),
 ]
 
 # Sold abroad only: they stay in answers with "Not sold in the UK" (Noemi, 15 Oct 2026, evening; 16 Oct, decision 4).

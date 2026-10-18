@@ -2486,6 +2486,36 @@
    "from_price_url": "https://kirby.com/products/kirby-avalir-platinum-vacuum-cleaner",
    "from_price_checked_on": "2026-10-18",
    "note": "From the research findings of 2026-10-18: Kirby sells its vacuums through independent authorised distributors with in-home demonstrations, not shops. Its own store has a UK market: with the United Kingdom as the store's country (18 Oct 2026), 'Kirby Avalir Platinum Vacuum Cleaner - The Kirby Company' shows £3195.00 for each package (the vacuum, the Home Cleaning System and the Ultimate system) with 'Schedule a Demo' and no basket button (US store: $2,599 to $3,349); UK-only spares sell online there (Kirby Vacuum Belt UK £20.00, Add to cart), while the Signature Series vacuums (V530, C530) aren't offered to the UK (404). Kirby's contact page lists a UK consumer line (0800-328-1247). Caveats: the page's specs read 110/120 volt (the US text; no UK machine seen), the distributor finder takes US cities or ZIP codes, and the shipping policy only mentions the contiguous US. Amazon UK has only Kirby bags, belts and parts. From price: the Avalir Platinum at Kirby's UK price, £3,195, bought through a distributor's demonstration."
+  },
+  {
+   "brand": "JLab",
+   "also_called": ["Jlabs", "JLabs", "Jlab"],
+   "category": "general",
+   "product_type": "earbuds",
+   "sells": true,
+   "sources": ["https://www.jlab.com/en-gb/collections/earbuds", "https://www.jlab.com/en-gb/products/jbuds2-signature-earbuds-black", "https://www.jlab.com/en-gb/collections/earbuds?sort_by=price-ascending", "https://www.jlab.com/en-gb/collections/true-wireless-earbuds", "https://www.jlab.com/en-gb/collections/true-wireless-earbuds?sort_by=price-ascending", "https://www.jlab.com/en-gb/products/jbuds2-signature-earbuds-black.js", "https://www.jlab.com/en-gb/products/go-pop-plus-true-wireless-earbuds-black.js"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://www.jlab.com/en-gb/collections/earbuds",
+   "from_price": 8.0,
+   "from_price_shop": "JLab",
+   "from_price_url": "https://www.jlab.com/en-gb/products/jbuds2-signature-earbuds-black",
+   "from_price_checked_on": "2026-10-18",
+   "note": "From the research findings of 2026-10-18: JLab's own UK store (jlab.com/en-gb, region 'United Kingdom | GBP £', 'Free UK Ground Shipping'), 18 Oct 2026. 'Shop JLab Wireless & Wired Earbuds' (96 products) sorted by price: JBuds2 Signature Earbuds (wired) £8.00, JBuds Pro Signature Wired £10.00, Metal Earbuds £15.00, JBuds Pro Wireless Signature £20.00, then the true wireless GO Tones+ and GO Pop+ at £24.99. The JBuds2 page ('JBuds2 Signature Earbuds Black – JLab', 'Signature wired earbuds with ergonomic fit') shows £8.00 and Add to Cart; its store data says available. The true wireless range ('JLab True Wireless Earbuds', 22 products) runs from GO Pop+ / GO Tones+ £24.99 to Epic Lab Edition £199.99; GO Pop+ Black is available at £24.99 (https://www.jlab.com/en-gb/products/go-pop-plus-true-wireless-earbuds-black). If the answer means JLab's wireless earbuds, the from price is £24.99, not £8.00."
+  },
+  {
+   "brand": "Anker Soundcore",
+   "category": "general",
+   "product_type": "bluetooth speaker",
+   "sells": true,
+   "sources": ["https://www.soundcore.com/uk/collections/speakers", "https://www.soundcore.com/uk/products/select-4-go-a31x1011"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://www.soundcore.com/uk/collections/speakers",
+   "range_shop": "soundcore",
+   "from_price": 24.99,
+   "from_price_shop": "soundcore",
+   "from_price_url": "https://www.soundcore.com/uk/products/select-4-go-a31x1011",
+   "from_price_checked_on": "2026-10-18",
+   "note": "From the research findings of 2026-10-18: soundcore UK ('Bluetooth Speakers - soundcore UK'), 18 Oct 2026, 10 speakers: Select 4 Go £18.96 (was £24.99), soundcore 2 £28.99, soundcore 3 £35.14, Boom Go 3i £37.98, Boom 3i £64.99, Motion+ £69.99, Boom 2 £79.99, Motion X600 £184.21, Boom 2 Plus £199.99, Rave 3S £299.00. The Select 4 Go's own page ('soundcore Select 4 Go | Ultra Portable Bluetooth Speaker, IP67 Waterproof - soundcore UK', read in a browser) shows £24.99 with Add to Cart and Buy Now; the £18.96 needs a £6.03 code (WS24A31X1UKB, 'Ends in 0 Days'), so the from price without a code is £24.99. A single from price is fair: all 10 are Bluetooth speakers and the Select 4 Go is the cheapest."
   }
  ]
 }
