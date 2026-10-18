@@ -1061,8 +1061,8 @@ def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
     Since 17 Oct 2026 (the converge round, within her rule 4) a quote that opens by agreeing with another writer
     (_opens_by_agreeing: "Agreed; ...", "Seconded.", "Yeah ..."), names another product of its comment before its own
     (_names_another_first, from `named_in`: {comment id: the names of the products it names}) or tells someone else's
-    experience (_hearsay: "my sister swears by it", "apparently") comes after the clearer quotes of its tier and of the
-    tiers that name the product or give a view; never after those that do neither."""
+    experience (_hearsay: "my sister swears by it", "apparently") comes after a clearer quote of its tier that says as
+    much for the request (informative): last of its kind, never after a quote that names less or says less."""
     ordered = _most_credible_first(items)
 
     # 0: names it and gives a view; 1: only names it; 2: only gives a view; 3: neither (10 Oct 2026, night: b04 showed a
@@ -1093,8 +1093,8 @@ def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
         return (_opens_by_agreeing(m.quote) or _hearsay(m.quote)
                 or _names_another_first(m, (named_in or {}).get(m.comment_id, ())))
 
-    return sorted(ordered, key=lambda m: (m.comment_id in leaning, opposite(m), against(m), tier(m) == 3, unclear(m),
-                                          tier(m), informative(m)))
+    return sorted(ordered, key=lambda m: (m.comment_id in leaning, opposite(m), against(m), tier(m), informative(m),
+                                          unclear(m)))
 
 
 # A reply's opening agreement with another writer (17 Oct 2026, the converge round): "Agreed; ...", "Seconded.", "Yeah
@@ -1104,7 +1104,7 @@ _AGREEING = re.compile(
     r"^\W*(?:yes|yeah|yea|yep|yup|agreed|agree|i agree|totally agree|completely agree|fully agree|100% agree"
     r"|seconded|seconding|second(?:ing)? this|i second|i'd second|second|thirded|\+1|same(?: here)?|ditto|exactly"
     r"|this(?=\s*[.!,]|\s*$)|came here to (?:say|post|recommend|suggest)|was (?:going|about) to (?:say|post|suggest)"
-    r"|can confirm|i can confirm|me too|i also|also (?:a fan|love|recommend|vote|use)|another (?:vote|fan|one) for"
+    r"|can confirm|i can confirm|me too|i also|also (?:a fan|love|recommend|vote|use|team)|another (?:vote|fan|one) for"
     r"|(?:big |huge )?(?:\+1|vote) for)\b", re.IGNORECASE)
 
 
@@ -2329,14 +2329,15 @@ def _same_kind(a: frozenset[str], b: frozenset[str]) -> bool:
 def _contradicts(kind: KindSupport, ranking: RankingResult, product_type: str | None, asked: frozenset[str],
                  refused: tuple[str, ...], picks: Collection[str], unsuited_kinds: Collection[str] = ()) -> bool:
     """Whether a kind's advice would say the opposite of the request, of a pick, or of stronger credible advice about
-    the same kind in this answer (_look_for, 17 Oct 2026). An "Avoid" naming what the request refuses agrees with it.
-    A kind the request's facts rule out (`unsuited_kinds`: tretinoin for a beginner) argues against nothing."""
+    the same kind in this answer (_look_for, 17 Oct 2026). An "Avoid" naming what the request refuses agrees with it,
+    and so does one about a kind the request's facts rule out (`unsuited_kinds`: tretinoin for a beginner, by its
+    facts entry), whatever others recommend; such a kind argues against nothing either."""
     category = ranking.category
     words = _kind_own_words(kind.name, category, product_type)
     others = [(other, _kind_own_words(other.name, category, product_type)) for other in ranking.kinds
               if other.key != kind.key and other.key not in unsuited_kinds]
     if kind.support < 0:
-        if _says_any(kind.name, refused):
+        if _says_any(kind.name, refused) or kind.key in unsuited_kinds:
             return False
         # Every word of its name, not only what tells it apart: "products with niacinamide" names the ingredient asked
         # for after its "with", and a serum's clue words hold the actives.

@@ -175,3 +175,16 @@ def test_avoiding_a_needs_opposite_or_whom_it_is_for_isnt_against_the_request():
                 quote="Beginner knife sets are a waste, buy one good knife instead.")
     assert shown([sets], "chef knife", "first chef's knife for a beginner", needs=[beginner]) == [
         (wording.AVOID, "beginner knife sets")]
+
+
+def test_avoiding_a_kind_the_requests_facts_rule_out_stays_whatever_others_recommend():
+    # "Avoid: tretinoin" for a beginner, whose answer the facts rules keep tretinoin out of (the pipeline's unsuited
+    # kinds: the kind's own facts entry clashes hard with the request), stays beside writers recommending a tretinoin
+    # cream: it agrees with the request.
+    items = mentions(3, "Acme serum", category="skincare")
+    notes = [note("tretinoin", "t1", stance="warn", weight=-0.8, key="tretinoin",
+                  quote="Tretinoin is far too strong to start with."),
+             note("tretinoin cream", "t2", weight=0.9, quote="A tretinoin cream is great once you are used to it.")]
+    answer = write_answer(rank_products(items, "skincare", notes, {}), bodies_for(*items, *notes), "retinoid",
+                          request="gentle retinol for beginners", unsuited_kinds={"tretinoin"})
+    assert (wording.AVOID, "tretinoin") in [(item.advice, item.kind) for item in answer.look_for]

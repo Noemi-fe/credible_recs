@@ -70,3 +70,14 @@ def test_a_downside_opening_by_agreeing_comes_after_a_clearer_warning():
                     quote="The Acme kettle's switch failed after fourteen months of daily use.")
     answer, _ = first_quotes(praise + [agreeing, clear])
     assert [q.text for q in answer.picks[0].downsides][0] == clear.quote
+
+
+def test_a_weak_opening_never_puts_a_quote_after_one_that_says_less():
+    # Only a clearer quote saying as much goes first: one that never names the product ("it's held up") stays behind a
+    # reply's that does, and so does one that says less about what the request asks.
+    agreeing = mention("Acme kettle", "t1", weight=2.0,
+                       quote="Yeah, my Acme kettle has lasted six years of daily boiling without a fault.")
+    vague = mention("Acme kettle", "t2", weight=1.0, quote="I can say it's held up, it's been over four years now.")
+    rest = mention("Acme kettle", "t1", weight=0.9, quote="Our Acme kettle is the best we've owned, years on.")
+    _, shown = first_quotes([agreeing, vague, rest])
+    assert shown[0] == agreeing.quote
