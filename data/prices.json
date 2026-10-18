@@ -12254,6 +12254,174 @@
     "https://www.linoto.com/products.json"
    ],
    "note": "Cheaper than the listed £502: with the United Kingdom as the store's country (pounds; 'Linoto Linen Sheets | Linen for Bed, Bath and Home', 18 Oct 2026), single linen sheets start at £191.00: 'Eco Natural Belgian Eco-Linen Fitted Sheet', TwinXL 39\"x80\", 14\" standard depth, Regular price £191.00, Add to cart, estimated shipping in 3-4 weeks; the Organic Ivory Linen Fitted Sheet TwinXL is also £191, and linen flat sheets start at £195 (Twin 70\"x100\", e.g. White). Sheet sets start at £465 (Cobalt Linen Sheet Set, TwinXL); its Queen set is now from £499. Pound prices are the dollar prices converted (rate 0.7615 shown); US bed sizes; ships from the US. The cheapest in-stock sheets were found in the store's product data (cheaper sale sheets are sold out)."
+  },
+  {
+   "product": "MyPillow",
+   "also_called": [
+    "My Pillow",
+    "Mypillow",
+    "My pillow",
+    "MyPillow Premium pillow",
+    "MyPillow Premium Series"
+   ],
+   "category": "general",
+   "product_type": "pillow",
+   "price": 43.91,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/dp/B0148UVPVA",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.amazon.co.uk/dp/B0148UVPVA",
+    "https://www.amazon.co.uk/dp/B09T4WTPXZ",
+    "https://www.amazon.co.uk/sp?seller=A2AUMKCZ73O67Q"
+   ],
+   "note": "Read with a London delivery postcode (SW1A 1AA), 18 Oct 2026: Amazon UK itself sells and ships 'MyPillow Inc Premium Series Bed Pillow King White Level (Medium)' (B0148UVPVA) at £43.91, Add to basket, with no Global Store or import label, but a far-off delivery estimate: FREE delivery Sunday 27 December, fastest 22-24 December. A UK seller, Stay Safe uk (Talaash Ltd, Mildenhall, Suffolk, per its Amazon seller profile), sells 'MyPillow Premium Bed Pillow Set of 2 Queen Medium' (B09T4WTPXZ) new at £158.24 (£79.12 each), 'Only 9 left in stock', dispatched within two days, delivery 26-31 October. So it is sold new to the UK, not only as a US import."
+  },
+  {
+   "product": "Speed Queen washing machine",
+   "also_called": [
+    "Speed Queen washer",
+    "Speed Queen washers",
+    "Speed Queen washing machines"
+   ],
+   "category": "general",
+   "product_type": "washing machine",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Speed Queen",
+   "url": "https://speedqueen.com/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://speedqueen.com/",
+    "https://speedqueen.com/products/all-products/",
+    "https://speedqueen.com/where-to-buy/",
+    "https://code.metalocator.com/index.php?option=com_locator&view=directory&layout=combined_bootstrap&Itemid=20416&tmpl=component&framed=1&source=js",
+    "https://speedqueencommercial.com/en-international/",
+    "https://speedqueencommercial.com/en-gb/",
+    "https://www.johnlewis.com/search?search-term=speed%20queen",
+    "https://www.currys.co.uk/search?q=speed+queen",
+    "https://www.amazon.co.uk/s?k=speed+queen+washing+machine"
+   ],
+   "note": "not sold to UK shoppers: Speed Queen's home washers are a US range: speedqueen.com ('Speed Queen | All Products', 18 Oct 2026) lists top-load TR7, TC5, TR5 and TR3 and the FF7 front-loader, with no prices, and its Where to Buy is a US ZIP-code dealer locator listing US dealers only. Outside the US it is commercial only: speedqueen.eu leads to 'Home - International | Speed Queen Commercial' (laundromats, multi-housing, on-premises laundry), whose 'Speed Queen Home' link goes back to the US site, and speedqueencommercial.com/en-gb redirects to the US commercial site. John Lewis (229 unrelated results), Currys (306 items) and Amazon UK ('speed queen washing machine') show no Speed Queen washer; AO answered with a bot check. Not sold in the UK as a home washer (web search was unavailable, so small importers weren't checked)."
+  },
+  {
+   "product": "Plume SuperPods",
+   "also_called": [
+    "Plume SuperPod",
+    "Plume Superpods",
+    "Plume pods",
+    "Plume WiFi",
+    "Plume HomePass"
+   ],
+   "category": "general",
+   "product_type": "wifi router",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Plume",
+   "url": "https://www.plume.com/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.plume.com/",
+    "https://www.plume.com/platform/home",
+    "https://www.plume.com/homepass",
+    "https://www.plume.com/shop",
+    "https://www.plume.com/superpods",
+    "https://shop.plume.com/",
+    "https://www.amazon.co.uk/s?k=plume+superpod",
+    "https://www.johnlewis.com/search?search-term=plume%20superpod",
+    "https://www.currys.co.uk/search?q=plume+superpod"
+   ],
+   "note": "not sold to UK shoppers: Plume no longer sells SuperPods to shoppers: plume.com ('Build Better Connections - Plume', 18 Oct 2026) is aimed at internet providers, and 'Plume Home - Plume' says it is offered by 'hundreds of ISPs ... for subscribers'; the old /homepass address redirects there, /shop and /superpods give 'We can't find the page you're looking for', and shop.plume.com is an empty store (0 products). No UK shop sells them: John Lewis, Currys and Amazon UK searches show no Plume product. The pods come only with an internet provider that uses Plume; I couldn't confirm which UK providers do (web search unavailable). Not on sale to UK shoppers; arguably not sold anywhere at retail now."
+  },
+  {
+   "product": "OtterBox Defender Series",
+   "also_called": [
+    "other box defender",
+    "OtterBox Defender",
+    "Otterbox Defender",
+    "Otter Box Defender",
+    "OtterBox Defender case"
+   ],
+   "category": "general",
+   "product_type": "phone case",
+   "price": 42.99,
+   "currency": "GBP",
+   "shop": "OtterBox UK",
+   "url": "https://www.otterbox.co.uk/products/iphone-17e-case-iphone-16e-15-14-13-case-defender-series-cas",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.otterbox.co.uk/products/iphone-17e-case-iphone-16e-15-14-13-case-defender-series-cas",
+    "https://www.otterbox.co.uk/",
+    "https://www.otterbox.co.uk/collections/defender-series",
+    "https://www.otterbox.co.uk/collections/defender-series/products.json?limit=250"
+   ],
+   "note": "OtterBox's UK store ('OtterBox Europe' at otterbox.co.uk, prices in GBP), Defender Series collection ('Defender Series – OtterBox Europe', 98 products incl. Samsung and Pixel), 18 Oct 2026. iPhone Defender cases in stock: £42.99 for iPhone 17e & 16e/15/14/13 (Foxberry, Forest Ranger, Black; Add to cart), iPhone SE (2nd/3rd gen) & 8/7, iPhone 12/12 Pro, iPhone 15 Pro Max, iPhone 15 Plus/14 Plus and iPhone 16 Plus (Defender Pro for MagSafe); Defender XT £47.99 (iPhone 15 Pro Max, 14 Pro, 16e/15/14/13); Defender Pro and Pro XT £50.99 for iPhone 17, 17 Pro, 17 Pro Max and Air; £59.99 for iPhone 18 Pro and 18 Pro Max (also fit 17 Pro / Pro Max). Sold-out listings: the separate iPhone 11, 14, 14 Pro, 14 Plus, 15 Pro, 12 Pro Max, 12 mini, XR and 8 Plus/7 Plus Defender cases and the older iPhone 13 / 13 Pro Defender XT. No iPhone 16, 16 Pro or 16 Pro Max Defender is listed."
+  },
+  {
+   "product": "Berkey water filter",
+   "also_called": [
+    "Berkey",
+    "Big Berkey",
+    "Berkey filter",
+    "Berkey water filters",
+    "Berkey gravity filter"
+   ],
+   "category": "general",
+   "product_type": "water filter",
+   "price": 535.78,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/dp/B00CYW3EVO",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.amazon.co.uk/dp/B00CYW3EVO",
+    "https://www.amazon.co.uk/s?k=berkey+water+filter",
+    "https://www.amazon.co.uk/s?k=big+berkey",
+    "https://www.amazon.co.uk/sp?seller=A1AS3W8FGN7BF4",
+    "https://www.amazon.co.uk/dp/B0CBVMTYMG",
+    "https://www.amazon.co.uk/dp/B00FQP2CUU",
+    "https://www.amazon.co.uk/dp/B002YRPY94",
+    "https://www.amazon.co.uk/dp/B0HL5C463L",
+    "https://www.amazon.co.uk/dp/B0HHKRMJ1D",
+    "https://www.amazon.co.uk/sp?seller=A2KVF7QXNCLV8H",
+    "https://www.amazon.co.uk/sp?seller=A30DC7701CXIBH",
+    "https://www.berkey.co.uk/",
+    "https://www.johnlewis.com/search?search-term=berkey"
+   ],
+   "note": "Berkey gravity filters (US) are sold new to UK buyers on Amazon UK (London postcode, 18 Oct 2026). From UK-registered sellers: 'Big Berkey Gravity-Fed Water Filter with 2 Black Berkey Purification Elements' (B00CYW3EVO) £535.78 from MrFatherSeller (MrFather Ltd, Durham), usually dispatched within 5 to 6 days, delivery 30-31 October; 8 other sellers £535.05-£604.56. Cheaper offers are imports through Amazon's Global Store: Big Berkey with 2 Black Berkey elements £342.27 and Travel Berkey £308.10 from Amazon EU (Munich, 'EU products may differ from UK products'); Go Berkey Kit £224.44 and Big Berkey with Phoenix Gravity elements £283.34 from Amazon US ('US imports may differ'). Amazon UK's search for 'berkey water filter' mixes in British Berkefeld systems (e.g. British Berkefeld 6L Ultra Sterasyl £166.95), a different brand (made by Doulton) that isn't Berkey, plus Berkey-compatible elements from other makers. berkey.co.uk answered with a bot check; John Lewis has none. Price given is the Big Berkey from a UK seller."
+  },
+  {
+   "product": "Sennheiser HD 650",
+   "also_called": [
+    "Sennheiser HD650",
+    "HD650",
+    "HD 650",
+    "HD650s",
+    "Senn HD650"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": 249.99,
+   "currency": "GBP",
+   "shop": "Sennheiser UK",
+   "url": "https://uk.sennheiser-hearing.com/products/hd-650",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://uk.sennheiser-hearing.com/products/hd-650",
+    "https://uk.sennheiser-hearing.com/products.json?limit=250",
+    "https://www.thomann.co.uk/search_dir.html?sw=sennheiser%20hd%20650",
+    "https://www.thomann.co.uk/sennheiser_hd_650_new_version_2019.htm"
+   ],
+   "note": "Still sold, not replaced (18 Oct 2026): Sennheiser's own UK store ('Sennheiser HD 650 – Sennheiser UK - Sonova Consumer Hearing UK Limited') £249.99 incl. VAT, Add to Cart; the same store sells the HD 600 £249.99, HD 660S2 £399.99 and a refurbished HD 650 £229.99. Thomann UK ('Sennheiser HD 650 – Thomann UK') £311 incl. VAT, In stock, Add to Basket (B-stock from £267)."
   }
  ]
 }

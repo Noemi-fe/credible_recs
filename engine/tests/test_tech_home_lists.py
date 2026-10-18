@@ -53,6 +53,12 @@ PRODUCTS = [
     ("Ralph Lauren towel", "towel", 49.0, "John Lewis"),
     ("Nomadix towel", "towel", 17.95, "WildBounds"),
     ("Pottery Barn towel", "towel", 27.2, "Pottery Barn UK"),
+    # The same day's second pass: a newer check under a writer's spelling replaces the 15 Oct "not sold" for MyPillow.
+    ("My Pillow", "pillow", 43.91, "Amazon UK"),
+    ("MyPillow", "pillow", 43.91, "Amazon UK"),
+    ("Sennheiser HD650", "headphones", 249.99, "Sennheiser UK"),
+    ("other box defender", "phone case", 42.99, "OtterBox UK"),
+    ("Berkey water filter", "water filter", 535.78, "Amazon UK"),
 ]
 
 # (brand as the line's name starts, product type, from price in pounds, shop as shown)
@@ -140,6 +146,8 @@ ABROAD = [
     ("Grid Linen towel from Outlier", "towel"),
     ("Avocado pillow", "pillow"),
     ("Casper pillow", "pillow"),
+    ("Speed Queen washing machine", "washing machine"),
+    ("Plume SuperPods", "wifi router"),
 ]
 
 
