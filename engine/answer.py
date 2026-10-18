@@ -530,6 +530,9 @@ class Pick:
     # only when no price or availability line links to that page already, nor a range link to the line's; else None.
     link: ShownLink | None = None
     image: ShownImage | None = None
+    # How many of the last `downsides` are about the pick's brand's line as a whole, not the pick (17 Oct 2026, the
+    # converge round's item 5: DOWNSIDES_SHARE_BRAND says how many voices); 0 when none is.
+    brand_downsides: int = 0
 
 
 @dataclass
@@ -1734,6 +1737,7 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
     line_name, line_warnings = brand if brand else (None, [])
     own_writers = _warned(product, more_downsides)
     line_warnings = [m for m in line_warnings if (m.author or m.comment_id) not in own_writers]
+    own_shown = len(downsides)
     if line_warnings and len(downsides) < DOWNSIDES_PER_PICK:
         shown = {q.comment_id for q in downsides}
         downsides += _warning_quotes(([m for m in line_warnings if m.comment_id not in shown],), check,
@@ -1756,6 +1760,7 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
         cautions=cautions or [],
         downsides_share=_downsides_share(product, more_downsides, line_name, line_warnings) if downsides else None,
         voices=_voices(product, more_downsides),
+        brand_downsides=len(downsides) - own_shown,
     )
 
 

@@ -59,6 +59,7 @@ def test_the_share_line_counts_the_picks_own_warnings_and_names_the_brands_apart
     assert [q.text for q in pick.downsides][0] == own[0].quote  # its own first, then the line's
     assert {q.text for q in pick.downsides[1:]} <= {m.quote for m in line}
     assert pick.voices["warn"] == 1  # the meter counts its own warnings
+    assert pick.brand_downsides == len(pick.downsides) - 1  # the last ones are the line's
     assert unverified_claims(answer, bodies_for(*items, *line)) == []
     assert pick.downsides_share in render_markdown(answer)
 
