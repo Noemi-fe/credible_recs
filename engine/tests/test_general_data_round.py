@@ -33,10 +33,12 @@ LINES_SOLD_IN_THE_UK = [
     (["Dyson"], "hair dryer", "Dyson", 249.99, "John Lewis"),
     (["Sonicare", "sonicare"], "electric toothbrush", "Sonicare", 39.99, "John Lewis"),
     (["DeWalt", "Dewalt"], "drill", "DeWalt", 75.0, "B&Q"),
-    (["Merrell", "Merrells", "merrells"], "hiking boots", "Merrell", 120.0, "Merrell UK"),
-    (["Salomon", "Solomon"], "hiking boots", "Salomon", 150.0, "John Lewis"),
+    (["Merrell", "Merrells", "merrells"], "hiking boots", "Merrell", 58.0, "Merrell UK"),
+    # 18 Oct 2026, the same day: hiking shoes are of the type too (its keywords), so Salomon's and KEEN's from prices are
+    # their cheapest hiking shoes (£110, £75), no longer their cheapest boots (£150, £110); Merrell's likewise (£58, was £120).
+    (["Salomon", "Solomon"], "hiking boots", "Salomon", 110.0, "John Lewis"),
     (["Lowa", "LOWA"], "hiking boots", "LOWA", 114.0, "LOWA UK"),
-    (["Keen", "Keens", "KEEN"], "hiking boots", "KEEN", 110.0, "KEEN UK"),
+    (["Keen", "Keens", "KEEN"], "hiking boots", "KEEN", 75.0, "KEEN UK"),
     (["Meindl"], "hiking boots", "Meindl", 184.99, "Meindl UK"),
     (["UPPAbaby", "Uppababy"], "stroller", "UPPAbaby", 399.0, "John Lewis"),
     (["UPPAbaby Vista", "Uppababy Vista"], "stroller", "UPPAbaby Vista", 1099.99, "John Lewis"),
@@ -62,6 +64,9 @@ LINES_SOLD_IN_THE_UK = [
     (["Smartwool", "SmartWool"], "socks", "Smartwool", 21.0, "John Lewis"),
     (["Hydro Flask", "Hydroflask"], "water bottle", "Hydro Flask", 34.95, "John Lewis"),
     (["Ruffwear"], "dog harness", "Ruffwear", 21.95, "Ruffwear UK"),
+    # Lines of a brand that writers name as one product, though they come in several versions and heights.
+    (["Salomon X Ultra", "Salomon X-Ultra"], "hiking boots", "Salomon X Ultra", 140.0, "John Lewis"),
+    (["Salomon Quest"], "hiking boots", "Salomon Quest", 170.0, "John Lewis"),
 ]
 
 # Brands the makers' own pages show selling the type, with no UK price readable (their prices load by script).
@@ -201,5 +206,5 @@ def test_boots_named_by_their_brand_alone_are_ranked_as_the_brands_lines_with_th
                             product_pages=load_product_pages(), today=ROUND, more_threads=None)
     picks = {pick.name: pick for pick in result.answer.picks}
     assert {"Merrell hiking boots line", "KEEN hiking boots line"} <= set(picks), list(picks)
-    assert picks["Merrell hiking boots line"].price.text == "From £120 at Merrell UK, checked 18 Oct 2026"
+    assert picks["Merrell hiking boots line"].price.text == "From £58 at Merrell UK, checked 18 Oct 2026"
     assert picks["KEEN hiking boots line"].availability.text == "Sold at KEEN UK, checked 18 Oct 2026"

@@ -11066,6 +11066,39 @@
     "https://ruffwear.co.uk/products.json?limit=250"
    ],
    "note": "Ruffwear UK sells the Front Range Dog Harness at £49.95 on 18 Oct (available sizes and colours in its product list)."
+  },
+  {
+   "product": "Salomon X Ultra hiking boots",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/salomon-x-ultra-360-gore-tex-hiking-shoes-sage-chic-etherea/p115503097",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/salomon-x-ultra-360-gore-tex-hiking-shoes-sage-chic-etherea/p115503097",
+    "https://www.johnlewis.com/brand/salomon/walking/_/N-lk95Z1yzjf2t",
+    "https://www.johnlewis.com/salomon-x-ultra-360-mid-gore-tex-mens-boots-magnet-black/p111519894"
+   ],
+   "note": "Salomon's X Ultra hiking boots and shoes (writers' 'X-Ultra', 'X Ultra 4'...; the current generation is the X Ultra 360): John Lewis's Salomon walking page lists X Ultra 360 Gore-Tex hiking shoes at £140 and X Ultra 360 Mid Gore-Tex boots at £150 on 18 Oct. From price: the X Ultra 360 Gore-Tex hiking shoe at £140. Product page is the Mid boot's."
+  },
+  {
+   "product": "Salomon Quest hiking boots",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/salomon-mens-quest-element-walking-boots-black-olive-night/p112332005",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/salomon-mens-quest-element-walking-boots-black-olive-night/p112332005",
+    "https://www.johnlewis.com/brand/salomon/walking/_/N-lk95Z1yzjf2t"
+   ],
+   "note": "Salomon's Quest walking boots (writers' 'Salomon Quest', 'Quest 4 GTX'): John Lewis lists the Men's Quest Element Walking Boots at £170 on 18 Oct, email when available (out of stock for now still counts as sold)."
   }
  ]
 }

@@ -2259,29 +2259,29 @@
    "category": "general",
    "product_type": "hiking boots",
    "sells": true,
-   "sources": ["https://www.merrell.com/UK/en_GB/men-hiking-boots", "https://www.merrell.com/UK/en_GB/thermo-chill-2-mid-waterproof/60653M.html", "https://www.merrell.com/UK/en_GB/men-hiking-boots?srule=price-low-to-high"],
+   "sources": ["https://www.merrell.com/UK/en_GB/men-hiking-boots", "https://www.merrell.com/UK/en_GB/thermo-chill-2-mid-waterproof/60653M.html", "https://www.merrell.com/UK/en_GB/men-hiking-boots?srule=price-low-to-high", "https://www.merrell.com/UK/en_GB/moab-speed-2-vent-2k/59318M.html", "https://www.merrell.com/UK/en_GB/hiking-view-all/?srule=price-low-to-high"],
    "checked_on": "2026-10-18",
    "range_page": "https://www.merrell.com/UK/en_GB/men-hiking-boots",
-   "from_price": 120.0,
+   "from_price": 58.0,
    "from_price_shop": "Merrell UK",
-   "from_price_url": "https://www.merrell.com/UK/en_GB/thermo-chill-2-mid-waterproof/60653M.html",
+   "from_price_url": "https://www.merrell.com/UK/en_GB/moab-speed-2-vent-2k/59318M.html",
    "from_price_checked_on": "2026-10-18",
-   "note": "From the research findings of 2026-10-18: Merrell's own UK store (merrell.com/UK/en_GB, prices in pounds): men's hiking boots, 15 listed (8 models: Moab 3 Mid GORE-TEX from £124, Speed Strike 2 Mid, Thermo boots...). From price: sorted by price, the Men's Thermo Chill 2 Mid Waterproof at £120, the cheapest men's hiking boot there on 18 Oct (women's boots have their own page). The page gives no stock per product."
+   "note": "From the research findings of 2026-10-18: Merrell's own UK store (merrell.com/UK/en_GB, prices in pounds): men's hiking boots, 15 listed (8 models: Moab 3 Mid GORE-TEX from £124, Speed Strike 2 Mid, Thermo boots...). From price: sorted by price, the Men's Thermo Chill 2 Mid Waterproof at £120, the cheapest men's hiking boot there on 18 Oct (women's boots have their own page). The page gives no stock per product. Corrected the same day: hiking shoes are of the type too, so the from price is the Men's Moab Speed 2 Vent 2K hiking shoe from £58 (by variant, up to £115) on Merrell UK's hiking and walking page sorted by price (239 products)."
   },
   {
    "brand": "Salomon",
    "category": "general",
    "product_type": "hiking boots",
    "sells": true,
-   "sources": ["https://www.johnlewis.com/browse/men/mens-boots/salomon/walking/_/N-7onxZlk95Z1yzjf2t", "https://www.johnlewis.com/salomon-x-ultra-360-mid-gore-tex-mens-boots-magnet-black/p111519894"],
+   "sources": ["https://www.johnlewis.com/browse/men/mens-boots/salomon/walking/_/N-7onxZlk95Z1yzjf2t", "https://www.johnlewis.com/salomon-x-ultra-360-mid-gore-tex-mens-boots-magnet-black/p111519894", "https://www.johnlewis.com/brand/salomon/walking/_/N-lk95Z1yzjf2t", "https://www.johnlewis.com/salomon-alphaglide-gtx-hiking-shoes-black-asphalt-black/p115661315"],
    "checked_on": "2026-10-18",
    "range_page": "https://www.johnlewis.com/browse/men/mens-boots/salomon/walking/_/N-7onxZlk95Z1yzjf2t",
    "range_shop": "John Lewis",
-   "from_price": 150.0,
+   "from_price": 110.0,
    "from_price_shop": "John Lewis",
-   "from_price_url": "https://www.johnlewis.com/salomon-x-ultra-360-mid-gore-tex-mens-boots-magnet-black/p111519894",
+   "from_price_url": "https://www.johnlewis.com/salomon-alphaglide-gtx-hiking-shoes-black-asphalt-black/p115661315",
    "from_price_checked_on": "2026-10-18",
-   "note": "From the research findings of 2026-10-18: Salomon's own UK store refuses automated reads (403). John Lewis's Salomon men's walking boots page lists the X Ultra 360 Mid Gore-Tex boots at £150 (Add to basket, sizes 7-12) and the X Ultra 360 hiking shoes at £140, on 18 Oct. From price: the X Ultra 360 Mid GTX at £150, the one Salomon boot John Lewis sells now (Salomon's own range may hold cheaper ones)."
+   "note": "From the research findings of 2026-10-18: Salomon's own UK store refuses automated reads (403). John Lewis's Salomon men's walking boots page lists the X Ultra 360 Mid Gore-Tex boots at £150 (Add to basket, sizes 7-12) and the X Ultra 360 hiking shoes at £140, on 18 Oct. From price: the X Ultra 360 Mid GTX at £150, the one Salomon boot John Lewis sells now (Salomon's own range may hold cheaper ones). Corrected the same day: hiking shoes are of the type too (its keywords), so the from price is the Alphaglide GTX hiking shoe at £110 on John Lewis's Salomon walking page (18 products, X Ultra 360 shoes £140, Mid boots £150, Quest Element boots £170)."
   },
   {
    "brand": "LOWA",
@@ -2302,14 +2302,14 @@
    "category": "general",
    "product_type": "hiking boots",
    "sells": true,
-   "sources": ["https://www.keenfootwear.co.uk/collections/mens-walking-boots", "https://www.keenfootwear.co.uk/products/mens-zionic-mid-waterproof-dark-olive-scarlet-ibis", "https://www.keenfootwear.co.uk/collections/mens-walking-boots?sort_by=price-ascending"],
+   "sources": ["https://www.keenfootwear.co.uk/collections/mens-walking-boots", "https://www.keenfootwear.co.uk/products/mens-zionic-mid-waterproof-dark-olive-scarlet-ibis", "https://www.keenfootwear.co.uk/collections/mens-walking-boots?sort_by=price-ascending", "https://www.keenfootwear.co.uk/products/mens-targhee-apex-waterproof-abbey-stone-gold-flame", "https://www.keenfootwear.co.uk/products.json?limit=250"],
    "checked_on": "2026-10-18",
    "range_page": "https://www.keenfootwear.co.uk/collections/mens-walking-boots",
-   "from_price": 110.0,
+   "from_price": 75.0,
    "from_price_shop": "KEEN UK",
-   "from_price_url": "https://www.keenfootwear.co.uk/products/mens-zionic-mid-waterproof-dark-olive-scarlet-ibis",
+   "from_price_url": "https://www.keenfootwear.co.uk/products/mens-targhee-apex-waterproof-abbey-stone-gold-flame",
    "from_price_checked_on": "2026-10-18",
-   "note": "From the research findings of 2026-10-18: KEEN's own UK store (keenfootwear.co.uk, prices in pounds): men's walking and hiking boots, 15 listed on 18 Oct (Targhee IV Waterproof £155, Targhee Apex £150, Hightrail £135...). From price: sorted by price, the Men's Zionic Waterproof Hiking Boot at £110 in its outlet (was £160); the cheapest at full price is the Hightrail at £135."
+   "note": "From the research findings of 2026-10-18: KEEN's own UK store (keenfootwear.co.uk, prices in pounds): men's walking and hiking boots, 15 listed on 18 Oct (Targhee IV Waterproof £155, Targhee Apex £150, Hightrail £135...). From price: sorted by price, the Men's Zionic Waterproof Hiking Boot at £110 in its outlet (was £160); the cheapest at full price is the Hightrail at £135. Corrected the same day: hiking shoes are of the type too, so the from price is the Men's Targhee Apex Waterproof Hiking Shoe at £75 (was £140; in stock in some sizes), from KEEN UK's product list."
   },
   {
    "brand": "Meindl",
@@ -2710,6 +2710,36 @@
    "from_price_url": "https://ruffwear.co.uk/products/hi-and-light-dog-harness-3082",
    "from_price_checked_on": "2026-10-18",
    "note": "From the research findings of 2026-10-18: Ruffwear's UK store (ruffwear.co.uk, prices in pounds) lists 16 harnesses on 18 Oct (its product list, available variants): Hi & Light from £21.95 (another listing £49.95), Switchbak £31.98, Front Range £49.95, Front Range Flex £64.95, Flagline and Web Master £84.95, Ridgeline £199.95. From price: the Hi & Light at £21.95, the cheapest available."
+  },
+  {
+   "brand": "Salomon X Ultra",
+   "category": "general",
+   "product_type": "hiking boots",
+   "sells": true,
+   "sources": ["https://www.johnlewis.com/salomon-x-ultra-360-mid-gore-tex-mens-boots-magnet-black/p111519894", "https://www.johnlewis.com/salomon-x-ultra-360-gore-tex-hiking-shoes-sage-chic-etherea/p115503097", "https://www.johnlewis.com/brand/salomon/walking/_/N-lk95Z1yzjf2t"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://www.johnlewis.com/salomon-x-ultra-360-mid-gore-tex-mens-boots-magnet-black/p111519894",
+   "range_shop": "John Lewis",
+   "from_price": 140.0,
+   "from_price_shop": "John Lewis",
+   "from_price_url": "https://www.johnlewis.com/salomon-x-ultra-360-gore-tex-hiking-shoes-sage-chic-etherea/p115503097",
+   "from_price_checked_on": "2026-10-18",
+   "note": "From the research findings of 2026-10-18: Salomon's X Ultra hiking boots and shoes (writers' 'X-Ultra', 'X Ultra 4'...; the current generation is the X Ultra 360): John Lewis's Salomon walking page lists X Ultra 360 Gore-Tex hiking shoes at £140 and X Ultra 360 Mid Gore-Tex boots at £150 on 18 Oct. From price: the X Ultra 360 Gore-Tex hiking shoe at £140. Product page is the Mid boot's."
+  },
+  {
+   "brand": "Salomon Quest",
+   "category": "general",
+   "product_type": "hiking boots",
+   "sells": true,
+   "sources": ["https://www.johnlewis.com/salomon-mens-quest-element-walking-boots-black-olive-night/p112332005", "https://www.johnlewis.com/brand/salomon/walking/_/N-lk95Z1yzjf2t"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://www.johnlewis.com/salomon-mens-quest-element-walking-boots-black-olive-night/p112332005",
+   "range_shop": "John Lewis",
+   "from_price": 170.0,
+   "from_price_shop": "John Lewis",
+   "from_price_url": "https://www.johnlewis.com/salomon-mens-quest-element-walking-boots-black-olive-night/p112332005",
+   "from_price_checked_on": "2026-10-18",
+   "note": "From the research findings of 2026-10-18: Salomon's Quest walking boots (writers' 'Salomon Quest', 'Quest 4 GTX'): John Lewis lists the Men's Quest Element Walking Boots at £170 on 18 Oct, email when available (out of stock for now still counts as sold)."
   }
  ]
 }
