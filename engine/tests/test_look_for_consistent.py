@@ -205,3 +205,28 @@ def test_the_same_kinds_recommendations_count_together_against_a_warning():
     # One of them alone, under half as strong, doesn't outweigh it.
     assert (wording.AVOID, "variable temperature kettle") in shown([notes[0], notes[1], notes[3]], "electric kettle",
                                                                    "electric kettle that lasts 10+ years")
+
+
+def test_a_kind_named_after_a_prescription_only_active_gives_a_beginner_no_look_for_even_misspelt():
+    # b03 ("retinol for a beginner with sensitive skin", a blind-test question) showed "Look for: adalpalene": a
+    # writer's slip for adapalene, prescription-only in the UK (Differin), which the facts rules keep out of the answer.
+    # A kind named after an active ingredient (a one-letter slip in a long word forgiven) gives no "Look for" when every
+    # product of the facts list holding it clashes hard with the request; a kind of another active stays.
+    from datetime import date
+
+    from engine.pipeline import _unsuited_kinds
+    from engine.product_facts import ProductFacts
+    from engine.query import parse_query
+    from engine.rank import KindSupport
+
+    facts = [ProductFacts(product="Differin Gel (adapalene 0.1%)", category="skincare", product_type="retinoid",
+                          facts={"prescription_only": True, "strength": "strong"},
+                          sources=["https://www.example-pharmacy.co.uk/differin"], checked_on=date(2026, 10, 14)),
+             ProductFacts(product="Acme Gentle Retinol Serum", category="skincare", product_type="retinoid",
+                          facts={"prescription_only": False, "strength": "gentle"},
+                          sources=["https://www.example-maker.co.uk/serum"], checked_on=date(2026, 10, 14))]
+    kinds = [KindSupport("adalpalene", "adalpalene", 0.6, 1), KindSupport("encapsulated retinol",
+                                                                         "encapsulated retinol", 0.4, 1)]
+    beginner = parse_query("retinol for a beginner with sensitive skin")
+    assert _unsuited_kinds(kinds, beginner, facts) == {"adalpalene"}
+    assert _unsuited_kinds(kinds, parse_query("retinol for acne scars"), facts) == set()

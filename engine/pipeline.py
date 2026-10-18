@@ -175,6 +175,7 @@ from engine.config import (
     INGREDIENT_NOT_FORM_ASKED,
     INGREDIENT_NOT_LISTED,
     INGREDIENT_RINSE_OFF,
+    INGREDIENTS,
     LIVE_CHECK_PARALLEL,
     LIVE_CHECK_REQUIRED,
     LIVE_CHECK_SHOWN_DAYS,
@@ -205,7 +206,7 @@ from engine.group_products import (
 from engine.gold import DEFAULT_GOLD_DIR
 from engine.ingredients import evidence as ingredient_evidence
 from engine.ingredients import (
-    facts_types, form_kind, form_of, ingredient_type_name, own_name, rinse_off_word, wanted_types,
+    facts_types, form_kind, form_of, ingredient_type_name, names_ingredient, own_name, rinse_off_word, wanted_types,
 )
 from engine.ingredients import shown as shown_ingredients
 from engine.library import DEFAULT_LIBRARY_DIR, checked_live_within
@@ -1717,7 +1718,13 @@ def _unsuited_kinds(kinds, query: ParsedQuery, product_facts: list[ProductFacts]
     Claude late on 10 Oct 2026; b03 said "Look for: tret" to a beginner with sensitive skin, though the rules leave
     tretinoin products out of that answer). A kind takes an entry's facts only when the entry has the kind's very name
     (short names allowed: "tret" is Tretinoin), never one that only shares words with it ("salicylic acid" and "COSRX
-    Salicylic Acid Daily Gentle Cleanser"). "Avoid" advice about such a kind stays."""
+    Salicylic Acid Daily Gentle Cleanser"). "Avoid" advice about such a kind stays.
+
+    Since 17 Oct 2026 (the converge round: b03 showed "Look for: adalpalene", a writer's slip for adapalene) also a kind
+    named after one active ingredient (config.INGREDIENTS' single-active entries, engine.ingredients.names_ingredient:
+    a one-letter slip in a long word forgiven; never a family such as "retinoid") whose every product in the facts list
+    (by its name or its formula) is prescription-only, when the request's prescription-only rule clashes hard: being
+    sold only on a prescription belongs to the active, not to one product, as no other fact does."""
     aliases = known_aliases().get(query.category, {})
     unsuited = set()
     for kind in kinds:
@@ -1725,6 +1732,16 @@ def _unsuited_kinds(kinds, query: ParsedQuery, product_facts: list[ProductFacts]
         own = [f for f in product_facts if f.category == query.category and product_words(f.product, aliases) == words]
         if words and any(c.hard for f in own for c in conflicts(query, f)):
             unsuited.add(kind.key)
+            continue
+        for ingredient in (key for key, entry in INGREDIENTS.items()
+                           if len(entry.get("actives", ())) == 1 and names_ingredient(kind.name, key)):
+            holding = [f for f in product_facts if f.category == query.category
+                       and (names_ingredient(f.product, ingredient)
+                            or ingredient.lower() in [a.lower() for a in (f.formula.actives if f.formula else [])])]
+            if holding and all(f.facts.get("prescription_only") is True for f in holding) and any(
+                    c.hard and c.rule == "prescription only" for f in holding for c in conflicts(query, f)):
+                unsuited.add(kind.key)
+                break
     return unsuited
 
 
