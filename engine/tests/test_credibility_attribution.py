@@ -217,8 +217,8 @@ def test_a_short_name_of_the_same_model_is_no_sibling():
 
 
 @pytest.mark.parametrize("body", [
-    "I bought a Quill Arc wallet for my boyfriend ten years ago and it is still going strong.",
-    "Bought my sisters some Quill Arc speakers about five years ago and they're still kicking.",
+    "I bought a Quill Arc wallet for my boyfriend, a decade on he still carries it every day.",
+    "Bought my sisters some Quill Arc speakers back in 2021, both work like new.",
     "My dad has a pair of Quill Arc headphones that I bought for him 12 years ago, they still work.",
     "I ordered my girl some Quill Arc boots and she loves them.",
 ])
