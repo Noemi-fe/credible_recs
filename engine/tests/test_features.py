@@ -24,6 +24,7 @@ def features(request: str) -> list[str]:
     ("mechanical keyboard", ["mechanical"]),
     ("cordless drill", ["cordless"]),
     ("stainless steel pan for searing", ["stainless steel"]),
+    ("raw denim jeans that fade well", ["raw denim"]),  # named up to the noun when another of its names comes between
 ])
 def test_a_feature_named_before_the_product_noun(request_text, expected):
     assert features(request_text) == expected

@@ -83,7 +83,7 @@ def _request_features(query: ParsedQuery) -> tuple[Feature, ...]:
     head = _head_noun(text, query.product_type or "")
     if head is None:
         return ()
-    head_start, head_end = head
+    head_start, head_end, noun_start = head
     after = _THATS.match(text, head_end)  # "a kettle that's quiet": the words right after "that's" too
     window = (after.end(), after.end() + len(_THATS_WORDS.match(text, after.end()).group(0))) if after else None
     asked, required = _requirements(query)
@@ -109,18 +109,21 @@ def _request_features(query: ParsedQuery) -> tuple[Feature, ...]:
         joined = (item is not None and group and item[2].request_word is not None and group[-1][2].request_word
                   is not None and _JOINED.fullmatch(text[group[-1][1]:item[0]]))
         if group and not joined:
-            features.append(_feature(query.text, text, group))
+            # Named up to the noun itself when the product's other names come between ("raw denim" in "raw denim jeans").
+            name_end = noun_start if _JOINED.fullmatch(text[group[-1][1]:head_start]) else None
+            features.append(_feature(query.text, text, group, name_end))
             group = []
         if item is not None:
             group.append(item)
     return tuple(features)
 
 
-def _feature(typed: str, text: str, group: list[tuple[int, int, Need]]) -> Feature:
-    """One feature from request needs written together ("noise" and "cancelling"): named as typed, praised when its
-    words are said in a row, or as config's short forms ("anc"); a config need ("quiet") by its praise words."""
+def _feature(typed: str, text: str, group: list[tuple[int, int, Need]], name_end: int | None = None) -> Feature:
+    """One feature from request needs written together ("noise" and "cancelling"): named as typed (up to `name_end` when
+    given), praised when its words are said in a row, or as config's short forms ("anc"); a config need ("quiet") by
+    its praise words."""
     start, end = group[0][0], group[-1][1]
-    name = typed[start:end]
+    name = typed[start:max(end, name_end or 0)].strip()
     needs = tuple(need for _, _, need in group)
     material = _a_material(name)
     if needs[0].request_word is None:
@@ -191,20 +194,26 @@ _THATS_WORDS = re.compile(r"[a-z0-9' -]*?(?=$|[,.;!?]|\s(?:and|but|or|for|with|u
                           r"|so|because|less|more|than)(?![a-z0-9]))")
 
 
-def _head_noun(text: str, product_type: str) -> tuple[int, int] | None:
+def _head_noun(text: str, product_type: str) -> tuple[int, int, int] | None:
     """Where the product noun is in the request (lowercase): the earliest of the type's last word (or its plural) and its
-    one-word names, as whole words; None when none is written ("portable charger" for a power bank)."""
+    one-word names, as whole words, (its start, its end, the start of the last of the product's words written in a row
+    from it: "jeans" in "denim jeans"); None when none is written ("portable charger" for a power bank)."""
     heads = {product_type.split()[-1]} if product_type else set()
     product = next((p for p in PRODUCT_TYPES if p.name == product_type), None)
     if product is not None:
         heads |= {k.lower() for k in product.keywords if " " not in k}
+    forms = {form for head in heads for form in (head, head + "s", head + "es")}
     best = None
-    for head in heads:
-        for form in (head, head + "s", head + "es"):
-            match = re.search(rf"(?<![a-z0-9]){re.escape(form)}(?![a-z0-9])", text)
-            if match and (best is None or match.start() < best[0]):
-                best = match.span()
-    return best
+    for form in forms:
+        match = re.search(rf"(?<![a-z0-9]){re.escape(form)}(?![a-z0-9])", text)
+        if match and (best is None or match.start() < best[0]):
+            best = match.span()
+    if best is None:
+        return None
+    noun_start, at = best[0], best[1]
+    while (following := re.match(r"\s+([a-z0-9'-]+)", text[at:])) and following.group(1) in forms:
+        noun_start, at = at + following.start(1), at + following.end(1)
+    return best[0], best[1], noun_start
 
 
 def _requirements(query: ParsedQuery) -> tuple[set[str], set[str]]:
