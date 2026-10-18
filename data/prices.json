@@ -12970,6 +12970,196 @@
     "https://www.bigagnes.com/collections/tents/products.json?limit=250"
    ],
    "note": "From the research of 18 Oct (found-17, Big Agnes Copper Spur tent line): Absolute Snow, a UK outdoor shop, lists six Big Agnes tents (pre-orders with Add to Basket); Big Agnes (US) has no UK store. No from price recorded: the cheapest of the six wasn't read (the Copper Spur UL2 is £522.45 there, its line's from price)."
+  },
+  {
+   "product": "Bellroy wallet",
+   "category": "general",
+   "product_type": "wallet",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/Bellroy-Mag-Wallet-Leather-Magnetic/dp/B0FN7BMRQ5",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.amazon.co.uk/Bellroy-Mag-Wallet-Leather-Magnetic/dp/B0FN7BMRQ5",
+    "https://bellroy.com/products/category/wallets",
+    "https://bellroy.com/customer-care/shipping-delivery",
+    "https://www.amazon.co.uk/Bellroy-Wallet-Magnetic-Leather-Holder/dp/B0GJ5R9CQY",
+    "https://wildbounds.com/collections/bellroy-wallets"
+   ],
+   "note": "[Builder's choice, 18 Oct 2026: the from price is the Mag Wallet at £39.00, Bellroy's own list price, read as 'New (2) from £39.00' on Amazon UK's listing sold by Bellroy EU; the helper's £25.00 was another Mag Wallet listing (the INNOVERA Edition) whose lowest 'New from' offer may be a third party's, and its buy-box price was hidden.] Range page: Bellroy's wallets page (35 items on 18 Oct). Bellroy (Australian) sells worldwide and prices in the visitor's currency, so its pages showed US dollars to my reader, never pounds (sorted by price its cheapest wallet is the Mag Wallet INNOVERA Edition at $25-$45; Hide & Seek $95); its shipping page says express delivery to the UK takes 1-3 working days. Pounds read on UK pages: Amazon UK's listing of that Mag Wallet INNOVERA Edition shows 'New (2) from £25.00' (its buy-box price is hidden until the item is added to the basket). The same page shows other Bellroy wallets at £39.00 (Mag Wallet), £49.00 (Card Sleeve), £75.00 (Slim Sleeve), £85.00 (Note Sleeve), £69.99-£85.00 (Hide & Seek) and £119.00 (Apex Slim Sleeve); the Mag Wallet listing (sold by Bellroy EU) says 'New (2) from £39.00'. WildBounds, a UK shop in Bristol, lists nine Bellroy wallets, all available, from £84.95 (Hide & Seek) to £148.95 (Travel Folio). From price: £25.00 is for the small magnetic Mag Wallet card holder (holds 3 cards); the usual billfolds start at about £75-£85."
+  },
+  {
+   "product": "UPPAbaby Cruz stroller",
+   "category": "general",
+   "product_type": "stroller",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/uppababy-cruz-v3-pushchair/liam/p113972182",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/uppababy-cruz-v3-pushchair/liam/p113972182",
+    "https://uppababy.co.uk/strollers/full-size/cruz-v3/",
+    "https://www.kiddies-kingdom.com/strollers/63858-uppababy-cruz-v3-pushchair-jake.html",
+    "https://www.kiddies-kingdom.com/strollers/63828-uppababy-cruz-v3-pushchair-liam.html",
+    "https://www.kiddies-kingdom.com/strollers/63831-uppababy-cruz-v3-pushchair-owen.html"
+   ],
+   "note": "Range page: UPPAbaby UK's Cruz V3 page (the Cruz V3 is its only Cruz stroller; nine colourways listed with Add To Cart on 18 Oct). Its page text shows no price to a reader, but its page data (schema offers, GBP, in stock) lists £749.99 for eight colourways and £559.99 for one (Charcoal, 'Jake'), whose own page now redirects to the Black ('James') page, so that figure is not counted. From price: John Lewis, UPPAbaby Cruz V3 Pushchair at £749.99 (Add to basket, 0% APR over 12 months, standard UK delivery by the supplier within 7 days, no Click & Collect; the page I read had the Dillan colourway selected and lists seven colourways). Kiddies Kingdom shows £749.99 (RRP £749.99) on its Liam and Owen pages and has the Jake colourway on offer at £599.99 (RRP £749.99, '20% off')."
+  },
+  {
+   "product": "Oral-B electric toothbrush",
+   "category": "general",
+   "product_type": "electric toothbrush",
+   "price": null,
+   "currency": "GBP",
+   "shop": "LloydsPharmacy",
+   "url": "https://lloydspharmacy.com/products/oral-b-pro-series-1-pink-electric-toothbrush-with-case",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://lloydspharmacy.com/products/oral-b-pro-series-1-pink-electric-toothbrush-with-case",
+    "https://www.oralb.co.uk/en-gb/product-collections/electric-toothbrushes/all",
+    "https://lloydspharmacy.com/collections/adult-electric-toothbrushes"
+   ],
+   "note": "Range page: Oral-B UK's electric toothbrushes page (iO, Genius, Pro, Smart and Vitality series; it shows no prices). From price: Lloyds Pharmacy (UK online pharmacy), Oral-B Pro Series 1 Pink Electric Toothbrush with Case at £21.00 (listed with a compare-at price of £70.00, part of its October 'better than half price on selected Oral-B' offer; in stock). Its other Oral-B rechargeable handles on 18 Oct: Pro 1 Cross Action Black & Travel Case £30.00 (was £69.99), iO2 from £39.00 (was £100), iO3 £53.00-£64.00, Vitality Pro with an extra head £50.00; a children's Vitality Pro Disney 100 at £19.99 is not counted. Boots, Superdrug, Argos, Currys, Tesco, Asda, Sainsbury's, Morrisons, Ocado and AO refused automated reads (403 or a bot check) on 18 Oct, so their Vitality and Pro 1 prices could not be read."
+  },
+  {
+   "product": "Kirkland dog bed",
+   "category": "general",
+   "product_type": "dog bed",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Costco UK",
+   "url": "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/Kirkland-Signature-21-x-25-Wide-Walled-Cuddler-Pet-Bed-in-4-Options/p/1851837",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/Kirkland-Signature-21-x-25-Wide-Walled-Cuddler-Pet-Bed-in-4-Options/p/1851837",
+    "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/c/cos_6.12",
+    "https://www.costco.co.uk/c/Kirkland-Signature-21-x-25-Rectangular-Nuzzler-Ped-Bed-in-Brown/p/1348743B",
+    "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/Kirkland-Signature-42-1067cm-Round-Pet-Bed-in-2-Colours/p/1834421",
+    "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/Kirkland-Signature-42-Round-Pet-Bed-in-6-Designs/p/1348470",
+    "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/Kirkland-Signature-Square-Plush-Tufted-Napper-Pet-Bed-40-1016cm-in-2-Colours/p/1676930",
+    "https://www.costco.co.uk/Grocery-Household/Speciality/Kirkland-Signature/Kirkland-Signature-25-x-35-635-x-889cm-Bolstered-Sofa-Pet-Bed-in-2-Designs/p/1259357",
+    "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/Kirkland-Signature-Duke-Bolster-Pet-Bed-11684-x-9144cm-46-x-36-in-2-Colours/p/1834416",
+    "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/Kirkland-Signature-Oval-Cuddler-Pet-Bed-46-x-32-116cm-x-81cm-in-2-Colours/p/1815236"
+   ],
+   "note": "Kirkland Signature is Costco's own brand; Costco UK (a membership warehouse club) lists its pet beds in its Pets & Wildlife section, the range page. Costco's pages load prices by script, but the page source carries them; read there on 18 Oct (page text: 'Shipping Included. Item may be available in your local warehouse, prices may vary'; postcode delivery restrictions may apply): 21\" x 25\" Wide Walled Cuddler Pet Bed 'Starting at £27.99', 4 options (Grey, Grey Pattern, Brown, Cream), in stock, described as for dogs and cats - the from price, a small bed; 21\" x 25\" Rectangular Nuzzler £27.99 (out of stock); 42\" (106.7cm) Round Pet Bed £34.69 in 2 colours (in stock; the Grey page shows out of stock); 42\" Round in 6 designs £36.99; 32\" x 42\" Pillow Top Gusseted £36.99 (category page); 40\" Square Plush Tufted Napper £42.99; 25\" x 35\" Bolstered Sofa Pet Bed £49.99; Duke Bolster 46\" x 36\" and Oval Cuddler 46\" x 32\" £51.99."
+  },
+  {
+   "product": "Big Agnes tent",
+   "category": "general",
+   "product_type": "tent",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Absolute Snow",
+   "url": "https://www.absolute-snow.co.uk/big-agnes-blacktail-2-tents,-bivvys--extensions",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.absolute-snow.co.uk/big-agnes-blacktail-2-tents,-bivvys--extensions",
+    "https://www.absolute-snow.co.uk/brands/big-agnes",
+    "https://www.absolute-snow.co.uk/big-agnes-tiger-wall-ul1-tents,-bivvys--extensions",
+    "https://www.absolute-snow.co.uk/big-agnes-tiger-wall-ul2-tents,-bivvys--extensions",
+    "https://www.absolute-snow.co.uk/big-agnes-tiger-wall-ul3-tents,-bivvys--extensions",
+    "https://www.absolute-snow.co.uk/big-agnes-tiger-wall-ul2-bikepack-tents,-bivvys--extensions",
+    "https://www.absolute-snow.co.uk/big-agnes-copper-spur-ul2-tents,-bivvys--extensions"
+   ],
+   "note": "Absolute Snow (UK outdoor shop) lists 17 Big Agnes products on 18 Oct, six of them tents. I read each tent's own page: Blacktail 2 £224.95 (was £249.95), Tiger Wall UL1 £377.95 (was £419.95), Tiger Wall UL2 £422.95 (was £469.95), Tiger Wall UL3 £467.95 (was £519.95), Tiger Wall UL2 Bikepack £476.95 (was £529.95), Copper Spur UL2 £522.45 (was £549.95). From price: the Blacktail 2 two-person tent at £224.95 (colour Vetiver, size 2P; its page data says in stock, while the page text reads 'Pre-order yours today' beside Add To Basket, as on all six tent pages). The shop's AUTUMN10 code (extra 10% off sale items until 31 Oct) is not counted."
+  },
+  {
+   "product": "Osprey Daylite Expandable 26+6",
+   "category": "general",
+   "product_type": "backpack",
+   "price": 78.26,
+   "currency": "GBP",
+   "shop": "Alpinetrek",
+   "url": "https://www.alpinetrek.co.uk/osprey-daylite-expandable-travel-pack-26-6-travel-backpack/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.alpinetrek.co.uk/osprey-daylite-expandable-travel-pack-26-6-travel-backpack/",
+    "https://www.trekitt.co.uk/rucksacks/everyday-commuter-packs/osprey-daylite-expandable-travel-pack-26-plus-6-black__58502",
+    "https://www.amazon.co.uk/dp/B0F5H83T7V"
+   ],
+   "note": "Osprey's Daylite Expandable Travel Pack 26+6 (26 litres, expands by 6; 840g). Osprey's own UK store refused automated reads (403), so the price is from UK shops. Alpinetrek (UK site of a German outdoor shop), item 502-8884, black only: 'Original price £89.95, Price £78.26 incl. duties and taxes' plus shipping (free delivery from £85 to GB), 'All items in stock', delivery 5-7 working days. Trekitt (UK shop) lists the black and the Night Shift Blue at £76.50 (was £90.00, 15% off), but its page gives no stock status (despatch date 'Undetermined'), so it is not used. Amazon UK's Tunnel Vision Grey page says 'Currently unavailable'."
+  },
+  {
+   "product": "Rockwell 6S",
+   "category": "general",
+   "product_type": "razor",
+   "price": 92.0,
+   "currency": "GBP",
+   "shop": "Rockwell Razors UK",
+   "url": "https://uk.getrockwell.com/products/rockwell-6s-adjustable-safety-razor",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://uk.getrockwell.com/products/rockwell-6s-adjustable-safety-razor",
+    "https://getrockwell.com/products/rockwell-6s-adjustable-safety-razor",
+    "https://www.theenglishshavingcompany.com/rockwell-6s-adjustable-stainless-steel-safety-razor.html",
+    "https://www.theenglishshavingcompany.com/rockwell-6s-adjustable-stainless-steel-safety-razor-matte-black.html",
+    "https://www.theenglishshavingcompany.com/shop-by-brand/rockwell.html"
+   ],
+   "note": "The Rockwell 6S is Rockwell Razors' adjustable double-edge safety razor (6 settings from 3 reversible base plates, 316L stainless steel, lifetime warranty). Rockwell's own UK store (uk.getrockwell.com, prices in GBP, reached through the site's United Kingdom selector) lists the Rockwell 6S Adjustable Stainless Steel Razor at £92.00 in Matte Stainless Steel, £115.00 in Black Stainless Steel and £192.00 in 24K Gold, all available with Add to cart and 'Free Shipping for all orders'; the page says taxes and shipping are calculated at checkout (its US page shows $120 USD). The English Shaving Company (UK) also sells it: stainless 6S RRP £109.00 (the page also shows £90.83 excluding VAT), in stock; Matte Black RRP £136.00 (£113.33 excluding VAT), in stock. The colour changes the price."
+  },
+  {
+   "product": "Garmin Forerunner 965",
+   "category": "general",
+   "product_type": "sports watch",
+   "price": 499.99,
+   "currency": "GBP",
+   "shop": "Garmin UK",
+   "url": "https://www.garmin.com/en-GB/p/886725/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.garmin.com/en-GB/p/886725/",
+    "https://www.sportsshoes.com/product/gar254/garmin-forerunner-965-gps-watch",
+    "https://www.garmin.com/en-GB/c/sports-fitness/running-smartwatches/",
+    "https://www.johnlewis.com/browse/electricals/smart-watches-wearable-tech/view-all-smart-watches/garmin/_/N-5nmcZ1z13y4o",
+    "https://www.runnersneed.com/c/electronics/garmin-forerunner.html"
+   ],
+   "note": "Still sold new in the UK: Garmin UK's own store page for the Forerunner 965 (filed under its 'Previous Models' category and marked not discontinued) shows it in stock with Add To Cart, delivery in 1-3 days, list price £499.99 for each of its three versions (e.g. Carbon Grey DLC Titanium Bezel with Black Case and Amp Yellow/Black band); the price is in the page's data (schema offer 499.99 GBP, no sale price). SportsShoes shows it at £399.99 (RRP £499.99) but out of stock in every colour on 18 Oct. Garmin UK's running watches page, John Lewis's Garmin list (30 watches) and Runners Need's Forerunner list (9 models) do not show it, listing newer Forerunners (970, 570, 170, 70) instead, but the 965 is not discontinued."
+  },
+  {
+   "product": "965",
+   "category": "general",
+   "product_type": "sports watch",
+   "price": 499.99,
+   "currency": "GBP",
+   "shop": "Garmin UK",
+   "url": "https://www.garmin.com/en-GB/p/886725/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.garmin.com/en-GB/p/886725/",
+    "https://www.sportsshoes.com/product/gar254/garmin-forerunner-965-gps-watch",
+    "https://www.garmin.com/en-GB/c/sports-fitness/running-smartwatches/",
+    "https://www.johnlewis.com/browse/electricals/smart-watches-wearable-tech/view-all-smart-watches/garmin/_/N-5nmcZ1z13y4o",
+    "https://www.runnersneed.com/c/electronics/garmin-forerunner.html"
+   ],
+   "note": "'965' is a writer's shorthand for the Garmin Forerunner 965 running watch. Still sold new in the UK: Garmin UK's own store page for the Forerunner 965 (filed under its 'Previous Models' category and marked not discontinued) shows it in stock with Add To Cart, delivery in 1-3 days, list price £499.99 for each of its three versions (e.g. Carbon Grey DLC Titanium Bezel with Black Case and Amp Yellow/Black band); the price is in the page's data (schema offer 499.99 GBP, no sale price). SportsShoes shows it at £399.99 (RRP £499.99) but out of stock in every colour on 18 Oct. Garmin UK's running watches page, John Lewis's Garmin list (30 watches) and Runners Need's Forerunner list (9 models) do not show it, listing newer Forerunners (970, 570, 170, 70) instead, but the 965 is not discontinued."
+  },
+  {
+   "product": "Feathered Friends sleeping bag",
+   "category": "general",
+   "product_type": "sleeping bag",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Feathered Friends",
+   "url": "https://featheredfriends.com/collections/sleeping-bags",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://featheredfriends.com/collections/sleeping-bags",
+    "https://www.ultralightoutdoorgear.co.uk/brands"
+   ],
+   "note": "not sold to UK shoppers: Feathered Friends (Seattle; also written FF) makes down sleeping bags and quilts, hand-made in Seattle, and sells them from its own online store (a US store with a Canadian storefront). I found no UK seller: Ultralight Outdoor Gear, the UK specialist, does not list the brand (it lists Western Mountaineering and Enlightened Equipment), searches of UK outdoor shops found none, and UK eBay shows only individual sellers, many shipping from the US. The maker's online store was behind a 'back soon' maintenance page on 18 Oct, so its range, prices and shipping terms could not be read; its collection pages in search results (prices in US dollars) cover three-season, ultralight, YF, women's and winter/expedition bags (e.g. Swallow UL, Lark, Egret UL, Snowbunting ES). Not sold in the UK: only from the maker's US store."
   }
  ]
 }

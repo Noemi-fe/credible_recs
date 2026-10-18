@@ -7539,6 +7539,200 @@
    ],
    "checked_on": "2026-10-18",
    "note": "From the research of 18 Oct (found-17, Big Agnes Copper Spur tent line): Absolute Snow, a UK outdoor shop, lists six Big Agnes tents (pre-orders with Add to Basket); Big Agnes (US) has no UK store. No from price recorded: the cheapest of the six wasn't read (the Copper Spur UL2 is £522.45 there, its line's from price)."
+  },
+  {
+   "product": "UPPAbaby Cruz stroller line",
+   "category": "general",
+   "product_type": "stroller",
+   "page": "https://uppababy.co.uk/strollers/full-size/cruz-v3/",
+   "shop": "UPPAbaby UK",
+   "sources": [
+    "https://uppababy.co.uk/strollers/full-size/cruz-v3/",
+    "https://www.johnlewis.com/uppababy-cruz-v3-pushchair/liam/p113972182",
+    "https://www.kiddies-kingdom.com/strollers/63858-uppababy-cruz-v3-pushchair-jake.html",
+    "https://www.kiddies-kingdom.com/strollers/63828-uppababy-cruz-v3-pushchair-liam.html",
+    "https://www.kiddies-kingdom.com/strollers/63831-uppababy-cruz-v3-pushchair-owen.html"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Range page: UPPAbaby UK's Cruz V3 page (the Cruz V3 is its only Cruz stroller; nine colourways listed with Add To Cart on 18 Oct). Its page text shows no price to a reader, but its page data (schema offers, GBP, in stock) lists £749.99 for eight colourways and £559.99 for one (Charcoal, 'Jake'), whose own page now redirects to the Black ('James') page, so that figure is not counted. From price: John Lewis, UPPAbaby Cruz V3 Pushchair at £749.99 (Add to basket, 0% APR over 12 months, standard UK delivery by the supplier within 7 days, no Click & Collect; the page I read had the Dillan colourway selected and lists seven colourways). Kiddies Kingdom shows £749.99 (RRP £749.99) on its Liam and Owen pages and has the Jake colourway on offer at £599.99 (RRP £749.99, '20% off')."
+  },
+  {
+   "product": "Oral-B electric toothbrush line",
+   "category": "general",
+   "product_type": "electric toothbrush",
+   "page": "https://www.oralb.co.uk/en-gb/product-collections/electric-toothbrushes/all",
+   "shop": "Oral-B",
+   "sources": [
+    "https://www.oralb.co.uk/en-gb/product-collections/electric-toothbrushes/all",
+    "https://lloydspharmacy.com/products/oral-b-pro-series-1-pink-electric-toothbrush-with-case",
+    "https://lloydspharmacy.com/collections/adult-electric-toothbrushes"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Range page: Oral-B UK's electric toothbrushes page (iO, Genius, Pro, Smart and Vitality series; it shows no prices). From price: Lloyds Pharmacy (UK online pharmacy), Oral-B Pro Series 1 Pink Electric Toothbrush with Case at £21.00 (listed with a compare-at price of £70.00, part of its October 'better than half price on selected Oral-B' offer; in stock). Its other Oral-B rechargeable handles on 18 Oct: Pro 1 Cross Action Black & Travel Case £30.00 (was £69.99), iO2 from £39.00 (was £100), iO3 £53.00-£64.00, Vitality Pro with an extra head £50.00; a children's Vitality Pro Disney 100 at £19.99 is not counted. Boots, Superdrug, Argos, Currys, Tesco, Asda, Sainsbury's, Morrisons, Ocado and AO refused automated reads (403 or a bot check) on 18 Oct, so their Vitality and Pro 1 prices could not be read."
+  },
+  {
+   "product": "lululemon mats",
+   "category": "general",
+   "product_type": "yoga mat",
+   "page": "https://www.lululemon.co.uk/en-gb/c/accessories/yoga-mats",
+   "shop": "lululemon UK",
+   "sources": [
+    "https://www.lululemon.co.uk/en-gb/c/accessories/yoga-mats"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "lululemon's own UK store (lululemon.co.uk, en-gb) has a Yoga Mats category and mat pages (The Mat 5mm, The (Big) Mat 5mm, lululemon Align Yoga Mat 5mm, The Reversible Mat 5mm, The Lightweight Mat 5mm and others, as shown in search results). Its pages gave a Cloudflare 'Attention Required' block (403) to my reader again on 18 Oct, so no page could be read and no price is given (no other UK page for its mats was found). Search summaries of cached lululemon.co.uk pages put The Mat 5mm at £74-£88 and The (Big) Mat 5mm at £118; these were not read on a page and are not counted."
+  },
+  {
+   "product": "Osprey Daylite Expandable 26+6",
+   "category": "general",
+   "product_type": "backpack",
+   "page": "https://www.alpinetrek.co.uk/osprey-daylite-expandable-travel-pack-26-6-travel-backpack/",
+   "shop": "Alpinetrek",
+   "sources": [
+    "https://www.alpinetrek.co.uk/osprey-daylite-expandable-travel-pack-26-6-travel-backpack/",
+    "https://www.trekitt.co.uk/rucksacks/everyday-commuter-packs/osprey-daylite-expandable-travel-pack-26-plus-6-black__58502",
+    "https://www.amazon.co.uk/dp/B0F5H83T7V"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Osprey's Daylite Expandable Travel Pack 26+6 (26 litres, expands by 6; 840g). Osprey's own UK store refused automated reads (403), so the price is from UK shops. Alpinetrek (UK site of a German outdoor shop), item 502-8884, black only: 'Original price £89.95, Price £78.26 incl. duties and taxes' plus shipping (free delivery from £85 to GB), 'All items in stock', delivery 5-7 working days. Trekitt (UK shop) lists the black and the Night Shift Blue at £76.50 (was £90.00, 15% off), but its page gives no stock status (despatch date 'Undetermined'), so it is not used. Amazon UK's Tunnel Vision Grey page says 'Currently unavailable'."
+  },
+  {
+   "product": "Rockwell 6S",
+   "category": "general",
+   "product_type": "razor",
+   "page": "https://uk.getrockwell.com/products/rockwell-6s-adjustable-safety-razor",
+   "shop": "Rockwell Razors UK",
+   "sources": [
+    "https://uk.getrockwell.com/products/rockwell-6s-adjustable-safety-razor",
+    "https://getrockwell.com/products/rockwell-6s-adjustable-safety-razor",
+    "https://www.theenglishshavingcompany.com/rockwell-6s-adjustable-stainless-steel-safety-razor.html",
+    "https://www.theenglishshavingcompany.com/rockwell-6s-adjustable-stainless-steel-safety-razor-matte-black.html",
+    "https://www.theenglishshavingcompany.com/shop-by-brand/rockwell.html"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "The Rockwell 6S is Rockwell Razors' adjustable double-edge safety razor (6 settings from 3 reversible base plates, 316L stainless steel, lifetime warranty). Rockwell's own UK store (uk.getrockwell.com, prices in GBP, reached through the site's United Kingdom selector) lists the Rockwell 6S Adjustable Stainless Steel Razor at £92.00 in Matte Stainless Steel, £115.00 in Black Stainless Steel and £192.00 in 24K Gold, all available with Add to cart and 'Free Shipping for all orders'; the page says taxes and shipping are calculated at checkout (its US page shows $120 USD). The English Shaving Company (UK) also sells it: stainless 6S RRP £109.00 (the page also shows £90.83 excluding VAT), in stock; Matte Black RRP £136.00 (£113.33 excluding VAT), in stock. The colour changes the price."
+  },
+  {
+   "product": "B Yoga B Mat",
+   "category": "general",
+   "product_type": "yoga mat",
+   "page": "https://bhalfmoon.com/products/b-mat-everyday-4mm",
+   "shop": "b, halfmoon",
+   "sources": [
+    "https://bhalfmoon.com/products/b-mat-everyday-4mm",
+    "https://us.bhalfmoon.com/products/b-mat-everyday-4mm",
+    "https://bhalfmoon.eu/products/b-mat-everyday-4mm",
+    "https://bhalfmoon.eu/pages/help-centre",
+    "https://bhalfmoon.com/pages/help-centre"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "B Yoga is the B Mat yoga mat brand, now writing its name 'b, halfmoon' (Canadian; bhalfmoon.com). Mats: Everyday 4mm (also Long), Strong 6mm, Traveller 2mm and others. Its own stores: Canada (Everyday C$124.00), US (US$118.00) and Europe (bhalfmoon.eu, €90,00, most colours sold out on 18 Oct); its ship-to menu offers Canada, United States, Europe and the UAE, with no UK store, but its EU help centre mentions UK import VAT and customs duties on parcels, so the EU store seems to ship to the UK (price in euros). Search results show the mat on UK shop pages (Free People UK, a Decathlon UK marketplace seller, Amazon UK), but those refused automated reads (403, 403, 503), so neither a UK sale nor a UK price was confirmed. Unsure: likely buyable in the UK, price not read."
+  },
+  {
+   "product": "Garmin Forerunner 965",
+   "category": "general",
+   "product_type": "sports watch",
+   "page": "https://www.garmin.com/en-GB/p/886725/",
+   "shop": "Garmin UK",
+   "sources": [
+    "https://www.garmin.com/en-GB/p/886725/",
+    "https://www.sportsshoes.com/product/gar254/garmin-forerunner-965-gps-watch",
+    "https://www.garmin.com/en-GB/c/sports-fitness/running-smartwatches/",
+    "https://www.johnlewis.com/browse/electricals/smart-watches-wearable-tech/view-all-smart-watches/garmin/_/N-5nmcZ1z13y4o",
+    "https://www.runnersneed.com/c/electronics/garmin-forerunner.html"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Still sold new in the UK: Garmin UK's own store page for the Forerunner 965 (filed under its 'Previous Models' category and marked not discontinued) shows it in stock with Add To Cart, delivery in 1-3 days, list price £499.99 for each of its three versions (e.g. Carbon Grey DLC Titanium Bezel with Black Case and Amp Yellow/Black band); the price is in the page's data (schema offer 499.99 GBP, no sale price). SportsShoes shows it at £399.99 (RRP £499.99) but out of stock in every colour on 18 Oct. Garmin UK's running watches page, John Lewis's Garmin list (30 watches) and Runners Need's Forerunner list (9 models) do not show it, listing newer Forerunners (970, 570, 170, 70) instead, but the 965 is not discontinued."
+  },
+  {
+   "product": "965",
+   "category": "general",
+   "product_type": "sports watch",
+   "page": "https://www.garmin.com/en-GB/p/886725/",
+   "shop": "Garmin UK",
+   "sources": [
+    "https://www.garmin.com/en-GB/p/886725/",
+    "https://www.sportsshoes.com/product/gar254/garmin-forerunner-965-gps-watch",
+    "https://www.garmin.com/en-GB/c/sports-fitness/running-smartwatches/",
+    "https://www.johnlewis.com/browse/electricals/smart-watches-wearable-tech/view-all-smart-watches/garmin/_/N-5nmcZ1z13y4o",
+    "https://www.runnersneed.com/c/electronics/garmin-forerunner.html"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "'965' is a writer's shorthand for the Garmin Forerunner 965 running watch. Still sold new in the UK: Garmin UK's own store page for the Forerunner 965 (filed under its 'Previous Models' category and marked not discontinued) shows it in stock with Add To Cart, delivery in 1-3 days, list price £499.99 for each of its three versions (e.g. Carbon Grey DLC Titanium Bezel with Black Case and Amp Yellow/Black band); the price is in the page's data (schema offer 499.99 GBP, no sale price). SportsShoes shows it at £399.99 (RRP £499.99) but out of stock in every colour on 18 Oct. Garmin UK's running watches page, John Lewis's Garmin list (30 watches) and Runners Need's Forerunner list (9 models) do not show it, listing newer Forerunners (970, 570, 170, 70) instead, but the 965 is not discontinued."
+  },
+  {
+   "product": "Garmin Forerunner 955",
+   "category": "general",
+   "product_type": "sports watch",
+   "page": "https://www.garmin.com/en-GB/p/777655/",
+   "shop": "Garmin UK",
+   "sources": [
+    "https://www.garmin.com/en-GB/p/777655/",
+    "https://www.sportsshoes.com/product/gar238/garmin-forerunner-955-gps-watch",
+    "https://www.tredz.co.uk/.Garmin-Forerunner-955-GPS-Watch_249678.htm",
+    "https://www.amazon.co.uk/dp/B09WTTD27P",
+    "https://www.garmin.com/en-GB/c/sports-fitness/running-smartwatches/",
+    "https://www.johnlewis.com/browse/electricals/smart-watches-wearable-tech/view-all-smart-watches/garmin/_/N-5nmcZ1z13y4o",
+    "https://www.runnersneed.com/c/electronics/garmin-forerunner.html"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Not found sold new in the UK on 18 Oct, but not provably discontinued. Garmin UK's page for the Forerunner 955 (Previous Models; list prices £449.99 and £389.99 by version) has no Add To Cart and shows it not in stock (5-8 weeks), and its data says 'discontinued: false'; Garmin's US and Irish pages are the same. UK shops I could read: SportsShoes shows every 955 and 955 Solar page out of stock (the 955 at £298.99, RRP £439.99), Tredz's 955 page says 'This product is no longer available', Amazon UK's Black 955 page says 'Currently unavailable', and John Lewis and Runners Need no longer list it. Boots (its 955 page gave a bot check), Currys, Argos, Decathlon, GO Outdoors, Millets and Very refused reading (403 or a bot check), so leftover new stock there can't be ruled out. Likely discontinued; status unsure."
+  },
+  {
+   "product": "955",
+   "category": "general",
+   "product_type": "sports watch",
+   "page": "https://www.garmin.com/en-GB/p/777655/",
+   "shop": "Garmin UK",
+   "sources": [
+    "https://www.garmin.com/en-GB/p/777655/",
+    "https://www.sportsshoes.com/product/gar238/garmin-forerunner-955-gps-watch",
+    "https://www.tredz.co.uk/.Garmin-Forerunner-955-GPS-Watch_249678.htm",
+    "https://www.amazon.co.uk/dp/B09WTTD27P",
+    "https://www.garmin.com/en-GB/c/sports-fitness/running-smartwatches/",
+    "https://www.johnlewis.com/browse/electricals/smart-watches-wearable-tech/view-all-smart-watches/garmin/_/N-5nmcZ1z13y4o",
+    "https://www.runnersneed.com/c/electronics/garmin-forerunner.html"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "'955' is a writer's shorthand for the Garmin Forerunner 955 running watch. Not found sold new in the UK on 18 Oct, but not provably discontinued. Garmin UK's page for the Forerunner 955 (Previous Models; list prices £449.99 and £389.99 by version) has no Add To Cart and shows it not in stock (5-8 weeks), and its data says 'discontinued: false'; Garmin's US and Irish pages are the same. UK shops I could read: SportsShoes shows every 955 and 955 Solar page out of stock (the 955 at £298.99, RRP £439.99), Tredz's 955 page says 'This product is no longer available', Amazon UK's Black 955 page says 'Currently unavailable', and John Lewis and Runners Need no longer list it. Boots (its 955 page gave a bot check), Currys, Argos, Decathlon, GO Outdoors, Millets and Very refused reading (403 or a bot check), so leftover new stock there can't be ruled out. Likely discontinued; status unsure."
+  },
+  {
+   "product": "Garmin Forerunner 255",
+   "category": "general",
+   "product_type": "sports watch",
+   "page": "https://www.garmin.com/en-GB/p/780139/",
+   "shop": "Garmin UK",
+   "sources": [
+    "https://www.garmin.com/en-GB/p/780139/",
+    "https://www.sportsshoes.com/product/gar229/garmin-forerunner-255-gps-watch",
+    "https://www.tredz.co.uk/.Garmin-Forerunner-255-GPS-Watch_249679.htm",
+    "https://www.gadcet.com/products/garmin-forerunner-255-easy-to-use-lightweight-gps-running-smartwatch-advanced-training-and-recovery-insights-safety-and-tracking-features-included-up-to-14-days-battery-life-slate-grey",
+    "https://www.amazon.co.uk/dp/B09WTP57Z5",
+    "https://www.garmin.com/en-GB/c/sports-fitness/running-smartwatches/",
+    "https://www.johnlewis.com/browse/electricals/smart-watches-wearable-tech/view-all-smart-watches/garmin/_/N-5nmcZ1z13y4o",
+    "https://www.runnersneed.com/c/electronics/garmin-forerunner.html"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Not found sold new in the UK on 18 Oct, but not provably discontinued. Garmin UK's page for the Forerunner 255 (46mm; the 255S, 255 Music and 255S Music are variants; Previous Models; £259.99 or £299.99 by version) has no Add To Cart and shows it not in stock (5-8 weeks), and its data says 'discontinued: false'; Garmin's US and Irish pages are the same. UK shops I could read: SportsShoes shows its 255 pages out of stock (£299.99), Tredz says 'This product is no longer available', Gadcet UK's 255 (£229.00, was £299.99) is out of stock new and used, Cotswold Outdoor's old 255 page is gone (404), Amazon UK's main 255 listing offers only used or 'newly overhauled' units (from £199.95), and John Lewis and Runners Need do not list it. Currys, Decathlon, Millets, GO Outdoors, Very, Boots and Argos refused reading (403 or a bot check) and search results show 255-family pages at several of them, so leftover new stock can't be ruled out. Likely discontinued; status unsure."
+  },
+  {
+   "product": "255",
+   "category": "general",
+   "product_type": "sports watch",
+   "page": "https://www.garmin.com/en-GB/p/780139/",
+   "shop": "Garmin UK",
+   "sources": [
+    "https://www.garmin.com/en-GB/p/780139/",
+    "https://www.sportsshoes.com/product/gar229/garmin-forerunner-255-gps-watch",
+    "https://www.tredz.co.uk/.Garmin-Forerunner-255-GPS-Watch_249679.htm",
+    "https://www.gadcet.com/products/garmin-forerunner-255-easy-to-use-lightweight-gps-running-smartwatch-advanced-training-and-recovery-insights-safety-and-tracking-features-included-up-to-14-days-battery-life-slate-grey",
+    "https://www.amazon.co.uk/dp/B09WTP57Z5",
+    "https://www.garmin.com/en-GB/c/sports-fitness/running-smartwatches/",
+    "https://www.johnlewis.com/browse/electricals/smart-watches-wearable-tech/view-all-smart-watches/garmin/_/N-5nmcZ1z13y4o",
+    "https://www.runnersneed.com/c/electronics/garmin-forerunner.html"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "'255' is a writer's shorthand for the Garmin Forerunner 255 running watch. Not found sold new in the UK on 18 Oct, but not provably discontinued. Garmin UK's page for the Forerunner 255 (46mm; the 255S, 255 Music and 255S Music are variants; Previous Models; £259.99 or £299.99 by version) has no Add To Cart and shows it not in stock (5-8 weeks), and its data says 'discontinued: false'; Garmin's US and Irish pages are the same. UK shops I could read: SportsShoes shows its 255 pages out of stock (£299.99), Tredz says 'This product is no longer available', Gadcet UK's 255 (£229.00, was £299.99) is out of stock new and used, Cotswold Outdoor's old 255 page is gone (404), Amazon UK's main 255 listing offers only used or 'newly overhauled' units (from £199.95), and John Lewis and Runners Need do not list it. Currys, Decathlon, Millets, GO Outdoors, Very, Boots and Argos refused reading (403 or a bot check) and search results show 255-family pages at several of them, so leftover new stock can't be ruled out. Likely discontinued; status unsure."
   }
  ]
 }

@@ -2802,9 +2802,13 @@
    "category": "general",
    "product_type": "electric toothbrush",
    "sells": true,
-   "sources": ["https://www.oralb.co.uk/en-gb/products/electric-toothbrushes", "https://www.oralb.co.uk/electric-toothbrushes.list", "https://www.johnlewis.com/browse/beauty/electric-toothbrushes-flossers-accessories/_/N-483s"],
+   "sources": ["https://www.oralb.co.uk/en-gb/products/electric-toothbrushes", "https://www.oralb.co.uk/electric-toothbrushes.list", "https://www.johnlewis.com/browse/beauty/electric-toothbrushes-flossers-accessories/_/N-483s", "https://lloydspharmacy.com/products/oral-b-pro-series-1-pink-electric-toothbrush-with-case"],
    "checked_on": "2026-10-18",
    "range_page": "https://www.oralb.co.uk/en-gb/products/electric-toothbrushes",
+   "from_price": 21.0,
+   "from_price_shop": "LloydsPharmacy",
+   "from_price_url": "https://lloydspharmacy.com/products/oral-b-pro-series-1-pink-electric-toothbrush-with-case",
+   "from_price_checked_on": "2026-10-18",
    "note": "From the research findings of 2026-10-18: Oral-B's UK site lists its electric toothbrush lines (iO, Genius, Pro, Smart, Vitality), but its shop page loads products and prices with scripts, so no price could be read. John Lewis's electric toothbrushes page lists only Oral-B iO models on 18 Oct (9 items; the iO6 from £120 is the cheapest). Oral-B's cheaper Pro and Vitality brushes are mostly sold at shops whose pages refuse automated reads (Boots, Argos, Currys). No clean from price."
   },
   {
@@ -3026,6 +3030,10 @@
    "sources": ["https://bellroy.com/products/category/wallets", "https://bellroy.com/", "https://bellroy.com/products/hide-and-seek-wallet", "https://www.amazon.co.uk/Bellroy-Mag-Wallet-Leather-Magnetic/dp/B0FN7BMRQ5", "https://www.johnlewis.com/search?search-term=bellroy%20wallet"],
    "checked_on": "2026-10-18",
    "range_page": "https://bellroy.com/products/category/wallets",
+   "from_price": 39.0,
+   "from_price_shop": "Amazon UK",
+   "from_price_url": "https://www.amazon.co.uk/Bellroy-Mag-Wallet-Leather-Magnetic/dp/B0FN7BMRQ5",
+   "from_price_checked_on": "2026-10-18",
    "note": "From the research findings of 2026-10-18: Bellroy (Australian) sells its wallets (billfolds, card holders, zip and passport wallets) direct worldwide on bellroy.com, which prices in the visitor's currency (its Hide & Seek page says it picks the version for visitors paying in British pounds), and on Amazon UK, sold by 'Bellroy EU' and dispatched by Amazon (Mag Wallet listing). Neither showed a price to my reader on 18 Oct: bellroy.com renders prices by script, and Amazon's buy box asked to add the item to the basket to see it. No big UK shop found: John Lewis has none, Selfridges refused reading. Search snippets of Amazon UK listings put Bellroy wallets from £39 (Mag Wallet) and £59 (Card Pocket) to £85-£119 (Note Sleeve, Hide & Seek), not verified. Sold new to UK shoppers; no from price."
   },
   {
@@ -3052,6 +3060,10 @@
    "checked_on": "2026-10-18",
    "range_page": "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/c/cos_6.12",
    "range_shop": "Costco UK",
+   "from_price": 27.99,
+   "from_price_shop": "Costco UK",
+   "from_price_url": "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/Kirkland-Signature-21-x-25-Wide-Walled-Cuddler-Pet-Bed-in-4-Options/p/1851837",
+   "from_price_checked_on": "2026-10-18",
    "note": "From the research findings of 2026-10-18: Kirkland Signature is Costco's own brand. Costco UK (a membership warehouse club) has Kirkland Signature dog and pet bed pages on 18 Oct, e.g. the 21\" x 25\" Rectangular Nuzzler Pet Bed, the 21\" x 25\" Wide Walled Cuddler Pet Bed and the 42\" (106.7cm) Round Pet Bed; its Pets & Wildlife page, which holds them, is the closest range page. Its pages load prices and stock by script, so no price could be read; search listings show these beds from about £27.99 (not read on a page)."
   },
   {
@@ -3260,10 +3272,14 @@
    "category": "general",
    "product_type": "stroller",
    "sells": true,
-   "sources": ["https://uppababy.co.uk/strollers/full-size/cruz-v3/ada/", "https://uppababy.com/country-select/", "https://uppababy.co.uk/strollers/full-size/"],
+   "sources": ["https://uppababy.co.uk/strollers/full-size/cruz-v3/ada/", "https://uppababy.com/country-select/", "https://uppababy.co.uk/strollers/full-size/", "https://www.johnlewis.com/uppababy-cruz-v3-pushchair/liam/p113972182"],
    "checked_on": "2026-10-18",
    "range_page": "https://uppababy.co.uk/strollers/full-size/cruz-v3/ada/",
    "range_shop": "UPPAbaby UK",
+   "from_price": 749.99,
+   "from_price_shop": "John Lewis",
+   "from_price_url": "https://www.johnlewis.com/uppababy-cruz-v3-pushchair/liam/p113972182",
+   "from_price_checked_on": "2026-10-18",
    "note": "From the research findings of 2026-10-18: UPPAbaby's own UK store (uppababy.co.uk) sells the Cruz V3 (with Add To Cart, e.g. the Ada colourway) on 18 Oct, but its pages show no prices to the reader (none in the page text or data), so no from price. The Cruz V3 is its only Cruz model listed."
   },
   {
@@ -3374,11 +3390,26 @@
    "category": "general",
    "product_type": "tent",
    "sells": true,
-   "sources": ["https://www.absolute-snow.co.uk/brands/big-agnes", "https://www.bigagnes.com/collections/tents/products.json?limit=250"],
+   "sources": ["https://www.absolute-snow.co.uk/brands/big-agnes", "https://www.bigagnes.com/collections/tents/products.json?limit=250", "https://www.absolute-snow.co.uk/big-agnes-blacktail-2-tents,-bivvys--extensions"],
    "checked_on": "2026-10-18",
    "range_page": "https://www.absolute-snow.co.uk/brands/big-agnes",
    "range_shop": "Absolute Snow",
+   "from_price": 224.95,
+   "from_price_shop": "Absolute Snow",
+   "from_price_url": "https://www.absolute-snow.co.uk/big-agnes-blacktail-2-tents,-bivvys--extensions",
+   "from_price_checked_on": "2026-10-18",
    "note": "Big Agnes (US) makes backpacking tents (its Copper Spur, Tiger Wall and other ranges on bigagnes.com, 18 Oct 2026). In the UK Absolute Snow's Big Agnes page lists six of its tents (pre-orders on 18 Oct); no from price recorded, since the cheapest of them wasn't read (the Copper Spur UL2 is £522.45 there: its line's entry)."
+  },
+  {
+   "brand": "Feathered Friends",
+   "also_called": ["FF"],
+   "category": "general",
+   "product_type": "sleeping bag",
+   "sells": true,
+   "sources": ["https://featheredfriends.com/collections/sleeping-bags", "https://www.ultralightoutdoorgear.co.uk/brands"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://featheredfriends.com/collections/sleeping-bags",
+   "note": "Feathered Friends (Seattle) makes down sleeping bags and quilts, hand-made in Seattle, rated from 40F down to -60F: three-season, ultralight, YF (Pertex YFuse), women's and winter/expedition bags (e.g. Swallow UL 20/30, Lark 10 YF, Egret UL, Snowbunting ES 0, Ptarmigan ES -25), per its collection pages in search results (prices in US dollars). Its online store (a US store with a Canadian storefront) was behind a 'back soon' maintenance page on 18 Oct, so the range page itself could not be read. Sold abroad only: no UK shop found (Ultralight Outdoor Gear's brand list does not include it; UK eBay has only individual sellers). Not sold in the UK."
   }
  ]
 }

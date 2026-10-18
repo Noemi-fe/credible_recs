@@ -407,3 +407,113 @@ def test_brooklinen_is_not_shown_as_the_running_shoe_brand_brooks():
     makers = tuple(sorted({line.brand for line in load_brand_lines() if line.category == "general"}))
     assert maker_spelling("Brook Linen", "general", makers, ()) == "Brooklinen"
     assert maker_spelling("Brooks", "general", makers, ()) == "Brooks"
+
+
+# --- The finishing round (18 Oct 2026, afternoon): prices for the picks that still had none, and the sleeping bag lines ---
+# The last builder to work on the round read the picks the answers still showed with "Price not checked yet" or
+# "Availability not checked yet" and researched each on UK pages (docs' findings, imported with engine.buyable). A line's
+# from price is the cheapest product read on a page: Bellroy's is its £39 Mag Wallet (Bellroy EU's own listing on Amazon UK,
+# the £25 listing of another edition having a hidden buy-box price), Oral-B's a sale price at an online pharmacy (the
+# big shops refused to be read), Kirkland's the smallest bed at Costco UK, Big Agnes's the two-person Blacktail.
+LINES_SOLD_IN_THE_UK_4 = [
+    (["Bellroy"], "wallet", "Bellroy", 39.0, "Amazon UK"),
+    (["UPPAbaby Cruz"], "stroller", "UPPAbaby Cruz", 749.99, "John Lewis"),
+    (["Oral-B", "Oral B", "Oral-b"], "electric toothbrush", "Oral-B", 21.0, "LloydsPharmacy"),
+    (["Kirkland"], "dog bed", "Kirkland", 27.99, "Costco UK"),
+    (["Big Agnes"], "tent", "Big Agnes", 224.95, "Absolute Snow"),
+]
+
+PRODUCTS_SOLD_IN_THE_UK_4 = [
+    ("Rockwell 6S", "razor", 92.0, "Rockwell Razors UK"),
+    ("Osprey Daylite Expandable 26+6", "backpack", 78.26, "Alpinetrek"),
+    # Garmin's Forerunner 965 is still sold new by Garmin UK (under its "Previous Models"); writers just say "965".
+    ("Garmin Forerunner 965", "sports watch", 499.99, "Garmin UK"),
+    ("965", "sports watch", 499.99, "Garmin UK"),
+]
+
+
+def test_the_finishing_rounds_lines_have_a_uk_from_price():
+    lines, prices = load_brand_lines(), load_prices()
+    for names, product_type, brand, amount, shop in LINES_SOLD_IN_THE_UK_4:
+        for name in names:
+            line = find_brand_line([name], "general", product_type, lines)
+            assert line is not None and line.brand == brand and line.sells, (name, product_type)
+            assert line.range_page and line.range_page in line.sources, (name, product_type)
+            assert (line.from_price, line.from_price_shop) == (amount, shop), (name, product_type)
+            assert line.from_price_url in line.sources and line.from_price_checked_on == ROUND, (name, product_type)
+        entry = find_brand_entry(names, "general", prices, product_type.split(), product_type)
+        assert entry is not None and entry.available is True and not entry.not_in_uk, (brand, product_type)
+
+
+def test_the_finishing_rounds_products_have_a_uk_price():
+    prices = load_prices()
+    for name, product_type, amount, shop in PRODUCTS_SOLD_IN_THE_UK_4:
+        entry = find_availability(name, "general", prices, product_type)
+        assert entry is not None and entry.available is True and entry.shop == shop, name
+        assert entry.checked_on == ROUND, name
+        price = find_price(name, "general", prices, "GBP", product_type)
+        assert (price.price if price else None) == amount, name
+
+
+def test_feathered_friends_is_a_sleeping_bag_line_sold_abroad_only():
+    """Writers name Feathered Friends ("FF") for its down sleeping bags; it sells from its own US store and no UK seller
+    was found, so its line is shown with "Not sold in the UK" (Noemi, 15 Oct 2026, evening)."""
+    lines, prices = load_brand_lines(), load_prices()
+    for name in ("Feathered Friends", "FF"):
+        line = find_brand_line([name], "general", "sleeping bag", lines)
+        assert line is not None and line.brand == "Feathered Friends" and line.sells, name
+        assert "featheredfriends.com" in line.range_page and line.range_page in line.sources, name
+        assert line.from_price is None, name
+    entry = find_brand_entry(["Feathered Friends"], "general", prices, ["sleeping", "bag"], "sleeping bag")
+    assert entry is not None and entry.available is False and entry.not_in_uk and entry.checked_on == ROUND
+
+
+BAG_PRAISE = "My {brand} bag has kept me warm below freezing for {years} winters, and it still lofts like new."
+
+
+def sleeping_bags_library(tmp_path: Path) -> Path:
+    """Two sleeping bag threads in which five writers praise Feathered Friends, three by the initials "FF" and two by the
+    full name, and one writer each names a model (a Lark YF, a Flicker): one brand written two ways, whose name fits
+    several products (module 4 marks it loose), so the brand's line should be one pick, whichever way a writer wrote it."""
+    def thread(thread_id: str, title: str, praised: list[tuple[str, str, int]]) -> dict:
+        url = f"https://www.reddit.com/r/Ultralight/comments/{thread_id}/x/"
+        comments = [make_comment(cid, thread_id=thread_id, body=BAG_PRAISE.format(brand=brand, years=years),
+                                 url=f"https://www.reddit.com/r/Ultralight/comments/{thread_id}/comment/{cid}/")
+                    for cid, brand, years in praised]
+        return make_thread(id=thread_id, community="Ultralight", category="general", title=title,
+                           body="Mine is worn out.", url=url, comments=comments)
+
+    threads = {
+        "1bag001": thread("1bag001", "Winter sleeping bag advice", [
+            ("g1aaaa", "FF", 5), ("g1bbbb", "Feathered Friends", 3), ("g1cccc", "FF", 4),
+            ("g1dddd", "Feathered Friends Lark YF", 2)]),
+        "1bag002": thread("1bag002", "Which sleeping bag lasts?", [
+            ("g2aaaa", "Feathered Friends", 6), ("g2bbbb", "FF", 2), ("g2cccc", "FF Flicker 20 degree", 1)]),
+    }
+    root = write_gold(tmp_path / "library", list(threads.values()), voices=None, mentions=None)
+    (root / "extracted").mkdir()
+    for thread_id, data in threads.items():
+        mentions = []
+        for c in data["comments"]:
+            brand = c["body"].split(" bag has ")[0].removeprefix("My ")
+            mentions.append({"comment_id": c["id"], "product": brand, "category": "general",
+                             "product_type": "sleeping bag", "stance": "recommend", "evidence": "long-term use",
+                             "evidence_tags": ["long-term use"], "quote": c["body"]})
+        (root / "extracted" / f"{thread_id}.json").write_text(json.dumps({
+            "thread_id": thread_id, "instructions_version": "extract-v15", "extracted_at": "2026-10-18T10:00:00Z",
+            "extractor": "claude-code", "mentions": mentions}), encoding="utf-8")
+    return root
+
+
+def test_feathered_friends_written_two_ways_is_one_line_shown_as_not_sold_in_the_uk(tmp_path):
+    result = answer_request("sleeping bag", library_dir=sleeping_bags_library(tmp_path), prices=load_prices(),
+                            product_facts=load_product_facts(), brand_lines=load_brand_lines(),
+                            product_pages=load_product_pages(), today=ROUND, more_threads=None)
+    # One pick, whichever way the writers wrote the brand (shown as the brand, or as its line when module 4 finds the
+    # name doesn't say the type), not sold in the UK, with the maker's range page.
+    assert len(result.answer.picks) == 1, [pick.name for pick in result.answer.picks]
+    pick = result.answer.picks[0]
+    assert pick.name.startswith("Feathered Friends"), pick.name
+    assert pick.availability.text == "Not sold in the UK, checked 18 Oct 2026"
+    page = pick.range or pick.link
+    assert page is not None and "featheredfriends.com" in page.url
