@@ -24,6 +24,8 @@ def met(request: str, body: str, thread: bool = False) -> tuple[str, ...]:
     "I am 61 years old and it is the only one I repurchase.",
     "Turning 50 next year, this is my favourite.",
     "My 63-year-old skin drinks it up.",
+    "44 yr old with combination skin and this is my favourite.",
+    "At 57 yrs old I still reach for it every evening.",
 ])
 def test_an_age_of_forty_or_more_talks_about_mature_skin(body):
     assert met("night cream for my 40s", body) == ("mature",)

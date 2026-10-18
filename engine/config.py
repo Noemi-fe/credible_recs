@@ -2281,7 +2281,7 @@ IMAGE_CHECK_TIMEOUT_SECONDS = 15
 
 # --- Converge round 1: ws-data-beauty (17 Oct 2026) ---
 # Mature skin in the words writers use (decided by Claude, 18 Oct 2026, from the skincare data round; reported to
-# Noemi). In threads about mature skin, writers mostly give their age as a number ("I'm 46", "46F", "a 58 yo") rather
+# Noemi). In threads about mature skin, writers mostly give their age as a number ("I'm 46", "46F", "a 58 yo", "44 yr old") rather
 # than a decade ("my 40s", which NEEDS already reads), so the need rule (a pick needs a credible recommendation that
 # talks about the request's needs) found almost no voice about mature skin, and "night cream for my 40s" kept one pick
 # however many threads about it were read. An age of 40 to 79 written as an age talks about mature skin, in comments
@@ -2291,6 +2291,7 @@ IMAGE_CHECK_TIMEOUT_SECONDS = 15
 # and perimenopause, forties to sixties.
 MATURE_AGES = range(40, 80)
 MATURE_AGE_FORMS = ("{n}f", "{n}yo", "{n} yo", "{n} y/o", "{n} year old", "{n} years old", "{n}-year-old",
+                    "{n} yr old", "{n} yrs old", "{n}yr old", "{n}yrs old",
                     "i'm {n}", "im {n}", "i am {n}", "turning {n}")
 NEED_COMMENT_WORDS["mature"] = NEED_COMMENT_WORDS.get("mature", ()) + tuple(
     form.format(n=n) for n in MATURE_AGES for form in MATURE_AGE_FORMS)
