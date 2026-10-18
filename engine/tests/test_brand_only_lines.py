@@ -10,9 +10,11 @@ under a must-have is left out, as a whole brand can't be checked (decided 10 Oct
 The rule (engine.pipeline._brand_only_lines): a product group becomes its brand's line only when all of these hold:
 - the brand-lines entry its names find (engine.brand_lines.find_brand_line, as for any brand name) sells the requested
   type;
-- every name of the group is that brand (or one of its other names, also_called) alone or followed only by words that
-  name no model (engine.pipeline._names_a_model: the type's words and synonyms, "non-stick", descriptions);
-- no facts or price entry its names find names one product (a model) of it: then the lists say which product it is.
+- every name of the group is that brand (or one of its other names, also_called; a co-brand's maker written alone
+  counts as the co-brand) alone or followed only by words that name no model (engine.pipeline._names_a_model: the
+  type's words and synonyms, "non-stick", descriptions);
+- no facts or price entry its names find names one product (a model) of it: then the lists say which product it is;
+- the brand's line isn't among the answer's groups already: then the existing fold applies, as before.
 
 Every brand, library, entry and comment here is made up, and every library is a temporary folder, but in the last
 tests, which read the committed lists with the names writers use for b10's brands.
