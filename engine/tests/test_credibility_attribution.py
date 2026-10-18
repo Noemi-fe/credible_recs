@@ -214,3 +214,20 @@ def test_a_short_name_of_the_same_model_is_no_sibling():
     assert not _names_a_sibling("my sony xm4 has lasted three years.", "Sony WH-1000XM4")
     assert _names_a_sibling("the sony wf-1000xm3 earbuds were fine.", "Sony WH-1000XM4")
     assert not _names_a_sibling("my zephyr has lasted ten years.", "Zephyr Air")  # no model said: it may be this one
+
+
+@pytest.mark.parametrize("body", [
+    "I bought a Quill Arc wallet for my boyfriend ten years ago and it is still going strong.",
+    "Bought my sisters some Quill Arc speakers about five years ago and they're still kicking.",
+    "My dad has a pair of Quill Arc headphones that I bought for him 12 years ago, they still work.",
+    "I ordered my girl some Quill Arc boots and she loves them.",
+])
+def test_a_gifts_use_is_the_persons_it_was_for(body):
+    assert evidence_for(body, "Quill Arc").level == NO_USE
+
+
+def test_another_persons_years_without_a_my_are_theirs_too():
+    body = "I finally got a Quill Arc toaster last month. Godmother has had one for 20+ years."
+    evidence = evidence_for(body, "Quill Arc")
+    assert evidence.level == "short-term use"
+    assert "20 years of use" not in evidence.reasons

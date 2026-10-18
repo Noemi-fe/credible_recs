@@ -928,13 +928,15 @@ _FRESH_START_CUE = re.compile(r"\b" + _FRESH_START + r"\b")
 _PEOPLE = (r"(?:sisters?|brothers?|mom|mum|mother|dad|father|parents|friends?|wife|husband|partner|boyfriend|girlfriend"
            r"|roommates?|flatmates?|housemates?|coworkers?|co-workers?|colleagues?|grandma|grandmother|grandpa"
            r"|grandfather|grandparents|nan|nana|nanna|gran|granny|aunt|uncle|cousins?|daughters?|sons?|family|folks"
-           r"|kids?|child|children|toddler|baby|fianc[eé]e?|bf|gf|step ?dad|step ?mom|step ?mum|step ?father"
+           r"|kids?|child|children|toddler|baby|fianc[eé]e?|bf|gf|so|dh|dw|hubby|wifey|missus|girl|guy|man|lady"
+           r"|step ?dad|step ?mom|step ?mum|step ?father"
            r"|step ?mother|mil|fil|in-?laws|mother-in-law|father-in-law|sister-in-law|brother-in-law|god ?mother"
            r"|god ?father|god ?parents|mates?|buddy|buddies|neighbou?rs?|boss|teacher|coach)")
 # The writer using, owning or judging something themselves. Since 17 Oct 2026 "a friend of mine" isn't the writer's,
 # nor "I have met people who own one", and "I inherited" is.
 _FIRST_HAND = re.compile(
-    r"\b(?:(?:i|we)\s+(?:also\s+|still\s+|really\s+|just\s+|personally\s+|now\s+|currently\s+|actually\s+|absolutely\s+)?"
+    r"\b(?:(?:i|we)\s+(?:also\s+|still\s+|really\s+|just\s+|personally\s+|now\s+|currently\s+|actually\s+|absolutely\s+"
+    r"|finally\s+|recently\s+|eventually\s+|originally\s+|first\s+)?"
     r"(?:use|used|using|have(?!\s+(?:heard|read|seen|met|known|watched|noticed|no|never|not|to|been told))|had|own"
     r"|owned|bought|got|tried|love|loved|like|liked|swear by|switched|went with|ended up|inherited"
     r"|keep|kept|reach for|replaced|returned|threw|stopped|started|cook|apply|sharpen|sharpened|wash)"
@@ -974,6 +976,16 @@ _SECONDHAND = re.compile(
     r"|(?:i|we)(?: have|'ve) (?:met|known|seen) (?:\w+ ){0,3}(?:people|folks|others|users|owners|workers|guys)"
     r"|fellow \w+ who)\b"
 )
+# A gift (17 Oct 2026): "I bought a Bellroy for my boyfriend", "I bought my sisters some speakers", "that I bought for
+# him": the use that follows is theirs, not the writer's, so the clause gives the writer no use of their own.
+_GIFT = re.compile(
+    r"\b(?:bought|got|ordered|gave|gifted|purchased|picked up)\b(?:\s+[\w']+){0,6}?\s+for\s+(?:my|our|his|her|their)?\s*"
+    r"(?:" + _PEOPLE + r"|him|her|them)\b"
+    r"|\b(?:bought|got|ordered|gave|gifted|purchased)\s+(?:each of |both of |one for |a pair for )?(?:my|our)\s+"
+    + _PEOPLE + r"\b")
+# Another person as the clause's subject, written without "my" ("godmother has had one for 20+ years").
+_PERSON_SUBJECT = re.compile(r"^\W*(?:(?:my|our|his|her|their)\s+)?" + _PEOPLE + r"(?:'s)?\s+(?:has|had|have|uses|used"
+                             r"|swears|swore|loves|loved|owns|owned|bought|got|still)\b")
 _SECONDHAND_REASON = "someone else's experience"
 # Heard or read about it.
 _HEARSAY = re.compile(
@@ -1086,7 +1098,9 @@ def _not_this_writers(clause: str, product_name: str, mine: frozenset[str], thei
             return True
     if _names_a_sibling(clause, product_name):
         return True
-    return bool(_SECONDHAND.search(clause)) and not _FIRST_HAND.search(clause)
+    if _GIFT.search(clause):
+        return True  # a gift's use is the person's it was for, whatever "I bought" says
+    return bool(_SECONDHAND.search(clause) or _PERSON_SUBJECT.search(clause)) and not _FIRST_HAND.search(clause)
 
 
 def _names_a_sibling(text: str, product_name: str) -> bool:
