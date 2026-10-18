@@ -192,16 +192,155 @@ def routed_by_model(text: str, model: QueryModel):
         return Routing("out_of_scope", message=OUT_OF_SCOPE_MESSAGE)
     department = category if category in GENERAL_DEPARTMENTS else None
     category = "general" if department else category
-    if category not in THREAD_CATEGORIES or not product or set(product.split()) <= NO_PRODUCT_WORDS:
+    product = _whole_thing(product, text.lower())  # "case" in "ipad case for kids" is the iPad case
+    if (category not in THREAD_CATEGORIES or not product or set(product.split()) <= NO_PRODUCT_WORDS | HOLDER_WORDS):
         return None
     if not _in_own_words(product, text.lower()):
         return None  # only the request's own words: never a product the shopper didn't name
+    if _not_one_kind(product):
+        return None  # "le creuset or staub", "cerave": the rules' question stands
     known = classify(product)
     if known.status == "ok" and (known.category == category or not known.clues):
         return known  # "pan" is the rules' frying pan; "kettle" the kitchen's, whatever the model said
+    category, department = _placed(product, category, department)
     if department:
         return Routing("ok", "general", product, GENERAL_DEPARTMENTS[department]["communities"], department=department)
     return Routing("ok", category, product, SUBREDDITS[category])  # "curl cream" isn't the rules' moisturiser
+
+
+# --- The model's product, by its own words (17 Oct 2026, the ws-names builder; Claude's technical calls, reported to
+# Noemi). The 16 Oct review of module 1 found the model placing what the rules can't by its own habits: a mouse mat in
+# home, a bike pump, guitar strings and a tyre pressure gauge in tools, a knife block set in tools (the kitchen's
+# answers can't count general mentions), a baby food maker in home, a hair toner and sheet masks in general beauty; and
+# brands ("cerave") or two products ("le creuset or staub") becoming product types of their own. ---
+
+# Words that only say a thing holds, covers or fits on another: alone they name no product ("a sturdy case": a case for
+# what?), so the request is asked about; with what they are for they do ("ipad case", engine.query.accessory_stretches).
+HOLDER_WORDS = frozenset({"case", "cases", "cover", "covers", "stand", "stands", "holder", "holders", "mount", "mounts",
+                          "sleeve", "sleeves", "strap", "straps", "band", "bands", "lid", "lids", "liner", "liners",
+                          "attachment", "attachments", "accessory", "accessories", "part", "parts", "spares", "refill",
+                          "refills"})
+# Words saying two products are compared or either will do: such an answer is no one kind of product.
+_TWO_PRODUCTS = re.compile(r"(?<![a-z0-9'-])(?:or|vs|versus|nor)(?![a-z0-9'-])")
+# What makes, keeps or serves food and drink in a kitchen ("baby food maker", "yogurt maker", "wine rack"), after a word
+# of food or drink: a kitchen product, whatever department the model chose.
+KITCHEN_THING_WORDS = frozenset({
+    "maker", "makers", "machine", "machines", "press", "presses", "mill", "mills", "grinder", "grinders", "cooker",
+    "cookers", "steamer", "steamers", "dehydrator", "dehydrators", "slicer", "slicers", "cutter", "cutters", "mould",
+    "moulds", "mold", "molds", "pan", "pans", "pot", "pots", "tin", "tins", "jar", "jars", "glass", "glasses", "rack",
+    "racks", "dispenser", "dispensers", "chiller", "chillers", "cooler", "coolers", "fridge", "fridges", "frother",
+    "frothers", "whisk", "whisks", "bowl", "bowls", "warmer", "warmers", "spinner", "spinners", "scoop", "scoops",
+    "brewer", "brewers", "infuser", "infusers", "strainer", "strainers", "sieve", "sieves", "decanter", "decanters",
+    "aerator", "aerators", "opener", "openers", "shaker", "shakers"})
+FOOD_WORDS = ("food", "baby food", "yogurt", "yoghurt", "ice cream", "popcorn", "pasta", "bread", "pizza", "soda",
+              "juice", "smoothie", "tortilla", "rice", "egg", "eggs", "sushi", "noodle", "noodles", "dumpling",
+              "candy floss", "cotton candy", "waffle", "pancake", "crepe", "jerky", "butter", "cheese", "milk",
+              "oat milk", "nut milk", "tofu", "kombucha", "cold brew", "coffee", "tea", "espresso", "soup", "sauce",
+              "herb", "herbs", "spice", "spices", "salad", "fruit", "vegetable", "vegetables", "veg", "meat", "fish",
+              "burger", "sausage", "chocolate", "beer", "wine", "cocktail", "cocktails", "sparkling water", "chips",
+              "fries", "crisps", "nuts", "cake", "cookie", "cookies", "biscuit", "biscuits")
+# Something put on the hair or scalp ("hair toner", "scalp serum"): haircare, as the model's own instructions say. Hair
+# tools ("hair claw clips", "hair dryer") stay the general category's (Noemi's q29, 14 Oct 2026).
+HAIR_FORM_WORDS = frozenset({
+    "toner", "toners", "dye", "dyes", "colour", "color", "bleach", "gloss", "glaze", "mask", "masks", "oil", "oils",
+    "serum", "serums", "spray", "sprays", "gel", "gels", "mousse", "cream", "creams", "wax", "pomade", "powder",
+    "treatment", "treatments", "tonic", "tonics", "rinse", "lotion", "lotions", "butter", "balm", "perm", "shampoo",
+    "shampoos", "conditioner", "conditioners", "paste", "clay", "putty", "primer", "elixir", "milk", "water"})
+# Something put on the skin that the model named a beauty product ("sheet mask", "hand cream"): skincare. Not when it is
+# for nails, lashes, brows, a beard or make-up, or a massage or a shave.
+SKIN_FORM_WORDS = frozenset({
+    "mask", "masks", "lotion", "lotions", "cream", "creams", "serum", "serums", "mist", "mists", "essence", "essences",
+    "toner", "toners", "cleanser", "cleansers", "moisturiser", "moisturisers", "moisturizer", "moisturizers",
+    "sunscreen", "sunscreens", "exfoliator", "exfoliators", "exfoliant", "exfoliants", "scrub", "scrubs", "peel",
+    "peels", "balm", "balms", "oil", "oils", "wash", "washes", "patch", "patches", "strips", "pads", "gel", "gels"})
+NOT_SKIN_WORDS = frozenset({"beard", "nail", "nails", "cuticle", "lash", "lashes", "eyelash", "eyelashes", "brow",
+                            "brows", "eyebrow", "eyebrows", "makeup", "make-up", "bb", "cc", "tattoo", "massage",
+                            "shaving", "shave", "aftershave", "dog", "cat", "pet", "car", "leather", "wood"})
+
+
+def _whole_thing(product: str, lowered: str) -> str:
+    """The thing the request names when the model answered with only the word for it ("case" for "ipad case for kids"):
+    the request's own name of it, a product's name with that word (engine.query.accessory_stretches); else the
+    model's product as it was."""
+    from engine.query import accessory_stretches  # here: engine.query imports this module
+
+    words = product.split()
+    if not words or not set(words) <= HOLDER_WORDS | _accessory_words():
+        return product
+    for start, end in accessory_stretches(lowered):
+        stretch = " ".join(re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", lowered[start:end]))
+        if stretch.split()[-len(words):] == words or stretch.split()[-1].rstrip("s") == words[-1].rstrip("s"):
+            return stretch
+    return product
+
+
+@cache
+def _accessory_words() -> frozenset[str]:
+    """engine.query's ACCESSORY_WORDS, read once (engine.query imports this module)."""
+    from engine.query import ACCESSORY_WORDS
+
+    return frozenset(ACCESSORY_WORDS)
+
+
+def _not_one_kind(product: str) -> bool:
+    """Whether the model's product is no one kind of product: two compared ("le creuset or staub") or a brand alone
+    ("cerave": data/brand_lines.json's brands, config.MAKER_SPELLINGS and the shipped short names' full names)."""
+    return bool(_TWO_PRODUCTS.search(product)) or tuple(_plain_words(product)) in brand_names()
+
+
+def _plain_words(name: str) -> list[str]:
+    return re.findall(r"[a-z0-9]+", name.lower().replace("'", "").replace("’", ""))
+
+
+@cache
+def brand_names() -> frozenset[tuple[str, ...]]:
+    """Every brand module 1 knows, as its plain words, read once: the brand-lines list's (data/brand_lines.json),
+    config.MAKER_SPELLINGS and the shipped short names' full names of up to three words."""
+    import json
+
+    from engine.config import MAKER_SPELLINGS
+
+    names = [name for spellings in MAKER_SPELLINGS.values() for name in spellings]
+    try:
+        from engine.brand_lines import load_brand_lines
+
+        names += [line.brand for line in load_brand_lines()]
+    except Exception:  # no brand-lines list here: the other lists still say
+        pass
+    try:
+        aliases = json.loads((REPO_ROOT / "engine" / "data" / "product_aliases.json").read_text(encoding="utf-8"))
+        names += [entry["full"] for entries in aliases.get("products", {}).values() for entry in entries
+                  if len(entry["full"].split()) <= 3]
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        pass
+    return frozenset(tuple(_plain_words(name)) for name in names if _plain_words(name))
+
+
+def _placed(product: str, category: str, department: str | None) -> tuple[str, str | None]:
+    """(category, department) of a product the model named, by its own words, else the model's:
+    1. a thing made for a product goes where that product is: the product's name starts it, and its last word names no
+       product of its own ("mouse mat" with the mouse in tech, "tyre pressure gauge" with the tyres in car, "knife
+       block set" with the chef knife in the kitchen); never "cpu cooler", "bench grinder" or "carpet shampoo", whose
+       last word is another product the model's words set aside;
+    2. what makes, keeps or serves food or drink is the kitchen's ("baby food maker");
+    3. what is put on the hair or scalp is haircare ("hair toner");
+    4. what is put on the skin, named a beauty product, is skincare ("sheet mask")."""
+    from engine.query import _find_matches  # here: engine.query imports this module
+
+    words = product.split()
+    found = _find_matches(product, strong=True)
+    if found and not any(end == len(product) for _, end, _ in found):
+        owner = found[0][2]
+        return owner.category, owner.department
+    before, last = " ".join(words[:-1]), words[-1]
+    if last in KITCHEN_THING_WORDS and any(re.search(rf"(?<![a-z]){re.escape(food)}(?![a-z])", before)
+                                           for food in FOOD_WORDS):
+        return "kitchen", None
+    if {"hair", "scalp"} & set(words[:-1]) and last in HAIR_FORM_WORDS:
+        return "haircare", None
+    if department == "beauty" and last in SKIN_FORM_WORDS and not NOT_SKIN_WORDS & set(words[:-1]):
+        return "skincare", None
+    return category, department
 
 
 def _in_own_words(product: str, lowered: str) -> bool:

@@ -1472,6 +1472,11 @@ def plural(product_type: str) -> str:
     English's usual rules for a type the open model named (11 Oct 2026): "dish brushes", "french presses", "air fryers"."""
     if product_type in PRODUCT_TYPE_PLURALS:
         return PRODUCT_TYPE_PLURALS[product_type]
+    # A name already plural is its own plural (17 Oct 2026, the ws-names builder: the no-threads message had said "guitar
+    # stringses"): a last word ending in "s" after a consonant or an "e" ("strings", "bits", "toys", "shoes"), but
+    # "lens".
+    if re.search(r"(?:[^aeious\W]|e)s$", product_type) and not product_type.endswith("lens"):
+        return product_type
     if re.search(r"(?:s|sh|ch|x|z)$", product_type):
         return product_type + "es"
     if re.search(r"[^aeiou]y$", product_type):

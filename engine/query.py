@@ -541,6 +541,12 @@ CATEGORY_HINTS = {
     "kitchen": ("kitchen", "cooking", "cook", "coffee", "tea", "baking", "cookware"),
     "haircare": ("hair", "scalp", "curl", "curly", "frizz", "frizzy", "dandruff", "haircare"),
 }
+# Skin concerns a request may name without the word "skin" (17 Oct 2026, the ws-names builder, from the 16 Oct review of
+# module 1: "something for dark circles", "something for my dry lips", "cerave or la roche posay for eczema" had the
+# general question, with headphones and hiking boots as examples). Looked for after the three categories' words, so a
+# scalp's eczema or redness still asks about haircare.
+SKIN_CONCERN_HINTS = ("blackhead", "whitehead", "spots", "breakouts", "pimple", "pigmentation", "hyperpigmentation",
+                      "dark circle", "lip", "lips", "eczema", "rosacea", "melasma", "redness", "dermatitis")
 # The general category's departments, by their own words (config.GENERAL_DEPARTMENTS; 14 Oct 2026): "something for my
 # dog" asks within pets. After the three categories above, in the departments' order.
 DEPARTMENT_HINTS = {department: entry["hints"] for department, entry in GENERAL_DEPARTMENTS.items()}
@@ -550,6 +556,21 @@ EXAMPLES = {"skincare": "a cleanser, a moisturiser or a sunscreen", "kitchen": "
 # The question when nothing places the request (wording PROPOSED, 14 Oct 2026: examples from across the categories).
 VAGUE_QUESTION = ("What kind of product are you looking for? For example a moisturiser, a kettle, headphones or "
                   "hiking boots?")
+# A gift (17 Oct 2026, the ws-names builder; wording PROPOSED): a request for a present that names no product asks what
+# kind of gift, in the category or department its words suggest ("a gift for my dad who likes cooking"), with examples
+# answers can give whole (the blind test's chef knives, cast iron and grinders for the kitchen); one that suggests none
+# asks what the person likes, whose answer ("cooking", "gadgets") is a request the question within it then follows.
+GIFT_WORDS = ("gift", "present", "stocking filler", "stocking stuffer", "secret santa")
+GIFT_EXAMPLES = {"kitchen": "a chef's knife, a cast iron skillet or a coffee grinder",
+                 "skincare": "a moisturiser, an eye cream or a lip balm",
+                 "haircare": "a hair mask, a hair oil or a leave-in conditioner"}
+CATEGORY_QUESTION = "What kind of {noun} product are you after? For example {examples}?"
+GIFT_CATEGORY_QUESTION = "What kind of {noun} gift are you thinking of? For example {examples}?"
+GIFT_QUESTION = "What do they like? For example cooking, coffee, skincare, gadgets or the outdoors?"
+# A pet's own products (17 Oct 2026, wording PROPOSED): the pets department's examples name a cat's litter box beside a
+# dog's harness, so "something for my dog" had been offered a litter box.
+PET_EXAMPLES = {"dog": "a dog harness, a dog bed or a crate", "cat": "a cat tree, a litter box or a cat carrier"}
+PET_WORDS = {"dog": ("dog", "dogs", "puppy", "puppies"), "cat": ("cat", "cats", "kitten", "kittens")}
 
 
 @dataclass(frozen=True)
@@ -622,15 +643,50 @@ def classify(text: str) -> Routing:
             return Routing("out_of_scope", message=message)
     if ADVICE.search(lowered):
         return Routing("out_of_scope", message=OUT_OF_SCOPE_MESSAGE)
-    for category, hints in CATEGORY_HINTS.items():
-        if _mentions_any(lowered, hints):
-            return Routing("clarify", category, question=f"What kind of {category} product are you after? For example {EXAMPLES[category]}?")
+    long_tail = _long_tail_product(lowered)
+    if long_tail is not None:
+        return long_tail
+    gift = _mentions_any(lowered, GIFT_WORDS)
+    asked = GIFT_CATEGORY_QUESTION if gift else CATEGORY_QUESTION
+    category = next((c for c, hints in CATEGORY_HINTS.items() if _mentions_any(lowered, hints)), None)
+    if category is None and _mentions_any(lowered, SKIN_CONCERN_HINTS):
+        category = "skincare"
+    if category is not None:
+        examples = GIFT_EXAMPLES[category] if gift else EXAMPLES[category]
+        return Routing("clarify", category, question=asked.format(noun=category, examples=examples))
     department = _department_hinted(lowered)
     if department is not None:
         entry = GENERAL_DEPARTMENTS[department]
+        animal = next((a for a, words in PET_WORDS.items() if _mentions_any(lowered, words)), None)
+        examples = PET_EXAMPLES[animal] if department == "pets" and animal else entry["examples"]
         return Routing("clarify", "general", department=department,
-                       question=f"What kind of {entry['noun']} product are you after? For example {entry['examples']}?")
-    return Routing("clarify", question=VAGUE_QUESTION)
+                       question=asked.format(noun=entry["noun"], examples=examples))
+    return Routing("clarify", question=GIFT_QUESTION if gift else VAGUE_QUESTION)
+
+
+# Products of no type of module 1's that hold another type's word, placed by the rules in their own name (17 Oct 2026,
+# the ws-names builder): a kitchen mixer tap is a tap, but the open model reads it as a "kitchen mixer", the stand
+# mixer's own name, so the request had been asked about as a kitchen product. {the request's words for it: (the
+# product's name, its category, its department)}, longest first. A product type of its own, found in threads by its
+# name, as one the open model names (engine/query_model.py); not one of module 1's types, whose names the reading AI's
+# instructions list.
+LONG_TAIL_PRODUCTS: dict[str, tuple[str, str, str | None]] = {
+    phrase: ("mixer tap", "general", "home")
+    for phrase in ("kitchen mixer tap", "mixer tap", "kitchen tap", "basin mixer tap", "basin mixer", "basin tap",
+                   "bath mixer tap", "bath mixer", "bath tap", "bathroom tap", "monobloc tap", "pull out tap",
+                   "pull-out tap", "kitchen faucet", "bathroom faucet", "faucet")
+}
+
+
+def _long_tail_product(lowered: str) -> Routing | None:
+    """The routing of a request (in small letters) whose product is one of LONG_TAIL_PRODUCTS, when it names no
+    product of module 1's types."""
+    for phrase in sorted(LONG_TAIL_PRODUCTS, key=len, reverse=True):
+        if re.search(rf"\b{re.escape(phrase)}(?:s|es)?\b", lowered):
+            name, category, department = LONG_TAIL_PRODUCTS[phrase]
+            communities = GENERAL_DEPARTMENTS[department]["communities"] if department else SUBREDDITS[category]
+            return Routing("ok", category, name, tuple(communities), department=department)
+    return None
 
 
 class _Words:
@@ -867,8 +923,14 @@ def set_aside_stretches(lowered: str) -> list[tuple[int, int]]:
     name followed by a word for a thing made for it, with that word ("ipad case"). The open model's answer is checked
     against them (engine.query_model): a product found only inside one, such as "knife" in "tomato knife" or "ipad" in
     "ipad case", isn't what the request names, and would bring back the very type the rules set aside."""
-    stretches = _set_aside_spans(lowered, LOOKALIKES)
+    return _set_aside_spans(lowered, LOOKALIKES) + accessory_stretches(lowered)
+
+
+def accessory_stretches(lowered: str) -> list[tuple[int, int]]:
+    """(start, end) of each product's name in a request (lowercase) followed by a word for a thing made for it, with
+    that word ("ipad case", "guitar strings": ACCESSORY_WORDS): the things the request names that way."""
     aside = _set_aside(lowered, LOOKALIKES)
+    stretches = []
     for start, end, _ in _find_matches(aside, strong=True) + _find_matches(aside, strong=False):
         accessory = _ACCESSORY_AFTER.match(aside, end)
         if accessory is not None:

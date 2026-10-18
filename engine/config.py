@@ -2277,3 +2277,60 @@ SEARCH_PAGE_QUERY_KEYS = ("q", "k", "query", "search", "searchterm", "search-ter
 IMAGE_MAX_BYTES = 500_000  # about 500 KB, as phones and servers count them
 IMAGE_SMALLER_WIDTH = 600
 IMAGE_CHECK_TIMEOUT_SECONDS = 15
+
+# --- Converge round 1: ws-names (17 Oct 2026) ---
+# Module 1's need words and module 4's names, from the 16 Oct breadth-first reviews (docs: understanding, reading and
+# extraction-and-names); Claude's technical calls within Noemi's rules, reported to her. Each value added here, merged
+# into the shared one it extends.
+# Eczema is sensitive skin, as rosacea is (16 Oct 2026): the sensitive-skin rules apply ("moisturiser for eczema"), and
+# comments about eczema already talked about sensitive skin (NEED_COMMENT_WORDS). For a scalp, a sensitive scalp
+# (engine.needs: a need of another category's words is its own category's).
+NEED_REQUEST_WORDS = NEED_REQUEST_WORDS | {"eczema": "sensitive"}
+# Need words, round two (17 Oct 2026; engine/needs.py). More two words that make one need, named whole in the reason:
+# ones written with a word that is no need on its own ("dog hair", "no pull", "carry on"), with a word of the product's
+# name ("raw denim", "double cleansing", "chapped lips", "true wireless"), or with the skin need's word for the lips
+# ("dry lips", which had been named "dry skin").
+NEED_PHRASES = NEED_PHRASES + (
+    "dog hair", "pet hair", "cat hair", "no pull", "true wireless", "raw denim", "large pores", "open pores",
+    "clogged pores", "double cleansing", "chapped lips", "cracked lips", "dry lips", "carry on", "memory foam",
+    "non toxic", "bread dough", "pizza dough")
+# A need that is a verb, as the reason names it (17 Oct 2026): "about drying fast", not "about dry or fast"; "about
+# staying cool", "about keeping drinks cold", "about slipping" ("a yoga mat that doesn't slip"). Only the label: the
+# need is still found by the word as typed.
+NEED_VERB_LABELS: dict[str, str] = {
+    "dry": "drying", "dries": "drying", "stay": "staying", "stays": "staying", "keep": "keeping", "keeps": "keeping",
+    "fade": "fading", "fades": "fading", "fold": "folding", "folds": "folding", "fit": "fitting", "fits": "fitting",
+    "hold": "holding", "holds": "holding", "heat": "heating", "heats": "heating", "charge": "charging",
+    "charges": "charging", "grip": "gripping", "grips": "gripping", "slip": "slipping", "slips": "slipping",
+    "wobble": "wobbling", "wobbles": "wobbling", "chip": "chipping", "crease": "creasing", "creases": "creasing",
+    "pinch": "pinching", "pinches": "pinching", "leak": "leaking", "leaks": "leaking", "rust": "rusting",
+    "rusts": "rusting", "scratch": "scratching", "scratches": "scratching", "break": "breaking", "breaks": "breaking",
+    "shrink": "shrinking", "shrinks": "shrinking", "pill": "pilling", "stain": "staining", "stains": "staining",
+    "smudge": "smudging", "smudges": "smudging", "warp": "warping", "warps": "warping", "fog": "fogging",
+    "fogs": "fogging", "tangle": "tangling", "tangles": "tangling", "squeak": "squeaking", "squeaks": "squeaking",
+    "sag": "sagging", "sags": "sagging", "peel": "peeling", "peels": "peeling", "fray": "fraying", "frays": "fraying",
+    "whistle": "whistling", "whistles": "whistling", "boil": "boiling", "boils": "boiling", "clean": "cleaning",
+    "cleans": "cleaning", "blunt": "blunting", "dull": "dulling"}
+# A request's own word is also found in a comment's other words for it (17 Oct 2026, from the 16 Oct review of module 1:
+# "a laptop for university" found no comment saying "uni" or "college"), each written as need words are (letters and
+# digits only; two words are found written as one too: "stovetop" finds "stove top").
+REQUEST_WORD_SYNONYMS: dict[str, tuple[str, ...]] = {
+    "university": ("uni", "college", "student"), "uni": ("university", "college", "student"),
+    "college": ("university", "uni", "student"), "student": ("university", "uni", "college"),
+    "commuting": ("commute", "commuter"), "commute": ("commuting", "commuter"),
+    "hob": ("stove", "stovetop", "cooktop"), "stove": ("hob", "stovetop", "cooktop"),
+    "stovetop": ("hob", "stove", "cooktop"), "newborn": ("infant", "newborns"),
+}
+# Words that hold a request's own word but say something else (17 Oct 2026, from the 16 Oct review of ranking: a
+# comment about taking makeup off had made a moisturiser "work under makeup"), as NEED_LOOKALIKES are for its needs.
+NEED_LOOKALIKES = NEED_LOOKALIKES | {
+    "makeup": (r"(?<![a-z0-9])(?:remov\w*|take|takes|taking|took|wipe|wipes|wiping|melt\w*|break\w* down|dissolv\w*|"
+               r"get|gets|getting)\s+(?:\w+\s+){0,3}?(?:off\s+)?(?:all\s+|my\s+|the\s+|your\s+|of\s+|eye\s+)*"
+               r"make-?up(?:\s+off)?(?![a-z0-9])",
+               r"(?<![a-z0-9])make-?up\s+(?:remov\w*|wipes?|residue|off)(?![a-z0-9])"),
+}
+# Brands that are everyday words too: a request's word is no brand of these (engine.needs: a brand is no judged need),
+# found among data/brand_lines.json's one-word brands on 17 Oct 2026.
+EVERYDAY_BRAND_WORDS = frozenset({"field", "global", "hero", "tiger", "wolf", "aroma", "flair", "luxe", "nest", "sage",
+                                  "apple", "ego", "kyte", "epicurean", "icebreaker", "simple", "always", "instant",
+                                  "fresh", "glow", "honest", "native", "pure", "smart", "true", "original", "solo"})
