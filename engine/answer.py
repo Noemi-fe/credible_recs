@@ -175,7 +175,7 @@ from engine.product_pages import ProductPage
 from engine.needs import LASTING, Need, needs_met, said_not_to_help
 from engine.sources import _stem as _need_stem
 from engine.prices import PriceCheck
-from engine.credibility import GENERIC_NAME_WORDS
+from engine.credibility import _SECONDHAND_REASON, _proof_of_use, GENERIC_NAME_WORDS
 from engine.match_products import FILLER_WORDS, known_aliases
 from engine.memo import Table
 from engine.rank import KindNote, KindSupport, ProductScore, RankingResult, ScoredMention, ScoreBreakdown, is_credible
@@ -661,6 +661,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     image (shown_image). They never change which products are shown.
     """
     check = _QuoteCheck(bodies, flattened)
+    check.named_in = _named_in(ranking)
     pages = pages or {}
     ranges = ranges or {}
     forms = forms or {}
@@ -845,7 +846,7 @@ def _worth_quotes(product: ProductScore, check: "_QuoteCheck", asks: tuple[str, 
     make up, a bare mention, a garbled quote, one that says nothing about it, one that still leans on the thread or one
     that starts mid-sentence (_mid_sentence) is never shown."""
     mentions, leaning = _standing(product.credible_recommendations, check.widen, _names_its_product)
-    ordered = _naming_first(_with_a_view(mentions, check.widen), asks, needs, leaning, product_type)
+    ordered = _naming_first(_with_a_view(mentions, check.widen), asks, needs, leaning, product_type, check.named_in)
     good = [m for m in ordered if m.comment_id not in leaning and _says_something(m)
             and not (_bare_mention(m) or _garbled(m.quote) or _mid_sentence(m.quote, check.bodies.get(m.comment_id)))]
     # A quote about another product of its comment (15 Oct 2026) only when the item has no other.
@@ -946,6 +947,9 @@ class _QuoteCheck:
         # sentences.
         self.widen = {cid: body for cid, body in bodies.items() if cid not in flattened} if flattened else bodies
         self.dropped = 0
+        # {comment id: the names (as shown, and as written) of every product it names}, for quote order (17 Oct 2026:
+        # _names_another_first); set by write_answer from the ranking.
+        self.named_in: Mapping[str, tuple[tuple[str, str], ...]] = {}
 
     def first(self, items: Iterable[ScoredMention | KindNote | CareTip], limit: int) -> list[ShownQuote]:
         """The first `limit` items whose quote passes the check, as quotes to show."""
@@ -1030,7 +1034,8 @@ def _most_credible_first(items: Iterable[ScoredMention]) -> list[ScoredMention]:
 
 def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
                   needs: tuple[Need, ...] = (), leaning: Collection[str] = (),
-                  product_type: str | None = None) -> list[ScoredMention]:
+                  product_type: str | None = None,
+                  named_in: Mapping[str, tuple[tuple[str, str], ...]] | None = None) -> list[ScoredMention]:
     """The most credible first, but the quotes that name their product and give a view before those that only name
     it, those before the ones that only give a view, and those before the rest; within each, those whose comment talks about what the request asks for first (10 Oct 2026: out of context, a line that only opens a list of other products the
     writer has had no trouble with says little, and so does a list of the grinders someone owns), and a quote that says the opposite of what
@@ -1051,7 +1056,13 @@ def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
     Then the most informative for the request first (15 Oct 2026, the coordinator's trial comparison with ChatGPT and
     Vetted: testers see a pick's first quotes): within each tier, a quote talking about what the request asks for, then
     one saying why otherwise (_says_why: which need, how long, a view with something behind it), then the rest, and a
-    bare like last ("I love the X": _bare_like), which doesn't count as a view."""
+    bare like last ("I love the X": _bare_like), which doesn't count as a view.
+
+    Since 17 Oct 2026 (the converge round, within her rule 4) a quote that opens by agreeing with another writer
+    (_opens_by_agreeing: "Agreed; ...", "Seconded.", "Yeah ..."), names another product of its comment before its own
+    (_names_another_first, from `named_in`: {comment id: the names of the products it names}) or tells someone else's
+    experience (_hearsay: "my sister swears by it", "apparently") comes after the clearer quotes of its tier and of the
+    tiers that name the product or give a view; never after those that do neither."""
     ordered = _most_credible_first(items)
 
     # 0: names it and gives a view; 1: only names it; 2: only gives a view; 3: neither (10 Oct 2026, night: b04 showed a
@@ -1078,7 +1089,76 @@ def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
     def against(m: ScoredMention) -> bool:
         return reads_against_its_stance(m.quote, m.stance, _its_names(m)) or _about_another_product(m)
 
-    return sorted(ordered, key=lambda m: (m.comment_id in leaning, opposite(m), against(m), tier(m), informative(m)))
+    def unclear(m: ScoredMention) -> bool:
+        return (_opens_by_agreeing(m.quote) or _hearsay(m.quote)
+                or _names_another_first(m, (named_in or {}).get(m.comment_id, ())))
+
+    return sorted(ordered, key=lambda m: (m.comment_id in leaning, opposite(m), against(m), tier(m) == 3, unclear(m),
+                                          tier(m), informative(m)))
+
+
+# A reply's opening agreement with another writer (17 Oct 2026, the converge round): "Agreed; ...", "Seconded.", "Yeah
+# my ...", "I second the ...", "+1", "Same here", "This!", "Came here to say", "Can confirm", "I also use ...". It leans on
+# a comment the reader doesn't see, so a clearer quote of the same stance comes first (_naming_first).
+_AGREEING = re.compile(
+    r"^\W*(?:yes|yeah|yea|yep|yup|agreed|agree|i agree|totally agree|completely agree|fully agree|100% agree"
+    r"|seconded|seconding|second(?:ing)? this|i second|i'd second|second|thirded|\+1|same(?: here)?|ditto|exactly"
+    r"|this(?=\s*[.!,]|\s*$)|came here to (?:say|post|recommend|suggest)|was (?:going|about) to (?:say|post|suggest)"
+    r"|can confirm|i can confirm|me too|i also|also (?:a fan|love|recommend|vote|use)|another (?:vote|fan|one) for"
+    r"|(?:big |huge )?(?:\+1|vote) for)\b", re.IGNORECASE)
+
+
+def _opens_by_agreeing(quote: str) -> bool:
+    """Whether a quote opens by agreeing with another writer (_AGREEING)."""
+    return bool(_AGREEING.match(_plain(quote)))
+
+
+def _hearsay(quote: str) -> bool:
+    """Whether a quote tells someone else's experience or what the writer heard, not their own use, by module 5's
+    reading of first-hand use (engine.credibility: "my sister swears by it", "apparently it never fails", "I've heard")."""
+    level, reasons = _proof_of_use(_plain(quote), None)
+    return level == "no first-hand use" and bool(set(reasons) & HEARSAY_REASONS)
+
+
+# Module 5's reasons for someone else's experience and for hearsay (engine.credibility._proof_of_use).
+HEARSAY_REASONS = frozenset({_SECONDHAND_REASON, "heard about it, not used"})
+
+
+def _names_another_first(m: ScoredMention, named: Iterable[tuple[str, str]]) -> bool:
+    """Whether a quote names another product of its comment before its own (named: the names, as shown and as written,
+    of every product its comment names): that product's own word (the first word of its name its product's names don't
+    hold, a brand, as names_another_product finds it) comes first, or it alone is named."""
+    text = " ".join(_split_words(m.quote))
+    own_at = _first_at(text, {w for name in _its_names(m) for w in _split_words(name) if w not in FILLER_WORDS
+                              and w not in GENERIC_NAME_WORDS})
+    own = {word for name in _its_names(m) for word in _split_words(name)}
+    for name, written in named:
+        if name == m.product_name:
+            continue
+        for other in (name, written):
+            distinct = [w for w in dict.fromkeys(_split_words(other)) if w not in own and w not in FILLER_WORDS
+                        and w != "and"]
+            brand = next((w for w in distinct if w not in GENERIC_NAME_WORDS), None)
+            other_at = _first_at(text, {brand}) if brand else None
+            if other_at is not None and (own_at is None or other_at < own_at):
+                return True
+    return False
+
+
+def _first_at(text: str, words: Collection[str]) -> int | None:
+    """Where the first of these words is in a text of words (_split_words joined by spaces), or None."""
+    found = [m.start() for word in words if word for m in [re.search(rf"(?<![a-z0-9']){re.escape(word)}(?![a-z0-9'])",
+                                                                      text)] if m]
+    return min(found) if found else None
+
+
+def _named_in(ranking: RankingResult) -> dict[str, tuple[tuple[str, str], ...]]:
+    """{comment id: the names, as shown and as written, of every product of the ranking it names} (17 Oct 2026)."""
+    found: dict[str, dict[tuple[str, str], None]] = {}
+    for product in ranking.products:
+        for m in product.mentions:
+            found.setdefault(m.comment_id, {})[(m.product_name, m.written_as)] = None
+    return {cid: tuple(names) for cid, names in found.items()}
 
 
 def _not_the_type(quote: str, product_type: str | None) -> bool:
@@ -1685,7 +1765,7 @@ def _pick_quotes(product: ProductScore, check: _QuoteCheck, asks: tuple[str, ...
     something about it come first; a bare mention or a garbled quote (_garbled), a quote that says nothing about it
     (_says_something) and, last, one that still leans on the thread only make up MIN_QUOTES_PER_PICK."""
     mentions, leaning = _standing(product.credible_recommendations, check.widen, _names_its_product)
-    ordered = _naming_first(_with_a_view(mentions, check.widen), asks, needs, leaning, product_type)
+    ordered = _naming_first(_with_a_view(mentions, check.widen), asks, needs, leaning, product_type, check.named_in)
     standing = [m for m in ordered if m.comment_id not in leaning]
 
     def filler(m: ScoredMention) -> bool:  # since 15 Oct 2026 also a quote about another product of its comment
@@ -1708,7 +1788,7 @@ def _warning_quotes(groups: Iterable[Iterable[ScoredMention]], check: _QuoteChec
     ordered, leaning = [], set()
     for group in groups:
         mentions, group_leaning = _standing(group, check.widen, _names_its_product)
-        ordered += _naming_first(mentions, needs=needs, leaning=group_leaning)
+        ordered += _naming_first(mentions, needs=needs, leaning=group_leaning, named_in=check.named_in)
         leaning |= group_leaning
     shown = check.first([m for m in ordered if m.comment_id not in leaning], limit)
     return shown or check.first([m for m in ordered if m.comment_id in leaning], 1)
