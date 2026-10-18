@@ -38,6 +38,21 @@ PRODUCTS = [
     ("Shokz Open Fit Air", "earbuds", 94.0, "John Lewis"),
     ("Openrun Mini", "headphones", 129.95, "John Lewis"),
     ("Sony WF-1000XM5", "earbuds", 179.99, "John Lewis"),
+    # Picks and Also worth a look items researched on 18 Oct 2026 (the round's second pass), under the names shown.
+    ("AirPods Pro 3", "earbuds", 219.0, "Apple UK"),
+    ("Er2xr", "earbuds", 130.0, "Scan"),
+    ("MX Master 3", "mouse", 115.5, "Amazon UK"),
+    ("Teevo Terra Pro", "mouse", 62.0, "Teevolution"),
+    ("Keychron Q1", "keyboard", 190.0, "Amazon UK"),
+    ("Filco Majestouch tenkeyless", "keyboard", 120.0, "The Keyboard Company"),
+    ("KTC M27P6", "monitor", 399.99, "Amazon UK"),
+    ("Samsung Odyssey G7 G70F", "monitor", 429.0, "Samsung UK"),
+    ("Pocketbook InkPad", "e-reader", 289.0, "Amazon UK"),
+    ("Lenovo Legion 5a Gen 10", "laptop", 1780.0, "Lenovo UK"),
+    ("L.L.Bean Percale Pima Cotton", "bed sheets", 140.0, "L.L.Bean"),
+    ("Ralph Lauren towel", "towel", 49.0, "John Lewis"),
+    ("Nomadix towel", "towel", 17.95, "WildBounds"),
+    ("Pottery Barn towel", "towel", 27.2, "Pottery Barn UK"),
 ]
 
 # (brand as the line's name starts, product type, from price in pounds, shop as shown)
@@ -61,6 +76,17 @@ LINES = [
     # A line of a brand with an entry of its own (18 Oct 2026): "Bose QuietComfort headphones line".
     ("Bose QuietComfort", "headphones", 189.95, "Bose"),
     ("Bose Quiet Comfort", "headphones", 189.95, "Bose"),
+    # Lines researched on 18 Oct 2026 (the round's second pass); a writer's spelling finds its maker's entry.
+    ("Ducky", "keyboard", 24.95, "Overclockers UK"),
+    ("Das", "keyboard", 72.0, "The Keyboard Company"),
+    ("Kobo", "e-reader", 149.0, "Currys"),
+    ("EMEET", "webcam", 23.0, "EMEET"),
+    ("Asus ROG", "laptop", 1599.99, "ASUS UK"),
+    ("L.L.Bean flannels", "bed sheets", 58.0, "L.L.Bean"),
+    ("Dunlopillo", "pillow", 64.99, "Bensons for Beds"),
+    ("DUNLOPILLOW", "pillow", 64.99, "Bensons for Beds"),
+    ("Kirby", "vacuum cleaner", 3195.0, "Kirby"),
+    ("Linoto", "bed sheets", 191.0, "Linoto"),
 ]
 
 # Sold in the UK, a range rather than one model, so no single price (name as the answer shows it, type, shop as shown).
@@ -92,12 +118,28 @@ DISCONTINUED = [
     ("Samsung Galaxy Buds 2", "earbuds"),
     ("Jabra Elite 8 Active", "earbuds"),
     ("Jabra Elite Active 8", "earbuds"),
+    # Shown on 18 Oct 2026 though no longer made: their makers' pages show successors, no big UK shop sells them new.
+    ("XM3", "headphones"),
+    ("AirPods Pro 2", "earbuds"),
+    ("Sony WF-1000XM4", "earbuds"),
+    ("Soundcore Liberty Air Pro 2", "earbuds"),
+    ("2014 MacBook Air", "laptop"),
+    ("Altec Lansing H2O", "bluetooth speaker"),
 ]
 
 # Sold abroad only: they stay in answers with "Not sold in the UK" (Noemi, 15 Oct 2026, evening; 16 Oct, decision 4).
 ABROAD = [
     ("Vizio TV", "tv"),
     ("Raycon Everyday Earbuds", "earbuds"),
+    # 18 Oct 2026: US makers with no UK shop (their lines under the brand and type, as the price list records a line).
+    ("Purple mattress", "mattress"),
+    ("Honeywell air purifier", "air purifier"),
+    ("Rabbit Air", "air purifier"),
+    ("Alen Breathsmart", "air purifier"),
+    ("Parachute towel", "towel"),
+    ("Grid Linen towel from Outlier", "towel"),
+    ("Avocado pillow", "pillow"),
+    ("Casper pillow", "pillow"),
 ]
 
 

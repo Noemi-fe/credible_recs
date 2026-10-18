@@ -11395,6 +11395,865 @@
    "checked_on": "2026-10-18",
    "available": true,
    "note": "John Lewis, Sony WF-1000XM5 Noise Cancelling True Wireless Bluetooth Sweat & Weather-Resistant In-Ear Headphones with Mic/Remote, Black: £179.99, Add to basket."
+  },
+  {
+   "product": "Sony WH-1000XM3",
+   "also_called": [
+    "XM3",
+    "Sony XM3",
+    "XM3s",
+    "Sony XM3s",
+    "WH-1000XM3",
+    "Sony WH1000XM3",
+    "Sony 1000XM3"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Sony",
+   "url": "https://www.sony.co.uk/electronics/headband-headphones/wh-1000xm3",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "sources": [
+    "https://www.sony.co.uk/electronics/headband-headphones/wh-1000xm3",
+    "https://www.sony.co.uk/headphones/headband",
+    "https://www.johnlewis.com/search?search-term=sony%20wh-1000xm3",
+    "https://www.currys.co.uk/search?q=sony+wh-1000xm3",
+    "https://www.amazon.co.uk/dp/B07GDR2LYK"
+   ],
+   "note": "discontinued: Sony UK's WH-1000XM3 address now redirects to its 'Headband | Headphones | Sony UK' range (15 products, 18 Oct 2026: WH-1000XM4C £219.00, WH-1000XM5 £229.00, WH-1000XM6 £349.00, 1000X THE COLLEXION £474.00 ...), with no XM3. John Lewis's search (237 Sony results) and Currys's (101 items) show the XM4C, XM5 and XM6 but no XM3. Amazon UK's XM3 listing (B07GDR2LYK, read with a London delivery postcode) has only used offers: Used - Good £129.99 (DCP Works), Used - Very Good £134.99 and £144.99; no new offer. Argos refuses readers (Access Denied). The XM4 replaced it in 2020 (from knowledge). Not sold new."
+  },
+  {
+   "product": "Apple AirPods Pro 2",
+   "also_called": [
+    "AirPods Pro 2",
+    "Airpods Pro 2",
+    "AirPods Pro (2nd generation)",
+    "Apple AirPods Pro (2nd generation)",
+    "AirPods Pro 2nd gen",
+    "APP2"
+   ],
+   "category": "general",
+   "product_type": "earbuds",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Apple",
+   "url": "https://www.apple.com/uk/airpods/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "sources": [
+    "https://www.apple.com/uk/airpods/",
+    "https://www.apple.com/uk/shop/product/MTJV3ZM/A/airpods-pro",
+    "https://www.apple.com/uk/shop/buy-airpods/airpods-pro-2",
+    "https://www.johnlewis.com/search?search-term=airpods%20pro",
+    "https://www.currys.co.uk/search?q=airpods+pro+2",
+    "https://www.amazon.co.uk/dp/B0CHWZ9TZS",
+    "https://www.argos.co.uk/search/airpods-pro/"
+   ],
+   "note": "discontinued: Apple UK's 'AirPods - Apple (UK)' page (18 Oct 2026) offers AirPods 5, AirPods Pro 3 and AirPods Max 2; AirPods Pro 2 appears only in footnotes ('AirPods Pro 2 and later'). Apple UK's AirPods Pro 2 (USB-C, MTJV3ZM/A) product address redirects to an Apple search page, and /shop/buy-airpods/airpods-pro-2 redirects to 'Buy AirPods Pro 3' (£219.00). John Lewis's 'airpods pro' search (9 results) and Currys's 'airpods pro 2' search (313 items) show AirPods Pro 3 at £219.00 and no Pro 2. Amazon UK's AirPods Pro 2 USB-C listing (B0CHWZ9TZS, London postcode): 'Currently unavailable', no offers. Argos refused readers (Access Denied). Replaced by AirPods Pro 3; no big UK shop sells it new."
+  },
+  {
+   "product": "Apple AirPods Pro 3",
+   "also_called": [
+    "AirPods Pro 3",
+    "Airpods Pro 3",
+    "APP3"
+   ],
+   "category": "general",
+   "product_type": "earbuds",
+   "price": 219.0,
+   "currency": "GBP",
+   "shop": "Apple UK",
+   "url": "https://www.apple.com/uk/shop/buy-airpods/airpods-pro-3",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.apple.com/uk/shop/buy-airpods/airpods-pro-3",
+    "https://www.apple.com/uk/airpods-pro/",
+    "https://www.apple.com/uk/shop/product/MFHP4ZM/A/airpods-pro-3",
+    "https://www.johnlewis.com/search?search-term=airpods%20pro",
+    "https://www.currys.co.uk/search?q=airpods+pro"
+   ],
+   "note": "Apple UK, 18 Oct 2026: 'AirPods Pro 3 - Apple (UK)' product page with Buy; 'Buy AirPods Pro 3 - Apple (UK)' (MFHP4ZM/A) shows £219.00 (offer data GBP 219.00, free delivery). John Lewis: Apple AirPods Pro 3 with MagSafe Charging Case (USB-C), White £219.00 (p114325329); Currys: APPLE AirPods Pro 3 - White £219.00, Add to basket."
+  },
+  {
+   "product": "Etymotic ER2XR",
+   "also_called": [
+    "Er2xr",
+    "ER2XR",
+    "ER2-XR",
+    "Etymotic ER2-XR",
+    "Etymotic Research ER2XR",
+    "Etymotic ER2 XR"
+   ],
+   "category": "general",
+   "product_type": "earbuds",
+   "price": 130.0,
+   "currency": "GBP",
+   "shop": "Scan",
+   "url": "https://www.scan.co.uk/products/etymotic-er2-xr-earphones-extended-response",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.scan.co.uk/products/etymotic-er2-xr-earphones-extended-response",
+    "https://www.hifiheadphones.co.uk/search?q=etymotic",
+    "https://www.hifiheadphones.co.uk/products/etymotic-er2-in-ear-isolating-earphones-with-detachable-cable?variant=43223090397439",
+    "https://www.amazon.co.uk/dp/B07NSL5XS5",
+    "https://etymotic.com/products/er2xr-earphones"
+   ],
+   "note": "Orderable new in the UK on pre-order only, nothing in stock (18 Oct 2026): Scan 'Etymotic ER2-XR Earphones (Extended Response) LN149137 - P001484 | SCAN UK' £130.00 with a Pre Order button (no ETA shown); Hifi Headphones 'Etymotic ER2XR/ER2SE - In Ear Isolating Earphones with Detachable Cable', XR - Extended Response £149.99, PRE ORDER ('We will fulfill the item as soon as it becomes available'). Amazon UK's ER2-XR listing (B07NSL5XS5): Currently unavailable. Etymotic's own US store still lists 'ER2XR Earphones' at $179.99 but Sold out, and it doesn't ship to the UK. Still made (not discontinued); writer may want to say 'pre-order'."
+  },
+  {
+   "product": "Sony WF-1000XM4",
+   "also_called": [
+    "WF-1000XM4",
+    "Sony WF1000XM4",
+    "Sony WF-XM4",
+    "WF-XM4"
+   ],
+   "category": "general",
+   "product_type": "earbuds",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Sony",
+   "url": "https://www.sony.co.uk/electronics/truly-wireless/wf-1000xm4",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "sources": [
+    "https://www.sony.co.uk/electronics/truly-wireless/wf-1000xm4",
+    "https://www.sony.co.uk/headphones/products/wf-1000xm4",
+    "https://www.sony.co.uk/headphones/gallery",
+    "https://www.johnlewis.com/search?search-term=sony%20wf-1000xm4",
+    "https://www.currys.co.uk/search?q=sony+wf-1000xm4",
+    "https://www.amazon.co.uk/dp/B095DNPH4R",
+    "https://www.amazon.co.uk/dp/B095D1HCYG",
+    "https://www.amazon.co.uk/dp/B096LZXZKB"
+   ],
+   "note": "discontinued: Sony UK's WF-1000XM4 product address now redirects to its truly wireless range ('Gallery | Headphones | Sony UK', 9 products, 18 Oct 2026: WF-1000XM6 £249.00, WF-1000XM5 £179.00, LinkBuds Clip/Fit/Open, WF-C710N, WF-C700N, WF-C510), with no XM4; the old electronics address opens a blank page. John Lewis's search (222 Sony results) shows the WF-1000XM6 £249.99 and XM5 £179.99, Currys's (69 items) the XM5 and XM6, neither the XM4. Amazon UK's three WF-1000XM4 listings (B095DNPH4R Black, B095D1HCYG and B096LZXZKB Silver; London postcode) are all 'Currently unavailable' with no offers. Not sold new."
+  },
+  {
+   "product": "Soundcore Liberty Air 2 Pro",
+   "also_called": [
+    "Soundcore Liberty Air Pro 2",
+    "Anker Soundcore Liberty Air 2 Pro",
+    "Liberty Air 2 Pro",
+    "soundcore Liberty Air 2 Pro",
+    "Anker Liberty Air 2 Pro"
+   ],
+   "category": "general",
+   "product_type": "earbuds",
+   "price": null,
+   "currency": "GBP",
+   "shop": "soundcore",
+   "url": "https://www.soundcore.com/uk/collections/true-wireless-earbuds",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "sources": [
+    "https://www.soundcore.com/uk/collections/true-wireless-earbuds",
+    "https://www.soundcore.com/uk/search?q=liberty%20air%202%20pro",
+    "https://www.soundcore.com/uk/products/a3951011",
+    "https://www.amazon.co.uk/dp/B08G4K8CY8",
+    "https://www.amazon.co.uk/dp/B092DY9THF",
+    "https://www.amazon.co.uk/dp/B092DXF8WB",
+    "https://www.amazon.co.uk/dp/B08X3ZJ65D",
+    "https://www.johnlewis.com/search?search-term=soundcore",
+    "https://www.currys.co.uk/search?q=soundcore+liberty+air+2+pro"
+   ],
+   "note": "discontinued: soundcore UK's 'True Wireless Earbuds - soundcore UK' range (18 products, 18 Oct 2026: Liberty 5 Pro Max £199.99, Liberty 5 Pro £149.99, Liberty Buds 2 £129.99, Liberty 4 Pro £89.00, Liberty 5 £69.99 ... P20i £19.99) has no Liberty Air model; its site search for 'liberty air 2 pro' finds 0 items and the old Liberty Air 2 Pro (A3951) addresses return 404. Amazon UK's four Liberty Air 2 Pro listings (B08G4K8CY8, B092DY9THF, B092DXF8WB pink, B08X3ZJ65D renewed; London postcode) are all 'Currently unavailable', no offers. John Lewis: 'Sorry, we don't stock soundcore.' Currys (267 items) lists Liberty 5 / 5 Pro / 4 Pro but no Liberty Air 2 Pro. Not sold new."
+  },
+  {
+   "product": "Logitech MX Master 3",
+   "also_called": [
+    "MX Master 3",
+    "Logitech MX Master III",
+    "Logi MX Master 3"
+   ],
+   "category": "general",
+   "product_type": "mouse",
+   "price": 115.5,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/dp/B07W6JG6Z7",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.amazon.co.uk/dp/B07W6JG6Z7",
+    "https://www.logitech.com/en-gb/products/mice/mx-master-3.910-005694.html",
+    "https://www.logitech.com/en-gb/products/mice/mx-master-3.html",
+    "https://www.johnlewis.com/search?search-term=logitech%20mx%20master",
+    "https://www.currys.co.uk/search?q=logitech+mx+master+3"
+   ],
+   "note": "Final stock only. Logitech UK no longer sells it: the MX Master 3 product address (910-005694) gives 'Error: 404' and the plain MX Master 3 address redirects to 'MX Master 3S Bluetooth Edition Wireless Mouse'. John Lewis (6 results: MX Master 4 £101.99/£119.99, MX Anywhere 3S £79.99) and Currys (MX Master 3S, MX Master 4) don't list it. Amazon UK (London postcode, 18 Oct 2026): 'Logitech MX Master 3 Advanced Wireless Mouse ... - Graphite' (model 910-005694) new £115.50, 'Only 2 left in stock', Add to basket, sold by JAF Enterprises and dispatched from Amazon (another new offer £135.75, used £104.50). Counts as sold while that stock lasts; successors MX Master 3S / 4."
+  },
+  {
+   "product": "Teevolution Terra Pro",
+   "also_called": [
+    "Teevo Terra Pro",
+    "Teevolution Terra PRO",
+    "Teevo Terra PRO",
+    "Terra Pro"
+   ],
+   "category": "general",
+   "product_type": "mouse",
+   "price": 62.0,
+   "currency": "GBP",
+   "shop": "Teevolution",
+   "url": "https://www.teevolution.gg/products/terra-pro?variant=45079418667161",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.teevolution.gg/products/terra-pro?variant=45079418667161",
+    "https://www.teevolution.gg/",
+    "https://www.teevolution.gg/products/terra-pro",
+    "https://www.teevolution.gg/policies/shipping-policy",
+    "https://www.teevolution.gg/pages/where-to-buy",
+    "https://www.amazon.co.uk/dp/B0FFT65T7M"
+   ],
+   "note": "'Teevo Terra Pro' is the Teevolution Terra PRO, a wireless right-handed ergonomic gaming mouse (G403/G703-style shape, PAW3950 sensor, about 49 g) from Hong Kong brand Teevolution. Its official store ('Teevolution | Official Site | Gamers Evolve', based in Hong Kong) lists the United Kingdom in its shipping policy and shows UK visitors GBP: 'Teevolution Terra PRO | Legendary Ergonomic Shape | Ultra-Lightweight', 8K Ready / Black / no add-on £62.00, Add to cart (8K Included £81.00; default bundle £85.00). No UK retailer: its Where to Buy page lists none for the UK (EU: MaxGaming; US: Micro Center), and Amazon UK's Terra Pro listing (B0FFT65T7M) is 'Currently unavailable'. UK shoppers buy it from the maker's store."
+  },
+  {
+   "product": "Keychron Q1",
+   "also_called": [
+    "Keychron Q1 V2",
+    "Keychron Q1 Version 2",
+    "Keychron Q1 QMK"
+   ],
+   "category": "general",
+   "product_type": "keyboard",
+   "price": 190.0,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/dp/B0B4WZSKH1",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.amazon.co.uk/dp/B0B4WZSKH1",
+    "https://www.keychron.uk/collections/all-keyboards/products.json?limit=250",
+    "https://www.keychron.uk/collections/all-products/products.json?limit=250",
+    "https://www.keychron.uk/products/keychron-q1-max-qmk-via-wireless-custom-mechanical-keyboard-iso-layout-collection",
+    "https://www.keychron.uk/search?q=q1",
+    "https://www.keychron.com/products/keychron-q1",
+    "https://www.keychron.com/products/keychron-q1-pro-qmk-via-wireless-custom-mechanical-keyboard",
+    "https://www.keyboardco.com/category.asp?man=keychron"
+   ],
+   "note": "Keychron UK (18 Oct 2026) sells only two Q1 models: Q1 Max (QMK/VIA Wireless, ISO, £219.99, in stock, Add to cart) and Q1 HE (QMK Wireless, magnetic switches, £229.99); no Q1 Pro and no plain Q1. Neither is the Q1 itself: the Q1 Max is the 2.4 GHz/Bluetooth wireless version and the Q1 HE the Hall-effect magnetic-switch version. The Q1 itself (wired 75% QMK board, now 'Keychron Q1 QMK Custom Mechanical Keyboard - Version 2') is still sold by Keychron's global US store (keychron.com, USD: Barebone Knob $69.99, Fully Assembled Knob $89.99, most variants sold out) and in the UK on Amazon UK: 'Keychron Q1 RGB Wired Mechanical Keyboard ... Gateron G Pro Red' (Version 2, US ANSI layout) £190.00, 'Only 11 left in stock', Add to basket, sold and shipped by The Keyboard Company. The Keyboard Company's own Keychron range has only the Q1 Max."
+  },
+  {
+   "product": "Ducky keyboard",
+   "category": "general",
+   "product_type": "keyboard",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Overclockers UK",
+   "url": "https://www.overclockers.co.uk/ducky-project-d-tinker-65-mechanical-customisable-gaming-keyboard-cherry-mx-red-black/PER-DCK-00660.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.overclockers.co.uk/ducky-project-d-tinker-65-mechanical-customisable-gaming-keyboard-cherry-mx-red-black/PER-DCK-00660.html",
+    "https://ducky.global/pages/where-to-buy",
+    "https://www.overclockers.co.uk/brands/ducky",
+    "https://www.overclockers.co.uk/ducky-origin-usb-mechanical-gaming-keyboard-cherry-mx-silent-red-vintage-uk-lay/PER-DCK-00947.html",
+    "https://www.currys.co.uk/search?q=ducky+keyboard",
+    "https://www.keyboardco.com/category.asp?man=ducky"
+   ],
+   "note": "Ducky's Where to Buy page (ducky.global) lists Overclockers UK, Currys, Amazon UK, CCL, Orbit, Esports Gear and Falcon Computers for the UK. Overclockers UK's Ducky range ('Ducky', 102 results incl. accessories), sorted by price on 18 Oct 2026: cheapest keyboard the Ducky Project D Tinker 65 (pre-built 65%, UK ISO, Cherry MX Red, PBT keycaps) £24.95 (reduced from £44.99), In Stock; cheapest full-size (100%) board the Ducky Origin (UK ISO, Cherry MX Silent Red, Vintage) £63.95, In Stock; One 3 Classic TKL £69.70; One 3 Classic Fullsize £89.69. Currys: Ducky Origin £64.99. The Keyboard Company: Origin Vintage from £82.80."
+  },
+  {
+   "product": "Filco Majestouch-2 Tenkeyless",
+   "also_called": [
+    "Filco Majestouch tenkeyless",
+    "Filco Majestouch TKL",
+    "Filco Majestouch 2 TKL",
+    "Majestouch-2 Tenkeyless",
+    "Filco TKL"
+   ],
+   "category": "general",
+   "product_type": "keyboard",
+   "price": 120.0,
+   "currency": "GBP",
+   "shop": "The Keyboard Company",
+   "url": "https://www.keyboardco.com/keyboard/filco-majestouch-2-tenkeyless-nkr-mechanical-keyboards.asp",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.keyboardco.com/keyboard/filco-majestouch-2-tenkeyless-nkr-mechanical-keyboards.asp",
+    "https://www.keyboardco.com/category.asp?man=filco",
+    "https://www.keyboardco.com/keyboard/filco-majestouch-3-tenkeyless-double-shot-keyboards.asp"
+   ],
+   "note": "The Keyboard Company (UK keyboard specialist), 18 Oct 2026: 'UK Filco Majestouch-2, Tenkeyless, MX Brown Tactile, Keyboard' (FKBN88M/UKB2) £120.00 (£100.00 ex VAT), 'Lots In Stock', Add to Cart, UK stock and despatch (Blue, Brown, Silent Red; UK, US and EU layouts). The newer 'UK Filco Majestouch 3 Tenkeyless MX Brown Tactile Double Shot Keyboard' (same case, renewed board) £140.00, Lots In Stock. Other Majestouch TKLs there: Ninja Majestouch-2 TKL from £125, Ninja Majestouch 2 HAKUA TKL (US) from £100, Majestouch 3 NINJA/HAKUA TKL from £150."
+  },
+  {
+   "product": "Das keyboard",
+   "category": "general",
+   "product_type": "keyboard",
+   "price": null,
+   "currency": "GBP",
+   "shop": "The Keyboard Company",
+   "url": "https://www.keyboardco.com/keyboard/das-x50q-smart-rgb-mechanical-gaming-pc-keyboard.asp",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.keyboardco.com/keyboard/das-x50q-smart-rgb-mechanical-gaming-pc-keyboard.asp",
+    "https://www.daskeyboard.com/where-to-buy",
+    "https://www.keyboardco.com/category.asp?man=daskeyboard"
+   ],
+   "note": "Das Keyboard's 'Where to Buy' page names The Keyboard Company (keyboardco.com) as its United Kingdom seller. The Keyboard Company's Das Keyboard range, 18 Oct 2026: cheapest the 'UK Das X50Q Smart RGB Tactile Mechanical Gaming PC Keyboard' (full size, DKGKX50P0GZS0UKX) £72.00 (£60.00 ex VAT), '1 In Stock', Add to Cart; then Prime 13 and Das Keyboard 4 Root from £109, 4C TKL and 5QS from £119, 4 Professional from £139, 4Q from £150, 6 Professional and MacTigr from £169, 5QS Mark II from £209."
+  },
+  {
+   "product": "KTC M27P6",
+   "also_called": [
+    "M27P6",
+    "KTC M27P6 Mini LED"
+   ],
+   "category": "general",
+   "product_type": "monitor",
+   "price": 399.99,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/dp/B0FGXJQPXL",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.amazon.co.uk/dp/B0FGXJQPXL",
+    "https://uk.ktcplay.com/",
+    "https://us.ktcplay.com/"
+   ],
+   "note": "KTC has no UK store: uk.ktcplay.com redirects to its US store ('Pro Gaming, Office & Portable Monitors | KTC', ships to the US, Canada and Australia only). Amazon UK (London postcode, 18 Oct 2026): 'KTC MiniLED Gaming Monitor 27 Inch | 4K@160Hz, FHD@320Hz Seamless Switching | 1152 Zoll Local Dimming | VESA Display HDR1400 | ... | White | M27P6' £399.99, In stock, Add to basket, sold by Ktcmonitor-Official and dispatched from Amazon."
+  },
+  {
+   "product": "Samsung Odyssey G7 G70F",
+   "also_called": [
+    "Odyssey G7 G70F",
+    "Samsung G70F",
+    "Samsung Odyssey G7 (G70F)",
+    "LS27FG702EUXXU"
+   ],
+   "category": "general",
+   "product_type": "monitor",
+   "price": 429.0,
+   "currency": "GBP",
+   "shop": "Samsung UK",
+   "url": "https://www.samsung.com/uk/monitors/gaming/odyssey-g7-g70f-27-inch-dual-mode-4k-180hz-fhd-360hz-ls27fg702euxxu/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.samsung.com/uk/monitors/gaming/odyssey-g7-g70f-27-inch-dual-mode-4k-180hz-fhd-360hz-ls27fg702euxxu/",
+    "https://www.samsung.com/uk/monitors/gaming/"
+   ],
+   "note": "Samsung UK, 18 Oct 2026: 'Buy the 27 Inch Odyssey G7 4K Gaming Monitor | Samsung UK': '27\" Odyssey G7 G70F 4K Dual Mode 360Hz Gaming Monitor' (4K 180Hz / FHD 360Hz), Black, LS27FG702EUXXU, £429.00, Add to basket; 27-inch is the only size offered."
+  },
+  {
+   "product": "Kobo e-reader",
+   "category": "general",
+   "product_type": "e-reader",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Currys",
+   "url": "https://www.currys.co.uk/products/kobo-clara-bw-6-ereader-16-gb-black-10263289.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.currys.co.uk/products/kobo-clara-bw-6-ereader-16-gb-black-10263289.html",
+    "https://www.kobo.com/gb/en/ereaders",
+    "https://ereader.kobo.com/en-gb/products/kobo-clara-bw.js",
+    "https://ereader.kobo.com/en-gb/collections/ereaders/products.json?limit=250",
+    "https://www.johnlewis.com/search?search-term=kobo",
+    "https://www.currys.co.uk/search?q=kobo"
+   ],
+   "note": "Kobo's UK range ('Kobo eReaders | Rakuten Kobo United Kingdom', read in a browser on 18 Oct 2026), 5 devices: Kobo Clara BW £149.99, Clara Colour £169.99, Libra Colour £239.99, Sage £259.99 (sold out in Kobo's UK store data), Elipsa 2E £349.99. Cheapest seen: Currys 'Buy KOBO Clara BW 6\" eReader - 16 GB, Black | Currys' £149.00, Add to basket (Currys also has Clara Colour £169.99, Libra Colour £239.00). John Lewis: 'Sorry, we don't stock kobo.' Kobo's product pages redirect non-UK visitors to its US store, so the UK range page is the link."
+  },
+  {
+   "product": "PocketBook InkPad",
+   "also_called": [
+    "Pocketbook InkPad",
+    "Pocketbook Inkpad",
+    "PocketBook InkPad series"
+   ],
+   "category": "general",
+   "product_type": "e-reader",
+   "price": 289.0,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/dp/B0CLPFTFYD",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.amazon.co.uk/dp/B0CLPFTFYD",
+    "https://pocketbook.uk/e-readers",
+    "https://www.amazon.co.uk/dp/B0C2QM93N5",
+    "https://www.amazon.co.uk/dp/B0C62QGL8H",
+    "https://www.currys.co.uk/search?q=pocketbook+inkpad"
+   ],
+   "note": "No single model: PocketBook UK's e-readers page ('Buy PocketBook E-Book Readers in the United Kingdom from Our Official Partners', no prices; sells via Currys and Amazon UK) lists the InkPad Series as the InkPad 4 (7.8in mono, IPX8) and InkPad Color 3 (7.8in colour), with InkPad One / Eo 2 among its 10.3in e-note devices. 18 Oct 2026: the InkPad Color 3 (the listing PocketBook UK links) is on Amazon UK at £289.00, In stock, sold by Pocketbook Readers GmbH and dispatched from Amazon. The mono InkPad 4 isn't on sale: both Amazon UK listings (B0C2QM93N5, B0C62QGL8H) are 'Currently unavailable' and Currys has none. Currys: InkPad One £269.00 (third-party delivery), InkPad Color 3 £299.00 (out of stock), InkPad Eo Color £499.00."
+  },
+  {
+   "product": "EMEET webcam",
+   "category": "general",
+   "product_type": "webcam",
+   "price": null,
+   "currency": "GBP",
+   "shop": "EMEET",
+   "url": "https://emeet.com/en-uk/products/webcam-c950",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://emeet.com/en-uk/products/webcam-c950",
+    "https://emeet.com/en-uk",
+    "https://emeet.com/en-uk/collections/webcam",
+    "https://emeet.com/en-uk/collections/webcam/products.json?limit=250"
+   ],
+   "note": "EMEET's own store has a UK version (emeet.com/en-uk, prices in GBP, ships to the UK). Its 'Webcams | EMEET' range (17 products, 18 Oct 2026): cheapest 'EMEET SmartCam C950 | Full HD 1080P Webcam', C950 1080P standalone £23.00, Add to cart (C950 4K £39.99); then SmartCam C960 £37, C960 2K £46, S600 £47.99, C960 4K £56, C60E 4K Dual £62.99, S600L £74, PIXY £83, C980 Pro £83, PIXY Wireless £184 (plus 5/10-packs)."
+  },
+  {
+   "product": "Apple MacBook Air (Early 2014)",
+   "also_called": [
+    "2014 MacBook Air",
+    "2014 Macbook Air",
+    "MacBook Air 2014",
+    "MacBook Air (13-inch, Early 2014)",
+    "MacBook Air (11-inch, Early 2014)"
+   ],
+   "category": "general",
+   "product_type": "laptop",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Apple",
+   "url": "https://support.apple.com/en-gb/102772",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "sources": [
+    "https://support.apple.com/en-gb/102772",
+    "https://www.apple.com/uk/macbook-air/",
+    "https://www.johnlewis.com/search?search-term=macbook%20air",
+    "https://www.currys.co.uk/search?q=macbook+air+2014"
+   ],
+   "note": "discontinued: Apple Support UK ('Getting a service for your Apple product after its warranty has expired') lists MacBook Air (11-inch, Early 2014) and (13-inch, Early 2014) under 'Mac products obsolete worldwide' (Apple stopped distributing them more than 7 years ago). Apple UK's MacBook Air page now offers only the M5 13- and 15-inch; John Lewis lists six 2026 M5 MacBook Airs (from £1,299) and Currys only 2025 M4 and 2026 M5 models. Second-hand only."
+  },
+  {
+   "product": "Asus ROG laptop",
+   "category": "general",
+   "product_type": "laptop",
+   "price": null,
+   "currency": "GBP",
+   "shop": "ASUS UK",
+   "url": "https://uk.store.asus.com/rog/90nr0kw7-m00dc0-rog-strix-g16-g614.html?config=90NR0KW7-M00DC0",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://uk.store.asus.com/rog/90nr0kw7-m00dc0-rog-strix-g16-g614.html?config=90NR0KW7-M00DC0",
+    "https://rog.asus.com/uk/laptops-group/allmodels/",
+    "https://www.currys.co.uk/gaming/pc-gaming/gaming-laptops?q=asus%20rog"
+   ],
+   "note": "ROG UK's laptop range ('Gaming Laptops | Buy ROG Zephyrus Flow Strix Gaming Laptops｜ROG UK', 64 products, 18 Oct 2026): cheapest with an ASUS eStore price the ROG Strix G16 G614 (G614PM-RV065W: Ryzen 9 8940HX, RTX 5060, 16GB, 1TB, 16in FHD+ 165Hz) at £1,599.99 (was £2,199.99), In Stock; its ASUS UK store page 'ROG Strix G16 G614 with free One Year Extra Warranty worth £69.99' shows Special Price £1,599.99, Add to Cart, delivery 1-2 working days. Next: Strix G16 RTX 5060 £1,899.99, Zephyrus G14 (2026) £2,199.99. Currys' ROG laptops start at £1,799 (ROG Flow Z13). Reviewed 18 Oct 2026: the range page (rog.asus.com/uk) stays in the sources only, since the price was read on ASUS UK's store at another address."
+  },
+  {
+   "product": "Lenovo Legion 5 Gen 10 (15\" AMD)",
+   "also_called": [
+    "Lenovo Legion 5a Gen 10",
+    "Legion 5a Gen 10",
+    "Legion 5 Gen 10 (15\" AMD)",
+    "Lenovo Legion 5 Gen 10 AMD"
+   ],
+   "category": "general",
+   "product_type": "laptop",
+   "price": 1780.0,
+   "currency": "GBP",
+   "shop": "Lenovo UK",
+   "url": "https://www.lenovo.com/gb/en/p/laptops/legion-laptops/legion-5-series/lenovo-legion-5-gen-10-15-inch-amd/len101g0047",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "The 'Legion 5a Gen 10' is Lenovo's 2025 AMD Legion 5 15-inch, which Lenovo sells as 'Legion 5 Gen 10 (15\" AMD)' (from knowledge; a Gen 11 followed in 2026). Lenovo UK, read in a browser on 18 Oct 2026 ('Legion 5 Gen 10 (AMD) | 15'' Robust Laptop for Gaming & Streaming | Lenovo UK'): Starting At £1,780.00; 3 models: £1,780.00 inc. VAT (Ryzen AI 7 350, RTX 5060 8GB, 16GB, 512GB, 15.1in 2560x1600 OLED 165Hz, part 83F1CTO1WWGB3, 'Ships in 3 days', Add To Cart), £2,029.99 (32GB) and £2,260.00 (32GB, 1TB, Windows Pro)."
+  },
+  {
+   "product": "Altec Lansing H2O",
+   "also_called": [
+    "Altec Lansing Mini H2O",
+    "Altec Lansing Jacket H2O",
+    "Altec H2O",
+    "Mini H2O"
+   ],
+   "category": "general",
+   "product_type": "bluetooth speaker",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Altec Lansing",
+   "url": "https://www.alteclansing.com/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "sources": [
+    "https://www.alteclansing.com/",
+    "https://www.alteclansing.com/products.json?limit=250",
+    "https://www.alteclansing.com/search?q=h2o",
+    "https://www.amazon.co.uk/dp/B013AOCFHI",
+    "https://www.amazon.co.uk/dp/B072LP665R",
+    "https://www.amazon.co.uk/dp/B01MDLV624",
+    "https://www.amazon.co.uk/dp/B01M5AR6OV",
+    "https://www.currys.co.uk/search?q=altec+lansing",
+    "https://www.johnlewis.com/search?search-term=altec%20lansing"
+   ],
+   "note": "discontinued: Altec Lansing's own store (US, ships to the US only) has no H2O model among its 78 products; its search for 'h2o' gives 'No results', and its floating waterproof range is now the Hydra series (HydraMini 2.0 from $29.99, HydraMotion 2.0 $59.99, HydraJolt 2.0 $69.99, HydraBlast 2.0 from $79.99 ...). Amazon UK's H2O listings (Mini H2O B013AOCFHI, Mini H2O 3 IMW258 B072LP665R, Jacket H2O 2 B01MDLV624, Jacket H2O iMW457 B01M5AR6OV; London postcode) are all 'Currently unavailable' with no offers. Currys sells Altec Lansing's Hydra speakers (HydraMini, HydraJolt, HydraBlast, HydraBoom) but no H2O; John Lewis has no Altec Lansing. Not sold new."
+  },
+  {
+   "product": "Purple mattress",
+   "category": "general",
+   "product_type": "mattress",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Purple",
+   "url": "https://purple.com/mattresses",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://purple.com/mattresses",
+    "https://purple.com/terms-and-privacy",
+    "https://www.johnlewis.com/search?search-term=purple%20mattress",
+    "https://www.amazon.co.uk/s?k=purple+innovation+mattress"
+   ],
+   "note": "not sold to UK shoppers: Purple (US) sells its mattresses from its own US store: 'Shop Purple Mattresses' (18 Oct 2026) shows Essential mattresses (queens from $999 on sale, was $1,299), Restore Hybrid (queens from $2,699) and Rejuvenate Luxe (queens from $5,499), plus The Purple Mattress, PurplePlus, PurpleFlex, RestorePlus/RestorePremier and the Rejuvenate models. Its terms: all transactions are in US dollars, it makes no representation that products are available outside the United States, and it may refuse or rescind purchases from outside the US. No UK store: purple.co.uk refused the connection. John Lewis's search for 'purple mattress' shows no Purple brand (only purple-coloured Snüz items); Amazon UK's search shows only Purple SoftStretch sheet sets (imports), no Purple mattress."
+  },
+  {
+   "product": "Honeywell air purifier",
+   "category": "general",
+   "product_type": "air purifier",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Honeywell",
+   "url": "https://www.honeywellpluggedin.com/honeywell-air-purifiers-for-home/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.honeywellpluggedin.com/honeywell-air-purifiers-for-home/",
+    "https://www.currys.co.uk/appliances/fans-heating-and-air-treatment/air-purifiers",
+    "https://www.johnlewis.com/search?search-term=honeywell%20air%20purifier",
+    "https://www.amazon.co.uk/s?k=honeywell+air+purifier",
+    "https://www.amazon.co.uk/dp/B0FKCZSWCX",
+    "https://www.amazon.co.uk/dp/B0FKCQ459Y",
+    "https://www.tjc.co.uk/honeywell-designer-series-ultra-quiet-hepa-tower-air-purifier---white-7846381.html",
+    "https://www.appliancesdirect.co.uk/p/hpa710/honeywell-hpa710-air-purifier-air-purifier",
+    "https://www.appliancesdirect.co.uk/p/hpa830we1/honeywell-hpa830we1-air-purifier-air-purifier"
+   ],
+   "note": "not sold to UK shoppers: Honeywell home air purifiers are made under licence by Kaz USA, a Helen of Troy company: 'Air Purifiers for Home - Honeywell Plugged In' (18 Oct 2026) lists US models (Allergen Plus HPA4100/4200/4300, HPA5100/5200/5300, HPA6000, AQSense HPA125, HPA120, Air Genius 4 and 5, Fresher Air HHT270, PowerPlus HPA3300, HPA060), sized in square feet, no prices and no UK sales. No UK shop sells a UK model new: Currys' air purifier page has no Honeywell among its brands (Blueair, Bosch, Dyson, Philips, Shark, Russell Hobbs, Fellowes and others) and its old Honeywell product page (10230858) now redirects to that page; John Lewis's search shows no Honeywell; Appliances Direct's pages for the European HPA710 and HPA830WE1 return 410 Gone; TJC's Honeywell Designer Series Ultra Quiet HEPA Tower (£299.99) is sold out. Amazon UK has only US models imported by Amazon US through its global store ('US imports may differ from local products'): Allergen Plus AQSense HPA125B £96.82, Allergen Plus 3-in-1 HPA6000B £324.98, both in stock; US electrical appliances, so counted as not sold in the UK (as for All-Clad's waffle makers). A UK office supplier (ACS Office) lists an HPA710WE, but its page asked for a human check, so it wasn't read."
+  },
+  {
+   "product": "Rabbit Air",
+   "also_called": [
+    "RabbitAir",
+    "Rabbit air",
+    "rabbit air",
+    "Rabbitair"
+   ],
+   "category": "general",
+   "product_type": "air purifier",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Rabbit Air",
+   "url": "https://rabbitair.com/collections/shop-air-purifiers",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://rabbitair.com/collections/shop-air-purifiers",
+    "https://rabbitair.com/products/minusa2-air-purifier",
+    "https://rabbitair.com/products/minusa2-air-purifier-220v",
+    "https://rabbitair.com/pages/canadian-customers",
+    "https://rabbitair.com/policies/shipping-policy",
+    "https://www.rabbitair.co.uk/",
+    "https://www.amazon.co.uk/s?k=rabbit+air+purifier",
+    "https://www.amazon.co.uk/dp/B0040HKFUO"
+   ],
+   "note": "not sold to UK shoppers: Rabbit Air (Los Angeles) sells from its US store in dollars: 'Shop Air Purifiers - Rabbit Air' (18 Oct 2026): BioGS 2.0 from $369.95, MinusA2 from $599.95, A3 from $749.95 (special editions to $769.95). The MinusA2 runs on 120V AC 60Hz; a 220V MinusA2 (SPA-700M, $599.95) is rated 240V AC 60Hz. Its country links are Japan (rabbitair.co.jp) and Canada (prices in USD, UPS International); rabbitair.co.uk redirects to the US store, and asked for with the UK as its country the store still answers as US/USD (no UK market). Amazon UK has one listing, the US MinusA2 SPA-780A (120 V) from a third-party seller ('All is well uk'), £1,175.09 as shown to this reader, 10 left: a US-spec electrical import, so not counted as sold in the UK."
+  },
+  {
+   "product": "Alen BreatheSmart",
+   "also_called": [
+    "Alen Breathsmart",
+    "Alen Breathesmart",
+    "Alen Breathe Smart",
+    "BreatheSmart",
+    "Alen BreatheSmart air purifier"
+   ],
+   "category": "general",
+   "product_type": "air purifier",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Alen",
+   "url": "https://alen.com/collections/air-purifiers",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://alen.com/collections/air-purifiers",
+    "https://alen.com/products/breathesmart-25i",
+    "https://support.alen.com/hc/en-us/articles/360056504051-Free-FedEx-Ground-Shipping",
+    "https://www.amazon.co.uk/s?k=alen+breathesmart",
+    "https://www.amazon.co.uk/dp/B0G1T353JP"
+   ],
+   "note": "not sold to UK shoppers: Alen (Austin, Texas; the maker writes BreatheSmart) sells the range from its US store in dollars: 'Home Air Purifiers - HEPA Air Cleaners for Every Room | Alen' (18 Oct 2026): BreatheSmart 25i from $179, 35i from $289, 45i from $449, 75i from $799. Its help page 'Free FedEx Ground Shipping' covers the continental US, with extra charges for Alaska, Hawaii and Puerto Rico; the store has no UK market. No UK shop found with a UK model: Amazon UK has only the US BreatheSmart 25i imported by Amazon US through its global store ('US imports may differ from local products'), £182.16 including £34.65 estimated import charges, in stock; a US-spec electrical import, so counted as not sold in the UK (the 25i runs from a 24V external power supply; its mains rating isn't stated)."
+  },
+  {
+   "product": "L.L.Bean 280-Thread-Count Pima Cotton Percale Sheet Set",
+   "also_called": [
+    "L.L.Bean Percale Pima Cotton",
+    "L.L.Bean Pima Cotton Percale",
+    "L.L.Bean pima percale sheets",
+    "LL Bean Pima Percale",
+    "LL Bean pima cotton percale sheets",
+    "L.L. Bean Pima Percale Sheets"
+   ],
+   "category": "general",
+   "product_type": "bed sheets",
+   "price": 140.0,
+   "currency": "GBP",
+   "shop": "L.L.Bean",
+   "url": "https://global.llbean.com/llb/shop/113446.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://global.llbean.com/llb/shop/113446.html",
+    "https://global.llbean.com/llb/shop/113447.html",
+    "https://global.llbean.com/"
+   ],
+   "note": "L.L.Bean sells to UK shoppers from its own international store (global.llbean.com, run with Global-e): with the UK as the shipping country it prices in pounds, 'Duties & Taxes included in product pricing', free shipping on orders over £75 (its Canadian store's Ship To dialog sends other countries to these international sites). '280-Thread-Count Pima Cotton Percale Sheet Set | Sheets | L.L.Bean International' (18 Oct 2026): Twin set £140, Full £160, Queen £180 (King and Cal King also offered), 11 colours, ADD TO BAG shown; 100% long-staple pima cotton, flat and fitted sheet and two pillowcases (twin: one). US bed sizes (twin fitted 39\"x76\"). The printed version is £170 (Twin)."
+  },
+  {
+   "product": "L.L.Bean flannels bed sheets",
+   "category": "general",
+   "product_type": "bed sheets",
+   "price": null,
+   "currency": "GBP",
+   "shop": "L.L.Bean",
+   "url": "https://global.llbean.com/llb/shop/78401.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://global.llbean.com/llb/shop/78401.html",
+    "https://global.llbean.com/llb/shop/516760/",
+    "https://global.llbean.com/llb/shop/121370.html",
+    "https://global.llbean.com/llb/shop/83508.html"
+   ],
+   "note": "L.L.Bean's international store with the UK as the shipping country (pounds, duties and taxes included): 'Flannel Bedding | L.L.Bean International' (18 Oct 2026) lists the Ultrasoft Comfort Flannel Sheet Set £140-£190, Ultrasoft Comfort Flannel Sheet, Flat £58-£79 and Fitted £58-£79, check, stripe and plaid Ultrasoft sets, and flannel collections (Heritage Chamois, Organic, Botanical Floral, Evergreen, Birch Floral and others, whose lowest prices are pillowcases). Cheapest full-size flannel sheet: 'Ultrasoft Comfort Flannel Sheet, Flat', Twin, £58, ADD TO BAG shown. Twin sets start at £130 (Botanical Floral Flannel Sheet Collection); Organic Flannel Twin set £135 (reduced from £160, ships by 24 Nov). US bed sizes."
+  },
+  {
+   "product": "Parachute towel",
+   "category": "general",
+   "product_type": "towel",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Parachute",
+   "url": "https://www.parachutehome.com/collections/towels",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.parachutehome.com/collections/towels",
+    "https://parachutehome.com/pages/faq",
+    "https://www.parachutehome.com/policies/shipping-policy",
+    "https://www.amazon.co.uk/s?k=parachute+home+towel"
+   ],
+   "note": "not sold to UK shoppers: Parachute Home (US) sells towels from its own store in dollars: 'Towels | Parachute - Parachute Home' (18 Oct 2026): Classic Turkish Cotton Towels $14-$79, Organic Plush, Soft Rib and Organic Resort Stripe $19-$89, Organic Cotton Mosaic $34-$59, Waffle $29-$49. Its FAQ: 'We ship within the U.S.A., including Alaska and Hawaii and Canada'; its region menu offers only Canada (CAD) and the United States (USD), and the store has no UK market. Amazon UK's search shows no Parachute Home towels."
+  },
+  {
+   "product": "Ralph Lauren towel",
+   "also_called": [
+    "Ralph Lauren towels",
+    "Ralph Lauren Home towels",
+    "Ralph Lauren bath towels",
+    "Polo Ralph Lauren towels"
+   ],
+   "category": "general",
+   "product_type": "towel",
+   "price": 49.0,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/ralph-lauren-polo-player-towels/andover/p114958009",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/ralph-lauren-polo-player-towels/andover/p114958009",
+    "https://www.ralphlauren.co.uk/",
+    "https://www.ralphlauren.co.uk/en/home/bath/towels-bath-mats/50402",
+    "https://www.johnlewis.com/search?search-term=ralph%20lauren%20towel",
+    "https://www.johnlewis.com/ralph-lauren-dulaney-towels/sheer-blue/p114958021",
+    "https://www.flannels.com/avenue-bath-towel-850947"
+   ],
+   "note": "Ralph Lauren Home towels are sold in the UK. Ralph Lauren UK's own home menu (ralphlauren.co.uk, 18 Oct 2026) has Bath > 'Towels & Bath Mats' (the range page given), but that page answered 'Access Denied' to this reader, so its prices weren't read. John Lewis: 'Ralph Lauren Polo Player Bath Towel, Andover' (70 x 140cm) £49.00, 'Currently in stock online', Add to basket (bath sheet £69.00; all 7 colours in stock); Dulaney Towels £69-£99; Polo Pony Jacquard Beach Towel £98-£139. Flannels lists the Ralph Lauren Home RL Avenue Towel (hand towel, bath towel, sheet) at £49 (a £69 price also shown), Add to bag. From price: the Polo Player bath towel at John Lewis, £49. (Reviewed 18 Oct 2026: linked to the John Lewis page read, since Ralph Lauren UK refused this reader.)"
+  },
+  {
+   "product": "Nomadix towel",
+   "also_called": [
+    "Nomadix towels",
+    "Nomadix",
+    "nomadix towel"
+   ],
+   "category": "general",
+   "product_type": "towel",
+   "price": 17.95,
+   "currency": "GBP",
+   "shop": "WildBounds",
+   "url": "https://wildbounds.com/products/ultralight-towel-agua-blue",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://wildbounds.com/products/ultralight-towel-agua-blue",
+    "https://wildbounds.com/collections/nomadix",
+    "https://wildbounds.com/products/original-towel-baja-aqua",
+    "https://myoutdoors.co.uk/gear-news/make-waves-with-nomadix"
+   ],
+   "note": "Nomadix (US) towels are sold in the UK by WildBounds, the British adventure retailer that launched the range here (MyOutdoors, 13 May 2026). 'Nomadix - WildBounds' (18 Oct 2026; free UK delivery over £50), all reduced: Ultralight Towel £17.95 (was £29.95; 137.2 x 76.2cm, 227g), Original Towel £23.95 (was £39.95; 76 x 184cm, 450g), Bandana Towel £14.95 and Tiny Towel 3-Pack £13.95 (small towels). From price: Ultralight Towel, Agua Blue, £17.95, ADD TO BAG, available in the store's data (a sale price). The Original Towel is the brand's signature towel."
+  },
+  {
+   "product": "Pottery Barn towel",
+   "also_called": [
+    "Pottery Barn towels",
+    "Pottery Barn bath towels"
+   ],
+   "category": "general",
+   "product_type": "towel",
+   "price": 27.2,
+   "currency": "GBP",
+   "shop": "Pottery Barn UK",
+   "url": "https://www.potterybarn.co.uk/hydrocotton-organic-bath-towel",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.potterybarn.co.uk/hydrocotton-organic-bath-towel",
+    "https://www.potterybarn.co.uk/",
+    "https://www.potterybarn.co.uk/bedding/shop-all-towels-linens/bath-linens",
+    "https://www.potterybarn.co.uk/pb-classic-organic-towels",
+    "https://www.hometextilestoday.com/international/website-pop-up-give-uk-shoppers-access-to-pottery-barn"
+   ],
+   "note": "Pottery Barn has its own UK store (potterybarn.co.uk, Williams-Sonoma; launched in September 2025 per Home Textiles Today), in pounds with UK delivery. 'Bath Towels | Pottery Barn UK' (18 Oct 2026): Hydrocotton Quick-Dry Towel £9.60-£68 (mid season sale), Classic Organic Towel £8.95-£82 (clearance), towel bundles £54.40-£82; the lowest figures are face and hand towels. Bath towels (71 x 140cm): Hydrocotton Quick-Dry £34.00 in most colours, Porcelain Blue £27.20 (was £34.00), 'In Stock & Ready to Ship', Add to cart; Classic Organic bath towel £39.00 (4 colours, in stock). From price: the Hydrocotton Quick-Dry bath towel in Porcelain Blue, £27.20 (a sale price; usually £34)."
+  },
+  {
+   "product": "Outlier Grid Linen Towel",
+   "also_called": [
+    "Grid Linen towel from Outlier",
+    "Outlier Grid Linen towel",
+    "Outlier grid linen towel",
+    "Outlier linen towel",
+    "Grid Linen Towel"
+   ],
+   "category": "general",
+   "product_type": "towel",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Outlier",
+   "url": "https://outlier.nyc/products/grid-linen-towel",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://outlier.nyc/products/grid-linen-towel",
+    "https://outlier.nyc/pages/information",
+    "https://outlier.nyc/search?q=towel",
+    "https://www.amazon.co.uk/s?k=outlier+grid+linen+towel"
+   ],
+   "note": "not sold to UK shoppers: Still listed in Outlier's own New York store, under Classics: 'OUTLIER - Grid Linen Towel' (18 Oct 2026), 100% linen box (waffle) weave from Lithuania, made in Manhattan, L (55 x 36in) $75 and XL (75 x 56in) $110; every colour (Gray Rock, Gray/Blue/Red/Tan Vibes) shows Out of Stock with 'notify me about restocks', so out of stock for now, not discontinued. Outlier prices only in US dollars ('Prices are displayed in U.S. Dollars') and ships abroad for $35 plus duties and taxes ('We ship to the US, Canada, Europe, Australia and Japan all the time'), so UK buyers can order from the US, but no UK seller was found (none on Amazon UK): counted as not sold in the UK, as for other dollar-only US stores."
+  },
+  {
+   "product": "Avocado pillow",
+   "category": "general",
+   "product_type": "pillow",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Avocado",
+   "url": "https://www.avocadogreenmattress.com/collections/pillows",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.avocadogreenmattress.com/collections/pillows",
+    "https://www.avocadogreenmattress.com/products/green-pillow",
+    "https://www.amazon.co.uk/s?k=avocado+green+mattress+latex+pillow",
+    "https://www.amazon.co.uk/dp/B0H37PDLYG",
+    "https://www.amazon.co.uk/dp/B0CQ1WF4Q8"
+   ],
+   "note": "not sold to UK shoppers: Avocado Green Mattress (Los Angeles) sells its pillows from its US store in dollars ('Organic Pillows | 5 Finished-Product Certifications | Avocado Green Mattress', 18 Oct 2026: Avocado Green Pillow, Molded Latex, Pure Talalay Luxury, Grand Luxe, Down and others; Green Pillow Standard $118); the store has no UK market. UK shoppers can buy it on Amazon UK as a US import sold and shipped by Amazon US: 'Avocado Organic Green Pillow - GOTS and GOLS-Certified ... Standard' £150.98, In stock (Queen £175.23, King £198.85), 'US imports may differ from local products'. Amazon also sells the 'Avocado Organic Cotton Pillow ... King' itself, usually dispatched within 3 to 7 months, shown as £80.05 to this reader, whose delivery address is in the US (so possibly without UK VAT). No from price: the cheaper listing's UK price couldn't be read; the in-stock import is £150.98. Reviewed 18 Oct 2026: no UK shop sells it; Amazon UK lists only US imports shipped by Amazon US (import charges added), so it is recorded as sold abroad, its maker's own page linked."
+  },
+  {
+   "product": "Casper pillow",
+   "category": "general",
+   "product_type": "pillow",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Casper",
+   "url": "https://casper.com/pillows/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://casper.com/pillows/",
+    "https://casper.com/uk/",
+    "https://www.amazon.co.uk/s?k=casper+sleep+pillow",
+    "https://www.amazon.co.uk/dp/B07KRKFLCT",
+    "https://www.amazon.co.uk/dp/B0H1LZW4S8"
+   ],
+   "note": "not sold to UK shoppers: Casper has no UK store: casper.com/uk returns 404 (18 Oct 2026). Its US store sells the pillows in dollars ('Pillows & Comfortable Bed Pillow Sets | Casper': Original Pillow $67.50 (was $75), Original Cooling $89.10, Hybrid $116.10, Down $143.10 and others). Amazon UK still lists Casper pillows: 'Casper Sleep Original Cooling Pillow 2-Pack, King Size', sold and shipped by Amazon US as a US import, £309.54 including £64.66 estimated import charges, In stock; Amazon's own 'Casper Sleep Original Microfiber Pillow for Sleeping, Standard, White' is usually dispatched within 3 to 7 months and showed £64.69 to this reader, whose delivery address is in the US (so possibly without UK VAT); a Casper Essential Pillow King has no offer. No from price: the single pillow's UK price couldn't be read, and the in-stock listing is a pack of two. Reviewed 18 Oct 2026: no UK shop sells it; Amazon UK lists only US imports shipped by Amazon US (import charges added), so it is recorded as sold abroad, its maker's own page linked."
+  },
+  {
+   "product": "Dunlopillo pillow",
+   "also_called": [
+    "DUNLOPILLOW pillow",
+    "Dunlopillow pillow"
+   ],
+   "category": "general",
+   "product_type": "pillow",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Bensons for Beds",
+   "url": "https://www.bensonsforbeds.co.uk/products/dunlopillo-hybrid-side-sleeper-pillow/STK782201/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.bensonsforbeds.co.uk/products/dunlopillo-hybrid-side-sleeper-pillow/STK782201/",
+    "https://www.bensonsforbeds.co.uk/brands/dunlopillo/all-dunlopillo/",
+    "https://www.dunlopillo.co.uk/",
+    "https://www.amazon.co.uk/s?k=dunlopillo+pillow"
+   ],
+   "note": "The brand is Dunlopillo (the answer's 'DUNLOPILLOW' is a writer's spelling). dunlopillo.co.uk does resolve (Relyon Beds Ltd, 'Mattress Manufacturer | Dunlopillo'): mattresses, bases, headboards and fabrics, no pillows, and a 'Find a stockist' page. Bensons for Beds (170 UK stores) sells the pillows: 'Dunlopillo Pillow Collection | Dunlopillo Latex Pillows | Bensons for Beds' (18 Oct 2026): Super Comfort Pillow £109.99, Serenity Comfort Pillow £109.99, Hybrid Side Sleeper Pillow £64.99 and Hybrid Front & Back Sleeper Pillow £64.99 (beside Dunlopillo mattresses). 'Dunlopillo Hybrid Side Sleeper Pillow' £64.99, Add to basket, delivery from 7 days (£10), a Bensons exclusive (honeycomb latex and hollowfibre). Amazon UK's search shows no Dunlopillo pillows."
+  },
+  {
+   "product": "Kirby vacuum cleaner",
+   "category": "general",
+   "product_type": "vacuum cleaner",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Kirby",
+   "url": "https://kirby.com/products/kirby-avalir-platinum-vacuum-cleaner",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://kirby.com/products/kirby-avalir-platinum-vacuum-cleaner",
+    "https://kirby.com/products/kirby-vacuum-belt-uk",
+    "https://kirby.com/pages/contact",
+    "https://kirby.com/pages/find-a-distributor",
+    "https://kirby.com/policies/shipping-policy",
+    "https://www.amazon.co.uk/s?k=kirby+avalir+vacuum"
+   ],
+   "note": "Kirby sells its vacuums through independent authorised distributors with in-home demonstrations, not shops. Its own store has a UK market: with the United Kingdom as the store's country (18 Oct 2026), 'Kirby Avalir Platinum Vacuum Cleaner - The Kirby Company' shows £3195.00 for each package (the vacuum, the Home Cleaning System and the Ultimate system) with 'Schedule a Demo' and no basket button (US store: $2,599 to $3,349); UK-only spares sell online there (Kirby Vacuum Belt UK £20.00, Add to cart), while the Signature Series vacuums (V530, C530) aren't offered to the UK (404). Kirby's contact page lists a UK consumer line (0800-328-1247). Caveats: the page's specs read 110/120 volt (the US text; no UK machine seen), the distributor finder takes US cities or ZIP codes, and the shipping policy only mentions the contiguous US. Amazon UK has only Kirby bags, belts and parts. From price: the Avalir Platinum at Kirby's UK price, £3,195, bought through a distributor's demonstration."
+  },
+  {
+   "product": "Linoto bed sheets",
+   "category": "general",
+   "product_type": "bed sheets",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Linoto",
+   "url": "https://www.linoto.com/products/belgian-eco-linen-fitted-sheet-eco-natural",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.linoto.com/products/belgian-eco-linen-fitted-sheet-eco-natural",
+    "https://www.linoto.com/",
+    "https://www.linoto.com/products/linen-fitted-sheet-organic-ivory",
+    "https://www.linoto.com/products/linen-flat-sheet-white",
+    "https://www.linoto.com/products/cobalt-linen-sheet-set",
+    "https://www.linoto.com/products.json"
+   ],
+   "note": "Cheaper than the listed £502: with the United Kingdom as the store's country (pounds; 'Linoto Linen Sheets | Linen for Bed, Bath and Home', 18 Oct 2026), single linen sheets start at £191.00: 'Eco Natural Belgian Eco-Linen Fitted Sheet', TwinXL 39\"x80\", 14\" standard depth, Regular price £191.00, Add to cart, estimated shipping in 3-4 weeks; the Organic Ivory Linen Fitted Sheet TwinXL is also £191, and linen flat sheets start at £195 (Twin 70\"x100\", e.g. White). Sheet sets start at £465 (Cobalt Linen Sheet Set, TwinXL); its Queen set is now from £499. Pound prices are the dollar prices converted (rate 0.7615 shown); US bed sizes; ships from the US. The cheapest in-stock sheets were found in the store's product data (cheaper sale sheets are sold out)."
   }
  ]
 }
