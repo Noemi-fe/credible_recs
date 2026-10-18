@@ -58,10 +58,12 @@ LINES_SOLD_IN_THE_UK = [
     (["Klean Kanteen", "Klein Kanteen"], "water bottle", "Klean Kanteen", 19.64, "Alpinetrek"),
     (["COROS", "Coros"], "sports watch", "COROS", 229.0, "COROS UK"),
     (["Honda"], "lawn mower", "Honda", 425.0, "Honda UK"),
+    (["Levi's", "Levis", "Levi’s"], "jeans", "Levi's", 70.0, "John Lewis"),
 ]
 
 # Brands the makers' own pages show selling the type, with no UK price readable (their prices load by script).
-LINES_WITH_NO_FROM_PRICE = [(["Arc'teryx", "Arcteryx"], "rain jacket", "Arc'teryx")]
+LINES_WITH_NO_FROM_PRICE = [(["Arc'teryx", "Arcteryx"], "rain jacket", "Arc'teryx"),
+                            (["Wrangler", "Wranglers"], "jeans", "Wrangler")]
 
 
 def test_brands_with_no_readable_price_still_have_their_range():
@@ -87,7 +89,18 @@ PRODUCTS_SOLD_IN_THE_UK = [
     ("Garmin Forerunner 265", "sports watch", 369.99, "John Lewis"),
     ("Garmin Forerunner 570", "sports watch", 429.0, "John Lewis"),
     ("COROS PACE 3", "sports watch", None, "COROS UK"),
+    # engine.maker_pages found its 71cm spinner, a checked case; writers' Platinum Elite in carry-on threads is the
+    # cabin size: its 55cm spinner, out of stock for now (which still counts as sold).
+    ("Travelpro Platinum Elite", "suitcase", 285.0, "Travelpro"),
+    # A range ("Carhartt boot socks"): its page is one boot sock's, so no single price.
+    ("Carhartt boot socks", "socks", None, "Carhartt"),
 ]
+
+
+def test_a_us_only_mower_is_shown_as_sold_abroad():
+    # Ryobi's 40V mowers are its US range; its UK site has no such mower.
+    entry = find_availability("Ryobi 40V 20-inch push mower", "general", load_prices(), "lawn mower")
+    assert entry is not None and entry.available is False and entry.not_in_uk and entry.checked_on == ROUND
 
 
 def test_shown_products_have_a_uk_price_or_where_they_are_sold():

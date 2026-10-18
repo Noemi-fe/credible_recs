@@ -6098,6 +6098,73 @@
    ],
    "checked_on": "2026-10-18",
    "note": "Honda UK still sells lawnmowers on 18 Oct (petrol IZY, HRS, HRN, HRX, HRD, HRH; cordless IZY-ON and HRX; robotic HRM; lawn tractors), prices including VAT, sold through its dealers. From price: the IZY petrol mower from £425 on the page (its menu says from £470)."
+  },
+  {
+   "product": "Ryobi 40V 20-inch push mower",
+   "category": "general",
+   "product_type": "lawn mower",
+   "page": "https://www.ryobitools.com/products/46396056580",
+   "shop": "Ryobi",
+   "sources": [
+    "https://www.ryobitools.com/products/46396056580",
+    "https://uk.ryobitools.eu/"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Ryobi's 40V HP Brushless 20\" push mowers are its US range (ryobitools.com, in US dollars, about $249-$359 by kit in a search of its pages, 18 Oct); none of the 1,239 pages of Ryobi's UK site (uk.ryobitools.eu) is a 40V 20\" mower's (engine.maker_pages, 18 Oct). Sold abroad only."
+  },
+  {
+   "product": "Wrangler jeans line",
+   "category": "general",
+   "product_type": "jeans",
+   "page": "https://www.charlies.co.uk/wrangler-men-s-texas-low-stretch-jeans-blue-black",
+   "shop": "Charlie's",
+   "sources": [
+    "https://www.charlies.co.uk/wrangler-men-s-texas-low-stretch-jeans-blue-black",
+    "https://www.charlies.co.uk/brands/wrangler/"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Wrangler's UK store refuses automated reads (403) and John Lewis has no Wrangler jeans in stock on 18 Oct. Charlie's, a UK menswear shop, sells Wrangler jeans (its Wrangler brand page; the Texas Authentic Straight at £59.99, RRP £80, in stock in most sizes). No from price: cheaper Wrangler jeans are sold elsewhere (ASOS, unreadable), so £59.99 isn't the cheapest."
+  },
+  {
+   "product": "Levi's jeans line",
+   "category": "general",
+   "product_type": "jeans",
+   "page": "https://www.johnlewis.com/browse/men/mens-jeans/levis/_/N-eaaZ1z140cx",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/browse/men/mens-jeans/levis/_/N-eaaZ1z140cx",
+    "https://www.johnlewis.com/levis-501-original-straight-jeans/p857125"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis's Levi's men's jeans page lists 43 on 18 Oct: 501 Original Straight from £80, 511 Slim from £80, 512 Slim Tapered £70, 501 Hudson Selvedge £130; five older-season pairs are cleared at £32.40-£36 (not counted). From price: the 512 Slim Tapered (Rock Cod) at £70."
+  },
+  {
+   "product": "Travelpro Platinum Elite",
+   "category": "general",
+   "product_type": "suitcase",
+   "page": "https://www.travelpro.co.uk/products/platinum-elite-55cm-expandable-spinner-vintage-grey",
+   "shop": "Travelpro",
+   "sources": [
+    "https://www.travelpro.co.uk/products/platinum-elite-55cm-expandable-spinner-vintage-grey",
+    "https://www.travelpro.co.uk/products.json?limit=250"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Checked by hand (18 Oct): engine.maker_pages found the Platinum Elite 71cm spinner, a checked case; writers' Platinum Elite in carry-on threads is the cabin size, so the page is Travelpro UK's Platinum Elite 55cm Expandable Spinner (Vintage Grey), £285, out of stock on 18 Oct (out of stock still counts as sold); the line also comes as a 58cm rollaboard suiter (£275), 71cm (£319) and 82cm spinners."
+  },
+  {
+   "product": "Carhartt boot socks",
+   "category": "general",
+   "product_type": "socks",
+   "page": "https://www.carhartt.com/en-gb/p/heavyweight-wool-blend-boot-sock/802530",
+   "shop": "Carhartt",
+   "image": "https://imgcdn.carhartt.com/is/image/Carhartt/EU_SB39150M_034?$400L2$",
+   "image_page": "https://www.carhartt.com/en-gb/p/heavyweight-wool-blend-boot-sock/802530",
+   "sources": [
+    "https://www.carhartt.com/en-gb/p/heavyweight-wool-blend-boot-sock/802530",
+    "https://www.carhartt.com/en-gb/Product.xml"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.carhartt.com/en-gb/Product.xml; the page names it \"Heavyweight Wool Blend Boot Sock\"; GBP 18.99 on the page. Checked by hand (18 Oct): writers' 'Carhartt boot socks' names Carhartt's boot socks as a range, not this one sock, so no single price is recorded; the page stays as its link (Carhartt's UK store sells it)."
   }
  ]
 }

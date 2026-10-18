@@ -2640,6 +2640,32 @@
    "from_price_url": "https://www.honda.co.uk/lawn-and-garden/products/lawnmowers.html",
    "from_price_checked_on": "2026-10-18",
    "note": "From the research findings of 2026-10-18: Honda UK still sells lawnmowers on 18 Oct (petrol IZY, HRS, HRN, HRX, HRD, HRH; cordless IZY-ON and HRX; robotic HRM; lawn tractors), prices including VAT, sold through its dealers. From price: the IZY petrol mower from £425 on the page (its menu says from £470)."
+  },
+  {
+   "brand": "Wrangler",
+   "category": "general",
+   "product_type": "jeans",
+   "sells": true,
+   "sources": ["https://www.charlies.co.uk/wrangler-men-s-texas-low-stretch-jeans-blue-black", "https://www.charlies.co.uk/brands/wrangler/"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://www.charlies.co.uk/wrangler-men-s-texas-low-stretch-jeans-blue-black",
+   "range_shop": "Charlie's",
+   "note": "From the research findings of 2026-10-18: Wrangler's UK store refuses automated reads (403) and John Lewis has no Wrangler jeans in stock on 18 Oct. Charlie's, a UK menswear shop, sells Wrangler jeans (its Wrangler brand page; the Texas Authentic Straight at £59.99, RRP £80, in stock in most sizes). No from price: cheaper Wrangler jeans are sold elsewhere (ASOS, unreadable), so £59.99 isn't the cheapest."
+  },
+  {
+   "brand": "Levi's",
+   "category": "general",
+   "product_type": "jeans",
+   "sells": true,
+   "sources": ["https://www.johnlewis.com/browse/men/mens-jeans/levis/_/N-eaaZ1z140cx", "https://www.johnlewis.com/levis-512-slim-tapered-jeans-rock-cod/p3761262", "https://www.johnlewis.com/levis-501-original-straight-jeans/p857125"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://www.johnlewis.com/browse/men/mens-jeans/levis/_/N-eaaZ1z140cx",
+   "range_shop": "John Lewis",
+   "from_price": 70.0,
+   "from_price_shop": "John Lewis",
+   "from_price_url": "https://www.johnlewis.com/levis-512-slim-tapered-jeans-rock-cod/p3761262",
+   "from_price_checked_on": "2026-10-18",
+   "note": "From the research findings of 2026-10-18: John Lewis's Levi's men's jeans page lists 43 on 18 Oct: 501 Original Straight from £80, 511 Slim from £80, 512 Slim Tapered £70, 501 Hudson Selvedge £130; five older-season pairs are cleared at £32.40-£36 (not counted). From price: the 512 Slim Tapered (Rock Cod) at £70."
   }
  ]
 }
