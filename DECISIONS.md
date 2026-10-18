@@ -81,3 +81,45 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   comment-level bootstrap: -9.6 to +1.2 points). Its own slips, now told to every extraction helper: a reply's
   product name comes from its parent's own words; a tool or applicator named in passing isn't a mention; tentative
   interest is neutral. Opus stays for the orchestrator, judgement reviews and code that changes scoring or rules.
+- Built by Claude, 17-18 Oct 2026 (the converge round's ws-data-general builder, branch ws-data-general: the data for
+  the general category's demo, interviewee and eval requests, by three builders in turn, the last under the 18 Oct
+  cost policy; Claude's calls within Noemi's rules, reported to her; eval/RUNS.md): (1) Threads: 150 new threads in 26
+  product types (hiking boots 4, rain jackets 4, backpacks 3, suitcases 6, tents 4, sleeping bags 4, water bottles 7,
+  jeans 8, socks 6, winter coats 4, work boots 6, wallets 6, strollers 6, car seats 7, baby monitors 5, electric
+  toothbrushes 2, razors 8, hair dryers 2, hair straighteners 8, dog beds 5, dog harnesses 9, drills 7, dumbbells 5,
+  yoga mats 8, sports watches 7, running shoes 9), found by Arctic Shift's title search in the decided communities and
+  read from its archive into the builder's own library copy (new files only: none of the shared library's 1,973
+  threads and 1,953 extractions differs byte for byte), extracted with extract-v15 by helpers the first two builders
+  spawned without a cheaper model (Opus, batches of 2 to 5 threads, before the cost policy; nothing was extracted
+  under it): 8,845 mentions, 2,255 notes, 351 care tips, every quote word for word (0 rejected), then slimmed; one
+  thread read and extracted was held back (its comments are about vacuums). A type got no more threads once it had 6
+  to 8 on-type ones: sleeping bags stay at 1 pick (8 on-type threads; many voices praise bags they have not used, and
+  the brands' models split the rest, so no product reaches 3 credible recommendations in 2 threads). (2) Lists,
+  researched on makers' and UK shops' pages of 18 Oct and imported with engine.buyable: 84 more brand-lines entries
+  (UK range pages and from prices for the brands writers name alone, or the maker's page abroad), 172 price-list
+  entries and 155 product pages. Claude's calls: the cheapest regular price where the cheapest was one size on
+  clearance (Carhartt, Columbia); a cordless kit for a drill line (Bosch); a UK store's tax-inclusive price over a
+  maker's tax-exclusive one (GORUCK, Alpinetrek); no single price for a range named by its brand; waxed jackets left
+  out of rain jackets; Bellroy's from price the £39 Mag Wallet as Bellroy EU lists it on Amazon UK, not a £25 listing
+  whose buy-box price is hidden; Oral-B's a sale price at an online pharmacy (the big shops refuse to be read); the
+  UK's Boondock Ultralight for writers' Timberland PRO Boondock (the entry's note says it is not provably the same
+  build); and what could not be shown sold or gone left as "Availability not checked yet": Garmin's Forerunner 255 and
+  955 (no Add To Cart at Garmin UK, out of stock or delisted at the UK shops, but not marked discontinued: if Noemi
+  counts that as gone they leave the running watch answer), B Yoga's B Mat and Cinch's White Label. Brands are written
+  as their makers write them (Oral-B, PowerBlock, Secrid, Timberland PRO, Jade, and in config Astra, lululemon,
+  Brooklinen: writers' "astras" were shown as the running-shoe brand Altra, "lulu lemon" and "Brook Linen" as slips).
+  (3) Profiles: 574 writers added to the builder's profile store (550 with numbers, 24 unknown to the archive; numbers
+  and flair only) in four chunks (300, 217, 65 and 8 writers), those whose comments the 47 answers of these types
+  quote; the other 5,031 writers of the new threads are listed in
+  docs/bfs-2026-10-17/profiles-later-ws-data-general.txt. (4) Results: the eval identical to the baseline but for the
+  library's counts and one ingredient-eval pick's place (writers' profiles warmed); blind test 10/10 full top 3s,
+  253/253 shown quotes verified; the sweep's 77 changed answers in eval/RUNS.md; 26 of the 27 requests show 3 picks
+  and the sleeping bag 1; the answers under 3 picks 127 -> 98. With ws-names, ws-ranking and the kitchen rule merged
+  in a scratch tree, razors keep 3 real picks once razor blades are no razors (Merkur, Rockwell 6S, Rockwell 6C) and
+  sleeping bags have 2 (the Western Mountaineering and Feathered Friends lines); eight short names for the integrator
+  to add to engine/data/product_aliases.json (WM, EE, FF for sleeping bags; 255, FR 255, 265, 955, 965 for Garmin's
+  Forerunners, which show as bare numbers now) are in the report. Open: other requests read the new threads when their
+  posts name a word in passing (laptop, mattress, headphones, phone, monitor, towel, washing machine: 19 answers'
+  reading counts, 7 "Look for" lists, one of them a washing machine's showing a dog bed tip), because
+  engine/sources.py puts threads titled as another type last but still reads them when few are on-type; the 150
+  threads are archive reads of 18 Oct that `library check-live` has not yet read on Reddit.
