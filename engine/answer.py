@@ -179,7 +179,7 @@ from engine.credibility import _SECONDHAND_REASON, _proof_of_use, GENERIC_NAME_W
 from engine.match_products import FILLER_WORDS, known_aliases
 from engine.memo import Table
 from engine.rank import KindNote, KindSupport, ProductScore, RankingResult, ScoredMention, ScoreBreakdown, is_credible
-from engine.query import LOOKALIKE_PHRASES, PRODUCT_TYPES
+from engine.query import LOOKALIKE_PHRASES, PRODUCT_TYPES, SKIN_TYPES
 from engine.sources import mentions_product
 from engine.summaries import Summary, shown_problems, summary_key, text_problems
 from engine.text import one_edit_apart
@@ -2222,14 +2222,21 @@ def _asked_and_refused(category: str, product_type: str | None, request: str, ne
     for need in needs:
         if need.name in REFUSED_THINGS:
             continue
-        for word in (need.request_word or "", *need.words):
-            if word and " " not in word:  # a phrase ("temp control") is too loose word by word: its words name others
-                words |= set(_written(word, category))
+        if need.request_word:  # a word of the request as typed: "mineral", "storey"
+            words |= set(_written(need.request_word, category))
+        elif need.name not in PERSON_NEEDS:
+            # A need of config.NEEDS by its name's first word, a long one only: "temperature" of "temperature control",
+            # "curly", "stainless". Never its other words: they hold its opposite too ("harsh" for gentle, "broke" for
+            # lasting, "greasy" for oily), which an "Avoid" line agrees with.
+            words |= {w for w in _written(need.name, category)[:1] if len(w) >= 5}
     words |= _feature_words(category, product_type, request)
     words = {w for w in words if len(w) > 2 and w not in GENERIC_KIND_WORDS}
     return frozenset(w for w in words if not _says_any(w, refused)), refused
 
 
+# Needs that say whom the product is for rather than what it is (17 Oct 2026): an "Avoid" line naming one ("beginner
+# knife sets", "oily sunscreens") isn't against a request asking for it.
+PERSON_NEEDS = frozenset(SKIN_TYPES) | {"beginner", "home cook"}
 # Words that tell no kind apart, when kinds are compared (17 Oct 2026).
 _NO_KIND_WORDS = frozenset({"a", "an", "the", "and", "or", "of", "to", "in", "on", "at", "by", "for", "from", "with",
                             "into", "but", "you", "can", "has", "once", "then", "not", "no", "one", "it", "its"})

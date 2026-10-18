@@ -155,3 +155,23 @@ def test_in_a_knife_answer_warnings_about_other_knives_stay_beside_advice_about_
     assert sorted(shown(notes, "paring knife", "best paring knife under £30")) == sorted([
         (wording.AVOID, "Damascus knives"), (wording.LOOK_FOR, "Japanese style knives"),
         (wording.AVOID, "classic German knives")])
+
+
+def test_avoiding_a_needs_opposite_or_whom_it_is_for_isnt_against_the_request():
+    # A need's words hold its opposite too ("harsh" for gentle, "broke" for lasting): avoiding that agrees with it. And
+    # a need saying whom the product is for (a beginner, oily skin) is no word of the product asked for.
+    from engine.needs import Need
+
+    gentle, lasting = Need("gentle", NEEDS["gentle"]), Need("lasting", NEEDS["lasting"])
+    harsh = note("harsh scrubs", "t1", stance="warn", weight=-0.6, quote="Harsh scrubs tear your skin, skip them.")
+    assert shown([harsh], "exfoliant", "gentle exfoliant", needs=[gentle], category="skincare") == [
+        (wording.AVOID, "harsh scrubs")]
+    broke = note("plastic kettles that broke", "t1", stance="warn", weight=-0.6,
+                 quote="Plastic kettles that broke within a year, every one of them, so skip those.")
+    assert shown([broke], "electric kettle", "kettle that lasts", needs=[lasting]) == [
+        (wording.AVOID, "plastic kettles that broke")]
+    beginner = Need("beginner", NEEDS["beginner"])
+    sets = note("beginner knife sets", "t1", stance="warn", weight=-0.6,
+                quote="Beginner knife sets are a waste, buy one good knife instead.")
+    assert shown([sets], "chef knife", "first chef's knife for a beginner", needs=[beginner]) == [
+        (wording.AVOID, "beginner knife sets")]
