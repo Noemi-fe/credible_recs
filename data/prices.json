@@ -10697,6 +10697,204 @@
     "https://global.oliveyoung.com/gb/search/results?query=isntree%20chestnut%20bha"
    ],
    "note": "100 ml, £18.00 at Skinsider, still out of stock on 17 Oct 2026 (an email-me-when-back notice). Signs it may be on its way out, none conclusive: YesStyle says the item is no longer available, the maker's own Korean shop finds only its Chestnut BHA 0.9% Clear Toner when searched for chestnut or BHA, and Olive Young Global's UK site finds no Isntree chestnut BHA product. No maker's page says it is discontinued, so it still counts as sold (out of stock for now, the list's convention): check again before the blind test."
+  },
+  {
+   "product": "La Roche-Posay Cicaplast Baume B5+ 40ml",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "price": 11.0,
+   "currency": "GBP",
+   "shop": "Boots",
+   "url": "https://www.boots.com/la-roche-posay-cicaplast-balm-40ml-10189518",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "also_called": [
+    "La Roche-Posay Cicaplast Baume B5"
+   ],
+   "sources": [
+    "https://www.boots.com/la-roche-posay-cicaplast-balm-40ml-10189518"
+   ],
+   "note": "40 ml, £11.00, Add to basket, on 18 Oct 2026 (Boots also lists a 100 ml). The ingredient list Boots gives has no fragrance (parfum)."
+  },
+  {
+   "product": "Aveeno Face Calm + Restore Oat Gel Moisturiser 50ml",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "price": 14.99,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/aveeno-face-calm-and-restore-oat-gel-moisturiser-50ml/13434912/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "also_called": [
+    "Aveeno Calm and Restore Oat Gel Moisturiser",
+    "Aveeno Calm + Restore Oat Gel Moisturizer"
+   ],
+   "sources": [
+    "https://www.lookfantastic.com/p/aveeno-face-calm-and-restore-oat-gel-moisturiser-50ml/13434912/"
+   ],
+   "note": "50 ml, £14.99, in stock (usually dispatched within 24 hours) on 18 Oct 2026; the page says it is fragrance free and dermatologist tested for sensitive skin. Boots had it at £10.12 on an online offer (usually £13.49) the same day."
+  },
+  {
+   "product": "Kiehl's Ultra Facial Cream 50ml",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "price": 37.0,
+   "currency": "GBP",
+   "shop": "Kiehl's",
+   "url": "https://www.kiehls.co.uk/skin-care/category/moisturisers/ultra-facial-cream/622.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.kiehls.co.uk/skin-care/category/moisturisers/ultra-facial-cream/622.html"
+   ],
+   "note": "Kiehl's UK, 18 Oct 2026: 28 ml £21, 50 ml £37, 125 ml £65, 150 ml refill £69; priced at the 50 ml, its usual size. Lookfantastic listed the 50 ml at £33 as coming soon (not yet orderable)."
+  },
+  {
+   "product": "CeraVe Moisturising Cream 454g",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "price": 17.5,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/cerave-moisturising-cream-454g/11798691.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.lookfantastic.com/cerave-moisturising-cream-454g/11798691.html"
+   ],
+   "note": "454 g pot, £17.50, in stock (usually dispatched within 24 hours) on 18 Oct 2026; 177 ml and 340 g sizes listed too."
+  },
+  {
+   "product": "Cetaphil Moisturising Cream 450g",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "price": 17.0,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/cetaphil-moisturising-cream-450g/13810034/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "also_called": [
+    "Cetaphil Moisturizing Cream"
+   ],
+   "sources": [
+    "https://www.lookfantastic.com/p/cetaphil-moisturising-cream-450g/13810034/"
+   ],
+   "note": "450 g, £17.00, in stock (usually dispatched within 24 hours) on 18 Oct 2026."
+  },
+  {
+   "product": "Vanicream Moisturizing Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/dp/B000NWGCZ2",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.amazon.co.uk/dp/B000NWGCZ2"
+   ],
+   "note": "No UK shop or distributor stocks Vanicream; Amazon UK lists the 16 fl oz (453 g) pump in stock from a marketplace seller shipping it in (delivery 27 Oct to 3 Nov, seen on 18 Oct 2026). Its £19.57 was shown to a non-UK delivery address and may leave out UK VAT, so no price is recorded."
+  },
+  {
+   "product": "EltaMD sunscreen",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=eltamd+uv+clear",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.amazon.co.uk/s?k=eltamd+uv+clear",
+    "https://www.lookfantastic.com/p/eltamd-uv-clear-broad-spectrum-spf46-48g/11370303/"
+   ],
+   "note": "No UK shop sells EltaMD's sunscreens on 18 Oct 2026: Lookfantastic's UV Clear page opens its 'Do Not Stock' page, and Amazon UK's search for EltaMD UV Clear shows only other brands; only marketplace imports (OnBuy, U-Buy, eBay, out of stock) turn up elsewhere."
+  },
+  {
+   "product": "Pipette Mineral Sunscreen SPF 50",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=pipette+mineral+sunscreen+spf+50",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "also_called": [
+    "Pipette Mineral Sunscreen Lotion SPF 50"
+   ],
+   "sources": [
+    "https://www.amazon.co.uk/s?k=pipette+mineral+sunscreen+spf+50",
+    "https://www.pipettebaby.com/collections/sunscreen"
+   ],
+   "note": "A US baby-care brand: its own US store (prices in $) lists the Mineral Sunscreen Lotion SPF 50 at $23.99, sold out on 18 Oct 2026; Amazon UK's search shows only other brands' mineral sunscreens; no UK shop found."
+  },
+  {
+   "product": "CeraVe Skin Renewing Peptide Cream 48g",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "price": 30.0,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/cerave-skin-renewing-peptide-cream-48g/17642583/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "also_called": [
+    "CeraVe Skin Renewing Night Cream"
+   ],
+   "sources": [
+    "https://www.lookfantastic.com/p/cerave-skin-renewing-peptide-cream-48g/17642583/",
+    "https://www.cerave.com/skincare/moisturizers/skin-renewing-night-cream"
+   ],
+   "note": "48 g, £30.00, in stock (usually dispatched within 24 hours) on 18 Oct 2026: a night cream for PM use with niacinamide, ceramides NP, AP and EOP, tripeptide-1, caprooyl tetrapeptide-3 and sodium hyaluronate, the actives and size of the night cream CeraVe US sells as Skin Renewing Night Cream (taken as its UK name; CeraVe UK's own moisturisers page doesn't list it)."
+  },
+  {
+   "product": "La Roche-Posay Toleriane Hydrating Gentle Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=la+roche+posay+toleriane+hydrating+gentle+cleanser",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "also_called": [
+    "La Roche-Posay Toleriane Hydrating Gentle Face Cleanser",
+    "La Roche-Posay Toleriane Hydrating Gentle Facial Cleanser"
+   ],
+   "sources": [
+    "https://www.amazon.co.uk/s?k=la+roche+posay+toleriane+hydrating+gentle+cleanser",
+    "https://www.lookfantastic.com/search/?q=la%20roche%20posay%20toleriane%20hydrating%20gentle%20cleanser",
+    "https://www.laroche-posay.us/our-products/face/face-wash/toleriane-hydrating-gentle-facial-cleanser-3337875545778.html"
+   ],
+   "note": "La Roche-Posay's US cream face wash: on 18 Oct 2026 Lookfantastic's and Amazon UK's searches for it show only the Toleriane Dermo-Cleanser (a milk sold in the UK) and other cleansers; no UK shop found selling the Hydrating Gentle Cleanser."
+  },
+  {
+   "product": "Garnier Micellar Water for Sensitive Skin 700ml",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "price": 9.99,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/garnier-micellar-water-facial-cleanser-and-makeup-remover-for-sensitive-skin-700ml/11919593/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "also_called": [
+    "Garnier Micellar Water",
+    "Garnier Micellar Cleansing Water"
+   ],
+   "sources": [
+    "https://www.lookfantastic.com/search/?q=garnier%20micellar%20water",
+    "https://www.lookfantastic.com/p/garnier-micellar-water-facial-cleanser-and-makeup-remover-for-sensitive-skin-700ml/11919593/"
+   ],
+   "note": "Garnier's original micellar water (for sensitive skin), the one writers mean by a plain 'Garnier micellar water': 700 ml £9.99 (100 ml £3.49) at Lookfantastic on 18 Oct 2026; its oil-infused, vitamin C, salicylic and hyaluronic versions are separate products."
   }
  ]
 }

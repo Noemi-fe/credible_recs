@@ -2200,6 +2200,20 @@
    "range_page": "https://www.connaughtshaving.com/merkurs.html",
    "range_shop": "Connaught Shaving",
    "note": "From the research findings of 2026-10-15: Merkur (Solingen, Germany) safety razors are stocked by UK shaving specialists: Connaught Shaving, a UK shop, has a Merkur page under its safety razors (its products load by script, so no price could be read). Merkur's own site didn't load and other UK shops refused automated reads, so no range page from the maker, price or image."
+  },
+  {
+   "brand": "Shiseido",
+   "category": "skincare",
+   "product_type": "eye cream",
+   "sells": true,
+   "sources": ["https://www.shiseido.co.uk/gb/en/skincare/eye-and-lip-care/", "https://www.shiseido.co.uk/gb/en/shiseido-power-infusing-eye-concentrate-768614172895.html"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://www.shiseido.co.uk/gb/en/skincare/eye-and-lip-care/",
+   "from_price": 54.0,
+   "from_price_shop": "Shiseido",
+   "from_price_url": "https://www.shiseido.co.uk/gb/en/shiseido-power-infusing-eye-concentrate-768614172895.html",
+   "from_price_checked_on": "2026-10-18",
+   "note": "Shiseido UK's Eye & Lip Care page, 18 Oct 2026: Ultimune Power Infusing Eye Concentrate 15 ml £54 (the cheapest full size, Add to cart), Total Revitalizer Eye 15 ml £70, Benefiance Wrinkle Smoothing Eye Cream 15 ml £75, Vital Perfection Eye Cream 15 ml £77, Intensive Wrinklespot Treatment A+ £102, Future Solution LX Eye and Lip Contour Regenerating Cream £192; the rest are sets and masks."
   }
  ]
 }

@@ -5554,6 +5554,90 @@
    ],
    "checked_on": "2026-10-15",
    "note": "Found by engine.maker_pages in the sitemap https://torriden.us/sitemap_products_1.xml?from=14730333389166&to=15191420567918; the page names it \"DIVE IN Soothing Cream\"; USD 27 on the page."
+  },
+  {
+   "product": "CeraVe Skin Renewing Night Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "page": "https://www.cerave.com/skincare/moisturizers/skin-renewing-night-cream",
+   "shop": "CeraVe",
+   "image": "https://www.cerave.com/-/media/project/loreal/brand-sites/cerave/americas/us/skincare/2025/skin-renewing-night-cream/700x785/skin-renewing-night-cream-packshot-front-700x785-v1.jpg?rev=e26e5d7b923b47ac98ddd5c1baf07a54",
+   "image_page": "https://www.cerave.com/skincare/moisturizers/skin-renewing-night-cream",
+   "sources": [
+    "https://www.cerave.com/skincare/moisturizers/skin-renewing-night-cream",
+    "https://a82962.sitemaphosting.com/4034207/sitemap.xml"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://a82962.sitemaphosting.com/4034207/sitemap.xml; the page names it \"Skin Renewing Night Cream\"."
+  },
+  {
+   "product": "COSRX Oil-Free Ultra Moisturizing Lotion",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "page": "https://www.cosrx.com/products/oil-free-ultra-moisturizing-lotion-with-birch-sap",
+   "shop": "COSRX Official",
+   "sources": [
+    "https://www.cosrx.com/products/oil-free-ultra-moisturizing-lotion-with-birch-sap",
+    "https://www.cosrx.com/sitemap_products_1.xml?from=6101921824924&to=10309980192984"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.cosrx.com/sitemap_products_1.xml?from=6101921824924&to=10309980192984; the page names it \"Oil-Free Ultra-Moisturizing Lotion with Birch Sap\"; USD 25 on the page."
+  },
+  {
+   "product": "Avene xeracalm balm",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "page": "https://www.avene.co.uk/p/xeracalm-ad-replenishing-balm-3282770399523-b5405ca4",
+   "shop": "Avene",
+   "image": "https://media-pierre-fabre.wedia-group.com/api/wedia/dam/transform/u5wa3z31qn5sjnpd1rysprnhfryybhfqzsuaqxe/out?t=resize&height=400",
+   "image_page": "https://www.avene.co.uk/p/xeracalm-ad-replenishing-balm-3282770399523-b5405ca4",
+   "sources": [
+    "https://www.avene.co.uk/p/xeracalm-ad-replenishing-balm-3282770399523-b5405ca4",
+    "https://www.avene.co.uk/product.xml"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.avene.co.uk/product.xml; the page names it \"XERACALM AD - Replenishing Balm\"."
+  },
+  {
+   "product": "iUNIK Beta Glucan Daily Moisture Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "page": "https://www.iunik.com/products/beta-glucan-daily-moisture-cream",
+   "shop": "IUNIK GLOBAL",
+   "sources": [
+    "https://www.iunik.com/products/beta-glucan-daily-moisture-cream",
+    "https://www.iunik.com/sitemap_products_1.xml?from=10375277773073&to=15409025057041"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.iunik.com/sitemap_products_1.xml?from=10375277773073&to=15409025057041; the page names it \"Beta Glucan Daily Moisture Cream\"; USD 17 on the page."
+  },
+  {
+   "product": "CeraVe Moisturising Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "page": "https://www.cerave.co.uk/skincare/moisturisers/moisturising-cream",
+   "shop": "cerave",
+   "image": "https://www.cerave.co.uk/-/media/project/loreal/brand-sites/cerave/emea/uk/products/moisturising-cream-pot-340g/moisturising-cream-pot-340g-1-sm.jpg?rev=6b36359cd86e4c84bdea2f817a0ce48a",
+   "image_page": "https://www.cerave.co.uk/skincare/moisturisers/moisturising-cream",
+   "sources": [
+    "https://www.cerave.co.uk/skincare/moisturisers/moisturising-cream",
+    "https://www.cerave.co.uk/sitemap.xml"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.cerave.co.uk/sitemap.xml; the page names it \"Moisturising Cream Pot\"."
+  },
+  {
+   "product": "COSRX Advanced Snail 92 All in one Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "page": "https://www.cosrx.com/products/advanced-snail-92-all-in-one-cream",
+   "shop": "COSRX Official",
+   "sources": [
+    "https://www.cosrx.com/products/advanced-snail-92-all-in-one-cream",
+    "https://www.cosrx.com/sitemap_products_1.xml?from=6101921824924&to=10309980192984"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.cosrx.com/sitemap_products_1.xml?from=6101921824924&to=10309980192984; the page names it \"Advanced Snail 92 All in One Cream\"; USD 26 on the page."
   }
  ]
 }

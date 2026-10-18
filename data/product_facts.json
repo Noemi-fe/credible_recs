@@ -3285,6 +3285,105 @@
     "https://elizabetharden.co.uk/products/eight-hour-cream-skin-protectant"
    ],
    "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Vanicream Moisturizing Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.vanicream.com/product/vanicream-moisturizing-cream"
+   ],
+   "checked_on": "2026-10-17"
+  },
+  {
+   "product": "CeraVe Skin Renewing Night Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.cerave.com/skincare/moisturizers/skin-renewing-night-cream"
+   ],
+   "checked_on": "2026-10-17",
+   "formula": {
+    "actives": [
+     "niacinamide",
+     "ceramides",
+     "hyaluronic acid"
+    ],
+    "sources": [
+     "https://www.cerave.com/skincare/moisturizers/skin-renewing-night-cream"
+    ],
+    "checked_on": "2026-10-18"
+   }
+  },
+  {
+   "product": "Eucerin Aquaphor Soothing Skin Balm",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.eucerin.co.uk/products/aquaphor/soothing-skin-balm",
+    "https://www.lookfantastic.com/p/eucerin-aquaphor-soothing-skin-balm-45ml/11115983/"
+   ],
+   "checked_on": "2026-10-17"
+  },
+  {
+   "product": "Eucerin Aquaphor Soothing Skin Balm",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "fragrance_free": true,
+    "spf": false
+   },
+   "sources": [
+    "https://www.eucerin.co.uk/products/aquaphor/soothing-skin-balm",
+    "https://www.lookfantastic.com/p/eucerin-aquaphor-soothing-skin-balm-45ml/11115983/"
+   ],
+   "checked_on": "2026-10-17"
+  },
+  {
+   "product": "Isntree Hyaluronic Acid Watery Sun Gel",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "facts": {
+    "filters": "chemical",
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.lookfantastic.com/p/isntree-hyaluronic-acid-watery-sun-gel-spf50-pa-50ml/15443552/"
+   ],
+   "checked_on": "2026-10-18"
+  },
+  {
+   "product": "La Roche-Posay Cicaplast Baume B5+",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.boots.com/la-roche-posay-cicaplast-balm-40ml-10189518"
+   ],
+   "checked_on": "2026-10-18"
+  },
+  {
+   "product": "Vanicream Moisturizing Lotion",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.vanicream.com/product/vanicream-moisturizing-lotion"
+   ],
+   "checked_on": "2026-10-18"
   }
  ]
 }
