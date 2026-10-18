@@ -10210,6 +10210,493 @@
     "https://cabeau.co.uk/sitemap_products_1.xml?from=3525988384854&to=14852250566959"
    ],
    "note": "Found by engine.maker_pages in the sitemap https://cabeau.co.uk/sitemap_products_1.xml?from=3525988384854&to=14852250566959; the page names it \"Evolution S3® Neck Pillow\"; GBP 34.99 on the page."
+  },
+  {
+   "product": "Stratia Soft Touch AHA",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "price": 14.0,
+   "currency": "GBP",
+   "shop": "Stratia",
+   "url": "https://www.stratiaskin.com/products/soft-touch-aha",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.stratiaskin.com/products/soft-touch-aha"
+   ],
+   "note": "40 ml. Its maker's own shop shows UK shoppers £14.00 (US $18), Add to cart, on 17 Oct 2026. The page says its products are free of fragrance and that it is made for sensitive skin."
+  },
+  {
+   "product": "COSRX AHA/BHA Clarifying Treatment Toner",
+   "category": "skincare",
+   "product_type": null,
+   "price": 21.99,
+   "currency": "GBP",
+   "shop": "Cult Beauty",
+   "url": "https://www.cultbeauty.co.uk/p/cosrx-aha-bha-clarifying-treatment-toner-150ml/11401176/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.cultbeauty.co.uk/p/cosrx-aha-bha-clarifying-treatment-toner-150ml/11401176/"
+   ],
+   "note": "150 ml, £21.99, in stock (usually dispatched within 24 hours) on 17 Oct 2026."
+  },
+  {
+   "product": "Beauty of Joseon Relief Sun Aqua-Fresh: Rice + B5",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "price": 15.5,
+   "currency": "GBP",
+   "shop": "Cult Beauty",
+   "url": "https://www.cultbeauty.co.uk/p/beauty-of-joseon-relief-sun-aqua-fresh-rice-b5-spf50-50ml/15821479/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.cultbeauty.co.uk/p/beauty-of-joseon-relief-sun-aqua-fresh-rice-b5-spf50-50ml/15821479/"
+   ],
+   "note": "50 ml, £15.50, in stock on 17 Oct 2026."
+  },
+  {
+   "product": "Beauty of Joseon Relief Sun: Rice + Niacinamide (formerly Rice + Probiotics)",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "price": 15.5,
+   "currency": "GBP",
+   "shop": "Cult Beauty",
+   "url": "https://www.cultbeauty.co.uk/p/beauty-of-joseon-relief-sun-rice-probiotics-spf50-50ml/15443553/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.cultbeauty.co.uk/p/beauty-of-joseon-relief-sun-rice-probiotics-spf50-50ml/15443553/",
+    "https://beautyofjoseon.com/products/relief-sun-rice-probiotics-spf50-pa-uk?country=GB&currency=GBP"
+   ],
+   "note": "50 ml, £15.50, in stock at Cult Beauty on 17 Oct 2026 (listed under its old name, Rice + Probiotics; its description names niacinamide). The maker's own UK page shows £10.50 on sale (regular £15.00) but sold out that day, so the in-stock regular price is the one to show."
+  },
+  {
+   "product": "Eucerin Sun Gel-Creme Oil Control Dry Touch SPF 50+ (face)",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "price": 20.0,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/eucerin-sun-face-oil-control-sun-gel-cream-dry-touch-spf50-50ml/12510296/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.lookfantastic.com/p/eucerin-sun-face-oil-control-sun-gel-cream-dry-touch-spf50-50ml/12510296/"
+   ],
+   "note": "50 ml, £20.00, in stock on 17 Oct 2026 (checked again: the entry before was of 10 Oct)."
+  },
+  {
+   "product": "Beauty of Joseon Revive Eye Serum: Ginseng + Retinal",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "price": 15.0,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/beauty-of-joseon-revive-eye-serum-ginseng-retinal-30ml/14866956/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.lookfantastic.com/p/beauty-of-joseon-revive-eye-serum-ginseng-retinal-30ml/14866956/"
+   ],
+   "note": "30 ml, £15.00, in stock on 17 Oct 2026."
+  },
+  {
+   "product": "innisfree Retinol Cica Moisture Recovery Serum",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "price": 33.0,
+   "currency": "GBP",
+   "shop": "Cult Beauty",
+   "url": "https://www.cultbeauty.co.uk/p/innisfree-retinol-cica-moisture-recovery-serum-30ml/15227995/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.cultbeauty.co.uk/p/innisfree-retinol-cica-moisture-recovery-serum-30ml/15227995/",
+    "https://www.spacenk.com/uk/skincare/treatment/serums/retinol-cica-moisture-recovery-serum-MUK200049251.html",
+    "https://us.innisfree.com/products/retinol-cica-moisture-recovery-serum"
+   ],
+   "note": "30 ml, £33.00 at Cult Beauty, out of stock (sold out, notify me) on 17 Oct 2026; Space NK UK out of stock too (marked down to £23.10 from £33.00); innisfree's US store out of stock as well. Not discontinued by any page read: out of stock for now still counts as sold (the list's convention). Sephora UK's page refused to load (Access Denied)."
+  },
+  {
+   "product": "CeraVe Resurfacing Retinol Serum",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "price": 19.99,
+   "currency": "GBP",
+   "shop": "The Independent Pharmacy",
+   "url": "https://www.theindependentpharmacy.co.uk/acne/cerave-resurfacing-retinol-serum-30ml",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.theindependentpharmacy.co.uk/acne/cerave-resurfacing-retinol-serum-30ml"
+   ],
+   "note": "£19.99, in stock on 17 Oct 2026."
+  },
+  {
+   "product": "ILLIYOON Ceramide Ato Concentrate Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "price": 19.99,
+   "currency": "GBP",
+   "shop": "Boots",
+   "url": "https://www.boots.com/illiyoon-ceramide-ato-concentrate-cream-200ml-10374657",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.boots.com/illiyoon-ceramide-ato-concentrate-cream-200ml-10374657"
+   ],
+   "note": "200 ml, £19.99, Add to basket on 17 Oct 2026 (read in a browser: Boots refuses tools). Its details say odourless and free of fragrances."
+  },
+  {
+   "product": "AESTURA Atobarrier 365 Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "price": 26.0,
+   "currency": "GBP",
+   "shop": "Sephora UK",
+   "url": "https://www.sephora.co.uk/p/aestura-atobarrier365-cream-skin-barrier-strenghtening-moisturizing-cream",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.sephora.co.uk/p/aestura-atobarrier365-cream-skin-barrier-strenghtening-moisturizing-cream"
+   ],
+   "note": "80 ml, £26.00, in stock on 17 Oct 2026 (read in a browser); its ingredient list has no fragrance."
+  },
+  {
+   "product": "Mary&May Idebenone Blackberry Intense Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "price": 22.0,
+   "currency": "GBP",
+   "shop": "Holland & Barrett",
+   "url": "https://www.hollandandbarrett.com/shop/product/mary-may-idebenone-blackberry-intense-cream-70g-6100022231",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.hollandandbarrett.com/shop/product/mary-may-idebenone-blackberry-intense-cream-70g-6100022231"
+   ],
+   "note": "70 g, £22.00, 10 in stock on 17 Oct 2026 (read in a browser), sold and delivered on Holland & Barrett's site by Melon + Starfish, a K-beauty seller; the page says it is made without artificial fragrance, and its ingredient list has none."
+  },
+  {
+   "product": "Prequel Gleanser Non-Drying Glycerin Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "price": 20.0,
+   "currency": "GBP",
+   "shop": "Space NK",
+   "url": "https://www.spacenk.com/uk/skincare/cleansers/cleanser/gleanser-UK200065348.html",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.spacenk.com/uk/skincare/cleansers/cleanser/gleanser-UK200065348.html"
+   ],
+   "note": "£20.00, in stock by the page's product data (schema.org InStock) on 17 Oct 2026."
+  },
+  {
+   "product": "CeraVe Hydrating Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "price": 12.5,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/cerave-hydrating-cleanser-with-hyaluronic-acid-for-normal-to-dry-skin-236ml/11798700/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.lookfantastic.com/p/cerave-hydrating-cleanser-with-hyaluronic-acid-for-normal-to-dry-skin-236ml/11798700/"
+   ],
+   "note": "236 ml, £12.50, in stock on 17 Oct 2026."
+  },
+  {
+   "product": "CeraVe Hydrating Cream-to-Foam Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "price": 14.5,
+   "currency": "GBP",
+   "shop": "Cult Beauty",
+   "url": "https://www.cultbeauty.co.uk/p/cerave-hydrating-cream-to-foam-cleanser-with-amino-acids-for-normal-to-dry-skin-236ml/12667341/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.cultbeauty.co.uk/p/cerave-hydrating-cream-to-foam-cleanser-with-amino-acids-for-normal-to-dry-skin-236ml/12667341/"
+   ],
+   "note": "236 ml, £14.50, in stock on 17 Oct 2026."
+  },
+  {
+   "product": "Bioderma Sensibio H2O",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "price": 13.99,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/bioderma-sensibio-h2o-micellar-water-for-sensitive-skin-prone-to-rosacea-250ml/16209656/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.lookfantastic.com/p/bioderma-sensibio-h2o-micellar-water-for-sensitive-skin-prone-to-rosacea-250ml/16209656/",
+    "https://www.lookfantastic.com/search/?q=bioderma%20sensibio%20h2o"
+   ],
+   "note": "250 ml, £13.99, in stock on 17 Oct 2026: its smallest regular size (also 100 ml at £7.00, a travel size, 500 ml £19.00 and 850 ml £22.50)."
+  },
+  {
+   "product": "CeraVe Hydrating Foaming Oil Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "price": 14.5,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/cerave-hydrating-foaming-oil-cleanser-236ml/13494900/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.lookfantastic.com/p/cerave-hydrating-foaming-oil-cleanser-236ml/13494900/"
+   ],
+   "note": "236 ml, £14.50, in stock on 17 Oct 2026."
+  },
+  {
+   "product": "CeraVe Eye Repair Cream",
+   "category": "skincare",
+   "product_type": "eye cream",
+   "price": 14.5,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/cerave-eye-repair-cream-for-dark-circles-puffiness-14-ml/11798690/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.lookfantastic.com/p/cerave-eye-repair-cream-for-dark-circles-puffiness-14-ml/11798690/"
+   ],
+   "note": "14 ml, £14.50, in stock on 17 Oct 2026 (sold in the UK as the Eye Repair Cream for Dark Circles & Puffiness)."
+  },
+  {
+   "product": "Shiseido Benefiance Wrinkle Smoothing Eye Cream",
+   "category": "skincare",
+   "product_type": "eye cream",
+   "price": 72.0,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/shiseido-benefiance-wrinkle-smoothing-eye-cream-15ml/14869486/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.lookfantastic.com/p/shiseido-benefiance-wrinkle-smoothing-eye-cream-15ml/14869486/"
+   ],
+   "note": "15 ml, £72.00, in stock on 17 Oct 2026."
+  },
+  {
+   "product": "The INKEY List Caffeine Eye Cream",
+   "category": "skincare",
+   "product_type": "eye cream",
+   "price": 12.0,
+   "currency": "GBP",
+   "shop": "The INKEY List",
+   "url": "https://uk.theinkeylist.com/products/caffeine-eye-cream",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://uk.theinkeylist.com/products/caffeine-eye-cream"
+   ],
+   "note": "15 ml, £12.00, in stock (Add to bag) at the maker's UK shop on 17 Oct 2026."
+  },
+  {
+   "product": "Good Molecules Yerba Mate Wake Up Eye Gel",
+   "category": "skincare",
+   "product_type": "eye cream",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Good Molecules",
+   "url": "https://www.goodmolecules.com/s/good-molecules-yerba-mate-wake-up-eye-gel-15ml",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "also_called": [
+    "Good Molecules Yerba Mate Eye Gel"
+   ],
+   "sources": [
+    "https://www.goodmolecules.com/s/good-molecules-yerba-mate-wake-up-eye-gel-15ml",
+    "https://www.goodmolecules.com/help",
+    "https://www.cultbeauty.co.uk/search?q=good%20molecules%20yerba%20mate"
+   ],
+   "note": "15 ml, US $6.00, in stock (schema.org InStock) at its maker's own shop on 17 Oct 2026, read in a browser; no price here because the list is in pounds and the shop sells in dollars. The maker's help page lists the UK among the places it delivers to (from the US; duties not stated). Cult Beauty doesn't stock the brand; no UK shop found."
+  },
+  {
+   "product": "SKIN1004 Madagascar Centella Soothing Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "price": 18.0,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/skin1004-madagascar-centella-soothing-cream-75ml/14867345/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.lookfantastic.com/p/skin1004-madagascar-centella-soothing-cream-75ml/14867345/"
+   ],
+   "note": "75 ml, £18.00, in stock on 17 Oct 2026 (a 20% code offer aside); its ingredient list names no fragrance."
+  },
+  {
+   "product": "Supergoop Unseen Sunscreen",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "price": 36.5,
+   "currency": "GBP",
+   "shop": "Cult Beauty",
+   "url": "https://www.cultbeauty.co.uk/p/supergoop-unseen-sunscreen-spf-50-50ml/17648874/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.cultbeauty.co.uk/p/supergoop-unseen-sunscreen-spf-50-50ml/17648874/",
+    "https://www.cultbeauty.co.uk/search?q=supergoop%20unseen"
+   ],
+   "note": "SPF 50, 50 ml (its full size), £36.50, in stock on 17 Oct 2026; the 20 ml travel size is £18.00 and the SPF 30 versions (same prices) were awaiting stock."
+  },
+  {
+   "product": "The Ordinary Glycolic Acid 7% Exfoliating Toner",
+   "category": "skincare",
+   "product_type": null,
+   "price": 8.0,
+   "currency": "GBP",
+   "shop": "The Ordinary",
+   "url": "https://theordinary.com/en-gb/glycolic-acid-7-exfoliating-toner-100418.html",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "also_called": [
+    "The Ordinary Glycolic Acid 7% Toning Solution"
+   ],
+   "sources": [
+    "https://theordinary.com/en-gb/glycolic-acid-7-exfoliating-toner-100418.html"
+   ],
+   "note": "100 ml, £8.00, Add to Cart on the maker's UK page on 17 Oct 2026. Its own FAQ still calls it the Glycolic Acid 7% Toning Solution, its old name, which writers use: so this entry names both."
+  },
+  {
+   "product": "Eucerin Aquaphor Soothing Skin Balm",
+   "category": "skincare",
+   "product_type": null,
+   "price": 13.5,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/eucerin-aquaphor-soothing-skin-balm-45ml/11115983/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.lookfantastic.com/p/eucerin-aquaphor-soothing-skin-balm-45ml/11115983/"
+   ],
+   "note": "45 ml, its full price £13.50 (£10.12 in a 25% sale on 17 Oct 2026), in stock; the page says it is fragrance-free. Eucerin's UK name for Aquaphor Healing Ointment (the list's 15 Oct entry under that name, for lip balms, is the same page); no product type, since writers use it on lips and face alike."
+  },
+  {
+   "product": "SKIN1004 Madagascar Centella Hyalu-Cica Water-Fit Sun Serum SPF50",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "price": 16.0,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/skin1004-madagascar-centella-hyalu-cica-water-fit-sun-serum-spf50-pa-50ml/16858549/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.lookfantastic.com/search/?q=skin1004%20hyalu-cica%20sun%20serum",
+    "https://skinsider.co.uk/skin1004-madagascar-centella-hyalu-cica-water-fit-sun-serum-50ml/"
+   ],
+   "note": "50 ml, £16.00 at Lookfantastic on 17 Oct 2026 (a 20% code offer aside; 15 ml travel size £8.00); Skinsider lists it at £18.00 MSRP, on sale at £12.60."
+  },
+  {
+   "product": "COSRX Aloe Soothing Sun Cream",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "price": 22.0,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/cosrx-aloe-soothing-spf50-pa-sun-cream-50ml/11401177/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.lookfantastic.com/search/?q=cosrx%20aloe%20soothing%20sun%20cream"
+   ],
+   "note": "50 ml (SPF50 PA+++), £22.00 at Lookfantastic on 17 Oct 2026 (a 20% code offer aside)."
+  },
+  {
+   "product": "Purito Mighty Bamboo Panthenol Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "price": 20.0,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/purito-mighty-bamboo-panthenol-cream-100ml/15607813/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "also_called": [
+    "Purito B5 Panthenol Re-barrier cream"
+   ],
+   "sources": [
+    "https://www.lookfantastic.com/search/?q=purito%20panthenol",
+    "https://purito.com/product/mighty-bamboo-panthenol-cream/",
+    "https://peachesandcremeshop.com/products/b5-panthenol-re-barrier-cream"
+   ],
+   "note": "100 ml, £20.00 at Lookfantastic on 17 Oct 2026 (a 20% code offer aside). Purito renamed its B5 Panthenol Re-barrier Cream (80 ml) the Mighty Bamboo Panthenol Cream (100 ml, 10% panthenol, new packaging; a shop's page under the old name now sells the new one), so this entry names both, as the list does for Beauty of Joseon's renamed sunscreen."
+  },
+  {
+   "product": "Canmake Mermaid Skin Gel UV",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "price": 9.34,
+   "currency": "GBP",
+   "shop": "Japanese Taste",
+   "url": "https://japanesetaste.co.uk/products/canmake-mermaid-skin-gel-uv-sunscreen-spf50-40g",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://japanesetaste.co.uk/products/canmake-mermaid-skin-gel-uv-sunscreen-spf50-40g"
+   ],
+   "note": "40 g, SPF50+ PA++++ (the clear one; a White 02 tinted version is £11.04), £9.34 and available on 17 Oct 2026, from the shop's own product search (Japanese Taste's UK site, prices in pounds, as the list's Anessa and Melano CC entries)."
+  },
+  {
+   "product": "Biore kids pure milk sunscreen",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "price": 11.9,
+   "currency": "GBP",
+   "shop": "Japanese Taste",
+   "url": "https://japanesetaste.co.uk/products/kao-biore-uv-mild-milky-kids-sunscreen-spf50-90g",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://japanesetaste.co.uk/products/kao-biore-uv-mild-milky-kids-sunscreen-spf50-90g"
+   ],
+   "note": "Bioré UV Kids Pure Milk Sunscreen SPF50+ PA+++ 70 g, £11.90 and available on 17 Oct 2026 (Japanese Taste's UK site)."
+  },
+  {
+   "product": "Isntree Hyaluronic Acid Watery Sun Gel",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "price": 23.0,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/isntree-hyaluronic-acid-watery-sun-gel-spf50-pa-50ml/15443552/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.lookfantastic.com/search/?q=isntree%20sun%20gel"
+   ],
+   "note": "SPF50+ PA++++ 50 ml, £23.00 at Lookfantastic on 17 Oct 2026 (a 20% code offer aside)."
+  },
+  {
+   "product": "Isntree Chestnut BHA 2% Clear Liquid",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "price": 18.0,
+   "currency": "GBP",
+   "shop": "Skinsider",
+   "url": "https://skinsider.co.uk/isntree-chestnut-bha-2-clear-liquid/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://skinsider.co.uk/isntree-chestnut-bha-2-clear-liquid/",
+    "https://www.yesstyle.com/en/isntree-chestnut-bha-2-clear-liquid-100ml/info.html/pid.1115329665",
+    "https://isntree.com/product/search.html?keyword=%EC%B2%B4%EC%8A%A4%ED%8A%B8%EB%84%9B",
+    "https://global.oliveyoung.com/gb/search/results?query=isntree%20chestnut%20bha"
+   ],
+   "note": "100 ml, £18.00 at Skinsider, still out of stock on 17 Oct 2026 (an email-me-when-back notice). Signs it may be on its way out, none conclusive: YesStyle says the item is no longer available, the maker's own Korean shop finds only its Chestnut BHA 0.9% Clear Toner when searched for chestnut or BHA, and Olive Young Global's UK site finds no Isntree chestnut BHA product. No maker's page says it is discontinued, so it still counts as sold (out of stock for now, the list's convention): check again before the blind test."
   }
  ]
 }
