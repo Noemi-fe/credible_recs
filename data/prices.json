@@ -11352,6 +11352,82 @@
     "https://uk.byoma.com/sitemap_products_1.xml?from=8323340501128&to=16302618444163"
    ],
    "note": "Found by engine.maker_pages in the sitemap https://uk.byoma.com/sitemap_products_1.xml?from=8323340501128&to=16302618444163; the page names it \"Hydrating Milky Toner\"; GBP 11.99 on the page. Checked by Claude, 18 Oct 2026: the page is the product's own; image: the page's own featured image."
+  },
+  {
+   "product": "Acnecide 5% w/w Gel",
+   "category": "skincare",
+   "product_type": null,
+   "price": 14.65,
+   "currency": "GBP",
+   "shop": "Superdrug",
+   "url": "https://www.superdrug.com/health/medicated-skin/acne-spots-treatment/acnecide-gel-spot-treatment-benzoyl-peroxide-30g/p/374606",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.superdrug.com/health/medicated-skin/acne-spots-treatment/acnecide-gel-spot-treatment-benzoyl-peroxide-30g/p/374606",
+    "https://www.boots.com/beauty/skincare/expert-skincare-/acne-prone-skin/acnecide-gel-30g-10187571"
+   ],
+   "note": "30 g tube, £14.65 at Superdrug on 18 Oct 2026 (its page refused automated reads that day, so the figure is the one its search listing shows; unchanged since 15 Oct). A pharmacy medicine: Superdrug asks for a questionnaire checked by a pharmacist. Boots lists the same tube at £15.20 (and an offer at £10.49); the full price is kept, as for the list's other entries."
+  },
+  {
+   "product": "CeraVe SA Smoothing Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "price": 14.5,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/cerave-sa-smoothing-cleanser-with-salicylic-acid-for-dry-rough-bumpy-skin-236ml/12207663/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.lookfantastic.com/p/cerave-sa-smoothing-cleanser-with-salicylic-acid-for-dry-rough-bumpy-skin-236ml/12207663/",
+    "https://www.cerave.co.uk/skincare/cleansers/sa-smoothing-cleanser"
+   ],
+   "note": "CeraVe UK calls it the Renewing SA Smoothing Cleanser. 236 ml at Lookfantastic: £14.50, the page says In stock and usually dispatched within 24 hours (read 18 Oct 2026; same price as on 15 Oct). CeraVe UK's own site links to shops rather than selling."
+  },
+  {
+   "product": "The INKEY List Salicylic Acid Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "price": 14.0,
+   "currency": "GBP",
+   "shop": "The INKEY List",
+   "url": "https://uk.theinkeylist.com/products/salicylic-acid-cleanser",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "150 ml, £14.00 at The INKEY List's UK store, marked In stock (read 18 Oct 2026; same price as on 15 Oct)."
+  },
+  {
+   "product": "Epiduo (adapalene 0.1% / benzoyl peroxide 2.5%) Gel",
+   "category": "skincare",
+   "product_type": null,
+   "price": 39.99,
+   "currency": "GBP",
+   "shop": "The Independent Pharmacy",
+   "url": "https://www.theindependentpharmacy.co.uk/acne/epiduo-gel",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.theindependentpharmacy.co.uk/acne/epiduo-gel",
+    "https://www.medicines.org.uk/emc/product/451/smpc"
+   ],
+   "note": "£39.99 at The Independent Pharmacy, In stock on 18 Oct 2026 (same as 15 Oct): the page says an online consultation reviewed by its medical team is required, and calls Epiduo a prescription-only acne gel."
+  },
+  {
+   "product": "COSRX Salicylic Acid Daily Gentle Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "price": 14.0,
+   "currency": "GBP",
+   "shop": "Argos",
+   "url": "https://www.argos.co.uk/product/9967106",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.argos.co.uk/product/9967106",
+    "https://skinsider.co.uk/cosrx-salicylic-acid-daily-gentle-cleanser-150ml"
+   ],
+   "note": "150 ml, £14.00 at Argos on 18 Oct 2026 (its page refused automated reads, so the figure is the one its search listing shows). The maker's own page (cosrx.com/products/salicylic-acid-daily-gentle-cleanser), the source of the 15 Oct entry's £13, now answers not found. Other UK listings that day: Skinsider £12.00 (a notify-me notice, so probably sold out there), Feel Unique £17.99, Escentual £18.00, Justmylook £8.07 against an RRP of £14."
   }
  ]
 }
