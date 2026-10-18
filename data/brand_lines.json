@@ -130,10 +130,14 @@
    "category": "kitchen",
    "product_type": "chef knife",
    "sells": true,
-   "sources": ["https://www.mercerculinary.com/product-category/cutlery/"],
+   "sources": ["https://www.mercerculinary.com/product-category/cutlery/", "https://www.amazon.co.uk/dp/B000PS2XI4"],
    "checked_on": "2026-10-14",
    "range_page": "https://www.mercerculinary.com/product-category/cutlery/",
-   "note": "Mercer Culinary's own Cutlery page, 14 Oct 2026: chef's knives in its BPX, ZüM, Millennia, Renaissance and Genesis lines (its Chef's filter shows 54; the filtered page refuses automated reads). No from price: a US maker with no UK site; in the UK only trade catering suppliers list it (ex VAT), no big UK shop."
+   "note": "Mercer Culinary's own Cutlery page, 14 Oct 2026: chef's knives in its BPX, ZüM, Millennia, Renaissance and Genesis lines (its Chef's filter shows 54; the filtered page refuses automated reads). From price, 17 Oct 2026: Amazon UK sells the Millennia 8-inch chef's knife (M22608) at £15.86, in stock, read in a browser; Mercer has no UK site.",
+   "from_price": 15.86,
+   "from_price_shop": "Amazon UK",
+   "from_price_url": "https://www.amazon.co.uk/dp/B000PS2XI4",
+   "from_price_checked_on": "2026-10-17"
   },
   {
    "brand": "Lodge",
@@ -2229,6 +2233,20 @@
    "from_price_url": "https://www.zwilling.com/uk/ballarini-bologna-frying-pan-20-cm-aluminium-ceramic-non-stick-coating/1030873.html",
    "from_price_checked_on": "2026-10-17",
    "note": "Noemi's decision 8 of 16 Oct 2026: Ballarini's price-list and facts name (\"Ballarini non-stick pans\", 14 and 15 Oct) became this brand line. Ballarini belongs to Zwilling, whose UK store is Ballarini's UK shop; on 17 Oct 2026 its Ballarini cookware page lists 24 items: Bologna, Ledro and Salina pans with a ceramic coating its pages say is produced without PFAS, and Ferrara Granitium pans with a 5-ply non-stick coating whose page says nothing of PFAS. The cheapest frying pan is the Bologna 20 cm at £39.95, in stock. Whether a Ballarini pan is PFAS-free depends on the model, so no facts entry speaks for the brand."
+  },
+  {
+   "brand": "Le Creuset",
+   "category": "kitchen",
+   "product_type": "teapot",
+   "sells": true,
+   "sources": ["https://www.lecreuset.co.uk/en_GB/c/dining/drinking/teapots-and-cafetieres", "https://www.lecreuset.co.uk/en_GB/p/stoneware-teapot-with-stainless-steel-infuser/SW0288.html"],
+   "checked_on": "2026-10-17",
+   "range_page": "https://www.lecreuset.co.uk/en_GB/c/dining/drinking/teapots-and-cafetieres",
+   "from_price": 65.0,
+   "from_price_shop": "Le Creuset",
+   "from_price_url": "https://www.lecreuset.co.uk/en_GB/p/stoneware-teapot-with-stainless-steel-infuser/SW0288.html",
+   "from_price_checked_on": "2026-10-17",
+   "note": "Le Creuset's UK store, read in a browser on 17 Oct 2026: its Teapots & Cafetieres category holds stoneware teapots, the Stoneware Teapot with Stainless Steel Infuser 1.3 L and the Stoneware Grand Teapot 1.3 L, both £65, to add to the basket. No glass teapot."
   }
  ]
 }

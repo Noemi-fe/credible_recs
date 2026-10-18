@@ -111,13 +111,22 @@
   {
    "product": "1Zpresso JX-Pro-S Manual Coffee Grinder",
    "category": "kitchen",
-   "price": null,
+   "price": 140.83,
    "currency": "GBP",
    "shop": "The English Coffee Company",
    "url": "https://englishcoffeecompany.co.uk/products/1zpresso-jx-pro-s-manual-coffee-grinder",
-   "checked_on": "2026-10-09",
-   "available": false,
-   "not_in_uk": true
+   "checked_on": "2026-10-17",
+   "available": true,
+   "also_called": [
+    "1Zpresso JX-Pro"
+   ],
+   "sources": [
+    "https://englishcoffeecompany.co.uk/products/1zpresso-jx-pro-s-manual-coffee-grinder",
+    "https://1zpresso.coffee/product/jxpro/",
+    "https://1zpresso.coffee/j/",
+    "https://1zpresso.coffee/store/"
+   ],
+   "note": "The JX-Pro S is the JX-Pro's 2023 refresh (a folding handle), the grinder writers call the JX-Pro. The English Coffee Company, a UK shop, lists it at £140.83 but sold out on 17 Oct 2026 (out of stock for now counts as sold, the list's convention). 1Zpresso's own JX-Pro S page says it is currently out of stock and unavailable, and its J Series page still presents it; 1Zpresso marks its K-Plus, K-Pro and K-Max as discontinued, not the JX-Pro. Sigma Coffee, its UK distributor, sells the J, J-Ultra, K-Ultra, X-Ultra, ZP6 and Q instead."
   },
   {
    "product": "1Zpresso J-Max",
@@ -720,10 +729,13 @@
    "currency": "GBP",
    "shop": "Amazon UK",
    "url": "https://www.amazon.co.uk/s?k=timemore+chestnut+c2+max",
-   "checked_on": "2026-10-10",
+   "checked_on": "2026-10-17",
    "available": false,
-   "note": "no UK shop found selling it: Amazon UK lists the C2S and C3S Max but not the C2 Max, and Redber sells only the C2; Timemore's own store no longer lists it (its product page is gone; it now sells the C3, C3S and C5)",
-   "not_in_uk": true
+   "note": "discontinued: Timemore's own C2 Max page is gone (not found on 17 Oct 2026, as on 10 Oct), its store sells the C3, C3S and C5 instead, and no UK shop was found selling it (Amazon UK lists the C2S and C3S Max, Redber only the C2).",
+   "sources": [
+    "https://www.timemore.com/products/chestnut-c2-max",
+    "https://www.amazon.co.uk/s?k=timemore+chestnut+c2+max"
+   ]
   },
   {
    "product": "KINGrinder K2 Hand Coffee Grinder",
@@ -806,27 +818,35 @@
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "Sigma Coffee UK",
-   "url": "https://sigmacoffee.co.uk/search?q=1zpresso&type=product",
-   "checked_on": "2026-10-10",
+   "shop": "1Zpresso",
+   "url": "https://1zpresso.coffee/k/",
+   "checked_on": "2026-10-17",
    "available": false,
    "also_called": [
     "1Zpresso K-Plus"
    ],
-   "note": "1Zpresso's UK distributor sells the newer K-Ultra (£229), not the K-Plus, and 1Zpresso's own store no longer lists the K-Plus",
-   "not_in_uk": true
+   "note": "discontinued: 1Zpresso's own K Series page marks the K-Plus Grinder (with the K-Pro and K-Max) as discontinued, its old product address now leads to K-Plus spare parts, and its store sells the K-Ultra instead; Sigma Coffee, its UK distributor, sells the K-Ultra (£229), not the K-Plus. Checked 17 Oct 2026.",
+   "sources": [
+    "https://1zpresso.coffee/k/",
+    "https://1zpresso.coffee/store/",
+    "https://sigmacoffee.co.uk/search?q=1zpresso&type=product"
+   ]
   },
   {
    "product": "1zpresso X-Pro",
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "Sigma Coffee UK",
-   "url": "https://sigmacoffee.co.uk/search?q=1zpresso&type=product",
-   "checked_on": "2026-10-10",
+   "shop": "1Zpresso",
+   "url": "https://1zpresso.coffee/x/",
+   "checked_on": "2026-10-17",
    "available": false,
-   "note": "1Zpresso's UK distributor sells the newer X-Ultra (£145, sold out on 10 Oct), not the X-Pro, and 1Zpresso's own store no longer lists the X-Pro",
-   "not_in_uk": true
+   "note": "discontinued: 1Zpresso's own X Series page presents only the X-Ultra, its old X-Pro address now leads to X-Pro S spare parts, and its store sells the X-Ultra instead; Sigma Coffee, its UK distributor, sells the X-Ultra (£145), not the X-Pro. Checked 17 Oct 2026.",
+   "sources": [
+    "https://1zpresso.coffee/x/",
+    "https://1zpresso.coffee/store/",
+    "https://sigmacoffee.co.uk/search?q=1zpresso&type=product"
+   ]
   },
   {
    "product": "niche",
@@ -1168,10 +1188,14 @@
    "currency": "GBP",
    "shop": "Clumsy Goat",
    "url": "https://clumsygoat.co.uk/products/fellow-corvo-ekg-coffee-pouring-kettle-matte-black",
-   "checked_on": "2026-10-10",
+   "checked_on": "2026-10-17",
    "available": false,
-   "note": "the original Corvo EKG (not the Pro), UK 3-pin plug: Clumsy Goat still lists it (£149.00, was £175.00) but both colours are sold out; Fellow's own Corvo EKG page now offers only the Corvo EKG Pro and Pro Studio Edition, and its store has only spare kettle bodies for the original; Borough Kitchen's Corvo EKG pages are gone (404), and Borough Kitchen and Coffee Beautiful sell only the Corvo EKG Pro (£159 to £195); so no UK shop checked sells the original new",
-   "not_in_uk": true
+   "note": "discontinued: the original Corvo EKG (not the Pro). Fellow's own Corvo EKG page is gone (not found on 17 Oct 2026) and its store sells only the Corvo EKG Pro and Pro Studio Edition, a newer model; Clumsy Goat still lists the original (£149, was £175) with both colours sold out since 10 Oct, and Borough Kitchen and Coffee Beautiful sell only the Pro.",
+   "sources": [
+    "https://clumsygoat.co.uk/products/fellow-corvo-ekg-coffee-pouring-kettle-matte-black",
+    "https://fellowproducts.com/products/corvo-ekg-electric-kettle",
+    "https://fellowproducts.com/products/corvo-ekg-pro-electric-kettle"
+   ]
   },
   {
    "product": "Knock Aergrind",

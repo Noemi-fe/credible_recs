@@ -136,3 +136,30 @@ def test_circulon_and_ballarini_are_left_out_of_a_pfas_free_answer_as_whole_bran
     left_out = {item.name: item.reason for item in result.left_out_not_suited}
     assert left_out["Circulon frying pan line"] == left_out["Ballarini frying pan line"] == (
         "a whole brand can't be checked for PFAS or a non-stick coating")
+
+
+# --- 3. Prices and availability ---
+
+def test_grinders_and_a_kettle_their_makers_stopped_selling_are_discontinued_not_sold_abroad():
+    # They were marked "not sold in the UK" (so shown with that note); their makers no longer sell them, so answers leave
+    # them out and name them, as for any discontinued model (Noemi's decision 1 of 15 Oct 2026, late afternoon).
+    prices = load_prices()
+    for name in ("1ZPresso K Plus", "1Zpresso K-Plus", "1zpresso X-Pro", "Timemore C2 Max", "Fellow Corvo EKG"):
+        entry = find_availability(name, "kitchen", prices)
+        assert entry is not None and entry.available is False and not entry.not_in_uk, name
+        assert entry.note.startswith("discontinued:") and entry.checked_on == TODAY, name
+
+
+def test_b09s_jx_pro_has_its_uk_shops_price():
+    # A UK shop lists it, sold out for now: out of stock counts as sold (the price list's convention), with its price.
+    prices = load_prices()
+    price = find_price("1Zpresso JX-Pro", "kitchen", prices, currency="GBP")
+    assert (price.price, price.currency, price.shop) == (140.83, "GBP", "The English Coffee Company")
+    assert find_availability("1Zpresso JX-Pro", "kitchen", prices).available is True
+
+
+def test_lines_picked_under_a_budget_have_a_uk_from_price():
+    lines = load_brand_lines()
+    for brand, product_type, amount in (("Mercer", "chef knife", 15.86), ("Le Creuset", "teapot", 65.0)):
+        line = find_brand_line([brand], "kitchen", product_type, lines)
+        assert line is not None and line.from_price == amount and line.from_price_checked_on == TODAY, brand
