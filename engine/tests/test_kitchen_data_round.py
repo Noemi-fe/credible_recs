@@ -15,8 +15,6 @@ with the committed lists, so it shows what the lists change in an answer.
 
 from datetime import date
 
-import pytest
-
 from engine.brand_lines import find_brand_line, load_brand_lines
 from engine.pipeline import answer_request
 from engine.prices import find_availability, find_price, load_prices
@@ -126,11 +124,9 @@ def test_le_creusets_toughened_non_stick_leaves_a_pfas_free_answer_and_greenpan_
     assert NotSuited("Le Creuset toughened non-stick pan", "it isn't PFAS-free") in result.left_out_not_suited
 
 
-@pytest.mark.xfail(strict=True, reason="Noemi's decision 8 needs module 4 or the pipeline too (ws-names / ws-ranking, "
-                   "written down for the integrator, 17 Oct 2026): a group none of whose names names a model, whose "
-                   "brand has a brand-lines entry selling the requested type, is ranked as that brand's line. Until "
-                   "then module 4 keeps a brand with no model named as one product (group_products._lines_of_the_type)")
 def test_circulon_and_ballarini_are_left_out_of_a_pfas_free_answer_as_whole_brands(tmp_path):
+    # Needs the pipeline's rule too (17 Oct 2026, engine.pipeline._brand_only_lines; engine/tests/
+    # test_brand_only_lines.py): module 4 keeps a brand none of whose models is named as one product.
     result = pfas_answer(tmp_path)
     assert not any(word in name for name in shown_names(result) for word in ("Circulon", "Ballarini"))
     left_out = {item.name: item.reason for item in result.left_out_not_suited}

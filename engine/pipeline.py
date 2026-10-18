@@ -35,6 +35,10 @@ Every step is a module of its own; this file only passes each one's output to th
   support counts for nothing rather than twice. It is listed on the result with the product it stepped aside for
   (folded_brand_picks). Its own products are those whose name starts with the brand's words, or that module 4 says
   are one of its products (engine.match_products.same_product: "CeraVe cleanser" and "CeraVe Hydrating Cleanser").
+  Since 17 Oct 2026 (within Noemi's decision 8 of 16 Oct 2026) a product group named only by its brand ("Circulon
+  pans", "circulon": module 4 keeps a brand none of whose models is named as one product) is that brand's line too,
+  when its brand-lines entry says the brand sells the requested type and no facts or price entry names one product of
+  it (_brand_only_lines): under a must-have it is then left out as a whole brand, as every line is.
 - with a budget in the request (a max and a currency), a product whose price (engine/prices.py, data/prices.json) is
   known and above the max is left out (Noemi's decision 11). A product with no known price, a price in another
   currency, or a price checked over PRICE_MAX_AGE_DAYS ago is kept, and its answer says so.
@@ -165,6 +169,7 @@ from engine.care_tips import CareTips, attach_care_tips, credible_care_tips
 from engine.config import (
     BRAND_MODEL_GENERIC_WORDS,
     BRAND_MODEL_MIN_CREDIBLE,
+    BRAND_ONLY_NAMES_AS_LINES,
     BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE,
     BRAND_PICK_TITLE_SHARE,
     BUDGET_DEFAULT_CURRENCY,
@@ -507,6 +512,9 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     # The price and facts lists write their products as their makers do: a name in their words is shown so (15 Oct 2026).
     makers, curated = _spelling_lists(brand_lines, prices, product_facts, query.category)
     kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads}, brand_lines, curated, makers)
+    # A product named only by its brand is that brand's line when the brand-lines list says the brand sells the type
+    # (17 Oct 2026, within Noemi's decision 8 of 16 Oct 2026: writers' "Circulon pans" is the Circulon frying pan line).
+    kept_groups = _brand_only_lines(kept_groups, query, brand_lines, prices, product_facts)
     lines = {g.key for g in kept_groups if g.loose}  # the brand or line names kept as the brand's whole line
     # Their brand-lines entries, whose range pages the answer links to (Noemi's night decision 1, 14 Oct 2026).
     ranges = {g.key: line for g in kept_groups if g.loose and (line := _brand_line(g, query, brand_lines)) is not None}
@@ -1093,6 +1101,99 @@ def _line_name(group: ProductGroup, line: BrandLine | None, product_type: str, k
     if line is not None and brand == brand.lower():
         brand = uk_name(line.brand)
     return brand_pick_name(brand, product_type, keep_ingredients)
+
+
+def _brand_only_lines(groups: list[ProductGroup], query: ParsedQuery, brand_lines: list[BrandLine],
+                      prices: list[Price], product_facts: list[ProductFacts]) -> list[ProductGroup]:
+    """The groups, with each product named only by its brand ranked as that brand's line (17 Oct 2026; the
+    coordinator's technical call within Noemi's decision 8 of 16 Oct 2026, her 12 Oct 2026 rule on brand-only names
+    made consistent: they count when the brand-lines list says the brand makes the requested type, and are shown as
+    "<Brand> <type> line").
+
+    Writers name Circulon's and Ballarini's frying pans by brand only ("Circulon pans", "ballarini"), never a model, and
+    module 4 keeps a brand none of whose models is named as one product: a PFAS-free answer had picked "Circulon pans"
+    as if it were one pan, with a note that we couldn't confirm it. Such a group is its brand's line ("Circulon frying
+    pan line"), shown with its range page and from price, and under a must-have left out as a whole brand, as every
+    line is (10 Oct 2026), when all of these hold:
+    - the brand-lines entry its names find (_brand_line, as for any brand's name) says the brand sells the type;
+    - every name of it is that brand, or another name the entry gives it (also_called), alone or followed only by words
+      that name no model (_names_only_its_brand): "Circulon pans", "circulon", "Zwilling/Ballarini non-stick pans";
+    - no facts or price entry its names find names one product of it (_a_listed_product): then the lists say which
+      product it is ("our place pan" is the Always Pan);
+    - the brand's line isn't among these groups already (as "OXO" is, next to OXO's non-stick pans, in b10's threads):
+      then the existing rules fold the two when both are shown (_the_line_itself), where a second line of the same
+      name would be judged apart from the first and only joined to it afterwards (_one_per_name).
+    Never for an ingredient-led request (no one type), nor with brand picks or this rule switched off
+    (PIPELINE_BRAND_PICKS, config.BRAND_ONLY_NAMES_AS_LINES)."""
+    if not (BRAND_ONLY_NAMES_AS_LINES and PIPELINE_BRAND_PICKS) or query.ingredient_led or not query.product_type:
+        return groups
+    # The brand-lines entries of the lines already here: a brand's line found among the groups is never made twice.
+    lines_here = {id(line) for g in groups if g.loose and (line := _brand_line(g, query, brand_lines)) is not None}
+    found = []
+    for group in groups:
+        line = None if group.loose or group.generic else _brand_line(group, query, brand_lines)
+        if (line is not None and line.sells and id(line) not in lines_here
+                and _names_only_its_brand(group, line, query.product_type)
+                and not _a_listed_product(group, line, query.product_type, prices, product_facts)):
+            group = replace(group, name=brand_pick_name(uk_name(line.brand), query.product_type), loose=True,
+                            bases=tuple(dict.fromkeys((*group.bases, line.brand, *line.also_called))))
+        found.append(group)
+    return found
+
+
+def _names_only_its_brand(group: ProductGroup, line: BrandLine, product_type: str) -> bool:
+    """Whether every name of a group is the brand-lines entry's brand, or another name the entry gives it, alone or
+    followed only by words that name no model (_names_a_model: the type's words and synonyms, "non-stick", descriptions
+    such as "cheap"), with no number and no "or" (two products). Writers' "non stick" is read as "non-stick", a brand
+    the UK knows by another name as the UK knows it (decision 12: "Breville" is Sage), and the first words of a
+    co-brand name the entry gives, written alone, as that name ("Zwilling" in the group of "Zwilling/Ballarini
+    non-stick pans", which module 4 joined it to)."""
+    brand = _brand_of(line)
+    aliases = known_aliases().get(group.category, {})
+    # The maker's name before the brand in a co-brand name the entry gives, written alone ("Zwilling" for
+    # "Zwilling/Ballarini"): module 4 joins a brand written alone to its one product named here, so in such a group it
+    # is the co-brand name's.
+    own = product_words(line.brand, aliases)
+    co_brands = [words[:-len(own)] for other in line.also_called
+                 if len(words := product_words(other, aliases)) > len(own) and written_alike(words[-len(own):], own)]
+    named = False
+    for name in group.names:
+        if not (words := product_words(name, aliases)):
+            continue  # filler words only: it names nothing
+        if any(written_alike(words, first) for first in co_brands):
+            continue
+        if "or" in plain_words(name) or not any(
+                find_brand_line([written], group.category, product_type, [line], of_a_product=True) is not None
+                for written in (name, uk_name(name))):
+            return False
+        if _names_a_model(_NON_STICK.sub("non-stick", uk_name(name)), brand, product_type):
+            return False  # "Breville kettle" is read as the UK knows it, "Sage kettle", as the entry's brand is
+        named = True
+    return named
+
+
+_NON_STICK = re.compile(r"\bnon\s+stick", re.IGNORECASE)  # "non stick", as writers often spell "non-stick"
+
+
+def _a_listed_product(group: ProductGroup, line: BrandLine, product_type: str, prices: list[Price],
+                      product_facts: list[ProductFacts]) -> bool:
+    """Whether a facts or price entry that a group's names find names one product of its brand, a model ("Our Place
+    Always Pan" for "our place pan"), rather than the brand's whole range ("GreenPan", "OXO non-stick pan")."""
+    brand = _brand_of(line)
+    for name in group.names:
+        entries = (find_facts(name, group.category, product_facts, product_type),
+                   find_price(name, group.category, prices, None, product_type),
+                   find_availability(name, group.category, prices, product_type))
+        if any(entry is not None and _names_a_model(uk_name(entry.product), brand, product_type) for entry in entries):
+            return True
+    return False
+
+
+def _brand_of(line: BrandLine) -> ProductGroup:
+    """A brand-lines entry's brand as a group of its names (the brand and also_called), for _names_a_model."""
+    return ProductGroup(f"{line.category}:{line.brand}", line.brand, line.category,
+                        [ProductMention("brand_lines", "brand_lines", name, line.category, "neutral")
+                         for name in (line.brand, *line.also_called)])
 
 
 def _clear_brand(group: ProductGroup, query: ParsedQuery, titles: dict[str, str], groups: list[ProductGroup],

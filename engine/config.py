@@ -2277,3 +2277,12 @@ SEARCH_PAGE_QUERY_KEYS = ("q", "k", "query", "search", "searchterm", "search-ter
 IMAGE_MAX_BYTES = 500_000  # about 500 KB, as phones and servers count them
 IMAGE_SMALLER_WIDTH = 600
 IMAGE_CHECK_TIMEOUT_SECONDS = 15
+
+# --- Converge round 1: ws-data-kitchen (17 Oct 2026) ---
+# A product named only by its brand is its brand's line (the coordinator's technical call of 17 Oct 2026, within Noemi's
+# decision 8 of 16 Oct 2026 and her 12 Oct 2026 rule on brand-only names; engine.pipeline._brand_only_lines): when every
+# name of a group is the brand (or another name its brand-lines entry gives it) alone or with words that name no model,
+# no facts or price entry names one product of it, and its brand-lines entry says the brand sells the requested type, it
+# is ranked and shown as that line ("Circulon frying pan line"), and a must-have leaves it out as a whole brand. False
+# keeps such a group one product, as before.
+BRAND_ONLY_NAMES_AS_LINES = True
