@@ -328,11 +328,12 @@ def test_only_as_much_credible_advice_the_other_way_outweighs_a_line():
     assert (wording.AVOID, "non-stick pans") not in shown(stronger, "cast iron skillet", "cast iron skillet for a beginner")
 
 
-def line_pick(model):
+def line_pick(model, stance="recommend"):
     """A brand-level pick ("Bonavita", ranked as a line), one of its products ranked beside it (one mention: never a
     pick of its own), and two more picks."""
+    weight = -1.0 if stance == "warn" else None
     return (mentions(3, "Bonavita", key="kitchen:bonavita")
-            + [mention(model, "t1", key="kitchen:" + model.lower(), written_as=model)]
+            + [mention(model, "t1", key="kitchen:" + model.lower(), written_as=model, stance=stance, weight=weight)]
             + mentions(3, "Acme kettle", key="kitchen:acme kettle") + mentions(3, "Bolt kettle", key="kitchen:bolt kettle"))
 
 
@@ -345,6 +346,11 @@ def test_a_line_picks_products_say_which_kinds_of_the_type_it_holds():
     for model in ("Bonavita variable temperature gooseneck", "Bonavita adjustable temp kettle"):
         assert shown([variable, glass], "electric kettle", "electric kettle that lasts 10+ years",
                      picks=line_pick(model)) == [(wording.LOOK_FOR, "glass kettle")], model
+    # A product of the line its credible writers only warn against isn't what the pick recommends: warning against its
+    # kind agrees with them.
+    assert (wording.AVOID, "variable temperature kettle") in shown(
+        [variable, glass], "electric kettle", "electric kettle that lasts 10+ years",
+        picks=line_pick("Bonavita variable temperature gooseneck", stance="warn"))
     # Its products tell only kinds of the type asked for: a set of knives under a knife line says nothing of knife sets.
     sets = note("knife sets", "t1", stance="warn", weight=-0.8, quote="Knife sets are a waste, buy one good knife.")
     knives = (mentions(3, "Victorinox", key="kitchen:victorinox")

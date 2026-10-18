@@ -1727,11 +1727,17 @@ def _unsuited_kinds(kinds, query: ParsedQuery, product_facts: list[ProductFacts]
     sold only on a prescription belongs to the active, not to one product, as no other fact does."""
     aliases = known_aliases().get(query.category, {})
     unsuited = set()
+    # Only when a prescription-only product clashes hard with this request can a kind be one by its active (latency,
+    # 18 Oct 2026: otherwise every kind of every answer was compared with every active).
+    prescription = [f for f in product_facts if f.category == query.category and f.facts.get("prescription_only") is True]
+    clashing = any(c.hard and c.rule == "prescription only" for f in prescription for c in conflicts(query, f))
     for kind in kinds:
         words = product_words(kind.name, aliases)
         own = [f for f in product_facts if f.category == query.category and product_words(f.product, aliases) == words]
         if words and any(c.hard for f in own for c in conflicts(query, f)):
             unsuited.add(kind.key)
+            continue
+        if not clashing:
             continue
         for ingredient in (key for key, entry in INGREDIENTS.items()
                            if len(entry.get("actives", ())) == 1 and names_ingredient(kind.name, key)):

@@ -1182,14 +1182,15 @@ class _Once:
 def _lines_products(ranking: RankingResult, picks: Iterable["Pick"], product_type: str | None) -> list[str]:
     """The names of the products ranked under each pick's own name, as shown and as their writers give them, of the
     type asked for (18 Oct 2026): a brand or line pick holds them ("Bonavita variable temperature gooseneck" under the
-    Bonavita kettle line, "OXO adjustable temp kettle" under OXO's), so they say which kinds of the type it is. A product
-    whose name names another type ("Lodge enameled cast iron Dutch oven" under the Lodge skillet line) isn't one."""
+    Bonavita kettle line, "OXO adjustable temp kettle" under OXO's), so they say which kinds of the type it is. Only
+    those its credible writers recommend, which are what the pick stands for (a model they only warn against isn't);
+    never one whose name names another type ("Lodge enameled cast iron Dutch oven" under the Lodge skillet line)."""
     names: list[str] = []
     for pick in picks:
         under = pick.product_key + " "
         for product in ranking.products:
-            if product.key.startswith(under) and not (_named_types(product.name, ranking.category)
-                                                      - {product_type}):
+            if (product.key.startswith(under) and product.credible_recommendations
+                    and not (_named_types(product.name, ranking.category) - {product_type})):
                 names += [product.name, *(m.written_as for m in product.mentions if m.written_as)]
     return list(dict.fromkeys(names))
 
