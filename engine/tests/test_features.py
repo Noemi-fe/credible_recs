@@ -125,6 +125,7 @@ def test_a_material_counts_only_in_the_writers_own_words_about_the_product():
     assert praised_for(found, "i've had it for ten years. it's stainless steel and still looks new.", names)
     assert not praised_for(found, "go stainless steel every time. for eggs, though, a brightmoor non stick is fine.",
                            names)
+    assert not praised_for(found, "i heat my stainless on medium. the brightmoor is my egg pan.", names)
     # A thread asking for a material gets answers proposing others: its ask counts for nothing.
     assert not praised_for(found, "brightmoor has been great.", names, thread_asks=True)
 

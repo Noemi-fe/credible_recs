@@ -58,7 +58,7 @@ class Feature:
     against: str | None = None  # a pattern finding its opposite said ("noisy", "loud" for quiet), or None
     # A material (config.FEATURE_MATERIALS: stainless steel, cast iron, glass...): comments compare materials and
     # threads asking for one get answers proposing another, so only the writer's own words count, and only in a clause
-    # that holds the product itself (its name or a word pointing at it: "my", "it", "these").
+    # that holds the product itself (its name or a word pointing at it: "it", "these").
     material: bool = False
 
 
@@ -250,7 +250,7 @@ def _said(pattern: str | None, text: str, holder: re.Pattern | None = None) -> t
 
 def _holds_the_product(names: tuple[str, ...]) -> re.Pattern:
     """A pattern finding the product in a clause: a word of its own names that picks it out (engine.credibility's
-    name words: "tramontina", "allclad"), or a word pointing at it ("my", "it", "these", "this one", "mine")."""
+    name words: "tramontina", "allclad"), or a word pointing at it ("it", "these", "this one")."""
     from engine.credibility import name_words  # here: engine.credibility reads names as module 5 does
 
     words = sorted({word for name in names if name for word in name_words(name)}, key=len, reverse=True)
@@ -258,8 +258,9 @@ def _holds_the_product(names: tuple[str, ...]) -> re.Pattern:
     return re.compile(r"(?<![a-z0-9'])(?:" + "|".join(alternatives) + r")(?![a-z0-9'])")
 
 
-_POINTERS = (r"my", r"mine", r"our", r"ours", r"it", r"it's", r"its", r"they", r"they're", r"them", r"these", r"this",
-             r"those", r"this one", r"that one")
+# Never "my" or "our" alone: "I heat my stainless on medium", beside a ceramic pan, is the writer's other pan.
+_POINTERS = (r"it", r"it's", r"its", r"they", r"they're", r"them", r"these", r"this", r"those", r"this one",
+             r"that one")
 
 
 def _clause_around(text: str, at: int) -> str:
