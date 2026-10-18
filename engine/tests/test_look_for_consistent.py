@@ -10,11 +10,11 @@ what the request itself refuses ("Avoid: Teflon" for a pan without Teflon) agree
 
 18 Oct 2026, from reading the whole sweep: counting other kinds' advice as the same kind's took out good lines ("Avoid:
 pull-through sharpener" for a knife sharpener's credible praise, "Avoid: ice maker" beside "Look for: fridge without an
-ice maker", "Avoid: non-stick pans" in a cast iron answer), and the lines that came in for them were weaker ("Look for: a
-disguised brand off Amazon"). Now another kind counts only when it is the same thing, or one of it ("heavy wool coat"
-for "wool coats in rain"), never a wider one nor its opposite, and only as much credible advice the other way outweighs
-a line; the kettle answers are told by their picks, a line pick by its products' names; and a line left out leaves its
-place empty.
+ice maker", "Avoid: non-stick pans" in a cast iron answer), and the lines that came in for them were weaker (a no-name
+copy from a marketplace, in a kettle answer). Now another kind counts only when it is the same thing, or one of it
+("heavy wool coat" for "wool coats in rain"), never a wider one nor its opposite, and only as much credible advice the
+other way outweighs a line; the kettle answers are told by their picks, a line pick by its products' names; and a line
+left out leaves its place empty.
 
 All text is made up (engine/tests/ranking_factories.py).
 """
@@ -253,8 +253,8 @@ def test_a_kind_named_after_a_prescription_only_active_gives_a_beginner_no_look_
 
 
 def test_a_picks_writers_names_tell_its_kind_too():
-    # b06 after the variable-temperature line left: "Avoid: gooseneck" under the Fellow Stagg EKG, which its writers call
-    # their Stagg gooseneck. The names a pick's writers give it say what kind it is, as its shown name does.
+    # b06 after the variable-temperature line left: "Avoid: gooseneck" under the Fellow Stagg EKG, which its writers
+    # call their Stagg gooseneck. The names a pick's writers give it say what kind it is, as its shown name does.
     picks = (mentions(3, "Fellow Stagg EKG", written_as="Stagg gooseneck kettle")
              + mentions(3, "Acme kettle", written_as="Acme kettle"))
     notes = [note("gooseneck", "t1", stance="warn", weight=-0.7,
@@ -325,7 +325,8 @@ def test_only_as_much_credible_advice_the_other_way_outweighs_a_line():
     assert (wording.AVOID, "non-stick pans") in shown(notes, "cast iron skillet", "cast iron skillet for a beginner")
     stronger = notes + [note("restaurant nonstick pan", "t2", weight=4.5,
                              quote="A restaurant nonstick pan is great, cheap and tough.")]
-    assert (wording.AVOID, "non-stick pans") not in shown(stronger, "cast iron skillet", "cast iron skillet for a beginner")
+    assert (wording.AVOID, "non-stick pans") not in shown(stronger, "cast iron skillet",
+                                                          "cast iron skillet for a beginner")
 
 
 def line_pick(model, stance="recommend"):
@@ -334,7 +335,8 @@ def line_pick(model, stance="recommend"):
     weight = -1.0 if stance == "warn" else None
     return (mentions(3, "Bonavita", key="kitchen:bonavita")
             + [mention(model, "t1", key="kitchen:" + model.lower(), written_as=model, stance=stance, weight=weight)]
-            + mentions(3, "Acme kettle", key="kitchen:acme kettle") + mentions(3, "Bolt kettle", key="kitchen:bolt kettle"))
+            + mentions(3, "Acme kettle", key="kitchen:acme kettle")
+            + mentions(3, "Bolt kettle", key="kitchen:bolt kettle"))
 
 
 def test_a_line_picks_products_say_which_kinds_of_the_type_it_holds():
