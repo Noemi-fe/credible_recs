@@ -5661,6 +5661,19 @@
    ],
    "checked_on": "2026-10-17",
    "note": "Numatic's own UK Henry shop (myhenry.com, 'The Official UK Home of Henry Vacuum Cleaners', linked as 'Shop Henry' from numatic.com/uk): Henry HVR160 GBP129.99 special price (regular GBP179.99), In stock, Add to Basket, 17 Oct 2026. John Lewis sells the Henry Plus and Pet Pro at GBP189.99."
+  },
+  {
+   "product": "Vizio TV",
+   "category": "general",
+   "product_type": "tv",
+   "page": "https://www.vizio.com/en/tv",
+   "shop": "VIZIO",
+   "sources": [
+    "https://www.vizio.com/en/tv",
+    "https://www.johnlewis.com/search?search-term=vizio"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "VIZIO sells its TVs in the US (vizio.com, US paths and dollar prices only, no country selector; its Quantum 4K range from $139 on 17 Oct 2026); John Lewis has 0 results for vizio. Not sold to UK shoppers."
   }
  ]
 }

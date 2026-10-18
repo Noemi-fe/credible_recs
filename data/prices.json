@@ -10487,6 +10487,152 @@
     "https://numatic.com/uk/"
    ],
    "note": "Numatic's own UK Henry shop (myhenry.com, 'The Official UK Home of Henry Vacuum Cleaners', linked as 'Shop Henry' from numatic.com/uk): Henry HVR160 GBP129.99 special price (regular GBP179.99), In stock, Add to Basket, 17 Oct 2026. John Lewis sells the Henry Plus and Pet Pro at GBP189.99."
+  },
+  {
+   "product": "Vizio TV",
+   "category": "general",
+   "product_type": "tv",
+   "price": null,
+   "currency": "GBP",
+   "shop": "VIZIO",
+   "url": "https://www.vizio.com/en/tv",
+   "checked_on": "2026-10-17",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.vizio.com/en/tv",
+    "https://www.johnlewis.com/search?search-term=vizio"
+   ],
+   "note": "not sold to UK shoppers: VIZIO sells its TVs in the US (vizio.com, US paths and dollar prices only, no country selector; its Quantum 4K range from $139 on 17 Oct 2026); John Lewis has 0 results for vizio. Not sold to UK shoppers."
+  },
+  {
+   "product": "Raycon Everyday Earbuds",
+   "category": "general",
+   "product_type": "earbuds",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Raycon",
+   "url": "https://www.bigapplebuddy.com/blog/raycon-fitness-true-wireless-noise-cancelling-earbuds-blue-the-uk-how-to-buy-online",
+   "checked_on": "2026-10-17",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.bigapplebuddy.com/blog/raycon-fitness-true-wireless-noise-cancelling-earbuds-blue-the-uk-how-to-buy-online",
+    "https://www.johnlewis.com/search?search-term=sports%20earbuds"
+   ],
+   "note": "not sold to UK shoppers: Raycon is a US brand sold from raycon.com; a US shopping service's UK guide says its earbuds aren't released in the UK, to be bought from the US through it; John Lewis's earbud range has none. Not sold by a UK shop."
+  },
+  {
+   "product": "Roborock S4",
+   "category": "general",
+   "product_type": "robot vacuum",
+   "price": null,
+   "currency": "GBP",
+   "shop": "uk.roborock.com",
+   "url": "https://uk.roborock.com/",
+   "checked_on": "2026-10-17",
+   "available": false,
+   "note": "discontinued: Roborock's UK official site on 17 Oct 2026 lists the Saros, Qrevo, Q10, Q7 and QV ranges, not the S4 (a 2019 model, from knowledge). Not sold new."
+  },
+  {
+   "product": "Roborock S5 MAX",
+   "category": "general",
+   "product_type": "robot vacuum",
+   "price": null,
+   "currency": "GBP",
+   "shop": "uk.roborock.com",
+   "url": "https://uk.roborock.com/",
+   "checked_on": "2026-10-17",
+   "available": false,
+   "note": "discontinued: Roborock's UK official site on 17 Oct 2026 lists the Saros, Qrevo, Q10, Q7 and QV ranges, not the S5 Max (a 2019 model, from knowledge). Not sold new."
+  },
+  {
+   "product": "Neato D5",
+   "category": "general",
+   "product_type": "robot vacuum",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/search?search-term=robot%20vacuum",
+   "checked_on": "2026-10-17",
+   "available": false,
+   "note": "discontinued: Neato Robotics closed in 2023 (from knowledge; its owner Vorwerk ended the brand), so no Neato is sold new; John Lewis's robot vacuums on 17 Oct 2026 include none. Was marked not sold in the UK on 15 Oct: it is discontinued everywhere."
+  },
+  {
+   "product": "Jabra elite wireless 65t",
+   "category": "general",
+   "product_type": "earbuds",
+   "price": null,
+   "currency": "GBP",
+   "shop": "androidauthority.com",
+   "url": "https://androidauthority.com/jabra-elite-discontinued-3450815",
+   "checked_on": "2026-10-17",
+   "available": false,
+   "sources": [
+    "https://androidauthority.com/jabra-elite-discontinued-3450815",
+    "https://mobilesyrup.com/2024/06/13/jabra-consumer-earbuds-shutdown/"
+   ],
+   "note": "discontinued: Jabra's owner GN announced on 11 Jun 2024 that it would wind down the Elite earbuds; the Elite 65t (2017) was replaced long before. Not sold new."
+  },
+  {
+   "product": "iPhone 11",
+   "category": "general",
+   "product_type": "phone",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Apple UK",
+   "url": "https://www.apple.com/uk/iphone/",
+   "checked_on": "2026-10-17",
+   "available": false,
+   "note": "discontinued: Apple UK's iPhone range no longer includes the iPhone 11 (2019), which Apple stopped selling in 2023 (from knowledge); only used or refurbished ones are sold. Not sold new."
+  },
+  {
+   "product": "Legion Y540",
+   "category": "general",
+   "product_type": "laptop",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/search?search-term=lenovo%20legion",
+   "checked_on": "2026-10-17",
+   "available": false,
+   "note": "discontinued: The Lenovo Legion Y540 is a 2019 gaming laptop (from knowledge), replaced by several Legion generations: John Lewis's Legion laptops on 17 Oct 2026 are the 2026 Legion 5 15AGP11 and Legion 7 16AGP11, no Y540. Lenovo UK's site refuses readers. Not sold new."
+  },
+  {
+   "product": "Dell Latitude 5300 13.3 Touchscreen",
+   "category": "general",
+   "product_type": "laptop",
+   "price": null,
+   "currency": "GBP",
+   "shop": "dell.com",
+   "url": "https://www.dell.com/en-uk/shop/laptops/scr/laptops/appref=latitude-laptops",
+   "checked_on": "2026-10-17",
+   "available": false,
+   "note": "discontinued: The Latitude 5300 is a 2019 business laptop (from knowledge), long replaced; Dell UK's laptop page on 17 Oct 2026 doesn't list it, and the 15 Oct entry's own note found only refurbished units on Amazon UK. Discontinued, not sold abroad (it had been marked not sold in the UK)."
+  },
+  {
+   "product": "Apple AirPods (1st generation)",
+   "category": "general",
+   "product_type": "earbuds",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Apple UK",
+   "url": "https://www.apple.com/uk/airpods/",
+   "checked_on": "2026-10-17",
+   "available": false,
+   "note": "discontinued: Apple UK's AirPods range on 17 Oct 2026 is AirPods 5, AirPods Pro 3 and AirPods Max 2; the 1st generation (2016) was replaced in 2019 (the 15 Oct entry's own note). Discontinued, not sold abroad (it had been marked not sold in the UK)."
+  },
+  {
+   "product": "Neato",
+   "category": "general",
+   "product_type": "robot vacuum",
+   "price": null,
+   "currency": "GBP",
+   "shop": "TechCrunch",
+   "url": "https://techcrunch.com/2023/05/01/neato-robotics-is-being-shut-down-after-18-years/",
+   "checked_on": "2026-10-17",
+   "available": false,
+   "note": "discontinued: Neato Robotics was shut down by Vorwerk in 2023 (TechCrunch, the 15 Oct entry's source): no Neato robot vacuum is made or sold new anywhere, so the brand is discontinued, not sold abroad (it had been marked not sold in the UK)."
   }
  ]
 }

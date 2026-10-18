@@ -38,9 +38,24 @@ LINES = [
     ("Roomba", "robot vacuum", 229.0, "iRobot"),
 ]
 
-# Discontinued models: left out of answers and named (Noemi, 15 Oct 2026).
+# Discontinued models: left out of answers and named (Noemi, 15 Oct 2026). Some had been marked "not sold in the UK"
+# on 15 Oct though their own notes said they are no longer made: the newer check says so.
 DISCONTINUED = [
     ("Roomba i7", "robot vacuum"),
+    ("Roborock S4", "robot vacuum"),
+    ("Roborock S5 MAX", "robot vacuum"),
+    ("Neato D5", "robot vacuum"),
+    ("Jabra elite wireless 65t", "earbuds"),
+    ("Apple AirPods (1st generation)", "earbuds"),
+    ("iPhone 11", "phone"),
+    ("Legion Y540", "laptop"),
+    ("Dell Latitude 5300 13.3 Touchscreen", "laptop"),
+]
+
+# Sold abroad only: they stay in answers with "Not sold in the UK" (Noemi, 15 Oct 2026, evening; 16 Oct, decision 4).
+ABROAD = [
+    ("Vizio TV", "tv"),
+    ("Raycon Everyday Earbuds", "earbuds"),
 ]
 
 
@@ -65,3 +80,10 @@ def test_a_discontinued_model_is_known_to_be_no_longer_sold(name, product_type):
     entry = find_availability(name, "general", load_prices(), product_type=product_type)
     assert entry is not None and entry.available is False and not entry.not_in_uk
     assert counts_as_sold(entry) is False
+
+
+@pytest.mark.parametrize("name, product_type", ABROAD)
+def test_a_product_sold_only_abroad_stays_with_its_note(name, product_type):
+    entry = find_availability(name, "general", load_prices(), product_type=product_type)
+    assert entry is not None and entry.available is False and entry.not_in_uk
+    assert counts_as_sold(entry) is True
