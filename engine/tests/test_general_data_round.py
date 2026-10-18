@@ -71,8 +71,9 @@ LINES_SOLD_IN_THE_UK = [
 ]
 
 # Brands the makers' own pages show selling the type, with no UK price readable (their prices load by script).
-LINES_WITH_NO_FROM_PRICE = [(["Arc'teryx", "Arcteryx"], "rain jacket", "Arc'teryx"),
-                            (["Wrangler", "Wranglers"], "jeans", "Wrangler")]
+# 18 Oct 2026, later the same day: Arc'teryx's UK pages now show prices, so its line has a from price (the Beta Jacket,
+# £350) and moved to LINES_SOLD_IN_THE_UK_2 below; it was here because none could be read in the morning.
+LINES_WITH_NO_FROM_PRICE = [(["Wrangler", "Wranglers"], "jeans", "Wrangler")]
 
 
 def test_brands_with_no_readable_price_still_have_their_range():
@@ -226,6 +227,74 @@ def test_astra_blades_are_shown_as_astra_not_as_the_running_shoe_brand_altra():
     assert maker_spelling("altras", "general", makers, ()) == "Altra"
 
 
+# --- The round's second half (18 Oct 2026): the lines and products the new threads' answers show ---
+# Researched on the makers' pages and UK shops on 18 Oct (docs' findings, imported with engine.buyable): from prices of
+# full-size products; a specialist shop where no big UK shop sells the type (shaving: The English Shaving Company).
+LINES_SOLD_IN_THE_UK_2 = [
+    (["Arc'teryx", "Arcteryx"], "rain jacket", "Arc'teryx", 350.0, "Arc'teryx UK"),
+    # The cheapest regular price read (a John Lewis clearance in one size, ending the next day, was left aside).
+    (["Columbia"], "rain jacket", "Columbia", 135.0, "Ellis Brigham"),
+    (["Yeti", "YETI"], "water bottle", "Yeti", 32.0, "Yeti UK"),
+    (["Merkur"], "razor", "Merkur", 29.0, "The English Shaving Company"),
+    # Blades count as razors in the taxonomy ("razor blades" is a razor keyword): writers' "astras".
+    (["Astra", "astras"], "razor", "Astra", 2.5, "The English Shaving Company"),
+    (["Milwaukee"], "drill", "Milwaukee", 149.99, "Toolstation"),
+    (["EGO", "Ego"], "lawn mower", "Ego", 489.0, "EGO Power+ UK"),
+    (["PowerBlock", "Powerblocks"], "dumbbells", "PowerBlock", 199.0, "PowerBlock UK"),
+    (["Bowflex"], "dumbbells", "bowflex", 239.99, "Bowflex UK"),
+    (["Chicco"], "stroller", "Chicco", 99.9, "Chicco UK"),
+    (["Canada Goose"], "winter coat", "Canada Goose", 1050.0, "Canada Goose UK"),
+]
+
+PRODUCTS_SOLD_IN_THE_UK_2 = [
+    ("Wrangler 13MWZ", "jeans", 58.0, "Zalando"),
+    ("Unbranded", "jeans", 83.4, "Jeanstore"),
+    ("Gillette Silver Blue", "razor", 2.1, "The English Shaving Company"),
+    ("Rockwell 6C", "razor", 55.0, "The English Shaving Company"),
+    ("mild Henson al 13", "razor", 81.6, "Henson Shaving UK"),
+    ("Makita 18v hammer drill combo", "drill", 179.99, "Toolstation"),
+    ("Crispi Summit GTX", "hiking boots", 280.0, "ArdMoor"),
+    ("Big Agnes Tiger Wall UL 3 person", "tent", 467.95, "Absolute Snow"),
+    ("cybex rotating car seat", "car seat", 214.16, "John Lewis"),
+    ("Owlet sock", "baby monitor", 299.99, "Owlet UK"),
+]
+
+# Sold only abroad (Noemi, 15 Oct 2026, evening: shown with "Not sold in the UK"). Graco's UK Turn2Me seats are other
+# seats under the name; writers' Turn2Me is the US 3-in-1.
+SOLD_ABROAD_ONLY_2 = [("Graco Turn2Me", "car seat"), ("Baby Jogger City Turn", "car seat"), ("Hello Baby", "baby monitor"),
+                      ("laifen swift", "hair dryer"), ("Dearborn Denim", "jeans"), ("durston x mid 2p", "tent"),
+                      ("Takeya originals 32 oz insulated water bottle with spout lid", "water bottle")]
+
+
+def test_the_second_halfs_lines_have_a_uk_from_price():
+    lines = load_brand_lines()
+    for names, product_type, brand, amount, shop in LINES_SOLD_IN_THE_UK_2:
+        for name in names:
+            line = find_brand_line([name], "general", product_type, lines)
+            assert line is not None and line.brand == brand and line.sells, (name, product_type)
+            assert line.range_page and line.range_page in line.sources, (name, product_type)
+            assert (line.from_price, line.from_price_shop) == (amount, shop), (name, product_type)
+            assert line.from_price_url in line.sources and line.from_price_checked_on == ROUND, (name, product_type)
+
+
+def test_the_second_halfs_products_have_a_uk_price():
+    prices = load_prices()
+    for name, product_type, amount, shop in PRODUCTS_SOLD_IN_THE_UK_2:
+        entry = find_availability(name, "general", prices, product_type)
+        assert entry is not None and entry.available is True and entry.shop == shop, name
+        assert entry.checked_on == ROUND, name
+        price = find_price(name, "general", prices, "GBP", product_type)
+        assert (price.price if price else None) == amount, name
+
+
+def test_the_second_halfs_products_sold_abroad_only_say_so():
+    prices = load_prices()
+    for name, product_type in SOLD_ABROAD_ONLY_2:
+        entry = find_availability(name, "general", prices, product_type)
+        assert entry is not None and entry.available is False and entry.not_in_uk, name
+        assert entry.checked_on == ROUND, name
+
+
 def test_lululemon_is_shown_as_its_maker_writes_it():
     """Writers' "lulu lemon mats" became a pick of "yoga mat" with the new yoga threads. lululemon writes its name in small
     letters, a style maker_spelling takes only from config (the brand-lines list writes some brands in small letters
@@ -235,6 +304,99 @@ def test_lululemon_is_shown_as_its_maker_writes_it():
     makers = tuple(sorted({line.brand for line in load_brand_lines() if line.category == "general"}))
     assert maker_spelling("lulu lemon mats", "general", makers, ()) == "lululemon mats"
     assert maker_spelling("Lululemon", "general", makers, ()) == "lululemon"
+
+
+# The picks and items the round's 150 new threads brought (research of 18 Oct 2026, later in the day). Brands writers
+# name alone or by a line's name became lines with their UK range pages and from prices; the cheapest regular price
+# was recorded where the cheapest was one size or colour on clearance (Carhartt's), a cordless kit for a drill line
+# asked for as cordless (Bosch), and a UK store's tax-inclusive price over a maker's tax-exclusive one (GORUCK).
+LINES_SOLD_IN_THE_UK_3 = [
+    (["Travelpro"], "suitcase", "Travelpro", 149.0, "Travelpro UK"),
+    (["Away"], "suitcase", "Away", 198.0, "Away"),
+    (["Samsonite"], "suitcase", "Samsonite", 145.0, "Samsonite UK"),
+    (["timberland pro", "Timberland PRO"], "work boots", "Timberland PRO", 89.99, "ITS"),
+    (["SecrID", "Secrid"], "wallet", "Secrid", 34.95, "Secrid"),
+    (["Carhartt"], "winter coat", "Carhartt", 120.39, "Workwear Gurus"),
+    (["Carhartt"], "jeans", "Carhartt", 64.99, "Charlie's"),
+    (["Patagonia"], "winter coat", "Patagonia", 175.0, "Zalando"),
+    (["Outdoor Research"], "rain jacket", "Outdoor Research", 99.95, "Outdoor Action"),
+    (["North Face"], "rain jacket", "North Face", 119.99, "John Lewis"),
+    (["GHD"], "hair straightener", "GHD", 149.0, "John Lewis"),
+    (["Perfect Fit"], "dog harness", "Perfect Fit", 35.7, "PerfectFit"),
+    (["Ruffwear Front Range"], "dog harness", "Ruffwear Front Range", 49.95, "Ruffwear UK"),
+    (["Easy Walk"], "dog harness", "Easy Walk", 14.99, "PetSafe UK"),
+    (["jade", "Jade"], "yoga mat", "Jade", 60.0, "JadeYoga UK"),
+    (["Liforme"], "yoga mat", "Liforme", 125.0, "Liforme"),
+    (["Bosch"], "drill", "Bosch", 87.11, "Bosch DIY UK"),
+    (["Western Mountaineering", "WM"], "sleeping bag", "Western Mountaineering", 439.99, "Ultralight Outdoor Gear"),
+    (["Enlightened Equipment", "EE"], "sleeping bag", "Enlightened Equipment", 219.99, "Ultralight Outdoor Gear"),
+    (["Big Agnes Copper Spur", "Copper Spur"], "tent", "Big Agnes Copper Spur", 522.45, "Absolute Snow"),
+    (["MSR Hubba Hubba", "Hubba Hubba"], "tent", "MSR Hubba Hubba", 447.95, "Cotswold Outdoor"),
+    (["Nemo Dragonfly"], "tent", "Nemo Dragonfly", 455.95, "Absolute Snow"),
+    (["Bugaboo Donkey"], "stroller", "Bugaboo Donkey", 972.0, "Bugaboo UK"),
+    (["Silver Cross"], "stroller", "Silver Cross", 195.0, "Silver Cross"),
+    (["Thule"], "stroller", "Thule", 314.99, "Thule UK"),
+    (["Nanit"], "baby monitor", "Nanit", 179.99, "Nanit UK"),
+    (["Owlet sock"], "baby monitor", "Owlet sock", 299.99, "Owlet UK"),
+]
+
+PRODUCTS_SOLD_IN_THE_UK_3 = [
+    ("Ruffwear Web Master", "dog harness", 84.95, "Ruffwear UK"),
+    ("Dyson Supersonic Hair Dryer", "hair dryer", 249.99, "John Lewis"),
+    ("NEMO Dagger OSMO 2P", "tent", 474.95, "Absolute Snow"),
+    ("Go Ruck GR2", "backpack", 375.0, "GORUCK UK"),
+    ("GoRuck GR1 backpack", "backpack", 395.0, "GORUCK UK"),
+    ("Canada Goose mid length down parka", "winter coat", 1095.0, "Canada Goose UK"),
+    ("Pelican Air 1535", "suitcase", 308.54, "Peli UK"),
+    ("Ridge Wallet", "wallet", 65.0, "Ridge UK"),
+    ("Hanwag Berglers", "hiking boots", 296.0, "Zalando"),
+    ("Loreal Steampod hair straightener", "hair straightener", 320.29, "Sally Beauty"),
+    # Sold in the UK by marketplace sellers only, at over twice the maker's US price: no price recorded.
+    ("Blue-9 Balance Harness", "dog harness", None, "Amazon UK"),
+]
+
+SOLD_ABROAD_ONLY_3 = [("Graco Extend2Fit", "car seat"), ("Nuna Rava", "car seat"), ("Cybex Callisto", "car seat"),
+                      ("Evenflo pivot travel system", "stroller"), ("2 Hounds no pull harness", "dog harness"),
+                      ('BaByliss nano titanium 1" flat iron', "hair straightener")]
+
+# Lines sold abroad only: a price-list entry under the brand and type saying so, and a brand-lines entry with the maker's
+# range page abroad, so a brand writers name alone can still be shown, with "Not sold in the UK".
+LINES_SOLD_ABROAD_3 = [(["Red Wing"], "work boots"), (["Durston X-Mid", "X-Mid"], "tent"), (["Tarptent"], "tent"),
+                       (["Cumulus"], "sleeping bag"), (["K9 Ballistics"], "dog bed"), (["Tortuga"], "backpack"),
+                       (["BOB"], "stroller")]
+
+
+def test_the_new_threads_lines_have_a_uk_from_price():
+    lines = load_brand_lines()
+    for names, product_type, brand, amount, shop in LINES_SOLD_IN_THE_UK_3:
+        for name in names:
+            line = find_brand_line([name], "general", product_type, lines)
+            assert line is not None and line.brand == brand and line.sells, (name, product_type)
+            assert line.range_page and line.range_page in line.sources, (name, product_type)
+            assert (line.from_price, line.from_price_shop) == (amount, shop), (name, product_type)
+            assert line.from_price_url in line.sources and line.from_price_checked_on == ROUND, (name, product_type)
+
+
+def test_the_new_threads_products_have_a_uk_price():
+    prices = load_prices()
+    for name, product_type, amount, shop in PRODUCTS_SOLD_IN_THE_UK_3:
+        entry = find_availability(name, "general", prices, product_type)
+        assert entry is not None and entry.available is True and entry.shop == shop, name
+        assert entry.checked_on == ROUND, name
+        price = find_price(name, "general", prices, "GBP", product_type)
+        assert (price.price if price else None) == amount, name
+
+
+def test_the_new_threads_products_and_lines_sold_abroad_say_so():
+    prices, lines = load_prices(), load_brand_lines()
+    for name, product_type in SOLD_ABROAD_ONLY_3:
+        entry = find_availability(name, "general", prices, product_type)
+        assert entry is not None and entry.available is False and entry.not_in_uk, name
+    for names, product_type in LINES_SOLD_ABROAD_3:
+        line = find_brand_line(names, "general", product_type, lines)
+        assert line is not None and line.sells and line.range_page in line.sources, names
+        entry = find_brand_entry(names, "general", prices, product_type.split(), product_type)
+        assert entry is not None and entry.available is False and entry.not_in_uk, names
 
 
 def test_brooklinen_is_not_shown_as_the_running_shoe_brand_brooks():
