@@ -125,7 +125,7 @@ import re
 from collections.abc import Callable, Collection, Iterable, Iterator, Mapping
 from dataclasses import dataclass, field, replace
 from datetime import date
-from functools import cache
+from functools import cache, lru_cache
 
 from engine import config  # the upvote rule's settings, read as the answer is written (14 Oct 2026)
 from engine.brand_lines import BrandLine, is_source_page
@@ -1947,7 +1947,7 @@ def _said_needs(needs: Iterable[Need], product_type: str | None = None, request:
     return _SaidNeeds(labels, frozenset(hidden))
 
 
-@cache
+@lru_cache(maxsize=4096)  # one per request as typed: bounded, since visitors' requests are any words (17 Oct 2026)
 def _own_name_words(product_type: str | None, request: str) -> frozenset[str]:
     """The words of the product's own names the request uses (module 1's names and clue words for its type,
     config.TYPE_SYNONYMS), as need words are written (engine.sources: no hyphens or apostrophes, a plural trimmed): "non"
