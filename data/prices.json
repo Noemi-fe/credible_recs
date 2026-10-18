@@ -11099,6 +11099,24 @@
     "https://www.johnlewis.com/brand/salomon/walking/_/N-lk95Z1yzjf2t"
    ],
    "note": "Salomon's Quest walking boots (writers' 'Salomon Quest', 'Quest 4 GTX'): John Lewis lists the Men's Quest Element Walking Boots at £170 on 18 Oct, email when available (out of stock for now still counts as sold)."
+  },
+  {
+   "product": "Scarpa hiking boots",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "SCARPA UK",
+   "url": "https://www.scarpa.co.uk/products/ribelle-cross-2-mid-gtx-lightweight-walking-boots-cream",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.scarpa.co.uk/products/ribelle-cross-2-mid-gtx-lightweight-walking-boots-cream",
+    "https://www.scarpa.co.uk/collections/mens-walking-boots",
+    "https://www.scarpa.co.uk/collections.json?limit=250",
+    "https://www.scarpa.co.uk/products.json?limit=250"
+   ],
+   "note": "SCARPA's own UK store (scarpa.co.uk, prices in pounds; 270 products on 18 Oct): adult hiking and trekking boots and shoes from the Ribelle Cross 2 Mid GTX walking boot at £110 (Rush TRK LT GTX £120, Ribelle Cross 2 shoe £140); kids' boots from £33 not counted."
   }
  ]
 }

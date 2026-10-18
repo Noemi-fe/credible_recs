@@ -67,6 +67,7 @@ LINES_SOLD_IN_THE_UK = [
     # Lines of a brand that writers name as one product, though they come in several versions and heights.
     (["Salomon X Ultra", "Salomon X-Ultra"], "hiking boots", "Salomon X Ultra", 140.0, "John Lewis"),
     (["Salomon Quest"], "hiking boots", "Salomon Quest", 170.0, "John Lewis"),
+    (["Scarpa", "SCARPA"], "hiking boots", "Scarpa", 110.0, "SCARPA UK"),
 ]
 
 # Brands the makers' own pages show selling the type, with no UK price readable (their prices load by script).
