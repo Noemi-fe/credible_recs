@@ -23,6 +23,12 @@ Two layers (the brief's "Credibility score v1", with Noemi's definitions from da
   with no time given; no first-hand use: heard, read, never tried, or suggested without saying they used it).
   Honesty adds tags: mentions flaws, compares alternatives (names other products it was used with, before or
   instead), specific details (sizes, settings, how it failed), and "vague" when there is nothing concrete.
+  Since 17 Oct 2026 (the converge round, ws-ranking) a time of use and the writer's own use are read clause by clause:
+  a clause about another product, another model of this one ("I had a Zephyr Pro for ten years" for a Zephyr Air) or
+  another person's use ("my parents have had theirs for 15 years") gives this product neither, and a fresh start ("I
+  just bought a JX after fighting my old grinder for a couple years") gives its sentence's times to nothing; and the
+  AI's own reading of the whole comment counts where these rules miss the writer's use (with_ai_evidence, Noemi's
+  decision 3 of 16 Oct 2026), while someone else's experience is never first-hand use, whichever reader sees it.
 
 A mention's weight (mention_weight) = voice value x evidence value x stance value, with the values in
 engine/config.py (VOICE_VALUE, EVIDENCE_VALUE, STANCE_VALUE): recommend counts plus, warn minus, neutral nothing.
@@ -50,7 +56,7 @@ import re
 from bisect import bisect_left
 from collections import OrderedDict
 from collections.abc import Collection, Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import cache
 from datetime import datetime
 from itertools import combinations
@@ -127,6 +133,17 @@ class EvidenceScore:
     tags: tuple[str, ...]
     reasons: tuple[str, ...]
     badges: tuple[str, ...] = ()  # the reasons worth showing: long-term use and signs of honesty ("3 years of use")
+    # What the product's own words show of the writer (17 Oct 2026, read by with_ai_evidence; not part of the score):
+    # `own_use`, the writer says they use, own or used it ("I've had", "we bought", "mine"), in clauses that are about
+    # this product and the writer, never another person's ("my parents have had theirs"); `first_person`, the writer
+    # speaks for themselves in the product's own sentences, an opinion or a suggestion aside ("in my opinion", "I'd
+    # suggest"). Not compared: two scores with the same level, tags and reasons are the same score.
+    own_use: bool = field(default=False, compare=False)
+    first_person: bool = field(default=False, compare=False)
+    # `someone_else`: the product's own sentences tell another person's experience or hearsay ("my folks have one", "the
+    # test kitchen recommends them"), which with_ai_evidence needs beside the AI's "secondhand" before taking use away
+    # from a time or a long use (the AI also tags "bought second-hand" so).
+    someone_else: bool = field(default=False, compare=False)
 
 
 @dataclass(frozen=True)
@@ -707,7 +724,11 @@ def _score_evidence(comment: Comment, product_name: str, stance: str, other_prod
     others = _distinct_others(product_name, other_products)
     context = _product_context(_own_words(comment.body), product_name, others)
     text = " ".join(context)
-    level, reasons = _proof_of_use(text, comment.created_at)
+    # Whose time of use it is (17 Oct 2026): times, long use and the writer's own use are read only in the clauses that
+    # are about this product and the writer (_own_clauses), never another product's, a sibling model's or another
+    # person's; a fresh start ("just bought") gives no time of use to its own sentence.
+    owned, timed = _own_clauses(context, product_name, others)
+    level, reasons = _proof_of_use(text, comment.created_at, owned, timed)
     tags = [level] if level != "no first-hand use" else []  # "long-term use" and "short-term use" are tags too
     if reasons == [_SECONDHAND_REASON]:
         tags.append("secondhand")
@@ -723,17 +744,44 @@ def _score_evidence(comment: Comment, product_name: str, stance: str, other_prod
         tags.append("vague")
     shown = reasons[:1] if level == "long-term use" else []
     shown += [reason for reason in reasons if reason in HONESTY_TAGS or reason.startswith("compares ")]
-    return EvidenceScore(level, tuple(dict.fromkeys(tags)), tuple(reasons), tuple(shown))
+    return EvidenceScore(level, tuple(dict.fromkeys(tags)), tuple(reasons), tuple(shown),
+                         own_use=bool(_FIRST_HAND.search(owned)), first_person=_speaks_for_themselves(text),
+                         someone_else=bool(_SECONDHAND.search(text) or _HEARSAY.search(text)))
+
+
+def product_text(comment: Comment, product_name: str, other_products: Iterable[str] = ()) -> str:
+    """A comment's own words about one product (17 Oct 2026, for what a comment praises a product for: engine/features.py):
+    the sentences about it (_product_context), lowercase, with the clauses about another product, another model of it
+    or another person's use blanked out (_own_clauses). Worked out once per comment, product and other products."""
+    other_products = tuple(other_products)
+    key = (comment.body, product_name, other_products)
+    found = _PRODUCT_TEXT.get(key)
+    if found is None:
+        others = _distinct_others(product_name, other_products)
+        context = _product_context(_own_words(comment.body), product_name, others)
+        found = _PRODUCT_TEXT.keep(key, _own_clauses(context, product_name, others)[0])
+    return found
+
+
+_PRODUCT_TEXT = Table()  # (a comment's words, a product, its other products) -> product_text's answer
 
 
 NO_USE = "no first-hand use"
 _VERDICT_REASON = "speaks of it from use (no time given)"
 _SECONDHAND_TAG = "secondhand"
 _AI_NO_USE_REASON = "no use of it in the AI's reading of the whole comment"
+_AI_USE_REASON = "uses it, in the AI's reading of the whole comment"
+_AI_LONG_REASON = "used for a long time, in the AI's reading of the whole comment"
+_NO_TIME_REASON = "uses it (no time given)"
+_SECONDHAND_CLASH_REASON = "someone else's experience, in the AI's reading of the whole comment"
+# The AI's tags that say something concrete about the writer's use (17 Oct 2026): with one of them, or the writer
+# speaking for themselves in the product's sentences, the AI's reading of use counts when the rules miss it. "vague",
+# "cheaper alternative" and "alternative for another need" say nothing of use: "X is a little cheaper" is a fact.
+_AI_CONCRETE_TAGS = frozenset({"specific details", "mentions flaws", "compares alternatives"})
 
 
 def with_ai_evidence(evidence: EvidenceScore, ai_level: str | None, ai_tags: Iterable[str] = ()) -> EvidenceScore:
-    """The mention's evidence once the AI's own reading of it is taken in: first-hand use needs both readers to see it.
+    """The mention's evidence once the AI's own reading of it is taken in.
 
     From extraction instructions v6 the AI writes an evidence level for every mention, reading the whole comment
     (`ai_level`, with its tags `ai_tags`). When it says "no first-hand use" and these rules found use, the words the
@@ -745,23 +793,66 @@ def with_ai_evidence(evidence: EvidenceScore, ai_level: str | None, ai_tags: Ite
 
     One exception, from the labelling guide: a verdict on the product alone ("it's amazing", the rules' "speaks of it
     from use") is short-term use, so it stays use unless the AI says it is someone else's experience ("secondhand").
-    Whether a plain verdict should need the AI's agreement too is Noemi's call (see eval/RUNS.md, 13 Oct 2026).
+    Noemi, 13 Oct 2026: "keep the plain verdict rule as it is".
 
-    The AI's reading only ever takes use away: when it sees use the rules don't, the rules' level stands. With no
-    level from the AI (an older extraction), the rules decide alone, as before. The honesty tags stay what they are.
+    Hearsay is never first-hand use (17 Oct 2026, the converge round's item 4): when the AI's tags say the experience is
+    someone else's ("secondhand") while its own level says use (369 library mentions, 336 of them recommendations), the
+    mention has use only if the rules found the writer's own use in the product's own clauses (EvidenceScore.own_use:
+    a partner and the writer using it together, "I got mine last month"); a verdict, a long use or a time alone ("my folks' oven still
+    works", "the test kitchen people recommend them, they're great") is no first-hand use.
+
+    The AI's reading also adds use the rules miss (Noemi's decision 3 of 16 Oct 2026, config.AI_FIRST_HAND_COUNTS): the
+    rules read phrases and miss use said in other words ("I tested them", "ours", "I put a little on"; on the library
+    9,054 mentions the rules read as no use the AI read as use). The AI's level then counts, unless its tags say someone
+    else's experience, and only when its tags say something concrete about the use (_AI_CONCRETE_TAGS) or the writer
+    speaks for themselves in the product's own sentences (EvidenceScore.first_person): her gold labels had a writer
+    recommending two brands in general ("X and Y have great exfoliants") as no first-hand use, which the AI had read as
+    short-term use, "vague". So does its long use, where the rules see use but no time at all ("uses it", a verdict) and
+    the AI reads long-term use (config.AI_LONG_TERM_COUNTS): on her held-out kettle thread, the fair test, that took
+    agreement from 27 to 29 of 30 products, and none of her scored threads' changed. A time the rules found ("6 months")
+    is never lengthened. No time badge is added: the time is the AI's reading, not words the answer can quote.
+    With no level from the AI (an older extraction), the rules decide alone, as before. The honesty tags stay what they
+    are.
     """
     ai_tags = tuple(ai_tags)
+    if ai_level in ("short-term use", "long-term use"):
+        if (_SECONDHAND_TAG in ai_tags and evidence.level != NO_USE and not evidence.own_use
+                and (evidence.someone_else or evidence.reasons[:1] == (_VERDICT_REASON,))):
+            return _without_use(evidence, (_SECONDHAND_CLASH_REASON,), secondhand=True)
+        if (evidence.level == NO_USE and config.AI_FIRST_HAND_COUNTS and _SECONDHAND_TAG not in ai_tags
+                and (_AI_CONCRETE_TAGS.intersection(ai_tags) or evidence.first_person)):
+            tags = [ai_level] + [tag for tag in evidence.tags if tag not in ("vague", _SECONDHAND_TAG)]
+            if not set(tags) & _CONCRETE_TAGS and ai_level != "long-term use":
+                tags.append("vague")
+            honest = tuple(r for r in evidence.reasons if r in HONESTY_TAGS or r.startswith("compares "))
+            return EvidenceScore(ai_level, tuple(dict.fromkeys(tags)), (_AI_USE_REASON,) + honest, honest,
+                                 own_use=evidence.own_use, first_person=evidence.first_person,
+                                 someone_else=evidence.someone_else)
+        if (ai_level == "long-term use" and evidence.level == "short-term use" and config.AI_LONG_TERM_COUNTS
+                and evidence.reasons[:1] in ((_NO_TIME_REASON,), (_VERDICT_REASON,)) and _SECONDHAND_TAG not in ai_tags
+                and (_AI_CONCRETE_TAGS.intersection(ai_tags) or evidence.first_person)):
+            tags = ["long-term use"] + [tag for tag in evidence.tags if tag not in ("short-term use", "vague")]
+            return EvidenceScore("long-term use", tuple(dict.fromkeys(tags)), (_AI_LONG_REASON,) + evidence.reasons[1:],
+                                 evidence.badges, own_use=evidence.own_use, first_person=evidence.first_person,
+                                 someone_else=evidence.someone_else)
+        return evidence
     if ai_level != NO_USE or evidence.level == NO_USE:
         return evidence
     if evidence.reasons[:1] == (_VERDICT_REASON,) and _SECONDHAND_TAG not in ai_tags:
         return evidence
+    return _without_use(evidence, (_AI_NO_USE_REASON,), secondhand=_SECONDHAND_TAG in ai_tags)
+
+
+def _without_use(evidence: EvidenceScore, reasons: tuple[str, ...], secondhand: bool) -> EvidenceScore:
+    """The evidence with no first-hand use: its use tags and time badge gone, its honesty kept."""
     tags = [tag for tag in evidence.tags if tag not in ("long-term use", "short-term use")]
-    if _SECONDHAND_TAG in ai_tags and _SECONDHAND_TAG not in tags:
+    if secondhand and _SECONDHAND_TAG not in tags:
         tags.append(_SECONDHAND_TAG)
     if not set(tags) & _CONCRETE_TAGS and "vague" not in tags:
         tags.append("vague")
     honest = tuple(r for r in evidence.reasons if r in HONESTY_TAGS or r.startswith("compares "))
-    return EvidenceScore(NO_USE, tuple(tags), (_AI_NO_USE_REASON,) + honest, honest)
+    return EvidenceScore(NO_USE, tuple(tags), reasons + honest, honest, own_use=evidence.own_use,
+                         first_person=evidence.first_person, someone_else=evidence.someone_else)
 
 
 # Words that compare one product with another ("better than", "switched from", "instead of").
@@ -815,28 +906,47 @@ _SINCE_YEAR = re.compile(r"\b(?:since|(?:bought|got|purchased)\s+(?:\w+\s+){0,3}
 # Use over a long time, said without a number.
 _HELD_UP = re.compile(
     r"\b(?:still (?:going|works|working|kicking|use|using|have|has|in use|sharp|perfect|holding|my go-to|my favou?rite)"
-    r"|held up|holds up|holding up|has lasted|years later|to this day|for years|for ages|for decades|decades"
+    r"|held up|holds up|holding up|has lasted|lasted (?:me |us )?(?:for )?(?:years|ages|decades)|years later"
+    r"|to this day|for years|for ages|for decades|decades"
     r"|for a long time|years ago|after all these years|since (?:college|high school|uni|university|childhood|i was))\b"
 )
-# Days or weeks of use, or a fresh start.
+# Days or weeks of use, or a fresh start. "recently upgraded to", "just ordered" and "recently have gotten" since 17 Oct
+# 2026 (_FRESH_START): the laptop answer's writer who had lately moved on to an Air, and liked it, had read as no use.
+_FRESH_START = (r"(?:just|recently|newly) (?:have |had |finally )?(?:bought|got|gotten|started|received|picked up|tried"
+                r"|switched|purchased|grabbed|upgraded|ordered|treated myself to|invested in)")
 _SHORT_TERM = re.compile(
-    r"\b(?:(?:just|recently) (?:bought|got|started|received|picked up|tried|switched|purchased|grabbed)"
+    r"\b(?:" + _FRESH_START +
     r"|first (?:impressions?|use|week|few (?:days|weeks|uses))|first time (?:using|trying|i used|i tried)"
     r"|so far|started using|only (?:had|used|tried)|trying (?:it|them|this|out))\b"
 )
-# The writer using, owning or judging something themselves.
+# A fresh start, for whose time of use a sentence gives (17 Oct 2026, _own_clauses): "I just bought a JX after fighting my
+# old grinder for a couple years" gives the JX no couple of years.
+_FRESH_START_CUE = re.compile(r"\b" + _FRESH_START + r"\b")
+# The people whose experience is someone else's (17 Oct 2026: "folks", "kid", "fiancé", "bf", "stepdad", "mil",
+# "godmother", "mate" and others added; the library's comments had read "my folks have one" and "my fiancé had a couple"
+# as the writer's own).
+_PEOPLE = (r"(?:sisters?|brothers?|mom|mum|mother|dad|father|parents|friends?|wife|husband|partner|boyfriend|girlfriend"
+           r"|roommates?|flatmates?|housemates?|coworkers?|co-workers?|colleagues?|grandma|grandmother|grandpa"
+           r"|grandfather|grandparents|nan|nana|nanna|gran|granny|aunt|uncle|cousins?|daughters?|sons?|family|folks"
+           r"|kids?|child|children|toddler|baby|fianc[eé]e?|bf|gf|step ?dad|step ?mom|step ?mum|step ?father"
+           r"|step ?mother|mil|fil|in-?laws|mother-in-law|father-in-law|sister-in-law|brother-in-law|god ?mother"
+           r"|god ?father|god ?parents|mates?|buddy|buddies|neighbou?rs?|boss|teacher|coach)")
+# The writer using, owning or judging something themselves. Since 17 Oct 2026 "a friend of mine" isn't the writer's,
+# nor "I have met people who own one", and "I inherited" is.
 _FIRST_HAND = re.compile(
     r"\b(?:(?:i|we)\s+(?:also\s+|still\s+|really\s+|just\s+|personally\s+|now\s+|currently\s+|actually\s+|absolutely\s+)?"
-    r"(?:use|used|using|have(?!\s+(?:heard|read|seen|no|never|not|to|been told))|had|own|owned|bought|got|tried"
-    r"|love|loved|like|liked|swear by|switched|went with|ended up"
+    r"(?:use|used|using|have(?!\s+(?:heard|read|seen|met|known|watched|noticed|no|never|not|to|been told))|had|own"
+    r"|owned|bought|got|tried|love|loved|like|liked|swear by|switched|went with|ended up|inherited"
     r"|keep|kept|reach for|replaced|returned|threw|stopped|started|cook|apply|sharpen|sharpened|wash)"
-    r"|(?:i|we)'?ve\s+(?:been\s+)?(?:using|used|had|owned|bought|got|gotten|tried|loved|cooked|made|sharpened)"
-    r"|i'?m (?:using|loving)|mine|for me|broke me out"
-    r"|(?:irritat\w*|broke|breaks|gives|gave|makes|made|leaves|left|helped|helps|saved|saves) (?:me|my)\b"
-    r"|my (?!(?:sister|brother|mom|mum|mother|dad|father|parents|friends?|wife|husband|partner|boyfriend|girlfriend"
-    r"|roommate|flatmate|coworker|colleague|grandma|grandmother|grandpa|aunt|uncle|cousin|daughter|son|family"
-    r"|derm|dermatologist|doctor|advice|opinion|question|guess|recommendation|suggestion|vote|two|2|bad|god"
-    r"|budget|understanding)\b)[a-z0-9])"
+    r"|(?:i|we)'?ve\s+(?:been\s+)?(?:using|used|had|owned|bought|got|gotten|tried|loved|cooked|made|sharpened|inherited)"
+    r"|i'?m (?:using|loving)|(?<!of )mine|for me|broke me out|myself"
+    r"|(?:my|our) " + _PEOPLE + r" (?:and|&) (?:i|me)\b|(?:i|me) (?:and|&) (?:my|our) " + _PEOPLE + r"\b"
+    r"|(?<!previous )(?<!prior )(?<!the )(?<!old )owner (?:of|as of|for|since)\b"
+    r"|(?:i'?m|i am|as) (?:a |an |the )?(?:\w+ )?owner\b"
+    r"|(?:irritat\w*|broke|breaks|gives|gave|makes|made|leaves|left|helped|helps|saved|saves|got|served|lasted"
+    r"|treated|kept|carried|took) (?:me|my)\b"
+    r"|my (?!(?:" + _PEOPLE + r"|derm|dermatologist|doctor|advice|opinion|question|guess|recommendation|suggestion|vote"
+    r"|two|2|bad|god|budget|understanding)\b)[a-z0-9])"
 )
 # A verdict on the product, which the guide counts as use with no time given ("it's amazing", "X is very nice").
 # Weaker than the cues above: "I've heard X is great" is still hearsay.
@@ -858,48 +968,180 @@ _UNTRIED = re.compile(
     r"|(?:going to|gonna) try (?:it|them|this|that|one)|(?:can'?t|cannot) review\b[^.!?]{0,40}?\byet"
     r"|haven'?t (?:had (?:a|the) chance|gotten around|got around|gotten|got) to (?:try|use))\b"
 )
-# Someone else's experience.
+# Someone else's experience: one of _PEOPLE after "my" (or "our"), "a friend of mine", or people the writer has met.
 _SECONDHAND = re.compile(
-    r"\bmy (?:sister|brother|mom|mum|mother|dad|father|parents|friends?|wife|husband|partner|boyfriend|girlfriend"
-    r"|roommate|flatmate|coworker|colleague|grandma|grandmother|grandpa|aunt|uncle|cousin|daughter|son|family)\b"
+    r"\b(?:(?:my|our) " + _PEOPLE + r"|(?:a )?(?:friend|mate|buddy|colleague|coworker) of (?:mine|ours)"
+    r"|(?:i|we)(?: have|'ve) (?:met|known|seen) (?:\w+ ){0,3}(?:people|folks|others|users|owners|workers|guys)"
+    r"|fellow \w+ who)\b"
 )
 _SECONDHAND_REASON = "someone else's experience"
 # Heard or read about it.
 _HEARSAY = re.compile(
     r"\b(?:heard|i read|read (?:good|great|that)|people (?:say|swear|rave|love|recommend)|supposedly|apparently"
-    r"|reviews (?:say|are)|(?:is|are) supposed to be|said to be|everyone (?:says|loves|raves)|known for|reputation)\b"
+    r"|reviews (?:say|are)|(?:is|are) supposed to be|said to be|everyone (?:says|loves|raves)|known for|reputation"
+    r"|test kitchen|atk|wirecutter|consumer reports|which\? (?:magazine|best buy)|according to"
+    r"|(?:was|is|were|are) (?:the |their |a )?(?:best buy|top pick|winner|editor'?s choice)\b)\b"
 )
 
 
-def _proof_of_use(text: str, written: datetime | None) -> tuple[str, list[str]]:
+def _proof_of_use(text: str, written: datetime | None, owned: str | None = None,
+                  timed: str | None = None) -> tuple[str, list[str]]:
     """The evidence level that `text` shows, and the reasons for it in words.
 
     In this order: never used it (or only wants to) -> no first-hand use; heard about it or someone else's
     experience, with no use of their own -> no first-hand use; a year or more, or "still going" -> long-term use;
     days, weeks, a fresh start, any use of their own, or a verdict on it ("it's amazing") -> short-term use;
     anything else (a bare name, "get X") -> no first-hand use.
+
+    Since 17 Oct 2026 the writer's own use is read in `owned` and times and long use in `timed` (_own_clauses: the
+    clauses about this product and the writer; a fresh start's sentence gives no time), the text itself when not given.
     """
+    owned = text if owned is None else owned
+    timed = text if timed is None else timed
     if _UNTRIED.search(text):
         return "no first-hand use", ["hasn't tried it"]
-    own_use = _FIRST_HAND.search(text)
+    own_use = _FIRST_HAND.search(owned)
     if _SECONDHAND.search(text) and not own_use:
         return "no first-hand use", [_SECONDHAND_REASON]
     if _HEARSAY.search(text) and not own_use:
         return "no first-hand use", ["heard about it, not used"]
-    months, how_long = _longest_use(text, written)
+    months, how_long = _longest_use(timed, written)
     if months is not None and months >= config.LONG_TERM_MIN_MONTHS:
         return "long-term use", [how_long]
-    if _HELD_UP.search(text):
+    if _HELD_UP.search(timed):
         return "long-term use", ["used for a long time"]
     if months is not None:
         return "short-term use", [how_long]
     if _SHORT_TERM.search(text):
         return "short-term use", ["just started using it"]
     if own_use:
-        return "short-term use", ["uses it (no time given)"]
+        return "short-term use", [_NO_TIME_REASON]
     if _VERDICT.search(text):
         return "short-term use", [_VERDICT_REASON]
     return "no first-hand use", ["suggests it without saying they used it"]
+
+
+# --- Whose time of use it is (17 Oct 2026, the converge round's item 3) ---
+# The review of 16 Oct found times given to the wrong product: "10 years of use" from a writer's older MacBook Pro on the
+# MacBook Air they now recommend, "a couple years of use" for a grinder just bought (the couple of years were the old
+# grinder's), a Griswold credited with the writer's Lodge's 12 years ("better than my 12 year old Lodge"), a cocotte with
+# the writer's parents' 15 years. So a sentence's clauses are read one by one: a clause about another product, another
+# model of this one or another person's use gives this product no time and no use of the writer's.
+
+# Where a sentence's clauses part: punctuation, words that set two things side by side, and an "and" before the writer
+# ("... and I got mine last month") or before another person ("... and my parents have had theirs for 15 years").
+_CLAUSE_BREAK = re.compile(
+    r"[,;:()\[\]]|\s(?:but|than|while|whilst|whereas|though|although|however|except|unlike|vs|versus)\s"
+    r"|\s(?=and (?:i|i've|i'm|i'd|we|we've|we're)\s)|\s(?=and (?:my|our|his|her|their) " + _PEOPLE + r"\b)")
+# Words that name a model of a range ("Air", "Pro", "Max", "Mini"...), for telling a writer's older model from the one
+# recommended: with codes of letters and digits ("C2", "XM4") and short codes of letters ("JX", "WH").
+_MODEL_WORDS = frozenset({"pro", "air", "max", "mini", "plus", "ultra", "lite", "light", "se", "xl", "slim", "elite",
+                          "sport", "classic", "original", "prime", "neo", "evo", "premium", "deluxe", "compact"})
+_NOT_A_MODEL_CODE = frozenset({"a", "an", "am", "as", "at", "be", "by", "do", "go", "he", "hi", "i", "if", "in", "is",
+                               "it", "me", "my", "no", "of", "oh", "ok", "on", "or", "so", "to", "up", "us", "we", "ya",
+                               "the", "and", "but", "for", "has", "had", "was", "are", "its", "not", "one", "two", "our",
+                               "you", "she", "his", "her", "him", "who", "how", "now", "new", "old", "all", "any", "can",
+                               "got", "get", "use", "too", "very", "that", "this", "with", "from", "have"})
+_TOKEN = re.compile(r"[a-z0-9]+")
+
+
+def _own_clauses(sentences: list[str], product_name: str, others: list[str]) -> tuple[str, str]:
+    """(the text where the writer's own use of this product is read, the text where its times of use are read): the
+    product's sentences (_product_context), joined as its text is, with every clause blanked out that names another
+    product and not this one (_naming), names only another model of it (_names_a_sibling: "I had a Zephyr Pro for ten
+    years" for a Zephyr Air) or tells another person's use with none of the writer's own ("my parents have had theirs
+    for 15 years"). Blanked, not cut, so what is left reads as written: a time's own sentence and punctuation still say
+    whether it is a warranty, the reader's or a hope. The times are also blanked in a fresh start's sentence ("I just
+    bought a JX after fighting my old grinder for a couple years"): a writer who just got it hasn't had it long, whatever
+    else the sentence times."""
+    mine = _name_words(product_name)
+    theirs = [_name_words(other) for other in others]
+    owned, timed = [], []
+    for sentence in sentences:
+        kept = list(sentence)
+        start, fresh = 0, False
+        for end in [m.start() for m in _CLAUSE_BREAK.finditer(sentence)] + [len(sentence)]:
+            clause = sentence[start:end]
+            if clause.strip() and _not_this_writers(clause, product_name, mine, theirs):
+                kept[start:end] = " " * (end - start)
+            elif _FRESH_START_CUE.search(clause) and (_found_in_sentence(clause, mine) or _POINTER.search(clause)):
+                fresh = True
+            start = end
+        kept_text = "".join(kept)
+        owned.append(kept_text)
+        timed.append(" " * len(sentence) if fresh else kept_text)
+    return " ".join(owned), " ".join(timed)
+
+
+# Words pointing at the product a comment is about, for a fresh start that doesn't name it ("just got mine").
+_POINTER = re.compile(r"(?<![a-z'])(?:it|one|ones|them|these|those|this|that|mine|a pair|a set|some)(?![a-z'])")
+
+
+def _not_this_writers(clause: str, product_name: str, mine: frozenset[str], theirs: list[frozenset[str]]) -> bool:
+    """Whether a clause of a product's sentence is about another product, another model of it or another person's use,
+    and so says nothing of the writer's own use of this product (_own_clauses)."""
+    if theirs:
+        names_mine, names_other = _naming(clause, mine, theirs)
+        if names_other and not names_mine:
+            return True
+    if _names_a_sibling(clause, product_name):
+        return True
+    return bool(_SECONDHAND.search(clause)) and not _FIRST_HAND.search(clause)
+
+
+def _names_a_sibling(text: str, product_name: str) -> bool:
+    """Whether `text` names another model of this product's range and never this one: a word that picks out the product
+    ("zephyr") followed, in the text, by a model word other than the one following it in the product's name ("Zephyr
+    Pro" for "Zephyr Air", "1Zpresso K" for "1Zpresso JX"). A name with no model word after its own words ("Lodge",
+    "Lodge skillet") has no sibling to tell apart."""
+    name = _TOKEN.findall(html.unescape(product_name).lower())
+    picks = _name_words(product_name)
+    models = {word: (name[i + 1], name[i + 1:]) for i, word in enumerate(name[:-1])
+              if word in picks and _a_model_word(name[i + 1])}
+    if not models:
+        return False
+    words = _TOKEN.findall(text)
+    sibling = False
+    for i, word in enumerate(words[:-1]):
+        own = models.get(word) or models.get(word.removesuffix("s"))
+        if own is None:
+            continue
+        following, rest = words[i + 1], own[1]
+        # This very model, also by another part of its name ("Sony XM4" for the Sony WH-1000XM4).
+        if following in (own[0], own[0] + "s") or any(following in part or part in following for part in rest):
+            return False
+        if _a_model_word(following):
+            sibling = True
+    return sibling
+
+
+def _a_model_word(word: str) -> bool:
+    """A word naming a model in a range: one of _MODEL_WORDS, a code mixing letters and digits ("c2", "xm4"), or a short
+    code of letters that is no common word ("jx", "wh")."""
+    if word in _MODEL_WORDS:
+        return True
+    letters, digits = any(c.isalpha() for c in word), any(c.isdigit() for c in word)
+    if letters and digits:
+        return True
+    return letters and not digits and len(word) <= 3 and word not in _NOT_A_MODEL_CODE
+
+
+# Speaking for oneself (17 Oct 2026, with_ai_evidence): a first-person word left once opinions, suggestions and
+# hearsay in the first person are taken out ("in my opinion", "I'd suggest", "I recommend", "I've heard").
+_FIRST_PERSON = re.compile(r"(?<![a-z'])(?:i|i'm|i've|i'd|i'll|im|ive|me|myself|my|mine|we|we've|we're|we'd|us|our"
+                           r"|ours)(?![a-z'])")
+_OPINION_IN_FIRST_PERSON = re.compile(
+    r"(?<![a-z'])(?:in my (?:opinion|book|view)|imo|imho|for my money|my (?:two cents|2 cents|vote|advice"
+    r"|recommendation|suggestion|pick|guess|choice|take|opinion)"
+    r"|(?:i|we)(?: would|'d| d)? (?:strongly |highly |definitely |honestly |personally )?(?:recommend|suggest|say"
+    r"|think|guess|believe|imagine|bet|assume|vote for|go with|look at|check out|consider)"
+    r"|i(?: have|'ve) (?:heard|read|seen)|i hear|i read)(?![a-z'])")
+
+
+def _speaks_for_themselves(text: str) -> bool:
+    """Whether the writer speaks for themselves in `text` (a product's own sentences): a first-person word outside an
+    opinion, a suggestion or hearsay said in the first person."""
+    return bool(_FIRST_PERSON.search(_OPINION_IN_FIRST_PERSON.sub(" ", text)))
 
 
 def _longest_use(text: str, written: datetime | None) -> tuple[float | None, str]:
@@ -965,7 +1207,7 @@ def _is_not_a_duration(text: str, match: re.Match) -> bool:
         return True
     words_before = text[:match.start()].split()[-1:]
     previous = words_before[0] if words_before else ""
-    if previous in ("once", "twice", "times", "per", "x", "every"):
+    if previous in ("once", "twice", "times", "per", "x", "every", "hours", "hrs", "hour", "minutes", "mins"):
         return True
     return match.group(0) in ("one day", "some day") and previous not in ("for", "after", "within", "in")
 
@@ -1131,6 +1373,12 @@ def _name_words(product_name: str) -> frozenset[str]:
 
 
 _NAME_WORDS = Table()  # a product name -> _name_words's answer
+
+
+def name_words(product_name: str) -> frozenset[str]:
+    """The words of a product's name that pick it out in a sentence (no generic words, no bare numbers), as module 5
+    finds a product in a comment's sentences (_name_words; engine/features.py, 17 Oct 2026)."""
+    return _name_words(product_name)
 
 
 def _naming(sentence: str, mine: frozenset[str], theirs: list[frozenset[str]]) -> tuple[bool, bool]:
