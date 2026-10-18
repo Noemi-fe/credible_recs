@@ -10210,6 +10210,350 @@
     "https://cabeau.co.uk/sitemap_products_1.xml?from=3525988384854&to=14852250566959"
    ],
    "note": "Found by engine.maker_pages in the sitemap https://cabeau.co.uk/sitemap_products_1.xml?from=3525988384854&to=14852250566959; the page names it \"Evolution S3® Neck Pillow\"; GBP 34.99 on the page."
+  },
+  {
+   "product": "Patagonia rain jacket",
+   "category": "general",
+   "product_type": "rain jacket",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/patagonia-mens-torrentshell-3l-rain-jacket/black/p114816865",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/patagonia-mens-torrentshell-3l-rain-jacket/black/p114816865",
+    "https://eu.patagonia.com/gb/en/shop/mens/jackets-vests/rain-jackets"
+   ],
+   "note": "Range page as before (Patagonia's own UK rain jackets page; it showed an outage screen to the reader on 18 Oct). From price: John Lewis, Men's Torrentshell 3L Rain Jacket at £180 with Add to basket (sizes S-XL listed), Patagonia's main rain jacket; the cheapest adult Patagonia rain jacket found, not a full sort of the range."
+  },
+  {
+   "product": "Columbia rain jacket",
+   "category": "general",
+   "product_type": "rain jacket",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/browse/men/mens-coats-jackets/columbia/_/N-ea9Z1yzkt3r",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/browse/men/mens-coats-jackets/columbia/_/N-ea9Z1yzkt3r",
+    "https://www.johnlewis.com/columbia-mens-pouring-adventure-2-jacket-collegiate-navy/p113871752"
+   ],
+   "note": "Columbia's UK store refuses automated reads (403). John Lewis's Columbia men's coats and jackets page lists 25 products on 18 Oct, among them the waterproof Pouring Adventure 2 (£40.50, reduced to clear, size S only) and the Coreshot shell anorak (£210); its other Columbia rain jackets (Pouring Adventure III, Trailborne 2.5L, Inner Limits IV) are no longer available online there. No clean from price: the one waterproof shell in stock is a clearance size."
+  },
+  {
+   "product": "Nalgene water bottle",
+   "category": "general",
+   "product_type": "water bottle",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Heinnie Haynes",
+   "url": "https://heinnie.com/nalgene-sustain-wide-mouth-1l-bottle",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "Nalgene has no UK store; Heinnie Haynes, a UK outdoor and knife shop (free UK delivery), lists the Nalgene Sustain Wide Mouth 1L Bottle at £12.99, in stock (its structured data). Product page is that bottle, not a range page. No big UK shop found selling Nalgene in a search (Decathlon's Nalgene listings are its EU marketplaces)."
+  },
+  {
+   "product": "Dyson hair dryer",
+   "category": "general",
+   "product_type": "hair dryer",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/dyson-supersonic-origin-hair-dryer-prussian-blue/p115577495",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/dyson-supersonic-origin-hair-dryer-prussian-blue/p115577495",
+    "https://www.dyson.co.uk/hair-care/hair-dryers",
+    "https://www.johnlewis.com/brand/hair-dryers/dyson/_/N-48sbZ1z140en"
+   ],
+   "note": "Range page as before (Dyson UK's hair dryers page; its site refuses automated reads). John Lewis's Dyson hair dryers page lists 10 dryers on 18 Oct, from £249.99 (Supersonic Origin in Prussian Blue, Add to basket shown; the Supersonic Travel and two Supersonic models are £249.99 too) to £399.99 (Supersonic r). From price: the Supersonic Origin at £249.99."
+  },
+  {
+   "product": "Sonicare electric toothbrush",
+   "category": "general",
+   "product_type": "electric toothbrush",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/philips-sonicare-hx3673-13-series-3100-electric-toothbrush-white/p5536363",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/philips-sonicare-hx3673-13-series-3100-electric-toothbrush-white/p5536363",
+    "https://www.philips.co.uk/c-m-pe/electric-toothbrushes",
+    "https://www.johnlewis.com/brand/electric-toothbrushes-flossers-accessories/philips/electric-toothbrush/_/N-483sZ1z13zzkZ1z0jq47"
+   ],
+   "note": "Range page: Philips UK's Sonicare electric toothbrushes page (no prices shown there). John Lewis lists 21 Philips Sonicare toothbrushes on 18 Oct; cheapest adult one: the Series 3100 HX3673/13 at £39.99 (reduced to clear from £99.99, Add to basket shown); next the 4100 HX4042 at £44.99. Writers' 'Sonicare' is Philips' toothbrush brand."
+  },
+  {
+   "product": "DeWalt drill",
+   "category": "general",
+   "product_type": "drill",
+   "price": null,
+   "currency": "GBP",
+   "shop": "B&Q",
+   "url": "https://www.diy.com/departments/dewalt-xr-18v-li-ion-brushed-cordless-combi-drill-1-x-2ah-dcd776d1t-gb/5035048741382_BQ.prd",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.diy.com/departments/dewalt-xr-18v-li-ion-brushed-cordless-combi-drill-1-x-2ah-dcd776d1t-gb/5035048741382_BQ.prd",
+    "https://www.dewalt.co.uk/en-gb/products/power-tools/drills",
+    "https://www.diy.com/departments/tools-equipment/power-tools/drills/DIY637279.cat?Brand=DeWalt"
+   ],
+   "note": "Range page as before (DeWalt UK's drills page; DeWalt sells through stockists). From price: B&Q, the XR 18V brushed combi drill DCD776D1T-GB with a 2Ah battery, charger and case, at £75 (was £89), sold and shipped by B&Q, Add to basket shown. Body-only drills are cheaper from marketplace sellers on B&Q's site (DCD709N bare at £62.99 from Powertoolmate), not counted: not sold by B&Q itself, and no battery."
+  },
+  {
+   "product": "Merrell hiking boots",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Merrell UK",
+   "url": "https://www.merrell.com/UK/en_GB/thermo-chill-2-mid-waterproof/60653M.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.merrell.com/UK/en_GB/thermo-chill-2-mid-waterproof/60653M.html",
+    "https://www.merrell.com/UK/en_GB/men-hiking-boots",
+    "https://www.merrell.com/UK/en_GB/men-hiking-boots?srule=price-low-to-high"
+   ],
+   "note": "Merrell's own UK store (merrell.com/UK/en_GB, prices in pounds): men's hiking boots, 15 listed (8 models: Moab 3 Mid GORE-TEX from £124, Speed Strike 2 Mid, Thermo boots...). From price: sorted by price, the Men's Thermo Chill 2 Mid Waterproof at £120, the cheapest men's hiking boot there on 18 Oct (women's boots have their own page). The page gives no stock per product."
+  },
+  {
+   "product": "Salomon hiking boots",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/salomon-x-ultra-360-mid-gore-tex-mens-boots-magnet-black/p111519894",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/salomon-x-ultra-360-mid-gore-tex-mens-boots-magnet-black/p111519894",
+    "https://www.johnlewis.com/browse/men/mens-boots/salomon/walking/_/N-7onxZlk95Z1yzjf2t"
+   ],
+   "note": "Salomon's own UK store refuses automated reads (403). John Lewis's Salomon men's walking boots page lists the X Ultra 360 Mid Gore-Tex boots at £150 (Add to basket, sizes 7-12) and the X Ultra 360 hiking shoes at £140, on 18 Oct. From price: the X Ultra 360 Mid GTX at £150, the one Salomon boot John Lewis sells now (Salomon's own range may hold cheaper ones)."
+  },
+  {
+   "product": "Lowa hiking boots",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "LOWA UK",
+   "url": "https://www.lowa.co.uk/products/maddox-pro-gtx-mid",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.lowa.co.uk/products/maddox-pro-gtx-mid",
+    "https://www.lowa.co.uk/collections/mens-boots",
+    "https://www.lowa.co.uk/collections/mens-boots?sort_by=price-ascending"
+   ],
+   "note": "LOWA's own UK store (lowa.co.uk, distributed by TKC Sales Ltd, prices in pounds): men's walking boots, 25 listed (Renegade Evo GTX Mid £165 on sale, regular £220; Zephyr, Innox, Camino...). From price: sorted by price, the Maddox Pro GTX Mid from £114 on sale (regular £190, by colour), on 18 Oct."
+  },
+  {
+   "product": "Keen hiking boots",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "KEEN UK",
+   "url": "https://www.keenfootwear.co.uk/products/mens-zionic-mid-waterproof-dark-olive-scarlet-ibis",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.keenfootwear.co.uk/products/mens-zionic-mid-waterproof-dark-olive-scarlet-ibis",
+    "https://www.keenfootwear.co.uk/collections/mens-walking-boots",
+    "https://www.keenfootwear.co.uk/collections/mens-walking-boots?sort_by=price-ascending"
+   ],
+   "note": "KEEN's own UK store (keenfootwear.co.uk, prices in pounds): men's walking and hiking boots, 15 listed on 18 Oct (Targhee IV Waterproof £155, Targhee Apex £150, Hightrail £135...). From price: sorted by price, the Men's Zionic Waterproof Hiking Boot at £110 in its outlet (was £160); the cheapest at full price is the Hightrail at £135."
+  },
+  {
+   "product": "Danner hiking boots",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Danner",
+   "url": "https://www.danner.com/productfamily/mountain-600/men:hike/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.danner.com/productfamily/mountain-600/men:hike/",
+    "https://global.danner.com/men/work"
+   ],
+   "note": "not sold to UK shoppers: Danner (Portland, US) sells its hiking boots (Mountain 600 and others) from danner.com in US dollars; its global store (global.danner.com, 'worldwide delivery') showed no products to the reader on 18 Oct. As on 15 Oct for its work boots, no UK seller found: sold abroad only."
+  },
+  {
+   "product": "Danner Mountain 600",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Danner",
+   "url": "https://www.danner.com/mountain-600-4-5-saddle-tan.html",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.danner.com/mountain-600-4-5-saddle-tan.html",
+    "https://www.danner.com/productfamily/mountain-600/men:hike/"
+   ],
+   "note": "not sold to UK shoppers: Danner's Mountain 600 4.5\" hiking boot, sold on danner.com in US dollars (about $220-230 in a search of its pages, 18 Oct); no UK seller found: sold abroad only."
+  },
+  {
+   "product": "Meindl hiking boots",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Meindl UK",
+   "url": "https://www.meindl.co.uk/product/footwear/mens/meindl-respond-men-mid-gtx-walking-boot/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.meindl.co.uk/product/footwear/mens/meindl-respond-men-mid-gtx-walking-boot/",
+    "https://www.meindl.co.uk/",
+    "https://www.meindl.co.uk/products/mens/boots/"
+   ],
+   "note": "Meindl's own UK site (meindl.co.uk, prices in pounds, 'Buy Online' on most boots, the rest from its stockists): men's boots, 37 listed (Bhutan MFS from £289.99, Burma Pro MFS, Borneo 2...). From price: the Respond Men Mid II GTX walking boot at £184.99, the cheapest of the 16 shown on 18 Oct (not a full sort)."
+  },
+  {
+   "product": "UPPAbaby stroller",
+   "category": "general",
+   "product_type": "stroller",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/uppababy-minu-v3-stroller-james/p115608646",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/uppababy-minu-v3-stroller-james/p115608646",
+    "https://www.johnlewis.com/browse/baby-child/buggies-travel/pushchairs-prams/uppababy/_/N-8h7Z1yzumhx",
+    "https://www.johnlewis.com/uppababy-vista-v3-pushchair/p112501137"
+   ],
+   "note": "John Lewis's UPPAbaby prams and pushchairs page lists 12 UPPAbaby pushchairs and strollers on 18 Oct: Vista V3 £1,099.99, Cruz V3 £749.99, Ridge V2 £699.99, Minu Duo £599.99, MINU V3 from £399. From price: the MINU V3 stroller (James) at £399. UPPAbaby's own UK pages weren't found at the address tried."
+  },
+  {
+   "product": "UPPAbaby Vista stroller",
+   "category": "general",
+   "product_type": "stroller",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/uppababy-vista-v3-pushchair/p112501137",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/uppababy-vista-v3-pushchair/p112501137",
+    "https://www.johnlewis.com/browse/baby-child/buggies-travel/pushchairs-prams/uppababy/_/N-8h7Z1yzumhx"
+   ],
+   "note": "Writers' 'UPPAbaby Vista' (and 'Vista V2') is UPPAbaby's Vista pushchair line; its current model, the Vista V3, is £1,099.99 at John Lewis on 18 Oct (Add to basket shown; Vista V3 bundles with a car seat cost more). Product page is the Vista V3's."
+  },
+  {
+   "product": "Bugaboo stroller",
+   "category": "general",
+   "product_type": "stroller",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/bugaboo-butterfly-2-stroller-heritage-black/p113681128",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/bugaboo-butterfly-2-stroller-heritage-black/p113681128",
+    "https://www.johnlewis.com/browse/baby-child/buggies-travel/pushchairs-prams/bugaboo/_/N-8h7Z1z14078"
+   ],
+   "note": "John Lewis's Bugaboo prams and strollers page lists 11 Bugaboo pushchairs and strollers on 18 Oct: Fox 5 Renew £1,099, Donkey 6 from £1,560, Cub £749, Dragonfly Plus £649, Butterfly 2 £435, and two reduced to clear (Dragonfly in Forest Green £404.10, Fox Cub £539.10). From price: the Butterfly 2 at £435, the cheapest not being cleared."
+  },
+  {
+   "product": "Garmin sports watch",
+   "category": "general",
+   "product_type": "sports watch",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/browse/electricals/smart-watches-wearable-tech/view-all-smart-watches/garmin/_/N-5nmcZ1z13y4o",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/browse/electricals/smart-watches-wearable-tech/view-all-smart-watches/garmin/_/N-5nmcZ1z13y4o",
+    "https://www.garmin.com/en-GB/c/sports-fitness/running-smartwatches/",
+    "https://www.garmin.com/en-GB/p/1941179/",
+    "https://www.johnlewis.com/garmin-forerunner-70-gps-running-smartwatch-black/p115389859"
+   ],
+   "note": "Range page: Garmin UK's running watches page (its prices load by script, so none read there). John Lewis lists 8 Garmin Forerunner running watches on 18 Oct: Forerunner 70 £199-£219.99 (its page shows £219.99 for black, Add to basket), 165 Music from £205, 165 £249, 170 £259.99, 265 £369.99, 570 £429. From price: the Forerunner 70 from £199 on that list. The Forerunner 55 is no longer sold there."
+  },
+  {
+   "product": "HOKA running shoes",
+   "category": "general",
+   "product_type": "running shoes",
+   "price": null,
+   "currency": "GBP",
+   "shop": "SportsShoes",
+   "url": "https://www.sportsshoes.com/product/hok2565/hoka-skyflow-men%27s-running-shoes---aw26",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.sportsshoes.com/product/hok2565/hoka-skyflow-men%27s-running-shoes---aw26",
+    "https://www.sportsshoes.com/products/hoka/mens/shoes"
+   ],
+   "note": "HOKA's own UK store couldn't be read (its page returned an oversized header). SportsShoes, a big UK running shop, lists 183 HOKA men's shoes on 18 Oct; its road running shoes run from the Skyflow at £89.99 (also in 2E width) through the Clifton 11 and Arahi 9 (£125.99) to the Rocket X 3 (£219.99). From price: the Skyflow at £89.99. (John Lewis sells HOKA kids' shoes only.)"
+  },
+  {
+   "product": "Saucony running shoes",
+   "category": "general",
+   "product_type": "running shoes",
+   "price": null,
+   "currency": "GBP",
+   "shop": "SportsShoes",
+   "url": "https://www.sportsshoes.com/product/sau5249/saucony-guide-18-men%27s-running-shoes",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.sportsshoes.com/product/sau5249/saucony-guide-18-men%27s-running-shoes",
+    "https://www.sportsshoes.com/products/saucony/mens/shoes"
+   ],
+   "note": "SportsShoes, a big UK running shop, lists 201 Saucony men's shoes on 18 Oct (first page read): road shoes from the Guide 18 stability shoe at £77.99 (RRP £129.99), Hurricane 25 £98.99, Triumph 23 £99.99, Kinvara 16 £107.99, Guide 19 from £125.99. From price: the Guide 18 at £77.99, of the first page (not a full sort)."
+  },
+  {
+   "product": "New Balance running shoes",
+   "category": "general",
+   "product_type": "running shoes",
+   "price": null,
+   "currency": "GBP",
+   "shop": "SportsShoes",
+   "url": "https://www.sportsshoes.com/product/new696017/new-balance-411v3-men%27s-running-shoes",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.sportsshoes.com/product/new696017/new-balance-411v3-men%27s-running-shoes",
+    "https://www.sportsshoes.com/products/new-balance/mens/shoes"
+   ],
+   "note": "SportsShoes, a big UK running shop, lists 287 New Balance men's shoes on 18 Oct (first page read): road running shoes from the 411v3 at £26.99 (RRP £44.99), 520v9 £49.99, 680v9 £69.99, the 860v14 stability shoe from £79.99, 1080v15 from £101.99, 880v15 £139.99. From price: the 411v3 at £26.99, of the first page."
+  },
+  {
+   "product": "Brooks running shoes",
+   "category": "general",
+   "product_type": "running shoes",
+   "price": null,
+   "currency": "GBP",
+   "shop": "SportsShoes",
+   "url": "https://www.sportsshoes.com/product/bro3728/brooks-revel-9-men%27s-running-shoes---aw26",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.sportsshoes.com/product/bro3728/brooks-revel-9-men%27s-running-shoes---aw26",
+    "https://www.sportsshoes.com/products/brooks/mens/shoes"
+   ],
+   "note": "SportsShoes, a big UK running shop, lists 133 Brooks men's shoes on 18 Oct (72 read): road running shoes from the Revel 9 at £100, Launch 12 £110, Ghost 18 £135, the Adrenaline GTS 25 stability shoe £145, Glycerin GTS 23 £165. From price: the Revel 9 at £100."
   }
  ]
 }
