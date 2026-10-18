@@ -81,3 +81,51 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   comment-level bootstrap: -9.6 to +1.2 points). Its own slips, now told to every extraction helper: a reply's
   product name comes from its parent's own words; a tool or applicator named in passing isn't a mention; tentative
   interest is neutral. Opus stays for the orchestrator, judgement reviews and code that changes scoring or rules.
+- Built by Claude, 17-18 Oct 2026 (the converge round's ws-names builder, branch ws-names: module 1, the need words and
+  module 4's names; Claude's technical calls within Noemi's rules, reported to her; eval/RUNS.md): (1) Module 1: the
+  open model's product is placed by its own words (a mouse mat with the mouse in tech, a bike pump outdoors, guitar
+  strings in hobbies, a tyre gauge in car, a baby food maker or a stock pot in the kitchen, a hair toner in haircare,
+  a sheet mask in skincare); a model answering "case" names the request's "ipad case"; two products or a brand is
+  never a type ("le creuset or staub" asks in the kitchen); a kitchen mixer tap is a tap; skin concerns ("dark
+  circles", "dry lips", eczema) ask the skincare question, and eczema is sensitive skin, as rosacea is; a skincare or
+  haircare maker's name places a vague request ("dupe for drunk elephant protini"), a brand with lines in two
+  categories places none; a set of pots and pans asks frying pan or saucepan; "stocking filler" is never corrected to
+  "filter", and a gift's question stands when the model names no product (the gift, dog, coffee and tea questions'
+  wording PROPOSED); money in words is a budget ("less than a tenner" is £10, "about forty quid" £40, "under a grand"
+  1000: engine.query.money_in_figures, the budget's own rules unchanged). Routing eval with the model 104/104 (main
+  96/104), rules alone 89/104 (88). (2) Claude's call of 18 Oct, built: for a product type with the PFAS-free fact
+  (frying pans, saucepans) "non toxic", "non-toxic", "nontoxic" and "toxin free" ask for PFAS-free
+  (config.TYPE_ASKED_WORDS, engine.query.type_asks) and are one need, named "PFAS-free" in the reason and found by
+  toxins, PFAS, PTFE, PFOA and Teflon; "non toxic moisturiser" stays an ordinary need. "non toxic frying pan" now
+  shows GreenPan's line, De Buyer's carbon steel pans and HexClad (noted "we couldn't confirm it's PFAS-free") and
+  leaves out 15 pans whose facts say they aren't PFAS-free (Tefal's PTFE pan had been pick 2). (3) Need words: in
+  kitchen and general requests the type's own head words are no judged need ("about freezer", "about coffee" gone;
+  config.TYPE_OTHER_NAMES: "portable" of a portable charger), a one-word kind stays one ("gyuto"); a brand is no
+  judged need unless it is what the product is for ("for my iphone 15"); two-word needs and verbs are named whole
+  ("dog hair", "three storey house", "staying cool"); a short need word is found with its plural ("dogs"), a request
+  word in its other words (uni, college), a two-word need also written as one or with a hyphen ("nonstick"), never in
+  removing makeup; skin types only for skin; conversation words, people, contractions and money in words are no needs;
+  an induction hob, stove or cooktop is the induction need. (4) Names: one product shown once (`python -m
+  engine.duplicate_names <sweep.jsonl>`: answers showing one product twice 2 -> 0 over the sweep, one brand written
+  two ways 4 -> 0): short names for the Ergobaby Embrace, Kindle Paperwhite, Weber Spirit and Genesis, OtterBox and
+  the King 1000/6000 stone, never one making two brand-lines entries one (a Dualit 4-slice short name broke the list's
+  check and was taken out); makers' spellings (OtterBox, Oral-B, The INKEY List, KEVIN.MURPHY, iUNIK, e.l.f., got2b,
+  Red Wing, Darn Tough, LG, GHD...), brands a letter apart kept apart (Graco is no Grado, Babylist no BaByliss, Molly
+  Mutt no "melly"); a name keeps its own words after its maker's spelling ("Bosch Series 4", "Ryobi ONE+", "COSRX The
+  6 Peptide") but not where or how it was bought ("from Costco", "(refurbished)"), quotation marks, a possessive or a
+  "brand" after the maker; a price or facts list's own name keeps its letters, since an answer finds a product's
+  price, availability, page and image by the name it is shown under (respelled, the price list's "OleHenricksen ..."
+  eye cream lost its £38 price and a £35 budget no longer left it out: the list is the place to correct it). (5) Type
+  rules (the decided rule of 10 Oct 2026, decision 5): razor blades and liners are no razor or sleeping bag (Derby's
+  and Feather's blades leave both razor answers, which keep one pick, Merkur's line); a stock or pasta pot is no
+  saucepan; a name's last word says it is another thing only for "blades" (the wider rule of 17 Oct had also left out
+  the Boos Block, Peak Design's Travel Bag, PowerBlocks and OneBlade); the barbecue and sharpener synonyms of 17 Oct
+  were taken out (they turned the Weber Spirit and the King stone into lines). Eval back to back with main's code:
+  identical but for names, the library's groups (24,502 -> 24,475) and the routing eval; blind test 10/10 full top 3s,
+  every shown quote verified; sweep 110 of 278 answers changed, each explained in the private report. Open for Noemi:
+  whether an essence counts as a toner (COSRX Snail 96 tops "hydrating toner"); brand-only names shown as products
+  (T3, Mous, Sleep Number, Jura, "King stones") until the brand-only-line rule is merged; a travel system as a
+  stroller pick. For the data builders: the price and pages lists' "OleHenricksen banana bright + vitamin C under eye
+  cream" named as its maker names it; the Kindle Keyboard (a 2010 model no longer sold) is the e-reader answers' third
+  pick until a price entry says so; Scanpan's PTFE fact and HexClad's and Le Creuset's toughened non-stick coatings
+  for the non-toxic and PFAS-free answers; more razor threads.
