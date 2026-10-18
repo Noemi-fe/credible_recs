@@ -232,3 +232,100 @@ def test_two_brands_compared_ask_in_their_category(monkeypatch):
     assert (classify("le creuset or staub").status, classify("le creuset or staub").category) == ("clarify", "kitchen")
     assert classify("cerave or la roche posay").category == "skincare"
     assert classify("something with global roaming").category is None  # an everyday word is no brand here
+
+
+# --- 9. Round three (18 Oct 2026, the ws-names builder): every request of the day's lists, the model off then on ---
+
+def test_a_stocking_filler_is_never_corrected_into_a_filter():
+    from engine.query import correct_typos
+
+    assert correct_typos("stocking filler for my brother") == "stocking filler for my brother"
+    query = parse_query("stocking filler for my brother", model=None)
+    assert query.status == "clarify" and "like" in query.question.lower()
+
+
+@pytest.mark.parametrize("answer", [{"category": "other", "product": ""},
+                                    {"category": "home", "product": "stocking filler"},
+                                    {"category": "home", "product": "secret santa gift"}])
+def test_a_gifts_question_stands_when_the_model_names_no_product(answer):
+    for text in ("secret santa gift under £20", "stocking filler for my brother"):
+        query = parse_query(text, model=FakeModel(answer))
+        assert query.status == "clarify" and "like" in query.question.lower(), (text, answer)
+
+
+def test_a_gift_the_model_names_a_product_for_is_that_product():
+    query = parse_query("secret santa gift under £20, maybe a nice mug",
+                        model=FakeModel({"category": "kitchen", "product": "mug"}))
+    assert query.status == "ok" and query.product_type == "mug"
+
+
+def test_a_tyre_gauge_is_no_tyre():
+    assert classify("digital tyre gauge").product_type != "car tyres"
+    assert placed("digital tyre gauge", {"category": "tools", "product": "tyre gauge"}) == (
+        "ok", "general", "tyre gauge", "car")
+
+
+@pytest.mark.parametrize("text, answer", [
+    ("stock pot", {"category": "home", "product": "stock pot"}),
+    ("stockpot for soup", {"category": "home", "product": "stockpot"}),
+    ("pasta pot", {"category": "home", "product": "pasta pot"}),
+])
+def test_a_stock_or_pasta_pot_is_the_kitchens(text, answer):
+    status, category, product_type, department = placed(text, answer)
+    assert (status, category, department) == ("ok", "kitchen", None) and product_type == answer["product"]
+
+
+@pytest.mark.parametrize("text", ["a good set of pans for a first flat", "set of pans", "pots and pans set",
+                                  "a set of pots and pans", "cookware set", "saucepan set", "best pots and pans for a beginner",
+                                  "non toxic cookware", "stainless steel cookware that lasts"])
+def test_a_set_of_pots_and_pans_asks_which_pan(text):
+    # Routed to a "cookware set" of its own, it found no saved thread (the library's sets are in "pots and pans"
+    # threads, which frying pan answers read): the two-product question gets an answer instead.
+    routing = classify(text)
+    assert (routing.status, routing.several) == ("clarify", True)
+    assert routing.question == "I look for one thing at a time: shall I start with the frying pan or the saucepan?"
+
+
+@pytest.mark.parametrize("text, product_type", [("frying pan", "frying pan"), ("camping cookware", "camping cookware"),
+                                                ("a pan for my stove", "frying pan"), ("2qt saucepan", "saucepan")])
+def test_one_pan_or_another_cookware_type_is_still_itself(text, product_type):
+    assert classify(text).product_type == product_type
+
+
+def test_two_products_besides_a_set_still_ask_which():
+    assert classify("a frying pan and a saucepan").status == "clarify"
+
+
+def test_a_skincare_makers_name_asks_the_skincare_question():
+    # config.MAKER_SPELLINGS's skincare brands place a request naming no product, as the brand-lines list's do.
+    assert classify("dupe for drunk elephant protini").category == "skincare"
+    assert classify("neutrogena or cerave").category == "skincare"
+
+
+def test_a_brand_of_more_than_one_category_places_nothing(monkeypatch):
+    from engine import query
+
+    monkeypatch.setattr(query, "_brand_categories", lambda: {("ikea",): {"kitchen", "general"}})
+    assert classify("something from ikea").category is None
+
+
+# Money in words is a budget (understanding review, U9: "less than a tenner" and "about forty quid" had given none, so
+# their answers ignored the budget): written in figures for the budget only, the budget's own rules unchanged.
+@pytest.mark.parametrize("text, budget", [
+    ("less than a tenner moisturiser", (None, 10.0, "GBP")),
+    ("moisturiser for about forty quid", (None, 40.0, "GBP")),
+    ("lip balm for a fiver", (None, 5.0, "GBP")),
+    ("kettle under twenty five pounds", (None, 25.0, "GBP")),
+    ("headphones for under fifty bucks", (None, 50.0, "USD")),
+    ("a frying pan under two hundred and fifty euros", (None, 250.0, "EUR")),
+    ("a laptop under a grand", (None, 1000.0, None)),
+    ("gaming pc under 2 grand", (None, 2000.0, None)),
+])
+def test_money_in_words_is_a_budget(text, budget):
+    found = parse_query(text, model=None).constraints.budget
+    assert found is not None and (found.min, found.max, found.currency) == budget
+
+
+@pytest.mark.parametrize("text", ["a forty pound kettlebell", "a grand piano stool"])
+def test_words_that_only_look_like_money_are_no_budget(text):
+    assert parse_query(text, model=None).constraints.budget is None

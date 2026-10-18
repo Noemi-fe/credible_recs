@@ -57,6 +57,10 @@ NO_PRODUCT_WORDS = frozenset({
     "tech", "electronics", "home", "house", "garden", "outdoor", "outdoors", "camping", "travel", "clothes",
     "clothing", "fashion", "baby", "babies", "kids", "pet", "pets", "dog", "dogs", "cat", "cats", "puppy", "kitten",
     "fitness", "gym", "sport", "sports", "hobby", "hobbies", "diy", "office", "bedroom", "bathroom", "garage",
+    # A present's words (18 Oct 2026, the ws-names builder): a "stocking filler" or a "secret santa" says it is a gift,
+    # not what; the gift's question stands (engine.query.GIFT_QUESTION).
+    "stocking", "filler", "fillers", "stuffer", "stuffers", "secret", "santa", "christmas", "xmas", "birthday",
+    "anniversary",
 })
 # The model's categories (14 Oct 2026): the three categories, then the general category's departments.
 MODEL_CATEGORIES = ("skincare", "haircare", "kitchen") + tuple(GENERAL_DEPARTMENTS)
@@ -233,6 +237,7 @@ KITCHEN_THING_WORDS = frozenset({
     "brewer", "brewers", "infuser", "infusers", "strainer", "strainers", "sieve", "sieves", "decanter", "decanters",
     "aerator", "aerators", "opener", "openers", "shaker", "shakers"})
 FOOD_WORDS = ("food", "baby food", "yogurt", "yoghurt", "ice cream", "popcorn", "pasta", "bread", "pizza", "soda",
+              "stock", "broth",  # 18 Oct 2026: a stock pot is the kitchen's, not the home's
               "juice", "smoothie", "tortilla", "rice", "egg", "eggs", "sushi", "noodle", "noodles", "dumpling",
               "candy floss", "cotton candy", "waffle", "pancake", "crepe", "jerky", "butter", "cheese", "milk",
               "oat milk", "nut milk", "tofu", "kombucha", "cold brew", "coffee", "tea", "espresso", "soup", "sauce",
@@ -322,7 +327,8 @@ def _placed(product: str, category: str, department: str | None) -> tuple[str, s
        product of its own ("mouse mat" with the mouse in tech, "tyre pressure gauge" with the tyres in car, "knife
        block set" with the chef knife in the kitchen); never "cpu cooler", "bench grinder" or "carpet shampoo", whose
        last word is another product the model's words set aside;
-    2. what makes, keeps or serves food or drink is the kitchen's ("baby food maker");
+    2. what makes, keeps or serves food or drink is the kitchen's ("baby food maker"; since 18 Oct 2026 also the two
+       written as one word, "stockpot");
     3. what is put on the hair or scalp is haircare ("hair toner");
     4. what is put on the skin, named a beauty product, is skincare ("sheet mask")."""
     from engine.query import _find_matches  # here: engine.query imports this module
@@ -336,6 +342,9 @@ def _placed(product: str, category: str, department: str | None) -> tuple[str, s
     if last in KITCHEN_THING_WORDS and any(re.search(rf"(?<![a-z]){re.escape(food)}(?![a-z])", before)
                                            for food in FOOD_WORDS):
         return "kitchen", None
+    if len(words) == 1 and any(last == food + thing for food in FOOD_WORDS if " " not in food
+                               for thing in KITCHEN_THING_WORDS):
+        return "kitchen", None  # the two written as one word ("stockpot", 18 Oct 2026)
     if {"hair", "scalp"} & set(words[:-1]) and last in HAIR_FORM_WORDS:
         return "haircare", None
     if department == "beauty" and last in SKIN_FORM_WORDS and not NOT_SKIN_WORDS & set(words[:-1]):

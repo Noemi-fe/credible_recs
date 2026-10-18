@@ -15,7 +15,10 @@ A request's needs (request_needs), in the order the request gives them:
   "lasting" too;
 - every other specific word of the request (engine.sources.need_words: "pour-over", "PFAS", "winter"), each a need of
   its own, found in comments by that word alone. The words of config.NEED_IGNORED_WORDS ("leave", "cook", "burr")
-  are left out: they are too common in comments to show anything.
+  are left out: they are too common in comments to show anything;
+- since 18 Oct 2026, words that ask the product's type for a checked fact (config.TYPE_ASKED_WORDS: "non toxic" asks a
+  frying pan or a saucepan for PFAS-free) as one need named by what they ask, found by toxins and by PFAS, PTFE, PFOA
+  and Teflon.
 Since 14 Oct 2026 (the need-quality builder) a negation is never a need of its own ("isn't", "not", "no": engine.sources.
 _STOPWORDS), and what a request asks a product not to do names the need it asks for (config.NEGATED_NEEDS): "a shampoo
 that isn't drying" or "won't dry out my hair" names "not drying", and its "dry" names no other need (not dry hair). Hair
@@ -46,13 +49,14 @@ from engine.config import (
     EVERYDAY_BRAND_WORDS, HAIR_LIST_NEEDS, HAIR_LIST_NOUNS, HAIR_LIST_WORDS, HAIR_NEEDS, INGREDIENT_FORM_WORDS,
     INGREDIENTS, NEED_COMMENT_WORDS, NEED_IGNORED_WORDS, NEED_LOOKALIKES, NEED_PHRASES, NEED_REQUEST_WORDS,
     NEED_SIZE_UNITS, NEED_VERB_LABELS, NEEDS, NEGATED_NEEDS, NEGATION_REACH, NEGATIONS, NO_HELP_LEADS,
-    NO_HELP_PATTERNS, NO_HELP_POINTERS, REQUEST_WORD_SYNONYMS, TYPE_SYNONYMS,
+    NO_HELP_PATTERNS, NO_HELP_POINTERS, REQUEST_WORD_SYNONYMS, TYPE_ASKED_LABEL, TYPE_ASKED_WORDS, TYPE_OTHER_NAMES,
+    TYPE_SYNONYMS,
 )
 from engine.credibility import _own_words
 from engine.ingredients import _whole as _whole_words
 from engine.memo import Table
 from engine.models import Thread
-from engine.query import CATEGORY_HINTS, PRODUCT_TYPES, SKIN_TYPES, ParsedQuery
+from engine.query import CATEGORY_HINTS, PRODUCT_TYPES, SKIN_TYPES, ParsedQuery, type_asked_spans
 from engine.sources import _stem, _title_has, _title_words, need_words
 
 LASTING = "lasting"  # the need that long-term use also speaks to
@@ -146,6 +150,15 @@ def _request_needs(query: ParsedQuery) -> tuple[Need, ...]:
     listed = [(at, Need(need, needs[need], list_words=_list_words(need) if query.category == "haircare" else (),
                         label=phrased.get(at))) for need, at in found.items()]
     own = [(at, Need(typed, request_word=word, label=labels.get(at))) for at, word, typed in own_words]
+    # Words that ask the product's type for a checked fact (config.TYPE_ASKED_WORDS, 18 Oct 2026: "non toxic" asks a pan
+    # for PFAS-free) are one need, named by what they ask ("PFAS-free"), which comments about toxins or about PFAS,
+    # PTFE, PFOA or Teflon talk about; the words' own needs ("non", "toxic") give way to it.
+    for start, asked, end in type_asked_spans(query.text, query.product_type):
+        typed = query.text[start:end]
+        taken = {_need_form(token) for token in _TOKEN.findall(_plain(typed))}
+        own = [(at, need) for at, need in own if need.request_word not in taken]
+        own.append((start, Need(typed, TYPE_ASKED_WORDS[asked]["comment_words"],
+                                label=TYPE_ASKED_LABEL.format(typed=typed, asked=asked))))
     return tuple(need for _, need in sorted(listed + own, key=lambda pair: pair[0]))
 
 
@@ -282,7 +295,8 @@ def _product_name_words(query: ParsedQuery) -> frozenset[str]:
 
     product = next((p for p in PRODUCT_TYPES if p.name == query.product_type), None)
     if query.category not in NEED_RULE_IN_EVERY_READING:
-        return _heads_of_names(_plain(query.text), tuple(product.keywords) if product else ())
+        return _heads_of_names(_plain(query.text), tuple(product.keywords) if product else ()) | _named_words(
+            _plain(query.text), tuple(re.escape(name) for name in TYPE_OTHER_NAMES.get(query.product_type or "", ())))
     names = list(product.keywords + product.hints) if product else []
     names += list(TYPE_SYNONYMS.get(query.product_type or "", ()))
     patterns = [re.escape(name.lower()) for name in names]
@@ -292,13 +306,15 @@ def _product_name_words(query: ParsedQuery) -> frozenset[str]:
 
 @cache
 def _heads_of_names(text: str, names: tuple[str, ...]) -> frozenset[str]:
-    """The last word of each of `names` that `text` holds as whole words, and the categories' own words inside it
-    (engine.query.CATEGORY_HINTS: "coffee", "tea", "cooking"...), as need words are written."""
+    """The last word of each of `names` of two words or more that `text` holds as whole words, and the categories' own
+    words inside it (engine.query.CATEGORY_HINTS: "coffee", "tea", "cooking"...), as need words are written. A name of
+    one word is no head of another's (18 Oct 2026): it is a kind, a maker's line or a model ("gyuto", "macbook",
+    "kindle"), what the request asks for, or a plain synonym the request's other words already leave out."""
     hints = {hint for words in CATEGORY_HINTS.values() for hint in words}
     words: set[str] = set()
     for name in names:
         written = name.lower().split()
-        if not written or not re.search(rf"(?<![a-z0-9]){re.escape(name.lower())}(?:s|es)?(?![a-z0-9])", text):
+        if len(written) < 2 or not re.search(rf"(?<![a-z0-9]){re.escape(name.lower())}(?:s|es)?(?![a-z0-9])", text):
             continue
         words.add(_need_form(written[-1]))
         words |= {_need_form(word) for word in written[:-1] if word in hints}
@@ -311,9 +327,20 @@ def _brand_words(query: ParsedQuery) -> frozenset[str]:
     they are for, so it is no judged need, though it still leads the first reading to threads about it. Brands are the
     ones module 1 knows (engine.query_model's list: the brand-lines list, config.MAKER_SPELLINGS and the shipped short
     names' full names), but those that are everyday words too (config.EVERYDAY_BRAND_WORDS: "global", "field")."""
+    from engine.query import _context_ranges
     from engine.query_model import brand_names
 
-    return _brands_in(_plain(query.text), brand_names())
+    # A brand written as what the product is for, with or on is what it needs (18 Oct 2026): a case "for my iphone 15"
+    # is about the iPhone, a charger "for my macbook" about the MacBook; and so is a brand's line that is one of the
+    # type's own names, the product asked for ("macbook for uni", "kindle with a warm light").
+    text = _plain(query.text)
+    product = next((p for p in PRODUCT_TYPES if p.name == query.product_type), None)
+    spans = list(_context_ranges(text))
+    for name in (product.keywords if product else ()):
+        spans += [m.span() for m in re.finditer(rf"(?<![a-z0-9]){re.escape(name.lower())}(?:s|es)?(?![a-z0-9])", text)]
+    for start, end in spans:
+        text = text[:start] + " " * (end - start) + text[end:]
+    return _brands_in(text, brand_names())
 
 
 @cache

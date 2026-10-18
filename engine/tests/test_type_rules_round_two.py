@@ -80,3 +80,39 @@ def test_a_stock_pot_is_no_saucepan():
     assert not mentions_product("a 12 quart stockpot", "saucepan")
     assert mentions_product("a heavy pot for sauces", "saucepan")
     assert classify("stock pot for making broth").product_type != "saucepan"
+
+
+# --- Round three (18 Oct 2026, the ws-names builder): only "blades" names another thing ---
+
+def test_a_name_ending_in_another_things_word_is_still_the_product():
+    # The 17 Oct rule had read every name ending in a word of config.OTHER_TYPE_WORDS as that thing, and left these
+    # out of their own answers: the Boos Block is a cutting board, Peak Design's Travel Bag a backpack, PowerBlocks
+    # dumbbells, a garden furniture set garden furniture, Case a knife maker. Their type is the AI's to say.
+    for names, product_type, category in (
+            (("John Boos chopping block", "Boos Block"), "cutting board", "kitchen"),
+            (("Peak Design Travel Bag",), "backpack", "general"),
+            (("power blocks", "Power Blocks"), "dumbbells", "general"),
+            (("Polywood table and chair set",), "garden furniture", "general"),
+            (("Case",), "pocket knife", "general"),
+            (("Taylor Stitch Heavy Bag",), "t-shirt", "general")):
+        groups = grouped([(name, product_type) for name in names] * 2, product_type, category)
+        assert all(ai_types(g) == {product_type} for g in groups), names
+
+
+def test_a_product_named_with_blade_alone_is_still_the_product():
+    # "one blade" is Philips' OneBlade shaver, a "fixed blade" a knife, a "wide blade" a tape measure.
+    for name, product_type in (("Phillips one blade", "electric shaver"), ("Buck fixed blade", "outdoor knife"),
+                               ("Milwaukee wide blade", "tape measure")):
+        groups = grouped([(name, product_type)] * 2, product_type)
+        assert ai_types(groups[0]) == {product_type}, name
+
+
+def test_a_pack_of_blades_is_blades_in_its_tools_answer_too():
+    groups = grouped([("Olfa black blades", "utility knife"), ("Olfa black blades", "utility knife")], "utility knife")
+    assert ai_types(groups[0]) == {"utility knife blade"}
+
+
+def test_a_pasta_pot_and_a_stock_pot_with_a_hyphen_are_no_saucepans():
+    assert not mentions_product("All-Clad pasta pot", "saucepan")
+    assert not mentions_product("a 12 qt stock-pot", "saucepan")
+    assert classify("pasta pot with a strainer insert").product_type != "saucepan"

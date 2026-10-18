@@ -99,25 +99,37 @@ def test_the_weber_spirit_written_without_weber_is_the_weber_spirit():
 
 
 def test_the_king_1000_6000_written_any_way_is_one_stone():
+    # Changed on purpose 18 Oct 2026 (the ws-names builder): writers' King 1000/6000 is one combination stone, whichever
+    # of King's 1000/6000 stones (KDS, KW65) a writer or the reading AI named, and its names are written out to the
+    # stone itself, never to the stone followed by the type's word (a line's form in "Name levels"). Was: every name
+    # starting with "King KDS 1000/6000".
     aliases = known_aliases()["kitchen"]
-    kds = product_words("King KDS 1000/6000", aliases)
-    for name in ("King 1000/6000", "king 1k/6k", "double sided 1000/6000 King", "double sided King whetstone, 1000/6000"):
-        assert product_words(name, aliases)[:len(kds)] == kds, name
+    stone = product_words("King 1000/6000", aliases)
+    for name in ("King KDS 1000/6000", "king 1k/6k", "king 1k-6k combo", "double sided 1000/6000 King whetstone",
+                 "double sided King whetstone, 1000/6000", "King KDS 1000/6000 combo stone",
+                 "KING KW65 1000/6000 Grit Combination Whetstone", "King combo stone 1000/6000"):
+        assert product_words(name, aliases) == stone, name
+    assert product_words("King 1000", aliases) != stone  # King's 1000 grit stone is another
 
 
 def test_a_barbecue_or_a_stone_named_with_its_types_other_names_is_the_name_alone():
-    # config.TYPE_SYNONYMS (17 Oct 2026): "grill" and "BBQ" for a barbecue, "stone" and "combo" for a sharpener's
-    # stones; the made-up mentions below are of real names.
+    # Changed on purpose 18 Oct 2026 (the ws-names builder): config.TYPE_SYNONYMS' barbecue and sharpener words of 17 Oct
+    # are taken out (with them "Weber Spirit gas grill" and the King stone read as lines of a model, and the barbecue
+    # answer lost the Spirit); the short names keep each product one. Was: Weber's BBQ, grills and gas grill one loose
+    # group, and the King's names one group by the type's other words. The made-up mentions below are of real names.
     from engine.group_products import ProductMention, group_products, library_ranges
 
     def grouped(names, product_type, category="kitchen"):
         mentions = [ProductMention(f"1t{i}", f"c{i}", n, category, "recommend", product_type) for i, n in enumerate(names)]
         return group_products(mentions, product_type=product_type, ranges=library_ranges(mentions))
 
-    groups = grouped(["Weber", "Weber BBQ", "Weber grills", "Weber gas grill", "Weber Q", "Weber Q"], "barbecue")
-    weber = next(g for g in groups if "Weber BBQ" in g.names)
-    assert weber.loose and set(weber.names) == {"Weber", "Weber BBQ", "Weber grills", "Weber gas grill"}
-    groups = grouped(["King KDS 1000/6000", "King KDS 1000/6000 combo stone", "King 1000/6000", "Shapton Pro 1500"],
+    groups = grouped(["Weber Spirit gas grill", "Weber Spirit gas grill", "Weber Q", "Weber Q"], "barbecue")
+    spirit = next(g for g in groups if "Weber Spirit gas grill" in g.names)
+    assert not spirit.loose  # a model and the type's word is the model, never a line of it
+    groups = grouped(["King KDS 1000/6000", "King KDS 1000/6000 combo stone", "King 1000/6000",
+                      "double sided 1000/6000 King whetstone", "king 1k-6k combo", "Shapton Pro 1500"],
                      "knife sharpener")
     king = next(g for g in groups if "King KDS 1000/6000" in g.names)
-    assert set(king.names) == {"King KDS 1000/6000", "King KDS 1000/6000 combo stone", "King 1000/6000"}
+    assert not king.loose
+    assert set(king.names) == {"King KDS 1000/6000", "King KDS 1000/6000 combo stone", "King 1000/6000",
+                               "double sided 1000/6000 King whetstone", "king 1k-6k combo"}

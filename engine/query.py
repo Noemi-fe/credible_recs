@@ -24,7 +24,7 @@ from pydantic import Field, model_validator
 
 from engine.config import (
     CONDITION_PRODUCT_TYPES, CONDITION_SUBREDDITS, GENERAL_DEPARTMENTS, HARMFUL_KNIVES, INGREDIENTS, MORE_PRODUCT_TYPES,
-    SUBREDDITS, THREAD_CATEGORIES,
+    PRODUCT_FACTS_BY_TYPE, SUBREDDITS, THREAD_CATEGORIES, TYPE_ASKED_WORDS,
 )
 from engine.ingredients import (
     TYPE_OWN_INGREDIENT, blanked, find_ingredients, forms_named, ingredient_type_name, ingredients_of_type,
@@ -446,7 +446,8 @@ _OTHER_BLENDERS = ("immersion", "stick", "hand", "handheld", "hand-held", "beaut
 _PLACES = tuple(f"{word} {the} {appliance}" for word in ("in", "into", "inside", "to", "from")
                 for the in ("the", "my", "your") for appliance in ("oven", "microwave", "dishwasher"))
 FIRST_LOOKALIKES = (
-    "ice cream", "coffee pot", "stock pot", "stockpot", "sheet pan", "cake pan", "loaf pan", "roasting pan",
+    "ice cream", "coffee pot", "stock pot", "stockpot", "stock-pot", "pasta pot", "sheet pan", "cake pan", "loaf pan",
+    "roasting pan",
     "baking pan", "muffin pan", "bundt pan", "pie pan", "tart pan", "sun hat", "sun lounger", "vacuum sealer",
     "vacuum flask", "vacuum-insulated", "vacuum insulated",
     # 13 Oct 2026: razor bumps and razor burn are skin, not a razor ("salicylic acid for razor bumps").
@@ -607,7 +608,8 @@ def classify(text: str) -> Routing:
        ("a bed for my dog" is a dog bed, "a case for my iphone" an iPhone case: _reversed_name); a name followed by
        "-free" or "-safe", or after "not", "no" or "instead of", is a requirement, not the product; a name followed
        by a word for a thing made for it names that thing ("ipad case", "guitar strings": ACCESSORY_WORDS, 14 Oct
-       2026). One product is the answer; two get one question; clue words count only when no name does.
+       2026). One product is the answer; two get one question; clue words count only when no name does; a set of pots
+       and pans gets the question too, frying pan or saucepan (18 Oct 2026).
     4. No product: a polite no in the words of what it is (NOT_RECOMMENDED, ADVICE; not for a thing made for what it
        names, "wine rack", nor NOT_RECOMMENDED_LOOKALIKES, "photo album"), else a product of no type of module 1's
        named in its own words (LONG_TAIL_PRODUCTS: a kitchen mixer tap, 17 Oct 2026), else a question within the
@@ -640,10 +642,16 @@ def classify(text: str) -> Routing:
     own_clues = [m for m in clues if not _in_context(m, context)]
     found = [product for _, _, product in _heads(own_named, aside)] if own_named else [p for _, _, p in own_clues]
     names = list(dict.fromkeys(p.name for p in found))
+    # A set of pots and pans asks which (18 Oct 2026, the ws-names builder: "a good set of pans for a first flat" had
+    # been answered with frying pans): the two-product question, frying pan or saucepan, since a cookware set is no type
+    # of module 1's on purpose (config's note: frying pan answers read its threads) and, found by its name alone, has
+    # no saved thread of its own; never in place of another product the request names.
+    if set(names) <= _SET_MEMBERS and _COOKWARE_SET.search(aside):
+        return Routing("clarify", question=SEVERAL_QUESTION.format(first="frying pan", second="saucepan"),
+                       several=True)
 
     if len(names) > 1:
-        return Routing("clarify", question=f"I look for one thing at a time: shall I start with the {names[0]} or the {names[1]}?",
-                       several=True)
+        return Routing("clarify", question=SEVERAL_QUESTION.format(first=names[0], second=names[1]), several=True)
     if names:
         product = next(p for p in found if p.name == names[0])
         hints = () if own_named else tuple(h for h in product.hints if _mentions_any(aside, (h,)))
@@ -680,6 +688,17 @@ def classify(text: str) -> Routing:
         return Routing("clarify", "general", department=department,
                        question=asked.format(noun=entry["noun"], examples=examples))
     return Routing("clarify", question=GIFT_QUESTION if gift else VAGUE_QUESTION)
+
+
+# The question when a request names two products (its wording as before 18 Oct 2026).
+SEVERAL_QUESTION = "I look for one thing at a time: shall I start with the {first} or the {second}?"
+# A set of pots and pans (18 Oct 2026, the ws-names builder): a set of pots or pans, pots and pans, a pan set, cookware;
+# the types a set is made of may be named in it ("set of frying pans"). Asked about as two products (classify).
+_SET_MEMBERS = frozenset({"frying pan", "saucepan", "cast iron skillet"})
+_COOKWARE_SET = re.compile(
+    r"\b(?:sets?\s+of\s+(?:[a-z'-]+\s+){0,3}?(?:pots?|pans?|saucepans?|skillets?|cookware)"
+    r"|(?:pots?|saucepans?)\s+(?:and|&|n|'n')\s+(?:frying\s+)?pans?|pans?\s+(?:and|&)\s+(?:pots?|saucepans?)"
+    r"|(?:pots?|pans?|saucepans?|skillets?|cookware)\s+sets?|cookware)\b")
 
 
 # Products of no type of module 1's that hold another type's word, placed by the rules in their own name (17 Oct 2026,
@@ -746,6 +765,8 @@ ACCESSORY_WORDS = (
     "guards", "sheath", "sheaths", "roll", "strip", "strips", "block", "blocks", "sharpener", "sharpeners", "gimbal",
     "cap", "caps", "net", "nets", "frame", "frames", "legs", "wheel", "wheels", "knob", "knobs", "brush", "brushes",
     "head", "heads", "spares", "repair", "scrubber", "scrubbers", "stool", "stools", "paddle", "paddles",
+    # 18 Oct 2026 (the ws-names builder): a gauge or an inflator for tyres ("digital tyre gauge" had been car tyres)
+    "gauge", "gauges", "inflator", "inflators",
 )
 _MODEL_WORD = r"(?:[a-z]*\d[a-z0-9-]*|pro|max|mini|plus|ultra|air|lite|se|xl|oled|slim|fe|gen)"
 _ACCESSORY_AFTER = re.compile(rf"(?:\s+{_MODEL_WORD}){{0,3}}\s+(?:{'|'.join(map(re.escape, ACCESSORY_WORDS))})\b"
@@ -922,26 +943,35 @@ def _brands_category(lowered: str) -> str | None:
             continue
         if f" {' '.join(brand)} " in words:
             found |= categories
-    found &= {"skincare", "haircare", "kitchen"}
-    return next(iter(found)) if len(found) == 1 else None
+    # One category only: a brand with lines in the general category too ("ikea") says nothing of which (18 Oct 2026).
+    return next(iter(found)) if len(found) == 1 and found <= {"skincare", "haircare", "kitchen"} else None
 
 
 @cache
 def _brand_categories() -> dict[tuple[str, ...], set[str]]:
-    """{a brand's plain words: the categories the brand-lines list has its lines in}, read once; nothing when the list
-    can't be read."""
+    """{a brand's plain words: the categories the brand-lines list has its lines in}, read once; and since 18 Oct 2026
+    the skincare and haircare brands config.MAKER_SPELLINGS writes ("dupe for drunk elephant protini" asks about
+    skincare); nothing from the list when it can't be read."""
+    from engine.config import MAKER_SPELLINGS
+
+    def plain(name: str) -> tuple[str, ...]:
+        return tuple(re.findall(r"[a-z0-9]+", name.lower().replace("'", "").replace("’", "")))
+
+    found: dict[tuple[str, ...], set[str]] = {}
+    for category in ("skincare", "haircare"):
+        for name in MAKER_SPELLINGS.get(category, ()):
+            if plain(name):
+                found.setdefault(plain(name), set()).add(category)
     try:
         from engine.brand_lines import load_brand_lines  # here: engine.brand_lines imports this module
 
         lines = load_brand_lines()
     except Exception:
-        return {}
-    found: dict[tuple[str, ...], set[str]] = {}
+        return found
     for line in lines:
         for name in (line.brand, *line.also_called):
-            words = tuple(re.findall(r"[a-z0-9]+", name.lower().replace("'", "").replace("’", "")))
-            if words:
-                found.setdefault(words, set()).add(line.category)
+            if plain(name):
+                found.setdefault(plain(name), set()).add(line.category)
     return found
 
 
@@ -1050,6 +1080,28 @@ def find_must_haves(text: str) -> list[str]:
     return [name for _, name in sorted(found)]
 
 
+def type_asks(text: str, product_type: str | None) -> list[str]:
+    """What the request's words ask for only of a product type that has the fact (config.TYPE_ASKED_WORDS; 18 Oct 2026:
+    "non toxic" asks a frying pan or a saucepan for PFAS-free, and nothing of a moisturiser), in the order the request
+    names them."""
+    return [asked for _, asked, _ in type_asked_spans(text, product_type)]
+
+
+def type_asked_spans(text: str, product_type: str | None) -> list[tuple[int, str, int]]:
+    """(where it starts, what is asked, where it ends) of the first of each config.TYPE_ASKED_WORDS ask the request
+    (`text`, as typed) makes of its product type."""
+    found = []
+    lowered = text.lower().replace("’", "'")
+    for asked, entry in TYPE_ASKED_WORDS.items():
+        if entry["fact"] not in PRODUCT_FACTS_BY_TYPE.get(product_type or "", ()):
+            continue
+        matches = [m for pattern in entry["words"] for m in re.finditer(rf"\b{pattern}\b", lowered)]
+        if matches:
+            first = min(matches, key=lambda m: m.start())
+            found.append((first.start(), asked, first.end()))
+    return sorted(found)
+
+
 def search_terms(product_type: str, constraints: Constraints) -> list[str]:
     """What to search for, most specific first. Each search costs credits, so at most three. An ingredient-led request
     is searched by its ingredients' names ("salicylic acid"), a typed one with an ingredient by both ("salicylic acid
@@ -1076,7 +1128,9 @@ def search_terms(product_type: str, constraints: Constraints) -> list[str]:
 # appliances) also "cooked" and "cooler" ("cooker"), "toasted" ("toaster"), "blended" and "bender" ("blender"), "juices",
 # "juiced" and "juicier" ("juicer"), "microwaved" ("microwave").
 _REAL_WORDS = {"cleaner", "cleaners", "cooked", "cooler", "coolers", "toasted", "blended", "bender", "juices", "juiced",
-               "juicier", "microwaved"}
+               "juicier", "microwaved",
+               # 18 Oct 2026 (the ws-names builder): a stocking filler is a small present, never a "stocking filter"
+               "filler", "fillers"}
 
 
 # Long product nouns of the general category that people often misspell (14 Oct 2026; chosen by Claude): typos are
@@ -1144,6 +1198,45 @@ def correct_typos(text: str) -> str:
 _DEFAULT = object()  # parse_query's model: the open model when this machine has it (engine.query_model)
 
 
+# Money in words (18 Oct 2026, the ws-names builder, from the 16 Oct understanding review's U9: "less than a tenner" and
+# "about forty quid" gave no budget, so their answers ignored it): written in figures before the budget is read
+# (engine.query_rules.parse_budget, whose rules don't change), so "a tenner" is £10, "a fiver" £5, "forty quid" 40
+# quid, "a hundred bucks" 100 bucks and "a grand" or "2 grand" 1000 or 2000, with no currency written, as a bare number
+# after "under" has always been read. Number words count only before quid, pounds, bucks, dollars or euros: "a forty
+# pound kettlebell" is a weight.
+_MONEY_UNITS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9}
+_MONEY_TEENS = {"ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15, "sixteen": 16,
+                "seventeen": 17, "eighteen": 18, "nineteen": 19}
+_MONEY_TENS = {"twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80,
+               "ninety": 90}
+_SMALL_NUMBER = (rf"(?:(?:{'|'.join(_MONEY_TENS)})(?:[\s-]+(?:{'|'.join(_MONEY_UNITS)}))?|{'|'.join(_MONEY_TEENS)}"
+                 rf"|{'|'.join(_MONEY_UNITS)})")
+_NUMBER_IN_WORDS = re.compile(
+    rf"\b(?P<number>(?:a|{'|'.join(_MONEY_UNITS)})\s+hundred(?:\s+(?:and\s+)?{_SMALL_NUMBER})?|{_SMALL_NUMBER})"
+    r"\s+(?P<unit>quid|pounds|bucks|dollars|euros)\b")
+_MONEY_SLANG = re.compile(r"\b(?:a\s+)?(?P<word>tenner|fiver)\b")
+_GRAND = re.compile(rf"\b(?P<number>\d{{1,2}}|a|{'|'.join(_MONEY_UNITS)}|{'|'.join(_MONEY_TEENS)})\s+grand\b")
+
+
+def _number_in_words(words: str) -> int:
+    """The number some number words write ("forty", "twenty five", "two hundred and fifty")."""
+    before, hundred, after = words.partition("hundred")
+    count = (1 if before.strip() == "a" else _MONEY_UNITS[before.strip()]) if hundred else 0
+    small = sum(_MONEY_UNITS.get(word, 0) + _MONEY_TEENS.get(word, 0) + _MONEY_TENS.get(word, 0)
+                for word in re.split(r"[\s-]+", (after if hundred else before).strip()))
+    return count * 100 + small
+
+
+def money_in_figures(text: str) -> str:
+    """The request, in small letters, with money written in words written in figures (see above), for the budget
+    only: "less than a tenner moisturiser" is "less than £10 moisturiser"."""
+    lowered = _MONEY_SLANG.sub(lambda m: "£10" if m["word"] == "tenner" else "£5", text.lower())
+    lowered = _GRAND.sub(lambda m: str(1000 * (1 if m["number"] == "a" else int(m["number"]) if m["number"].isdigit()
+                                               else _MONEY_UNITS.get(m["number"], 0) + _MONEY_TEENS.get(m["number"], 0))),
+                         lowered)
+    return _NUMBER_IN_WORDS.sub(lambda m: f"{_number_in_words(m['number'])} {m['unit']}", lowered)
+
+
 def parse_query(text: str, model=_DEFAULT) -> ParsedQuery:
     """Turns a request typed in plain words into an understood request: rules first, at no cost; when they find no
     product type, a free open model's second opinion, checked by code (engine.query_model; Noemi, 11 Oct 2026).
@@ -1159,7 +1252,11 @@ def parse_query(text: str, model=_DEFAULT) -> ParsedQuery:
     if led or model is None:
         pass  # an ingredient-led request is placed by the rules: the open model is never asked about it
     elif routing.status == "clarify" and not routing.several:
-        routing = routed_by_model(text, model) or routing
+        other = routed_by_model(text, model)
+        # A gift's question stands unless the model names a product in the request's own words (18 Oct 2026: the
+        # model's "other" had made "secret santa gift under £20" a polite no; a present is something to buy).
+        if other is not None and not (other.status != "ok" and _mentions_any(text.lower(), GIFT_WORDS)):
+            routing = other
     elif routing.status == "ok" and routing.clues:
         routing = _second_opinion(text, routing, model)
     if routing.status == "out_of_scope":
@@ -1167,7 +1264,7 @@ def parse_query(text: str, model=_DEFAULT) -> ParsedQuery:
     ingredients = [f.ingredient for f in found if TYPE_OWN_INGREDIENT.get(routing.product_type or "") != f.ingredient]
 
     constraints = Constraints(
-        budget=parse_budget(text),
+        budget=parse_budget(money_in_figures(text)),
         skin_types=parse_skin_types(text),
         size=parse_size(text),
         spf=parse_spf(text),
@@ -1176,6 +1273,10 @@ def parse_query(text: str, model=_DEFAULT) -> ParsedQuery:
         ingredients=ingredients,
         forms=forms_named(text, found) if led else [],
     )
+    if routing.status == "ok":  # what the words ask only of this type ("non toxic" pans are PFAS-free; 18 Oct 2026)
+        asked = [a for a in type_asks(text, routing.product_type) if a not in constraints.must_haves]
+        if asked:
+            constraints = constraints.model_copy(update={"must_haves": constraints.must_haves + asked})
     if routing.status == "clarify":
         # Kept so that, once the shopper answers, what they already said isn't lost.
         return ParsedQuery(text=original, status="clarify", category=routing.category, constraints=constraints,

@@ -40,7 +40,9 @@ def met(request_text: str, body: str) -> tuple[str, ...]:
     ("fridge freezer that's quiet", ["quiet"]),
     ("coffee machine", []),
     ("coffee machine with a good steam wand", ["steam wand"]),
-    ("portable charger", ["portable"]),
+    # Changed on purpose 18 Oct 2026 (the ws-names builder): "portable charger" is another name of the power bank, not a
+    # kind of it (config.TYPE_OTHER_NAMES), so "portable" is the product's own word. Was: ["portable"].
+    ("portable charger", []),
     ("a tea kettle that whistles", ["whistling"]),
     ("wine cooler for the kitchen", ["wine"]),
     ("water filter jug", []),
@@ -81,7 +83,10 @@ def test_they_stay_needs_for_the_threads_read_first():
     ("lip balm that actually fixes cracked lips, less than 5 dollars", ["cracked lips"]),
     ("webcam for video calls", ["video calls"]),
     ("mesh wifi for a three storey house", ["three storey house"]),
-    ("non toxic frying pan", ["non toxic"]),
+    # Changed on purpose 18 Oct 2026 (the ws-names builder): for a frying pan "non toxic" asks for PFAS-free (Claude's
+    # call of 18 Oct 2026; engine/tests/test_non_toxic_pfas.py), named "PFAS-free". A yoga mat's is the
+    # need of two words this case is about. Was: ("non toxic frying pan", ["non toxic"]).
+    ("non toxic yoga mat", ["non toxic"]),
     ("water bottle that keeps drinks cold", ["keeping drinks cold"]),
     ("bed sheets that stay cool", ["staying cool"]),
     ("a yoga mat that doesn't slip", ["slipping"]),
@@ -133,7 +138,10 @@ def test_a_brand_is_no_judged_need(request_text, needs):
     ("a laptop for university", "I took it through four years of college.", "university"),
     ("a laptop for uni", "It got me through university.", "uni"),
     ("noise cancelling headphones for commuting", "Great on my commute.", "commuting"),
-    ("kettle for an induction hob", "Works on my gas stove too.", "hob"),
+    # Changed on purpose 18 Oct 2026 (the ws-names builder): an induction hob is the induction need, named once (config
+    # NEEDS["induction-compatible"]), and a gas stove says nothing of it; a gas hob's hob is found in "stove" as before.
+    # Was: ("kettle for an induction hob", "Works on my gas stove too.", "hob").
+    ("kettle for a gas hob", "Works on my stove top too.", "hob"),
 ])
 def test_a_request_word_is_found_in_its_other_words(request_text, body, need):
     assert need in met(request_text, body)
@@ -142,3 +150,36 @@ def test_a_request_word_is_found_in_its_other_words(request_text, body, need):
 def test_removing_makeup_isnt_wearing_it():
     assert met("moisturiser that works under makeup", "I use it to take off my makeup at night.") == ()
     assert met("moisturiser that works under makeup", "My makeup sits on it really well.") == ("makeup",)
+
+
+# --- 6. Round three (18 Oct 2026, the ws-names builder): from every sweep request's reason words ---
+
+@pytest.mark.parametrize("request_text, needs", [
+    # A name that is another name of the type, not a kind of it: its words are the product's ("portable charger" is a
+    # power bank; config.TYPE_OTHER_NAMES). A kind stays a need, as before.
+    ("portable charger", []),
+    ("portable charger for travel", ["travel"]),
+    ("battery pack for camping", ["camping"]),
+    ("wine cooler for the kitchen", ["wine"]),
+    # A one-word name of the type that is a kind is what it asks: a gyuto is a Japanese chef knife (as on 16 Oct; a
+    # laptop's "macbook" and an e-reader's "kindle" are title words of their types, left out of needs as before).
+    ("210mm gyuto for a beginner, around $100", ["gyuto", "beginner"]),
+    # A brand written as what the product is for is a need: a case for an iPhone is about the iPhone.
+    ("headphones for my iphone", ["iphone"]),
+    ("a case for my iphone 15", ["iphone"]),
+    ("charger for my macbook", ["macbook"]),
+    # "that'll" and "yrs" are no needs ("20+ yrs" is how long it lasts).
+    ("10 inch cast iron skilet that'll last 20+ yrs, under 50 bucks", ["lasting"]),
+    # An induction hob is the induction need, named once.
+    ("a frying pan for an induction hob", ["induction-compatible"]),
+    ("kettle for an induction hob", ["induction-compatible"]),
+])
+def test_round_three_judged_needs(request_text, needs):
+    judged_names = list(dict.fromkeys(need.name if need.request_word is None else (need.label or need.name)
+                                      for need in judged_needs(parse_query(request_text, model=None))))
+    assert judged_names == needs
+
+
+def test_a_brand_naming_which_products_is_still_no_need():
+    assert "cerave" not in judged("cerave or similar cleanser for oily skin")
+    assert "lodge" not in judged("a cast iron skillet like lodge but lighter")

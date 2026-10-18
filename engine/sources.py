@@ -1330,6 +1330,8 @@ _STOPWORDS = {
     "dad", "mum", "mom", "mother", "father", "wife", "husband", "boyfriend", "girlfriend", "partner", "brother",
     "sister", "son", "daughter", "friend", "grandma", "grandpa", "grandmother", "grandfather", "nan", "uncle", "aunt",
     "colleague", "boss", "teacher",
+    # 18 Oct 2026: a contraction is no need ("a skillet that'll last"), nor "yrs" ("20+ yrs" is how long it lasts).
+    "thatll", "itll", "theyll", "youll", "yrs", "yr",
     "eleven", "twelve", "fifteen", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety",
     "hundred",
 }

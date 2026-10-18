@@ -2334,21 +2334,15 @@ NEED_LOOKALIKES = NEED_LOOKALIKES | {
 EVERYDAY_BRAND_WORDS = frozenset({"field", "global", "hero", "tiger", "wolf", "aroma", "flair", "luxe", "nest", "sage",
                                   "apple", "ego", "kyte", "epicurean", "icebreaker", "simple", "always", "instant",
                                   "fresh", "glow", "honest", "native", "pure", "smart", "true", "original", "solo"})
-# Module 4's names (17 Oct 2026). Barbecue writers' other names for it, found among the library's names after two or
-# more brands ("Weber grills", "Weber BBQ", "Weber Spirit gas grill", "Char-Broil grill"): a brand's or a model's name
-# with them says no more than the name alone (engine.group_products, "Name levels"), so "Weber Spirit gas grill" and
-# "Spirit II" are no longer shown as two picks of one product.
-# And a knife sharpener's stones ("King stones", "King KDS 1000/6000 combo stone" beside "King KDS 1000/6000").
-TYPE_SYNONYMS = TYPE_SYNONYMS | {
-    "barbecue": ("grill", "grills", "gas grill", "charcoal grill", "bbq", "barbeque"),
-    "knife sharpener": ("stone", "whetstone", "waterstone", "water stone", "whet stone", "sharpening stone",
-                        "combo stone", "combination stone", "combo"),
-}
+# Module 4's names (17 Oct 2026). Barbecue and knife sharpener synonyms were tried here on 17 Oct and taken out on 18 Oct
+# 2026 (the ws-names builder): with them a model's name and the type's word ("Weber Spirit gas grill", "King KDS
+# 1000/6000 combo stone") read as a line of the model (engine.group_products, "Name levels"), so the barbecue answer
+# folded the Spirit into Weber's line and lost a pick, and the King stone and the Shapton Pro 1500 became lines; the
+# short names alone keep one product shown once (engine/data/product_aliases.json).
 # Brands as their makers write them (17 Oct 2026, from the day's sweep: names still shown in small letters or other
 # capitals, a writer's possessive or plural of a brand), merged into MAKER_SPELLINGS. A maker's own small letters are
-# kept ("smartwater"; "innisfree" is the brand-lines list's); a model's name with its brand where writers write the
-# model in small letters
-# ("Laifen Swift", "Spyderco Sharpmaker", "Shapton Pro").
+# kept ("smartwater"); a model's name with its brand where writers write the model in small letters ("Laifen Swift",
+# "Spyderco Sharpmaker", "Shapton Pro").
 _NAMES_ROUND_TWO_SPELLINGS: dict[str, tuple[str, ...]] = {
     "general": ("OtterBox Defender", "OtterBox", "Laifen Swift", "Laifen", "Nanit", "Momcozy", "Durston X-Mid",
                 "Durston", "Sea to Summit", "Bowflex", "BaByliss", "Grado", "Oral-B", "Fisher & Paykel", "Kenmore",
@@ -2363,8 +2357,51 @@ _NAMES_ROUND_TWO_SPELLINGS: dict[str, tuple[str, ...]] = {
 }
 MAKER_SPELLINGS = {category: MAKER_SPELLINGS.get(category, ()) + _NAMES_ROUND_TWO_SPELLINGS.get(category, ())
                    for category in sorted(set(MAKER_SPELLINGS) | set(_NAMES_ROUND_TWO_SPELLINGS))}
+# 18 Oct 2026 (the ws-names builder, from every library name spelled with the 17 Oct rules): makers who write their
+# brand in small letters or capitals of their own, which a capital to start a name as a last resort had turned into
+# "E.l.f.", "Iunik", "Got2b" or "Ogx" (innisfree's small letters come from the facts list's own names, engine.
+# group_products._tidied: config's would also write writers' "Innisfree" so, which 16 Oct left to config alone); and
+# brands writers write apart, together or in the plural ("darn tough", "all birds", "fat max", "redwings"; "la creuset"
+# is in the short names).
+_NAMES_ROUND_THREE_SPELLINGS: dict[str, tuple[str, ...]] = {
+    "general": ("REI", "KEF", "iFi", "J.Crew", "UGG", "MAM", "Big Agnes", "FatMax", "Bar Keepers Friend", "Allbirds",
+                "IceMule", "Darn Tough", "Red Wing"),
+    "skincare": ("e.l.f.", "iUNIK", "Melano CC", "Drunk Elephant", "Haruharu"),
+    "haircare": ("got2b", "OGX"),
+}
+MAKER_SPELLINGS = {category: MAKER_SPELLINGS.get(category, ()) + _NAMES_ROUND_THREE_SPELLINGS.get(category, ())
+                   for category in sorted(set(MAKER_SPELLINGS) | set(_NAMES_ROUND_THREE_SPELLINGS))}
 # Type rules (17 Oct 2026; the decided rule of 10 Oct 2026, decision 5: what holds, covers, sharpens or refills a
 # product never counts for it). A razor's blade is such a thing: "blade" joins OTHER_TYPE_WORDS (an existing value,
 # extended in place for this item), so the AI's 30 "razor blade" mentions, and a product every writer names as blades
 # (engine.group_products), stay out of razor answers ("Derby blades" had been the second razor pick).
 OTHER_TYPE_WORDS = OTHER_TYPE_WORDS + ("blade",)
+# And a liner (18 Oct 2026): a sleeping bag liner goes inside a sleeping bag, a bin liner in a bin; the AI's "sleeping bag
+# liner" mentions had made Sea to Summit's liners a sleeping bag answer's Skip these.
+OTHER_TYPE_WORDS = OTHER_TYPE_WORDS + ("liner",)
+# Non-toxic cookware is PFAS-free cookware (18 Oct 2026, the ws-names builder; Claude's call of 18 Oct 2026, Noemi:
+# "About the pfas - do what you think is best"). For a product type that has the fact (PRODUCT_FACTS_BY_TYPE: frying pans
+# and saucepans), "non toxic", "non-toxic", "nontoxic" and "toxin free" ask for PFAS-free, since that is what non-toxic
+# means for pans (no PTFE or other PFAS, Noemi's rule of 11 Oct 2026), as refusing Teflon has since 16 Oct 2026
+# (PRODUCT_FACT_REQUEST_WORDS); for every other type they stay an ordinary need word (engine.query.type_asks). {what is
+# asked: its fact, the request's words (regular expressions, whole words, lowercase) and the words of comments that talk
+# about it: toxins, and PFAS, PTFE, PFOA or Teflon by name}. The reason line names the must-have (TYPE_ASKED_LABEL:
+# "about PFAS-free", as the ws-answer builder names refusing Teflon on 17 Oct 2026), so the reading shows.
+TYPE_ASKED_WORDS: dict[str, dict] = {
+    "PFAS-free": {"fact": "pfas_free", "words": (r"non[- ]?toxic", r"toxi(?:ns?|c)[- ]?free"),
+                  "comment_words": ("toxic", "toxin", "nontoxic", "non-toxic", "pfas", "ptfe", "pfoa", "teflon",
+                                    "forever chemical")},
+}
+TYPE_ASKED_LABEL = "{asked}"
+# Need words, round three (18 Oct 2026, the ws-names builder; engine/needs.py). A name of a type that is another name
+# for it, not a kind of it: in kitchen and general requests its words are the product's, as a type's own name is
+# ("portable charger" is a power bank, so "portable" is no need; a "wine cooler" stays a kind of fridge, "gaming laptop"
+# a kind of laptop).
+TYPE_OTHER_NAMES: dict[str, tuple[str, ...]] = {
+    "power bank": ("portable charger", "portable chargers", "portable battery", "portable batteries", "battery pack",
+                   "battery packs", "battery bank", "battery banks"),
+}
+# An induction hob, stove or cooktop is the induction need, named once (the hob, stove or cooktop had been a need of its
+# own: "about induction or hob"), extending the need's words in place for this item.
+NEEDS = NEEDS | {"induction-compatible": NEEDS["induction-compatible"] + (
+    "induction hob", "induction stove", "induction cooktop", "induction hot plate", "induction range")}
