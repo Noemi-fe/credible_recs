@@ -70,6 +70,14 @@ PRODUCTS = [
     ("GMMK Pro", "keyboard", 139.99, "Glorious"),
     ("Logitech brio 4k", "webcam", 79.99, "John Lewis"),
     ("Amazfit Balance 2", "smartwatch", 299.0, "Amazon UK"),
+    # The third pass (18 Oct 2026, after the round's office chair, standing desk, pillow, purifier and phone threads):
+    # shown picks without a price, under the names the answers show them.
+    ("JBL clip", "bluetooth speaker", 39.99, "John Lewis"),
+    ("Amia", "office chair", 717.6, "Hunts Office"),
+    ("Tresanti", "standing desk", 279.99, "Costco UK"),
+    ("T14", "laptop", 2095.0, "Lenovo UK"),
+    ("Legion 5 Pro", "laptop", 1980.0, "Lenovo UK"),
+    ("Aeron office chair line", "office chair", 1219.0, "Herman Miller"),
 ]
 
 # (brand as the line's name starts, product type, from price in pounds, shop as shown)
@@ -106,12 +114,29 @@ LINES = [
     ("Linoto", "bed sheets", 191.0, "Linoto"),
     ("JLab", "earbuds", 8.0, "JLab"),
     ("Anker Soundcore", "bluetooth speaker", 24.99, "soundcore"),
+    # Lines researched in the third pass (18 Oct 2026); a writer's spelling finds its maker's entry.
+    ("Thinkpad", "laptop", 1023.0, "Lenovo UK"),
+    ("Lenovo", "laptop", 599.0, "Lenovo UK"),
+    ("Framework", "laptop", 479.0, "Framework"),
+    ("Asus zenbook", "laptop", 799.99, "ASUS UK"),
+    ("MacBook Pro", "laptop", 1999.0, "Apple UK"),
+    ("Google Pixel", "phone", 499.0, "Google Store"),
+    ("Iniu", "power bank", 19.99, "INIU UK"),
+    ("Samsung", "power bank", 29.6, "Samsung UK"),
+    ("Sebo", "vacuum cleaner", 295.92, "SEBO UK"),
+    ("Levoit", "air purifier", 49.99, "Levoit UK"),
+    ("Winix", "air purifier", 90.4, "Amazon UK"),
+    ("Steelcase", "office chair", 430.56, "Hunts Office"),
+    ("Fully Jarvis", "standing desk", 760.0, "Herman Miller"),
+    ("Garmin", "smartwatch", 219.99, "Garmin UK"),
 ]
 
 # Sold in the UK, a range rather than one model, so no single price (name as the answer shows it, type, shop as shown).
 SOLD = [
     ("Anker Soundcore", "bluetooth speaker", "soundcore"),
     ("Razer Death Adder", "mouse", "Razer"),
+    ("fully jarvis standing desk line", "standing desk", "Herman Miller"),
+    ("Jarvis", "standing desk", "Herman Miller"),
 ]
 
 # Discontinued models: left out of answers and named (Noemi, 15 Oct 2026). Some had been marked "not sold in the UK"
@@ -146,6 +171,11 @@ DISCONTINUED = [
     ("Altec Lansing H2O", "bluetooth speaker"),
     ("Oasis 8th gen and up", "e-reader"),
     ("Kindle Oasis", "e-reader"),
+    # Shown on 18 Oct 2026 (third pass) though their makers no longer sell them: the makers' pages show successors only.
+    ("Ultimate Ears Megaboom 3", "bluetooth speaker"),
+    ("Pixel 4a", "phone"),
+    ("Samsung Note 10+", "phone"),
+    ("S9+ Galaxy", "phone"),
 ]
 
 # Sold abroad only: they stay in answers with "Not sold in the UK" (Noemi, 15 Oct 2026, evening; 16 Oct, decision 4).
@@ -163,6 +193,11 @@ ABROAD = [
     ("Casper pillow", "pillow"),
     ("Speed Queen washing machine", "washing machine"),
     ("Plume SuperPods", "wifi router"),
+    # Third pass (18 Oct 2026): sold in the US only (importers on Amazon UK don't count).
+    ("Sleep on latex latex bed", "mattress"),
+    ("Uplift standing desk line", "standing desk"),
+    ("Harmony pillow from Purple", "pillow"),
+    ("TCL C2A Pro", "monitor"),
 ]
 
 
