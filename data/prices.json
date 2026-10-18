@@ -10554,6 +10554,216 @@
     "https://www.sportsshoes.com/products/brooks/mens/shoes"
    ],
    "note": "SportsShoes, a big UK running shop, lists 133 Brooks men's shoes on 18 Oct (72 read): road running shoes from the Revel 9 at £100, Launch 12 £110, Ghost 18 £135, the Adrenaline GTS 25 stability shoe £145, Glycerin GTS 23 £165. From price: the Revel 9 at £100."
+  },
+  {
+   "product": "BaByliss hair dryer",
+   "category": "general",
+   "product_type": "hair dryer",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/babyliss-2200-turbo-smooth-hair-dryer-black/p113241638",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/babyliss-2200-turbo-smooth-hair-dryer-black/p113241638",
+    "https://www.johnlewis.com/browse/beauty/hair-dryers/babyliss/hair-dryers/_/N-a3fZ1z13zqfZpgxn"
+   ],
+   "note": "John Lewis's BaByliss hair dryers page lists 5 BaByliss dryers on 18 Oct: 2200 Turbo Smooth £23, Salon Pro 2200 £40, Onyx £42.99, Hydro-Fusion Anti-Frizz 2100 £59.99, Digital Power 6150DU £70. From price: the 2200 Turbo Smooth at £23. (BaByliss is the UK maker's name; writers also mean its US professional brand BaBylissPRO.)"
+  },
+  {
+   "product": "Darn Tough socks",
+   "category": "general",
+   "product_type": "socks",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Darn Tough UK",
+   "url": "https://darntough.uk/products/mens-merino-wool-run-no-show-tab-no-cushion-ultra-lightweight-running-socks",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://darntough.uk/products/mens-merino-wool-run-no-show-tab-no-cushion-ultra-lightweight-running-socks",
+    "https://darntough.uk/",
+    "https://darntough.uk/collections/men",
+    "https://darntough.uk/collections/men/products.json?limit=250"
+   ],
+   "note": "Darn Tough's UK store (darntough.uk, prices in pounds; its seller is Brand Access, LLC, shipping from a Netherlands warehouse, launched Aug 2023): 95 men's socks on 18 Oct, merino wool. From price: the Men's Run No Show Tab Ultra-Lightweight Running Socks at £20, the cheapest available men's sock in its product list; hiking socks £27-£32, tactical socks £22-£38."
+  },
+  {
+   "product": "Darn Tough tactical socks",
+   "category": "general",
+   "product_type": "socks",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Darn Tough UK",
+   "url": "https://darntough.uk/collections/tactical-socks",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://darntough.uk/collections/tactical-socks",
+    "https://darntough.uk/collections/men/products.json?limit=250"
+   ],
+   "note": "Darn Tough's UK store sells its tactical socks (a range, not one sock): T4037 No Show £22, T4088 Quarter £24, T3001 Micro Crew £28, T4021 Boot Midweight £34, T4033 Boot Heavyweight £38, on 18 Oct. No single price: writers' name is the range."
+  },
+  {
+   "product": "Manduka yoga mat",
+   "category": "general",
+   "product_type": "yoga mat",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Yogamatters",
+   "url": "https://yogamatters.com/products/manduka-eko-lite-3-0-4mm-yoga-mat",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://yogamatters.com/products/manduka-eko-lite-3-0-4mm-yoga-mat",
+    "https://yogamatters.com/collections/manduka",
+    "https://yogamatters.com/collections/manduka/products.json?limit=250",
+    "https://www.yogamatters.com/products/manduka-pro-yoga-mat"
+   ],
+   "note": "Yogamatters, a UK yoga shop (free UK mainland delivery over £75), sells Manduka's mats on 18 Oct (its product list, in stock): eKO Lite 3.0 4mm £100, PROlite £108, PRO 6mm £138, PRO Long £158. From price: the eKO Lite 3.0 4mm at £100, the cheapest full-size Manduka mat in stock (its eKO Superlite travel mat is £52, not counted: a travel mat)."
+  },
+  {
+   "product": "Osprey backpack",
+   "category": "general",
+   "product_type": "backpack",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/osprey-daylite-backpack-black/p111310382",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/osprey-daylite-backpack-black/p111310382",
+    "https://www.johnlewis.com/brand/osprey/backpack/_/N-1z0njtvZ1z0roj8"
+   ],
+   "note": "John Lewis's Osprey backpacks page lists 13 on 18 Oct: Daylite £65, Daylite Plus £75, Nebula 32L £120, Tempest and Talon 22L £125, Farpoint and Fairview 40L travel packs £170, Transporter 36L cabin pack £175, Farpoint and Fairview 70L £200. From price: the Daylite at £65."
+  },
+  {
+   "product": "Osprey Farpoint backpack",
+   "category": "general",
+   "product_type": "backpack",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/osprey-farpoint-family-backpack-40l-cascade-blue/p114860865",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/osprey-farpoint-family-backpack-40l-cascade-blue/p114860865",
+    "https://www.johnlewis.com/brand/osprey/backpack/_/N-1z0njtvZ1z0roj8"
+   ],
+   "note": "Osprey's Farpoint travel packs (writers' 'Farpoint 40', 'Farpoint 55'...): John Lewis sells the Farpoint 40L at £170 and the 70L at £200 on 18 Oct. Product page is the 40L's."
+  },
+  {
+   "product": "Osprey Fairview backpack",
+   "category": "general",
+   "product_type": "backpack",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/osprey-farview-family-backpack-40l-cascade-blue/p114860867",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/osprey-farview-family-backpack-40l-cascade-blue/p114860867",
+    "https://www.johnlewis.com/brand/osprey/backpack/_/N-1z0njtvZ1z0roj8"
+   ],
+   "note": "Osprey's Fairview travel packs (the women's fit of the Farpoint): John Lewis sells the Fairview 40L at £170 (listed as 'Farview') and the 70L at £200 on 18 Oct."
+  },
+  {
+   "product": "T3 hair dryer",
+   "category": "general",
+   "product_type": "hair dryer",
+   "price": null,
+   "currency": "GBP",
+   "shop": "T3 UK",
+   "url": "https://t3micro.co.uk/products/featherweight-stylemax-professional-hair-dryer",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://t3micro.co.uk/products/featherweight-stylemax-professional-hair-dryer",
+    "https://t3micro.co.uk/collections/hair-dryers",
+    "https://t3micro.co.uk/products.json?limit=250"
+   ],
+   "note": "T3's own UK store (t3micro.co.uk, United Kingdom, GBP): UK-plug hair dryers on 18 Oct: Featherweight StyleMax £139.99 (on sale, regular £199.99; Add to cart), Afar £159.99, AireLuxe £199.99 (EU-plug versions listed apart). From price: the Featherweight StyleMax at £139.99."
+  },
+  {
+   "product": "T3",
+   "category": "general",
+   "product_type": "hair dryer",
+   "price": null,
+   "currency": "GBP",
+   "shop": "T3 UK",
+   "url": "https://t3micro.co.uk/collections/hair-dryers",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://t3micro.co.uk/collections/hair-dryers",
+    "https://t3micro.co.uk/products.json?limit=250"
+   ],
+   "note": "Writers' 'T3' is the brand's hair dryers (shown under the brand's name alone): T3 sells them in the UK from its own store, from £139.99 (Featherweight StyleMax) to £199.99 (AireLuxe) on 18 Oct. No single price: the name is a brand."
+  },
+  {
+   "product": "Lowa Renegade GTX",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": 220.0,
+   "currency": "GBP",
+   "shop": "LOWA UK",
+   "url": "https://www.lowa.co.uk/products/renegade-evo-gtx-mid",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.lowa.co.uk/products/renegade-evo-gtx-mid",
+    "https://www.lowa.co.uk/products.json?limit=250",
+    "https://www.lowa.co.uk/collections/mens-boots?sort_by=price-ascending"
+   ],
+   "note": "LOWA's UK store sells the Renegade as the Renegade Evo GTX Mid (the Renegade GTX Mid's current version; also Narrow, Wide, Lo, women's, Warm and Ice versions): men's Mid at £220 among its available sizes on 18 Oct (some colours were on sale from £165 on its boots page)."
+  },
+  {
+   "product": "ASICS running shoes",
+   "category": "general",
+   "product_type": "running shoes",
+   "price": null,
+   "currency": "GBP",
+   "shop": "SportsShoes",
+   "url": "https://www.sportsshoes.com/product/asi16237/asics-dynablast-5-men%27s-running-shoes---ss26",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.sportsshoes.com/product/asi16237/asics-dynablast-5-men%27s-running-shoes---ss26",
+    "https://www.sportsshoes.com/products/asics/mens/shoes"
+   ],
+   "note": "SportsShoes, a big UK running shop, lists 235 ASICS men's shoes on 18 Oct (first page read): road running shoes from the Dynablast 5 at £68.99 (RRP £114.99), Gel-Cumulus 27 £83.99, GT-1000 15 £103.49, the GT-2000 15 stability shoe from £121.49, Gel-Kayano 33 from £161.99, Gel-Nimbus 28 from £161.99. From price: the Dynablast 5 at £68.99, of the first page."
+  },
+  {
+   "product": "Fjällräven Nuuk Parka",
+   "category": "general",
+   "product_type": "winter coat",
+   "price": 394.96,
+   "currency": "GBP",
+   "shop": "Nordic Outdoor",
+   "url": "https://www.nordicoutdoor.co.uk/products/fjallraven-mens-nuuk-parka",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.nordicoutdoor.co.uk/products/fjallraven-mens-nuuk-parka",
+    "https://www.nordicoutdoor.co.uk/products/fjallraven-mens-nuuk-parka.json"
+   ],
+   "note": "Nordic Outdoor (Edinburgh, an independent UK outdoor shop with four stores) sells Fjällräven's Men's Nuuk Parka at £394.96 on sale (regular £494.95), in black, deep forest and dark navy, on 18 Oct; its page marks sizes sold out or unavailable but shows Add to cart, so stock is unclear (out of stock still counts as sold)."
+  },
+  {
+   "product": "nanit cam",
+   "category": "general",
+   "product_type": "baby monitor",
+   "price": 249.99,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/nanit-pro-camera-baby-monitor-flex-stand/p109555009",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "Writers' Nanit camera is the Nanit Pro (Nanit's baby monitor camera): John Lewis lists the Nanit Pro Camera Baby Monitor & Flex Stand at £249.99 on 18 Oct, currently out of stock online (out of stock still counts as sold); its wall-mount and floor-stand sets cost more."
   }
  ]
 }

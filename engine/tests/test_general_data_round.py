@@ -19,7 +19,7 @@ from pathlib import Path
 
 from engine.brand_lines import find_brand_line, load_brand_lines
 from engine.pipeline import answer_request
-from engine.prices import find_brand_entry, load_prices
+from engine.prices import find_availability, find_brand_entry, find_price, load_prices
 from engine.product_facts import load_product_facts
 from engine.product_pages import load_product_pages
 from engine.tests.factories import make_comment, make_thread, write_gold
@@ -46,7 +46,33 @@ LINES_SOLD_IN_THE_UK = [
     (["Saucony"], "running shoes", "Saucony", 77.99, "SportsShoes"),
     (["New Balance"], "running shoes", "New Balance", 26.99, "SportsShoes"),
     (["Brooks"], "running shoes", "Brooks", 100.0, "SportsShoes"),
+    (["Asics", "ASICS", "asics"], "running shoes", "ASICS", 68.99, "SportsShoes"),
+    (["BaByliss", "Babyliss"], "hair dryer", "BaByliss", 23.0, "John Lewis"),
+    (["T3"], "hair dryer", "T3", 139.99, "T3 UK"),
+    (["Darn Tough", "darn tough"], "socks", "Darn Tough", 20.0, "Darn Tough UK"),
+    (["Manduka"], "yoga mat", "Manduka", 100.0, "Yogamatters"),
+    (["Osprey"], "backpack", "Osprey", 65.0, "John Lewis"),
+    (["Osprey Farpoint"], "backpack", "Osprey Farpoint", 170.0, "John Lewis"),
+    (["Osprey Fairview"], "backpack", "Osprey Fairview", 170.0, "John Lewis"),
 ]
+
+# (the name an answer shows, product type, price or None for a range with no single price, its shop)
+PRODUCTS_SOLD_IN_THE_UK = [
+    ("Lowa Renegade GTX", "hiking boots", 220.0, "LOWA UK"),
+    ("Fjällräven Nuuk Parka", "winter coat", 394.96, "Nordic Outdoor"),
+    ("nanit cam", "baby monitor", 249.99, "John Lewis"),
+    ("Darn Tough tactical socks", "socks", None, "Darn Tough UK"),
+]
+
+
+def test_shown_products_have_a_uk_price_or_where_they_are_sold():
+    prices = load_prices()
+    for name, product_type, amount, shop in PRODUCTS_SOLD_IN_THE_UK:
+        entry = find_availability(name, "general", prices, product_type)
+        assert entry is not None and entry.available is True and entry.shop == shop, name
+        assert entry.checked_on == ROUND, name
+        price = find_price(name, "general", prices, "GBP", product_type)
+        assert (price.price if price else None) == amount, name
 
 
 def test_brands_writers_name_alone_have_a_brand_lines_entry_with_a_uk_from_price():
