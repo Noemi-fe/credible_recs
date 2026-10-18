@@ -43,6 +43,8 @@ from engine.query import PRODUCT_TYPES, ParsedQuery
 # in quotation marks, since they can be any words ("gaming", "noise cancelling", "4k").
 FEATURE_NOT_PRAISED = ("No credible voice in the threads we read praised these picks for {features}: they are the "
                        "best-supported {products} overall, so check that before you buy.")
+FEATURE_NOT_PRAISED_ONE = ("No credible voice in the threads we read praised this pick for {features}: it is the "
+                           "best-supported {product} overall, so check that before you buy.")
 FEATURES_JOIN = " or "
 
 
@@ -163,15 +165,20 @@ def thread_asks_for(thread: Thread, feature: Feature, titled_as_another_type: bo
     return bool(_compiled(feature.praise).search(_plain(thread.title or "")))
 
 
-def feature_note(features: tuple[Feature, ...], praised_by_pick: list[tuple[str, ...]], products: str) -> str | None:
+def feature_note(features: tuple[Feature, ...], praised_by_pick: list[tuple[str, ...]], products: str,
+                 product: str | None = None) -> str | None:
     """FEATURE_NOT_PRAISED for the features no shown pick is praised for (`praised_by_pick`: each pick's praised
-    features), or None when every feature has a praised pick, or there are no picks or no features."""
+    features; `products` the type in the plural, `product` in the singular for an answer of one pick,
+    FEATURE_NOT_PRAISED_ONE), or None when every feature has a praised pick, or there are no picks or no features."""
     if not features or not praised_by_pick:
         return None
     unmet = [f.name for f in features if not any(f.name in praised for praised in praised_by_pick)]
     if not unmet:
         return None
-    return FEATURE_NOT_PRAISED.format(features=FEATURES_JOIN.join(f'"{name}"' for name in unmet), products=products)
+    named = FEATURES_JOIN.join(f'"{name}"' for name in unmet)
+    if len(praised_by_pick) == 1:
+        return FEATURE_NOT_PRAISED_ONE.format(features=named, product=product or products)
+    return FEATURE_NOT_PRAISED.format(features=named, products=products)
 
 
 # --- Helpers ---

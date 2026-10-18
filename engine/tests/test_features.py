@@ -99,6 +99,8 @@ def test_the_note_names_the_features_no_pick_is_praised_for():
     assert '"noise cancelling"' in note and "headphones" in note
     assert feature_note(found, [("noise cancelling",), ()], "headphones") is None
     assert feature_note(found, [], "headphones") is None  # no picks: the answer's own message says why
+    one = feature_note(found, [()], "headphones", "headphones")
+    assert one.startswith("No credible voice in the threads we read praised this pick for")
     assert feature_note((), [()], "headphones") is None
 
 

@@ -674,7 +674,8 @@ def _note_features(result: PipelineResult, features: tuple[Feature, ...], query:
     by_key = {p.key: p for p in result.ranking.products}
     praised = [by_key[pick.product_key].features_praised if pick.product_key in by_key else ()
                for pick in result.answer.picks]
-    note = feature_note(features, praised, plural(query.product_type) if query.product_type else "products")
+    note = feature_note(features, praised, plural(query.product_type) if query.product_type else "products",
+                        query.product_type or "product")
     if note and note not in (result.answer.message or ""):
         result.answer.message = f"{result.answer.message} {note}" if result.answer.message else note
 
