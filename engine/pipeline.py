@@ -1991,7 +1991,8 @@ def _a_known_model(model, brand: ProductGroup, product_type: str | None, price_c
     """Whether a brand's most named model is a product we know as one (17 Oct 2026, the converge round): the price
     list's entry for it (its price or where it is sold, PriceCheck) under its own name, one naming a model
     (_names_a_model: "DeWalt drill", the brand and the type, speaks for the line, never one of its models); a facts
-    entry naming one product (`known`: _known_products' words); a researched page of its own (`pages`, by product key);
+    entry naming one product (`known`: _known_products' words); a researched page of its own (`pages`, by product key,
+    under a name naming a model too);
     or a name the matcher knows as one product (engine/data/product_aliases.json, its full names naming a model). The
     type's words and generic words aside, as names of the same model differ in them ("Victorinox Fibrox chef knife" is
     the alias list's "Victorinox Fibrox"). Never one whose name holds a shop's code, nor one its entries say is no longer
@@ -2004,8 +2005,9 @@ def _a_known_model(model, brand: ProductGroup, product_type: str | None, price_c
         return False
     if any(_names_a_model(entry.product, brand, product_type) for entry in entries):
         return True
-    if model.key in pages:
-        return True
+    page = pages.get(model.key)
+    if page is not None and _names_a_model(getattr(page, "product", ""), brand, product_type):
+        return True  # its own page, not the brand's ("DeWalt drill line" speaks for no corded drill)
     words = _model_words(model.name, brand.category, product_type)
     if not words:
         return False

@@ -73,8 +73,10 @@ def brand(name="Victorinox"):
 
 
 class Model:
+    """A ranked product (its name and key), or a page (its product's name)."""
+
     def __init__(self, name, key=None):
-        self.name, self.key = name, key or f"kitchen:{name.lower()}"
+        self.name, self.key, self.product = name, key or f"kitchen:{name.lower()}", name
 
 
 def test_a_shops_code_or_a_discontinued_model_is_never_named():
@@ -99,5 +101,7 @@ def test_a_facts_entry_or_a_researched_page_makes_a_model_known():
     model = Model("Victorinox Grand Maitre chef knife")
     facts = {"kitchen": [("victorinox", "grand", "maitre", "chef", "knife")]}
     assert _a_known_model(model, brand(), "chef knife", {}, facts, {})
-    assert _a_known_model(model, brand(), "chef knife", {}, {}, {model.key: object()})
+    assert _a_known_model(model, brand(), "chef knife", {}, {}, {model.key: Model(model.name)})
     assert not _a_known_model(model, brand(), "chef knife", {}, {}, {})
+    # A page under the brand's name only (its line's page, found for the model's name too) says nothing of one model.
+    assert not _a_known_model(model, brand(), "chef knife", {}, {}, {model.key: Model("Victorinox chef knife line")})
