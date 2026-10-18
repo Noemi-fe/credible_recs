@@ -30,6 +30,14 @@ PRODUCTS = [
     ("Momentum 4s", "headphones", 199.0, "John Lewis"),
     ("Anker Soundcore Q30s", "headphones", 44.99, "soundcore"),
     ("Shokz open run", "headphones", 129.95, "John Lewis"),
+    # Running and gym earbuds (18 Oct 2026), under the names writers use.
+    ("Powerbeats Pro 2", "earbuds", 179.0, "John Lewis"),
+    ("Soundcore x20’s", "earbuds", 89.99, "soundcore"),
+    ("soundcore sport x20", "earbuds", 89.99, "soundcore"),
+    ("Shokz open fit 2 plus", "earbuds", 179.0, "John Lewis"),
+    ("Shokz Open Fit Air", "earbuds", 94.0, "John Lewis"),
+    ("Openrun Mini", "headphones", 129.95, "John Lewis"),
+    ("Sony WF-1000XM5", "earbuds", 179.99, "John Lewis"),
 ]
 
 # (brand as the line's name starts, product type, from price in pounds, shop as shown)
@@ -50,6 +58,9 @@ LINES = [
     ("UniFi", "wifi router", 65.0, "Ubiquiti UK Store"),
     ("Keychron", "keyboard", 49.99, "Keychron UK"),
     ("Bose", "headphones", 189.95, "Bose"),
+    # A line of a brand with an entry of its own (18 Oct 2026): "Bose QuietComfort headphones line".
+    ("Bose QuietComfort", "headphones", 189.95, "Bose"),
+    ("Bose Quiet Comfort", "headphones", 189.95, "Bose"),
 ]
 
 # Sold in the UK, a range rather than one model, so no single price (name as the answer shows it, type, shop as shown).
@@ -76,6 +87,11 @@ DISCONTINUED = [
     ("Bose qc35", "headphones"),
     ("Bose qc25s", "headphones"),
     ("Bose 700", "headphones"),
+    # Earbuds whose makers no longer sell them (18 Oct 2026): their own pages now show a successor or support only.
+    ("Beats Fit Pro", "earbuds"),
+    ("Samsung Galaxy Buds 2", "earbuds"),
+    ("Jabra Elite 8 Active", "earbuds"),
+    ("Jabra Elite Active 8", "earbuds"),
 ]
 
 # Sold abroad only: they stay in answers with "Not sold in the UK" (Noemi, 15 Oct 2026, evening; 16 Oct, decision 4).

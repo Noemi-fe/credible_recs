@@ -6047,6 +6047,134 @@
    ],
    "checked_on": "2026-10-18",
    "note": "John Lewis, 18 Oct 2026: Sonos Ace, Black, GBP349 (Ace Ultra GBP395.28-399)."
+  },
+  {
+   "product": "Bose QuietComfort headphones line",
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.bose.co.uk/en_gb/products/headphones.html",
+   "shop": "Bose",
+   "sources": [
+    "https://www.bose.co.uk/en_gb/products/headphones.html",
+    "https://www.bose.co.uk/en_gb/p/headphones/quietcomfort-acoustic-noise-cancelling-headphones/QC-HEADPHONEARN.html"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Bose UK's headphones page (18 Oct 2026) lists the QuietComfort range: Bose QuietComfort Headphones £189.95 (its page shows Add to Basket), QuietComfort SC £189.95 (sold out), QuietComfort Headphones (2nd Gen) £299.95, QuietComfort Ultra Headphones (2nd Gen) £399.95, QuietComfort Ultra Headphones £449.95."
+  },
+  {
+   "product": "Powerbeats Pro 2",
+   "also_called": [
+    "PowerBeats Pro 2",
+    "Powerbeats Pro 2’s",
+    "powerbeats pro 2’s",
+    "powerbeats pro 2s"
+   ],
+   "category": "general",
+   "product_type": "earbuds",
+   "page": "https://www.johnlewis.com/powerbeats-pro-2-true-wireless-bluetooth-in-ear-sport-headphones-with-mic-remote/black/p113270307",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/powerbeats-pro-2-true-wireless-bluetooth-in-ear-sport-headphones-with-mic-remote/black/p113270307"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, Powerbeats Pro 2 True Wireless Bluetooth In-Ear Sport Headphones with Mic/Remote, Jet Black: £179.00, Add to basket (other colours up to £249.99)."
+  },
+  {
+   "product": "soundcore Sport X20",
+   "also_called": [
+    "Soundcore x20’s",
+    "Soundcore x20's",
+    "Soundcore x20s",
+    "soundcore x20s",
+    "soundcore sport x20",
+    "Soundcore Sport X20",
+    "Anker Soundcore Sport X20"
+   ],
+   "category": "general",
+   "product_type": "earbuds",
+   "page": "https://www.soundcore.com/uk/products/a3968-sport-x20-earbuds",
+   "shop": "soundcore",
+   "sources": [
+    "https://www.soundcore.com/uk/products/a3968-sport-x20-earbuds"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "soundcore UK's own page (title 'soundcore Sport X20 | Sport Noise-Cancelling Earbuds, IP68 and Waterproof - soundcore UK'): £89.99, Add to Cart and Buy Now (a £20-off code is advertised, not counted)."
+  },
+  {
+   "product": "Shokz OpenFit 2+",
+   "also_called": [
+    "Shokz open fit 2 plus",
+    "open fit 2 plus",
+    "openfit 2+",
+    "Open Ear 2+",
+    "Shokz OpenFit 2 Plus",
+    "OpenFit 2+"
+   ],
+   "category": "general",
+   "product_type": "earbuds",
+   "page": "https://www.johnlewis.com/shokz-openfit-2-bluetooth-true-wireless-open-ear-headphones/black/p113753491",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/shokz-openfit-2-bluetooth-true-wireless-open-ear-headphones/black/p113753491",
+    "https://www.johnlewis.com/search?search-term=shokz%20openfit"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, Shokz OpenFit 2+ Bluetooth True Wireless Open-Ear Headphones, Black: £179.00, Add to basket. John Lewis's Shokz range has no original OpenFit; it lists OpenFit Air £94, OpenFit Air 2 £129, OpenFit 2+ £179, OpenFit Pro £219, OpenDots ONE £143."
+  },
+  {
+   "product": "Shokz OpenFit Air",
+   "also_called": [
+    "Shokz Open Fit Air",
+    "openfit air",
+    "Openfit Air",
+    "Shokz Openfit air"
+   ],
+   "category": "general",
+   "product_type": "earbuds",
+   "page": "https://www.johnlewis.com/shokz-openfit-air-bluetooth-true-wireless-open-ear-headphones/black/p112098323",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/shokz-openfit-air-bluetooth-true-wireless-open-ear-headphones/black/p112098323"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, Shokz OpenFit Air Bluetooth True Wireless Open-Ear Headphones, Black: £94.00, Add to basket."
+  },
+  {
+   "product": "Shokz OpenRun Mini",
+   "also_called": [
+    "Openrun Mini",
+    "OpenRun Mini",
+    "Shokz Open Run Pro Mini"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.johnlewis.com/shokz-openrun-mini-bluetooth-wireless-open-ear-headphones-usb-c-charging-black/p112598633",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/shokz-openrun-mini-bluetooth-wireless-open-ear-headphones-usb-c-charging-black/p112598633"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, Shokz OpenRun Mini Bluetooth Wireless Open-Ear Headphones, USB-C Charging, Black: £129.95, Add to basket."
+  },
+  {
+   "product": "Sony WF-1000XM5",
+   "also_called": [
+    "Sony WF1000-XM5",
+    "WF-1000XM5",
+    "Sony ANC WF-1000XM5",
+    "sony wf-1000xm5",
+    "Sony WF-1000XM5 ANC buds",
+    "WF-XM5"
+   ],
+   "category": "general",
+   "product_type": "earbuds",
+   "page": "https://www.johnlewis.com/sony-wf-1000xm5-noise-cancelling-true-wireless-bluetooth-sweat-weather-resistant-in-ear-headphones-with-mic-remote/black/p110581859",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/sony-wf-1000xm5-noise-cancelling-true-wireless-bluetooth-sweat-weather-resistant-in-ear-headphones-with-mic-remote/black/p110581859"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, Sony WF-1000XM5 Noise Cancelling True Wireless Bluetooth Sweat & Weather-Resistant In-Ear Headphones with Mic/Remote, Black: £179.99, Add to basket."
   }
  ]
 }

@@ -2374,6 +2374,22 @@
    "from_price_url": "https://www.bose.co.uk/en_gb/products/headphones.html",
    "from_price_checked_on": "2026-10-18",
    "note": "From the research findings of 2026-10-18: Bose UK, 18 Oct 2026: its headphones from the QuietComfort Headphones at GBP189.95 (QC SC GBP189.95 sold out) to the QC Ultra (2nd Gen) at GBP399.95."
+  },
+  {
+   "brand": "Bose QuietComfort",
+   "also_called": ["Bose Quiet Comfort", "Bose quietcomfort", "Bose Quietcomfort", "Bose QC", "QuietComfort", "Quiet Comfort", "Bose QuietComfort Headphones"],
+   "category": "general",
+   "product_type": "headphones",
+   "sells": true,
+   "sources": ["https://www.bose.co.uk/en_gb/products/headphones.html", "https://www.bose.co.uk/en_gb/p/headphones/quietcomfort-acoustic-noise-cancelling-headphones/QC-HEADPHONEARN.html"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://www.bose.co.uk/en_gb/products/headphones.html",
+   "range_shop": "Bose",
+   "from_price": 189.95,
+   "from_price_shop": "Bose",
+   "from_price_url": "https://www.bose.co.uk/en_gb/p/headphones/quietcomfort-acoustic-noise-cancelling-headphones/QC-HEADPHONEARN.html",
+   "from_price_checked_on": "2026-10-18",
+   "note": "From the research findings of 2026-10-18: Bose UK's headphones page (18 Oct 2026) lists the QuietComfort range: Bose QuietComfort Headphones £189.95 (its page shows Add to Basket), QuietComfort SC £189.95 (sold out), QuietComfort Headphones (2nd Gen) £299.95, QuietComfort Ultra Headphones (2nd Gen) £399.95, QuietComfort Ultra Headphones £449.95."
   }
  ]
 }
