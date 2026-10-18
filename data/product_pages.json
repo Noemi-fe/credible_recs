@@ -5554,6 +5554,113 @@
    ],
    "checked_on": "2026-10-15",
    "note": "Found by engine.maker_pages in the sitemap https://torriden.us/sitemap_products_1.xml?from=14730333389166&to=15191420567918; the page names it \"DIVE IN Soothing Cream\"; USD 27 on the page."
+  },
+  {
+   "product": "LG TV line",
+   "category": "general",
+   "product_type": "tv",
+   "page": "https://www.lg.com/uk/tvs/",
+   "shop": "LG",
+   "sources": [
+    "https://www.lg.com/uk/tvs/",
+    "https://www.johnlewis.com/lg-32lb650b6la-2026-led-hdr-hd-ready-smart-ai-tv-32-inch-charcoal-black/p115308767",
+    "https://www.johnlewis.com/search?search-term=lg%20tv"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "LG UK's own TV range page (title 'LG AI TVs | Buy LG TVs ... | LG UK'; no prices to a reader). John Lewis on 17 Oct 2026: cheapest the LG 32LB650B6LA (2026) 32in HD Ready, GBP159 (Add to basket); 43in 4K 43NU850B6LA GBP249; cheapest OLED the 48in OLED48B65LA GBP899."
+  },
+  {
+   "product": "Samsung TV line",
+   "category": "general",
+   "product_type": "tv",
+   "page": "https://www.samsung.com/uk/tvs/all-tvs/",
+   "shop": "Samsung",
+   "sources": [
+    "https://www.samsung.com/uk/tvs/all-tvs/",
+    "https://www.johnlewis.com/samsung-ue43u7000h-2026-led-hdr-4k-ultra-hd-smart-tv-43-inch-black/p115507482",
+    "https://www.johnlewis.com/search?search-term=samsung%20tv"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "Samsung UK's own TV range page (title 'Smart AI TVs | Browse Full Samsung TV Range | Samsung UK'). John Lewis on 17 Oct 2026: cheapest in stock the UE43U7000H (2026) 43in 4K, GBP249 (Add to basket); a 24in UE24F6000F (GBP149) and 32in UE32F6000F (GBP179) show 'Email when available', so not used."
+  },
+  {
+   "product": "UE Boom",
+   "category": "general",
+   "product_type": "bluetooth speaker",
+   "page": "https://www.johnlewis.com/ultimate-ears-boom-4-bluetooth-waterproof-portable-speaker/blue/p112235920",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/ultimate-ears-boom-4-bluetooth-waterproof-portable-speaker/blue/p112235920",
+    "https://www.johnlewis.com/search?search-term=ultimate%20ears"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "Writers' 'UE Boom' is Ultimate Ears' BOOM speaker; its current model is the BOOM 4, GBP129.99 at John Lewis on 17 Oct 2026 (Add to basket); MEGABOOM 4 GBP123.99, EVERBOOM GBP133.99."
+  },
+  {
+   "product": "Anker power bank line",
+   "category": "general",
+   "product_type": "power bank",
+   "page": "https://www.anker.com/uk/collections/power-banks",
+   "shop": "Anker",
+   "sources": [
+    "https://www.anker.com/uk/collections/power-banks"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "Anker's own UK store, Power Banks and Portable Chargers, 17 Oct 2026: cheapest the Anker Nano Power Bank 5,000mAh with Built-In Foldable USB-C Connector, GBP24.99; 321 MagGo Battery GBP25.99; Zolo 20K 30W GBP34.99; Prime 20K 220W GBP129.99."
+  },
+  {
+   "product": "Shark robot vacuum line",
+   "category": "general",
+   "product_type": "robot vacuum",
+   "page": "https://www.sharkninja.co.uk/home-cleaning/vacuum-cleaners/robot-vacuums",
+   "shop": "Shark",
+   "sources": [
+    "https://www.sharkninja.co.uk/home-cleaning/vacuum-cleaners/robot-vacuums",
+    "https://www.johnlewis.com/shark-matrix-plus-rv2620waukwh-robot-vacuum-cleaner-white-silver/p113844304",
+    "https://www.johnlewis.com/search?search-term=robot%20vacuum"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "SharkNinja UK's robot vacuum range (16 of 19 shown on 17 Oct 2026: Matrix Plus RV2620WAUK GBP269.99-519.99, PowerDetect Self-Empty AV2820VEUKWH GBP319.99, Navigator RV2110AEUK GBP364.99...). John Lewis: Matrix Plus RV2620WAUKWH GBP269.99, was GBP519.99 (Save GBP250, Add to basket): an offer price, check again when it ends."
+  },
+  {
+   "product": "Roomba robot vacuum line",
+   "category": "general",
+   "product_type": "robot vacuum",
+   "page": "https://www.irobot.co.uk/en_GB/roomba-robots.html",
+   "shop": "iRobot",
+   "sources": [
+    "https://www.irobot.co.uk/en_GB/roomba-robots.html"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "iRobot UK's Roomba range on 17 Oct 2026: Roomba 115 Combo Robot, Black, GBP229 (cheapest), Roomba Mini + AutoEmpty from GBP249 (offer), Plus 415 Combo GBP449 ... Max 875 Combo GBP799. Older models (i7, j7, s9) aren't listed any more."
+  },
+  {
+   "product": "iRobot robot vacuum line",
+   "category": "general",
+   "product_type": "robot vacuum",
+   "page": "https://www.irobot.co.uk/en_GB/roomba-robots.html",
+   "shop": "iRobot",
+   "sources": [
+    "https://www.irobot.co.uk/en_GB/roomba-robots.html"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "Same range as the Roomba line: iRobot UK, 17 Oct 2026, from the Roomba 115 Combo at GBP229."
+  },
+  {
+   "product": "Numatic Henry",
+   "category": "general",
+   "product_type": "vacuum cleaner",
+   "page": "https://www.myhenry.com/henry-hvr160",
+   "shop": "Numatic",
+   "image": "https://www.myhenry.com/media/catalog/product/h/e/henry-front.png?quality=100&bg-color=255,255,255&fit=bounds&height=280&width=280&canvas=280:280",
+   "image_page": "https://www.myhenry.com/henry-hvr160",
+   "sources": [
+    "https://www.myhenry.com/henry-hvr160",
+    "https://www.myhenry.com/",
+    "https://numatic.com/uk/"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "Numatic's own UK Henry shop (myhenry.com, 'The Official UK Home of Henry Vacuum Cleaners', linked as 'Shop Henry' from numatic.com/uk): Henry HVR160 GBP129.99 special price (regular GBP179.99), In stock, Add to Basket, 17 Oct 2026. John Lewis sells the Henry Plus and Pet Pro at GBP189.99."
   }
  ]
 }

@@ -10210,6 +10210,283 @@
     "https://cabeau.co.uk/sitemap_products_1.xml?from=3525988384854&to=14852250566959"
    ],
    "note": "Found by engine.maker_pages in the sitemap https://cabeau.co.uk/sitemap_products_1.xml?from=3525988384854&to=14852250566959; the page names it \"Evolution S3® Neck Pillow\"; GBP 34.99 on the page."
+  },
+  {
+   "product": "Kindle e-reader",
+   "category": "general",
+   "product_type": "e-reader",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/amazon-kindle-2026-ereader-6-high-resolution-illuminated-touch-screen-16gb-with-special-offers/graphite/p115960445",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/amazon-kindle-2026-ereader-6-high-resolution-illuminated-touch-screen-16gb-with-special-offers/graphite/p115960445",
+    "https://www.johnlewis.com/search?search-term=kindle"
+   ],
+   "note": "John Lewis's Kindle range on 17 Oct 2026: cheapest the Kindle (2026) 6in 16GB with Special Offers, Graphite, GBP134.99 (Add to basket on its page); the Kindle (2024) 16GB is also GBP134.99. Amazon's own pages refuse readers, so no maker range page or image."
+  },
+  {
+   "product": "Paperwhite e-reader",
+   "category": "general",
+   "product_type": "e-reader",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/amazon-kindle-paperwhite-2024-waterproof-ereader-7-inch-high-resolution-illuminated-touch-screen-with-adjustable-warm-light-16gb-with-special-offers/black/p112750421",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/amazon-kindle-paperwhite-2024-waterproof-ereader-7-inch-high-resolution-illuminated-touch-screen-with-adjustable-warm-light-16gb-with-special-offers/black/p112750421",
+    "https://www.johnlewis.com/search?search-term=kindle"
+   ],
+   "note": "Kindle Paperwhite (2024) 7in 16GB with Special Offers, Black, GBP184.99 at John Lewis (Add to basket); the Signature Edition 32GB GBP229.99. Amazon's pages refuse readers."
+  },
+  {
+   "product": "Sony tv",
+   "category": "general",
+   "product_type": "tv",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/sony-bravia-kd32w800-led-hdr-hd-ready-720p-smart-android-tv-32-inch-with-freeview-play/p109903199",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/sony-bravia-kd32w800-led-hdr-hd-ready-720p-smart-android-tv-32-inch-with-freeview-play/p109903199",
+    "https://www.johnlewis.com/search?search-term=sony%20tv"
+   ],
+   "note": "John Lewis lists 35 Sony TVs on 17 Oct 2026; cheapest the Bravia KD32W800 32in HD Ready, GBP291.90 (Add to basket); cheapest 4K the Bravia 2 II 43in K43S25M2PB at GBP549. sony.co.uk refuses readers, so no maker range page."
+  },
+  {
+   "product": "LG tv",
+   "category": "general",
+   "product_type": "tv",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/lg-32lb650b6la-2026-led-hdr-hd-ready-smart-ai-tv-32-inch-charcoal-black/p115308767",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/lg-32lb650b6la-2026-led-hdr-hd-ready-smart-ai-tv-32-inch-charcoal-black/p115308767",
+    "https://www.lg.com/uk/tvs/",
+    "https://www.johnlewis.com/search?search-term=lg%20tv"
+   ],
+   "note": "LG UK's own TV range page (title 'LG AI TVs | Buy LG TVs ... | LG UK'; no prices to a reader). John Lewis on 17 Oct 2026: cheapest the LG 32LB650B6LA (2026) 32in HD Ready, GBP159 (Add to basket); 43in 4K 43NU850B6LA GBP249; cheapest OLED the 48in OLED48B65LA GBP899."
+  },
+  {
+   "product": "Samsung tv",
+   "category": "general",
+   "product_type": "tv",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/samsung-ue43u7000h-2026-led-hdr-4k-ultra-hd-smart-tv-43-inch-black/p115507482",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/samsung-ue43u7000h-2026-led-hdr-4k-ultra-hd-smart-tv-43-inch-black/p115507482",
+    "https://www.samsung.com/uk/tvs/all-tvs/",
+    "https://www.johnlewis.com/search?search-term=samsung%20tv"
+   ],
+   "note": "Samsung UK's own TV range page (title 'Smart AI TVs | Browse Full Samsung TV Range | Samsung UK'). John Lewis on 17 Oct 2026: cheapest in stock the UE43U7000H (2026) 43in 4K, GBP249 (Add to basket); a 24in UE24F6000F (GBP149) and 32in UE32F6000F (GBP179) show 'Email when available', so not used."
+  },
+  {
+   "product": "JBL bluetooth speaker",
+   "category": "general",
+   "product_type": "bluetooth speaker",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/jbl-go-5-bluetooth-waterproof-portable-speaker-black/black/p115300735",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/jbl-go-5-bluetooth-waterproof-portable-speaker-black/black/p115300735",
+    "https://www.johnlewis.com/search?search-term=jbl%20speaker"
+   ],
+   "note": "John Lewis on 17 Oct 2026: JBL Go 5 GBP39.99 (Add to basket), Clip 5 from GBP39.99, Flip 7 from GBP104.99, Charge 6 GBP149, Xtreme 5 from GBP279. JBL's UK site refuses readers (403)."
+  },
+  {
+   "product": "Bose bluetooth speaker",
+   "category": "general",
+   "product_type": "bluetooth speaker",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/bose-soundlink-micro-water-resistant-portable-bluetooth-speaker-with-built-in-speakerphone/black/p3327251",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/bose-soundlink-micro-water-resistant-portable-bluetooth-speaker-with-built-in-speakerphone/black/p3327251",
+    "https://www.johnlewis.com/search?search-term=bose%20speaker"
+   ],
+   "note": "John Lewis on 17 Oct 2026: Bose SoundLink Micro, Black, GBP104.99 (Add to basket); SoundLink Micro (2nd Gen) GBP119.95, Flex (2nd Gen) from GBP116.99, Plus from GBP188.13, Max from GBP282.99."
+  },
+  {
+   "product": "UE Boom",
+   "category": "general",
+   "product_type": "bluetooth speaker",
+   "price": 129.99,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/ultimate-ears-boom-4-bluetooth-waterproof-portable-speaker/blue/p112235920",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/ultimate-ears-boom-4-bluetooth-waterproof-portable-speaker/blue/p112235920",
+    "https://www.johnlewis.com/search?search-term=ultimate%20ears"
+   ],
+   "note": "Writers' 'UE Boom' is Ultimate Ears' BOOM speaker; its current model is the BOOM 4, GBP129.99 at John Lewis on 17 Oct 2026 (Add to basket); MEGABOOM 4 GBP123.99, EVERBOOM GBP133.99."
+  },
+  {
+   "product": "Anker power bank",
+   "category": "general",
+   "product_type": "power bank",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Anker",
+   "url": "https://www.anker.com/uk/collections/power-banks",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "note": "Anker's own UK store, Power Banks and Portable Chargers, 17 Oct 2026: cheapest the Anker Nano Power Bank 5,000mAh with Built-In Foldable USB-C Connector, GBP24.99; 321 MagGo Battery GBP25.99; Zolo 20K 30W GBP34.99; Prime 20K 220W GBP129.99."
+  },
+  {
+   "product": "Logitech mouse",
+   "category": "general",
+   "product_type": "mouse",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/logitech-m196-wireless-mouse/graphite/p112814672",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/logitech-m196-wireless-mouse/graphite/p112814672",
+    "https://www.johnlewis.com/search?search-term=logitech%20mouse"
+   ],
+   "note": "John Lewis on 17 Oct 2026 lists 17 Logitech mice: cheapest the M196 Wireless, Graphite, GBP9.99 (Add to basket); Lift vertical GBP32.99, MX Vertical GBP49.99, MX Master 4 from GBP101.99. Logitech's own UK store draws its prices by script."
+  },
+  {
+   "product": "MacBook Air laptop",
+   "category": "general",
+   "product_type": "laptop",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/2026-apple-macbook-air-13-6-inch-m5-processor-16gb-ram-512gb-ssd/midnight/p115096196",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/2026-apple-macbook-air-13-6-inch-m5-processor-16gb-ram-512gb-ssd/midnight/p115096196",
+    "https://www.johnlewis.com/search?search-term=macbook%20air",
+    "https://www.apple.com/uk/shop/buy-mac/macbook-air"
+   ],
+   "note": "John Lewis on 17 Oct 2026: the 2026 MacBook Air 13.6in M5 16GB 512GB at GBP1,299 is its cheapest (15.3in from GBP1,499). Apple UK's buy page lists 13- and 15-inch M5 models from 16GB/512GB but shows no prices to a reader."
+  },
+  {
+   "product": "Eufy robot vacuum",
+   "category": "general",
+   "product_type": "robot vacuum",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/eufy-omni-c28-robot-vacuum-and-mop-all-in-one-station-with-extra-dust-bags-white/p115276465",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/eufy-omni-c28-robot-vacuum-and-mop-all-in-one-station-with-extra-dust-bags-white/p115276465",
+    "https://www.johnlewis.com/search?search-term=robot%20vacuum"
+   ],
+   "note": "John Lewis on 17 Oct 2026: eufy Omni C28 robot vacuum and mop, White, GBP599 (Add to basket), its cheapest eufy robot (C30 Edge GBP699, E35 GBP999, S2 GBP1,599). eufy's own UK store may sell cheaper models; its cheapest price couldn't be read on 15 Oct."
+  },
+  {
+   "product": "Shark robot vacuum",
+   "category": "general",
+   "product_type": "robot vacuum",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/shark-matrix-plus-rv2620waukwh-robot-vacuum-cleaner-white-silver/p113844304",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/shark-matrix-plus-rv2620waukwh-robot-vacuum-cleaner-white-silver/p113844304",
+    "https://www.sharkninja.co.uk/home-cleaning/vacuum-cleaners/robot-vacuums",
+    "https://www.johnlewis.com/search?search-term=robot%20vacuum"
+   ],
+   "note": "SharkNinja UK's robot vacuum range (16 of 19 shown on 17 Oct 2026: Matrix Plus RV2620WAUK GBP269.99-519.99, PowerDetect Self-Empty AV2820VEUKWH GBP319.99, Navigator RV2110AEUK GBP364.99...). John Lewis: Matrix Plus RV2620WAUKWH GBP269.99, was GBP519.99 (Save GBP250, Add to basket): an offer price, check again when it ends."
+  },
+  {
+   "product": "Roomba robot vacuum",
+   "category": "general",
+   "product_type": "robot vacuum",
+   "price": null,
+   "currency": "GBP",
+   "shop": "iRobot",
+   "url": "https://www.irobot.co.uk/en_GB/roomba-robots.html",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "note": "iRobot UK's Roomba range on 17 Oct 2026: Roomba 115 Combo Robot, Black, GBP229 (cheapest), Roomba Mini + AutoEmpty from GBP249 (offer), Plus 415 Combo GBP449 ... Max 875 Combo GBP799. Older models (i7, j7, s9) aren't listed any more."
+  },
+  {
+   "product": "iRobot robot vacuum",
+   "category": "general",
+   "product_type": "robot vacuum",
+   "price": null,
+   "currency": "GBP",
+   "shop": "iRobot",
+   "url": "https://www.irobot.co.uk/en_GB/roomba-robots.html",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "note": "Same range as the Roomba line: iRobot UK, 17 Oct 2026, from the Roomba 115 Combo at GBP229."
+  },
+  {
+   "product": "Roomba i7",
+   "category": "general",
+   "product_type": "robot vacuum",
+   "price": null,
+   "currency": "GBP",
+   "shop": "iRobot",
+   "url": "https://www.irobot.co.uk/en_GB/roomba-robots.html",
+   "checked_on": "2026-10-17",
+   "available": false,
+   "note": "discontinued: Not in iRobot UK's Roomba range on 17 Oct 2026, which lists the 2025-26 Roomba 115 to Max 875 only; the range page's trade-in text names i6-i7 robots among older ones. iRobot replaced the i series in 2025 (from knowledge). Not sold new."
+  },
+  {
+   "product": "Herman Miller Aeron",
+   "category": "general",
+   "product_type": "office chair",
+   "price": 1219.0,
+   "currency": "GBP",
+   "shop": "Herman Miller",
+   "url": "https://ukstore.hermanmiller.com/collections/aeron-chairs/",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://ukstore.hermanmiller.com/collections/aeron-chairs/",
+    "https://www.hermanmiller.com/en_gb/products/seating/office-chairs/aeron-chair/"
+   ],
+   "note": "Herman Miller's UK store, Aeron chairs, 17 Oct 2026: Aeron Office Chair from GBP1,219 (configurable; the gaming chair and stool cost more). Its maker page (already in the pages list) links Buy Now to this store."
+  },
+  {
+   "product": "Numatic Henry",
+   "category": "general",
+   "product_type": "vacuum cleaner",
+   "price": 129.99,
+   "currency": "GBP",
+   "shop": "Numatic",
+   "url": "https://www.myhenry.com/henry-hvr160",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.myhenry.com/henry-hvr160",
+    "https://www.myhenry.com/",
+    "https://numatic.com/uk/"
+   ],
+   "note": "Numatic's own UK Henry shop (myhenry.com, 'The Official UK Home of Henry Vacuum Cleaners', linked as 'Shop Henry' from numatic.com/uk): Henry HVR160 GBP129.99 special price (regular GBP179.99), In stock, Add to Basket, 17 Oct 2026. John Lewis sells the Henry Plus and Pet Pro at GBP189.99."
   }
  ]
 }
