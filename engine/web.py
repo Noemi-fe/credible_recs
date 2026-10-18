@@ -412,7 +412,8 @@ def _visitor_waits(change: int) -> None:
 # someone. While it starts, Cloud Run gives it the processor in full, and keeps visitors on the server before it.
 ready = threading.Event()
 # The site's reads ahead (engine/read_ahead.py, 14 Oct 2026): set by the command line when the live checker has the
-# bucket; None otherwise and in the tests, which give their own.
+# bucket; None otherwise and in the tests, which give their own. Since 17 Oct 2026 each fresh answer tells it the
+# comments it showed (ReadAhead.shown), read again first, so the next visitor asking the same finds them checked.
 read_ahead = None
 
 
@@ -539,6 +540,8 @@ def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple
             asked = "a request" if quiet else repr(request)
             print(f"Refused the answer to {asked}:", *problems, sep="\n  - ", file=sys.stderr)
             return _error(500, REFUSED), ANSWER_KEEP_HOURS * 3600.0
+        if read_ahead is not None:  # its comments read again first (17 Oct 2026): links only, in memory only
+            read_ahead.shown(quote.url for quote in quotes_to_check(result.answer))
     extra = {"on_demand": reading.state} if reading is not None and reading.state is not None else {}
     whole = result.live_put_off == 0 and (reading is None or reading.remember)
     return (200, JSON, _json_bytes(answer_json(result) | {"timing": timing} | extra)), (_keep_seconds(result) if whole
