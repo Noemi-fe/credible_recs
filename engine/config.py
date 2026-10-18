@@ -2277,3 +2277,22 @@ SEARCH_PAGE_QUERY_KEYS = ("q", "k", "query", "search", "searchterm", "search-ter
 IMAGE_MAX_BYTES = 500_000  # about 500 KB, as phones and servers count them
 IMAGE_SMALLER_WIDTH = 600
 IMAGE_CHECK_TIMEOUT_SECONDS = 15
+
+
+# --- Converge round 1: ws-data-beauty (17 Oct 2026) ---
+# Mature skin in the words writers use (decided by Claude, 18 Oct 2026, from the skincare data round; reported to
+# Noemi). In threads about mature skin, writers mostly give their age as a number ("I'm 46", "46F", "a 58 yo") rather
+# than a decade ("my 40s", which NEEDS already reads), so the need rule (a pick needs a credible recommendation that
+# talks about the request's needs) found almost no voice about mature skin, and "night cream for my 40s" kept one pick
+# however many threads about it were read. An age of 40 to 79 written as an age talks about mature skin, in comments
+# only (NEED_COMMENT_WORDS: a number in a title is too loose to rank threads by); a number written any other way says
+# nothing ("SPF 50+", "for 45 minutes", "40 pounds", and "50 f..." is left out, since "SPF 50 for" would read as an age).
+# The signs of ageing and the decades in letters are mature words everywhere (NEEDS): sagging, crepey skin, menopause
+# and perimenopause, forties to sixties.
+MATURE_AGES = range(40, 80)
+MATURE_AGE_FORMS = ("{n}f", "{n}yo", "{n} yo", "{n} y/o", "{n} year old", "{n} years old", "{n}-year-old",
+                    "i'm {n}", "im {n}", "i am {n}", "turning {n}")
+NEED_COMMENT_WORDS["mature"] = NEED_COMMENT_WORDS.get("mature", ()) + tuple(
+    form.format(n=n) for n in MATURE_AGES for form in MATURE_AGE_FORMS)
+NEEDS["mature"] = NEEDS["mature"] + ("forties", "fifties", "sixties", "menopaus", "perimenopaus", "sagging", "saggy",
+                                     "crepey", "crepiness")
