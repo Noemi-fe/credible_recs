@@ -10707,6 +10707,495 @@
     "https://www.keychron.uk/collections/all-keyboards/products.json?limit=250"
    ],
    "note": "Keychron's UK store ('All Keyboards | Mechanical & Wireless | Keychron UK', ships from the UK), 17 Oct 2026: cheapest the C3 Pro wired mechanical keyboard GBP49.99 (both variants in its product data; the B1 Pro slim wireless is also GBP49.99), C1 Pro 8K GBP54.99, V1/V3/K3 Max GBP109.99, K2 HE GBP129.99."
+  },
+  {
+   "product": "Sennheiser HD600",
+   "also_called": [
+    "HD600",
+    "HD 600",
+    "HD600s",
+    "hd600s",
+    "HD 600s",
+    "Sennheiser HD600's",
+    "Sennheiser HD 600",
+    "Senn HD600"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": 255.0,
+   "currency": "GBP",
+   "shop": "Thomann",
+   "url": "https://www.thomann.co.uk/sennheiser_hd_600_new_version_2019.htm",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "Thomann UK, 18 Oct 2026: Sennheiser HD 600 GBP255 incl. VAT, in stock (B-stock from GBP238). Wired open-back headphones, not noise cancelling."
+  },
+  {
+   "product": "Sony MDR-7506",
+   "also_called": [
+    "Sony Mdr-7506",
+    "sony 7506",
+    "MDR-7506",
+    "Sony MDR 7506",
+    "Sony MDR7506",
+    "mdr 7506",
+    "Sony 7506"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": 83.0,
+   "currency": "GBP",
+   "shop": "Thomann",
+   "url": "https://www.thomann.co.uk/sony_mdr7506_kopfhoerer.htm",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "Thomann UK, 18 Oct 2026: Sony MDR-7506 GBP83 incl. VAT, in stock. Wired closed-back studio headphones, not noise cancelling."
+  },
+  {
+   "product": "Sony WH-1000XM4",
+   "also_called": [
+    "Sony xm4",
+    "Sony XM4",
+    "XM4",
+    "XM4s",
+    "Sony XM4s",
+    "Sony XM4's",
+    "XM4's",
+    "Sony XM4 Series",
+    "Sony 1000x4",
+    "Sony MX4s",
+    "xm4",
+    "Sony WH1000XM4",
+    "Sony WH-1000XM4C",
+    "WH-1000XM4"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": 219.99,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/sony-wh-1000xm4c-noise-cancelling-wireless-bluetooth-high-resolution-audio-over-ear-headphones-with-mic-remote/black/p115845122",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/sony-wh-1000xm4c-noise-cancelling-wireless-bluetooth-high-resolution-audio-over-ear-headphones-with-mic-remote/black/p115845122",
+    "https://www.johnlewis.com/search?search-term=noise%20cancelling%20headphones"
+   ],
+   "note": "John Lewis, 18 Oct 2026: the WH-1000XM4C, 'refined and retuned from the original WH-1000XM4', 'back by popular demand', GBP219.99, Add to basket. The original XM4 (2020) is sold as this refresh."
+  },
+  {
+   "product": "Sony WH-1000XM5",
+   "also_called": [
+    "Sony XM5",
+    "XM5",
+    "XM5s",
+    "Sony XM5s",
+    "xm5",
+    "Sony wx1000xm5",
+    "Sony WH1000XM5",
+    "xm5's",
+    "WH-1000XM5"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": 199.0,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/sony-wh-1000xm5-noise-cancelling-wireless-bluetooth-high-resolution-audio-over-ear-headphones-with-mic-remote/black/p6229813",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/sony-wh-1000xm5-noise-cancelling-wireless-bluetooth-high-resolution-audio-over-ear-headphones-with-mic-remote/black/p6229813",
+    "https://www.johnlewis.com/search?search-term=noise%20cancelling%20headphones"
+   ],
+   "note": "John Lewis's noise-cancelling headphones, 18 Oct 2026: Sony WH-1000XM5 Black GBP199."
+  },
+  {
+   "product": "Sony WH-1000XM6",
+   "also_called": [
+    "Sony XM6",
+    "XM6",
+    "Sony XM6s",
+    "xm6's",
+    "Sony xm6",
+    "XM6s",
+    "WH-1000XM6"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": 349.0,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/sony-wh-1000xm6-noise-cancelling-wireless-bluetooth-high-resolution-audio-over-ear-headphones-with-mic-remote/sand-pink/p113671309",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/sony-wh-1000xm6-noise-cancelling-wireless-bluetooth-high-resolution-audio-over-ear-headphones-with-mic-remote/sand-pink/p113671309",
+    "https://www.johnlewis.com/search?search-term=noise%20cancelling%20headphones"
+   ],
+   "note": "John Lewis's noise-cancelling headphones, 18 Oct 2026: Sony WH-1000XM6 GBP349 (GBP349.99 in some colours)."
+  },
+  {
+   "product": "Bose QuietComfort Ultra Headphones",
+   "also_called": [
+    "QC Ultra",
+    "Bose QC Ultra",
+    "Bose qc ultras",
+    "Bose QuietComfort Ultra",
+    "Bose QC Ultras",
+    "QC Ultras",
+    "Bose QC Ultra Headphones"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": 399.95,
+   "currency": "GBP",
+   "shop": "Bose",
+   "url": "https://www.bose.co.uk/en_gb/products/headphones.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.bose.co.uk/en_gb/products/headphones.html",
+    "https://www.johnlewis.com/search?search-term=noise%20cancelling%20headphones"
+   ],
+   "note": "Bose UK's headphones page, 18 Oct 2026: QuietComfort Ultra Headphones (2nd Gen) GBP399.95 (the 2023 first generation still listed at GBP449.95); John Lewis has the 2nd Gen from GBP329.99 in some colours."
+  },
+  {
+   "product": "Bose QuietComfort 45",
+   "also_called": [
+    "QC45",
+    "QC45s",
+    "Bose QC45",
+    "Qc45",
+    "Bose QC 45"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Bose",
+   "url": "https://www.bose.co.uk/en_gb/products/headphones.html",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "note": "discontinued: the QC45 (2021) isn't on Bose UK's headphones page on 18 Oct 2026, which lists the QuietComfort Headphones (its 2023 successor) and their 2nd Gen, and the QC Ultra and Ultra 2nd Gen. Not sold new."
+  },
+  {
+   "product": "Bose QuietComfort 35 II",
+   "also_called": [
+    "Bose QC35 II",
+    "QC35 II",
+    "Bose QC 35 II"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Bose",
+   "url": "https://www.bose.co.uk/en_gb/products/headphones.html",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "note": "discontinued: the QC35 II (2017) isn't on Bose UK's headphones page on 18 Oct 2026; Bose replaced it years ago (from knowledge). Not sold new."
+  },
+  {
+   "product": "Bose QuietComfort 25",
+   "also_called": [
+    "Bose QC25",
+    "QC25",
+    "qc25",
+    "Bose qc25s",
+    "QC25's",
+    "Bose QC 25"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Bose",
+   "url": "https://www.bose.co.uk/en_gb/products/headphones.html",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "note": "discontinued: the wired QC25 (2014) isn't on Bose UK's headphones page on 18 Oct 2026, long replaced (from knowledge). Not sold new."
+  },
+  {
+   "product": "Bose 700",
+   "also_called": [
+    "Bose 700s",
+    "Bose Noise Cancelling Headphones 700"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Bose",
+   "url": "https://www.bose.co.uk/en_gb/products/headphones.html",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "note": "discontinued: the Noise Cancelling Headphones 700 (2019) aren't on Bose UK's headphones page on 18 Oct 2026 (replaced by the QC Ultra, from knowledge). Not sold new."
+  },
+  {
+   "product": "Bose headphones",
+   "category": "general",
+   "product_type": "headphones",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Bose",
+   "url": "https://www.bose.co.uk/en_gb/products/headphones.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "Bose UK, 18 Oct 2026: its headphones from the QuietComfort Headphones at GBP189.95 (QC SC GBP189.95 sold out) to the QC Ultra (2nd Gen) at GBP399.95."
+  },
+  {
+   "product": "AirPods Max",
+   "also_called": [
+    "Airpods Max",
+    "AirPod Max",
+    "AirPod Maxes",
+    "airpod max",
+    "air pods max",
+    "APM",
+    "AP max",
+    "Apple AirPod Max",
+    "AirPods Max 2",
+    "Apple AirPods Max"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": 499.0,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/apple-airpods-max-2-noise-cancelling-wireless-bluetooth-over-ear-headphones-usb-c-charging/midnight/p115154036",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/apple-airpods-max-2-noise-cancelling-wireless-bluetooth-over-ear-headphones-usb-c-charging/midnight/p115154036",
+    "https://www.johnlewis.com/search?search-term=noise%20cancelling%20headphones",
+    "https://www.apple.com/uk/airpods/"
+   ],
+   "note": "Apple UK's AirPods range on 18 Oct 2026 has the AirPods Max 2; John Lewis sells them (USB-C, Midnight) at GBP499. Writers' 'AirPods Max' may be the first generation, which the Max 2 replaced."
+  },
+  {
+   "product": "Sennheiser Momentum 4",
+   "also_called": [
+    "Momentum 4s",
+    "sennheiser momentum 4",
+    "Sennheiser MOMENTUM 4",
+    "Momentum 4",
+    "momentum 4s",
+    "Momentum 4 Wireless"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": 199.0,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/sennheiser-momentum-4-wireless-noise-cancelling-bluetooth-over-ear-headphones-with-mic-remote/black/p109312626",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/sennheiser-momentum-4-wireless-noise-cancelling-bluetooth-over-ear-headphones-with-mic-remote/black/p109312626",
+    "https://www.johnlewis.com/search?search-term=noise%20cancelling%20headphones"
+   ],
+   "note": "John Lewis, 18 Oct 2026: Sennheiser Momentum 4 Wireless, Black, GBP199 (GBP199.99 in some colours); the Momentum 5 is GBP329.99."
+  },
+  {
+   "product": "Sennheiser HDB630",
+   "also_called": [
+    "HDB630",
+    "630s",
+    "Sennheiser HDB 630",
+    "HDB 630"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": 399.99,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/sennheiser-hdb-630-noise-cancelling-high-resolution-audio-over-ear-headphones-usb-c-connection-with-btd-700-bluetooth-usb-c-dongle-black/p115337206",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/sennheiser-hdb-630-noise-cancelling-high-resolution-audio-over-ear-headphones-usb-c-connection-with-btd-700-bluetooth-usb-c-dongle-black/p115337206",
+    "https://www.johnlewis.com/search?search-term=sennheiser%20hd"
+   ],
+   "note": "John Lewis, 18 Oct 2026: Sennheiser HDB 630 noise-cancelling headphones with the BTD 700 USB-C dongle, GBP399.99."
+  },
+  {
+   "product": "Soundcore Q30",
+   "also_called": [
+    "Anker Soundcore Q30s",
+    "Soundcore Q30s",
+    "Soundcore Life Q30",
+    "Life Q30",
+    "Anker Soundcore Q30"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": 44.99,
+   "currency": "GBP",
+   "shop": "soundcore",
+   "url": "https://www.soundcore.com/uk/collections/headphones",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "soundcore's UK store, 18 Oct 2026: soundcore Q30 noise cancelling headphones GBP44.99 (was GBP79.99); the Q31i GBP74.99, Q20i GBP39.99."
+  },
+  {
+   "product": "Soundcore Space One",
+   "also_called": [
+    "soundcore one",
+    "Anker Soundcore Space One"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": 64.0,
+   "currency": "GBP",
+   "shop": "soundcore",
+   "url": "https://www.soundcore.com/uk/collections/headphones",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "soundcore's UK store, 18 Oct 2026: soundcore Space One GBP64 (was GBP89.99); Space One Pro GBP149, Space 2 GBP129.99, Space 2 Pro GBP199.99."
+  },
+  {
+   "product": "Shokz OpenRun",
+   "also_called": [
+    "Shokz Openrun",
+    "Shokz open run",
+    "open run by shokz",
+    "open runs",
+    "Aftershokz OpenRun",
+    "Shokz OpenRun Mini"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": 129.95,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/shokz-openrun-bluetooth-wireless-open-ear-headphones-usb-c-charging/black/p112598634",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/shokz-openrun-bluetooth-wireless-open-ear-headphones-usb-c-charging/black/p112598634",
+    "https://www.johnlewis.com/search?search-term=sports%20earbuds"
+   ],
+   "note": "John Lewis, 18 Oct 2026: Shokz OpenRun bone-conduction open-ear headphones, USB-C, Black, GBP129.95; OpenRun Pro 2 GBP165-169, OpenRun Mini GBP129.95."
+  },
+  {
+   "product": "Shokz OpenRun Pro 2",
+   "also_called": [
+    "shokz openrun pro 2",
+    "OpenRun Pro 2"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": 165.0,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/shokz-openrun-pro-2-bluetooth-wireless-open-ear-headphones-usb-c-charging-black/black/p112598526",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/shokz-openrun-pro-2-bluetooth-wireless-open-ear-headphones-usb-c-charging-black/black/p112598526",
+    "https://www.johnlewis.com/search?search-term=sports%20earbuds"
+   ],
+   "note": "John Lewis, 18 Oct 2026: Shokz OpenRun Pro 2 GBP165 (GBP169 in some colours)."
+  },
+  {
+   "product": "Shokz OpenSwim Pro",
+   "also_called": [
+    "Shokz Openswim Pros",
+    "OpenSwim Pro"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": 199.0,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/shokz-openswim-pro-bluetooth-waterproof-open-ear-headphones/grey/p112098327",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/shokz-openswim-pro-bluetooth-waterproof-open-ear-headphones/grey/p112098327",
+    "https://www.johnlewis.com/search?search-term=sports%20earbuds"
+   ],
+   "note": "John Lewis, 18 Oct 2026: Shokz OpenSwim Pro, Grey, GBP199."
+  },
+  {
+   "product": "Bowers & Wilkins Px7 S3",
+   "also_called": [
+    "B&W PX7 S3",
+    "PX7 S3",
+    "Px7 S3"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": 399.0,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/bowers-wilkins-px7-s3-noise-cancelling-wireless-over-ear-headphones/anthracite-black/p113576205",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/bowers-wilkins-px7-s3-noise-cancelling-wireless-over-ear-headphones/anthracite-black/p113576205",
+    "https://www.johnlewis.com/search?search-term=noise%20cancelling%20headphones"
+   ],
+   "note": "John Lewis, 18 Oct 2026: Bowers & Wilkins Px7 S3, Anthracite Black, GBP399 (Px7 S2e GBP329)."
+  },
+  {
+   "product": "Bowers & Wilkins Px8",
+   "also_called": [
+    "bower and wilkins px8",
+    "px8",
+    "PX8s",
+    "B&W Px8"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/bowers-wilkins-px8-s2-noise-cancelling-wireless-over-ear-headphones/onyx-black/p114031656",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/bowers-wilkins-px8-s2-noise-cancelling-wireless-over-ear-headphones/onyx-black/p114031656",
+    "https://www.johnlewis.com/search?search-term=noise%20cancelling%20headphones"
+   ],
+   "note": "John Lewis, 18 Oct 2026: the original Px8 GBP499-529 and the Px8 S2 (Onyx Black) GBP629; the price isn't recorded as one, since the page linked is the S2's."
+  },
+  {
+   "product": "Sonos Ace",
+   "category": "general",
+   "product_type": "headphones",
+   "price": 349.0,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/sonos-ace-wireless-bluetooth-over-ear-headphones-with-active-noise-cancelling-mic-remote/black/p112069471",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/sonos-ace-wireless-bluetooth-over-ear-headphones-with-active-noise-cancelling-mic-remote/black/p112069471",
+    "https://www.johnlewis.com/search?search-term=noise%20cancelling%20headphones"
+   ],
+   "note": "John Lewis, 18 Oct 2026: Sonos Ace, Black, GBP349 (Ace Ultra GBP395.28-399)."
+  },
+  {
+   "product": "Bose QuietComfort 35",
+   "also_called": [
+    "Bose QC35",
+    "QC35",
+    "QC 35",
+    "Bose qc35",
+    "Bose QC35's",
+    "QC35's"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Bose",
+   "url": "https://www.bose.co.uk/en_gb/products/headphones.html",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "note": "discontinued: The first QC35 (2016) isn't on Bose UK's headphones page on 18 Oct 2026, long replaced (from knowledge). Not sold new."
   }
  ]
 }

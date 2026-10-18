@@ -2360,6 +2360,20 @@
    "from_price_url": "https://www.keychron.uk/products/keychron-c3-pro-qmk-via-wired-mechanical-keyboard-iso-layout-collection",
    "from_price_checked_on": "2026-10-17",
    "note": "From the research findings of 2026-10-17: Keychron's UK store ('All Keyboards | Mechanical & Wireless | Keychron UK', ships from the UK), 17 Oct 2026: cheapest the C3 Pro wired mechanical keyboard GBP49.99 (both variants in its product data; the B1 Pro slim wireless is also GBP49.99), C1 Pro 8K GBP54.99, V1/V3/K3 Max GBP109.99, K2 HE GBP129.99."
+  },
+  {
+   "brand": "Bose",
+   "category": "general",
+   "product_type": "headphones",
+   "sells": true,
+   "sources": ["https://www.bose.co.uk/en_gb/products/headphones.html"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://www.bose.co.uk/en_gb/products/headphones.html",
+   "from_price": 189.95,
+   "from_price_shop": "Bose",
+   "from_price_url": "https://www.bose.co.uk/en_gb/products/headphones.html",
+   "from_price_checked_on": "2026-10-18",
+   "note": "From the research findings of 2026-10-18: Bose UK, 18 Oct 2026: its headphones from the QuietComfort Headphones at GBP189.95 (QC SC GBP189.95 sold out) to the QC Ultra (2nd Gen) at GBP399.95."
   }
  ]
 }

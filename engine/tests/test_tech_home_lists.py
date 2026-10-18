@@ -19,6 +19,17 @@ PRODUCTS = [
     ("UE Boom", "bluetooth speaker", 129.99, "John Lewis"),
     ("Herman Miller Aeron", "office chair", 1219.0, "Herman Miller"),
     ("Numatic Henry", "vacuum cleaner", 129.99, "Numatic"),
+    # Headphones, under writers' own names (18 Oct 2026): the entries carry them as also_called.
+    ("Sennheiser HD600", "headphones", 255.0, "Thomann"),
+    ("Sony Mdr-7506", "headphones", 83.0, "Thomann"),
+    ("Sony xm4", "headphones", 219.99, "John Lewis"),
+    ("XM5s", "headphones", 199.0, "John Lewis"),
+    ("Sony XM6", "headphones", 349.0, "John Lewis"),
+    ("QC Ultra", "headphones", 399.95, "Bose"),
+    ("AirPod Max", "headphones", 499.0, "John Lewis"),
+    ("Momentum 4s", "headphones", 199.0, "John Lewis"),
+    ("Anker Soundcore Q30s", "headphones", 44.99, "soundcore"),
+    ("Shokz open run", "headphones", 129.95, "John Lewis"),
 ]
 
 # (brand as the line's name starts, product type, from price in pounds, shop as shown)
@@ -38,6 +49,7 @@ LINES = [
     ("Roomba", "robot vacuum", 229.0, "iRobot"),
     ("UniFi", "wifi router", 65.0, "Ubiquiti UK Store"),
     ("Keychron", "keyboard", 49.99, "Keychron UK"),
+    ("Bose", "headphones", 189.95, "Bose"),
 ]
 
 # Sold in the UK, a range rather than one model, so no single price (name as the answer shows it, type, shop as shown).
@@ -59,6 +71,11 @@ DISCONTINUED = [
     ("Legion Y540", "laptop"),
     ("Dell Latitude 5300 13.3 Touchscreen", "laptop"),
     ("TP-Link Deco M5", "wifi router"),
+    ("QC45s", "headphones"),
+    ("Bose QC35 II", "headphones"),
+    ("Bose qc35", "headphones"),
+    ("Bose qc25s", "headphones"),
+    ("Bose 700", "headphones"),
 ]
 
 # Sold abroad only: they stay in answers with "Not sold in the UK" (Noemi, 15 Oct 2026, evening; 16 Oct, decision 4).
