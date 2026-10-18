@@ -3384,6 +3384,82 @@
     "https://www.vanicream.com/product/vanicream-moisturizing-lotion"
    ],
    "checked_on": "2026-10-18"
+  },
+  {
+   "product": "Dear, Klairs Freshly Juiced Vitamin Drop",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.klairs.com/products/freshly-juiced-vitamin-drop"
+   ],
+   "checked_on": "2026-10-18",
+   "formula": {
+    "actives": [
+     "vitamin c"
+    ],
+    "sources": [
+     "https://www.klairs.com/products/freshly-juiced-vitamin-drop"
+    ],
+    "checked_on": "2026-10-18"
+   }
+  },
+  {
+   "product": "Avène XeraCalm A.D Replenishing Balm",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.avene.co.uk/p/xeracalm-ad-replenishing-balm-3282770399523-b5405ca4"
+   ],
+   "checked_on": "2026-10-18"
+  },
+  {
+   "product": "iUNIK Beta Glucan Daily Moisture Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.iunik.com/products/beta-glucan-daily-moisture-cream"
+   ],
+   "checked_on": "2026-10-18"
+  },
+  {
+   "product": "Aveeno Calm + Restore Oat Gel Moisturiser",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.aveeno.co.uk/face/calm-restore-oat-gel-moisturiser"
+   ],
+   "checked_on": "2026-10-18"
+  },
+  {
+   "product": "Vanicream Vitamin C Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.vanicream.com/product/vitamin-c-serum"
+   ],
+   "checked_on": "2026-10-18",
+   "formula": {
+    "actives": [
+     "vitamin c"
+    ],
+    "sources": [
+     "https://www.vanicream.com/product/vitamin-c-serum"
+    ],
+    "checked_on": "2026-10-18"
+   }
   }
  ]
 }

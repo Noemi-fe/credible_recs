@@ -10947,6 +10947,336 @@
     "https://www.lookfantastic.com/search/?q=la%20roche%20posay%20uvmune%20400%20invisible%20fluid"
    ],
    "note": "50 ml, £21.00 in Lookfantastic's listing on 18 Oct 2026 (the tinted version £22; a 20% code offer aside)."
+  },
+  {
+   "product": "Biore UV Aqua Rich Watery Essence SPF50",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "price": 15.99,
+   "currency": "GBP",
+   "shop": "Boots",
+   "url": "https://www.boots.com/biore-uv-aqua-rich-watery-essence-j-beauty-sunscreen-spf-50-50ml-10356353",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.boots.com/biore-uv-aqua-rich-watery-essence-j-beauty-sunscreen-spf-50-50ml-10356353"
+   ],
+   "note": "50 ml, £15.99, Add to basket, on 18 Oct 2026: checked again because it is now a pick of the blind test's b02."
+  },
+  {
+   "product": "Etude House Soon Jung 2x Barrier Intensive Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "price": 16.5,
+   "currency": "GBP",
+   "shop": "Skin Cupid",
+   "url": "https://www.skincupid.co.uk/products/etude-house-soonjung-2x-barrier-intensive-cream-60ml",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.skincupid.co.uk/products/etude-house-soonjung-2x-barrier-intensive-cream-60ml"
+   ],
+   "note": "60 ml, £16.50, in stock and shipped from the UK warehouse, on 18 Oct 2026: checked again because it is now a pick of the blind test's b04."
+  },
+  {
+   "product": "Isntree Chestnut BHA 2% Clear Liquid",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "price": 18.0,
+   "currency": "GBP",
+   "shop": "Skinsider",
+   "url": "https://skinsider.co.uk/isntree-chestnut-bha-2-clear-liquid/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://skinsider.co.uk/isntree-chestnut-bha-2-clear-liquid/"
+   ],
+   "note": "100 ml, £18.00 at Skinsider, still sold out on 18 Oct 2026 (an email-me-when-back notice; every other Isntree item on the page is sold out too, so it looks like the shop's Isntree stock rather than the product). Shops in the EU and Canada still list it and no page read says it is discontinued, so it still counts as sold (out of stock for now, the list's convention): b01's first pick, check again before the blind test."
+  },
+  {
+   "product": "Stratia Soft Touch AHA",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "price": 14.0,
+   "currency": "GBP",
+   "shop": "Stratia",
+   "url": "https://www.stratiaskin.com/products/soft-touch-aha",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.stratiaskin.com/products/soft-touch-aha"
+   ],
+   "note": "40 ml, £14.00 with Add to cart on its maker's shop in pounds on 18 Oct 2026 (US $18). The page says Stratia's products are free of fragrance."
+  },
+  {
+   "product": "COSRX AHA/BHA Clarifying Treatment Toner",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "price": 21.99,
+   "currency": "GBP",
+   "shop": "Cult Beauty",
+   "url": "https://www.cultbeauty.co.uk/p/cosrx-aha-bha-clarifying-treatment-toner-150ml/11401176/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.cultbeauty.co.uk/p/cosrx-aha-bha-clarifying-treatment-toner-150ml/11401176/",
+    "https://www.cosrx.com/products/aha-bha-clarifying-treatment-toner"
+   ],
+   "note": "150 ml, £21.99, in stock with Add to Bag on 18 Oct 2026. COSRX's page still lists glycolic acid and betaine salicylate, and no fragrance in its ingredients."
+  },
+  {
+   "product": "Beauty of Joseon Relief Sun Aqua-Fresh: Rice + B5",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "price": 15.5,
+   "currency": "GBP",
+   "shop": "Cult Beauty",
+   "url": "https://www.cultbeauty.co.uk/p/beauty-of-joseon-relief-sun-aqua-fresh-rice-b5-spf50-50ml/15821479/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.cultbeauty.co.uk/p/beauty-of-joseon-relief-sun-aqua-fresh-rice-b5-spf50-50ml/15821479/"
+   ],
+   "note": "50 ml, £15.50, in stock with Add to Bag on its own page on 18 Oct 2026."
+  },
+  {
+   "product": "Beauty of Joseon Relief Sun: Rice + Niacinamide (formerly Rice + Probiotics)",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "price": 15.5,
+   "currency": "GBP",
+   "shop": "Cult Beauty",
+   "url": "https://www.cultbeauty.co.uk/p/beauty-of-joseon-relief-sun-rice-probiotics-spf50-50ml/15443553/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.cultbeauty.co.uk/p/beauty-of-joseon-relief-sun-rice-probiotics-spf50-50ml/15443553/"
+   ],
+   "note": "50 ml, £15.50, in stock with Add to Bag on 18 Oct 2026. Its maker's old UK product address now answers not found."
+  },
+  {
+   "product": "Beauty of Joseon Revive Eye Serum: Ginseng + Retinal",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "price": 15.0,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/beauty-of-joseon-revive-eye-serum-ginseng-retinal-30ml/14866956/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.lookfantastic.com/p/beauty-of-joseon-revive-eye-serum-ginseng-retinal-30ml/14866956/"
+   ],
+   "note": "30 ml, £15.00, in stock with Add to Basket on 18 Oct 2026 (a 20% code offer aside)."
+  },
+  {
+   "product": "innisfree Retinol Cica Moisture Recovery Serum",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "price": 33.0,
+   "currency": "GBP",
+   "shop": "Cult Beauty",
+   "url": "https://www.cultbeauty.co.uk/p/innisfree-retinol-cica-moisture-recovery-serum-30ml/15227995/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.cultbeauty.co.uk/p/innisfree-retinol-cica-moisture-recovery-serum-30ml/15227995/",
+    "https://www.spacenk.com/uk/skincare/treatment/serums/retinol-cica-moisture-recovery-serum-MUK200049251.html",
+    "https://us.innisfree.com/products/retinol-cica-moisture-recovery-serum"
+   ],
+   "note": "30 ml, £33.00 at Cult Beauty, sold out (notify me) on 18 Oct 2026; Space NK UK sold out too (marked down to £23.10 from £33.00); innisfree's US store shows notify-me as well. No page says it is discontinued, so it still counts as sold (out of stock for now, the list's convention): b03's second pick, sold out in every UK shop read for four days running, check again before the blind test."
+  },
+  {
+   "product": "CeraVe Resurfacing Retinol Serum",
+   "category": "skincare",
+   "product_type": "retinoid",
+   "price": 19.99,
+   "currency": "GBP",
+   "shop": "The Independent Pharmacy",
+   "url": "https://www.theindependentpharmacy.co.uk/acne/cerave-resurfacing-retinol-serum-30ml",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.theindependentpharmacy.co.uk/acne/cerave-resurfacing-retinol-serum-30ml"
+   ],
+   "note": "30 ml, £19.99, in stock on 18 Oct 2026."
+  },
+  {
+   "product": "ILLIYOON Ceramide Ato Concentrate Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "price": 19.99,
+   "currency": "GBP",
+   "shop": "Boots",
+   "url": "https://www.boots.com/illiyoon-ceramide-ato-concentrate-cream-200ml-10374657",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.boots.com/illiyoon-ceramide-ato-concentrate-cream-200ml-10374657"
+   ],
+   "note": "200 ml, £19.99 with Add to basket on 18 Oct 2026. Boots' page says it is free of fragrances (odorless & 4-free)."
+  },
+  {
+   "product": "AESTURA Atobarrier 365 Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "price": 26.0,
+   "currency": "GBP",
+   "shop": "Boots",
+   "url": "https://www.boots.com/aestura-atobarrier365-cream-80ml-10397824",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.boots.com/aestura-atobarrier365-cream-80ml-10397824",
+    "https://www.boots.com/sitesearch?searchTerm=aestura"
+   ],
+   "note": "80 ml, £26.00 with Add to basket at Boots on 18 Oct 2026 (Sephora UK's page refused to load: Access Denied)."
+  },
+  {
+   "product": "Eucerin Aquaphor Soothing Skin Balm",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "price": 13.5,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/eucerin-aquaphor-soothing-skin-balm-45ml/11115983/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.lookfantastic.com/p/eucerin-aquaphor-soothing-skin-balm-45ml/11115983/"
+   ],
+   "note": "45 ml, its full price £13.50; £10.12 in a 25% sale, in stock with Add to Basket, on 18 Oct 2026. Now a pick of the blind test's b04."
+  },
+  {
+   "product": "Prequel Gleanser Non-Drying Glycerin Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "price": 20.0,
+   "currency": "GBP",
+   "shop": "Space NK",
+   "url": "https://www.spacenk.com/uk/skincare/cleansers/cleanser/gleanser-UK200065348.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.spacenk.com/uk/skincare/cleansers/cleanser/gleanser-UK200065348.html"
+   ],
+   "note": "£20.00 with Add to Bag at Space NK on 18 Oct 2026; the page lists it as fragrance-free."
+  },
+  {
+   "product": "CeraVe Hydrating Cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "price": 12.5,
+   "currency": "GBP",
+   "shop": "Lookfantastic",
+   "url": "https://www.lookfantastic.com/p/cerave-hydrating-cleanser-with-hyaluronic-acid-for-normal-to-dry-skin-236ml/11798700/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.lookfantastic.com/p/cerave-hydrating-cleanser-with-hyaluronic-acid-for-normal-to-dry-skin-236ml/11798700/"
+   ],
+   "note": "236 ml, £12.50, in stock with Add to Basket on 18 Oct 2026."
+  },
+  {
+   "product": "Vanicream Vitamin C Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=vanicream+vitamin+c+serum",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.vanicream.com/product/vitamin-c-serum",
+    "https://www.amazon.co.uk/s?k=vanicream+vitamin+c+serum"
+   ],
+   "note": "A US product (Vanicream's own page, read 18 Oct 2026: a vitamin C derivative serum with ceramides in an airless pump, sold through US retailers). Vanicream has no UK shop or distributor, and Amazon UK's search for it on 18 Oct 2026 shows only other brands' vitamin C serums. Not discontinued: not sold in the UK."
+  },
+  {
+   "product": "Vanicream Moisturizing Lotion",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/s?k=vanicream+moisturizing+lotion",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.vanicream.com/products",
+    "https://www.amazon.co.uk/s?k=vanicream+moisturizing+lotion"
+   ],
+   "note": "Vanicream's product line page lists the Moisturizing Lotion (a lighter version of its Moisturizing Cream) on 18 Oct 2026. No UK shop or distributor stocks Vanicream; Amazon UK's search on 18 Oct 2026 lists the Moisturizing Cream (a marketplace seller shipping it in), cleansing bars and the facial cleanser, but no lotion. Not discontinued: not sold in the UK."
+  },
+  {
+   "product": "Sana Nameraka Honpo Soy Milk Isoflavone Wrinkle Eye Cream",
+   "category": "skincare",
+   "product_type": "eye cream",
+   "price": 10.63,
+   "currency": "GBP",
+   "shop": "Japanese Taste",
+   "url": "https://japanesetaste.co.uk/products/sana-nameraka-honpo-soy-milk-isoflavone-wrinkle-eye-cream-20g",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "also_called": [
+    "SANA soy milk eye cream",
+    "Sana Nameraka Honpo Wrinkle Eye Cream"
+   ],
+   "sources": [
+    "https://japanesetaste.co.uk/products/sana-nameraka-honpo-soy-milk-isoflavone-wrinkle-eye-cream-20g"
+   ],
+   "note": "20 g, £10.63, in stock at Japanese Taste's UK store on 18 Oct 2026 (read from the shop's own product data on its .co.uk address, whose cart is in pounds; a Japanese import shop, not a UK chain). Writers' 'SANA soy milk eye cream' is taken as this one, the line's classic wrinkle eye cream (the writer says it helped with creasing); Sana's two other soy milk eye creams there (for dark circles, and a wrinkle-care one with niacinamide) are £11.01 each, so the budget check holds whichever was meant."
+  },
+  {
+   "product": "Rohto Melano CC Intensive Anti-Spot Essence",
+   "category": "skincare",
+   "product_type": "serum",
+   "price": 11.89,
+   "currency": "GBP",
+   "shop": "Japanese Taste",
+   "url": "https://japanesetaste.co.uk/products/melano-cc-intensive-anti-spot-brightening-essence-vitamin-c-20ml",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://japanesetaste.co.uk/products/melano-cc-intensive-anti-spot-brightening-essence-vitamin-c-20ml",
+    "https://jp.rohto.com/melanocc/essence/"
+   ],
+   "note": "20 ml, £11.89, in stock at Japanese Taste's UK store on 18 Oct 2026 (the shop's own product data on its .co.uk address, cart in pounds; a browser outside the UK is sent to its international store in dollars). Rohto sells it in Japan only."
+  },
+  {
+   "product": "Rohto Melano CC Premium Intensive Anti-Spot Essence",
+   "category": "skincare",
+   "product_type": "serum",
+   "price": 15.29,
+   "currency": "GBP",
+   "shop": "Japanese Taste",
+   "url": "https://japanesetaste.co.uk/products/rohto-melano-cc-essence-premium-vitamin-c-serum-20ml",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://japanesetaste.co.uk/products/rohto-melano-cc-essence-premium-vitamin-c-serum-20ml",
+    "https://jp.rohto.com/melanocc/premium-essence/"
+   ],
+   "note": "20 ml, £15.29, in stock at Japanese Taste's UK store on 18 Oct 2026 (the shop's own product data on its .co.uk address, cart in pounds). Rohto sells it in Japan only."
+  },
+  {
+   "product": "BYOMA jelly cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "price": 10.99,
+   "currency": "GBP",
+   "shop": "BYOMA",
+   "url": "https://uk.byoma.com/products/creamy-jelly-cleanser",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://uk.byoma.com/products/creamy-jelly-cleanser",
+    "https://uk.byoma.com/sitemap_products_1.xml?from=8323340501128&to=16302618444163"
+   ],
+   "note": "Found by engine.maker_pages in the sitemap https://uk.byoma.com/sitemap_products_1.xml?from=8323340501128&to=16302618444163; the page names it \"Creamy Jelly Cleanser\"; GBP 10.99 on the page. Checked by Claude, 18 Oct 2026: BYOMA's only jelly cleanser is its Creamy Jelly Cleanser; £10.99, available, on its UK site."
   }
  ]
 }
