@@ -5554,6 +5554,78 @@
    ],
    "checked_on": "2026-10-15",
    "note": "Found by engine.maker_pages in the sitemap https://torriden.us/sitemap_products_1.xml?from=14730333389166&to=15191420567918; the page names it \"DIVE IN Soothing Cream\"; USD 27 on the page."
+  },
+  {
+   "product": "Wüsthof classic Pairing knife",
+   "category": "kitchen",
+   "product_type": "paring knife",
+   "page": "https://wusthof.co.uk/products/classic-paring-knife-9-cm-3-12-inch",
+   "shop": "Wüsthof UK",
+   "image": "https://wusthof.co.uk/cdn/shop/products/1030100409.png?v=1722880115&width=600",
+   "image_page": "https://wusthof.co.uk/products/classic-paring-knife-9-cm-3-12-inch",
+   "sources": [
+    "https://wusthof.co.uk/products/classic-paring-knife-9-cm-3-12-inch"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Wüsthof's own UK page, whose own name is WÜSTHOF Classic Paring Knife 9 cm | 3 1/2 inch (read by Claude, 18 Oct 2026): £82.00, available. Writers name it the Wüsthof classic paring knife. Imported for its page and image only: data/prices.json already has its UK price (18 Oct 2026).; image: a smaller size of the maker's image (55 KB instead of 773 KB)"
+  },
+  {
+   "product": "DeMeyere Industry 5 3.5qt conical sauteuse",
+   "category": "kitchen",
+   "product_type": "saucepan",
+   "page": "https://www.zwilling.com/uk/demeyere-industry-5-24-cm-18%2F10-stainless-steel-sauteuse-conical/1029706.html",
+   "shop": "Zwilling UK",
+   "image": "https://www.zwilling.com/on/demandware.static/-/Sites-zwilling-master-catalog/default/dwd9751510/images/large/48824-48524_1_1.jpg",
+   "image_page": "https://www.zwilling.com/uk/demeyere-industry-5-24-cm-18%2F10-stainless-steel-sauteuse-conical/1029706.html",
+   "sources": [
+    "https://www.zwilling.com/uk/demeyere-industry-5-24-cm-18%2F10-stainless-steel-sauteuse-conical/1029706.html"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Zwilling's UK store (Demeyere's owner), whose page names it Demeyere Industry 5 24 cm 18/10 Stainless Steel Sauteuse conical (read by Claude, 18 Oct 2026): £269.00, in stock; the 24 cm is the 3.5 litre size, as writers' 3.5 quart one. Imported for its page and image only: data/prices.json already has its UK price (18 Oct 2026)."
+  },
+  {
+   "product": "Rancilio Silvia",
+   "category": "kitchen",
+   "product_type": "espresso machine",
+   "page": "https://bellabarista.co.uk/products/rancilio-silvia-e-v6-espresso-machine",
+   "shop": "Bella Barista",
+   "image": "https://www.ranciliogroup.com/app/uploads/2019/09/rancilio-group-rancilio-homeline-semiautomatic-silvia-front-1024x1024-1.webp",
+   "image_page": "https://www.ranciliogroup.com/rancilio/silvia/",
+   "sources": [
+    "https://bellabarista.co.uk/products/rancilio-silvia-e-v6-espresso-machine",
+    "https://www.ranciliogroup.com/rancilio/silvia/"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Bella Barista, a UK espresso machine specialist, read in a browser on 18 Oct 2026: the Rancilio Silvia E V6 Espresso Machine (the current Silvia) at £589.00 tax included, to add to the cart. Rancilio's own page (Silvia: Professional Home line Espresso Machine, an article page with no price or UK shop) gives the image. Writers name it the Rancilio Silvia."
+  },
+  {
+   "product": "mannkitchen original pepper cannon pepper mill",
+   "category": "kitchen",
+   "product_type": "pepper grinder",
+   "page": "https://mannkitchen.co.uk/products/the-original-pepper-cannon-pepper-mill",
+   "shop": "Männkitchen",
+   "image": "https://mannkitchen.co.uk/cdn/shop/files/Untitled_design_4.jpg?v=1773664735",
+   "image_page": "https://mannkitchen.co.uk/products/the-original-pepper-cannon-pepper-mill",
+   "sources": [
+    "https://mannkitchen.co.uk/products/the-original-pepper-cannon-pepper-mill",
+    "https://mannkitchen.co.uk/policies/terms-of-service"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Männkitchen's UK store (its terms: owned by MANNKITCHEN and operated by Atlantic Access, London), read on 18 Oct 2026: the page names it MÄNNKITCHEN PEPPER CANNON: The Original Best Pepper Grinder, £175.00 in pounds, available (a product page). Writers name it the Pepper Cannon."
+  },
+  {
+   "product": "Mercer Culinary Millennia wavy edge wide bread knife 10\"",
+   "category": "kitchen",
+   "product_type": "bread knife",
+   "page": "https://www.mercerculinary.com/product/millennia-wavy-edge-wide-bread-knife-10-25-4-cm/",
+   "shop": "Mercer Culinary",
+   "image": "https://www.mercerculinary.com/wp-content/uploads/2018/12/M23210.jpg",
+   "image_page": "https://www.mercerculinary.com/product/millennia-wavy-edge-wide-bread-knife-10-25-4-cm/",
+   "sources": [
+    "https://www.mercerculinary.com/product/millennia-wavy-edge-wide-bread-knife-10-25-4-cm/"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in Mercer's sitemap (https://www.mercerculinary.com/product-sitemap.xml) and read by Claude on 18 Oct 2026: the page names it Millennia Wavy Edge Wide Bread Knife, 10\" (25.4 cm), M23210; Mercer's own (US) site gives no UK price, so where it is sold in the UK is left unchecked (unsure: the page only)."
   }
  ]
 }

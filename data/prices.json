@@ -1938,7 +1938,8 @@
    "available": true,
    "also_called": [
     "Sam's Club restaurant non-stick pans",
-    "Sam's Club restaurant quality non-stick pans"
+    "Sam's Club restaurant quality non-stick pans",
+    "Member's Mark commercial non-stick pans"
    ],
    "note": "Sam's Club's own brand, which Sam's Club sells only in the US; Amazon UK lists it from an importing seller: the 8-inch at £58.46 on 15 Oct 2026, delivered 4 to 9 Nov, and the older Bakers & Chefs 10-inch at £88.17; writers name no size, so no one price fits the name"
   },
@@ -10188,6 +10189,103 @@
     "https://cabeau.co.uk/sitemap_products_1.xml?from=3525988384854&to=14852250566959"
    ],
    "note": "Found by engine.maker_pages in the sitemap https://cabeau.co.uk/sitemap_products_1.xml?from=3525988384854&to=14852250566959; the page names it \"Evolution S3® Neck Pillow\"; GBP 34.99 on the page."
+  },
+  {
+   "product": "Wüsthof Classic Paring Knife",
+   "category": "kitchen",
+   "product_type": "paring knife",
+   "price": 82.0,
+   "currency": "GBP",
+   "shop": "Wüsthof UK",
+   "url": "https://wusthof.co.uk/products/classic-paring-knife-9-cm-3-12-inch",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://wusthof.co.uk/products/classic-paring-knife-9-cm-3-12-inch",
+    "https://wusthof.co.uk/collections/paring-knives"
+   ],
+   "note": "Wüsthof's own UK store, 18 Oct 2026: the Classic Paring Knife, 9 cm (3 1/2 inch), £82.00, available; its Classic Flat Cut Paring Knife, 8 cm, is £79.00 and the Classic Ikon paring knives £105.00."
+  },
+  {
+   "product": "Demeyere Industry 5 conical sauteuse",
+   "category": "kitchen",
+   "product_type": "saucepan",
+   "price": 269.0,
+   "currency": "GBP",
+   "shop": "Zwilling UK",
+   "url": "https://www.zwilling.com/uk/demeyere-industry-5-24-cm-18%2F10-stainless-steel-sauteuse-conical/1029706.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.zwilling.com/uk/demeyere-industry-5-24-cm-18%2F10-stainless-steel-sauteuse-conical/1029706.html"
+   ],
+   "note": "Zwilling's UK store (Demeyere's owner), 18 Oct 2026: the Demeyere Industry 5 conical sauteuse, 24 cm (the 3.5 litre size, as writers' 3.5 quart one), £269.00, in stock; the 18 cm and 20 cm sizes are listed too (£165 to £189, and £185)."
+  },
+  {
+   "product": "Lelit Victoria PL91T",
+   "also_called": [
+    "Lelit Victoria"
+   ],
+   "category": "kitchen",
+   "product_type": "espresso machine",
+   "price": 759.0,
+   "currency": "GBP",
+   "shop": "Bella Barista",
+   "url": "https://bellabarista.co.uk/products/lelit-victoria-pid-espresso-machine-pl91t",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://bellabarista.co.uk/products/lelit-victoria-pid-espresso-machine-pl91t"
+   ],
+   "note": "Bella Barista, a UK espresso machine specialist, read in a browser on 18 Oct 2026: the Lelit Victoria PID Espresso Machine PL91T at £759.00 tax included, marked coming soon (out of stock for now, which this list counts as sold)."
+  },
+  {
+   "product": "Rancilio Silvia",
+   "category": "kitchen",
+   "product_type": "espresso machine",
+   "price": 589.0,
+   "currency": "GBP",
+   "shop": "Bella Barista",
+   "url": "https://bellabarista.co.uk/products/rancilio-silvia-e-v6-espresso-machine",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://bellabarista.co.uk/products/rancilio-silvia-e-v6-espresso-machine",
+    "https://www.ranciliogroup.com/rancilio/silvia/"
+   ],
+   "note": "Bella Barista, a UK espresso machine specialist, read in a browser on 18 Oct 2026: the Rancilio Silvia E V6 Espresso Machine (the current Silvia) at £589.00 tax included, to add to the cart. Rancilio's own page (Silvia: Professional Home line Espresso Machine, an article page with no price or UK shop) gives the image. Writers name it the Rancilio Silvia."
+  },
+  {
+   "product": "mannkitchen original pepper cannon pepper mill",
+   "category": "kitchen",
+   "product_type": "pepper grinder",
+   "price": 175.0,
+   "currency": "GBP",
+   "shop": "Männkitchen",
+   "url": "https://mannkitchen.co.uk/products/the-original-pepper-cannon-pepper-mill",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://mannkitchen.co.uk/products/the-original-pepper-cannon-pepper-mill",
+    "https://mannkitchen.co.uk/policies/terms-of-service"
+   ],
+   "note": "Männkitchen's UK store (its terms: owned by MANNKITCHEN and operated by Atlantic Access, London), read on 18 Oct 2026: the page names it MÄNNKITCHEN PEPPER CANNON: The Original Best Pepper Grinder, £175.00 in pounds, available (a product page). Writers name it the Pepper Cannon."
+  },
+  {
+   "product": "Unicorn pepper grinder",
+   "category": "kitchen",
+   "product_type": "pepper grinder",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Unicorn Mills",
+   "url": "https://www.unicornmills.org/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "sources": [
+    "https://www.unicornmills.org/"
+   ],
+   "note": "not sold to UK shoppers: Unicorn Mills, a US maker, says on its own site (read 18 Oct 2026) that its Magnum Plus and Magnum mills are in stock at Amazon (in the US) and are being made by an Italian partner, Tre Spade; no UK shop was found selling them (a web search found only US prices and US eBay sellers).",
+   "not_in_uk": true
   }
  ]
 }
