@@ -61,6 +61,7 @@ LINES_SOLD_IN_THE_UK = [
     (["Levi's", "Levis", "Levi’s"], "jeans", "Levi's", 70.0, "John Lewis"),
     (["Smartwool", "SmartWool"], "socks", "Smartwool", 21.0, "John Lewis"),
     (["Hydro Flask", "Hydroflask"], "water bottle", "Hydro Flask", 34.95, "John Lewis"),
+    (["Ruffwear"], "dog harness", "Ruffwear", 21.95, "Ruffwear UK"),
 ]
 
 # Brands the makers' own pages show selling the type, with no UK price readable (their prices load by script).
@@ -97,6 +98,7 @@ PRODUCTS_SOLD_IN_THE_UK = [
     # A range ("Carhartt boot socks"): its page is one boot sock's, so no single price.
     ("Carhartt boot socks", "socks", None, "Carhartt"),
     ("Thule Chariot", "stroller", None, "Thule UK"),
+    ("Ruffwear Front Range harness", "dog harness", 49.95, "Ruffwear UK"),
 ]
 
 

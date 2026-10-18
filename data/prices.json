@@ -11033,6 +11033,39 @@
     "https://www.johnlewis.com/browse/home-garden/drinkware/water-bottles/hydro-flask/drinks-bottles/_/N-c0lZnxwsZ1z0wq75"
    ],
    "note": "John Lewis's Hydro Flask drinks bottles page lists 5 vacuum-insulated bottles on 18 Oct: 621ml Flip Straw £34.95, 946ml Wide Mouth Flip Straw and Flex Straw £39.95, and a 300ml Micro £18.50 (a mini, not counted). From price: the 621ml Flip Straw at £34.95."
+  },
+  {
+   "product": "Ruffwear dog harness",
+   "category": "general",
+   "product_type": "dog harness",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Ruffwear UK",
+   "url": "https://ruffwear.co.uk/products/hi-and-light-dog-harness-3082",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://ruffwear.co.uk/products/hi-and-light-dog-harness-3082",
+    "https://ruffwear.co.uk/products.json?limit=250",
+    "https://ruffwear.co.uk/products/front-range-everyday-dog-harness"
+   ],
+   "note": "Ruffwear's UK store (ruffwear.co.uk, prices in pounds) lists 16 harnesses on 18 Oct (its product list, available variants): Hi & Light from £21.95 (another listing £49.95), Switchbak £31.98, Front Range £49.95, Front Range Flex £64.95, Flagline and Web Master £84.95, Ridgeline £199.95. From price: the Hi & Light at £21.95, the cheapest available."
+  },
+  {
+   "product": "Ruffwear Front Range harness",
+   "category": "general",
+   "product_type": "dog harness",
+   "price": 49.95,
+   "currency": "GBP",
+   "shop": "Ruffwear UK",
+   "url": "https://ruffwear.co.uk/products/front-range-everyday-dog-harness",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://ruffwear.co.uk/products/front-range-everyday-dog-harness",
+    "https://ruffwear.co.uk/products.json?limit=250"
+   ],
+   "note": "Ruffwear UK sells the Front Range Dog Harness at £49.95 on 18 Oct (available sizes and colours in its product list)."
   }
  ]
 }
