@@ -101,13 +101,13 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   more are listed for later (docs/bfs-2026-10-17/profiles-later-ws-data-beauty.txt). Results, offline, model on, from the worktree
   (docs/bfs-2026-10-17/sweep-ws-data-beauty.jsonl against sweep-base.jsonl, changes with reasons in sweep-ws-data-beauty-changes.txt):
   of 278 answers 50 beauty answers changed (38 with other picks, 12 price lines or voice counts; each traced by leaving the new
-  threads or the lists out); official skincare and haircare requests with 3 picks 55 -> 58 of 68 (salicylic acid cleanser,
+  threads or the lists out; one more, azelaic acid for redness, only has a support line that moved with the shared cache); official skincare and haircare requests with 3 picks 55 -> 58 of 68 (salicylic acid cleanser,
   benzoyl peroxide, "toner w/o alcohol..." and the night cream up; "vitamin c serum that doesn't oxidise quickly" 3 -> 1: CeraVe's
   serum has 8 credible warnings and loses three bare "CeraVe" recommendations to a CeraVe line, Rohto's essence becomes the Melano CC
   line without a voice about oxidation), the builders' own 39 beauty requests 19 -> 26 with 3 picks; blind test 10/10 full top 3s,
   every shown quote verified (b02 gets Biore UV Aqua Rich for Eucerin's gel, b04 Avene's XeraCalm A.D balm for Mary&May's cream, b05
   La Roche-Posay's Toleriane Hydrating Gentle Cleanser for CeraVe's cream-to-foam, shown as not sold in the UK); the other 36
-  changed answers (kitchen, general: 35 support lines and the two winter coat answers' third pick) are not this workstream's: the winter
+  changed answers (kitchen, general: 32 differ in support lines only, two pan answers in the order of two picks, as in main today, and the two winter coat answers in a third pick) are not this workstream's: the winter
   coat answer is the same with main's library or this one, the lists as they were or now, and either profile store, and main today
   already differs from the 17 Oct baseline in 19 other answers (the shared Arctic Shift cache fills as builders warm profiles). 5,270 tests
   pass; the evaluation matches the base but for the library's counts (62,969/63,023 -> 67,358/67,412 quotes, shown 250/250 ->
