@@ -81,3 +81,14 @@ def test_a_weak_opening_never_puts_a_quote_after_one_that_says_less():
     rest = mention("Acme kettle", "t1", weight=0.9, quote="Our Acme kettle is the best we've owned, years on.")
     _, shown = first_quotes([agreeing, vague, rest])
     assert shown[0] == agreeing.quote
+
+
+def test_what_counts_as_opening_by_agreeing():
+    from engine.answer import _opens_by_agreeing
+
+    for opener in ("Agreed; it works.", "Seconded.", "Second the Acme kettle.", "Third for the Acme!", "+1 for Acme",
+                   "Yeah my Acme is great", "Another vote for the Acme.", "I also use the Acme.", "This! Mine lasted."):
+        assert _opens_by_agreeing(opener), opener
+    for clear in ("Secondly, the Acme lasts.", "Third time I've bought the Acme.", "This kettle is great.",
+                  "Yes-man products aside, the Acme is great.", "My Acme kettle lasted nine years."):
+        assert not _opens_by_agreeing(clear), clear

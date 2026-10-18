@@ -1102,10 +1102,11 @@ def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
 # a comment the reader doesn't see, so a clearer quote of the same stance comes first (_naming_first).
 _AGREEING = re.compile(
     r"^\W*(?:yes|yeah|yea|yep|yup|agreed|agree|i agree|totally agree|completely agree|fully agree|100% agree"
-    r"|seconded|seconding|second(?:ing)? this|i second|i'd second|second|thirded|\+1|same(?: here)?|ditto|exactly"
+    r"|seconded|seconding|second(?:ing)? this|i second|i'd second|second|thirded|thirding|third for|\+1|same(?: here)?"
+    r"|ditto|exactly"
     r"|this(?=\s*[.!,]|\s*$)|came here to (?:say|post|recommend|suggest)|was (?:going|about) to (?:say|post|suggest)"
     r"|can confirm|i can confirm|me too|i also|also (?:a fan|love|recommend|vote|use|team)|another (?:vote|fan|one) for"
-    r"|(?:big |huge )?(?:\+1|vote) for)\b", re.IGNORECASE)
+    r"|(?:big |huge )?(?:\+1|vote) for)(?![\w'-])", re.IGNORECASE)
 
 
 def _opens_by_agreeing(quote: str) -> bool:
