@@ -5754,6 +5754,124 @@
    ],
    "checked_on": "2026-10-18",
    "note": "Found by Claude in Vanicream's sitemap, 18 Oct 2026 (engine.maker_pages missed it): the page names it \"Vanicream™ Vitamin C Serum\"; a US product (the price list says it isn't sold in the UK); image: the page's own front photo.; image left out: its size couldn't be checked: the server doesn't give it"
+  },
+  {
+   "product": "Round Lab Dokdo toner",
+   "category": "skincare",
+   "product_type": "toner",
+   "page": "https://roundlab.com/products/1025-dokdo-toner",
+   "shop": "Round Lab",
+   "image": "https://cdn.shopify.com/s/files/1/0651/7656/8022/files/Dokdo_Toner_2025.png?v=1772851199",
+   "image_page": "https://roundlab.com/products/1025-dokdo-toner",
+   "sources": [
+    "https://roundlab.com/products/1025-dokdo-toner",
+    "https://roundlab.com/sitemap_products_1.xml?from=7700855816406&to=15377801445590"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://roundlab.com/sitemap_products_1.xml?from=7700855816406&to=15377801445590; the page names it \"1025 Dokdo Toner\"; USD 4.8 on the page; it says out of stock or discontinued. Checked by Claude, 18 Oct 2026: the page is the product's own; image: the page's own featured image."
+  },
+  {
+   "product": "BYOMA milky toner",
+   "category": "skincare",
+   "product_type": "toner",
+   "page": "https://uk.byoma.com/products/byoma-milky-toner-sensitive-skin-hydrating",
+   "shop": "BYOMA",
+   "image": "https://cdn.shopify.com/s/files/1/0632/7395/9560/files/610086D_1_088d55eb-2915-4c06-9e45-d23cb8d7ba8d.png?v=1741952524&width=600",
+   "image_page": "https://uk.byoma.com/products/byoma-milky-toner-sensitive-skin-hydrating",
+   "sources": [
+    "https://uk.byoma.com/products/byoma-milky-toner-sensitive-skin-hydrating",
+    "https://uk.byoma.com/sitemap_products_1.xml?from=8323340501128&to=16302618444163"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://uk.byoma.com/sitemap_products_1.xml?from=8323340501128&to=16302618444163; the page names it \"Hydrating Milky Toner\"; GBP 11.99 on the page. Checked by Claude, 18 Oct 2026: the page is the product's own; image: the page's own featured image.; image: a smaller size of the maker's image (21 KB instead of 532 KB)"
+  },
+  {
+   "product": "CeraVe Ultra-Light",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "page": "https://www.cerave.com/skincare/moisturizers/ultra-light-moisturizing-lotion-spf-30",
+   "shop": "CeraVe",
+   "image": "https://www.cerave.com/-/media/project/loreal/brand-sites/cerave/americas/us/skincare/2026/09/ultra-light-moisturizing-lotion/desktop/01-cerave-facial-moisturizer-ultra-light-lotion-700x785-primary.jpg?rev=c5e3da7d29484eccb6015b9d0c28fd99",
+   "image_page": "https://www.cerave.com/skincare/moisturizers/ultra-light-moisturizing-lotion-spf-30",
+   "sources": [
+    "https://www.cerave.com/skincare/moisturizers/ultra-light-moisturizing-lotion-spf-30",
+    "https://a82962.sitemaphosting.com/4034207/sitemap.xml"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://a82962.sitemaphosting.com/4034207/sitemap.xml; the page names it \"Ultra-Light Moisturizing Lotion\". Checked by Claude, 18 Oct 2026: the page is the product's own."
+  },
+  {
+   "product": "Camille Rose Curl Love Moisture Milk leave in",
+   "category": "haircare",
+   "product_type": "leave-in conditioner",
+   "page": "https://www.camillerose.com/products/curl-love-moisture-milk",
+   "shop": "Camille Rose Naturals",
+   "image": "https://cdn.shopify.com/s/files/1/0980/9736/files/ProductCard_Signature_LeaveinConditioner.webp?v=1772795367",
+   "image_page": "https://www.camillerose.com/products/curl-love-moisture-milk",
+   "sources": [
+    "https://www.camillerose.com/products/curl-love-moisture-milk",
+    "https://www.camillerose.com/sitemap_products_1.xml?from=6142133251&to=9379613147285"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.camillerose.com/sitemap_products_1.xml?from=6142133251&to=9379613147285; the page names it \"Curl Love Moisture Milk\"; USD 15 on the page. Checked by Claude, 18 Oct 2026: the page is the product's own; image: the page's own featured image."
+  },
+  {
+   "product": "Nivea shine control",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "page": "https://www.nivea.co.uk/products/nivea-sun-breathable-uv-face-shine-control-spf50plus-40ml-40060002198130045.html",
+   "shop": "Nivea",
+   "image": "https://assets.beiersdorf.com/-/media/images/b/3/6/e/d6d8398501c944028d9710f05f6a7e55-web_1010x1180_transparent_png.png?mh=1200&mw=1200&ctx=GB&rx=0&ry=325&rw=1009&rh=528&hash=F51895CDB3F634147365C2DEDAD87686",
+   "image_page": "https://www.nivea.co.uk/products/nivea-sun-breathable-uv-face-shine-control-spf50plus-40ml-40060002198130045.html",
+   "sources": [
+    "https://www.nivea.co.uk/products/nivea-sun-breathable-uv-face-shine-control-spf50plus-40ml-40060002198130045.html",
+    "https://www.nivea.co.uk/sitemap.xml"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.nivea.co.uk/sitemap.xml; the page names it \"NIVEA SUN Breathable UV Face Shine Control SPF50+ 40ML\". Checked by Claude, 18 Oct 2026: the page is the product's own."
+  },
+  {
+   "product": "Australian Gold Botanical tinted sunscreen",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "page": "https://australiangold.co.uk/products/botanical-spf-50-tinted-face-lotion",
+   "shop": "Australian Gold",
+   "image": "https://cdn.shopify.com/s/files/1/2088/0643/files/Tinted.png?v=1730993506&width=600",
+   "image_page": "https://australiangold.co.uk/products/botanical-spf-50-tinted-face-lotion",
+   "sources": [
+    "https://australiangold.co.uk/products/botanical-spf-50-tinted-face-lotion",
+    "https://australiangold.co.uk/sitemap_products_1.xml?from=8129596165&to=15425856897403"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://australiangold.co.uk/sitemap_products_1.xml?from=8129596165&to=15425856897403; the page names it \"Botanical SPF 50 Tinted Face Lotion\". Checked by Claude, 18 Oct 2026: the page is the product's own; image: the page's own featured image.; image: a smaller size of the maker's image (394 KB instead of 895 KB)"
+  },
+  {
+   "product": "Supergoop Matte Screen",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "page": "https://supergoop.com/products/smooth-and-poreless-mattescreen",
+   "shop": "Supergoop",
+   "image": "https://cdn.shopify.com/s/files/1/1503/5658/files/MatteScreen_45ml_Sunrise.png?v=1791299548&width=600",
+   "image_page": "https://supergoop.com/products/smooth-and-poreless-mattescreen",
+   "sources": [
+    "https://supergoop.com/products/smooth-and-poreless-mattescreen",
+    "https://supergoop.com/sitemap_products_1.xml?from=112965845008&to=10329900515426"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://supergoop.com/sitemap_products_1.xml?from=112965845008&to=10329900515426; the page names it \"Mineral Mattescreen SPF 40\"; USD 40 on the page. Checked by Claude, 18 Oct 2026: the page is the product's own.; image: a smaller size of the maker's image (237 KB instead of 778 KB)"
+  },
+  {
+   "product": "Redken acidic bonding concentrate",
+   "category": "haircare",
+   "product_type": "conditioner",
+   "page": "https://www.redken.co.uk/products/haircare/acidic-bonding-concentrate/acidic-bonding-concentrate-conditioner",
+   "shop": "Redken",
+   "sources": [
+    "https://www.redken.co.uk/products/haircare/acidic-bonding-concentrate/acidic-bonding-concentrate-conditioner",
+    "https://www.redken.co.uk/sitemap.xml"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.redken.co.uk/sitemap.xml; the page names it \"Acidic Bonding Concentrate Conditioner\". Checked by Claude, 18 Oct 2026: the page is the product's own; its image was another product's (Color Gels), so no image."
   }
  ]
 }

@@ -11277,6 +11277,81 @@
     "https://uk.byoma.com/sitemap_products_1.xml?from=8323340501128&to=16302618444163"
    ],
    "note": "Found by engine.maker_pages in the sitemap https://uk.byoma.com/sitemap_products_1.xml?from=8323340501128&to=16302618444163; the page names it \"Creamy Jelly Cleanser\"; GBP 10.99 on the page. Checked by Claude, 18 Oct 2026: BYOMA's only jelly cleanser is its Creamy Jelly Cleanser; £10.99, available, on its UK site."
+  },
+  {
+   "product": "COSRX The Vitamin C 23 Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "price": 26.0,
+   "currency": "GBP",
+   "shop": "Skin Cupid",
+   "url": "https://skincupid.co.uk/products/cosrx-the-vitamin-c-23-serum-20ml",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "also_called": [
+    "COSRX Vitamin C 23 serum",
+    "COSRX Vitamin C 23"
+   ],
+   "sources": [
+    "https://skincupid.co.uk/products/cosrx-the-vitamin-c-23-serum-20ml"
+   ],
+   "note": "20 ml, £26.00, available at Skin Cupid (a UK K-beauty shop) on 18 Oct 2026, read from the shop's own product search; Lookfantastic's search shows no COSRX vitamin C serum. Over a £20 budget."
+  },
+  {
+   "product": "Dr. Ceuracle Vegan Kombucha Tea Essence",
+   "category": "skincare",
+   "product_type": "toner",
+   "price": 26.0,
+   "currency": "GBP",
+   "shop": "Skin Cupid",
+   "url": "https://skincupid.co.uk/products/dr-ceuracle-vegan-kombucha-tea-essence",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "also_called": [
+    "Dr. Ceuracle kombucha essence",
+    "Dr Ceuracle kombucha essence",
+    "Dr. Ceuracle Kombucha toner"
+   ],
+   "sources": [
+    "https://skincupid.co.uk/products/dr-ceuracle-vegan-kombucha-tea-essence"
+   ],
+   "note": "150 ml, £26.00, available at Skin Cupid on 18 Oct 2026 (an 18 ml mini is £4.50, not counted: full size only). Over a 20 euro budget."
+  },
+  {
+   "product": "Hada Labo Gokujyun Premium Hyaluronic Acid Lotion",
+   "category": "skincare",
+   "product_type": "toner",
+   "price": 9.34,
+   "currency": "GBP",
+   "shop": "Japanese Taste",
+   "url": "https://japanesetaste.co.uk/products/hada-labo-gokujyun-premium-hyaluronic-acid-lotion-170ml",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "also_called": [
+    "Hada Labo Gokujyun Premium Lotion",
+    "Hada Labo Gokujyun Premium",
+    "Hada labo Gokujyun Premium"
+   ],
+   "sources": [
+    "https://japanesetaste.co.uk/products/hada-labo-gokujyun-premium-hyaluronic-acid-lotion-170ml"
+   ],
+   "note": "170 ml bottle, £9.34, available at Japanese Taste's UK store on 18 Oct 2026 (the shop's own product data on its .co.uk address, cart in pounds; refills and the 400 ml pump not counted). Rohto's hydrating lotion, used as a toner."
+  },
+  {
+   "product": "BYOMA milky toner",
+   "category": "skincare",
+   "product_type": "toner",
+   "price": 11.99,
+   "currency": "GBP",
+   "shop": "BYOMA",
+   "url": "https://uk.byoma.com/products/byoma-milky-toner-sensitive-skin-hydrating",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://uk.byoma.com/products/byoma-milky-toner-sensitive-skin-hydrating",
+    "https://uk.byoma.com/sitemap_products_1.xml?from=8323340501128&to=16302618444163"
+   ],
+   "note": "Found by engine.maker_pages in the sitemap https://uk.byoma.com/sitemap_products_1.xml?from=8323340501128&to=16302618444163; the page names it \"Hydrating Milky Toner\"; GBP 11.99 on the page. Checked by Claude, 18 Oct 2026: the page is the product's own; image: the page's own featured image."
   }
  ]
 }
