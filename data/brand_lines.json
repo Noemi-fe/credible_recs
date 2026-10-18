@@ -1724,10 +1724,14 @@
    "category": "general",
    "product_type": "wifi router",
    "sells": true,
-   "sources": ["https://uk.store.ui.com/uk/en"],
+   "sources": ["https://uk.store.ui.com/uk/en", "https://uk.store.ui.com/uk/en/category/all-wifi"],
    "checked_on": "2026-10-15",
    "range_page": "https://uk.store.ui.com/uk/en",
    "range_shop": "Ubiquiti UK Store",
+   "from_price": 65.0,
+   "from_price_shop": "Ubiquiti UK Store",
+   "from_price_url": "https://uk.store.ui.com/uk/en/category/all-wifi",
+   "from_price_checked_on": "2026-10-17",
    "note": "From the research findings of 2026-10-15: Ubiquiti has a UK store (Ubiquiti Store United Kingdom) selling UniFi gear; its product prices load by script, so no UniFi router price was read."
   },
   {

@@ -36,6 +36,7 @@ LINES = [
     ("Eufy", "robot vacuum", 599.0, "John Lewis"),
     ("Shark", "robot vacuum", 269.99, "John Lewis"),
     ("Roomba", "robot vacuum", 229.0, "iRobot"),
+    ("UniFi", "wifi router", 65.0, "Ubiquiti UK Store"),
 ]
 
 # Discontinued models: left out of answers and named (Noemi, 15 Oct 2026). Some had been marked "not sold in the UK"
@@ -50,6 +51,7 @@ DISCONTINUED = [
     ("iPhone 11", "phone"),
     ("Legion Y540", "laptop"),
     ("Dell Latitude 5300 13.3 Touchscreen", "laptop"),
+    ("TP-Link Deco M5", "wifi router"),
 ]
 
 # Sold abroad only: they stay in answers with "Not sold in the UK" (Noemi, 15 Oct 2026, evening; 16 Oct, decision 4).

@@ -10633,6 +10633,34 @@
    "checked_on": "2026-10-17",
    "available": false,
    "note": "discontinued: Neato Robotics was shut down by Vorwerk in 2023 (TechCrunch, the 15 Oct entry's source): no Neato robot vacuum is made or sold new anywhere, so the brand is discontinued, not sold abroad (it had been marked not sold in the UK)."
+  },
+  {
+   "product": "UniFi wifi router",
+   "category": "general",
+   "product_type": "wifi router",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Ubiquiti UK Store",
+   "url": "https://uk.store.ui.com/uk/en/category/all-wifi",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "note": "Ubiquiti Store United Kingdom, all WiFi, 17 Oct 2026: cheapest in stock the UniFi Travel Router (UTR) GBP65; access points U6+ and U7 Lite GBP79; the UK-Ultra (GBP65) and AC Mesh are out of stock."
+  },
+  {
+   "product": "TP-Link Deco M5",
+   "category": "general",
+   "product_type": "wifi router",
+   "price": null,
+   "currency": "GBP",
+   "shop": "tp-link.com",
+   "url": "https://www.tp-link.com/uk/home-networking/deco/deco-m5/",
+   "checked_on": "2026-10-17",
+   "available": false,
+   "sources": [
+    "https://www.tp-link.com/uk/home-networking/deco/deco-m5/",
+    "https://www.johnlewis.com/search?search-term=tp-link%20deco"
+   ],
+   "note": "discontinued: TP-Link UK's own Deco M5 page (17 Oct 2026) labels it End of Life and offers 'Replace with Deco X10'; John Lewis's Deco range has the M4, X50, X1500, BE22, BE65 and P9, no M5. Not sold new."
   }
  ]
 }
