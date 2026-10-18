@@ -2666,6 +2666,36 @@
    "from_price_url": "https://www.johnlewis.com/levis-512-slim-tapered-jeans-rock-cod/p3761262",
    "from_price_checked_on": "2026-10-18",
    "note": "From the research findings of 2026-10-18: John Lewis's Levi's men's jeans page lists 43 on 18 Oct: 501 Original Straight from £80, 511 Slim from £80, 512 Slim Tapered £70, 501 Hudson Selvedge £130; five older-season pairs are cleared at £32.40-£36 (not counted). From price: the 512 Slim Tapered (Rock Cod) at £70."
+  },
+  {
+   "brand": "Smartwool",
+   "category": "general",
+   "product_type": "socks",
+   "sells": true,
+   "sources": ["https://www.johnlewis.com/browse/men/mens-socks/smartwool/socks/_/N-eahZ1z13ucuZ1z140xv", "https://www.johnlewis.com/smartwool-run-targeted-cushion-ankle-socks-medium-grey/p114423416", "https://www.johnlewis.com/smartwool-performance-hike-light-cushion-crew-socks/p5767637"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://www.johnlewis.com/browse/men/mens-socks/smartwool/socks/_/N-eahZ1z13ucuZ1z140xv",
+   "range_shop": "John Lewis",
+   "from_price": 21.0,
+   "from_price_shop": "John Lewis",
+   "from_price_url": "https://www.johnlewis.com/smartwool-run-targeted-cushion-ankle-socks-medium-grey/p114423416",
+   "from_price_checked_on": "2026-10-18",
+   "note": "From the research findings of 2026-10-18: John Lewis's SmartWool men's socks page lists 18 on 18 Oct, merino wool blends: hiking socks £22-£28 (Hike Light Cushion Crew £22, Performance Hike Light Cushion Crew £25-£26, Classic Mountaineer £28), ski socks £29-£30. From price: the Run Targeted Cushion Ankle Socks at £21."
+  },
+  {
+   "brand": "Hydro Flask",
+   "category": "general",
+   "product_type": "water bottle",
+   "sells": true,
+   "sources": ["https://www.johnlewis.com/browse/home-garden/drinkware/water-bottles/hydro-flask/drinks-bottles/_/N-c0lZnxwsZ1z0wq75", "https://www.johnlewis.com/hydro-flask-double-wall-vacuum-insulated-stainless-steel-flip-straw-drinks-bottle-621ml/p113027389"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://www.johnlewis.com/browse/home-garden/drinkware/water-bottles/hydro-flask/drinks-bottles/_/N-c0lZnxwsZ1z0wq75",
+   "range_shop": "John Lewis",
+   "from_price": 34.95,
+   "from_price_shop": "John Lewis",
+   "from_price_url": "https://www.johnlewis.com/hydro-flask-double-wall-vacuum-insulated-stainless-steel-flip-straw-drinks-bottle-621ml/p113027389",
+   "from_price_checked_on": "2026-10-18",
+   "note": "From the research findings of 2026-10-18: John Lewis's Hydro Flask drinks bottles page lists 5 vacuum-insulated bottles on 18 Oct: 621ml Flip Straw £34.95, 946ml Wide Mouth Flip Straw and Flex Straw £39.95, and a 300ml Micro £18.50 (a mini, not counted). From price: the 621ml Flip Straw at £34.95."
   }
  ]
 }

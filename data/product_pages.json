@@ -6165,6 +6165,44 @@
    ],
    "checked_on": "2026-10-18",
    "note": "Found by engine.maker_pages in the sitemap https://www.carhartt.com/en-gb/Product.xml; the page names it \"Heavyweight Wool Blend Boot Sock\"; GBP 18.99 on the page. Checked by hand (18 Oct): writers' 'Carhartt boot socks' names Carhartt's boot socks as a range, not this one sock, so no single price is recorded; the page stays as its link (Carhartt's UK store sells it)."
+  },
+  {
+   "product": "Smartwool socks line",
+   "category": "general",
+   "product_type": "socks",
+   "page": "https://www.johnlewis.com/browse/men/mens-socks/smartwool/socks/_/N-eahZ1z13ucuZ1z140xv",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/browse/men/mens-socks/smartwool/socks/_/N-eahZ1z13ucuZ1z140xv",
+    "https://www.johnlewis.com/smartwool-performance-hike-light-cushion-crew-socks/p5767637"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis's SmartWool men's socks page lists 18 on 18 Oct, merino wool blends: hiking socks £22-£28 (Hike Light Cushion Crew £22, Performance Hike Light Cushion Crew £25-£26, Classic Mountaineer £28), ski socks £29-£30. From price: the Run Targeted Cushion Ankle Socks at £21."
+  },
+  {
+   "product": "Thule Chariot",
+   "category": "general",
+   "product_type": "stroller",
+   "page": "https://www.thule.com/en-gb/bike-trailers/bike-trailers-for-kids/thule-chariot-lite-_-10203024",
+   "shop": "Thule UK",
+   "sources": [
+    "https://www.thule.com/en-gb/bike-trailers/bike-trailers-for-kids/thule-chariot-lite-_-10203024",
+    "https://www.thule.com/en-gb/bike-trailers"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Thule's own UK store (current market United Kingdom, prices in pounds) sells its Chariot multisport trailers (trailer, jogging stroller or pushchair with kits): Chariot Lite double £789 on sale (was £829), Chariot Sport 2 double £1,449.99, Chariot Cab and Sport 2 bundles more, on 18 Oct (its popular list, not a full sort). Writers' 'Thule Chariot' names the range, so no single price is recorded; its page is the cheapest shown, the Chariot Lite."
+  },
+  {
+   "product": "Hydro Flask water bottle line",
+   "category": "general",
+   "product_type": "water bottle",
+   "page": "https://www.johnlewis.com/browse/home-garden/drinkware/water-bottles/hydro-flask/drinks-bottles/_/N-c0lZnxwsZ1z0wq75",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/browse/home-garden/drinkware/water-bottles/hydro-flask/drinks-bottles/_/N-c0lZnxwsZ1z0wq75"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis's Hydro Flask drinks bottles page lists 5 vacuum-insulated bottles on 18 Oct: 621ml Flip Straw £34.95, 946ml Wide Mouth Flip Straw and Flex Straw £39.95, and a 300ml Micro £18.50 (a mini, not counted). From price: the 621ml Flip Straw at £34.95."
   }
  ]
 }

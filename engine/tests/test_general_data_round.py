@@ -59,6 +59,8 @@ LINES_SOLD_IN_THE_UK = [
     (["COROS", "Coros"], "sports watch", "COROS", 229.0, "COROS UK"),
     (["Honda"], "lawn mower", "Honda", 425.0, "Honda UK"),
     (["Levi's", "Levis", "Levi’s"], "jeans", "Levi's", 70.0, "John Lewis"),
+    (["Smartwool", "SmartWool"], "socks", "Smartwool", 21.0, "John Lewis"),
+    (["Hydro Flask", "Hydroflask"], "water bottle", "Hydro Flask", 34.95, "John Lewis"),
 ]
 
 # Brands the makers' own pages show selling the type, with no UK price readable (their prices load by script).
@@ -94,6 +96,7 @@ PRODUCTS_SOLD_IN_THE_UK = [
     ("Travelpro Platinum Elite", "suitcase", 285.0, "Travelpro"),
     # A range ("Carhartt boot socks"): its page is one boot sock's, so no single price.
     ("Carhartt boot socks", "socks", None, "Carhartt"),
+    ("Thule Chariot", "stroller", None, "Thule UK"),
 ]
 
 
