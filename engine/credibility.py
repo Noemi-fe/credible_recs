@@ -943,8 +943,8 @@ _FIRST_HAND = re.compile(
     r"|(?:my|our) " + _PEOPLE + r" (?:and|&) (?:i|me)\b|(?:i|me) (?:and|&) (?:my|our) " + _PEOPLE + r"\b"
     r"|(?<!previous )(?<!prior )(?<!the )(?<!old )owner (?:of|as of|for|since)\b"
     r"|(?:i'?m|i am|as) (?:a |an |the )?(?:\w+ )?owner\b"
-    r"|(?:irritat\w*|broke|breaks|gives|gave|makes|made|leaves|left|helped|helps|saved|saves|got|served|lasted"
-    r"|treated|kept|carried|took) (?:me|my)\b"
+    r"|(?:irritat\w*|broke|breaks|gives|gave|makes|made|leaves|left|helped|helps|saved|saves|served|lasted|treated"
+    r"|kept) (?:me|my)\b|got me through"
     r"|my (?!(?:" + _PEOPLE + r"|derm|dermatologist|doctor|advice|opinion|question|guess|recommendation|suggestion|vote"
     r"|two|2|bad|god|budget|understanding)\b)[a-z0-9])"
 )
