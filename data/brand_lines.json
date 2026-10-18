@@ -2732,6 +2732,22 @@
    "from_price_url": "https://www.apple.com/uk/shop/buy-mac/macbook-pro/14-inch-space-black-standard-display-apple-m5-chip-10-core-cpu-10-core-gpu-16gb-memory-1tb-storage",
    "from_price_checked_on": "2026-10-18",
    "note": "From the research findings of 2026-10-18: Apple UK's MacBook Pro range page ('MacBook Pro - Apple (UK)': 14-inch with M5, M5 Pro or M5 Max chip; 16-inch with M5 Pro or M5 Max) shows no prices to a reader, but its buy page ('Buy MacBook Pro - Apple (UK)', read in the built-in browser on 18 Oct 2026) shows 'MacBook Pro From £1,999 or £61.44/mo.', 14-inch 'From £1,999' and 16-inch 'From £2,999'. Cheapest current model: MacBook Pro, 14-inch, M5 Chip, 10-core CPU, 10-core GPU, standard display, 16GB memory, 1TB storage (Space Black or Silver), page title 'Buy MacBook Pro, 14-inch, M5 Chip, 10-core CPU, 10-core GPU, Space Black, Standard display, 16GB memory, 1TB storage - Apple (UK)', £1,999.00, 'Add to Bag', 'Free shipping' or 'Pick up from Store'; the same Apple page data lists the nano-texture 14-inch M5 at £2,149, 14-inch M5 Pro from £2,499 and 16-inch M5 Pro from £2,999. John Lewis agrees: '2025 Apple MacBook Pro 14”, M5 Processor, 16GB RAM, 1TB SSD, Space Black' £1,999.00, 'Add to basket', UK delivery in 2 to 5 days. John Lewis also lists an older '2025 Apple MacBook Pro 14”, M5, 16GB RAM, 512GB SSD, Space Black' at £1,399.00, but its page says 'Currently out of stock online' ('Email me when available'), and Apple UK no longer lists a 512GB model, so it is not counted. From price = £1,999."
+  },
+  {
+   "brand": "Aeron",
+   "also_called": ["hm aeron", "HM Aeron", "Aeron chair", "Aeron chairs", "Aeron office chair", "Aeron office chairs"],
+   "category": "general",
+   "product_type": "office chair",
+   "sells": true,
+   "sources": ["https://www.hermanmiller.com/en_gb/products/seating/office-chairs/aeron-chair/", "https://ukstore.hermanmiller.com/collections/aeron-chairs/"],
+   "checked_on": "2026-10-17",
+   "range_page": "https://www.hermanmiller.com/en_gb/products/seating/office-chairs/aeron-chair/",
+   "range_shop": "Herman Miller",
+   "from_price": 1219.0,
+   "from_price_shop": "Herman Miller",
+   "from_price_url": "https://ukstore.hermanmiller.com/collections/aeron-chairs/",
+   "from_price_checked_on": "2026-10-17",
+   "note": "From the research findings of 2026-10-17: Writers' bare 'Aeron' is the Herman Miller Aeron (module 4 shows it as a line of its own, 'Aeron office chair line'). Herman Miller's UK store, Aeron chairs, read on 17 Oct 2026 by the first builder: Aeron Office Chair from GBP1,219 (configurable); its maker page links Buy Now to the store. Re-used here as the line's from price so the line shows a price and the budget rule applies to it."
   }
  ]
 }

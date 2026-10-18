@@ -7806,6 +7806,28 @@
    ],
    "checked_on": "2026-10-18",
    "note": "Read 18 Oct 2026 (the built-in browser; Amazon UK with the London delivery postcode SW1A 1AA). TCL UK's monitors page ('TCL Monitors – Gaming & Mini LED Displays | TCL UK') lists 34R83Q, 27G64, 25G64, 24G54, 27P2A Pro, 27P2A, 32G64, 32X3A OLED+ and 27C2A, with no prices and no 27C2A Pro; /uk/en/monitors/27c2a-pro is a 404. The UK's C2A is the lower-spec 'TCL 27C2A Premium QD-Mini LED Monitor | TCL UK' (1196 dimming zones, 1200 nits, UHD 160Hz / FHD 320Hz; IT Brief UK of 11 June 2026 calls it the 27C2A-UK), and TCL UK's 'Buy now' pop-up for it says 'There is no online offer at the moment'. The 27C2A Pro is TCL's US model: 'TCL 27\" 27C2A Pro QD-Mini LED 4K UHD 320Hz HDR Gaming Monitor | TCL US – TCL North America' on us.tcl.com, 2,300+ dimming zones and 2,000 nits, USD 699.99 on sale (regular 999.99), 'ADD TO CART', 'Free Shipping Within the United States'. Amazon UK's searches 'TCL 27C2A Pro monitor', 'TCL 27C2A' and 'TCL 27 inch 4K QD-Mini LED gaming monitor C2A' show no C2A at all (its TCL monitors: 27P2A Pro-UK £349.00, 27G64 £229.00 and 25G64); Currys' 'tcl 27c2a' and 'tcl monitor' searches return TCL TVs only; Scan UK and Overclockers UK 'tcl monitor' searches show no TCL monitor. Not sold in the UK under this name; no UK price."
+  },
+  {
+   "product": "Aeron office chair line",
+   "also_called": [
+    "Aeron",
+    "hm aeron",
+    "HM Aeron",
+    "Aeron chair",
+    "Aeron chairs",
+    "Aeron office chair",
+    "Aeron office chairs"
+   ],
+   "category": "general",
+   "product_type": "office chair",
+   "page": "https://www.hermanmiller.com/en_gb/products/seating/office-chairs/aeron-chair/",
+   "shop": "Herman Miller",
+   "sources": [
+    "https://www.hermanmiller.com/en_gb/products/seating/office-chairs/aeron-chair/",
+    "https://ukstore.hermanmiller.com/collections/aeron-chairs/"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "Writers' bare 'Aeron' is the Herman Miller Aeron (module 4 shows it as a line of its own, 'Aeron office chair line'). Herman Miller's UK store, Aeron chairs, read on 17 Oct 2026 by the first builder: Aeron Office Chair from GBP1,219 (configurable); its maker page links Buy Now to the store. Re-used here as the line's from price so the line shows a price and the budget rule applies to it."
   }
  ]
 }

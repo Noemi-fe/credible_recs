@@ -129,6 +129,8 @@ LINES = [
     ("Steelcase", "office chair", 430.56, "Hunts Office"),
     ("Fully Jarvis", "standing desk", 760.0, "Herman Miller"),
     ("Garmin", "smartwatch", 219.99, "Garmin UK"),
+    # Writers' bare "Aeron" is shown as a line of its own: it takes the chair's from price, so a budget can rule it out.
+    ("Aeron", "office chair", 1219.0, "Herman Miller"),
 ]
 
 # Sold in the UK, a range rather than one model, so no single price (name as the answer shows it, type, shop as shown).
