@@ -1114,7 +1114,11 @@ def test_a_word_inside_another_products_name_doesnt_name_the_product():
 
     assert not mentions_product("Best tea pot for loose leaf?", "saucepan")
     assert not mentions_product("Instant pot or crock pot for stews?", "saucepan")
-    assert mentions_product("Best stock pot that lasts?", "saucepan")
+    # Changed on purpose 17 Oct 2026 (the ws-names builder, from the 16 Oct review of module 4: a Vollrath stock pot was
+    # listed under a saucepan answer's Also worth a look): a stock pot is a look-alike of a saucepan, as a tea pot is
+    # (engine.query.FIRST_LOOKALIKES), not one. Was: mentions_product("Best stock pot that lasts?", "saucepan").
+    assert not mentions_product("Best stock pot that lasts?", "saucepan")
+    assert mentions_product("Best saucepan or pot that lasts?", "saucepan")
     assert mentions_product("Pots and pans set: worth it?", "saucepan")
     assert not mentions_product("Holy grail dry shampoo?", "shampoo")
     assert mentions_product("Dry shampoo vs regular shampoo for oily hair", "shampoo")

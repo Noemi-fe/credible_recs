@@ -208,3 +208,27 @@ def test_a_dogs_question_names_a_dogs_products():
 def test_a_plain_vague_request_keeps_its_question():
     query = parse_query("something nice", model=None)
     assert query.status == "clarify" and "What kind of product" in query.question
+
+
+# --- 8. Coffee and tea questions, and brands that say where (wording PROPOSED, 17 Oct 2026) ---
+
+@pytest.mark.parametrize("text", ["present for a coffee lover", "aeropress or v60", "something for my latte habit"])
+def test_a_coffee_request_with_no_product_asks_with_coffee_examples(text):
+    query = parse_query(text, model=None)
+    assert (query.status, query.category) == ("clarify", "kitchen")
+    assert "coffee grinder" in query.question and "chef's knife" not in query.question
+
+
+def test_a_tea_request_with_no_product_asks_with_tea_examples():
+    query = parse_query("something for a tea lover", model=None)
+    assert query.category == "kitchen" and "teapot" in query.question
+
+
+def test_two_brands_compared_ask_in_their_category(monkeypatch):
+    from engine import query
+
+    monkeypatch.setattr(query, "_brand_categories", lambda: {("le", "creuset"): {"kitchen"}, ("staub",): {"kitchen"},
+                                                             ("cerave",): {"skincare"}, ("global",): {"kitchen"}})
+    assert (classify("le creuset or staub").status, classify("le creuset or staub").category) == ("clarify", "kitchen")
+    assert classify("cerave or la roche posay").category == "skincare"
+    assert classify("something with global roaming").category is None  # an everyday word is no brand here

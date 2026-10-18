@@ -17,6 +17,7 @@ Every request ends in one of three outcomes:
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass
+from functools import cache
 from typing import Literal
 
 from pydantic import Field, model_validator
@@ -445,7 +446,7 @@ _OTHER_BLENDERS = ("immersion", "stick", "hand", "handheld", "hand-held", "beaut
 _PLACES = tuple(f"{word} {the} {appliance}" for word in ("in", "into", "inside", "to", "from")
                 for the in ("the", "my", "your") for appliance in ("oven", "microwave", "dishwasher"))
 FIRST_LOOKALIKES = (
-    "ice cream", "coffee pot", "sheet pan", "cake pan", "loaf pan", "roasting pan",
+    "ice cream", "coffee pot", "stock pot", "stockpot", "sheet pan", "cake pan", "loaf pan", "roasting pan",
     "baking pan", "muffin pan", "bundt pan", "pie pan", "tart pan", "sun hat", "sun lounger", "vacuum sealer",
     "vacuum flask", "vacuum-insulated", "vacuum insulated",
     # 13 Oct 2026: razor bumps and razor burn are skin, not a razor ("salicylic acid for razor bumps").
@@ -571,6 +572,14 @@ GIFT_QUESTION = "What do they like? For example cooking, coffee, skincare, gadge
 # dog's harness, so "something for my dog" had been offered a litter box.
 PET_EXAMPLES = {"dog": "a dog harness, a dog bed or a crate", "cat": "a cat tree, a litter box or a cat carrier"}
 PET_WORDS = {"dog": ("dog", "dogs", "puppy", "puppies"), "cat": ("cat", "cats", "kitten", "kittens")}
+# Coffee and tea, in a kitchen question (17 Oct 2026, wording PROPOSED): "present for a coffee lover" or "aeropress or v60"
+# had been offered a kettle, a chef's knife or a pan. Coffee makers' names place a request in the kitchen too.
+COFFEE_WORDS = ("coffee", "espresso", "aeropress", "v60", "chemex", "latte", "cappuccino", "barista")
+TEA_WORDS = ("tea", "matcha")
+INTEREST_EXAMPLES = (
+    (COFFEE_WORDS, "a coffee grinder, an espresso machine or a French press"),
+    (TEA_WORDS, "an electric kettle, a teapot or a stovetop kettle"),
+)
 
 
 @dataclass(frozen=True)
@@ -600,8 +609,11 @@ def classify(text: str) -> Routing:
        by a word for a thing made for it names that thing ("ipad case", "guitar strings": ACCESSORY_WORDS, 14 Oct
        2026). One product is the answer; two get one question; clue words count only when no name does.
     4. No product: a polite no in the words of what it is (NOT_RECOMMENDED, ADVICE; not for a thing made for what it
-       names, "wine rack", nor NOT_RECOMMENDED_LOOKALIKES, "photo album"), else a question within the category or
-       department its words suggest, else a general question."""
+       names, "wine rack", nor NOT_RECOMMENDED_LOOKALIKES, "photo album"), else a product of no type of module 1's
+       named in its own words (LONG_TAIL_PRODUCTS: a kitchen mixer tap, 17 Oct 2026), else a question within the
+       category or department its words suggest (since 17 Oct 2026 also its skin concerns, coffee makers' names and
+       the brand-lines list's brands: "something for dark circles", "aeropress or v60", "le creuset or staub"), else
+       a general question; a gift's asks what kind of gift, or what they like (GIFT_*)."""
     lowered = text.lower()
     if _HARMFUL.mentioned(_phrases_pattern(HARMFUL_LOOKALIKES).sub(lambda m: " " * len(m.group(0)), lowered)):
         return Routing("out_of_scope", message=HARMFUL_MESSAGE)
@@ -651,8 +663,14 @@ def classify(text: str) -> Routing:
     category = next((c for c, hints in CATEGORY_HINTS.items() if _mentions_any(lowered, hints)), None)
     if category is None and _mentions_any(lowered, SKIN_CONCERN_HINTS):
         category = "skincare"
+    if category is None and _mentions_any(lowered, COFFEE_WORDS):
+        category = "kitchen"
+    if category is None:
+        category = _brands_category(lowered)
     if category is not None:
         examples = GIFT_EXAMPLES[category] if gift else EXAMPLES[category]
+        if category == "kitchen":
+            examples = next((e for words, e in INTEREST_EXAMPLES if _mentions_any(lowered, words)), examples)
         return Routing("clarify", category, question=asked.format(noun=category, examples=examples))
     department = _department_hinted(lowered)
     if department is not None:
@@ -889,6 +907,42 @@ def _reversed_name(lowered: str) -> tuple[int, int, ProductType] | None:
                 if product is not None:
                     return m.start(1), m.end(2), product
     return None
+
+
+def _brands_category(lowered: str) -> str | None:
+    """The one category of skincare, haircare and kitchen whose brands the request names, by the brand-lines list
+    (data/brand_lines.json; 17 Oct 2026: "le creuset or staub" asks about kitchen products, "cerave or la roche posay"
+    about skincare), but brands that are everyday words too (config.EVERYDAY_BRAND_WORDS: "global"); None otherwise."""
+    from engine.config import EVERYDAY_BRAND_WORDS
+
+    words = " " + " ".join(re.findall(r"[a-z0-9]+", lowered.replace("'", "").replace("’", ""))) + " "
+    found = set()
+    for brand, categories in _brand_categories().items():
+        if len(brand) == 1 and (brand[0] in EVERYDAY_BRAND_WORDS or len(brand[0]) < 4):
+            continue
+        if f" {' '.join(brand)} " in words:
+            found |= categories
+    found &= {"skincare", "haircare", "kitchen"}
+    return next(iter(found)) if len(found) == 1 else None
+
+
+@cache
+def _brand_categories() -> dict[tuple[str, ...], set[str]]:
+    """{a brand's plain words: the categories the brand-lines list has its lines in}, read once; nothing when the list
+    can't be read."""
+    try:
+        from engine.brand_lines import load_brand_lines  # here: engine.brand_lines imports this module
+
+        lines = load_brand_lines()
+    except Exception:
+        return {}
+    found: dict[tuple[str, ...], set[str]] = {}
+    for line in lines:
+        for name in (line.brand, *line.also_called):
+            words = tuple(re.findall(r"[a-z0-9]+", name.lower().replace("'", "").replace("’", "")))
+            if words:
+                found.setdefault(words, set()).add(line.category)
+    return found
 
 
 def _department_hinted(lowered: str) -> str | None:

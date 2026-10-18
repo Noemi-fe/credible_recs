@@ -2334,3 +2334,37 @@ NEED_LOOKALIKES = NEED_LOOKALIKES | {
 EVERYDAY_BRAND_WORDS = frozenset({"field", "global", "hero", "tiger", "wolf", "aroma", "flair", "luxe", "nest", "sage",
                                   "apple", "ego", "kyte", "epicurean", "icebreaker", "simple", "always", "instant",
                                   "fresh", "glow", "honest", "native", "pure", "smart", "true", "original", "solo"})
+# Module 4's names (17 Oct 2026). Barbecue writers' other names for it, found among the library's names after two or
+# more brands ("Weber grills", "Weber BBQ", "Weber Spirit gas grill", "Char-Broil grill"): a brand's or a model's name
+# with them says no more than the name alone (engine.group_products, "Name levels"), so "Weber Spirit gas grill" and
+# "Spirit II" are no longer shown as two picks of one product.
+# And a knife sharpener's stones ("King stones", "King KDS 1000/6000 combo stone" beside "King KDS 1000/6000").
+TYPE_SYNONYMS = TYPE_SYNONYMS | {
+    "barbecue": ("grill", "grills", "gas grill", "charcoal grill", "bbq", "barbeque"),
+    "knife sharpener": ("stone", "whetstone", "waterstone", "water stone", "whet stone", "sharpening stone",
+                        "combo stone", "combination stone", "combo"),
+}
+# Brands as their makers write them (17 Oct 2026, from the day's sweep: names still shown in small letters or other
+# capitals, a writer's possessive or plural of a brand), merged into MAKER_SPELLINGS. A maker's own small letters are
+# kept ("smartwater"; "innisfree" is the brand-lines list's); a model's name with its brand where writers write the
+# model in small letters
+# ("Laifen Swift", "Spyderco Sharpmaker", "Shapton Pro").
+_NAMES_ROUND_TWO_SPELLINGS: dict[str, tuple[str, ...]] = {
+    "general": ("OtterBox Defender", "OtterBox", "Laifen Swift", "Laifen", "Nanit", "Momcozy", "Durston X-Mid",
+                "Durston", "Sea to Summit", "Bowflex", "BaByliss", "Grado", "Oral-B", "Fisher & Paykel", "Kenmore",
+                "BabyBjörn", "Ergobaby", "Smartwool", "Dogbed4less", "Wrangler", "Danner", "Feather", "IKEA",
+                "Unique Melody", "Shure", "Logitech", "Lenovo", "Melanzana", "smartwater"),
+    "kitchen": ("Chef'sChoice", "Our Place", "Finex", "Hario", "All-Clad", "Amazon Basics", "Big Green Egg", "Char-Broil",
+                "Henckels", "Kenmore", "Weber", "Spyderco Sharpmaker", "Shapton Pro", "1Zpresso", "Sunbeam",
+                "Toastmaster", "IKEA", "Orphan Espresso"),
+    "skincare": ("Paula's Choice", "Vanicream", "Sun Bum", "SKINFOOD", "Neutrogena", "Estée Lauder", "Ole Henriksen",
+                 "The INKEY List"),
+    "haircare": ("Native", "Viori", "KEVIN.MURPHY", "Hairstory", "Giovanni"),
+}
+MAKER_SPELLINGS = {category: MAKER_SPELLINGS.get(category, ()) + _NAMES_ROUND_TWO_SPELLINGS.get(category, ())
+                   for category in sorted(set(MAKER_SPELLINGS) | set(_NAMES_ROUND_TWO_SPELLINGS))}
+# Type rules (17 Oct 2026; the decided rule of 10 Oct 2026, decision 5: what holds, covers, sharpens or refills a
+# product never counts for it). A razor's blade is such a thing: "blade" joins OTHER_TYPE_WORDS (an existing value,
+# extended in place for this item), so the AI's 30 "razor blade" mentions, and a product every writer names as blades
+# (engine.group_products), stay out of razor answers ("Derby blades" had been the second razor pick).
+OTHER_TYPE_WORDS = OTHER_TYPE_WORDS + ("blade",)

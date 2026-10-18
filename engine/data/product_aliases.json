@@ -62,7 +62,10 @@
       {"short": "Daniel Kern BP treatment", "full": "Acne.org Treatment (Benzoyl Peroxide 2.5%)", "seen": ["Daniel Kern BP treatment"]},
       {"short": "Dr. Song 2.5% solution", "full": "Dr. Song 2.5% Benzoyl Peroxide Advanced Acne Gel", "seen": ["Dr. Song 2.5% solution", "Dr Song 2.5%"]},
       {"short": "CortiBalm", "full": "Dr. Dan's CortiBalm", "seen": ["CortiBalm"]},
-      {"short": "Clinique Moisture Surge Lipbalm", "full": "Clinique Moisture Surge Lip Hydro-Plump Treatment", "seen": ["Clinique Moisture Surge Lipbalm"]}
+      {"short": "Clinique Moisture Surge Lipbalm", "full": "Clinique Moisture Surge Lip Hydro-Plump Treatment", "seen": ["Clinique Moisture Surge Lipbalm"]},
+      {"short": "Inkey List", "full": "The INKEY List", "seen": ["Inkey List caffeine eye cream"]},
+      {"short": "OleHenricksen", "full": "Ole Henriksen", "seen": ["OleHenricksen banana bright + vitamin C under eye cream"]},
+      {"short": "haru haru", "full": "Haruharu Wonder", "seen": ["haru haru sunscreen line"]}
     ],
     "kitchen": [
       {"short": "1Z", "full": "1Zpresso", "seen": ["1Z K plus", "1ZPresso K Plus"]},
@@ -97,7 +100,21 @@
       {"short": "Made in Japan Zojirushi", "full": "Zojirushi", "seen": ["Made in Japan Zojirushi", "used Made in Japan Zojirushi"]},
       {"short": "Matfer CS", "full": "Matfer carbon steel", "seen": ["Matfer CS", "Matfer carbon steel"]},
       {"short": "KitchenAid Pro", "full": "KitchenAid Professional", "seen": ["KitchenAid Pro stand mixer", "KitchenAid Pro 5 Plus", "KitchenAid Professional 5 Plus", "KitchenAid Pro HD", "Kitchenaid Professional HD", "KitchenAid Professional 600"]},
-      {"short": "Kitchen Aid Pro", "full": "KitchenAid Professional", "seen": ["kitchen aid pro", "KitchenAid Professional"]}
+      {"short": "Kitchen Aid Pro", "full": "KitchenAid Professional", "seen": ["kitchen aid pro", "KitchenAid Professional"]},
+      {"short": "Spirit", "full": "Weber Spirit", "seen": ["Spirit II", "spirit", "Spirit line", "Weber Spirit gas grill"]},
+      {"short": "King 1000/6000", "full": "King KDS 1000/6000", "seen": ["King 1000/6000", "king 1000/6000", "King KDS 1000/6000"]},
+      {"short": "King 1K/6K", "full": "King KDS 1000/6000", "seen": ["King 1K/6K", "king 1k-6k combo"]},
+      {"short": "Genesis", "full": "Weber Genesis", "seen": ["Genesis", "genesis", "Genesis II", "Weber Genesis"]},
+      {"short": "double sided 1000/6000 King", "full": "King KDS 1000/6000", "seen": ["double sided 1000/6000 King whetstone"]},
+      {"short": "double sided King whetstone", "full": "King KDS", "seen": ["double sided King whetstone, 1000/6000"]},
+      {"short": "Kenmoore", "full": "Kenmore", "seen": ["Kenmoore fridge line", "Kenmore fridge line"]},
+      {"short": "vintage Sunbeam Radiant Control", "full": "Sunbeam Radiant Control", "seen": ["vintage Sunbeam Radiant Control toaster"]},
+      {"short": "vintage Toastmaster 1B14", "full": "Toastmaster 1B14", "seen": ["vintage Toastmaster 1B14 toaster"]},
+      {"short": "Kenwood Chef vintage", "full": "Kenwood Chef", "seen": ["Kenwood Chef (vintage)"]},
+      {"short": "full-size Hario Skerton", "full": "Hario Skerton", "seen": ["full-size Hario Skerton"]},
+      {"short": "finex 12", "full": "Finex 12-inch skillet", "seen": ["finex 12”"]},
+      {"short": "Lido", "full": "Orphan Espresso Lido", "seen": ["Lido 3", "lido 3"]},
+      {"short": "Canadian made Napoleon", "full": "Napoleon", "seen": ["Canadian made Napoleon Grill"]}
     ],
     "general": [
       {"short": "Braun S7", "full": "Braun Series 7", "seen": ["Braun S7", "Braun series 7", "Braun Series 7"]},
@@ -112,7 +129,28 @@
       {"short": "Capilene", "full": "Patagonia Capilene", "seen": ["capilene", "Capilene lightweight", "Capilene daily", "Patagonia Capilene"]},
       {"short": "lightweight capilene", "full": "Patagonia Capilene Lightweight", "seen": ["lightweight capilene", "lightweight capilene base layer", "Patagonia lightweight capilene"]},
       {"short": "Thermal Weight Capilene", "full": "Patagonia Capilene Thermal Weight", "seen": ["Thermal Weight Capilene", "Patagonia capilene Thermal weight"]},
-      {"short": "Pillow Guy", "full": "MyPillow", "seen": ["Pillow Guy", "MyPillow"]}
+      {"short": "Pillow Guy", "full": "MyPillow", "seen": ["Pillow Guy", "MyPillow"]},
+      {"short": "Embrace", "full": "Ergobaby Embrace", "seen": ["Embrace", "embrace", "Ergobaby Embrace carrier"]},
+      {"short": "Embrace mesh version", "full": "Ergobaby Embrace", "seen": ["Embrace mesh version", "Ergobaby Embrace carrier"]},
+      {"short": "Ergo", "full": "Ergobaby", "seen": ["Ergo embrace", "ergo 360", "ergo aerloom", "Ergobaby Omni 360"]},
+      {"short": "Ergo Baby", "full": "Ergobaby", "seen": ["Ergo Baby Embrace", "ergo baby Omni breeze", "Ergobaby omni breeze"]},
+      {"short": "Paperwhite", "full": "Kindle Paperwhite", "seen": ["paperwhite", "Paperwhite 3", "Kindle Paperwhite 3"]},
+      {"short": "paper white", "full": "Kindle Paperwhite", "seen": ["paper white", "Kindle paper White"]},
+      {"short": "other box", "full": "OtterBox", "seen": ["other box defender", "Otterbox Defender", "OtterBox defender"]},
+      {"short": "Otter box", "full": "OtterBox", "seen": ["Otter box", "otter box defender", "otter boxes", "Otter Box"]},
+      {"short": "S2S", "full": "Sea to Summit", "seen": ["s2s fleece liner"]},
+      {"short": "SE846", "full": "Shure SE846", "seen": ["SE846", "Shure 846"]},
+      {"short": "G502", "full": "Logitech G502", "seen": ["G502 wireless"]},
+      {"short": "melly", "full": "Melanzana Micro Grid Hoodie", "seen": ["melly", "Melly"]},
+      {"short": "bjorn older model", "full": "BabyBjorn Bouncer", "seen": ["bjorn older model", "Baby Bjorn bouncer"]},
+      {"short": "Grid Linen towel from Outlier", "full": "Outlier Grid Linen Towel", "seen": ["Grid Linen towel from Outlier"]},
+      {"short": "babyliss nano titanium", "full": "BaBylissPRO Nano Titanium", "seen": ["babyliss nano titanium 1\" flat iron"]},
+      {"short": "mest mkii", "full": "Unique Melody MEST MKII", "seen": ["mest mkii"]}
+    ],
+    "haircare": [
+      {"short": "Kevyn Murphy", "full": "KEVIN.MURPHY", "seen": ["Kevyn Murphy angel shampoo"]},
+      {"short": "HairStory Rich New Wash", "full": "Hairstory New Wash Rich", "seen": ["HairStory Rich New Wash"]},
+      {"short": "Giovanni Tea Tree Triple Threat", "full": "Giovanni Tea Tree Triple Treat", "seen": ["Giovanni Tea Tree Triple Threat", "Giovanni tea tree triple treat"]}
     ]
   },
   "kinds": {

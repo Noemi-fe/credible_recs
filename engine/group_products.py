@@ -133,12 +133,12 @@ import threading
 from array import array
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import cache, lru_cache
 
 from engine.config import (
-    BRAND_MODEL_GENERIC_WORDS, BRAND_PICK_NAME, MAKER_SPELLINGS, PRODUCT_TYPE_PLURALS, PRODUCT_TYPE_SHOWN,
-    PRODUCT_VARIANT_WORDS, SHOPS, TYPE_SYNONYMS, UK_BRAND_NAMES,
+    BRAND_MODEL_GENERIC_WORDS, BRAND_PICK_NAME, MAKER_SPELLINGS, OTHER_TYPE_WORDS, PRODUCT_TYPE_PLURALS,
+    PRODUCT_TYPE_SHOWN, PRODUCT_VARIANT_WORDS, SHOPS, TYPE_SYNONYMS, UK_BRAND_NAMES,
 )
 from engine.extract import CheckResult
 from engine.memo import Table, register
@@ -248,7 +248,53 @@ def group_products(mentions: list[ProductMention], aliases: dict[str, Aliases] |
               for g in _group_category(category, ms, aliases.get(category, {}), product_type,
                                        (index or {}).get(category), frozenset((known or {}).get(category, ())),
                                        ranges)]
+    if product_type:
+        groups = [_named_as_another_thing(g, product_type) for g in groups]
     return sorted(groups, key=lambda g: (-len(g.mentions), g.key))
+
+
+# The words of config.OTHER_TYPE_WORDS a product's own name can end with to say it is that thing, not the product it goes
+# with: all but a kit's and a bundle's, which name a product sold with its extras as often ("a console bundle").
+_NAMED_THING_WORDS = frozenset(OTHER_TYPE_WORDS) - {"kit", "bundle"}
+
+
+def _named_as_another_thing(group: ProductGroup, product_type: str) -> ProductGroup:
+    """The group, with its mentions typed as the thing its every name says it is (17 Oct 2026, the ws-names builder;
+    the decided rule of 10 Oct 2026 that what holds, covers, sharpens or refills a product never counts for it,
+    config.OTHER_TYPE_WORDS): "Derby blades" in a razor answer is razor blades, whatever type the AI gave it, and the
+    answer leaves it out as another type (it had been the day's second razor pick twice). Only when every name's last
+    word is such a word ("blades", "lid", "case"), not after "with" ("with straw lid" says what a bottle has), and not
+    a word of the requested type's own names ("case" for a phone case, "stand" for a stand mixer, "set" for "dumbbell
+    set")."""
+    endings = {_last_word(name) for name in group.names}
+    if len(endings) != 1:
+        return group
+    ending = next(iter(endings))
+    singular = ending.removesuffix("s") if ending.endswith("s") and ending.removesuffix("s") in _NAMED_THING_WORDS \
+        else ending
+    if singular not in _NAMED_THING_WORDS or singular in _own_words_of_type(product_type):
+        return group
+    if any(re.search(r"\bwith\s+(?:\S+\s+){0,2}\S+$", name.lower()) for name in group.names):
+        return group
+    thing = f"{product_type} {singular}"
+    return ProductGroup(group.key, group.name, group.category,
+                        [replace(m, product_type=thing) for m in group.mentions], group.loose, group.generic,
+                        group.bases)
+
+
+def _last_word(name: str) -> str:
+    words = plain_words(name)
+    return words[-1] if words else ""
+
+
+@lru_cache(maxsize=1024)
+def _own_words_of_type(product_type: str) -> frozenset[str]:
+    """The words of a type's own names, singular: its name's and, for module 1's types, its keywords' ("stand" of a stand
+    mixer, "set" of "dumbbell set")."""
+    from engine.query import PRODUCT_TYPES
+
+    names = [product_type] + [k for p in PRODUCT_TYPES if p.name == product_type for k in p.keywords]
+    return frozenset(w.removesuffix("s") for name in names for w in plain_words(name))
 
 
 class NameIndex:
@@ -1313,9 +1359,15 @@ register(_SPELLED.clear)
 
 
 def _maker_spelling(name: str, category: str, more: tuple[str, ...] = (), whole: tuple[str, ...] = ()) -> str:
+    """The name as its maker writes it (_spelled), tidied (_tidied): no quotation marks, and a capital to start it unless
+    its maker writes it in small letters."""
+    return _tidied(_spelled(name, category, more, whole), category, more)
+
+
+def _spelled(name: str, category: str, more: tuple[str, ...] = (), whole: tuple[str, ...] = ()) -> str:
     """The name with its brand written as its maker writes it (15 Oct 2026, from a product researcher's list of names
     shown misspelled: "Phillips Avent", "Levelor", "LL Beans", "Mountain Hardware", "Simple Human", "Kitchen Aide"):
-    when the name's first one to three words are a known spelling's words, but written otherwise (a slip, another
+    when the name's first one to four words are a known spelling's words, but written otherwise (a slip, another
     spacing or punctuation, a short name: engine.match_products.product_words), they are replaced by it. Known
     spellings: config.MAKER_SPELLINGS, the full names of the category's short names (engine/data/product_aliases.json:
     "KitchenAid", "Le Creuset") and `more` (the brand-lines list's brands). Never a name the UK knows by another
@@ -1324,26 +1376,39 @@ def _maker_spelling(name: str, category: str, more: tuple[str, ...] = (), whole:
     Since 16 Oct 2026 (the interview-fixes builder) a brand written only in other capitals is shown as they write it
     too ("Cosrx" as "COSRX", "kitchenaid" as "KitchenAid"; it had been left as written, and 58 names shown in the day's
     answers had their brand in small letters or other capitals), the longest such beginning first; and so is a first
-    word that the price and facts lists' names (`whole`) begin with, written one way there ("kindle paperwhite" as
-    "Kindle paperwhite"), though never into small letters from those names.
+    word that the price and facts lists' names (`whole`) begin with, written one way there ("kindle oasis" as
+    "Kindle oasis"), though never into small letters from those names.
 
     `whole`: names the price list and the facts list write as their makers do (15 Oct 2026, the second product
     researcher's "Mad Hippie vitamin c serum" beside "Mad Hippie Vitamin C Serum"): a name with one of their words, in
-    other capitals or another writing, is shown as they write it."""
+    other capitals or another writing, is shown as they write it, with its brand as config.MAKER_SPELLINGS writes it
+    (17 Oct 2026: the price list's "1ZPresso K Plus" beside the 1Zpresso JX-Pro).
+
+    Since 17 Oct 2026 (the ws-names builder) a name whose words are a short name's full name's is shown as that full
+    name, Claude's spelling of the product the threads make plain ("other box defender" as "OtterBox Defender",
+    "melly" as "Melanzana Micro Grid Hoodie", "Grid Linen towel from Outlier" as "Outlier Grid Linen Towel"); and a
+    beginning of four words can be a known one too ("vintage Sunbeam Radiant Control")."""
     tokens = name.split()
     aliases = known_aliases().get(category, {})
-    if whole:
-        found = _whole_spellings(category, whole).get(tuple(product_words(name, aliases)))
-        if found is not None and not (found == found.lower() and name != name.lower()):
-            return found  # never in small letters a name written with capitals ("niche" for "Niche")
     folded, by_letter, spelled = _maker_spellings(category, more)
-    for size in range(min(3, len(tokens)), 0, -1):
+    if spelled.get(_folded(name)) is not None:  # a known spelling, as written but perhaps for capitals ("Field Company")
+        return spelled[_folded(name)]
+    words = tuple(product_words(name, aliases))
+    full = _short_names_full(category).get(words) or _short_names_full(category).get(
+        tuple(aliases.get(tuple(normalize_name(name)), ())))  # a short name the matcher reads as a slip of its full
+    if full is not None:
+        return full
+    if whole:
+        found = _whole_spellings(category, whole).get(words)
+        if found is not None and not (found == found.lower() and name != name.lower()):
+            return _config_brand(found, category)  # never in small letters a name written with capitals ("niche")
+    # The longest beginning a known spelling writes, as written but for capitals, or in other words (since 17 Oct 2026
+    # one beginning at a time, so "durston x mid" is "Durston X-Mid" though "durston" alone is "Durston").
+    for size in range(min(4, len(tokens)), 0, -1):
         run = " ".join(tokens[:size])
         known = spelled.get(_folded(run))
         if known is not None:  # written as its maker writes it, but perhaps for capitals
             return name if known == run else " ".join([known, *tokens[size:]])
-    for size in range(min(3, len(tokens)), 0, -1):
-        run = " ".join(tokens[:size])
         words = tuple(product_words(run, aliases))
         if not words:
             continue
@@ -1361,6 +1426,69 @@ def _maker_spelling(name: str, category: str, more: tuple[str, ...] = (), whole:
         if known is not None and not (known == known.lower() and tokens[0] != tokens[0].lower()):
             return " ".join([known, *tokens[1:]])
     return name
+
+
+def _config_brand(name: str, category: str) -> str:
+    """A list's name with its first words written as config.MAKER_SPELLINGS writes them, when they are one of those
+    spellings in other capitals or marks ("1ZPresso K Plus" as "1Zpresso K Plus")."""
+    tokens = name.split()
+    for size in range(min(4, len(tokens)), 0, -1):
+        run = " ".join(tokens[:size])
+        known = _config_spellings(category).get(_folded(run))
+        if known is not None:
+            return name if known == run else " ".join([known, *tokens[size:]])
+    return name
+
+
+@lru_cache(maxsize=16)
+def _config_spellings(category: str) -> dict[str, str]:
+    return {_folded(spelling): spelling for spelling in MAKER_SPELLINGS.get(category, ())}
+
+
+register(_config_spellings.cache_clear)
+
+
+@lru_cache(maxsize=16)
+def _short_names_full(category: str) -> dict[Words, str]:
+    """{a short name's full name's words: the full name as the alias list writes it} for a category (17 Oct 2026); a
+    full name two entries write two ways is left out."""
+    import json
+
+    found: dict[Words, set[str]] = defaultdict(set)
+    try:
+        listed = json.loads(DEFAULT_ALIASES.read_text(encoding="utf-8")).get("products", {}).get(category, [])
+    except (OSError, ValueError, AttributeError):
+        return {}
+    aliases = known_aliases().get(category, {})
+    for entry in listed:
+        full = entry.get("full", "")
+        words = tuple(product_words(full, aliases))
+        if words:
+            found[words].add(full)
+    return {words: next(iter(spellings)) for words, spellings in found.items() if len(spellings) == 1}
+
+
+register(_short_names_full.cache_clear)
+
+# Quotation marks a writer put around part of a name ('Le Creuset "toughened non-stick" pan'), never its maker's; never
+# an inch mark after a number ('1" flat iron').
+_QUOTES = re.compile(r"[“„]|(?<![0-9])[\"”]")
+
+
+def _tidied(name: str, category: str, more: tuple[str, ...] = ()) -> str:
+    """A shown name without double quotation marks, and starting with a capital (17 Oct 2026, the ws-names builder: 23
+    of the day's shown names started in small letters, "laifen swift", "nanit cam"), unless its first word is written
+    as a known spelling writes it ("innisfree": config.MAKER_SPELLINGS, the brand-lines list's brands, the short names'
+    full names) or has capitals of its own ("iPhone", "eBay")."""
+    tidy = " ".join(_QUOTES.sub("", name).split()) or name
+    first = tidy.split()[0]
+    if not first[:1].islower() or any(c.isupper() for c in first) or not normalize_name(tidy):
+        return tidy  # a name of filler alone ("the one") names nothing: it is never a shown name
+    known = {s.split()[0] for s in (*MAKER_SPELLINGS.get(category, ()), *more) if s.split()}
+    known |= {full.split()[0] for full in _short_names_full(category).values() if full.split()}
+    if first in known:
+        return tidy
+    return first[:1].upper() + tidy[1:]
 
 
 def _folded(text: str) -> str:

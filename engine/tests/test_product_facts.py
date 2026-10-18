@@ -796,10 +796,14 @@ def test_a_pick_with_a_facts_entry_is_shown_under_the_entrys_name(tmp_path, skin
                         {"cerave resurfacing retinol serum": 4, "Differin Gel": 3, "inkey list retinol": 3})
     proper = [known("CeraVe Resurfacing Retinol Serum", strength="gentle", prescription_only=False)]
     result = answer_request(BEGINNER, library_dir=lib, prices=[], product_facts=proper, today=TODAY)
-    assert names(result.answer.picks) == ["CeraVe Resurfacing Retinol Serum", "Differin Gel", "inkey list retinol"]
+    # Changed on purpose 17 Oct 2026 (the ws-names builder): the shipped short name "Inkey List" is The INKEY List, so
+    # the writers' "inkey list retinol" is shown with the brand as its maker writes it. Was: "inkey list retinol".
+    assert names(result.answer.picks) == ["CeraVe Resurfacing Retinol Serum", "Differin Gel", "The INKEY List retinol"]
     assert [p.name for p in result.ranking.products][:1] == ["CeraVe Resurfacing Retinol Serum"]
     without = answer_request(BEGINNER, library_dir=lib, prices=[], product_facts=[], today=TODAY)
-    assert names(without.answer.picks)[0] == "cerave resurfacing retinol serum"
+    # Changed on purpose 17 Oct 2026 (the ws-names builder): a shown name starts with a capital as a last resort. Was:
+    # "cerave resurfacing retinol serum".
+    assert names(without.answer.picks)[0] == "Cerave resurfacing retinol serum"
 
 
 def test_a_product_shown_under_its_facts_entrys_name_is_checked_against_the_price_list_under_that_name(
