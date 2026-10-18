@@ -188,3 +188,20 @@ def test_avoiding_a_kind_the_requests_facts_rule_out_stays_whatever_others_recom
     answer = write_answer(rank_products(items, "skincare", notes, {}), bodies_for(*items, *notes), "retinoid",
                           request="gentle retinol for beginners", unsuited_kinds={"tretinoin"})
     assert (wording.AVOID, "tretinoin") in [(item.advice, item.kind) for item in answer.look_for]
+
+
+def test_the_same_kinds_recommendations_count_together_against_a_warning():
+    # The kettle answers of the 17 Oct sweep: one warning against variable temperature kettles (-1.6), and credible
+    # recommendations of the same thing under three other names, each under half as strong, together more: the warning
+    # is left out. "temp" is "temperature" written short.
+    notes = [note("variable temperature kettle", "t1", stance="warn", weight=-1.6,
+                  quote="Every variable temperature kettle I owned broke inside a year."),
+             note("temperature-controlled kettle", "t2", weight=0.6,
+                  quote="A temperature-controlled kettle is great for green tea."),
+             note("variable temp", "t1", weight=0.5, quote="Variable temp is great for tea, get a kettle with it."),
+             note("steel kettle", "t2", weight=0.4, quote="A steel kettle is great, no plastic taste at all.")]
+    assert (wording.AVOID, "variable temperature kettle") not in shown(notes, "electric kettle",
+                                                                       "electric kettle that lasts 10+ years")
+    # One of them alone, under half as strong, doesn't outweigh it.
+    assert (wording.AVOID, "variable temperature kettle") in shown([notes[0], notes[1], notes[3]], "electric kettle",
+                                                                   "electric kettle that lasts 10+ years")

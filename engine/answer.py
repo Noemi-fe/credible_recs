@@ -2203,8 +2203,9 @@ REFUSED_THINGS: dict[str, tuple[str, ...]] = {
     "strip": ("stripping", "harsh"),
     "cruelty-free": ("cruelty", "tested on animals"),
 }
-# How much credible support a kind recommending what an "Avoid" line warns against needs, against that warning, to keep
-# the line out (17 Oct 2026): half of it. Stronger warnings than its support keep a "Look for" out. Decided by Claude.
+# How much credible support the kinds recommending what an "Avoid" line warns against need, together, against that
+# warning, to keep the line out (17 Oct 2026): half of it. Stronger warnings than its support, together, keep a "Look
+# for" out. Decided by Claude.
 AVOID_OUTWEIGHED_SHARE = 0.5
 
 
@@ -2243,9 +2244,16 @@ _NO_KIND_WORDS = frozenset({"a", "an", "the", "and", "or", "of", "to", "in", "on
                             "into", "but", "you", "can", "has", "once", "then", "not", "no", "one", "it", "its"})
 
 
+# Short forms writers use for a kind's word (17 Oct 2026): "variable temp" is variable temperature.
+_SHORT_FORMS = {"temp": "temperature", "temps": "temperature"}
+
+
 def _one_form(word: str) -> str:
     """A kind word as one form, so a plural group_kinds made singular its own way meets its singular: "knive" (of
-    "knives") is "knife", "patche" "patch", "batterie" "battery", "glasse" "glass"."""
+    "knives") is "knife", "patche" "patch", "batterie" "battery", "glasse" "glass"; and a short form as its word
+    (_SHORT_FORMS: "temp")."""
+    if word in _SHORT_FORMS:
+        return _SHORT_FORMS[word]
     if len(word) > 4:
         for ending, base in (("ive", "ife"), ("che", "ch"), ("she", "sh"), ("sse", "ss"), ("xe", "x"), ("ie", "y")):
             if word.endswith(ending):
@@ -2347,12 +2355,13 @@ def _contradicts(kind: KindSupport, ranking: RankingResult, product_type: str | 
             return True
         if words and any(all(any(_same_word(w, n) for n in _written(pick, category)) for w in words) for pick in picks):
             return True
-        return any(other.support > 0 and other.support >= AVOID_OUTWEIGHED_SHARE * -kind.support
-                   and _same_kind(words, other_words) for other, other_words in others)
+        # The same kind's recommendations under other names count together (module 4 kept them apart).
+        return sum(other.support for other, other_words in others
+                   if other.support > 0 and _same_kind(words, other_words)) >= AVOID_OUTWEIGHED_SHARE * -kind.support
     if _says_any(kind.name, refused):
         return True
-    return any(other.support < 0 and -other.support > kind.support and _same_kind(words, other_words)
-               for other, other_words in others)
+    return -sum(other.support for other, other_words in others
+                if other.support < 0 and _same_kind(words, other_words)) > kind.support
 
 
 def _another_types_advice(kind: str, notes: list[KindNote], category: str, product_type: str | None) -> bool:
