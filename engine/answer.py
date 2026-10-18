@@ -706,7 +706,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             item.form = forms.get(item.product_key)
             item.prescription = _prescription(item.product_key, prescription)
     look_for = _look_for(ranking, check, product_type, unsuited_kinds, request, asks, [pick.name for pick in picks],
-                         forms_asked, needs, _picks_names(ranking, picks))
+                         forms_asked, needs, _picks_names(ranking, picks),
+                         _Once(lambda: _lines_products(ranking, picks, product_type)))
     care_note = _care_note([care.get(pick.product_key) for pick in picks], picks, check)
     # Shown thanks to a comment standing out in its thread (14 Oct 2026): the messages and the note say how.
     standing_out = {p.key for p in ranking.products if p.by_standout}
@@ -1163,6 +1164,33 @@ def _picks_names(ranking: RankingResult, picks: Iterable["Pick"]) -> list[str]:
         names.append(pick.name)
         product = by_key.get(pick.product_key)
         names += [m.written_as for m in (product.mentions if product else ()) if m.written_as]
+    return list(dict.fromkeys(names))
+
+
+class _Once:
+    """What a function gives, worked out the first time it is asked for (latency, 18 Oct 2026)."""
+
+    def __init__(self, work):
+        self._work, self._done, self._value = work, False, None
+
+    def __call__(self):
+        if not self._done:
+            self._value, self._done = self._work(), True
+        return self._value
+
+
+def _lines_products(ranking: RankingResult, picks: Iterable["Pick"], product_type: str | None) -> list[str]:
+    """The names of the products ranked under each pick's own name, as shown and as their writers give them, of the
+    type asked for (18 Oct 2026): a brand or line pick holds them ("Bonavita variable temperature gooseneck" under the
+    Bonavita kettle line, "OXO adjustable temp kettle" under OXO's), so they say which kinds of the type it is. A product
+    whose name names another type ("Lodge enameled cast iron Dutch oven" under the Lodge skillet line) isn't one."""
+    names: list[str] = []
+    for pick in picks:
+        under = pick.product_key + " "
+        for product in ranking.products:
+            if product.key.startswith(under) and not (_named_types(product.name, ranking.category)
+                                                      - {product_type}):
+                names += [product.name, *(m.written_as for m in product.mentions if m.written_as)]
     return list(dict.fromkeys(names))
 
 
@@ -1951,13 +1979,15 @@ def _said_needs(needs: Iterable[Need], product_type: str | None = None, request:
     asked = set(asks)
     own = _own_name_words(product_type, request) if category in ("kitchen", "general") else frozenset()
     for need in needs:
-        if need.request_word is not None and need.request_word in own:
-            hidden.add(need.name)
-            continue
         written = re.sub(r"[\s'-]", "", (need.label or need.request_word or need.name).lower())
-        for must_have, words in MUST_HAVE_WORDS.items():
-            if must_have in asked and any(written.startswith(word) for word in words):
-                labels[need.name] = must_have
+        must = next((must_have for must_have, words in MUST_HAVE_WORDS.items()
+                     if must_have in asked and any(written.startswith(word) for word in words)), None)
+        if must is not None:
+            # A must-have is named as one even when the product's name holds it (18 Oct 2026): "non stick pan without
+            # teflon" asks for a non-stick pan as "non-stick frying pan without PFAS" does, and is said the same way.
+            labels[need.name] = must
+        elif need.request_word is not None and need.request_word in own:
+            hidden.add(need.name)
     return _SaidNeeds(labels, frozenset(hidden))
 
 
@@ -2108,7 +2138,8 @@ def _skip_item(product: ProductScore, check: _QuoteCheck) -> SkipItem | None:
 def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | None = None,
               unsuited_kinds: Collection[str] = (), request: str = "", asks: tuple[str, ...] = (),
               picks: Collection[str] = (), forms_asked: Collection[str] = (),
-              needs: tuple[Need, ...] = (), picks_names: Collection[str] | None = None) -> list[LookFor]:
+              needs: tuple[Need, ...] = (), picks_names: Collection[str] | None = None,
+              lines_products: Collection[str] | Callable[[], Collection[str]] = ()) -> list[LookFor]:
     """Up to LOOK_FOR_NOTES kinds, strongest credible advice first, each with its strongest verified note. In skincare,
     a kind whose advice is about another type of product gives none (_another_types_advice). A kind in
     `unsuited_kinds` (its facts clash hard with the request: the pipeline's _unsuited_kinds) gives no "Look for".
@@ -2134,10 +2165,17 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
     Since 17 Oct 2026 (the converge round) the section never says the opposite of the request or of the picks
     (_contradicts): no "Avoid" for what the request asks for (an active ingredient it names, one of its `needs`, or a
     feature of the product it names, "mesh" in "mesh wifi"), for a kind one of the `picks` is by its own name ("Avoid:
-    inverter microwave" above a Panasonic inverter microwave), or for a kind another kind's credible advice recommends
-    ("Avoid: variable temperature kettle" while credible voices recommend a temperature-controlled one); no "Look for"
-    for what the request refuses ("Teflon pans" for a pan without Teflon), or that stronger credible warnings in the same
-    answer argue against. Avoiding what the request refuses ("Avoid: Teflon") agrees with it, and stays.
+    inverter microwave" above a Panasonic inverter microwave; "Avoid: variable temperature kettle" above a kettle line
+    whose products are variable temperature ones), or for a kind the same kind's credible advice, under its other names,
+    recommends as strongly ("Avoid: mineral SPFs" beside "Look for: mineral sunscreen"); no "Look for" for what the
+    request refuses ("Teflon pans" for a pan without Teflon), or that stronger credible warnings in the same answer
+    argue against. Avoiding what the request refuses ("Avoid: Teflon") agrees with it, and stays.
+
+    Since 18 Oct 2026 (the whole sweep read): `picks_names` are the picks' names and their writers' (_picks_names),
+    `lines_products` the names of the products ranked under them (_lines_products), which tell only kinds of the type
+    asked for ("variable temperature kettle" under the Bonavita line's variable temperature gooseneck); another kind's
+    advice counts as this one's only when it is about the same thing (_about_the_same); and a line left out for saying
+    the opposite leaves its place empty: the advice after the first lines is weaker, and none comes in for it.
     """
     candidates = []
     asked_words, refused = _asked_and_refused(ranking.category, product_type, request, needs, asks)
@@ -2159,15 +2197,24 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
                                       if n.kind_key == kind.key and n.stance == stance and is_credible(n)])
         if (_the_product_asked_for(kind.name, ranking.category, product_type, request)
                 or _instead_of_the_product(kind.name, ranking.category, product_type, request)
-                or _another_types_advice(kind.name, notes, ranking.category, product_type)
-                or _contradicts(kind, ranking, product_type, asked_words, refused,
-                                picks if picks_names is None else picks_names, unsuited_kinds)):
+                or _another_types_advice(kind.name, notes, ranking.category, product_type)):
             continue
+        # A kind saying the opposite (_contradicts) still takes its place, left empty at the end (18 Oct 2026).
         candidates.append((kind, advice, notes))
     # sorted keeps ties in the ranking's order
     candidates.sort(key=lambda c: (not _about_the_type(c[0].name, c[2], product_type), -abs(c[0].support)))
+    names = picks if picks_names is None else picks_names
+    opposite: dict[str, bool] = {}  # worked out only for the kinds the section reaches (latency, 18 Oct 2026)
+
+    def says_the_opposite(kind: KindSupport) -> bool:
+        if kind.key not in opposite:
+            opposite[kind.key] = _contradicts(kind, ranking, product_type, asked_words, refused, names,
+                                              unsuited_kinds, lines_products)
+        return opposite[kind.key]
+
     items: list[LookFor] = []
     item_notes: list[list[KindNote]] = []  # each item's kind's notes that state advice, strongest first
+    item_kinds: list[list[KindSupport]] = []  # each item's kinds: its own, then those sharing its line
     for kind, advice, notes in candidates:
         if len(items) == LOOK_FOR_NOTES:
             break
@@ -2186,12 +2233,20 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
             else:
                 shared = check.first([n for n in notes if n.comment_id in used], 1)
                 if shared:
-                    items[used[shared[0].comment_id]].kind += f" or {kind.name}"
+                    item_kinds[used[shared[0].comment_id]].append(kind)
                 continue
         if quote:
             items.append(LookFor(kind.name, advice, quote[0]))
             item_notes.append(notes)
-    return items
+            item_kinds.append([kind])
+    shown = []
+    for item, kinds in zip(items, item_kinds):
+        # A line saying the opposite is left out; a kind sharing its line keeps it (the comment backs it too).
+        kept = [kind.name for kind in kinds if not says_the_opposite(kind)]
+        if kept:
+            item.kind = " or ".join(kept)
+            shown.append(item)
+    return shown
 
 
 def _form_shown(kind: str, forms_asked: Collection[str]) -> bool:
@@ -2218,9 +2273,10 @@ REFUSED_THINGS: dict[str, tuple[str, ...]] = {
     "cruelty-free": ("cruelty", "tested on animals"),
 }
 # How much credible support the kinds recommending what an "Avoid" line warns against need, together, against that
-# warning, to keep the line out (17 Oct 2026): half of it. Stronger warnings than its support, together, keep a "Look
-# for" out. Decided by Claude.
-AVOID_OUTWEIGHED_SHARE = 0.5
+# warning, to keep the line out: half of it on 17 Oct 2026, as much since 18 Oct (half took out a strong warning against
+# non-stick pans in a cast iron answer for weaker praise of two kinds of them). Stronger warnings than its support,
+# together, keep a "Look for" out. Decided by Claude.
+AVOID_OUTWEIGHED_SHARE = 1.0
 
 
 def _asked_and_refused(category: str, product_type: str | None, request: str, needs: Iterable[Need],
@@ -2258,8 +2314,9 @@ _NO_KIND_WORDS = frozenset({"a", "an", "the", "and", "or", "of", "to", "in", "on
                             "into", "but", "you", "can", "has", "once", "then", "not", "no", "one", "it", "its"})
 
 
-# Short forms writers use for a kind's word (17 Oct 2026): "variable temp" is variable temperature.
-_SHORT_FORMS = {"temp": "temperature", "temps": "temperature"}
+# Short forms writers use for a kind's word (17 Oct 2026): "variable temp" is variable temperature; and one word for
+# another saying the same (18 Oct 2026): an "adjustable temperature" kettle is a variable temperature one.
+_SHORT_FORMS = {"temp": "temperature", "temps": "temperature", "adjustable": "variable"}
 
 
 def _one_form(word: str) -> str:
@@ -2321,11 +2378,21 @@ def _kind_own_words(kind: str, category: str, product_type: str | None) -> froze
     """What tells a kind apart, as kinds are read (17 Oct 2026): the words of its parts (kind_parts: before a word
     saying what it is for, the type's words out), each in one form, less the type's clue words, synonyms and names'
     last words (_type_words), GENERIC_KIND_WORDS and words that tell nothing apart. "variable temperature kettle":
-    variable, temperature; "mineral SPFs": mineral; "Teflon": nonstick (its known name written out)."""
-    aliases = known_aliases("kinds").get(category, {})
-    own = _type_words(category, product_type) if product_type else frozenset()
-    return frozenset(w for part in kind_parts(kind, product_type or "", aliases) for w in map(_one_form, part)
-                     if w not in GENERIC_KIND_WORDS and w not in _NO_KIND_WORDS and not any(_same_word(w, o) for o in own))
+    variable, temperature; "mineral SPFs": mineral; "Teflon": nonstick (its known name written out). Worked out once
+    per kind, category and type (latency, 18 Oct 2026: an answer compares every kind with every other)."""
+    key = (kind, category, product_type)
+    found = _KIND_OWN_WORDS.get(key)
+    if found is None:
+        aliases = known_aliases("kinds").get(category, {})
+        own = _type_words(category, product_type) if product_type else frozenset()
+        found = _KIND_OWN_WORDS.keep(key, frozenset(
+            w for part in kind_parts(kind, product_type or "", aliases) for w in map(_one_form, part)
+            if w not in GENERIC_KIND_WORDS and w not in _NO_KIND_WORDS and not any(_same_word(w, o) for o in own)))
+    return found
+
+
+_KIND_OWN_WORDS = Table()  # (kind, category, product type) -> _kind_own_words
+_ABOUT_THE_SAME = Table()  # (kind, other, category, product type) -> _about_the_same
 
 
 def _says_any(text: str, phrases: Iterable[str]) -> bool:
@@ -2338,44 +2405,120 @@ def _shares_a_word(a: Iterable[str], b: Iterable[str]) -> bool:
     return any(_same_word(x, y) for x in a for y in b)
 
 
-def _same_kind(a: frozenset[str], b: frozenset[str]) -> bool:
-    """Whether two kinds name the same thing: every word telling the one with fewer apart is one of the other's, told
-    the same way (_same_word). "mineral SPFs" and "mineral sunscreen" (mineral); "temperature-controlled kettle" and
-    "variable temperature kettle" (temperaturecontrolled, temperature); never "Japanese style knives" and "classic
-    German knives"."""
-    if not a or not b:
-        return False
-    fewer, more = (a, b) if len(a) <= len(b) else (b, a)
-    return all(any(_same_word(x, y) for y in more) for x in fewer)
-
-
 def _contradicts(kind: KindSupport, ranking: RankingResult, product_type: str | None, asked: frozenset[str],
-                 refused: tuple[str, ...], picks: Collection[str], unsuited_kinds: Collection[str] = ()) -> bool:
-    """Whether a kind's advice would say the opposite of the request, of a pick, or of stronger credible advice about
+                 refused: tuple[str, ...], picks: Collection[str], unsuited_kinds: Collection[str] = (),
+                 lines_products: Collection[str] | Callable[[], Collection[str]] = ()) -> bool:
+    """Whether a kind's advice would say the opposite of the request, of a pick, or of as strong credible advice about
     the same kind in this answer (_look_for, 17 Oct 2026). An "Avoid" naming what the request refuses agrees with it,
     and so does one about a kind the request's facts rule out (`unsuited_kinds`: tretinoin for a beginner, by its
-    facts entry), whatever others recommend; such a kind argues against nothing either."""
+    facts entry), whatever others recommend; such a kind argues against nothing either. A kind said without what the
+    request refuses ("PFAS-free pans", 18 Oct 2026) is the other way round: looking for it agrees with the request.
+
+    The picks are what `picks` names (their names and their writers'); for a kind of the type asked for ("variable
+    temperature kettle"), also the products ranked under them (`lines_products`, _lines_products, 18 Oct 2026)."""
     category = ranking.category
     words = _kind_own_words(kind.name, category, product_type)
-    others = [(other, _kind_own_words(other.name, category, product_type)) for other in ranking.kinds
-              if other.key != kind.key and other.key not in unsuited_kinds]
+    others = [other for other in ranking.kinds if other.key != kind.key and other.key not in unsuited_kinds]
+    refuses = _says_any(kind.name, refused) and not _negated(kind.name, category)
+    against_refusal = _says_any(kind.name, refused) and _negated(kind.name, category)
     if kind.support < 0:
-        if _says_any(kind.name, refused) or kind.key in unsuited_kinds:
+        if refuses or kind.key in unsuited_kinds:
             return False
+        if against_refusal:
+            return True
         # Every word of its name, not only what tells it apart: "products with niacinamide" names the ingredient asked
         # for after its "with", and a serum's clue words hold the actives.
         named = [w for w in _written(kind.name, category) if w not in GENERIC_KIND_WORDS]
         if _shares_a_word(set(named) | {a + b for a, b in zip(named, named[1:])}, asked):
             return True
-        if words and any(all(any(_same_word(w, n) for n in _written(pick, category)) for w in words) for pick in picks):
+        lines = (lines_products() if callable(lines_products) else lines_products) if (
+            _of_the_type(kind.name, category, product_type)) else ()
+        names = [*picks, *lines]
+        if words and any(all(any(_same_word(w, n) for n in _written(name, category)) for w in words) for name in names):
             return True
         # The same kind's recommendations under other names count together (module 4 kept them apart).
-        return sum(other.support for other, other_words in others
-                   if other.support > 0 and _same_kind(words, other_words)) >= AVOID_OUTWEIGHED_SHARE * -kind.support
-    if _says_any(kind.name, refused):
+        return sum(other.support for other in others if other.support > 0
+                   and _about_the_same(kind.name, other.name, category, product_type)) >= (
+            AVOID_OUTWEIGHED_SHARE * -kind.support)
+    if refuses:
         return True
-    return -sum(other.support for other, other_words in others
-                if other.support < 0 and _same_kind(words, other_words)) > kind.support
+    return -sum(other.support for other in others if other.support < 0
+                and _about_the_same(kind.name, other.name, category, product_type)) > kind.support
+
+
+# Words saying a kind is without something (18 Oct 2026): "fridge without an ice maker", "garage no ice maker",
+# "silicone-free" (one word, as kinds are read) are the opposite of an ice maker and of silicones, never the same kind.
+# "non" only before another word than "stick": a non-stick pan has its coating.
+_NEGATIONS = frozenset({"without", "no", "free", "zero", "not", "never"})
+
+
+def _negated(kind: str, category: str) -> bool:
+    """Whether a kind's name says it is without something (_NEGATIONS, a word ending in "free", or "non" before a word
+    other than "stick")."""
+    key = (kind, category)
+    found = _NEGATED.get(key)
+    if found is None:
+        words = _written(kind, category)
+        found = _NEGATED.keep(key, any(w in _NEGATIONS or (len(w) > 4 and w.endswith("free"))
+                                       or (w == "non" and words[i + 1:i + 2] != ["stick"])
+                                       for i, w in enumerate(words)))
+    return found
+
+
+_NEGATED = Table()  # (kind, category) -> _negated
+_HEADS = Table()  # (kind, category) -> _head
+
+
+def _head(kind: str, category: str) -> str | None:
+    """What a kind is: the last word of its name before a word saying what it is for, as kinds are read ("coat" of "wool
+    coats in rain", "sharpener" of "pull-through sharpener", "iem" of "IEMs with detachable cables")."""
+    key = (kind, category)
+    if key not in _HEADS:
+        words = _written(kind, category)
+        cut = next((i for i, w in enumerate(words) if w in PURPOSE_WORDS), len(words))
+        words = [w for w in words[:cut] if w not in _NO_KIND_WORDS and w not in GENERIC_KIND_WORDS
+                 and not any(ch.isdigit() for ch in w)]
+        _HEADS.keep(key, words[-1] if words else None)
+    return _HEADS[key]
+
+
+def _of_the_type(kind: str, category: str, product_type: str | None) -> bool:
+    """Whether a kind is a kind of the type asked for by its name's last word ("variable temperature kettle", "inverter
+    microwave"; never "knife sets" in a chef knife answer)."""
+    head = _head(kind, category)
+    return bool(product_type and head and any(_same_word(head, w) for w in _type_words(category, product_type)))
+
+
+def _about_the_same(kind: str, other: str, category: str, product_type: str | None) -> bool:
+    """Whether another kind's advice is about this kind, so that their credible support counts together (_contradicts;
+    18 Oct 2026, from the whole sweep): every word telling this one apart is one of the other's (_kind_own_words, told
+    the same way: _same_word); the other's further words, if any, only say which one of it it is, keeping what it is
+    (_head: "heavy wool coat" for "wool coats in rain", "micro-encapsulated tretinoin" for "tretinoin"; never "merino
+    hiking socks" for "hiking boots", "cleansing brushes" for "BHA cleanser"); and neither is without what the other is
+    (_negated: "fridge without an ice maker" agrees with avoiding an ice maker). A wider kind never counts for a narrower
+    one: a knife sharpener's praise says nothing for a pull-through one, nor a temperature-controlled kettle's (it never
+    says "variable") for a variable temperature one."""
+    key = (kind, other, category, product_type)
+    found = _ABOUT_THE_SAME.get(key)
+    if found is None:
+        found = _ABOUT_THE_SAME.keep(key, _about_the_same_of(kind, other, category, product_type))
+    return found
+
+
+def _about_the_same_of(kind: str, other: str, category: str, product_type: str | None) -> bool:
+    words = _kind_own_words(kind, category, product_type)
+    other_words = _kind_own_words(other, category, product_type)
+    if not words or not other_words or not all(any(_same_word(w, o) for o in other_words) for w in words):
+        return False
+    if _negated(kind, category) != _negated(other, category):
+        return False
+    if all(any(_same_word(o, w) for w in words) for o in other_words):
+        return True  # one kind under two names: "mineral SPFs" and "mineral sunscreen", "variable temp"
+    head, other_head = _head(kind, category), _head(other, category)
+    if head is None or other_head is None:
+        return False
+    return _same_word(head, other_head) or (_of_the_type(kind, category, product_type)
+                                            and _of_the_type(other, category, product_type))
 
 
 def _another_types_advice(kind: str, notes: list[KindNote], category: str, product_type: str | None) -> bool:
@@ -2443,16 +2586,30 @@ def _named_types_of(kind: str, category: str) -> set[str]:
     words = re.findall(r"[a-z0-9][a-z0-9'-]*", _plain(kind))
     cut = next((i for i, w in enumerate(words) if w in PURPOSE_WORDS), len(words))
     text = " ".join(words[:cut])
-    types = [p for p in PRODUCT_TYPES if p.category == category]
-    matches = [(m.start(), m.end(), p.name) for p in types for keyword in p.keywords
-               for m in re.finditer(rf"\b{re.escape(keyword)}s?\b", text)]
+    matches = [(m.start(), m.end(), name) for pattern, name in _type_name_patterns(category)
+               for m in pattern.finditer(text)]
     named = [(s, e, name) for s, e, name in matches
              if not any(s2 <= s and e <= e2 and e2 - s2 > e - s for s2, e2, _ in matches)]
     for word in re.finditer(r"[a-z0-9]+", text):
         if not any(s <= word.start() < e for s, e, _ in named):
-            named += [(word.start(), word.end(), p.name) for p in types
-                      if any(_same_word(word.group(), name) for name in (p.name, *p.keywords) if " " not in name)]
+            named += [(word.start(), word.end(), name) for name, one_word in _one_word_type_names(category)
+                      if any(_same_word(word.group(), other) for other in one_word)]
     return {name for _, _, name in named}
+
+
+@cache
+def _type_name_patterns(category: str) -> tuple[tuple[re.Pattern, str], ...]:
+    """Each name of module 1's product types of a category, as the pattern _named_types_of finds it with, and its type,
+    compiled once (latency, 18 Oct 2026: the general category's ~1,700 names were compiled again for every new name)."""
+    return tuple((re.compile(rf"\b{re.escape(keyword)}s?\b"), p.name) for p in PRODUCT_TYPES if p.category == category
+                 for keyword in p.keywords)
+
+
+@cache
+def _one_word_type_names(category: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    """(type, its one-word names) of each of module 1's product types of a category (_named_types_of)."""
+    return tuple((p.name, tuple(name for name in (p.name, *p.keywords) if " " not in name))
+                 for p in PRODUCT_TYPES if p.category == category)
 
 
 def _a_lookalike_of(kind: str, product_type: str) -> bool:

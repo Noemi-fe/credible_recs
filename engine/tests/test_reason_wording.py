@@ -30,8 +30,11 @@ def reason(request: str, needs_talked_about: tuple[str, ...]) -> str:
 
 def test_a_must_have_asked_for_in_other_words_is_named_as_the_must_have():
     said = reason("non stick pan without teflon that lasts", ("non", "stick", "teflon"))
-    assert "about PFAS-free" in said
-    assert "teflon" not in said.lower() and "non stick" not in said  # "non stick pan" is the product's own name
+    assert "teflon" not in said.lower() and "non stick" not in said
+    # Changed on 18 Oct 2026 (deliberately; it said "about PFAS-free" alone, "non stick" being the product's own name):
+    # the request asks for a non-stick pan (a must-have, checked against the facts) though its words are the product's
+    # name too, so it is named as the must-have, as "non-stick frying pan without PFAS" is just below.
+    assert said.endswith("3 of them about non-stick or PFAS-free.")
     said = reason("non-stick frying pan without PFAS that actually lasts", ("non-stick", "PFAS"))
     assert said.endswith("3 of them about non-stick or PFAS-free.")
     said = reason("28cm frying pan, non stick but pfas free, £30-60", ("non", "stick", "pfas"))
