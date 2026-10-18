@@ -2277,3 +2277,18 @@ SEARCH_PAGE_QUERY_KEYS = ("q", "k", "query", "search", "searchterm", "search-ter
 IMAGE_MAX_BYTES = 500_000  # about 500 KB, as phones and servers count them
 IMAGE_SMALLER_WIDTH = 600
 IMAGE_CHECK_TIMEOUT_SECONDS = 15
+
+
+# --- Converge round 1: ws-data-general (17 Oct 2026) ---
+# Astra, the razor-blade maker, as its maker writes it (18 Oct 2026, the general data builder; Claude's call, reported):
+# with the new razor threads, writers' "astras" (Astra Superior Platinum blades) became a pick of "razor for sensitive
+# skin", shown as "Altra razor line": the brand-lines list's "Altra" (running shoes) was the only known spelling of a
+# brand one letter away (engine.group_products.maker_spelling). A spelling of its own comes first, so it is shown as
+# Astra; Altra's own names are unchanged.
+MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "Astra")
+# lululemon, which writes its name in small letters (a maker's own style is taken from config only): with the new
+# yoga threads, writers' "lulu lemon mats" became a pick of "yoga mat", shown as written.
+MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "lululemon")
+# Brooklinen (bed sheets): with Brooks (running shoes) in the brand-lines list, writers' "Brook Linen" was shown as
+# "Brooks Linen" on a skip list (the same slip between two makers' names as Astra's).
+MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "Brooklinen")

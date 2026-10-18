@@ -209,3 +209,39 @@ def test_boots_named_by_their_brand_alone_are_ranked_as_the_brands_lines_with_th
     assert {"Merrell hiking boots line", "KEEN hiking boots line"} <= set(picks), list(picks)
     assert picks["Merrell hiking boots line"].price.text == "From £58 at Merrell UK, checked 18 Oct 2026"
     assert picks["KEEN hiking boots line"].availability.text == "Sold at KEEN UK, checked 18 Oct 2026"
+
+
+# --- Names shown (18 Oct 2026, the round's second half) ---
+
+def test_astra_blades_are_shown_as_astra_not_as_the_running_shoe_brand_altra():
+    """Writers' "astras" are Astra razor blades. The brand-lines list's "Altra" (running shoes) was the only known
+    spelling of a brand one letter away, so maker_spelling showed the razor answer's pick as "Altra razor line". Astra's
+    own spelling (config, the general builder's section) comes first; Altra's own names are still Altra's."""
+    from engine.group_products import maker_spelling
+
+    makers = tuple(sorted({line.brand for line in load_brand_lines() if line.category == "general"}))
+    assert maker_spelling("Astra", "general", makers, ()) == "Astra"
+    assert maker_spelling("astras", "general", makers, ()) == "Astra"
+    assert maker_spelling("Altra", "general", makers, ()) == "Altra"
+    assert maker_spelling("altras", "general", makers, ()) == "Altra"
+
+
+def test_lululemon_is_shown_as_its_maker_writes_it():
+    """Writers' "lulu lemon mats" became a pick of "yoga mat" with the new yoga threads. lululemon writes its name in small
+    letters, a style maker_spelling takes only from config (the brand-lines list writes some brands in small letters
+    that aren't their makers' style), so config's spelling joins the writers' two words into the maker's one."""
+    from engine.group_products import maker_spelling
+
+    makers = tuple(sorted({line.brand for line in load_brand_lines() if line.category == "general"}))
+    assert maker_spelling("lulu lemon mats", "general", makers, ()) == "lululemon mats"
+    assert maker_spelling("Lululemon", "general", makers, ()) == "lululemon"
+
+
+def test_brooklinen_is_not_shown_as_the_running_shoe_brand_brooks():
+    """The skip list of "bed sheets that stay cool" showed writers' "Brook Linen" as "Brooks Linen" once Brooks (running
+    shoes) joined the brand-lines list this round: one more slip between two makers' names, fixed as Astra's was."""
+    from engine.group_products import maker_spelling
+
+    makers = tuple(sorted({line.brand for line in load_brand_lines() if line.category == "general"}))
+    assert maker_spelling("Brook Linen", "general", makers, ()) == "Brooklinen"
+    assert maker_spelling("Brooks", "general", makers, ()) == "Brooks"
