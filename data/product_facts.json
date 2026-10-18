@@ -938,19 +938,6 @@
    "checked_on": "2026-10-10"
   },
   {
-   "product": "Circulon pans",
-   "category": "kitchen",
-   "product_type": "frying pan",
-   "facts": {
-    "non_stick": true
-   },
-   "sources": [
-    "https://circulon.com/pages/product-disclosures",
-    "https://circulon.com/products.json"
-   ],
-   "checked_on": "2026-10-10"
-  },
-  {
    "product": "Merten & Storck carbon steel pan",
    "category": "kitchen",
    "product_type": "frying pan",
@@ -2531,20 +2518,6 @@
    "checked_on": "2026-10-14"
   },
   {
-   "product": "Ballarini non-stick pans",
-   "category": "kitchen",
-   "product_type": "frying pan",
-   "facts": {
-    "non_stick": true
-   },
-   "sources": [
-    "https://www.zwilling.com/uk/ballarini/cookware/",
-    "https://www.zwilling.com/uk/ballarini-ferrara-granitium-28-cm-aluminium-frying-pan-75001-856-0/75001-856-0.html",
-    "https://www.zwilling.com/uk/ballarini-salina-frying-pan-28-cm-aluminium-titanium-reinforced-ceramic-non-stick-coating/1030840.html"
-   ],
-   "checked_on": "2026-10-14"
-  },
-  {
    "product": "Paula's Choice Skin Perfecting 2% BHA Gel Exfoliant",
    "category": "skincare",
    "product_type": "exfoliant",
@@ -3285,6 +3258,48 @@
     "https://elizabetharden.co.uk/products/eight-hour-cream-skin-protectant"
    ],
    "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Le Creuset Toughened Non-Stick Frying Pan",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": false,
+    "non_stick": true,
+    "induction": true
+   },
+   "sources": [
+    "https://www.lecreuset.com/toughened-nonstick-pro-fry-pan/51131.html",
+    "https://www.lecreuset.co.uk/en_GB/p/toughened-non-stick-deep-frying-pan/TN51101b.html"
+   ],
+   "checked_on": "2026-10-17"
+  },
+  {
+   "product": "Our Place Always Pan",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true,
+    "non_stick": true
+   },
+   "sources": [
+    "https://fromourplace.co.uk/products/always-essential-cooking-pan"
+   ],
+   "checked_on": "2026-10-17"
+  },
+  {
+   "product": "Our Place Titanium Always Pan Pro",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true,
+    "non_stick": true,
+    "induction": true
+   },
+   "sources": [
+    "https://fromourplace.co.uk/products/titanium-always-pan-pro"
+   ],
+   "checked_on": "2026-10-17"
   }
  ]
 }

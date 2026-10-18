@@ -752,17 +752,6 @@
    "not_in_uk": true
   },
   {
-   "product": "Circulon pans",
-   "category": "kitchen",
-   "price": null,
-   "currency": "GBP",
-   "shop": "Circulon",
-   "url": "https://circulon.uk.com/collections/cookware-frying-pans-skillets",
-   "checked_on": "2026-10-10",
-   "available": true,
-   "note": "its UK store sells many non-stick frying pans, £39.99 to £125.00 at full price for a single pan (some reduced on 10 Oct), so no one price fits the name"
-  },
-  {
    "product": "Tefal non-stick pan",
    "category": "kitchen",
    "price": null,
@@ -3269,23 +3258,6 @@
    "note": "50 ml. Cult Beauty £15.50, in stock today; Boots lists it at £15.50 too (page blocks reading). Beauty of Joseon has no GBP store: its Irish/EU store sells this UK version (vendor 'Beauty of Joseon UK') in euros, so the image comes from that page."
   },
   {
-   "product": "Circulon pans",
-   "category": "kitchen",
-   "product_type": "frying pan",
-   "price": 31.99,
-   "currency": "GBP",
-   "shop": "Circulon",
-   "url": "https://circulon.uk.com/products/circulon-halo-20cm-25cm-ceramic-non-stick-frying-pan",
-   "checked_on": "2026-10-15",
-   "available": true,
-   "sources": [
-    "https://circulon.uk.com/products/circulon-halo-20cm-25cm-ceramic-non-stick-frying-pan",
-    "https://circulon.uk.com/collections/cookware-frying-pans-skillets",
-    "https://circulon.uk.com/products/total-nonstick-induction-frying-pan-small-medium-large"
-   ],
-   "note": "A brand range (Circulon's non-stick frying pans), treated like a line: Circulon UK's own store sells 16 frying pans and sets. From £31.99: the Halo 20 cm ceramic pan on offer (usually £39.99); at full price from £39.99 (Total non-stick 22 cm). Image from the Total frying pan's page."
-  },
-  {
    "product": "Kiwi chef knife",
    "category": "kitchen",
    "product_type": "chef knife",
@@ -3301,24 +3273,6 @@
    ],
    "note": "not sold to UK shoppers: Kiwi is a Thai knife brand (e.g. the No. 21 8-inch Thai chef's knife) sold through US (Walmart), Thai and German marketplaces; no UK shop or UK maker page found in two searches. Amazon UK and eBay UK block reading from here, so marketplace imports there can't be ruled out, but no big UK shop sells it.",
    "not_in_uk": true
-  },
-  {
-   "product": "Ballarini non-stick pans",
-   "category": "kitchen",
-   "product_type": "frying pan",
-   "price": 39.95,
-   "currency": "GBP",
-   "shop": "Zwilling",
-   "url": "https://www.zwilling.com/uk/ballarini-bologna-frying-pan-20-cm-aluminium-ceramic-non-stick-coating/1030873.html",
-   "checked_on": "2026-10-15",
-   "available": true,
-   "sources": [
-    "https://www.zwilling.com/uk/ballarini-bologna-frying-pan-20-cm-aluminium-ceramic-non-stick-coating/1030873.html",
-    "https://www.zwilling.com/uk/ballarini/cookware/",
-    "https://www.zwilling.com/uk/ballarini-ledro-frying-pan-20-cm-aluminium-ceramic-non-stick-coating/1027772.html",
-    "https://www.zwilling.com/uk/ballarini-salina-frying-pan-20-cm-aluminium-titanium-reinforced-ceramic-non-stick-coating/1030837.html"
-   ],
-   "note": "A brand range, treated like a line. Ballarini belongs to Zwilling, whose UK store is Ballarini's UK shop: Bologna, Ledro and Salina ceramic pans and Ferrara Granitium (PTFE) pans. From £39.95 (Bologna 20 cm, in stock); Ledro 20 cm £46.95, Salina 20 cm £79.95."
   },
   {
    "product": "ILLIYOON Ceramide Ato Concentrate Cream",

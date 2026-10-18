@@ -95,7 +95,7 @@
    "note": "50 ml. Cult Beauty £15.50, in stock today; Boots lists it at £15.50 too (page blocks reading). Beauty of Joseon has no GBP store: its Irish/EU store sells this UK version (vendor 'Beauty of Joseon UK') in euros, so the image comes from that page."
   },
   {
-   "product": "Circulon pans",
+   "product": "Circulon frying pan line",
    "category": "kitchen",
    "product_type": "frying pan",
    "page": "https://circulon.uk.com/collections/cookware-frying-pans-skillets",
@@ -107,11 +107,11 @@
     "https://circulon.uk.com/products/total-nonstick-induction-frying-pan-small-medium-large",
     "https://circulon.uk.com/products/circulon-halo-20cm-25cm-ceramic-non-stick-frying-pan"
    ],
-   "checked_on": "2026-10-15",
-   "note": "A brand range (Circulon's non-stick frying pans), treated like a line: Circulon UK's own store sells 16 frying pans and sets. From £31.99: the Halo 20 cm ceramic pan on offer (usually £39.99); at full price from £39.99 (Total non-stick 22 cm). Image from the Total frying pan's page."
+   "checked_on": "2026-10-17",
+   "note": "Noemi's decision 8 of 16 Oct 2026: the brand's line (the entry was \"Circulon pans\", a brand range). Range page as in data/brand_lines.json, Circulon UK's own store, read again on 17 Oct 2026: 16 frying pans and sets, from £31.99 (the Halo LaserDefense 20 cm ceramic pan, usually £39.99). Image from the Total frying pan's page."
   },
   {
-   "product": "Ballarini non-stick pans",
+   "product": "Ballarini frying pan line",
    "category": "kitchen",
    "product_type": "frying pan",
    "page": "https://www.zwilling.com/uk/ballarini/cookware/",
@@ -122,8 +122,8 @@
     "https://www.zwilling.com/uk/ballarini-ledro-frying-pan-20-cm-aluminium-ceramic-non-stick-coating/1027772.html",
     "https://www.zwilling.com/uk/ballarini-salina-frying-pan-20-cm-aluminium-titanium-reinforced-ceramic-non-stick-coating/1030837.html"
    ],
-   "checked_on": "2026-10-15",
-   "note": "A brand range, treated like a line. Ballarini belongs to Zwilling, whose UK store is Ballarini's UK shop: Bologna, Ledro and Salina ceramic pans and Ferrara Granitium (PTFE) pans. From £39.95 (Bologna 20 cm, in stock); Ledro 20 cm £46.95, Salina 20 cm £79.95.; image left out: 587 KB, over 500 KB, and no smaller size of it on the maker's server"
+   "checked_on": "2026-10-17",
+   "note": "Noemi's decision 8 of 16 Oct 2026: the brand's line (the entry was \"Ballarini non-stick pans\", a brand range). Ballarini belongs to Zwilling, whose UK store is Ballarini's UK shop (range page as in data/brand_lines.json), read again on 17 Oct 2026: Bologna, Ledro and Salina ceramic pans and Ferrara Granitium pans, from £39.95 (Bologna 20 cm, in stock). Image left out: 587 KB, over 500 KB, and no smaller size of it on the maker's server."
   },
   {
    "product": "ILLIYOON Ceramide Ato Concentrate Cream",

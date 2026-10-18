@@ -2200,6 +2200,35 @@
    "range_page": "https://www.connaughtshaving.com/merkurs.html",
    "range_shop": "Connaught Shaving",
    "note": "From the research findings of 2026-10-15: Merkur (Solingen, Germany) safety razors are stocked by UK shaving specialists: Connaught Shaving, a UK shop, has a Merkur page under its safety razors (its products load by script, so no price could be read). Merkur's own site didn't load and other UK shops refused automated reads, so no range page from the maker, price or image."
+  },
+  {
+   "brand": "Circulon",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "sells": true,
+   "sources": ["https://circulon.uk.com/collections/cookware-frying-pans-skillets", "https://circulon.uk.com/products/circulon-halo-20cm-25cm-ceramic-non-stick-frying-pan", "https://circulon.uk.com/products/total-nonstick-induction-frying-pan-small-medium-large"],
+   "checked_on": "2026-10-17",
+   "range_page": "https://circulon.uk.com/collections/cookware-frying-pans-skillets",
+   "from_price": 31.99,
+   "from_price_shop": "Circulon",
+   "from_price_url": "https://circulon.uk.com/products/circulon-halo-20cm-25cm-ceramic-non-stick-frying-pan",
+   "from_price_checked_on": "2026-10-17",
+   "note": "Noemi's decision 8 of 16 Oct 2026: Circulon's price-list and facts name (\"Circulon pans\", 10 to 15 Oct) became this brand line. Circulon UK's own store, read in a browser on 17 Oct 2026: 16 frying pans and sets over two pages (ScratchDefense, Total, Infinite and Halo LaserDefense); the cheapest single pan is the Halo LaserDefense ceramic non-stick 20 cm at £31.99 (usually £39.99), to add to the basket, then the Total non-stick 22 cm at £39.99. Only the Halo pans' page says they are made without PFAS; the Total page says nothing of PFAS, so whether a Circulon pan is PFAS-free depends on the model and no facts entry speaks for the brand (a PFAS-free answer leaves the line out: a whole brand can't be checked)."
+  },
+  {
+   "brand": "Ballarini",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "sells": true,
+   "sources": ["https://www.zwilling.com/uk/ballarini/cookware/", "https://www.zwilling.com/uk/ballarini-bologna-frying-pan-20-cm-aluminium-ceramic-non-stick-coating/1030873.html", "https://www.zwilling.com/uk/ballarini-ferrara-granitium-28-cm-aluminium-frying-pan-75001-856-0/75001-856-0.html"],
+   "checked_on": "2026-10-17",
+   "range_page": "https://www.zwilling.com/uk/ballarini/cookware/",
+   "range_shop": "Zwilling",
+   "from_price": 39.95,
+   "from_price_shop": "Zwilling",
+   "from_price_url": "https://www.zwilling.com/uk/ballarini-bologna-frying-pan-20-cm-aluminium-ceramic-non-stick-coating/1030873.html",
+   "from_price_checked_on": "2026-10-17",
+   "note": "Noemi's decision 8 of 16 Oct 2026: Ballarini's price-list and facts name (\"Ballarini non-stick pans\", 14 and 15 Oct) became this brand line. Ballarini belongs to Zwilling, whose UK store is Ballarini's UK shop; on 17 Oct 2026 its Ballarini cookware page lists 24 items: Bologna, Ledro and Salina pans with a ceramic coating its pages say is produced without PFAS, and Ferrara Granitium pans with a 5-ply non-stick coating whose page says nothing of PFAS. The cheapest frying pan is the Bologna 20 cm at £39.95, in stock. Whether a Ballarini pan is PFAS-free depends on the model, so no facts entry speaks for the brand."
   }
  ]
 }
