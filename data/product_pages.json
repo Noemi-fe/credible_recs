@@ -7733,6 +7733,19 @@
    ],
    "checked_on": "2026-10-18",
    "note": "'255' is a writer's shorthand for the Garmin Forerunner 255 running watch. Not found sold new in the UK on 18 Oct, but not provably discontinued. Garmin UK's page for the Forerunner 255 (46mm; the 255S, 255 Music and 255S Music are variants; Previous Models; £259.99 or £299.99 by version) has no Add To Cart and shows it not in stock (5-8 weeks), and its data says 'discontinued: false'; Garmin's US and Irish pages are the same. UK shops I could read: SportsShoes shows its 255 pages out of stock (£299.99), Tredz says 'This product is no longer available', Gadcet UK's 255 (£229.00, was £299.99) is out of stock new and used, Cotswold Outdoor's old 255 page is gone (404), Amazon UK's main 255 listing offers only used or 'newly overhauled' units (from £199.95), and John Lewis and Runners Need do not list it. Currys, Decathlon, Millets, GO Outdoors, Very, Boots and Argos refused reading (403 or a bot check) and search results show 255-family pages at several of them, so leftover new stock can't be ruled out. Likely discontinued; status unsure."
+  },
+  {
+   "product": "Timberland PRO Boondock",
+   "category": "general",
+   "product_type": "work boots",
+   "page": "https://its.co.uk/pd/timberland-boondock-ultralight-safety-boots-brown-_tim4402882667.htm",
+   "shop": "ITS",
+   "sources": [
+    "https://its.co.uk/pd/timberland-boondock-ultralight-safety-boots-brown-_tim4402882667.htm",
+    "https://its.co.uk/timberland/"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "The finishing builder's own check (18 Oct 2026, one product): writers' Timberland PRO Boondock is the brand's waterproof composite-toe work boot. In the UK ITS (a big UK tool and workwear shop, authorised Timberland stockist) sells the Boondock as the Timberland Boondock Ultralight Safety Boots, Brown or Wheat, at £169.99 (was £179.98), in stock in sizes 7 to 12 on 18 Oct (S7S SR SC FO, a lightweight asymmetrical composite safety toe, waterproof; its page does not call it PRO and does not give the boot height). The classic US 6-inch Boondock writers name was not found on the UK pages read, so this is the UK version of the Boondock, not provably the same build. The search tool here is US-only and Timberland's own sites refuse automated reads (403), so no other UK page was read."
   }
  ]
 }

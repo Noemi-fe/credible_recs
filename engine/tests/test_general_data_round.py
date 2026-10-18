@@ -429,6 +429,9 @@ PRODUCTS_SOLD_IN_THE_UK_4 = [
     # Garmin's Forerunner 965 is still sold new by Garmin UK (under its "Previous Models"); writers just say "965".
     ("Garmin Forerunner 965", "sports watch", 499.99, "Garmin UK"),
     ("965", "sports watch", 499.99, "Garmin UK"),
+    # The UK sells the Boondock as the Ultralight safety boot (ITS, authorised stockist); the classic US 6-inch Boondock
+    # writers name was not found on UK pages, so the entry's note says it is the UK version.
+    ("Timberland PRO Boondock", "work boots", 169.99, "ITS"),
 ]
 
 
