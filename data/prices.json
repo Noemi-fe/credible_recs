@@ -10286,6 +10286,54 @@
    ],
    "note": "not sold to UK shoppers: Unicorn Mills, a US maker, says on its own site (read 18 Oct 2026) that its Magnum Plus and Magnum mills are in stock at Amazon (in the US) and are being made by an Italian partner, Tre Spade; no UK shop was found selling them (a web search found only US prices and US eBay sellers).",
    "not_in_uk": true
+  },
+  {
+   "product": "Snakmaster",
+   "also_called": [
+    "Snakmaster sandwich maker",
+    "snack master"
+   ],
+   "category": "kitchen",
+   "product_type": "sandwich maker",
+   "price": null,
+   "currency": "GBP",
+   "shop": "eBay UK",
+   "url": "https://www.ebay.co.uk/sch/i.html?_nkw=snakmaster",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "sources": [
+    "https://www.ebay.co.uk/sch/i.html?_nkw=snakmaster"
+   ],
+   "note": "not sold to UK shoppers: the Snakmaster is a grilled sandwich maker writers own from decades ago (the round's r/BuyItForLife thread calls it about 30 years old) and name no maker for; no UK shop was found selling it and eBay UK's search (18 Oct 2026) holds no Snakmaster sandwich maker, only unrelated Snakemaster items. Whether it is still made couldn't be checked this round (web search unavailable): if it isn't, it should be marked discontinued.",
+   "not_in_uk": true
+  },
+  {
+   "product": "Ikea KONCIS garlic press",
+   "category": "kitchen",
+   "product_type": "garlic press",
+   "price": 4.0,
+   "currency": "GBP",
+   "shop": "IKEA",
+   "url": "https://www.ikea.com/gb/en/p/koncis-garlic-press-stainless-steel-00089163/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "IKEA UK's own page, read on 18 Oct 2026: it names it KONCIS Garlic press - stainless steel, £4, in stock (a product page). Writers name it the Ikea KONCIS garlic press."
+  },
+  {
+   "product": "KitchenAid plastic meat grinder attachment",
+   "category": "kitchen",
+   "product_type": "meat grinder",
+   "price": 109.0,
+   "currency": "GBP",
+   "shop": "KitchenAid",
+   "url": "https://www.kitchenaid.co.uk/mixer-attachments/859711577170/meat-grinder-5ksmfga-white",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.kitchenaid.co.uk/mixer-attachments/859711577170/meat-grinder-5ksmfga-white",
+    "https://www.kitchenaid.co.uk/mixer-attachments"
+   ],
+   "note": "KitchenAid's own UK page, read in a browser on 18 Oct 2026: it names it MEAT GRINDER (5KSMFGA, white: the plastic food grinder attachment), £109, in stock; the metal Meat Grinder and Sausage Stuffer Set (5KSMMGA) is £159 on its own page. Writers name the 5KSMFGA the plastic KitchenAid grinder attachment."
   }
  ]
 }

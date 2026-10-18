@@ -2396,6 +2396,35 @@
    "from_price_url": "https://www.kitchenaid.co.uk/hand-blenders/859711687020/hand-blender-classic-5khbv53-onyx-black",
    "from_price_checked_on": "2026-10-18",
    "note": "KitchenAid's own UK Hand blenders page, read in a browser on 18 Oct 2026, each product's own page giving its price: the Hand Blender Classic (5KHBV53) at £109 (Onyx Black in stock, white out of stock), the Hand Blender with Accessories (5KHBV83) £159, and the cordless KitchenAid Go models £149 (without a battery) to £219. From price: the Classic in Onyx Black."
+  },
+  {
+   "brand": "Le Creuset",
+   "category": "kitchen",
+   "product_type": "saucepan",
+   "sells": true,
+   "sources": ["https://www.lecreuset.co.uk/en_GB/c/cooking-and-baking/cooking/saucepans-and-pots", "https://www.lecreuset.co.uk/en_GB/p/non-stick-ceramic-saucepan/NC1316.html"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://www.lecreuset.co.uk/en_GB/c/cooking-and-baking/cooking/saucepans-and-pots",
+   "from_price": 125.0,
+   "from_price_shop": "Le Creuset",
+   "from_price_url": "https://www.lecreuset.co.uk/en_GB/p/non-stick-ceramic-saucepan/NC1316.html",
+   "from_price_checked_on": "2026-10-18",
+   "note": "Le Creuset's own UK Saucepans & Pots page, read in a browser on 18 Oct 2026 (20 products): milk pans from £95 in an October sale, the Non-Stick Ceramic Saucepan from £125, 3-ply stainless steel saucepans from £129, cast iron saucepans from £219. From price: the Non-Stick Ceramic Saucepan, 16 cm (1.9 L), £125 incl. VAT, to add to the basket, in a sale (from £155) that runs to 31 Oct 2026: check again after it. Writers' Le Creuset saucepans in the round's threads are mostly enamelled cast iron (from £219)."
+  },
+  {
+   "brand": "OXO",
+   "category": "kitchen",
+   "product_type": "garlic press",
+   "sells": true,
+   "sources": ["https://www.johnlewis.com/oxo-good-grips-garlic-press-with-built-in-cleaner/p113892388"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://www.johnlewis.com/oxo-good-grips-garlic-press-with-built-in-cleaner/p113892388",
+   "range_shop": "John Lewis",
+   "from_price": 20.0,
+   "from_price_shop": "John Lewis",
+   "from_price_url": "https://www.johnlewis.com/oxo-good-grips-garlic-press-with-built-in-cleaner/p113892388",
+   "from_price_checked_on": "2026-10-18",
+   "note": "OXO has no UK store. John Lewis, read in a browser on 18 Oct 2026, sells one OXO garlic press: the OXO Good Grips Garlic Press with Built-In Cleaner, £20.00, in stock (its page also serves as the range page: John Lewis has no other OXO press)."
   }
  ]
 }

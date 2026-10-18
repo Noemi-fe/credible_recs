@@ -417,3 +417,30 @@ def test_the_lines_the_rounds_threads_pick_have_range_pages_and_uk_from_prices_o
         assert line.from_price_url in line.sources, brand
     unicorn = find_availability("Unicorn pepper grinder", "kitchen", prices, "pepper grinder")
     assert unicorn is not None and unicorn.available is False and unicorn.not_in_uk and unicorn.checked_on == ROUND2
+
+
+def test_the_second_reads_picks_have_uk_pages_prices_or_say_they_arent_sold_here():
+    # The round's later threads (saucepans, garlic presses, meat grinders, toastie makers) pick products with no
+    # entries: Le Creuset's saucepans (a line in "a good saucepan"), IKEA's KONCIS garlic press, KitchenAid's plastic
+    # meat grinder attachment (its 5KSMFGA) and the Snakmaster sandwich maker, which no UK shop sells.
+    lines, prices, pages = load_brand_lines(), load_prices(), load_product_pages()
+    line = find_brand_line(["Le Creuset"], "kitchen", "saucepan", lines)
+    assert line is not None and line.sells and "lecreuset.co.uk" in line.range_page
+    assert (line.from_price, line.from_price_shop, line.from_price_checked_on) == (125.0, "Le Creuset", ROUND2)
+    for shown, product_type, site, amount, shop in (("Ikea KONCIS garlic press", "garlic press", "ikea.com/gb", 4.0, "IKEA"),
+                                                    ("KitchenAid plastic meat grinder attachment", "meat grinder",
+                                                     "kitchenaid.co.uk", 109.0, "KitchenAid")):
+        page = find_page([shown], "kitchen", product_type, pages)
+        assert page is not None and site in page.page and page.checked_on == ROUND2, shown
+        price = find_price(shown, "kitchen", prices, currency="GBP", product_type=product_type)
+        assert price is not None and (price.price, price.shop, price.checked_on) == (amount, shop, ROUND2), shown
+    snakmaster = find_availability("Snakmaster", "kitchen", prices, "sandwich maker")
+    assert snakmaster is not None and snakmaster.available is False and snakmaster.not_in_uk
+
+
+def test_oxos_garlic_press_line_has_a_uk_from_price():
+    # "garlic press that's easy to clean" picks the OXO garlic press line; OXO has no UK store, and John Lewis sells its
+    # Good Grips press with a built-in cleaner.
+    line = find_brand_line(["OXO"], "kitchen", "garlic press", load_brand_lines())
+    assert line is not None and line.sells and "johnlewis.com" in line.range_page
+    assert (line.from_price, line.from_price_shop, line.from_price_checked_on) == (20.0, "John Lewis", ROUND2)
