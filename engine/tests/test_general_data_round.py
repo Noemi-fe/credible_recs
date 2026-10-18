@@ -54,7 +54,28 @@ LINES_SOLD_IN_THE_UK = [
     (["Osprey"], "backpack", "Osprey", 65.0, "John Lewis"),
     (["Osprey Farpoint"], "backpack", "Osprey Farpoint", 170.0, "John Lewis"),
     (["Osprey Fairview"], "backpack", "Osprey Fairview", 170.0, "John Lewis"),
+    (["Briggs & Riley", "Briggs and Riley"], "suitcase", "Briggs & Riley", 389.0, "John Lewis"),
+    (["Klean Kanteen", "Klein Kanteen"], "water bottle", "Klean Kanteen", 19.64, "Alpinetrek"),
+    (["COROS", "Coros"], "sports watch", "COROS", 229.0, "COROS UK"),
+    (["Honda"], "lawn mower", "Honda", 425.0, "Honda UK"),
 ]
+
+# Brands the makers' own pages show selling the type, with no UK price readable (their prices load by script).
+LINES_WITH_NO_FROM_PRICE = [(["Arc'teryx", "Arcteryx"], "rain jacket", "Arc'teryx")]
+
+
+def test_brands_with_no_readable_price_still_have_their_range():
+    lines = load_brand_lines()
+    for names, product_type, brand in LINES_WITH_NO_FROM_PRICE:
+        for name in names:
+            line = find_brand_line([name], "general", product_type, lines)
+            assert line is not None and line.brand == brand and line.sells and line.range_page, name
+            assert line.from_price is None, name
+
+
+def test_klein_alone_is_not_klean_kanteen():
+    # Writers misspell Klean Kanteen "Klein Kanteen"; Klein alone is the tool maker's name, never the bottle's.
+    assert find_brand_line(["Klein"], "general", "water bottle", load_brand_lines()) is None
 
 # (the name an answer shows, product type, price or None for a range with no single price, its shop)
 PRODUCTS_SOLD_IN_THE_UK = [
@@ -62,6 +83,10 @@ PRODUCTS_SOLD_IN_THE_UK = [
     ("Fjällräven Nuuk Parka", "winter coat", 394.96, "Nordic Outdoor"),
     ("nanit cam", "baby monitor", 249.99, "John Lewis"),
     ("Darn Tough tactical socks", "socks", None, "Darn Tough UK"),
+    ("Garmin Forerunner 165", "sports watch", 249.0, "John Lewis"),
+    ("Garmin Forerunner 265", "sports watch", 369.99, "John Lewis"),
+    ("Garmin Forerunner 570", "sports watch", 429.0, "John Lewis"),
+    ("COROS PACE 3", "sports watch", None, "COROS UK"),
 ]
 
 

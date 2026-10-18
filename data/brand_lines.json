@@ -2572,6 +2572,74 @@
    "from_price_url": "https://www.sportsshoes.com/product/asi16237/asics-dynablast-5-men%27s-running-shoes---ss26",
    "from_price_checked_on": "2026-10-18",
    "note": "From the research findings of 2026-10-18: SportsShoes, a big UK running shop, lists 235 ASICS men's shoes on 18 Oct (first page read): road running shoes from the Dynablast 5 at £68.99 (RRP £114.99), Gel-Cumulus 27 £83.99, GT-1000 15 £103.49, the GT-2000 15 stability shoe from £121.49, Gel-Kayano 33 from £161.99, Gel-Nimbus 28 from £161.99. From price: the Dynablast 5 at £68.99, of the first page."
+  },
+  {
+   "brand": "Arc'teryx",
+   "category": "general",
+   "product_type": "rain jacket",
+   "sells": true,
+   "sources": ["https://arcteryx.com/gb/en/c/mens/shell-jackets"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://arcteryx.com/gb/en/c/mens/shell-jackets",
+   "note": "From the research findings of 2026-10-18: Arc'teryx's own UK store (arcteryx.com/gb/en, United Kingdom) lists 31 men's shell jackets on 18 Oct, its waterproof hardshells among them (Beta, Beta AR, Beta SL, Alpha, Alpha SV, Sabre, Rush, Sidewinder...). Its prices load by script, so none was read and there is no from price."
+  },
+  {
+   "brand": "Briggs & Riley",
+   "category": "general",
+   "product_type": "suitcase",
+   "sells": true,
+   "sources": ["https://www.johnlewis.com/browse/sport-leisure/suitcases-bags-accessories/suitcases-luggage/briggs-riley/_/N-etcZ1z13ypl", "https://www.johnlewis.com/briggs-riley-35-6cm-4-wheel-cabin-bag-olive/p112685689", "https://www.johnlewis.com/briggs-riley-global-53cm-carry-on-spinner-4-wheel-suitcase-black/black/p113632894"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://www.johnlewis.com/browse/sport-leisure/suitcases-bags-accessories/suitcases-luggage/briggs-riley/_/N-etcZ1z13ypl",
+   "range_shop": "John Lewis",
+   "from_price": 389.0,
+   "from_price_shop": "John Lewis",
+   "from_price_url": "https://www.johnlewis.com/briggs-riley-35-6cm-4-wheel-cabin-bag-olive/p112685689",
+   "from_price_checked_on": "2026-10-18",
+   "note": "From the research findings of 2026-10-18: John Lewis's Briggs & Riley luggage page lists 41 items on 18 Oct (duffles and backpacks among them): wheeled cases from the 35.6cm 4-wheel underseat cabin bag at £389 and the 40cm 4-wheel cabin case at £399; carry-on spinners from £469 (Global Hard-Side 53cm, ZDX Essential 56cm), Baseline Global 53cm £599. From price: the 35.6cm 4-wheel cabin bag at £389, the cheapest wheeled case."
+  },
+  {
+   "brand": "Klean Kanteen",
+   "category": "general",
+   "product_type": "water bottle",
+   "sells": true,
+   "sources": ["https://www.alpinetrek.co.uk/brands/klean-kanteen/", "https://www.alpinetrek.co.uk/klean-kanteen-classic-narrow-flip-sport-water-bottle/"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://www.alpinetrek.co.uk/brands/klean-kanteen/",
+   "range_shop": "Alpinetrek",
+   "from_price": 19.64,
+   "from_price_shop": "Alpinetrek",
+   "from_price_url": "https://www.alpinetrek.co.uk/klean-kanteen-classic-narrow-flip-sport-water-bottle/",
+   "from_price_checked_on": "2026-10-18",
+   "note": "From the research findings of 2026-10-18: Alpinetrek, the UK shop of the Bergfreunde outdoor group (prices in pounds, UK delivery), lists 37 Klean Kanteen products on 18 Oct: adult bottles from the Classic Narrow Flip Sport at £19.64 (from £23.95), insulated ones from the Rise Classic VI at £27.02 and the TKWide Vacuum Insulated at £27.84; kids' bottles from £13.90 (not counted). From price: the Classic Narrow Flip Sport at £19.64. Writers also spell it 'Klein Kanteen'."
+  },
+  {
+   "brand": "COROS",
+   "category": "general",
+   "product_type": "sports watch",
+   "sells": true,
+   "sources": ["https://coros.com/uk", "https://coros.com/uk/pace4", "https://coros.com/uk/pace3"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://coros.com/uk",
+   "from_price": 229.0,
+   "from_price_shop": "COROS UK",
+   "from_price_url": "https://coros.com/uk/pace4",
+   "from_price_checked_on": "2026-10-18",
+   "note": "From the research findings of 2026-10-18: COROS's own UK store (United Kingdom, prices in pounds) on 18 Oct: PACE 4 from £229, NOMAD £319, PACE 4 Pro and APEX 4 £389, VERTIX 2S £599; the PACE 3 page is still up with Add to bag but shows no price. From price: the PACE 4 from £229."
+  },
+  {
+   "brand": "Honda",
+   "category": "general",
+   "product_type": "lawn mower",
+   "sells": true,
+   "sources": ["https://www.honda.co.uk/lawn-and-garden/products/lawnmowers.html"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://www.honda.co.uk/lawn-and-garden/products/lawnmowers.html",
+   "from_price": 425.0,
+   "from_price_shop": "Honda UK",
+   "from_price_url": "https://www.honda.co.uk/lawn-and-garden/products/lawnmowers.html",
+   "from_price_checked_on": "2026-10-18",
+   "note": "From the research findings of 2026-10-18: Honda UK still sells lawnmowers on 18 Oct (petrol IZY, HRS, HRN, HRX, HRD, HRH; cordless IZY-ON and HRX; robotic HRM; lawn tractors), prices including VAT, sold through its dealers. From price: the IZY petrol mower from £425 on the page (its menu says from £470)."
   }
  ]
 }
