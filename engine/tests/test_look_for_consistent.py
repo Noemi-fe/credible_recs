@@ -381,3 +381,30 @@ def test_looking_for_a_kind_free_of_what_the_request_refuses_agrees_with_it():
     against = note("PFAS-free pans", "t1", stance="warn", weight=-0.8,
                    quote="PFAS-free pans lose their slickness in months, skip them.")
     assert shown([against], "frying pan", "non stick pan without teflon", asks=("PFAS-free",)) == []
+
+
+def test_a_warning_whose_own_words_say_what_the_request_refuses_is_never_outweighed():
+    # From the 18 Oct sweep: "sunscreen for dry skin that doesn't leave a white cast" lost "Avoid: mineral SPFs" (its
+    # writer: mineral filters are white by nature, so a white cast) to praise of mineral sunscreen for other reasons. A
+    # warning about what the request asks to be without agrees with it; the praise stays too, its own note saying
+    # nothing of a cast (engine/tests/test_answer_sense.py: such a note is the one shown).
+    notes = [note("mineral sunscreen", "t1", weight=0.9,
+                  quote="A mineral sunscreen is great around the eyes, no sting."),
+             note("mineral SPFs", "t2", stance="warn", weight=-0.6,
+                  quote="Mineral SPFs leave a white cast on me, every one I tried."),
+             note("stick sunscreens", "t1", weight=0.3, quote="Stick sunscreens are great for top ups.")]
+    request = "sunscreen for dry skin that doesn't leave a white cast"
+    assert shown(notes, "sunscreen", request, asks=("no white cast",), category="skincare") == [
+        (wording.LOOK_FOR, "mineral sunscreen"), (wording.AVOID, "mineral SPFs"),
+        (wording.LOOK_FOR, "stick sunscreens")]
+    # Asking for nothing of the kind, the stronger praise outweighs the warning, as before.
+    assert (wording.AVOID, "mineral SPFs") not in shown(notes, "sunscreen", "best sunscreen", category="skincare")
+
+
+def test_avoiding_what_the_request_refuses_stays_whatever_writers_call_the_picks():
+    # "Avoid: Teflon" for a pan without it (Teflon is read as non-stick, and writers call their GreenPan non-stick).
+    pans = mentions(3, "Acme pan", written_as="Acme nonstick pan") + mentions(3, "Bolt pan")
+    teflon = note("Teflon", "t1", stance="warn", weight=-0.8,
+                  quote="Teflon coatings flake within two years, I'd never buy one again.")
+    assert shown([teflon], "frying pan", "non stick pan without teflon that lasts", asks=("PFAS-free", "non-stick"),
+                 picks=pans) == [(wording.AVOID, "Teflon")]

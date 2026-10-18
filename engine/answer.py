@@ -2175,8 +2175,10 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
     Since 18 Oct 2026 (the whole sweep read): `picks_names` are the picks' names and their writers' (_picks_names),
     `lines_products` the names of the products ranked under them (_lines_products), which tell only kinds of the type
     asked for ("variable temperature kettle" under the Bonavita line's variable temperature gooseneck); another kind's
-    advice counts as this one's only when it is about the same thing (_about_the_same); and a line left out for saying
-    the opposite leaves its place empty: the advice after the first lines is weaker, and none comes in for it.
+    advice counts as this one's only when it is about the same thing (_about_the_same), and never against a warning
+    whose own notes say what the request asks to be without ("Avoid: mineral SPFs", for their white cast, in an answer
+    asking for none); and a line left out for saying the opposite leaves its place empty: the advice after the first
+    lines is weaker, and none comes in for it.
     """
     candidates = []
     asked_words, refused = _asked_and_refused(ranking.category, product_type, request, needs, asks)
@@ -2210,7 +2212,7 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
     def says_the_opposite(kind: KindSupport) -> bool:
         if kind.key not in opposite:
             opposite[kind.key] = _contradicts(kind, ranking, product_type, asked_words, refused, names,
-                                              unsuited_kinds, lines_products)
+                                              unsuited_kinds, lines_products, tuple(asks))
         return opposite[kind.key]
 
     items: list[LookFor] = []
@@ -2408,7 +2410,8 @@ def _shares_a_word(a: Iterable[str], b: Iterable[str]) -> bool:
 
 def _contradicts(kind: KindSupport, ranking: RankingResult, product_type: str | None, asked: frozenset[str],
                  refused: tuple[str, ...], picks: Collection[str], unsuited_kinds: Collection[str] = (),
-                 lines_products: Collection[str] | Callable[[], Collection[str]] = ()) -> bool:
+                 lines_products: Collection[str] | Callable[[], Collection[str]] = (),
+                 asks: tuple[str, ...] = ()) -> bool:
     """Whether a kind's advice would say the opposite of the request, of a pick, or of as strong credible advice about
     the same kind in this answer (_look_for, 17 Oct 2026). An "Avoid" naming what the request refuses agrees with it,
     and so does one about a kind the request's facts rule out (`unsuited_kinds`: tretinoin for a beginner, by its
@@ -2420,12 +2423,12 @@ def _contradicts(kind: KindSupport, ranking: RankingResult, product_type: str | 
     category = ranking.category
     words = _kind_own_words(kind.name, category, product_type)
     others = [other for other in ranking.kinds if other.key != kind.key and other.key not in unsuited_kinds]
-    refuses = _says_any(kind.name, refused) and not _negated(kind.name, category)
-    against_refusal = _says_any(kind.name, refused) and _negated(kind.name, category)
+    negated = _negated(kind.name, category)
+    refuses = _says_any(kind.name, refused) and not negated
     if kind.support < 0:
         if refuses or kind.key in unsuited_kinds:
             return False
-        if against_refusal:
+        if _says_any(kind.name, refused) and negated:
             return True
         # Every word of its name, not only what tells it apart: "products with niacinamide" names the ingredient asked
         # for after its "with", and a serum's clue words hold the actives.
@@ -2437,6 +2440,12 @@ def _contradicts(kind: KindSupport, ranking: RankingResult, product_type: str | 
         names = [*picks, *lines]
         if words and any(all(any(_same_word(w, n) for n in _written(name, category)) for w in words) for name in names):
             return True
+        # A warning whose own credible notes say what the request asks to be without ("mineral SPFs are white by nature,
+        # so a white cast" for a sunscreen leaving none: _says_the_opposite) agrees with the request (18 Oct 2026): the
+        # same kind's praise for other reasons ("Look for: mineral sunscreen" around the eyes) doesn't outweigh it.
+        if asks and any(_says_the_opposite(n.quote, asks) for n in ranking.kind_notes
+                        if n.kind_key == kind.key and n.stance == "warn" and is_credible(n)):
+            return False
         # The same kind's recommendations under other names count together (module 4 kept them apart).
         return sum(other.support for other in others if other.support > 0
                    and _about_the_same(kind.name, other.name, category, product_type)) >= (
