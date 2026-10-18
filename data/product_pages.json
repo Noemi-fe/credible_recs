@@ -5674,6 +5674,21 @@
    ],
    "checked_on": "2026-10-17",
    "note": "VIZIO sells its TVs in the US (vizio.com, US paths and dollar prices only, no country selector; its Quantum 4K range from $139 on 17 Oct 2026); John Lewis has 0 results for vizio. Not sold to UK shoppers."
+  },
+  {
+   "product": "Keychron keyboard line",
+   "category": "general",
+   "product_type": "keyboard",
+   "page": "https://www.keychron.uk/collections/all-keyboards",
+   "shop": "Keychron UK",
+   "sources": [
+    "https://www.keychron.uk/collections/all-keyboards",
+    "https://www.keychron.uk/products/keychron-c3-pro-qmk-via-wired-mechanical-keyboard-iso-layout-collection",
+    "https://www.keychron.uk/products/keychron-c3-pro-qmk-via-wired-mechanical-keyboard-iso-layout-collection.json",
+    "https://www.keychron.uk/collections/all-keyboards/products.json?limit=250"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "Keychron's UK store ('All Keyboards | Mechanical & Wireless | Keychron UK', ships from the UK), 17 Oct 2026: cheapest the C3 Pro wired mechanical keyboard GBP49.99 (both variants in its product data; the B1 Pro slim wireless is also GBP49.99), C1 Pro 8K GBP54.99, V1/V3/K3 Max GBP109.99, K2 HE GBP129.99."
   }
  ]
 }

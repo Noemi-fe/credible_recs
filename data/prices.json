@@ -10661,6 +10661,52 @@
     "https://www.johnlewis.com/search?search-term=tp-link%20deco"
    ],
    "note": "discontinued: TP-Link UK's own Deco M5 page (17 Oct 2026) labels it End of Life and offers 'Replace with Deco X10'; John Lewis's Deco range has the M4, X50, X1500, BE22, BE65 and P9, no M5. Not sold new."
+  },
+  {
+   "product": "Anker Soundcore",
+   "category": "general",
+   "product_type": "bluetooth speaker",
+   "price": null,
+   "currency": "GBP",
+   "shop": "soundcore",
+   "url": "https://www.soundcore.com/uk/collections/speakers",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "note": "Anker's soundcore speakers are sold on its own UK store (soundcore UK, Anker Technology (UK) Ltd), 17 Oct 2026: Select 4 Go GBP18.96, soundcore 2 GBP28.99, soundcore 3 GBP35.14, Boom 2 GBP79.99, Motion X600 GBP184.21 ... 'Anker Soundcore' names the range, not one model, so no single price."
+  },
+  {
+   "product": "Razer Death Adder",
+   "category": "general",
+   "product_type": "mouse",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Razer",
+   "url": "https://www.razer.com/gb-en/gaming-mice/razer-deathadder-essential",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.razer.com/gb-en/gaming-mice/razer-deathadder-essential",
+    "https://www.razer.com/gb-en/gaming-mice/razer-deathadder-v3"
+   ],
+   "note": "Razer's UK store sells the DeathAdder family on 17 Oct 2026: DeathAdder Essential from GBP29.99 and DeathAdder V3 from GBP69.99 (BUY buttons shown). Writers' 'DeathAdder' spans generations, so no single price."
+  },
+  {
+   "product": "Keychron keyboard",
+   "category": "general",
+   "product_type": "keyboard",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Keychron UK",
+   "url": "https://www.keychron.uk/products/keychron-c3-pro-qmk-via-wired-mechanical-keyboard-iso-layout-collection",
+   "checked_on": "2026-10-17",
+   "available": true,
+   "sources": [
+    "https://www.keychron.uk/products/keychron-c3-pro-qmk-via-wired-mechanical-keyboard-iso-layout-collection",
+    "https://www.keychron.uk/collections/all-keyboards",
+    "https://www.keychron.uk/products/keychron-c3-pro-qmk-via-wired-mechanical-keyboard-iso-layout-collection.json",
+    "https://www.keychron.uk/collections/all-keyboards/products.json?limit=250"
+   ],
+   "note": "Keychron's UK store ('All Keyboards | Mechanical & Wireless | Keychron UK', ships from the UK), 17 Oct 2026: cheapest the C3 Pro wired mechanical keyboard GBP49.99 (both variants in its product data; the B1 Pro slim wireless is also GBP49.99), C1 Pro 8K GBP54.99, V1/V3/K3 Max GBP109.99, K2 HE GBP129.99."
   }
  ]
 }

@@ -2346,6 +2346,20 @@
    "from_price_url": "https://www.johnlewis.com/shark-matrix-plus-rv2620waukwh-robot-vacuum-cleaner-white-silver/p113844304",
    "from_price_checked_on": "2026-10-17",
    "note": "From the research findings of 2026-10-17: SharkNinja UK's robot vacuum range (16 of 19 shown on 17 Oct 2026: Matrix Plus RV2620WAUK GBP269.99-519.99, PowerDetect Self-Empty AV2820VEUKWH GBP319.99, Navigator RV2110AEUK GBP364.99...). John Lewis: Matrix Plus RV2620WAUKWH GBP269.99, was GBP519.99 (Save GBP250, Add to basket): an offer price, check again when it ends."
+  },
+  {
+   "brand": "Keychron",
+   "category": "general",
+   "product_type": "keyboard",
+   "sells": true,
+   "sources": ["https://www.keychron.uk/collections/all-keyboards", "https://www.keychron.uk/products/keychron-c3-pro-qmk-via-wired-mechanical-keyboard-iso-layout-collection", "https://www.keychron.uk/products/keychron-c3-pro-qmk-via-wired-mechanical-keyboard-iso-layout-collection.json", "https://www.keychron.uk/collections/all-keyboards/products.json?limit=250"],
+   "checked_on": "2026-10-17",
+   "range_page": "https://www.keychron.uk/collections/all-keyboards",
+   "from_price": 49.99,
+   "from_price_shop": "Keychron UK",
+   "from_price_url": "https://www.keychron.uk/products/keychron-c3-pro-qmk-via-wired-mechanical-keyboard-iso-layout-collection",
+   "from_price_checked_on": "2026-10-17",
+   "note": "From the research findings of 2026-10-17: Keychron's UK store ('All Keyboards | Mechanical & Wireless | Keychron UK', ships from the UK), 17 Oct 2026: cheapest the C3 Pro wired mechanical keyboard GBP49.99 (both variants in its product data; the B1 Pro slim wireless is also GBP49.99), C1 Pro 8K GBP54.99, V1/V3/K3 Max GBP109.99, K2 HE GBP129.99."
   }
  ]
 }

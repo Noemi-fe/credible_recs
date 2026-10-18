@@ -37,6 +37,13 @@ LINES = [
     ("Shark", "robot vacuum", 269.99, "John Lewis"),
     ("Roomba", "robot vacuum", 229.0, "iRobot"),
     ("UniFi", "wifi router", 65.0, "Ubiquiti UK Store"),
+    ("Keychron", "keyboard", 49.99, "Keychron UK"),
+]
+
+# Sold in the UK, a range rather than one model, so no single price (name as the answer shows it, type, shop as shown).
+SOLD = [
+    ("Anker Soundcore", "bluetooth speaker", "soundcore"),
+    ("Razer Death Adder", "mouse", "Razer"),
 ]
 
 # Discontinued models: left out of answers and named (Noemi, 15 Oct 2026). Some had been marked "not sold in the UK"
@@ -89,3 +96,9 @@ def test_a_product_sold_only_abroad_stays_with_its_note(name, product_type):
     entry = find_availability(name, "general", load_prices(), product_type=product_type)
     assert entry is not None and entry.available is False and entry.not_in_uk
     assert counts_as_sold(entry) is True
+
+
+@pytest.mark.parametrize("name, product_type, shop", SOLD)
+def test_a_researched_range_is_known_to_be_sold_where(name, product_type, shop):
+    entry = find_availability(name, "general", load_prices(), product_type=product_type)
+    assert entry is not None and counts_as_sold(entry) is True and entry.shop == shop and not entry.not_in_uk
