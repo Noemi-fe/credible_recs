@@ -173,6 +173,7 @@ from engine.links import is_direct_page, is_linkable, is_search_page
 from engine.models import Thread
 from engine.product_pages import ProductPage
 from engine.needs import LASTING, Need, needs_met, said_not_to_help
+from engine.sources import _stem as _need_stem
 from engine.prices import PriceCheck
 from engine.credibility import GENERIC_NAME_WORDS
 from engine.match_products import FILLER_WORDS, known_aliases
@@ -669,6 +670,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     cautions = cautions or {}
     summaries = summaries or {}
     picks: list[Pick] = []
+    said = _said_needs(needs, product_type, request, asks, ranking.category)  # how the reason names them (17 Oct 2026)
     for product in ranking.qualifying:
         if len(picks) == PICKS_SHOWN:
             break
@@ -680,7 +682,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             tips = _care_tips(CareTips(own.own, []) if own else None, check)
             notes = [CAUTION.format(reason=reason) for reason in cautions.get(product.key, [])]
             picks.append(_pick(len(picks) + 1, product, quotes, check, ranking, price, tips, availability, notes,
-                               (more_downsides or {}).get(product.key, []), needs))
+                               (more_downsides or {}).get(product.key, []), needs, said))
             picks[-1].model = models.get(product.key)
             picks[-1].model_price = (model_prices or {}).get(product.key)
             picks[-1].summary = _summary(product, _summary_of(product, summaries), check)
@@ -691,7 +693,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     # A product the upvote rule lifted (14 Oct 2026) may be an item and a pick shown: then it is a pick only.
     shown_picks = {pick.product_key for pick in picks}
     worth = _worth_items(ranking, check, prices, cautions, summaries, set(worth_left_out) | shown_picks, asks, needs,
-                         product_type)
+                         product_type, said)
     for item in worth:
         item.form = forms.get(item.product_key)
         item.range = shown_range(ranges.get(item.product_key))
@@ -790,7 +792,8 @@ def _ingredient_note(product_type: str | None, ingredient: str | None,
 
 def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[str, PriceCheck],
                  cautions: Mapping[str, list[str]], summaries: Mapping[str, Summary], left_out: Collection[str],
-                 asks: tuple[str, ...], needs: tuple[Need, ...], product_type: str | None) -> list[WorthALook]:
+                 asks: tuple[str, ...], needs: tuple[Need, ...], product_type: str | None,
+                 said: "_SaidNeeds | None" = None) -> list[WorthALook]:
     """Up to WORTH_A_LOOK_SHOWN products of ranking.worth_a_look, in its order, those in `left_out` aside: first those
     that meet the picks bar on their own but rank below the top 3 (Noemi's decision 4 of 15 Oct 2026), each labelled so
     (meets_bar) and with a pick's reason line and voices; then those with two credible recommendations across two
@@ -817,7 +820,7 @@ def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[s
             # shown here thanks to a comment standing out in its thread says so (_reason). One meeting the bar on its
             # own has a pick's reason, as a pick would say it.
             reason=_reason(product, ranking, upvotes=meets_bar, order=tuple(need.name for need in needs),
-                           shown=_need_labels(needs)),
+                           shown=(said or _said_needs(needs)).labels, hidden=(said or _said_needs(needs)).hidden),
             quotes=quotes,
             downsides=downsides,
             downsides_share=_downsides_share(product) if downsides else None,
@@ -1714,17 +1717,19 @@ def _warning_quotes(groups: Iterable[Iterable[ScoredMention]], check: _QuoteChec
 def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _QuoteCheck, ranking: RankingResult,
           price: ShownPrice, care: list[ShownCareTip], availability: ShownAvailability = NOT_CHECKED,
           cautions: list[str] | None = None, more_downsides: list[ScoredMention] = (),
-          needs: tuple[Need, ...] = ()) -> Pick:
+          needs: tuple[Need, ...] = (), said: "_SaidNeeds | None" = None) -> Pick:
     """One pick. `more_downsides`: credible warnings about the pick's own brand or line, shown after its own (the
     pipeline's _fold_brand_skips, 10 Oct 2026). `needs`: warnings that talk about them come first among equally clear
-    ones ("when my bonavita broke" for a kettle that should last)."""
+    ones ("when my bonavita broke" for a kettle that should last). `said`: how its reason names them (_said_needs)."""
     warnings = product.credible_warnings
     downsides = _warning_quotes((warnings, more_downsides), check, DOWNSIDES_PER_PICK, needs)
+    said = said or _said_needs(needs)
     return Pick(
         rank=rank,
         product_key=product.key,
         name=product.name,
-        reason=_reason(product, ranking, order=tuple(need.name for need in needs), shown=_need_labels(needs)),
+        reason=_reason(product, ranking, order=tuple(need.name for need in needs), shown=said.labels,
+                       hidden=said.hidden),
         support=_support(product),
         quotes=quotes,
         downsides=downsides,
@@ -1818,12 +1823,75 @@ def _need_labels(needs: Iterable[Need]) -> dict[str, str]:
     return {need.name: need.label for need in needs if need.label}
 
 
+@dataclass(frozen=True)
+class _SaidNeeds:
+    """How a reason line names the request's needs (17 Oct 2026): {need name: words} for those named otherwise than by
+    their name, and the needs it never names nor counts."""
+
+    labels: Mapping[str, str]
+    hidden: frozenset[str] = frozenset()
+
+
+# The must-haves a request can ask for in other words (17 Oct 2026, the converge round), by their names as
+# engine.product_facts.request_asks gives them, and the words naming them as need words are written (no spaces,
+# hyphens or apostrophes): a need found by one of these words, when the request asks for the must-have, is named by it
+# ("about PFAS-free", not "about teflon"). Decided by Claude.
+MUST_HAVE_WORDS: dict[str, tuple[str, ...]] = {
+    "PFAS-free": ("pfas", "teflon", "ptfe", "pfoa", "forever"),
+    "non-stick": ("nonstick",),
+    "sulfate-free": ("sulfate", "sulphate"),
+    "SPF": ("spf",),
+}
+
+
+def _said_needs(needs: Iterable[Need], product_type: str | None = None, request: str = "",
+                asks: Iterable[str] = (), category: str | None = None) -> _SaidNeeds:
+    """How the reason names the request's needs (_need_labels), and since 17 Oct 2026 (the converge round): a need that
+    is a must-have the request asks for in other words, by the must-have (MUST_HAVE_WORDS: "teflon" and "PFAS" as
+    "PFAS-free", "non stick" as "non-stick"), named once; and in kitchen and general answers, never a need that is a word
+    of the product's own name in the request (_own_name_words: "non stick" of "non stick pan", "freezer" of "fridge
+    freezer", "cordless" of "cordless drill"). Skincare and haircare requests already have no such need
+    (engine.needs.judged_needs). Which words are needs is module 1's; this is only how they are said."""
+    labels = _need_labels(needs)
+    hidden: set[str] = set()
+    asked = set(asks)
+    own = _own_name_words(product_type, request) if category in ("kitchen", "general") else frozenset()
+    for need in needs:
+        if need.request_word is not None and need.request_word in own:
+            hidden.add(need.name)
+            continue
+        written = re.sub(r"[\s'-]", "", (need.label or need.request_word or need.name).lower())
+        for must_have, words in MUST_HAVE_WORDS.items():
+            if must_have in asked and any(written.startswith(word) for word in words):
+                labels[need.name] = must_have
+    return _SaidNeeds(labels, frozenset(hidden))
+
+
+@cache
+def _own_name_words(product_type: str | None, request: str) -> frozenset[str]:
+    """The words of the product's own names the request uses (module 1's names and clue words for its type,
+    config.TYPE_SYNONYMS), as need words are written (engine.sources: no hyphens or apostrophes, a plural trimmed): "non"
+    and "stick" of "non stick pan" (a frying pan's "non-stick pan", written with a space or a hyphen), "freezer" of "fridge
+    freezer"."""
+    product = next((p for p in PRODUCT_TYPES if p.name == product_type), None)
+    names = list(product.keywords + product.hints) if product else []
+    names += list(TYPE_SYNONYMS.get(product_type or "", ()))
+    lowered = _plain(request)
+    words: set[str] = set()
+    for name in names:
+        pattern = r"[\s-]*".join(re.escape(part) for part in re.split(r"[\s-]+", name.lower()) if part)
+        for match in re.finditer(rf"(?<![a-z0-9]){pattern}(?:s|es)?(?![a-z0-9])", lowered):
+            words |= {_need_stem(re.sub(r"['-]", "", token))
+                      for token in re.findall(r"[a-z0-9]+(?:['-][a-z0-9]+)*", match.group(0))}
+    return frozenset(words)
+
+
 def _reason(product: ProductScore, ranking: RankingResult, upvotes: bool = True, order: tuple[str, ...] = (),
-            shown: Mapping[str, str] | None = None) -> str:
+            shown: Mapping[str, str] | None = None, hidden: Collection[str] = ()) -> str:
     """The one-line reason: how many credible voices, which counted twice for their upvotes (a pick's, `upvotes`) or
     which comment stands out in its thread when that is why it is shown (14 Oct 2026), how many after long-term use,
-    how many talk about the request's needs (named in `order`, the request's own, when given), and the kind if it
-    leads."""
+    how many talk about the request's needs (named in `order`, the request's own, when given; never one of `hidden`,
+    17 Oct 2026), and the kind if it leads."""
     recommendations = product.credible_recommendations
     long_term = sum(m.evidence == "long-term use" for m in recommendations)
     has_bonus = product.breakdown.kind_bonus > 0 and ranking.leading_kind is not None
@@ -1836,7 +1904,7 @@ def _reason(product: ProductScore, ranking: RankingResult, upvotes: bool = True,
         upvotes=clause,
         long_term=REASON_LONG_TERM.format(n=long_term) if long_term else "",
         needs=_needs_clause(recommendations, [m.needs for p in ranking.products for m in p.mentions], ranking.category,
-                            order, shown),
+                            order, shown, hidden),
         kind=REASON_KIND.format(kind=ranking.leading_kind.name) if has_bonus else "",
     )
 
@@ -1878,7 +1946,8 @@ def _rule(standout_pick: bool = False) -> str:
 
 
 def _needs_clause(recommendations: list[ScoredMention], every_list: list[tuple[str, ...]],
-                  category: str | None = None, order: tuple[str, ...] = (), shown: Mapping[str, str] | None = None) -> str:
+                  category: str | None = None, order: tuple[str, ...] = (), shown: Mapping[str, str] | None = None,
+                  hidden: Collection[str] = ()) -> str:
     """", 3 of them about sensitive skin": how many credible recommendations talk about the request's needs, and which
     needs, in the request's order; "" when none does. `order` is the request's needs in its own order (write_answer's
     `needs`): since 15 Oct 2026 the needs are named in it, since the mentions alone can't always show it (each lists its
@@ -1889,7 +1958,8 @@ def _needs_clause(recommendations: list[ScoredMention], every_list: list[tuple[s
     Nothing is said twice: long-term use talks about "lasting" (engine/needs.py), and the reason already says how many
     recommendations come after long-term use, so those don't count again for "how long it lasts".
     """
-    fitting = [needs for needs in map(_needs_not_said, recommendations) if needs]
+    fitting = [kept for needs in map(_needs_not_said, recommendations)
+               if (kept := tuple(need for need in needs if need not in hidden))]
     if not fitting:
         return ""
     mine = {need for needs in fitting for need in needs}
