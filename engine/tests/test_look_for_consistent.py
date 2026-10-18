@@ -230,3 +230,15 @@ def test_a_kind_named_after_a_prescription_only_active_gives_a_beginner_no_look_
     beginner = parse_query("retinol for a beginner with sensitive skin")
     assert _unsuited_kinds(kinds, beginner, facts) == {"adalpalene"}
     assert _unsuited_kinds(kinds, parse_query("retinol for acne scars"), facts) == set()
+
+
+def test_a_picks_writers_names_tell_its_kind_too():
+    # b06 after the variable-temperature line left: "Avoid: gooseneck" under the Fellow Stagg EKG, which its writers call
+    # their Stagg gooseneck. The names a pick's writers give it say what kind it is, as its shown name does.
+    picks = (mentions(3, "Fellow Stagg EKG", written_as="Stagg gooseneck kettle")
+             + mentions(3, "Acme kettle", written_as="Acme kettle"))
+    notes = [note("gooseneck", "t1", stance="warn", weight=-0.7,
+                  quote="A gooseneck is useless unless you brew pour over, skip it."),
+             note("glass kettle", "t2", weight=0.4, quote="A glass kettle is great, you see the scale building up.")]
+    assert shown(notes, "electric kettle", "electric kettle that lasts 10+ years", picks=picks) == [
+        (wording.LOOK_FOR, "glass kettle")]

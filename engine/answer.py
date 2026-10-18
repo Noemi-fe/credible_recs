@@ -706,7 +706,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             item.form = forms.get(item.product_key)
             item.prescription = _prescription(item.product_key, prescription)
     look_for = _look_for(ranking, check, product_type, unsuited_kinds, request, asks, [pick.name for pick in picks],
-                         forms_asked, needs)
+                         forms_asked, needs, _picks_names(ranking, picks))
     care_note = _care_note([care.get(pick.product_key) for pick in picks], picks, check)
     # Shown thanks to a comment standing out in its thread (14 Oct 2026): the messages and the note say how.
     standing_out = {p.key for p in ranking.products if p.by_standout}
@@ -1151,6 +1151,19 @@ def _first_at(text: str, words: Collection[str]) -> int | None:
     found = [m.start() for word in words if word for m in [re.search(rf"(?<![a-z0-9']){re.escape(word)}(?![a-z0-9'])",
                                                                       text)] if m]
     return min(found) if found else None
+
+
+def _picks_names(ranking: RankingResult, picks: Iterable["Pick"]) -> list[str]:
+    """Every name the picks go by: each one's shown name and the names its writers give it (ScoredMention.written_as:
+    "Stagg gooseneck kettle" for the Fellow Stagg EKG), which say what kind of product it is as its name does (17 Oct
+    2026: What to look for never warns against a pick's own kind)."""
+    by_key = {p.key: p for p in ranking.products}
+    names: list[str] = []
+    for pick in picks:
+        names.append(pick.name)
+        product = by_key.get(pick.product_key)
+        names += [m.written_as for m in (product.mentions if product else ()) if m.written_as]
+    return list(dict.fromkeys(names))
 
 
 def _named_in(ranking: RankingResult) -> dict[str, tuple[tuple[str, str], ...]]:
@@ -2095,7 +2108,7 @@ def _skip_item(product: ProductScore, check: _QuoteCheck) -> SkipItem | None:
 def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | None = None,
               unsuited_kinds: Collection[str] = (), request: str = "", asks: tuple[str, ...] = (),
               picks: Collection[str] = (), forms_asked: Collection[str] = (),
-              needs: tuple[Need, ...] = ()) -> list[LookFor]:
+              needs: tuple[Need, ...] = (), picks_names: Collection[str] | None = None) -> list[LookFor]:
     """Up to LOOK_FOR_NOTES kinds, strongest credible advice first, each with its strongest verified note. In skincare,
     a kind whose advice is about another type of product gives none (_another_types_advice). A kind in
     `unsuited_kinds` (its facts clash hard with the request: the pipeline's _unsuited_kinds) gives no "Look for".
@@ -2147,7 +2160,8 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
         if (_the_product_asked_for(kind.name, ranking.category, product_type, request)
                 or _instead_of_the_product(kind.name, ranking.category, product_type, request)
                 or _another_types_advice(kind.name, notes, ranking.category, product_type)
-                or _contradicts(kind, ranking, product_type, asked_words, refused, picks, unsuited_kinds)):
+                or _contradicts(kind, ranking, product_type, asked_words, refused,
+                                picks if picks_names is None else picks_names, unsuited_kinds)):
             continue
         candidates.append((kind, advice, notes))
     # sorted keeps ties in the ranking's order
