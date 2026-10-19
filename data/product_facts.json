@@ -671,6 +671,21 @@
    "checked_on": "2026-10-10"
   },
   {
+   "product": "OXO Ceramic Professional",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true,
+    "non_stick": true,
+    "induction": true
+   },
+   "sources": [
+    "https://www.oxouk.com/ceramic-professional-non-stick-cookware/",
+    "https://www.oxouk.com/products/cookware/frying-saute-pans/"
+   ],
+   "checked_on": "2026-10-19"
+  },
+  {
    "product": "All-Clad non-stick pans",
    "category": "kitchen",
    "product_type": "frying pan",
@@ -3020,13 +3035,13 @@
    "product_type": "frying pan",
    "facts": {
     "pfas_free": true,
+    "non_stick": true,
     "induction": true
    },
    "sources": [
-    "https://www.carawayhome.com/products/fry-pan",
-    "https://www.carawayhome.com/products/stainless-steel-fry-pan"
+    "https://www.carawayhome.com/products/fry-pan"
    ],
-   "checked_on": "2026-10-15"
+   "checked_on": "2026-10-19"
   },
   {
    "product": "IKEA VARDAGEN carbon steel frying pan",
