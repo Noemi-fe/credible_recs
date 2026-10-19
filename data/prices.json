@@ -111,13 +111,22 @@
   {
    "product": "1Zpresso JX-Pro-S Manual Coffee Grinder",
    "category": "kitchen",
-   "price": null,
+   "price": 140.83,
    "currency": "GBP",
    "shop": "The English Coffee Company",
    "url": "https://englishcoffeecompany.co.uk/products/1zpresso-jx-pro-s-manual-coffee-grinder",
-   "checked_on": "2026-10-09",
-   "available": false,
-   "not_in_uk": true
+   "checked_on": "2026-10-17",
+   "available": true,
+   "also_called": [
+    "1Zpresso JX-Pro"
+   ],
+   "sources": [
+    "https://englishcoffeecompany.co.uk/products/1zpresso-jx-pro-s-manual-coffee-grinder",
+    "https://1zpresso.coffee/product/jxpro/",
+    "https://1zpresso.coffee/j/",
+    "https://1zpresso.coffee/store/"
+   ],
+   "note": "The JX-Pro S is the JX-Pro's 2023 refresh (a folding handle), the grinder writers call the JX-Pro. The English Coffee Company, a UK shop, lists it at £140.83 but sold out on 17 Oct 2026 (out of stock for now counts as sold, the list's convention). 1Zpresso's own JX-Pro S page says it is currently out of stock and unavailable, and its J Series page still presents it; 1Zpresso marks its K-Plus, K-Pro and K-Max as discontinued, not the JX-Pro. Sigma Coffee, its UK distributor, sells the J, J-Ultra, K-Ultra, X-Ultra, ZP6 and Q instead."
   },
   {
    "product": "1Zpresso J-Max",
@@ -720,10 +729,13 @@
    "currency": "GBP",
    "shop": "Amazon UK",
    "url": "https://www.amazon.co.uk/s?k=timemore+chestnut+c2+max",
-   "checked_on": "2026-10-10",
+   "checked_on": "2026-10-17",
    "available": false,
-   "note": "no UK shop found selling it: Amazon UK lists the C2S and C3S Max but not the C2 Max, and Redber sells only the C2; Timemore's own store no longer lists it (its product page is gone; it now sells the C3, C3S and C5)",
-   "not_in_uk": true
+   "note": "discontinued: Timemore's own C2 Max page is gone (not found on 17 Oct 2026, as on 10 Oct), its store sells the C3, C3S and C5 instead, and no UK shop was found selling it (Amazon UK lists the C2S and C3S Max, Redber only the C2).",
+   "sources": [
+    "https://www.timemore.com/products/chestnut-c2-max",
+    "https://www.amazon.co.uk/s?k=timemore+chestnut+c2+max"
+   ]
   },
   {
    "product": "KINGrinder K2 Hand Coffee Grinder",
@@ -750,17 +762,6 @@
    "available": false,
    "note": "no UK shop found selling it new: Amazon UK lists none, and Helor's own site (helor.com) does not load",
    "not_in_uk": true
-  },
-  {
-   "product": "Circulon pans",
-   "category": "kitchen",
-   "price": null,
-   "currency": "GBP",
-   "shop": "Circulon",
-   "url": "https://circulon.uk.com/collections/cookware-frying-pans-skillets",
-   "checked_on": "2026-10-10",
-   "available": true,
-   "note": "its UK store sells many non-stick frying pans, £39.99 to £125.00 at full price for a single pan (some reduced on 10 Oct), so no one price fits the name"
   },
   {
    "product": "Tefal non-stick pan",
@@ -817,27 +818,35 @@
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "Sigma Coffee UK",
-   "url": "https://sigmacoffee.co.uk/search?q=1zpresso&type=product",
-   "checked_on": "2026-10-10",
+   "shop": "1Zpresso",
+   "url": "https://1zpresso.coffee/k/",
+   "checked_on": "2026-10-17",
    "available": false,
    "also_called": [
     "1Zpresso K-Plus"
    ],
-   "note": "1Zpresso's UK distributor sells the newer K-Ultra (£229), not the K-Plus, and 1Zpresso's own store no longer lists the K-Plus",
-   "not_in_uk": true
+   "note": "discontinued: 1Zpresso's own K Series page marks the K-Plus Grinder (with the K-Pro and K-Max) as discontinued, its old product address now leads to K-Plus spare parts, and its store sells the K-Ultra instead; Sigma Coffee, its UK distributor, sells the K-Ultra (£229), not the K-Plus. Checked 17 Oct 2026.",
+   "sources": [
+    "https://1zpresso.coffee/k/",
+    "https://1zpresso.coffee/store/",
+    "https://sigmacoffee.co.uk/search?q=1zpresso&type=product"
+   ]
   },
   {
    "product": "1zpresso X-Pro",
    "category": "kitchen",
    "price": null,
    "currency": "GBP",
-   "shop": "Sigma Coffee UK",
-   "url": "https://sigmacoffee.co.uk/search?q=1zpresso&type=product",
-   "checked_on": "2026-10-10",
+   "shop": "1Zpresso",
+   "url": "https://1zpresso.coffee/x/",
+   "checked_on": "2026-10-17",
    "available": false,
-   "note": "1Zpresso's UK distributor sells the newer X-Ultra (£145, sold out on 10 Oct), not the X-Pro, and 1Zpresso's own store no longer lists the X-Pro",
-   "not_in_uk": true
+   "note": "discontinued: 1Zpresso's own X Series page presents only the X-Ultra, its old X-Pro address now leads to X-Pro S spare parts, and its store sells the X-Ultra instead; Sigma Coffee, its UK distributor, sells the X-Ultra (£145), not the X-Pro. Checked 17 Oct 2026.",
+   "sources": [
+    "https://1zpresso.coffee/x/",
+    "https://1zpresso.coffee/store/",
+    "https://sigmacoffee.co.uk/search?q=1zpresso&type=product"
+   ]
   },
   {
    "product": "niche",
@@ -1179,10 +1188,14 @@
    "currency": "GBP",
    "shop": "Clumsy Goat",
    "url": "https://clumsygoat.co.uk/products/fellow-corvo-ekg-coffee-pouring-kettle-matte-black",
-   "checked_on": "2026-10-10",
+   "checked_on": "2026-10-17",
    "available": false,
-   "note": "the original Corvo EKG (not the Pro), UK 3-pin plug: Clumsy Goat still lists it (£149.00, was £175.00) but both colours are sold out; Fellow's own Corvo EKG page now offers only the Corvo EKG Pro and Pro Studio Edition, and its store has only spare kettle bodies for the original; Borough Kitchen's Corvo EKG pages are gone (404), and Borough Kitchen and Coffee Beautiful sell only the Corvo EKG Pro (£159 to £195); so no UK shop checked sells the original new",
-   "not_in_uk": true
+   "note": "discontinued: the original Corvo EKG (not the Pro). Fellow's own Corvo EKG page is gone (not found on 17 Oct 2026) and its store sells only the Corvo EKG Pro and Pro Studio Edition, a newer model; Clumsy Goat still lists the original (£149, was £175) with both colours sold out since 10 Oct, and Borough Kitchen and Coffee Beautiful sell only the Pro.",
+   "sources": [
+    "https://clumsygoat.co.uk/products/fellow-corvo-ekg-coffee-pouring-kettle-matte-black",
+    "https://fellowproducts.com/products/corvo-ekg-electric-kettle",
+    "https://fellowproducts.com/products/corvo-ekg-pro-electric-kettle"
+   ]
   },
   {
    "product": "Knock Aergrind",
@@ -1925,7 +1938,8 @@
    "available": true,
    "also_called": [
     "Sam's Club restaurant non-stick pans",
-    "Sam's Club restaurant quality non-stick pans"
+    "Sam's Club restaurant quality non-stick pans",
+    "Member's Mark commercial non-stick pans"
    ],
    "note": "Sam's Club's own brand, which Sam's Club sells only in the US; Amazon UK lists it from an importing seller: the 8-inch at £58.46 on 15 Oct 2026, delivered 4 to 9 Nov, and the older Bakers & Chefs 10-inch at £88.17; writers name no size, so no one price fits the name"
   },
@@ -3269,23 +3283,6 @@
    "note": "50 ml. Cult Beauty £15.50, in stock today; Boots lists it at £15.50 too (page blocks reading). Beauty of Joseon has no GBP store: its Irish/EU store sells this UK version (vendor 'Beauty of Joseon UK') in euros, so the image comes from that page."
   },
   {
-   "product": "Circulon pans",
-   "category": "kitchen",
-   "product_type": "frying pan",
-   "price": 31.99,
-   "currency": "GBP",
-   "shop": "Circulon",
-   "url": "https://circulon.uk.com/products/circulon-halo-20cm-25cm-ceramic-non-stick-frying-pan",
-   "checked_on": "2026-10-15",
-   "available": true,
-   "sources": [
-    "https://circulon.uk.com/products/circulon-halo-20cm-25cm-ceramic-non-stick-frying-pan",
-    "https://circulon.uk.com/collections/cookware-frying-pans-skillets",
-    "https://circulon.uk.com/products/total-nonstick-induction-frying-pan-small-medium-large"
-   ],
-   "note": "A brand range (Circulon's non-stick frying pans), treated like a line: Circulon UK's own store sells 16 frying pans and sets. From £31.99: the Halo 20 cm ceramic pan on offer (usually £39.99); at full price from £39.99 (Total non-stick 22 cm). Image from the Total frying pan's page."
-  },
-  {
    "product": "Kiwi chef knife",
    "category": "kitchen",
    "product_type": "chef knife",
@@ -3301,24 +3298,6 @@
    ],
    "note": "not sold to UK shoppers: Kiwi is a Thai knife brand (e.g. the No. 21 8-inch Thai chef's knife) sold through US (Walmart), Thai and German marketplaces; no UK shop or UK maker page found in two searches. Amazon UK and eBay UK block reading from here, so marketplace imports there can't be ruled out, but no big UK shop sells it.",
    "not_in_uk": true
-  },
-  {
-   "product": "Ballarini non-stick pans",
-   "category": "kitchen",
-   "product_type": "frying pan",
-   "price": 39.95,
-   "currency": "GBP",
-   "shop": "Zwilling",
-   "url": "https://www.zwilling.com/uk/ballarini-bologna-frying-pan-20-cm-aluminium-ceramic-non-stick-coating/1030873.html",
-   "checked_on": "2026-10-15",
-   "available": true,
-   "sources": [
-    "https://www.zwilling.com/uk/ballarini-bologna-frying-pan-20-cm-aluminium-ceramic-non-stick-coating/1030873.html",
-    "https://www.zwilling.com/uk/ballarini/cookware/",
-    "https://www.zwilling.com/uk/ballarini-ledro-frying-pan-20-cm-aluminium-ceramic-non-stick-coating/1027772.html",
-    "https://www.zwilling.com/uk/ballarini-salina-frying-pan-20-cm-aluminium-titanium-reinforced-ceramic-non-stick-coating/1030837.html"
-   ],
-   "note": "A brand range, treated like a line. Ballarini belongs to Zwilling, whose UK store is Ballarini's UK shop: Bologna, Ledro and Salina ceramic pans and Ferrara Granitium (PTFE) pans. From £39.95 (Bologna 20 cm, in stock); Ledro 20 cm £46.95, Salina 20 cm £79.95."
   },
   {
    "product": "ILLIYOON Ceramide Ato Concentrate Cream",
@@ -10210,6 +10189,151 @@
     "https://cabeau.co.uk/sitemap_products_1.xml?from=3525988384854&to=14852250566959"
    ],
    "note": "Found by engine.maker_pages in the sitemap https://cabeau.co.uk/sitemap_products_1.xml?from=3525988384854&to=14852250566959; the page names it \"Evolution S3® Neck Pillow\"; GBP 34.99 on the page."
+  },
+  {
+   "product": "Wüsthof Classic Paring Knife",
+   "category": "kitchen",
+   "product_type": "paring knife",
+   "price": 82.0,
+   "currency": "GBP",
+   "shop": "Wüsthof UK",
+   "url": "https://wusthof.co.uk/products/classic-paring-knife-9-cm-3-12-inch",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://wusthof.co.uk/products/classic-paring-knife-9-cm-3-12-inch",
+    "https://wusthof.co.uk/collections/paring-knives"
+   ],
+   "note": "Wüsthof's own UK store, 18 Oct 2026: the Classic Paring Knife, 9 cm (3 1/2 inch), £82.00, available; its Classic Flat Cut Paring Knife, 8 cm, is £79.00 and the Classic Ikon paring knives £105.00."
+  },
+  {
+   "product": "Demeyere Industry 5 conical sauteuse",
+   "category": "kitchen",
+   "product_type": "saucepan",
+   "price": 269.0,
+   "currency": "GBP",
+   "shop": "Zwilling UK",
+   "url": "https://www.zwilling.com/uk/demeyere-industry-5-24-cm-18%2F10-stainless-steel-sauteuse-conical/1029706.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.zwilling.com/uk/demeyere-industry-5-24-cm-18%2F10-stainless-steel-sauteuse-conical/1029706.html"
+   ],
+   "note": "Zwilling's UK store (Demeyere's owner), 18 Oct 2026: the Demeyere Industry 5 conical sauteuse, 24 cm (the 3.5 litre size, as writers' 3.5 quart one), £269.00, in stock; the 18 cm and 20 cm sizes are listed too (£165 to £189, and £185)."
+  },
+  {
+   "product": "Lelit Victoria PL91T",
+   "also_called": [
+    "Lelit Victoria"
+   ],
+   "category": "kitchen",
+   "product_type": "espresso machine",
+   "price": 759.0,
+   "currency": "GBP",
+   "shop": "Bella Barista",
+   "url": "https://bellabarista.co.uk/products/lelit-victoria-pid-espresso-machine-pl91t",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://bellabarista.co.uk/products/lelit-victoria-pid-espresso-machine-pl91t"
+   ],
+   "note": "Bella Barista, a UK espresso machine specialist, read in a browser on 18 Oct 2026: the Lelit Victoria PID Espresso Machine PL91T at £759.00 tax included, marked coming soon (out of stock for now, which this list counts as sold)."
+  },
+  {
+   "product": "Rancilio Silvia",
+   "category": "kitchen",
+   "product_type": "espresso machine",
+   "price": 589.0,
+   "currency": "GBP",
+   "shop": "Bella Barista",
+   "url": "https://bellabarista.co.uk/products/rancilio-silvia-e-v6-espresso-machine",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://bellabarista.co.uk/products/rancilio-silvia-e-v6-espresso-machine",
+    "https://www.ranciliogroup.com/rancilio/silvia/"
+   ],
+   "note": "Bella Barista, a UK espresso machine specialist, read in a browser on 18 Oct 2026: the Rancilio Silvia E V6 Espresso Machine (the current Silvia) at £589.00 tax included, to add to the cart. Rancilio's own page (Silvia: Professional Home line Espresso Machine, an article page with no price or UK shop) gives the image. Writers name it the Rancilio Silvia."
+  },
+  {
+   "product": "mannkitchen original pepper cannon pepper mill",
+   "category": "kitchen",
+   "product_type": "pepper grinder",
+   "price": 175.0,
+   "currency": "GBP",
+   "shop": "Männkitchen",
+   "url": "https://mannkitchen.co.uk/products/the-original-pepper-cannon-pepper-mill",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://mannkitchen.co.uk/products/the-original-pepper-cannon-pepper-mill",
+    "https://mannkitchen.co.uk/policies/terms-of-service"
+   ],
+   "note": "Männkitchen's UK store (its terms: owned by MANNKITCHEN and operated by Atlantic Access, London), read on 18 Oct 2026: the page names it MÄNNKITCHEN PEPPER CANNON: The Original Best Pepper Grinder, £175.00 in pounds, available (a product page). Writers name it the Pepper Cannon."
+  },
+  {
+   "product": "Unicorn pepper grinder",
+   "category": "kitchen",
+   "product_type": "pepper grinder",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Unicorn Mills",
+   "url": "https://www.unicornmills.org/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "sources": [
+    "https://www.unicornmills.org/"
+   ],
+   "note": "not sold to UK shoppers: Unicorn Mills, a US maker, says on its own site (read 18 Oct 2026) that its Magnum Plus and Magnum mills are in stock at Amazon (in the US) and are being made by an Italian partner, Tre Spade; no UK shop was found selling them (a web search found only US prices and US eBay sellers).",
+   "not_in_uk": true
+  },
+  {
+   "product": "Snakmaster",
+   "also_called": [
+    "Snakmaster sandwich maker",
+    "snack master"
+   ],
+   "category": "kitchen",
+   "product_type": "sandwich maker",
+   "price": null,
+   "currency": "GBP",
+   "shop": "eBay UK",
+   "url": "https://www.ebay.co.uk/sch/i.html?_nkw=snakmaster",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "sources": [
+    "https://www.ebay.co.uk/sch/i.html?_nkw=snakmaster"
+   ],
+   "note": "not sold to UK shoppers: the Snakmaster is a grilled sandwich maker writers own from decades ago (the round's r/BuyItForLife thread calls it about 30 years old) and name no maker for; no UK shop was found selling it and eBay UK's search (18 Oct 2026) holds no Snakmaster sandwich maker, only unrelated Snakemaster items. Whether it is still made couldn't be checked this round (web search unavailable): if it isn't, it should be marked discontinued.",
+   "not_in_uk": true
+  },
+  {
+   "product": "Ikea KONCIS garlic press",
+   "category": "kitchen",
+   "product_type": "garlic press",
+   "price": 4.0,
+   "currency": "GBP",
+   "shop": "IKEA",
+   "url": "https://www.ikea.com/gb/en/p/koncis-garlic-press-stainless-steel-00089163/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "IKEA UK's own page, read on 18 Oct 2026: it names it KONCIS Garlic press - stainless steel, £4, in stock (a product page). Writers name it the Ikea KONCIS garlic press."
+  },
+  {
+   "product": "KitchenAid plastic meat grinder attachment",
+   "category": "kitchen",
+   "product_type": "meat grinder",
+   "price": 109.0,
+   "currency": "GBP",
+   "shop": "KitchenAid",
+   "url": "https://www.kitchenaid.co.uk/mixer-attachments/859711577170/meat-grinder-5ksmfga-white",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.kitchenaid.co.uk/mixer-attachments/859711577170/meat-grinder-5ksmfga-white",
+    "https://www.kitchenaid.co.uk/mixer-attachments"
+   ],
+   "note": "KitchenAid's own UK page, read in a browser on 18 Oct 2026: it names it MEAT GRINDER (5KSMFGA, white: the plastic food grinder attachment), £109, in stock; the metal Meat Grinder and Sausage Stuffer Set (5KSMMGA) is £159 on its own page. Writers name the 5KSMFGA the plastic KitchenAid grinder attachment."
   }
  ]
 }
