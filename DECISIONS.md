@@ -494,3 +494,18 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   the final review's: 18 answers differ, each in these items' scope (office chair 1, phone 1, toothbrush 2, laptop 2,
   mattress 3, e-reader 2, rice cooker 2, headphones 3, the two pan questions), and the counts are the same: 200 answers
   with 3 picks, 19 with 1 or 2, 59 with none, 631 picks, no error.
+- Noemi's decisions of 19 Oct 2026, on the convergence's last questions: (a) a first pick that is sold out
+  everywhere stays the first pick, in answers and in the blind test ("if it's sold out it means it's good, i want to
+  know about the product"); (b) when the first reading and the wider reading give as many picks, the wider one wins
+  if more of its picks have a credible voice about the request's need or feature (the smartwatch answer's Garmin);
+  (c) no country preference anywhere in ranking: "let's make sure we are showing the possible best picks
+  independently of the country" (the not-sold notes stay, as information only); (d) a top-level answer in a thread
+  whose title asks for the need counts as talking about it; (e) phone and webcam communities may be added; (f) a
+  maker-discontinued product listed only by Amazon marketplace sellers isn't counted as still sold; (g) essences stay
+  out of toner answers; (h) a travel system can be a stroller pick; (i) for fast-moving tech, "not super old tech, but
+  let's make sure other options still relevant count": very old evidence about models no longer current can't make a
+  pick, while evidence about models or lines still sold counts whatever its age; (j) a credible warning against a
+  pick's whole kind (electric sharpeners for Japanese knives) pushes products of that kind down; (k) HexClad is shown
+  as PFAS-free from its current coating, with a note that most reviews are of the older one; (l) on-demand reading
+  comes back on after the interviews, with a cheaper reader; (m) in the blind-test packets, a pick's one-line summary
+  is its "why". The blind-test capture of the rivals: Claude's call ("does it matter? let's do the best option").
