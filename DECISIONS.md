@@ -271,3 +271,63 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   will need about 2.7 to 2.8 GB. Results are in eval/RUNS.md's row: the whole suite 5,955 passed; no eval number worse
   than the baseline; blind test 10/10 full top 3s; the sweep's answers with 3 / 1 to 2 / 0 picks 151 / 43 / 84 -> 200 /
   20 / 58, every shown quote found word for word.
+- Built by Claude, 18 Oct 2026 (the round-2 data builder, branch round2-data, from main be59fc9: the coordinator's
+  five data items; the lists and tests only, no code; technical calls within Noemi's rules, reported to her;
+  eval/RUNS.md): (1) The price and pages lists' eye cream is named as its maker spells it, "Ole Henriksen banana
+  bright + vitamin C under eye cream" (the lists had kept a writer's slip, "OleHenricksen ..."): ws-names' rule
+  respells the slip as the maker's name, which now finds the £38 price and the page again, and a £35 budget still
+  leaves it out (engine/tests/test_round2_data.py). (2) The Kindle Keyboard (the 2010 third-generation Kindle) is
+  discontinued in the price list ("Amazon Kindle Keyboard", also called "Kindle Keyboard" and "Kindle Keyboard 3G"):
+  Amazon's help page on Kindle e-readers released in 2012 or earlier says they lose store access, and can't be
+  registered, from 20 May 2026 (its text as a search result gave it: the page itself answered 503 to this round's
+  read), and Amazon UK's Shop all Kindle page and John Lewis's search list none. It has left the e-reader answers'
+  Also worth a look; the Kindle Voyage (2014) and Scribe 2024 are still there, not checked. (3) PFAS, from the makers'
+  own pages, decided per named model. Scanpan's FAQ says its pans are free of PFOA and PFOS but do contain some PTFE,
+  so every non-stick range is pfas_free false (Stratanium: Classic Induction, CTX, Urban; Stratanium+: Haptiq,
+  Techniq, CS+; also Classic and Pro SB+), while its Impact, Fusion 5, STS, Maitre D and Black Iron pans are uncoated:
+  new entries "Scanpan" (writers' bare name for the non-stick pans; every mention in the threads is of one) and
+  "Scanpan Haptiq", beside the 14 Oct "Scanpan non-stick pans" and "Scanpan CTX". A bare "Scanpan" had no fact, so
+  "non toxic frying pan" listed it under Also worth a look with "we couldn't confirm it's PFAS-free"; it is now left
+  out as not PFAS-free, and with its non-stick fact confirmed it is the third pick of "best non stick frying pan" (7
+  credible voices; a line with no brand-lines entry yet, so "Price not checked yet" and "Availability not checked
+  yet", though Scanpan UK sells it: left for the next round). HexClad: its own FAQ and science page name its coating
+  as TerraBond, a ceramic non-stick it calls PTFE-free and PFAS-free, and its FAQ lists newer induction cooktops among
+  those it suits, so a "HexClad" entry says pfas_free, non_stick and induction true; the "we couldn't confirm" note
+  leaves "non toxic frying pan", and HexClad can now show in "ptfe free frying pan" and "a frying pan for an induction
+  hob" (hexclad.co.uk, its UK shop, wouldn't load for this round's tools, so HexClad has no UK price or availability
+  yet). FOR NOEMI: reviews say HexClad switched from a PTFE coating to TerraBond in 2024/25 without announcing it, and
+  11 of the 17 threads naming HexClad are from 2020-23, so the entry describes the pan sold now, not the one most
+  quotes praise (the kitchen round left OXO's non-stick pans unconfirmed because writers' were mostly the older PTFE
+  ones); deleting the "HexClad" entry puts it back to unconfirmed. Le Creuset's toughened non-stick was already
+  recorded on 17 Oct (pfas_free false; a search result showed its US pages disclosing PFAS in the Toughened Non-stick
+  PRO pans); its site gave this round's reads an empty page, so it was not read again. (4) The Snakmaster (the Clark
+  Snakmaster, a grilled sandwich maker sold from a 1990 TV infomercial) is discontinued, no longer "not sold in the
+  UK": Hunker (22 Aug 2026) says it is no longer sold new and House Digest (30 Jul 2026) that the infomercial's number
+  no longer works; it is no vintage brand (config.SECOND_HAND_VINTAGE), so second-hand sales don't count. "toastie
+  maker" now has no pick (the toastie threads praise only the Snakmaster); one kitchen-round test changed on purpose
+  (test_kitchen_data_round.py: not_in_uk -> discontinued, with a dated note). (5) b01's Isntree Chestnut BHA 2% Clear
+  Liquid and b03's innisfree Retinol Cica serum, read again late on 18 Oct: both still sold out in every UK shop read
+  (Skinsider; Cult Beauty, Space NK and ASOS UK; Lookfantastic's search finds no Isntree chestnut BHA), and no page
+  read says either is discontinued, so both count as sold by the list's convention (their two 18 Oct rows were
+  updated, not doubled). Signs the Isntree liquid may be on its way out: YesStyle says it is no longer available, and
+  its maker's Korean shop lists only the 0.9% toner among its BHA products; innisfree's own US store still lists its
+  serum (stock unclear). FOR NOEMI: neither pick can be bought in the UK now, so a tester following b01's first pick
+  or b03's second can't buy it; whether to keep, swap or re-capture is hers, and both are worth checking again on the
+  capture day. Sites that refused or blocked this round's reads and were not tried another way: Amazon (503),
+  TechRepublic, HotHardware and Skinsort (403), Liliputing (bot check), Sweetcare UK and Sephora Canada (403), Le
+  Creuset (empty page); ASOS timed out for the fetch tool and loaded normally in the built-in browser. Results
+  (eval/RUNS.md): the whole suite 6,000 passed (converge-1: 5,955; 45 new tests in engine/tests/test_round2_data.py,
+  one kitchen-round test changed on purpose). The evaluation is the converge-1 run's in every number but the library's
+  own, which others changed after that run (1,717 library files): quotes found word for word 85,111/85,165 ->
+  84,953/85,024, the ingredient eval's shown products with evidence 54/54 -> 55/55, and b04's third pick (Avène
+  XeraCalm A.D instead of Aquaphor, the same with the committed lists on the same library); blind test 10/10 full top
+  3s, unverified quotes shown 0 (shown 246/246). On the same library, the committed lists against these edits, 84
+  requests (the sweep's pan, e-reader, toastie, eye cream, exfoliant and retinol requests, the ten blind-test
+  questions and the 27 sweep answers that differ from converge-1's): 18 answers differ, each in the items' scope. Of
+  those 27, 5 are these edits (the two e-reader answers, the induction-hob frying pan, the toastie maker, eye cream
+  for dark circles) and 22 the library's. Full sweep of 278 answers: 200 with 3 picks (converge-1: 200), 19 with 1 or
+  2 (20), 59 with none (58), 631 picks (632), no error. Two answers move by more than their item: "non toxic frying
+  pan for induction" loses Scanpan (PTFE), so its first reading has 2 picks and the pipeline reads 48 threads, which
+  reshuffles it (Caraway, GreenPan and an All-Clad saute pan whose facts are unconfirmed; De Buyer's carbon steel pans
+  drop out of the wider reading, not looked into: for the names owner); "a frying pan for an induction hob" gets
+  HexClad as its second pick (induction confirmed by its FAQ) with no price or availability yet.

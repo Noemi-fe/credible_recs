@@ -3548,6 +3548,50 @@
     ],
     "checked_on": "2026-10-18"
    }
+  },
+  {
+   "product": "Scanpan",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "non_stick": true,
+    "pfas_free": false
+   },
+   "sources": [
+    "https://scanpan.co.uk/pages/faq",
+    "https://scanpan.co.uk/collections/frying-pans"
+   ],
+   "checked_on": "2026-10-18"
+  },
+  {
+   "product": "Scanpan Haptiq",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "non_stick": true,
+    "pfas_free": false,
+    "induction": true
+   },
+   "sources": [
+    "https://scanpan.co.uk/products/haptiq-frying-pan",
+    "https://scanpan.co.uk/pages/faq"
+   ],
+   "checked_on": "2026-10-18"
+  },
+  {
+   "product": "HexClad",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "non_stick": true,
+    "pfas_free": true,
+    "induction": true
+   },
+   "sources": [
+    "https://hexclad.com/pages/faq",
+    "https://hexclad.com/pages/hexclad-science"
+   ],
+   "checked_on": "2026-10-18"
   }
  ]
 }
