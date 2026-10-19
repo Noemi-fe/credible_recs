@@ -61,6 +61,7 @@ from functools import cache
 from datetime import datetime
 from itertools import combinations
 from typing import Literal
+from urllib.parse import urlsplit
 
 from engine import config
 from engine.extract import ExtractedAgreement
@@ -192,6 +193,7 @@ def score_voice(
     signs = (
         _standing_signs(comment, history)
         + _independence_signs(text)
+        + _own_site_signs(comment, text)
         + _copy_signs(comment, copied)
         + _endorsement_signs(comment, thread, agreements)
         + _recency_signs(comment, thread)
@@ -326,11 +328,17 @@ PAID_PROMOTION_PHRASES = (
     "use my code", "use code", "my code", "discount code", "promo code", "coupon code", "referral code",
     "referral link", "affiliate link", "affiliate", "sponsored", "#ad", "#sponsored", "#partner",
 )
-# Parts of a link that pay the writer when someone buys: an Amazon associate tag, affiliate networks.
+# Parts of a link that pay the writer when someone buys: an Amazon associate tag, affiliate networks. Since 18 Oct 2026
+# (round 2, from the kitchen data builder's findings in the library) also Amazon's associates' short links (amzn.to:
+# a shopper's own share link is a.co or amzn.eu) and the redirects that hide a shop link behind a code, as affiliate
+# links do (ra-sl.com's "dp-" links to Amazon products, a bare cloudfront.net address with a product code).
 AFFILIATE_LINK_MARKERS = (
     "tag=", "affiliate", "aff_id=", "affid=", "aff=", "rstyle.me", "shopmy.us", "liketk.it", "skimresources",
-    "linksynergy", "shareasale", "awin1.com", "howl.me",
+    "linksynergy", "shareasale", "awin1.com", "howl.me", "amzn.to/", "ra-sl.com/", "cloudfront.net/?q=",
 )
+# Links that pay the writer when someone signs up or buys through them (18 Oct 2026): a deals app's share links, one
+# account's in six of the library's threads. A referral link is clear paid promotion too (Noemi's rubric, 9 Oct 2026).
+REFERRAL_LINK_MARKERS = ("hiarthur.com/?share=", "hiarthur.com/share/")
 # The writer works for, owns or represents a brand: even when honest about it, they aren't independent.
 AFFILIATION_PHRASES = (
     "i'm the founder", "i am the founder", "founder of", "co-founder", "cofounder", "i own the company",
@@ -355,14 +363,60 @@ def _independence_signs_of(text: str) -> list[Sign]:
     pitch = _first_phrase(text, SALESY_PHRASES)
     if paid:
         signs.append(Sign("salesy language", f'paid promotion: "{paid}"', "red flag", config.PAID_PROMOTION_RED_FLAGS))
-    elif any(marker in link for link in _LINK.findall(text) for marker in AFFILIATE_LINK_MARKERS):
+    elif _links_hold(text, AFFILIATE_LINK_MARKERS):
         signs.append(Sign("salesy language", "an affiliate link: the writer earns from sales", "red flag",
+                          config.PAID_PROMOTION_RED_FLAGS))
+    elif _links_hold(text, REFERRAL_LINK_MARKERS):
+        signs.append(Sign("salesy language", "a referral link: the writer earns from it", "red flag",
                           config.PAID_PROMOTION_RED_FLAGS))
     elif pitch:
         signs.append(Sign("salesy language", f'sales talk: "{pitch}"', "red flag"))
     if _first_phrase(text, AFFILIATION_PHRASES):
         signs.append(Sign("promotes one brand", "says they work for or represent a brand", "red flag"))
     return signs
+
+
+def _links_hold(text: str, markers: tuple[str, ...]) -> bool:
+    """Whether one of the comment's links holds one of the markers, in any case."""
+    return any(marker in link.lower() for link in _LINK.findall(text) for marker in markers)
+
+
+# A writer promoting their own business (18 Oct 2026, round 2, from the kitchen data builder's findings in the
+# library): a link to their own site, its address holding their name (a knife maker's shop, a chef's or a blogger's
+# review pages, an appliance retailer's account), or a review outfit's account (a name ending as REVIEW_OUTFIT_NAMES
+# do) linking its write-up of products it says it tested. They own or represent what they promote, so they aren't
+# independent: "promotes one brand", one red flag, as saying so in words is (AFFILIATION_PHRASES), and counted once.
+OWN_SITE_MIN_LETTERS = 6  # a shorter name is found by chance in too many addresses
+REVIEW_OUTFIT_NAMES = ("tested", "reviews", "review", "testing")
+_TESTED = re.compile(r"\b(?:tested|testing|tests|test(?:ed)? (?:them|it|all|each|every|\d+))\b")
+_NAME_PARTS = re.compile(r"[A-Z]+(?![a-z])|[A-Z]?[a-z]+|\d+")
+
+
+def _own_site_signs(comment: Comment, text: str) -> list[Sign]:
+    """A writer linking their own site, or a review outfit's account linking its write-up of products it tested
+    (see above), as one red flag: "promotes one brand"; none when the words already say so (AFFILIATION_PHRASES)."""
+    author = comment.author
+    links = _LINK.findall(text)
+    if author is None or not author.name or not links or _first_phrase(text, AFFILIATION_PHRASES):
+        return []
+    letters = re.sub(r"[^a-z]", "", author.name.lower())
+    if len(letters) >= OWN_SITE_MIN_LETTERS and any(letters in _site_letters(link) for link in links):
+        return [Sign("promotes one brand", "links their own site", "red flag")]
+    words = _NAME_PARTS.findall(author.name)
+    if words and words[-1].lower() in REVIEW_OUTFIT_NAMES and _TESTED.search(text.lower()):
+        return [Sign("promotes one brand", "a review outfit's account linking its own write-up", "red flag")]
+    return []
+
+
+def _site_letters(link: str) -> str:
+    """The letters of a link's site name, without "www." and its last part (".com"): "chefkevinashton" for
+    https://chefkevinashton.com/2024/..."""
+    try:
+        host = urlsplit(link).hostname or ""
+    except ValueError:
+        return ""
+    parts = host.removeprefix("www.").split(".")
+    return re.sub(r"[^a-z]", "", "".join(parts[:-1] if len(parts) > 1 else parts))
 
 
 # Copied text (Noemi's decision 3, 11 Oct 2026): another writer's comment, word for word. Found in the library: two

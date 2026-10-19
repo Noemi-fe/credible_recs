@@ -2512,3 +2512,32 @@ MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "lululemon")
 # Brooklinen (bed sheets): with Brooks (running shoes) in the brand-lines list, writers' "Brook Linen" was shown as
 # "Brooks Linen" on a skip list (the same slip between two makers' names as Astra's).
 MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "Brooklinen")
+
+# --- Converge round 2: code (18 Oct 2026) ---
+# The round-2 code builder's values (docs/bfs-2026-10-17/round2-additions.md and the orchestrator's list); Claude's
+# technical calls within Noemi's rules, reported to her (DECISIONS.md, 18 Oct 2026).
+# "What to look for" shows only tips about the type asked for (her blueprint of 8 Oct 2026 is the requested product's):
+# in these categories' answers a thread read whose products are mostly of another type gives no tip unless the tip's
+# own name names the type asked for (engine.pipeline._threads_about_another_type, engine.answer._look_for). A thread is
+# about another type when fewer than LOOK_FOR_TYPE_SHARE of the products the AI found in it are of the requested type:
+# a quarter keeps the threads comparing the type with a close one (headphones and earbuds threads, about a third each)
+# and leaves out a yoga mat thread read for towels (one product in seven a towel) or a dog bed thread read for washing
+# machines (none). Kitchen keeps another kind or material of cookware as an alternative (10 Oct 2026: "Look for: cast
+# iron" for a non-stick pan), so there such a thread's tip is left out only when its own name names another type of
+# product (LOOK_FOR_OTHER_NAMED_ONLY: "cheap rice cookers" in a saucepan answer, "induction cooktop" in a sheet pan
+# one); skincare and haircare have their own rule for another type's advice.
+LOOK_FOR_OWN_TYPE_CATEGORIES = ("general", "kitchen")
+LOOK_FOR_OTHER_NAMED_ONLY = ("kitchen",)
+LOOK_FOR_TYPE_SHARE = 0.25
+# Bean to cup (UK) is what US writers call a super automatic machine: one need, so the request's need-led reading finds
+# the threads titled "super automatic ..." and its comments about them, and, named before the machine ("bean to cup
+# coffee machine"), it is a feature the answer ranks by (Noemi's decision 1 of 16 Oct 2026; it had picked manual
+# espresso machines). Found at the start of a word, as every need word is. Not "fully automatic": a request for a
+# fully automatic washing machine would have asked about bean to cup.
+NEEDS["bean-to-cup"] = ("bean to cup", "bean-to-cup", "beantocup", "super automatic", "super-automatic",
+                        "superautomatic", "super auto")
+FEATURE_CONFIG_NEEDS = FEATURE_CONFIG_NEEDS + ("bean-to-cup",)
+# The daily plan job works out its requests one product type at a time (their order kept for what it reads first) and
+# forgets what answers worked out between types (engine.precheck._work_out): one type's work kept at a time, so its
+# memory no longer grows with the types it answers (it needed about 2.7 to 2.8 GB of its 3 GiB with round 1's library).
+PLAN_ANSWERS_KEPT_TYPES = 1

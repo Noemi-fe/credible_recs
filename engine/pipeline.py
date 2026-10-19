@@ -525,7 +525,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     prices = load_prices() if prices is None else prices
     # The price and facts lists write their products as their makers do: a name in their words is shown so (15 Oct 2026).
     makers, curated = _spelling_lists(brand_lines, prices, product_facts, query.category)
-    kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads}, brand_lines, curated, makers)
+    kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads}, brand_lines, curated, makers,
+                                  listed=_listed_of_the_type(prices, product_facts, query))
     # A product named only by its brand is that brand's line when the brand-lines list says the brand sells the type
     # (17 Oct 2026, within Noemi's decision 8 of 16 Oct 2026: writers' "Circulon pans" is the Circulon frying pan line).
     kept_groups = _brand_only_lines(kept_groups, query, brand_lines, prices, product_facts)
@@ -549,7 +550,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     product_pages = load_product_pages() if product_pages is None else product_pages
     wording = {**_ingredient_wording(query, kept_groups, types, formulas, result.line_forms),
                "prescription": _prescription_only(kept_groups, formulas), "flattened": flattened_comments(threads),
-               "pages": _pages(kept_groups, named_before, query, product_pages, types)}
+               "pages": _pages(kept_groups, named_before, query, product_pages, types),
+               "other_types_threads": _threads_about_another_type(checked, threads, query)}
     kind_mentions = _kind_mentions(checked)
     kinds = group_kinds(kind_mentions, kept_groups, query.category, query.product_type or "")
     with_a_kind = kinds_of(kinds)
@@ -852,6 +854,42 @@ def _about_the_product(thread: Thread, product_type: str) -> bool:
     return names_product(thread, product_type)
 
 
+def _threads_about_another_type(checked: dict[str, CheckResult], threads: list[Thread],
+                                query: ParsedQuery) -> set[str]:
+    """The ids of the threads read that are about another type of product than the request's (18 Oct 2026, round 2:
+    only tips about the type asked for show under "What to look for"; engine.answer._look_for): fewer than
+    config.LOOK_FOR_TYPE_SHARE of the products the AI found in it are of the requested type, by the AI's types as
+    module 4 reads them (_another_type_by_ai: a "yoga towel" is a towel); a thread with no typed product is about
+    another type when its title is (engine.sources.titled_as_another_type). Module 2 reads such threads when few are
+    about the request, since their posts name it in passing: round 1's washing machine answer read a dog bed thread
+    and showed a dog bed tip, its towel answer a yoga mat thread's cork mat tip.
+
+    General and kitchen answers (config.LOOK_FOR_OWN_TYPE_CATEGORIES; in a kitchen answer only a tip naming another
+    type is left out, as another kind of cookware is a real alternative there: engine.answer._another_types_tip);
+    skincare and haircare answers have their own rule (engine.answer._another_types_advice). Nor an ingredient-led
+    request, which has no one type."""
+    if query.category not in config.LOOK_FOR_OWN_TYPE_CATEGORIES or not query.product_type or query.ingredient_led:
+        return set()
+    requested = query.product_type
+    own: dict[str, bool] = {}  # an AI type -> whether it is the requested one, worked out once
+
+    def of_the_type(product_type: str) -> bool:
+        if product_type not in own:
+            own[product_type] = not _another_type_by_ai([product_type], requested)
+        return own[product_type]
+
+    found = set()
+    for thread in threads:
+        result = checked.get(thread.id)
+        types = [m.product_type.strip().lower() for m in (result.kept if result else []) if m.product_type]
+        if types:
+            if sum(of_the_type(t) for t in types) < config.LOOK_FOR_TYPE_SHARE * len(types):
+                found.add(thread.id)
+        elif titled_as_another_type(thread.title, query):
+            found.add(thread.id)
+    return found
+
+
 def _about_the_request(thread: Thread, query: ParsedQuery) -> bool:
     """Whether the thread is about what the request asks for (13 Oct 2026): its title or post names the product
     (_about_the_product), or, for a request naming active ingredients, one of them ("Glycolic acid: worth it?" for a
@@ -1114,10 +1152,13 @@ _SPELLING_LISTS: dict[tuple, tuple] = {}  # (the lists' ids, category) -> (the l
 
 def _groups_to_rank(groups: list[ProductGroup], query: ParsedQuery, result: PipelineResult,
                     titles: dict[str, str], brand_lines: list[BrandLine] = (),
-                    curated: tuple[str, ...] = (), makers: tuple[str, ...] | None = None) -> list[ProductGroup]:
+                    curated: tuple[str, ...] = (), makers: tuple[str, ...] | None = None,
+                    listed: tuple[str, ...] = ()) -> list[ProductGroup]:
     """The product groups worth ranking for this request, each under the name to show; the others are named on the
     result. Every name is shown as a UK shopper knows it ("Sage", not "Breville": decision 12). `titles` is
-    {thread id: title} for the threads read; `brand_lines` the brand-lines list (engine/brand_lines.py)."""
+    {thread id: title} for the threads read; `brand_lines` the brand-lines list (engine/brand_lines.py). `listed`: the
+    price and facts lists' products of the requested type (_listed_of_the_type), for a name that is a bare number (18
+    Oct 2026: no shown name is one; _named_in_full)."""
     kept = []
     same_category = [g for g in groups if g.category == query.category]
     typed: dict = {}  # once worked out, the names of these groups that name the requested type (_typed_names)
@@ -1129,6 +1170,12 @@ def _groups_to_rank(groups: list[ProductGroup], query: ParsedQuery, result: Pipe
         makers = tuple(sorted({line.brand for line in brand_lines if line.category == query.category}))
     same_category = [replace(g, name=maker_spelling(g.name, g.category, makers, curated)) for g in same_category]
     for group in same_category:  # the ranking only looks at the request's category anyway
+        if bare_number(group.name):  # no shown name is a bare number (18 Oct 2026): "965" is the Garmin Forerunner 965
+            full = _named_in_full(group, listed)
+            if full is None:  # nothing says which product it is: it names no one product
+                result.left_out_generic.append(group.name)
+                continue
+            group = replace(group, name=maker_spelling(full, group.category, makers, curated))
         if group.generic:  # it names no one product (15 Oct 2026): neither a product nor a brand's line
             result.left_out_generic.append(uk_name(group.name))
         elif group.loose:
@@ -1150,6 +1197,55 @@ def _groups_to_rank(groups: list[ProductGroup], query: ParsedQuery, result: Pipe
     return kept
 
 
+# A name that is a number alone ("965", "502's", "#5"): a model number its writers wrote without its maker or its line.
+_BARE_NUMBER = re.compile(r"[\W_]*(\d+)(?:'?s)?[\W_]*")
+
+
+def bare_number(name: str) -> str | None:
+    """The number a name is made of alone ("965" for "965", "502" for "502's"), or None for a name with a word in it."""
+    found = _BARE_NUMBER.fullmatch(name.strip())
+    return found.group(1) if found else None
+
+
+def _listed_of_the_type(prices: list[Price], product_facts: list[ProductFacts], query: ParsedQuery) -> tuple[str, ...]:
+    """The price and facts lists' products of the requested type, as their makers write them (for _named_in_full);
+    none for an ingredient-led request, which has no one type."""
+    if query.ingredient_led or not query.product_type:
+        return ()
+    wanted = (query.category, query.product_type)
+    return tuple(dict.fromkeys([p.product for p in prices if (p.category, p.product_type) == wanted]
+                               + [f.product for f in product_facts if (f.category, f.product_type) == wanted]))
+
+
+def _named_in_full(group: ProductGroup, listed: tuple[str, ...]) -> str | None:
+    """The name a product its writers named by a bare number is shown under (18 Oct 2026, round 2: the running watch
+    answer showed a pick named "965"; no shown name may be a bare number):
+
+    1. the price and facts lists' product of the requested type (`listed`) with that number as its model's word, the
+       name up to that word ("Garmin Forerunner 965"; "G502" of "G502 wireless", which says no more than writers did),
+       when the lists hold one such product;
+    2. else the group's own fuller name most written ("Forerunner 965" when the lists say nothing, or name two makers'
+       products with the number);
+    3. else None: nothing says which product it is, so it names no one product (left out as such).
+    A name in the lists that is itself a bare number (a researcher's entry for the shown name) says nothing."""
+    number = bare_number(group.name)
+    model = re.compile(rf"[^\W\d_]*{number}", re.IGNORECASE)
+    found = []
+    for name in listed:
+        if bare_number(name):
+            continue
+        words = name.split()
+        at = next((i for i, word in enumerate(words) if model.fullmatch(word.strip(",.;:()[]")) is not None), None)
+        if at is not None:
+            shown = " ".join(words[:at + 1]).strip(",.;:()[]")
+            found.append(name if bare_number(shown) else shown)  # "4711 Original Eau de Cologne" stays whole
+    found = list(dict.fromkeys(found))
+    if len(found) == 1:
+        return found[0]
+    own = [name for name, _ in group.names.most_common() if not bare_number(name)]
+    return own[0] if own else None
+
+
 def _brand_line(group: ProductGroup, query: ParsedQuery, brand_lines: list[BrandLine]) -> BrandLine | None:
     """The brand-lines entry for a brand or line name in this request (engine.brand_lines.find_brand_line, by the names
     writers used for it and their UK names), or None."""
@@ -1161,11 +1257,32 @@ def _line_name(group: ProductGroup, line: BrandLine | None, product_type: str, k
     """The name a brand or line ranked as the brand's line is shown under (engine.group_products.brand_pick_name):
     "Lodge cast iron skillet line". The brand as its writers spelled it, as a UK shopper knows it; but a name its
     writers wrote all in lowercase ("head and shoulders") is shown as its maker writes it when the brand-lines list
-    has an entry for it ("Head & Shoulders shampoo line"; 12 Oct 2026)."""
+    has an entry for it ("Head & Shoulders shampoo line"; 12 Oct 2026). Since 18 Oct 2026 (round 2) also when its
+    writers' name is one of the entry's other names that leaves its maker's name out (_makers_name_left_out): "WM" is
+    the "Western Mountaineering sleeping bag line", "Stagg" the "Fellow Stagg electric kettle line"; then a line its
+    writers named both ways is shown, and ranked, once (_one_per_name)."""
     brand = uk_name(group.name)
-    if line is not None and brand == brand.lower():
+    if line is not None and (brand == brand.lower() or _makers_name_left_out(group.name, line, product_type)):
         brand = uk_name(line.brand)
     return brand_pick_name(brand, product_type, keep_ingredients)
+
+
+def _makers_name_left_out(name: str, line: BrandLine, product_type: str) -> bool:
+    """Whether writers' `name` for a line (the type's own words at its end aside) is one of its brand-lines entry's
+    other names (also_called) that leaves the maker's name out (18 Oct 2026): the brand's short form, its initials ("WM"
+    for Western Mountaineering, "EE" for Enlightened Equipment), or the line without the maker's name before it
+    ("Stagg" for Fellow Stagg, "Copper Spur" for Big Agnes Copper Spur). A brand's own first words ("Field" for Field
+    Company, "Hario Mini" for Hario Mini Mill) are how writers and shoppers name the brand itself: they stay."""
+    type_words = set(normalize_name(product_type)) | set(normalize_name(plural(product_type)))
+    words = normalize_name(name)
+    while len(words) > 1 and words[-1] in type_words:
+        words = words[:-1]
+    if not words or all(normalize_name(other) != words for other in line.also_called):
+        return False
+    brand = normalize_name(line.brand)
+    if len(words) < len(brand) and brand[-len(words):] == words:
+        return True
+    return len(words) == 1 and len(brand) >= 2 and words[0] == "".join(word[0] for word in brand)
 
 
 def _brand_only_lines(groups: list[ProductGroup], query: ParsedQuery, brand_lines: list[BrandLine],
