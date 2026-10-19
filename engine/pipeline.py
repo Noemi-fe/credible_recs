@@ -2451,7 +2451,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                 praised = tuple(f.name for f in features if praised_for(
                     f, own, (m.product, group.name), f.name in (asking or {}).get(tid, ())))
             met = _needs_talked_about(m.quote, comment.body, needs, asks, evidence.level == "long-term use", m.stance,
-                                      own, features, praised)
+                                      own)
             weight = mention_weight(voice, evidence, m.stance) * (NEED_MATCH_BOOST if met else 1)
             standing = upvotes.get(m.comment_id)
             scored.append(ScoredMention(
@@ -2467,6 +2467,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                 others_of_another_type=_others_of_another_type(m, res.kept),
                 features=praised,
                 opposite_need=m.stance == "warn" and _from_the_opposite_need(comment.body, needs, opposites),
+                needs_unpraised=_feature_needs_unpraised(met, features, praised) if m.stance == "recommend" else (),
             ))
         for n in res.kept_notes:
             if n.comment_id in repeats:
@@ -2512,8 +2513,8 @@ def _products_named(res: CheckResult) -> dict[str, int]:
 
 
 def _needs_talked_about(quote: str, body: str, needs: tuple[Need, ...], asks: tuple[str, ...],
-                        long_term_use: bool = False, stance: str = "recommend", own_text: str | None = None,
-                        features: tuple[Feature, ...] = (), praised: tuple[str, ...] = ()) -> tuple[str, ...]:
+                        long_term_use: bool = False, stance: str = "recommend",
+                        own_text: str | None = None) -> tuple[str, ...]:
     """The request's needs a comment talks about (engine.needs.needs_met), for NEED_MATCH_BOOST; none when the
     mention's quote says the opposite of what the request asks (engine.answer.says_the_opposite: "it will give you a
     white cast" for a no-white-cast request; b02, 11 Oct 2026). Such a comment talks about the need, but against the
@@ -2523,21 +2524,25 @@ def _needs_talked_about(quote: str, body: str, needs: tuple[Need, ...], asks: tu
 
     Since 19 Oct 2026 (round 3), for a recommendation: a word of the request as typed its words about the product
     (`own_text`: engine.credibility.product_text) say the opposite of (engine.features.says_its_opposite: "it isn't
-    insulated" for keeping drinks cold) isn't talked about either; and in a feature answer (Noemi's decision 1 of 16 Oct
-    2026) a need the request's `features` are made of is talked about only when the recommendation praises its product
-    for that feature (`praised`: its names, engine.features.praised_for), so a reason never counts a voice "about
-    stainless steel" that praised stainless pans and recommended a non-stick one."""
+    insulated" for keeping drinks cold) isn't talked about either."""
     if says_the_opposite(quote, asks):
         return ()
     met = needs_met(body, needs, long_term_use)
     if stance != "recommend" or not met:
         return met
     against = said_not_to_help(quote, needs)
-    of_feature = {need.name: f.name for f in features for need in f.needs}
     words = {need.name: need.request_word for need in needs if need.request_word is not None}
     return tuple(need for need in met if need not in against
-                 and (need not in of_feature or of_feature[need] in praised)
                  and not (own_text is not None and need in words and says_its_opposite(words[need], own_text)))
+
+
+def _feature_needs_unpraised(met: tuple[str, ...], features: tuple[Feature, ...],
+                             praised: tuple[str, ...]) -> tuple[str, ...]:
+    """Of the needs a recommendation talks about, those a feature the request names is made of when it doesn't praise
+    its product for that feature (`praised`: engine.features.praised_for; 19 Oct 2026, round 3, Noemi's decision 1 of 16
+    Oct 2026): its reason never counts it "about" the feature (ScoredMention.needs_unpraised)."""
+    of_feature = {need.name: f.name for f in features for need in f.needs}
+    return tuple(need for need in met if need in of_feature and of_feature[need] not in praised)
 
 
 def _has_opposites(needs: tuple[Need, ...]) -> bool:

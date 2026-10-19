@@ -122,9 +122,11 @@ asked Claude to decide wording and report it).
 
 import dataclasses
 import re
+import unicodedata
 from collections.abc import Callable, Collection, Iterable, Iterator, Mapping
 from dataclasses import dataclass, field, replace
 from datetime import date
+from difflib import SequenceMatcher
 from functools import cache, lru_cache
 
 from engine import config  # the upvote rule's settings, read as the answer is written (14 Oct 2026)
@@ -1133,24 +1135,28 @@ def _naming_first(items: Iterable[ScoredMention], asks: tuple[str, ...] = (),
     # among those that name their product or give a view: the first quote shown names the product and backs it.
     def ranked(m: ScoredMention) -> tuple:
         level = tier(m)
-        return (m.comment_id in leaning, opposite(m), against(m), level >= 2, _unfit_first(m), level, informative(m),
-                unclear(m))
+        return (m.comment_id in leaning, opposite(m), against(m) or _about_a_sibling(m, product_type), level >= 2, _unfit_first(m),
+                level, informative(m), unclear(m))
 
     return sorted(ordered, key=ranked)
 
 
 def _unfit_first(m: ScoredMention) -> bool:
-    """Whether a quote is unfit to stand first for its product (19 Oct 2026, round 3): it swears (a word the page masks:
-    MASKED_WORDS), its first sentence opens negatively (config.QUOTE_NEGATIVE_OPENINGS: telling readers
-    to ignore or avoid it, its writer not recommending it), it names the product only as the yardstick for another (config.
-    QUOTE_YARDSTICK: "as good as my X"), or its writer named a sibling of it (_a_sibling)."""
+    """Whether a quote reads badly first for its product (19 Oct 2026, round 3): it swears (a word the page masks:
+    MASKED_WORDS) or its first sentence opens negatively (config.QUOTE_NEGATIVE_OPENINGS: telling readers to ignore or
+    avoid it, its writer not recommending it)."""
     text = " ".join(_plain(m.quote).split())
     if _MASKED.search(text):
         return True
     first = re.split(r"(?<=[.!?;])\s", text, maxsplit=1)[0]
-    if any(re.search(pattern, first) for pattern in config.QUOTE_NEGATIVE_OPENINGS):
-        return True
-    return _as_a_yardstick(text, m) or _a_sibling(m)
+    return any(re.search(pattern, first) for pattern in config.QUOTE_NEGATIVE_OPENINGS)
+
+
+def _about_a_sibling(m: ScoredMention, product_type: str | None = None) -> bool:
+    """Whether a quote is about another product than its own (19 Oct 2026, round 3), like a quote about another product
+    of its comment: it names its product only as the yardstick for another (config.QUOTE_YARDSTICK: "as good as my
+    X"), or its writer named a sibling of it (_a_sibling)."""
+    return _as_a_yardstick(" ".join(_plain(m.quote).split()), m) or _a_sibling(m, product_type)
 
 
 def _as_a_yardstick(text: str, m: ScoredMention) -> bool:
@@ -1162,21 +1168,54 @@ def _as_a_yardstick(text: str, m: ScoredMention) -> bool:
     if first is None:
         return False
     sentence = re.split(r"(?<=[.!?;])\s", text[:first])[-1]
+    # "Nothing is as good as my X", "never found anything better than my X": praise of it, not of another.
+    if re.search(r"(?<![a-z'])(?:nothing|never|nobody|none|no other|not|isn't|aren't|can't|cannot|haven't)(?![a-z'])",
+                 sentence):
+        return False
     return bool(re.search(config.QUOTE_YARDSTICK, sentence))
 
 
-def _a_sibling(m: ScoredMention) -> bool:
-    """Whether the writer named a sibling of a specific product: their name for it (written_as) has a word telling
-    products apart that the product's own name hasn't ("Cetaphil Gentle Clear Acne" for the Gentle Skin Cleanser): not a
-    generic or filler word, a number or size, a word of its type's names, nor anything for a brand's line (a line's
-    every model is its own)."""
+def _a_sibling(m: ScoredMention, product_type: str | None = None) -> bool:
+    """Whether the writer named a sibling of a specific product, another product of its brand ("Cetaphil Gentle Clear
+    Acne" for the Gentle Skin Cleanser): their name for it (written_as) starts with its brand, holds a word telling
+    products apart that its name hasn't, and lacks one its name has. Words are compared loosely (accents aside, a
+    letter or two apart, written together: "Aneesa", "essense", "homegoods" are the writer's spelling of the same name),
+    and a generic or filler word, a number, a short word or a word of a type's names tells nothing apart. Never for a
+    brand's line: every model of it is its own."""
     if not m.written_as or m.product_name.lower().endswith(" line"):
         return False
-    own = set(_name_words(m.product_name))
+    own, written = _sibling_words(m.product_name), _sibling_words(m.written_as)
+    if len(own) < 2 or len(written) < 2 or not _alike(own[0], written[0]):
+        return False
     generic = set(config.BRAND_MODEL_GENERIC_WORDS) | set(FILLER_WORDS) | set(GENERIC_NAME_WORDS)
-    return any(w not in own and w not in generic and len(w) > 3 and not any(ch.isdigit() for ch in w)
-               and not w.endswith("'s") and not any(_same_word(w, o) for o in own) and not _a_type_word(w, m.category)
-               for w in _name_words(m.written_as))
+    own_joined, written_joined = "".join(own), "".join(written)
+
+    def telling(word: str) -> bool:
+        return len(word) > 3 and word not in generic and not any(ch.isdigit() for ch in word)
+
+    extra = [w for w in written[1:] if telling(w) and not _a_type_word(w, m.category) and w not in own_joined
+             and not any(_alike(w, o) for o in own)]
+    # What its name has that theirs lacks: any word of it but a filler, a number, a short word or the type asked for
+    # ("skin" of "Gentle Skin Cleanser" is a generic word, yet it tells the cleanser from Gentle Clear Acne).
+    own_type = set(_sibling_words(product_type or ""))
+    lacking = [w for w in own[1:] if len(w) > 3 and w not in FILLER_WORDS and not any(ch.isdigit() for ch in w)
+               and w not in own_type and w not in written_joined and not any(_alike(w, x) for x in written)]
+    return bool(extra) and bool(lacking)
+
+
+def _sibling_words(name: str) -> list[str]:
+    """A name's words for _a_sibling: lowercase, accents and a possessive aside."""
+    plain = unicodedata.normalize("NFKD", name.lower().replace("’", "'"))
+    plain = "".join(ch for ch in plain if not unicodedata.combining(ch))
+    return [re.sub(r"'s$", "", w) for w in re.findall(r"[a-z0-9][a-z0-9'-]*", plain)]
+
+
+def _alike(a: str, b: str) -> bool:
+    """Two words a writer may spell either way: the same, one the other's plural, or four letters or more and a letter
+    or two apart."""
+    if a == b or a in (b + "s", b + "es") or b in (a + "s", a + "es"):
+        return True
+    return min(len(a), len(b)) >= 4 and SequenceMatcher(None, a, b).ratio() >= 0.8
 
 
 @cache
@@ -2216,8 +2255,11 @@ def _needs_clause(recommendations: list[ScoredMention], every_list: list[tuple[s
 
 
 def _needs_not_said(mention: ScoredMention) -> tuple[str, ...]:
-    """A mention's needs, less "lasting" when it comes after long-term use: the reason says that already."""
-    return tuple(need for need in mention.needs if not (need == LASTING and mention.evidence == "long-term use"))
+    """A mention's needs, less "lasting" when it comes after long-term use: the reason says that already; and less a
+    feature's needs it talks about without praising its product for the feature (ScoredMention.needs_unpraised, 19 Oct
+    2026, round 3: a voice praising stainless pans in general is no voice "about stainless steel" for a non-stick pick)."""
+    return tuple(need for need in mention.needs if not (need == LASTING and mention.evidence == "long-term use")
+                 and need not in mention.needs_unpraised)
 
 
 def _in_request_order(lists: list[tuple[str, ...]]) -> list[str]:
@@ -2399,10 +2441,14 @@ def _another_appliance(kind: str, category: str, product_type: str | None) -> bo
     text = " ".join(words[:cut])
     found = [(m.start(), m.end(), name) for name in appliances
              for m in re.finditer(rf"(?<![a-z0-9]){re.escape(name)}(?:s|es)?(?![a-z0-9])", text)]
-    longest = [name for s, e, name in found if not any(s2 <= s and e <= e2 and e2 - s2 > e - s for s2, e2, _ in found)]
+    longest = {name for s, e, name in found if not any(s2 <= s and e <= e2 and e2 - s2 > e - s for s2, e2, _ in found)}
+    # Module 1's types its name names too ("hand grinder" and "grinder" name a coffee grinder: _named_types).
+    named = _named_types(kind, category)
     product = next((p for p in PRODUCT_TYPES if p.name == product_type), None)
     own = {product_type.lower(), *(k.lower() for k in (product.keywords if product else ()))}
-    return any(name not in own for name in longest)
+    other = (longest | (named & set(appliances))) - own
+    # Only when it names no product of the type asked for ("blender and food processor combos" are about blenders).
+    return bool(other) and product_type not in named and not (longest & own)
 
 
 def _for_another_use(kind: str, category: str, request: str) -> bool:

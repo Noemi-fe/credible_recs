@@ -48,22 +48,28 @@ def test_a_thread_asks_for_a_feature_by_its_title_never_by_its_posts_passing_wor
     assert thread_asks_for(general_thread("Laptop for gaming and uni?"), gaming)
 
 
-def test_in_a_feature_answer_only_a_voice_praising_its_product_for_it_talks_about_the_feature():
+def test_in_a_feature_answer_the_reason_counts_only_voices_praising_their_product_for_the_feature():
     # Found in the final review: "stainless steel pan for searing" said no pick was praised for stainless steel, yet its
     # reasons counted voices "about stainless steel": they praised stainless pans in general, then named a non-stick one.
+    # The reason only: their weight and the wider reading's need rule count them as before (a pick's voices list
+    # stainless brands without the word in their clause: tried on 19 Oct 2026, a stricter rule had taken a third pick).
+    from dataclasses import replace
+
     query = parse_query("stainless steel pan for searing", model=None)
-    needs, features = judged_needs(query), request_features(query)
-    body = "Stainless steel is what you want for searing. For eggs, though, a Brightmoor non-stick is handy."
-    assert "stainless steel" not in pipeline._needs_talked_about(
-        "For eggs, though, a Brightmoor non-stick is handy.", body, needs, (), features=features, praised=())
-    assert "stainless steel" in pipeline._needs_talked_about(
-        "Stainless steel is what you want.", body, needs, (), features=features, praised=("stainless steel",))
-    # A warning keeps what it talks about: its words about the feature are what it warns of.
-    assert "stainless steel" in pipeline._needs_talked_about(
-        "My stainless steel pan warped.", body, needs, (), stance="warn", features=features, praised=())
-    # Its other needs are untouched.
-    assert "searing" in pipeline._needs_talked_about(
-        "Great for searing.", "Great for searing steaks.", needs, (), features=features, praised=())
+    features = request_features(query)
+    assert pipeline._feature_needs_unpraised(("stainless steel", "searing"), features, ()) == ("stainless steel",)
+    assert pipeline._feature_needs_unpraised(("stainless steel", "searing"), features, ("stainless steel",)) == ()
+    unpraised = [replace(m, needs=("stainless steel",), needs_unpraised=("stainless steel",))
+                 for m in mentions(3, "Brightmoor non-stick pan", category="kitchen")]
+    praised = [replace(m, needs=("stainless steel",), features=("stainless steel",))
+               for m in mentions(3, "Steelhaus tri-ply pan", category="kitchen")]
+    ranking = rank_products(unpraised + praised, "kitchen", [], {}, features=["stainless steel"])
+    answer = write_answer(ranking, bodies_for(*unpraised, *praised), "frying pan", needs=judged_needs(query),
+                          request="stainless steel pan for searing")
+    reasons = {pick.name: pick.reason for pick in answer.picks}
+    assert "about stainless steel" not in reasons["Brightmoor non-stick pan"]
+    assert "3 of them about stainless steel" in reasons["Steelhaus tri-ply pan"]
+    assert answer.picks[0].name == "Steelhaus tri-ply pan"  # praised for the feature: first
 
 
 # --- 2. A voice saying the opposite ---
@@ -382,3 +388,14 @@ def test_the_shipped_list_holds_the_demo_and_interviewee_requests_and_the_plan_s
     # The plan's working out grows with its requests (486 took about 5 minutes on Noemi's computer, the model off; 18
     # Oct 2026): a bound well inside the job's task timeout, which the free-tier sums count (test_cloudrun.py).
     assert len(requests) <= config.PLAN_MAX_REQUESTS
+
+
+def test_praise_saying_nothing_matches_the_product_is_no_yardstick_and_a_writers_spelling_is_no_sibling():
+    from engine.answer import _a_sibling, _as_a_yardstick
+
+    item = mention("Seatwell Aeron", quote="Nothing I've sat on is as comfy as my Seatwell Aeron.", category="general")
+    assert not _as_a_yardstick(" ".join(item.quote.lower().split()), item)
+    for written in ("Seatwel Aeron", "seatwell aerons", "Seatwell Aeron chair"):
+        assert not _a_sibling(mention("Seatwell Aeron", written_as=written, category="general"), "office chair")
+    assert _a_sibling(mention("Dermalux Gentle Skin Cleanser", written_as="Dermalux Gentle Clear Acne Wash",
+                              category="skincare"), "cleanser")
