@@ -879,6 +879,13 @@
   },
   {
    "product": "Herman Miller Aeron",
+   "also_called": [
+    "Aeron",
+    "Aeron office chair line",
+    "hm aeron",
+    "HM Aeron",
+    "Aeron chair"
+   ],
    "category": "general",
    "product_type": "office chair",
    "page": "https://www.hermanmiller.com/en_gb/products/seating/office-chairs/aeron-chair/",
@@ -5973,6 +5980,2295 @@
    ],
    "checked_on": "2026-10-18",
    "note": "Found by engine.maker_pages in the sitemap https://www.redken.co.uk/sitemap.xml; the page names it \"Acidic Bonding Concentrate Conditioner\". Checked by Claude, 18 Oct 2026: the page is the product's own; its image was another product's (Color Gels), so no image."
+  },
+  {
+   "product": "LG TV line",
+   "category": "general",
+   "product_type": "tv",
+   "page": "https://www.lg.com/uk/tvs/",
+   "shop": "LG",
+   "sources": [
+    "https://www.lg.com/uk/tvs/",
+    "https://www.johnlewis.com/lg-32lb650b6la-2026-led-hdr-hd-ready-smart-ai-tv-32-inch-charcoal-black/p115308767",
+    "https://www.johnlewis.com/search?search-term=lg%20tv"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "LG UK's own TV range page (title 'LG AI TVs | Buy LG TVs ... | LG UK'; no prices to a reader). John Lewis on 17 Oct 2026: cheapest the LG 32LB650B6LA (2026) 32in HD Ready, GBP159 (Add to basket); 43in 4K 43NU850B6LA GBP249; cheapest OLED the 48in OLED48B65LA GBP899."
+  },
+  {
+   "product": "Samsung TV line",
+   "category": "general",
+   "product_type": "tv",
+   "page": "https://www.samsung.com/uk/tvs/all-tvs/",
+   "shop": "Samsung",
+   "sources": [
+    "https://www.samsung.com/uk/tvs/all-tvs/",
+    "https://www.johnlewis.com/samsung-ue43u7000h-2026-led-hdr-4k-ultra-hd-smart-tv-43-inch-black/p115507482",
+    "https://www.johnlewis.com/search?search-term=samsung%20tv"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "Samsung UK's own TV range page (title 'Smart AI TVs | Browse Full Samsung TV Range | Samsung UK'). John Lewis on 17 Oct 2026: cheapest in stock the UE43U7000H (2026) 43in 4K, GBP249 (Add to basket); a 24in UE24F6000F (GBP149) and 32in UE32F6000F (GBP179) show 'Email when available', so not used."
+  },
+  {
+   "product": "UE Boom",
+   "category": "general",
+   "product_type": "bluetooth speaker",
+   "page": "https://www.johnlewis.com/ultimate-ears-boom-4-bluetooth-waterproof-portable-speaker/blue/p112235920",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/ultimate-ears-boom-4-bluetooth-waterproof-portable-speaker/blue/p112235920",
+    "https://www.johnlewis.com/search?search-term=ultimate%20ears"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "Writers' 'UE Boom' is Ultimate Ears' BOOM speaker; its current model is the BOOM 4, GBP129.99 at John Lewis on 17 Oct 2026 (Add to basket); MEGABOOM 4 GBP123.99, EVERBOOM GBP133.99."
+  },
+  {
+   "product": "Anker power bank line",
+   "category": "general",
+   "product_type": "power bank",
+   "page": "https://www.anker.com/uk/collections/power-banks",
+   "shop": "Anker",
+   "sources": [
+    "https://www.anker.com/uk/collections/power-banks"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "Anker's own UK store, Power Banks and Portable Chargers, 17 Oct 2026: cheapest the Anker Nano Power Bank 5,000mAh with Built-In Foldable USB-C Connector, GBP24.99; 321 MagGo Battery GBP25.99; Zolo 20K 30W GBP34.99; Prime 20K 220W GBP129.99."
+  },
+  {
+   "product": "Shark robot vacuum line",
+   "category": "general",
+   "product_type": "robot vacuum",
+   "page": "https://www.sharkninja.co.uk/home-cleaning/vacuum-cleaners/robot-vacuums",
+   "shop": "Shark",
+   "sources": [
+    "https://www.sharkninja.co.uk/home-cleaning/vacuum-cleaners/robot-vacuums",
+    "https://www.johnlewis.com/shark-matrix-plus-rv2620waukwh-robot-vacuum-cleaner-white-silver/p113844304",
+    "https://www.johnlewis.com/search?search-term=robot%20vacuum"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "SharkNinja UK's robot vacuum range (16 of 19 shown on 17 Oct 2026: Matrix Plus RV2620WAUK GBP269.99-519.99, PowerDetect Self-Empty AV2820VEUKWH GBP319.99, Navigator RV2110AEUK GBP364.99...). John Lewis: Matrix Plus RV2620WAUKWH GBP269.99, was GBP519.99 (Save GBP250, Add to basket): an offer price, check again when it ends."
+  },
+  {
+   "product": "Roomba robot vacuum line",
+   "category": "general",
+   "product_type": "robot vacuum",
+   "page": "https://www.irobot.co.uk/en_GB/roomba-robots.html",
+   "shop": "iRobot",
+   "sources": [
+    "https://www.irobot.co.uk/en_GB/roomba-robots.html"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "iRobot UK's Roomba range on 17 Oct 2026: Roomba 115 Combo Robot, Black, GBP229 (cheapest), Roomba Mini + AutoEmpty from GBP249 (offer), Plus 415 Combo GBP449 ... Max 875 Combo GBP799. Older models (i7, j7, s9) aren't listed any more."
+  },
+  {
+   "product": "iRobot robot vacuum line",
+   "category": "general",
+   "product_type": "robot vacuum",
+   "page": "https://www.irobot.co.uk/en_GB/roomba-robots.html",
+   "shop": "iRobot",
+   "sources": [
+    "https://www.irobot.co.uk/en_GB/roomba-robots.html"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "Same range as the Roomba line: iRobot UK, 17 Oct 2026, from the Roomba 115 Combo at GBP229."
+  },
+  {
+   "product": "Numatic Henry",
+   "category": "general",
+   "product_type": "vacuum cleaner",
+   "page": "https://www.myhenry.com/henry-hvr160",
+   "shop": "Numatic",
+   "image": "https://www.myhenry.com/media/catalog/product/h/e/henry-front.png?quality=100&bg-color=255,255,255&fit=bounds&height=280&width=280&canvas=280:280",
+   "image_page": "https://www.myhenry.com/henry-hvr160",
+   "sources": [
+    "https://www.myhenry.com/henry-hvr160",
+    "https://www.myhenry.com/",
+    "https://numatic.com/uk/"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "Numatic's own UK Henry shop (myhenry.com, 'The Official UK Home of Henry Vacuum Cleaners', linked as 'Shop Henry' from numatic.com/uk): Henry HVR160 GBP129.99 special price (regular GBP179.99), In stock, Add to Basket, 17 Oct 2026. John Lewis sells the Henry Plus and Pet Pro at GBP189.99."
+  },
+  {
+   "product": "Vizio TV",
+   "category": "general",
+   "product_type": "tv",
+   "page": "https://www.vizio.com/en/tv",
+   "shop": "VIZIO",
+   "sources": [
+    "https://www.vizio.com/en/tv",
+    "https://www.johnlewis.com/search?search-term=vizio"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "VIZIO sells its TVs in the US (vizio.com, US paths and dollar prices only, no country selector; its Quantum 4K range from $139 on 17 Oct 2026); John Lewis has 0 results for vizio. Not sold to UK shoppers."
+  },
+  {
+   "product": "Keychron keyboard line",
+   "category": "general",
+   "product_type": "keyboard",
+   "page": "https://www.keychron.uk/collections/all-keyboards",
+   "shop": "Keychron UK",
+   "sources": [
+    "https://www.keychron.uk/collections/all-keyboards",
+    "https://www.keychron.uk/products/keychron-c3-pro-qmk-via-wired-mechanical-keyboard-iso-layout-collection",
+    "https://www.keychron.uk/products/keychron-c3-pro-qmk-via-wired-mechanical-keyboard-iso-layout-collection.json",
+    "https://www.keychron.uk/collections/all-keyboards/products.json?limit=250"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "Keychron's UK store ('All Keyboards | Mechanical & Wireless | Keychron UK', ships from the UK), 17 Oct 2026: cheapest the C3 Pro wired mechanical keyboard GBP49.99 (both variants in its product data; the B1 Pro slim wireless is also GBP49.99), C1 Pro 8K GBP54.99, V1/V3/K3 Max GBP109.99, K2 HE GBP129.99."
+  },
+  {
+   "product": "Sennheiser HD600",
+   "also_called": [
+    "HD600",
+    "HD 600",
+    "HD600s",
+    "hd600s",
+    "HD 600s",
+    "Sennheiser HD600's",
+    "Sennheiser HD 600",
+    "Senn HD600"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.thomann.co.uk/sennheiser_hd_600_new_version_2019.htm",
+   "shop": "Thomann",
+   "sources": [
+    "https://www.thomann.co.uk/sennheiser_hd_600_new_version_2019.htm"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Thomann UK, 18 Oct 2026: Sennheiser HD 600 GBP255 incl. VAT, in stock (B-stock from GBP238). Wired open-back headphones, not noise cancelling."
+  },
+  {
+   "product": "Sony MDR-7506",
+   "also_called": [
+    "Sony Mdr-7506",
+    "sony 7506",
+    "MDR-7506",
+    "Sony MDR 7506",
+    "Sony MDR7506",
+    "mdr 7506",
+    "Sony 7506"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.thomann.co.uk/sony_mdr7506_kopfhoerer.htm",
+   "shop": "Thomann",
+   "sources": [
+    "https://www.thomann.co.uk/sony_mdr7506_kopfhoerer.htm"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Thomann UK, 18 Oct 2026: Sony MDR-7506 GBP83 incl. VAT, in stock. Wired closed-back studio headphones, not noise cancelling."
+  },
+  {
+   "product": "Sony WH-1000XM4",
+   "also_called": [
+    "Sony xm4",
+    "Sony XM4",
+    "XM4",
+    "XM4s",
+    "Sony XM4s",
+    "Sony XM4's",
+    "XM4's",
+    "Sony XM4 Series",
+    "Sony 1000x4",
+    "Sony MX4s",
+    "xm4",
+    "Sony WH1000XM4",
+    "Sony WH-1000XM4C",
+    "WH-1000XM4"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.johnlewis.com/sony-wh-1000xm4c-noise-cancelling-wireless-bluetooth-high-resolution-audio-over-ear-headphones-with-mic-remote/black/p115845122",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/sony-wh-1000xm4c-noise-cancelling-wireless-bluetooth-high-resolution-audio-over-ear-headphones-with-mic-remote/black/p115845122",
+    "https://www.johnlewis.com/search?search-term=noise%20cancelling%20headphones"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, 18 Oct 2026: the WH-1000XM4C, 'refined and retuned from the original WH-1000XM4', 'back by popular demand', GBP219.99, Add to basket. The original XM4 (2020) is sold as this refresh."
+  },
+  {
+   "product": "Sony WH-1000XM5",
+   "also_called": [
+    "Sony XM5",
+    "XM5",
+    "XM5s",
+    "Sony XM5s",
+    "xm5",
+    "Sony wx1000xm5",
+    "Sony WH1000XM5",
+    "xm5's",
+    "WH-1000XM5"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.johnlewis.com/sony-wh-1000xm5-noise-cancelling-wireless-bluetooth-high-resolution-audio-over-ear-headphones-with-mic-remote/black/p6229813",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/sony-wh-1000xm5-noise-cancelling-wireless-bluetooth-high-resolution-audio-over-ear-headphones-with-mic-remote/black/p6229813",
+    "https://www.johnlewis.com/search?search-term=noise%20cancelling%20headphones"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis's noise-cancelling headphones, 18 Oct 2026: Sony WH-1000XM5 Black GBP199."
+  },
+  {
+   "product": "Sony WH-1000XM6",
+   "also_called": [
+    "Sony XM6",
+    "XM6",
+    "Sony XM6s",
+    "xm6's",
+    "Sony xm6",
+    "XM6s",
+    "WH-1000XM6"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.johnlewis.com/sony-wh-1000xm6-noise-cancelling-wireless-bluetooth-high-resolution-audio-over-ear-headphones-with-mic-remote/sand-pink/p113671309",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/sony-wh-1000xm6-noise-cancelling-wireless-bluetooth-high-resolution-audio-over-ear-headphones-with-mic-remote/sand-pink/p113671309",
+    "https://www.johnlewis.com/search?search-term=noise%20cancelling%20headphones"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis's noise-cancelling headphones, 18 Oct 2026: Sony WH-1000XM6 GBP349 (GBP349.99 in some colours)."
+  },
+  {
+   "product": "Bose QuietComfort Ultra Headphones",
+   "also_called": [
+    "QC Ultra",
+    "Bose QC Ultra",
+    "Bose qc ultras",
+    "Bose QuietComfort Ultra",
+    "Bose QC Ultras",
+    "QC Ultras",
+    "Bose QC Ultra Headphones"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.bose.co.uk/en_gb/products/headphones.html",
+   "shop": "Bose",
+   "sources": [
+    "https://www.bose.co.uk/en_gb/products/headphones.html",
+    "https://www.johnlewis.com/search?search-term=noise%20cancelling%20headphones"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Bose UK's headphones page, 18 Oct 2026: QuietComfort Ultra Headphones (2nd Gen) GBP399.95 (the 2023 first generation still listed at GBP449.95); John Lewis has the 2nd Gen from GBP329.99 in some colours."
+  },
+  {
+   "product": "Bose headphones line",
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.bose.co.uk/en_gb/products/headphones.html",
+   "shop": "Bose",
+   "sources": [
+    "https://www.bose.co.uk/en_gb/products/headphones.html"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Bose UK, 18 Oct 2026: its headphones from the QuietComfort Headphones at GBP189.95 (QC SC GBP189.95 sold out) to the QC Ultra (2nd Gen) at GBP399.95."
+  },
+  {
+   "product": "AirPods Max",
+   "also_called": [
+    "Airpods Max",
+    "AirPod Max",
+    "AirPod Maxes",
+    "airpod max",
+    "air pods max",
+    "APM",
+    "AP max",
+    "Apple AirPod Max",
+    "AirPods Max 2",
+    "Apple AirPods Max"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.johnlewis.com/apple-airpods-max-2-noise-cancelling-wireless-bluetooth-over-ear-headphones-usb-c-charging/midnight/p115154036",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/apple-airpods-max-2-noise-cancelling-wireless-bluetooth-over-ear-headphones-usb-c-charging/midnight/p115154036",
+    "https://www.johnlewis.com/search?search-term=noise%20cancelling%20headphones",
+    "https://www.apple.com/uk/airpods/"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Apple UK's AirPods range on 18 Oct 2026 has the AirPods Max 2; John Lewis sells them (USB-C, Midnight) at GBP499. Writers' 'AirPods Max' may be the first generation, which the Max 2 replaced."
+  },
+  {
+   "product": "Sennheiser Momentum 4",
+   "also_called": [
+    "Momentum 4s",
+    "sennheiser momentum 4",
+    "Sennheiser MOMENTUM 4",
+    "Momentum 4",
+    "momentum 4s",
+    "Momentum 4 Wireless"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.johnlewis.com/sennheiser-momentum-4-wireless-noise-cancelling-bluetooth-over-ear-headphones-with-mic-remote/black/p109312626",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/sennheiser-momentum-4-wireless-noise-cancelling-bluetooth-over-ear-headphones-with-mic-remote/black/p109312626",
+    "https://www.johnlewis.com/search?search-term=noise%20cancelling%20headphones"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, 18 Oct 2026: Sennheiser Momentum 4 Wireless, Black, GBP199 (GBP199.99 in some colours); the Momentum 5 is GBP329.99."
+  },
+  {
+   "product": "Sennheiser HDB630",
+   "also_called": [
+    "HDB630",
+    "630s",
+    "Sennheiser HDB 630",
+    "HDB 630"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.johnlewis.com/sennheiser-hdb-630-noise-cancelling-high-resolution-audio-over-ear-headphones-usb-c-connection-with-btd-700-bluetooth-usb-c-dongle-black/p115337206",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/sennheiser-hdb-630-noise-cancelling-high-resolution-audio-over-ear-headphones-usb-c-connection-with-btd-700-bluetooth-usb-c-dongle-black/p115337206",
+    "https://www.johnlewis.com/search?search-term=sennheiser%20hd"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, 18 Oct 2026: Sennheiser HDB 630 noise-cancelling headphones with the BTD 700 USB-C dongle, GBP399.99."
+  },
+  {
+   "product": "Soundcore Q30",
+   "also_called": [
+    "Anker Soundcore Q30s",
+    "Soundcore Q30s",
+    "Soundcore Life Q30",
+    "Life Q30",
+    "Anker Soundcore Q30"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.soundcore.com/uk/collections/headphones",
+   "shop": "soundcore",
+   "sources": [
+    "https://www.soundcore.com/uk/collections/headphones"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "soundcore's UK store, 18 Oct 2026: soundcore Q30 noise cancelling headphones GBP44.99 (was GBP79.99); the Q31i GBP74.99, Q20i GBP39.99."
+  },
+  {
+   "product": "Soundcore Space One",
+   "also_called": [
+    "soundcore one",
+    "Anker Soundcore Space One"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.soundcore.com/uk/collections/headphones",
+   "shop": "soundcore",
+   "sources": [
+    "https://www.soundcore.com/uk/collections/headphones"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "soundcore's UK store, 18 Oct 2026: soundcore Space One GBP64 (was GBP89.99); Space One Pro GBP149, Space 2 GBP129.99, Space 2 Pro GBP199.99."
+  },
+  {
+   "product": "Shokz OpenRun",
+   "also_called": [
+    "Shokz Openrun",
+    "Shokz open run",
+    "open run by shokz",
+    "open runs",
+    "Aftershokz OpenRun",
+    "Shokz OpenRun Mini"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.johnlewis.com/shokz-openrun-bluetooth-wireless-open-ear-headphones-usb-c-charging/black/p112598634",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/shokz-openrun-bluetooth-wireless-open-ear-headphones-usb-c-charging/black/p112598634",
+    "https://www.johnlewis.com/search?search-term=sports%20earbuds"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, 18 Oct 2026: Shokz OpenRun bone-conduction open-ear headphones, USB-C, Black, GBP129.95; OpenRun Pro 2 GBP165-169, OpenRun Mini GBP129.95."
+  },
+  {
+   "product": "Shokz OpenRun Pro 2",
+   "also_called": [
+    "shokz openrun pro 2",
+    "OpenRun Pro 2"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.johnlewis.com/shokz-openrun-pro-2-bluetooth-wireless-open-ear-headphones-usb-c-charging-black/black/p112598526",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/shokz-openrun-pro-2-bluetooth-wireless-open-ear-headphones-usb-c-charging-black/black/p112598526",
+    "https://www.johnlewis.com/search?search-term=sports%20earbuds"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, 18 Oct 2026: Shokz OpenRun Pro 2 GBP165 (GBP169 in some colours)."
+  },
+  {
+   "product": "Shokz OpenSwim Pro",
+   "also_called": [
+    "Shokz Openswim Pros",
+    "OpenSwim Pro"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.johnlewis.com/shokz-openswim-pro-bluetooth-waterproof-open-ear-headphones/grey/p112098327",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/shokz-openswim-pro-bluetooth-waterproof-open-ear-headphones/grey/p112098327",
+    "https://www.johnlewis.com/search?search-term=sports%20earbuds"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, 18 Oct 2026: Shokz OpenSwim Pro, Grey, GBP199."
+  },
+  {
+   "product": "Bowers & Wilkins Px7 S3",
+   "also_called": [
+    "B&W PX7 S3",
+    "PX7 S3",
+    "Px7 S3"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.johnlewis.com/bowers-wilkins-px7-s3-noise-cancelling-wireless-over-ear-headphones/anthracite-black/p113576205",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/bowers-wilkins-px7-s3-noise-cancelling-wireless-over-ear-headphones/anthracite-black/p113576205",
+    "https://www.johnlewis.com/search?search-term=noise%20cancelling%20headphones"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, 18 Oct 2026: Bowers & Wilkins Px7 S3, Anthracite Black, GBP399 (Px7 S2e GBP329)."
+  },
+  {
+   "product": "Bowers & Wilkins Px8",
+   "also_called": [
+    "bower and wilkins px8",
+    "px8",
+    "PX8s",
+    "B&W Px8"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.johnlewis.com/bowers-wilkins-px8-s2-noise-cancelling-wireless-over-ear-headphones/onyx-black/p114031656",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/bowers-wilkins-px8-s2-noise-cancelling-wireless-over-ear-headphones/onyx-black/p114031656",
+    "https://www.johnlewis.com/search?search-term=noise%20cancelling%20headphones"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, 18 Oct 2026: the original Px8 GBP499-529 and the Px8 S2 (Onyx Black) GBP629; the price isn't recorded as one, since the page linked is the S2's."
+  },
+  {
+   "product": "Sonos Ace",
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.johnlewis.com/sonos-ace-wireless-bluetooth-over-ear-headphones-with-active-noise-cancelling-mic-remote/black/p112069471",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/sonos-ace-wireless-bluetooth-over-ear-headphones-with-active-noise-cancelling-mic-remote/black/p112069471",
+    "https://www.johnlewis.com/search?search-term=noise%20cancelling%20headphones"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, 18 Oct 2026: Sonos Ace, Black, GBP349 (Ace Ultra GBP395.28-399)."
+  },
+  {
+   "product": "Bose QuietComfort headphones line",
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.bose.co.uk/en_gb/products/headphones.html",
+   "shop": "Bose",
+   "sources": [
+    "https://www.bose.co.uk/en_gb/products/headphones.html",
+    "https://www.bose.co.uk/en_gb/p/headphones/quietcomfort-acoustic-noise-cancelling-headphones/QC-HEADPHONEARN.html"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Bose UK's headphones page (18 Oct 2026) lists the QuietComfort range: Bose QuietComfort Headphones £189.95 (its page shows Add to Basket), QuietComfort SC £189.95 (sold out), QuietComfort Headphones (2nd Gen) £299.95, QuietComfort Ultra Headphones (2nd Gen) £399.95, QuietComfort Ultra Headphones £449.95."
+  },
+  {
+   "product": "Powerbeats Pro 2",
+   "also_called": [
+    "PowerBeats Pro 2",
+    "Powerbeats Pro 2’s",
+    "powerbeats pro 2’s",
+    "powerbeats pro 2s"
+   ],
+   "category": "general",
+   "product_type": "earbuds",
+   "page": "https://www.johnlewis.com/powerbeats-pro-2-true-wireless-bluetooth-in-ear-sport-headphones-with-mic-remote/black/p113270307",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/powerbeats-pro-2-true-wireless-bluetooth-in-ear-sport-headphones-with-mic-remote/black/p113270307"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, Powerbeats Pro 2 True Wireless Bluetooth In-Ear Sport Headphones with Mic/Remote, Jet Black: £179.00, Add to basket (other colours up to £249.99)."
+  },
+  {
+   "product": "soundcore Sport X20",
+   "also_called": [
+    "Soundcore x20’s",
+    "Soundcore x20's",
+    "Soundcore x20s",
+    "soundcore x20s",
+    "soundcore sport x20",
+    "Soundcore Sport X20",
+    "Anker Soundcore Sport X20"
+   ],
+   "category": "general",
+   "product_type": "earbuds",
+   "page": "https://www.soundcore.com/uk/products/a3968-sport-x20-earbuds",
+   "shop": "soundcore",
+   "sources": [
+    "https://www.soundcore.com/uk/products/a3968-sport-x20-earbuds"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "soundcore UK's own page (title 'soundcore Sport X20 | Sport Noise-Cancelling Earbuds, IP68 and Waterproof - soundcore UK'): £89.99, Add to Cart and Buy Now (a £20-off code is advertised, not counted)."
+  },
+  {
+   "product": "Shokz OpenFit 2+",
+   "also_called": [
+    "Shokz open fit 2 plus",
+    "open fit 2 plus",
+    "openfit 2+",
+    "Open Ear 2+",
+    "Shokz OpenFit 2 Plus",
+    "OpenFit 2+"
+   ],
+   "category": "general",
+   "product_type": "earbuds",
+   "page": "https://www.johnlewis.com/shokz-openfit-2-bluetooth-true-wireless-open-ear-headphones/black/p113753491",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/shokz-openfit-2-bluetooth-true-wireless-open-ear-headphones/black/p113753491",
+    "https://www.johnlewis.com/search?search-term=shokz%20openfit"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, Shokz OpenFit 2+ Bluetooth True Wireless Open-Ear Headphones, Black: £179.00, Add to basket. John Lewis's Shokz range has no original OpenFit; it lists OpenFit Air £94, OpenFit Air 2 £129, OpenFit 2+ £179, OpenFit Pro £219, OpenDots ONE £143."
+  },
+  {
+   "product": "Shokz OpenFit Air",
+   "also_called": [
+    "Shokz Open Fit Air",
+    "openfit air",
+    "Openfit Air",
+    "Shokz Openfit air"
+   ],
+   "category": "general",
+   "product_type": "earbuds",
+   "page": "https://www.johnlewis.com/shokz-openfit-air-bluetooth-true-wireless-open-ear-headphones/black/p112098323",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/shokz-openfit-air-bluetooth-true-wireless-open-ear-headphones/black/p112098323"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, Shokz OpenFit Air Bluetooth True Wireless Open-Ear Headphones, Black: £94.00, Add to basket."
+  },
+  {
+   "product": "Shokz OpenRun Mini",
+   "also_called": [
+    "Openrun Mini",
+    "OpenRun Mini",
+    "Shokz Open Run Pro Mini"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://www.johnlewis.com/shokz-openrun-mini-bluetooth-wireless-open-ear-headphones-usb-c-charging-black/p112598633",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/shokz-openrun-mini-bluetooth-wireless-open-ear-headphones-usb-c-charging-black/p112598633"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, Shokz OpenRun Mini Bluetooth Wireless Open-Ear Headphones, USB-C Charging, Black: £129.95, Add to basket."
+  },
+  {
+   "product": "Sony WF-1000XM5",
+   "also_called": [
+    "Sony WF1000-XM5",
+    "WF-1000XM5",
+    "Sony ANC WF-1000XM5",
+    "sony wf-1000xm5",
+    "Sony WF-1000XM5 ANC buds",
+    "WF-XM5"
+   ],
+   "category": "general",
+   "product_type": "earbuds",
+   "page": "https://www.johnlewis.com/sony-wf-1000xm5-noise-cancelling-true-wireless-bluetooth-sweat-weather-resistant-in-ear-headphones-with-mic-remote/black/p110581859",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/sony-wf-1000xm5-noise-cancelling-true-wireless-bluetooth-sweat-weather-resistant-in-ear-headphones-with-mic-remote/black/p110581859"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "John Lewis, Sony WF-1000XM5 Noise Cancelling True Wireless Bluetooth Sweat & Weather-Resistant In-Ear Headphones with Mic/Remote, Black: £179.99, Add to basket."
+  },
+  {
+   "product": "Apple AirPods Pro 3",
+   "also_called": [
+    "AirPods Pro 3",
+    "Airpods Pro 3",
+    "APP3"
+   ],
+   "category": "general",
+   "product_type": "earbuds",
+   "page": "https://www.apple.com/uk/airpods-pro/",
+   "shop": "Apple UK",
+   "sources": [
+    "https://www.apple.com/uk/airpods-pro/",
+    "https://www.apple.com/uk/shop/product/MFHP4ZM/A/airpods-pro-3",
+    "https://www.apple.com/uk/shop/buy-airpods/airpods-pro-3",
+    "https://www.johnlewis.com/search?search-term=airpods%20pro",
+    "https://www.currys.co.uk/search?q=airpods+pro"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Apple UK, 18 Oct 2026: 'AirPods Pro 3 - Apple (UK)' product page with Buy; 'Buy AirPods Pro 3 - Apple (UK)' (MFHP4ZM/A) shows £219.00 (offer data GBP 219.00, free delivery). John Lewis: Apple AirPods Pro 3 with MagSafe Charging Case (USB-C), White £219.00 (p114325329); Currys: APPLE AirPods Pro 3 - White £219.00, Add to basket."
+  },
+  {
+   "product": "Etymotic ER2XR",
+   "also_called": [
+    "Er2xr",
+    "ER2XR",
+    "ER2-XR",
+    "Etymotic ER2-XR",
+    "Etymotic Research ER2XR",
+    "Etymotic ER2 XR"
+   ],
+   "category": "general",
+   "product_type": "earbuds",
+   "page": "https://www.scan.co.uk/products/etymotic-er2-xr-earphones-extended-response",
+   "shop": "Scan",
+   "sources": [
+    "https://www.scan.co.uk/products/etymotic-er2-xr-earphones-extended-response",
+    "https://www.hifiheadphones.co.uk/search?q=etymotic",
+    "https://www.hifiheadphones.co.uk/products/etymotic-er2-in-ear-isolating-earphones-with-detachable-cable?variant=43223090397439",
+    "https://www.amazon.co.uk/dp/B07NSL5XS5",
+    "https://etymotic.com/products/er2xr-earphones"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Orderable new in the UK on pre-order only, nothing in stock (18 Oct 2026): Scan 'Etymotic ER2-XR Earphones (Extended Response) LN149137 - P001484 | SCAN UK' £130.00 with a Pre Order button (no ETA shown); Hifi Headphones 'Etymotic ER2XR/ER2SE - In Ear Isolating Earphones with Detachable Cable', XR - Extended Response £149.99, PRE ORDER ('We will fulfill the item as soon as it becomes available'). Amazon UK's ER2-XR listing (B07NSL5XS5): Currently unavailable. Etymotic's own US store still lists 'ER2XR Earphones' at $179.99 but Sold out, and it doesn't ship to the UK. Still made (not discontinued); writer may want to say 'pre-order'."
+  },
+  {
+   "product": "Logitech MX Master 3",
+   "also_called": [
+    "MX Master 3",
+    "Logitech MX Master III",
+    "Logi MX Master 3"
+   ],
+   "category": "general",
+   "product_type": "mouse",
+   "page": "https://www.amazon.co.uk/dp/B07W6JG6Z7",
+   "shop": "Amazon UK",
+   "sources": [
+    "https://www.amazon.co.uk/dp/B07W6JG6Z7",
+    "https://www.logitech.com/en-gb/products/mice/mx-master-3.910-005694.html",
+    "https://www.logitech.com/en-gb/products/mice/mx-master-3.html",
+    "https://www.johnlewis.com/search?search-term=logitech%20mx%20master",
+    "https://www.currys.co.uk/search?q=logitech+mx+master+3"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Final stock only. Logitech UK no longer sells it: the MX Master 3 product address (910-005694) gives 'Error: 404' and the plain MX Master 3 address redirects to 'MX Master 3S Bluetooth Edition Wireless Mouse'. John Lewis (6 results: MX Master 4 £101.99/£119.99, MX Anywhere 3S £79.99) and Currys (MX Master 3S, MX Master 4) don't list it. Amazon UK (London postcode, 18 Oct 2026): 'Logitech MX Master 3 Advanced Wireless Mouse ... - Graphite' (model 910-005694) new £115.50, 'Only 2 left in stock', Add to basket, sold by JAF Enterprises and dispatched from Amazon (another new offer £135.75, used £104.50). Counts as sold while that stock lasts; successors MX Master 3S / 4."
+  },
+  {
+   "product": "Teevolution Terra Pro",
+   "also_called": [
+    "Teevo Terra Pro",
+    "Teevolution Terra PRO",
+    "Teevo Terra PRO",
+    "Terra Pro"
+   ],
+   "category": "general",
+   "product_type": "mouse",
+   "page": "https://www.teevolution.gg/products/terra-pro",
+   "shop": "Teevolution",
+   "sources": [
+    "https://www.teevolution.gg/products/terra-pro",
+    "https://www.teevolution.gg/",
+    "https://www.teevolution.gg/products/terra-pro?variant=45079418667161",
+    "https://www.teevolution.gg/policies/shipping-policy",
+    "https://www.teevolution.gg/pages/where-to-buy",
+    "https://www.amazon.co.uk/dp/B0FFT65T7M"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "'Teevo Terra Pro' is the Teevolution Terra PRO, a wireless right-handed ergonomic gaming mouse (G403/G703-style shape, PAW3950 sensor, about 49 g) from Hong Kong brand Teevolution. Its official store ('Teevolution | Official Site | Gamers Evolve', based in Hong Kong) lists the United Kingdom in its shipping policy and shows UK visitors GBP: 'Teevolution Terra PRO | Legendary Ergonomic Shape | Ultra-Lightweight', 8K Ready / Black / no add-on £62.00, Add to cart (8K Included £81.00; default bundle £85.00). No UK retailer: its Where to Buy page lists none for the UK (EU: MaxGaming; US: Micro Center), and Amazon UK's Terra Pro listing (B0FFT65T7M) is 'Currently unavailable'. UK shoppers buy it from the maker's store."
+  },
+  {
+   "product": "Keychron Q1",
+   "also_called": [
+    "Keychron Q1 V2",
+    "Keychron Q1 Version 2",
+    "Keychron Q1 QMK"
+   ],
+   "category": "general",
+   "product_type": "keyboard",
+   "page": "https://www.amazon.co.uk/dp/B0B4WZSKH1",
+   "shop": "Amazon UK",
+   "sources": [
+    "https://www.amazon.co.uk/dp/B0B4WZSKH1",
+    "https://www.keychron.uk/collections/all-keyboards/products.json?limit=250",
+    "https://www.keychron.uk/collections/all-products/products.json?limit=250",
+    "https://www.keychron.uk/products/keychron-q1-max-qmk-via-wireless-custom-mechanical-keyboard-iso-layout-collection",
+    "https://www.keychron.uk/search?q=q1",
+    "https://www.keychron.com/products/keychron-q1",
+    "https://www.keychron.com/products/keychron-q1-pro-qmk-via-wireless-custom-mechanical-keyboard",
+    "https://www.keyboardco.com/category.asp?man=keychron"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Keychron UK (18 Oct 2026) sells only two Q1 models: Q1 Max (QMK/VIA Wireless, ISO, £219.99, in stock, Add to cart) and Q1 HE (QMK Wireless, magnetic switches, £229.99); no Q1 Pro and no plain Q1. Neither is the Q1 itself: the Q1 Max is the 2.4 GHz/Bluetooth wireless version and the Q1 HE the Hall-effect magnetic-switch version. The Q1 itself (wired 75% QMK board, now 'Keychron Q1 QMK Custom Mechanical Keyboard - Version 2') is still sold by Keychron's global US store (keychron.com, USD: Barebone Knob $69.99, Fully Assembled Knob $89.99, most variants sold out) and in the UK on Amazon UK: 'Keychron Q1 RGB Wired Mechanical Keyboard ... Gateron G Pro Red' (Version 2, US ANSI layout) £190.00, 'Only 11 left in stock', Add to basket, sold and shipped by The Keyboard Company. The Keyboard Company's own Keychron range has only the Q1 Max."
+  },
+  {
+   "product": "Ducky keyboard line",
+   "also_called": [
+    "Ducky keyboards",
+    "Ducky keyboard",
+    "Ducky"
+   ],
+   "category": "general",
+   "product_type": "keyboard",
+   "page": "https://www.overclockers.co.uk/brands/ducky",
+   "shop": "Overclockers UK",
+   "sources": [
+    "https://www.overclockers.co.uk/brands/ducky",
+    "https://ducky.global/pages/where-to-buy",
+    "https://www.overclockers.co.uk/ducky-project-d-tinker-65-mechanical-customisable-gaming-keyboard-cherry-mx-red-black/PER-DCK-00660.html",
+    "https://www.overclockers.co.uk/ducky-origin-usb-mechanical-gaming-keyboard-cherry-mx-silent-red-vintage-uk-lay/PER-DCK-00947.html",
+    "https://www.currys.co.uk/search?q=ducky+keyboard",
+    "https://www.keyboardco.com/category.asp?man=ducky"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Ducky's Where to Buy page (ducky.global) lists Overclockers UK, Currys, Amazon UK, CCL, Orbit, Esports Gear and Falcon Computers for the UK. Overclockers UK's Ducky range ('Ducky', 102 results incl. accessories), sorted by price on 18 Oct 2026: cheapest keyboard the Ducky Project D Tinker 65 (pre-built 65%, UK ISO, Cherry MX Red, PBT keycaps) £24.95 (reduced from £44.99), In Stock; cheapest full-size (100%) board the Ducky Origin (UK ISO, Cherry MX Silent Red, Vintage) £63.95, In Stock; One 3 Classic TKL £69.70; One 3 Classic Fullsize £89.69. Currys: Ducky Origin £64.99. The Keyboard Company: Origin Vintage from £82.80."
+  },
+  {
+   "product": "Filco Majestouch-2 Tenkeyless",
+   "also_called": [
+    "Filco Majestouch tenkeyless",
+    "Filco Majestouch TKL",
+    "Filco Majestouch 2 TKL",
+    "Majestouch-2 Tenkeyless",
+    "Filco TKL"
+   ],
+   "category": "general",
+   "product_type": "keyboard",
+   "page": "https://www.keyboardco.com/keyboard/filco-majestouch-2-tenkeyless-nkr-mechanical-keyboards.asp",
+   "shop": "The Keyboard Company",
+   "sources": [
+    "https://www.keyboardco.com/keyboard/filco-majestouch-2-tenkeyless-nkr-mechanical-keyboards.asp",
+    "https://www.keyboardco.com/category.asp?man=filco",
+    "https://www.keyboardco.com/keyboard/filco-majestouch-3-tenkeyless-double-shot-keyboards.asp"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "The Keyboard Company (UK keyboard specialist), 18 Oct 2026: 'UK Filco Majestouch-2, Tenkeyless, MX Brown Tactile, Keyboard' (FKBN88M/UKB2) £120.00 (£100.00 ex VAT), 'Lots In Stock', Add to Cart, UK stock and despatch (Blue, Brown, Silent Red; UK, US and EU layouts). The newer 'UK Filco Majestouch 3 Tenkeyless MX Brown Tactile Double Shot Keyboard' (same case, renewed board) £140.00, Lots In Stock. Other Majestouch TKLs there: Ninja Majestouch-2 TKL from £125, Ninja Majestouch 2 HAKUA TKL (US) from £100, Majestouch 3 NINJA/HAKUA TKL from £150."
+  },
+  {
+   "product": "Das keyboard line",
+   "also_called": [
+    "Das Keyboard",
+    "Das Keyboards",
+    "Das keyboards",
+    "Das Keyboard keyboard line"
+   ],
+   "category": "general",
+   "product_type": "keyboard",
+   "page": "https://www.keyboardco.com/category.asp?man=daskeyboard",
+   "shop": "The Keyboard Company",
+   "sources": [
+    "https://www.keyboardco.com/category.asp?man=daskeyboard",
+    "https://www.daskeyboard.com/where-to-buy",
+    "https://www.keyboardco.com/keyboard/das-x50q-smart-rgb-mechanical-gaming-pc-keyboard.asp"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Das Keyboard's 'Where to Buy' page names The Keyboard Company (keyboardco.com) as its United Kingdom seller. The Keyboard Company's Das Keyboard range, 18 Oct 2026: cheapest the 'UK Das X50Q Smart RGB Tactile Mechanical Gaming PC Keyboard' (full size, DKGKX50P0GZS0UKX) £72.00 (£60.00 ex VAT), '1 In Stock', Add to Cart; then Prime 13 and Das Keyboard 4 Root from £109, 4C TKL and 5QS from £119, 4 Professional from £139, 4Q from £150, 6 Professional and MacTigr from £169, 5QS Mark II from £209."
+  },
+  {
+   "product": "KTC M27P6",
+   "also_called": [
+    "M27P6",
+    "KTC M27P6 Mini LED"
+   ],
+   "category": "general",
+   "product_type": "monitor",
+   "page": "https://www.amazon.co.uk/dp/B0FGXJQPXL",
+   "shop": "Amazon UK",
+   "sources": [
+    "https://www.amazon.co.uk/dp/B0FGXJQPXL",
+    "https://uk.ktcplay.com/",
+    "https://us.ktcplay.com/"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "KTC has no UK store: uk.ktcplay.com redirects to its US store ('Pro Gaming, Office & Portable Monitors | KTC', ships to the US, Canada and Australia only). Amazon UK (London postcode, 18 Oct 2026): 'KTC MiniLED Gaming Monitor 27 Inch | 4K@160Hz, FHD@320Hz Seamless Switching | 1152 Zoll Local Dimming | VESA Display HDR1400 | ... | White | M27P6' £399.99, In stock, Add to basket, sold by Ktcmonitor-Official and dispatched from Amazon."
+  },
+  {
+   "product": "Samsung Odyssey G7 G70F",
+   "also_called": [
+    "Odyssey G7 G70F",
+    "Samsung G70F",
+    "Samsung Odyssey G7 (G70F)",
+    "LS27FG702EUXXU"
+   ],
+   "category": "general",
+   "product_type": "monitor",
+   "page": "https://www.samsung.com/uk/monitors/gaming/odyssey-g7-g70f-27-inch-dual-mode-4k-180hz-fhd-360hz-ls27fg702euxxu/",
+   "shop": "Samsung UK",
+   "sources": [
+    "https://www.samsung.com/uk/monitors/gaming/odyssey-g7-g70f-27-inch-dual-mode-4k-180hz-fhd-360hz-ls27fg702euxxu/",
+    "https://www.samsung.com/uk/monitors/gaming/"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Samsung UK, 18 Oct 2026: 'Buy the 27 Inch Odyssey G7 4K Gaming Monitor | Samsung UK': '27\" Odyssey G7 G70F 4K Dual Mode 360Hz Gaming Monitor' (4K 180Hz / FHD 360Hz), Black, LS27FG702EUXXU, £429.00, Add to basket; 27-inch is the only size offered."
+  },
+  {
+   "product": "Kobo e-reader line",
+   "also_called": [
+    "Kobo",
+    "Kobo e-readers",
+    "Kobo eReaders",
+    "Kobo ereader",
+    "Rakuten Kobo"
+   ],
+   "category": "general",
+   "product_type": "e-reader",
+   "page": "https://www.kobo.com/gb/en/ereaders",
+   "shop": "Kobo",
+   "sources": [
+    "https://www.kobo.com/gb/en/ereaders",
+    "https://ereader.kobo.com/en-gb/products/kobo-clara-bw.js",
+    "https://ereader.kobo.com/en-gb/collections/ereaders/products.json?limit=250",
+    "https://www.johnlewis.com/search?search-term=kobo",
+    "https://www.currys.co.uk/search?q=kobo",
+    "https://www.currys.co.uk/products/kobo-clara-bw-6-ereader-16-gb-black-10263289.html"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Kobo's UK range ('Kobo eReaders | Rakuten Kobo United Kingdom', read in a browser on 18 Oct 2026), 5 devices: Kobo Clara BW £149.99, Clara Colour £169.99, Libra Colour £239.99, Sage £259.99 (sold out in Kobo's UK store data), Elipsa 2E £349.99. Cheapest seen: Currys 'Buy KOBO Clara BW 6\" eReader - 16 GB, Black | Currys' £149.00, Add to basket (Currys also has Clara Colour £169.99, Libra Colour £239.00). John Lewis: 'Sorry, we don't stock kobo.' Kobo's product pages redirect non-UK visitors to its US store, so the UK range page is the link."
+  },
+  {
+   "product": "PocketBook InkPad",
+   "also_called": [
+    "Pocketbook InkPad",
+    "Pocketbook Inkpad",
+    "PocketBook InkPad series"
+   ],
+   "category": "general",
+   "product_type": "e-reader",
+   "page": "https://pocketbook.uk/e-readers#inkpad",
+   "shop": "PocketBook",
+   "sources": [
+    "https://pocketbook.uk/e-readers#inkpad",
+    "https://pocketbook.uk/e-readers",
+    "https://www.amazon.co.uk/dp/B0CLPFTFYD",
+    "https://www.amazon.co.uk/dp/B0C2QM93N5",
+    "https://www.amazon.co.uk/dp/B0C62QGL8H",
+    "https://www.currys.co.uk/search?q=pocketbook+inkpad"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "No single model: PocketBook UK's e-readers page ('Buy PocketBook E-Book Readers in the United Kingdom from Our Official Partners', no prices; sells via Currys and Amazon UK) lists the InkPad Series as the InkPad 4 (7.8in mono, IPX8) and InkPad Color 3 (7.8in colour), with InkPad One / Eo 2 among its 10.3in e-note devices. 18 Oct 2026: the InkPad Color 3 (the listing PocketBook UK links) is on Amazon UK at £289.00, In stock, sold by Pocketbook Readers GmbH and dispatched from Amazon. The mono InkPad 4 isn't on sale: both Amazon UK listings (B0C2QM93N5, B0C62QGL8H) are 'Currently unavailable' and Currys has none. Currys: InkPad One £269.00 (third-party delivery), InkPad Color 3 £299.00 (out of stock), InkPad Eo Color £499.00."
+  },
+  {
+   "product": "EMEET webcam line",
+   "also_called": [
+    "EMEET",
+    "Emeet",
+    "EMEET webcams",
+    "Emeet webcam"
+   ],
+   "category": "general",
+   "product_type": "webcam",
+   "page": "https://emeet.com/en-uk/collections/webcam",
+   "shop": "EMEET",
+   "sources": [
+    "https://emeet.com/en-uk/collections/webcam",
+    "https://emeet.com/en-uk",
+    "https://emeet.com/en-uk/collections/webcam/products.json?limit=250",
+    "https://emeet.com/en-uk/products/webcam-c950"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "EMEET's own store has a UK version (emeet.com/en-uk, prices in GBP, ships to the UK). Its 'Webcams | EMEET' range (17 products, 18 Oct 2026): cheapest 'EMEET SmartCam C950 | Full HD 1080P Webcam', C950 1080P standalone £23.00, Add to cart (C950 4K £39.99); then SmartCam C960 £37, C960 2K £46, S600 £47.99, C960 4K £56, C60E 4K Dual £62.99, S600L £74, PIXY £83, C980 Pro £83, PIXY Wireless £184 (plus 5/10-packs)."
+  },
+  {
+   "product": "Lenovo Legion 5 Gen 10 (15\" AMD)",
+   "also_called": [
+    "Lenovo Legion 5a Gen 10",
+    "Legion 5a Gen 10",
+    "Legion 5 Gen 10 (15\" AMD)",
+    "Lenovo Legion 5 Gen 10 AMD"
+   ],
+   "category": "general",
+   "product_type": "laptop",
+   "page": "https://www.lenovo.com/gb/en/p/laptops/legion-laptops/legion-5-series/lenovo-legion-5-gen-10-15-inch-amd/len101g0047",
+   "shop": "Lenovo UK",
+   "sources": [
+    "https://www.lenovo.com/gb/en/p/laptops/legion-laptops/legion-5-series/lenovo-legion-5-gen-10-15-inch-amd/len101g0047"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "The 'Legion 5a Gen 10' is Lenovo's 2025 AMD Legion 5 15-inch, which Lenovo sells as 'Legion 5 Gen 10 (15\" AMD)' (from knowledge; a Gen 11 followed in 2026). Lenovo UK, read in a browser on 18 Oct 2026 ('Legion 5 Gen 10 (AMD) | 15'' Robust Laptop for Gaming & Streaming | Lenovo UK'): Starting At £1,780.00; 3 models: £1,780.00 inc. VAT (Ryzen AI 7 350, RTX 5060 8GB, 16GB, 512GB, 15.1in 2560x1600 OLED 165Hz, part 83F1CTO1WWGB3, 'Ships in 3 days', Add To Cart), £2,029.99 (32GB) and £2,260.00 (32GB, 1TB, Windows Pro)."
+  },
+  {
+   "product": "Rabbit Air",
+   "also_called": [
+    "RabbitAir",
+    "Rabbit air",
+    "rabbit air",
+    "Rabbitair"
+   ],
+   "category": "general",
+   "product_type": "air purifier",
+   "page": "https://rabbitair.com/collections/shop-air-purifiers",
+   "shop": "Rabbit Air",
+   "sources": [
+    "https://rabbitair.com/collections/shop-air-purifiers",
+    "https://rabbitair.com/products/minusa2-air-purifier",
+    "https://rabbitair.com/products/minusa2-air-purifier-220v",
+    "https://rabbitair.com/pages/canadian-customers",
+    "https://rabbitair.com/policies/shipping-policy",
+    "https://www.rabbitair.co.uk/",
+    "https://www.amazon.co.uk/s?k=rabbit+air+purifier",
+    "https://www.amazon.co.uk/dp/B0040HKFUO"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Rabbit Air (Los Angeles) sells from its US store in dollars: 'Shop Air Purifiers - Rabbit Air' (18 Oct 2026): BioGS 2.0 from $369.95, MinusA2 from $599.95, A3 from $749.95 (special editions to $769.95). The MinusA2 runs on 120V AC 60Hz; a 220V MinusA2 (SPA-700M, $599.95) is rated 240V AC 60Hz. Its country links are Japan (rabbitair.co.jp) and Canada (prices in USD, UPS International); rabbitair.co.uk redirects to the US store, and asked for with the UK as its country the store still answers as US/USD (no UK market). Amazon UK has one listing, the US MinusA2 SPA-780A (120 V) from a third-party seller ('All is well uk'), £1,175.09 as shown to this reader, 10 left: a US-spec electrical import, so not counted as sold in the UK."
+  },
+  {
+   "product": "Alen BreatheSmart",
+   "also_called": [
+    "Alen Breathsmart",
+    "Alen Breathesmart",
+    "Alen Breathe Smart",
+    "BreatheSmart",
+    "Alen BreatheSmart air purifier"
+   ],
+   "category": "general",
+   "product_type": "air purifier",
+   "page": "https://alen.com/collections/air-purifiers",
+   "shop": "Alen",
+   "sources": [
+    "https://alen.com/collections/air-purifiers",
+    "https://alen.com/products/breathesmart-25i",
+    "https://support.alen.com/hc/en-us/articles/360056504051-Free-FedEx-Ground-Shipping",
+    "https://www.amazon.co.uk/s?k=alen+breathesmart",
+    "https://www.amazon.co.uk/dp/B0G1T353JP"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Alen (Austin, Texas; the maker writes BreatheSmart) sells the range from its US store in dollars: 'Home Air Purifiers - HEPA Air Cleaners for Every Room | Alen' (18 Oct 2026): BreatheSmart 25i from $179, 35i from $289, 45i from $449, 75i from $799. Its help page 'Free FedEx Ground Shipping' covers the continental US, with extra charges for Alaska, Hawaii and Puerto Rico; the store has no UK market. No UK shop found with a UK model: Amazon UK has only the US BreatheSmart 25i imported by Amazon US through its global store ('US imports may differ from local products'), £182.16 including £34.65 estimated import charges, in stock; a US-spec electrical import, so counted as not sold in the UK (the 25i runs from a 24V external power supply; its mains rating isn't stated)."
+  },
+  {
+   "product": "L.L.Bean 280-Thread-Count Pima Cotton Percale Sheet Set",
+   "also_called": [
+    "L.L.Bean Percale Pima Cotton",
+    "L.L.Bean Pima Cotton Percale",
+    "L.L.Bean pima percale sheets",
+    "LL Bean Pima Percale",
+    "LL Bean pima cotton percale sheets",
+    "L.L. Bean Pima Percale Sheets"
+   ],
+   "category": "general",
+   "product_type": "bed sheets",
+   "page": "https://global.llbean.com/llb/shop/113446.html",
+   "shop": "L.L.Bean",
+   "sources": [
+    "https://global.llbean.com/llb/shop/113446.html",
+    "https://global.llbean.com/llb/shop/113447.html",
+    "https://global.llbean.com/"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "L.L.Bean sells to UK shoppers from its own international store (global.llbean.com, run with Global-e): with the UK as the shipping country it prices in pounds, 'Duties & Taxes included in product pricing', free shipping on orders over £75 (its Canadian store's Ship To dialog sends other countries to these international sites). '280-Thread-Count Pima Cotton Percale Sheet Set | Sheets | L.L.Bean International' (18 Oct 2026): Twin set £140, Full £160, Queen £180 (King and Cal King also offered), 11 colours, ADD TO BAG shown; 100% long-staple pima cotton, flat and fitted sheet and two pillowcases (twin: one). US bed sizes (twin fitted 39\"x76\"). The printed version is £170 (Twin)."
+  },
+  {
+   "product": "L.L.Bean flannels bed sheets line",
+   "also_called": [
+    "L.L.Bean flannels",
+    "L.L.Bean flannel sheets",
+    "LL Bean flannel sheets",
+    "LL Bean flannels",
+    "L.L. Bean flannel sheets"
+   ],
+   "category": "general",
+   "product_type": "bed sheets",
+   "page": "https://global.llbean.com/llb/shop/516760/",
+   "shop": "L.L.Bean",
+   "sources": [
+    "https://global.llbean.com/llb/shop/516760/",
+    "https://global.llbean.com/llb/shop/78401.html",
+    "https://global.llbean.com/llb/shop/121370.html",
+    "https://global.llbean.com/llb/shop/83508.html"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "L.L.Bean's international store with the UK as the shipping country (pounds, duties and taxes included): 'Flannel Bedding | L.L.Bean International' (18 Oct 2026) lists the Ultrasoft Comfort Flannel Sheet Set £140-£190, Ultrasoft Comfort Flannel Sheet, Flat £58-£79 and Fitted £58-£79, check, stripe and plaid Ultrasoft sets, and flannel collections (Heritage Chamois, Organic, Botanical Floral, Evergreen, Birch Floral and others, whose lowest prices are pillowcases). Cheapest full-size flannel sheet: 'Ultrasoft Comfort Flannel Sheet, Flat', Twin, £58, ADD TO BAG shown. Twin sets start at £130 (Botanical Floral Flannel Sheet Collection); Organic Flannel Twin set £135 (reduced from £160, ships by 24 Nov). US bed sizes."
+  },
+  {
+   "product": "Ralph Lauren towel",
+   "also_called": [
+    "Ralph Lauren towels",
+    "Ralph Lauren Home towels",
+    "Ralph Lauren bath towels",
+    "Polo Ralph Lauren towels"
+   ],
+   "category": "general",
+   "product_type": "towel",
+   "page": "https://www.johnlewis.com/ralph-lauren-polo-player-towels/andover/p114958009",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/ralph-lauren-polo-player-towels/andover/p114958009",
+    "https://www.ralphlauren.co.uk/",
+    "https://www.ralphlauren.co.uk/en/home/bath/towels-bath-mats/50402",
+    "https://www.johnlewis.com/search?search-term=ralph%20lauren%20towel",
+    "https://www.johnlewis.com/ralph-lauren-dulaney-towels/sheer-blue/p114958021",
+    "https://www.flannels.com/avenue-bath-towel-850947"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Ralph Lauren Home towels are sold in the UK. Ralph Lauren UK's own home menu (ralphlauren.co.uk, 18 Oct 2026) has Bath > 'Towels & Bath Mats' (the range page given), but that page answered 'Access Denied' to this reader, so its prices weren't read. John Lewis: 'Ralph Lauren Polo Player Bath Towel, Andover' (70 x 140cm) £49.00, 'Currently in stock online', Add to basket (bath sheet £69.00; all 7 colours in stock); Dulaney Towels £69-£99; Polo Pony Jacquard Beach Towel £98-£139. Flannels lists the Ralph Lauren Home RL Avenue Towel (hand towel, bath towel, sheet) at £49 (a £69 price also shown), Add to bag. From price: the Polo Player bath towel at John Lewis, £49. (Reviewed 18 Oct 2026: linked to the John Lewis page read, since Ralph Lauren UK refused this reader.)"
+  },
+  {
+   "product": "Nomadix towel",
+   "also_called": [
+    "Nomadix towels",
+    "Nomadix",
+    "nomadix towel"
+   ],
+   "category": "general",
+   "product_type": "towel",
+   "page": "https://wildbounds.com/collections/nomadix",
+   "shop": "WildBounds",
+   "sources": [
+    "https://wildbounds.com/collections/nomadix",
+    "https://wildbounds.com/products/ultralight-towel-agua-blue",
+    "https://wildbounds.com/products/original-towel-baja-aqua",
+    "https://myoutdoors.co.uk/gear-news/make-waves-with-nomadix"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Nomadix (US) towels are sold in the UK by WildBounds, the British adventure retailer that launched the range here (MyOutdoors, 13 May 2026). 'Nomadix - WildBounds' (18 Oct 2026; free UK delivery over £50), all reduced: Ultralight Towel £17.95 (was £29.95; 137.2 x 76.2cm, 227g), Original Towel £23.95 (was £39.95; 76 x 184cm, 450g), Bandana Towel £14.95 and Tiny Towel 3-Pack £13.95 (small towels). From price: Ultralight Towel, Agua Blue, £17.95, ADD TO BAG, available in the store's data (a sale price). The Original Towel is the brand's signature towel."
+  },
+  {
+   "product": "Pottery Barn towel",
+   "also_called": [
+    "Pottery Barn towels",
+    "Pottery Barn bath towels"
+   ],
+   "category": "general",
+   "product_type": "towel",
+   "page": "https://www.potterybarn.co.uk/bedding/shop-all-towels-linens/bath-linens",
+   "shop": "Pottery Barn UK",
+   "sources": [
+    "https://www.potterybarn.co.uk/bedding/shop-all-towels-linens/bath-linens",
+    "https://www.potterybarn.co.uk/",
+    "https://www.potterybarn.co.uk/hydrocotton-organic-bath-towel",
+    "https://www.potterybarn.co.uk/pb-classic-organic-towels",
+    "https://www.hometextilestoday.com/international/website-pop-up-give-uk-shoppers-access-to-pottery-barn"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Pottery Barn has its own UK store (potterybarn.co.uk, Williams-Sonoma; launched in September 2025 per Home Textiles Today), in pounds with UK delivery. 'Bath Towels | Pottery Barn UK' (18 Oct 2026): Hydrocotton Quick-Dry Towel £9.60-£68 (mid season sale), Classic Organic Towel £8.95-£82 (clearance), towel bundles £54.40-£82; the lowest figures are face and hand towels. Bath towels (71 x 140cm): Hydrocotton Quick-Dry £34.00 in most colours, Porcelain Blue £27.20 (was £34.00), 'In Stock & Ready to Ship', Add to cart; Classic Organic bath towel £39.00 (4 colours, in stock). From price: the Hydrocotton Quick-Dry bath towel in Porcelain Blue, £27.20 (a sale price; usually £34)."
+  },
+  {
+   "product": "Outlier Grid Linen Towel",
+   "also_called": [
+    "Grid Linen towel from Outlier",
+    "Outlier Grid Linen towel",
+    "Outlier grid linen towel",
+    "Outlier linen towel",
+    "Grid Linen Towel"
+   ],
+   "category": "general",
+   "product_type": "towel",
+   "page": "https://outlier.nyc/products/grid-linen-towel",
+   "shop": "Outlier",
+   "sources": [
+    "https://outlier.nyc/products/grid-linen-towel",
+    "https://outlier.nyc/pages/information",
+    "https://outlier.nyc/search?q=towel",
+    "https://www.amazon.co.uk/s?k=outlier+grid+linen+towel"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Still listed in Outlier's own New York store, under Classics: 'OUTLIER - Grid Linen Towel' (18 Oct 2026), 100% linen box (waffle) weave from Lithuania, made in Manhattan, L (55 x 36in) $75 and XL (75 x 56in) $110; every colour (Gray Rock, Gray/Blue/Red/Tan Vibes) shows Out of Stock with 'notify me about restocks', so out of stock for now, not discontinued. Outlier prices only in US dollars ('Prices are displayed in U.S. Dollars') and ships abroad for $35 plus duties and taxes ('We ship to the US, Canada, Europe, Australia and Japan all the time'), so UK buyers can order from the US, but no UK seller was found (none on Amazon UK): counted as not sold in the UK, as for other dollar-only US stores."
+  },
+  {
+   "product": "Dunlopillo pillow line",
+   "also_called": [
+    "DUNLOPILLOW pillow line",
+    "DUNLOPILLOW pillow",
+    "Dunlopillow pillow",
+    "Dunlopillow pillows",
+    "Dunlopillo pillow",
+    "Dunlopillo pillows"
+   ],
+   "category": "general",
+   "product_type": "pillow",
+   "page": "https://www.bensonsforbeds.co.uk/brands/dunlopillo/all-dunlopillo/",
+   "shop": "Bensons for Beds",
+   "sources": [
+    "https://www.bensonsforbeds.co.uk/brands/dunlopillo/all-dunlopillo/",
+    "https://www.bensonsforbeds.co.uk/products/dunlopillo-hybrid-side-sleeper-pillow/STK782201/",
+    "https://www.dunlopillo.co.uk/",
+    "https://www.amazon.co.uk/s?k=dunlopillo+pillow"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "The brand is Dunlopillo (the answer's 'DUNLOPILLOW' is a writer's spelling). dunlopillo.co.uk does resolve (Relyon Beds Ltd, 'Mattress Manufacturer | Dunlopillo'): mattresses, bases, headboards and fabrics, no pillows, and a 'Find a stockist' page. Bensons for Beds (170 UK stores) sells the pillows: 'Dunlopillo Pillow Collection | Dunlopillo Latex Pillows | Bensons for Beds' (18 Oct 2026): Super Comfort Pillow £109.99, Serenity Comfort Pillow £109.99, Hybrid Side Sleeper Pillow £64.99 and Hybrid Front & Back Sleeper Pillow £64.99 (beside Dunlopillo mattresses). 'Dunlopillo Hybrid Side Sleeper Pillow' £64.99, Add to basket, delivery from 7 days (£10), a Bensons exclusive (honeycomb latex and hollowfibre). Amazon UK's search shows no Dunlopillo pillows."
+  },
+  {
+   "product": "Kirby vacuum cleaner line",
+   "also_called": [
+    "Kirby vacuum",
+    "Kirby vacuums",
+    "Kirby vacuum cleaner",
+    "Kirby vacuum cleaners",
+    "Kirby"
+   ],
+   "category": "general",
+   "product_type": "vacuum cleaner",
+   "page": "https://kirby.com/products/kirby-avalir-platinum-vacuum-cleaner",
+   "shop": "Kirby",
+   "sources": [
+    "https://kirby.com/products/kirby-avalir-platinum-vacuum-cleaner",
+    "https://kirby.com/products/kirby-vacuum-belt-uk",
+    "https://kirby.com/pages/contact",
+    "https://kirby.com/pages/find-a-distributor",
+    "https://kirby.com/policies/shipping-policy",
+    "https://www.amazon.co.uk/s?k=kirby+avalir+vacuum"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Kirby sells its vacuums through independent authorised distributors with in-home demonstrations, not shops. Its own store has a UK market: with the United Kingdom as the store's country (18 Oct 2026), 'Kirby Avalir Platinum Vacuum Cleaner - The Kirby Company' shows £3195.00 for each package (the vacuum, the Home Cleaning System and the Ultimate system) with 'Schedule a Demo' and no basket button (US store: $2,599 to $3,349); UK-only spares sell online there (Kirby Vacuum Belt UK £20.00, Add to cart), while the Signature Series vacuums (V530, C530) aren't offered to the UK (404). Kirby's contact page lists a UK consumer line (0800-328-1247). Caveats: the page's specs read 110/120 volt (the US text; no UK machine seen), the distributor finder takes US cities or ZIP codes, and the shipping policy only mentions the contiguous US. Amazon UK has only Kirby bags, belts and parts. From price: the Avalir Platinum at Kirby's UK price, £3,195, bought through a distributor's demonstration."
+  },
+  {
+   "product": "Linoto bed sheets line",
+   "also_called": [
+    "Linoto sheets",
+    "Linoto linen sheets",
+    "Linoto bed sheets"
+   ],
+   "category": "general",
+   "product_type": "bed sheets",
+   "page": "https://www.linoto.com/",
+   "shop": "Linoto",
+   "sources": [
+    "https://www.linoto.com/",
+    "https://www.linoto.com/products/belgian-eco-linen-fitted-sheet-eco-natural",
+    "https://www.linoto.com/products/linen-fitted-sheet-organic-ivory",
+    "https://www.linoto.com/products/linen-flat-sheet-white",
+    "https://www.linoto.com/products/cobalt-linen-sheet-set",
+    "https://www.linoto.com/products.json"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Cheaper than the listed £502: with the United Kingdom as the store's country (pounds; 'Linoto Linen Sheets | Linen for Bed, Bath and Home', 18 Oct 2026), single linen sheets start at £191.00: 'Eco Natural Belgian Eco-Linen Fitted Sheet', TwinXL 39\"x80\", 14\" standard depth, Regular price £191.00, Add to cart, estimated shipping in 3-4 weeks; the Organic Ivory Linen Fitted Sheet TwinXL is also £191, and linen flat sheets start at £195 (Twin 70\"x100\", e.g. White). Sheet sets start at £465 (Cobalt Linen Sheet Set, TwinXL); its Queen set is now from £499. Pound prices are the dollar prices converted (rate 0.7615 shown); US bed sizes; ships from the US. The cheapest in-stock sheets were found in the store's product data (cheaper sale sheets are sold out)."
+  },
+  {
+   "product": "MyPillow",
+   "also_called": [
+    "My Pillow",
+    "Mypillow",
+    "My pillow",
+    "MyPillow Premium pillow",
+    "MyPillow Premium Series"
+   ],
+   "category": "general",
+   "product_type": "pillow",
+   "page": "https://www.amazon.co.uk/dp/B0148UVPVA",
+   "shop": "Amazon UK",
+   "sources": [
+    "https://www.amazon.co.uk/dp/B0148UVPVA",
+    "https://www.amazon.co.uk/dp/B09T4WTPXZ",
+    "https://www.amazon.co.uk/sp?seller=A2AUMKCZ73O67Q"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Read with a London delivery postcode (SW1A 1AA), 18 Oct 2026: Amazon UK itself sells and ships 'MyPillow Inc Premium Series Bed Pillow King White Level (Medium)' (B0148UVPVA) at £43.91, Add to basket, with no Global Store or import label, but a far-off delivery estimate: FREE delivery Sunday 27 December, fastest 22-24 December. A UK seller, Stay Safe uk (Talaash Ltd, Mildenhall, Suffolk, per its Amazon seller profile), sells 'MyPillow Premium Bed Pillow Set of 2 Queen Medium' (B09T4WTPXZ) new at £158.24 (£79.12 each), 'Only 9 left in stock', dispatched within two days, delivery 26-31 October. So it is sold new to the UK, not only as a US import."
+  },
+  {
+   "product": "Plume SuperPods",
+   "also_called": [
+    "Plume SuperPod",
+    "Plume Superpods",
+    "Plume pods",
+    "Plume WiFi",
+    "Plume HomePass"
+   ],
+   "category": "general",
+   "product_type": "wifi router",
+   "page": "https://www.plume.com/platform/home",
+   "shop": "Plume",
+   "sources": [
+    "https://www.plume.com/platform/home",
+    "https://www.plume.com/",
+    "https://www.plume.com/homepass",
+    "https://www.plume.com/shop",
+    "https://www.plume.com/superpods",
+    "https://shop.plume.com/",
+    "https://www.amazon.co.uk/s?k=plume+superpod",
+    "https://www.johnlewis.com/search?search-term=plume%20superpod",
+    "https://www.currys.co.uk/search?q=plume+superpod"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Plume no longer sells SuperPods to shoppers: plume.com ('Build Better Connections - Plume', 18 Oct 2026) is aimed at internet providers, and 'Plume Home - Plume' says it is offered by 'hundreds of ISPs ... for subscribers'; the old /homepass address redirects there, /shop and /superpods give 'We can't find the page you're looking for', and shop.plume.com is an empty store (0 products). No UK shop sells them: John Lewis, Currys and Amazon UK searches show no Plume product. The pods come only with an internet provider that uses Plume; I couldn't confirm which UK providers do (web search unavailable). Not on sale to UK shoppers; arguably not sold anywhere at retail now."
+  },
+  {
+   "product": "OtterBox Defender Series",
+   "also_called": [
+    "other box defender",
+    "OtterBox Defender",
+    "Otterbox Defender",
+    "Otter Box Defender",
+    "OtterBox Defender case"
+   ],
+   "category": "general",
+   "product_type": "phone case",
+   "page": "https://www.otterbox.co.uk/collections/defender-series",
+   "shop": "OtterBox UK",
+   "sources": [
+    "https://www.otterbox.co.uk/collections/defender-series",
+    "https://www.otterbox.co.uk/",
+    "https://www.otterbox.co.uk/collections/defender-series/products.json?limit=250",
+    "https://www.otterbox.co.uk/products/iphone-17e-case-iphone-16e-15-14-13-case-defender-series-cas"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "OtterBox's UK store ('OtterBox Europe' at otterbox.co.uk, prices in GBP), Defender Series collection ('Defender Series – OtterBox Europe', 98 products incl. Samsung and Pixel), 18 Oct 2026. iPhone Defender cases in stock: £42.99 for iPhone 17e & 16e/15/14/13 (Foxberry, Forest Ranger, Black; Add to cart), iPhone SE (2nd/3rd gen) & 8/7, iPhone 12/12 Pro, iPhone 15 Pro Max, iPhone 15 Plus/14 Plus and iPhone 16 Plus (Defender Pro for MagSafe); Defender XT £47.99 (iPhone 15 Pro Max, 14 Pro, 16e/15/14/13); Defender Pro and Pro XT £50.99 for iPhone 17, 17 Pro, 17 Pro Max and Air; £59.99 for iPhone 18 Pro and 18 Pro Max (also fit 17 Pro / Pro Max). Sold-out listings: the separate iPhone 11, 14, 14 Pro, 14 Plus, 15 Pro, 12 Pro Max, 12 mini, XR and 8 Plus/7 Plus Defender cases and the older iPhone 13 / 13 Pro Defender XT. No iPhone 16, 16 Pro or 16 Pro Max Defender is listed."
+  },
+  {
+   "product": "Berkey water filter",
+   "also_called": [
+    "Berkey",
+    "Big Berkey",
+    "Berkey filter",
+    "Berkey water filters",
+    "Berkey gravity filter"
+   ],
+   "category": "general",
+   "product_type": "water filter",
+   "page": "https://www.amazon.co.uk/dp/B00CYW3EVO",
+   "shop": "Amazon UK",
+   "sources": [
+    "https://www.amazon.co.uk/dp/B00CYW3EVO",
+    "https://www.amazon.co.uk/s?k=berkey+water+filter",
+    "https://www.amazon.co.uk/s?k=big+berkey",
+    "https://www.amazon.co.uk/sp?seller=A1AS3W8FGN7BF4",
+    "https://www.amazon.co.uk/dp/B0CBVMTYMG",
+    "https://www.amazon.co.uk/dp/B00FQP2CUU",
+    "https://www.amazon.co.uk/dp/B002YRPY94",
+    "https://www.amazon.co.uk/dp/B0HL5C463L",
+    "https://www.amazon.co.uk/dp/B0HHKRMJ1D",
+    "https://www.amazon.co.uk/sp?seller=A2KVF7QXNCLV8H",
+    "https://www.amazon.co.uk/sp?seller=A30DC7701CXIBH",
+    "https://www.berkey.co.uk/",
+    "https://www.johnlewis.com/search?search-term=berkey"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Berkey gravity filters (US) are sold new to UK buyers on Amazon UK (London postcode, 18 Oct 2026). From UK-registered sellers: 'Big Berkey Gravity-Fed Water Filter with 2 Black Berkey Purification Elements' (B00CYW3EVO) £535.78 from MrFatherSeller (MrFather Ltd, Durham), usually dispatched within 5 to 6 days, delivery 30-31 October; 8 other sellers £535.05-£604.56. Cheaper offers are imports through Amazon's Global Store: Big Berkey with 2 Black Berkey elements £342.27 and Travel Berkey £308.10 from Amazon EU (Munich, 'EU products may differ from UK products'); Go Berkey Kit £224.44 and Big Berkey with Phoenix Gravity elements £283.34 from Amazon US ('US imports may differ'). Amazon UK's search for 'berkey water filter' mixes in British Berkefeld systems (e.g. British Berkefeld 6L Ultra Sterasyl £166.95), a different brand (made by Doulton) that isn't Berkey, plus Berkey-compatible elements from other makers. berkey.co.uk answered with a bot check; John Lewis has none. Price given is the Big Berkey from a UK seller."
+  },
+  {
+   "product": "Sennheiser HD 650",
+   "also_called": [
+    "Sennheiser HD650",
+    "HD650",
+    "HD 650",
+    "HD650s",
+    "Senn HD650"
+   ],
+   "category": "general",
+   "product_type": "headphones",
+   "page": "https://uk.sennheiser-hearing.com/products/hd-650",
+   "shop": "Sennheiser UK",
+   "sources": [
+    "https://uk.sennheiser-hearing.com/products/hd-650",
+    "https://uk.sennheiser-hearing.com/products.json?limit=250",
+    "https://www.thomann.co.uk/search_dir.html?sw=sennheiser%20hd%20650",
+    "https://www.thomann.co.uk/sennheiser_hd_650_new_version_2019.htm"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Still sold, not replaced (18 Oct 2026): Sennheiser's own UK store ('Sennheiser HD 650 – Sennheiser UK - Sonova Consumer Hearing UK Limited') £249.99 incl. VAT, Add to Cart; the same store sells the HD 600 £249.99, HD 660S2 £399.99 and a refurbished HD 650 £229.99. Thomann UK ('Sennheiser HD 650 – Thomann UK') £311 incl. VAT, In stock, Add to Basket (B-stock from £267)."
+  },
+  {
+   "product": "Amazon Kindle (2024)",
+   "also_called": [
+    "basic in matcha green",
+    "Kindle basic",
+    "Kindle Basic",
+    "matcha basic",
+    "basic Kindle",
+    "Kindle (2024)",
+    "Kindle 2024",
+    "Kindle Matcha",
+    "Matcha Kindle"
+   ],
+   "category": "general",
+   "product_type": "e-reader",
+   "page": "https://www.amazon.co.uk/dp/B0CP31VPZ1",
+   "shop": "Amazon",
+   "sources": [
+    "https://www.amazon.co.uk/dp/B0CP31VPZ1",
+    "https://www.johnlewis.com/amazon-kindle-2024-ereader-6-high-resolution-illuminated-touch-screen-16gb/matcha-green/p112573562",
+    "https://www.johnlewis.com/search?search-term=kindle",
+    "https://www.amazon.co.uk/dp/B0CP31JRLK",
+    "https://www.amazon.co.uk/dp/B0G4SHPH5K",
+    "https://www.amazon.co.uk/s?k=kindle+oasis",
+    "https://www.amazon.co.uk/b/?node=218876277031",
+    "https://www.argos.co.uk/search/kindle-oasis/",
+    "https://www.currys.co.uk/search?q=kindle+oasis"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "The basic 6in 16GB Kindle in Matcha green, 18 Oct 2026. John Lewis: 'Amazon Kindle (2024) eReader, 6” High Resolution Illuminated Touch Screen, 16GB, Matcha Green' £134.99, 'This version comes with Special Offers' (ads), Add to basket, delivery in 2 to 5 days. Amazon UK (London postcode SW1A 1AA): 'Amazon Kindle 16 GB (2024 model) ... 16 GB – With Ads – Matcha' (B0CP31VPZ1) £134.99, sold by Amazon, Add to basket but delivery 4-6 November; Without Ads – Matcha (B0CP31JRLK) £149.99, 'Only 6 left in stock', delivery 21-22 Oct. Argos: 'Amazon Kindle 2024 6 Inch 16GB Wi-Fi E-Reader - Matcha Green' £134.99 (Add to trolley); Currys: 'AMAZON Kindle 2024 6\" eReader - 16 GB, Green' £134.99. Amazon's pages say there is a newer model: Amazon UK's 'Amazon Kindle 16GB (newest gen)' (B0G4SHPH5K, £149.99 without ads, In stock) comes in Ube, Graphite, Alpine Sky Aluminium and Seaglass Green Aluminium, no Matcha (John Lewis and Currys sell the Kindle (2026) 16GB with ads at £134.99), so Matcha means the 2024 model."
+  },
+  {
+   "product": "JLab earbuds line",
+   "category": "general",
+   "product_type": "earbuds",
+   "page": "https://www.jlab.com/en-gb/collections/earbuds",
+   "shop": "JLab",
+   "sources": [
+    "https://www.jlab.com/en-gb/collections/earbuds",
+    "https://www.jlab.com/en-gb/collections/earbuds?sort_by=price-ascending",
+    "https://www.jlab.com/en-gb/collections/true-wireless-earbuds",
+    "https://www.jlab.com/en-gb/collections/true-wireless-earbuds?sort_by=price-ascending",
+    "https://www.jlab.com/en-gb/products/jbuds2-signature-earbuds-black",
+    "https://www.jlab.com/en-gb/products/jbuds2-signature-earbuds-black.js",
+    "https://www.jlab.com/en-gb/products/go-pop-plus-true-wireless-earbuds-black.js"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "JLab's own UK store (jlab.com/en-gb, region 'United Kingdom | GBP £', 'Free UK Ground Shipping'), 18 Oct 2026. 'Shop JLab Wireless & Wired Earbuds' (96 products) sorted by price: JBuds2 Signature Earbuds (wired) £8.00, JBuds Pro Signature Wired £10.00, Metal Earbuds £15.00, JBuds Pro Wireless Signature £20.00, then the true wireless GO Tones+ and GO Pop+ at £24.99. The JBuds2 page ('JBuds2 Signature Earbuds Black – JLab', 'Signature wired earbuds with ergonomic fit') shows £8.00 and Add to Cart; its store data says available. The true wireless range ('JLab True Wireless Earbuds', 22 products) runs from GO Pop+ / GO Tones+ £24.99 to Epic Lab Edition £199.99; GO Pop+ Black is available at £24.99 (https://www.jlab.com/en-gb/products/go-pop-plus-true-wireless-earbuds-black). If the answer means JLab's wireless earbuds, the from price is £24.99, not £8.00."
+  },
+  {
+   "product": "Shure SE215",
+   "also_called": [
+    "SE215",
+    "SE215s",
+    "Shure SE215s",
+    "Shure SE 215",
+    "SE-215",
+    "Shure SE215-CL"
+   ],
+   "category": "general",
+   "product_type": "earbuds",
+   "page": "https://www.shure.com/en-GB/products/earphones/se215",
+   "shop": "Shure",
+   "sources": [
+    "https://www.shure.com/en-GB/products/earphones/se215",
+    "https://www.amazon.co.uk/s?k=shure+se215",
+    "https://www.amazon.co.uk/dp/B004PO10E2",
+    "https://www.thomann.co.uk/shure_se215_cl.htm"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "18 Oct 2026. Shure UK ('SE215 - Professional Sound Isolating™ Earphones - Shure United Kingdom'): SE215, SKU SE215-CL-EFS, Clear, 64\" or 46\" cable, 'Recommended Retail Price £109.00', Add to Cart (online shop operated by 11ecom). Amazon UK (London postcode SW1A 1AA): 'Shure SE215-CL Sound Isolating Earphones' (B004PO10E2, Clear, wired) £98.00, In stock, shipped and sold by Amazon, delivery 21 Oct; used from £83.93. Thomann UK: 'Shure SE215-CL Bundle' (with a case) £106, in stock; that page gives the SE215 Pro CL alone at £98."
+  },
+  {
+   "product": "Glorious GMMK Pro",
+   "also_called": [
+    "GMMK Pro",
+    "GMMK PRO",
+    "Glorious GMMK PRO",
+    "GMMK Pro 75%",
+    "Glorious GMMK Pro 75%"
+   ],
+   "category": "general",
+   "product_type": "keyboard",
+   "page": "https://www.gloriousgaming.com/en-uk/products/glorious-gmmk-pro-75-barebone-black",
+   "shop": "Glorious",
+   "sources": [
+    "https://www.gloriousgaming.com/en-uk/products/glorious-gmmk-pro-75-barebone-black",
+    "https://www.gloriousgaming.com/en-uk/collections/keyboards",
+    "https://www.gloriousgaming.com/en-uk/products/glorious-gmmk-pro-75-barebone-black.js",
+    "https://www.gloriousgaming.com/en-uk/pages/the-glorious-distributors",
+    "https://glorious.ladesk.com/907119-Does-Glorious-Ship-to-My-Country",
+    "https://www.amazon.co.uk/s?k=glorious+gmmk+pro",
+    "https://www.amazon.co.uk/dp/B09VCCMYZ3"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Still sold new, not replaced: Glorious's UK store (gloriousgaming.com/en-uk, GBP), 18 Oct 2026, sells the original 'GMMK PRO Barebones 75%' ('GMMK PRO: Customizable Mechanical Gaming Keyboard 75%') at £139.99 (regular £199.99), Add to Cart, with all four variants (Black Slate or White Ice, ANSI or ISO) available in its store data. The GMMK 3 PRO is sold beside it (Barebones £179.99-£229.99, Prebuilt £229.99-£269.99, Prebuilt Wireless £289.99). Glorious's help page 'Does Glorious Ship to My Country?' excludes only the countries it lists, not the UK; its UK authorised resellers are Amazon UK, Currys and Overclockers. Amazon UK (London postcode) also has the prebuilt 'GLORIOUS GMMK PRO 75% Custom Mechanical Keyboard (Black)', UK layout (B09VCCMYZ3), new at £79.99 (RRP £299.99), 'Only 2 left in stock', sold by DISTRIBUTING PRODUCTS UK and dispatched by Amazon; its search also shows barebones listings at £72.00-£72.93 with 1-3 left (sellers not checked)."
+  },
+  {
+   "product": "Logitech Brio 4K",
+   "also_called": [
+    "Logitech brio 4k",
+    "Logitech Brio",
+    "Logitech BRIO",
+    "Brio 4K",
+    "Logitech BRIO 4K",
+    "Logitech Brio 4K Ultra HD",
+    "Logitech Brio Ultra HD Pro"
+   ],
+   "category": "general",
+   "product_type": "webcam",
+   "page": "https://www.logitech.com/en-gb/products/webcams/brio-4k-hdr-webcam.html",
+   "shop": "Logitech",
+   "sources": [
+    "https://www.logitech.com/en-gb/products/webcams/brio-4k-hdr-webcam.html",
+    "https://www.logitech.com/en-gb/products/webcams/brio-4k-hdr-webcam.960-001106.html",
+    "https://www.logitech.com/en-gb/products/webcams/brio-4k-hdr-webcam.960-001746.html",
+    "https://www.johnlewis.com/logitech-brio-4k-ultra-hd-webcam-black/p113844400",
+    "https://www.johnlewis.com/search?search-term=logitech%20brio"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "The original Brio, not the MX Brio, 18 Oct 2026. Logitech UK ('Logitech BRIO Webcam with 4K Ultra HD Video & HDR', read in a browser): 'BRIO 4K, Ultra HD webcam with Windows Hello support', £110.99 on sale (from £149.99), 'In stock. Ready to ship', Add to Cart; the old 960-001106 address now opens SKU 960-001746. John Lewis: 'Logitech Brio 4K Ultra HD Webcam, Black' £79.99, Add to basket, delivery in 2-5 days; its specs (4K, up to 90fps, 5x digital zoom, dual omni mics, USB-C, H27 x W102 mm) match Logitech's Brio 4K (4K/30, 1080p/60, 720p/90, 5x zoom). John Lewis lists the MX Brio separately at £189.99."
+  },
+  {
+   "product": "Amazfit Balance 2",
+   "also_called": [
+    "Balance 2",
+    "Amazfit Balance2",
+    "Amazfit Balance 2 smartwatch"
+   ],
+   "category": "general",
+   "product_type": "smartwatch",
+   "page": "https://uk.amazfit.com/products/balance-2",
+   "shop": "Amazfit",
+   "sources": [
+    "https://uk.amazfit.com/products/balance-2",
+    "https://uk.amazfit.com/products/balance-2.js",
+    "https://www.amazon.co.uk/s?k=amazfit+balance+2",
+    "https://www.amazon.co.uk/dp/B0F8HNKK6Z",
+    "https://www.johnlewis.com/search?search-term=amazfit"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "18 Oct 2026. Amazfit's UK store ('Balance 2'): Balance 2, Black, £299.90, Add to cart, available in its store data. Amazon UK (London postcode SW1A 1AA): 'Amazfit Balance 2 Smart Watch 47mm, GPS, 21 Days Battery, Hyrox & Golf Mode' (B0F8HNKK6Z) £299.00, In stock, shipped and sold by Amazon, delivery 21 Oct; the page notes a newer model (Amazon also lists the Amazfit Balance 3 48mm at £369.99 and £449.90). John Lewis doesn't stock Amazfit (its 'amazfit' search shows 0 and falls back to 'amalfi')."
+  },
+  {
+   "product": "Anker Soundcore bluetooth speaker line",
+   "category": "general",
+   "product_type": "bluetooth speaker",
+   "page": "https://www.soundcore.com/uk/collections/speakers",
+   "shop": "soundcore",
+   "sources": [
+    "https://www.soundcore.com/uk/collections/speakers",
+    "https://www.soundcore.com/uk/products/select-4-go-a31x1011"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "soundcore UK ('Bluetooth Speakers - soundcore UK'), 18 Oct 2026, 10 speakers: Select 4 Go £18.96 (was £24.99), soundcore 2 £28.99, soundcore 3 £35.14, Boom Go 3i £37.98, Boom 3i £64.99, Motion+ £69.99, Boom 2 £79.99, Motion X600 £184.21, Boom 2 Plus £199.99, Rave 3S £299.00. The Select 4 Go's own page ('soundcore Select 4 Go | Ultra Portable Bluetooth Speaker, IP67 Waterproof - soundcore UK', read in a browser) shows £24.99 with Add to Cart and Buy Now; the £18.96 needs a £6.03 code (WS24A31X1UKB, 'Ends in 0 Days'), so the from price without a code is £24.99. A single from price is fair: all 10 are Bluetooth speakers and the Select 4 Go is the cheapest."
+  },
+  {
+   "product": "Kobo Libra Colour",
+   "also_called": [
+    "Kobo Libra Color",
+    "Libra Colour",
+    "Libra Color",
+    "Kobo Libra Colour eReader"
+   ],
+   "category": "general",
+   "product_type": "e-reader",
+   "page": "https://ereader.kobo.com/en-gb/products/kobo-libra-colour",
+   "shop": "Kobo",
+   "sources": [
+    "https://ereader.kobo.com/en-gb/products/kobo-libra-colour",
+    "https://www.kobo.com/gb/en/ereaders",
+    "https://uk.kobobooks.com/products/kobo-libra-colour",
+    "https://ereader.kobo.com/en-gb/products/kobo-libra-colour.js",
+    "https://www.currys.co.uk/search?q=kobo",
+    "https://www.currys.co.uk/products/kobo-libra-colour-7-ereader-32-gb-black-10263273.html",
+    "https://www.argos.co.uk/search/kindle-oasis/",
+    "https://www.johnlewis.com/search?search-term=kobo"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "18 Oct 2026. Kobo's UK store ('Kobo Libra Colour | Rakuten Kobo eReader Store United Kingdom', linked from 'Kobo eReaders | Rakuten Kobo United Kingdom'): £239.99, Black or White, Add To Cart, both available in its store data. Currys: 'Buy KOBO Libra Colour 7\" eReader - 32 GB, Black | Currys' £239.00, Add to basket (White also £239.00). Argos: Kobo Libra Colour 32GB Black and White £239.99. John Lewis: 'Sorry, we don't stock kobo.'"
+  },
+  {
+   "product": "Kobo Clara BW",
+   "also_called": [
+    "Clara BW",
+    "Kobo Clara B&W",
+    "Kobo Clara Black and White",
+    "Kobo Clara BW eReader"
+   ],
+   "category": "general",
+   "product_type": "e-reader",
+   "page": "https://ereader.kobo.com/en-gb/products/kobo-clara-bw",
+   "shop": "Kobo",
+   "sources": [
+    "https://ereader.kobo.com/en-gb/products/kobo-clara-bw",
+    "https://www.kobo.com/gb/en/ereaders",
+    "https://uk.kobobooks.com/products/kobo-clara-bw",
+    "https://ereader.kobo.com/en-gb/products/kobo-clara-bw.js",
+    "https://www.currys.co.uk/search?q=kobo",
+    "https://www.currys.co.uk/products/kobo-clara-bw-6-ereader-16-gb-black-10263289.html",
+    "https://www.argos.co.uk/search/kindle-oasis/",
+    "https://www.johnlewis.com/search?search-term=kobo"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "18 Oct 2026. Kobo's UK store ('Kobo Clara BW | Rakuten Kobo eReader Store United Kingdom'): £149.99, Black, Add To Cart, available in its store data. Currys: 'Buy KOBO Clara BW 6\" eReader - 16 GB, Black | Currys' £149.00, Add to basket. Argos: 'Kobo Clara BW 16GB Wi-Fi E-Reader - Black' £149.99 (Add to trolley). John Lewis: 'Sorry, we don't stock kobo.'"
+  },
+  {
+   "product": "Amazon Kindle Colorsoft",
+   "also_called": [
+    "Kindle Colorsoft",
+    "Colorsoft",
+    "Kindle Colorsoft 16GB",
+    "Kindle Colorsoft (2025)",
+    "Kindle ColourSoft"
+   ],
+   "category": "general",
+   "product_type": "e-reader",
+   "page": "https://www.amazon.co.uk/dp/B0CX8MQF7R",
+   "shop": "Amazon UK",
+   "sources": [
+    "https://www.amazon.co.uk/dp/B0CX8MQF7R",
+    "https://www.amazon.co.uk/dp/B0GV642G9D",
+    "https://www.amazon.co.uk/b/?node=218876277031",
+    "https://www.johnlewis.com/search?search-term=kindle",
+    "https://www.currys.co.uk/search?q=kindle+oasis",
+    "https://www.argos.co.uk/search/kindle-oasis/"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "The standard 16 GB Colorsoft, read with a London delivery postcode (SW1A 1AA), 18 Oct 2026. Amazon UK: 'Amazon Kindle Colorsoft 16 GB (2024 model) ... Black' (B0CX8MQF7R) £239.99, In stock, shipped and sold by Amazon, delivery from 19 Oct. John Lewis: 'Amazon Kindle Colorsoft (2025) eReader, 7\" Colour Illuminated Touch Screen, 16GB, Black' £239.99; Currys ('Kindle Colorsoft (2025)') and Argos £259.99. A new generation is on pre-order and is the Colorsoft on Amazon's 'Shop all Kindle' page: 'Amazon Kindle Colorsoft 16 GB (Newest Gen), Now thinner and lighter ... Graphite' (B0GV642G9D) £259.99, 'This item will be released on November 11, 2026. Pre-order now.' The Signature Edition is its own entry (£289.99)."
+  },
+  {
+   "product": "Amazon Kindle Colorsoft Signature Edition",
+   "also_called": [
+    "Kindle Colorsoft Signature Edition",
+    "Colorsoft Signature Edition",
+    "Kindle Colorsoft SE",
+    "Colorsoft SE",
+    "Kindle Colorsoft Signature"
+   ],
+   "category": "general",
+   "product_type": "e-reader",
+   "page": "https://www.amazon.co.uk/dp/B0CX8YKQ2H",
+   "shop": "Amazon UK",
+   "sources": [
+    "https://www.amazon.co.uk/dp/B0CX8YKQ2H",
+    "https://www.amazon.co.uk/dp/B0GV64PVLT",
+    "https://www.amazon.co.uk/b/?node=218876277031",
+    "https://www.johnlewis.com/search?search-term=kindle",
+    "https://www.argos.co.uk/search/kindle-oasis/",
+    "https://www.currys.co.uk/computing/ipad-tablets-and-ereaders/ereaders/amazon?searchTerm=kindle"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Read with a London delivery postcode (SW1A 1AA), 18 Oct 2026. Amazon UK: 'Amazon Kindle Colorsoft Signature Edition 32GB (2024 model) ... Metallic Black' (B0CX8YKQ2H) £289.99, In stock, shipped and sold by Amazon, delivery from 19 Oct. John Lewis ('Kindle Colorsoft Signature Edition (2024) ... 32GB, Black') and Argos ('Amazon Kindle Colorsoft Signature Ed 32 GB E-Reader') also £289.99; Currys lists it too. New generation on pre-order: 'Amazon Kindle Colorsoft Signature Edition 32 GB (Newest Gen), Thinner, new aluminium design ... Fig' (B0GV64PVLT) £289.99, released November 11, 2026."
+  },
+  {
+   "product": "Amazon Kindle Scribe",
+   "also_called": [
+    "Kindle Scribe",
+    "Kindle Scribe (2025)",
+    "Kindle Scribe 2025",
+    "Kindle Scribe 32GB",
+    "Amazon Scribe"
+   ],
+   "category": "general",
+   "product_type": "e-reader",
+   "page": "https://www.amazon.co.uk/dp/B0FC1XB22K",
+   "shop": "Amazon UK",
+   "sources": [
+    "https://www.amazon.co.uk/dp/B0FC1XB22K",
+    "https://www.amazon.co.uk/b/?node=218876277031",
+    "https://www.johnlewis.com/search?search-term=kindle",
+    "https://www.currys.co.uk/search?q=kindle+oasis",
+    "https://www.currys.co.uk/computing/ipad-tablets-and-ereaders/ereaders/amazon?searchTerm=kindle"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Read with a London delivery postcode (SW1A 1AA), 18 Oct 2026. Amazon UK: 'Amazon Kindle Scribe 32 GB (newest generation) — 11\" paper-like display with front light — Thinner, lighter, faster ...' (B0FC1XB22K) £449.00, In stock, shipped and sold by Amazon, 'You’re viewing the newest model of this product'; 64 GB £499.00. Amazon's 'Shop all Kindle' page also lists the Kindle Scribe Without Front Light 16 GB £389.99 and the Kindle Scribe Colorsoft 64 GB £629.99. John Lewis: Kindle Scribe (2025) 32GB £449.99, 64GB £499.99; Scribe without Front Light (2025) 16GB £389.99; Scribe Colorsoft (2025) 32GB £569.99, 64GB £629.99. Currys calls the same models (2026): Scribe 64GB £499.00, Scribe Colorsoft 32GB £569.00."
+  },
+  {
+   "product": "ThinkPad laptop line",
+   "also_called": [
+    "Thinkpad laptop line",
+    "Thinkpad",
+    "ThinkPad",
+    "Thinkpads",
+    "ThinkPads",
+    "Lenovo ThinkPad",
+    "Lenovo Thinkpad",
+    "ThinkPad laptops",
+    "Thinkpad laptops",
+    "Lenovo ThinkPad laptops",
+    "Lenovo Thinkpad laptops"
+   ],
+   "category": "general",
+   "product_type": "laptop",
+   "page": "https://www.lenovo.com/gb/en/c/laptops/thinkpad/",
+   "shop": "Lenovo UK",
+   "sources": [
+    "https://www.lenovo.com/gb/en/c/laptops/thinkpad/",
+    "https://www.lenovo.com/gb/en/c/laptops/thinkpad/?sortBy=priceUp",
+    "https://www.lenovo.com/gb/en/p/laptops/thinkpad/thinkpade/lenovo-thinkpad-e14-gen-7-14-inch-amd-laptop/len101t0133"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Lenovo UK's ThinkPad range page (title 'ThinkPad | Mobile workstations, laptops, & 2-in-1s for your business | Lenovo UK', 63 matching results, series X1, X9, X, T, E, L, P; WebFetch got 403, read in the built-in browser on 18 Oct 2026). Sorted 'Price Low to High' (...?sortBy=priceUp) the cheapest ThinkPad is the ThinkPad E14 Gen 7 (14\" AMD), 'Starting At £1,023.00 inc. VAT'; then E14 Gen 8 (14\" Intel) £1,109.99, E14 Gen 7 (14\" Intel) £1,114.00, T16 Gen 4 £1,227.00, E16 Gen 3 (AMD) £1,239.00. Its own page (title 'ThinkPad E14 Gen 7 (14 inch AMD) | Power-Packed AI-Ready Business Laptop | Lenovo UK') lists 4 models; the cheapest, 'ThinkPad E14 Gen 7 (AMD)' (Ryzen 5 230, Windows 11 Home, 8 GB DDR5, 256 GB SSD, 14\" WUXGA, part 21T0CTO1WWGB4, 'SHIPS IN 3 DAYS', est. delivery 27-29 Oct), shows Web Price £1,134.00 now £1,023.00 (9% off) inc. VAT; the page's JSON-LD offer is GBP 1023, InStock, NewCondition. All Lenovo UK prices include VAT. Lenovo UK sells ThinkPads new, built to order or ready to ship. From price = the E14 Gen 7 (AMD) at £1,023."
+  },
+  {
+   "product": "Lenovo laptop line",
+   "also_called": [
+    "Lenovo laptops",
+    "Lenovo laptop"
+   ],
+   "category": "general",
+   "product_type": "laptop",
+   "page": "https://www.lenovo.com/gb/en/laptops/",
+   "shop": "Lenovo UK",
+   "sources": [
+    "https://www.lenovo.com/gb/en/laptops/",
+    "https://www.lenovo.com/gb/en/laptops/results/?sortBy=priceUp",
+    "https://www.lenovo.com/gb/en/p/laptops/ideapad/ideapad-300/ideapad-slim-3-gen-8-15-inch-amd/82xq01tfuk"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Lenovo UK's laptops range page (title 'Shop a Wide Range of Lenovo Laptops and Notebooks | Lenovo UK'; the /c/laptops/ address redirects to it; brands ThinkPad, ThinkBook, Yoga, IdeaPad, Legion, LOQ and more). WebFetch got 403 for lenovo.com, read in the built-in browser on 18 Oct 2026. Its 'Shop All Lenovo Laptops | Lenovo UK' list (444 matching results) sorted Price Low to High starts with 'IdeaPad Slim 3 15 (R5-Windows 11 Home-8GB-512GB)' (IdeaPad Slim 3 Gen 8, 15.6\" FHD, Ryzen 5, 8 GB, 512 GB, part 82XQ01TFUK): Web Price £699.00 now £599.00 (14% off) inc. VAT, READY TO SHIP, 'Add To Cart', estimated delivery 20/10; its product page JSON-LD is GBP 599, InStock, NewCondition. Next in the list: IdeaPad Slim 3x Gen 11 (15\" Snapdragon) £660.00, (14\") £679.99, IdeaPad Slim 3i 14 (i7, 8GB, 512GB) £699.00. From price = £599 (IdeaPad Slim 3 15, the cheapest full-size laptop listed). Lenovo UK prices include VAT."
+  },
+  {
+   "product": "Framework laptop line",
+   "also_called": [
+    "Framework Laptop",
+    "Framework laptop",
+    "Framework laptops",
+    "Framework Laptops",
+    "Framework Laptop 13",
+    "Framework 13",
+    "Framework Laptop 12",
+    "Framework Laptop 16"
+   ],
+   "category": "general",
+   "product_type": "laptop",
+   "page": "https://frame.work/gb/en",
+   "shop": "Framework",
+   "sources": [
+    "https://frame.work/gb/en",
+    "https://frame.work/gb/en/laptop12",
+    "https://frame.work/gb/en/laptop13",
+    "https://frame.work/gb/en/products/laptop12-diy-intel-series3/configuration/new",
+    "https://frame.work/gb/en/products/laptop12-diy-intel-13gen/configuration/new",
+    "https://frame.work/gb/en/products/laptop13-diy-amd-ai300/configuration/new",
+    "https://frame.work/gb/en/marketplace/laptops",
+    "https://knowledgebase.frame.work/what-countries-and-regions-do-you-ship-to-r1899ikiO"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Framework sells to the UK: it has a UK store in pounds (frame.work/gb/en, title 'Framework | Framework Computer | Modular Laptops & PCs You Can Repair', footer '© 2026 Framework Computer UK Ltd', locale 'United Kingdom (UK)', GBP), and its Knowledge Base article 'What countries and regions do you ship to?' (dated April 29 2026) lists 'United Kingdom' among the countries Framework products ship to (Jersey Island is listed there as not available). Range on the UK page: Laptop 12, Laptop 13 Pro, Laptop 13, Laptop 16 (plus a Desktop), each with 'Configure now'; the marketplace page 'Framework | Framework Marketplace | Framework Laptops' shows 17 laptop results. Prices read in the UK configurators (18 Oct 2026): Framework Laptop 12 DIY Edition (13th Gen Intel Core) 'Starting at £479.00, was £499' (i3-1315U £479, i5-1334U £579), 'Add to Bag', 'Ships within 5 business days', free shipping on laptop orders, 30-day returns; the £479 is the base system, DIY Edition memory/storage/OS are separate options (16 GB DDR5 +£250, 8 GB +£160 out of stock, or 'None (bring your own)'). Laptop 12 (Intel Core Series 3) 'Starting at £549.00' (Core 3 304) is pre-order only, batches shipping in Dec (Oct and Nov batches sold out). Laptop 13 DIY Edition (AMD Ryzen AI 300) 'Starting at £849.00, was £899' (Ryzen AI 5 340; AI 7 350 £1,129; AI 9 HX 370 £1,489), 'Add to Bag'. Laptop 13 Pro and Laptop 16 prices not read. From price = £479 for the Laptop 12 (a 12.2\" convertible); the cheapest 13\" laptop is the Laptop 13 at £849."
+  },
+  {
+   "product": "Asus Zenbook laptop line",
+   "also_called": [
+    "Asus zenbook",
+    "ASUS Zenbook",
+    "Asus Zenbook",
+    "Zenbook",
+    "ASUS zenbook",
+    "Asus zenbook laptops",
+    "ASUS Zenbook laptops"
+   ],
+   "category": "general",
+   "product_type": "laptop",
+   "page": "https://www.asus.com/uk/laptops/for-home/zenbook/",
+   "shop": "asus.com",
+   "sources": [
+    "https://www.asus.com/uk/laptops/for-home/zenbook/",
+    "https://www.asus.com/uk/laptops/for-home/zenbook/filter?Series=Zenbook&SubSeries=Zenbook-S,Zenbook,Zenbook-Duo",
+    "https://uk.store.asus.com/asus-zenbook-14-ux3480-snapdragon-copilot-pc-37959.html",
+    "https://www.currys.co.uk/search?q=asus%20zenbook"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "ASUS UK's Zenbook range page (title 'ASUS Zenbook Best Lightweight Laptops｜ASUS UK') shows 'ASUS eShop price starting at' £799.99 for the Zenbook sub-range, £1,429.99 for Zenbook S and £1,609.99 for Zenbook Duo (read in the built-in browser, 18 Oct 2026). Its full Zenbook list ('Filter results: 11 Results', 10 in stock in the ASUS eShop) starts with 'ASUS Zenbook 14 (UX3480, Snapdragon); Copilot+ PC' at £799.99; the others start at £1,299.99 (Zenbook 14 Intel, A14 £1,299.99 was £1,599.99), Zenbook 14 AMD £1,399.99, S14 £1,429.99, S16 £1,699.99, A16 £2,099.99, DUO £2,399.99. The cheapest model's page on the ASUS UK eShop (uk.store.asus.com, which says FiveTech Ltd. is the authorized reseller) shows 'ASUS Zenbook 14 (UX3480, Snapdragon); Copilot+ PC', Snapdragon X X1 26 100, 8 GB LPDDR5X, 256 GB SSD, 14\" WUXGA OLED, Zabriskie Beige, model UX3480QA-U1160W, £799.99, 'Add to Cart', free shipping over £150, delivery 1-2 working days (page metadata price 799.99 GBP). Currys' 'asus zenbook' search (225 items; first 20 read, not price-sorted) starts at £999 (Zenbook 14 OLED, Ryzen AI 5, 1 TB). From price = £799.99."
+  },
+  {
+   "product": "Pixel phone line",
+   "also_called": [
+    "Google Pixel",
+    "Google Pixel phone",
+    "Google Pixel phones",
+    "Pixel phone",
+    "Pixel phones",
+    "Google Pixel line"
+   ],
+   "category": "general",
+   "product_type": "phone",
+   "page": "https://store.google.com/gb/category/phones?hl=en-GB",
+   "shop": "Google Store",
+   "sources": [
+    "https://store.google.com/gb/category/phones?hl=en-GB",
+    "https://store.google.com/gb/product/pixel_10?hl=en-GB"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Google Store UK phones page (title 'Explore the Google Pixel 11 phone family', read in the built-in browser on 18 Oct 2026; WebFetch only got a truncated page) lists, each with a 'Buy' button: Pixel 11 Pro from £1,079, Pixel 11 Pro Fold from £1,799, Pixel 11 from £779 (was £879, save £100), Pixel 10a from £599, Pixel 10 Pro from £649 (was £899, save £250), Pixel 10 Pro Fold from £1,749, Pixel 10 from £499 (was £699, save £200). The Pixel 10's own page (title 'Google Pixel 10 - AI Powered Excellence with Tensor G5') shows 'From £499 £699, Save £200 ... Offer ends 03/11 ... Buy'. So the cheapest current Pixel is the Pixel 10 at £499 (a special offer to 3 Nov; list price £699); at list prices the cheapest is the Pixel 10a at £599."
+  },
+  {
+   "product": "INIU power bank line",
+   "also_called": [
+    "Iniu power bank line",
+    "Iniu power bank",
+    "INIU power bank",
+    "Iniu power banks",
+    "INIU power banks",
+    "Iniu",
+    "INIU",
+    "Iniu portable charger",
+    "INIU portable charger"
+   ],
+   "category": "general",
+   "product_type": "power bank",
+   "page": "https://uk-main.iniushop.com/collections/all",
+   "shop": "INIU UK",
+   "sources": [
+    "https://uk-main.iniushop.com/collections/all",
+    "https://uk-main.iniushop.com/products.json?limit=250",
+    "https://uk-main.iniushop.com/products/iniu-megapower-slim-10000mah-20w-portable-charger",
+    "https://uk-main.iniushop.com/products/iniu-b41-portable-charger-15w-fast-charging-slimmest-10000mah",
+    "https://iniushop.com/collections/all",
+    "https://www.amazon.co.uk/s?k=INIU+power+bank&rh=p_89%3AINIU&s=price-asc-rank",
+    "https://www.amazon.co.uk/dp/B08JTQ66K7",
+    "https://www.amazon.co.uk/dp/B0DCJFYQ7L"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "INIU's own UK store (uk-main.iniushop.com, 'INIU | Portable Power Banks, Magnetic Chargers & Cables', 'United Kingdom | GBP £', 42 products; the built-in browser was redirected to the US store, so the UK pages were read with WebFetch and curl on 18 Oct 2026, including its products.json). Cheapest power bank in stock: 'INIU B6 Power Bank 10,000mAh 22.5W Built-in Holder' (page title 'INIU | B6 Portable Battery Pack Charger with Phone Holder') £19.99 (compare-at £23.57; JSON-LD GBP 19.99, InStock, valid to 2026-10-28; ships to GB). Next: Carry Slim 10000mAh 22.5W £21.99, Carry 10000mAh 45W £24.99, Carry 20000mAh 22.5W £26.99. The cheaper Pawsible/B41 Slim 10000mAh at £16.99 is OutOfStock in every colour, and the Carry 5000mAh £21.99 is unavailable (5000mAh is not counted as full-size). Amazon UK (London postcode SW1A 1AA) is cheaper but from third-party sellers on INIU Store listings: 'INIU Power Bank, 10000mAh 22.5W PD3.0 QC4.0' (B08JTQ66K7) £14.96, In stock, Amazon's Choice, sold by TopStar GETIHU Accessory and dispatched by Amazon (RRP £19.99); 'INIU Smaller 10000mAh Power Bank, 20W PD' (B0DCJFYQ7L) £16.99, sold by EAFU. From price taken from the maker's UK store: £19.99 (Amazon UK marketplace low £14.96)."
+  },
+  {
+   "product": "Anker 737 Power Bank (PowerCore 24K)",
+   "also_called": [
+    "Anker 737",
+    "Anker 737 power bank",
+    "Anker 737 Power Bank",
+    "Anker 737 PowerCore 24K",
+    "Anker PowerCore 24K",
+    "Anker 737 (PowerCore 24K)",
+    "Anker A1289",
+    "Anker 737 140W"
+   ],
+   "category": "general",
+   "product_type": "power bank",
+   "page": "https://www.amazon.co.uk/dp/B09VPHVT2Z",
+   "shop": "Amazon UK",
+   "sources": [
+    "https://www.amazon.co.uk/dp/B09VPHVT2Z",
+    "https://www.anker.com/uk/products/a1289",
+    "https://www.anker.com/uk/collections/power-banks",
+    "https://www.anker.com/uk/server-sitemap-index-products.xml",
+    "https://www.anker.com/uk/website-update-faq",
+    "https://www.anker.com/us/products/a1289",
+    "https://www.amazon.co.uk/dp/B0HLRCDD3D",
+    "https://www.amazon.co.uk/s?k=anker+737+power+bank+powercore+24k",
+    "https://www.amazon.co.uk/s?k=anker+a1289",
+    "https://www.johnlewis.com/search?search-term=anker%20737",
+    "https://www.argos.co.uk/search/anker-737-power-bank/",
+    "https://www.currys.co.uk/search?q=anker%20737%20power%20bank"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Could not settle whether it is still sold new in the UK. Signs it is gone from the UK: Anker UK's own address for it (anker.com/uk/products/a1289) now redirects (server redirect) to the Power Banks collection ('Power Banks', 41 items), which names the 737 only in a FAQ line; Anker UK's product sitemap (121 products) has no a1289/737; the UK site is being merged into one anker.com/uk store ('Website Update FAQ', planned Autumn 2026), so the gap may be that migration. John Lewis ('anker 737', 12 results: Prime GaN chargers, Two Port 20K 87W £59.99, Two Port 25K 165W £99.99, no 737), Argos ('anker 737 power bank', 11 products, no 737) and Currys (first 20 of 304 results, no 737) do not list it. Amazon UK's own 737 page (B09VPHVT2Z, London postcode SW1A 1AA) has no new offer: its only offer is 'Used - Like New' £89.99 sold by AnkerDirect UK (fulfilled by Amazon), and Amazon says 'There is a newer model of this item: Anker Prime 27,650mAh Power Bank (250W)' £139.99 In stock; Anker UK lists that Prime 27,650mAh at £139.99 (was £179.99). Signs it may still be bought: a third-party Amazon UK bundle 'Anker 737 Power Bank & 100W Prime GaN Charger Bundle' (B0HLRCDD3D, brand REGALSMITH, seller REGAL SMITH COLLECTIONS) is £79.15, 'Only 7 left in stock', Add to basket; a web search lists AO.com and City Office Supplies pages for the 737 but both refuse readers (AO.com: Cloudflare 'Just a moment...' check, 403 to WebFetch and curl; City Office Supplies: 'Are you human? Solve the challenge.'), so their stock is unknown. Anker still sells it outside the UK: Anker US page 'Anker 737 Power Bank (PowerCore 24K)' $109.99, Add to Cart, '(In Stock) Estimated delivery in 3 - 7 business days', so it is not discontinued worldwide. A web search for a recall or end-of-life notice naming the A1289 found none. Likely not_sold_uk (or sold only as marketplace stock) but not proven; no UK price given."
+  },
+  {
+   "product": "Samsung power bank line",
+   "also_called": [
+    "Samsung power bank",
+    "Samsung power banks",
+    "Samsung battery pack",
+    "Samsung battery packs",
+    "Samsung portable charger",
+    "Samsung Battery Pack"
+   ],
+   "category": "general",
+   "product_type": "power bank",
+   "page": "https://www.samsung.com/uk/mobile-accessories/all-mobile-accessories/?battery-packs",
+   "shop": "Samsung UK",
+   "sources": [
+    "https://www.samsung.com/uk/mobile-accessories/all-mobile-accessories/?battery-packs",
+    "https://www.samsung.com/uk/mobile-accessories/",
+    "https://www.samsung.com/uk/mobile-accessories/wireless-chargers/",
+    "https://www.samsung.com/uk/mobile-accessories/10-000mah-battery-pack-beige-eb-p3400xuegeu/"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Samsung UK calls them battery packs. Its 'Mobile Accessories - Phone Cases, Chargers & More | Samsung UK' page filtered to Product type 'Battery Packs' (address ...all-mobile-accessories/?battery-packs, 5 results, read on 18 Oct 2026) lists: 10,000 mAh Battery Pack (25W Super Fast Charging) Beige £29.60 (RRP £37.00, save £7.40; two entries, EB-P3401XUEGWW and EB-P3400XUEGEU), 10,000 mAh Wireless Battery Pack (25W) Beige £35.20 (RRP £44.00), Qi2 Magnet Wireless Battery Pack Grey £43.20 (RRP £54.00), 20,000 mAh Battery Pack (45W Super Fast Charging 2.0) Beige £57.00, each with 'Add to basket'. Cheapest = the 10,000mAh 25W Battery Pack: its page ('Super Fast Charging 25W Portable Charger | Samsung UK', 'Battery Pack 10,000mAh 25W Super Fast Charging', Beige, EB-P3400XUEGEU, 2x USB-C) shows £29.60 (RRP £37.00), 'Add to basket' visible, JSON-LD GBP 29.6 inStock."
+  },
+  {
+   "product": "JBL Clip 5",
+   "also_called": [
+    "JBL clip",
+    "JBL Clip",
+    "JBL Clip 4",
+    "JBL clip 4",
+    "JBL clip 5",
+    "Clip 5",
+    "Clip 4",
+    "JBL Clip4",
+    "JBL Clip5"
+   ],
+   "category": "general",
+   "product_type": "bluetooth speaker",
+   "page": "https://www.johnlewis.com/jbl-clip-5-bluetooth-waterproof-portable-speaker/blue/p112128071",
+   "shop": "John Lewis",
+   "sources": [
+    "https://www.johnlewis.com/jbl-clip-5-bluetooth-waterproof-portable-speaker/blue/p112128071",
+    "https://www.johnlewis.com/search?search-term=jbl%20clip",
+    "https://www.johnlewis.com/jbl-clip-5-bluetooth-waterproof-portable-speaker/black/p112128071",
+    "https://www.amazon.co.uk/s?k=jbl+clip+5&s=price-asc-rank",
+    "https://www.amazon.co.uk/dp/B0CX93RKQX",
+    "https://www.amazon.co.uk/dp/B08HRWSYH6",
+    "https://www.argos.co.uk/search/jbl-clip-5/",
+    "https://www.currys.co.uk/search?q=jbl%20clip%205"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "The current model is the JBL Clip 5. John Lewis ('jbl clip' search: only 'Clip 5 Bluetooth Waterproof Portable Speaker', £39.99 - £56.05) has 'JBL Clip 5 Bluetooth Waterproof Portable Speaker, Blue' at £39.99 (price matched, 'Currently in stock online', Add to basket; JSON-LD InStock) and the Black one at £56.05 (InStock). Amazon UK (London postcode SW1A 1AA) matches at £39.99: 'JBL Clip 5 Ultra-Portable Bluetooth Speaker ... Blue' (B0CX93RKQX), RRP £59.99, In stock, shipper/seller Amazon. Argos has the Clip 5 Black at £59.99 (Add to trolley); Currys the Clip 5 Black £59.99 and Blue £46.99. JBL UK's own site (uk.jbl.com) refuses readers (DataDome human check), so no JBL UK price. John Lewis's 'jbl clip' search shows only the Clip 5 (Argos and Currys were searched for 'jbl clip 5' only); Amazon UK still lists the Clip 4 ('JBL Clip 4 ... Black', B08HRWSYH6, £42.88, shipper/seller Amazon EU, 'There is a newer model of this item: JBL Clip 5'), so answers saying Clip 4 should point to the Clip 5. Cheapest UK shop price for the Clip 5: £39.99 (John Lewis, Amazon UK)."
+  },
+  {
+   "product": "SEBO vacuum cleaner line",
+   "also_called": [
+    "Sebo vacuum cleaner line",
+    "Sebo vacuum cleaner",
+    "SEBO vacuum cleaner",
+    "Sebo vacuum",
+    "SEBO vacuum",
+    "Sebo vacuums",
+    "SEBO vacuums",
+    "Sebo vacuum cleaners",
+    "Sebo",
+    "SEBO",
+    "Sebo Felix",
+    "Sebo Airbelt"
+   ],
+   "category": "general",
+   "product_type": "vacuum cleaner",
+   "page": "https://sebo.co.uk/domestic-vacuum-cleaners.html",
+   "shop": "SEBO UK",
+   "sources": [
+    "https://sebo.co.uk/domestic-vacuum-cleaners.html",
+    "https://sebo.co.uk/",
+    "https://sebo.co.uk/domestic-vacuum-cleaners/cordless-vacuum-cleaner.html",
+    "https://sebo.co.uk/domestic-vacuum-cleaners/uprights.html",
+    "https://sebo.co.uk/domestic-vacuum-cleaners/cylinders.html",
+    "https://sebo.co.uk/commercial-vacuum-cleaners/uprights.html",
+    "https://sebo.co.uk/commercial-vacuum-cleaners/cylinders.html",
+    "https://sebo.co.uk/commercial-vacuum-cleaners/floor-care.html",
+    "https://sebo.co.uk/offer.html",
+    "https://sebo.co.uk/sebo-airbelt-k1-pastel-pink.html",
+    "https://sebo.co.uk/sebo-airbelt-k1.html",
+    "https://sebo.co.uk/sebo-balance-a1-magenta.html"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "SEBO's own UK shop (sebo.co.uk, title 'SEBO Vacuum Cleaners'; 'SEBO - Domestic Vacuum Cleaners' page; Domestic = cordless, uprights (Felix, Automatic X), cylinders (Airbelt K, E, D), Commercial = uprights, cylinders, floor care; free shipping over £100). Read on 18 Oct 2026 with price-sorted category pages and the 'On Sale' page. Cheapest vacuum cleaner on sale: 'SEBO AIRBELT K1 Pastel Pink' (cylinder, 890W, 5.5 kg), 'Special Price £295.92' (-20%, was £369.90, Pink Ribbon edition), 'Add to Cart', page metadata 295.92 GBP. Cheapest standard colour: SEBO AIRBELT K1 RED £296.90 (Add to Cart). Next: K1 BERRY £297.90, cordless SEBO BALANCE A1 MAGENTA £299.00, FELIX ROSE/PEONY £335.92 (was £419.90), AUTOMATIC X7 Pastel Pink £405.52. Commercial: D8 Professional £438.00, Dart 1 £456.00 (out of stock), Dart 2 £483.60. Spares and accessories (from £1.96) are mixed into the category lists and were not counted. From price = £295.92."
+  },
+  {
+   "product": "Sleep On Latex mattress",
+   "also_called": [
+    "Sleep on latex latex bed",
+    "Sleep On Latex latex bed",
+    "Sleep on latex",
+    "Sleep On Latex",
+    "SleepOnLatex",
+    "Sleep on latex bed",
+    "Sleep On Latex bed",
+    "Sleep On Latex latex mattress",
+    "Sleep on latex mattress",
+    "Sleep On Latex Pure Green"
+   ],
+   "category": "general",
+   "product_type": "mattress",
+   "page": "https://sleeponlatex.com/products/natural-latex-mattress",
+   "shop": "Sleep On Latex",
+   "sources": [
+    "https://sleeponlatex.com/products/natural-latex-mattress",
+    "https://sleeponlatex.com/",
+    "https://sleeponlatex.com/help/shipping",
+    "https://sleeponlatex.com/help/faq",
+    "https://www.johnlewis.com/search?search-term=sleep%20on%20latex",
+    "https://www.amazon.co.uk/s?k=sleep+on+latex+mattress"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "SleepOnLatex.com ('Latex Mattresses, Toppers, and Pillows | SleepOnLatex.com') is a US maker (factory in Niles, Illinois) selling in dollars: its mattress page ('Pure Green Organic Latex Mattress | SleepOnLatex.com') shows USD prices from $799 (Twin / Medium), and it also has a Hybrid Mattress, Mattress Topper and pillows. Its Shipping page says 'All of our products include free shipping within the contiguous United States', 'We also ship to Alaska, Hawaii and Canada. We may be able to ship to other countries upon request', with no responsibility for taxes or duties abroad; its FAQ says extra charges apply outside the contiguous USA. There is no UK store, no pound prices and no UK stockist. John Lewis ('sleep on latex', 23 results: Hypnos, John Lewis own-brand and Simba mattresses and pillows) lists no Sleep On Latex product; Amazon UK ('sleep on latex mattress') shows only a 'Sleep On Latex Mattress Topper Cover - 3 Inch Queen (Cover Only)' at £161.43 (B076ZQFXXT), a cover, not a mattress. Treated as not sold in the UK (an export to the UK would only be by request)."
+  },
+  {
+   "product": "Razer DeathAdder",
+   "also_called": [
+    "Razer Death Adder",
+    "Razer death adder",
+    "Death Adder",
+    "DeathAdder",
+    "Deathadder",
+    "Razer Deathadder",
+    "Razer DeathAdder V3",
+    "Razer DeathAdder V4 Pro",
+    "Razer DeathAdder Essential"
+   ],
+   "category": "general",
+   "product_type": "mouse",
+   "page": "https://www.razer.com/gb-en/pc/gaming-mice/deathadder-line",
+   "shop": "Razer",
+   "sources": [
+    "https://www.razer.com/gb-en/pc/gaming-mice/deathadder-line",
+    "https://www.razer.com/gb-en/gaming-mice",
+    "https://www.razer.com/gb-en/gaming-mice/razer-deathadder-essential",
+    "https://www.razer.com/gb-en/gaming-mice/razer-deathadder-v3",
+    "https://www.razer.com/gb-en/gaming-mice/razer-deathadder-v3-hyperspeed",
+    "https://www.razer.com/gb-en/gaming-mice/razer-deathadder-v3-pro",
+    "https://www.razer.com/gb-en/gaming-mice/razer-deathadder-v4-pro",
+    "https://www.razer.com/gb-en/gaming-mice/razer-deathadder-v4-pro-niko-edition"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Razer UK's DeathAdder line page (title 'Right-Handed Palm and Claw Grip Mouse - The Razer DeathAdder Line | Razer United Kingdom', 18 Oct 2026) lists the lineup with BUY NOW: DeathAdder V4 Pro, V3 Pro, V3 HyperSpeed, V3 and the Essential. The current (newest) model is the Razer DeathAdder V4 Pro, an ultra-lightweight wireless mouse: its page ('Razer DeathAdder V4 Pro: Fastest Gaming Mouse | Razer United Kingdom') shows 'Starting from £169.99' (JSON-LD GBP 169.99-189.99, InStock; a NiKo Edition is also sold at the same prices). Cheapest current DeathAdder: the Razer DeathAdder Essential, page title 'Right Handed Gaming Mouse - Razer DeathAdder Essential | Razer United Kingdom', 'Starting from £29.99', BUY, JSON-LD GBP 29.99 InStock. Others: DeathAdder V3 £69.99, V3 HyperSpeed £99.99, V3 Pro £119.99-£164.99 (all InStock, Buy). [18 Oct, third builder: price left null on purpose: 29.99 pounds is the Essential, the entry-level model; the DeathAdder writers recommend is the V2/V3 or the current V4 Pro (169.99 pounds), so no one price speaks for the product.]"
+  },
+  {
+   "product": "Levoit air purifier line",
+   "also_called": [
+    "Levoit air purifiers",
+    "Levoit air purifier",
+    "Levoit purifiers",
+    "Levoit purifier",
+    "Levoit purifier line",
+    "Levoit HEPA air purifier",
+    "Levoit HEPA air purifiers",
+    "Levoit"
+   ],
+   "category": "general",
+   "product_type": "air purifier",
+   "page": "https://levoit.co.uk/collections/air-purifiers",
+   "shop": "Levoit UK",
+   "sources": [
+    "https://levoit.co.uk/collections/air-purifiers",
+    "https://levoit.co.uk/collections/air-purifiers/products.json?limit=250",
+    "https://levoit.co.uk/products/levoit-core-mini-air-purifier",
+    "https://www.amazon.co.uk/s?k=levoit+air+purifier&s=price-asc-rank"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Levoit UK's own store, read 18 Oct 2026. Range page 'Air Purifiers for Cleaner Air | Levoit' (levoit.co.uk/collections/air-purifiers) shows 10 purifiers, each with '+ Quick add', all in stock in the store's product feed: Core Mini £49.99, LV-H128 True HEPA Air Purifier and Aroma Diffuser £49.99 (a desktop unit, same price), Core 200S Smart £99.99, Core 300 £99.99, Core 300S Smart £149.99, Eleva 300X Smart £159.99 (marked New), Vital 100S Smart £169.99, Vital Pet Pro £179.99, Core 400S Smart £219.99, Core 600S Smart £299.99. Cheapest current model: the Levoit Core Mini Air Purifier (page title 'Levoit Core Mini Small HEPA Air Purifier for Bedroom & Desk'): 'Sale price £49.99 incl. VAT, free shipping', Add to cart, delivery 3-5 business days, 2-year warranty. Amazon UK (London postcode SW1A 1AA) also lists the Core Mini at £49.99 with Add to basket. If a small bedroom unit should not set the from price, the cheapest regular-room models are the Core 200S Smart and the Core 300 at £99.99."
+  },
+  {
+   "product": "Winix air purifier line",
+   "also_called": [
+    "Winix air purifiers",
+    "Winix air purifier",
+    "Winix purifiers",
+    "Winix purifier",
+    "WINIX air purifier line",
+    "WINIX air purifiers",
+    "WINIX air purifier",
+    "Winix HEPA air purifier",
+    "Winix",
+    "WINIX"
+   ],
+   "category": "general",
+   "product_type": "air purifier",
+   "page": "https://winixeurope.eu/air-purifiers-winix/",
+   "shop": "Winix",
+   "sources": [
+    "https://winixeurope.eu/air-purifiers-winix/",
+    "https://winixeurope.eu/",
+    "https://winixeurope.eu/shop/?swoof=1&product_cat=air-purifiers",
+    "https://winixeurope.eu/air-purifiers/winix-air-purifier-t500/",
+    "https://winixeurope.eu/distributors/",
+    "https://www.amazon.co.uk/s?k=winix+air+purifier",
+    "https://www.amazon.co.uk/dp/B0FY3YYPZT",
+    "https://www.amazon.co.uk/dp/B08NW6KMJ2",
+    "https://housefresh.com/best-air-purifiers-in-the-uk/",
+    "https://www.johnlewis.com/search?search-term=winix%20air%20purifier"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Sold new in the UK; price read on Amazon UK (London postcode SW1A 1AA), 18 Oct 2026. Maker's page: WINIX Europe (Amsterdam), range page 'Air Purifiers | The Best Air Purifier For Your Home | WINIX' lists six models: T800 WiFi (New), T500 WIFI (New), ZERO Compact, ZERO Pro, ZERO-S, ZERO. Its pages carry a UK banner saying it currently ships to mainland UK only (not Northern Ireland), and its distributors page says its webshop ships to Germany, France, the United Kingdom, Belgium and the Netherlands, but the pages show no prices to a reader and 'Buy this product' leads to the distributors page, so no price could be read there. Amazon UK, 'Visit the Winix Store', shipper/seller Amazon, In stock, Add to basket: 'WINIX T500 Air Purifier for Bedroom Home, 50m², CADR 250 m³/h, HEPA & Carbon Filter ...' £90.40 (the cheapest of the Amazon UK prices seen for the models on Winix Europe's current range page; the ZERO Pro price was not seen). From the Amazon UK search results: Compact £99.00, T800 £196.27, Zero-S £198.02, and older-style listings 5300-2 £149.99, 5500-2 £159.00, 5530 £386.11. An older A332 (not on Winix Europe's current range page) is still listed at £89.00, In stock, Add to basket, shipper/seller Amazon, so £89.00 is the lowest Winix price seen if an older model is allowed. John Lewis search shows no Winix (it matched 'winnie'); Currys refused tools (403). A HouseFresh UK review (snapshot, not used for the price) quoted the Zero S at £185."
+  },
+  {
+   "product": "Steelcase Amia",
+   "also_called": [
+    "Amia",
+    "Steelcase Amia chair",
+    "Amia chair",
+    "Amia office chair",
+    "Steelcase Amia office chair",
+    "Amia Office Task Chair",
+    "Steelcase Amia task chair",
+    "Steelcase Amia ergonomic chair"
+   ],
+   "category": "general",
+   "product_type": "office chair",
+   "page": "https://uk.steelcase.com/products/amia",
+   "shop": "Steelcase",
+   "sources": [
+    "https://uk.steelcase.com/products/amia",
+    "https://www.huntsoffice.co.uk/office-furniture/steelcase-amia-office-task-chair",
+    "https://www.huntsoffice.co.uk/office-furniture/steelcase-amia-office-task-chair-home-edition",
+    "https://uk.steelcase.com/",
+    "https://uk.steelcase.com/products.json?limit=250",
+    "https://www.amazon.co.uk/s?k=steelcase+amia",
+    "https://www.amazon.co.uk/dp/B0C1GMTMY7",
+    "https://www.steelcase.com/products/office-chairs/amia-amia-air/",
+    "https://www.steelcase.com/eu-en/products/office-chairs/",
+    "https://www.steelcase.com/eu-en/?s=amia",
+    "https://www.steelcase.com/eu-en/resources/documents/amia-brochure"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Sold new in the UK. Cheapest price found: Hunts Office (UK Steelcase Platinum Partner; ships to mainland UK only, free delivery), page 'Steelcase Amia Office Task Chair | Office Edition | Hunts Office', 18 Oct 2026: 'From £650.00 ex.VAT £780.00 inc.VAT', now '£598.00 ex.VAT £717.60 inc.VAT Save 8%', Add to basket, made to order, about 4-5 weeks. Price recorded is the inc-VAT sale price of the Office Edition (the sale may not last). The Home Edition page ('Steelcase Amia Office Task Chair | Home Edition | Hunts Office') shows £789.36 ex.VAT / £947.23 inc.VAT after 8% off (from £858.00 ex.VAT / £1,029.60 inc.VAT), Add to basket. Maker's UK page: Steelcase's own UK shop, 'Amia – Ergonomic office chair – Steelcase Shop UK' (uk.steelcase.com/products/amia): £1,049 VAT incl. (£874.17 excl.), Add to cart, built to order and shipped before Sun 15 November 2026, colours Fame Black 8004, Fame Mocca 61135, Gaja Pearl Grey 2027, Fame Turquoise 67016 (its product feed shows 4 variants at £1,049, not all available). Amazon UK (London postcode SW1A 1AA): 'Steelcase Ergonomic office chair: Amia,4D armrests, Seat Depth, Grey' £1,029.00 (Black and Mocca £1,049 in the search results), shipper/seller Amazon, Add to basket, 'Only 1 left in stock (more on the way)', delivery Tue 20 Oct. Steelcase's global page 'Amia Ergonomic Task Chair with Adjustable Arms | Steelcase' (steelcase.com/products/office-chairs/amia-amia-air/) lists Amia as available in Europe, Middle East and Africa among its regions (Amia Air is North America only). Steelcase's Europe site has no Amia product page (the URL redirects to the chairs range page, which does not list Amia) but its Amia brochure link redirects to a file named EN-Amia-Brochure-2026.pdf under uploads/2026/09 (not opened). Not discontinued: three UK sellers list it new."
+  },
+  {
+   "product": "Steelcase office chair line",
+   "also_called": [
+    "Steelcase office chairs",
+    "Steelcase office chair",
+    "Steelcase chairs",
+    "Steelcase chair",
+    "Steelcase ergonomic chair",
+    "Steelcase ergonomic chairs",
+    "Steelcase task chair",
+    "Steelcase task chairs",
+    "Steelcase"
+   ],
+   "category": "general",
+   "product_type": "office chair",
+   "page": "https://uk.steelcase.com/collections/office-chairs",
+   "shop": "Steelcase",
+   "sources": [
+    "https://uk.steelcase.com/collections/office-chairs",
+    "https://uk.steelcase.com/products.json?limit=250",
+    "https://uk.steelcase.com/products/reply-air",
+    "https://www.steelcase.com/uk/",
+    "https://www.steelcase.com/eu-en/products/office-chairs/",
+    "https://www.steelcase.com/eu-en/products/office-chairs/lets-b/",
+    "https://www.huntsoffice.co.uk/office-furniture/steelcase?type=Seating",
+    "https://www.huntsoffice.co.uk/office-furniture/steelcase-lets-b-high-back-office-chair",
+    "https://www.huntsoffice.co.uk/office-furniture/steelcase-reply-upholstered-office-chair-office-edition",
+    "https://www.huntsoffice.co.uk/office-furniture/steelcase-reply-air-mesh-back-office-chair-office-edition",
+    "https://www.huntsoffice.co.uk/office-furniture/steelcase-series-1-office-chair-office-edition",
+    "https://www.huntsoffice.co.uk/office-furniture/steelcase-amia-office-task-chair",
+    "https://www.amazon.co.uk/s?k=steelcase+amia"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Maker's UK page: Steelcase's own UK shop, 'Ergonomic Office Chairs - Steelcase UK Shop' (uk.steelcase.com/collections/office-chairs), 18 Oct 2026, prices VAT included, built to order (the Amia and Reply Air pages say 'built from scratch for you' and ship before Sun 15 November 2026): Reply Air £559, Series 1 from £609, Series 2 from £709, Think £1,009, Karman from £1,019, Please from £1,019, Amia £1,049, Gesture from £1,089, Leap from £1,239. Steelcase's Europe site (steelcase.com/uk redirects to steelcase.com/eu-en) has a range page 'Office Chairs & Desk Seating - Steelcase' listing Karman, Gesture, Please, Think, Series 1, Series 2, Leap, Reply and Let's B plus Orangebox chairs, no prices. Cheapest at a UK reseller: Hunts Office (UK Steelcase Platinum Partner; Add to basket; ships to mainland UK only, free delivery), listing sorted low to high on 18 Oct 2026: 'Steelcase Let's B High Back Office Chair | Hunts Office': 'From £390.00 ex.VAT £468.00 inc.VAT', now £358.80 ex.VAT £430.56 inc.VAT (Save 8%), about 5-6 weeks; Steelcase's own Let's B page (title 'Let's B Flexible Office & Task Chair - Steelcase') calls it an office and task chair, though Hunts describes it as suited to group collaboration, meetings and receptions as well as the office. Next cheapest there: Reply Upholstered Office Chair | Office Edition and Reply Air Mesh Back Office Chair | Office Edition, both £384.00 ex.VAT / £460.80 inc.VAT (about 5 weeks); Series 1 Office Chair | Office Edition £404.70 ex.VAT / £485.64 inc.VAT after 5% off; Amia Office Edition £717.60 inc.VAT. Hunts' meeting chairs and stools (e.g. Series M Meeting Chair from £202 ex.VAT) are not counted as office chairs. Amazon UK sells Steelcase chairs fully specified at higher prices (Reply Air £559, Series 1 £609-£689, Amia £1,029-£1,049). Price recorded is the inc-VAT sale price of the Let's B (£468 without the 8% off); if that is not wanted as the entry model, the Reply Office Edition is £460.80 inc VAT."
+  },
+  {
+   "product": "Fully Jarvis standing desk line",
+   "also_called": [
+    "fully jarvis standing desk line",
+    "Fully Jarvis standing desk",
+    "Fully Jarvis standing desks",
+    "Fully Jarvis desk",
+    "Fully Jarvis desks",
+    "Fully Jarvis",
+    "Fully desk",
+    "Fully standing desk",
+    "Jarvis standing desk",
+    "Jarvis standing desks",
+    "Jarvis desk",
+    "Jarvis desks",
+    "Herman Miller Jarvis",
+    "Herman Miller Jarvis standing desk"
+   ],
+   "category": "general",
+   "product_type": "standing desk",
+   "page": "https://ukstore.hermanmiller.com/collections/jarvis-standing-desk",
+   "shop": "Herman Miller",
+   "sources": [
+    "https://ukstore.hermanmiller.com/collections/jarvis-standing-desk",
+    "https://www.fully.com/",
+    "https://store.hermanmiller.com/brands-fully",
+    "https://ukstore.hermanmiller.com/pages/fully-customer-information",
+    "https://ukstore.hermanmiller.com/collections/standing-desks",
+    "https://ukstore.hermanmiller.com/products/jarvis-bamboo-standing-desk",
+    "https://ukstore.hermanmiller.com/products/jarvis-laminate-standing-desk",
+    "https://ukstore.hermanmiller.com/products.json?limit=250"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Sold new in the UK, through Herman Miller. fully.com no longer sells: it redirects (HTTP 301) to the Herman Miller US store's Fully page (store.hermanmiller.com/brands-fully, 'Fully – Herman Miller Store', prices in dollars). Herman Miller UK's page 'Fully Customer Information | Herman Miller' (ukstore.hermanmiller.com/pages/fully-customer-information, last update April 18, 2023) says Fully's furniture and accessories are now sold exclusively through Herman Miller (part of MillerKnoll), that Herman Miller will keep selling selected Jarvis standing desks, and that all other Fully products have been discontinued from its sites. Herman Miller UK's range page 'Fully Jarvis Standing Desk | Herman Miller UK' (ukstore.hermanmiller.com/collections/jarvis-standing-desk), 18 Oct 2026, prices in pounds including VAT: Jarvis Bamboo Standing Desk from £760.00 (1200x800 rectangle, Up/Down Controls; its page 'Jarvis Bamboo Standing Desk' shows 'Add to Basket - £760.00', 48 variants all available, 'Estimated delivery is within 6 working days'), Jarvis Laminate Standing Desk from £910.00 (24 variants, all available), Jarvis Hardwood Standing Desk from £1,350.00, Fully Jarvis Cable Management Kit £65.00. The vendor on each Jarvis listing is Fully."
+  },
+  {
+   "product": "Tresanti",
+   "also_called": [
+    "Tresanti desk",
+    "Tresanti desks",
+    "Tresanti standing desk",
+    "Tresanti standing desks",
+    "Tresanti sit stand desk",
+    "Tresanti sit-stand desk",
+    "Tresanti adjustable desk",
+    "Tresanti adjustable height desk",
+    "Tresanti Geller",
+    "Tresanti Geller desk",
+    "Costco Tresanti",
+    "Costco Tresanti desk",
+    "Costco Tresanti standing desk"
+   ],
+   "category": "general",
+   "product_type": "standing desk",
+   "page": "https://www.costco.co.uk/Furniture-Mattresses/Home-Office-Furniture/Desks/Tresanti-Geller-Power-Adjustable-Height-Tech-Desk-White/p/499456",
+   "shop": "Costco UK",
+   "sources": [
+    "https://www.costco.co.uk/Furniture-Mattresses/Home-Office-Furniture/Desks/Tresanti-Geller-Power-Adjustable-Height-Tech-Desk-White/p/499456",
+    "https://www.costco.co.uk/search?text=tresanti",
+    "https://www.costco.co.uk/how-it-works",
+    "https://www.costco.co.uk/online-only-membership-questions"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Sold new in the UK, but only at Costco UK (not a not_sold_uk case). Page 'Tresanti Geller Power Adjustable Height Tech Desk, White' (Item # 499456), read 18 Oct 2026: £279.99, 'Shipping Included', product data says InStock / NewCondition with a price valid until 25 Oct 2026, 'Add to cart' and 'Buy Now!' shown, delivery about 5 business days, UK mainland only (some postcodes excluded), white tempered glass top 120.1 x 60.2 cm, height 74.8 to 119.4 cm. A costco.co.uk search for 'tresanti' (33 results) shows three Tresanti desks: Geller White £279.99, Geller Black £279.99 and Aurora Power Adjustable Height Desk with LED Lights £299.98, so the Geller is the cheapest. Costco is a membership club: its Membership page (costco.co.uk/how-it-works) lists an Online-only Membership at £42.00 (£35 ex VAT) a year, 'No qualification necessary', which lets anyone shop online; I did not log in or try to buy. No other UK seller was looked at."
+  },
+  {
+   "product": "Purple Harmony Pillow",
+   "also_called": [
+    "Harmony pillow from Purple",
+    "Purple Harmony pillow",
+    "Purple Harmony",
+    "Harmony pillow",
+    "Harmony Pillow",
+    "Purple's Harmony pillow",
+    "Purple Harmony latex pillow",
+    "Purple Harmony® Pillow",
+    "Purple Harmony®"
+   ],
+   "category": "general",
+   "product_type": "pillow",
+   "page": "https://purple.com/pillows/harmony",
+   "shop": "Purple",
+   "sources": [
+    "https://purple.com/pillows/harmony",
+    "https://purple.com/pillows",
+    "https://purple.com/terms-and-privacy",
+    "https://www.amazon.co.uk/s?k=purple+harmony+pillow",
+    "https://www.amazon.co.uk/dp/B09HRDN6GR",
+    "https://www.johnlewis.com/search?search-term=purple%20harmony%20pillow"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Purple sells it from its US store, 18 Oct 2026. Page 'Purple Harmony® Pillow | Talalay Latex Pillow' (purple.com/pillows/harmony): Standard sizes $229.00 and King $269.00 in US dollars, InStock, free shipping, and the offer data names the shipping destination as US only; the footer region menu offers only 'United States - English' and 'Canada - English'. Purple's terms (purple.com/terms-and-privacy) say all transactions are in US dollars, that Purple makes no representation its products are available outside the United States, and that it disclaims liability for use of the website outside the United States and Canada. No UK store found. John Lewis search for 'purple harmony pillow' (first 72 of 4,065 results shown) lists no Purple product; Argos refused tools (403). Amazon UK (London postcode SW1A 1AA) has a third-party listing 'Purple Harmony Pillow ... (King - Medium)' (B09HRDN6GR, Brand: Purple) at £364.05, Add to basket, shipper/seller YUMEZ (not Purple or Amazon), delivery 31 Oct - 6 Nov, which suggests an import from abroad; I treated it as a marketplace resale rather than a UK shop selling it new, so status not_sold_uk (a judgement call; the listing could be counted as sold_new at £364.05 by someone who accepts marketplace imports). Another Amazon UK listing titled 'Purple Harmony Pillow 100% Elastic Grid with Latex Core' (£92.99) is listed under the brand Berklan, not Purple."
+  },
+  {
+   "product": "Garmin smartwatch line",
+   "also_called": [
+    "Garmin smartwatches",
+    "Garmin smartwatch",
+    "Garmin watches",
+    "Garmin watch",
+    "Garmin smartwatch lineup"
+   ],
+   "category": "general",
+   "product_type": "smartwatch",
+   "page": "https://www.garmin.com/en-GB/c/wearables-smartwatches/",
+   "shop": "Garmin UK",
+   "sources": [
+    "https://www.garmin.com/en-GB/c/wearables-smartwatches/",
+    "https://www.garmin.com/en-GB/c/wearables-smartwatches/?sorter=price-asc",
+    "https://www.garmin.com/en-GB/p/1941179/",
+    "https://www.garmin.com/en-GB/p/1314137/",
+    "https://www.garmin.com/en-GB/p/1555457/",
+    "https://www.garmin.com/en-GB/p/1613801/",
+    "https://www.garmin.com/en-GB/p/950277/",
+    "https://www.garmin.com/en-GB/p/1815501/",
+    "https://www.garmin.com/en-GB/p/721216/",
+    "https://www.garmin.com/en-GB/p/785411/",
+    "https://www.garmin.com/en-GB/p/782585/"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Garmin UK's smartwatch range page (title 'Fitness Watches | Sport Watches | Smartwatches | Garmin', list headed 'All Smartwatches'; its product list is loaded by the page, so read in the built-in browser sorted 'Price: Low to High', with the page's own list and price data also read, 18 Oct 2026). Tiles with Garmin's own words and prices: vívofit jr. 3 £79.99 (kids' tracker), vívosmart 5 £129.99 ('Fitness Activity Tracker'), Approach S12 £179.99 ('Golf watch'), Instinct 3 'Rugged GPS smartwatches' from £219.99 (the Instinct E 40 mm and 45 mm are £219.99), Forerunner 70/170 'GPS running smartwatches' from £219.99, Lily 2 'Small fashion smartwatches' from £249.99, Bounce 2 'Kids smartwatch' £259.99, vívoactive 6 £269.99, vívomove hybrid £279.99, Instinct Crossover from £289.99, Forerunner 570 £429.99, Venu 4 from £439.99, fēnix 8 from £529.99. Cheapest current full-size watch Garmin calls a smartwatch: the Forerunner 70 ('Garmin Forerunner 70 | Entry-Level GPS Running Smartwatch', part 010-04307-00 and three other colours, £219.99, 'ADD TO CART', 'Available to ship in 1–3 business days', all four colours in stock); the Instinct E (40 mm, 'smartwatch mode' battery claim) ties at £219.99. If the answer means only lifestyle watches (the Venu and vívoactive range), the cheapest is the vívoactive 6 ('Garmin vívoactive 6 | Fitness Smartwatch with GPS') at £269.99, in stock, and the cheapest Venu is the Venu 4 41 mm at £439.99. Left out of the from price: fitness trackers (vívosmart 5, vívofit jr. 3), kids' watches (Bounce 2), golf watches (Approach S12 £179.99), and the vívomove Sport (£179.99 but every colour shown as not in stock and without a price). From price = £219.99 (Forerunner 70)."
+  },
+  {
+   "product": "Lenovo ThinkPad T14",
+   "also_called": [
+    "T14",
+    "ThinkPad T14",
+    "Thinkpad T14",
+    "Lenovo T14",
+    "Lenovo Thinkpad T14",
+    "T14 ThinkPad"
+   ],
+   "category": "general",
+   "product_type": "laptop",
+   "page": "https://www.lenovo.com/gb/en/p/laptops/thinkpad/thinkpadt/lenovo-thinkpad-t14-gen-7-14-inch-intel-laptop/len101t0154",
+   "shop": "Lenovo UK",
+   "sources": [
+    "https://www.lenovo.com/gb/en/p/laptops/thinkpad/thinkpadt/lenovo-thinkpad-t14-gen-7-14-inch-intel-laptop/len101t0154",
+    "https://www.lenovo.com/gb/en/c/laptops/thinkpad/thinkpadt/",
+    "https://www.lenovo.com/gb/en/p/laptops/thinkpad/thinkpadt/thinkpad-t14-gen-7-14-inch-amd/len101t0156",
+    "https://www.lenovo.com/gb/en/p/laptops/thinkpad/thinkpadt/thinkpad-t14-gen-6-14-inch-intel/len101t0127"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "The current generation is the ThinkPad T14 Gen 7 (14\" Intel and AMD), on Lenovo UK on 18 Oct 2026 (WebFetch got 403 for lenovo.com; read in the built-in browser). 'ThinkPad T Series | Our flagship laptops for business | Lenovo UK' (15 results, all loaded) lists ThinkPad T14 Gen 7 (14\" Intel) 'Copilot+ PC' Starting At £2,095.00 inc. VAT; ThinkPad T14 Gen 7 (14\" AMD) 'Copilot+ PC' Starting At £2,104.99; a second ThinkPad T14 Gen 7 (14\" AMD) 'NEW ARRIVAL' Starting At £2,205.00; and the previous generation, ThinkPad T14 Gen 6 (14\" Intel), Starting At £1,299.00. The Gen 7 Intel page ('ThinkPad T14 Gen 7 (14'' Intel) | Copilot+ Business Laptop | Lenovo UK', Starting At £2,095.00, 3 models) shows the cheapest Gen 7: ThinkPad T14 Gen 7, Intel Core Ultra 5 325, Windows 11 Home, 16 GB LPDDR5X (CAMM2), 1 TB SSD, 14\" WUXGA 400 nits, £2,095.00 inc. VAT, 'SHIPS IN 3 DAYS', 'Add To Cart' and 'Build Your PC'; the other two are £2,365.99 and £2,764.99. The Gen 7 AMD page ('ThinkPad T14 Gen 7 (14-inch AMD) | Copilot+ Business Laptop | Lenovo UK') has a JSON-LD offer of GBP 2104.99, InStock, NewCondition. The Gen 6 page ('ThinkPad T14 Gen 6 (Intel) | 14 inch Powerhouse With Copilot+ AI Performance | Lenovo UK', 4.6 stars, 36 reviews) is still on sale: Starting At £1,299.00 (Core Ultra 7 258V, Windows 11 Pro, 32 GB on package, 512 GB SSD, 14\" WUXGA, part 21QG00CNUK, 'Add To Cart', estimated delivery 9 to 11 Nov), other models from £1,710.00. Lenovo UK prices include VAT; business and student prices are for members only. Price taken for the current generation = the Gen 7 Intel at £2,095.00 (AMD from £2,104.99); if the cheapest T14 on sale is wanted, it is the Gen 6 at £1,299.00. Older web snippets showing about £1,700 to £1,885 for the Gen 7 were not on the live pages."
+  },
+  {
+   "product": "Lenovo Legion Pro 5",
+   "also_called": [
+    "Legion 5 Pro",
+    "Lenovo Legion 5 Pro",
+    "Legion Pro 5",
+    "Legion Pro 5i",
+    "Legion 5i Pro"
+   ],
+   "category": "general",
+   "product_type": "laptop",
+   "page": "https://www.lenovo.com/gb/en/p/laptops/legion-laptops/legion-5-series/legion-pro-5-gen-10-16-inch-amd/len101g0041",
+   "shop": "Lenovo UK",
+   "sources": [
+    "https://www.lenovo.com/gb/en/p/laptops/legion-laptops/legion-5-series/legion-pro-5-gen-10-16-inch-amd/len101g0041",
+    "https://www.lenovo.com/gb/en/c/laptops/legion-laptops/",
+    "https://www.lenovo.com/gb/en/c/laptops/legion-laptops/legion-5-series/",
+    "https://www.lenovo.com/gb/en/p/laptops/legion-laptops/legion-5-series/legion-pro-5i-gen-10-16-inch-intel/len101g0040",
+    "https://www.lenovo.com/gb/en/p/laptops/legion-laptops/legion-5-series/legion-5-pro-gen-7-16-inch-amd/len101g0021"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Lenovo UK now sells the 16-inch Legion 5 Pro as the Legion Pro 5 (read in the built-in browser on 18 Oct 2026; WebFetch got 403 for lenovo.com). 'Legion Gaming Laptops | Shop All Models | Lenovo UK' (15 results) lists Legion Pro 5 Gen 10 (16\" AMD) Starting At £1,980.00 and Legion Pro 5i Gen 10 (16\" Intel) Starting At £2,320.00 as the Pro 5 models; no Legion Pro 5 Gen 11 (the Gen 11 entries are the 15\" Legion 5a/5i, Legion 5i Gen 11 from £2,020.00 and the Legion 7a). The AMD page ('Lenovo Legion Pro 5 Gen 10 (16″ AMD) | AMD powered 16-inch gaming laptop for esports | Lenovo UK', Starting At £1,980.00, 4 models at £1,980.00, £2,180.00, £2,280.00 and £2,580.00, all 'SHIPS IN 3 DAYS') shows the cheapest: Legion Pro 5 Gen 10, AMD Ryzen 7 8745HX, Windows 11 Home, NVIDIA GeForce RTX 5060 8 GB, 16 GB DDR5, 1 TB SSD, 16\" WQXGA OLED 165 Hz, part 83LTCTO1WWGB3, £1,980.00 inc. VAT, 'Add To Cart', 'Build Your PC', estimated delivery 27 to 29 Oct. The Intel page ('Legion Pro 5i Gen 10 (16” Intel) | 16'' esports gaming laptop powered by Intel® | Lenovo UK') starts at £2,320.00 (Core Ultra 7 255HX, RTX 5060 8 GB, 16 GB, 1 TB, 16\" OLED 165 Hz, part 83F3CTO1WWGB3, 'SHIPS IN 3 DAYS'). The old name: Lenovo UK's 'Legion 5 Pro Gen 7 (16″ AMD) | AMD Ryzen™ powered gaming laptop | Lenovo UK' page (the 2022 model, RTX 30 series) has no price, shows 'New Options Available' and 'Shop Similar Products', and its page data says productstatus 'End Of Life'; the 16-inch Pro line has been sold as the Legion Pro 5 since the Gen 8 (from knowledge). Price = the cheapest Legion Pro 5, the AMD model at £1,980.00."
+  },
+  {
+   "product": "MacBook Pro laptop line",
+   "also_called": [
+    "MacBook Pro",
+    "MacBook Pros",
+    "Apple MacBook Pro",
+    "Macbook Pro",
+    "MacBook Pro line",
+    "MBP"
+   ],
+   "category": "general",
+   "product_type": "laptop",
+   "page": "https://www.apple.com/uk/macbook-pro/",
+   "shop": "Apple UK",
+   "sources": [
+    "https://www.apple.com/uk/macbook-pro/",
+    "https://www.apple.com/uk/macbook-pro/specs/",
+    "https://www.apple.com/uk/shop/buy-mac/macbook-pro",
+    "https://www.apple.com/uk/shop/buy-mac/macbook-pro/14-inch-space-black-standard-display-apple-m5-chip-10-core-cpu-10-core-gpu-16gb-memory-1tb-storage",
+    "https://www.johnlewis.com/search?search-term=macbook%20pro",
+    "https://www.johnlewis.com/2025-apple-macbook-pro-14-m5-processor-16gb-ram-1tb-ssd/space-black/p114464818",
+    "https://www.johnlewis.com/2025-apple-macbook-pro-14-m5-processor-16gb-ram-512gb-ssd/space-black/p114464817"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Apple UK's MacBook Pro range page ('MacBook Pro - Apple (UK)': 14-inch with M5, M5 Pro or M5 Max chip; 16-inch with M5 Pro or M5 Max) shows no prices to a reader, but its buy page ('Buy MacBook Pro - Apple (UK)', read in the built-in browser on 18 Oct 2026) shows 'MacBook Pro From £1,999 or £61.44/mo.', 14-inch 'From £1,999' and 16-inch 'From £2,999'. Cheapest current model: MacBook Pro, 14-inch, M5 Chip, 10-core CPU, 10-core GPU, standard display, 16GB memory, 1TB storage (Space Black or Silver), page title 'Buy MacBook Pro, 14-inch, M5 Chip, 10-core CPU, 10-core GPU, Space Black, Standard display, 16GB memory, 1TB storage - Apple (UK)', £1,999.00, 'Add to Bag', 'Free shipping' or 'Pick up from Store'; the same Apple page data lists the nano-texture 14-inch M5 at £2,149, 14-inch M5 Pro from £2,499 and 16-inch M5 Pro from £2,999. John Lewis agrees: '2025 Apple MacBook Pro 14”, M5 Processor, 16GB RAM, 1TB SSD, Space Black' £1,999.00, 'Add to basket', UK delivery in 2 to 5 days. John Lewis also lists an older '2025 Apple MacBook Pro 14”, M5, 16GB RAM, 512GB SSD, Space Black' at £1,399.00, but its page says 'Currently out of stock online' ('Email me when available'), and Apple UK no longer lists a 512GB model, so it is not counted. From price = £1,999."
+  },
+  {
+   "product": "TCL 27C2A Pro",
+   "also_called": [
+    "TCL C2A Pro",
+    "C2A Pro",
+    "TCL 27 C2A Pro",
+    "27C2A Pro",
+    "TCL 27C2A Pro monitor"
+   ],
+   "category": "general",
+   "product_type": "monitor",
+   "page": "https://us.tcl.com/products/tcl-27-c2a-pro-4k-qd-mini-led-2-000-nits-peak-brightness-320hz-refresh-rate-0-2ms-mprt-plus-gaming-monitor",
+   "shop": "TCL",
+   "sources": [
+    "https://us.tcl.com/products/tcl-27-c2a-pro-4k-qd-mini-led-2-000-nits-peak-brightness-320hz-refresh-rate-0-2ms-mprt-plus-gaming-monitor",
+    "https://www.tcl.com/uk/en/monitors",
+    "https://www.tcl.com/uk/en/monitors/27c2a",
+    "https://www.tcl.com/uk/en/monitors/27c2a-pro",
+    "https://www.amazon.co.uk/s?k=TCL+27C2A+Pro+monitor",
+    "https://www.amazon.co.uk/s?k=TCL+27C2A",
+    "https://www.amazon.co.uk/s?k=TCL+27+inch+4K+QD-Mini+LED+gaming+monitor+C2A",
+    "https://www.currys.co.uk/search?q=tcl%2027c2a",
+    "https://www.currys.co.uk/search?q=tcl%20monitor",
+    "https://www.scan.co.uk/search?q=tcl%20monitor",
+    "https://www.overclockers.co.uk/search?sSearch=tcl%20monitor",
+    "https://itbrief.co.uk/story/tcl-launches-flagship-oled-mini-led-monitors-in-uk"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Read 18 Oct 2026 (the built-in browser; Amazon UK with the London delivery postcode SW1A 1AA). TCL UK's monitors page ('TCL Monitors – Gaming & Mini LED Displays | TCL UK') lists 34R83Q, 27G64, 25G64, 24G54, 27P2A Pro, 27P2A, 32G64, 32X3A OLED+ and 27C2A, with no prices and no 27C2A Pro; /uk/en/monitors/27c2a-pro is a 404. The UK's C2A is the lower-spec 'TCL 27C2A Premium QD-Mini LED Monitor | TCL UK' (1196 dimming zones, 1200 nits, UHD 160Hz / FHD 320Hz; IT Brief UK of 11 June 2026 calls it the 27C2A-UK), and TCL UK's 'Buy now' pop-up for it says 'There is no online offer at the moment'. The 27C2A Pro is TCL's US model: 'TCL 27\" 27C2A Pro QD-Mini LED 4K UHD 320Hz HDR Gaming Monitor | TCL US – TCL North America' on us.tcl.com, 2,300+ dimming zones and 2,000 nits, USD 699.99 on sale (regular 999.99), 'ADD TO CART', 'Free Shipping Within the United States'. Amazon UK's searches 'TCL 27C2A Pro monitor', 'TCL 27C2A' and 'TCL 27 inch 4K QD-Mini LED gaming monitor C2A' show no C2A at all (its TCL monitors: 27P2A Pro-UK £349.00, 27G64 £229.00 and 25G64); Currys' 'tcl 27c2a' and 'tcl monitor' searches return TCL TVs only; Scan UK and Overclockers UK 'tcl monitor' searches show no TCL monitor. Not sold in the UK under this name; no UK price."
+  },
+  {
+   "product": "Aeron office chair line",
+   "also_called": [
+    "Aeron",
+    "hm aeron",
+    "HM Aeron",
+    "Aeron chair",
+    "Aeron chairs",
+    "Aeron office chair",
+    "Aeron office chairs"
+   ],
+   "category": "general",
+   "product_type": "office chair",
+   "page": "https://www.hermanmiller.com/en_gb/products/seating/office-chairs/aeron-chair/",
+   "shop": "Herman Miller",
+   "sources": [
+    "https://www.hermanmiller.com/en_gb/products/seating/office-chairs/aeron-chair/",
+    "https://ukstore.hermanmiller.com/collections/aeron-chairs/"
+   ],
+   "checked_on": "2026-10-17",
+   "note": "Writers' bare 'Aeron' is the Herman Miller Aeron (module 4 shows it as a line of its own, 'Aeron office chair line'). Herman Miller's UK store, Aeron chairs, read on 17 Oct 2026 by the first builder: Aeron Office Chair from GBP1,219 (configurable); its maker page links Buy Now to the store. Re-used here as the line's from price so the line shows a price and the budget rule applies to it."
+  },
+  {
+   "product": "ThinkPad T14 laptop line",
+   "also_called": [
+    "ThinkPad T14 laptop",
+    "T14 laptop line",
+    "ThinkPad T14",
+    "Thinkpad T14",
+    "T14 ThinkPad"
+   ],
+   "category": "general",
+   "product_type": "laptop",
+   "page": "https://www.lenovo.com/gb/en/p/laptops/thinkpad/thinkpadt/lenovo-thinkpad-t14-gen-7-14-inch-intel-laptop/len101t0154",
+   "shop": "Lenovo UK",
+   "sources": [
+    "https://www.lenovo.com/gb/en/p/laptops/thinkpad/thinkpadt/lenovo-thinkpad-t14-gen-7-14-inch-intel-laptop/len101t0154",
+    "https://www.lenovo.com/gb/en/c/laptops/thinkpad/thinkpadt/",
+    "https://www.lenovo.com/gb/en/p/laptops/thinkpad/thinkpadt/thinkpad-t14-gen-7-14-inch-amd/len101t0156",
+    "https://www.lenovo.com/gb/en/p/laptops/thinkpad/thinkpadt/thinkpad-t14-gen-6-14-inch-intel/len101t0127"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Module 4 shows writers' bare 'T14' as 'ThinkPad T14 laptop line' (a line of its own); this re-uses the T14 finding of the same day (Lenovo UK, ThinkPad T14 Gen 7 from GBP2,095) as the line's from price and range page. The current generation is the ThinkPad T14 Gen 7 (14\" Intel and AMD), on Lenovo UK on 18 Oct 2026 (WebFetch got 403 for lenovo.com; read in the built-in browser). 'ThinkPad T Series | Our flagship laptops for business | Lenovo UK' (15 results, all loaded) lists ThinkPad T14 Gen 7 (14\" Intel) 'Copilot+ PC' Starting At £2,095.00 inc. VAT; ThinkPad T14 Gen 7 (14\" AMD) 'Copilot+ PC' Starting At £2,104.99; a second ThinkPad T14 Gen 7 (14\" AMD) 'NEW ARRIVAL' Starting At £2,205.00; and the previous generation, ThinkPad T14 Gen 6 (14\" Intel), Starting At £1,299.00. The Gen 7 Intel page ('ThinkPad T14 Gen 7 (14'' Intel) | Copilot+ Business Laptop | Lenovo UK', Starting At £2,095.00, 3 models) shows the cheapest Gen 7: ThinkPad T14 Gen 7, Intel Core Ultra 5 325, Windows 11 Home, 16 GB LPDDR5X (CAMM2), 1 TB SSD, 14\" WUXGA 400 nits, £2,095.00 inc. VAT, 'SHIPS IN 3 DAYS', 'Add To Cart' and 'Build Your PC'; the other two are £2,365.99 and £2,764.99. The Gen 7 AMD page ('ThinkPad T14 Gen 7 (14-inch AMD) | Copilot+ Business Laptop | Lenovo UK') has a JSON-LD offer of GBP 2104.99, InStock, NewCondition. The Gen 6 page ('ThinkPad T14 Gen 6 (Intel) | 14 inch Powerhouse With Copilot+ AI Performance | Lenovo UK', 4.6 stars, 36 reviews) is still on sale: Starting At £1,299.00 (Core Ultra 7 258V, Windows 11 Pro, 32 GB on package, 512 GB SSD, 14\" WUXGA, part 21QG00CNUK, 'Add To Cart', estimated delivery 9 to 11 Nov), other models from £1,710.00. Lenovo UK prices include VAT; business and student prices are for members only. Price taken for the current generation = the Gen 7 Intel at £2,095.00 (AMD from £2,104.99); if the cheapest T14 on sale is wanted, it is the Gen 6 at £1,299.00. Older web snippets showing about £1,700 to £1,885 for the Gen 7 were not on the live pages."
   }
  ]
 }
