@@ -331,7 +331,9 @@ def test_a_brand_written_in_lowercase_only_is_shown_as_its_maker_writes_it(tmp_p
         ]),
         "1skil02": ("Which cast iron skillet lasts?", "Mine cracked.", [praise("p2a", "pansmith", 7)]),
     })
-    assert names(run(tmp_path, [], library=library)) == ["pansmith cast iron skillet line"]  # the threads decide
+    # Changed on purpose 17 Oct 2026 (the ws-names builder): as a last resort a shown name starts with a capital
+    # (engine.group_products._tidied: 23 of the day's shown names had started in small letters). Was: "pansmith ...".
+    assert names(run(tmp_path, [], library=library)) == ["Pansmith cast iron skillet line"]  # the threads decide
     assert names(run(tmp_path, [line("PanSmith")], library=library)) == ["PanSmith cast iron skillet line"]
 
 

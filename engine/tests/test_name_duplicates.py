@@ -353,12 +353,20 @@ def test_a_brand_in_other_capitals_is_shown_as_the_lists_write_it():
     # Small letters come only from config's own spellings (a maker's style: "Simple Human" is "simplehuman", above).
     assert maker_spelling("innisfree serum", "skincare", more=("innisfree",)) == "innisfree serum"
     assert maker_spelling("Innisfree serum", "skincare", more=("innisfree",)) == "Innisfree serum"
+    # Changed on purpose 17 Oct 2026 (the ws-names builder): the shipped short names now write "Paperwhite" out as
+    # "Kindle Paperwhite" (a Kindle beside a Paperwhite line had been one product shown twice), so that whole name is a
+    # known spelling, as Amazon writes it. Was: "Kindle paperwhite". The brand alone, its first word, as before:
     assert maker_spelling("kindle paperwhite", "general", whole=("Kindle Paperwhite Signature Edition",)) == (
-        "Kindle paperwhite")  # the brand: its first word
+        "Kindle Paperwhite")
+    assert maker_spelling("kindle oasis", "general", whole=("Kindle Paperwhite Signature Edition",)) == (
+        "Kindle oasis")  # the brand: its first word
     assert maker_spelling("kindle e-reader", "general", whole=("Kindle Paperwhite Signature Edition",)) == (
         "Kindle e-reader")
     assert maker_spelling("Brisa serum", "skincare", whole=("brisa gel",)) == "Brisa serum"
-    assert maker_spelling("laifen swift", "general") == "laifen swift"  # no list writes it: as written
+    # Changed on purpose 17 Oct 2026 (the ws-names builder): config.MAKER_SPELLINGS writes "Laifen Swift" now, and a
+    # name no list writes starts with a capital (engine.group_products._tidied). Was: "laifen swift", as written.
+    assert maker_spelling("laifen swift", "general") == "Laifen Swift"
+    assert maker_spelling("zorvo swift", "general") == "Zorvo swift"  # no list writes it: as written, with a capital
     # A brand the brand-lines list writes in small letters only is no maker's style: never a reason for small letters.
     assert maker_spelling("Shark robot vacuum", "general", more=("shark",)) == "Shark robot vacuum"
     assert maker_spelling("shark robot vacuum", "general", more=("shark",)) == "shark robot vacuum"
