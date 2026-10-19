@@ -131,6 +131,8 @@ LINES = [
     ("Garmin", "smartwatch", 219.99, "Garmin UK"),
     # Writers' bare "Aeron" is shown as a line of its own: it takes the chair's from price, so a budget can rule it out.
     ("Aeron", "office chair", 1219.0, "Herman Miller"),
+    # Writers' bare "T14" is shown as "ThinkPad T14 laptop line": it takes the T14's from price and range page.
+    ("ThinkPad T14", "laptop", 2095.0, "Lenovo UK"),
 ]
 
 # Sold in the UK, a range rather than one model, so no single price (name as the answer shows it, type, shop as shown).

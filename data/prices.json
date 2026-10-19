@@ -13702,6 +13702,30 @@
     "https://www.hermanmiller.com/en_gb/products/seating/office-chairs/aeron-chair/"
    ],
    "note": "Writers' bare 'Aeron' is the Herman Miller Aeron (module 4 shows it as a line of its own, 'Aeron office chair line'). Herman Miller's UK store, Aeron chairs, read on 17 Oct 2026 by the first builder: Aeron Office Chair from GBP1,219 (configurable); its maker page links Buy Now to the store. Re-used here as the line's from price so the line shows a price and the budget rule applies to it."
+  },
+  {
+   "product": "ThinkPad T14 laptop",
+   "also_called": [
+    "T14 laptop line",
+    "ThinkPad T14",
+    "Thinkpad T14",
+    "T14 ThinkPad"
+   ],
+   "category": "general",
+   "product_type": "laptop",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Lenovo UK",
+   "url": "https://www.lenovo.com/gb/en/p/laptops/thinkpad/thinkpadt/lenovo-thinkpad-t14-gen-7-14-inch-intel-laptop/len101t0154",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.lenovo.com/gb/en/p/laptops/thinkpad/thinkpadt/lenovo-thinkpad-t14-gen-7-14-inch-intel-laptop/len101t0154",
+    "https://www.lenovo.com/gb/en/c/laptops/thinkpad/thinkpadt/",
+    "https://www.lenovo.com/gb/en/p/laptops/thinkpad/thinkpadt/thinkpad-t14-gen-7-14-inch-amd/len101t0156",
+    "https://www.lenovo.com/gb/en/p/laptops/thinkpad/thinkpadt/thinkpad-t14-gen-6-14-inch-intel/len101t0127"
+   ],
+   "note": "Module 4 shows writers' bare 'T14' as 'ThinkPad T14 laptop line' (a line of its own); this re-uses the T14 finding of the same day (Lenovo UK, ThinkPad T14 Gen 7 from GBP2,095) as the line's from price and range page. The current generation is the ThinkPad T14 Gen 7 (14\" Intel and AMD), on Lenovo UK on 18 Oct 2026 (WebFetch got 403 for lenovo.com; read in the built-in browser). 'ThinkPad T Series | Our flagship laptops for business | Lenovo UK' (15 results, all loaded) lists ThinkPad T14 Gen 7 (14\" Intel) 'Copilot+ PC' Starting At £2,095.00 inc. VAT; ThinkPad T14 Gen 7 (14\" AMD) 'Copilot+ PC' Starting At £2,104.99; a second ThinkPad T14 Gen 7 (14\" AMD) 'NEW ARRIVAL' Starting At £2,205.00; and the previous generation, ThinkPad T14 Gen 6 (14\" Intel), Starting At £1,299.00. The Gen 7 Intel page ('ThinkPad T14 Gen 7 (14'' Intel) | Copilot+ Business Laptop | Lenovo UK', Starting At £2,095.00, 3 models) shows the cheapest Gen 7: ThinkPad T14 Gen 7, Intel Core Ultra 5 325, Windows 11 Home, 16 GB LPDDR5X (CAMM2), 1 TB SSD, 14\" WUXGA 400 nits, £2,095.00 inc. VAT, 'SHIPS IN 3 DAYS', 'Add To Cart' and 'Build Your PC'; the other two are £2,365.99 and £2,764.99. The Gen 7 AMD page ('ThinkPad T14 Gen 7 (14-inch AMD) | Copilot+ Business Laptop | Lenovo UK') has a JSON-LD offer of GBP 2104.99, InStock, NewCondition. The Gen 6 page ('ThinkPad T14 Gen 6 (Intel) | 14 inch Powerhouse With Copilot+ AI Performance | Lenovo UK', 4.6 stars, 36 reviews) is still on sale: Starting At £1,299.00 (Core Ultra 7 258V, Windows 11 Pro, 32 GB on package, 512 GB SSD, 14\" WUXGA, part 21QG00CNUK, 'Add To Cart', estimated delivery 9 to 11 Nov), other models from £1,710.00. Lenovo UK prices include VAT; business and student prices are for members only. Price taken for the current generation = the Gen 7 Intel at £2,095.00 (AMD from £2,104.99); if the cheapest T14 on sale is wanted, it is the Gen 6 at £1,299.00. Older web snippets showing about £1,700 to £1,885 for the Gen 7 were not on the live pages."
   }
  ]
 }
