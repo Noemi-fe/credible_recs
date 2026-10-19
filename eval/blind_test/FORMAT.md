@@ -13,6 +13,14 @@ as the answer page shows it), and its reason line ("Recommended by 3 credible vo
 summary. Until then our why was the reason line, which counts voices as the support line rule 6 drops does. The why
 counts toward the 90 words like the rest, and is cut at a word as the reason was (rule 2).
 
+Claude's call of 19 Oct 2026, under Noemi's delegation, because the rivals were asked from the US this time (no VPN,
+no change to this Mac's settings, so some of their answers are for a US shopper, in dollars and with US shops): in the
+shown version of all three tools' answers, prices, currency amounts and availability notes are cut, so no answer stands
+out by its country. That is the template's Price line, rule 7's notes ("Not sold in the UK, checked ...", "Sold
+second-hand only.", the prescription note), "Sold at ..." and every where-to-buy line or button. Only cut, never
+reworded, and a cut inside a quote is marked "…". It covers the 19 Oct 2026 capture; the cuts are made by hand after
+`shown` (the engine still writes the Price line), and Noemi can reverse the call.
+
 ## The template
 
 ```
