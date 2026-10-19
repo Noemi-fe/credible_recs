@@ -15068,6 +15068,2972 @@
     "https://www.lenovo.com/gb/en/p/laptops/thinkpad/thinkpadt/thinkpad-t14-gen-6-14-inch-intel/len101t0127"
    ],
    "note": "Module 4 shows writers' bare 'T14' as 'ThinkPad T14 laptop line' (a line of its own); this re-uses the T14 finding of the same day (Lenovo UK, ThinkPad T14 Gen 7 from GBP2,095) as the line's from price and range page. The current generation is the ThinkPad T14 Gen 7 (14\" Intel and AMD), on Lenovo UK on 18 Oct 2026 (WebFetch got 403 for lenovo.com; read in the built-in browser). 'ThinkPad T Series | Our flagship laptops for business | Lenovo UK' (15 results, all loaded) lists ThinkPad T14 Gen 7 (14\" Intel) 'Copilot+ PC' Starting At £2,095.00 inc. VAT; ThinkPad T14 Gen 7 (14\" AMD) 'Copilot+ PC' Starting At £2,104.99; a second ThinkPad T14 Gen 7 (14\" AMD) 'NEW ARRIVAL' Starting At £2,205.00; and the previous generation, ThinkPad T14 Gen 6 (14\" Intel), Starting At £1,299.00. The Gen 7 Intel page ('ThinkPad T14 Gen 7 (14'' Intel) | Copilot+ Business Laptop | Lenovo UK', Starting At £2,095.00, 3 models) shows the cheapest Gen 7: ThinkPad T14 Gen 7, Intel Core Ultra 5 325, Windows 11 Home, 16 GB LPDDR5X (CAMM2), 1 TB SSD, 14\" WUXGA 400 nits, £2,095.00 inc. VAT, 'SHIPS IN 3 DAYS', 'Add To Cart' and 'Build Your PC'; the other two are £2,365.99 and £2,764.99. The Gen 7 AMD page ('ThinkPad T14 Gen 7 (14-inch AMD) | Copilot+ Business Laptop | Lenovo UK') has a JSON-LD offer of GBP 2104.99, InStock, NewCondition. The Gen 6 page ('ThinkPad T14 Gen 6 (Intel) | 14 inch Powerhouse With Copilot+ AI Performance | Lenovo UK', 4.6 stars, 36 reviews) is still on sale: Starting At £1,299.00 (Core Ultra 7 258V, Windows 11 Pro, 32 GB on package, 512 GB SSD, 14\" WUXGA, part 21QG00CNUK, 'Add To Cart', estimated delivery 9 to 11 Nov), other models from £1,710.00. Lenovo UK prices include VAT; business and student prices are for members only. Price taken for the current generation = the Gen 7 Intel at £2,095.00 (AMD from £2,104.99); if the cheapest T14 on sale is wanted, it is the Gen 6 at £1,299.00. Older web snippets showing about £1,700 to £1,885 for the Gen 7 were not on the live pages."
+  },
+  {
+   "product": "Patagonia rain jacket",
+   "category": "general",
+   "product_type": "rain jacket",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/patagonia-mens-torrentshell-3l-rain-jacket/black/p114816865",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/patagonia-mens-torrentshell-3l-rain-jacket/black/p114816865",
+    "https://eu.patagonia.com/gb/en/shop/mens/jackets-vests/rain-jackets"
+   ],
+   "note": "Range page as before (Patagonia's own UK rain jackets page; it showed an outage screen to the reader on 18 Oct). From price: John Lewis, Men's Torrentshell 3L Rain Jacket at £180 with Add to basket (sizes S-XL listed), Patagonia's main rain jacket; the cheapest adult Patagonia rain jacket found, not a full sort of the range."
+  },
+  {
+   "product": "Columbia rain jacket",
+   "category": "general",
+   "product_type": "rain jacket",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/browse/men/mens-coats-jackets/columbia/_/N-ea9Z1yzkt3r",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/browse/men/mens-coats-jackets/columbia/_/N-ea9Z1yzkt3r",
+    "https://www.johnlewis.com/columbia-mens-pouring-adventure-2-jacket-collegiate-navy/p113871752"
+   ],
+   "note": "Columbia's UK store refuses automated reads (403). John Lewis's Columbia men's coats and jackets page lists 25 products on 18 Oct, among them the waterproof Pouring Adventure 2 (£40.50, reduced to clear, size S only) and the Coreshot shell anorak (£210); its other Columbia rain jackets (Pouring Adventure III, Trailborne 2.5L, Inner Limits IV) are no longer available online there. No clean from price: the one waterproof shell in stock is a clearance size."
+  },
+  {
+   "product": "Nalgene water bottle",
+   "category": "general",
+   "product_type": "water bottle",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Heinnie Haynes",
+   "url": "https://heinnie.com/nalgene-sustain-wide-mouth-1l-bottle",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "Nalgene has no UK store; Heinnie Haynes, a UK outdoor and knife shop (free UK delivery), lists the Nalgene Sustain Wide Mouth 1L Bottle at £12.99, in stock (its structured data). Product page is that bottle, not a range page. No big UK shop found selling Nalgene in a search (Decathlon's Nalgene listings are its EU marketplaces)."
+  },
+  {
+   "product": "Dyson hair dryer",
+   "category": "general",
+   "product_type": "hair dryer",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/dyson-supersonic-origin-hair-dryer-prussian-blue/p115577495",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/dyson-supersonic-origin-hair-dryer-prussian-blue/p115577495",
+    "https://www.dyson.co.uk/hair-care/hair-dryers",
+    "https://www.johnlewis.com/brand/hair-dryers/dyson/_/N-48sbZ1z140en"
+   ],
+   "note": "Range page as before (Dyson UK's hair dryers page; its site refuses automated reads). John Lewis's Dyson hair dryers page lists 10 dryers on 18 Oct, from £249.99 (Supersonic Origin in Prussian Blue, Add to basket shown; the Supersonic Travel and two Supersonic models are £249.99 too) to £399.99 (Supersonic r). From price: the Supersonic Origin at £249.99."
+  },
+  {
+   "product": "Sonicare electric toothbrush",
+   "category": "general",
+   "product_type": "electric toothbrush",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/philips-sonicare-hx3673-13-series-3100-electric-toothbrush-white/p5536363",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/philips-sonicare-hx3673-13-series-3100-electric-toothbrush-white/p5536363",
+    "https://www.philips.co.uk/c-m-pe/electric-toothbrushes",
+    "https://www.johnlewis.com/brand/electric-toothbrushes-flossers-accessories/philips/electric-toothbrush/_/N-483sZ1z13zzkZ1z0jq47"
+   ],
+   "note": "Range page: Philips UK's Sonicare electric toothbrushes page (no prices shown there). John Lewis lists 21 Philips Sonicare toothbrushes on 18 Oct; cheapest adult one: the Series 3100 HX3673/13 at £39.99 (reduced to clear from £99.99, Add to basket shown); next the 4100 HX4042 at £44.99. Writers' 'Sonicare' is Philips' toothbrush brand."
+  },
+  {
+   "product": "DeWalt drill",
+   "category": "general",
+   "product_type": "drill",
+   "price": null,
+   "currency": "GBP",
+   "shop": "B&Q",
+   "url": "https://www.diy.com/departments/dewalt-xr-18v-li-ion-brushed-cordless-combi-drill-1-x-2ah-dcd776d1t-gb/5035048741382_BQ.prd",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.diy.com/departments/dewalt-xr-18v-li-ion-brushed-cordless-combi-drill-1-x-2ah-dcd776d1t-gb/5035048741382_BQ.prd",
+    "https://www.dewalt.co.uk/en-gb/products/power-tools/drills",
+    "https://www.diy.com/departments/tools-equipment/power-tools/drills/DIY637279.cat?Brand=DeWalt"
+   ],
+   "note": "Range page as before (DeWalt UK's drills page; DeWalt sells through stockists). From price: B&Q, the XR 18V brushed combi drill DCD776D1T-GB with a 2Ah battery, charger and case, at £75 (was £89), sold and shipped by B&Q, Add to basket shown. Body-only drills are cheaper from marketplace sellers on B&Q's site (DCD709N bare at £62.99 from Powertoolmate), not counted: not sold by B&Q itself, and no battery."
+  },
+  {
+   "product": "Merrell hiking boots",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Merrell UK",
+   "url": "https://www.merrell.com/UK/en_GB/thermo-chill-2-mid-waterproof/60653M.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.merrell.com/UK/en_GB/thermo-chill-2-mid-waterproof/60653M.html",
+    "https://www.merrell.com/UK/en_GB/men-hiking-boots",
+    "https://www.merrell.com/UK/en_GB/men-hiking-boots?srule=price-low-to-high"
+   ],
+   "note": "Merrell's own UK store (merrell.com/UK/en_GB, prices in pounds): men's hiking boots, 15 listed (8 models: Moab 3 Mid GORE-TEX from £124, Speed Strike 2 Mid, Thermo boots...). From price: sorted by price, the Men's Thermo Chill 2 Mid Waterproof at £120, the cheapest men's hiking boot there on 18 Oct (women's boots have their own page). The page gives no stock per product."
+  },
+  {
+   "product": "Salomon hiking boots",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/salomon-x-ultra-360-mid-gore-tex-mens-boots-magnet-black/p111519894",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/salomon-x-ultra-360-mid-gore-tex-mens-boots-magnet-black/p111519894",
+    "https://www.johnlewis.com/browse/men/mens-boots/salomon/walking/_/N-7onxZlk95Z1yzjf2t"
+   ],
+   "note": "Salomon's own UK store refuses automated reads (403). John Lewis's Salomon men's walking boots page lists the X Ultra 360 Mid Gore-Tex boots at £150 (Add to basket, sizes 7-12) and the X Ultra 360 hiking shoes at £140, on 18 Oct. From price: the X Ultra 360 Mid GTX at £150, the one Salomon boot John Lewis sells now (Salomon's own range may hold cheaper ones)."
+  },
+  {
+   "product": "Lowa hiking boots",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "LOWA UK",
+   "url": "https://www.lowa.co.uk/products/maddox-pro-gtx-mid",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.lowa.co.uk/products/maddox-pro-gtx-mid",
+    "https://www.lowa.co.uk/collections/mens-boots",
+    "https://www.lowa.co.uk/collections/mens-boots?sort_by=price-ascending"
+   ],
+   "note": "LOWA's own UK store (lowa.co.uk, distributed by TKC Sales Ltd, prices in pounds): men's walking boots, 25 listed (Renegade Evo GTX Mid £165 on sale, regular £220; Zephyr, Innox, Camino...). From price: sorted by price, the Maddox Pro GTX Mid from £114 on sale (regular £190, by colour), on 18 Oct."
+  },
+  {
+   "product": "Keen hiking boots",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "KEEN UK",
+   "url": "https://www.keenfootwear.co.uk/products/mens-zionic-mid-waterproof-dark-olive-scarlet-ibis",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.keenfootwear.co.uk/products/mens-zionic-mid-waterproof-dark-olive-scarlet-ibis",
+    "https://www.keenfootwear.co.uk/collections/mens-walking-boots",
+    "https://www.keenfootwear.co.uk/collections/mens-walking-boots?sort_by=price-ascending"
+   ],
+   "note": "KEEN's own UK store (keenfootwear.co.uk, prices in pounds): men's walking and hiking boots, 15 listed on 18 Oct (Targhee IV Waterproof £155, Targhee Apex £150, Hightrail £135...). From price: sorted by price, the Men's Zionic Waterproof Hiking Boot at £110 in its outlet (was £160); the cheapest at full price is the Hightrail at £135."
+  },
+  {
+   "product": "Danner hiking boots",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Danner",
+   "url": "https://www.danner.com/productfamily/mountain-600/men:hike/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.danner.com/productfamily/mountain-600/men:hike/",
+    "https://global.danner.com/men/work"
+   ],
+   "note": "not sold to UK shoppers: Danner (Portland, US) sells its hiking boots (Mountain 600 and others) from danner.com in US dollars; its global store (global.danner.com, 'worldwide delivery') showed no products to the reader on 18 Oct. As on 15 Oct for its work boots, no UK seller found: sold abroad only."
+  },
+  {
+   "product": "Danner Mountain 600",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Danner",
+   "url": "https://www.danner.com/mountain-600-4-5-saddle-tan.html",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.danner.com/mountain-600-4-5-saddle-tan.html",
+    "https://www.danner.com/productfamily/mountain-600/men:hike/"
+   ],
+   "note": "not sold to UK shoppers: Danner's Mountain 600 4.5\" hiking boot, sold on danner.com in US dollars (about $220-230 in a search of its pages, 18 Oct); no UK seller found: sold abroad only."
+  },
+  {
+   "product": "Meindl hiking boots",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Meindl UK",
+   "url": "https://www.meindl.co.uk/product/footwear/mens/meindl-respond-men-mid-gtx-walking-boot/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.meindl.co.uk/product/footwear/mens/meindl-respond-men-mid-gtx-walking-boot/",
+    "https://www.meindl.co.uk/",
+    "https://www.meindl.co.uk/products/mens/boots/"
+   ],
+   "note": "Meindl's own UK site (meindl.co.uk, prices in pounds, 'Buy Online' on most boots, the rest from its stockists): men's boots, 37 listed (Bhutan MFS from £289.99, Burma Pro MFS, Borneo 2...). From price: the Respond Men Mid II GTX walking boot at £184.99, the cheapest of the 16 shown on 18 Oct (not a full sort)."
+  },
+  {
+   "product": "UPPAbaby stroller",
+   "category": "general",
+   "product_type": "stroller",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/uppababy-minu-v3-stroller-james/p115608646",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/uppababy-minu-v3-stroller-james/p115608646",
+    "https://www.johnlewis.com/browse/baby-child/buggies-travel/pushchairs-prams/uppababy/_/N-8h7Z1yzumhx",
+    "https://www.johnlewis.com/uppababy-vista-v3-pushchair/p112501137"
+   ],
+   "note": "John Lewis's UPPAbaby prams and pushchairs page lists 12 UPPAbaby pushchairs and strollers on 18 Oct: Vista V3 £1,099.99, Cruz V3 £749.99, Ridge V2 £699.99, Minu Duo £599.99, MINU V3 from £399. From price: the MINU V3 stroller (James) at £399. UPPAbaby's own UK pages weren't found at the address tried."
+  },
+  {
+   "product": "UPPAbaby Vista stroller",
+   "category": "general",
+   "product_type": "stroller",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/uppababy-vista-v3-pushchair/p112501137",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/uppababy-vista-v3-pushchair/p112501137",
+    "https://www.johnlewis.com/browse/baby-child/buggies-travel/pushchairs-prams/uppababy/_/N-8h7Z1yzumhx"
+   ],
+   "note": "Writers' 'UPPAbaby Vista' (and 'Vista V2') is UPPAbaby's Vista pushchair line; its current model, the Vista V3, is £1,099.99 at John Lewis on 18 Oct (Add to basket shown; Vista V3 bundles with a car seat cost more). Product page is the Vista V3's."
+  },
+  {
+   "product": "Bugaboo stroller",
+   "category": "general",
+   "product_type": "stroller",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/bugaboo-butterfly-2-stroller-heritage-black/p113681128",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/bugaboo-butterfly-2-stroller-heritage-black/p113681128",
+    "https://www.johnlewis.com/browse/baby-child/buggies-travel/pushchairs-prams/bugaboo/_/N-8h7Z1z14078"
+   ],
+   "note": "John Lewis's Bugaboo prams and strollers page lists 11 Bugaboo pushchairs and strollers on 18 Oct: Fox 5 Renew £1,099, Donkey 6 from £1,560, Cub £749, Dragonfly Plus £649, Butterfly 2 £435, and two reduced to clear (Dragonfly in Forest Green £404.10, Fox Cub £539.10). From price: the Butterfly 2 at £435, the cheapest not being cleared."
+  },
+  {
+   "product": "Garmin sports watch",
+   "category": "general",
+   "product_type": "sports watch",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/browse/electricals/smart-watches-wearable-tech/view-all-smart-watches/garmin/_/N-5nmcZ1z13y4o",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/browse/electricals/smart-watches-wearable-tech/view-all-smart-watches/garmin/_/N-5nmcZ1z13y4o",
+    "https://www.garmin.com/en-GB/c/sports-fitness/running-smartwatches/",
+    "https://www.garmin.com/en-GB/p/1941179/",
+    "https://www.johnlewis.com/garmin-forerunner-70-gps-running-smartwatch-black/p115389859"
+   ],
+   "note": "Range page: Garmin UK's running watches page (its prices load by script, so none read there). John Lewis lists 8 Garmin Forerunner running watches on 18 Oct: Forerunner 70 £199-£219.99 (its page shows £219.99 for black, Add to basket), 165 Music from £205, 165 £249, 170 £259.99, 265 £369.99, 570 £429. From price: the Forerunner 70 from £199 on that list. The Forerunner 55 is no longer sold there."
+  },
+  {
+   "product": "HOKA running shoes",
+   "category": "general",
+   "product_type": "running shoes",
+   "price": null,
+   "currency": "GBP",
+   "shop": "SportsShoes",
+   "url": "https://www.sportsshoes.com/product/hok2565/hoka-skyflow-men%27s-running-shoes---aw26",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.sportsshoes.com/product/hok2565/hoka-skyflow-men%27s-running-shoes---aw26",
+    "https://www.sportsshoes.com/products/hoka/mens/shoes"
+   ],
+   "note": "HOKA's own UK store couldn't be read (its page returned an oversized header). SportsShoes, a big UK running shop, lists 183 HOKA men's shoes on 18 Oct; its road running shoes run from the Skyflow at £89.99 (also in 2E width) through the Clifton 11 and Arahi 9 (£125.99) to the Rocket X 3 (£219.99). From price: the Skyflow at £89.99. (John Lewis sells HOKA kids' shoes only.)"
+  },
+  {
+   "product": "Saucony running shoes",
+   "category": "general",
+   "product_type": "running shoes",
+   "price": null,
+   "currency": "GBP",
+   "shop": "SportsShoes",
+   "url": "https://www.sportsshoes.com/product/sau5249/saucony-guide-18-men%27s-running-shoes",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.sportsshoes.com/product/sau5249/saucony-guide-18-men%27s-running-shoes",
+    "https://www.sportsshoes.com/products/saucony/mens/shoes"
+   ],
+   "note": "SportsShoes, a big UK running shop, lists 201 Saucony men's shoes on 18 Oct (first page read): road shoes from the Guide 18 stability shoe at £77.99 (RRP £129.99), Hurricane 25 £98.99, Triumph 23 £99.99, Kinvara 16 £107.99, Guide 19 from £125.99. From price: the Guide 18 at £77.99, of the first page (not a full sort)."
+  },
+  {
+   "product": "New Balance running shoes",
+   "category": "general",
+   "product_type": "running shoes",
+   "price": null,
+   "currency": "GBP",
+   "shop": "SportsShoes",
+   "url": "https://www.sportsshoes.com/product/new696017/new-balance-411v3-men%27s-running-shoes",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.sportsshoes.com/product/new696017/new-balance-411v3-men%27s-running-shoes",
+    "https://www.sportsshoes.com/products/new-balance/mens/shoes"
+   ],
+   "note": "SportsShoes, a big UK running shop, lists 287 New Balance men's shoes on 18 Oct (first page read): road running shoes from the 411v3 at £26.99 (RRP £44.99), 520v9 £49.99, 680v9 £69.99, the 860v14 stability shoe from £79.99, 1080v15 from £101.99, 880v15 £139.99. From price: the 411v3 at £26.99, of the first page."
+  },
+  {
+   "product": "Brooks running shoes",
+   "category": "general",
+   "product_type": "running shoes",
+   "price": null,
+   "currency": "GBP",
+   "shop": "SportsShoes",
+   "url": "https://www.sportsshoes.com/product/bro3728/brooks-revel-9-men%27s-running-shoes---aw26",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.sportsshoes.com/product/bro3728/brooks-revel-9-men%27s-running-shoes---aw26",
+    "https://www.sportsshoes.com/products/brooks/mens/shoes"
+   ],
+   "note": "SportsShoes, a big UK running shop, lists 133 Brooks men's shoes on 18 Oct (72 read): road running shoes from the Revel 9 at £100, Launch 12 £110, Ghost 18 £135, the Adrenaline GTS 25 stability shoe £145, Glycerin GTS 23 £165. From price: the Revel 9 at £100."
+  },
+  {
+   "product": "BaByliss hair dryer",
+   "category": "general",
+   "product_type": "hair dryer",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/babyliss-2200-turbo-smooth-hair-dryer-black/p113241638",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/babyliss-2200-turbo-smooth-hair-dryer-black/p113241638",
+    "https://www.johnlewis.com/browse/beauty/hair-dryers/babyliss/hair-dryers/_/N-a3fZ1z13zqfZpgxn"
+   ],
+   "note": "John Lewis's BaByliss hair dryers page lists 5 BaByliss dryers on 18 Oct: 2200 Turbo Smooth £23, Salon Pro 2200 £40, Onyx £42.99, Hydro-Fusion Anti-Frizz 2100 £59.99, Digital Power 6150DU £70. From price: the 2200 Turbo Smooth at £23. (BaByliss is the UK maker's name; writers also mean its US professional brand BaBylissPRO.)"
+  },
+  {
+   "product": "Darn Tough socks",
+   "category": "general",
+   "product_type": "socks",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Darn Tough UK",
+   "url": "https://darntough.uk/products/mens-merino-wool-run-no-show-tab-no-cushion-ultra-lightweight-running-socks",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://darntough.uk/products/mens-merino-wool-run-no-show-tab-no-cushion-ultra-lightweight-running-socks",
+    "https://darntough.uk/",
+    "https://darntough.uk/collections/men",
+    "https://darntough.uk/collections/men/products.json?limit=250"
+   ],
+   "note": "Darn Tough's UK store (darntough.uk, prices in pounds; its seller is Brand Access, LLC, shipping from a Netherlands warehouse, launched Aug 2023): 95 men's socks on 18 Oct, merino wool. From price: the Men's Run No Show Tab Ultra-Lightweight Running Socks at £20, the cheapest available men's sock in its product list; hiking socks £27-£32, tactical socks £22-£38."
+  },
+  {
+   "product": "Darn Tough tactical socks",
+   "category": "general",
+   "product_type": "socks",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Darn Tough UK",
+   "url": "https://darntough.uk/collections/tactical-socks",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://darntough.uk/collections/tactical-socks",
+    "https://darntough.uk/collections/men/products.json?limit=250"
+   ],
+   "note": "Darn Tough's UK store sells its tactical socks (a range, not one sock): T4037 No Show £22, T4088 Quarter £24, T3001 Micro Crew £28, T4021 Boot Midweight £34, T4033 Boot Heavyweight £38, on 18 Oct. No single price: writers' name is the range."
+  },
+  {
+   "product": "Manduka yoga mat",
+   "category": "general",
+   "product_type": "yoga mat",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Yogamatters",
+   "url": "https://yogamatters.com/products/manduka-eko-lite-3-0-4mm-yoga-mat",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://yogamatters.com/products/manduka-eko-lite-3-0-4mm-yoga-mat",
+    "https://yogamatters.com/collections/manduka",
+    "https://yogamatters.com/collections/manduka/products.json?limit=250",
+    "https://www.yogamatters.com/products/manduka-pro-yoga-mat"
+   ],
+   "note": "Yogamatters, a UK yoga shop (free UK mainland delivery over £75), sells Manduka's mats on 18 Oct (its product list, in stock): eKO Lite 3.0 4mm £100, PROlite £108, PRO 6mm £138, PRO Long £158. From price: the eKO Lite 3.0 4mm at £100, the cheapest full-size Manduka mat in stock (its eKO Superlite travel mat is £52, not counted: a travel mat)."
+  },
+  {
+   "product": "Osprey backpack",
+   "category": "general",
+   "product_type": "backpack",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/osprey-daylite-backpack-black/p111310382",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/osprey-daylite-backpack-black/p111310382",
+    "https://www.johnlewis.com/brand/osprey/backpack/_/N-1z0njtvZ1z0roj8"
+   ],
+   "note": "John Lewis's Osprey backpacks page lists 13 on 18 Oct: Daylite £65, Daylite Plus £75, Nebula 32L £120, Tempest and Talon 22L £125, Farpoint and Fairview 40L travel packs £170, Transporter 36L cabin pack £175, Farpoint and Fairview 70L £200. From price: the Daylite at £65."
+  },
+  {
+   "product": "Osprey Farpoint backpack",
+   "category": "general",
+   "product_type": "backpack",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/osprey-farpoint-family-backpack-40l-cascade-blue/p114860865",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/osprey-farpoint-family-backpack-40l-cascade-blue/p114860865",
+    "https://www.johnlewis.com/brand/osprey/backpack/_/N-1z0njtvZ1z0roj8"
+   ],
+   "note": "Osprey's Farpoint travel packs (writers' 'Farpoint 40', 'Farpoint 55'...): John Lewis sells the Farpoint 40L at £170 and the 70L at £200 on 18 Oct. Product page is the 40L's."
+  },
+  {
+   "product": "Osprey Fairview backpack",
+   "category": "general",
+   "product_type": "backpack",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/osprey-farview-family-backpack-40l-cascade-blue/p114860867",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/osprey-farview-family-backpack-40l-cascade-blue/p114860867",
+    "https://www.johnlewis.com/brand/osprey/backpack/_/N-1z0njtvZ1z0roj8"
+   ],
+   "note": "Osprey's Fairview travel packs (the women's fit of the Farpoint): John Lewis sells the Fairview 40L at £170 (listed as 'Farview') and the 70L at £200 on 18 Oct."
+  },
+  {
+   "product": "T3 hair dryer",
+   "category": "general",
+   "product_type": "hair dryer",
+   "price": null,
+   "currency": "GBP",
+   "shop": "T3 UK",
+   "url": "https://t3micro.co.uk/products/featherweight-stylemax-professional-hair-dryer",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://t3micro.co.uk/products/featherweight-stylemax-professional-hair-dryer",
+    "https://t3micro.co.uk/collections/hair-dryers",
+    "https://t3micro.co.uk/products.json?limit=250"
+   ],
+   "note": "T3's own UK store (t3micro.co.uk, United Kingdom, GBP): UK-plug hair dryers on 18 Oct: Featherweight StyleMax £139.99 (on sale, regular £199.99; Add to cart), Afar £159.99, AireLuxe £199.99 (EU-plug versions listed apart). From price: the Featherweight StyleMax at £139.99."
+  },
+  {
+   "product": "T3",
+   "category": "general",
+   "product_type": "hair dryer",
+   "price": null,
+   "currency": "GBP",
+   "shop": "T3 UK",
+   "url": "https://t3micro.co.uk/collections/hair-dryers",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://t3micro.co.uk/collections/hair-dryers",
+    "https://t3micro.co.uk/products.json?limit=250"
+   ],
+   "note": "Writers' 'T3' is the brand's hair dryers (shown under the brand's name alone): T3 sells them in the UK from its own store, from £139.99 (Featherweight StyleMax) to £199.99 (AireLuxe) on 18 Oct. No single price: the name is a brand."
+  },
+  {
+   "product": "Lowa Renegade GTX",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": 220.0,
+   "currency": "GBP",
+   "shop": "LOWA UK",
+   "url": "https://www.lowa.co.uk/products/renegade-evo-gtx-mid",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.lowa.co.uk/products/renegade-evo-gtx-mid",
+    "https://www.lowa.co.uk/products.json?limit=250",
+    "https://www.lowa.co.uk/collections/mens-boots?sort_by=price-ascending"
+   ],
+   "note": "LOWA's UK store sells the Renegade as the Renegade Evo GTX Mid (the Renegade GTX Mid's current version; also Narrow, Wide, Lo, women's, Warm and Ice versions): men's Mid at £220 among its available sizes on 18 Oct (some colours were on sale from £165 on its boots page)."
+  },
+  {
+   "product": "ASICS running shoes",
+   "category": "general",
+   "product_type": "running shoes",
+   "price": null,
+   "currency": "GBP",
+   "shop": "SportsShoes",
+   "url": "https://www.sportsshoes.com/product/asi16237/asics-dynablast-5-men%27s-running-shoes---ss26",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.sportsshoes.com/product/asi16237/asics-dynablast-5-men%27s-running-shoes---ss26",
+    "https://www.sportsshoes.com/products/asics/mens/shoes"
+   ],
+   "note": "SportsShoes, a big UK running shop, lists 235 ASICS men's shoes on 18 Oct (first page read): road running shoes from the Dynablast 5 at £68.99 (RRP £114.99), Gel-Cumulus 27 £83.99, GT-1000 15 £103.49, the GT-2000 15 stability shoe from £121.49, Gel-Kayano 33 from £161.99, Gel-Nimbus 28 from £161.99. From price: the Dynablast 5 at £68.99, of the first page."
+  },
+  {
+   "product": "Fjällräven Nuuk Parka",
+   "category": "general",
+   "product_type": "winter coat",
+   "price": 394.96,
+   "currency": "GBP",
+   "shop": "Nordic Outdoor",
+   "url": "https://www.nordicoutdoor.co.uk/products/fjallraven-mens-nuuk-parka",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.nordicoutdoor.co.uk/products/fjallraven-mens-nuuk-parka",
+    "https://www.nordicoutdoor.co.uk/products/fjallraven-mens-nuuk-parka.json"
+   ],
+   "note": "Nordic Outdoor (Edinburgh, an independent UK outdoor shop with four stores) sells Fjällräven's Men's Nuuk Parka at £394.96 on sale (regular £494.95), in black, deep forest and dark navy, on 18 Oct; its page marks sizes sold out or unavailable but shows Add to cart, so stock is unclear (out of stock still counts as sold)."
+  },
+  {
+   "product": "nanit cam",
+   "category": "general",
+   "product_type": "baby monitor",
+   "price": 249.99,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/nanit-pro-camera-baby-monitor-flex-stand/p109555009",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "Writers' Nanit camera is the Nanit Pro (Nanit's baby monitor camera): John Lewis lists the Nanit Pro Camera Baby Monitor & Flex Stand at £249.99 on 18 Oct, currently out of stock online (out of stock still counts as sold); its wall-mount and floor-stand sets cost more."
+  },
+  {
+   "product": "Arc'teryx rain jacket",
+   "category": "general",
+   "product_type": "rain jacket",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Arc'teryx UK",
+   "url": "https://arcteryx.com/gb/en/c/mens/shell-jackets",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "Arc'teryx's own UK store (arcteryx.com/gb/en, United Kingdom) lists 31 men's shell jackets on 18 Oct, its waterproof hardshells among them (Beta, Beta AR, Beta SL, Alpha, Alpha SV, Sabre, Rush, Sidewinder...). Its prices load by script, so none was read and there is no from price."
+  },
+  {
+   "product": "Briggs & Riley suitcase",
+   "category": "general",
+   "product_type": "suitcase",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/briggs-riley-35-6cm-4-wheel-cabin-bag-olive/p112685689",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/briggs-riley-35-6cm-4-wheel-cabin-bag-olive/p112685689",
+    "https://www.johnlewis.com/browse/sport-leisure/suitcases-bags-accessories/suitcases-luggage/briggs-riley/_/N-etcZ1z13ypl",
+    "https://www.johnlewis.com/briggs-riley-global-53cm-carry-on-spinner-4-wheel-suitcase-black/black/p113632894"
+   ],
+   "note": "John Lewis's Briggs & Riley luggage page lists 41 items on 18 Oct (duffles and backpacks among them): wheeled cases from the 35.6cm 4-wheel underseat cabin bag at £389 and the 40cm 4-wheel cabin case at £399; carry-on spinners from £469 (Global Hard-Side 53cm, ZDX Essential 56cm), Baseline Global 53cm £599. From price: the 35.6cm 4-wheel cabin bag at £389, the cheapest wheeled case."
+  },
+  {
+   "product": "Klean Kanteen water bottle",
+   "category": "general",
+   "product_type": "water bottle",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Alpinetrek",
+   "url": "https://www.alpinetrek.co.uk/klean-kanteen-classic-narrow-flip-sport-water-bottle/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.alpinetrek.co.uk/klean-kanteen-classic-narrow-flip-sport-water-bottle/",
+    "https://www.alpinetrek.co.uk/brands/klean-kanteen/"
+   ],
+   "note": "Alpinetrek, the UK shop of the Bergfreunde outdoor group (prices in pounds, UK delivery), lists 37 Klean Kanteen products on 18 Oct: adult bottles from the Classic Narrow Flip Sport at £19.64 (from £23.95), insulated ones from the Rise Classic VI at £27.02 and the TKWide Vacuum Insulated at £27.84; kids' bottles from £13.90 (not counted). From price: the Classic Narrow Flip Sport at £19.64. Writers also spell it 'Klein Kanteen'."
+  },
+  {
+   "product": "COROS sports watch",
+   "category": "general",
+   "product_type": "sports watch",
+   "price": null,
+   "currency": "GBP",
+   "shop": "COROS UK",
+   "url": "https://coros.com/uk/pace4",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://coros.com/uk/pace4",
+    "https://coros.com/uk",
+    "https://coros.com/uk/pace3"
+   ],
+   "note": "COROS's own UK store (United Kingdom, prices in pounds) on 18 Oct: PACE 4 from £229, NOMAD £319, PACE 4 Pro and APEX 4 £389, VERTIX 2S £599; the PACE 3 page is still up with Add to bag but shows no price. From price: the PACE 4 from £229."
+  },
+  {
+   "product": "COROS PACE 3",
+   "category": "general",
+   "product_type": "sports watch",
+   "price": null,
+   "currency": "GBP",
+   "shop": "COROS UK",
+   "url": "https://coros.com/uk/pace3",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://coros.com/uk/pace3",
+    "https://coros.com/uk"
+   ],
+   "note": "COROS's UK store still lists the PACE 3 (in its GPS watches menu, Add to bag shown) beside its successor the PACE 4 (from £229) on 18 Oct; no price shown for it."
+  },
+  {
+   "product": "Garmin Forerunner 165",
+   "category": "general",
+   "product_type": "sports watch",
+   "price": 249.0,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/garmin-forerunner-165-gps-running-smartwatch/black/p111728140",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/garmin-forerunner-165-gps-running-smartwatch/black/p111728140",
+    "https://www.johnlewis.com/browse/electricals/smart-watches-wearable-tech/view-all-smart-watches/garmin/_/N-5nmcZ1z13y4o"
+   ],
+   "note": "John Lewis: Garmin Forerunner 165 GPS Running Smartwatch at £249 on 18 Oct (black out of stock online then, mist grey listed; out of stock still counts as sold); the 165 Music from £205."
+  },
+  {
+   "product": "Garmin Forerunner 265",
+   "category": "general",
+   "product_type": "sports watch",
+   "price": 369.99,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/garmin-forerunner-265-wrist-heart-rate-gps-fitness-watch-46mm-black/p110195615",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/garmin-forerunner-265-wrist-heart-rate-gps-fitness-watch-46mm-black/p110195615",
+    "https://www.johnlewis.com/browse/electricals/smart-watches-wearable-tech/view-all-smart-watches/garmin/_/N-5nmcZ1z13y4o"
+   ],
+   "note": "John Lewis's Garmin watches page lists the Forerunner 265 (46mm) and 265S (42mm) at £369.99 on 18 Oct."
+  },
+  {
+   "product": "Garmin Forerunner 570",
+   "category": "general",
+   "product_type": "sports watch",
+   "price": 429.0,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/garmin-forerunner-570-gps-running-smartwatch-42mm/raspberry/p113806560",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/garmin-forerunner-570-gps-running-smartwatch-42mm/raspberry/p113806560",
+    "https://www.johnlewis.com/browse/electricals/smart-watches-wearable-tech/view-all-smart-watches/garmin/_/N-5nmcZ1z13y4o"
+   ],
+   "note": "John Lewis's Garmin watches page lists the Forerunner 570 (42mm and 47mm) at £429 on 18 Oct."
+  },
+  {
+   "product": "Honda lawn mower",
+   "category": "general",
+   "product_type": "lawn mower",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Honda UK",
+   "url": "https://www.honda.co.uk/lawn-and-garden/products/lawnmowers.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "Honda UK still sells lawnmowers on 18 Oct (petrol IZY, HRS, HRN, HRX, HRD, HRH; cordless IZY-ON and HRX; robotic HRM; lawn tractors), prices including VAT, sold through its dealers. From price: the IZY petrol mower from £425 on the page (its menu says from £470)."
+  },
+  {
+   "product": "Ryobi 40V 20-inch push mower",
+   "category": "general",
+   "product_type": "lawn mower",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Ryobi",
+   "url": "https://www.ryobitools.com/products/46396056580",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.ryobitools.com/products/46396056580",
+    "https://uk.ryobitools.eu/"
+   ],
+   "note": "not sold to UK shoppers: Ryobi's 40V HP Brushless 20\" push mowers are its US range (ryobitools.com, in US dollars, about $249-$359 by kit in a search of its pages, 18 Oct); none of the 1,239 pages of Ryobi's UK site (uk.ryobitools.eu) is a 40V 20\" mower's (engine.maker_pages, 18 Oct). Sold abroad only."
+  },
+  {
+   "product": "Wrangler jeans",
+   "category": "general",
+   "product_type": "jeans",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Charlie's",
+   "url": "https://www.charlies.co.uk/wrangler-men-s-texas-low-stretch-jeans-blue-black",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.charlies.co.uk/wrangler-men-s-texas-low-stretch-jeans-blue-black",
+    "https://www.charlies.co.uk/brands/wrangler/"
+   ],
+   "note": "Wrangler's UK store refuses automated reads (403) and John Lewis has no Wrangler jeans in stock on 18 Oct. Charlie's, a UK menswear shop, sells Wrangler jeans (its Wrangler brand page; the Texas Authentic Straight at £59.99, RRP £80, in stock in most sizes). No from price: cheaper Wrangler jeans are sold elsewhere (ASOS, unreadable), so £59.99 isn't the cheapest."
+  },
+  {
+   "product": "Levi's jeans",
+   "category": "general",
+   "product_type": "jeans",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/levis-512-slim-tapered-jeans-rock-cod/p3761262",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/levis-512-slim-tapered-jeans-rock-cod/p3761262",
+    "https://www.johnlewis.com/browse/men/mens-jeans/levis/_/N-eaaZ1z140cx",
+    "https://www.johnlewis.com/levis-501-original-straight-jeans/p857125"
+   ],
+   "note": "John Lewis's Levi's men's jeans page lists 43 on 18 Oct: 501 Original Straight from £80, 511 Slim from £80, 512 Slim Tapered £70, 501 Hudson Selvedge £130; five older-season pairs are cleared at £32.40-£36 (not counted). From price: the 512 Slim Tapered (Rock Cod) at £70."
+  },
+  {
+   "product": "Travelpro Platinum Elite",
+   "category": "general",
+   "product_type": "suitcase",
+   "price": 285.0,
+   "currency": "GBP",
+   "shop": "Travelpro",
+   "url": "https://www.travelpro.co.uk/products/platinum-elite-55cm-expandable-spinner-vintage-grey",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.travelpro.co.uk/products/platinum-elite-55cm-expandable-spinner-vintage-grey",
+    "https://www.travelpro.co.uk/products.json?limit=250"
+   ],
+   "note": "Checked by hand (18 Oct): engine.maker_pages found the Platinum Elite 71cm spinner, a checked case; writers' Platinum Elite in carry-on threads is the cabin size, so the page is Travelpro UK's Platinum Elite 55cm Expandable Spinner (Vintage Grey), £285, out of stock on 18 Oct (out of stock still counts as sold); the line also comes as a 58cm rollaboard suiter (£275), 71cm (£319) and 82cm spinners."
+  },
+  {
+   "product": "Carhartt boot socks",
+   "category": "general",
+   "product_type": "socks",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Carhartt",
+   "url": "https://www.carhartt.com/en-gb/p/heavyweight-wool-blend-boot-sock/802530",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.carhartt.com/en-gb/p/heavyweight-wool-blend-boot-sock/802530",
+    "https://www.carhartt.com/en-gb/Product.xml"
+   ],
+   "note": "Found by engine.maker_pages in the sitemap https://www.carhartt.com/en-gb/Product.xml; the page names it \"Heavyweight Wool Blend Boot Sock\"; GBP 18.99 on the page. Checked by hand (18 Oct): writers' 'Carhartt boot socks' names Carhartt's boot socks as a range, not this one sock, so no single price is recorded; the page stays as its link (Carhartt's UK store sells it)."
+  },
+  {
+   "product": "Smartwool socks",
+   "category": "general",
+   "product_type": "socks",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/smartwool-run-targeted-cushion-ankle-socks-medium-grey/p114423416",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/smartwool-run-targeted-cushion-ankle-socks-medium-grey/p114423416",
+    "https://www.johnlewis.com/browse/men/mens-socks/smartwool/socks/_/N-eahZ1z13ucuZ1z140xv",
+    "https://www.johnlewis.com/smartwool-performance-hike-light-cushion-crew-socks/p5767637"
+   ],
+   "note": "John Lewis's SmartWool men's socks page lists 18 on 18 Oct, merino wool blends: hiking socks £22-£28 (Hike Light Cushion Crew £22, Performance Hike Light Cushion Crew £25-£26, Classic Mountaineer £28), ski socks £29-£30. From price: the Run Targeted Cushion Ankle Socks at £21."
+  },
+  {
+   "product": "Thule Chariot",
+   "category": "general",
+   "product_type": "stroller",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Thule UK",
+   "url": "https://www.thule.com/en-gb/bike-trailers/bike-trailers-for-kids/thule-chariot-lite-_-10203024",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.thule.com/en-gb/bike-trailers/bike-trailers-for-kids/thule-chariot-lite-_-10203024",
+    "https://www.thule.com/en-gb/bike-trailers"
+   ],
+   "note": "Thule's own UK store (current market United Kingdom, prices in pounds) sells its Chariot multisport trailers (trailer, jogging stroller or pushchair with kits): Chariot Lite double £789 on sale (was £829), Chariot Sport 2 double £1,449.99, Chariot Cab and Sport 2 bundles more, on 18 Oct (its popular list, not a full sort). Writers' 'Thule Chariot' names the range, so no single price is recorded; its page is the cheapest shown, the Chariot Lite."
+  },
+  {
+   "product": "Hydro Flask water bottle",
+   "category": "general",
+   "product_type": "water bottle",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/hydro-flask-double-wall-vacuum-insulated-stainless-steel-flip-straw-drinks-bottle-621ml/p113027389",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/hydro-flask-double-wall-vacuum-insulated-stainless-steel-flip-straw-drinks-bottle-621ml/p113027389",
+    "https://www.johnlewis.com/browse/home-garden/drinkware/water-bottles/hydro-flask/drinks-bottles/_/N-c0lZnxwsZ1z0wq75"
+   ],
+   "note": "John Lewis's Hydro Flask drinks bottles page lists 5 vacuum-insulated bottles on 18 Oct: 621ml Flip Straw £34.95, 946ml Wide Mouth Flip Straw and Flex Straw £39.95, and a 300ml Micro £18.50 (a mini, not counted). From price: the 621ml Flip Straw at £34.95."
+  },
+  {
+   "product": "Ruffwear dog harness",
+   "category": "general",
+   "product_type": "dog harness",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Ruffwear UK",
+   "url": "https://ruffwear.co.uk/products/hi-and-light-dog-harness-3082",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://ruffwear.co.uk/products/hi-and-light-dog-harness-3082",
+    "https://ruffwear.co.uk/products.json?limit=250",
+    "https://ruffwear.co.uk/products/front-range-everyday-dog-harness"
+   ],
+   "note": "Ruffwear's UK store (ruffwear.co.uk, prices in pounds) lists 16 harnesses on 18 Oct (its product list, available variants): Hi & Light from £21.95 (another listing £49.95), Switchbak £31.98, Front Range £49.95, Front Range Flex £64.95, Flagline and Web Master £84.95, Ridgeline £199.95. From price: the Hi & Light at £21.95, the cheapest available."
+  },
+  {
+   "product": "Ruffwear Front Range harness",
+   "category": "general",
+   "product_type": "dog harness",
+   "price": 49.95,
+   "currency": "GBP",
+   "shop": "Ruffwear UK",
+   "url": "https://ruffwear.co.uk/products/front-range-everyday-dog-harness",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://ruffwear.co.uk/products/front-range-everyday-dog-harness",
+    "https://ruffwear.co.uk/products.json?limit=250"
+   ],
+   "note": "Ruffwear UK sells the Front Range Dog Harness at £49.95 on 18 Oct (available sizes and colours in its product list)."
+  },
+  {
+   "product": "Salomon X Ultra hiking boots",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/salomon-x-ultra-360-gore-tex-hiking-shoes-sage-chic-etherea/p115503097",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/salomon-x-ultra-360-gore-tex-hiking-shoes-sage-chic-etherea/p115503097",
+    "https://www.johnlewis.com/brand/salomon/walking/_/N-lk95Z1yzjf2t",
+    "https://www.johnlewis.com/salomon-x-ultra-360-mid-gore-tex-mens-boots-magnet-black/p111519894"
+   ],
+   "note": "Salomon's X Ultra hiking boots and shoes (writers' 'X-Ultra', 'X Ultra 4'...; the current generation is the X Ultra 360): John Lewis's Salomon walking page lists X Ultra 360 Gore-Tex hiking shoes at £140 and X Ultra 360 Mid Gore-Tex boots at £150 on 18 Oct. From price: the X Ultra 360 Gore-Tex hiking shoe at £140. Product page is the Mid boot's."
+  },
+  {
+   "product": "Salomon Quest hiking boots",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/salomon-mens-quest-element-walking-boots-black-olive-night/p112332005",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/salomon-mens-quest-element-walking-boots-black-olive-night/p112332005",
+    "https://www.johnlewis.com/brand/salomon/walking/_/N-lk95Z1yzjf2t"
+   ],
+   "note": "Salomon's Quest walking boots (writers' 'Salomon Quest', 'Quest 4 GTX'): John Lewis lists the Men's Quest Element Walking Boots at £170 on 18 Oct, email when available (out of stock for now still counts as sold)."
+  },
+  {
+   "product": "Scarpa hiking boots",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "SCARPA UK",
+   "url": "https://www.scarpa.co.uk/products/ribelle-cross-2-mid-gtx-lightweight-walking-boots-cream",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.scarpa.co.uk/products/ribelle-cross-2-mid-gtx-lightweight-walking-boots-cream",
+    "https://www.scarpa.co.uk/collections/mens-walking-boots",
+    "https://www.scarpa.co.uk/collections.json?limit=250",
+    "https://www.scarpa.co.uk/products.json?limit=250"
+   ],
+   "note": "SCARPA's own UK store (scarpa.co.uk, prices in pounds; 270 products on 18 Oct): adult hiking and trekking boots and shoes from the Ribelle Cross 2 Mid GTX walking boot at £110 (Rush TRK LT GTX £120, Ribelle Cross 2 shoe £140); kids' boots from £33 not counted."
+  },
+  {
+   "product": "Graco Turn2Me",
+   "category": "general",
+   "product_type": "car seat",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Graco US",
+   "url": "https://www.gracobaby.com/shop/car-seats/toddler-car-seats/all-in-one-car-seats/turn2me-3-in-1-rotating-car-seat/SP_1891616.html",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.gracobaby.com/shop/car-seats/toddler-car-seats/all-in-one-car-seats/turn2me-3-in-1-rotating-car-seat/SP_1891616.html",
+    "https://www.kiddies-kingdom.com/23_graco/1833-graco-car-seats",
+    "https://www.kiddies-kingdom.com/toddler-car-seats-15m-7yrs/57782-graco-turn2me-grow-i-size-r129-360-rotating-isofix-car-seat-midnight.html"
+   ],
+   "note": "not sold to UK shoppers: Writers (mostly US) mean Graco's US Turn2Me 3-in-1 Rotating Car Seat: rear-facing harness 4-40 lb, forward-facing harness to 65 lb, high-back booster 40-100 lb, rotating in rear-facing mode, built to US rules. Graco sells it in the US only; its US page refuses automated reads, and search results show it out of stock there and at Walmart and Macrobaby on 18 Oct. The UK seats called Turn2Me are not the same seat: they are R129 (i-Size) seats made for Europe, with 360-degree rotation and ISOFIX. The Turn2Me i-Size R129 is for birth to about 4 years (40-105cm). The Turn2Me DLX i-Size R129 adds an anti-rebound bar: Kiddies Kingdom £149 (RRP £190) on 18 Oct. The Turn2Me Grow i-Size R129 runs 40-125cm, with a high-back booster mode from 100cm, so it is the closest to the US 3-in-1: Kiddies Kingdom £180 (RRP £249.99, last items) on 18 Oct. Halfords, Argos, Boots, Smyths and Next sell the UK versions, but their pages refuse automated reads. If answers should show the UK seat instead, the Grow is the closest match."
+  },
+  {
+   "product": "Baby Jogger City Turn",
+   "category": "general",
+   "product_type": "car seat",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Baby Jogger US",
+   "url": "https://www.babyjogger.com/car-seats/toddler-car-seats/city-turn/city-turn-rotating-convertible-car-seat/SP_1397014.html",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.babyjogger.com/car-seats/toddler-car-seats/city-turn/city-turn-rotating-convertible-car-seat/SP_1397014.html",
+    "https://snugglebugz.ca/products/baby-jogger-city-turn-rotating-convertible-car-seat"
+   ],
+   "note": "not sold to UK shoppers: Baby Jogger's City Turn rotating convertible car seat: rear-facing harness 4-50 lb, forward-facing harness 26.5-65 lb, turning 180 degrees in rear-facing mode only. It is a US and Canada seat. Baby Jogger's US page lists it at $579.99 on 18 Oct, out of stock and final sale, which looks like a run-out. A Canadian shop, Snuggle Bugz, also shows it out of stock and final sale (CA$859.99). Searches found no UK shop selling it and no European (R129) version."
+  },
+  {
+   "product": "cybex rotating car seat",
+   "category": "general",
+   "product_type": "car seat",
+   "price": 214.16,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/cybex-sirona-gi-i-size-360-rotating-isofix-car-seat/p112390540",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/cybex-sirona-gi-i-size-360-rotating-isofix-car-seat/p112390540",
+    "https://www.cybex-online.com/en/gb/car-seats/",
+    "https://www.cybex-online.com/en/gb/p/cs-go-sirona-gi-i-size.html",
+    "https://www.cybex-online.com/en/gb/p/cs-go-sirona-g-i-size.html",
+    "https://www.johnlewis.com/browse/baby-child/buggies-travel/car-seats/cybex/_/N-8gzZ1z13qnc",
+    "https://www.johnlewis.com/cybex-sirona-g-i-size-360-rotating-car-seat/p112390542"
+   ],
+   "note": "Cybex's rotating car seats are its Sirona range. Cybex's own UK store: Sirona S from £269.95, Sirona Si from £339.95 (both 360-degree), Sirona Gi i-Size £249.95 (360-degree, in stock) and Sirona G i-Size £239.95 (few left; only fits the Base G, sold separately), on 18 Oct. John Lewis's Cybex car seats page lists 12 Sirona products on 18 Oct. Among them: Sirona Gi in Fog Grey at £214.16, reduced to clear (the page also shows £279.95 and £237.96); Sirona T £269.95; Sirona T Plus £309.95; Sirona S £269.95 (coming soon). John Lewis also has the Sirona G in Fog Grey at £178.19, reduced to clear with an extra 10% off until 19 Oct (was £230). From price: the Sirona Gi at £214.16 at John Lewis, the cheapest complete rotating Sirona. The Sirona G is cheaper but needs the separate Base G, so it isn't counted. Both G-line seats are being cleared at John Lewis; Cybex's current Sirona S starts at £269.95."
+  },
+  {
+   "product": "Chicco stroller",
+   "category": "general",
+   "product_type": "stroller",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Chicco UK",
+   "url": "https://www.chicco.co.uk/prams-and-strollers/echo-complete-stroller",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.chicco.co.uk/prams-and-strollers/echo-complete-stroller",
+    "https://www.chicco.co.uk/prams-and-strollers",
+    "https://www.chicco.co.uk/products/strollers.html"
+   ],
+   "note": "Chicco's own UK store lists one pushchair on 18 Oct: the Echo stroller at £99.90 (lightweight, 7.6kg, birth to about 4 years, up to 22kg). It is out of stock with a back-in-stock alert, which still counts as sold. From price: the Echo at £99.90. Other Chicco pushchairs may be sold by UK shops whose pages couldn't be read today, so this from price may not cover the whole UK range."
+  },
+  {
+   "product": "Owlet sock",
+   "category": "general",
+   "product_type": "baby monitor",
+   "price": 299.99,
+   "currency": "GBP",
+   "shop": "Owlet UK",
+   "url": "https://owletbabycare.co.uk/products/dream-sock-pulse-oximeter-pediatric",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://owletbabycare.co.uk/products/dream-sock-pulse-oximeter-pediatric",
+    "https://owletbabycare.co.uk/",
+    "https://owletbabycare.co.uk/products.json"
+   ],
+   "note": "The Owlet Dream Sock Smart Baby Monitor. Owlet UK's own store (owletbabycare.co.uk, prices in pounds) lists it at £299.99 on 18 Oct, marked 'Special Offer' with no was price shown. It is in stock in Dusty Rose and Bedtime Blue (Mint out of stock). The store also sells the Dream Duo (sock plus camera) at £379.99. It calls the sock medically certified and links an MHRA certification page. It notifies when SpO2 falls below 80% or the pulse is outside 50-220 bpm, and is for healthy babies 0-18 months. Writers' 'Smart Sock' is Owlet's older sock; the store sells the Dream Sock."
+  },
+  {
+   "product": "Hello Baby",
+   "category": "general",
+   "product_type": "baby monitor",
+   "price": null,
+   "currency": "GBP",
+   "shop": "HelloBaby US",
+   "url": "https://www.hellobaby-monitor.com/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.hellobaby-monitor.com/",
+    "https://www.hellobaby-monitor.com/policies/shipping-policy"
+   ],
+   "note": "not sold to UK shoppers: HelloBaby is a US brand of video baby monitors, here taken as its whole range. Its own US store (prices in dollars) lists on 18 Oct: the HB65 from $79.99 (regular $119.99), the HB6550 5-inch from $99.99, the HB6560 6-inch from $109.99, and two-camera versions. Its shipping policy names the UK among countries it ships to, at an extra $9.98. There is no UK store, UK shop or UK price: its country menu shows a 'United Kingdom GBP' option that leads nowhere. Walmart's US page refuses automated reads. Amazon UK couldn't be checked (no web searches left)."
+  },
+  {
+   "product": "Oral B electric toothbrush",
+   "category": "general",
+   "product_type": "electric toothbrush",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Oral-B UK",
+   "url": "https://www.oralb.co.uk/en-gb/products/electric-toothbrushes",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.oralb.co.uk/en-gb/products/electric-toothbrushes",
+    "https://www.oralb.co.uk/electric-toothbrushes.list",
+    "https://www.johnlewis.com/browse/beauty/electric-toothbrushes-flossers-accessories/_/N-483s"
+   ],
+   "note": "Oral-B's UK site lists its electric toothbrush lines (iO, Genius, Pro, Smart, Vitality), but its shop page loads products and prices with scripts, so no price could be read. John Lewis's electric toothbrushes page lists only Oral-B iO models on 18 Oct (9 items; the iO6 from £120 is the cheapest). Oral-B's cheaper Pro and Vitality brushes are mostly sold at shops whose pages refuse automated reads (Boots, Argos, Currys). No clean from price."
+  },
+  {
+   "product": "Braun electric toothbrush",
+   "category": "general",
+   "product_type": "electric toothbrush",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Oral-B UK",
+   "url": "https://www.oralb.co.uk/en-gb/products/electric-toothbrushes",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "Braun makes Oral-B's electric toothbrushes, and in the UK they are sold as Oral-B ('Oral-B by Braun'), so the name means Oral-B's range. Oral-B UK's electric toothbrush page lists the iO, Genius, Pro, Smart and Vitality lines, but no prices could be read. The name gives no model, so no price; see the 'Oral B electric toothbrush line' record (John Lewis has only iO models, from £120 on 18 Oct)."
+  },
+  {
+   "product": "T3",
+   "category": "general",
+   "product_type": "hair dryer",
+   "price": 139.99,
+   "currency": "GBP",
+   "shop": "T3 UK",
+   "url": "https://t3micro.co.uk/products/featherweight-stylemax-professional-hair-dryer",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://t3micro.co.uk/products/featherweight-stylemax-professional-hair-dryer",
+    "https://t3micro.co.uk/collections/hair-dryers"
+   ],
+   "note": "A brand named alone, so T3's line of hair dryers. T3's own UK store (t3micro.co.uk, prices in pounds) lists three dryers on 18 Oct, all with add to cart: Featherweight StyleMax £139.99 on sale (regular £199.99), AFAR £159.99 (a travel dryer) and AireLuxe £199.99 (White or Graphite). From price: the Featherweight StyleMax at £139.99, a sale price (usually £199.99)."
+  },
+  {
+   "product": "laifen swift",
+   "category": "general",
+   "product_type": "hair dryer",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Laifen US",
+   "url": "https://www.laifentech.com/products/laifen-swift-high-speed-hair-dryer",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.laifentech.com/products/laifen-swift-high-speed-hair-dryer",
+    "https://www.laifentech.com/",
+    "https://eu.laifentech.com/products.json?limit=250"
+   ],
+   "note": "not sold to UK shoppers: The Laifen Swift high-speed hair dryer. Laifen's US page lists it at $111.99 (was $139.99) on 18 Oct, rated 120V and not dual voltage; the page shows both add-to-cart and sold-out signals. Laifen has no UK store: its country menu lists the US, Canada, Europe (English), Germany, France, Japan, Australia, South Korea and Indonesia. Its European store doesn't sell the Swift, only other dryers (Neo, Neo Special, Air, Air Pro, Mini) and a travel bag for the Swift. Amazon UK couldn't be checked (no web searches left)."
+  },
+  {
+   "product": "Wrangler 13MWZ",
+   "category": "general",
+   "product_type": "jeans",
+   "price": 58.0,
+   "currency": "GBP",
+   "shop": "Zalando",
+   "url": "https://www.zalando.co.uk/wrangler-straight-leg-jeans-stonewashed-wr122g0a6-k12.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.zalando.co.uk/wrangler-straight-leg-jeans-stonewashed-wr122g0a6-k12.html",
+    "https://www.johnlewis.com/wrangler-13mwz-cowboy-cut-jeans-black/p112206174"
+   ],
+   "note": "Wrangler's 13MWZ Cowboy Cut Original Fit jean (13oz non-stretch 100% cotton, mid-rise, regular thigh and knee, slight boot opening; Wrangler Europe sells it as the 13MWZ Original Cowboy Cut, filed under '13MWZ Regular Straight'). Wrangler's own UK store (eu.wrangler.com/uk-en, found by search with 13MWZ pages, several washes shown sold out) refuses automated reads (403), so no price was read there. John Lewis's 13MWZ in black is no longer available online. Zalando UK lists '13MWZ REGULAR STRAIGHT - Straight leg jeans - stonewashed' (13oz non-stretch 100% cotton, Cowboy Cut description) from £58.00, usual £64.99 ('up to 11% off'; the price depends on the size), Add to bag shown, on 18 Oct."
+  },
+  {
+   "product": "Carhartt jeans",
+   "category": "general",
+   "product_type": "jeans",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Carhartt",
+   "url": "https://www.carhartt.com/en-gb/c/men/trousers-jeans/jeans/eum3000086",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.carhartt.com/en-gb/c/men/trousers-jeans/jeans/eum3000086",
+    "https://www.charlies.co.uk/carhartt-men-s-relaxed-straight-rugged-flex-jeans-superior",
+    "https://www.arco.co.uk/BRANDS-ROOT/Carhartt/c/BRAND_CARHARTT",
+    "https://www.johnlewis.com/brand/carhartt-wip/_/N-1z0cfb5"
+   ],
+   "note": "Carhartt's workwear jeans (Rugged Flex Relaxed Straight 102804, Slim Tapered 102807, utility and double-front jeans) are sold new to UK shoppers on Carhartt's own UK store (carhartt.com/en-gb, prices in pounds); its men's jeans page (the product page here) was found by search, but the store refuses automated reads (403), so no price could be read on it on 18 Oct. No big UK shop sells Carhartt workwear jeans: John Lewis carries Carhartt WIP only, Arco's Carhartt brand page has no products, Screwfix's Carhartt page refused reading, and Amazon UK's listings (search results) are third-party at £99-£166. Charlie's, a UK menswear shop, sells the Relaxed Straight Rugged Flex jean (Superior) at £64.99 (£49.00 in a few sizes; RRP £71.99) on 18 Oct. No from price: the maker's own UK prices couldn't be read."
+  },
+  {
+   "product": "Dearborn Denim",
+   "category": "general",
+   "product_type": "jeans",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Dearborn Denim",
+   "url": "https://dearborndenim.us/collections/jeans",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://dearborndenim.us/collections/jeans",
+    "https://dearborndenim.us/pages/frequently-asked-questions",
+    "https://dearborndenim.us/policies/shipping-policy"
+   ],
+   "note": "not sold to UK shoppers: Dearborn Denim & Apparel's jeans (a brand named alone: its jeans line), sold from its own US store: 84 jeans on its Jeans page on 18 Oct (Tailored Fit Dark Wash $75, Tailored Fit Medium Wash $79, Long Ryder Model 1 $39.99). Its FAQ answers 'I live outside the United States... can you ship to me?' with no: it isn't doing international shipping at this time. No UK seller found (it sells direct)."
+  },
+  {
+   "product": "Unbranded",
+   "category": "general",
+   "product_type": "jeans",
+   "price": 83.4,
+   "currency": "GBP",
+   "shop": "Jeanstore",
+   "url": "https://jeanstore.co.uk/products/unbranded-ub254-tapered-fit-mens-jeans-13-5oz-vintage-blue-selvedge",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://jeanstore.co.uk/products/unbranded-ub254-tapered-fit-mens-jeans-13-5oz-vintage-blue-selvedge",
+    "https://jeanstore.co.uk/collections/the-unbranded-brand",
+    "https://jeanstore.co.uk/collections/the-unbranded-brand/products.json?limit=250",
+    "https://jeanstore.co.uk/products/unbranded-tapered-fit-mens-jeans-14-5oz-raw-indigo-selvedge",
+    "https://theunbrandedbrand.com/collections/jeans",
+    "https://theunbrandedbrand.com/policies/shipping-policy"
+   ],
+   "note": "Writers' 'Unbranded' is The Unbranded Brand's raw selvedge denim jeans. Its own store (theunbrandedbrand.com) prices in US dollars ($112-$149 for jeans, 44 on 18 Oct) and ships worldwide by FedEx ($25 outside the US and Canada). Jeanstore, a UK jeans shop (prices in pounds, UK delivery), sells the range on 18 Oct: 14.5oz indigo selvedge UB101/UB201/UB301/UB401/UB601/UB701 at £125, 11oz stretch selvedge £135-£139, 14.5oz slubby black £159, 21oz £165. From price: the UB254 Tapered Fit in 13.5oz Vintage Blue Selvedge at £83.40 (a sale price, usual £139.00; sizes W28, W30, W36 and W38 in stock); the cheapest at full price is £125 (UB201 Tapered Fit page read)."
+  },
+  {
+   "product": "Canada Goose winter coat",
+   "category": "general",
+   "product_type": "winter coat",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Canada Goose UK",
+   "url": "https://www.canadagoose.com/en-gb/products/bayview-parka-3833m",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.canadagoose.com/en-gb/products/bayview-parka-3833m",
+    "https://www.canadagoose.com/en-gb/collections/mens-parkas",
+    "https://www.canadagoose.com/en-gb/collections/mens-parkas?sort_by=price-ascending",
+    "https://www.canadagoose.com/en-gb/collections/womens-parkas?sort_by=price-ascending"
+   ],
+   "note": "Canada Goose's own UK store (canadagoose.com/en-gb, prices in pounds): 32 men's parkas and 36 women's parkas on 18 Oct. From price: the men's Bayview Parka at £1,050 (out of stock for now, Notify Me; still counted as sold), then the MacMillan Parka at £1,075; women's from the Leslie and Ivy Parkas at £1,095; most cost £1,195-£1,850 (Expedition Parka £1,675, Snow Mantra Parka £1,850). Kids' parkas not counted. Product page: the men's parkas page."
+  },
+  {
+   "product": "Red Wing work boots",
+   "category": "general",
+   "product_type": "work boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Red Wing",
+   "url": "https://www.redwingshoes.com/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.redwingshoes.com/",
+    "https://www.redwingshoes.com/contact-us/shipping.html",
+    "https://www.redwingshoes.com/mens/work/boots/",
+    "https://eu.redwingshoes.com/"
+   ],
+   "note": "not sold to UK shoppers: Red Wing's work boots (its work range, not Heritage: SuperSole, King Toe, VersaPro, ShieldLite...) are sold from its own North American store (redwingshoes.com, prices in USD or CAD; 136 men's work boots on 18 Oct, $134.99-$374.99), whose shipping page says the final destination must be within the United States. Red Wing's European store (eu.redwingshoes.com, 'Red Wing Heritage Europe') sells the Heritage line only, with no work range. UK shops weren't searched (the web search allowance ran out)."
+  },
+  {
+   "product": "Merkur razor",
+   "category": "general",
+   "product_type": "razor",
+   "price": null,
+   "currency": "GBP",
+   "shop": "The English Shaving Company",
+   "url": "https://www.theenglishshavingcompany.com/merkur-41c-de-safety-razor-open-comb.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.theenglishshavingcompany.com/merkur-41c-de-safety-razor-open-comb.html",
+    "https://www.merkur-razors.com",
+    "https://www.theenglishshavingcompany.com/merkur.html",
+    "https://www.theenglishshavingcompany.com/astra-superior-platinum-de-razor-blades.html",
+    "https://www.theenglishshavingcompany.com/tax-free-shopping"
+   ],
+   "note": "Merkur (Solingen, Germany) makes double-edge safety razors. Its own shop (merkur-razors.com) is German, it has no UK store, and I found no big UK chain listing it, so UK shoppers buy from shaving specialists. The English Shaving Company's Merkur page lists 18 Merkur safety razors, all in stock on 18 Oct, from £29.00 (41C open comb; the 30C and 42C are the same price) to £83.50 (Futur gold). The shop shows each price with and without VAT: the 41C page reads 'RRP £29.00 £24.17', and its quantity tiers on other pages pair the two figures the same way, so UK buyers pay £29.00. Left out: the Merkur Moustache Razor (£27.95), a small razor that takes its own blades."
+  },
+  {
+   "product": "Astra razor",
+   "category": "general",
+   "product_type": "razor",
+   "price": null,
+   "currency": "GBP",
+   "shop": "The English Shaving Company",
+   "url": "https://www.theenglishshavingcompany.com/astra-superior-platinum-de-razor-blades.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.theenglishshavingcompany.com/astra-superior-platinum-de-razor-blades.html",
+    "https://www.theenglishshavingcompany.com/razor-blades.html"
+   ],
+   "note": "Astra double-edge razor blades. I found no maker's page for Astra online. The English Shaving Company sells one Astra product, Superior Platinum DE blades in a 5-pack: £2.50 a pack (£2.08 before VAT; £2.40 a pack for 10 to 19, £2.35 for 20 or more), in stock on 18 Oct; its page says they are made in China. I found no UK shop selling Astra Superior Stainless. From price: the Superior Platinum 5-pack at £2.50. The shop's Astra brand-page link returned not found, so the product page stands for the range."
+  },
+  {
+   "product": "Gillette Silver Blue",
+   "category": "general",
+   "product_type": "razor",
+   "price": 2.1,
+   "currency": "GBP",
+   "shop": "The English Shaving Company",
+   "url": "https://www.theenglishshavingcompany.com/gillette-silver-blue-de-razor-blades.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.theenglishshavingcompany.com/gillette-silver-blue-de-razor-blades.html",
+    "https://www.theenglishshavingcompany.com/razor-blades.html"
+   ],
+   "note": "Gillette Silver Blue double-edge razor blades, 5 to a pack, made in St Petersburg, Russia by Petersburg Products Int. under licence from Gillette (per the page). The English Shaving Company sells them at £2.10 a pack (£1.75 before VAT; £1.90 a pack for 10 to 19, £1.80 for 20 or more), in stock on 18 Oct."
+  },
+  {
+   "product": "Rockwell 6C",
+   "category": "general",
+   "product_type": "razor",
+   "price": 55.0,
+   "currency": "GBP",
+   "shop": "The English Shaving Company",
+   "url": "https://www.theenglishshavingcompany.com/rockwell-6c-white-chrome-de-safety-razor.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.theenglishshavingcompany.com/rockwell-6c-white-chrome-de-safety-razor.html",
+    "https://www.theenglishshavingcompany.com/rockwell-6c-gunmetal-de-safety-razor.html",
+    "https://getrockwell.com/products/rockwell-6c-safety-razor",
+    "https://getrockwell.com/policies/shipping-policy"
+   ],
+   "note": "Rockwell Razors' (Canada) 6C adjustable double-edge safety razor, with six settings from three reversible plates, a blade cap and 5 blades. In the UK The English Shaving Company lists it at £55.00 (£45.83 before VAT) in white chrome and in gunmetal, both out of stock on 18 Oct. Rockwell's own shop (getrockwell.com) lists it at $60.00 and ships to the UK (free over £45, £10 below; UK import charges may apply); its 6C page showed a 'Sold out' label beside an add-to-cart button. Counted as on sale, out of stock for now."
+  },
+  {
+   "product": "mild Henson al 13",
+   "category": "general",
+   "product_type": "razor",
+   "price": 81.6,
+   "currency": "GBP",
+   "shop": "Henson Shaving UK",
+   "url": "https://uk.hensonshaving.com/collections/all",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://uk.hensonshaving.com/collections/all",
+    "https://hensonshaving.com",
+    "https://uk.hensonshaving.com/products/henson-al13-in-aircraft-aluminum",
+    "https://uk.hensonshaving.com/products/henson-al13-in-aircraft-aluminum.json"
+   ],
+   "note": "The writer's 'mild Henson al 13' is Henson Shaving's (Canada) AL13 aluminium safety razor in its Mild version. Henson's own UK store sells the AL13 at £81.60 in five finishes (aircraft aluminium, jet black, steel blue, copper, tan; same price), with 5 blades included. The store's AL13 is the Mild (its product code ends MLD and its page uses the Mild template); no Medium version was listed. The price was read on the store's all-products page, since the product page loads it after the page itself; stock isn't shown; free UK shipping over £115."
+  },
+  {
+   "product": "Milwaukee drill",
+   "category": "general",
+   "product_type": "drill",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Toolstation",
+   "url": "https://www.toolstation.com/milwaukee-m12-blpdrc-202c-brushless-compact-percussion-drill-driver-kit/pAL231",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.toolstation.com/milwaukee-m12-blpdrc-202c-brushless-compact-percussion-drill-driver-kit/pAL231",
+    "https://uk.milwaukeetool.eu/en-gb/power-tools/drilling-and-chipping/percussion-drills/",
+    "https://uk.milwaukeetool.eu/en-gb/power-tools/drilling-and-chipping/drill-drivers/",
+    "https://www.toolstation.com/power-tools/drills/c719?brand=Milwaukee",
+    "https://www.toolstation.com/milwaukee-m18-bpd-402c-heavy-duty-combi-kit/p39889",
+    "https://www.toolstation.com/milwaukee-m18-compact-brushless-percussion-drill/p55598",
+    "https://www.toolstation.com/milwaukee-m12-sub-compact-drill-driver/p43712"
+   ],
+   "note": "Milwaukee's UK site lists its cordless M12 and M18 drills (6 percussion or combi drills, 9 drill drivers), without prices. Toolstation's Milwaukee drills page lists 44 drills and SDS hammers on 18 Oct. From price for a kit with batteries and charger: the M12 BLPDRC-202C brushless compact percussion drill driver kit (2 x 2.0Ah, charger, case) at £149.99, 12 available for delivery. Cheaper but on clearance and out of stock for delivery: an M18 compact brushless percussion drill kit (1 x 5.0Ah) at £116.98 and an M12 sub compact drill driver kit (2 x 2.0Ah) at £129.98. The M18 BPD-402C combi kit (2 x 4.0Ah) is also £149.99 (was £219.99) and in stock, but Milwaukee's UK site no longer lists the M18 BPD. Bare tools start at £99.99 (an M12 right-angle drill); the M18 FPD3 combi drill body only is £129.99. (Shop field: Toolstation, where the price was read; the product page is the maker's.)"
+  },
+  {
+   "product": "Makita 18v hammer drill combo",
+   "category": "general",
+   "product_type": "drill",
+   "price": 179.99,
+   "currency": "GBP",
+   "shop": "Toolstation",
+   "url": "https://www.toolstation.com/makita-dhp490sfx2-18v-brushless-combi-drill-and-101-piece-accessory-set/pAH687",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.toolstation.com/makita-dhp490sfx2-18v-brushless-combi-drill-and-101-piece-accessory-set/pAH687",
+    "https://www.makitauk.com/products/combi-drills-lxt-18v-18vx2",
+    "https://www.toolstation.com/power-tools/drills/c719?brand=Makita",
+    "https://www.toolstation.com/makita-dhp490sfj-18v-brushless-combi-drill/pAH688",
+    "https://www.toolstation.com/makita-dlx2414st-18v-lxt-combi-drill-impact-driver-kit/pAB221"
+   ],
+   "note": "The name gives no model. It means a Makita 18V LXT combi (hammer) drill kit, with batteries and a charger; in US usage a 'combo' can also mean a hammer drill and impact driver kit. Makita UK lists eight 18V LXT combi drills (DHP453, DHP458, DHP482, DHP484, DHP487, DHP489, DHP490, DHP492). The cheapest current kit at Toolstation on 18 Oct is the DHP490SFX2 brushless combi drill (1 x 3.0Ah LXT battery, charger, case and a 101-piece accessory set) at £179.99, 20 available for delivery. With 2 x 3.0Ah batteries and no accessory set (DHP490SFJ) it is £199.99. The combi drill and impact driver twin kit (DLX2414ST: DHP487 and DTD157, 2 x 5.0Ah) is £269.98, out of stock for delivery. (Shop field: Toolstation, where the price was read; the product page is the maker's.)"
+  },
+  {
+   "product": "EGO lawn mower",
+   "category": "general",
+   "product_type": "lawn mower",
+   "price": null,
+   "currency": "GBP",
+   "shop": "EGO Power+ UK",
+   "url": "https://egopowerplusuk.com/lm1711e-42cm-push-mower-kit/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://egopowerplusuk.com/lm1711e-42cm-push-mower-kit/",
+    "https://egopowerplus.co.uk/products/mowers",
+    "https://egopowerplus.co.uk/where-to-buy",
+    "https://egopowerplusuk.com/lawnmowers/power-lawnmowers/",
+    "https://egopowerplusuk.com/lm1710e-42cm-push-mower/"
+   ],
+   "note": "EGO Power+ UK lists 12 cordless walk-behind mowers (42 to 76cm, push and self-propelled). It doesn't sell direct; its where-to-buy page names Henton & Chattell as UK distributor, whose shop (egopowerplusuk.com) prices them. From price for a mower with battery and charger: the LM1711E 42cm push mower kit (LM1710E mower, 2.5Ah battery and charger) at £489.00 on sale (was £529.00), shown in stock on 18 Oct. Bare tools start at £349.00 (LM1710E 42cm push mower, was £379.00). The shop also sells robotic mowers (from £1,649.00) and ride-ons."
+  },
+  {
+   "product": "Powerblocks dumbbells",
+   "category": "general",
+   "product_type": "dumbbells",
+   "price": null,
+   "currency": "GBP",
+   "shop": "PowerBlock UK",
+   "url": "https://powerblock.com/en-gb/products/sport-24-adjustable-dumbbells",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://powerblock.com/en-gb/products/sport-24-adjustable-dumbbells",
+    "https://powerblock.com/en-gb/collections/adjustable-dumbbells",
+    "https://powerblock.com/en-gb/products/sport-24-adjustable-dumbbells.json",
+    "https://powerblock.com/policies/shipping-policy",
+    "https://powerblock.com/pages/store-locator"
+   ],
+   "note": "The writer's 'Powerblocks' are PowerBlock (US) adjustable dumbbells. PowerBlock sells to UK shoppers from its own site's UK store, with prices in pounds and free UK shipping (by DPD); its retailer list covers only the US and Canada. The UK store lists the Pro 100 EXP, Pro 50 and Sport 24, with the Elite EXP and commercial sets 'Coming Soon'. From price: the Sport 24 (1.4 to 10.9kg per dumbbell, sold as a pair) at £199.00, in stock on 18 Oct."
+  },
+  {
+   "product": "Bowflex dumbbells",
+   "category": "general",
+   "product_type": "dumbbells",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Bowflex UK",
+   "url": "https://bowflex.co.uk/products/bowflex-52s-adjustable-dumbbell-single",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://bowflex.co.uk/products/bowflex-52s-adjustable-dumbbell-single",
+    "https://bowflex.co.uk/collections/weights-benches",
+    "https://bowflex.co.uk/products/bowflex-52s-adjustable-dumbbell-pair",
+    "https://bowflex.co.uk/products/bowflex-selecttech-1090i-dumbell-single",
+    "https://bowflex.co.uk/products/bowflex-1090i-adjustable-dumbbells-pair"
+   ],
+   "note": "BowFlex's UK store (bowflex.co.uk, prices including taxes) sells its SelectTech adjustable dumbbells. The 52s ('SelectTech 52', 2 to 24kg) is £239.99 a single (was £279.99) or £449.99 a pair. The SelectTech 1090i (4 to 41kg) is £300.00 a single or £599.00 a pair (£659.99 with a stand). No 552 is listed. On 18 Oct every dumbbell page showed 'Sold out' beside an add-to-cart button, so stock is unclear; counted as on sale. From price: the 52s single at £239.99."
+  },
+  {
+   "product": "Columbia rain jacket",
+   "category": "general",
+   "product_type": "rain jacket",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Ellis Brigham",
+   "url": "https://www.ellis-brigham.com/columbia-womens-boulder-falls-jacket-224002915",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.ellis-brigham.com/columbia-womens-boulder-falls-jacket-224002915",
+    "https://www.johnlewis.com/browse/men/mens-coats-jackets/columbia/_/N-ea9Z1yzkt3r",
+    "https://www.johnlewis.com/columbia-mens-pouring-adventure-2-jacket-collegiate-navy/p113871752",
+    "https://www.johnlewis.com/browse/women/womens-coats-jackets/columbia/waterproof/_/N-flvZ1yzkt3rZ1z0roub",
+    "https://www.ellis-brigham.com/columbia-womens-amaze-trench-rain-jacket-224001914",
+    "https://www.absolute-snow.co.uk/brands/columbia"
+   ],
+   "note": "Columbia's own UK store (columbiasportswear.co.uk) still refuses automated reads (403), as do Blacks, Millets, Go Outdoors, Very and Next; Sports Direct and House of Fraser time out; Amazon UK hides its Watertight II price ('add this item to your basket' to see it). From price: John Lewis's Columbia men's coats and jackets page (25 products, 18 Oct) lists the waterproof Men's Pouring Adventure 2 Jacket (Collegiate Navy) at £40.50: was £90, reduced to clear at £45, with a further 10% off reduced-to-clear lines until 19.10.2026; size S only, so it is a clearance price, not Columbia's usual one. The other Columbia shell there is the Coreshot shell anorak (£210); John Lewis's women's Columbia waterproofs page is empty. Regular-price Columbia rain jackets read today: Ellis Brigham's women's Boulder Falls Jacket (Omni-Tech, seam-sealed) at £135 and Amaze Trench Rain Jacket at £180. Absolute Snow's Columbia page has no rain jacket. Claude's call (18 Oct): the from price recorded is the cheapest regular price read, £135 at Ellis Brigham (women's Boulder Falls), not the £40.50 John Lewis clearance in one size whose extra discount ends 19 Oct."
+  },
+  {
+   "product": "Arc'teryx rain jacket",
+   "category": "general",
+   "product_type": "rain jacket",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Arc'teryx UK",
+   "url": "https://arcteryx.com/gb/en/shop/mens/beta-jacket-0868",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://arcteryx.com/gb/en/shop/mens/beta-jacket-0868",
+    "https://arcteryx.com/gb/en/c/mens/shell-jackets",
+    "https://arcteryx.com/gb/en/c/womens/shell-jackets",
+    "https://arcteryx.com/gb/en/shop/mens/beta-sl-jacket-0886",
+    "https://arcteryx.com/gb/en/shop/mens/therme-jacket-1001",
+    "https://arcteryx.com/gb/en/shop/womens/beta-jacket-0869",
+    "https://arcteryx.com/gb/en/shop/womens/beta-jacket-0516",
+    "https://arcteryx.com/gb/en/shop/womens/norvan-jacket-9469",
+    "https://arcteryx.com/gb/en/shop/womens/naya-cropped-jacket-0327",
+    "https://arcteryx.com/gb/en/shop/womens/altira-cropped-jacket-0094",
+    "https://arcteryx.com/gb/en/shop/womens/emaris-relaxed-jacket-0089"
+   ],
+   "note": "Arc'teryx's own UK store (arcteryx.com/gb/en) lists 31 men's and 33 women's shell jackets on 18 Oct: waterproof GORE-TEX hardshells (Beta, Beta SL, Beta AR, Beta SV, Alpha, Alpha SV, Sabre, Rush, Sidewinder, Norvan...) and also softshells (Gamma, Solano) and windshells (Squamish, Norvan Windshell), which are not counted. Its product pages show prices: from £350 for the Beta Jacket (GORE-TEX ePE, waterproof; men's in Black Sapphire, sizes XS-XXXL with Add to cart; the women's Beta Jacket is also £350), then the women's Norvan Jacket £400, Beta SL £450, Naya Cropped £450, Therme £550, Altira Cropped £600 and Emaris Relaxed £700; no sale prices. Some listings load only on scroll (about 7 men's and 9 women's were not seen), so a cheaper hidden shell can't be fully ruled out."
+  },
+  {
+   "product": "Eddie Bauer rain jacket",
+   "category": "general",
+   "product_type": "rain jacket",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Eddie Bauer",
+   "url": "https://www.eddiebauer.com/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.eddiebauer.com/",
+    "https://www.eddiebauer.com/collections/mens-outerwear-rainwear",
+    "https://www.eddiebauer.eu/"
+   ],
+   "note": "not sold to UK shoppers: Eddie Bauer (US) sells its rain jackets from its US store (eddiebauer.com, US dollars, banner 'FREE SHIPPING $99+ | US ONLY') and a Canada store (/en-ca). Its men's rainwear page lists 14 products on 18 Oct, rain jackets such as the RipPac Pro ($99, from $88.98), Rain Trek ($109, now $97.97), Packable Rainfoil ($109), Rainfoil Storm ($119), Cloud Cap ($149) and Cloud Cap 3L ($179); women's rainwear is at /collections/womens-outerwear-rainwear. Its European site (eddiebauer.eu, Eddie Bauer AB) says the brand is 'Launching in Europe 2027'. No UK shop found: a web search turned up only second-hand (eBay, Vinted) and US import listings. Sold abroad only."
+  },
+  {
+   "product": "Yeti water bottle",
+   "category": "general",
+   "product_type": "water bottle",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Yeti UK",
+   "url": "https://uk.yeti.com/products/rambler-18-bottle-with-chug-cap-navy",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://uk.yeti.com/products/rambler-18-bottle-with-chug-cap-navy",
+    "https://uk.yeti.com/",
+    "https://uk.yeti.com/collections/bottles",
+    "https://uk.yeti.com/collections/bottles/products.json?limit=250",
+    "https://uk.yeti.com/products/rambler-18-bottle-with-chug-cap-navy.js",
+    "https://uk.yeti.com/collections/travel-mugs/products.json?limit=250",
+    "https://uk.yeti.com/products/rambler-8-travel-bottle-black.js",
+    "https://uk.yeti.com/products/rambler-12-travel-bottle-navy.js"
+   ],
+   "note": "Yeti's own UK store (uk.yeti.com, YETI UK Limited, prices in pounds, free shipping over £50). Its Bottles range on 18 Oct: Rambler bottles (double-wall vacuum insulated) from the 18 oz (532 ml) bottle at £32 (chug, straw or flip chug cap; a few special colours £35-£37), then 26 oz (769 ml) £40, 36 oz (1 l) £50, 46 oz (1.3 l) £55 and 64 oz (1.9 l) £60; no sale prices. Not counted: the Rambler Travel Bottles (8 oz £25, 12 oz £28, 16 oz £32), which Yeti also files under its hot-drink travel mugs; the Rambler Jr 12 oz kids' bottle (£28); and the plastic, uninsulated Yonder bottles (from £22). From price: the Rambler 18 oz Bottle with Chug Cap (Navy) at £32, available, read in the page's product data."
+  },
+  {
+   "product": "Takeya originals 32 oz insulated water bottle with spout lid",
+   "category": "general",
+   "product_type": "water bottle",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Takeya USA",
+   "url": "https://takeyausa.com/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://takeyausa.com/",
+    "https://takeyausa.com/products/originals-water-bottle-with-spout-lid",
+    "https://takeyausa.com/products/originals-water-bottle-with-spout-lid.js",
+    "https://takeyausa.com/pages/international-1",
+    "https://www.johnlewis.com/search?search-term=takeya"
+   ],
+   "note": "not sold to UK shoppers: Takeya USA's Originals Water Bottle with Spout Lid in the 32 oz size (double stainless steel insulation, leakproof spout lid, loop handle; also 18, 24 and 40 oz). On Takeya's US store (US dollars) on 18 Oct the 32 oz is on sale at $23.09 (was $32.99) but sold out in all five colours (Black, Navy, Graphite, White, Ocean); only the 40 oz in Black and White is available. Takeya's international page names distributors only in Mexico and Chile/Brazil, and John Lewis's search finds no Takeya; no UK seller found. Sold abroad only."
+  },
+  {
+   "product": "Crispi Summit GTX",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": 280.0,
+   "currency": "GBP",
+   "shop": "ArdMoor",
+   "url": "https://www.ardmoor.co.uk/products/crispi-summit-goretex-boots-cf7900",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.ardmoor.co.uk/products/crispi-summit-goretex-boots-cf7900",
+    "https://www.ardmoor.co.uk/products/crispi-summit-goretex-boots-cf7900.js",
+    "https://www.ardmoor.co.uk/collections/crispi-boots/products.json?limit=250",
+    "https://www.crispi.it/",
+    "https://www.crispi.it/it/shop-online/prodotto/summit-gtx_CF7900%7CAC0197168--/4360",
+    "https://shop.gohunt.com/products/crispi-summit-gtx-1"
+   ],
+   "note": "Crispi's Summit GTX (code CF 7900, Brown Grey; GORE-TEX Performance Comfort, Vibram Megagrip sole, 630 g, made in Italy), a hunting and mountain walking boot still in Crispi's Italian online shop (no price shown there); GOHUNT's US page says the Summit GTX is discontinued there. ArdMoor, a UK country clothing shop, sells the 'Crispi Summit Gore-Tex Boots' (CF7900, under walking boots) at £280 on 18 Oct, not reduced; sizes UK 6, 7, 8, 9, 11 and 12 in stock, UK 5, 6.5, 10 and 10.5 sold out."
+  },
+  {
+   "product": "Big Agnes Tiger Wall UL 3 person",
+   "category": "general",
+   "product_type": "tent",
+   "price": 467.95,
+   "currency": "GBP",
+   "shop": "Absolute Snow",
+   "url": "https://www.absolute-snow.co.uk/big-agnes-tiger-wall-ul3-tents,-bivvys--extensions",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.absolute-snow.co.uk/big-agnes-tiger-wall-ul3-tents,-bivvys--extensions",
+    "https://www.bigagnes.com/collections/tents/products.json?limit=250",
+    "https://www.bigagnes.com/products/tiger-wall-ul-three.js"
+   ],
+   "note": "Big Agnes's Tiger Wall UL3, its three-person ultralight side-entry backpacking tent (now made in Big Agnes's HyperBead fabric; $579.95 and available on bigagnes.com, 18 Oct). Absolute Snow, a UK outdoor shop, lists the 'Tiger Wall UL3 Ultralight 3 Person Backpacking Tent' (Mercury/Evening Primrose) at £467.95, 10% off £519.95, on pre-order ('Pre-order yours today', Add To Basket, free delivery) on 18 Oct."
+  },
+  {
+   "product": "durston x mid 2p",
+   "category": "general",
+   "product_type": "tent",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Durston Gear",
+   "url": "https://durstongear.com/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://durstongear.com/",
+    "https://durstongear.com/products/x-mid-2-tent-ultralight-backpacking",
+    "https://durstongear.com/products/x-mid-2-tent-ultralight-backpacking.js",
+    "https://durstongear.com/pages/shipping-taxes-and-returns"
+   ],
+   "note": "not sold to UK shoppers: Writers' 'X-Mid 2P' is the Durston X-Mid 2, a two-person trekking-pole tent (890 g), sold by Durston Gear (Canada) from its own store: $319 USD, in stock (Add to cart) on 18 Oct. Orders outside the USA ship from British Columbia, Canada (FedEx 2-6 or Canada Post 5-10 business days); the store offers a pound currency option, but its shipping page doesn't name the UK among the countries whose prices include tax (for other countries it warns of about 20% VAT and 12% tent duty collected at delivery). No UK shop found (a web search found only second-hand listings). Sold from abroad only."
+  },
+  {
+   "product": "Fox River socks",
+   "category": "general",
+   "product_type": "socks",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Fox River",
+   "url": "https://foxsox.com/collections/all-socks",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://foxsox.com/collections/all-socks",
+    "https://foxsox.com/pages/faqs",
+    "https://foxsox.com/pages/shipping-policy"
+   ],
+   "note": "not sold to UK shoppers: Fox River Mills' socks are sold from its own US store (foxsox.com, prices in dollars; its FAQ lists the United Kingdom among the countries it ships to). Two searches (18 Oct) found no UK shop stocking them: only Amazon UK search listings (likely third-party importers, about £5-£24 in search results, pages unreadable) and an OnBuy listing from a US seller. So not sold in the UK, but orderable from the US store."
+  },
+  {
+   "product": "Stance socks",
+   "category": "general",
+   "product_type": "socks",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Stance UK",
+   "url": "https://uk.stance.com/collections/socks",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://uk.stance.com/collections/socks",
+    "https://uk.stance.com/collections/socks?sort_by=price-ascending",
+    "https://uk.stance.com/products/icon-no-show-sock-pink"
+   ],
+   "note": "A brand named alone: Stance's socks. Stance's own UK store (uk.stance.com, prices in pounds) lists 285 socks on 18 Oct. From price: the adult Icon No Show Sock in Pink at £5.50 on sale (regular £10.99; only size L in stock in that colour). Many socks are on sale (light no-show £6.50, crew socks from £6.99); full-price singles start around £10.99. Kids' socks (from £4.50) and multipacks not counted. Claude's call (18 Oct): no single price recorded for a range named by its brand (the £5.50 was one colour in one size on sale)."
+  },
+  {
+   "product": "Samsonite suitcase",
+   "category": "general",
+   "product_type": "suitcase",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Samsonite UK",
+   "url": "https://www.samsonite.co.uk/urbify-upright-underseater-45cm-navy-blue/150714-1598.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.samsonite.co.uk/urbify-upright-underseater-45cm-navy-blue/150714-1598.html",
+    "https://www.samsonite.co.uk/luggage/suitcases/",
+    "https://www.samsonite.co.uk/luggage/suitcases/?srule=price-low-to-high&sz=60"
+   ],
+   "note": "Samsonite's own UK store (samsonite.co.uk, prices in pounds). Its suitcases page sorted by price (18 Oct) starts with the Urbify Upright underseater (2 wheels) 45cm, 45 x 35 x 20 cm, cabin size, at £145.00 (no was price), then the Upscape Spinner underseater 45cm at £155.00; the default sort shows Nexis and C-Lite spinners at £409-£465. From price: the Urbify underseater at £145. Kids' cases and sets not counted."
+  },
+  {
+   "product": "Pelican Air 1535",
+   "category": "general",
+   "product_type": "suitcase",
+   "price": 308.54,
+   "currency": "GBP",
+   "shop": "Peli UK",
+   "url": "https://peliproducts.co.uk/products/1535-air-case",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "The Pelican 1535 Air carry-on case, sold in Europe as the Peli 1535 Air. Peli Products (UK) Ltd, the authorised UK distributor, sells it on peliproducts.co.uk: Black, empty (no foam), £308.54 inc. VAT (£257.12 ex. VAT), Add to cart shown, on 18 Oct; ten colours and foam or padded-divider inserts are offered on the page (one price shown)."
+  },
+  {
+   "product": "Outdoor Research rain jacket",
+   "category": "general",
+   "product_type": "rain jacket",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Outdoor Action",
+   "url": "https://www.outdooraction.co.uk/outdoor-research-helium-rain-waterproof-jacket-p18560",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.outdooraction.co.uk/outdoor-research-helium-rain-waterproof-jacket-p18560",
+    "https://www.outdooraction.co.uk/mens-c1/mens-clothing-c155/waterproof-jackets-c321/outdoor-research-m23"
+   ],
+   "note": "Outdoor Research has no UK store (its store offers the US and Canada only; Cotswold Outdoor's Outdoor Research page showed no products to the reader). Outdoor Action, a UK outdoor shop (Blackburn), lists 8 men's Outdoor Research waterproof jackets on 18 Oct: Helium Rain £99.95 (RRP £175), Dryline Rain £129.95, Stratoburst £149.95, Helium £154.95, Foray 3L from £199.95, SkyChaser £244.95. From price: the Helium Rain Waterproof Jacket at £99.95 inc. VAT (a specialist shop, not one of the big UK shops)."
+  },
+  {
+   "product": "North Face rain jacket",
+   "category": "general",
+   "product_type": "rain jacket",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/the-north-face-sangro-mens-waterproof-jacket/p3915325",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/the-north-face-sangro-mens-waterproof-jacket/p3915325",
+    "https://www.johnlewis.com/brand/the-north-face/jackets/waterproof/_/N-1z13wqaZ1z13zxqZ1yzim4q"
+   ],
+   "note": "The North Face's UK store (thenorthface.co.uk) refuses automated reads (403). John Lewis's The North Face waterproof jackets page lists on 18 Oct the Sangro Men's Waterproof Jacket at £119.99-£150.00 (price matched, Add to basket, S-XL), the Quest Men's Waterproof Jacket at £125 (email when available) and the Reign On 2.0 at £170; kids' jackets not counted. From price: the Sangro at £119.99."
+  },
+  {
+   "product": "Patagonia winter coat",
+   "category": "general",
+   "product_type": "winter coat",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Zalando",
+   "url": "https://www.zalando.co.uk/patagonia-down-coat-river-rock-green-pa941f05a-c11.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.zalando.co.uk/patagonia-down-coat-river-rock-green-pa941f05a-c11.html",
+    "https://eu.patagonia.com/gb/en/shop/mens/jackets-vests/parkas-coats",
+    "https://www.zalando.co.uk/coats/patagonia/"
+   ],
+   "note": "Patagonia's own UK store (eu.patagonia.com/gb, its men's parkas and coats page; found by search) showed an outage screen to the reader on 18 Oct. John Lewis has no Patagonia parkas in stock. Zalando UK's Patagonia coats page lists 9 on 18 Oct: a knee-length women's hooded down coat (unnamed model) at £175.00 (50% off £349.99, Add to bag) in river rock green or sunken blue, £210 in black, the Downdrift Parka £288 (from £359.99), Fitz Roy £469.99, Jackson Glacier £539.99, Tres 3-in-1 £629.99. From price: that down coat at £175 (sale)."
+  },
+  {
+   "product": "Ridge Wallet",
+   "category": "general",
+   "product_type": "wallet",
+   "price": 65.0,
+   "currency": "GBP",
+   "shop": "Ridge UK",
+   "url": "https://uk.ridge.com/products/aluminum-black",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "The Ridge Wallet (aluminium card wallet with a money clip or cash strap). Ridge's own UK store (uk.ridge.com, prices in pounds) on 18 Oct: Royal Black aluminium at £65 (was £79, 17% off), also Matte Olive, Alpine Navy and Tiger Stripe at £65; Gunmetal, Basecamp Orange, Matte Black at £79; Carbon Fiber 3K £125."
+  },
+  {
+   "product": "Liforme yoga mat",
+   "category": "general",
+   "product_type": "yoga mat",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Liforme",
+   "url": "https://liforme.com/products/liforme-classic-yoga-mat",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://liforme.com/products/liforme-classic-yoga-mat",
+    "https://liforme.com/collections/yoga-mats"
+   ],
+   "note": "Liforme's own store (liforme.com, UK storefront in pounds) on 18 Oct: Classic Yoga Mat £125 (Add to Bag), printed mats £150-£160 (Cosmic Moon, Blossoming Lotus, Mindful Garden £150; Majestic Carpet £155; White Magic £160). From price: the Classic Yoga Mat (Regular) at £125. The Classic Travel mat (£100) not counted."
+  },
+  {
+   "product": "Makita drill",
+   "category": "general",
+   "product_type": "drill",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Toolstation",
+   "url": "https://www.toolstation.com/power-tools/drills/c719?brand=Makita",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.toolstation.com/power-tools/drills/c719?brand=Makita",
+    "https://www.makitauk.com/products/drilling-and-fixing",
+    "https://www.makitauk.com/products/combi-drills-and-drill-drivers",
+    "https://www.toolstation.com/makita-680w-hammer-drill/p12417"
+   ],
+   "note": "Makita UK's site lists its drills without prices (Combi Drills and Drill Drivers, with rotary and percussion drills). Toolstation lists 24 Makita drills on 18 Oct. From price: the cheapest ready-to-use one, the Makita 680W Hammer Drill 240V (HP1641K/2, corded) at £89.08 inc. VAT (was £98.98, 4 available for delivery); the cheapest cordless kit is the CLX224AJ 12V drill driver and impact driver kit at £139.99; body-only tools from £74.99 (DA333DZ angle drill) not counted as ready to use. Claude's call (18 Oct): no from price recorded: the cheapest ready-to-use Makita drill is corded and the cheapest cordless kit's own page wasn't read."
+  },
+  {
+   "product": "Bosch drill",
+   "category": "general",
+   "product_type": "drill",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Bosch DIY UK",
+   "url": "https://www.bosch-diy.com/gb/en/p/easydrill-18v-40-06039d8000",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.bosch-diy.com/gb/en/p/easydrill-18v-40-06039d8000",
+    "https://www.bosch-diy.com/gb/en/power-tools/drills-and-screw-drivers",
+    "https://www.bosch-diy.com/gb/en/power-tools/drills-and-screw-drivers?page=2",
+    "https://www.bosch-diy.com/gb/en/power-tools/drills-and-screw-drivers?page=3",
+    "https://www.bosch-diy.com/gb/en/p/psb650-06033f2070",
+    "https://www.toolstation.com/power-tools/drills/c719?brand=Bosch"
+   ],
+   "note": "Bosch DIY's own UK site and online shop (bosch-diy.com/gb, prices in GBP): its Drills and screwdrivers pages list 28 tools on 18 Oct. From price: the PSB650 650W corded impact drill at £50.15 (with auxiliary handle). Cordless: the EasyDrill 18V-40 with 1.5Ah battery and charger at £87.11 (bare tool £59.83). Bosch Professional (blue) drills are sold by Toolstation, from the GSB 18V-65 combi drill with one 5.0Ah battery at £139.98. Claude's call (18 Oct): the from price recorded is the cheapest cordless kit (EasyDrill 18V-40, £87.11), since the answers asking are for cordless drills; the corded PSB650 is left aside."
+  },
+  {
+   "product": "Nuobells",
+   "category": "general",
+   "product_type": "dumbbells",
+   "price": 499.99,
+   "currency": "GBP",
+   "shop": "Bells of Steel UK",
+   "url": "https://bellsofsteel.co.uk/products/nuobell-adjustable-dumbbells-kg",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://bellsofsteel.co.uk/products/nuobell-adjustable-dumbbells-kg",
+    "https://bellsofsteel.co.uk/collections/adjustable-dumbbells"
+   ],
+   "note": "Writers' 'Nuobells' are Nüobell adjustable dumbbells (pairs, 2-20 kg or 2-32 kg; a newer Nüobell-S model too). Bells of Steel UK (Bristol, prices in pounds) sells the Nüobell Adjustable Dumbbells (pair, 2-20 kg or 2-32 kg, four plate and handle colours) from £499.99 on 18 Oct (Add to cart and Notify me both shown, so some variants may be out of stock), and the Nüobell-S from £799.99. Fitness Superstore (also lists them) refused reading."
+  },
+  {
+   "product": "Hanwag Berglers",
+   "category": "general",
+   "product_type": "hiking boots",
+   "price": 296.0,
+   "currency": "GBP",
+   "shop": "Zalando",
+   "url": "https://www.zalando.co.uk/hanwag-bergler-hiking-shoes-hazelnut-ha542c009-o11.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.zalando.co.uk/hanwag-bergler-hiking-shoes-hazelnut-ha542c009-o11.html",
+    "https://www.thesportinglodge.com/products/hanwag-bergler-hazelnut"
+   ],
+   "note": "The Hanwag Bergler, a double-stitched leather mountain boot. Hanwag's own UK store has a Bergler page (found by search, refuses automated reads). Zalando UK lists the Hanwag BERGLER in hazelnut at £296.00 (20% off £369.99), out of stock for now on 18 Oct (still counted as sold). The Sporting Lodge, a UK shop, sells the Bergler Boot in hazelnut or chestnut at £365 (only UK 7 in stock); the Bergler II and Bergler Low are separate models."
+  },
+  {
+   "product": "Travelpro suitcase",
+   "category": "general",
+   "product_type": "suitcase",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Travelpro UK",
+   "url": "https://www.travelpro.co.uk/products/maxlite-5-55cm-international-expandable-spinner-black",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.travelpro.co.uk/products/maxlite-5-55cm-international-expandable-spinner-black",
+    "https://www.travelpro.co.uk/products.json?limit=250",
+    "https://www.travelpro.co.uk/collections/all"
+   ],
+   "note": "Travelpro's UK store (travelpro.co.uk, run by its UK seller Luggage Online, prices in pounds) sells its Maxlite 5, FlightCrew 5, Platinum Elite and VersaPack+ suitcases, plus Anthem sets, totes and bags (about 35 products in its feed on 18 Oct). From price: the Maxlite 5 55cm International Expandable Spinner in Black at £149.00 (shown with £175.00 struck through), out of stock on 18 Oct ('Sorry, Out of Stock') and still counted as sold. The cheapest suitcase in stock is the Maxlite 5 79cm Expandable Spinner at £179.00 (was £240.00). Others: Maxlite 5 69cm £169 (out of stock), FlightCrew 5 55cm Rollaboard £189 (out of stock) and 64cm £219, VersaPack+ from £259, Platinum Elite £275 (58cm Rollaboard Suiter) to £339. Totes, backpacks, a cooler and the 3-piece Anthem set not counted."
+  },
+  {
+   "product": "Away suitcase",
+   "category": "general",
+   "product_type": "suitcase",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Away",
+   "url": "https://www.awaytravel.com/en-gb/products/softside-compact-carry-on-olive-green",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.awaytravel.com/en-gb/products/softside-compact-carry-on-olive-green",
+    "https://www.awaytravel.com/en-gb/collections/luggage",
+    "https://www.awaytravel.com/en-gb/collections/softside-luggage",
+    "https://www.awaytravel.com/en-gb/products/softside-bigger-carry-on-navy-blue",
+    "https://www.awaytravel.com/en-gb/products/softside-bigger-carry-on-clay-pink",
+    "https://www.awaytravel.com/en-gb/products/carry-on-sea-green",
+    "https://www.awaytravel.com/en-uk/suitcases/carry-on"
+   ],
+   "note": "Away's UK store (awaytravel.com/en-gb, prices in pounds; its product pages say it ships to the US, UK and Canada). Its luggage page lists 38 products. From price: the Softside Compact Carry-On (30 L, 45.5 x 38.2 x 23 cm) at £198, in stock on 18 Oct ('Add to cart', Olive Green). Then the Softside Carry-On £208, The Bigger Carry-On from £212 in some colours (£278 otherwise), Softside Bigger Carry-On £228, The Carry-On £258, Softside Medium £278, Softside Large £308, The Large £348, and the Series 3, Flex and Trunk cases £298-£458. Garment roller and bags not counted."
+  },
+  {
+   "product": "Thorogood work boots",
+   "category": "general",
+   "product_type": "work boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Thorogood",
+   "url": "https://thorogoodusa.com/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://thorogoodusa.com/",
+    "https://thorogoodusa.com/work-boots-1/",
+    "https://thorogoodusa.com/find-a-retailer/"
+   ],
+   "note": "not sold to UK shoppers: Thorogood (an employee-owned Wisconsin maker) makes work boots: moc toe, safety toe, waterproof and insulated ranges. Its site has no online store: it sends buyers to local dealers through a dealer locator and to a US closeout site (midwestboots.com). I found no UK shop selling Thorogood boots on 18 Oct: the only UK-facing listings in search results are import marketplaces shipping from the US (u-buy.co.uk), not counted. Sold abroad only, through US dealers; product page: its men's work boots page (no prices on it)."
+  },
+  {
+   "product": "timberland pro work boots",
+   "category": "general",
+   "product_type": "work boots",
+   "price": null,
+   "currency": "GBP",
+   "shop": "ITS",
+   "url": "https://its.co.uk/pd/A1YWH231-Timberland-Pro-Splitrock-XT2-Safety-Boots---Wheat-_TIMA1YWH231.htm",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://its.co.uk/pd/A1YWH231-Timberland-Pro-Splitrock-XT2-Safety-Boots---Wheat-_TIMA1YWH231.htm",
+    "https://its.co.uk/timberland/",
+    "https://its.co.uk/pd/Timberland-Pro-Ballast-Safety-Boot---Brown_TIM33958-57986-06BROWN.htm",
+    "https://its.co.uk/pd/A1V21214-Timberland-Pro-Iconic-Alloy-Boot---Brown-_TIMA1V21214.htm",
+    "https://www.workwearexpress.com/brands/timberland-pro/timberland-pro-footwear"
+   ],
+   "note": "Timberland PRO, Timberland's work and safety footwear line. Timberland's own UK site and timberlandpro.com refuse automated reads (403) and search found no PRO pages on timberland.co.uk, so the range page is a big UK tool and workwear shop's: ITS's Timberland page lists 11 Timberland PRO safety boots and trainers, all in stock on 18 Oct. From price: the Timberland Pro Splitrock Safety Boots in Wheat (S3 SRC, composite toe, UK 6-13) at £89.99, was £124.99; then the Ballast 6\" XL Safety Boots in Brown at £95.00 (was £129.99), up to the Iconic Alloy Safety Boots at £129.99 (was £149.99). ITS shows the same figure ex and inc VAT. Also sold at Workwear Express (Timberland PRO footwear from £119.97 ex VAT) and Screwfix (its pages refuse reading)."
+  },
+  {
+   "product": "SecrID wallet",
+   "category": "general",
+   "product_type": "wallet",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Secrid",
+   "url": "https://secrid.com/en-gb/cardprotector-teal",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://secrid.com/en-gb/cardprotector-teal",
+    "https://secrid.com/en-gb/wallets/all/",
+    "https://www.johnlewis.com/secrid-cardprotector-wallet/p113981855"
+   ],
+   "note": "The name means Secrid (Dutch maker of aluminium card protectors and slim wallets). Its UK store (secrid.com/en-gb, prices in pounds) lists the Cardprotector, Cardprotector for MagSafe, Flexwallet, Cardslide, Envelope Wallet, Miniwallet, Slimwallet, Bandwallet and Twinwallet. From price: the Cardprotector (an aluminium card holder for up to 6 cards) at £34.95 on its Teal page; John Lewis also sells it at £34.95 (Black, Green, Titanium; 'Add to basket' on 18 Oct). The wallets cost more (search results put the Flexwallet at £49.95 and the Cardslide at £59.95, not read)."
+  },
+  {
+   "product": "Saddleback leather wallet",
+   "category": "general",
+   "product_type": "wallet",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Saddleback Leather",
+   "url": "https://saddlebackleather.com/wallets/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://saddlebackleather.com/wallets/",
+    "https://saddlebackleather.com/faq/"
+   ],
+   "note": "not sold to UK shoppers: Saddleback Leather (US) sells its leather wallets from its own US store in dollars: 20 items on its wallets page on 18 Oct, from $49 (Front Pocket ID Wallet, Slim Leather Card Wallet, Front Pocket Magic Wallet, Newton Wallet) to $219 (Big Wallet-Silverback). Its FAQ says international buyers pay all taxes and import duties on UPS shipments, so it ships abroad from the US, but it has no UK store or pound prices and I found no UK shop selling it. Not sold in the UK (orderable from the US store)."
+  },
+  {
+   "product": "Bellroy wallet",
+   "category": "general",
+   "product_type": "wallet",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Bellroy",
+   "url": "https://bellroy.com/products/category/wallets",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://bellroy.com/products/category/wallets",
+    "https://bellroy.com/",
+    "https://bellroy.com/products/hide-and-seek-wallet",
+    "https://www.amazon.co.uk/Bellroy-Mag-Wallet-Leather-Magnetic/dp/B0FN7BMRQ5",
+    "https://www.johnlewis.com/search?search-term=bellroy%20wallet"
+   ],
+   "note": "Bellroy (Australian) sells its wallets (billfolds, card holders, zip and passport wallets) direct worldwide on bellroy.com, which prices in the visitor's currency (its Hide & Seek page says it picks the version for visitors paying in British pounds), and on Amazon UK, sold by 'Bellroy EU' and dispatched by Amazon (Mag Wallet listing). Neither showed a price to my reader on 18 Oct: bellroy.com renders prices by script, and Amazon's buy box asked to add the item to the basket to see it. No big UK shop found: John Lewis has none, Selfridges refused reading. Search snippets of Amazon UK listings put Bellroy wallets from £39 (Mag Wallet) and £59 (Card Pocket) to £85-£119 (Note Sleeve, Hide & Seek), not verified. Sold new to UK shoppers; no from price."
+  },
+  {
+   "product": "Evenflo pivot travel system",
+   "category": "general",
+   "product_type": "stroller",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Evenflo",
+   "url": "https://www.evenflo.com/pivot",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.evenflo.com/pivot",
+    "https://www.evenflo.com/products/pivot-modular-car-seats-and-stroller-travel-systems",
+    "https://www.evenflo.com/policies/shipping-policy"
+   ],
+   "note": "not sold to UK shoppers: The Evenflo Pivot Modular Travel System with LiteMax Infant Car Seat (stroller, infant car seat and toddler seat), a US product: $329.99 on Evenflo's US store on 18 Oct, its colours shown sold out or unavailable; the newer Pivot NXT Travel System is also $329.99 (sold out). Evenflo ships only to US addresses (its shipping policy) and I found no UK shop selling it, only import marketplaces (u-buy.co.uk) in search results. Not sold in the UK."
+  },
+  {
+   "product": "Canada Goose mid length down parka",
+   "category": "general",
+   "product_type": "winter coat",
+   "price": 1095.0,
+   "currency": "GBP",
+   "shop": "Canada Goose UK",
+   "url": "https://www.canadagoose.com/en-gb/products/leslie-parka-black-disc-3833wb",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.canadagoose.com/en-gb/products/leslie-parka-black-disc-3833wb",
+    "https://www.canadagoose.com/en-gb/collections/womens-parkas?sort_by=price-ascending",
+    "https://www.canadagoose.com/en-gb/collections/mens-parkas?sort_by=price-ascending",
+    "https://www.canadagoose.com/en-gb/collections/mens-long-parkas",
+    "https://www.canadagoose.com/en-gb/products/leslie-parka-tonal-disc-3833wt",
+    "https://www.canadagoose.com/en-gb/products/ivy-parka-1722wt",
+    "https://www.canadagoose.com/en-gb/products/langford-parka-2052m",
+    "https://www.canadagoose.com/en-gb/products/bayview-parka-3833m",
+    "https://www.canadagoose.com/en-gb/products/macmillan-parka-2080m"
+   ],
+   "note": "Read as Canada Goose's down parkas cut to mid-thigh length: its product pages give each parka's length ('Intended to hit at the mid-thigh', 'at the hip'), and there is no mid-length collection. On its UK store (prices in pounds) on 18 Oct the cheapest mid-thigh down parkas are women's: the Leslie Parka (Black Disc and Tonal Disc) and the Ivy Parka at £1,095, all out of stock for now with Notify Me (still counted as sold). Men's: the Langford Parka at £1,325 (mid-thigh, out of stock); the cheaper men's Bayview (£1,050) and MacMillan (£1,075) parkas are hip length. Product page: the women's parkas page (36 parkas)."
+  },
+  {
+   "product": "Carhartt winter coat",
+   "category": "general",
+   "product_type": "winter coat",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Workwear Gurus",
+   "url": "https://workweargurus.com/collections/carhartt-jackets/products/carhartt-montana-rugged-flex-duck-insulated-jacket-106432",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://workweargurus.com/collections/carhartt-jackets/products/carhartt-montana-rugged-flex-duck-insulated-jacket-106432",
+    "https://workweargurus.com/collections/carhartt-jackets",
+    "https://www.bataltd.co.uk/clothing-footwear/men/coats-jackets/c479?filter=1&f_brand=366",
+    "https://www.charlies.co.uk/carhartt-men-s-bartlett-sherpa-lined-hooded-utility-jacket-moss/",
+    "https://www.charlies.co.uk/carhartt-mens-duck-detroit-jacket-brown/",
+    "https://www.workwearexpress.com/brands/carhartt/carhartt-vests-and-jackets"
+   ],
+   "note": "Carhartt's workwear winter coats and insulated jackets (Montana, Detroit, Bartlett, Active Jac, Traditional Coat...). Carhartt's own UK store refuses automated reads (403) and no big UK chain sells Carhartt workwear coats, so the price is a UK workwear shop's: Workwear Gurus (a UK company; free UK delivery over £100, dispatch in 2-3 working days) sells the Montana Rugged Flex Relaxed Fit Duck Insulated Jacket (106432) at £120.39 in most sizes, £92.45 in Black XXL only (£124.89 in Brown XL), all shown available on 18 Oct; its Carhartt jackets page lists insulated jackets up to £139.99 (Bartlett). Other UK shops: BATA Ltd, Stretch Insulated Jacket £152.99 and Montana Insulated Jacket £155.00 inc VAT; Charlie's, Bartlett Sherpa Lined Jacket in Moss £99.00 (was £149.00, RRP £161.99; out of stock online) and Duck Detroit £134.99 (out of stock); Workwear Express shows ex-VAT prices (Duck Traditional Coat £116.00). From price: £92.45 (one size), £120.39 for most sizes. Claude's call (18 Oct): the from price recorded is the price in most sizes (£120.39), not the £92.45 of one colour in one size."
+  },
+  {
+   "product": "Carhartt jeans",
+   "category": "general",
+   "product_type": "jeans",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Charlie's",
+   "url": "https://www.charlies.co.uk/carhartt-men-s-relaxed-straight-rugged-flex-jeans-superior",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "Carhartt's workwear jeans (Rugged Flex Relaxed Straight 102804, Loose Fit Utility, Slim Tapered...). Carhartt's own UK store lists them (its men's jeans page is the product page here, found by search) but refuses automated reads (403), and no big UK chain sells Carhartt workwear jeans. Charlie's, a UK workwear and menswear shop, sells the Relaxed Straight Rugged Flex Jeans in Superior at £64.99 (RRP £71.99), £49.00 in sizes 31, 33 and 40; 'In stock' on 18 Oct (its data shows sizes 33 and 36 out of stock). From price: £49.00 (sizes 31 and 40 in stock); £64.99 for the other sizes. Claude's call (18 Oct): the from price recorded is the price in most sizes (£64.99), not the £49 of three sizes."
+  },
+  {
+   "product": "Oral-B electric toothbrush",
+   "category": "general",
+   "product_type": "electric toothbrush",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Oral-B UK",
+   "url": "https://www.oralb.co.uk/en-gb/product-collections/electric-toothbrushes/all",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.oralb.co.uk/en-gb/product-collections/electric-toothbrushes/all",
+    "https://www.johnlewis.com/browse/beauty/electric-toothbrushes-flossers-accessories/electric-toothbrush/_/N-2pzgZ1z0jq47"
+   ],
+   "note": "Range page as before: Oral-B UK's electric toothbrushes page (iO, Genius, Pro, Smart and Vitality series; it shows no prices, and its shop's listing pages now redirect to category pages without products). Still no readable from price on 18 Oct: every UK shop page with Oral-B's cheaper brushes (Vitality Pro, Pro Series 1) refused automated reads (Boots and Superdrug, Argos, Currys, Tesco, Morrisons, Ocado and AO: 403 or a bot check), and Amazon UK's Vitality Pro page hides its price until the item is added to the basket. John Lewis reads, but it lists only Oral-B's iO models (9 of its 41 electric toothbrushes, from the iO6 at £120-£130), far above the range's lowest price, so it is not given as the from price. Search listings put the Vitality Pro at about £21-£25 (not read on a page)."
+  },
+  {
+   "product": "Dyson Supersonic Hair Dryer",
+   "category": "general",
+   "product_type": "hair dryer",
+   "price": 249.99,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/dyson-supersonic-straight-wavy-hair-dryer-prussian-blue/p113563725",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/dyson-supersonic-straight-wavy-hair-dryer-prussian-blue/p113563725",
+    "https://www.johnlewis.com/brand/hair-dryers/dyson/_/N-48sbZ1z140en"
+   ],
+   "note": "The standard Dyson Supersonic (not the Origin, Travel, Nural or r) is sold in the UK as the Supersonic Straight+Wavy and Supersonic Curly+Coily editions, with attachments for those hair types; John Lewis lists no plain 'Supersonic' among its 10 Dyson dryers on 18 Oct. John Lewis: Dyson Supersonic Straight+Wavy Hair Dryer, Prussian Blue (model 113279-01; styling concentrator, gentle air and flyaway attachments), £249.99, was £299.99 (save £50), Add to basket shown. The Curly+Coily edition in Prussian Blue is £249.99 too. Dyson UK's own site refuses automated reads."
+  },
+  {
+   "product": "CHI hair straightener",
+   "category": "general",
+   "product_type": "hair straightener",
+   "price": null,
+   "currency": "GBP",
+   "shop": "CHI",
+   "url": "https://chi.com/shop/categories/tools-accessories/flat-irons/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://chi.com/shop/categories/tools-accessories/flat-irons/",
+    "https://www.glamot.com/p/34920/chi-lava-volcanic-ceramic-hair-straightener-1"
+   ],
+   "note": "not sold to UK shoppers: CHI (Farouk Systems, US) sells its flat irons on chi.com in dollars: 41 results on its 'CHI Flat Irons and Hair Straighteners' page on 18 Oct (e.g. LAVA 1 Inch Hairstyling Iron $178.07); the page mentions only US shipping (free ground shipping over $50) and names no UK stockist. No UK shop found: the one seller of UK-plug CHI irons in pounds is Glamot, an online shop sending to the UK by DHL Express or FedEx International (CHI Lava Volcanic Ceramic Hair Straightener 1\", UK plug, £142.62, RRP £329.74, 2 in stock), which is not a UK shop."
+  },
+  {
+   "product": "GHD hair straightener",
+   "category": "general",
+   "product_type": "hair straightener",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/ghd-original-hair-styler-black/p5971778",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/ghd-original-hair-styler-black/p5971778",
+    "https://www.johnlewis.com/browse/beauty/hair-straighteners/ghd/_/N-a3gZ1z13u4z"
+   ],
+   "note": "ghd's own UK site refused automated reads (403), so the range page is John Lewis's ghd hair straighteners page: 19 products on 18 Oct, none on offer: ghd Original Hair Styler £149, Mini £169.99, Gold £199, Max £209, Platinum+ £249, Chronos and Chronos Max £299, Sculpt Interactive £369, plus gift sets (£209-£379) and a straightener and dryer set. From price: the ghd Original Hair Styler, Black (ghd calls its straighteners stylers; UK plug, 2.7m cable), £149.00 with Add to basket."
+  },
+  {
+   "product": "BaByliss nano titanium 1\" flat iron",
+   "category": "general",
+   "product_type": "hair straightener",
+   "price": null,
+   "currency": "GBP",
+   "shop": "BaBylissPRO",
+   "url": "https://www.costco.com/babylisspro-nano-titanium-1%E2%80%9D-ultra-thin-straightener.product.4000330644.html",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "note": "not sold to UK shoppers: The BaBylissPRO Nano Titanium 1\" flat iron is from the US salon brand BaBylissPRO (Conair), separate from the UK's BaByliss PRO range. Its current 1\" model is the Nano Titanium 1\" Ultra-Thin Straightener (BNT4072TUC): Costco US lists it on 18 Oct ('BaBylissPRO Nano Titanium 1” Ultra-Thin Straightener', BNT4072TUC, Online Only; no price shown to the reader). BaBylissPRO's US site answers 'not found' to automated reads for every page, its home page and the BNT4070T page found on 15 Oct included, so its product page here is from search results. The one UK listing found on 15 Oct (Beautyflash, a salon supplier) is gone (404), and no big UK shop sells it."
+  },
+  {
+   "product": "Kirkland dog bed",
+   "category": "general",
+   "product_type": "dog bed",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Costco UK",
+   "url": "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/c/cos_6.12",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/c/cos_6.12",
+    "https://www.costco.co.uk/c/Kirkland-Signature-21-x-25-Rectangular-Nuzzler-Ped-Bed-in-Brown/p/1348743B",
+    "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/Kirkland-Signature-42-1067cm-Round-Pet-Bed-in-2-Colours/p/1834421",
+    "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/Kirkland-Signature-21-x-25-Wide-Walled-Cuddler-Pet-Bed-in-4-Options/p/1851837"
+   ],
+   "note": "Kirkland Signature is Costco's own brand. Costco UK (a membership warehouse club) has Kirkland Signature dog and pet bed pages on 18 Oct, e.g. the 21\" x 25\" Rectangular Nuzzler Pet Bed, the 21\" x 25\" Wide Walled Cuddler Pet Bed and the 42\" (106.7cm) Round Pet Bed; its Pets & Wildlife page, which holds them, is the closest range page. Its pages load prices and stock by script, so no price could be read; search listings show these beds from about £27.99 (not read on a page)."
+  },
+  {
+   "product": "Kuranda dog bed",
+   "category": "general",
+   "product_type": "dog bed",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Kuranda",
+   "url": "https://kuranda.com/dog-beds",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://kuranda.com/dog-beds",
+    "https://kuranda.com/standard-dog-bed-options",
+    "https://kuranda.com/"
+   ],
+   "note": "not sold to UK shoppers: Kuranda (US) makes elevated, chew-proof cot-style dog beds: its 'Chew Proof Dog Beds' page lists standard PVC beds from $80.95, aluminium beds from $126.95, crate and bunk beds, on 18 Oct, with free shipping to the 48 contiguous states and no word of shipping abroad. No UK shop found: search results show only import marketplaces (U-Buy, desertcart)."
+  },
+  {
+   "product": "2 Hounds no pull harness",
+   "category": "general",
+   "product_type": "dog harness",
+   "price": null,
+   "currency": "GBP",
+   "shop": "2 Hounds Design",
+   "url": "https://2houndsdesign.com/collections/freedom-no-pull-harness",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://2houndsdesign.com/collections/freedom-no-pull-harness",
+    "https://2houndsdesign.com/products/royal-blue-freedom-no-pull-dog-harness"
+   ],
+   "note": "not sold to UK shoppers: The 2 Hounds Design Freedom No-Pull Harness (US maker). Its own site lists it in many colours from $32.98 (prints and reflective versions $36.98) on 18 Oct, with Add to cart; free shipping is for US retail orders only and 'International orders will receive discounted shipping'. No UK shop found: search results show only U-Buy, which imports it from a US store, and Faire, a wholesale site for shops."
+  },
+  {
+   "product": "Ruffwear Web Master",
+   "category": "general",
+   "product_type": "dog harness",
+   "price": 84.95,
+   "currency": "GBP",
+   "shop": "Ruffwear UK",
+   "url": "https://ruffwear.co.uk/products/web-master-harness",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://ruffwear.co.uk/products/web-master-harness",
+    "https://ruffwear.co.uk/products/web-master-harness.js"
+   ],
+   "note": "Ruffwear's UK store sells the Web Master Dog Harness with Handle at £84.95 on 18 Oct (sizes XXSmall to Large/XLarge in Basalt Gray, River Rock Green, Red Canyon and Blaze Orange). Its product data lists all 20 size and colour variants available at £84.95; the page text read also carried 'Out of Stock' and 'Coming Soon' labels, which the product data contradicts."
+  },
+  {
+   "product": "Perfect Fit dog harness",
+   "category": "general",
+   "product_type": "dog harness",
+   "price": null,
+   "currency": "GBP",
+   "shop": "PerfectFit",
+   "url": "https://perfect-fit-dog-harness.com/products/15mm-xs-xxs-xs-harness",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://perfect-fit-dog-harness.com/products/15mm-xs-xxs-xs-harness",
+    "https://perfect-fit-dog-harness.com/harness.html"
+   ],
+   "note": "PerfectFit makes a modular dog harness of three pieces (top, front and girth, each chosen by size) and sells it from its own UK shop (UK contact details, prices in pounds): 49 harness sets on 18 Oct, from £35.70 (the 15mm sets for small dogs) and £43.02 (20mm) up to wider webbing. From price: 15mm XS-XXS-XS PerfectFit Harness, £35.70, In stock with Add to basket (free UK delivery over £60)."
+  },
+  {
+   "product": "lululemon mats",
+   "category": "general",
+   "product_type": "yoga mat",
+   "price": null,
+   "currency": "GBP",
+   "shop": "lululemon",
+   "url": "https://www.lululemon.co.uk/en-gb/c/accessories/yoga-mats",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "note": "Writers' 'lulu lemon mats' are lululemon's yoga mats, a range (The Mat 3mm and 5mm, the lululemon Align Yoga Mat 5mm, The Reversible Mat 5mm, The (Big) Mat 5mm and others). lululemon sells them in the UK from its own UK shop (lululemon.co.uk) and stores; its site refused automated reads on 18 Oct (403, its yoga mats page and a mat page; as on 15 Oct), so no page, price or stock could be read here, and the range page is from search results. I found no other UK shop selling them."
+  },
+  {
+   "product": "jade yoga mat",
+   "category": "general",
+   "product_type": "yoga mat",
+   "price": null,
+   "currency": "GBP",
+   "shop": "JadeYoga UK",
+   "url": "https://www.jadeyoga.co.uk/uk_en/jade-level-one-mat-68-4mm-173cm.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.jadeyoga.co.uk/uk_en/jade-level-one-mat-68-4mm-173cm.html",
+    "https://www.jadeyoga.co.uk/uk_en/yoga-mats.html",
+    "https://jadeyoga.com/pages/international-distributors",
+    "https://yogamatters.com/collections/jade-yoga/products.json?limit=250",
+    "https://yogamatters.com/products/jade-yoga-harmony-2-0-yoga-mat-173cm.js"
+   ],
+   "note": "Writers' 'jade yoga' is JadeYoga (US, mats made in the USA). It sells in the UK through JadeYoga UK (jadeyoga.co.uk, prices in pounds), run via YO|YOGA AG, the official European distributor its international distributors page names for the UK. Its UK yoga mats page lists 24 products on 18 Oct: full-size mats from the Jade Level One 68\" (4mm, 173cm) at 'As low as £60.00' (In stock, Add to Cart) to Harmony 2.0 (£90), Harmony 5mm (£95) and Fusion 8mm (£165); its Voyager 1.6mm travel mats (£45-£55) and Fusion Mini Mat (£35) aren't counted. Yogamatters, a UK yoga shop, also sells JadeYoga mats (Harmony 2.0 173cm £90, available)."
+  },
+  {
+   "product": "Graco Extend2Fit",
+   "category": "general",
+   "product_type": "car seat",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Graco US",
+   "url": "https://www.gracobaby.com/shop/car-seats/toddler-car-seats/convertible-car-seats/extend2fit-convertible-car-seat/SP_93668.html",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.gracobaby.com/shop/car-seats/toddler-car-seats/convertible-car-seats/extend2fit-convertible-car-seat/SP_93668.html",
+    "https://www.target.com/p/graco-baby-extend2fit-convertible-car-seat-gotham/-/A-50585130"
+   ],
+   "note": "not sold to UK shoppers: Graco's Extend2Fit Convertible Car Seat, a US and Canada seat built to US rules: rear-facing harness 4-50 lb, with a 4-position panel giving up to 5 in of extra legroom, then forward-facing harness 26.5-65 lb (there are also 2-in-1 and 3-in-1 booster versions). Graco's US page refuses automated reads; Target's US page lists it (Gotham) at $239.99, in stock, on 18 Oct. Not sold in the UK: Graco's UK range (search results) is R129 seats such as the Turn2Me, SnugGo and SlimFit, with no Extend2Fit, and no UK shop was found selling it. Amazon UK has marketplace listings of the imported US seat (£477.84-£725.94 in search results); they aren't counted, since a US-certified seat lacks the R44/R129 approval UK law requires for use in cars."
+  },
+  {
+   "product": "Nuna Rava",
+   "category": "general",
+   "product_type": "car seat",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Nuna US",
+   "url": "https://nunababy.com/usa/rava-convertible-car-seat",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://nunababy.com/usa/rava-convertible-car-seat",
+    "https://nunababy.com/usa/car-seats/convertible",
+    "https://nunababy.com/recalls-rava1",
+    "https://www.johnlewis.com/browse/baby-child/buggies-travel/car-seats/nuna/_/N-8gzZ1z13vsp"
+   ],
+   "note": "not sold to UK shoppers: Nuna's RAVA convertible car seat, a US seat (rear-facing 5-50 lb, forward-facing 30-65 lb). Nuna's US convertible car seats page lists it from $375.00 on 18 Oct, beside its successor the RAVA next (from $525.00); the RAVA's own page shows it out of stock, with a back-in-stock alert, and no discontinued notice. Not sold in the UK: Nuna's UK site refuses automated reads, John Lewis's Nuna car seats page lists 11 products (PIPA, ARRA, TODL next, PRUU, RELX and others) with no RAVA, and searches found only Mamas & Papas shops in the Gulf selling it. Nuna's US recall covers RAVA seats made from 16 July 2016 to 25 October 2023 (front harness adjuster; remedy kit offered in the US)."
+  },
+  {
+   "product": "Cybex Callisto",
+   "category": "general",
+   "product_type": "car seat",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Cybex US",
+   "url": "https://www.cybex-online.com/en/us/p/cs-go-callisto-g-360-sensorsafe-3.html",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.cybex-online.com/en/us/p/cs-go-callisto-g-360-sensorsafe-3.html",
+    "https://www.cybex-online.com/en/us/car-seats/convertible-car-seats/",
+    "https://www.cybex-online.com/en/us/p/cs-pl-callisto-t-360-sensorsafe-3.html",
+    "https://www.cybex-online.com/en/gb/car-seats/"
+   ],
+   "note": "not sold to UK shoppers: Cybex's Callisto is its US family of rotating all-in-one car seats (rear-facing, forward-facing harness to 65 lb, then booster to 120 lb). Cybex's US convertible car seats page lists three on 18 Oct: Callisto G 360 $699.95, Callisto G 360 Select $649.95 and Callisto T 360 $799.95 ('Back in Stock'). The name fits the Callisto G 360 best: it is the original Callisto, and its page (In Stock, $699.95) describes all-round ventilation and a sun canopy, as the writers do; the T 360 is the newer premium model. Not sold in the UK: the readable part of Cybex's UK car seats page has no Callisto (its UK rotating seats are the Sirona range), and searches found no UK shop selling one. An older Cybex Callisto was a pushchair, not a car seat."
+  },
+  {
+   "product": "Owlet sock baby monitor",
+   "category": "general",
+   "product_type": "baby monitor",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Owlet UK",
+   "url": "https://owletbabycare.co.uk/products/dream-sock-pulse-oximeter-pediatric",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://owletbabycare.co.uk/products/dream-sock-pulse-oximeter-pediatric",
+    "https://owletbabycare.co.uk/collections/all",
+    "https://owletbabycare.co.uk/products.json",
+    "https://www.johnlewis.com/browse/baby-child/safety-healthcare/healthcare/owlet/baby-monitors/_/N-8c9Z1yzksetZ1yzygri"
+   ],
+   "note": "Owlet's sock monitors. Owlet's UK store (owletbabycare.co.uk, named as its UK site in Owlet's 2024 UK launch announcement) lists four products on 18 Oct: the Dream Sock Smart Baby Monitor at £299.99 ('Special Offer', no was price; Mint shows as unavailable in the store's data), the Dream Duo (sock plus Dream Sight camera) at £379.99, a Twin Bundle of two Dream Duos at £709.99 (was £759.98), and the Dream Sight camera alone at £99.99 (not a sock). John Lewis has the same prices (Dream Sock £299.99, Dream Duo £379.99). From price: the Dream Sock at £299.99 on Owlet UK's page; it is for healthy babies 0-18 months (2.5-13.6 kg)."
+  },
+  {
+   "product": "Rusk W8less Professional 2000 Watt Dryer",
+   "category": "general",
+   "product_type": "hair dryer",
+   "price": null,
+   "currency": "GBP",
+   "shop": "rusk1.com",
+   "url": "https://www.rusk1.com/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.rusk1.com/",
+    "https://purespadirect.com/products/rusk-w8less-ceramic-and-tourmaline-2000-watt-dryer-ux-227112",
+    "https://www.marlobeauty.com/rusk-w8less-ceramic-and-tourmaline-2000-watt-dryer/p26113/"
+   ],
+   "note": "not sold to UK shoppers: Rusk's W8less 2000 Watt dryer (model IREW8LSBD; ceramic and tourmaline, about 1 lb), a US salon-brand dryer. Rusk has no product page for it: rusk1.com is now a hair-care blog with no tools. US salon suppliers still list it on 18 Oct: Pure Spa Direct at $111.25 (salon price, with add to cart) and Marlo Beauty Supply (prices only for logged-in professionals); Walmart's US pages refused automated reads. Searches found no UK shop, only US listings and an import marketplace (Ubuy). So not sold in the UK, and there is no maker's page to link."
+  },
+  {
+   "product": "drybar buttercup blow dryer",
+   "category": "general",
+   "product_type": "hair dryer",
+   "price": 30.0,
+   "currency": "GBP",
+   "shop": "LloydsPharmacy",
+   "url": "https://lloydspharmacy.com/products/drybar-buttercup-blow-dryer",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://lloydspharmacy.com/products/drybar-buttercup-blow-dryer",
+    "https://uk.drybar.com/buttercup-blow-dryer/13837956.html",
+    "https://lloydspharmacy.com/products/drybar-buttercup-blow-dryer.js",
+    "https://lloydspharmacy.com/products/drybar-buttercup-blow-dryer.json",
+    "https://cultbeauty.co.uk/p/drybar-buttercup-blow-dryer/13837956",
+    "https://www.cultbeauty.co.uk/p/13935851/",
+    "https://cultbeauty.co.uk/c/brands/dry-bar/shop-all",
+    "https://www.amazon.co.uk/Drybar-Buttercup-blow-dryer-Ultra-powerful-lightweight/dp/B0BPYCLDMB",
+    "https://www.lookfantastic.com/p/drybar-buttercup-blow-dryer/14919604"
+   ],
+   "note": "Drybar's Buttercup Blow-Dryer (1875W, ionic; the UK version is 220-240V with a UK plug), and it is running out in the UK. Drybar's own UK store page refuses automated reads; search results show it sold out there at £139. Cult Beauty's two listings are sold out (£139.00 with UK plug, and £129.00), and its Drybar page now lists only the Baby Buttercup travel dryer (£125); LookFantastic's link now opens its general hair dryers page; Amazon UK's listing shows it out of stock. LloydsPharmacy (online shop run under licence by Pharmacy2U) has it at £30.00, was £139.00, available, limit 2 per order, on 18 Oct: the price comes from the page's own product data (updated 18 Oct), as its text doesn't show the price without scripts. Sephora UK (£139 in search results) and Next (£62, was £139, in search results) refuse automated reads. In the US Drybar also sells a newer Buttercup PRO."
+  },
+  {
+   "product": "Remington S5500",
+   "category": "general",
+   "product_type": "hair straightener",
+   "price": null,
+   "currency": "GBP",
+   "shop": "remingtonproducts.com",
+   "url": "https://remingtonproducts.com/collections/flat-irons-hair-straighteners",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "sources": [
+    "https://remingtonproducts.com/collections/flat-irons-hair-straighteners",
+    "https://uk.remington-europe.com/sleek-smooth-slim-straightener-s5500-uk"
+   ],
+   "note": "discontinued: The writer's S5500, bought in 2013 for $15, is Remington's US 1-inch anti-static ceramic flat iron (up to 410°F), made from 2013. It is no longer made: Remington's US flat irons page lists 15 straighteners on 18 Oct and none is an S5500; the nearest current model is the 1-inch Anti-Static S5503NA ($24.99, in stock), and the S5505P is sold out. A different straightener shares the model number in the UK: Remington's Sleek & Smooth Slim Straightener S5500 (230°C, 110mm plates, digital display), £73.99 and in stock on Remington's UK store on 18 Oct; if answers should show that UK namesake instead, that is its page."
+  },
+  {
+   "product": "Loreal Steampod hair straightener",
+   "category": "general",
+   "product_type": "hair straightener",
+   "price": 320.29,
+   "currency": "GBP",
+   "shop": "Sally Beauty",
+   "url": "https://www.sallybeauty.co.uk/hair/hair-electricals/hair-straighteners-and-hair-stylers/l'or%C3%A9al-professionnel-steampod-4/817522.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.sallybeauty.co.uk/hair/hair-electricals/hair-straighteners-and-hair-stylers/l'or%C3%A9al-professionnel-steampod-4/817522.html",
+    "https://www.lorealprofessionnel.co.uk/all-products/hair-tools/steampod-4",
+    "https://lorealprofessionnel.co.uk/hair-styling/steampod/hair-styling-tools-at-home"
+   ],
+   "note": "L'Oréal Professionnel's SteamPod steam straightener; its current model is the SteamPod 4.0 (L'Oréal Professionnel UK's tools page lists the SteamPod 4.0 and the older SteamPod 3.0). L'Oréal Professionnel UK's SteamPod 4.0 page has a Buy now button but no price. Sally Beauty UK lists the SteamPod 4 at £320.29, in stock (only one left), on 18 Oct. Boots and Sephora UK list it at £305.00 in search results, but their pages refuse automated reads."
+  },
+  {
+   "product": "Blue-9 Balance Harness",
+   "category": "general",
+   "product_type": "dog harness",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/Blue-9-Balance-Harness-Buckle-Medium/dp/B01LVZVTP3",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.amazon.co.uk/Blue-9-Balance-Harness-Buckle-Medium/dp/B01LVZVTP3",
+    "https://www.blue-9.com/collections/balance-harnesses",
+    "https://www.thedoghouserules.co.uk/product/Blue-9-Balance-Harness"
+   ],
+   "note": "Blue-9's Balance Harness, a US-made no-pull harness with six adjustment points and front and back lead rings (the buckle-neck version is the standard one). Blue-9's US store has it at $39.95, in stock, on 18 Oct (the Reflective version $49.95). No maker's UK site or big UK shop sells it. Amazon UK has only marketplace sellers: 'New (2) from £95.56' with free delivery for the Medium in Blue, with no main offer (other sizes and colours have their own listings and prices). Small UK dog shops sell it for much less: The Dog House Rules at £30.00, in stock, on 18 Oct (searches also found Healthy Pet Store at £37.50). Amazon UK's price is used as the last resort the rules allow. Claude's call (18 Oct): no price recorded: the only big-shop price is Amazon UK marketplace sellers' £95.56, over twice the maker's US price; small UK dog shops sell it for less."
+  },
+  {
+   "product": "Ruffwear Front Range dog harness",
+   "category": "general",
+   "product_type": "dog harness",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Ruffwear UK",
+   "url": "https://ruffwear.co.uk/products/front-range-everyday-dog-harness",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://ruffwear.co.uk/products/front-range-everyday-dog-harness",
+    "https://ruffwear.co.uk/",
+    "https://ruffwear.co.uk/collections/front-range-dog-gear",
+    "https://ruffwear.co.uk/products/front-range-everyday-dog-harness.js",
+    "https://ruffwear.co.uk/products/front-range-flex-harness",
+    "https://ruffwear.co.uk/products/front-range-flex-harness.js"
+   ],
+   "note": "Ruffwear's Front Range harnesses. Ruffwear's UK store (ruffwear.co.uk, prices in pounds) sells two on 18 Oct: the Front Range Dog Harness, £49.95 in XXS-S, £54.95 in M and £59.95 in L/XL (nine colours), and the knitted Front Range Flex Harness, £64.95 in XXXS-S, £69.95 in M and £74.95 in L/XL. The store's product data marks every size and colour of both available, though both pages' text read without scripts shows 'Out of stock' labels and a 'Coming Soon' button. From price: the Front Range Dog Harness at £49.95 (small sizes)."
+  },
+  {
+   "product": "Easy Walk dog harness",
+   "category": "general",
+   "product_type": "dog harness",
+   "price": null,
+   "currency": "GBP",
+   "shop": "PetSafe UK",
+   "url": "https://www.petsafe.com/gb/p/easy-walk-harness-1/EW-H-S-BK-17/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.petsafe.com/gb/p/easy-walk-harness-1/EW-H-S-BK-17/",
+    "https://www.petsafe.com/gb",
+    "https://www.petsafe.com/gb/shop/dog/harnesses-and-leashes/"
+   ],
+   "note": "PetSafe's Easy Walk harnesses. PetSafe's UK store (petsafe.com/gb, prices in pounds; uk.petsafe.net redirects there) lists on its dog harnesses page on 18 Oct: the Easy Walk Harness £14.99-£22.99 (by size), the Easy Walk Deluxe Harness £19.99-£26.99, and the Easy Walk 3 in 1 Harness and Car Restraint £40.99 (the Easy Walk Headcollar, £26.99, is a head halter, not a harness). The Easy Walk Harness page shows £14.99 for the size it opens on (Small, black), with Add to Basket. From price: the Easy Walk Harness at £14.99."
+  },
+  {
+   "product": "Garmin Forerunner 245",
+   "category": "general",
+   "product_type": "sports watch",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Garmin UK",
+   "url": "https://www.garmin.com/en-GB/c/sports-fitness/running-smartwatches/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "sources": [
+    "https://www.garmin.com/en-GB/c/sports-fitness/running-smartwatches/",
+    "https://en.wikipedia.org/wiki/Garmin_Forerunner"
+   ],
+   "note": "discontinued: Garmin's Forerunner 245 (and 245 Music), a running watch released on 30 April 2019. Garmin replaced it with the Forerunner 255 in 2022, followed by the 265 and later models (from knowledge). Garmin UK's running smartwatches page, as read on 18 Oct, shows only current headline models (fēnix 9, Forerunner 70 | 170, Approach S72, Enduro 4); its full product list and prices don't load for automated reads, and the web-search budget ran out before shops could be checked, so this rests on knowledge. Not sold new by Garmin."
+  },
+  {
+   "product": "Western Mountaineering sleeping bag",
+   "category": "general",
+   "product_type": "sleeping bag",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Ultralight Outdoor Gear",
+   "url": "https://ultralightoutdoorgear.co.uk/highlite-sleeping-bag/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://ultralightoutdoorgear.co.uk/highlite-sleeping-bag/",
+    "https://www.westernmountaineering.com/",
+    "https://www.westernmountaineering.com/dealers-map/",
+    "https://www.ultralightoutdoorgear.co.uk/brands",
+    "https://ultralightoutdoorgear.co.uk/western-mountaineering/"
+   ],
+   "note": "Western Mountaineering (San Jose, California) makes down sleeping bags (ExtremeLite, MicroFiber, StormShield and Gore series) and sells them through about 300 dealers worldwide; its own site has no UK store. Ultralight Outdoor Gear, a UK specialist, sells 12 of its bags and quilts on 18 Oct: from £439.99 for the HighLite Sleeping Bag (Regular or Long; RRP £584.99; In Stock) and the Nanolite Down Quilt (from £439.99, RRP £549.99), up to the VersaLite at £774.99 (RRP £969.99). Web search was unavailable (the allowance was used up), so other UK shops weren't checked."
+  },
+  {
+   "product": "Cumulus sleeping bag",
+   "category": "general",
+   "product_type": "sleeping bag",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Cumulus",
+   "url": "https://cumulus.equipment/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://cumulus.equipment/",
+    "https://cumulus.equipment/en/",
+    "https://cumulus.equipment/en/legal-policies",
+    "https://www.ultralightoutdoorgear.co.uk/brands"
+   ],
+   "note": "not sold to UK shoppers: Cumulus, the Polish down maker ('made in Poland'), sells its down sleeping bags and quilts from its own shop; its English pages showed prices in złoty on 18 Oct (Rect 700 1,249 PLN, Mysterious Traveller 500 1,259 PLN, Lite Line 400 1,459 PLN, Panyam 450 1,639 PLN). Its legal policies say prices are in EUR, USD or GBP, it ships outside Poland in 1-7 business days, and buyers outside the EU pay customs duties on arrival. No UK shop found (Ultralight Outdoor Gear doesn't list it; web search was unavailable). Not sold in the UK (orderable from Poland)."
+  },
+  {
+   "product": "Enlightened Equipment sleeping bag",
+   "category": "general",
+   "product_type": "sleeping bag",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Ultralight Outdoor Gear",
+   "url": "https://ultralightoutdoorgear.co.uk/revelation-apex-50f-synthetic-quilt/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://ultralightoutdoorgear.co.uk/revelation-apex-50f-synthetic-quilt/",
+    "https://enlightenedequipment.com/",
+    "https://www.ultralightoutdoorgear.co.uk/brands",
+    "https://ultralightoutdoorgear.co.uk/enlightened-equipment/"
+   ],
+   "note": "Enlightened Equipment (US) makes down and synthetic quilts (its site sells quilts, no sleeping bags) from its US store. Ultralight Outdoor Gear, a UK specialist, sells 20 EE quilts on 18 Oct: from £219.99 for the Revelation APEX 50F Synthetic Quilt (Regular, Regular Wide or Long Wide; its page says In Stock, though the brand listing marks it out of stock), then the APEX 40F at £229.99; down quilts from £299.99 (Revelation 850FP 50F) to £529.99; two-person Accomplice quilts from £549.99. Quilts count as sleeping bags here."
+  },
+  {
+   "product": "K9 Ballistics dog bed",
+   "category": "general",
+   "product_type": "dog bed",
+   "price": null,
+   "currency": "GBP",
+   "shop": "K9 Ballistics",
+   "url": "https://k9ballistics.com/collections/chew-proof",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://k9ballistics.com/collections/chew-proof",
+    "https://k9ballistics.com/policies/shipping-policy"
+   ],
+   "note": "not sold to UK shoppers: K9 Ballistics (US) sells chew-resistant dog beds, crate pads and elevated beds from its US store in dollars: 15 on its chew-proof beds page on 18 Oct, from $45 (Tough Ripstop Dog Travel Mat) and $70 (crate pad) to $280 (Giant 7\" Orthopedic). Its shipping policy says it can't ship outside the 48 contiguous US states (it suggests forwarding services). No UK shop found. Not sold in the UK."
+  },
+  {
+   "product": "Philips electric toothbrush",
+   "category": "general",
+   "product_type": "electric toothbrush",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/philips-sonicare-hx3673-13-series-3100-electric-toothbrush-white/p5536363",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/philips-sonicare-hx3673-13-series-3100-electric-toothbrush-white/p5536363",
+    "https://www.philips.co.uk/c-m-pe/electric-toothbrushes",
+    "https://www.philips.co.uk/c-m-pe/electric-toothbrushes/latest",
+    "https://www.philips.co.uk/c-p/HX4042_52/4100-rechargeable-toothbrush",
+    "https://www.johnlewis.com/search?search-term=philips%20sonicare%20electric%20toothbrush"
+   ],
+   "note": "Philips Sonicare electric toothbrushes: Philips' UK site lists about 80 (DiamondClean, 7000 to 4000 series, Sonicare for Kids) but shows no prices to my reader. John Lewis sells 21 Sonicare brushes on 18 Oct; the cheapest adult brush is the Series 3100 HX3673/13 in White at £39.99 ('Reduced To Clear', was £99.99; Add to basket), then the 4100 HX4042 at £44.99 (white or black). Kids' brushes (from £44.99) not counted. Boots, Currys and Argos refused automated reads."
+  },
+  {
+   "product": "Big Agnes Copper Spur tent",
+   "category": "general",
+   "product_type": "tent",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Absolute Snow",
+   "url": "https://www.absolute-snow.co.uk/big-agnes-copper-spur-ul2-tents,-bivvys--extensions?v=516392",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.absolute-snow.co.uk/big-agnes-copper-spur-ul2-tents,-bivvys--extensions?v=516392",
+    "https://www.absolute-snow.co.uk/brands/big-agnes",
+    "https://www.bigagnes.com/collections/tents/products.json?limit=250",
+    "https://www.cotswoldoutdoor.com/brands/big-agnes.html",
+    "https://www.ellis-brigham.com/brands/big-agnes"
+   ],
+   "note": "Big Agnes's Copper Spur range (US maker, no UK store): on bigagnes.com on 18 Oct the current Copper Spur UL tents (HyperBead fabric) UL1 $499.95, UL2 $599.95, UL2 XL, UL3, UL3 XL, UL4 and UL5, plus Bikepack and mtnGLO versions, and one leftover HV UL1 Bikepack. In the UK, Absolute Snow (a UK outdoor shop) is the stockist found: its Big Agnes page lists six tents, the only Copper Spur being the 'Copper Spur UL2 2 Person Ultralight Backpacking Tent' (Lichen Green) at £522.45, was £549.95, 'Pre-order yours today' with Add To Basket. Cotswold's and Ellis Brigham's Big Agnes pages list no tents. From price (two-person): the Copper Spur UL2 at £522.45. The web-search budget ran out, so other UK shops weren't searched."
+  },
+  {
+   "product": "MSR Hubba Hubba tent",
+   "category": "general",
+   "product_type": "tent",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Cotswold Outdoor",
+   "url": "https://www.cotswoldoutdoor.com/p/msr-hubba-hubba-nx-tent-D1312362.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.cotswoldoutdoor.com/p/msr-hubba-hubba-nx-tent-D1312362.html",
+    "https://www.cotswoldoutdoor.com/brands/msr.html",
+    "https://www.absolute-snow.co.uk/brands/msr"
+   ],
+   "note": "MSR's Hubba Hubba backpacking tents (MSR's European site now redirects to its parent Cascade Designs' address, which answered 'not found', so the range page is Cotswold Outdoor's MSR page: 4 MSR tents on 18 Oct, two of them Hubba Hubbas). Two-person Hubba Hubbas read today: Cotswold's MSR Hubba Hubba NX Tent (sleeps 2, Green) £447.95, RRP £560, 'Low in stock' with Add to basket; Cotswold's Hubba Hubba LT Tent 2P £475.95 (RRP £560); Absolute Snow's Hubba Hubba LT 2P £503.95 and Hubba Hubba 2 Bikepack £557.95. From price: the Hubba Hubba NX at £447.95 (the NX is the earlier version of the two-person Hubba Hubba, low in stock; the next is the LT 2P at £475.95)."
+  },
+  {
+   "product": "Nemo Dragonfly tent",
+   "category": "general",
+   "product_type": "tent",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Absolute Snow",
+   "url": "https://www.absolute-snow.co.uk/nemo-dragonfly-osmo-2p-tents,-bivvys--extensions?v=543882",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.absolute-snow.co.uk/nemo-dragonfly-osmo-2p-tents,-bivvys--extensions?v=543882",
+    "https://www.absolute-snow.co.uk/brands/nemo",
+    "https://www.nemoequipment.com/collections/tents",
+    "https://www.nemoequipment.eu/products/dragonfly-osmo?country=GB",
+    "https://www.cotswoldoutdoor.com/brands/nemo.html"
+   ],
+   "note": "NEMO's Dragonfly OSMO tents (1P, 2P, 3P and Bikepack versions; $499.95-$619.95 on NEMO's US site). NEMO has no UK store: its 'UK' choice opens its European store, which prices the Dragonfly OSMO in euros (€500 for the 1-person) and showed only back-in-stock alerts on 18 Oct. Absolute Snow (a UK outdoor shop) lists four Dragonfly tents: Dragonfly OSMO 2P Lightweight 2 Person Tent (Birch Bud) £455.95, was £479.95, 'Pre-order yours today' with Add To Basket; Dragonfly OSMO 3P £531.95; Dragonfly Bikepack OSMO 2P £550.95; Bikepack 1P £493.95. Cotswold sells only the Dragonfly OSMO 2P footprint. From price (two-person): the Dragonfly OSMO 2P at £455.95."
+  },
+  {
+   "product": "Durston X-Mid tent",
+   "category": "general",
+   "product_type": "tent",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Durston Gear",
+   "url": "https://durstongear.com/pages/tents",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://durstongear.com/pages/tents",
+    "https://durstongear.com/"
+   ],
+   "note": "not sold to UK shoppers: Durston Gear's X-Mid trekking-pole tents (Durston, Canada): its tents page lists, in US dollars on 18 Oct, X-Mid 1 $269, X-Mid 1 Solid $289, X-Mid 2 $319 (sale price; the two-person model), X-Mid 2 Solid $339, and the X-Mid Pro 1, Pro 2 and Pro 2+ from $599 to $719. Sold from its own store only: the store offers a United Kingdom (GBP) choice, but orders outside the USA ship from British Columbia, Canada, with UK import charges due at delivery (as found today for the X-Mid 2, finding 'durston x mid 2p'); no UK shop sells it."
+  },
+  {
+   "product": "Tarptent tent",
+   "category": "general",
+   "product_type": "tent",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Tarptent",
+   "url": "https://www.tarptent.com/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.tarptent.com/",
+    "https://www.tarptent.com/shop/",
+    "https://www.tarptent.com/product-tag/sleeps-2/",
+    "https://www.tarptent.com/retail-partners/",
+    "https://www.tarptent.com/support/shipping/"
+   ],
+   "note": "not sold to UK shoppers: Tarptent (US) makes lightweight tents for 1 to 4 (Moment, Notch, ProTrek, Rainbow, Double Rainbow, StratoSpire, ArcDome, Dipole and others), sold from its own store in US dollars: its two-person tents run from the Double Rainbow ($284-$299) to the Double Rainbow DW Li ($734-$749) on 18 Oct. It ships internationally (DHL Express or UPS, at near cost; duties and VAT due at delivery), and its retail partners page lists shops in Slovakia, Czechia, France, Germany, the Netherlands and Sweden, none in the UK. Not sold in the UK."
+  },
+  {
+   "product": "Big Agnes Copper Spur HV UL 3",
+   "category": "general",
+   "product_type": "tent",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Big Agnes",
+   "url": "https://www.bigagnes.com/collections/tents/products.json?limit=250",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "sources": [
+    "https://www.bigagnes.com/collections/tents/products.json?limit=250",
+    "https://www.bigagnes.com/products/copper-spur-ul-three",
+    "https://www.absolute-snow.co.uk/brands/big-agnes",
+    "https://www.cotswoldoutdoor.com/brands/big-agnes.html",
+    "https://www.ellis-brigham.com/brands/big-agnes"
+   ],
+   "note": "discontinued: The Copper Spur HV UL3 is the earlier three-person Copper Spur. Big Agnes's range no longer has it on 18 Oct: its tents list holds the Copper Spur UL3 (the current three-person Copper Spur, HyperBead fabric; $649.95, 'Available Now!' in Tangelo and Lichen Green) and UL3 XL, and of the HV tents only an HV UL1 Bikepack. No UK shop checked sells either the HV UL3 or the UL3 (Absolute Snow lists only the Copper Spur UL2; Cotswold and Ellis Brigham list no Big Agnes tents; the web-search budget ran out before others). If the pick should stand for its successor, the Copper Spur UL3 would be not_sold_uk with https://www.bigagnes.com/products/copper-spur-ul-three."
+  },
+  {
+   "product": "NEMO Dagger OSMO 2P",
+   "category": "general",
+   "product_type": "tent",
+   "price": 474.95,
+   "currency": "GBP",
+   "shop": "Absolute Snow",
+   "url": "https://www.absolute-snow.co.uk/nemo-dagger-osmo-tents,-bivvys--extensions?v=516287",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.absolute-snow.co.uk/nemo-dagger-osmo-tents,-bivvys--extensions?v=516287",
+    "https://www.absolute-snow.co.uk/brands/nemo",
+    "https://www.nemoequipment.com/collections/tents",
+    "https://www.cotswoldoutdoor.com/brands/nemo.html"
+   ],
+   "note": "NEMO's Dagger OSMO two-person backpacking tent ($599.95-$649.95 on NEMO's US site; NEMO has no UK store). Absolute Snow (a UK outdoor shop): 'Nemo Dagger Osmo 2 Person Tent' (2P, 109 x 223 x 127cm, Birch Bud/Midnight Grey) at £474.95, was £499.95, 'Pre-order yours today' with Add To Basket, on 18 Oct. (Its Dagger Osmo Ridge 2P is £531.95 and the 3 Person £550.95; Cotswold sells only the Dagger OSMO 2P footprint.)"
+  },
+  {
+   "product": "Big Agnes Copper Spur HV UL2 long",
+   "category": "general",
+   "product_type": "tent",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Big Agnes",
+   "url": "https://www.bigagnes.com/collections/tents/products.json?limit=250",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "sources": [
+    "https://www.bigagnes.com/collections/tents/products.json?limit=250",
+    "https://www.bigagnes.com/products/copper-spur-ul-two-xl",
+    "https://www.absolute-snow.co.uk/brands/big-agnes",
+    "https://www.cotswoldoutdoor.com/brands/big-agnes.html",
+    "https://www.ellis-brigham.com/brands/big-agnes"
+   ],
+   "note": "discontinued: The Copper Spur HV UL2 Long, the earlier generation's longer two-person Copper Spur. Big Agnes's range no longer has it, nor any 'Long' Copper Spur, on 18 Oct: its longer two-person Copper Spur is now the Copper Spur UL2 XL ($649.95, 'Available Now!'), which its page says has an extra 6-8\" of length and 2\" of width over the standard Copper Spur UL. No UK shop checked sells the HV UL2 Long or the UL2 XL (Absolute Snow lists only the standard Copper Spur UL2, £522.45; Cotswold and Ellis Brigham list no Big Agnes tents; the web-search budget ran out before others). If the pick should stand for its successor, the UL2 XL would be not_sold_uk with https://www.bigagnes.com/products/copper-spur-ul-two-xl."
+  },
+  {
+   "product": "Tortuga backpack",
+   "category": "general",
+   "product_type": "backpack",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Tortuga",
+   "url": "https://www.tortugabackpacks.com/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.tortugabackpacks.com/",
+    "https://www.tortugabackpacks.com/pages/shipping",
+    "https://www.tortugabackpacks.com/collections/travel-backpacks"
+   ],
+   "note": "not sold to UK shoppers: Tortuga's travel backpacks are sold from its own US store (prices in dollars: Expandable, Lite 40L and Daily Carry Pro $250, Pro 34L $300, Pro 40L $350 on 18 Oct). Its shipping page says it does not currently ship outside the US (some products on Amazon.ca for Canada). No UK seller found."
+  },
+  {
+   "product": "Go Ruck GR2",
+   "category": "general",
+   "product_type": "backpack",
+   "price": 375.0,
+   "currency": "GBP",
+   "shop": "GORUCK UK",
+   "url": "https://goruck.uk/products/gr2",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://goruck.uk/products/gr2",
+    "https://www.goruck.com/"
+   ],
+   "note": "The GORUCK GR2 travel rucksack. GORUCK's own UK store (goruck.uk, prices in pounds) lists the GR2 in Black, 26L or 34L, at £375.00 on 18 Oct, in stock with Add to cart (one price shown for both sizes)."
+  },
+  {
+   "product": "GoRuck GR1 backpack",
+   "category": "general",
+   "product_type": "backpack",
+   "price": 395.0,
+   "currency": "GBP",
+   "shop": "GORUCK UK",
+   "url": "https://goruck.uk/products/gr1",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://goruck.uk/products/gr1",
+    "https://www.goruck.com/"
+   ],
+   "note": "The GORUCK GR1 (USA-made rucksack, 21L or 26L). GORUCK's own UK store (goruck.uk) lists it in Black at £395.00 on 18 Oct, Add to cart shown ('A few left in stock'; one price for both sizes)."
+  },
+  {
+   "product": "Bugaboo Donkey stroller",
+   "category": "general",
+   "product_type": "stroller",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Bugaboo UK",
+   "url": "https://www.bugaboo.com/gb-en/pushchairs/bugaboo-donkey-5-mono/bugaboo-donkey-5-mono-2-in-1-pram-PM004615.html",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.bugaboo.com/gb-en/pushchairs/bugaboo-donkey-5-mono/bugaboo-donkey-5-mono-2-in-1-pram-PM004615.html",
+    "https://www.bugaboo.com/gb-en/",
+    "https://www.bugaboo.com/gb-en/pushchairs/bugaboo-donkey-6-single/bugaboo-donkey-6-2-in-1-pushchair-PM007805.html"
+   ],
+   "note": "Bugaboo's own UK store (bugaboo.com/gb-en, prices in pounds). The current Donkey 6: single 2-in-1 pushchair (base, seat, carrycot, mattress, canopy, basket, side bag, rain cover) £1,245.00 (low stock in cocoa brown), Double £1,560.00, plus a Twin. From price: the previous Donkey 5 Mono 2-in-1 pram in the Outlet at £972.00 (20% off £1,215.00, forest green in stock) on 18 Oct."
+  },
+  {
+   "product": "UPPAbaby Cruz stroller",
+   "category": "general",
+   "product_type": "stroller",
+   "price": null,
+   "currency": "GBP",
+   "shop": "UPPAbaby UK",
+   "url": "https://uppababy.co.uk/strollers/full-size/cruz-v3/ada/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://uppababy.co.uk/strollers/full-size/cruz-v3/ada/",
+    "https://uppababy.com/country-select/",
+    "https://uppababy.co.uk/strollers/full-size/"
+   ],
+   "note": "UPPAbaby's own UK store (uppababy.co.uk) sells the Cruz V3 (with Add To Cart, e.g. the Ada colourway) on 18 Oct, but its pages show no prices to the reader (none in the page text or data), so no from price. The Cruz V3 is its only Cruz model listed."
+  },
+  {
+   "product": "Silver Cross stroller",
+   "category": "general",
+   "product_type": "stroller",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Silver Cross",
+   "url": "https://www.silvercrossbaby.com/products/pop-cobble",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.silvercrossbaby.com/products/pop-cobble",
+    "https://www.silvercrossbaby.com/collections/pushchairs-strollers?sort_by=price-ascending"
+   ],
+   "note": "Silver Cross's own UK store (silvercrossbaby.com, prices in pounds). Its pushchairs and strollers sorted by price (18 Oct) start with the Pop 2 stroller at £195 (Cobble, Space or Sage; with seat liner, bumper bar and rain cover; limited stock, Add to cart), then the Clic 2 at £225 (was £295). From price: the Pop 2 at £195."
+  },
+  {
+   "product": "Thule stroller",
+   "category": "general",
+   "product_type": "stroller",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Thule UK",
+   "url": "https://www.thule.com/en-gb/strollers/compact-strollers/thule-spring-_-11300211",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.thule.com/en-gb/strollers/compact-strollers/thule-spring-_-11300211",
+    "https://www.thule.com/en-gb/strollers"
+   ],
+   "note": "Thule's own UK store (thule.com/en-gb, prices in pounds) on 18 Oct: Spring £314.99 (sale, was £449.99; Soft Beige in stock), Spring 2 £449.99, Sleek £639.99 (was £799.99), Glide 3 £699.99, Urban Glide 3 £769.99, Urban Glide 4-wheel and Sleek 2 £799.99, Urban Glide 3 double £899.99; bundles more. From price: the Thule Spring at £314.99."
+  },
+  {
+   "product": "BOB stroller",
+   "category": "general",
+   "product_type": "stroller",
+   "price": null,
+   "currency": "GBP",
+   "shop": "BOB Gear",
+   "url": "https://www.bobgear.com/",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://www.bobgear.com/",
+    "https://www.bobgear.com/single-strollers"
+   ],
+   "note": "not sold to UK shoppers: BOB Gear's jogging strollers (Wayfinder from $679.99, Alterrain Pro $829.99, Revolution Flex 3.0 $649.99 on 18 Oct) are sold from its US site (Fort Mill, SC) and US retailers (Target, Amazon, REI); no UK site, country selector or UK seller found (only a Canada registration page)."
+  },
+  {
+   "product": "Nanit baby monitor",
+   "category": "general",
+   "product_type": "baby monitor",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Nanit UK",
+   "url": "https://nanituk.co.uk/products/smart-baby-monitor?variant=47469103808785",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://nanituk.co.uk/products/smart-baby-monitor?variant=47469103808785",
+    "https://www.nanit.com/pages/retailers",
+    "https://nanituk.co.uk/",
+    "https://nanituk.co.uk/collections/monitors"
+   ],
+   "note": "Nanit's worldwide retailers page sends UK and Irish buyers to Nanit UK (nanituk.co.uk, prices in pounds). On 18 Oct it sells the Smart Baby Video Monitor (Nanit Pro camera) at £299.00 regular, from £179.99 for the Blue limited edition with wall mount (40% off), and with the Anywhere Stand at £249; outlet items (from £174.30) and the Sound + Light (£99.99, not a video monitor) not counted. From price: £179.99."
+  },
+  {
+   "product": "Big Agnes tent",
+   "category": "general",
+   "product_type": "tent",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Absolute Snow",
+   "url": "https://www.absolute-snow.co.uk/brands/big-agnes",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.absolute-snow.co.uk/brands/big-agnes",
+    "https://www.bigagnes.com/collections/tents/products.json?limit=250"
+   ],
+   "note": "From the research of 18 Oct (found-17, Big Agnes Copper Spur tent line): Absolute Snow, a UK outdoor shop, lists six Big Agnes tents (pre-orders with Add to Basket); Big Agnes (US) has no UK store. No from price recorded: the cheapest of the six wasn't read (the Copper Spur UL2 is £522.45 there, its line's from price)."
+  },
+  {
+   "product": "Bellroy wallet",
+   "category": "general",
+   "product_type": "wallet",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/Bellroy-Mag-Wallet-Leather-Magnetic/dp/B0FN7BMRQ5",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.amazon.co.uk/Bellroy-Mag-Wallet-Leather-Magnetic/dp/B0FN7BMRQ5",
+    "https://bellroy.com/products/category/wallets",
+    "https://bellroy.com/customer-care/shipping-delivery",
+    "https://www.amazon.co.uk/Bellroy-Wallet-Magnetic-Leather-Holder/dp/B0GJ5R9CQY",
+    "https://wildbounds.com/collections/bellroy-wallets"
+   ],
+   "note": "[Builder's choice, 18 Oct 2026: the from price is the Mag Wallet at £39.00, Bellroy's own list price, read as 'New (2) from £39.00' on Amazon UK's listing sold by Bellroy EU; the helper's £25.00 was another Mag Wallet listing (the INNOVERA Edition) whose lowest 'New from' offer may be a third party's, and its buy-box price was hidden.] Range page: Bellroy's wallets page (35 items on 18 Oct). Bellroy (Australian) sells worldwide and prices in the visitor's currency, so its pages showed US dollars to my reader, never pounds (sorted by price its cheapest wallet is the Mag Wallet INNOVERA Edition at $25-$45; Hide & Seek $95); its shipping page says express delivery to the UK takes 1-3 working days. Pounds read on UK pages: Amazon UK's listing of that Mag Wallet INNOVERA Edition shows 'New (2) from £25.00' (its buy-box price is hidden until the item is added to the basket). The same page shows other Bellroy wallets at £39.00 (Mag Wallet), £49.00 (Card Sleeve), £75.00 (Slim Sleeve), £85.00 (Note Sleeve), £69.99-£85.00 (Hide & Seek) and £119.00 (Apex Slim Sleeve); the Mag Wallet listing (sold by Bellroy EU) says 'New (2) from £39.00'. WildBounds, a UK shop in Bristol, lists nine Bellroy wallets, all available, from £84.95 (Hide & Seek) to £148.95 (Travel Folio). From price: £25.00 is for the small magnetic Mag Wallet card holder (holds 3 cards); the usual billfolds start at about £75-£85."
+  },
+  {
+   "product": "UPPAbaby Cruz stroller",
+   "category": "general",
+   "product_type": "stroller",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/uppababy-cruz-v3-pushchair/liam/p113972182",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/uppababy-cruz-v3-pushchair/liam/p113972182",
+    "https://uppababy.co.uk/strollers/full-size/cruz-v3/",
+    "https://www.kiddies-kingdom.com/strollers/63858-uppababy-cruz-v3-pushchair-jake.html",
+    "https://www.kiddies-kingdom.com/strollers/63828-uppababy-cruz-v3-pushchair-liam.html",
+    "https://www.kiddies-kingdom.com/strollers/63831-uppababy-cruz-v3-pushchair-owen.html"
+   ],
+   "note": "Range page: UPPAbaby UK's Cruz V3 page (the Cruz V3 is its only Cruz stroller; nine colourways listed with Add To Cart on 18 Oct). Its page text shows no price to a reader, but its page data (schema offers, GBP, in stock) lists £749.99 for eight colourways and £559.99 for one (Charcoal, 'Jake'), whose own page now redirects to the Black ('James') page, so that figure is not counted. From price: John Lewis, UPPAbaby Cruz V3 Pushchair at £749.99 (Add to basket, 0% APR over 12 months, standard UK delivery by the supplier within 7 days, no Click & Collect; the page I read had the Dillan colourway selected and lists seven colourways). Kiddies Kingdom shows £749.99 (RRP £749.99) on its Liam and Owen pages and has the Jake colourway on offer at £599.99 (RRP £749.99, '20% off')."
+  },
+  {
+   "product": "Oral-B electric toothbrush",
+   "category": "general",
+   "product_type": "electric toothbrush",
+   "price": null,
+   "currency": "GBP",
+   "shop": "LloydsPharmacy",
+   "url": "https://lloydspharmacy.com/products/oral-b-pro-series-1-pink-electric-toothbrush-with-case",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://lloydspharmacy.com/products/oral-b-pro-series-1-pink-electric-toothbrush-with-case",
+    "https://www.oralb.co.uk/en-gb/product-collections/electric-toothbrushes/all",
+    "https://lloydspharmacy.com/collections/adult-electric-toothbrushes"
+   ],
+   "note": "Range page: Oral-B UK's electric toothbrushes page (iO, Genius, Pro, Smart and Vitality series; it shows no prices). From price: Lloyds Pharmacy (UK online pharmacy), Oral-B Pro Series 1 Pink Electric Toothbrush with Case at £21.00 (listed with a compare-at price of £70.00, part of its October 'better than half price on selected Oral-B' offer; in stock). Its other Oral-B rechargeable handles on 18 Oct: Pro 1 Cross Action Black & Travel Case £30.00 (was £69.99), iO2 from £39.00 (was £100), iO3 £53.00-£64.00, Vitality Pro with an extra head £50.00; a children's Vitality Pro Disney 100 at £19.99 is not counted. Boots, Superdrug, Argos, Currys, Tesco, Asda, Sainsbury's, Morrisons, Ocado and AO refused automated reads (403 or a bot check) on 18 Oct, so their Vitality and Pro 1 prices could not be read."
+  },
+  {
+   "product": "Kirkland dog bed",
+   "category": "general",
+   "product_type": "dog bed",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Costco UK",
+   "url": "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/Kirkland-Signature-21-x-25-Wide-Walled-Cuddler-Pet-Bed-in-4-Options/p/1851837",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/Kirkland-Signature-21-x-25-Wide-Walled-Cuddler-Pet-Bed-in-4-Options/p/1851837",
+    "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/c/cos_6.12",
+    "https://www.costco.co.uk/c/Kirkland-Signature-21-x-25-Rectangular-Nuzzler-Ped-Bed-in-Brown/p/1348743B",
+    "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/Kirkland-Signature-42-1067cm-Round-Pet-Bed-in-2-Colours/p/1834421",
+    "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/Kirkland-Signature-42-Round-Pet-Bed-in-6-Designs/p/1348470",
+    "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/Kirkland-Signature-Square-Plush-Tufted-Napper-Pet-Bed-40-1016cm-in-2-Colours/p/1676930",
+    "https://www.costco.co.uk/Grocery-Household/Speciality/Kirkland-Signature/Kirkland-Signature-25-x-35-635-x-889cm-Bolstered-Sofa-Pet-Bed-in-2-Designs/p/1259357",
+    "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/Kirkland-Signature-Duke-Bolster-Pet-Bed-11684-x-9144cm-46-x-36-in-2-Colours/p/1834416",
+    "https://www.costco.co.uk/Grocery-Household/Pets-Wildlife/Kirkland-Signature-Oval-Cuddler-Pet-Bed-46-x-32-116cm-x-81cm-in-2-Colours/p/1815236"
+   ],
+   "note": "Kirkland Signature is Costco's own brand; Costco UK (a membership warehouse club) lists its pet beds in its Pets & Wildlife section, the range page. Costco's pages load prices by script, but the page source carries them; read there on 18 Oct (page text: 'Shipping Included. Item may be available in your local warehouse, prices may vary'; postcode delivery restrictions may apply): 21\" x 25\" Wide Walled Cuddler Pet Bed 'Starting at £27.99', 4 options (Grey, Grey Pattern, Brown, Cream), in stock, described as for dogs and cats - the from price, a small bed; 21\" x 25\" Rectangular Nuzzler £27.99 (out of stock); 42\" (106.7cm) Round Pet Bed £34.69 in 2 colours (in stock; the Grey page shows out of stock); 42\" Round in 6 designs £36.99; 32\" x 42\" Pillow Top Gusseted £36.99 (category page); 40\" Square Plush Tufted Napper £42.99; 25\" x 35\" Bolstered Sofa Pet Bed £49.99; Duke Bolster 46\" x 36\" and Oval Cuddler 46\" x 32\" £51.99."
+  },
+  {
+   "product": "Big Agnes tent",
+   "category": "general",
+   "product_type": "tent",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Absolute Snow",
+   "url": "https://www.absolute-snow.co.uk/big-agnes-blacktail-2-tents,-bivvys--extensions",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.absolute-snow.co.uk/big-agnes-blacktail-2-tents,-bivvys--extensions",
+    "https://www.absolute-snow.co.uk/brands/big-agnes",
+    "https://www.absolute-snow.co.uk/big-agnes-tiger-wall-ul1-tents,-bivvys--extensions",
+    "https://www.absolute-snow.co.uk/big-agnes-tiger-wall-ul2-tents,-bivvys--extensions",
+    "https://www.absolute-snow.co.uk/big-agnes-tiger-wall-ul3-tents,-bivvys--extensions",
+    "https://www.absolute-snow.co.uk/big-agnes-tiger-wall-ul2-bikepack-tents,-bivvys--extensions",
+    "https://www.absolute-snow.co.uk/big-agnes-copper-spur-ul2-tents,-bivvys--extensions"
+   ],
+   "note": "Absolute Snow (UK outdoor shop) lists 17 Big Agnes products on 18 Oct, six of them tents. I read each tent's own page: Blacktail 2 £224.95 (was £249.95), Tiger Wall UL1 £377.95 (was £419.95), Tiger Wall UL2 £422.95 (was £469.95), Tiger Wall UL3 £467.95 (was £519.95), Tiger Wall UL2 Bikepack £476.95 (was £529.95), Copper Spur UL2 £522.45 (was £549.95). From price: the Blacktail 2 two-person tent at £224.95 (colour Vetiver, size 2P; its page data says in stock, while the page text reads 'Pre-order yours today' beside Add To Basket, as on all six tent pages). The shop's AUTUMN10 code (extra 10% off sale items until 31 Oct) is not counted."
+  },
+  {
+   "product": "Osprey Daylite Expandable 26+6",
+   "category": "general",
+   "product_type": "backpack",
+   "price": 78.26,
+   "currency": "GBP",
+   "shop": "Alpinetrek",
+   "url": "https://www.alpinetrek.co.uk/osprey-daylite-expandable-travel-pack-26-6-travel-backpack/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.alpinetrek.co.uk/osprey-daylite-expandable-travel-pack-26-6-travel-backpack/",
+    "https://www.trekitt.co.uk/rucksacks/everyday-commuter-packs/osprey-daylite-expandable-travel-pack-26-plus-6-black__58502",
+    "https://www.amazon.co.uk/dp/B0F5H83T7V"
+   ],
+   "note": "Osprey's Daylite Expandable Travel Pack 26+6 (26 litres, expands by 6; 840g). Osprey's own UK store refused automated reads (403), so the price is from UK shops. Alpinetrek (UK site of a German outdoor shop), item 502-8884, black only: 'Original price £89.95, Price £78.26 incl. duties and taxes' plus shipping (free delivery from £85 to GB), 'All items in stock', delivery 5-7 working days. Trekitt (UK shop) lists the black and the Night Shift Blue at £76.50 (was £90.00, 15% off), but its page gives no stock status (despatch date 'Undetermined'), so it is not used. Amazon UK's Tunnel Vision Grey page says 'Currently unavailable'."
+  },
+  {
+   "product": "Rockwell 6S",
+   "category": "general",
+   "product_type": "razor",
+   "price": 92.0,
+   "currency": "GBP",
+   "shop": "Rockwell Razors UK",
+   "url": "https://uk.getrockwell.com/products/rockwell-6s-adjustable-safety-razor",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://uk.getrockwell.com/products/rockwell-6s-adjustable-safety-razor",
+    "https://getrockwell.com/products/rockwell-6s-adjustable-safety-razor",
+    "https://www.theenglishshavingcompany.com/rockwell-6s-adjustable-stainless-steel-safety-razor.html",
+    "https://www.theenglishshavingcompany.com/rockwell-6s-adjustable-stainless-steel-safety-razor-matte-black.html",
+    "https://www.theenglishshavingcompany.com/shop-by-brand/rockwell.html"
+   ],
+   "note": "The Rockwell 6S is Rockwell Razors' adjustable double-edge safety razor (6 settings from 3 reversible base plates, 316L stainless steel, lifetime warranty). Rockwell's own UK store (uk.getrockwell.com, prices in GBP, reached through the site's United Kingdom selector) lists the Rockwell 6S Adjustable Stainless Steel Razor at £92.00 in Matte Stainless Steel, £115.00 in Black Stainless Steel and £192.00 in 24K Gold, all available with Add to cart and 'Free Shipping for all orders'; the page says taxes and shipping are calculated at checkout (its US page shows $120 USD). The English Shaving Company (UK) also sells it: stainless 6S RRP £109.00 (the page also shows £90.83 excluding VAT), in stock; Matte Black RRP £136.00 (£113.33 excluding VAT), in stock. The colour changes the price."
+  },
+  {
+   "product": "Garmin Forerunner 965",
+   "category": "general",
+   "product_type": "sports watch",
+   "price": 499.99,
+   "currency": "GBP",
+   "shop": "Garmin UK",
+   "url": "https://www.garmin.com/en-GB/p/886725/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.garmin.com/en-GB/p/886725/",
+    "https://www.sportsshoes.com/product/gar254/garmin-forerunner-965-gps-watch",
+    "https://www.garmin.com/en-GB/c/sports-fitness/running-smartwatches/",
+    "https://www.johnlewis.com/browse/electricals/smart-watches-wearable-tech/view-all-smart-watches/garmin/_/N-5nmcZ1z13y4o",
+    "https://www.runnersneed.com/c/electronics/garmin-forerunner.html"
+   ],
+   "note": "Still sold new in the UK: Garmin UK's own store page for the Forerunner 965 (filed under its 'Previous Models' category and marked not discontinued) shows it in stock with Add To Cart, delivery in 1-3 days, list price £499.99 for each of its three versions (e.g. Carbon Grey DLC Titanium Bezel with Black Case and Amp Yellow/Black band); the price is in the page's data (schema offer 499.99 GBP, no sale price). SportsShoes shows it at £399.99 (RRP £499.99) but out of stock in every colour on 18 Oct. Garmin UK's running watches page, John Lewis's Garmin list (30 watches) and Runners Need's Forerunner list (9 models) do not show it, listing newer Forerunners (970, 570, 170, 70) instead, but the 965 is not discontinued."
+  },
+  {
+   "product": "965",
+   "category": "general",
+   "product_type": "sports watch",
+   "price": 499.99,
+   "currency": "GBP",
+   "shop": "Garmin UK",
+   "url": "https://www.garmin.com/en-GB/p/886725/",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://www.garmin.com/en-GB/p/886725/",
+    "https://www.sportsshoes.com/product/gar254/garmin-forerunner-965-gps-watch",
+    "https://www.garmin.com/en-GB/c/sports-fitness/running-smartwatches/",
+    "https://www.johnlewis.com/browse/electricals/smart-watches-wearable-tech/view-all-smart-watches/garmin/_/N-5nmcZ1z13y4o",
+    "https://www.runnersneed.com/c/electronics/garmin-forerunner.html"
+   ],
+   "note": "'965' is a writer's shorthand for the Garmin Forerunner 965 running watch. Still sold new in the UK: Garmin UK's own store page for the Forerunner 965 (filed under its 'Previous Models' category and marked not discontinued) shows it in stock with Add To Cart, delivery in 1-3 days, list price £499.99 for each of its three versions (e.g. Carbon Grey DLC Titanium Bezel with Black Case and Amp Yellow/Black band); the price is in the page's data (schema offer 499.99 GBP, no sale price). SportsShoes shows it at £399.99 (RRP £499.99) but out of stock in every colour on 18 Oct. Garmin UK's running watches page, John Lewis's Garmin list (30 watches) and Runners Need's Forerunner list (9 models) do not show it, listing newer Forerunners (970, 570, 170, 70) instead, but the 965 is not discontinued."
+  },
+  {
+   "product": "Feathered Friends sleeping bag",
+   "category": "general",
+   "product_type": "sleeping bag",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Feathered Friends",
+   "url": "https://featheredfriends.com/collections/sleeping-bags",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "not_in_uk": true,
+   "sources": [
+    "https://featheredfriends.com/collections/sleeping-bags",
+    "https://www.ultralightoutdoorgear.co.uk/brands"
+   ],
+   "note": "not sold to UK shoppers: Feathered Friends (Seattle; also written FF) makes down sleeping bags and quilts, hand-made in Seattle, and sells them from its own online store (a US store with a Canadian storefront). I found no UK seller: Ultralight Outdoor Gear, the UK specialist, does not list the brand (it lists Western Mountaineering and Enlightened Equipment), searches of UK outdoor shops found none, and UK eBay shows only individual sellers, many shipping from the US. The maker's online store was behind a 'back soon' maintenance page on 18 Oct, so its range, prices and shipping terms could not be read; its collection pages in search results (prices in US dollars) cover three-season, ultralight, YF, women's and winter/expedition bags (e.g. Swallow UL, Lark, Egret UL, Snowbunting ES). Not sold in the UK: only from the maker's US store."
+  },
+  {
+   "product": "Timberland PRO Boondock",
+   "category": "general",
+   "product_type": "work boots",
+   "price": 169.99,
+   "currency": "GBP",
+   "shop": "ITS",
+   "url": "https://its.co.uk/pd/timberland-boondock-ultralight-safety-boots-brown-_tim4402882667.htm",
+   "checked_on": "2026-10-18",
+   "available": true,
+   "sources": [
+    "https://its.co.uk/pd/timberland-boondock-ultralight-safety-boots-brown-_tim4402882667.htm",
+    "https://its.co.uk/timberland/"
+   ],
+   "note": "The finishing builder's own check (18 Oct 2026, one product): writers' Timberland PRO Boondock is the brand's waterproof composite-toe work boot. In the UK ITS (a big UK tool and workwear shop, authorised Timberland stockist) sells the Boondock as the Timberland Boondock Ultralight Safety Boots, Brown or Wheat, at £169.99 (was £179.98), in stock in sizes 7 to 12 on 18 Oct (S7S SR SC FO, a lightweight asymmetrical composite safety toe, waterproof; its page does not call it PRO and does not give the boot height). The classic US 6-inch Boondock writers name was not found on the UK pages read, so this is the UK version of the Boondock, not provably the same build. The search tool here is US-only and Timberland's own sites refuse automated reads (403), so no other UK page was read."
   }
  ]
 }
