@@ -509,3 +509,53 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   as PFAS-free from its current coating, with a note that most reviews are of the older one; (l) on-demand reading
   comes back on after the interviews, with a cheaper reader; (m) in the blind-test packets, a pick's one-line summary
   is its "why". The blind-test capture of the rivals: Claude's call ("does it matter? let's do the best option").
+- Built by Claude, 19 Oct 2026 (the round-4 builder, branch round4 from main 5683b2d: Noemi's decisions of 19 Oct 2026
+  above, and the coordinator's items 10 and 11 from her later notes; technical calls reported here): (b) when both
+  readings give as many picks, the wider one wins if more of its picks have a credible voice about the request's need
+  or feature (engine.pipeline._wider_wins): "smartwatch for fitness" now shows Garmin's line first (and Amazfit's Bip
+  6), from the wider reading, where Huawei's watch stood alone. (d) A top-level answer (a direct reply to the post) in
+  a thread whose title asks for a need counts as talking about it for the need rule of every skincare and haircare
+  reading and of the wider reading (ScoredMention.needs_by_title; its reason, weight and standing out still go by its
+  own words, so a reason never counts a voice "about dry skin" that never said so); the feature rule takes a thread's
+  ask for top-level answers only, replies needing their own words (until then every comment of such a thread had it).
+  (g) Essences stay out of toner answers (config.KINDS_KEPT_OUT_OF_TYPE: a product the AI types as an essence, or
+  named one and never a toner, is another type; a request naming an essence keeps them, and a toner whose name holds
+  "essence" stays): "toner w/o alcohol for combination/normal skin" loses COSRX's Snail 96 essence and shows 2 picks.
+  (h) A travel system already was a stroller pick ("travel system" is one of the stroller's names): a test keeps it so.
+  (i) Fast-moving tech (config.FAST_MOVING_TYPES): a comment older than config.FAST_MOVING_OLD_EVIDENCE_YEARS (5,
+  PROPOSED) says nothing for or against a product unless it, or the line it is, is known to be still sold (a price-list
+  entry counting it as sold, abroad too, or a brand-lines entry saying the brand sells the type). The TV answer is
+  unchanged: its 1999 Trinitron is told in comments of 2023 (the rule judges a comment's age, not the age of the set it
+  describes); the laptop answers are unchanged; "mesh wifi for a three storey house" loses Eero and Netgear Orbi (no
+  entry says either is sold: a brand-lines entry would bring them back) and shows 2 picks. (j) A kind credible voices
+  warn off as they would a product (at least 2 writers, outnumbering its credible recommendations: engine.rank.
+  warned_off_kinds) takes config.KIND_WARNING_PENALTY (PROPOSED: KIND_BONUS's size) off the products whose own kind it
+  is, never for a kind the request names nor one warned about for one use ("... for bread", "... in dry climates":
+  engine.pipeline._kinds_not_pushed). Tried first on any negatively supported kind a product was placed in: 59 picks
+  moved, mostly by one passing note or by broad placements (a non-stick pan in "Teflon"), so it was narrowed. Now
+  "knife sharpener for japanese knives" shows King stones where the Chef'sChoice electric line was third, Bonavita's
+  line goes from first to third in "electric kettle that lasts 10+ years" (two writers warned against goosenecks) and
+  2 Hounds from first to second in "dog harness". (k) HexClad's facts stay PFAS-free (its current coating), with a note
+  shown under it wherever its entry is found: a new optional facts field, shown_note, as a caution ("Note: most reviews
+  here are of its earlier PTFE-coated pans."; wording approved by Noemi, 19 Oct 2026). (m) In the blind-test packets a
+  pick's why is its one-line summary, its reason line only without one (FORMAT.md, dated note). (c) Checked: no
+  ranking step prefers products sold in the UK (rank's order has no availability; the budget, the sold-under-its-name
+  and brand-model steps count a product sold only abroad as sold; the price check only compares a budget with prices
+  in its currency, keeping the others; the answer never reorders by availability); nothing to fix, and (i)'s still-sold
+  counts products sold only abroad. Item 10 (Noemi, of the ILLIYOON line's third quote): a shown quote never holds a
+  question asking for other products or suggestions (config.QUOTE_ASKING_PATTERNS, read inside a question only); it is
+  cut to the part before it ending on a clause that carries its stance, or not shown, and the pick's other quotes make
+  up its two (engine.answer._without_asking). No quote of the 19 Oct sweeps holds one; in the sweeps of 16-17 Oct the
+  ILLIYOON line's (17 words) would be cut to its first 6, the writer saying they use and love it. Item 11: the wording
+  she approved is marked decided (the how page's privacy, logs, live-check, kept-comments and sold-abroad lines; the
+  feature-not-praised note, both brand-wide warning lines, the HexClad note, the not-sold-in-the-UK line, the
+  fewer-picks, no-pick, summary and Also worth a look notes; the packets' tester-code line and question heading; the
+  vague, gift and department questions). PROPOSED, for her to see: the no-threads message, reworded at her request
+  ("We haven't read Reddit about {products} yet, so we'd rather not guess. Try a related product, or one of the
+  examples above.", shown as the answer's message under the search box and its examples), and the home page's six
+  examples she asked for (dutch oven, pet-hair vacuum, beginner's espresso machine, frizzy curly conditioner, hiking
+  boots, carry-on suitcase: none a blind-test type, each a full top 3 in the 19 Oct sweeps; the page groups them by
+  category). Tests: engine/tests/test_round4.py (16) and one in test_blind_test.py; changed on purpose, with dated
+  notes: the summary test of test_blind_test.py, the retinol library's title in test_needs_and_contradictions.py, the
+  example and no-threads pins of test_web.py and test_general_engine.py. The whole suite, the evaluation and the
+  sweep: eval/RUNS.md, 19 Oct 2026, round 4.
