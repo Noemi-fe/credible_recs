@@ -156,7 +156,11 @@
       {"short": "mest mkii", "full": "Unique Melody MEST MKII", "seen": ["mest mkii"]},
       {"short": "MEST", "full": "Unique Melody MEST", "seen": ["MEST"]},
       {"short": "Wave", "full": "Leatherman Wave", "seen": ["wave", "Wave", "Leatherman Wave"]},
-      {"short": "Squeeze", "full": "Sawyer Squeeze", "seen": ["squeeze", "Squeeze", "Sawyer Squeeze"]}
+      {"short": "Squeeze", "full": "Sawyer Squeeze", "seen": ["squeeze", "Squeeze", "Sawyer Squeeze"]},
+      {"short": "255", "full": "Garmin Forerunner 255", "seen": ["255", "255 music"]},
+      {"short": "FR 255", "full": "Garmin Forerunner 255", "seen": ["FR 255"]},
+      {"short": "265", "full": "Garmin Forerunner 265", "seen": ["265"]},
+      {"short": "955", "full": "Garmin Forerunner 955", "seen": ["955", "955 solar version"]}
     ],
     "haircare": [
       {"short": "Kevyn Murphy", "full": "KEVIN.MURPHY", "seen": ["Kevyn Murphy angel shampoo"]},
