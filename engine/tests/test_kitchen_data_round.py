@@ -271,10 +271,15 @@ def test_oxo_non_stick_pans_whose_writers_name_no_model_are_never_shown_as_confi
     # asks for PFAS-free says so. One writer naming the Ceramic Professional (made without PFAS, by OXO's California
     # disclosure) doesn't make the others' pans that model: module 4 names their group after it, so a facts entry under
     # that model's name would mark them all PFAS-free (tried on 18 Oct 2026; left for the integrator).
+    # Changed on purpose 19 Oct 2026 (the round-3 names builder, the coordinator's item 3: "the OXO non-stick pan picked
+    # there: decide by its named model"): OXO UK's own pages say its Ceramic Professional pans have a ceramic coating
+    # with no PFAS, so that model has a facts entry, and the group in which a writer names it is shown as that model
+    # (engine/tests/test_round3_names.py). This test keeps the other half of the rule, with no writer naming a model
+    # (the library had one, "Oxo ceramic professional non-stick"): OXO's non-stick pans as a whole stay unconfirmed.
     library = typed_as(write_library(tmp_path, {
         "1oxo001": ("Non-stick pan that lasts, no PFAS?", "Peeling again.", [
             praise("o1a", "OXO non-stick", 3), praise("o1b", "OXO non-stick pan", 4),
-            praise("o1c", "Oxo ceramic professional non-stick", 2), praise("g5a", "GreenPan", 4),
+            praise("o1c", "Oxo non stick skillet", 2), praise("g5a", "GreenPan", 4),
             praise("g5b", "GreenPan", 5),
         ]),
         "1oxo002": ("Which non-stick pan lasts?", "Ten years, ideally.", [

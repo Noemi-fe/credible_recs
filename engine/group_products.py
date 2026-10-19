@@ -88,6 +88,12 @@ Claude's technical calls within the name-levels rules, reported to Noemi; found 
   brand's product, so it never joins two brands' products into one (CeraVe's and COSRX's SA cleansers had been one
   product through it, by the facts entry its name then found). The answers never rank such a group, nor list it as a
   brand or a line (engine/pipeline.py).
+- A price put in front of the requested type's words alone ("$30 rice cooker", "£20 kettle"; 19 Oct 2026, the final
+  review had shown "$30 rice cooker" under Also worth a look) is a budget a writer names, not a maker's product:
+  flagged generic too. A price before a maker ("$150 Ninja") is that maker's mention, and a number inside a name
+  ("Zojirushi NS-ZCC10", "30 cm Tefal pan") is no price. A name of descriptions alone ("basic", "the old one":
+  _DESCRIPTIONS), which the final review had shown as "Basic e-reader line", is no product either: it joins the one
+  brand's name that holds it here ("Kindle Basic", when "Kindle" is written alone too), else it is generic too.
 - A model's one-word name written without its brand ("wave", "squeeze", "Mobius") is that name with a brand before it
   ("Leatherman Wave", "Sawyer Squeeze", "Audeze Mobius"; _add_brands_before): each had been a pick or a skip of its own
   beside it. A name of two words or more already fitted so ("Flip 5" and "JBL Flip 5"). Not when two makers' names end
@@ -623,10 +629,14 @@ def _group_category(category: str, mentions: list[ProductMention], aliases: Alia
             nameless[m.product.strip().lower()].append(m)
     _expand_initials(by_words, type_words)
     # Names that name no one product (15 Oct 2026): two models at once, a shop's name with no maker's own after it, or
-    # a kind the whole library writes only after two or more makers' names (`ranges`, LibraryRanges.generic). Each is a
-    # group of its own, joining nothing.
+    # a kind the whole library writes only after two or more makers' names (`ranges`, LibraryRanges.generic); and since
+    # 19 Oct 2026 a price put in front of the requested type's words alone ("$30 rice cooker": _a_price_point). Each is
+    # a group of its own, joining nothing. A description alone ("basic": _only_a_description) is the brand's name that
+    # holds it when the mentions write exactly one ("Kindle Basic"), else it is generic too (_attach_descriptions).
     generic = {w: by_words.pop(w) for w in sorted(by_words)
-               if _gives_alternatives(w) or _a_shops_name(w) or (ranges is not None and ranges.generic(category, w))}
+               if _gives_alternatives(w) or _a_shops_name(w) or _a_price_point(w, by_words[w], type_words)
+               or (ranges is not None and ranges.generic(category, w))}
+    _attach_descriptions(by_words, generic)
 
     names = sorted(by_words)
     # Words written alone as a name: brands, or lines writers name on their own ("Ballarini"). A name of one such word
@@ -801,6 +811,67 @@ def _a_shops_name(words: Words) -> bool:
     15 Oct 2026): a shop sells other makers' products, so its name says where a product was bought, not which one. A
     shop's own brand has a name of its own ("Kirkland sheets"), which isn't one of them."""
     return any(words[:len(shop)] == shop for shop in _SHOP_WORDS)
+
+
+# A price in front of a name, as writers put what they paid or would spend: "$30 rice cooker", "£20 kettle", "30$
+# blender", "30 dollar toaster". A weight in pounds is no price ("5 pound bag"), so only money's own words and signs.
+_PRICE_FIRST = re.compile(r"\s*(?:[$£€]\s?\d|\d[\d.,]*\s?(?:[$£€]|dollars?|bucks?|quid|euros?)(?![a-z]))",
+                          re.IGNORECASE)
+
+
+# Words that describe a product without naming it (config.BRAND_MODEL_GENERIC_WORDS' descriptions, 10 Oct 2026).
+_DESCRIPTIONS = frozenset({"restored", "vintage", "old", "older", "used", "new", "newer", "original", "any", "good",
+                           "cheap", "basic", "big", "small", "large", "little"})
+
+
+def _only_a_description(words: Words) -> bool:
+    """Whether a name is only descriptions (19 Oct 2026, the round-3 names builder): a bare "basic" (29 mentions in the
+    library's e-reader threads, writers saying which model of a brand they use) says which model of a brand its thread
+    is about, not which brand, so it is no product's name (the final review showed it as "Basic e-reader line"). With
+    a brand ("basic Kindle", "basic Sonicare") or a model, a description is part of a name."""
+    return bool(words) and all(word in _DESCRIPTIONS for word in words)
+
+
+def _left_after(name: Words, words: Words) -> list[str] | None:
+    """The words of `name` left once each of `words` is taken out, or None when it lacks one."""
+    rest = list(name)
+    for word in words:
+        if word not in rest:
+            return None
+        rest.remove(word)
+    return rest
+
+
+def _attach_descriptions(by_words: dict[Words, list[ProductMention]],
+                         generic: dict[Words, list[ProductMention]]) -> None:
+    """Moves each name of descriptions alone (_only_a_description) to the one name here that holds its words and a
+    brand's, written alone as a name here as well: "basic" is "Kindle Basic" when the mentions write "Kindle Basic"
+    (and "Kindle", alone) and no other brand's "basic" (the e-reader threads' 29 "basic"; the same rule as a model's
+    one-word name that takes its brand, _add_brands_before). Any other is generic: it names no one product. Changes
+    `by_words` and `generic` in place."""
+    described = [w for w in sorted(by_words) if _only_a_description(w)]
+    if not described:
+        return
+    alone = {w[0] for w in by_words if len(w) == 1 and not _only_a_description(w)}
+    for words in described:
+        partners = [name for name in sorted(by_words) if len(name) == len(words) + 1
+                    and (rest := _left_after(name, words)) is not None
+                    and rest[0] in alone and _could_be_a_maker(rest[0])]
+        if len(partners) == 1:
+            by_words[partners[0]] = by_words[partners[0]] + by_words.pop(words)
+        else:
+            generic[words] = by_words.pop(words)
+
+
+def _a_price_point(words: Words, mentions: Iterable[ProductMention], type_words: frozenset[str]) -> bool:
+    """Whether a name is a price put in front of the requested type's words alone (19 Oct 2026, the round-3 names
+    builder; the final review's "$30 rice cooker" was shown under Also worth a look): what a writer paid or would spend,
+    "a $30 one is fine", not a maker's product, so it is neither ranked nor shown (a group flagged generic, like a
+    shop's name). Every mention of the name must put the price first. A price before a maker ("$150 Ninja") or a model
+    is that maker's or model's mention; a number inside a name ("Zojirushi NS-ZCC10", "30 cm Tefal pan") is no price."""
+    return (len(words) > 1 and words[0].replace(".", "").replace(",", "").isdigit()
+            and all(word in type_words or word in _DESCRIPTIONS for word in words[1:])
+            and all(_PRICE_FIRST.match(m.product) is not None for m in mentions))
 
 
 # Words left out of a brand's initials ("BB&B" for Bed Bath & Beyond) and the most letters initials have.
