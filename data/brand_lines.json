@@ -2425,6 +2425,35 @@
    "from_price_url": "https://www.johnlewis.com/oxo-good-grips-garlic-press-with-built-in-cleaner/p113892388",
    "from_price_checked_on": "2026-10-18",
    "note": "OXO has no UK store. John Lewis, read in a browser on 18 Oct 2026, sells one OXO garlic press: the OXO Good Grips Garlic Press with Built-In Cleaner, £20.00, in stock (its page also serves as the range page: John Lewis has no other OXO press)."
+  },
+  {
+   "brand": "Shiseido",
+   "category": "skincare",
+   "product_type": "eye cream",
+   "sells": true,
+   "sources": ["https://www.shiseido.co.uk/gb/en/skincare/eye-and-lip-care/", "https://www.shiseido.co.uk/gb/en/shiseido-power-infusing-eye-concentrate-768614172895.html"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://www.shiseido.co.uk/gb/en/skincare/eye-and-lip-care/",
+   "from_price": 54.0,
+   "from_price_shop": "Shiseido",
+   "from_price_url": "https://www.shiseido.co.uk/gb/en/shiseido-power-infusing-eye-concentrate-768614172895.html",
+   "from_price_checked_on": "2026-10-18",
+   "note": "Shiseido UK's Eye & Lip Care page, 18 Oct 2026: Ultimune Power Infusing Eye Concentrate 15 ml £54 (the cheapest full size, Add to cart), Total Revitalizer Eye 15 ml £70, Benefiance Wrinkle Smoothing Eye Cream 15 ml £75, Vital Perfection Eye Cream 15 ml £77, Intensive Wrinklespot Treatment A+ £102, Future Solution LX Eye and Lip Contour Regenerating Cream £192; the rest are sets and masks."
+  },
+  {
+   "brand": "Melano CC",
+   "also_called": ["Melano CC Essence", "Rohto Melano CC", "Rohto Melano CC Essence"],
+   "category": "skincare",
+   "product_type": "serum",
+   "sells": true,
+   "sources": ["https://jp.rohto.com/melanocc/", "https://jp.rohto.com/melanocc/essence/", "https://jp.rohto.com/melanocc/premium-essence/", "https://japanesetaste.co.uk/products/melano-cc-intensive-anti-spot-brightening-essence-vitamin-c-20ml", "https://japanesetaste.co.uk/products/rohto-melano-cc-essence-premium-vitamin-c-serum-20ml"],
+   "checked_on": "2026-10-18",
+   "range_page": "https://jp.rohto.com/melanocc/",
+   "from_price": 11.89,
+   "from_price_shop": "Japanese Taste",
+   "from_price_url": "https://japanesetaste.co.uk/products/melano-cc-intensive-anti-spot-brightening-essence-vitamin-c-20ml",
+   "from_price_checked_on": "2026-10-18",
+   "note": "Rohto's Melano CC (its own Japanese pages, read 18 Oct 2026) has two vitamin C essences, the Intensive Anti-Spot Essence and the Premium; writers' 'Melano CC Essence' can mean either, so the name is the line's. Japanese Taste's UK store (a Japanese import shop; prices in pounds on its .co.uk address) has both in stock on 18 Oct 2026: the essence 20 ml £11.89, the Premium 20 ml £15.29. Range page: Rohto's Melano CC page, in Japanese (no UK page or official UK stockist)."
   }
  ]
 }

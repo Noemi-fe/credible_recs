@@ -5655,6 +5655,324 @@
    ],
    "checked_on": "2026-10-18",
    "note": "KitchenAid's own UK page, read in a browser on 18 Oct 2026: it names it MEAT GRINDER (5KSMFGA, white: the plastic food grinder attachment), £109, in stock; the metal Meat Grinder and Sausage Stuffer Set (5KSMMGA) is £159 on its own page. Writers name the 5KSMFGA the plastic KitchenAid grinder attachment."
+  },
+  {
+   "product": "CeraVe Skin Renewing Night Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "page": "https://www.cerave.com/skincare/moisturizers/skin-renewing-night-cream",
+   "shop": "CeraVe",
+   "image": "https://www.cerave.com/-/media/project/loreal/brand-sites/cerave/americas/us/skincare/2025/skin-renewing-night-cream/700x785/skin-renewing-night-cream-packshot-front-700x785-v1.jpg?rev=e26e5d7b923b47ac98ddd5c1baf07a54",
+   "image_page": "https://www.cerave.com/skincare/moisturizers/skin-renewing-night-cream",
+   "sources": [
+    "https://www.cerave.com/skincare/moisturizers/skin-renewing-night-cream",
+    "https://a82962.sitemaphosting.com/4034207/sitemap.xml"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://a82962.sitemaphosting.com/4034207/sitemap.xml; the page names it \"Skin Renewing Night Cream\"."
+  },
+  {
+   "product": "COSRX Oil-Free Ultra Moisturizing Lotion",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "page": "https://www.cosrx.com/products/oil-free-ultra-moisturizing-lotion-with-birch-sap",
+   "shop": "COSRX Official",
+   "sources": [
+    "https://www.cosrx.com/products/oil-free-ultra-moisturizing-lotion-with-birch-sap",
+    "https://www.cosrx.com/sitemap_products_1.xml?from=6101921824924&to=10309980192984"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.cosrx.com/sitemap_products_1.xml?from=6101921824924&to=10309980192984; the page names it \"Oil-Free Ultra-Moisturizing Lotion with Birch Sap\"; USD 25 on the page."
+  },
+  {
+   "product": "Avene xeracalm balm",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "page": "https://www.avene.co.uk/p/xeracalm-ad-replenishing-balm-3282770399523-b5405ca4",
+   "shop": "Avene",
+   "image": "https://media-pierre-fabre.wedia-group.com/api/wedia/dam/transform/u5wa3z31qn5sjnpd1rysprnhfryybhfqzsuaqxe/out?t=resize&height=400",
+   "image_page": "https://www.avene.co.uk/p/xeracalm-ad-replenishing-balm-3282770399523-b5405ca4",
+   "sources": [
+    "https://www.avene.co.uk/p/xeracalm-ad-replenishing-balm-3282770399523-b5405ca4",
+    "https://www.avene.co.uk/product.xml"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.avene.co.uk/product.xml; the page names it \"XERACALM AD - Replenishing Balm\"."
+  },
+  {
+   "product": "iUNIK Beta Glucan Daily Moisture Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "page": "https://www.iunik.com/products/beta-glucan-daily-moisture-cream",
+   "shop": "IUNIK GLOBAL",
+   "sources": [
+    "https://www.iunik.com/products/beta-glucan-daily-moisture-cream",
+    "https://www.iunik.com/sitemap_products_1.xml?from=10375277773073&to=15409025057041"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.iunik.com/sitemap_products_1.xml?from=10375277773073&to=15409025057041; the page names it \"Beta Glucan Daily Moisture Cream\"; USD 17 on the page."
+  },
+  {
+   "product": "CeraVe Moisturising Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "page": "https://www.cerave.co.uk/skincare/moisturisers/moisturising-cream",
+   "shop": "cerave",
+   "image": "https://www.cerave.co.uk/-/media/project/loreal/brand-sites/cerave/emea/uk/products/moisturising-cream-pot-340g/moisturising-cream-pot-340g-1-sm.jpg?rev=6b36359cd86e4c84bdea2f817a0ce48a",
+   "image_page": "https://www.cerave.co.uk/skincare/moisturisers/moisturising-cream",
+   "sources": [
+    "https://www.cerave.co.uk/skincare/moisturisers/moisturising-cream",
+    "https://www.cerave.co.uk/sitemap.xml"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.cerave.co.uk/sitemap.xml; the page names it \"Moisturising Cream Pot\"."
+  },
+  {
+   "product": "COSRX Advanced Snail 92 All in one Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "page": "https://www.cosrx.com/products/advanced-snail-92-all-in-one-cream",
+   "shop": "COSRX Official",
+   "sources": [
+    "https://www.cosrx.com/products/advanced-snail-92-all-in-one-cream",
+    "https://www.cosrx.com/sitemap_products_1.xml?from=6101921824924&to=10309980192984"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.cosrx.com/sitemap_products_1.xml?from=6101921824924&to=10309980192984; the page names it \"Advanced Snail 92 All in One Cream\"; USD 26 on the page."
+  },
+  {
+   "product": "EltaMD UV Clear Broad-Spectrum SPF 46",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "page": "https://eltamd.com/products/uv-clear-broad-spectrum-spf-46",
+   "shop": "EltaMD",
+   "image": "https://cdn.shopify.com/s/files/1/0467/8120/2585/files/UVClearUntinted1.7oz.jpg?v=1791265741",
+   "image_page": "https://eltamd.com/products/uv-clear-broad-spectrum-spf-46",
+   "sources": [
+    "https://eltamd.com/products/uv-clear-broad-spectrum-spf-46",
+    "https://eltamd.com/sitemap_products_1.xml?from=7590988873881&to=15400249786521"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://eltamd.com/sitemap_products_1.xml?from=7590988873881&to=15400249786521; the page names it \"UV Clear Broad Spectrum SPF 46\"; USD 46 on the page. Checked by Claude, 18 Oct 2026: the page is the product's own (US; the price list says it isn't sold in the UK); the image is the page's own 1.7 oz photo (its first image is a bundle graphic)."
+  },
+  {
+   "product": "Drunk Elephant Protini Polypeptide Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "page": "https://www.drunkelephant.co.uk/gb/en/collections/moisturizers/Protini%E2%84%A2-Polypeptide-Cream/999DE00000103.html",
+   "shop": "Drunk Elephant",
+   "image": "https://www.drunkelephant.co.uk/dw/image/v2/BCMQ_PRD/on/demandware.static/-/Sites-itemmaster_drunkelephant/default/dwa4e28630/products/images/Skincare/Moisturizer/42800025101/drunk-elephant-Protini-PDP_2026_Key-Benefits-1.jpg?sw=540&sh=540&sm=fit",
+   "image_page": "https://www.drunkelephant.co.uk/gb/en/collections/moisturizers/Protini%E2%84%A2-Polypeptide-Cream/999DE00000103.html",
+   "sources": [
+    "https://www.drunkelephant.co.uk/gb/en/collections/moisturizers/Protini%E2%84%A2-Polypeptide-Cream/999DE00000103.html",
+    "https://www.drunkelephant.co.uk/gb/en/sitemap_0-product.xml"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages (the sitemap https://www.drunkelephant.co.uk/gb/en/sitemap_0-product.xml), which took the Midi size's page; checked by Claude, 18 Oct 2026, and replaced with the same sitemap's main page for the cream, whose own name is \"Drunk Elephant Protini™ Polypeptide Cream\"; image: that page's og:image."
+  },
+  {
+   "product": "glow recipe watermelon dew drops niacinamide serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "page": "https://www.glowrecipe.com/products/watermelon-glow-niacinamide-dew-drops",
+   "shop": "Glow Recipe",
+   "image": "https://cdn.shopify.com/s/files/1/0543/8301/files/10_21_2410_21_24_WM_DEWDROPS-_1.jpg?v=1762197997",
+   "image_page": "https://www.glowrecipe.com/products/watermelon-glow-niacinamide-dew-drops",
+   "sources": [
+    "https://www.glowrecipe.com/products/watermelon-glow-niacinamide-dew-drops",
+    "https://www.glowrecipe.com/sitemap_products_1.xml?from=142773813262&to=10328486903923"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.glowrecipe.com/sitemap_products_1.xml?from=142773813262&to=10328486903923; the page names it \"Watermelon Glow Niacinamide Dew Drops\"; USD 36 on the page. Checked by Claude, 18 Oct 2026: the page is the product's own; image: the page's own featured image."
+  },
+  {
+   "product": "COSRX snail peptide eye cream",
+   "category": "skincare",
+   "product_type": "eye cream",
+   "page": "https://www.cosrx.com/products/advanced-snail-peptide-eye-cream",
+   "shop": "COSRX",
+   "image": "https://cdn.shopify.com/s/files/1/0513/3775/6828/files/advanced-snail-peptide-eye-cream-cosrx-official-1.png?v=1724835637",
+   "image_page": "https://www.cosrx.com/products/advanced-snail-peptide-eye-cream",
+   "sources": [
+    "https://www.cosrx.com/products/advanced-snail-peptide-eye-cream",
+    "https://www.cosrx.com/sitemap_products_1.xml?from=6101921824924&to=10309980192984"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.cosrx.com/sitemap_products_1.xml?from=6101921824924&to=10309980192984; the page names it \"Advanced Snail Peptide Eye Cream\"; USD 28 on the page. Checked by Claude, 18 Oct 2026: the page is the product's own; image: the page's own featured image."
+  },
+  {
+   "product": "BYOMA jelly cleanser",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "page": "https://uk.byoma.com/products/creamy-jelly-cleanser",
+   "shop": "BYOMA",
+   "image": "https://cdn.shopify.com/s/files/1/0632/7395/9560/files/610005D_1_c0a8950f-ab69-4779-a180-8c477ad9820a.png?v=1741952642&width=600",
+   "image_page": "https://uk.byoma.com/products/creamy-jelly-cleanser",
+   "sources": [
+    "https://uk.byoma.com/products/creamy-jelly-cleanser",
+    "https://uk.byoma.com/sitemap_products_1.xml?from=8323340501128&to=16302618444163"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://uk.byoma.com/sitemap_products_1.xml?from=8323340501128&to=16302618444163; the page names it \"Creamy Jelly Cleanser\"; GBP 10.99 on the page. Checked by Claude, 18 Oct 2026: BYOMA's only jelly cleanser is its Creamy Jelly Cleanser; £10.99, available, on its UK site.; image: a smaller size of the maker's image (27 KB instead of 524 KB)"
+  },
+  {
+   "product": "Moroccanoil Treatment",
+   "category": "haircare",
+   "product_type": "hair oil",
+   "page": "https://www.moroccanoil.com/products/moroccanoil-treatment-original",
+   "shop": "Moroccanoil",
+   "image": "https://cdn.shopify.com/s/files/1/0647/5540/0921/files/153_TREATMENT_ORIGINAL_100mL_v3.jpg?v=1774983361",
+   "image_page": "https://www.moroccanoil.com/products/moroccanoil-treatment-original",
+   "sources": [
+    "https://www.moroccanoil.com/products/moroccanoil-treatment-original",
+    "https://www.moroccanoil.com/sitemap_products_1.xml?from=8161090568409&to=9894419333337"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "engine.maker_pages took the Dry Scalp Treatment's page (another product); checked by Claude, 18 Oct 2026, and replaced with the same sitemap's page for Moroccanoil Treatment Original (the original oil writers call Moroccanoil Treatment), whose own name is \"Moroccanoil Treatment Original\"; USD prices on the page (no UK site found); image: the page's own featured image."
+  },
+  {
+   "product": "Redken all soft",
+   "category": "haircare",
+   "product_type": "conditioner",
+   "page": "https://www.redken.co.uk/products/haircare/all-soft/all-soft-conditioner",
+   "shop": "Redken",
+   "sources": [
+    "https://www.redken.co.uk/products/haircare/all-soft/all-soft-conditioner",
+    "https://www.redken.co.uk/sitemap.xml"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.redken.co.uk/sitemap.xml; the page names it \"all-soft-conditioner\". Checked by Claude, 18 Oct 2026: the page's title is \"All Soft Conditioner\" (the product's own UK page); its only image is a generic 300 ml shampoo bottle, so no image."
+  },
+  {
+   "product": "Vanicream Vitamin C Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "page": "https://www.vanicream.com/product/vitamin-c-serum",
+   "shop": "Vanicream",
+   "sources": [
+    "https://www.vanicream.com/product/vitamin-c-serum",
+    "https://www.vanicream.com/sitemap.xml"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by Claude in Vanicream's sitemap, 18 Oct 2026 (engine.maker_pages missed it): the page names it \"Vanicream™ Vitamin C Serum\"; a US product (the price list says it isn't sold in the UK); image: the page's own front photo.; image left out: its size couldn't be checked: the server doesn't give it"
+  },
+  {
+   "product": "Round Lab Dokdo toner",
+   "category": "skincare",
+   "product_type": "toner",
+   "page": "https://roundlab.com/products/1025-dokdo-toner",
+   "shop": "Round Lab",
+   "image": "https://cdn.shopify.com/s/files/1/0651/7656/8022/files/Dokdo_Toner_2025.png?v=1772851199",
+   "image_page": "https://roundlab.com/products/1025-dokdo-toner",
+   "sources": [
+    "https://roundlab.com/products/1025-dokdo-toner",
+    "https://roundlab.com/sitemap_products_1.xml?from=7700855816406&to=15377801445590"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://roundlab.com/sitemap_products_1.xml?from=7700855816406&to=15377801445590; the page names it \"1025 Dokdo Toner\"; USD 4.8 on the page; it says out of stock or discontinued. Checked by Claude, 18 Oct 2026: the page is the product's own; image: the page's own featured image."
+  },
+  {
+   "product": "BYOMA milky toner",
+   "category": "skincare",
+   "product_type": "toner",
+   "page": "https://uk.byoma.com/products/byoma-milky-toner-sensitive-skin-hydrating",
+   "shop": "BYOMA",
+   "image": "https://cdn.shopify.com/s/files/1/0632/7395/9560/files/610086D_1_088d55eb-2915-4c06-9e45-d23cb8d7ba8d.png?v=1741952524&width=600",
+   "image_page": "https://uk.byoma.com/products/byoma-milky-toner-sensitive-skin-hydrating",
+   "sources": [
+    "https://uk.byoma.com/products/byoma-milky-toner-sensitive-skin-hydrating",
+    "https://uk.byoma.com/sitemap_products_1.xml?from=8323340501128&to=16302618444163"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://uk.byoma.com/sitemap_products_1.xml?from=8323340501128&to=16302618444163; the page names it \"Hydrating Milky Toner\"; GBP 11.99 on the page. Checked by Claude, 18 Oct 2026: the page is the product's own; image: the page's own featured image.; image: a smaller size of the maker's image (21 KB instead of 532 KB)"
+  },
+  {
+   "product": "CeraVe Ultra-Light",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "page": "https://www.cerave.com/skincare/moisturizers/ultra-light-moisturizing-lotion-spf-30",
+   "shop": "CeraVe",
+   "image": "https://www.cerave.com/-/media/project/loreal/brand-sites/cerave/americas/us/skincare/2026/09/ultra-light-moisturizing-lotion/desktop/01-cerave-facial-moisturizer-ultra-light-lotion-700x785-primary.jpg?rev=c5e3da7d29484eccb6015b9d0c28fd99",
+   "image_page": "https://www.cerave.com/skincare/moisturizers/ultra-light-moisturizing-lotion-spf-30",
+   "sources": [
+    "https://www.cerave.com/skincare/moisturizers/ultra-light-moisturizing-lotion-spf-30",
+    "https://a82962.sitemaphosting.com/4034207/sitemap.xml"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://a82962.sitemaphosting.com/4034207/sitemap.xml; the page names it \"Ultra-Light Moisturizing Lotion\". Checked by Claude, 18 Oct 2026: the page is the product's own."
+  },
+  {
+   "product": "Camille Rose Curl Love Moisture Milk leave in",
+   "category": "haircare",
+   "product_type": "leave-in conditioner",
+   "page": "https://www.camillerose.com/products/curl-love-moisture-milk",
+   "shop": "Camille Rose Naturals",
+   "image": "https://cdn.shopify.com/s/files/1/0980/9736/files/ProductCard_Signature_LeaveinConditioner.webp?v=1772795367",
+   "image_page": "https://www.camillerose.com/products/curl-love-moisture-milk",
+   "sources": [
+    "https://www.camillerose.com/products/curl-love-moisture-milk",
+    "https://www.camillerose.com/sitemap_products_1.xml?from=6142133251&to=9379613147285"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.camillerose.com/sitemap_products_1.xml?from=6142133251&to=9379613147285; the page names it \"Curl Love Moisture Milk\"; USD 15 on the page. Checked by Claude, 18 Oct 2026: the page is the product's own; image: the page's own featured image."
+  },
+  {
+   "product": "Nivea shine control",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "page": "https://www.nivea.co.uk/products/nivea-sun-breathable-uv-face-shine-control-spf50plus-40ml-40060002198130045.html",
+   "shop": "Nivea",
+   "image": "https://assets.beiersdorf.com/-/media/images/b/3/6/e/d6d8398501c944028d9710f05f6a7e55-web_1010x1180_transparent_png.png?mh=1200&mw=1200&ctx=GB&rx=0&ry=325&rw=1009&rh=528&hash=F51895CDB3F634147365C2DEDAD87686",
+   "image_page": "https://www.nivea.co.uk/products/nivea-sun-breathable-uv-face-shine-control-spf50plus-40ml-40060002198130045.html",
+   "sources": [
+    "https://www.nivea.co.uk/products/nivea-sun-breathable-uv-face-shine-control-spf50plus-40ml-40060002198130045.html",
+    "https://www.nivea.co.uk/sitemap.xml"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.nivea.co.uk/sitemap.xml; the page names it \"NIVEA SUN Breathable UV Face Shine Control SPF50+ 40ML\". Checked by Claude, 18 Oct 2026: the page is the product's own."
+  },
+  {
+   "product": "Australian Gold Botanical tinted sunscreen",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "page": "https://australiangold.co.uk/products/botanical-spf-50-tinted-face-lotion",
+   "shop": "Australian Gold",
+   "image": "https://cdn.shopify.com/s/files/1/2088/0643/files/Tinted.png?v=1730993506&width=600",
+   "image_page": "https://australiangold.co.uk/products/botanical-spf-50-tinted-face-lotion",
+   "sources": [
+    "https://australiangold.co.uk/products/botanical-spf-50-tinted-face-lotion",
+    "https://australiangold.co.uk/sitemap_products_1.xml?from=8129596165&to=15425856897403"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://australiangold.co.uk/sitemap_products_1.xml?from=8129596165&to=15425856897403; the page names it \"Botanical SPF 50 Tinted Face Lotion\". Checked by Claude, 18 Oct 2026: the page is the product's own; image: the page's own featured image.; image: a smaller size of the maker's image (394 KB instead of 895 KB)"
+  },
+  {
+   "product": "Supergoop Matte Screen",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "page": "https://supergoop.com/products/smooth-and-poreless-mattescreen",
+   "shop": "Supergoop",
+   "image": "https://cdn.shopify.com/s/files/1/1503/5658/files/MatteScreen_45ml_Sunrise.png?v=1791299548&width=600",
+   "image_page": "https://supergoop.com/products/smooth-and-poreless-mattescreen",
+   "sources": [
+    "https://supergoop.com/products/smooth-and-poreless-mattescreen",
+    "https://supergoop.com/sitemap_products_1.xml?from=112965845008&to=10329900515426"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://supergoop.com/sitemap_products_1.xml?from=112965845008&to=10329900515426; the page names it \"Mineral Mattescreen SPF 40\"; USD 40 on the page. Checked by Claude, 18 Oct 2026: the page is the product's own.; image: a smaller size of the maker's image (237 KB instead of 778 KB)"
+  },
+  {
+   "product": "Redken acidic bonding concentrate",
+   "category": "haircare",
+   "product_type": "conditioner",
+   "page": "https://www.redken.co.uk/products/haircare/acidic-bonding-concentrate/acidic-bonding-concentrate-conditioner",
+   "shop": "Redken",
+   "sources": [
+    "https://www.redken.co.uk/products/haircare/acidic-bonding-concentrate/acidic-bonding-concentrate-conditioner",
+    "https://www.redken.co.uk/sitemap.xml"
+   ],
+   "checked_on": "2026-10-18",
+   "note": "Found by engine.maker_pages in the sitemap https://www.redken.co.uk/sitemap.xml; the page names it \"Acidic Bonding Concentrate Conditioner\". Checked by Claude, 18 Oct 2026: the page is the product's own; its image was another product's (Color Gels), so no image."
   }
  ]
 }
