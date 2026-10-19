@@ -235,3 +235,39 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   reading counts, 7 "Look for" lists, one of them a washing machine's showing a dog bed tip), because
   engine/sources.py puts threads titled as another type last but still reads them when few are on-type; the 150
   threads are archive reads of 18 Oct that `library check-live` has not yet read on Reddit.
+- Built by Claude, 18 Oct 2026 (the converge-1 integrator, branch converge-1: the orchestrator's task to merge the seven
+  converge round-1 branches; technical calls, reported to Noemi; eval/RUNS.md): (1) Merged in the order ws-names,
+  ws-ranking, ws-answer, ws-data-kitchen, ws-data-beauty, ws-data-tech, ws-data-general. CLAUDE.md stayed the short file
+  and the dated notes three branches had added to it (ws-ranking's, ws-answer's, ws-data-kitchen's two) were moved to
+  this file; every paragraph here and every row of eval/RUNS.md is kept once; every config section is kept; the four
+  data lists were merged entry by entry, each in its own layout (prices 713 -> 1,119, brand lines 170 -> 307, facts 207
+  -> 225, pages 384 -> 671), with no duplicate entry and no product twice on one day. (2) One fix for the merge itself:
+  engine.answer._said_needs also hides the words of the product's own name that no need holds ("freezer" of "fridge
+  freezer"), because ws-names' judged_needs now leaves them out of the needs and a ws-answer test lists one; the
+  pipeline never gives a mention such a need. (3) engine/data/product_aliases.json: of ws-data-general's eight proposed
+  short names only Garmin's 255, FR 255, 265 and 955 were added, because the shared library's general threads show no
+  other use for them. Left out: WM (West Marine, in a duffel bag thread), EE (an electrical engineer, a shoe width), FF
+  (forward-facing in car seat threads, Fleet Feet in a shoe thread) and 965 (a robot vacuum's model number). So the
+  sleeping bag answer shows "WM sleeping bag line" and, in Also worth a look, "Western Mountaineering sleeping bag
+  line", and the running watch answer a bare "965"; an alias scope per product type, or Noemi's word that those other
+  uses don't matter, would let them in. (4) Library: 620 new threads and their extractions copied into the shared
+  library from the four data builders' copies (kitchen 141, beauty 144 of the 201 it read, tech 185, general 150): no
+  file overwritten, no id in two lists, no existing file changed in any copy. Also the extraction files ws-data-kitchen
+  made for 3 threads the library held but had never extracted (1up22a0, xovg6z, m3zanh), and those 3 threads slimmed.
+  1,045 writers' profiles and 1,069 flairs added (the shared file's entries untouched); the import log had no new line.
+  Threads 1,973 -> 2,593, extractions 1,953 -> 2,576. The 57 threads ws-data-beauty held back were not copied. (5) What
+  the live site needs before the new threads' comments show: nothing now. A thread's last live check (in a slimmed
+  thread, each kept comment's last verification) holds a thread back only when an answer is written with no live checker
+  and the rule left on, the function's default; the sweeps and evals switch it off, and the site passes its embed-page
+  checker, which turns it off by itself: each quote shown then needs its own passing check from the last 48 hours, made
+  as the answer is written, by reading ahead or by the daily plan. `library check-live` never reads a slimmed thread
+  (all 620 are), so it would do nothing for them: ws-data-general's note to run it before deploying describes the
+  default. With a stand-in checker, six requests gave 0 to 3 picks without a live checker (their new threads waiting)
+  and 2 to 3 with it, with 4 to 12 new threads quoted. The new threads' 19,668 kept comments have never been verified,
+  nor have 51,273 older ones (70,941 in all): each loses its words if not verified within 30 days of the archive read
+  (dues 6 to 17 Nov); at 3,000 verifications a day that takes about 24 days, so the deploy, with ws-answer's faster
+  reading ahead, should be by about 24 Oct. (6) Memory: reading the library takes 500 -> 619 MB and 60 answers 1.09 ->
+  1.32 GB peak (+21%, the open model off), so the plan job (2.25 GB for 486 requests over ~1,950 threads, limit 3 GiB)
+  will need about 2.7 to 2.8 GB. Results are in eval/RUNS.md's row: the whole suite 5,955 passed; no eval number worse
+  than the baseline; blind test 10/10 full top 3s; the sweep's answers with 3 / 1 to 2 / 0 picks 151 / 43 / 84 -> 200 /
+  20 / 58, every shown quote found word for word.
