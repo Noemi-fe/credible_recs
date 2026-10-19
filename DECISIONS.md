@@ -371,3 +371,68 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   reshuffles it (Caraway, GreenPan and an All-Clad saute pan whose facts are unconfirmed; De Buyer's carbon steel pans
   drop out of the wider reading, not looked into: for the names owner); "a frying pan for an induction hob" gets
   HexClad as its second pick (induction confirmed by its FAQ) with no price or availability yet.
+- Built by Claude, 19 Oct 2026 (the round-3 names builder, branch round3-names, from main 4f2851d: the orchestrator's
+  four items from the final review of 19 Oct, docs/bfs-2026-10-17/final-review.md; the alias file, the brand-lines,
+  facts, price and pages lists, module 4's name code and tests, no other code; technical calls within Noemi's rules,
+  reported to her; eval/RUNS.md): (1) The same product twice in one answer, joined. Office chair: the alias file writes
+  "Aeron" (and "Aeron remastered", "Aeron size B", "Aeron 2", whose single mentions had kept the bare name loose) as the
+  "Herman Miller Aeron", so its 36 + 14 mentions are one product with the price, page and image the lists give it (24
+  voices; it was "Aeron office chair line" beside "Herman Miller Aeron"). Phone: the brand-lines entry "iPhone" is now
+  "Apple iPhone", with writers' "iPhone" as its other name, so that line is shown as "Apple phone line", as the Apple
+  entry's is, and the two are one pick (17 voices; an alias would have shown every model as "Apple iPhone 11", and
+  test_names_round_two keeps "iPhone 11" as written). Toothbrush: the alias file writes "Philips Sonicare" and "basic
+  Sonicare" as "Sonicare", so the Sonicare line is one (151 mentions, 98 voices, instead of 95 and 52 apart); the bare
+  Philips line stays apart (Philips makes other things) and is hidden beside the Sonicare pick; "Oral B Braun" and
+  "Braun Oral-B" are written as "Oral-B" (Braun is its maker, not a model). FOR NOEMI: joining the two lines frees a
+  place in the top three, and her 10 Oct rule (a brand line steps aside for its own product shown with it) lets a thin
+  product take it: the answer is now Sonicare (98 voices), Oral-B Vitality (7) and Aquasonic (4), the Oral-B line's 62
+  voices having stepped aside for Oral-B Vitality (first tried, "Sonicare" written as "Philips Sonicare": the same, with
+  "Philips DiamondClean" first, then "Oral-B Braun"); a ranking rule that asked a product for a share of its line's
+  support first would keep the line, and is hers to decide. Laptop: "ThinkPad" is written as "Lenovo ThinkPad", so
+  ThinkPad and Lenovo are one "Lenovo laptop line" (29 voices; Framework's line takes the freed place). (2) Garbled
+  names. "Sleep on latex latex bed" (what an extraction typed) is written as "Sleep On Latex mattress", the price and
+  pages lists' name (still "Not sold in the UK"); Bose's "QuietComfort Pros (Ultras?)" as "Bose QuietComfort Ultra
+  Headphones", the price list's name (the Bose line shows that model with its £399.95). The basic Kindle: "basic
+  Kindle", "Basic in matcha green", "basic matcha", "matcha basic" and "2024 Basic" are written as "Kindle Basic"; a new
+  brand-lines entry "Kindle Basic" gives its line a from price (£134.99, John Lewis, from the 18 Oct findings for the
+  Amazon Kindle (2024), not read again); and module 4 (engine/group_products.py, _attach_descriptions) joins a name of
+  descriptions alone to the one brand name here that holds it, as a model's one-word name takes its brand: the 29 bare
+  "basic" are "Kindle Basic" (30 voices, was 17 under "Basic"); a name of descriptions alone with no such partner is
+  generic (_only_a_description; a bare "basic" is the only one in the library). The e-reader answer is as before but for
+  that line's name and its garbled model. A price in front of the requested type's words alone ("$30 rice cooker", "£20
+  kettle") is no product (module 4, _a_price_point: generic, never ranked or shown); a price before a maker ("$150
+  Ninja", 36 library names start with a price) stays that maker's mention. (3) Pan facts, from the makers' own pages
+  read on 19 Oct 2026. OXO: oxouk.com says its Ceramic Professional pans (and its Agility ones) have a
+  diamond-reinforced ceramic coating that is "No PFAS" (with the note that no intentionally added PFAS were used in the
+  manufacture) and an induction base, so the model b10's pick names (writers' "OXO ceramic professional non-stick") has
+  a facts entry "OXO Ceramic Professional" (pfas_free, non_stick and induction true), a price entry (John Lewis,
+  re-read: £75 to £95 by size, £75 as before) and a pages entry (the OXO UK page). It is named without "non-stick" so
+  that OXO's generic "non-stick" names (writers who name no model) don't find it: they stay on the older entry "OXO
+  non-stick pan", PFAS unknown, since OXO's Good Grips Non-Stick Pro pans (Lakeland) are only marketed "PFOA-free",
+  which is not PFAS-free, and the maker names none as PTFE (oxo.com, OXO's US site, answered 403 to the page read and
+  was not tried another way). b10's pick is now "OXO Ceramic Professional", with no note, its £75 and its OXO UK link;
+  the answers to b10 and to "non stick pan without teflon that lasts" change in that pick only. FOR NOEMI: the claim is
+  OXO's own and hedged ("no intentionally added PFAS"), like HexClad's; this reverses round 2's caution on purpose (the
+  coordinator's item: "decide by its named model"), and one test is changed with a dated note
+  (test_kitchen_data_round.py: its OXO library no longer has a writer naming the model; the generic names still carry
+  "we couldn't confirm it's PFAS-free"); if b10's answers were captured for the blind test already, this pick's name and
+  note differ from the capture. Caraway: carawayhome.com's own page for its ceramic fry pan says non-stick, made without
+  PTFE, PFOA and PFAS, and works on induction, so the line's entry "Caraway frying pans" says non_stick true (the note
+  "we couldn't confirm it's non-stick" is gone); Caraway also sells an uncoated stainless steel fry pan, which the entry
+  no longer cites. (4) Not built, FOR NOEMI: Anessa's origin ("korean sunscreen"), Nalgene's lack of insulation ("keeps
+  drinks cold") and Berkey's being a countertop system ("water filter jug") have no fact in the vocabulary
+  (engine/config.py: PRODUCT_FACT_VALUES has no origin, insulated or form fact, PRODUCT_FACT_RULES reads none, and the
+  type "water filter" holds jugs and countertop systems alike), so no list can record them: each needs a new fact, its
+  product types and its request words, a user-facing rule. Not done either: "Huawei watch gt7 pro" (lowercase) and the
+  Lenovo line's model for a university laptop, "Lenovo Legion 5a Gen 10" (a gaming laptop, £1,780: one of the few Lenovo
+  models with a price entry, while the ThinkPad E14 Gen 7 that writers name most, in 8 mentions, has none). Tests: 66
+  new in engine/tests/test_round3_names.py (each item's names and facts from the committed lists, and made-up libraries
+  that reproduce the final review's duplicates and garbles before the fix). Results (eval/RUNS.md): the whole suite
+  6,089 tests (6,088 passed in the heavy run; the one left, test_metrics.py's check that the run has a row in
+  eval/RUNS.md, passes with this note's row); the evaluation as round 2's in every number but the library's own (quotes
+  found word for word 84,947/85,018, 71 not found as before; 6 fewer mentions, the price-in-front names; 11 fewer
+  product groups and 4 fewer loose ones, as the short names join names); blind test 10/10 full top 3s, unverified quotes
+  shown 0 (shown 246/246); the full sweep of 278 answers (docs/bfs-2026-10-17/sweep-round3-names-final.jsonl) against
+  the final review's: 18 answers differ, each in these items' scope (office chair 1, phone 1, toothbrush 2, laptop 2,
+  mattress 3, e-reader 2, rice cooker 2, headphones 3, the two pan questions), and the counts are the same: 200 answers
+  with 3 picks, 19 with 1 or 2, 59 with none, 631 picks, no error.
