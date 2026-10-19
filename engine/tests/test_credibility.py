@@ -1053,7 +1053,9 @@ def test_a_mentions_evidence_is_worked_out_once(monkeypatch):
 
     calls = []
     real = credibility._proof_of_use
-    monkeypatch.setattr(credibility, "_proof_of_use", lambda text, written: calls.append(1) or real(text, written))
+    # 17 Oct 2026 (ws-ranking, item 3): _proof_of_use also takes the clauses where the writer's own use and times are
+    # read, so the stand-in passes on whatever it is given; what this test checks (worked out once) is unchanged.
+    monkeypatch.setattr(credibility, "_proof_of_use", lambda *args: calls.append(1) or real(*args))
     first = evidence_for("I've had my Lodge skillet for 2 years and use it daily.")
     asked = len(calls)
     assert evidence_for("I've had my Lodge skillet for 2 years and use it daily.") == first

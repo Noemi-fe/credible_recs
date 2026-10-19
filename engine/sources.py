@@ -67,7 +67,7 @@ from engine.models import Comment, Thread
 from engine.parse_reddit import ParseRedditClient
 from engine.query import (
     FIRST_LOOKALIKES, FIRST_PRODUCT_TYPES, LIP_SUN_PROTECTION, LOOKALIKES, PRODUCT_TYPES, TITLE_WORDS, ParsedQuery,
-    name_pattern, plural_ending,
+    correct_typos, name_pattern, plural_ending,
 )
 from engine.text import one_edit_apart
 
@@ -1320,6 +1320,20 @@ _STOPWORDS = {
     "at", "least", "willing", "spend", "spending", "proper", "from", "which", "recommend", "recommendation", "vs",
     "versus", "all", "free", "pls", "please", "plz", "similar", "daily", "pretty", "easy", "uk", "one", "two", "three",
     "four", "five", "six", "seven", "eight", "nine", "ten",
+    # 17 Oct 2026 (the ws-names builder): "prone" says nothing without what the skin is prone to ("eczema prone skin",
+    # whose eczema names sensitive skin); words of a conversation, not of a need ("help me find a good kettle", "i need
+    # a new kettle", "what's the best kettle", "something that's worth it"); and money in words ("less than a tenner",
+    # "about forty quid"), which is a budget, never a need.
+    "prone", "help", "find", "finding", "new", "whats", "what", "worth", "like", "recommendations", "recs", "suggestions",
+    "suggest", "advice", "ideas", "options", "buy", "buying", "get", "getting", "tenner", "fiver", "grand", "day",
+    # who it is for ("pocket knife for my dad"), never a need; a child is one ("ipad case for kids").
+    "dad", "mum", "mom", "mother", "father", "wife", "husband", "boyfriend", "girlfriend", "partner", "brother",
+    "sister", "son", "daughter", "friend", "grandma", "grandpa", "grandmother", "grandfather", "nan", "uncle", "aunt",
+    "colleague", "boss", "teacher",
+    # 18 Oct 2026: a contraction is no need ("a skillet that'll last"), nor "yrs" ("20+ yrs" is how long it lasts).
+    "thatll", "itll", "theyll", "youll", "yrs", "yr",
+    "eleven", "twelve", "fifteen", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety",
+    "hundred",
 }
 
 
@@ -1337,7 +1351,9 @@ def need_words(query: ParsedQuery) -> list[str]:
     # trim leaves as they are (short words, "fe" to "ves").
     plurals = {w + "s" for w in product_words} | {w[:-2] + "ves" for w in product_words if w.endswith("fe")}
     product_words |= plurals | {_stem(w) for w in plurals}
-    words, text = [], query.text.lower()
+    # The request with its slips in product words mended, as module 1 read it (17 Oct 2026, the ws-names builder: "fragrance
+    # free clenser" had a need "clenser", the product's own word misspelt).
+    words, text = [], correct_typos(query.text).lower()
     if query.product_type == "lip balm":
         # Sun protection for the lips is a lip balm with SPF (15 Oct 2026, Noemi's decision 2): the words naming the
         # product in "spf for my lips" or "lip oil with spf" are no needs, only the SPF it asks for (engine.query).

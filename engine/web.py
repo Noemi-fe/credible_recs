@@ -215,8 +215,10 @@ An error is {"error": "<plain words>", "code": "<one word for programs>"}:
     503 feedback_unavailable (the feedback couldn't be kept just now)
 The words are for whoever calls the API; the page picks its own words by code (PROPOSED, at the top of the page).
 
-Answers take about 2 seconds, so each one is remembered for as long as the server runs: asking again is instant.
-A library refresh needs a restart to show.
+Answers take about 2 seconds, so each one is remembered: asking again is instant. Since 12 Oct 2026 for
+ANSWER_KEEP_HOURS at most, and since 17 Oct 2026 never past the moment its oldest shown quote's check turns 48 hours old
+(_keep_seconds: a quote is shown only with a passing check from the last 48 hours, and checks made ahead of time can be
+up to 48 hours old when the answer is worked out). A library refresh needs a restart to show.
 
 Getting ready (latency, 12 Oct 2026): as it starts, the server reads the library, the price and facts lists, loads
 the open model, and works out (and throws away) one answer per product type without live checks, so what answers keep
@@ -256,14 +258,16 @@ import time
 import traceback
 from collections import OrderedDict, deque
 from dataclasses import dataclass
+from datetime import timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 
 from engine import answer as wording
 from engine import feedback, how_page
-from engine.answer import answer_to_dict, unverified_claims
-from engine.config import (ANSWERS_KEPT_TYPES, BRAND_PICK_MODEL, FEEDBACK_MAX_BODY_BYTES, FEEDBACK_MAX_COMMENT_CHARS,
+from engine.answer import answer_to_dict, quotes_to_check, unverified_claims
+from engine.config import (ANSWERS_KEPT_TYPES, BRAND_PICK_MODEL, CACHE_MAX_AGE_HOURS, FEEDBACK_MAX_BODY_BYTES,
+                           FEEDBACK_MAX_COMMENT_CHARS,
                            LEFT_OUT_NAMES_SHOWN,
                            PICKS_SHOWN, RATE_LIMIT_ANSWERS, RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS, WEB_MAX_REQUEST_CHARS,
                            WEB_PORT)
@@ -366,11 +370,13 @@ class Site:
 LOCAL = Site()
 
 
-# Answers already worked out, by (request, library folder), kept until the server stops.
-_answers: dict[tuple[str, str], tuple[float, tuple[int, str, bytes]]] = {}  # key -> (when worked out, the answer)
-# How long a remembered answer is kept before it is worked out again, its quotes checked live once more (12 Oct 2026):
-# well within the 48 hours Reddit content may be kept, and short enough that a comment deleted today leaves the
-# answers by tomorrow. Chosen by Claude, reported to Noemi.
+# Answers already worked out, by (request, library folder), each until its time is up (_keep_seconds).
+_answers: dict[tuple[str, str], tuple[float, tuple[int, str, bytes]]] = {}  # key -> (kept until, on _clock; the answer)
+# How long a remembered answer is kept at most before it is worked out again, its quotes checked live once more (12 Oct
+# 2026): well within the 48 hours Reddit content may be kept, and short enough that a comment deleted today leaves the
+# answers by tomorrow. Chosen by Claude, reported to Noemi. Since 17 Oct 2026 also never past the moment its oldest
+# shown quote's check turns CACHE_MAX_AGE_HOURS old (_keep_seconds): kept 24 hours after checks of up to 48, a
+# remembered answer could show a check about 72 hours old (the website review of 16 Oct 2026).
 ANSWER_KEEP_HOURS = 24
 # What answers worked out is kept for at most ANSWERS_KEPT_TYPES product types (15 Oct 2026; engine.memo.TypeWindow):
 # every answer worked out here, a visitor's or a warm one, says its type first. With ~1,950 threads the live site had
@@ -406,7 +412,8 @@ def _visitor_waits(change: int) -> None:
 # someone. While it starts, Cloud Run gives it the processor in full, and keeps visitors on the server before it.
 ready = threading.Event()
 # The site's reads ahead (engine/read_ahead.py, 14 Oct 2026): set by the command line when the live checker has the
-# bucket; None otherwise and in the tests, which give their own.
+# bucket; None otherwise and in the tests, which give their own. Since 17 Oct 2026 each fresh answer tells it the
+# comments it showed (ReadAhead.shown), read again first, so the next visitor asking the same finds them checked.
 read_ahead = None
 
 
@@ -448,23 +455,23 @@ def answer_response(request: str, library_dir: Path, quiet: bool = False) -> tup
         return _error(400, TOO_LONG, n=len(request), limit=WEB_MAX_REQUEST_CHARS)
     key = (request, str(library_dir))
     remembered = _answers.get(key)  # read without waiting (11 Oct 2026): a slow new answer never holds up a known one
-    if remembered is not None and _clock() - remembered[0] < ANSWER_KEEP_HOURS * 3600:
+    if remembered is not None and _clock() < remembered[0]:
         return remembered[1]
     _visitor_waits(+1)
     with _answers_lock:  # one answer is worked out at a time, so the same request is never worked out twice
         _visitor_waits(-1)
         remembered = _answers.get(key)
-        if remembered is None or _clock() - remembered[0] >= ANSWER_KEEP_HOURS * 3600:
+        if remembered is None or _clock() >= remembered[0]:
             try:
                 _window.answered(request_kind(request))
-                response, whole = _fresh_answer(request, library_dir, quiet)
+                response, keep = _fresh_answer(request, library_dir, quiet)
             except Exception:  # a broken library file, say: reported in the server's window, never sent
                 _report_failure(quiet)
                 return _error(500, ENGINE_FAILED)  # not remembered: fixing the file and asking again works
-            if not whole:  # something was left out for Reddit's allowance (13 Oct 2026): worked out again next time
-                _answers.pop(key, None)
+            if keep <= 0:  # something was left out for Reddit's allowance (13 Oct 2026), or a check's age isn't known
+                _answers.pop(key, None)  # (17 Oct 2026): worked out again next time
                 return response
-            _answers[key] = (_clock(), response)
+            _answers[key] = (_clock() + keep, response)
         return _answers[key][1]
 
 
@@ -505,11 +512,12 @@ class _TimedChecker:
         return total
 
 
-def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple[tuple[int, str, bytes], bool]:
-    """Runs the pipeline, then checks every quote once more; one that fails refuses the whole answer. Also whether the
-    answer is whole: nothing in it was left out because its live check would have waited (13 Oct 2026), and since 14
-    Oct 2026 it isn't an answer on-demand reading is about to change (engine/on_demand.py: a request queued for
-    reading, or one whose queue couldn't be read): such an answer is worked out again next time."""
+def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple[tuple[int, str, bytes], float]:
+    """Runs the pipeline, then checks every quote once more; one that fails refuses the whole answer. Also how many
+    seconds the answer may be remembered (_keep_seconds, 17 Oct 2026), or 0 when it isn't whole: something in it was
+    left out because its live check would have waited (13 Oct 2026), or since 14 Oct 2026 it is an answer on-demand
+    reading is about to change (engine/on_demand.py: a request queued for reading, or one whose queue couldn't be
+    read): such an answer is worked out again next time."""
     with_profiles = {} if profiles is None else {"profiles": profiles}
     timed = _TimedChecker(live) if live is not None else None
     if timed is not None:
@@ -531,10 +539,33 @@ def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple
         if problems:  # the problems name comments, never the failed quote's words
             asked = "a request" if quiet else repr(request)
             print(f"Refused the answer to {asked}:", *problems, sep="\n  - ", file=sys.stderr)
-            return _error(500, REFUSED), True
+            return _error(500, REFUSED), ANSWER_KEEP_HOURS * 3600.0
+        if read_ahead is not None:  # its comments read again first (17 Oct 2026): links only, in memory only
+            read_ahead.shown(quote.url for quote in quotes_to_check(result.answer))
     extra = {"on_demand": reading.state} if reading is not None and reading.state is not None else {}
     whole = result.live_put_off == 0 and (reading is None or reading.remember)
-    return (200, JSON, _json_bytes(answer_json(result) | {"timing": timing} | extra)), whole
+    return (200, JSON, _json_bytes(answer_json(result) | {"timing": timing} | extra)), (_keep_seconds(result) if whole
+                                                                                         else 0.0)
+
+
+def _keep_seconds(result: PipelineResult) -> float:
+    """How long an answer may be remembered, in seconds (17 Oct 2026, the converge round): ANSWER_KEEP_HOURS at most,
+    and never past the moment its oldest shown quote's check turns CACHE_MAX_AGE_HOURS old, since a quote is shown only
+    with a passing live check from the last 48 hours and the checks an answer finds may have been made up to 48 hours
+    before it, ahead of time (engine/read_ahead.py). Every quote the live check had to pass counts (engine.answer.
+    quotes_to_check: a summary's cited comments too). 0 when one of their checks can't be found any more: nothing then
+    says how old it is, so the answer is worked out again next time. Without a live checker (this computer's own
+    server, the tests) nothing is checked live: ANSWER_KEEP_HOURS, as before."""
+    keep = ANSWER_KEEP_HOURS * 3600.0
+    if live is None or result.answer is None:
+        return keep
+    now, lasts = live.now(), timedelta(hours=CACHE_MAX_AGE_HOURS)
+    for url in dict.fromkeys(quote.url for quote in quotes_to_check(result.answer)):
+        checked = live.checked_at(url)
+        if checked is None:
+            return 0.0
+        keep = min(keep, (checked + lasts - now).total_seconds())
+    return max(keep, 0.0)
 
 
 def _report_failure(quiet: bool) -> None:

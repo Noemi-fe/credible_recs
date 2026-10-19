@@ -175,9 +175,14 @@ def test_a_part_that_would_be_cut_too_short_is_left_out_and_a_cut_quote_is_close
     reason = " ".join(["reason"] * 80)  # leaves 5 words, after the price line's 5
     shown = shown_from_ours({"picks": [pick(1, "Kettle", reason=reason)]})
     assert '"Mine has lasted' not in shown  # 5 words left: under MIN_CUT_WORDS, so the quote isn't cut to nothing
-    long_downside = " ".join(f"w{i}" for i in range(100))
-    shown = shown_from_ours({"picks": [pick(1, "Kettle", quotes=[], downsides=[quote(long_downside)])]})
+    # Changed on purpose 17 Oct 2026 (the converge round, item 7): a downside is no longer cut at a word, only at the end
+    # of a sentence that keeps its point (engine/tests/test_blind_test_cuts.py), so the cut quote closed here is a piece
+    # of evidence, and a long downside with no sentence end is left out.
+    long_quote = " ".join(f"w{i}" for i in range(100))
+    shown = shown_from_ours({"picks": [pick(1, "Kettle", quotes=[quote(long_quote)])]})
     assert shown.count('"') % 2 == 0 and '…"' in shown
+    shown = shown_from_ours({"picks": [pick(1, "Kettle", quotes=[], downsides=[quote(long_quote)])]})
+    assert "Downside" not in shown
 
 
 def test_a_quote_written_over_several_lines_is_shown_on_one():

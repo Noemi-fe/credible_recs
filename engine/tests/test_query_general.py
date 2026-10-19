@@ -334,9 +334,14 @@ def test_a_product_named_with_a_health_or_food_word_is_still_the_product():
     ("something for camping", "outdoor"),
 ])
 def test_a_vague_request_with_a_departments_words_asks_within_it(text, department):
+    # Changed on purpose 17 Oct 2026 (the ws-names builder): a dog's question names a dog's products
+    # (engine.query.PET_EXAMPLES), not the pets department's, which offered a dog a litter box.
+    from engine.query import PET_EXAMPLES
+
     routing = classify(text)
     assert (routing.status, routing.category, routing.department) == ("clarify", "general", department)
-    assert GENERAL_DEPARTMENTS[department]["examples"] in routing.question
+    examples = PET_EXAMPLES["dog"] if "dog" in text else GENERAL_DEPARTMENTS[department]["examples"]
+    assert examples in routing.question
 
 
 def test_a_vague_request_still_gets_a_question_not_a_no():

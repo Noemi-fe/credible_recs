@@ -1,0 +1,241 @@
+"""The tech and home picks' prices and availability (the converge round of 17 Oct 2026, ws-data-tech; CLAUDE.md's
+UK-availability follow-up for general picks): each researched product or brand line, under the name the answers show
+it, finds its entry in the committed lists the way answers find one (engine.prices.find_price and find_availability,
+engine.brand_lines.find_brand_line), so a researched price or "Not sold in the UK" is never lost to a name that the
+matcher doesn't join. Noemi's rule: the best pick whatever country it is sold in, with a note, never left out for it;
+a discontinued model is left out and named.
+
+These read data/prices.json and data/brand_lines.json, as the tests that check the committed lists load do; every
+price here was read on a UK shop's or maker's page on the day its entry gives.
+"""
+
+import pytest
+
+from engine.brand_lines import find_brand_line, load_brand_lines
+from engine.prices import counts_as_sold, find_availability, find_price, load_prices
+
+# (name as the answer shows it, product type, price in pounds, shop as shown)
+PRODUCTS = [
+    ("UE Boom", "bluetooth speaker", 129.99, "John Lewis"),
+    ("Herman Miller Aeron", "office chair", 1219.0, "Herman Miller"),
+    ("Numatic Henry", "vacuum cleaner", 129.99, "Numatic"),
+    # Headphones, under writers' own names (18 Oct 2026): the entries carry them as also_called.
+    ("Sennheiser HD600", "headphones", 255.0, "Thomann"),
+    ("Sony Mdr-7506", "headphones", 83.0, "Thomann"),
+    ("Sony xm4", "headphones", 219.99, "John Lewis"),
+    ("XM5s", "headphones", 199.0, "John Lewis"),
+    ("Sony XM6", "headphones", 349.0, "John Lewis"),
+    ("QC Ultra", "headphones", 399.95, "Bose"),
+    ("AirPod Max", "headphones", 499.0, "John Lewis"),
+    ("Momentum 4s", "headphones", 199.0, "John Lewis"),
+    ("Anker Soundcore Q30s", "headphones", 44.99, "soundcore"),
+    ("Shokz open run", "headphones", 129.95, "John Lewis"),
+    # Running and gym earbuds (18 Oct 2026), under the names writers use.
+    ("Powerbeats Pro 2", "earbuds", 179.0, "John Lewis"),
+    ("Soundcore x20’s", "earbuds", 89.99, "soundcore"),
+    ("soundcore sport x20", "earbuds", 89.99, "soundcore"),
+    ("Shokz open fit 2 plus", "earbuds", 179.0, "John Lewis"),
+    ("Shokz Open Fit Air", "earbuds", 94.0, "John Lewis"),
+    ("Openrun Mini", "headphones", 129.95, "John Lewis"),
+    ("Sony WF-1000XM5", "earbuds", 179.99, "John Lewis"),
+    # Picks and Also worth a look items researched on 18 Oct 2026 (the round's second pass), under the names shown.
+    ("AirPods Pro 3", "earbuds", 219.0, "Apple UK"),
+    ("Er2xr", "earbuds", 130.0, "Scan"),
+    ("MX Master 3", "mouse", 115.5, "Amazon UK"),
+    ("Teevo Terra Pro", "mouse", 62.0, "Teevolution"),
+    ("Keychron Q1", "keyboard", 190.0, "Amazon UK"),
+    ("Filco Majestouch tenkeyless", "keyboard", 120.0, "The Keyboard Company"),
+    ("KTC M27P6", "monitor", 399.99, "Amazon UK"),
+    ("Samsung Odyssey G7 G70F", "monitor", 429.0, "Samsung UK"),
+    ("Pocketbook InkPad", "e-reader", 289.0, "Amazon UK"),
+    ("Lenovo Legion 5a Gen 10", "laptop", 1780.0, "Lenovo UK"),
+    ("L.L.Bean Percale Pima Cotton", "bed sheets", 140.0, "L.L.Bean"),
+    ("Ralph Lauren towel", "towel", 49.0, "John Lewis"),
+    ("Nomadix towel", "towel", 17.95, "WildBounds"),
+    ("Pottery Barn towel", "towel", 27.2, "Pottery Barn UK"),
+    # The same day's second pass: a newer check under a writer's spelling replaces the 15 Oct "not sold" for MyPillow.
+    ("My Pillow", "pillow", 43.91, "Amazon UK"),
+    ("MyPillow", "pillow", 43.91, "Amazon UK"),
+    ("Sennheiser HD650", "headphones", 249.99, "Sennheiser UK"),
+    ("other box defender", "phone case", 42.99, "OtterBox UK"),
+    ("Berkey water filter", "water filter", 535.78, "Amazon UK"),
+    # The e-readers, earbuds, keyboard, webcam and smartwatch the new threads bring (18 Oct 2026).
+    ("basic in matcha green", "e-reader", 134.99, "John Lewis"),
+    ("Kobo Libra Colour", "e-reader", 239.0, "Currys"),
+    ("Clara BW", "e-reader", 149.0, "Currys"),
+    ("Kindle Colorsoft", "e-reader", 239.99, "Amazon UK"),
+    ("Colorsoft", "e-reader", 239.99, "Amazon UK"),
+    ("Kindle Scribe", "e-reader", 449.0, "Amazon UK"),
+    ("Shure SE215", "earbuds", 98.0, "Amazon UK"),
+    ("GMMK Pro", "keyboard", 139.99, "Glorious"),
+    ("Logitech brio 4k", "webcam", 79.99, "John Lewis"),
+    ("Amazfit Balance 2", "smartwatch", 299.0, "Amazon UK"),
+    # The third pass (18 Oct 2026, after the round's office chair, standing desk, pillow, purifier and phone threads):
+    # shown picks without a price, under the names the answers show them.
+    ("JBL clip", "bluetooth speaker", 39.99, "John Lewis"),
+    ("Amia", "office chair", 717.6, "Hunts Office"),
+    ("Tresanti", "standing desk", 279.99, "Costco UK"),
+    ("T14", "laptop", 2095.0, "Lenovo UK"),
+    ("Legion 5 Pro", "laptop", 1980.0, "Lenovo UK"),
+    ("Aeron office chair line", "office chair", 1219.0, "Herman Miller"),
+]
+
+# (brand as the line's name starts, product type, from price in pounds, shop as shown)
+LINES = [
+    ("Kindle", "e-reader", 134.99, "John Lewis"),
+    ("Paperwhite", "e-reader", 184.99, "John Lewis"),
+    ("Sony", "tv", 291.90, "John Lewis"),
+    ("LG", "tv", 159.0, "John Lewis"),
+    ("Samsung", "tv", 249.0, "John Lewis"),
+    ("JBL", "bluetooth speaker", 39.99, "John Lewis"),
+    ("Bose", "bluetooth speaker", 104.99, "John Lewis"),
+    ("Anker", "power bank", 24.99, "Anker"),
+    ("Logitech", "mouse", 9.99, "John Lewis"),
+    ("MacBook Air", "laptop", 1299.0, "John Lewis"),
+    ("Eufy", "robot vacuum", 599.0, "John Lewis"),
+    ("Shark", "robot vacuum", 269.99, "John Lewis"),
+    ("Roomba", "robot vacuum", 229.0, "iRobot"),
+    ("UniFi", "wifi router", 65.0, "Ubiquiti UK Store"),
+    ("Keychron", "keyboard", 49.99, "Keychron UK"),
+    ("Bose", "headphones", 189.95, "Bose"),
+    # A line of a brand with an entry of its own (18 Oct 2026): "Bose QuietComfort headphones line".
+    ("Bose QuietComfort", "headphones", 189.95, "Bose"),
+    ("Bose Quiet Comfort", "headphones", 189.95, "Bose"),
+    # Lines researched on 18 Oct 2026 (the round's second pass); a writer's spelling finds its maker's entry.
+    ("Ducky", "keyboard", 24.95, "Overclockers UK"),
+    ("Das", "keyboard", 72.0, "The Keyboard Company"),
+    ("Kobo", "e-reader", 149.0, "Currys"),
+    ("EMEET", "webcam", 23.0, "EMEET"),
+    ("Asus ROG", "laptop", 1599.99, "ASUS UK"),
+    ("L.L.Bean flannels", "bed sheets", 58.0, "L.L.Bean"),
+    ("Dunlopillo", "pillow", 64.99, "Bensons for Beds"),
+    ("DUNLOPILLOW", "pillow", 64.99, "Bensons for Beds"),
+    ("Kirby", "vacuum cleaner", 3195.0, "Kirby"),
+    ("Linoto", "bed sheets", 191.0, "Linoto"),
+    ("JLab", "earbuds", 8.0, "JLab"),
+    ("Anker Soundcore", "bluetooth speaker", 24.99, "soundcore"),
+    # Lines researched in the third pass (18 Oct 2026); a writer's spelling finds its maker's entry.
+    ("Thinkpad", "laptop", 1023.0, "Lenovo UK"),
+    ("Lenovo", "laptop", 599.0, "Lenovo UK"),
+    ("Framework", "laptop", 479.0, "Framework"),
+    ("Asus zenbook", "laptop", 799.99, "ASUS UK"),
+    ("MacBook Pro", "laptop", 1999.0, "Apple UK"),
+    ("Google Pixel", "phone", 499.0, "Google Store"),
+    ("Iniu", "power bank", 19.99, "INIU UK"),
+    ("Samsung", "power bank", 29.6, "Samsung UK"),
+    ("Sebo", "vacuum cleaner", 295.92, "SEBO UK"),
+    ("Levoit", "air purifier", 49.99, "Levoit UK"),
+    ("Winix", "air purifier", 90.4, "Amazon UK"),
+    ("Steelcase", "office chair", 430.56, "Hunts Office"),
+    ("Fully Jarvis", "standing desk", 760.0, "Herman Miller"),
+    ("Garmin", "smartwatch", 219.99, "Garmin UK"),
+    # Writers' bare "Aeron" is shown as a line of its own: it takes the chair's from price, so a budget can rule it out.
+    ("Aeron", "office chair", 1219.0, "Herman Miller"),
+    # Writers' bare "T14" is shown as "ThinkPad T14 laptop line": it takes the T14's from price and range page.
+    ("ThinkPad T14", "laptop", 2095.0, "Lenovo UK"),
+]
+
+# Sold in the UK, a range rather than one model, so no single price (name as the answer shows it, type, shop as shown).
+SOLD = [
+    ("Anker Soundcore", "bluetooth speaker", "soundcore"),
+    ("Razer Death Adder", "mouse", "Razer"),
+    ("fully jarvis standing desk line", "standing desk", "Herman Miller"),
+    ("Jarvis", "standing desk", "Herman Miller"),
+]
+
+# Discontinued models: left out of answers and named (Noemi, 15 Oct 2026). Some had been marked "not sold in the UK"
+# on 15 Oct though their own notes said they are no longer made: the newer check says so.
+DISCONTINUED = [
+    ("Roomba i7", "robot vacuum"),
+    ("Roborock S4", "robot vacuum"),
+    ("Roborock S5 MAX", "robot vacuum"),
+    ("Neato D5", "robot vacuum"),
+    ("Jabra elite wireless 65t", "earbuds"),
+    ("Apple AirPods (1st generation)", "earbuds"),
+    ("iPhone 11", "phone"),
+    ("Legion Y540", "laptop"),
+    ("Dell Latitude 5300 13.3 Touchscreen", "laptop"),
+    ("TP-Link Deco M5", "wifi router"),
+    ("QC45s", "headphones"),
+    ("Bose QC35 II", "headphones"),
+    ("Bose qc35", "headphones"),
+    ("Bose qc25s", "headphones"),
+    ("Bose 700", "headphones"),
+    # Earbuds whose makers no longer sell them (18 Oct 2026): their own pages now show a successor or support only.
+    ("Beats Fit Pro", "earbuds"),
+    ("Samsung Galaxy Buds 2", "earbuds"),
+    ("Jabra Elite 8 Active", "earbuds"),
+    ("Jabra Elite Active 8", "earbuds"),
+    # Shown on 18 Oct 2026 though no longer made: their makers' pages show successors, no big UK shop sells them new.
+    ("XM3", "headphones"),
+    ("AirPods Pro 2", "earbuds"),
+    ("Sony WF-1000XM4", "earbuds"),
+    ("Soundcore Liberty Air Pro 2", "earbuds"),
+    ("2014 MacBook Air", "laptop"),
+    ("Altec Lansing H2O", "bluetooth speaker"),
+    ("Oasis 8th gen and up", "e-reader"),
+    ("Kindle Oasis", "e-reader"),
+    # Shown on 18 Oct 2026 (third pass) though their makers no longer sell them: the makers' pages show successors only.
+    ("Ultimate Ears Megaboom 3", "bluetooth speaker"),
+    ("Pixel 4a", "phone"),
+    ("Samsung Note 10+", "phone"),
+    ("S9+ Galaxy", "phone"),
+]
+
+# Sold abroad only: they stay in answers with "Not sold in the UK" (Noemi, 15 Oct 2026, evening; 16 Oct, decision 4).
+ABROAD = [
+    ("Vizio TV", "tv"),
+    ("Raycon Everyday Earbuds", "earbuds"),
+    # 18 Oct 2026: US makers with no UK shop (their lines under the brand and type, as the price list records a line).
+    ("Purple mattress", "mattress"),
+    ("Honeywell air purifier", "air purifier"),
+    ("Rabbit Air", "air purifier"),
+    ("Alen Breathsmart", "air purifier"),
+    ("Parachute towel", "towel"),
+    ("Grid Linen towel from Outlier", "towel"),
+    ("Avocado pillow", "pillow"),
+    ("Casper pillow", "pillow"),
+    ("Speed Queen washing machine", "washing machine"),
+    ("Plume SuperPods", "wifi router"),
+    # Third pass (18 Oct 2026): sold in the US only (importers on Amazon UK don't count).
+    ("Sleep on latex latex bed", "mattress"),
+    ("Uplift standing desk line", "standing desk"),
+    ("Harmony pillow from Purple", "pillow"),
+    ("TCL C2A Pro", "monitor"),
+]
+
+
+@pytest.mark.parametrize("name, product_type, amount, shop", PRODUCTS)
+def test_a_researched_product_finds_its_uk_price_and_is_sold(name, product_type, amount, shop):
+    prices = load_prices()
+    price = find_price(name, "general", prices, product_type=product_type)
+    assert price is not None and (price.price, price.currency, price.shop) == (amount, "GBP", shop)
+    assert counts_as_sold(find_availability(name, "general", prices, product_type=product_type)) is True
+
+
+@pytest.mark.parametrize("brand, product_type, amount, shop", LINES)
+def test_a_researched_brand_line_finds_its_from_price(brand, product_type, amount, shop):
+    line = find_brand_line([brand], "general", product_type, load_brand_lines())
+    assert line is not None and line.sells
+    assert (line.from_price, line.from_price_shop) == (amount, shop)
+    assert line.from_price_url in line.sources and line.from_price_checked_on is not None
+
+
+@pytest.mark.parametrize("name, product_type", DISCONTINUED)
+def test_a_discontinued_model_is_known_to_be_no_longer_sold(name, product_type):
+    entry = find_availability(name, "general", load_prices(), product_type=product_type)
+    assert entry is not None and entry.available is False and not entry.not_in_uk
+    assert counts_as_sold(entry) is False
+
+
+@pytest.mark.parametrize("name, product_type", ABROAD)
+def test_a_product_sold_only_abroad_stays_with_its_note(name, product_type):
+    entry = find_availability(name, "general", load_prices(), product_type=product_type)
+    assert entry is not None and entry.available is False and entry.not_in_uk
+    assert counts_as_sold(entry) is True
+
+
+@pytest.mark.parametrize("name, product_type, shop", SOLD)
+def test_a_researched_range_is_known_to_be_sold_where(name, product_type, shop):
+    entry = find_availability(name, "general", load_prices(), product_type=product_type)
+    assert entry is not None and counts_as_sold(entry) is True and entry.shop == shop and not entry.not_in_uk

@@ -938,19 +938,6 @@
    "checked_on": "2026-10-10"
   },
   {
-   "product": "Circulon pans",
-   "category": "kitchen",
-   "product_type": "frying pan",
-   "facts": {
-    "non_stick": true
-   },
-   "sources": [
-    "https://circulon.com/pages/product-disclosures",
-    "https://circulon.com/products.json"
-   ],
-   "checked_on": "2026-10-10"
-  },
-  {
    "product": "Merten & Storck carbon steel pan",
    "category": "kitchen",
    "product_type": "frying pan",
@@ -2531,20 +2518,6 @@
    "checked_on": "2026-10-14"
   },
   {
-   "product": "Ballarini non-stick pans",
-   "category": "kitchen",
-   "product_type": "frying pan",
-   "facts": {
-    "non_stick": true
-   },
-   "sources": [
-    "https://www.zwilling.com/uk/ballarini/cookware/",
-    "https://www.zwilling.com/uk/ballarini-ferrara-granitium-28-cm-aluminium-frying-pan-75001-856-0/75001-856-0.html",
-    "https://www.zwilling.com/uk/ballarini-salina-frying-pan-28-cm-aluminium-titanium-reinforced-ceramic-non-stick-coating/1030840.html"
-   ],
-   "checked_on": "2026-10-14"
-  },
-  {
    "product": "Paula's Choice Skin Perfecting 2% BHA Gel Exfoliant",
    "category": "skincare",
    "product_type": "exfoliant",
@@ -3285,6 +3258,296 @@
     "https://elizabetharden.co.uk/products/eight-hour-cream-skin-protectant"
    ],
    "checked_on": "2026-10-15"
+  },
+  {
+   "product": "Le Creuset Toughened Non-Stick Frying Pan",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": false,
+    "non_stick": true,
+    "induction": true
+   },
+   "sources": [
+    "https://www.lecreuset.com/toughened-nonstick-pro-fry-pan/51131.html",
+    "https://www.lecreuset.co.uk/en_GB/p/toughened-non-stick-deep-frying-pan/TN51101b.html"
+   ],
+   "checked_on": "2026-10-17"
+  },
+  {
+   "product": "Our Place Always Pan",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true,
+    "non_stick": true
+   },
+   "sources": [
+    "https://fromourplace.co.uk/products/always-essential-cooking-pan"
+   ],
+   "checked_on": "2026-10-17"
+  },
+  {
+   "product": "Our Place Titanium Always Pan Pro",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true,
+    "non_stick": true,
+    "induction": true
+   },
+   "sources": [
+    "https://fromourplace.co.uk/products/titanium-always-pan-pro"
+   ],
+   "checked_on": "2026-10-17"
+  },
+  {
+   "product": "Made In Stainless Clad Frying Pan",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "non_stick": false,
+    "pfas_free": true
+   },
+   "sources": [
+    "https://madeincookware.com/products/stainless-steel-frying-pan",
+    "https://madeincookware.com/pages/ab-1200",
+    "https://www.madeincookware.co.uk/products/stainless-steel-frying-pan"
+   ],
+   "checked_on": "2026-10-18"
+  },
+  {
+   "product": "Made In Non Stick Frying Pan",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "non_stick": true,
+    "pfas_free": false
+   },
+   "sources": [
+    "https://madeincookware.com/pages/ab-1200",
+    "https://madeincookware.com/products/non-stick-frying-pan",
+    "https://www.madeincookware.co.uk/products/non-stick-frying-pan"
+   ],
+   "checked_on": "2026-10-18"
+  },
+  {
+   "product": "Cuisinart French Classic Tri-Ply Nonstick Skillet",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "non_stick": true,
+    "pfas_free": false
+   },
+   "sources": [
+    "https://www.cuisinart.com/shopping/cookware/skillets-fry-pan/fct22-24ns/",
+    "https://www.cuisinart.com/chemical-disclosure"
+   ],
+   "checked_on": "2026-10-18"
+  },
+  {
+   "product": "Member's Mark commercial non-stick pans",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": false,
+    "non_stick": true,
+    "induction": false
+   },
+   "sources": [
+    "https://www.samsclub.com/ip/members-mark-8-aluminum-nonstick-restaurant-fry-pan/7874204529",
+    "https://www.samsclub.com/ip/members-mark-10-aluminum-nonstick-restaurant-fry-pan/7874204530"
+   ],
+   "checked_on": "2026-10-18"
+  },
+  {
+   "product": "Cuisinart Advantage Nonstick Skillets",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "non_stick": true,
+    "pfas_free": false
+   },
+   "sources": [
+    "https://www.cuisinart.com/chemical-disclosure",
+    "https://www.kohls.com/product/prd-2813827/cuisinart-advantage-11-pc-nonstick-cookware-set.jsp"
+   ],
+   "checked_on": "2026-10-18"
+  },
+  {
+   "product": "Vanicream Moisturizing Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.vanicream.com/product/vanicream-moisturizing-cream"
+   ],
+   "checked_on": "2026-10-17"
+  },
+  {
+   "product": "CeraVe Skin Renewing Night Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.cerave.com/skincare/moisturizers/skin-renewing-night-cream"
+   ],
+   "checked_on": "2026-10-17",
+   "formula": {
+    "actives": [
+     "niacinamide",
+     "ceramides",
+     "hyaluronic acid"
+    ],
+    "sources": [
+     "https://www.cerave.com/skincare/moisturizers/skin-renewing-night-cream"
+    ],
+    "checked_on": "2026-10-18"
+   }
+  },
+  {
+   "product": "Eucerin Aquaphor Soothing Skin Balm",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.eucerin.co.uk/products/aquaphor/soothing-skin-balm",
+    "https://www.lookfantastic.com/p/eucerin-aquaphor-soothing-skin-balm-45ml/11115983/"
+   ],
+   "checked_on": "2026-10-17"
+  },
+  {
+   "product": "Eucerin Aquaphor Soothing Skin Balm",
+   "category": "skincare",
+   "product_type": "lip balm",
+   "facts": {
+    "fragrance_free": true,
+    "spf": false
+   },
+   "sources": [
+    "https://www.eucerin.co.uk/products/aquaphor/soothing-skin-balm",
+    "https://www.lookfantastic.com/p/eucerin-aquaphor-soothing-skin-balm-45ml/11115983/"
+   ],
+   "checked_on": "2026-10-17"
+  },
+  {
+   "product": "Isntree Hyaluronic Acid Watery Sun Gel",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "facts": {
+    "filters": "chemical",
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.lookfantastic.com/p/isntree-hyaluronic-acid-watery-sun-gel-spf50-pa-50ml/15443552/"
+   ],
+   "checked_on": "2026-10-18"
+  },
+  {
+   "product": "La Roche-Posay Cicaplast Baume B5+",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.boots.com/la-roche-posay-cicaplast-balm-40ml-10189518"
+   ],
+   "checked_on": "2026-10-18"
+  },
+  {
+   "product": "Vanicream Moisturizing Lotion",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.vanicream.com/product/vanicream-moisturizing-lotion"
+   ],
+   "checked_on": "2026-10-18"
+  },
+  {
+   "product": "Dear, Klairs Freshly Juiced Vitamin Drop",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {},
+   "sources": [
+    "https://www.klairs.com/products/freshly-juiced-vitamin-drop"
+   ],
+   "checked_on": "2026-10-18",
+   "formula": {
+    "actives": [
+     "vitamin c"
+    ],
+    "sources": [
+     "https://www.klairs.com/products/freshly-juiced-vitamin-drop"
+    ],
+    "checked_on": "2026-10-18"
+   }
+  },
+  {
+   "product": "Avène XeraCalm A.D Replenishing Balm",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.avene.co.uk/p/xeracalm-ad-replenishing-balm-3282770399523-b5405ca4"
+   ],
+   "checked_on": "2026-10-18"
+  },
+  {
+   "product": "iUNIK Beta Glucan Daily Moisture Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.iunik.com/products/beta-glucan-daily-moisture-cream"
+   ],
+   "checked_on": "2026-10-18"
+  },
+  {
+   "product": "Aveeno Calm + Restore Oat Gel Moisturiser",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.aveeno.co.uk/face/calm-restore-oat-gel-moisturiser"
+   ],
+   "checked_on": "2026-10-18"
+  },
+  {
+   "product": "Vanicream Vitamin C Serum",
+   "category": "skincare",
+   "product_type": "serum",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.vanicream.com/product/vitamin-c-serum"
+   ],
+   "checked_on": "2026-10-18",
+   "formula": {
+    "actives": [
+     "vitamin c"
+    ],
+    "sources": [
+     "https://www.vanicream.com/product/vitamin-c-serum"
+    ],
+    "checked_on": "2026-10-18"
+   }
   }
  ]
 }

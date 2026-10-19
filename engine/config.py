@@ -2277,3 +2277,238 @@ SEARCH_PAGE_QUERY_KEYS = ("q", "k", "query", "search", "searchterm", "search-ter
 IMAGE_MAX_BYTES = 500_000  # about 500 KB, as phones and servers count them
 IMAGE_SMALLER_WIDTH = 600
 IMAGE_CHECK_TIMEOUT_SECONDS = 15
+
+# --- Converge round 1: ws-names (17 Oct 2026) ---
+# Module 1's need words and module 4's names, from the 16 Oct breadth-first reviews (docs: understanding, reading and
+# extraction-and-names); Claude's technical calls within Noemi's rules, reported to her. Each value added here, merged
+# into the shared one it extends.
+# Eczema is sensitive skin, as rosacea is (16 Oct 2026): the sensitive-skin rules apply ("moisturiser for eczema"), and
+# comments about eczema already talked about sensitive skin (NEED_COMMENT_WORDS). For a scalp, a sensitive scalp
+# (engine.needs: a need of another category's words is its own category's).
+NEED_REQUEST_WORDS = NEED_REQUEST_WORDS | {"eczema": "sensitive"}
+# Need words, round two (17 Oct 2026; engine/needs.py). More two words that make one need, named whole in the reason:
+# ones written with a word that is no need on its own ("dog hair", "no pull", "carry on"), with a word of the product's
+# name ("raw denim", "double cleansing", "chapped lips", "true wireless"), or with the skin need's word for the lips
+# ("dry lips", which had been named "dry skin").
+NEED_PHRASES = NEED_PHRASES + (
+    "dog hair", "pet hair", "cat hair", "no pull", "true wireless", "raw denim", "large pores", "open pores",
+    "clogged pores", "double cleansing", "chapped lips", "cracked lips", "dry lips", "carry on", "memory foam",
+    "non toxic", "bread dough", "pizza dough")
+# A need that is a verb, as the reason names it (17 Oct 2026): "about drying fast", not "about dry or fast"; "about
+# staying cool", "about keeping drinks cold", "about slipping" ("a yoga mat that doesn't slip"). Only the label: the
+# need is still found by the word as typed.
+NEED_VERB_LABELS: dict[str, str] = {
+    "dry": "drying", "dries": "drying", "stay": "staying", "stays": "staying", "keep": "keeping", "keeps": "keeping",
+    "fade": "fading", "fades": "fading", "fold": "folding", "folds": "folding", "fit": "fitting", "fits": "fitting",
+    "hold": "holding", "holds": "holding", "heat": "heating", "heats": "heating", "charge": "charging",
+    "charges": "charging", "grip": "gripping", "grips": "gripping", "slip": "slipping", "slips": "slipping",
+    "wobble": "wobbling", "wobbles": "wobbling", "chip": "chipping", "crease": "creasing", "creases": "creasing",
+    "pinch": "pinching", "pinches": "pinching", "leak": "leaking", "leaks": "leaking", "rust": "rusting",
+    "rusts": "rusting", "scratch": "scratching", "scratches": "scratching", "break": "breaking", "breaks": "breaking",
+    "shrink": "shrinking", "shrinks": "shrinking", "pill": "pilling", "stain": "staining", "stains": "staining",
+    "smudge": "smudging", "smudges": "smudging", "warp": "warping", "warps": "warping", "fog": "fogging",
+    "fogs": "fogging", "tangle": "tangling", "tangles": "tangling", "squeak": "squeaking", "squeaks": "squeaking",
+    "sag": "sagging", "sags": "sagging", "peel": "peeling", "peels": "peeling", "fray": "fraying", "frays": "fraying",
+    "whistle": "whistling", "whistles": "whistling", "boil": "boiling", "boils": "boiling", "clean": "cleaning",
+    "cleans": "cleaning", "blunt": "blunting", "dull": "dulling"}
+# A request's own word is also found in a comment's other words for it (17 Oct 2026, from the 16 Oct review of module 1:
+# "a laptop for university" found no comment saying "uni" or "college"), each written as need words are (letters and
+# digits only; two words are found written as one too: "stovetop" finds "stove top").
+REQUEST_WORD_SYNONYMS: dict[str, tuple[str, ...]] = {
+    "university": ("uni", "college", "student"), "uni": ("university", "college", "student"),
+    "college": ("university", "uni", "student"), "student": ("university", "uni", "college"),
+    "commuting": ("commute", "commuter"), "commute": ("commuting", "commuter"),
+    "hob": ("stove", "stovetop", "cooktop"), "stove": ("hob", "stovetop", "cooktop"),
+    "stovetop": ("hob", "stove", "cooktop"), "newborn": ("infant", "newborns"),
+}
+# Words that hold a request's own word but say something else (17 Oct 2026, from the 16 Oct review of ranking: a
+# comment about taking makeup off had made a moisturiser "work under makeup"), as NEED_LOOKALIKES are for its needs.
+NEED_LOOKALIKES = NEED_LOOKALIKES | {
+    "makeup": (r"(?<![a-z0-9])(?:remov\w*|take|takes|taking|took|wipe|wipes|wiping|melt\w*|break\w* down|dissolv\w*|"
+               r"get|gets|getting)\s+(?:\w+\s+){0,3}?(?:off\s+)?(?:all\s+|my\s+|the\s+|your\s+|of\s+|eye\s+)*"
+               r"make-?up(?:\s+off)?(?![a-z0-9])",
+               r"(?<![a-z0-9])make-?up\s+(?:remov\w*|wipes?|residue|off)(?![a-z0-9])"),
+}
+# Brands that are everyday words too: a request's word is no brand of these (engine.needs: a brand is no judged need),
+# found among data/brand_lines.json's one-word brands on 17 Oct 2026.
+EVERYDAY_BRAND_WORDS = frozenset({"field", "global", "hero", "tiger", "wolf", "aroma", "flair", "luxe", "nest", "sage",
+                                  "apple", "ego", "kyte", "epicurean", "icebreaker", "simple", "always", "instant",
+                                  "fresh", "glow", "honest", "native", "pure", "smart", "true", "original", "solo"})
+# Module 4's names (17 Oct 2026). Barbecue and knife sharpener synonyms were tried here on 17 Oct and taken out on 18 Oct
+# 2026 (the ws-names builder): with them a model's name and the type's word ("Weber Spirit gas grill", "King KDS
+# 1000/6000 combo stone") read as a line of the model (engine.group_products, "Name levels"), so the barbecue answer
+# folded the Spirit into Weber's line and lost a pick, and the King stone and the Shapton Pro 1500 became lines; the
+# short names alone keep one product shown once (engine/data/product_aliases.json).
+# Brands as their makers write them (17 Oct 2026, from the day's sweep: names still shown in small letters or other
+# capitals, a writer's possessive or plural of a brand), merged into MAKER_SPELLINGS. A maker's own small letters are
+# kept ("smartwater"); a model's name with its brand where writers write the model in small letters ("Laifen Swift",
+# "Spyderco Sharpmaker", "Shapton Pro").
+_NAMES_ROUND_TWO_SPELLINGS: dict[str, tuple[str, ...]] = {
+    "general": ("OtterBox Defender", "OtterBox", "Laifen Swift", "Laifen", "Nanit", "Momcozy", "Durston X-Mid",
+                "Durston", "Sea to Summit", "Bowflex", "BaByliss", "Grado", "Oral-B", "Fisher & Paykel", "Kenmore",
+                "BabyBjörn", "Ergobaby", "Smartwool", "Dogbed4less", "Wrangler", "Danner", "Feather", "IKEA",
+                "Unique Melody", "Shure", "Logitech", "Lenovo", "Melanzana", "smartwater"),
+    "kitchen": ("Chef'sChoice", "Our Place", "Finex", "Hario", "All-Clad", "Amazon Basics", "Big Green Egg", "Char-Broil",
+                "Henckels", "Kenmore", "Weber", "Spyderco Sharpmaker", "Shapton Pro", "1Zpresso", "Sunbeam",
+                "Toastmaster", "IKEA", "Orphan Espresso"),
+    "skincare": ("Paula's Choice", "Vanicream", "Sun Bum", "SKINFOOD", "Neutrogena", "Estée Lauder", "Ole Henriksen",
+                 "The INKEY List"),
+    "haircare": ("Native", "Viori", "KEVIN.MURPHY", "Hairstory", "Giovanni"),
+}
+MAKER_SPELLINGS = {category: MAKER_SPELLINGS.get(category, ()) + _NAMES_ROUND_TWO_SPELLINGS.get(category, ())
+                   for category in sorted(set(MAKER_SPELLINGS) | set(_NAMES_ROUND_TWO_SPELLINGS))}
+# 18 Oct 2026 (the ws-names builder, from every library name spelled with the 17 Oct rules): makers who write their
+# brand in small letters or capitals of their own, which a capital to start a name as a last resort had turned into
+# "E.l.f.", "Iunik", "Got2b" or "Ogx" (innisfree's small letters come from the facts list's own names, engine.
+# group_products._tidied: config's would also write writers' "Innisfree" so, which 16 Oct left to config alone); and
+# brands writers write apart, together or in the plural ("darn tough", "all birds", "fat max", "redwings"; "la creuset"
+# is in the short names).
+_NAMES_ROUND_THREE_SPELLINGS: dict[str, tuple[str, ...]] = {
+    "general": ("REI", "KEF", "iFi", "J.Crew", "UGG", "MAM", "Big Agnes", "FatMax", "Bar Keepers Friend", "Allbirds",
+                "IceMule", "Darn Tough", "Red Wing"),
+    "skincare": ("e.l.f.", "iUNIK", "Melano CC", "Drunk Elephant", "Haruharu"),
+    "haircare": ("got2b", "OGX"),
+}
+MAKER_SPELLINGS = {category: MAKER_SPELLINGS.get(category, ()) + _NAMES_ROUND_THREE_SPELLINGS.get(category, ())
+                   for category in sorted(set(MAKER_SPELLINGS) | set(_NAMES_ROUND_THREE_SPELLINGS))}
+# Type rules (17 Oct 2026; the decided rule of 10 Oct 2026, decision 5: what holds, covers, sharpens or refills a
+# product never counts for it). A razor's blade is such a thing: "blade" joins OTHER_TYPE_WORDS (an existing value,
+# extended in place for this item), so the AI's 30 "razor blade" mentions, and a product every writer names as blades
+# (engine.group_products), stay out of razor answers ("Derby blades" had been the second razor pick).
+OTHER_TYPE_WORDS = OTHER_TYPE_WORDS + ("blade",)
+# And a liner (18 Oct 2026): a sleeping bag liner goes inside a sleeping bag, a bin liner in a bin; the AI's "sleeping bag
+# liner" mentions had made Sea to Summit's liners a sleeping bag answer's Skip these.
+OTHER_TYPE_WORDS = OTHER_TYPE_WORDS + ("liner",)
+# Non-toxic cookware is PFAS-free cookware (18 Oct 2026, the ws-names builder; Claude's call of 18 Oct 2026, Noemi:
+# "About the pfas - do what you think is best"). For a product type that has the fact (PRODUCT_FACTS_BY_TYPE: frying pans
+# and saucepans), "non toxic", "non-toxic", "nontoxic" and "toxin free" ask for PFAS-free, since that is what non-toxic
+# means for pans (no PTFE or other PFAS, Noemi's rule of 11 Oct 2026), as refusing Teflon has since 16 Oct 2026
+# (PRODUCT_FACT_REQUEST_WORDS); for every other type they stay an ordinary need word (engine.query.type_asks). {what is
+# asked: its fact, the request's words (regular expressions, whole words, lowercase) and the words of comments that talk
+# about it: toxins, and PFAS, PTFE, PFOA or Teflon by name}. The reason line names the must-have (TYPE_ASKED_LABEL:
+# "about PFAS-free", as the ws-answer builder names refusing Teflon on 17 Oct 2026), so the reading shows.
+TYPE_ASKED_WORDS: dict[str, dict] = {
+    "PFAS-free": {"fact": "pfas_free", "words": (r"non[- ]?toxic", r"toxi(?:ns?|c)[- ]?free"),
+                  "comment_words": ("toxic", "toxin", "nontoxic", "non-toxic", "pfas", "ptfe", "pfoa", "teflon",
+                                    "forever chemical")},
+}
+TYPE_ASKED_LABEL = "{asked}"
+# Need words, round three (18 Oct 2026, the ws-names builder; engine/needs.py). A name of a type that is another name
+# for it, not a kind of it: in kitchen and general requests its words are the product's, as a type's own name is
+# ("portable charger" is a power bank, so "portable" is no need; a "wine cooler" stays a kind of fridge, "gaming laptop"
+# a kind of laptop).
+TYPE_OTHER_NAMES: dict[str, tuple[str, ...]] = {
+    "power bank": ("portable charger", "portable chargers", "portable battery", "portable batteries", "battery pack",
+                   "battery packs", "battery bank", "battery banks"),
+}
+# An induction hob, stove or cooktop is the induction need, named once (the hob, stove or cooktop had been a need of its
+# own: "about induction or hob"), extending the need's words in place for this item.
+NEEDS = NEEDS | {"induction-compatible": NEEDS["induction-compatible"] + (
+    "induction hob", "induction stove", "induction cooktop", "induction hot plate", "induction range")}
+
+# --- Converge round 1: ws-ranking (17 Oct 2026) ---
+# Modules 5 and 6, from the breadth-first review of 16 Oct 2026 (docs/bfs-2026-10-16/credibility-and-ranking.md) and
+# Noemi's decisions of 16 Oct 2026 (evening). Values chosen by Claude within her decisions; what goes beyond them is
+# marked PROPOSED and switched off.
+# Item 3, her decision 3 (first-hand use): the AI's reading of the whole comment counts when the rules miss the writer's
+# use (engine.credibility.with_ai_evidence), only with a concrete tag or the writer speaking for themselves, and never
+# for someone else's experience. On because her gold threads' agreement and votes didn't get worse (eval/RUNS.md, 17
+# Oct 2026); False goes back to the rules' reading, the AI only taking use away.
+AI_FIRST_HAND_COUNTS = True
+# And its long use (the same decision, 17 Oct 2026): where the rules see use but no time ("I use it", a verdict) and the
+# AI reads long-term use, the AI's reading counts. Her held-out kettle thread: 27 -> 29 of 30 products as answers use
+# them; her scored threads unchanged. False keeps the rules' short-term use there.
+AI_LONG_TERM_COUNTS = True
+# Item 2, her decision 2 (Skip these): a product is listed under Skip these only with credible warnings from at least
+# SKIP_MIN_THREADS threads (the picks bar's two threads; 140 of the 16 Oct sweep's 271 shown items came from one), the
+# warnings from the opposite of a need the request asks about left aside (NEED_OPPOSITES: an oily-skin complaint in a
+# dry-skin answer, unless it talks about dry skin too), and at most SKIP_SHOWN are shown (engine/answer.py).
+SKIP_MIN_THREADS = 2
+SKIP_SHOWN = 5
+# The needs whose opposite a request can name, skin and hair types (Claude's list, from her example): {need: its
+# opposites}. Kitchen and general needs have none listed; a warning about something else there still counts.
+NEED_OPPOSITES: dict[str, tuple[str, ...]] = {
+    "dry": ("oily",), "oily": ("dry",),
+    "dry hair": ("oily hair",), "oily hair": ("dry hair",),
+}
+# Item 6 (PROPOSED, off: it changes the brief's Sum rule, Noemi's to decide): the picks ordered by credible support, the
+# sum of their credible mentions' weights, with every mention's score (hearsay and low voices included) breaking ties.
+# On the 16 Oct sweep 26 of 472 pairs of picks had a pick with fewer and shorter credible voices first only because of
+# its other mentions' points (b03: innisfree's 3 credible voices and 8 hearsay ones above CeraVe's 7 credible).
+RANK_BY_CREDIBLE_POINTS = False
+# Item 1, her decision 1 (features before the product noun; engine/features.py). Claude's lists, from the 16 Oct sweep's
+# 41 requests naming a feature: the categories it applies to (skincare and haircare keep their need rule); the config
+# needs that describe a product, so a request naming them before its noun asks for a feature (a beginner, a home cook or
+# lasting is about the buyer or the whole library); words that only name the product ("coffee machine", "tea kettle",
+# "computer mouse"); how a comment praises a product for a config need and what says the opposite (quiet: "very noisy"
+# isn't praise); short forms a comment may use for a feature; and the words of a product's own name that say a feature's
+# opposite (a "corded DeWalt drill" is no cordless drill, whatever its writer says of cordless ones).
+FEATURE_CATEGORIES = ("kitchen", "general")
+FEATURE_CONFIG_NEEDS = ("quiet", "stainless steel", "dishwasher-safe", "induction-compatible", "plastic-free",
+                        "temperature control")
+FEATURE_PLAIN_WORDS = ("coffee", "tea", "computer", "pc", "mobile", "cell", "wrist", "bed", "bath", "drink", "drinks",
+                       "power", "web", "home", "kitchen", "pair")
+FEATURE_PRAISE_WORDS: dict[str, tuple[str, ...]] = {
+    "quiet": ("quiet", "silent", "silence", "whisper", "no noise", "barely any noise", "hardly any noise",
+              "little noise"),
+}
+FEATURE_AGAINST_WORDS: dict[str, tuple[str, ...]] = {
+    "quiet": ("noisy", "loud", "rattl", "racket", "screech", "whine", "whining"),
+}
+FEATURE_SHORT_FORMS: dict[str, tuple[str, ...]] = {"noise cancelling": ("anc",), "true wireless": ("tws", "wireless")}
+# Materials (Claude's list): a request naming one before its noun ("stainless steel pan", "cast iron kettle", "glass
+# teapot") gets praise from the writer's own words only, in a clause holding the product, never from a thread's ask:
+# on the 16 Oct library a cast iron kettle thread's answers proposed enamel and stainless kettles, and comments compare
+# materials (one praised stainless steel in general, then named a non-stick Tramontina for those who want one).
+FEATURE_MATERIALS = ("stainless steel", "stainless", "cast iron", "carbon steel", "steel", "iron", "enamel", "enamelled",
+                     "enameled", "ceramic", "copper", "glass", "aluminium", "aluminum", "titanium", "wood", "wooden",
+                     "bamboo", "teak", "walnut", "maple", "olive wood", "plastic", "silicone", "porcelain", "stoneware",
+                     "clay", "leather", "suede", "canvas", "wool", "merino", "cotton", "linen", "silk", "cashmere",
+                     "denim", "raw denim", "down", "nylon", "polyester", "gore-tex", "goretex")
+FEATURE_OPPOSITE_NAMES: dict[str, tuple[str, ...]] = {
+    "cordless": ("corded",), "wireless": ("wired",), "true wireless": ("wired",),
+    "noise cancelling": ("open back", "open-back"), "automatic": ("quartz", "solar", "eco-drive", "eco drive"),
+    "mechanical": ("membrane",),
+}
+
+# --- Converge round 1: ws-data-kitchen (17 Oct 2026) ---
+# A product named only by its brand is its brand's line (the coordinator's technical call of 17 Oct 2026, within Noemi's
+# decision 8 of 16 Oct 2026 and her 12 Oct 2026 rule on brand-only names; engine.pipeline._brand_only_lines): when every
+# name of a group is the brand (or another name its brand-lines entry gives it) alone or with words that name no model,
+# no facts or price entry names one product of it, and its brand-lines entry says the brand sells the requested type, it
+# is ranked and shown as that line ("Circulon frying pan line"), and a must-have leaves it out as a whole brand. False
+# keeps such a group one product, as before.
+BRAND_ONLY_NAMES_AS_LINES = True
+
+# --- Converge round 1: ws-data-beauty (17 Oct 2026) ---
+# Mature skin in the words writers use (decided by Claude, 18 Oct 2026, from the skincare data round; reported to
+# Noemi). In threads about mature skin, writers mostly give their age as a number ("I'm 46", "46F", "a 58 yo", "44 yr old") rather
+# than a decade ("my 40s", which NEEDS already reads), so the need rule (a pick needs a credible recommendation that
+# talks about the request's needs) found almost no voice about mature skin, and "night cream for my 40s" kept one pick
+# however many threads about it were read. An age of 40 to 79 written as an age talks about mature skin, in comments
+# only (NEED_COMMENT_WORDS: a number in a title is too loose to rank threads by); a number written any other way says
+# nothing ("SPF 50+", "for 45 minutes", "40 pounds", and "50 f..." is left out, since "SPF 50 for" would read as an age).
+# The signs of ageing and the decades in letters are mature words everywhere (NEEDS): sagging, crepey skin, menopause
+# and perimenopause, forties to sixties.
+MATURE_AGES = range(40, 80)
+MATURE_AGE_FORMS = ("{n}f", "{n}yo", "{n} yo", "{n} y/o", "{n} year old", "{n} years old", "{n}-year-old",
+                    "{n} yr old", "{n} yrs old", "{n}yr old", "{n}yrs old",
+                    "i'm {n}", "im {n}", "i am {n}", "turning {n}")
+NEED_COMMENT_WORDS["mature"] = NEED_COMMENT_WORDS.get("mature", ()) + tuple(
+    form.format(n=n) for n in MATURE_AGES for form in MATURE_AGE_FORMS)
+NEEDS["mature"] = NEEDS["mature"] + ("forties", "fifties", "sixties", "menopaus", "perimenopaus", "sagging", "saggy",
+                                     "crepey", "crepiness")
+
+# --- Converge round 1: ws-data-general (17 Oct 2026) ---
+# Astra, the razor-blade maker, as its maker writes it (18 Oct 2026, the general data builder; Claude's call, reported):
+# with the new razor threads, writers' "astras" (Astra Superior Platinum blades) became a pick of "razor for sensitive
+# skin", shown as "Altra razor line": the brand-lines list's "Altra" (running shoes) was the only known spelling of a
+# brand one letter away (engine.group_products.maker_spelling). A spelling of its own comes first, so it is shown as
+# Astra; Altra's own names are unchanged.
+MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "Astra")
+# lululemon, which writes its name in small letters (a maker's own style is taken from config only): with the new
+# yoga threads, writers' "lulu lemon mats" became a pick of "yoga mat", shown as written.
+MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "lululemon")
+# Brooklinen (bed sheets): with Brooks (running shoes) in the brand-lines list, writers' "Brook Linen" was shown as
+# "Brooks Linen" on a skip list (the same slip between two makers' names as Astra's).
+MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "Brooklinen")

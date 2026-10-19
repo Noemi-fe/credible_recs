@@ -9,6 +9,7 @@ reaches the network.
 """
 
 import threading
+import time
 from datetime import timedelta
 
 import pytest
@@ -96,12 +97,27 @@ def test_the_plans_comments_with_no_read_are_read_in_its_order_answers_first(sce
     assert scene.live.saved_check(link(1), QUOTE).show  # an answer finds it checked
 
 
-def test_reads_go_a_few_at_once_each_batch_in_the_plans_order(scene):
+def test_reads_go_a_few_at_once_in_the_plans_order(scene):
+    # Changed on purpose 17 Oct 2026 (the converge round, item 2): reads no longer go in batches, each batch waiting for
+    # its slowest read before the next began (test_a_slow_read_never_holds_back_the_next_ones); a new read starts as
+    # soon as one is back, in the plan's order. So the order shows only as they start: the first 4 are under way at
+    # once (none comes back before all 4 are), and only then the next.
+    together = threading.Barrier(4, timeout=5)
+
+    class FourAtOnce(Reddit):
+        def __call__(self, url, headers):
+            answer = super().__call__(url, headers)
+            with self._lock:
+                first_four = len(self.asked) <= 4
+            if first_four:
+                together.wait()
+            return answer
+
     scene.plan(answers=range(1, 10))
-    ahead = scene.site(parallel=4)
-    assert ahead.on_ping().read == 9
-    batches = [sorted(scene.reddit.asked[i:i + 4]) for i in (0, 4)]
-    assert batches == [sorted(embed_url(link(n)) for n in range(1, 5)), sorted(embed_url(link(n)) for n in range(5, 9))]
+    reddit = FourAtOnce(scene.clock)
+    assert scene.site(reddit, parallel=4).on_ping().read == 9
+    assert sorted(reddit.asked[:4]) == sorted(embed_url(link(n)) for n in range(1, 5))
+    assert sorted(reddit.asked[4:]) == sorted(embed_url(link(n)) for n in range(5, 10))
 
 
 def test_an_answers_comment_is_read_again_once_its_read_is_40_hours_old_so_its_check_never_runs_out(scene):
@@ -321,6 +337,8 @@ def test_a_day_of_pings_reads_what_falls_due_with_room_to_spare():
     # every READ_AHEAD_AGAIN_HOURS, and LIBRARY_VERIFY_READS kept comments a day. Now as many at once as an answer reads
     # (LIVE_CHECK_PARALLEL): READ_AHEAD_PER_PING a ping, within Reddit's share (the test above) and the ping's seconds
     # (its cost: engine/tests/test_cloudrun.py), covering what falls due with a third to spare.
+    # Note of 17 Oct 2026: the live site's logs (15 to 17 Oct) showed 32 a ping at most, its batches taking 1.25 to 1.67
+    # s, not 1.0; reads now overlap instead (test_overlapping_reads_reach_a_pings_reads_at_the_live_sites_pace).
     from math import ceil
 
     pings_a_day, batch_seconds, plan_answers = 24 * 12, 1.0, 7_752  # the live site's numbers, 15 Oct 2026
@@ -330,3 +348,109 @@ def test_a_day_of_pings_reads_what_falls_due_with_room_to_spare():
     assert per_ping == config.READ_AHEAD_PER_PING == 40
     assert per_ping * pings_a_day >= 1.33 * due_a_day  # 11,520 a day against 7,651
     assert config.READ_AHEAD_PARALLEL <= config.LIVE_CHECK_PARALLEL  # no more at once than an answer reads
+
+
+# --- More reads a ping, the site's own answers first (17 Oct 2026, the converge round, item 2) ---
+
+def test_a_slow_read_never_holds_back_the_next_ones(scene):
+    # In batches, each read waited for its batch's slowest and for the reads' spacing (LIVE_CHECK_MIN_INTERVAL: each
+    # starts 0.1 s after the one before), so on the live site a ping read 32 of its READ_AHEAD_PER_PING in its
+    # READ_AHEAD_SECONDS (its logs, 15 to 17 Oct 2026: 4 batches of 8, never 5). Now a read starts as soon as one is
+    # back: here the five others are read while the first is still out.
+    released, seen = threading.Event(), []
+
+    class OneSlow(Reddit):
+        def __call__(self, url, headers):
+            if "/comment/c0001x/" in url:
+                released.wait(timeout=5)
+            return super().__call__(url, headers)
+
+    def release_once_the_others_are_read():
+        for _ in range(500):
+            if len(reddit.asked) >= 5:
+                break
+            time.sleep(0.01)
+        seen.append(len(reddit.asked))
+        released.set()
+
+    scene.plan(answers=range(1, 7))
+    reddit = OneSlow(scene.clock)
+    threading.Thread(target=release_once_the_others_are_read, daemon=True).start()
+    reading = scene.site(reddit, parallel=2).on_ping()
+    assert reading.read == 6 and seen == [5]
+
+
+def test_when_reddit_stops_answering_no_new_read_starts_until_those_out_are_back(scene):
+    # One failure among good reads (a page cut off, say) costs nothing more; reads going on after a failure wait for
+    # those still out, so a Reddit that has stopped answering is asked at most READ_AHEAD_PARALLEL times a ping, as
+    # with batches (test_when_reddit_doesnt_answer_a_ping_stops_after_one_batch).
+    scene.plan(answers=range(1, 12))
+    reddit = Reddit(scene.clock)
+
+    def one_fails(url, headers):
+        if "/comment/c0002x/" in url:
+            reddit.asked.append(url)
+            raise TimeoutError("timed out")
+        return reddit(url, headers)
+
+    ahead = scene.site(reddit, parallel=3)
+    scene.live._fetch = one_fails
+    reading = ahead.on_ping()
+    assert (reading.read, reading.failed, reading.reddit_failing) == (10, 1, False)
+
+
+def test_the_comments_of_answers_this_site_showed_are_read_again_first(scene):
+    # The plan comes from the daily job, which can't know what visitors ask; the site does, for the answers it has just
+    # worked out. Their comments are read again first, as an answer's comment is (READ_AHEAD_AGAIN_HOURS after its last
+    # read), so the next visitor asking the same finds every check ready, a comment the plan doesn't list included.
+    scene.plan(answers=[1, 2])
+    ahead = scene.site(parallel=1)
+    ahead.on_ping()
+    scene.live.check(link(7), QUOTE)  # a visitor's answer reads it as it is written...
+    ahead.shown([link(7), link(2)])  # ...and shows it, with one of the plan's
+    scene.clock.now += timedelta(hours=config.READ_AHEAD_AGAIN_HOURS, minutes=1)
+    scene.reddit.asked.clear()
+    assert ahead.on_ping().read == 3
+    assert [url.split("/comment/")[1][:5] for url in scene.reddit.asked] == ["c0007", "c0002", "c0001"]
+    scene.reddit.asked.clear()
+    assert ahead.on_ping().read == 0  # read again: not due for another 40 hours
+
+
+def test_only_the_newest_shown_comments_are_kept_in_mind(scene):
+    ahead = scene.site(shown_kept=3)
+    ahead.shown([link(n) for n in range(1, 4)])
+    ahead.shown([link(4), link(2)])  # a newer answer, in its own order: one new, one shown again; the oldest goes
+    assert ahead.shown_now() == [link(4), link(2), link(1)]
+
+
+def test_a_ping_says_how_long_its_reads_took(scene):
+    scene.plan(answers=[1])
+    scene.ticks.step = 0.5
+    reading = scene.site().on_ping()
+    assert reading.read == 1 and reading.seconds > 0
+    from engine.read_ahead import report
+    assert f"in {reading.seconds:.1f} s" in report(reading, None)
+
+
+def test_overlapping_reads_reach_a_pings_reads_at_the_live_sites_pace():
+    # 17 Oct 2026 (the converge round, item 2), from the live site's logs of 15 to 17 Oct 2026: in batches of
+    # READ_AHEAD_PARALLEL a ping read 32 at most (4 batches began within READ_AHEAD_SECONDS, never 5) and some 24 (3), so a
+    # batch took 1.25 to 1.67 s, of which its reads' spacing (each LIVE_CHECK_MIN_INTERVAL after the one before) was 0.7
+    # s: a read took about 1 s at most. 32 a ping is 9,216 a day, against the 7,545 falling due (the 17 Oct plan's 7,574
+    # answers' comments every READ_AHEAD_AGAIN_HOURS, and LIBRARY_VERIFY_READS): it kept up, a fifth to spare, and the
+    # backlog after each new plan took about a day to read. With reads overlapping, one starts every spacing while fewer
+    # than READ_AHEAD_PARALLEL are out, so a ping reaches READ_AHEAD_PER_PING in its seconds even at the slowest read
+    # seen: 11,520 a day, half again what falls due, with the same reads in each of Reddit's 10 minutes (at most 2 x
+    # READ_AHEAD_PER_PING) and the same billed seconds (engine/tests/test_cloudrun.py).
+    from math import ceil
+
+    spacing, parallel, seconds = config.LIVE_CHECK_MIN_INTERVAL, config.READ_AHEAD_PARALLEL, config.READ_AHEAD_SECONDS
+    fastest_batch, slowest_batch = 1.25, 1.67  # the logs' bounds
+    assert parallel * ceil(seconds / fastest_batch) == 32 and parallel * ceil(seconds / slowest_batch) == 24
+    slowest_read = slowest_batch - (parallel - 1) * spacing
+    rate = min(1 / spacing, parallel / slowest_read)  # reads a second, overlapping
+    per_ping = min(config.READ_AHEAD_PER_PING, int(rate * seconds))
+    assert per_ping == config.READ_AHEAD_PER_PING == 40
+    due_a_day = 7_574 * 24 / config.READ_AHEAD_AGAIN_HOURS + config.LIBRARY_VERIFY_READS
+    pings_a_day = 24 * 12
+    assert 32 * pings_a_day >= 1.2 * due_a_day and per_ping * pings_a_day >= 1.5 * due_a_day

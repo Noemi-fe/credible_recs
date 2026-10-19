@@ -20,6 +20,8 @@
   kept and that the site ran on Hugging Face); a quote's check is from the 48 hours before its answer, usually made ahead
   of time (it had said "just before" it is shown); each kept comment is read again within its days (it had said whole
   threads are read again); a product sold only outside the UK is shown with its note (it had said it is left out).
+  17 Oct 2026 (the converge round; wording PROPOSED, for Noemi): a remembered answer is shown only while every check it
+  shows is under 48 hours old (engine/web.py _keep_seconds), as well as for a day at most.
 -->
 {{search_page_style}}
 <style>
@@ -100,7 +102,7 @@ h3.group { font-size: 12.5px; font-weight: 650; text-transform: uppercase; lette
   {{communities}}
   <p>We read the threads through third-party services that collect public Reddit posts. People can delete or change what they wrote, so we keep checking:</p>
   <ul>
-    <li>Before a quote is shown, we read that comment again on Reddit itself, usually ahead of time: an answer only uses checks from the last {{config:CACHE_MAX_AGE_HOURS}} hours, and is shown for a day at most before it is made again, with fresh checks. If the comment was deleted, removed or edited so the quote isn't there any more, or if Reddit can't be reached to check it, the quote is never shown, and that comment's opinion no longer counts.</li>
+    <li>Before a quote is shown, we read that comment again on Reddit itself, usually ahead of time: an answer only uses checks from the last {{config:CACHE_MAX_AGE_HOURS}} hours, and is shown for a day at most, and only while every check it shows is under {{config:CACHE_MAX_AGE_HOURS}} hours old; then it is made again, with fresh checks. If the comment was deleted, removed or edited so the quote isn't there any more, or if Reddit can't be reached to check it, the quote is never shown, and that comment's opinion no longer counts.</li>
     <li>When answers are made without that live check (in our offline tests), they only use threads we have re-read on Reddit in the last {{config:LIVE_CHECK_SHOWN_DAYS}} days.</li>
     <li>We keep only the comments answers use, and read each one again on Reddit at least every {{config:LIBRARY_VERIFY_DAYS}} days. One deleted or removed since, or one we couldn't check in that time, loses its words and no longer counts; one edited keeps only what it still says.</li>
   </ul>

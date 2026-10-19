@@ -35,6 +35,10 @@ Every step is a module of its own; this file only passes each one's output to th
   support counts for nothing rather than twice. It is listed on the result with the product it stepped aside for
   (folded_brand_picks). Its own products are those whose name starts with the brand's words, or that module 4 says
   are one of its products (engine.match_products.same_product: "CeraVe cleanser" and "CeraVe Hydrating Cleanser").
+  Since 17 Oct 2026 (within Noemi's decision 8 of 16 Oct 2026) a product group named only by its brand ("Circulon
+  pans", "circulon": module 4 keeps a brand none of whose models is named as one product) is that brand's line too,
+  when its brand-lines entry says the brand sells the requested type and no facts or price entry names one product of
+  it (_brand_only_lines): under a must-have it is then left out as a whole brand, as every line is.
 - with a budget in the request (a max and a currency), a product whose price (engine/prices.py, data/prices.json) is
   known and above the max is left out (Noemi's decision 11). A product with no known price, a price in another
   currency, or a price checked over PRICE_MAX_AGE_DAYS ago is kept, and its answer says so.
@@ -110,6 +114,18 @@ Two ranking changes of 9 Oct 2026 are worked out here, in _score, before module 
   every mention and note they make, so none of it is credible. They are named on the result (contradicting_writers)
   for reports, which count them; nothing about them is shown to users.
 
+Two more of 17 Oct 2026 (the converge round, ws-ranking), from Noemi's decisions of 16 Oct 2026, also worked out in
+_score:
+- features: a kitchen or general request naming a feature before its product noun ("noise cancelling headphones",
+  "quiet kettle"; engine/features.py) gives each recommendation the features its own words, or its thread's ask, praise
+  its product for (ScoredMention.features); the products so praised rank first (engine.rank), and when no pick is, the
+  answer says so after its own message (_note_features, wording PROPOSED);
+- opposite needs: a warning whose comment talks about the opposite of a need the request asks about, and not the need
+  itself (an oily-skin complaint in a dry-skin answer; config.NEED_OPPOSITES), doesn't count toward Skip these
+  (ScoredMention.opposite_need).
+A brand line's warnings folded under a specific product of its brand (_fold_brand_skips) are shown apart from the
+pick's own, which alone its downsides' count holds (engine.answer.DOWNSIDES_SHARE_BRAND, wording PROPOSED).
+
 Names are shown as a UK shopper knows them (decision 12): "Sage", not "Breville" (engine.group_products.uk_name).
 
 The same product never shows twice in one answer (13 Oct 2026, from reading the day's answers: b06 had "Fellow Stagg
@@ -165,6 +181,7 @@ from engine.care_tips import CareTips, attach_care_tips, credible_care_tips
 from engine.config import (
     BRAND_MODEL_GENERIC_WORDS,
     BRAND_MODEL_MIN_CREDIBLE,
+    BRAND_ONLY_NAMES_AS_LINES,
     BRAND_PICK_NEEDS_A_PRODUCT_OF_THE_TYPE,
     BRAND_PICK_TITLE_SHARE,
     BUDGET_DEFAULT_CURRENCY,
@@ -175,6 +192,7 @@ from engine.config import (
     INGREDIENT_NOT_FORM_ASKED,
     INGREDIENT_NOT_LISTED,
     INGREDIENT_RINSE_OFF,
+    INGREDIENTS,
     LIVE_CHECK_PARALLEL,
     LIVE_CHECK_REQUIRED,
     LIVE_CHECK_SHOWN_DAYS,
@@ -193,10 +211,11 @@ from engine.config import (
 )
 from engine.contradictions import contradicting_writers
 from engine.credibility import (
-    VoiceScore, badges, copied_comment_ids, copy_groups, mention_weight, repeated_copies, score_evidence, score_voice,
-    thread_upvotes, with_ai_evidence,
+    VoiceScore, badges, copied_comment_ids, copy_groups, mention_weight, product_text, repeated_copies, score_evidence,
+    score_voice, thread_upvotes, with_ai_evidence,
 )
 from engine.extract import CheckResult, shown_comment_ids
+from engine.features import Feature, feature_note, praised_for, request_features, thread_asks_for
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
 from engine.group_products import (
     LibraryRanges, ProductGroup, ProductMention, brand_pick_name, group_of, group_products, library_name_index,
@@ -205,7 +224,7 @@ from engine.group_products import (
 from engine.gold import DEFAULT_GOLD_DIR
 from engine.ingredients import evidence as ingredient_evidence
 from engine.ingredients import (
-    facts_types, form_kind, form_of, ingredient_type_name, own_name, rinse_off_word, wanted_types,
+    facts_types, form_kind, form_of, ingredient_type_name, names_ingredient, own_name, rinse_off_word, wanted_types,
 )
 from engine.ingredients import shown as shown_ingredients
 from engine.library import DEFAULT_LIBRARY_DIR, checked_live_within
@@ -215,7 +234,7 @@ from engine.match_products import (
 )
 from engine.memo import Table
 from engine.models import Comment, Thread
-from engine.needs import Need, judged_needs, needs_met, said_not_to_help
+from engine.needs import Need, judged_needs, needs_met, needs_of, said_not_to_help
 from engine.prices import (
     Price,
     PriceCheck,
@@ -243,7 +262,7 @@ from engine.product_facts import (
 from engine.profiles import ProfileStore, StoredProfiles, with_profiles
 from engine.query import _OTHER_KNIVES as OTHER_KNIVES, PRODUCT_TYPES, ParsedQuery, parse_query
 from engine.rank import KindNote, RankingResult, ScoredMention, rank_products
-from engine.sources import LocalSource, mentions_product, names_product
+from engine.sources import LocalSource, mentions_product, names_product, titled_as_another_type
 from engine.summaries import SUMMARIES_FILE, Summary, load_summaries
 
 
@@ -507,6 +526,9 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     # The price and facts lists write their products as their makers do: a name in their words is shown so (15 Oct 2026).
     makers, curated = _spelling_lists(brand_lines, prices, product_facts, query.category)
     kept_groups = _groups_to_rank(groups, query, result, {t.id: t.title for t in threads}, brand_lines, curated, makers)
+    # A product named only by its brand is that brand's line when the brand-lines list says the brand sells the type
+    # (17 Oct 2026, within Noemi's decision 8 of 16 Oct 2026: writers' "Circulon pans" is the Circulon frying pan line).
+    kept_groups = _brand_only_lines(kept_groups, query, brand_lines, prices, product_facts)
     lines = {g.key for g in kept_groups if g.loose}  # the brand or line names kept as the brand's whole line
     # Their brand-lines entries, whose range pages the answer links to (Noemi's night decision 1, 14 Oct 2026).
     ranges = {g.key: line for g in kept_groups if g.loose and (line := _brand_line(g, query, brand_lines)) is not None}
@@ -535,8 +557,14 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.contradicting_writers = sorted(contradicting_writers(groups, {c.id: c for t in threads for c in t.comments}))
     # What a comment talks about of the request is judged by the needs a comment can talk about (15 Oct 2026): the need
     # rule's, so the reason, the breakdown and the quotes shown first say no more than the rule judges.
+    # The features the request names (Noemi's decision 1 of 16 Oct 2026, engine/features.py), each thread's ask for
+    # them, and the opposites of its needs (her decision 2: oily-skin complaints in a dry-skin answer), 17 Oct 2026.
+    features = request_features(query)
+    asking = {t.id: {f.name for f in features if thread_asks_for(t, f, titled_as_another_type(t.title, query))}
+              for t in threads} if features else {}
     scored, kind_notes = _score(threads, checked, kept_groups, kinds, judged_needs(query),
-                                set(result.contradicting_writers), request_asks(query))
+                                set(result.contradicting_writers), request_asks(query), features, asking,
+                                _opposite_needs(query))
     if summaries is None:
         loaded = load_summaries(Path(library_dir) / SUMMARIES_FILE)
         summaries = loaded.entries
@@ -545,7 +573,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     def rank_and_write(result: PipelineResult, scored: list[ScoredMention], kind_notes: list[KindNote],
                        upvote_rule: bool) -> PipelineResult:
         """Modules 6 and 7 for this reading: the ranking, the answer, and the live checks of what it shows."""
-        result.ranking, more_downsides = _fold_brand_skips(
+        result.ranking, more_downsides, brand_downsides = _fold_brand_skips(
             _fold_brand_picks(_ranked(scored, query, kind_notes, kinds, need_led, result.skip_only, upvote_rule,
                                       result.unconfirmed),
                               kept_groups, result, query.product_type),
@@ -553,14 +581,18 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
         unsuited_kinds = _unsuited_kinds(result.ranking.kinds, query, product_facts)
         folded = {item.name for item in result.folded_brand_picks}
         care = _care_tips(threads, checked, [g for g in kept_groups if g.name not in folded], kinds, query)
-        models, model_prices = _brand_models(result.ranking, kept_groups, query.product_type, price_checks)
+        models, model_prices = _brand_models(result.ranking, kept_groups, query.product_type, price_checks, known,
+                                             wording["pages"])
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
                                      judged_needs(query), query.text, summaries,
-                                     _worth_left_out(result.ranking, kept_groups), **wording, ranges=ranges)
+                                     _worth_left_out(result.ranking, kept_groups), **wording, ranges=ranges,
+                                     brand_downsides=brand_downsides)
         if live_checker is not None:
             _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions,
-                        kept_groups, unsuited_kinds, need_led, summaries, wording, ranges, upvote_rule=upvote_rule)
+                        kept_groups, unsuited_kinds, need_led, summaries, wording, ranges, upvote_rule=upvote_rule,
+                        known=known)
+        _note_features(result, features, query)
         thread_of = {c.id: t.id for t in threads for c in t.comments}
         quoted = {thread_of.get(quote.comment_id) for _, quote in _every_quote(result.answer)}
         result.threads_quoted = [tid for tid in result.threads_used if tid in quoted]
@@ -619,10 +651,13 @@ def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
     there (Noemi's decision 1 of 13 Oct 2026). `upvote_rule`: with Noemi's upvote rules (14 Oct 2026), as config sets
     them: counting twice (config.UPVOTE_COUNTS_MORE) and a comment standing out (config.STANDOUT_ON). `unconfirmed`:
     {product key: how many of the request's must-haves its facts can't confirm} (PipelineResult.unconfirmed): those
-    products rank after the confirmed ones (Noemi's decision 1 of 15 Oct 2026; engine.rank)."""
+    products rank after the confirmed ones (Noemi's decision 1 of 15 Oct 2026; engine.rank). The features the request
+    names (engine/features.py) order the products praised for them first, right after the must-haves (her decision 1 of
+    16 Oct 2026)."""
     ranking = rank_products(scored, query.category, kind_notes, placements(kinds),
                             upvote_rule=upvote_rule and config.UPVOTE_COUNTS_MORE,
-                            standout_rule=upvote_rule and config.STANDOUT_ON, unconfirmed=unconfirmed)
+                            standout_rule=upvote_rule and config.STANDOUT_ON, unconfirmed=unconfirmed,
+                            features=[f.name for f in request_features(query)])
     judged = {need.name for need in judged_needs(query)}
     if (need_led or query.category in NEED_RULE_IN_EVERY_READING) and judged:
         ranking.products = [replace(p, qualifies=False, shortfall=WIDER_READING_SHORTFALL, worth_a_look=False)
@@ -640,11 +675,47 @@ def _talks_about(product, needs: set[str]) -> bool:
     return any(needs.intersection(m.needs) for m in product.credible_recommendations)
 
 
+def _note_features(result: PipelineResult, features: tuple[Feature, ...], query: ParsedQuery) -> None:
+    """When no pick shown is praised for a feature the request names (Noemi's decision 1 of 16 Oct 2026: "if we can't
+    find any, still show up with the main prod"), the answer says so (engine.features.FEATURE_NOT_PRAISED, wording
+    PROPOSED), after its own message when it has one. Changed in place, as the no-threads message is, so the rest of the
+    answer stays the one module 7 wrote. An answer with no picks says why in its own message."""
+    if not features or result.answer is None or not result.answer.picks:
+        return
+    by_key = {p.key: p for p in result.ranking.products}
+    praised = [by_key[pick.product_key].features_praised if pick.product_key in by_key else ()
+               for pick in result.answer.picks]
+    note = feature_note(features, praised, plural(query.product_type) if query.product_type else "products",
+                        query.product_type or "product")
+    if note and note not in (result.answer.message or ""):
+        result.answer.message = f"{result.answer.message} {note}" if result.answer.message else note
+
+
+def _opposite_needs(query: ParsedQuery) -> tuple[tuple[str, tuple[Need, ...]], ...]:
+    """(a need the request asks about, the needs opposite to it) for each of its needs with opposites (Noemi's decision 2
+    of 16 Oct 2026; config.NEED_OPPOSITES: oily skin for dry skin), with config's words for each opposite (engine.needs.
+    needs_of), leaving out an opposite the request asks about too ("combination skin, dry and oily")."""
+    asked = {need.name for need in judged_needs(query)}
+    words = needs_of(query.category)
+    return tuple((name, tuple(Need(o, words[o]) for o in config.NEED_OPPOSITES[name] if o in words and o not in asked))
+                 for name in sorted(asked) if name in config.NEED_OPPOSITES)
+
+
+def _from_the_opposite_need(body: str, needs: tuple[Need, ...], opposites) -> bool:
+    """Whether a comment talks about the opposite of a need the request asks about and not about that need itself (an
+    oily-skin complaint in a dry-skin answer, unless it talks about dry skin too): such a warning doesn't count toward
+    Skip these (engine.rank; Noemi's decision 2 of 16 Oct 2026)."""
+    if not opposites:
+        return False
+    own = set(needs_met(body, needs))
+    return any(need not in own and needs_met(body, others) for need, others in opposites if others)
+
+
 def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds, query, price_checks, care,
                 cautions=None, groups: list[ProductGroup] = (), unsuited_kinds: frozenset[str] = frozenset(),
                 need_led: bool = False, summaries: Mapping[str, Summary] | None = None,
                 wording: Mapping | None = None, ranges: Mapping[str, BrandLine] | None = None,
-                upvote_rule: bool = False) -> None:
+                upvote_rule: bool = False, known: Mapping[str, list[tuple[str, ...]]] | None = None) -> None:
     """Checks every quote about to be shown against Reddit itself; drops the comments that fail and answers again.
     Since 13 Oct 2026 the quotes a shown summary cites are checked too (engine.answer.quotes_to_check): a summary never
     stands on a comment deleted or changed since.
@@ -688,13 +759,15 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         ranking = _ranked([m for m in scored if m.comment_id not in failed], query,
                           [n for n in kind_notes if n.comment_id not in failed], kinds, need_led, result.skip_only,
                           upvote_rule, result.unconfirmed)
-        result.ranking, more_downsides = _fold_brand_skips(
+        result.ranking, more_downsides, brand_downsides = _fold_brand_skips(
             _fold_brand_picks(ranking, groups, result, query.product_type), groups, result)
-        models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks)
+        models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks, known,
+                                             (wording or {}).get("pages"))
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
                                      judged_needs(query), query.text, summaries,
-                                     _worth_left_out(result.ranking, groups), **(wording or {}), ranges=ranges)
+                                     _worth_left_out(result.ranking, groups), **(wording or {}), ranges=ranges,
+                                     brand_downsides=brand_downsides)
 
 
 def _checked_together(live_checker, quotes, may_wait: set[str] | None = None) -> dict[tuple[str, str], object]:
@@ -1093,6 +1166,99 @@ def _line_name(group: ProductGroup, line: BrandLine | None, product_type: str, k
     if line is not None and brand == brand.lower():
         brand = uk_name(line.brand)
     return brand_pick_name(brand, product_type, keep_ingredients)
+
+
+def _brand_only_lines(groups: list[ProductGroup], query: ParsedQuery, brand_lines: list[BrandLine],
+                      prices: list[Price], product_facts: list[ProductFacts]) -> list[ProductGroup]:
+    """The groups, with each product named only by its brand ranked as that brand's line (17 Oct 2026; the
+    coordinator's technical call within Noemi's decision 8 of 16 Oct 2026, her 12 Oct 2026 rule on brand-only names
+    made consistent: they count when the brand-lines list says the brand makes the requested type, and are shown as
+    "<Brand> <type> line").
+
+    Writers name Circulon's and Ballarini's frying pans by brand only ("Circulon pans", "ballarini"), never a model, and
+    module 4 keeps a brand none of whose models is named as one product: a PFAS-free answer had picked "Circulon pans"
+    as if it were one pan, with a note that we couldn't confirm it. Such a group is its brand's line ("Circulon frying
+    pan line"), shown with its range page and from price, and under a must-have left out as a whole brand, as every
+    line is (10 Oct 2026), when all of these hold:
+    - the brand-lines entry its names find (_brand_line, as for any brand's name) says the brand sells the type;
+    - every name of it is that brand, or another name the entry gives it (also_called), alone or followed only by words
+      that name no model (_names_only_its_brand): "Circulon pans", "circulon", "Zwilling/Ballarini non-stick pans";
+    - no facts or price entry its names find names one product of it (_a_listed_product): then the lists say which
+      product it is ("our place pan" is the Always Pan);
+    - the brand's line isn't among these groups already (as "OXO" is, next to OXO's non-stick pans, in b10's threads):
+      then the existing rules fold the two when both are shown (_the_line_itself), where a second line of the same
+      name would be judged apart from the first and only joined to it afterwards (_one_per_name).
+    Never for an ingredient-led request (no one type), nor with brand picks or this rule switched off
+    (PIPELINE_BRAND_PICKS, config.BRAND_ONLY_NAMES_AS_LINES)."""
+    if not (BRAND_ONLY_NAMES_AS_LINES and PIPELINE_BRAND_PICKS) or query.ingredient_led or not query.product_type:
+        return groups
+    # The brand-lines entries of the lines already here: a brand's line found among the groups is never made twice.
+    lines_here = {id(line) for g in groups if g.loose and (line := _brand_line(g, query, brand_lines)) is not None}
+    found = []
+    for group in groups:
+        line = None if group.loose or group.generic else _brand_line(group, query, brand_lines)
+        if (line is not None and line.sells and id(line) not in lines_here
+                and _names_only_its_brand(group, line, query.product_type)
+                and not _a_listed_product(group, line, query.product_type, prices, product_facts)):
+            group = replace(group, name=brand_pick_name(uk_name(line.brand), query.product_type), loose=True,
+                            bases=tuple(dict.fromkeys((*group.bases, line.brand, *line.also_called))))
+        found.append(group)
+    return found
+
+
+def _names_only_its_brand(group: ProductGroup, line: BrandLine, product_type: str) -> bool:
+    """Whether every name of a group is the brand-lines entry's brand, or another name the entry gives it, alone or
+    followed only by words that name no model (_names_a_model: the type's words and synonyms, "non-stick", descriptions
+    such as "cheap"), with no number and no "or" (two products). Writers' "non stick" is read as "non-stick", a brand
+    the UK knows by another name as the UK knows it (decision 12: "Breville" is Sage), and the first words of a
+    co-brand name the entry gives, written alone, as that name ("Zwilling" in the group of "Zwilling/Ballarini
+    non-stick pans", which module 4 joined it to)."""
+    brand = _brand_of(line)
+    aliases = known_aliases().get(group.category, {})
+    # The maker's name before the brand in a co-brand name the entry gives, written alone ("Zwilling" for
+    # "Zwilling/Ballarini"): module 4 joins a brand written alone to its one product named here, so in such a group it
+    # is the co-brand name's.
+    own = product_words(line.brand, aliases)
+    co_brands = [words[:-len(own)] for other in line.also_called
+                 if len(words := product_words(other, aliases)) > len(own) and written_alike(words[-len(own):], own)]
+    named = False
+    for name in group.names:
+        if not (words := product_words(name, aliases)):
+            continue  # filler words only: it names nothing
+        if any(written_alike(words, first) for first in co_brands):
+            continue
+        if "or" in plain_words(name) or not any(
+                find_brand_line([written], group.category, product_type, [line], of_a_product=True) is not None
+                for written in (name, uk_name(name))):
+            return False
+        if _names_a_model(_NON_STICK.sub("non-stick", uk_name(name)), brand, product_type):
+            return False  # "Breville kettle" is read as the UK knows it, "Sage kettle", as the entry's brand is
+        named = True
+    return named
+
+
+_NON_STICK = re.compile(r"\bnon\s+stick", re.IGNORECASE)  # "non stick", as writers often spell "non-stick"
+
+
+def _a_listed_product(group: ProductGroup, line: BrandLine, product_type: str, prices: list[Price],
+                      product_facts: list[ProductFacts]) -> bool:
+    """Whether a facts or price entry that a group's names find names one product of its brand, a model ("Our Place
+    Always Pan" for "our place pan"), rather than the brand's whole range ("GreenPan", "OXO non-stick pan")."""
+    brand = _brand_of(line)
+    for name in group.names:
+        entries = (find_facts(name, group.category, product_facts, product_type),
+                   find_price(name, group.category, prices, None, product_type),
+                   find_availability(name, group.category, prices, product_type))
+        if any(entry is not None and _names_a_model(uk_name(entry.product), brand, product_type) for entry in entries):
+            return True
+    return False
+
+
+def _brand_of(line: BrandLine) -> ProductGroup:
+    """A brand-lines entry's brand as a group of its names (the brand and also_called), for _names_a_model."""
+    return ProductGroup(f"{line.category}:{line.brand}", line.brand, line.category,
+                        [ProductMention("brand_lines", "brand_lines", name, line.category, "neutral")
+                         for name in (line.brand, *line.also_called)])
 
 
 def _clear_brand(group: ProductGroup, query: ParsedQuery, titles: dict[str, str], groups: list[ProductGroup],
@@ -1714,14 +1880,36 @@ def _unsuited_kinds(kinds, query: ParsedQuery, product_facts: list[ProductFacts]
     Claude late on 10 Oct 2026; b03 said "Look for: tret" to a beginner with sensitive skin, though the rules leave
     tretinoin products out of that answer). A kind takes an entry's facts only when the entry has the kind's very name
     (short names allowed: "tret" is Tretinoin), never one that only shares words with it ("salicylic acid" and "COSRX
-    Salicylic Acid Daily Gentle Cleanser"). "Avoid" advice about such a kind stays."""
+    Salicylic Acid Daily Gentle Cleanser"). "Avoid" advice about such a kind stays.
+
+    Since 17 Oct 2026 (the converge round: b03 showed "Look for: adalpalene", a writer's slip for adapalene) also a kind
+    named after one active ingredient (config.INGREDIENTS' single-active entries, engine.ingredients.names_ingredient:
+    a one-letter slip in a long word forgiven; never a family such as "retinoid") whose every product in the facts list
+    (by its name or its formula) is prescription-only, when the request's prescription-only rule clashes hard: being
+    sold only on a prescription belongs to the active, not to one product, as no other fact does."""
     aliases = known_aliases().get(query.category, {})
     unsuited = set()
+    # Only when a prescription-only product clashes hard with this request can a kind be one by its active (latency,
+    # 18 Oct 2026: otherwise every kind of every answer was compared with every active).
+    prescription = [f for f in product_facts if f.category == query.category and f.facts.get("prescription_only") is True]
+    clashing = any(c.hard and c.rule == "prescription only" for f in prescription for c in conflicts(query, f))
     for kind in kinds:
         words = product_words(kind.name, aliases)
         own = [f for f in product_facts if f.category == query.category and product_words(f.product, aliases) == words]
         if words and any(c.hard for f in own for c in conflicts(query, f)):
             unsuited.add(kind.key)
+            continue
+        if not clashing:
+            continue
+        for ingredient in (key for key, entry in INGREDIENTS.items()
+                           if len(entry.get("actives", ())) == 1 and names_ingredient(kind.name, key)):
+            holding = [f for f in product_facts if f.category == query.category
+                       and (names_ingredient(f.product, ingredient)
+                            or ingredient.lower() in [a.lower() for a in (f.formula.actives if f.formula else [])])]
+            if holding and all(f.facts.get("prescription_only") is True for f in holding) and any(
+                    c.hard and c.rule == "prescription only" for f in holding for c in conflicts(query, f)):
+                unsuited.add(kind.key)
+                break
     return unsuited
 
 
@@ -1820,8 +2008,8 @@ def _the_line_itself(product: ProductGroup, line: ProductGroup, product_type: st
             and not any(_names_a_model(name, line, product_type) for name in product.names))
 
 
-def _fold_brand_skips(ranking: RankingResult, groups: list[ProductGroup],
-                      result: PipelineResult) -> tuple[RankingResult, dict[str, list[ScoredMention]]]:
+def _fold_brand_skips(ranking: RankingResult, groups: list[ProductGroup], result: PipelineResult
+                      ) -> tuple[RankingResult, dict[str, list[ScoredMention]], dict[str, tuple[str, list[ScoredMention]]]]:
     """The ranking without the brands or lines on the skip list that a shown pick belongs to, and their credible
     warnings by that pick's key, to show under its Known downsides after its own (decided by Claude, 10 Oct 2026).
 
@@ -1836,18 +2024,29 @@ def _fold_brand_skips(ranking: RankingResult, groups: list[ProductGroup],
     Also (10 Oct 2026, night: b09's "Hario Mini (their coffee grinders)", while a credible warning about the Hario Mini
     Mill, one of its own grinders, was shown nowhere): a shown brand or line pick speaks for its specific products, so
     the credible warnings about those that are neither shown as picks nor on the skip list go under its downsides too,
-    after its own."""
+    after its own.
+
+    Since 17 Oct 2026 (the converge round, ws-ranking item 5) the warnings of a brand line folded under a specific
+    product of its brand are about the line as a whole, not the pick: they come back apart, {pick key: (the line's name
+    as shown, its credible warnings)}, shown after the pick's own and counted apart (engine.answer.DOWNSIDES_SHARE_BRAND:
+    b01's COSRX toner, one warning of its own, had said "4 of 7"). Under a line pick they stay its own."""
     by_key = {g.key: g for g in groups}
     shown = [(p, by_key[p.key]) for p in ranking.qualifying if p.key in by_key][:PICKS_SHOWN]
     more: dict[str, list[ScoredMention]] = {}
+    apart: dict[str, tuple[str, list[ScoredMention]]] = {}
     folded, keys = [], set()
     for skipped in ranking.skip_list:
         group = by_key.get(skipped.key)
         if group is None or not group.loose:
             continue
-        pick = next((p for p, g in shown if _same_brand(group, g) or _same_brand(g, group)), None)
-        if pick is not None:
-            more.setdefault(pick.key, []).extend(skipped.credible_warnings)
+        found = next(((p, g) for p, g in shown if _same_brand(group, g) or _same_brand(g, group)), None)
+        if found is not None:
+            pick, pick_group = found
+            if pick_group.loose:
+                more.setdefault(pick.key, []).extend(skipped.credible_warnings)
+            else:
+                name, line = apart.get(pick.key, (skipped.name, []))
+                apart[pick.key] = (name, line + list(skipped.credible_warnings))
             folded.append(FoldedBrandPick(skipped.name, pick.name))
             keys.add(skipped.key)
     elsewhere = {p.key for p, _ in shown} | {s.key for s in ranking.skip_list}
@@ -1860,7 +2059,7 @@ def _fold_brand_skips(ranking: RankingResult, groups: list[ProductGroup],
                 more.setdefault(pick.key, []).extend(product.credible_warnings)
     result.folded_skips = folded
     ranking = replace(ranking, products=[p for p in ranking.products if p.key not in keys]) if keys else ranking
-    return ranking, more
+    return ranking, more, apart
 
 
 # --- Also worth a look: the brand rules (Noemi's decision 2 of 13 Oct 2026; rules decided by Claude) ---
@@ -1929,15 +2128,24 @@ def _without_leading_size(name: str) -> str:
 
 
 def _brand_models(ranking: RankingResult, groups: list[ProductGroup], product_type: str | None,
-                  price_checks: Mapping[str, PriceCheck] | None = None) -> tuple[dict[str, str], dict[str, str]]:
+                  price_checks: Mapping[str, PriceCheck] | None = None,
+                  known: Mapping[str, list[tuple[str, ...]]] | None = None,
+                  pages: Mapping[str, ProductPage] | None = None) -> tuple[dict[str, str], dict[str, str]]:
     """({brand pick's key: the name of its brand's model its credible writers recommend most}, {brand pick's key: that
     model's checked price, as the price line words it}) (10 Oct 2026). A model is a specific product of the brand
     still in the ranking (_same_brand), with at least BRAND_MODEL_MIN_CREDIBLE credible recommendations, whose name
-    says more than the brand and the product type (_names_a_model). The most credible recommendations win, then the
-    higher score. A brand pick with none is left out; a model with no price checked has no price, but one a shop is
-    known to sell says where ("sold at The English Coffee Company, checked 10 Oct 2026")."""
+    says more than the brand and the product type (_names_a_model), and since 17 Oct 2026 one we know as one product
+    (_a_known_model, from its price and availability entries in `price_checks`, the facts list's product names in
+    `known` and the researched pages in `pages`): never a size, a description, a discontinued model or a shop's code
+    that writers wrote. The most credible recommendations win, then the higher score. A brand pick with none is left
+    out; a model with no price checked has no price, but one a shop is known to sell says where ("sold at The English
+    Coffee Company, checked 10 Oct 2026")."""
     models, prices = {}, {}
-    for brand_key, model in _brand_model_products(ranking, groups, product_type).items():
+
+    def real(model, brand) -> bool:
+        return _a_known_model(model, brand, product_type, price_checks or {}, known or {}, pages or {})
+
+    for brand_key, model in _brand_model_products(ranking, groups, product_type, real).items():
         models[brand_key] = model.name
         check = (price_checks or {}).get(model.key)
         if check is not None and check.price is not None and check.price.price is not None:
@@ -1948,9 +2156,10 @@ def _brand_models(ranking: RankingResult, groups: list[ProductGroup], product_ty
     return models, prices
 
 
-def _brand_model_products(ranking: RankingResult, groups: list[ProductGroup],
-                          product_type: str | None) -> dict[str, "ProductScore"]:
-    """{brand pick's key: the ranked product that is its brand's most recommended model} (see _brand_models)."""
+def _brand_model_products(ranking: RankingResult, groups: list[ProductGroup], product_type: str | None,
+                          real=None) -> dict[str, "ProductScore"]:
+    """{brand pick's key: the ranked product that is its brand's most recommended model} (see _brand_models); with
+    `real` ((product, brand's group) -> bool, 17 Oct 2026), only a model it says is a real product."""
     by_key = {g.key: g for g in groups}
     found = {}
     # The specific products with enough credible recommendations to be a brand's model, worked out once for every brand.
@@ -1961,10 +2170,58 @@ def _brand_model_products(ranking: RankingResult, groups: list[ProductGroup],
         if brand_group is None or not brand_group.loose:
             continue
         candidates = [p for p, g in models
-                      if _same_brand(brand_group, g) and _names_a_model(p.name, brand_group, product_type)]
+                      if _same_brand(brand_group, g) and _names_a_model(p.name, brand_group, product_type)
+                      and (real is None or real(p, brand_group))]
         if candidates:
             found[brand.key] = max(candidates, key=lambda p: (len(p.credible_recommendations), p.score))
     return found
+
+
+# A shop's own code for a product, as writers paste it from a shop's page (an Amazon number: "B005YR0F40"): never part of
+# a name shown (17 Oct 2026).
+_SHOP_CODE = re.compile(r"(?<![A-Za-z0-9])B0[0-9A-Z]{8}(?![A-Za-z0-9])")
+
+
+def _a_known_model(model, brand: ProductGroup, product_type: str | None, price_checks: Mapping[str, PriceCheck],
+                   known: Mapping[str, list[tuple[str, ...]]], pages: Mapping[str, object]) -> bool:
+    """Whether a brand's most named model is a product we know as one (17 Oct 2026, the converge round): the price
+    list's entry for it (its price or where it is sold, PriceCheck) under its own name, one naming a model
+    (_names_a_model: "DeWalt drill", the brand and the type, speaks for the line, never one of its models); a facts
+    entry naming one product (`known`: _known_products' words); a researched page of its own (`pages`, by product key,
+    under a name naming a model too);
+    or a name the matcher knows as one product (engine/data/product_aliases.json, its full names naming a model). The
+    type's words and generic words aside, as names of the same model differ in them ("Victorinox Fibrox chef knife" is
+    the alias list's "Victorinox Fibrox"). Never one whose name holds a shop's code, nor one its entries say is no longer
+    sold (sold only abroad still counts: Noemi, 15 Oct 2026)."""
+    if _SHOP_CODE.search(model.name):
+        return False
+    check = price_checks.get(model.key)
+    entries = [entry for entry in (check.price, check.availability) if entry is not None] if check else []
+    if any(entry.available is False and not entry.not_in_uk for entry in entries):
+        return False
+    if any(_names_a_model(entry.product, brand, product_type) for entry in entries):
+        return True
+    page = pages.get(model.key)
+    if page is not None and _names_a_model(getattr(page, "product", ""), brand, product_type):
+        return True  # its own page, not the brand's ("DeWalt drill line" speaks for no corded drill)
+    words = _model_words(model.name, brand.category, product_type)
+    if not words:
+        return False
+    if any(written_alike(words, _model_words(" ".join(name), brand.category, product_type))
+           for name in known.get(brand.category, [])):
+        return True
+    return any(_names_a_model(full, brand, product_type)
+               and written_alike(words, _model_words(full, brand.category, product_type))
+               for full in (" ".join(words) for words in known_aliases().get(brand.category, {}).values()))
+
+
+def _model_words(name: str, category: str, product_type: str | None) -> list[str]:
+    """A name's words as the matcher reads them (product_words), less the product type's words, its plural's and
+    config.BRAND_MODEL_GENERIC_WORDS: what tells one model's names apart from another's."""
+    generic = set(BRAND_MODEL_GENERIC_WORDS) | set((product_type or "").lower().split())
+    generic |= set(plural(product_type).lower().split()) if product_type else set()
+    return [w for w in product_words(name, known_aliases().get(category, {})) if w not in generic
+            and w.rstrip("s") not in generic]
 
 
 def _names_a_model(name: str, brand: ProductGroup, product_type: str | None) -> bool:
@@ -2026,14 +2283,19 @@ def _same_brand_of(brand: ProductGroup, product: ProductGroup, bases: tuple[str,
 
 def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[ProductGroup], kinds,
            needs: tuple[Need, ...] = (),
-           contradicting: set[str] = frozenset(), asks: tuple[str, ...] = ()) -> tuple[list[ScoredMention], list[KindNote]]:
+           contradicting: set[str] = frozenset(), asks: tuple[str, ...] = (), features: tuple[Feature, ...] = (),
+           asking: Mapping[str, set[str]] | None = None,
+           opposites: tuple = ()) -> tuple[list[ScoredMention], list[KindNote]]:
     """A weight for every product mention and kind note of the threads read (module 5), ready for the ranking.
 
     `needs` are the request's needs a comment can talk about (engine.needs.judged_needs, since 15 Oct 2026; every need
     of engine.needs.request_needs before): a product mention whose comment talks about one of them weighs
     NEED_MATCH_BOOST times as much, and they are the needs the mention carries (ScoredMention.needs). `contradicting`
     are the writers who contradict themselves (engine.contradictions): every mention and note of theirs counts as a low
-    voice.
+    voice. `features` (17 Oct 2026, engine/features.py) are the features the request names, `asking` each thread's
+    features its title or post asks for: each mention carries the features its own words, or its thread's ask, praise
+    its product for (ScoredMention.features). `opposites` (_opposite_needs) give each warning from the opposite of a
+    need asked about (ScoredMention.opposite_need).
     """
     by_id = {t.id: t for t in threads}
     group_by_mention = group_of(groups)
@@ -2070,6 +2332,11 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
             met = _needs_talked_about(m.quote, comment.body, needs, asks, evidence.level == "long-term use", m.stance)
             weight = mention_weight(voice, evidence, m.stance) * (NEED_MATCH_BOOST if met else 1)
             standing = upvotes.get(m.comment_id)
+            praised = ()
+            if features and m.stance == "recommend":
+                text = product_text(comment, m.product, others)
+                praised = tuple(f.name for f in features if praised_for(
+                    f, text, (m.product, group.name), f.name in (asking or {}).get(tid, ())))
             scored.append(ScoredMention(
                 product_key=group.key, product_name=group.name, category=group.category, thread_id=tid,
                 comment_id=m.comment_id, comment_url=str(comment.url), stance=m.stance,
@@ -2081,6 +2348,8 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                 share_beaten=standing.share_beaten if standing else None,
                 products_named=named[m.comment_id], needs_asked=bool(needs),
                 others_of_another_type=_others_of_another_type(m, res.kept),
+                features=praised,
+                opposite_need=m.stance == "warn" and _from_the_opposite_need(comment.body, needs, opposites),
             ))
         for n in res.kept_notes:
             if n.comment_id in repeats:

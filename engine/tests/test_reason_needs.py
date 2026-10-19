@@ -141,21 +141,30 @@ def judged(request_text: str) -> list[str]:
     ("retinol for someone with rosacea", ["sensitive"]),
     ("vitamin c serum that doesn't oxidise quickly", ["oxidise"]),
     ("espresso machine w a proper steam wand, willing to spend at least €400", ["steam wand"]),
-    ("robot vacuum that handles dog hair under £300", ["dog"]),
+    # Changed on purpose 17 Oct 2026 (the ws-names builder, need words round two): two words that make one need are
+    # named whole with a word that is no need on its own too (config.NEED_PHRASES: "dog hair"). Was: ["dog"].
+    ("robot vacuum that handles dog hair under £300", ["dog hair"]),
     ("enameled dutch oven 5.5 quart, from 100 to 200 euro", ["enameled"]),
-    ("lip balm that actually fixes cracked lips, less than 5 dollars", ["cracked"]),
+    # Changed on purpose 17 Oct 2026 (the ws-names builder): "cracked lips" is named whole, its "lips" the product's
+    # word (config.NEED_PHRASES). Was: ["cracked"].
+    ("lip balm that actually fixes cracked lips, less than 5 dollars", ["cracked lips"]),
     ("cutting board that's easy on knives", ["knives"]),
     ("knife sharpener for japanese knives", ["japanese"]),  # the type's own word, in the plural
     # In skincare and haircare the product's own names and clue words are no needs: a night cream's "night" and
     # "cream", a sunscreen's "spf", a cleansing oil's "cleansing" and "oil", a wash's "wash".
     ("night cream for my 40s", ["mature"]),
     ("spf for sensitive skin with no white cast", ["sensitive", "no white cast"]),
-    ("double cleansing oil for beginners", ["double", "beginner"]),
+    # Changed on purpose 17 Oct 2026 (the ws-names builder): "double cleansing" is named whole (config.NEED_PHRASES).
+    # Was: ["double", "beginner"].
+    ("double cleansing oil for beginners", ["double cleansing", "beginner"]),
     ("pimple patches for acne", ["acne-prone"]),
     ("salicylic acid wash", []),
     # In kitchen and general requests a kind the type's names hold stays a need: it is what they ask ("gaming").
     ("best gaming laptop under 800", ["gaming"]),
-    ("fridge freezer that's quiet", ["freezer", "quiet"]),
+    # Changed on purpose 17 Oct 2026 (the ws-names builder, the orchestrator's item: kitchen and general reason lines
+    # never name the type's own words): the last word of the type's name the request uses is the product's ("about
+    # freezer" in a fridge freezer answer). Was: ["freezer", "quiet"].
+    ("fridge freezer that's quiet", ["quiet"]),
     # Two words that make one need are named whole, as typed; "kitchen" alone is no need.
     ("eye cream for dark circles", ["dark circles"]),
     ("burr grinder for pour over, 150 or less, im in the uk", ["pour over"]),
@@ -164,7 +173,9 @@ def judged(request_text: str) -> list[str]:
     ("a mattress for back pain", ["back pain"]),
     ("running shoes for flat feet", ["flat feet"]),
     ("air fryer for a small kitchen", ["small kitchen"]),
-    ("wine cooler for the kitchen", ["wine", "cooler"]),
+    # Changed on purpose 17 Oct 2026 (the ws-names builder): "cooler" is the last word of the fridge's name "wine cooler",
+    # the product's; "wine", the kind, stays. Was: ["wine", "cooler"].
+    ("wine cooler for the kitchen", ["wine"]),
     ("28cm frying pan, non stick but pfas free, £30-60", ["non stick", "pfas"]),
     # Written as one word, as before.
     ("burr coffee grinder for pour-over under £150", ["pour-over"]),

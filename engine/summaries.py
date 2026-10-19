@@ -48,6 +48,18 @@ Command line:
                                        in the library and readable, their numbers), and, in each answer where its
                                        product qualifies, whether it would be shown. Exits 1 if any fails. Both answer
                                        about 90 requests: a few minutes.
+
+For what a sweep shows (17 Oct 2026, the converge round: the sweeps of eval/sweep.py show far more products than the
+pre-check's requests, the interviewee and demo requests and the general category among them; for the final phase,
+once picks settle):
+    python -m engine.summaries missing <sweep.jsonl>
+                                       every pick and "Also worth a look" item the sweep's answers show without a
+                                       one-line summary, each product once, with the requests and why (no summary yet,
+                                       or one not shown there); from the sweep's file and summaries.json alone, in
+                                       seconds. Names and reasons only.
+    python -m engine.summaries todo --sweep <sweep.jsonl>
+                                       todo for the sweep's requests, answered again from the library, and only the
+                                       products their answers show: the writer's reading for exactly those.
 """
 
 import json
@@ -373,10 +385,11 @@ class _Shown:
 
 
 def _answers(requests: Iterable[Request | tuple[str, str]], library_dir: Path, profiles=None,
-             entries: Mapping[str, Summary] | None = None) -> list[_Shown]:
+             entries: Mapping[str, Summary] | None = None, shown_only: bool = False) -> list[_Shown]:
     """Every product that qualifies as a pick, or is worth a look, in the ranking of each request's answer, shown or
-    not, from the library and without live checks (as engine.prices.todo answers): no comment is read on Reddit, and
-    threads waiting for their live check count too. A wider request reads config.PIPELINE_MORE_THREADS threads."""
+    not (with `shown_only`, 17 Oct 2026: only those the answer shows), from the library and without live checks (as
+    engine.prices.todo answers): no comment is read on Reddit, and threads waiting for their live check count too. A
+    wider request reads config.PIPELINE_MORE_THREADS threads."""
     from engine import pipeline  # here: the pipeline imports this module
 
     found = []
@@ -389,23 +402,25 @@ def _answers(requests: Iterable[Request | tuple[str, str]], library_dir: Path, p
         quotes = {item.product_key: {q.comment_id for q in [*item.quotes, *item.downsides]}
                   for item in [*run.answer.picks, *run.answer.worth_a_look]}
         for product in run.ranking.products:
-            if product.qualifies or product.worth_a_look:
+            if (product.qualifies or product.worth_a_look) and (not shown_only or product.key in quotes):
                 found.append(_Shown(request.id, product, quotes.get(product.key, set()), run.query.product_type,
                                     run.bodies))
     return found
 
 
-def todo(requests: Iterable[Request | tuple[str, str]], library_dir: Path, profiles=None) -> list[ProductToSummarise]:
-    """The products that can be a pick or an "Also worth a look" item in the requests' answers (_answers) and need a
-    summary: none yet, one written under older instructions, or one that wouldn't be shown in one of the answers where
-    the product qualifies (engine.answer.summary_reasons, with the reason). In the order they are first met."""
+def todo(requests: Iterable[Request | tuple[str, str]], library_dir: Path, profiles=None,
+         shown_only: bool = False) -> list[ProductToSummarise]:
+    """The products that can be a pick or an "Also worth a look" item in the requests' answers (_answers; with
+    `shown_only`, only those the answers show: a sweep's, 17 Oct 2026) and need a summary: none yet, one written under
+    older instructions, or one that wouldn't be shown in one of the answers where the product qualifies
+    (engine.answer.summary_reasons, with the reason). In the order they are first met."""
     from engine.answer import summary_reasons
 
     loaded = load_summaries(Path(library_dir) / SUMMARIES_FILE)
     version = current_version()
     found: dict[str, ProductToSummarise] = {}
     per_answer: dict[str, list[_Shown]] = {}
-    for item in _answers(requests, library_dir, profiles, loaded.entries):
+    for item in _answers(requests, library_dir, profiles, loaded.entries, shown_only):
         per_answer.setdefault(_key_of(item.product), []).append(item)
     for key, shown in per_answer.items():
         product = shown[0].product
@@ -439,6 +454,48 @@ def _credible(shown: list[_Shown]) -> list[dict]:
                 "in_every_answer": all(m.comment_id in ids for ids in every)})
             row["shown"] = row["shown"] or m.comment_id in s.shown
     return sorted(rows.values(), key=lambda r: (r["stance"] != "recommend", not r["shown"], r["comment_id"]))
+
+
+def sweep_requests(sweep: Path) -> list[tuple[str, str]]:
+    """The requests of a sweep's file (eval/sweep.py: one {"request", "source", "seconds", "json"} a line), each once, as
+    (id, request): the request is its own id."""
+    found = []
+    for line in Path(sweep).read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            request = json.loads(line)["request"]
+            if request not in found:
+                found.append(request)
+    return [(request, request) for request in found]
+
+
+def missing_in_sweep(sweep: Path, library_dir: Path) -> list[dict]:
+    """Every pick and "Also worth a look" item a sweep's answers show without a one-line summary (17 Oct 2026), each
+    product once, in the order first met: {"key": summary_key, "product", "category", "shown_as": ["pick", "worth a
+    look"], "requests", "reasons": "<request>: no summary yet", or that its saved summary isn't shown in that answer}.
+    From the sweep's file (the API's answers: engine.web.answer_json) and summaries.json alone: no thread is read."""
+    entries = load_summaries(Path(library_dir) / SUMMARIES_FILE).entries
+    found: dict[str, dict] = {}
+    for line in Path(sweep).read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        answer = (row.get("json") or {}).get("answer") or {}
+        category = answer.get("category")
+        for shown_as, items in (("pick", answer.get("picks") or []), ("worth a look", answer.get("worth_a_look") or [])):
+            for item in items:
+                if item.get("summary") or not category:
+                    continue
+                key = summary_key(category, item["name"])
+                entry = found.setdefault(key, {"key": key, "product": item["name"], "category": category,
+                                               "shown_as": [], "requests": [], "reasons": []})
+                if shown_as not in entry["shown_as"]:
+                    entry["shown_as"].append(shown_as)
+                if row["request"] not in entry["requests"]:
+                    entry["requests"].append(row["request"])
+                    why = ("no summary yet" if key not in entries
+                           else "its summary isn't shown in this answer (todo says why)")
+                    entry["reasons"].append(f"{row['request']}: {why}")
+    return list(found.values())
 
 
 def write_todo(found: list[ProductToSummarise], library_dir: Path) -> Path:
@@ -493,18 +550,24 @@ def check(library_dir: Path, requests: Iterable[Request | tuple[str, str]],
 def main(argv: list[str], request_files: Iterable[Path] | None = None, library_dir: Path | None = None) -> int:
     """`request_files` and `library_dir` can be swapped for made-up ones, which is how the tests run it. It prints
     product names and reasons only: never a quote."""
-    if argv not in (["todo"], ["check"]):
+    sweep = Path(argv[2]) if len(argv) == 3 and argv[:2] == ["todo", "--sweep"] else None
+    if argv not in (["todo"], ["check"]) and sweep is None and not (len(argv) == 2 and argv[0] == "missing"):
         print(__doc__)
         return 2
     from engine.library import DEFAULT_LIBRARY_DIR
 
     library_dir = Path(library_dir or DEFAULT_LIBRARY_DIR)
-    requests = (requests_to_answer(request_files) if request_files is not None
-                else all_requests(library_dir=library_dir))
+    if argv[0] == "missing":
+        return _print_missing(Path(argv[1]), library_dir)
+    if sweep is not None:
+        requests = sweep_requests(sweep)
+    else:
+        requests = (requests_to_answer(request_files) if request_files is not None
+                    else all_requests(library_dir=library_dir))
     profiles = _profiles(library_dir)
     started = time.monotonic()
-    if argv == ["todo"]:
-        found = todo(requests, library_dir, profiles)
+    if argv[0] == "todo":
+        found = todo(requests, library_dir, profiles, shown_only=sweep is not None)
         path = write_todo(found, library_dir)
         print(f"Products that need a one-line summary, of those that can be shown in the answers to {len(requests)} "
               "requests (from the library, without live checks):")
@@ -526,6 +589,24 @@ def main(argv: list[str], request_files: Iterable[Path] | None = None, library_d
         print(f"  (note) {note}")
     print(f"({len(requests)} requests answered in {time.monotonic() - started:.0f} s)")
     return 1 if problems else 0
+
+
+def _print_missing(sweep: Path, library_dir: Path) -> int:
+    """`missing`: what the sweep shows without a summary, product by product, then the counts. Names and reasons only."""
+    found = missing_in_sweep(sweep, library_dir)
+    answers = len(sweep_requests(sweep))
+    picks = sum("pick" in item["shown_as"] for item in found)
+    worth = sum("worth a look" in item["shown_as"] for item in found)
+    print(f"Products shown without a one-line summary in the {answers} answers of {sweep.name}:")
+    for item in found:
+        print(f"  {item['key']} ({item['product']}; {' and '.join(item['shown_as'])}; {len(item['requests'])} "
+              f"answer{'' if len(item['requests']) == 1 else 's'}):")
+        print("".join(f"    - {reason}\n" for reason in item["reasons"][:3]), end="")
+        if len(item["reasons"]) > 3:
+            print(f"    - and {len(item['reasons']) - 3} more")
+    print(f"{len(found)} product{'' if len(found) == 1 else 's'} ({picks} shown as picks, {worth} under Also worth a "
+          f"look). To prepare the writer's reading for them: python -m engine.summaries todo --sweep {sweep}")
+    return 0
 
 
 def _profiles(library_dir: Path):

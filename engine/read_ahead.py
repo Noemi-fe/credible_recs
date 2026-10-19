@@ -22,7 +22,14 @@ to read (`python -m engine.precheck --plan`), and the site reads it, a few comme
   comment is read again only as an answer's comment is, 40 hours on. At most config.READ_AHEAD_PER_PING reads a ping,
   config.READ_AHEAD_PARALLEL at once, none starting config.READ_AHEAD_SECONDS after the ping began, never one that would
   wait for Reddit's allowance, and none while Reddit says fewer than config.READ_AHEAD_KEEP reads are left in its 10
-  minutes: those are visitors' answers'.
+  minutes: those are visitors' answers'. Since 17 Oct 2026 a new read starts as soon as one is back (in batches each
+  waited for its batch's slowest read, so a ping read 32 of its 40 in its 5 seconds: the live site's logs, 15 to 17 Oct
+  2026); after a read that failed, none starts until those still out are back, and when every one of the last
+  READ_AHEAD_PARALLEL failed, the ping stops (Reddit isn't answering).
+- First of all, since 17 Oct 2026 (the converge round): the comments of the answers this site has just worked out
+  (shown), the newest SHOWN_KEPT links, in memory only (never the request), read again as an answer's comment is. The
+  daily job can't know what visitors ask; the site does, so the next visitor asking the same finds every check ready,
+  a comment the plan doesn't list included.
 - At most once an hour (config.BUNDLE_SHARE_SECONDS), when it has read something new, it writes every read of the last
   48 hours in its folder to the bucket's bundle (live_check/bundle.json), only over the version it last read or wrote
   (engine.live_check.LiveChecker.share_bundle: another writer's version is read in first). The daily job starts from
@@ -37,7 +44,9 @@ import re
 import sys
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
+from collections import OrderedDict
+from collections.abc import Iterable
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -46,6 +55,9 @@ from engine.config import (BUNDLE_SHARE_SECONDS, PLAN_RELOAD_SECONDS, READ_AHEAD
 from engine.live_check import MAX_AGE
 
 PLAN_NAME = "plan.json"  # in the live checks' bucket, under live_check/, next to the bundle
+# The comments of the site's own answers kept in mind, newest first (17 Oct 2026): about 70 answers' worth (an answer
+# shows 10 to 40 comments), links only.
+SHOWN_KEPT = 2000
 _COMMENT_LINK = re.compile(r"^https://(?:www\.|old\.)?reddit\.com/r/[A-Za-z0-9_]+/comments/[A-Za-z0-9]+/\S*$")
 
 
@@ -98,6 +110,7 @@ class PingReading:
     reddit_failing: bool = False  # stopped: every read of a batch failed (Reddit isn't answering now)
     new_plan: bool = False  # a new plan was taken in
     shared: int | None = None  # reads written to the bucket's bundle at this ping (None: not written)
+    seconds: float = 0.0  # how long its reads took, on the server's clock (17 Oct 2026: so the logs show it)
 
 
 class ReadAhead:
@@ -108,8 +121,15 @@ class ReadAhead:
     def __init__(self, checker, clock=time.monotonic, per_ping: int = READ_AHEAD_PER_PING,
                  seconds: float = READ_AHEAD_SECONDS, parallel: int = READ_AHEAD_PARALLEL, keep: int = READ_AHEAD_KEEP,
                  again: timedelta = timedelta(hours=READ_AHEAD_AGAIN_HOURS),
-                 reload_seconds: float = PLAN_RELOAD_SECONDS, share_seconds: float = BUNDLE_SHARE_SECONDS):
+                 reload_seconds: float = PLAN_RELOAD_SECONDS, share_seconds: float = BUNDLE_SHARE_SECONDS,
+                 shown_kept: int = SHOWN_KEPT):
         self.checker = checker
+        # The comments of the answers this site worked out, newest first (shown), at most shown_kept; and those whose
+        # last read has been looked up in the folder (_look), so each is looked up once, not at every ping.
+        self._shown: OrderedDict[str, None] = OrderedDict()
+        self._shown_kept = shown_kept
+        self._shown_looked: set[str] = set()
+        self._shown_lock = threading.Lock()
         self.bucket = getattr(checker, "bucket", None)
         self._clock = clock
         self.per_ping, self.seconds, self.parallel, self.keep, self.again = per_ping, seconds, max(parallel, 1), keep, again
@@ -175,9 +195,32 @@ class ReadAhead:
         else:
             self._last[url] = (last[0], last[2])
 
+    def shown(self, urls: Iterable[str]) -> None:
+        """The comments of an answer this site has just worked out (17 Oct 2026): read again first at the next pings, as
+        an answer's comment is (see the module's docstring). Kept newest first, at most shown_kept; a link shown again
+        moves up. Links only, in memory only."""
+        with self._shown_lock:
+            for url in reversed(list(dict.fromkeys(u for u in urls if isinstance(u, str) and _COMMENT_LINK.match(u)))):
+                self._shown[url] = None
+                self._shown.move_to_end(url, last=False)
+            while len(self._shown) > self._shown_kept:
+                gone, _ = self._shown.popitem(last=True)
+                self._shown_looked.discard(gone)
+
+    def shown_now(self) -> list[str]:
+        """The comments of the site's own answers kept in mind, newest first."""
+        with self._shown_lock:
+            return list(self._shown)
+
     def due_now(self) -> list[str]:
-        """The plan's comments due now, in its order (see the module's docstring)."""
-        if self.plan is None:
+        """The comments due now: the site's own answers' first, newest first, then the plan's in its order (see the
+        module's docstring)."""
+        shown = self.shown_now()
+        for url in shown:  # a comment shown since the last ping: its last read looked up once (then kept up by _look)
+            if url not in self._shown_looked:
+                self._look(url)
+                self._shown_looked.add(url)
+        if self.plan is None and not shown:
             return []
         now = self.checker.now()
 
@@ -185,51 +228,64 @@ class ReadAhead:
             known = self._last.get(url)
             return known if known is not None and now - known[0] < MAX_AGE else None
 
+        answers = tuple(shown) + (self.plan.answers + self.plan.edited if self.plan is not None else ())
         due, seen = [], set()
-        for url in self.plan.answers + self.plan.edited:  # an edited comment as an answer's (15 Oct 2026)
+        for url in answers:  # an edited comment as an answer's (15 Oct 2026), and the site's own (17 Oct 2026)
             read = last(url)
             if url not in seen and (read is None or read[1] is None and now - read[0] >= self.again):
                 due.append(url)
             seen.add(url)
-        for url in self.plan.verify:
+        for url in self.plan.verify if self.plan is not None else ():
             if url not in seen and last(url) is None:
                 due.append(url)
             seen.add(url)
         return due
 
     def read_due(self, reading: PingReading) -> PingReading:
-        """Reads the comments due, `parallel` at a time, within the ping's reads, its seconds and Reddit's allowance."""
+        """Reads the comments due, in order, up to `parallel` at a time, a new one starting as soon as one is back (17
+        Oct 2026: in batches, each waited for its slowest), within the ping's reads, its seconds and Reddit's allowance.
+        After a read that failed no new one starts until those still out are back, so a Reddit that has stopped
+        answering is asked at most `parallel` times a ping: when the last `parallel` reads all failed, the ping stops."""
         due = self.due_now()
         reading.due = len(due)
-        started, done = self._clock(), 0
+        started, next_up, failed_in_a_row, stop = self._clock(), 0, 0, False
+        out: dict = {}  # each read under way -> its comment
         with ThreadPoolExecutor(max_workers=self.parallel, thread_name_prefix="read-ahead") as pool:
-            while done < len(due):
-                if reading.read + reading.failed >= self.per_ping or self._clock() - started >= self.seconds:
+            while True:
+                room = self.parallel if not failed_in_a_row else (0 if out else 1)
+                while not stop and next_up < len(due) and len(out) < room:
+                    if (reading.read + reading.failed + len(out) >= self.per_ping
+                            or self._clock() - started >= self.seconds):
+                        stop = True
+                        break
+                    spare = self.checker.spare()
+                    if spare is not None and spare < self.keep:
+                        reading.kept_for_visitors = True
+                        stop = True
+                        break
+                    out[pool.submit(self._read_one, due[next_up])] = due[next_up]
+                    next_up += 1
+                if not out:
                     break
-                spare = self.checker.spare()
-                if spare is not None and spare < self.keep:
-                    reading.kept_for_visitors = True
-                    break
-                batch = due[done:done + min(self.parallel, self.per_ping - reading.read - reading.failed)]
-                outcomes = list(pool.map(self._read_one, batch))
-                for url in batch:
+                back, _ = wait(out, return_when=FIRST_COMPLETED)
+                for future in back:
+                    url = out.pop(future)
+                    outcome = future.result()
                     self._look(url)
-                done += len(batch)
-                for outcome in outcomes:
-                    if outcome != "later":  # "later": not read, still due
-                        setattr(reading, outcome, getattr(reading, outcome) + 1)
-                if "later" in outcomes:
-                    reading.put_off = True
-                    break
-                if all(outcome == "failed" for outcome in outcomes):
-                    reading.reddit_failing = True  # Reddit isn't answering now: the next ping tries again
-                    break
+                    if outcome == "later":  # not read, still due: the next read would wait for Reddit's allowance
+                        reading.put_off = stop = True
+                        continue
+                    setattr(reading, outcome, getattr(reading, outcome) + 1)
+                    failed_in_a_row = failed_in_a_row + 1 if outcome == "failed" else 0
+                    if failed_in_a_row >= self.parallel:
+                        reading.reddit_failing = stop = True  # Reddit isn't answering now: the next ping tries again
         reading.left = len(due) - reading.read - reading.failed - reading.fresh
+        reading.seconds = self._clock() - started
         self._unshared += reading.read
         return reading
 
     def _read_one(self, url: str) -> str:
-        again = self.plan is not None and (url in self.plan.answers or url in self.plan.edited)
+        again = url in self._shown or self.plan is not None and (url in self.plan.answers or url in self.plan.edited)
         return self.checker.read_if_free(url, self.again if again else MAX_AGE)
 
     def share_if_due(self) -> int | None:
@@ -259,8 +315,8 @@ def report(reading: PingReading, plan: Plan | None) -> str:
                    "; stopped: the next read would have waited" if reading.put_off else
                    "; stopped: Reddit isn't answering just now" if reading.reddit_failing else "")
         failed = f" ({reading.failed} couldn't be read)" if reading.failed else ""
-        parts.append(f"{reading.read} read{failed} of {reading.due:,} due, {reading.left:,} left for the next pings"
-                     f"{stopped}")
+        parts.append(f"{reading.read} read{failed} of {reading.due:,} due in {reading.seconds:.1f} s, "
+                     f"{reading.left:,} left for the next pings{stopped}")
     if reading.shared is not None:
         parts.append(f"{reading.shared:,} reads of the last 48 hours shared through the bucket")
     return "Reading ahead: " + "; ".join(parts) + "."
