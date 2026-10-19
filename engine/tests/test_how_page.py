@@ -408,3 +408,11 @@ def test_the_ingredient_requirement_is_explained(tmp_path, monkeypatch):
     assert "its maker's list of actives" in words and f"“{answer.FORM_LABEL}: pads”" in words
     # Noemi's decision 1 of 13 Oct 2026: leave-on forms only, unless you name another.
     assert "leave-on" in words and "rinse-off" in words
+
+
+def test_a_remembered_answer_is_said_to_be_shown_only_while_its_checks_are_under_48_hours_old(tmp_path, monkeypatch):
+    # 17 Oct 2026 (the converge round, item 1): a remembered answer is kept until its oldest shown quote's check turns
+    # 48 hours old, and never past web.ANSWER_KEEP_HOURS (web._keep_seconds); the page says both.
+    words = text_of(get_how(tmp_path, monkeypatch))
+    assert (f"shown for a day at most, and only while every check it shows is under {config.CACHE_MAX_AGE_HOURS} "
+            f"hours old") in words

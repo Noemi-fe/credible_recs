@@ -187,6 +187,7 @@ from engine.config import (
     INGREDIENT_NOT_FORM_ASKED,
     INGREDIENT_NOT_LISTED,
     INGREDIENT_RINSE_OFF,
+    INGREDIENTS,
     LIVE_CHECK_PARALLEL,
     LIVE_CHECK_REQUIRED,
     LIVE_CHECK_SHOWN_DAYS,
@@ -218,7 +219,7 @@ from engine.group_products import (
 from engine.gold import DEFAULT_GOLD_DIR
 from engine.ingredients import evidence as ingredient_evidence
 from engine.ingredients import (
-    facts_types, form_kind, form_of, ingredient_type_name, own_name, rinse_off_word, wanted_types,
+    facts_types, form_kind, form_of, ingredient_type_name, names_ingredient, own_name, rinse_off_word, wanted_types,
 )
 from engine.ingredients import shown as shown_ingredients
 from engine.library import DEFAULT_LIBRARY_DIR, checked_live_within
@@ -572,7 +573,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
         unsuited_kinds = _unsuited_kinds(result.ranking.kinds, query, product_facts)
         folded = {item.name for item in result.folded_brand_picks}
         care = _care_tips(threads, checked, [g for g in kept_groups if g.name not in folded], kinds, query)
-        models, model_prices = _brand_models(result.ranking, kept_groups, query.product_type, price_checks)
+        models, model_prices = _brand_models(result.ranking, kept_groups, query.product_type, price_checks, known,
+                                             wording["pages"])
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
                                      judged_needs(query), query.text, summaries,
@@ -580,7 +582,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
                                      brand_downsides=brand_downsides)
         if live_checker is not None:
             _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions,
-                        kept_groups, unsuited_kinds, need_led, summaries, wording, ranges, upvote_rule=upvote_rule)
+                        kept_groups, unsuited_kinds, need_led, summaries, wording, ranges, upvote_rule=upvote_rule,
+                        known=known)
         _note_features(result, features, query)
         thread_of = {c.id: t.id for t in threads for c in t.comments}
         quoted = {thread_of.get(quote.comment_id) for _, quote in _every_quote(result.answer)}
@@ -704,7 +707,7 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
                 cautions=None, groups: list[ProductGroup] = (), unsuited_kinds: frozenset[str] = frozenset(),
                 need_led: bool = False, summaries: Mapping[str, Summary] | None = None,
                 wording: Mapping | None = None, ranges: Mapping[str, BrandLine] | None = None,
-                upvote_rule: bool = False) -> None:
+                upvote_rule: bool = False, known: Mapping[str, list[tuple[str, ...]]] | None = None) -> None:
     """Checks every quote about to be shown against Reddit itself; drops the comments that fail and answers again.
     Since 13 Oct 2026 the quotes a shown summary cites are checked too (engine.answer.quotes_to_check): a summary never
     stands on a comment deleted or changed since.
@@ -750,7 +753,8 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
                           upvote_rule, result.unconfirmed)
         result.ranking, more_downsides, brand_downsides = _fold_brand_skips(
             _fold_brand_picks(ranking, groups, result, query.product_type), groups, result)
-        models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks)
+        models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks, known,
+                                             (wording or {}).get("pages"))
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
                                      judged_needs(query), query.text, summaries,
@@ -1775,14 +1779,36 @@ def _unsuited_kinds(kinds, query: ParsedQuery, product_facts: list[ProductFacts]
     Claude late on 10 Oct 2026; b03 said "Look for: tret" to a beginner with sensitive skin, though the rules leave
     tretinoin products out of that answer). A kind takes an entry's facts only when the entry has the kind's very name
     (short names allowed: "tret" is Tretinoin), never one that only shares words with it ("salicylic acid" and "COSRX
-    Salicylic Acid Daily Gentle Cleanser"). "Avoid" advice about such a kind stays."""
+    Salicylic Acid Daily Gentle Cleanser"). "Avoid" advice about such a kind stays.
+
+    Since 17 Oct 2026 (the converge round: b03 showed "Look for: adalpalene", a writer's slip for adapalene) also a kind
+    named after one active ingredient (config.INGREDIENTS' single-active entries, engine.ingredients.names_ingredient:
+    a one-letter slip in a long word forgiven; never a family such as "retinoid") whose every product in the facts list
+    (by its name or its formula) is prescription-only, when the request's prescription-only rule clashes hard: being
+    sold only on a prescription belongs to the active, not to one product, as no other fact does."""
     aliases = known_aliases().get(query.category, {})
     unsuited = set()
+    # Only when a prescription-only product clashes hard with this request can a kind be one by its active (latency,
+    # 18 Oct 2026: otherwise every kind of every answer was compared with every active).
+    prescription = [f for f in product_facts if f.category == query.category and f.facts.get("prescription_only") is True]
+    clashing = any(c.hard and c.rule == "prescription only" for f in prescription for c in conflicts(query, f))
     for kind in kinds:
         words = product_words(kind.name, aliases)
         own = [f for f in product_facts if f.category == query.category and product_words(f.product, aliases) == words]
         if words and any(c.hard for f in own for c in conflicts(query, f)):
             unsuited.add(kind.key)
+            continue
+        if not clashing:
+            continue
+        for ingredient in (key for key, entry in INGREDIENTS.items()
+                           if len(entry.get("actives", ())) == 1 and names_ingredient(kind.name, key)):
+            holding = [f for f in product_facts if f.category == query.category
+                       and (names_ingredient(f.product, ingredient)
+                            or ingredient.lower() in [a.lower() for a in (f.formula.actives if f.formula else [])])]
+            if holding and all(f.facts.get("prescription_only") is True for f in holding) and any(
+                    c.hard and c.rule == "prescription only" for f in holding for c in conflicts(query, f)):
+                unsuited.add(kind.key)
+                break
     return unsuited
 
 
@@ -2001,15 +2027,24 @@ def _without_leading_size(name: str) -> str:
 
 
 def _brand_models(ranking: RankingResult, groups: list[ProductGroup], product_type: str | None,
-                  price_checks: Mapping[str, PriceCheck] | None = None) -> tuple[dict[str, str], dict[str, str]]:
+                  price_checks: Mapping[str, PriceCheck] | None = None,
+                  known: Mapping[str, list[tuple[str, ...]]] | None = None,
+                  pages: Mapping[str, ProductPage] | None = None) -> tuple[dict[str, str], dict[str, str]]:
     """({brand pick's key: the name of its brand's model its credible writers recommend most}, {brand pick's key: that
     model's checked price, as the price line words it}) (10 Oct 2026). A model is a specific product of the brand
     still in the ranking (_same_brand), with at least BRAND_MODEL_MIN_CREDIBLE credible recommendations, whose name
-    says more than the brand and the product type (_names_a_model). The most credible recommendations win, then the
-    higher score. A brand pick with none is left out; a model with no price checked has no price, but one a shop is
-    known to sell says where ("sold at The English Coffee Company, checked 10 Oct 2026")."""
+    says more than the brand and the product type (_names_a_model), and since 17 Oct 2026 one we know as one product
+    (_a_known_model, from its price and availability entries in `price_checks`, the facts list's product names in
+    `known` and the researched pages in `pages`): never a size, a description, a discontinued model or a shop's code
+    that writers wrote. The most credible recommendations win, then the higher score. A brand pick with none is left
+    out; a model with no price checked has no price, but one a shop is known to sell says where ("sold at The English
+    Coffee Company, checked 10 Oct 2026")."""
     models, prices = {}, {}
-    for brand_key, model in _brand_model_products(ranking, groups, product_type).items():
+
+    def real(model, brand) -> bool:
+        return _a_known_model(model, brand, product_type, price_checks or {}, known or {}, pages or {})
+
+    for brand_key, model in _brand_model_products(ranking, groups, product_type, real).items():
         models[brand_key] = model.name
         check = (price_checks or {}).get(model.key)
         if check is not None and check.price is not None and check.price.price is not None:
@@ -2020,9 +2055,10 @@ def _brand_models(ranking: RankingResult, groups: list[ProductGroup], product_ty
     return models, prices
 
 
-def _brand_model_products(ranking: RankingResult, groups: list[ProductGroup],
-                          product_type: str | None) -> dict[str, "ProductScore"]:
-    """{brand pick's key: the ranked product that is its brand's most recommended model} (see _brand_models)."""
+def _brand_model_products(ranking: RankingResult, groups: list[ProductGroup], product_type: str | None,
+                          real=None) -> dict[str, "ProductScore"]:
+    """{brand pick's key: the ranked product that is its brand's most recommended model} (see _brand_models); with
+    `real` ((product, brand's group) -> bool, 17 Oct 2026), only a model it says is a real product."""
     by_key = {g.key: g for g in groups}
     found = {}
     # The specific products with enough credible recommendations to be a brand's model, worked out once for every brand.
@@ -2033,10 +2069,58 @@ def _brand_model_products(ranking: RankingResult, groups: list[ProductGroup],
         if brand_group is None or not brand_group.loose:
             continue
         candidates = [p for p, g in models
-                      if _same_brand(brand_group, g) and _names_a_model(p.name, brand_group, product_type)]
+                      if _same_brand(brand_group, g) and _names_a_model(p.name, brand_group, product_type)
+                      and (real is None or real(p, brand_group))]
         if candidates:
             found[brand.key] = max(candidates, key=lambda p: (len(p.credible_recommendations), p.score))
     return found
+
+
+# A shop's own code for a product, as writers paste it from a shop's page (an Amazon number: "B005YR0F40"): never part of
+# a name shown (17 Oct 2026).
+_SHOP_CODE = re.compile(r"(?<![A-Za-z0-9])B0[0-9A-Z]{8}(?![A-Za-z0-9])")
+
+
+def _a_known_model(model, brand: ProductGroup, product_type: str | None, price_checks: Mapping[str, PriceCheck],
+                   known: Mapping[str, list[tuple[str, ...]]], pages: Mapping[str, object]) -> bool:
+    """Whether a brand's most named model is a product we know as one (17 Oct 2026, the converge round): the price
+    list's entry for it (its price or where it is sold, PriceCheck) under its own name, one naming a model
+    (_names_a_model: "DeWalt drill", the brand and the type, speaks for the line, never one of its models); a facts
+    entry naming one product (`known`: _known_products' words); a researched page of its own (`pages`, by product key,
+    under a name naming a model too);
+    or a name the matcher knows as one product (engine/data/product_aliases.json, its full names naming a model). The
+    type's words and generic words aside, as names of the same model differ in them ("Victorinox Fibrox chef knife" is
+    the alias list's "Victorinox Fibrox"). Never one whose name holds a shop's code, nor one its entries say is no longer
+    sold (sold only abroad still counts: Noemi, 15 Oct 2026)."""
+    if _SHOP_CODE.search(model.name):
+        return False
+    check = price_checks.get(model.key)
+    entries = [entry for entry in (check.price, check.availability) if entry is not None] if check else []
+    if any(entry.available is False and not entry.not_in_uk for entry in entries):
+        return False
+    if any(_names_a_model(entry.product, brand, product_type) for entry in entries):
+        return True
+    page = pages.get(model.key)
+    if page is not None and _names_a_model(getattr(page, "product", ""), brand, product_type):
+        return True  # its own page, not the brand's ("DeWalt drill line" speaks for no corded drill)
+    words = _model_words(model.name, brand.category, product_type)
+    if not words:
+        return False
+    if any(written_alike(words, _model_words(" ".join(name), brand.category, product_type))
+           for name in known.get(brand.category, [])):
+        return True
+    return any(_names_a_model(full, brand, product_type)
+               and written_alike(words, _model_words(full, brand.category, product_type))
+               for full in (" ".join(words) for words in known_aliases().get(brand.category, {}).values()))
+
+
+def _model_words(name: str, category: str, product_type: str | None) -> list[str]:
+    """A name's words as the matcher reads them (product_words), less the product type's words, its plural's and
+    config.BRAND_MODEL_GENERIC_WORDS: what tells one model's names apart from another's."""
+    generic = set(BRAND_MODEL_GENERIC_WORDS) | set((product_type or "").lower().split())
+    generic |= set(plural(product_type).lower().split()) if product_type else set()
+    return [w for w in product_words(name, known_aliases().get(category, {})) if w not in generic
+            and w.rstrip("s") not in generic]
 
 
 def _names_a_model(name: str, brand: ProductGroup, product_type: str | None) -> bool:

@@ -51,7 +51,7 @@ from datetime import date
 from itertools import permutations
 from pathlib import Path
 
-from engine.answer import answer_to_dict
+from engine.answer import answer_to_dict, carries_its_stance
 from engine.config import (
     BLIND_TEST_GIVEAWAYS,
     BLIND_TEST_QUESTIONS_PER_TESTER,
@@ -119,8 +119,9 @@ def shown_from_ours(data: dict | None, words: int = BLIND_TEST_WORDS_PER_PICK) -
     its reason, its first two quotes with the badge that says what backs them (the writer's use when there is one),
     its first downside, its cautions, that it is sold second-hand only or not sold in the UK (with the day that was
     checked) or is prescription-only (Noemi's decision 7 of 16 Oct 2026), and its price when known, at most `words`
-    words, cut at a word, the notes never. Our words only: the support line, score breakdown, care tips, links and
-    where it is sold are left out. With no picks, the answer's own message."""
+    words, the notes never cut (_fitted: the reason and the evidence cut at a word, a badge never; the downside only at
+    the end of a sentence that keeps its point, since 17 Oct 2026). Our words only: the support line, score breakdown,
+    care tips, links and where it is sold are left out. With no picks, the answer's own message."""
     if data is None:
         return "No answer."
     if not data.get("picks"):
@@ -142,27 +143,91 @@ def _shown_pick(pick: dict, words: int) -> str:
     price = pick.get("price") or {}
     if price.get("amount") is not None and price.get("text"):
         fixed.append(f"Price: {price['text'].split(', checked')[0]}")
-    parts = [pick["reason"].rstrip(".") + "."]
+    reason = pick["reason"].rstrip(".") + "."
     if pick.get("model"):  # a brand pick's most recommended model (10 Oct 2026): our own words too
         price = f" ({pick['model_price'].split(', checked')[0]})" if pick.get("model_price") else ""
-        parts[0] = BRAND_PICK_MODEL.format(model=pick["model"]) + price + ". " + parts[0]
-    for quote in (pick.get("quotes") or [])[:QUOTES_SHOWN]:
-        badge = _evidence_badge(quote.get("badges") or [])
-        parts.append(f'"{_one_line(quote["text"])}"' + (f" ({badge})" if badge else ""))
-    if pick.get("downsides"):
-        parts.append(f'Downside: "{_one_line(pick["downsides"][0]["text"])}"')
+        reason = BRAND_PICK_MODEL.format(model=pick["model"]) + price + ". " + reason
+    evidence = [(_one_line(quote["text"]), _evidence_badge(quote.get("badges") or []))
+                for quote in (pick.get("quotes") or [])[:QUOTES_SHOWN]]
+    downside = _one_line(pick["downsides"][0]["text"]) if pick.get("downsides") else None
     left = words - sum(len(line.split()) for line in fixed)
+    return "\n\n".join([f"**{pick['rank']}. {pick['name']}**"] + _fitted(reason, evidence, downside, left, pick["name"])
+                        + fixed)
+
+
+def _evidence_line(text: str, badge: str | None) -> str:
+    return f'"{text}"' + (f" ({badge})" if badge else "")
+
+
+def _downside_line(text: str) -> str:
+    return f'Downside: "{text}"'
+
+
+def _words(line: str) -> int:
+    return len(line.split())
+
+
+def _fitted(reason: str, evidence: list[tuple[str, str | None]], downside: str | None, left: int,
+            name: str) -> list[str]:
+    """The reason, the evidence and the downside in `left` words (17 Oct 2026, the converge round). Whole when they
+    fit. Else the downside as long as it can be with the reason and the evidence whole, cut only at the end of a
+    sentence that still warns (_downside_forms); when no such form fits, its shortest one stays, with the reason and
+    as much evidence as fits (_cut_parts: FORMAT.md rule 2's cut, at a word, a badge never); and when even the reason
+    can't stay whole beside it, the downside is left out, never shown without its point."""
+    parts = [("reason", reason, None)] + [("evidence", text, badge) for text, badge in evidence]
+    whole = sum(_words(_line(part)) for part in parts)
+    forms = _downside_forms(downside, name) if downside else []
+    for form in forms:
+        if whole + _words(_downside_line(form)) <= left:
+            return [_line(part) for part in parts] + [_downside_line(form)]
+    for form in forms:  # longest first: the first leaving room for the reason and the first piece of evidence whole
+        room = left - _words(_downside_line(form))
+        if room >= sum(_words(_line(part)) for part in parts[:2]):
+            return _cut_parts(parts, room) + [_downside_line(form)]
+    if forms and left - _words(_downside_line(forms[-1])) >= _words(reason):
+        return _cut_parts(parts, left - _words(_downside_line(forms[-1]))) + [_downside_line(forms[-1])]
+    return _cut_parts(parts, left)
+
+
+def _line(part: tuple[str, str, str | None]) -> str:
+    kind, text, badge = part
+    return _evidence_line(text, badge) if kind == "evidence" else text
+
+
+_SENTENCE_END = re.compile(r"(?<=[.!?…])[\"'”’)\]]*\s+")
+
+
+def _downside_forms(text: str, name: str) -> list[str]:
+    """The ways a downside may be shown, longest first: whole, then each run of its first sentences that still warns
+    (engine.answer.carries_its_stance), marked " …" as cut."""
+    ends = [m.start() for m in _SENTENCE_END.finditer(text)]
+    forms = [text]
+    for end in reversed(ends):
+        head = text[:end].rstrip()
+        if head and carries_its_stance(head, "warn", (name,)):
+            forms.append(head + " …")
+    return forms
+
+
+def _cut_parts(parts: list[tuple[str, str, str | None]], left: int) -> list[str]:
+    """The parts in `left` words, in order: whole while they fit, then the one running over cut at a word (a piece of
+    evidence keeps its badge whole, or loses it when its words can't stay with it), unless what is left of it would be
+    under MIN_CUT_WORDS; the rest left out."""
     kept = []
-    for part in parts:
-        count = len(part.split())
-        if count <= left:
-            kept.append(part)
-            left -= count
+    for kind, text, badge in parts:
+        line = _evidence_line(text, badge) if kind == "evidence" else text
+        if _words(line) <= left:
+            kept.append(line)
+            left -= _words(line)
             continue
-        if left >= MIN_CUT_WORDS:
-            kept.append(_cut(part, left))
+        if kind == "evidence" and badge and _words(f'"{text}"') <= left:
+            kept.append(f'"{text}"')  # the quote whole, without the badge that wouldn't fit beside it
+        elif kind == "evidence" and badge and left - _words(f"({badge})") >= MIN_CUT_WORDS:
+            kept.append(_cut(f'"{text}"', left - _words(f"({badge})")) + f" ({badge})")
+        elif left >= MIN_CUT_WORDS:
+            kept.append(_cut(f'"{text}"' if kind == "evidence" else text, left))
         break
-    return "\n\n".join([f"**{pick['rank']}. {pick['name']}**"] + kept + fixed)
+    return kept
 
 
 def _one_line(text: str) -> str:
