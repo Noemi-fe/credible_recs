@@ -2025,6 +2025,10 @@ def _said_needs(needs: Iterable[Need], product_type: str | None = None, request:
             labels[need.name] = must
         elif need.request_word is not None and need.request_word in own:
             hidden.add(need.name)
+    # Integration (18 Oct 2026, converge-1, after merging ws-names): engine.needs.judged_needs now leaves the noun of the
+    # product's own name ("freezer" of "fridge freezer") out of the needs altogether, so no need holds it to hide above;
+    # a mention listing it is still never named (the pipeline never gives one, a hand-made mention can).
+    hidden |= own - {need.request_word for need in needs if need.request_word is not None}
     return _SaidNeeds(labels, frozenset(hidden))
 
 
