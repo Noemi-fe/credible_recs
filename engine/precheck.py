@@ -109,8 +109,8 @@ from pathlib import Path
 
 from engine import memo, on_demand, pipeline
 from engine.answer import Answer, ShownQuote, quotes_to_check
-from engine.config import (ANSWERS_KEPT_TYPES, BRIGHT_DATA_BATCH_THREADS, LIBRARY_VERIFY_AGAIN_DAYS, LIBRARY_VERIFY_DAYS,
-                           LIBRARY_VERIFY_READS, LIBRARY_VERIFY_RETRY_DAYS, PICKS_SHOWN,
+from engine.config import (BRIGHT_DATA_BATCH_THREADS, LIBRARY_VERIFY_AGAIN_DAYS, LIBRARY_VERIFY_DAYS,
+                           LIBRARY_VERIFY_READS, LIBRARY_VERIFY_RETRY_DAYS, PICKS_SHOWN, PLAN_ANSWERS_KEPT_TYPES,
                            PRECHECK_BRIGHT_DATA_FRESH_HOURS, PRECHECK_BRIGHT_DATA_GONE_DAYS,
                            PRECHECK_BRIGHT_DATA_MAX_THREADS, PRECHECK_BRIGHT_DATA_SKIP_DAYS,
                            PRECHECK_BRIGHT_DATA_RECORDS, PRECHECK_FRESH_HOURS, PRECHECK_MAX_READS,
@@ -271,17 +271,28 @@ def comments_to_check(requests: list[str], library_dir: Path = DEFAULT_LIBRARY_D
 
 def _work_out(requests: list[str], library_dir: Path, checker, profiles, unverifiable=frozenset()) -> _Found:
     """The comments of every request's answer, and those next in line (comments_to_check). What answers work out is
-    forgotten once they have asked about more than ANSWERS_KEPT_TYPES product types since it last was (engine.memo.
+    forgotten once they have asked about more than PLAN_ANSWERS_KEPT_TYPES product types since it last was (engine.memo.
     TypeWindow, 15 Oct 2026: kept for every type, it had made the plan job's memory grow with the types, 2.25 GB for 486
-    requests over ~1,950 threads): the library stays read, and the answers are the same."""
+    requests over ~1,950 threads): the library stays read, and the answers are the same.
+
+    Since 18 Oct 2026 (round 2) the requests are worked out one product type at a time, in the order each type first
+    comes, and what answers worked out is forgotten between types (PLAN_ANSWERS_KEPT_TYPES = 1): the job keeps one
+    type's work, not 64 types', so its memory no longer grows with the types it answers (with round 1's library it would
+    have needed about 2.7 to 2.8 GB of its 3 GiB). Each request keeps its own place in the list for what is read first
+    (Candidate.request), so the comments found, and their order, are the same."""
     found = _Found()
     as_if = _AsIfChecked(checker, unverifiable)
     every: list[Candidate] = []
-    window = memo.TypeWindow(ANSWERS_KEPT_TYPES)
+    window = memo.TypeWindow(PLAN_ANSWERS_KEPT_TYPES)
+    kinds = [pipeline.request_kind(request) for request in requests]
+    first = {}  # each type's first place in the list
+    for number, kind in enumerate(kinds):
+        first.setdefault(kind, number)
     with _answers_kept() as (written, write_answer):
-        for number, request in enumerate(requests):
+        for number in sorted(range(len(requests)), key=lambda n: (first[kinds[n]], n)):
+            request = requests[number]
             written.clear()
-            window.answered(pipeline.request_kind(request))
+            window.answered(kinds[number])
             try:
                 result = pipeline.answer_request(request, library_dir=library_dir, profiles=profiles,
                                                  live_checker=as_if)

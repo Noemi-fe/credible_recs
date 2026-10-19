@@ -506,6 +506,10 @@ def test_working_out_forgets_the_answers_memory_every_so_many_types_and_finds_th
     memo.forget_all()
     forgot, real = [], memo.forget_answers
     monkeypatch.setattr(memo, "forget_answers", lambda: forgot.append(1) or real())
-    monkeypatch.setattr(precheck, "ANSWERS_KEPT_TYPES", 1)
+    # Changed on purpose, 18 Oct 2026 (round 2, the code builder): the job now works its requests out one product type
+    # at a time and forgets between types (config.PLAN_ANSWERS_KEPT_TYPES = 1, which replaces patching
+    # ANSWERS_KEPT_TYPES to 1 here), so its electric kettle requests are worked out together and the forgetting comes
+    # 3 times, not 4; the comments found, and their order, are still the same.
+    monkeypatch.setattr(precheck, "PLAN_ANSWERS_KEPT_TYPES", 1)
     assert comments_to_check(requests, library_dir=lib, checker=live_checker(tmp_path / "b", FakeReddit())) == whole
-    assert len(forgot) == 4  # electric kettle, then frying pan, chef knife, electric kettle again and toaster
+    assert len(forgot) == 3  # the electric kettles, then frying pan, chef knife and toaster

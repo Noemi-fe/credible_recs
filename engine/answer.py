@@ -637,7 +637,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
                  forms_asked: Collection[str] = (), ranges: Mapping[str, BrandLine] | None = None,
                  prescription: Collection[str] = (), flattened: Collection[str] = (),
                  pages: Mapping[str, ProductPage] | None = None,
-                 brand_downsides: Mapping[str, tuple[str, list[ScoredMention]]] | None = None) -> Answer:
+                 brand_downsides: Mapping[str, tuple[str, list[ScoredMention]]] | None = None,
+                 other_types_threads: Collection[str] = ()) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -671,6 +672,9 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     image (shown_image). They never change which products are shown. `brand_downsides` ({pick key: (its brand's line's
     name as shown, the line's credible warnings)}, 17 Oct 2026: the pipeline's _fold_brand_skips) are warnings about a
     specific pick's brand's line as a whole: shown after its own downsides and counted apart (DOWNSIDES_SHARE_BRAND).
+    `other_types_threads` (18 Oct 2026, round 2) are the ids of the threads read that are about another type of product
+    (engine.pipeline._threads_about_another_type, general answers only): their notes give "What to look for" nothing
+    unless the tip's own name names the type asked for (_look_for).
     """
     check = _QuoteCheck(bodies, flattened)
     check.named_in = _named_in(ranking)
@@ -722,7 +726,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
         item.prescription = _prescription(item.product_key, prescription)
     look_for = _look_for(ranking, check, product_type, unsuited_kinds, request, asks, [pick.name for pick in picks],
                          forms_asked, needs, _picks_names(ranking, picks),
-                         _Once(lambda: _lines_products(ranking, picks, product_type)))
+                         _Once(lambda: _lines_products(ranking, picks, product_type)),
+                         other_types_threads=other_types_threads)
     care_note = _care_note([care.get(pick.product_key) for pick in picks], picks, check)
     # Shown thanks to a comment standing out in its thread (14 Oct 2026): the messages and the note say how.
     standing_out = {p.key for p in ranking.products if p.by_standout}
@@ -2182,7 +2187,8 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
               unsuited_kinds: Collection[str] = (), request: str = "", asks: tuple[str, ...] = (),
               picks: Collection[str] = (), forms_asked: Collection[str] = (),
               needs: tuple[Need, ...] = (), picks_names: Collection[str] | None = None,
-              lines_products: Collection[str] | Callable[[], Collection[str]] = ()) -> list[LookFor]:
+              lines_products: Collection[str] | Callable[[], Collection[str]] = (),
+              other_types_threads: Collection[str] = ()) -> list[LookFor]:
     """Up to LOOK_FOR_NOTES kinds, strongest credible advice first, each with its strongest verified note. In skincare,
     a kind whose advice is about another type of product gives none (_another_types_advice). A kind in
     `unsuited_kinds` (its facts clash hard with the request: the pipeline's _unsuited_kinds) gives no "Look for".
@@ -2221,6 +2227,12 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
     whose own notes say what the request asks to be without ("Avoid: mineral SPFs", for their white cast, in an answer
     asking for none); and a line left out for saying the opposite leaves its place empty: the advice after the first
     lines is weaker, and none comes in for it.
+
+    Since 18 Oct 2026 (round 2; only tips about the type asked for): a note from one of `other_types_threads`, the
+    threads read that are about another type of product (the pipeline's _threads_about_another_type: a dog bed thread
+    a washing machine answer read because its post names a washing machine in passing), backs no advice, unless the
+    kind's own name names the type asked for ("mat towels" in a towel answer: _another_types_tip); a kind left without
+    notes gives none.
     """
     candidates = []
     asked_words, refused = _asked_and_refused(ranking.category, product_type, request, needs, asks)
@@ -2240,6 +2252,10 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
         stance, advice = ("recommend", LOOK_FOR) if kind.support > 0 else ("warn", AVOID)
         notes = _most_credible_first([n for n in ranking.kind_notes
                                       if n.kind_key == kind.key and n.stance == stance and is_credible(n)])
+        if other_types_threads and _another_types_tip(kind.name, ranking.category, product_type):
+            notes = [n for n in notes if n.thread_id not in other_types_threads]
+            if not notes:  # only another type's threads back it (18 Oct 2026)
+                continue
         if (_the_product_asked_for(kind.name, ranking.category, product_type, request)
                 or _instead_of_the_product(kind.name, ranking.category, product_type, request)
                 or _another_types_advice(kind.name, notes, ranking.category, product_type)):
@@ -2292,6 +2308,13 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
             item.kind = " or ".join(kept)
             shown.append(item)
     return shown
+
+
+def _another_types_tip(kind: str, category: str, product_type: str | None) -> bool:
+    """Whether a kind's notes from a thread about another type of product are that type's tips (18 Oct 2026): unless
+    its own name names the type asked for, as _named_types reads names ("mat towels" and "Turkish cotton towel" name a
+    towel; "cork mat" and "crib mattress as a dog bed" don't)."""
+    return not (product_type and product_type in _named_types(kind, category))
 
 
 def _form_shown(kind: str, forms_asked: Collection[str]) -> bool:

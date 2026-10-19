@@ -271,3 +271,43 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   will need about 2.7 to 2.8 GB. Results are in eval/RUNS.md's row: the whole suite 5,955 passed; no eval number worse
   than the baseline; blind test 10/10 full top 3s; the sweep's answers with 3 / 1 to 2 / 0 picks 151 / 43 / 84 -> 200 /
   20 / 58, every shown quote found word for word.
+- Built by Claude, 18-19 Oct 2026 (the round-2 code builder, branch round2-code from main be59fc9: the orchestrator's
+  six items from round 1's answers, docs/bfs-2026-10-17/round2-additions.md; technical calls within Noemi's rules,
+  reported to her; eval/RUNS.md): (1) "smartwatch for fitness": no round-1 rule took the Garmin line's recommendations.
+  On all 26 threads it keeps its 6 credible ones (2 about fitness) beside 4 warnings and is the wider reading's one
+  pick; but two Huawei Watch GT 7 Pro recommendations now count as first-hand (the AI reads use with specific details,
+  her decision 3 of 16 Oct; both writers speak of their own watch, checked), so the first 16 threads already give one
+  pick, and the wider reading, kept only when it has more picks (11 Oct), isn't: the answer shows the Huawei, which no
+  credible voice praises for fitness, and lists the Garmin line under Skip these from the first 16 threads' 1
+  recommendation and 3 warnings. Right by the rules as written; which reading wins a tie is hers (reported). (2) What to
+  look for shows only tips about the type asked for (her blueprint of 8 Oct is the requested product's): in a general
+  answer, a thread read whose products the AI typed mostly as other types (under config.LOOK_FOR_TYPE_SHARE, a quarter,
+  of the requested type; by its title when it has none) backs no tip unless the tip's own name names the type
+  (engine.pipeline. _threads_about_another_type, engine.answer._another_types_tip). 16 answers' lists change; gone: the
+  washing machine's dog bed tip, the towels' yoga mat tip, the perfume's air purifier, candle and diffuser tips, the
+  phone's phone-case warning, the shotgun mic's air purifier, the speaker's soundbar and subwoofer, the water bottle's
+  sling bag, the hunting knife's sharpening tips, the camera's mirror and phone tips; kept by their names: mat towels,
+  wool socks, safety razors. Kitchen keeps its 10 Oct exception (tried for kitchen tips naming another type: it also
+  took "Avoid: non-stick pans" from cast iron skillet answers and "Look for: cast iron" from saucepan ones, so not
+  kept); a type as broad as "camera" still lets baby-monitor camera tips through by name. (3) Names: a brand-lines entry
+  found through one of its other names shows its maker's name when that name is the brand's initials ("WM", "EE") or the
+  line without its maker ("Stagg", "Copper Spur", "Barista Express"), and the items join (_one_per_name); a brand's own
+  first words stay ("Field"). No shown name is a bare number: the price or facts list's one product of the type with
+  that model number, up to it ("Garmin Forerunner 965", "G502"), else the writers' fuller name, else left out as naming
+  no one product. (4) "bean to cup" is one need (config.NEEDS) with US writers' "super automatic", and named before the
+  machine a feature (her decision 1 of 16 Oct): the bean-to-cup answer now reads the five bean-to-cup and super
+  automatic threads first and picks the Sage Barista Express (a built-in grinder; UK shops sell it as bean to cup), the
+  De'Longhi and Gaggia lines (was the Barista Express, a Mr. Coffee and the Rancilio Silvia). Every answer in a thread
+  asking for one counts as praise for the feature, manual machines recommended instead too: a built-in grinder fact
+  would settle it (hers). (5) Voice rubric, her red flags as written: Amazon associates' short links, redirect links
+  hiding a shop behind a code and a deals app's referral links are paid promotion (an affiliate or referral link: two
+  red flags); a writer linking their own site (its address holds their name) or a review outfit's account linking its
+  write-up of products it tested promotes one brand (one red flag): 44 library comments newly flagged (36, 7, 1);
+  shoppers' own a.co and amzn.eu share links stay unflagged. A writer repeating their own comment stays no red flag (her
+  11 Oct rule; one vote per writer anyway). (6) The daily plan job works its requests one product type at a time and
+  forgets what answers worked out between types (config.PLAN_ANSWERS_KEPT_TYPES = 1; each request keeps its place, so
+  the same comments in the same order): on round 1's library its working out of the 486 requests peaked at 1.39 GB with
+  the 64-type window and at 1.08 GB now (this Mac, the model off; 4.3 -> 4.8 minutes), so 3 GiB and deploy.sh stay. The
+  shared library's files were rewritten at 22:40 on 18 Oct (1,615 threads, 104 extractions; not this branch): main's
+  code on it already changes 24 answers of round 1's sweep (b04's third pick among them), so this branch's answers are
+  compared with main's on the same library.
