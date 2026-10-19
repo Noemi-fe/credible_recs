@@ -371,3 +371,61 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   reshuffles it (Caraway, GreenPan and an All-Clad saute pan whose facts are unconfirmed; De Buyer's carbon steel pans
   drop out of the wider reading, not looked into: for the names owner); "a frying pan for an induction hob" gets
   HexClad as its second pick (induction confirmed by its FAQ) with no price or availability yet.
+- Built by Claude, 19 Oct 2026 (the round-3 logic builder, branch round3-logic from main 4f2851d: the orchestrator's
+  seven items from the final review, docs/bfs-2026-10-17/final-review.md; technical calls within Noemi's rules,
+  reported to her; eval/RUNS.md): (1) Her feature rule (decision 1 of 16 Oct) didn't hold for "gaming laptop under
+  £1000" because a thread asked for a feature by its post too: a uni laptop thread whose post said its writer games on
+  a desktop counted as asking for a gaming laptop, so every answer in it, Apple's line among them, was praise for
+  gaming. A thread now asks for a feature by its title only (engine.features.thread_asks_for: a slimmed post keeps a
+  list of words, which can't tell an ask from a mention); no laptop is praised for gaming, so the answer shows the
+  type's best (Lenovo, Framework, Asus Zenbook) with the not-praised note. Three other answers' picks move by the same
+  rule (quiet dishwasher: a KitchenAid its writers call quiet for the Asko line; minimalist wallet: Ridge above
+  Saddleback; laptop backpack: the Osprey Daylite for the GR2, each praised through a post only). For "stainless steel
+  pan for searing" the note was right (no pick praised for it) but the reason counted any voice whose comment said
+  stainless; it now counts a voice about a feature only when it praises its product for it (ScoredMention.
+  needs_unpraised, the reason only: counted nowhere, the 2qt saucepan answer lost its Tramontina pick, whose writer
+  listed it among stainless brands; dutch ovens' "about enamelled" and quiet kettles' "about noise" counts fall too).
+  (2) A voice or a name saying the opposite never counts: open ear, bone conduction or hearing traffic is no praise
+  for noise cancelling, even in a thread asking for it, nor is a product whose name has a word starting "open"
+  (config.OPPOSITE_QUOTE_PATTERNS["noise cancelling"], FEATURE_OPPOSITE_NAMES): the three noise-cancelling answers'
+  third pick is the Sony XM6 (was the Shokz OpenRun Pro 2, recommended as open-ear in an ANC thread). A recommendation
+  whose words about its product say the opposite of a request word doesn't talk about it (OPPOSITE_QUOTE_PATTERNS
+  ["cold"]: not insulated, won't keep drinks cold). Not fixed, since no voice in the threads read says the opposite:
+  Nalgene (its "about keeping drinks cold" voices keep track of their water or mention cold water) and the
+  Chef'sChoice electric sharpener for Japanese knives (no writer of it talks about Japanese knives; it is a pick on
+  overall support, which a kitchen answer's first reading allows). (3) What to look for and Skip these never
+  contradict a pick, its model, an item above or the requested form: an Avoid naming a pick's kind in the type's own
+  words is left out ("oil cleanser", "balm" above an oil cleanser and a cleansing balm; the 17 Oct check read only the
+  words beyond the type's); a Look for whose same kind's warnings say what the request asks to be without goes, its
+  Avoid stays (mineral sunscreen beside mineral SPFs' white cast; one test changed on purpose, dated); a Look for
+  naming the opposite of a feature the request names goes, an Avoid agrees (corded drill, bone conduction headphones);
+  Skip these leaves out a product a shown pick, its most named model or an Also worth a look item names in full
+  (Adrenaline beside the Brooks line's Adrenaline, G502 beside the G502 wireless). Not fixed: "Avoid: automatic milk
+  frothers" above the Sage Milk Cafe (nothing we hold says it is automatic: no facts or price entry, no writer).
+  (4) A kitchen or general tip naming another appliance (config.OTHER_APPLIANCES, or module 1's names: "hand grinder"
+  is a coffee grinder) and not the type asked for is left out (pressure cooker, food processor, rice cookers, electric
+  kettle for stovetop kettles, toaster ovens, hand grinder for espresso machines, heat pump water heater); cookware,
+  knives and tools are no appliances, so kitchen's cast-iron exception stands; a general tip for a use the request
+  doesn't name is left out ("Windows laptop for accounting", "SDS drill for concrete"; a reason or price after its
+  "for" isn't a use: config.FOR_A_REASON_WORDS); DIY electrical and battery care tips are left out like repairs
+  (config.CARE_TIP_LEFT_OUT_WORDS). (5) A pick's quotes, order only: one that swears (the page's masked words) or
+  opens negatively (config.QUOTE_NEGATIVE_OPENINGS) comes after a clean one of its kind; one naming its product only
+  as the yardstick for another (QUOTE_YARDSTICK, not after "nothing" or "never") or naming a sibling of it (the
+  writer's name starts with its brand, has a word its name hasn't and lacks one it has, spellings compared loosely)
+  after the rest of its tier, as a quote about another product does (one test changed on purpose, dated). Seven
+  first quotes change: Cetaphil, CeraVe Eye Repair, JBL Clip, Eufy, Tempur, Herman Miller Aeron, All-Clad. (6) No
+  "Price not checked yet" beside "Not sold in the UK": such a product's price text is empty (engine.answer.
+  shown_price), the page shows no price line and says "Not sold in the UK" at a glance (93 picks and 61 items in the
+  sweep). (7) The daily plan job's requests include the demo and interviewee requests (engine/data/demo_requests.json,
+  98 product requests, now in the public repo), and those answers' and the blind-test questions' shown and
+  next-in-line comments are read first (engine.precheck.Candidate.first and priority), so the site's reading ahead
+  reads them first: 3,298 comments of 108 requests (4,945 with tiers 2 and 3), about 7 hours of pings at 40 a ping,
+  then kept fresh as answers' comments are; 559 requests (config.PLAN_MAX_REQUESTS, 650, keeps the plan's working out
+  well inside its 55-minute task timeout, which the free-tier sums count). Results: the whole suite passes (6,052);
+  every eval number as main's but the library's own quote counts (266 thread files rewritten at 00:07 after main's
+  eval) and shown 245/245 (b02's mineral sunscreen line); blind test 10/10 full top 3s with the same picks; the sweep
+  (docs/bfs-2026-10-17/sweep-3-logic.jsonl) against sweep-final: 124 of 278 answers differ, each by an item, full top
+  3s 200 as before. FOR NOEMI: may a credible warning against a pick's kind demote it in a kitchen need answer (the
+  Chef'sChoice electric sharpener under "Avoid: pull-through sharpener")? Nalgene's "not insulated" and the Milk Cafe's
+  "automatic" would need fact fields the lists don't have yet (data, not rules); the demo and interviewee lists are now
+  public in the repo.
