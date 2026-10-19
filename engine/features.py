@@ -35,7 +35,7 @@ from functools import cache
 
 from engine import config
 from engine.models import Thread
-from engine.needs import Need, judged_needs, thread_needs
+from engine.needs import Need, judged_needs, needs_met
 from engine.query import PRODUCT_TYPES, ParsedQuery
 
 # What the answer says when no pick is praised for a feature asked for (Noemi's decision 1 of 16 Oct 2026: "if we can't
@@ -144,8 +144,10 @@ def _a_material(name: str) -> bool:
 def praised_for(feature: Feature, text: str, names: tuple[str, ...] = (), thread_asks: bool = False) -> bool:
     """Whether a comment's words about a product (`text`: engine.credibility.product_text, lowercase) praise it for the
     feature: said and not denied, with nothing against it; or the comment answers a thread asking for the feature
-    (`thread_asks`) and says nothing against it. Never when one of the product's own `names` says the opposite."""
-    if _named_the_opposite(feature, names):
+    (`thread_asks`) and says nothing against it. Never when one of the product's own `names` says the opposite, nor,
+    since 19 Oct 2026 (round 3), when its words say the opposite (config.OPPOSITE_QUOTE_PATTERNS under the feature's
+    name: "open ear" or "bone conduction" for noise cancelling), whatever the thread asks."""
+    if _named_the_opposite(feature, names) or says_its_opposite(feature.name, text):
         return False
     holder = _holds_the_product(names) if feature.material else None
     said, denied = _said(feature.praise, text, holder)
@@ -156,16 +158,19 @@ def praised_for(feature: Feature, text: str, names: tuple[str, ...] = (), thread
 
 
 def thread_asks_for(thread: Thread, feature: Feature, titled_as_another_type: bool = False) -> bool:
-    """Whether a thread's title or post asks for the feature (engine.needs.thread_needs, as the need-led first reading
-    reads them): every need of the feature, so "noise from my fridge" asks nothing of noise cancelling, or the feature
-    said in the title as a comment would praise it (its short forms too: "wireless earbuds" for true wireless ones). A
-    material's thread asks nothing that counts (Feature.material)."""
+    """Whether a thread's title asks for the feature: every need of the feature (engine.needs.needs_met, as a title is
+    read), so "noise from my fridge" asks nothing of noise cancelling, or the feature said as a comment would praise it
+    (its short forms too: "wireless earbuds" for true wireless ones). A material's thread asks nothing that counts
+    (Feature.material). The title only since 19 Oct 2026 (round 3): a post's words (a slimmed thread keeps only a list
+    of them) can't tell an ask from a passing mention, and a uni laptop thread whose post said its writer games on a
+    desktop had counted as asking for a gaming laptop, so that every answer in it praised its laptop for gaming."""
     if feature.material or titled_as_another_type:
         return False
-    met = thread_needs(thread, feature.needs, titled_as_another_type)
+    title = thread.title or ""
+    met = needs_met(title, feature.needs, thread=True)
     if all(need.name in met for need in feature.needs):
         return True
-    return bool(_compiled(feature.praise).search(_plain(thread.title or "")))
+    return bool(_compiled(feature.praise).search(_plain(title)))
 
 
 def feature_note(features: tuple[Feature, ...], praised_by_pick: list[tuple[str, ...]], products: str,
@@ -232,8 +237,21 @@ def _requirements(query: ParsedQuery) -> tuple[set[str], set[str]]:
 
 
 def _named_the_opposite(feature: Feature, names: tuple[str, ...]) -> bool:
-    opposites = config.FEATURE_OPPOSITE_NAMES.get(feature.name.lower().replace("-", " "), ())
+    opposites = config.FEATURE_OPPOSITE_NAMES.get(_key(feature.name), ())
     return any(re.search(_any_of(opposites), _plain(name)) for name in names if name) if opposites else False
+
+
+def says_its_opposite(name: str, text: str) -> bool:
+    """Whether a text (a comment's words about a product, lowercase) says the opposite of a feature or a request's word
+    (19 Oct 2026, round 3): one of config.OPPOSITE_QUOTE_PATTERNS under its name ("noise cancelling": "open ear", "bone
+    conduction"; "cold": "isn't insulated"), as a quote saying the opposite of an ask is found (engine.answer)."""
+    patterns = config.OPPOSITE_QUOTE_PATTERNS.get(_key(name), ())
+    return bool(patterns) and any(_compiled(pattern).search(_plain(text)) for pattern in patterns)
+
+
+def _key(name: str) -> str:
+    """A feature's name as config's lists hold it: lowercase, a hyphen as a space, and US "canceling" as "cancelling"."""
+    return re.sub(r"cancel(?!l)", "cancell", name.lower().replace("-", " "))
 
 
 def _said(pattern: str | None, text: str, holder: re.Pattern | None = None) -> tuple[bool, bool]:

@@ -64,6 +64,7 @@ from dataclasses import dataclass, field
 from typing import NamedTuple
 
 from engine.config import (
+    CARE_TIP_LEFT_OUT_WORDS,
     CARE_TIP_REPAIR_WORDS,
     CARE_TIP_SHARED_SHARE,
     CARE_TIP_SHARED_WORDS,
@@ -297,6 +298,16 @@ def _no_metal_utensils(tip: str) -> bool:
     if _METAL.search(text):
         return _says_no(tip)
     return bool(_SOFT.search(text))
+
+
+def is_left_out(tip: str) -> bool:
+    """Whether answers leave a tip out altogether: a repair (is_repair; Noemi, 12 Oct 2026), DIY electrical work or
+    battery care (config.CARE_TIP_LEFT_OUT_WORDS, 19 Oct 2026, round 3: rewiring a toaster's plug, chilling a drill's
+    batteries before charging)."""
+    if is_repair(tip):
+        return True
+    text = " ".join(plain_words(tip))
+    return any(re.search(rf"\b(?:{pattern})\b", text) for pattern in CARE_TIP_LEFT_OUT_WORDS)
 
 
 def is_repair(tip: str) -> bool:

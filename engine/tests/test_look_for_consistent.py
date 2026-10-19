@@ -394,9 +394,12 @@ def test_a_warning_whose_own_words_say_what_the_request_refuses_is_never_outweig
                   quote="Mineral SPFs leave a white cast on me, every one I tried."),
              note("stick sunscreens", "t1", weight=0.3, quote="Stick sunscreens are great for top ups.")]
     request = "sunscreen for dry skin that doesn't leave a white cast"
+    # Changed on purpose, 19 Oct 2026 (round 3, the final review: both white-cast answers said to look for mineral
+    # sunscreen and to avoid mineral SPFs): the warning agreeing with the request stays, and the praise of the same kind
+    # under its other name goes, since looking for it goes against both (engine.answer._contradicts). Was: the praise
+    # shown first, then the warning.
     assert shown(notes, "sunscreen", request, asks=("no white cast",), category="skincare") == [
-        (wording.LOOK_FOR, "mineral sunscreen"), (wording.AVOID, "mineral SPFs"),
-        (wording.LOOK_FOR, "stick sunscreens")]
+        (wording.AVOID, "mineral SPFs"), (wording.LOOK_FOR, "stick sunscreens")]
     # Asking for nothing of the kind, the stronger praise outweighs the warning, as before.
     assert (wording.AVOID, "mineral SPFs") not in shown(notes, "sunscreen", "best sunscreen", category="skincare")
 

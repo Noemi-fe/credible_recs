@@ -126,6 +126,9 @@ from engine.verify import FAILED, LEDGER_NAME, KeptComment, Ledger, kept_comment
 QUESTIONS_FILE = REPO_ROOT / "eval" / "blind_test" / "questions.json"  # the search page's example requests
 LATENCY_FILE = REPO_ROOT / "eval" / "edge_cases" / "latency_queries.json"
 INGREDIENTS_FILE = REPO_ROOT / "eval" / "edge_cases" / "ingredients.json"  # the ingredient eval's requests (13 Oct 2026)
+# The demo and interviewee requests (19 Oct 2026, round 3): checked ahead right after the blind-test questions, their
+# answers' quotes before every other request's (Candidate.first), so a live answer to one finds its checks ready.
+DEMO_FILE = Path(__file__).resolve().parent / "data" / "demo_requests.json"
 TIERS = ("shown", "next in line", "behind the picks", "next after those")  # each tier in words, for the report
 SET_ASIDE = "set aside by the pre-check, to see what is ranked behind it"  # never shown: these answers are thrown away
 PROGRESS_EVERY = 100  # reads between progress lines on stderr
@@ -144,10 +147,18 @@ class Candidate:
     section: int
     request: int
     place: int
+    # A comment of a blind-test, demo or interviewee request's answer (first_requests; 19 Oct 2026, round 3): shown or
+    # next in line (tiers 0 and 1), it is read before every other request's, so their live answers find it checked.
+    first: bool = False
 
     @property
     def order(self) -> tuple[int, int, int, int]:
         return self.tier, self.section, self.request, self.place
+
+    @property
+    def priority(self) -> tuple[int, int, int, int, int]:
+        """What is read first: a first request's shown and next-in-line comments, then everything in its order."""
+        return (0 if self.first and self.tier <= 1 else 1, *self.order)
 
 
 @dataclass
@@ -180,18 +191,35 @@ class _Found:
 # --- Which requests ---
 
 def requests_to_check(questions: Path = QUESTIONS_FILE, latency: Path = LATENCY_FILE,
-                      library_dir: Path = DEFAULT_LIBRARY_DIR, ingredients: Path = INGREDIENTS_FILE) -> list[str]:
+                      library_dir: Path = DEFAULT_LIBRARY_DIR, ingredients: Path = INGREDIENTS_FILE,
+                      demo: Path = DEMO_FILE) -> list[str]:
     """The requests whose answers are checked ahead, likeliest first, each once: the search page's example requests
     (the blind-test questions), the latency eval's requests, module 1's product types, the open model's types in the
-    library's request log, config.PRECHECK_MODEL_TYPES, then the ingredient eval's requests (13 Oct 2026: ingredient-led
-    answers read skincare threads of every type). A missing file adds nothing."""
+    library's request log, config.PRECHECK_MODEL_TYPES, since 19 Oct 2026 (round 3) the demo and interviewee requests
+    (DEMO_FILE: their answers' comments, with the blind-test questions', are read before every other's whatever their
+    place here, Candidate.first), then the ingredient eval's requests (13 Oct 2026: ingredient-led answers read
+    skincare threads of every type). A missing file adds nothing."""
     found = [q["text"] for q in _read_json(questions).get("questions", [])]
     found += [q["text"] for q in _read_json(latency).get("queries", [])]
     found += [p.name for p in PRODUCT_TYPES]
     found += _logged_types(Path(library_dir) / "requests.jsonl")
     found += list(PRECHECK_MODEL_TYPES)
+    found += _demo_requests(demo)
     found += [q["text"] for q in _read_json(ingredients).get("cases", [])]
     return list(dict.fromkeys(text.strip() for text in found if text and text.strip()))
+
+
+def first_requests(questions: Path = QUESTIONS_FILE, demo: Path = DEMO_FILE) -> set[str]:
+    """The requests whose answers' quotes are read before every other request's (Candidate.first; 19 Oct 2026, round
+    3): the blind-test questions and the demo and interviewee requests, as typed."""
+    found = [q["text"] for q in _read_json(questions).get("questions", [])] + _demo_requests(demo)
+    return {text.strip() for text in found if text and text.strip()}
+
+
+def _demo_requests(path: Path) -> list[str]:
+    """The demo requests, then the interviewee ones, of DEMO_FILE's shape ({"demo": [...], "interviewee": [...]})."""
+    data = _read_json(path)
+    return [text for key in ("demo", "interviewee") for text in data.get(key, []) if isinstance(text, str)]
 
 
 def _read_json(path: Path) -> dict:
@@ -283,6 +311,7 @@ def _work_out(requests: list[str], library_dir: Path, checker, profiles, unverif
     found = _Found()
     as_if = _AsIfChecked(checker, unverifiable)
     every: list[Candidate] = []
+    first_ones = first_requests()  # their answers' quotes are read first (19 Oct 2026, round 3)
     window = memo.TypeWindow(PLAN_ANSWERS_KEPT_TYPES)
     kinds = [pipeline.request_kind(request) for request in requests]
     first = {}  # each type's first place in the list
@@ -306,7 +335,8 @@ def _work_out(requests: list[str], library_dir: Path, checker, profiles, unverif
             found.answered += 1
             arguments = next(args for args, answer in reversed(written) if answer is result.answer)
             for tier, answers in enumerate(_written_again(arguments, result.answer, write_answer)):
-                every += [Candidate(quote.url, quote.comment_id, (quote.text,), tier, section, number, place)
+                every += [Candidate(quote.url, quote.comment_id, (quote.text,), tier, section, number, place,
+                                    request.strip() in first_ones)
                           for answer in answers for place, (section, quote) in enumerate(shown_quotes(answer))]
     found.candidates = merged(every)
     return found
@@ -351,13 +381,13 @@ def merged(candidates: list[Candidate]) -> list[Candidate]:
     """One candidate per comment, at its likeliest order, holding every quote of it (each once, likeliest first);
     sorted likeliest first."""
     by_url: dict[str, list[Candidate]] = {}
-    for candidate in sorted(candidates, key=lambda c: c.order):
+    for candidate in sorted(candidates, key=lambda c: c.priority):
         by_url.setdefault(candidate.url, []).append(candidate)
     out = []
     for same in by_url.values():
         quotes = tuple(dict.fromkeys(q for c in same for q in c.quotes))
         out.append(dataclasses.replace(same[0], quotes=quotes))
-    return sorted(out, key=lambda c: c.order)
+    return sorted(out, key=lambda c: c.priority)
 
 
 # --- Reading them ---
@@ -685,7 +715,7 @@ def _value_order(comments: list[Candidate], cost: int | None) -> tuple:
     """Which threads are read first: those whose comments are likeliest to be shown (the best tier, a pick's own quotes
     first), then those that verify the most comments for their records, then by their likeliest comment."""
     return (min(c.tier for c in comments), min(c.section for c in comments),
-            (cost if cost is not None else float("inf")) / len(comments), min(c.order for c in comments))
+            (cost if cost is not None else float("inf")) / len(comments), min(c.priority for c in comments))
 
 
 def _records_estimate(library_dir: Path, post_id: str) -> int | None:
