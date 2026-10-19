@@ -109,7 +109,11 @@ def test_swear_words_are_masked_on_display_and_the_checked_text_stays_the_commen
     items = [sweary] + mentions(2, "Acme pan", threads=("t2", "t1"))
     bodies = bodies_for(*items)
     answer = pan_answer(items, bodies)
-    assert answer.picks[0].quotes[0].text == sweary.quote  # what is checked, word for word and live
+    # Changed on purpose, 19 Oct 2026 (round 3, the final review: a pick's first quote doesn't swear): the sweary quote
+    # now comes after the clean ones (engine.answer._unfit_first), still shown and still checked as the comment's own
+    # words. Was: shown first.
+    assert answer.picks[0].quotes[0].text != sweary.quote
+    assert sweary.quote in [q.text for q in answer.picks[0].quotes]  # what is checked, word for word and live
     assert unverified_claims(answer, bodies) == []
     text = render_markdown(answer)
     assert "f*****g great" in text and "fucking" not in text

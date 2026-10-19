@@ -215,7 +215,7 @@ from engine.credibility import (
     score_voice, thread_upvotes, with_ai_evidence,
 )
 from engine.extract import CheckResult, shown_comment_ids
-from engine.features import Feature, feature_note, praised_for, request_features, thread_asks_for
+from engine.features import Feature, feature_note, praised_for, request_features, says_its_opposite, thread_asks_for
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
 from engine.group_products import (
     LibraryRanges, ProductGroup, ProductMention, brand_pick_name, group_of, group_products, library_name_index,
@@ -2445,14 +2445,15 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
             # First-hand use needs the AI's reading to agree when it says no use (13 Oct 2026; with_ai_evidence).
             evidence = with_ai_evidence(score_evidence(comment, m.product, m.stance, others), m.evidence,
                                         m.evidence_tags)
-            met = _needs_talked_about(m.quote, comment.body, needs, asks, evidence.level == "long-term use", m.stance)
+            praised, own = (), None
+            if m.stance == "recommend" and (features or _has_opposites(needs)):
+                own = product_text(comment, m.product, others)
+                praised = tuple(f.name for f in features if praised_for(
+                    f, own, (m.product, group.name), f.name in (asking or {}).get(tid, ())))
+            met = _needs_talked_about(m.quote, comment.body, needs, asks, evidence.level == "long-term use", m.stance,
+                                      own)
             weight = mention_weight(voice, evidence, m.stance) * (NEED_MATCH_BOOST if met else 1)
             standing = upvotes.get(m.comment_id)
-            praised = ()
-            if features and m.stance == "recommend":
-                text = product_text(comment, m.product, others)
-                praised = tuple(f.name for f in features if praised_for(
-                    f, text, (m.product, group.name), f.name in (asking or {}).get(tid, ())))
             scored.append(ScoredMention(
                 product_key=group.key, product_name=group.name, category=group.category, thread_id=tid,
                 comment_id=m.comment_id, comment_url=str(comment.url), stance=m.stance,
@@ -2466,6 +2467,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                 others_of_another_type=_others_of_another_type(m, res.kept),
                 features=praised,
                 opposite_need=m.stance == "warn" and _from_the_opposite_need(comment.body, needs, opposites),
+                needs_unpraised=_feature_needs_unpraised(met, features, praised) if m.stance == "recommend" else (),
             ))
         for n in res.kept_notes:
             if n.comment_id in repeats:
@@ -2511,20 +2513,42 @@ def _products_named(res: CheckResult) -> dict[str, int]:
 
 
 def _needs_talked_about(quote: str, body: str, needs: tuple[Need, ...], asks: tuple[str, ...],
-                        long_term_use: bool = False, stance: str = "recommend") -> tuple[str, ...]:
+                        long_term_use: bool = False, stance: str = "recommend",
+                        own_text: str | None = None) -> tuple[str, ...]:
     """The request's needs a comment talks about (engine.needs.needs_met), for NEED_MATCH_BOOST; none when the
     mention's quote says the opposite of what the request asks (engine.answer.says_the_opposite: "it will give you a
     white cast" for a no-white-cast request; b02, 11 Oct 2026). Such a comment talks about the need, but against the
     request. So does a recommendation whose quote says its product didn't help with a need (engine.needs.
     said_not_to_help, 15 Oct 2026: "it did nothing for my oily skin"): that need isn't among those it talks about. A
-    warning's not helping is what it warns about, so it keeps them."""
+    warning's not helping is what it warns about, so it keeps them.
+
+    Since 19 Oct 2026 (round 3), for a recommendation: a word of the request as typed its words about the product
+    (`own_text`: engine.credibility.product_text) say the opposite of (engine.features.says_its_opposite: "it isn't
+    insulated" for keeping drinks cold) isn't talked about either."""
     if says_the_opposite(quote, asks):
         return ()
     met = needs_met(body, needs, long_term_use)
     if stance != "recommend" or not met:
         return met
     against = said_not_to_help(quote, needs)
-    return tuple(need for need in met if need not in against)
+    words = {need.name: need.request_word for need in needs if need.request_word is not None}
+    return tuple(need for need in met if need not in against
+                 and not (own_text is not None and need in words and says_its_opposite(words[need], own_text)))
+
+
+def _feature_needs_unpraised(met: tuple[str, ...], features: tuple[Feature, ...],
+                             praised: tuple[str, ...]) -> tuple[str, ...]:
+    """Of the needs a recommendation talks about, those a feature the request names is made of when it doesn't praise
+    its product for that feature (`praised`: engine.features.praised_for; 19 Oct 2026, round 3, Noemi's decision 1 of 16
+    Oct 2026): its reason never counts it "about" the feature (ScoredMention.needs_unpraised)."""
+    of_feature = {need.name: f.name for f in features for need in f.needs}
+    return tuple(need for need in met if need in of_feature and of_feature[need] not in praised)
+
+
+def _has_opposites(needs: tuple[Need, ...]) -> bool:
+    """Whether one of the request's own need words has words saying its opposite (config.OPPOSITE_QUOTE_PATTERNS by the
+    word; config's needs keep their rule of the quote saying the opposite, engine.answer.says_the_opposite)."""
+    return any(need.request_word is not None and need.request_word in config.OPPOSITE_QUOTE_PATTERNS for need in needs)
 
 
 def _as_low(voice: VoiceScore) -> VoiceScore:

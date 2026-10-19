@@ -2540,3 +2540,81 @@ FEATURE_CONFIG_NEEDS = FEATURE_CONFIG_NEEDS + ("bean-to-cup",)
 # forgets what answers worked out between types (engine.precheck._work_out): one type's work kept at a time, so its
 # memory no longer grows with the types it answers (it needed about 2.7 to 2.8 GB of its 3 GiB with round 1's library).
 PLAN_ANSWERS_KEPT_TYPES = 1
+
+# --- Converge round 3: logic (19 Oct 2026) ---
+# The round-3 logic builder's values (docs/bfs-2026-10-17/final-review.md and the orchestrator's list); Claude's
+# technical calls within Noemi's rules, reported to her (DECISIONS.md, 19 Oct 2026).
+# A voice saying the opposite of a feature (her decision 1 of 16 Oct 2026; engine/features.py) or of a request's own need
+# word never counts as talking about it (engine.features.says_its_opposite, engine.pipeline._needs_talked_about): open
+# ear or bone conduction headphones, or a writer hearing the traffic around them, for noise cancelling (an open-ear pair
+# recommended in a thread asking about ANC had been praised for it by the thread's ask); a bottle its writer says isn't
+# insulated, or won't keep drinks cold, for keeping drinks cold. Lowercase, as the other asks' patterns are.
+OPPOSITE_QUOTE_PATTERNS["noise cancelling"] = (
+    r"\bopen[- ]?(?:ear|back)(?:ed|s)?\b",
+    r"\bbone[- ]?conduct\w*",
+    r"\bsituational awareness\b",
+    r"\bhear(?:ing)? (?:\w+ ){0,2}?(?:surroundings|traffic|cars|everything around|the world around)\b",
+    r"\b(?:don't|dont|do not|doesn't|doesnt|didn't|didnt) (?:really )?(?:care about|need|want) (?:the |any )?"
+    r"(?:anc|noise[- ]?cancel\w*)",
+)
+OPPOSITE_QUOTE_PATTERNS["cold"] = (
+    r"\b(?:not|isn't|isnt|aren't|arent|wasn't|wasnt|never|non|un)[- ]?insulated\b",
+    r"\bno insulation\b",
+    r"\b(?:doesn't|doesnt|does not|don't|dont|do not|won't|wont|will not|didn't|didnt|can't|cant|never) (?:really |"
+    r"actually )?keeps? (?:\w+ ){0,3}?(?:cold|cool)\b",
+)
+# A product whose own name says it is an open design is never praised for noise cancelling: "open" at the start of a
+# word of its name (OpenRun, Open Fit, open-back), or bone conduction (16 Oct's list had open-back only).
+FEATURE_OPPOSITE_NAMES["noise cancelling"] = (*FEATURE_OPPOSITE_NAMES["noise cancelling"], "open", "bone conduction")
+# Only tips about the type asked for (her blueprint of 8 Oct 2026; round 2 did it for general answers by their threads):
+# a kitchen or general tip naming another appliance (these types, as whole words, a plural too, the longest name found:
+# "toaster ovens" is a toaster oven, not a toaster) is left out of an answer for another type (engine.answer.
+# _another_appliance): a pressure cooker in a dutch oven answer, a food processor in a blender one, rice cookers in a
+# saucepan one, a heat pump water heater in a dehumidifier one. Kitchen keeps its exception of 10 Oct 2026, untouched:
+# cookware, knives and tools are no appliances, so "Look for: cast iron" for a saucepan and "Avoid: non-stick pans" for
+# a cast iron skillet stay; nor are a fridge's freezer or ice maker, which its own answers talk about.
+OTHER_APPLIANCES: dict[str, tuple[str, ...]] = {
+    "kitchen": ("air fryer", "blender", "bread maker", "coffee grinder", "coffee maker", "coffee machine", "deep fryer",
+                "dishwasher", "electric grill", "electric kettle", "espresso machine", "food dehydrator",
+                "food processor", "hand mixer", "ice cream maker", "immersion blender", "stick blender", "juicer",
+                "meat grinder", "microwave", "milk frother", "pasta maker", "pizza oven", "popcorn maker",
+                "pressure cooker", "instant pot", "rice cooker", "sandwich maker", "slow cooker", "soda maker",
+                "sous vide cooker", "spice grinder", "stand mixer", "toaster", "toaster oven", "vacuum sealer",
+                "waffle maker"),
+    "general": ("heat pump", "water heater", "air conditioner", "air purifier", "humidifier", "space heater",
+                "washing machine", "tumble dryer", "boiler"),
+}
+# In a general answer, a tip for another use than the request's (its name's words after "for", none of them the
+# request's: "Windows laptop for accounting" in a gaming laptop answer) is someone else's (engine.answer.
+# _for_another_use). What a kind is good for isn't a use: words opening with these say a reason or a price ("for a
+# better angle", "for maximum accuracy", "for $200").
+FOR_A_REASON_WORDS = ("a", "an", "the", "more", "most", "less", "better", "best", "maximum", "max", "extra", "longer",
+                      "under", "over", "around", "about", "less", "every", "any", "your", "my")
+# Care tips left out of answers altogether, like repairs (CARE_TIP_REPAIR_WORDS; the final review of 19 Oct 2026): DIY
+# electrical work (rewiring a plug, earthing a metal case, a GFCI socket) and battery care (chilling batteries before
+# charging, how full to store them), which are no advice on looking after the product asked for and, for wiring, unsafe
+# to give. Regular expressions on the tip's whole words, as the repair words are; "grounds" (coffee) isn't "grounded".
+CARE_TIP_LEFT_OUT_WORDS = (
+    r"re-?wir(e|es|ed|ing)", r"wiring", r"(properly |well )?ground(ed|ing)", r"earth(ed|ing)", r"gfci", r"rcd",
+    r"fuses?", r"electrocut\w*", r"short circuits?", r"live wires?",
+    r"batter(y|ies)", r"charg(e|er|ers|ing|ed)", r"discharg\w*",
+)
+# A pick's first quote (the final review of 19 Oct 2026; engine.answer._naming_first): only the order of its quotes
+# changes, never their words. One that swears (a word the page masks: engine.answer.MASKED_WORDS), opens by telling
+# readers to ignore, avoid or not buy it (or that its writer can't recommend it), names the product only as the
+# yardstick for another ("as good as my X") or is about a sibling of it (another product of its brand:
+# "Cetaphil Gentle Clear Acne" for Cetaphil's Gentle Skin Cleanser) comes after a quote of its kind that doesn't.
+# Lowercase regular expressions; the negative ones on its first sentence.
+QUOTE_NEGATIVE_OPENINGS = (
+    r"\b(?:ignore|avoid|avoided|steer clear|stay away|don't bother|regret)\b",
+    r"\b(?:can't|cant|cannot|couldn't|wouldn't|won't|don't|do not|never|not) (?:really |personally |honestly )?"
+    r"recommend",
+    r"\b(?:don't|do not|wouldn't|would not|never) (?:buy|get)\b",
+)
+QUOTE_YARDSTICK = (r"(?:\bthan|\bas \w+(?: \w+){0,5} as|\bcompared (?:to|with)|\bsimilar to|\bjust like|\bthe same as)"
+                   r"(?: (?:my|the|a|an|our|your|their|his|her))?(?: \S+){0,2} $")
+# The daily plan job's requests (engine.precheck.requests_to_check: the blind-test questions, the demo and interviewee
+# requests of engine/data/demo_requests.json, then the rest): at most this many, so its working out (486 requests took
+# about 5 minutes on Noemi's computer with the model off, 18 Oct 2026) stays well inside its 55-minute task timeout,
+# which the free-tier sums count (engine/tests/test_cloudrun.py). Claude's bound.
+PLAN_MAX_REQUESTS = 650

@@ -177,10 +177,16 @@ class ScoredMention:
     # (17 Oct 2026, her decision 2: oily-skin complaints in a dry-skin answer; config.NEED_OPPOSITES): such a warning
     # doesn't count toward Skip these.
     opposite_need: bool = False
+    # Of its `needs`, those a feature the request names is made of that it talks about without praising its product for
+    # that feature (19 Oct 2026, round 3; Noemi's decision 1 of 16 Oct 2026): the reason never counts it "about" the
+    # feature ("about stainless steel" for praise of stainless pans beside a recommended non-stick one). Its weight and
+    # the wider reading's need rule still count them, as before.
+    needs_unpraised: tuple[str, ...] = ()
 
     def __post_init__(self):
         object.__setattr__(self, "badges", tuple(self.badges))  # a list given by the pipeline is fine too
         object.__setattr__(self, "needs", tuple(self.needs))
+        object.__setattr__(self, "needs_unpraised", tuple(self.needs_unpraised))
         object.__setattr__(self, "others_of_another_type", tuple(self.others_of_another_type))
         object.__setattr__(self, "features", tuple(self.features))
         _check_choice("category", self.category, MENTION_CATEGORIES)

@@ -95,6 +95,7 @@ const LABELS = {
   glancePrice: "Price",
   glanceTally: "{for} for, {against} against",
   glanceNoPrice: "Not checked yet",
+  glanceNotSold: "Not sold in the UK",
   // A card's toggle for the rest of its evidence (13 Oct 2026).
   moreQuotes: ["1 more quote", "{n} more quotes"],
   moreDownsides: ["1 known downside", "{n} known downsides"],
@@ -1123,6 +1124,9 @@ details[open] > summary .icon { transform: rotate(180deg); }
   /** The price line: amount, shop and date with a link to the shop's page, or "Price not checked yet"; then how it
       meets the budget, if the request has one. */
   function priceLines(price) {
+    // A product not sold in the UK has no price line (its availability line says so; 19 Oct 2026), only its budget note.
+    if (!price.text && !price.budget_note) return [];
+    if (!price.text) return [el("p", { class: "budget" }, price.budget_note)];
     const shop = shopUrl(price.url);
     const link = shop && el("a", { href: shop, target: "_blank", rel: "noopener noreferrer" },
       WORDING.price_link_text, el("span", { class: "visually-hidden" }, " " + LABELS.shopNewTab));
@@ -1344,7 +1348,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
   /** A checked price's amount alone ("£155", "£21.99"), or "Not checked yet"; a brand line's from price says so
       ("From £25", the answer's own word: 14 Oct 2026). */
   function priceAmount(price) {
-    if (price.amount === null || price.amount === undefined) return LABELS.glanceNoPrice;
+    if (price.amount === null || price.amount === undefined) return price.text ? LABELS.glanceNoPrice : LABELS.glanceNotSold;
     const digits = price.amount % 1 ? 2 : 0;
     let amount;
     try {
