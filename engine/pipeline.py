@@ -864,10 +864,9 @@ def _threads_about_another_type(checked: dict[str, CheckResult], threads: list[T
     about the request, since their posts name it in passing: round 1's washing machine answer read a dog bed thread
     and showed a dog bed tip, its towel answer a yoga mat thread's cork mat tip.
 
-    General and kitchen answers (config.LOOK_FOR_OWN_TYPE_CATEGORIES; in a kitchen answer only a tip naming another
-    type is left out, as another kind of cookware is a real alternative there: engine.answer._another_types_tip);
-    skincare and haircare answers have their own rule (engine.answer._another_types_advice). Nor an ingredient-led
-    request, which has no one type."""
+    General answers only (config.LOOK_FOR_OWN_TYPE_CATEGORIES): another kind of cookware is a real alternative in a
+    kitchen answer (10 Oct 2026: "Look for: cast iron" for a non-stick pan), and skincare and haircare answers have their
+    own rule (engine.answer._another_types_advice). Nor an ingredient-led request, which has no one type."""
     if query.category not in config.LOOK_FOR_OWN_TYPE_CATEGORIES or not query.product_type or query.ingredient_led:
         return set()
     requested = query.product_type

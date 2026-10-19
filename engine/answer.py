@@ -2230,10 +2230,9 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
 
     Since 18 Oct 2026 (round 2; only tips about the type asked for): a note from one of `other_types_threads`, the
     threads read that are about another type of product (the pipeline's _threads_about_another_type: a dog bed thread
-    a washing machine answer read because its post names a washing machine in passing), backs no advice that is that
-    type's (_another_types_tip): in a general answer any but one whose own name names the type asked for ("mat towels"
-    in a towel answer), in a kitchen answer one whose own name names another type ("cheap rice cookers" in a saucepan
-    answer); a kind left without notes gives none.
+    a washing machine answer read because its post names a washing machine in passing), backs no advice, unless the
+    kind's own name names the type asked for ("mat towels" in a towel answer: _another_types_tip); a kind left without
+    notes gives none.
     """
     candidates = []
     asked_words, refused = _asked_and_refused(ranking.category, product_type, request, needs, asks)
@@ -2312,16 +2311,10 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
 
 
 def _another_types_tip(kind: str, category: str, product_type: str | None) -> bool:
-    """Whether a kind's notes from a thread about another type of product are that type's tips (18 Oct 2026), by the
-    kind's own name as _named_types reads it: never when it names the type asked for ("mat towels" and "Turkish cotton
-    towel" name a towel); in a general answer, any other ("cork mat", "crib mattress as a dog bed" in a washing machine
-    answer); in a kitchen answer (config.LOOK_FOR_OTHER_NAMED_ONLY) only one naming another type of product ("cheap rice
-    cookers" in a saucepan answer), since another kind or material of cookware is a real alternative there ("Look for:
-    carbon steel"; 10 Oct 2026)."""
-    named = _named_types(kind, category)
-    if product_type and product_type in named:
-        return False
-    return bool(named) if category in config.LOOK_FOR_OTHER_NAMED_ONLY else True
+    """Whether a kind's notes from a thread about another type of product are that type's tips (18 Oct 2026): unless
+    its own name names the type asked for, as _named_types reads names ("mat towels" and "Turkish cotton towel" name a
+    towel; "cork mat" and "crib mattress as a dog bed" don't)."""
+    return not (product_type and product_type in _named_types(kind, category))
 
 
 def _form_shown(kind: str, forms_asked: Collection[str]) -> bool:

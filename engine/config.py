@@ -2522,12 +2522,11 @@ MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "Brooklinen")
 # about another type when fewer than LOOK_FOR_TYPE_SHARE of the products the AI found in it are of the requested type:
 # a quarter keeps the threads comparing the type with a close one (headphones and earbuds threads, about a third each)
 # and leaves out a yoga mat thread read for towels (one product in seven a towel) or a dog bed thread read for washing
-# machines (none). Kitchen keeps another kind or material of cookware as an alternative (10 Oct 2026: "Look for: cast
-# iron" for a non-stick pan), so there such a thread's tip is left out only when its own name names another type of
-# product (LOOK_FOR_OTHER_NAMED_ONLY: "cheap rice cookers" in a saucepan answer, "induction cooktop" in a sheet pan
-# one); skincare and haircare have their own rule for another type's advice.
-LOOK_FOR_OWN_TYPE_CATEGORIES = ("general", "kitchen")
-LOOK_FOR_OTHER_NAMED_ONLY = ("kitchen",)
+# machines (none). Kitchen answers keep another kind of cookware as an alternative (10 Oct 2026: "Look for: cast iron"
+# for a non-stick pan; tried on 18 Oct 2026 for kitchen tips naming another type of product, it also took "Avoid:
+# non-stick pans" from cast iron skillet answers and "Look for: cast iron" from saucepan ones, so not kept); skincare
+# and haircare have their own rule for another type's advice.
+LOOK_FOR_OWN_TYPE_CATEGORIES = ("general",)
 LOOK_FOR_TYPE_SHARE = 0.25
 # Bean to cup (UK) is what US writers call a super automatic machine: one need, so the request's need-led reading finds
 # the threads titled "super automatic ..." and its comments about them, and, named before the machine ("bean to cup

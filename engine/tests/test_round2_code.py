@@ -94,34 +94,14 @@ def test_a_thread_is_about_another_type_when_few_of_its_products_are_of_the_type
     assert pipeline._threads_about_another_type(checked, threads, query) == {"d1", "n1"}
 
 
-def test_skincare_and_haircare_answers_keep_their_own_rule_for_another_types_advice():
-    checked = {"d1": extraction("cleanser", "cleanser", "cleanser")}
-    threads = [thread("d1", "Best cleanser?")]
-    for request in ("moisturiser for dry skin", "shampoo for curly hair"):
+def test_kitchen_skincare_and_haircare_answers_keep_their_own_rules_for_another_types_advice():
+    # Kitchen keeps another kind of cookware as an alternative (10 Oct 2026: "Look for: cast iron" for a non-stick pan,
+    # and "Avoid: non-stick pans" in a cast iron skillet answer, whose notes come from frying pan threads); skincare and
+    # haircare have their own rule (engine.answer._another_types_advice).
+    checked = {"d1": extraction("frying pan", "frying pan", "frying pan")}
+    threads = [thread("d1", "Best frying pan?")]
+    for request in ("cast iron skillet for a beginner", "moisturiser for dry skin", "shampoo for curly hair"):
         assert pipeline._threads_about_another_type(checked, threads, parse_query(request, model=None)) == set()
-
-
-def saucepan_ranking():
-    """A saucepan answer: two saucepans, and two tips from a rice cooker thread (t9): one naming another type of
-    product, one a material of cookware."""
-    items = (mentions(3, "Potco saucepan", category="kitchen") + mentions(3, "Simmerco saucepan", category="kitchen"))
-    notes = [note("cheap rice cookers", "t9", quote="Cheap rice cookers do the job for years."),
-             note("cheap rice cookers", "t9", quote="Get one of the cheap rice cookers instead."),
-             note("tri-ply stainless steel", "t9", quote="Tri-ply stainless steel heats evenly for rice too.")]
-    return rank_products(items, "kitchen", notes, {}), bodies_for(*items, *notes)
-
-
-def test_a_kitchen_answer_leaves_out_another_types_tip_but_keeps_another_kind_of_cookware():
-    # Round 1's saucepan answers showed "Look for: cheap rice cookers", from a rice cooker thread. In kitchen answers
-    # another kind or material of cookware stays a real alternative (10 Oct 2026: "Look for: cast iron" for a non-stick
-    # pan): only a tip naming another type of product is left out, and only from a thread about another type.
-    ranking, bodies = saucepan_ranking()
-    shown = [item.kind for item in write_answer(ranking, bodies, "saucepan", other_types_threads={"t9"}).look_for]
-    assert "cheap rice cookers" not in shown and "tri-ply stainless steel" in shown
-    query = parse_query("a good saucepan", model=None)
-    checked = {"r1": extraction("rice cooker", "rice cooker", "pressure cooker"), "s1": extraction("saucepan")}
-    threads = [thread("r1", "Cheap rice cooker that lasts?"), thread("s1", "Best saucepan?")]
-    assert pipeline._threads_about_another_type(checked, threads, query) == {"r1"}
 
 
 # --- Names ---
