@@ -30,8 +30,12 @@ Two things the pipeline settles before the ranking (9 Oct 2026), so they arrive 
 The rules, in plain words:
 - Minimum evidence: a product can be a pick only with at least 3 credible recommendations from at least 2
   different threads, and a score above zero. The kind bonus never helps a product pass this rule.
-- Skip-these list: at least 2 credible warnings, and more credible warnings than credible recommendations.
-  A product on it is never a pick.
+- Skip-these list: at least 2 credible warnings, from at least 2 threads (config.SKIP_MIN_THREADS, Noemi's decision 2
+  of 16 Oct 2026: the picks bar's two threads), and more credible warnings than credible recommendations. A warning from
+  the opposite of a need the request asks about (ScoredMention.opposite_need: an oily-skin complaint in a dry-skin
+  answer) doesn't count toward it (ProductScore.skip_warnings), and at most config.SKIP_SHOWN are shown (engine/answer.py).
+  A product on it is never a pick; one with warnings from one thread only isn't listed, and stays no pick if its credible
+  recommendations fall short.
 - Disagreement flag: at least one credible recommendation and at least 2 credible warnings. Flagged, not hidden.
 - Also worth a look (Noemi's decision 2 of 13 Oct 2026): a product with exactly 2 credible recommendations
   (config.WORTH_A_LOOK_CREDIBLE), from at least 2 different threads (WORTH_A_LOOK_MIN_THREADS), a score above zero and
@@ -80,9 +84,16 @@ The rules, in plain words:
   confirmed come first. Those the upvote rule or a standing-out comment lift still come after every product meeting
   the bar on its own (RankingResult.qualifying), confirmed or not: they only fill places left empty. Until then (the
   rules of 10 and 11 Oct 2026) a product we couldn't confirm kept its place, with a note; the note stays.
+- Features asked for first (Noemi's decision 1 of 16 Oct 2026; engine/features.py): when a kitchen or general request
+  names a feature before its product noun ("noise cancelling headphones", "gaming laptop", "quiet kettle"), the products
+  more of whose features a credible recommendation praises them for (ProductScore.features_praised) rank first, right
+  after the must-haves. Like confirmation, it never makes a pick: the bar and the rules above don't change, so a product
+  short of the bar stays short, and when no pick is praised for a feature the answer says so (engine.pipeline).
 - Ties, decided the same way every time: higher score first (differences under one millionth are rounding
   noise, so they count as a tie), then more credible recommendations, then more threads with one, then more
-  high voices recommending it, then the name in alphabetical order.
+  high voices recommending it, then the name in alphabetical order. PROPOSED (17 Oct 2026, config.RANK_BY_CREDIBLE_POINTS,
+  off: it changes the brief's Sum rule, Noemi's to decide): the credible mentions' points before the score, so hearsay
+  and low voices only break ties (b03 ranked innisfree, 3 credible voices and 8 hearsay ones, above CeraVe's 7 credible).
 - Thin evidence: when no product meets the minimum-evidence rule, `thin_evidence` is True; when fewer than 3
   do, `needs_more_threads` is True. Either is the pipeline's signal to fetch more threads (CLAUDE.md open item).
 """
@@ -158,11 +169,20 @@ class ScoredMention:
     # as written: a quote naming one of them is about another product (engine/answer.py: "my Lodge carbon steel skillet
     # has replaced my cast iron" for a cast iron pick).
     others_of_another_type: tuple[str, ...] = ()
+    # The features the request names that this mention praises the product for (17 Oct 2026, Noemi's decision 1 of 16
+    # Oct 2026; engine/features.py: "noise cancelling" in "noise cancelling headphones"): empty when it praises it for
+    # none, and for every mention of a request naming no feature. Only a credible recommendation's count (rank_products).
+    features: tuple[str, ...] = ()
+    # Whether its comment comes from the opposite of a need the request asks about and doesn't talk about the need itself
+    # (17 Oct 2026, her decision 2: oily-skin complaints in a dry-skin answer; config.NEED_OPPOSITES): such a warning
+    # doesn't count toward Skip these.
+    opposite_need: bool = False
 
     def __post_init__(self):
         object.__setattr__(self, "badges", tuple(self.badges))  # a list given by the pipeline is fine too
         object.__setattr__(self, "needs", tuple(self.needs))
         object.__setattr__(self, "others_of_another_type", tuple(self.others_of_another_type))
+        object.__setattr__(self, "features", tuple(self.features))
         _check_choice("category", self.category, MENTION_CATEGORIES)
         _check_choice("voice", self.voice, VOICE_LEVELS)
         _check_choice("evidence", self.evidence, EVIDENCE_LEVELS)
@@ -336,6 +356,10 @@ class ProductScore:
     # counted_twice it isn't in the score breakdown: the answer says it in the product's note ("we couldn't
     # confirm...").
     unconfirmed: int = 0
+    # The request's features (engine/features.py) at least one of its credible recommendations praises it for, in the
+    # request's order (Noemi's decision 1 of 16 Oct 2026): more rank first, after the must-haves. Empty without a feature
+    # asked. Like `unconfirmed`, not in the score breakdown.
+    features_praised: tuple[str, ...] = ()
 
     @property
     def credible_recommendations(self) -> list[ScoredMention]:
@@ -344,6 +368,18 @@ class ProductScore:
     @property
     def credible_warnings(self) -> list[ScoredMention]:
         return [m for m in self.mentions if m.stance == "warn" and is_credible(m)]
+
+    @property
+    def skip_warnings(self) -> list[ScoredMention]:
+        """The credible warnings that count toward Skip these: all but those from the opposite of a need the request
+        asks about (Noemi's decision 2 of 16 Oct 2026; ScoredMention.opposite_need)."""
+        return [m for m in self.credible_warnings if not m.opposite_need]
+
+    @property
+    def credible_points(self) -> float:
+        """The sum of its credible mentions' weights (recommendations add, warnings subtract): what the PROPOSED order by
+        credible support sorts by (config.RANK_BY_CREDIBLE_POINTS, 17 Oct 2026)."""
+        return round(sum(m.weight for m in self.mentions if m.stance != "neutral" and is_credible(m)), DECIMALS)
 
 
 @dataclass
@@ -406,7 +442,7 @@ class RankingResult:
     def skip_list(self) -> list[ProductScore]:
         """Products credible voices warn against, most credible warnings first."""
         skipped = [p for p in self.products if p.on_skip_list]
-        return sorted(skipped, key=lambda p: (-p.breakdown.credible_warnings, p.score, p.name.casefold(), p.key))
+        return sorted(skipped, key=lambda p: (-len(p.skip_warnings), p.score, p.name.casefold(), p.key))
 
     @property
     def best_candidate(self) -> ProductScore | None:
@@ -435,6 +471,7 @@ def rank_products(
     upvote_rule: bool | None = None,
     standout_rule: bool | None = None,
     unconfirmed: Mapping[str, int] | None = None,
+    features: Iterable[str] = (),
 ) -> RankingResult:
     """Ranks the products of one category, best first, by the rules at the top of this file.
 
@@ -446,6 +483,9 @@ def rank_products(
     config.STANDOUT_ON.
     `unconfirmed`: {product key: how many of the request's must-haves its facts leave unconfirmed} (Noemi's decision 1
     of 15 Oct 2026): fewer rank first. None, or a product not in it, is 0.
+    `features`: the features the request names (engine/features.py, Noemi's decision 1 of 16 Oct 2026), in its order:
+    a product with more of them praised by its credible recommendations (ScoredMention.features) ranks first, right after
+    the must-haves. Empty, the order is as before.
     """
     _check_choice("category", category, THREAD_CATEGORIES)
     placements = {kind: set(products) for kind, products in (placements or {}).items()}
@@ -461,8 +501,11 @@ def rank_products(
         _score_product(key, product_mentions, kinds, placements, leader, kind_bonus, upvote_rule, standout_rule)
         for key, product_mentions in by_product.items()
     ]
+    features = tuple(features)
     for product in products:
         product.unconfirmed = max(0, (unconfirmed or {}).get(product.key, 0))
+        praised = {f for m in product.credible_recommendations for f in m.features}
+        product.features_praised = tuple(f for f in features if f in praised)
     products.sort(key=_rank_order)
     on = config.UPVOTE_COUNTS_MORE if upvote_rule is None else upvote_rule
     return RankingResult(category, products, kinds, leader, notes, fill_only=on and config.UPVOTE_ONLY_TO_FILL)
@@ -502,23 +545,27 @@ def _score_product(
     credible_threads = len({m.thread_id for m in credible_recommends})
     # Toward the bar, a credible recommendation counted twice for its upvotes counts two (14 Oct 2026; off: none does).
     twice = _counted_twice(credible_recommends, upvote_rule)
-    counted = len(credible_recommends) + len(twice)
+    toward_bar = len(credible_recommends) + len(twice)
 
-    on_skip_list = (
-        len(credible_warnings) >= SKIP_MIN_CREDIBLE_WARNINGS and len(credible_warnings) > len(credible_recommends)
-    )
+    # Warned off (the skip rule of 9 Oct 2026): at least SKIP_MIN_CREDIBLE_WARNINGS credible warnings, outnumbering the
+    # credible recommendations: never a pick nor "Also worth a look". Listed under Skip these (Noemi's decision 2 of 16
+    # Oct 2026) only with those warnings from at least SKIP_MIN_THREADS threads. Either way, the warnings from the
+    # opposite of a need the request asks about are left aside: they say nothing to this shopper.
+    counted = [m for m in credible_warnings if not m.opposite_need]
+    warned_off = len(counted) >= SKIP_MIN_CREDIBLE_WARNINGS and len(counted) > len(credible_recommends)
+    on_skip_list = warned_off and len({m.thread_id for m in counted}) >= config.SKIP_MIN_THREADS
     disputed = bool(credible_recommends) and len(credible_warnings) >= DISAGREEMENT_MIN_CREDIBLE_WARNINGS
-    shortfall = _shortfall(counted, credible_threads, points, on_skip_list, len(twice))
+    shortfall = _shortfall(toward_bar, credible_threads, points, warned_off, len(twice), on_skip_list)
     # Also worth a look counts writers: a product the upvote rule lifts keeps its place there in case its score leaves it
     # out of the picks (RankingResult.worth_a_look).
     worth_a_look = (len(credible_recommends) == WORTH_A_LOOK_CREDIBLE and credible_threads >= WORTH_A_LOOK_MIN_THREADS
-                    and points > 0 and not on_skip_list)
+                    and points > 0 and not warned_off)
     # A comment standing out in its thread (14 Oct 2026), for a product still short of the bar: Also worth a look, and
     # with a second credible writer the bar, the comment counting as two and standing in for the second thread. Warnings
     # still count writers: more credible recommendations than credible warnings. What the upvote rule lifts stays its.
     standouts = tuple(sorted((m for m in credible_recommends if stands_out(m, standout_rule)),
                              key=lambda m: (-m.upvotes, m.comment_id)))
-    by_standout = (bool(standouts) and shortfall is not None and points > 0 and not on_skip_list
+    by_standout = (bool(standouts) and shortfall is not None and points > 0 and not warned_off
                    and len(credible_warnings) < len(credible_recommends))
     if by_standout:
         worth_a_look = True  # kept in case it isn't a pick (RankingResult.worth_a_look), as for the upvote rule's
@@ -561,12 +608,16 @@ def _score_product(
     )
 
 
-def _shortfall(credible: int, threads: int, points: float, on_skip_list: bool, twice: int = 0) -> str | None:
+def _shortfall(credible: int, threads: int, points: float, warned_off: bool, twice: int = 0,
+               listed: bool | None = None) -> str | None:
     """Why a product can't be a pick, in words, or None when it meets the minimum-evidence rule. `credible` counts the
-    credible recommendations as the bar does, `twice` of them counted twice for their upvotes (14 Oct 2026)."""
+    credible recommendations as the bar does, `twice` of them counted twice for their upvotes (14 Oct 2026).
+    `warned_off`: more credible warnings than recommendations; `listed`, it is on the skip-these list too (its warnings
+    from two threads, 17 Oct 2026; None: as warned_off)."""
     reasons = []
-    if on_skip_list:
-        reasons.append("more credible warnings than recommendations (on the skip-these list)")
+    if warned_off:
+        listed = warned_off if listed is None else listed
+        reasons.append("more credible warnings than recommendations" + (" (on the skip-these list)" if listed else ""))
     if credible < MIN_CREDIBLE_MENTIONS:
         counted = f" ({twice} counted twice for {'its' if twice == 1 else 'their'} upvotes)" if twice else ""
         reasons.append(f"{credible} of {MIN_CREDIBLE_MENTIONS} credible recommendations{counted}")
@@ -585,10 +636,14 @@ def _count(mentions: list[ScoredMention], level: str, levels: tuple[str, ...]) -
 
 def _rank_order(product: ProductScore) -> tuple:
     """The sort order: best first, ties broken as described at the top of this file. Fewer must-haves left unconfirmed
-    come first (Noemi's decision 1 of 15 Oct 2026; 0 for every product of a request without one)."""
+    come first (Noemi's decision 1 of 15 Oct 2026; 0 for every product of a request without one), then more of the
+    request's features praised (her decision 1 of 16 Oct 2026; none for a request naming none), then, only with the
+    PROPOSED config.RANK_BY_CREDIBLE_POINTS (17 Oct 2026, off), more credible points."""
     b = product.breakdown
     return (
         product.unconfirmed,
+        -len(product.features_praised),
+        -product.credible_points if config.RANK_BY_CREDIBLE_POINTS else 0.0,
         -product.score,
         -b.credible_recommends,
         -b.credible_threads,

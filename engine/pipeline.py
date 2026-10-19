@@ -110,6 +110,18 @@ Two ranking changes of 9 Oct 2026 are worked out here, in _score, before module 
   every mention and note they make, so none of it is credible. They are named on the result (contradicting_writers)
   for reports, which count them; nothing about them is shown to users.
 
+Two more of 17 Oct 2026 (the converge round, ws-ranking), from Noemi's decisions of 16 Oct 2026, also worked out in
+_score:
+- features: a kitchen or general request naming a feature before its product noun ("noise cancelling headphones",
+  "quiet kettle"; engine/features.py) gives each recommendation the features its own words, or its thread's ask, praise
+  its product for (ScoredMention.features); the products so praised rank first (engine.rank), and when no pick is, the
+  answer says so after its own message (_note_features, wording PROPOSED);
+- opposite needs: a warning whose comment talks about the opposite of a need the request asks about, and not the need
+  itself (an oily-skin complaint in a dry-skin answer; config.NEED_OPPOSITES), doesn't count toward Skip these
+  (ScoredMention.opposite_need).
+A brand line's warnings folded under a specific product of its brand (_fold_brand_skips) are shown apart from the
+pick's own, which alone its downsides' count holds (engine.answer.DOWNSIDES_SHARE_BRAND, wording PROPOSED).
+
 Names are shown as a UK shopper knows them (decision 12): "Sage", not "Breville" (engine.group_products.uk_name).
 
 The same product never shows twice in one answer (13 Oct 2026, from reading the day's answers: b06 had "Fellow Stagg
@@ -193,10 +205,11 @@ from engine.config import (
 )
 from engine.contradictions import contradicting_writers
 from engine.credibility import (
-    VoiceScore, badges, copied_comment_ids, copy_groups, mention_weight, repeated_copies, score_evidence, score_voice,
-    thread_upvotes, with_ai_evidence,
+    VoiceScore, badges, copied_comment_ids, copy_groups, mention_weight, product_text, repeated_copies, score_evidence,
+    score_voice, thread_upvotes, with_ai_evidence,
 )
 from engine.extract import CheckResult, shown_comment_ids
+from engine.features import Feature, feature_note, praised_for, request_features, thread_asks_for
 from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
 from engine.group_products import (
     LibraryRanges, ProductGroup, ProductMention, brand_pick_name, group_of, group_products, library_name_index,
@@ -215,7 +228,7 @@ from engine.match_products import (
 )
 from engine.memo import Table
 from engine.models import Comment, Thread
-from engine.needs import Need, judged_needs, needs_met, said_not_to_help
+from engine.needs import Need, judged_needs, needs_met, needs_of, said_not_to_help
 from engine.prices import (
     Price,
     PriceCheck,
@@ -243,7 +256,7 @@ from engine.product_facts import (
 from engine.profiles import ProfileStore, StoredProfiles, with_profiles
 from engine.query import _OTHER_KNIVES as OTHER_KNIVES, PRODUCT_TYPES, ParsedQuery, parse_query
 from engine.rank import KindNote, RankingResult, ScoredMention, rank_products
-from engine.sources import LocalSource, mentions_product, names_product
+from engine.sources import LocalSource, mentions_product, names_product, titled_as_another_type
 from engine.summaries import SUMMARIES_FILE, Summary, load_summaries
 
 
@@ -535,8 +548,14 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.contradicting_writers = sorted(contradicting_writers(groups, {c.id: c for t in threads for c in t.comments}))
     # What a comment talks about of the request is judged by the needs a comment can talk about (15 Oct 2026): the need
     # rule's, so the reason, the breakdown and the quotes shown first say no more than the rule judges.
+    # The features the request names (Noemi's decision 1 of 16 Oct 2026, engine/features.py), each thread's ask for
+    # them, and the opposites of its needs (her decision 2: oily-skin complaints in a dry-skin answer), 17 Oct 2026.
+    features = request_features(query)
+    asking = {t.id: {f.name for f in features if thread_asks_for(t, f, titled_as_another_type(t.title, query))}
+              for t in threads} if features else {}
     scored, kind_notes = _score(threads, checked, kept_groups, kinds, judged_needs(query),
-                                set(result.contradicting_writers), request_asks(query))
+                                set(result.contradicting_writers), request_asks(query), features, asking,
+                                _opposite_needs(query))
     if summaries is None:
         loaded = load_summaries(Path(library_dir) / SUMMARIES_FILE)
         summaries = loaded.entries
@@ -545,7 +564,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     def rank_and_write(result: PipelineResult, scored: list[ScoredMention], kind_notes: list[KindNote],
                        upvote_rule: bool) -> PipelineResult:
         """Modules 6 and 7 for this reading: the ranking, the answer, and the live checks of what it shows."""
-        result.ranking, more_downsides = _fold_brand_skips(
+        result.ranking, more_downsides, brand_downsides = _fold_brand_skips(
             _fold_brand_picks(_ranked(scored, query, kind_notes, kinds, need_led, result.skip_only, upvote_rule,
                                       result.unconfirmed),
                               kept_groups, result, query.product_type),
@@ -557,10 +576,12 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
                                      judged_needs(query), query.text, summaries,
-                                     _worth_left_out(result.ranking, kept_groups), **wording, ranges=ranges)
+                                     _worth_left_out(result.ranking, kept_groups), **wording, ranges=ranges,
+                                     brand_downsides=brand_downsides)
         if live_checker is not None:
             _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions,
                         kept_groups, unsuited_kinds, need_led, summaries, wording, ranges, upvote_rule=upvote_rule)
+        _note_features(result, features, query)
         thread_of = {c.id: t.id for t in threads for c in t.comments}
         quoted = {thread_of.get(quote.comment_id) for _, quote in _every_quote(result.answer)}
         result.threads_quoted = [tid for tid in result.threads_used if tid in quoted]
@@ -619,10 +640,13 @@ def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
     there (Noemi's decision 1 of 13 Oct 2026). `upvote_rule`: with Noemi's upvote rules (14 Oct 2026), as config sets
     them: counting twice (config.UPVOTE_COUNTS_MORE) and a comment standing out (config.STANDOUT_ON). `unconfirmed`:
     {product key: how many of the request's must-haves its facts can't confirm} (PipelineResult.unconfirmed): those
-    products rank after the confirmed ones (Noemi's decision 1 of 15 Oct 2026; engine.rank)."""
+    products rank after the confirmed ones (Noemi's decision 1 of 15 Oct 2026; engine.rank). The features the request
+    names (engine/features.py) order the products praised for them first, right after the must-haves (her decision 1 of
+    16 Oct 2026)."""
     ranking = rank_products(scored, query.category, kind_notes, placements(kinds),
                             upvote_rule=upvote_rule and config.UPVOTE_COUNTS_MORE,
-                            standout_rule=upvote_rule and config.STANDOUT_ON, unconfirmed=unconfirmed)
+                            standout_rule=upvote_rule and config.STANDOUT_ON, unconfirmed=unconfirmed,
+                            features=[f.name for f in request_features(query)])
     judged = {need.name for need in judged_needs(query)}
     if (need_led or query.category in NEED_RULE_IN_EVERY_READING) and judged:
         ranking.products = [replace(p, qualifies=False, shortfall=WIDER_READING_SHORTFALL, worth_a_look=False)
@@ -638,6 +662,42 @@ def _talks_about(product, needs: set[str]) -> bool:
     """Whether one of a product's credible recommendations talks about one of these needs (their names: the need rule's,
     engine.needs.judged_needs)."""
     return any(needs.intersection(m.needs) for m in product.credible_recommendations)
+
+
+def _note_features(result: PipelineResult, features: tuple[Feature, ...], query: ParsedQuery) -> None:
+    """When no pick shown is praised for a feature the request names (Noemi's decision 1 of 16 Oct 2026: "if we can't
+    find any, still show up with the main prod"), the answer says so (engine.features.FEATURE_NOT_PRAISED, wording
+    PROPOSED), after its own message when it has one. Changed in place, as the no-threads message is, so the rest of the
+    answer stays the one module 7 wrote. An answer with no picks says why in its own message."""
+    if not features or result.answer is None or not result.answer.picks:
+        return
+    by_key = {p.key: p for p in result.ranking.products}
+    praised = [by_key[pick.product_key].features_praised if pick.product_key in by_key else ()
+               for pick in result.answer.picks]
+    note = feature_note(features, praised, plural(query.product_type) if query.product_type else "products",
+                        query.product_type or "product")
+    if note and note not in (result.answer.message or ""):
+        result.answer.message = f"{result.answer.message} {note}" if result.answer.message else note
+
+
+def _opposite_needs(query: ParsedQuery) -> tuple[tuple[str, tuple[Need, ...]], ...]:
+    """(a need the request asks about, the needs opposite to it) for each of its needs with opposites (Noemi's decision 2
+    of 16 Oct 2026; config.NEED_OPPOSITES: oily skin for dry skin), with config's words for each opposite (engine.needs.
+    needs_of), leaving out an opposite the request asks about too ("combination skin, dry and oily")."""
+    asked = {need.name for need in judged_needs(query)}
+    words = needs_of(query.category)
+    return tuple((name, tuple(Need(o, words[o]) for o in config.NEED_OPPOSITES[name] if o in words and o not in asked))
+                 for name in sorted(asked) if name in config.NEED_OPPOSITES)
+
+
+def _from_the_opposite_need(body: str, needs: tuple[Need, ...], opposites) -> bool:
+    """Whether a comment talks about the opposite of a need the request asks about and not about that need itself (an
+    oily-skin complaint in a dry-skin answer, unless it talks about dry skin too): such a warning doesn't count toward
+    Skip these (engine.rank; Noemi's decision 2 of 16 Oct 2026)."""
+    if not opposites:
+        return False
+    own = set(needs_met(body, needs))
+    return any(need not in own and needs_met(body, others) for need, others in opposites if others)
 
 
 def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds, query, price_checks, care,
@@ -688,13 +748,14 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         ranking = _ranked([m for m in scored if m.comment_id not in failed], query,
                           [n for n in kind_notes if n.comment_id not in failed], kinds, need_led, result.skip_only,
                           upvote_rule, result.unconfirmed)
-        result.ranking, more_downsides = _fold_brand_skips(
+        result.ranking, more_downsides, brand_downsides = _fold_brand_skips(
             _fold_brand_picks(ranking, groups, result, query.product_type), groups, result)
         models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks)
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
                                      judged_needs(query), query.text, summaries,
-                                     _worth_left_out(result.ranking, groups), **(wording or {}), ranges=ranges)
+                                     _worth_left_out(result.ranking, groups), **(wording or {}), ranges=ranges,
+                                     brand_downsides=brand_downsides)
 
 
 def _checked_together(live_checker, quotes, may_wait: set[str] | None = None) -> dict[tuple[str, str], object]:
@@ -1820,8 +1881,8 @@ def _the_line_itself(product: ProductGroup, line: ProductGroup, product_type: st
             and not any(_names_a_model(name, line, product_type) for name in product.names))
 
 
-def _fold_brand_skips(ranking: RankingResult, groups: list[ProductGroup],
-                      result: PipelineResult) -> tuple[RankingResult, dict[str, list[ScoredMention]]]:
+def _fold_brand_skips(ranking: RankingResult, groups: list[ProductGroup], result: PipelineResult
+                      ) -> tuple[RankingResult, dict[str, list[ScoredMention]], dict[str, tuple[str, list[ScoredMention]]]]:
     """The ranking without the brands or lines on the skip list that a shown pick belongs to, and their credible
     warnings by that pick's key, to show under its Known downsides after its own (decided by Claude, 10 Oct 2026).
 
@@ -1836,18 +1897,29 @@ def _fold_brand_skips(ranking: RankingResult, groups: list[ProductGroup],
     Also (10 Oct 2026, night: b09's "Hario Mini (their coffee grinders)", while a credible warning about the Hario Mini
     Mill, one of its own grinders, was shown nowhere): a shown brand or line pick speaks for its specific products, so
     the credible warnings about those that are neither shown as picks nor on the skip list go under its downsides too,
-    after its own."""
+    after its own.
+
+    Since 17 Oct 2026 (the converge round, ws-ranking item 5) the warnings of a brand line folded under a specific
+    product of its brand are about the line as a whole, not the pick: they come back apart, {pick key: (the line's name
+    as shown, its credible warnings)}, shown after the pick's own and counted apart (engine.answer.DOWNSIDES_SHARE_BRAND:
+    b01's COSRX toner, one warning of its own, had said "4 of 7"). Under a line pick they stay its own."""
     by_key = {g.key: g for g in groups}
     shown = [(p, by_key[p.key]) for p in ranking.qualifying if p.key in by_key][:PICKS_SHOWN]
     more: dict[str, list[ScoredMention]] = {}
+    apart: dict[str, tuple[str, list[ScoredMention]]] = {}
     folded, keys = [], set()
     for skipped in ranking.skip_list:
         group = by_key.get(skipped.key)
         if group is None or not group.loose:
             continue
-        pick = next((p for p, g in shown if _same_brand(group, g) or _same_brand(g, group)), None)
-        if pick is not None:
-            more.setdefault(pick.key, []).extend(skipped.credible_warnings)
+        found = next(((p, g) for p, g in shown if _same_brand(group, g) or _same_brand(g, group)), None)
+        if found is not None:
+            pick, pick_group = found
+            if pick_group.loose:
+                more.setdefault(pick.key, []).extend(skipped.credible_warnings)
+            else:
+                name, line = apart.get(pick.key, (skipped.name, []))
+                apart[pick.key] = (name, line + list(skipped.credible_warnings))
             folded.append(FoldedBrandPick(skipped.name, pick.name))
             keys.add(skipped.key)
     elsewhere = {p.key for p, _ in shown} | {s.key for s in ranking.skip_list}
@@ -1860,7 +1932,7 @@ def _fold_brand_skips(ranking: RankingResult, groups: list[ProductGroup],
                 more.setdefault(pick.key, []).extend(product.credible_warnings)
     result.folded_skips = folded
     ranking = replace(ranking, products=[p for p in ranking.products if p.key not in keys]) if keys else ranking
-    return ranking, more
+    return ranking, more, apart
 
 
 # --- Also worth a look: the brand rules (Noemi's decision 2 of 13 Oct 2026; rules decided by Claude) ---
@@ -2026,14 +2098,19 @@ def _same_brand_of(brand: ProductGroup, product: ProductGroup, bases: tuple[str,
 
 def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[ProductGroup], kinds,
            needs: tuple[Need, ...] = (),
-           contradicting: set[str] = frozenset(), asks: tuple[str, ...] = ()) -> tuple[list[ScoredMention], list[KindNote]]:
+           contradicting: set[str] = frozenset(), asks: tuple[str, ...] = (), features: tuple[Feature, ...] = (),
+           asking: Mapping[str, set[str]] | None = None,
+           opposites: tuple = ()) -> tuple[list[ScoredMention], list[KindNote]]:
     """A weight for every product mention and kind note of the threads read (module 5), ready for the ranking.
 
     `needs` are the request's needs a comment can talk about (engine.needs.judged_needs, since 15 Oct 2026; every need
     of engine.needs.request_needs before): a product mention whose comment talks about one of them weighs
     NEED_MATCH_BOOST times as much, and they are the needs the mention carries (ScoredMention.needs). `contradicting`
     are the writers who contradict themselves (engine.contradictions): every mention and note of theirs counts as a low
-    voice.
+    voice. `features` (17 Oct 2026, engine/features.py) are the features the request names, `asking` each thread's
+    features its title or post asks for: each mention carries the features its own words, or its thread's ask, praise
+    its product for (ScoredMention.features). `opposites` (_opposite_needs) give each warning from the opposite of a
+    need asked about (ScoredMention.opposite_need).
     """
     by_id = {t.id: t for t in threads}
     group_by_mention = group_of(groups)
@@ -2070,6 +2147,11 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
             met = _needs_talked_about(m.quote, comment.body, needs, asks, evidence.level == "long-term use", m.stance)
             weight = mention_weight(voice, evidence, m.stance) * (NEED_MATCH_BOOST if met else 1)
             standing = upvotes.get(m.comment_id)
+            praised = ()
+            if features and m.stance == "recommend":
+                text = product_text(comment, m.product, others)
+                praised = tuple(f.name for f in features if praised_for(
+                    f, text, (m.product, group.name), f.name in (asking or {}).get(tid, ())))
             scored.append(ScoredMention(
                 product_key=group.key, product_name=group.name, category=group.category, thread_id=tid,
                 comment_id=m.comment_id, comment_url=str(comment.url), stance=m.stance,
@@ -2081,6 +2163,8 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                 share_beaten=standing.share_beaten if standing else None,
                 products_named=named[m.comment_id], needs_asked=bool(needs),
                 others_of_another_type=_others_of_another_type(m, res.kept),
+                features=praised,
+                opposite_need=m.stance == "warn" and _from_the_opposite_need(comment.body, needs, opposites),
             ))
         for n in res.kept_notes:
             if n.comment_id in repeats:

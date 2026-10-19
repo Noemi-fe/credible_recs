@@ -262,8 +262,13 @@ def test_a_line_written_with_the_types_words_on_the_skip_list_folds_into_its_bra
                             "general")
     assert [p.key for p in ranking.skip_list] == [line.key]
     result = pipeline.PipelineResult(query=None)
-    folded, downsides = pipeline._fold_brand_skips(ranking, groups, result)
-    assert folded.skip_list == [] and len(downsides[percale.key]) == 3
+    # 17 Oct 2026 (ws-ranking item 5): a brand line's warnings folded under a specific product of its brand are about the
+    # line as a whole, so they come back apart, with the line's name, and the pick's own count leaves them out.
+    skipped_name = ranking.skip_list[0].name
+    folded, downsides, apart = pipeline._fold_brand_skips(ranking, groups, result)
+    assert folded.skip_list == [] and percale.key not in downsides
+    name, warnings = apart[percale.key]
+    assert name == skipped_name and len(warnings) == 3
 
 
 def test_the_brands_unsold_products_rule_reads_the_line_as_written():

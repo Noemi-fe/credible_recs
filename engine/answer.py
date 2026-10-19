@@ -230,6 +230,12 @@ DOWNSIDES_HEADING = "Known downsides"
 # Known downsides in proportion (Noemi, 12 Oct 2026: a single warning under many long-term recommendations read as if it
 # outweighed them). Shown above a pick's downsides; wording from her own example, decided by Claude.
 DOWNSIDES_SHARE = "{n} of {total} credible voices warned against it:"
+# Warnings about the pick's brand's line as a whole, shown after its own (17 Oct 2026, the converge round, ws-ranking item
+# 5; wording PROPOSED, decided by Claude): b01's COSRX toner had said "4 of 7 credible voices warned against it" with one
+# warning of its own, the other three about COSRX's exfoliants in general. The count is its own; the line's are said
+# apart, and their quotes come after its own.
+DOWNSIDES_SHARE_BRAND = "{n} of {total} credible voices warned against it, and {more} more against the {line} as a whole:"
+DOWNSIDES_BRAND_ONLY = "No credible voice warned against it, but {more} warned against the {line} as a whole:"
 SUPPORT_LABEL = "Credible support"
 BREAKDOWN_HEADING = "Score breakdown"  # off the answer card since 12 Oct 2026 (Noemi); kept in the JSON
 LOOK_FOR_HEADING = "What to look for"
@@ -524,6 +530,9 @@ class Pick:
     # only when no price or availability line links to that page already, nor a range link to the line's; else None.
     link: ShownLink | None = None
     image: ShownImage | None = None
+    # How many of the last `downsides` are about the pick's brand's line as a whole, not the pick (17 Oct 2026, the
+    # converge round's item 5: DOWNSIDES_SHARE_BRAND says how many voices); 0 when none is.
+    brand_downsides: int = 0
 
 
 @dataclass
@@ -624,7 +633,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
                  ingredient: str | None = None, forms: Mapping[str, str | None] | None = None,
                  forms_asked: Collection[str] = (), ranges: Mapping[str, BrandLine] | None = None,
                  prescription: Collection[str] = (), flattened: Collection[str] = (),
-                 pages: Mapping[str, ProductPage] | None = None) -> Answer:
+                 pages: Mapping[str, ProductPage] | None = None,
+                 brand_downsides: Mapping[str, tuple[str, list[ScoredMention]]] | None = None) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -655,7 +665,9 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     comments whose words are Reddit's embed page's text (flattened_comments): their quotes are shown as they are, never
     widened to the sentences before them. `pages` ({product key: entry of data/product_pages.json}, 15 Oct 2026) are the
     researched pages of the products: each such pick and item links to its own page (shown_link) and shows its maker's
-    image (shown_image). They never change which products are shown.
+    image (shown_image). They never change which products are shown. `brand_downsides` ({pick key: (its brand's line's
+    name as shown, the line's credible warnings)}, 17 Oct 2026: the pipeline's _fold_brand_skips) are warnings about a
+    specific pick's brand's line as a whole: shown after its own downsides and counted apart (DOWNSIDES_SHARE_BRAND).
     """
     check = _QuoteCheck(bodies, flattened)
     pages = pages or {}
@@ -678,7 +690,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             tips = _care_tips(CareTips(own.own, []) if own else None, check)
             notes = [CAUTION.format(reason=reason) for reason in cautions.get(product.key, [])]
             picks.append(_pick(len(picks) + 1, product, quotes, check, ranking, price, tips, availability, notes,
-                               (more_downsides or {}).get(product.key, []), needs))
+                               (more_downsides or {}).get(product.key, []), needs,
+                               (brand_downsides or {}).get(product.key)))
             picks[-1].model = models.get(product.key)
             picks[-1].model_price = (model_prices or {}).get(product.key)
             picks[-1].summary = _summary(product, _summary_of(product, summaries), check)
@@ -695,11 +708,13 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
         item.range = shown_range(ranges.get(item.product_key))
         item.prescription = _prescription(item.product_key, prescription)
         _with_page(item, pages.get(item.product_key))
-    skip = [_skip_item(product, check) for product in ranking.skip_list]
+    # At most config.SKIP_SHOWN under Skip these, those with the most warnings that count first (Noemi's decision 2 of
+    # 16 Oct 2026); one with no verified warning quote gives its place to the next.
+    skip = [item for item in (_skip_item(product, check) for product in ranking.skip_list)
+            if item is not None][:config.SKIP_SHOWN]
     for item in skip:
-        if item is not None:
-            item.form = forms.get(item.product_key)
-            item.prescription = _prescription(item.product_key, prescription)
+        item.form = forms.get(item.product_key)
+        item.prescription = _prescription(item.product_key, prescription)
     look_for = _look_for(ranking, check, product_type, unsuited_kinds, request, asks, [pick.name for pick in picks],
                          forms_asked)
     care_note = _care_note([care.get(pick.product_key) for pick in picks], picks, check)
@@ -713,7 +728,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
         product_type=product_type,
         picks=picks,
         look_for=look_for,
-        skip=[item for item in skip if item is not None],
+        skip=skip,
         message=_message(len(picks), product_type, standout_pick),
         needs_more_threads=len(picks) < PICKS_SHOWN,
         quotes_dropped=check.dropped,
@@ -1712,12 +1727,21 @@ def _warning_quotes(groups: Iterable[Iterable[ScoredMention]], check: _QuoteChec
 def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _QuoteCheck, ranking: RankingResult,
           price: ShownPrice, care: list[ShownCareTip], availability: ShownAvailability = NOT_CHECKED,
           cautions: list[str] | None = None, more_downsides: list[ScoredMention] = (),
-          needs: tuple[Need, ...] = ()) -> Pick:
-    """One pick. `more_downsides`: credible warnings about the pick's own brand or line, shown after its own (the
-    pipeline's _fold_brand_skips, 10 Oct 2026). `needs`: warnings that talk about them come first among equally clear
-    ones ("when my bonavita broke" for a kettle that should last)."""
+          needs: tuple[Need, ...] = (), brand: tuple[str, list[ScoredMention]] | None = None) -> Pick:
+    """One pick. `more_downsides`: credible warnings about the products of a brand line pick, its own (the pipeline's
+    _fold_brand_skips, 10 Oct 2026). `brand`: (the name of a specific pick's brand's line, the line's credible warnings),
+    shown after its own and counted apart (17 Oct 2026; DOWNSIDES_SHARE_BRAND). `needs`: warnings that talk about them
+    come first among equally clear ones ("when my bonavita broke" for a kettle that should last)."""
     warnings = product.credible_warnings
     downsides = _warning_quotes((warnings, more_downsides), check, DOWNSIDES_PER_PICK, needs)
+    line_name, line_warnings = brand if brand else (None, [])
+    own_writers = _warned(product, more_downsides)
+    line_warnings = [m for m in line_warnings if (m.author or m.comment_id) not in own_writers]
+    own_shown = len(downsides)
+    if line_warnings and len(downsides) < DOWNSIDES_PER_PICK:
+        shown = {q.comment_id for q in downsides}
+        downsides += _warning_quotes(([m for m in line_warnings if m.comment_id not in shown],), check,
+                                     DOWNSIDES_PER_PICK - len(downsides), needs)
     return Pick(
         rank=rank,
         product_key=product.key,
@@ -1734,8 +1758,9 @@ def _pick(rank: int, product: ProductScore, quotes: list[ShownQuote], check: _Qu
         availability=availability,
         care=care,
         cautions=cautions or [],
-        downsides_share=_downsides_share(product, more_downsides) if downsides else None,
+        downsides_share=_downsides_share(product, more_downsides, line_name, line_warnings) if downsides else None,
         voices=_voices(product, more_downsides),
+        brand_downsides=len(downsides) - own_shown,
     )
 
 
@@ -1766,11 +1791,20 @@ def _warned(product: ProductScore, more_downsides: Iterable[ScoredMention] = ())
     return {m.author or m.comment_id for m in [*product.credible_warnings, *more_downsides]}
 
 
-def _downsides_share(product: ProductScore, more_downsides: Iterable[ScoredMention] = ()) -> str:
+def _downsides_share(product: ProductScore, more_downsides: Iterable[ScoredMention] = (), line: str | None = None,
+                     line_warnings: Iterable[ScoredMention] = ()) -> str:
     """DOWNSIDES_SHARE for a pick: the writers its downsides come from (_warned), of those and its credible
     recommendations together (Noemi, 12 Oct 2026): "1 of 15 credible voices warned against it:" reads as what it is.
-    The mixed-opinions line (DISAGREEMENT) counts the same writers, so the two never give different numbers."""
+    The mixed-opinions line (DISAGREEMENT) counts the same writers, so the two never give different numbers. The writers
+    who warned against its brand's `line` as a whole (17 Oct 2026) are said apart (DOWNSIDES_SHARE_BRAND), or alone when
+    none warned against the pick itself (DOWNSIDES_BRAND_ONLY)."""
     warned = _warned(product, more_downsides)
+    more = len({m.author or m.comment_id for m in line_warnings} - warned)
+    if line and more:
+        if not warned:
+            return DOWNSIDES_BRAND_ONLY.format(more=more, line=line)
+        return DOWNSIDES_SHARE_BRAND.format(n=len(warned), total=len(warned) + len(product.credible_recommendations),
+                                            more=more, line=line)
     return DOWNSIDES_SHARE.format(n=len(warned), total=len(warned) + len(product.credible_recommendations))
 
 
@@ -1927,13 +1961,15 @@ def _support(product: ProductScore) -> str:
 
 
 def _skip_item(product: ProductScore, check: _QuoteCheck) -> SkipItem | None:
-    """A skip-these entry with its verified warnings, or None when no warning quote passes the check."""
-    quotes = _warning_quotes((product.credible_warnings,), check, QUOTES_PER_SKIPPED_PRODUCT)
+    """A skip-these entry with its verified warnings, or None when no warning quote passes the check. Since 17 Oct 2026
+    the warnings that count toward Skip these (ProductScore.skip_warnings: those from the opposite of a need asked about
+    left aside, Noemi's decision 2 of 16 Oct 2026), so the reason never counts a voice its quotes leave out."""
+    quotes = _warning_quotes((product.skip_warnings,), check, QUOTES_PER_SKIPPED_PRODUCT)
     if not quotes:
         return None
     praised = len(product.credible_recommendations)
     reason = SKIP_REASON.format(
-        voices=_plural(len(product.credible_warnings), "credible voice"),
+        voices=_plural(len(product.skip_warnings), "credible voice"),
         praised=SKIP_ALSO_PRAISED.format(voices=_plural(praised, "credible voice")) if praised else "",
     )
     return SkipItem(product.key, product.name, reason, quotes)

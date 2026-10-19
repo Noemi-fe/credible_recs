@@ -158,11 +158,13 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # (engine/tests/test_prescription_note.py).
     # Changed on purpose 15 Oct 2026 (Noemi's decisions 2 and 3 of the late afternoon): each pick also has its "link" to
     # its own page and its maker's "image", or null (engine/tests/test_buyable.py).
+    # Changed on purpose 17 Oct 2026 (ws-ranking, item 5): each pick also says how many of its last downsides are about
+    # its brand's line as a whole, "brand_downsides", 0 when none is (engine/tests/test_answer_converge.py).
     assert set(data["answer"]["picks"][0]) == {"rank", "product_key", "name", "reason", "support", "quotes",
                                                "downsides", "disagreement", "score", "breakdown", "price",
                                                "availability", "care", "cautions", "model", "model_price",
                                                "downsides_share", "summary", "voices", "form", "range",
-                                               "prescription", "link", "image"}
+                                               "prescription", "link", "image", "brand_downsides"}
     assert set(data["answer"]["picks"][0]["quotes"][0]) == {"text", "comment_id", "url", "badges"}
     assert set(data["answer"]["picks"][0]["price"]) == {"text", "amount", "currency", "shop", "url", "checked_on",
                                                         "budget_status", "budget_note", "from_price"}

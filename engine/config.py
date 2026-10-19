@@ -2405,3 +2405,68 @@ TYPE_OTHER_NAMES: dict[str, tuple[str, ...]] = {
 # own: "about induction or hob"), extending the need's words in place for this item.
 NEEDS = NEEDS | {"induction-compatible": NEEDS["induction-compatible"] + (
     "induction hob", "induction stove", "induction cooktop", "induction hot plate", "induction range")}
+
+# --- Converge round 1: ws-ranking (17 Oct 2026) ---
+# Modules 5 and 6, from the breadth-first review of 16 Oct 2026 (docs/bfs-2026-10-16/credibility-and-ranking.md) and
+# Noemi's decisions of 16 Oct 2026 (evening). Values chosen by Claude within her decisions; what goes beyond them is
+# marked PROPOSED and switched off.
+# Item 3, her decision 3 (first-hand use): the AI's reading of the whole comment counts when the rules miss the writer's
+# use (engine.credibility.with_ai_evidence), only with a concrete tag or the writer speaking for themselves, and never
+# for someone else's experience. On because her gold threads' agreement and votes didn't get worse (eval/RUNS.md, 17
+# Oct 2026); False goes back to the rules' reading, the AI only taking use away.
+AI_FIRST_HAND_COUNTS = True
+# And its long use (the same decision, 17 Oct 2026): where the rules see use but no time ("I use it", a verdict) and the
+# AI reads long-term use, the AI's reading counts. Her held-out kettle thread: 27 -> 29 of 30 products as answers use
+# them; her scored threads unchanged. False keeps the rules' short-term use there.
+AI_LONG_TERM_COUNTS = True
+# Item 2, her decision 2 (Skip these): a product is listed under Skip these only with credible warnings from at least
+# SKIP_MIN_THREADS threads (the picks bar's two threads; 140 of the 16 Oct sweep's 271 shown items came from one), the
+# warnings from the opposite of a need the request asks about left aside (NEED_OPPOSITES: an oily-skin complaint in a
+# dry-skin answer, unless it talks about dry skin too), and at most SKIP_SHOWN are shown (engine/answer.py).
+SKIP_MIN_THREADS = 2
+SKIP_SHOWN = 5
+# The needs whose opposite a request can name, skin and hair types (Claude's list, from her example): {need: its
+# opposites}. Kitchen and general needs have none listed; a warning about something else there still counts.
+NEED_OPPOSITES: dict[str, tuple[str, ...]] = {
+    "dry": ("oily",), "oily": ("dry",),
+    "dry hair": ("oily hair",), "oily hair": ("dry hair",),
+}
+# Item 6 (PROPOSED, off: it changes the brief's Sum rule, Noemi's to decide): the picks ordered by credible support, the
+# sum of their credible mentions' weights, with every mention's score (hearsay and low voices included) breaking ties.
+# On the 16 Oct sweep 26 of 472 pairs of picks had a pick with fewer and shorter credible voices first only because of
+# its other mentions' points (b03: innisfree's 3 credible voices and 8 hearsay ones above CeraVe's 7 credible).
+RANK_BY_CREDIBLE_POINTS = False
+# Item 1, her decision 1 (features before the product noun; engine/features.py). Claude's lists, from the 16 Oct sweep's
+# 41 requests naming a feature: the categories it applies to (skincare and haircare keep their need rule); the config
+# needs that describe a product, so a request naming them before its noun asks for a feature (a beginner, a home cook or
+# lasting is about the buyer or the whole library); words that only name the product ("coffee machine", "tea kettle",
+# "computer mouse"); how a comment praises a product for a config need and what says the opposite (quiet: "very noisy"
+# isn't praise); short forms a comment may use for a feature; and the words of a product's own name that say a feature's
+# opposite (a "corded DeWalt drill" is no cordless drill, whatever its writer says of cordless ones).
+FEATURE_CATEGORIES = ("kitchen", "general")
+FEATURE_CONFIG_NEEDS = ("quiet", "stainless steel", "dishwasher-safe", "induction-compatible", "plastic-free",
+                        "temperature control")
+FEATURE_PLAIN_WORDS = ("coffee", "tea", "computer", "pc", "mobile", "cell", "wrist", "bed", "bath", "drink", "drinks",
+                       "power", "web", "home", "kitchen", "pair")
+FEATURE_PRAISE_WORDS: dict[str, tuple[str, ...]] = {
+    "quiet": ("quiet", "silent", "silence", "whisper", "no noise", "barely any noise", "hardly any noise",
+              "little noise"),
+}
+FEATURE_AGAINST_WORDS: dict[str, tuple[str, ...]] = {
+    "quiet": ("noisy", "loud", "rattl", "racket", "screech", "whine", "whining"),
+}
+FEATURE_SHORT_FORMS: dict[str, tuple[str, ...]] = {"noise cancelling": ("anc",), "true wireless": ("tws", "wireless")}
+# Materials (Claude's list): a request naming one before its noun ("stainless steel pan", "cast iron kettle", "glass
+# teapot") gets praise from the writer's own words only, in a clause holding the product, never from a thread's ask:
+# on the 16 Oct library a cast iron kettle thread's answers proposed enamel and stainless kettles, and comments compare
+# materials (one praised stainless steel in general, then named a non-stick Tramontina for those who want one).
+FEATURE_MATERIALS = ("stainless steel", "stainless", "cast iron", "carbon steel", "steel", "iron", "enamel", "enamelled",
+                     "enameled", "ceramic", "copper", "glass", "aluminium", "aluminum", "titanium", "wood", "wooden",
+                     "bamboo", "teak", "walnut", "maple", "olive wood", "plastic", "silicone", "porcelain", "stoneware",
+                     "clay", "leather", "suede", "canvas", "wool", "merino", "cotton", "linen", "silk", "cashmere",
+                     "denim", "raw denim", "down", "nylon", "polyester", "gore-tex", "goretex")
+FEATURE_OPPOSITE_NAMES: dict[str, tuple[str, ...]] = {
+    "cordless": ("corded",), "wireless": ("wired",), "true wireless": ("wired",),
+    "noise cancelling": ("open back", "open-back"), "automatic": ("quartz", "solar", "eco-drive", "eco drive"),
+    "mechanical": ("membrane",),
+}
