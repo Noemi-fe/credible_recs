@@ -81,3 +81,25 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   comment-level bootstrap: -9.6 to +1.2 points). Its own slips, now told to every extraction helper: a reply's
   product name comes from its parent's own words; a tool or applicator named in passing isn't a mention; tentative
   interest is neutral. Opus stays for the orchestrator, judgement reviews and code that changes scoring or rules.
+- Tech and home data round, finished 18 Oct 2026 (branch ws-data-tech, three builders in turn; the last one under the
+  cost policy; technical calls by Claude, reported to Noemi). The library copy holds 185 new threads (extract-v15, every
+  quote word for word, 0 rejected: 5,521 mentions, 1,261 notes, 114 care tips, 547 agreements), all extracted by Sonnet
+  in batches of 12 to 20 threads, slimmed (new threads only), with the profiles of the 160 writers whose comments
+  answers quote warmed (3,197 other writers listed in docs/bfs-2026-10-17/profiles-later-ws-data-tech.txt). The last
+  round read and extracted threads only for requests that still had fewer than 3 picks: office chair 6, standing desk 6,
+  pillow 6, air purifier 6, pet-hair vacuum 2, 4k monitor 8, smartwatch 8 (and copied 35 threads the earlier builders had
+  extracted). Four phone threads about phones that last were taken out again: for "a phone with a good camera" they put
+  the iPhone 7 and 8 first, so a thread is kept only when it is about the request's need. Prices, pages and availability
+  (dated 18 Oct, UK delivery address) for the picks shown: laptop lines (ThinkPad, Lenovo, Framework, Zenbook, MacBook
+  Pro), Pixel, power banks, JBL Clip 5, SEBO, Garmin, Levoit, Winix, Steelcase, Fully's Jarvis desk, Tresanti at Costco UK.
+  Left out and named as no longer sold new: Pixel 4a, Galaxy Note10+, Galaxy S9+, Ultimate Ears MEGABOOM 3 (units still
+  listed on Amazon UK by marketplace sellers do not count as "final stock counts as sold": Claude's reading of Noemi's
+  rule, for her to confirm). Sold abroad only, kept with the note: UPLIFT desks, Purple's Harmony pillow, Sleep On
+  Latex, the TCL 27C2A Pro. Results: 5,404 tests pass; the evaluation equals the baseline except the library's size
+  (62,969 -> 68,490 quotes found word for word, shown 250 -> 253 of 253 verified); blind test 10/10 full top 3s; of the
+  278 sweep answers 58 changed (14 only by the date: the base code on the base library gives them today; 9 by the lists;
+  7 by the threads; 28 by both; none by the warmed profiles). Still short of 3 picks, by data the decided communities do
+  not hold: webcam for video calls (0), 4k monitor for work or photo editing (1: the market is split over many models),
+  smartwatch for fitness (1), and, from the eval requests, mirrorless camera (0), mesh wifi (2), case for an iPhone 15
+  (2), robot vacuum under 300 pounds (2: the budget rule removed the Eufy line). "Gaming laptop under 1000 pounds" shows
+  laptop lines that are not gaming laptops (no need rule for the general category: Noemi's call, see the report).
