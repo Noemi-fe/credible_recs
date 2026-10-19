@@ -146,6 +146,7 @@ from engine.config import (
     NEEDS,
     OTHER_KIND_WORDS,
     QUOTE_ADVICE_AGAINST_PATTERNS,
+    QUOTE_ASKING_PATTERNS,
     QUOTE_FAILURE_PATTERNS,
     QUOTE_PRAISE_PATTERNS,
     QUOTE_STANCE_NEGATION_WINDOW,
@@ -223,11 +224,14 @@ SKIP_ALSO_PRAISED = ", though still recommended by {voices}"
 LOOK_FOR = "Look for"  # a kind credible voices recommend
 AVOID = "Avoid"  # a kind credible voices warn against
 RULE = "at least {mentions} credible recommendations across at least {threads} threads"
+# The no-pick and fewer-picks notes: wording approved by Noemi, 19 Oct 2026 (the rest of this block still waits).
 NO_PICKS = "Not enough credible evidence to recommend {what} yet: a pick needs {rule}. We'd rather say so than guess."
-# When no saved thread is about the product at all (14 Oct 2026, the general category: most of its types have none yet;
-# wording decided by Claude, PROPOSED). On the live site on-demand reading then says it has started reading.
-NO_THREADS = ("We haven't read any Reddit threads about {products} yet, so there's nothing to recommend from. We'd "
-              "rather say so than guess.")
+# When no saved thread is about the product at all (14 Oct 2026, the general category: most of its types have none yet).
+# Reworded 19 Oct 2026 (Noemi, of the first wording: "make it a little nicer if possible?"); the new wording PROPOSED,
+# for her to see. The page shows it as the answer's message, under the search box and the example requests ("the
+# examples above"); with on-demand reading on (after the interviews), its reading note says it has started reading.
+NO_THREADS = ("We haven't read Reddit about {products} yet, so we'd rather not guess. Try a related product, or one of "
+              "the examples above.")
 FEWER_PICKS = "Enough credible evidence for only {products} ({rule}), so we show {n} instead of {wanted}."
 BADGE_VOICE = "{voice}-credibility voice"  # the badge when module 5 gave no reason in words
 QUOTES_HEADING = "In their words"
@@ -236,7 +240,7 @@ DOWNSIDES_HEADING = "Known downsides"
 # outweighed them). Shown above a pick's downsides; wording from her own example, decided by Claude.
 DOWNSIDES_SHARE = "{n} of {total} credible voices warned against it:"
 # Warnings about the pick's brand's line as a whole, shown after its own (17 Oct 2026, the converge round, ws-ranking item
-# 5; wording PROPOSED, decided by Claude): b01's COSRX toner had said "4 of 7 credible voices warned against it" with one
+# 5; wording decided by Claude, approved by Noemi, 19 Oct 2026): b01's COSRX toner had said "4 of 7 credible voices warned against it" with one
 # warning of its own, the other three about COSRX's exfoliants in general. The count is its own; the line's are said
 # apart, and their quotes come after its own.
 DOWNSIDES_SHARE_BRAND = "{n} of {total} credible voices warned against it, and {more} more against the {line} as a whole:"
@@ -333,7 +337,7 @@ AVAILABILITY = "Sold at {shop}, checked {date}"
 AVAILABILITY_UNKNOWN = "Availability not checked yet"
 AVAILABILITY_GONE = "No longer sold, checked {date}"  # never shown through the pipeline, which leaves such products out
 # A product not sold to UK shoppers but not discontinued (sold abroad, mostly in the US), shown with this note (Noemi,
-# 15 Oct 2026, evening). Wording PROPOSED.
+# 15 Oct 2026, evening). Wording approved by Noemi, 19 Oct 2026.
 AVAILABILITY_NOT_IN_UK = "Not sold in the UK, checked {date}"
 # Sold second-hand only: a product no longer made (Griswold and Wagner cast iron), sold only second-hand, on eBay UK or
 # by a UK vintage dealer. Noemi's decision of 10 Oct 2026: such products count as available, and the answer says so.
@@ -359,7 +363,8 @@ CAUTION = "Note: {reason}."
 # product or sensitive skin (config.PRODUCT_FACT_RULES, "prescription only"): the note is for every other answer.
 PRESCRIPTION_NOTE = "Prescription-only in the UK: ask a doctor or pharmacist."
 PRESCRIPTION_TAG = "Prescription-only"
-# Also worth a look (Noemi's decision 2 of 13 Oct 2026; wording decided by Claude). The note under the heading says how
+# Also worth a look (Noemi's decision 2 of 13 Oct 2026; wording decided by Claude, its notes approved by Noemi, 19 Oct
+# 2026). The note under the heading says how
 # much less support its products have: "2 credible voices each: less evidence than the picks above, which need at least
 # 3 credible recommendations across at least 2 threads." With no picks above, WORTH_NOTE_NO_PICKS.
 WORTH_HEADING = "Also worth a look"
@@ -370,7 +375,8 @@ WORTH_NOTE_STANDOUT = ("{voices} each, or one comment that stands out in its thr
                        "above, which need {rule}.")
 WORTH_NOTE_STANDOUT_NO_PICKS = ("{voices} each, or one comment that stands out in its thread: less evidence than a "
                                 "pick needs ({rule}).")
-# Products past the picks (Noemi's decision 4 of 15 Oct 2026; wording decided by Claude, PROPOSED): a product that meets
+# Products past the picks (Noemi's decision 4 of 15 Oct 2026; wording decided by Claude, approved by Noemi, 19 Oct
+# 2026): a product that meets
 # the picks bar on its own but ranks below the top 3 comes first under Also worth a look, labelled MEETS_BAR (its row's
 # tag on the page, a line under its name in the text). The note under the heading says it first: WORTH_NOTE_BAR_ONE when
 # it is the only item, WORTH_NOTE_BAR_EACH when every item is one, else WORTH_NOTE_BAR_FIRST(_ONE) and the others after
@@ -384,8 +390,8 @@ WORTH_NOTE_BAR_FIRST = "The first {n} meet the bar for a pick ({rule}) but rank 
 WORTH_NOTE_BAR_REST = "{voices} each: less evidence than a pick needs."
 WORTH_NOTE_BAR_REST_STANDOUT = ("{voices} each, or one comment that stands out in its thread: less evidence than a "
                                 "pick needs.")
-# One-line summaries (Noemi's decision 4 of 13 Oct 2026; wording decided by Claude): shown under a pick's name as
-# "In short: <summary>", with the note saying it is ours and not a quote.
+# One-line summaries (Noemi's decision 4 of 13 Oct 2026; wording decided by Claude, the note approved by Noemi, 19 Oct
+# 2026): shown under a pick's name as "In short: <summary>", with the note saying it is ours and not a quote.
 SUMMARY_LABEL = "In short:"
 SUMMARY_NOTE = "Our summary of what its credible voices say, not a quote."
 # Active ingredients (13 Oct 2026; wording decided by Claude). The title of an answer to a request naming an ingredient
@@ -997,9 +1003,62 @@ class _QuoteCheck:
             if _quote_problem(item.quote, item.comment_id, self.bodies):
                 self.dropped += 1
             else:
-                text = _shown_text(item.quote, self.bodies[item.comment_id])
-                shown.append(ShownQuote(text, item.comment_id, item.comment_url, _badges(item)))
+                body = self.bodies[item.comment_id]
+                text = _shown_text(item.quote, body)
+                # Never a question asking for other products or suggestions (Noemi, 19 Oct 2026): the part before it
+                # carrying the stance, or the next item's quote.
+                kept = _without_asking(text, getattr(item, "stance", None), _item_names(item))
+                if kept is None or (kept != text and not verify_quote(body, kept)):
+                    continue
+                shown.append(ShownQuote(kept, item.comment_id, item.comment_url, _badges(item)))
         return shown
+
+
+def _item_names(item) -> tuple[str, ...]:
+    """The names a quote's item goes by (a product's as shown and as written, a kind's, a care tip's product), whose
+    words say no stance (carries_its_stance)."""
+    names = (getattr(item, "product_name", None), getattr(item, "written_as", None), getattr(item, "kind_name", None),
+             getattr(item, "about", None))
+    return tuple(name for name in names if name)
+
+
+# A question asking for other products or suggestions (config.QUOTE_ASKING_PATTERNS, read inside a question only), where
+# a sentence or clause ends, and where a quote may be cut before one: at a sentence's end, or before a turn.
+_ASKING = re.compile("|".join(f"(?:{pattern})" for pattern in QUOTE_ASKING_PATTERNS), re.IGNORECASE)
+_QUESTION = re.compile(r"[^.!?\n]*\?")
+_CLAUSE_BREAK = re.compile(r"[,;:]\s|\s[-–—]\s")
+_CUT_AT = re.compile(r"(?<=[.!?])\s+|[,;]?\s+(?=(?:but|however|though|although|except|unfortunately|sadly|yet)\b)",
+                     re.IGNORECASE)
+_CUT_END = " ,;:-–—\n"
+
+
+def _without_asking(text: str, stance: str | None, names: tuple[str, ...] = ()) -> str | None:
+    """A shown quote without a question asking for other products or suggestions (config.QUOTE_ASKING_PATTERNS; Noemi,
+    19 Oct 2026, under her rule 4 of 15 Oct 2026): the quote whole when it asks nothing. Else the longest part before
+    the question (and before the clause leading into it: "..., but I want something richer, any suggestions?") that ends
+    on a clause carrying the stance it backs, cut at a sentence's end or at a turn ("I love it, but ..." is "I love
+    it"), and not reading against it; None when no part does, so the quote isn't shown. Always the comment's own words
+    from its start: it is cut, never reworded. A note with no stance (a care tip) keeps the part before the question
+    when it has 3 words or more."""
+    head_end = None
+    for question in _QUESTION.finditer(text):
+        asking = _ASKING.search(text, question.start(), question.end())
+        if asking is not None:
+            breaks = list(_CLAUSE_BREAK.finditer(text, question.start(), asking.start()))
+            head_end = breaks[-1].start() if breaks else question.start()
+            break
+    if head_end is None:
+        return text
+    head = text[:head_end].rstrip(_CUT_END)
+    if stance not in ("recommend", "warn"):
+        return head if len(head.split()) >= 3 else None
+    cuts = sorted({0, len(head), *(m.start() for m in _CUT_AT.finditer(head))})
+    for at in range(len(cuts) - 1, 0, -1):
+        part = head[:cuts[at]].rstrip(_CUT_END)
+        if (part and carries_its_stance(head[cuts[at - 1]:cuts[at]], stance, names)
+                and not reads_against_its_stance(part, stance, names)):
+            return part
+    return None
 
 
 def _quote_problem(text: str, comment_id: str, bodies: Mapping[str, str]) -> str | None:

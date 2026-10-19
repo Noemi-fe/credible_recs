@@ -555,10 +555,12 @@ DEPARTMENT_HINTS = {department: entry["hints"] for department, entry in GENERAL_
 
 EXAMPLES = {"skincare": "a cleanser, a moisturiser or a sunscreen", "kitchen": "a kettle, a chef's knife or a pan",
             "haircare": "a shampoo, a conditioner or a hair mask"}
-# The question when nothing places the request (wording PROPOSED, 14 Oct 2026: examples from across the categories).
+# The question when nothing places the request (14 Oct 2026: examples from across the categories; wording approved by
+# Noemi, 19 Oct 2026).
 VAGUE_QUESTION = ("What kind of product are you looking for? For example a moisturiser, a kettle, headphones or "
                   "hiking boots?")
-# A gift (17 Oct 2026, the ws-names builder; wording PROPOSED): a request for a present that names no product asks what
+# A gift (17 Oct 2026, the ws-names builder; wording of the gift questions, in a category or department or not, approved
+# by Noemi, 19 Oct 2026): a request for a present that names no product asks what
 # kind of gift, in the category or department its words suggest ("a gift for my dad who likes cooking"), with examples
 # answers can give whole (the blind test's chef knives, cast iron and grinders for the kitchen); one that suggests none
 # asks what the person likes, whose answer ("cooking", "gadgets") is a request the question within it then follows.

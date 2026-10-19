@@ -210,6 +210,25 @@ def test_a_brand_picks_model_is_part_of_its_reason():
     assert "Most named model: Victorinox Fibrox chef knife. Recommended by 3 credible voices" in shown
 
 
+def test_our_why_is_the_picks_one_line_summary_and_its_reason_line_only_without_one():
+    # Noemi's decision (m) of 19 Oct 2026: in the packets a pick's "why" is its one-line summary, what its voices say
+    # of it; the reason line ("Recommended by 3 credible voices...") counts voices, as the support line rule 6 drops.
+    summary = {"text": "Owners say it boils fast and still works after years of daily use.", "sources": []}
+    shown = shown_from_ours({"picks": [pick(1, "Dualit Classic Kettle", summary=summary)]})
+    assert shown.startswith("**1. Dualit Classic Kettle**\n\nOwners say it boils fast and still works after years of "
+                            "daily use.\n\n")
+    assert "Recommended by" not in shown
+    assert blind_test.words_per_pick(shown)[0] <= blind_test.BLIND_TEST_WORDS_PER_PICK
+    for missing in (None, {"text": "", "sources": []}):
+        assert "Recommended by 3 credible voices" in shown_from_ours({"picks": [pick(1, "Kettle", summary=missing)]})
+    shown = shown_from_ours({"picks": [pick(1, "Victorinox chef knife line", model="Victorinox Fibrox chef knife",
+                                            summary={"text": "Cooks say it stays sharp for years.", "sources": []})]})
+    assert "Most named model: Victorinox Fibrox chef knife. Cooks say it stays sharp for years." in shown
+    long_summary = {"text": " ".join(f"word{i}" for i in range(120)), "sources": []}
+    shown = shown_from_ours({"picks": [pick(1, "Long Kettle", summary=long_summary)]})
+    assert blind_test.words_per_pick(shown) == [blind_test.BLIND_TEST_WORDS_PER_PICK]  # within FORMAT.md's 90 words
+
+
 def test_a_pick_sold_second_hand_only_says_so():
     shown = shown_from_ours({"picks": [pick(1, "Griswold cast iron skillet line",  # the line's name: 12 Oct 2026
                                             availability={"text": "Sold second-hand only: eBay UK, checked 10 Oct 2026",
@@ -571,5 +590,8 @@ def test_also_worth_a_look_and_summaries_stay_out_of_the_blind_test_view():
             "message": None}
     shown = shown_from_ours(data)
     assert "**1. Dualit Classic Kettle**" in shown
-    for left_out in ("Made-up Worth Kettle", "Owners say it keeps going", "2 credible voices each", "In short"):
+    # Changed on purpose 19 Oct 2026 (Noemi's decision (m)): a pick's one-line summary is now its why, so it is shown,
+    # as the template's why line (without the page's "In short" label); it was left out until then.
+    assert "**1. Dualit Classic Kettle**\n\nOwners say it keeps going for years.\n\n" in shown
+    for left_out in ("Made-up Worth Kettle", "2 credible voices each", "In short"):
         assert left_out not in shown

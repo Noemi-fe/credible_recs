@@ -8,12 +8,17 @@ Noemi's decision 7 of 16 Oct 2026: a pick's note that it isn't sold in the UK (w
 is sold second-hand only, or that it needs a prescription is kept (rule 7). Until then the template dropped "Not sold
 in the UK" (b06's and b09's third picks would have lost it) and the prescription-only note.
 
+Noemi's decision (m) of 19 Oct 2026: our pick's why is its one-line summary (what its voices say of it, in our words,
+as the answer page shows it), and its reason line ("Recommended by 3 credible voices, ...") only when it has no
+summary. Until then our why was the reason line, which counts voices as the support line rule 6 drops does. The why
+counts toward the 90 words like the rest, and is cut at a word as the reason was (rule 2).
+
 ## The template
 
 ```
 **1. <product name>**
 
-<why: the tool's own reason for this pick>
+<why: the tool's own reason for this pick (ours: its one-line summary)>
 
 "<evidence, as the tool gave it>" (<what backs it, as the tool said it>)
 "<a second piece of evidence, if the tool gave one>" (...)

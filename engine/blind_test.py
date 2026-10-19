@@ -116,7 +116,8 @@ _PICK_HEADING = re.compile(r"^\*\*\d+\. .+\*\*$")
 
 def shown_from_ours(data: dict | None, words: int = BLIND_TEST_WORDS_PER_PICK) -> str:
     """Our answer (engine.answer.answer_to_dict) in the template every tool's answer is shown in. Per pick: its name,
-    its reason, its first two quotes with the badge that says what backs them (the writer's use when there is one),
+    its why (its one-line summary, or its reason line without one: Noemi's decision (m) of 19 Oct 2026), its first two
+    quotes with the badge that says what backs them (the writer's use when there is one),
     its first downside, its cautions, that it is sold second-hand only or not sold in the UK (with the day that was
     checked) or is prescription-only (Noemi's decision 7 of 16 Oct 2026), and its price when known, at most `words`
     words, the notes never cut (_fitted: the reason and the evidence cut at a word, a badge never; the downside only at
@@ -143,7 +144,10 @@ def _shown_pick(pick: dict, words: int) -> str:
     price = pick.get("price") or {}
     if price.get("amount") is not None and price.get("text"):
         fixed.append(f"Price: {price['text'].split(', checked')[0]}")
-    reason = pick["reason"].rstrip(".") + "."
+    # The why (Noemi's decision (m) of 19 Oct 2026): its one-line summary, what its voices say of it; its reason line,
+    # which counts voices as the support line rule 6 drops does, only when it has no summary.
+    why = ((pick.get("summary") or {}).get("text") or "").strip() or pick["reason"]
+    reason = why.rstrip(".") + "."
     if pick.get("model"):  # a brand pick's most recommended model (10 Oct 2026): our own words too
         price = f" ({pick['model_price'].split(', checked')[0]})" if pick.get("model_price") else ""
         reason = BRAND_PICK_MODEL.format(model=pick["model"]) + price + ". " + reason
@@ -383,12 +387,13 @@ def build_packets(folder: Path, questions_path: Path, testers: list[Tester], see
                  "order. Read all three, then say which one you would trust with your own money, which one you "
                  "would trust least, how confident you are from 1 to 5, and, if you like, why.", "",
                  f"In the response form, give your tester code, {tester.id}, and each question's code, in brackets "
-                 "after its number.", ""]
+                 "after its number.", ""]  # this line and the question heading below: approved by Noemi, 19 Oct 2026
         for number, qid in enumerate(assigned[tester.id], start=1):
             order = order_for(earlier[qid], index[qid], seed)
             earlier[qid] += 1
             key[tester.id][qid] = dict(zip(LETTERS, order))
-            # Its code (16 Oct 2026, Noemi's decision 7): the response form asks for it (eval/blind_test/RUNBOOK.md).
+            # Its code (16 Oct 2026, Noemi's decision 7): the response form asks for it (eval/blind_test/RUNBOOK.md). The
+            # heading's wording approved by Noemi, 19 Oct 2026.
             lines += [f'## Question {number} ({qid}): "{texts[qid]}"', ""]
             for letter, tool in zip(LETTERS, order):
                 # Line by line (16 Oct 2026, the website review: handed over as one line, an answer's picks ran

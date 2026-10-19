@@ -148,7 +148,8 @@ VISITS_COUNTED = ("<strong>Visit counts.</strong> We count visits with GoatCount
                   "it got, which feedback button was pressed, and the answer to “First time here?”. Never what you "
                   "typed.")
 VISITS_NOT_COUNTED = "<strong>Visit counts.</strong> Visits aren't counted at the moment."
-# The public site's host and its logs (Noemi's decision 5 of 16 Oct 2026; wording PROPOSED): since 12 Oct 2026 the site
+# The public site's host and its logs (Noemi's decision 5 of 16 Oct 2026; wording approved by Noemi, 19 Oct 2026):
+# since 12 Oct 2026 the site
 # runs on Google Cloud Run, whose request logs keep each request's time, address asked for, IP address and browser (and
 # the website that linked there, when the browser says) in Cloud Logging's _Default bucket for its default 30 days (no
 # exclusion or other keeping time is set: the website review of 16 Oct 2026). The request people type is in the body of

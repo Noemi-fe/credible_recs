@@ -93,7 +93,8 @@ SUBREDDITS: dict[str, tuple[str, ...]] = {
         "Coffee",
     ),
 }
-# The general category's departments (14 Oct 2026; chosen by Claude, reported to Noemi; the words shown are PROPOSED):
+# The general category's departments (14 Oct 2026; chosen by Claude, reported to Noemi; the words shown are PROPOSED,
+# but for the question's, its "noun" and "examples", approved by Noemi, 19 Oct 2026):
 # each product type of the category belongs to one (engine/data/product_types.json), and the page shows it above the
 # answer as the other categories' names are shown. For each: the name shown ("label"), the words a question about it
 # uses ("noun": "What kind of pet product are you after?") with its examples, the words that place a vague request in it
@@ -2618,3 +2619,45 @@ QUOTE_YARDSTICK = (r"(?:\bthan|\bas \w+(?: \w+){0,5} as|\bcompared (?:to|with)|\
 # about 5 minutes on Noemi's computer with the model off, 18 Oct 2026) stays well inside its 55-minute task timeout,
 # which the free-tier sums count (engine/tests/test_cloudrun.py). Claude's bound.
 PLAN_MAX_REQUESTS = 650
+
+# --- Round 4 of the convergence (19 Oct 2026, Noemi's decisions of 19 Oct 2026; DECISIONS.md) ---
+# (g) Essences stay out of toner answers (her decision): {the type asked for: the kinds of product that aren't it,
+# though module 1 routes their name to it}. A product the AI types as one of these, or whose names call it one and never
+# the type asked for, is another type in its answers ("COSRX Snail 96 Mucin Power Essence" in a toner answer; a
+# "Pyunkang Yul Essence Toner" is a toner), unless the request names that kind itself ("hydrating essence" still
+# routes to toners and keeps its essences). Whole words, lowercase, a plural "s" allowed.
+KINDS_KEPT_OUT_OF_TYPE = {"toner": ("essence",)}
+# (i) For fast-moving tech (FAST_MOVING_TYPES; her decision: "not super old tech, but let's make sure other options still
+# relevant count"): a comment older than this many years, counted back from the answer's day, says nothing for or
+# against a product unless the product, or the line it is, is known to be still sold (a price-list entry counting it
+# as sold, abroad too: her decision (c), no country preference; or a brand-lines entry saying the brand sells the
+# type). Newer comments count as before. PROPOSED (Claude's value, waiting for Noemi).
+FAST_MOVING_OLD_EVIDENCE_YEARS = 5
+# (j) A credible warning against a whole kind of product (her decision: "electric sharpeners" for Japanese knives) pushes
+# the products of that kind down: a kind whose credible notes warn against it more than they recommend it (its support
+# below zero, engine.rank.kind_support) takes this many points off each of its products' scores, as the leading kind's
+# products gain KIND_BONUS, so they rank below others with similar support. PROPOSED (Claude's size: the bonus's own).
+KIND_WARNING_PENALTY = KIND_BONUS
+# Item 10 (Noemi, 19 Oct 2026, of a pick's third quote that praised it and then asked the thread for something more
+# moisturising: "that's not bringing any further info to the user"), under her rule 4 of 15 Oct 2026 (a quote is the
+# most significant, coherent part of its comment for the stance it backs): a shown quote never holds a question asking
+# for other products or for suggestions. It is cut to the part before the question that ends on a clause carrying its
+# stance (at a sentence's end or at a turn: "but", "though"), or not shown (engine.answer._without_asking); a pick's
+# other quotes make up its two. Lowercase regular expressions, read only inside a question (a sentence ending with
+# "?"), so "I was looking for something better and found this" asks nothing; "Have you tried X?" suggests, it doesn't
+# ask. Claude's patterns.
+QUOTE_ASKING_PATTERNS = (
+    r"\bany (?:other |good |better |more )?(?:suggestions?|recommendations?|recs?|ideas|alternatives?|advice|tips)\b",
+    r"\b(?:suggestions?|recommendations?|recs|alternatives|ideas)\s*\?",
+    r"\b(?:can|could|would|will) (?:anyone|anybody|someone|somebody|you|y'all|people) (?:please )?"
+    r"(?:suggest|recommend|point me)\b",
+    r"\b(?:what|which)(?: \w+){0,3} (?:should|would|do|could|can) (?:i|we|you|y'all|people)(?: \w+){0,2} "
+    r"(?:recommend|suggest|use|try|get|buy|go for|pick)\b",
+    r"\bwhat else\b",
+    r"\b(?:anyone|anybody|someone|somebody) (?:recommend|suggest)\b",
+    r"\b(?:anyone|anybody|someone|somebody) (?:have|has|got|know(?: of)?) (?:a |an |any )?(?:good |better |cheaper )?"
+    r"(?:recommendations?|suggestions?|alternatives?|ideas|dupes?|substitutes?|replacements?)\b",
+    r"\b(?:is there|are there|know of|looking for|recommend|suggest) (?:a |an |any |some )?(?:good |better |cheaper "
+    r"|similar )?(?:alternatives?|dupes?|substitutes?|replacements?|recommendations?|suggestions?)\b",
+    r"\b(?:anything|something) (?:else|similar|better|cheaper|richer|lighter|more|less|like (?:it|this|that))\b",
+)

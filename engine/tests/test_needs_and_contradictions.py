@@ -18,15 +18,20 @@ SENSITIVE_REQUEST = "retinol for sensitive skin"
 
 
 def retinol_library(tmp_path: Path, rows: list[tuple[str, str, str, str]]) -> Path:
-    """Two skincare threads asking for a retinol for sensitive skin. Each row is one comment: (comment id, product,
-    stance, text); the text is also the quote. Comments starting with "r1" go in thread 1reti01, the others in 1reti02."""
+    """Two skincare threads asking which retinol to use. Each row is one comment: (comment id, product, stance, text);
+    the text is also the quote. Comments starting with "r1" go in thread 1reti01, the others in 1reti02.
+
+    Changed on purpose 19 Oct 2026 (Noemi's decision (d)): the threads' title asked for a retinol for sensitive skin,
+    and a top-level answer in a thread whose title asks for the need now talks about it for the need rule, so every
+    comment here would pass it; the title no longer names the need, as these tests are about what a comment's own words
+    say."""
     threads, extractions = {}, {}
     for comment_id, product, stance, body in rows:
         thread_id = "1reti01" if comment_id.startswith("r1") else "1reti02"
         threads.setdefault(thread_id, []).append(make_comment(comment_id, thread_id=thread_id, body=body))
         extractions.setdefault(thread_id, ([], []))[0].append(mention(comment_id, product, body, stance, "skincare"))
     root = write_gold(tmp_path / "library", [
-        make_thread(id=tid, title="Which retinol for sensitive skin?", body="Looking for my first one.",
+        make_thread(id=tid, title="Which retinol do you recommend?", body="Looking for my first one.",
                     url=f"https://www.reddit.com/r/SkincareAddiction/comments/{tid}/retinol/", comments=comments)
         for tid, comments in threads.items()
     ], voices=None, mentions=None)
