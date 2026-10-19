@@ -391,8 +391,10 @@ def test_the_page_carries_the_answers_own_headings_and_the_example_requests(tmp_
     assert settings["wording"]["quotes_heading"] == QUOTES_HEADING
     assert settings["maxChars"] == WEB_MAX_REQUEST_CHARS
     # Changed on purpose 16 Oct 2026 (Noemi's decision 7): the examples were the blind-test questions ("burr coffee
-    # grinder for pour-over under £150" was one); they are other requests now (the test below).
-    assert settings["examples"] == web.example_requests() and "vitamin c serum" in [e["text"] for e in settings["examples"]]
+    # grinder for pour-over under £150" was one); they are other requests now (the test below). Changed on purpose 19 Oct
+    # 2026 (Noemi: "no pimple patches or vitamin c serum"): the dutch oven is one of the six now.
+    assert settings["examples"] == web.example_requests() and "dutch oven that won't chip" in [
+        e["text"] for e in settings["examples"]]
     assert "PROPOSED" in html  # the page's own new wording is marked for Noemi's review
 
 
@@ -410,7 +412,11 @@ def test_the_sites_examples_are_never_the_blind_test_questions_nor_about_their_k
     assert "PROPOSED" in data["note"]
     same = {" ".join(q["text"].lower().split()) for q in questions}
     tested = {web._placed_by_rules(q["text"])[0] for q in questions}
-    assert len(examples) >= 8 and {e["category"] for e in examples} >= {"skincare", "kitchen"}
+    # Changed on purpose 19 Oct 2026 (Noemi: "less examples but more meaningful ones"): six, in the order she was offered
+    # them, no skincare one among them; until then at least 8, skincare and kitchen among them.
+    assert [e["text"] for e in examples] == ["dutch oven that won't chip", "a vacuum for pet hair",
+                                             "espresso machine for a beginner", "conditioner for frizzy curly hair",
+                                             "hiking boots", "carry on suitcase"]
     for example in examples:
         assert " ".join(example["text"].lower().split()) not in same, example
         product_type, asks_model = web._placed_by_rules(example["text"])

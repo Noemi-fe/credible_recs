@@ -90,8 +90,9 @@ def test_a_general_request_comes_back_as_picks_with_verified_quotes(tmp_path):
 def test_a_general_request_with_no_threads_yet_says_so_honestly(tmp_path):
     result = answer_request("robot vacuum for pet hair", library_dir=general_library(tmp_path))
     assert result.query.status == "ok" and result.threads_available == 0 and result.answer.picks == []
-    assert result.answer.message == "We haven't read any Reddit threads about robot vacuums yet, so there's nothing " \
-                                    "to recommend from. We'd rather say so than guess."
+    # Changed on purpose 19 Oct 2026 (Noemi: "make it a little nicer if possible?"; the new wording PROPOSED).
+    assert result.answer.message == "We haven't read Reddit about robot vacuums yet, so we'd rather not guess. Try a " \
+                                    "related product, or one of the examples above."
 
 
 def test_a_mention_typed_as_one_of_module_1s_types_counts_in_that_types_category(tmp_path):

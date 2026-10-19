@@ -74,7 +74,12 @@ The rules, in plain words:
   of them: it only fills places left empty, as above.
 - Kind support: each kind's support is the sum of the weights of its credible notes. If the best-supported kind
   has at least 2 credible recommending notes and at least twice the support of the next kind, its products
-  get a bonus (config.KIND_BONUS, shown in the score breakdown).
+  get a bonus (config.KIND_BONUS, shown in the score breakdown). A kind credible voices warn off as they would warn
+  off a product (warned_off_kinds: "avoid electric sharpeners" for Japanese knives, from at least 2 writers,
+  outnumbering its credible recommendations) pushes down the products whose own kind it is, by
+  config.KIND_WARNING_PENALTY (PROPOSED: the bonus's size), so they rank below others with similar support (Noemi's
+  decision (j) of 19 Oct 2026); never a kind the request names, nor one whose warnings only say what it is bad for
+  (the pipeline's kinds_not_pushed).
 - Confirmed first under a must-have (Noemi's decision 1 of 15 Oct 2026): when the request asks for something a
   product's facts can settle (engine.product_facts.hard_requirements: SPF for a lip balm, PFAS-free or non-stick for a
   pan, sulfate-free for a shampoo...), the pipeline says how many of those must-haves each product's facts and name
@@ -99,7 +104,7 @@ The rules, in plain words:
 """
 
 from collections import Counter, defaultdict
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Collection, Iterable, Mapping
 from dataclasses import dataclass, field
 
 from engine import config  # the upvote rule's settings, read when ranking (14 Oct 2026), so they can be switched
@@ -182,11 +187,16 @@ class ScoredMention:
     # feature ("about stainless steel" for praise of stainless pans beside a recommended non-stick one). Its weight and
     # the wider reading's need rule still count them, as before.
     needs_unpraised: tuple[str, ...] = ()
+    # For a recommendation that is a top-level answer (a direct reply to the post) in a thread whose title asks for some
+    # of the request's needs: those its own words don't talk about (Noemi's decision (d) of 19 Oct 2026). The need rule
+    # counts it as talking about them (engine.pipeline._talks_about); its reason and the rest go by `needs`, its words.
+    needs_by_title: tuple[str, ...] = ()
 
     def __post_init__(self):
         object.__setattr__(self, "badges", tuple(self.badges))  # a list given by the pipeline is fine too
         object.__setattr__(self, "needs", tuple(self.needs))
         object.__setattr__(self, "needs_unpraised", tuple(self.needs_unpraised))
+        object.__setattr__(self, "needs_by_title", tuple(self.needs_by_title))
         object.__setattr__(self, "others_of_another_type", tuple(self.others_of_another_type))
         object.__setattr__(self, "features", tuple(self.features))
         _check_choice("category", self.category, MENTION_CATEGORIES)
@@ -313,7 +323,7 @@ class ScoreBreakdown:
     """Every number behind a product's score, for the interface's expandable breakdown."""
 
     mention_points: float  # the sum of the mentions' weights
-    kind_bonus: float  # added when the product belongs to the leading kind, else 0
+    kind_bonus: float  # + for the leading kind, - for a kind warned against (KIND_WARNING_PENALTY), else 0
     kind: str | None  # the kind the product belongs to (the leading one if it is in it), or None
     kind_support: float | None  # that kind's support, or None
     recommends: int
@@ -478,6 +488,7 @@ def rank_products(
     standout_rule: bool | None = None,
     unconfirmed: Mapping[str, int] | None = None,
     features: Iterable[str] = (),
+    kinds_not_pushed: Collection[str] = (),
 ) -> RankingResult:
     """Ranks the products of one category, best first, by the rules at the top of this file.
 
@@ -492,6 +503,8 @@ def rank_products(
     `features`: the features the request names (engine/features.py, Noemi's decision 1 of 16 Oct 2026), in its order:
     a product with more of them praised by its credible recommendations (ScoredMention.features) ranks first, right after
     the must-haves. Empty, the order is as before.
+    `kinds_not_pushed`: the keys of kinds whose warnings push nothing down (warned_off_kinds; the pipeline's: those the
+    request names itself, and those whose warnings say only what they are bad for).
     """
     _check_choice("category", category, THREAD_CATEGORIES)
     placements = {kind: set(products) for kind, products in (placements or {}).items()}
@@ -500,11 +513,13 @@ def rank_products(
     notes = _one_per_comment(kind_notes, lambda n: n.kind_key)
     kinds = kind_support(notes, placements)
     leader = leading_kind(kinds)
+    kinds_warned_off = warned_off_kinds(notes) - set(kinds_not_pushed)
     by_product: dict[str, list[ScoredMention]] = defaultdict(list)
     for mention in votes:
         by_product[mention.product_key].append(mention)
     products = [
-        _score_product(key, product_mentions, kinds, placements, leader, kind_bonus, upvote_rule, standout_rule)
+        _score_product(key, product_mentions, kinds, placements, leader, kind_bonus, upvote_rule, standout_rule,
+                       kinds_warned_off)
         for key, product_mentions in by_product.items()
     ]
     features = tuple(features)
@@ -540,6 +555,7 @@ def _score_product(
     kind_bonus: float,
     upvote_rule: bool | None = None,
     standout_rule: bool | None = None,
+    kinds_warned_off: Collection[str] = frozenset(),
 ) -> ProductScore:
     recommends = [m for m in mentions if m.stance == "recommend"]
     warnings = [m for m in mentions if m.stance == "warn"]
@@ -548,6 +564,8 @@ def _score_product(
     points = round(sum(m.weight for m in mentions), DECIMALS)
     kind = _kind_of(key, kinds, placements, leader)
     bonus = kind_bonus if leader is not None and kind is leader else 0.0
+    if not bonus and kind is not None and kind.key in kinds_warned_off:  # Noemi's decision (j) of 19 Oct 2026
+        bonus = -config.KIND_WARNING_PENALTY
     credible_threads = len({m.thread_id for m in credible_recommends})
     # Toward the bar, a credible recommendation counted twice for its upvotes counts two (14 Oct 2026; off: none does).
     twice = _counted_twice(credible_recommends, upvote_rule)
@@ -675,6 +693,25 @@ def kind_support(notes: Iterable[KindNote], placements: Mapping[str, Iterable[st
         names.setdefault(key, key)  # no note gives it a name, so its key stands in
     kinds = [KindSupport(key, name, round(support[key], DECIMALS), recommending[key]) for key, name in names.items()]
     return sorted(kinds, key=lambda k: (-k.support, k.name.casefold(), k.key))
+
+
+def warned_off_kinds(notes: Iterable[KindNote]) -> set[str]:
+    """The keys of the kinds credible voices warn off as they would warn off a product (_score_product's warned_off;
+    Noemi's decision (j) of 19 Oct 2026: "avoid electric sharpeners" for Japanese knives): credible warning notes from at
+    least SKIP_MIN_CREDIBLE_WARNINGS writers, outnumbering its credible recommending notes. A product whose own kind
+    (_kind_of) is one of them is pushed down (_score_product). One writer's warning alone pushes nothing: the 19 Oct
+    sweep found most warned kinds held a single note, often a passing one."""
+    writers: dict[str, set] = defaultdict(set)
+    recommending: Counter = Counter()
+    for note in notes:
+        if not is_credible(note):
+            continue
+        if note.stance == "warn":
+            writers[note.kind_key].add(note.author or note.comment_id)
+        elif note.stance == "recommend":
+            recommending[note.kind_key] += 1
+    return {key for key, warning in writers.items()
+            if len(warning) >= SKIP_MIN_CREDIBLE_WARNINGS and len(warning) > recommending[key]}
 
 
 def leading_kind(

@@ -164,7 +164,7 @@ Command line:
 import re
 import sys
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from datetime import date
@@ -173,8 +173,9 @@ from pathlib import Path
 
 from engine import config  # the upvote rule's switch, read for each request (14 Oct 2026)
 from engine.answer import (
-    NO_THREADS, Answer, _every_quote, comment_bodies, flattened_comments, needed_quotes, quotes_to_check,
-    render_markdown, says_the_opposite, shown_availability, shown_price, without_unread, write_answer,
+    NO_THREADS, Answer, _every_quote, _kind_own_words, _same_word, _written, comment_bodies, flattened_comments,
+    needed_quotes, quotes_to_check, render_markdown, says_the_opposite, shown_availability, shown_price, without_unread,
+    write_answer,
 )
 from engine.brand_lines import BrandLine, find_brand_line, from_price_entry, load_brand_lines, not_sold_reason
 from engine.care_tips import CareTips, attach_care_tips, credible_care_tips
@@ -216,7 +217,7 @@ from engine.credibility import (
 )
 from engine.extract import CheckResult, shown_comment_ids
 from engine.features import Feature, feature_note, praised_for, request_features, says_its_opposite, thread_asks_for
-from engine.group_kinds import KindMention, group_kinds, kinds_of, placements
+from engine.group_kinds import PURPOSE_WORDS, KindGroup, KindMention, group_kinds, kinds_of, placements
 from engine.group_products import (
     LibraryRanges, ProductGroup, ProductMention, brand_pick_name, group_of, group_products, library_name_index,
     library_ranges, maker_spelling, plural, uk_name,
@@ -402,9 +403,12 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     The answer reads the `max_threads` most relevant threads first. When they give fewer than PICKS_SHOWN picks and the
     library holds more threads about the product, it reads up to `more_threads` before giving up (Noemi, 7 Oct 2026:
     "fetch more threads automatically before giving up"; built 11 Oct 2026), and keeps that wider answer only if it has
-    more picks: the first threads are the ones closest to the request's needs. In the wider reading a pick also needs a
-    credible recommendation that talks about what the request asks for, when it asks for something besides the product
-    (its needs, engine/needs.py): reading 48 shampoo threads had given every shampoo request the same popular picks. For
+    more picks: the first threads are the ones closest to the request's needs; or, since Noemi's decision (b) of 19 Oct
+    2026, as many picks, more of which have a credible voice about the request's need or feature (_wider_wins: the
+    smartwatch for fitness, whose first reading gave Huawei's watch, its wider one Garmin's). In the wider reading a
+    pick also needs a credible recommendation that talks about what the request asks for, when it asks for something
+    besides the product (its needs, engine/needs.py): reading 48 shampoo threads had given every shampoo request the
+    same popular picks. For
     haircare it needs one in the first reading too (config.NEED_RULE_IN_EVERY_READING; Noemi's decision 4 of 14 Oct
     2026). `more_threads=None` never reads more. `brand_lines`: the brand-lines list (engine/brand_lines.py); None reads
     data/brand_lines.json. `summaries`: the one-line summaries ({engine.summaries.summary_key: Summary}); None reads the
@@ -427,7 +431,7 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     if not (more_threads is None or more_threads <= max_threads or result.answer is None
             or len(result.answer.picks) >= PICKS_SHOWN or result.threads_available <= len(result.threads_used)):
         wider = _answer(query, max_threads=more_threads, need_led=True, **reading)
-        if len(wider.answer.picks) > len(result.answer.picks):
+        if _wider_wins(result, wider, query):
             wider.read_more = True
             result = wider
     if upvotes and result.with_upvotes is not None:
@@ -564,9 +568,14 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     features = request_features(query)
     asking = {t.id: {f.name for f in features if thread_asks_for(t, f, titled_as_another_type(t.title, query))}
               for t in threads} if features else {}
+    # The needs each thread's title asks for, which its top-level answers talk about (Noemi's decision (d), 19 Oct 2026).
+    titles_ask = {t.id: _title_needs(t, judged_needs(query), query) for t in threads}
     scored, kind_notes = _score(threads, checked, kept_groups, kinds, judged_needs(query),
                                 set(result.contradicting_writers), request_asks(query), features, asking,
-                                _opposite_needs(query))
+                                _opposite_needs(query), titles_ask)
+    if query.product_type in config.FAST_MOVING_TYPES:  # old evidence (Noemi's decision (i), 19 Oct 2026)
+        scored = _set_aside_old_evidence(scored, {c.id: c.created_at.date() for t in threads for c in t.comments},
+                                         _known_still_sold(price_checks, ranges), today)
     if summaries is None:
         loaded = load_summaries(Path(library_dir) / SUMMARIES_FILE)
         summaries = loaded.entries
@@ -659,7 +668,8 @@ def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
     ranking = rank_products(scored, query.category, kind_notes, placements(kinds),
                             upvote_rule=upvote_rule and config.UPVOTE_COUNTS_MORE,
                             standout_rule=upvote_rule and config.STANDOUT_ON, unconfirmed=unconfirmed,
-                            features=[f.name for f in request_features(query)])
+                            features=[f.name for f in request_features(query)],
+                            kinds_not_pushed=_kinds_not_pushed(kinds, query))
     judged = {need.name for need in judged_needs(query)}
     if (need_led or query.category in NEED_RULE_IN_EVERY_READING) and judged:
         ranking.products = [replace(p, qualifies=False, shortfall=WIDER_READING_SHORTFALL, worth_a_look=False)
@@ -671,10 +681,84 @@ def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
     return ranking
 
 
+def _kinds_not_pushed(kinds: list[KindGroup], query: ParsedQuery) -> set[str]:
+    """The keys of the kinds whose credible warnings push none of their products down (engine.rank.warned_off_kinds;
+    Noemi's decision (j) of 19 Oct 2026). A kind the request names itself, whose words that tell it apart are among
+    the request's (engine.answer._kind_own_words: an oil cleanser for "double cleansing oil", Teflon's non-stick for a
+    non-stick pan, salicylic acid for a salicylic acid cleanser), or that has none, being only the type asked for: the
+    shopper asked for it. And a kind whose warnings say what it is bad for, its name holding a word that says what for,
+    as module 4 reads kinds (engine.group_kinds.PURPOSE_WORDS: "hyaluronic acid in dry climates", "KitchenAid stand
+    mixers for bread"): module 4 groups it as the whole kind, but the warning is about one use."""
+    request = _written(query.text, query.category)
+    found = set()
+    for kind in kinds:
+        own = _kind_own_words(kind.name, query.category, query.product_type)
+        named = not own or any(_same_word(word, asked) for word in own for asked in request)
+        if named or PURPOSE_WORDS.intersection(re.findall(r"[a-z]+", kind.name.lower())):
+            found.add(kind.key)
+    return found
+
+
 def _talks_about(product, needs: set[str]) -> bool:
     """Whether one of a product's credible recommendations talks about one of these needs (their names: the need rule's,
-    engine.needs.judged_needs)."""
-    return any(needs.intersection(m.needs) for m in product.credible_recommendations)
+    engine.needs.judged_needs), its words or, for a top-level answer, its thread's title asking for it
+    (ScoredMention.needs_by_title: Noemi's decision (d) of 19 Oct 2026)."""
+    return any(needs.intersection(m.needs) or needs.intersection(m.needs_by_title)
+               for m in product.credible_recommendations)
+
+
+def _wider_wins(first: PipelineResult, wider: PipelineResult, query: ParsedQuery) -> bool:
+    """Whether answer_request keeps the wider reading: it gives more picks than the first reading, or as many with more
+    of them having a credible voice about the request's need or feature (_voiced_picks; Noemi's decision (b) of 19 Oct
+    2026). As many such picks keep the first reading, the closest to the request."""
+    if len(wider.answer.picks) != len(first.answer.picks):
+        return len(wider.answer.picks) > len(first.answer.picks)
+    return _voiced_picks(wider, query) > _voiced_picks(first, query)
+
+
+def _voiced_picks(result: PipelineResult, query: ParsedQuery) -> int:
+    """How many of a reading's picks have a credible recommendation talking about one of the request's needs (the need
+    rule's, _talks_about) or praising the pick for a feature it names (engine.features)."""
+    needs = {need.name for need in judged_needs(query)}
+    ranked = {p.key: p for p in result.ranking.products}
+    return sum(1 for pick in result.answer.picks if (product := ranked.get(pick.product_key)) is not None
+               and (_talks_about(product, needs) or product.features_praised))
+
+
+def _answers_the_post(comment: Comment, thread: Thread) -> bool:
+    """Whether a comment is a top-level answer: a direct reply to the thread's post, not to another comment."""
+    return comment.parent_id is None or comment.parent_id == thread.id
+
+
+def _title_needs(thread: Thread, needs: tuple[Need, ...], query: ParsedQuery) -> tuple[str, ...]:
+    """The names of the request's needs a thread's title asks for (engine.needs.needs_met, as a title is read), none
+    when its title names another type of product (engine.sources.titled_as_another_type): Noemi's decision (d) of 19 Oct
+    2026, a top-level answer in such a thread talks about them (_score)."""
+    if not needs or titled_as_another_type(thread.title, query):
+        return ()
+    return tuple(needs_met(thread.title or "", needs, thread=True))
+
+
+def _set_aside_old_evidence(scored: list[ScoredMention], written: Mapping[str, date], still_sold: set[str],
+                            today: date) -> list[ScoredMention]:
+    """For fast-moving tech (config.FAST_MOVING_TYPES; Noemi's decision (i) of 19 Oct 2026: "not super old tech, but
+    let's make sure other options still relevant count"): the mentions without those from comments older than
+    config.FAST_MOVING_OLD_EVIDENCE_YEARS (`written`: {comment id: the day it was written}), counted back from `today`,
+    about a product not known to be still sold (`still_sold`: the product keys that are, _known_still_sold). Very old
+    evidence about a model no longer current then says nothing for or against it; a product or a line still sold keeps
+    its evidence whatever its age, and newer comments count as before. Such a model's warnings go with its praise, so
+    old warnings alone never list it under Skip these."""
+    cutoff = date.fromordinal(today.toordinal() - round(365.25 * config.FAST_MOVING_OLD_EVIDENCE_YEARS))
+    return [m for m in scored if m.product_key in still_sold or written.get(m.comment_id, today) >= cutoff]
+
+
+def _known_still_sold(price_checks: Mapping[str, PriceCheck], ranges: Mapping[str, BrandLine]) -> set[str]:
+    """The product keys known to be still sold, for _set_aside_old_evidence: a price-list entry counting the product as
+    sold (engine.prices.counts_as_sold: sold new, sold second-hand when bought vintage on purpose, or sold only outside
+    the UK, since Noemi's decision (c) of 19 Oct 2026 leaves no country preference in ranking), or, for a brand or line,
+    a brand-lines entry saying its brand sells the type."""
+    sold = {key for key, check in price_checks.items() if counts_as_sold(check.availability) is True}
+    return sold | {key for key, line in ranges.items() if line.sells}
 
 
 def _note_features(result: PipelineResult, features: tuple[Feature, ...], query: ParsedQuery) -> None:
@@ -1065,7 +1149,10 @@ def _of_another_type(groups: list[ProductGroup], query: ParsedQuery, result: Pip
         if group.category != query.category or (_another_type(group, query) and not group.loose):
             continue  # left out whole, or never ranked
         for mention in group.mentions:
-            if all(_mention_of_another_type(mention, w) for w in wanted):
+            # One of a kind kept out of the answer (an essence in a toner brand's line: Noemi's decision (g) of 19 Oct
+            # 2026) is another type too.
+            if (all(_mention_of_another_type(mention, w) for w in wanted)
+                    or _of_a_kind_kept_out([mention.product], [mention.product_type], query)):
                 found.add(_typed(mention))
                 if uk_name(mention.product) not in result.mentions_of_another_type:
                     result.mentions_of_another_type.append(uk_name(mention.product))
@@ -1428,11 +1515,44 @@ def _another_type(group: ProductGroup, query: ParsedQuery) -> bool:
     """
     types = [m.product_type for m in group.mentions if m.product_type]
     wanted = _wanted_types(query)
+    if _of_a_kind_kept_out(group.names, types, query):
+        return True
     if _named_as_asked_with_its_ingredient(group, query, types):
         return False
     if types:
         return all(_another_type_by_ai(types, w) for w in wanted)
     return all(_another_type_by_name(group, query, w) for w in wanted)
+
+
+def _kinds_kept_out(query: ParsedQuery) -> tuple[str, ...]:
+    """The kinds of product kept out of this request's answer though module 1 routes their name to its type (config.
+    KINDS_KEPT_OUT_OF_TYPE; Noemi's decision (g) of 19 Oct 2026: essences out of toner answers), less those the request
+    names itself ("hydrating essence"); none for an ingredient-led request, whose types are its ingredient's."""
+    if query.ingredient_led or not query.product_type:
+        return ()
+    return tuple(kind for kind in config.KINDS_KEPT_OUT_OF_TYPE.get(query.product_type, ())
+                 if not _says_word(query.text, kind))
+
+
+def _of_a_kind_kept_out(names: Iterable[str], types: Iterable[str | None], query: ParsedQuery) -> bool:
+    """Whether a product (or one mention: its name, and the AI's type) is of a kind kept out of this request's answer
+    (_kinds_kept_out): none of its names says the requested type, and one says the kind, or most of the AI's types do
+    ("COSRX Snail 96 Mucin Power Essence", or a "COSRX snail mucin" the AI typed as an essence, in a toner answer; a
+    "Pyunkang Yul Essence Toner" is a toner)."""
+    kinds = _kinds_kept_out(query)
+    names = [name for name in names if name]
+    if not kinds or any(_says_word(name, query.product_type) for name in names):
+        return False
+    if any(_says_word(name, kind) for name in names for kind in kinds):
+        return True
+    typed = [t.strip().lower() for t in types if t]
+    majority = Counter(typed).most_common(1)[0][0] if typed else ""
+    return any(_says_word(majority, kind) for kind in kinds)
+
+
+def _says_word(text: str, word: str) -> bool:
+    """Whether a text holds the word (or words) whole, in any case, with a plural "s" allowed."""
+    return re.search(rf"(?<!\w){re.escape(word)}s?(?!\w)", text or "", re.IGNORECASE) is not None
 
 
 def _wanted_types(query: ParsedQuery) -> tuple[str, ...]:
@@ -1846,6 +1966,8 @@ def _suited_to_request(groups: list[ProductGroup], query: ParsedQuery, product_f
         if missing:
             soft.append(unconfirmed_note(missing))
             result.unconfirmed[group.key] = len(missing)  # ranked after the confirmed (Noemi, 15 Oct 2026)
+        if facts is not None and facts.shown_note:  # its entry's own note (Noemi's decision (k), 19 Oct 2026)
+            soft.append(facts.shown_note)
         if soft:
             cautions[group.key] = soft
     return kept, cautions, found_facts
@@ -2401,7 +2523,8 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
            needs: tuple[Need, ...] = (),
            contradicting: set[str] = frozenset(), asks: tuple[str, ...] = (), features: tuple[Feature, ...] = (),
            asking: Mapping[str, set[str]] | None = None,
-           opposites: tuple = ()) -> tuple[list[ScoredMention], list[KindNote]]:
+           opposites: tuple = (),
+           titles_ask: Mapping[str, tuple[str, ...]] | None = None) -> tuple[list[ScoredMention], list[KindNote]]:
     """A weight for every product mention and kind note of the threads read (module 5), ready for the ranking.
 
     `needs` are the request's needs a comment can talk about (engine.needs.judged_needs, since 15 Oct 2026; every need
@@ -2412,6 +2535,14 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
     features its title or post asks for: each mention carries the features its own words, or its thread's ask, praise
     its product for (ScoredMention.features). `opposites` (_opposite_needs) give each warning from the opposite of a
     need asked about (ScoredMention.opposite_need).
+
+    Noemi's decision (d) of 19 Oct 2026: a top-level recommendation (a direct reply to the post, _answers_the_post) in a
+    thread whose title asks for a need talks about it for the need rule (`titles_ask`: {thread id: the needs its title
+    asks for, _title_needs}; ScoredMention.needs_by_title, unless its own words say the opposite or that it didn't
+    help: _needs_talked_about), and one in a thread asking for a feature is praised for it unless its words say
+    otherwise (engine.features.praised_for); a reply further down needs its own words for both. Its reason, weight and
+    standing out still go by its words (ScoredMention.needs). Until then every comment of a thread asking for a feature
+    had its thread's ask, and none had its thread's need.
     """
     by_id = {t.id: t for t in threads}
     group_by_mention = group_of(groups)
@@ -2446,12 +2577,17 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
             evidence = with_ai_evidence(score_evidence(comment, m.product, m.stance, others), m.evidence,
                                         m.evidence_tags)
             praised, own = (), None
+            answers_the_post = _answers_the_post(comment, thread)
             if m.stance == "recommend" and (features or _has_opposites(needs)):
                 own = product_text(comment, m.product, others)
                 praised = tuple(f.name for f in features if praised_for(
-                    f, own, (m.product, group.name), f.name in (asking or {}).get(tid, ())))
+                    f, own, (m.product, group.name), answers_the_post and f.name in (asking or {}).get(tid, ())))
             met = _needs_talked_about(m.quote, comment.body, needs, asks, evidence.level == "long-term use", m.stance,
                                       own)
+            title_asks = (titles_ask or {}).get(tid, ()) if answers_the_post and m.stance == "recommend" else ()
+            by_title = tuple(need for need in _needs_talked_about(
+                m.quote, comment.body, needs, asks, evidence.level == "long-term use", m.stance, own, title_asks)
+                if need not in met) if title_asks else ()
             weight = mention_weight(voice, evidence, m.stance) * (NEED_MATCH_BOOST if met else 1)
             standing = upvotes.get(m.comment_id)
             scored.append(ScoredMention(
@@ -2468,6 +2604,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                 features=praised,
                 opposite_need=m.stance == "warn" and _from_the_opposite_need(comment.body, needs, opposites),
                 needs_unpraised=_feature_needs_unpraised(met, features, praised) if m.stance == "recommend" else (),
+                needs_by_title=by_title,
             ))
         for n in res.kept_notes:
             if n.comment_id in repeats:
@@ -2514,7 +2651,7 @@ def _products_named(res: CheckResult) -> dict[str, int]:
 
 def _needs_talked_about(quote: str, body: str, needs: tuple[Need, ...], asks: tuple[str, ...],
                         long_term_use: bool = False, stance: str = "recommend",
-                        own_text: str | None = None) -> tuple[str, ...]:
+                        own_text: str | None = None, title_asks: tuple[str, ...] = ()) -> tuple[str, ...]:
     """The request's needs a comment talks about (engine.needs.needs_met), for NEED_MATCH_BOOST; none when the
     mention's quote says the opposite of what the request asks (engine.answer.says_the_opposite: "it will give you a
     white cast" for a no-white-cast request; b02, 11 Oct 2026). Such a comment talks about the need, but against the
@@ -2524,10 +2661,15 @@ def _needs_talked_about(quote: str, body: str, needs: tuple[Need, ...], asks: tu
 
     Since 19 Oct 2026 (round 3), for a recommendation: a word of the request as typed its words about the product
     (`own_text`: engine.credibility.product_text) say the opposite of (engine.features.says_its_opposite: "it isn't
-    insulated" for keeping drinks cold) isn't talked about either."""
+    insulated" for keeping drinks cold) isn't talked about either.
+
+    `title_asks`: for a top-level answer, the needs its thread's title asks for (Noemi's decision (d) of 19 Oct 2026),
+    which a recommendation talks about too, unless its words take them away as above."""
     if says_the_opposite(quote, asks):
         return ()
     met = needs_met(body, needs, long_term_use)
+    if stance == "recommend" and title_asks:
+        met = tuple(need.name for need in needs if need.name in met or need.name in title_asks)
     if stance != "recommend" or not met:
         return met
     against = said_not_to_help(quote, needs)

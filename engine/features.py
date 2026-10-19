@@ -6,7 +6,8 @@ words before the product noun name a feature the shopper wants, not a need about
 found studio headphones, wired and open-back, answering noise cancelling headphones, a MacBook Air the gaming laptop,
 quartz watches the automatic one and kettles nobody calls quiet a quiet kettle. Her decision: the products a credible
 voice praises for the feature rank first (engine.rank), but an answer is never emptied by it: when no pick is praised
-for it, the type's best products are still shown, with a note saying so (FEATURE_NOT_PRAISED, wording PROPOSED).
+for it, the type's best products are still shown, with a note saying so (FEATURE_NOT_PRAISED, wording approved by
+Noemi, 19 Oct 2026).
 Skincare and haircare keep their own need rule (engine.pipeline._ranked).
 
 Which words are a feature (request_features): the request's needs a comment can talk about (engine.needs.judged_needs)
@@ -39,7 +40,7 @@ from engine.needs import Need, judged_needs, needs_met
 from engine.query import PRODUCT_TYPES, ParsedQuery
 
 # What the answer says when no pick is praised for a feature asked for (Noemi's decision 1 of 16 Oct 2026: "if we can't
-# find any, still show up with the main prod"). Wording PROPOSED (decided by Claude, waiting for Noemi): the typed words
+# find any, still show up with the main prod"). Wording decided by Claude, approved by Noemi, 19 Oct 2026: the typed words
 # in quotation marks, since they can be any words ("gaming", "noise cancelling", "4k").
 FEATURE_NOT_PRAISED = ("No credible voice in the threads we read praised these picks for {features}: they are the "
                        "best-supported {products} overall, so check that before you buy.")

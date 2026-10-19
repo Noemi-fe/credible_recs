@@ -165,6 +165,10 @@ class ProductFacts(Record):
     sources: list[Annotated[str, AfterValidator(_source_page)]] = Field(min_length=1)
     checked_on: date
     formula: Formula | None = None  # what it is made with (13 Oct 2026); None when not looked up
+    # A note answers show under the product wherever this entry is found for it, as its cautions are ("Note: <it>.":
+    # lowercase first, no full stop), whatever the request (Noemi's decision (k) of 19 Oct 2026: HexClad's facts are
+    # its current coating's, and most reviews are of its earlier one). None: no note.
+    shown_note: str | None = Field(default=None, min_length=1)
 
     @model_validator(mode="after")
     def _fits_the_vocabulary(self) -> "ProductFacts":
