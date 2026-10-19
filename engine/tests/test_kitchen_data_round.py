@@ -435,7 +435,10 @@ def test_the_second_reads_picks_have_uk_pages_prices_or_say_they_arent_sold_here
         price = find_price(shown, "kitchen", prices, currency="GBP", product_type=product_type)
         assert price is not None and (price.price, price.shop, price.checked_on) == (amount, shop, ROUND2), shown
     snakmaster = find_availability("Snakmaster", "kitchen", prices, "sandwich maker")
-    assert snakmaster is not None and snakmaster.available is False and snakmaster.not_in_uk
+    # Changed on purpose 18 Oct 2026 (the round-2 data builder): the Snakmaster is not "sold abroad only" (not_in_uk),
+    # it is discontinued: Hunker (22 Aug 2026) says it is no longer sold new, only second-hand (engine/tests/
+    # test_round2_data.py). Either way no UK shop sells it. Was: `and snakmaster.not_in_uk`.
+    assert snakmaster is not None and snakmaster.available is False and not snakmaster.not_in_uk
 
 
 def test_oxos_garlic_press_line_has_a_uk_from_price():

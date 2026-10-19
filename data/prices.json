@@ -7226,7 +7226,7 @@
    "note": "Read as the Nitecore NU25 headlamp; its current version, the NU25 MCT, is £48.95, in stock, at nitecore.co.uk (AJC Trading, Nitecore's UK seller). No maker image taken (the page has no share image)."
   },
   {
-   "product": "OleHenricksen banana bright + vitamin C under eye cream",
+   "product": "Ole Henriksen banana bright + vitamin C under eye cream",
    "category": "skincare",
    "product_type": "eye cream",
    "price": 38.0,
@@ -7240,7 +7240,7 @@
     "https://www.lookfantastic.com/c/brands/ole-henriksen/",
     "https://olehenriksen.com/products/banana-bright-eye-creme"
    ],
-   "note": "Ole Henriksen Banana Bright+ Vitamin C Eye Crème, 15 ml at £38, in stock at Lookfantastic. Image from the maker's US store (US$46)."
+   "note": "Ole Henriksen Banana Bright+ Vitamin C Eye Crème, 15 ml at £38, in stock at Lookfantastic. Image from the maker's US store (US$46). Renamed on 18 Oct 2026 from \"OleHenricksen ...\" (a writer's slip, which the list had kept) to the maker's spelling, so a writer's slip, shown as the maker's name, finds this price again."
   },
   {
    "product": "Panasonic inverter microwave",
@@ -10309,10 +10309,11 @@
    "checked_on": "2026-10-18",
    "available": false,
    "sources": [
-    "https://www.ebay.co.uk/sch/i.html?_nkw=snakmaster"
+    "https://www.ebay.co.uk/sch/i.html?_nkw=snakmaster",
+    "https://www.hunker.com/2241602/nostalgic-household-staple-clark-snakmaster/",
+    "https://www.housedigest.com/2225000/every-house-had-one-90s-kitchen-gadget-snackmaster-back-on-counters/"
    ],
-   "note": "not sold to UK shoppers: the Snakmaster is a grilled sandwich maker writers own from decades ago (the round's r/BuyItForLife thread calls it about 30 years old) and name no maker for; no UK shop was found selling it and eBay UK's search (18 Oct 2026) holds no Snakmaster sandwich maker, only unrelated Snakemaster items. Whether it is still made couldn't be checked this round (web search unavailable): if it isn't, it should be marked discontinued.",
-   "not_in_uk": true
+   "note": "discontinued: the Clark Snakmaster, a grilled sandwich maker sold from a 1990 TV infomercial (US$49.95 plus US$8 postage), which writers own from decades ago and name no maker for. Hunker (22 Aug 2026) says it is no longer sold new and has to be bought second-hand, on eBay or Etsy; House Digest (30 Jul 2026) says the infomercial number no longer works and sends readers to eBay or Craigslist, or to other makers' sandwich makers; eBay UK's search (18 Oct 2026) holds no Snakmaster sandwich maker, and no UK shop was found selling one. No maker's page exists to read. It is not a product people buy vintage on purpose (config.SECOND_HAND_VINTAGE), so second-hand sales don't count as sold: it is left out of answers and named. Was marked \"not sold to UK shoppers\" earlier on 18 Oct 2026, before it could be checked whether it is still made."
   },
   {
    "product": "Ikea KONCIS garlic press",
@@ -11120,9 +11121,12 @@
    "checked_on": "2026-10-18",
    "available": true,
    "sources": [
-    "https://skinsider.co.uk/isntree-chestnut-bha-2-clear-liquid/"
+    "https://skinsider.co.uk/isntree-chestnut-bha-2-clear-liquid/",
+    "https://www.lookfantastic.com/search/?q=isntree%20chestnut%20bha",
+    "https://www.yesstyle.com/en/isntree-chestnut-bha-2-clear-liquid-100ml/info.html/pid.1115329665",
+    "https://isntree.com/"
    ],
-   "note": "100 ml, £18.00 at Skinsider, still sold out on 18 Oct 2026 (an email-me-when-back notice; every other Isntree item on the page is sold out too, so it looks like the shop's Isntree stock rather than the product). Shops in the EU and Canada still list it and no page read says it is discontinued, so it still counts as sold (out of stock for now, the list's convention): b01's first pick, check again before the blind test."
+   "note": "100 ml, £18.00 at Skinsider, still sold out on 18 Oct 2026, read again late that day (a \"notify me\" form and no add-to-basket button; the day's earlier read found every other Isntree item on the page sold out too, so it looks like the shop's Isntree stock rather than the product). No UK shop found with it in stock: Lookfantastic's search for \"isntree chestnut bha\" finds nothing, Sweetcare's UK page refused automated reads (403), Boots and Amazon UK refused tools on earlier reads and were not tried again; YesStyle's page says \"This item is no longer available\"; the maker's own Korean shop (isntree.com, read 18 Oct 2026) lists its Chestnut BHA 0.9% Clear Toner (200 ml) among its BHA products and no Chestnut BHA 2% Clear Liquid. Shops abroad still list it, some sold out (search results; one in Qatar read: sold out). No page read says it is discontinued, so it still counts as sold (out of stock for now, the list's convention): b01's first pick, which testers cannot buy while it stays sold out (it may be on its way out: check again on the capture day)."
   },
   {
    "product": "Stratia Soft Touch AHA",
@@ -11213,9 +11217,10 @@
    "sources": [
     "https://www.cultbeauty.co.uk/p/innisfree-retinol-cica-moisture-recovery-serum-30ml/15227995/",
     "https://www.spacenk.com/uk/skincare/treatment/serums/retinol-cica-moisture-recovery-serum-MUK200049251.html",
+    "https://www.asos.com/korean-skincare/innisfree-retinol-cica-moisture-recovery-serum-30ml/prd/207680314",
     "https://us.innisfree.com/products/retinol-cica-moisture-recovery-serum"
    ],
-   "note": "30 ml, £33.00 at Cult Beauty, sold out (notify me) on 18 Oct 2026; Space NK UK sold out too (marked down to £23.10 from £33.00); innisfree's US store shows notify-me as well. No page says it is discontinued, so it still counts as sold (out of stock for now, the list's convention): b03's second pick, sold out in every UK shop read for four days running, check again before the blind test."
+   "note": "30 ml, £33.00 at Cult Beauty, sold out (\"Notify Me When Available\") on 18 Oct 2026, read again late that day. Space NK UK out of stock too (\"Sorry, this item is out of stock\", marked down to £23.10 from £33.00); ASOS UK \"OUT OF STOCK\" with a \"Notify me\" button (now £26.40, was £33.00); Beauty Bay's old address for it returns 404 (not found). innisfree's own US store still lists it at US$37, with a \"notify me when back in stock\" button beside \"Add to cart\", so its stock there is unclear, and nothing on the page says it is discontinued or replaced. Sephora Canada refuses automated reads (403). No page read says it is discontinued, so it still counts as sold (out of stock for now, the list's convention): b03's second pick, sold out in every UK shop read for days running, check again on the capture day."
   },
   {
    "product": "CeraVe Resurfacing Retinol Serum",
@@ -13811,6 +13816,28 @@
     "https://www.argos.co.uk/search/kindle-oasis/"
    ],
    "note": "discontinued: Read with a London delivery postcode (SW1A 1AA), 18 Oct 2026. Amazon UK's own 'Shop all Kindle' page ('Meet the whole family') lists Kindle, Kindle in aluminium, Paperwhite, Paperwhite Signature Edition, Colorsoft, Colorsoft Signature Edition, Scribe Without Front Light, Scribe, Scribe Colorsoft and Kids models, and no Oasis; its Kindle homepage doesn't mention the Oasis either. The Oasis listings themselves (the 2019 10th gen: 8 GB Graphite B07L5GDTYY, 32 GB Graphite B07L5GK1KY, 32 GB Gold B07L5K4TG3) offer only pre-owned units sold by Amazon Resale ('See pre-owned buying options'; Used: Good £172.03 for 8 GB, £194.47 for 32 GB, £281.59 for 32 GB + mobile), no new offer. John Lewis ('kindle oasis', 69 results, and its 23 Kindle products), Currys ('AMAZON Kindle - Amazon eReaders', 21 items) and Argos ('kindle oasis', 34 products) list no Oasis. The 8th (2016), 9th (2017) and 10th (2019) gen Oasis are no longer made (generations from knowledge); not sold new in the UK."
+  },
+  {
+   "product": "Amazon Kindle Keyboard",
+   "also_called": [
+    "Kindle Keyboard",
+    "Kindle Keyboard 3G"
+   ],
+   "category": "general",
+   "product_type": "e-reader",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/b/?node=218876277031",
+   "checked_on": "2026-10-18",
+   "available": false,
+   "sources": [
+    "https://www.amazon.com/gp/help/customer/display.html?nodeId=TRXsYxKJr4WTdsVs2P",
+    "https://www.amazon.co.uk/b/?node=218876277031",
+    "https://www.johnlewis.com/search?search-term=kindle%20keyboard",
+    "https://en.wikipedia.org/wiki/Amazon_Kindle"
+   ],
+   "note": "discontinued: the Kindle Keyboard (the 3rd-generation Kindle, the one with a physical keyboard) is a retired 2010 model: Wikipedia gives its release as 27 August 2010. Amazon's own help page \"Kindle E-Readers Released in 2012 or Earlier\" says that from 20 May 2026 Amazon ends support for Kindle e-readers released in 2012 or earlier: they can no longer buy, borrow or download new books or be registered to an account (its text as a search result gave it on 18 Oct 2026; the page itself returned 503 to this round's read, so the list of models on it was not read). Amazon UK's \"Shop all Kindle\" page (read 18 Oct 2026 for the Oasis entry) lists no Keyboard, and John Lewis's search for \"kindle keyboard\" (read 18 Oct 2026, 72 of its 105 results) shows only the 2024 and 2026 Kindles, Paperwhite, Colorsoft, Scribe and Kids models and their cases. Not sold new in the UK."
   },
   {
    "product": "Amazon Kindle (2024)",
