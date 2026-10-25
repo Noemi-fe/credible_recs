@@ -36,18 +36,21 @@ writer who is MISSING is, for module 5, a writer the archive doesn't know: no st
 dropped and not kept, but neutral, and it changes answers a good deal (on the 278-request sweep with every profile expired,
 77 of 219 answers' picks changed and the high-credibility voices behind the picks fell from 2,501 to 699). The library's
 profiles were all looked up on 9 to 16 Oct, so they expire on 9 to 16 Nov. `warm` asks the writers of the comments answers
-quote first (--quoted), then the stalest first (a writer never looked up before all), in chunks (--limit), and saves what it
-has found every SAVE_EVERY writers, so a run that is stopped loses little and the next carries on where it stopped. It is
+quote first (--quoted), then the stalest first (writers never looked up come last: they are neutral already), in
+chunks (--limit), and saves what it has found every SAVE_EVERY writers, so a run that is stopped loses little and the next carries on where it stopped. It is
 paced at ArcticShiftClient's 10 seconds a call, one call per writer and one per 100 comments' flairs.
 
 Command line:
-    python -m engine.profiles warm <threads folder> [--limit N] [--quoted FILE]
+    python -m engine.profiles warm <threads folder> [--limit N] [--quoted FILE] [--refresh-before TIME]
         fills the cache for the writers of comments with kept product mentions or notes in that folder's checked
         extractions (engine.extract.load_checked), and, for the library's folder, keeps the answers in its store. It says how many calls and how long before it starts, then shows progress.
         --limit N looks up at most N writers not yet in the cache; the next run carries on from there. With --limit the
         flairs looked up are those of the same writers only.
         --quoted FILE asks the writers of the comments in FILE first (one comment link or id a line; `python
         eval/sweep.py quoted <sweep.jsonl> <FILE>` lists the comments a sweep's answers quote), the stalest first.
+        --refresh-before TIME (a date or an ISO time) asks again every writer looked up before TIME, though the store
+        still holds them: a refresh ahead of the 30 days. It ends when every entry is newer than TIME, so run it over
+        and over (--limit) with the same TIME.
 """
 
 import math
@@ -153,6 +156,11 @@ class ProfileStore:
     def checked_at(self, name: str) -> datetime | None:
         """When the writer was last looked up, even if that is too long ago to count; None if never."""
         entry = self.writers.get(name.lower())
+        return datetime.fromisoformat(entry["checked_at"]) if entry is not None else None
+
+    def flair_checked_at(self, comment_id: str) -> datetime | None:
+        """When the comment's flair was last looked up, even if that is too long ago to count; None if never."""
+        entry = self.flairs.get(comment_id)
         return datetime.fromisoformat(entry["checked_at"]) if entry is not None else None
 
     def put_user(self, name: str, stats: dict | None) -> None:
@@ -408,20 +416,22 @@ def quoted_comment_ids(text: str) -> set[str]:
 
 def _quoted_first_then_stalest(names: list[str], writers: dict[str, list[str]], store: ProfileStore | None,
                                quoted: Collection[str] | None) -> list[str]:
-    """The writers to ask, in order (25 Oct 2026): those of quoted comments first, then the stalest first (never looked
-    up before all, then the longest ago); writers equally stale keep the order they came in."""
+    """The writers to ask, in order (25 Oct 2026): those of quoted comments first; in each group the writers already in the
+    store, the stalest first (an entry that runs out loses the writer's standing signs), then those never looked up (they
+    are neutral already, so waiting costs them nothing); writers equally stale keep the order they came in."""
     quoted = set(quoted or ())
-    never = datetime.min.replace(tzinfo=UTC)
+    long_ago = datetime.min.replace(tzinfo=UTC)
 
     def key(name: str):
         looked = store.checked_at(name) if store is not None else None
-        return (0 if quoted.intersection(writers[name]) else 1, looked or never)
+        return (0 if quoted.intersection(writers[name]) else 1, looked is None, looked or long_ago)
 
     return sorted(names, key=key)
 
 
 def warm(threads_dir: Path, client: ArcticShiftClient, limit: int | None = None, say: Callable[[str], None] = print,
-         store: ProfileStore | None = None, quoted: Collection[str] | None = None) -> WarmResult:
+         store: ProfileStore | None = None, quoted: Collection[str] | None = None,
+         refresh_before: datetime | None = None) -> WarmResult:
     """Fills the 48-hour cache for the writers of comments with kept product mentions or notes in `threads_dir`.
 
     Says what it will cost before starting and shows progress after each writer looked up. With `limit`, at most
@@ -429,11 +439,14 @@ def warm(threads_dir: Path, client: ArcticShiftClient, limit: int | None = None,
     library's), writers and flairs already stored aren't asked again, the answers are kept in it, and writers no
     longer in the folder are dropped from it. The writers are asked in order (_quoted_first_then_stalest): those of the
     comments in `quoted` (comment ids) first, then the stalest; with a store the answers are saved every SAVE_EVERY
-    writers, and with a `limit` the flairs looked up are those of the writers asked this run.
+    writers, and with a `limit` the flairs looked up are those of the writers asked this run. With `refresh_before`, a
+    writer looked up before that time is asked again though the store still holds them (an entry that has not run out
+    yet): a refresh ahead of the 30 days, which ends when every entry is newer than that time.
     """
     quoted = set(quoted or ())
     writers = writers_with_kept_mentions(threads_dir)
-    stored = {name for name in writers if store is not None and store.user_stats(name) is not MISSING}
+    stored = {name for name in writers if store is not None and store.user_stats(name) is not MISSING
+              and (refresh_before is None or store.checked_at(name) >= refresh_before)}
     to_ask = client.uncached_users([name for name in writers if name not in stored])
     to_ask = _quoted_first_then_stalest(to_ask, writers, store, quoted)
     later = to_ask[limit:] if limit is not None else []
@@ -446,7 +459,12 @@ def warm(threads_dir: Path, client: ArcticShiftClient, limit: int | None = None,
     # refresh in chunks) only the writers asked this run and those answered from the cache: the flairs of 14,000 writers
     # at once would take hours before the first writer.
     flair_names = writers if limit is None else [name for name in writers if name in ask_all or name in cached_set]
-    comment_ids = [cid for name in flair_names for cid in writers[name] if store is None or store.flair(cid) is MISSING]
+    def flair_wanted(comment_id: str) -> bool:  # not stored, run out, or (a refresh) looked up before the refresh time
+        if store is None or store.flair(comment_id) is MISSING:
+            return True
+        return refresh_before is not None and store.flair_checked_at(comment_id) < refresh_before
+
+    comment_ids = [cid for name in flair_names for cid in writers[name] if flair_wanted(cid)]
     uncached = client.uncached_comments(comment_ids)
     flair_calls = math.ceil(len(uncached) / FLAIR_BATCH)
     calls = len(asking) + flair_calls
@@ -557,7 +575,7 @@ def main(argv: list[str], client: ArcticShiftClient | None = None) -> int:
     if options is None:
         print(__doc__)
         return 2
-    folder, limit, quoted_file = options
+    folder, limit, quoted_file, refresh_before = options
     quoted = None
     if quoted_file is not None:
         try:
@@ -566,23 +584,24 @@ def main(argv: list[str], client: ArcticShiftClient | None = None) -> int:
             print(f"Can't read the list of quoted comments {quoted_file}: {e.strerror or e}")
             return 1
     try:
-        result = warm(folder, client or ArcticShiftClient(), limit, store=library_store(folder), quoted=quoted)
+        result = warm(folder, client or ArcticShiftClient(), limit, store=library_store(folder), quoted=quoted,
+                      refresh_before=refresh_before)
     except (ExtractionError, GoldSetError) as e:
         print(e)
         return 1
     return 1 if result.failed else 0
 
 
-def _warm_options(argv: list[str]) -> tuple[Path, int | None, Path | None] | None:
-    """The folder, --limit and --quoted typed after `warm` (as `--limit 5` or `--limit=5`), or None when they don't make
-    sense."""
+def _warm_options(argv: list[str]) -> tuple[Path, int | None, Path | None, datetime | None] | None:
+    """The folder, --limit, --quoted and --refresh-before typed after `warm` (as `--limit 5` or `--limit=5`), or None
+    when they don't make sense."""
     if not argv or argv[0] != "warm":
         return None
-    folders, limit, quoted, words = [], None, None, list(argv[1:])
+    folders, limit, quoted, refresh_before, words = [], None, None, None, list(argv[1:])
     while words:
         word = words.pop(0)
         name, equals, value = word.partition("=")
-        if name not in ("--limit", "--quoted"):
+        if name not in ("--limit", "--quoted", "--refresh-before"):
             if word.startswith("--"):
                 return None  # an option this command doesn't have
             folders.append(word)
@@ -593,11 +612,18 @@ def _warm_options(argv: list[str]) -> tuple[Path, int | None, Path | None] | Non
             if not value:
                 return None
             quoted = Path(value)
-            continue
-        if not value.isdigit() or int(value) < 1:
-            return None
-        limit = int(value)
-    return (Path(folders[0]), limit, quoted) if len(folders) == 1 else None
+        elif name == "--refresh-before":
+            try:
+                refresh_before = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except ValueError:
+                return None
+            if refresh_before.tzinfo is None:
+                refresh_before = refresh_before.replace(tzinfo=UTC)
+        else:
+            if not value.isdigit() or int(value) < 1:
+                return None
+            limit = int(value)
+    return (Path(folders[0]), limit, quoted, refresh_before) if len(folders) == 1 else None
 
 
 if __name__ == "__main__":

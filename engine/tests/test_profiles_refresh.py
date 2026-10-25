@@ -10,7 +10,7 @@ Every writer, number and thread here is made up (test_profiles.py's factories): 
 
 import importlib.util
 import json
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -63,14 +63,29 @@ def stored_days_ago(store, clock, **ages):
     clock.now = now
 
 
-def test_the_stalest_writers_are_asked_first_those_never_asked_before_all(tmp_path):
+def test_stored_writers_go_stalest_first_and_those_never_asked_before_come_last(tmp_path):
+    # An expired entry is what the cliff of 9 to 16 Nov is made of: answers keep their standing signs only while it is
+    # looked up again in time. A writer never looked up is neutral already, so it loses nothing by waiting.
     threads_dir, archive = many_writers(tmp_path, 4)
     clock = FakeClock()
     store = store_at(tmp_path, clock)
     stored_days_ago(store, clock, writer1=5, writer2=config.LIBRARY_REFRESH_DAYS + 5, writer3=config.LIBRARY_REFRESH_DAYS + 15)
     assert store.user_stats("writer1") is not profiles.MISSING  # 5 days old: fresh, not asked at all
     warm(threads_dir, make_client(tmp_path, archive), say=say(), store=store)
-    assert archive.writers_asked == ["writer4", "writer3", "writer2"]  # never asked, then the oldest first
+    assert archive.writers_asked == ["writer3", "writer2", "writer4"]  # the oldest first, the never asked last
+
+
+def test_a_writer_looked_up_before_the_refresh_time_is_asked_again_though_it_has_not_expired(tmp_path):
+    threads_dir, archive = many_writers(tmp_path, 3)
+    clock = FakeClock()
+    store = store_at(tmp_path, clock)
+    stored_days_ago(store, clock, writer1=20, writer2=10, writer3=2)  # none expired (30 days)
+    when = clock.now - timedelta(days=5)
+    warm(threads_dir, make_client(tmp_path, archive), say=say(), store=store, refresh_before=when)
+    assert archive.writers_asked == ["writer1", "writer2"]  # looked up before the refresh time; writer3 is newer
+    again = FakeArchive(writers=archive.writers, flairs=archive.flairs)
+    warm(threads_dir, make_client(tmp_path / "other", again), say=say(), store=store, refresh_before=when)
+    assert again.writers_asked == []  # what the refresh found is newer than its time: a run finishes
 
 
 def test_quoted_writers_come_before_stale_ones_and_each_group_goes_stalest_first(tmp_path):
@@ -195,6 +210,34 @@ def test_the_command_takes_a_quoted_list_and_asks_those_writers_first(tmp_path, 
     assert profiles.main(["warm", str(threads_dir), "--quoted", str(listing)], client=make_client(tmp_path, archive)) == 0
     assert archive.writers_asked == ["test_newbie", "test_derm"]
     assert "Asked first: 1 writer of quoted comments" in capsys.readouterr().out
+
+
+def test_a_refresh_looks_up_the_flairs_of_the_writers_it_asks_again_too(tmp_path):
+    threads_dir, archive = many_writers(tmp_path, 3)
+    clock = FakeClock()
+    store = store_at(tmp_path, clock)
+    stored_days_ago(store, clock, writer1=20, writer2=2, writer3=20)
+    now = clock.now
+    for days, cid in ((20, "c1aaaa"), (2, "c2aaaa"), (20, "c3aaaa")):
+        clock.now = now - timedelta(days=days)
+        store.put_flair(cid, None)
+    clock.now = now
+    warm(threads_dir, make_client(tmp_path, archive), say=say(), store=store, refresh_before=now - timedelta(days=5))
+    assert archive.writers_asked == ["writer1", "writer3"] and sorted(archive.comments_asked) == ["c1aaaa", "c3aaaa"]
+    assert store.flair_checked_at("c1aaaa") == now and store.flair_checked_at("c2aaaa") == now - timedelta(days=2)
+
+
+def test_the_command_takes_a_refresh_time(tmp_path):
+    assert profiles._warm_options(["warm", "x", "--refresh-before", "2026-10-25"]) == (
+        Path("x"), None, None, datetime(2026, 10, 25, tzinfo=UTC))
+    assert profiles._warm_options(["warm", "x", "--refresh-before=2026-10-25T05:30:00Z", "--limit", "3"]) == (
+        Path("x"), 3, None, datetime(2026, 10, 25, 5, 30, tzinfo=UTC))
+
+
+@pytest.mark.parametrize("argv", [["warm", "x", "--refresh-before"], ["warm", "x", "--refresh-before", "soon"]])
+def test_the_command_explains_itself_when_the_refresh_time_is_typed_wrong(argv, capsys, tmp_path):
+    assert profiles.main(argv, client=make_client(tmp_path, FakeArchive())) == 2
+    assert "--refresh-before" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("argv", [["warm", "x", "--quoted"], ["warm", "x", "--quoted", "a", "b"]])
