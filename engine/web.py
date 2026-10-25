@@ -42,11 +42,14 @@ Routes:
                                  a short blind test for friends, standalone (it never names the site or links to the
                                  rest of it, and nothing else links to it). A new deck of 6 comparisons for each visit
                                  (ours against ChatGPT's or Vetted's answer), made from data/library/blind_test_cards.json;
-                                 503 with a plain "not open yet" page while that file is missing or breaks a rule
+                                 503 with a plain "not open yet" page while that file is missing or breaks a rule. The
+                                 page is told each comparison's two cards and the visit's id, never which tool is the
+                                 rival or which side is ours (25 Oct 2026; engine/pair_test.py)
     POST /api/test-response      one answer of that test (engine/feedback.py parse_pair), kept as the kind "blind_pair"
-                                 through the same store; taken like feedback (JSON only, FEEDBACK_MAX_BODY_BYTES, only
-                                 from this site's own page) with its own rate limit (RATE_LIMIT_PAIRS); 503 test_closed
-                                 without cards, 400 for a question the cards don't have
+                                 through the same store, with the rival and the side the server works out from the visit's
+                                 id; taken like feedback (JSON only, FEEDBACK_MAX_BODY_BYTES, only from this site's own
+                                 page) with its own rate limit (RATE_LIMIT_PAIRS); 503 test_closed without cards, 400 for
+                                 a question the visit wasn't asked
     anything else                404; a known route asked the wrong way, 405
 
 The JSON for /api/answer (200):
@@ -409,9 +412,13 @@ live = None
 on_demand = None
 # Where feedback goes (engine.feedback, 11 Oct 2026): set by the command line; None in the tests, which give their own.
 store = None
-# Where the pairwise test's decks get their randomness (every visit's questions, rivals, sides and order): the system's,
-# so no one can guess a deck; the tests give a seeded one.
+# Where the pairwise test's visit ids get their randomness: the system's, so no one can guess an id; the tests give a
+# seeded one. A visit's deck (its questions, rivals, sides and order) follows from its id and _deck_key.
 _deck_random = random.SystemRandom()
+# The key that, with a visit's id, decides its deck, so that the rival and side of each answer can be worked out again
+# when it comes in and never need to be told to the page (engine/pair_test.py). From the site's own secret, so every
+# instance has the same; a random one without it (this computer, the tests: one process).
+_deck_key = pair_test.deck_key()
 _closed_said = ""  # why the test was last said to be closed (in the server's window, once)
 _answers_lock = threading.Lock()
 # Visitors waiting for _answers_lock (14 Oct 2026, measured live just after a deploy: a visitor's answer queued 31 s
@@ -690,13 +697,15 @@ def test_page_response(library_dir: Path) -> tuple[int, str, bytes]:
             _closed_said = why
             print(f"The pairwise test (/test) is closed: {why}", file=sys.stderr, flush=True)
         return 503, HTML, test_page(None)
-    return 200, HTML, test_page(pair_test.build_deck(cards, _deck_random))
+    visit = pair_test.new_visit(cards, _deck_random)
+    return 200, HTML, test_page(pair_test.public_deck(pair_test.deck_for(cards, visit, _deck_key)), visit)
 
 
-def test_page(deck: list[dict] | None) -> bytes:
-    """The pairwise test's page (engine/templates/test.html) with this visit's deck in it; `deck` None: the page that says
-    the test isn't open. The same page for the local and the public site: it counts nobody and loads nothing."""
-    settings = {"deck": deck or [], "whyMax": PAIR_TEST_MAX_WHY_CHARS, "closed": deck is None}
+def test_page(deck: list[dict] | None, visit: str | None = None) -> bytes:
+    """The pairwise test's page (engine/templates/test.html) with this visit's deck (pair_test.public_deck: no rival, no
+    side) and its id in it; `deck` None: the page that says the test isn't open. The same page for the local and the
+    public site: it counts nobody and loads nothing."""
+    settings = {"deck": deck or [], "session": visit, "whyMax": PAIR_TEST_MAX_WHY_CHARS, "closed": deck is None}
     template = TEST_TEMPLATE.read_text(encoding="utf-8")
     return template.replace("{{SETTINGS}}", _script_json(settings)).encode("utf-8")
 
@@ -705,8 +714,9 @@ def handle_test_response(content_type: str | None, content_length: str | None, r
                          library_dir: Path = DEFAULT_LIBRARY_DIR) -> tuple[int, str, bytes]:
     """POST /api/test-response, once the request is known to come from this site's own page: one answer of the pairwise
     test, checked as feedback is (the same JSON-only, size and wording rules; engine.feedback.parse_pair), for a question
-    the cards have, and kept in `store` as the kind "blind_pair"; or an error. Only {"saved": true} comes back: nothing
-    of the answer, least of all which side was ours."""
+    the visit was asked, and kept in `store` as the kind "blind_pair" with the rival and the side the server works out
+    from the visit's id (pair_test.sides_of); or an error. Only {"saved": true} comes back: nothing of the answer, least
+    of all which side was ours."""
     data, refused = _json_body(content_type, content_length, read, FEEDBACK_MAX_BODY_BYTES, _FEEDBACK_BODY)
     if refused is not None:
         return refused
@@ -714,9 +724,7 @@ def handle_test_response(content_type: str | None, content_length: str | None, r
     if cards is None:
         return _error(503, TEST_CLOSED)
     try:
-        record = feedback.parse_pair(data)
-        if record["question"] not in {question["id"] for question in cards["questions"]}:
-            raise feedback.FeedbackError(f'"question" {record["question"]} is not a question of this test.')
+        record = feedback.parse_pair(data, lambda visit, question: pair_test.sides_of(cards, visit, question, _deck_key))
     except feedback.FeedbackError as error:
         return _error(400, BAD_FEEDBACK, reason=str(error))
     if store is None:

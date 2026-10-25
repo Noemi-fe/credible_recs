@@ -20,8 +20,9 @@ from engine.tests.pair_factories import QUESTION_IDS, made_up_cards, pick, write
 from engine.tests.test_web_public import HOST, PUBLIC, FakeStore, own_origin, send, start, stop
 from engine.tests.test_web_ux import _contrast, _tokens
 
-PAIR = {"session": "k3j9x0a7q2m5p8w1", "question": "b01", "rival": "chatgpt", "ours_side": "A", "choice": "B",
-        "why": "It explained what to avoid.", "language": "en", "answered_at": "2026-10-24T20:15:03.512Z"}
+# What the page sends of an answer, apart from the visit's id and the question: never the rival or the side, which the
+# server works out from the visit's id (25 Oct 2026, so that nothing a visitor's browser holds tells which answer is ours).
+PAIR = {"choice": "B", "why": "It explained what to avoid.", "language": "en", "answered_at": "2026-10-24T20:15:03.512Z"}
 
 # The page as the public site serves it, with the longest cards the rules allow: its size budget, in bytes, uncompressed.
 # The search page's is 120 KB; this one is a few screens of text.
@@ -56,9 +57,35 @@ def script_of(html: str) -> str:
     return re.search(r"<script>(.*?)</script>", html, re.DOTALL).group(1)
 
 
+def settings_of(html: str) -> dict:
+    return json.loads(re.search(r'<script type="application/json" id="settings">(.*?)</script>', html, re.DOTALL).group(1))
+
+
 def deck_of(html: str) -> list[dict]:
-    return json.loads(re.search(r'<script type="application/json" id="settings">(.*?)</script>', html, re.DOTALL)
-                      .group(1))["deck"]
+    return settings_of(html)["deck"]
+
+
+@pytest.fixture
+def visit(library):
+    """A visit to the page: its id and the questions of its deck, in the order they are asked."""
+    settings = settings_of(page_of(library))
+    return settings["session"], [item["question"] for item in settings["deck"]]
+
+
+def sent(visit, number: int = 0, **changes) -> dict:
+    """The answer the page sends for the visit's `number`th comparison."""
+    session, questions = visit
+    return {"session": session, "question": questions[number], **PAIR, **changes}
+
+
+def visit_asking(library, question: str) -> tuple[str, list[str]]:
+    """A visit whose deck holds `question` (about one in two of the visits to the made-up cards' page do)."""
+    for _ in range(100):
+        settings = settings_of(page_of(library))
+        questions = [item["question"] for item in settings["deck"]]
+        if question in questions:
+            return settings["session"], questions
+    raise AssertionError(question)
 
 
 def function_body(script: str, signature: str) -> str:
@@ -84,7 +111,10 @@ def test_the_test_page_is_a_standalone_page_with_one_fresh_deck_inside(library):
     html = page_of(library)
     deck = deck_of(html)
     assert len(deck) == 6 and len({item["question"] for item in deck}) == 6
-    assert set(deck[0]) == {"question", "text", "rival", "ours_side", "cards"}
+    assert set(deck[0]) == {"question", "text", "cards"}  # never which tool the other card is, or which side is ours
+    settings = settings_of(html)
+    assert set(settings) == {"deck", "session", "whyMax", "closed"} and settings["closed"] is False
+    assert feedback._PAIR_SESSION.fullmatch(settings["session"])  # the visit's id, made by the server
 
 
 def test_every_visitor_gets_a_new_deck(library, monkeypatch):
@@ -94,8 +124,16 @@ def test_every_visitor_gets_a_new_deck(library, monkeypatch):
         decks.append(deck_of(page_of(library)))
     assert decks[0] != decks[1]
     monkeypatch.setattr(web, "_deck_random", random.Random(1))
-    assert deck_of(page_of(library)) == decks[0]  # the deck is the cards' own, built by pair_test.build_deck
-    assert decks[0] == pair_test.build_deck(pair_test.cards_in(library), random.Random(1))
+    html = page_of(library)
+    assert deck_of(html) == decks[0]
+    # the deck is worked out from the visit's id, as it will be again when its answers come in
+    cards = pair_test.cards_in(library)
+    full = pair_test.deck_for(cards, settings_of(html)["session"], web._deck_key)
+    assert decks[0] == pair_test.public_deck(full)
+
+
+def test_two_visits_never_share_an_id(library):
+    assert len({settings_of(page_of(library))["session"] for _ in range(50)}) == 50
 
 
 def test_the_page_names_no_site_and_links_nowhere(library):
@@ -157,14 +195,25 @@ def test_a_card_shows_each_pick_by_name_and_why_or_the_note_when_there_are_no_pi
     assert "innerHTML" not in script_of(page_of(library))  # every text goes in as text
 
 
-def test_no_text_the_visitor_can_read_says_which_side_is_ours_or_who_the_rival_is(library):
-    script = script_of(page_of(library))
-    # The record is the one place the page uses either: they are sent, never drawn, and held in no attribute or class.
-    code = re.sub(r"//[^\n]*", "", re.sub(r"/\*.*?\*/", "", script, flags=re.DOTALL))  # the comments may tell the story
-    outside = code.replace(function_body(code, "function answerRecord(item, choice, why)"), "")
-    assert not re.search(r"\b(ours_side|rival|ours|chatgpt|vetted)\b", outside)
+def test_nothing_the_visitor_can_read_says_which_side_is_ours_or_who_the_rival_is(library):
+    """25 Oct 2026: found by trying the page, which had carried both in its data block, and so in the page's source and
+    in a tab's session storage. Now the server keeps them (the visit's id works them out, with a key only it has), so no
+    word of the page's whole source, its comments and its data included, says either."""
+    html = page_of(library)
+    assert not re.search(r"\b(ours_side|rival|ours|chatgpt|vetted|openai)\b", html, re.IGNORECASE)
+    script = script_of(html)
     assert "setAttribute(\"data-" not in script and "dataset" not in script
     assert "console." not in script
+
+
+def test_a_visits_deck_is_the_same_whichever_instance_asks_for_it_and_only_the_server_can_work_it_out(library):
+    cards = pair_test.cards_in(library)
+    settings = settings_of(page_of(library))
+    full = pair_test.deck_for(cards, settings["session"], web._deck_key)
+    assert [(item["question"], item["cards"]) for item in full] == [(item["question"], item["cards"])
+                                                                   for item in settings["deck"]]
+    another_server = pair_test.deck_key({"CREDIBLE_RECS_TEST_KEY": "not this server's"})
+    assert pair_test.deck_for(cards, settings["session"], another_server) != full
 
 
 def test_the_pages_script_sends_exactly_the_fields_the_server_takes(library):
@@ -172,6 +221,8 @@ def test_the_pages_script_sends_exactly_the_fields_the_server_takes(library):
     body = function_body(script, "function answerRecord(item, choice, why)")
     sent = set(re.findall(r"^\s+(\w+):", body, re.MULTILINE))
     assert sent == set(feedback.PAIR_REQUIRED) | set(feedback.PAIR_OPTIONAL)
+    assert not {"rival", "ours_side"} & sent  # the server works those out
+    assert "settings.session" in script and "getRandomValues" not in script  # the visit's id is the server's
     assert len(re.findall(r"\bfetch\(", script)) == 1 and '"/api/test-response"' in script
 
 
@@ -298,34 +349,78 @@ def post_pair(body, library, content_type="application/json"):
     return status, kind, json.loads(response)
 
 
-def test_an_answer_is_kept_as_a_blind_pair_with_the_time_and_nothing_about_the_sender(library, fake_store):
-    status, content_type, data = post_pair(PAIR, library)
+def test_an_answer_is_kept_as_a_blind_pair_with_the_time_and_nothing_about_the_sender(library, fake_store, visit):
+    status, content_type, data = post_pair(sent(visit), library)
     assert status == 200 and content_type.startswith("application/json")
     assert data == {"saved": True}  # nothing of the answer, least of all the side, comes back
     (record,) = fake_store.records
-    assert record["kind"] == "blind_pair" and record["choice"] == "B" and record["ours_side"] == "A"
-    assert set(record) == set(PAIR) | {"kind", "received_at"}
+    assert record["kind"] == "blind_pair" and record["choice"] == "B"
+    assert set(record) == set(sent(visit)) | {"kind", "received_at", "rival", "ours_side"}
 
 
-def test_an_answer_for_a_question_the_test_does_not_have_is_refused(library, fake_store):
-    status, _, data = post_pair({**PAIR, "question": "z99"}, library)
+def test_each_answer_is_kept_with_the_rival_and_the_side_the_visits_own_cards_were_shown_on(library, fake_store):
+    questions = {q["id"]: q["answers"] for q in pair_test.cards_in(library)["questions"]}
+    settings = settings_of(page_of(library))
+    asked = [item["question"] for item in settings["deck"]]
+    for number in range(len(asked)):
+        assert post_pair(sent((settings["session"], asked), number), library)[0] == 200
+    assert [record["question"] for record in fake_store.records] == asked
+    for record, shown in zip(fake_store.records, settings["deck"]):
+        other = "B" if record["ours_side"] == "A" else "A"
+        # what the visitor was shown on each side is the card of the tool the record says it was
+        assert shown["cards"][record["ours_side"]] == questions[record["question"]]["ours"]
+        assert shown["cards"][other] == questions[record["question"]][record["rival"]]
+    assert {record["rival"] for record in fake_store.records} == {"chatgpt", "vetted"}
+    assert [record["ours_side"] for record in fake_store.records].count("A") == 3
+
+
+def test_an_answer_for_a_question_the_test_does_not_have_is_refused(library, fake_store, visit):
+    status, _, data = post_pair(sent(visit, question="z99"), library)
     assert status == 400 and data["code"] == "bad_feedback" and "z99" in data["error"] and fake_store.records == []
+
+
+def test_an_answer_for_a_question_this_visit_was_not_asked_is_refused(library, fake_store, visit):
+    session, asked = visit
+    not_asked = next(question for question in QUESTION_IDS if question not in asked)
+    status, _, data = post_pair(sent(visit, question=not_asked), library)
+    assert status == 400 and data["code"] == "bad_feedback" and not_asked in data["error"] and fake_store.records == []
+
+
+def test_the_page_may_not_send_the_rival_or_the_side(library, fake_store, visit):
+    for extra in ({"rival": "chatgpt"}, {"ours_side": "A"}):
+        status, _, data = post_pair({**sent(visit), **extra}, library)
+        assert status == 400 and data["code"] == "bad_feedback" and fake_store.records == []
+
+
+def test_an_answer_from_a_visit_the_server_did_not_make_is_not_matched_to_a_deck(library, fake_store):
+    status, _, data = post_pair({**PAIR, "session": "k3j9x0a7q2m5p8w1", "question": "b01"}, library)
+    assert status == 400 and data["code"] == "bad_feedback" and fake_store.records == []
+
+
+def test_an_answer_that_arrives_after_the_cards_changed_is_refused_not_given_the_wrong_side(library, fake_store, visit,
+                                                                                             tmp_path):
+    cards = made_up_cards()
+    cards["questions"] = cards["questions"][:8]
+    changed = write_cards(tmp_path / "changed", cards)
+    status, _, data = post_pair(sent(visit), changed)
+    assert status == 400 and fake_store.records == []
 
 
 def test_every_question_of_the_cards_is_taken(library, fake_store):
     for question in QUESTION_IDS:
-        assert post_pair({**PAIR, "question": question}, library)[0] == 200
+        session, questions = visit_asking(library, question)
+        assert post_pair({"session": session, "question": question, **PAIR}, library)[0] == 200
     assert len(fake_store.records) == len(QUESTION_IDS)
 
 
-def test_an_answer_is_refused_with_the_feedback_routes_codes_and_nothing_is_kept(library, fake_store):
-    assert post_pair(PAIR, library, "text/plain")[::2] == (415, {"error": web.NOT_JSON[1], "code": "not_json"})
+def test_an_answer_is_refused_with_the_feedback_routes_codes_and_nothing_is_kept(library, fake_store, visit):
+    assert post_pair(sent(visit), library, "text/plain")[::2] == (415, {"error": web.NOT_JSON[1], "code": "not_json"})
     assert post_pair(b"{not json", library)[0] == 400
     assert post_pair(b'{"session": "a", "session": "b"}', library)[2]["code"] == "bad_json"
-    assert post_pair({**PAIR, "ip": "203.0.113.7"}, library)[2]["code"] == "bad_feedback"
-    assert post_pair({"kind": "blind_pair", **PAIR}, library)[2]["code"] == "bad_feedback"
-    assert post_pair({**PAIR, "why": "w" * 301}, library)[2]["code"] == "bad_feedback"
-    assert post_pair({**PAIR, "choice": "both"}, library)[2]["code"] == "bad_feedback"
+    assert post_pair({**sent(visit), "ip": "203.0.113.7"}, library)[2]["code"] == "bad_feedback"
+    assert post_pair({"kind": "blind_pair", **sent(visit)}, library)[2]["code"] == "bad_feedback"
+    assert post_pair({**sent(visit), "why": "w" * 301}, library)[2]["code"] == "bad_feedback"
+    assert post_pair({**sent(visit), "choice": "both"}, library)[2]["code"] == "bad_feedback"
     assert fake_store.records == []
 
 
@@ -339,31 +434,31 @@ def test_the_size_limit_is_the_feedbacks_and_the_body_is_not_read_beyond_it(libr
     assert web.handle_test_response("application/json", "abc", never_read, library)[0] == 400
 
 
-def test_the_longest_real_answer_fits_the_size_limit(library, fake_store):
-    longest = {**PAIR, "why": "長" * 300, "session": "s" * 64, "question": "r05"}
+def test_the_longest_real_answer_fits_the_size_limit(library, fake_store, visit):
+    longest = sent(visit, why="長" * 300)
     assert len(json.dumps(longest, ensure_ascii=False).encode("utf-8")) <= FEEDBACK_MAX_BODY_BYTES
     assert post_pair(longest, library)[0] == 200
 
 
-def test_an_answer_that_cant_be_kept_right_now_says_so(library, monkeypatch):
+def test_an_answer_that_cant_be_kept_right_now_says_so(library, monkeypatch, visit):
     monkeypatch.setattr(web, "store", FakeStore(fail=True))
-    status, _, data = post_pair(PAIR, library)
+    status, _, data = post_pair(sent(visit), library)
     assert status == 503 and data["code"] == "feedback_unavailable"
     monkeypatch.setattr(web, "store", None)
-    assert post_pair(PAIR, library)[0] == 503
+    assert post_pair(sent(visit), library)[0] == 503
 
 
-def test_without_cards_no_answer_is_taken(tmp_path, fake_store):
-    status, _, data = post_pair(PAIR, tmp_path / "none")
+def test_without_cards_no_answer_is_taken(tmp_path, fake_store, visit):
+    status, _, data = post_pair(sent(visit), tmp_path / "none")
     assert status == 503 and data["code"] == "test_closed" and fake_store.records == []
 
 
-def test_the_answers_go_through_the_same_store_as_other_feedback(library, tmp_path, monkeypatch):
+def test_the_answers_go_through_the_same_store_as_other_feedback(library, tmp_path, monkeypatch, visit):
     local = feedback.LocalStore(tmp_path / "feedback.jsonl")
     monkeypatch.setattr(web, "store", local)
-    assert post_pair(PAIR, library)[0] == 200
+    assert post_pair(sent(visit), library)[0] == 200
     (record,) = feedback.read_pairs([tmp_path / "feedback.jsonl"])
-    assert record["kind"] == "blind_pair" and record["session"] == PAIR["session"]
+    assert record["kind"] == "blind_pair" and record["session"] == visit[0]
 
 
 # --- Over HTTP ---
@@ -390,72 +485,72 @@ def public_send(server, path, body=None, client="203.0.113.7", headers=None):
     return send(server, path, body, {"Host": HOST, "X-Forwarded-For": f"{client}, 10.16.0.1", **(headers or {})})
 
 
-def test_the_local_page_can_send_an_answer(local_server, fake_store):
-    status, _, data = send(local_server, "/api/test-response", PAIR, {**JSON_FROM_HERE, "Origin": own_origin(local_server)})
+def test_the_local_page_can_send_an_answer(local_server, fake_store, visit):
+    status, _, data = send(local_server, "/api/test-response", sent(visit), {**JSON_FROM_HERE, "Origin": own_origin(local_server)})
     assert status == 200 and data == {"saved": True} and len(fake_store.records) == 1
 
 
 @pytest.mark.parametrize("headers", [{}, {"Origin": "https://evil.example"}, {"Origin": "null"},
                                      {"Referer": "https://evil.example/test"}])
-def test_an_answer_from_another_website_or_from_nowhere_is_refused(local_server, fake_store, headers):
-    status, _, data = send(local_server, "/api/test-response", PAIR, {**JSON_FROM_HERE, **headers})
+def test_an_answer_from_another_website_or_from_nowhere_is_refused(local_server, fake_store, visit, headers):
+    status, _, data = send(local_server, "/api/test-response", sent(visit), {**JSON_FROM_HERE, **headers})
     assert status == 403 and data["code"] == "cross_site" and fake_store.records == []
 
 
-def test_an_answer_addressed_to_another_host_is_refused(local_server, fake_store):
+def test_an_answer_addressed_to_another_host_is_refused(local_server, fake_store, visit):
     headers = {**JSON_FROM_HERE, "Host": "evil.example", "Origin": "http://evil.example"}
-    assert send(local_server, "/api/test-response", PAIR, headers)[0] == 403 and fake_store.records == []
+    assert send(local_server, "/api/test-response", sent(visit), headers)[0] == 403 and fake_store.records == []
 
 
-def test_the_routes_take_only_their_own_method(local_server):
+def test_the_routes_take_only_their_own_method(local_server, visit):
     status, headers, data = send(local_server, "/api/test-response")
     assert status == 405 and data["code"] == "method_not_allowed" and headers["Allow"] == "POST"
-    status, headers, data = send(local_server, "/test", PAIR, {**JSON_FROM_HERE, "Origin": own_origin(local_server)})
+    status, headers, data = send(local_server, "/test", sent(visit), {**JSON_FROM_HERE, "Origin": own_origin(local_server)})
     assert status == 405 and headers["Allow"] == "GET"
 
 
-def test_the_public_site_serves_the_page_and_takes_answers_for_its_own_host_only(public_server, fake_store):
+def test_the_public_site_serves_the_page_and_takes_answers_for_its_own_host_only(public_server, fake_store, visit):
     request = urllib.request.Request(f"{own_origin(public_server)}/test", headers={"Host": HOST})
     with urllib.request.urlopen(request, timeout=10) as response:
         assert response.status == 200
     headers = {**JSON_FROM_HERE, "Origin": f"https://{HOST}"}
-    assert public_send(public_server, "/api/test-response", PAIR, headers=headers)[0] == 200
-    assert public_send(public_server, "/api/test-response", PAIR, headers={**headers, "Origin": "https://evil.example"})[0] == 403
-    assert public_send(public_server, "/api/test-response", PAIR, headers={**headers, "Host": "evil.example"})[0] == 403
+    assert public_send(public_server, "/api/test-response", sent(visit), headers=headers)[0] == 200
+    assert public_send(public_server, "/api/test-response", sent(visit), headers={**headers, "Origin": "https://evil.example"})[0] == 403
+    assert public_send(public_server, "/api/test-response", sent(visit), headers={**headers, "Host": "evil.example"})[0] == 403
     (record,) = fake_store.records
     assert "203.0.113.7" not in json.dumps(record) and "10.16.0.1" not in json.dumps(record)
 
 
-def test_answers_have_a_rate_limit_of_their_own_that_leaves_room_for_several_tests(public_server, fake_store):
+def test_answers_have_a_rate_limit_of_their_own_that_leaves_room_for_several_tests(public_server, fake_store, visit):
     assert RATE_LIMIT_PAIRS >= 3 * pair_test.QUESTIONS_PER_VISITOR  # friends on one network, or a retried answer
     assert RATE_LIMIT_PAIRS >= RATE_LIMIT_FEEDBACK
     public_server.limits["pairs"] = web.RateLimiter(2, 600)
     headers = {**JSON_FROM_HERE, "Origin": f"https://{HOST}"}
-    assert [public_send(public_server, "/api/test-response", PAIR, headers=headers)[0] for _ in range(2)] == [200, 200]
-    status, response_headers, data = public_send(public_server, "/api/test-response", PAIR, headers=headers)
+    assert [public_send(public_server, "/api/test-response", sent(visit), headers=headers)[0] for _ in range(2)] == [200, 200]
+    status, response_headers, data = public_send(public_server, "/api/test-response", sent(visit), headers=headers)
     assert status == 429 and data["code"] == "too_many_requests" and int(response_headers["Retry-After"]) > 0
-    assert public_send(public_server, "/api/test-response", PAIR, client="198.51.100.4", headers=headers)[0] == 200
+    assert public_send(public_server, "/api/test-response", sent(visit), client="198.51.100.4", headers=headers)[0] == 200
     assert len(fake_store.records) == 3
 
 
-def test_the_answers_limit_and_the_feedback_limit_do_not_use_each_other_up(public_server, fake_store):
+def test_the_answers_limit_and_the_feedback_limit_do_not_use_each_other_up(public_server, fake_store, visit):
     public_server.limits["feedback"] = web.RateLimiter(1, 600)
     headers = {**JSON_FROM_HERE, "Origin": f"https://{HOST}"}
     useful = {"kind": "first_time", "answer": "yes"}
     assert public_send(public_server, "/api/feedback", useful, headers=headers)[0] == 200
     assert public_send(public_server, "/api/feedback", useful, headers=headers)[0] == 429
-    assert public_send(public_server, "/api/test-response", PAIR, headers=headers)[0] == 200
+    assert public_send(public_server, "/api/test-response", sent(visit), headers=headers)[0] == 200
 
 
-def test_local_mode_has_no_rate_limit_on_answers(local_server, fake_store):
+def test_local_mode_has_no_rate_limit_on_answers(local_server, fake_store, visit):
     local_server.limits["pairs"] = web.RateLimiter(1, 600)
     headers = {**JSON_FROM_HERE, "Origin": own_origin(local_server)}
-    assert [send(local_server, "/api/test-response", PAIR, headers)[0] for _ in range(3)] == [200] * 3
+    assert [send(local_server, "/api/test-response", sent(visit), headers)[0] for _ in range(3)] == [200] * 3
 
 
-def test_the_feedback_route_still_refuses_a_pairwise_answer(local_server, fake_store):
+def test_the_feedback_route_still_refuses_a_pairwise_answer(local_server, fake_store, visit):
     headers = {**JSON_FROM_HERE, "Origin": own_origin(local_server)}
-    status, _, data = send(local_server, "/api/feedback", {"kind": "blind_pair", **PAIR}, headers)
+    status, _, data = send(local_server, "/api/feedback", {"kind": "blind_pair", **sent(visit)}, headers)
     assert status == 400 and data["code"] == "bad_feedback" and fake_store.records == []
 
 
@@ -496,13 +591,16 @@ def test_the_trial_server_serves_the_page_and_keeps_answers_in_its_own_file(libr
     try:
         request = urllib.request.Request(f"{own_origin(server)}/test")
         with urllib.request.urlopen(request, timeout=10) as response:
-            assert response.status == 200 and b"id=\"settings\"" in response.read()
-        status, _, data = send(server, "/api/test-response", PAIR, {**JSON_FROM_HERE, "Origin": own_origin(server)})
+            assert response.status == 200
+            settings = settings_of(response.read().decode("utf-8"))
+        answer = {"session": settings["session"], "question": settings["deck"][0]["question"], **PAIR}
+        status, _, data = send(server, "/api/test-response", answer, {**JSON_FROM_HERE, "Origin": own_origin(server)})
         assert status == 200 and data == {"saved": True}
     finally:
         stop(server)
     (record,) = feedback.read_pairs([trial])
-    assert record["session"] == PAIR["session"] and record["kind"] == "blind_pair"
+    assert record["session"] == settings["session"] and record["kind"] == "blind_pair"
+    assert record["rival"] in feedback.PAIR_RIVALS and record["ours_side"] in feedback.PAIR_SIDES
 
 
 def test_the_trial_servers_options():

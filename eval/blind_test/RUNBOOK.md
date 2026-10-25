@@ -177,12 +177,18 @@ random. A visitor who starts again gets a new deck and counts as a new visit.
 
 ### What a visitor's answer is, and what is kept
 
-One small record per answer, sent as soon as they press Next: a random visit id the page makes, the question, the rival,
-which side ours was on, the choice (A, B or same), the why (at most 300 characters), the language and the page's clock.
-The server adds the time it arrived and keeps nothing about the sender (no address, no browser, no cookie), through the
-same store as the site's feedback: Noemi's private dataset when `CREDIBLE_RECS_FEEDBACK_REPO` and `HF_TOKEN` are set,
-else `data/feedback/feedback.jsonl`. Which side is ours is never written on the page; it travels only in the record. The
-page keeps nothing in the browser but its place in the tab (sessionStorage), so a reload carries on. An answer is limited
+One small record per answer, sent as soon as they press Next: the visit id the server gave the page, the question, the
+choice (A, B or same), the why (at most 300 characters), the language and the page's clock. The server adds the time it
+arrived, and the rival and the side ours was on, and keeps nothing about the sender (no address, no browser, no cookie),
+through the same store as the site's feedback: Noemi's private dataset when `CREDIBLE_RECS_FEEDBACK_REPO` and `HF_TOKEN`
+are set, else `data/feedback/feedback.jsonl`. The page never knows the rival or which side is ours (25 Oct 2026: found by
+trying it, when both sat in the page's source and a tab's session storage): the visit's id and a key only the server has
+decide the deck, so the server builds the same deck again when an answer comes in and reads the rival and the side off
+it. The key is worked out from `CREDIBLE_RECS_TEST_KEY` or, failing that, `HF_TOKEN` (the live site holds it already, so
+every instance has the same key and nothing needs setting up); with neither (the trial on this computer) it is random
+for that run. If the cards' questions change while someone is part way through, their answers are refused rather than
+given the wrong side, so don't redeploy different cards while friends are taking the test. The page keeps nothing in the
+browser but its place in the tab (sessionStorage), so a reload carries on. An answer is limited
 like feedback (JSON only, 8 KB, only from the site's own page) with a rate limit of its own (30 answers in 10 minutes
 for one address, five whole tests, so friends on one network are never turned away).
 

@@ -127,11 +127,11 @@ h1, h2 { line-height: 1.2; }
 <script type="application/json" id="settings">{{SETTINGS}}</script>
 <script>
 /* How this page works. The server makes a new deck for each visit (engine/pair_test.py) and puts it in the data block
-   above: 6 comparisons, each with the question, the two cards in the order they are shown, and, for the record only,
-   which tool the other card is and which side the first tool was on. The page draws a card by its picks and nothing
-   else; the tools and the side are sent with the answer (POST /api/test-response) and are never drawn, written into the
-   page or kept in an attribute. Nothing is kept in the browser but this visit's place, in this tab's sessionStorage, so a
-   reload (a phone putting the tab to sleep) carries on where it was; no cookies, no counting.
+   above, with the visit's id: 6 comparisons, each with the question and the two cards in the order they are shown, and
+   nothing else. The page knows no more than a visitor does: which tool wrote a card, and which side is whose, stay with
+   the server, which works them out again from the visit's id when an answer comes in (POST /api/test-response). The
+   page draws a card by its picks and nothing else. Nothing is kept in the browser but this visit's place, in this tab's
+   sessionStorage, so a reload (a phone putting the tab to sleep) carries on where it was; no cookies, no counting.
    WORDING: decided by Claude, 24 Oct 2026, PROPOSED for Noemi to read (Italian too). Every word the page shows that is
    not a card's is here. */
 (function () {
@@ -191,7 +191,7 @@ h1, h2 { line-height: 1.2; }
   const RETRY_LIMIT = 6;
   const settings = JSON.parse(document.getElementById("settings").textContent);
   const state = {
-    language: startLanguage(), session: makeSession(), deck: settings.deck, index: 0,
+    language: startLanguage(), session: settings.session, deck: settings.deck, index: 0,
     screen: settings.closed ? "closed" : "intro", choice: null, why: "", outbox: [], sending: false, failures: 0,
   };
   const screen = document.getElementById("screen");
@@ -199,13 +199,6 @@ h1, h2 { line-height: 1.2; }
   function startLanguage() {
     const wanted = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
     return String(wanted[0] || "en").toLowerCase().startsWith("it") ? "it" : "en";
-  }
-
-  function makeSession() {
-    const bytes = new Uint8Array(12);
-    if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(bytes);
-    else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
-    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
   }
 
   function words(key, values) {
@@ -408,8 +401,6 @@ h1, h2 { line-height: 1.2; }
     return {
       session: state.session,
       question: item.question,
-      rival: item.rival,
-      ours_side: item.ours_side,
       choice: choice,
       why: why.trim() || null,
       language: state.language,

@@ -13,12 +13,22 @@ import pytest
 from engine import feedback
 
 NOW = datetime(2026, 10, 24, 20, 15, 4, tzinfo=UTC)
-PAIR = {"session": "k3j9x0a7q2m5p8w1", "question": "b01", "rival": "chatgpt", "ours_side": "A", "choice": "B",
+# What the page sends: never the rival or the side, which the server works out from the visit's id (25 Oct 2026).
+PAIR = {"session": "k3j9x0a7q2m5p8w1", "question": "b01", "choice": "B",
         "why": "It explained what to avoid.", "language": "en", "answered_at": "2026-10-24T20:15:03.512Z"}
 
 
+def sides(session, question):
+    """The server's lookup (engine/pair_test.py sides_of), made up: every question is chatgpt's, with ours on side A."""
+    return "chatgpt", "A"
+
+
+def parse(data, **more):
+    return feedback.parse_pair(data, sides=more.pop("sides", sides), now=NOW, **more)
+
+
 def test_an_answer_is_kept_with_its_fields_as_its_own_kind_and_the_time_it_arrived():
-    record = feedback.parse_pair(PAIR, now=NOW)
+    record = parse(PAIR)
     assert record == {"kind": "blind_pair", "session": "k3j9x0a7q2m5p8w1", "question": "b01", "rival": "chatgpt",
                       "ours_side": "A", "choice": "B", "why": "It explained what to avoid.", "language": "en",
                       "answered_at": "2026-10-24T20:15:03Z", "received_at": "2026-10-24T20:15:04Z"}
@@ -33,28 +43,50 @@ def test_the_kinds_of_the_other_feedback_are_unchanged_and_pairs_are_not_sent_th
 
 def test_the_why_may_be_left_out_or_blank():
     without = {key: value for key, value in PAIR.items() if key != "why"}
-    assert feedback.parse_pair(without, now=NOW)["why"] is None
-    assert feedback.parse_pair({**PAIR, "why": "   "}, now=NOW)["why"] is None
-    assert feedback.parse_pair({**PAIR, "why": None}, now=NOW)["why"] is None
-    assert feedback.parse_pair({**PAIR, "why": "  spaced  "}, now=NOW)["why"] == "spaced"
+    assert parse(without)["why"] is None
+    assert parse({**PAIR, "why": "   "})["why"] is None
+    assert parse({**PAIR, "why": None})["why"] is None
+    assert parse({**PAIR, "why": "  spaced  "})["why"] == "spaced"
 
 
 def test_the_why_may_be_three_hundred_characters_and_not_more():
     assert feedback.PAIR_MAX_WHY_CHARS == 300
-    assert feedback.parse_pair({**PAIR, "why": "長" * 300}, now=NOW)["why"] == "長" * 300
+    assert parse({**PAIR, "why": "長" * 300})["why"] == "長" * 300
     with pytest.raises(feedback.FeedbackError, match="300"):
-        feedback.parse_pair({**PAIR, "why": "長" * 301}, now=NOW)
+        parse({**PAIR, "why": "長" * 301})
 
 
 @pytest.mark.parametrize("choice", ["A", "B", "same"])
 def test_every_choice_is_kept(choice):
-    assert feedback.parse_pair({**PAIR, "choice": choice}, now=NOW)["choice"] == choice
+    assert parse({**PAIR, "choice": choice})["choice"] == choice
 
 
 @pytest.mark.parametrize("rival, side, language", [("chatgpt", "A", "en"), ("vetted", "B", "it")])
-def test_each_rival_side_and_language_is_kept(rival, side, language):
-    record = feedback.parse_pair({**PAIR, "rival": rival, "ours_side": side, "language": language}, now=NOW)
+def test_the_rival_and_side_are_the_servers_and_the_language_the_pages(rival, side, language):
+    record = parse({**PAIR, "language": language}, sides=lambda session, question: (rival, side))
     assert (record["rival"], record["ours_side"], record["language"]) == (rival, side, language)
+
+
+def test_the_server_is_asked_for_the_rival_and_side_of_the_visit_and_question_sent():
+    asked = []
+
+    def lookup(session, question):
+        asked.append((session, question))
+        return "vetted", "B"
+
+    parse({**PAIR, "question": "b04"}, sides=lookup)
+    assert asked == [("k3j9x0a7q2m5p8w1", "b04")]
+
+
+def test_an_answer_for_a_question_not_in_the_visits_deck_is_refused_with_words_saying_so():
+    with pytest.raises(feedback.FeedbackError, match='"question" b01 is not one of this visit'):
+        parse(PAIR, sides=lambda session, question: None)
+
+
+@pytest.mark.parametrize("name, value", [("rival", "chatgpt"), ("ours_side", "A")])
+def test_the_page_may_not_send_the_rival_or_the_side_it_must_not_know(name, value):
+    with pytest.raises(feedback.FeedbackError, match=name):
+        parse({**PAIR, name: value})
 
 
 @pytest.mark.parametrize("sent, words", [
@@ -66,8 +98,6 @@ def test_each_rival_side_and_language_is_kept(rival, side, language):
     ({**PAIR, "category": "kitchen"}, "category"),
     ({key: value for key, value in PAIR.items() if key != "session"}, "session"),
     ({key: value for key, value in PAIR.items() if key != "question"}, "question"),
-    ({key: value for key, value in PAIR.items() if key != "rival"}, "rival"),
-    ({key: value for key, value in PAIR.items() if key != "ours_side"}, "ours_side"),
     ({key: value for key, value in PAIR.items() if key != "choice"}, "choice"),
     ({key: value for key, value in PAIR.items() if key != "language"}, "language"),
     ({key: value for key, value in PAIR.items() if key != "answered_at"}, "answered_at"),
@@ -78,10 +108,6 @@ def test_each_rival_side_and_language_is_kept(rival, side, language):
     ({**PAIR, "question": "B 01!"}, '"question"'),
     ({**PAIR, "question": ""}, '"question"'),
     ({**PAIR, "question": 1}, '"question"'),
-    ({**PAIR, "rival": "ours"}, '"rival"'),
-    ({**PAIR, "rival": "bing"}, '"rival"'),
-    ({**PAIR, "ours_side": "C"}, '"ours_side"'),
-    ({**PAIR, "ours_side": "a"}, '"ours_side"'),
     ({**PAIR, "choice": "tie"}, '"choice"'),
     ({**PAIR, "choice": "b"}, '"choice"'),
     ({**PAIR, "choice": True}, '"choice"'),
@@ -94,7 +120,7 @@ def test_each_rival_side_and_language_is_kept(rival, side, language):
 ])
 def test_an_answer_that_breaks_a_rule_is_refused_with_words_saying_why(sent, words):
     with pytest.raises(feedback.FeedbackError) as refused:
-        feedback.parse_pair(sent, now=NOW)
+        parse(sent)
     assert words in str(refused.value)
 
 
@@ -102,13 +128,14 @@ def test_an_answer_that_breaks_a_rule_is_refused_with_words_saying_why(sent, wor
                                          ("2026-10-24T20:15:03.5Z", "2026-10-24T20:15:03Z"),
                                          ("2026-10-24T20:15:03.999Z", "2026-10-24T20:15:03Z")])
 def test_the_pages_timestamp_is_kept_to_the_second(stamp, kept):
-    assert feedback.parse_pair({**PAIR, "answered_at": stamp}, now=NOW)["answered_at"] == kept
+    assert parse({**PAIR, "answered_at": stamp})["answered_at"] == kept
 
 
 # --- Reading and summing up ---
 
 def line(**changes) -> str:
-    return json.dumps({"kind": "blind_pair", **PAIR, "received_at": "2026-10-24T20:15:04Z", **changes}) + "\n"
+    stored = {"kind": "blind_pair", **PAIR, "rival": "chatgpt", "ours_side": "A", "received_at": "2026-10-24T20:15:04Z"}
+    return json.dumps({**stored, **changes}) + "\n"
 
 
 def test_reading_the_local_file_takes_in_pairs_and_the_other_kinds(tmp_path):

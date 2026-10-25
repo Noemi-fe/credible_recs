@@ -30,6 +30,16 @@ rest go to the others), in a random order; each question is ours against one riv
 against Vetted (so every visitor sees both), and ours is on side A in three of the six and on side B in the other three
 (a random choice of which, so no side is ours more often). The deck is made when the page is asked for.
 
+Nothing a visitor's browser holds may say which answer is ours or who the rival is (25 Oct 2026: found by trying the page,
+which had carried both in its data, so in the page's source and in the tab's session storage). So the page is given only
+each comparison's question and two cards, in the order to show them (public_deck), and the visit's id, which the server
+made (new_visit). The deck follows from that id and a key only the server has (deck_for: the id, mixed with the key, seeds
+the shuffles), so when an answer comes back with the id and the question, the server builds the same deck again and reads
+the rival and the side off it (sides_of), and keeps them in the record. Nothing is kept between the page and the answers,
+so every instance of the live site works the same: the key comes from a secret the site already holds (deck_key). The
+id's last four letters are a fingerprint of the cards' questions (fingerprint): if the cards change while someone is part
+way through, their answers are refused rather than given the wrong side.
+
     python -m engine.pair_test check [cards file]     reads the cards and lists every rule they break
     python -m engine.pair_test serve [--port N] [--cards DIR] [--store FILE]
         tries the page on this computer, http://127.0.0.1:8767/test: only the test's two routes, no library or model
@@ -39,7 +49,10 @@ against Vetted (so every visitor sees both), and ours is on side A in three of t
 """
 
 import copy
+import hashlib
+import hmac
 import json
+import os
 import random
 import re
 import sys
@@ -268,6 +281,62 @@ def build_deck(cards: dict, rng: random.Random, size: int = QUESTIONS_PER_VISITO
         deck.append({"question": question["id"], "text": copy.deepcopy(question["text"]), "rival": rival,
                      "ours_side": side, "cards": {"A": shown["A"], "B": shown["B"]}})
     return deck
+
+
+# --- A visit: its id, and the deck that follows from it ---
+
+KEY_SETTINGS = ("CREDIBLE_RECS_TEST_KEY", "HF_TOKEN")  # in this order: the first one set makes the key
+VISIT_FINGERPRINT_CHARS = 4
+
+
+def deck_key(environ=None) -> bytes:
+    """The key that, with a visit's id, decides its deck: worked out (HMAC-SHA-256, so the secret itself can't be read
+    back from it) from CREDIBLE_RECS_TEST_KEY, else from HF_TOKEN, which the live site holds as a secret already, so every
+    instance and every restart get the same key. With neither set (a trial on this computer, the tests) a fresh random
+    key: the deck is the same for one running server and nobody else."""
+    environ = os.environ if environ is None else environ
+    for name in KEY_SETTINGS:
+        secret = (environ.get(name) or "").strip()
+        if secret:
+            return hmac.new(secret.encode("utf-8"), b"credible-recs pairwise test: decks", hashlib.sha256).digest()
+    return os.urandom(32)
+
+
+def fingerprint(cards: dict) -> str:
+    """Four letters that change when the cards' questions, their categories or their order do, and not when a card's
+    words do: what decides a deck. The end of every visit's id."""
+    shape = json.dumps([[question["id"], question["category"]] for question in cards.get("questions") or []])
+    return hashlib.sha256(shape.encode("utf-8")).hexdigest()[:VISIT_FINGERPRINT_CHARS]
+
+
+def new_visit(cards: dict, rng: random.Random) -> str:
+    """A new visit's id: 24 random letters and digits from `rng` (the system's, on the site) and the cards' fingerprint."""
+    return f"{rng.getrandbits(96):024x}{fingerprint(cards)}"
+
+
+def deck_for(cards: dict, visit: str, key: bytes, size: int = QUESTIONS_PER_VISITOR) -> list[dict]:
+    """The visit's deck, in full (build_deck's, with the rival and the side): the same whenever it is asked for, by whoever
+    holds `key`."""
+    seed = int.from_bytes(hmac.new(key, visit.encode("utf-8"), hashlib.sha256).digest(), "big")
+    return build_deck(cards, random.Random(seed), size)
+
+
+def sides_of(cards: dict, visit: str, question: str, key: bytes) -> tuple[str, str] | None:
+    """(the rival, the side ours was on) for a question of the visit's deck; None when the visit's id is for other cards
+    (their fingerprint differs) or its deck never held that question."""
+    if visit[-VISIT_FINGERPRINT_CHARS:] != fingerprint(cards):
+        return None
+    for item in deck_for(cards, visit, key):
+        if item["question"] == question:
+            return item["rival"], item["ours_side"]
+    return None
+
+
+def public_deck(deck: list[dict]) -> list[dict]:
+    """What the page is given of a deck: each comparison's question, its text and its two cards in the order to show
+    them. Never the rival or ours' side: they stay with the server."""
+    return [{"question": item["question"], "text": copy.deepcopy(item["text"]), "cards": copy.deepcopy(item["cards"])}
+            for item in deck]
 
 
 # --- Trying it on this computer ---

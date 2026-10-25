@@ -13,17 +13,22 @@ Two kinds of record come in through POST /api/feedback (engine/web.py), sent by 
 A third kind comes in through POST /api/test-response, sent by the pairwise test's page (/test; engine/pair_test.py, Noemi,
 20 Oct 2026), one record per answer, checked by parse_pair:
 
-    {"session": "k3j9x0a7q2m5",                     a random id the page makes for one visit (not tied to anyone)
+    {"session": "<28 letters and digits>",          the id the server gave this visit (not tied to anyone)
      "question": "b01",                             the test question's id
-     "rival": "chatgpt" | "vetted",                 the tool ours was set against
-     "ours_side": "A" | "B",                        the side ours was shown on
      "choice": "A" | "B" | "same",                  the visitor's answer: the side trusted more, or about the same
      "why": "..." | null,                           optional, at most PAIR_MAX_WHY_CHARS characters
      "language": "en" | "it",
      "answered_at": "2026-10-24T20:15:03.512Z"}     the page's clock, UTC
 
-It is kept as the kind "blind_pair" (the server sets the kind; a body that names one is refused), with the time it
-arrived, in the same store; `python -m engine.blind_test tally-pairs` counts them.
+The page never knows which tool the other answer is, or which side ours is on (25 Oct 2026: nothing a visitor's browser
+holds may say, so it is never in the page or in what the page sends). The server works both out from the visit's id
+(engine/pair_test.py sides_of, passed in as `sides`) and keeps them in the record:
+
+     "rival": "chatgpt" | "vetted",                 the tool ours was set against
+     "ours_side": "A" | "B",                        the side ours was shown on
+
+A page that sends either is refused. It is kept as the kind "blind_pair" (the server sets the kind; a body that names one
+is refused), with the time it arrived, in the same store; `python -m engine.blind_test tally-pairs` counts them.
 
 parse_record checks each one strictly: an unknown kind or field, a missing field, a value of the wrong type or a text
 over its limit is refused, with plain words saying why, and nothing is kept. What is kept is those fields and the time
@@ -81,7 +86,7 @@ PAIR_SIDES = ("A", "B")
 PAIR_CHOICES = ("A", "B", "same")
 PAIR_LANGUAGES = ("en", "it")
 PAIR_MAX_WHY_CHARS = PAIR_TEST_MAX_WHY_CHARS
-PAIR_REQUIRED = ("session", "question", "rival", "ours_side", "choice", "language", "answered_at")
+PAIR_REQUIRED = ("session", "question", "choice", "language", "answered_at")  # what the page sends
 PAIR_OPTIONAL = ("why",)
 _PAIR_SESSION = re.compile(r"[A-Za-z0-9_-]{8,64}")
 _PAIR_QUESTION = re.compile(r"[A-Za-z0-9_-]{1,16}")
@@ -122,21 +127,25 @@ def parse_record(data: object, now: datetime | None = None) -> dict:
     return record
 
 
-def parse_pair(data: object, now: datetime | None = None) -> dict:
+def parse_pair(data: object, sides, now: datetime | None = None) -> dict:
     """The record to keep for one answer of the pairwise test: its fields, checked, as the kind "blind_pair", and the
-    time it arrived. The page's own clock is kept to the second (UTC). Raises FeedbackError when anything is off."""
+    time it arrived. The page's own clock is kept to the second (UTC). `sides(session, question)` gives the rival and
+    ours' side for that visit's question as ("chatgpt" | "vetted", "A" | "B"), or None when the visit was never asked
+    that question (the answer is then refused). Raises FeedbackError when anything is off."""
     if not isinstance(data, dict):
         raise FeedbackError("Send one JSON object.")
     _only(data, required=PAIR_REQUIRED, optional=PAIR_OPTIONAL)
-    record = {"kind": PAIR_KIND,
-              "session": _matching(data, "session", _PAIR_SESSION, "8 to 64 letters, digits, - or _"),
-              "question": _matching(data, "question", _PAIR_QUESTION, "1 to 16 letters, digits, - or _"),
-              "rival": _one_of(data, "rival", PAIR_RIVALS),
-              "ours_side": _one_of(data, "ours_side", PAIR_SIDES),
-              "choice": _one_of(data, "choice", PAIR_CHOICES),
-              "why": _text(data, "why", PAIR_MAX_WHY_CHARS),
-              "language": _one_of(data, "language", PAIR_LANGUAGES),
-              "answered_at": _page_time(data)}
+    session = _matching(data, "session", _PAIR_SESSION, "8 to 64 letters, digits, - or _")
+    question = _matching(data, "question", _PAIR_QUESTION, "1 to 16 letters, digits, - or _")
+    checked = {"choice": _one_of(data, "choice", PAIR_CHOICES), "why": _text(data, "why", PAIR_MAX_WHY_CHARS),
+               "language": _one_of(data, "language", PAIR_LANGUAGES), "answered_at": _page_time(data)}
+    found = sides(session, question)  # last: working out a deck is only done for an answer that is otherwise fine
+    if found is None:
+        raise FeedbackError(f'"question" {question} is not one of this visit\'s questions.')
+    rival, ours_side = found
+    assert rival in PAIR_RIVALS and ours_side in PAIR_SIDES, found  # the server's own lookup: a bug, not bad input
+    record = {"kind": PAIR_KIND, "session": session, "question": question, "rival": rival, "ours_side": ours_side,
+              **checked}
     record["received_at"] = (now or datetime.now(UTC)).astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     return record
 

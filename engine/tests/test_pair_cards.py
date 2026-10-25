@@ -290,6 +290,104 @@ def test_a_deck_is_refused_when_there_are_no_questions():
         pair_test.build_deck({"version": 1, "questions": []}, random.Random(1))
 
 
+# --- A visit: its deck follows from its id, so the page never needs to know the rival or the side (25 Oct 2026) ---
+
+KEY = pair_test.deck_key({"CREDIBLE_RECS_TEST_KEY": "a made-up key for the tests"})
+OTHER_KEY = pair_test.deck_key({"CREDIBLE_RECS_TEST_KEY": "another made-up key"})
+
+
+def visit_of(seed: int, cards: dict | None = None) -> str:
+    return pair_test.new_visit(cards or made_up_cards(), random.Random(seed))
+
+
+def test_a_visits_id_is_one_the_answers_route_takes_and_it_ends_with_the_cards_fingerprint():
+    from engine import feedback
+
+    cards = made_up_cards()
+    visit = visit_of(1, cards)
+    assert feedback._PAIR_SESSION.fullmatch(visit) and len(visit) == 28
+    assert visit.endswith(pair_test.fingerprint(cards))
+    assert visit_of(1, cards) == visit and visit_of(2, cards) != visit  # random ids, from the generator given
+
+
+def test_the_fingerprint_follows_the_questions_and_their_categories_and_order_not_the_words():
+    cards = made_up_cards()
+    words_changed = copy.deepcopy(cards)
+    words_changed["questions"][0]["answers"]["ours"]["picks"][0]["name"] = "Another made-up name"
+    assert pair_test.fingerprint(words_changed) == pair_test.fingerprint(cards)
+    fewer = copy.deepcopy(cards)
+    fewer["questions"].pop()
+    assert pair_test.fingerprint(fewer) != pair_test.fingerprint(cards)
+    reordered = copy.deepcopy(cards)
+    reordered["questions"].reverse()
+    assert pair_test.fingerprint(reordered) != pair_test.fingerprint(cards)
+    recategorised = copy.deepcopy(cards)
+    recategorised["questions"][0]["category"] = "other"
+    assert pair_test.fingerprint(recategorised) != pair_test.fingerprint(cards)
+
+
+def test_a_visits_deck_is_worked_out_from_its_id_and_the_servers_key_the_same_each_time():
+    cards = made_up_cards()
+    visit = visit_of(5, cards)
+    deck = pair_test.deck_for(cards, visit, KEY)
+    assert deck == pair_test.deck_for(cards, visit, KEY)  # asked for again when its answers come in: the same deck
+    assert len(deck) == 6 and Counter(item["rival"] for item in deck) == {"chatgpt": 3, "vetted": 3}
+    assert Counter(item["ours_side"] for item in deck) == {"A": 3, "B": 3}
+    assert pair_test.deck_for(cards, visit_of(6, cards), KEY) != deck
+    assert pair_test.deck_for(cards, visit, OTHER_KEY) != deck  # nobody without the key can work a deck out
+
+
+def test_the_rival_and_side_of_each_question_asked_can_be_found_again_from_the_id_alone():
+    cards = made_up_cards()
+    for seed in range(40):
+        visit = visit_of(seed, cards)
+        deck = pair_test.deck_for(cards, visit, KEY)
+        for item in deck:
+            assert pair_test.sides_of(cards, visit, item["question"], KEY) == (item["rival"], item["ours_side"])
+        asked = {item["question"] for item in deck}
+        for question in set(QUESTION_IDS) - asked:
+            assert pair_test.sides_of(cards, visit, question, KEY) is None  # not in this visit's deck: not its answer
+        assert pair_test.sides_of(cards, visit, "z99", KEY) is None
+
+
+def test_an_id_made_for_other_cards_is_not_matched_to_a_deck():
+    cards = made_up_cards()
+    visit = visit_of(3, cards)
+    changed = copy.deepcopy(cards)
+    changed["questions"] = changed["questions"][:8]  # cards replaced while a visitor was part way through
+    question = pair_test.deck_for(cards, visit, KEY)[0]["question"]
+    assert pair_test.sides_of(changed, visit, question, KEY) is None
+    assert pair_test.sides_of(cards, visit, question, KEY) is not None
+
+
+def test_an_id_that_is_not_one_the_server_made_gives_some_deck_but_never_an_error():
+    cards = made_up_cards()
+    assert pair_test.sides_of(cards, "k3j9x0a7q2m5p8w1", "b01", KEY) is None  # too short to carry a fingerprint
+    forged = "f" * 24 + pair_test.fingerprint(cards)
+    deck = pair_test.deck_for(cards, forged, KEY)
+    assert pair_test.sides_of(cards, forged, deck[0]["question"], KEY) == (deck[0]["rival"], deck[0]["ours_side"])
+
+
+def test_the_public_deck_is_what_the_page_gets_and_it_holds_neither_the_rival_nor_the_side():
+    cards = made_up_cards()
+    deck = deck_of(4, cards)
+    public = pair_test.public_deck(deck)
+    assert [set(item) for item in public] == [{"question", "text", "cards"}] * 6
+    assert [item["cards"] for item in public] == [item["cards"] for item in deck]
+    assert "rival" in deck[0] and "ours_side" in deck[0]  # the deck itself is not changed
+    assert not any(word in json.dumps(public) for word in ("rival", "ours_side", "chatgpt", "vetted"))
+
+
+def test_the_key_comes_from_the_sites_own_secret_so_every_instance_has_the_same():
+    token = {"HF_TOKEN": "a-made-up-token"}
+    assert pair_test.deck_key(token) == pair_test.deck_key(token) != pair_test.deck_key({"HF_TOKEN": "another-token"})
+    assert b"a-made-up-token" not in pair_test.deck_key(token)  # a key worked out from the token, not the token
+    assert pair_test.deck_key({**token, "CREDIBLE_RECS_TEST_KEY": "own"}) == pair_test.deck_key(
+        {"CREDIBLE_RECS_TEST_KEY": "own"})  # its own setting comes first
+    assert pair_test.deck_key({"HF_TOKEN": "  "}) != pair_test.deck_key({"HF_TOKEN": "  "})  # none set: a fresh key each
+    assert pair_test.deck_key({}) != pair_test.deck_key({})
+
+
 # --- python -m engine.pair_test check ---
 
 def test_the_check_command_says_the_cards_follow_the_rules_or_lists_what_breaks_them(tmp_path, capsys):
