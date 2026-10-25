@@ -188,7 +188,7 @@ def test_the_jobs_stay_inside_cloud_runs_free_tier_in_the_longest_month():
     assert (precheck_seconds * cpu, precheck_seconds * cpu + ON_DEMAND_MONTH_SECONDS * reader_cpu) == (102_300, 152_300)
 
 
-def test_the_site_reads_ahead_within_a_third_of_its_own_free_tier():
+def test_the_site_reads_ahead_within_a_third_and_a_bit_of_its_own_free_tier():
     # 14 Oct 2026 (the free-tier redesign): the site is billed only while it answers (request-billed: 180,000
     # vCPU-seconds and 360,000 GiB-seconds free a month). Reading ahead adds at most READ_AHEAD_SECONDS (and a second for
     # the last reads to come back) to each keep-warm ping, every 5 minutes (DEPLOY.md's schedule), on the site's size.
@@ -206,8 +206,13 @@ def test_the_site_reads_ahead_within_a_third_of_its_own_free_tier():
     # minutes with ~1,950 threads, the open model and its warmed answers), so reading ahead's GiB-seconds rise from a
     # third of the free tier to 60% at most (214,272 of 360,000); its vCPU-seconds stay under a third. Bringing the
     # site's memory back down is in CLAUDE.md's follow-ups.
-    assert seconds * cpu <= 180_000 / 3 and seconds * gib <= 360_000 * 0.6
-    assert seconds * cpu == 53_568  # DEPLOY.md's sum
+    # Changed on purpose 25 Oct 2026 (the verify2 builder, from the review's option (c); reported to Noemi): reading ahead
+    # takes 48 reads a ping in 6 seconds instead of 40 in 5 (engine/config.py), so it bills 7 seconds a ping, not 6: at most
+    # 62,496 vCPU-seconds a month (35% of the site's 180,000 free, no longer under a third) and, at 4 GiB, 249,984
+    # GiB-seconds (69% of 360,000, no longer 60%). Still free, with 65% of the vCPU-seconds and 31% of the GiB-seconds left
+    # for answering visitors.
+    assert seconds * cpu <= 180_000 * 0.35 and seconds * gib <= 360_000 * 0.7
+    assert (seconds * cpu, seconds * gib) == (62_496, 249_984)  # DEPLOY.md's sums
 
 
 def test_the_bright_data_records_stay_well_inside_its_free_tier():

@@ -613,10 +613,18 @@ PRECHECK_STOP_AFTER_UNKNOWN = 20
 # day, while about 7,650 fell due (the plan's ~7,750 answers' comments every 40 hours and LIBRARY_VERIFY_READS a day);
 # at 8, as many at once as an answer reads (LIVE_CHECK_PARALLEL), a ping reaches its 40: 11,520 a day, with no more of
 # Reddit's reads (at most 80 of each 10 minutes' 200, as before) and no more billed seconds.
-READ_AHEAD_PER_PING = 40
-READ_AHEAD_SECONDS = 5
+# Capacity since 25 Oct 2026 (Claude, the verify2 builder, from the review's option (c); reported to Noemi): the site read
+# 9,600 a day against a cap of 11,520 while what falls due (about 9,300 a day with LIBRARY_VERIFY_READS 4,500 and the answers'
+# last two tiers read every PLAN_FALLBACK_TIER_DAYS days) needs room to clear a backlog. So visitors keep 100 of Reddit's
+# 200 reads in each 10 minutes instead of 120 (two fresh answers of the biggest size, 40 reads each, and a margin of 20),
+# reading ahead takes at most 48 a ping (96 of each 10 minutes' 200, with the 100 kept: 196) in 6 seconds (a read took 0.97 s
+# at the slowest seen, 8 at once, each starting 0.1 s after the one before: 49 starts in 6 s): 13,824 a day, 1.5 times what
+# falls due. Billed time rises from 6 to 7 seconds a ping, worst case 62,496 vCPU-seconds (35% of the site's 180,000 free)
+# and, at the site's 4 GiB, 249,984 GiB-seconds (69% of 360,000): engine/tests/test_cloudrun.py.
+READ_AHEAD_PER_PING = 48
+READ_AHEAD_SECONDS = 6
 READ_AHEAD_PARALLEL = 8
-READ_AHEAD_KEEP = 120
+READ_AHEAD_KEEP = 100
 READ_AHEAD_AGAIN_HOURS = 40
 PLAN_RELOAD_SECONDS = 3600
 BUNDLE_SHARE_SECONDS = 3600
@@ -705,13 +713,32 @@ LIBRARY_VERIFY_DAYS = 30
 # (so due by 10 to 13 Nov), and with the 846 threads still to extract about 31,000 never verified: 11 days at 3,000 a
 # day, oldest first, so a migration in late October still verifies every one in time. After that, about 36,000 kept
 # comments (about 33,500 outside the answers) are each read every 12 days, well inside LIBRARY_VERIFY_DAYS.
-LIBRARY_VERIFY_READS = 3000
+#
+# 4,500 a day since 25 Oct 2026 (Claude, the verify2 builder, from the review docs/verify-bfs-2026-10-25.md; reported to
+# Noemi). The review measured the library on 24 Oct (78,102 kept comments): about 2,700 pass their 30 days a day, so 3,000
+# had 10% to spare and a week's outage would cost about 2,200 comments by 22 Nov, ten days about 10,400. At 4,500 a day,
+# with reading ahead's capacity to match (below) and the answers' last two tiers read less often (PLAN_FALLBACK_TIER_DAYS),
+# a ten-day outage loses nothing. It is the plan's list, oldest deadline first; the site reads what Reddit's limits allow.
+LIBRARY_VERIFY_READS = 4500
 # A kept comment verified within this many days isn't read again by that pass (the comments answers show still are,
 # daily): with a library smaller than its budget, it doesn't spend reads verifying again what is a few days old.
 LIBRARY_VERIFY_AGAIN_DAYS = 7
 # An embed page that showed no comment ("Not supported comment") is tried again only after this many days: such a
 # comment usually stays unreadable there, and each try would take a read from the comments that can pass.
 LIBRARY_VERIFY_RETRY_DAYS = 10
+# A kept comment whose embed page showed no comment twice, the second read at least this many days after the first with no
+# passing read between, lapses at the next deploy as an expired one does (25 Oct 2026, the review's option (i), reported
+# to Noemi): such a page is probably a comment gone from Reddit (all 2,031 the review found were in archive-read threads,
+# none in the 4,949 read live; Bright Data found 4 of 35, all edited), and until its deadline it held a read every
+# LIBRARY_VERIFY_RETRY_DAYS (every 40 hours when an answer used it). One unreadable read still proves nothing, so a page
+# Reddit redesigns can't wipe the library in one go: the second read comes a week or more later.
+LIBRARY_UNREADABLE_LAPSE_DAYS = 7
+# The answers' last two tiers (the products ranked behind the picks, and those after them: the fallbacks a failed check
+# brings in, rarely shown) are listed by the daily plan one day in this many, each comment on its day, instead of being read
+# again every READ_AHEAD_AGAIN_HOURS (25 Oct 2026, the review's option (h); about 1,260 reads a day freed). A quote still
+# needs a passing check from the last 48 hours to be shown: one that has none is checked at answer time, as for any quote
+# not read ahead. The first two tiers (shown, next in line) are unchanged.
+PLAN_FALLBACK_TIER_DAYS = 5
 # LIVE_CHECK_ROUNDS (3), how many times an answer was written again after the live check dropped comments, is gone
 # (12 Oct 2026): an answer written after the third round was shown with its new quotes unchecked. It is now written
 # again until every quote it shows has passed (engine.pipeline._check_live).

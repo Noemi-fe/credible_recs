@@ -465,3 +465,27 @@ def test_writers_of_care_tips_are_looked_up_too():
                            "quote": "Same here, 3 years and counting."}]
     (extracted_dir(threads_dir) / "1fake01.json").write_text(json.dumps(extraction))
     assert profiles.writers_with_kept_mentions(threads_dir) == {"test_newbie": ["c2bbbb"]}
+
+
+# --- Profiles as they will stand once a month has passed (25 Oct 2026, the verify2 builder) ---
+
+def test_the_profiles_as_if_expired_know_no_writer_so_scoring_treats_every_voice_as_having_no_profile(tmp_path):
+    # 13,283 of the library's 14,328 stored writers pass LIBRARY_REFRESH_DAYS on 9 to 16 Nov 2026. An expired entry is
+    # MISSING, so StoredProfiles has no numbers for the writer (the 48-hour cache apart): with_profiles leaves them as
+    # saved, a name only, and module 5 sees no standing for or against them. as_if_expired is that state, to measure
+    # what it does to answers (eval/sweep.py --profiles-expired).
+    store = store_at(tmp_path, lambda: datetime.now(UTC))
+    store.put_user("test_derm", WRITERS["test_derm"])
+    store.put_flair("c1aaaa", "Dermatologist")
+    store.save()
+    fresh = StoredProfiles(ProfileStore(tmp_path / "profiles.json"))
+    assert fresh.user_stats("test_derm") == WRITERS["test_derm"]
+    expired = profiles.as_if_expired(fresh)
+    assert expired.user_stats("test_derm") is None and expired.comment_flairs(["c1aaaa"]) == {}
+    thread = Thread.model_validate(parse_thread())
+    before = score_voice(thread.comments[0], thread)
+    after_fresh = score_voice(with_profiles(thread, fresh, ["c1aaaa"]).thread.comments[0], thread)
+    after_expired = score_voice(with_profiles(thread, expired, ["c1aaaa"]).thread.comments[0], thread)
+    assert "established member" in after_fresh.tags
+    assert after_expired.tags == before.tags and after_expired.level == before.level  # as if never looked up
+    assert fresh.user_stats("test_derm") == WRITERS["test_derm"]  # the store itself is left as it was

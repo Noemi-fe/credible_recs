@@ -48,7 +48,7 @@ site a plan: a job is billed for its whole run, and two thirds of the old daily 
   time; since 14 Oct 2026 it reads nothing on Reddit's embed page itself. It reads the bundle, records in the
   verification record what each of the site's reads of a kept comment said, works out the comments answers would show
   (2,260 from 439 requests on a copy of 14 Oct 2026's library, slimmed: the whole plan run took 2.1 minutes on Noemi's
-  computer; the old run's working out took 84 s on Cloud Run for 1,967) and the kept comments due (oldest first, at most 3,000 a day: config.LIBRARY_VERIFY_READS, the answers'
+  computer; the old run's working out took 84 s on Cloud Run for 1,967) and the kept comments due (earliest deadline first, ties by use, at most 4,500 a day since 25 Oct 2026, 3,000 before: config.LIBRARY_VERIFY_READS, the answers'
   own left out), and writes the record and the plan. Then, for the comments whose embed page shows no comment ("Not
   supported comment", about 1 in 8; Noemi, 13 Oct 2026: "Use Bright Data"), it reads their threads through Bright
   Data, within 30 records a run (the most useful threads first), starting nothing 30 minutes after it started, and
@@ -63,11 +63,14 @@ site a plan: a job is billed for its whole run, and two thirds of the old daily 
   Bright Data job, waited for up to 20 minutes since, had been cut off at 10). Its report (counts and times, never a
   comment's words) is in the job's logs.
 - **The site's reads ahead** (engine/read_ahead.py, 14 Oct 2026): at each keep-warm ping (every 5 minutes, below) the
-  site reads the plan's comments that are due: an answer's comment once its last read is 40 hours old (so its check
-  never runs out at 48 hours), or that has none; a comment to verify not read in the last 48 hours. At most 40 a ping, 8
-  at once (4 until 15 Oct 2026), none starting 5 seconds after the ping began, never a read that would wait for Reddit's allowance, and none
-  while Reddit says fewer than 120 reads are left in its 10 minutes (those are visitors' answers'). Each ping's counts
-  are in the site's logs ("Reading ahead: ...").
+  site reads the plan's comments that are due: an answer's comment (the first two tiers: shown and next in line) once its
+  last read is 40 hours old (so its check never runs out at 48 hours), or that has none; since 25 Oct 2026 the last two
+  tiers (the products behind the picks and those after them) are listed one day in five each ("fallback" in the plan) and
+  read when they have no read in the last 48 hours; a comment to verify not read in the last 48 hours. At most 48 a ping
+  (40 until 25 Oct 2026), 8 at once (4 until 15 Oct 2026), none starting 6 seconds after the ping began (5 until 25 Oct),
+  never a read that would wait for Reddit's allowance, and none while Reddit says fewer than 100 reads are left in its 10
+  minutes (120 until 25 Oct; those are visitors' answers'). Each ping's counts are in the site's logs ("Reading ahead:
+  ...").
 - **The verification record** (`live_check/verified.json`, in the same bucket): for each comment the slimmed library
   keeps, its latest read on Reddit (when, and what it said: passing, deleted, removed, edited or unreadable) and its
   last passing read. Ids, dates and outcomes only, never a comment's words (about 1 MB for 10,000 comments). Written by
@@ -160,7 +163,7 @@ comment must be verified on Reddit (its embed page, free) within 30 days, or it 
 (engine/verify.py). The library is baked into the image, and the checks happen in the cloud, so the two meet at each
 deploy:
 
-1. every day the pre-check job lists in its plan the kept comments verified longest ago (3,000), the site reads them
+1. every day the pre-check job lists in its plan the kept comments with the earliest deadlines (4,500; 3,000 until 25 Oct 2026), the site reads them
    over the day (its reads ahead), and the next run records what each read said in `live_check/verified.json`;
 2. `deploy.sh` copies that record to a temporary file (`gcloud storage cp`) and runs
    `python -m engine.library apply-checks --ledger <it>` before bundling: each passing comment gets its date, and a
@@ -304,8 +307,10 @@ and to see its report: `gcloud run jobs executions list --job credible-recs-prec
 execution's logs in the console (Cloud Run, Jobs, credible-recs-precheck, Logs).
 
 Reddit's limit is per address, and since 14 Oct 2026 the site's reads ahead share it with visitors' answers: at two
-pings in Reddit's 10 minutes they take at most 80 of its 200, and none while fewer than 120 are left, so three fresh
-answers' worth (an answer reads 10 to 40 comments) stays for visitors. The site's other reads (on-demand reading's
+pings in Reddit's 10 minutes they took at most 80 of its 200, and none while fewer than 120 were left, so three fresh
+answers' worth (an answer reads 10 to 40 comments) stayed for visitors. Since 25 Oct 2026 (the review
+docs/verify-bfs-2026-10-25.md, option (c)) they take at most 96 (48 a ping) and none while fewer than 100 are left, so two
+fresh answers of the biggest size and a margin of 20 stay for visitors. The site's other reads (on-demand reading's
 archive, the bucket) aren't Reddit's.
 
 ## On-demand reading
@@ -453,6 +458,19 @@ so a ping reaches its 40 in its 5 seconds: 11,520 a day, half as much again as i
 most 80 of each 10 minutes' 200) and the same billed seconds. Finding what is
 due takes about a millisecond a ping (each comment's last read is kept in memory, read from the folder in 0.3 s once a
 day as the new plan comes in).
+
+Reading ahead's capacity and the free tier, 25 Oct 2026 (the verify2 builder; the review docs/verify-bfs-2026-10-25.md,
+options (b), (c), (h) and (i); reported to Noemi). The plan asks for 4,500 kept comments a day (3,000 before): the review
+measured 78,102 kept comments, about 2,700 passing their 30 days a day, and a week's outage costing about 2,200 comments,
+ten days about 10,400; at 4,500 a ten-day outage loses nothing. The answers' last two tiers (881 behind the picks and 2,266
+after those, of the 559 requests' 10,172 comments) are read every 5 days instead of every 40 hours, freeing about 1,260
+reads a day; a comment unreadable twice a week apart lapses at once, freeing the reads it held. What falls due a day:
+7,025 first-tier comments x 24/40 = 4,215, 3,147 fallback ones / 5 = 629 and 4,500 kept ones, about 9,350 against 9,600
+read on 24 Oct 2026 (the cap then 11,520). So a ping reads at most 48 in 6 seconds (40 in 5 before), 13,824 a day, with
+visitors keeping 100 of Reddit's 200 reads in each 10 minutes (96 for reading ahead). The ping bills 7 seconds (6
+before): at most 62,496 vCPU-seconds a month on the site's 1 vCPU (35% of 180,000; it was 53,568, 30%) and, at its 4 GiB,
+249,984 GiB-seconds (69% of 360,000; it was 214,272, 60%), still free; the pre-check job's sums are unchanged (102,300
+vCPU-seconds, 43%; 152,300 with on-demand reading's, 63%), and so are Bright Data's 930 records a month.
 
 Container images (14 Oct 2026). Each deploy stores the site's image in Artifact Registry (the repository `cloud-run-source-deploy`, which `gcloud run deploy --source` makes): about 1.15 GB, most of it the open model the build downloads. Its free tier is 0.5 GB of storage, then about 0.10 USD per GB a month. By the evening of 14 Oct 44 images had grown to 51 GB (about 4.60 EUR a month); Noemi chose to keep only the newest one, so the other 43 were deleted that evening and deploy.sh applies a cleanup policy after each deploy (image_cleanup_policy.json: keep the newest version, delete every other; Google runs it about once a day). One image costs about 0.07 EUR a month. An older site version can't be rolled back to once its image is gone: rebuild it from its commit instead. To bring storage under the free 0.5 GB, the model would have to leave the image (downloaded as the server starts, about 20 s slower starts): not done.
 

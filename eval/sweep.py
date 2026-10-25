@@ -5,9 +5,13 @@ Offline: live checks are off (live_check_required=False), so shown quotes are on
 saved comments; nothing reaches Reddit. Every eval request is answered by default (eval/blind_test/questions.json and
 eval/edge_cases/*.json but matching.json and retrieval.json), then any request files given (one request a line).
 
-    python eval/sweep.py answer <out.jsonl> [<requests.txt> ...]
+    python eval/sweep.py answer <out.jsonl> [<requests.txt> ...] [--profiles-expired]
         one {"request", "source", "seconds", "json"} a line, "json" being the API's answer (engine.web.answer_json);
-        requests already in <out.jsonl> are skipped, so a stopped sweep goes on where it stopped
+        requests already in <out.jsonl> are skipped, so a stopped sweep goes on where it stopped; with
+        --profiles-expired (25 Oct 2026) every writer's profile is taken as past its 30 days (engine.profiles.
+        as_if_expired), as the library's will be on 9 to 16 Nov
+    python eval/sweep.py quoted <out.jsonl> <ids.txt>
+        the ids of the comments the answers quote, one a line, no words (for `python -m engine.profiles warm --quoted`)
     python eval/sweep.py view <out.jsonl> [<view.txt>]
         a tester's view of every answer: title, picks (reason, availability, link, image, first quote's start), Also
         worth a look, Skip these, the message
@@ -36,15 +40,16 @@ def eval_requests() -> list[tuple[str, str]]:
     return list(found.items())
 
 
-def answer(out: Path, extra: list[Path]) -> None:
+def answer(out: Path, extra: list[Path], profiles_expired: bool = False) -> None:
     from engine.pipeline import answer_request, cached_profiles
+    from engine.profiles import as_if_expired
     from engine.web import answer_json
     requests = eval_requests() + [(line.strip(), path.stem) for path in extra
                                   for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
     done = {json.loads(line)["request"] for line in out.read_text(encoding="utf-8").splitlines()} if out.is_file() else set()
     todo = [(r, s) for r, s in dict(requests).items() if r not in done]
     print(f"{len(todo)} requests to answer ({len(done)} done before)", flush=True)
-    profiles = cached_profiles()
+    profiles = as_if_expired(cached_profiles()) if profiles_expired else cached_profiles()
     for i, (request, source) in enumerate(todo, 1):
         started = time.perf_counter()
         try:
@@ -56,6 +61,27 @@ def answer(out: Path, extra: list[Path]) -> None:
             f.write(json.dumps({"request": request, "source": source, "seconds": seconds, "json": data},
                                ensure_ascii=False) + "\n")
         print(f"[{i}/{len(todo)}] {seconds:6.1f}s {request}", flush=True)
+
+
+def _quoted_ids(value) -> set[str]:
+    """Every "comment_id" anywhere in an answer's JSON (its quotes, downsides, care tips, notes...)."""
+    if isinstance(value, dict):
+        found = {value["comment_id"]} if isinstance(value.get("comment_id"), str) else set()
+        return found.union(*(_quoted_ids(v) for v in value.values()))
+    if isinstance(value, list):
+        return set().union(*(_quoted_ids(v) for v in value))
+    return set()
+
+
+def quoted(out: Path, listing: Path) -> int:
+    """Writes the ids of the comments the sweep's answers quote, one a line (ids only, no words), for `python -m
+    engine.profiles warm --quoted` (25 Oct 2026): their writers' profiles are refreshed first. How many."""
+    ids: set[str] = set()
+    for line in out.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            ids |= _quoted_ids(json.loads(line).get("json") or {})
+    listing.write_text("".join(f"{comment_id}\n" for comment_id in sorted(ids)), encoding="utf-8")
+    return len(ids)
 
 
 def _text(value) -> str:
@@ -101,7 +127,11 @@ def view(out: Path) -> str:
 
 def main(argv: list[str]) -> int:
     if len(argv) >= 2 and argv[0] == "answer":
-        answer(Path(argv[1]), [Path(a) for a in argv[2:]])
+        expired = "--profiles-expired" in argv
+        answer(Path(argv[1]), [Path(a) for a in argv[2:] if a != "--profiles-expired"], expired)
+        return 0
+    if len(argv) == 3 and argv[0] == "quoted":
+        print(f"{quoted(Path(argv[1]), Path(argv[2]))} comments quoted, listed in {argv[2]}")
         return 0
     if len(argv) >= 2 and argv[0] == "view":
         text = view(Path(argv[1]))
