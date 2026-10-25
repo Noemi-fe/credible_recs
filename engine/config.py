@@ -2661,3 +2661,39 @@ QUOTE_ASKING_PATTERNS = (
     r"|similar )?(?:alternatives?|dupes?|substitutes?|replacements?|recommendations?|suggestions?)\b",
     r"\b(?:anything|something) (?:else|similar|better|cheaper|richer|lighter|more|less|like (?:it|this|that))\b",
 )
+
+# --- Region (24 Oct 2026) ---
+# Noemi, 24 Oct 2026: "the tool should work for visitors anywhere, not just the UK ... country-aware availability: ok,
+# do it now". The page offers UK (the default), US and Elsewhere; the API takes an optional "region" in the POST body. A
+# region changes the price and availability lines only: which picks are shown and their order never change (her decision
+# (c) of 19 Oct 2026: no country preference anywhere in ranking), and the UK region is exactly as it was. Claude's
+# technical values; the lines' wording is PROPOSED (engine/answer.py).
+REGIONS = ("uk", "us", "elsewhere")
+DEFAULT_REGION = "uk"
+# What the price list says about the US (engine.prices.us_sale). Evidence that a product is sold in the US is a USD entry
+# that isn't about a discontinued product (the entry's currency is its shop's), or a page of one of these shops among an
+# entry's url and sources: the shop's address without "www." (matched exactly, never as a subdomain: "global.danner.com"
+# is an international store) and the name the line shows. US retailers, and the US makers' own stores that appear in
+# data/prices.json's entries for products not sold in the UK. PROPOSED, a list for Claude to extend as researchers read
+# more US shops; a product with none of this evidence is simply not said to be sold in the US.
+US_SHOPS = {
+    "amazon.com": "Amazon US", "walmart.com": "Walmart", "target.com": "Target", "homedepot.com": "The Home Depot",
+    "lowes.com": "Lowe's", "bestbuy.com": "Best Buy", "costco.com": "Costco US", "ebay.com": "eBay US",
+    "macys.com": "Macy's", "kohls.com": "Kohl's", "nordstrom.com": "Nordstrom", "crateandbarrel.com": "Crate & Barrel",
+    "roomandboard.com": "Room & Board", "garnethill.com": "Garnet Hill", "backcountry.com": "Backcountry",
+    "oldnavy.gap.com": "Old Navy", "ulta.com": "Ulta Beauty", "sephora.com": "Sephora US", "dermstore.com": "Dermstore",
+    "harborfreight.com": "Harbor Freight", "go.harborfreight.com": "Harbor Freight", "rei.com": "REI",
+    "williams-sonoma.com": "Williams Sonoma", "wayfair.com": "Wayfair", "chewy.com": "Chewy", "petco.com": "Petco",
+    "newegg.com": "Newegg", "bhphotovideo.com": "B&H Photo",
+    "purple.com": "Purple", "upliftdesk.com": "UPLIFT Desk", "geappliances.com": "GE Appliances",
+    "frigidaire.com": "Frigidaire", "kenmore.com": "Kenmore", "jennair.com": "JennAir",
+    "hamiltonbeach.com": "Hamilton Beach", "mrcoffee.com": "Mr. Coffee", "sunbeam.com": "Sunbeam",
+    "craftsman.com": "Craftsman", "ridgid.com": "RIDGID", "evenflo.com": "Evenflo", "gracobaby.com": "Graco",
+    "babyjogger.com": "Baby Jogger", "eddiebauer.com": "Eddie Bauer", "danner.com": "Danner",
+    "redwingshoes.com": "Red Wing", "thorogoodusa.com": "Thorogood", "johnboos.com": "John Boos",
+    "duluthtrading.com": "Duluth Trading", "lovesac.com": "Lovesac", "casper.com": "Casper",
+    "avocadogreenmattress.com": "Avocado Green Mattress", "parachutehome.com": "Parachute", "article.com": "Article",
+    "flexsteel.com": "Flexsteel", "mypillow.com": "MyPillow", "levolor.com": "Levolor", "speedqueen.com": "Speed Queen",
+    "vanicream.com": "Vanicream", "all-clad.com": "All-Clad", "saddlebackleather.com": "Saddleback Leather",
+    "tarptent.com": "Tarptent", "durstongear.com": "Durston Gear",
+}

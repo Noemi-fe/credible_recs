@@ -157,6 +157,7 @@ from engine.config import (
     MIN_THREADS,
     NEED_MATCH_BOOST,
     PICKS_SHOWN,
+    DEFAULT_REGION,
     PRICE_MAX_AGE_DAYS,
     QUOTE_MAX_WORDS,
     QUOTES_PER_PICK,
@@ -342,6 +343,17 @@ AVAILABILITY_NOT_IN_UK = "Not sold in the UK, checked {date}"
 # Sold second-hand only: a product no longer made (Griswold and Wagner cast iron), sold only second-hand, on eBay UK or
 # by a UK vintage dealer. Noemi's decision of 10 Oct 2026: such products count as available, and the answer says so.
 AVAILABILITY_SECOND_HAND = "Sold second-hand only: {shop}, checked {date}"
+# A region other than the UK (Noemi, 24 Oct 2026: "the tool should work for visitors anywhere, not just the UK"). The
+# price and availability lines then say where they hold, and a product sold only outside the UK is never told "Not sold in
+# the UK" to someone who isn't there. Wording decided by Claude, PROPOSED (listed in DECISIONS.md, 24 Oct 2026). The UK
+# region's lines are the ones above, exactly as before.
+PRICE_IN_UK = "{amount} in the UK, at {shop}, checked {date}"
+PRICE_FROM_IN_UK = "From {amount} in the UK, at {shop}, checked {date}"
+PRICE_IN_US = "{amount} in the US, at {shop}, checked {date}"
+AVAILABILITY_IN_UK = "Sold in the UK at {shop}, checked {date}"
+AVAILABILITY_IN_UK_SECOND_HAND = "Sold second-hand only in the UK: {shop}, checked {date}"
+AVAILABILITY_IN_US = "Sold in the US at {shop}, checked {date}"
+AVAILABILITY_US_UNKNOWN = "Availability in the US not checked yet"  # a product sold only outside the UK, for a US visitor
 # Products' own pages and their makers' images (Noemi's decisions 2 and 3 of 15 Oct 2026, late afternoon; wording
 # decided by Claude, PROPOSED): a direct link to the product's own page, its maker's or a big UK shop's, with the day it
 # was read ("See it at Apple", "checked 15 Oct 2026"); and a small image from its maker's own page, linked to that
@@ -646,7 +658,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
                  prescription: Collection[str] = (), flattened: Collection[str] = (),
                  pages: Mapping[str, ProductPage] | None = None,
                  brand_downsides: Mapping[str, tuple[str, list[ScoredMention]]] | None = None,
-                 other_types_threads: Collection[str] = ()) -> Answer:
+                 other_types_threads: Collection[str] = (), region: str = DEFAULT_REGION) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -682,7 +694,9 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     specific pick's brand's line as a whole: shown after its own downsides and counted apart (DOWNSIDES_SHARE_BRAND).
     `other_types_threads` (18 Oct 2026, round 2) are the ids of the threads read that are about another type of product
     (engine.pipeline._threads_about_another_type, general answers only): their notes give "What to look for" nothing
-    unless the tip's own name names the type asked for (_look_for).
+    unless the tip's own name names the type asked for (_look_for). `region` (24 Oct 2026, Noemi: "the tool should work for
+    visitors anywhere") is where the visitor is, config.REGIONS: it changes the words of each price and availability line
+    (shown_price, shown_availability) and nothing else, so the same products are shown in the same order.
     """
     check = _QuoteCheck(bodies, flattened)
     check.named_in = _named_in(ranking)
@@ -701,8 +715,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             break
         quotes = _pick_quotes(product, check, asks, needs, product_type)
         if len(quotes) >= MIN_QUOTES_PER_PICK:
-            price = shown_price(prices.get(product.key))
-            availability = shown_availability(prices.get(product.key), price.url)
+            price = shown_price(prices.get(product.key), region)
+            availability = shown_availability(prices.get(product.key), price.url, region)
             own = care.get(product.key)
             tips = _care_tips(CareTips(own.own, []) if own else None, check)
             notes = [CAUTION.format(reason=reason) for reason in cautions.get(product.key, [])]
@@ -719,7 +733,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     # A product the upvote rule lifted (14 Oct 2026) may be an item and a pick shown: then it is a pick only.
     shown_picks = {pick.product_key for pick in picks}
     worth = _worth_items(ranking, check, prices, cautions, summaries, set(worth_left_out) | shown_picks, asks, needs,
-                         product_type, said)
+                         product_type, said, region)
     for item in worth:
         item.form = forms.get(item.product_key)
         item.range = shown_range(ranges.get(item.product_key))
@@ -837,7 +851,7 @@ def _ingredient_note(product_type: str | None, ingredient: str | None,
 def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[str, PriceCheck],
                  cautions: Mapping[str, list[str]], summaries: Mapping[str, Summary], left_out: Collection[str],
                  asks: tuple[str, ...], needs: tuple[Need, ...], product_type: str | None,
-                 said: "_SaidNeeds | None" = None) -> list[WorthALook]:
+                 said: "_SaidNeeds | None" = None, region: str = DEFAULT_REGION) -> list[WorthALook]:
     """Up to WORTH_A_LOOK_SHOWN products of ranking.worth_a_look, in its order, those in `left_out` aside: first those
     that meet the picks bar on their own but rank below the top 3 (Noemi's decision 4 of 15 Oct 2026), each labelled so
     (meets_bar) and with a pick's reason line and voices; then those with two credible recommendations across two
@@ -854,7 +868,7 @@ def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[s
         if not quotes:
             continue
         downsides = _warning_quotes((product.credible_warnings,), check, DOWNSIDES_PER_PICK, needs)
-        price = shown_price(prices.get(product.key))
+        price = shown_price(prices.get(product.key), region)
         meets_bar = product.key in past
         items.append(WorthALook(
             product_key=product.key,
@@ -873,7 +887,7 @@ def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[s
             score=product.score,
             breakdown=product.breakdown,
             price=price,
-            availability=shown_availability(prices.get(product.key), price.url),
+            availability=shown_availability(prices.get(product.key), price.url, region),
             cautions=[CAUTION.format(reason=reason) for reason in cautions.get(product.key, [])],
             summary=_summary(product, _summary_of(product, summaries), check),
             voices=_voices(product, twice=meets_bar),
@@ -3106,12 +3120,17 @@ def _message(picks: int, product_type: str | None, standout_pick: bool = False) 
     return FEWER_PICKS.format(products=_plural(picks, "product"), rule=rule, n=picks, wanted=PICKS_SHOWN)
 
 
-def shown_price(check: PriceCheck | None) -> ShownPrice:
+def shown_price(check: PriceCheck | None, region: str = DEFAULT_REGION) -> ShownPrice:
     """A product's price as the shopper sees it: amount, shop and date when known, and how it meets the budget. A brand
-    line's from price (14 Oct 2026) says so: "From £25 at John Lewis, checked 14 Oct 2026"."""
+    line's from price (14 Oct 2026) says so: "From £25 at John Lewis, checked 14 Oct 2026". For a visitor outside the UK
+    (24 Oct 2026, `region`) the line says where the price holds: "£120 in the UK, at John Lewis, checked 9 Oct 2026"; the
+    price shown is the same one (the budget note is about it), the list's USD price standing in only when it has no
+    other."""
     budget_status = None if check is None or check.status == "no budget" else check.status
     budget_note = _budget_note(check) if budget_status else None
     price = check.price if check is not None else None
+    if region != DEFAULT_REGION:
+        return _regional_price(check, price, budget_status, budget_note)
     if price is None:
         # A product not sold in the UK (Noemi, 15 Oct 2026, evening) has no UK price to check: its line says so, and no
         # "Price not checked yet" stands beside it (19 Oct 2026, round 3, the final review).
@@ -3145,12 +3164,16 @@ def shown_range(line: BrandLine | None) -> ShownRange | None:
 
 
 
-def shown_availability(check: PriceCheck | None, price_url: str | None = None) -> ShownAvailability:
+def shown_availability(check: PriceCheck | None, price_url: str | None = None,
+                       region: str = DEFAULT_REGION) -> ShownAvailability:
     """Whether a product is sold, as the shopper sees it: the shop and the day it was checked, when the price list says.
 
     The shop's link is passed on only when it is https, and only when the price line (whose link is `price_url`)
-    doesn't already link to the same page. A product sold second-hand only says so (AVAILABILITY_SECOND_HAND).
+    doesn't already link to the same page. A product sold second-hand only says so (AVAILABILITY_SECOND_HAND). For a
+    visitor outside the UK (24 Oct 2026, `region`) the line says where it is sold (_regional_availability).
     """
+    if region != DEFAULT_REGION:
+        return _regional_availability(check, price_url, region)
     sold = check.availability if check is not None else None
     if sold is None or sold.available is None:
         return NOT_CHECKED
@@ -3164,6 +3187,52 @@ def shown_availability(check: PriceCheck | None, price_url: str | None = None) -
     wording = AVAILABILITY_SECOND_HAND if sold.second_hand else AVAILABILITY
     return ShownAvailability(wording.format(shop=sold.shop, date=day), True, sold.shop, url,
                              sold.checked_on.isoformat(), sold.second_hand)
+
+
+def _regional_price(check: PriceCheck | None, price, budget_status: str | None, budget_note: str | None) -> ShownPrice:
+    """The price line for a visitor outside the UK (24 Oct 2026): the price the UK shows, saying where it holds ("in the
+    UK" for pounds, "in the US" for dollars), or the list's USD price when there is no other; "Price not checked yet"
+    otherwise, also for a product sold only abroad, whose UK availability line no longer carries its story."""
+    from_price = check is not None and check.from_price
+    if price is None and check is not None and check.us_price is not None:
+        price, from_price = check.us_price, False
+    if price is None:
+        return ShownPrice(PRICE_UNKNOWN, None, None, None, None, None, budget_status, budget_note)
+    place = {"GBP": PRICE_FROM_IN_UK if from_price else PRICE_IN_UK, "USD": PRICE_IN_US}
+    words = place.get(price.currency, PRICE_FROM if from_price else PRICE)
+    text = words.format(amount=_money(price.price, price.currency), shop=price.shop, date=_day(price.checked_on))
+    url = price.url if is_direct_page(price.url) else None
+    return ShownPrice(text, price.price, price.currency, price.shop, url, price.checked_on.isoformat(), budget_status,
+                      budget_note, from_price)
+
+
+def _regional_availability(check: PriceCheck | None, price_url: str | None, region: str) -> ShownAvailability:
+    """The availability line for a visitor outside the UK (24 Oct 2026): where the price list says the product is sold,
+    the visitor's own side first (a US visitor: the US, then the UK; elsewhere: the UK, then the US). Never "Not sold in
+    the UK": a product sold only abroad says it is sold in the US where the list holds evidence (a US shop or a USD price,
+    engine.prices.us_sale), or that its US availability isn't checked ("elsewhere": that nothing is checked). A product
+    no longer made says so, as it does anywhere."""
+    sold = check.availability if check is not None else None
+    us = check.us_sold if check is not None else None
+    if sold is not None and sold.available is False and not sold.not_in_uk:
+        return shown_availability(check, price_url)  # discontinued: the same words in every region
+    parts = []  # (text, shop, link, day, second_hand), the visitor's own side first
+    if sold is not None and sold.available:
+        words = AVAILABILITY_IN_UK_SECOND_HAND if sold.second_hand else AVAILABILITY_IN_UK
+        parts.append((words.format(shop=sold.shop, date=_day(sold.checked_on)), sold.shop, sold.url,
+                      sold.checked_on.isoformat(), sold.second_hand))
+    if us is not None:
+        here = (AVAILABILITY_IN_US.format(shop=us.shop, date=_day(us.checked_on)), us.shop, us.url,
+                us.checked_on.isoformat(), False)
+        parts.insert(0, here) if region == "us" else parts.append(here)
+    if not parts:
+        abroad = sold is not None and sold.available is False  # sold only outside the UK, and nothing says where
+        return ShownAvailability(AVAILABILITY_US_UNKNOWN if abroad and region == "us" else AVAILABILITY_UNKNOWN,
+                                 None, None, None, None)
+    text = "; ".join(part[0] if i == 0 else part[0][:1].lower() + part[0][1:] for i, part in enumerate(parts))
+    _, shop, link, day, second_hand = parts[0]
+    url = link if is_direct_page(link) and link != price_url else None
+    return ShownAvailability(text, True, shop, url, day, second_hand)
 
 
 def _budget_note(check: PriceCheck) -> str:
