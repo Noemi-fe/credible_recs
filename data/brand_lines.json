@@ -4243,6 +4243,35 @@
    "from_price_url": "https://www.johnlewis.com/amazon-kindle-2024-ereader-6-high-resolution-illuminated-touch-screen-16gb/matcha-green/p112573562",
    "from_price_checked_on": "2026-10-18",
    "note": "Added 19 Oct 2026 (the round-3 names builder) from the 18 Oct findings for the Amazon Kindle (2024) in the price and pages lists (not read again today). Writers call the entry-level Kindle 'the basic' or 'Kindle Basic' (the lists already give 'Kindle Basic' and 'basic Kindle' as that product's other names). The entry names the line 'Kindle Basic' (shown 'Kindle Basic e-reader line') and gives its from price; the alias list writes writers' 'basic Kindle', 'Basic in matcha green' and the like as 'Kindle Basic', and a bare 'basic' (29 mentions in the e-reader threads) joins the same group (engine/group_products.py, _attach_descriptions: a description alone is the one brand name here that holds it, as 'Kindle' is written alone too), so the final review's 'Basic e-reader line' and its model 'Basic in matcha green' are gone. John Lewis, 18 Oct 2026: Amazon Kindle (2024) eReader, 6in, 16GB, Matcha Green, GBP134.99. No range page: Amazon's own pages refuse readers."
+  },
+  {
+   "brand": "Apple Watch",
+   "category": "general",
+   "product_type": "smartwatch",
+   "sells": true,
+   "sources": ["https://www.apple.com/uk/watch/", "https://www.apple.com/uk/shop/buy-watch/apple-watch-se"],
+   "checked_on": "2026-10-25",
+   "range_page": "https://www.apple.com/uk/watch/",
+   "range_shop": "Apple UK",
+   "from_price": 219.0,
+   "from_price_shop": "Apple UK",
+   "from_price_url": "https://www.apple.com/uk/shop/buy-watch/apple-watch-se",
+   "from_price_checked_on": "2026-10-25",
+   "note": "From the research findings of 2026-10-25: Apple UK Watch range page (25 Oct 2026) lists three models: Apple Watch Series 12 (New), Apple Watch Ultra 4 (New), Apple Watch SE 3, with no prices on that page. The Apple Watch SE 3 buy page reads 'From £219', the lowest of the range (Series 12 and Ultra 4 prices not read, SE is Apple's entry model). Cheapest new model: Apple Watch SE 3, GPS 40mm."
+  },
+  {
+   "brand": "Samsung",
+   "category": "general",
+   "product_type": "phone",
+   "sells": true,
+   "sources": ["https://www.samsung.com/uk/smartphones/all-smartphones/", "https://www.johnlewis.com/samsung-galaxy-a17-5g-smartphone-android-6-7-4gb-ram-5g-sim-free-128gb/black/p114117293", "https://www.johnlewis.com/browse/electricals/mobile-phones-accessories/view-all-mobile-phones/samsung/_/N-a8vZ1z13z13", "https://www.johnlewis.com/browse/electricals/mobile-phones-accessories/view-all-mobile-phones/galaxy-a17-5g/black/_/N-a8vZq3jvZ1z141fu"],
+   "checked_on": "2026-10-25",
+   "range_page": "https://www.samsung.com/uk/smartphones/all-smartphones/",
+   "from_price": 169.0,
+   "from_price_shop": "John Lewis",
+   "from_price_url": "https://www.johnlewis.com/samsung-galaxy-a17-5g-smartphone-android-6-7-4gb-ram-5g-sim-free-128gb/black/p114117293",
+   "from_price_checked_on": "2026-10-25",
+   "note": "From the research findings of 2026-10-25: Samsung UK's range page loads prices by script and showed none on 2026-10-25 (it named Galaxy S26 Ultra, Z Fold8, Z Fold8 Ultra, Z Flip8). Price read on John Lewis: the Samsung phones listing (17 Galaxy phones) shows Samsung Galaxy A17 5G Smartphone, Android, 6.7in, 4GB RAM, 5G, SIM Free, 128GB as the cheapest at 'from' £169.00 (£169-£259 range across options), and the product page (Black) shows £169.00 with no was/now price, in stock in Black and Grey. Other cheap models on the same listing: Galaxy A17 (4G) £219.00, Galaxy A18 £249.00, Galaxy A27 from £319.00. Galaxy A07 was not on John Lewis's listing and no UK shop page for it was read, so a cheaper A07 is possible but unconfirmed. John Lewis price used because Samsung UK's page shows none."
   }
  ]
 }

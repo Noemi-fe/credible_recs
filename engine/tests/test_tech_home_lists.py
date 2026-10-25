@@ -69,7 +69,9 @@ PRODUCTS = [
     ("Shure SE215", "earbuds", 98.0, "Amazon UK"),
     ("GMMK Pro", "keyboard", 139.99, "Glorious"),
     ("Logitech brio 4k", "webcam", 79.99, "John Lewis"),
-    ("Amazfit Balance 2", "smartwatch", 299.0, "Amazon UK"),
+    # Changed on purpose on 25 Oct 2026 (the data-tech2 round): the maker's UK page was read again and gives GBP 299.90 (the
+    # newest check is the one answers show; the 18 Oct Amazon UK price, GBP 299, can't be read again by tools).
+    ("Amazfit Balance 2", "smartwatch", 299.9, "Amazfit UK"),
     # The third pass (18 Oct 2026, after the round's office chair, standing desk, pillow, purifier and phone threads):
     # shown picks without a price, under the names the answers show them.
     ("JBL clip", "bluetooth speaker", 39.99, "John Lewis"),
