@@ -35,6 +35,11 @@ Each comment gets a tier (0: shown; 1: next in line; 2: behind the picks; 3: nex
 that order, a pick's own quotes before the rest of each tier, then by request, then by place in the answer: the
 likeliest to be shown first. A comment in several answers or places is read once, at its likeliest.
 
+The plan for the site lists tiers 0 and 1 every day (the site reads them again every config.READ_AHEAD_AGAIN_HOURS), and
+since 25 Oct 2026 (the review docs/verify-bfs-2026-10-25.md, option (h)) tiers 2 and 3, the fallbacks a failed check brings
+in, one day in config.PLAN_FALLBACK_TIER_DAYS each (fallback_due; the plan's "fallback"): about 1,260 reads a day freed. A
+shown quote still needs a passing check from the last 48 hours; a fallback quote that has none is checked at answer time.
+
 How it is read (check_ahead): through the live site's own checker (engine.live_check.checker_from_env: the same pace,
 the same 48-hour cache; but a read waits for Reddit's next 10 minutes however long that is, config.
 PRECHECK_MAX_WAIT_SECONDS, since nobody waits on it), one comment at a time, until the run's budget is spent: its reads
@@ -73,7 +78,13 @@ thread was read), within a budget of their own (--verify N, default config.LIBRA
 every config.LIBRARY_VERIFY_AGAIN_DAYS; a comment found deleted or removed isn't read again (the next deploy drops it),
 one found edited is read again first, until a deploy keeps Reddit's current text and the items still found in it
 (Noemi's decision 3 of 15 Oct 2026; in the plan, like an answer's comment: engine/read_ahead.py), and a page with no
-comment on it is tried again after config.LIBRARY_VERIFY_RETRY_DAYS. Every read goes into the
+comment on it is tried again after config.LIBRARY_VERIFY_RETRY_DAYS (since 25 Oct 2026 a second unreadable read at least
+config.LIBRARY_UNREADABLE_LAPSE_DAYS after the first makes the comment lapse at the next deploy, and it is read no more:
+engine.verify.Ledger.lapsed; the review's option (i)). Since 25 Oct 2026 too the order is the deadline's calendar day
+first, and when deadlines tie the comments answers use come first (_priority, USE_LEVELS: a comment backing a product an
+answer shows, then one backing a product ranked just behind, then the rest; option (b)); the plan report ends with a
+"projected lapses" line (projected_lapses): how many readable kept comments the day's budget leaves to pass their 30 days
+unread. Every read goes into the
 verification record (engine.verify.Ledger: when, and what it said; ids, dates and outcomes only, never any words): on
 this machine (.cache/verified.json) and, with a bucket, next to the bundle (live_check/verified.json). The library
 itself is never changed here: it is baked into the site's image, so `python -m engine.library apply-checks` applies the
@@ -96,26 +107,31 @@ in on-demand reading's queue, after the requests above.
 """
 
 import dataclasses
+import heapq
 import inspect
 import json
 import os
 import re
 import sys
 import time
+import zlib
+from collections import Counter
+from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 from engine import memo, on_demand, pipeline
 from engine.answer import Answer, ShownQuote, quotes_to_check
-from engine.config import (BRIGHT_DATA_BATCH_THREADS, LIBRARY_VERIFY_AGAIN_DAYS, LIBRARY_VERIFY_DAYS,
-                           LIBRARY_VERIFY_READS, LIBRARY_VERIFY_RETRY_DAYS, PICKS_SHOWN, PLAN_ANSWERS_KEPT_TYPES,
-                           PRECHECK_BRIGHT_DATA_FRESH_HOURS, PRECHECK_BRIGHT_DATA_GONE_DAYS,
-                           PRECHECK_BRIGHT_DATA_MAX_THREADS, PRECHECK_BRIGHT_DATA_SKIP_DAYS,
-                           PRECHECK_BRIGHT_DATA_RECORDS, PRECHECK_FRESH_HOURS, PRECHECK_MAX_READS,
-                           PRECHECK_MAX_RUN_MINUTES, PRECHECK_MAX_WAIT_SECONDS, PRECHECK_MODEL_TYPES,
-                           PRECHECK_PLAN_MINUTES, PRECHECK_STOP_AFTER_UNKNOWN)
+from engine.config import (BRIGHT_DATA_BATCH_THREADS, LIBRARY_UNREADABLE_LAPSE_DAYS, LIBRARY_VERIFY_AGAIN_DAYS,
+                           LIBRARY_VERIFY_DAYS, LIBRARY_VERIFY_READS, LIBRARY_VERIFY_RETRY_DAYS, PICKS_SHOWN,
+                           PLAN_ANSWERS_KEPT_TYPES, PLAN_FALLBACK_TIER_DAYS, PRECHECK_BRIGHT_DATA_FRESH_HOURS,
+                           PRECHECK_BRIGHT_DATA_GONE_DAYS, PRECHECK_BRIGHT_DATA_MAX_THREADS,
+                           PRECHECK_BRIGHT_DATA_SKIP_DAYS, PRECHECK_BRIGHT_DATA_RECORDS, PRECHECK_FRESH_HOURS,
+                           PRECHECK_MAX_READS, PRECHECK_MAX_RUN_MINUTES, PRECHECK_MAX_WAIT_SECONDS,
+                           PRECHECK_MODEL_TYPES, PRECHECK_PLAN_MINUTES, PRECHECK_STOP_AFTER_UNKNOWN,
+                           READ_AHEAD_AGAIN_HOURS)
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.live_check import LiveResult, checker_from_env
 from engine.parse_reddit import REPO_ROOT, parse_thread_url
@@ -186,6 +202,47 @@ class _Found:
     candidates: list[Candidate] = field(default_factory=list)
     answered: int = 0
     failed: int = 0  # requests the pipeline couldn't answer (each named on stderr)
+    # How much each comment is used by the answers worked out (25 Oct 2026; USE_LEVELS), by comment id: 0 for the answers'
+    # own comments (their quotes, tiers 0 to 3), 1 and 2 for those that back a product an answer shows or ranks just behind
+    # it. A comment in none is absent (USE_NONE). The order kept comments are verified in when their deadlines tie.
+    use: dict[str, int] = field(default_factory=dict)
+
+
+# How much the answers use a comment (25 Oct 2026, the review's option (b)): the order kept comments are verified in when
+# their deadlines are the same calendar day. A comment backing nothing an answer shows or ranks near the top comes last.
+USE_LEVELS = ("an answer's own quote", "a credible mention of a product an answer shows",
+              "another mention of a product an answer shows, or of one ranked just behind", "none")
+USE_NONE = len(USE_LEVELS) - 1
+FALLBACK_FIRST_TIER = 2  # tiers 2 (behind the picks) and 3 (next after those) are the answers' last two
+JUST_BEHIND = 3  # the products ranked this far behind the picks count as "just behind" (as many as a fourth to sixth place)
+
+
+def fallback_due(comment_id: str, day: date) -> bool:
+    """Whether the daily plan lists this comment of the answers' last two tiers on `day`: one day in
+    PLAN_FALLBACK_TIER_DAYS, a fixed day of the cycle for each comment (a checksum of its id: Python's own hash changes
+    with every run), so it is read about every PLAN_FALLBACK_TIER_DAYS days and the load is the same each day."""
+    slot = zlib.crc32(comment_id.encode("utf-8")) % PLAN_FALLBACK_TIER_DAYS
+    return (day.toordinal() - slot) % PLAN_FALLBACK_TIER_DAYS == 0
+
+
+def used_comments(ranking) -> dict[str, int]:
+    """{comment id: 1 or 2} for the comments an answer's ranking leans on without quoting them: 1 for a credible mention
+    of a product the answer shows (a pick, "Also worth a look", the skip list), 2 for any other mention of one, and for any
+    mention of the next JUST_BEHIND products ranked behind the picks."""
+    from engine.rank import is_credible
+
+    qualifying = ranking.qualifying
+    shown = {p.key: p for p in ranking.picks}
+    shown |= {p.key: p for p in ranking.past_the_picks}
+    shown |= {p.key: p for p in ranking.products if p.worth_a_look or p.on_skip_list}
+    behind = [p for p in qualifying[PICKS_SHOWN:PICKS_SHOWN + JUST_BEHIND] if p.key not in shown]
+    levels: dict[str, int] = {}
+    for products, credible in ((shown.values(), 1), (behind, 2)):
+        for product in products:
+            for mention in product.mentions:
+                level = credible if is_credible(mention) else 2
+                levels[mention.comment_id] = min(levels.get(mention.comment_id, USE_NONE), level)
+    return levels
 
 
 # --- Which requests ---
@@ -334,11 +391,14 @@ def _work_out(requests: list[str], library_dir: Path, checker, profiles, unverif
                 continue
             found.answered += 1
             arguments = next(args for args, answer in reversed(written) if answer is result.answer)
+            for comment_id, level in used_comments(arguments["ranking"]).items():
+                found.use[comment_id] = min(found.use.get(comment_id, USE_NONE), level)
             for tier, answers in enumerate(_written_again(arguments, result.answer, write_answer)):
                 every += [Candidate(quote.url, quote.comment_id, (quote.text,), tier, section, number, place,
                                     request.strip() in first_ones)
                           for answer in answers for place, (section, quote) in enumerate(shown_quotes(answer))]
     found.candidates = merged(every)
+    found.use |= {candidate.comment_id: 0 for candidate in found.candidates}  # an answer's own comment: first of all
     return found
 
 
@@ -796,6 +856,7 @@ class VerifyReading:
     unreadable: int = 0  # the page showed no comment: tried again after LIBRARY_VERIFY_RETRY_DAYS
     unknown: int = 0  # couldn't be read now (an error, Reddit refusing): left for the next run
     gone_already: int = 0  # found deleted or removed before: not read again, the next deploy drops them
+    lapsed: int = 0  # unreadable twice, a week apart (Ledger.lapsed): not read again, the next deploy drops them
     waiting_retry: int = 0  # unreadable less than LIBRARY_VERIFY_RETRY_DAYS ago
     not_reached: int = 0  # due, but left for lack of reads in this run's budget
     would_read: int = 0  # a dry run: what would have been read
@@ -822,6 +883,7 @@ def verify_kept(library_dir: Path, checker, ledger: Ledger, limit: int = LIBRARY
     reading.recorded = record_saved_checks(library_dir, checker, ledger, kept)  # what today's checks say: no read
     due = due_for_verification(kept, ledger, now, again=again, retry=retry)
     reading.due, reading.gone_already, reading.waiting_retry = due.due, due.gone_already, due.waiting_retry
+    reading.lapsed = due.lapsed
     unknown_in_a_row = 0
     # Those found edited first (15 Oct 2026): a read of the last 48 hours gives apply-checks their current text.
     for comment in due.edited + due.chosen:
@@ -857,39 +919,164 @@ class Due:
     due: int = 0  # due, chosen or not
     not_reached: int = 0  # due, beyond the limit
     gone_already: int = 0  # found deleted or removed before: not read again, the next deploy drops them
-    waiting_retry: int = 0  # unreadable less than LIBRARY_VERIFY_RETRY_DAYS ago
+    # Unreadable twice, the second read a week or more after the first with no pass between (25 Oct 2026, the review's
+    # option (i); Ledger.lapsed): not read again, the next deploy drops them as it does an expired comment.
+    lapsed: int = 0
+    waiting_retry: int = 0  # unreadable less than `retry` ago
     # Found edited since their last pass (15 Oct 2026, Noemi's decision 3): read again like answers' comments until a
     # deploy applies them, so the bundle always holds Reddit's current text for it (engine/verify.py, read_ahead.py).
     edited: list[KeptComment] = field(default_factory=list)
 
 
+def _state(comment: KeptComment, ledger: Ledger, now: datetime, again: timedelta,
+           retry: timedelta) -> tuple[str, datetime | None]:
+    """Where a kept comment stands: "edited", "gone" (found deleted or removed), "lapsed" (unreadable twice), "waiting"
+    (unreadable lately: its page is tried again after `retry`), "due" (not verified within `again`, or never), or "fresh";
+    and when it was last verified (None: never)."""
+    entry, last = ledger.get(comment.comment_id), _last_verified(comment, ledger)
+    newer = entry is not None and (last is None or entry.at > last)
+    if newer and entry.outcome == "changed":
+        return "edited", last
+    if newer and entry.outcome in FAILED:
+        return "gone", last
+    if newer and ledger.lapsed(comment.comment_id):
+        return "lapsed", last
+    if newer and entry.outcome == "unreadable" and now - entry.at < retry:
+        return "waiting", last
+    return ("due" if last is None or now - last >= again else "fresh"), last
+
+
+def _deadline(comment: KeptComment, last: datetime | None) -> date:
+    """The last day a kept comment may go without a passing read: LIBRARY_VERIFY_DAYS after its last one (a comment never
+    verified: after its thread was read), counted in calendar days as engine.verify.expired does."""
+    return ((last or comment.collected_at).date()) + timedelta(days=LIBRARY_VERIFY_DAYS)
+
+
+def _priority(comment: KeptComment, last: datetime | None, use: Mapping[str, int] | None) -> tuple:
+    """The order kept comments are verified in: the earlier deadline day first; within a day, the comments answers use
+    first (their level, USE_LEVELS) when it is known; then longest unverified, then by thread and place in it."""
+    level = USE_NONE if use is None else use.get(comment.comment_id, USE_NONE)
+    return _deadline(comment, last), level, last or comment.collected_at, comment.thread_id, comment.order
+
+
 def due_for_verification(kept: list[KeptComment], ledger: Ledger, now: datetime, limit: int | None = None,
                          exclude=frozenset(), again: timedelta = timedelta(days=LIBRARY_VERIFY_AGAIN_DAYS),
-                         retry: timedelta = timedelta(days=LIBRARY_VERIFY_RETRY_DAYS)) -> Due:
+                         retry: timedelta = timedelta(days=LIBRARY_VERIFY_RETRY_DAYS),
+                         use: Mapping[str, int] | None = None) -> Due:
     """The kept comments not verified within `again` (a comment never verified counts from the day its thread was
-    read), longest unverified first, then by thread and place in it; at most `limit` chosen. Left out: those in
-    `exclude` (comment ids: the answers' own comments, read anyway), those found deleted or removed since their last
-    pass, and those whose page showed no comment less than `retry` ago. Those found edited since their last pass are
-    listed apart (edited), outside the limit: there are few, and each is read again only while it waits for a deploy."""
+    read), earliest deadline first (_priority: since 25 Oct 2026 the deadline is the calendar day, and when deadlines tie
+    the comments `use` rates highest come first: {comment id: 0 to 2}, see USE_LEVELS; then longest unverified, then by
+    thread and place in it); at most `limit` chosen. Left out: those in `exclude` (comment ids: the answers' own
+    comments, read anyway), those found deleted or removed since their last pass, those unreadable twice a week apart,
+    and those whose page showed no comment less than `retry` ago. Those found edited since their last pass are listed
+    apart (edited), outside the limit: there are few, and each is read again only while it waits for a deploy."""
     result, due = Due(), []
     for comment in kept:
         if comment.comment_id in exclude:
             continue
-        entry, last = ledger.get(comment.comment_id), _last_verified(comment, ledger)
-        if entry is not None and entry.outcome == "changed" and (last is None or entry.at > last):
+        state, last = _state(comment, ledger, now, again, retry)
+        if state == "edited":
             result.edited.append(comment)
-        elif entry is not None and entry.outcome in FAILED and (last is None or entry.at > last):
+        elif state == "gone":
             result.gone_already += 1
-        elif entry is not None and entry.outcome == "unreadable" and (last is None or entry.at > last) and (
-                now - entry.at < retry):
+        elif state == "lapsed":
+            result.lapsed += 1
+        elif state == "waiting":
             result.waiting_retry += 1
-        elif last is None or now - last >= again:
-            due.append(((last or comment.collected_at), comment.thread_id, comment.order, comment))
-    due.sort(key=lambda item: item[:3])
-    ordered = [item[3] for item in due]
+        elif state == "due":
+            due.append((_priority(comment, last, use), comment))
+    due.sort(key=lambda item: item[0])
+    ordered = [item[1] for item in due]
     result.due, result.chosen = len(ordered), ordered if limit is None else ordered[:limit]
     result.not_reached = result.due - len(result.chosen)
     return result
+
+
+# --- What the budget leaves to lapse (25 Oct 2026) ---
+
+@dataclass
+class Projection:
+    """What a day's budget of verification reads leaves to lapse, worked out without reading Reddit (projected_lapses)."""
+
+    reads_a_day: int
+    lapses: int = 0  # readable kept comments that would pass their deadline unread
+    lapses_used: int = 0  # of those, the ones `use` rates as backing a product an answer shows or ranks just behind
+    first_day: date | None = None  # the first day a lapse takes effect (the day after its deadline)
+    last_day: date | None = None  # the last
+    busiest_day: date | None = None  # the deadline day with most comments due
+    busiest: int = 0
+    unreadable_lapsed: int = 0  # unreadable twice, a week apart: they lapse at the next deploy
+    unreadable_waiting: int = 0  # unreadable once lately: their page is tried again, and lapses if still unreadable
+
+
+def projected_lapses(kept: list[KeptComment], ledger: Ledger, now: datetime, per_day: int, exclude=frozenset(),
+                     use: Mapping[str, int] | None = None,
+                     again: timedelta = timedelta(days=LIBRARY_VERIFY_AGAIN_DAYS),
+                     retry: timedelta = timedelta(days=LIBRARY_VERIFY_RETRY_DAYS)) -> Projection:
+    """How many readable kept comments would pass their deadline unread if each day's plan read `per_day` of them, the
+    earliest deadline first (_priority): the day-by-day sum behind the plan report's "projected lapses" line. A comment
+    can be read from the day it is due (not verified within `again`) until its deadline; a read comment is not counted
+    again (its next deadline is 30 days on). Left out as the plan leaves them out: the answers' own comments (`exclude`:
+    the site reads them anyway), those found deleted, removed or edited, those unreadable twice, and those whose page
+    was unreadable lately (counted apart). Nothing is read, and the budget is the plan's own: the site's reads of Reddit
+    may fall short of it."""
+    today = now.date()
+    projection = Projection(per_day)
+    pool = []  # (priority, deadline, the day it can first be read, comment id)
+    for comment in kept:
+        if comment.comment_id in exclude:
+            continue
+        state, last = _state(comment, ledger, now, again, retry)
+        if state == "lapsed":
+            projection.unreadable_lapsed += 1
+        elif state == "waiting":
+            projection.unreadable_waiting += 1
+        elif state in ("due", "fresh"):
+            deadline = max(_deadline(comment, last), today)  # one past its deadline reads it today or never
+            readable = today if state == "due" else max((last + again).date(), today)
+            pool.append((_priority(comment, last, use), deadline, readable, comment.comment_id))
+    pool.sort(key=lambda item: item[0])
+    busiest = Counter(item[1] for item in pool)
+    if busiest:
+        projection.busiest_day, projection.busiest = min(busiest.items(), key=lambda item: (-item[1], item[0]))
+    starts: dict[int, list[int]] = {}
+    for rank, (_, _, readable, _) in enumerate(pool):
+        starts.setdefault((readable - today).days, []).append(rank)
+    waiting, lapsed = [], []  # a heap of ranks (the priority order); the ranks that ran out of days
+    for offset in range(max(((item[1] - today).days for item in pool), default=-1) + 1):
+        for rank in starts.get(offset, ()):
+            heapq.heappush(waiting, rank)
+        for _ in range(min(per_day, len(waiting))):
+            heapq.heappop(waiting)  # read today
+        day = today + timedelta(days=offset)
+        while waiting and pool[waiting[0]][1] <= day:  # today was its last day: it lapses tomorrow
+            lapsed.append(heapq.heappop(waiting))
+    for rank in lapsed:
+        projection.lapses += 1
+        projection.lapses_used += use is not None and use.get(pool[rank][3], USE_NONE) < USE_NONE
+    if lapsed:
+        days = sorted(pool[rank][1] + timedelta(days=1) for rank in lapsed)
+        projection.first_day, projection.last_day = days[0], days[-1]
+    return projection
+
+
+def _day(day: date) -> str:
+    return f"{day.day} {day:%b}"
+
+
+def projection_report(projection: Projection, per_day: int) -> str:
+    """The projected lapses in a line: counts and dates only, never a comment's words."""
+    if projection.lapses:
+        used = f", {projection.lapses_used:,} of them backing products answers show" if projection.lapses_used else ""
+        lapses = (f"{projection.lapses:,} readable kept comments would pass their {LIBRARY_VERIFY_DAYS} days unread, "
+                  f"the first lapsing on {_day(projection.first_day)}, the last on {_day(projection.last_day)}{used}")
+    else:
+        lapses = "none would lapse"
+    busiest = (f" Most due on one day: {projection.busiest:,} due on {_day(projection.busiest_day)}."
+               if projection.busiest_day else "")
+    return (f"Projected lapses at {per_day:,} reads a day (oldest deadline first, ties by use): {lapses}.{busiest} "
+            f"Unreadable pages: {projection.unreadable_lapsed:,} lapsed (two reads at least {LIBRARY_UNREADABLE_LAPSE_DAYS} "
+            f"days apart), {projection.unreadable_waiting:,} waiting for their second.")
 
 
 def _last_verified(comment: KeptComment, ledger: Ledger) -> datetime | None:
@@ -945,8 +1132,10 @@ def verify_report(reading: VerifyReading) -> str:
     lines = [f"Kept comments of slimmed threads: {reading.kept:,} kept comments, each to be verified on Reddit within "
              f"{LIBRARY_VERIFY_DAYS} days. From today's checks: {reading.recorded:,}; due: {reading.due:,}; {done}; "
              f"left for the next runs: {reading.not_reached:,}.",
-             f"Found deleted or removed before (the next deploy drops them): {reading.gone_already:,}; unreadable, "
-             f"tried again after {LIBRARY_VERIFY_RETRY_DAYS} days: {reading.waiting_retry:,}. After this run: "
+             f"Found deleted or removed before (the next deploy drops them): {reading.gone_already:,}; unreadable "
+             f"twice, at least {LIBRARY_UNREADABLE_LAPSE_DAYS} days apart (they drop too): {reading.lapsed:,}; "
+             f"unreadable once, tried again after {LIBRARY_VERIFY_RETRY_DAYS} days: {reading.waiting_retry:,}. After "
+             f"this run: "
              f"{reading.never_verified:,} never verified, the oldest verified {reading.oldest_days} days ago, "
              f"{reading.expiring:,} due to go within a week unless read."]
     if reading.stopped:
@@ -1084,21 +1273,31 @@ def plan_run(requests: list[str], library_dir: Path, checker, profiles, dry_run:
         ledger.merge(Ledger.loads(bucket.get(LEDGER_NAME)))
     recorded = record_saved_checks(library_dir, checker, ledger, kept) if kept else 0
     memory = load_bright_data_memory(checker)  # what Bright Data couldn't read lately (each run's disk starts empty)
-    found = _work_out(requests, library_dir, checker, profiles, memory.unverifiable(now))
-    due = due_for_verification(kept, ledger, now, verify_limit, exclude={c.comment_id for c in found.candidates})
-    answers, verify = [c.url for c in found.candidates], [c.url for c in due.chosen]
+    # A comment unreadable twice a week apart lapses at the next deploy (25 Oct 2026): answers drop it now, as they will
+    # then, and what shows instead is read ahead.
+    found = _work_out(requests, library_dir, checker, profiles, memory.unverifiable(now) | ledger.lapsed_ids())
+    answers_own = {c.comment_id for c in found.candidates}
+    due = due_for_verification(kept, ledger, now, verify_limit, exclude=answers_own, use=found.use)
+    # The first two tiers are read every READ_AHEAD_AGAIN_HOURS; the last two (the fallbacks) one day in
+    # PLAN_FALLBACK_TIER_DAYS each (25 Oct 2026), so only those whose day it is are listed.
+    answers = [c.url for c in found.candidates if c.tier < FALLBACK_FIRST_TIER]
+    fallback = [c.url for c in found.candidates
+                if c.tier >= FALLBACK_FIRST_TIER and fallback_due(c.comment_id, now.date())]
+    verify = [c.url for c in due.chosen]
     edited = [c.url for c in due.edited]  # read again like answers' comments until a deploy applies them (15 Oct 2026)
+    projection = projected_lapses(kept, ledger, now, verify_limit, exclude=answers_own, use=found.use) if kept else None
     written = None
     if not dry_run:
         if kept:
             ledger.keep_only({comment.comment_id for comment in kept})
             ledger.save(local, now)
             bucket.put(LEDGER_NAME, ledger.dumps(now))
-        written = bucket.put(PLAN_NAME, plan_bytes(answers, verify, checker.checks_made("bright_data"), now, edited))
+        written = bucket.put(PLAN_NAME, plan_bytes(answers, verify, checker.checks_made("bright_data"), now, edited,
+                                                   fallback))
     after = VerifyReading()
     _after_the_run(kept, ledger, now, after)
     print(plan_report(found, len(requests), kept, due, loaded, recorded, after, time.perf_counter() - started, dry_run,
-                      written))
+                      written, len(fallback), projection, verify_limit))
     until = None if minutes is None else now + timedelta(minutes=minutes)
     remember = None if dry_run else lambda: save_bright_data_memory(checker, memory, now)
     through = verify_through_bright_data(found.candidates, checker, bright_data, library_dir,
@@ -1108,15 +1307,17 @@ def plan_run(requests: list[str], library_dir: Path, checker, profiles, dry_run:
         remember()  # every run: so the bucket's 2-day rule never removes it while the job runs daily
     print(bright_data_report(through))
     if not dry_run and through.read:
-        bucket.put(PLAN_NAME, plan_bytes(answers, verify, checker.checks_made("bright_data"), now, edited))
+        bucket.put(PLAN_NAME, plan_bytes(answers, verify, checker.checks_made("bright_data"), now, edited, fallback))
     if bucket.problems:
         print(f"The bucket failed {bucket.problems} time(s) (said above).")
     return 0
 
 
 def plan_report(found: _Found, requests: int, kept: list[KeptComment], due: Due, loaded: int, recorded: int,
-                after: VerifyReading, seconds: float, dry_run: bool, written: bool | None) -> str:
-    """The plan in a few lines: counts and times only, never a comment's words."""
+                after: VerifyReading, seconds: float, dry_run: bool, written: bool | None, listed: int = 0,
+                projection: Projection | None = None, verify_limit: int = LIBRARY_VERIFY_READS) -> str:
+    """The plan in a few lines: counts and times only, never a comment's words. `listed`: the answers' last two tiers'
+    comments the plan lists today (fallback_due); `projection`: what the day's budget leaves to lapse."""
     by_tier = [sum(1 for c in found.candidates if c.tier == tier) for tier in range(len(TIERS))]
     tiers = ", ".join(f"{n:,} {words}" for n, words in zip(by_tier, TIERS))
     failures = f", {found.failed} failed (named above)" if found.failed else ""
@@ -1124,15 +1325,22 @@ def plan_report(found: _Found, requests: int, kept: list[KeptComment], due: Due,
     lines = [f"{head}: {len(found.candidates):,} answers' comments ({tiers}) from {requests} requests "
              f"({found.answered} answered{failures}), worked out in {_duration(seconds)}; then {len(due.chosen):,} kept "
              f"comments to verify, of {due.due:,} due."]
+    fallbacks = sum(1 for c in found.candidates if c.tier >= FALLBACK_FIRST_TIER)
+    lines.append(f"The last two tiers ({fallbacks:,} comments) are read every {PLAN_FALLBACK_TIER_DAYS} days, not every "
+                 f"{READ_AHEAD_AGAIN_HOURS} hours: {listed:,} listed today, each read every {PLAN_FALLBACK_TIER_DAYS} "
+                 "days.")
     if kept:
         lines.append(f"Kept comments of slimmed threads: {len(kept):,}, each to be verified on Reddit within "
                      f"{LIBRARY_VERIFY_DAYS} days. The site's reads of the last 48 hours: {loaded:,} taken from the "
                      f"bucket's bundle, {recorded:,} of kept comments recorded. Found deleted or removed before (the "
                      f"next deploy drops them): {due.gone_already:,}; found edited (read again until the next deploy "
-                     f"keeps what still verifies): {len(due.edited):,}; unreadable, tried again after "
-                     f"{LIBRARY_VERIFY_RETRY_DAYS} days: {due.waiting_retry:,}. Now {after.never_verified:,} never "
-                     f"verified, the oldest verified {after.oldest_days} days ago, {after.expiring:,} due to go within a "
-                     "week unless read.")
+                     f"keeps what still verifies): {len(due.edited):,}; unreadable once, tried again after "
+                     f"{LIBRARY_VERIFY_RETRY_DAYS} days: {due.waiting_retry:,}; unreadable twice, at least "
+                     f"{LIBRARY_UNREADABLE_LAPSE_DAYS} days apart (the next deploy drops them): {due.lapsed:,}. Now "
+                     f"{after.never_verified:,} never verified, the oldest verified {after.oldest_days} days ago, "
+                     f"{after.expiring:,} due to go within a week unless read.")
+    if projection is not None:
+        lines.append(projection_report(projection, verify_limit))
     if dry_run:
         lines.append("Nothing written: a dry run.")
     elif not written:
