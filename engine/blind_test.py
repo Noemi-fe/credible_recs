@@ -34,6 +34,15 @@
         confidence per tool, and every comment by the tool chosen. With --save, the result also goes into
         eval/metrics.json, which the how-we-score page shows (later evaluation runs keep it).
 
+    python -m engine.blind_test tally-pairs [<responses file or the dataset's export folder>] [--cards <cards file>]
+        The pairwise test (Noemi, 20 Oct 2026; GET /test, engine/pair_test.py): its answers, which the site keeps through
+        engine/feedback.py's store as the kind "blind_pair" (the local data/feedback/feedback.jsonl when no file is named;
+        for the private dataset, `python -m engine.feedback --repo OWNER/NAME` downloads it first, then name the
+        downloaded folder). Prints, per rival, how often ours was preferred, the rival was preferred, or the two were
+        about the same, each with its 95% range, the same per category (the categories come from the cards file,
+        data/library/blind_test_cards.json unless --cards names another) and every reason given, without who gave it.
+        A visitor's repeated answer to a question counts once (the last).
+
 The answers folder is never committed (.gitignore): our answers quote Reddit, and the rivals' answers and the testers'
 names aren't ours to publish. How each tool's raw answer becomes the answer shown (protocol step 3: "names removed,
 formatting matched") is eval/blind_test/FORMAT.md (Noemi's decision, 10 Oct 2026).
@@ -52,6 +61,7 @@ from itertools import permutations
 from pathlib import Path
 
 from engine.answer import answer_to_dict, carries_its_stance
+from engine import feedback, pair_test
 from engine.config import (
     BLIND_TEST_GIVEAWAYS,
     BLIND_TEST_QUESTIONS_PER_TESTER,
@@ -575,6 +585,184 @@ def _percent(part: int, whole: int) -> str:
     return f"{part / whole:.0%}"
 
 
+# --- 3b. Tally of the pairwise test (Noemi, 20 Oct 2026) ---
+
+@dataclass
+class PairCounts:
+    """How a group of answers went: ours preferred, the rival preferred, or about the same."""
+
+    ours: int = 0
+    rival: int = 0
+    same: int = 0
+
+    @property
+    def total(self) -> int:
+        return self.ours + self.rival + self.same
+
+    def add(self, outcome: str) -> None:
+        setattr(self, outcome, getattr(self, outcome) + 1)
+
+
+@dataclass
+class PairTally:
+    answers: int = 0  # answers counted: one per visit and question
+    sessions: int = 0
+    repeats: int = 0  # answers replaced by a later one from the same visit to the same question
+    skipped: int = 0  # records that are not whole answers of the test
+    by_rival: dict[str, PairCounts] = field(default_factory=lambda: {rival: PairCounts() for rival in RIVALS})
+    overall: PairCounts = field(default_factory=PairCounts)
+    by_category: dict[str, dict[str, PairCounts]] = field(default_factory=dict)  # {rival: {category: counts}}
+    categories_known: bool = True
+    reasons: list[tuple[str, str, str, str]] = field(default_factory=list)  # (outcome, question, rival, the why)
+
+
+def _pair_outcome(record: dict) -> str | None:
+    """"ours", "rival" or "same" for a whole answer of the test, else None. The letter chosen is ours when it is the side
+    ours was shown on."""
+    session, question = record.get("session"), record.get("question")
+    if not (isinstance(session, str) and session and isinstance(question, str) and question):
+        return None
+    if record.get("rival") not in feedback.PAIR_RIVALS or record.get("ours_side") not in feedback.PAIR_SIDES:
+        return None
+    choice = record.get("choice")
+    if choice not in feedback.PAIR_CHOICES:
+        return None
+    if choice == "same":
+        return "same"
+    return "ours" if choice == record["ours_side"] else "rival"
+
+
+def tally_pairs(records: list[dict], categories: dict[str, str] | None = None) -> PairTally:
+    """The answers of the pairwise test, counted per rival and, with `categories` ({question id: category}), per
+    category. A visit's second answer to the same question replaces its first (the last in the records' order)."""
+    result = PairTally(categories_known=categories is not None)
+    kept: dict[tuple[str, str], dict] = {}
+    for record in records:
+        if _pair_outcome(record) is None:
+            result.skipped += 1
+            continue
+        key = (record["session"], record["question"])
+        result.repeats += key in kept
+        kept[key] = record
+    result.answers = len(kept)
+    result.sessions = len({session for session, _ in kept})
+    for record in kept.values():
+        outcome, rival, question = _pair_outcome(record), record["rival"], record["question"]
+        result.by_rival[rival].add(outcome)
+        result.overall.add(outcome)
+        if categories is not None:
+            category = categories.get(question, "unknown")
+            result.by_category.setdefault(rival, {}).setdefault(category, PairCounts()).add(outcome)
+        if record.get("why"):
+            result.reasons.append((outcome, question, rival, str(record["why"])))
+    return result
+
+
+def _plural(n: int, noun: str) -> str:
+    return f"{n} {noun}" + ("" if n == 1 else "s")
+
+
+def _share(wins: int, total: int) -> str:
+    low, high = wilson_range(wins, total)
+    return f"{wins} ({_percent(wins, total)}, 95% range {low:.0%} to {high:.0%})"
+
+
+def pair_counts_text(counts: PairCounts, rival: str) -> str:
+    """The three shares on one line, each with its 95% range."""
+    return (f"ours preferred {_share(counts.ours, counts.total)}, {rival} preferred {_share(counts.rival, counts.total)}, "
+            f"about the same {_share(counts.same, counts.total)}")
+
+
+def _pair_block(title: str, counts: PairCounts, rival: str, categories: dict[str, PairCounts] | None) -> list[str]:
+    lines = [f"{title}, {_plural(counts.total, 'answer')}:"]
+    if not counts.total:
+        return lines + ["  none yet"]
+    lines += [f"  ours preferred {_share(counts.ours, counts.total)}",
+              f"  {rival} preferred {_share(counts.rival, counts.total)}",
+              f"  about the same {_share(counts.same, counts.total)}"]
+    decided = counts.ours + counts.rival
+    if decided:
+        low, high = wilson_range(counts.ours, decided)
+        lines.append(f"  when a side was picked, ours {counts.ours} of {decided} ({_percent(counts.ours, decided)}, "
+                     f"95% range {low:.0%} to {high:.0%})")
+    if categories:
+        lines.append("  by category:")
+        order = [c for c in (*pair_test.CATEGORIES, "unknown") if c in categories]
+        lines += [f"    {c}, {_plural(categories[c].total, 'answer')}: {pair_counts_text(categories[c], rival)}"
+                  for c in order]
+    return lines
+
+
+def pair_tally_lines(result: PairTally) -> list[str]:
+    """The report: per rival, then both together, how the answers went, with 95% ranges and per category; then the
+    reasons given, by what was preferred. No session ids."""
+    if not result.answers:
+        none = ["No pairwise answers yet."]
+        return none + ([f"{_plural(result.skipped, 'line')} skipped: not whole answers of the test."] if result.skipped else [])
+    notes = []
+    if result.repeats:
+        notes.append(f"{_plural(result.repeats, 'repeated answer')} ignored")
+    if result.skipped:
+        notes.append(f"{_plural(result.skipped, 'line')} skipped")
+    lines = [f"Pairwise test: {_plural(result.answers, 'answer')} from {_plural(result.sessions, 'session')}"
+             + (f" ({', '.join(notes)})." if notes else ".")]
+    if not result.categories_known:
+        lines.append("(categories not shown: no cards file to say which question is in which)")
+    for rival in RIVALS:
+        lines += _pair_block(f"against {rival}", result.by_rival[rival], rival, result.by_category.get(rival))
+    together: dict[str, PairCounts] = {}
+    for per_category in result.by_category.values():
+        for category, counts in per_category.items():
+            into = together.setdefault(category, PairCounts())
+            into.ours, into.rival, into.same = into.ours + counts.ours, into.rival + counts.rival, into.same + counts.same
+    lines += _pair_block("both rivals together", result.overall, "the rival", together or None)
+    for outcome, heading in (("ours", "when ours was preferred"), ("rival", "when the rival was preferred"),
+                             ("same", "when they were about the same")):
+        reasons = [(question, rival, why) for kind, question, rival, why in result.reasons if kind == outcome]
+        if reasons:
+            lines += ["", f"Why, {heading}:"] + [f"  - {question} against {rival}: {why}" for question, rival, why in reasons]
+    return lines
+
+
+def load_pair_records(path: Path) -> list[dict]:
+    """The pairwise test's records in a JSON-lines file, or in every .jsonl file under a folder (the dataset's export),
+    in file-name order (a batch's name is its time), line order within a file."""
+    path = Path(path)
+    if path.is_dir():
+        files = sorted(path.rglob("*.jsonl"))
+    elif path.is_file():
+        files = [path]
+    else:
+        raise BlindTestError(f"{path} doesn't exist")
+    return feedback.read_pairs(files)
+
+
+def _tally_pairs_command(args: list[str]) -> int:
+    cards_path = None
+    if "--cards" in args:
+        at = args.index("--cards")
+        if at + 1 >= len(args):
+            print(__doc__)
+            return 2
+        cards_path = Path(args[at + 1])
+        del args[at:at + 2]
+    if len(args) > 1:
+        print(__doc__)
+        return 2
+    records = load_pair_records(Path(args[0]) if args else feedback.DEFAULT_FILE)
+    categories, note = None, None
+    if cards_path is not None or pair_test.cards_file().is_file():
+        try:
+            cards = pair_test.load_cards(cards_path or pair_test.cards_file())
+            categories = {q["id"]: q["category"] for q in cards["questions"]}
+        except pair_test.CardsError as error:
+            note = f"The cards couldn't be read, so categories not shown: {error}"
+    if note:
+        print(note)
+    print("\n".join(pair_tally_lines(tally_pairs(records, categories))))
+    return 0
+
+
 # --- The command line ---
 
 def main(argv: list[str]) -> int:
@@ -605,6 +793,8 @@ def main(argv: list[str]) -> int:
                 save_blind_test(result.against, METRICS_FILE)
                 print(f"Saved in {METRICS_FILE.name}: the how-we-score page (/how) now shows it.")
             return 0
+        if argv[:1] == ["tally-pairs"]:
+            return _tally_pairs_command(list(argv[1:]))
     except (BlindTestError, MetricsError, OSError, ValueError) as e:
         print(e)
         return 1

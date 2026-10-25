@@ -38,6 +38,18 @@ Routes:
                                  Cloud Run's request log keeps every address it is asked, with the visitor's IP address
                                  and browser, for 30 days; it never keeps a body). GET /api/answer says how to ask (405)
     POST /api/feedback           "Was this useful?" or "First time here?" (engine/feedback.py; 11 Oct 2026)
+    GET  /test                   the pairwise test (Noemi, 20 Oct 2026; engine/pair_test.py, engine/templates/test.html):
+                                 a short blind test for friends, standalone (it never names the site or links to the
+                                 rest of it, and nothing else links to it). A new deck of 6 comparisons for each visit
+                                 (ours against ChatGPT's or Vetted's answer), made from data/library/blind_test_cards.json;
+                                 503 with a plain "not open yet" page while that file is missing or breaks a rule. The
+                                 page is told each comparison's two cards and the visit's id, never which tool is the
+                                 rival or which side is ours (25 Oct 2026; engine/pair_test.py)
+    POST /api/test-response      one answer of that test (engine/feedback.py parse_pair), kept as the kind "blind_pair"
+                                 through the same store, with the rival and the side the server works out from the visit's
+                                 id; taken like feedback (JSON only, FEEDBACK_MAX_BODY_BYTES, only from this site's own
+                                 page) with its own rate limit (RATE_LIMIT_PAIRS); 503 test_closed without cards, 400 for
+                                 a question the visit wasn't asked
     anything else                404; a known route asked the wrong way, 405
 
 The JSON for /api/answer (200):
@@ -212,7 +224,7 @@ An error is {"error": "<plain words>", "code": "<one word for programs>"}:
     411 length_required, 413 too_large, 415 not_json   (feedback, and since 16 Oct 2026 answers)
     429 too_many_requests (public mode only, with a Retry-After header in seconds)
     500 quote_not_verified (the answer is refused), engine_failed (details in the server's window, never sent)
-    503 feedback_unavailable (the feedback couldn't be kept just now)
+    503 feedback_unavailable (the feedback couldn't be kept just now), test_closed (the pairwise test has no cards)
 The words are for whoever calls the API; the page picks its own words by code (PROPOSED, at the top of the page).
 
 Answers take about 2 seconds, so each one is remembered: asking again is instant. Since 12 Oct 2026 for
@@ -250,6 +262,7 @@ import ipaddress
 import json
 import math
 import os
+import random
 import re
 import signal
 import sys
@@ -264,13 +277,13 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from engine import answer as wording
-from engine import feedback, how_page
+from engine import feedback, how_page, pair_test
 from engine.answer import answer_to_dict, quotes_to_check, unverified_claims
 from engine.config import (ANSWERS_KEPT_TYPES, BRAND_PICK_MODEL, CACHE_MAX_AGE_HOURS, FEEDBACK_MAX_BODY_BYTES,
                            FEEDBACK_MAX_COMMENT_CHARS,
-                           LEFT_OUT_NAMES_SHOWN,
-                           PICKS_SHOWN, RATE_LIMIT_ANSWERS, RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS, WEB_MAX_REQUEST_CHARS,
-                           WEB_PORT)
+                           LEFT_OUT_NAMES_SHOWN, PAIR_TEST_MAX_WHY_CHARS,
+                           PICKS_SHOWN, RATE_LIMIT_ANSWERS, RATE_LIMIT_FEEDBACK, RATE_LIMIT_PAIRS, RATE_LIMIT_WINDOW_SECONDS,
+                           WEB_MAX_REQUEST_CHARS, WEB_PORT)
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.metrics import METRICS_FILE
 from engine.parse_reddit import REPO_ROOT
@@ -282,6 +295,7 @@ from engine.query import FIRST_PRODUCT_TYPES, PRODUCT_TYPES
 HOST = "127.0.0.1"  # this computer only. Never "0.0.0.0", which would open the server to the whole network.
 PUBLIC_HOST = "0.0.0.0"  # public mode only: every network interface, so the Space's proxy can reach the server
 PAGE_TEMPLATE = Path(__file__).resolve().parent / "templates" / "search.html"
+TEST_TEMPLATE = Path(__file__).resolve().parent / "templates" / "test.html"  # the pairwise test (20 Oct 2026)
 # The search page's example requests: since 16 Oct 2026 (Noemi's decision 7) not the blind-test questions
 # (eval/blind_test/questions.json), which a tester trying the site first could have recognised.
 EXAMPLES_FILE = Path(__file__).resolve().parent / "data" / "example_requests.json"
@@ -345,11 +359,15 @@ ANSWER_TOO_LARGE = ("too_large", "The body is limited to {limit} bytes.")
 ANSWER_BAD_JSON = ("bad_json", "The body isn't one valid JSON value (or a name in it appears twice).")
 BAD_ANSWER_BODY = ("bad_body", 'Send one JSON object with the request as text: {{"request": "..."}}.')
 
+# The pairwise test (Noemi, 20 Oct 2026): its answers take the feedback's checks, with a code of their own for "no cards".
+TEST_CLOSED = ("test_closed", "The test isn't open just now. Please try again later.")
 ANSWER_PATH = "/api/answer"
 FEEDBACK_PATH = "/api/feedback"
+TEST_PATH = "/test"
+TEST_RESPONSE_PATH = "/api/test-response"
 READY_PATH = "/ready"  # whether the server has got ready (warm_up): Cloud Run's startup probe asks it
-METHODS = {"/": "GET", "/how": "GET", ANSWER_PATH: "POST", READY_PATH: "GET",
-           FEEDBACK_PATH: "POST"}  # each route and how it is asked (answers with POST since 16 Oct 2026)
+METHODS = {"/": "GET", "/how": "GET", ANSWER_PATH: "POST", READY_PATH: "GET", FEEDBACK_PATH: "POST", TEST_PATH: "GET",
+           TEST_RESPONSE_PATH: "POST"}  # each route and how it is asked (answers with POST since 16 Oct 2026)
 # POST /api/answer's body at most (16 Oct 2026): room for a request of WEB_MAX_REQUEST_CHARS characters however JSON writes
 # it (a \u escape is 6 bytes a character, 12 for one outside the Basic Multilingual Plane), with its name and quotes. A
 # longer request in a body that fits gets request_too_long, as before.
@@ -394,6 +412,14 @@ live = None
 on_demand = None
 # Where feedback goes (engine.feedback, 11 Oct 2026): set by the command line; None in the tests, which give their own.
 store = None
+# Where the pairwise test's visit ids get their randomness: the system's, so no one can guess an id; the tests give a
+# seeded one. A visit's deck (its questions, rivals, sides and order) follows from its id and _deck_key.
+_deck_random = random.SystemRandom()
+# The key that, with a visit's id, decides its deck, so that the rival and side of each answer can be worked out again
+# when it comes in and never need to be told to the page (engine/pair_test.py). From the site's own secret, so every
+# instance has the same; a random one without it (this computer, the tests: one process).
+_deck_key = pair_test.deck_key()
+_closed_said = ""  # why the test was last said to be closed (in the server's window, once)
 _answers_lock = threading.Lock()
 # Visitors waiting for _answers_lock (14 Oct 2026, measured live just after a deploy: a visitor's answer queued 31 s
 # behind a warming slice, because Python's lock isn't fair and the slice took it back for its next request before the
@@ -428,6 +454,8 @@ def handle_request(path_and_query: str, library_dir: Path = DEFAULT_LIBRARY_DIR,
     parts = urlsplit(path_and_query)
     if parts.path == "/":
         return 200, HTML, search_page(site)
+    if parts.path == TEST_PATH:
+        return test_page_response(library_dir)
     if parts.path == "/how":  # read now: a new evaluation run shows at once
         page = how_page.page(METRICS_FILE, counter=counter_script(site.goatcounter), public=site.public,
                              on_demand=on_demand is not None)
@@ -652,6 +680,59 @@ def handle_feedback(content_type: str | None, content_length: str | None, read) 
         store.add(record)
     except Exception as error:  # too much waiting to be uploaded, or a full disk: the record's words are never logged
         print(f"Feedback not kept ({type(error).__name__}).", file=sys.stderr)
+        return _error(503, FEEDBACK_UNAVAILABLE)
+    return 200, JSON, _json_bytes({"saved": True})
+
+
+# --- The pairwise test: its page and its answers (Noemi, 20 Oct 2026) ---
+
+def test_page_response(library_dir: Path) -> tuple[int, str, bytes]:
+    """GET /test: the page with a new deck for this visit, or, while the cards are missing or break a rule, the same page
+    saying the test isn't open yet (503). The server's window says why, once; a visitor is never told."""
+    global _closed_said
+    cards = pair_test.cards_in(library_dir)
+    if cards is None:
+        why = pair_test.why_closed(library_dir)
+        if why != _closed_said:
+            _closed_said = why
+            print(f"The pairwise test (/test) is closed: {why}", file=sys.stderr, flush=True)
+        return 503, HTML, test_page(None)
+    visit = pair_test.new_visit(cards, _deck_random)
+    return 200, HTML, test_page(pair_test.public_deck(pair_test.deck_for(cards, visit, _deck_key)), visit)
+
+
+def test_page(deck: list[dict] | None, visit: str | None = None) -> bytes:
+    """The pairwise test's page (engine/templates/test.html) with this visit's deck (pair_test.public_deck: no rival, no
+    side) and its id in it; `deck` None: the page that says the test isn't open. The same page for the local and the
+    public site: it counts nobody and loads nothing."""
+    settings = {"deck": deck or [], "session": visit, "whyMax": PAIR_TEST_MAX_WHY_CHARS, "closed": deck is None}
+    template = TEST_TEMPLATE.read_text(encoding="utf-8")
+    return template.replace("{{SETTINGS}}", _script_json(settings)).encode("utf-8")
+
+
+def handle_test_response(content_type: str | None, content_length: str | None, read,
+                         library_dir: Path = DEFAULT_LIBRARY_DIR) -> tuple[int, str, bytes]:
+    """POST /api/test-response, once the request is known to come from this site's own page: one answer of the pairwise
+    test, checked as feedback is (the same JSON-only, size and wording rules; engine.feedback.parse_pair), for a question
+    the visit was asked, and kept in `store` as the kind "blind_pair" with the rival and the side the server works out
+    from the visit's id (pair_test.sides_of); or an error. Only {"saved": true} comes back: nothing of the answer, least
+    of all which side was ours."""
+    data, refused = _json_body(content_type, content_length, read, FEEDBACK_MAX_BODY_BYTES, _FEEDBACK_BODY)
+    if refused is not None:
+        return refused
+    cards = pair_test.cards_in(library_dir)
+    if cards is None:
+        return _error(503, TEST_CLOSED)
+    try:
+        record = feedback.parse_pair(data, lambda visit, question: pair_test.sides_of(cards, visit, question, _deck_key))
+    except feedback.FeedbackError as error:
+        return _error(400, BAD_FEEDBACK, reason=str(error))
+    if store is None:
+        return _error(503, FEEDBACK_UNAVAILABLE)
+    try:
+        store.add(record)
+    except Exception as error:  # too much waiting to be uploaded, or a full disk: the record's words are never logged
+        print(f"Test answer not kept ({type(error).__name__}).", file=sys.stderr)
         return _error(503, FEEDBACK_UNAVAILABLE)
     return 200, JSON, _json_bytes({"saved": True})
 
@@ -979,11 +1060,16 @@ class _Handler(BaseHTTPRequestHandler):
                 return
             return self._send(*handle_answer(self.headers.get("Content-Type"), self.headers.get("Content-Length"),
                                              self.rfile.read, self.server.library_dir, self.server.site))
-        if path != FEEDBACK_PATH:
+        if path not in (FEEDBACK_PATH, TEST_RESPONSE_PATH):
             refused = _error(405, WRONG_METHOD, allowed=METHODS[path]) if path in METHODS else _error(404, NOT_FOUND)
             return self._send(*refused, path=path)
         if not from_this_site(self.headers.get("Origin"), self.headers.get("Referer"), self._accepts):
             return self._send(*_error(403, CROSS_SITE))
+        if path == TEST_RESPONSE_PATH:  # the pairwise test's answers: the feedback's checks, a limit of their own
+            if self._held_back("pairs"):
+                return
+            return self._send(*handle_test_response(self.headers.get("Content-Type"), self.headers.get("Content-Length"),
+                                                    self.rfile.read, self.server.library_dir))
         if self._held_back("feedback"):
             return
         self._send(*handle_feedback(self.headers.get("Content-Type"), self.headers.get("Content-Length"),
@@ -1090,7 +1176,8 @@ def make_server(port: int = WEB_PORT, library_dir: Path = DEFAULT_LIBRARY_DIR, s
     server.library_dir = Path(library_dir)
     server.site = site
     server.limits = {"answers": RateLimiter(RATE_LIMIT_ANSWERS, RATE_LIMIT_WINDOW_SECONDS),
-                     "feedback": RateLimiter(RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS)}
+                     "feedback": RateLimiter(RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS),
+                     "pairs": RateLimiter(RATE_LIMIT_PAIRS, RATE_LIMIT_WINDOW_SECONDS)}
     server.refused_hosts, server.refused_lock = set(), threading.Lock()  # public mode: refused hosts already named
     return server
 

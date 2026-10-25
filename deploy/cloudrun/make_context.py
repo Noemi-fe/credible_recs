@@ -5,7 +5,8 @@ The bundle is uploaded to Cloud Build in Noemi's own project and becomes a priva
 text) is never public, and never in this repository. What goes in:
 - the code as committed (`git archive HEAD`), so nothing uncommitted and nothing git ignores: no .env, no caches;
 - data/library's threads/*.json, extracted/*.json, profiles.json and summaries.json (the picks' one-line summaries,
-  13 Oct 2026), the files answers read (not the request log, the candidate lists or the summaries' to-do list);
+  13 Oct 2026), the files answers read (not the request log, the candidate lists or the summaries' to-do list), and
+  blind_test_cards.json (20 Oct 2026: the cards of the pairwise test at /test, engine/pair_test.py, when it exists);
 - deploy/cloudrun/Dockerfile, as the bundle's Dockerfile.
 Every file is then dated a day before the bundle was made (stamp_files, 14 Oct 2026), and check_bundle refuses a bundle
 holding a secret file or a cache, whatever put it there.
@@ -23,7 +24,7 @@ import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-LIBRARY_PATTERNS = ("threads/*.json", "extracted/*.json", "profiles.json", "summaries.json")
+LIBRARY_PATTERNS = ("threads/*.json", "extracted/*.json", "profiles.json", "summaries.json", "blind_test_cards.json")
 FORBIDDEN = (".env", ".cache", "models", ".git")  # secrets, caches, the 1.1 GB model (downloaded at build) and history
 
 

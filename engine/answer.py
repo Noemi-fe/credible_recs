@@ -227,9 +227,10 @@ RULE = "at least {mentions} credible recommendations across at least {threads} t
 # The no-pick and fewer-picks notes: wording approved by Noemi, 19 Oct 2026 (the rest of this block still waits).
 NO_PICKS = "Not enough credible evidence to recommend {what} yet: a pick needs {rule}. We'd rather say so than guess."
 # When no saved thread is about the product at all (14 Oct 2026, the general category: most of its types have none yet).
-# Reworded 19 Oct 2026 (Noemi, of the first wording: "make it a little nicer if possible?"); the new wording PROPOSED,
-# for her to see. The page shows it as the answer's message, under the search box and the example requests ("the
-# examples above"); with on-demand reading on (after the interviews), its reading note says it has started reading.
+# Reworded 19 Oct 2026 (Noemi, of the first wording: "make it a little nicer if possible?"); the new wording DECIDED:
+# Noemi approved it on 20 Oct 2026. The page shows it as the answer's message, under the search box and the example
+# requests ("the examples above"); with on-demand reading on (after the interviews), its reading note says it has
+# started reading.
 NO_THREADS = ("We haven't read Reddit about {products} yet, so we'd rather not guess. Try a related product, or one of "
               "the examples above.")
 FEWER_PICKS = "Enough credible evidence for only {products} ({rule}), so we show {n} instead of {wanted}."

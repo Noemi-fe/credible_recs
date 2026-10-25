@@ -1775,6 +1775,19 @@ RATE_LIMIT_WINDOW_SECONDS = 600
 RATE_LIMIT_ANSWERS = 30
 RATE_LIMIT_FEEDBACK = 15
 
+# --- The pairwise test (Noemi, 20 Oct 2026; engine/pair_test.py, GET /test, POST /api/test-response) ---
+# A short, blind test friends do in about 4 minutes: 6 comparisons of ours against ChatGPT's or Vetted's answer to a
+# shopping question, "A", "B" or "About the same", and an optional one-line why. Noemi chose the test, its 12 questions
+# and the 6 each visitor gets; the values below carry that out (technical values, chosen by Claude, reported to her).
+PAIR_TEST_QUESTIONS_PER_VISITOR = 6
+PAIR_TEST_MAX_PICKS = 3  # picks on a card, in the tool's own order
+PAIR_TEST_MAX_WHY_WORDS = 20  # a pick's one-line why, in each language
+PAIR_TEST_MAX_WHY_CHARS = 300  # the visitor's optional "Why?"
+# An answer of the test is one small request, six to a visitor. Its own limit, so the test never uses up the feedback's
+# (RATE_LIMIT_FEEDBACK), and large enough that friends on one network (one address) and an answer sent again after a
+# failure are not turned away: 30 is five whole tests in the window.
+RATE_LIMIT_PAIRS = 30
+
 # --- Time of use (11 Oct 2026) ---
 # A time longer than this many years is nobody's own use of a product: "a 400 year history" is a tradition's age (a
 # teapot note had the badge "400 years of use"). Chosen by Claude, reported to Noemi: a long cooking life with one pan
