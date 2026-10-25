@@ -18077,6 +18077,436 @@
     "https://its.co.uk/timberland/"
    ],
    "note": "The finishing builder's own check (18 Oct 2026, one product): writers' Timberland PRO Boondock is the brand's waterproof composite-toe work boot. In the UK ITS (a big UK tool and workwear shop, authorised Timberland stockist) sells the Boondock as the Timberland Boondock Ultralight Safety Boots, Brown or Wheat, at £169.99 (was £179.98), in stock in sizes 7 to 12 on 18 Oct (S7S SR SC FO, a lightweight asymmetrical composite safety toe, waterproof; its page does not call it PRO and does not give the boot height). The classic US 6-inch Boondock writers name was not found on the UK pages read, so this is the UK version of the Boondock, not provably the same build. The search tool here is US-only and Timberland's own sites refuse automated reads (403), so no other UK page was read."
+  },
+  {
+   "product": "Logitech C920",
+   "category": "general",
+   "product_type": "webcam",
+   "price": 84.99,
+   "currency": "GBP",
+   "shop": "Logitech UK",
+   "url": "https://www.logitech.com/en-gb/shop/p/c920-pro-hd-webcam.960-001055",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "note": "Logitech UK page heading 'C920 HD Pro Webcam' (browser title 'Logitech C920 PRO HD Webcam, 1080p Video with Stereo Audio'), model 960-001055, not the C922. Price GBP 84.99, 'In stock. Ready to ship.' on 2026-10-25. No discontinued or replaced notice on the page."
+  },
+  {
+   "product": "Logitech Streamcam",
+   "category": "general",
+   "product_type": "webcam",
+   "price": 139.99,
+   "currency": "GBP",
+   "shop": "Logitech UK",
+   "url": "https://www.logitech.com/en-gb/shop/p/streamcam.960-001281",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "note": "Logitech UK page heading 'StreamCam' (title 'Logitech StreamCam - Full HD 1080p Streaming Webcam'). Price GBP 139.99 shown, but the page says 'Sold Out Temporarily' with a 'Notify me' button and no Add to cart on 2026-10-25, so it is listed new but not buyable right now. No discontinued notice. Search snippets mentioned Argos at 99.99 but that page could not be read (403), so not used."
+  },
+  {
+   "product": "Razer Kiyo Pro",
+   "category": "general",
+   "product_type": "webcam",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Razer UK",
+   "url": "https://www.razer.com/gb-en/streaming-cameras/razer-kiyo-pro",
+   "checked_on": "2026-10-25",
+   "available": false,
+   "sources": [
+    "https://www.razer.com/gb-en/streaming-cameras/razer-kiyo-pro",
+    "https://www.johnlewis.com/razer-kiyo-pro-1080p-full-hd-webcam/p6269029",
+    "https://www.scan.co.uk/products/razer-kiyo-pro-streaming-webcam-camera-adaptive-light-sensor-gorilla-glass-3-hdr-1080p-60fps-21mp-mi",
+    "https://www.laptopsdirect.co.uk/razer-kiyo-pro-streaming-webcam-rz19-03640100-r3m1/version.asp"
+   ],
+   "note": "discontinued: Razer UK page is still up (heading '1080p Streaming Webcam with Adaptive Light Sensor - Razer Kiyo Pro') but in the part I could read it shows no price and no BUY button; it does NOT itself say discontinued (page text was truncated). Three UK shops say it is gone: John Lewis 'No longer available online ... unlikely to receive more stock', Scan 'End of life ... no longer available to purchase', Laptops Direct 'This product is no longer available'. Marketplace units on Amazon UK not counted. Status discontinued is inferred from the shops, not stated by Razer: doubtful."
+  },
+  {
+   "product": "Razer Kiyo V2",
+   "category": "general",
+   "product_type": "webcam",
+   "price": 149.99,
+   "currency": "GBP",
+   "shop": "Razer UK",
+   "url": "https://www.razer.com/gb-en/streaming-cameras/razer-kiyo-v2",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "note": "Razer UK page heading exactly 'Razer Kiyo V2' with a BUY button and 'Starting from GBP 149.99' (the 'Starting from' wording is Razer's; no sold-out or discontinued text). Razer's site navigation lists 'Razer Kiyo V2 X' and 'Razer Kiyo V2 Pro' as separate products; this record is the plain Kiyo V2, not the V2 X. Live stock level not shown on the page."
+  },
+  {
+   "product": "Dell U3225QE",
+   "category": "general",
+   "product_type": "monitor",
+   "price": 853.2,
+   "currency": "GBP",
+   "shop": "Dell UK",
+   "url": "https://www.dell.com/en-uk/shop/U3225QE-monitor/apd/210-BQTK/monitors-monitor-accessories",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "note": "Dell UK page heading 'Dell UltraSharp 32 4K Thunderbolt Hub Monitor - U3225QE'. 'Dell Price' GBP 853.20 incl VAT (711.00 ex VAT), Add to Basket shown, no out-of-stock or discontinued notice, no strikethrough or sale price on 2026-10-25. A search-result snippet of a Dell category page had shown 748.55 (earlier or promo price); I used the product page."
+  },
+  {
+   "product": "Gigabyte M27UP",
+   "category": "general",
+   "product_type": "monitor",
+   "also_called": [
+    "M27up",
+    "M27UP"
+   ],
+   "price": 298.99,
+   "currency": "GBP",
+   "shop": "Scan",
+   "url": "https://www.scan.co.uk/products/27-gigabyte-m27up-ek-monitor-ss-ips-4k-160hz-1ms-freesync-premium-hdr400-10001-350cd-m-hdmi-dp-usb",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "sources": [
+    "https://www.scan.co.uk/products/27-gigabyte-m27up-ek-monitor-ss-ips-4k-160hz-1ms-freesync-premium-hdr400-10001-350cd-m-hdmi-dp-usb",
+    "https://www.overclockers.co.uk/gigabyte-m27up-4k-uhd-gaming-monitor-27-inch-dual-mode-4k-160hz-or-fhd-3-mon-gig-06373.html"
+   ],
+   "note": "Scan page 'Gigabyte M27UP 27in 4K UHD 160Hz SS IPS G-Sync Compatible Gaming Monitor': GBP 298.99 inc VAT, but only 'Pre Order' with 'Item currently awaiting an ETA'. Overclockers page 'GIGABYTE M27UP 27in 3840x2160 160Hz ... Dual Mode ... Gaming Monitor' shows GBP 299.99 incl VAT, also 'Pre Order' with 'Notify me when this product is orderable again'. So UK shops still list it new at about 299-300 but neither has stock now. A CCL search snippet called it 'Discontinued' (page unreadable, 403); Gigabyte UK unreadable. Doubtful: could turn out to be winding down."
+  },
+  {
+   "product": "Anker C200",
+   "category": "general",
+   "product_type": "webcam",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/Cancelling-Microphones-Adjustable-Correction-Integrated/dp/B09MFMTMPD",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "sources": [
+    "https://www.amazon.co.uk/Cancelling-Microphones-Adjustable-Correction-Integrated/dp/B09MFMTMPD",
+    "https://uk.ankerwork.com/products/a3369"
+   ],
+   "note": "Amazon UK page title 'Anker PowerConf C200 2K Webcam for PC with AI Noise Cancelling Mics', 'Sold by AnkerDirect UK', 'Dispatched from Amazon', a Buy Now button, and an 'Other sellers' box 'New (2) from GBP 43.69'. The exact buy-box price was not in the part of this huge page I could read, so price is null (43.69 is only the lowest new offer, seller not stated). Anker's own UK store page (uk.ankerwork.com/products/a3369) refused my reads (429, then 404), so it is unread; a search snippet put it at 59.99 or 69.99 with an 'email me when available' notice, unverified. No discontinued notice seen. Doubtful: price and live stock unconfirmed."
+  },
+  {
+   "product": "Apple Watch smartwatch",
+   "category": "general",
+   "product_type": "smartwatch",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Apple UK",
+   "url": "https://www.apple.com/uk/shop/buy-watch/apple-watch-se",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "sources": [
+    "https://www.apple.com/uk/shop/buy-watch/apple-watch-se",
+    "https://www.apple.com/uk/watch/"
+   ],
+   "note": "Apple UK Watch range page (25 Oct 2026) lists three models: Apple Watch Series 12 (New), Apple Watch Ultra 4 (New), Apple Watch SE 3, with no prices on that page. The Apple Watch SE 3 buy page reads 'From £219', the lowest of the range (Series 12 and Ultra 4 prices not read, SE is Apple's entry model). Cheapest new model: Apple Watch SE 3, GPS 40mm."
+  },
+  {
+   "product": "Garmin Venu 4",
+   "category": "general",
+   "product_type": "smartwatch",
+   "price": 379.0,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/garmin-venu-4-gps-smartwatch/slate-black/p114367623",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/garmin-venu-4-gps-smartwatch/slate-black/p114367623",
+    "https://www.garmin.com/en-GB/p/1613801/"
+   ],
+   "note": "Garmin UK page title: 'Garmin Venu 4 | Fitness Smartwatch ... | 41 mm'; its price and buy button are not in the page text (loaded by script), so the price was read at John Lewis: 'Garmin Venu 4 GPS Smartwatch, Slate/Black, 41mm' £379.00 with an 'Add to basket' button (Lunar Gold/Bone 41mm out of stock). Price is the 41mm size; 45mm not read. Garmin UK's own price not read."
+  },
+  {
+   "product": "Garmin Venu 3S",
+   "category": "general",
+   "product_type": "smartwatch",
+   "price": 379.99,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/garmin-venu-3s-gps-smartwatch-41mm/pebble-grey-slate/p110926292",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/garmin-venu-3s-gps-smartwatch-41mm/pebble-grey-slate/p110926292",
+    "https://www.garmin.com/en-GB/p/873214/",
+    "https://www.johnlewis.com/garmin-venu-3s-gps-smartwatch-41mm/p110926292"
+   ],
+   "note": "Garmin UK page is named 'Garmin Venu® 3S' and carries no discontinued or replaced notice, but its price and buy button are not in the page text, so I could not confirm that Garmin UK itself still sells it new. John Lewis sells 'Garmin Venu 3S, GPS, Smartwatch, 41mm' (Pebble Grey/Slate) new at £379.99 with an 'Add to basket' button on 25 Oct 2026 (French Grey/Soft Gold out of stock). Doubt: a search snippet from a US reseller (CDW, page blocked) said a US Venu 3S variant was discontinued in June 2026; not confirmed for the UK."
+  },
+  {
+   "product": "Amazfit Balance 2",
+   "category": "general",
+   "product_type": "smartwatch",
+   "price": 299.9,
+   "currency": "GBP",
+   "shop": "Amazfit UK",
+   "url": "https://uk.amazfit.com/products/balance-2",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "note": "Amazfit UK page 'Balance 2' (Black): regular and sale price both £299.90, 'Add to cart' shown, no sold-out message, 25 Oct 2026. The 18 Oct Amazon UK price of £299 was not re-read (Amazon UK page serves no price to automated reads); Amazfit UK confirms about £299.90."
+  },
+  {
+   "product": "iPhone 16 Pro",
+   "category": "general",
+   "product_type": "phone",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.apple.com/uk/iphone/",
+   "checked_on": "2026-10-25",
+   "available": false,
+   "sources": [
+    "https://www.apple.com/uk/iphone/",
+    "https://www.apple.com/uk/iphone-16-pro/",
+    "https://www.apple.com/uk/shop/buy-iphone/iphone-16",
+    "https://www.johnlewis.com/apple-iphone-16-pro-ios-6-3-inch-5g-sim-free-128gb/desert-titanium/p112608793"
+   ],
+   "note": "discontinued: Apple UK's iPhone range page (apple.com/uk/iphone/ and apple.com/uk/iphone-16-pro/ both show it) lists only iPhone Duo, iPhone 18 Pro, iPhone Air, iPhone 17, iPhone 17e and iPhone 16; iPhone 16 Pro is not offered and the buy-iphone page has no 16 Pro option. John Lewis page 'Apple iPhone 16 Pro, iOS, 6.3\", 5G, SIM Free, 128GB, Desert Titanium' says 'No longer available online' and 'unlikely to receive more stock'. Currys and EE pages could not be read (403/queue). Apple does not use the word 'discontinued'; status is from the range listing."
+  },
+  {
+   "product": "Galaxy S23 Ultra",
+   "category": "general",
+   "product_type": "phone",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Samsung UK",
+   "url": "https://www.samsung.com/uk/smartphones/galaxy-s23-ultra/buy/",
+   "checked_on": "2026-10-25",
+   "available": false,
+   "sources": [
+    "https://www.samsung.com/uk/smartphones/galaxy-s23-ultra/buy/",
+    "https://www.samsung.com/uk/smartphones/all-smartphones/",
+    "https://www.johnlewis.com/samsung-galaxy-s23-ultra-smartphone-with-bluetooth-s-pen-8gb-ram-6-8-inch-galaxy-ai-5g-sim-free-256gb/phantom-black/p110058814"
+   ],
+   "note": "discontinued: Samsung UK buy page 'Galaxy S23 Ultra' shows no price and no Buy button; colours listed as 'Out of Stock' (Graphite, Lime, Sky Blue, Red) and options 'Not available in this combination'. Samsung UK's phone page names only the Galaxy S26 Ultra and Z Fold8/Flip8 as current. John Lewis page 'Samsung Galaxy S23 Ultra Smartphone ... SIM Free, 256GB' says 'No longer available online' and 'unlikely to receive more stock'. Doubt: Samsung's page says 'out of stock', not the word 'discontinued'; third-party new units on Amazon UK marketplace not counted."
+  },
+  {
+   "product": "iPhone 5S",
+   "category": "general",
+   "product_type": "phone",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Apple Support UK",
+   "url": "https://support.apple.com/en-gb/102772",
+   "checked_on": "2026-10-25",
+   "available": false,
+   "sources": [
+    "https://support.apple.com/en-gb/102772",
+    "https://support.apple.com/en-us/102772"
+   ],
+   "note": "discontinued: Apple Support UK page 'Getting a service for your Apple product after its warranty has expired' (published 19 Oct 2026) lists 'iPhone 5s' under 'iPhone products obsolete worldwide' (obsolete = Apple stopped distributing it more than 7 years ago). No price."
+  },
+  {
+   "product": "iPhone XR",
+   "category": "general",
+   "product_type": "phone",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Apple Support UK",
+   "url": "https://support.apple.com/en-gb/111868",
+   "checked_on": "2026-10-25",
+   "available": false,
+   "sources": [
+    "https://support.apple.com/en-gb/111868",
+    "https://www.apple.com/uk/iphone/",
+    "https://www.apple.com/uk/iphone-xr/",
+    "https://support.apple.com/en-gb/102772"
+   ],
+   "note": "discontinued: Doubt: no Apple page read says 'discontinued' for the XR in words. Apple UK's current iPhone range (iPhone Duo, 18 Pro, Air, 17, 17e, 16) does not include it, and apple.com/uk/iphone-xr/ just shows that range page. Apple Support UK page 'iPhone XR - Technical Specifications' (year introduced 2018) names the product. Apple's vintage/obsolete list (support.apple.com/en-gb/102772, published 19 Oct 2026) does not yet list the XR (it lists XS, XS Max, 11 Pro as vintage; 5 years after sale end not reached). Status rests on the range listing; sale ended 2021 per your brief, not read on a page."
+  },
+  {
+   "product": "OBSBOT Meet 2",
+   "category": "general",
+   "product_type": "webcam",
+   "price": 128.99,
+   "currency": "GBP",
+   "shop": "Scan",
+   "url": "https://www.scan.co.uk/products/obsbot-meet-2-ai-powered-4k-webcam-4k30-1-2-cmos-sensor-usb-c-gesture-control-aurora-green",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "sources": [
+    "https://www.scan.co.uk/products/obsbot-meet-2-ai-powered-4k-webcam-4k30-1-2-cmos-sensor-usb-c-gesture-control-aurora-green",
+    "https://www.scan.co.uk/products/obsbot-meet-2-ai-powered-4k-webcam-4k30-1-2-cmos-sensor-usb-c-gesture-control-space-grey",
+    "https://www.scan.co.uk/shop-by-brand/obsbot",
+    "https://www.obsbot.com/store/products/meet-2?f_cur=GBP&f_reg=GB&fl=en"
+   ],
+   "note": "Scan page 'OBSBOT Meet 2 AI-Powered 4K Webcam (Aurora Green)': £128.99 inc VAT, 'In stock'. Space Grey and Cloud White at Scan are £128.99 but on pre-order ('awaiting an ETA'). OBSBOT's own UK-region store page 'OBSBOT Meet 2 AI-Powered 4K Webcam - Space Grey' shows £109 marked 'TAX NOT INCLUDED' (so about £130.80 with VAT, not read) with 'ADD TO CART'. Not the Meet 2 Combo or Meet Flip."
+  },
+  {
+   "product": "OBSBOT Tiny 2",
+   "category": "general",
+   "product_type": "webcam",
+   "also_called": [
+    "obs tiny 2",
+    "Obsbot tiny 2"
+   ],
+   "price": null,
+   "currency": "GBP",
+   "shop": "OBSBOT",
+   "url": "https://www.obsbot.com/store/products/tiny-2?f_cur=GBP&f_reg=GB&fl=en",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "sources": [
+    "https://www.obsbot.com/store/products/tiny-2?f_cur=GBP&f_reg=GB&fl=en",
+    "https://www.obsbot.com/store/products/tiny-2",
+    "https://www.obsbot.com/store?f_cur=GBP&f_reg=GB&fl=en",
+    "https://www.scan.co.uk/shop-by-brand/obsbot"
+   ],
+   "note": "Claude 25 Oct 2026: price withheld, the OBSBOT UK store shows 279 pounds marked tax not included, so a price with VAT was not read. OBSBOT's UK-region store page 'OBSBOT Tiny 2 AI-Powered PTZ 4K Webcam' shows £279 marked 'TAX NOT INCLUDED' (UK VAT likely added at checkout, so the price paid is probably higher, about £335, not read), 'ADD TO CART', delivery 3-5 working days. Doubt: no UK shop price inc VAT could be read. Scan's OBSBOT range lists no Tiny 2 camera (only a mount); Jessops, CameraWorld, CVP and Amazon UK pages returned 403 or no price (search results, not page reads, mention £232 ex VAT to £349). Not the Tiny 2 Lite."
+  },
+  {
+   "product": "Elgato Facecam Pro",
+   "category": "general",
+   "product_type": "webcam",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Elgato UK",
+   "url": "https://www.elgato.com/uk/en/p/facecam-pro",
+   "checked_on": "2026-10-25",
+   "available": false,
+   "note": "discontinued: Elgato UK page 'Facecam Pro' states 'Facecam Pro has been discontinued' and 'NO LONGER AVAILABLE'; it still shows an old list price of £299.99, not a current price. Amazon UK still lists the Pro via marketplace per a search result (not read, does not count as sold)."
+  },
+  {
+   "product": "Samsung phone",
+   "category": "general",
+   "product_type": "phone",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/samsung-galaxy-a17-5g-smartphone-android-6-7-4gb-ram-5g-sim-free-128gb/black/p114117293",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "sources": [
+    "https://www.johnlewis.com/samsung-galaxy-a17-5g-smartphone-android-6-7-4gb-ram-5g-sim-free-128gb/black/p114117293",
+    "https://www.samsung.com/uk/smartphones/all-smartphones/",
+    "https://www.johnlewis.com/browse/electricals/mobile-phones-accessories/view-all-mobile-phones/samsung/_/N-a8vZ1z13z13",
+    "https://www.johnlewis.com/browse/electricals/mobile-phones-accessories/view-all-mobile-phones/galaxy-a17-5g/black/_/N-a8vZq3jvZ1z141fu"
+   ],
+   "note": "Samsung UK's range page loads prices by script and showed none on 2026-10-25 (it named Galaxy S26 Ultra, Z Fold8, Z Fold8 Ultra, Z Flip8). Price read on John Lewis: the Samsung phones listing (17 Galaxy phones) shows Samsung Galaxy A17 5G Smartphone, Android, 6.7in, 4GB RAM, 5G, SIM Free, 128GB as the cheapest at 'from' £169.00 (£169-£259 range across options), and the product page (Black) shows £169.00 with no was/now price, in stock in Black and Grey. Other cheap models on the same listing: Galaxy A17 (4G) £219.00, Galaxy A18 £249.00, Galaxy A27 from £319.00. Galaxy A07 was not on John Lewis's listing and no UK shop page for it was read, so a cheaper A07 is possible but unconfirmed. John Lewis price used because Samsung UK's page shows none."
+  },
+  {
+   "product": "Google Pixel 3 XL",
+   "category": "general",
+   "product_type": "phone",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Google Pixel Help",
+   "url": "https://support.google.com/pixelphone/answer/4457705",
+   "checked_on": "2026-10-25",
+   "available": false,
+   "sources": [
+    "https://support.google.com/pixelphone/answer/4457705",
+    "https://store.google.com/gb/category/phones?hl=en-GB"
+   ],
+   "note": "discontinued: Google's update-schedule page 'Learn when you'll get software updates on Google Pixel phones' (read 2026-10-25) lists 'Pixel 3 & Pixel 3 XL' under 'Pixel 5a & earlier', which it says 'no longer receive Android version updates and security updates'. 2018 phone, no longer supported by Google. The Google Store UK phones page (store.google.com/gb/category/phones) could not be read as text by the fetch tool; its search-result title shows only the Pixel 11 family, with Pixel 10 and 10a on other store pages, none of them Pixel 3 XL. No price: not sold new by Google; units on marketplaces do not count."
+  },
+  {
+   "product": "Google Pixel 2 XL",
+   "category": "general",
+   "product_type": "phone",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Google Pixel Help",
+   "url": "https://support.google.com/pixelphone/answer/4457705",
+   "checked_on": "2026-10-25",
+   "available": false,
+   "sources": [
+    "https://support.google.com/pixelphone/answer/4457705",
+    "https://store.google.com/gb/category/phones?hl=en-GB"
+   ],
+   "note": "discontinued: Google's update-schedule page 'Learn when you'll get software updates on Google Pixel phones' (read 2026-10-25) lists 'Pixel 2 & Pixel 2 XL' under 'Pixel 5a & earlier', which it says 'no longer receive Android version updates and security updates'. 2017 phone, no longer supported by Google. The Google Store UK phones page (store.google.com/gb/category/phones) could not be read as text by the fetch tool; its search-result title shows only the Pixel 11 family, with Pixel 10 and 10a on other store pages, none of them Pixel 2 XL. No price: not sold new by Google; units on marketplaces do not count."
+  },
+  {
+   "product": "Gigabyte M27UA",
+   "category": "general",
+   "product_type": "monitor",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/dp/B0DFMHGS5C",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "sources": [
+    "https://www.amazon.co.uk/dp/B0DFMHGS5C",
+    "https://www.scan.co.uk/products/27-gigabyte-m27ua-gaming-monitor-ips-3840x2160-display-hdr400-1ms-160hz-freesync-premium-10001-400cd"
+   ],
+   "note": "Claude 25 Oct 2026, built-in browser with a London delivery address (SW1A 1AA): Amazon UK page titled 'Gigabyte M27UA 27 UHD Gaming Monitor - 3840 x 2160, 160Hz, 1ms, 400 cd/m2, FreeSync Premium, HDR ready, HDMI 2.1, DisplayPort 1.4' shows 'In stock', shipper and seller Amazon, delivery Thursday 29 October; the browser showed the price in USD (527.74 for a UK address), so no pound price is recorded. Scan lists it End Of Life and Currys shows it out of stock; Argos and Amazon still list it."
+  },
+  {
+   "product": "Huawei Watch GT 7 Pro",
+   "category": "general",
+   "product_type": "smartwatch",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Amazon UK",
+   "url": "https://www.amazon.co.uk/dp/B0HC9F8Q9D",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "sources": [
+    "https://www.amazon.co.uk/dp/B0HC9F8Q9D",
+    "https://consumer.huawei.com/uk/wearables/watch-gt7-pro/"
+   ],
+   "note": "Claude 25 Oct 2026: Huawei UK page named 'HUAWEI WATCH GT 7 Pro' (a Notify Me sign-up, no price); Amazon UK page 'HUAWEI WATCH GT 7 Pro 46mm Smart Watch, ECG, GPS, 21 Days Battery, Black' read in the built-in browser with a London delivery address: Buy New, In stock, shipper and seller Amazon, delivery Wednesday 28 October; the browser showed the price in USD (508.01), so no pound price is recorded."
+  },
+  {
+   "product": "Logitech lift",
+   "category": "general",
+   "product_type": "mouse",
+   "price": 42.99,
+   "currency": "GBP",
+   "shop": "Logitech",
+   "url": "https://www.logitech.com/en-gb/shop/p/lift-vertical-ergonomic-mouse",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "sources": [
+    "https://www.logitech.com/en-gb/shop/p/lift-vertical-ergonomic-mouse",
+    "https://www.logitech.com/en-gb/sitemap.xml"
+   ],
+   "note": "Found by engine.maker_pages in the sitemap https://www.logitech.com/en-gb/sitemap.xml; the page names it \"Lift\"; GBP 42.99 on the page. Image left out by the integrator: the page's og:image is the site's generic picture, not the product's."
+  },
+  {
+   "product": "Sunday riley good genes",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "price": 70.0,
+   "currency": "GBP",
+   "shop": "Sunday Riley – UK",
+   "url": "https://sundayriley.co.uk/products/good-genes-lactic-acid-treatment",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "sources": [
+    "https://sundayriley.co.uk/products/good-genes-lactic-acid-treatment",
+    "https://sundayriley.co.uk/sitemap_products_1.xml?from=5619331301525&to=15806371660160"
+   ],
+   "note": "Found by engine.maker_pages in the sitemap https://sundayriley.co.uk/sitemap_products_1.xml?from=5619331301525&to=15806371660160; the page names it \"Good Genes Lactic Acid Treatment\"; GBP 70 on the page."
+  },
+  {
+   "product": "Secret Lab Magnus Pro",
+   "category": "general",
+   "product_type": "standing desk",
+   "price": 873.0,
+   "currency": "GBP",
+   "shop": "Secret Lab",
+   "url": "https://secretlab.co.uk/products/magnus-pro",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "sources": [
+    "https://secretlab.co.uk/products/magnus-pro",
+    "https://secretlab.co.uk/sitemap_products_1.xml?from=11856914438&to=15453972693371"
+   ],
+   "note": "Found by engine.maker_pages in the sitemap https://secretlab.co.uk/sitemap_products_1.xml?from=11856914438&to=15453972693371; the page names it \"Secretlab MAGNUS Pro\"; GBP 873 on the page. Image left out by the integrator: the page's og:image is the site's generic picture, not the product's."
+  },
+  {
+   "product": "Dermalogica Daily Milkfoliant",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "price": 65.0,
+   "currency": "GBP",
+   "shop": "Dermalogica UK",
+   "url": "https://www.dermalogica.co.uk/products/daily-milkfoliant",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "sources": [
+    "https://www.dermalogica.co.uk/products/daily-milkfoliant",
+    "https://www.dermalogica.co.uk/sitemap_products_1.xml?from=5670154797209&to=15006422401400"
+   ],
+   "note": "Found by engine.maker_pages in the sitemap https://www.dermalogica.co.uk/sitemap_products_1.xml?from=5670154797209&to=15006422401400; the page names it \"Daily Milkfoliant\"; GBP 65 on the page."
   }
  ]
 }
