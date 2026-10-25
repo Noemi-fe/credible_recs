@@ -603,9 +603,11 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   to 3, a phone with a good camera the same 3 lines with more voices and the Samsung line's price, running watch one
   Forerunner's voices 4 to 5, and the look-for tips of two camera requests); 171 answers with 3 picks (167), 539 picks,
   no error. FOR NOEMI: (1) "smartwatch for fitness" now shows Huawei Watch GT 7 Pro, Amazfit Balance 2 and the Apple
-  Watch line, with Garmin's smartwatch line under Skip these ("warned against by 2 credible voices"): the first reading
-  takes the 16 threads closest to the request, the new ones displaced older Garmin-heavy threads, and Garmin's running
-  watches are typed "sports watch", so the line is judged on a few mentions. Whether a thin reading may put the leading
-  brand under Skip these is a ranking call (read on when the answer's top brand has fewer mentions than its rivals, or
-  count sports watches for a fitness request), hers. (2) The comment ids that look coordinated (several near-identical
+  Watch line, with Garmin's smartwatch line under Skip these: the first reading takes the 16 threads closest to the
+  request and now gives 3 picks, so the wider reading that gave Garmin's line (decision (b)) never runs; in those 16 the
+  line has 3 credible recommendations, all from one thread (most Garmin recommendations come from writers who don't say
+  they use the watch), against 4 credible warnings, and Garmin's running watches are typed "sports watch", so they don't
+  count in a smartwatch answer. Whether a leading brand may go under Skip these on a reading this thin is a ranking
+  call (read on when the first reading's top brand has few credible voices, or count sports watches for a fitness
+  request), hers. (2) The comment ids that look coordinated (several near-identical
   plugs and one account pushing two brands in the smartwatch thread) count as credible voices today.
