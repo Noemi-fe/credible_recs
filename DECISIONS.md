@@ -559,3 +559,53 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   notes: the summary test of test_blind_test.py, the retinol library's title in test_needs_and_contradictions.py, the
   example and no-threads pins of test_web.py and test_general_engine.py. The whole suite, the evaluation and the
   sweep: eval/RUNS.md, 19 Oct 2026, round 4.
+- Built by Claude, 25 Oct 2026 (the data-tech2 builder, branch data-tech2 from main 1ed01ec: the tech data round's second
+  pass, after Noemi's decision (e) of 19 Oct 2026, "phone and webcam communities may be added"; technical calls within
+  her rules, reported to her; eval/RUNS.md): (1) Communities (test first, engine/tests/test_tech2_round.py): r/iphone,
+  r/GooglePixel and r/samsung (each checked on Arctic Shift that day: it exists and posts daily) join the general
+  category's decided subreddits and the phone type's communities, after its broad ones; r/Twitch joins both lists for
+  webcams (about 25 "which webcam" threads with 10 or more comments in 2024-2026). Not r/webcam, the obvious name: it is
+  an adult-content community whose last post is from 2021 (a test pins that it is never added); r/WorkFromHome had two
+  weak webcam threads in the same years. (2) Threads: 32 new, 8 each for webcams (7 from r/Twitch, 1 from r/BuyItForLife),
+  4k monitors for work (r/Monitors, 2025-2026), smartwatches for fitness (r/smartwatch 6, r/fitbit 2) and phones with a good camera (r/iphone 3, r/samsung 2, r/PickAnAndroidForMe 3), found by Arctic
+  Shift title searches cut into date windows (a search over a big community's whole history times out: r/GooglePixel
+  times out even on a five-day window, so it gave no thread), read from its archive into a private stage folder, extracted
+  by two Sonnet helpers of 16 threads each (extract-v15, every quote word for word, 0 rejected: 1,069 mentions, 86 notes,
+  45 agreements), slimmed, and copied to the worktree's own library; I read none of their text. Helpers were told: a
+  reply's product name comes from its parent's own words, a tool or accessory named in passing is no mention, tentative
+  interest is neutral. One correction by rule, not by reading: the helper typed the 30 bare "Garmin" and "Suunto"
+  mentions of a "best smartwatch" thread as "sports watch", but the instructions give a brand named alone the thread's
+  type, so they are "smartwatch" (before that, the Garmin line lost its recommenders to another type). The helpers named
+  comment ids that look coordinated or paid (docs/bfs-2026-10-17/data-tech2-integrator-notes.txt): kept, as extraction
+  never judges a voice. Profiles: Arctic Shift's users endpoint answered 422 and 500 for every try, so 2 of the 39
+  writers the answers quote are stored; the rest, and the new threads' other writers, are listed in
+  docs/bfs-2026-10-17/profiles-later-data-tech2.txt. (3) Prices, availability and pages for the picks and Also worth a
+  look items shown (three Sonnet researchers on makers' UK pages and big UK shops, each page's own name read; Amazon UK in
+  the built-in browser with a London delivery address, whose prices it shows in dollars, so only its stock is recorded):
+  Logitech C920 GBP 84.99 and Streamcam GBP 139.99 (its page says sold out temporarily), Razer Kiyo V2 GBP 149.99, OBSBOT
+  Meet 2 GBP 128.99, Anker C200 and OBSBOT Tiny 2 sold (no price: the maker's price excludes VAT), Dell U3225QE GBP
+  853.20, Gigabyte M27UP GBP 298.99 (pre-order only at Scan and Overclockers), Gigabyte M27UA sold at Amazon UK (Scan
+  lists it end of life: conflicting, no price), Garmin Venu 4 GBP 379 and Venu 3S GBP 379.99 at John Lewis, Amazfit
+  Balance 2 GBP 299.90 re-read at Amazfit UK (one test changed on purpose, dated), Huawei Watch GT 7 Pro sold at Amazon UK
+  (no price), the Apple Watch line from GBP 219 (Apple Watch SE 3) and the Samsung phone line from GBP 169 (Galaxy A17 5G,
+  John Lewis). No longer sold new, so left out and named: Razer Kiyo Pro, Elgato Facecam Pro, iPhone 16 Pro, Galaxy
+  S23 Ultra, iPhone 5S, iPhone XR, Pixel 3 XL, Pixel 2 XL. Left without an entry because the evidence conflicts: Innocn
+  32M2V (the maker's page is its US store, Amazon UK lists it out of stock) and Pixel 8a (John Lewis says gone, Google's
+  page could not be read); not recorded for a model doubt: Samsung's "Neo G8" (Samsung UK lists neither the G85NB nor its
+  successor under that name). engine.maker_pages find ran over the two shown products still without a page (the Neo G8
+  and the Vivo X200 Ultra): 0 found. Results: the whole suite (6,170 tests): all pass but test_precheck_verify.py's
+  bucket test, which already fails on the base commit since 23 Oct (a made-up date a week old; main fixed it in 126e676);
+  the evaluation as round 4's in every number but the library's own (85,876 of 85,970 quotes found word for word, the 94
+  not found all in older threads, none in the 32 new; shown 247/247, unverified shown 0); blind test 10/10 full top 3s,
+  the same picks; the sweep of 243 answers (docs/bfs-2026-10-17/sweep-data-tech2.jsonl) against main's code on main's
+  library the same day (sweep-data-tech2-base.jsonl): 8 answers differ, each traced by stage runs to its threads or lists
+  (webcam for video calls 0 to 3 picks, 4k monitor for work 1 to 3 and for photo editing 1 to 3, smartwatch for fitness 2
+  to 3, a phone with a good camera the same 3 lines with more voices and the Samsung line's price, running watch one
+  Forerunner's voices 4 to 5, and the look-for tips of two camera requests); 171 answers with 3 picks (167), 539 picks,
+  no error. FOR NOEMI: (1) "smartwatch for fitness" now shows Huawei Watch GT 7 Pro, Amazfit Balance 2 and the Apple
+  Watch line, with Garmin's smartwatch line under Skip these ("warned against by 2 credible voices"): the first reading
+  takes the 16 threads closest to the request, the new ones displaced older Garmin-heavy threads, and Garmin's running
+  watches are typed "sports watch", so the line is judged on a few mentions. Whether a thin reading may put the leading
+  brand under Skip these is a ranking call (read on when the answer's top brand has fewer mentions than its rivals, or
+  count sports watches for a fitness request), hers. (2) The comment ids that look coordinated (several near-identical
+  plugs and one account pushing two brands in the smartwatch thread) count as credible voices today.
