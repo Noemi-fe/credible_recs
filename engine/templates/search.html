@@ -32,6 +32,14 @@ const LABELS = {
   searchPlaceholder: "e.g. electric kettle that lasts 10+ years",
   searchHint: "Say what it is and anything that matters: budget, skin type, how long it should last.",
   searchButton: "Find picks",
+  // Region (24 Oct 2026, Noemi: "the tool should work for visitors anywhere, not just the UK"; wording decided by
+  // Claude, PROPOSED): kept in this browser only and sent with the request, nowhere else. It changes the price and
+  // availability lines, never the picks.
+  regionLabel: "Shopping from",
+  regionUK: "UK",
+  regionUS: "US",
+  regionElsewhere: "Elsewhere",
+  regionHint: "Changes the price and availability lines, never the picks.",
   examplesHeading: "Try an example",
   categories: { skincare: "Skincare", haircare: "Haircare", kitchen: "Kitchen", general: "More products" },
   // The general category's departments (14 Oct 2026), shown above its answers in place of a category: as
@@ -319,6 +327,8 @@ button { font: inherit; color: inherit; }
   background: var(--accent); color: var(--on-accent); font-weight: 650; cursor: pointer; transition: background-color .15s; }
 .go:hover { background: var(--accent-hover); }
 .hint { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+.region { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 10px 0 0; font-size: 14px; color: var(--muted); }
+.region select { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 8px; padding: 3px 6px; }
 
 /* Example requests and recent searches, as chips. */
 .examples { max-width: 720px; margin: 22px auto 0; text-align: left; }
@@ -711,6 +721,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
         <button id="go" class="go" type="submit" data-label="searchButton"></button>
       </div>
       <p id="q-hint" class="hint" data-label="searchHint"></p>
+      <p class="region"><label for="region" data-label="regionLabel"></label><select id="region" aria-describedby="region-hint"><option value="uk" selected data-label="regionUK"></option><option value="us" data-label="regionUS"></option><option value="elsewhere" data-label="regionElsewhere"></option></select><span id="region-hint" data-label="regionHint"></span></p>
     </form>
     <details id="examples" class="examples" open>
       <summary><span data-label="examplesHeading"></span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></summary>
@@ -777,6 +788,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
   const WORDING = SETTINGS.wording;
   const form = document.getElementById("search");
   const input = document.getElementById("q");
+  const regionBox = document.getElementById("region");
   const hero = document.getElementById("hero");
   const examples = document.getElementById("examples");
   const status = document.getElementById("status");
@@ -997,9 +1009,11 @@ details[open] > summary .icon { transform: rotate(180deg); }
 
   const FIRST_TIME_KEY = "credible-recs:first-time";
   const RECENT_KEY = "credible-recs:recent";
+  const REGION_KEY = "credible-recs:region";
 
-  /* The browser's own storage, for two things only: that "First time here?" was asked, and the visitor's own last few
-     requests (13 Oct 2026). Every use is wrapped in try and catch, since storage can be switched off, full, or refused
+  /* The browser's own storage, for three things only: that "First time here?" was asked, the visitor's own last few
+     requests (13 Oct 2026), and the region they chose (24 Oct 2026: "uk", "us" or "elsewhere", sent with each request
+     and nowhere else). Every use is wrapped in try and catch, since storage can be switched off, full, or refused
      inside a frame. */
   function recall(key) { try { return localStorage.getItem(key); } catch (error) { return null; } }
   function remember(key, value) { try { localStorage.setItem(key, value); return true; } catch (error) { return false; } }
@@ -1063,6 +1077,12 @@ details[open] > summary .icon { transform: rotate(180deg); }
     forget(RECENT_KEY);
     drawRecent();
     input.focus();
+  }
+
+  /** The region this browser remembers, when it is one the server knows (the first, the UK, otherwise). */
+  function currentRegion() {
+    const kept = recall(REGION_KEY);
+    return SETTINGS.regions.includes(kept) ? kept : SETTINGS.regions[0];
   }
 
   /** The recent searches as chips, above the examples; nothing when there are none. */
@@ -1700,10 +1720,11 @@ details[open] > summary .icon { transform: rotate(180deg); }
   async function fetchAnswer(request, signal) {
     let response;
     try {
+      const region = regionBox.value;
       response = await fetch("/api/answer", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ request }),
+        body: JSON.stringify({ request, region }),
         signal,
       });
     } catch (error) {
@@ -1793,6 +1814,13 @@ details[open] > summary .icon { transform: rotate(180deg); }
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     search(input.value, true);
+  });
+  // A new region asks again for the request on screen: the picks are the same, the price and availability lines differ.
+  regionBox.value = currentRegion();
+  regionBox.addEventListener("change", () => {
+    const region = regionBox.value;
+    remember(REGION_KEY, region);
+    if (requestInAddress().trim()) search(requestInAddress(), false);
   });
   window.addEventListener("popstate", fromAddress);
   document.addEventListener("keydown", onKey);
