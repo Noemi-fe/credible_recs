@@ -167,7 +167,7 @@ from collections import Counter
 from collections.abc import Iterable, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
-from datetime import date
+from datetime import date, datetime
 from functools import cache
 from pathlib import Path
 
@@ -355,6 +355,11 @@ class PipelineResult:
     # mention counts as a low voice (Noemi's rule, 9 Oct 2026). For reports only, as a count: never shown to users.
     contradicting_writers: list[str] = field(default_factory=list)
     threads_available: int = 0  # extracted threads about the product that could be read (threads_used is the first ones)
+    # Of those, the ones not titled as another type of product, and the newest of them (25 Oct 2026, from the review of
+    # 16 Oct, R1 and R2): on-demand reading's bar counts these (engine.on_demand.SiteReader.after_answer), since a thread
+    # titled as another product only names this one in its post.
+    own_threads_available: int = 0
+    newest_own_thread: datetime | None = None
     # The comments the AI read in the threads used (its reading view: the readable comments, up to EXTRACT_MAX_COMMENTS
     # a thread), shown with every answer (Noemi, 12 Oct 2026).
     comments_read: int = 0
@@ -510,6 +515,9 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.waiting_live_check = [t.id for t in extracted if not (exempt or _checked_live_recently(t, today))]
     usable = [t for t in extracted if t.id not in result.waiting_live_check]
     result.threads_available = len(usable)
+    own = [t for t in usable if not titled_as_another_type(t.title, query)]
+    result.own_threads_available = len(own)
+    result.newest_own_thread = max((t.created_at for t in own), default=None)
     threads = usable[:max_threads]
     checked = {t.id: every_checked[t.id] for t in threads}
     if not exempt:  # the same rule, comment by comment, in slimmed threads (13 Oct 2026)

@@ -2091,6 +2091,12 @@ PRODUCT_TYPE_FORMS: dict[str, str] = {
 # about than this, is queued for a reading job (Arctic Shift's archive, Gemini's free allowance), and the site says so:
 # the library's own mix per product type.
 ON_DEMAND_MIN_THREADS = LIBRARY_THREADS_PER_PRODUCT
+# What counts toward that bar (25 Oct 2026, Noemi's decision (l) of 19 Oct, from the review of 16 Oct, R1 and R2; PROPOSED): only
+# the threads about the type, never those titled as another type (a moisturiser had 51 of 102 such threads, a saucepan
+# 30 of 50, so weak types never got more); and for a fast-moving type (FAST_MOVING_TYPES: laptops, headphones, phones),
+# a library whose newest thread about it is older than this many years is read again for newer ones, which only reads
+# threads posted since (a 2019 laptop is no recommendation; the general category's threads date from 2019 to 2023).
+ON_DEMAND_OLD_YEARS = 2
 # What the queue keeps of a request: its product type, category and subreddits (module 1's), and at most this many of its
 # need words (engine.sources.need_words: its own words less the product's name, filler words and numbers), for a
 # need-led choice of threads. Never the request as typed, never a time or an address (Noemi's rule of 11 Oct 2026).
@@ -2098,7 +2104,8 @@ ON_DEMAND_NEED_WORDS = 3
 # At most this many requests wait at once: more are answered from what the library has, and asked about again later.
 # 20 since 14 Oct 2026 (10 before; the coordinator asked to raise it with the general category, whose types mostly have
 # no threads yet, so most of its requests queue; chosen by Claude, reported to Noemi): about two days of the job's
-# reading within Gemini's free allowance (about 11 products a day, at about 9 calls each), and their threads (6 each)
+# reading within Gemini's free allowance (about 11 products a day, at about 9 calls each: since 25 Oct 2026 the measured
+# free allowance of Gemini 3.8 Flash reads one a day, and the visitor is told), and their threads (6 each)
 # fit the bundle (ON_DEMAND_BUNDLE_MAX_THREADS) before a deploy takes them in. The free-tier sums don't change: the
 # job's time and its Gemini calls have caps of their own (ON_DEMAND_MONTH_SECONDS, ON_DEMAND_GEMINI_CALLS_A_DAY), and
 # the site never starts the job while the queue rests.
@@ -2123,22 +2130,39 @@ ON_DEMAND_NEW_READING_SECONDS = 15 * 60
 ON_DEMAND_MONTH_SECONDS = 50_000
 ON_DEMAND_START_SECONDS = 30
 ON_DEMAND_LEASE_MINUTES = 50
-# Gemini calls a day the job may make (Gemini's free allowance only, Noemi's decision of 14 Oct 2026), leaving the rest
-# of the free daily allowance to Noemi's own bulk reading; a 429 for the day stops it sooner. The allowance resets at
-# midnight Pacific time: the job waits until GEMINI_RESET_HOUR_UTC (8 am UTC: midnight in winter, 1 am in summer), so
-# it never asks before the reset.
-ON_DEMAND_GEMINI_CALLS_A_DAY = 100
+# The Gemini model the job reads with (the job's settings may name another: CREDIBLE_RECS_ON_DEMAND_MODEL) and the Gemini
+# calls a day it may make: Gemini's free allowance only (Noemi's decision of 14 Oct 2026), a little under what Google
+# allows that model a day, since a 429 for the day stops the job sooner anyway. Gemini 3.8 Flash's free allowance is
+# 20 requests a day and 5 a minute (read from Google's own 429 answer on 25 Oct 2026, eval/RUNS.md), so 18: about one
+# request a day, which the visitor is now told (ON_DEMAND_CALLS_PER_PRODUCT below). It was 100 until 25 Oct 2026, a number
+# that left "the rest of the allowance" to bulk reading Claude's builders do now. The allowance resets at midnight
+# Pacific time: the job waits until GEMINI_RESET_HOUR_UTC (8 am UTC: midnight in winter, 1 am in summer), so it never
+# asks before the reset. A cheaper reader (a Flash-Lite model) waits for Noemi's go-ahead: its precision on her gold
+# threads is 8 points under Flash's (eval/RUNS.md, 25 Oct 2026).
+ON_DEMAND_GEMINI_MODEL = "gemini-3.8-flash"
+ON_DEMAND_GEMINI_CALLS_A_DAY = 18
+# What one request takes, for the wait the visitor is told (25 Oct 2026; PROPOSED): six threads at the median 42
+# comments, 40 a call, are 12 to 15 Gemini calls (the review of 16 Oct 2026, R7), so ON_DEMAND_GEMINI_CALLS_A_DAY //
+# ON_DEMAND_CALLS_PER_PRODUCT requests a day. Each call of Gemini 3.8 Flash took 3.4 to 4.5 minutes on 25 Oct 2026 (the
+# 4 calls for the three gold threads took 16 minutes; a Flash-Lite model took 10 to 25 seconds a call), so one request takes about an
+# hour of the job's time, not the 12 minutes first guessed: 6 of them are Arctic Shift's paced searches and reads. These
+# numbers describe the reader above; a faster reader changes them (and the cap) together.
+ON_DEMAND_CALLS_PER_PRODUCT = 15
+ON_DEMAND_CALL_MINUTES = 4
+ON_DEMAND_ARCHIVE_MINUTES = 6
+ON_DEMAND_PRODUCT_MINUTES = ON_DEMAND_ARCHIVE_MINUTES + ON_DEMAND_CALLS_PER_PRODUCT * ON_DEMAND_CALL_MINUTES
 GEMINI_RESET_HOUR_UTC = 8
 # The bundle holds at most this many threads not baked into the site's image yet: past it the job reads no new request
 # until a deploy takes them in (python -m engine.library pull-bucket, run by deploy/cloudrun/deploy.sh).
 ON_DEMAND_BUNDLE_MAX_THREADS = 300
-# What a visitor is told: the first request waiting is read in about ON_DEMAND_FIRST_MINUTES (the job starts at once:
-# about 6 minutes of Arctic Shift's paced searches and reads, then Gemini's extraction and the site's pick-up), each one
-# ahead of it about ON_DEMAND_EACH_MINUTES more; past ON_DEMAND_LATE_MINUTES of waiting (by the site's own clock, kept in
-# memory only) it is said to be taking longer than usual.
-ON_DEMAND_FIRST_MINUTES = 20
-ON_DEMAND_EACH_MINUTES = 15
-ON_DEMAND_LATE_MINUTES = 90
+# What a visitor is told: the first request waiting is read in about ON_DEMAND_FIRST_MINUTES (the job starts at once and
+# takes ON_DEMAND_PRODUCT_MINUTES, then the site picks the threads up at its next keep-warm ping, every 5 minutes), each
+# one ahead of it about ON_DEMAND_EACH_MINUTES more, while the day's Gemini calls and the month's reading time last (engine.
+# on_demand.wait_for); past ON_DEMAND_LATE_MINUTES of waiting (by the site's own clock, kept in memory only) it is said to
+# be taking longer than usual. 20, 15 and 90 until 25 Oct 2026, when the calls were timed.
+ON_DEMAND_FIRST_MINUTES = ON_DEMAND_PRODUCT_MINUTES + 4
+ON_DEMAND_EACH_MINUTES = ON_DEMAND_PRODUCT_MINUTES
+ON_DEMAND_LATE_MINUTES = 150
 # The site starts the job at most this often, when requests wait and no run holds the queue (the keep-warm ping, every 5
 # minutes, starts it again when a start failed), and reads the queue again at most this often when asked about a
 # request it knows is waiting.

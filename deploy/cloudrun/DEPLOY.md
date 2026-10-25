@@ -325,9 +325,10 @@ deploy/cloudrun/on_demand.sh from off to on.
 
 Since 14 Oct 2026 (Noemi: "I want recs regardless of the category"; the plan's part 3). A request module 1 understands,
 about a product the library holds fewer than 6 extracted threads about, is queued, and the answer says so in the
-page's words, for example "We haven't read Reddit about teapots yet, so we've started: check back in about 20 minutes."
-(15 more minutes for each request ahead of it; "taking longer than usual" after 90 minutes; and when the free
-allowance is used up, when it is back). That answer isn't remembered: the next ask works it out again. The site starts
+page's words, for example "We haven't read Reddit about teapots yet, so we've started: check back in about an hour."
+(about an hour more for each request ahead of it while the day's calls last, since a Gemini 3.8 Flash call takes about 4
+minutes and a request 15 calls; "taking longer than usual" after 150 minutes; and when the free allowance is used up,
+when it is back, with the place in line). That answer isn't remembered: the next ask works it out again. The site starts
 the reading job at once, and at every keep-warm ping while a request waits it asks the bundle's version (one small
 read, a download only when it changed), takes the new threads into its library folder and answers with them, every
 quote shown checked live on Reddit as always. The daily pre-check takes them in too and checks their answers ahead.
@@ -341,13 +342,26 @@ europe-west1 --project credible-picks`; its report (counts and product types, ne
 (Cloud Run, Jobs, credible-recs-reader, Logs).
 
 The job's limits, all in engine/config.py ("On-demand reading"): it starts no new reading after 15 minutes of a run and
-stops at 45; its runs read for at most 50,000 seconds a month (then the queue rests until the 1st); it makes at most 100
-Gemini calls a day of the free allowance, leaving the rest to Noemi's own bulk reading, and none more that day after
-Gemini's daily 429 (until 8 am UTC, when the allowance is surely back); at most 20 requests wait at once (10 until
+stops at 45; its runs read for at most 50,000 seconds a month (then the queue rests until the 1st); it makes at most 18
+Gemini calls a day (100 until 25 Oct 2026): Gemini 3.8 Flash's free allowance is 20 requests a day and 5 a minute, as
+Google's own 429 answer says, and a request takes about 15 calls, so it reads about one request a day; none more that
+day after Gemini's daily 429 (until 8 am UTC, when the allowance is surely back); at most 20 requests wait at once (10 until
 14 Oct 2026: with the general category most requests queue; 20 is about two days of the job's reading, and the
 sums below don't change, since the job's time and Gemini calls have caps of their own); a request
 whose archive search fails is tried again an hour later and set aside for a day after 3 tries; a product read once is
 read again only after 30 days, if its library is still thin then.
+
+**What counts and what visitors are told** (25 Oct 2026, from the review of 16 Oct 2026, R1, R2 and R7; wording
+PROPOSED). The bar of 6 threads counts only the threads about the type, never those titled as another type, and a
+fast-moving type (laptop, headphones, phone...) whose newest thread about it is over 2 years old (config
+ON_DEMAND_OLD_YEARS) is queued too, to be read again for newer threads (only threads posted in the last 2 years are
+read; the answer keeps its picks and says the threads are a few years old). The sentence the visitor sees now comes from
+the queue's length and the day's capacity (engine.on_demand.wait_for): "in about an hour" only while the day's calls
+and the month's reading time can still read the request (an hour more for each one ahead), else "It's in line: 3
+products are ahead of it, and our free reading allowance covers about 1 a day. Check back tomorrow" (or the date; the
+1st of next month when the month's time is out). The reader's model is config ON_DEMAND_GEMINI_MODEL (a deploy may set
+CREDIBLE_RECS_ON_DEMAND_MODEL on the job instead); a cheaper Flash-Lite reader was measured on 25 Oct 2026 and is held
+back (eval/RUNS.md): the switch above is still off by default until Noemi decides.
 
 ## The Gemini key
 

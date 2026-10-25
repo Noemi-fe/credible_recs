@@ -14,8 +14,8 @@ import pytest
 
 from engine import on_demand, web
 from engine.config import (
-    ARCHIVE_TEXT_KEPT_DAYS, LIBRARY_THREADS_PER_PRODUCT, ON_DEMAND_BUNDLE_MAX_THREADS, ON_DEMAND_LATE_MINUTES,
-    ON_DEMAND_MAX_WAITING,
+    ARCHIVE_TEXT_KEPT_DAYS, LIBRARY_THREADS_PER_PRODUCT, ON_DEMAND_BUNDLE_MAX_THREADS, ON_DEMAND_EACH_MINUTES,
+    ON_DEMAND_FIRST_MINUTES, ON_DEMAND_LATE_MINUTES, ON_DEMAND_MAX_WAITING,
 )
 from engine.live_check import BUNDLE_RELOAD_SECONDS, Bucket
 from engine.on_demand import Bundle, JobStarter, Queue, QueueStore, SiteReader, entry_for, run_job
@@ -76,8 +76,10 @@ def test_a_request_the_library_hasnt_read_about_is_queued_and_the_answer_says_so
     assert data["query"]["product_type"] == "teapot" and data["answer"]["picks"] == []
     assert data["on_demand"] == {
         "state": "reading", "product_type": "teapot", "about": "teapots", "read_before": False,
-        "check_back_minutes": 20,
-        "message": "We haven't read Reddit about teapots yet, so we've started: check back in about 20 minutes."}
+        "check_back_minutes": ON_DEMAND_FIRST_MINUTES,
+        # Changed on purpose, 25 Oct 2026: "in about 20 minutes" until the Gemini calls were timed (about 4 minutes each,
+        # 15 calls a request): the first request in line is read in about an hour.
+        "message": "We haven't read Reddit about teapots yet, so we've started: check back in about an hour."}
     [entry] = site.queue().entries
     assert entry.product_type == "teapot" and entry.status == "waiting"
     assert site.google.jobs_started == [JOB]  # started at once: no schedule to wait for
@@ -119,7 +121,15 @@ def test_a_second_request_waits_its_turn(tmp_path, monkeypatch):
     site = Site(tmp_path, monkeypatch)
     site.ask(TEAPOT)
     data = site.ask("stovetop kettle that whistles")
-    assert data["on_demand"]["check_back_minutes"] == 35 and "in about 35 minutes" in data["on_demand"]["message"]
+    # Changed on purpose, 25 Oct 2026 (the wait is honest now, tests/test_on_demand_wait.py): the job's 18 Gemini calls a
+    # day read one request, so the second in line was promised "in about 35 minutes" for nothing. With a reader whose
+    # allowance reads ten a day it is told when its turn comes:
+    assert data["on_demand"]["check_back_minutes"] is None and data["on_demand"]["message"].endswith("Check back tomorrow.")
+    monkeypatch.setattr(on_demand, "ON_DEMAND_GEMINI_CALLS_A_DAY", 150)
+    site.reader._queue_at = None  # the queue is read afresh
+    data = site.ask("stovetop kettle that whistles")
+    assert data["on_demand"]["check_back_minutes"] == ON_DEMAND_FIRST_MINUTES + ON_DEMAND_EACH_MINUTES
+    assert "in about 2 hours" in data["on_demand"]["message"]
 
 
 def test_while_reading_rests_the_answer_says_when_it_starts_again(tmp_path, monkeypatch):
@@ -162,7 +172,9 @@ def test_twenty_requests_may_wait_and_their_threads_fit_the_bundle(tmp_path, mon
                                subreddits=["BuyItForLife"]) for n in range(10)]
     QueueStore(site.bucket).change(lambda q: q.entries.extend(entries))
     data = site.ask(TEAPOT)
-    assert data["on_demand"]["state"] == "reading" and len(site.queue().waiting()) == 11
+    # Changed on purpose, 25 Oct 2026 (the wait is honest now, tests/test_on_demand_wait.py): the 11th in line is told
+    # when the day's allowance reaches it, no longer "reading" at once.
+    assert data["on_demand"]["state"] in ("reading", "waiting") and len(site.queue().waiting()) == 11
 
 
 def test_when_the_bucket_cant_be_reached_the_answer_isnt_remembered(tmp_path, monkeypatch):

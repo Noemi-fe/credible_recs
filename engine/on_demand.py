@@ -5,12 +5,14 @@ reads its threads, so the next ask gets an answer.
 How it works, in four parts:
 
 1. The site queues (SiteReader.after_answer). When module 1 understands a request but the library holds fewer than
-   ON_DEMAND_MIN_THREADS extracted threads about its product, the site adds an entry to the queue, one small object in
+   ON_DEMAND_MIN_THREADS extracted threads about its product (only the threads about the type count, never those titled
+   as another type; and a fast-moving type whose newest thread is over ON_DEMAND_OLD_YEARS old is queued too, to be read
+   again for newer ones: 25 Oct 2026), the site adds an entry to the queue, one small object in
    the private bucket CREDIBLE_RECS_ON_DEMAND_BUCKET (on_demand/queue.json), and starts the reading job at once (Cloud
    Run's jobs:run, with its service account's token). The answer says so in plain words ("We haven't read Reddit about
-   teapots yet, so we've started: check back in about 20 minutes."), and isn't remembered: the next ask works it out
-   again. An entry holds only what finding threads needs (Noemi's rule of 11 Oct 2026: no access logs of visitors): the
-   product type module 1 understood, its category and subreddits, and at most ON_DEMAND_NEED_WORDS of the request's need
+   teapots yet, so we've started: check back in about an hour."; the wait comes from the queue's length and the day's
+   capacity, wait_for), and isn't remembered: the next ask works it out again. An entry holds only what finding threads
+   needs (Noemi's rule of 11 Oct 2026: no access logs of visitors): the product type module 1 understood, its category and subreddits, and at most ON_DEMAND_NEED_WORDS of the request's need
    words (engine.sources.need_words: its own words less the product's name, filler words and numbers); never the
    request as typed, never when it was asked (the job's own times say when it read), nothing about who asked. Requests
    with the same product and need words are one entry. The site and the job both write the queue, each only over the version it read (Bucket.put_if), so
@@ -67,14 +69,17 @@ from pathlib import Path
 
 from engine.config import (
     ARCHIVE_TEXT_KEPT_DAYS,
+    FAST_MOVING_TYPES,
     GEMINI_RESET_HOUR_UTC,
     LIBRARY_MIX,
     LIBRARY_THREADS_PER_PRODUCT,
     ON_DEMAND_BUNDLE_MAX_THREADS,
+    ON_DEMAND_CALLS_PER_PRODUCT,
     ON_DEMAND_EACH_MINUTES,
     ON_DEMAND_EXTRACT_TRIES,
     ON_DEMAND_FIRST_MINUTES,
     ON_DEMAND_GEMINI_CALLS_A_DAY,
+    ON_DEMAND_GEMINI_MODEL,
     ON_DEMAND_LATE_MINUTES,
     ON_DEMAND_LEASE_MINUTES,
     ON_DEMAND_MAX_DONE,
@@ -84,6 +89,8 @@ from engine.config import (
     ON_DEMAND_MONTH_SECONDS,
     ON_DEMAND_NEED_WORDS,
     ON_DEMAND_NEW_READING_SECONDS,
+    ON_DEMAND_OLD_YEARS,
+    ON_DEMAND_PRODUCT_MINUTES,
     ON_DEMAND_QUEUE_FRESH_SECONDS,
     ON_DEMAND_READ_AGAIN_DAYS,
     ON_DEMAND_RETRY_DAYS,
@@ -93,9 +100,10 @@ from engine.config import (
 )
 from engine.live_check import BUCKET_TIMEOUT, BUNDLE_RELOAD_SECONDS, Bucket, _http_request
 from engine.query import ParsedQuery
-from engine.sources import need_words
+from engine.sources import _posted_before, _years_before, need_words
 
 BUCKET_VAR = "CREDIBLE_RECS_ON_DEMAND_BUCKET"  # the private bucket of the queue and the bundle
+MODEL_VAR = "CREDIBLE_RECS_ON_DEMAND_MODEL"  # the Gemini model the reading job asks (the job's settings; blank: config)
 JOB_VAR = "CREDIBLE_RECS_ON_DEMAND_JOB"  # projects/<project>/locations/<region>/jobs/<job>: the site starts it
 DEFAULT_BUCKET = "credible-picks-on-demand"  # its name in Noemi's project (deploy/cloudrun/deploy.sh)
 PREFIX = "on_demand/"  # the bucket's objects are under this prefix
@@ -116,6 +124,20 @@ WAITING_NEW = ("We haven't read Reddit about {about} yet. It's on our list, but 
 WAITING_MORE = ("We've read only a little on Reddit about {about} so far. Reading more is on our list, but our free "
                 "reading allowance is used up for now: check back {when}.")
 LATE = "We're reading Reddit about {about}, but it's taking longer than usual: please check back later."
+# For a type whose threads are all a few years old (a laptop library from 2019 to 2023; ON_DEMAND_OLD_YEARS):
+READING_OLD = ("The Reddit threads we've read about {about} are a few years old, so we've started reading newer ones: "
+               "check back {when}.")
+WAITING_OLD = ("The Reddit threads we've read about {about} are a few years old. Reading newer ones is on our list, "
+               "but our free reading allowance is used up for now: check back {when}.")
+# In line behind other requests, past what the day's free allowance can read (25 Oct 2026; wording PROPOSED): {ahead_text}
+# is "1 product is" or "3 products are"; {per_day} is the products a day the allowance covers.
+IN_LINE_NEW = ("We haven't read Reddit about {about} yet. It's in line: {ahead_text} ahead of it, and our free reading "
+               "allowance covers about {per_day} a day. Check back {when}.")
+IN_LINE_MORE = ("We've read only a little on Reddit about {about} so far. Reading more is in line: {ahead_text} ahead of "
+                "it, and our free reading allowance covers about {per_day} a day. Check back {when}.")
+IN_LINE_OLD = ("The Reddit threads we've read about {about} are a few years old. Reading newer ones is in line: "
+               "{ahead_text} ahead of it, and our free reading allowance covers about {per_day} a day. Check back "
+               "{when}.")
 IN_MINUTES = "in about {n} minutes"
 IN_AN_HOUR = "in about an hour"
 IN_HOURS = "in about {n} hours"
@@ -153,7 +175,10 @@ class Entry:
     subreddits: list[str]
     needs: list[str] = field(default_factory=list)  # at most ON_DEMAND_NEED_WORDS of its need words
     ingredient_led: bool = False  # an ingredient-led request ("salicylic acid product"): module 2 reads it so
-    had: int = 0  # the extracted threads the library had about it when it was queued
+    had: int = 0  # the extracted threads about it (not titled as another type) the library had when it was queued
+    # True for a fast-moving type whose threads were all old (config.ON_DEMAND_OLD_YEARS): the job reads it although
+    # the library has enough threads, and only threads posted since (25 Oct 2026).
+    refresh: bool = False
     status: str = "waiting"  # "waiting", or "done" once its threads are read and extracted
     tries: int = 0  # readings that failed (Arctic Shift couldn't be reached), by the job
     tried_at: str | None = None  # when the job last tried and failed (UTC)
@@ -164,12 +189,13 @@ class Entry:
     note: str | None = None  # the job's last word on it, in a few words (counts only)
 
     @classmethod
-    def waiting_for(cls, query: ParsedQuery, had: int) -> "Entry":
-        """The entry for an understood request (module 1's ParsedQuery), whose library has `had` extracted threads."""
+    def waiting_for(cls, query: ParsedQuery, had: int, refresh: bool = False) -> "Entry":
+        """The entry for an understood request (module 1's ParsedQuery), whose library has `had` extracted threads about
+        it; `refresh`: its threads are old, so newer ones are wanted."""
         needs = need_words(query)[:ON_DEMAND_NEED_WORDS]
         return cls(key=key_of(query.category, query.product_type, needs), category=query.category,
                    product_type=query.product_type, subreddits=list(query.subreddits), needs=needs,
-                   ingredient_led=query.ingredient_led, had=had)
+                   ingredient_led=query.ingredient_led, had=had, refresh=refresh)
 
     def query(self) -> ParsedQuery:
         """The request as module 2 reads it, made again from the entry: its product type, category and subreddits, and
@@ -190,9 +216,10 @@ class Entry:
         after = _time(self.read_again_after)
         return self.status == "done" and (after is None or now >= after)
 
-    def wait_again(self, had: int) -> None:
+    def wait_again(self, had: int, refresh: bool = False) -> None:
         """Queued again, from the start."""
         self.status, self.had, self.tries, self.tried_at, self.read_at, self.note = "waiting", had, 0, None, None, None
+        self.refresh = refresh
 
     def tried_lately(self, now: datetime) -> bool:
         """Whether its last failed try was under ON_DEMAND_RETRY_MINUTES ago: the next run tries others first."""
@@ -241,7 +268,7 @@ class Queue:
                 self.entries.remove(old)
             return entry
         if found.status == "done":
-            found.wait_again(entry.had)
+            found.wait_again(entry.had, entry.refresh)
             self.entries.remove(found)
             self.entries.append(found)
         return found
@@ -276,6 +303,11 @@ class Queue:
             self.usage.update(day=day, gemini_calls=0)
         return self.usage
 
+    def usage_today(self, now: datetime) -> tuple[float, int]:
+        """The job's seconds this month and Gemini calls in Gemini's day, without changing the queue."""
+        usage = Queue(usage=dict(self.usage)).usage_now(now)
+        return float(usage.get("seconds", 0.0)), int(usage.get("gemini_calls", 0))
+
     def as_json(self) -> dict:
         return {"version": 1, "entries": [entry.as_json() for entry in self.entries], "lease_until": self.lease_until,
                 "resting_until": self.resting_until, "resting_why": self.resting_why, "usage": self.usage,
@@ -287,6 +319,45 @@ class Queue:
                    lease_until=data.get("lease_until"), resting_until=data.get("resting_until"),
                    resting_why=data.get("resting_why"), usage=dict(data.get("usage") or {}),
                    last_run=data.get("last_run"))
+
+
+def reader_model() -> str:
+    """The Gemini model the reading job asks: the one in the job's settings (CREDIBLE_RECS_ON_DEMAND_MODEL; a deploy may
+    set it), else config.ON_DEMAND_GEMINI_MODEL. A cheaper reader (Noemi's decision (l) of 19 Oct 2026) is a change of
+    that one value, with the daily cap and the timings beside it (config.py)."""
+    return (os.environ.get(MODEL_VAR) or "").strip() or ON_DEMAND_GEMINI_MODEL
+
+
+def products_a_day() -> int:
+    """Requests a day's Gemini calls can read: the calls the job may make a day, over the calls one request takes."""
+    return max(1, ON_DEMAND_GEMINI_CALLS_A_DAY // ON_DEMAND_CALLS_PER_PRODUCT)
+
+
+def wait_for(place: int, queue: Queue, now: datetime) -> tuple[int | None, datetime | None]:
+    """When the request at `place` in line (0: the next one read) is read, from the queue's length and the day's
+    capacity (25 Oct 2026; Noemi's decision (l) of 19 Oct): (minutes from now, None) when today's Gemini calls and the month's
+    time can still read it, else (None, the time reading reaches it): after a rest, after the day's reset, or on the
+    1st of the next month, a day later for each products_a_day() places. Counts and the clock only."""
+    seconds, calls = queue.usage_today(now)
+    per_day = products_a_day()
+    if queue.resting(now):  # no reading until then (Gemini's day, the month's time): the line starts again from it
+        return None, _time(queue.resting_until) + timedelta(days=place // per_day)
+    month_places = max(0, int(ON_DEMAND_MONTH_SECONDS - seconds)) // (ON_DEMAND_PRODUCT_MINUTES * 60)
+    if place >= month_places:  # the month's reading time runs out before this one
+        return None, next_month(now) + timedelta(days=(place - month_places) // per_day)
+    today_places = max(0, ON_DEMAND_GEMINI_CALLS_A_DAY - calls) // ON_DEMAND_CALLS_PER_PRODUCT
+    if place < today_places:
+        return ON_DEMAND_FIRST_MINUTES + ON_DEMAND_EACH_MINUTES * place, None
+    return None, next_gemini_reset(now) + timedelta(days=(place - today_places) // per_day)
+
+
+def threads_are_old(product_type: str, newest: datetime | None, now: datetime) -> bool:
+    """Whether a fast-moving type's newest thread about it is older than ON_DEMAND_OLD_YEARS (25 Oct 2026; PROPOSED):
+    a library of 2019 laptop threads recommends laptops nobody sells. A type that isn't fast-moving, or has no thread
+    at all (the thin library's bar catches that), is never old."""
+    if product_type not in FAST_MOVING_TYPES or newest is None:
+        return False
+    return newest < _years_before(now, ON_DEMAND_OLD_YEARS)
 
 
 def gemini_day(now: datetime):
@@ -473,10 +544,16 @@ class SiteReader:
         """What on-demand reading adds to an answer (engine.pipeline's PipelineResult). A request module 1 didn't
         understand, or whose library isn't thin, costs nothing: no call at all."""
         query = result.query
-        if query.status != "ok" or not query.product_type or result.threads_available >= self.min_threads:
+        if query.status != "ok" or not query.product_type:
             return Outcome()
-        entry = Entry.waiting_for(query, had=result.threads_available)
         now = self._now()
+        # Only the threads about the type count (25 Oct 2026): one titled as another product just names this one in its
+        # post. And a fast-moving type whose newest thread is old is read again for newer ones.
+        own = result.own_threads_available
+        old = threads_are_old(query.product_type, result.newest_own_thread, now)
+        if own >= self.min_threads and not old:
+            return Outcome()
+        entry = Entry.waiting_for(query, had=own, refresh=own >= self.min_threads)
         with self._lock:
             queue = self._read_queue(ON_DEMAND_QUEUE_FRESH_SECONDS)
             if queue is None:
@@ -502,23 +579,33 @@ class SiteReader:
             return Outcome(self._state(queue, entry.key, now), remember=False)
 
     def _state(self, queue: Queue, key: str, now: datetime) -> dict:
-        """The API's "on_demand" for a waiting entry: where it stands, and the sentence the page shows."""
+        """The API's "on_demand" for a waiting entry: where it stands, and the sentence the page shows. The wait comes
+        from the queue's length and what the day can read (wait_for), so the tenth in line isn't promised the first's
+        20 minutes (25 Oct 2026)."""
         entry = queue.find(key)
         from engine.group_products import plural  # here: grouping is a module answers load anyway
 
         about = plural(entry.product_type)
-        more = entry.had > 0
-        state = {"state": "reading", "product_type": entry.product_type, "about": about, "read_before": more,
+        kind = "old" if entry.refresh else "more" if entry.had > 0 else "new"
+        waiting = [e.key for e in queue.waiting()]
+        ahead = waiting.index(key) if key in waiting else 0
+        state = {"state": "reading", "product_type": entry.product_type, "about": about, "read_before": kind != "new",
                  "check_back_minutes": None}
-        if queue.resting(now):
-            when = back_when(_time(queue.resting_until), now)
-            return state | {"state": "waiting", "message": (WAITING_MORE if more else WAITING_NEW).format(
-                about=about, when=when)}
+        minutes, until = wait_for(ahead, queue, now)
+        if minutes is None:  # reading is for another day: the daily capacity, not a clock, says when
+            when = back_when(until, now)
+            if ahead == 0 or (queue.resting(now) and until == _time(queue.resting_until)):
+                message = {"new": WAITING_NEW, "more": WAITING_MORE, "old": WAITING_OLD}[kind].format(about=about,
+                                                                                                        when=when)
+            else:
+                ahead_text = f"{ahead} product{' is' if ahead == 1 else 's are'}"
+                message = {"new": IN_LINE_NEW, "more": IN_LINE_MORE, "old": IN_LINE_OLD}[kind].format(
+                    about=about, ahead_text=ahead_text, per_day=products_a_day(), when=when)
+            return state | {"state": "waiting", "message": message}
         if self._clock() - self._first_seen.get(key, self._clock()) > ON_DEMAND_LATE_MINUTES * 60:
             return state | {"state": "late", "message": LATE.format(about=about)}
-        ahead = [e.key for e in queue.waiting()].index(key) if key in [e.key for e in queue.waiting()] else 0
-        minutes = ON_DEMAND_FIRST_MINUTES + ON_DEMAND_EACH_MINUTES * ahead
-        return state | {"check_back_minutes": minutes, "message": (READING_MORE if more else READING_NEW).format(
+        return state | {"check_back_minutes": minutes, "message": {"new": READING_NEW, "more": READING_MORE,
+                                                                   "old": READING_OLD}[kind].format(
             about=about, when=check_back_in(minutes))}
 
     # --- Getting ready and the keep-warm ping ---
@@ -915,7 +1002,7 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
     except ValueError:
         _change_entry(queues, key, lambda e: e.finish(moment, found=0, failed=True, note="no longer fits module 1"))
         return
-    if entry.had + len(bundle.extracted(entry.product_type)) >= ON_DEMAND_MIN_THREADS:
+    if not entry.refresh and entry.had + len(bundle.extracted(entry.product_type)) >= ON_DEMAND_MIN_THREADS:
         _change_entry(queues, key, lambda e: e.finish(moment, found=0, note="enough threads about it already"))
         report.requests_done.append(entry.product_type)
         return
@@ -936,6 +1023,9 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
     saved = {path.stem for path in (library_dir / "threads").glob("*.json")}
     skip = saved | set(bundle.threads) | unlabelled_gold_ids()
     fresh = [post for post in ranked if str(post["id"]).removeprefix("t3_") not in skip]
+    if entry.refresh:  # the library's threads are old: only threads posted since count (an unknown date isn't old)
+        oldest = _years_before(moment, ON_DEMAND_OLD_YEARS)
+        fresh = [post for post in fresh if not _posted_before(post, oldest)]
     chosen = choose_mix(query, fresh, total=LIBRARY_THREADS_PER_PRODUCT, mix=LIBRARY_MIX)
     read: dict[str, Item] = {}
     for post in chosen:
@@ -1204,7 +1294,7 @@ def main(argv: list[str]) -> int:
         from engine.gemini_extract import GeminiClient
         from engine.library import DEFAULT_LIBRARY_DIR
 
-        report = run_job(Bucket(name, prefix=PREFIX), DEFAULT_LIBRARY_DIR, ArcticShiftClient(), GeminiClient())
+        report = run_job(Bucket(name, prefix=PREFIX), DEFAULT_LIBRARY_DIR, ArcticShiftClient(), GeminiClient(model=reader_model()))
         print(report.text())
         return 0
     if argv[:1] == ["status"] and len(argv) in (1, 3):
