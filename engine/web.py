@@ -36,12 +36,28 @@ Routes:
     POST /api/answer             the answer to one request, as JSON; the request in the JSON body, {"request": "..."}
                                  (Noemi's decision 5 of 16 Oct 2026: it was GET /api/answer?q=<request>, and Google
                                  Cloud Run's request log keeps every address it is asked, with the visitor's IP address
-                                 and browser, for 30 days; it never keeps a body). GET /api/answer says how to ask (405)
+                                 and browser, for 30 days; it never keeps a body), and, since 24 Oct 2026, optionally
+                                 the visitor's region, {"request": "...", "region": "us"} (see below). GET /api/answer
+                                 says how to ask (405)
     POST /api/feedback           "Was this useful?" or "First time here?" (engine/feedback.py; 11 Oct 2026)
+    GET  /test                   the pairwise test (Noemi, 20 Oct 2026; engine/pair_test.py, engine/templates/test.html):
+                                 a short blind test for friends, standalone (it never names the site or links to the
+                                 rest of it, and nothing else links to it). A new deck of 6 comparisons for each visit
+                                 (ours against ChatGPT's or Vetted's answer), made from data/library/blind_test_cards.json;
+                                 503 with a plain "not open yet" page while that file is missing or breaks a rule. The
+                                 page is told each comparison's two cards and the visit's id, never which tool is the
+                                 rival or which side is ours (25 Oct 2026; engine/pair_test.py)
+    POST /api/test-response      one answer of that test (engine/feedback.py parse_pair), kept as the kind "blind_pair"
+                                 through the same store, with the rival and the side the server works out from the visit's
+                                 id; taken like feedback (JSON only, FEEDBACK_MAX_BODY_BYTES, only from this site's own
+                                 page) with its own rate limit (RATE_LIMIT_PAIRS); 503 test_closed without cards, 400 for
+                                 a question the visit wasn't asked
     anything else                404; a known route asked the wrong way, 405
 
 The JSON for /api/answer (200):
     {
+      "region": "us" | "elsewhere",     only when the body asked for a region other than the UK (24 Oct 2026); the UK's
+                                        answer has no such field and is exactly as it was
       "query": {"status": "ok" | "clarify" | "out_of_scope",  module 1's outcome
                 "category": "skincare" | "kitchen" | "haircare" | "general" | null,
                 "product_type": "electric kettle" | null,
@@ -194,7 +210,16 @@ The JSON for /api/answer (200):
     }
 
 POST /api/answer takes one JSON object (Content-Type: application/json, at most ANSWER_MAX_BODY_BYTES), {"request":
-"<the request as typed>"}; other names in it are ignored, and without "request" the request is empty. Any caller may ask
+"<the request as typed>"}; other names in it are ignored, and without "request" the request is empty. Since 24 Oct 2026
+(Noemi: "the tool should work for visitors anywhere, not just the UK") it may also say where the visitor is, {"region":
+"uk" | "us" | "elsewhere"} (any capitals; "uk" when left out or null; anything else is refused, 400 bad_region). A region
+changes the words of each pick's "price" and "availability" lines and nothing else: the same products in the same order
+(no country preference in ranking, her decision (c) of 19 Oct 2026), the same fields, and the UK's lines exactly as they
+were. In the US a UK price reads "£120 in the UK, at <shop>, ..." and a product the price list shows is sold in the US
+(a US shop or a USD price) says "Sold in the US at <shop>, ..."; "Not sold in the UK" is shown to nobody outside it;
+elsewhere the lines are neutral ("Sold in the UK at ...", "Sold in the US at ..." where known). The page keeps the visitor's
+choice in their browser only and sends it with the request, nowhere else. Each region's answer is remembered on its own.
+Any caller may ask
 (eval/live_latency.py does), but a page on another website can't make a browser send it: JSON can't be posted across
 sites without the browser first asking this server for leave, which it never gives.
 
@@ -204,7 +229,8 @@ the Origin header the browser adds (or, when it sends none, its Referer) must na
 
 An error is {"error": "<plain words>", "code": "<one word for programs>"}:
     400 empty_request, request_too_long (over WEB_MAX_REQUEST_CHARS characters); bad_length, bad_json, bad_feedback,
-        bad_body (an answer's body that isn't {"request": "<text>"})
+        bad_body (an answer's body that isn't {"request": "<text>"}), bad_region (a "region" that isn't uk, us or
+        elsewhere; 24 Oct 2026)
     403 wrong_host        a request not addressed to this server
         cross_site        feedback not sent from this site's own page
     404 not_found
@@ -212,17 +238,19 @@ An error is {"error": "<plain words>", "code": "<one word for programs>"}:
     411 length_required, 413 too_large, 415 not_json   (feedback, and since 16 Oct 2026 answers)
     429 too_many_requests (public mode only, with a Retry-After header in seconds)
     500 quote_not_verified (the answer is refused), engine_failed (details in the server's window, never sent)
-    503 feedback_unavailable (the feedback couldn't be kept just now)
+    503 feedback_unavailable (the feedback couldn't be kept just now), test_closed (the pairwise test has no cards)
 The words are for whoever calls the API; the page picks its own words by code (PROPOSED, at the top of the page).
 
-Answers take about 2 seconds, so each one is remembered: asking again is instant. Since 12 Oct 2026 for
+Answers take about 2 seconds, so each one is remembered (for each region on its own, since 24 Oct 2026): asking again is
+instant. Since 12 Oct 2026 for
 ANSWER_KEEP_HOURS at most, and since 17 Oct 2026 never past the moment its oldest shown quote's check turns 48 hours old
 (_keep_seconds: a quote is shown only with a passing check from the last 48 hours, and checks made ahead of time can be
 up to 48 hours old when the answer is worked out). A library refresh needs a restart to show.
 
 Getting ready (latency, 12 Oct 2026): as it starts, the server reads the library, the price and facts lists, loads
 the open model, and works out (and throws away) one answer per product type without live checks, so what answers keep
-between requests is ready (warm_up). All in the background: the page is there at once, and the first visitor doesn't
+between requests is ready (warm_up). Since 24 Oct 2026 (Noemi: fast first answers) the search page's examples and the 62
+demo requests she may show at interviews (engine/data/demo_requests.json) are warmed first, within the answers' memory. All in the background: the page is there at once, and the first visitor doesn't
 wait for any of it. On the live site (CREDIBLE_RECS_LIVE_CACHE_BUCKET set) it first reads the checks of the last 48
 hours from the bucket's one bundle into its folder, and the daily plan of what to read ahead. Since 14 Oct 2026 (the
 free-tier redesign; engine/read_ahead.py) the site reads ahead itself, a few comments each time Cloud Scheduler's
@@ -250,6 +278,7 @@ import ipaddress
 import json
 import math
 import os
+import random
 import re
 import signal
 import sys
@@ -264,13 +293,14 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from engine import answer as wording
-from engine import feedback, how_page
+from engine import feedback, how_page, pair_test
 from engine.answer import answer_to_dict, quotes_to_check, unverified_claims
-from engine.config import (ANSWERS_KEPT_TYPES, BRAND_PICK_MODEL, CACHE_MAX_AGE_HOURS, FEEDBACK_MAX_BODY_BYTES,
-                           FEEDBACK_MAX_COMMENT_CHARS,
-                           LEFT_OUT_NAMES_SHOWN,
-                           PICKS_SHOWN, RATE_LIMIT_ANSWERS, RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS, WEB_MAX_REQUEST_CHARS,
-                           WEB_PORT)
+from engine.config import (ANSWERS_KEPT_TYPES, BRAND_PICK_MODEL, CACHE_MAX_AGE_HOURS, DEFAULT_REGION,
+                           FEEDBACK_MAX_BODY_BYTES, FEEDBACK_MAX_COMMENT_CHARS,
+                           LEFT_OUT_NAMES_SHOWN, PAIR_TEST_MAX_WHY_CHARS,
+                           PICKS_SHOWN, RATE_LIMIT_ANSWERS, RATE_LIMIT_FEEDBACK, RATE_LIMIT_PAIRS,
+                           RATE_LIMIT_WINDOW_SECONDS, REGIONS,
+                           WEB_MAX_REQUEST_CHARS, WEB_PORT)
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.metrics import METRICS_FILE
 from engine.parse_reddit import REPO_ROOT
@@ -282,6 +312,7 @@ from engine.query import FIRST_PRODUCT_TYPES, PRODUCT_TYPES
 HOST = "127.0.0.1"  # this computer only. Never "0.0.0.0", which would open the server to the whole network.
 PUBLIC_HOST = "0.0.0.0"  # public mode only: every network interface, so the Space's proxy can reach the server
 PAGE_TEMPLATE = Path(__file__).resolve().parent / "templates" / "search.html"
+TEST_TEMPLATE = Path(__file__).resolve().parent / "templates" / "test.html"  # the pairwise test (20 Oct 2026)
 # The search page's example requests: since 16 Oct 2026 (Noemi's decision 7) not the blind-test questions
 # (eval/blind_test/questions.json), which a tester trying the site first could have recognised.
 EXAMPLES_FILE = Path(__file__).resolve().parent / "data" / "example_requests.json"
@@ -344,12 +375,17 @@ ANSWER_NO_LENGTH = ("length_required", "Say how long the body is, with a Content
 ANSWER_TOO_LARGE = ("too_large", "The body is limited to {limit} bytes.")
 ANSWER_BAD_JSON = ("bad_json", "The body isn't one valid JSON value (or a name in it appears twice).")
 BAD_ANSWER_BODY = ("bad_body", 'Send one JSON object with the request as text: {{"request": "..."}}.')
+BAD_REGION = ("bad_region", 'The region must be "uk", "us" or "elsewhere" (or left out, which means "uk").')
 
+# The pairwise test (Noemi, 20 Oct 2026): its answers take the feedback's checks, with a code of their own for "no cards".
+TEST_CLOSED = ("test_closed", "The test isn't open just now. Please try again later.")
 ANSWER_PATH = "/api/answer"
 FEEDBACK_PATH = "/api/feedback"
+TEST_PATH = "/test"
+TEST_RESPONSE_PATH = "/api/test-response"
 READY_PATH = "/ready"  # whether the server has got ready (warm_up): Cloud Run's startup probe asks it
-METHODS = {"/": "GET", "/how": "GET", ANSWER_PATH: "POST", READY_PATH: "GET",
-           FEEDBACK_PATH: "POST"}  # each route and how it is asked (answers with POST since 16 Oct 2026)
+METHODS = {"/": "GET", "/how": "GET", ANSWER_PATH: "POST", READY_PATH: "GET", FEEDBACK_PATH: "POST", TEST_PATH: "GET",
+           TEST_RESPONSE_PATH: "POST"}  # each route and how it is asked (answers with POST since 16 Oct 2026)
 # POST /api/answer's body at most (16 Oct 2026): room for a request of WEB_MAX_REQUEST_CHARS characters however JSON writes
 # it (a \u escape is 6 bytes a character, 12 for one outside the Basic Multilingual Plane), with its name and quotes. A
 # longer request in a body that fits gets request_too_long, as before.
@@ -370,8 +406,9 @@ class Site:
 LOCAL = Site()
 
 
-# Answers already worked out, by (request, library folder), each until its time is up (_keep_seconds).
-_answers: dict[tuple[str, str], tuple[float, tuple[int, str, bytes]]] = {}  # key -> (kept until, on _clock; the answer)
+# Answers already worked out, by (request, library folder, region), each until its time is up (_keep_seconds). Per region
+# since 24 Oct 2026: the lines of a price and of its availability differ by region, so each region's answer is its own.
+_answers: dict[tuple[str, str, str], tuple[float, tuple[int, str, bytes]]] = {}  # key -> (kept until, on _clock; the answer)
 # How long a remembered answer is kept at most before it is worked out again, its quotes checked live once more (12 Oct
 # 2026): well within the 48 hours Reddit content may be kept, and short enough that a comment deleted today leaves the
 # answers by tomorrow. Chosen by Claude, reported to Noemi. Since 17 Oct 2026 also never past the moment its oldest
@@ -394,6 +431,14 @@ live = None
 on_demand = None
 # Where feedback goes (engine.feedback, 11 Oct 2026): set by the command line; None in the tests, which give their own.
 store = None
+# Where the pairwise test's visit ids get their randomness: the system's, so no one can guess an id; the tests give a
+# seeded one. A visit's deck (its questions, rivals, sides and order) follows from its id and _deck_key.
+_deck_random = random.SystemRandom()
+# The key that, with a visit's id, decides its deck, so that the rival and side of each answer can be worked out again
+# when it comes in and never need to be told to the page (engine/pair_test.py). From the site's own secret, so every
+# instance has the same; a random one without it (this computer, the tests: one process).
+_deck_key = pair_test.deck_key()
+_closed_said = ""  # why the test was last said to be closed (in the server's window, once)
 _answers_lock = threading.Lock()
 # Visitors waiting for _answers_lock (14 Oct 2026, measured live just after a deploy: a visitor's answer queued 31 s
 # behind a warming slice, because Python's lock isn't fair and the slice took it back for its next request before the
@@ -428,6 +473,8 @@ def handle_request(path_and_query: str, library_dir: Path = DEFAULT_LIBRARY_DIR,
     parts = urlsplit(path_and_query)
     if parts.path == "/":
         return 200, HTML, search_page(site)
+    if parts.path == TEST_PATH:
+        return test_page_response(library_dir)
     if parts.path == "/how":  # read now: a new evaluation run shows at once
         page = how_page.page(METRICS_FILE, counter=counter_script(site.goatcounter), public=site.public,
                              on_demand=on_demand is not None)
@@ -445,15 +492,17 @@ def handle_request(path_and_query: str, library_dir: Path = DEFAULT_LIBRARY_DIR,
     return _error(404, NOT_FOUND)
 
 
-def answer_response(request: str, library_dir: Path, quiet: bool = False) -> tuple[int, str, bytes]:
+def answer_response(request: str, library_dir: Path, quiet: bool = False,
+                    region: str = DEFAULT_REGION) -> tuple[int, str, bytes]:
     """The answer to one request as JSON, remembered for next time; or an error. `quiet` (the public site): nothing
-    about the request goes to the server's window, not even in a report of a failure."""
+    about the request goes to the server's window, not even in a report of a failure. `region` (24 Oct 2026): where the
+    visitor is, one of config.REGIONS; each region's answer is remembered on its own."""
     request = request.strip()
     if not request:
         return _error(400, EMPTY_REQUEST)
     if len(request) > WEB_MAX_REQUEST_CHARS:
         return _error(400, TOO_LONG, n=len(request), limit=WEB_MAX_REQUEST_CHARS)
-    key = (request, str(library_dir))
+    key = (request, str(library_dir), region)
     remembered = _answers.get(key)  # read without waiting (11 Oct 2026): a slow new answer never holds up a known one
     if remembered is not None and _clock() < remembered[0]:
         return remembered[1]
@@ -464,7 +513,9 @@ def answer_response(request: str, library_dir: Path, quiet: bool = False) -> tup
         if remembered is None or _clock() >= remembered[0]:
             try:
                 _window.answered(request_kind(request))
-                response, keep = _fresh_answer(request, library_dir, quiet)
+                # The UK is asked exactly as before (24 Oct 2026): no new argument.
+                response, keep = (_fresh_answer(request, library_dir, quiet) if region == DEFAULT_REGION
+                                  else _fresh_answer(request, library_dir, quiet, region))
             except Exception:  # a broken library file, say: reported in the server's window, never sent
                 _report_failure(quiet)
                 return _error(500, ENGINE_FAILED)  # not remembered: fixing the file and asking again works
@@ -512,13 +563,16 @@ class _TimedChecker:
         return total
 
 
-def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple[tuple[int, str, bytes], float]:
+def _fresh_answer(request: str, library_dir: Path, quiet: bool = False,
+                  region: str = DEFAULT_REGION) -> tuple[tuple[int, str, bytes], float]:
     """Runs the pipeline, then checks every quote once more; one that fails refuses the whole answer. Also how many
     seconds the answer may be remembered (_keep_seconds, 17 Oct 2026), or 0 when it isn't whole: something in it was
     left out because its live check would have waited (13 Oct 2026), or since 14 Oct 2026 it is an answer on-demand
     reading is about to change (engine/on_demand.py: a request queued for reading, or one whose queue couldn't be
     read): such an answer is worked out again next time."""
     with_profiles = {} if profiles is None else {"profiles": profiles}
+    if region != DEFAULT_REGION:  # the UK is asked exactly as before (24 Oct 2026)
+        with_profiles["region"] = region
     timed = _TimedChecker(live) if live is not None else None
     if timed is not None:
         with_profiles["live_checker"] = timed
@@ -544,7 +598,7 @@ def _fresh_answer(request: str, library_dir: Path, quiet: bool = False) -> tuple
             read_ahead.shown(quote.url for quote in quotes_to_check(result.answer))
     extra = {"on_demand": reading.state} if reading is not None and reading.state is not None else {}
     whole = result.live_put_off == 0 and (reading is None or reading.remember)
-    return (200, JSON, _json_bytes(answer_json(result) | {"timing": timing} | extra)), (_keep_seconds(result) if whole
+    return (200, JSON, _json_bytes(answer_json(result, region) | {"timing": timing} | extra)), (_keep_seconds(result) if whole
                                                                                          else 0.0)
 
 
@@ -580,11 +634,12 @@ def _report_failure(quiet: bool) -> None:
     print(f"The engine failed on a request ({kind.__name__ if kind else 'unknown error'}{where}).", file=sys.stderr)
 
 
-def answer_json(result: PipelineResult) -> dict:
-    """The pipeline's result in the shape the page (and the later website) reads: see the top of this file."""
+def answer_json(result: PipelineResult, region: str = DEFAULT_REGION) -> dict:
+    """The pipeline's result in the shape the page (and the later website) reads: see the top of this file. For a region
+    other than the UK (24 Oct 2026) the answer also says which: "region" (the UK's answer is exactly as it was)."""
     query = result.query
     brand_names = result.brand_or_line_names_left_out
-    return {
+    return ({"region": region} if region != DEFAULT_REGION else {}) | {
         "query": {"status": query.status, "category": query.category, "product_type": query.product_type,
                   "question": query.question, "message": query.message,
                   "ingredients": list(query.constraints.ingredients), "ingredient_led": query.ingredient_led,
@@ -656,6 +711,59 @@ def handle_feedback(content_type: str | None, content_length: str | None, read) 
     return 200, JSON, _json_bytes({"saved": True})
 
 
+# --- The pairwise test: its page and its answers (Noemi, 20 Oct 2026) ---
+
+def test_page_response(library_dir: Path) -> tuple[int, str, bytes]:
+    """GET /test: the page with a new deck for this visit, or, while the cards are missing or break a rule, the same page
+    saying the test isn't open yet (503). The server's window says why, once; a visitor is never told."""
+    global _closed_said
+    cards = pair_test.cards_in(library_dir)
+    if cards is None:
+        why = pair_test.why_closed(library_dir)
+        if why != _closed_said:
+            _closed_said = why
+            print(f"The pairwise test (/test) is closed: {why}", file=sys.stderr, flush=True)
+        return 503, HTML, test_page(None)
+    visit = pair_test.new_visit(cards, _deck_random)
+    return 200, HTML, test_page(pair_test.public_deck(pair_test.deck_for(cards, visit, _deck_key)), visit)
+
+
+def test_page(deck: list[dict] | None, visit: str | None = None) -> bytes:
+    """The pairwise test's page (engine/templates/test.html) with this visit's deck (pair_test.public_deck: no rival, no
+    side) and its id in it; `deck` None: the page that says the test isn't open. The same page for the local and the
+    public site: it counts nobody and loads nothing."""
+    settings = {"deck": deck or [], "session": visit, "whyMax": PAIR_TEST_MAX_WHY_CHARS, "closed": deck is None}
+    template = TEST_TEMPLATE.read_text(encoding="utf-8")
+    return template.replace("{{SETTINGS}}", _script_json(settings)).encode("utf-8")
+
+
+def handle_test_response(content_type: str | None, content_length: str | None, read,
+                         library_dir: Path = DEFAULT_LIBRARY_DIR) -> tuple[int, str, bytes]:
+    """POST /api/test-response, once the request is known to come from this site's own page: one answer of the pairwise
+    test, checked as feedback is (the same JSON-only, size and wording rules; engine.feedback.parse_pair), for a question
+    the visit was asked, and kept in `store` as the kind "blind_pair" with the rival and the side the server works out
+    from the visit's id (pair_test.sides_of); or an error. Only {"saved": true} comes back: nothing of the answer, least
+    of all which side was ours."""
+    data, refused = _json_body(content_type, content_length, read, FEEDBACK_MAX_BODY_BYTES, _FEEDBACK_BODY)
+    if refused is not None:
+        return refused
+    cards = pair_test.cards_in(library_dir)
+    if cards is None:
+        return _error(503, TEST_CLOSED)
+    try:
+        record = feedback.parse_pair(data, lambda visit, question: pair_test.sides_of(cards, visit, question, _deck_key))
+    except feedback.FeedbackError as error:
+        return _error(400, BAD_FEEDBACK, reason=str(error))
+    if store is None:
+        return _error(503, FEEDBACK_UNAVAILABLE)
+    try:
+        store.add(record)
+    except Exception as error:  # too much waiting to be uploaded, or a full disk: the record's words are never logged
+        print(f"Test answer not kept ({type(error).__name__}).", file=sys.stderr)
+        return _error(503, FEEDBACK_UNAVAILABLE)
+    return 200, JSON, _json_bytes({"saved": True})
+
+
 # The words of each POST route's refusals of a body (16 Oct 2026: the answer's route takes a body too).
 _FEEDBACK_BODY = {"not_json": NOT_JSON, "length_required": NO_LENGTH, "too_large": TOO_LARGE, "bad_json": BAD_JSON}
 _ANSWER_BODY = {"not_json": ANSWER_NOT_JSON, "length_required": ANSWER_NO_LENGTH, "too_large": ANSWER_TOO_LARGE,
@@ -697,7 +805,20 @@ def handle_answer(content_type: str | None, content_length: str | None, read, li
     request = data.get("request", "") if isinstance(data, dict) else None
     if not isinstance(request, str):
         return _error(400, BAD_ANSWER_BODY)
-    return answer_response(request, Path(library_dir), quiet=site.public)
+    region = _region_in(data)
+    if region is None:
+        return _error(400, BAD_REGION)
+    return answer_response(request, Path(library_dir), quiet=site.public, region=region)
+
+
+def _region_in(body: dict) -> str | None:
+    """The region a body asks for (24 Oct 2026): "uk", "us" or "elsewhere" in any capitals and spaces; the UK when it has
+    none (no "region", or null); None for anything else."""
+    region = body.get("region")
+    if region is None:
+        return DEFAULT_REGION
+    region = region.strip().lower() if isinstance(region, str) else None
+    return region if region in REGIONS else None
 
 
 def _no_repeated_names(pairs: list[tuple[str, object]]) -> dict:
@@ -890,7 +1011,8 @@ def search_page(site: Site = LOCAL) -> bytes:
     settings = {"wording": answer_wording(), "examples": example_requests(), "maxChars": WEB_MAX_REQUEST_CHARS,
                 "maxCommentChars": FEEDBACK_MAX_COMMENT_CHARS, "counting": site.goatcounter is not None,
                 "public": site.public,
-                "picksShown": PICKS_SHOWN}  # the reading strip's "why not all?" (13 Oct 2026)
+                "picksShown": PICKS_SHOWN,  # the reading strip's "why not all?" (13 Oct 2026)
+                "regions": list(REGIONS)}  # the region control's choices, UK first (24 Oct 2026)
     template = PAGE_TEMPLATE.read_text(encoding="utf-8")
     page = template.replace("{{COUNTER}}", counter_script(site.goatcounter))  # first: the settings could hold any text
     return page.replace("{{SETTINGS}}", _script_json(settings)).encode("utf-8")
@@ -979,11 +1101,16 @@ class _Handler(BaseHTTPRequestHandler):
                 return
             return self._send(*handle_answer(self.headers.get("Content-Type"), self.headers.get("Content-Length"),
                                              self.rfile.read, self.server.library_dir, self.server.site))
-        if path != FEEDBACK_PATH:
+        if path not in (FEEDBACK_PATH, TEST_RESPONSE_PATH):
             refused = _error(405, WRONG_METHOD, allowed=METHODS[path]) if path in METHODS else _error(404, NOT_FOUND)
             return self._send(*refused, path=path)
         if not from_this_site(self.headers.get("Origin"), self.headers.get("Referer"), self._accepts):
             return self._send(*_error(403, CROSS_SITE))
+        if path == TEST_RESPONSE_PATH:  # the pairwise test's answers: the feedback's checks, a limit of their own
+            if self._held_back("pairs"):
+                return
+            return self._send(*handle_test_response(self.headers.get("Content-Type"), self.headers.get("Content-Length"),
+                                                    self.rfile.read, self.server.library_dir))
         if self._held_back("feedback"):
             return
         self._send(*handle_feedback(self.headers.get("Content-Type"), self.headers.get("Content-Length"),
@@ -1090,7 +1217,8 @@ def make_server(port: int = WEB_PORT, library_dir: Path = DEFAULT_LIBRARY_DIR, s
     server.library_dir = Path(library_dir)
     server.site = site
     server.limits = {"answers": RateLimiter(RATE_LIMIT_ANSWERS, RATE_LIMIT_WINDOW_SECONDS),
-                     "feedback": RateLimiter(RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS)}
+                     "feedback": RateLimiter(RATE_LIMIT_FEEDBACK, RATE_LIMIT_WINDOW_SECONDS),
+                     "pairs": RateLimiter(RATE_LIMIT_PAIRS, RATE_LIMIT_WINDOW_SECONDS)}
     server.refused_hosts, server.refused_lock = set(), threading.Lock()  # public mode: refused hosts already named
     return server
 
@@ -1241,7 +1369,8 @@ def warm_requests() -> list[str]:
     ready reached 7, then 13, of its requests in its time), each once, in the order that takes the most cold work away
     soonest (measured on this Mac: eval/LATENCY.md):
 
-    - the search page's example requests (the first of WARM_FIRST_FILES): what a visitor clicks, word for word;
+    - the search page's example requests, word for word (what a visitor clicks), and then the demo requests, the 62 Noemi
+      may show at interviews (the first two of WARM_FIRST_FILES; 24 Oct 2026: "fast first answers");
     - then one request for each product type not asked yet (WARM_PRODUCT_TYPES' order), its likeliest: the first of the
       latency requests that module 1's rules place as that type, else the type's own name. A type's first answer reads
       every thread of its category for it, the biggest part of a cold answer, which every later request of that type
@@ -1254,21 +1383,41 @@ def warm_requests() -> list[str]:
     general request already does the general category's own work (its readable threads, each thread's comments read),
     and the answers' memory keeps ANSWERS_KEPT_TYPES types' work (_window), fewer than their 398: warming them had
     filled the memory (the live site ran out of it at 2 GiB). Each is worked out for its first visitor.
-    What getting ready has no time for (WARM_UP_ANSWERS_SECONDS) is warmed a slice per keep-warm ping (warm_more)."""
-    examples = _requests_in(WARM_FIRST_FILES[0]) if WARM_FIRST_FILES else []
+    What getting ready has no time for (WARM_UP_ANSWERS_SECONDS) is warmed a slice per keep-warm ping (warm_more). Since
+    24 Oct 2026 the list holds requests of at most ANSWERS_KEPT_TYPES product types (_within_the_memory): the demo
+    requests alone span 60, so the memory is as it was and the last requests of the others are left to their first
+    visitors."""
+    first = list(dict.fromkeys(text for path in WARM_FIRST_FILES[:2] for text in _requests_in(path)))
     likely = [text for path in WARM_FIRST_FILES for text in _requests_in(path)]
     every = list(dict.fromkeys(likely + list(WARM_PRODUCT_TYPES)))
     placed = {text: _placed_by_rules(text) for text in every}
     per_type = [text for product_type in WARM_PRODUCT_TYPES
                 if (text := next((t for t in every if placed[t] == (product_type, False)), None)) is not None]
-    lead = list(dict.fromkeys(examples + per_type))
+    lead = list(dict.fromkeys(first + per_type))
     rest = [text for text in every if text not in lead]
-    return lead + [t for t in rest if not placed[t][1]] + [t for t in rest if placed[t][1]]
+    ordered = lead + [t for t in rest if not placed[t][1]] + [t for t in rest if placed[t][1]]
+    return _within_the_memory(ordered, placed)
 
 
-def _placed_by_rules(text: str) -> tuple[str | None, bool]:
-    """The product type module 1 places a request as (None for a question or a polite no), and whether it would ask the
-    open model about it: module 1 run with a stand-in that only notes being asked, so its rules alone decide."""
+def _within_the_memory(requests: list[str], placed: dict[str, tuple[str | None, bool]]) -> list[str]:
+    """The requests, in their order, left to those whose product types the answers' memory can keep (24 Oct 2026, with the
+    demo requests warmed first): once answers have asked about more than ANSWERS_KEPT_TYPES types, what they worked out
+    is forgotten (engine.memo.TypeWindow), so a longer list would throw away the first requests' warm work as it warmed
+    the last. A request of a type past the limit is left to its first visitor, as the taxonomy's types are. A request that
+    asks the open model has a type of its own until the model has read it (which only makes the limit safer)."""
+    kept, kinds = [], set()
+    for text in requests:
+        kind = ("asks the open model", text) if placed[text][1] else _kind_by_rules(text)
+        if kind not in kinds and len(kinds) >= ANSWERS_KEPT_TYPES:
+            continue
+        kinds.add(kind)
+        kept.append(text)
+    return kept
+
+
+def _read_by_rules(text: str):
+    """(module 1's reading of a request, whether it would ask the open model about it): module 1 run with a stand-in that
+    only notes being asked, so its rules alone decide."""
     from engine.query import parse_query
 
     class _Noting:
@@ -1279,23 +1428,40 @@ def _placed_by_rules(text: str) -> tuple[str | None, bool]:
             return None
 
     noting = _Noting()
-    query = parse_query(text, model=noting)
-    return (query.product_type if query.status == "ok" else None), noting.asked
+    return parse_query(text, model=noting), noting.asked
+
+
+def _placed_by_rules(text: str) -> tuple[str | None, bool]:
+    """The product type module 1 places a request as (None for a question or a polite no), and whether it would ask the
+    open model about it: module 1 run with a stand-in that only notes being asked, so its rules alone decide."""
+    query, asked = _read_by_rules(text)
+    return (query.product_type if query.status == "ok" else None), asked
+
+
+def _kind_by_rules(text: str) -> tuple:
+    """What the answers' memory keeps a request's work under (engine.pipeline.request_kind), by module 1's rules alone."""
+    query, _ = _read_by_rules(text)
+    return (query.category, query.product_type, query.ingredient_led) if query.status == "ok" else (query.status,)
 
 
 def _requests_in(path: Path) -> list[str]:
     """The requests of a file of requests: the search page's examples ("examples"), the blind-test questions
-    ("questions") or the latency requests ("queries"); none when there is no such file."""
+    ("questions"), the latency requests ("queries") or the demo requests ("demo"); none when there is no such file."""
     if not Path(path).is_file():
         return []
     data = json.loads(Path(path).read_text(encoding="utf-8"))
-    return [item["text"] for item in data.get("examples", data.get("questions", data.get("queries", [])))]
+    return [item["text"] if isinstance(item, dict) else item
+            for item in data.get("examples", data.get("questions", data.get("queries", data.get("demo", []))))]
 
 
 # The requests answered first while getting ready (warm_requests): the search page's examples, then the latency
 # requests (each type's likeliest first).
 LATENCY_FILE = REPO_ROOT / "eval" / "edge_cases" / "latency_queries.json"
-WARM_FIRST_FILES = (EXAMPLES_FILE, LATENCY_FILE)
+# Since 24 Oct 2026 (Noemi: fast first answers): the search page's examples and then the demo requests, the 62 she may
+# show at interviews (the committed copy of docs/bfs-2026-10-17/demo-requests.txt: docs/ is private and not in the site's
+# image), are warmed before anything else; then the latency requests and the types, as before.
+DEMO_FILE = Path(__file__).resolve().parent / "data" / "demo_requests.json"
+WARM_FIRST_FILES = (EXAMPLES_FILE, DEMO_FILE, LATENCY_FILE)
 # Then the product types: module 1's own first 43 (engine.query.FIRST_PRODUCT_TYPES). The rules route each by its name
 # (only "serum", placed by a clue word, also gets the open model's view, as any request would).
 WARM_PRODUCT_TYPES = tuple(p.name for p in FIRST_PRODUCT_TYPES)

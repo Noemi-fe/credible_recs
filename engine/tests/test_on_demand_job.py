@@ -304,3 +304,38 @@ def test_a_waiting_thread_that_cant_be_read_is_let_go_and_the_run_goes_on(tmp_pa
     bundle = the_bundle(google)
     assert "1bad001" not in bundle.threads and len(bundle.extracted()) == 3 and report.extracted == 3
     assert the_queue(google).entries[0].status == "done"
+
+
+# --- The reader's model (Noemi's decision (l) of 19 Oct 2026: a cheaper reader) ---
+
+def test_the_job_reads_with_the_model_config_names_unless_its_settings_name_another(monkeypatch):
+    from engine import config
+
+    monkeypatch.delenv(on_demand.MODEL_VAR, raising=False)
+    assert on_demand.reader_model() == config.ON_DEMAND_GEMINI_MODEL
+    monkeypatch.setenv(on_demand.MODEL_VAR, "gemini-test-model")
+    assert on_demand.reader_model() == "gemini-test-model"
+    monkeypatch.setenv(on_demand.MODEL_VAR, "  ")
+    assert on_demand.reader_model() == config.ON_DEMAND_GEMINI_MODEL  # a blank setting is no setting
+
+
+def test_a_run_from_the_command_line_asks_gemini_through_that_model(monkeypatch):
+    import engine.gemini_extract
+
+    seen = {}
+
+    class Client:
+        def __init__(self, *args, **kwargs):
+            seen["model"] = kwargs.get("model")
+
+    def fake_run_job(bucket, library, archive, gemini, **kwargs):
+        seen["gemini"] = gemini
+        return types.SimpleNamespace(text=lambda: "report")
+
+    monkeypatch.setenv(on_demand.BUCKET_VAR, "credible-test-on-demand")
+    monkeypatch.setenv(on_demand.MODEL_VAR, "gemini-test-model")
+    monkeypatch.setattr(engine.gemini_extract, "GeminiClient", Client)
+    monkeypatch.setattr(on_demand, "run_job", fake_run_job)
+    monkeypatch.setattr("engine.arctic_shift.ArcticShiftClient", lambda *a, **k: object())
+    assert on_demand.main(["run"]) == 0
+    assert seen["model"] == "gemini-test-model" and isinstance(seen["gemini"], Client)

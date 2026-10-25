@@ -46,7 +46,11 @@ def test_the_page_sends_the_request_in_a_post_body_never_in_an_address(tmp_path)
     assert sorted(set(calls)) == ['"/api/answer"', '"/api/feedback"']
     asking = re.search(r'fetch\("/api/answer", \{(.*?)\}\);', script, re.DOTALL).group(1)
     assert 'method: "POST"' in asking and '"Content-Type": "application/json"' in asking
-    assert "body: JSON.stringify({ request })" in asking
+    # Changed on purpose 25 Oct 2026 (Noemi, 24 Oct: the region choice, "never sent anywhere except with the request"): the
+    # body also holds the visitor's region, one of the select's three values; the address still holds nothing. Was:
+    # "body: JSON.stringify({ request })".
+    assert "body: JSON.stringify({ request, region })" in asking
+    assert "const region = regionBox.value;" in script
 
 
 def test_the_address_bar_and_the_copied_link_keep_the_request_after_the_hash_only(tmp_path):

@@ -618,10 +618,18 @@ PRECHECK_STOP_AFTER_UNKNOWN = 20
 # day, while about 7,650 fell due (the plan's ~7,750 answers' comments every 40 hours and LIBRARY_VERIFY_READS a day);
 # at 8, as many at once as an answer reads (LIVE_CHECK_PARALLEL), a ping reaches its 40: 11,520 a day, with no more of
 # Reddit's reads (at most 80 of each 10 minutes' 200, as before) and no more billed seconds.
-READ_AHEAD_PER_PING = 40
-READ_AHEAD_SECONDS = 5
+# Capacity since 25 Oct 2026 (Claude, the verify2 builder, from the review's option (c); reported to Noemi): the site read
+# 9,600 a day against a cap of 11,520 while what falls due (about 9,300 a day with LIBRARY_VERIFY_READS 4,500 and the answers'
+# last two tiers read every PLAN_FALLBACK_TIER_DAYS days) needs room to clear a backlog. So visitors keep 100 of Reddit's
+# 200 reads in each 10 minutes instead of 120 (two fresh answers of the biggest size, 40 reads each, and a margin of 20),
+# reading ahead takes at most 48 a ping (96 of each 10 minutes' 200, with the 100 kept: 196) in 6 seconds (a read took 0.97 s
+# at the slowest seen, 8 at once, each starting 0.1 s after the one before: 49 starts in 6 s): 13,824 a day, 1.5 times what
+# falls due. Billed time rises from 6 to 7 seconds a ping, worst case 62,496 vCPU-seconds (35% of the site's 180,000 free)
+# and, at the site's 4 GiB, 249,984 GiB-seconds (69% of 360,000): engine/tests/test_cloudrun.py.
+READ_AHEAD_PER_PING = 48
+READ_AHEAD_SECONDS = 6
 READ_AHEAD_PARALLEL = 8
-READ_AHEAD_KEEP = 120
+READ_AHEAD_KEEP = 100
 READ_AHEAD_AGAIN_HOURS = 40
 PLAN_RELOAD_SECONDS = 3600
 BUNDLE_SHARE_SECONDS = 3600
@@ -710,13 +718,32 @@ LIBRARY_VERIFY_DAYS = 30
 # (so due by 10 to 13 Nov), and with the 846 threads still to extract about 31,000 never verified: 11 days at 3,000 a
 # day, oldest first, so a migration in late October still verifies every one in time. After that, about 36,000 kept
 # comments (about 33,500 outside the answers) are each read every 12 days, well inside LIBRARY_VERIFY_DAYS.
-LIBRARY_VERIFY_READS = 3000
+#
+# 4,500 a day since 25 Oct 2026 (Claude, the verify2 builder, from the review docs/verify-bfs-2026-10-25.md; reported to
+# Noemi). The review measured the library on 24 Oct (78,102 kept comments): about 2,700 pass their 30 days a day, so 3,000
+# had 10% to spare and a week's outage would cost about 2,200 comments by 22 Nov, ten days about 10,400. At 4,500 a day,
+# with reading ahead's capacity to match (below) and the answers' last two tiers read less often (PLAN_FALLBACK_TIER_DAYS),
+# a ten-day outage loses nothing. It is the plan's list, oldest deadline first; the site reads what Reddit's limits allow.
+LIBRARY_VERIFY_READS = 4500
 # A kept comment verified within this many days isn't read again by that pass (the comments answers show still are,
 # daily): with a library smaller than its budget, it doesn't spend reads verifying again what is a few days old.
 LIBRARY_VERIFY_AGAIN_DAYS = 7
 # An embed page that showed no comment ("Not supported comment") is tried again only after this many days: such a
 # comment usually stays unreadable there, and each try would take a read from the comments that can pass.
 LIBRARY_VERIFY_RETRY_DAYS = 10
+# A kept comment whose embed page showed no comment twice, the second read at least this many days after the first with no
+# passing read between, lapses at the next deploy as an expired one does (25 Oct 2026, the review's option (i), reported
+# to Noemi): such a page is probably a comment gone from Reddit (all 2,031 the review found were in archive-read threads,
+# none in the 4,949 read live; Bright Data found 4 of 35, all edited), and until its deadline it held a read every
+# LIBRARY_VERIFY_RETRY_DAYS (every 40 hours when an answer used it). One unreadable read still proves nothing, so a page
+# Reddit redesigns can't wipe the library in one go: the second read comes a week or more later.
+LIBRARY_UNREADABLE_LAPSE_DAYS = 7
+# The answers' last two tiers (the products ranked behind the picks, and those after them: the fallbacks a failed check
+# brings in, rarely shown) are listed by the daily plan one day in this many, each comment on its day, instead of being read
+# again every READ_AHEAD_AGAIN_HOURS (25 Oct 2026, the review's option (h); about 1,260 reads a day freed). A quote still
+# needs a passing check from the last 48 hours to be shown: one that has none is checked at answer time, as for any quote
+# not read ahead. The first two tiers (shown, next in line) are unchanged.
+PLAN_FALLBACK_TIER_DAYS = 5
 # LIVE_CHECK_ROUNDS (3), how many times an answer was written again after the live check dropped comments, is gone
 # (12 Oct 2026): an answer written after the third round was shown with its new quotes unchecked. It is now written
 # again until every quote it shows has passed (engine.pipeline._check_live).
@@ -1780,6 +1807,19 @@ RATE_LIMIT_WINDOW_SECONDS = 600
 RATE_LIMIT_ANSWERS = 30
 RATE_LIMIT_FEEDBACK = 15
 
+# --- The pairwise test (Noemi, 20 Oct 2026; engine/pair_test.py, GET /test, POST /api/test-response) ---
+# A short, blind test friends do in about 4 minutes: 6 comparisons of ours against ChatGPT's or Vetted's answer to a
+# shopping question, "A", "B" or "About the same", and an optional one-line why. Noemi chose the test, its 12 questions
+# and the 6 each visitor gets; the values below carry that out (technical values, chosen by Claude, reported to her).
+PAIR_TEST_QUESTIONS_PER_VISITOR = 6
+PAIR_TEST_MAX_PICKS = 3  # picks on a card, in the tool's own order
+PAIR_TEST_MAX_WHY_WORDS = 20  # a pick's one-line why, in each language
+PAIR_TEST_MAX_WHY_CHARS = 300  # the visitor's optional "Why?"
+# An answer of the test is one small request, six to a visitor. Its own limit, so the test never uses up the feedback's
+# (RATE_LIMIT_FEEDBACK), and large enough that friends on one network (one address) and an answer sent again after a
+# failure are not turned away: 30 is five whole tests in the window.
+RATE_LIMIT_PAIRS = 30
+
 # --- Time of use (11 Oct 2026) ---
 # A time longer than this many years is nobody's own use of a product: "a 400 year history" is a tradition's age (a
 # teapot note had the badge "400 years of use"). Chosen by Claude, reported to Noemi: a long cooking life with one pan
@@ -2083,6 +2123,12 @@ PRODUCT_TYPE_FORMS: dict[str, str] = {
 # about than this, is queued for a reading job (Arctic Shift's archive, Gemini's free allowance), and the site says so:
 # the library's own mix per product type.
 ON_DEMAND_MIN_THREADS = LIBRARY_THREADS_PER_PRODUCT
+# What counts toward that bar (25 Oct 2026, Noemi's decision (l) of 19 Oct, from the review of 16 Oct, R1 and R2; PROPOSED): only
+# the threads about the type, never those titled as another type (a moisturiser had 51 of 102 such threads, a saucepan
+# 30 of 50, so weak types never got more); and for a fast-moving type (FAST_MOVING_TYPES: laptops, headphones, phones),
+# a library whose newest thread about it is older than this many years is read again for newer ones, which only reads
+# threads posted since (a 2019 laptop is no recommendation; the general category's threads date from 2019 to 2023).
+ON_DEMAND_OLD_YEARS = 2
 # What the queue keeps of a request: its product type, category and subreddits (module 1's), and at most this many of its
 # need words (engine.sources.need_words: its own words less the product's name, filler words and numbers), for a
 # need-led choice of threads. Never the request as typed, never a time or an address (Noemi's rule of 11 Oct 2026).
@@ -2090,7 +2136,8 @@ ON_DEMAND_NEED_WORDS = 3
 # At most this many requests wait at once: more are answered from what the library has, and asked about again later.
 # 20 since 14 Oct 2026 (10 before; the coordinator asked to raise it with the general category, whose types mostly have
 # no threads yet, so most of its requests queue; chosen by Claude, reported to Noemi): about two days of the job's
-# reading within Gemini's free allowance (about 11 products a day, at about 9 calls each), and their threads (6 each)
+# reading within Gemini's free allowance (about 11 products a day, at about 9 calls each: since 25 Oct 2026 the measured
+# free allowance of Gemini 3.8 Flash reads one a day, and the visitor is told), and their threads (6 each)
 # fit the bundle (ON_DEMAND_BUNDLE_MAX_THREADS) before a deploy takes them in. The free-tier sums don't change: the
 # job's time and its Gemini calls have caps of their own (ON_DEMAND_MONTH_SECONDS, ON_DEMAND_GEMINI_CALLS_A_DAY), and
 # the site never starts the job while the queue rests.
@@ -2115,22 +2162,39 @@ ON_DEMAND_NEW_READING_SECONDS = 15 * 60
 ON_DEMAND_MONTH_SECONDS = 50_000
 ON_DEMAND_START_SECONDS = 30
 ON_DEMAND_LEASE_MINUTES = 50
-# Gemini calls a day the job may make (Gemini's free allowance only, Noemi's decision of 14 Oct 2026), leaving the rest
-# of the free daily allowance to Noemi's own bulk reading; a 429 for the day stops it sooner. The allowance resets at
-# midnight Pacific time: the job waits until GEMINI_RESET_HOUR_UTC (8 am UTC: midnight in winter, 1 am in summer), so
-# it never asks before the reset.
-ON_DEMAND_GEMINI_CALLS_A_DAY = 100
+# The Gemini model the job reads with (the job's settings may name another: CREDIBLE_RECS_ON_DEMAND_MODEL) and the Gemini
+# calls a day it may make: Gemini's free allowance only (Noemi's decision of 14 Oct 2026), a little under what Google
+# allows that model a day, since a 429 for the day stops the job sooner anyway. Gemini 3.8 Flash's free allowance is
+# 20 requests a day and 5 a minute (read from Google's own 429 answer on 25 Oct 2026, eval/RUNS.md), so 18: about one
+# request a day, which the visitor is now told (ON_DEMAND_CALLS_PER_PRODUCT below). It was 100 until 25 Oct 2026, a number
+# that left "the rest of the allowance" to bulk reading Claude's builders do now. The allowance resets at midnight
+# Pacific time: the job waits until GEMINI_RESET_HOUR_UTC (8 am UTC: midnight in winter, 1 am in summer), so it never
+# asks before the reset. A cheaper reader (a Flash-Lite model) waits for Noemi's go-ahead: its precision on her gold
+# threads is 8 points under Flash's (eval/RUNS.md, 25 Oct 2026).
+ON_DEMAND_GEMINI_MODEL = "gemini-3.8-flash"
+ON_DEMAND_GEMINI_CALLS_A_DAY = 18
+# What one request takes, for the wait the visitor is told (25 Oct 2026; PROPOSED): six threads at the median 42
+# comments, 40 a call, are 12 to 15 Gemini calls (the review of 16 Oct 2026, R7), so ON_DEMAND_GEMINI_CALLS_A_DAY //
+# ON_DEMAND_CALLS_PER_PRODUCT requests a day. Each call of Gemini 3.8 Flash took 3.4 to 4.5 minutes on 25 Oct 2026 (the
+# 4 calls for the three gold threads took 16 minutes; a Flash-Lite model took 10 to 25 seconds a call), so one request takes about an
+# hour of the job's time, not the 12 minutes first guessed: 6 of them are Arctic Shift's paced searches and reads. These
+# numbers describe the reader above; a faster reader changes them (and the cap) together.
+ON_DEMAND_CALLS_PER_PRODUCT = 15
+ON_DEMAND_CALL_MINUTES = 4
+ON_DEMAND_ARCHIVE_MINUTES = 6
+ON_DEMAND_PRODUCT_MINUTES = ON_DEMAND_ARCHIVE_MINUTES + ON_DEMAND_CALLS_PER_PRODUCT * ON_DEMAND_CALL_MINUTES
 GEMINI_RESET_HOUR_UTC = 8
 # The bundle holds at most this many threads not baked into the site's image yet: past it the job reads no new request
 # until a deploy takes them in (python -m engine.library pull-bucket, run by deploy/cloudrun/deploy.sh).
 ON_DEMAND_BUNDLE_MAX_THREADS = 300
-# What a visitor is told: the first request waiting is read in about ON_DEMAND_FIRST_MINUTES (the job starts at once:
-# about 6 minutes of Arctic Shift's paced searches and reads, then Gemini's extraction and the site's pick-up), each one
-# ahead of it about ON_DEMAND_EACH_MINUTES more; past ON_DEMAND_LATE_MINUTES of waiting (by the site's own clock, kept in
-# memory only) it is said to be taking longer than usual.
-ON_DEMAND_FIRST_MINUTES = 20
-ON_DEMAND_EACH_MINUTES = 15
-ON_DEMAND_LATE_MINUTES = 90
+# What a visitor is told: the first request waiting is read in about ON_DEMAND_FIRST_MINUTES (the job starts at once and
+# takes ON_DEMAND_PRODUCT_MINUTES, then the site picks the threads up at its next keep-warm ping, every 5 minutes), each
+# one ahead of it about ON_DEMAND_EACH_MINUTES more, while the day's Gemini calls and the month's reading time last (engine.
+# on_demand.wait_for); past ON_DEMAND_LATE_MINUTES of waiting (by the site's own clock, kept in memory only) it is said to
+# be taking longer than usual. 20, 15 and 90 until 25 Oct 2026, when the calls were timed.
+ON_DEMAND_FIRST_MINUTES = ON_DEMAND_PRODUCT_MINUTES + 4
+ON_DEMAND_EACH_MINUTES = ON_DEMAND_PRODUCT_MINUTES
+ON_DEMAND_LATE_MINUTES = 150
 # The site starts the job at most this often, when requests wait and no run holds the queue (the keep-warm ping, every 5
 # minutes, starts it again when a start failed), and reads the queue again at most this often when asked about a
 # request it knows is waiting.
@@ -2666,3 +2730,39 @@ QUOTE_ASKING_PATTERNS = (
     r"|similar )?(?:alternatives?|dupes?|substitutes?|replacements?|recommendations?|suggestions?)\b",
     r"\b(?:anything|something) (?:else|similar|better|cheaper|richer|lighter|more|less|like (?:it|this|that))\b",
 )
+
+# --- Region (24 Oct 2026) ---
+# Noemi, 24 Oct 2026: "the tool should work for visitors anywhere, not just the UK ... country-aware availability: ok,
+# do it now". The page offers UK (the default), US and Elsewhere; the API takes an optional "region" in the POST body. A
+# region changes the price and availability lines only: which picks are shown and their order never change (her decision
+# (c) of 19 Oct 2026: no country preference anywhere in ranking), and the UK region is exactly as it was. Claude's
+# technical values; the lines' wording is PROPOSED (engine/answer.py).
+REGIONS = ("uk", "us", "elsewhere")
+DEFAULT_REGION = "uk"
+# What the price list says about the US (engine.prices.us_sale). Evidence that a product is sold in the US is a USD entry
+# that isn't about a discontinued product (the entry's currency is its shop's), or a page of one of these shops among an
+# entry's url and sources: the shop's address without "www." (matched exactly, never as a subdomain: "global.danner.com"
+# is an international store) and the name the line shows. US retailers, and the US makers' own stores that appear in
+# data/prices.json's entries for products not sold in the UK. PROPOSED, a list for Claude to extend as researchers read
+# more US shops; a product with none of this evidence is simply not said to be sold in the US.
+US_SHOPS = {
+    "amazon.com": "Amazon US", "walmart.com": "Walmart", "target.com": "Target", "homedepot.com": "The Home Depot",
+    "lowes.com": "Lowe's", "bestbuy.com": "Best Buy", "costco.com": "Costco US", "ebay.com": "eBay US",
+    "macys.com": "Macy's", "kohls.com": "Kohl's", "nordstrom.com": "Nordstrom", "crateandbarrel.com": "Crate & Barrel",
+    "roomandboard.com": "Room & Board", "garnethill.com": "Garnet Hill", "backcountry.com": "Backcountry",
+    "oldnavy.gap.com": "Old Navy", "ulta.com": "Ulta Beauty", "sephora.com": "Sephora US", "dermstore.com": "Dermstore",
+    "harborfreight.com": "Harbor Freight", "go.harborfreight.com": "Harbor Freight", "rei.com": "REI",
+    "williams-sonoma.com": "Williams Sonoma", "wayfair.com": "Wayfair", "chewy.com": "Chewy", "petco.com": "Petco",
+    "newegg.com": "Newegg", "bhphotovideo.com": "B&H Photo",
+    "purple.com": "Purple", "upliftdesk.com": "UPLIFT Desk", "geappliances.com": "GE Appliances",
+    "frigidaire.com": "Frigidaire", "kenmore.com": "Kenmore", "jennair.com": "JennAir",
+    "hamiltonbeach.com": "Hamilton Beach", "mrcoffee.com": "Mr. Coffee", "sunbeam.com": "Sunbeam",
+    "craftsman.com": "Craftsman", "ridgid.com": "RIDGID", "evenflo.com": "Evenflo", "gracobaby.com": "Graco",
+    "babyjogger.com": "Baby Jogger", "eddiebauer.com": "Eddie Bauer", "danner.com": "Danner",
+    "redwingshoes.com": "Red Wing", "thorogoodusa.com": "Thorogood", "johnboos.com": "John Boos",
+    "duluthtrading.com": "Duluth Trading", "lovesac.com": "Lovesac", "casper.com": "Casper",
+    "avocadogreenmattress.com": "Avocado Green Mattress", "parachutehome.com": "Parachute", "article.com": "Article",
+    "flexsteel.com": "Flexsteel", "mypillow.com": "MyPillow", "levolor.com": "Levolor", "speedqueen.com": "Speed Queen",
+    "vanicream.com": "Vanicream", "all-clad.com": "All-Clad", "saddlebackleather.com": "Saddleback Leather",
+    "tarptent.com": "Tarptent", "durstongear.com": "Durston Gear",
+}

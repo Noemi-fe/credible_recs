@@ -593,6 +593,10 @@ def test_warming_up_answers_each_product_type_without_asking_reddit(tmp_path, mo
     asked = []
     monkeypatch.setattr(web, "answer_request", lambda request, library_dir, **kwargs: asked.append(
         (request, kwargs | {"in_turn": web._answers_lock.locked()})))
+    # Changed on purpose 25 Oct 2026 (Noemi: the demo requests are warmed first): the list is cut to the product types the
+    # answers' memory keeps (web._within_the_memory, tests/test_region.py), which the 62 demo requests nearly fill, so
+    # this test reads the list with room for every type, as it was written for. Was: no such line.
+    monkeypatch.setattr(web, "ANSWERS_KEPT_TYPES", 10_000)
     web.warm_up(settled(library(tmp_path)))
     assert all(kwargs["in_turn"] for _, kwargs in asked)  # one at a time with visitors' answers
     assert [request for request, _ in asked] == web.warm_requests()
@@ -605,7 +609,7 @@ def test_warming_up_answers_each_product_type_without_asking_reddit(tmp_path, mo
     assert all("live_checker" not in kwargs and kwargs["live_check_required"] is False for _, kwargs in asked)
 
 
-def test_getting_ready_answers_the_examples_then_one_request_per_product_type():
+def test_getting_ready_answers_the_examples_then_one_request_per_product_type(monkeypatch):
     # 14 Oct 2026 (the coordinator, from the live site: Cloud Run's one processor warmed 13 of 65 requests in getting
     # ready's 120 s): the search page's example requests first (what a visitor clicks); then one request for each type
     # not asked yet, its likeliest (the first latency request the rules place as that type, else the type's name): a
@@ -627,9 +631,16 @@ def test_getting_ready_answers_the_examples_then_one_request_per_product_type():
         query = parse_query(text, model=stub)
         return (query.product_type if query.status == "ok" else None), stub.asked
 
+    # Changed on purpose 25 Oct 2026 (Noemi: "fast first answers"): the demo requests (engine/data/demo_requests.json, the
+    # 62 she may show at interviews) are warmed right after the examples, before one request per type; and the list is cut
+    # to the types the answers' memory keeps (web._within_the_memory, tests/test_region.py), which they nearly fill, so
+    # this test reads the list with room for every type. Was: the examples, then one request per type.
+    monkeypatch.setattr(web, "ANSWERS_KEPT_TYPES", 10_000)
     examples = [q["text"] for q in web.example_requests()]
+    demo = web._requests_in(web.DEMO_FILE)
+    first_ones = list(dict.fromkeys(examples + demo))
     latency = [q["text"] for q in json.loads(web.LATENCY_FILE.read_text(encoding="utf-8"))["queries"]]
-    likely = list(dict.fromkeys(examples + latency))
+    likely = list(dict.fromkeys(first_ones + latency))
     warmed = web.warm_requests()
     # 14 Oct 2026 (the general category): the taxonomy's types came after every one of these, by their names. Changed
     # on purpose 15 Oct 2026 (the coordinator: warm only what pays): they aren't warmed (the test below); what came before
@@ -637,23 +648,30 @@ def test_getting_ready_answers_the_examples_then_one_request_per_product_type():
     taxonomy = [name for name in web.WARM_TAXONOMY_TYPES if name not in likely]
     assert taxonomy and not set(taxonomy) & set(warmed)
     assert sorted(warmed) == sorted(dict.fromkeys(likely + list(web.WARM_PRODUCT_TYPES)))  # each once
-    assert examples and warmed[:len(examples)] == examples
+    assert examples and demo and warmed[:len(first_ones)] == first_ones  # the examples, then the demo requests
     every = list(dict.fromkeys(likely + list(web.WARM_PRODUCT_TYPES)))
     where = {t: placed(t) for t in every}
-    asked = {where[t][0] for t in examples}
+    asked = {where[t][0] for t in first_ones}
     per_type = [next(t for t in every if where[t] == (p, False)) for p in web.WARM_PRODUCT_TYPES
                 if p not in asked and any(where[t] == (p, False) for t in every)]
-    assert warmed[len(examples):len(examples) + len(per_type)] == per_type
-    assert "anti-dandruff shampoo" in per_type and "shampoo" not in per_type  # a type's latency request, else its name
+    assert warmed[len(first_ones):len(first_ones) + len(per_type)] == per_type
+    # Changed on purpose 25 Oct 2026: a type a demo request already asks about ("best shampoo") needs no request of its
+    # own, so the shampoo pair of this line moved to the exfoliant, whose latency request still comes before its name. Was:
+    # "anti-dandruff shampoo" in per_type and "shampoo" not in per_type.
+    assert "best shampoo" in first_ones and not {"anti-dandruff shampoo", "shampoo"} & set(per_type)
+    assert "gentle exfoliant for sensitive skin under £30" in per_type and "exfoliant" not in per_type
     assert "toner" in per_type
-    first = warmed[:len(examples) + len(per_type)]
+    first = warmed[:len(first_ones) + len(per_type)]
     assert {where[t][0] for t in first} >= set(web.WARM_PRODUCT_TYPES) - {"serum"}  # every type the rules place alone
-    asks_model = [t for t in warmed if where[t][1]]
+    # Changed on purpose 25 Oct 2026: two demo requests ask the open model ("a gift for my dad who likes cooking",
+    # "something for my dog"), and the demo requests are warmed first, so those the model is asked about after them come
+    # last. Was: every request asking the model last.
+    asks_model = [t for t in warmed if where[t][1] and t not in first_ones]
     assert asks_model and warmed[-len(asks_model):] == asks_model  # "serum" and "something nice for my mum" last
     assert "serum" in asks_model
 
 
-def test_getting_ready_leaves_the_taxonomys_types_to_their_first_visitors():
+def test_getting_ready_leaves_the_taxonomys_types_to_their_first_visitors(monkeypatch):
     # 14 Oct 2026 (the coordinator, merging the general category): module 1's first 43 types keep their place
     # (WARM_PRODUCT_TYPES: the examples, then one request per type, then the rest, the open model's last), and the 351
     # types of engine/data/product_types.json came after all of them, by their names, in the file's order
@@ -673,12 +691,19 @@ def test_getting_ready_leaves_the_taxonomys_types_to_their_first_visitors():
     assert len(warmed) == len(set(warmed))  # each once
     likely = {text for path in web.WARM_FIRST_FILES for text in web._requests_in(path)}
     taxonomy = [name for name in web.WARM_TAXONOMY_TYPES if name not in likely]
-    assert not set(taxonomy) & set(warmed) and "robot vacuum" not in warmed
-    assert "serum" in warmed and "electric kettle" in warmed
+    # Changed on purpose 25 Oct 2026 (Noemi: the demo requests are warmed first): "robot vacuum", the example here of a
+    # taxonomy type left to its first visitor, is one of the demo requests, so it is warmed now; "dishwasher" stands in.
+    assert not set(taxonomy) & set(warmed) and "robot vacuum" in warmed and "robot vacuum" in web._requests_in(web.DEMO_FILE)
+    assert "dishwasher" in web.WARM_TAXONOMY_TYPES and "dishwasher" not in warmed
     from engine.pipeline import request_kind
     from engine.config import ANSWERS_KEPT_TYPES
 
     assert len({request_kind(text) for text in warmed}) <= ANSWERS_KEPT_TYPES  # the memory keeps them all
+    # Changed on purpose 25 Oct 2026 (Noemi: the demo requests are warmed first): the list is cut to the types the memory
+    # keeps (web._within_the_memory, tests/test_region.py), so "serum" and "electric kettle", past the demo requests'
+    # types, are read in the list with room for every type. Was: both in the list itself.
+    monkeypatch.setattr(web, "ANSWERS_KEPT_TYPES", 10_000)
+    assert "serum" in web.warm_requests() and "electric kettle" in web.warm_requests()
 
 
 def test_warming_up_stops_answering_product_types_once_its_time_is_up(tmp_path, monkeypatch, capsys):

@@ -328,7 +328,11 @@ def test_two_pings_in_reddits_10_minutes_leave_visitors_their_share():
     # that time: reading ahead takes at most 2 x READ_AHEAD_PER_PING and stops while fewer than READ_AHEAD_KEEP are left.
     # (Its cost: engine/tests/test_cloudrun.py.)
     assert config.READ_AHEAD_PER_PING * 2 + config.READ_AHEAD_KEEP <= 200
-    assert config.READ_AHEAD_KEEP >= 40 * 3  # three fresh answers' worth (an answer reads 10 to 40 comments)
+    # Changed on purpose 25 Oct 2026 (the verify2 builder, from the review's option (c); reported to Noemi): visitors keep
+    # 100 of the 200, no longer 120 (three fresh answers' worth, 40 each): two fresh answers of the biggest size and a
+    # margin of 20, which lets reading ahead take 96 of each 10 minutes' reads instead of 80
+    # (engine/tests/test_read_ahead_capacity.py); it still stops while Reddit says fewer than READ_AHEAD_KEEP are left.
+    assert config.READ_AHEAD_KEEP >= 2 * 40 + 20
 
 
 def test_a_day_of_pings_reads_what_falls_due_with_room_to_spare():
@@ -345,8 +349,10 @@ def test_a_day_of_pings_reads_what_falls_due_with_room_to_spare():
     per_ping = min(config.READ_AHEAD_PER_PING,
                    config.READ_AHEAD_PARALLEL * ceil(config.READ_AHEAD_SECONDS / batch_seconds))
     due_a_day = plan_answers * 24 / config.READ_AHEAD_AGAIN_HOURS + config.LIBRARY_VERIFY_READS
-    assert per_ping == config.READ_AHEAD_PER_PING == 40
-    assert per_ping * pings_a_day >= 1.33 * due_a_day  # 11,520 a day against 7,651
+    # Changed on purpose 25 Oct 2026 (the verify2 builder): 48 a ping since then, not 40 (engine/config.py, the review's
+    # option (c)); 13,824 a day against 9,151 with LIBRARY_VERIFY_READS at 4,500 (it was 11,520 against 7,651).
+    assert per_ping == config.READ_AHEAD_PER_PING == 48
+    assert per_ping * pings_a_day >= 1.33 * due_a_day
     assert config.READ_AHEAD_PARALLEL <= config.LIVE_CHECK_PARALLEL  # no more at once than an answer reads
 
 
@@ -446,11 +452,14 @@ def test_overlapping_reads_reach_a_pings_reads_at_the_live_sites_pace():
 
     spacing, parallel, seconds = config.LIVE_CHECK_MIN_INTERVAL, config.READ_AHEAD_PARALLEL, config.READ_AHEAD_SECONDS
     fastest_batch, slowest_batch = 1.25, 1.67  # the logs' bounds
-    assert parallel * ceil(seconds / fastest_batch) == 32 and parallel * ceil(seconds / slowest_batch) == 24
+    # (25 Oct 2026: READ_AHEAD_SECONDS is 6 now, so the logs' 5 s is written out: it is what they measured.)
+    assert parallel * ceil(5 / fastest_batch) == 32 and parallel * ceil(5 / slowest_batch) == 24
     slowest_read = slowest_batch - (parallel - 1) * spacing
     rate = min(1 / spacing, parallel / slowest_read)  # reads a second, overlapping
     per_ping = min(config.READ_AHEAD_PER_PING, int(rate * seconds))
-    assert per_ping == config.READ_AHEAD_PER_PING == 40
-    due_a_day = 7_574 * 24 / config.READ_AHEAD_AGAIN_HOURS + config.LIBRARY_VERIFY_READS
+    assert per_ping == config.READ_AHEAD_PER_PING == 48  # changed on purpose 25 Oct 2026, from 40 (see above)
+    # That day's budget was 3,000 kept comments (LIBRARY_VERIFY_READS is 4,500 since 25 Oct 2026: written out, since this
+    # is about 17 Oct's batches, 32 a ping; engine/tests/test_read_ahead_capacity.py covers today's budget).
+    due_a_day = 7_574 * 24 / config.READ_AHEAD_AGAIN_HOURS + 3_000
     pings_a_day = 24 * 12
     assert 32 * pings_a_day >= 1.2 * due_a_day and per_ping * pings_a_day >= 1.5 * due_a_day

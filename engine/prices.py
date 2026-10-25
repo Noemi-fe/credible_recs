@@ -55,6 +55,14 @@ pipeline leaves out a product whose answer is "no longer sold" (engine.pipeline,
 and however old the check: unlike a price, a product that stopped being sold rarely comes back, and an answer should never
 recommend it. A product with no availability check is kept, and its answer says so.
 
+Sold in the US (24 Oct 2026, the region choice; Noemi: "the tool should work for visitors anywhere, not just the UK"):
+an answer asked for the US or for elsewhere says where a product is sold in the US when the list holds evidence
+(us_sale): an entry in USD (an entry's currency is its shop's) that isn't about a discontinued product, or a page of a
+known US shop (config.US_SHOPS) as an entry's url or among its sources. Nothing is guessed from a note. To record a US
+shop for a product not sold in the UK, write its entry in USD with "available": false and "not_in_uk": true (the UK
+answers say "Not sold in the UK" as before, and it never makes the product look sold here); the US price, when there is
+one, is that entry's. Which products are shown and their order never depend on any of this.
+
 A brand pick ("Griswold cast iron skillet line") has no single product, so it is never priced or checked this way.
 An entry under the brand's own name speaks for it (find_brand_entry): when the newest one ("Griswold") says it is sold
 second-hand only, the brand pick says so too (10 Oct 2026). Since late on 10 Oct 2026, an entry under the brand's name
@@ -93,7 +101,8 @@ from urllib.parse import urlsplit
 
 from pydantic import AfterValidator, Field, StrictBool, ValidationError, model_validator
 
-from engine.config import PRICE_MAX_AGE_DAYS, PRICES_TODO_NEXT_IN_LINE, SECOND_HAND_VINTAGE, THREAD_CATEGORIES
+from engine.config import (PRICE_MAX_AGE_DAYS, PRICES_TODO_NEXT_IN_LINE, SECOND_HAND_VINTAGE, THREAD_CATEGORIES,
+                           US_SHOPS)
 from engine.links import is_linkable
 from engine.match_products import known_aliases, product_words, same_product, written_alike
 from engine.memo import FileMemo, PerList
@@ -184,6 +193,21 @@ class PriceCheck:
     # True when `price` is a brand line's from price (data/brand_lines.json; Noemi's night decision 1, 14 Oct 2026): the
     # cheapest UK price of the brand's products of the type, shown as "From £X at <shop>, checked <date>".
     from_price: bool = False
+    # What the list says about the US (24 Oct 2026, the region choice: engine.prices.us_sale), looked up only for an
+    # answer asked for another region than the UK; None for the UK's and for a product nothing says is sold in the US.
+    # They change no pick and no order: they are only the words of a price and an availability line.
+    us_sold: "UsSale | None" = None  # where the list says the product is sold in the US
+    us_price: Price | None = None  # a USD entry's price for it, when the list has one
+
+
+@dataclass(frozen=True)
+class UsSale:
+    """Evidence that a product is sold in the US (24 Oct 2026): the shop's name as the line shows it, its page (https) and
+    the day the entry that holds it was checked."""
+
+    shop: str
+    url: str
+    checked_on: date
 
 
 # --- The list ---
@@ -333,6 +357,50 @@ def counts_as_sold(entry: Price | None) -> bool | None:
     if entry.second_hand:
         return any(bought_vintage(name, entry.category) for name in [entry.product, *entry.also_called])
     return True
+
+
+# --- Sold in the US (24 Oct 2026, the region choice) ---
+
+def us_shop_name(url: str) -> str | None:
+    """The name of the US shop a page belongs to (config.US_SHOPS), or None. The address is matched exactly, without a
+    leading "www.": a subdomain ("global.danner.com") or a lookalike ("notwalmart.com") is another site."""
+    host = (urlsplit(url).hostname or "").lower()
+    return US_SHOPS.get(host.removeprefix("www."))
+
+
+def us_sale(entries: Iterable[Price]) -> tuple[UsSale | None, Price | None]:
+    """(where the list says the product is sold in the US, its USD price) from the entries about the product, or None
+    for what it doesn't say. Evidence is a USD entry (the entry's currency is its shop's), or a page of a known US shop
+    (config.US_SHOPS) as an entry's url or among its sources; an entry about a product no longer made (not sold, and not
+    "not_in_uk") is none. The newest check is the sale; the price is the newest, then cheapest, USD price. Nothing is
+    guessed from an entry's note, and the UK's answers never read this."""
+    sale, priced = None, None
+    for entry in entries:
+        if entry.available is False and not entry.not_in_uk:
+            continue
+        found = None
+        if entry.currency == "USD":
+            found = UsSale(entry.shop, entry.url, entry.checked_on)
+            if entry.price is not None and (priced is None or _newer_cheaper(entry) < _newer_cheaper(priced)):
+                priced = entry
+        else:
+            for url in [entry.url, *entry.sources]:
+                if (shop := us_shop_name(url)) is not None:
+                    found = UsSale(shop, url, entry.checked_on)
+                    break
+        if found is not None and (sale is None or (-found.checked_on.toordinal(), found.shop.casefold()) < (
+                -sale.checked_on.toordinal(), sale.shop.casefold())):
+            sale = found
+    return sale, priced
+
+
+def _newer_cheaper(entry: Price) -> tuple:
+    return -entry.checked_on.toordinal(), entry.price, entry.shop.casefold()
+
+
+def us_sale_of(name: str, category: str, prices: Iterable[Price], product_type: str | None = None):
+    """us_sale for the entries about the product called `name` (entries_for)."""
+    return us_sale(entries_for(name, category, prices, product_type))
 
 
 def _newest_check_first(p: Price) -> tuple:

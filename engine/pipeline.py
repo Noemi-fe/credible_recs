@@ -167,7 +167,7 @@ from collections import Counter
 from collections.abc import Iterable, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
-from datetime import date
+from datetime import date, datetime
 from functools import cache
 from pathlib import Path
 
@@ -245,6 +245,8 @@ from engine.prices import (
     find_brand_entry,
     find_price,
     load_prices,
+    us_sale,
+    entries_for,
 )
 from engine.product_pages import ProductPage, find_page, load_product_pages
 from engine.product_facts import (
@@ -353,6 +355,11 @@ class PipelineResult:
     # mention counts as a low voice (Noemi's rule, 9 Oct 2026). For reports only, as a count: never shown to users.
     contradicting_writers: list[str] = field(default_factory=list)
     threads_available: int = 0  # extracted threads about the product that could be read (threads_used is the first ones)
+    # Of those, the ones not titled as another type of product, and the newest of them (25 Oct 2026, from the review of
+    # 16 Oct, R1 and R2): on-demand reading's bar counts these (engine.on_demand.SiteReader.after_answer), since a thread
+    # titled as another product only names this one in its post.
+    own_threads_available: int = 0
+    newest_own_thread: datetime | None = None
     # The comments the AI read in the threads used (its reading view: the readable comments, up to EXTRACT_MAX_COMMENTS
     # a thread), shown with every answer (Noemi, 12 Oct 2026).
     comments_read: int = 0
@@ -397,7 +404,7 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
                    more_threads: int | None = PIPELINE_MORE_THREADS,
                    brand_lines: list[BrandLine] | None = None,
                    summaries: Mapping[str, Summary] | None = None,
-                   product_pages: list[ProductPage] | None = None) -> PipelineResult:
+                   product_pages: list[ProductPage] | None = None, region: str = config.DEFAULT_REGION) -> PipelineResult:
     """Runs modules 1 to 7 on the saved library and returns everything each step decided.
 
     The answer reads the `max_threads` most relevant threads first. When they give fewer than PICKS_SHOWN picks and the
@@ -413,7 +420,10 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     2026). `more_threads=None` never reads more. `brand_lines`: the brand-lines list (engine/brand_lines.py); None reads
     data/brand_lines.json. `summaries`: the one-line summaries ({engine.summaries.summary_key: Summary}); None reads the
     library's summaries.json (none when there is no such file). `product_pages`: the products' own pages and makers'
-    images (engine/product_pages.py, 15 Oct 2026); None reads data/product_pages.json.
+    images (engine/product_pages.py, 15 Oct 2026); None reads data/product_pages.json. `region` (24 Oct 2026, Noemi: "the
+    tool should work for visitors anywhere"): where the visitor is, one of config.REGIONS; it changes the words of each
+    pick's price and availability lines and nothing else (the same products in the same order: her decision (c) of 19
+    Oct 2026, no country preference in ranking), and the default, the UK, is the answer as it always was.
 
     Noemi's upvote rule (14 Oct 2026; off unless config.UPVOTE_COUNTS_MORE) never changes how much is read: ranked with
     it, a first reading short of picks could reach three with products it lifts and never read on, where the wider
@@ -422,11 +432,14 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     read (_answer's upvotes_too: its threads aren't read again). The same goes for a comment standing out in its thread
     (14 Oct 2026; config.STANDOUT_ON): the upvote rules, together.
     """
+    if region not in config.REGIONS:
+        raise ValueError(f"region must be one of {', '.join(config.REGIONS)}, not {region!r}")
     query = parse_query(request)
     upvotes = config.UPVOTE_COUNTS_MORE or config.STANDOUT_ON
     reading = dict(library_dir=library_dir, profiles=profiles, prices=prices, today=today,
                    live_check_required=live_check_required, live_checker=live_checker, product_facts=product_facts,
-                   brand_lines=brand_lines, summaries=summaries, upvotes_too=upvotes, product_pages=product_pages)
+                   brand_lines=brand_lines, summaries=summaries, upvotes_too=upvotes, product_pages=product_pages,
+                   region=region)
     result = _answer(query, max_threads=max_threads, **reading)
     if not (more_threads is None or more_threads <= max_threads or result.answer is None
             or len(result.answer.picks) >= PICKS_SHOWN or result.threads_available <= len(result.threads_used)):
@@ -455,7 +468,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
             product_facts: list[ProductFacts] | None, need_led: bool = False,
             brand_lines: list[BrandLine] | None = None,
             summaries: Mapping[str, Summary] | None = None, upvotes_too: bool = False,
-            product_pages: list[ProductPage] | None = None) -> PipelineResult:
+            product_pages: list[ProductPage] | None = None, region: str = config.DEFAULT_REGION) -> PipelineResult:
     """One reading of the library for an understood request, with at most `max_threads` threads (answer_request).
     `need_led`: the wider reading's rule, a pick needs a credible recommendation that talks about the request's needs.
     `upvotes_too`: the reading is also ranked with Noemi's upvote rules (engine.rank.counts_twice, stands_out, as config
@@ -502,6 +515,9 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.waiting_live_check = [t.id for t in extracted if not (exempt or _checked_live_recently(t, today))]
     usable = [t for t in extracted if t.id not in result.waiting_live_check]
     result.threads_available = len(usable)
+    own = [t for t in usable if not titled_as_another_type(t.title, query)]
+    result.own_threads_available = len(own)
+    result.newest_own_thread = max((t.created_at for t in own), default=None)
     threads = usable[:max_threads]
     checked = {t.id: every_checked[t.id] for t in threads}
     if not exempt:  # the same rule, comment by comment, in slimmed threads (13 Oct 2026)
@@ -542,6 +558,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     named_before = {g.key: g.name for g in kept_groups if not g.loose}  # the names the price list was asked about
     kept_groups, cautions, formulas = _suited_to_request(kept_groups, query, product_facts, result, types)
     kept_groups = _sold_under_shown_name(kept_groups, named_before, query, prices, price_checks, result, types, today)
+    if region != config.DEFAULT_REGION:  # only the words of the price and availability lines (24 Oct 2026)
+        _with_us_sales(kept_groups, price_checks, prices, types, query)
     lines -= result.lines_as_one_product  # lines whose products are one known product are that product (14 Oct 2026)
     kept_groups = _one_per_name(kept_groups)  # the names are final here: one item per name (13 Oct 2026)
     result.ranked_as_lines = [g.name for g in kept_groups if g.key in lines]
@@ -555,7 +573,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     wording = {**_ingredient_wording(query, kept_groups, types, formulas, result.line_forms),
                "prescription": _prescription_only(kept_groups, formulas), "flattened": flattened_comments(threads),
                "pages": _pages(kept_groups, named_before, query, product_pages, types),
-               "other_types_threads": _threads_about_another_type(checked, threads, query)}
+               "other_types_threads": _threads_about_another_type(checked, threads, query), "region": region}
     kind_mentions = _kind_mentions(checked)
     kinds = group_kinds(kind_mentions, kept_groups, query.category, query.product_type or "")
     with_a_kind = kinds_of(kinds)
@@ -593,7 +611,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
         folded = {item.name for item in result.folded_brand_picks}
         care = _care_tips(threads, checked, [g for g in kept_groups if g.name not in folded], kinds, query)
         models, model_prices = _brand_models(result.ranking, kept_groups, query.product_type, price_checks, known,
-                                             wording["pages"])
+                                             wording["pages"], region)
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
                                      judged_needs(query), query.text, summaries,
@@ -848,7 +866,7 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         result.ranking, more_downsides, brand_downsides = _fold_brand_skips(
             _fold_brand_picks(ranking, groups, result, query.product_type), groups, result)
         models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks, known,
-                                             (wording or {}).get("pages"))
+                                             (wording or {}).get("pages"), (wording or {}).get("region", config.DEFAULT_REGION))
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
                                      judged_needs(query), query.text, summaries,
@@ -1795,6 +1813,26 @@ def _sold_under_shown_name(groups: list[ProductGroup], named_before: Mapping[str
     return kept
 
 
+def _with_us_sales(groups: list[ProductGroup], checks: dict[str, PriceCheck], prices: list[Price],
+                   types: Mapping[str, str | None], query: ParsedQuery) -> None:
+    """What the price list says about the US for each product shown (24 Oct 2026, the region choice), added to its price
+    check in place: where it is sold there (a USD entry or a known US shop's page among an entry's sources) and its USD
+    price (engine.prices.us_sale). Only for an answer asked for a region other than the UK; it changes no pick and no
+    order, only the words of the two lines. A brand line has no entries of its own: only the one its availability line
+    is read from."""
+    for group in groups:
+        check = checks.get(group.key)
+        if check is None:
+            continue
+        if group.loose:
+            entries = [check.availability] if check.availability is not None else []
+        else:
+            entries = entries_for(group.name, group.category, prices, types.get(group.key, query.product_type))
+        sold, priced = us_sale(entries)
+        if sold is not None or priced is not None:
+            checks[group.key] = replace(check, us_sold=sold, us_price=priced)
+
+
 def _budget(query: ParsedQuery):
     """The request's budget as prices are checked against it: "under 100" has no currency, and module 1 doesn't guess
     one, but the shoppers are in the UK (Noemi, 9 Oct 2026), so it is in BUDGET_DEFAULT_CURRENCY."""
@@ -2368,7 +2406,8 @@ def _without_leading_size(name: str) -> str:
 def _brand_models(ranking: RankingResult, groups: list[ProductGroup], product_type: str | None,
                   price_checks: Mapping[str, PriceCheck] | None = None,
                   known: Mapping[str, list[tuple[str, ...]]] | None = None,
-                  pages: Mapping[str, ProductPage] | None = None) -> tuple[dict[str, str], dict[str, str]]:
+                  pages: Mapping[str, ProductPage] | None = None,
+                  region: str = config.DEFAULT_REGION) -> tuple[dict[str, str], dict[str, str]]:
     """({brand pick's key: the name of its brand's model its credible writers recommend most}, {brand pick's key: that
     model's checked price, as the price line words it}) (10 Oct 2026). A model is a specific product of the brand
     still in the ranking (_same_brand), with at least BRAND_MODEL_MIN_CREDIBLE credible recommendations, whose name
@@ -2387,8 +2426,8 @@ def _brand_models(ranking: RankingResult, groups: list[ProductGroup], product_ty
         models[brand_key] = model.name
         check = (price_checks or {}).get(model.key)
         if check is not None and check.price is not None and check.price.price is not None:
-            prices[brand_key] = shown_price(check).text
-        elif (sold := shown_availability(check)).available is True:
+            prices[brand_key] = shown_price(check, region).text
+        elif (sold := shown_availability(check, None, region)).available is True:
             # No one price fits the name, but a shop sells it (10 Oct 2026, late: "Bonavita gooseneck").
             prices[brand_key] = sold.text[:1].lower() + sold.text[1:]
     return models, prices

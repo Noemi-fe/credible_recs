@@ -21,7 +21,10 @@ and in every case it loses its mentions: each item of the extraction pointing to
 tips, agreements) is removed from the extraction file, so none of its words stays anywhere in the library. An
 unreadable page proves nothing either way: the comment just isn't verified by it (the pre-check verifies those answers
 show through Bright Data instead: Noemi's "Use Bright Data" decision), and its words go only when the deadline passes.
-So a page Reddit redesigns can never wipe the library in one go.
+So a page Reddit redesigns can never wipe the library in one go. Since 25 Oct 2026 (the review docs/verify-bfs-2026-10-25.md,
+option (i)) a second unreadable read, at least config.LIBRARY_UNREADABLE_LAPSE_DAYS (7) after the first with no passing read
+between, makes the comment lapse at the next deploy as an expired one does, instead of holding a read every 10 days (every
+40 hours when an answer uses it) until its deadline: such a page is probably a comment gone from Reddit (Ledger.lapsed).
 
 Edited comments keep what still verifies (Noemi's decision 3 of 15 Oct 2026). A comment found edited keeps Reddit's
 current text, and only the items whose quotes are still found in it word for word (and that the extraction's checks
@@ -68,7 +71,7 @@ from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from engine.config import LIBRARY_VERIFY_DAYS
+from engine.config import LIBRARY_UNREADABLE_LAPSE_DAYS, LIBRARY_VERIFY_DAYS
 from engine.extract import Extraction, check_extraction, extracted_dir
 from engine.match_products import known_aliases, same_product
 from engine.models import Thread
@@ -108,11 +111,15 @@ def verification_quotes(thread: Thread, extraction: Extraction) -> dict[str, tup
 
 @dataclass(frozen=True)
 class LedgerEntry:
-    """One kept comment's latest read (when, and what it said) and its last passing read."""
+    """One kept comment's latest read (when, and what it said) and its last passing read. `unreadable_since`: when the
+    run of unreadable reads this one ends began (its first read since the last passing read), when that is earlier than
+    `at`; None for a first unreadable read, and for any other outcome (25 Oct 2026: two unreadable reads a week apart
+    make a comment lapse, Ledger.lapsed)."""
 
     at: datetime
     outcome: str
     passed: datetime | None = None
+    unreadable_since: datetime | None = None
 
 
 class Ledger:
@@ -126,19 +133,44 @@ class Ledger:
 
     def record(self, comment_id: str, at: datetime, outcome: str) -> None:
         """Takes in one read. The latest read decides what the comment's state is; the last pass is kept apart, so an
-        unreadable page after a pass doesn't make a verified comment unverified."""
+        unreadable page after a pass doesn't make a verified comment unverified. The run of unreadable reads since the
+        last pass is followed too (`unreadable_since`), whatever order the reads arrive in."""
         old = self.entries.get(comment_id)
         passes = [d for d in (old.passed if old else None, at if outcome == "passing" else None) if d is not None]
         passed = max(passes) if passes else None
-        if old is None or at > old.at:
+        if old is None:
             self.entries[comment_id] = LedgerEntry(at, outcome, passed)
-        else:
-            self.entries[comment_id] = replace(old, passed=passed)
+        elif at > old.at:  # the newest read: it decides, and an unreadable one carries on the run it follows
+            since = None
+            if outcome == "unreadable" and old.outcome == "unreadable":
+                since = old.unreadable_since or old.at
+            self.entries[comment_id] = LedgerEntry(at, outcome, passed, since)
+        else:  # an older read taken in late: only the pass, and the run's start, can change
+            since = old.unreadable_since
+            if outcome == "passing" and since is not None and at >= since:
+                since = None  # a pass inside the run: it starts again from the latest read
+            elif outcome == "unreadable" and old.outcome == "unreadable" and (old.passed is None or old.passed < at):
+                since = min(at, since or old.at)
+                since = since if since < old.at else None
+            self.entries[comment_id] = replace(old, passed=passed, unreadable_since=since)
+
+    def lapsed(self, comment_id: str) -> bool:
+        """Whether the comment's page was unreadable twice, the second read at least LIBRARY_UNREADABLE_LAPSE_DAYS after
+        the first with no passing read between (25 Oct 2026): it lapses at the next deploy, as an expired comment does."""
+        entry = self.entries.get(comment_id)
+        return (entry is not None and entry.outcome == "unreadable" and entry.unreadable_since is not None
+                and entry.at - entry.unreadable_since >= timedelta(days=LIBRARY_UNREADABLE_LAPSE_DAYS))
+
+    def lapsed_ids(self) -> set[str]:
+        """Every comment that has lapsed (see `lapsed`)."""
+        return {comment_id for comment_id in self.entries if self.lapsed(comment_id)}
 
     def merge(self, other: "Ledger") -> None:
         for comment_id, entry in other.entries.items():
             if entry.passed is not None:
                 self.record(comment_id, entry.passed, "passing")
+            if entry.unreadable_since is not None:
+                self.record(comment_id, entry.unreadable_since, "unreadable")
             self.record(comment_id, entry.at, entry.outcome)
 
     def keep_only(self, comment_ids: set[str]) -> None:
@@ -147,7 +179,8 @@ class Ledger:
 
     def dumps(self, now: datetime) -> bytes:
         comments = {cid: {"at": e.at.isoformat(), "outcome": e.outcome,
-                          "passed": e.passed.isoformat() if e.passed else None}
+                          "passed": e.passed.isoformat() if e.passed else None,
+                          **({"unreadable_since": e.unreadable_since.isoformat()} if e.unreadable_since else {})}
                     for cid, e in sorted(self.entries.items())}
         return json.dumps({"written_at": now.isoformat(), "comments": comments}).encode("utf-8")
 
@@ -162,8 +195,10 @@ class Ledger:
         for cid, entry in comments.items() if isinstance(comments, dict) else ():
             try:
                 at, passed = _when(entry["at"]), _when(entry["passed"]) if entry["passed"] else None
+                since = _when(entry["unreadable_since"]) if entry.get("unreadable_since") else None
                 if _ID.match(cid) and entry["outcome"] in OUTCOMES:
-                    ledger.entries[cid] = LedgerEntry(at, entry["outcome"], passed)
+                    ledger.entries[cid] = LedgerEntry(at, entry["outcome"], passed,
+                                                      since if entry["outcome"] == "unreadable" else None)
             except (TypeError, ValueError, KeyError):
                 continue
         return ledger
@@ -316,6 +351,8 @@ def apply_checks(folder: Path, ledger: Ledger, now: datetime | None = None, dry_
                         stamps[comment.id] = max(found[0], verified) if verified is not None else found[0]
                     elif found is not None:
                         texts[comment.id] = found
+            elif entry is not None and ledger.lapsed(comment.id) and (verified is None or entry.at > verified):
+                drops[comment.id] = "unreadable"  # its page showed no comment twice, a week apart (25 Oct 2026)
             elif expired(comment.model_copy(update={"verified_at": verified}), thread, now):
                 drops[comment.id] = "expired"
         for comment_id in drops:
@@ -456,8 +493,10 @@ def _applied(thread: Thread, raw: dict, stamps: dict, drops: dict, types,
         elif why is not None:  # edited, or not verified in time: still on Reddit as far as we know
             if found := names_in(comment.body, types):
                 names[comment.id] = found
-            if why in ("changed", "expired"):  # a verification's reason (WholeThread.dropped); "not used" has none:
-                gone_why[comment.id] = why     # engine.ethics's removals leave a stub like slimming's (15 Oct 2026)
+            if why in ("changed", "expired", "unreadable"):  # a verification's reason (WholeThread.dropped); "not used"
+                # has none: engine.ethics's removals leave a stub like slimming's (15 Oct 2026). Unreadable twice is
+                # "expired" there: not verified in time, and as far as we know still on Reddit (25 Oct 2026).
+                gone_why[comment.id] = "changed" if why == "changed" else "expired"
             name = comment.author.name if comment.author is not None else None
             if name in kept_since and comment.created_at < min(first_seen.get(name, kept_since[name]),
                                                               kept_since[name]):
@@ -644,7 +683,8 @@ def report(result: ApplyResult) -> str:
              f"item(s) still found in it word for word.",
              f"Words and mentions dropped: deleted on Reddit: {d.get('deleted', 0)}, removed on Reddit: "
              f"{d.get('removed', 0)}, edited: {d.get('changed', 0)}, not verified within {LIBRARY_VERIFY_DAYS} days: "
-             f"{d.get('expired', 0)}, no longer used: {d.get('not used', 0)} (items removed from the extractions: "
+             f"{d.get('expired', 0)}, unreadable twice, at least {LIBRARY_UNREADABLE_LAPSE_DAYS} days apart: "
+             f"{d.get('unreadable', 0)}, no longer used: {d.get('not used', 0)} (items removed from the extractions: "
              f"{result.items_removed})."]
     if result.dry_run:
         lines.append("Dry run: nothing written.")

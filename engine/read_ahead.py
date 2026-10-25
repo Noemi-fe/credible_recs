@@ -14,7 +14,11 @@ to read (`python -m engine.precheck --plan`), and the site reads it, a few comme
   embed page can't show). Links and those checks only. The site asks for its version at most once an hour
   (config.PLAN_RELOAD_SECONDS), downloads it only when it changed, and takes its checks into its folder.
 - At each ping the site reads the plan's comments that are due, in the plan's order: an answer's comment whose last
-  read is config.READ_AHEAD_AGAIN_HOURS old, or that has none, so its check never runs out at 48 hours; a kept comment
+  read is config.READ_AHEAD_AGAIN_HOURS old, or that has none, so its check never runs out at 48 hours (the answers' first
+  two tiers: shown and next in line; since 25 Oct 2026 the last two, the products behind the picks and those after them,
+  are listed apart, one day in config.PLAN_FALLBACK_TIER_DAYS, and read when they have no read in the last 48 hours, like
+  a kept comment to verify: about 1,260 reads a day freed, and a quote of theirs that is shown anyway is checked at answer
+  time, as the rule always said); a kept comment
   found edited on Reddit, the same way, until a deploy has applied it (15 Oct 2026, Noemi's decision 3: it keeps
   Reddit's current text and the items still found in it, taken from the bundle, which so always holds a read of it);
   a comment to verify that hasn't been read in the last 48 hours (the job records the read, and lists it again only
@@ -73,12 +77,19 @@ class Plan:
     # the bundle always holds Reddit's current text for the next deploy to keep (engine/verify.py). Empty in an older
     # plan.
     edited: tuple[str, ...] = ()
+    # The answers' last two tiers (the products behind the picks, and those after them) that fall due today (25 Oct 2026,
+    # config.PLAN_FALLBACK_TIER_DAYS): one day in five each, so each is read every 5 days instead of every 40 hours. The
+    # site reads a listed one that has no read in the last 48 hours, as it does a kept comment to verify. Empty in an
+    # older plan, which lists every tier among the answers'.
+    fallback: tuple[str, ...] = ()
 
 
-def plan_bytes(answers: list[str], verify: list[str], checks: dict, now: datetime, edited: list[str] = ()) -> bytes:
+def plan_bytes(answers: list[str], verify: list[str], checks: dict, now: datetime, edited: list[str] = (),
+               fallback: list[str] = ()) -> bytes:
     """A plan as the job writes it to the bucket."""
     return json.dumps({"written_at": now.isoformat(), "answers": list(answers), "verify": list(verify),
-                       "checks": checks, "edited": list(edited)}, ensure_ascii=False).encode("utf-8")
+                       "checks": checks, "edited": list(edited), "fallback": list(fallback)},
+                      ensure_ascii=False).encode("utf-8")
 
 
 def read_plan(data: bytes | None) -> Plan | None:
@@ -88,12 +99,13 @@ def read_plan(data: bytes | None) -> Plan | None:
         written_at = datetime.fromisoformat(raw["written_at"])
         answers, verify, checks = raw["answers"], raw["verify"], raw.get("checks") or {}
         edited = raw.get("edited") or []
+        fallback = raw.get("fallback") or []
     except (TypeError, ValueError, KeyError, AttributeError):
         return None
-    if not all(isinstance(items, list) for items in (answers, verify, edited)) or not isinstance(checks, dict):
+    if not all(isinstance(items, list) for items in (answers, verify, edited, fallback)) or not isinstance(checks, dict):
         return None
     links = lambda items: tuple(i for i in items if isinstance(i, str) and _COMMENT_LINK.match(i))
-    return Plan(written_at, links(answers), links(verify), checks, links(edited))
+    return Plan(written_at, links(answers), links(verify), checks, links(edited), links(fallback))
 
 
 @dataclass
@@ -183,7 +195,7 @@ class ReadAhead:
         self.plan, self._plan_generation = plan, generation
         self._unshared += self.checker.take_checks(plan.checks)
         self._last = {}
-        for url in dict.fromkeys(plan.answers + plan.edited + plan.verify):
+        for url in dict.fromkeys(plan.answers + plan.edited + plan.fallback + plan.verify):
             self._look(url)
         return True
 
@@ -235,7 +247,10 @@ class ReadAhead:
             if url not in seen and (read is None or read[1] is None and now - read[0] >= self.again):
                 due.append(url)
             seen.add(url)
-        for url in self.plan.verify if self.plan is not None else ():
+        # The fallback comments listed for today, then the kept comments to verify: each only when it has no read in the
+        # last 48 hours (the job lists it again when it is due once more).
+        later = (self.plan.fallback + self.plan.verify) if self.plan is not None else ()
+        for url in later:
             if url not in seen and last(url) is None:
                 due.append(url)
             seen.add(url)
@@ -308,8 +323,9 @@ def report(reading: PingReading, plan: Plan | None) -> str:
     parts = []
     if reading.new_plan and plan is not None:
         edited = f", {len(plan.edited):,} found edited" if plan.edited else ""
-        parts.append(f"a new plan ({len(plan.answers):,} answers' comments{edited}, {len(plan.verify):,} to verify, "
-                     f"{len(plan.checks):,} checks through Bright Data)")
+        later = f", {len(plan.fallback):,} fallback ones due today" if plan.fallback else ""
+        parts.append(f"a new plan ({len(plan.answers):,} answers' comments{later}{edited}, {len(plan.verify):,} to "
+                     f"verify, {len(plan.checks):,} checks through Bright Data)")
     if reading.due or reading.read or reading.failed:
         stopped = ("; stopped to keep Reddit's reads for visitors" if reading.kept_for_visitors else
                    "; stopped: the next read would have waited" if reading.put_off else

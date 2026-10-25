@@ -131,7 +131,11 @@ def test_the_browsers_storage_keeps_only_the_first_time_note_and_the_visitors_ow
     calls = re.findall(r"\bremember\(((?:[^()]|\([^()]*\))*)\)", script.replace("function remember(key, value)", ""))
     assert calls
     for arguments in calls:
-        assert re.fullmatch(r'FIRST_TIME_KEY, "[a-z]+"|RECENT_KEY, JSON\.stringify\(recent\)', arguments), arguments
+        # Changed on purpose 25 Oct 2026 (Noemi: a region choice, "remembered in the visitor's browser only and never sent
+        # anywhere except with the request"): the third thing the browser keeps is that choice, "uk", "us" or
+        # "elsewhere". Was: the first-time note and the recent searches only.
+        assert re.fullmatch(r'FIRST_TIME_KEY, "[a-z]+"|RECENT_KEY, JSON\.stringify\(recent\)|REGION_KEY, region',
+                            arguments), arguments
     keeping = function_body(script, "function rememberSearch(request)")
     assert "recent = [request" in keeping  # the request as typed, and nothing from an answer
     assert "data." not in keeping and "answer" not in keeping

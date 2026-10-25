@@ -48,7 +48,7 @@ site a plan: a job is billed for its whole run, and two thirds of the old daily 
   time; since 14 Oct 2026 it reads nothing on Reddit's embed page itself. It reads the bundle, records in the
   verification record what each of the site's reads of a kept comment said, works out the comments answers would show
   (2,260 from 439 requests on a copy of 14 Oct 2026's library, slimmed: the whole plan run took 2.1 minutes on Noemi's
-  computer; the old run's working out took 84 s on Cloud Run for 1,967) and the kept comments due (oldest first, at most 3,000 a day: config.LIBRARY_VERIFY_READS, the answers'
+  computer; the old run's working out took 84 s on Cloud Run for 1,967) and the kept comments due (earliest deadline first, ties by use, at most 4,500 a day since 25 Oct 2026, 3,000 before: config.LIBRARY_VERIFY_READS, the answers'
   own left out), and writes the record and the plan. Then, for the comments whose embed page shows no comment ("Not
   supported comment", about 1 in 8; Noemi, 13 Oct 2026: "Use Bright Data"), it reads their threads through Bright
   Data, within 30 records a run (the most useful threads first), starting nothing 30 minutes after it started, and
@@ -63,11 +63,14 @@ site a plan: a job is billed for its whole run, and two thirds of the old daily 
   Bright Data job, waited for up to 20 minutes since, had been cut off at 10). Its report (counts and times, never a
   comment's words) is in the job's logs.
 - **The site's reads ahead** (engine/read_ahead.py, 14 Oct 2026): at each keep-warm ping (every 5 minutes, below) the
-  site reads the plan's comments that are due: an answer's comment once its last read is 40 hours old (so its check
-  never runs out at 48 hours), or that has none; a comment to verify not read in the last 48 hours. At most 40 a ping, 8
-  at once (4 until 15 Oct 2026), none starting 5 seconds after the ping began, never a read that would wait for Reddit's allowance, and none
-  while Reddit says fewer than 120 reads are left in its 10 minutes (those are visitors' answers'). Each ping's counts
-  are in the site's logs ("Reading ahead: ...").
+  site reads the plan's comments that are due: an answer's comment (the first two tiers: shown and next in line) once its
+  last read is 40 hours old (so its check never runs out at 48 hours), or that has none; since 25 Oct 2026 the last two
+  tiers (the products behind the picks and those after them) are listed one day in five each ("fallback" in the plan) and
+  read when they have no read in the last 48 hours; a comment to verify not read in the last 48 hours. At most 48 a ping
+  (40 until 25 Oct 2026), 8 at once (4 until 15 Oct 2026), none starting 6 seconds after the ping began (5 until 25 Oct),
+  never a read that would wait for Reddit's allowance, and none while Reddit says fewer than 100 reads are left in its 10
+  minutes (120 until 25 Oct; those are visitors' answers'). Each ping's counts are in the site's logs ("Reading ahead:
+  ...").
 - **The verification record** (`live_check/verified.json`, in the same bucket): for each comment the slimmed library
   keeps, its latest read on Reddit (when, and what it said: passing, deleted, removed, edited or unreadable) and its
   last passing read. Ids, dates and outcomes only, never a comment's words (about 1 MB for 10,000 comments). Written by
@@ -160,7 +163,7 @@ comment must be verified on Reddit (its embed page, free) within 30 days, or it 
 (engine/verify.py). The library is baked into the image, and the checks happen in the cloud, so the two meet at each
 deploy:
 
-1. every day the pre-check job lists in its plan the kept comments verified longest ago (3,000), the site reads them
+1. every day the pre-check job lists in its plan the kept comments with the earliest deadlines (4,500; 3,000 until 25 Oct 2026), the site reads them
    over the day (its reads ahead), and the next run records what each read said in `live_check/verified.json`;
 2. `deploy.sh` copies that record to a temporary file (`gcloud storage cp`) and runs
    `python -m engine.library apply-checks --ledger <it>` before bundling: each passing comment gets its date, and a
@@ -304,8 +307,10 @@ and to see its report: `gcloud run jobs executions list --job credible-recs-prec
 execution's logs in the console (Cloud Run, Jobs, credible-recs-precheck, Logs).
 
 Reddit's limit is per address, and since 14 Oct 2026 the site's reads ahead share it with visitors' answers: at two
-pings in Reddit's 10 minutes they take at most 80 of its 200, and none while fewer than 120 are left, so three fresh
-answers' worth (an answer reads 10 to 40 comments) stays for visitors. The site's other reads (on-demand reading's
+pings in Reddit's 10 minutes they took at most 80 of its 200, and none while fewer than 120 were left, so three fresh
+answers' worth (an answer reads 10 to 40 comments) stayed for visitors. Since 25 Oct 2026 (the review
+docs/verify-bfs-2026-10-25.md, option (c)) they take at most 96 (48 a ping) and none while fewer than 100 are left, so two
+fresh answers of the biggest size and a margin of 20 stay for visitors. The site's other reads (on-demand reading's
 archive, the bucket) aren't Reddit's.
 
 ## On-demand reading
@@ -325,9 +330,10 @@ deploy/cloudrun/on_demand.sh from off to on.
 
 Since 14 Oct 2026 (Noemi: "I want recs regardless of the category"; the plan's part 3). A request module 1 understands,
 about a product the library holds fewer than 6 extracted threads about, is queued, and the answer says so in the
-page's words, for example "We haven't read Reddit about teapots yet, so we've started: check back in about 20 minutes."
-(15 more minutes for each request ahead of it; "taking longer than usual" after 90 minutes; and when the free
-allowance is used up, when it is back). That answer isn't remembered: the next ask works it out again. The site starts
+page's words, for example "We haven't read Reddit about teapots yet, so we've started: check back in about an hour."
+(about an hour more for each request ahead of it while the day's calls last, since a Gemini 3.8 Flash call takes about 4
+minutes and a request 15 calls; "taking longer than usual" after 150 minutes; and when the free allowance is used up,
+when it is back, with the place in line). That answer isn't remembered: the next ask works it out again. The site starts
 the reading job at once, and at every keep-warm ping while a request waits it asks the bundle's version (one small
 read, a download only when it changed), takes the new threads into its library folder and answers with them, every
 quote shown checked live on Reddit as always. The daily pre-check takes them in too and checks their answers ahead.
@@ -341,13 +347,26 @@ europe-west1 --project credible-picks`; its report (counts and product types, ne
 (Cloud Run, Jobs, credible-recs-reader, Logs).
 
 The job's limits, all in engine/config.py ("On-demand reading"): it starts no new reading after 15 minutes of a run and
-stops at 45; its runs read for at most 50,000 seconds a month (then the queue rests until the 1st); it makes at most 100
-Gemini calls a day of the free allowance, leaving the rest to Noemi's own bulk reading, and none more that day after
-Gemini's daily 429 (until 8 am UTC, when the allowance is surely back); at most 20 requests wait at once (10 until
+stops at 45; its runs read for at most 50,000 seconds a month (then the queue rests until the 1st); it makes at most 18
+Gemini calls a day (100 until 25 Oct 2026): Gemini 3.8 Flash's free allowance is 20 requests a day and 5 a minute, as
+Google's own 429 answer says, and a request takes about 15 calls, so it reads about one request a day; none more that
+day after Gemini's daily 429 (until 8 am UTC, when the allowance is surely back); at most 20 requests wait at once (10 until
 14 Oct 2026: with the general category most requests queue; 20 is about two days of the job's reading, and the
 sums below don't change, since the job's time and Gemini calls have caps of their own); a request
 whose archive search fails is tried again an hour later and set aside for a day after 3 tries; a product read once is
 read again only after 30 days, if its library is still thin then.
+
+**What counts and what visitors are told** (25 Oct 2026, from the review of 16 Oct 2026, R1, R2 and R7; wording
+PROPOSED). The bar of 6 threads counts only the threads about the type, never those titled as another type, and a
+fast-moving type (laptop, headphones, phone...) whose newest thread about it is over 2 years old (config
+ON_DEMAND_OLD_YEARS) is queued too, to be read again for newer threads (only threads posted in the last 2 years are
+read; the answer keeps its picks and says the threads are a few years old). The sentence the visitor sees now comes from
+the queue's length and the day's capacity (engine.on_demand.wait_for): "in about an hour" only while the day's calls
+and the month's reading time can still read the request (an hour more for each one ahead), else "It's in line: 3
+products are ahead of it, and our free reading allowance covers about 1 a day. Check back tomorrow" (or the date; the
+1st of next month when the month's time is out). The reader's model is config ON_DEMAND_GEMINI_MODEL (a deploy may set
+CREDIBLE_RECS_ON_DEMAND_MODEL on the job instead); a cheaper Flash-Lite reader was measured on 25 Oct 2026 and is held
+back (eval/RUNS.md): the switch above is still off by default until Noemi decides.
 
 ## The Gemini key
 
@@ -439,6 +458,19 @@ so a ping reaches its 40 in its 5 seconds: 11,520 a day, half as much again as i
 most 80 of each 10 minutes' 200) and the same billed seconds. Finding what is
 due takes about a millisecond a ping (each comment's last read is kept in memory, read from the folder in 0.3 s once a
 day as the new plan comes in).
+
+Reading ahead's capacity and the free tier, 25 Oct 2026 (the verify2 builder; the review docs/verify-bfs-2026-10-25.md,
+options (b), (c), (h) and (i); reported to Noemi). The plan asks for 4,500 kept comments a day (3,000 before): the review
+measured 78,102 kept comments, about 2,700 passing their 30 days a day, and a week's outage costing about 2,200 comments,
+ten days about 10,400; at 4,500 a ten-day outage loses nothing. The answers' last two tiers (881 behind the picks and 2,266
+after those, of the 559 requests' 10,172 comments) are read every 5 days instead of every 40 hours, freeing about 1,260
+reads a day; a comment unreadable twice a week apart lapses at once, freeing the reads it held. What falls due a day:
+7,025 first-tier comments x 24/40 = 4,215, 3,147 fallback ones / 5 = 629 and 4,500 kept ones, about 9,350 against 9,600
+read on 24 Oct 2026 (the cap then 11,520). So a ping reads at most 48 in 6 seconds (40 in 5 before), 13,824 a day, with
+visitors keeping 100 of Reddit's 200 reads in each 10 minutes (96 for reading ahead). The ping bills 7 seconds (6
+before): at most 62,496 vCPU-seconds a month on the site's 1 vCPU (35% of 180,000; it was 53,568, 30%) and, at its 4 GiB,
+249,984 GiB-seconds (69% of 360,000; it was 214,272, 60%), still free; the pre-check job's sums are unchanged (102,300
+vCPU-seconds, 43%; 152,300 with on-demand reading's, 63%), and so are Bright Data's 930 records a month.
 
 Container images (14 Oct 2026). Each deploy stores the site's image in Artifact Registry (the repository `cloud-run-source-deploy`, which `gcloud run deploy --source` makes): about 1.15 GB, most of it the open model the build downloads. Its free tier is 0.5 GB of storage, then about 0.10 USD per GB a month. By the evening of 14 Oct 44 images had grown to 51 GB (about 4.60 EUR a month); Noemi chose to keep only the newest one, so the other 43 were deleted that evening and deploy.sh applies a cleanup policy after each deploy (image_cleanup_policy.json: keep the newest version, delete every other; Google runs it about once a day). One image costs about 0.07 EUR a month. An older site version can't be rolled back to once its image is gone: rebuild it from its commit instead. To bring storage under the free 0.5 GB, the model would have to leave the image (downloaded as the server starts, about 20 s slower starts): not done.
 
