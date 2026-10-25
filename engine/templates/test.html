@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<title>Which answer would you trust?</title>
+<style>
+/* A short blind test for friends (Noemi, 20 Oct 2026). Standalone: it shares the site's colours, type and dark mode and
+   nothing else (no name, no links). Phone first: one column, big buttons; two cards side by side from 720px. Every
+   text colour meets WCAG AA (4.5:1) and every button's edge 3:1, in light and dark (engine/tests/test_pair_web.py). */
+:root {
+  color-scheme: light dark;
+  --bg: #f6f3ee;
+  --surface: #fffdf9;
+  --sunken: #f1ede5;
+  --text: #1c1a17;
+  --muted: #5d574e;
+  --line: #e4ded3;
+  --control: #857e72;
+  --accent: #1d6a51;
+  --accent-hover: #15543f;
+  --accent-soft: #e2efe8;
+  --on-accent: #ffffff;
+  --bad: #a5311f;
+  --bad-soft: #fbe5df;
+  --shadow: 0 1px 2px rgba(48, 36, 16, .05), 0 6px 20px rgba(48, 36, 16, .06);
+  --serif: ui-serif, "New York", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #131210;
+    --surface: #1c1b18;
+    --sunken: #232220;
+    --text: #ece8e1;
+    --muted: #a9a297;
+    --line: #2e2c28;
+    --control: #7d776d;
+    --accent: #6fc4a1;
+    --accent-hover: #8fd6b8;
+    --accent-soft: #1b2f27;
+    --on-accent: #0c1d16;
+    --bad: #f09a89;
+    --bad-soft: #341d19;
+    --shadow: 0 1px 0 rgba(0, 0, 0, .35);
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 var(--sans); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+button, input { font: inherit; color: inherit; }
+h1, h2 { line-height: 1.2; }
+.wrap { max-width: 880px; margin: 0 auto; padding: 0 16px 48px; }
+
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0 6px; }
+.kicker { margin: 0; font-size: 12.5px; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.lang { display: inline-flex; border: 2px solid var(--control); border-radius: 10px; overflow: hidden; }
+.lang button { min-height: 44px; min-width: 48px; padding: 0 12px; border: 0; background: var(--surface); font-weight: 650; cursor: pointer; }
+.lang button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+
+.screen { padding-top: 18px; }
+.title:focus, .question:focus { outline: none; }
+.title { margin: 0 0 12px; font: 600 clamp(28px, 7vw, 40px)/1.12 var(--serif); letter-spacing: -.02em; text-wrap: balance; }
+.lede { margin: 0 0 24px; font-size: 18px; max-width: 46ch; text-wrap: pretty; }
+
+.progress { margin: 0 0 8px; font-size: 14px; font-weight: 650; color: var(--muted); }
+.bar { height: 8px; margin: 0 0 20px; border-radius: 99px; background: var(--sunken); border: 1px solid var(--line); overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--accent); transition: width .25s; }
+.asks { margin: 0 0 4px; font-size: 14px; color: var(--muted); }
+.question { margin: 0 0 20px; font: 600 clamp(24px, 6vw, 34px)/1.15 var(--serif); letter-spacing: -.015em; text-wrap: balance; }
+
+.cards { display: grid; gap: 14px; margin: 0 0 22px; }
+.card { min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 16px 6px; box-shadow: var(--shadow); }
+.card-title { margin: 0 0 8px; font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.picks { margin: 0; padding: 0; list-style: none; counter-reset: pick; }
+.pick { position: relative; margin: 0 0 12px; padding-left: 30px; counter-increment: pick; }
+.pick::before { content: counter(pick); position: absolute; left: 0; top: 1px; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 700; line-height: 22px; text-align: center; }
+.pick-name { display: block; font-weight: 650; overflow-wrap: anywhere; }
+.pick-why { display: block; color: var(--muted); overflow-wrap: anywhere; }
+.note { margin: 0 0 12px; color: var(--muted); font-style: italic; }
+
+.ask { margin: 0 0 10px; padding: 0; border: 0; }
+.ask legend { padding: 0; margin: 0 0 10px; font-weight: 650; }
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.choice { min-height: 52px; padding: 0 16px; border: 2px solid var(--control); border-radius: 12px; background: var(--surface); font-size: 18px; font-weight: 650; cursor: pointer; transition: background-color .15s, border-color .15s; }
+.choice[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.choice.same { grid-column: 1 / -1; font-size: 16px; }
+.why { display: block; margin: 18px 0 6px; font-weight: 650; }
+.why-input { display: block; width: 100%; min-height: 48px; padding: 0 12px; border: 2px solid var(--control); border-radius: 12px; background: var(--surface); }
+.why-input::placeholder { color: var(--muted); }
+.hint { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
+
+.primary { display: block; width: 100%; min-height: 52px; margin-top: 22px; padding: 0 22px; border: 0; border-radius: 12px; background: var(--accent); color: var(--on-accent); font-size: 18px; font-weight: 650; cursor: pointer; transition: background-color .15s; }
+.primary:hover { background: var(--accent-hover); }
+.primary:disabled { opacity: .45; cursor: not-allowed; }
+.status { margin: 18px 0 0; padding: 12px 14px; border-radius: 12px; background: var(--accent-soft); color: var(--text); }
+.status.problem { background: var(--bad-soft); color: var(--bad); }
+.closed { margin: 0; padding: 14px 16px; border-radius: 12px; background: var(--sunken); }
+
+@media (min-width: 720px) {
+  .wrap { padding: 0 24px 64px; }
+  .cards { grid-template-columns: 1fr 1fr; align-items: start; }
+  .choices { grid-template-columns: 1fr 1fr 1fr; }
+  .choice.same { grid-column: auto; font-size: 18px; }
+  .primary { width: auto; min-width: 200px; margin-left: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar > span, .choice, .primary { transition: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <p class="kicker" id="kicker"></p>
+    <div class="lang" role="group" id="lang"></div>
+  </header>
+  <main class="screen" id="screen"></main>
+  <noscript><p class="closed">This test needs JavaScript. Questo test richiede JavaScript.</p></noscript>
+</div>
+<script type="application/json" id="settings">{{SETTINGS}}</script>
+<script>
+/* How this page works. The server makes a new deck for each visit (engine/pair_test.py) and puts it in the data block
+   above: 6 comparisons, each with the question, the two cards in the order they are shown, and, for the record only,
+   which tool the other card is and which side the first tool was on. The page draws a card by its picks and nothing
+   else; the tools and the side are sent with the answer (POST /api/test-response) and are never drawn, written into the
+   page or kept in an attribute. Nothing is kept in the browser but this visit's place, in this tab's sessionStorage, so a
+   reload (a phone putting the tab to sleep) carries on where it was; no cookies, no counting.
+   WORDING: decided by Claude, 24 Oct 2026, PROPOSED for Noemi to read (Italian too). Every word the page shows that is
+   not a card's is here. */
+(function () {
+  "use strict";
+  const LABELS = {
+    en: {
+      pageTitle: "Which answer would you trust?",
+      kicker: "A 4-minute test",
+      introTitle: "Which answer would you trust?",
+      intro: "Compare two answers to a shopping question and pick the one you'd trust with your own money. It takes about 4 minutes, and it's anonymous.",
+      start: "Start",
+      progress: "Question {n} of {total}",
+      asks: "Someone asks:",
+      answer: "Answer {letter}",
+      askTrust: "Which would you trust with your own money?",
+      same: "About the same",
+      whyLabel: "Why? (optional)",
+      whyPlaceholder: "One line is plenty",
+      whyHint: "Please don't include personal details.",
+      next: "Next",
+      finish: "Finish",
+      thanksTitle: "Thank you!",
+      thanks: "Your answers were saved anonymously. You can close this page now.",
+      saving: "Saving your answers…",
+      unsaved: "Some answers couldn't be saved yet.",
+      retry: "Try again",
+      language: "Language",
+      closed: "This test isn't open yet. Please try again later.",
+    },
+    it: {
+      pageTitle: "Di quale risposta ti fideresti?",
+      kicker: "Un test di 4 minuti",
+      introTitle: "Di quale risposta ti fideresti?",
+      intro: "Confronta due risposte a una domanda di shopping e scegli quella di cui ti fideresti per spendere i tuoi soldi. Ci vogliono circa 4 minuti ed è anonimo.",
+      start: "Inizia",
+      progress: "Domanda {n} di {total}",
+      asks: "Qualcuno chiede:",
+      answer: "Risposta {letter}",
+      askTrust: "Di quale ti fideresti per spendere i tuoi soldi?",
+      same: "Più o meno uguali",
+      whyLabel: "Perché? (facoltativo)",
+      whyPlaceholder: "Basta una riga",
+      whyHint: "Per favore, non scrivere dati personali.",
+      next: "Avanti",
+      finish: "Fine",
+      thanksTitle: "Grazie!",
+      thanks: "Le tue risposte sono state salvate in modo anonimo. Ora puoi chiudere questa pagina.",
+      saving: "Salvataggio delle risposte…",
+      unsaved: "Alcune risposte non sono ancora state salvate.",
+      retry: "Riprova",
+      language: "Lingua",
+      closed: "Questo test non è ancora aperto. Riprova più tardi.",
+    },
+  };
+  const LANGUAGE_NAMES = { en: "English", it: "Italiano" };
+  const PLACE_KEY = "pair-test-place";
+  const RETRY_LIMIT = 6;
+  const settings = JSON.parse(document.getElementById("settings").textContent);
+  const state = {
+    language: startLanguage(), session: makeSession(), deck: settings.deck, index: 0,
+    screen: settings.closed ? "closed" : "intro", choice: null, why: "", outbox: [], sending: false, failures: 0,
+  };
+  const screen = document.getElementById("screen");
+
+  function startLanguage() {
+    const wanted = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
+    return String(wanted[0] || "en").toLowerCase().startsWith("it") ? "it" : "en";
+  }
+
+  function makeSession() {
+    const bytes = new Uint8Array(12);
+    if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(bytes);
+    else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+
+  function words(key, values) {
+    let text = LABELS[state.language][key];
+    for (const name of Object.keys(values || {})) text = text.replace("{" + name + "}", values[name]);
+    return text;
+  }
+
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function button(className, text, onClick) {
+    const node = el("button", className, text);
+    node.type = "button";
+    node.addEventListener("click", onClick);
+    return node;
+  }
+
+  // --- The language switch and the frame ---
+
+  function drawFrame() {
+    document.documentElement.lang = state.language;
+    document.title = words("pageTitle");
+    document.getElementById("kicker").textContent = words("kicker");
+    const group = document.getElementById("lang");
+    group.setAttribute("aria-label", words("language"));
+    group.textContent = "";
+    for (const code of Object.keys(LANGUAGE_NAMES)) {
+      const choice = button("", code.toUpperCase(), () => switchLanguage(code));
+      choice.setAttribute("aria-label", LANGUAGE_NAMES[code]);
+      choice.setAttribute("aria-pressed", String(code === state.language));
+      choice.lang = code;
+      group.appendChild(choice);
+    }
+  }
+
+  function switchLanguage(code) {
+    if (code === state.language) return;
+    state.language = code;
+    drawFrame();
+    draw(false);
+  }
+
+  // --- The screens ---
+
+  function draw(moveFocus) {
+    screen.textContent = "";
+    if (state.screen === "closed") showClosed();
+    else if (state.screen === "intro") showIntro();
+    else if (state.screen === "question") showQuestion();
+    else showThanks();
+    if (moveFocus) {
+      const heading = screen.querySelector(".title, .question");
+      if (heading) {
+        heading.tabIndex = -1;
+        heading.focus({ preventScroll: true });
+      }
+      window.scrollTo(0, 0);
+    }
+  }
+
+  function showClosed() {
+    screen.appendChild(el("p", "closed", words("closed")));
+  }
+
+  function showIntro() {
+    screen.appendChild(el("h1", "title", words("introTitle")));
+    screen.appendChild(el("p", "lede", words("intro")));
+    screen.appendChild(button("primary", words("start"), () => {
+      state.screen = "question";
+      rememberPlace();
+      draw(true);
+    }));
+  }
+
+  function cardElement(card, letter) {
+    const box = el("section", "card");
+    box.appendChild(el("h2", "card-title", words("answer", { letter: letter })));
+    if (card.picks.length) {
+      const list = el("ol", "picks");
+      for (const pick of card.picks) {
+        const item = el("li", "pick");
+        item.appendChild(el("strong", "pick-name", pick.name));
+        item.appendChild(el("span", "pick-why", pick.why[state.language]));
+        list.appendChild(item);
+      }
+      box.appendChild(list);
+    } else {
+      box.appendChild(el("p", "note", card.note[state.language]));
+    }
+    return box;
+  }
+
+  function showQuestion() {
+    const item = state.deck[state.index];
+    const last = state.index === state.deck.length - 1;
+    screen.appendChild(el("p", "progress", words("progress", { n: state.index + 1, total: state.deck.length })));
+    const bar = el("div", "bar");
+    bar.setAttribute("aria-hidden", "true");
+    const fill = el("span");
+    fill.style.width = Math.round(100 * (state.index + 1) / state.deck.length) + "%";
+    bar.appendChild(fill);
+    screen.appendChild(bar);
+    screen.appendChild(el("p", "asks", words("asks")));
+    screen.appendChild(el("h1", "question", item.text[state.language]));
+
+    const cards = el("div", "cards");
+    cards.appendChild(cardElement(item.cards.A, "A"));
+    cards.appendChild(cardElement(item.cards.B, "B"));
+    screen.appendChild(cards);
+
+    const ask = el("fieldset", "ask");
+    ask.appendChild(el("legend", "", words("askTrust")));
+    const choices = el("div", "choices");
+    const next = button("primary", words(last ? "finish" : "next"), advance);
+    next.disabled = state.choice === null;
+    for (const value of ["A", "B", "same"]) {
+      const text = value === "same" ? words("same") : value;
+      const choice = button("choice" + (value === "same" ? " same" : ""), text, () => {
+        state.choice = value;
+        for (const other of choices.children) other.setAttribute("aria-pressed", String(other === choice));
+        next.disabled = false;
+      });
+      if (value !== "same") choice.setAttribute("aria-label", words("answer", { letter: value }));
+      choice.setAttribute("aria-pressed", String(state.choice === value));
+      choices.appendChild(choice);
+    }
+    ask.appendChild(choices);
+    screen.appendChild(ask);
+
+    const label = el("label", "why", words("whyLabel"));
+    label.htmlFor = "why";
+    screen.appendChild(label);
+    const input = el("input", "why-input");
+    input.id = "why";
+    input.type = "text";
+    input.maxLength = settings.whyMax;
+    input.autocomplete = "off";
+    input.setAttribute("enterkeyhint", "next");
+    input.placeholder = words("whyPlaceholder");
+    input.value = state.why;
+    input.addEventListener("input", () => { state.why = input.value; });
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && state.choice !== null) advance();
+    });
+    screen.appendChild(input);
+    screen.appendChild(el("p", "hint", words("whyHint")));
+    screen.appendChild(next);
+  }
+
+  function showThanks() {
+    screen.appendChild(el("h1", "title", words("thanksTitle")));
+    screen.appendChild(el("p", "lede", words("thanks")));
+    const status = el("p", "status");
+    status.id = "status";
+    status.setAttribute("role", "status");
+    screen.appendChild(status);
+    drawStatus();
+  }
+
+  function drawStatus() {
+    const status = document.getElementById("status");
+    if (!status) return;
+    status.textContent = "";
+    status.className = "status";
+    status.hidden = state.outbox.length === 0;
+    if (!state.outbox.length) return;
+    if (state.sending && state.failures < RETRY_LIMIT) {
+      status.textContent = words("saving");
+      return;
+    }
+    status.classList.add("problem");
+    status.appendChild(el("span", "", words("unsaved") + " "));
+    status.appendChild(button("primary", words("retry"), () => { state.failures = 0; send(); drawStatus(); }));
+  }
+
+  // --- Moving on, and sending the answers ---
+
+  function advance() {
+    if (state.choice === null) return;
+    state.outbox.push(answerRecord(state.deck[state.index], state.choice, state.why));
+    state.index += 1;
+    state.choice = null;
+    state.why = "";
+    if (state.index >= state.deck.length) {
+      state.screen = "thanks";
+      forgetPlace();
+    } else {
+      rememberPlace();
+    }
+    send();
+    draw(true);
+  }
+
+  function answerRecord(item, choice, why) {
+    return {
+      session: state.session,
+      question: item.question,
+      rival: item.rival,
+      ours_side: item.ours_side,
+      choice: choice,
+      why: why.trim() || null,
+      language: state.language,
+      answered_at: new Date().toISOString(),
+    };
+  }
+
+  // One answer at a time, in order. An answer the server refuses for good (a 4xx other than "too many requests") is
+  // dropped, since sending it again cannot help; the others wait and are tried again, a few times, then offered a retry.
+  function send() {
+    if (state.sending || !state.outbox.length) return;
+    state.sending = true;
+    sendNext();
+  }
+
+  function sendNext() {
+    if (!state.outbox.length) {
+      state.sending = false;
+      drawStatus();
+      return;
+    }
+    fetch("/api/test-response", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(state.outbox[0]),
+    }).then((response) => {
+      if (response.ok || (response.status >= 400 && response.status < 500 && response.status !== 429)) {
+        state.outbox.shift();
+        state.failures = 0;
+        sendNext();
+      } else {
+        retryLater(response.status === 429 ? Number(response.headers.get("Retry-After")) || 30 : 5);
+      }
+    }).catch(() => retryLater(5));
+  }
+
+  function retryLater(seconds) {
+    state.failures += 1;
+    if (state.failures >= RETRY_LIMIT) {
+      state.sending = false;
+      drawStatus();
+      return;
+    }
+    window.setTimeout(() => { state.sending = false; send(); }, Math.min(seconds, 60) * 1000);
+    drawStatus();
+  }
+
+  // --- This visit's place, so a reload carries on ---
+
+  function rememberPlace() {
+    try {
+      sessionStorage.setItem(PLACE_KEY, JSON.stringify({
+        session: state.session, deck: state.deck, index: state.index, language: state.language, screen: state.screen,
+      }));
+    } catch (error) { /* nothing kept */ }
+  }
+
+  function forgetPlace() {
+    try { sessionStorage.removeItem(PLACE_KEY); } catch (error) { /* nothing kept */ }
+  }
+
+  function resumePlace() {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(PLACE_KEY));
+      if (saved && typeof saved.session === "string" && Array.isArray(saved.deck) && saved.deck.length &&
+          Number.isInteger(saved.index) && saved.index >= 0 && saved.index < saved.deck.length &&
+          saved.deck.every((item) => item && item.cards && item.cards.A && item.cards.B && item.text)) {
+        state.session = saved.session;
+        state.deck = saved.deck;
+        state.index = saved.index;
+        state.screen = "question";
+        if (saved.language === "en" || saved.language === "it") state.language = saved.language;
+      }
+    } catch (error) { /* nothing kept, or not from this page: start from the beginning */ }
+  }
+
+  if (state.screen !== "closed") resumePlace();
+  drawFrame();
+  draw(false);
+})();
+</script>
+</body>
+</html>
