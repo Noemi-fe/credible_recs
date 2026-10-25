@@ -63,6 +63,11 @@ SUBREDDITS: dict[str, tuple[str, ...]] = {
         "3Dprinting", "4kTV", "audiophile", "buildapc", "Cameras", "DataHoarder", "drones", "HomeNetworking",
         "hometheater", "kindle", "MouseReview", "photography", "PickAnAndroidForMe", "printers", "projectors",
         "smartwatch", "vinyl", "virtualreality",
+        # 25 Oct 2026 (Noemi's decision (e) of 19 Oct: "phone and webcam communities may be added"; the data-tech2
+        # builder, chosen by Claude, reported to her): the phone communities, where people ask which phone has the
+        # best camera (r/iphone, r/GooglePixel and r/samsung each exist and post every day), and r/Twitch for webcams
+        # (about 25 "which webcam" threads with 10+ comments in 2024-2026). Not r/webcam: an adult-content community.
+        "iphone", "GooglePixel", "samsung", "Twitch",
         # outdoor and travel
         "bikecommuting", "birding", "ebikes", "EDC", "ElectricScooters", "Fishing", "flashlight", "golf", "hiking",
         "Kayaking", "Paddleboarding", "whichbike",
