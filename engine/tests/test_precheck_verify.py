@@ -7,7 +7,7 @@ A made-up slimmed thread and a made-up embed page: no test reads data/ or reache
 """
 
 import json
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -154,6 +154,28 @@ def test_the_record_is_shared_through_the_bucket_and_starts_the_next_run(tmp_pat
     checker.bucket = bucket(checker._clock)
     precheck.run([], limit=0, dry_run=False, library_dir=root, checker=checker, profiles=None, verify_limit=20)
     assert second.asked == []  # every kept comment was verified four days ago: none is due yet
+
+
+def test_a_run_counts_what_is_due_by_the_checkers_clock_not_the_computers(tmp_path, monkeypatch):
+    # 25 Oct 2026: the test above began failing on 23 Oct, a week after the dates it makes up. The run took its start
+    # from the checker's clock but sent the verification step off with the computer's own, so a made-up "yesterday"
+    # was judged against the real today. Here the computer's clock says 2035: the made-up days must still decide.
+    class Computer(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return datetime(2035, 1, 1, tzinfo=tz)
+
+    monkeypatch.setattr(precheck, "datetime", Computer)
+    root = slimmed_library(tmp_path)
+    first = FakeEmbed(root)
+    precheck.run([], limit=0, dry_run=False, library_dir=root, checker=checker_at(tmp_path, first, day(10)),
+                 profiles=None, verify_limit=20)
+    assert sorted(first.asked) == sorted(ORDER)
+    # Three days on: past the checker's 48 hours (so a saved check can't be what stops a read), inside the week.
+    later = FakeEmbed(root)
+    precheck.run([], limit=0, dry_run=False, library_dir=root, checker=checker_at(tmp_path, later, day(13)),
+                 profiles=None, verify_limit=20)
+    assert later.asked == []  # all nine were verified three days ago: none is due, whatever the computer's date is
 
 
 def test_a_library_with_nothing_slimmed_writes_no_record(tmp_path):

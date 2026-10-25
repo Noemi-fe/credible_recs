@@ -1016,7 +1016,8 @@ def run(requests: list[str], limit: int, dry_run: bool, library_dir: Path, check
     started. Then the kept comments of slimmed threads are verified, within `verify_limit` reads (verify_step), and the
     verification record written (one more object, when the library has slimmed threads)."""
     started = time.perf_counter()
-    began = (getattr(checker, "now", None) or (lambda: datetime.now(UTC)))()
+    clock = getattr(checker, "now", None) or (lambda: datetime.now(UTC))
+    began = clock()
     bucket = getattr(checker, "bucket", None)
     loaded = checker.load_bundle() if bucket is not None else 0
     memory = load_bright_data_memory(checker)
@@ -1038,7 +1039,9 @@ def run(requests: list[str], limit: int, dry_run: bool, library_dir: Path, check
     print(report(found.candidates, reading, len(requests), found.answered, working, reading.seconds, found.failed))
     print(bright_data_report(through))
     until = None if minutes is None else began + timedelta(minutes=minutes)  # the same minutes as the reads above
-    verified = verify_step(library_dir, checker, dry_run, verify_limit, until=until)
+    # By the checker's clock, like the reads above (25 Oct 2026): left to itself the step used the computer's own, and a
+    # test's made-up days were judged against the real date.
+    verified = verify_step(library_dir, checker, dry_run, verify_limit, now=clock(), until=until)
     if verified.kept:
         print(verify_report(verified))
     if bucket is not None:

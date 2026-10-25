@@ -10,6 +10,26 @@ Two kinds of record come in through POST /api/feedback (engine/web.py), sent by 
      "status": "ok" | "clarify" | "out_of_scope"}   the kind of answer: picks, one question first, or a polite no
     {"kind": "first_time", "answer": "yes" | "no"}  "First time here?", to count new and returning visitors
 
+A third kind comes in through POST /api/test-response, sent by the pairwise test's page (/test; engine/pair_test.py, Noemi,
+20 Oct 2026), one record per answer, checked by parse_pair:
+
+    {"session": "<28 letters and digits>",          the id the server gave this visit (not tied to anyone)
+     "question": "b01",                             the test question's id
+     "choice": "A" | "B" | "same",                  the visitor's answer: the side trusted more, or about the same
+     "why": "..." | null,                           optional, at most PAIR_MAX_WHY_CHARS characters
+     "language": "en" | "it",
+     "answered_at": "2026-10-24T20:15:03.512Z"}     the page's clock, UTC
+
+The page never knows which tool the other answer is, or which side ours is on (25 Oct 2026: nothing a visitor's browser
+holds may say, so it is never in the page or in what the page sends). The server works both out from the visit's id
+(engine/pair_test.py sides_of, passed in as `sides`) and keeps them in the record:
+
+     "rival": "chatgpt" | "vetted",                 the tool ours was set against
+     "ours_side": "A" | "B",                        the side ours was shown on
+
+A page that sends either is refused. It is kept as the kind "blind_pair" (the server sets the kind; a body that names one
+is refused), with the time it arrived, in the same store; `python -m engine.blind_test tally-pairs` counts them.
+
 parse_record checks each one strictly: an unknown kind or field, a missing field, a value of the wrong type or a text
 over its limit is refused, with plain words saying why, and nothing is kept. What is kept is those fields and the time
 the record arrived (UTC, "received_at"), and nothing else: no IP address, no browser details, no cookie, no name. The
@@ -34,6 +54,7 @@ Reading it all:
 
 import json
 import os
+import re
 import secrets
 import sys
 import threading
@@ -42,7 +63,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from engine.config import (FEEDBACK_MAX_COMMENT_CHARS, FEEDBACK_MAX_PENDING, FEEDBACK_MAX_PRODUCT_TYPE_CHARS,
-                           FEEDBACK_UPLOAD_EVERY_SECONDS, WEB_MAX_REQUEST_CHARS)
+                           FEEDBACK_UPLOAD_EVERY_SECONDS, PAIR_TEST_MAX_WHY_CHARS, WEB_MAX_REQUEST_CHARS)
 from engine.parse_reddit import DEFAULT_ENV_FILE as ENV_FILE
 from engine.parse_reddit import _read_env_file
 
@@ -57,6 +78,19 @@ KINDS = ("answer_feedback", "first_time")
 VERDICTS = ("useful", "not useful")
 STATUSES = ("ok", "clarify", "out_of_scope")  # module 1's outcomes (engine.query.ParsedQuery.status); a test checks
 FIRST_TIME_ANSWERS = ("yes", "no")
+# The pairwise test's answers (20 Oct 2026): their own kind, which only POST /api/test-response takes.
+PAIR_KIND = "blind_pair"
+STORED_KINDS = KINDS + (PAIR_KIND,)  # what the store holds and reading takes in
+PAIR_RIVALS = ("chatgpt", "vetted")
+PAIR_SIDES = ("A", "B")
+PAIR_CHOICES = ("A", "B", "same")
+PAIR_LANGUAGES = ("en", "it")
+PAIR_MAX_WHY_CHARS = PAIR_TEST_MAX_WHY_CHARS
+PAIR_REQUIRED = ("session", "question", "choice", "language", "answered_at")  # what the page sends
+PAIR_OPTIONAL = ("why",)
+_PAIR_SESSION = re.compile(r"[A-Za-z0-9_-]{8,64}")
+_PAIR_QUESTION = re.compile(r"[A-Za-z0-9_-]{1,16}")
+_PAIR_TIME = re.compile(r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d{1,6})?Z")
 # The kinds of answer, in words, for the summary.
 STATUS_WORDS = {"ok": "answers with picks", "clarify": "a question first", "out_of_scope": "a polite no"}
 
@@ -91,6 +125,49 @@ def parse_record(data: object, now: datetime | None = None) -> dict:
         raise FeedbackError(f'"kind" must be one of: {_listed(KINDS)}.')
     record["received_at"] = (now or datetime.now(UTC)).astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     return record
+
+
+def parse_pair(data: object, sides, now: datetime | None = None) -> dict:
+    """The record to keep for one answer of the pairwise test: its fields, checked, as the kind "blind_pair", and the
+    time it arrived. The page's own clock is kept to the second (UTC). `sides(session, question)` gives the rival and
+    ours' side for that visit's question as ("chatgpt" | "vetted", "A" | "B"), or None when the visit was never asked
+    that question (the answer is then refused). Raises FeedbackError when anything is off."""
+    if not isinstance(data, dict):
+        raise FeedbackError("Send one JSON object.")
+    _only(data, required=PAIR_REQUIRED, optional=PAIR_OPTIONAL)
+    session = _matching(data, "session", _PAIR_SESSION, "8 to 64 letters, digits, - or _")
+    question = _matching(data, "question", _PAIR_QUESTION, "1 to 16 letters, digits, - or _")
+    checked = {"choice": _one_of(data, "choice", PAIR_CHOICES), "why": _text(data, "why", PAIR_MAX_WHY_CHARS),
+               "language": _one_of(data, "language", PAIR_LANGUAGES), "answered_at": _page_time(data)}
+    found = sides(session, question)  # last: working out a deck is only done for an answer that is otherwise fine
+    if found is None:
+        raise FeedbackError(f'"question" {question} is not one of this visit\'s questions.')
+    rival, ours_side = found
+    assert rival in PAIR_RIVALS and ours_side in PAIR_SIDES, found  # the server's own lookup: a bug, not bad input
+    record = {"kind": PAIR_KIND, "session": session, "question": question, "rival": rival, "ours_side": ours_side,
+              **checked}
+    record["received_at"] = (now or datetime.now(UTC)).astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return record
+
+
+def _matching(data: dict, name: str, pattern: re.Pattern, words: str) -> str:
+    value = data.get(name)
+    if not isinstance(value, str) or not pattern.fullmatch(value):
+        raise FeedbackError(f'"{name}" must be {words}.')
+    return value
+
+
+def _page_time(data: dict) -> str:
+    """The page's timestamp (UTC, ending in Z, optional fractions of a second) as a time to the second."""
+    value = data.get("answered_at")
+    found = _PAIR_TIME.fullmatch(value) if isinstance(value, str) else None
+    try:
+        if found is None:
+            raise ValueError
+        datetime.strptime(found.group(1), "%Y-%m-%dT%H:%M:%S")
+    except ValueError:
+        raise FeedbackError('"answered_at" must be a UTC time such as 2026-10-24T20:15:03Z.') from None
+    return found.group(1) + "Z"
 
 
 def _only(data: dict, required: tuple[str, ...], optional: tuple[str, ...]) -> None:
@@ -263,9 +340,14 @@ def read_records(paths) -> list[dict]:
                 record = json.loads(line)
             except ValueError:
                 continue
-            if isinstance(record, dict) and record.get("kind") in KINDS:
+            if isinstance(record, dict) and record.get("kind") in STORED_KINDS:
                 records.append(record)
     return records
+
+
+def read_pairs(paths) -> list[dict]:
+    """The pairwise test's records (kind "blind_pair") in these JSON-lines files, in file order; anything else is left out."""
+    return [record for record in read_records(paths) if record.get("kind") == PAIR_KIND]
 
 
 def summary(records: list[dict]) -> str:
@@ -275,6 +357,12 @@ def summary(records: list[dict]) -> str:
         return "No feedback yet."
     rated = [r for r in records if r.get("kind") == "answer_feedback"]
     firsts = [r for r in records if r.get("kind") == "first_time"]
+    pairs = [r for r in records if r.get("kind") == PAIR_KIND]
+    pair_line = (f"Pairwise test: {_count(len(pairs), 'answer')} from "
+                 f"{_count(len({r.get('session') for r in pairs}), 'session')} (python -m engine.blind_test tally-pairs "
+                 "counts them).")
+    if pairs and not (rated or firsts):
+        return pair_line
     verdicts = Counter(r.get("verdict") for r in rated)
     answers = Counter(r.get("answer") for r in firsts)
     lines = [f"Was this useful? {_count(len(rated), 'answer')} rated: {verdicts['useful']} useful, "
@@ -284,6 +372,8 @@ def summary(records: list[dict]) -> str:
         if some:
             lines.append(f"  {words}: {len(some)} rated, {sum(r.get('verdict') == 'useful' for r in some)} useful")
     lines.append(f"First time here? {len(firsts)} answered: {answers['yes']} yes, {answers['no']} no.")
+    if pairs:
+        lines.append(pair_line)
     comments = sorted((r for r in rated if r.get("comment")), key=lambda r: str(r.get("received_at", "")), reverse=True)
     if comments:
         lines += ["", "Comments, newest first:"]
