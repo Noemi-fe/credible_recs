@@ -31,17 +31,30 @@ are still tried; after 3 failures in a row (PROFILE_FAILURES_IN_A_ROW_TO_STOP) i
 
 Cost: free, but slow on purpose: 1 call per writer, plus 1 per 100 comments for flairs, 10 seconds apart.
 
+Refreshing the store (25 Oct 2026, the verify2 builder): an entry older than LIBRARY_REFRESH_DAYS is MISSING, and a
+writer who is MISSING is, for module 5, a writer the archive doesn't know: no standing for or against them, no flair. Not
+dropped and not kept, but neutral, and it changes answers a good deal (on the 278-request sweep with every profile expired,
+77 of 219 answers' picks changed and the high-credibility voices behind the picks fell from 2,501 to 699). The library's
+profiles were all looked up on 9 to 16 Oct, so they expire on 9 to 16 Nov. `warm` asks the writers of the comments answers
+quote first (--quoted), then the stalest first (a writer never looked up before all), in chunks (--limit), and saves what it
+has found every SAVE_EVERY writers, so a run that is stopped loses little and the next carries on where it stopped. It is
+paced at ArcticShiftClient's 10 seconds a call, one call per writer and one per 100 comments' flairs.
+
 Command line:
-    python -m engine.profiles warm <threads folder> [--limit N]
+    python -m engine.profiles warm <threads folder> [--limit N] [--quoted FILE]
         fills the cache for the writers of comments with kept product mentions or notes in that folder's checked
         extractions (engine.extract.load_checked), and, for the library's folder, keeps the answers in its store. It says how many calls and how long before it starts, then shows progress.
-        --limit N looks up at most N writers not yet in the cache; the next run carries on from there.
+        --limit N looks up at most N writers not yet in the cache; the next run carries on from there. With --limit the
+        flairs looked up are those of the same writers only.
+        --quoted FILE asks the writers of the comments in FILE first (one comment link or id a line; `python
+        eval/sweep.py quoted <sweep.jsonl> <FILE>` lists the comments a sweep's answers quote), the stalest first.
 """
 
 import math
+import re
 import sys
 import time
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Collection, Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -69,12 +82,15 @@ class LookUps:
     stopped: bool = False  # True when it failed PROFILE_FAILURES_IN_A_ROW_TO_STOP times in a row
 
 
-def look_up(client: ArcticShiftClient, names: Iterable[str], progress: Callable[[int, str], None] | None = None) -> LookUps:
+def look_up(client: ArcticShiftClient, names: Iterable[str], progress: Callable[[int, str], None] | None = None,
+            on_result: Callable[[str, dict | None], None] | None = None) -> LookUps:
     """Asks for each writer's numbers in turn; the cache answers when it can.
 
     A writer Arctic Shift can't answer for is noted and the next one is tried. After 3 failures in a row the trouble
     is Arctic Shift itself, so the writers left are noted as failed without asking. `progress`, if given, is told
     after each writer: their number in the list and what happened ("found", "not in the archive", "failed: ...").
+    `on_result`, if given, is told each answer as it comes: the writer and their numbers (None: the archive doesn't
+    know them), so a caller can keep them as it goes.
     """
     result = LookUps()
     failures_in_a_row = 0
@@ -99,6 +115,8 @@ def look_up(client: ArcticShiftClient, names: Iterable[str], progress: Callable[
                 else:
                     result.found[name] = stats
                     outcome = "found"
+                if on_result:
+                    on_result(name, stats)
         if progress:
             progress(n, outcome)
     return result
@@ -120,6 +138,9 @@ class ProfileStore:
         data = json.loads(self.path.read_text(encoding="utf-8")) if self.path.exists() else {}
         self.writers: dict[str, dict] = data.get("writers", {})
         self.flairs: dict[str, dict] = data.get("flairs", {})
+        # What keep_only dropped: not brought back by save() from what another run saved (see save)
+        self._dropped_writers: set[str] = set()
+        self._dropped_flairs: set[str] = set()
 
     def user_stats(self, name: str):
         """The writer's numbers, None if the archive didn't know them, or MISSING if not stored or too old."""
@@ -129,23 +150,53 @@ class ProfileStore:
         """The comment's flair (None for none), or MISSING if not stored or too old."""
         return self._fresh(self.flairs.get(comment_id), "flair")
 
+    def checked_at(self, name: str) -> datetime | None:
+        """When the writer was last looked up, even if that is too long ago to count; None if never."""
+        entry = self.writers.get(name.lower())
+        return datetime.fromisoformat(entry["checked_at"]) if entry is not None else None
+
     def put_user(self, name: str, stats: dict | None) -> None:
         self.writers[name.lower()] = {"stats": stats, "checked_at": self._clock().isoformat()}
+        self._dropped_writers.discard(name.lower())
 
     def put_flair(self, comment_id: str, flair: str | None) -> None:
         self.flairs[comment_id] = {"flair": flair, "checked_at": self._clock().isoformat()}
+        self._dropped_flairs.discard(comment_id)
 
     def keep_only(self, names: Iterable[str], comment_ids: Iterable[str]) -> None:
         """Drops every writer and comment that isn't in the library any more."""
         names, comment_ids = {n.lower() for n in names}, set(comment_ids)
+        self._dropped_writers |= {n for n in self.writers if n not in names}
+        self._dropped_flairs |= {c for c in self.flairs if c not in comment_ids}
         self.writers = {n: e for n, e in self.writers.items() if n in names}
         self.flairs = {c: e for c, e in self.flairs.items() if c in comment_ids}
 
     def save(self) -> None:
+        """Writes the store, keeping what another run saved since this one read the file (25 Oct 2026: a refresh runs for
+        hours, saving as it goes, while data builders warm their new writers): an entry another run wrote and this one
+        doesn't hold comes in, and of an entry both hold the newer look-up stays. What keep_only dropped stays dropped."""
+        self._take_in_what_others_saved()
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self.path.with_suffix(".json.tmp")
         temporary.write_text(json.dumps({"writers": self.writers, "flairs": self.flairs}, ensure_ascii=False), encoding="utf-8")
         temporary.replace(self.path)
+
+    def _take_in_what_others_saved(self) -> None:
+        try:
+            on_disk = json.loads(self.path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return
+        for mine, theirs, dropped in ((self.writers, on_disk.get("writers", {}), self._dropped_writers),
+                                      (self.flairs, on_disk.get("flairs", {}), self._dropped_flairs)):
+            for key, entry in theirs.items() if isinstance(theirs, dict) else ():
+                if key in dropped:
+                    continue
+                try:
+                    if key not in mine or datetime.fromisoformat(entry["checked_at"]) > datetime.fromisoformat(
+                            mine[key]["checked_at"]):
+                        mine[key] = entry
+                except (KeyError, TypeError, ValueError):
+                    continue
 
     def _fresh(self, entry: dict | None, name: str):
         if entry is None:
@@ -175,6 +226,14 @@ class StoredProfiles:
         if rest and self.cached:
             found |= self.cached.comment_flairs(rest)
         return found
+
+
+def as_if_expired(profiles: StoredProfiles) -> StoredProfiles:
+    """The same store once every entry has passed LIBRARY_REFRESH_DAYS, with no 48-hour cache to fall back on: every
+    writer is MISSING, so answers see none of them (25 Oct 2026, the verify2 builder: what the library's profiles will do
+    to answers on 9 to 16 Nov, measured by `eval/sweep.py answer ... --profiles-expired`). The store is only read."""
+    later = datetime.now(UTC) + timedelta(days=LIBRARY_REFRESH_DAYS * 100)
+    return StoredProfiles(ProfileStore(profiles.store.path, clock=lambda: later))
 
 
 # --- At answer time: the cache only ---
@@ -328,24 +387,66 @@ def writers_with_kept_mentions(threads_dir: Path) -> dict[str, list[str]]:
     return writers
 
 
+SAVE_EVERY = 20  # writers looked up between two saves of the library's store (25 Oct 2026): a stopped run loses little
+
+
+def quoted_comment_ids(text: str) -> set[str]:
+    """The comment ids in a list, one comment link or bare id a line (blank lines and lines starting with # are left out):
+    what `warm --quoted` reads."""
+    found = set()
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("http"):
+            parts = [part for part in re.split(r"[/?#]", line.split("://", 1)[-1]) if part]
+            line = parts[-1] if "comments" in parts and len(parts) >= 6 else ""
+        if re.fullmatch(r"[A-Za-z0-9_-]{3,20}", line):
+            found.add(line)
+    return found
+
+
+def _quoted_first_then_stalest(names: list[str], writers: dict[str, list[str]], store: ProfileStore | None,
+                               quoted: Collection[str] | None) -> list[str]:
+    """The writers to ask, in order (25 Oct 2026): those of quoted comments first, then the stalest first (never looked
+    up before all, then the longest ago); writers equally stale keep the order they came in."""
+    quoted = set(quoted or ())
+    never = datetime.min.replace(tzinfo=UTC)
+
+    def key(name: str):
+        looked = store.checked_at(name) if store is not None else None
+        return (0 if quoted.intersection(writers[name]) else 1, looked or never)
+
+    return sorted(names, key=key)
+
+
 def warm(threads_dir: Path, client: ArcticShiftClient, limit: int | None = None, say: Callable[[str], None] = print,
-         store: ProfileStore | None = None) -> WarmResult:
+         store: ProfileStore | None = None, quoted: Collection[str] | None = None) -> WarmResult:
     """Fills the 48-hour cache for the writers of comments with kept product mentions or notes in `threads_dir`.
 
     Says what it will cost before starting and shows progress after each writer looked up. With `limit`, at most
     that many writers not yet in the cache are looked up; the others are left for a later run. With `store` (the
     library's), writers and flairs already stored aren't asked again, the answers are kept in it, and writers no
-    longer in the folder are dropped from it.
+    longer in the folder are dropped from it. The writers are asked in order (_quoted_first_then_stalest): those of the
+    comments in `quoted` (comment ids) first, then the stalest; with a store the answers are saved every SAVE_EVERY
+    writers, and with a `limit` the flairs looked up are those of the writers asked this run.
     """
+    quoted = set(quoted or ())
     writers = writers_with_kept_mentions(threads_dir)
-    stored = [name for name in writers if store is not None and store.user_stats(name) is not MISSING]
+    stored = {name for name in writers if store is not None and store.user_stats(name) is not MISSING}
     to_ask = client.uncached_users([name for name in writers if name not in stored])
+    to_ask = _quoted_first_then_stalest(to_ask, writers, store, quoted)
     later = to_ask[limit:] if limit is not None else []
-    asking = [name for name in to_ask if name not in later]
-    cached = [name for name in writers if name not in to_ask and name not in stored]
+    asking = to_ask[:limit] if limit is not None else to_ask
+    asked_set, ask_all = set(to_ask), set(asking)
+    cached = [name for name in writers if name not in asked_set and name not in stored]
+    cached_set = set(cached)
     # Every writer's comments whose flair isn't stored, stored writers' too (10 Oct 2026: their flairs were left in the
-    # 48-hour cache and lost when it expired). Flairs already in the cache cost no call.
-    comment_ids = [cid for name in writers for cid in writers[name] if store is None or store.flair(cid) is MISSING]
+    # 48-hour cache and lost when it expired). Flairs already in the cache cost no call. With a limit (25 Oct 2026, a
+    # refresh in chunks) only the writers asked this run and those answered from the cache: the flairs of 14,000 writers
+    # at once would take hours before the first writer.
+    flair_names = writers if limit is None else [name for name in writers if name in ask_all or name in cached_set]
+    comment_ids = [cid for name in flair_names for cid in writers[name] if store is None or store.flair(cid) is MISSING]
     uncached = client.uncached_comments(comment_ids)
     flair_calls = math.ceil(len(uncached) / FLAIR_BATCH)
     calls = len(asking) + flair_calls
@@ -355,6 +456,10 @@ def warm(threads_dir: Path, client: ArcticShiftClient, limit: int | None = None,
         f"the 48-hour cache{in_store}.")
     say(f"Each writer costs 1 free Arctic Shift call, and their flairs 1 call per {FLAIR_BATCH} comments; calls are "
         f"{client.min_interval:.0f} s apart.")
+    if quoted:
+        first = sum(1 for name in asking if quoted.intersection(writers[name]))
+        say(f"Asked first: {_plural(first, 'writer')} of quoted comments, the stalest of them first; then the stalest of "
+            "the rest.")
     say(f"This run: {_plural(len(asking), 'writer')} and {_plural(flair_calls, 'flair call')}: {_plural(calls, 'call')}, "
         f"about {_duration(calls * client.min_interval)}, plus {RETRY_PAUSE:.0f} s each time Arctic Shift says it is busy.")
     if later:
@@ -368,9 +473,26 @@ def warm(threads_dir: Path, client: ArcticShiftClient, limit: int | None = None,
         flairs |= client.comment_flairs(uncached) if uncached else {}
     except ArcticShiftError as e:
         say(f"Flairs not fetched ({e}); the writers' numbers are still looked up.")
+    if store is not None and flairs:  # kept now, so a run that is stopped keeps the calls they cost
+        for comment_id, flair in flairs.items():
+            store.put_flair(comment_id, flair)
+        store.save()
     from_cache = look_up(client, cached)
+
+    unsaved = 0
+
+    def keep_as_it_goes(name: str, stats: dict | None) -> None:
+        nonlocal unsaved
+        if store is None:
+            return
+        store.put_user(name, stats)
+        unsaved += 1
+        if unsaved >= SAVE_EVERY:
+            store.save()
+            unsaved = 0
+
     asked = look_up(client, asking, lambda n, outcome: say(
-        f"  {n}/{len(asking)} {outcome} ({_duration(time.monotonic() - started)} so far)"))
+        f"  {n}/{len(asking)} {outcome} ({_duration(time.monotonic() - started)} so far)"), keep_as_it_goes)
     stored_found = sum(store.user_stats(name) is not None for name in stored) if store is not None else 0
     if store is not None:
         _keep(store, [from_cache, asked], flairs, writers)
@@ -435,34 +557,47 @@ def main(argv: list[str], client: ArcticShiftClient | None = None) -> int:
     if options is None:
         print(__doc__)
         return 2
-    folder, limit = options
+    folder, limit, quoted_file = options
+    quoted = None
+    if quoted_file is not None:
+        try:
+            quoted = quoted_comment_ids(quoted_file.read_text(encoding="utf-8"))
+        except OSError as e:
+            print(f"Can't read the list of quoted comments {quoted_file}: {e.strerror or e}")
+            return 1
     try:
-        result = warm(folder, client or ArcticShiftClient(), limit, store=library_store(folder))
+        result = warm(folder, client or ArcticShiftClient(), limit, store=library_store(folder), quoted=quoted)
     except (ExtractionError, GoldSetError) as e:
         print(e)
         return 1
     return 1 if result.failed else 0
 
 
-def _warm_options(argv: list[str]) -> tuple[Path, int | None] | None:
-    """The folder and --limit typed after `warm` (as `--limit 5` or `--limit=5`), or None when they don't make sense."""
+def _warm_options(argv: list[str]) -> tuple[Path, int | None, Path | None] | None:
+    """The folder, --limit and --quoted typed after `warm` (as `--limit 5` or `--limit=5`), or None when they don't make
+    sense."""
     if not argv or argv[0] != "warm":
         return None
-    folders, limit, words = [], None, list(argv[1:])
+    folders, limit, quoted, words = [], None, None, list(argv[1:])
     while words:
         word = words.pop(0)
         name, equals, value = word.partition("=")
-        if name != "--limit":
+        if name not in ("--limit", "--quoted"):
             if word.startswith("--"):
                 return None  # an option this command doesn't have
             folders.append(word)
             continue
         if not equals:
             value = words.pop(0) if words else ""
+        if name == "--quoted":
+            if not value:
+                return None
+            quoted = Path(value)
+            continue
         if not value.isdigit() or int(value) < 1:
             return None
         limit = int(value)
-    return (Path(folders[0]), limit) if len(folders) == 1 else None
+    return (Path(folders[0]), limit, quoted) if len(folders) == 1 else None
 
 
 if __name__ == "__main__":
