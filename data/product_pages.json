@@ -10734,6 +10734,88 @@
    ],
    "checked_on": "2026-10-25",
    "note": "Claude 25 Oct 2026: Huawei UK page named 'HUAWEI WATCH GT 7 Pro' (a Notify Me sign-up, no price); Amazon UK page 'HUAWEI WATCH GT 7 Pro 46mm Smart Watch, ECG, GPS, 21 Days Battery, Black' read in the built-in browser with a London delivery address: Buy New, In stock, shipper and seller Amazon, delivery Wednesday 28 October; the browser showed the price in USD (508.01), so no pound price is recorded."
+  },
+  {
+   "product": "Logitech lift",
+   "category": "general",
+   "product_type": "mouse",
+   "page": "https://www.logitech.com/en-gb/shop/p/lift-vertical-ergonomic-mouse",
+   "shop": "Logitech",
+   "sources": [
+    "https://www.logitech.com/en-gb/shop/p/lift-vertical-ergonomic-mouse",
+    "https://www.logitech.com/en-gb/sitemap.xml"
+   ],
+   "checked_on": "2026-10-25",
+   "note": "Found by engine.maker_pages in the sitemap https://www.logitech.com/en-gb/sitemap.xml; the page names it \"Lift\"; GBP 42.99 on the page. Image left out by the integrator: the page's og:image is the site's generic picture, not the product's."
+  },
+  {
+   "product": "Sunday riley good genes",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "page": "https://sundayriley.co.uk/products/good-genes-lactic-acid-treatment",
+   "shop": "Sunday Riley – UK",
+   "sources": [
+    "https://sundayriley.co.uk/products/good-genes-lactic-acid-treatment",
+    "https://sundayriley.co.uk/sitemap_products_1.xml?from=5619331301525&to=15806371660160"
+   ],
+   "checked_on": "2026-10-25",
+   "note": "Found by engine.maker_pages in the sitemap https://sundayriley.co.uk/sitemap_products_1.xml?from=5619331301525&to=15806371660160; the page names it \"Good Genes Lactic Acid Treatment\"; GBP 70 on the page."
+  },
+  {
+   "product": "Stratia Velvet Cleansing Milk",
+   "category": "skincare",
+   "product_type": "cleanser",
+   "page": "https://www.stratiaskin.com/products/velvet-cleansing-milk",
+   "shop": "Stratia",
+   "image": "https://www.stratiaskin.com/cdn/shop/files/velvet-cleansing-milk_09bb05ee-798e-4dbb-bfe2-3275b3d90a68.jpg?v=1715012803",
+   "image_page": "https://www.stratiaskin.com/products/velvet-cleansing-milk",
+   "sources": [
+    "https://www.stratiaskin.com/products/velvet-cleansing-milk",
+    "https://www.stratiaskin.com/sitemap_products_1.xml?from=10358546433&to=9219347316874"
+   ],
+   "checked_on": "2026-10-25",
+   "note": "Found by engine.maker_pages in the sitemap https://www.stratiaskin.com/sitemap_products_1.xml?from=10358546433&to=9219347316874; the page names it \"Velvet Cleansing Milk\"."
+  },
+  {
+   "product": "Secret Lab Magnus Pro",
+   "category": "general",
+   "product_type": "standing desk",
+   "page": "https://secretlab.co.uk/products/magnus-pro",
+   "shop": "Secret Lab",
+   "sources": [
+    "https://secretlab.co.uk/products/magnus-pro",
+    "https://secretlab.co.uk/sitemap_products_1.xml?from=11856914438&to=15453972693371"
+   ],
+   "checked_on": "2026-10-25",
+   "note": "Found by engine.maker_pages in the sitemap https://secretlab.co.uk/sitemap_products_1.xml?from=11856914438&to=15453972693371; the page names it \"Secretlab MAGNUS Pro\"; GBP 873 on the page. Image left out by the integrator: the page's og:image is the site's generic picture, not the product's."
+  },
+  {
+   "product": "Dermalogica Daily Milkfoliant",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "page": "https://www.dermalogica.co.uk/products/daily-milkfoliant",
+   "shop": "Dermalogica UK",
+   "sources": [
+    "https://www.dermalogica.co.uk/products/daily-milkfoliant",
+    "https://www.dermalogica.co.uk/sitemap_products_1.xml?from=5670154797209&to=15006422401400"
+   ],
+   "checked_on": "2026-10-25",
+   "note": "Found by engine.maker_pages in the sitemap https://www.dermalogica.co.uk/sitemap_products_1.xml?from=5670154797209&to=15006422401400; the page names it \"Daily Milkfoliant\"; GBP 65 on the page."
+  },
+  {
+   "product": "Supergoop Unseen Sunscreen",
+   "category": "skincare",
+   "product_type": "sunscreen",
+   "page": "https://supergoop.com/products/unseen-sunscreen-spf-50",
+   "shop": "Supergoop",
+   "image": "https://cdn.shopify.com/s/files/1/1503/5658/files/Unseen_PDP_Image_Allure_Seal_2025.png?v=1758030958&width=600",
+   "image_page": "https://supergoop.com/products/unseen-sunscreen-spf-50",
+   "sources": [
+    "https://supergoop.com/products/unseen-sunscreen-spf-50",
+    "https://supergoop.com/sitemap_products_1.xml?from=112965845008&to=10329900515426"
+   ],
+   "checked_on": "2026-10-25",
+   "note": "Found by engine.maker_pages in the sitemap https://supergoop.com/sitemap_products_1.xml?from=112965845008&to=10329900515426; the page names it \"Unseen Sunscreen SPF 50\"; USD 38 on the page.; image: a smaller size of the maker's image (246 KB instead of 613 KB)"
   }
  ]
 }

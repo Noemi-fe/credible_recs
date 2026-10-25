@@ -18443,6 +18443,70 @@
     "https://consumer.huawei.com/uk/wearables/watch-gt7-pro/"
    ],
    "note": "Claude 25 Oct 2026: Huawei UK page named 'HUAWEI WATCH GT 7 Pro' (a Notify Me sign-up, no price); Amazon UK page 'HUAWEI WATCH GT 7 Pro 46mm Smart Watch, ECG, GPS, 21 Days Battery, Black' read in the built-in browser with a London delivery address: Buy New, In stock, shipper and seller Amazon, delivery Wednesday 28 October; the browser showed the price in USD (508.01), so no pound price is recorded."
+  },
+  {
+   "product": "Logitech lift",
+   "category": "general",
+   "product_type": "mouse",
+   "price": 42.99,
+   "currency": "GBP",
+   "shop": "Logitech",
+   "url": "https://www.logitech.com/en-gb/shop/p/lift-vertical-ergonomic-mouse",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "sources": [
+    "https://www.logitech.com/en-gb/shop/p/lift-vertical-ergonomic-mouse",
+    "https://www.logitech.com/en-gb/sitemap.xml"
+   ],
+   "note": "Found by engine.maker_pages in the sitemap https://www.logitech.com/en-gb/sitemap.xml; the page names it \"Lift\"; GBP 42.99 on the page. Image left out by the integrator: the page's og:image is the site's generic picture, not the product's."
+  },
+  {
+   "product": "Sunday riley good genes",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "price": 70.0,
+   "currency": "GBP",
+   "shop": "Sunday Riley – UK",
+   "url": "https://sundayriley.co.uk/products/good-genes-lactic-acid-treatment",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "sources": [
+    "https://sundayriley.co.uk/products/good-genes-lactic-acid-treatment",
+    "https://sundayriley.co.uk/sitemap_products_1.xml?from=5619331301525&to=15806371660160"
+   ],
+   "note": "Found by engine.maker_pages in the sitemap https://sundayriley.co.uk/sitemap_products_1.xml?from=5619331301525&to=15806371660160; the page names it \"Good Genes Lactic Acid Treatment\"; GBP 70 on the page."
+  },
+  {
+   "product": "Secret Lab Magnus Pro",
+   "category": "general",
+   "product_type": "standing desk",
+   "price": 873.0,
+   "currency": "GBP",
+   "shop": "Secret Lab",
+   "url": "https://secretlab.co.uk/products/magnus-pro",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "sources": [
+    "https://secretlab.co.uk/products/magnus-pro",
+    "https://secretlab.co.uk/sitemap_products_1.xml?from=11856914438&to=15453972693371"
+   ],
+   "note": "Found by engine.maker_pages in the sitemap https://secretlab.co.uk/sitemap_products_1.xml?from=11856914438&to=15453972693371; the page names it \"Secretlab MAGNUS Pro\"; GBP 873 on the page. Image left out by the integrator: the page's og:image is the site's generic picture, not the product's."
+  },
+  {
+   "product": "Dermalogica Daily Milkfoliant",
+   "category": "skincare",
+   "product_type": "exfoliant",
+   "price": 65.0,
+   "currency": "GBP",
+   "shop": "Dermalogica UK",
+   "url": "https://www.dermalogica.co.uk/products/daily-milkfoliant",
+   "checked_on": "2026-10-25",
+   "available": true,
+   "sources": [
+    "https://www.dermalogica.co.uk/products/daily-milkfoliant",
+    "https://www.dermalogica.co.uk/sitemap_products_1.xml?from=5670154797209&to=15006422401400"
+   ],
+   "note": "Found by engine.maker_pages in the sitemap https://www.dermalogica.co.uk/sitemap_products_1.xml?from=5670154797209&to=15006422401400; the page names it \"Daily Milkfoliant\"; GBP 65 on the page."
   }
  ]
 }
