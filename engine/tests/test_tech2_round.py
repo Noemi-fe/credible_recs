@@ -127,7 +127,7 @@ def test_a_researched_pick_finds_its_uk_price_and_is_sold(name, product_type, am
 def test_a_pick_sold_in_the_uk_without_a_price_read_is_known_to_be_sold(name, product_type, shop):
     prices = load_prices()
     entry = find_availability(name, "general", prices, product_type=product_type)
-    assert entry is not None and counts_as_sold(entry) is True and entry.shop.startswith(shop) and not entry.not_in_uk
+    assert entry is not None and counts_as_sold(entry) is True and entry.shop == shop and not entry.not_in_uk
     assert find_price(name, "general", prices, product_type=product_type) is None  # never a price read in dollars
     assert find_page([name], "general", product_type, load_product_pages()) is not None
 
