@@ -22,6 +22,12 @@ Command line:
         with <out folder>/threads/ linking to the threads read, so `python -m engine.extract check <out folder>/threads`
         checks them; then prints what was written, skipped or failed.
 
+The reader's fields (26 Oct 2026): each message ends with plain rules for the fields Gemini 3.1 Flash-Lite mixed up
+(field_rules: the evidence LEVEL and the reason TAGS are two fields, the tags allowed, the post's id is never a comment
+id), and the reply is asked for in a JSON Schema that only allows the allowed values (extraction_schema). Gemini
+refusing the schema is not fatal (GeminiClient.generate). The instructions file (engine/prompts/extract_mentions.md) and
+its version are untouched, so no existing extraction is out of date.
+
 The free allowance's daily limit (14 Oct 2026, for on-demand reading): a 429 that names Gemini's per-day quota can't
 pass before the day resets (midnight Pacific time), so it is never asked again after a pause (DailyLimitReached), and a
 batch stops there, naming the threads it didn't send, rather than failing each of them in turn.
@@ -43,6 +49,7 @@ from pathlib import Path
 import certifi
 from pydantic import ValidationError
 
+from engine.config import EVIDENCE_LEVELS, EVIDENCE_TAGS, MENTION_CATEGORIES, STANCE_VALUE
 from engine.extract import DEFAULT_INSTRUCTIONS, Extraction, current_instructions_version, shown_comment_ids
 from engine.gold import load_threads, unlabelled_gold_ids
 from engine.parse_reddit import REPO_ROOT, _read_env_file
@@ -119,30 +126,19 @@ class GeminiClient:
         self.min_interval = min_interval
         self._last: float | None = None
         self.calls = 0
+        self.schema_refused: str | None = None  # Gemini's 400 to a reply schema, once it has refused one
 
-    def generate(self, system: str, user: str) -> str:
-        """The model's answer (JSON text) to the instructions `system` and the message `user`."""
-        key = self._key or os.environ.get(KEY_NAME) or _key_from_env_file()
-        if not key:
-            raise GeminiError(f"no Gemini key: put it in .env as {KEY_NAME}=...")
+    def _ask(self, headers: dict, body: dict) -> dict:
+        """One request, at the client's pace, asked again after a pause while the model is busy."""
         if self._last is not None:
             wait = self.min_interval - (time.monotonic() - self._last)
             if wait > 0:
                 self._sleep(wait)
-        body = {
-            "systemInstruction": {"parts": [{"text": system}]},
-            "contents": [{"role": "user", "parts": [{"text": user}]}],
-            "generationConfig": {"temperature": 0, "responseMimeType": "application/json", "maxOutputTokens": 65536},
-        }
-        if self.thinking:
-            body["generationConfig"]["thinkingConfig"] = {"thinkingLevel": self.thinking}
-        headers = {"x-goog-api-key": key, "Content-Type": "application/json"}
         for pause in (*BUSY_PAUSES, None):
             self._last = time.monotonic()
             self.calls += 1
             try:
-                answer = self._fetch(API.format(model=self.model), headers, json.dumps(body).encode("utf-8"))
-                break
+                return self._fetch(API.format(model=self.model), headers, json.dumps(body).encode("utf-8"))
             except GeminiError as e:
                 if isinstance(e, DailyLimitReached):
                     raise
@@ -151,6 +147,35 @@ class GeminiClient:
                 if e.status not in BUSY_STATUSES or pause is None:
                     raise
                 self._sleep(pause)
+
+    def generate(self, system: str, user: str, schema: dict | None = None) -> str:
+        """The model's answer (JSON text) to the instructions `system` and the message `user`. With a `schema` (JSON
+        Schema, sent as generationConfig.responseJsonSchema) the model can only write what it allows. Gemini's 400 to
+        a schema is not fatal (26 Oct 2026): the same request goes again at once without it, and the schema is not
+        sent again by this client (`schema_refused` holds Gemini's answer), so one bad schema costs one extra call."""
+        key = self._key or os.environ.get(KEY_NAME) or _key_from_env_file()
+        if not key:
+            raise GeminiError(f"no Gemini key: put it in .env as {KEY_NAME}=...")
+        body = {
+            "systemInstruction": {"parts": [{"text": system}]},
+            "contents": [{"role": "user", "parts": [{"text": user}]}],
+            "generationConfig": {"temperature": 0, "responseMimeType": "application/json", "maxOutputTokens": 65536},
+        }
+        if self.thinking:
+            body["generationConfig"]["thinkingConfig"] = {"thinkingLevel": self.thinking}
+        if schema is not None and self.schema_refused is None:
+            body["generationConfig"]["responseJsonSchema"] = schema
+        headers = {"x-goog-api-key": key, "Content-Type": "application/json"}
+        try:
+            answer = self._ask(headers, body)
+        except GeminiError as e:
+            if e.status != 400 or "responseJsonSchema" not in body["generationConfig"]:
+                raise
+            self.schema_refused = str(e)[:300]
+            print(f"Gemini refused the reply schema ({self.schema_refused}): reading without the schema.",
+                  file=sys.stderr)
+            del body["generationConfig"]["responseJsonSchema"]
+            answer = self._ask(headers, body)
         try:
             return "".join(part.get("text", "") for part in answer["candidates"][0]["content"]["parts"])
         except (KeyError, IndexError, TypeError):
@@ -198,10 +223,10 @@ def extract_threads(threads_dir: Path, out_dir: Path, client: GeminiClient, ids:
             shown = shown_comment_ids(thread)
             parts = [shown[i:i + part_comments] for i in range(0, len(shown), part_comments)] or [[]]
             for number, part in enumerate(parts, 1):
-                user = (render_part(thread, part, number, len(parts)) + f"\n\nWrite the extraction of these comments of "
-                        f"thread {thread.id} as one JSON object, in the format of the instructions' Output section, and "
-                        "nothing else.")
-                answer = json.loads(client.generate(system, user))
+                user = (render_part(thread, part, number, len(parts)) + "\n\n" + field_rules(thread, part)
+                        + f"\n\nWrite the extraction of these comments of thread {thread.id} as one JSON object, in "
+                        "the format of the instructions' Output section, and nothing else.")
+                answer = json.loads(client.generate(system, user, schema=extraction_schema(part)))
                 if not isinstance(answer, dict):
                     raise ValueError("the answer isn't a JSON object")
                 for name in LISTS:
@@ -226,6 +251,78 @@ def extract_threads(threads_dir: Path, out_dir: Path, client: GeminiClient, ids:
             json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         report.written.append(thread.id)
     return report
+
+
+# Which tags suit a comment that isn't first-hand use is the reader's call, comment by comment; these are the ones the
+# rules name as examples (only those still in config.EVIDENCE_TAGS are named).
+NOT_FIRST_HAND_EXAMPLES = (("secondhand", "someone else's experience"), ("asks about it", "a question about it"),
+                           ("vague", "nothing concrete"))
+
+
+def _quoted(words) -> str:
+    return ", ".join(f'"{word}"' for word in words)
+
+
+def field_rules(thread, comment_ids: list[str]) -> str:
+    """Plain words, ending each message, on the fields Gemini mixed up (26 Oct 2026, on-demand reading with Gemini 3.1
+    Flash-Lite): of 45 mentions the check dropped from 28 threads, 20 had the evidence LEVEL "no first-hand use" in
+    evidence_tags (reason tags; that level is not one) and 2 had the post's own id as their comment id. The lists are
+    config's (EVIDENCE_LEVELS, EVIDENCE_TAGS), so the words can't fall behind them. Nothing maps a wrong value to a
+    right one here or anywhere: which tag fits depends on the comment, and engine.extract's check still drops it."""
+    both = [level for level in EVIDENCE_LEVELS if level in EVIDENCE_TAGS]
+    levels_only = [level for level in EVIDENCE_LEVELS if level not in EVIDENCE_TAGS]
+    lines = [
+        "Three fields are easy to mix up, so plainly:",
+        f'- "evidence" holds one level, exactly one of: {_quoted(EVIDENCE_LEVELS)}.',
+        f'- "evidence_tags" holds reason tags, a different field from "evidence": a list of at least one, and only '
+        f"these, spelled exactly: {_quoted(EVIDENCE_TAGS)}.",
+    ]
+    if both:
+        names = " and ".join(_quoted([level]) for level in both)
+        lines.append(f"  The levels {names} are also tags: when the level is one of them, that tag fits too.")
+    for level in levels_only:
+        examples = [f'"{tag}" for {what}' for tag, what in NOT_FIRST_HAND_EXAMPLES if tag in EVIDENCE_TAGS]
+        lines.append(f'  The level "{level}" is not a reason tag: never write it in "evidence_tags". When "evidence" '
+                     f'is "{level}", give the tags that fit what the comment says instead'
+                     + (f" ({', '.join(examples)})." if examples else "."))
+    example = f" (such as [{comment_ids[0]}])" if comment_ids else ""
+    lines.append(f'- "comment_id" is the id in square brackets that starts a comment\'s header above{example}. '
+                 f"The thread's id, {thread.id}, is the post's, not a comment's: never write it as a comment_id. Only "
+                 "comments count, so a product named only in the post's own text is not a mention.")
+    return "\n".join(lines)
+
+
+def extraction_schema(comment_ids: list[str]) -> dict:
+    """The JSON Schema of the reply (Gemini's generationConfig.responseJsonSchema), so the model can only write allowed
+    values: reason tags from config.EVIDENCE_TAGS, a level from config.EVIDENCE_LEVELS, a stance, a category and a
+    comment id of this part's comments (never the post's). It has exactly the fields of the extraction models' lists
+    (the thread id, version, time and extractor are ours, never the model's); a test keeps the two in step. A part
+    with no comments gets no list of ids: Gemini refuses an empty one."""
+    comment_id = {"type": "string"}
+    if comment_ids:
+        comment_id["enum"] = list(comment_ids)
+    text = {"type": "string"}
+    stance = {"type": "string", "enum": list(STANCE_VALUE)}
+
+    def items(properties: dict, required: list[str]) -> dict:
+        return {"type": "array", "items": {"type": "object", "properties": properties, "required": required}}
+
+    mention = {
+        "comment_id": comment_id, "product": text,
+        "category": {"type": "string", "enum": list(MENTION_CATEGORIES)}, "product_type": text, "stance": stance,
+        "evidence": {"type": "string", "enum": list(EVIDENCE_LEVELS)},
+        "evidence_tags": {"type": "array", "minItems": 1, "items": {"type": "string", "enum": list(EVIDENCE_TAGS)}},
+        "quote": text, "refers_to": {"type": "string", "enum": ["parent", "post", "earlier"]},
+    }
+    properties = {
+        "mentions": items(mention, [name for name in mention if name != "refers_to"]),
+        "notes": items({"comment_id": comment_id, "about": text, "stance": stance, "quote": text},
+                       ["comment_id", "about", "stance", "quote"]),
+        "care": items({"comment_id": comment_id, "about": text, "is_kind": {"type": "boolean"}, "tip": text,
+                       "quote": text}, ["comment_id", "about", "is_kind", "tip", "quote"]),
+        "agreements": items({"comment_id": comment_id, "quote": text}, ["comment_id", "quote"]),
+    }
+    return {"type": "object", "properties": properties, "required": list(properties)}
 
 
 def render_part(thread, comment_ids: list[str], number: int, parts: int) -> str:

@@ -231,3 +231,158 @@ def test_a_batch_stops_at_the_daily_limit_and_says_which_threads_werent_sent(tmp
     assert report.stopped and "day" in report.stopped
     assert report.not_sent == ["1fake02", "1fake03"] and report.failed == {}
     assert not (tmp_path / "out" / "extracted" / "1fake02.json").exists()
+
+
+# --- Two fields that were mixed up, and the post's id (26 Oct 2026) ---
+# Gemini 3.1 Flash-Lite had read 28 threads for on-demand answers; the word-for-word check dropped 45 of their mentions.
+# 20 had the evidence LEVEL "no first-hand use" written in evidence_tags, which holds reason tags (that level is not
+# one); 2 had the post's own id as their comment id. The reader's instructions now say plainly what each field holds,
+# and the reply's schema only lets it write the allowed values. The code does NOT repair a wrong tag (which tag fits
+# depends on the comment); the check in engine/extract.py still drops it.
+
+from engine import config  # noqa: E402
+from engine.extract import ExtractedAgreement, ExtractedCareTip, ExtractedMention, ExtractedNote  # noqa: E402
+from engine.gemini_extract import extraction_schema, field_rules  # noqa: E402
+
+
+def sent_user_text(tmp_path) -> str:
+    fetch = FakeFetch(a_reply())
+    client = GeminiClient(key="test-key", model="gemini-test", fetch=fetch, sleep=lambda s: None)
+    extract_threads(folder(tmp_path), tmp_path / "out", client, ids=["1fake01"])
+    return fetch.sent[0]["body"]["contents"][0]["parts"][0]["text"]
+
+
+def test_the_message_says_the_level_and_the_tags_are_two_fields_and_lists_the_allowed_tags(tmp_path):
+    user = sent_user_text(tmp_path)
+    for level in config.EVIDENCE_LEVELS:
+        assert f'"{level}"' in user
+    for tag in config.EVIDENCE_TAGS:
+        assert f'"{tag}"' in user
+    # The one level that is not also a tag is named as never a tag.
+    [only_a_level] = [level for level in config.EVIDENCE_LEVELS if level not in config.EVIDENCE_TAGS]
+    assert only_a_level == "no first-hand use"
+    assert f'The level "{only_a_level}" is not a reason tag' in user
+    assert '"evidence" holds one level' in user and '"evidence_tags" holds reason tags' in user
+
+
+def test_the_message_says_the_posts_id_is_never_a_comment_id(tmp_path):
+    user = sent_user_text(tmp_path)
+    assert "The thread's id, 1fake01, is the post's" in user and "never write it as a comment_id" in user
+    assert "a product named only in the post's own text is not a mention" in user
+    assert "[c1aaaa]" in user  # the example of a comment id is a real one from this part
+
+
+def test_the_rules_follow_the_configured_values_not_a_copy(monkeypatch):
+    # The wording is built from config, so a changed list can't leave the instructions behind.
+    thread = Thread.model_validate(make_thread())
+    monkeypatch.setattr(gemini_extract, "EVIDENCE_TAGS", ("long-term use", "brand new tag"))
+    rules = field_rules(thread, ["c1aaaa"])
+    assert '"brand new tag"' in rules and '"vague"' not in rules and '"secondhand"' not in rules
+
+
+def test_a_part_with_no_comments_still_gets_its_rules():
+    rules = field_rules(Thread.model_validate(make_thread()), [])
+    assert "never write it as a comment_id" in rules and "such as [" not in rules
+
+
+def test_the_reply_is_asked_for_in_a_schema_that_only_allows_the_allowed_values(tmp_path):
+    fetch = FakeFetch(a_reply())
+    client = GeminiClient(key="test-key", model="gemini-test", fetch=fetch, sleep=lambda s: None)
+    extract_threads(folder(tmp_path), tmp_path / "out", client, ids=["1fake01"])
+    config_sent = fetch.sent[0]["body"]["generationConfig"]
+    assert config_sent["responseMimeType"] == "application/json"
+    schema = config_sent["responseJsonSchema"]
+    mention = schema["properties"]["mentions"]["items"]["properties"]
+    assert mention["evidence_tags"]["items"]["enum"] == list(config.EVIDENCE_TAGS)
+    assert "no first-hand use" not in mention["evidence_tags"]["items"]["enum"]
+    assert mention["evidence"]["enum"] == list(config.EVIDENCE_LEVELS)
+    assert mention["stance"]["enum"] == list(config.STANCE_VALUE)
+    assert mention["category"]["enum"] == list(config.MENTION_CATEGORIES)
+    assert mention["evidence_tags"]["minItems"] == 1
+
+
+def test_a_comment_id_can_only_be_one_of_the_comments_in_that_part(tmp_path):
+    from engine.tests.factories import make_comment
+
+    comments = [make_comment(f"c{i:04d}", body=f"The Brand{i} cleanser is great, used it for {i} years.")
+                for i in range(3)]
+    write_gold(tmp_path, [make_thread(comments=comments)], voices=None, mentions=None)
+    fetch = FakeFetch({"mentions": []})
+    client = GeminiClient(key="test-key", model="gemini-test", fetch=fetch, sleep=lambda s: None, min_interval=0)
+    extract_threads(tmp_path / "threads", tmp_path / "out", client, ids=["1fake01"], part_comments=2)
+    allowed = []
+    for sent in fetch.sent:
+        schema = sent["body"]["generationConfig"]["responseJsonSchema"]["properties"]
+        ids = schema["mentions"]["items"]["properties"]["comment_id"]["enum"]
+        for kind in ("notes", "care", "agreements"):  # every list's comment ids are limited the same way
+            assert schema[kind]["items"]["properties"]["comment_id"]["enum"] == ids
+        allowed.append(ids)
+    assert allowed == [["c0000", "c0001"], ["c0002"]]  # the post's id (1fake01) is in none of them
+
+
+def test_a_part_with_no_comments_gets_no_empty_list_of_allowed_ids():
+    schema = extraction_schema([])
+    assert "enum" not in schema["properties"]["mentions"]["items"]["properties"]["comment_id"]  # Gemini refuses []
+
+
+def test_the_schema_has_exactly_the_fields_of_the_extraction_models():
+    # A field added to a model must be added to the schema, or the reader could never write it.
+    schema = extraction_schema(["c1aaaa"])["properties"]
+    models = {"mentions": ExtractedMention, "notes": ExtractedNote, "care": ExtractedCareTip,
+              "agreements": ExtractedAgreement}
+    assert set(schema) == set(models)
+    for name, model in models.items():
+        item = schema[name]["items"]
+        assert set(item["properties"]) == set(model.model_fields), name
+        assert set(item["required"]) <= set(item["properties"]), name
+        for field, rule in model.model_fields.items():
+            if rule.is_required():
+                assert field in item["required"], (name, field)
+
+
+def test_a_wrong_tag_is_not_repaired_by_the_code_and_the_check_still_drops_it(tmp_path):
+    # Which tag fits a comment that isn't first-hand depends on the comment ("secondhand", "asks about it"...): the
+    # reader chooses, the code never maps the level to a tag, and engine/extract.py's check is unchanged.
+    wrong = a_reply()["mentions"][0] | {"evidence": "no first-hand use", "evidence_tags": ["no first-hand use"]}
+    client = GeminiClient(key="test-key", model="gemini-test", fetch=FakeFetch(a_reply(mentions=[wrong])),
+                          sleep=lambda s: None)
+    out = tmp_path / "out"
+    assert extract_threads(folder(tmp_path), out, client, ids=["1fake01"]).written == ["1fake01"]
+    saved = json.loads((out / "extracted" / "1fake01.json").read_text(encoding="utf-8"))
+    assert saved["mentions"][0]["evidence_tags"] == ["no first-hand use"]  # kept as the model wrote it
+    checked = load_checked(out / "threads")["1fake01"]
+    assert checked.kept == [] and "unknown evidence tag" in checked.rejected[0][1]
+
+
+def test_a_schema_gemini_refuses_is_dropped_and_the_reading_goes_on_without_it(capsys):
+    # The schema is an extra guard: if Gemini answers 400 to it (a complex schema, a changed API), the same request
+    # is asked at once without it, once for the client's life, and the word-for-word check does its job as before.
+    bodies = []
+
+    def fetch(url, headers, body):
+        bodies.append(json.loads(body))
+        if "responseJsonSchema" in bodies[-1]["generationConfig"]:
+            raise GeminiError("Gemini answered 400: schema too complex", status=400)
+        return {"candidates": [{"content": {"parts": [{"text": "{}"}]}}]}
+
+    client = GeminiClient(key="test-key", fetch=fetch, sleep=lambda s: None, min_interval=0)
+    assert client.generate("system", "user", schema={"type": "object"}) == "{}"
+    assert ["responseJsonSchema" in b["generationConfig"] for b in bodies] == [True, False]
+    assert client.calls == 2 and "schema too complex" in client.schema_refused
+    assert "reading without the schema" in capsys.readouterr().err
+    assert client.generate("system", "user", schema={"type": "object"}) == "{}"  # not tried again
+    assert len(bodies) == 3 and "responseJsonSchema" not in bodies[-1]["generationConfig"]
+    assert client.calls == 3
+
+
+def test_a_400_without_a_schema_is_still_not_retried():
+    calls = []
+
+    def fetch(url, headers, body):
+        calls.append(1)
+        raise GeminiError("Gemini answered 400: bad request", status=400)
+
+    client = GeminiClient(key="test-key", fetch=fetch, sleep=lambda s: None, min_interval=0)
+    with pytest.raises(GeminiError):
+        client.generate("system", "user")
+    assert len(calls) == 1 and client.schema_refused is None

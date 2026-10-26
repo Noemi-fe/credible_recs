@@ -725,3 +725,29 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   classics builder read Misen's page on 25 Oct 2026 and found it uncoated (the page refused a second read today: too
   many requests). In answers asking for non-stick it is now left out as not non-stick instead of shown with "we
   couldn't confirm it's non-stick".
+
+- 26 Oct 2026 (Claude, readertags builder; a technical fix, nothing user-facing): the on-demand reader (Gemini 3.1
+  Flash-Lite, extractor "gemini:gemini-3.1-flash-lite") mixed up two fields, so its instructions now keep them apart.
+  What was wrong: over the 28 threads it had read, the word-for-word check kept 650 mentions and dropped 45. 20 of the
+  45 had the evidence LEVEL "no first-hand use" written in evidence_tags, the field of reason tags (config.EVIDENCE_TAGS
+  has no such tag; the levels are config.EVIDENCE_LEVELS): 10 had it alone, 10 beside a valid tag ("vague", "asks about
+  it", "mentions flaws", "secondhand"). 2 used the thread's own id as the comment id (no refers_to). The rest: 2 quotes
+  not found word for word and a few refers_to problems, which this does not touch. The reader gets the extraction
+  instructions (engine/prompts/extract_mentions.md), written for Claude Code, plus the thread; nothing in either said
+  that "no first-hand use" has no tag of its own, and the thread's id sits on the first line of what it reads, next to
+  the comment ids. What changed (engine/gemini_extract.py only): (1) every message now ends with plain rules built from
+  config (field_rules): "evidence" holds one level; "evidence_tags" holds at least one reason tag from the listed ten,
+  spelled exactly; "no first-hand use" is not a tag, so for it the reader gives the tags that fit the comment ("secondhand"
+  for someone else's experience, "asks about it" for a question, "vague" for nothing concrete, offered as examples); a
+  comment_id is one of the bracketed ids of the comments in that part, the thread's id is the post's and never a comment
+  id, and a product named only in the post's own text is not a mention. (2) The reply is asked for in a JSON Schema
+  (extraction_schema, generationConfig.responseJsonSchema) that only allows the listed tags, levels, stances, categories
+  and, per part, that part's comment ids; a test keeps its fields equal to the extraction models'. If Gemini answers 400
+  to the schema, the request goes again at once without it and the client stops sending it (one extra call; a line on
+  stderr), so a schema it dislikes can't stop reading. Not changed, on purpose: no code maps "no first-hand use" to a tag
+  (which tag fits depends on the comment), engine/extract.py's check is as before and still drops a wrong tag, the
+  instructions file and its version (extract-v15) are untouched so no extraction counts as out of date, and no existing
+  thread was extracted again. The effect on the dropped mentions is not measured yet: it shows when the next threads are
+  read on demand. Not yet tried against the real Gemini (tests never reach it): Google's v1beta lists responseJsonSchema
+  as deprecated in favour of generationConfig.responseFormat.text.schema, though it still takes it; one real read of a
+  made-up thread would confirm the schema is accepted (the fallback above covers it if not).
