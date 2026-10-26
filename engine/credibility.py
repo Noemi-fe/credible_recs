@@ -193,7 +193,7 @@ def score_voice(
     signs = (
         _standing_signs(comment, history)
         + _independence_signs(text)
-        + _own_site_signs(comment, text)
+        + (_own_site_signs(comment, text) or _sign_off_signs(comment, text))
         + _copy_signs(comment, copied)
         + _endorsement_signs(comment, thread, agreements)
         + _recency_signs(comment, thread)
@@ -339,6 +339,11 @@ AFFILIATE_LINK_MARKERS = (
 # Links that pay the writer when someone signs up or buys through them (18 Oct 2026): a deals app's share links, one
 # account's in six of the library's threads. A referral link is clear paid promotion too (Noemi's rubric, 9 Oct 2026).
 REFERRAL_LINK_MARKERS = ("hiarthur.com/?share=", "hiarthur.com/share/")
+# An Amazon product behind a site that isn't Amazon (25 Oct 2026, from the comments the tech data round's extraction
+# helpers flagged): the same shape as the redirects listed by host above (ra-sl.com), under other names, in four
+# near-identical plugs of one thread: the page's path is "dp-" and an Amazon product code (B0 and eight letters or
+# digits). Amazon's own links say "/dp/", with a slash, so a shopper's link is never caught.
+_AMAZON_LOOKALIKE_PATH = re.compile(r"/dp-b0[a-z0-9]{8}")
 # The writer works for, owns or represents a brand: even when honest about it, they aren't independent.
 AFFILIATION_PHRASES = (
     "i'm the founder", "i am the founder", "founder of", "co-founder", "cofounder", "i own the company",
@@ -369,11 +374,27 @@ def _independence_signs_of(text: str) -> list[Sign]:
     elif _links_hold(text, REFERRAL_LINK_MARKERS):
         signs.append(Sign("salesy language", "a referral link: the writer earns from it", "red flag",
                           config.PAID_PROMOTION_RED_FLAGS))
+    elif _links_to_amazon_by_lookalike(text):
+        signs.append(Sign("salesy language", "an affiliate link: a page that sends shoppers on to an Amazon product",
+                          "red flag", config.PAID_PROMOTION_RED_FLAGS))
     elif pitch:
         signs.append(Sign("salesy language", f'sales talk: "{pitch}"', "red flag"))
     if _first_phrase(text, AFFILIATION_PHRASES):
         signs.append(Sign("promotes one brand", "says they work for or represent a brand", "red flag"))
     return signs
+
+
+def _links_to_amazon_by_lookalike(text: str) -> bool:
+    """Whether one of the comment's links is a page on another site named like an Amazon product ("/dp-B0..."), in any
+    case: a redirect that hides the shop (_AMAZON_LOOKALIKE_PATH)."""
+    for link in _LINK.findall(text):
+        try:
+            path = urlsplit(link).path.lower()
+        except ValueError:
+            continue
+        if _AMAZON_LOOKALIKE_PATH.search(path):
+            return True
+    return False
 
 
 def _links_hold(text: str, markers: tuple[str, ...]) -> bool:
@@ -406,6 +427,31 @@ def _own_site_signs(comment: Comment, text: str) -> list[Sign]:
     if words and words[-1].lower() in REVIEW_OUTFIT_NAMES and _TESTED.search(text.lower()):
         return [Sign("promotes one brand", "a review outfit's account linking its own write-up", "red flag")]
     return []
+
+
+# A closing line naming the brand the writer works at (25 Oct 2026, from the comments the tech data round's extraction
+# helpers flagged: a comment from a mobile network's account ended "- <first name> at <the network>"): a dash, a name
+# and "at" or "from" the brand, alone on the comment's last line. Capitals are what tell a brand from "at home" or
+# "from Ohio", so it reads the comment as written. "From" needs the word team, support, care or service after the brand
+# ("from the Northwind team"), which a place never has. Not a sentence (it ends at the brand) and not a list item
+# (only the last line counts).
+_SIGN_OFF_DASH = r"^[\\\s]*[-\u2013\u2014~]+\s*"
+_SIGN_OFF_NAME = r"[A-Z][\w'.-]*(?: [A-Z][\w'.-]*)?"
+_SIGN_OFF_BRAND = r"[A-Z][\w&'.-]*(?: [A-Z][\w&'.-]*){0,2}"
+_SIGN_OFF_AT = re.compile(f"{_SIGN_OFF_DASH}{_SIGN_OFF_NAME} at (?:the )?{_SIGN_OFF_BRAND}\\.?\\s*$")
+_SIGN_OFF_TEAM = re.compile(f"{_SIGN_OFF_DASH}{_SIGN_OFF_NAME} from (?:the )?{_SIGN_OFF_BRAND} "
+                            "(?:[Tt]eam|[Ss]upport|[Cc]are|[Ss]ervice)\\.?\\s*$")
+
+
+def _sign_off_signs(comment: Comment, text: str) -> list[Sign]:
+    """A sign-off naming the brand the writer works at (see above) as one red flag, "promotes one brand"; none when the
+    words already say so (AFFILIATION_PHRASES). `text` is the comment's own words in lowercase."""
+    lines = [line for line in html.unescape(comment.body).splitlines()
+             if line.strip() and not line.lstrip().startswith(">")]
+    if not lines or not (_SIGN_OFF_AT.match(lines[-1]) or _SIGN_OFF_TEAM.match(lines[-1])):
+        return []  # the quick look first: nearly every comment ends otherwise
+    return [] if _first_phrase(text, AFFILIATION_PHRASES) else [
+        Sign("promotes one brand", "says they work for or represent a brand", "red flag")]
 
 
 def _site_letters(link: str) -> str:

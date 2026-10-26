@@ -4,7 +4,7 @@ availability: ok, do it now").
 The page offers UK (the default), US and Elsewhere; the API takes an optional "region" in the POST body. A region
 changes only the price and availability lines: which picks are shown and their order never change (Noemi's decision
 (c) of 19 Oct 2026: no country preference anywhere in ranking), and in the UK region every answer is exactly as it was.
-Wording is PROPOSED (engine/answer.py). Every text and shop here is made up; no test reaches the network.
+Wording approved by Noemi, 25 Oct 2026 (it was PROPOSED; engine/answer.py). Every text and shop here is made up; no test reaches the network.
 """
 
 import io

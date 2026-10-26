@@ -78,8 +78,9 @@ def test_a_request_the_library_hasnt_read_about_is_queued_and_the_answer_says_so
         "state": "reading", "product_type": "teapot", "about": "teapots", "read_before": False,
         "check_back_minutes": ON_DEMAND_FIRST_MINUTES,
         # Changed on purpose, 25 Oct 2026: "in about 20 minutes" until the Gemini calls were timed (about 4 minutes each,
-        # 15 calls a request): the first request in line is read in about an hour.
-        "message": "We haven't read Reddit about teapots yet, so we've started: check back in about an hour."}
+        # 15 calls a request): the first request in line was read in about an hour. Changed again the same day, when
+        # Noemi approved Gemini 3.1 Flash-Lite as the reader (a call is told to take a minute): about 25 minutes.
+        "message": "We haven't read Reddit about teapots yet, so we've started: check back in about 25 minutes."}
     [entry] = site.queue().entries
     assert entry.product_type == "teapot" and entry.status == "waiting"
     assert site.google.jobs_started == [JOB]  # started at once: no schedule to wait for
@@ -122,14 +123,16 @@ def test_a_second_request_waits_its_turn(tmp_path, monkeypatch):
     site.ask(TEAPOT)
     data = site.ask("stovetop kettle that whistles")
     # Changed on purpose, 25 Oct 2026 (the wait is honest now, tests/test_on_demand_wait.py): the job's 18 Gemini calls a
-    # day read one request, so the second in line was promised "in about 35 minutes" for nothing. With a reader whose
-    # allowance reads ten a day it is told when its turn comes:
-    assert data["on_demand"]["check_back_minutes"] is None and data["on_demand"]["message"].endswith("Check back tomorrow.")
-    monkeypatch.setattr(on_demand, "ON_DEMAND_GEMINI_CALLS_A_DAY", 150)
+    # day (Gemini 3.8 Flash) read one request, so the second in line was promised "in about 35 minutes" for nothing, and
+    # was told "Check back tomorrow". The same day Noemi approved Gemini 3.1 Flash-Lite as the reader (450 calls a day,
+    # 30 requests): the second in line is read after the first, 21 minutes later.
+    assert data["on_demand"]["check_back_minutes"] == ON_DEMAND_FIRST_MINUTES + ON_DEMAND_EACH_MINUTES
+    assert "in about 45 minutes" in data["on_demand"]["message"]
+    # With the old reader's 18 calls a day, as before, it is told when its turn comes:
+    monkeypatch.setattr(on_demand, "ON_DEMAND_GEMINI_CALLS_A_DAY", 18)
     site.reader._queue_at = None  # the queue is read afresh
     data = site.ask("stovetop kettle that whistles")
-    assert data["on_demand"]["check_back_minutes"] == ON_DEMAND_FIRST_MINUTES + ON_DEMAND_EACH_MINUTES
-    assert "in about 2 hours" in data["on_demand"]["message"]
+    assert data["on_demand"]["check_back_minutes"] is None and data["on_demand"]["message"].endswith("Check back tomorrow.")
 
 
 def test_while_reading_rests_the_answer_says_when_it_starts_again(tmp_path, monkeypatch):
