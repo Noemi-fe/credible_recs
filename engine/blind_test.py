@@ -67,6 +67,7 @@ from engine.config import (
     BLIND_TEST_QUESTIONS_PER_TESTER,
     BLIND_TEST_TARGET,
     BLIND_TEST_WORDS_PER_PICK,
+    BRAND_MODEL_TITLE_WHOSE,
     BRAND_PICK_MODEL,
 )
 from engine.metrics import METRICS_FILE, MetricsError, save_blind_test
@@ -164,9 +165,13 @@ def _shown_pick(pick: dict, words: int) -> str:
     evidence = [(_one_line(quote["text"]), _evidence_badge(quote.get("badges") or []))
                 for quote in (pick.get("quotes") or [])[:QUOTES_SHOWN]]
     downside = _one_line(pick["downsides"][0]["text"]) if pick.get("downsides") else None
-    left = words - sum(len(line.split()) for line in fixed)
-    return "\n\n".join([f"**{pick['rank']}. {pick['name']}**"] + _fitted(reason, evidence, downside, left, pick["name"])
-                        + fixed)
+    # A pick titled by its line's leading model (26 Oct 2026): the note stays whole, right under the title, so testers
+    # never read the line's voices as all about the model.
+    # The counts below it are the page's, not the card's, so its last sentence is left out here.
+    noted = [pick["line_note"].removesuffix(" " + BRAND_MODEL_TITLE_WHOSE)] if pick.get("line_note") else []
+    left = words - sum(len(line.split()) for line in fixed + noted)
+    return "\n\n".join([f"**{pick['rank']}. {pick['name']}**"] + noted
+                        + _fitted(reason, evidence, downside, left, pick["name"]) + fixed)
 
 
 def _evidence_line(text: str, badge: str | None) -> str:

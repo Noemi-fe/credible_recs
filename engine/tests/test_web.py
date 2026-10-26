@@ -160,11 +160,15 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # its own page and its maker's "image", or null (engine/tests/test_buyable.py).
     # Changed on purpose 17 Oct 2026 (ws-ranking, item 5): each pick also says how many of its last downsides are about
     # its brand's line as a whole, "brand_downsides", 0 when none is (engine/tests/test_answer_converge.py).
+    # Changed on purpose 26 Oct 2026 (the names builder; Noemi's decision 3): a pick also has its "line" and "line_note"
+    # when a model titles its line (null otherwise), and its "current_model" (null unless a newer model replaced the one
+    # reviewed): engine/tests/test_model_titles.py, engine/tests/test_current_models.py.
     assert set(data["answer"]["picks"][0]) == {"rank", "product_key", "name", "reason", "support", "quotes",
                                                "downsides", "disagreement", "score", "breakdown", "price",
                                                "availability", "care", "cautions", "model", "model_price",
                                                "downsides_share", "summary", "voices", "form", "range",
-                                               "prescription", "link", "image", "brand_downsides"}
+                                               "prescription", "link", "image", "brand_downsides", "line",
+                                               "line_note", "current_model"}
     assert set(data["answer"]["picks"][0]["quotes"][0]) == {"text", "comment_id", "url", "badges"}
     assert set(data["answer"]["picks"][0]["price"]) == {"text", "amount", "currency", "shop", "url", "checked_on",
                                                         "budget_status", "budget_note", "from_price"}
@@ -900,10 +904,11 @@ def test_also_worth_a_look_comes_through_in_the_json(tmp_path):
     # false here; engine/tests/test_past_the_picks.py).
     # Changed on purpose 15 Oct 2026 (Noemi's decisions 2 and 3 of the late afternoon): an item also has its "link" and
     # "image", as picks do.
+    # Changed on purpose 26 Oct 2026 (the names builder): an item also has its "current_model", as picks do.
     assert set(data["answer"]["worth_a_look"][0]) == {"product_key", "name", "reason", "quotes", "downsides",
                                                      "downsides_share", "disagreement", "score", "breakdown", "price",
                                                      "availability", "cautions", "summary", "voices", "form", "range",
-                                                     "prescription", "meets_bar", "link", "image"}
+                                                     "prescription", "meets_bar", "link", "image", "current_model"}
     assert data["answer"]["worth_a_look"][0]["meets_bar"] is False
 
 

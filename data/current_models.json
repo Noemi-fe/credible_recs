@@ -1,0 +1,140 @@
+{
+ "current_models": [
+  {
+   "product_type": "headphones",
+   "category": "general",
+   "replaced": [
+    "Sony XM4"
+   ],
+   "current": "Sony WH-1000XM6",
+   "shop": "John Lewis",
+   "maker": false,
+   "page": "https://www.johnlewis.com/sony-wh-1000xm6-noise-cancelling-wireless-bluetooth-high-resolution-audio-over-ear-headphones-with-mic-remote/p113671309",
+   "checked_on": "2026-10-26",
+   "note": "Sony's own page (sony.co.uk) refused an automated read (HTTP 403, 26 Oct 2026), so John Lewis's page for the XM6 is used. The XM4 came before the XM5 and the XM6 in Sony's WH-1000X line."
+  },
+  {
+   "product_type": "headphones",
+   "category": "general",
+   "replaced": [
+    "Bose QuietComfort Ultra Headphones"
+   ],
+   "current": "Bose QuietComfort Ultra Headphones (2nd Gen)",
+   "shop": "Bose",
+   "maker": true,
+   "page": "https://www.bose.co.uk/p/headphones/bose-quietcomfort-ultra-headphones-2nd-gen/QCUH2-HEADPHONEARN.html",
+   "checked_on": "2026-10-26",
+   "note": "Bose's UK page names the 2nd Gen as its QuietComfort Ultra Headphones; the page gives no release date."
+  },
+  {
+   "product_type": "bluetooth speaker",
+   "category": "general",
+   "replaced": [
+    "JBL flip 3"
+   ],
+   "current": "JBL Flip 7",
+   "shop": "John Lewis",
+   "maker": false,
+   "page": "https://www.johnlewis.com/jbl-flip-7-waterproof-portable-bluetooth-speaker/black/p113592408",
+   "checked_on": "2026-10-26",
+   "note": "JBL's own page (uk.jbl.com) refused an automated read (HTTP 403, 26 Oct 2026), so John Lewis's page for the Flip 7 is used. The Flip 3 is three Flip generations back."
+  },
+  {
+   "product_type": "bluetooth speaker",
+   "category": "general",
+   "replaced": [
+    "UE Boom 2"
+   ],
+   "current": "Ultimate Ears BOOM 4",
+   "shop": "Ultimate Ears",
+   "maker": true,
+   "page": "https://www.ultimateears.com/en-gb/wireless-speakers/boom-4.html",
+   "checked_on": "2026-10-26",
+   "note": "Ultimate Ears' UK page shows the BOOM 4 in stock and speaks of 'previous generation BOOM speakers'; it names no release date."
+  },
+  {
+   "product_type": "e-reader",
+   "category": "general",
+   "line": [
+    "Kindle Paperwhite e-reader line"
+   ],
+   "current": "Kindle Paperwhite (12th generation, 2024)",
+   "released": "2024",
+   "shop": "John Lewis",
+   "maker": false,
+   "page": "https://www.johnlewis.com/amazon-kindle-paperwhite-2024-waterproof-ereader-7-inch-high-resolution-illuminated-touch-screen-with-adjustable-warm-light-16gb-with-special-offers/black/p112750421",
+   "checked_on": "2026-10-26",
+   "note": "Amazon's own page (amazon.co.uk) answered 503 to an automated read on 26 Oct 2026, and Currys and Argos 403, so John Lewis's page is used; it names the Paperwhite (2024) and, on another colour, the 12th Generation. A line: shown only when most of its credible voices wrote before 2024."
+  },
+  {
+   "product_type": "e-reader",
+   "category": "general",
+   "line": [
+    "Kindle Basic e-reader line"
+   ],
+   "current": "Kindle (2026)",
+   "released": "2026",
+   "shop": "John Lewis",
+   "maker": false,
+   "page": "https://www.johnlewis.com/amazon-kindle-2026-ereader-6-high-resolution-illuminated-touch-screen-16gb-with-special-offers/ube-purple/p115960445",
+   "checked_on": "2026-10-26",
+   "note": "John Lewis's Amazon Kindles listing (26 Oct 2026) shows the Kindle (2024) beside the Kindle (2026). A line: shown only when most of its credible voices wrote before 2026."
+  },
+  {
+   "product_type": "e-reader",
+   "category": "general",
+   "replaced": [
+    "Scribe 2024"
+   ],
+   "current": "Kindle Scribe (2025)",
+   "shop": "John Lewis",
+   "maker": false,
+   "page": "https://www.johnlewis.com/amazon-kindle-scribe-2025-ereader-with-premium-pen-11-32gb-black/p115128968",
+   "checked_on": "2026-10-26",
+   "note": "John Lewis's page calls it 'the latest Kindle Scribe' (2025)."
+  },
+  {
+   "product_type": "sports watch",
+   "category": "general",
+   "replaced": [
+    "Garmin Forerunner 255",
+    "Garmin Forerunner 265"
+   ],
+   "current": "Garmin Forerunner 570",
+   "released": "2025-05",
+   "shop": "Garmin",
+   "maker": true,
+   "page": "https://www.garmin.com/en-GB/blog/which-garmin-running-smartwatch-is-right-for-me/",
+   "checked_on": "2026-10-26",
+   "note": "Garmin's UK guide (dated 29 July 2026) lists the Forerunner 570 as its Advanced running watch; its newsroom announced the 570 and 970 on 15 May 2025. Garmin's pages do not say 'replaces': the 570 is the 265's tier (Forerunner 255, 265, 570)."
+  },
+  {
+   "product_type": "sports watch",
+   "category": "general",
+   "replaced": [
+    "Garmin Forerunner 955",
+    "Garmin Forerunner 965"
+   ],
+   "current": "Garmin Forerunner 970",
+   "released": "2025-05",
+   "shop": "Garmin",
+   "maker": true,
+   "page": "https://www.garmin.com/en-GB/blog/which-garmin-running-smartwatch-is-right-for-me/",
+   "checked_on": "2026-10-26",
+   "note": "Garmin's UK guide (dated 29 July 2026) lists the Forerunner 970 as its Elite running watch; its newsroom announced the 570 and 970 on 15 May 2025. Garmin's pages do not say 'replaces': the 970 is the 965's tier (Forerunner 955, 965, 970)."
+  },
+  {
+   "product_type": "phone",
+   "category": "general",
+   "replaced": [
+    "Google pixel 8a"
+   ],
+   "current": "Google Pixel 10a",
+   "shop": "John Lewis",
+   "maker": false,
+   "page": "https://www.johnlewis.com/google-pixel-10a-smartphone-android-6-3-5g-sim-free/p114915045",
+   "checked_on": "2026-10-26",
+   "note": "Google's own store pages could not be read by an automated read (empty text), so John Lewis's page for the Pixel 10a is used; its footnote compares the 10a with the 9a."
+  }
+ ]
+}

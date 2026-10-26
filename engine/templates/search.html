@@ -454,6 +454,7 @@ button { font: inherit; color: inherit; }
 .card-title { min-width: 0; }
 .card-head h3 { margin: 6px 0 0; font: 600 clamp(22px, 3vw, 27px)/1.2 var(--serif); letter-spacing: -.01em; overflow-wrap: anywhere; }
 .model { margin: 6px 0 0; font-size: 14.5px; color: var(--muted); }
+.line-note { margin: 0 0 10px; font-size: 14.5px; color: var(--muted); }
 .card-body { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 24px 32px; margin-top: 18px; }
 .card-main > * + * { margin-top: 14px; }
 .card h4 { margin: 0 0 10px; font-size: 12.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
@@ -1190,6 +1191,19 @@ details[open] > summary .icon { transform: rotate(180deg); }
       icon("external")), el("span", { class: "range-checked" }, " · " + page.checked)));
   }
 
+  /** The current model of a fast-moving tech product whose reviewed model a newer one has replaced (26 Oct 2026): its
+      line, the page it was read on (a link opening in a new tab, checked like every link here) and the day. Nothing
+      without one. */
+  function currentModelLine(current) {
+    if (!current) return null;
+    const address = rangeUrl(current.url);
+    if (!address) return null;
+    return el("p", { class: "fact range current-model" }, icon("store"), el("span", {}, current.text + " · ",
+      el("a", { href: address, target: "_blank", rel: "noopener noreferrer", class: "range-link" }, current.link_text,
+        el("span", { class: "visually-hidden" }, " " + LABELS.pageNewTab), icon("external")),
+      el("span", { class: "range-checked" }, " · " + current.checked)));
+  }
+
   /** A product's image from its maker's page, linked to it (Noemi, 15 Oct 2026): loaded only near the screen, with no
       referrer, so the maker never sees the search; gone if it can't load. */
   function productImage(image) {
@@ -1288,6 +1302,9 @@ details[open] > summary .icon { transform: rotate(180deg); }
       pick no credible voice warned against, the answer's own sentence saying so. */
   function trustBox(item, sayNoDownsides) {
     return el("div", { class: "trust" },
+      // A pick titled by its line's leading model (26 Oct 2026): how many credible voices are about the model and how many
+      // about the line in general, and that the counts below are the line's. Picks only.
+      item.line_note ? el("p", { class: "line-note" }, item.line_note) : null,
       trustMeter(item.voices),
       el("p", { class: "reason" }, item.reason),
       item.support ? el("p", { class: "support" }, el("strong", {}, WORDING.support_label + ": "), item.support) : null,
@@ -1323,14 +1340,16 @@ details[open] > summary .icon { transform: rotate(180deg); }
         el("div", { class: "card-title" },
           el("h3", { id: nameId }, el("span", { class: "visually-hidden" }, fill(LABELS.rank, { rank: pick.rank }) + " "), pick.name),
           formChip(pick.form),
-          pick.model ? el("p", { class: "model" }, WORDING.brand_model.replace("{model}", pick.model)
+          // A pick titled by its line's leading model has its note in the box of counts (trustBox), where it says whose
+          // they are; otherwise the line's most named model, when it has one.
+          !pick.line_note && pick.model ? el("p", { class: "model" }, WORDING.brand_model.replace("{model}", pick.model)
             + (pick.model_price ? " (" + pick.model_price + ")" : "")) : null),
         productImage(pick.image)),
       el("div", { class: "card-body" },
         el("div", { class: "card-main" },
           summaryLine(pick.summary),
           trustBox(pick, true),
-          ...priceLines(pick.price), availabilityLine(pick.availability), rangeLine(pick.range), pageLine(pick.link),
+          ...priceLines(pick.price), availabilityLine(pick.availability), rangeLine(pick.range), pageLine(pick.link), currentModelLine(pick.current_model),
           prescriptionLine(pick.prescription),
           ...cautionLines(pick.cautions),
           pick.disagreement && withIcon("alert", el("p", { class: "flag" }, pick.disagreement))),
@@ -1418,7 +1437,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
       // Its price only when known or when the request has a budget, where it is sold only when checked.
       ...(item.price.amount !== null || item.price.budget_note ? priceLines(item.price) : []),
       item.availability && item.availability.available !== null ? availabilityLine(item.availability) : null,
-      rangeLine(item.range), pageLine(item.link),
+      rangeLine(item.range), pageLine(item.link), currentModelLine(item.current_model),
       prescriptionLine(item.prescription),
       ...cautionLines(item.cautions),
       item.disagreement && withIcon("alert", el("p", { class: "flag" }, item.disagreement)),

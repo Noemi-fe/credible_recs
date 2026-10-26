@@ -173,12 +173,13 @@ from pathlib import Path
 
 from engine import config  # the upvote rule's switch, read for each request (14 Oct 2026)
 from engine.answer import (
-    NO_THREADS, Answer, _every_quote, _kind_own_words, _same_word, _written, comment_bodies, flattened_comments,
+    NO_THREADS, Answer, LeadingModel, _every_quote, _kind_own_words, _same_word, _written, comment_bodies, flattened_comments,
     needed_quotes, quotes_to_check, render_markdown, says_the_opposite, shown_availability, shown_price, without_unread,
     write_answer,
 )
 from engine.brand_lines import BrandLine, find_brand_line, from_price_entry, load_brand_lines, not_sold_reason
 from engine.care_tips import CareTips, attach_care_tips, credible_care_tips
+from engine.current_models import CurrentModel, find_current_model, load_current_models, released_from
 from engine.config import (
     BRAND_MODEL_GENERIC_WORDS,
     BRAND_MODEL_MIN_CREDIBLE,
@@ -406,7 +407,8 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
                    more_threads: int | None = PIPELINE_MORE_THREADS,
                    brand_lines: list[BrandLine] | None = None,
                    summaries: Mapping[str, Summary] | None = None,
-                   product_pages: list[ProductPage] | None = None, region: str = config.DEFAULT_REGION) -> PipelineResult:
+                   product_pages: list[ProductPage] | None = None, region: str = config.DEFAULT_REGION,
+                   current_models: list[CurrentModel] | None = None) -> PipelineResult:
     """Runs modules 1 to 7 on the saved library and returns everything each step decided.
 
     The answer reads the `max_threads` most relevant threads first. When they give fewer than PICKS_SHOWN picks and the
@@ -426,6 +428,9 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     tool should work for visitors anywhere"): where the visitor is, one of config.REGIONS; it changes the words of each
     pick's price and availability lines and nothing else (the same products in the same order: her decision (c) of 19
     Oct 2026, no country preference in ranking), and the default, the UK, is the answer as it always was.
+    `current_models` (26 Oct 2026): the current-models list (engine/current_models.py); None reads
+    data/current_models.json. Only a pick or item of config.FAST_MOVING_TYPES whose reviewed model a newer one has
+    replaced shows a current model (_current_models).
 
     Noemi's upvote rule (14 Oct 2026; off unless config.UPVOTE_COUNTS_MORE) never changes how much is read: ranked with
     it, a first reading short of picks could reach three with products it lifts and never read on, where the wider
@@ -441,7 +446,7 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     reading = dict(library_dir=library_dir, profiles=profiles, prices=prices, today=today,
                    live_check_required=live_check_required, live_checker=live_checker, product_facts=product_facts,
                    brand_lines=brand_lines, summaries=summaries, upvotes_too=upvotes, product_pages=product_pages,
-                   region=region)
+                   region=region, current_models=current_models)
     result = _answer(query, max_threads=max_threads, **reading)
     if not (more_threads is None or more_threads <= max_threads or result.answer is None
             or len(result.answer.picks) >= PICKS_SHOWN or result.threads_available <= len(result.threads_used)):
@@ -470,7 +475,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
             product_facts: list[ProductFacts] | None, need_led: bool = False,
             brand_lines: list[BrandLine] | None = None,
             summaries: Mapping[str, Summary] | None = None, upvotes_too: bool = False,
-            product_pages: list[ProductPage] | None = None, region: str = config.DEFAULT_REGION) -> PipelineResult:
+            product_pages: list[ProductPage] | None = None, region: str = config.DEFAULT_REGION,
+            current_models: list[CurrentModel] | None = None) -> PipelineResult:
     """One reading of the library for an understood request, with at most `max_threads` threads (answer_request).
     `need_led`: the wider reading's rule, a pick needs a credible recommendation that talks about the request's needs.
     `upvotes_too`: the reading is also ranked with Noemi's upvote rules (engine.rank.counts_twice, stands_out, as config
@@ -573,6 +579,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     # of 15 Oct 2026), whose quotes are never widened, and each product's own page and its maker's image (Noemi's
     # decisions of 15 Oct 2026, late afternoon).
     product_pages = load_product_pages() if product_pages is None else product_pages
+    current_for = _current_models_for(query, threads, current_models)  # 26 Oct 2026: None unless it could show any
     wording = {**_ingredient_wording(query, kept_groups, types, formulas, result.line_forms),
                "prescription": _prescription_only(kept_groups, formulas), "flattened": flattened_comments(threads),
                "pages": _pages(kept_groups, named_before, query, product_pages, types),
@@ -615,15 +622,18 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
         care = _care_tips(threads, checked, [g for g in kept_groups if g.name not in folded], kinds, query)
         models, model_prices = _brand_models(result.ranking, kept_groups, query.product_type, price_checks, known,
                                              wording["pages"], region)
+        leading = _leading_models(result.ranking, kept_groups, query.product_type, price_checks, known,
+                                  wording["pages"], region)
+        current = current_for(result.ranking, leading, models) if current_for else {}
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
                                      judged_needs(query), query.text, summaries,
                                      _worth_left_out(result.ranking, kept_groups), **wording, ranges=ranges,
-                                     brand_downsides=brand_downsides)
+                                     brand_downsides=brand_downsides, leading=leading, current=current)
         if live_checker is not None:
             _check_live(result, live_checker, scored, kind_notes, kinds, query, price_checks, care, cautions,
                         kept_groups, unsuited_kinds, need_led, summaries, wording, ranges, upvote_rule=upvote_rule,
-                        known=known)
+                        known=known, current_for=current_for)
         _note_features(result, features, query)
         thread_of = {c.id: t.id for t in threads for c in t.comments}
         quoted = {thread_of.get(quote.comment_id) for _, quote in _every_quote(result.answer)}
@@ -822,7 +832,8 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
                 cautions=None, groups: list[ProductGroup] = (), unsuited_kinds: frozenset[str] = frozenset(),
                 need_led: bool = False, summaries: Mapping[str, Summary] | None = None,
                 wording: Mapping | None = None, ranges: Mapping[str, BrandLine] | None = None,
-                upvote_rule: bool = False, known: Mapping[str, list[tuple[str, ...]]] | None = None) -> None:
+                upvote_rule: bool = False, known: Mapping[str, list[tuple[str, ...]]] | None = None,
+                current_for=None) -> None:
     """Checks every quote about to be shown against Reddit itself; drops the comments that fail and answers again.
     Since 13 Oct 2026 the quotes a shown summary cites are checked too (engine.answer.quotes_to_check): a summary never
     stands on a comment deleted or changed since.
@@ -870,11 +881,14 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
             _fold_brand_picks(ranking, groups, result, query.product_type), groups, result)
         models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks, known,
                                              (wording or {}).get("pages"), (wording or {}).get("region", config.DEFAULT_REGION))
+        leading = _leading_models(result.ranking, groups, query.product_type, price_checks, known,
+                                  (wording or {}).get("pages"), (wording or {}).get("region", config.DEFAULT_REGION))
+        current = current_for(result.ranking, leading, models) if current_for else {}
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
                                      judged_needs(query), query.text, summaries,
                                      _worth_left_out(result.ranking, groups), **(wording or {}), ranges=ranges,
-                                     brand_downsides=brand_downsides)
+                                     brand_downsides=brand_downsides, leading=leading, current=current)
 
 
 def _checked_together(live_checker, quotes, may_wait: set[str] | None = None) -> dict[tuple[str, str], object]:
@@ -2458,6 +2472,150 @@ def _brand_model_products(ranking: RankingResult, groups: list[ProductGroup], pr
                       and (real is None or real(p, brand_group))]
         if candidates:
             found[brand.key] = max(candidates, key=lambda p: (len(p.credible_recommendations), p.score))
+    return found
+
+
+# --- A brand-line pick titled by the model its credible writers clearly name most (26 Oct 2026, the names builder) ---
+
+# Two models in one name: a slash between words ("Adrenaline/Glycerine"), "and", "or", "&", a comma, a plus, or a
+# writer's doubt ("(Ultras?)"). Such a name speaks for no one product, so it is no title.
+_TWO_MODELS = re.compile(r"[A-Za-z0-9][/,+&][A-Za-z0-9 ]|\s[/&+]\s|\b(?:and|or|vs\.?|versus)\b|\?", re.IGNORECASE)
+
+
+def _one_model(name: str) -> bool:
+    """Whether a name gives one model (a title may be it), not two ("Brooks Adrenaline/Glycerine GTS", "Roborock S7 or
+    S8", "Bose QuietComfort Pros (Ultras?)")."""
+    return not _TWO_MODELS.search(name)
+
+
+def _leading_models(ranking: RankingResult, groups: list[ProductGroup], product_type: str | None,
+                    price_checks: Mapping[str, PriceCheck] | None = None,
+                    known: Mapping[str, list[tuple[str, ...]]] | None = None,
+                    pages: Mapping[str, ProductPage] | None = None,
+                    region: str = config.DEFAULT_REGION) -> dict[str, LeadingModel]:
+    """{brand pick's key: the model that clearly leads the models its credible writers name} (26 Oct 2026, Noemi's decision
+    3: model names instead of lines); the answer titles each such pick by its model (engine.answer._titled_by_its_model).
+
+    The models of a brand line are its brand's specific products in the ranking whose names say a model (_names_a_model),
+    known as one product or not: their credible recommendations are the credible voices that name one of the line's
+    models. One clearly leads when it has at least BRAND_MODEL_TITLE_MIN_CREDIBLE of them, at least
+    BRAND_MODEL_TITLE_LEAD_RATIO times as many as any other model, and at least BRAND_MODEL_TITLE_MIN_SHARE of all of
+    them (the numbers behind these values are in engine/config.py). Then it must also be a title we can stand behind: a
+    name giving one model (_one_model) and not starting with a size, as suited to the request as the line (_suits_the_
+    request), a product we know as one (_a_known_model: never a size, a description, a discontinued model or a shop's
+    code), and not sold only abroad while another model of the line is sold here (_sold_in). A line with no such model
+    keeps its name and its "Most named model" (_brand_models), as before. The ranking is not touched: the leader is a
+    product of it already."""
+    if not config.BRAND_MODEL_TITLES_ON:
+        return {}
+    by_key = {g.key: g for g in groups}
+    specific = [(p, g) for p in ranking.products if (g := by_key.get(p.key)) is not None and not g.loose]
+    checks = price_checks or {}
+    found = {}
+    for brand in ranking.products:
+        brand_group = by_key.get(brand.key)
+        if brand_group is None or not brand_group.loose:
+            continue
+        models = [p for p, g in specific if _same_brand(brand_group, g) and _names_a_model(p.name, brand_group, product_type)]
+        counted = sorted((p for p in models if p.credible_recommendations),
+                         key=lambda p: (-len(p.credible_recommendations), -p.score, p.name))
+        if not counted:
+            continue
+        top, voices = counted[0], len(counted[0].credible_recommendations)
+        everyone = sum(len(p.credible_recommendations) for p in counted)
+        rival = len(counted[1].credible_recommendations) if len(counted) > 1 else 0
+        if (voices < config.BRAND_MODEL_TITLE_MIN_CREDIBLE or voices < config.BRAND_MODEL_TITLE_MIN_SHARE * everyone
+                or voices < config.BRAND_MODEL_TITLE_LEAD_RATIO * rival or not _one_model(top.name)
+                or _without_leading_size(top.name) != top.name):  # a size first is a writer's way of naming, no title
+            continue
+        if not (_suits_the_request(top, brand) and _a_known_model(top, brand_group, product_type, checks, known or {},
+                                                                  pages or {})):
+            continue
+        others = [_sold_in(checks.get(p.key), region) for p in models if p is not top]
+        here = _sold_in(checks.get(top.key), region)
+        if here is False or (here is None and region != config.DEFAULT_REGION):
+            if any(sold is True for sold in others):
+                continue
+        found[brand.key] = LeadingModel(top)
+    return found
+
+
+def _suits_the_request(model, line) -> bool:
+    """Whether the ranking itself leaves a line's leading model as suited to the request as the line (26 Oct 2026): it is
+    not on the skip list, its shortfall (when it has one) is only the bar's counts and not the request's (WIDER_READING_
+    SHORTFALL, warnings outweighing its support), and the ranking's own request-fit keys (engine.rank._rank_order: the
+    must-haves its facts leave unconfirmed, the request's features its voices praise it for) never put it behind the
+    line. Found in the 26 Oct baseline: the Tramontina line stood first in "stainless steel pan for searing" because its
+    voices praise stainless steel, while its most named model, a non-stick pan, ranks below it for lacking that."""
+    if model.on_skip_list or (model.shortfall and (model.shortfall == WIDER_READING_SHORTFALL
+                                                   or "warning" in model.shortfall)):
+        return False
+    return model.unconfirmed <= line.unconfirmed and len(model.features_praised) >= len(line.features_praised)
+
+
+def _sold_in(check: PriceCheck | None, region: str) -> bool | None:
+    """Whether the price list says a model is sold where the visitor is: True, False (it says it is not: sold only
+    abroad, or no longer made), or None (it says nothing). In the UK, an availability entry or a price says so; for a
+    visitor elsewhere (24 Oct 2026, config.REGIONS), a UK sale or evidence of a sale in the US (PriceCheck.us_sold)."""
+    if check is None:
+        return None
+    sold = check.availability
+    if region == config.DEFAULT_REGION:
+        if sold is not None and sold.available is not None:
+            return sold.available
+        return True if check.price is not None else None
+    if sold is not None and sold.available is False and not sold.not_in_uk:
+        return False
+    if (sold is not None and sold.available) or check.us_sold is not None or check.price is not None:
+        return True
+    return None
+
+
+def _current_models_for(query: ParsedQuery, threads: list, entries: list[CurrentModel] | None):
+    """A function (ranking, leading models) -> {product key: CurrentModel} for this request, or None when it could show
+    none: only a request for a type of config.FAST_MOVING_TYPES can, and only when the list holds an entry for the type
+    (26 Oct 2026, Noemi's decision 3). The list is read only then (None: data/current_models.json); the days the comments
+    were written, for a line (_current_models), are kept from the threads read."""
+    if query.product_type not in config.FAST_MOVING_TYPES:
+        return None
+    entries = load_current_models() if entries is None else entries
+    entries = [e for e in entries if e.category == query.category and e.product_type == query.product_type]
+    if not entries:
+        return None
+    written = {c.id: c.created_at.date() for t in threads for c in t.comments}
+    return lambda ranking, leading, models: _current_models(ranking, query, entries, written, leading, models)
+
+
+def _current_models(ranking: RankingResult, query: ParsedQuery, entries: list[CurrentModel],
+                    written: Mapping[str, date], leading: Mapping[str, LeadingModel],
+                    models: Mapping[str, str] | None = None) -> dict[str, CurrentModel]:
+    """{product key: the current-models entry} for the picks and "Also worth a look" items of a fast-moving type whose
+    reviewed model a newer one has replaced (Noemi's decision 3 of 26 Oct 2026, second part).
+
+    The reviewed model is the one the answer names: the product's name, or the model that titles a line pick (the line
+    itself then says nothing of which model its voices named), or the "Most named model" a line pick shows (`models`,
+    _brand_models). An entry's `replaced` names are replaced models whatever
+    the evidence says; its `line` names count only when more than config.CURRENT_MODEL_OLDER_SHARE of the product's
+    credible voices wrote before the current model came out (engine.current_models.released_from; a comment's day
+    unknown is no vote), since a line's writers reviewed whichever model was current when they wrote. A product with no
+    entry, or whose entry doesn't fit, shows nothing: no claim without the page."""
+    found = {}
+    for product in ranking.products:
+        if not (product.qualifies or product.worth_a_look):
+            continue
+        lead = leading.get(product.key)
+        named = [lead.product.name] if lead is not None else [product.name, *([models[product.key]]
+                                                                                if product.key in (models or {}) else [])]
+        hit = find_current_model(named, query.category, query.product_type, entries)
+        if hit is None:
+            continue
+        entry, kind = hit
+        if kind == "line":
+            days = [day for m in product.credible_recommendations if (day := written.get(m.comment_id)) is not None]
+            first = released_from(entry)
+            if not days or sum(day < first for day in days) <= config.CURRENT_MODEL_OLDER_SHARE * len(days):
+                continue
+        found[product.key] = entry
     return found
 
 

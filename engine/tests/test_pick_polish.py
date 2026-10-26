@@ -38,7 +38,10 @@ TODAY = date(2026, 10, 9)
 
 
 def names(result) -> list[str]:
-    return [pick.name for pick in result.answer.picks]
+    # Changed on purpose 26 Oct 2026 (the names builder; Noemi's decision 3): a line pick whose leading model clearly leads
+    # is titled by that model, the line's name in `line`; these tests are about the lines and the products, so a pick is
+    # named by its line when it has one.
+    return [pick.line or pick.name for pick in result.answer.picks]
 
 
 # --- 1. A brand pick steps aside for its own specific product ---
@@ -586,8 +589,13 @@ def test_a_brand_pick_stays_when_its_own_product_qualifies_but_isnt_shown(tmp_pa
 # Under a brand pick, the answer names the model of that brand its credible writers recommend most (at least
 # BRAND_MODEL_MIN_CREDIBLE of them), when there is one: a name that says more than the brand and the product type.
 
-def test_a_brand_pick_names_its_most_recommended_model(tmp_path):
+def test_a_brand_pick_names_its_most_recommended_model(tmp_path, monkeypatch):
     from engine.answer import answer_to_dict, render_markdown
+
+    # Changed on purpose 26 Oct 2026 (the names builder; Noemi's decision 3): the Fibrox, 2 of the 3 credible voices that
+    # name one of the line's models, now clearly leads and titles the pick (engine/tests/test_model_titles.py). This test
+    # is about the "Most named model" line a pick shows when no model clearly leads, so the titles are off here.
+    monkeypatch.setattr(config, "BRAND_MODEL_TITLES_ON", False)
 
     result = answer_request(KNIFE_REQUEST, library_dir=knife_library(tmp_path, fibrox=(1, 1)), prices=[], today=TODAY)
     victorinox = next(pick for pick in result.answer.picks if pick.name == VICTORINOX)
@@ -626,10 +634,15 @@ def test_what_counts_as_a_model_name(name, model):
     assert _names_a_model(name, brand, "cast iron skillet") is model
 
 
-def test_a_brand_picks_model_shows_its_checked_price(tmp_path):
+def test_a_brand_picks_model_shows_its_checked_price(tmp_path, monkeypatch):
     # A price the shopper can act on, for the model named (10 Oct 2026). Only shown, never used to leave the brand out.
     from engine.answer import render_markdown
     from engine.tests.test_availability import listed
+
+    # Changed on purpose 26 Oct 2026 (the names builder; Noemi's decision 3): the Fibrox, 2 of the 3 credible voices that
+    # name one of the line's models, now clearly leads and titles the pick (engine/tests/test_model_titles.py). This test
+    # is about the "Most named model" line a pick shows when no model clearly leads, so the titles are off here.
+    monkeypatch.setattr(config, "BRAND_MODEL_TITLES_ON", False)
 
     fibrox_price = listed(FIBROX, available=True, price=41.5, shop="Victorinox UK")
     result = answer_request(KNIFE_REQUEST, library_dir=knife_library(tmp_path, fibrox=(1, 1)), prices=[fibrox_price],
@@ -641,11 +654,16 @@ def test_a_brand_picks_model_shows_its_checked_price(tmp_path):
         render_markdown(result.answer))
 
 
-def test_a_brand_picks_model_with_no_price_says_where_it_is_sold(tmp_path):
+def test_a_brand_picks_model_with_no_price_says_where_it_is_sold(tmp_path, monkeypatch):
     # Found in b06 at 16 threads, 10 Oct 2026 (late): "Most named model: Bonavita gooseneck" said nothing, though its entry
     # says a UK shop sells it (no one price fits the name). Where it's sold is shown instead of a price.
     from engine.answer import render_markdown
     from engine.tests.test_availability import listed
+
+    # Changed on purpose 26 Oct 2026 (the names builder; Noemi's decision 3): the Fibrox, 2 of the 3 credible voices that
+    # name one of the line's models, now clearly leads and titles the pick (engine/tests/test_model_titles.py). This test
+    # is about the "Most named model" line a pick shows when no model clearly leads, so the titles are off here.
+    monkeypatch.setattr(config, "BRAND_MODEL_TITLES_ON", False)
 
     sold = listed(FIBROX, available=True, price=None, shop="Victorinox UK")
     result = answer_request(KNIFE_REQUEST, library_dir=knife_library(tmp_path, fibrox=(1, 1)), prices=[sold],
@@ -754,7 +772,8 @@ def test_a_brand_line_whose_cheapest_product_is_over_the_budget_is_left_out(tmp_
     for i, kept in enumerate((line(25.0), None)):
         result = answer_request(request, library_dir=knife_library(tmp_path / f"again{i}", fibrox=(1, 1)), prices=[],
                                 today=TODAY, brand_lines=[kept] if kept else [])
-        assert VICTORINOX in [pick.name for pick in result.answer.picks]
+        # Changed on purpose 26 Oct 2026 (the names builder): the line pick is titled by its leading model (`line` is the line).
+        assert VICTORINOX in [pick.line or pick.name for pick in result.answer.picks]
 
 
 def test_a_product_with_no_price_of_its_own_whose_brands_cheapest_is_over_the_budget_is_left_out(tmp_path):

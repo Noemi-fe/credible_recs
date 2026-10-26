@@ -132,6 +132,7 @@ from functools import cache, lru_cache
 from engine import config  # the upvote rule's settings, read as the answer is written (14 Oct 2026)
 from engine.brand_lines import BrandLine, is_source_page
 from engine.care_tips import CareTip, CareTips, is_left_out, similar_tips, tips_by_agreement
+from engine.current_models import CurrentModel
 from engine.config import (
     BRAND_PICK_MODEL,
     CARE_NOTE_TIPS,
@@ -477,6 +478,21 @@ class ShownLink:
 
 
 @dataclass(frozen=True)
+class ShownCurrentModel:
+    """The current model of a fast-moving tech product whose reviewed model a newer one has replaced, as shown (26 Oct
+    2026, the names builder; Noemi's decision 3): from data/current_models.json, read on the maker's page (or a big UK
+    shop's) on the day it says. Never from a comment."""
+
+    text: str  # "Current model: Kindle Paperwhite (12th generation, 2024)" (CURRENT_MODEL)
+    model: str  # the model as its page names it
+    link_text: str  # "Amazon page" (CURRENT_MODEL_PAGE)
+    url: str  # the page, exactly as the list writes it: https only, never Reddit's, never a search
+    shop: str  # the maker's or shop's plain name
+    checked: str  # "checked 26 Oct 2026": the day its page was read
+    checked_on: str  # the same day, as "2026-10-26"
+
+
+@dataclass(frozen=True)
 class ShownImage:
     """A small image of the product from its maker's own product page, linked to that page (Noemi's decision 2 of 15 Oct
     2026, late afternoon). The page loads it only when its card is on screen and sends no referrer."""
@@ -558,6 +574,15 @@ class Pick:
     # How many of the last `downsides` are about the pick's brand's line as a whole, not the pick (17 Oct 2026, the
     # converge round's item 5: DOWNSIDES_SHARE_BRAND says how many voices); 0 when none is.
     brand_downsides: int = 0
+    # A brand-line pick titled by the model its credible writers clearly name most (26 Oct 2026, the names builder;
+    # _titled_by_its_model): `name` is then the model, `line` the line's name as the ranking has it, and `line_note` the
+    # plain words saying how many credible voices are about the model and how many about the line in general. None
+    # otherwise. The pick is still the line's: its score, support, reason, voices and place are the line's.
+    line: str | None = None
+    line_note: str | None = None
+    # The current model of a fast-moving tech product whose reviewed model a newer one has replaced (26 Oct 2026); None
+    # otherwise, and whenever it could not be checked.
+    current_model: ShownCurrentModel | None = None
 
 
 @dataclass
@@ -586,6 +611,7 @@ class WorthALook:
     meets_bar: bool = False
     link: ShownLink | None = None  # as a pick's (15 Oct 2026)
     image: ShownImage | None = None
+    current_model: ShownCurrentModel | None = None  # as a pick's (26 Oct 2026)
 
 
 @dataclass
@@ -660,7 +686,9 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
                  prescription: Collection[str] = (), flattened: Collection[str] = (),
                  pages: Mapping[str, ProductPage] | None = None,
                  brand_downsides: Mapping[str, tuple[str, list[ScoredMention]]] | None = None,
-                 other_types_threads: Collection[str] = (), region: str = DEFAULT_REGION) -> Answer:
+                 other_types_threads: Collection[str] = (), region: str = DEFAULT_REGION,
+                 leading: "Mapping[str, LeadingModel] | None" = None,
+                 current: "Mapping[str, CurrentModel] | None" = None) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -699,6 +727,11 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     unless the tip's own name names the type asked for (_look_for). `region` (24 Oct 2026, Noemi: "the tool should work for
     visitors anywhere") is where the visitor is, config.REGIONS: it changes the words of each price and availability line
     (shown_price, shown_availability) and nothing else, so the same products are shown in the same order.
+    `leading` (26 Oct 2026, the names builder; {brand pick's key: LeadingModel}, engine.pipeline._leading_models) are the
+    models that clearly lead their brand-line picks: each such pick is titled by its model (_titled_by_its_model), once
+    everything else about the answer is worked out from the line, so only what is shown changes. `current` (26 Oct 2026;
+    {product key: CurrentModel}, engine.pipeline._current_models) are the entries of data/current_models.json for the
+    picks and items whose reviewed model a newer one has replaced: each shows its current model (shown_current_model).
     """
     check = _QuoteCheck(bodies, flattened)
     check.named_in = _named_in(ranking)
@@ -764,6 +797,11 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     standout_pick = any(pick.product_key in standing_out for pick in picks)
     standout_item = any(item.product_key in standing_out for item in worth)
     bar_items = sum(item.meets_bar for item in worth)  # past the picks, shown first (Noemi's decision 4, 15 Oct 2026)
+    for pick in picks:  # last, so the line's name is what every rule above read (26 Oct 2026)
+        if (lead := (leading or {}).get(pick.product_key)) is not None:
+            _titled_by_its_model(pick, lead, check, prices, pages, asks, needs, product_type, region)
+    for shown in [*picks, *worth]:  # the current model of a replaced one (26 Oct 2026)
+        shown.current_model = shown_current_model((current or {}).get(shown.product_key))
     return Answer(
         category=ranking.category,
         product_type=product_type,
@@ -788,6 +826,62 @@ def _named_above(name: str, shown: Iterable[str], category: str, product_type: s
     words = [w for w in _beyond_the_type(name, category, product_type) if w != "line"]
     return bool(words) and any(all(any(_same_word(w, n) for n in _written(other, category)) for w in words)
                                for other in shown)
+
+
+# --- A brand-line pick titled by the model its credible writers clearly name most (26 Oct 2026, the names builder) ---
+
+@dataclass(frozen=True)
+class LeadingModel:
+    """The model that clearly leads the models a brand-line pick's credible writers name (engine.pipeline._leading_models):
+    its ranked product, whose name, credible recommendations (the voices about the model) and quotes it brings. Its price,
+    availability and page come from the same lists as any product's (write_answer's `prices` and `pages`, by its key)."""
+
+    product: ProductScore
+
+
+def _titled_by_its_model(pick: Pick, lead: LeadingModel, check: "_QuoteCheck", prices: Mapping[str, PriceCheck],
+                         pages: Mapping[str, ProductPage], asks: tuple[str, ...], needs: tuple[Need, ...],
+                         product_type: str | None, region: str) -> None:
+    """Titles a brand-line pick by its leading model, in place (Noemi's decision 3 of 26 Oct 2026: model names instead of
+    lines). Only what is shown changes: the pick stays the line's (its key, score, reason, support, voices, downsides),
+    and `line_note` says how many credible voices are about the model and how many about the line in general, so the
+    title never suggests the line's voices all reviewed this model. What is shown beside the title is the model's own
+    where the lists have it, else the line's as before: its price (and with it the budget note), where it is sold, its
+    page and image. The model's own quotes come first (BRAND_MODEL_QUOTES_FIRST), then the line's."""
+    model = lead.product
+    line = pick.name
+    voices = len(model.credible_recommendations)
+    pick.line, pick.name = line, model.name
+    pick.model = pick.model_price = None  # the title is the model: no second "Most named model"
+    pick.line_note = config.BRAND_MODEL_TITLE_NOTE.format(line=line, model_voices=voices,
+                                                          line_voices=pick.voices.get("recommend", 0))
+    own = _pick_quotes(model, check, asks, needs, product_type)[:config.BRAND_MODEL_QUOTES_FIRST]
+    first = {quote.comment_id for quote in own}
+    pick.quotes = (own + [quote for quote in pick.quotes if quote.comment_id not in first])[:QUOTES_PER_PICK]
+    checked = prices.get(model.key)
+    if checked is not None and checked.price is not None and checked.price.price is not None:
+        pick.price = shown_price(checked, region)
+    sold = shown_availability(checked, pick.price.url, region)
+    if sold.available is not None:
+        pick.availability = sold
+    page = pages.get(model.key)
+    if (link := shown_link(page)) is not None:
+        pick.range = None  # the model's own page stands where the line's range page did
+        pick.link = None if link.url in {pick.price.url, pick.availability.url} else link
+    if (image := shown_image(page, pick.name)) is not None:
+        pick.image = image
+
+
+def shown_current_model(entry: "CurrentModel | None") -> ShownCurrentModel | None:
+    """A fast-moving tech product's current model as shown (26 Oct 2026): "Current model: <model>", the page it was read on
+    ("Sony page") and the day. None without an entry, and for a page that isn't one the list allows (https, never Reddit's,
+    never a search), checked again here as the list does when it loads."""
+    if entry is None or not is_direct_page(entry.page):
+        return None
+    return ShownCurrentModel(config.CURRENT_MODEL.format(model=entry.current), entry.current,
+                             config.CURRENT_MODEL_PAGE.format(shop=entry.shop), entry.page, entry.shop,
+                             config.CURRENT_MODEL_CHECKED.format(date=_day(entry.checked_on)),
+                             entry.checked_on.isoformat())
 
 
 def _prescription(key: str, prescription: Collection[str]) -> str | None:
@@ -3420,13 +3514,15 @@ def _render_form(form: str | None) -> list[str]:
 
 def _render_pick(pick: Pick) -> list[str]:
     lines = [f"## {pick.rank}. {pick.name}", ""] + _render_form(pick.form)
-    if pick.model:
+    if pick.line_note:  # titled by its model (26 Oct 2026)
+        lines += [pick.line_note, ""]
+    elif pick.model:
         price = f" ({pick.model_price})" if pick.model_price else ""
         lines += [BRAND_PICK_MODEL.format(model=pick.model) + price, ""]
     lines += _render_summary(pick.summary)
     lines += [pick.reason, "", f"**{SUPPORT_LABEL}:** {pick.support}", ""]
     lines += _render_price(pick.price) + _render_availability(pick.availability) + _render_range(pick.range)
-    lines += _render_link(pick.link)
+    lines += _render_link(pick.link) + _render_current_model(pick.current_model)
     lines += [pick.prescription, ""] if pick.prescription else []
     for caution in pick.cautions:
         lines += [caution, ""]
@@ -3464,7 +3560,7 @@ def _render_worth(item: WorthALook) -> list[str]:
         lines += _render_price(item.price)
     if item.availability.available is not None:
         lines += _render_availability(item.availability)
-    lines += _render_range(item.range) + _render_link(item.link)
+    lines += _render_range(item.range) + _render_link(item.link) + _render_current_model(item.current_model)
     lines += [item.prescription, ""] if item.prescription else []
     for caution in item.cautions:
         lines += [caution, ""]
@@ -3514,6 +3610,11 @@ def _render_link(link: ShownLink | None) -> list[str]:
     """A product's direct link to its own page, and the day it was read (15 Oct 2026); nothing without one. The text
     answer carries no images."""
     return [f"[{link.text}]({link.url}) · {link.checked}", ""] if link is not None else []
+
+
+def _render_current_model(shown: ShownCurrentModel | None) -> list[str]:
+    """The current model, its page and the day it was read (26 Oct 2026); nothing without one."""
+    return ([f"{shown.text} · [{shown.link_text}]({shown.url}) · {shown.checked}", ""] if shown is not None else [])
 
 
 def _one_line(text: str) -> str:
