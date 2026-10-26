@@ -7,11 +7,15 @@ Three kinds, in the order a pick's own label is chosen when it qualifies for mor
 1. A topic its credible voices write about (config.BEST_FOR_TOPICS: sensitive skin, being quiet, battery life...). The
    pipeline notes, for each credible recommendation, which topics the writer's own words about the product hold
    (topics_in, ScoredMention.topics: the sentences about this product only, not the clauses about another product or
-   person, and not a clause that complains or negates: "not for sensitive skin").
-2. Long-term use: how many of its credible voices wrote after long-term use, an evidence the ranking already weighs.
-3. Its checked price against the other picks': only when every pick has a price checked in the shopper's region and
+   person, not the words of the product's own name, and not a clause that complains or negates: "not for sensitive
+   skin"). Where several topics qualify, the one with the biggest lead over the other picks.
+2. Its checked price against the other picks': only when every pick has a price checked in the shopper's region and
    currency in the last config.PRICE_MAX_AGE_DAYS days (never a brand line's "from" price) and the cheapest is clearly
-   below the next.
+   below the next. A price label is never from what voices say about price: only from checked prices.
+3. Long-term use: how many of its credible voices wrote after long-term use, an evidence the ranking already weighs (the
+   reason line says how many); a label only when it has the most of them and clearly the biggest share.
+What a request asks for is never a label, and the kinds of engine/group_kinds.py are not one: a kind is what a pick is
+(its category of product, shown in the reason and under "What to look for"), not what it is best for.
 
 A label is shown only when the evidence clearly supports it: there are at least config.BEST_FOR_MIN_PICKS picks (a lone pick
 has nothing to be best against); at least config.BEST_FOR_MIN_VOICES of the pick's credible voices; more of them than any
@@ -119,15 +123,23 @@ _WORD = re.compile(r"[a-z0-9]+(?:'[a-z0-9]+)*")
 
 
 def _said(text: str, word: str) -> bool:
-    """Whether `word` is said somewhere in `text`, not negated just before it and not in a clause that complains."""
+    """Whether `word` is said somewhere in `text`, not negated just before it, not turned against the product just after
+    it ("my dry skin, so it wasn't thick enough") and not in a clause that complains."""
     for match in _pattern(word).finditer(text):
-        before = _CLAUSE_END.split(text[:match.start()])[-1]
-        after = _CLAUSE_END.split(text[match.end():])[0]
-        if _negated(_WORD.findall(before)[-config.NEGATION_REACH:]):
-            continue
-        if _complains(_WORD.findall(before) + _WORD.findall(after)):
+        before = _WORD.findall(_CLAUSE_END.split(text[:match.start()])[-1])
+        after = _WORD.findall(_CLAUSE_END.split(text[match.end():])[0])
+        if _negated(before[-config.NEGATION_REACH:]) or _turned_against(after) or _complains(before + after):
             continue
         return True
+    return False
+
+
+def _turned_against(words_after: list[str]) -> bool:
+    """Whether a negation comes soon after a topic's word in its clause without negating a complaint: "it wasn't thick
+    enough" does, "it does not react" doesn't (config.BEST_FOR_NEGATABLE)."""
+    for i, word in enumerate(words_after[:config.BEST_FOR_AFTER_REACH]):
+        if word in _NEGATIONS:
+            return not any(next_word in _NEGATABLE for next_word in words_after[i + 1:i + 3])
     return False
 
 
@@ -146,6 +158,7 @@ def _complains(words: list[str]) -> bool:
 
 _NEGATIONS = frozenset(config.BEST_FOR_NEGATIONS)
 _COMPLAINTS = frozenset(config.BEST_FOR_COMPLAINTS)
+_NEGATABLE = frozenset(config.BEST_FOR_NEGATABLE)
 
 
 # --- The labels of an answer's picks ---

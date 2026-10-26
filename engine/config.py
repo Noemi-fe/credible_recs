@@ -2828,9 +2828,24 @@ BEST_FOR_NEGATIONS = NEGATIONS + ("too", "hardly", "barely", "lack", "lacks", "l
 BEST_FOR_COMPLAINTS = ("bad", "poor", "poorly", "terrible", "awful", "mediocre", "meh", "disappointing", "disappointed",
                        "worse", "worst", "weak", "annoying", "uncomfortable", "flimsy", "stings", "stung", "burns",
                        "burned", "burnt", "irritated", "irritates", "irritating", "itchy", "sting", "irritate", "burn")
+# What a negation AFTER a topic's word may negate without turning the praise round: "my sensitive skin does not react at
+# all", "it doesn't break me out", "no complaints". A negation after the word (in its clause, within BEST_FOR_AFTER_REACH
+# words) with none of these among the two words that follow it ("my dry skin, so it wasn't thick enough") leaves that
+# occurrence out.
+BEST_FOR_AFTER_REACH = 8
+BEST_FOR_NEGATABLE = BEST_FOR_COMPLAINTS + ("react", "reacts", "reacted", "reaction", "reactions", "reactive", "break",
+                                            "breaks", "clog", "clogs", "dry", "drying", "dries", "tight", "greasy", "flake",
+                                            "flaky", "peel", "peels", "itch", "irritation", "complaint", "complaints",
+                                            "problem", "problems", "issue", "issues", "trouble", "harsh", "heavy", "shine", "shiny", "oil",
+                                            "oiliness", "grease", "residue", "cast", "film", "smell", "scent", "fragrance",
+                                            "sticky", "stickiness", "breakout", "breakouts", "questions", "hassle", "fuss",
+                                            "noise", "noisy", "loud", "rattle", "rattling", "squeak", "sag", "sagging",
+                                            "wobble", "wobbling", "cracks", "cracked", "rust", "rusting", "chip", "chipping",
+                                            "oily", "strip", "strips", "stripping", "weigh", "weighs", "fade", "fades",
+                                            "pill", "pills", "pilling", "leave", "leaves", "rash", "rashes", "regret")
 # Words in a label's phrase that do not name the thing (a test checks that the first word left is in the topic's words).
 BEST_FOR_PHRASE_FILLER = ("a", "an", "the", "its", "being", "leaving", "no", "not", "feeling", "for", "of", "and", "to",
-                          "feel")
+                          "feel", "or", "having")
 # The topics a credible voice can write about (26 Oct 2026, the bestfor builder; the words are Claude's, chosen from
 # what the needs of NEEDS and the sweep's credible recommendations say; reported to Noemi). Each: the phrase the label
 # and its basis use ("Most praised for <phrase>", "write about <phrase>"), the words that find it in a writer's own words
@@ -2858,15 +2873,16 @@ BEST_FOR_TOPICS: dict[str, dict] = {
     "mature skin": {"phrase": "mature skin", "categories": ("skincare",), "needs": ("mature",),
                     "words": ("mature skin", "aging skin", "ageing skin", "older skin", "maturing skin")},
     # What a skincare product is or leaves.
-    "no fragrance": {"phrase": "being fragrance-free", "categories": ("skincare", "haircare"),
-                     "needs": ("fragrance-free",),
-                     "words": ("fragrance-free", "fragrance free", "unscented", "no fragrance", "no scent",
-                               "scent-free", "scent free", "without fragrance", "without scent", "no perfume",
-                               "perfume-free", "perfume free", "without perfume")},
+    "fragrance-free": {"phrase": "being fragrance-free", "categories": ("skincare", "haircare"),
+                       "needs": ("fragrance-free",),
+                       "words": ("fragrance-free", "fragrance free", "no fragrance", "without fragrance",
+                                 "perfume-free", "perfume free", "without perfume", "no perfume")},
+    "no scent": {"phrase": "having no scent", "categories": ("skincare", "haircare"), "needs": ("fragrance-free",),
+                 "words": ("unscented", "no scent", "scent-free", "scent free", "without scent", "no smell")},
     "no white cast": {"phrase": "leaving no white cast", "categories": ("skincare",), "needs": ("no white cast",),
                       "words": ("no white cast", "no white-cast", "no cast", "without a white cast", "zero white cast",
                                 "zero cast", "doesn't leave a white cast", "doesn't leave a cast",
-                                "doesnt leave a white cast", "no ghosting", "no white residue")},
+                                "doesnt leave a white cast")},
     "not greasy": {"phrase": "not feeling greasy", "categories": ("skincare",), "needs": (),
                    "words": ("not greasy", "non-greasy", "nongreasy", "isn't greasy", "isnt greasy",
                              "doesn't feel greasy", "doesnt feel greasy", "never greasy")},
@@ -2875,14 +2891,15 @@ BEST_FOR_TOPICS: dict[str, dict] = {
     # Hair types.
     "dry hair": {"phrase": "dry hair", "categories": ("haircare",), "needs": ("dry hair",),
                  "words": ("dry hair", "dry ends", "hair is dry", "hair is very dry", "hair gets dry", "dry, damaged")},
-    "oily scalp": {"phrase": "an oily scalp", "categories": ("haircare",), "needs": ("oily hair",),
+    "oily scalp": {"phrase": "oily hair or scalp", "categories": ("haircare",), "needs": ("oily hair",),
                    "words": ("oily scalp", "oily hair", "greasy hair", "greasy scalp", "hair gets oily",
                              "hair gets greasy", "hair is oily", "hair is greasy")},
     "fine hair": {"phrase": "fine hair", "categories": ("haircare",), "needs": ("fine hair",),
-                  "words": ("fine hair", "thin hair", "fine, thin hair", "hair is fine", "hair is thin", "limp hair")},
+                  "words": ("fine hair", "thin hair", "fine, thin hair", "hair is fine", "hair is thin")},
     "curly hair": {"phrase": "curly hair", "categories": ("haircare",), "needs": ("curly",),
-                   "words": ("curly hair", "curly-haired", "my curls", "curly girl", "curl pattern", "coily hair",
-                             "wavy hair", "waves and curls")},
+                   "words": ("curly hair", "curly-haired", "my curls", "curly girl", "curl pattern", "coily hair")},
+    "wavy hair": {"phrase": "wavy hair", "categories": ("haircare",), "needs": ("wavy",),
+                  "words": ("wavy hair", "wavy-haired", "my waves", "my wavy hair")},
     "frizz": {"phrase": "frizz", "categories": ("haircare",), "needs": ("frizzy",),
               "words": ("frizz", "frizzy", "flyaway", "fly-away")},
     "colour-treated hair": {"phrase": "colour-treated hair", "categories": ("haircare",), "needs": ("colour-treated",),

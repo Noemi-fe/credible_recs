@@ -111,6 +111,22 @@ def test_a_clause_that_complains_does_not_count():
     assert "comfort" in best_for.topics_in("poor battery, but comfortable even after an hour", "general")
 
 
+def test_a_negation_after_the_topic_turns_it_only_when_it_does_not_negate_a_complaint():
+    # "my dry skin, so it wasn't thick enough": the writer is saying the product falls short for that skin.
+    assert best_for.topics_in("i have dry skin, so it wasn't thick enough for me", "skincare") == ()
+    # "does not react", "no complaints", "no shine": the negation negates a complaint, so the praise stands.
+    assert "sensitive skin" in best_for.topics_in("my sensitive skin does not react at all", "skincare")
+    assert "sensitive skin" in best_for.topics_in("i have sensitive skin and no complaints", "skincare")
+    assert "oily skin" in best_for.topics_in("great for oily skin, no shine by noon", "skincare")
+
+
+def test_a_word_that_names_another_thing_is_not_found_by_a_synonym_the_label_would_not_say():
+    # "curly hair" is not "wavy hair", and "unscented" is not "fragrance-free": each has its own label.
+    assert best_for.topics_in("great for my wavy hair", "haircare") == ("wavy hair",)
+    assert best_for.topics_in("it is unscented", "skincare") == ("no scent",)
+    assert best_for.topics_in("it is fragrance-free", "skincare") == ("fragrance-free",)
+
+
 def test_the_words_of_the_products_own_name_are_not_the_writers_praise():
     # "Bose QuietComfort" written "quiet comfort", and a "Gentle Cleanser" by its name: neither is praise.
     assert best_for.topics_in("my bose quiet comfort headphones are 5 years old", "general", ("Bose QuietComfort",)) == ()
@@ -187,6 +203,12 @@ def test_a_single_pick_has_nothing_to_be_best_against():
     items, ranking = case(Acme_cream=(6, 5))
     answer = written(items, ranking)
     assert len(answer.picks) == 1 and answer.picks[0].best_for is None
+
+
+def test_with_two_picks_the_basis_speaks_of_the_other_pick_in_the_singular():
+    items, ranking = case(Acme_cream=(6, 4), Bolt_cream=(4, 0))
+    acme, bolt = written(items, ranking).picks
+    assert acme.best_for.basis.endswith("the other pick has 0.") and bolt.best_for is None
 
 
 def test_a_label_is_one_of_the_topics_of_the_category_it_was_found_in():

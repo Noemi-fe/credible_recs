@@ -111,6 +111,8 @@ def view(out: Path) -> str:
             lines.append(f"     price: {_text(pick.get('price'))} | availability: {_text(pick.get('availability'))} | "
                          f"link: {'yes' if pick.get('link') else 'no'} | image: {'yes' if pick.get('image') else 'no'}"
                          f" | summary: {_text(pick.get('summary'))[:90]}")
+            if pick.get("best_for"):  # 26 Oct 2026, the bestfor builder
+                lines.append(f"     best for: {pick['best_for']['text']} ({pick['best_for']['basis']})")
             lines.append(f"     first quote ({len(quotes)}): {_text(quotes[0] if quotes else None)[:140]}")
         worth = [w.get("name") for w in ans.get("worth_a_look") or []]
         skip = [s.get("name") for s in ans.get("skip") or []]
