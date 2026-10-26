@@ -251,14 +251,15 @@ def _long_term_labels(products: Sequence[ProductScore]) -> dict[int, Label]:
 
 def _leader(counts: list[int], voices: list[int], min_share: float) -> tuple[int, int, list[int]] | None:
     """(the pick with the most, its count, the others' counts) when one pick clearly leads: at least BEST_FOR_MIN_VOICES,
-    more than every other pick, and at least `min_share` of its own voices; else None."""
+    more than every other pick by at least BEST_FOR_MIN_LEAD, and at least `min_share` of its own voices; else None."""
     top = max(counts)
     if counts.count(top) != 1 or top < config.BEST_FOR_MIN_VOICES:
         return None
     index = counts.index(top)
-    if top < min_share * voices[index]:
+    others = [n for i, n in enumerate(counts) if i != index]
+    if top < min_share * voices[index] or top - max(others) < config.BEST_FOR_MIN_LEAD:
         return None
-    return index, top, [n for i, n in enumerate(counts) if i != index]
+    return index, top, others
 
 
 def _price_labels(prices: Sequence["ShownPrice"], region: str, today: date, money: Callable[[float, str], str]

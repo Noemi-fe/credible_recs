@@ -2785,8 +2785,10 @@ US_SHOPS = {
 # Fewer picks than this and there is nothing to be best against: no labels.
 BEST_FOR_MIN_PICKS = 2
 # At least this many of a pick's credible voices must write about a topic (or write after long-term use) for it to be
-# the pick's label, and more than any other pick has.
+# the pick's label, and more than any other pick has, by at least BEST_FOR_MIN_LEAD voices (on the probe, a lead of one
+# voice, "2 against 1", made 13 of the 37 topic labels and 9 of the 40 long-term ones: too thin to call a pick "most").
 BEST_FOR_MIN_VOICES = 2
+BEST_FOR_MIN_LEAD = 2
 # And they must be this share of the pick's own credible voices, so two voices of forty are not what the pick is about.
 BEST_FOR_MIN_SHARE = 0.2
 # Long-term use is what the reason line already counts for every pick, so it is a label only when most of the voices
@@ -2816,9 +2818,9 @@ BEST_FOR_OTHER_PICK, BEST_FOR_OTHER_PICKS = "pick has", "picks have"
 BEST_FOR_OTHER_PICK_COSTS, BEST_FOR_OTHER_PICKS_COST = "pick costs", "picks cost"
 # The sentence of the how-we-score page (26 Oct 2026, the bestfor builder; approved in principle by Noemi, wording Claude's).
 BEST_FOR_HOW = ("A pick can carry a label, such as “{example}”, when at least {min_voices} of its credible voices write "
-                "about that (or wrote after long-term use), more than for any other pick shown, or when its price, "
-                "checked in your region in the last {days} days, is clearly the lowest of the picks, and it says "
-                "only what those voices say, so many picks have none.")
+                "about that (or wrote after long-term use), and at least {min_lead} more than for any other pick shown, "
+                "or when its price, checked in your region in the last {days} days, is clearly the lowest of the "
+                "picks, and it says only what those voices say, so many picks have none.")
 # The clauses a topic word is not counted in (26 Oct 2026, the bestfor builder; Claude's lists): a writer who says a
 # product is not good for sensitive skin, or that its comfort is poor, does not praise it for that. A negation within
 # NEGATION_REACH words before the topic's word, or one of these complaints in the same clause (unless it is itself

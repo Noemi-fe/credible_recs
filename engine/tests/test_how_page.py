@@ -427,6 +427,7 @@ def test_the_page_says_in_one_sentence_how_a_best_for_label_is_chosen(tmp_path, 
     sentence = re.search(r"A pick can carry a label[^<]*?many picks have none\.", words)
     assert sentence, "no sentence on how labels are chosen"
     assert f"at least {config.BEST_FOR_MIN_VOICES} of its credible voices" in sentence.group(0)
+    assert f"at least {config.BEST_FOR_MIN_LEAD} more than for any other pick" in sentence.group(0)
     assert f"in the last {config.PRICE_MAX_AGE_DAYS} days" in sentence.group(0)
     assert "says only what those voices say" in sentence.group(0)
     assert ". " not in sentence.group(0)  # one sentence (the brief: "one sentence on the How we score page")

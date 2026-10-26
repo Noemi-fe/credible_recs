@@ -173,11 +173,19 @@ def test_the_leader_needs_a_real_share_of_its_own_voices():
     assert [p.best_for for p in written(items, ranking).picks] == [None, None, None]
 
 
-def test_a_small_pick_can_lead_on_its_share_of_a_bigger_leader_s_count_only_by_having_more_voices():
-    # "Most praised" is a count of voices: the pick with fewer voices does not take it from one with more.
-    items, ranking = case(Acme_cream=(8, 4), Bolt_cream=(4, 3), Cove_cream=(3, 0))
+def test_most_praised_is_a_count_of_voices_not_a_share():
+    # "Most praised" is a count of voices: the pick with fewer voices does not take it from one with clearly more.
+    items, ranking = case(Acme_cream=(8, 5), Bolt_cream=(4, 3), Cove_cream=(3, 0))
     acme, bolt, _ = written(items, ranking).picks
     assert acme.best_for is not None and bolt.best_for is None
+
+
+def test_a_lead_of_one_voice_is_too_thin_a_lead():
+    assert config.BEST_FOR_MIN_LEAD == 2
+    items, ranking = case(Acme_cream=(6, 3), Bolt_cream=(5, 2), Cove_cream=(3, 0))  # 3 against 2
+    assert [p.best_for for p in written(items, ranking).picks] == [None, None, None]
+    items, ranking = case(Acme_cream=(6, 4), Bolt_cream=(5, 2), Cove_cream=(3, 0))  # 4 against 2
+    assert written(items, ranking).picks[0].best_for.text == "Most praised for sensitive skin"
 
 
 def test_a_pick_never_gets_two_labels_and_two_picks_never_get_the_same_one():

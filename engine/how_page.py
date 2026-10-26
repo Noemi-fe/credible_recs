@@ -369,7 +369,8 @@ def _best_for_rule() -> str:
     config and its example the label of the first topic."""
     example = config.BEST_FOR_LABEL.format(topic=next(iter(config.BEST_FOR_TOPICS.values()))["phrase"])
     return html.escape(config.BEST_FOR_HOW).format(
-        example=html.escape(example), min_voices=_config_span("BEST_FOR_MIN_VOICES"), days=_config_span("PRICE_MAX_AGE_DAYS"))
+        example=html.escape(example), min_voices=_config_span("BEST_FOR_MIN_VOICES"),
+        min_lead=_config_span("BEST_FOR_MIN_LEAD"), days=_config_span("PRICE_MAX_AGE_DAYS"))
 
 
 def _medium_red_flags() -> str:
