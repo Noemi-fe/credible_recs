@@ -773,3 +773,38 @@ def test_a_product_with_no_price_of_its_own_whose_brands_cheapest_is_over_the_bu
     priced = answer_request(KNIFE_REQUEST + " under £100", library_dir=knife_library(tmp_path / "priced", fibrox=(1, 1)),
                             prices=[made_up_price(fibrox, 45.0)], today=TODAY, brand_lines=[line])
     assert fibrox not in priced.left_out_over_budget  # its own price, within the budget, says otherwise
+
+
+def test_a_line_shown_by_its_brands_facts_entry_steps_aside_for_its_own_product_shown_with_it(tmp_path):
+    # Found 26 Oct 2026 (the classics round's sweep): a facts entry under a brand's own name shows the brand's pick as its
+    # line ("Vanicream moisturiser line"), but the pick had stopped counting as a line, so the line and one of its own
+    # products ("Vanicream Moisturizing Cream") were both picks. Shown as a line, it folds as every line does: it steps
+    # aside for its own product shown with it, so its support counts once, not twice.
+    library = write_library(tmp_path, {
+        "1pan001": ("Which frying pan lasts?", "Ten years, ideally.", [
+            praise("p1a", "Tramontina", 5), praise("p1b", "Tramontina", 6), praise("p1c", "Tramontina", 7),
+            praise("p1d", "Tramontina Professional frying pan", 3),
+            praise("p1e", "Tramontina Professional frying pan", 4),
+            praise("p1k", "Tramontina Professional frying pan", 5),
+            praise("p1f", "Tramontina tri-ply frying pan", 2),
+            praise("p1g", "GreenPan Valencia frying pan", 4), praise("p1h", "GreenPan Valencia frying pan", 5),
+            praise("p1i", "Misen frying pan", 4),
+        ]),
+        "1pan002": ("Best frying pan for daily use?", "Mine is peeling.", [
+            praise("p2a", "Tramontina", 8), praise("p2b", "Tramontina", 9),
+            praise("p2c", "Tramontina Professional frying pan", 6),
+            praise("p2f", "Tramontina Professional frying pan", 7),
+            praise("p2d", "GreenPan Valencia frying pan", 6), praise("p2e", "Misen frying pan", 6),
+        ]),
+    }, community="BuyItForLife")
+    from engine.tests.test_product_facts import known
+
+    # The product has an entry of its own, as the Vanicream cream has: it stays apart from the brand's entry.
+    facts = [known("Tramontina", category="kitchen", product_type="frying pan", pfas_free=True, non_stick=True),
+             known("Tramontina Professional frying pan", category="kitchen", product_type="frying pan", pfas_free=True,
+                   non_stick=True)]
+    result = answer_request("frying pan that lasts", library_dir=library, prices=[], product_facts=facts, today=TODAY)
+    assert "Tramontina Professional frying pan" in names(result)
+    assert TRAMONTINA not in names(result)
+    assert FoldedBrandPick(TRAMONTINA, "Tramontina Professional frying pan") in result.folded_brand_picks
+    assert unverified_claims(result.answer, result.bodies) == []

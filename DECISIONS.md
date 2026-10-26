@@ -691,3 +691,19 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   left to her; (d) the Vanicream line has no price or brand-lines entry, so it shows "Price not checked yet" while its
   Moisturizing Cream entry says only a marketplace seller on Amazon UK ships it in: a data pass for it (Vanicream is sold
   in the UK by no shop) would settle that.
+
+- 26 Oct 2026 (Claude, the orchestrator; technical, reported to Noemi; the classics round's note (c) decided rather than
+  left open): a brand line shown by a facts entry under its brand's own name ("Vanicream moisturiser line": the classics
+  round's brand-wide fragrance-free entry) is checked as a product, so its facts can meet the request's needs, but it is
+  still its brand's line when picks fold (engine/pipeline.py, _fold_brand_picks, PipelineResult.line_keys): it steps
+  aside for its own product shown with it, as every line has since 10 Oct 2026, so its support counts once. Not a new
+  rule: the line had slipped past the existing one, and a tester saw Vanicream twice in one top 3. Two of 278 answers
+  change, and only those: "fragrance free moisturiser for sensitive skin under £20" (Vanicream Moisturizing Cream,
+  ILLIYOON, Vanicream Moisturizing Lotion: the cream and the lotion are two products) and "moisturiser for dry +
+  sensitive skin, fragrance free pls, 15-25 quid" (ILLIYOON, the Vanicream cream, Etude House). The blind test is
+  untouched (b04's Vanicream line has none of its own products in its top 3). Also data/brand_lines.json: Vanicream sells
+  moisturisers (its products page and where-to-buy page, read today: seven moisturisers, only US shops, no UK price, so
+  no from price), so its line links to the maker's page. Found reading the reader's output, for later: of the 28
+  threads read on demand by Gemini 3.1 Flash-Lite, 45 of 695 mentions fail the extraction check, 20 of them because the
+  reader wrote the evidence level "no first-hand use" as a reason tag (the reason tags are config.EVIDENCE_TAGS); only 2
+  are quotes not found word for word. The reader's instructions should say levels and tags apart.

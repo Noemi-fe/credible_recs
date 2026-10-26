@@ -634,6 +634,19 @@
    "note": "CeraVe UK's Moisturisers page, 14 Oct 2026 (Moisturising Cream Tube, PM and AM Facial Moisturising Lotions, Intensive Moisturising Cream and others). From price: Boots's CeraVe Moisturisers (27 items), the Moisturising Cream Tube 177ml at £12, to add to the basket (the Moisturising Lotion 236ml £12.50, the PM Facial Lotion 52ml £12.75; an eye cream, a serum, a repair ointment and refill pouches aren't counted)."
   },
   {
+   "brand": "Vanicream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "sells": true,
+   "sources": [
+    "https://www.vanicream.com/products",
+    "https://www.vanicream.com/where-to-buy"
+   ],
+   "checked_on": "2026-10-26",
+   "range_page": "https://www.vanicream.com/products",
+   "note": "Vanicream's products page, 26 Oct 2026: Moisturizing Cream, Enhanced Moisturizer, Daily Facial Moisturizer, Moisturizing Lotion, Moisturizing Ointment (out of stock, being reformulated), Moisturizing Cream for Baby and Facial Moisturizer SPF 30; it has no moisturisers page of its own. Its where-to-buy page names only US drug stores and online shops, no UK shop or distributor; no UK price, so no from price. Added by Claude (the orchestrator) after the classics round: its line led the fragrance-free moisturiser answer with no link."
+  },
+  {
    "brand": "ILLIYOON",
    "category": "skincare",
    "product_type": "moisturiser",

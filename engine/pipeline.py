@@ -309,6 +309,8 @@ class PipelineResult:
     brands_not_selling: list[NotSuited] = field(default_factory=list)
     # The brand or line names ranked as the brand's whole line ("Lodge cast iron skillet line"), as shown (12 Oct 2026).
     ranked_as_lines: list[str] = field(default_factory=list)
+    # Their keys, for the rule folding a line into its own product shown with it (_fold_brand_picks; 26 Oct 2026).
+    line_keys: set[str] = field(default_factory=set)
     not_extracted: list[str] = field(default_factory=list)  # ids of threads about the product the AI hasn't read yet
     notes_without_kind: list[str] = field(default_factory=list)  # the "about" of each kept note that names no kind
     left_out_over_budget: list[str] = field(default_factory=list)  # product names, with a known price above the max
@@ -563,6 +565,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     lines -= result.lines_as_one_product  # lines whose products are one known product are that product (14 Oct 2026)
     kept_groups = _one_per_name(kept_groups)  # the names are final here: one item per name (13 Oct 2026)
     result.ranked_as_lines = [g.name for g in kept_groups if g.key in lines]
+    result.line_keys = {g.key for g in kept_groups if g.key in lines}
     _note_other_names(kept_groups, cautions)
     # What the answer says beyond the ranking, as write_answer's keywords: about the request's active ingredients (13 Oct
     # 2026), which products its facts say are prescription-only in the UK (Noemi's decision 5 of 14 Oct 2026), which
@@ -2226,13 +2229,17 @@ def _fold_brand_picks(ranking: RankingResult, groups: list[ProductGroup], result
     for a Lodge pan ranked below the top 3, and vanished). After each fold the next product moves up, so it is checked
     again until nothing changes.
 
+    A line shown by a facts entry under its brand's own name ("Vanicream moisturiser line") is checked as a product,
+    so its facts can meet the request's needs (_suited_to_request), but here it is still its brand's line (26 Oct 2026,
+    the classics round: it and the Vanicream Moisturizing Cream, a product of its own, were both picks).
+
     Name levels (14 Oct 2026): a "product" none of whose names says more than the brand and the type ("lodge cast iron
     pan" next to the Lodge line; _the_line_itself) is the line written another way, not one of its products. The line
     never steps aside for it; the two fold as two lines of one brand do, the one ranked lower into the other (b08 had
     lost its Lodge pick so). A line written with its size first ('12" Lodge cast iron skillet line') is its brand's line
     too, as Also worth a look already read it (_same_brand_sized; b08's follow-up: it had been a pick next to the
     product '10.25" Lodge')."""
-    by_key = {g.key: g for g in groups}
+    by_key = {g.key: replace(g, loose=True) if g.key in result.line_keys else g for g in groups}
     qualifying = [(p, by_key[p.key]) for p in ranking.qualifying if p.key in by_key]
     folded, keys = [], set()
     while True:
