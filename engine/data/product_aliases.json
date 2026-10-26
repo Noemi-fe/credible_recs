@@ -1,5 +1,5 @@
 {
-  "note": "Known short names, per category: written out in full before names are compared (engine/match_products.py). Drafted by Claude on 9 Oct 2026 from the library's product names; Noemi reviews. Add a short name only when real names show it is needed, and list them under 'seen' (product names only, never comment text). Since 10 Oct 2026 a short name can also be one product's other name, where a rule would be too risky ('House of Hur weightless sunscreen' is its Weightless Sun Fluid); such entries were added by Claude from the blind-test answers' split products. Products: a short name is only written out at the start of a name, even with a small spelling slip or a possessive ('BoJ's'). Kinds: anywhere in the kind (engine/group_kinds.py).",
+  "note": "Known short names, per category: written out in full before names are compared (engine/match_products.py). Drafted by Claude on 9 Oct 2026 from the library's product names; Noemi reviews. Add a short name only when real names show it is needed, and list them under 'seen' (product names only, never comment text). Since 10 Oct 2026 a short name can also be one product's other name, where a rule would be too risky ('House of Hur weightless sunscreen' is its Weightless Sun Fluid); such entries were added by Claude from the blind-test answers' split products. Products: a short name is only written out at the start of a name, even with a small spelling slip or a possessive ('BoJ's'). Kinds: anywhere in the kind (engine/group_kinds.py). 25 Oct 2026 (classics review, DECISIONS.md): names that split one product into two to four groups, pooled by their real spellings (product names only): Steelcase Leap V2, Dualit Classic Kettle (its 'Dualit kettle' spellings; a bare 'Dualit' then joins it only while the threads name no other Dualit kettle), Vanicream Moisturizing Cream (the tub), La Roche-Posay Lipikar Balm AP+M, Misen Carbon Nonstick and Lodge Blacklock. A short name matches the start of a name, so where a shorter one could catch a sibling product, a longer entry that maps the sibling to its own name goes first ('Leap Frog', 'Leap V1' and 'Leap Plus' before 'Leap'; 'Lipikar Baume Light' before 'Lipikar Baume').",
   "products": {
     "skincare": [
       {"short": "TO", "full": "The Ordinary", "seen": ["TO lactic acid", "The ordinary lactic acid", "TO niacinamide", "the Ordinary Niacinamide 10% and Zinc 1%"]},
@@ -63,7 +63,25 @@
       {"short": "Dr. Song 2.5% solution", "full": "Dr. Song 2.5% Benzoyl Peroxide Advanced Acne Gel", "seen": ["Dr. Song 2.5% solution", "Dr Song 2.5%"]},
       {"short": "CortiBalm", "full": "Dr. Dan's CortiBalm", "seen": ["CortiBalm"]},
       {"short": "Clinique Moisture Surge Lipbalm", "full": "Clinique Moisture Surge Lip Hydro-Plump Treatment", "seen": ["Clinique Moisture Surge Lipbalm"]},
-      {"short": "Inkey List", "full": "The INKEY List", "seen": ["Inkey List caffeine eye cream"]}
+      {"short": "Inkey List", "full": "The INKEY List", "seen": ["Inkey List caffeine eye cream"]},
+      {"short": "La Roche-Posay Lipikar Baume Light", "full": "La Roche-Posay Lipikar Baume Light", "seen": []},
+      {"short": "La Roche-Posay Lipikar Balm Light", "full": "La Roche-Posay Lipikar Balm Light", "seen": []},
+      {"short": "La Roche-Posay Lipikar Baume AP+M", "full": "La Roche-Posay Lipikar Balm AP+M", "seen": ["LRP lipikar baume AP+M"]},
+      {"short": "La Roche-Posay Lipikar Baume AP+", "full": "La Roche-Posay Lipikar Balm AP+M", "seen": ["LRP lipikar baume AP+", "La Roche-Posay Lipikar Baume AP+"]},
+      {"short": "La Roche-Posay Lipikar Balm AP+", "full": "La Roche-Posay Lipikar Balm AP+M", "seen": ["La Roche-Posay Lipikar Balm AP+", "La Roche-Posay Lipikar Balm AP+ M"]},
+      {"short": "La Roche-Posay Lipikar AP+M Triple Repair Moisturizer", "full": "La Roche-Posay Lipikar Balm AP+M", "seen": ["La Roche-Posay Lipikar AP+M Triple Repair Moisturizer"]},
+      {"short": "La Roche-Posay Lipikar AP+M", "full": "La Roche-Posay Lipikar Balm AP+M", "seen": ["LRP lipikar ap+m", "LRP Lipikar AP+M"]},
+      {"short": "La Roche-Posay AP+M Triple Repair Body Moisturizing Cream", "full": "La Roche-Posay Lipikar Balm AP+M", "seen": ["La Roche Posay AP+M Triple Repair Body Moisturizing Cream"]},
+      {"short": "La Roche-Posay Triple Repair Moisturizer", "full": "La Roche-Posay Lipikar Balm AP+M", "seen": ["LRP triple repair moisturizer"]},
+      {"short": "Laroche Posay Triple Repair", "full": "La Roche-Posay Lipikar Balm AP+M", "seen": ["Laroche Posay Triple Repair"]},
+      {"short": "La Roche-Posay Lipikar face and body", "full": "La Roche-Posay Lipikar Balm AP+M", "seen": ["La Roche Posay lipikar face and body"]},
+      {"short": "La Roche-Posay Lipikar Balm", "full": "La Roche-Posay Lipikar Balm AP+M", "seen": ["La Roche Posay Lipikar Balm", "LRP lipikar balm"]},
+      {"short": "La Roche-Posay Lipikar Baume", "full": "La Roche-Posay Lipikar Balm AP+M", "seen": ["LRP Lipikar Baume"]},
+      {"short": "Vanicream in the tub", "full": "Vanicream Moisturizing Cream", "seen": ["Vanicream in the tub", "Vanicream (in the tub)", "vanicream in the tub"]},
+      {"short": "Vanicream in the tub with the blue lid", "full": "Vanicream Moisturizing Cream", "seen": ["vanicream in the tub with the blue lid"]},
+      {"short": "Vanicream in the big tub", "full": "Vanicream Moisturizing Cream", "seen": ["Vanicream in the big tub"]},
+      {"short": "Vanicream tub", "full": "Vanicream Moisturizing Cream", "seen": ["Vanicream tub"]},
+      {"short": "tub Vanicream", "full": "Vanicream Moisturizing Cream", "seen": ["tub vanicream"]}
     ],
     "kitchen": [
       {"short": "1Z", "full": "1Zpresso", "seen": ["1Z K plus", "1ZPresso K Plus"]},
@@ -122,6 +140,13 @@
       {"short": "finex 12", "full": "Finex 12-inch skillet", "seen": ["finex 12”"]},
       {"short": "Lido", "full": "Orphan Espresso Lido", "seen": ["Lido 3", "lido 3"]},
       {"short": "Canadian made Napoleon", "full": "Napoleon", "seen": ["Canadian made Napoleon Grill"]},
+      {"short": "Dualit kettle", "full": "Dualit Classic Kettle", "seen": ["Dualit kettle"]},
+      {"short": "Dualit kettles", "full": "Dualit Classic Kettle", "seen": ["Dualit kettles"]},
+      {"short": "Dualit (big full size)", "full": "Dualit Classic Kettle", "seen": ["Dualit (big full size)"]},
+      {"short": "Misen nitrogenated carbon steel pan", "full": "Misen Carbon Nonstick", "seen": ["Misen nitrogenated carbon steel pan"]},
+      {"short": "Nitrited Misen", "full": "Misen Carbon Nonstick", "seen": ["Nitrited Misen"]},
+      {"short": "Blacklock", "full": "Lodge Blacklock", "seen": ["Blacklock 12\" skillet"]},
+      {"short": "Lodge Blacklock collection", "full": "Lodge Blacklock", "seen": ["lodge blacklock collection"]},
       {"short": "La Creuset", "full": "Le Creuset", "seen": ["la creuset pot", "La Creuset", "la creuset"]}
     ],
     "general": [
@@ -163,6 +188,12 @@
       {"short": "955", "full": "Garmin Forerunner 955", "seen": ["955", "955 solar version"]},
       {"short": "Aeron", "full": "Herman Miller Aeron", "seen": ["Aeron", "aeron", "Aeron chair", "Aeron chairs", "Herman Miller Aeron"]},
       {"short": "Aeron remastered", "full": "Herman Miller Aeron", "seen": ["aeron remastered"]},
+      {"short": "Leap V2", "full": "Steelcase Leap V2", "seen": ["Leap V2", "leap v2", "leap V2", "Leap v2", "leap v2 uph"]},
+      {"short": "leapv2", "full": "Steelcase Leap V2", "seen": ["leapv2"]},
+      {"short": "Leap", "full": "Steelcase Leap V2", "seen": ["Leap", "leap"]},
+      {"short": "Leap Frog", "full": "LeapFrog", "seen": ["leap frog"]},
+      {"short": "Leap V1", "full": "Steelcase Leap V1", "seen": []},
+      {"short": "Leap Plus", "full": "Steelcase Leap Plus", "seen": []},
       {"short": "Aeron size B", "full": "Herman Miller Aeron", "seen": ["aeron size B"]},
       {"short": "Aeron 2", "full": "Herman Miller Aeron", "seen": ["Aeron 2"]},
       {"short": "Philips Sonicare", "full": "Sonicare", "seen": ["Phillips Sonicare", "Phillips sonicare", "Philips Sonicare", "Philips sonicare", "Philips Sonicare 6100"]},

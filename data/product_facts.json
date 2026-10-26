@@ -3608,6 +3608,57 @@
    ],
    "checked_on": "2026-10-18",
    "shown_note": "most reviews here are of its earlier PTFE-coated pans"
+  },
+  {
+   "product": "Vanicream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.vanicream.com/body-products/all-body-products",
+    "https://www.vanicream.com/face-products",
+    "https://www.vanicream.com/product/vanicream-moisturizing-cream"
+   ],
+   "checked_on": "2026-10-25"
+  },
+  {
+   "product": "CeraVe Moisturizing Cream",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.cerave.com/skincare/moisturizers/moisturizing-cream"
+   ],
+   "checked_on": "2026-10-25"
+  },
+  {
+   "product": "La Roche-Posay Lipikar Balm AP+M",
+   "category": "skincare",
+   "product_type": "moisturiser",
+   "facts": {
+    "fragrance_free": true
+   },
+   "sources": [
+    "https://www.cultbeauty.co.uk/p/la-roche-posay-lipikar-balm-ap-m-moisturiser-for-dry-skin-400ml/12382711/",
+    "https://www.lookfantastic.com/p/la-roche-posay-lipikar-balm-ap-m-moisturiser-for-dry-skin-400ml/12382711/"
+   ],
+   "checked_on": "2026-10-25"
+  },
+  {
+   "product": "Misen Carbon Nonstick",
+   "category": "kitchen",
+   "product_type": "frying pan",
+   "facts": {
+    "pfas_free": true
+   },
+   "sources": [
+    "https://misen.com/pages/we-dont-kill-birds"
+   ],
+   "checked_on": "2026-10-25"
   }
  ]
 }
