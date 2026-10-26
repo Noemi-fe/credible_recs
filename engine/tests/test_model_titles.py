@@ -179,6 +179,20 @@ def test_a_leader_sold_only_abroad_titles_nothing_when_another_model_is_sold_her
     assert pick.name == VICTORINOX and pick.line_note is None
 
 
+def test_a_leader_sold_only_abroad_titles_nothing_when_its_line_is_sold_here(tmp_path):
+    # The line's brand-lines entry found the brand's knives on sale in the UK (its from price); the Fibrox is sold abroad
+    # only: the line is what a UK shopper can buy, so it keeps its name (the Vitamix line and its 5200, 26 Oct baseline).
+    abroad = listed(FIBROX, available=False).model_copy(update={"not_in_uk": True})
+    line = BrandLine(brand="Victorinox", category="kitchen", product_type="chef knife", sells=True,
+                     sources=["https://shop.example/knife"], checked_on=TODAY, from_price=25.0,
+                     from_price_shop="Made-up Cookshop", from_price_url="https://shop.example/knife",
+                     from_price_checked_on=TODAY, note="Made up.")
+    result = answer_request(KNIFE_REQUEST, library_dir=knife_library(tmp_path, fibrox=(1, 1)), prices=[abroad],
+                            product_facts=[], product_pages=[], brand_lines=[line], today=TODAY)
+    pick = line_pick(result)
+    assert pick.name == VICTORINOX and pick.line_note is None
+
+
 def test_a_leader_sold_only_abroad_still_titles_when_no_other_model_is_sold_here(tmp_path):
     abroad = listed(FIBROX, available=False).model_copy(update={"not_in_uk": True})
     result = answer_request(KNIFE_REQUEST, library_dir=knife_library(tmp_path, fibrox=(1, 1)), prices=[abroad],

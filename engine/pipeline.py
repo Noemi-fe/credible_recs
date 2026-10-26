@@ -2534,7 +2534,9 @@ def _leading_models(ranking: RankingResult, groups: list[ProductGroup], product_
         if not (_suits_the_request(top, brand) and _a_known_model(top, brand_group, product_type, checks, known or {},
                                                                   pages or {})):
             continue
-        others = [_sold_in(checks.get(p.key), region) for p in models if p is not top]
+        # The line's own entry counts as another that is sold here: its from price or availability (a brand-lines entry
+        # found on sale at a shop) says the brand sells the type here, as the Vitamix line is while its 5200 is not.
+        others = [_sold_in(checks.get(p.key), region) for p in [*(p for p in models if p is not top), brand]]
         here = _sold_in(checks.get(top.key), region)
         if here is False or (here is None and region != config.DEFAULT_REGION):
             if any(sold is True for sold in others):
