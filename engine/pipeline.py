@@ -2489,6 +2489,9 @@ def _one_model(name: str) -> bool:
     return not _TWO_MODELS.search(name)
 
 
+_SPARE_PICKS = 5  # qualifying products beyond the shown picks whose lines may still be shown (_leading_models)
+
+
 def _leading_models(ranking: RankingResult, groups: list[ProductGroup], product_type: str | None,
                     price_checks: Mapping[str, PriceCheck] | None = None,
                     known: Mapping[str, list[tuple[str, ...]]] | None = None,
@@ -2511,10 +2514,14 @@ def _leading_models(ranking: RankingResult, groups: list[ProductGroup], product_
     if not config.BRAND_MODEL_TITLES_ON:
         return {}
     by_key = {g.key: g for g in groups}
-    specific = [(p, g) for p in ranking.products if (g := by_key.get(p.key)) is not None and not g.loose]
+    # Only the lines that may be shown as picks (the first qualifying products, with some to spare for a pick left out
+    # for want of quotes) and the products credible voices named: latency, 26 Oct 2026 (the first version asked every line
+    # of the ranking of each of its products, 27 ms an answer, 1.3 s in the worst).
+    specific = [(p, g) for p in ranking.products if p.credible_recommendations and (g := by_key.get(p.key)) is not None
+                and not g.loose]
     checks = price_checks or {}
     found = {}
-    for brand in ranking.products:
+    for brand in ranking.qualifying[:PICKS_SHOWN + _SPARE_PICKS]:
         brand_group = by_key.get(brand.key)
         if brand_group is None or not brand_group.loose:
             continue
