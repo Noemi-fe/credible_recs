@@ -2164,23 +2164,29 @@ ON_DEMAND_START_SECONDS = 30
 ON_DEMAND_LEASE_MINUTES = 50
 # The Gemini model the job reads with (the job's settings may name another: CREDIBLE_RECS_ON_DEMAND_MODEL) and the Gemini
 # calls a day it may make: Gemini's free allowance only (Noemi's decision of 14 Oct 2026), a little under what Google
-# allows that model a day, since a 429 for the day stops the job sooner anyway. Gemini 3.8 Flash's free allowance is
-# 20 requests a day and 5 a minute (read from Google's own 429 answer on 25 Oct 2026, eval/RUNS.md), so 18: about one
-# request a day, which the visitor is now told (ON_DEMAND_CALLS_PER_PRODUCT below). It was 100 until 25 Oct 2026, a number
-# that left "the rest of the allowance" to bulk reading Claude's builders do now. The allowance resets at midnight
-# Pacific time: the job waits until GEMINI_RESET_HOUR_UTC (8 am UTC: midnight in winter, 1 am in summer), so it never
-# asks before the reset. A cheaper reader (a Flash-Lite model) waits for Noemi's go-ahead: its precision on her gold
-# threads is 8 points under Flash's (eval/RUNS.md, 25 Oct 2026).
-ON_DEMAND_GEMINI_MODEL = "gemini-3.8-flash"
-ON_DEMAND_GEMINI_CALLS_A_DAY = 18
-# What one request takes, for the wait the visitor is told (25 Oct 2026; PROPOSED): six threads at the median 42
-# comments, 40 a call, are 12 to 15 Gemini calls (the review of 16 Oct 2026, R7), so ON_DEMAND_GEMINI_CALLS_A_DAY //
-# ON_DEMAND_CALLS_PER_PRODUCT requests a day. Each call of Gemini 3.8 Flash took 3.4 to 4.5 minutes on 25 Oct 2026 (the
-# 4 calls for the three gold threads took 16 minutes; a Flash-Lite model took 10 to 25 seconds a call), so one request takes about an
-# hour of the job's time, not the 12 minutes first guessed: 6 of them are Arctic Shift's paced searches and reads. These
-# numbers describe the reader above; a faster reader changes them (and the cap) together.
+# allows that model a day, since a 429 for the day stops the job sooner anyway.
+# Noemi approved the cheaper reader on 25 Oct 2026 ("yes to all recommendations"): gemini-3.1-flash-lite, whose free
+# allowance is 500 requests a day and 15 a minute (read from Google's own 429 answers on 25 Oct 2026, eval/RUNS.md).
+# On her three labelled gold threads it found 80% of her products at 85% precision, against Gemini 3.8 Flash's 84% and
+# 93% (3.8 Flash has 20 requests a day and 5 a minute, which read one request a day: 18 calls, the value until then),
+# and every quote is checked word for word as for every reader. 450 calls a day leave a margin of 50 under the 500 (a
+# thread's retries count as calls, and the cap is checked before a thread, not inside it); the job asks at most
+# ON_DEMAND_GEMINI_CALLS_A_MINUTE a minute, under the 15 (engine.on_demand.reader_client). The allowance resets at
+# midnight Pacific time: the job waits until GEMINI_RESET_HOUR_UTC (8 am UTC: midnight in winter, 1 am in summer), so it
+# never asks before the reset.
+ON_DEMAND_GEMINI_MODEL = "gemini-3.1-flash-lite"
+ON_DEMAND_GEMINI_CALLS_A_DAY = 450
+ON_DEMAND_GEMINI_CALLS_A_MINUTE = 10
+# What one request takes, for the wait the visitor is told (25 Oct 2026): six threads at the median 42 comments, 40 a
+# call, are 12 to 15 Gemini calls (the review of 16 Oct 2026, R7), so ON_DEMAND_GEMINI_CALLS_A_DAY //
+# ON_DEMAND_CALLS_PER_PRODUCT requests a day by Gemini's calls (30 of them). A Flash-Lite call took 10 to 25 seconds on
+# 25 Oct 2026 (a Gemini 3.8 Flash call took 3.4 to 4.5 minutes, which made a request an hour); a safe minute a call,
+# and 6 minutes for Arctic Shift's paced searches and reads, make a request 21 minutes of the job. The month's job time
+# (ON_DEMAND_MONTH_SECONDS) is then what limits the reading, not Gemini: 39 requests a month at these 21 minutes (about
+# twice that at the 11 a request actually takes), and the visitor is told so (engine.on_demand.products_a_month). These
+# numbers describe the reader above; a different reader changes them (and the cap) together.
 ON_DEMAND_CALLS_PER_PRODUCT = 15
-ON_DEMAND_CALL_MINUTES = 4
+ON_DEMAND_CALL_MINUTES = 1
 ON_DEMAND_ARCHIVE_MINUTES = 6
 ON_DEMAND_PRODUCT_MINUTES = ON_DEMAND_ARCHIVE_MINUTES + ON_DEMAND_CALLS_PER_PRODUCT * ON_DEMAND_CALL_MINUTES
 GEMINI_RESET_HOUR_UTC = 8
@@ -2191,7 +2197,8 @@ ON_DEMAND_BUNDLE_MAX_THREADS = 300
 # takes ON_DEMAND_PRODUCT_MINUTES, then the site picks the threads up at its next keep-warm ping, every 5 minutes), each
 # one ahead of it about ON_DEMAND_EACH_MINUTES more, while the day's Gemini calls and the month's reading time last (engine.
 # on_demand.wait_for); past ON_DEMAND_LATE_MINUTES of waiting (by the site's own clock, kept in memory only) it is said to
-# be taking longer than usual. 20, 15 and 90 until 25 Oct 2026, when the calls were timed.
+# be taking longer than usual. 20, 15 and 90 until 25 Oct 2026, when the calls were timed (70, 66 and 150 for Gemini
+# 3.8 Flash, 25, 21 and 150 for Flash-Lite).
 ON_DEMAND_FIRST_MINUTES = ON_DEMAND_PRODUCT_MINUTES + 4
 ON_DEMAND_EACH_MINUTES = ON_DEMAND_PRODUCT_MINUTES
 ON_DEMAND_LATE_MINUTES = 150

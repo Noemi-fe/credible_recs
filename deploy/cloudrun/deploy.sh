@@ -14,7 +14,8 @@
 # its reading job on the same image (started by the site, no schedule of its own), and the threads it has read baked
 # into the image first (pull-bucket), then let go of by the bucket once the site runs it (forget-baked). It needs the
 # Gemini key's secret, gemini-key, which Noemi creates herself (DEPLOY.md): without it on-demand reading stays off.
-# Since 16 Oct 2026 (Noemi's decision 6) it is off unless the deploy turns it on: CREDIBLE_RECS_ON_DEMAND=on (on_demand.sh).
+# Off from 16 Oct 2026 (Noemi's decision 6), on again by default since 25 Oct 2026 (read by Gemini 3.1 Flash-Lite):
+# CREDIBLE_RECS_ON_DEMAND=off turns it off for a deploy (on_demand.sh).
 # Safe to run again: each step creates what is missing and sets again what is there.
 set -eu
 PROJECT="${CREDIBLE_RECS_GCP_PROJECT:-credible-picks}"
@@ -29,7 +30,7 @@ GCLOUD="${GCLOUD:-gcloud}"
 NUMBER="$($GCLOUD projects describe "$PROJECT" --format='value(projectNumber)')"
 RUNNER="${NUMBER}-compute@developer.gserviceaccount.com"  # the account the site and the job run as (the default)
 . deploy/cloudrun/on_demand.sh  # on-demand reading's steps (ON_DEMAND_BUCKET, READER_JOB, READER_JOB_NAME)
-on_demand_secret  # ON_DEMAND on or off: off unless CREDIBLE_RECS_ON_DEMAND=on, and while the Gemini key's secret isn't there
+on_demand_secret  # ON_DEMAND on or off: on unless CREDIBLE_RECS_ON_DEMAND=off, and off while the Gemini key's secret isn't there
 if [ "$ON_DEMAND" = on ]; then
     ON_DEMAND_SITE_VARS=";CREDIBLE_RECS_ON_DEMAND_BUCKET=${ON_DEMAND_BUCKET};CREDIBLE_RECS_ON_DEMAND_JOB=${READER_JOB_NAME}"
     ON_DEMAND_PRECHECK_VARS=",CREDIBLE_RECS_ON_DEMAND_BUCKET=${ON_DEMAND_BUCKET}"

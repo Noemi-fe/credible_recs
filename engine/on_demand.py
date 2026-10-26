@@ -79,6 +79,7 @@ from engine.config import (
     ON_DEMAND_EXTRACT_TRIES,
     ON_DEMAND_FIRST_MINUTES,
     ON_DEMAND_GEMINI_CALLS_A_DAY,
+    ON_DEMAND_GEMINI_CALLS_A_MINUTE,
     ON_DEMAND_GEMINI_MODEL,
     ON_DEMAND_LATE_MINUTES,
     ON_DEMAND_LEASE_MINUTES,
@@ -114,7 +115,7 @@ _JOB_NAME = re.compile(r"projects/[a-z][a-z0-9-]{4,28}[a-z0-9]/locations/[a-z0-9
                        r"/jobs/[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?")
 CHANGE_TRIES = 5  # a write over a version another writer moved on is redone from a fresh read this many times at most
 
-# --- Wording visitors see (decided by Claude, 14 Oct 2026; PROPOSED, like the page's other new words) ---
+# --- Wording visitors see (Claude's wording of 14 and 25 Oct 2026, approved by Noemi, 25 Oct 2026) ---
 # The answer says what is happening in the page's own style; {about} is the product type's plural ("teapots").
 READING_NEW = "We haven't read Reddit about {about} yet, so we've started: check back {when}."
 READING_MORE = ("We've read only a little on Reddit about {about} so far, so we've started reading more: check back "
@@ -129,14 +130,15 @@ READING_OLD = ("The Reddit threads we've read about {about} are a few years old,
                "check back {when}.")
 WAITING_OLD = ("The Reddit threads we've read about {about} are a few years old. Reading newer ones is on our list, "
                "but our free reading allowance is used up for now: check back {when}.")
-# In line behind other requests, past what the day's free allowance can read (25 Oct 2026; wording PROPOSED): {ahead_text}
-# is "1 product is" or "3 products are"; {per_day} is the products a day the allowance covers.
+# In line behind other requests, past what the day's free allowance can read (25 Oct 2026): {ahead_text} is "1 product
+# is" or "3 products are"; {capacity} is what the free allowance covers, "30 a day" while Gemini's calls limit the
+# reading and "39 a month" once the job's time for the month does (capacity_text).
 IN_LINE_NEW = ("We haven't read Reddit about {about} yet. It's in line: {ahead_text} ahead of it, and our free reading "
-               "allowance covers about {per_day} a day. Check back {when}.")
+               "allowance covers about {capacity}. Check back {when}.")
 IN_LINE_MORE = ("We've read only a little on Reddit about {about} so far. Reading more is in line: {ahead_text} ahead of "
-                "it, and our free reading allowance covers about {per_day} a day. Check back {when}.")
+                "it, and our free reading allowance covers about {capacity}. Check back {when}.")
 IN_LINE_OLD = ("The Reddit threads we've read about {about} are a few years old. Reading newer ones is in line: "
-               "{ahead_text} ahead of it, and our free reading allowance covers about {per_day} a day. Check back "
+               "{ahead_text} ahead of it, and our free reading allowance covers about {capacity}. Check back "
                "{when}.")
 IN_MINUTES = "in about {n} minutes"
 IN_AN_HOUR = "in about an hour"
@@ -328,9 +330,37 @@ def reader_model() -> str:
     return (os.environ.get(MODEL_VAR) or "").strip() or ON_DEMAND_GEMINI_MODEL
 
 
+def reader_client():
+    """The Gemini client the reading job asks: the reader's model, at most ON_DEMAND_GEMINI_CALLS_A_MINUTE calls a minute
+    (Flash-Lite's free allowance is 15 a minute; 25 Oct 2026). Built where it is used, so no test reaches Google."""
+    from engine.gemini_extract import GeminiClient
+
+    return GeminiClient(model=reader_model(), min_interval=60 / ON_DEMAND_GEMINI_CALLS_A_MINUTE)
+
+
 def products_a_day() -> int:
     """Requests a day's Gemini calls can read: the calls the job may make a day, over the calls one request takes."""
     return max(1, ON_DEMAND_GEMINI_CALLS_A_DAY // ON_DEMAND_CALLS_PER_PRODUCT)
+
+
+def products_a_month() -> int:
+    """Requests a whole month's job time can read (ON_DEMAND_MONTH_SECONDS, at the time one request is told to take)."""
+    return max(1, ON_DEMAND_MONTH_SECONDS // (ON_DEMAND_PRODUCT_MINUTES * 60))
+
+
+def month_places_left(queue: Queue, now: datetime) -> int:
+    """Requests the rest of this month's job time can still read."""
+    seconds, _ = queue.usage_today(now)
+    return max(0, int(ON_DEMAND_MONTH_SECONDS - seconds)) // (ON_DEMAND_PRODUCT_MINUTES * 60)
+
+
+def capacity_text(place: int, queue: Queue, now: datetime) -> str:
+    """What the free allowance covers, for the visitor at `place` in line (25 Oct 2026, Noemi's decision (l) of 19 Oct,
+    on Gemini 3.1 Flash-Lite): "30 a day" while Gemini's calls decide when the place is reached, "39 a month" once the
+    job's time for the month does. Flash-Lite's 450 calls a day could read 30 requests, but the month's job time reads
+    about 39: "30 a day" beside "check back on 1 November" would not be true."""
+    month_limits = (queue.resting_why == "month") if queue.resting(now) else place >= month_places_left(queue, now)
+    return f"{products_a_month()} a month" if month_limits else f"{products_a_day()} a day"
 
 
 def wait_for(place: int, queue: Queue, now: datetime) -> tuple[int | None, datetime | None]:
@@ -338,11 +368,11 @@ def wait_for(place: int, queue: Queue, now: datetime) -> tuple[int | None, datet
     capacity (25 Oct 2026; Noemi's decision (l) of 19 Oct): (minutes from now, None) when today's Gemini calls and the month's
     time can still read it, else (None, the time reading reaches it): after a rest, after the day's reset, or on the
     1st of the next month, a day later for each products_a_day() places. Counts and the clock only."""
-    seconds, calls = queue.usage_today(now)
+    _, calls = queue.usage_today(now)
     per_day = products_a_day()
     if queue.resting(now):  # no reading until then (Gemini's day, the month's time): the line starts again from it
         return None, _time(queue.resting_until) + timedelta(days=place // per_day)
-    month_places = max(0, int(ON_DEMAND_MONTH_SECONDS - seconds)) // (ON_DEMAND_PRODUCT_MINUTES * 60)
+    month_places = month_places_left(queue, now)
     if place >= month_places:  # the month's reading time runs out before this one
         return None, next_month(now) + timedelta(days=(place - month_places) // per_day)
     today_places = max(0, ON_DEMAND_GEMINI_CALLS_A_DAY - calls) // ON_DEMAND_CALLS_PER_PRODUCT
@@ -352,7 +382,8 @@ def wait_for(place: int, queue: Queue, now: datetime) -> tuple[int | None, datet
 
 
 def threads_are_old(product_type: str, newest: datetime | None, now: datetime) -> bool:
-    """Whether a fast-moving type's newest thread about it is older than ON_DEMAND_OLD_YEARS (25 Oct 2026; PROPOSED):
+    """Whether a fast-moving type's newest thread about it is older than ON_DEMAND_OLD_YEARS (25 Oct 2026; the years are
+    PROPOSED, the message's wording is approved):
     a library of 2019 laptop threads recommends laptops nobody sells. A type that isn't fast-moving, or has no thread
     at all (the thin library's bar catches that), is never old."""
     if product_type not in FAST_MOVING_TYPES or newest is None:
@@ -600,7 +631,8 @@ class SiteReader:
             else:
                 ahead_text = f"{ahead} product{' is' if ahead == 1 else 's are'}"
                 message = {"new": IN_LINE_NEW, "more": IN_LINE_MORE, "old": IN_LINE_OLD}[kind].format(
-                    about=about, ahead_text=ahead_text, per_day=products_a_day(), when=when)
+                    about=about, ahead_text=ahead_text, capacity=capacity_text(ahead, queue, now),
+                    when=when)
             return state | {"state": "waiting", "message": message}
         if self._clock() - self._first_seen.get(key, self._clock()) > ON_DEMAND_LATE_MINUTES * 60:
             return state | {"state": "late", "message": LATE.format(about=about)}
@@ -1291,10 +1323,9 @@ def main(argv: list[str]) -> int:
             print(f"Set {BUCKET_VAR} to the bucket of the queue and the bundle.")
             return 2
         from engine.arctic_shift import ArcticShiftClient
-        from engine.gemini_extract import GeminiClient
         from engine.library import DEFAULT_LIBRARY_DIR
 
-        report = run_job(Bucket(name, prefix=PREFIX), DEFAULT_LIBRARY_DIR, ArcticShiftClient(), GeminiClient(model=reader_model()))
+        report = run_job(Bucket(name, prefix=PREFIX), DEFAULT_LIBRARY_DIR, ArcticShiftClient(), reader_client())
         print(report.text())
         return 0
     if argv[:1] == ["status"] and len(argv) in (1, 3):

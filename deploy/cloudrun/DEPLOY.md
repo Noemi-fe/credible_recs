@@ -141,7 +141,7 @@ After committing (and after new threads are extracted), from the repository's ro
 
     sh deploy/cloudrun/deploy.sh
 
-It deploys on-demand reading off unless asked (since 16 Oct 2026, below), turns it off for that deploy if the Gemini
+It deploys on-demand reading on unless told off (on again by default since 25 Oct 2026, below), turns it off for that deploy if the Gemini
 key's secret isn't there yet (below; the site deploys anyway and never says it has started reading), and the pre-check's
 Bright Data verification off if the Bright Data
 key's isn't (the job deploys anyway), makes sure both buckets exist with their rules,
@@ -315,24 +315,25 @@ archive, the bucket) aren't Reddit's.
 
 ## On-demand reading
 
-**Off for the interviews** (Noemi's decision 6 of 16 Oct 2026): Gemini's free allowance reads about one product a day,
-so "check back in about 20 minutes" isn't true; Claude reads the likely products ahead instead. Every deploy leaves it
-off unless it is asked for, with one setting:
+**On by default since 25 Oct 2026** (Noemi, "yes to all recommendations"; it was off from 16 Oct 2026, her decision 6, because
+Gemini 3.8 Flash's free allowance read about one product a day and "check back in about 20 minutes" wasn't true). The
+reader is now Gemini 3.1 Flash-Lite, whose free allowance is 500 requests a day and 15 a minute: on her three labelled
+gold threads it found 80% of her products at 85% precision (3.8 Flash: 84% and 93%), and every quote is checked word for
+word as for every reader. Every deploy turns it on, with one setting to turn it off for a deploy:
 
-    CREDIBLE_RECS_ON_DEMAND=on sh deploy/cloudrun/deploy.sh
+    CREDIBLE_RECS_ON_DEMAND=off sh deploy/cloudrun/deploy.sh
 
 Off, the site gets none of its settings (CREDIBLE_RECS_ON_DEMAND_BUCKET, CREDIBLE_RECS_ON_DEMAND_JOB): a product it
 hasn't read about gets the honest no-threads message ("We haven't read any Reddit threads about teapots yet..."),
 nothing is queued, the reading job is never started, and the pre-check doesn't look at the queue. Nothing is deleted:
 the code, the bucket (whose objects go at 37 days, as always) and the job stay, and the job is moved to the site's image
-again by the first deploy with it on. To make on the default again, change `ON_DEMAND_SWITCH`'s default in
-deploy/cloudrun/on_demand.sh from off to on.
+again by the first deploy without "off". The switch's default is `ON_DEMAND_SWITCH` in deploy/cloudrun/on_demand.sh.
 
 Since 14 Oct 2026 (Noemi: "I want recs regardless of the category"; the plan's part 3). A request module 1 understands,
 about a product the library holds fewer than 6 extracted threads about, is queued, and the answer says so in the
-page's words, for example "We haven't read Reddit about teapots yet, so we've started: check back in about an hour."
-(about an hour more for each request ahead of it while the day's calls last, since a Gemini 3.8 Flash call takes about 4
-minutes and a request 15 calls; "taking longer than usual" after 150 minutes; and when the free allowance is used up,
+page's words, for example "We haven't read Reddit about teapots yet, so we've started: check back in about 25 minutes."
+(about 21 minutes more for each request ahead of it while the day's calls last, since a Flash-Lite call is told to take a
+minute and a request 15 calls plus 6 minutes of archive reading; "taking longer than usual" after 150 minutes; and when the free allowance is used up,
 when it is back, with the place in line). That answer isn't remembered: the next ask works it out again. The site starts
 the reading job at once, and at every keep-warm ping while a request waits it asks the bundle's version (one small
 read, a download only when it changed), takes the new threads into its library folder and answers with them, every
@@ -347,9 +348,11 @@ europe-west1 --project credible-picks`; its report (counts and product types, ne
 (Cloud Run, Jobs, credible-recs-reader, Logs).
 
 The job's limits, all in engine/config.py ("On-demand reading"): it starts no new reading after 15 minutes of a run and
-stops at 45; its runs read for at most 50,000 seconds a month (then the queue rests until the 1st); it makes at most 18
-Gemini calls a day (100 until 25 Oct 2026): Gemini 3.8 Flash's free allowance is 20 requests a day and 5 a minute, as
-Google's own 429 answer says, and a request takes about 15 calls, so it reads about one request a day; none more that
+stops at 45; its runs read for at most 50,000 seconds a month (then the queue rests until the 1st), which at 21 minutes a
+request is 39 requests a month (about twice that at the 11 minutes a request actually took on 25 Oct 2026) and is what
+limits the reading; it makes at most 450 Gemini calls a day, at most 10 a minute (18 a day with Gemini 3.8 Flash, whose
+free allowance is 20 a day and 5 a minute, as Google's own 429 answer says; 100 until 25 Oct 2026): Flash-Lite's is 500
+a day and 15 a minute, and a request takes about 15 calls, so Gemini's calls alone could read 30 requests a day; none more that
 day after Gemini's daily 429 (until 8 am UTC, when the allowance is surely back); at most 20 requests wait at once (10 until
 14 Oct 2026: with the general category most requests queue; 20 is about two days of the job's reading, and the
 sums below don't change, since the job's time and Gemini calls have caps of their own); a request
@@ -361,12 +364,12 @@ PROPOSED). The bar of 6 threads counts only the threads about the type, never th
 fast-moving type (laptop, headphones, phone...) whose newest thread about it is over 2 years old (config
 ON_DEMAND_OLD_YEARS) is queued too, to be read again for newer threads (only threads posted in the last 2 years are
 read; the answer keeps its picks and says the threads are a few years old). The sentence the visitor sees now comes from
-the queue's length and the day's capacity (engine.on_demand.wait_for): "in about an hour" only while the day's calls
-and the month's reading time can still read the request (an hour more for each one ahead), else "It's in line: 3
-products are ahead of it, and our free reading allowance covers about 1 a day. Check back tomorrow" (or the date; the
-1st of next month when the month's time is out). The reader's model is config ON_DEMAND_GEMINI_MODEL (a deploy may set
-CREDIBLE_RECS_ON_DEMAND_MODEL on the job instead); a cheaper Flash-Lite reader was measured on 25 Oct 2026 and is held
-back (eval/RUNS.md): the switch above is still off by default until Noemi decides.
+the queue's length and the day's capacity (engine.on_demand.wait_for): "in about 25 minutes" only while the day's calls
+and the month's reading time can still read the request (21 minutes more for each one ahead), else "It's in line: 3
+products are ahead of it, and our free reading allowance covers about 30 a day. Check back tomorrow" (or the date; and
+once the month's job time is what runs out, "covers about 39 a month. Check back on 1 November", because 30 a day
+beside the 1st of next month would not be true). The wording of this message was approved by Noemi on 25 Oct 2026.
+The reader's model is config ON_DEMAND_GEMINI_MODEL (a deploy may set CREDIBLE_RECS_ON_DEMAND_MODEL on the job instead).
 
 ## The Gemini key
 
@@ -484,8 +487,9 @@ and 125,550 that afternoon, 161,820 and 242,730 before), 152,300 of the free 240
 356,900 of the free 450,000 GiB-seconds (79%).
 There are no empty runs: nothing is scheduled,
 the job runs only when a request waits. Cloud Scheduler: no new job (the site starts the reading job, and the keep-warm
-ping starts it again when a start failed), so still 2 of the 3 free jobs. Gemini: free tier only, at most 100 calls a
-day by the job (about 10 products), stopping at Gemini's own daily limit. Secret Manager: a third secret (gemini-key,
+ping starts it again when a start failed), so still 2 of the 3 free jobs. Gemini: free tier only, at most 450 calls a
+day by the job (500 are free; 30 requests by calls, but the month's 50,000 job seconds read about 39 requests), 10 a
+minute, stopping at Gemini's own daily limit. Secret Manager: a third secret (gemini-key,
 with hf-token and bright-data-key), inside the free 6 secret versions, and the job reads it once a run (free: 10,000
 reads a month). Arctic Shift: free, at its own pace. Starting a job (Cloud Run's Admin API): free. Sending threads to
 Gemini is the only traffic out of Google: about 0.25 MB a product, about 17 MB in a capped month, about 0.002 USD.

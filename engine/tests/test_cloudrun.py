@@ -419,7 +419,10 @@ def test_the_image_cleanup_comes_after_every_job_runs_the_new_image():
     assert script.index('if [ "$JOB_IMAGE" != "$IMAGE" ]') < cleanup
 
 
-# --- On-demand reading off for the interviews (Noemi's decision 6 of 16 Oct 2026) ---
+# --- On-demand reading: off for the interviews (Noemi's decision 6 of 16 Oct 2026), on again by default since 25 Oct 2026 ---
+# Changed on purpose, 25 Oct 2026: Noemi approved turning it on again, read by Gemini 3.1 Flash-Lite ("yes to all
+# recommendations"). A deploy now has it on unless CREDIBLE_RECS_ON_DEMAND says "off"; the tests below were the switch's
+# three tests of 16 Oct (off unless "on"), changed to say the same of "off".
 
 def _on_demand_switch(tmp_path: Path, there: bool, switch: str | None) -> tuple[str, str, list[str]]:
     """on_demand.sh's on_demand_secret run on its own, as deploy.sh runs it, with a made-up gcloud whose `secrets describe`
@@ -440,13 +443,11 @@ def _on_demand_switch(tmp_path: Path, there: bool, switch: str | None) -> tuple[
     return done.stdout.strip(), done.stderr, calls.read_text().splitlines() if calls.exists() else []
 
 
-@pytest.mark.parametrize("switch", [None, "off", "", "yes"])
-def test_on_demand_reading_stays_off_unless_the_deploy_turns_it_on(tmp_path, switch):
-    # Gemini's free allowance reads about one product a day, so "check back in about 20 minutes" isn't true: off for
-    # the interviews, even with the key there, and the key isn't even looked for. Said once, with how to turn it on.
-    state, said, calls = _on_demand_switch(tmp_path, there=True, switch=switch)
+def test_on_demand_reading_is_off_for_a_deploy_that_says_off(tmp_path):
+    # Off even with the key there, and the key isn't even looked for. Said once, with the setting that did it.
+    state, said, calls = _on_demand_switch(tmp_path, there=True, switch="off")
     assert state == "off" and calls == []
-    assert len(said.splitlines()) == 1 and "CREDIBLE_RECS_ON_DEMAND=on" in said
+    assert len(said.splitlines()) == 1 and "CREDIBLE_RECS_ON_DEMAND=off" in said
 
 
 def test_turned_on_it_needs_the_gemini_key_as_before(tmp_path):
@@ -458,7 +459,7 @@ def test_turned_on_it_needs_the_gemini_key_as_before(tmp_path):
     assert state == "off" and len(said.splitlines()) == 1 and "gemini-key" in said
 
 
-@pytest.mark.parametrize("switch, on", [(None, False), ("on", True)])
+@pytest.mark.parametrize("switch, on", [("off", False), (None, True), ("on", True)])
 def test_switched_off_the_site_and_the_pre_check_get_none_of_its_settings(tmp_path, switch, on):
     # Without CREDIBLE_RECS_ON_DEMAND_BUCKET and _JOB the site never queues a request or starts the reader
     # (engine.on_demand.site_reader_from_env), and answers a product it hasn't read about with the no-threads message.
@@ -480,8 +481,8 @@ def test_switched_off_the_site_and_the_pre_check_get_none_of_its_settings(tmp_pa
         assert (site, precheck) == ("site:", "precheck:")
 
 
-def test_the_switch_is_one_setting_and_its_default_is_off():
+def test_the_switch_is_one_setting_and_its_default_is_on():
     script = ON_DEMAND_SH.read_text(encoding="utf-8")
-    assert 'ON_DEMAND_SWITCH="${CREDIBLE_RECS_ON_DEMAND:-off}"' in script
+    assert 'ON_DEMAND_SWITCH="${CREDIBLE_RECS_ON_DEMAND:-on}"' in script
     deploy_md = (DEPLOY_SH.parent / "DEPLOY.md").read_text(encoding="utf-8")
-    assert "CREDIBLE_RECS_ON_DEMAND=on sh deploy/cloudrun/deploy.sh" in deploy_md
+    assert "CREDIBLE_RECS_ON_DEMAND=off sh deploy/cloudrun/deploy.sh" in deploy_md

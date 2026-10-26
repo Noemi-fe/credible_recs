@@ -346,15 +346,16 @@ AVAILABILITY_NOT_IN_UK = "Not sold in the UK, checked {date}"
 AVAILABILITY_SECOND_HAND = "Sold second-hand only: {shop}, checked {date}"
 # A region other than the UK (Noemi, 24 Oct 2026: "the tool should work for visitors anywhere, not just the UK"). The
 # price and availability lines then say where they hold, and a product sold only outside the UK is never told "Not sold in
-# the UK" to someone who isn't there. Wording decided by Claude, PROPOSED (listed in DECISIONS.md, 24 Oct 2026). The UK
-# region's lines are the ones above, exactly as before.
+# the UK" to someone who isn't there. Wording written by Claude (DECISIONS.md, 24 Oct 2026); approved by Noemi, 25 Oct 2026.
+# The UK region's lines are the ones above, exactly as before.
 PRICE_IN_UK = "{amount} in the UK, at {shop}, checked {date}"
-PRICE_FROM_IN_UK = "From {amount} in the UK, at {shop}, checked {date}"
 PRICE_IN_US = "{amount} in the US, at {shop}, checked {date}"
 AVAILABILITY_IN_UK = "Sold in the UK at {shop}, checked {date}"
-AVAILABILITY_IN_UK_SECOND_HAND = "Sold second-hand only in the UK: {shop}, checked {date}"
 AVAILABILITY_IN_US = "Sold in the US at {shop}, checked {date}"
 AVAILABILITY_US_UNKNOWN = "Availability in the US not checked yet"  # a product sold only outside the UK, for a US visitor
+# Two more lines of the region work that Noemi's approval of 25 Oct 2026 did not list: still PROPOSED.
+PRICE_FROM_IN_UK = "From {amount} in the UK, at {shop}, checked {date}"
+AVAILABILITY_IN_UK_SECOND_HAND = "Sold second-hand only in the UK: {shop}, checked {date}"
 # Products' own pages and their makers' images (Noemi's decisions 2 and 3 of 15 Oct 2026, late afternoon; wording
 # decided by Claude, PROPOSED): a direct link to the product's own page, its maker's or a big UK shop's, with the day it
 # was read ("See it at Apple", "checked 15 Oct 2026"); and a small image from its maker's own page, linked to that

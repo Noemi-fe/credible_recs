@@ -2,7 +2,7 @@
 about 20 minutes" was false, since Gemini's free allowance read about one product a day): the sentence comes from the
 queue's length and what the day can read, so the second request in line isn't promised what the tenth can't have.
 
-Wording PROPOSED, like the page's other new words. Every service is a stand-in (engine/tests/fake_google.py): no test
+Wording approved by Noemi, 25 Oct 2026 (it was PROPOSED). Every service is a stand-in (engine/tests/fake_google.py): no test
 reaches the network.
 """
 
@@ -25,7 +25,7 @@ from engine.tests.on_demand_fakes import NOW, Ticks
 NAME = "credible-test-on-demand"
 JOB = "projects/credible-picks/locations/europe-west1/jobs/credible-recs-reader"
 # These tests take a reader whose free allowance reads 10 requests a day (150 calls); the one config names today
-# (Gemini 3.8 Flash: 20 calls a day) is tested on its own at the end.
+# (Gemini 3.1 Flash-Lite: 450 calls a day) is tested on its own at the end.
 CALLS_A_DAY = 150
 PER_DAY = CALLS_A_DAY // ON_DEMAND_CALLS_PER_PRODUCT
 
@@ -60,12 +60,14 @@ class Line:
         return self.site.after_answer(result).state
 
 
-def test_the_first_request_with_the_days_calls_to_spare_is_read_in_about_an_hour(tmp_path):
-    # Each Gemini call took about 4 minutes on 25 Oct 2026 and a request is 15 calls and 6 minutes of Arctic Shift: 66
-    # minutes of the job, and the site picks the threads up at its next ping. It was "20 minutes" before it was timed.
+def test_the_first_request_with_the_days_calls_to_spare_is_told_when_the_reader_will_have_read_it(tmp_path):
+    # Changed on purpose, 25 Oct 2026 (Noemi approved Gemini 3.1 Flash-Lite as the reader): each Gemini 3.8 Flash call
+    # took about 4 minutes and a request 15 calls and 6 minutes of Arctic Shift, 66 minutes of the job ("in about an
+    # hour", 70 with the site's next ping; it was "20 minutes" before it was timed); a Flash-Lite call is told to take
+    # a minute, so a request is 21 minutes of the job and the first is told 25.
     state = Line(tmp_path).asked()
-    assert state["check_back_minutes"] == ON_DEMAND_FIRST_MINUTES == 70
-    assert state["message"] == "We haven't read Reddit about teapots yet, so we've started: check back in about an hour."
+    assert state["check_back_minutes"] == ON_DEMAND_FIRST_MINUTES == 25
+    assert state["message"] == "We haven't read Reddit about teapots yet, so we've started: check back in about 25 minutes."
 
 
 def test_each_request_ahead_adds_its_reading_while_the_days_calls_last(tmp_path):
@@ -138,8 +140,9 @@ def test_a_resting_queue_counts_the_place_from_when_it_starts_again(tmp_path):
 def test_threads_that_are_old_say_newer_ones_are_being_read(tmp_path):
     state = Line(tmp_path).asked("laptop for university", threads=14, own=8, newest=NOW - timedelta(days=3 * 365))
     assert state["read_before"] is True and state["state"] == "reading"
+    # Changed on purpose, 25 Oct 2026: "in about an hour" with Gemini 3.8 Flash, 25 minutes with Flash-Lite.
     assert state["message"] == ("The Reddit threads we've read about laptops are a few years old, so we've started "
-                                "reading newer ones: check back in about an hour.")
+                                "reading newer ones: check back in about 25 minutes.")
 
 
 def test_the_wait_is_worked_out_by_wait_for(tmp_path):
@@ -151,13 +154,18 @@ def test_the_wait_is_worked_out_by_wait_for(tmp_path):
     assert minutes is None and until > NOW
 
 
-def test_with_the_reader_config_names_today_the_second_request_in_line_is_told_tomorrow(tmp_path, monkeypatch):
-    # Gemini 3.8 Flash's free allowance is 20 requests a day (Google's own 429 answer, 25 Oct 2026): the job's 18 calls
-    # read one request of 15 calls a day, so "in about 35 minutes" for the second would be false.
+def test_with_the_reader_config_names_today_the_second_request_in_line_is_told_when_its_turn_comes(tmp_path, monkeypatch):
+    # Changed on purpose, 25 Oct 2026. Gemini 3.8 Flash's free allowance was 20 requests a day (Google's own 429 answer):
+    # the job's 18 calls read one request of 15 calls a day, so "in about 35 minutes" for the second would have been
+    # false and it was told "Check back tomorrow" ("about 1 a day"). Noemi approved Gemini 3.1 Flash-Lite the same day
+    # (500 a day; 450 used): 30 requests by Gemini's calls, so the second is read 21 minutes after the first, and
+    # "tomorrow" comes only when the day's calls are used up.
     monkeypatch.setattr(on_demand, "ON_DEMAND_GEMINI_CALLS_A_DAY", config.ON_DEMAND_GEMINI_CALLS_A_DAY)
-    assert config.ON_DEMAND_GEMINI_MODEL == "gemini-3.8-flash" and on_demand.products_a_day() == 1
+    assert config.ON_DEMAND_GEMINI_MODEL == "gemini-3.1-flash-lite" and on_demand.products_a_day() == 30
     first = Line(tmp_path / "first").asked()
     assert first["check_back_minutes"] == ON_DEMAND_FIRST_MINUTES
     second = Line(tmp_path / "second", waiting=1).asked("stovetop kettle that whistles")
-    assert second["state"] == "waiting" and second["message"].endswith("Check back tomorrow.")
-    assert "1 product is ahead of it" in second["message"] and "about 1 a day" in second["message"]
+    assert second["state"] == "reading" and second["check_back_minutes"] == ON_DEMAND_FIRST_MINUTES + ON_DEMAND_EACH_MINUTES
+    spent = Line(tmp_path / "spent", waiting=1, calls_used=config.ON_DEMAND_GEMINI_CALLS_A_DAY).asked("stovetop kettle that whistles")
+    assert spent["state"] == "waiting" and spent["message"].endswith("Check back tomorrow.")
+    assert "1 product is ahead of it" in spent["message"] and "about 30 a day" in spent["message"]
