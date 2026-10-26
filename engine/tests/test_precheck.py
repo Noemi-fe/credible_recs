@@ -42,7 +42,9 @@ COMMENTS = [
     ("c1aaaa", "1kett01", "Chefman kettle", "warn", "The Chefman kettle died after 6 months of use."),
     ("c2aaaa", "1kett02", "Chefman kettle", "warn", "Two Chefman kettles broke within a year of use, avoid them."),
 ]
-LETTERS = {"Zojirushi kettle": "z", "Dualit kettle": "d", "Bonavita kettle": "b", "Cosori kettle": "s"}
+# Changed on purpose 25 Oct 2026 (classics review): the fixture's "Dualit kettle" is the real Dualit's line spelling, now the
+# Dualit Classic Kettle (engine/data/product_aliases.json), shown under the price list's name.
+LETTERS = {"Zojirushi kettle": "z", "Dualit Classic Kettle": "d", "Bonavita kettle": "b", "Cosori kettle": "s"}
 
 
 def library(tmp_path):

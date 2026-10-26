@@ -372,6 +372,9 @@ def test_todo_covers_every_product_that_qualifies_not_only_those_shown(tmp_path)
     praised = ("Zojirushi", "Fellow Stagg", "Bonavita", "Smeg", "Dualit", "Sage", "Cosori")
     lib = kettle_library(tmp_path, praised=praised)
     found = {item.key: item for item in summaries.todo([summaries.Request("k01", REQUEST)], lib)}
-    assert {f"kitchen:{brand.lower()} kettle" for brand in praised} <= set(found)
+    # Changed on purpose 25 Oct 2026 (classics review): the fixture's "Dualit" is the real Dualit, whose kettle is now the
+    # Dualit Classic Kettle (engine/data/product_aliases.json), so its key is that product's.
+    assert {"kitchen:dualit classic kettle" if brand == "Dualit" else f"kitchen:{brand.lower()} kettle"
+            for brand in praised} <= set(found)
     shown_in_answer = [key for key, item in found.items() if any(m["shown"] for m in item.credible)]
     assert len(shown_in_answer) == 6

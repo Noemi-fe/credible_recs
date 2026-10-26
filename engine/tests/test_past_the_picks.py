@@ -206,8 +206,10 @@ def test_through_the_pipeline_a_fourth_kettle_meeting_the_bar_heads_also_worth_a
     shown = [pick.name for pick in result.answer.picks]
     items = result.answer.worth_a_look
     assert len(items) == 2 and all(item.meets_bar for item in items)
+    # Changed on purpose 25 Oct 2026 (classics review): the fixture's "Dualit" is the real Dualit, whose kettle line
+    # spellings are now the Dualit Classic Kettle (engine/data/product_aliases.json), shown under the price list's name.
     assert {item.name for item in items} | set(shown) == {f"{brand} kettle" for brand in (
-        "Zojirushi", "Fellow Stagg", "Bonavita", "Dualit", "Sage")}
+        "Zojirushi", "Fellow Stagg", "Bonavita", "Sage")} | {"Dualit Classic Kettle"}
     assert unverified_claims(result.answer, result.bodies) == []
 
 
