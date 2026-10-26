@@ -207,6 +207,24 @@ def test_a_name_with_a_size_first_is_no_title(name, titles):
     assert (_without_leading_size(name) == name) is titles
 
 
+@pytest.mark.parametrize("name, request_text, another", [
+    ("Tramontina Professional Nonstick", "stainless steel pan for searing", True),  # the 26 Oct baseline's case
+    ("Tramontina Professional Non-Stick", "stainless steel pan for searing", True),
+    ("Lodge Chef Collection carbon steel", "stainless steel pan for searing", True),
+    ("Tramontina Gourmet Tri-Ply Clad stainless steel", "stainless steel pan for searing", False),  # the material asked
+    ("Tramontina Professional Nonstick", "nonstick frying pan", False),  # non-stick is no material asked for here
+    ("Tramontina Professional Nonstick", "frying pan", False),  # a request naming no material
+    ("Lodge Blacklock skillet", "cast iron skillet", False),
+    ("Lodge enamel skillet", "cast iron skillet", False),  # a type's own material ("cast iron skillet") is no feature
+])
+def test_a_model_that_says_another_material_than_the_one_asked_for_is_no_title(name, request_text, another):
+    from engine.features import request_features
+    from engine.pipeline import _names_another_material
+    from engine.query import parse_query
+
+    assert _names_another_material(name, request_features(parse_query(request_text))) is another
+
+
 def test_a_model_less_suited_to_the_request_than_its_line_is_no_title():
     # Found in the 26 Oct baseline: "stainless steel pan for searing" put the Tramontina line first because its voices
     # praise stainless steel, while its most named model, a non-stick pan, ranks below it for lacking that.

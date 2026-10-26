@@ -623,7 +623,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
         models, model_prices = _brand_models(result.ranking, kept_groups, query.product_type, price_checks, known,
                                              wording["pages"], region)
         leading = _leading_models(result.ranking, kept_groups, query.product_type, price_checks, known,
-                                  wording["pages"], region)
+                                  wording["pages"], region, features)
         current = current_for(result.ranking, leading, models) if current_for else {}
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
@@ -882,7 +882,8 @@ def _check_live(result: PipelineResult, live_checker, scored, kind_notes, kinds,
         models, model_prices = _brand_models(result.ranking, groups, query.product_type, price_checks, known,
                                              (wording or {}).get("pages"), (wording or {}).get("region", config.DEFAULT_REGION))
         leading = _leading_models(result.ranking, groups, query.product_type, price_checks, known,
-                                  (wording or {}).get("pages"), (wording or {}).get("region", config.DEFAULT_REGION))
+                                  (wording or {}).get("pages"), (wording or {}).get("region", config.DEFAULT_REGION),
+                                  request_features(query))
         current = current_for(result.ranking, leading, models) if current_for else {}
         result.answer = write_answer(result.ranking, result.bodies, query.product_type, price_checks, care, cautions,
                                      models, request_asks(query), model_prices, more_downsides, unsuited_kinds,
@@ -2492,7 +2493,8 @@ def _leading_models(ranking: RankingResult, groups: list[ProductGroup], product_
                     price_checks: Mapping[str, PriceCheck] | None = None,
                     known: Mapping[str, list[tuple[str, ...]]] | None = None,
                     pages: Mapping[str, ProductPage] | None = None,
-                    region: str = config.DEFAULT_REGION) -> dict[str, LeadingModel]:
+                    region: str = config.DEFAULT_REGION,
+                    features: Iterable[Feature] = ()) -> dict[str, LeadingModel]:
     """{brand pick's key: the model that clearly leads the models its credible writers name} (26 Oct 2026, Noemi's decision
     3: model names instead of lines); the answer titles each such pick by its model (engine.answer._titled_by_its_model).
 
@@ -2501,8 +2503,8 @@ def _leading_models(ranking: RankingResult, groups: list[ProductGroup], product_
     models. One clearly leads when it has at least BRAND_MODEL_TITLE_MIN_CREDIBLE of them, at least
     BRAND_MODEL_TITLE_LEAD_RATIO times as many as any other model, and at least BRAND_MODEL_TITLE_MIN_SHARE of all of
     them (the numbers behind these values are in engine/config.py). Then it must also be a title we can stand behind: a
-    name giving one model (_one_model) and not starting with a size, as suited to the request as the line (_suits_the_
-    request), a product we know as one (_a_known_model: never a size, a description, a discontinued model or a shop's
+    name giving one model (_one_model) and not starting with a size or saying another material than the one asked for
+    (_names_another_material), as suited to the request as the line (_suits_the_request), a product we know as one (_a_known_model: never a size, a description, a discontinued model or a shop's
     code), and not sold only abroad while another model of the line is sold here (_sold_in). A line with no such model
     keeps its name and its "Most named model" (_brand_models), as before. The ranking is not touched: the leader is a
     product of it already."""
@@ -2526,7 +2528,8 @@ def _leading_models(ranking: RankingResult, groups: list[ProductGroup], product_
         rival = len(counted[1].credible_recommendations) if len(counted) > 1 else 0
         if (voices < config.BRAND_MODEL_TITLE_MIN_CREDIBLE or voices < config.BRAND_MODEL_TITLE_MIN_SHARE * everyone
                 or voices < config.BRAND_MODEL_TITLE_LEAD_RATIO * rival or not _one_model(top.name)
-                or _without_leading_size(top.name) != top.name):  # a size first is a writer's way of naming, no title
+                or _without_leading_size(top.name) != top.name  # a size first is a writer's way of naming, no title
+                or _names_another_material(top.name, features)):
             continue
         if not (_suits_the_request(top, brand) and _a_known_model(top, brand_group, product_type, checks, known or {},
                                                                   pages or {})):
@@ -2538,6 +2541,26 @@ def _leading_models(ranking: RankingResult, groups: list[ProductGroup], product_
                 continue
         found[brand.key] = LeadingModel(top)
     return found
+
+
+# A coating that is no material of config.FEATURE_MATERIALS but tells pans apart as one does.
+_COATINGS = ("nonstick", "non-stick", "non stick")
+
+
+def _names_another_material(name: str, features: Iterable[Feature]) -> bool:
+    """Whether a model's name says a material (or a non-stick coating) other than the one the request names (26 Oct 2026):
+    "Tramontina Professional Nonstick" for "stainless steel pan for searing". The request's material features
+    (Feature.material: config.FEATURE_MATERIALS) are what it names; the words of the feature itself never count against it
+    ("steel" in a stainless steel one's name)."""
+    words = f" {' '.join(re.findall(r'[a-z0-9][a-z0-9-]*', name.lower()))} "
+    for feature in features:
+        if not feature.material:
+            continue
+        own = set(feature.name.lower().split())
+        for material in (*config.FEATURE_MATERIALS, *_COATINGS):
+            if not set(material.split()) <= own and f" {material} " in words:
+                return True
+    return False
 
 
 def _suits_the_request(model, line) -> bool:
