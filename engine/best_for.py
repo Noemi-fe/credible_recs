@@ -125,6 +125,8 @@ _WORD = re.compile(r"[a-z0-9]+(?:'[a-z0-9]+)*")
 def _said(text: str, word: str) -> bool:
     """Whether `word` is said somewhere in `text`, not negated just before it, not turned against the product just after
     it ("my dry skin, so it wasn't thick enough") and not in a clause that complains."""
+    if word not in text:  # the quick check first: most words are nowhere in a comment (latency: it is most of the time)
+        return False
     for match in _pattern(word).finditer(text):
         before = _WORD.findall(_CLAUSE_END.split(text[:match.start()])[-1])
         after = _WORD.findall(_CLAUSE_END.split(text[match.end():])[0])
@@ -201,7 +203,7 @@ def _asked(needs: Collection, asks: Collection[str], request: str) -> frozenset[
     names = {getattr(need, "name", need) for need in needs} | set(asks)
     typed = (request or "").lower().replace("’", "'")
     return frozenset(key for key, topic in config.BEST_FOR_TOPICS.items()
-                     if names.intersection(topic["needs"]) or any(_pattern(word).search(typed) for word in topic["words"]))
+                     if names.intersection(topic["needs"]) or any(word in typed and _pattern(word).search(typed) for word in topic["words"]))
 
 
 def _topic_labels(products: Sequence[ProductScore], asked: frozenset[str]) -> dict[int, Label]:
