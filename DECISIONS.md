@@ -732,7 +732,7 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   Three kinds, at most one a pick, never the same label twice in an answer, none for a lone pick (nothing to be best
   against):
   1. A topic its credible voices write about ("Most praised for sensitive skin", "...for being quiet", "...for build
-     quality"; config.BEST_FOR_TOPICS: 43 topics with the words that find them, skin and hair types, what a product is or
+     quality"; config.BEST_FOR_TOPICS: 49 topics with the words that find them, skin and hair types, what a product is or
      leaves, and kitchen and general features). The pipeline notes, for each credible recommendation, the topics its
      writer's own words about the product hold (ScoredMention.topics, engine/pipeline.py _score): only the sentences about
      that product (engine.credibility.product_text), never the words of the product's own name ("Bose QuietComfort" is
