@@ -254,6 +254,7 @@ def page(metrics_path: Path = METRICS_FILE, counter: str = "", public: bool = Fa
         "upvote_rule": _upvote_rule(),
         "need_rule": _need_rule(),
         "standout_rule": _standout_rule(),
+        "best_for_rule": _best_for_rule(),
         "evaluation": evaluation_section(metrics_path),
         "visit_counting": VISITS_COUNTED if counter else VISITS_NOT_COUNTED,
         "public_site": PUBLIC_SITE if public else "",
@@ -361,6 +362,15 @@ def _standout_rule() -> str:
         return ""
     picks = STANDOUT_RULE_PICKS if config.STANDOUT_FILLS_PICKS else ""
     return fill(STANDOUT_RULE.replace("{picks}", picks), {"worth_heading": answer.WORTH_HEADING})
+
+
+def _best_for_rule() -> str:
+    """The one sentence on how a pick's "best for" label is chosen (config.BEST_FOR_HOW, 26 Oct 2026), its numbers from
+    config and its example the label of the first topic."""
+    example = config.BEST_FOR_LABEL.format(topic=next(iter(config.BEST_FOR_TOPICS.values()))["phrase"])
+    return html.escape(config.BEST_FOR_HOW).format(
+        example=html.escape(example), min_voices=_config_span("BEST_FOR_MIN_VOICES"),
+        min_lead=_config_span("BEST_FOR_MIN_LEAD"), days=_config_span("PRICE_MAX_AGE_DAYS"))
 
 
 def _medium_red_flags() -> str:

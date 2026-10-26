@@ -454,6 +454,12 @@ button { font: inherit; color: inherit; }
 .card-title { min-width: 0; }
 .card-head h3 { margin: 6px 0 0; font: 600 clamp(22px, 3vw, 27px)/1.2 var(--serif); letter-spacing: -.01em; overflow-wrap: anywhere; }
 .model { margin: 6px 0 0; font-size: 14.5px; color: var(--muted); }
+/* A pick's "best for" label (26 Oct 2026, the bestfor builder): what its credible voices clearly lean towards, with the
+   numbers it rests on in plain sight (a tooltip would not show on a phone). */
+.best-for { margin: 8px 0 0; }
+.best-for-label { display: inline-block; padding: 2px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent);
+  font-size: 13.5px; font-weight: 700; }
+.best-for-basis { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); }
 .card-body { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 24px 32px; margin-top: 18px; }
 .card-main > * + * { margin-top: 14px; }
 .card h4 { margin: 0 0 10px; font-size: 12.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
@@ -890,6 +896,12 @@ details[open] > summary .icon { transform: rotate(180deg); }
     return form ? el("span", { class: "form-chip" }, WORDING.form_label + ": " + form) : null;
   }
 
+  /** A pick's "best for" label with the numbers it rests on (26 Oct 2026); nothing for a pick with none. */
+  function bestForLine(label) {
+    return label ? el("p", { class: "best-for" }, el("span", { class: "best-for-label" }, label.text),
+      el("span", { class: "best-for-basis" }, label.basis)) : null;
+  }
+
   /** A count in words, one or many: `forms` is [one, many], with {n} for the count. */
   function counted(forms, n) { return fill(n === 1 ? forms[0] : forms[1], { n: n.toLocaleString("en-GB") }); }
 
@@ -1322,6 +1334,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
         el("span", { class: "rank", "aria-hidden": "true" }, String(pick.rank)),
         el("div", { class: "card-title" },
           el("h3", { id: nameId }, el("span", { class: "visually-hidden" }, fill(LABELS.rank, { rank: pick.rank }) + " "), pick.name),
+          bestForLine(pick.best_for),
           formChip(pick.form),
           pick.model ? el("p", { class: "model" }, WORDING.brand_model.replace("{model}", pick.model)
             + (pick.model_price ? " (" + pick.model_price + ")" : "")) : null),

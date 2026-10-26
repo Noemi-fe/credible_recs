@@ -416,3 +416,23 @@ def test_a_remembered_answer_is_said_to_be_shown_only_while_its_checks_are_under
     words = text_of(get_how(tmp_path, monkeypatch))
     assert (f"shown for a day at most, and only while every check it shows is under {config.CACHE_MAX_AGE_HOURS} "
             f"hours old") in words
+
+
+# --- How a pick's "best for" label is chosen (26 Oct 2026, the bestfor builder) ---
+
+def test_the_page_says_in_one_sentence_how_a_best_for_label_is_chosen(tmp_path, monkeypatch):
+    html = get_how(tmp_path, monkeypatch)
+    words = text_of(html)
+    assert 'data-config="BEST_FOR_MIN_VOICES"' in html and 'data-config="PRICE_MAX_AGE_DAYS"' in html
+    sentence = re.search(r"A pick can carry a label[^<]*?many picks have none\.", words)
+    assert sentence, "no sentence on how labels are chosen"
+    assert f"at least {config.BEST_FOR_MIN_VOICES} of its credible voices" in sentence.group(0)
+    assert f"at least {config.BEST_FOR_MIN_LEAD} more than for any other pick" in sentence.group(0)
+    assert f"in the last {config.PRICE_MAX_AGE_DAYS} days" in sentence.group(0)
+    assert "says only what those voices say" in sentence.group(0)
+    assert ". " not in sentence.group(0)  # one sentence (the brief: "one sentence on the How we score page")
+
+
+def test_a_changed_label_minimum_changes_the_page(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "BEST_FOR_MIN_VOICES", 4)
+    assert "at least 4 of its credible voices" in text_of(get_how(tmp_path, monkeypatch))

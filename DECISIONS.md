@@ -756,3 +756,38 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   read on demand. Not yet tried against the real Gemini (tests never reach it): Google's v1beta lists responseJsonSchema
   as deprecated in favour of generationConfig.responseFormat.text.schema, though it still takes it; one real read of a
   made-up thread would confirm the schema is accepted (the fallback above covers it if not).
+- 26 Oct 2026 (the bestfor builder, Claude; Noemi approved the label in principle, "okay to all four recommendations",
+  decision 3's third part; the rules, numbers and wording below are Claude's, reported to her, not yet approved one by
+  one): a "best for" label per pick, from our own evidence only (engine/best_for.py; no AI writes anything per request).
+  Three kinds, at most one a pick, never the same label twice in an answer, none for a lone pick (nothing to be best
+  against):
+  1. A topic its credible voices write about ("Most praised for sensitive skin", "...for being quiet", "...for build
+     quality"; config.BEST_FOR_TOPICS: 49 topics with the words that find them, skin and hair types, what a product is or
+     leaves, and kitchen and general features). The pipeline notes, for each credible recommendation, the topics its
+     writer's own words about the product hold (ScoredMention.topics, engine/pipeline.py _score): only the sentences about
+     that product (engine.credibility.product_text), never the words of the product's own name ("Bose QuietComfort" is
+     not "quiet"; "Cetaphil Gentle Cleanser" is not "gentle"), never a clause that negates or complains ("not for
+     sensitive skin"; a negation after the word counts unless it negates a complaint: "does not react"). A topic is a label
+     when at least 2 of the pick's credible voices write about it, at least 2 more than any other pick has, and they are
+     at least a fifth of the pick's own voices (2 of 175 voices is no trait of a pick). A topic the request asked for is
+     never a label (every pick fits what was asked). Medical conditions (eczema, rosacea, dandruff) are not topics: a
+     label can't say "for" them without suggesting a treatment. Each phrase says only what its words say (a test checks:
+     "Best for eczema" would need a voice saying eczema; "unscented" and "fragrance-free", "wavy" and "curly" are separate
+     labels).
+  2. Long-term use ("Most backed by long-term use"): the pick with at least 2 voices after long-term use, at least 2 more
+     than any other pick, at least half of its own voices, and a share at least 10 points above every other pick's (in
+     buy-it-for-life threads nearly every voice writes after years of use, so the biggest pick would always lead).
+  3. Price ("Lowest price of these picks"): only when every pick has a checked price in the shopper's region and
+     currency (UK: pounds; US: dollars; elsewhere: none), checked in the last 30 days, and not a brand line's "from"
+     price, and the cheapest is at least 10% below the next. Never from what voices say about price.
+  Each label carries its basis, the numbers it rests on ("4 of its 12 credible voices write about sensitive skin; the
+  other picks have 1 and 0."). Shown on the pick card under its name, in the JSON as `best_for` {text, basis, kind} (null
+  for most picks), in the text answer, and in one sentence on the how-we-score page. The kinds of engine/group_kinds.py
+  are not a label source: a kind says what a pick is (shown in the reason and under "What to look for"), not what it is
+  best for. The 278-request sweep: 63 of 639 picks get a label (10%), in 61 of 220 answers; 28 long-term use, 14 price, 21
+  topics; none repeated within an answer; no pick's order, quotes or anything else changes (the same 278 requests
+  answered with and without the labels, in one process, differ in nothing but `best_for`). The numbers are cautious on
+  purpose: with a lead of one voice instead of two, 37% more labels, but "2 against 1" is a thin "most". To label more,
+  config.BEST_FOR_MIN_LEAD and BEST_FOR_MIN_SHARE are the levers; to cover more product types, config.BEST_FOR_TOPICS
+  needs words per type (the sweep's commonest words in credible recommendations are the place to look). The reading
+  builder's wider reading gives picks more voices, so the thresholds should be looked at again after that merge.

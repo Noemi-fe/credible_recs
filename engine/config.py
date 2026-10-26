@@ -2773,3 +2773,241 @@ US_SHOPS = {
     "vanicream.com": "Vanicream", "all-clad.com": "All-Clad", "saddlebackleather.com": "Saddleback Leather",
     "tarptent.com": "Tarptent", "durstongear.com": "Durston Gear",
 }
+
+# --- Build round 26 Oct 2026: bestfor ---
+# A "best for" label per pick (Noemi's decision 3 of 26 Oct 2026, third part: ChatGPT labels its picks "best for
+# sensitive skin" or "best budget"). Worked out from our own evidence only, with no AI writing per request
+# (engine/best_for.py): what a pick's credible voices write about (the topics below, found in their own words about the
+# product), how many of them wrote after long-term use, and its checked price against the other picks'. At most one label
+# a pick, never the same label on two picks of an answer, and only when the evidence clearly supports it. The numbers
+# below are the builder's, chosen from the 278 requests of the 26 Oct 2026 sweep (docs/build-2026-10-26/bestfor/);
+# Noemi approved the idea in principle, not these numbers.
+# Fewer picks than this and there is nothing to be best against: no labels.
+BEST_FOR_MIN_PICKS = 2
+# At least this many of a pick's credible voices must write about a topic (or write after long-term use) for it to be
+# the pick's label, and more than any other pick has, by at least BEST_FOR_MIN_LEAD voices (on the probe, a lead of one
+# voice, "2 against 1", made 13 of the 37 topic labels and 9 of the 40 long-term ones: too thin to call a pick "most").
+BEST_FOR_MIN_VOICES = 2
+BEST_FOR_MIN_LEAD = 2
+# And they must be this share of the pick's own credible voices, so two voices of forty are not what the pick is about.
+BEST_FOR_MIN_SHARE = 0.2
+# Long-term use is what the reason line already counts for every pick, so it is a label only when most of the voices
+# backing the pick wrote after long-term use.
+BEST_FOR_LONG_TERM_MIN_SHARE = 0.5
+# And its share of long-term voices must beat every other pick's by this much (on the probe, 32 of the 85 answers whose
+# pick had the most long-term voices had another pick with a higher share: in books-for-life threads nearly every voice
+# writes after years of use, so the pick with the most voices would always lead).
+BEST_FOR_LONG_TERM_SHARE_LEAD = 0.1
+# A price label: the cheapest pick must cost at least this share less than the next cheapest (a £12 pick beside a £12.50
+# one is not "the lowest price"), every pick must have a checked price in the shopper's region and currency, and
+# not a brand line's "from" price (it is the cheapest of many products), each checked within PRICE_MAX_AGE_DAYS.
+BEST_FOR_PRICE_GAP = 0.10
+BEST_FOR_PRICE_CURRENCY = {"uk": "GBP", "us": "USD"}  # the prices a visitor of a region is shown as theirs; "elsewhere": none
+# The words of a label, in the answer's plain way of saying things (26 Oct 2026, the bestfor builder; approved in
+# principle by Noemi, wording Claude's). "Most praised for" is a count of the pick's credible voices, as the basis says;
+# it names a thing those voices write about, never a claim of its own ("Best for eczema" would be one).
+BEST_FOR_LABEL = "Most praised for {topic}"
+BEST_FOR_LONG_TERM_LABEL = "Most backed by long-term use"
+BEST_FOR_PRICE_LABEL = "Lowest price of these picks"
+# What the label rests on, shown beside it (26 Oct 2026, the bestfor builder; approved in principle by Noemi, wording
+# Claude's). {others} is what the other picks have, in rank order: "1 and 0", or "2" for one other pick.
+BEST_FOR_BASIS_TOPIC = "{n} of its {voices} credible voices write about {topic}; the other {picks} {others}."
+BEST_FOR_BASIS_LONG_TERM = "{n} of its {voices} credible voices wrote after long-term use; the other {picks} {others}."
+BEST_FOR_BASIS_PRICE = ("{amount} on the prices we checked in the last {days} days; the other {picks} {others}.")
+BEST_FOR_OTHER_PICK, BEST_FOR_OTHER_PICKS = "pick has", "picks have"
+BEST_FOR_OTHER_PICK_COSTS, BEST_FOR_OTHER_PICKS_COST = "pick costs", "picks cost"
+# The sentence of the how-we-score page (26 Oct 2026, the bestfor builder; approved in principle by Noemi, wording Claude's).
+BEST_FOR_HOW = ("A pick can carry a label, such as “{example}”, when at least {min_voices} of its credible voices write "
+                "about that (or wrote after long-term use), and at least {min_lead} more than for any other pick shown, "
+                "or when its price, checked in your region in the last {days} days, is clearly the lowest of the "
+                "picks, and it says only what those voices say, so many picks have none.")
+# The clauses a topic word is not counted in (26 Oct 2026, the bestfor builder; Claude's lists): a writer who says a
+# product is not good for sensitive skin, or that its comfort is poor, does not praise it for that. A negation within
+# NEGATION_REACH words before the topic's word, or one of these complaints in the same clause (unless it is itself
+# negated: "never stung my sensitive skin"), leaves that occurrence out.
+BEST_FOR_NEGATIONS = NEGATIONS + ("too", "hardly", "barely", "lack", "lacks", "lacking", "wasn't", "wasnt", "weren't",
+                                  "werent", "cannot", "can't", "cant", "couldn't", "couldnt", "nothing")
+BEST_FOR_COMPLAINTS = ("bad", "poor", "poorly", "terrible", "awful", "mediocre", "meh", "disappointing", "disappointed",
+                       "worse", "worst", "weak", "annoying", "uncomfortable", "flimsy", "stings", "stung", "burns",
+                       "burned", "burnt", "irritated", "irritates", "irritating", "itchy", "sting", "irritate", "burn")
+# What a negation AFTER a topic's word may negate without turning the praise round: "my sensitive skin does not react at
+# all", "it doesn't break me out", "no complaints". A negation after the word (in its clause, within BEST_FOR_AFTER_REACH
+# words) with none of these among the two words that follow it ("my dry skin, so it wasn't thick enough") leaves that
+# occurrence out.
+BEST_FOR_AFTER_REACH = 8
+BEST_FOR_NEGATABLE = BEST_FOR_COMPLAINTS + ("react", "reacts", "reacted", "reaction", "reactions", "reactive", "break",
+                                            "breaks", "clog", "clogs", "dry", "drying", "dries", "tight", "greasy", "flake",
+                                            "flaky", "peel", "peels", "itch", "irritation", "complaint", "complaints",
+                                            "problem", "problems", "issue", "issues", "trouble", "harsh", "heavy", "shine", "shiny", "oil",
+                                            "oiliness", "grease", "residue", "cast", "film", "smell", "scent", "fragrance",
+                                            "sticky", "stickiness", "breakout", "breakouts", "questions", "hassle", "fuss",
+                                            "noise", "noisy", "loud", "rattle", "rattling", "squeak", "sag", "sagging",
+                                            "wobble", "wobbling", "cracks", "cracked", "rust", "rusting", "chip", "chipping",
+                                            "oily", "strip", "strips", "stripping", "weigh", "weighs", "fade", "fades",
+                                            "pill", "pills", "pilling", "leave", "leaves", "rash", "rashes", "regret")
+# Words in a label's phrase that do not name the thing (a test checks that the first word left is in the topic's words).
+BEST_FOR_PHRASE_FILLER = ("a", "an", "the", "its", "being", "leaving", "no", "not", "feeling", "for", "of", "and", "to",
+                          "feel", "or", "having")
+# The topics a credible voice can write about, each phrase being label wording (26 Oct 2026, the bestfor builder; approved
+# in principle by Noemi, wording Claude's; the words that find them are Claude's too, chosen from what the needs of NEEDS and
+# the sweep's credible recommendations say, and reported to Noemi). Each: the phrase the label and its basis use ("Most
+# praised for <phrase>", "write about <phrase>": every word of it that names something is one of the topic's own words, a
+# test checks), the words that find it in a writer's own words about the product (whole words, or a phrase whole, a plural
+# allowed), the categories it can be found in, and the names (a need of NEEDS or a request_asks name) under which a request
+# asks for it: a topic the request asked for is no label (every pick fits what was asked). Medical conditions (eczema,
+# rosacea, dandruff, acne treatment) are left out: a label's wording can't say "for" them without suggesting a treatment.
+BEST_FOR_TOPICS: dict[str, dict] = {
+    # Skin types, as writers say them ("my skin is very sensitive").
+    "sensitive skin": {"phrase": "sensitive skin", "categories": ("skincare",), "needs": ("sensitive",),
+                       "words": ("sensitive skin", "sensitive-skin", "sensitive face", "reactive skin",
+                                 "skin is sensitive", "skin is very sensitive", "skin is really sensitive",
+                                 "skin is super sensitive", "skin's sensitive", "skin is pretty sensitive")},
+    "dry skin": {"phrase": "dry skin", "categories": ("skincare",), "needs": ("dry",),
+                 "words": ("dry skin", "dry-skin", "dry face", "dehydrated skin", "skin is dry", "skin is very dry",
+                           "skin is really dry", "skin is super dry", "skin gets dry", "skin gets really dry")},
+    "oily skin": {"phrase": "oily skin", "categories": ("skincare",), "needs": ("oily",),
+                  "words": ("oily skin", "oily-skin", "oily face", "greasy skin", "skin is oily", "skin is very oily",
+                            "skin is really oily", "skin gets oily", "oily t-zone")},
+    "combination skin": {"phrase": "combination skin", "categories": ("skincare",), "needs": ("combination",),
+                         "words": ("combination skin", "combination-skin", "combo skin")},
+    "acne-prone skin": {"phrase": "acne-prone skin", "categories": ("skincare",), "needs": ("acne-prone",),
+                        "words": ("acne-prone skin", "acne-prone", "acne prone", "prone to acne", "prone to breakouts",
+                                  "prone to breaking out", "breakout-prone", "breakout prone")},
+    "mature skin": {"phrase": "mature skin", "categories": ("skincare",), "needs": ("mature",),
+                    "words": ("mature skin", "aging skin", "ageing skin", "older skin", "maturing skin")},
+    # What a skincare product is or leaves.
+    "fragrance-free": {"phrase": "being fragrance-free", "categories": ("skincare", "haircare"),
+                       "needs": ("fragrance-free",),
+                       "words": ("fragrance-free", "fragrance free", "no fragrance", "without fragrance",
+                                 "perfume-free", "perfume free", "without perfume", "no perfume")},
+    "no scent": {"phrase": "having no scent", "categories": ("skincare", "haircare"), "needs": ("fragrance-free",),
+                 "words": ("unscented", "no scent", "scent-free", "scent free", "without scent", "no smell")},
+    "no white cast": {"phrase": "leaving no white cast", "categories": ("skincare",), "needs": ("no white cast",),
+                      "words": ("no white cast", "no white-cast", "no cast", "without a white cast", "zero white cast",
+                                "zero cast", "doesn't leave a white cast", "doesn't leave a cast",
+                                "doesnt leave a white cast")},
+    "not greasy": {"phrase": "not feeling greasy", "categories": ("skincare",), "needs": (),
+                   "words": ("not greasy", "non-greasy", "nongreasy", "isn't greasy", "isnt greasy",
+                             "doesn't feel greasy", "doesnt feel greasy", "never greasy")},
+    "lightweight feel": {"phrase": "a lightweight feel", "categories": ("skincare", "haircare"), "needs": (),
+                              "words": ("lightweight", "light weight", "feels light", "light on the skin")},
+    # Hair types.
+    "dry hair": {"phrase": "dry hair", "categories": ("haircare",), "needs": ("dry hair",),
+                 "words": ("dry hair", "dry ends", "hair is dry", "hair is very dry", "hair gets dry", "dry, damaged")},
+    "oily scalp": {"phrase": "oily hair or scalp", "categories": ("haircare",), "needs": ("oily hair",),
+                   "words": ("oily scalp", "oily hair", "greasy hair", "greasy scalp", "hair gets oily",
+                             "hair gets greasy", "hair is oily", "hair is greasy")},
+    "fine hair": {"phrase": "fine hair", "categories": ("haircare",), "needs": ("fine hair",),
+                  "words": ("fine hair", "thin hair", "fine, thin hair", "hair is fine", "hair is thin")},
+    "curly hair": {"phrase": "curly hair", "categories": ("haircare",), "needs": ("curly",),
+                   "words": ("curly hair", "curly-haired", "my curls", "curly girl", "curl pattern", "coily hair")},
+    "wavy hair": {"phrase": "wavy hair", "categories": ("haircare",), "needs": ("wavy",),
+                  "words": ("wavy hair", "wavy-haired", "my waves", "my wavy hair")},
+    "frizz": {"phrase": "frizz", "categories": ("haircare",), "needs": ("frizzy",),
+              "words": ("frizz", "frizzy", "flyaway", "fly-away")},
+    "colour-treated hair": {"phrase": "colour-treated hair", "categories": ("haircare",), "needs": ("colour-treated",),
+                            "words": ("colour-treated", "color-treated", "colour treated", "color treated",
+                                      "dyed hair", "bleached hair", "colour-safe", "color-safe")},
+    "sensitive scalp": {"phrase": "a sensitive scalp", "categories": ("haircare",), "needs": ("sensitive scalp",),
+                        "words": ("sensitive scalp", "scalp is sensitive")},
+    # Kitchen and general products.
+    "quiet": {"phrase": "being quiet", "categories": ("kitchen", "general"), "needs": ("quiet",),
+              "words": ("quiet", "quieter", "quietest", "silent", "whisper", "barely hear", "barely any noise",
+                        "hardly any noise", "very little noise")},
+    "easy to clean": {"phrase": "being easy to clean", "categories": ("kitchen", "general"), "needs": (),
+                      "words": ("easy to clean", "easy cleanup", "easy clean-up", "easy clean up", "easy cleaning",
+                                "easy to wash", "wipes clean", "cleans easily", "cleans up easily", "easy to maintain")},
+    "easy to use": {"phrase": "being easy to use", "categories": ("kitchen", "general"), "needs": (),
+                    "words": ("easy to use", "simple to use", "user friendly", "user-friendly", "intuitive",
+                              "foolproof", "easy setup", "easy to set up", "easy to operate")},
+    "beginners": {"phrase": "beginners", "categories": ("kitchen", "general"), "needs": ("beginner",),
+                  "words": ("beginner", "beginners", "beginner-friendly", "beginner friendly", "newbie", "novice")},
+    "build quality": {"phrase": "build quality", "categories": ("kitchen", "general"), "needs": ("lasting",),
+                      "words": ("build quality", "well built", "well-built", "well made", "well-made", "built like a tank",
+                                "sturdy", "solid build", "durable", "durability", "built to last", "heavy duty",
+                                "heavy-duty", "solidly built", "solidly made", "high quality", "good quality",
+                                "great quality", "excellent quality", "rock solid", "solid construction", "tough",
+                                "bombproof", "indestructible")},
+    "comfort": {"phrase": "comfort", "categories": ("kitchen", "general"), "needs": (),
+                "words": ("comfortable", "comfy", "comfortably", "cushy")},
+    "battery life": {"phrase": "battery life", "categories": ("general",), "needs": (),
+                     "words": tuple(f"{adj} battery" for adj in ("great", "good", "excellent", "amazing", "long",
+                                                                  "solid", "incredible", "fantastic", "awesome",
+                                                                  "impressive", "insane"))
+                     + ("battery lasts", "battery life is great", "battery life is excellent", "battery life is amazing",
+                        "battery life is good", "battery life is incredible", "long battery life", "battery life is long")},
+    "sound": {"phrase": "sound quality", "categories": ("general",), "needs": (),
+              "words": ("sound quality", "sounds great", "sounds amazing", "sounds good", "sounds fantastic",
+                        "great sound", "excellent sound", "good sound", "amazing sound")},
+    "noise cancelling": {"phrase": "noise cancelling", "categories": ("general",), "needs": ("noise cancelling",),
+                         "words": ("noise cancelling", "noise canceling", "noise-cancelling", "noise-canceling")},
+    "portable": {"phrase": "being compact", "categories": ("kitchen", "general"), "needs": (),
+                 "words": ("compact", "small footprint", "doesn't take up much space", "doesnt take up much space",
+                           "takes up little space", "takes little space", "fits in a small")},
+    "lightweight": {"phrase": "being lightweight", "categories": ("general",), "needs": (),
+                    "words": ("lightweight", "light weight", "feather light", "weighs nothing", "very light")},
+    "even heating": {"phrase": "even heating", "categories": ("kitchen",), "needs": (),
+                     "words": ("even heat", "even heating", "heats evenly", "heat evenly", "evenly heats",
+                               "distributes heat", "no hot spots")},
+    "customer service": {"phrase": "customer service", "categories": ("kitchen", "general"), "needs": (),
+                         "words": tuple(f"{adj} customer {noun}" for adj in ("great", "excellent", "good", "amazing", "fantastic",
+                                                                "outstanding", "responsive", "helpful", "superb",
+                                                                "stellar", "top notch", "top-notch")
+                                for noun in ("service", "support"))
+                + tuple(f"customer {noun} {be} {adj}" for noun in ("service", "support") for be in ("is", "was")
+                        for adj in ("great", "excellent", "good", "amazing", "fantastic", "outstanding", "helpful",
+                                    "superb", "stellar"))},
+    "looks": {"phrase": "its looks", "categories": ("kitchen", "general"), "needs": (),
+              "words": ("looks great", "looks good", "good looking", "good-looking", "beautiful", "gorgeous", "stylish",
+                        "looks beautiful", "looks amazing")},
+    "cushioning": {"phrase": "cushioning", "categories": ("general",), "needs": (),
+                   "words": ("cushion", "cushioning", "cushioned", "plush")},
+    "gentle": {"phrase": "being gentle", "categories": ("skincare", "haircare"), "needs": ("gentle",),
+               "words": ("gentle", "gentler", "doesn't irritate", "doesnt irritate", "doesn't burn", "doesnt burn",
+                         "doesn't sting", "doesnt sting", "non-irritating", "non irritating")},
+    "under makeup": {"phrase": "wearing under makeup", "categories": ("skincare",), "needs": (),
+                     "words": ("under makeup", "under my makeup", "under foundation", "under concealer",
+                               "under your makeup", "wearing under makeup", "wears well under makeup")},
+    "dry lips": {"phrase": "dry lips", "categories": ("skincare",), "needs": (),
+                 "words": ("dry lips", "chapped lips", "cracked lips", "lips are dry", "dry, chapped lips")},
+    "skin barrier": {"phrase": "the skin barrier", "categories": ("skincare",), "needs": (),
+                     "words": ("skin barrier", "barrier repair", "my barrier", "damaged barrier", "compromised barrier")},
+    "warranty": {"phrase": "its warranty", "categories": ("kitchen", "general"), "needs": (),
+                 "words": ("lifetime warranty", "great warranty", "good warranty", "excellent warranty", "amazing warranty",
+                           "warranty is great", "warranty is good", "warranty is excellent", "honored the warranty",
+                           "honoured the warranty", "honored my warranty", "honoured my warranty",
+                           "replaced under warranty", "replaced it under warranty", "warranty replacement",
+                           "covered under warranty", "covered by the warranty", "backed by a warranty")},
+    "travel": {"phrase": "travel", "categories": ("general",), "needs": (),
+               "words": ("travel", "travelling", "traveling", "carry-on", "carry on", "airplane")},
+    "dishwasher": {"phrase": "being dishwasher-safe", "categories": ("kitchen",), "needs": ("dishwasher-safe",),
+                   "words": ("dishwasher safe", "dishwasher-safe", "goes in the dishwasher", "put it in the dishwasher",
+                             "dishwasher friendly", "dishwasher-friendly")},
+    "heat retention": {"phrase": "heat retention", "categories": ("kitchen",), "needs": (),
+                       "words": ("heat retention", "retains heat", "holds heat", "keeps heat", "retains the heat",
+                                 "holds the heat")},
+    "power": {"phrase": "power", "categories": ("kitchen", "general"), "needs": (),
+              "words": ("powerful", "plenty of power", "lots of power", "strong motor", "great suction",
+                        "strong suction", "good suction", "amazing suction")},
+    "sharpness": {"phrase": "sharpness", "categories": ("kitchen",), "needs": (),
+                  "words": ("very sharp", "razor sharp", "razor-sharp", "stays sharp", "holds an edge", "holds its edge",
+                            "edge retention", "keeps an edge", "keeps its edge", "sharpness")},
+    "fit": {"phrase": "fit", "categories": ("general",), "needs": (),
+            "words": ("true to size", "fits well", "fits great", "fits perfectly", "fit perfectly", "great fit",
+                      "perfect fit", "fits true", "fits true to size", "fits me perfectly")},
+    "screen": {"phrase": "the screen", "categories": ("general",), "needs": (),
+               "words": tuple(f"{adj} {noun}" for adj in ("great", "good", "excellent", "amazing", "beautiful",
+                                                          "gorgeous", "fantastic", "sharp", "bright", "crisp")
+                              for noun in ("screen", "display"))
+               + tuple(f"{noun} is {adj}" for adj in ("great", "good", "excellent", "amazing", "beautiful",
+                                                     "gorgeous", "fantastic", "sharp", "bright", "crisp")
+                       for noun in ("screen", "display"))},
+    "keyboard": {"phrase": "the keyboard", "categories": ("general",), "needs": (),
+                 "words": tuple(f"{adj} keyboard" for adj in ("great", "good", "excellent", "amazing", "best", "fantastic",
+                                                              "nice", "superb"))
+                 + tuple(f"keyboard is {adj}" for adj in ("great", "good", "excellent", "amazing", "fantastic", "nice"))},
+    "back support": {"phrase": "back support", "categories": ("general",), "needs": (),
+                     "words": ("lumbar support", "back support", "lumbar", "ergonomic")},
+    "adjustability": {"phrase": "adjustability", "categories": ("general",), "needs": (),
+                      "words": ("adjustable", "adjustability", "highly adjustable", "very adjustable", "easily adjustable")},
+}

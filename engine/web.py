@@ -146,6 +146,13 @@ The JSON for /api/answer (200):
                                                                2): the image's address, its text (the product's name)
                                                                and the maker's page it links to; null without one. The
                                                                page loads it lazily, with no referrer
+                            "best_for": {"text", "basis",      a "best for" label (Noemi's decision 3 of 26 Oct 2026;
+                                         "kind"}               engine/best_for.py): "Most praised for sensitive skin",
+                                                               the numbers it rests on ("4 of its 6 credible voices
+                                                               write about sensitive skin; the other picks have 1 and
+                                                               0."), and its kind ("topic", "long-term use" or "price");
+                                                               null for a pick whose evidence does not clearly support
+                                                               one, which most are
                            }],
                  "look_for": [{"kind", "advice", "quote": {same shape}}],
                  "skip": [{"product_key", "name", "reason", "quotes": [...], "prescription"}],
