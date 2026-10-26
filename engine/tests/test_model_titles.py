@@ -337,3 +337,43 @@ def test_a_titled_pick_has_no_one_line_summary_since_it_sums_up_the_lines_voices
     monkeypatch.setattr(config, "BRAND_MODEL_TITLES_ON", True)
     titled = lead(tmp_path / "b", summaries=kept).answer.picks[0]
     assert titled.name == FIBROX and titled.summary is None  # "In short" would read as about the model
+
+
+def test_a_quote_naming_the_model_comes_before_one_that_does_not_whoever_wrote_it(tmp_path):
+    # The Fibrox's own two comments never say "Fibrox"; one of the line's comments does: it comes first.
+    said = lambda cid, product, text: (cid, product, text, "recommend")
+    library = write_library(tmp_path, {
+        "1knif01": ("Best first chef knife?", "Budget about 100.", [
+            said("v1a", "Victorinox", "My Victorinox Fibrox is still sharp after 5 years of weekly use."),
+            said("v1b", "Victorinox", "Victorinox knives have lasted me 6 years and still work perfectly."),
+            said("f1a", FIBROX, "Great value, it has stayed sharp for 3 years of daily use."),
+            said("r1a", ROSEWOOD, "Lovely handle, 2 years in and no complaints."),
+            praise("m1a", "Mac Mighty chef knife", 7), praise("m1b", "Mac Mighty chef knife", 8),
+            praise("t1a", "Tojiro DP gyuto", 5), praise("t1b", "Tojiro DP gyuto", 6)]),
+        "1knif02": ("Which chef knife lasts?", "Mine chipped.", [
+            said("v2a", "Victorinox", "Victorinox knives are solid, mine is 9 years old."),
+            said("v2b", "Victorinox", "Victorinox is what I would buy again after 10 years."),
+            said("f2a", FIBROX, "Cheap and cheerful, it has lasted 4 years of heavy use."),
+            praise("m2a", "Mac Mighty chef knife", 4), praise("t2a", "Tojiro DP gyuto", 3)]),
+    }, community="chefknives")
+    result = answer_request(KNIFE_REQUEST, library_dir=library, prices=[], product_facts=[], product_pages=[],
+                            today=TODAY)
+    pick = line_pick(result)
+    assert pick.name == FIBROX
+    assert pick.quotes[0].comment_id == "v1a"  # the only quote naming the Fibrox, though a line's
+    assert {q.comment_id for q in pick.quotes[1:]} == {"f1a", "f2a"}  # then its own, in the order of any pick's quotes
+    assert unverified_claims(result.answer, result.bodies) == []
+
+
+@pytest.mark.parametrize("text, line, model, names", [
+    ("my fibrox is great", "Victorinox chef knife line", "Victorinox Fibrox", True),
+    ("the Fibrox's edge is fine", "Victorinox chef knife line", "Victorinox Fibrox", True),
+    ("it is a Victorinox, great", "Victorinox chef knife line", "Victorinox Fibrox", False),  # the brand alone names a line
+    ("the 5200 is a beast", "Vitamix blender line", "Vitamix 5200", True),
+    ("I use the 52000 daily", "Vitamix blender line", "Vitamix 5200", False),  # whole words only
+    ("my Libra Colour is lovely", "Kobo e-reader line", "Kobo Libra Colour", True),
+])
+def test_what_names_a_model(text, line, model, names):
+    from engine.answer import _names_the_model
+
+    assert _names_the_model(text, model, line) is names

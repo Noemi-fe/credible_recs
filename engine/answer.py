@@ -847,7 +847,8 @@ def _titled_by_its_model(pick: Pick, lead: LeadingModel, check: "_QuoteCheck", p
     and `line_note` says how many credible voices are about the model and how many about the line in general, so the
     title never suggests the line's voices all reviewed this model. What is shown beside the title is the model's own
     where the lists have it, else the line's as before: its price (and with it the budget note), where it is sold, its
-    page and image. The model's own quotes come first (BRAND_MODEL_QUOTES_FIRST), then the line's. The one-line summary
+    page and image. The quotes naming the model come first (the model's own before the line's: at most
+    BRAND_MODEL_QUOTES_FIRST of its own are taken), then the others. The one-line summary
     ("In short:") is left out: it sums up the line's voices, and under a model's title it would read as about the model."""
     model = lead.product
     line = pick.name
@@ -859,7 +860,10 @@ def _titled_by_its_model(pick: Pick, lead: LeadingModel, check: "_QuoteCheck", p
                                                           line_voices=pick.voices.get("recommend", 0))
     own = _pick_quotes(model, check, asks, needs, product_type)[:config.BRAND_MODEL_QUOTES_FIRST]
     first = {quote.comment_id for quote in own}
-    pick.quotes = (own + [quote for quote in pick.quotes if quote.comment_id not in first])[:QUOTES_PER_PICK]
+    quotes = own + [quote for quote in pick.quotes if quote.comment_id not in first]
+    # Those naming the model first, the model's own before the line's, as the answer's quotes name what they back.
+    named = [quote for quote in quotes if _names_the_model(quote.text, model.name, line)]
+    pick.quotes = (named + [quote for quote in quotes if quote not in named])[:QUOTES_PER_PICK]
     checked = prices.get(model.key)
     if checked is not None and checked.price is not None and checked.price.price is not None:
         pick.price = shown_price(checked, region)
@@ -872,6 +876,16 @@ def _titled_by_its_model(pick: Pick, lead: LeadingModel, check: "_QuoteCheck", p
         pick.link = None if link.url in {pick.price.url, pick.availability.url} else link
     if (image := shown_image(page, pick.name)) is not None:
         pick.image = image
+
+
+def _names_the_model(text: str, model: str, line: str) -> bool:
+    """Whether a quote names a model: a word of its name that its line's name doesn't hold (the brand, the type) nor
+    BRAND_MODEL_GENERIC_WORDS say ("Fibrox" of "Victorinox Fibrox", "5200", "Libra"), as a whole word, a plural or a
+    possessive too, capitals aside. A model with no such word is named by what names it."""
+    own = set(re.findall(r"[a-z0-9][a-z0-9'-]*", line.lower())) | set(config.BRAND_MODEL_GENERIC_WORDS)
+    words = [w for w in re.findall(r"[a-z0-9][a-z0-9'-]*", model.lower()) if w not in own and len(w) > 1]
+    spoken = " ".join(re.findall(r"[a-z0-9][a-z0-9'-]*", text.lower().replace("’", "'")))
+    return any(re.search(rf"(?<![a-z0-9]){re.escape(w)}(?:s|'s)?(?![a-z0-9])", spoken) for w in words)
 
 
 def shown_current_model(entry: "CurrentModel | None") -> ShownCurrentModel | None:
