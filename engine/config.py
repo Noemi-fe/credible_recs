@@ -2988,4 +2988,25 @@ BEST_FOR_TOPICS: dict[str, dict] = {
     "power": {"phrase": "power", "categories": ("kitchen", "general"), "needs": (),
               "words": ("powerful", "plenty of power", "lots of power", "strong motor", "great suction",
                         "strong suction", "good suction", "amazing suction")},
+    "sharpness": {"phrase": "sharpness", "categories": ("kitchen",), "needs": (),
+                  "words": ("very sharp", "razor sharp", "razor-sharp", "stays sharp", "holds an edge", "holds its edge",
+                            "edge retention", "keeps an edge", "keeps its edge", "sharpness")},
+    "fit": {"phrase": "fit", "categories": ("general",), "needs": (),
+            "words": ("true to size", "fits well", "fits great", "fits perfectly", "fit perfectly", "great fit",
+                      "perfect fit", "fits true", "fits true to size", "fits me perfectly")},
+    "screen": {"phrase": "the screen", "categories": ("general",), "needs": (),
+               "words": tuple(f"{adj} {noun}" for adj in ("great", "good", "excellent", "amazing", "beautiful",
+                                                          "gorgeous", "fantastic", "sharp", "bright", "crisp")
+                              for noun in ("screen", "display"))
+               + tuple(f"{noun} is {adj}" for adj in ("great", "good", "excellent", "amazing", "beautiful",
+                                                     "gorgeous", "fantastic", "sharp", "bright", "crisp")
+                       for noun in ("screen", "display"))},
+    "keyboard": {"phrase": "the keyboard", "categories": ("general",), "needs": (),
+                 "words": tuple(f"{adj} keyboard" for adj in ("great", "good", "excellent", "amazing", "best", "fantastic",
+                                                              "nice", "superb"))
+                 + tuple(f"keyboard is {adj}" for adj in ("great", "good", "excellent", "amazing", "fantastic", "nice"))},
+    "back support": {"phrase": "back support", "categories": ("general",), "needs": (),
+                     "words": ("lumbar support", "back support", "lumbar", "ergonomic")},
+    "adjustability": {"phrase": "adjustability", "categories": ("general",), "needs": (),
+                      "words": ("adjustable", "adjustability", "highly adjustable", "very adjustable", "easily adjustable")},
 }
