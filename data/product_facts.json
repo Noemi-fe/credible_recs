@@ -3653,7 +3653,8 @@
    "category": "kitchen",
    "product_type": "frying pan",
    "facts": {
-    "pfas_free": true
+    "pfas_free": true,
+    "non_stick": false
    },
    "sources": [
     "https://misen.com/pages/we-dont-kill-birds"

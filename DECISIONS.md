@@ -707,3 +707,21 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   threads read on demand by Gemini 3.1 Flash-Lite, 45 of 695 mentions fail the extraction check, 20 of them because the
   reader wrote the evidence level "no first-hand use" as a reason tag (the reason tags are config.EVIDENCE_TAGS); only 2
   are quotes not found word for word. The reader's instructions should say levels and tags apart.
+
+- 26 Oct 2026, afternoon (Noemi: "okay to all four recommendations"), her decisions on the classics review and the
+  comparison with ChatGPT and Vetted, each as recommended:
+  1. Read past the first 16 threads even when they give 3 picks, for popular product types (many threads in the
+     library), as long as answers stay fast (docs/classics-review-2026-10-25.md: b04 reads 16 of its 165 threads). With
+     it, the type rule must stop dropping a product whole when many of its mentions are typed as another kind (Aquaphor:
+     124 of its 194 mentions typed lip balm).
+  2. An uncoated carbon steel pan does not count as non-stick: it becomes non-stick only after seasoning, so for
+     "non-stick without PFAS" it isn't the same thing (ChatGPT had picked Misen's carbon steel pan).
+  3. Model names instead of lines where credible writers name a model; the current tech models named where an
+     owner-reviewed line continues; a "best for" label per pick, taken from what its credible voices talk about.
+  4. The blind test's cards of our answers are refreshed to the improved answers before she sends the test; ChatGPT's
+     and Vetted's stay as captured on 24 Oct 2026.
+  Decision 2 built at once (Claude): data/product_facts.json's Misen Carbon Nonstick now says non_stick false, as every
+  other uncoated carbon steel pan's entry already did (OXO, Merten & Storck, De Buyer, Lodge, IKEA, Matfer); the
+  classics builder read Misen's page on 25 Oct 2026 and found it uncoated (the page refused a second read today: too
+  many requests). In answers asking for non-stick it is now left out as not non-stick instead of shown with "we
+  couldn't confirm it's non-stick".

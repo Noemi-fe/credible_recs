@@ -110,9 +110,11 @@ def test_lipikars_lotion_and_cicaplast_do_not_find_the_balms_entry():
         assert found is None or found.product != "La Roche-Posay Lipikar Balm AP+M", other
 
 
-def test_misen_carbon_nonstick_is_pfas_free_by_its_makers_page_and_says_nothing_of_non_stick():
+def test_misen_carbon_nonstick_is_pfas_free_by_its_makers_page_and_not_non_stick():
+    # Changed on purpose 26 Oct 2026: Noemi decided an uncoated carbon steel pan doesn't count as non-stick (her
+    # decision 2 of 26 Oct 2026, DECISIONS.md); "non_stick" had been left out, waiting for her call.
     entry = find_facts("Misen Carbon Nonstick", "kitchen", load_product_facts(), "frying pan")
-    assert entry is not None and entry.facts == {"pfas_free": True}  # "non_stick" is Noemi's call (DECISIONS.md)
+    assert entry is not None and entry.facts == {"pfas_free": True, "non_stick": False}
     assert entry.checked_on == TODAY and all(source.startswith("https://misen.com/") for source in entry.sources)
 
 
