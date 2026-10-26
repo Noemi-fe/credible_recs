@@ -202,6 +202,28 @@ def test_a_leader_sold_only_abroad_still_titles_when_no_other_model_is_sold_here
     assert pick.availability.text == "Not sold in the UK, checked 9 Oct 2026"  # said honestly beside the title
 
 
+def usd(name: str):
+    """A made-up US shop's entry: the price list's evidence that a product is sold in the US."""
+    return listed(name, available=True, price=30.0).model_copy(update={"currency": "USD", "shop": "Made-up US Shop"})
+
+
+def test_for_a_us_visitor_a_leader_with_no_sale_there_titles_nothing_when_another_model_has_one(tmp_path):
+    result = answer_request(KNIFE_REQUEST, library_dir=knife_library(tmp_path, fibrox=(1, 1)), prices=[usd(ROSEWOOD)],
+                            product_facts=[], product_pages=[], today=TODAY, region="us")
+    assert line_pick(result).name == VICTORINOX  # the Fibrox is not known to be sold in the US, the Rosewood is
+    # The same answer for a UK visitor is as the UK always was: nothing says the Fibrox is not sold here.
+    uk = answer_request(KNIFE_REQUEST, library_dir=knife_library(tmp_path / "uk", fibrox=(1, 1)),
+                        prices=[usd(ROSEWOOD)], product_facts=[], product_pages=[], today=TODAY)
+    assert line_pick(uk).name == FIBROX
+
+
+def test_for_a_us_visitor_a_leader_sold_there_still_titles(tmp_path):
+    result = answer_request(KNIFE_REQUEST, library_dir=knife_library(tmp_path, fibrox=(1, 1)),
+                            prices=[usd(FIBROX), usd(ROSEWOOD)], product_facts=[], product_pages=[], today=TODAY,
+                            region="us")
+    assert line_pick(result).name == FIBROX
+
+
 @pytest.mark.parametrize("name, one", [
     ("Victorinox Fibrox chef knife", True), ("Lenovo Legion 5a Gen 10", True), ("Brooks Adrenaline/Glycerine GTS", False),
     ("Sony WH-1000XM4 and XM5", False), ("Bose QuietComfort Pros (Ultras?)", False), ("Mac Mighty & Chef", False),
