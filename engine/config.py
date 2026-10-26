@@ -2848,13 +2848,14 @@ BEST_FOR_NEGATABLE = BEST_FOR_COMPLAINTS + ("react", "reacts", "reacted", "react
 # Words in a label's phrase that do not name the thing (a test checks that the first word left is in the topic's words).
 BEST_FOR_PHRASE_FILLER = ("a", "an", "the", "its", "being", "leaving", "no", "not", "feeling", "for", "of", "and", "to",
                           "feel", "or", "having")
-# The topics a credible voice can write about (26 Oct 2026, the bestfor builder; the words are Claude's, chosen from
-# what the needs of NEEDS and the sweep's credible recommendations say; reported to Noemi). Each: the phrase the label
-# and its basis use ("Most praised for <phrase>", "write about <phrase>"), the words that find it in a writer's own words
-# about the product (as engine.needs finds a need's: a single word is a word beginning, a phrase is found whole), the
-# categories it can be found in, and the names (a need of NEEDS or a request_asks name) under which a request asks for it:
-# a topic the request asked for is no label (every pick fits what was asked). Medical conditions (eczema, rosacea,
-# dandruff, acne treatment) are left out: a label's wording can't say "for" them without suggesting a treatment.
+# The topics a credible voice can write about, each phrase being label wording (26 Oct 2026, the bestfor builder; approved
+# in principle by Noemi, wording Claude's; the words that find them are Claude's too, chosen from what the needs of NEEDS and
+# the sweep's credible recommendations say, and reported to Noemi). Each: the phrase the label and its basis use ("Most
+# praised for <phrase>", "write about <phrase>": every word of it that names something is one of the topic's own words, a
+# test checks), the words that find it in a writer's own words about the product (whole words, or a phrase whole, a plural
+# allowed), the categories it can be found in, and the names (a need of NEEDS or a request_asks name) under which a request
+# asks for it: a topic the request asked for is no label (every pick fits what was asked). Medical conditions (eczema,
+# rosacea, dandruff, acne treatment) are left out: a label's wording can't say "for" them without suggesting a treatment.
 BEST_FOR_TOPICS: dict[str, dict] = {
     # Skin types, as writers say them ("my skin is very sensitive").
     "sensitive skin": {"phrase": "sensitive skin", "categories": ("skincare",), "needs": ("sensitive",),
