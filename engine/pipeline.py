@@ -177,6 +177,7 @@ from engine.answer import (
     needed_quotes, quotes_to_check, render_markdown, says_the_opposite, shown_availability, shown_price, without_unread,
     write_answer,
 )
+from engine.best_for import topics_in
 from engine.brand_lines import BrandLine, find_brand_line, from_price_entry, load_brand_lines, not_sold_reason
 from engine.care_tips import CareTips, attach_care_tips, credible_care_tips
 from engine.config import (
@@ -576,7 +577,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     wording = {**_ingredient_wording(query, kept_groups, types, formulas, result.line_forms),
                "prescription": _prescription_only(kept_groups, formulas), "flattened": flattened_comments(threads),
                "pages": _pages(kept_groups, named_before, query, product_pages, types),
-               "other_types_threads": _threads_about_another_type(checked, threads, query), "region": region}
+               "other_types_threads": _threads_about_another_type(checked, threads, query), "region": region,
+               "today": today}  # `today`: the price label's day (26 Oct 2026, the bestfor builder)
     kind_mentions = _kind_mentions(checked)
     kinds = group_kinds(kind_mentions, kept_groups, query.category, query.product_type or "")
     with_a_kind = kinds_of(kinds)
@@ -2651,6 +2653,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                 opposite_need=m.stance == "warn" and _from_the_opposite_need(comment.body, needs, opposites),
                 needs_unpraised=_feature_needs_unpraised(met, features, praised) if m.stance == "recommend" else (),
                 needs_by_title=by_title,
+                topics=_topics_talked_about(comment, m, others, own, voice, evidence, group),
             ))
         for n in res.kept_notes:
             if n.comment_id in repeats:
@@ -2665,6 +2668,19 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
                     voice=voice.level, quote=n.quote, badges=badges(voice, evidence), author=_writer(comment),
                 ))
     return scored, notes
+
+
+def _topics_talked_about(comment: Comment, mention, others: list[str], own: str | None, voice, evidence, group
+                         ) -> tuple[str, ...]:
+    """The topics of config.BEST_FOR_TOPICS a credible recommendation's own words about its product talk about (26 Oct 2026,
+    the bestfor builder; engine.best_for.topics_in), for a pick's "best for" label. Only a credible recommendation (a voice
+    that isn't low, with first-hand use) is read: nothing else is counted. `own` is its product text when already worked
+    out for the features."""
+    if (mention.stance != "recommend" or voice.level not in config.CREDIBLE_VOICES
+            or evidence.level not in config.CREDIBLE_EVIDENCE):
+        return ()
+    return topics_in(own if own is not None else product_text(comment, mention.product, others), group.category,
+                     (mention.product, group.name))
 
 
 def _others_of_another_type(mention, kept) -> tuple[str, ...]:

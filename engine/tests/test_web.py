@@ -160,11 +160,13 @@ def test_the_json_has_the_documented_shape(tmp_path):
     # its own page and its maker's "image", or null (engine/tests/test_buyable.py).
     # Changed on purpose 17 Oct 2026 (ws-ranking, item 5): each pick also says how many of its last downsides are about
     # its brand's line as a whole, "brand_downsides", 0 when none is (engine/tests/test_answer_converge.py).
+    # Changed on purpose 26 Oct 2026 (the bestfor builder, Noemi's decision 3): each pick also has its "best_for" label
+    # ({"text", "basis", "kind"}), or null when its evidence does not clearly support one (engine/tests/test_best_for.py).
     assert set(data["answer"]["picks"][0]) == {"rank", "product_key", "name", "reason", "support", "quotes",
                                                "downsides", "disagreement", "score", "breakdown", "price",
                                                "availability", "care", "cautions", "model", "model_price",
                                                "downsides_share", "summary", "voices", "form", "range",
-                                               "prescription", "link", "image", "brand_downsides"}
+                                               "prescription", "link", "image", "brand_downsides", "best_for"}
     assert set(data["answer"]["picks"][0]["quotes"][0]) == {"text", "comment_id", "url", "badges"}
     assert set(data["answer"]["picks"][0]["price"]) == {"text", "amount", "currency", "shop", "url", "checked_on",
                                                         "budget_status", "budget_note", "from_price"}

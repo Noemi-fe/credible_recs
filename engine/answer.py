@@ -129,7 +129,9 @@ from datetime import date
 from difflib import SequenceMatcher
 from functools import cache, lru_cache
 
+from engine import best_for
 from engine import config  # the upvote rule's settings, read as the answer is written (14 Oct 2026)
+from engine.best_for import Label
 from engine.brand_lines import BrandLine, is_source_page
 from engine.care_tips import CareTip, CareTips, is_left_out, similar_tips, tips_by_agreement
 from engine.config import (
@@ -558,6 +560,9 @@ class Pick:
     # How many of the last `downsides` are about the pick's brand's line as a whole, not the pick (17 Oct 2026, the
     # converge round's item 5: DOWNSIDES_SHARE_BRAND says how many voices); 0 when none is.
     brand_downsides: int = 0
+    # Its "best for" label and what it rests on (26 Oct 2026, the bestfor builder; engine/best_for.py): at most one, only
+    # when its credible voices, their long-term use or its checked price clearly support it; None for most picks.
+    best_for: Label | None = None
 
 
 @dataclass
@@ -660,7 +665,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
                  prescription: Collection[str] = (), flattened: Collection[str] = (),
                  pages: Mapping[str, ProductPage] | None = None,
                  brand_downsides: Mapping[str, tuple[str, list[ScoredMention]]] | None = None,
-                 other_types_threads: Collection[str] = (), region: str = DEFAULT_REGION) -> Answer:
+                 other_types_threads: Collection[str] = (), region: str = DEFAULT_REGION,
+                 today: date | None = None) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
@@ -698,7 +704,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     (engine.pipeline._threads_about_another_type, general answers only): their notes give "What to look for" nothing
     unless the tip's own name names the type asked for (_look_for). `region` (24 Oct 2026, Noemi: "the tool should work for
     visitors anywhere") is where the visitor is, config.REGIONS: it changes the words of each price and availability line
-    (shown_price, shown_availability) and nothing else, so the same products are shown in the same order.
+    (shown_price, shown_availability) and nothing else, so the same products are shown in the same order. `today` (26 Oct
+    2026, the bestfor builder) is the day a price label judges how old a price is (None is today): engine.best_for.
     """
     check = _QuoteCheck(bodies, flattened)
     check.named_in = _named_in(ranking)
@@ -732,6 +739,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
             picks[-1].range = shown_range(ranges.get(product.key))
             picks[-1].prescription = _prescription(product.key, prescription)
             _with_page(picks[-1], pages.get(product.key))
+    _label_picks(picks, ranking, needs, asks, request, region, today)  # "best for" (26 Oct 2026, the bestfor builder)
     # A product the upvote rule lifted (14 Oct 2026) may be an item and a pick shown: then it is a pick only.
     shown_picks = {pick.product_key for pick in picks}
     worth = _worth_items(ranking, check, prices, cautions, summaries, set(worth_left_out) | shown_picks, asks, needs,
@@ -788,6 +796,20 @@ def _named_above(name: str, shown: Iterable[str], category: str, product_type: s
     words = [w for w in _beyond_the_type(name, category, product_type) if w != "line"]
     return bool(words) and any(all(any(_same_word(w, n) for n in _written(other, category)) for w in words)
                                for other in shown)
+
+
+def _label_picks(picks: list[Pick], ranking: RankingResult, needs: Iterable[Need], asks: tuple[str, ...], request: str,
+                 region: str, today: date | None) -> None:
+    """Each pick's "best for" label (26 Oct 2026, the bestfor builder; engine.best_for), from its own credible voices, their
+    long-term use and its price as shown, set in place. Nothing for fewer than config.BEST_FOR_MIN_PICKS picks."""
+    scores = {product.key: product for product in ranking.products}
+    products = [scores[pick.product_key] for pick in picks if pick.product_key in scores]
+    if len(products) != len(picks):
+        return
+    labels = best_for.label_picks(products, [pick.price for pick in picks], needs, asks, request, region, today,
+                                  _money)
+    for pick, label in zip(picks, labels):
+        pick.best_for = label
 
 
 def _prescription(key: str, prescription: Collection[str]) -> str | None:
@@ -3420,6 +3442,8 @@ def _render_form(form: str | None) -> list[str]:
 
 def _render_pick(pick: Pick) -> list[str]:
     lines = [f"## {pick.rank}. {pick.name}", ""] + _render_form(pick.form)
+    if pick.best_for:  # 26 Oct 2026, the bestfor builder
+        lines += [f"**{pick.best_for.text}** ({pick.best_for.basis})", ""]
     if pick.model:
         price = f" ({pick.model_price})" if pick.model_price else ""
         lines += [BRAND_PICK_MODEL.format(model=pick.model) + price, ""]

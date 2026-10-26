@@ -191,12 +191,17 @@ class ScoredMention:
     # of the request's needs: those its own words don't talk about (Noemi's decision (d) of 19 Oct 2026). The need rule
     # counts it as talking about them (engine.pipeline._talks_about); its reason and the rest go by `needs`, its words.
     needs_by_title: tuple[str, ...] = ()
+    # For a credible recommendation (26 Oct 2026, the bestfor builder): the topics of config.BEST_FOR_TOPICS the writer's
+    # own words about this product talk about ("sensitive skin", "quiet"; engine.best_for.topics_in), which a pick's
+    # "best for" label counts. Empty for every other mention, and for a writer who talks about none. Not in the score.
+    topics: tuple[str, ...] = ()
 
     def __post_init__(self):
         object.__setattr__(self, "badges", tuple(self.badges))  # a list given by the pipeline is fine too
         object.__setattr__(self, "needs", tuple(self.needs))
         object.__setattr__(self, "needs_unpraised", tuple(self.needs_unpraised))
         object.__setattr__(self, "needs_by_title", tuple(self.needs_by_title))
+        object.__setattr__(self, "topics", tuple(self.topics))
         object.__setattr__(self, "others_of_another_type", tuple(self.others_of_another_type))
         object.__setattr__(self, "features", tuple(self.features))
         _check_choice("category", self.category, MENTION_CATEGORIES)
