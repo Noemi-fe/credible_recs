@@ -705,8 +705,10 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   moisturisers (its products page and where-to-buy page, read today: seven moisturisers, only US shops, no UK price, so
   no from price), so its line links to the maker's page. Found reading the reader's output, for later: of the 28
   threads read on demand by Gemini 3.1 Flash-Lite, 45 of 695 mentions fail the extraction check, 20 of them because the
-  reader wrote the evidence level "no first-hand use" as a reason tag (the reason tags are config.EVIDENCE_TAGS); only 2
-  are quotes not found word for word. The reader's instructions should say levels and tags apart.
+  reader wrote the evidence level "no first-hand use" as a reason tag (the reason tags are config.EVIDENCE_TAGS); 10
+  are quotes not found word for word (corrected the same day: a first, rough count had said 2) and 13 replies marked as
+  naming their product further up that aren't replies to a reply. The reader's instructions should say levels and tags
+  apart.
 
 - 26 Oct 2026, afternoon (Noemi: "okay to all four recommendations"), her decisions on the classics review and the
   comparison with ChatGPT and Vetted, each as recommended:
@@ -731,8 +733,11 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   What was wrong: over the 28 threads it had read, the word-for-word check kept 650 mentions and dropped 45. 20 of the
   45 had the evidence LEVEL "no first-hand use" written in evidence_tags, the field of reason tags (config.EVIDENCE_TAGS
   has no such tag; the levels are config.EVIDENCE_LEVELS): 10 had it alone, 10 beside a valid tag ("vague", "asks about
-  it", "mentions flaws", "secondhand"). 2 used the thread's own id as the comment id (no refers_to). The rest: 2 quotes
-  not found word for word and a few refers_to problems, which this does not touch. The reader gets the extraction
+  it", "mentions flaws", "secondhand"). 2 used the thread's own id as the comment id (no refers_to). The rest: 10 quotes
+  not found word for word and 13 refers_to problems (the orchestrator's recount, 26 Oct 2026, over the 29 extractions
+  then in the library: 46 of 704 mentions dropped), which this does not touch. Checked against the real Gemini the same
+  day (one call, a made-up kettle thread): the reply schema was accepted, and hearsay came back tagged "secondhand", a
+  question "asks about it". The reader gets the extraction
   instructions (engine/prompts/extract_mentions.md), written for Claude Code, plus the thread; nothing in either said
   that "no first-hand use" has no tag of its own, and the thread's id sits on the first line of what it reads, next to
   the comment ids. What changed (engine/gemini_extract.py only): (1) every message now ends with plain rules built from
