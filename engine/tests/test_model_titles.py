@@ -304,3 +304,18 @@ def test_a_testers_card_keeps_the_note_whole_under_the_title(tmp_path):
     assert "counts below" not in card
     assert "Most named model" not in card
     assert len(card.split()) <= BLIND_TEST_WORDS_PER_PICK + len(f"**1. {FIBROX}**".split())
+
+
+def test_a_titled_pick_has_no_one_line_summary_since_it_sums_up_the_lines_voices(tmp_path, monkeypatch):
+    from engine import summaries
+    from engine.summaries import Summary, summary_key
+
+    line = Summary(product=VICTORINOX, category="kitchen", product_type="chef knife", cites=["v1a", "v2a"],
+                   text="Owners say it has lasted for years.", written_at="2026-10-26T10:00:00Z", writer="claude-code",
+                   instructions_version=summaries.current_version())
+    kept = {summary_key("kitchen", VICTORINOX): line}
+    monkeypatch.setattr(config, "BRAND_MODEL_TITLES_ON", False)
+    assert lead(tmp_path / "a", summaries=kept).answer.picks[0].summary is not None  # the line's, as any pick's
+    monkeypatch.setattr(config, "BRAND_MODEL_TITLES_ON", True)
+    titled = lead(tmp_path / "b", summaries=kept).answer.picks[0]
+    assert titled.name == FIBROX and titled.summary is None  # "In short" would read as about the model

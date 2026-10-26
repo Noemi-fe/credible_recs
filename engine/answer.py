@@ -847,12 +847,14 @@ def _titled_by_its_model(pick: Pick, lead: LeadingModel, check: "_QuoteCheck", p
     and `line_note` says how many credible voices are about the model and how many about the line in general, so the
     title never suggests the line's voices all reviewed this model. What is shown beside the title is the model's own
     where the lists have it, else the line's as before: its price (and with it the budget note), where it is sold, its
-    page and image. The model's own quotes come first (BRAND_MODEL_QUOTES_FIRST), then the line's."""
+    page and image. The model's own quotes come first (BRAND_MODEL_QUOTES_FIRST), then the line's. The one-line summary
+    ("In short:") is left out: it sums up the line's voices, and under a model's title it would read as about the model."""
     model = lead.product
     line = pick.name
     voices = len(model.credible_recommendations)
     pick.line, pick.name = line, model.name
     pick.model = pick.model_price = None  # the title is the model: no second "Most named model"
+    pick.summary = None  # "In short:" sums up the line's voices, whose words may be about its other models: not under a model's title
     pick.line_note = config.BRAND_MODEL_TITLE_NOTE.format(line=line, model_voices=voices,
                                                           line_voices=pick.voices.get("recommend", 0))
     own = _pick_quotes(model, check, asks, needs, product_type)[:config.BRAND_MODEL_QUOTES_FIRST]
