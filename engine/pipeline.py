@@ -848,16 +848,32 @@ def _wider_wins(first: PipelineResult, wider: PipelineResult, query: ParsedQuery
     of them having a credible voice about the request's need or feature (_voiced_picks; Noemi's decision (b) of 19 Oct
     2026). As many such picks keep the first reading, the closest to the request, except for a popular type's wider
     reading (`popular`, 26 Oct 2026, the reading builder): it has more evidence behind the same number of picks, so with
-    as many picks and as many of them with such a voice it is shown, unless fewer of its credible voices talk about what
-    the request asks for (_need_voices): it then has more evidence of popularity, not of fit (on the library: the
-    moisturiser for oily skin, whose wider reading had 90 credible voices behind its picks, 5 of them about oily skin,
-    where the first reading had 22, 8 of them)."""
+    as many picks and as many of them with such a voice it is shown when the request asks for nothing but the product,
+    and otherwise only when more of its credible voices talk about what the request asks for (_need_voices), at a share
+    of its picks' voices at least config.POPULAR_WIDER_NEED_SHARE_KEPT of the first reading's (_need_share): else it has
+    more evidence of popularity, not of fit (on the library: the moisturiser for oily skin, whose wider reading had 90
+    credible voices behind its picks, 5 of them about oily skin, where the first reading had 22, 8 of them)."""
     if len(wider.answer.picks) != len(first.answer.picks):
         return len(wider.answer.picks) > len(first.answer.picks)
     voiced_wider, voiced_first = _voiced_picks(wider, query), _voiced_picks(first, query)
     if voiced_wider != voiced_first:
         return voiced_wider > voiced_first
-    return popular and _need_voices(wider) >= _need_voices(first)
+    if not popular:
+        return False
+    if not judged_needs(query):  # a request asking for nothing but the product: more evidence wins
+        return True
+    # More evidence of fit, not only of popularity (26 Oct 2026, the orchestrator, at the merge): the wider reading must
+    # bring more credible voices about the need, at a share of its picks' voices close to the first reading's. It had
+    # won on as many: "shampoo for curly hair that isn't drying" read 57 threads for the same 8 voices about the need
+    # behind twice the voices (8 of 17, then 8 of 33), and put an anti-dandruff shampoo second.
+    return (_need_voices(wider) > _need_voices(first)
+            and _need_share(wider) >= config.POPULAR_WIDER_NEED_SHARE_KEPT * _need_share(first))
+
+
+def _need_share(result: PipelineResult) -> float:
+    """The share of the credible recommendations behind a reading's picks that talk about the request's need (0 for none)."""
+    voices = sum(pick.breakdown.credible_recommends for pick in result.answer.picks)
+    return _need_voices(result) / voices if voices else 0.0
 
 
 def _need_voices(result: PipelineResult) -> int:

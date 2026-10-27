@@ -2815,3 +2815,9 @@ POPULAR_READS_ONLY_THREADS_ABOUT_THE_NEED = True
 # 16 took 0.1 to 0.8 s) and at most 50 MB more at its peak; 41 popular types one after the other, the answers' memory
 # emptied between types as the plan job does, peaked at 994 MB against 988 MB for the first 16 threads.
 PIPELINE_POPULAR_THREADS = 200
+# A popular type's wider reading, as many picks as the first, is shown for a request with needs only when it has more
+# credible voices about them behind its picks, at a share of its picks' voices at least this much of the first
+# reading's (26 Oct 2026, the orchestrator at the merge; technical, reported to Noemi). On the library: b04's moisturiser
+# 11 of 32 voices about the need, then 17 of 53 (a share 0.94 of the first's: shown wider); the curly-hair shampoo 8 of
+# 17, then 8 of 33, and fine oily hair 11 of 18, then 11 of 33 (no more voices about the need: the first reading stays).
+POPULAR_WIDER_NEED_SHARE_KEPT = 0.75

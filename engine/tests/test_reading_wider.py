@@ -356,10 +356,12 @@ def fitting(query, name: str, voices: int, fitting_voices: int):
 def test_as_many_picks_the_popular_types_wider_reading_wins_unless_fewer_of_its_picks_have_a_voice():
     query = parse_query("smartwatch for fitness", model=None)
     first, wider = two_readings(query, [("Halo GT watch", ("fitness",), ())], [("Garmin Forerunner watch", ("fitness",), ())])
-    # Same picks, same voices: the first reading stays for a type that isn't popular (as before), the wider one wins for
-    # a popular type, which has more evidence.
+    # Same picks, same voices: the first reading stays for a type that isn't popular (as before). Changed on purpose 26
+    # Oct 2026 (the orchestrator, at the merge): for a popular type it stays too, since the wider reading brings no more
+    # voices about the need (it had won: "shampoo for curly hair that isn't drying" read 57 threads, not 16, for the same
+    # 8 voices about the need behind twice the voices, and put an anti-dandruff shampoo second).
     assert not pipeline._wider_wins(first, wider, query)
-    assert pipeline._wider_wins(first, wider, query, popular=True)
+    assert not pipeline._wider_wins(first, wider, query, popular=True)
     # Fewer of the wider reading's picks with a voice about the need: the first reading stays either way.
     voiceless = reading(query, ("Garmin Forerunner watch", (), ()))
     assert not pipeline._wider_wins(first, voiceless, query, popular=True)
@@ -374,8 +376,10 @@ def test_a_popular_types_wider_reading_with_fewer_voices_about_the_need_does_not
     assert pipeline._voiced_picks(first, query) == pipeline._voiced_picks(wider, query) == 1
     assert (pipeline._need_voices(first), pipeline._need_voices(wider)) == (8, 5)
     assert not pipeline._wider_wins(first, wider, query, popular=True)
-    # As many voices about the need, or more, and it wins; nothing is asked of a request that asks for nothing.
-    assert pipeline._wider_wins(first, fitting(query, "Garmin Forerunner watch", 90, 8), query, popular=True)
+    # More voices about the need, at a share not much below the first reading's, and it wins; nothing is asked of a
+    # request that asks for nothing. Changed on purpose 26 Oct 2026 (the orchestrator, at the merge): as many voices
+    # about the need (8 and 8) had won; more evidence of popularity with no more evidence of fit now keeps the first.
+    assert not pipeline._wider_wins(first, fitting(query, "Garmin Forerunner watch", 90, 8), query, popular=True)
     assert pipeline._wider_wins(first, fitting(query, "Garmin Forerunner watch", 90, 30), query, popular=True)
     plain = parse_query("smartwatch", model=None)
     assert pipeline._wider_wins(fitting(plain, "Halo GT watch", 22, 0), fitting(plain, "Garmin Forerunner watch", 90, 0),
@@ -389,3 +393,21 @@ def test_fewer_picks_never_win_and_more_picks_always_do():
     for popular in (False, True):
         assert pipeline._wider_wins(one, two, query, popular=popular)
         assert not pipeline._wider_wins(two, one, query, popular=popular)
+
+
+
+def test_a_popular_types_wider_reading_must_add_voices_about_the_need_at_a_share_close_to_the_first_readings():
+    # 26 Oct 2026 (the orchestrator, at the merge): reading three times the threads should bring more evidence of fit,
+    # not only of popularity. On the library: b04's moisturiser went from 11 of 32 voices about the need to 17 of 53 (shown
+    # wider); the curly-hair shampoo from 8 of 17 to 8 of 33, and the fine oily hair one from 11 of 18 to 11 of 33 (both
+    # now keep their first reading).
+    query = parse_query("smartwatch for fitness", model=None)
+    first = fitting(query, "Halo GT watch", 32, 11)
+    assert pipeline._wider_wins(first, fitting(query, "Garmin Forerunner watch", 53, 17), query, popular=True)
+    assert not pipeline._wider_wins(fitting(query, "Halo GT watch", 17, 8), fitting(query, "Garmin Forerunner watch", 33, 8),
+                                    query, popular=True)
+    # More voices about the need, but a far smaller share of them: still popularity, not fit.
+    assert not pipeline._wider_wins(fitting(query, "Halo GT watch", 17, 8), fitting(query, "Garmin Forerunner watch", 60, 9),
+                                    query, popular=True)
+    # The share it must keep is a setting.
+    assert 0 < config.POPULAR_WIDER_NEED_SHARE_KEPT <= 1
