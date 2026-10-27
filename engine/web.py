@@ -1074,6 +1074,7 @@ def answer_wording() -> dict[str, str]:
         "meets_bar": wording.MEETS_BAR,
         # One-line summaries (Noemi, 13 Oct 2026): "In short:" and the note saying it is ours, not a quote.
         "summary_label": wording.SUMMARY_LABEL,
+        "summary_about_label": wording.SUMMARY_ABOUT_LABEL,  # a model-titled pick's, about its line (26 Oct 2026)
         "summary_note": wording.SUMMARY_NOTE,
         # Active ingredients (13 Oct 2026): the label of each product's form in an ingredient-led answer.
         "form_label": wording.FORM_LABEL,

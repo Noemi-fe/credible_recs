@@ -1291,7 +1291,9 @@ details[open] > summary .icon { transform: rotate(180deg); }
       quotation, with the note saying it is ours. Nothing when there is none (or when it failed a check). */
   function summaryLine(summary) {
     if (!summary || !summary.text) return null;
-    return el("p", { class: "summary" }, el("span", { class: "summary-label" }, WORDING.summary_label), summary.text,
+    // A model-titled pick's summary is its line's, and says so (26 Oct 2026): "In short, about the ... line:".
+    const label = summary.about ? WORDING.summary_about_label.replace("{line}", summary.about) : WORDING.summary_label;
+    return el("p", { class: "summary" }, el("span", { class: "summary-label" }, label), summary.text,
       el("span", { class: "summary-note" }, WORDING.summary_note));
   }
 

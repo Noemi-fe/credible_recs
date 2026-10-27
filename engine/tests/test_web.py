@@ -921,6 +921,9 @@ def test_the_page_draws_also_worth_a_look_and_summaries_with_the_answers_own_wor
     settings = json.loads(re.search(r'<script type="application/json" id="settings">(.*?)</script>', html, re.DOTALL).group(1))
     assert settings["wording"]["worth_heading"] == WORTH_HEADING == "Also worth a look"
     assert settings["wording"]["summary_label"] == SUMMARY_LABEL and settings["wording"]["summary_note"] == SUMMARY_NOTE
+    # 26 Oct 2026 (the orchestrator): a model-titled pick's summary is said to be about its line.
+    from engine.answer import SUMMARY_ABOUT_LABEL
+    assert settings["wording"]["summary_about_label"] == SUMMARY_ABOUT_LABEL
     assert "worthSection(answer)" in html and "answer.worth_note" in html
     worth = re.search(r"function worthCard\(item\) \{(.*?)\n  \}", html, re.DOTALL).group(1)
     assert "quoteList(item.quotes" in worth  # the same Reddit link check as every other quote

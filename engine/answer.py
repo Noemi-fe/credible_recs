@@ -410,6 +410,9 @@ WORTH_NOTE_BAR_REST_STANDOUT = ("{voices} each, or one comment that stands out i
 # One-line summaries (Noemi's decision 4 of 13 Oct 2026; wording decided by Claude, the note approved by Noemi, 19 Oct
 # 2026): shown under a pick's name as "In short: <summary>", with the note saying it is ours and not a quote.
 SUMMARY_LABEL = "In short:"
+# A model-titled pick's summary, which sums up its line's voices (26 Oct 2026, the orchestrator; wording Claude's):
+# "In short, about the Victorinox chef knife line:".
+SUMMARY_ABOUT_LABEL = "In short, about the {line}:"
 SUMMARY_NOTE = "Our summary of what its credible voices say, not a quote."
 # Active ingredients (13 Oct 2026; wording decided by Claude). The title of an answer to a request naming an ingredient
 # and no type, and of one naming both; the note under the title; the label of each product's form.
@@ -535,6 +538,8 @@ class ShownSummary:
     # The verified quotes of the comments it cites, in its order: not shown, but checked word for word again (and live)
     # like every quote, so a summary never stands on a comment deleted or changed since.
     sources: tuple[ShownQuote, ...]
+    # The line's name when the pick is titled by its model (26 Oct 2026): the summary is the line's, and says so.
+    about: str | None = None
 
 
 @dataclass
@@ -870,14 +875,16 @@ def _titled_by_its_model(pick: Pick, lead: LeadingModel, check: "_QuoteCheck", p
     title never suggests the line's voices all reviewed this model. What is shown beside the title is the model's own
     where the lists have it, else the line's as before: its price (and with it the budget note), where it is sold, its
     page and image. The quotes naming the model come first (the model's own before the line's: at most
-    BRAND_MODEL_QUOTES_FIRST of its own are taken), then the others. The one-line summary
-    ("In short:") is left out: it sums up the line's voices, and under a model's title it would read as about the model."""
+    BRAND_MODEL_QUOTES_FIRST of its own are taken), then the others. The one-line summary ("In short:") sums up the
+    line's voices, so it is kept and said to be about the line (26 Oct 2026, the orchestrator: the builder had left it
+    out, and b07's and r01's titled picks lost it): "In short, about the Victorinox chef knife line:"."""
     model = lead.product
     line = pick.name
     voices = len(model.credible_recommendations)
     pick.line, pick.name = line, model.name
     pick.model = pick.model_price = None  # the title is the model: no second "Most named model"
-    pick.summary = None  # "In short:" sums up the line's voices, whose words may be about its other models: not under a model's title
+    if pick.summary is not None:  # the line's voices, whose words may be about its other models: said to be the line's
+        pick.summary = replace(pick.summary, about=line)
     pick.line_note = config.BRAND_MODEL_TITLE_NOTE.format(line=line, model_voices=voices,
                                                           line_voices=pick.voices.get("recommend", 0))
     own = _pick_quotes(model, check, asks, needs, product_type)[:config.BRAND_MODEL_QUOTES_FIRST]
@@ -3587,7 +3594,10 @@ def _render_pick(pick: Pick) -> list[str]:
 
 def _render_summary(summary: ShownSummary | None) -> list[str]:
     """"In short:" and the summary, in our words and never in quotation marks, with the note saying so."""
-    return [f"**{SUMMARY_LABEL}** {summary.text} _({SUMMARY_NOTE})_", ""] if summary is not None else []
+    if summary is None:
+        return []
+    label = SUMMARY_ABOUT_LABEL.format(line=summary.about) if summary.about else SUMMARY_LABEL
+    return [f"**{label}** {summary.text} _({SUMMARY_NOTE})_", ""]
 
 
 def _render_worth(item: WorthALook) -> list[str]:

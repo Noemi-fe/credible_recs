@@ -360,7 +360,10 @@ def test_a_testers_card_keeps_the_note_whole_under_the_title(tmp_path):
     assert len(card.split()) <= BLIND_TEST_WORDS_PER_PICK + len(f"**1. {FIBROX}**".split())
 
 
-def test_a_titled_pick_has_no_one_line_summary_since_it_sums_up_the_lines_voices(tmp_path, monkeypatch):
+def test_a_titled_pick_keeps_its_one_line_summary_said_to_be_about_the_line(tmp_path, monkeypatch):
+    # Changed on purpose 26 Oct 2026 (the orchestrator, at the merge): the names builder had left the summary out, since it
+    # sums up the line's voices; but a titled pick then lost its "In short" line (b07's Victorinox Fibrox and r01's Kobo
+    # Libra Colour in the blind test). It is kept, and said to be about the line, so it never reads as about the model.
     from engine import summaries
     from engine.summaries import Summary, summary_key
 
@@ -372,7 +375,10 @@ def test_a_titled_pick_has_no_one_line_summary_since_it_sums_up_the_lines_voices
     assert lead(tmp_path / "a", summaries=kept).answer.picks[0].summary is not None  # the line's, as any pick's
     monkeypatch.setattr(config, "BRAND_MODEL_TITLES_ON", True)
     titled = lead(tmp_path / "b", summaries=kept).answer.picks[0]
-    assert titled.name == FIBROX and titled.summary is None  # "In short" would read as about the model
+    assert titled.name == FIBROX and titled.summary is not None and titled.summary.about == VICTORINOX
+    from engine.answer import SUMMARY_ABOUT_LABEL, render_markdown
+    text = render_markdown(lead(tmp_path / "c", summaries=kept).answer)
+    assert SUMMARY_ABOUT_LABEL.format(line=VICTORINOX) in text
 
 
 def test_a_quote_naming_the_model_comes_before_one_that_does_not_whoever_wrote_it(tmp_path):

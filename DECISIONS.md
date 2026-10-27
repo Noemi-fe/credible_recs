@@ -865,3 +865,15 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   the numbers); (b) a titled pick's "In short:" is left out, and the line's counts stay beside the model's title with the
   note; (c) Garmin's pages say no model "replaces" another: the 255, 265, 955 and 965 are shown the 570 and 970 by tier;
   (d) titles keep writers' spellings where no list writes the name ("Google pixel 8a" is not one today).
+
+- 26 Oct 2026, night (Claude, the orchestrator; technical and wording, reported to Noemi), at the merges of `bestfor` and
+  `names`: (1) the "best for" labels are worked out after the model titles, so the "Lowest price of these picks" label
+  judges the prices shown (a titled pick shows its model's own price); (2) a model-titled pick keeps its one-line summary,
+  said to be about its line ("In short, about the Victorinox chef knife line:", engine/answer.py SUMMARY_ABOUT_LABEL):
+  the names builder had left it out, as it sums up the line's voices, but b07's Victorinox Fibrox and r01's Kobo Libra
+  Colour, both in the blind test, then lost theirs; (3) the How we score page gets one sentence on model titles and
+  current models (the names builder's proposal). Also decided: the names builder's "clearly leads" rule stands (at least
+  twice the next model's voices and a quarter of the line's model-naming voices: it titled fewer picks on one-voice
+  margins than "at least half" would have), and so does its reading of Garmin's tiers for the current Forerunners. The
+  summaries for the 12 blind-test questions (a Sonnet helper, 26 Oct 2026): 42 new and 23 stale ones rewritten in
+  data/library/summaries.json (813 entries), so 65 products those answers show or may show have one.
