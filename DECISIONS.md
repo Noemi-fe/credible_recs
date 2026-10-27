@@ -792,9 +792,11 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   branch). 16 current-model lines are shown in 9 answers (Sony XM4 in 4 headphone answers, Bose in 3, a Pixel
   line pick, Garmin Forerunners 255 and 265 as picks and 955 and 965 as items in "running watch", the Kindle Scribe 2024
   twice, JBL Flip 3 and UE Boom 2). Blind test: 10 of 10 with 3 picks, every shown quote verified (244 of 244, unverified
-  shown 0), every other evaluation number as in the control run. Warm times per answer, sweep seconds, against the control:
-  mean 0.67 s to 0.73 s, 90th percentile 1.26 s to 1.30 s (the new functions run on every answer with a brand line; the
-  list is read once). FOR NOEMI: (a) "clearly" is twice the next model and a quarter of the voices, not half (above:
+  shown 0), every other evaluation number as in the control run. Warm times per answer, sweep seconds, against the control
+  run back to back: mean 0.69 s to 0.68 s, 90th percentile 1.28 s to 1.22 s (the first version of _leading_models took 27 ms
+  an answer and 1.3 s in the worst, +9% on the sweep, for looking under every line of the ranking; now only under the
+  lines that may be shown and among the products credible voices named: 1.7 ms an answer on average, 15 ms at worst, with
+  the same 278 answers; the current-models list is read once, 0.0 ms). No memory is held beyond the two small lists. FOR NOEMI: (a) "clearly" is twice the next model and a quarter of the voices, not half (above:
   the numbers); (b) a titled pick's "In short:" is left out, and the line's counts stay beside the model's title with the
   note; (c) Garmin's pages say no model "replaces" another: the 255, 265, 955 and 965 are shown the 570 and 970 by tier;
   (d) titles keep writers' spellings where no list writes the name ("Google pixel 8a" is not one today).
