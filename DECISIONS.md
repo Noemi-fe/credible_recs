@@ -933,3 +933,15 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   request's needs: only those about the needs (its default, POPULAR_READS_ONLY_THREADS_ABOUT_THE_NEED), since every
   thread gave most requests of a type the same top 3 (10 shampoo requests: 4 different top 3s); a technical reading of
   Noemi's decision 1, reported to her.
+
+- 26 Oct 2026, night (Claude, the orchestrator; Noemi's decision 4 of 26 Oct 2026): the blind test's cards of our answers
+  (data/library/blind_test_cards.json, git-ignored; the old ones kept in docs/build-2026-10-26/cards-before-27oct.json)
+  are refreshed to the answers of main f83f456 (the classics fixes, the reading, names and bestfor rounds, the
+  summaries for the 12 questions); ChatGPT's and Vetted's cards are unchanged (captured 24 Oct 2026). Our picks change in
+  b04 (Vanicream first; CeraVe's night cream out), b06 (the Dualit Classic in, Bonavita out), b07 (the Victorinox pick
+  titled Victorinox Fibrox, its why said to be about Victorinox's chef knives), r01 (Kobo Libra Colour, likewise about
+  Kobo's e-readers), r03 (the Leap V2 in, the Mirra 2 out) and r05 (three webcams, where our answer had none on 20
+  Oct). The whys were written by a Sonnet helper from each pick's summary as the site shows it (the vague "Often
+  recommended..." ones replaced; specific unchanged ones kept), at most 20 words in English and Italian; prices and
+  "Lowest price" labels left out, as the cards' rules require; "KP" and "OBS" spelled out by the orchestrator.
+  `python -m engine.pair_test check`: every rule followed.
