@@ -2773,3 +2773,45 @@ US_SHOPS = {
     "vanicream.com": "Vanicream", "all-clad.com": "All-Clad", "saddlebackleather.com": "Saddleback Leather",
     "tarptent.com": "Tarptent", "durstongear.com": "Durston Gear",
 }
+
+# --- Build round 26 Oct 2026: reading ---
+# Noemi's decision 1 of 26 Oct 2026 ("okay to all four recommendations", after comparing our answers with ChatGPT's
+# and Vetted's): read wider for popular product types even when the first reading already has three picks. Every value
+# here is Claude's technical call, reported to Noemi (26 Oct 2026, the reading builder; measurements in
+# docs/build-2026-10-26/reading, private).
+#
+# The type rule used to decide a product's type for the whole product, by the type most of its mentions have. A
+# product whose mentions are split between kinds (a healing ointment typed lip balm in lip balm threads and
+# moisturiser in moisturiser ones) was left out whole once every thread was read. Now a product with at least this
+# many mentions typed as the requested type by the AI, from at least this many threads, is not left out whole; its
+# mentions of another type still count for nothing. Twice what a pick needs (3 credible recommendations from 2
+# threads, Noemi's decisions 4 to 8 of 9 Oct 2026), so what is kept could be a pick on its own. A product with fewer
+# is left out as before. Measured on the library with every thread read, for the product type of each of the 278 sweep
+# requests: the only product this keeps is Aquaphor Healing Ointment in moisturiser answers (9 mentions typed
+# moisturiser by the AI, from 5 threads, of 29 mentions); the most any other product has typed as the requested type
+# is 6 mentions from 2 threads (CeraVe Healing Ointment, in a request for an acid).
+TYPE_RULE_KEEP_MIN_MENTIONS = 6
+TYPE_RULE_KEEP_MIN_THREADS = 4
+
+# Popular product types. A type is popular when the library holds at least this many usable threads about it (the
+# first reading's threads_available): half again as many as the first reading's 16. Measured on the 150 sweep requests
+# whose type has more than 16 (probe): reading every thread instead of the first 16 changed the top 3 of 111 of them:
+# 3 of 12 for types of 17 to 22 threads, 7 of 8 for 23, 101 of 130 from 24 up. A popular type is read wider even when
+# the first reading has 3 picks, and shown when the wider reading has more picks, or as many with as many voices about
+# the need (engine.pipeline._wider_wins).
+POPULAR_TYPE_MIN_THREADS = 24
+# What a popular type's wider reading reads: every thread that talks about what the request asks for (its needs, in a
+# title or post), every thread when it asks for nothing besides the product or names an active ingredient, and at
+# least PIPELINE_MORE_THREADS when the first reading is short of picks. Not every thread for a request with needs: on
+# the library that gave a type's most recommended products to every request for it (10 shampoo requests: 9 different
+# top 3s from the first 16 threads, 7 from the threads about the need, 4 from every thread; 6 cleanser requests: 5, 5
+# and 2), and a Kose oil cleanser and two CeraVe ones for a gentle cleanser for acne-prone skin.
+# False reads every thread of a popular type whatever the request asks for (the reading of the classics review of 25
+# Oct 2026): more evidence behind a type's most recommended products, and the same top 3 for most requests of a type.
+POPULAR_READS_ONLY_THREADS_ABOUT_THE_NEED = True
+# The most threads a popular type's wider reading reads (answer_request's popular_threads). The library's biggest type
+# has 172 threads, so today this reads every thread there is; it bounds the time and memory of a type that grows.
+# Measured in one process with the open model off: reading all 172 shampoo threads took 1.0 to 2.2 s warm (the first
+# 16 took 0.1 to 0.8 s) and at most 50 MB more at its peak; 41 popular types one after the other, the answers' memory
+# emptied between types as the plan job does, peaked at 994 MB against 988 MB for the first 16 threads.
+PIPELINE_POPULAR_THREADS = 200

@@ -725,3 +725,47 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   classics builder read Misen's page on 25 Oct 2026 and found it uncoated (the page refused a second read today: too
   many requests). In answers asking for non-stick it is now left out as not non-stick instead of shown with "we
   couldn't confirm it's non-stick".
+
+- 26 Oct 2026, evening (Claude, the reading builder, branch reading; technical values and rules within Noemi's decision 1
+  of 26 Oct 2026, reported to her; not merged, not deployed). Decision 1 built, measured and explained:
+  1. A popular type is read wider even when the first 16 threads give 3 picks. Popular means the library holds at least
+     24 usable threads about the product (config.POPULAR_TYPE_MIN_THREADS: half again as many as the 16 read; reading
+     every thread instead of the first 16 changed the top 3 of 101 of 130 requests from 24 threads up, 7 of 8 at 23, 3 of
+     12 at 17 to 22). What it reads is a choice, made on the numbers: not every thread but every thread that talks about
+     what the request asks for (a need in its title or post: PipelineResult.threads_about_needs), or every thread when
+     the request asks for nothing besides the product or names an active ingredient, at most 200
+     (config.PIPELINE_POPULAR_THREADS; the biggest type holds 172). Reading every thread for every request gave a type's
+     most recommended products to all its requests: the 10 shampoo requests got 4 different top 3s (9 from the first 16
+     threads, 7 from the threads about the need), the 6 cleanser requests 2 (5 and 5), and a gentle cleanser for
+     acne-prone skin got two CeraVe cleansers and an oil cleanser. A reading of fewer than 24 threads is no wider one
+     (a request with 17 to 23 threads about its need stays as it was). Short of picks, a popular type reads the same
+     threads but never fewer than the 48 it always read (so the ingredient-led requests and "salicylic acid wash" go to
+     every thread: 1 pick became 3). The wider reading is shown when it has more picks, or as many with as many of them
+     talking about the need and not fewer credible voices about it (engine.pipeline._wider_wins, popular): the
+     moisturiser for oily skin, read in full, had 90 credible voices behind its picks and 5 about oily skin, against 22
+     and 8. `more_threads=None` still reads nothing more; read_more still means "too few picks" (the page's note says so),
+     and a new PipelineResult.read_wider says the reading shown is a popular type's. With a live checker, the first
+     reading of such a type is not checked against Reddit until it is known to be the one shown (the sweep's 36 popular
+     answers would have read 9 comments each, from Reddit's allowance of about 200 in 10 minutes, for quotes not shown).
+  2. The type rule no longer drops a product whole when many of its mentions are typed as the requested kind
+     (engine.pipeline._many_typed_as_requested): at least 6 mentions typed so by the AI (twice a pick's 3), from at least
+     4 threads (twice a pick's 2), count by the AI's type alone, not by the writer's words (counting words had kept a lip
+     cream in a moisturiser answer, a glycolic toner in an exfoliant one and an air fryer oven in an air fryer one); a
+     brand or line (loose group) is judged as before. On the library with every thread read, for the product type of each
+     of the 278 requests, it keeps one product: Aquaphor Healing Ointment in moisturiser answers (9 mentions typed so, of
+     29, in 5 threads; the rest are typed lip balm or ointment and still count for nothing). It then ranks 29th of 880
+     in b04's widest reading, and a sweep with only this rule switched off gives the same 278 answers: it changes none.
+  3. Measured, 278 requests, the change off and on back to back (docs/build-2026-10-26/reading, private): 41 answers read
+     more threads (4,132 threads read in all became 5,674; 234,965 comments, 291,723), 39 answers change (31 change picks,
+     15 of them the first pick; 8 only the Also worth a look or Skip lists; 3 gain a pick), none unexplained. Warm
+     seconds (the sweep's): all answers mean 0.69 to 0.80, 90th percentile 1.27 to 1.61; the 41 widened answers mean 0.58
+     to 1.32, 90th percentile 1.16 to 2.93, slowest 3.78. Memory (fresh processes): one answer over the biggest
+     type, every one of its 172 threads, peaks within 50 MB of the first 16 threads' (913 and 923 MB with the open model off,
+     991 and 944 MB in another run); 41 popular types one after another with the answers' memory emptied between types, as
+     the plan job does, 994 MB against 988 MB; never forgetting, 1,357 MB against 1,221 MB. The distinct comments the 278 answers quote: 3,697 became 3,742, so
+     the read-ahead load is about the same. Four more products show without a one-line summary (339, was 335). The
+     blind test stays at 10 questions with 3 picks and no unverified quote (248 quotes shown, was 244); b04 reads 49
+     threads, not 16, with the same three picks (Vanicream's line now backed by 31 credible voices across 11 threads).
+  Left for Noemi: whether a request with needs should read every thread (the classics review's reading: more evidence
+  behind a type's most recommended products, and the same top 3 for most requests of a type) or only the threads about
+  the need (built). One switch: config.POPULAR_READS_ONLY_THREADS_ABOUT_THE_NEED.

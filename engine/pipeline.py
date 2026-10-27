@@ -206,6 +206,7 @@ from engine.config import (
     PICKS_SHOWN,
     PIPELINE_MAX_THREADS,
     PIPELINE_MORE_THREADS,
+    PIPELINE_POPULAR_THREADS,
     TYPE_SYNONYMS,
     UK_BRAND_NAMES,
     WORTH_A_LOOK_SHOWN,
@@ -235,7 +236,7 @@ from engine.match_products import (
 )
 from engine.memo import Table
 from engine.models import Comment, Thread
-from engine.needs import Need, judged_needs, needs_met, needs_of, said_not_to_help
+from engine.needs import Need, judged_needs, needs_met, needs_of, request_needs, said_not_to_help, thread_needs
 from engine.prices import (
     Price,
     PriceCheck,
@@ -362,6 +363,10 @@ class PipelineResult:
     # titled as another product only names this one in its post.
     own_threads_available: int = 0
     newest_own_thread: datetime | None = None
+    # Of the usable threads, how many talk about one of the request's needs in their title or post (26 Oct 2026, the
+    # reading builder; _threads_about_needs): the threads module 2's need-led order puts first. None when there is no
+    # need to read by (the request names none, or is ingredient-led), and for a type too small to be popular.
+    threads_about_needs: int | None = None
     # The comments the AI read in the threads used (its reading view: the readable comments, up to EXTRACT_MAX_COMMENTS
     # a thread), shown with every answer (Noemi, 12 Oct 2026).
     comments_read: int = 0
@@ -369,6 +374,10 @@ class PipelineResult:
     # reported, never quietly dropped (11 Oct 2026).
     skipped_files: list[str] = field(default_factory=list)
     read_more: bool = False  # the first threads gave too few picks, so more were read (answer_request, 11 Oct 2026)
+    # The reading kept is the wider reading of a popular type (26 Oct 2026, config.POPULAR_TYPE_MIN_THREADS): the
+    # library holds many more threads about the product than the first reading used. Apart from read_more, which the
+    # page words as "the most relevant ones gave too few picks" and stays for that reason alone.
+    read_wider: bool = False
     # The same reading ranked with Noemi's upvote rule (14 Oct 2026), when asked for (_answer's upvotes_too): what
     # answer_request returns for the reading it keeps. None otherwise, and when the rule changes nothing in its ranking
     # (the answer is this one).
@@ -406,7 +415,8 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
                    more_threads: int | None = PIPELINE_MORE_THREADS,
                    brand_lines: list[BrandLine] | None = None,
                    summaries: Mapping[str, Summary] | None = None,
-                   product_pages: list[ProductPage] | None = None, region: str = config.DEFAULT_REGION) -> PipelineResult:
+                   product_pages: list[ProductPage] | None = None, region: str = config.DEFAULT_REGION,
+                   popular_threads: int | None = PIPELINE_POPULAR_THREADS) -> PipelineResult:
     """Runs modules 1 to 7 on the saved library and returns everything each step decided.
 
     The answer reads the `max_threads` most relevant threads first. When they give fewer than PICKS_SHOWN picks and the
@@ -419,7 +429,20 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
     besides the product (its needs, engine/needs.py): reading 48 shampoo threads had given every shampoo request the
     same popular picks. For
     haircare it needs one in the first reading too (config.NEED_RULE_IN_EVERY_READING; Noemi's decision 4 of 14 Oct
-    2026). `more_threads=None` never reads more. `brand_lines`: the brand-lines list (engine/brand_lines.py); None reads
+    2026). `more_threads=None` never reads more.
+
+    A popular type is read wider even when the first reading has enough picks (26 Oct 2026, Noemi's decision 1 of that
+    day, after comparing our answers with ChatGPT's and Vetted's): when the library holds at least
+    config.POPULAR_TYPE_MIN_THREADS usable threads about the product, the wider reading reads, up to `popular_threads`,
+    every thread that talks about what the request asks for (every thread when it asks for nothing besides the
+    product), or every thread there is when the first reading is short of picks (_wider_width). The first 16 threads are
+    a sample of a type with a hundred (docs/classics-review-2026-10-25.md, "The 16-thread window": the moisturiser
+    answer reads 16 of 165 threads); but reading them all gave a type's most recommended products to every request for
+    it, so a request with needs reads the threads about them. It is shown when it has more picks, or as many with as
+    many of them with a voice about the need and not fewer credible voices about it (_wider_wins, popular).
+    `popular_threads=None` leaves a popular type to the few-picks rule alone.
+
+    `brand_lines`: the brand-lines list (engine/brand_lines.py); None reads
     data/brand_lines.json. `summaries`: the one-line summaries ({engine.summaries.summary_key: Summary}); None reads the
     library's summaries.json (none when there is no such file). `product_pages`: the products' own pages and makers'
     images (engine/product_pages.py, 15 Oct 2026); None reads data/product_pages.json. `region` (24 Oct 2026, Noemi: "the
@@ -442,17 +465,108 @@ def answer_request(request: str, library_dir: Path = DEFAULT_LIBRARY_DIR, max_th
                    live_check_required=live_check_required, live_checker=live_checker, product_facts=product_facts,
                    brand_lines=brand_lines, summaries=summaries, upvotes_too=upvotes, product_pages=product_pages,
                    region=region)
-    result = _answer(query, max_threads=max_threads, **reading)
-    if not (more_threads is None or more_threads <= max_threads or result.answer is None
-            or len(result.answer.picks) >= PICKS_SHOWN or result.threads_available <= len(result.threads_used)):
-        wider = _answer(query, max_threads=more_threads, need_led=True, **reading)
-        if _wider_wins(result, wider, query):
-            wider.read_more = True
-            result = wider
+    # With a live checker, the first reading of a type that may be read wider isn't checked against Reddit yet (26 Oct
+    # 2026, the reading builder): its quotes would cost an embed read each, from Reddit's allowance of about 200 in 10
+    # minutes, and not be shown when the wider reading is (36 popular answers of the sweep: 9 such reads each). Only
+    # the reading shown is checked: the wider one as it is read, the first one after all when it is the one kept. The
+    # pick counts that decide are the same unchecked.
+    unchecked = (_without_live_check(reading) if live_checker is not None and popular_threads is not None
+                 and more_threads is not None and _usable_thread_count(
+                     query, library_dir, today, live_check_required, live_checker) >= config.POPULAR_TYPE_MIN_THREADS
+                 else None)
+    result = _answer(query, max_threads=max_threads, **(reading if unchecked is None else unchecked))
+    width, popular = _wider_width(result, max_threads, more_threads, popular_threads)
+    kept_wider = False
+    if width is not None:
+        wider = _answer(query, max_threads=width, need_led=True, **reading)
+        if _wider_wins(result, wider, query, popular):
+            # read_more is the page's "the most relevant ones gave too few picks": for that reason alone
+            wider.read_more = len(result.answer.picks) < PICKS_SHOWN
+            wider.read_wider = popular
+            result, kept_wider = wider, True
+    if unchecked is not None and not kept_wider:
+        result = _answer(query, max_threads=max_threads, **reading)
     if upvotes and result.with_upvotes is not None:
         result.with_upvotes.read_more = result.read_more
+        result.with_upvotes.read_wider = result.read_wider
         result = result.with_upvotes
     return result
+
+
+def _without_live_check(reading: dict) -> dict:
+    """A reading's arguments without its live checker: the threads it reads are the same (`live_check_required` is what
+    follows the checker's absence, so it is fixed at what the checker made it), and the quotes it would show are only
+    checked word for word against the saved comments."""
+    required = reading["live_check_required"]
+    return {**reading, "live_checker": None, "live_check_required": False if required is None else required}
+
+
+def _usable_thread_count(query: ParsedQuery, library_dir: Path, today: date | None, live_check_required: bool | None,
+                         live_checker) -> int:
+    """How many threads _answer will call usable for this request (PipelineResult.threads_available), counted before
+    reading any: the extracted threads about the request, less those waiting for a live check. Worked out as _answer's
+    first lines do (engine/tests/test_reading_wider.py keeps the two the same); module 2's retrieval is kept with the
+    library, so this is cheap once the library is read."""
+    if query.status != "ok":
+        return 0
+    threads_dir = Path(library_dir) / "threads"
+    library = loaded_library(threads_dir)
+    candidates = LocalSource(threads_dir, skip_broken=True, threads=library.threads,
+                             remembered=library.remembered).find_threads(query, limit=sys.maxsize)
+    required = LIVE_CHECK_REQUIRED and live_checker is None if live_check_required is None else live_check_required
+    exempt = not required or _in_gold_set(threads_dir)
+    today = today or _today()
+    return sum(1 for t in candidates if _about_the_request(t, query) and t.id in library.checked
+               and (exempt or _checked_live_recently(t, today)))
+
+
+def _wider_width(first: PipelineResult, max_threads: int, more_threads: int | None,
+                 popular_threads: int | None) -> tuple[int | None, bool]:
+    """How many threads the wider reading reads, and whether it is a popular type's: (None, False) for no wider reading.
+
+    Nothing wider when `more_threads` is None (every caller that wants the first reading alone), the request has no
+    answer, or the first reading read every thread there is.
+
+    A popular type (the library holds at least config.POPULAR_TYPE_MIN_THREADS usable threads about it: PipelineResult.
+    threads_available; 26 Oct 2026, Noemi's decision 1 of that day) reads wider whatever the first reading gave: every
+    thread that talks about what was asked (threads_about_needs), or every thread when the request asks for nothing
+    besides the product or names an active ingredient, up to `popular_threads`. With enough picks that must be a reading
+    of at least config.POPULAR_TYPE_MIN_THREADS threads; short of picks (fewer than PICKS_SHOWN) it reads at least
+    `more_threads`, as before. Reading every thread for a request with needs had given a type's most recommended
+    products to every request for it (the library's six cleanser requests all had the same top 3, eleven shampoo ones
+    four): the threads about the need are the evidence for it.
+    Any other type reads up to `more_threads`, only when short of picks (11 Oct 2026). A width not beyond the first
+    reading's is no wider reading."""
+    if (more_threads is None or first.answer is None or first.threads_available <= len(first.threads_used)):
+        return None, False
+    short = len(first.answer.picks) < PICKS_SHOWN
+    popular = popular_threads is not None and first.threads_available >= config.POPULAR_TYPE_MIN_THREADS
+    if popular:
+        about_needs = first.threads_about_needs if config.POPULAR_READS_ONLY_THREADS_ABOUT_THE_NEED else None
+        reach = first.threads_available if about_needs is None else about_needs
+        width = min(popular_threads, reach)
+        if short:
+            width = max(width, more_threads)
+        elif width < config.POPULAR_TYPE_MIN_THREADS:
+            return None, False
+    elif short:
+        width = more_threads
+    else:
+        return None, False
+    return (width, popular) if width > max_threads else (None, False)
+
+
+def _threads_about_needs(usable: list[Thread], query: ParsedQuery) -> int | None:
+    """How many of the usable threads talk about one of the request's needs in their title or post (engine.needs.
+    thread_needs, as module 2's need-led order reads them; a thread titled as another type of product talks about none):
+    the evidence about what was asked, which a popular type's wider reading reads (_wider_width). None when the request
+    names no need or is ingredient-led (module 2 reads those threads by how much their comments talk about the
+    ingredient: every thread naming it is about the request), and for a type too small to be popular, which never
+    asks."""
+    needs = request_needs(query)
+    if not needs or query.ingredient_led or len(usable) < config.POPULAR_TYPE_MIN_THREADS:
+        return None
+    return sum(1 for thread in usable if thread_needs(thread, needs, titled_as_another_type(thread.title, query)))
 
 
 def request_kind(request: str) -> tuple:
@@ -519,6 +633,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.threads_available = len(usable)
     own = [t for t in usable if not titled_as_another_type(t.title, query)]
     result.own_threads_available = len(own)
+    result.threads_about_needs = _threads_about_needs(usable, query)
     result.newest_own_thread = max((t.created_at for t in own), default=None)
     threads = usable[:max_threads]
     checked = {t.id: every_checked[t.id] for t in threads}
@@ -728,13 +843,27 @@ def _talks_about(product, needs: set[str]) -> bool:
                for m in product.credible_recommendations)
 
 
-def _wider_wins(first: PipelineResult, wider: PipelineResult, query: ParsedQuery) -> bool:
+def _wider_wins(first: PipelineResult, wider: PipelineResult, query: ParsedQuery, popular: bool = False) -> bool:
     """Whether answer_request keeps the wider reading: it gives more picks than the first reading, or as many with more
     of them having a credible voice about the request's need or feature (_voiced_picks; Noemi's decision (b) of 19 Oct
-    2026). As many such picks keep the first reading, the closest to the request."""
+    2026). As many such picks keep the first reading, the closest to the request, except for a popular type's wider
+    reading (`popular`, 26 Oct 2026, the reading builder): it has more evidence behind the same number of picks, so with
+    as many picks and as many of them with such a voice it is shown, unless fewer of its credible voices talk about what
+    the request asks for (_need_voices): it then has more evidence of popularity, not of fit (on the library: the
+    moisturiser for oily skin, whose wider reading had 90 credible voices behind its picks, 5 of them about oily skin,
+    where the first reading had 22, 8 of them)."""
     if len(wider.answer.picks) != len(first.answer.picks):
         return len(wider.answer.picks) > len(first.answer.picks)
-    return _voiced_picks(wider, query) > _voiced_picks(first, query)
+    voiced_wider, voiced_first = _voiced_picks(wider, query), _voiced_picks(first, query)
+    if voiced_wider != voiced_first:
+        return voiced_wider > voiced_first
+    return popular and _need_voices(wider) >= _need_voices(first)
+
+
+def _need_voices(result: PipelineResult) -> int:
+    """How many credible recommendations behind a reading's picks talk about one of the request's needs (their
+    breakdown's credible_recommends_fitting_need): none when the request asks for nothing but the product."""
+    return sum(pick.breakdown.credible_recommends_fitting_need for pick in result.answer.picks)
 
 
 def _voiced_picks(result: PipelineResult, query: ParsedQuery) -> int:
@@ -1541,8 +1670,33 @@ def _another_type(group: ProductGroup, query: ParsedQuery) -> bool:
     if _named_as_asked_with_its_ingredient(group, query, types):
         return False
     if types:
-        return all(_another_type_by_ai(types, w) for w in wanted)
+        return all(_another_type_by_ai(types, w) for w in wanted) and not _many_typed_as_requested(group, wanted)
     return all(_another_type_by_name(group, query, w) for w in wanted)
+
+
+def _many_typed_as_requested(group: ProductGroup, wanted: tuple[str, ...]) -> bool:
+    """Whether a product that most of its mentions' types call another type has many mentions typed as the requested
+    one (26 Oct 2026, the reading builder; Noemi's decision 1 of 26 Oct 2026, the classics review of 25 Oct): at least
+    config.TYPE_RULE_KEEP_MIN_MENTIONS of them, from at least config.TYPE_RULE_KEEP_MIN_THREADS threads. It is then not
+    left out whole: a healing ointment typed lip balm in the lip balm threads that mention it is still a moisturiser to
+    the writers who use it as one, and with every thread read its lip balm mentions had outnumbered the rest. Its
+    mentions of another type still count for nothing (_of_another_type), so it stands on the ones typed as the
+    requested type alone.
+
+    A mention counts as typed as the requested type by the AI's type alone (_another_type_by_ai), not by the mention's
+    words: the words rule (_mention_of_another_type) only keeps a mention of a product that is kept anyway. Counting
+    words as well had kept a lip cream the AI called a lip balm in a moisturiser answer, a glycolic toner in an
+    exfoliant one and an oven the AI called an air fryer oven in an air fryer one (the reading builder's check over the
+    library's product types, 26 Oct 2026).
+
+    Only one product: a brand or line (a loose group) is judged as before (name levels, 14 Oct 2026: which lines are
+    clear brands is the brand rules' to say)."""
+    if group.loose:
+        return False
+    typed = [m for m in group.mentions
+             if m.product_type and any(not _another_type_by_ai([m.product_type.strip().lower()], w) for w in wanted)]
+    return (len(typed) >= config.TYPE_RULE_KEEP_MIN_MENTIONS
+            and len({m.thread_id for m in typed}) >= config.TYPE_RULE_KEEP_MIN_THREADS)
 
 
 def _kinds_kept_out(query: ParsedQuery) -> tuple[str, ...]:
