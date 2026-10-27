@@ -59,9 +59,12 @@ def test_an_item_of_a_brand_line_pick_is_left_out(tmp_path):
     # The Victorinox line is a pick, and it speaks for the Fibrox (praised twice): listing the Fibrox apart would say
     # the same brand twice, once as less supported.
     result = answer_request(KNIFE_REQUEST, library_dir=knife_library(tmp_path, fibrox=(1, 1)), prices=[], today=TODAY)
-    assert VICTORINOX in picks(result)
+    # Changed on purpose 26 Oct 2026 (the names builder; Noemi's decision 3): the line pick is titled by its leading model,
+    # the Fibrox, so it is the pick's `line` that is the Victorinox line; and the Fibrox is still not listed apart.
+    assert VICTORINOX in [p.line for p in result.answer.picks]
     assert "Victorinox Fibrox chef knife" in [p.name for p in result.ranking.worth_a_look]
     assert "Victorinox Fibrox chef knife" not in worth(result)
+    assert picks(result).count("Victorinox Fibrox chef knife") == 1
 
 
 def test_a_brand_line_steps_aside_for_its_own_product_among_the_items(tmp_path):

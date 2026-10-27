@@ -791,3 +791,77 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   config.BEST_FOR_MIN_LEAD and BEST_FOR_MIN_SHARE are the levers; to cover more product types, config.BEST_FOR_TOPICS
   needs words per type (the sweep's commonest words in credible recommendations are the place to look). The reading
   builder's wider reading gives picks more voices, so the thresholds should be looked at again after that merge.
+- 26 Oct 2026 (Claude, the names builder; Noemi's decision 3 of the afternoon, first two parts: "model names instead of
+  lines" and "the current tech models named"; technical and wording calls reported to her, each new wording marked in
+  engine/config.py; branch `names`, from main 66d410f, not merged, not deployed):
+  1. A brand-line pick is titled by the model its credible writers clearly name most (engine/pipeline.py,
+     _leading_models; engine/answer.py, _titled_by_its_model). The pick is still the line's: its key, score, reason,
+     support, voices, downsides and place are the line's, so only what is shown changes. "Clearly" (my value, from the
+     numbers; the brief's example was "at least half"): at least 2 credible voices, at least twice as many as any other model
+     of the line, and at least a quarter of all the credible voices that name one of the line's models (the line's
+     brand's specific products in the ranking whose names say a model, known or not). On the baseline's 398 line picks
+     (170 lines) with a known one-model leader, "half and more than any other" gives 26 picks, 12 lines and models, three of
+     them (Hero 4 voices to 3, Bonavita 4 to 3, Fellow 3 to 2) a one-voice margin, and misses four leaders by far in a
+     long list of models (Kobo's Libra Colour 18 voices to 5 of 45, Travelpro's Platinum Elite 10 to 3 of 24, Vitamix's
+     5200 18 to 4 of 44, LOWA's Renegade GTX 8 to 4 of 17); the rule used gives 36 picks, 13 lines and models. The values
+     are config.BRAND_MODEL_TITLE_MIN_CREDIBLE, _LEAD_RATIO and _MIN_SHARE; BRAND_MODEL_TITLES_ON False gives the answers of
+     26 Oct back. A title must also be a name we can stand behind: a name giving one model (never "Adrenaline/Glycerine
+     GTS", "S7 or S8", "(Ultras?)"), not starting with a size ("8" wusthof classic"), a known product (_a_known_model, as
+     for "Most named model": never a size, a description, a discontinued model or a shop's code), not another material than
+     the one asked for (a non-stick Tramontina pan as the first pick of "stainless steel pan for searing": found in the
+     baseline's answers), not less suited to the request than the line by the ranking's own keys (unconfirmed must-haves,
+     features praised, skip list, a shortfall that is the request's and not the bar's), and not sold only abroad while
+     another model of the line, or the line itself (its brand-lines entry found on sale), is sold in the visitor's region
+     (the Vitamix 5200 against the Vitamix line). No clear lead: the line's name and "Most named model", as before.
+     Shown with the title: a note saying how many credible voices are about the model and how many about the line in
+     general, and that the counts below are the line's ("The model named most in the Bose QuietComfort headphones line.
+     Credible voices: 2 about this model, 8 about the line in general. The counts below are the line's."; at the top of
+     the box of counts on the page, and under the title in the text answer); the model's own price, where it is sold, page
+     and image where the lists have them, else the line's as before; the quotes naming the model first (the model's own two
+     at most, then the line's); no "In short:" summary (it sums up the line's voices, whose words may be about its other
+     models). The blind-test packet keeps the note whole under the title (its last sentence aside) and cuts the reason
+     and quotes to the 90 words instead.
+  2. The current model of a fast-moving tech pick or Also worth a look item whose reviewed model a newer one of the same
+     line has replaced (engine/current_models.py; data/current_models.json, 10 entries naming 12 products, read on 26 Oct
+     2026 for the tech products the baseline sweep showed): "Current model: Kindle Scribe (2025)", the page's link
+     ("John Lewis page") and "checked 26 Oct 2026", as one line on the card (a link opening in a new tab) and in the text
+     answer. The reviewed model is the name the answer shows: a pick's or item's, the model that titles a line pick, or the
+     "Most named model" of one; it must be exactly an entry's name (never a likeness: the XM4 and XM5 are one letter
+     apart). A line (not one model) counts only when more than half of its credible voices wrote before the current model
+     came out (the page's year or month; before its first day): the writers of a line reviewed whichever model was current
+     when they wrote. None of the two Kindle lines' entries shows today (18 of the Paperwhite line's 45 voices wrote before
+     2024, 3 of the basic Kindle line's 30 before 2026); they stay in the list for a later library. Nothing is shown for a
+     current model, a model the list doesn't hold, or a type that isn't fast-moving. Sources: the maker's own page for
+     Bose (UK), Ultimate Ears (UK) and Garmin (its UK guide of 29 July 2026, which lists the Forerunner 570 and 970 as its
+     Advanced and Elite running watches, and its newsroom's announcement of 15 May 2025; Garmin's pages never say
+     "replaces", so the 255, 265, 955 and 965 point to the 570 and 970 by tier); a big UK shop's, John Lewis's, where the
+     maker's page refused an automated read (Sony 403, JBL 403, Amazon 503; Currys and Argos 403 too: none got around):
+     the Sony XM6, JBL Flip 7, Kindle Paperwhite (12th generation, 2024), Kindle (2026), Kindle Scribe (2025) and Google
+     Pixel 10a (Google's store pages gave no text). Left out for lack of a readable page: Roborock (its UK pages answered 429;
+     one retry, then left alone), the JBL Clip (no page gives a release date). Not looked up: the lines whose current model
+     differs by brand-wide choice (Apple, Samsung, TV lines), and models still current.
+  New tests, written first: engine/tests/test_model_titles.py (55), engine/tests/test_current_models.py (38); changed on
+  purpose, each with a dated note: the name helper and 4 tests of test_pick_polish.py, the pick helper and one list of
+  test_line_links.py, one test of test_pipeline_worth.py, and the key lists of test_web.py (2) and test_answer_worth.py
+  (a pick has "line", "line_note", "current_model"; an item "current_model"). Whole suite from the worktree (PYTHONPATH set)
+  through the heavy lock: 6,676 passed (6,583 on main). Sweep of 278 answers against a control run of the same code with the
+  two features off, back to back (so the library and the profiles are the same): 18 answers differ, 260 are identical. 14
+  have a pick titled by its model (Victorinox Fibrox in "first chef's knife under £100 for a home cook", which is the blind
+  test's b07, and in "best chef knife under £100"; Bose QuietComfort Ultra Headphones in 3 headphone answers; Kobo Libra
+  Colour in 2 e-reader answers; Travelpro Platinum Elite in 2 suitcase answers; Sage Bit More toaster in 2; EltaMD UV Clear
+  Broad-Spectrum SPF 46; COSRX Full Fit Propolis Synergy Toner; Garmin Venu 3S in "smartwatch for fitness"), and 4 more show
+  only a current-model line; in all 18 every other field is as before (rank, score, reason, support, voices, picks and items,
+  skip lists, messages). The baseline sweep itself differs from the control in 10 answers (two hiking boots answers, an air purifier, two
+  dumbbell answers, a cutting board, a mineral sunscreen, "smartwatch for fitness" and two e-reader answers, mostly the
+  order or the members of Also worth a look: the library and the refreshed profiles since the baseline ran, not this
+  branch). 16 current-model lines are shown in 9 answers (Sony XM4 in 4 headphone answers, Bose in 3, a Pixel
+  line pick, Garmin Forerunners 255 and 265 as picks and 955 and 965 as items in "running watch", the Kindle Scribe 2024
+  twice, JBL Flip 3 and UE Boom 2). Blind test: 10 of 10 with 3 picks, every shown quote verified (244 of 244, unverified
+  shown 0), every other evaluation number as in the control run. Warm times per answer, sweep seconds, against the control
+  run back to back: mean 0.69 s to 0.68 s, 90th percentile 1.28 s to 1.22 s (the first version of _leading_models took 27 ms
+  an answer and 1.3 s in the worst, +9% on the sweep, for looking under every line of the ranking; now only under the
+  lines that may be shown and among the products credible voices named: 1.7 ms an answer on average, 15 ms at worst, with
+  the same 278 answers; the current-models list is read once, 0.0 ms). No memory is held beyond the two small lists. FOR NOEMI: (a) "clearly" is twice the next model and a quarter of the voices, not half (above:
+  the numbers); (b) a titled pick's "In short:" is left out, and the line's counts stay beside the model's title with the
+  note; (c) Garmin's pages say no model "replaces" another: the 255, 265, 955 and 965 are shown the 570 and 970 by tier;
+  (d) titles keep writers' spellings where no list writes the name ("Google pixel 8a" is not one today).

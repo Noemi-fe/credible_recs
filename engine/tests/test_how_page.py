@@ -436,3 +436,14 @@ def test_the_page_says_in_one_sentence_how_a_best_for_label_is_chosen(tmp_path, 
 def test_a_changed_label_minimum_changes_the_page(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "BEST_FOR_MIN_VOICES", 4)
     assert "at least 4 of its credible voices" in text_of(get_how(tmp_path, monkeypatch))
+
+
+# --- Model titles and current tech models (26 Oct 2026, the orchestrator, from the names builder's proposal) ---
+
+def test_the_page_says_when_a_pick_is_titled_by_its_model_and_when_a_current_model_is_shown(tmp_path, monkeypatch):
+    html = get_how(tmp_path, monkeypatch)
+    words = text_of(html)
+    assert 'data-config="BRAND_MODEL_TITLE_MIN_CREDIBLE"' in html and 'data-config="BRAND_MODEL_TITLE_LEAD_RATIO"' in html
+    assert "the pick is titled by that model" in words
+    assert "how many are about the model and how many about the line in general" in words
+    assert "the card shows the current model" in words and "with the day we checked" in words

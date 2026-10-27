@@ -49,14 +49,19 @@ def answer(tmp_path, lines, request: str = KNIFE_REQUEST, live_checker=None):
 
 
 def pick(result, name: str):
-    return next(p for p in result.answer.picks if p.name == name)
+    # Changed on purpose 26 Oct 2026 (the names builder; Noemi's decision 3): a line pick whose leading model clearly
+    # leads (here the Fibrox, praised twice to the Rosewood's once) is titled by that model, the line's name in `line`
+    # (engine.pipeline._leading_models). A pick is found by either name. What these tests check - the line's range page,
+    # its from price, its budget - a titled pick keeps, as it has no page or price of the model's own here.
+    return next(p for p in result.answer.picks if name in (p.name, p.line))
 
 
 # --- 1. The range link ---
 
 def test_a_brand_line_pick_links_to_its_makers_page_for_its_type(tmp_path):
     result = answer(tmp_path, [victorinox()])
-    assert [p.name for p in result.answer.picks] == [VICTORINOX, "Mac Mighty chef knife", "Tojiro DP gyuto"]
+    # Changed on purpose 26 Oct 2026: the line pick is titled by its leading model (`line` holds the line's name).
+    assert [p.line or p.name for p in result.answer.picks] == [VICTORINOX, "Mac Mighty chef knife", "Tojiro DP gyuto"]
     assert pick(result, VICTORINOX).range == ShownRange(
         text="Browse Victorinox chef knives", url=RANGE, checked="checked 14 Oct 2026", checked_on="2026-10-14")
     # A specific product has its own price line; only a line, which has many products, links to its maker's range.

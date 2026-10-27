@@ -147,10 +147,13 @@ def test_items_are_in_the_json_and_the_text():
     # below the top 3 ("meets_bar"; engine/tests/test_past_the_picks.py).
     # Changed on purpose 15 Oct 2026 (Noemi's decisions 2 and 3 of the late afternoon): each item also has its "link" to
     # its own page and its maker's "image", or null (engine/tests/test_buyable.py).
+    # Changed on purpose 26 Oct 2026 (the names builder; Noemi's decision 3): each item also has its "current_model",
+    # the current model of a fast-moving tech product whose reviewed model a newer one replaced, or null
+    # (engine/tests/test_current_models.py).
     assert set(data["worth_a_look"][0]) == {"product_key", "name", "reason", "quotes", "downsides", "downsides_share",
                                            "disagreement", "score", "breakdown", "price", "availability", "cautions",
                                            "summary", "voices", "form", "range", "prescription", "meets_bar", "link",
-                                           "image"}
+                                           "image", "current_model"}
     text = render_markdown(answer)
     assert f"## {wording.WORTH_HEADING}" in text and answer.worth_note in text
     assert text.index("Tojiro DP Gyuto") < text.index(wording.WORTH_HEADING) < text.index("Misono UX10")

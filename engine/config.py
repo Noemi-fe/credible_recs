@@ -3011,3 +3011,45 @@ BEST_FOR_TOPICS: dict[str, dict] = {
     "adjustability": {"phrase": "adjustability", "categories": ("general",), "needs": (),
                       "words": ("adjustable", "adjustability", "highly adjustable", "very adjustable", "easily adjustable")},
 }
+# --- Build round 26 Oct 2026: names ---
+# Noemi's decision 3 of 26 Oct 2026 ("okay to all four recommendations", after comparing our answers with ChatGPT's and
+# Vetted's): model names instead of lines, and the current tech models named. Technical values are Claude's, reported to
+# her; every new wording is marked "(26 Oct 2026, the names builder; approved in principle by Noemi, wording Claude's)".
+
+# (1) A brand-line pick titled by the model its credible writers clearly name most. Only what is shown changes: the
+# pick is still the line's, so its score, support, reason and rank are the line's. A model clearly leads when it has at
+# least BRAND_MODEL_TITLE_MIN_CREDIBLE credible recommendations, at least BRAND_MODEL_TITLE_LEAD_RATIO times as many as
+# any other model of the line, and at least BRAND_MODEL_TITLE_MIN_SHARE of all the credible recommendations that name
+# one of the line's models (the products of the brand in the ranking whose names say a model, known or not). From the
+# 26 Oct 2026 baseline's 398 line picks (170 lines) with a known one-model leader: "at least half of the models' voices,
+# and more than any other" gave 26 picks (12 lines and models: Hero 4 voices to 3, Bonavita 4 to 3, Fellow 3 to 2 among
+# them, each a one-voice margin) and missed Kobo's Libra Colour (18 voices to 5 of 45), Travelpro's Platinum Elite
+# (10 to 3 of 24), Vitamix's 5200 (18 to 4 of 44) and LOWA's Renegade GTX (8 to 4 of 17), leaders by far in a long
+# list of models; "twice the next model and a quarter of the voices" gives 36 picks (13 lines and models), the four
+# above included and the one-voice margins out. BRAND_MODEL_TITLES_ON False: the line's name and "Most named model",
+# as before 26 Oct 2026. BRAND_MODEL_QUOTES_FIRST: how many of the model's own quotes are shown before the line's.
+BRAND_MODEL_TITLES_ON = True
+BRAND_MODEL_TITLE_MIN_CREDIBLE = 2
+BRAND_MODEL_TITLE_LEAD_RATIO = 2.0
+BRAND_MODEL_TITLE_MIN_SHARE = 0.25
+BRAND_MODEL_QUOTES_FIRST = 2
+# (26 Oct 2026, the names builder; approved in principle by Noemi, wording Claude's) The note under a model's title: the
+# line it is from, and how many credible voices are about the model and how many about the line in general. The line's
+# voices are the ones the reason, the support and the meter count, so the note keeps a model's title from suggesting
+# that all of them reviewed this model. {model_voices} and {line_voices} are numbers. It stands at the top of the box
+# holding the line's counts (the page), so the counts below it are read as the line's.
+BRAND_MODEL_TITLE_WHOSE = "The counts below are the line's."
+BRAND_MODEL_TITLE_NOTE = ("The model named most in the {line}. Credible voices: {model_voices} about this model, "
+                          "{line_voices} about the line in general. " + BRAND_MODEL_TITLE_WHOSE)
+
+# (2) The current model of a fast-moving tech product whose reviewed model a newer one has replaced (engine/current_models.py,
+# data/current_models.json). Shown on a pick or an "Also worth a look" item of config.FAST_MOVING_TYPES as one line with a
+# link to the page it was read on: "Current model: Kindle Paperwhite (12th generation, 2024)", "Amazon page", "checked 26
+# Oct 2026". A "line" entry (a product that is a whole line, not one model) counts as a replaced model only when MORE than
+# this share of its credible voices wrote before the current model came out: the writers of a line reviewed whichever model
+# was current when they wrote.
+CURRENT_MODEL_OLDER_SHARE = 0.5
+# (26 Oct 2026, the names builder; approved in principle by Noemi, wording Claude's) The line, its link text and the day.
+CURRENT_MODEL = "Current model: {model}"
+CURRENT_MODEL_PAGE = "{shop} page"
+CURRENT_MODEL_CHECKED = "checked {date}"

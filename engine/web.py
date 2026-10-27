@@ -107,6 +107,22 @@ The JSON for /api/answer (200):
                             "model": "Victorinox Fibrox...",   a brand pick's most recommended model (10 Oct
                                                                2026); null for other picks
                             "model_price": "£41.50 at ...",    that model's checked price line, or null
+                            "line": "Victorinox chef knife line",   a brand-line pick titled by the model its credible
+                            "line_note": "The model named most in ...",  writers clearly name most (26 Oct 2026, the
+                                                               names builder): "name" is then that model, "line" the
+                                                               line's name and "line_note" the plain words saying how
+                                                               many credible voices are about the model and how many
+                                                               about the line in general (the "voices" and the reason
+                                                               are the line's); both null otherwise, and "model" is
+                                                               null for such a pick
+                            "current_model": {"text",          (26 Oct 2026) the current model of a fast-moving tech
+                                              "model",         product whose reviewed model a newer one has replaced,
+                                              "link_text",     read on the maker's page (or a big UK shop's) on the day
+                                              "url", "shop",   it says: "Current model: Kindle Paperwhite (12th
+                                              "checked",       generation, 2024)", "Amazon page", "checked 26 Oct
+                                              "checked_on"},   2026"; null otherwise ("worth_a_look" items have it too);
+                                                               data/current_models.json, the url https only, never
+                                                               Reddit's, never from a comment
                             "downsides_share": "1 of 15 ...",  how many credible voices warned against it (12 Oct
                                                                2026), or null when no downside is shown
                             "summary": {"text": "...",         "In short:" (Noemi's decision 4, 13 Oct 2026): one
