@@ -402,6 +402,39 @@ job, no access granted) and says so in one line (14 Oct 2026: a missing key neve
 then says the step is off. Secret Manager's free tier covers it (6 secret versions and 10,000 reads a month: the job
 reads it once a run).
 
+## Firebase Hosting and the domain
+
+Since 2 Nov 2026 the site's address is **crediblepicks.com** (Noemi bought it at Porkbun, with Porkbun's free WHOIS
+privacy: the public record names only Porkbun's proxy). Firebase Hosting, free, holds the domain and
+credible-picks.web.app and hands every request to the Cloud Run service (deploy/cloudrun/hosting.py; Cloud Run's own
+domain mapping is a preview "not recommended for production", and Google's load balancer costs about 18 USD a month).
+www.crediblepicks.com is sent on to crediblepicks.com. The service's run.app address keeps working, for the keep-warm
+ping and the latency measurements.
+
+    python -m deploy.cloudrun.hosting release    every path on the Hosting addresses to the service, in europe-west1
+    python -m deploy.cloudrun.hosting domains    adds the domain and www where missing (done 2 Nov 2026)
+    python -m deploy.cloudrun.hosting status     the domains' state, and the DNS records Firebase still wants
+
+The DNS records, at Porkbun (Noemi's account): Porkbun's parking records removed (the ALIAS on the domain and the
+CNAME on `*`), then A on the domain to 199.36.158.100, TXT on the domain `hosting-site=credible-picks` (kept for good:
+it proves the domain is ours), and CNAME on www to credible-picks.web.app. Firebase's certificate follows within 24
+hours.
+
+What Hosting changes for the site:
+- **60 seconds a request at most.** Answers took 2 to 21 s through it on 2 Nov 2026 (live_latency.py, 4 fresh
+  answers); a server still getting ready (up to 4 minutes, after a deploy) could make a visitor's first answer time
+  out, which the keep-warm ping makes rare. Answers are one JSON reply, not a stream, so Hosting's buffering does not
+  matter.
+- **The addresses the site answers.** Hosting's Host header names the service, as before, but a page's Origin names
+  the address the visitor opened, and feedback and the blind test's answers are refused from any other: deploy.sh adds
+  SITE_DOMAINS (the domain, www, credible-picks.web.app and credible-picks.firebaseapp.com) to
+  CREDIBLE_RECS_ALLOWED_HOSTS.
+- **Who a visitor is, for the rate limit.** Hosting replaces whatever X-Forwarded-For a visitor sends with the
+  visitor's own address, and Google's front end then adds the address Hosting reached it from, one of Google's own
+  (74.125.0.0/16, 66.102.0.0/20 and 192.178.0.0/15 on 2 Nov 2026). engine.web.client_address skips that one hop, so
+  each visitor keeps a limit of their own instead of sharing Google's (engine/web.py, GOOGLE_FRONT_ENDS).
+- **Cookies.** Hosting passes on only one named `__session`; the site sets none.
+
 ## Keeping it awake
 
 A server that has slept takes about a minute to get ready (engine/web.py's warm_up: 65 s on 13 Oct 2026), and Cloud

@@ -486,3 +486,39 @@ def test_the_switch_is_one_setting_and_its_default_is_on():
     assert 'ON_DEMAND_SWITCH="${CREDIBLE_RECS_ON_DEMAND:-on}"' in script
     deploy_md = (DEPLOY_SH.parent / "DEPLOY.md").read_text(encoding="utf-8")
     assert "CREDIBLE_RECS_ON_DEMAND=off sh deploy/cloudrun/deploy.sh" in deploy_md
+
+
+def test_the_site_answers_its_own_domain_and_firebase_hostings_addresses(tmp_path):
+    # 2 Nov 2026 (Noemi bought crediblepicks.com): visitors reach the service through Firebase Hosting, whose Host
+    # header names the service, but the page's Origin (what feedback and the blind test's answers are checked by) names
+    # the address the visitor opened, so the site must take those too, or a deploy would drop them again.
+    import os
+    import subprocess
+
+    script = DEPLOY_SH.read_text(encoding="utf-8")
+    opening = script[:script.index("# The pre-check's Bright Data key")]
+    gcloud = tmp_path / "gcloud"
+    gcloud.write_text('#!/bin/sh\ncase "$*" in *"projects describe"*) echo 123;; *"services describe"*) '
+                      'echo https://credible-recs-abc-ew.a.run.app;; esac\nexit 0\n', encoding="utf-8")
+    gcloud.chmod(0o755)
+    shell = opening + 'echo "$HOSTS"\n'
+    done = subprocess.run(["sh", "-c", shell], capture_output=True, text=True, check=True,
+                          env={"PATH": os.environ["PATH"], "GCLOUD": str(gcloud)}, cwd=make_context.REPO_ROOT)
+    hosts = done.stdout.strip().splitlines()[-1].split(",")
+    assert hosts == ["credible-recs-123.europe-west1.run.app", "credible-recs-abc-ew.a.run.app", "crediblepicks.com",
+                     "www.crediblepicks.com", "credible-picks.web.app", "credible-picks.firebaseapp.com"]
+
+
+def test_firebase_hosting_passes_every_request_to_the_service_in_its_region():
+    # 2 Nov 2026: crediblepicks.com and credible-picks.web.app are Firebase Hosting's, which hands each request to the
+    # Cloud Run service deploy.sh deploys (its default name and region), and www is sent on to the domain itself.
+    from deploy.cloudrun import hosting
+
+    script = DEPLOY_SH.read_text(encoding="utf-8")
+    assert 'SERVICE="${CREDIBLE_RECS_GCP_SERVICE:-credible-recs}"' in script
+    assert 'REGION="${CREDIBLE_RECS_GCP_REGION:-europe-west1}"' in script
+    assert hosting.config() == {"rewrites": [{"glob": "**", "run": {"serviceId": "credible-recs",
+                                                                   "region": "europe-west1"}}]}
+    assert hosting.DOMAINS == {"crediblepicks.com": None, "www.crediblepicks.com": "crediblepicks.com"}
+    assert set(hosting.DOMAINS) | {f"{hosting.SITE}.web.app", f"{hosting.SITE}.firebaseapp.com"} <= set(
+        script.split('SITE_DOMAINS="${CREDIBLE_RECS_SITE_DOMAINS:-', 1)[1].split("}", 1)[0].split(","))

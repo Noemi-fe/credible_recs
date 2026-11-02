@@ -42,6 +42,11 @@ HOSTS="${SERVICE}-${NUMBER}.${REGION}.run.app"
 # The service's older-style address too, once it exists.
 OLD="$($GCLOUD run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)' 2>/dev/null || true)"
 if [ -n "$OLD" ]; then HOSTS="$HOSTS,${OLD#https://}"; fi
+# The site's own domain and Firebase Hosting's addresses (2 Nov 2026, Noemi bought crediblepicks.com): Hosting passes
+# visitors on to the service (deploy/cloudrun/hosting.py) naming the service in the Host header, but the page's Origin,
+# which feedback and the blind test's answers are checked by, names the address the visitor opened.
+SITE_DOMAINS="${CREDIBLE_RECS_SITE_DOMAINS:-crediblepicks.com,www.crediblepicks.com,credible-picks.web.app,credible-picks.firebaseapp.com}"
+HOSTS="$HOSTS,${SITE_DOMAINS}"
 
 # The pre-check's Bright Data key (Noemi, 13 Oct 2026, "Use Bright Data": comments the embed page can't show are
 # verified through Bright Data): the Secret Manager secret bright-data-key, which Noemi creates (DEPLOY.md, The Bright

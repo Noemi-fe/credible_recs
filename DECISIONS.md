@@ -945,3 +945,15 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   recommended..." ones replaced; specific unchanged ones kept), at most 20 words in English and Italian; prices and
   "Lowest price" labels left out, as the cards' rules require; "KP" and "OBS" spelled out by the orchestrator.
   `python -m engine.pair_test check`: every rule followed.
+
+- 2 Nov 2026 (Claude, the orchestrator; Noemi bought crediblepicks.com at Porkbun on Claude's recommendation of 31 Oct
+  2026, after choosing the name Credible Picks): the site's address is crediblepicks.com, through Firebase Hosting in
+  front of the Cloud Run service (deploy/cloudrun/hosting.py; DEPLOY.md, Firebase Hosting and the domain); www is sent
+  on to it, and the run.app address keeps working. The service takes requests whose page names the domain, www,
+  credible-picks.web.app or credible-picks.firebaseapp.com (deploy.sh's SITE_DOMAINS, set live on revision 00077 before
+  the next deploy). The rate limit tells visitors apart behind Hosting by skipping Google's own front end, the last hop
+  Hosting adds (engine.web.client_address, GOOGLE_FRONT_ENDS): Google's long-standing blocks for its own services from
+  its published list, never Google Cloud customers' ranges, one hop at most, and only after a public address. Seen
+  first-hand on 2 Nov 2026 with a throwaway service that echoed the headers it received (deleted the same hour):
+  Hosting drops a visitor's own X-Forwarded-For, and Cloud Run's front end writes the address it was reached from
+  last. A request that comes straight to run.app with a made-up X-Forwarded-For is still named by its own address.

@@ -387,6 +387,25 @@ def test_the_visitor_is_the_last_public_address_the_proxy_names():
     assert len(web.client_address("8.8.4.4," * 5000, "10.16.0.2")) <= 100
 
 
+def test_through_firebase_hosting_the_visitor_is_the_address_before_googles_own_hop():
+    # 2 Nov 2026: the site's own domain (crediblepicks.com) reaches Cloud Run through Firebase Hosting. Hosting replaces
+    # any X-Forwarded-For a visitor sends with the visitor's own address, then Google's front end adds the address it
+    # was reached from, one of Google's own (seen from 74.125.0.0/16, 66.102.0.0/20 and 192.178.0.0/15). Taking the last
+    # public address would count every visitor as Google and share one limit between them all.
+    assert web.client_address("8.8.4.4,74.125.210.97", "169.254.1.1") == "8.8.4.4"
+    assert web.client_address("8.8.4.4, 66.102.8.96", "169.254.1.1") == "8.8.4.4"
+    assert web.client_address("2606:4700:4700::1111,192.178.5.6", "169.254.1.1") == "2606:4700:4700::1111"
+    assert web.client_address("1.0.0.1, 2a00:1450:4009::1", "169.254.1.1") == "1.0.0.1"
+    # Reaching Cloud Run directly, a visitor can't pass for Hosting: Google's front end writes their own address last.
+    assert web.client_address("1.1.1.1, 74.125.210.97, 8.8.4.4", "169.254.1.1") == "8.8.4.4"
+    # One hop of Google's is skipped, never more, and with no public address before it, it is the visitor.
+    assert web.client_address("1.1.1.1, 66.102.8.96, 74.125.210.97", "169.254.1.1") == "66.102.8.96"
+    assert web.client_address("74.125.210.97", "169.254.1.1") == "74.125.210.97"
+    assert web.client_address("10.0.0.1, 74.125.210.97", "169.254.1.1") == "74.125.210.97"
+    # Google Cloud's customers' addresses (a server anyone can rent) are never skipped.
+    assert web.client_address("8.8.4.4, 34.76.1.1", "169.254.1.1") == "34.76.1.1"
+
+
 def test_public_mode_keeps_no_log_of_addresses_or_requests(public_server, capfd):
     public_send(public_server, "/api/answer", {"request": "kettle for my flat"}, headers=ASKED)
     captured = capfd.readouterr()

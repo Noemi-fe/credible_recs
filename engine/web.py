@@ -893,21 +893,45 @@ def allowed_hosts(value: str) -> tuple[str, ...]:
     return tuple(dict.fromkeys(hosts))
 
 
+# Google's own front ends (2 Nov 2026): the addresses Firebase Hosting reaches Cloud Run from, written last in
+# X-Forwarded-For after the visitor's own (seen from 74.125.0.0/16, 66.102.0.0/20 and 192.178.0.0/15). Google's
+# long-standing blocks for its own services, from its published list (www.gstatic.com/ipranges/goog.json, less the
+# Google Cloud customers' ranges in cloud.json, 2 Nov 2026): nobody can rent a server at one of them.
+GOOGLE_FRONT_ENDS = tuple(ipaddress.ip_network(block) for block in (
+    "64.233.160.0/19", "66.102.0.0/20", "66.249.64.0/19", "72.14.192.0/18", "74.125.0.0/16", "108.177.0.0/17",
+    "142.250.0.0/15", "172.217.0.0/16", "172.253.0.0/16", "173.194.0.0/16", "192.178.0.0/15", "209.85.128.0/17",
+    "216.58.192.0/19", "216.239.32.0/19", "2001:4860::/32", "2404:6800::/32", "2607:f8b0::/32", "2800:3f0::/32",
+    "2a00:1450::/32", "2c0f:fb50::/32"))
+
+
 def client_address(forwarded_for: str | None, socket_address: str) -> str:
     """Who a request comes from, for the rate limit only (public mode): the last public address in X-Forwarded-For,
-    the one the Space's proxy adds (a visitor can write made-up addresses into the header, but only in front of it, so
-    the first one could change on every request and get round the limit); proxies' own private addresses are skipped.
-    With no public address, the first entry, else the connection's own address. Cut to 100 characters, so a made-up
-    header can't fill memory. Held in memory only: never stored, never logged."""
+    the one the Space's proxy, or Cloud Run's front end, adds (a visitor can write made-up addresses into the header,
+    but only in front of it, so the first one could change on every request and get round the limit); proxies' own
+    private addresses are skipped. Since 2 Nov 2026 the site's own domain reaches Cloud Run through Firebase Hosting,
+    which writes the visitor's address and is then named last itself, from one of Google's own front ends
+    (GOOGLE_FRONT_ENDS): that one hop is skipped too, never more, and only when a public address comes before it.
+    Hosting drops whatever X-Forwarded-For a visitor sends, and one reaching Cloud Run directly is named last by
+    Cloud Run's front end, so neither can pass for Hosting. With no public address, the first entry, else the
+    connection's own address. Cut to 100 characters, so a made-up header can't fill memory. Held in memory only:
+    never stored, never logged."""
     entries = [entry.strip()[:100] for entry in (forwarded_for or "")[:2000].split(",")]
+    public = []
     for entry in reversed(entries):
         try:
-            if ipaddress.ip_address(entry).is_global:
-                return entry
+            address = ipaddress.ip_address(entry)
         except ValueError:
             continue
+        if address.is_global:
+            public.append((entry, address))
+            if len(public) == 2:
+                break
+    if public:
+        (last, address), before = public[0], public[1:]
+        if before and any(address in block for block in GOOGLE_FRONT_ENDS):
+            return before[0][0]
+        return last
     return next((entry for entry in entries if entry), "") or socket_address
-
 
 class RateLimiter:
     """At most `limit` requests from each visitor in any `window` seconds (a sliding window). Kept in memory only, and
