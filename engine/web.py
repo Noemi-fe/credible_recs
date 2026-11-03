@@ -22,7 +22,20 @@ Public mode (`--public`, for the Hugging Face Space; Noemi's decision of 11 Oct 
   never stored, never logged. It is a courtesy against casual floods, not a wall.
 - it keeps no access log (no addresses, no requests), its pages may be shown inside the Space's own page on
   huggingface.co (a frame), and its error messages speak to visitors rather than to whoever runs the server.
-Local mode is exactly as before: none of this applies to it.
+- it is guarded against a rush of visitors (3 Nov 2026, before the Show HN; values in engine/config.py, "A busy site").
+  Fresh answers are worked out one at a time, and Firebase Hosting in front of the live site cuts any request at 60 s, so
+  a crowd would queue behind the lock, see a generic error, and leave the server working for answers nobody waits for.
+  Instead: (1) an answer that isn't remembered and would have to queue is refused at once, 503 "busy" with a Retry-After
+  header, when BUSY_MAX_WAITING visitors already wait for their turn, or when its turn doesn't come within
+  BUSY_MAX_QUEUE_SECONDS; a remembered answer is never refused, and warming (warm_up, warm_more), which takes the same
+  turns, is never refused and still gives way to a waiting visitor; (2) no answer waits for Reddit past
+  ANSWER_DEADLINE_SECONDS after the request came in, queue time included: a live check that couldn't be made in time
+  counts as not made now. For the comments only "Also worth a look" and the summaries quote, that is the road already
+  there for Reddit's allowance (13 Oct 2026): what stands on them is left out and the answer isn't remembered. For the
+  comments the picks need there is no honest way to go on (the quote would be shown unchecked, or the picks would change
+  without a word), so the visitor is told "busy" and the checks made are kept for their next try. Every quote still needs
+  a passing check from the last 48 hours. What the deadline can't cut is the engine's own work and a read already begun.
+Local mode is exactly as before: none of this applies to it (one visitor, nothing in front of it to cut a request).
 
 Visit counts (11 Oct 2026, either mode): when CREDIBLE_RECS_GOATCOUNTER holds Noemi's GoatCounter site code (letters,
 digits and hyphens only), both pages load GoatCounter's standard script, which sets no cookies, and the search page
@@ -54,7 +67,8 @@ Routes:
                                  Cloud Run's request log keeps every address it is asked, with the visitor's IP address
                                  and browser, for 30 days; it never keeps a body), and, since 24 Oct 2026, optionally
                                  the visitor's region, {"request": "...", "region": "us"} (see below). GET /api/answer
-                                 says how to ask (405)
+                                 says how to ask (405). On the public site, 503 busy when it has no room for a fresh
+                                 answer just now (see "guarded", above, and the errors below)
     POST /api/feedback           "Was this useful?" or "First time here?" (engine/feedback.py; 11 Oct 2026)
     GET  /test                   the pairwise test (Noemi, 20 Oct 2026; engine/pair_test.py, engine/templates/test.html):
                                  a short blind test for friends, standalone (it never names the site or links to the
@@ -277,7 +291,12 @@ An error is {"error": "<plain words>", "code": "<one word for programs>"}:
     411 length_required, 413 too_large, 415 not_json   (feedback, and since 16 Oct 2026 answers)
     429 too_many_requests (public mode only, with a Retry-After header in seconds)
     500 quote_not_verified (the answer is refused), engine_failed (details in the server's window, never sent)
-    503 feedback_unavailable (the feedback couldn't be kept just now), test_closed (the pairwise test has no cards)
+    503 busy              POST /api/answer, public mode only (3 Nov 2026): the site has no room for this answer just now,
+                          because the queue for fresh answers is full, the visitor's turn didn't come in time, or the answer's
+                          picks couldn't be checked before its deadline. Always with a Retry-After header, in seconds
+                          (BUSY_RETRY_AFTER_SECONDS); never for a remembered answer. No answer is kept, but the live checks
+                          already made are, so the next try finds them
+        feedback_unavailable (the feedback couldn't be kept just now), test_closed (the pairwise test has no cards)
 The words are for whoever calls the API; the page picks its own words by code (PROPOSED, at the top of the page).
 
 Answers take about 2 seconds, so each one is remembered (for each region on its own, since 24 Oct 2026): asking again is
@@ -334,13 +353,15 @@ from urllib.parse import urlsplit
 from engine import answer as wording
 from engine import feedback, how_page, pair_test
 from engine.answer import answer_to_dict, quotes_to_check, unverified_claims
-from engine.config import (ANSWERS_KEPT_TYPES, BRAND_PICK_MODEL, CACHE_MAX_AGE_HOURS, DEFAULT_REGION,
+from engine.config import (ANSWER_DEADLINE_SECONDS, ANSWERS_KEPT_TYPES, BRAND_PICK_MODEL, BUSY_MAX_QUEUE_SECONDS,
+                           BUSY_MAX_WAITING, BUSY_RETRY_AFTER_SECONDS, CACHE_MAX_AGE_HOURS, DEFAULT_REGION,
                            FEEDBACK_MAX_BODY_BYTES, FEEDBACK_MAX_COMMENT_CHARS,
                            LEFT_OUT_NAMES_SHOWN, PAIR_TEST_MAX_WHY_CHARS,
                            PICKS_SHOWN, RATE_LIMIT_ANSWERS, RATE_LIMIT_FEEDBACK, RATE_LIMIT_PAIRS,
                            RATE_LIMIT_WINDOW_SECONDS, REGIONS,
                            WEB_MAX_REQUEST_CHARS, WEB_PORT)
 from engine.library import DEFAULT_LIBRARY_DIR
+from engine.live_check import LiveResult
 from engine.metrics import METRICS_FILE
 from engine.parse_reddit import REPO_ROOT
 from engine import memo
@@ -422,6 +443,8 @@ BAD_JSON = ("bad_json", "The feedback isn't one valid JSON value (or a name in i
 BAD_FEEDBACK = ("bad_feedback", "{reason}")
 FEEDBACK_UNAVAILABLE = ("feedback_unavailable", "Feedback can't be kept just now. Please try again later.")
 TOO_MANY = ("too_many_requests", "Too many requests in a short time. Please try again in {seconds} seconds.")
+# Added 3 Nov 2026 (the load fix before the Show HN): the public site's answer to a visitor it has no room for just now.
+BUSY = ("busy", "The site is busy answering other visitors just now. Please try again in {seconds} seconds.")
 # Asking for an answer (Noemi's decision 5 of 16 Oct 2026): the request comes in a POST's JSON body, never in the address,
 # so no log of addresses (Google Cloud Run keeps one for 30 days) holds what people type. The feedback's checks, in
 # words about the request. Every message goes through str.format (_error), so a brace that is a word is doubled.
@@ -510,6 +533,37 @@ def _visitor_waits(change: int) -> None:
     global _visitors_waiting
     with _visitors_lock:
         _visitors_waiting += change
+
+
+def _join_queue() -> bool:
+    """A place in the queue for the answers' turn, counted as waiting (3 Nov 2026, the load fix before the Show HN); False
+    when BUSY_MAX_WAITING visitors already wait. Counted and checked together, so two arrivals never both take the last place."""
+    global _visitors_waiting
+    with _visitors_lock:
+        if _visitors_waiting >= BUSY_MAX_WAITING:
+            return False
+        _visitors_waiting += 1
+        return True
+
+
+def _take_the_turn(guarded: bool) -> bool:
+    """Takes _answers_lock for a visitor's fresh answer: at once if it is free, else after waiting for it, counted in
+    _visitors_waiting meanwhile. A guarded visitor (the public site's) has a limit: refused (False) when the queue is full
+    (BUSY_MAX_WAITING) or when their turn doesn't come within BUSY_MAX_QUEUE_SECONDS; the lock is then not taken. Others
+    (this computer's own server) wait as long as it takes, as they always did."""
+    if _answers_lock.acquire(blocking=False):
+        return True
+    if guarded:
+        if not _join_queue():
+            return False
+        waits = BUSY_MAX_QUEUE_SECONDS
+    else:
+        _visitor_waits(+1)
+        waits = -1  # for as long as it takes
+    try:
+        return _answers_lock.acquire(timeout=waits)
+    finally:
+        _visitor_waits(-1)
 # Set once the server has got ready (warm_up). Until then /ready says 503, and Cloud Run sends visitors to the server
 # only when it says 200 (13 Oct 2026, the live site's latency): a new server getting ready took turns with its first
 # visitors' answers and held them up to 30 s, with the processor Cloud Run gives a server only while it answers
@@ -552,10 +606,19 @@ def handle_request(path_and_query: str, library_dir: Path = DEFAULT_LIBRARY_DIR,
 
 
 def answer_response(request: str, library_dir: Path, quiet: bool = False,
-                    region: str = DEFAULT_REGION) -> tuple[int, str, bytes]:
+                    region: str = DEFAULT_REGION, guarded: bool = False,
+                    arrived: float | None = None) -> tuple[int, str, bytes]:
     """The answer to one request as JSON, remembered for next time; or an error. `quiet` (the public site): nothing
     about the request goes to the server's window, not even in a report of a failure. `region` (24 Oct 2026): where the
-    visitor is, one of config.REGIONS; each region's answer is remembered on its own."""
+    visitor is, one of config.REGIONS; each region's answer is remembered on its own.
+
+    `guarded` (3 Nov 2026, the load fix before the Show HN; the public site only, handle_answer): an answer that isn't
+    remembered and would have to queue is refused at once, 503 "busy", when BUSY_MAX_WAITING visitors already wait for
+    their turn, or when its turn doesn't come within BUSY_MAX_QUEUE_SECONDS (the answer worked out for someone else
+    meanwhile is still given); and the answer is worked out to a deadline, ANSWER_DEADLINE_SECONDS after `arrived` (when
+    the request came in, on _clock; now when not given), queue time included (_TimedChecker). A remembered answer is
+    never refused."""
+    arrived = _clock() if arrived is None else arrived
     request = request.strip()
     if not request:
         return _error(400, EMPTY_REQUEST)
@@ -565,16 +628,23 @@ def answer_response(request: str, library_dir: Path, quiet: bool = False,
     remembered = _answers.get(key)  # read without waiting (11 Oct 2026): a slow new answer never holds up a known one
     if remembered is not None and _clock() < remembered[0]:
         return remembered[1]
-    _visitor_waits(+1)
-    with _answers_lock:  # one answer is worked out at a time, so the same request is never worked out twice
-        _visitor_waits(-1)
+    if not _take_the_turn(guarded):  # one answer is worked out at a time, so the same request is never worked out twice
+        remembered = _answers.get(key)  # worked out for someone else while this visitor waited?
+        if remembered is not None and _clock() < remembered[0]:
+            return remembered[1]
+        return _busy()
+    try:
         remembered = _answers.get(key)
         if remembered is None or _clock() >= remembered[0]:
             try:
                 _window.answered(request_kind(request))
-                # The UK is asked exactly as before (24 Oct 2026): no new argument.
-                response, keep = (_fresh_answer(request, library_dir, quiet) if region == DEFAULT_REGION
-                                  else _fresh_answer(request, library_dir, quiet, region))
+                # The UK is asked exactly as before (24 Oct 2026): no new argument. And so is an answer without a deadline.
+                settings = {} if region == DEFAULT_REGION else {"region": region}
+                if guarded:
+                    settings["deadline"] = arrived + ANSWER_DEADLINE_SECONDS
+                response, keep = _fresh_answer(request, library_dir, quiet, **settings)
+            except AnswerCutShort:  # its picks' checks ran out of time (_TimedChecker): nothing of it is shown
+                return _busy()
             except Exception:  # a broken library file, say: reported in the server's window, never sent
                 _report_failure(quiet)
                 return _error(500, ENGINE_FAILED)  # not remembered: fixing the file and asking again works
@@ -583,24 +653,61 @@ def answer_response(request: str, library_dir: Path, quiet: bool = False,
                 return response
             _answers[key] = (_clock() + keep, response)
         return _answers[key][1]
+    finally:
+        _answers_lock.release()
+
+
+def _busy() -> tuple[int, str, bytes]:
+    """The refusal of a visitor the public site has no room for just now (3 Nov 2026); the handler adds Retry-After."""
+    return _error(503, BUSY, seconds=BUSY_RETRY_AFTER_SECONDS)
+
+
+class AnswerCutShort(Exception):
+    """An answer's picks could not all be checked before its deadline (3 Nov 2026): it can't be finished, and is refused
+    as busy. Showing it would mean a quote without its check from the last 48 hours; leaving the quotes' comments out
+    as unreadable would change the picks without saying why."""
 
 
 class _TimedChecker:
     """The live checker, timed for one answer (13 Oct 2026, hill-climbing the live site's latency): how many checks it
-    made and how long the answer waited on them, overlapping checks counted once."""
+    made and how long the answer waited on them, overlapping checks counted once.
 
-    def __init__(self, checker):
+    With a `deadline` (3 Nov 2026, the load fix before the Show HN; seconds on _clock, set for a visitor of the public
+    site) it also keeps the answer from waiting for Reddit past it. A check already saved from the last 48 hours answers
+    as always. Any other is made only if its read can start before the deadline; later, or once the deadline has passed,
+    it is not made now ("later": not read, not counted), exactly as for a read asked not to wait. For the comments only
+    "Also worth a look" and the summaries quote, that is the road already built (engine.pipeline._check_live): what stands
+    on them is left out and the answer isn't remembered. For the comments the picks need, the answer can't be finished
+    without showing a quote unchecked or changing the picks, so AnswerCutShort ends it ("busy"). The checks made are
+    kept, so the visitor's next try finds them."""
+
+    def __init__(self, checker, deadline: float | None = None):
         self._checker = checker
+        self._deadline = deadline
         self._spans: list[tuple[float, float]] = []
         self._lock = threading.Lock()
 
-    def check(self, *args, **kwargs):
+    def check(self, comment_url: str, quote: str, *args, **kwargs):
         started = time.perf_counter()
         try:
-            return self._checker.check(*args, **kwargs)
+            if self._deadline is None:
+                return self._checker.check(comment_url, quote, *args, **kwargs)
+            return self._check_by_the_deadline(comment_url, quote, args, kwargs)
         finally:
             with self._lock:
                 self._spans.append((started, time.perf_counter()))
+
+    def _check_by_the_deadline(self, comment_url: str, quote: str, args: tuple, kwargs: dict):
+        left = self._deadline - _clock()
+        if left > 0:
+            result = self._checker.check(comment_url, quote, *args, wait_at_most=left, **kwargs)
+        else:  # the time is up: only a check already saved can answer, and no read is started
+            result = self._checker.saved_check(comment_url, quote)
+            if result is None:
+                result = LiveResult("later", "not read: the answer's time was up")
+        if result.status == "later" and kwargs.get("wait", True):  # a comment the picks need (the pipeline asks it to wait)
+            raise AnswerCutShort(comment_url)
+        return result
 
     def __getattr__(self, name):  # anything else the pipeline asks the checker goes to the real one
         return getattr(self._checker, name)
@@ -622,17 +729,19 @@ class _TimedChecker:
         return total
 
 
-def _fresh_answer(request: str, library_dir: Path, quiet: bool = False,
-                  region: str = DEFAULT_REGION) -> tuple[tuple[int, str, bytes], float]:
+def _fresh_answer(request: str, library_dir: Path, quiet: bool = False, region: str = DEFAULT_REGION,
+                  deadline: float | None = None) -> tuple[tuple[int, str, bytes], float]:
     """Runs the pipeline, then checks every quote once more; one that fails refuses the whole answer. Also how many
     seconds the answer may be remembered (_keep_seconds, 17 Oct 2026), or 0 when it isn't whole: something in it was
     left out because its live check would have waited (13 Oct 2026), or since 14 Oct 2026 it is an answer on-demand
     reading is about to change (engine/on_demand.py: a request queued for reading, or one whose queue couldn't be
-    read): such an answer is worked out again next time."""
+    read): such an answer is worked out again next time. `deadline` (3 Nov 2026): when its live checks must stop waiting
+    for Reddit, on _clock (_TimedChecker); a check not made in time is a check that would have waited, so such an answer
+    isn't remembered either. Raises AnswerCutShort when its picks could not be checked in time."""
     with_profiles = {} if profiles is None else {"profiles": profiles}
     if region != DEFAULT_REGION:  # the UK is asked exactly as before (24 Oct 2026)
         with_profiles["region"] = region
-    timed = _TimedChecker(live) if live is not None else None
+    timed = _TimedChecker(live, deadline) if live is not None else None
     if timed is not None:
         with_profiles["live_checker"] = timed
     started = time.perf_counter()
@@ -858,6 +967,7 @@ def handle_answer(content_type: str | None, content_length: str | None, read, li
     browser, for 30 days) and never a body: what people type is in no log. `read(n)` reads the body, and is called only
     once it is known to be JSON of a sensible size. Other names in the object are ignored, and a body without "request"
     is an empty request (as an address without q= was)."""
+    arrived = _clock()  # the deadline counts from here (3 Nov 2026)
     data, refused = _json_body(content_type, content_length, read, ANSWER_MAX_BODY_BYTES, _ANSWER_BODY)
     if refused is not None:
         return refused
@@ -867,7 +977,10 @@ def handle_answer(content_type: str | None, content_length: str | None, read, li
     region = _region_in(data)
     if region is None:
         return _error(400, BAD_REGION)
-    return answer_response(request, Path(library_dir), quiet=site.public, region=region)
+    # The public site is guarded against a rush (3 Nov 2026): the cap on its queue and the deadline. Local mode, one
+    # visitor with no Hosting in front, waits as it always did.
+    return answer_response(request, Path(library_dir), quiet=site.public, region=region, guarded=site.public,
+                           arrived=arrived)
 
 
 def _region_in(body: dict) -> str | None:
@@ -1193,8 +1306,10 @@ class _Handler(BaseHTTPRequestHandler):
         if path == ANSWER_PATH:  # since 16 Oct 2026 (Noemi's decision 5): the request in the body, never in the address
             if self._held_back("answers"):
                 return
-            return self._send(*handle_answer(self.headers.get("Content-Type"), self.headers.get("Content-Length"),
-                                             self.rfile.read, self.server.library_dir, self.server.site))
+            response = handle_answer(self.headers.get("Content-Type"), self.headers.get("Content-Length"),
+                                     self.rfile.read, self.server.library_dir, self.server.site)
+            # An answer's only 503 is "busy" (3 Nov 2026): when to try again, for programs (the page asks for a minute).
+            return self._send(*response, extra={"Retry-After": str(BUSY_RETRY_AFTER_SECONDS)} if response[0] == 503 else None)
         if path not in (FEEDBACK_PATH, TEST_RESPONSE_PATH):
             refused = _error(405, WRONG_METHOD, allowed=METHODS[path]) if path in METHODS else _error(404, NOT_FOUND)
             return self._send(*refused, path=path)
