@@ -85,7 +85,23 @@ def test_the_page_shows_each_metric_from_the_metrics_file(tmp_path, monkeypatch)
     assert "72 out of 75 (96%)" in card(html, "name_matching")
     assert "75 out of 79 (95%)" in card(html, "thread_order")
     for key in metrics.METRIC_KEYS:
-        card(html, key)  # every metric has its card
+        if key not in metrics.BLIND_TEST_KEYS.values():
+            card(html, key)  # every metric but the blind test's has its card
+
+
+def test_the_blind_test_is_not_on_the_page(tmp_path, monkeypatch):
+    # Noemi, 2 Nov 2026: the page no longer shows the two blind-test results (preferred over Vetted, over ChatGPT),
+    # even when the metrics file holds them, and its test questions aren't called the blind test's.
+    data = json.loads(json.dumps(EXAMPLE))
+    for key in metrics.BLIND_TEST_KEYS.values():
+        data["metrics"][key].update(value=0.25, count=5, out_of=20)
+    html = get_how(tmp_path, monkeypatch, data)
+    for key in metrics.BLIND_TEST_KEYS.values():
+        assert f'id="metric-{key}"' not in html
+    words = text_of(html)
+    for rival_or_test in ("Vetted", "ChatGPT", "blind test", "Preferred over"):
+        assert rival_or_test not in words
+    assert "Of our 10 test questions, 1 got a full answer" in words
 
 
 def test_each_card_names_its_target(tmp_path, monkeypatch):
@@ -93,7 +109,6 @@ def test_each_card_names_its_target(tmp_path, monkeypatch):
     assert "Target: at least 90%" in card(html, "extraction_precision")
     assert "Target: at least 80%" in card(html, "extraction_recall")
     assert "Target: 100%" in card(html, "quote_verification")
-    assert "Target: at least 60%" in card(html, "blind_test_vs_chatgpt")
     assert "Target: under $0.05" in card(html, "cost_per_question_usd")
     assert "No target" in card(html, "thread_order")
 
@@ -120,10 +135,11 @@ def test_a_value_exactly_on_its_target_meets_it_and_a_cost_on_its_limit_misses_i
 
 
 def test_a_metric_not_measured_yet_says_so(tmp_path, monkeypatch):
-    html = get_how(tmp_path, monkeypatch)
-    for rival in ("blind_test_vs_vetted", "blind_test_vs_chatgpt"):
-        assert "Not measured yet" in card(html, rival)
-        assert "Meets the target" not in card(html, rival) and "Misses the target" not in card(html, rival)
+    data = json.loads(json.dumps(EXAMPLE))
+    data["metrics"]["extraction_recall"].update(value=None, count=None, out_of=None)
+    found = card(get_how(tmp_path, monkeypatch, data), "extraction_recall")
+    assert "Not measured yet" in found
+    assert "Meets the target" not in found and "Misses the target" not in found
 
 
 def test_a_metric_missing_from_the_file_is_not_measured_yet(tmp_path, monkeypatch):
@@ -269,7 +285,8 @@ def test_the_lists_of_signs_follow_the_code():
     assert list(how_page.GOOD_SIGNS) == [sign for sign, worth in config.VOICE_SIGN_WEIGHTS.items() if worth]
     assert set(how_page.RED_FLAGS) <= set(config.VOICE_TAGS) and not set(how_page.RED_FLAGS) & set(config.VOICE_SIGN_WEIGHTS)
     assert list(how_page.HONESTY_SIGNS) == list(credibility.HONESTY_TAGS)
-    assert tuple(how_page.METRIC_WORDING) == metrics.METRIC_KEYS
+    assert tuple(how_page.METRIC_WORDING) == tuple(key for key in metrics.METRIC_KEYS
+                                                   if key not in metrics.BLIND_TEST_KEYS.values())
 
 
 def test_the_copied_text_red_flag_is_explained():

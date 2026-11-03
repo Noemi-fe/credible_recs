@@ -30,7 +30,8 @@ from pathlib import Path
 
 from engine import answer, config
 from engine.group_products import brand_pick_name, plural
-from engine.metrics import HEADLINE_KEYS, LOWER_IS_BETTER, METRICS_FILE, OTHER_KEYS, MetricEntry, MetricsError, load_metrics
+from engine.metrics import (BLIND_TEST_KEYS, HEADLINE_KEYS, LOWER_IS_BETTER, METRICS_FILE, OTHER_KEYS, MetricEntry,
+                            MetricsError, load_metrics)
 from engine.product_facts import unconfirmed_note
 
 TEMPLATE = Path(__file__).resolve().parent / "templates" / "how.html"
@@ -88,7 +89,10 @@ ASKS_WORDS: dict[str, str] = {
     "dry": "something for dry skin",
     "acne-prone": "something for acne-prone skin",
 }
-# Each result of eval/metrics.json: its name and what it measures (engine/metrics.py, METRIC_KEYS, in that order).
+# The blind test's two results (preferred over Vetted, over ChatGPT) stay in eval/metrics.json but aren't shown here
+# (Noemi, 2 Nov 2026).
+SHOWN_HEADLINE_KEYS = tuple(key for key in HEADLINE_KEYS if key not in BLIND_TEST_KEYS.values())
+# Each result the page shows: its name and what it measures (engine/metrics.py, METRIC_KEYS, in that order).
 METRIC_WORDING: dict[str, tuple[str, str]] = {
     "quote_verification": ("Every quote checked word for word",
                            "Of the quotes shown in the answers to our test questions, the share that code found word "
@@ -104,12 +108,6 @@ METRIC_WORDING: dict[str, tuple[str, str]] = {
     "evidence_agreement": ("Knowing who has really used it",
                            "Of the mentions we rated long-term use or no first-hand use by hand, the share the rules "
                            "didn't put at the opposite end."),
-    "blind_test_vs_vetted": ("Preferred over Vetted",
-                             "In a blind test with the names hidden, how often people who care about skincare or "
-                             "kitchen gear trust our answer more than Vetted's."),
-    "blind_test_vs_chatgpt": ("Preferred over ChatGPT",
-                              "In a blind test with the names hidden, how often people who care about skincare or "
-                              "kitchen gear trust our answer more than ChatGPT's."),
     "cost_per_question_usd": ("Cost per question",
                               "What we pay for paid services to answer one question. The AI reads the threads ahead of "
                               "time, in batches under a flat subscription, and the data services we use are on free "
@@ -220,9 +218,8 @@ MEASURED_ON = "Last measured on {date}."
 TARGETS_HEADING = "The targets we set"
 OTHER_HEADING = "Other checks"
 QUESTIONS_HEADING = "Our test questions"
-QUESTIONS = ("Of our {questions} test questions (the ones real testers will judge in the blind test), {full} got a full "
-             "answer with {picks_wanted} picks and {some} got at least one pick. Those answers showed {shown}, and "
-             "{unverified} failed the word-for-word check.")
+QUESTIONS = ("Of our {questions} test questions, {full} got a full answer with {picks_wanted} picks and {some} got at "
+             "least one pick. Those answers showed {shown}, and {unverified} failed the word-for-word check.")
 WAITING = ("{n} saved threads were waiting for their regular re-check on Reddit, so these answers couldn't use them.")
 SAMPLE = "Measured on {threads} threads we labelled by hand."
 MEETS, MISSES, NOT_MEASURED, NO_TARGET = "Meets the target", "Misses the target", "Not measured yet", "No target"
@@ -439,7 +436,7 @@ def evaluation_section(metrics_path: Path = METRICS_FILE) -> str:
     day = loaded.measured_on
     parts = [f'<p class="measured">{html.escape(MEASURED_ON.format(date=f"{day.day} {day:%b %Y}"))}</p>',
              f'<h3 class="group">{html.escape(TARGETS_HEADING)}</h3>',
-             _cards(HEADLINE_KEYS, loaded.metrics)]
+             _cards(SHOWN_HEADLINE_KEYS, loaded.metrics)]
     if loaded.end_to_end is not None:
         e = loaded.end_to_end
         lines = [QUESTIONS.format(questions=e.questions, full=e.with_all_picks, picks_wanted=e.picks_wanted,

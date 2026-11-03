@@ -957,3 +957,8 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   first-hand on 2 Nov 2026 with a throwaway service that echoed the headers it received (deleted the same hour):
   Hosting drops a visitor's own X-Forwarded-For, and Cloud Run's front end writes the address it was reached from
   last. A request that comes straight to run.app with a made-up X-Forwarded-For is still named by its own address.
+- 2 Nov 2026 (Noemi, "yes remove both blind test metrics"): the How page no longer shows the blind test's two
+  results, preferred over Vetted and preferred over ChatGPT (engine.how_page.SHOWN_HEADLINE_KEYS), and its test
+  questions are no longer called the ones testers will judge in the blind test. The first round is done, the page
+  showed both as not measured yet, and its result is told in person instead. Both keys stay in eval/metrics.json and
+  engine/metrics.py, so the blind-test tooling (save_blind_test, carry_blind_test) keeps working for a second round.
