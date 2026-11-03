@@ -522,3 +522,76 @@ def test_firebase_hosting_passes_every_request_to_the_service_in_its_region():
     assert hosting.DOMAINS == {"crediblepicks.com": None, "www.crediblepicks.com": "crediblepicks.com"}
     assert set(hosting.DOMAINS) | {f"{hosting.SITE}.web.app", f"{hosting.SITE}.firebaseapp.com"} <= set(
         script.split('SITE_DOMAINS="${CREDIBLE_RECS_SITE_DOMAINS:-', 1)[1].split("}", 1)[0].split(","))
+
+
+# --- The pages Hosting's CDN keeps (3 Nov 2026, the launch-load fix): a deploy clears them by releasing Hosting again ---
+
+def test_a_deploy_releases_firebase_hosting_once_the_site_is_deployed_and_before_the_steps_that_can_stop_it():
+    # The home page and the How page are kept by Hosting's CDN for up to 10 minutes (engine/web.py, PAGE_CACHE_CONTROL).
+    # Firebase's docs: redeploying a site clears all its cached content across the CDN until the next request. So after
+    # the new revision serves (`gcloud run deploy` waits for that), Hosting is released again, with the same Python as the
+    # script's other steps. It comes before the jobs' steps: the script stops at the first failure (set -e), and a deploy
+    # that stopped later would leave the old pages in the CDN.
+    script = DEPLOY_SH.read_text(encoding="utf-8")
+    release = _command(script, ".venv/bin/python -m deploy.cloudrun.hosting release")
+    assert script.index("$GCLOUD run deploy") < script.index(".venv/bin/python -m deploy.cloudrun.hosting release")
+    assert script.index(".venv/bin/python -m deploy.cloudrun.hosting release") < script.index("$GCLOUD run jobs deploy")
+    assert "set -eu" in script
+    # A Hosting problem never stops a deploy (the new site is live by now): it says so in one line, on stderr.
+    assert "||" in release and release.split("||", 1)[1].strip().startswith("echo ") and release.endswith(">&2")
+
+
+@pytest.mark.parametrize("hosting_exit", [0, 1])
+def test_a_hosting_release_that_fails_never_stops_the_deploy_and_says_so(tmp_path, hosting_exit):
+    import os
+    import subprocess
+
+    script = DEPLOY_SH.read_text(encoding="utf-8")
+    release = _command(script, ".venv/bin/python -m deploy.cloudrun.hosting release")
+    python = tmp_path / ".venv" / "bin" / "python"
+    python.parent.mkdir(parents=True)
+    python.write_text(f'#!/bin/sh\necho "$@" >> calls.txt\nexit {hosting_exit}\n', encoding="utf-8")
+    python.chmod(0o755)
+    done = subprocess.run(["sh", "-c", f"set -eu\n{release}\necho carried on\n"], capture_output=True, text=True,
+                          env={"PATH": os.environ["PATH"]}, cwd=tmp_path)
+    assert done.returncode == 0 and done.stdout.strip() == "carried on"
+    assert (tmp_path / "calls.txt").read_text(encoding="utf-8").splitlines() == ["-m deploy.cloudrun.hosting release"]
+    assert ("Firebase Hosting wasn't released" in done.stderr) == (hosting_exit != 0)
+
+
+def test_releasing_hosting_again_and_again_only_makes_the_same_new_version_each_time(monkeypatch, capsys):
+    # Safe to run on every deploy: a release adds a version of the same config (every path to the service) and points the
+    # site at it; it changes no domain, deletes nothing, and a second one is the same four calls.
+    import re
+
+    from deploy.cloudrun import hosting
+
+    calls = []
+
+    def fake_call(method, url, body=None, auth=""):
+        calls.append((method, url.replace(hosting.API, ""), body))
+        return {"name": f"sites/{hosting.SITE}/versions/v{len(calls)}"} if url.endswith("/versions") else {"name": "r"}
+
+    monkeypatch.setattr(hosting, "_token", lambda: "token")
+    monkeypatch.setattr(hosting, "_call", fake_call)
+    hosting.release()
+    hosting.release()
+    capsys.readouterr()
+
+    def shape(batch):
+        return [(method, re.sub(r"/v\d+", "/V", url)) for method, url, _ in batch]
+
+    site = f"/sites/{hosting.SITE}"
+    one_release = [("POST", f"{site}/versions"), ("POST", f"{site}/versions/V:populateFiles"),
+                   ("PATCH", f"{site}/versions/V?update_mask=status"),
+                   ("POST", f"{site}/releases?versionName=sites/{hosting.SITE}/versions/V")]
+    assert len(calls) == 8 and shape(calls[:4]) == shape(calls[4:]) == one_release
+    assert calls[0][2] == calls[4][2] == {"config": hosting.config()}
+
+
+def test_deploy_md_tells_how_the_pages_are_kept_and_that_a_deploy_releases_hosting():
+    deploy_md = (DEPLOY_SH.parent / "DEPLOY.md").read_text(encoding="utf-8")
+    section = deploy_md.split("## Firebase Hosting and the domain", 1)[1].split("\n## ", 1)[0]
+    assert "public, max-age=60, s-maxage=600" in section and "deploy.sh" in section and "release" in section
+    updating = deploy_md.split("## Updating the site", 1)[1].split("\n## ", 1)[0]
+    assert "Firebase Hosting" in updating

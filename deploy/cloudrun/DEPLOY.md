@@ -147,7 +147,8 @@ Bright Data verification off if the Bright Data
 key's isn't (the job deploys anyway), makes sure both buckets exist with their rules,
 brings the threads read on demand into data/library, applies the pre-check's verification record to the
 library, bundles the current commit with the library, builds the private
-image and deploys the site, then points the pre-check job and the reading job at the same image, makes sure the daily
+image and deploys the site, releases Firebase Hosting again (since 3 Nov 2026, so its CDN lets go of the home page and
+the How page it keeps; below), then points the pre-check job and the reading job at the same image, makes sure the daily
 schedule exists, lets the on-demand bucket go of the threads the image now holds, and prints the address. Safe to run
 again: each step creates what is missing and sets again what is there.
 
@@ -434,6 +435,52 @@ What Hosting changes for the site:
   (74.125.0.0/16, 66.102.0.0/20 and 192.178.0.0/15 on 2 Nov 2026). engine.web.client_address skips that one hop, so
   each visitor keeps a limit of their own instead of sharing Google's (engine/web.py, GOOGLE_FRONT_ENDS).
 - **Cookies.** Hosting passes on only one named `__session`; the site sets none.
+- **The home page and the How page are kept by Hosting's CDN (3 Nov 2026, the launch-load fix, for the Show HN).** The
+  site is one Cloud Run server, at most one instance, 8 requests at a time, and until then every response said
+  `Cache-Control: no-store`, so every visit to the home page woke and used the server that also works out answers. In
+  public mode, `GET /` and `GET /how` answered 200 now say `Cache-Control: public, max-age=60, s-maxage=600`
+  (engine/web.py, PAGE_CACHE_CONTROL and cache_control): the CDN keeps a copy for 10 minutes and a browser for 1.
+  Everything else says `no-store`: the API, `/test`, `/ready`, every error and 404, and local mode. What Firebase's
+  documentation says (https://firebase.google.com/docs/hosting/manage-cache, read 3 Nov 2026), and what the site does
+  about it:
+  - Responses from Cloud Run are not kept by the CDN by default: Hosting treats them as `private` (the visitor's browser
+    only). A response is kept only if it says `public` and a lifetime: `s-maxage` for the CDN (it overrides `max-age`
+    there), `max-age` for browsers. Once a kept copy is older than `s-maxage`, the CDN asks the server again. Our
+    server doesn't answer "unchanged" (no ETag), so it sends the page whole each time, once per CDN location per 10
+    minutes.
+  - Only GET and HEAD can be kept. The server answers GET and POST only: a HEAD gets Python's own 501, which is never
+    marked `public`.
+  - The key a copy is kept under is the host name, the path, the query string and the request headers named in `Vary`
+    (Hosting adds Cookie, Authorization and, as the live site's responses showed on 3 Nov 2026, the address the visitor
+    opened, so crediblepicks.com, www and credible-picks.web.app each have a copy; and the server adds Accept-Encoding,
+    so a gzipped and a plain copy are kept apart). So `/?a=1` and `/?a=2` are two copies; a link with `?utm_source=...`
+    is kept like any other, and anyone adding random query strings reaches the server each time (the page is cheap to
+    make).
+  - Cookies are stripped from requests to Cloud Run except one named `__session`, which would join the key. The site
+    reads no cookie and sets none, so the key is just the address. (The docs don't say what a response that sets a cookie
+    does to caching; ours never does.)
+  - Both pages are the same bytes for everyone (engine/tests/test_web_cache.py asks both with different cookies,
+    addresses, countries, languages, browsers, origins and query strings and compares them), and change only with a
+    deploy: the templates, the example requests, the makers' image hosts (data/product_pages.json) and
+    eval/metrics.json, which the How page shows (it is read each time the page is made, but it is in the image like
+    every tracked file, `git archive HEAD` in make_context.py), are all baked in. Nothing the site works out at run time
+    reaches either page.
+  - A 404 Hosting makes itself is kept 10 minutes by default; ours come from the server, say `no-store`, and aren't kept.
+  - **A deploy clears the CDN.** The docs say that redeploying a site's content clears all its cached content across
+    the CDN until the next request. They say it of the site's content and don't say it separately of a Cloud Run
+    service's responses, so it is not proven for ours. deploy.sh therefore runs `python -m deploy.cloudrun.hosting
+    release` right after it deploys the site (step 3b), which also changes nothing else (the same rewrite of every
+    path to the service; a new Hosting version each time, none deleted, no domain touched), and prints one line if it
+    fails without stopping the deploy. If the release does not clear the CDN, a page is at most 11 minutes old after a
+    deploy (10 in the CDN, 1 in the browser); if it does, 1 minute. Either is harmless: the old pages call the same
+    `/api/answer`; only a deploy that changed the shape of its JSON could make an old page misbehave for those minutes.
+  - **Checking it after a deploy** (the live site's responses carry `x-cache` and `x-cache-hits`):
+    `curl -s -o /dev/null -D - https://crediblepicks.com/how | grep -i -E 'cache'` twice. The first shows
+    `cache-control: public, max-age=60, s-maxage=600` and `x-cache: MISS`, the second `x-cache: HIT` (the edge location
+    that answers is in `x-served-by`; another location has its own copy). `x-cache: MISS` every time, or `no-store`,
+    means the pages aren't being kept: check that the revision serving is the new one. A page that still shows the old
+    wording after 11 minutes means the release did not clear the CDN and the 10 minutes were not enough: lower
+    s-maxage.
 
 ## Keeping it awake
 

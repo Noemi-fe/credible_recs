@@ -16,6 +16,8 @@
 # Gemini key's secret, gemini-key, which Noemi creates herself (DEPLOY.md): without it on-demand reading stays off.
 # Off from 16 Oct 2026 (Noemi's decision 6), on again by default since 25 Oct 2026 (read by Gemini 3.1 Flash-Lite):
 # CREDIBLE_RECS_ON_DEMAND=off turns it off for a deploy (on_demand.sh).
+# Since 3 Nov 2026 it also releases Firebase Hosting again once the site is deployed (3b), which clears the pages Hosting's
+# CDN keeps (the home page and the How page; engine/web.py), so a deploy shows its new pages at once.
 # Safe to run again: each step creates what is missing and sets again what is there.
 set -eu
 PROJECT="${CREDIBLE_RECS_GCP_PROJECT:-credible-picks}"
@@ -132,6 +134,18 @@ $GCLOUD run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --source "
     --set-env-vars "^;^CREDIBLE_RECS_ALLOWED_HOSTS=${HOSTS};CREDIBLE_RECS_GOATCOUNTER=noemix;CREDIBLE_RECS_FEEDBACK_REPO=Noemix/credible-recs-feedback;CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}${ON_DEMAND_SITE_VARS}" \
     --set-secrets "HF_TOKEN=hf-token:latest" --quiet
 rm -rf "$(dirname "$BUNDLE")"
+
+# 3b. Firebase Hosting's cache (3 Nov 2026, the launch-load fix): Hosting's CDN keeps the home page and the How page for
+#     up to 10 minutes (engine/web.py, PAGE_CACHE_CONTROL), so most visits never reach the site. A deploy has to show its
+#     new pages at once, so Hosting is released again now that the new revision serves (`gcloud run deploy` waits for
+#     that): Firebase's docs say a redeploy clears all of a site's cached content across the CDN until the next request
+#     (they don't say it separately of a Cloud Run service's responses, so the 10 minutes were chosen to be harmless if
+#     it didn't; deploy/cloudrun/DEPLOY.md, Firebase Hosting and the domain). The release is the same one every time (every
+#     path to the service, deploy/cloudrun/hosting.py: a new version of that config, nothing else touched), so it is safe
+#     to run on every deploy. It comes before the steps below, which may stop the script. A failure never stops a deploy
+#     (the site is live): the old pages then age out of the CDN within 11 minutes, and one line says so.
+.venv/bin/python -m deploy.cloudrun.hosting release \
+    || echo "Firebase Hosting wasn't released: the site's pages may show their old version for up to 11 minutes (deploy/cloudrun/DEPLOY.md, Firebase Hosting and the domain)." >&2
 
 # 4. The pre-check: a Cloud Run job on the image just deployed, `python -m engine.precheck --plan` (14 Oct 2026): it
 #    reads nothing on Reddit's embed page itself, works out the plan the site reads ahead from, and verifies through
