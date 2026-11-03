@@ -402,7 +402,7 @@ def test_on_the_public_site_the_page_names_firebase_hosting_and_what_google_says
             "made to it, as web hosts do") in words
     assert "Firebase Hosting also sees every request" in words
     assert "uses IP addresses to detect abuse and keeps that IP data for a few months" in words
-    assert "we have not turned on Hosting's own request log for us to read" in words
+    assert "Hosting's own request log, which would let us read those requests, is switched off." in words
     assert "Hosting passes each request on" not in words  # Hosting does keep IP data: never said to keep nothing
     assert "What you type is never in those logs" in words  # the rest of the item is as it was
     assert f"kept for {how_page.REQUEST_LOG_DAYS} days" in words

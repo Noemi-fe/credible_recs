@@ -170,8 +170,8 @@ REQUEST_LOGS = ("<li><strong>Google's request logs.</strong> The site sits behin
                 "Google Cloud Run, which logs every request made to it, as web hosts do: the time, the part of the "
                 "site asked for, your IP address and your browser, and the website you came from if your browser says, "
                 "kept for {days} days. Firebase Hosting also sees every request: Google says it uses IP addresses to "
-                "detect abuse and keeps that IP data for a few months, and we have not turned on Hosting's own request "
-                "log for us to read. What you type is never in those logs: your search travels inside the request, not "
+                "detect abuse and keeps that IP data for a few months. Hosting's own request log, which would let us read "
+                "those requests, is switched off. What you type is never in those logs: your search travels inside the request, not "
                 "in its address, and it stays in this page's address only after the “#”, which your browser never "
                 "sends.</li>")
 PUBLIC_SITE = ("<p>To stop anyone flooding the site, our server counts each address's requests for a short while, in "
