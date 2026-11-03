@@ -319,3 +319,16 @@ def test_every_text_colour_meets_wcag_aa_contrast_in_light_and_dark(tmp_path):
         for colour, ground in TEXT_ON:
             ratio = _contrast(tokens[colour], tokens[ground])
             assert ratio >= 4.5, f"{mode}: {colour} on {ground} is {ratio:.2f}:1"
+
+
+# --- The product's name ---
+
+def test_the_pages_name_the_product_credible_picks(tmp_path):
+    # Noemi chose the name Credible Picks (31 Oct 2026) and its domain, crediblepicks.com: both words capitalised in the
+    # search page's title and heading and on the How page's brand.
+    for path in ("/", "/how"):
+        _, _, body = web.handle_request(path, tmp_path / "no library")
+        page = body.decode("utf-8")
+        assert "Credible Picks" in page and "Credible picks" not in page, path
+    search = web.handle_request("/", tmp_path / "no library")[2].decode("utf-8")
+    assert 'pageTitle: "Credible Picks"' in search and 'heading: "Credible Picks"' in search

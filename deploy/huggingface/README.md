@@ -9,7 +9,7 @@ pinned: false
 short_description: Credibility-ranked product picks from Reddit
 ---
 
-# Credible picks
+# Credible Picks
 
 Three picks for skincare and kitchen gear, ranked by how credible the people recommending them are on Reddit, not by
 how popular a product is. Every quote is checked word for word against its comment, and links back to it.
