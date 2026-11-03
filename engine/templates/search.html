@@ -27,7 +27,11 @@ const LABELS = {
   // product people buy and use, not only skincare, haircare and kitchen gear.
   kicker: "Skincare · Kitchen · Tech · Home · and more",
   heroTitle: "Product picks from the people who really know.",
-  intro: "Three picks for almost anything you buy and use, from moisturisers and kettles to headphones and hiking boots, ranked by how credible the people recommending them are on Reddit, not by how popular a product is. Every quote is checked word for word against its comment.",
+  // The intro and the third step below were reworded on 3 Nov 2026 (Noemi's yes; wording approved by Noemi). "About 350 kinds
+  // of product" is the product types with 6 or more saved threads: 354 when counted again on 3 Nov 2026 (engine.library
+  // coverage); keep the word "about" while the count stays between 330 and 370. Suitcases and headphones both answer with
+  // three picks, each sold in the UK (the 3 Nov 2026 sweep).
+  intro: "Up to three picks for what you buy and use, across about 350 kinds of product, from moisturisers and kettles to headphones and suitcases, ranked by how credible the people recommending them are on Reddit, not by how popular a product is. Every quote is checked word for word against its comment.",
   searchLabel: "What are you looking for?",
   searchPlaceholder: "e.g. electric kettle that lasts 10+ years",
   searchHint: "Say what it is and anything that matters: budget, skin type, how long it should last.",
@@ -54,7 +58,7 @@ const LABELS = {
   steps: [
     ["Reads the threads", "Saved Reddit threads from the communities that talk about these products in depth."],
     ["Weighs every voice", "Who wrote it, whether they've used it, whether they mention its flaws: credible voices count more than loud ones."],
-    ["Checks every quote", "Word for word against its comment, and again on Reddit, so a deleted or edited comment is never quoted."],
+    ["Checks every quote", "Word for word against its comment, and again on Reddit in the 48 hours before it's shown, so a comment found deleted or edited is never quoted."],
   ],
   loading: "Reading saved Reddit threads and checking every quote word for word…",
   loadingSlow: "Still working: a quote not checked lately is read again on Reddit before it's shown, which can take a few more seconds.",

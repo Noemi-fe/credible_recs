@@ -1,11 +1,11 @@
 {
-  "note": "The search page's example requests (engine/web.py, example_requests), grouped on the page by category. Since 16 Oct 2026 (Noemi's decision 7) they are not the blind-test questions (eval/blind_test/questions.json), which a tester trying the site first could have recognised, nor about the blind test's kinds of product: chosen by Claude from the requests the 16 Oct sweep answered with a full top 3. Since 19 Oct 2026 (Noemi: \"no pimple patches or vitamin c serum. less examples but more meaningful ones\") these six, in the order she was offered them, each answered with a full top 3 by the 19 Oct sweeps; the page groups them by category. PROPOSED, for Noemi to see.",
+  "note": "The search page's example requests (engine/web.py, example_requests), grouped on the page by category. Since 16 Oct 2026 (Noemi's decision 7) they are not the blind-test questions (eval/blind_test/questions.json), which a tester trying the site first could have recognised, nor about the blind test's kinds of product: chosen by Claude from the requests the 16 Oct sweep answered with a full top 3. Since 19 Oct 2026 (Noemi: \"no pimple patches or vitamin c serum. less examples but more meaningful ones\") these six, in the order she was offered them, each answered with a full top 3 by the 19 Oct sweeps; the page groups them by category. On 3 Nov 2026 (Noemi's yes) \"hiking boots\" (the fifth) was replaced by \"noise cancelling headphones\": the boots' top pick isn't sold in the UK, while the headphones' 3 Nov sweep answer has 3 picks, each sold in the UK. PROPOSED, for Noemi to see.",
   "examples": [
     {"text": "dutch oven that won't chip", "category": "kitchen"},
     {"text": "a vacuum for pet hair", "category": "general"},
     {"text": "espresso machine for a beginner", "category": "kitchen"},
     {"text": "conditioner for frizzy curly hair", "category": "haircare"},
-    {"text": "hiking boots", "category": "general"},
+    {"text": "noise cancelling headphones", "category": "general"},
     {"text": "carry on suitcase", "category": "general"}
   ]
 }

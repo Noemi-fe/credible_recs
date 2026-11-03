@@ -154,12 +154,26 @@ VISITS_NOT_COUNTED = "<strong>Visit counts.</strong> Visits aren't counted at th
 # exclusion or other keeping time is set: the website review of 16 Oct 2026). The request people type is in the body of
 # a POST, which those logs never keep, and after the page's "#", which browsers never send. It had said the site ran on
 # Hugging Face and kept no IP addresses.
+# Firebase Hosting (3 Nov 2026, Noemi's yes): since 2 Nov 2026 the site's own address
+# reaches Cloud Run through Hosting (deploy/cloudrun/hosting.py), so the item's first sentence says so. What Hosting keeps
+# was checked three ways, and only that is said: (1) Google's Firebase privacy information (firebase.google.com/support/
+# privacy, read 3 Nov 2026) says "Hosting uses IP addresses of incoming requests to detect abuse and provide customers
+# with detailed analysis of usage data" and "Hosting retains IP data for a few months"; (2) Hosting's documentation
+# (docs/hosting/web-request-logs-and-metrics) says its CDN logs every request but that the logs reach Cloud Logging only
+# when the project is linked to it in the Firebase console, and then for 30 days; (3) this project's Cloud Logging has no
+# Firebase Hosting log (gcloud logging logs list --project credible-picks, 3 Nov 2026: only the audit, build, error,
+# scheduler and Cloud Run logs) and no sink for one, so it is not linked. Hence "also sees every request", Google's own
+# words for what it keeps ("a few months", no number of days given), and that we have not turned its request log on.
+# Hosting is not said to keep nothing: Google's own page says it keeps IP data.
 REQUEST_LOG_DAYS = 30
-REQUEST_LOGS = ("<li><strong>Google's request logs.</strong> The site runs on Google Cloud Run, which logs every request "
-                "made to it, as web hosts do: the time, the part of the site asked for, your IP address and your "
-                "browser, and the website you came from if your browser says, kept for {days} days. What you type is "
-                "never in those logs: your search travels inside the request, not in its address, and it stays in "
-                "this page's address only after the “#”, which your browser never sends.</li>")
+REQUEST_LOGS = ("<li><strong>Google's request logs.</strong> The site sits behind Google's Firebase Hosting and runs on "
+                "Google Cloud Run, which logs every request made to it, as web hosts do: the time, the part of the "
+                "site asked for, your IP address and your browser, and the website you came from if your browser says, "
+                "kept for {days} days. Firebase Hosting also sees every request: Google says it uses IP addresses to "
+                "detect abuse and keeps that IP data for a few months, and we have not turned on Hosting's own request "
+                "log for us to read. What you type is never in those logs: your search travels inside the request, not "
+                "in its address, and it stays in this page's address only after the “#”, which your browser never "
+                "sends.</li>")
 PUBLIC_SITE = ("<p>To stop anyone flooding the site, our server counts each address's requests for a short while, in "
                "memory only: it never writes them down.</p>")
 # A product sold only outside the UK (Noemi, 15 Oct 2026, evening) stays in answers with this note; an example day.

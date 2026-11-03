@@ -1028,3 +1028,39 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   60 s) is remembered like any other, so one visitor's thinner answer can be served to the next for up to a day; and a
   crowd asking the same request at once is queued like any other crowd, though all but the first would be answered at once
   when the first finishes (answering them together would be kinder; not built).
+
+- 3 Nov 2026, Noemi's yes ("yes to everything"; built by Claude on branch home-wording, not merged or deployed; the
+  facts behind each line were checked first, and the wording below is hers except where said):
+  (1) The home page's intro now reads "Up to three picks for what you buy and use, across about 350 kinds of product,
+  from moisturisers and kettles to headphones and suitcases, ranked by how credible the people recommending them are on
+  Reddit, not by how popular a product is. Every quote is checked word for word against its comment." Checked: counting
+  the product types with 6 or more saved threads the way the launch notes did (engine.library coverage, the saved
+  threads each type's name finds) gives 354 on 3 Nov 2026 (353 at launch), inside the 330 to 370 that keeps "about
+  350"; "carry on suitcase" and "noise cancelling headphones" each answer with 3 picks in the 3 Nov sweep.
+  (2) Step 3 of "How it works" now reads "Word for word against its comment, and again on Reddit in the 48 hours before
+  it's shown, so a comment found deleted or edited is never quoted." (the live check an answer relies on is the last 48
+  hours', engine/live_check.py).
+  (3) The How page's privacy item on Google's logs now says the site sits behind Google's Firebase Hosting and runs on
+  Google Cloud Run. What Hosting keeps was looked up, not assumed: Google's Firebase privacy page says Hosting uses the IP
+  addresses of incoming requests to detect abuse and keeps that IP data for a few months; Hosting's documentation says
+  its CDN logs every request but the logs reach a project's Cloud Logging only once the project is linked in the
+  Firebase console (then 30 days); and this project's Cloud Logging has no Firebase Hosting log and no sink for one
+  (gcloud logging logs list, read-only), so it is not linked. The page therefore does NOT say Hosting keeps nothing (the
+  suggested shape if it kept no logs): it says Firebase Hosting also sees every request, that Google says it uses IP
+  addresses to detect abuse and keeps that IP data for a few months, and that we have not turned on Hosting's own
+  request log for us to read. This is wording Claude wrote from those facts, not the approved sentence: Noemi to read it
+  before the deploy ("a few months" is Google's own phrase; it gives no number of days).
+  (4) The "hiking boots" example chip (its top pick, Danner, isn't sold in the UK; its third pick had no availability
+  check) is replaced, in the same place, by "noise cancelling headphones": 3 picks (Sony XM4, Bose QuietComfort Ultra,
+  Sony XM6), each sold in the UK, in the 3 Nov sweep; a tech request, so the chips now span kitchen, home, tech, hair and
+  travel. The tests that pin the chips and the warm order hold: the headphones request is a demo request too, so it is
+  now warmed fifth instead of at its place among the demo requests, and "hiking boots" is still warmed as a demo request.
+  Left alone and told: the "conditioner for frizzy curly hair" chip has 3 picks, but all three read "Availability not
+  checked yet" in that sweep.
+  (5) /test is closed: data/library/blind_test_cards.json, the one file that opened it, was moved (not deleted) to
+  eval/blind_test/answers/blind_test_cards.json, which git ignores and deploy/cloudrun/make_context.py never bundles (it
+  bundles `git archive HEAD` and data/library's named files only), so the next deploy serves the closed page (503). The
+  closed page now says "This test has closed. Thank you to everyone who took part." and, in Italian, "Questo test è
+  chiuso. Grazie a chi ha partecipato." (was "isn't open yet ... try again later"). The runbook says how to check the
+  cards where they are, and how to open a second round (put the file back in data/library and deploy). The API's own
+  error text for an answer sent to a closed test (web.TEST_CLOSED, never shown by the page) was left as it was.

@@ -167,13 +167,21 @@ random. A visitor who starts again gets a new deck and counts as a new visit.
    at the top of `engine/pair_test.py`.
 2. **Check them**: `python -m engine.pair_test check` lists every rule the cards break (a tool's name, a link, a price,
    a shop, availability, more than 3 picks, a why over 20 words, a wrong note), and says how many questions each category
-   has. The page isn't served while the file breaks a rule: visitors see "This test isn't open yet" (503).
+   has. The page isn't served while the file breaks a rule: visitors see the closed page, "This test has closed. Thank you to everyone who took part." (503; before 3 Nov 2026 it
+said "This test isn't open yet").
 3. **Try it**: `python -m engine.pair_test serve` opens http://127.0.0.1:8767/test with nothing loaded but the test (no
    library, no model). Answers go to `data/feedback/pairs-trial.jsonl`, apart from the real feedback; count them with
    `python -m engine.blind_test tally-pairs data/feedback/pairs-trial.jsonl`, and delete the file before the real run.
 4. **Open it**: deploy as usual (Noemi's call). The address is `/test` on the site; nothing on the site links to it, and
    the page never names the site or links to it, so a friend sees a bare test. Send them that address and nothing else
    about the site (as for the first test, the site comes after).
+
+Closed (3 Nov 2026, Noemi's yes): the first round is over, so the cards file was moved out of `data/library` to
+`eval/blind_test/answers/blind_test_cards.json` (git-ignored, and not among the files `deploy/cloudrun/make_context.py`
+bundles). Without it in `data/library`, the next deploy serves the closed page. To check or try the cards where they are:
+`python -m engine.pair_test check eval/blind_test/answers/blind_test_cards.json` and
+`python -m engine.pair_test serve --cards eval/blind_test/answers`. To open a second round, put the file back in
+`data/library` and deploy.
 
 ### What a visitor's answer is, and what is kept
 

@@ -74,7 +74,8 @@ Routes:
                                  a short blind test for friends, standalone (it never names the site or links to the
                                  rest of it, and nothing else links to it). A new deck of 6 comparisons for each visit
                                  (ours against ChatGPT's or Vetted's answer), made from data/library/blind_test_cards.json;
-                                 503 with a plain "not open yet" page while that file is missing or breaks a rule. The
+                                 503 with a plain "closed" page while that file is missing or breaks a rule (the test
+                                 closed on 3 Nov 2026, Noemi's yes: the file was moved out of data/library). The
                                  page is told each comparison's two cards and the visit's id, never which tool is the
                                  rival or which side is ours (25 Oct 2026; engine/pair_test.py)
     POST /api/test-response      one answer of that test (engine/feedback.py parse_pair), kept as the kind "blind_pair"
@@ -883,7 +884,7 @@ def handle_feedback(content_type: str | None, content_length: str | None, read) 
 
 def test_page_response(library_dir: Path) -> tuple[int, str, bytes]:
     """GET /test: the page with a new deck for this visit, or, while the cards are missing or break a rule, the same page
-    saying the test isn't open yet (503). The server's window says why, once; a visitor is never told."""
+    saying the test has closed (503). The server's window says why, once; a visitor is never told."""
     global _closed_said
     cards = pair_test.cards_in(library_dir)
     if cards is None:
@@ -898,7 +899,7 @@ def test_page_response(library_dir: Path) -> tuple[int, str, bytes]:
 
 def test_page(deck: list[dict] | None, visit: str | None = None) -> bytes:
     """The pairwise test's page (engine/templates/test.html) with this visit's deck (pair_test.public_deck: no rival, no
-    side) and its id in it; `deck` None: the page that says the test isn't open. The same page for the local and the
+    side) and its id in it; `deck` None: the page that says the test has closed. The same page for the local and the
     public site: it counts nobody and loads nothing."""
     settings = {"deck": deck or [], "session": visit, "whyMax": PAIR_TEST_MAX_WHY_CHARS, "closed": deck is None}
     template = TEST_TEMPLATE.read_text(encoding="utf-8")

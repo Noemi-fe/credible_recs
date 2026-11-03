@@ -420,9 +420,13 @@ def test_the_sites_examples_are_never_the_blind_test_questions_nor_about_their_k
     tested = {web._placed_by_rules(q["text"])[0] for q in questions}
     # Changed on purpose 19 Oct 2026 (Noemi: "less examples but more meaningful ones"): six, in the order she was offered
     # them, no skincare one among them; until then at least 8, skincare and kitchen among them.
+    # Changed on purpose 3 Nov 2026 (Noemi's yes): "hiking boots" is out (its top pick isn't sold in the UK, and its third
+    # had no availability check) and "noise cancelling headphones" is in, its place in the order: its 3 Nov sweep answer
+    # has 3 picks, each sold in the UK. Was: "hiking boots" in the fifth place.
     assert [e["text"] for e in examples] == ["dutch oven that won't chip", "a vacuum for pet hair",
                                              "espresso machine for a beginner", "conditioner for frizzy curly hair",
-                                             "hiking boots", "carry on suitcase"]
+                                             "noise cancelling headphones", "carry on suitcase"]
+    assert "hiking boots" not in [e["text"] for e in examples]
     for example in examples:
         assert " ".join(example["text"].lower().split()) not in same, example
         product_type, asks_model = web._placed_by_rules(example["text"])

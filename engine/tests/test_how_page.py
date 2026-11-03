@@ -391,6 +391,24 @@ def test_on_the_public_site_the_page_names_its_host_its_logs_and_the_memory_only
     assert "Google Cloud Run" not in local  # this computer's own server keeps no such log
 
 
+def test_on_the_public_site_the_page_names_firebase_hosting_and_what_google_says_it_keeps(tmp_path):
+    # 3 Nov 2026 (Noemi's yes): the site has been reached through Firebase Hosting since 2 Nov 2026, so the first
+    # sentence of the logs item says so. What Hosting keeps is what Google's Firebase privacy information says (Hosting
+    # uses the IP addresses of incoming requests to detect abuse and keeps that IP data for a few months), and what was
+    # checked in this project (no Hosting request log is linked to its Cloud Logging); nothing more is claimed.
+    html = how_page.page(write(tmp_path), public=True)
+    words = text_of(html)
+    assert ("The site sits behind Google's Firebase Hosting and runs on Google Cloud Run, which logs every request "
+            "made to it, as web hosts do") in words
+    assert "Firebase Hosting also sees every request" in words
+    assert "uses IP addresses to detect abuse and keeps that IP data for a few months" in words
+    assert "we have not turned on Hosting's own request log for us to read" in words
+    assert "Hosting passes each request on" not in words  # Hosting does keep IP data: never said to keep nothing
+    assert "What you type is never in those logs" in words  # the rest of the item is as it was
+    assert f"kept for {how_page.REQUEST_LOG_DAYS} days" in words
+    assert "Firebase" not in text_of(how_page.page(write(tmp_path)))  # this computer's own server has no Hosting in front
+
+
 # --- What the page says about checks and availability (16 Oct 2026, the website review) ---
 
 def test_quotes_are_said_to_be_checked_ahead_within_the_48_hours_not_just_before(tmp_path, monkeypatch):

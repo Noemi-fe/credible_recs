@@ -249,7 +249,13 @@ def test_the_test_is_closed_with_a_plain_page_when_the_cards_are_missing_or_wron
         status, content_type, body = get(folder)
         text = body.decode("utf-8")
         assert status == 503 and content_type.startswith("text/html")
-        assert "isn't open" in text and "non è ancora aperto" in text
+        # Changed on purpose 3 Nov 2026 (Noemi's yes): the test is over, so the closed page thanks people instead of saying
+        # the test isn't open yet and asking them to try later. Was: "This test isn't open yet. Please try again later."
+        # and "Questo test non è ancora aperto. Riprova più tardi."
+        assert "This test has closed. Thank you to everyone who took part." in text
+        assert "Questo test è chiuso. Grazie a chi ha partecipato." in text
+        assert "isn't open yet" not in text and "try again later" not in text.lower()
+        assert "non è ancora aperto" not in text and "Riprova più tardi" not in text
         assert not re.search(r"credible|href|chatgpt|vetted|\bours\b|blind_test_cards", text.lower())
 
 
