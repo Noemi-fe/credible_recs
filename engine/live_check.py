@@ -11,7 +11,9 @@ since 13 Oct 2026 the day before, by the daily pre-check (below). The result:
     changed   the comment is there but no longer says this: it was edited
     unknown   the page couldn't be read (an error, a timeout, or a page whose layout has changed)
     later     not read: reading it now would have meant waiting for Reddit's allowance, and the check was asked not
-              to wait (13 Oct 2026: what "Also worth a look" and summaries ask, so they never hold up an answer)
+              to wait (13 Oct 2026: what "Also worth a look" and summaries ask, so they never hold up an answer), or
+              to wait no longer than the answer had left before its deadline (3 Nov 2026: wait_at_most, the public
+              site's, engine.web._TimedChecker)
 
 Only "ok" is shown. Anything else drops the quote: strict by default, so a page Reddit redesigns makes quotes
 disappear rather than show unchecked.
@@ -345,11 +347,15 @@ class LiveChecker:
         self._bundle_generation: str | None = None  # the version of the bucket's bundle last read into the folder
         self._lock = threading.Lock()
 
-    def check(self, comment_url: str, quote: str, max_age: timedelta = MAX_AGE, wait: bool = True) -> LiveResult:
+    def check(self, comment_url: str, quote: str, max_age: timedelta = MAX_AGE, wait: bool = True,
+              wait_at_most: float | None = None) -> LiveResult:
         """Whether `quote` can be shown: its comment is still on Reddit and still says it, word for word. A saved check
         made within `max_age` answers (never one over 48 hours old, whatever is asked); else Reddit is read. With
-        wait=False, Reddit is read only if that needs no wait for its allowance, else the check is "later"."""
-        body = self._comment_text(comment_url, min(max_age, MAX_AGE), wait)
+        wait=False, Reddit is read only if that needs no wait for its allowance, else the check is "later". With
+        `wait_at_most` (3 Nov 2026: the seconds an answer has left before its deadline, engine.web), Reddit is read only
+        if the read can start within that many seconds, else the check is "later" too: not read, not counted, and the
+        pace as if it had never been asked. It is decided before max_wait, which would take the page as unreadable."""
+        body = self._comment_text(comment_url, min(max_age, MAX_AGE), wait, wait_at_most)
         if body is _PUT_OFF:
             return LiveResult("later", "not read now: it would have waited for Reddit's allowance")
         return _outcome(body, quote)
@@ -440,15 +446,16 @@ class LiveChecker:
                 return None
             return window.left - self._in_flight
 
-    def _comment_text(self, comment_url: str, max_age: timedelta, wait: bool = True) -> str | None:
+    def _comment_text(self, comment_url: str, max_age: timedelta, wait: bool = True,
+                      wait_at_most: float | None = None) -> str | None:
         """The comment's text as Reddit shows it now, from a check saved within `max_age` when there is one; None if
-        unreadable; _PUT_OFF if there is none and reading it would wait (wait=False)."""
+        unreadable; _PUT_OFF if there is none and reading it would wait (wait=False) or wait longer than `wait_at_most`."""
         url = embed_url(comment_url)
         saved = self._saved(url, max_age)
         if saved is not None:
             return saved["text"]
         try:
-            got = self._get(url, wait)
+            got = self._get(url, wait, wait_at_most)
             if got is None or got is _PUT_OFF:
                 return got  # None: it would have waited longer than max_wait, so it is unreadable now (not saved)
             status, page, fetched_at = got
@@ -581,12 +588,12 @@ class LiveChecker:
         partial.write_bytes(data)
         partial.replace(cache_file)
 
-    def _get(self, url: str, wait: bool = True):
+    def _get(self, url: str, wait: bool = True, wait_at_most: float | None = None):
         """The page, and when its call started: at least min_interval after the call before it started, whichever
         thread made that one, and when Reddit's allowance allows (what Reddit last said is left, spread out no slower
         than one every `refill` seconds; until it has said, a burst, then one every `refill` seconds). Nothing is read
-        or counted when it would wait and wait=False (_PUT_OFF), or when it would wait longer than max_wait for
-        Reddit's next 10 minutes (None)."""
+        or counted when it would wait and wait=False, or wait longer than `wait_at_most` seconds (_PUT_OFF; 3 Nov 2026),
+        or when it would wait longer than max_wait for Reddit's next 10 minutes (None)."""
         with self._lock:
             now = self._clock()
             spaced = now if self._last_call is None else max(now,
@@ -610,6 +617,8 @@ class LiveChecker:
                     allowed = 1.0
                 allowed -= 1
             if not wait and start > spaced:
+                return _PUT_OFF
+            if wait_at_most is not None and (start - now).total_seconds() > wait_at_most:
                 return _PUT_OFF
             if (start - now).total_seconds() > self.max_wait:
                 return None

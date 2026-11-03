@@ -425,6 +425,23 @@ What Hosting changes for the site:
   answers); a server still getting ready (up to 4 minutes, after a deploy) could make a visitor's first answer time
   out, which the keep-warm ping makes rare. Answers are one JSON reply, not a stream, so Hosting's buffering does not
   matter.
+- **A busy site (3 Nov 2026, before the Show HN of about 10 Nov).** The service is one instance that lets 8 requests in
+  at once (deploy.sh: `--concurrency 8 --max-instances 1`) and works fresh answers out one at a time, so a crowd would
+  queue behind one answer, reach Hosting's 60 s and see a generic error, while the server went on working for answers
+  nobody waited for any more. The per-visitor rate limit (30 answers in 10 minutes) does nothing against that. So the
+  public site (engine/web.py; values in engine/config.py, "A busy site") does this: an answer that isn't remembered and
+  would have to queue is refused at once with 503 `busy` and a Retry-After header of 20 s when 4 visitors already wait
+  for their turn, or when its turn doesn't come within 20 s; remembered answers are never refused, and warming takes its
+  turns as before and is never refused. And no answer waits for Reddit past 45 s after the request arrived (queue time
+  included): a live check that can't start by then is not made, what depends on it is left out of the answer (the
+  "Also worth a look" items and summaries), and that answer isn't remembered; if the picks' own checks can't be made in
+  time the visitor gets `busy` too, since showing the picks unchecked or changed isn't allowed. The checks that were
+  made are kept, so the retry finds them. The 4 and the 45 s are tied to `--concurrency 8` (the answer under way and 4
+  queued leave 3 places for pages, the keep-warm ping and remembered answers; a test fails if the concurrency is lowered
+  below 8) and to Hosting's 60 s; check them again if either changes. What the deadline can't cut: the engine's own work
+  before the checks (a fresh answer took 2 to 21 s in all through Hosting on 2 Nov) and a Reddit read already begun
+  (about 0.3 s; a hung one stops at its 30 s timeout). Local mode has neither the cap nor the deadline. The page shows "Lots of people are asking right now.
+  Please try again in a minute." (wording proposed by Claude on 3 Nov 2026, waiting for Noemi's yes).
 - **The addresses the site answers.** Hosting's Host header names the service, as before, but a page's Origin names
   the address the visitor opened, and feedback and the blind test's answers are refused from any other: deploy.sh adds
   SITE_DOMAINS (the domain, www, credible-picks.web.app and credible-picks.firebaseapp.com) to

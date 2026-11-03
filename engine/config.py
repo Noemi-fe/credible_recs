@@ -1807,6 +1807,36 @@ RATE_LIMIT_WINDOW_SECONDS = 600
 RATE_LIMIT_ANSWERS = 30
 RATE_LIMIT_FEEDBACK = 15
 
+# --- A busy site (3 Nov 2026, Claude; technical values, reported to Noemi; before the Show HN of about 10 Nov) ---
+# The rate limit above is per visitor, so it does nothing against many visitors at once. Fresh answers are worked out one
+# at a time (engine/web.py, _answers_lock), the live site is one Cloud Run instance that lets 8 requests in at once
+# (deploy/cloudrun/deploy.sh: --concurrency 8, --max-instances 1), and Firebase Hosting in front of it cuts any request at
+# 60 s. Measured: fresh answers took 2 to 21 s through Hosting (4 answers, 2 Nov 2026, deploy/cloudrun/DEPLOY.md); engine
+# time was p50 1.2 s and p95 2.4 s right after a deploy (15 Oct 2026) and 7 to 16 s while the product types weren't warmed
+# (14 Oct 2026; eval/LATENCY.md); a visitor queued 31 s behind warming on 14 Oct 2026. Left alone, a rush of visitors queue
+# behind the lock, hit Hosting's 60 s and see a generic error while the server goes on working for answers nobody waits
+# for. So, on the public site only (local mode is as it was), an answer that is not remembered and would have to queue is
+# refused at once with "busy" (503, Retry-After) instead, and no answer waits for Reddit past a deadline.
+# How many visitors may wait for their turn. Cloud Run lets 8 requests in at once: the answer being worked out and 4 queued
+# behind it use 5 places and leave 3 for the pages, the keep-warm ping (/ready) and remembered answers, which must never
+# wait behind answers. And the visitor in the 4th place waits for the answer under way and 3 others: with 4 to 5 s each
+# (Claude's estimate for a launch crowd's mix of answers, between the 1 to 3 s of a warmed one and the 8 to 21 s of a
+# cold one) that is about BUSY_MAX_QUEUE_SECONDS.
+BUSY_MAX_WAITING = 4
+# How long a visitor may wait for their turn before being refused. ANSWER_DEADLINE_SECONDS less this leaves 25 s for
+# their own answer, more than the slowest fresh answer measured through Hosting (21 s), so a visitor who waited the most is
+# still answered in time.
+BUSY_MAX_QUEUE_SECONDS = 20
+# The Retry-After a refused visitor is sent, in seconds: one queue's worth (BUSY_MAX_QUEUE_SECONDS), after which the answers
+# ahead of them have been worked out. The page doesn't use it; it asks the visitor to try again in a minute.
+BUSY_RETRY_AFTER_SECONDS = 20
+# No answer waits for Reddit past this many seconds after the request arrived (queue time included): a Reddit read that
+# would start later is not made, what it would have checked is left out of the answer (not remembered), and an answer whose
+# picks could not be checked in time is "busy" instead. Hosting's 60 s less 15 s of slack for what the deadline cannot cut:
+# Hosting's and Cloud Run's own time before the server sees the request, a read already under way at the deadline (about
+# 0.3 s; a hung one stops at the checker's 30 s timeout), re-ranking after a failed check, the last quote check and sending.
+ANSWER_DEADLINE_SECONDS = 45
+
 # --- The pairwise test (Noemi, 20 Oct 2026; engine/pair_test.py, GET /test, POST /api/test-response) ---
 # A short, blind test friends do in about 4 minutes: 6 comparisons of ours against ChatGPT's or Vetted's answer to a
 # shopping question, "A", "B" or "About the same", and an optional one-line why. Noemi chose the test, its 12 questions

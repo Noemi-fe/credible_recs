@@ -970,3 +970,37 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   stay). (3) The README gives each data source's real share: 2,500 of the 2,670 threads through Arctic Shift (about
   half from its published history files), 126 through Bright Data, the first 20 through Parse; live checks through
   Bright Data and Reddit's embed page.
+- 3 Nov 2026, built by Claude (branch load-busy-cap; technical calls, reported to Noemi; the page's wording is PROPOSED and
+  waits for her yes; not merged, not deployed): a load fix before the Show HN of about 10 Nov. The problem: fresh answers
+  are worked out one at a time, Firebase Hosting cuts any request at 60 s, and the per-visitor rate limit does nothing
+  against many visitors at once, so a crowd would queue behind the lock, see a generic error at 60 s, and leave the server
+  working for answers nobody waits for. Built on the public site only (engine/web.py; values in engine/config.py, "A busy
+  site", each with its grounds):
+  (1) A cap. An answer that isn't remembered and would have to queue is refused at once, 503 with code "busy" and a
+  Retry-After header, when 4 visitors already wait for their turn (BUSY_MAX_WAITING: Cloud Run lets 8 requests in at once,
+  so the answer under way and 4 queued leave 3 places for pages, the keep-warm ping and remembered answers), or when its
+  turn doesn't come within 20 s (BUSY_MAX_QUEUE_SECONDS: with the 45 s deadline it leaves 25 s for the visitor's own
+  answer, over the slowest fresh answer measured through Hosting, 21 s on 2 Nov). Remembered answers are never refused,
+  and a visitor whose time ran out is still given the answer worked out for someone else meanwhile. Warming (warm_up,
+  warm_more) takes the same turns as before, with no limit, so it is never refused, and still gives way to a waiting
+  visitor; the only other user of the lock is clear_answer_cache, which the tests use.
+  (2) A deadline. No answer waits for Reddit past 45 s after the request arrived (ANSWER_DEADLINE_SECONDS: Hosting's 60 s
+  less 15 s of slack), queue time included. The live checker can now be told how long a read may wait (LiveChecker.check,
+  wait_at_most): a read that would start later is not made ("later"), as a read asked not to wait already was, and a check
+  saved in the last 48 hours still answers at any time. For the comments only "Also worth a look" and the summaries quote,
+  that is the road built on 13 Oct: what stands on them is left out and the answer isn't remembered. For the comments the
+  picks need, that road doesn't work: the pipeline treats "later" as harmless only for those extras, and left on a pick's
+  quote it would leave the quote shown unchecked. The other road, dropping them as unreadable (what the 60 s wait limit
+  does today), changes the picks without a word, because the votes go with the comment (tried on the made-up kettle
+  library: one comment dropped, the top 3 became 2, and the thinner answer was remembered). So, past the deadline, an
+  answer whose picks can't be checked is refused as "busy", and the checks made are kept, so the retry finds them. No
+  quote rule is loosened: a quote is shown only with a passing check from the last 48 hours, and an answer cut short is
+  never remembered. The deadline cannot cut the engine's own work before the checks, or a Reddit read already begun.
+  (3) The page's wording for "busy" (engine/templates/search.html, LABELS.errors): "Lots of people are asking right now.
+  Please try again in a minute." (PROPOSED by Claude, waits for Noemi's yes; the page does not use Retry-After).
+  (4) Local mode (python -m engine.web without --public) has neither the cap nor the deadline: it serves one visitor, with
+  nothing in front of it that cuts a request, and a refusal there would only get in the way of Noemi's own testing.
+  Two things found and left alone: an answer that dropped comments as unreadable (a read that failed, or would wait over
+  60 s) is remembered like any other, so one visitor's thinner answer can be served to the next for up to a day; and a
+  crowd asking the same request at once is queued like any other crowd, though all but the first would be answered at once
+  when the first finishes (answering them together would be kinder; not built).
