@@ -970,3 +970,27 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   stay). (3) The README gives each data source's real share: 2,500 of the 2,670 threads through Arctic Shift (about
   half from its published history files), 126 through Bright Data, the first 20 through Parse; live checks through
   Bright Data and Reddit's embed page.
+
+- 3 Nov 2026, built by Claude (the launch-load fix (a), for the Show HN around 10 Nov; a technical call, reported to
+  Noemi, nothing in the pages changes): the home page and the How page can now be kept by Firebase Hosting's CDN. The live
+  site is one Cloud Run instance at most (8 requests at a time) behind Hosting, and every response said `Cache-Control:
+  no-store`, so every visit to the home page woke and used the server that also works out answers. In public mode,
+  `GET /` and `GET /how` answered 200 now say `public, max-age=60, s-maxage=600` (engine/web.py, PAGE_CACHE_CONTROL and
+  cache_control); /api/*, /test, /ready, every error and 404, every other path, and local mode keep `no-store`
+  (engine/tests/test_web_cache.py). Checked first: both pages are the same bytes for every visitor (nothing in them is
+  read from the request; the site sets no cookies; the test asks both with different cookies, addresses, countries,
+  languages, browsers, origins and query strings and compares them) and change only with a deploy: eval/metrics.json,
+  which /how reads each time, is tracked in git and so baked into the image (`git archive HEAD`), like the templates,
+  the example requests and data/product_pages.json. Values: 60 seconds in a browser, 600 in the CDN, so a spike costs the
+  server about one request per CDN location per ten minutes. Firebase's documentation (manage-cache) says a Cloud Run
+  response is kept only if it says `public` and a lifetime, that a redeploy clears all of a site's cached content across
+  the CDN, and that cookies other than `__session` are stripped; it does not say the redeploy clear applies to Cloud Run's
+  responses, so that is not proven. deploy.sh therefore releases Hosting right after the site is deployed (step 3b,
+  `python -m deploy.cloudrun.hosting release`, the same release every time and a failure never stops a deploy), and the
+  values are chosen so that if it clears nothing, a page is at most 11 minutes old after a deploy. Also: a response
+  large enough to be gzipped now always says `Vary: Accept-Encoding` (the plain copy said nothing, so a cache could have
+  held it for everyone); HEAD stays unsupported (Python's own 501, never marked `public`). Not done: answering
+  conditional requests (ETag/304: the CDN's re-asks every 10 minutes get the page whole), a HEAD handler, and any
+  defence against cache-busting query strings (a random `?x=` reaches the server each time; the page is cheap to make).
+  DEPLOY.md, Firebase Hosting and the domain, has the details and how to check a deploy (`x-cache: HIT` on the second
+  request).

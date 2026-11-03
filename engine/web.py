@@ -28,11 +28,27 @@ Visit counts (11 Oct 2026, either mode): when CREDIBLE_RECS_GOATCOUNTER holds No
 digits and hyphens only), both pages load GoatCounter's standard script, which sets no cookies, and the search page
 counts a few events by fixed names (listed in the page). Unset, nothing is loaded and nothing is counted.
 
+Caching (3 Nov 2026, the launch-load fix; DECISIONS.md): the live site is Firebase Hosting's CDN in front of one Cloud
+Run server, and by default nothing is kept anywhere: every response says "Cache-Control: no-store". So every visit to the
+home page woke and used the server that also works out answers. Now, in public mode only, the search page (GET /) and the
+How page (GET /how) answered 200 say "Cache-Control: public, max-age=60, s-maxage=600" (PAGE_CACHE_CONTROL,
+cache_control): the CDN keeps a copy for ten minutes and a browser for one, and most visits never reach this server.
+That is safe because both pages are the same bytes for every visitor: nothing in them comes from the request (not a
+cookie, an address, a country, a language, a query string or an Origin; the site sets no cookies), and they change only
+when a new version is deployed (the templates, the example requests, the makers' image hosts and the evaluation results
+the How page shows are all baked into the image; deploy.sh releases Firebase Hosting again after each deploy, which
+Firebase's documentation says clears the CDN, though not in so many words for a Cloud Run service's responses, so a
+page may be up to 11 minutes old after a deploy; DEPLOY.md). Everything else keeps no-store: /api/*, /test (a visit id of its own), /ready, every error
+and every other path (a 404 is never kept, nor a page that fails), and local mode entirely. The server answers only GET
+and POST; a HEAD gets Python's own 501, never the pages' public header. A response large enough to be sent gzipped says
+"Vary: Accept-Encoding" whether or not this browser took it, so a cache keeps the two copies apart.
+
 Routes:
-    GET  /                       the search page (engine/templates/search.html)
+    GET  /                       the search page (engine/templates/search.html); kept by the CDN in public mode (above)
     GET  /how                    the how-we-score page (engine/how_page.py): how an answer is made and scored, in plain
                                  words, and the latest evaluation results, read from eval/metrics.json each time it is
-                                 opened (10 Oct 2026); and what is collected about visitors (11 Oct 2026)
+                                 opened (10 Oct 2026; the file is in the image, so it changes only with a deploy); and
+                                 what is collected about visitors (11 Oct 2026); kept by the CDN in public mode (above)
     POST /api/answer             the answer to one request, as JSON; the request in the JSON body, {"request": "..."}
                                  (Noemi's decision 5 of 16 Oct 2026: it was GET /api/answer?q=<request>, and Google
                                  Cloud Run's request log keeps every address it is asked, with the visitor's IP address
@@ -357,6 +373,10 @@ GZIP_MIN_BYTES = 1024
 # price or for where a product is sold (https only, from data/prices.json; decision 11 and availability, 9 Oct 2026).
 # Exactly what local mode sends; security_headers adds GoatCounter when visits are counted, the Space's page, and
 # since 15 Oct 2026 the makers' images answers may show (their hosts only, https only).
+# "Cache-Control": "no-store" is what every response starts from: nothing is kept by a browser or a CDN. Since 3 Nov
+# 2026 exactly two responses swap it for PAGE_CACHE_CONTROL below (cache_control): the search page and the How page,
+# in public mode, when they answer 200. The API's answers, the pairwise test, /ready, every error and everything in
+# local mode keep no-store, as they must (they are worked out per visitor, per moment, or are not pages).
 HEADERS = {
     "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
                                "connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
@@ -364,6 +384,22 @@ HEADERS = {
     "Referrer-Policy": "no-referrer",
     "Cache-Control": "no-store",
 }
+
+# The two pages Firebase Hosting's CDN may keep (3 Nov 2026, built by Claude; DECISIONS.md, DEPLOY.md: Firebase Hosting
+# and the domain). Hosting sends every path to the one Cloud Run server (at most one instance, 8 requests at a time), and
+# the home page and the How page were worked out there for every visitor, so a launch spike would have woken and filled
+# the server that also works out answers. They are the same bytes for every visitor (nothing in them comes from the
+# request: no cookie, address, country, language, query string or Origin; the site sets no cookies) and change only when
+# a new version is deployed (the templates, the example requests, the makers' image hosts and eval/metrics.json, which
+# /how shows, are all in the image), so they can be kept. Hosting's CDN keeps a dynamic response only if it says
+# "public" (otherwise it treats it as private, for the visitor's browser alone) and it keeps it for s-maxage seconds
+# (max-age for browsers). 60 seconds in a browser: reloading and going back are quick, and a new version shows within a
+# minute of the CDN being cleared. 600 in the CDN: a spike costs the server about one request per CDN location per ten
+# minutes, and if a deploy did not clear the CDN (deploy.sh asks Hosting to, DEPLOY.md) a page would be at most 11 minutes
+# old. Chosen by Claude, reported to Noemi.
+PAGE_CACHE_CONTROL = "public, max-age=60, s-maxage=600"
+CACHED_PAGES = ("/", "/how")  # asked with GET, exactly these paths (/how/ is not /how); the query string changes nothing
+NO_STORE = HEADERS["Cache-Control"]
 
 # The API's errors: a code for programs, and plain words for whoever calls the API (the page has its own wording).
 EMPTY_REQUEST = ("empty_request", "Type what you're looking for: the request is empty.")
@@ -1050,6 +1086,15 @@ def makers_image_sources() -> tuple[str, ...]:
         return ()
 
 
+def cache_control(site: Site, path: str, status: int) -> str:
+    """The Cache-Control header of one GET response (3 Nov 2026): PAGE_CACHE_CONTROL for the search page and the How page,
+    answered 200 by the public site; no-store for everything else, including those two when they fail and in local
+    mode. The one place that decides what a browser or a CDN may keep."""
+    if site.public and status == 200 and path in CACHED_PAGES:
+        return PAGE_CACHE_CONTROL
+    return NO_STORE
+
+
 # --- The page ---
 
 def search_page(site: Site = LOCAL) -> bytes:
@@ -1138,7 +1183,8 @@ class _Handler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         if path != READY_PATH and not self._addressed_here():  # Cloud Run's probe names no site: it learns only this
             return self._send(*_error(403, self._wrong_host))
-        self._send(*handle_request(self.path, self.server.library_dir, self.server.site), path=path)
+        response = handle_request(self.path, self.server.library_dir, self.server.site)
+        self._send(*response, path=path, cache=cache_control(self.server.site, path, response[0]))
 
     def do_POST(self):
         path = urlsplit(self.path).path
@@ -1176,14 +1222,21 @@ class _Handler(BaseHTTPRequestHandler):
         return False
 
     def _send(self, status: int, content_type: str, body: bytes, path: str | None = None,
-              extra: dict[str, str] | None = None) -> None:
-        if len(body) >= GZIP_MIN_BYTES and takes_gzip(self.headers.get("Accept-Encoding")):
-            body = gzip.compress(body, compresslevel=6)
-            extra = {**(extra or {}), "Content-Encoding": "gzip", "Vary": "Accept-Encoding"}
+              extra: dict[str, str] | None = None, cache: str = NO_STORE) -> None:
+        if len(body) >= GZIP_MIN_BYTES:
+            # Whether a body this size is sent gzipped depends on the browser's Accept-Encoding, so the response says
+            # so either way (3 Nov 2026): a cache holding the plain copy must not hand it to everyone, nor the gzipped
+            # copy to a browser that can't read it. A small body is the same for everyone and says nothing.
+            extra = {**(extra or {}), "Vary": "Accept-Encoding"}
+            if takes_gzip(self.headers.get("Accept-Encoding")):
+                body = gzip.compress(body, compresslevel=6)
+                extra["Content-Encoding"] = "gzip"
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
-        for name, value in security_headers(self.server.site, page=content_type.startswith("text/html")).items():
+        headers = security_headers(self.server.site, page=content_type.startswith("text/html"))
+        headers["Cache-Control"] = cache  # no-store unless cache_control said this page may be kept
+        for name, value in headers.items():
             self.send_header(name, value)
         if status == 405 and path in METHODS:
             self.send_header("Allow", METHODS[path])
