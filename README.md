@@ -1,7 +1,7 @@
 # Credible Picks
 
-Three product picks for almost anything people buy, ranked by how credible the Reddit recommenders are rather than by
-popularity. Every quote shown is checked word for word against its comment.
+Up to three product picks for things people buy and use, ranked by how credible the Reddit recommenders are rather
+than by popularity. Every quote shown is checked word for word against its comment.
 
 **Live: https://crediblepicks.com** (how it scores: https://crediblepicks.com/how)
 
@@ -38,10 +38,11 @@ Quality is measured against a gold set Noemi labels by hand (`data/gold/`) and t
 extraction scores 94% precision (73 of 78) and 97% recall (73 of 75). On the ten end-to-end evaluation requests, all ten
 return a full top three, and no logged run has shown a quote that fails the word-for-word check.
 
-Threads come from the Arctic Shift archive, with Bright Data as the fallback reader, and are checked live through the
-Parse reddit.com API. These three are third-party services; the project does not use Reddit's Data API. Before a quote
-is shown, its comment is read again through Reddit's own embed page and needs a passing check from the last 48 hours,
-so a quote whose comment was deleted, removed or edited away is never shown. Reddit text stays off this repository; only links, ids and labels
+Threads come from the Arctic Shift archive (2,500 of them, about half from its published history files) and Bright
+Data (126); the first 20 came through the Parse reddit.com API. These are third-party services; the project does not
+use Reddit's Data API. Every comment the library keeps is read again on Reddit's own embed page at least every 30 days,
+and a quote is shown only with a passing check from the last 48 hours, so deleted, removed and edited comments drop
+out. Reddit text stays off this repository; only links, ids and labels
 are tracked here.
 
 ## Run it locally

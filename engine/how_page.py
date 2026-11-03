@@ -25,6 +25,7 @@ the template; the words for each listed sign and each test result are below.
 """
 
 import html
+import math
 import re
 from pathlib import Path
 
@@ -484,8 +485,13 @@ def _score(entry: MetricEntry, lower: bool) -> str:
 
 
 def _percent(value: float, target: float | None) -> str:
-    """The share as a whole percentage; with one decimal when rounding would make a miss look like the target."""
+    """The share as a whole percentage; with one decimal when rounding would make a miss look like the target, or a
+    share short of all or above none read "100%" or "0%" (2 Nov 2026), then rounded toward the middle: 99.96% is 99.9%,
+    0.01% is 0.1%."""
     shown = f"{value:.0%}"
+    if 0 < value < 1 and shown in ("0%", "100%"):
+        tenths = math.floor(value * 1000) if shown == "100%" else math.ceil(value * 1000)
+        return f"{tenths / 10:.1f}%"
     if target is not None and value < target and shown == f"{target:.0%}":
         shown = f"{value:.1%}"
     return shown

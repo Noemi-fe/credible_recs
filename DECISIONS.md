@@ -962,3 +962,11 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   questions are no longer called the ones testers will judge in the blind test. The first round is done, the page
   showed both as not measured yet, and its result is told in person instead. Both keys stay in eval/metrics.json and
   engine/metrics.py, so the blind-test tooling (save_blind_test, carry_blind_test) keeps working for a second round.
+- 2 Nov 2026 (Claude, the orchestrator; technical and wording calls, reported to Noemi; found by the launch drafts'
+  fact-check): (1) the How page never rounds a share short of all to "100%" or a share above none to "0%"; it shows
+  one decimal rounded toward the middle (62,969 of 63,023 quotes found had read "(100%)", now "(99.9%)";
+  engine.how_page._percent). (2) data/gold/CANDIDATES.md describes each thread in our words: the posters' own titles
+  are out of the repository, under the rule that keeps Reddit users' words out of tracked files (their links and ids
+  stay). (3) The README gives each data source's real share: 2,500 of the 2,670 threads through Arctic Shift (about
+  half from its published history files), 126 through Bright Data, the first 20 through Parse; live checks through
+  Bright Data and Reddit's embed page.

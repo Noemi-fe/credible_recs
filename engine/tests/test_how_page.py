@@ -125,6 +125,17 @@ def test_a_value_below_its_target_is_marked_as_missing_it(tmp_path, monkeypatch)
     assert "Meets the target" in card(html, "cost_per_question_usd")  # $0, under $0.05
 
 
+def test_a_count_short_of_its_total_never_rounds_to_100_percent_nor_one_above_none_to_0(tmp_path, monkeypatch):
+    # 2 Nov 2026: 62,969 of 63,023 quotes found read "(100%)", hiding 54 that weren't. A share rounds toward the middle
+    # near either end, to one decimal: down below 100%, up above 0%.
+    for count, out_of, shown in ((62_969, 63_023, "(99.9%)"), (86_027, 86_372, "(99.6%)"), (9_999, 10_000, "(99.9%)"),
+                                 (1, 1_000, "(0.1%)"), (3, 1_000, "(0.3%)"), (1, 10_000, "(0.1%)"), (2_838, 2_838, "(100%)"),
+                                 (0, 30, "(0%)"), (45, 47, "(96%)")):
+        data = json.loads(json.dumps(EXAMPLE))
+        data["metrics"]["ai_quotes_found"].update(value=count / out_of, count=count, out_of=out_of)
+        assert f"{count:,} out of {out_of:,} {shown}" in card(get_how(tmp_path, monkeypatch, data), "ai_quotes_found")
+
+
 def test_a_value_exactly_on_its_target_meets_it_and_a_cost_on_its_limit_misses_it(tmp_path, monkeypatch):
     data = json.loads(json.dumps(EXAMPLE))
     data["metrics"]["extraction_precision"].update(value=0.9, count=45, out_of=50)
