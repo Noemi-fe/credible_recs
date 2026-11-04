@@ -339,3 +339,92 @@ def test_a_run_from_the_command_line_asks_gemini_through_that_model(monkeypatch)
     monkeypatch.setattr("engine.arctic_shift.ArcticShiftClient", lambda *a, **k: object())
     assert on_demand.main(["run"]) == 0
     assert seen["model"] == "gemini-test-model" and isinstance(seen["gemini"], Client)
+
+
+# --- A search round cut short is tried again (4 Nov 2026, from Noemi's report about "blush") ---
+# Arctic Shift timed out on about half the searches that day; a round ended by them still read what its first searches
+# found (2 threads a request) and the request was closed with those. Now, when searches failed and the request has
+# fewer than LIBRARY_THREADS_PER_PRODUCT threads, it stays waiting (one more try), and the next run reads the rest,
+# never the bundle's again, up to LIBRARY_THREADS_PER_PRODUCT in all; after ON_DEMAND_MAX_TRIES it is closed with what
+# it has.
+
+class SearchesFail(FakeArchive):
+    """The archive with only the "teapot" searches of the `answering` communities answering (r/tea's): every other
+    search fails, as a busy archive's do."""
+
+    def __init__(self, answering=("tea",), **kwargs):
+        super().__init__(**kwargs)
+        self.answering = answering
+
+    def __call__(self, url, headers):
+        answers = "title=teapot&" in url and any(f"subreddit={name}&" in url for name in self.answering)
+        if "/posts/search" in url and not answers:
+            self.requests.append(url)
+            return 522, b"Cloudflare: the origin didn't answer"
+        return super().__call__(url, headers)
+
+
+def more_teapots(monkeypatch) -> tuple[str, ...]:
+    """Four more made-up teapot threads, in r/BuyItForLife: seven in all, more than a request reads."""
+    from engine.tests import on_demand_fakes
+
+    for n in range(4, 8):
+        monkeypatch.setitem(on_demand_fakes.TEAPOT_THREADS, f"1tea00{n}", ("BuyItForLife", f"Teapot number {n} worth it?", [
+            (f"t{n}a", f"My Brown Betty teapot has lasted {n} years.", "Brown Betty teapot")]))
+    return tuple(on_demand_fakes.TEAPOT_THREADS)
+
+
+def test_a_round_cut_short_leaves_the_request_waiting_and_the_next_run_reads_the_rest(tmp_path, monkeypatch):
+    from engine.config import LIBRARY_THREADS_PER_PRODUCT
+
+    every = more_teapots(monkeypatch)
+    whole = FakeGoogle()  # what one whole round reads, for comparison
+    queued(whole, TEAPOT)
+    (tmp_path / "whole").mkdir()
+    run(tmp_path / "whole", whole, fake_archive=FakeArchive(threads=every))
+    expected = sorted(the_bundle(whole).threads)
+    assert 2 < len(expected) <= LIBRARY_THREADS_PER_PRODUCT  # the library's mix, at most 3 from each community here
+
+    google = FakeGoogle()
+    queued(google, TEAPOT)
+    report = run(tmp_path, google, fake_archive=SearchesFail(threads=every))
+    [entry] = the_queue(google).entries
+    assert sorted(the_bundle(google).threads) == ["1tea001", "1tea003"]  # what r/tea's search found
+    assert entry.status == "waiting" and entry.tries == 1 and entry.read_at is None  # not closed with 2
+    assert report.threads_read == 2 and report.extracted == 2
+    fake = FakeArchive(threads=every)
+    later = run(tmp_path, google, fake_archive=fake, now=NOW + timedelta(minutes=61))
+    assert sorted(the_bundle(google).threads) == expected  # the two tries read what one whole round reads
+    assert later.threads_read == len(expected) - 2
+    assert not any("ids=1tea001" in url or "ids=1tea003" in url for url in fake.requests)  # the bundle's: not again
+    [entry] = the_queue(google).entries
+    assert entry.status == "done" and entry.found == len(expected)
+
+
+def test_after_its_tries_a_request_cut_short_each_time_is_closed_with_what_it_has(tmp_path, monkeypatch):
+    every = more_teapots(monkeypatch)
+    google = FakeGoogle()
+    queued(google, TEAPOT)
+    moment = NOW
+    for _ in range(ON_DEMAND_MAX_TRIES):
+        run(tmp_path, google, fake_archive=SearchesFail(threads=every), now=moment)
+        moment += timedelta(minutes=61)
+    [entry] = the_queue(google).entries
+    assert entry.status == "done" and entry.found == 2 and entry.tries == ON_DEMAND_MAX_TRIES
+    assert sorted(the_bundle(google).threads) == ["1tea001", "1tea003"]
+
+
+def test_a_round_that_found_all_it_needs_is_closed_though_a_search_failed(tmp_path, monkeypatch):
+    from engine.tests import on_demand_fakes
+
+    # Enough teapot threads in both communities for the library's mix (at most 3 from each of the two here): the two
+    # "teapot" searches that answer find all it needs, though the "tea pot" ones fail.
+    for n, community in ((4, "tea"), (5, "BuyItForLife"), (6, "BuyItForLife")):
+        monkeypatch.setitem(on_demand_fakes.TEAPOT_THREADS, f"1tea00{n}", (community, f"Teapot number {n} worth it?", [
+            (f"t{n}a", f"My Brown Betty teapot has lasted {n} years.", "Brown Betty teapot")]))
+    google = FakeGoogle()
+    queued(google, TEAPOT)
+    run(tmp_path, google, fake_archive=SearchesFail(answering=("tea", "BuyItForLife"),
+                                                    threads=tuple(on_demand_fakes.TEAPOT_THREADS)))
+    [entry] = the_queue(google).entries
+    assert entry.status == "done" and entry.tries == 0

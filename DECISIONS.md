@@ -1064,3 +1064,47 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   chiuso. Grazie a chi ha partecipato." (was "isn't open yet ... try again later"). The runbook says how to check the
   cards where they are, and how to open a second round (put the file back in data/library and deploy). The API's own
   error text for an answer sent to a closed test (web.TEST_CLOSED, never shown by the page) was left as it was.
+
+- 4 Nov 2026, built by Claude (branch makeup-threads, not merged or deployed), from Noemi's report that "blush" on the
+  site said it had counted one thread while Google's top results for it were big Reddit threads in r/Makeup and
+  r/Sephora ("let's do better threads wise"). Code only: no thread was read or extracted on this branch.
+  (1) Communities, PROPOSED until Noemi says yes: r/Makeup and r/Sephora (a shoppers' community, not run by the
+  retailer) are general-category subreddits, and r/AsianBeauty (skincare's already) is listed for the general category
+  too, so foundation, concealer, mascara and lipstick may search it. Every makeup type searches r/Makeup, r/Sephora,
+  r/MakeupAddiction and r/drugstoreMUA, in that order. r/MakeupRehab (a no-buy community) stays decided but no makeup
+  type searches it. Not added: BeautyGuruChatter, Ulta, makeupexchange.
+  (2) Types (401 now): bronzer (with the contour products), highlighter and setting powder are types of their own;
+  until now "bronzer" was answered with blushes and "translucent powder" with setting sprays. Blush and setting spray
+  lose those names. Every makeup type's title words include its plural ("blushes", "eyeshadows"...): Arctic Shift's title
+  search matches whole words only. Plain "contour" is not a bronzer word ("a mattress that contours" stays a mattress),
+  and "highlighter pen" is a lookalike. The extraction instructions are extract-v16 (v15 plus the three new names, as
+  v13 was; every earlier extraction is still current: EXTRACT_STILL_CURRENT), so the extraction brief should name v16.
+  (3) Advice searches (the archive reader only; Parse's paid search never runs them): the first two title words with
+  "favorite", "recommendations" and "best", subreddit by subreddit, over the whole history, at most 12
+  (ARCHIVE_ADVICE_WORDS, ARCHIVE_ADVICE_SEARCHES). A request with no need words ("blush") had no search but the newest
+  100 posts per title word, which never reached the big threads asking for recommendations. "recommendations" is
+  asked before "best" (the plan had them the other way) because in a replay of the searches only that order reached all
+  three of Google's threads within 12. A post only an advice search found is kept only when its title asks for advice
+  (a question mark, an asking start such as "what", "any", "best", "help", or a buying flair): "favorite" is also how
+  people show off a look. When a round is ended by failures but some searches answered (a busy archive, not a down one),
+  the need and advice searches still queued are asked once each, never halved, until 3 fail in a row: they are lighter
+  than the broad ones.
+  (4) On-demand: a site folder's threads that came from the job's own bundle are no longer counted as baked into the
+  site (the queue's "had"), so a request whose only threads came from the bundle is read again instead of closed as
+  having enough; the answer then says "more" rather than "haven't read" (PipelineResult.own_thread_ids).
+  (5) A round cut short (some searches failed and fewer than 6 threads chosen) waits and is tried again later, up to
+  ON_DEMAND_MAX_TRIES, keeping the threads it read; the next try reads only the rest, chosen from the whole mix.
+  (6) Makeup ranks like skincare and haircare: an old makeup thread loses the old-post points (REFORMULATED_TYPES: the
+  13 makeup types; general's other types are not reformulated).
+  (7) Timed on a busy archive: the blush request's search round took 455 and 876 seconds (22 and 41 calls; r/Makeup's
+  searches timed out almost every time, over its whole history and over the last 3 years alike), and the six threads
+  it chose (four of 107 to 238 comments) are 17 Gemini calls, up to 24 for six big ones. So ON_DEMAND_ARCHIVE_MINUTES is
+  17 (6) and ON_DEMAND_CALLS_PER_PRODUCT 24 (15): a request is 41 minutes of the job (21). What visitors are told
+  changes with it (the wording is unchanged): the first in line "in about 45 minutes" (25), the second "in about an
+  hour" (45 minutes), "about 18 a day" (30) and "about 20 a month" (39). Noemi to be told. The minute a Gemini call is
+  given is still the safe one (calls took 10 to 25 seconds), so these are generous.
+  Measured on the dry run (no thread read): 762 candidates (280 in a first dry run whose round ended before the advice searches, which is why a busy round
+  now still asks them), 6 threads chosen, none
+  from r/MakeupRehab; of Google's three threads, the r/Sephora one was among them and chosen, a second r/Sephora one was
+  found by an advice search in a later probe, and the r/Makeup one was out of reach while r/Makeup's searches timed out.
+  Only "blush" is in Noemi's words; the other makeup types got the same changes because they share the cause.

@@ -131,8 +131,9 @@ READING_OLD = ("The Reddit threads we've read about {about} are a few years old,
 WAITING_OLD = ("The Reddit threads we've read about {about} are a few years old. Reading newer ones is on our list, "
                "but our free reading allowance is used up for now: check back {when}.")
 # In line behind other requests, past what the day's free allowance can read (25 Oct 2026): {ahead_text} is "1 product
-# is" or "3 products are"; {capacity} is what the free allowance covers, "30 a day" while Gemini's calls limit the
-# reading and "39 a month" once the job's time for the month does (capacity_text).
+# is" or "3 products are"; {capacity} is what the free allowance covers, "18 a day" while Gemini's calls limit the
+# reading and "20 a month" once the job's time for the month does (capacity_text; 30 and 39 until 4 Nov 2026, when a
+# request was timed again: config.ON_DEMAND_CALLS_PER_PRODUCT).
 IN_LINE_NEW = ("We haven't read Reddit about {about} yet. It's in line: {ahead_text} ahead of it, and our free reading "
                "allowance covers about {capacity}. Check back {when}.")
 IN_LINE_MORE = ("We've read only a little on Reddit about {about} so far. Reading more is in line: {ahead_text} ahead of "
@@ -356,9 +357,9 @@ def month_places_left(queue: Queue, now: datetime) -> int:
 
 def capacity_text(place: int, queue: Queue, now: datetime) -> str:
     """What the free allowance covers, for the visitor at `place` in line (25 Oct 2026, Noemi's decision (l) of 19 Oct,
-    on Gemini 3.1 Flash-Lite): "30 a day" while Gemini's calls decide when the place is reached, "39 a month" once the
-    job's time for the month does. Flash-Lite's 450 calls a day could read 30 requests, but the month's job time reads
-    about 39: "30 a day" beside "check back on 1 November" would not be true."""
+    on Gemini 3.1 Flash-Lite): "18 a day" while Gemini's calls decide when the place is reached, "20 a month" once the
+    job's time for the month does (30 and 39 until 4 Nov 2026). Flash-Lite's 450 calls a day could read 18 requests, but
+    the month's job time reads about 20: "18 a day" beside "check back on 1 November" would not be true."""
     month_limits = (queue.resting_why == "month") if queue.resting(now) else place >= month_places_left(queue, now)
     return f"{products_a_month()} a month" if month_limits else f"{products_a_day()} a day"
 
@@ -584,8 +585,13 @@ class SiteReader:
         old = threads_are_old(query.product_type, result.newest_own_thread, now)
         if own >= self.min_threads and not old:
             return Outcome()
-        entry = Entry.waiting_for(query, had=own, refresh=own >= self.min_threads)
         with self._lock:
+            # What the job counts as the library's (4 Nov 2026): the threads baked into the image only. The ones this
+            # folder holds from the bundle are counted by the job as the bundle's; counted here too, a request with 4
+            # threads read on demand counted 8 and was closed as "enough threads about it already", unread.
+            ids = getattr(result, "own_thread_ids", None)
+            baked = own if ids is None else sum(1 for tid in ids if tid not in self._written)
+            entry = Entry.waiting_for(query, had=baked, refresh=own >= self.min_threads)
             queue = self._read_queue(ON_DEMAND_QUEUE_FRESH_SECONDS)
             if queue is None:
                 return Outcome(remember=False)  # the bucket can't be read just now: asked again next time
@@ -607,17 +613,18 @@ class SiteReader:
                 self._first_seen[entry.key] = self._clock()  # queued (again) now: its wait starts now
             self._first_seen.setdefault(entry.key, self._clock())
             self._start_if_due(queue, now)
-            return Outcome(self._state(queue, entry.key, now), remember=False)
+            return Outcome(self._state(queue, entry.key, now, own), remember=False)
 
-    def _state(self, queue: Queue, key: str, now: datetime) -> dict:
+    def _state(self, queue: Queue, key: str, now: datetime, own: int = 0) -> dict:
         """The API's "on_demand" for a waiting entry: where it stands, and the sentence the page shows. The wait comes
         from the queue's length and what the day can read (wait_for), so the tenth in line isn't promised the first's
-        20 minutes (25 Oct 2026)."""
+        20 minutes (25 Oct 2026). `own`: the threads about it the answer had, read on demand ones included (4 Nov 2026:
+        "we've read only a little" stays true when they were all read on demand)."""
         entry = queue.find(key)
         from engine.group_products import plural  # here: grouping is a module answers load anyway
 
         about = plural(entry.product_type)
-        kind = "old" if entry.refresh else "more" if entry.had > 0 else "new"
+        kind = "old" if entry.refresh else "more" if entry.had > 0 or own > 0 else "new"
         waiting = [e.key for e in queue.waiting()]
         ahead = waiting.index(key) if key in waiting else 0
         state = {"state": "reading", "product_type": entry.product_type, "about": about, "read_before": kind != "new",
@@ -1021,7 +1028,12 @@ def _finish_complete(queues: QueueStore, now, report: RunReport) -> bool:
 def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, bundles: BundleStore,
                 library_dir: Path, archive, now, work: Path, report: RunReport) -> None:
     """Finds and reads one waiting request's threads from the archive, into the bundle (waiting for Gemini), then
-    marks it read in the queue (or done, when the library has enough threads about it already or none were found)."""
+    marks it read in the queue (or done, when the library has enough threads about it already or none were found).
+
+    A round of searches cut short (some failed: Arctic Shift busy) that leaves the request with fewer than
+    LIBRARY_THREADS_PER_PRODUCT threads keeps it waiting, one try more (4 Nov 2026: such rounds had closed requests with
+    2 threads): the next try reads the rest of the mix, never the threads read already, which keep their places in it
+    when the searches find them again; after ON_DEMAND_MAX_TRIES it is closed with what it has."""
     from engine.arctic_shift import ArcticShiftError
     from engine.gold import GoldThreadError, unlabelled_gold_ids
     from engine.library import _save
@@ -1054,14 +1066,20 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
         return
     saved = {path.stem for path in (library_dir / "threads").glob("*.json")}
     skip = saved | set(bundle.threads) | unlabelled_gold_ids()
-    fresh = [post for post in ranked if str(post["id"]).removeprefix("t3_") not in skip]
+    mine = {tid for tid, item in bundle.threads.items() if item.entry == key}  # read on an earlier try (4 Nov 2026)
+    fresh = [post for post in ranked if _plain_id(post) not in skip or _plain_id(post) in mine]
     if entry.refresh:  # the library's threads are old: only threads posted since count (an unknown date isn't old)
         oldest = _years_before(moment, ON_DEMAND_OLD_YEARS)
         fresh = [post for post in fresh if not _posted_before(post, oldest)]
-    chosen = choose_mix(query, fresh, total=LIBRARY_THREADS_PER_PRODUCT, mix=LIBRARY_MIX)
+    mix = choose_mix(query, fresh, total=LIBRARY_THREADS_PER_PRODUCT, mix=LIBRARY_MIX)
+    chosen = [post for post in mix if _plain_id(post) not in mine][:max(0, LIBRARY_THREADS_PER_PRODUCT - len(mine))]
+    # Cut short: searches failed, and the request has fewer threads than a whole round reads. Tried again unless this
+    # was its last try.
+    cut_short = bool(source.failed) and len(mine) + len(chosen) < LIBRARY_THREADS_PER_PRODUCT
+    again = cut_short and entry.tries + 1 < ON_DEMAND_MAX_TRIES
     read: dict[str, Item] = {}
     for post in chosen:
-        post_id = str(post["id"]).removeprefix("t3_")
+        post_id = _plain_id(post)
         try:
             thread = _save(for_request(archive.get_thread(post_id, post["subreddit"]), query), work)
         except (ArcticShiftError, ValueError, GoldThreadError):
@@ -1076,15 +1094,26 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
             return
     report.threads_read += len(read)
     report.requests_read.append(entry.product_type)
+    if cut_short:
+        report.notes.append(f"Arctic Shift's searches for {entry.product_type} were cut short: "
+                            + ("tried again later." if again else "closed with what it has."))
 
-    def mark(mine: Entry):
-        mine.read_at = moment.isoformat()
-        if not read:
-            mine.finish(moment, found=0, note="no new threads in the archive")
+    def mark(waiting: Entry):
+        if cut_short:
+            waiting.tries, waiting.tried_at = waiting.tries + 1, moment.isoformat()
+        if again:
+            return  # still waiting: the next try reads the rest
+        waiting.read_at = moment.isoformat()
+        if not read and not mine:
+            waiting.finish(moment, found=0, note="no new threads in the archive")
 
     _change_entry(queues, key, mark)
-    if not read:
+    if not read and not mine and not again:
         report.requests_done.append(entry.product_type)
+
+
+def _plain_id(post: dict) -> str:
+    return str(post["id"]).removeprefix("t3_")
 
 
 def _extract_one(tid: str, bundle: Bundle, queues: QueueStore, bundles: BundleStore, library_dir: Path, gemini, now,

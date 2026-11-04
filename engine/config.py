@@ -90,6 +90,15 @@ SUBREDDITS: dict[str, tuple[str, ...]] = {
         # beauty and personal care
         "drugstoreMUA", "Fragrance", "MakeupAddiction", "MakeupRehab", "malegrooming", "RedditLaqueristas",
         "wicked_edge", "HaircareScience", "curlyhair", "Hair", "femalehairadvice", "SkincareAddiction",
+        # 4 Nov 2026 (Noemi's report about "blush": Google's top threads for it were in r/Makeup and r/Sephora, which
+        # the archive reader refused to read; chosen by Claude, PROPOSED until Noemi says yes): r/Makeup, the general
+        # makeup questions community, and r/Sephora, a shoppers' community (not run by the retailer), searched first
+        # for every makeup type (engine/data/product_types.json). r/AsianBeauty is skincare's already (category_for
+        # still gives "skincare"): listed here too, last, so foundation, concealer, mascara and lipstick requests may
+        # search it and a thread read there for them takes the general category (engine.sources.for_request). Not
+        # used: r/BeautyGuruChatter (influencer talk), r/Ulta (store staff), r/makeupexchange (selling). r/MakeupRehab
+        # stays decided, but no makeup type searches it any more: a no-buy community.
+        "Makeup", "Sephora", "AsianBeauty",
         # hobbies
         "astronomy", "boardgames", "DigitalArt", "drums", "fountainpens", "Guitar", "notebooks", "pens", "piano",
         "sewing", "telescopes",
@@ -329,6 +338,12 @@ OLD_SKINCARE_POST_MAX_VOICE = "medium"  # formulas change, so an old skincare co
 # The categories whose formulas change, so OLD_SKINCARE_POST_MAX_VOICE and the ranking's old-post penalty apply to them
 # (haircare added by Claude on 11 Oct 2026, reported to Noemi: shampoos are reformulated as skincare is).
 REFORMULATED_CATEGORIES = ("skincare", "haircare")
+# 4 Nov 2026 (makeup coverage, chosen by Claude, reported to Noemi): the general category's makeup types are
+# reformulated too (shades and formulas change, lines are discontinued), so the ranking's old-post penalty applies to
+# their threads as well (engine.sources.rank_posts): a 2020 blush thread no longer outranks a 2025 one of the same
+# size. The rest of the general category keeps no age penalty, and the voice's old-post cap is unchanged.
+REFORMULATED_TYPES = ("foundation", "concealer", "mascara", "lipstick", "eyeliner", "eyeshadow", "makeup primer",
+                      "brow pencil", "blush", "bronzer", "highlighter", "setting powder", "setting spray")
 
 # The comment's words. Decided by Noemi, 9 Oct 2026.
 ENTHUSIAST_MIN_TERMS = 3  # using this many of the category's specialist words shows an "enthusiast"
@@ -1781,6 +1796,15 @@ EXTRACT_STILL_CURRENT: dict[str, dict[str, tuple[str, ...]]] = {
     "extract-v15": {"extract-v14": THREAD_CATEGORIES, "extract-v13": THREAD_CATEGORIES,
                     "extract-v12": THREAD_CATEGORIES, "extract-v11": _BEFORE_GENERAL, "extract-v10": _BEFORE_GENERAL,
                     "extract-v9": _BEFORE_GENERAL, "extract-v8": ("skincare", "kitchen")},
+    # v16 (4 Nov 2026, makeup coverage) only adds the names of module 1's three new makeup types ("bronzer",
+    # "highlighter", "setting powder", split out of blush and setting spray) to the list the AI types products with, as
+    # v13 did for the routing audit's types. Under v15 the AI typed them in plain words ("bronzer", "highlighter",
+    # "setting powder": its "otherwise write a short lowercase type" rule), which the new types' names find, so every
+    # v15 extraction stays current, of all four categories, and the older ones as under v15. Decided by Claude, reported.
+    "extract-v16": {"extract-v15": THREAD_CATEGORIES, "extract-v14": THREAD_CATEGORIES,
+                    "extract-v13": THREAD_CATEGORIES, "extract-v12": THREAD_CATEGORIES, "extract-v11": _BEFORE_GENERAL,
+                    "extract-v10": _BEFORE_GENERAL, "extract-v9": _BEFORE_GENERAL,
+                    "extract-v8": ("skincare", "kitchen")},
 }
 
 # --- Going live (Noemi, 11 Oct 2026) ---
@@ -1879,6 +1903,17 @@ ARCHIVE_SPLIT_DEPTH = 2
 # product's title word with each of the request's first ARCHIVE_NEED_WORDS need words ("conditioner curly"), in each of
 # its subreddits, over the whole history: few posts match both. Chosen by Claude, reported to Noemi.
 ARCHIVE_NEED_WORDS = 2
+# 4 Nov 2026 (Noemi's report about "blush", chosen by Claude, reported to her): a request with no need words ("blush")
+# had no need searches, and for a type people post about every day round 1's newest 100 posts are the last few weeks:
+# the big "your favorite blush?" threads Google showed her, one or two years old, were out of reach. The archive's round
+# also searches the type's first two title words with each of these advice words ("blush favorite", "blushes
+# favorite", "blush recommendations"), subreddit by subreddit, over the whole history (few posts match both, so they
+# don't time out), at most ARCHIVE_ADVICE_SEARCHES of them; a post only they find must read as a question for advice
+# (engine.sources.search_archive). "recommendations" before "best": with a plural and four communities, the first 12
+# are "favorite" with both words and "recommendations" with the first, which reached all three of the threads Google
+# showed (the plan's discovery of 4 Nov 2026); "best" comes first for a type with one title word or fewer communities.
+ARCHIVE_ADVICE_WORDS = ("favorite", "recommendations", "best")
+ARCHIVE_ADVICE_SEARCHES = 12
 # 12 Oct 2026: a title search over a big subreddit's whole history timed out, one bounded by dates didn't (r/curlyhair,
 # "conditioner": 35 s for the last 3 years, 11 s for the 6 before). So both rounds are bounded: the last
 # ARCHIVE_OLDER_YEARS years, then back to ARCHIVE_OLDEST_FACTOR times as far (9 years).
@@ -2215,9 +2250,18 @@ ON_DEMAND_GEMINI_CALLS_A_MINUTE = 10
 # (ON_DEMAND_MONTH_SECONDS) is then what limits the reading, not Gemini: 39 requests a month at these 21 minutes (about
 # twice that at the 11 a request actually takes), and the visitor is told so (engine.on_demand.products_a_month). These
 # numbers describe the reader above; a different reader changes them (and the cap) together.
-ON_DEMAND_CALLS_PER_PRODUCT = 15
+# Timed again on 4 Nov 2026 (built by Claude, branch makeup-threads), when the archive reader's searches grew by the
+# advice searches (ARCHIVE_ADVICE_SEARCHES): a "blush" request's search round took 455 and 876 seconds (8 and 15
+# minutes; 22 and 41 calls, at least 10 seconds apart, on a busy archive that timed out on most of r/Makeup's searches),
+# and reading six threads is about 2 minutes more, so 17 minutes of Arctic Shift (6 until then). The advice searches
+# find the big threads asking for recommendations: a thread of 150 comments or more is 4 calls (EXTRACT_MAX_COMMENTS
+# over 40 a call), six are 24 calls (15 until then; the blush round's six, four of them 107 to 238 comments, were 17).
+# So a request is 41 minutes of the job (21 until then): the first in line is told about 45 minutes (25), each one
+# ahead 41 more (21); Gemini's calls read 18 requests a day (30), the month's job time 20 (39). The minute a call is
+# still the safe one: a call took 10 to 25 seconds.
+ON_DEMAND_CALLS_PER_PRODUCT = 24
 ON_DEMAND_CALL_MINUTES = 1
-ON_DEMAND_ARCHIVE_MINUTES = 6
+ON_DEMAND_ARCHIVE_MINUTES = 17
 ON_DEMAND_PRODUCT_MINUTES = ON_DEMAND_ARCHIVE_MINUTES + ON_DEMAND_CALLS_PER_PRODUCT * ON_DEMAND_CALL_MINUTES
 GEMINI_RESET_HOUR_UTC = 8
 # The bundle holds at most this many threads not baked into the site's image yet: past it the job reads no new request

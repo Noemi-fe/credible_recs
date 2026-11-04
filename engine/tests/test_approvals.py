@@ -130,40 +130,47 @@ class Line:
         return self.site.after_answer(result).state
 
 
-def test_a_request_takes_about_21_minutes_of_the_job_with_the_fast_reader():
+def test_a_request_takes_about_41_minutes_of_the_job_with_the_fast_reader():
     # A Flash-Lite call took 10 to 25 seconds on 25 Oct 2026; a safe minute a call, 15 calls and 6 minutes of Arctic
     # Shift's paced reads: 21 minutes, the first one's wait 4 minutes more (the site's next ping).
-    assert config.ON_DEMAND_CALL_MINUTES == 1 and config.ON_DEMAND_PRODUCT_MINUTES == 21
-    assert (config.ON_DEMAND_FIRST_MINUTES, config.ON_DEMAND_EACH_MINUTES) == (25, 21)
+    # Changed on purpose, 4 Nov 2026 (the makeup threads work: the archive reader's advice searches, timed on a busy
+    # archive): the search round took 8 and 15 minutes, plus about 2 for reading six threads, so 17
+    # minutes of Arctic Shift; and the advice searches choose big threads, up to 4 calls each, so 24 calls: 41 minutes.
+    assert config.ON_DEMAND_CALL_MINUTES == 1 and config.ON_DEMAND_PRODUCT_MINUTES == 41
+    assert (config.ON_DEMAND_ARCHIVE_MINUTES, config.ON_DEMAND_CALLS_PER_PRODUCT) == (17, 24)
+    assert (config.ON_DEMAND_FIRST_MINUTES, config.ON_DEMAND_EACH_MINUTES) == (45, 41)
 
 
-def test_the_first_request_is_told_about_25_minutes(tmp_path):
+def test_the_first_request_is_told_about_45_minutes(tmp_path):
+    # Changed on purpose, 4 Nov 2026: 25 minutes until a request's searches and calls were timed again (above).
     state = Line(tmp_path).asked()
-    assert state["check_back_minutes"] == 25
-    assert state["message"] == "We haven't read Reddit about teapots yet, so we've started: check back in about 25 minutes."
+    assert state["check_back_minutes"] == 45
+    assert state["message"] == "We haven't read Reddit about teapots yet, so we've started: check back in about 45 minutes."
 
 
 def test_the_days_capacity_in_the_wait_message_is_the_calls_over_a_requests_calls():
-    assert on_demand.products_a_day() == 450 // config.ON_DEMAND_CALLS_PER_PRODUCT == 30
+    # Changed on purpose, 4 Nov 2026: 30 at 15 calls a request, 18 at 24.
+    assert on_demand.products_a_day() == 450 // config.ON_DEMAND_CALLS_PER_PRODUCT == 18
 
 
-def test_in_line_past_the_days_calls_the_message_says_30_a_day(tmp_path):
+def test_in_line_past_the_days_calls_the_message_says_18_a_day(tmp_path):
     used = config.ON_DEMAND_GEMINI_CALLS_A_DAY  # nothing left today, plenty of the month's time
     state = Line(tmp_path, waiting=2, calls_used=used).asked()
     assert state["message"] == (
         "We haven't read Reddit about teapots yet. It's in line: 2 products are ahead of it, and our free reading "
-        "allowance covers about 30 a day. Check back tomorrow.")
+        "allowance covers about 18 a day. Check back tomorrow.")
 
 
 def test_when_the_months_time_is_what_runs_out_the_capacity_is_told_by_the_month_not_the_day(tmp_path):
     # 50,000 seconds of job time a month read 39 requests of 21 minutes: it is the month's time, not Gemini's 450
     # calls, that limits the reading, so "about 30 a day" next to "check back on 1 November" would not be true.
-    assert on_demand.products_a_month() == config.ON_DEMAND_MONTH_SECONDS // (21 * 60) == 39
-    left = config.ON_DEMAND_MONTH_SECONDS - 21 * 60  # one request's time left this month
+    # Changed on purpose, 4 Nov 2026: 20 requests of 41 minutes (18 a day by Gemini's calls).
+    assert on_demand.products_a_month() == config.ON_DEMAND_MONTH_SECONDS // (41 * 60) == 20
+    left = config.ON_DEMAND_MONTH_SECONDS - 41 * 60  # one request's time left this month
     state = Line(tmp_path, waiting=3, seconds_used=left).asked()
     assert state["message"] == (
         "We haven't read Reddit about teapots yet. It's in line: 3 products are ahead of it, and our free reading "
-        "allowance covers about 39 a month. Check back on 1 November.")
+        "allowance covers about 20 a month. Check back on 1 November.")
     assert "a day" not in state["message"]
 
 

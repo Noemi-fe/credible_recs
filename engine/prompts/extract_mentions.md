@@ -1,4 +1,4 @@
-Version: extract-v15
+Version: extract-v16
 
 # Finding product mentions in one Reddit thread
 
@@ -151,11 +151,11 @@ Use one of these names, written exactly as here, when it fits:
   "tape measure", "laser level", "stud finder", "shop vac", "pressure washer", "ladder", "soldering iron",
   "multimeter", "glue gun", "lawn mower", "robot lawn mower", "string trimmer", "hedge trimmer", "leaf blower",
   "chainsaw", "garden hose", "pruners", "garden furniture", "fire pit", "wheelbarrow", "spade"
-- general, beauty and personal care (v12): "hair dryer", "hair straightener", "curling iron", "hot air brush",
-  "hair brush", "electric toothbrush", "water flosser", "razor", "electric shaver", "beard trimmer", "shaving cream",
-  "deodorant", "perfume", "foundation", "concealer", "mascara", "lipstick", "eyeliner", "eyeshadow", "blush",
-  "setting spray", "makeup primer", "brow pencil", "makeup brush", "makeup sponge", "nail polish", "nail lamp",
-  "epilator", "ipl device"
+- general, beauty and personal care (v12; bronzer, highlighter and setting powder v16): "hair dryer",
+  "hair straightener", "curling iron", "hot air brush", "hair brush", "electric toothbrush", "water flosser", "razor",
+  "electric shaver", "beard trimmer", "shaving cream", "deodorant", "perfume", "foundation", "concealer", "mascara",
+  "lipstick", "eyeliner", "eyeshadow", "blush", "bronzer", "highlighter", "setting powder", "setting spray",
+  "makeup primer", "brow pencil", "makeup brush", "makeup sponge", "nail polish", "nail lamp", "epilator", "ipl device"
 - general, hobbies (v12; whittling knife and craft knife v13): "guitar", "guitar amp", "digital piano",
   "sewing machine", "board game", "jigsaw puzzle", "fountain pen", "notebook", "telescope", "drawing tablet",
   "electronic drum kit", "whittling knife", "craft knife"
@@ -328,7 +328,7 @@ comment (there's no one left to credit), and agreement with a comment other than
 ```json
 {
   "thread_id": "<the thread's id>",
-  "instructions_version": "extract-v15",
+  "instructions_version": "extract-v16",
   "extracted_at": "<now, ISO 8601 in UTC, e.g. 2026-10-08T10:00:00Z>",
   "extractor": "claude-code",
   "mentions": [

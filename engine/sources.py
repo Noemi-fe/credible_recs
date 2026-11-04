@@ -36,6 +36,8 @@ from typing import Protocol, runtime_checkable
 from engine.arctic_shift import ArcticShiftClient, ArcticShiftError
 from engine.bright_data import DISCOVER_POSTS_EACH, BrightDataError
 from engine.config import (
+    ARCHIVE_ADVICE_SEARCHES,
+    ARCHIVE_ADVICE_WORDS,
     ARCHIVE_DOWN_MINUTES,
     ARCHIVE_MAX_SEARCHES,
     ARCHIVE_NEED_WORDS,
@@ -57,6 +59,7 @@ from engine.config import (
     INGREDIENT_TALK_MAX,
     INGREDIENT_TALK_POINTS,
     REFORMULATED_CATEGORIES,
+    REFORMULATED_TYPES,
     SKINCARE_RECENT_YEARS,
     SUBREDDITS,
 )
@@ -874,7 +877,8 @@ def usable_posts(query: ParsedQuery, posts: list[dict], min_comments: int) -> li
 def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searches: int = 4,
                    max_warning_searches: int = 4, raise_if_nothing: bool = False, posts_each: int = 25,
                    older_than_years: int | None = None, max_failures: int = 1, failed: list[str] | None = None,
-                   now: datetime | None = None, halved: list[str] | None = None, need_searches: int = 0) -> list[dict]:
+                   now: datetime | None = None, halved: list[str] | None = None, need_searches: int = 0,
+                   advice_searches: int = 0) -> list[dict]:
     """Arctic Shift results, in rounds, each post once.
 
     1. The product's title words, term by term and subreddit by subreddit, up to `max_free_searches`, the newest
@@ -885,6 +889,12 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
     3. With `need_searches` (the archive reader's rounds, 13 Oct 2026), the first title word with each of the request's
        first `need_searches` need words ("conditioner curly"), subreddit by subreddit, over the whole history: the
        threads asking the request's own question, however old, which round 1's newest 100 posts rarely reach.
+    3b. With `advice_searches` (the archive reader's rounds, 4 Nov 2026), the first two title words with each of
+       ARCHIVE_ADVICE_WORDS ("blush favorite", "blushes favorite", "blush recommendations"), subreddit by subreddit,
+       over the whole history, at most `advice_searches` of them: the big threads asking for recommendations, which a
+       request with no need words ("blush") had no other search to reach. A post only they find joins the candidates
+       only when its title reads as a question for advice (asks_for_advice): "favorite" is also how people show off a
+       look ("wearing my favorite lipstick").
     4. Warning searches, so threads about failures and regrets are among the candidates: the first title word
        with each of WARNING_SEARCHES ("kettle died", "kettle regret"…), in the request's most specialist
        subreddit, up to `max_warning_searches`.
@@ -899,7 +909,9 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
     at most ARCHIVE_SPLIT_DEPTH times over, and named in `halved`; only a search that can't be split further is named
     in `failed`. Each timeout still counts towards the failures in a row: a service that is down ends the round as soon.
     A round ended by failures still uses the searches it had queued whose answers the client's 48-hour cache already
-    holds (cached_posts: no call).
+    holds (cached_posts: no call). When some of its searches answered (the archive busy, not down), the need and advice
+    searches still queued are asked anyway (4 Nov 2026), once each, until `max_failures` of them fail in a row: lighter,
+    they may answer where the broad ones timed out (on 4 Nov 2026 r/Sephora's did, and found a big thread).
     """
     terms = finder_terms(query.product_type)
     titles = [(subreddit, term) for term in terms for subreddit in query.subreddits][:max_free_searches]
@@ -914,13 +926,26 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
         pairs = ([(subreddit, term, {"after": split}) for subreddit, term in titles]
                  + [(subreddit, term, {"after": oldest, "before": split}) for subreddit, term in titles])
     needs = need_words(query)[:need_searches] if need_searches else []
-    pairs += [(subreddit, f"{terms[0]} {need}", {}) for need in needs for subreddit in query.subreddits][:max_free_searches]
+    need_pairs = [(subreddit, f"{terms[0]} {need}", {}) for need in needs for subreddit in query.subreddits]
+    pairs += need_pairs[:max_free_searches]
+    advice = [(subreddit, f"{term} {word}", {}) for word in ARCHIVE_ADVICE_WORDS for term in terms[:2]
+              for subreddit in query.subreddits][:max(0, advice_searches)]
     warnings = warning_words(query)[:max_warning_searches]
-    pairs += [(query.subreddits[0], f"{terms[0]} {warning}", {}) for warning in warnings]
+    warning_pairs = [(query.subreddits[0], f"{terms[0]} {warning}", {}) for warning in warnings]
+    # The searches whose posts must ask for advice (3b): an advice search no other round asks too.
+    advice_only = {(s, t) for s, t, _ in advice} - {(s, t) for s, t, _ in pairs + warning_pairs}
+    narrow = {(s, t) for s, t, _ in need_pairs[:max_free_searches] + advice}  # whole-history searches (rounds 3, 3b)
+    pairs += advice + warning_pairs
     queue = deque((subreddit, term, dates, 0) for subreddit, term, dates in pairs)  # 0: not halved yet
     posts: dict[str, dict] = {}
-    failures = in_a_row = 0
+    failures = in_a_row = answered = 0  # answered: searches a call answered
     ended_by: ArcticShiftError | None = None  # the failure that ended the round early, if one did
+
+    def keep(subreddit: str, term: str, found: list[dict]) -> None:
+        for post in found:
+            if (subreddit, term) not in advice_only or asks_for_advice(post):
+                posts.setdefault(_post_id(post), post)
+
     while queue:
         subreddit, term, dates, times_halved = queue.popleft()
         try:
@@ -952,19 +977,56 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
                 break
             continue
         in_a_row = 0
-        for post in found:
-            posts.setdefault(_post_id(post), post)
+        answered += 1
+        keep(subreddit, term, found)
     if ended_by is not None:
         # The searches still queued are used when the client's 48-hour cache already holds them: no call (13 Oct 2026).
         cached_posts = getattr(finder, "cached_posts", None)
-        for subreddit, term, dates, _ in queue if cached_posts is not None else ():
-            for post in cached_posts(subreddit, term, limit=posts_each, **dates) or []:
-                posts.setdefault(_post_id(post), post)
+        left = []
+        for subreddit, term, dates, _ in queue:
+            cached = cached_posts(subreddit, term, limit=posts_each, **dates) if cached_posts is not None else None
+            if cached is None:
+                left.append((subreddit, term, dates))
+            keep(subreddit, term, cached or [])
+        # A busy archive (some searches answered) still gets the narrow searches still queued (4 Nov 2026): the need and
+        # advice searches, lighter, which may answer where the broad ones timed out. Once each, never halved, and as many failures in
+        # a row end them too. An archive that answered nothing is down: no more calls.
+        in_a_row = 0
+        for subreddit, term, dates in (left if answered else []):
+            if (subreddit, term) not in narrow:
+                continue
+            try:
+                found = finder.search_posts(subreddit, term, limit=posts_each, **dates)
+            except ArcticShiftError as error:
+                failures += 1
+                in_a_row += 1
+                if failed is not None:
+                    failed.append(f"r/{subreddit} for \"{term}\": {error}")
+                if in_a_row >= max_failures:
+                    break
+                continue
+            in_a_row = 0
+            keep(subreddit, term, found)
         if raise_if_nothing and not posts:
             raise ended_by
     if raise_if_nothing and not posts and failures:
         raise ArcticShiftError(f"every archive search that ran failed ({failures})")
     return list(posts.values())
+
+
+# How a title asking for advice starts (4 Nov 2026): "What's your favorite blush?", "Any favorite lipstick for dry lips",
+# "Best mascara", "Recommendations for a cream bronzer", "Help me pick a blush", "[Request] ...".
+_ASKING_START = re.compile(r"^\W*(?:what|which|your|any|anyone|anybody|best|favou?rites?|top|need|help|looking"
+                           r"|recommend\w*|recs?|requests?)\b")
+
+
+def asks_for_advice(post: dict) -> bool:
+    """Whether a post's title reads as a question for advice (4 Nov 2026): a question mark, a start that asks
+    (_ASKING_START), or a flair for buying questions (_ADVICE_FLAIRS). What an advice search alone found must, since
+    "favorite" is also how people show off a look ("wearing my favorite red lipstick today")."""
+    title = (post.get("title") or "").strip().lower()
+    flair = (post.get("link_flair_text") or "").lower()
+    return "?" in title or bool(_ASKING_START.match(title)) or any(f in flair for f in _ADVICE_FLAIRS)
 
 
 def _timed_out(error: ArcticShiftError) -> bool:
@@ -1026,6 +1088,9 @@ class ArchiveSource:
         self.max_warning_searches = max_warning_searches
         self.skip_ids = set(skip_ids or ())
         self.notes: list[str] = []  # what the last search couldn't do, for `library add` to print
+        # The last search round's searches that failed (none: the round was whole). On-demand reading tries a request
+        # again when its round was cut short and found too few threads (4 Nov 2026, engine.on_demand._read_entry).
+        self.failed: list[str] = []
 
     def find_threads(self, query: ParsedQuery, limit: int = 3, mix: dict | None = None, fill: bool = True) -> list[Thread]:
         return [without_unusable_comments(t) for t in self.find_raw_threads(query, limit, mix, fill)]
@@ -1047,12 +1112,15 @@ class ArchiveSource:
         halved: list[str] = []
         try:
             # Free searches, so every decided subreddit, 100 posts each, and older threads too (11 Oct 2026); a search
-            # that times out is asked again over shorter spans of time (13 Oct 2026).
+            # that times out is asked again over shorter spans of time (13 Oct 2026); and the advice searches, over the
+            # whole history (4 Nov 2026).
             found = search_archive(self.client, query, self.max_free_searches, self.max_warning_searches,
                                    raise_if_nothing=True, posts_each=ARCHIVE_POSTS_EACH,
                                    older_than_years=ARCHIVE_OLDER_YEARS, max_failures=ARCHIVE_SEARCH_MAX_FAILURES,
-                                   failed=failed, halved=halved, need_searches=ARCHIVE_NEED_WORDS)
+                                   failed=failed, halved=halved, need_searches=ARCHIVE_NEED_WORDS,
+                                   advice_searches=ARCHIVE_ADVICE_SEARCHES)
         finally:
+            self.failed = list(failed)
             self.notes = ([f"The archive's search in {search} timed out, so it was asked again over shorter spans of "
                            "time." for search in halved]
                           + [f"The archive's search in {search} failed; run the add again to retry it (searches that "
@@ -1387,7 +1455,8 @@ def rank_posts(query: ParsedQuery, posts: list[dict], now: datetime | None = Non
     - under 15 comments: minus 2;
     - in the most specialist subreddit: 0.5;
     - skincare only, posted more than 3 years (SKINCARE_RECENT_YEARS) before `now`: minus 1.5, since formulas
-      change. `now` is the real clock unless a test gives one; kitchen threads can be any age;
+      change (haircare too since 11 Oct 2026, and the makeup types, REFORMULATED_TYPES, since 4 Nov 2026). `now` is
+      the real clock unless a test gives one; kitchen threads can be any age;
     - shop news (announcements, "guess the price", price drops, sales, deals) and, for kitchen gear and the general
       category's (14 Oct 2026), threads about
       looking after or using it (cleaning, seasoning, restoring, sharpening, tips, recipes), unless the
@@ -1433,7 +1502,8 @@ def _post_score(query: ParsedQuery, post: dict, needs: list[str], too_old: datet
     score += math.log10(1 + (post.get("num_comments") or 0))
     score -= 2.0 if (post.get("num_comments") or 0) < SMALL_THREAD else 0.0
     score += 0.5 if query.subreddits and _subreddit(post) == query.subreddits[0].lower() else 0.0
-    score -= 1.5 if query.category in REFORMULATED_CATEGORIES and _posted_before(post, too_old) else 0.0
+    reformulated = query.category in REFORMULATED_CATEGORIES or query.product_type in REFORMULATED_TYPES
+    score -= 1.5 if reformulated and _posted_before(post, too_old) else 0.0
     if not _ADVICE.search(lowered) and (_SHOP_NEWS.search(lowered) or (query.category in _GEAR and _CARE.search(lowered))):
         score -= 2.0
     return score

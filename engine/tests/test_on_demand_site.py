@@ -80,7 +80,9 @@ def test_a_request_the_library_hasnt_read_about_is_queued_and_the_answer_says_so
         # Changed on purpose, 25 Oct 2026: "in about 20 minutes" until the Gemini calls were timed (about 4 minutes each,
         # 15 calls a request): the first request in line was read in about an hour. Changed again the same day, when
         # Noemi approved Gemini 3.1 Flash-Lite as the reader (a call is told to take a minute): about 25 minutes.
-        "message": "We haven't read Reddit about teapots yet, so we've started: check back in about 25 minutes."}
+        # Changed on purpose, 4 Nov 2026, when a request's searches and calls were timed again (the archive reader's
+        # advice searches; tests/test_approvals.py): about 45 minutes.
+        "message": "We haven't read Reddit about teapots yet, so we've started: check back in about 45 minutes."}
     [entry] = site.queue().entries
     assert entry.product_type == "teapot" and entry.status == "waiting"
     assert site.google.jobs_started == [JOB]  # started at once: no schedule to wait for
@@ -126,10 +128,14 @@ def test_a_second_request_waits_its_turn(tmp_path, monkeypatch):
     # day (Gemini 3.8 Flash) read one request, so the second in line was promised "in about 35 minutes" for nothing, and
     # was told "Check back tomorrow". The same day Noemi approved Gemini 3.1 Flash-Lite as the reader (450 calls a day,
     # 30 requests): the second in line is read after the first, 21 minutes later.
-    assert data["on_demand"]["check_back_minutes"] == ON_DEMAND_FIRST_MINUTES + ON_DEMAND_EACH_MINUTES
-    assert "in about 45 minutes" in data["on_demand"]["message"]
+    # Changed on purpose, 4 Nov 2026 (a request timed again: 41 minutes of the job): 45 + 41 minutes, which past 55
+    # minutes is said in hours (check_back_in).
+    assert data["on_demand"]["check_back_minutes"] == ON_DEMAND_FIRST_MINUTES + ON_DEMAND_EACH_MINUTES == 86
+    assert "in about an hour" in data["on_demand"]["message"]
     # With the old reader's 18 calls a day, as before, it is told when its turn comes:
-    monkeypatch.setattr(on_demand, "ON_DEMAND_GEMINI_CALLS_A_DAY", 18)
+    # Changed on purpose, 4 Nov 2026: a day's calls that read one request whatever a request's calls are (18 read one
+    # request of 15 calls; at 24 calls a request, 18 read none and the turn came a day later).
+    monkeypatch.setattr(on_demand, "ON_DEMAND_GEMINI_CALLS_A_DAY", on_demand.ON_DEMAND_CALLS_PER_PRODUCT + 3)
     site.reader._queue_at = None  # the queue is read afresh
     data = site.ask("stovetop kettle that whistles")
     assert data["on_demand"]["check_back_minutes"] is None and data["on_demand"]["message"].endswith("Check back tomorrow.")
@@ -335,3 +341,42 @@ def test_switched_off_an_unread_product_gets_the_no_threads_message_and_no_readi
     assert data["answer"]["message"] == NO_THREADS.format(products="teapots")
     how = web.handle_request("/how", library)[2].decode("utf-8")
     assert "Products we haven't read about yet" not in how  # the privacy section's note is only for when it is on
+
+
+# --- What the site counts as the library's own (4 Nov 2026, from Noemi's report about "blush") ---
+# The site queued a request with `had` = its own threads about it, and those included the threads it had written into
+# its folder from the bundle; the job then added the bundle's threads again (had + the bundle's extracted threads), so
+# a product with 4 threads read on demand counted 8 and was closed as "enough threads about it already" without reading
+# anything, while the visitor was told to check back. `had` keeps meaning what the job reads it as: the threads baked
+# into the image (test_on_demand_job.py's "3 baked + 3 read").
+
+def test_threads_the_folder_holds_from_the_bundle_arent_counted_as_baked_ones(tmp_path, monkeypatch):
+    clock = Clock()
+    monkeypatch.setattr(web, "live", LiveChecker(cache_dir=tmp_path / "checks", fetch=FakeEmbed(), clock=clock,
+                                                 sleep=clock.sleep))
+    site = Site(tmp_path, monkeypatch)
+    site.ask(TEAPOT)
+    site.job_reads()  # 3 teapot threads into the bundle
+    site.reader.load_threads()  # and into the site's folder
+    site.reader.min_threads = 6
+    site.ticks.now += 120
+    another = "teapot that keeps tea hot"  # another need: another entry, whose own threads are the bundle's 3
+    data = site.ask(another)
+    entry = site.queue().find(entry_for(parse_query(another), had=0).key)
+    assert entry.status == "waiting" and entry.had == 0
+    # Still told the truth: we have read a little about teapots already.
+    assert data["on_demand"]["read_before"] is True
+    assert data["on_demand"]["message"].startswith("We've read only a little on Reddit about teapots so far")
+
+
+def test_only_the_baked_threads_among_the_own_ones_are_counted(tmp_path, monkeypatch):
+    import types
+
+    site = Site(tmp_path, monkeypatch)
+    site.reader.min_threads = 6
+    site.reader._written = {"1tea001": "written from the bundle", "1tea002": "written from the bundle"}
+    result = types.SimpleNamespace(query=parse_query(TEAPOT), threads_available=3, own_threads_available=3,
+                                   own_thread_ids=["1tea001", "1tea002", "1bak001"], newest_own_thread=None)
+    site.reader.after_answer(result)
+    [entry] = site.queue().entries
+    assert entry.had == 1  # 1bak001, baked into the image

@@ -332,9 +332,10 @@ again by the first deploy without "off". The switch's default is `ON_DEMAND_SWIT
 
 Since 14 Oct 2026 (Noemi: "I want recs regardless of the category"; the plan's part 3). A request module 1 understands,
 about a product the library holds fewer than 6 extracted threads about, is queued, and the answer says so in the
-page's words, for example "We haven't read Reddit about teapots yet, so we've started: check back in about 25 minutes."
-(about 21 minutes more for each request ahead of it while the day's calls last, since a Flash-Lite call is told to take a
-minute and a request 15 calls plus 6 minutes of archive reading; "taking longer than usual" after 150 minutes; and when the free allowance is used up,
+page's words, for example "We haven't read Reddit about teapots yet, so we've started: check back in about 45 minutes."
+(about 41 minutes more for each request ahead of it while the day's calls last, since a Flash-Lite call is told to take a
+minute and a request 24 calls plus 17 minutes of archive searches and reads; 25, 21, 15 and 6 until 4 Nov 2026, when
+the archive reader's advice searches were timed on a busy archive: config.ON_DEMAND_ARCHIVE_MINUTES; "taking longer than usual" after 150 minutes; and when the free allowance is used up,
 when it is back, with the place in line). That answer isn't remembered: the next ask works it out again. The site starts
 the reading job at once, and at every keep-warm ping while a request waits it asks the bundle's version (one small
 read, a download only when it changed), takes the new threads into its library folder and answers with them, every
@@ -349,11 +350,12 @@ europe-west1 --project credible-picks`; its report (counts and product types, ne
 (Cloud Run, Jobs, credible-recs-reader, Logs).
 
 The job's limits, all in engine/config.py ("On-demand reading"): it starts no new reading after 15 minutes of a run and
-stops at 45; its runs read for at most 50,000 seconds a month (then the queue rests until the 1st), which at 21 minutes a
-request is 39 requests a month (about twice that at the 11 minutes a request actually took on 25 Oct 2026) and is what
-limits the reading; it makes at most 450 Gemini calls a day, at most 10 a minute (18 a day with Gemini 3.8 Flash, whose
+stops at 45; its runs read for at most 50,000 seconds a month (then the queue rests until the 1st), which at 41 minutes a
+request is 20 requests a month (39 at 21 minutes until 4 Nov 2026; a request actually took 11 minutes on 25 Oct 2026,
+and on 4 Nov's busy archive its searches alone took 8 to 15) and is what limits the reading; it makes at most 450 Gemini calls a day, at most 10 a minute (18 a day with Gemini 3.8 Flash, whose
 free allowance is 20 a day and 5 a minute, as Google's own 429 answer says; 100 until 25 Oct 2026): Flash-Lite's is 500
-a day and 15 a minute, and a request takes about 15 calls, so Gemini's calls alone could read 30 requests a day; none more that
+a day and 15 a minute, and a request takes up to about 24 calls (15 until 4 Nov 2026), so Gemini's calls alone could
+read 18 requests a day (30 until then); none more that
 day after Gemini's daily 429 (until 8 am UTC, when the allowance is surely back); at most 20 requests wait at once (10 until
 14 Oct 2026: with the general category most requests queue; 20 is about two days of the job's reading, and the
 sums below don't change, since the job's time and Gemini calls have caps of their own); a request
@@ -365,11 +367,11 @@ PROPOSED). The bar of 6 threads counts only the threads about the type, never th
 fast-moving type (laptop, headphones, phone...) whose newest thread about it is over 2 years old (config
 ON_DEMAND_OLD_YEARS) is queued too, to be read again for newer threads (only threads posted in the last 2 years are
 read; the answer keeps its picks and says the threads are a few years old). The sentence the visitor sees now comes from
-the queue's length and the day's capacity (engine.on_demand.wait_for): "in about 25 minutes" only while the day's calls
-and the month's reading time can still read the request (21 minutes more for each one ahead), else "It's in line: 3
-products are ahead of it, and our free reading allowance covers about 30 a day. Check back tomorrow" (or the date; and
-once the month's job time is what runs out, "covers about 39 a month. Check back on 1 November", because 30 a day
-beside the 1st of next month would not be true). The wording of this message was approved by Noemi on 25 Oct 2026.
+the queue's length and the day's capacity (engine.on_demand.wait_for): "in about 45 minutes" only while the day's calls
+and the month's reading time can still read the request (41 minutes more for each one ahead), else "It's in line: 3
+products are ahead of it, and our free reading allowance covers about 18 a day. Check back tomorrow" (or the date; and
+once the month's job time is what runs out, "covers about 20 a month. Check back on 1 November", because 18 a day
+beside the 1st of next month would not be true; 25, 21, 30 and 39 until 4 Nov 2026). The wording of this message was approved by Noemi on 25 Oct 2026.
 The reader's model is config ON_DEMAND_GEMINI_MODEL (a deploy may set CREDIBLE_RECS_ON_DEMAND_MODEL on the job instead).
 
 ## The Gemini key
@@ -585,7 +587,7 @@ and 125,550 that afternoon, 161,820 and 242,730 before), 152,300 of the free 240
 There are no empty runs: nothing is scheduled,
 the job runs only when a request waits. Cloud Scheduler: no new job (the site starts the reading job, and the keep-warm
 ping starts it again when a start failed), so still 2 of the 3 free jobs. Gemini: free tier only, at most 450 calls a
-day by the job (500 are free; 30 requests by calls, but the month's 50,000 job seconds read about 39 requests), 10 a
+day by the job (500 are free; 18 requests by calls, but the month's 50,000 job seconds read about 20 requests), 10 a
 minute, stopping at Gemini's own daily limit. Secret Manager: a third secret (gemini-key,
 with hf-token and bright-data-key), inside the free 6 secret versions, and the job reads it once a run (free: 10,000
 reads a month). Arctic Shift: free, at its own pace. Starting a job (Cloud Run's Admin API): free. Sending threads to

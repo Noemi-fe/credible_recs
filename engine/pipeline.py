@@ -364,6 +364,9 @@ class PipelineResult:
     # 16 Oct, R1 and R2): on-demand reading's bar counts these (engine.on_demand.SiteReader.after_answer), since a thread
     # titled as another product only names this one in its post.
     own_threads_available: int = 0
+    # Their ids (4 Nov 2026): the site counts which of them it wrote into its folder from on-demand reading's bundle, so
+    # a request is queued with only the threads baked into the image as the library's (SiteReader.after_answer).
+    own_thread_ids: list[str] = field(default_factory=list)
     newest_own_thread: datetime | None = None
     # Of the usable threads, how many talk about one of the request's needs in their title or post (26 Oct 2026, the
     # reading builder; _threads_about_needs): the threads module 2's need-led order puts first. None when there is no
@@ -640,6 +643,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.threads_available = len(usable)
     own = [t for t in usable if not titled_as_another_type(t.title, query)]
     result.own_threads_available = len(own)
+    result.own_thread_ids = [t.id for t in own]
     result.threads_about_needs = _threads_about_needs(usable, query)
     result.newest_own_thread = max((t.created_at for t in own), default=None)
     threads = usable[:max_threads]

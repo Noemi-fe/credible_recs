@@ -95,3 +95,57 @@ def test_a_product_not_read_yet_is_queued_read_checked_and_answered_with_verifie
     assert forget_baked(bucket(), noemis_library) == 3
     assert Bundle.from_json(google.read(NAME, "on_demand/threads.json")).threads == {}
     web.clear_answer_cache()
+
+
+def test_a_request_whose_only_threads_came_from_the_bundle_is_read_not_closed_as_enough(tmp_path, monkeypatch):
+    # 4 Nov 2026 (Noemi's report about "blush"): the site had 4 threads about blushes, all read on demand; a request with
+    # other need words was queued with those 4 counted as the library's, and the job added the bundle's 4 again: 8, so
+    # it was closed as "enough threads about it already" without reading anything. Now the site counts only the threads
+    # baked into the image, and the job reads.
+    from engine.tests import on_demand_fakes
+
+    monkeypatch.setitem(on_demand_fakes.TEAPOT_THREADS, "1tea004", ("tea", "Teapot that keeps tea hot?", [
+        ("t4a", "My Brown Betty teapot with a cosy keeps tea hot for an hour.", "Brown Betty teapot")]))
+    google, ticks, clock = FakeGoogle(), Ticks(), Clock()
+
+    def bucket():
+        return Bucket(NAME, request=google, clock=lambda: 0.0, prefix=on_demand.PREFIX)
+
+    image = kettle_library(tmp_path)
+    site_library = tmp_path / "site"
+    shutil.copytree(image, site_library)
+    site_bucket = bucket()
+    monkeypatch.setattr(web, "on_demand", SiteReader(site_bucket, site_library, job=JobStarter(JOB, site_bucket,
+                                                                                                request=google),
+                                                     clock=ticks, now=lambda: NOW))
+    monkeypatch.setattr(web, "live", LiveChecker(cache_dir=tmp_path / "checks", fetch=FakeEmbed(), clock=clock,
+                                                 sleep=clock.sleep))
+    monkeypatch.setattr(web, "ready", threading.Event())
+    web.ready.set()
+    web.clear_answer_cache()
+
+    def ask(request: str) -> dict:
+        status, _, body = post_answer(request, site_library)
+        assert status == 200
+        return json.loads(body)
+
+    def job(fake: FakeArchive):
+        job_library = tmp_path / "job"
+        shutil.rmtree(job_library, ignore_errors=True)
+        shutil.copytree(image, job_library)  # each run starts from the image
+        return run_job(bucket(), job_library, archive(tmp_path, fake), gemini(FakeGemini()), now=lambda: NOW,
+                       clock=Ticks(), work_dir=tmp_path / "work")
+
+    ask(REQUEST)
+    assert job(FakeArchive()).threads_read == 3  # the first three teapot threads (FakeArchive's own)
+    ticks.now += 300
+    web.handle_request("/ready", site_library)  # into the site's folder
+    another = ask("teapot that keeps tea hot")
+    assert another["on_demand"]["read_before"] is True
+    report = job(FakeArchive(threads=tuple(on_demand_fakes.TEAPOT_THREADS)))
+    assert report.threads_read == 1 and report.extracted == 1  # read, not closed as enough
+    entries = {e.key: e for e in Queue.from_json(google.read(NAME, "on_demand/queue.json")).entries}
+    assert entries["kitchen/teapot/hot+keep"].status == "done"
+    assert entries["kitchen/teapot/hot+keep"].note != "enough threads about it already"
+    assert "1tea004" in Bundle.from_json(google.read(NAME, "on_demand/threads.json")).threads
+    web.clear_answer_cache()
