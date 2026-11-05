@@ -359,8 +359,9 @@ from urllib.parse import urlsplit
 from engine import answer as wording
 from engine import feedback, how_page, pair_test
 from engine.answer import answer_to_dict, quotes_to_check, unverified_claims
-from engine.config import (ANSWER_DEADLINE_SECONDS, ANSWERS_KEPT_TYPES, BRAND_PICK_MODEL, BUSY_MAX_QUEUE_SECONDS,
-                           BUSY_MAX_WAITING, BUSY_RETRY_AFTER_SECONDS, CACHE_MAX_AGE_HOURS, DEFAULT_REGION,
+from engine.config import (ANSWER_DEADLINE_SECONDS, ANSWERS_KEPT_BYTES, ANSWERS_KEPT_TYPES, BRAND_PICK_MODEL,
+                           BUSY_MAX_QUEUE_SECONDS, BUSY_MAX_WAITING, BUSY_RETRY_AFTER_SECONDS, CACHE_MAX_AGE_HOURS,
+                           DEFAULT_REGION,
                            FEEDBACK_MAX_BODY_BYTES, FEEDBACK_MAX_COMMENT_CHARS,
                            LEFT_OUT_NAMES_SHOWN, PAIR_TEST_MAX_WHY_CHARS,
                            PICKS_SHOWN, RATE_LIMIT_ANSWERS, RATE_LIMIT_FEEDBACK, RATE_LIMIT_PAIRS,
@@ -494,9 +495,68 @@ class Site:
 LOCAL = Site()
 
 
+class RememberedAnswers(dict):
+    """The answers already worked out, kept to ANSWERS_KEPT_BYTES of their JSON at most (5 Nov 2026, the site-memory
+    builder). They were kept until their time was up and never let go of unless asked again, so a rush of different
+    requests (each answer is 20 to 35 KB) only ever added to them. Over its size, the answers whose time is up go first
+    and then the oldest made, where an answer made again counts as new. An answer let go of is worked out again when it is
+    asked for and is the same answer. Reads (`get`) take no lock, as before. Changes do, to keep the size right."""
+
+    def __init__(self, limit_bytes: int = ANSWERS_KEPT_BYTES):
+        super().__init__()
+        self.limit_bytes = limit_bytes
+        self._bytes = 0
+        self._changing = threading.RLock()
+
+    def size(self) -> int:
+        return self._bytes
+
+    @staticmethod
+    def _size_of(value) -> int:
+        return len(value[1][2])
+
+    def __setitem__(self, key, value) -> None:
+        with self._changing:
+            old = dict.pop(self, key, None)  # an answer made again is the newest
+            if old is not None:
+                self._bytes -= self._size_of(old)
+            dict.__setitem__(self, key, value)
+            self._bytes += self._size_of(value)
+            if self._bytes > self.limit_bytes:
+                self._let_go(key)
+
+    def _let_go(self, newest) -> None:
+        """Lets go of answers until the size fits: first those whose time is up, then the oldest; never `newest`."""
+        now = _clock()
+        for key in [key for key, (until, _) in dict.items(self) if now >= until and key != newest]:
+            self._bytes -= self._size_of(dict.pop(self, key))
+        for key in list(dict.keys(self)):
+            if self._bytes <= self.limit_bytes or key == newest:
+                break
+            self._bytes -= self._size_of(dict.pop(self, key))
+
+    def pop(self, key, *default):
+        with self._changing:
+            if dict.__contains__(self, key):
+                return self._forget(key)
+            if default:
+                return default[0]
+            raise KeyError(key)
+
+    def _forget(self, key):
+        value = dict.pop(self, key)
+        self._bytes -= self._size_of(value)
+        return value
+
+    def clear(self) -> None:
+        with self._changing:
+            dict.clear(self)
+            self._bytes = 0
+
+
 # Answers already worked out, by (request, library folder, region), each until its time is up (_keep_seconds). Per region
 # since 24 Oct 2026: the lines of a price and of its availability differ by region, so each region's answer is its own.
-_answers: dict[tuple[str, str, str], tuple[float, tuple[int, str, bytes]]] = {}  # key -> (kept until, on _clock; the answer)
+_answers = RememberedAnswers()  # key -> (kept until, on _clock; the answer)
 # How long a remembered answer is kept at most before it is worked out again, its quotes checked live once more (12 Oct
 # 2026): well within the 48 hours Reddit content may be kept, and short enough that a comment deleted today leaves the
 # answers by tomorrow. Chosen by Claude, reported to Noemi. Since 17 Oct 2026 also never past the moment its oldest
@@ -658,7 +718,8 @@ def answer_response(request: str, library_dir: Path, quiet: bool = False,
                 _answers.pop(key, None)  # (17 Oct 2026): worked out again next time
                 return response
             _answers[key] = (_clock() + keep, response)
-        return _answers[key][1]
+            return response
+        return remembered[1]
     finally:
         _answers_lock.release()
 

@@ -16,6 +16,7 @@ import json
 import re
 import sys
 from collections import Counter
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -89,15 +90,17 @@ def load_gold_set(root: Path = DEFAULT_GOLD_DIR) -> GoldSet:
     return GoldSet(threads=threads, voices=voices, mentions=mentions)
 
 
-def load_threads(folder: Path, skip_broken: bool = False, problems: list[str] | None = None) -> list[Thread]:
+def load_threads(folder: Path, skip_broken: bool = False, problems: list[str] | None = None,
+                 each: Callable[[Thread], None] | None = None) -> list[Thread]:
     """Loads and checks the thread files in a folder, without the label files. Retrieval reads threads this way.
 
     Any problem raises GoldSetError with the full list. With `skip_broken` (answers, 11 Oct 2026: one bad file had
     stopped every answer), a file with a problem is left out instead and its problems are added to `problems`, for the
-    caller to report; a missing folder still raises."""
+    caller to report; a missing folder still raises. `each` (5 Nov 2026) is told every thread as soon as it is read, so the
+    kept library can make each smaller (engine/compact.py) while the rest are still being read."""
     found: list[str] = []
     broken: set[str] = set()
-    threads, unreadable = _load_thread_folder(Path(folder), found, broken)
+    threads, unreadable = _load_thread_folder(Path(folder), found, broken, each)
     if found and not (skip_broken and Path(folder).is_dir()):
         raise GoldSetError(found)
     if problems is not None:
@@ -111,8 +114,8 @@ def _load_threads(root: Path, problems: list[str]) -> tuple[list[Thread], set[st
     return _load_thread_folder(root / "threads", problems)
 
 
-def _load_thread_folder(folder: Path, problems: list[str],
-                        broken: set[str] | None = None) -> tuple[list[Thread], set[str]]:
+def _load_thread_folder(folder: Path, problems: list[str], broken: set[str] | None = None,
+                        each: Callable[[Thread], None] | None = None) -> tuple[list[Thread], set[str]]:
     """Returns the threads that loaded, plus the ids of thread files that couldn't be read. The ids of threads that
     loaded with a problem are added to `broken`."""
     if not folder.is_dir():
@@ -147,6 +150,8 @@ def _load_thread_folder(folder: Path, problems: list[str],
         problems.extend(f"{where}: {p}" for p in thread_problems)
         if thread_problems and broken is not None:
             broken.add(thread.id)
+        if each is not None:
+            each(thread)
         threads.append(thread)
     return threads, unreadable
 

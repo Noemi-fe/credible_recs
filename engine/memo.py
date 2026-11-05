@@ -101,10 +101,17 @@ class TypeWindow:
             self.kinds.add(kind)
 
 
+# How many answers a Table keeps by default before it starts again (40,000 since 5 Nov 2026, the site-memory builder, and
+# 200,000 before). One answer never needs more than a few thousand of a table's, and a table started again only works
+# them out once more, so the answers are the same and a little slower. With 64 product types' work kept, several tables
+# held 100,000 or more at once.
+DEFAULT_TABLE_LIMIT = 40_000
+
+
 class Table(dict):
     """Remembered answers by key, emptied past `limit` of them (see the module docstring)."""
 
-    def __init__(self, limit: int = 200_000):
+    def __init__(self, limit: int = DEFAULT_TABLE_LIMIT):
         super().__init__()
         self.limit = limit
         register(self.clear)

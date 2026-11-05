@@ -438,6 +438,12 @@ WEB_MAX_REQUEST_CHARS = 300  # a longer request is refused (400): a real need fi
 # holds getting ready's requests (the examples, the latency set and one request per first type: 56 types) and the
 # types visitors ask next; a type asked after its work was forgotten is worked out again, a cold answer of its type.
 ANSWERS_KEPT_TYPES = 64
+# How many bytes of finished answers (their JSON) the site remembers at most, oldest let go first. This is a technical
+# value chosen by Claude on 5 Nov 2026 (the site-memory builder, engine.web.RememberedAnswers). A remembered answer is
+# only used by whoever asks the same request again, and one let go of is worked out again and is the same answer. Before,
+# remembered answers were only ever added to, so a rush of different requests grew the memory by 20 to 35 KB each. 24 MB
+# holds about 1,000 answers.
+ANSWERS_KEPT_BYTES = 24 * 1024 * 1024
 
 # --- Decisions of 9 Oct 2026 ---
 # Noemi approved 13 recommendations on 9 Oct 2026 (CLAUDE.md, "Decisions of 9 Oct 2026"). What she decided says so;

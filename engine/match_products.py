@@ -223,6 +223,16 @@ def _limit(table: dict) -> None:
         table.clear()
 
 
+def forget_names() -> None:
+    """Empties the tables of names' words and features (5 Nov 2026, the site-memory builder). Making the library's name
+    index works out these for every name of a category (118,575 names with about 2,750 threads) and nothing needs them
+    again. An answer needs those of its own request's few hundred names and works them out when it asks. They are tables
+    of what a function of the name gives, so an answer after this is the same answer. Left in, they were about 290 MB of
+    the live site's memory. engine.group_products.library_name_index and LibraryNameIndex call this once they are built."""
+    for table in (_NORMALIZED, _WORDS_BY_LIST, _WORDS_NO_ALIASES, _FEATURES, _SLIP_KEYS):
+        table.clear()
+
+
 def _words_table(aliases: "Aliases") -> dict[str, tuple[str, ...]]:
     """The remembered words of names under this list of short names."""
     if not aliases:
