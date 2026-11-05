@@ -878,7 +878,7 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
                    max_warning_searches: int = 4, raise_if_nothing: bool = False, posts_each: int = 25,
                    older_than_years: int | None = None, max_failures: int = 1, failed: list[str] | None = None,
                    now: datetime | None = None, halved: list[str] | None = None, need_searches: int = 0,
-                   advice_searches: int = 0) -> list[dict]:
+                   advice_searches: int = 0, max_calls: int | None = None) -> list[dict]:
     """Arctic Shift results, in rounds, each post once.
 
     1. The product's title words, term by term and subreddit by subreddit, up to `max_free_searches`, the newest
@@ -912,6 +912,18 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
     holds (cached_posts: no call). When some of its searches answered (the archive busy, not down), the need and advice
     searches still queued are asked anyway (4 Nov 2026), once each, until `max_failures` of them fail in a row: lighter,
     they may answer where the broad ones timed out (on 4 Nov 2026 r/Sephora's did, and found a big thread).
+
+    With `max_calls` (on-demand reading's budget, config.ON_DEMAND_SEARCH_CALLS; 4 Nov 2026, Noemi's "Keep 25 min"), the
+    round asks at most that many searches, every call counted (halves and second chances too; one the client's 48-hour
+    cache holds costs none), and the order decides what fits. The first title search goes first, alone, and its answer
+    says whether the type's word is common:
+    - it answered its full `posts_each` (or failed): the newest posts are only the last weeks of a word people post
+      about every day, so the need searches (the request's own words) and the advice searches come next, both over the
+      whole history, cut so the warning searches still fit, then the warning searches; the other title searches only
+      fill what is left;
+    - it answered fewer: the title searches find every post with the word (an advice search could only find some of the
+      same), so the round keeps its order without a budget (titles, needs, advice, warnings) until the budget is spent.
+    Running out of budget is no failure: the searches left are only taken from the cache.
     """
     terms = finder_terms(query.product_type)
     titles = [(subreddit, term) for term in terms for subreddit in query.subreddits][:max_free_searches]
@@ -925,31 +937,58 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
         windows = ({"after": split}, {"after": oldest, "before": split})
         pairs = ([(subreddit, term, {"after": split}) for subreddit, term in titles]
                  + [(subreddit, term, {"after": oldest, "before": split}) for subreddit, term in titles])
+    title_pairs = pairs
     needs = need_words(query)[:need_searches] if need_searches else []
     need_pairs = [(subreddit, f"{terms[0]} {need}", {}) for need in needs for subreddit in query.subreddits]
-    pairs += need_pairs[:max_free_searches]
+    need_pairs = need_pairs[:max_free_searches]
     advice = [(subreddit, f"{term} {word}", {}) for word in ARCHIVE_ADVICE_WORDS for term in terms[:2]
               for subreddit in query.subreddits][:max(0, advice_searches)]
     warnings = warning_words(query)[:max_warning_searches]
     warning_pairs = [(query.subreddits[0], f"{terms[0]} {warning}", {}) for warning in warnings]
     # The searches whose posts must ask for advice (3b): an advice search no other round asks too.
-    advice_only = {(s, t) for s, t, _ in advice} - {(s, t) for s, t, _ in pairs + warning_pairs}
-    narrow = {(s, t) for s, t, _ in need_pairs[:max_free_searches] + advice}  # whole-history searches (rounds 3, 3b)
-    pairs += advice + warning_pairs
+    advice_only = {(s, t) for s, t, _ in advice} - {(s, t) for s, t, _ in title_pairs + need_pairs + warning_pairs}
+    narrow = {(s, t) for s, t, _ in need_pairs + advice}  # whole-history searches (rounds 3, 3b)
+    # Without a budget every search is asked, in the rounds' order. With one, the first title search goes alone, and
+    # the rest is put in order once it has answered (the_rest).
+    later = None
+    if max_calls is None or not title_pairs:
+        pairs = title_pairs + need_pairs + advice + warning_pairs
+    else:
+        pairs, later = title_pairs[:1], title_pairs[1:]
     queue = deque((subreddit, term, dates, 0) for subreddit, term, dates in pairs)  # 0: not halved yet
     posts: dict[str, dict] = {}
-    failures = in_a_row = answered = 0  # answered: searches a call answered
+    failures = in_a_row = answered = calls = 0  # answered: searches a call answered; calls: calls made (the budget's)
     ended_by: ArcticShiftError | None = None  # the failure that ended the round early, if one did
+    out_of_budget = False
+    cached_posts = getattr(finder, "cached_posts", None)
 
     def keep(subreddit: str, term: str, found: list[dict]) -> None:
         for post in found:
             if (subreddit, term) not in advice_only or asks_for_advice(post):
                 posts.setdefault(_post_id(post), post)
 
+    def the_rest(first_found: list[dict] | None, halves: list[tuple]) -> deque:
+        """The round after its first title search, by what it answered (None: it failed; `halves`: its halves then)."""
+        if first_found is not None and len(first_found) < posts_each:  # a word the title searches cover whole
+            rest = later + need_pairs + advice + warning_pairs
+            return deque([(s, t, d, 0) for s, t, d in rest] + halves)
+        room = max(0, max_calls - calls - len(warning_pairs))  # the warning searches keep their place
+        front = (need_pairs + advice)[:room] + warning_pairs
+        return deque([(s, t, d, 0) for s, t, d in front] + halves + [(s, t, d, 0) for s, t, d in later])
+
     while queue:
         subreddit, term, dates, times_halved = queue.popleft()
+        found = None
+        if max_calls is not None:
+            found = cached_posts(subreddit, term, limit=posts_each, **dates) if cached_posts is not None else None
+            if found is None and calls >= max_calls:
+                out_of_budget = True
+                queue.appendleft((subreddit, term, dates, times_halved))
+                break
         try:
-            found = finder.search_posts(subreddit, term, limit=posts_each, **dates)
+            if found is None:
+                calls += 1
+                found = finder.search_posts(subreddit, term, limit=posts_each, **dates)
         except ArcticShiftError as error:
             failures += 1
             in_a_row += 1
@@ -972,29 +1011,40 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
                     halved.append(name)
             elif failed is not None:
                 failed.append(f"{name}: {error}")
+            found = None
             if in_a_row >= max_failures:
                 ended_by = error
-                break
-            continue
-        in_a_row = 0
-        answered += 1
-        keep(subreddit, term, found)
-    if ended_by is not None:
+        else:
+            in_a_row = 0
+            answered += 1
+            keep(subreddit, term, found)
+        if later is not None:
+            # The first title search has answered (or failed): the rest of the round, in the order its answer calls for;
+            # its halves, when it timed out, wait behind the narrow and warning searches.
+            queue = the_rest(found, list(queue))
+            later = None
+        if ended_by is not None:
+            break
+    if ended_by is not None or out_of_budget:
         # The searches still queued are used when the client's 48-hour cache already holds them: no call (13 Oct 2026).
-        cached_posts = getattr(finder, "cached_posts", None)
         left = []
         for subreddit, term, dates, _ in queue:
             cached = cached_posts(subreddit, term, limit=posts_each, **dates) if cached_posts is not None else None
             if cached is None:
                 left.append((subreddit, term, dates))
             keep(subreddit, term, cached or [])
+    if ended_by is not None:
         # A busy archive (some searches answered) still gets the narrow searches still queued (4 Nov 2026): the need and
-        # advice searches, lighter, which may answer where the broad ones timed out. Once each, never halved, and as many failures in
-        # a row end them too. An archive that answered nothing is down: no more calls.
+        # advice searches, lighter, which may answer where the broad ones timed out. Once each, never halved, and as
+        # many failures in a row end them too; within the budget, when there is one. An archive that answered nothing
+        # is down: no more calls.
         in_a_row = 0
         for subreddit, term, dates in (left if answered else []):
             if (subreddit, term) not in narrow:
                 continue
+            if max_calls is not None and calls >= max_calls:
+                break
+            calls += 1
             try:
                 found = finder.search_posts(subreddit, term, limit=posts_each, **dates)
             except ArcticShiftError as error:
@@ -1014,8 +1064,8 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
     return list(posts.values())
 
 
-# How a title asking for advice starts (4 Nov 2026): "What's your favorite blush?", "Any favorite lipstick for dry lips",
-# "Best mascara", "Recommendations for a cream bronzer", "Help me pick a blush", "[Request] ...".
+# How a title asking for advice starts (4 Nov 2026): "Which blush do you wear most?", "Any favorite lipstick for dry
+# lips", "Best mascara", "Recommendations for a cream bronzer", "Help me pick a blush", "[Request] ...".
 _ASKING_START = re.compile(r"^\W*(?:what|which|your|any|anyone|anybody|best|favou?rites?|top|need|help|looking"
                            r"|recommend\w*|recs?|requests?)\b")
 
@@ -1079,6 +1129,7 @@ class ArchiveSource:
         max_free_searches: int = ARCHIVE_MAX_SEARCHES,
         max_warning_searches: int = 4,
         skip_ids: set[str] | None = None,
+        max_calls: int | None = None,
     ):
         # The Arctic Shift client that searches and reads. It is never built here, so code that gives none (a test
         # that passes no finder) can't reach the network: with None, nothing is found or read.
@@ -1087,6 +1138,9 @@ class ArchiveSource:
         self.max_free_searches = max_free_searches
         self.max_warning_searches = max_warning_searches
         self.skip_ids = set(skip_ids or ())
+        # The most calls a round of searches may make (on-demand reading's budget, config.ON_DEMAND_SEARCH_CALLS, 4 Nov
+        # 2026: the advice searches come first inside it, search_archive); None, as for `library add`: every search.
+        self.max_calls = max_calls
         self.notes: list[str] = []  # what the last search couldn't do, for `library add` to print
         # The last search round's searches that failed (none: the round was whole). On-demand reading tries a request
         # again when its round was cut short and found too few threads (4 Nov 2026, engine.on_demand._read_entry).
@@ -1118,7 +1172,7 @@ class ArchiveSource:
                                    raise_if_nothing=True, posts_each=ARCHIVE_POSTS_EACH,
                                    older_than_years=ARCHIVE_OLDER_YEARS, max_failures=ARCHIVE_SEARCH_MAX_FAILURES,
                                    failed=failed, halved=halved, need_searches=ARCHIVE_NEED_WORDS,
-                                   advice_searches=ARCHIVE_ADVICE_SEARCHES)
+                                   advice_searches=ARCHIVE_ADVICE_SEARCHES, max_calls=self.max_calls)
         finally:
             self.failed = list(failed)
             self.notes = ([f"The archive's search in {search} timed out, so it was asked again over shorter spans of "

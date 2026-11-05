@@ -80,9 +80,7 @@ def test_a_request_the_library_hasnt_read_about_is_queued_and_the_answer_says_so
         # Changed on purpose, 25 Oct 2026: "in about 20 minutes" until the Gemini calls were timed (about 4 minutes each,
         # 15 calls a request): the first request in line was read in about an hour. Changed again the same day, when
         # Noemi approved Gemini 3.1 Flash-Lite as the reader (a call is told to take a minute): about 25 minutes.
-        # Changed on purpose, 4 Nov 2026, when a request's searches and calls were timed again (the archive reader's
-        # advice searches; tests/test_approvals.py): about 45 minutes.
-        "message": "We haven't read Reddit about teapots yet, so we've started: check back in about 45 minutes."}
+        "message": "We haven't read Reddit about teapots yet, so we've started: check back in about 25 minutes."}
     [entry] = site.queue().entries
     assert entry.product_type == "teapot" and entry.status == "waiting"
     assert site.google.jobs_started == [JOB]  # started at once: no schedule to wait for
@@ -128,14 +126,10 @@ def test_a_second_request_waits_its_turn(tmp_path, monkeypatch):
     # day (Gemini 3.8 Flash) read one request, so the second in line was promised "in about 35 minutes" for nothing, and
     # was told "Check back tomorrow". The same day Noemi approved Gemini 3.1 Flash-Lite as the reader (450 calls a day,
     # 30 requests): the second in line is read after the first, 21 minutes later.
-    # Changed on purpose, 4 Nov 2026 (a request timed again: 41 minutes of the job): 45 + 41 minutes, which past 55
-    # minutes is said in hours (check_back_in).
-    assert data["on_demand"]["check_back_minutes"] == ON_DEMAND_FIRST_MINUTES + ON_DEMAND_EACH_MINUTES == 86
-    assert "in about an hour" in data["on_demand"]["message"]
+    assert data["on_demand"]["check_back_minutes"] == ON_DEMAND_FIRST_MINUTES + ON_DEMAND_EACH_MINUTES
+    assert "in about 45 minutes" in data["on_demand"]["message"]
     # With the old reader's 18 calls a day, as before, it is told when its turn comes:
-    # Changed on purpose, 4 Nov 2026: a day's calls that read one request whatever a request's calls are (18 read one
-    # request of 15 calls; at 24 calls a request, 18 read none and the turn came a day later).
-    monkeypatch.setattr(on_demand, "ON_DEMAND_GEMINI_CALLS_A_DAY", on_demand.ON_DEMAND_CALLS_PER_PRODUCT + 3)
+    monkeypatch.setattr(on_demand, "ON_DEMAND_GEMINI_CALLS_A_DAY", 18)
     site.reader._queue_at = None  # the queue is read afresh
     data = site.ask("stovetop kettle that whistles")
     assert data["on_demand"]["check_back_minutes"] is None and data["on_demand"]["message"].endswith("Check back tomorrow.")

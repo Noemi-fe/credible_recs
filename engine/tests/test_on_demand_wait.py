@@ -26,8 +26,7 @@ NAME = "credible-test-on-demand"
 JOB = "projects/credible-picks/locations/europe-west1/jobs/credible-recs-reader"
 # These tests take a reader whose free allowance reads 10 requests a day (150 calls); the one config names today
 # (Gemini 3.1 Flash-Lite: 450 calls a day) is tested on its own at the end.
-# Changed on purpose, 4 Nov 2026: 10 requests' calls whatever a request's calls are (150 at 15 a request, 240 at 24).
-CALLS_A_DAY = 10 * ON_DEMAND_CALLS_PER_PRODUCT
+CALLS_A_DAY = 150
 PER_DAY = CALLS_A_DAY // ON_DEMAND_CALLS_PER_PRODUCT
 
 
@@ -66,11 +65,9 @@ def test_the_first_request_with_the_days_calls_to_spare_is_told_when_the_reader_
     # took about 4 minutes and a request 15 calls and 6 minutes of Arctic Shift, 66 minutes of the job ("in about an
     # hour", 70 with the site's next ping; it was "20 minutes" before it was timed); a Flash-Lite call is told to take
     # a minute, so a request is 21 minutes of the job and the first is told 25.
-    # Changed on purpose, 4 Nov 2026 (a request timed again with the archive reader's advice searches: 17 minutes of
-    # Arctic Shift and 24 calls, tests/test_approvals.py): 41 minutes of the job, the first told 45.
     state = Line(tmp_path).asked()
-    assert state["check_back_minutes"] == ON_DEMAND_FIRST_MINUTES == 45
-    assert state["message"] == "We haven't read Reddit about teapots yet, so we've started: check back in about 45 minutes."
+    assert state["check_back_minutes"] == ON_DEMAND_FIRST_MINUTES == 25
+    assert state["message"] == "We haven't read Reddit about teapots yet, so we've started: check back in about 25 minutes."
 
 
 def test_each_request_ahead_adds_its_reading_while_the_days_calls_last(tmp_path):
@@ -104,12 +101,10 @@ def test_the_day_with_no_calls_left_and_nobody_ahead_says_the_allowance_is_used_
 def test_a_line_longer_than_a_day_reads_is_told_the_day_it_will_be_reached(tmp_path, monkeypatch):
     # A small allowance of 30 calls (2 products a day, at 15 calls a product), all used today: the places 0 and 1 are
     # read on the first day after the reset (10 October, at 8 am UTC), 2 and 3 on the next. It is 9 October at noon.
-    # Changed on purpose, 4 Nov 2026: two products' calls whatever a product's calls are (30 at 15, 48 at 24).
-    small = 2 * ON_DEMAND_CALLS_PER_PRODUCT
-    monkeypatch.setattr(on_demand, "ON_DEMAND_GEMINI_CALLS_A_DAY", small)
-    tomorrow = Line(tmp_path / "one", waiting=1, calls_used=small).asked()
+    monkeypatch.setattr(on_demand, "ON_DEMAND_GEMINI_CALLS_A_DAY", 30)
+    tomorrow = Line(tmp_path / "one", waiting=1, calls_used=30).asked()
     assert tomorrow["message"].endswith("Check back tomorrow.")
-    later = Line(tmp_path / "two", waiting=2, calls_used=small).asked()
+    later = Line(tmp_path / "two", waiting=2, calls_used=30).asked()
     assert "2 products are ahead of it" in later["message"] and "about 2 a day" in later["message"]
     assert later["message"].endswith("Check back on 11 October.")
 
@@ -146,9 +141,8 @@ def test_threads_that_are_old_say_newer_ones_are_being_read(tmp_path):
     state = Line(tmp_path).asked("laptop for university", threads=14, own=8, newest=NOW - timedelta(days=3 * 365))
     assert state["read_before"] is True and state["state"] == "reading"
     # Changed on purpose, 25 Oct 2026: "in about an hour" with Gemini 3.8 Flash, 25 minutes with Flash-Lite.
-    # Changed on purpose, 4 Nov 2026: 45 minutes (a request timed again, tests/test_approvals.py).
     assert state["message"] == ("The Reddit threads we've read about laptops are a few years old, so we've started "
-                                "reading newer ones: check back in about 45 minutes.")
+                                "reading newer ones: check back in about 25 minutes.")
 
 
 def test_the_wait_is_worked_out_by_wait_for(tmp_path):
@@ -166,13 +160,29 @@ def test_with_the_reader_config_names_today_the_second_request_in_line_is_told_w
     # false and it was told "Check back tomorrow" ("about 1 a day"). Noemi approved Gemini 3.1 Flash-Lite the same day
     # (500 a day; 450 used): 30 requests by Gemini's calls, so the second is read 21 minutes after the first, and
     # "tomorrow" comes only when the day's calls are used up.
-    # Changed on purpose, 4 Nov 2026: 18 requests by Gemini's calls at 24 calls a request (30 at 15).
     monkeypatch.setattr(on_demand, "ON_DEMAND_GEMINI_CALLS_A_DAY", config.ON_DEMAND_GEMINI_CALLS_A_DAY)
-    assert config.ON_DEMAND_GEMINI_MODEL == "gemini-3.1-flash-lite" and on_demand.products_a_day() == 18
+    assert config.ON_DEMAND_GEMINI_MODEL == "gemini-3.1-flash-lite" and on_demand.products_a_day() == 30
     first = Line(tmp_path / "first").asked()
     assert first["check_back_minutes"] == ON_DEMAND_FIRST_MINUTES
     second = Line(tmp_path / "second", waiting=1).asked("stovetop kettle that whistles")
     assert second["state"] == "reading" and second["check_back_minutes"] == ON_DEMAND_FIRST_MINUTES + ON_DEMAND_EACH_MINUTES
     spent = Line(tmp_path / "spent", waiting=1, calls_used=config.ON_DEMAND_GEMINI_CALLS_A_DAY).asked("stovetop kettle that whistles")
     assert spent["state"] == "waiting" and spent["message"].endswith("Check back tomorrow.")
-    assert "1 product is ahead of it" in spent["message"] and "about 18 a day" in spent["message"]
+    assert "1 product is ahead of it" in spent["message"] and "about 30 a day" in spent["message"]
+
+
+def test_a_request_waiting_to_be_tried_again_is_told_the_wait_for_its_next_try(tmp_path):
+    # 4 Nov 2026 (the makeup threads work): a round of searches cut short by a busy archive leaves its request waiting
+    # for another try, ON_DEMAND_RETRY_MINUTES after this one; telling it the first in line's 25 minutes would not be
+    # true. Its wait counts from its next try.
+    line = Line(tmp_path)
+    entry = entry_for(parse_query("teapot for loose leaf tea"), had=0)
+    entry.tries, entry.tried_at = 1, (NOW - timedelta(minutes=10)).isoformat()
+    QueueStore(line.bucket).change(lambda queue: queue.add(entry) and None)
+    state = line.asked()
+    assert state["state"] == "reading"
+    assert state["check_back_minutes"] == config.ON_DEMAND_RETRY_MINUTES - 10 + ON_DEMAND_FIRST_MINUTES == 75
+    assert state["message"] == ("We haven't read Reddit about teapots yet, so we've started: check back in about an"
+                                " hour.")
+    fresh = Line(tmp_path / "fresh").asked()  # one never tried: the first in line's wait, as before
+    assert fresh["check_back_minutes"] == ON_DEMAND_FIRST_MINUTES == 25

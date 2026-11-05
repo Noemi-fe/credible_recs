@@ -361,7 +361,10 @@ def test_the_plan_works_out_the_demo_and_interviewee_requests_beside_the_blind_t
     found = precheck.requests_to_check(questions, latency, tmp_path, tmp_path / "none.json", demo)
     # In the plan's list (each once; their place there doesn't decide what is read first: Candidate.first does).
     assert found[:3] == ["blind one", "blind two", "latency one"] and found[-2:] == ["demo one", "asked one"]
-    assert precheck.first_requests(questions, demo) == {"blind one", "blind two", "demo one", "asked one"}
+    # Changed on purpose, 4 Nov 2026 (the makeup threads work): the requests of config.PRECHECK_FIRST_REQUESTS (the
+    # blush ones, checked ahead first but not warmed: the answers' memory is nearly full) are read first too.
+    assert precheck.first_requests(questions, demo) == ({"blind one", "blind two", "demo one", "asked one"}
+                                                        | set(config.PRECHECK_FIRST_REQUESTS))
 
 
 def test_their_shown_and_next_in_line_quotes_are_read_before_any_other_requests():

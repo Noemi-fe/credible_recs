@@ -65,8 +65,11 @@ def blush_posts() -> list[dict]:
         post_on("1new02", "Blushes I finished this year", 20, "2026-08-01"),
         post_on("1mid01", "Blush that survived a long shift", 9, "2022-05-01"),
         post_on("1mid02", "Blushes from the drugstore", 6, "2022-04-01"),
-        post_on("1old01", "Your favorite blush?", 238, "2025-01-10"),
-        post_on("1top01", "Top three most loved/favorite blushes?", 116, "2025-08-20"),
+        # Changed on purpose, 4 Nov 2026 (the round-1 review): these two had been near copies of two real r/Sephora
+        # titles, with their real comment counts and dates; invented ones test the same (a question with "blush" and
+        # "favorite" as whole words, not starting as a question does; one with only the plural "blushes").
+        post_on("1old01", "Blush you'd call your all-time favorite?", 205, "2024-11-03"),
+        post_on("1top01", "Three favorite blushes you would rebuy forever?", 137, "2025-06-14"),
     ]
 
 
@@ -259,3 +262,133 @@ def test_an_archive_that_answered_nothing_isnt_asked_again():
     with pytest.raises(ArcticShiftError):
         ArchiveSource(client).rank_candidates(parse_query("blush"))
     assert len(client.searches) == ARCHIVE_SEARCH_MAX_FAILURES  # as before: a service that is down ends the round
+
+
+# --- On demand: inside the old budget (4 Nov 2026, Noemi's "Keep 25 min") ---
+# Round 1 added up to 12 advice searches on top of the round's title, need and warning searches: a "blush" request asked
+# about 32 searches where main asked 16, and the wait visitors are told would have gone from about 25 minutes to about
+# 45. Noemi kept the 25 minutes. So on-demand reading's round has a budget, config.ON_DEMAND_SEARCH_CALLS (main's own
+# "blush" round: 12 title searches and 4 warning searches), and every call counts against it, halves of a search that
+# timed out and the busy archive's second chances included; a search the 48-hour cache holds costs nothing. Inside it,
+# one title search goes first, to see whether the type's word is common: when it answers its full 100, the newest posts
+# are only the last weeks, so the need and advice searches (whole history) come next, then the warning searches, and the
+# other title searches only fill what is left; when it answers fewer, the title searches find every post (the advice
+# searches could only find some of the same), so the round keeps main's order. `library add` has no budget.
+
+def saturated_blush_posts() -> list[dict]:
+    """More recent small "blush" posts in each makeup community than a search answers (its newest 100), and the big
+    advice threads a year or two old; every title made up."""
+    communities = ("Makeup", "Sephora", "MakeupAddiction", "drugstoreMUA")
+    posts = [post_on(f"1sw{i}{n:03d}", f"Blush swatch number {n}", 8, f"2026-{7 + n % 4:02d}-{1 + n % 27:02d}",
+                     community)
+             for i, community in enumerate(communities) for n in range(110)]
+    return posts + [
+        post_on("1old01", "Blush you'd call your all-time favorite?", 205, "2024-11-03", "Sephora"),
+        post_on("1top01", "Three favorite blushes you would rebuy forever?", 137, "2025-06-14", "Sephora"),
+        post_on("1rec01", "Blush recommendations for a first-timer?", 180, "2024-03-09", "Makeup"),
+    ]
+
+
+def budgeted(client, request: str = "blush", calls: int | None = None, **kwargs) -> list[dict]:
+    from engine.config import ON_DEMAND_SEARCH_CALLS
+
+    return search_archive(client, parse_query(request), 16, 4, posts_each=100, older_than_years=3, max_failures=3,
+                          now=NOW, need_searches=ARCHIVE_NEED_WORDS, advice_searches=ARCHIVE_ADVICE_SEARCHES,
+                          max_calls=ON_DEMAND_SEARCH_CALLS if calls is None else calls, **kwargs)
+
+
+def kind(term: str) -> str:
+    last = term.split()[-1]
+    if last in ARCHIVE_ADVICE_WORDS:
+        return "advice"
+    if last in ("died", "broke", "regret", "avoid"):
+        return "warning"
+    return "title" if term in ("blush", "blushes") else "need"
+
+
+def test_the_on_demand_budget_is_mains_blush_round():
+    from engine import config
+
+    # Main's "blush" round on 4 Nov 2026: 2 title words in 3 communities, both date windows (12), and 4 warnings.
+    assert config.ON_DEMAND_SEARCH_CALLS == 16
+    assert (config.ON_DEMAND_ARCHIVE_MINUTES, config.ON_DEMAND_CALLS_PER_PRODUCT) == (6, 15)  # as on main
+
+
+def test_a_blush_like_round_asks_the_advice_searches_before_the_title_searches_and_stays_inside_the_budget():
+    client = TitleSearch(saturated_blush_posts(), cap=100)
+    found = budgeted(client)
+    kinds = [kind(t) for _, t in client.searches]
+    assert len(client.searches) == 16  # the whole budget, not one call more
+    assert client.searches[0] == ("Makeup", "blush") and client.asked[0]["after"] is not None  # the one title search
+    assert kinds[1:] == ["advice"] * 11 + ["warning"] * 4  # then the advice searches, the warnings kept
+    assert {"1old01", "1top01", "1rec01"} <= ids(found)  # the big old advice threads are reached
+    ranked = ArchiveSource(TitleSearch(saturated_blush_posts(), cap=100), max_calls=16).rank_candidates(
+        parse_query("blush"))
+    assert {p["id"] for p in ranked[:3]} == {"1old01", "1top01", "1rec01"}
+
+
+def test_with_need_words_the_need_searches_come_first_then_the_advice_ones():
+    client = TitleSearch(saturated_blush_posts(), cap=100)
+    budgeted(client, "blush for fair skin")
+    kinds = [kind(t) for _, t in client.searches]
+    assert len(kinds) == 16 and kinds[0] == "title"
+    first_advice = kinds.index("advice")
+    assert set(kinds[1:first_advice]) == {"need"} and kinds[-4:] == ["warning"] * 4
+    assert "title" not in kinds[1:]
+
+
+def test_a_word_the_title_searches_cover_whole_keeps_mains_order():
+    # Few posts: the first title search answers fewer than 100, so title searches find every post with the word and
+    # come first, as on main; the budget still holds.
+    posts = [dict(p, subreddit="Makeup") for p in blush_posts()]
+    client = TitleSearch(posts, cap=100)
+    found = budgeted(client)
+    assert [kind(t) for _, t in client.searches] == ["title"] * 16  # 2 words, 4 communities, 2 windows: the budget
+    assert ids(found) == ids(posts)  # every one, the big ones included, through the title searches
+
+
+def test_every_call_counts_halves_and_second_chances_included():
+    # The title searches time out (each halved before it fails), three in a row end the round, and the busy archive's
+    # second chances (the advice searches, once each) stop when the budget does.
+    posts = [dict(p, subreddit="Makeup") for p in blush_posts()]
+    client, failed = BusyArchive(posts, answers=1), []
+    budgeted(client, calls=10, failed=failed)
+    assert len(client.searches) == 10 and failed
+
+
+def test_a_busy_archive_cannot_take_the_round_past_its_budget():
+    client = BusyArchive(saturated_blush_posts(), answers=1, narrow_fail=True)
+    budgeted(client, failed=[])
+    assert len(client.searches) <= 16
+
+
+class CachedSearches(TitleSearch):
+    """A client whose 48-hour cache already holds some searches (a request tried again after a round cut short)."""
+
+    def __init__(self, posts, held):
+        super().__init__(posts, cap=100)
+        self.held = set(held)
+
+    def cached_posts(self, subreddit, title, limit=25, before=None, after=None):
+        if (subreddit, title) not in self.held:
+            return None
+        words = set(title.lower().split())
+        found = [dict(p) for p in self.posts if p["subreddit"] == subreddit
+                 and words <= set(re.findall(r"[a-z0-9]+", p["title"].lower()))
+                 and (after is None or day(p) >= after) and (before is None or day(p) < before)]
+        return sorted(found, key=lambda p: p["created_utc"], reverse=True)[:self.cap]
+
+
+def test_a_search_the_cache_holds_costs_no_call():
+    held = {(community, f"{word} {advice}") for community in ("Makeup", "Sephora", "MakeupAddiction", "drugstoreMUA")
+            for word in ("blush", "blushes") for advice in ("favorite",)}
+    client = CachedSearches(saturated_blush_posts(), held)
+    found = budgeted(client)
+    assert len(client.searches) == 16 and not set(client.searches) & held  # 16 calls, none of them the cached 8
+    assert {"1old01", "1top01", "1rec01"} <= ids(found)
+
+
+def test_library_add_has_no_budget():
+    client = TitleSearch(saturated_blush_posts(), cap=100)
+    ArchiveSource(client).rank_candidates(parse_query("blush"))
+    assert len(client.searches) > 16 and len(advice_terms(client)) == ARCHIVE_ADVICE_SEARCHES

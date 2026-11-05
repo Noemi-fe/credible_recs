@@ -1068,7 +1068,8 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
 - 4 Nov 2026, built by Claude (branch makeup-threads, not merged or deployed), from Noemi's report that "blush" on the
   site said it had counted one thread while Google's top results for it were big Reddit threads in r/Makeup and
   r/Sephora ("let's do better threads wise"). Code only: no thread was read or extracted on this branch.
-  (1) Communities, PROPOSED until Noemi says yes: r/Makeup and r/Sephora (a shoppers' community, not run by the
+  (1) Communities, PROPOSED until Noemi said yes (she did the same day, "Yes, plus r/AsianBeauty": the note of the
+  makeup rework below): r/Makeup and r/Sephora (a shoppers' community, not run by the
   retailer) are general-category subreddits, and r/AsianBeauty (skincare's already) is listed for the general category
   too, so foundation, concealer, mascara and lipstick may search it. Every makeup type searches r/Makeup, r/Sephora,
   r/MakeupAddiction and r/drugstoreMUA, in that order. r/MakeupRehab (a no-buy community) stays decided but no makeup
@@ -1094,15 +1095,20 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   having enough; the answer then says "more" rather than "haven't read" (PipelineResult.own_thread_ids).
   (5) A round cut short (some searches failed and fewer than 6 threads chosen) waits and is tried again later, up to
   ON_DEMAND_MAX_TRIES, keeping the threads it read; the next try reads only the rest, chosen from the whole mix.
-  (6) Makeup ranks like skincare and haircare: an old makeup thread loses the old-post points (REFORMULATED_TYPES: the
-  13 makeup types; general's other types are not reformulated).
+  (6) Makeup's threads are ranked by age as skincare's and haircare's are: an old makeup thread loses the old-post
+  points (REFORMULATED_TYPES: the 13 makeup types; general's other types are not reformulated). Corrected the same day
+  (the reviewer): this note first said makeup "ranks like skincare and haircare", which is more than was built. The
+  voice's old-post cap (OLD_SKINCARE_POST_MAX_VOICE, engine/credibility.py: an old comment is at most a medium voice)
+  still applies to skincare and haircare only, so an old makeup comment can still be a high voice; left as it is, an
+  open question for Noemi (the rework note below).
   (7) Timed on a busy archive: the blush request's search round took 455 and 876 seconds (22 and 41 calls; r/Makeup's
   searches timed out almost every time, over its whole history and over the last 3 years alike), and the six threads
   it chose (four of 107 to 238 comments) are 17 Gemini calls, up to 24 for six big ones. So ON_DEMAND_ARCHIVE_MINUTES is
   17 (6) and ON_DEMAND_CALLS_PER_PRODUCT 24 (15): a request is 41 minutes of the job (21). What visitors are told
   changes with it (the wording is unchanged): the first in line "in about 45 minutes" (25), the second "in about an
   hour" (45 minutes), "about 18 a day" (30) and "about 20 a month" (39). Noemi to be told. The minute a Gemini call is
-  given is still the safe one (calls took 10 to 25 seconds), so these are generous.
+  given is still the safe one (calls took 10 to 25 seconds), so these are generous. Superseded the same day: Noemi
+  said "Keep 25 min", and the values are main's again (the rework note below).
   Measured on the dry run (no thread read): 762 candidates (280 in a first dry run whose round ended before the advice searches, which is why a busy round
   now still asks them), 6 threads chosen, none
   from r/MakeupRehab; of Google's three threads, the r/Sephora one was among them and chosen, a second r/Sephora one was
@@ -1132,13 +1138,21 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   Rare Beauty Soft Pinch and Nars Orgasm, after 360 writers Rare Beauty Soft Pinch, Milani and Patrick Ta (Nars Orgasm now
   Also worth a look), so they may move again when the other 386 are looked up. (4) Results, all offline with live checks
   off: the whole suite 6,915 passed and 1 failed (test_library's unlabelled gold thread 1v40u3t, which fails on main too);
-  the evaluation as the 2 Nov row in every number (30/30, 25/25, 25/25; fits 19/24, useful 23/24; ordering 75/79; votes
-  73/78 and 73/75; voice 12/12, evidence 30/30; blind test 10/10 full top 3s), the library's quote count 84,874 of 85,381
-  with the 10 new threads at 1,771 of 1,771 (the 507 not found are in older threads); the sweep of 293 answers against main's
-  code on main's library the same evening: 5 changed, all makeup (blush, blush for fair skin and cream blush from no pick
-  to 3 picks of 3 quotes each, 71 quotes in all; bronzer no longer answered as blush; setting powder no longer as setting
-  spray), the 10 blind-test answers identical, the other 278 with the same picks (the two e-reader answers differ only in a
-  count of threads left out as loose, 10 to 11), 207 answers with 3 picks (204), 650 picks (641), 7,567 quotes shown and
+  the evaluation as the 2 Nov row in every number but the library's two (30/30, 25/25, 25/25; fits 19/24, useful 23/24;
+  ordering 75/79; votes 73/78 and 73/75; voice 12/12, evidence 30/30; blind test 10/10 full top 3s), the library's quote
+  count 84,874 of 85,381 with the 10 new threads at 1,771 of 1,771 (the 507 not found are in older threads). Corrected
+  the same day, from the reviewer: those two are worse than the 2 Nov row's, not the same (quotes found word for word
+  99.41% of the library's, 99.60% on 2 Nov; 251 quotes shown in the 10 blind-test answers, 265), and the cause was
+  found: the 3 Nov deploy's verification pass (deploy.sh's `engine.library apply-checks`, before the bundle) rewrote
+  1,739 thread files and 1,012 extraction files in data/library between 07:30 and 08:40 that day, dropping the words
+  of 2,345 kept comments (291 removed on Reddit, 176 edited, 1,877 unreadable twice at least 7 days apart, 1 no longer
+  used) and 3,705 items from the extractions, the deletion and verification rules at work, not this round; the 162
+  more not found (345 on 2 Nov) were not traced item by item; the sweep of 293 answers against main's code on main's
+  library the same evening: 5 changed, all makeup (blush, blush for fair skin and cream blush from no pick to 3 picks
+  of 3 quotes each, 71 quotes in all; bronzer no longer answered as blush; setting powder no longer as setting spray),
+  the 10 blind-test answers identical, the other 278 with the same picks (the two e-reader answers differ only in a
+  count of threads left out as loose, 10 to 11), 207 answers with 3 picks (204), 650 picks (641), 7,567 quotes shown
+  and
   none failing the engine's word-for-word check. The blush answers read 11 threads (the 10 and the lipstick-repair thread
   from r/MakeupRehab that named blush, which no blush quote comes from). (5) Discovery dry run on the branch, run again that
   evening when the archive answered better than in the builder's runs: 408 candidates in 284 s, all three of Google's
@@ -1148,8 +1162,50 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   know them, lists those 7 as problems in `engine.extract check` and the library check until the branch is merged (answers
   skip them); do not deploy from main before the merge. No price or page was looked up for the blush picks (the lists hold
   no makeup entry): they say "Price not checked yet" and "Availability not checked yet". "blush for fair skin" gives the
-  same answer as "blush": the need is not one of config's words. "lipstick" and "lip tint" still quote one comment of
-  r/MakeupRehab (old library threads, as before this round). FOR NOEMI: yes or no to r/Makeup and r/Sephora as
-  general subreddits (and r/AsianBeauty listed there too), whether she wants the 11 other makeup types read (84 threads,
-  about 9,500 comments by the plan's table, Sonnet helpers), and the told wait of the builder's note (45 minutes for the first in line, 18 requests
-  a day, 20 a month).
+  same three picks as "blush", not the same answer, as this note first said (corrected the same day, from the
+  reviewer, who compared the sweep files): its reason line adds "1 of them about fair", it gives 3 things to look for
+  ("blush" 2), and Haus Labs' place and quotes differ. The need is recognised but weighs little. "lipstick" and "lip
+  tint" still quote one comment of r/MakeupRehab (old library threads, as before this round). FOR NOEMI (answered the
+  same day: the next note): yes or no to r/Makeup and r/Sephora as general subreddits (and r/AsianBeauty listed there
+  too), whether she wants the 11 other makeup types read (84 threads, about 9,500 comments by the plan's table, Sonnet
+  helpers), and the told wait of the builder's note (45 minutes for the first in line, 18 requests a day, 20 a month).
+
+- 4 Nov 2026, evening, decided by Noemi on the makeup round, in her words, and the rework that follows from them (by
+  Claude, the lead engineer, branch makeup-threads; not merged, not deployed):
+  (1) "Yes, plus r/AsianBeauty": r/Makeup, r/Sephora and r/AsianBeauty are decided subreddits of the general category
+  (engine/config.py SUBREDDITS; no longer PROPOSED). r/AsianBeauty was skincare's already: a thread read there for a
+  makeup request is a general thread (the request's category wins when the community is listed for it), which the
+  library's checks accept, and one read for a skincare request stays skincare (a test of each).
+  (2) "Keep 25 min": what visitors are told is main's again (round 1's (7) above is undone): ON_DEMAND_ARCHIVE_MINUTES
+  6 and ON_DEMAND_CALLS_PER_PRODUCT 15, so a request is 21 minutes of the job, the first in line is told "about 25
+  minutes", each request ahead adds 21, "about 30 a day", "about 39 a month"; the tests of those numbers
+  (test_on_demand_wait.py, test_approvals.py, test_on_demand_site.py's two wait checks), deploy/cloudrun/DEPLOY.md and
+  on_demand.sh are main's again. To keep them true, the job now keeps a request inside them (technical calls,
+  reported): (a) a request's searches are at most 16 calls (ON_DEMAND_SEARCH_CALLS: the round main asks for "blush", 2
+  title words in 3 communities over both date windows and 4 warnings, the kind of round main's 6 minutes are for),
+  every call counted, halves and second chances too; a search the archive client's 48-hour cache holds costs none;
+  `library add` has no budget. (b) Inside it the advice searches replace the weak title searches instead of adding to
+  them: the first title search goes alone, and when it answers its full 100 posts (the newest 100 of a word people
+  post every day are its last weeks) or fails, the need searches and the advice searches come next (cut so the 4
+  warning searches still fit), then the warnings, and the other title searches only fill what is left. When it answers
+  fewer than 100, the title searches find every post with the word, so the round keeps main's order (titles, needs,
+  advice, warnings) until the budget is spent. For a blush-like request (a test with 110 posts a community) that is 1
+  title search, 11 advice searches and 4 warnings, and the three big advice threads rank first. (c) Its threads are
+  chosen to fit the 15 Gemini calls (engine.on_demand.within_calls: a thread is one call per 40 comments read, at most
+  150 comments, so a big one is 4), counting the threads an earlier try already read, and a thread whose calls would
+  pass them is left unread with a note; in the test job a blush-like request makes 16 searches and 14 Gemini calls and
+  reads 3 of the 4 big advice threads (a fourth, 4 calls more, would pass the 15), a small advice thread and a small
+  post. (d) A request cut short (round 1's (5)) and waiting an hour for its next try is told the wait of that try (an
+  hour from the last one plus the first-in-line 25 minutes), not 25 minutes. Round 1's other on-demand fix (the
+  bundle's own threads not counted as baked into the site) stays.
+  (3) "Yes, all 11": the threads of the other 11 makeup types are to be read (batches 2 to 7: bronzer, highlighter,
+  foundation, concealer, setting powder, setting spray, makeup primer, mascara, eyeliner, brow pencil, lipstick;
+  bronzer, highlighter and setting powder the new types). Recorded here only: that data round is its own step, under
+  the cost rules (Sonnet helpers, no builder reading thread text).
+  Also, technical calls, reported: the daily pre-check reads the quotes of "blush", "blush for fair skin" and "cream
+  blush" ahead first, without warming them (config.PRECHECK_FIRST_REQUESTS; engine/data/demo_requests.json is left
+  alone, the answers' memory being nearly full), so their quotes have the 48-hour embed check before a visitor asks;
+  the advice tests' two titles that were near copies of real r/Sephora threads, and two titles in code comments and
+  a makeup test, are made up now (dated notes in the tests). Open, for Noemi: should an old makeup comment be at most
+  a medium voice, as an old skincare or haircare one is (OLD_SKINCARE_POST_MAX_VOICE)? Makeup's threads already lose
+  the ranking's old-post points (round 1's (6)); its voices were left as they were, since the voice rubric is hers.

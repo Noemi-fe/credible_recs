@@ -3,19 +3,24 @@ results for the same need were big Reddit threads in r/Makeup and r/Sephora; her
 
 1. The communities. r/Makeup (general makeup questions) and r/Sephora (a shoppers' community, not run by the retailer)
    are where those threads are; neither was a decided subreddit, so the archive reader refused to read them. They are
-   general-category subreddits now (PROPOSED until Noemi says yes), and r/AsianBeauty, decided for skincare already, is
-   listed for the general category too, last, for foundation, concealer, mascara and lipstick. r/MakeupRehab, a no-buy
-   community, stays decided but no makeup type searches it.
+   general-category subreddits now, and r/AsianBeauty, decided for skincare already, is listed for the general category
+   too, last, for foundation, concealer, mascara and lipstick (decided by Noemi, 4 Nov 2026: "Yes, plus r/AsianBeauty").
+   r/MakeupRehab, a no-buy community, stays decided but no makeup type searches it.
 2. The types. Bronzer was folded into blush and the setting powders into setting spray, so a "bronzer" request was
    answered with blushes; highlighters had no type. Bronzer, highlighter and setting powder are types of their own,
    blush and setting spray lose the names that were someone else's, and every makeup type's title words include its
    plural ("blushes": Arctic Shift's title search matches whole words only).
-3. Makeup is reformulated as skincare and haircare are: an old makeup thread loses the ranking's old-post points.
+3. Makeup is reformulated as skincare and haircare are, for the ranking of threads only: an old makeup thread loses the
+   ranking's old-post points. The voice's old-post cap (engine/credibility.py) still applies to skincare and haircare
+   comments only, so an old makeup comment can still count as a high voice: an open question for Noemi, unchanged.
+4. The pre-check reads the blush answers' quotes ahead, first (4 Nov 2026), without warming them: the answers' memory is
+   nearly full, so they are not in engine/data/demo_requests.json.
 
 Every post, title and comment here is made up.
 """
 
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 
@@ -57,6 +62,35 @@ def test_a_sephora_thread_is_read_not_refused(tmp_path):
     service = FakeArchive(posts={"1seph01": post}, trees={"1seph01": tree})
     thread = make_archive(tmp_path, service).get_thread("1seph01", "Sephora")
     assert (thread.id, thread.community, thread.category) == ("1seph01", "Sephora", "general")
+
+
+def test_the_makeup_communities_are_decided_not_proposed():
+    # Noemi, 4 Nov 2026: "Yes, plus r/AsianBeauty".
+    text = (Path(config.__file__)).read_text(encoding="utf-8")
+    first = text.index("# 4 Nov 2026 (Noemi's report about \"blush\"")
+    note = text[first:text.index('"Makeup", "Sephora", "AsianBeauty",', first)]
+    assert "PROPOSED" not in note and "Decided by Noemi, 4 Nov 2026" in note
+
+
+def test_a_thread_read_in_asian_beauty_for_a_makeup_request_is_a_general_thread_the_library_accepts(tmp_path):
+    from engine.gold import load_threads
+    from engine.library import _save
+    from engine.sources import for_request
+
+    post = archive_post("1asb01", subreddit="AsianBeauty", title="Which cushion foundation suits oily skin?")
+    tree = [node(raw_comment("c1", "t3_1asb01", body="A made-up comment about a cushion.", post_id="1asb01",
+                             subreddit="AsianBeauty"))]
+    service = FakeArchive(posts={"1asb01": post}, trees={"1asb01": tree})
+    thread = make_archive(tmp_path, service).get_thread("1asb01", "AsianBeauty")
+    assert thread.category == "skincare"  # the archive reader names it by the community alone
+    kept = for_request(thread, parse_query("foundation for oily skin"))
+    assert (kept.community, kept.category) == ("AsianBeauty", "general")
+    _save(kept, tmp_path / "library")
+    problems: list[str] = []
+    [loaded] = load_threads(tmp_path / "library" / "threads", skip_broken=True, problems=problems)
+    assert loaded.category == "general" and problems == []  # r/AsianBeauty is one of the general subreddits
+    # A skincare request reading the same community keeps it skincare.
+    assert for_request(thread, parse_query("sunscreen for oily skin")).category == "skincare"
 
 
 def test_makeup_rehab_stays_decided_but_no_makeup_type_searches_it():
@@ -150,7 +184,9 @@ def _posted(year: int, title: str, subreddit: str) -> dict:
 
 def test_an_old_makeup_thread_loses_the_old_post_points_a_recent_one_keeps():
     blush = parse_query("blush")
-    new, old = (post_score(blush, _posted(year, "Favorite blush?", "Sephora"), now=NOW) for year in (2025, 2020))
+    # Changed on purpose, 4 Nov 2026: the title was close to a real thread's; a made-up one tests the same.
+    new, old = (post_score(blush, _posted(year, "Which blush gets the most love here?", "Sephora"), now=NOW)
+                for year in (2025, 2020))
     assert new - old == pytest.approx(1.5)
     assert "blush" in config.REFORMULATED_TYPES and "general" not in config.REFORMULATED_CATEGORIES
 
@@ -164,3 +200,19 @@ def test_an_old_hair_dryer_thread_keeps_its_points():
 def test_the_reformulated_types_are_the_makeup_types():
     assert set(config.REFORMULATED_TYPES) == set(MAKEUP_TYPES)
     assert all(_entry(name)["category"] == "general" for name in config.REFORMULATED_TYPES)
+
+
+# --- 4. The blush answers are checked ahead ---
+
+def test_the_blush_requests_are_checked_ahead_first_without_being_warmed():
+    import json
+
+    from engine import precheck
+
+    blush = ("blush", "blush for fair skin", "cream blush")
+    assert config.PRECHECK_FIRST_REQUESTS == blush
+    listed, first = precheck.requests_to_check(), precheck.first_requests()
+    assert set(blush) <= set(listed) and set(blush) <= first
+    assert len(listed) <= config.PLAN_MAX_REQUESTS
+    demo = json.loads(precheck.DEMO_FILE.read_text(encoding="utf-8"))
+    assert not set(blush) & set(demo["demo"] + demo["interviewee"])  # not warmed: the answers' memory is nearly full

@@ -91,13 +91,14 @@ SUBREDDITS: dict[str, tuple[str, ...]] = {
         "drugstoreMUA", "Fragrance", "MakeupAddiction", "MakeupRehab", "malegrooming", "RedditLaqueristas",
         "wicked_edge", "HaircareScience", "curlyhair", "Hair", "femalehairadvice", "SkincareAddiction",
         # 4 Nov 2026 (Noemi's report about "blush": Google's top threads for it were in r/Makeup and r/Sephora, which
-        # the archive reader refused to read; chosen by Claude, PROPOSED until Noemi says yes): r/Makeup, the general
-        # makeup questions community, and r/Sephora, a shoppers' community (not run by the retailer), searched first
-        # for every makeup type (engine/data/product_types.json). r/AsianBeauty is skincare's already (category_for
-        # still gives "skincare"): listed here too, last, so foundation, concealer, mascara and lipstick requests may
-        # search it and a thread read there for them takes the general category (engine.sources.for_request). Not
-        # used: r/BeautyGuruChatter (influencer talk), r/Ulta (store staff), r/makeupexchange (selling). r/MakeupRehab
-        # stays decided, but no makeup type searches it any more: a no-buy community.
+        # the archive reader refused to read; proposed by Claude. Decided by Noemi, 4 Nov 2026: "Yes, plus
+        # r/AsianBeauty"): r/Makeup, the general makeup questions community, and r/Sephora, a shoppers' community (not
+        # run by the retailer), searched first for every makeup type (engine/data/product_types.json). r/AsianBeauty is
+        # skincare's already (category_for still gives "skincare", its first): listed here too, last, so foundation,
+        # concealer, mascara and lipstick requests search it, and a thread read there for them is kept as a general
+        # thread (engine.sources.for_request), which the library's checks accept because it is listed here. Not used:
+        # r/BeautyGuruChatter (influencer talk), r/Ulta (store staff), r/makeupexchange (selling). r/MakeupRehab stays
+        # decided, but no makeup type searches it any more: a no-buy community.
         "Makeup", "Sephora", "AsianBeauty",
         # hobbies
         "astronomy", "boardgames", "DigitalArt", "drums", "fountainpens", "Guitar", "notebooks", "pens", "piano",
@@ -341,7 +342,9 @@ REFORMULATED_CATEGORIES = ("skincare", "haircare")
 # 4 Nov 2026 (makeup coverage, chosen by Claude, reported to Noemi): the general category's makeup types are
 # reformulated too (shades and formulas change, lines are discontinued), so the ranking's old-post penalty applies to
 # their threads as well (engine.sources.rank_posts): a 2020 blush thread no longer outranks a 2025 one of the same
-# size. The rest of the general category keeps no age penalty, and the voice's old-post cap is unchanged.
+# size. Only that: the rest of the general category keeps no age penalty, and the voice's old-post cap
+# (OLD_SKINCARE_POST_MAX_VOICE, engine/credibility.py) still applies to skincare and haircare comments only, so an old
+# makeup comment can still be a high voice. Whether it should is an open question for Noemi (DECISIONS.md, 4 Nov 2026).
 REFORMULATED_TYPES = ("foundation", "concealer", "mascara", "lipstick", "eyeliner", "eyeshadow", "makeup primer",
                       "brow pencil", "blush", "bronzer", "highlighter", "setting powder", "setting spray")
 
@@ -656,6 +659,11 @@ PRECHECK_PLAN_MINUTES = 30
 # own types. Types the log names later are checked too wherever the log is. Since 14 Oct 2026 the air fryer, slow
 # cooker, toaster, blender, food processor, rice cooker and stand mixer are module 1's own types (checked ahead as such).
 PRECHECK_MODEL_TYPES = ("body wash",)
+# Requests checked ahead first, beside the blind-test, demo and interviewee ones (engine.precheck.first_requests), but
+# never warmed: the answers' memory is nearly full (engine/data/demo_requests.json: 62 of its 64 types), so they are not
+# in that file (4 Nov 2026, the makeup threads work, Claude's call, reported to Noemi): the blush answers, which read 10
+# new threads whose quotes had never had their 48-hour embed check, so a visitor's first blush answer finds them ready.
+PRECHECK_FIRST_REQUESTS = ("blush", "blush for fair skin", "cream blush")
 # Comments the embed page can't show ("Not supported comment", about 1 in 8), verified through Bright Data by the
 # pre-check (Noemi, 13 Oct 2026: "Use Bright Data"): their threads are read as Reddit shows them now, likeliest to be
 # shown first. Its free tier is 5,000 records a month, shared with the library's own reads (3,972 used by 13 Oct 2026),
@@ -1905,13 +1913,14 @@ ARCHIVE_SPLIT_DEPTH = 2
 ARCHIVE_NEED_WORDS = 2
 # 4 Nov 2026 (Noemi's report about "blush", chosen by Claude, reported to her): a request with no need words ("blush")
 # had no need searches, and for a type people post about every day round 1's newest 100 posts are the last few weeks:
-# the big "your favorite blush?" threads Google showed her, one or two years old, were out of reach. The archive's round
-# also searches the type's first two title words with each of these advice words ("blush favorite", "blushes
-# favorite", "blush recommendations"), subreddit by subreddit, over the whole history (few posts match both, so they
-# don't time out), at most ARCHIVE_ADVICE_SEARCHES of them; a post only they find must read as a question for advice
-# (engine.sources.search_archive). "recommendations" before "best": with a plural and four communities, the first 12
-# are "favorite" with both words and "recommendations" with the first, which reached all three of the threads Google
-# showed (the plan's discovery of 4 Nov 2026); "best" comes first for a type with one title word or fewer communities.
+# the big threads asking for people's favourite blushes that Google showed her, a year or two old, were out of reach.
+# The archive's round also searches the type's first two title words with each of these advice words ("blush
+# favorite", "blushes favorite", "blush recommendations"), subreddit by subreddit, over the whole history (few posts
+# match both, so they don't time out), at most ARCHIVE_ADVICE_SEARCHES of them; a post only they find must read as a
+# question for advice (engine.sources.search_archive). "recommendations" before "best": with a plural and four
+# communities, the first 12 are "favorite" with both words and "recommendations" with the first, which reached all
+# three of the threads Google showed (the plan's discovery of 4 Nov 2026); "best" comes first for a type with one title
+# word or fewer communities. On-demand reading asks them inside its budget (ON_DEMAND_SEARCH_CALLS, 4 Nov 2026).
 ARCHIVE_ADVICE_WORDS = ("favorite", "recommendations", "best")
 ARCHIVE_ADVICE_SEARCHES = 12
 # 12 Oct 2026: a title search over a big subreddit's whole history timed out, one bounded by dates didn't (r/curlyhair,
@@ -2250,18 +2259,21 @@ ON_DEMAND_GEMINI_CALLS_A_MINUTE = 10
 # (ON_DEMAND_MONTH_SECONDS) is then what limits the reading, not Gemini: 39 requests a month at these 21 minutes (about
 # twice that at the 11 a request actually takes), and the visitor is told so (engine.on_demand.products_a_month). These
 # numbers describe the reader above; a different reader changes them (and the cap) together.
-# Timed again on 4 Nov 2026 (built by Claude, branch makeup-threads), when the archive reader's searches grew by the
-# advice searches (ARCHIVE_ADVICE_SEARCHES): a "blush" request's search round took 455 and 876 seconds (8 and 15
-# minutes; 22 and 41 calls, at least 10 seconds apart, on a busy archive that timed out on most of r/Makeup's searches),
-# and reading six threads is about 2 minutes more, so 17 minutes of Arctic Shift (6 until then). The advice searches
-# find the big threads asking for recommendations: a thread of 150 comments or more is 4 calls (EXTRACT_MAX_COMMENTS
-# over 40 a call), six are 24 calls (15 until then; the blush round's six, four of them 107 to 238 comments, were 17).
-# So a request is 41 minutes of the job (21 until then): the first in line is told about 45 minutes (25), each one
-# ahead 41 more (21); Gemini's calls read 18 requests a day (30), the month's job time 20 (39). The minute a call is
-# still the safe one: a call took 10 to 25 seconds.
-ON_DEMAND_CALLS_PER_PRODUCT = 24
+# 4 Nov 2026 (Noemi: "Keep 25 min"): round 1 of the makeup work had added the archive reader's advice searches
+# (ARCHIVE_ADVICE_SEARCHES) on top of a request's round and timed it on a busy archive (17 minutes of Arctic Shift, 24
+# calls for six big threads: 45 minutes told, 18 a day, 20 a month). She kept main's numbers, the ones below, so the
+# round stays inside them: its searches are at most ON_DEMAND_SEARCH_CALLS calls, every call counted (main's own
+# "blush" round: 12 title searches over its two date windows and 4 warning searches; halves of a search that timed out
+# and a busy archive's second chances included, a search the 48-hour cache holds costing none), with the advice
+# searches before the title searches when the type's word is common (engine.sources.search_archive); and the threads
+# it reads are chosen so that their extraction fits ON_DEMAND_CALLS_PER_PRODUCT calls (engine.on_demand.within_calls:
+# a thread of 150 comments or more is 4 calls). The sum stays honest on a busy archive too: 16 searches and 12 reads
+# at the 15 to 20 seconds a call took on 4 Nov is 7 to 9 minutes, 1 to 3 over the 6, which the 15 calls at a told
+# minute each (10 to 25 seconds really) more than make up.
+ON_DEMAND_CALLS_PER_PRODUCT = 15
 ON_DEMAND_CALL_MINUTES = 1
-ON_DEMAND_ARCHIVE_MINUTES = 17
+ON_DEMAND_ARCHIVE_MINUTES = 6
+ON_DEMAND_SEARCH_CALLS = 16
 ON_DEMAND_PRODUCT_MINUTES = ON_DEMAND_ARCHIVE_MINUTES + ON_DEMAND_CALLS_PER_PRODUCT * ON_DEMAND_CALL_MINUTES
 GEMINI_RESET_HOUR_UTC = 8
 # The bundle holds at most this many threads not baked into the site's image yet: past it the job reads no new request

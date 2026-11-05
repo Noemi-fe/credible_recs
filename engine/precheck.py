@@ -130,7 +130,8 @@ from engine.config import (BRIGHT_DATA_BATCH_THREADS, LIBRARY_UNREADABLE_LAPSE_D
                            PRECHECK_BRIGHT_DATA_GONE_DAYS, PRECHECK_BRIGHT_DATA_MAX_THREADS,
                            PRECHECK_BRIGHT_DATA_SKIP_DAYS, PRECHECK_BRIGHT_DATA_RECORDS, PRECHECK_FRESH_HOURS,
                            PRECHECK_MAX_READS, PRECHECK_MAX_RUN_MINUTES, PRECHECK_MAX_WAIT_SECONDS,
-                           PRECHECK_MODEL_TYPES, PRECHECK_PLAN_MINUTES, PRECHECK_STOP_AFTER_UNKNOWN,
+                           PRECHECK_FIRST_REQUESTS, PRECHECK_MODEL_TYPES, PRECHECK_PLAN_MINUTES,
+                           PRECHECK_STOP_AFTER_UNKNOWN,
                            READ_AHEAD_AGAIN_HOURS)
 from engine.library import DEFAULT_LIBRARY_DIR
 from engine.live_check import LiveResult, checker_from_env
@@ -254,13 +255,15 @@ def requests_to_check(questions: Path = QUESTIONS_FILE, latency: Path = LATENCY_
     (the blind-test questions), the latency eval's requests, module 1's product types, the open model's types in the
     library's request log, config.PRECHECK_MODEL_TYPES, since 19 Oct 2026 (round 3) the demo and interviewee requests
     (DEMO_FILE: their answers' comments, with the blind-test questions', are read before every other's whatever their
-    place here, Candidate.first), then the ingredient eval's requests (13 Oct 2026: ingredient-led answers read
-    skincare threads of every type). A missing file adds nothing."""
+    place here, Candidate.first; and since 4 Nov 2026 config.PRECHECK_FIRST_REQUESTS, read first too but never warmed),
+    then the ingredient eval's requests (13 Oct 2026: ingredient-led answers read skincare threads of every type). A
+    missing file adds nothing."""
     found = [q["text"] for q in _read_json(questions).get("questions", [])]
     found += [q["text"] for q in _read_json(latency).get("queries", [])]
     found += [p.name for p in PRODUCT_TYPES]
     found += _logged_types(Path(library_dir) / "requests.jsonl")
     found += list(PRECHECK_MODEL_TYPES)
+    found += list(PRECHECK_FIRST_REQUESTS)
     found += _demo_requests(demo)
     found += [q["text"] for q in _read_json(ingredients).get("cases", [])]
     return list(dict.fromkeys(text.strip() for text in found if text and text.strip()))
@@ -268,8 +271,11 @@ def requests_to_check(questions: Path = QUESTIONS_FILE, latency: Path = LATENCY_
 
 def first_requests(questions: Path = QUESTIONS_FILE, demo: Path = DEMO_FILE) -> set[str]:
     """The requests whose answers' quotes are read before every other request's (Candidate.first; 19 Oct 2026, round
-    3): the blind-test questions and the demo and interviewee requests, as typed."""
+    3): the blind-test questions and the demo and interviewee requests, as typed; and since 4 Nov 2026
+    config.PRECHECK_FIRST_REQUESTS (the blush requests: read first, but not warmed, the answers' memory being nearly
+    full)."""
     found = [q["text"] for q in _read_json(questions).get("questions", [])] + _demo_requests(demo)
+    found += list(PRECHECK_FIRST_REQUESTS)
     return {text.strip() for text in found if text and text.strip()}
 
 

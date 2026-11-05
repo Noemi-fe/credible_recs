@@ -56,8 +56,7 @@ on_demand_bucket() {
 
 # The reading job, on the image the site now runs: `python -m engine.on_demand run`, never retried by Cloud Run (the
 # site and the keep-warm ping start it again), 45 minutes at most a run (it starts no new reading after 15, and one
-# took about 12 on 25 Oct 2026; with the advice searches of 4 Nov 2026, up to about 27 on a busy archive: 15 minutes of
-# searches, 2 of reads and 24 Gemini calls at their slowest). Billed for its whole run, waiting included, so the least that works: 1 vCPU (a job's minimum) and
+# takes about 12). Billed for its whole run, waiting included, so the least that works: 1 vCPU (a job's minimum) and
 # 1 GiB (it never loads the open model). Its one secret is the Gemini key, which RUNNER may read; the site, which also
 # runs as RUNNER, may start it. No schedule of its own: Cloud Scheduler's keep-warm ping drives the retries.
 on_demand_job() {
