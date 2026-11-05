@@ -9617,9 +9617,7 @@
    "keywords": [
     "lipstick",
     "liquid lipstick",
-    "lip tint",
     "lip gloss",
-    "lip stain",
     "lip liner",
     "lipsticks",
     "lip crayon",
@@ -9628,8 +9626,34 @@
    "title_words": [
     "lipstick",
     "lipsticks",
-    "lip tint",
     "lip gloss"
+   ],
+   "subreddits": [
+    "Makeup",
+    "Sephora",
+    "MakeupAddiction",
+    "drugstoreMUA",
+    "AsianBeauty"
+   ]
+  },
+  {
+   "name": "lip tint",
+   "plural": "lip tints",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "lip tint",
+    "lip tints",
+    "lip stain",
+    "lip stains",
+    "water tint",
+    "water tints"
+   ],
+   "title_words": [
+    "lip tint",
+    "lip tints",
+    "lip stain",
+    "lip stains"
    ],
    "subreddits": [
     "Makeup",
@@ -9867,19 +9891,44 @@
    "keywords": [
     "brow pencil",
     "eyebrow pencil",
-    "brow gel",
-    "eyebrow gel",
     "brow pomade",
     "brow pen",
     "eyebrow pen",
-    "brow pencils",
-    "brow wax",
-    "brow soap"
+    "brow pencils"
    ],
    "title_words": [
     "brow",
-    "eyebrow",
-    "brow gel"
+    "eyebrow"
+   ],
+   "subreddits": [
+    "Makeup",
+    "Sephora",
+    "MakeupAddiction",
+    "drugstoreMUA"
+   ]
+  },
+  {
+   "name": "brow gel",
+   "plural": "brow gels",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "brow gel",
+    "brow gels",
+    "eyebrow gel",
+    "eyebrow gels",
+    "eye brow gel",
+    "clear brow gel",
+    "tinted brow gel",
+    "brow glue",
+    "brow soap",
+    "brow wax",
+    "brow mascara"
+   ],
+   "title_words": [
+    "brow gel",
+    "brow gels",
+    "eyebrow gel"
    ],
    "subreddits": [
     "Makeup",

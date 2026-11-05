@@ -1,4 +1,4 @@
-Version: extract-v16
+Version: extract-v17
 
 # Finding product mentions in one Reddit thread
 
@@ -151,11 +151,12 @@ Use one of these names, written exactly as here, when it fits:
   "tape measure", "laser level", "stud finder", "shop vac", "pressure washer", "ladder", "soldering iron",
   "multimeter", "glue gun", "lawn mower", "robot lawn mower", "string trimmer", "hedge trimmer", "leaf blower",
   "chainsaw", "garden hose", "pruners", "garden furniture", "fire pit", "wheelbarrow", "spade"
-- general, beauty and personal care (v12; bronzer, highlighter and setting powder v16): "hair dryer",
-  "hair straightener", "curling iron", "hot air brush", "hair brush", "electric toothbrush", "water flosser", "razor",
-  "electric shaver", "beard trimmer", "shaving cream", "deodorant", "perfume", "foundation", "concealer", "mascara",
-  "lipstick", "eyeliner", "eyeshadow", "blush", "bronzer", "highlighter", "setting powder", "setting spray",
-  "makeup primer", "brow pencil", "makeup brush", "makeup sponge", "nail polish", "nail lamp", "epilator", "ipl device"
+- general, beauty and personal care (v12; bronzer, highlighter and setting powder v16; lip tint and brow gel v17):
+  "hair dryer", "hair straightener", "curling iron", "hot air brush", "hair brush", "electric toothbrush",
+  "water flosser", "razor", "electric shaver", "beard trimmer", "shaving cream", "deodorant", "perfume", "foundation",
+  "concealer", "mascara", "lipstick", "lip tint", "eyeliner", "eyeshadow", "blush", "bronzer", "highlighter",
+  "setting powder", "setting spray", "makeup primer", "brow pencil", "brow gel", "makeup brush", "makeup sponge",
+  "nail polish", "nail lamp", "epilator", "ipl device"
 - general, hobbies (v12; whittling knife and craft knife v13): "guitar", "guitar amp", "digital piano",
   "sewing machine", "board game", "jigsaw puzzle", "fountain pen", "notebook", "telescope", "drawing tablet",
   "electronic drum kit", "whittling knife", "craft knife"
@@ -192,6 +193,9 @@ panini press a "sandwich maker", a contact or indoor grill an "electric grill", 
 immersion circulator a "sous vide cooker", a hand or stick blender an "immersion blender", a deep fat fryer a
 "deep fryer", a microplane a "grater", a corkscrew a "wine opener", butter and table knives "cutlery", plates and
 crockery "dinnerware", wine, beer or whisky glasses a "wine glass"; a camping pot, pan or kettle "camping cookware".
+The v17 names cover theirs: a lip stain or a water, jelly or velvet tint is a "lip tint", not a "lipstick"; a brow
+soap, brow wax, brow glue or brow mascara, clear or tinted, is a "brow gel", not a "brow pencil", and so is a hair gel
+a writer uses on their brows, in their comment.
 
 When you're not sure (Noemi, 9 Oct 2026): assume a product is of the thread's type unless the comment or its name
 says otherwise. If you still can't tell what a product is, or whether a name is a real product at all, look it up
@@ -328,7 +332,7 @@ comment (there's no one left to credit), and agreement with a comment other than
 ```json
 {
   "thread_id": "<the thread's id>",
-  "instructions_version": "extract-v16",
+  "instructions_version": "extract-v17",
   "extracted_at": "<now, ISO 8601 in UTC, e.g. 2026-10-08T10:00:00Z>",
   "extractor": "claude-code",
   "mentions": [

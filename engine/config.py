@@ -335,18 +335,25 @@ DOWNVOTED_BELOW = 0  # a score under this (more downvotes than upvotes) is "down
 
 # Recency (the guide: "recent" = the last 2-3 years). Decided by Noemi, 9 Oct 2026.
 VOICE_RECENT_YEARS = 3  # a comment written within this many years of collection is "recent"; older is "old post"
-OLD_SKINCARE_POST_MAX_VOICE = "medium"  # formulas change, so an old skincare comment can't be high
+# Formulas change, so an old comment about a reformulated product can't be high: an old skincare or haircare comment
+# (REFORMULATED_CATEGORIES), and since 5 Nov 2026 an old comment counted for a makeup request (REFORMULATED_TYPES).
+OLD_SKINCARE_POST_MAX_VOICE = "medium"
 # The categories whose formulas change, so OLD_SKINCARE_POST_MAX_VOICE and the ranking's old-post penalty apply to them
 # (haircare added by Claude on 11 Oct 2026, reported to Noemi: shampoos are reformulated as skincare is).
 REFORMULATED_CATEGORIES = ("skincare", "haircare")
 # 4 Nov 2026 (makeup coverage, chosen by Claude, reported to Noemi): the general category's makeup types are
 # reformulated too (shades and formulas change, lines are discontinued), so the ranking's old-post penalty applies to
 # their threads as well (engine.sources.rank_posts): a 2020 blush thread no longer outranks a 2025 one of the same
-# size. Only that: the rest of the general category keeps no age penalty, and the voice's old-post cap
-# (OLD_SKINCARE_POST_MAX_VOICE, engine/credibility.py) still applies to skincare and haircare comments only, so an old
-# makeup comment can still be a high voice. Whether it should is an open question for Noemi (DECISIONS.md, 4 Nov 2026).
-REFORMULATED_TYPES = ("foundation", "concealer", "mascara", "lipstick", "eyeliner", "eyeshadow", "makeup primer",
-                      "brow pencil", "blush", "bronzer", "highlighter", "setting powder", "setting spray")
+# size. The rest of the general category keeps no age penalty.
+# 5 Nov 2026 (Noemi, "Yes, like skincare (Recommended)", asked "Old skincare and haircare comments count as medium
+# voices at most, because formulas change. Should old makeup comments work the same way?"): the voice's old-post cap
+# (OLD_SKINCARE_POST_MAX_VOICE, engine/credibility.py) applies to makeup too. A makeup thread is a general thread, so the
+# cap goes by the request: every comment an answer for one of these types counts (engine.pipeline._score, and its care
+# tips) is at most a medium voice when it is old, as every comment of a skincare or haircare thread is.
+# Lip tint and brow gel (Noemi's "Split both (Recommended)", 5 Nov 2026) are makeup types of their own.
+REFORMULATED_TYPES = ("foundation", "concealer", "mascara", "lipstick", "lip tint", "eyeliner", "eyeshadow",
+                      "makeup primer", "brow pencil", "brow gel", "blush", "bronzer", "highlighter", "setting powder",
+                      "setting spray")
 
 # The comment's words. Decided by Noemi, 9 Oct 2026.
 ENTHUSIAST_MIN_TERMS = 3  # using this many of the category's specialist words shows an "enthusiast"
@@ -1813,6 +1820,16 @@ EXTRACT_STILL_CURRENT: dict[str, dict[str, tuple[str, ...]]] = {
                     "extract-v13": THREAD_CATEGORIES, "extract-v12": THREAD_CATEGORIES, "extract-v11": _BEFORE_GENERAL,
                     "extract-v10": _BEFORE_GENERAL, "extract-v9": _BEFORE_GENERAL,
                     "extract-v8": ("skincare", "kitchen")},
+    # v17 (5 Nov 2026, Noemi's "Split both (Recommended)") adds the names of module 1's two new makeup types, "lip tint"
+    # (tints and stains, out of lipstick) and "brow gel" (gels, soaps, waxes and glues, out of brow pencil), to the list
+    # the AI types products with. Under v16 the AI had typed them "lipstick" and "brow pencil", so the library's
+    # extractions are brought to v17 by command, as v14's lip balms were: `python -m engine.makeup_types retype` re-types
+    # the tints and gels, judged by their names and their threads' titles. So every v16 extraction stays current, of all
+    # four categories, and the older ones as under v16. Decided by Claude, reported.
+    "extract-v17": {"extract-v16": THREAD_CATEGORIES, "extract-v15": THREAD_CATEGORIES,
+                    "extract-v14": THREAD_CATEGORIES, "extract-v13": THREAD_CATEGORIES,
+                    "extract-v12": THREAD_CATEGORIES, "extract-v11": _BEFORE_GENERAL, "extract-v10": _BEFORE_GENERAL,
+                    "extract-v9": _BEFORE_GENERAL, "extract-v8": ("skincare", "kitchen")},
 }
 
 # --- Going live (Noemi, 11 Oct 2026) ---
@@ -3272,3 +3289,18 @@ TIP_HEALTH_SCARE_WORDS = ("asbestos", "carcinogen", "carcinogenic", "cancer", "c
 # or matte"): what the form refuses, as engine.answer._asked_and_refused reads refused things, for the makeup types only.
 TIP_FORM_OPPOSITES: dict[str, tuple[str, ...]] = {"cream": ("powder", "pressed", "baked"),
                                                   "liquid": ("powder", "pressed", "baked")}
+
+# --- Noemi's answers of 5 Nov 2026, about 00:25 (the makeup fix round, part 3) ---
+# (B) The need-fit rule, built but OFF (Noemi, asked "The top 'cream blush' pick has no voices about cream. Should a top
+# pick need at least one credible voice that fits what was asked (cream, fair skin, oily skin) before it's shown?":
+# "Yes, measure first (Recommended)": built, measured across the whole site, and switched on only if she agrees). On,
+# a product that meets the picks bar can be a pick only when at least one of its credible recommendations talks about
+# one of the request's needs in its own words, read as the reason line reads "3 of them about fair skin"
+# (engine.pipeline._fits_the_need; a two-word need of NEED_PHRASES_WHOLE read whole: "dark" alone is no dark-circles
+# voice; a thread's title asking for the need is not enough, unlike the need rule's reading of Noemi's decision (d) of
+# 19 Oct 2026, since her question was about voices). One that has none is no pick: it is listed first under Also worth a
+# look, as a product meeting the bar but ranked below the picks is (engine.rank.ProductScore.fits_need). Where the need
+# rule already holds (NEED_RULE_IN_EVERY_READING's skincare and haircare, and every wider reading), such a product is
+# left out altogether before this rule looks, so there it changes only what its stricter reading changes (a two-word
+# need read whole, a thread's title not enough). A request naming no need is as before.
+NEED_FIT_FOR_PICKS = False

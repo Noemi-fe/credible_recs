@@ -1464,3 +1464,117 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   room; the Haus Labs foundation pick for oily skin still shows no oily-skin quote, as its oily-skin quote doesn't name
   the product and quotes naming their product come first (_naming_first's tiers). The sweeps, the frozen store's copy
   and this round's scratch files hold commenters' words and writers' names: they go to the Trash with the deletion rule.
+- 5 Nov 2026, early morning, the makeup fix round, part 3: Noemi's four answers of about 00:25 (Claude, builder 3;
+  branch makeup-threads; nothing pushed, merged or deployed). Her answers are quoted as she gave them; everything else
+  is Claude's technical call, reported to her. No scoring weight but (D), no product type but (A), no rule about no-buy
+  communities, no told number, no new call by the engine and the 48-hour quote rule untouched. Values in
+  engine/config.py; tests in engine/tests/test_makeup_split.py (made-up text).
+  (A) Asked "Lip tint is filed under lipstick and brow gel under brow pencil, so those requests get the wrong products.
+  Should I give them their own types?", Noemi: "Split both (Recommended)". Module 1 has two more makeup types
+  (engine/data/product_types.json, 401 to 403): "lip tint" (lip tint, lip stain, water tint and their plurals; r/Makeup,
+  r/Sephora, r/MakeupAddiction, r/drugstoreMUA, then r/AsianBeauty, as lipstick) and "brow gel" (brow gel, eyebrow gel,
+  clear and tinted brow gel, brow glue, soap, wax and mascara; the four makeup communities); lipstick and brow pencil
+  lost those words. Both are in config.REFORMULATED_TYPES, the pre-check's and on-demand reading's lists (which take
+  module 1's names) and the extraction instructions, now v17: a tint or stain is a "lip tint", a brow gel, soap, wax or
+  glue, or a hair gel a writer uses on their brows, a "brow gel" (config.EXTRACT_STILL_CURRENT keeps every older
+  extraction current, as v14 did). Claude's calls: a lip stain is a lip tint (shoppers use both words for the same
+  sheer, long-wearing products); a tinted lip balm stays a lip balm and a skin tint a foundation. No data file types
+  products by line, so the library's mentions were re-typed by command, as the SPF lip balms were on 15 Oct
+  (engine/makeup_types.py, `python -m engine.makeup_types retype [--write]`, ids and names only in its output): a
+  mention typed lipstick is a lip tint when its name says tint or stain, or names a tints-only line (Benetint, Peripera
+  Ink, Tony Moly Shocking Lip, Fenty Poutsicle), and doesn't say lipstick or crayon, or when the writer named the maker
+  alone ("Etude") in a thread whose title asks for lip tints; one typed brow pencil is a brow gel when its name names no
+  pencil form (pencil, pen, pomade, powder, paste, Brow Wiz, Dipbrow, micro, slim, styler...) and says gel, glue, soap,
+  wax, setter, laminator, freeze or mascara, or names a gel's line (Boy Brow, Gimme Brow, Brow Lift, Super Lock, Air
+  Brow...), or sits in a thread whose title asks for brow gels (there writers name their gel by the maker, "Benefit",
+  "Kosas", or a hair gel, got2b). Each was judged from its name, its thread's title and the extraction's own fields; no
+  quote was read. The shared library (backed up to the scratchpad first; each file written whole, then swapped in; only
+  "product_type" changed, versions and dates kept): 380 mentions in 17 extraction files (all v15), 158 lipstick to lip
+  tint (92 names, among them rom&nd Juicy Lasting Tint, rom&nd Glasting Water Tint, Peripera Ink Mood Glowy Tint,
+  Peripera Water Bare Tint, Dinto Blur Glowy tint, Laka Fruity Glam Tint, Etude Fixing Tint, Tony Moly Shocking Lip,
+  3CE Blur Water Tint, Milani Color Fetish Hydrating Lip Stain, Benefit Benetint, Fenty Poutsicle) and 222 brow pencil to
+  brow gel (105 names, among them Maybelline Super Lock Brow Glue, got2b Glue Spiking Gel, Glossier Boy Brow, Rare
+  Beauty eyebrow gel, Benefit brow gel, Ardell Brow Glue, NYX Brow Glue, Refy, e.l.f. Brow Lift, Maybelline Super Fluff,
+  Kosas Air Brow, NYX Thick It Stick It, Julep 101 brow sculpting stick and gel). Kept as they were: Kate Lip Monster and
+  the other lipsticks, balms and glosses of the lip tint threads, Colourpop's tint lip crayon, Rare Beauty's and Kosas's
+  brow pencils, Kevyn Aucoin's brow pen and gel duo, e.l.f.'s eyebrow paste. `engine.extract check` on the library:
+  93,773 of 94,276 mentions kept, 503 rejected, all from before (the 17 re-typed files: 1,479 kept, 12 rejected, the same
+  as before the change). Effect: "lip tint" (and "lip stain") is answered under "Top picks: lip tint" with rom&nd Juicy
+  Lasting Tint, Peripera Ink Mood Glowy Tint and rom&nd Glasting Water Tint (Also worth a look: Tony Moly Shocking Lip,
+  Etude Fixing Tint), where it was a lipstick answer led by MAC Ruby Woo; "lipstick" has no tint among its picks or
+  items (MAC Ruby Woo, Revlon Super Lustrous lipstick line, Clinique Almost Lipstick Black Honey; it showed rom&nd's and
+  Peripera's tints second and third); "brow gel" (and "eyebrow gel") is answered under "Top picks: brow gel" with
+  Maybelline Super Lock Brow Glue, Benefit brow gel line and got2b Glue Spiking Gel (Also worth a look: Kosas Air Brow,
+  e.l.f. Brow Lift, got2b Glued Brows & Edges), where the Benefit and Anastasia Beverly Hills brow pencil lines were
+  picks; "brow pencil" still answers with pencils, Benefit Precisely My Brow, Anastasia Beverly Hills Brow Wiz and NYX
+  Lift and Snatch (it had Super Lock Brow Glue first). The kinds the home page counts ("about 350 kinds of product":
+  types with 6 or more saved threads, engine.library coverage) are 366 before and 368 after, inside the 330 to 370 that
+  keeps "about 350", near its top. Found: lip tint has 3 threads about it, brow gel 5 and brow pencil 3 now (lipstick
+  had 14 and brow pencil 8), under on-demand reading's bar of 6, so on the site their first visitor queues an on-demand
+  reading, as for any thin type; the answers above already have 3 picks each, so no data round was asked for.
+  (D) Asked "Old skincare and haircare comments count as medium voices at most, because formulas change. Should old
+  makeup comments work the same way?", Noemi: "Yes, like skincare (Recommended)". A makeup thread is a general one, so
+  the cap goes by the request: every comment an answer for one of the 15 makeup types counts (picks, items, warnings,
+  care tips) is at most a medium voice when it is more than VOICE_RECENT_YEARS (3) years old
+  (engine.credibility.score_voice's `reformulated`, engine.pipeline._reformulated). config.py no longer says the cap is
+  skincare and haircare only, and the how-we-score page's "Skincare formulas change, so a skincare comment older than 3
+  years is medium at most" (already short of haircare) now reads "Skincare, haircare and makeup formulas change, so a
+  comment about any of them older than 3 years is medium at most" (a wording fix with her answer). Effect, measured
+  with the cap switched off and on over the same code and library: 11 of the 15 makeup answers change, no other answer;
+  the high voices behind the 45 makeup picks fall from 407 to 330. Picks: bronzer's third (Makeup by Mario SoftSculpt
+  Skin Enhancer to NARS cream bronzer), setting spray's (Ben Nye Final Seal to ONE/SIZE On 'Til Dawn), brow gel's (Kosas
+  Air Brow to got2b Glue Spiking Gel) and lipstick's (Maybelline vinyl liquid lipstick to Clinique Almost Lipstick Black
+  Honey), and the order of cream blush's last two (Patrick Ta before Rare Beauty) and setting powder's first two (Huda
+  Beauty before Hourglass); Also worth a look in blush and blush for fair skin (Glossier Cloud Paint for Tower 28),
+  setting powder (Maybelline Fit Me Loose Powder for Wet n Wild Photo Focus), eyeliner (Urban Decay 24/7 Glide-On for
+  Wet n Wild Breakup Proof Skinny-Tip) and mascara (order); concealer for dark circles only in its voices (mascara's
+  three picks go from 34 high voices to 9, the same picks). Highlighter, foundation for oily skin, makeup primer for
+  large pores and lip tint are as they were.
+  (C) Asked about the lipstick answers quoting a care tip from r/MakeupRehab, Noemi: "Remove those 2 threads". 1co3r5i
+  and 1jlzpoa (thread and extraction files) moved to data/library/set_aside, the library's place for threads set aside
+  (14 Oct 2026); ids only here; no rule about no-buy communities. Measured alone against builder 2's code: the 15 makeup
+  answers keep their picks, order and Also worth a look; lipstick and lip tint lose that care tip (1jlzpoa was read by
+  the three blush answers too, unchanged); after the round no answer quotes or reads r/MakeupRehab (two quoted it
+  before, five read the two threads).
+  (B) Asked "The top 'cream blush' pick has no voices about cream. Should a top pick need at least one credible voice
+  that fits what was asked (cream, fair skin, oily skin) before it's shown?", Noemi: "Yes, measure first
+  (Recommended)". Built and off: config.NEED_FIT_FOR_PICKS = False. On, a product that meets the bar is a pick only when
+  at least one of its credible recommendations talks about one of the request's needs in its own words (a form, cream
+  or liquid; a skin type or tone; dark circles; curly hair; pet hair; lasting...), read as the reason line reads them (a
+  two-word need such as dark circles whole; praise of a feature for another product no fit), and one without heads Also
+  worth a look, labelled as meeting the bar, so nothing leaves the answer (engine.pipeline._fits_the_need,
+  engine.rank.ProductScore.fits_need). Claude's calls: a thread's title asking for the need is not enough, unlike the
+  need rule (her decision (d) of 19 Oct 2026), as her question was about voices: with titles counted, "cream blush"
+  would not change at all (its top pick, Milani's line, has one top-level answer in a thread asking for cream blushes and
+  no voice saying cream); a need that is a word of the product's name ("cream" of "cream blush") counts though the
+  reason line never names it. Measured on, against off, on the full 293 answers (235 with picks): 77 answers change their
+  picks (4 of the 15 makeup answers, 73 of the 220 others with picks), 43 their top pick (2 and 41), and 33 go from 3
+  picks to fewer (1 and 32), 7 of them to none (all non-makeup: microwave with a grill, air purifier for allergies,
+  webcam for video calls, fridge freezer that's quiet, wine cooler, automatic watch, dash cam with parking mode); answers
+  with fewer than 3 picks would go from 74 to 107. Makeup: cream blush (Milani blush line and Rare Beauty blush line to
+  Also worth a look; Patrick Ta blush line, Glossier Cloud Paint and Haus Labs blush line), blush for fair skin (Milani
+  and NARS Orgasm out, Patrick Ta and Haus Labs in), foundation for oily skin (NARS Light Reflecting out, Maybelline
+  Super Stay Skin Tint in), makeup primer for large pores (Hourglass Mineral Veil and Danessa Myricks Blurring Balm out,
+  2 picks left: NYX Marshmallow primer, Smashbox Photo Finish). With titles counted it would be 50, 29, 26 and 5, and 3
+  makeup answers. Before switching it on: 12 of the 77 come from a word of the product's own name where every product
+  is that kind already (cordless drill, mechanical keyboard, merino socks, noise cancelling headphones, gaming laptop),
+  its fuller readings group some names differently (two picks both named "Boos block" in the cutting board answer), and
+  the reason line says nothing about a form, so a cream blush pick shows no sign of its cream voices. Every quote the
+  rule's sweep shows was found word for word (5,396).
+  Measured through the heavy lock on one frozen copy of the writers' profile store (taken at 04:23 EST, while the warm
+  writes the library's), with copies of the library before and after, live checks off, builder 2's code (f4369ab)
+  before and this round's after, back to back (repeated sweeps gave the same answers). Sweep of 293 answers: the 278
+  non-makeup answers are unchanged in every part; of the 15 makeup answers 13 changed (12 in what they show, concealer
+  for dark circles in its voices only), 7 of them in their picks or order (cream blush, bronzer, setting powder, setting
+  spray, brow gel, lipstick, lip tint). Every quote the after sweep shows, 5,586, was found word for word in its saved
+  comment (checked outside the engine). eval/run_eval.py: every number as before but the library's quote count, 93,784
+  of 94,291 to 93,773 of 94,276 (the two set-aside threads' 15 mentions, 11 found), so eval/metrics.json changes only
+  there. Whole suite: 7,146 passed and 1 failed (the unlabelled gold thread 1v40u3t, which fails on main too); the
+  tests changed on purpose say so in place (test_makeup_coverage: lip tint and brow gel are their own types; test_extract:
+  the instructions are v17; test_web: the warm taxonomy has 403 types).
+  Left, for Noemi or later: the need-fit rule's switch and the points above it; "got2b Glued Brows 38 Edges hair gel" is
+  how one extraction names got2b's Glued Brows & Edges (a shop link's spelling), shown in brow gel's Also worth a look:
+  a name fix in that extraction or an alias; main's product types still have r/MakeupRehab for some makeup types
+  until this branch is merged, and on-demand reading's skip list doesn't read the set_aside folder, so a later reading
+  of r/MakeupRehab could bring the two threads back (bulk import does read it). The scratch sweeps, the library copies
+  and the frozen store's copy hold commenters' words and writers' names: they go to the Trash with the deletion rule.

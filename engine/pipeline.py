@@ -173,7 +173,8 @@ from pathlib import Path
 
 from engine import config  # the upvote rule's switch, read for each request (14 Oct 2026)
 from engine.answer import (
-    NO_THREADS, Answer, LeadingModel, _every_quote, _kind_own_words, _same_word, _written, comment_bodies, flattened_comments,
+    NO_THREADS, Answer, LeadingModel, _every_quote, _kind_own_words, _phrase_heads, _same_word, _whole_needs, _written,
+    comment_bodies, flattened_comments,
     needed_quotes, quotes_to_check, render_markdown, says_the_opposite, shown_availability, shown_price, without_unread,
     write_answer,
 )
@@ -725,7 +726,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     titles_ask = {t.id: _title_needs(t, judged_needs(query), query) for t in threads}
     scored, kind_notes = _score(threads, checked, kept_groups, kinds, judged_needs(query),
                                 set(result.contradicting_writers), request_asks(query), features, asking,
-                                _opposite_needs(query), titles_ask)
+                                _opposite_needs(query), titles_ask, _reformulated(query))
     if query.product_type in config.FAST_MOVING_TYPES:  # old evidence (Noemi's decision (i), 19 Oct 2026)
         scored = _set_aside_old_evidence(scored, {c.id: c.created_at.date() for t in threads for c in t.comments},
                                          _known_still_sold(price_checks, ranges), today)
@@ -831,6 +832,10 @@ def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
         ranking.products = [replace(p, qualifies=False, shortfall=WIDER_READING_SHORTFALL, worth_a_look=False)
                             if (p.qualifies or p.worth_a_look) and not _talks_about(p, judged)
                             else p for p in ranking.products]
+    if config.NEED_FIT_FOR_PICKS and judged:  # the need-fit rule, built 5 Nov 2026 and OFF (Noemi: "measure first")
+        needs = judged_needs(query)
+        ranking.products = [replace(p, fits_need=False) if p.qualifies and not _fits_the_need(p, needs) else p
+                            for p in ranking.products]
     if skip_only:
         ranking.products = [replace(p, qualifies=False, worth_a_look=False, shortfall=skip_only[p.key])
                             if p.key in skip_only and (p.qualifies or p.worth_a_look) else p for p in ranking.products]
@@ -860,6 +865,23 @@ def _talks_about(product, needs: set[str]) -> bool:
     engine.needs.judged_needs), its words or, for a top-level answer, its thread's title asking for it
     (ScoredMention.needs_by_title: Noemi's decision (d) of 19 Oct 2026)."""
     return any(needs.intersection(m.needs) or needs.intersection(m.needs_by_title)
+               for m in product.credible_recommendations)
+
+
+def _fits_the_need(product, needs: tuple[Need, ...]) -> bool:
+    """For the need-fit rule (config.NEED_FIT_FOR_PICKS, built 5 Nov 2026 and off: Noemi's "Yes, measure first"),
+    whether at least one of a product's credible recommendations fits what the request asks for: its own words talk
+    about one of the request's needs, read as the reason line reads them for "3 of them about fair skin"
+    (engine.answer._reason_needs): a need of two words whose first word alone says something else only whole
+    (config.NEED_PHRASES_WHOLE: "dark" alone, a skin tone, is no dark-circles voice), and a feature talked about
+    without praising the product for it no fit (ScoredMention.needs_unpraised). Long-term use still talks about lasting
+    (engine.needs.LASTING). A need that is a word of the product's name in the request ("cream" of "cream blush",
+    "cordless" of "cordless drill") counts here though the reason line never names it: "cream" was Noemi's own example.
+    Unlike the need rule (_talks_about), a thread's title asking for the need (ScoredMention.needs_by_title, Noemi's
+    decision (d) of 19 Oct 2026) is not enough: her question was about voices."""
+    names = {need.name for need in needs}
+    heads = _phrase_heads(tuple(needs))
+    return any(names.intersection(_whole_needs(tuple(n for n in m.needs if n not in m.needs_unpraised), heads))
                for m in product.credible_recommendations)
 
 
@@ -2952,7 +2974,8 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
            contradicting: set[str] = frozenset(), asks: tuple[str, ...] = (), features: tuple[Feature, ...] = (),
            asking: Mapping[str, set[str]] | None = None,
            opposites: tuple = (),
-           titles_ask: Mapping[str, tuple[str, ...]] | None = None) -> tuple[list[ScoredMention], list[KindNote]]:
+           titles_ask: Mapping[str, tuple[str, ...]] | None = None,
+           reformulated: bool = False) -> tuple[list[ScoredMention], list[KindNote]]:
     """A weight for every product mention and kind note of the threads read (module 5), ready for the ranking.
 
     `needs` are the request's needs a comment can talk about (engine.needs.judged_needs, since 15 Oct 2026; every need
@@ -2971,6 +2994,9 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
     otherwise (engine.features.praised_for); a reply further down needs its own words for both. Its reason, weight and
     standing out still go by its words (ScoredMention.needs). Until then every comment of a thread asking for a feature
     had its thread's ask, and none had its thread's need.
+
+    `reformulated` (Noemi, 5 Nov 2026, "Yes, like skincare"): the request's product is a makeup type (_reformulated), so
+    an old comment is at most a medium voice, as an old skincare or haircare comment is (engine.credibility.score_voice).
     """
     by_id = {t.id: t for t in threads}
     group_by_mention = group_of(groups)
@@ -2988,7 +3014,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
 
         def voice_of(comment: Comment) -> VoiceScore:
             if comment.id not in voices:
-                voice = score_voice(comment, thread, res.kept_agreements, copied=copied)
+                voice = score_voice(comment, thread, res.kept_agreements, copied=copied, reformulated=reformulated)
                 voices[comment.id] = _as_low(voice) if _writer(comment) in contradicting else voice
             return voices[comment.id]
 
@@ -3154,8 +3180,15 @@ def _care_tips(threads: list[Thread], checked: dict[str, CheckResult], groups: l
                query: ParsedQuery) -> dict[str, CareTips]:
     """The credible care tips of the threads read, for the products ranked: {product key: CareTips}
     (engine/care_tips.py). An extraction made before instructions v7 has no care tips, so nothing changes for it."""
-    tips = credible_care_tips(threads, checked)
+    tips = credible_care_tips(threads, checked, reformulated=_reformulated(query))
     return attach_care_tips(tips, groups, kinds, query.category, query.product_type or "")
+
+
+def _reformulated(query: ParsedQuery) -> bool:
+    """Whether the request's product is one of the makeup types whose formulas change (config.REFORMULATED_TYPES), so an
+    old comment its answer counts is at most a medium voice (Noemi, 5 Nov 2026: "Yes, like skincare"). A skincare or
+    haircare comment is capped by its thread's category already."""
+    return query.product_type in config.REFORMULATED_TYPES
 
 
 def _writer(comment: Comment) -> str | None:

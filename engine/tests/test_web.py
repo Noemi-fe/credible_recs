@@ -698,7 +698,9 @@ def test_getting_ready_leaves_the_taxonomys_types_to_their_first_visitors(monkey
     # no warm answer after WARM_UP_ANSWERS_SECONDS, so its time doesn't grow: the types left are warmed by the pings.
     # Changed on purpose 4 Nov 2026 (makeup coverage): 3 more types, bronzer, highlighter and setting powder, split out
     # of blush and setting spray. Was: 398. Still never warmed at getting ready, as above.
-    assert len(web.WARM_TAXONOMY_TYPES) == 401 and "robot vacuum" in web.WARM_TAXONOMY_TYPES
+    # Changed on purpose 5 Nov 2026 (Noemi's "Split both"): 2 more types, lip tint and brow gel, split out of lipstick
+    # and brow pencil. Was: 401. Still never warmed at getting ready, as above.
+    assert len(web.WARM_TAXONOMY_TYPES) == 403 and "robot vacuum" in web.WARM_TAXONOMY_TYPES
     warmed = web.warm_requests()
     assert len(warmed) == len(set(warmed))  # each once
     likely = {text for path in web.WARM_FIRST_FILES for text in web._requests_in(path)}

@@ -10,9 +10,9 @@ results for the same need were big Reddit threads in r/Makeup and r/Sephora; her
    answered with blushes; highlighters had no type. Bronzer, highlighter and setting powder are types of their own,
    blush and setting spray lose the names that were someone else's, and every makeup type's title words include its
    plural ("blushes": Arctic Shift's title search matches whole words only).
-3. Makeup is reformulated as skincare and haircare are, for the ranking of threads only: an old makeup thread loses the
-   ranking's old-post points. The voice's old-post cap (engine/credibility.py) still applies to skincare and haircare
-   comments only, so an old makeup comment can still count as a high voice: an open question for Noemi, unchanged.
+3. Makeup is reformulated as skincare and haircare are: an old makeup thread loses the ranking's old-post points, and
+   since 5 Nov 2026 (Noemi: "Yes, like skincare") an old comment counted for a makeup request is a medium voice at
+   most, as an old skincare or haircare comment is (engine/credibility.py; tested in test_makeup_split.py).
 4. The pre-check reads the blush answers' quotes ahead, first (4 Nov 2026), without warming them: the answers' memory is
    nearly full, so they are not in engine/data/demo_requests.json.
 
@@ -32,9 +32,11 @@ from engine.sources import finder_terms, post_score
 from engine.tests.test_archive_reader import FakeArchive, archive_post, make_archive, node, raw_comment
 
 MAKEUP_COMMUNITIES = ["Makeup", "Sephora", "MakeupAddiction", "drugstoreMUA"]
-MAKEUP_TYPES = ("foundation", "concealer", "mascara", "lipstick", "eyeliner", "eyeshadow", "makeup primer",
-                "brow pencil", "blush", "bronzer", "highlighter", "setting powder", "setting spray")
-WITH_ASIAN_BEAUTY = ("foundation", "concealer", "mascara", "lipstick")
+# Changed on purpose, 5 Nov 2026: lip tint and brow gel are makeup types of their own (Noemi: "Split both"), lip tint
+# searched in r/AsianBeauty too, as lipstick is.
+MAKEUP_TYPES = ("foundation", "concealer", "mascara", "lipstick", "lip tint", "eyeliner", "eyeshadow", "makeup primer",
+                "brow pencil", "brow gel", "blush", "bronzer", "highlighter", "setting powder", "setting spray")
+WITH_ASIAN_BEAUTY = ("foundation", "concealer", "mascara", "lipstick", "lip tint")
 
 
 @pytest.fixture(autouse=True)
@@ -127,8 +129,12 @@ def test_a_makeup_request_is_searched_in_the_makeup_communities():
     ("blush", "blush"),
     ("cream blush", "blush"),
     ("blush for fair skin", "blush"),
-    ("lip tint", "lipstick"),
-    ("brow gel", "brow pencil"),
+    # Changed on purpose, 5 Nov 2026: a lip tint and a brow gel were a lipstick and a brow pencil until Noemi split
+    # them ("Split both").
+    ("lip tint", "lip tint"),
+    ("brow gel", "brow gel"),
+    ("lipstick", "lipstick"),
+    ("brow pencil", "brow pencil"),
 ])
 def test_each_makeup_name_finds_its_own_type(request_text, product_type):
     query = parse_query(request_text)
@@ -168,7 +174,11 @@ def test_every_makeup_types_title_words_include_its_plural():
                "highlighter": "highlighters", "setting spray": "setting sprays"}
     for name, plural in plurals.items():
         assert finder_terms(name)[:2] == [finder_terms(name)[0], plural], name
-    assert "lip tint" in finder_terms("lipstick") and "brow gel" in finder_terms("brow pencil")
+    # Changed on purpose, 5 Nov 2026: lip tints and brow gels are found under their own types now (Noemi: "Split
+    # both"), so lipstick's and brow pencil's searches no longer hold them.
+    assert "lip tint" not in finder_terms("lipstick") and "brow gel" not in finder_terms("brow pencil")
+    assert finder_terms("lip tint")[:2] == ["lip tint", "lip tints"]
+    assert finder_terms("brow gel")[:2] == ["brow gel", "brow gels"]
     assert finder_terms("setting powder") == ["setting powder", "translucent powder"]
 
 

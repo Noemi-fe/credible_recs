@@ -381,6 +381,12 @@ class ProductScore:
     # request's order (Noemi's decision 1 of 16 Oct 2026): more rank first, after the must-haves. Empty without a feature
     # asked. Like `unconfirmed`, not in the score breakdown.
     features_praised: tuple[str, ...] = ()
+    # False when the need-fit rule is on (config.NEED_FIT_FOR_PICKS, built 5 Nov 2026 and OFF: Noemi's "Yes, measure
+    # first") and none of its credible recommendations talks about what the request asks for (engine.pipeline.
+    # _fits_the_need): it can't be a pick, so it isn't one of RankingResult.qualifying, and when it meets the bar on its
+    # own it is listed first under Also worth a look (past_the_picks), as a product ranked below the picks is. True for
+    # every product while the rule is off.
+    fits_need: bool = True
 
     @property
     def credible_recommendations(self) -> list[ScoredMention]:
@@ -427,7 +433,7 @@ class RankingResult:
         """Every product that meets the minimum-evidence rule, best first; with `fill_only`, those the upvote rule lifted
         to it after the others, and whatever the variant, those a comment standing out in its thread lifted (14 Oct
         2026): they only fill places the others leave empty."""
-        found = [p for p in self.products if p.qualifies]
+        found = [p for p in self.products if p.qualifies and p.fits_need]  # fits_need: the need-fit rule (off)
         later = [p.by_standout or (self.fill_only and lifted(p)) for p in found]
         return [p for p, late in zip(found, later) if not late] + [p for p, late in zip(found, later) if late]
 
