@@ -3304,3 +3304,61 @@ TIP_FORM_OPPOSITES: dict[str, tuple[str, ...]] = {"cream": ("powder", "pressed",
 # left out altogether before this rule looks, so there it changes only what its stricter reading changes (a two-word
 # need read whole, a thread's title not enough). A request naming no need is as before.
 NEED_FIT_FOR_PICKS = False
+
+# --- Makeup fix round, part 4: the fixer (5 Nov 2026) ---
+# Technical calls by Claude, reported to Noemi, from the rules and shopper reviews of parts 1 to 3. Like part 2's, they
+# change which quotes and tips an answer shows and how its reason line counts a need, never a score.
+#
+# Noemi's "Remove those 2 threads" (5 Nov 2026, about 00:25: the two r/MakeupRehab threads whose care tip the lipstick
+# answers quoted). Under her rule of 14 Oct 2026 (set-aside threads we will never need are deleted, their ids kept so
+# they are never read again) the two are in the Trash for the deletion rule, and no reading saves them again: `library
+# add` (engine.library.not_to_read), on-demand reading and bulk import (engine.bulk_import.imported_before) skip them.
+# Thread ids only.
+REMOVED_THREADS: tuple[str, ...] = ("1co3r5i", "1jlzpoa")
+# A recommendation's quote that undercuts its product (engine.answer._undercuts, part 2) also:
+# - says its product was reformulated (QUOTE_REFORMULATED) and that it was the writer's ("I used to wear it daily") or
+#   is not as good now (QUOTE_WORSE_SINCE): "I used to wear X daily... then they reformulated it and reviews say it's
+#   worse". "They reformulated it and it's even better" is no undercut.
+QUOTE_REFORMULATED = r"\breformulat\w*|\bchanged (?:the|its|their) (?:formula|formulation)\b|\bnew formula\b"
+QUOTE_WORSE_SINCE = (r"\bused to\b|\bnot (?:as|nearly as|quite as) good\b|\bisn't (?:as|nearly as) good\b|\bworse\b"
+                     r"|\bnot the same\b|\bisn't the same\b")
+# - ranks it second to another: "In second place is X", "X is the runner-up".
+QUOTE_SECOND_PLACE = r"\b(?:in )?second place\b|\brunner[- ]?up\b"
+# A recommendation's quote saying its product is no longer made ("discontinued", "taken out of production"), naming no
+# other product of its comment ("X was discontinued, so I switched to Y" is Y's reason): never an "Also worth a look"
+# item's quote (an item with no other gives its place to the next) and only a pick's filler.
+QUOTE_NO_LONGER_MADE = (r"\bdiscontinu\w*|\b(?:taken|pulled|gone) (?:out of|off) (?:production|the market|shelves)\b"
+                        r"|\bno longer (?:made|sold|available|in production)\b|\bstopped (?:making|selling|producing)\b"
+                        r"|\bout of production\b")
+# A quote whose writer says they work or worked for the product's maker ("I used to work for X and it suits everyone"):
+# never shown. Only which quote is shown; whether such a writer is a credible voice is module 5's (AFFILIATION_PHRASES
+# in engine/credibility.py, Noemi's rubric), left as it is. The words before the maker's name, in the quote's own words;
+# the maker's name comes right after them ("the" or "a" aside): "the gym where I work stocks X" ties no one to X.
+QUOTE_WORKED_FOR = (r"\b(?:i|i've|i have|i'd|i had)\s+(?:used to\s+|once\s+|previously\s+|also\s+|actually\s+)?"
+                    r"(?:work(?:ed|s)?|been working)\s+(?:for|at|with)\s+"
+                    r"|\b(?:i'm|i am|i was)\s+(?:an?\s+)?(?:former\s+|ex-?\s*)?(?:employee|rep|representative)\s+"
+                    r"(?:of|for|at)\s+|\bformer\s+(?=\S+\s+(?:employee|rep)\b)|\bex-(?=\S+\s+(?:employee|rep)\b)")
+# A need sentence that gives the need to another product: in the sentence of the comment that talks about the need,
+# the need's words come with one of these ("then for my pores I add a separate primer"). Such a sentence is never taken
+# into the quote (engine.answer._need_stretch) and its voice isn't counted "about" that need in the reason line
+# (engine.answer._given_away); module 6's count, a score, is as it was. Only "a separate" or "a different" thing and
+# "something else": the round's own sweep found "the other", "my second" and "another" in comparisons ("less greasy
+# than the other brands", "on my second bottle", "better than another brand I tried"), which give nothing away.
+NEED_ELSEWHERE = (r"\b(?:a|an)\s+(?:separate|different)\s+(?!time|times|day|days|way|ways|reason|story)[a-z]"
+                  r"|\bsomething else\b")
+# Makeup names shown in small letters where their makers use capitals (the shopper review of part 3: "NARS radiant
+# creamy concealer", "e.l.f. brow lift", "Dior forever concealer line", "Anastasia Beverly Hills brow wiz"), and NYX's
+# primer, which NYX spells "Marshmellow". Capitals and that one letter only: a name keeps its words otherwise.
+MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "NARS Radiant Creamy", "Anastasia Beverly Hills Brow Wiz",
+                              "e.l.f. Brow Lift", "Dior Forever", "NYX Marshmellow")
+# A recommendation whose writer means to try other products after it ("I use X but reading this I want to try
+# others"): it undercuts X (engine.answer._undercuts). Others "from", "by" or "of" its own maker are more of the same.
+QUOTE_TRYING_OTHERS = (r"\b(?:wanna|want to|wanting to|tempted to|thinking of|thinking about|looking to)\s+"
+                       r"(?:try|trying|switch|switching)(?:\s+out)?\s+(?:to\s+)?(?:others|other ones|other brands"
+                       r"|something else|a different one|different ones)\b(?!\s+(?:from|by|of)\b)")
+# An "Also worth a look" item that this many of its credible recommendations (different comments) say is no longer made
+# is left out (engine.answer._said_to_be_gone). One such voice alone may be about one shade or one market.
+NO_LONGER_MADE_VOICES = 2
+# Words saying where a makeup product is worn, which name no kind of it: "face primer" is a makeup primer, as "eyebrow
+# gel" is a brow gel; a tip for one is a tip for the type asked for itself (engine.answer._one_of_the_types_names).
+TYPE_PLACE_WORDS = ("face", "facial", "makeup", "eye", "eyebrow", "brow", "lip", "cheek")

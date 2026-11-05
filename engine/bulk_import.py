@@ -729,8 +729,9 @@ def carry_out(result: ImportResult, files_dir: Path, library_dir: Path = DEFAULT
 
 def imported_before(library_dir: Path = DEFAULT_LIBRARY_DIR) -> set[str]:
     """Every thread an import has saved (imports.jsonl logs each, and each later set aside), and every thread in
-    set_aside/threads: an off-topic import is moved there or deleted, and is never imported again (Noemi, 14 Oct 2026)."""
-    ids: set[str] = set()
+    set_aside/threads: an off-topic import is moved there or deleted, and is never imported again (Noemi, 14 Oct 2026).
+    Since 5 Nov 2026 also the threads she said to remove that no import saved (config.REMOVED_THREADS)."""
+    ids: set[str] = set(config.REMOVED_THREADS)
     log = Path(library_dir) / "imports.jsonl"
     if log.is_file():
         for line in log.read_text(encoding="utf-8").splitlines():

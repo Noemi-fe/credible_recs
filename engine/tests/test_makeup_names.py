@@ -114,9 +114,11 @@ def test_the_super_stay_skin_tint_is_one_product_apart_from_the_super_stay_found
 
 @pytest.mark.parametrize("written, shown", [
     ("Nars Orgasm", "NARS Orgasm"),
-    ("nars radiant creamy concealer", "NARS radiant creamy concealer"),
+    # Changed on purpose, 5 Nov 2026 (the makeup fix round, part 4, from the shopper review of part 3): these three
+    # lines are written as their makers write them now, not only their brands (config.MAKER_SPELLINGS).
+    ("nars radiant creamy concealer", "NARS Radiant Creamy concealer"),
     ("NARS Light Reflecting foundation", "NARS Light Reflecting foundation"),
-    ("Nyx marshmallow primer", "NYX marshmallow primer"),
+    ("Nyx marshmallow primer", "NYX Marshmellow primer"),
     ("Mac Fix + Stay Over", "MAC Fix+ Stay Over"),
     ("Mac Fix+", "MAC Fix+"),
     ("Mac Fix Plus", "MAC Fix+"),
@@ -126,7 +128,7 @@ def test_the_super_stay_skin_tint_is_one_product_apart_from_the_super_stay_found
     ("Estee Lauder Double Wear", "Estée Lauder Double Wear"),
     ("L’Oreal True Match", "L'Oréal True Match"),
     ("Got2B Glue Spiking Gel", "got2b Glue Spiking Gel"),
-    ("Elf brow lift", "e.l.f. brow lift"),
+    ("Elf brow lift", "e.l.f. Brow Lift"),
     ("ELF setting spray", "e.l.f. setting spray"),
 ])
 def test_makeup_brands_are_shown_as_their_makers_write_them(written, shown):

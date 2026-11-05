@@ -146,6 +146,7 @@ from engine.config import (
     PARSE_MONTHLY_CREDITS,
     REDDIT_ARCHIVE_DAYS,
     REFRESH_READER,
+    REMOVED_THREADS,
     THREAD_CATEGORIES,
 )
 from engine.extract import ExtractionError
@@ -266,10 +267,11 @@ def archive_source(folder: Path, client: ArcticShiftClient | None) -> ArchiveSou
 
 
 def not_to_read(folder: Path) -> set[str]:
-    """The ids `add` never reads: the threads saved in this library and the gold threads Noemi hasn't labelled yet."""
+    """The ids `add` never reads: the threads saved in this library, the gold threads Noemi hasn't labelled yet and,
+    since 5 Nov 2026, the threads she said to remove (config.REMOVED_THREADS: in the Trash, never read again)."""
     threads = Path(folder) / "threads"
     saved = {path.stem for path in threads.glob("*.json")} if threads.is_dir() else set()
-    return saved | unlabelled_gold_ids()
+    return saved | unlabelled_gold_ids() | set(REMOVED_THREADS)
 
 
 def _live_copy(thread: Thread, folder: Path) -> Thread | None:

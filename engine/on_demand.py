@@ -103,6 +103,7 @@ from engine.config import (
     ON_DEMAND_SEARCH_CALLS,
     ON_DEMAND_START_EVERY_SECONDS,
     ON_DEMAND_START_SECONDS,
+    REMOVED_THREADS,
 )
 from engine.live_check import BUCKET_TIMEOUT, BUNDLE_RELOAD_SECONDS, Bucket, _http_request
 from engine.query import ParsedQuery
@@ -1087,7 +1088,7 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
         report.notes.append(f"Arctic Shift couldn't be searched for {entry.product_type}: tried again later.")
         return
     saved = {path.stem for path in (library_dir / "threads").glob("*.json")}
-    skip = saved | set(bundle.threads) | unlabelled_gold_ids()
+    skip = saved | set(bundle.threads) | unlabelled_gold_ids() | set(REMOVED_THREADS)  # Noemi's removed two, 5 Nov 2026
     mine = {tid for tid, item in bundle.threads.items() if item.entry == key}  # read on an earlier try (4 Nov 2026)
     fresh = [post for post in ranked if _plain_id(post) not in skip or _plain_id(post) in mine]
     if entry.refresh:  # the library's threads are old: only threads posted since count (an unknown date isn't old)

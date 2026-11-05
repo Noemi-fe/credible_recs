@@ -1567,9 +1567,10 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   non-makeup answers are unchanged in every part; of the 15 makeup answers 13 changed (12 in what they show, concealer
   for dark circles in its voices only), 7 of them in their picks or order (cream blush, bronzer, setting powder, setting
   spray, brow gel, lipstick, lip tint). Every quote the after sweep shows, 5,586, was found word for word in its saved
-  comment (checked outside the engine). eval/run_eval.py: every number as before but the library's quote count, 93,784
-  of 94,291 to 93,773 of 94,276 (the two set-aside threads' 15 mentions, 11 found), so eval/metrics.json changes only
-  there. Whole suite: 7,146 passed and 1 failed (the unlabelled gold thread 1v40u3t, which fails on main too); the
+  comment (checked outside the engine). eval/run_eval.py: every number as before but two of the library's: its quote
+  count, 93,784 of 94,291 to 93,773 of 94,276 (the two set-aside threads' 15 mentions, 11 found), and module 4's product
+  groups, 34,452 to 34,441 (loose 4,752 to 4,750); eval/metrics.json holds only the first, so it changes only there.
+  (Corrected in part 4, the same morning, after the rules review: this sentence first named the quote count alone.) Whole suite: 7,146 passed and 1 failed (the unlabelled gold thread 1v40u3t, which fails on main too); the
   tests changed on purpose say so in place (test_makeup_coverage: lip tint and brow gel are their own types; test_extract:
   the instructions are v17; test_web: the warm taxonomy has 403 types).
   Left, for Noemi or later: the need-fit rule's switch and the points above it; "got2b Glued Brows 38 Edges hair gel" is
@@ -1578,3 +1579,96 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   until this branch is merged, and on-demand reading's skip list doesn't read the set_aside folder, so a later reading
   of r/MakeupRehab could bring the two threads back (bulk import does read it). The scratch sweeps, the library copies
   and the frozen store's copy hold commenters' words and writers' names: they go to the Trash with the deletion rule.
+- 5 Nov 2026, morning, the makeup fix round, part 4: the fixer (Claude; Claude's technical calls, reported to Noemi;
+  branch makeup-threads; nothing pushed, merged or deployed). From the rules review and the shopper review of part 3.
+  Noemi's one answer acted on here is quoted as she gave it; everything else is Claude's call. Inside her bounds: no
+  scoring weight but (D), no product type but (A), the need-fit rule left off, no rule about no-buy communities, no told
+  number, no new call by the engine (every rule reads a quote's own words and what the extraction already holds) and
+  the 48-hour quote rule untouched. Values at the end of engine/config.py ("Makeup fix round, part 4"); tests in
+  engine/tests/test_makeup_fixes.py (made-up text).
+  (1) The two removed threads. Noemi, part 3 (C): "Remove those 2 threads". Their thread and extraction files left
+  data/library/set_aside for the Trash (~/.Trash/credible-recs-deletion-rule-2026-11-05-removed-threads; Noemi empties
+  it), and their ids, 1co3r5i and 1jlzpoa, are kept in config.REMOVED_THREADS, a list nothing reads a thread from: it
+  is in the library's never-read set (engine.library.not_to_read), bulk import's (engine.bulk_import.imported_before)
+  and on-demand reading's skip list (engine.on_demand), so no later reading brings them back (part 3 found on-demand
+  reading missed the set_aside folder). The library's request log still lists the two ids under the on-demand reading
+  that brought them in: a record of what happened, ids only.
+  (2) Quotes that undercut their product only make up a pick's minimum (engine.answer._undercuts, as in part 2), now
+  also: a rival named by its line alone, without its brand (_names_by_its_line: "but True Match suits me better" in a
+  Milani blush quote; a line read accents aside, as "L'Oréal" had split in two, and of one word only when it has 4
+  letters or more); a quote saying its product was reformulated and is worse or was the writer's (QUOTE_REFORMULATED
+  with QUOTE_WORSE_SINCE: Double Wear's); one ranking it second in a clause naming it and no other (QUOTE_SECOND_PLACE:
+  Brow Wiz's); and one whose writer, after naming it, means to try others (QUOTE_TRYING_OTHERS, found in this round's
+  own sweep: a brow gel line's quote; others "from" its own maker are more of the same).
+  (3) A writer who says, in the quote, that they work or worked for the product's maker (QUOTE_WORKED_FOR, the maker's
+  name right after it, "the" or "a" aside) is never quoted, not even to make up the minimum: a Clinique lipstick
+  quote. Working "at a department store" or "from home" ties a writer to no maker, nor does "the gym where I work
+  stocks X" (the round's own first sweep had dropped a yoga mat quote so, with the maker anywhere in the next 3
+  words). Whether the voice counts is module 5's, as before.
+  (4) No longer made (QUOTE_NO_LONGER_MADE: "discontinued", "taken out of production", "no longer sold"). A pick's
+  quote saying so only makes up the minimum; an "Also worth a look" item never shows one, and an item that
+  NO_LONGER_MADE_VOICES (2) of its credible recommendations, from different comments, say is no longer made is left
+  out (_said_to_be_gone): in makeup primer for large pores the Estée Lauder primer, two of whose three voices said it
+  was discontinued, gives its place to The Ordinary High-Adherence Silicone Primer. A quote naming another product too
+  ("X was discontinued, so I switched to Y") is about that one and stays, and so is one naming its product only after
+  saying so ("after my old one was discontinued I switched to X"; the first sweep had taken a benzoyl peroxide gel's
+  quote so).
+  (5) A need given to another product (config.NEED_ELSEWHERE: "a separate" or "a different" thing, "something else",
+  in a clause of the quote's sentence that talks about the need and doesn't name the product; _given_away). That voice
+  isn't counted "about" the need in the reason line, and its quote never takes in a sentence for it: NYX Marshmellow
+  primer's reason loses "1 of them about large pores", and its quote no longer runs on into its writer's "separate
+  primer" for pores. Module 6's count of need voices, a score, is as it was. The first version also read "the other",
+  "my second" and "another": the first full sweep showed it took a need voice from 12 reason lines in 9 non-makeup
+  answers, all wrongly ("less greasy than the other brands", "on my second bottle", "another puppy coming"), so those
+  words are out.
+  (6) Quote order. A quote ending on a question comes after a clearer quote of its tier (_ends_asking; a question in
+  brackets at the end is an aside: "fairly cheap (about $40?)"). A pick with a need asked, none of whose chosen quotes
+  talks about it, shows one that does in the last place (_with_a_need_quote): foundation for oily skin's Haus Labs
+  pick drops a hedging quote for an oily-skin one. That quote says something about the product, names no other product
+  of its comment, comes from a writer the extraction read as talking about the need, and talks about it outright, in
+  its own sense (_said_outright: "if you cook for six, get a bigger one" is not for a family, "a few years back" is no
+  back pain, "dry days" no dry skin); and a need that is a word of the product's own name ("mechanical" of "mechanical
+  keyboard", which the reason line never names either) asks for none. Without those conditions the first full sweep
+  had shown a grinder quote whose writer mostly uses another grinder and a rice cooker quote saying a big family
+  should buy a bigger one, and the second an office chair's "a few years back" for back pain.
+  (7) Tips. A writer who hasn't tried it backs no tip whatever the apostrophe (a curly one slipped through: blush's
+  purple blush tip now quotes a writer who has; only the apostrophes are straightened, since reading the words in
+  small letters also made "my wife laughs at my fights with our smart washer" someone else's experience in the first
+  sweep); a tip that is the type asked for itself is none (_one_of_the_types_names with config.TYPE_PLACE_WORDS:
+  "Avoid: face primer" in a makeup primer answer); a one-word makeup tip naming another makeup type is none ("Look
+  for: spray" in lip tint and lip stain; highlighter's "balm highlighter to avoid glitter or stick" loses "or stick").
+  (8) Names. got2b's Glued Brows & Edges, which one extraction spells as a shop link does ("Glued Brows 38 Edges hair
+  gel"), has two aliases (engine/data/product_aliases.json) and joins its own group, "got2b Glued Brow & Edge Gel", so a
+  plain got2b hair gel no longer joins it and its complaint is no longer shown as a recommendation; with its voices its
+  own, it has too few for brow gel's "Also worth a look", where the Anastasia Beverly Hills brow gel line takes its
+  place. Makers' capitals (config.MAKER_SPELLINGS): NARS Radiant Creamy, Anastasia Beverly Hills Brow Wiz, e.l.f. Brow
+  Lift, Dior Forever, and NYX's own "Marshmellow". Three expectations of engine/tests/test_makeup_names.py changed on
+  purpose for them, dated in place.
+  (9) From the rules review: part 3's measurement sentence above and its eval/RUNS.md row now say that module 4's
+  product groups moved too, 34,452 to 34,441 (loose 4,752 to 4,750), where they had named the quote count alone.
+  Measured through the heavy lock on one frozen copy of the writers' profile store (taken at 06:24 EST, while the warm
+  writes the library's), live checks off, part 3's code (c1e7b0c) before and this round's after, back to back (the
+  before sweep run twice gave the same answers). Sweep of 296 requests (the 293 of part 3 and brow pencil, lip stain
+  and eyebrow gel): no pick, no pick's order and no "Also worth a look" or "Skip these" item moved in any non-makeup
+  answer; 19 of the 278 non-makeup answers show another quote for one or two picks, every one the need quote of (6): a
+  pick whose quotes said nothing of the need asked now ends on one that does (a KitchenAid dishwasher said to be
+  quiet, Red Wing boots resoled, a Miele for pet hair, a Biore sunscreen leaving no white cast), in place of its last
+  quote. Of the 15 makeup answers 10 changed what they show and 5 are as they were (bronzer, setting powder, setting
+  spray, mascara, eyeliner), and brow pencil, lip stain and eyebrow gel changed too; no makeup pick or pick's order
+  moved (two picks only took their makers' capitals), and three "Also worth a look" items changed (makeup primer for
+  large pores, brow gel, eyebrow gel). Every quote the after sweep shows, 8,072 (all quotes in the answers' data:
+  picks, items, warnings, tips), was found word for word in its saved comment (checked outside the engine), 592 of
+  them in the 18 makeup answers. eval/run_eval.py, run on the same copy before and after: every number as before but
+  module 4's product groups, 34,441 to 34,442 (the got2b alias: the plain got2b hair gel is a group of its own again),
+  so eval/metrics.json doesn't change. Whole suite: 7,196 passed and 1 failed (the unlabelled gold thread 1v40u3t,
+  which fails on main too): part 3's 7,146 and this round's 50.
+  The rules review's other points, not fixed here: the commit metadata of older commits on this branch (c983114 and
+  6a907b9 signed by a Sonnet line; 896e033 and 6a907b9 dated -0500) needs a rebase, the orchestrator's; lip tint (3
+  threads), brow gel (5) and brow pencil (3) are under on-demand reading's bar of 6 (a data round or Noemi); 32 of the
+  79 products the makeup answers show have no summary, Urban Decay's among them, until the summarising batch after the
+  warm; the product notes for NARS Orgasm, Becca and got2b (data/product_notes.json) are user-facing and wait for
+  Noemi's yes; "eyeshadow primer" is a look-alike or open-model type now, so (D)'s cap doesn't reach it; the picks'
+  order moves with the profile copy, so these numbers hold for one frozen copy until the warm ends; main's engine
+  can't read the r/Makeup, r/Sephora and r/AsianBeauty threads, so this branch is merged before any deploy. The
+  scratch folders of parts 3 and 4 (sweeps, library and profile copies) hold commenters' words and writers' names:
+  they go to the Trash with the deletion rule by about 7 Nov.
