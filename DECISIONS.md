@@ -1108,3 +1108,48 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   from r/MakeupRehab; of Google's three threads, the r/Sephora one was among them and chosen, a second r/Sephora one was
   found by an advice search in a later probe, and the r/Makeup one was out of reach while r/Makeup's searches timed out.
   Only "blush" is in Noemi's words; the other makeup types got the same changes because they share the cause.
+
+- 4 Nov 2026, integrated by Claude (the makeup integrator, branch makeup-threads; technical calls, reported to Noemi; the
+  first data round of the branch; not merged, not deployed; eval/RUNS.md): (1) Threads: 10 for blush (the plan's batch 1:
+  r/Makeup 3, r/Sephora 4, r/MakeupAddiction 2, r/drugstoreMUA 1), among them Google's three (r/Makeup 1d62brq, r/Sephora
+  1n4xixh and 1hyd7j3), read from Arctic Shift's archive with the branch's engine (14 calls, none failed, no Bright Data
+  record; 1,376 comments saved), extracted by one Sonnet helper (extract-v15 with the makeup rules; v16 only adds the three
+  new type names and every v15 extraction stays current): 1,771 mentions (1,621 recommend, 98 neutral, 52 warn), 11 notes,
+  72 agreements, 0 rejected, in the stage and again in the library. Slimmed (995 comments kept whole), then copied into
+  the shared library without overwriting (2,673 to 2,683 threads, 2,656 to 2,666 extractions; the unslimmed copies stay
+  in the stage, under docs/, for the deletion rule). I read none of their text. Batches 2 to 7 (84 threads, 11 other
+  makeup types) were not read: the plan holds them for Noemi's own yes (cost rule 3, no extra types), so bronzer,
+  highlighter, setting powder, foundation, concealer, setting spray, makeup primer, mascara, eyeliner and brow gel still say
+  "we haven't read Reddit about X yet", and lipstick still has 1 pick. (2) Comment ids the helper flagged (ids only, in
+  docs/build-2026-11-04/makeup/integrator-notes.txt): two accounts that push one small brand across 3 threads each, a brand
+  gift, a free sample, a working makeup artist, one generic praise; none is quoted in the three blush answers and that
+  brand is in none of their lists; they count as ordinary voices, as in earlier rounds. (3) Profiles: 360 of the new
+  threads' writers were looked up (29 behind the blush answers' quotes first, then the stalest; 1 failed), kept with the
+  library for 30 days; 386 are listed for later in docs/build-2026-11-04/makeup/profiles-later-makeup.txt, which the
+  refresh due before 24 Nov asks anyway (a writer not yet looked up counts as neutral). The warm also dropped 1,676 stored
+  writers and 2,409 flairs of the 3 Nov store whom no kept comment in the library needs any more (what warm always does),
+  and it changed no stored entry. The blush answers moved with the profiles: before any new profile the picks were Milani,
+  Rare Beauty Soft Pinch and Nars Orgasm, after 360 writers Rare Beauty Soft Pinch, Milani and Patrick Ta (Nars Orgasm now
+  Also worth a look), so they may move again when the other 386 are looked up. (4) Results, all offline with live checks
+  off: the whole suite 6,915 passed and 1 failed (test_library's unlabelled gold thread 1v40u3t, which fails on main too);
+  the evaluation as the 2 Nov row in every number (30/30, 25/25, 25/25; fits 19/24, useful 23/24; ordering 75/79; votes
+  73/78 and 73/75; voice 12/12, evidence 30/30; blind test 10/10 full top 3s), the library's quote count 84,874 of 85,381
+  with the 10 new threads at 1,771 of 1,771 (the 507 not found are in older threads); the sweep of 293 answers against main's
+  code on main's library the same evening: 5 changed, all makeup (blush, blush for fair skin and cream blush from no pick
+  to 3 picks of 3 quotes each, 71 quotes in all; bronzer no longer answered as blush; setting powder no longer as setting
+  spray), the 10 blind-test answers identical, the other 278 with the same picks (the two e-reader answers differ only in a
+  count of threads left out as loose, 10 to 11), 207 answers with 3 picks (204), 650 picks (641), 7,567 quotes shown and
+  none failing the engine's word-for-word check. The blush answers read 11 threads (the 10 and the lipstick-repair thread
+  from r/MakeupRehab that named blush, which no blush quote comes from). (5) Discovery dry run on the branch, run again that
+  evening when the archive answered better than in the builder's runs: 408 candidates in 284 s, all three of Google's
+  threads among them (ranks 1, 11 and 5), and the mix of 6 took two of them (1d62brq and 1hyd7j3), two more from r/Makeup and
+  r/Sephora, one each from r/MakeupAddiction and r/drugstoreMUA, none from r/MakeupRehab.
+  (6) Told, not changed: r/Makeup and r/Sephora (PROPOSED) hold 7 of the 10 threads, so main's engine, which does not
+  know them, lists those 7 as problems in `engine.extract check` and the library check until the branch is merged (answers
+  skip them); do not deploy from main before the merge. No price or page was looked up for the blush picks (the lists hold
+  no makeup entry): they say "Price not checked yet" and "Availability not checked yet". "blush for fair skin" gives the
+  same answer as "blush": the need is not one of config's words. "lipstick" and "lip tint" still quote one comment of
+  r/MakeupRehab (old library threads, as before this round). FOR NOEMI: yes or no to r/Makeup and r/Sephora as
+  general subreddits (and r/AsianBeauty listed there too), whether she wants the 11 other makeup types read (84 threads,
+  about 9,500 comments by the plan's table, Sonnet helpers), and the told wait of the builder's note (45 minutes for the first in line, 18 requests
+  a day, 20 a month).
