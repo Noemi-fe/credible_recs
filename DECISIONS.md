@@ -1285,7 +1285,7 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   and brow gel types, the cap on old comments, the need-fit rule and those two threads are as they were. No scoring
   weight or wait number changed, no product type was added, and the engine makes no new call. Measured on one frozen
   copy of the writers' profile store (taken at about 01:30, while the profile warm went on writing the library's), both
-  trees on the same copy, live checks off, c983114's code before and this round's after, back to back.
+  trees on the same copy, live checks off, b83ab95's code before and this round's after, back to back.
   (1) On-demand searches for a rare word (the first title search answers fewer than 100 posts; 4 Nov, evening (b)): the
   round asked titles, needs, advice, then warnings until its 16 calls (ON_DEMAND_SEARCH_CALLS) were spent, and the
   advice searches pushed main's warning searches out. Now it asks main's order, titles, needs, then the 4 warnings, the
@@ -1435,7 +1435,7 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   on its parent without a telling word (the extraction's refers_to doesn't reach the quote step); which formula a quote
   describes when no date of a reformulation is known; first-hand use or an off-label use beyond the words listed.
   (8) Measured through the heavy lock on builder 1's frozen copy of the writers' profile store (taken at about 01:30),
-  live checks off, 07cace0's code before and this round's after, back to back (the before sweep, run four times in the
+  live checks off, 36704fa's code before and this round's after, back to back (the before sweep, run four times in the
   night, gave the same answers each time). Sweep of 293 answers: no answer's picks, their order or its Also worth a look
   changed, and 78 answers show something different. The 15 makeup answers: 13 changed (bronzer and mascara are the
   same). 17 of their 225 quotes under picks and Also worth a look changed (16 for another quote of the same product, 1
@@ -1562,7 +1562,7 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   the reason line says nothing about a form, so a cream blush pick shows no sign of its cream voices. Every quote the
   rule's sweep shows was found word for word (5,396).
   Measured through the heavy lock on one frozen copy of the writers' profile store (taken at 04:23 EST, while the warm
-  writes the library's), with copies of the library before and after, live checks off, builder 2's code (f4369ab)
+  writes the library's), with copies of the library before and after, live checks off, builder 2's code (24bbc31)
   before and this round's after, back to back (repeated sweeps gave the same answers). Sweep of 293 answers: the 278
   non-makeup answers are unchanged in every part; of the 15 makeup answers 13 changed (12 in what they show, concealer
   for dark circles in its voices only), 7 of them in their picks or order (cream blush, bronzer, setting powder, setting
@@ -1647,7 +1647,7 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   (9) From the rules review: part 3's measurement sentence above and its eval/RUNS.md row now say that module 4's
   product groups moved too, 34,452 to 34,441 (loose 4,752 to 4,750), where they had named the quote count alone.
   Measured through the heavy lock on one frozen copy of the writers' profile store (taken at 06:24 EST, while the warm
-  writes the library's), live checks off, part 3's code (c1e7b0c) before and this round's after, back to back (the
+  writes the library's), live checks off, part 3's code (e079eee) before and this round's after, back to back (the
   before sweep run twice gave the same answers). Sweep of 296 requests (the 293 of part 3 and brow pencil, lip stain
   and eyebrow gel): no pick, no pick's order and no "Also worth a look" or "Skip these" item moved in any non-makeup
   answer; 19 of the 278 non-makeup answers show another quote for one or two picks, every one the need quote of (6): a
@@ -1662,8 +1662,8 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   module 4's product groups, 34,441 to 34,442 (the got2b alias: the plain got2b hair gel is a group of its own again),
   so eval/metrics.json doesn't change. Whole suite: 7,196 passed and 1 failed (the unlabelled gold thread 1v40u3t,
   which fails on main too): part 3's 7,146 and this round's 50.
-  The rules review's other points, not fixed here: the commit metadata of older commits on this branch (c983114 and
-  6a907b9 signed by a Sonnet line; 896e033 and 6a907b9 dated -0500) needs a rebase, the orchestrator's; lip tint (3
+  The rules review's other points, not fixed here: the commit metadata of older commits on this branch (b83ab95 and
+  15835d6 signed by a Sonnet line; 1429829 and 15835d6 dated -0500) needs a rebase, the orchestrator's; lip tint (3
   threads), brow gel (5) and brow pencil (3) are under on-demand reading's bar of 6 (a data round or Noemi); 32 of the
   79 products the makeup answers show have no summary, Urban Decay's among them, until the summarising batch after the
   warm; the product notes for NARS Orgasm, Becca and got2b (data/product_notes.json) are user-facing and wait for
