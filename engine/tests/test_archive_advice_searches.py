@@ -273,7 +273,9 @@ def test_an_archive_that_answered_nothing_isnt_asked_again():
 # one title search goes first, to see whether the type's word is common: when it answers its full 100, the newest posts
 # are only the last weeks, so the need and advice searches (whole history) come next, then the warning searches, and the
 # other title searches only fill what is left; when it answers fewer, the title searches find every post (the advice
-# searches could only find some of the same), so the round keeps main's order. `library add` has no budget.
+# searches could only find some of the same), so the round keeps main's order: titles, needs and warnings, the title
+# searches cut so main's need and warning searches fit, and the advice searches only in what is left (5 Nov 2026, below).
+# `library add` has no budget.
 
 def saturated_blush_posts() -> list[dict]:
     """More recent small "blush" posts in each makeup community than a search answers (its newest 100), and the big
@@ -340,11 +342,102 @@ def test_with_need_words_the_need_searches_come_first_then_the_advice_ones():
 def test_a_word_the_title_searches_cover_whole_keeps_mains_order():
     # Few posts: the first title search answers fewer than 100, so title searches find every post with the word and
     # come first, as on main; the budget still holds.
+    # Changed on purpose, 5 Nov 2026 (the rules review of round 2): this test expected 16 title searches and no warning
+    # search, which was the flaw: main asks its 4 warning searches for every type, so the title searches are now cut to
+    # leave them room (12 title searches and 4 warnings, main's own "blush" round), as the tests below check for words
+    # that aren't makeup.
     posts = [dict(p, subreddit="Makeup") for p in blush_posts()]
     client = TitleSearch(posts, cap=100)
     found = budgeted(client)
-    assert [kind(t) for _, t in client.searches] == ["title"] * 16  # 2 words, 4 communities, 2 windows: the budget
-    assert ids(found) == ids(posts)  # every one, the big ones included, through the title searches
+    assert [kind(t) for _, t in client.searches] == ["title"] * 12 + ["warning"] * 4  # the budget, warnings kept
+    # The big ones are found through the title searches; the 4 cut are the plural's over the older years (an old small
+    # post holding only "blushes" is the price of the warnings).
+    assert {"1old01", "1top01"} <= ids(found) and ids(found) == ids(posts) - {"1mid02"}
+
+
+# --- A rare word (5 Nov 2026, the rules review of round 2) ---
+# For a word few posts hold, the first title search answers fewer than 100 posts. The round had then asked the title,
+# need and advice searches before the warning ones until the budget ran out, so most types lost main's 4 warning
+# searches (in a replay over every type's name, warning searches fell from 1,776 to 486) and many lost their need
+# searches. Now the need and warning searches main asks keep their place, the title searches are cut to leave them
+# room, and the advice searches only fill what is left. Every post here is made up.
+
+class FiveEach(FakeArchiveClient):
+    """Answers every search with 5 made-up posts of its own: far fewer than 100, so any word reads as a rare one."""
+
+    def search_posts(self, subreddit, title, limit=25, before=None, after=None):
+        self.searches.append((subreddit, title))
+        self.asked.append({"limit": limit, "before": before, "after": after})
+        n = len(self.searches)
+        return [post_on(f"1rr{n:03d}{i}", f"Made-up {title} question {i}?", 12, "2025-05-01", subreddit)
+                for i in range(5)]
+
+
+def kinds_of(request: str, client) -> list[str]:
+    from engine.sources import finder_terms, warning_words
+
+    query = parse_query(request)
+    terms = finder_terms(query.product_type)
+    warnings = {f"{terms[0]} {word}" for word in warning_words(query)}
+
+    def one(term: str) -> str:
+        if term in terms:
+            return "title"
+        if term in warnings:
+            return "warning"
+        if term.split()[-1] in ARCHIVE_ADVICE_WORDS and " ".join(term.split()[:-1]) in terms[:2]:
+            return "advice"
+        return "need"
+    return [one(t) for _, t in client.searches]
+
+
+def mains_round(request: str) -> list[tuple[str, str]]:
+    """The searches main asks for a request (no budget, no advice searches): its title, need and warning searches."""
+    client = FiveEach()
+    search_archive(client, parse_query(request), 16, 4, posts_each=100, older_than_years=3, max_failures=3, now=NOW,
+                   need_searches=ARCHIVE_NEED_WORDS)
+    return client.searches
+
+
+@pytest.mark.parametrize("request_text", ["teapot", "conditioner for curly hair", "robot vacuum for pet hair",
+                                          "chef knife for beginners"])
+def test_a_rare_word_keeps_mains_need_and_warning_searches(request_text):
+    main, client = mains_round(request_text), FiveEach()
+    budgeted(client, request_text)
+    kinds, main_kinds = kinds_of(request_text, client), kinds_of(request_text, FakeSearches(main))
+    assert len(client.searches) <= 16
+    for wanted in ("need", "warning"):
+        asked = [s for s, k in zip(client.searches, kinds) if k == wanted]
+        assert asked == [s for s, k in zip(main, main_kinds) if k == wanted]  # every one main asks, in its order
+    assert main_kinds.count("warning") == 4
+
+
+def test_a_rare_word_like_teapot_asks_mains_round_then_advice_only_fills_what_is_left():
+    client = FiveEach()
+    budgeted(client, "teapot")
+    kinds = kinds_of("teapot", client)
+    # Main's teapot round is 8 title searches and 4 warnings: all of it, then 4 advice searches, the rest of the budget.
+    assert kinds == ["title"] * 8 + ["warning"] * 4 + ["advice"] * 4
+    assert client.searches[:12] == mains_round("teapot")
+
+
+def test_with_more_need_searches_than_room_the_warnings_still_keep_their_place():
+    client = FiveEach()
+    budgeted(client, "conditioner for curly hair")
+    kinds = kinds_of("conditioner for curly hair", client)
+    assert kinds[0] == "title" and kinds.count("warning") == 4 and kinds.count("need") == 7
+    assert len(kinds) == 16 and "advice" not in kinds  # main's 25 searches don't fit: the title searches give way
+    client = FiveEach()
+    budgeted(client, "conditioner for curly hair", calls=8)
+    kinds = kinds_of("conditioner for curly hair", client)
+    assert kinds == ["title"] + ["need"] * 3 + ["warning"] * 4  # a tight budget: the warnings first, then the needs
+
+
+class FakeSearches:
+    """Holds a list of searches, for kinds_of."""
+
+    def __init__(self, searches):
+        self.searches = list(searches)
 
 
 def test_every_call_counts_halves_and_second_chances_included():

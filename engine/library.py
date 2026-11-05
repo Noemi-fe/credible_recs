@@ -303,7 +303,8 @@ def _find(source: Source, query, limit: int, mix: dict | None, only: str | None)
     if mix is not None and "mix" in inspect.signature(find).parameters:
         return find(query, limit=limit, mix=mix, **({"fill": False} if only is not None else {}))
     threads = find(query, limit=limit)
-    return [t for t in threads if only is None or thread_kind({"title": t.title}, t.category, query.product_type) == only]
+    return [t for t in threads if only is None
+            or thread_kind({"title": t.title, "subreddit": t.community}, t.category, query.product_type) == only]
 
 
 PLACEHOLDERS = {"deleted": "[deleted]", "removed": "[removed]"}  # what Reddit shows in place of the text
@@ -835,7 +836,8 @@ def coverage_by_kind(folder: Path = DEFAULT_LIBRARY_DIR) -> dict[str, dict[str, 
     so it shows which kinds a product still lacks against the library's mix. Threads of no kind aren't listed.
     """
     return {
-        name: {kind: sum(thread_kind({"title": t.title}, t.category, name) == kind for t in threads) for kind in THREAD_KINDS}
+        name: {kind: sum(thread_kind({"title": t.title, "subreddit": t.community}, t.category, name) == kind
+                         for t in threads) for kind in THREAD_KINDS}
         for name, threads in _relevant_threads(folder).items()
     }
 

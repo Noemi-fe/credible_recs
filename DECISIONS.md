@@ -1188,8 +1188,11 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   them: the first title search goes alone, and when it answers its full 100 posts (the newest 100 of a word people
   post every day are its last weeks) or fails, the need searches and the advice searches come next (cut so the 4
   warning searches still fit), then the warnings, and the other title searches only fill what is left. When it answers
-  fewer than 100, the title searches find every post with the word, so the round keeps main's order (titles, needs,
-  advice, warnings) until the budget is spent. For a blush-like request (a test with 110 posts a community) that is 1
+  fewer than 100, the title searches find every post with the word, and the round asked titles, needs, advice, then
+  warnings until the budget was spent. (Corrected 5 Nov 2026, from the rules review: this note first said that order
+  was main's. It was not: main has no advice searches and asks its warnings right after its needs, and with the advice
+  first the 16 calls ran out before the warnings for most types. Changed the same day: see the note of 5 Nov 2026, the
+  makeup fix round, (1).) For a blush-like request (a test with 110 posts a community) that is 1
   title search, 11 advice searches and 4 warnings, and the three big advice threads rank first. (c) Its threads are
   chosen to fit the 15 Gemini calls (engine.on_demand.within_calls: a thread is one call per 40 comments read, at most
   150 comments, so a big one is 4), counting the threads an earlier try already read, and a thread whose calls would
@@ -1274,3 +1277,84 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   provisional, and then the sweep and the summaries are to be redone (6 products the answers now show have none yet).
   (c) The sweeps, the stage folders and the scratchpad files hold commenters' words: they go to the Trash with the
   deletion rule.
+- 5 Nov 2026, early morning, the makeup fix round, part 1: matching and grouping (Claude, builder 1; technical calls,
+  reported to Noemi; branch makeup-threads; nothing pushed, merged or deployed). From the rules, shopper and integrator
+  reviews of the night. Noemi's four answers of the same night (about 00:25: lip tint and brow gel "Split both
+  (Recommended)", the need-fit rule "Yes, measure first (Recommended)", the two r/MakeupRehab threads "Remove those 2
+  threads", old makeup comments "Yes, like skincare (Recommended)") are the next step's, not this one's: the lip tint
+  and brow gel types, the cap on old comments, the need-fit rule and those two threads are as they were. No scoring
+  weight or wait number changed, no product type was added, and the engine makes no new call. Measured on one frozen
+  copy of the writers' profile store (taken at about 01:30, while the profile warm went on writing the library's), both
+  trees on the same copy, live checks off, c983114's code before and this round's after, back to back.
+  (1) On-demand searches for a rare word (the first title search answers fewer than 100 posts; 4 Nov, evening (b)): the
+  round asked titles, needs, advice, then warnings until its 16 calls (ON_DEMAND_SEARCH_CALLS) were spent, and the
+  advice searches pushed main's warning searches out. Now it asks main's order, titles, needs, then the 4 warnings, the
+  title searches cut so main's need and warning searches fit (the warnings first, then the needs, when even they don't),
+  and the advice searches only fill what is left (engine.sources.search_archive). The common-word path is as it was.
+  Measured with the reviewer's simulation (a fake archive answering 5 posts a search, every type name: 444 in this
+  branch's list; the reviewer's list had 447): warning searches main 1,776, the branch before 486 (219 types with none;
+  the reviewer counted 1,788, 486 and 360 of its 447), after 1,776 (every type its 4); title searches 4,348, 4,000,
+  3,608; advice searches 0, 2,431, 1,533. Examples (title + need + advice + warning searches; main, before, after):
+  teapot 8+0+0+4, 8+0+8+0, 8+0+4+4; conditioner for curly hair 14+7+0+4, 14+2+0+0, 5+7+0+4; robot vacuum for pet hair
+  18+3+0+4, 16+0+0+0, 9+3+0+4; blush 12+0+0+4, 16+0+0+0, 12+0+0+4; makeup primer for large pores 6+6+0+4, 16+0+0+0,
+  4+8+0+4. Tests: those three rare non-makeup requests keep main's need and warning searches (teapot its 4 warnings),
+  and the blush test now expects 12 title searches and 4 warnings (changed on purpose, dated in the test). The note of 4
+  Nov, evening, which said this order was main's, is corrected.
+  (2) Makeup primer: a type may now list community names (engine/data/product_types.json, "community_names"): words that
+  name it in a thread's title only when the thread is in one of its own communities (engine.sources.title_names; never
+  in a post's text, where a bare "primer" is as often an eyeshadow's or a paint's). Makeup primer's are "primer" and
+  "primers", so its 6 face-primer threads, whose titles say little more than "primer", are read. "eyeshadow primer" is
+  no longer one of its keywords and is a look-alike (with "eye primer"), so the eyeshadow-primer thread 1vs5bqy (its
+  mentions typed eyeshadow primer 168, eyeshadow 9, makeup primer 4) is out. "makeup primer for large pores" now reads
+  1oxcf8e, 17tudja, 1ux2gcj, 1mm85fo, 1hk56ak and 1txl469 (it read 1ux2gcj and 1vs5bqy) and gives 3 picks instead of 1
+  (Hourglass Mineral Veil, 6 credible voices; Danessa Myricks Blurring Balm, 4; NYX marshmallow primer, 3; ELF power
+  grip, the one pick before, has its credible recommendations in 1 thread once the eyeshadow-primer thread is out, and a
+  pick needs 2), needs_more_threads is false and the "evidence for only one" message is gone. A request for "eyeshadow
+  primer" is now a type of its own (the open model's way), not makeup primer.
+  (3) Kohl: "kohl" names eyeliner in a title only in eyeliner's communities (a community name), and "Kohl's" (the shop,
+  either apostrophe) is a look-alike of eyeliner, so it names none anywhere: 177xg86 and d65x5e (r/BuyItForLife, about
+  the shop's clothes) leave the eyeliner answer (10 threads to 8; other types' names left out 128 to 39), and a request
+  for sweatpants from Kohl's is about sweatpants, not eyeliner, while "kohl eyeliner" still is eyeliner. Left: "Kohls"
+  without an apostrophe in a comment still counts as eyeliner talk (18 comments outside the makeup communities), but a
+  thread is never read on its comments alone. pipeline._clear_brand, which reads titles for any type's names, is as it
+  was: it only acts for brands in data/brand_lines.json, and no makeup brand is one there.
+  (4) Grouping and names (engine/data/product_aliases.json's short names, written out at the start of a name, and
+  config.MAKER_SPELLINGS for how a name is shown). The shoppers' reports: "CT" is Charlotte Tilbury; "One size on til
+  dawn" is shown ONE/SIZE On 'Til Dawn; "Essence Princess Lash" is Essence Lash Princess; MAC and NARS in capitals;
+  Stila's liquid liner names are one product, Stila Stay All Day Liquid Liner (4 credible voices to 15); Maybelline
+  Super Stay Skin Tint is apart from the Super Stay foundations (the foundation answer's Also worth a look shows the
+  skin tint, 20 voices, where it showed the Super Stay foundation line, 19, mostly the tint's). Not done: the shopper's
+  brush-tip NYX pen as Epic Ink, because the three mentions written "Epic Wear pen" sit in replies about Epic Wear, so
+  the extraction's words don't make it certain. Found the same way in the 15 answers' ranked products (a writer's short
+  brand name beside the written-out one; each short name occurs only in makeup communities in the library): VB (Victoria
+  Beckham), T28 (Tower 28), ND and Denona (Natasha Denona), Huda (Huda Beauty), Thrive (Thrive Causemetics), ABH,
+  Anastasia BH and Anastasia (Anastasia Beverly Hills), "NYX Epic Ink" alone (NYX Epic Ink Liner; Epic Wear stays
+  apart), Got2be (got2b; and, as 'Leap V1' is, "ND filter" and "ND filters" are kept as they are before "ND", since the
+  general category holds cameras too), and the spellings NYX, ONE/SIZE, Estée Lauder, L'Oréal, e.l.f., got2b, rom&nd,
+  Lancôme and YSL. What moved: setting spray's Charlotte Tilbury is one product (23 credible recommendations and 17
+  credible warnings, 20 and 9 under its name before and 3 and 9 under "CT"), ranked tenth, so it leaves Also worth a
+  look and the CT skip line goes (shown nowhere: mixed, and that is what its voices say); concealer's picks are Tower 28
+  (65 to 71 voices), Natasha Denona (19 to 29, from third to second) and Kosas (35 to 34, from second to third); setting
+  powder keeps its three picks, Huda Beauty now first (7 to 12 voices, "Huda" and "Huda Beauty" together; it was third);
+  brow gel's third pick is Anastasia Beverly Hills's brow pencils (9 voices) and got2b Glue Spiking Gel goes to Also
+  worth a look; mascara's Thrive Causemetics has 30 voices (22); eyeliner shows NYX Epic Ink Liner (21), Stila Stay All
+  Day Liquid Liner (15) and Victoria Beckham's eyeliners (20); blush and blush for fair skin show Tower 28's blushes in
+  Also worth a look instead of Glossier Cloud Paint. One voice changed through an older rule: a writer who recommends
+  Tower 28 in one comment and warns against "T28" in another now contradicts themselves (Noemi's rule, 9 Oct 2026), so
+  all their comments are a low voice; one of them was the comment Kosas's summary cited.
+  (5) In the 15 makeup answers (sweep of 293 answers): picks 43 to 45, answers with 3 picks 14 to 15, names shown (picks
+  and Also worth a look) 86 to 90, quotes under picks 129 to 135; 518 quotes shown, each found word for word in its
+  saved comment (checked outside the engine). Names shown without a summary 10 to 22: 8 are newly shown (the 6 primer
+  names, two eyeliners), 5 renamed (a summary is kept by its name's words: Maybelline Super Stay Skin Tint, Thrive
+  Causemetics, Essence Lash Princess, Anastasia Beverly Hills's brow pencils, e.l.f. brow lift), and 2 dropped by the
+  summary check (Stila's now has a credible warning and its summary names no downside; Kosas's cited comment is the low
+  voice of (4)). The summaries are to be written in the next summarising batch, with the redo after the full warm.
+  Highlighter is the same; bronzer differs only in the names its left-out list holds; lipstick and lip tint only in
+  rom&nd's spelling.
+  (6) Checks, through the heavy lock: the whole suite 7,006 passed (77 new tests) and 1 failed, the unlabelled gold
+  thread 1v40u3t, which fails on main too; eval/run_eval.py identical before and after in every number but module 4's
+  count of the library's product groups (34,485 to 34,452, loose 4,760 to 4,752: the short names joining); of the 278
+  non-makeup answers every one is identical in picks, Also worth a look, Skip these, message, threads, summaries,
+  quotes, reasons and left-out lists, so no non-makeup answer changed. The makeup picks stay provisional until the full
+  warm, as in the note of 4 to 5 Nov, (7). The sweeps and the frozen copy of the store hold commenters' words and
+  writers' names: the store's copy is deleted, the sweeps go to the Trash with the deletion rule.

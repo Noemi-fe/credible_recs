@@ -575,7 +575,8 @@ def _threads_about_needs(usable: list[Thread], query: ParsedQuery) -> int | None
     needs = request_needs(query)
     if not needs or query.ingredient_led or len(usable) < config.POPULAR_TYPE_MIN_THREADS:
         return None
-    return sum(1 for thread in usable if thread_needs(thread, needs, titled_as_another_type(thread.title, query)))
+    return sum(1 for thread in usable
+               if thread_needs(thread, needs, titled_as_another_type(thread.title, query, thread.community)))
 
 
 def request_kind(request: str) -> tuple:
@@ -641,7 +642,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.waiting_live_check = [t.id for t in extracted if not (exempt or _checked_live_recently(t, today))]
     usable = [t for t in extracted if t.id not in result.waiting_live_check]
     result.threads_available = len(usable)
-    own = [t for t in usable if not titled_as_another_type(t.title, query)]
+    own = [t for t in usable if not titled_as_another_type(t.title, query, t.community)]
     result.own_threads_available = len(own)
     result.own_thread_ids = [t.id for t in own]
     result.threads_about_needs = _threads_about_needs(usable, query)
@@ -715,7 +716,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     # The features the request names (Noemi's decision 1 of 16 Oct 2026, engine/features.py), each thread's ask for
     # them, and the opposites of its needs (her decision 2: oily-skin complaints in a dry-skin answer), 17 Oct 2026.
     features = request_features(query)
-    asking = {t.id: {f.name for f in features if thread_asks_for(t, f, titled_as_another_type(t.title, query))}
+    asking = {t.id: {f.name for f in features
+                     if thread_asks_for(t, f, titled_as_another_type(t.title, query, t.community))}
               for t in threads} if features else {}
     # The needs each thread's title asks for, which its top-level answers talk about (Noemi's decision (d), 19 Oct 2026).
     titles_ask = {t.id: _title_needs(t, judged_needs(query), query) for t in threads}
@@ -916,7 +918,7 @@ def _title_needs(thread: Thread, needs: tuple[Need, ...], query: ParsedQuery) ->
     """The names of the request's needs a thread's title asks for (engine.needs.needs_met, as a title is read), none
     when its title names another type of product (engine.sources.titled_as_another_type): Noemi's decision (d) of 19 Oct
     2026, a top-level answer in such a thread talks about them (_score)."""
-    if not needs or titled_as_another_type(thread.title, query):
+    if not needs or titled_as_another_type(thread.title, query, thread.community):
         return ()
     return tuple(needs_met(thread.title or "", needs, thread=True))
 
@@ -1155,7 +1157,7 @@ def _threads_about_another_type(checked: dict[str, CheckResult], threads: list[T
         if types:
             if sum(of_the_type(t) for t in types) < config.LOOK_FOR_TYPE_SHARE * len(types):
                 found.add(thread.id)
-        elif titled_as_another_type(thread.title, query):
+        elif titled_as_another_type(thread.title, query, thread.community):
             found.add(thread.id)
     return found
 

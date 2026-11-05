@@ -2675,6 +2675,19 @@ MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "lululemon")
 # Brooklinen (bed sheets): with Brooks (running shoes) in the brand-lines list, writers' "Brook Linen" was shown as
 # "Brooks Linen" on a skip list (the same slip between two makers' names as Astra's).
 MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "Brooklinen")
+# Makeup brands as their makers write them (5 Nov 2026, the makeup review of round 2; Claude's call, reported to Noemi,
+# DECISIONS.md): answers had shown "Nars" beside "NARS", "Nyx" beside "NYX", "Mac Fix + Stay Over", "Estee Lauder"
+# beside "Estée Lauder", "L'Oreal" beside "L'Oréal" and "ELF" beside "Elf". MAC only as its lines: a bare "Mac" in the
+# general category is mostly Apple's (laptops). Each keeps a name's words (engine.summaries.summary_key) but e.l.f.,
+# whose two saved summaries ("elf power grip", "elf brow lift") wait for the next summarising batch.
+MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "NARS", "NYX", "ONE/SIZE", "Estée Lauder", "L'Oréal",
+                              "e.l.f.", "got2b", "rom&nd", "MAC Fix+", "MAC Studio Fix", "MAC Studio Radiance",
+                              "MAC Face and Body", "MAC Glow Play", "MAC Prep + Prime", "MAC Paint Pot",
+                              "MAC Pro Longwear", "MAC Liquidlast", "MAC Fluidline", "MAC Mineralize",
+                              "MAC Extended Play", "Lancôme", "YSL")
+# Also from a look through the same answers' ranked products: "Lancome" beside "Lancôme", "Ysl" beside "YSL". Writers'
+# short brand names that had split a shown pick's brand in two (VB, T28, ND, Huda, Thrive, ABH, Anastasia, Got2be, and
+# "NYX Epic Ink" alone) are short names in engine/data/product_aliases.json, whose full names are known spellings too.
 
 # --- Converge round 2: code (18 Oct 2026) ---
 # The round-2 code builder's values (docs/bfs-2026-10-17/round2-additions.md and the orchestrator's list); Claude's

@@ -69,8 +69,8 @@ from engine.memo import REQUEST_WORK, Table, register
 from engine.models import Comment, Thread
 from engine.parse_reddit import ParseRedditClient
 from engine.query import (
-    FIRST_LOOKALIKES, FIRST_PRODUCT_TYPES, LIP_SUN_PROTECTION, LOOKALIKES, PRODUCT_TYPES, TITLE_WORDS, ParsedQuery,
-    correct_typos, name_pattern, plural_ending,
+    FIRST_LOOKALIKES, FIRST_PRODUCT_TYPES, LIP_SUN_PROTECTION, LOOKALIKE_PHRASES, LOOKALIKES, PRODUCT_TYPES,
+    TITLE_WORDS, ParsedQuery, correct_typos, name_pattern, plural_ending,
 )
 from engine.text import one_edit_apart
 
@@ -369,22 +369,129 @@ def _product_words(product_type: str) -> tuple[str, ...]:
 
 def relevance(thread: Thread, product_type: str) -> float:
     """3 points if the title names the product, 1 if the post body does, plus up to 1 for comments that do (full at 5)."""
-    score = 3 if mentions_product(thread.title, product_type) else 0
+    score = 3 if title_names(thread.title, product_type, thread.community) else 0
     score += 1 if post_names(thread, product_type) else 0
     return score + min(1, talking(thread, product_type) / 5)
 
 
 def post_names(thread: Thread, product_type: str) -> bool:
     """Whether the thread's post names the product. A slimmed thread no longer holds its post's words (engine/slim.py,
-    13 Oct 2026): the product types they named were worked out first (engine.models.WholeThread.post_names)."""
-    if mentions_product(thread.body, product_type):
+    13 Oct 2026): the product types they named were worked out first (engine.models.WholeThread.post_names). A type's
+    community names never count in a post (title_names): what a slimmed post named through one of them ("kohl", the
+    shop Kohl's in an r/BuyItForLife post) counts only when its post words hold another of the type's names."""
+    if mentions_product(_without_community_names(thread.body, product_type), product_type):
         return True
-    return thread.whole_thread is not None and _among(thread.whole_thread.post_names, product_type)
+    if thread.whole_thread is None or not _among(thread.whole_thread.post_names, product_type):
+        return False
+    return _named_by_community_names(product_type) is None or _post_words_name(thread.whole_thread.post_words,
+                                                                                  product_type)
 
 
 def names_product(thread: Thread, product_type: str) -> bool:
     """Whether the thread's title or post names the product (its comments don't count)."""
-    return mentions_product(thread.title, product_type) or post_names(thread, product_type)
+    return title_names(thread.title, product_type, thread.community) or post_names(thread, product_type)
+
+
+# --- Community names (5 Nov 2026, the makeup review of round 2) ---
+# A type may list community names (engine/data/product_types.json, "community_names"): words that name it in a thread's
+# title only when the thread is in one of the type's own communities. In r/Makeup or r/drugstoreMUA a post titled
+# "best primer?" asks for a makeup primer, while the type's names were all longer ("makeup primer", "face primer"), so 5
+# of the library's 6 face-primer threads weren't read for a makeup primer request; elsewhere a primer is a paint's or a
+# beginner's guide. And "kohl", an eyeliner in the makeup communities, is mostly the shop Kohl's elsewhere: two
+# r/BuyItForLife threads counted as eyeliner threads. Read as written (whole words: never "Kohl's" or "Kohls"), never
+# inside a longer name of something else ("eyeshadow primer", "lash primer"), and never in a post. Module 1 doesn't read
+# them in a request, and comments read a type's names as before (the shop's "Kohl's" is a look-alike of eyeliner's,
+# so it names no eyeliner anywhere: engine/data/product_types.json).
+
+def title_names(title: str, product_type: str, community: str) -> bool:
+    """Whether a thread's title names the product (mentions_product). A type's community names count only in a title of
+    one of its own communities; a community name that is also one of the type's names ("kohl") counts nowhere else."""
+    if not product_type or not _community_names(product_type):
+        return mentions_product(title, product_type)
+    if (community or "").strip().lower() in _own_communities(product_type) and _community_named(title, product_type):
+        return True
+    return mentions_product(_without_community_names(title, product_type), product_type)
+
+
+@cache
+def _community_names(product_type: str) -> tuple[str, ...]:
+    wanted = product_type.strip().lower()
+    return next((p.community_names for p in PRODUCT_TYPES if p.name == wanted), ())
+
+
+@cache
+def _own_communities(product_type: str) -> frozenset[str]:
+    wanted = product_type.strip().lower()
+    return frozenset(s.lower() for p in PRODUCT_TYPES if p.name == wanted for s in p.subreddits)
+
+
+@cache
+def _community_pattern(product_type: str) -> re.Pattern:
+    """The type's community names, as written, whole words, and not followed by "'s" (the shop "Kohl's")."""
+    names = sorted(_community_names(product_type), key=len, reverse=True)
+    return re.compile(rf"\b(?:{'|'.join(map(re.escape, names))})\b(?!['’]s\b)", re.IGNORECASE)
+
+
+@cache
+def _community_covers(product_type: str) -> re.Pattern | None:
+    """The longer names of something else holding one of the type's community names: other types' names ("lash primer",
+    a mascara's) and the look-alikes ("eyeshadow primer"), with or without a plural "s"."""
+    wanted, own = product_type.strip().lower(), _community_pattern(product_type)
+    names = {n.lower() for n in _community_names(product_type)}
+    phrases = {k for p in PRODUCT_TYPES if p.name != wanted for k in p.keywords + p.hints} | set(LOOKALIKE_PHRASES)
+    holding = sorted({p for p in phrases if p.lower() not in names and own.search(p)}, key=len, reverse=True)
+    return re.compile(rf"\b(?:{'|'.join(map(re.escape, holding))})s?\b", re.IGNORECASE) if holding else None
+
+
+def _community_named(title: str, product_type: str) -> bool:
+    """Whether the title holds one of the type's community names outside every longer name of something else."""
+    title = unescaped(title)
+    found = list(_community_pattern(product_type).finditer(title))
+    if not found:
+        return False
+    pattern = _community_covers(product_type)
+    covers = [(c.start(), c.end()) for c in pattern.finditer(title)] if pattern is not None else []
+    return any(not any(s <= m.start() and m.end() <= e and e - s > m.end() - m.start() for s, e in covers)
+               for m in found)
+
+
+@cache
+def _named_by_community_names(product_type: str) -> re.Pattern | None:
+    """The type's community names that are also its names (eyeliner's "kohl"), in any form ("kohls", "kohl's"): what
+    is left out of a text before its names are looked for, where a community name doesn't count. None when there is
+    none: nothing is left out."""
+    if not product_type:
+        return None
+    names = [n for n in _community_names(product_type) if n in _product_words(product_type.strip().lower())]
+    if not names:
+        return None
+    return re.compile(rf"\b(?:{'|'.join(map(re.escape, names))})(?:s|['’]s)?\b", re.IGNORECASE)
+
+
+def _without_community_names(text: str, product_type: str) -> str:
+    """The text with the type's community names that are also its names blanked out (same length)."""
+    pattern = _named_by_community_names(product_type)
+    if pattern is None:
+        return text
+    return pattern.sub(lambda m: " " * len(m.group(0)), unescaped(text))
+
+
+@cache
+def _name_words(product_type: str) -> tuple[frozenset[str], ...]:
+    """The words a slimmed post's stored words hold for each of the type's names but its community names
+    (engine.slim.known_words_of: "eye liner" is "eye", "liner" and "eyeliner")."""
+    from engine.slim import known_words_of  # here: engine.slim builds on this module
+
+    wanted = product_type.strip().lower()
+    community = set(_community_names(wanted))
+    return tuple(words for name in _product_words(wanted) if name not in community
+                 if (words := known_words_of(name)))
+
+
+def _post_words_name(post_words: list[str], product_type: str) -> bool:
+    """Whether a slimmed post's stored words hold all the words of one of the type's names but its community names."""
+    held = set(post_words)
+    return any(words <= held for words in _name_words(product_type))
 
 
 def _among(names: list[str], product_type: str) -> bool:
@@ -623,10 +730,10 @@ class LocalSource:
         return self._remembered.setdefault(REQUEST_WORK, {})
 
     def _titled_as_another_type(self, thread: Thread, query: ParsedQuery) -> bool:
-        """titled_as_another_type(thread.title, query), worked out once per thread and request type."""
+        """titled_as_another_type for the thread's title and community, worked out once per thread and request type."""
         key, kept = ("titled as another type", thread.id, query.product_type), self._for_requests()
         if key not in kept:
-            kept[key] = titled_as_another_type(thread.title, query)
+            kept[key] = titled_as_another_type(thread.title, query, thread.community)
         return kept[key]
 
     def _readable(self, category: str) -> list[Thread]:
@@ -678,14 +785,18 @@ def newest_first_spans(threads: list[Thread]) -> dict[str, int]:
     return {t.id: int((newest - t.created_at).days // span_days) for t in threads}
 
 
-def titled_as_another_type(title: str, query: ParsedQuery) -> bool:
+def titled_as_another_type(title: str, query: ParsedQuery, community: str = "") -> bool:
     """Whether a thread's title names another type of product of the request's category, and none it asks for
     ("SPF for oily skin?" for a moisturiser request; for an ingredient-led request, any type that can carry its
     ingredient is one it asks for: engine.ingredients.wanted_types). Its post may name the requested product in passing:
     the thread is about the other one (14 Oct 2026). A requested type's name written as part of another type's name
     doesn't name it (name levels, 14 Oct 2026): a "cast iron (enamelled) dutch oven" is a Dutch oven thread, not a skillet one
-    (b08 had read one so); "cast iron skillet or dutch oven" names both."""
+    (b08 had read one so); "cast iron skillet or dutch oven" names both. With the thread's `community`, a requested
+    type's community names count as title_names reads them ("Primer or setting spray?" in r/Makeup names a makeup
+    primer, 5 Nov 2026)."""
     wanted = set(wanted_types(query.product_type)) | {query.product_type}
+    if community and any(_community_names(w) and title_names(title, w, community) for w in wanted if w):
+        return False
     others = [p for p in PRODUCT_TYPES if p.category == query.category and p.name not in wanted]
     if any(mentions_product(_without_names_set_aside(_without_names_inside(title, w, query.category), w), w)
            for w in wanted):
@@ -922,7 +1033,9 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
       whole history, cut so the warning searches still fit, then the warning searches; the other title searches only
       fill what is left;
     - it answered fewer: the title searches find every post with the word (an advice search could only find some of the
-      same), so the round keeps its order without a budget (titles, needs, advice, warnings) until the budget is spent.
+      same), so the round keeps main's order (titles, needs, warnings) with the title searches cut so that main's need
+      and warning searches fit (the warnings first when even they don't), and the advice searches only fill what is
+      left (5 Nov 2026: they had come before the warnings and pushed them out of most types' rounds).
     Running out of budget is no failure: the searches left are only taken from the cache.
     """
     terms = finder_terms(query.product_type)
@@ -969,10 +1082,15 @@ def search_archive(finder: ArcticShiftClient, query: ParsedQuery, max_free_searc
 
     def the_rest(first_found: list[dict] | None, halves: list[tuple]) -> deque:
         """The round after its first title search, by what it answered (None: it failed; `halves`: its halves then)."""
-        if first_found is not None and len(first_found) < posts_each:  # a word the title searches cover whole
-            rest = later + need_pairs + advice + warning_pairs
-            return deque([(s, t, d, 0) for s, t, d in rest] + halves)
         room = max(0, max_calls - calls - len(warning_pairs))  # the warning searches keep their place
+        if first_found is not None and len(first_found) < posts_each:  # a word the title searches cover whole
+            # Main's order (titles, needs, warnings), the title searches cut so main's need and warning searches fit
+            # (the warnings first, then the needs, when even they don't); the advice searches only fill what is left
+            # (5 Nov 2026, the rules review: they had come before the warnings and pushed them out).
+            needs = need_pairs[:room]
+            titles = later[:room - len(needs)]
+            rest = (titles + needs + warning_pairs + later[len(titles):] + need_pairs[len(needs):] + advice)
+            return deque([(s, t, d, 0) for s, t, d in rest] + halves)
         front = (need_pairs + advice)[:room] + warning_pairs
         return deque([(s, t, d, 0) for s, t, d in front] + halves + [(s, t, d, 0) for s, t, d in later])
 
@@ -1541,7 +1659,7 @@ def _post_score(query: ParsedQuery, post: dict, needs: list[str], too_old: datet
     if _RECURRING.search(lowered):
         return None
     flair = (post.get("link_flair_text") or "").lower()
-    names_it = mentions_product(title, query.product_type)
+    names_it = title_names(title, query.product_type, _subreddit(post))  # a community name only in its own (5 Nov 2026)
     need_matches = min(2, sum(_title_has(lowered, word) for word in needs))
     if _is_advice(lowered, flair):
         # Full points only for advice about this product or this need; a request about something else
@@ -1634,7 +1752,7 @@ def thread_kind(post: dict, category: str, product_type: str | None = None) -> s
     actually lasts?" is first of all a story of a kettle that failed.
     """
     title = (post.get("title") or "").lower()
-    if _is_warning(title, category, product_type):
+    if _is_warning(title, category, product_type, _subreddit(post)):
         return "warning"
     if _LONG_TERM_KIND.search(title):
         return "long_term"
@@ -1643,13 +1761,14 @@ def thread_kind(post: dict, category: str, product_type: str | None = None) -> s
     return "other"
 
 
-def _is_warning(lowered_title: str, category: str, product_type: str | None) -> bool:
-    """A warning names the product (when we know which) and isn't a care project ("sandblasted it since it rusted")."""
+def _is_warning(lowered_title: str, category: str, product_type: str | None, community: str = "") -> bool:
+    """A warning names the product (when we know which) and isn't a care project ("sandblasted it since it rusted").
+    In the post's `community`, as title_names reads a title (5 Nov 2026: "primer" in r/Makeup names a makeup primer)."""
     if not _WARNINGS.get(category, _ANY_WARNING).search(lowered_title):
         return False
     if category in _GEAR and _CARE.search(lowered_title):
         return False
-    return product_type is None or mentions_product(lowered_title, product_type)
+    return product_type is None or title_names(lowered_title, product_type, community)
 
 
 def choose_mix(

@@ -567,7 +567,7 @@ def _have(threads: list[Thread], name: str, category: str) -> dict[str, int]:
     for thread in threads:
         if thread.category == category and (_names(unescaped(thread.title), unescaped(thread.body or ""), name)
                                             or thread.slimmed and post_names(thread, name)):
-            kind = thread_kind({"title": thread.title}, category, name)
+            kind = thread_kind({"title": thread.title, "subreddit": thread.community}, category, name)
             if kind in THREAD_KINDS:
                 counts[kind] += 1
     return {kind: counts[kind] for kind in THREAD_KINDS}

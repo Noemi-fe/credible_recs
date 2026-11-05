@@ -1,5 +1,5 @@
 {
- "about": "Module 1's product types beyond the first ones, as data (14 Oct 2026, Noemi's plan for recs regardless of the category, part 1; chosen by Claude, reported to Noemi). Each type: its name and plural, its category (general, or kitchen, skincare or haircare) and for the general category its department, the names people use for it (keywords; hints are weaker clues, used only when no name is found), the words people put in Reddit post titles about it (title_words), the communities to search for it, most specific first, and where obvious its look-alikes (phrases that hold its words but name something else, set aside by module 1) and the name shown when it isn't the lowercase one. Loaded by engine/config.py and engine/query.py.",
+ "about": "Module 1's product types beyond the first ones, as data (14 Oct 2026, Noemi's plan for recs regardless of the category, part 1; chosen by Claude, reported to Noemi). Each type: its name and plural, its category (general, or kitchen, skincare or haircare) and for the general category its department, the names people use for it (keywords; hints are weaker clues, used only when no name is found), the words people put in Reddit post titles about it (title_words), the communities to search for it, most specific first, and where obvious its look-alikes (phrases that hold its words but name something else, set aside by module 1) and the name shown when it isn't the lowercase one. Since 5 Nov 2026 a type may also list community names: words that name it in a thread's title only when the thread is in one of its own communities (\"primer\" in r/Makeup is a makeup primer, elsewhere often a paint's; \"kohl\" outside the makeup communities is mostly the shop Kohl's), never in a post (engine.sources.title_names). Loaded by engine/config.py and engine/query.py.",
  "types": [
   {
    "name": "dishwasher",
@@ -9653,6 +9653,13 @@
     "kohl",
     "eyeliners"
    ],
+   "community_names": [
+    "kohl"
+   ],
+   "lookalikes": [
+    "kohl's",
+    "kohl’s"
+   ],
    "title_words": [
     "eyeliner",
     "eyeliners"
@@ -9829,8 +9836,17 @@
     "blurring primer",
     "primer for makeup",
     "foundation primer",
-    "eyeshadow primer",
     "makeup primers"
+   ],
+   "community_names": [
+    "primer",
+    "primers"
+   ],
+   "lookalikes": [
+    "eyeshadow primer",
+    "eyeshadow primers",
+    "eye primer",
+    "eye primers"
    ],
    "title_words": [
     "primer",
