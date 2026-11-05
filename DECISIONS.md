@@ -1209,3 +1209,68 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   a makeup test, are made up now (dated notes in the tests). Open, for Noemi: should an old makeup comment be at most
   a medium voice, as an old skincare or haircare one is (OLD_SKINCARE_POST_MAX_VOICE)? Makeup's threads already lose
   the ranking's old-post points (round 1's (6)); its voices were left as they were, since the voice rubric is hers.
+
+- 4 to 5 Nov 2026, night, the makeup round integrated and checked against its gates (Claude, the integrator, part 2;
+  technical calls, reported to Noemi; branch makeup-threads; nothing pushed, merged or deployed):
+  (1) The data of "Yes, all 11": the 84 threads of batches 2 to 7 (r/Makeup 27, r/Sephora 26, r/MakeupAddiction 16,
+  r/drugstoreMUA 13, r/AsianBeauty 2; about 9,500 comments by the plan) are read, extracted by Sonnet helpers
+  (extract-v15; 8,910 mentions kept, 0 rejected, plus 183 notes, 634 agreements and 14 care tips), slimmed and in the
+  shared library, now 2,767 threads and 2,750 extractions. The branch's prompt is extract-v16 (it only adds the three
+  new type names), and v15 stays current for them (config.EXTRACT_STILL_CURRENT). The unslimmed copies of the 84 are in
+  the stage folder until the deletion rule, with the sweeps (they hold commenters' words).
+  (2) What the answers do now (sweep of 293 answers, the 15 makeup requests among them): 14 of the 15 give 3 picks
+  ("blush", "blush for fair skin", "cream blush", bronzer, highlighter, foundation for oily skin, concealer for dark
+  circles, setting powder, setting spray, mascara, eyeliner, brow gel, lipstick, lip tint). "makeup primer for large
+  pores" gives 1 (ELF power grip) with the message that there is evidence for only one: the engine finds 2 of the 7
+  primer threads, because 5 of their titles hold none of the type's keywords in engine/data/product_types.json ("makeup
+  primer", "face primer", "pore primer"...; the titles say little more than "primer"), while an eyeshadow-primer thread
+  gets in through the keyword "eyeshadow primer". A keyword fix (a bare "primer" in a makeup community counts as makeup
+  primer; "eyeshadow primer" does not), not a data one; not made in this step; it is the next one. Every pick has 3
+  shown quotes, each found word for word (8,108 quotes in the sweep, 8,092 after the warm of (7); 0 failing, checked a second
+  time outside the engine against the saved comments).
+  (3) One-line summaries (summarise-v1, written by Claude reading the extracted quotes,
+  engine/prompts/summarise_pick.md): 69 for the products the 15 makeup answers show (picks and Also worth a look),
+  checked by `engine.summaries check` in the 25 makeup answers and their wider readings: 0 problems, every one shown.
+  One product has none (a glitter primer with two short comments that say nothing more than "it is good", rule 7). None
+  cites a comment the helpers flagged (a brand employee, a free product, a recurring pusher of one small brand). The
+  same check shows 252 of the 813 older entries failing (their cited comments are no longer credible or readable after
+  the 3 Nov verification pass and the profile refresh): not makeup, not touched, and worth a pass of their own.
+  (4) Against main of the same hour (517c2c9 on the same library without the 94 makeup threads, 2,673 threads, same
+  profiles): the offline evaluation is identical in every number but the library's quote count, which is better (83,103
+  of 83,610 found word for word, 99.39%; the branch 93,784 of 94,291, 99.46%: all 10,681 new items found, the same 507
+  older ones not); the whole suite passes (6,929) but the known gold thread 1v40u3t; of the 278 non-makeup answers 276
+  are identical and the two e-reader ones differ only in a counter, "loose" 10 to 11 (the brand and line names left
+  out): one more name, which a makeup brand starting with the same word makes ambiguous (shown names, picks, Also worth
+  a look, Skip these and message are the same); the 10 blind-test answers are identical. The branch's code on the
+  library without the makeup threads gives 10, so it is the data, not the code.
+  (5) The wait numbers are main's (a request 21 minutes, about 25 for the first in line, 30 a day, 39 a month; every
+  ON_DEMAND_* value as main's, read from both engines), the page text, DEPLOY.md's numbers and on_demand.sh as in 4 (2).
+  (6) Brand pushers: the small brand that two recurring accounts pushed across three blush threads (Phytosurgence,
+  flagged by the blush helper) is in none of the 293 answers; the 22 writers the extraction helpers flagged or module 5
+  marks (independence signs) back at most 1 of any pick's 4 to 65 credible voices, and the 15 answers keep the same
+  picks without them. Taking out four more, whom a rough rule found (4 recommendations of one brand in 2 threads), moves
+  one place: the third foundation pick ties with the fourth at 7.05 and a single voice, who also names other brands,
+  decides it (Maybelline Super Stay; Nars Light Reflecting would take it). Not a pusher, so nothing changed.
+  (7) Left open, for Noemi or the next step: (a) the lipstick and lip tint answers still show one care tip quoted from
+  r/MakeupRehab, a no-buy community (an old library comment about wearing a bold lip, there on main too); it is the one
+  thing keeping "no quote from an anti-buying community" from holding. Tested: without the two r/MakeupRehab threads the
+  two answers keep the same three picks and the tip goes. Options: set those threads aside (the library's set_aside
+  folder), or never quote a no-buy community (a small rule). (b) The writers' profiles: 4,519 of the library's writers
+  have none yet (565 the answers quote or the blush threads), so many voices count as they are before warming; the full
+  warm is the next step (4,519 writers, about 12 hours; the profiles are the 3 Nov refresh's and round 1's 360). To
+  answer "are the blush answers stable after warming?" before it, the 205 writers of the blush threads who mention the
+  seven blush brands the answers show were warmed first (4 Nov, 23:08 to 23:55 local time, 3 chunks of 70 under the
+  fetch lock, one transient failure asked again; 54,152 to 54,361 writers in the store; the store before is saved in the
+  scratchpad). Result: "blush" and "blush for fair skin" keep the same three picks in the same order (Rare Beauty Soft
+  Pinch Liquid Blush, Milani, Nars Orgasm); the credible voices are the same in number but many move from medium to high
+  (Rare Beauty 8 to 20 high of 27, Milani 4 to 10 of 19, Nars 5 to 10 of 16: a writer with no profile can't earn the
+  signs of a high voice), and the scores rise (9.9 to 13.0, 9.8 to 12.5, 8.1 to 9.7). "cream blush" moves: Rare Beauty's
+  blush line gains 9 high voices (score 6.9 to 8.25) and comes in second, Patrick Ta (7.65 to 7.9) goes from second to third, and
+  Glossier Cloud Paint (one medium voice becomes a low one, 14 credible voices to 13; 6.9 to 7.15) leaves the picks for
+  Also worth a look. So the blush answers are stable for the two main requests and not for cream blush, and 5 other
+  makeup answers moved too (the third pick of bronzer and of highlighter, the order of brow gel's first two, a name in
+  the Also worth a look of setting spray, lipstick and lip tint); the 278 non-makeup answers and the 10 blind-test
+  answers are identical after it (a second sweep). Until the other 4,300 writers are warmed the makeup picks stay
+  provisional, and then the sweep and the summaries are to be redone (6 products the answers now show have none yet).
+  (c) The sweeps, the stage folders and the scratchpad files hold commenters' words: they go to the Trash with the
+  deletion rule.
