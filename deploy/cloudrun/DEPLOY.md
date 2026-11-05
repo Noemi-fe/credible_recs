@@ -269,7 +269,7 @@ The project number is `NUMBER` below (`gcloud projects describe credible-picks -
            --format='value(spec.template.spec.containers[0].image)')
        gcloud run jobs deploy credible-recs-precheck --project credible-picks --region europe-west1 --image "$IMAGE" \
            --command python --args=-m,engine.precheck,--plan,--minutes,30 \
-           --tasks 1 --max-retries 0 --task-timeout 55m --memory 3Gi --cpu 1 \
+           --tasks 1 --max-retries 0 --task-timeout 55m --memory 2Gi --cpu 1 \
            --set-env-vars CREDIBLE_RECS_LIVE_CACHE_BUCKET=credible-picks-live-checks,CREDIBLE_RECS_ON_DEMAND_BUCKET=credible-picks-on-demand,CREDIBLE_RECS_PRECHECK_BRIGHT_DATA=on,CREDIBLE_RECS_QUERY_MODEL=off \
            --set-secrets BRIGHT_DATA_API_KEY=bright-data-key:latest
        gcloud run jobs add-iam-policy-binding credible-recs-precheck --project credible-picks --region europe-west1 \
@@ -527,8 +527,8 @@ nothing. The budget alert emails Noemi at 50% and 100% of 1 EUR.
 
 The pre-check (14 Oct 2026, the free-tier redesign; engine/tests/test_cloudrun.py does these sums from deploy.sh's own
 settings). A job is billed per instance-second for its whole run, waiting included, so it runs with the least that
-works: 1 vCPU (a job's minimum) and 3 GiB, with module 1's open model off (15 Oct 2026: with ~2,000 threads it ran out
-of memory at 1.5 and at 2 GiB; working out the 486 requests peaked at 2.97 GB with the model and 2.25 GB without on
+works: 1 vCPU (a job's minimum) and 2 GiB since 5 Nov 2026 (3 GiB before, see The site's memory below), with module 1's
+open model off (15 Oct 2026: with ~2,000 threads it ran out of memory at 1.5 and at 2 GiB; working out the 486 requests peaked at 2.97 GB with the model and 2.25 GB without on
 Noemi's computer, and the rules place 484 of them; on 13 Oct, with 436 threads, it had peaked at 1.3 GB with the model;
 0.2 GB without it, but without the model the open model's product types would not be checked ahead). It no longer
 waits for Reddit: a run is working out the answers (the whole plan run took 2.1 minutes on Noemi's computer for 439
@@ -538,8 +538,9 @@ when there is something to read), so a typical run should take 5 to 10 minutes, 
 Data's two jobs, both cut off at the then 10-minute wait). Its bound is Cloud Run's 55-minute task timeout: 3,300
 seconds a day, 102,300 in a 31-day month, 102,300 vCPU-seconds and 306,900 GiB-seconds, 43% and 68% of the free tier for
 instance-billed work (240,000 vCPU-seconds and 450,000 GiB-seconds a month), where the old run's 87 minutes a day were
-161,820 and 242,730 (67% and 54%). So 0 EUR. If a run's log says the memory limit was exceeded, 2 GiB (`--memory 2Gi`)
-is still inside the free tier: 167,400 GiB-seconds, 37%. The schedule is the second of Cloud Scheduler's 3 free jobs
+161,820 and 242,730 (67% and 54%). At 2 GiB, since 5 Nov 2026, its bound is 204,600 GiB-seconds a month (45%; at 3 GiB it
+was 306,900, 68%). So 0 EUR. If a run's log says the memory limit was exceeded, `--memory 3Gi` is still inside the free
+tier (306,900 GiB-seconds, 68%). The schedule is the second of Cloud Scheduler's 3 free jobs
 (the keep-warm ping is the first); the redesign adds none.
 
 The site's reads ahead (14 Oct 2026). The site is billed by request, under its own free tier (180,000 vCPU-seconds and
@@ -547,9 +548,10 @@ The site's reads ahead (14 Oct 2026). The site is billed by request, under its o
 once, each mostly waiting on Reddit's answer (about 0.3 s), so about a tenth of a second of the site's time a read. A
 ping starts no read 5 seconds after it began, so at most about 6 seconds a ping with the last reads' answers: 288 pings
 a day, at most 53,568 vCPU-seconds and 107,136 GiB-seconds in a 31-day month on the site's 1 vCPU and 2 GiB, 30% of
-each. Since 15 Oct 2026 the site runs at 4 GiB, a stopgap: at 2 GiB it ran out of memory every 20 to 40 minutes with
-~1,950 threads, the open model and its warmed answers, so reading ahead's GiB-seconds are at most 214,272 (60%) until
-the site's memory is brought back down. What is due on 14 Oct 2026's library, slimmed (17,335 kept comments): the answers' 2,229 comments once every 40
+each. From 15 Oct to 5 Nov 2026 the site ran at 4 GiB, a stopgap: at 2 GiB it ran out of memory every 20 to 40 minutes
+with ~1,950 threads, the open model and its warmed answers, so reading ahead's GiB-seconds were at most 214,272 (60%).
+Its memory was brought back down on 5 Nov 2026 (the next section, The site's memory), so they are at most 124,992 again
+(35%). What is due on 14 Oct 2026's library, slimmed (17,335 kept comments): the answers' 2,229 comments once every 40
 hours (about 1,340 a day) and up to 3,000 kept comments to verify, about 4,340 reads a day, 15 a ping, about 1.5
 seconds of each: about 13,400 vCPU-seconds a month, 7%. 12,356 of the kept comments were never verified (read from the
 archive on 11 to 14 Oct, so due by 10 to 13 Nov), about 31,000 once the 846 threads still to extract are slimmed: 11
@@ -572,9 +574,79 @@ reads a day; a comment unreadable twice a week apart lapses at once, freeing the
 7,025 first-tier comments x 24/40 = 4,215, 3,147 fallback ones / 5 = 629 and 4,500 kept ones, about 9,350 against 9,600
 read on 24 Oct 2026 (the cap then 11,520). So a ping reads at most 48 in 6 seconds (40 in 5 before), 13,824 a day, with
 visitors keeping 100 of Reddit's 200 reads in each 10 minutes (96 for reading ahead). The ping bills 7 seconds (6
-before): at most 62,496 vCPU-seconds a month on the site's 1 vCPU (35% of 180,000; it was 53,568, 30%) and, at its 4 GiB,
-249,984 GiB-seconds (69% of 360,000; it was 214,272, 60%), still free; the pre-check job's sums are unchanged (102,300
-vCPU-seconds, 43%; 152,300 with on-demand reading's, 63%), and so are Bright Data's 930 records a month.
+before): at most 62,496 vCPU-seconds a month on the site's 1 vCPU (35% of 180,000; it was 53,568, 30%) and, at 4 GiB,
+249,984 GiB-seconds (69% of 360,000; it was 214,272, 60%), still free. At the site's 2 GiB since 5 Nov 2026 the ping's
+GiB-seconds are 124,992 (35%). The pre-check job's vCPU-seconds are unchanged (102,300, 43%; 152,300 with on-demand
+reading's, 63%), and so are Bright Data's 930 records a month.
+
+The site's memory (5 Nov 2026, Noemi: "Let's do A"). From 15 Oct 2026 the site ran at 4 GiB, a stopgap, and it runs at 2 GiB
+again (deploy.sh, `--memory 2Gi`). Google's free allowance for Cloud Run is most likely one pot for the site and the jobs, and
+the site at 4 GiB was most of October's use of its memory part (84% of it, from Cloud Monitoring's billable time), so halving
+the site's memory leaves room to double on-demand reading later at no cost.
+
+What the live site used (Cloud Monitoring, run.googleapis.com/container/memory/utilizations, read only, the 4 GiB revisions,
+15 Oct to 5 Nov 2026, 6,061 five-minute windows). The busiest window of each day rose from 1.28 GiB on 16 Oct to 2.00 GiB on
+5 Nov, about 0.035 GiB a day, as the library grew from about 1,950 to 2,748 threads. Over the three weeks the median window
+was 1.64 GiB, 54% of the windows were over 1.6 GiB, 19% over 1.8 GiB and 54 (0.9%) over 2.0 GiB. The first hour at 4 GiB
+(15 Oct, 2.32 GiB) was the highest, just after the move. At 2 GiB the site would have run out of memory within hours again. The
+pre-check job used 1.1 to 1.35 GiB of its 3 GiB since 16 Oct (1.35 GiB on 4 Nov).
+
+How it was measured. The site was run on Noemi's computer the way the image runs it (engine.web --public, the library as the
+image holds it with its 2,748 threads, the open model, the keep-warm ping reading ahead against stand-ins for Reddit and
+for Google Cloud's bucket, 8 answers at once, the on-demand bundle of 300 threads and a soak of about 4,200 different
+requests over 34 minutes) and its memory read as macOS's footprint, the dirty and compressed pages, which is what Linux
+counts against a container best (the open model's 1.1 GB file is mapped and left out). On the code as it was (1744cec) that
+gave 2,075 MB at its worst, and Cloud Monitoring's busiest window of the same week was 2,048 MB (2.00 GiB), so the
+computer's number is a fair guide. The scripts are in the builder's scratch folder and not in the repository.
+
+Where the memory went (the code as it was, 2,748 threads, after the 85 warm answers, each object counted once):
+the library's threads 371 MB and its checked extractions 168 MB (213,000 comments and some 94,000 quotes); the tables of
+every name's words and features that making the library's name index fills and nothing needs again, 290 MB; the brand
+rules' remembered pairs 75 MB; the credibility tables 85 MB; the writers' profile store 69 MB; the name index 63 MB and
+the library's ranges 43 MB; the comments read for every thread an answer touched, 56 MB once all have been touched.
+The remembered answers (20 to 35 KB each) were never let go of, so a rush of different requests only added to them.
+
+What was bounded (engine/tests/test_site_memory.py holds each one, written before it). Nothing changes an answer. Each
+only decides what stays in memory, and what is let go is worked out again, the same.
+- Every pydantic object keeps a set of its field names (728 bytes for a comment). Objects of one shape share one set, made as
+  each thread and extraction is read (engine/compact.py): about 250 MB, and a library read again never holds two sizes.
+- The tables of every name's words and features are emptied once the library's name index of a category is built
+  (engine/match_products.py, forget_names): about 190 MB at the end of the warm answers.
+- The profile store the site reads is held as pairs and tuples (engine/profiles.py, CompactProfileStore, read only): 69 MB to 41.
+- The brand rules' remembered pairs share the sets of names they are keyed by (engine/pipeline.py): 75 MB to 15.
+- Remembered answers are kept to 24 MB (config.ANSWERS_KEPT_BYTES, engine.web.RememberedAnswers), about 1,000 answers: the
+  answers whose time is up go first and then the oldest.
+- A Table of remembered answers holds 40,000 at most (engine/memo.py, 200,000 before), the facts of recent threads 256 (512)
+  and the library's names share their words. About 100 MB together in the soak.
+Not changed: the answers' memory of 64 product types (config.ANSWERS_KEPT_TYPES), what warming warms (the search page's
+examples and the demo requests stay warm), the answers, their wording and scores, the 48-hour quote rule, the concurrency of
+8, reading ahead's counts, the busy cap and on-demand reading.
+
+Result, on Noemi's computer, footprint in MB by load phase, the code as it was and as it is: getting ready with its 85 warm
+answers 1,821 and 1,208; the keep-warm pings reading ahead 1,847 and 1,209; 8 cold answers at once 1,846 and 1,209;
+remembered answers 1,791 and 1,170; on-demand status polls 1,795 and 1,172; the bundle of 300 threads taken in 1,834 and
+1,172; the soak 2,075 and 1,449 (it rose to 1,432 in the first 17 minutes and added 17 MB in the next 17). At its
+worst the site is 1,449 MB (70.7% of 2 GiB) where it was 2,075, against the 80% (1,638 MB) kept free. The same test on the
+code as it was came within 1.3% of Cloud Monitoring's busiest window, so the live site should peak near 1.4 GiB. The bundle
+was a typical sample of 300 library threads (24,015 comments, 10,165 mentions). With the 300 largest library threads in its
+place (92,855 comments, 27,065 mentions) the bundle phase peaked at 1,210 MB and a 17-minute soak at 1,530 MB (74.7%), where the
+typical bundle's soak was 1,432 MB at that point.
+Answers are as fast: the median of 24 warmed answers was 0.235 s before and 0.237 s after, of 20 first answers of a
+type 0.281 s and 0.282 s, and remembered answers take no time; getting ready took 132.7 s and 132.6 s. All 296 requests of
+eval/sweep.py gave identical answers (every field), and eval/run_eval.py with live checks off gave identical output.
+
+Room to grow: the whole warm-up measured with 1,939, 2,351 and 2,748 threads took 977, 1,092 and 1,183 MB, so a library
+thread costs the site about 0.255 MB (it was 0.40) and about 0.31 MB on the worst case. The worst case already holds a full
+bundle of 300 typical threads, so about 600 more threads fit before it passes 80% of 2 GiB (1,638 MB). About 900 fit if on-demand
+reading brings in nothing and about 350 if its bundle holds the largest threads. The library grew by about 800 threads in the last three weeks (38 a day), so the margin lasts
+about two weeks at that pace: the next bounds are listed in DECISIONS.md. If Cloud Monitoring shows the site above 1.6 GiB
+(80%), look at those first, then at MALLOC_ARENA_MAX=2 in the Dockerfile (glibc's memory arenas per thread: it cannot be
+measured on a Mac), then at ANSWERS_KEPT_TYPES, then at the saved checks' files: the site's disk is memory on Cloud Run, and
+its 18,946 saved checks (5.8 MB of text) are small files of a page each, an estimated 95 MB.
+
+The pre-check job (the same library, the open model off, 559 requests): 1,092 MB at its worst on Noemi's computer where it was
+1,410 MB, and the job on Cloud Run peaked at 1.35 GiB on 4 Nov, so it runs at 2 GiB too (53% of it, inside the same 80%), and
+bills a third fewer GiB-seconds.
 
 Container images (14 Oct 2026). Each deploy stores the site's image in Artifact Registry (the repository `cloud-run-source-deploy`, which `gcloud run deploy --source` makes): about 1.15 GB, most of it the open model the build downloads. Its free tier is 0.5 GB of storage, then about 0.10 USD per GB a month. By the evening of 14 Oct 44 images had grown to 51 GB (about 4.60 EUR a month); Noemi chose to keep only the newest one, so the other 43 were deleted that evening and deploy.sh applies a cleanup policy after each deploy (image_cleanup_policy.json: keep the newest version, delete every other; Google runs it about once a day). One image costs about 0.07 EUR a month. An older site version can't be rolled back to once its image is gone: rebuild it from its commit instead. To bring storage under the free 0.5 GB, the model would have to leave the image (downloaded as the server starts, about 20 s slower starts): not done.
 
@@ -585,7 +657,8 @@ fewer for most), about 5 for Gemini (about 9 calls for 6 threads read in parts o
 and half a minute to start. Its runs are capped at 50,000 s a month (about 70 products), so the worst month is 50,000
 vCPU-seconds and 50,000 GiB-seconds; with the pre-check's at most 102,300 and 306,900 (15 Oct 2026, at 3 GiB; 83,700
 and 125,550 that afternoon, 161,820 and 242,730 before), 152,300 of the free 240,000 vCPU-seconds (63%; 88% before) and
-356,900 of the free 450,000 GiB-seconds (79%).
+356,900 of the free 450,000 GiB-seconds (79%). Since 5 Nov 2026 the pre-check runs at 2 GiB, so its GiB-seconds are at
+most 204,600 and the two jobs' 254,600 (57%).
 There are no empty runs: nothing is scheduled,
 the job runs only when a request waits. Cloud Scheduler: no new job (the site starts the reading job, and the keep-warm
 ping starts it again when a start failed), so still 2 of the 3 free jobs. Gemini: free tier only, at most 450 calls a

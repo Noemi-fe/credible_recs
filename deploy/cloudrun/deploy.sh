@@ -89,7 +89,10 @@ if [ "$ON_DEMAND" = on ]; then on_demand_bucket; fi
 # 3. The site: public, one server at most, none when idle (the free tier).
 #    On Cloud Run's second-generation environment (14 Oct 2026, measured: getting ready warmed all 65 requests in 40.9 s
 #    there, against 19 of 65 in 122 s on the first generation, whose sandbox makes the engine's many small file reads
-#    slow); same price. First the threads read on demand come into
+#    slow); same price. Memory (5 Nov 2026, Noemi's "Let's do A"): 2 GiB, where it was 4 GiB from 15 Oct 2026 as a stopgap. The
+#    site's memory is bounded now (engine/tests/test_site_memory.py) and its worst case on Noemi's computer is 1,449 MB, 70.7%
+#    of 2 GiB where 80% is kept free (deploy/cloudrun/DEPLOY.md, The site's memory): watch Cloud Monitoring's memory for the
+#    first day after this deploy. First the threads read on demand come into
 #    data/library (through gcloud's sign-in), so the image holds them; when that fails they stay in the bucket, where
 #    the site finds them as it gets ready.
 if [ "$ON_DEMAND" = on ]; then
@@ -127,7 +130,7 @@ rm -rf "$READS_DIR"
 BUNDLE="$(mktemp -d)/bundle"
 .venv/bin/python -m deploy.cloudrun.make_context "$BUNDLE"
 $GCLOUD run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --source "$BUNDLE" \
-    --allow-unauthenticated --memory 4Gi --cpu 1 --cpu-boost --max-instances 1 --min-instances 0 \
+    --allow-unauthenticated --memory 2Gi --cpu 1 --cpu-boost --max-instances 1 --min-instances 0 \
     --execution-environment gen2 \
     --concurrency 8 --timeout 300 \
     --startup-probe "httpGet.path=/ready,httpGet.port=8080,periodSeconds=3,timeoutSeconds=2,failureThreshold=80" \
@@ -153,7 +156,11 @@ rm -rf "$(dirname "$BUNDLE")"
 #    at most a run (one Bright Data job in flight may be waited for 20 minutes), never retried the same day. Billed for its whole run, so it gets the least that works: 1 vCPU (a
 #    job's minimum) and 3 GiB with the open model off (15 Oct 2026: it ran out of memory at 1.5 and at 2 GiB with
 #    ~2,000 threads; working out the 486 requests peaked at 2.97 GB with the model, 2.25 GB without, on Noemi's computer;
-#    the rules place 484 of them, so the model isn't loaded).
+#    the rules place 484 of them, so the model isn't loaded). 2 GiB again since 5 Nov 2026 (the site-memory builder,
+#    Noemi's "Let's do A"): the library's objects take about a third less memory now, so the plan run for 559 requests over
+#    2,748 threads peaked at 1,092 MB on Noemi's computer (1,410 MB before) and the job's own peak on Cloud Run was 1.35
+#    GiB of its 3 on 4 Nov 2026: about 1.05 GiB is 53% of 2 GiB, inside the 80% kept free (deploy/cloudrun/DEPLOY.md, The
+#    site's memory). Its GiB-seconds fall by a third.
 #    Its one secret is the Bright Data key, which the account it runs as may read (when the secret is there).
 if [ "$PRECHECK_BRIGHT_DATA" = on ]; then
     $GCLOUD secrets add-iam-policy-binding bright-data-key --project "$PROJECT" \
@@ -162,7 +169,7 @@ fi
 IMAGE="$($GCLOUD run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(spec.template.spec.containers[0].image)')"
 $GCLOUD run jobs deploy "$JOB" --project "$PROJECT" --region "$REGION" --image "$IMAGE" \
     --command python --args=-m,engine.precheck,--plan,--minutes,${PRECHECK_MINUTES} \
-    --tasks 1 --max-retries 0 --task-timeout 55m --memory 3Gi --cpu 1 \
+    --tasks 1 --max-retries 0 --task-timeout 55m --memory 2Gi --cpu 1 \
     --set-env-vars "CREDIBLE_RECS_LIVE_CACHE_BUCKET=${BUCKET}${ON_DEMAND_PRECHECK_VARS},CREDIBLE_RECS_PRECHECK_BRIGHT_DATA=${PRECHECK_BRIGHT_DATA},CREDIBLE_RECS_QUERY_MODEL=off" \
     "$PRECHECK_SECRETS" --quiet
 $GCLOUD run jobs add-iam-policy-binding "$JOB" --project "$PROJECT" --region "$REGION" \
