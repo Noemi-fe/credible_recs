@@ -1,0 +1,33 @@
+{
+  "product_notes": [
+    {
+      "names": ["NARS Orgasm blush line", "NARS Orgasm powder blush"],
+      "category": "general",
+      "note": "NARS reformulated its powder blushes in 2024, so quotes from before then may describe the old formula",
+      "sources": [
+        "https://www.musingsofamuse.com/?p=216410",
+        "https://alittlebitetc.com/newly-reformulated-nars-powder-blush-review",
+        "https://www.marieclaire.com/beauty/nars-blush-reformulation"
+      ],
+      "checked_on": "2026-11-05"
+    },
+    {
+      "names": ["Becca Champagne Pop"],
+      "category": "general",
+      "note": "Becca closed in 2021, and Smashbox took over this highlighter as Smashbox x Becca Shimmering Skin Perfector",
+      "sources": [
+        "https://cosmeticsbusiness.com/-covid-19-has-sadly-been-more-than-our-business-can-withstand-becca-cosmetics-shuts-down--174797",
+        "https://www.musingsofamuse.com/2021/09/smasbox-will-carry-becca-under-eye-brightening-corrector-and-shimmering-skin-perfector-pressed-highlighter.html"
+      ],
+      "checked_on": "2026-11-05"
+    },
+    {
+      "names": ["got2b Spiking Gel"],
+      "category": "general",
+      "note": "A hair styling gel, which some writers use to hold their brows",
+      "sources": ["threads"],
+      "threads": ["1ft2dmj", "1u2uw74"],
+      "checked_on": "2026-11-05"
+    }
+  ]
+}

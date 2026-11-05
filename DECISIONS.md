@@ -1358,3 +1358,109 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   quotes, reasons and left-out lists, so no non-makeup answer changed. The makeup picks stay provisional until the full
   warm, as in the note of 4 to 5 Nov, (7). The sweeps and the frozen copy of the store hold commenters' words and
   writers' names: the store's copy is deleted, the sweeps go to the Trash with the deletion rule.
+- 5 Nov 2026, small hours, the makeup fix round, part 2: what an answer shows (Claude, builder 2; Claude's technical
+  calls, reported to Noemi; branch makeup-threads; nothing pushed, merged or deployed). From the shopper review of 4 to
+  5 Nov 2026 (shoppers 5, 7, 10 to 15, 17 and 18). Only which quotes, tips and notes an answer shows and how its reason
+  line names a need changed: no pick and no pick's order moved ((8)), and no scoring weight, product type, wait number
+  or the 48-hour quote rule changed. The need-fit rule Noemi said to measure first ("Yes, measure first (Recommended)")
+  stays off, and her other three answers of the night are the next builder's. The engine makes no new call: every rule
+  reads the quote's own words and what the extraction already holds. Values in engine/config.py under "Makeup fix round,
+  part 2"; tests in engine/tests/test_answer_shows.py (made-up text).
+  (1) Quotes for a need (shoppers 7, 13, 15). A quote "talks about a need" as the reason line counts it now: a need of
+  two words whose first word alone says something else (config.NEED_PHRASES_WHOLE: dark circles, dark spots, dark marks,
+  large and open pores) counts only with its last word, so "I have dark skin" no longer passes for a dark-circles quote
+  (engine.answer._fits_a_need). Every other phrase's first word still counts alone ("my lower back" is about back pain):
+  read whole, the second sweep counted fewer voices in 47 non-makeup reason lines, most of them rightly counted before
+  ("fits in my car" for a car boot, "I sleep on my side"). Within a tier of _naming_first, such a quote still comes
+  first. A quote whose comment talks about the need (the extraction's needs) but whose own words don't takes in the
+  sentence that does where the comment allows (_with_the_need, _need_stretch): the sentences before it only when the
+  comment names no other product, the first of them is the writer's own ("I have dark circles myself", never "most
+  people get this wrong"), none says "it" or "this one" (most often another product) and no line starts between; the
+  sentences after it one at a time, never past a question, a new line, a quoted block, a turn ("but", "however"), praise
+  of something else ("I like the X", "X is good too": a product the extraction didn't list for that comment), another
+  product's name or QUOTE_MAX_WORDS. Those limits came from reading the widened quotes of the first three sweeps. With a
+  need asked, a makeup quote about a shade (a named or numbered shade, a match, an undertone, a skin tone) and not the
+  need is a filler: it only makes up a pick's minimum (config.QUOTE_SHADE_WORDS; "I own it in three shades" is no shade
+  quote). Tried and dropped: a need quote before every other, whatever its tier. In the first sweep it put a quote
+  naming the product without a view ("I have the X") before years of praise in many non-makeup answers, and changed only
+  one makeup quote.
+  (2) Quotes that undercut their own product (shoppers 12, 15, 17, 18). A recommendation's quote that ranks another
+  product of its comment above it, tells of leaving it for another, turns to another one ("but I'd rather pick up a
+  drugstore one"), is a step of a routine of several products, or praises an old version of it only makes up a pick's
+  minimum (so no pick drops for want of quotes) and is an Also worth a look item's quote only when it has no other
+  (engine.answer._undercuts; config.QUOTE_FAVOURING_WORDS, QUOTE_LEAVING, QUOTE_GOING_ELSEWHERE, QUOTE_ELSEWHERE_WORDS,
+  QUOTE_ROUTINE_STEP, QUOTE_OLD_VERSION). A comparison is read for which product it ranks lower: what comes after its
+  "than" or "over" ("Y is better than X" undercuts X; "it is far better than the Y was" doesn't), else the product named
+  last before the favouring word ("I like X, but Y is better"), or the first after "prefer" or "nothing beats"; a
+  negated one ("no, Y is not better") says neither. Of the 22 quotes the first sweep's rule judged undercut in the
+  non-makeup answers, 11 were praise: 9 comparisons read the wrong way round (a rival after "than" or "over", the
+  product called "it", a negation) and 2 an "old" that was the writer's own (an old Kindle, an old air fryer); the
+  reading above was written from them. So "the old X" counts in makeup answers only (the formula before a change; of an
+  air fryer it is most often the writer's long-lived one), and "an old version" or "my old version" never does. The
+  other product must be one the extraction found in the same comment. Skip these no longer shows a quote that only makes
+  sense with an earlier comment: a warning's quote that still leans on the thread is left out, and the product makes way
+  for the next (a pick's downsides keep one, as before).
+  (3) Tips ("What to look for", engine.answer._look_for), each a generic rule: a note whose writer hasn't tried what
+  they advise (engine.credibility._proof_of_use: "hasn't tried it", "heard about it, not used", "someone else's
+  experience") backs no tip (shopper 7; every answer); an Avoid line goes against no Also worth a look item, as it
+  already went against no pick (shopper 12, part 1: "pencil eyeliner" against the Urban Decay pencil); in a makeup
+  answer an Avoid needs credible warnings from at least 2 writers (config.AVOID_MIN_WRITERS; makeup only, because 19
+  tests of the kitchen and skincare rules expect one writer's Avoid); a makeup tip named after another makeup type is
+  left out unless it names this one too (shopper 14: bronzer in a blush answer; "bronzer worn as blush" stays), and so
+  is one for something not made for the face (shoppers 10 and 11: config.TIP_OFF_LABEL_CATEGORIES, haircare, and
+  TIP_OFF_LABEL_WORDS: hairspray, baby powder, hair gel, glues), one backed by a health scare the answer can't check
+  (shopper 11: config.TIP_HEALTH_SCARE_WORDS, asbestos and cancer words, read in the note's whole comment) and one of
+  the opposite form when the request names cream or liquid (shopper 5: config.TIP_FORM_OPPOSITES, a pressed or powder
+  tip in "cream blush"); in every answer, a tip whose label ends on a word like "of" or "for" (cut short when module 4
+  named it) is left out (config.KIND_DANGLING_END_WORDS).
+  (4) The reason line (shopper 7): a need word named alone is named with the word after it when that word says what it
+  describes (config.NEED_LABEL_NOUNS, engine.needs._labels): "about fair skin", "about old dog", "about damaged hair",
+  in every answer. Its count is of whole needs for the phrases of (1): "2 of them about dark circles" no longer counts a
+  voice saying only "dark". The score's own count of need voices (module 6's breakdown and boost) still counts "dark"
+  alone; it is scoring, so it is left for Noemi.
+  (5) Product notes: a checked fact shown under a product as "Note: ..." (engine/product_notes.py,
+  data/product_notes.json, committed: no Reddit data in it). A note never changes which products are shown or their
+  order. NARS's powder blushes (the Orgasm line): reformulated in 2024 (checked on 5 Nov 2026 on musingsofamuse.com,
+  alittlebitetc.com and marieclaire.com). Becca Champagne Pop: Becca closed in 2021 and Smashbox took the highlighter
+  over as Smashbox x Becca Shimmering Skin Perfector (cosmeticsbusiness.com, musingsofamuse.com), so it is still sold:
+  noted, not left out. A product no longer sold is left out by its price check (data/prices.json's "available": false),
+  as before; none of these three is. rom&nd's Juicy Lasting tint: no note, because no reliable page gave the date of its
+  renewal; its quote praising "the old" one is an undercut quote ((2)).
+  (6) got2b Glue Spiking Gel: noted as "A hair styling gel, which some writers use to hold their brows", in the threads'
+  own sense (1ft2dmj, 1u2uw74), by its name rather than its product type, so it holds whatever type the next builder
+  gives brow gel.
+  (7) Not caught without a new extraction (a Gemini call): a preference or a switch said with none of the words above,
+  or about a rival the extraction didn't list for that comment (the need widening has the same limit, narrowed by its
+  praise words: "I like the X" and "X is good too" are caught, a rival named without praise is not); a reply that leans
+  on its parent without a telling word (the extraction's refers_to doesn't reach the quote step); which formula a quote
+  describes when no date of a reformulation is known; first-hand use or an off-label use beyond the words listed.
+  (8) Measured through the heavy lock on builder 1's frozen copy of the writers' profile store (taken at about 01:30),
+  live checks off, 07cace0's code before and this round's after, back to back (the before sweep, run four times in the
+  night, gave the same answers each time). Sweep of 293 answers: no answer's picks, their order or its Also worth a look
+  changed, and 78 answers show something different. The 15 makeup answers: 13 changed (bronzer and mascara are the
+  same). 17 of their 225 quotes under picks and Also worth a look changed (16 for another quote of the same product, 1
+  widened to its need sentence), among them the NARS, Tower 28, Victoria Beckham, Kosas and rom&nd quotes undercutting
+  their product, the shade quotes of the need answers, and the dark-circles and fair-skin quotes the shoppers missed
+  (Natasha Denona, Kosas and Haus Labs). Tips 43 to 41: left out bronzer (twice), hairspray, baby powder, the two talc
+  Avoids, "pencil eyeliner", "pot concealer under the eye" and "separate makeup primer" (one writer each); "hydrating"
+  now shares its line with rose water; in came other tips of the same answers, among them "Look for: drugstore" in the
+  two blush answers and "Look for: mini" in setting powder, kinds module 4 had named before. Notes on 4 answers (NARS in
+  blush and blush for fair skin, Becca in highlighter, got2b in brow gel); reason lines in 2 ("about fair skin" three
+  times; Haus Labs concealer 4 to 3 voices about dark circles, NARS Radiant Creamy 3 to 2); Skip these in 1 (eyeliner:
+  NYX Epic Wear pen eyeliner leaves it, its only warning leaning on an earlier comment). The other 278 answers: 65
+  changed. 37 of their 2,978 quotes were widened to their need sentence and 46 changed for another (two items now show
+  one quote fewer, the dropped one undercutting them: the Feathered Friends sleeping bag and a Calphalon saucepan). Tips
+  changed in 9 answers: the untried-writer rule left out a ceramic kamado grill, condenser microphones (in a shotgun-mic
+  answer), an exfoliating glycolic toner and ballistic nylon work boots, and changed the comment behind a car seat tip;
+  the Also worth a look rule left out three Avoids (Teflon, balm, electric knife sharpener) that went against an item
+  shown. Reason lines in 3 answers ("about old dog", "about damaged hair", and an eye cream answer's dark-circles
+  counts, 2 to 1 for two products). Every quote the after sweep shows, 5,587 (5,596 before), was found word for word in
+  its saved comment (checked outside the engine). Whole suite: 7,064 passed (58 new tests) and 1 failed, the unlabelled
+  gold thread 1v40u3t, which fails on main too. eval/run_eval.py printed the same output before and after (shown quotes
+  252 of 252 verified), so eval/metrics.json is unchanged.
+  (9) Left, for Noemi or later: the score's need count ((4)); AVOID_MIN_WRITERS is makeup-only ((3)); rom&nd has no note
+  until a reliable page dates its renewal; Becca is noted, not left out, as Smashbox still sells it; what (7) can't
+  catch; "Look for: mini" and "Look for: drugstore" are terse kinds module 4 named, now shown where the tips above left
+  room; the Haus Labs foundation pick for oily skin still shows no oily-skin quote, as its oily-skin quote doesn't name
+  the product and quotes naming their product come first (_naming_first's tiers). The sweeps, the frozen store's copy
+  and this round's scratch files hold commenters' words and writers' names: they go to the Trash with the deletion rule.

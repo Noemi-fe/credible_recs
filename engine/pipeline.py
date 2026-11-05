@@ -252,6 +252,7 @@ from engine.prices import (
     entries_for,
 )
 from engine.product_pages import ProductPage, find_page, load_product_pages
+from engine.product_notes import ProductNote, load_product_notes, notes_for
 from engine.product_facts import (
     NotSuited,
     ProductFacts,
@@ -694,6 +695,7 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.ranked_as_lines = [g.name for g in kept_groups if g.key in lines]
     result.line_keys = {g.key for g in kept_groups if g.key in lines}
     _note_other_names(kept_groups, cautions)
+    _note_products(kept_groups, cautions, query.category)  # checked facts beside the quotes (5 Nov 2026)
     # What the answer says beyond the ranking, as write_answer's keywords: about the request's active ingredients (13 Oct
     # 2026), which products its facts say are prescription-only in the UK (Noemi's decision 5 of 14 Oct 2026), which
     # comments' words are Reddit's embed page's text (found edited, they kept Reddit's current text: Noemi's decision 3
@@ -2404,6 +2406,18 @@ def _note_other_names(groups: list[ProductGroup], cautions: dict[str, list[str]]
                 cautions.setdefault(group.key, []).append(OTHER_NAME_NOTE.format(brand=canonical[uk_brand]))
                 noted.add(uk_brand)
                 noted_brands.append(brand)
+
+
+def _note_products(groups: list[ProductGroup], cautions: dict[str, list[str]], category: str | None,
+                   notes: list[ProductNote] | None = None) -> None:
+    """Adds each product's checked notes (engine.product_notes, data/product_notes.json: "NARS reformulated its powder
+    blushes in 2024...") to its notes, shown under it as CAUTION (5 Nov 2026, the makeup fix round, part 2). Shown only:
+    a note never changes which products are shown."""
+    notes = load_product_notes() if notes is None else notes
+    for group in groups:
+        for text in notes_for(group.name, category or "", notes):
+            if text not in cautions.get(group.key, []):
+                cautions.setdefault(group.key, []).append(text)
 
 
 # --- A brand pick steps aside for its own product (decided by Claude, 10 Oct 2026) ---

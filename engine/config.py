@@ -3199,3 +3199,76 @@ PIPELINE_POPULAR_THREADS = 200
 # 11 of 32 voices about the need, then 17 of 53 (a share 0.94 of the first's: shown wider); the curly-hair shampoo 8 of
 # 17, then 8 of 33, and fine oily hair 11 of 18, then 11 of 33 (no more voices about the need: the first reading stays).
 POPULAR_WIDER_NEED_SHARE_KEPT = 0.75
+
+# --- Makeup fix round, part 2: what an answer shows (5 Nov 2026, builder 2) ---
+# Technical calls by Claude, reported to Noemi, from the shopper review of 4-5 Nov 2026: they change which quotes, tips
+# and notes an answer shows and how its reason line names a need, never which products are picks or their order.
+#
+# A quote that undercuts its own product (engine.answer._undercuts) only makes up a pick's minimum of quotes
+# (MIN_QUOTES_PER_PICK), and is an "Also worth a look" item's quote only when it has no other: it mainly ranks another
+# product of its comment above it ("I like X, but Y suits me better", "Y over X"), tells of leaving it for another ("X
+# was my favourite until I found Y"), lists it in a routine of several products ("Step 2: X, Y, Z"), or praises an old
+# version of it ("the old X", "before they reformulated"). Read in the quote's own words; how each is said:
+# Words that favour what follows or comes before them, within a clause.
+QUOTE_FAVOURING_WORDS = r"better|superior|nicer|prefer|preferred|prefers|beats|outperforms|wins"
+# Words saying the writer moved on from a product to another named after them.
+QUOTE_LEAVING = (r"\b(?:before|until|till|then|now|but now|since)\s+(?:i|we)(?:'ve| have)?\s+(?:found|discovered|tried|"
+                 r"switched|moved|started|went|got|use|picked up)\b|\bswitched\s+(?:over\s+)?to\b"
+                 r"|\breplaced\s+(?:it|them|that|mine)\s+with\b|\bmoved\s+(?:on\s+)?to\b")
+# A clause turning to another product instead: "but I'd rather pick up a drugstore one", when the rest of its clause
+# names another product of the comment or holds one of QUOTE_ELSEWHERE_WORDS, and never the product itself ("but I'd buy
+# it again" stays).
+QUOTE_GOING_ELSEWHERE = r"\bbut\s+(?:i|i'd|i would|i'll|i will)\s+(?:\w+\s+)?(?:go|get|buy|pick|choose|reach for)\b"
+QUOTE_ELSEWHERE_WORDS = r"\binstead\b|\belsewhere\b|\bdrugstore\b|\bsomething else\b|\banother (?:one|brand)\b|\bdupes?\b"
+# A step of a routine: "Step 3:".
+QUOTE_ROUTINE_STEP = r"(?:^|\s)step\s*\d+\s*[:\-–]"
+# An old version of the product: "the original formula", "pre-reformulation", "before they reformulated", a quote
+# opening on "original" (never "an old version" or "my old version": the writer's own previous one); and, in makeup
+# answers only (engine.answer._an_old_version), "the old" right before the product's name ("my old X" is more often the
+# one a writer used up, and of a kettle or an air fryer "the old X" is most often the writer's long-lived one).
+QUOTE_OLD_VERSION = (r"(?<!\ban )(?<!\ba )(?<!\bmy )(?<!\bour )(?<!\byour )"
+                     r"\b(?:old|original|previous|older|og)\s+(?:formula|formulation|version)s?\b|^\W*original\b"
+                     r"|\bpre[- ]?(?:reformulation|reformulated|renewal)\b"
+                     r"|\bbefore\s+(?:they|it was|it got|the)\s+(?:\w+\s+)?(?:reformulat|chang|renew)\w*")
+# With a need asked (fair skin, oily skin...), a makeup quote about a shade (one named or numbered, a match, an
+# undertone, a skin tone; never "I own it in three shades", which says how much its writer likes it) and not about the need
+# only makes up a pick's minimum, as a filler does (engine.answer._about_a_shade): it tells a reader asking for something
+# else nothing, or the opposite ("on my olive skin" for fair skin).
+QUOTE_SHADE_WORDS = (r"\bin (?:the |that |this |a |my )?shades?\b|\b(?:that|this|my|which|what|the) shade\b|\(shade\b"
+                     r"|\bshades? #?\d|\bswatch(?:es|ed)?\b|\bundertones?\b|\bskin ?tones?\b|\b[a-z]+[- ]toned\b"
+                     r"|\b(?:perfect|good|great|close|exact|colou?r|shade|skin|tone) match\b"
+                     r"|\bmatch(?:es|ed)? my (?:skin|tone|complexion|neck|face)\b"
+                     r"|\b(?:fair|pale|light|medium|olive|tan|tanned|deep|dark|brown)(?:[- ](?:to[- ])?"
+                     r"(?:fair|light|medium|deep|dark))?[- ](?:skin(?:ned)?|complexions?)\b")
+# Needs of two words (of NEED_PHRASES) whose first word alone says something else in their answers, so a quote or a
+# voice talks about them only with the second (engine.answer._phrase_heads): "dark" is a skin tone or a shade ("I have
+# dark skin" is no dark-circles voice), "large" or "open" a size or a jar. Every other phrase's first word still counts
+# alone, as before ("my lower back" is about back pain, "fits in my car" about a car boot): read whole, the sweep of
+# 5 Nov 2026 counted fewer voices in 47 non-makeup reasons.
+NEED_PHRASES_WHOLE = ("dark circles", "dark spots", "dark marks", "dark eye circles", "large pores", "open pores")
+# How the reason line names a need (engine.needs._labels): a word of the request followed by one of these, which says
+# what it describes, is named with it, as the visitor typed them ("about fair skin", not "about fair").
+NEED_LABEL_NOUNS = ("skin", "hair", "scalp", "lips", "lip", "eyes", "eye", "lashes", "brows", "eyebrows", "pores",
+                    "nails", "feet", "hands", "dog", "dogs", "cat", "cats", "puppy")
+# "What to look for" (engine.answer._look_for):
+# In a makeup answer (FACE_AND_EYE_TYPES), an "Avoid" line needs warnings from at least this many credible writers: one
+# writer's own experience ("pencils don't work for me") is no advice to avoid a whole kind. Makeup only: in every other
+# answer a single credible warning still gives an "Avoid", as 19 tests of the kitchen and skincare rules expect.
+AVOID_MIN_WRITERS = 2
+# Makeup types for the face and eyes: a tip naming a product of these categories, or one of these words, is no advice
+# for them (hairspray as a setting spray, baby powder as a setting powder). The makeup types of REFORMULATED_TYPES;
+# a new makeup type goes there.
+FACE_AND_EYE_TYPES = REFORMULATED_TYPES
+TIP_OFF_LABEL_CATEGORIES = ("haircare",)
+TIP_OFF_LABEL_WORDS = ("baby powder", "hairspray", "hair spray", "hair gel", "spiking gel", "glue stick",
+                       "school glue", "elmer's glue", "craft glue")
+# A tip whose kind's name ends on one of these words lost the words after it when module 4 named it ("mini or travel
+# size of"): a broken label is no tip, in any answer.
+KIND_DANGLING_END_WORDS = ("of", "for", "with", "to", "and", "or", "a", "an", "the", "in", "on", "at", "from", "as",
+                           "by", "than")
+# A health scare the answer can't check is never a tip's backing: a note holding one of these backs no tip.
+TIP_HEALTH_SCARE_WORDS = ("asbestos", "carcinogen", "carcinogenic", "cancer", "cancerous")
+# A makeup tip saying the opposite form of the one the request names (a "cream blush" answer's "pressed blush in satin
+# or matte"): what the form refuses, as engine.answer._asked_and_refused reads refused things, for the makeup types only.
+TIP_FORM_OPPOSITES: dict[str, tuple[str, ...]] = {"cream": ("powder", "pressed", "baked"),
+                                                  "liquid": ("powder", "pressed", "baked")}
