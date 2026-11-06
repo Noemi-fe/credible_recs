@@ -2375,3 +2375,19 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   (test_library::test_real_gold_threads_saved_to_the_library_load_back, the unlabelled gold thread 1v40u3t), as before.
   No gcloud command was run, nothing was pushed or deployed, and no Monitoring alert was made. No eval/RUNS.md row, since
   this is a docs and config commit and no eval ran.
+- 6 Nov 2026, the deploys (Claude, the orchestrator; Noemi's go-ahead of 5 Nov: merge and deploy once every gate
+  passes). The makeup branch was merged as 2a9944b and deployed as revision 00080 at 4 GiB. The deploy pulled 4 blush
+  threads read on demand and applied the pre-check's verification record (1,078 items of comments removed, edited or
+  unreadable twice on Reddit dropped), which moved 10 answers' picks against the last review sweep, cream blush among
+  them (now Patrick Ta, Milani baked blush and Haus Labs: the need-fit rule is still off). Live, all 19 checked requests
+  (the 17 makeup answers and two others) gave 3 picks: NARS Orgasm under Also worth a look with its note and warnings,
+  got2b tagged as a hair product with its note, ONE/SIZE without the misread warning. The site-memory branch was rebased
+  onto it (one conflict in engine/on_demand.py: write_items keeps the removed-threads check), its suite passed (7,353,
+  the known gold thread aside), and sweeps of main and of the branch on the same library were identical in all 295
+  answers. It was merged as d12d0f1 and deployed as revision 00081 at 3 GiB. Its first minutes warmed slowly and
+  visitors were told the site was busy for 8 minutes: the CPU sat at 10 to 40%, so the wait was for Reddit's embed
+  reads (about 200 in 10 minutes), which the live check of 19 fresh makeup answers on 00080 had used up just before,
+  and which a new instance has to read again for any check made since the bucket's last hourly share. The old code
+  does the same. Answers came back in 1 to 11 s once the reads were back, and the pre-check job was run once at
+  11:40 UTC so the makeup answers' quotes are checked ahead. Cloud Monitoring is read about an hour after the deploy
+  and then daily, by the step-down rule above.
