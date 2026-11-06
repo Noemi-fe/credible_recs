@@ -118,11 +118,12 @@ def for_request(thread: Thread, query: ParsedQuery) -> Thread:
 
 # What is made for each product type below is big for the general category's 347 types (5 Nov 2026, the site's memory
 # review): the expression that finds a type's names inside the names of the other types of its category is 549 KB each
-# (196 MB for all 446 types), the one for names holding a community's name up to 0.6 MB, and the longer names holding a
-# type's words 77 KB and 32 KB. A `cache` kept them for every type ever asked about, 150 MB or more after an hour of
-# many types, and a visitor's own words for a type the open model names each added one. The answers' own memory keeps
-# ANSWERS_KEPT_TYPES types, so these keep that many as well, the types asked most lately. One let go is made again, the
-# same expression, in 3 to 50 ms.
+# (196 MB for all 446 types), and the longer names holding a type's words 77 KB and 32 KB. The one for names holding a
+# community's name is small (6 Nov 2026: only 2 types have community names, about 1 KiB each, where an earlier figure of
+# up to 0.6 MB came from building it for types with none, which the code never does). A `cache` kept them for every
+# type ever asked about, 150 MB or more after an hour of many types, and a visitor's own words for a type the open model
+# names each added one. The answers' own memory keeps ANSWERS_KEPT_TYPES types, so these keep that many as well, the types
+# asked most lately. One let go is made again, the same expression, in 3 to 50 ms.
 _KEPT_TYPES = ANSWERS_KEPT_TYPES
 
 

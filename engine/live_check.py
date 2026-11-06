@@ -381,7 +381,9 @@ class LiveChecker:
     are shared through, as one bundle (see Bucket, load_bundle and save_bundle), or None. Checks never call it. `in_memory` (the
     public site on Cloud Run, 5 Nov 2026): the saved checks are kept in memory instead of in `cache_dir`, which is then
     never made or read (_MemoryChecks), and checks over 48 hours old, which nothing uses, are let go of whenever the
-    bundle is made (forget_old_checks)."""
+    bundle is made: in _bundle_data, through share_bundle, which the site calls at most hourly and only when reading ahead
+    has read or taken in something new (engine.read_ahead, share_if_due). forget_old_checks does the same on its own, and
+    nothing in production calls it."""
 
     def __init__(self, cache_dir: Path = DEFAULT_CACHE_DIR, fetch=_http_get, clock=None, sleep=time.sleep,
                  min_interval: float = LIVE_CHECK_MIN_INTERVAL, burst: int = LIVE_CHECK_BURST,
@@ -612,7 +614,8 @@ class LiveChecker:
     def forget_old_checks(self) -> int:
         """Lets go of the checks kept in memory that nothing can use any more: over 48 hours old (check, last_read and the
         bundle all stop at MAX_AGE), or no check at all. Checks kept as files are never deleted by the program: 0. How
-        many were let go."""
+        many were let go. Nothing in production calls this: _bundle_data lets the same checks go whenever the bundle is
+        made."""
         if not self._memory:
             return 0
         gone = 0

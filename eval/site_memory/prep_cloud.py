@@ -4,6 +4,8 @@
   site's 18,946), so a server started 'right after a deploy' with an empty folder reads them in (load_bundle);
 - bucket/live_check/plan.json: the daily plan (7,000 answers' comments due, 600 fallback, 4,500 to verify);
 - plans/plan_N.json: later daily plans, each with 4,500 other comments to verify (days of reading ahead, compressed).
+The bundle's check ages are fixed when this runs (41 and 10 hours), so a run more than about 7 hours later loses the
+41-hour ones to the 48-hour rule: run this again before each run.
 usage: run from a tree: python prep_cloud.py <outdir>"""
 import json
 import random

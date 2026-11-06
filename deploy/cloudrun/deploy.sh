@@ -89,11 +89,17 @@ if [ "$ON_DEMAND" = on ]; then on_demand_bucket; fi
 # 3. The site: public, one server at most, none when idle (the free tier).
 #    On Cloud Run's second-generation environment (14 Oct 2026, measured: getting ready warmed all 65 requests in 40.9 s
 #    there, against 19 of 65 in 122 s on the first generation, whose sandbox makes the engine's many small file reads
-#    slow), the same price. Memory (5 Nov 2026, Noemi's "Let's do A"): 2 GiB, where it was 4 GiB from 15 Oct 2026 as a stopgap.
-#    The site's memory is bounded now (engine/tests/test_site_memory.py). On Noemi's computer its highest in the review's
-#    worst cases was 1,584 MiB, 77.4% of 2 GiB, where 80% is the ceiling (deploy/cloudrun/DEPLOY.md, The site's
-#    memory). Linux is not measured, so watch Cloud Monitoring's memory for the first day and week after this deploy and use
-#    `--memory 3Gi` if it passes 1.6 GiB. First the threads read on demand come into
+#    slow), the same price. Memory (Noemi's "Let's do A", 5 Nov 2026, and 6 Nov 2026 after two reviews): 3 GiB for the
+#    first deploy of this code, where it was 4 GiB from 15 Oct 2026 as a stopgap. Step down to 2Gi once Cloud
+#    Monitoring's p99 memory stays under about 1.5 GiB across instances at least 2 days old, and come back to 3Gi if the
+#    p99 passes 0.8 of the limit in any 5-minute window or the warmed level climbs more than about 0.05 GiB a day.
+#    The site's memory is bounded now (engine/tests/test_site_memory.py). On Noemi's computer the review's worst case
+#    counted 1,584 MiB, but on Cloud Run the threads taken in from an on-demand bundle are also files on the memory disk,
+#    which a Mac's footprint never counts (49 MiB for the 300 largest). So the same worst case on Cloud Run is about
+#    1,633 MiB, 79.8% of 2 GiB, 5 MiB under the 80% ceiling of 1,638 MiB (deploy/cloudrun/DEPLOY.md, The site's
+#    memory). A second review's own soak peaked at 1,459 MiB (71.3%) and the live old code, once warm, read 88 to 93% of
+#    the Mac's figure for the same code. Linux, glibc with MALLOC_ARENA_MAX=2 and several days of creep are not
+#    measured, so 2 GiB has no margin yet. First the threads read on demand come into
 #    data/library (through gcloud's sign-in), so the image holds them; when that fails they stay in the bucket, where
 #    the site finds them as it gets ready.
 if [ "$ON_DEMAND" = on ]; then
@@ -131,7 +137,7 @@ rm -rf "$READS_DIR"
 BUNDLE="$(mktemp -d)/bundle"
 .venv/bin/python -m deploy.cloudrun.make_context "$BUNDLE"
 $GCLOUD run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --source "$BUNDLE" \
-    --allow-unauthenticated --memory 2Gi --cpu 1 --cpu-boost --max-instances 1 --min-instances 0 \
+    --allow-unauthenticated --memory 3Gi --cpu 1 --cpu-boost --max-instances 1 --min-instances 0 \
     --execution-environment gen2 \
     --concurrency 8 --timeout 300 \
     --startup-probe "httpGet.path=/ready,httpGet.port=8080,periodSeconds=3,timeoutSeconds=2,failureThreshold=80" \

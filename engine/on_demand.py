@@ -574,9 +574,12 @@ def bundle_spans(data: bytes) -> dict[str, tuple[int, int]]:
 
 def bundle_items(data: bytes) -> Iterator[tuple[str, Item]]:
     """The bundle's items one at a time, in the order of their thread ids: what
-    sorted(Bundle.from_json(json.loads(data)).threads.items()) holds, with one item parsed at a time. Whatever makes a
-    parse of the whole fail makes this fail, with a ValueError, TypeError or AttributeError. Nothing but a thread's item
-    that is a plain object is taken (an item of another shape is left out, as Bundle.from_json does)."""
+    sorted(Bundle.from_json(json.loads(data)).threads.items()) holds, with one item parsed at a time. What makes a
+    parse of the whole fail makes this fail too (a ValueError, TypeError or AttributeError), with one difference: a thread
+    named twice is its last copy, and only that copy is parsed, so a broken earlier copy that a later one overrides is
+    accepted here where json.loads of the whole file refuses it. That is harmless, since the reading job writes the bundle
+    with json.dumps of a dict, which never names a thread twice. Nothing but a thread's item that is a plain object is
+    taken (an item of another shape is left out, as Bundle.from_json does)."""
     spans = bundle_spans(data)
     for tid in sorted(spans):
         start, end = spans[tid]

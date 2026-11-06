@@ -30,6 +30,10 @@ the Trash when the work is done.
 and the daily plans. `make_bundle.py` makes a bundle of 300 threads under new ids, the largest in the library or a typical
 sample, as if the reading job had added them.
 
+Run `prep_cloud.py` again just before each run. It fixes the bundle's check ages at the time it is run (the answers' checks
+are 41 hours old and the rest 10), so a run that starts more than about 7 hours later finds the 41-hour checks past the
+48-hour rule and the site lets them go, which changes what the run measures.
+
 ## Runs
 
 `segments.sh` runs one piece of a run for one hold of the heavy lock (about 20 minutes), freezing the server between

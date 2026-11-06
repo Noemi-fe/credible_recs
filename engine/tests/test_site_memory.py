@@ -3,7 +3,8 @@
 The site had run at 4 GiB since 15 Oct 2026, a stopgap. Measured on 5 Nov 2026 (CLAUDE.md, DECISIONS.md): at 4 GiB it used
 1.9 to 2.0 GiB in its busiest windows, with each instance's memory climbing through its life, so at 2 GiB it would run out
 within hours. These tests hold each bound that brings it under 80% of 2 GiB. None changes an answer: every bound only decides what is kept in memory,
-and an answer worked out again is the same answer.
+and an answer worked out again is the same answer. The first deploy of this code asks for 3 GiB (6 Nov 2026, deploy.sh), because the
+worst case on Cloud Run is about 79.8% of 2 GiB and Linux is not measured. It steps down to 2 GiB once Cloud Monitoring shows room.
 
 Every library, request and comment here is made up. Nothing reads data/.
 """
@@ -722,9 +723,11 @@ def test_the_image_limits_glibcs_memory_arenas_to_two():
 # The soak's creep was not fragmentation. The compiled expression that finds a type's names inside the names of the other
 # types of its category (sources._inside_pattern) is 549 KB for each of the general category's 347 types, and a `cache`
 # kept one for every type ever asked about: 31 MB after getting ready, 153 MB after a soak that touched 338 types, up to
-# 196 MB for all 446. Two more were the same (_community_covers up to 268 MB for all types, though few are asked) and
-# _covering_pattern and _covering_phrases (13 and 14 MB). A visitor's own words for a type the open model names add an
-# entry each, so a long-lived server only ever grew. The answers' own memory keeps ANSWERS_KEPT_TYPES types, so these do.
+# 196 MB for all 446. Two more were the same in kind: _covering_pattern and _covering_phrases (13 and 14 MB for all types),
+# and _community_covers, which is tiny (6 Nov 2026: only 2 types have community names, about 1 KiB each, so the 268 MB first
+# written here came from building it for types with no community names, which the code never does). A visitor's own words for
+# a type the open model names add an entry each, so a long-lived server only ever grew. The answers' own memory keeps
+# ANSWERS_KEPT_TYPES types, so these do.
 
 @pytest.mark.parametrize("name", ["_inside_pattern", "_community_covers", "_covering_pattern", "_covering_phrases"])
 def test_what_is_made_for_each_product_type_of_a_big_category_is_kept_for_the_answers_types_only(name):

@@ -550,8 +550,9 @@ ping starts no read 5 seconds after it began, so at most about 6 seconds a ping 
 a day, at most 53,568 vCPU-seconds and 107,136 GiB-seconds in a 31-day month on the site's 1 vCPU and 2 GiB, 30% of
 each. From 15 Oct to 5 Nov 2026 the site ran at 4 GiB, a stopgap: at 2 GiB it ran out of memory every 20 to 40 minutes
 with ~1,950 threads, the open model and its warmed answers, so reading ahead's GiB-seconds were at most 214,272 (60%).
-Its memory was brought back down on 5 Nov 2026 (the next section, The site's memory), so they are at most 124,992 again
-(35%). What is due on 14 Oct 2026's library, slimmed (17,335 kept comments): the answers' 2,229 comments once every 40
+Its memory is brought down in the next section (The site's memory). The first deploy of that work is at 3 GiB, so
+they are at most 187,488 (52%), and 124,992 (35%) once the site steps down to 2 GiB. What is due on 14 Oct 2026's
+library, slimmed (17,335 kept comments): the answers' 2,229 comments once every 40
 hours (about 1,340 a day) and up to 3,000 kept comments to verify, about 4,340 reads a day, 15 a ping, about 1.5
 seconds of each: about 13,400 vCPU-seconds a month, 7%. 12,356 of the kept comments were never verified (read from the
 archive on 11 to 14 Oct, so due by 10 to 13 Nov), about 31,000 once the 846 threads still to extract are slimmed: 11
@@ -575,16 +576,20 @@ reads a day; a comment unreadable twice a week apart lapses at once, freeing the
 read on 24 Oct 2026 (the cap then 11,520). So a ping reads at most 48 in 6 seconds (40 in 5 before), 13,824 a day, with
 visitors keeping 100 of Reddit's 200 reads in each 10 minutes (96 for reading ahead). The ping bills 7 seconds (6
 before): at most 62,496 vCPU-seconds a month on the site's 1 vCPU (35% of 180,000; it was 53,568, 30%) and, at 4 GiB,
-249,984 GiB-seconds (69% of 360,000; it was 214,272, 60%), still free. At the site's 2 GiB since 5 Nov 2026 the ping's
-GiB-seconds are 124,992 (35%). The pre-check job's vCPU-seconds are unchanged (102,300, 43%; 152,300 with on-demand
-reading's, 63%), and so are Bright Data's 930 records a month.
+249,984 GiB-seconds (69% of 360,000; it was 214,272, 60%), still free. At the site's 3 GiB from the first deploy of the
+memory work (6 Nov 2026) the ping's GiB-seconds are 187,488 (52%), and 124,992 (35%) at 2 GiB. The pre-check job's
+vCPU-seconds are unchanged (102,300, 43%; 152,300 with on-demand reading's, 63%), and so are Bright Data's 930 records a
+month.
 
-The site's memory (5 Nov 2026, Noemi: "Let's do A"). From 15 Oct 2026 the site ran at 4 GiB, a stopgap, and deploy.sh asks for
-2 GiB again (`--memory 2Gi`, not deployed yet). Google's free allowance for Cloud Run is most likely one pot for the site and
-the jobs, and the site at 4 GiB was most of October's use of its memory part (84% of it, from Cloud Monitoring's billable
-time), so halving the site's memory leaves room to double on-demand reading later at no cost. A review the same evening
-found that the first version of this work had missed the biggest part of the memory's growth and a few spikes. What it found
-and what was done are in here, and the numbers are the second round's.
+The site's memory (5 Nov 2026, Noemi: "Let's do A"). From 15 Oct 2026 the site ran at 4 GiB, a stopgap. The work below
+was written to bring it back to 2 GiB, and after two independent reviews deploy.sh asks for 3 GiB for the first deploy of this
+code (`--memory 3Gi`, 6 Nov 2026, not deployed yet), with 2 GiB to follow once Cloud Monitoring shows room (the paragraph
+headed What the live site will tell says when). Google's free allowance for Cloud Run is most likely one pot for the site and the
+jobs, and the site at 4 GiB was most of October's use of its memory part (84% of it, from Cloud Monitoring's billable time),
+so halving the site's memory at the step down to 2 GiB leaves room to double on-demand reading later at no cost, and 3 GiB
+leaves half as much. A review on 5 Nov 2026, in the evening, found that the first version of this work had missed the biggest
+part of the memory's growth and a few spikes. What it found and what was done are in here, and the numbers are the second
+round's. Two independent reviews of that round found the code correct and the answers unchanged in all 296 sweep requests.
 
 What the live site used (Cloud Monitoring, run.googleapis.com/container/memory/utilizations, read only, the 4 GiB revisions,
 15 Oct to 5 Nov 2026, 6,061 five-minute windows). The busiest window of each day rose from 1.28 GiB on 16 Oct to 2.00 GiB on
@@ -607,7 +612,8 @@ lifetime peak the system keeps (the open model's 1.1 GB file is mapped and left 
 (its README says how to run them). Not measured: Linux and Cloud Run's own count of memory. No container runs here, so what
 glibc's arenas do and what Cloud Run counts are left to the first day's reading of Cloud Monitoring. One thing the first
 version did not count is now in the figures, the saved checks: on Cloud Run the disk is memory and each file takes a whole 4
-KiB page, which no macOS figure showed.
+KiB page, which no macOS figure showed. One thing is still not in them: an on-demand bundle's threads, which Cloud Run holds as
+files too (49.0 MiB for the 300 largest, see the result below).
 
 Where the memory went (the code as it was, 2,748 threads, after the 85 warm answers, each object counted once): the library's
 threads 371 MB and its checked extractions 168 MB (213,000 comments and some 94,000 quotes), the tables of every name's words
@@ -619,15 +625,19 @@ were never let go of. The review then found three more.
   of its category (engine/sources.py, _inside_pattern) is 549 KB each for the 347 types of the general category, and it was
   kept for every type ever asked about: 31 MB after getting ready, 153 MB after a soak that touched 338 types, up to 196 MB
   for all 446, and a visitor's own words for a type the open model names each added one. Two more were the same in kind
-  (_community_covers, up to 0.6 MB each, and _covering_pattern with _covering_phrases, 13 and 14 MB for all types). A heap dump
+  (_covering_pattern with _covering_phrases, 13 and 14 MB for all types, and _community_covers, which is small: only 2 types
+  have community names, about 1 KiB each. The up to 0.6 MB each and 268 MB for all types first written for it came from
+  building it for types with no community names, which the code never does). A heap dump
   of a server after 11 minutes of the soak showed the compiled expressions grown by 150 MB (from 37 MB to 187 MB) and the
   memory Python keeps for small objects by 59 MB (the structures it knew of by 42 MB of that), of the 240 MB the footprint had
-  risen. This was most of the soak's climb, and most likely the larger part of the climb through an instance's life that Cloud
-  Monitoring shows.
+  risen. This was most of the soak's climb. It does not explain the climb through an instance's life that Cloud Monitoring
+  shows with pings alone (0.055 to 0.132 GiB a day, live): no new product types are asked then, so these caches do not grow.
+  The saved checks below explain about 40 MiB a day of it at most. So 16 to 95 MiB a day of that climb is still unexplained,
+  and instances live up to 73 hours.
 - The saved checks as files on Cloud Run's memory disk: a page each whatever their size, about 300 bytes of words. 18,400 files
   from the bucket's bundle at a start, 44,838 after the review's soak, 70 to 210 MiB with the files' own bookkeeping. Reading
-  ahead adds up to about 9,350 a day, which at a page each is about 40 MiB a day, near the low end of the climb Cloud
-  Monitoring shows with pings alone.
+  ahead adds up to about 9,350 a day, which at a page each is about 40 MiB a day, below the climb Cloud Monitoring shows with
+  pings alone (56 to 135 MiB a day) and so only part of it. Kept in memory as they are now, 9,350 checks are about 5 MiB.
 - Taking in an on-demand bundle parsed the whole file at once, which holds the file, its text decoded (2 to 4 bytes a letter
   once a curly quote or an emoji is in it) and every string parsed out of it: about 7.8 times the file for a moment, +119 MiB
   for a typical 16.1 MiB bundle and +416 MiB for the 300 largest threads (52.8 MB).
@@ -648,7 +658,9 @@ decides what stays in memory, and what is let go is worked out again, the same.
 The review's three, and the setting, in the second round:
 - The compiled expressions made for each product type are kept for ANSWERS_KEPT_TYPES types at most, the types asked
   most lately (engine/sources.py, a least-recently-used cache of 64 for _inside_pattern, _community_covers,
-  _covering_pattern and _covering_phrases). 64 of them are about 35 MB, and one let go is made again, the same
+  _covering_pattern and _covering_phrases). The patterns of the 64 biggest general types are about 47 MiB (37.8 for
+  _inside_pattern, 5.6 for _covering_pattern and 4.0 for _covering_phrases), measured. Python's own re cache (512 patterns)
+  can also hold a pattern that this cache let go, so that figure is a floor. One let go is made again, the same
   expression, in 3 to 50 ms.
 - A bundle is taken in one item at a time (engine/on_demand.py, bundle_items): the file is scanned for where each item
   lies, the whole of it is checked to be readable before anything is written, and one item is parsed at a time, so what
@@ -678,8 +690,15 @@ memory, where as files they would have taken over 300 MiB on Cloud Run. The revi
 the same place on the code of the first round, 2,016.5 with the largest bundle changing again at the soak's level, and about
 1.85 GiB or more once Cloud Run's files were added. The ceiling is 1,638 MiB, 80% of 2 GiB, the most the site may reach in
 any of these before it needs more memory. The highest of all of them is 1,584.3 MiB, 77.4% of 2 GiB and 54 MiB under the
-ceiling. That is thin, it was measured on a Mac, and reading ahead and the bundle's sharing ran 60 times faster than they do
-live, so the first day's reading of Cloud Monitoring decides.
+ceiling, but that figure did not count everything it was first said to. On Cloud Run, write_items puts an on-demand bundle's
+threads into data/library/{threads,extracted} on the in-memory disk, and a Mac's footprint never counts files. For the 300
+largest threads those files are 49.0 MiB in 4 KiB pages. So the same worst case on Cloud Run is about 1,633 MiB, 79.8% of
+2 GiB and 5 MiB under the ceiling of 1,638 MiB. Two more readings bear on it. A second measurement review, with its own soak,
+found a lifetime peak of 1,459.3 MiB (71.3%). And Cloud Monitoring put the live old code, once warm, at 88 to 93% of the Mac's
+figure for the same code, which makes the Mac a conservative stand-in. What stays unmeasured is Linux itself, glibc with
+MALLOC_ARENA_MAX=2 and several days of creep in an instance's memory, and reading ahead and the bundle's sharing ran 60 times
+faster here than they do live. With 5 MiB of margin on the worst case and those open, 2 GiB should not be the first
+setting, so the first deploy of this code is at 3 GiB, and the paragraph headed What the live site will tell says when to step down.
 
 Speed, measured in-process on the full library with the model on (the review's bench, best of two rounds, paired by request):
 warmed answers had a median of 0.249 s on the code before the first round, 0.263 s after it and 0.262 s now (24 requests,
@@ -692,16 +711,20 @@ is not noticeable to a visitor. The first answer after an on-demand bundle with 
 as they were before. All 296 requests of eval/sweep.py gave identical answers (every field except the seconds), and
 eval/run_eval.py with live checks off gave identical output and an identical metrics.json.
 
-What the live site will tell, and what to do. The memory of each instance should now start near the footprint after getting
-ready, 1,196 MiB on the computer (1.17 GiB), and stay flat apart from the saved checks, which are 526 bytes each and are let
-go at 48 hours. After the first deploy, read Cloud Monitoring's memory for the first day and then the first week (Metrics
-Explorer, Cloud Run Revision, Container, Memory utilizations, service credible-recs, the 99th percentile). Above 0.8 (1.6
-GiB) for any five minutes, set `--memory 3Gi` in deploy.sh and deploy again: reading ahead then bills 187,488 GiB-seconds a
-month (52% of the free 360,000) where 2 GiB bills 124,992 (35%) and 4 GiB 249,984 (69%). An alert on that metric at 0.8, with
-an email, is the surest way to hear of it, and creating one sends mail in Noemi's name, so it is hers to say yes to (none was
-made). What is still unmeasured is Linux: what the arenas setting does and what Cloud Run adds to the count. The review's own
-fallback was to stay at 4 GiB or to try 3 GiB until that is measured, which is one line of deploy.sh. Until the first day's
-reading has been made, 2 GiB rests on a Mac's figures.
+What the live site will tell, and what to do (6 Nov 2026: the first deploy is at 3 GiB). The memory of each instance should
+now start near the footprint after getting ready, 1,196 MiB on the computer (1.17 GiB), and stay flat apart from the saved
+checks, which are 526 bytes each and are let go at 48 hours. Whether it does is the open question, since 16 to 95 MiB a day of
+the climb with pings alone is unexplained (see the compiled expressions above). After the first deploy, read Cloud
+Monitoring's memory for the first day and then the first week (Metrics Explorer, Cloud Run Revision, Container, Memory
+utilizations, service credible-recs, the 99th percentile). Step down to 2 GiB (`--memory 2Gi` in deploy.sh, then deploy
+again) once the p99 stays under about 1.5 GiB across instances at least 2 days old (a utilisation of about 0.5 at 3 GiB).
+Reading ahead then bills 124,992 GiB-seconds a month (35% of the free 360,000) where 3 GiB bills 187,488 (52%) and 4 GiB
+249,984 (69%). Go back to 3 GiB if the p99 goes over 0.8 of the limit in any 5-minute window or the warmed level climbs more
+than about 0.05 GiB a day. An alert on that metric at 0.8, with an email, is the surest way to hear of it, and creating one
+sends mail in Noemi's name, so it is hers to say yes to (none was made). What is still unmeasured is Linux: what the arenas
+setting does and what Cloud Run adds to the count. The review's own fallback was to stay at 4 GiB or to try 3 GiB until that
+is measured, which is what the first deploy does. Until the p99 has been read for a few days, 2 GiB rests on a Mac's figures
+and 5 MiB of margin.
 
 The pre-check job (the same library, the open model off, 559 requests): 913 MB at its worst on Noemi's computer, where it was
 1,410 MB before the first round and 1,092 MB after it (the bound on the compiled expressions saves the job too), and the job
