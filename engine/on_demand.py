@@ -158,14 +158,15 @@ READING_OLD = ("The Reddit threads we've read about {about} are a few years old,
 WAITING_OLD = ("The Reddit threads we've read about {about} are a few years old. Reading newer ones is on our list, "
                "but our free reading allowance is used up for now: check back {when}.")
 # In line behind other requests, past what the day's free allowance can read (25 Oct 2026): {ahead_text} is "1 product
-# is" or "3 products are"; {capacity} is what the free allowance covers, "30 a day" while Gemini's calls limit the
-# reading and "73 a month" (39 until the doubling of 6 Nov 2026) once the job's time for the month does (capacity_text).
+# is" or "3 products are"; {capacity} is what the free allowance covers, "about 30 a day" while Gemini's calls limit the
+# reading and "up to 73 a month" (39 until the doubling of 6 Nov 2026) once the job's time for the month does
+# (capacity_text).
 IN_LINE_NEW = ("We haven't read Reddit about {about} yet. It's in line: {ahead_text} ahead of it, and our free reading "
-               "allowance covers about {capacity}. Check back {when}.")
+               "allowance covers {capacity}. Check back {when}.")
 IN_LINE_MORE = ("We've read only a little on Reddit about {about} so far. Reading more is in line: {ahead_text} ahead of "
-                "it, and our free reading allowance covers about {capacity}. Check back {when}.")
+                "it, and our free reading allowance covers {capacity}. Check back {when}.")
 IN_LINE_OLD = ("The Reddit threads we've read about {about} are a few years old. Reading newer ones is in line: "
-               "{ahead_text} ahead of it, and our free reading allowance covers about {capacity}. Check back "
+               "{ahead_text} ahead of it, and our free reading allowance covers {capacity}. Check back "
                "{when}.")
 IN_MINUTES = "in about {n} minutes"
 IN_AN_HOUR = "in about an hour"
@@ -424,13 +425,15 @@ def month_places_left(queue: Queue, now: datetime) -> int:
 
 def capacity_text(place: int, queue: Queue, now: datetime) -> str:
     """What the free allowance covers, for the visitor at `place` in line (25 Oct 2026, Noemi's decision (l) of 19 Oct,
-    on Gemini 3.1 Flash-Lite): "30 a day" while Gemini's calls decide when the place is reached, "73 a month" (39 until
-    the doubling of 6 Nov 2026) once the job's time for the month does. Flash-Lite's 450 calls a day could read 30
-    requests, but the month's job time reads about 73: "30 a day" beside "check back on 1 November" would not be true."""
+    on Gemini 3.1 Flash-Lite): "about 30 a day" while Gemini's calls decide when the place is reached, "up to 73 a
+    month" (39 until the doubling of 6 Nov 2026) once the job's time for the month does. Flash-Lite's 450 calls a day
+    could read 30 requests, but the month's job time reads about 73: "30 a day" beside "check back on 1 November" would
+    not be true. "Up to" since 6 Nov 2026 (Noemi: "say up to 73"): past visitors' first 50,000 seconds the free-tier
+    guard may stop the reading sooner in a busy month (engine/free_tier.py)."""
     # A rest for the free-tier guard (6 Nov 2026) is the month's allowance too: Google's, shared with the site.
     month_limits = (queue.resting_why in ("month", "guard")) if queue.resting(now) \
         else place >= month_places_left(queue, now)
-    return f"{products_a_month()} a month" if month_limits else f"{products_a_day()} a day"
+    return f"up to {products_a_month()} a month" if month_limits else f"about {products_a_day()} a day"
 
 
 def wait_for(place: int, queue: Queue, now: datetime) -> tuple[int | None, datetime | None]:
