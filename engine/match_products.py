@@ -336,8 +336,11 @@ def _spell_out_once(words: list[str], aliases: Aliases) -> list[str]:
         start = words[:len(short)]
         if len(start) == len(short) and all(x == y or _spelling_slip(x, y) for x, y in zip(start, short)):
             full = aliases[short]
-            if _already_says(words, full) and not set(full) <= set(short):  # a longer short name ("Field Company"
-                return words                                                 # for "Field") is written out anyway
+            if (_already_says(words, full) and not set(full) <= set(short)  # a longer short name ("Field Company"
+                    and (words != list(short)   # for "Field") is written out anyway, and so is a name written exactly
+                         or "".join(words) == "".join(full))):  # as a listed one ("Smashbox's mattifying/Photo Finish
+                return words  # primer", fix 1, 5 Nov 2026: its possessive's slip "already said" the name), unless it is
+                              # the full name in other spacing only ("Leap Frog", "Elta MD": left as they are)
             return full + words[len(short):]
     return words
 

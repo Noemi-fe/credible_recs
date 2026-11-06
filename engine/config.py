@@ -90,6 +90,16 @@ SUBREDDITS: dict[str, tuple[str, ...]] = {
         # beauty and personal care
         "drugstoreMUA", "Fragrance", "MakeupAddiction", "MakeupRehab", "malegrooming", "RedditLaqueristas",
         "wicked_edge", "HaircareScience", "curlyhair", "Hair", "femalehairadvice", "SkincareAddiction",
+        # 4 Nov 2026 (Noemi's report about "blush": Google's top threads for it were in r/Makeup and r/Sephora, which
+        # the archive reader refused to read; proposed by Claude. Decided by Noemi, 4 Nov 2026: "Yes, plus
+        # r/AsianBeauty"): r/Makeup, the general makeup questions community, and r/Sephora, a shoppers' community (not
+        # run by the retailer), searched first for every makeup type (engine/data/product_types.json). r/AsianBeauty is
+        # skincare's already (category_for still gives "skincare", its first): listed here too, last, so foundation,
+        # concealer, mascara and lipstick requests search it, and a thread read there for them is kept as a general
+        # thread (engine.sources.for_request), which the library's checks accept because it is listed here. Not used:
+        # r/BeautyGuruChatter (influencer talk), r/Ulta (store staff), r/makeupexchange (selling). r/MakeupRehab stays
+        # decided, but no makeup type searches it any more: a no-buy community.
+        "Makeup", "Sephora", "AsianBeauty",
         # hobbies
         "astronomy", "boardgames", "DigitalArt", "drums", "fountainpens", "Guitar", "notebooks", "pens", "piano",
         "sewing", "telescopes",
@@ -325,10 +335,25 @@ DOWNVOTED_BELOW = 0  # a score under this (more downvotes than upvotes) is "down
 
 # Recency (the guide: "recent" = the last 2-3 years). Decided by Noemi, 9 Oct 2026.
 VOICE_RECENT_YEARS = 3  # a comment written within this many years of collection is "recent"; older is "old post"
-OLD_SKINCARE_POST_MAX_VOICE = "medium"  # formulas change, so an old skincare comment can't be high
+# Formulas change, so an old comment about a reformulated product can't be high: an old skincare or haircare comment
+# (REFORMULATED_CATEGORIES), and since 5 Nov 2026 an old comment counted for a makeup request (REFORMULATED_TYPES).
+OLD_SKINCARE_POST_MAX_VOICE = "medium"
 # The categories whose formulas change, so OLD_SKINCARE_POST_MAX_VOICE and the ranking's old-post penalty apply to them
 # (haircare added by Claude on 11 Oct 2026, reported to Noemi: shampoos are reformulated as skincare is).
 REFORMULATED_CATEGORIES = ("skincare", "haircare")
+# 4 Nov 2026 (makeup coverage, chosen by Claude, reported to Noemi): the general category's makeup types are
+# reformulated too (shades and formulas change, lines are discontinued), so the ranking's old-post penalty applies to
+# their threads as well (engine.sources.rank_posts): a 2020 blush thread no longer outranks a 2025 one of the same
+# size. The rest of the general category keeps no age penalty.
+# 5 Nov 2026 (Noemi, "Yes, like skincare (Recommended)", asked "Old skincare and haircare comments count as medium
+# voices at most, because formulas change. Should old makeup comments work the same way?"): the voice's old-post cap
+# (OLD_SKINCARE_POST_MAX_VOICE, engine/credibility.py) applies to makeup too. A makeup thread is a general thread, so the
+# cap goes by the request: every comment an answer for one of these types counts (engine.pipeline._score, and its care
+# tips) is at most a medium voice when it is old, as every comment of a skincare or haircare thread is.
+# Lip tint and brow gel (Noemi's "Split both (Recommended)", 5 Nov 2026) are makeup types of their own.
+REFORMULATED_TYPES = ("foundation", "concealer", "mascara", "lipstick", "lip tint", "eyeliner", "eyeshadow",
+                      "makeup primer", "brow pencil", "brow gel", "blush", "bronzer", "highlighter", "setting powder",
+                      "setting spray")
 
 # The comment's words. Decided by Noemi, 9 Oct 2026.
 ENTHUSIAST_MIN_TERMS = 3  # using this many of the category's specialist words shows an "enthusiast"
@@ -641,6 +666,11 @@ PRECHECK_PLAN_MINUTES = 30
 # own types. Types the log names later are checked too wherever the log is. Since 14 Oct 2026 the air fryer, slow
 # cooker, toaster, blender, food processor, rice cooker and stand mixer are module 1's own types (checked ahead as such).
 PRECHECK_MODEL_TYPES = ("body wash",)
+# Requests checked ahead first, beside the blind-test, demo and interviewee ones (engine.precheck.first_requests), but
+# never warmed: the answers' memory is nearly full (engine/data/demo_requests.json: 62 of its 64 types), so they are not
+# in that file (4 Nov 2026, the makeup threads work, Claude's call, reported to Noemi): the blush answers, which read 10
+# new threads whose quotes had never had their 48-hour embed check, so a visitor's first blush answer finds them ready.
+PRECHECK_FIRST_REQUESTS = ("blush", "blush for fair skin", "cream blush")
 # Comments the embed page can't show ("Not supported comment", about 1 in 8), verified through Bright Data by the
 # pre-check (Noemi, 13 Oct 2026: "Use Bright Data"): their threads are read as Reddit shows them now, likeliest to be
 # shown first. Its free tier is 5,000 records a month, shared with the library's own reads (3,972 used by 13 Oct 2026),
@@ -1781,6 +1811,25 @@ EXTRACT_STILL_CURRENT: dict[str, dict[str, tuple[str, ...]]] = {
     "extract-v15": {"extract-v14": THREAD_CATEGORIES, "extract-v13": THREAD_CATEGORIES,
                     "extract-v12": THREAD_CATEGORIES, "extract-v11": _BEFORE_GENERAL, "extract-v10": _BEFORE_GENERAL,
                     "extract-v9": _BEFORE_GENERAL, "extract-v8": ("skincare", "kitchen")},
+    # v16 (4 Nov 2026, makeup coverage) only adds the names of module 1's three new makeup types ("bronzer",
+    # "highlighter", "setting powder", split out of blush and setting spray) to the list the AI types products with, as
+    # v13 did for the routing audit's types. Under v15 the AI typed them in plain words ("bronzer", "highlighter",
+    # "setting powder": its "otherwise write a short lowercase type" rule), which the new types' names find, so every
+    # v15 extraction stays current, of all four categories, and the older ones as under v15. Decided by Claude, reported.
+    "extract-v16": {"extract-v15": THREAD_CATEGORIES, "extract-v14": THREAD_CATEGORIES,
+                    "extract-v13": THREAD_CATEGORIES, "extract-v12": THREAD_CATEGORIES, "extract-v11": _BEFORE_GENERAL,
+                    "extract-v10": _BEFORE_GENERAL, "extract-v9": _BEFORE_GENERAL,
+                    "extract-v8": ("skincare", "kitchen")},
+    # v17 (5 Nov 2026, Noemi's "Split both (Recommended)") adds the names of module 1's two new makeup types, "lip tint"
+    # (tints and stains, out of lipstick) and "brow gel" (gels, soaps, waxes and glues, out of brow pencil), to the list
+    # the AI types products with. Under v16 the AI had typed them "lipstick" and "brow pencil", so the library's
+    # extractions are brought to v17 by command, as v14's lip balms were: `python -m engine.makeup_types retype` re-types
+    # the tints and gels, judged by their names and their threads' titles. So every v16 extraction stays current, of all
+    # four categories, and the older ones as under v16. Decided by Claude, reported.
+    "extract-v17": {"extract-v16": THREAD_CATEGORIES, "extract-v15": THREAD_CATEGORIES,
+                    "extract-v14": THREAD_CATEGORIES, "extract-v13": THREAD_CATEGORIES,
+                    "extract-v12": THREAD_CATEGORIES, "extract-v11": _BEFORE_GENERAL, "extract-v10": _BEFORE_GENERAL,
+                    "extract-v9": _BEFORE_GENERAL, "extract-v8": ("skincare", "kitchen")},
 }
 
 # --- Going live (Noemi, 11 Oct 2026) ---
@@ -1879,6 +1928,18 @@ ARCHIVE_SPLIT_DEPTH = 2
 # product's title word with each of the request's first ARCHIVE_NEED_WORDS need words ("conditioner curly"), in each of
 # its subreddits, over the whole history: few posts match both. Chosen by Claude, reported to Noemi.
 ARCHIVE_NEED_WORDS = 2
+# 4 Nov 2026 (Noemi's report about "blush", chosen by Claude, reported to her): a request with no need words ("blush")
+# had no need searches, and for a type people post about every day round 1's newest 100 posts are the last few weeks:
+# the big threads asking for people's favourite blushes that Google showed her, a year or two old, were out of reach.
+# The archive's round also searches the type's first two title words with each of these advice words ("blush
+# favorite", "blushes favorite", "blush recommendations"), subreddit by subreddit, over the whole history (few posts
+# match both, so they don't time out), at most ARCHIVE_ADVICE_SEARCHES of them; a post only they find must read as a
+# question for advice (engine.sources.search_archive). "recommendations" before "best": with a plural and four
+# communities, the first 12 are "favorite" with both words and "recommendations" with the first, which reached all
+# three of the threads Google showed (the plan's discovery of 4 Nov 2026); "best" comes first for a type with one title
+# word or fewer communities. On-demand reading asks them inside its budget (ON_DEMAND_SEARCH_CALLS, 4 Nov 2026).
+ARCHIVE_ADVICE_WORDS = ("favorite", "recommendations", "best")
+ARCHIVE_ADVICE_SEARCHES = 12
 # 12 Oct 2026: a title search over a big subreddit's whole history timed out, one bounded by dates didn't (r/curlyhair,
 # "conditioner": 35 s for the last 3 years, 11 s for the 6 before). So both rounds are bounded: the last
 # ARCHIVE_OLDER_YEARS years, then back to ARCHIVE_OLDEST_FACTOR times as far (9 years).
@@ -2215,9 +2276,21 @@ ON_DEMAND_GEMINI_CALLS_A_MINUTE = 10
 # (ON_DEMAND_MONTH_SECONDS) is then what limits the reading, not Gemini: 39 requests a month at these 21 minutes (about
 # twice that at the 11 a request actually takes), and the visitor is told so (engine.on_demand.products_a_month). These
 # numbers describe the reader above; a different reader changes them (and the cap) together.
+# 4 Nov 2026 (Noemi: "Keep 25 min"): round 1 of the makeup work had added the archive reader's advice searches
+# (ARCHIVE_ADVICE_SEARCHES) on top of a request's round and timed it on a busy archive (17 minutes of Arctic Shift, 24
+# calls for six big threads: 45 minutes told, 18 a day, 20 a month). She kept main's numbers, the ones below, so the
+# round stays inside them: its searches are at most ON_DEMAND_SEARCH_CALLS calls, every call counted (main's own
+# "blush" round: 12 title searches over its two date windows and 4 warning searches; halves of a search that timed out
+# and a busy archive's second chances included, a search the 48-hour cache holds costing none), with the advice
+# searches before the title searches when the type's word is common (engine.sources.search_archive); and the threads
+# it reads are chosen so that their extraction fits ON_DEMAND_CALLS_PER_PRODUCT calls (engine.on_demand.within_calls:
+# a thread of 150 comments or more is 4 calls). The sum stays honest on a busy archive too: 16 searches and 12 reads
+# at the 15 to 20 seconds a call took on 4 Nov is 7 to 9 minutes, 1 to 3 over the 6, which the 15 calls at a told
+# minute each (10 to 25 seconds really) more than make up.
 ON_DEMAND_CALLS_PER_PRODUCT = 15
 ON_DEMAND_CALL_MINUTES = 1
 ON_DEMAND_ARCHIVE_MINUTES = 6
+ON_DEMAND_SEARCH_CALLS = 16
 ON_DEMAND_PRODUCT_MINUTES = ON_DEMAND_ARCHIVE_MINUTES + ON_DEMAND_CALLS_PER_PRODUCT * ON_DEMAND_CALL_MINUTES
 GEMINI_RESET_HOUR_UTC = 8
 # The bundle holds at most this many threads not baked into the site's image yet: past it the job reads no new request
@@ -2619,6 +2692,19 @@ MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "lululemon")
 # Brooklinen (bed sheets): with Brooks (running shoes) in the brand-lines list, writers' "Brook Linen" was shown as
 # "Brooks Linen" on a skip list (the same slip between two makers' names as Astra's).
 MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "Brooklinen")
+# Makeup brands as their makers write them (5 Nov 2026, the makeup review of round 2; Claude's call, reported to Noemi,
+# DECISIONS.md): answers had shown "Nars" beside "NARS", "Nyx" beside "NYX", "Mac Fix + Stay Over", "Estee Lauder"
+# beside "Estée Lauder", "L'Oreal" beside "L'Oréal" and "ELF" beside "Elf". MAC only as its lines: a bare "Mac" in the
+# general category is mostly Apple's (laptops). Each keeps a name's words (engine.summaries.summary_key) but e.l.f.,
+# whose two saved summaries ("elf power grip", "elf brow lift") wait for the next summarising batch.
+MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "NARS", "NYX", "ONE/SIZE", "Estée Lauder", "L'Oréal",
+                              "e.l.f.", "got2b", "rom&nd", "MAC Fix+", "MAC Studio Fix", "MAC Studio Radiance",
+                              "MAC Face and Body", "MAC Glow Play", "MAC Prep + Prime", "MAC Paint Pot",
+                              "MAC Pro Longwear", "MAC Liquidlast", "MAC Fluidline", "MAC Mineralize",
+                              "MAC Extended Play", "Lancôme", "YSL")
+# Also from a look through the same answers' ranked products: "Lancome" beside "Lancôme", "Ysl" beside "YSL". Writers'
+# short brand names that had split a shown pick's brand in two (VB, T28, ND, Huda, Thrive, ABH, Anastasia, Got2be, and
+# "NYX Epic Ink" alone) are short names in engine/data/product_aliases.json, whose full names are known spellings too.
 
 # --- Converge round 2: code (18 Oct 2026) ---
 # The round-2 code builder's values (docs/bfs-2026-10-17/round2-additions.md and the orchestrator's list); Claude's
@@ -3130,3 +3216,214 @@ PIPELINE_POPULAR_THREADS = 200
 # 11 of 32 voices about the need, then 17 of 53 (a share 0.94 of the first's: shown wider); the curly-hair shampoo 8 of
 # 17, then 8 of 33, and fine oily hair 11 of 18, then 11 of 33 (no more voices about the need: the first reading stays).
 POPULAR_WIDER_NEED_SHARE_KEPT = 0.75
+
+# --- Makeup fix round, part 2: what an answer shows (5 Nov 2026, builder 2) ---
+# Technical calls by Claude, reported to Noemi, from the shopper review of 4-5 Nov 2026: they change which quotes, tips
+# and notes an answer shows and how its reason line names a need, never which products are picks or their order.
+#
+# A quote that undercuts its own product (engine.answer._undercuts) only makes up a pick's minimum of quotes
+# (MIN_QUOTES_PER_PICK), and is an "Also worth a look" item's quote only when it has no other: it mainly ranks another
+# product of its comment above it ("I like X, but Y suits me better", "Y over X"), tells of leaving it for another ("X
+# was my favourite until I found Y"), lists it in a routine of several products ("Step 2: X, Y, Z"), or praises an old
+# version of it ("the old X", "before they reformulated"). Read in the quote's own words; how each is said:
+# Words that favour what follows or comes before them, within a clause.
+QUOTE_FAVOURING_WORDS = r"better|superior|nicer|prefer|preferred|prefers|beats|outperforms|wins"
+# Words saying the writer moved on from a product to another named after them.
+QUOTE_LEAVING = (r"\b(?:before|until|till|then|now|but now|since)\s+(?:i|we)(?:'ve| have)?\s+(?:found|discovered|tried|"
+                 r"switched|moved|started|went|got|use|picked up)\b|\bswitched\s+(?:over\s+)?to\b"
+                 r"|\breplaced\s+(?:it|them|that|mine)\s+with\b|\bmoved\s+(?:on\s+)?to\b")
+# A clause turning to another product instead: "but I'd rather pick up a drugstore one", when the rest of its clause
+# names another product of the comment or holds one of QUOTE_ELSEWHERE_WORDS, and never the product itself ("but I'd buy
+# it again" stays).
+QUOTE_GOING_ELSEWHERE = r"\bbut\s+(?:i|i'd|i would|i'll|i will)\s+(?:\w+\s+)?(?:go|get|buy|pick|choose|reach for)\b"
+QUOTE_ELSEWHERE_WORDS = r"\binstead\b|\belsewhere\b|\bdrugstore\b|\bsomething else\b|\banother (?:one|brand)\b|\bdupes?\b"
+# A step of a routine: "Step 3:".
+QUOTE_ROUTINE_STEP = r"(?:^|\s)step\s*\d+\s*[:\-–]"
+# An old version of the product: "the original formula", "pre-reformulation", "before they reformulated", a quote
+# opening on "original" (never "an old version" or "my old version": the writer's own previous one); and, in makeup
+# answers only (engine.answer._an_old_version), "the old" right before the product's name ("my old X" is more often the
+# one a writer used up, and of a kettle or an air fryer "the old X" is most often the writer's long-lived one).
+QUOTE_OLD_VERSION = (r"(?<!\ban )(?<!\ba )(?<!\bmy )(?<!\bour )(?<!\byour )"
+                     r"\b(?:old|original|previous|older|og)\s+(?:formula|formulation|version)s?\b|^\W*original\b"
+                     r"|\bpre[- ]?(?:reformulation|reformulated|renewal)\b"
+                     r"|\bbefore\s+(?:they|it was|it got|the)\s+(?:\w+\s+)?(?:reformulat|chang|renew)\w*")
+# With a need asked (fair skin, oily skin...), a makeup quote about a shade (one named or numbered, a match, an
+# undertone, a skin tone; never "I own it in three shades", which says how much its writer likes it) and not about the need
+# only makes up a pick's minimum, as a filler does (engine.answer._about_a_shade): it tells a reader asking for something
+# else nothing, or the opposite ("on my olive skin" for fair skin).
+QUOTE_SHADE_WORDS = (r"\bin (?:the |that |this |a |my )?shades?\b|\b(?:that|this|my|which|what|the) shade\b|\(shade\b"
+                     r"|\bshades? #?\d|\bswatch(?:es|ed)?\b|\bundertones?\b|\bskin ?tones?\b|\b[a-z]+[- ]toned\b"
+                     r"|\b(?:perfect|good|great|close|exact|colou?r|shade|skin|tone) match\b"
+                     r"|\bmatch(?:es|ed)? my (?:skin|tone|complexion|neck|face)\b"
+                     r"|\b(?:fair|pale|light|medium|olive|tan|tanned|deep|dark|brown)(?:[- ](?:to[- ])?"
+                     r"(?:fair|light|medium|deep|dark))?[- ](?:skin(?:ned)?|complexions?)\b")
+# Needs of two words (of NEED_PHRASES) whose first word alone says something else in their answers, so a quote or a
+# voice talks about them only with the second (engine.answer._phrase_heads): "dark" is a skin tone or a shade ("I have
+# dark skin" is no dark-circles voice), "large" or "open" a size or a jar. Every other phrase's first word still counts
+# alone, as before ("my lower back" is about back pain, "fits in my car" about a car boot): read whole, the sweep of
+# 5 Nov 2026 counted fewer voices in 47 non-makeup reasons.
+NEED_PHRASES_WHOLE = ("dark circles", "dark spots", "dark marks", "dark eye circles", "large pores", "open pores")
+# How the reason line names a need (engine.needs._labels): a word of the request followed by one of these, which says
+# what it describes, is named with it, as the visitor typed them ("about fair skin", not "about fair").
+NEED_LABEL_NOUNS = ("skin", "hair", "scalp", "lips", "lip", "eyes", "eye", "lashes", "brows", "eyebrows", "pores",
+                    "nails", "feet", "hands", "dog", "dogs", "cat", "cats", "puppy")
+# "What to look for" (engine.answer._look_for):
+# In a makeup answer (FACE_AND_EYE_TYPES), an "Avoid" line needs warnings from at least this many credible writers: one
+# writer's own experience ("pencils don't work for me") is no advice to avoid a whole kind. Makeup only: in every other
+# answer a single credible warning still gives an "Avoid", as 19 tests of the kitchen and skincare rules expect.
+AVOID_MIN_WRITERS = 2
+# Makeup types for the face and eyes: a tip naming a product of these categories, or one of these words, is no advice
+# for them (hairspray as a setting spray, baby powder as a setting powder). The makeup types of REFORMULATED_TYPES;
+# a new makeup type goes there.
+FACE_AND_EYE_TYPES = REFORMULATED_TYPES
+TIP_OFF_LABEL_CATEGORIES = ("haircare",)
+TIP_OFF_LABEL_WORDS = ("baby powder", "hairspray", "hair spray", "hair gel", "spiking gel", "glue stick",
+                       "school glue", "elmer's glue", "craft glue")
+# A tip whose kind's name ends on one of these words lost the words after it when module 4 named it ("mini or travel
+# size of"): a broken label is no tip, in any answer.
+KIND_DANGLING_END_WORDS = ("of", "for", "with", "to", "and", "or", "a", "an", "the", "in", "on", "at", "from", "as",
+                           "by", "than")
+# A health scare the answer can't check is never a tip's backing: a note holding one of these backs no tip.
+TIP_HEALTH_SCARE_WORDS = ("asbestos", "carcinogen", "carcinogenic", "cancer", "cancerous")
+# A makeup tip saying the opposite form of the one the request names (a "cream blush" answer's tip for a pressed satin
+# or matte blush): what the form refuses, as engine.answer._asked_and_refused reads refused things, for the makeup
+# types only.
+TIP_FORM_OPPOSITES: dict[str, tuple[str, ...]] = {"cream": ("powder", "pressed", "baked"),
+                                                  "liquid": ("powder", "pressed", "baked")}
+
+# --- Noemi's answers of 5 Nov 2026, about 00:25 (the makeup fix round, part 3) ---
+# (B) The need-fit rule, built but OFF (Noemi, asked "The top 'cream blush' pick has no voices about cream. Should a top
+# pick need at least one credible voice that fits what was asked (cream, fair skin, oily skin) before it's shown?":
+# "Yes, measure first (Recommended)": built, measured across the whole site, and switched on only if she agrees). On,
+# a product that meets the picks bar can be a pick only when at least one of its credible recommendations talks about
+# one of the request's needs in its own words, read as the reason line reads "3 of them about fair skin"
+# (engine.pipeline._fits_the_need; a two-word need of NEED_PHRASES_WHOLE read whole: "dark" alone is no dark-circles
+# voice; a thread's title asking for the need is not enough, unlike the need rule's reading of Noemi's decision (d) of
+# 19 Oct 2026, since her question was about voices). One that has none is no pick: it is listed first under Also worth a
+# look, as a product meeting the bar but ranked below the picks is (engine.rank.ProductScore.fits_need). Where the need
+# rule already holds (NEED_RULE_IN_EVERY_READING's skincare and haircare, and every wider reading), such a product is
+# left out altogether before this rule looks, so there it changes only what its stricter reading changes (a two-word
+# need read whole, a thread's title not enough). A request naming no need is as before.
+NEED_FIT_FOR_PICKS = False
+
+# --- Makeup fix round, part 4: the fixer (5 Nov 2026) ---
+# Technical calls by Claude, reported to Noemi, from the rules and shopper reviews of parts 1 to 3. Like part 2's, they
+# change which quotes and tips an answer shows and how its reason line counts a need, never a score.
+#
+# Noemi's "Remove those 2 threads" (5 Nov 2026, about 00:25: the two r/MakeupRehab threads whose care tip the lipstick
+# answers quoted). Under her rule of 14 Oct 2026 (set-aside threads we will never need are deleted, their ids kept so
+# they are never read again) the two are in the Trash for the deletion rule, and no reading saves them again: `library
+# add` (engine.library.not_to_read), on-demand reading and bulk import (engine.bulk_import.imported_before) skip them.
+# Thread ids only.
+REMOVED_THREADS: tuple[str, ...] = ("1co3r5i", "1jlzpoa")
+# A recommendation's quote that undercuts its product (engine.answer._undercuts, part 2) also:
+# - says its product was reformulated (QUOTE_REFORMULATED) and that it was the writer's ("I used to wear it daily") or
+#   is not as good now (QUOTE_WORSE_SINCE): "I used to wear X daily... then they reformulated it and reviews say it's
+#   worse". "They reformulated it and it's even better" is no undercut.
+QUOTE_REFORMULATED = r"\breformulat\w*|\bchanged (?:the|its|their) (?:formula|formulation)\b|\bnew formula\b"
+QUOTE_WORSE_SINCE = (r"\bused to\b|\bnot (?:as|nearly as|quite as) good\b|\bisn't (?:as|nearly as) good\b|\bworse\b"
+                     r"|\bnot the same\b|\bisn't the same\b")
+# - ranks it second to another: "X takes second place", "X is the runner-up".
+QUOTE_SECOND_PLACE = r"\b(?:in )?second place\b|\brunner[- ]?up\b"
+# A recommendation's quote saying its product is no longer made ("discontinued", "taken out of production"), naming no
+# other product of its comment ("X was discontinued, so I switched to Y" is Y's reason): never an "Also worth a look"
+# item's quote (an item with no other gives its place to the next) and only a pick's filler.
+QUOTE_NO_LONGER_MADE = (r"\bdiscontinu\w*|\b(?:taken|pulled|gone) (?:out of|off) (?:production|the market|shelves)\b"
+                        r"|\bno longer (?:made|sold|available|in production)\b|\bstopped (?:making|selling|producing)\b"
+                        r"|\bout of production\b")
+# A quote whose writer says they work or worked for the product's maker ("I used to work for X and it suits everyone"):
+# never shown. Only which quote is shown; whether such a writer is a credible voice is module 5's (AFFILIATION_PHRASES
+# in engine/credibility.py, Noemi's rubric), left as it is. The words before the maker's name, in the quote's own words;
+# the maker's name comes right after them ("the" or "a" aside): "the gym where I work stocks X" ties no one to X.
+QUOTE_WORKED_FOR = (r"\b(?:i|i've|i have|i'd|i had)\s+(?:used to\s+|once\s+|previously\s+|also\s+|actually\s+)?"
+                    r"(?:work(?:ed|s)?|been working)\s+(?:for|at|with)\s+"
+                    r"|\b(?:i'm|i am|i was)\s+(?:an?\s+)?(?:former\s+|ex-?\s*)?(?:employee|rep|representative)\s+"
+                    r"(?:of|for|at)\s+|\bformer\s+(?=\S+\s+(?:employee|rep)\b)|\bex-(?=\S+\s+(?:employee|rep)\b)")
+# A need sentence that gives the need to another product: in the sentence of the comment that talks about the need,
+# the need's words come with one of these ("then for my pores I add a separate primer"). Such a sentence is never taken
+# into the quote (engine.answer._need_stretch) and its voice isn't counted "about" that need in the reason line
+# (engine.answer._given_away); module 6's count, a score, is as it was. Only "a separate" or "a different" thing and
+# "something else": the round's own sweep found "the other", "my second" and "another" in comparisons ("less greasy
+# than the other brands", "on my second bottle", "better than another brand I tried"), which give nothing away.
+NEED_ELSEWHERE = (r"\b(?:a|an)\s+(?:separate|different)\s+(?!time|times|day|days|way|ways|reason|story)[a-z]"
+                  r"|\bsomething else\b")
+# Makeup names shown in small letters where their makers use capitals (the shopper review of part 3: "NARS radiant
+# creamy concealer", "e.l.f. brow lift", "Dior forever concealer line", "Anastasia Beverly Hills brow wiz"), and NYX's
+# primer, which NYX spells "Marshmellow". Capitals and that one letter only: a name keeps its words otherwise.
+MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "NARS Radiant Creamy", "Anastasia Beverly Hills Brow Wiz",
+                              "e.l.f. Brow Lift", "Dior Forever", "NYX Marshmellow")
+# A recommendation whose writer means to try other products after it ("I use X but reading this I want to try
+# others"): it undercuts X (engine.answer._undercuts). Others "from", "by" or "of" its own maker are more of the same.
+QUOTE_TRYING_OTHERS = (r"\b(?:wanna|want to|wanting to|tempted to|thinking of|thinking about|looking to)\s+"
+                       r"(?:try|trying|switch|switching)(?:\s+out)?\s+(?:to\s+)?(?:others|other ones|other brands"
+                       r"|something else|a different one|different ones)\b(?!\s+(?:from|by|of)\b)")
+# An "Also worth a look" item that this many of its credible recommendations (different comments) say is no longer made
+# is left out (engine.answer._said_to_be_gone). One such voice alone may be about one shade or one market.
+NO_LONGER_MADE_VOICES = 2
+# Words saying where a makeup product is worn, which name no kind of it: "face primer" is a makeup primer, as "eyebrow
+# gel" is a brow gel; a tip for one is a tip for the type asked for itself (engine.answer._one_of_the_types_names).
+TYPE_PLACE_WORDS = ("face", "facial", "makeup", "eye", "eyebrow", "brow", "lip", "cheek")
+
+# --- Makeup, after the warm: fix 1 (5 Nov 2026) ---
+# Technical calls by Claude, reported to Noemi, from the rules review, the shopper review and the summary fact-check of
+# the settled makeup answers. Like parts 2 and 4, they change which quotes and tips an answer shows, never a score.
+#
+# A makeup tip whose name, before its purpose word, names a product type of another category than the answer's
+# (skincare's moisturiser and sunscreen) and none of the type asked for is no "Look for": it is offered in place of
+# the type ("sunscreen as a primer", "tinted moisturizer for oily skin" in a foundation answer). Haircare's stay in
+# TIP_OFF_LABEL_CATEGORIES, which holds even when the type is named ("hairspray as a setting spray").
+TIP_OTHER_CATEGORIES = ("skincare", "haircare", "kitchen")
+# Words that name such a product though module 1 has no type by them: "spf as a primer" is a sunscreen offered in the
+# primer's place, as "sunscreen as a primer" is ("spf primer" names the primer, and stays).
+TIP_OTHER_CATEGORY_WORDS = ("spf",)
+# A recommendation's quote telling of leaving its product for another named right after "started buying": "I liked X
+# but started buying Y because it's cheaper" (engine.answer._undercuts, as QUOTE_LEAVING's other words). The other
+# product must come before any "because", which gives the reason and may name the product again.
+QUOTE_LEAVING = QUOTE_LEAVING + r"|\b(?:started|began)\s+(?:buying|using|getting|wearing)\b"
+# A quote saying it answers what another commenter said ("Someone said X, yes this is a favourite of mine too") leans
+# on a comment the reader doesn't see, as one saying "as you said" does (engine.answer._ELSEWHERE): it comes after a
+# clearer quote, and only makes up a pick's minimum. "Others" and "other people" only after "as", "like" or "what": "I
+# bought three others recommended online" speaks of other products and stands alone.
+QUOTE_SOMEONE_SAID = (r"\b(?:someone|somebody|another (?:commenter|commentor|poster|person)"
+                      r"|(?:as|like|what) (?:others|other people))"
+                      r"(?: else)? (?:have |had )?(?:said|mentioned|suggested|recommended|posted)\b")
+
+# --- Makeup, after the warm: fix 2 (5 Nov 2026, past midnight) ---
+# Technical calls by Claude, reported to Noemi, from the rules review, the shopper review and the summary fact-check of
+# fix 1. Like the rounds before, they change which quotes and tips an answer shows, never a score.
+#
+# A quote thanking the thread ("thanks everyone who suggested X, I bought it") leans on comments the reader doesn't see,
+# as one answering what someone else said does (QUOTE_SOMEONE_SAID): it comes after a clearer quote, and only makes up
+# a pick's minimum (engine.answer._ELSEWHERE). Thanks to people only: "thanks to the X my brows stay put" and "thanks
+# to all the oil in it" stand.
+QUOTE_THANKS_THREAD = (r"\b(?:thanks|thank you|thank u)(?: so much| again)? (?:everyone|everybody|all|you all|y'all"
+                       r"|guys)\b"
+                       r"|\b(?:thanks|thank you)(?: so much)? to (?:everyone|everybody|all of you|you all|y'all)\b"
+                       r"|\b(?:everyone|everybody|all of you|those|people) who (?:suggested|recommended|mentioned"
+                       r"|upvoted|commented)\b"
+                       r"|\b(?:thanks|thank you)(?: all| everyone)? for (?:the|all the|your) (?:suggestions?"
+                       r"|recommendations?|recs|tips|advice|replies|answers)\b")
+# Makers' capitals (as MAKER_SPELLINGS above): answers had shown "YSL lash clash".
+MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "YSL Lash Clash")
+
+# --- Noemi's decisions of 6 Nov 2026 ("yes to all three"), and round 3's technical calls ---
+# (2) A hair product is never a pick in a face-makeup answer (FACE_AND_EYE_TYPES: brow gel, mascara, primer...). What a
+# product is, is read in its names, the shown one and each writer's (engine.pipeline._a_hair_product): one of them says
+# one of these, as TIP_OFF_LABEL_WORDS says a tip is no advice for the face and eyes, and doesn't also name the type
+# asked for ("got2b hair gel" in a brow gel answer, never "Velo brow and hair gel"). Such a product keeps its score:
+# when it meets the bar it heads Also worth a look, with its product note (Claude's call: some writers use it on their
+# brows), as a product ranked below the picks does. Outside face makeup nothing changes. Hair words only: a brow glue, a
+# brow soap or a brow wax is a brow gel, and "pomade", "mousse" and "wax" alone name makeup too (brow pomade, mousse
+# foundation, brow wax).
+HAIR_PRODUCT_WORDS = ("hair gel", "styling gel", "spiking gel", "curl gel", "hairspray", "hair spray", "hair glue",
+                      "edge control", "hair wax", "hair pomade", "hair mousse", "hair oil", "hair serum", "dry shampoo")
+# (3) A "(new formula)" item: the warnings filed under it are about the product sold today, so a mention whose name says
+# it is the new formula of a product the answer has folds into that product (engine.pipeline._new_formulas_folded),
+# where the unchanged scoring weighs it and the answer shows its warnings as that product's downsides and share line.
+# Any category. Only the formula's words: "(new)" or "newer model" is another model, and an old or original formula,
+# or one "pre reformulation", is not the product sold today. A new formula of a product the answer doesn't have stays
+# apart, under its own name.
+NEW_FORMULA_WORDS = (r"\(\s*(?:the\s+)?(?:new(?:er)?\s+(?:formula|formulation)s?|reformulated(?:\s+(?:version|formula))?"
+                     r"|post[- ]?reformulation(?:\s+version)?|after\s+(?:the\s+)?reformulation)\s*\)"
+                     r"|\b(?:the\s+)?new(?:er)?\s+(?:formula|formulation)s?(?:\s+of)?\b"
+                     r"|\breformulated\b|\bpost[- ]?reformulation(?:\s+version)?\b|\bafter\s+(?:the\s+)?reformulation\b")

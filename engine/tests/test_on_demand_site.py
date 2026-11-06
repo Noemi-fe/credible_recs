@@ -335,3 +335,42 @@ def test_switched_off_an_unread_product_gets_the_no_threads_message_and_no_readi
     assert data["answer"]["message"] == NO_THREADS.format(products="teapots")
     how = web.handle_request("/how", library)[2].decode("utf-8")
     assert "Products we haven't read about yet" not in how  # the privacy section's note is only for when it is on
+
+
+# --- What the site counts as the library's own (4 Nov 2026, from Noemi's report about "blush") ---
+# The site queued a request with `had` = its own threads about it, and those included the threads it had written into
+# its folder from the bundle; the job then added the bundle's threads again (had + the bundle's extracted threads), so
+# a product with 4 threads read on demand counted 8 and was closed as "enough threads about it already" without reading
+# anything, while the visitor was told to check back. `had` keeps meaning what the job reads it as: the threads baked
+# into the image (test_on_demand_job.py's "3 baked + 3 read").
+
+def test_threads_the_folder_holds_from_the_bundle_arent_counted_as_baked_ones(tmp_path, monkeypatch):
+    clock = Clock()
+    monkeypatch.setattr(web, "live", LiveChecker(cache_dir=tmp_path / "checks", fetch=FakeEmbed(), clock=clock,
+                                                 sleep=clock.sleep))
+    site = Site(tmp_path, monkeypatch)
+    site.ask(TEAPOT)
+    site.job_reads()  # 3 teapot threads into the bundle
+    site.reader.load_threads()  # and into the site's folder
+    site.reader.min_threads = 6
+    site.ticks.now += 120
+    another = "teapot that keeps tea hot"  # another need: another entry, whose own threads are the bundle's 3
+    data = site.ask(another)
+    entry = site.queue().find(entry_for(parse_query(another), had=0).key)
+    assert entry.status == "waiting" and entry.had == 0
+    # Still told the truth: we have read a little about teapots already.
+    assert data["on_demand"]["read_before"] is True
+    assert data["on_demand"]["message"].startswith("We've read only a little on Reddit about teapots so far")
+
+
+def test_only_the_baked_threads_among_the_own_ones_are_counted(tmp_path, monkeypatch):
+    import types
+
+    site = Site(tmp_path, monkeypatch)
+    site.reader.min_threads = 6
+    site.reader._written = {"1tea001": "written from the bundle", "1tea002": "written from the bundle"}
+    result = types.SimpleNamespace(query=parse_query(TEAPOT), threads_available=3, own_threads_available=3,
+                                   own_thread_ids=["1tea001", "1tea002", "1bak001"], newest_own_thread=None)
+    site.reader.after_answer(result)
+    [entry] = site.queue().entries
+    assert entry.had == 1  # 1bak001, baked into the image

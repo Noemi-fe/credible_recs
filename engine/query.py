@@ -132,6 +132,9 @@ class ProductType:
     hints: tuple[str, ...] = ()  # weaker clues used only when no product name appears: "bha", "spf"
     subreddits: tuple[str, ...] = ()  # most specific first; empty means all of the category's subreddits
     department: str | None = None  # the general category's department (config.GENERAL_DEPARTMENTS); None otherwise
+    # Words that name it in a thread's title only when the thread is in one of its own communities, never in a post:
+    # "primer" in r/Makeup (5 Nov 2026; engine.sources.title_names). Module 1 doesn't read them in a request.
+    community_names: tuple[str, ...] = ()
 
 
 FIRST_PRODUCT_TYPES = (
@@ -259,7 +262,7 @@ FIRST_PRODUCT_TYPES = (
 # bed. Names are written as they are typed; hints are weaker clues, as above ("watch", "chair", "fan").
 PRODUCT_TYPES = FIRST_PRODUCT_TYPES + tuple(
     ProductType(entry["name"], entry["category"], tuple(entry["keywords"]), tuple(entry.get("hints", ())),
-                tuple(entry["subreddits"]), entry.get("department"))
+                tuple(entry["subreddits"]), entry.get("department"), tuple(entry.get("community_names", ())))
     for entry in MORE_PRODUCT_TYPES
 )
 

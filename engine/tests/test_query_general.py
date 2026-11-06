@@ -130,8 +130,10 @@ def test_each_name_of_a_general_type_finds_that_type():
 
 def test_a_types_look_alikes_hold_its_words_and_are_set_aside():
     # Kept with their types as data (part 2 chooses threads with them too): each holds one of its type's words.
+    # Since 5 Nov 2026 a community name counts as one of its words: "eyeshadow primer" holds "primer", the word that
+    # names a makeup primer in a makeup community's title (engine.sources.title_names), and is set aside there.
     for entry in MORE_PRODUCT_TYPES:
-        words = entry["keywords"] + entry.get("hints", [])
+        words = entry["keywords"] + entry.get("hints", []) + entry.get("community_names", [])
         for phrase in entry.get("lookalikes", []):
             assert any(re.search(rf"\b{re.escape(w.removesuffix('s'))}s?\b", phrase) for w in words), (entry["name"],
                                                                                                         phrase)

@@ -696,7 +696,11 @@ def test_getting_ready_leaves_the_taxonomys_types_to_their_first_visitors(monkey
     # Changed on purpose 14 Oct 2026 (the routing audit): 47 more types (kitchen knives, grinders, bakeware and gadgets;
     # pocket, outdoor, whittling and craft knives, box cutters; camping cookware). Was: 351. Getting ready still starts
     # no warm answer after WARM_UP_ANSWERS_SECONDS, so its time doesn't grow: the types left are warmed by the pings.
-    assert len(web.WARM_TAXONOMY_TYPES) == 398 and "robot vacuum" in web.WARM_TAXONOMY_TYPES
+    # Changed on purpose 4 Nov 2026 (makeup coverage): 3 more types, bronzer, highlighter and setting powder, split out
+    # of blush and setting spray. Was: 398. Still never warmed at getting ready, as above.
+    # Changed on purpose 5 Nov 2026 (Noemi's "Split both"): 2 more types, lip tint and brow gel, split out of lipstick
+    # and brow pencil. Was: 401. Still never warmed at getting ready, as above.
+    assert len(web.WARM_TAXONOMY_TYPES) == 403 and "robot vacuum" in web.WARM_TAXONOMY_TYPES
     warmed = web.warm_requests()
     assert len(warmed) == len(set(warmed))  # each once
     likely = {text for path in web.WARM_FIRST_FILES for text in web._requests_in(path)}
@@ -911,10 +915,13 @@ def test_also_worth_a_look_comes_through_in_the_json(tmp_path):
     # Changed on purpose 15 Oct 2026 (Noemi's decisions 2 and 3 of the late afternoon): an item also has its "link" and
     # "image", as picks do.
     # Changed on purpose 26 Oct 2026 (the names builder): an item also has its "current_model", as picks do.
+    # Changed on purpose 6 Nov 2026 (round 3's fixer, Noemi's decision 2 of that day): an item also says whether it is a
+    # hair product in a face-makeup answer ("hair_product"; engine/tests/test_makeup_round3_fix.py).
     assert set(data["answer"]["worth_a_look"][0]) == {"product_key", "name", "reason", "quotes", "downsides",
                                                      "downsides_share", "disagreement", "score", "breakdown", "price",
                                                      "availability", "cautions", "summary", "voices", "form", "range",
-                                                     "prescription", "meets_bar", "link", "image", "current_model"}
+                                                     "prescription", "meets_bar", "link", "image", "current_model",
+                                                     "hair_product"}
     assert data["answer"]["worth_a_look"][0]["meets_bar"] is False
 
 

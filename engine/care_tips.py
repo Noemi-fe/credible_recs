@@ -106,10 +106,12 @@ class CareTips:
     kind: list[CareTip] = field(default_factory=list)
 
 
-def credible_care_tips(threads: Iterable[Thread], checked: Mapping[str, CheckResult]) -> list[CareTip]:
+def credible_care_tips(threads: Iterable[Thread], checked: Mapping[str, CheckResult],
+                       reformulated: bool = False) -> list[CareTip]:
     """The kept care tips of these threads (checked: {thread id: CheckResult}) whose writer's voice isn't low.
 
-    An extraction made before instructions v7 has no care tips, so it gives none.
+    An extraction made before instructions v7 has no care tips, so it gives none. `reformulated`: for a makeup request,
+    an old writer's voice is at most medium (engine.credibility.score_voice; 5 Nov 2026), as in its answer's quotes.
     """
     tips = []
     for thread in threads:
@@ -123,7 +125,7 @@ def credible_care_tips(threads: Iterable[Thread], checked: Mapping[str, CheckRes
             if care.comment_id in repeats:  # copies count once (Noemi, 11 Oct 2026)
                 continue
             comment = comments[care.comment_id]
-            voice = score_voice(comment, thread, result.kept_agreements, copied=copied)
+            voice = score_voice(comment, thread, result.kept_agreements, copied=copied, reformulated=reformulated)
             if voice.level not in CREDIBLE_VOICES:
                 continue
             tips.append(CareTip(

@@ -173,7 +173,8 @@ from pathlib import Path
 
 from engine import config  # the upvote rule's switch, read for each request (14 Oct 2026)
 from engine.answer import (
-    NO_THREADS, Answer, LeadingModel, _every_quote, _kind_own_words, _same_word, _written, comment_bodies, flattened_comments,
+    NO_THREADS, Answer, LeadingModel, _every_quote, _kind_own_words, _phrase_heads, _same_word, _whole_needs, _written,
+    comment_bodies, flattened_comments,
     needed_quotes, quotes_to_check, render_markdown, says_the_opposite, shown_availability, shown_price, without_unread,
     write_answer,
 )
@@ -252,6 +253,7 @@ from engine.prices import (
     entries_for,
 )
 from engine.product_pages import ProductPage, find_page, load_product_pages
+from engine.product_notes import ProductNote, load_product_notes, notes_for
 from engine.product_facts import (
     NotSuited,
     ProductFacts,
@@ -364,6 +366,9 @@ class PipelineResult:
     # 16 Oct, R1 and R2): on-demand reading's bar counts these (engine.on_demand.SiteReader.after_answer), since a thread
     # titled as another product only names this one in its post.
     own_threads_available: int = 0
+    # Their ids (4 Nov 2026): the site counts which of them it wrote into its folder from on-demand reading's bundle, so
+    # a request is queued with only the threads baked into the image as the library's (SiteReader.after_answer).
+    own_thread_ids: list[str] = field(default_factory=list)
     newest_own_thread: datetime | None = None
     # Of the usable threads, how many talk about one of the request's needs in their title or post (26 Oct 2026, the
     # reading builder; _threads_about_needs): the threads module 2's need-led order puts first. None when there is no
@@ -572,7 +577,8 @@ def _threads_about_needs(usable: list[Thread], query: ParsedQuery) -> int | None
     needs = request_needs(query)
     if not needs or query.ingredient_led or len(usable) < config.POPULAR_TYPE_MIN_THREADS:
         return None
-    return sum(1 for thread in usable if thread_needs(thread, needs, titled_as_another_type(thread.title, query)))
+    return sum(1 for thread in usable
+               if thread_needs(thread, needs, titled_as_another_type(thread.title, query, thread.community)))
 
 
 def request_kind(request: str) -> tuple:
@@ -638,8 +644,9 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.waiting_live_check = [t.id for t in extracted if not (exempt or _checked_live_recently(t, today))]
     usable = [t for t in extracted if t.id not in result.waiting_live_check]
     result.threads_available = len(usable)
-    own = [t for t in usable if not titled_as_another_type(t.title, query)]
+    own = [t for t in usable if not titled_as_another_type(t.title, query, t.community)]
     result.own_threads_available = len(own)
+    result.own_thread_ids = [t.id for t in own]
     result.threads_about_needs = _threads_about_needs(usable, query)
     result.newest_own_thread = max((t.created_at for t in own), default=None)
     threads = usable[:max_threads]
@@ -660,6 +667,9 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     product_facts = load_product_facts() if product_facts is None else product_facts
     known = _known_products(product_facts)  # names the facts list knows as one product each (14 Oct 2026)
     brand_ranges = _library_ranges(library)  # what the whole library names of each brand's products (14 Oct 2026)
+    # A "(new formula)" item's mentions are the product sold today's (Noemi's decision 3 of 6 Nov 2026).
+    checked, mentions = _new_formulas_folded(checked, mentions, lambda found: group_products(
+        found, product_type=grouping_type, index=index, known=known, ranges=brand_ranges))
     groups = group_products(mentions, product_type=grouping_type, index=index, known=known, ranges=brand_ranges)
     of_another_type = _of_another_type(groups, query, result)
     if of_another_type:  # grouped again without them, so they neither count for nor name a product (13 Oct 2026)
@@ -689,6 +699,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.ranked_as_lines = [g.name for g in kept_groups if g.key in lines]
     result.line_keys = {g.key for g in kept_groups if g.key in lines}
     _note_other_names(kept_groups, cautions)
+    # Checked facts beside the quotes (5 Nov 2026); a Skip item shows them too, and no other caution (6 Nov 2026).
+    product_notes = _note_products(kept_groups, cautions, query.category)
     # What the answer says beyond the ranking, as write_answer's keywords: about the request's active ingredients (13 Oct
     # 2026), which products its facts say are prescription-only in the UK (Noemi's decision 5 of 14 Oct 2026), which
     # comments' words are Reddit's embed page's text (found edited, they kept Reddit's current text: Noemi's decision 3
@@ -700,7 +712,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
                "prescription": _prescription_only(kept_groups, formulas), "flattened": flattened_comments(threads),
                "pages": _pages(kept_groups, named_before, query, product_pages, types),
                "other_types_threads": _threads_about_another_type(checked, threads, query), "region": region,
-               "today": today}  # `today`: the price label's day (26 Oct 2026, the bestfor builder)
+               "today": today,  # `today`: the price label's day (26 Oct 2026, the bestfor builder)
+               "product_notes": product_notes}  # shown under Skip these too (Noemi's decision 1 of 6 Nov 2026)
     kind_mentions = _kind_mentions(checked)
     kinds = group_kinds(kind_mentions, kept_groups, query.category, query.product_type or "")
     with_a_kind = kinds_of(kinds)
@@ -711,13 +724,14 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     # The features the request names (Noemi's decision 1 of 16 Oct 2026, engine/features.py), each thread's ask for
     # them, and the opposites of its needs (her decision 2: oily-skin complaints in a dry-skin answer), 17 Oct 2026.
     features = request_features(query)
-    asking = {t.id: {f.name for f in features if thread_asks_for(t, f, titled_as_another_type(t.title, query))}
+    asking = {t.id: {f.name for f in features
+                     if thread_asks_for(t, f, titled_as_another_type(t.title, query, t.community))}
               for t in threads} if features else {}
     # The needs each thread's title asks for, which its top-level answers talk about (Noemi's decision (d), 19 Oct 2026).
     titles_ask = {t.id: _title_needs(t, judged_needs(query), query) for t in threads}
     scored, kind_notes = _score(threads, checked, kept_groups, kinds, judged_needs(query),
                                 set(result.contradicting_writers), request_asks(query), features, asking,
-                                _opposite_needs(query), titles_ask)
+                                _opposite_needs(query), titles_ask, _reformulated(query))
     if query.product_type in config.FAST_MOVING_TYPES:  # old evidence (Noemi's decision (i), 19 Oct 2026)
         scored = _set_aside_old_evidence(scored, {c.id: c.created_at.date() for t in threads for c in t.comments},
                                          _known_still_sold(price_checks, ranges), today)
@@ -823,10 +837,29 @@ def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
         ranking.products = [replace(p, qualifies=False, shortfall=WIDER_READING_SHORTFALL, worth_a_look=False)
                             if (p.qualifies or p.worth_a_look) and not _talks_about(p, judged)
                             else p for p in ranking.products]
+    if config.NEED_FIT_FOR_PICKS and judged:  # the need-fit rule, built 5 Nov 2026 and OFF (Noemi: "measure first")
+        needs = judged_needs(query)
+        ranking.products = [replace(p, fits_need=False) if p.qualifies and not _fits_the_need(p, needs) else p
+                            for p in ranking.products]
     if skip_only:
         ranking.products = [replace(p, qualifies=False, worth_a_look=False, shortfall=skip_only[p.key])
                             if p.key in skip_only and (p.qualifies or p.worth_a_look) else p for p in ranking.products]
+    if query.product_type in config.FACE_AND_EYE_TYPES:  # Noemi's decision 2 of 6 Nov 2026: never a hair product
+        ranking.products = [replace(p, pickable=False) if p.qualifies and _a_hair_product(p, query.product_type)
+                            else p for p in ranking.products]
     return ranking
+
+
+def _a_hair_product(product, product_type: str) -> bool:
+    """Whether a product is a hair product (Noemi's decision 2 of 6 Nov 2026: "A hair product is never a pick in a
+    face-makeup answer"), by what its names say it is: its shown name or one of its writers' names (ScoredMention.
+    written_as) says one of config.HAIR_PRODUCT_WORDS ("spiking gel", "hairspray", "hair glue"...), as a whole phrase,
+    and doesn't also name the type asked for (a "brow and hair gel" is a brow gel). Writers name such a product by its
+    maker alone or call it a brow gel as often as by what it is, so one name saying it is enough."""
+    names = {product.name, *(m.written_as for m in product.mentions if m.written_as)}
+    return any(re.search(rf"(?<![a-z0-9]){re.escape(word)}(?![a-z0-9])", name.lower())
+               and not mentions_product(name, product_type)
+               for name in names for word in config.HAIR_PRODUCT_WORDS)
 
 
 def _kinds_not_pushed(kinds: list[KindGroup], query: ParsedQuery) -> set[str]:
@@ -852,6 +885,23 @@ def _talks_about(product, needs: set[str]) -> bool:
     engine.needs.judged_needs), its words or, for a top-level answer, its thread's title asking for it
     (ScoredMention.needs_by_title: Noemi's decision (d) of 19 Oct 2026)."""
     return any(needs.intersection(m.needs) or needs.intersection(m.needs_by_title)
+               for m in product.credible_recommendations)
+
+
+def _fits_the_need(product, needs: tuple[Need, ...]) -> bool:
+    """For the need-fit rule (config.NEED_FIT_FOR_PICKS, built 5 Nov 2026 and off: Noemi's "Yes, measure first"),
+    whether at least one of a product's credible recommendations fits what the request asks for: its own words talk
+    about one of the request's needs, read as the reason line reads them for "3 of them about fair skin"
+    (engine.answer._reason_needs): a need of two words whose first word alone says something else only whole
+    (config.NEED_PHRASES_WHOLE: "dark" alone, a skin tone, is no dark-circles voice), and a feature talked about
+    without praising the product for it no fit (ScoredMention.needs_unpraised). Long-term use still talks about lasting
+    (engine.needs.LASTING). A need that is a word of the product's name in the request ("cream" of "cream blush",
+    "cordless" of "cordless drill") counts here though the reason line never names it: "cream" was Noemi's own example.
+    Unlike the need rule (_talks_about), a thread's title asking for the need (ScoredMention.needs_by_title, Noemi's
+    decision (d) of 19 Oct 2026) is not enough: her question was about voices."""
+    names = {need.name for need in needs}
+    heads = _phrase_heads(tuple(needs))
+    return any(names.intersection(_whole_needs(tuple(n for n in m.needs if n not in m.needs_unpraised), heads))
                for m in product.credible_recommendations)
 
 
@@ -912,7 +962,7 @@ def _title_needs(thread: Thread, needs: tuple[Need, ...], query: ParsedQuery) ->
     """The names of the request's needs a thread's title asks for (engine.needs.needs_met, as a title is read), none
     when its title names another type of product (engine.sources.titled_as_another_type): Noemi's decision (d) of 19 Oct
     2026, a top-level answer in such a thread talks about them (_score)."""
-    if not needs or titled_as_another_type(thread.title, query):
+    if not needs or titled_as_another_type(thread.title, query, thread.community):
         return ()
     return tuple(needs_met(thread.title or "", needs, thread=True))
 
@@ -1151,7 +1201,7 @@ def _threads_about_another_type(checked: dict[str, CheckResult], threads: list[T
         if types:
             if sum(of_the_type(t) for t in types) < config.LOOK_FOR_TYPE_SHARE * len(types):
                 found.add(thread.id)
-        elif titled_as_another_type(thread.title, query):
+        elif titled_as_another_type(thread.title, query, thread.community):
             found.add(thread.id)
     return found
 
@@ -1232,6 +1282,76 @@ _RANGES = ("library ranges",)  # where the library keeps them (engine.library_ca
 def _product_mentions(checked: dict[str, CheckResult]) -> list[ProductMention]:
     return [ProductMention(tid, m.comment_id, m.product, _category_of(m), m.stance, m.product_type, m.quote)
             for tid, res in checked.items() for m in res.kept]
+
+
+# --- A "(new formula)" item is the product sold today (Noemi's decision 3 of 6 Nov 2026) ---
+
+_NEW_FORMULA = re.compile(config.NEW_FORMULA_WORDS, re.IGNORECASE)
+
+
+def new_formula_base(name: str) -> str | None:
+    """The name of the product a name says is its new formula ("Velvet Lip Balm (new formula)", "new formulation of
+    Velvet", "Velvet Lip Balm (reformulated)": "Velvet Lip Balm", "Velvet"), or None when the name doesn't say so
+    (config.NEW_FORMULA_WORDS: an old, original or pre-reformulation formula, or "(new)", say something else)."""
+    if not _NEW_FORMULA.search(name):
+        return None
+    base = _NEW_FORMULA.sub(" ", name)
+    base = re.sub(r"\(\s*\)", " ", base)
+    base = " ".join(base.split()).strip(" ,;:-")
+    return base or None
+
+
+def _new_formulas_folded(checked: dict[str, CheckResult], mentions: list[ProductMention], grouper
+                         ) -> tuple[dict[str, CheckResult], list[ProductMention]]:
+    """The checked extractions and their mentions with each "(new formula)" mention folded into the product it is about
+    (Noemi's decision 3 of 6 Nov 2026, option (b): "the credible warnings filed under the '(new formula)' item are about
+    the product sold today"): renamed as that product (new_formula_base), so module 4 groups it there, module 5 scores
+    it and module 6 weighs it there as it weighs every other mention, and the answer shows its warnings as that
+    product's downsides and in its share line. Only when that product is in the answer: `grouper` (the request's own
+    grouping, engine.group_products.group_products) puts the renamed mention in a group holding a mention named
+    otherwise. A new formula of a product the answer doesn't have stays apart, under its own name. A writer who said
+    the same of the product today already counts once (the one mention kept). Any category. The cached extractions are
+    never changed: renamed mentions are copies."""
+    marked = {m: base for m in mentions if (base := new_formula_base(m.product))}
+    if not marked:
+        return checked, mentions
+    renamed = {m: replace(m, product=base) for m, base in marked.items()}
+    plain = [m for m in mentions if m not in marked]
+    own = set(plain)
+    group_by_mention = group_of(grouper(plain + [r for r in dict.fromkeys(renamed.values()) if r not in own]))
+    folded: dict[ProductMention, str] = {}
+    for original, r in renamed.items():
+        group = group_by_mention.get(r)
+        if r in own or (group is not None and any(m in own for m in group.mentions)):
+            folded[original] = r.product
+    if not folded:
+        return checked, mentions
+    # Only a renamed mention is ever dropped, when its writer's comment already names the product sold today with the
+    # same stance (or another renamed one did): every other mention stays as it was, a repeated one included.
+    new_checked = {}
+    for tid, res in checked.items():
+        plain_keys = {(m.comment_id, m.product, m.stance) for m in res.kept
+                      if ProductMention(tid, m.comment_id, m.product, _category_of(m), m.stance) not in folded}
+        kept, added, changed = [], set(), False
+        for m in res.kept:
+            name = folded.get(ProductMention(tid, m.comment_id, m.product, _category_of(m), m.stance))
+            if name is not None:
+                m, changed = m.model_copy(update={"product": name}), True
+                key = (m.comment_id, m.product, m.stance)
+                if key in plain_keys or key in added:
+                    continue
+                added.add(key)
+            kept.append(m)
+        new_checked[tid] = replace(res, kept=kept) if changed else res
+    new_mentions, added_mentions = [], set()
+    for m in mentions:
+        if m in folded:
+            m = renamed[m]
+            if m in own or m in added_mentions:
+                continue
+            added_mentions.add(m)
+        new_mentions.append(m)
+    return new_checked, new_mentions
 
 
 _TYPE_CATEGORY = {p.name: p.category for p in PRODUCT_TYPES}
@@ -2400,6 +2520,23 @@ def _note_other_names(groups: list[ProductGroup], cautions: dict[str, list[str]]
                 noted_brands.append(brand)
 
 
+def _note_products(groups: list[ProductGroup], cautions: dict[str, list[str]], category: str | None,
+                   notes: list[ProductNote] | None = None) -> dict[str, list[str]]:
+    """Adds each product's checked notes (engine.product_notes, data/product_notes.json: "NARS reformulated its powder
+    blushes in 2024...") to its notes, shown under it as CAUTION (5 Nov 2026, the makeup fix round, part 2). Shown only:
+    a note never changes which products are shown. Returns them alone, {product key: [note]}, for Skip these, which shows
+    a product's notes and none of its other cautions (Noemi's decision 1 of 6 Nov 2026: a note shows wherever its
+    product is shown)."""
+    notes = load_product_notes() if notes is None else notes
+    found: dict[str, list[str]] = {}
+    for group in groups:
+        for text in notes_for(group.name, category or "", notes):
+            found.setdefault(group.key, []).append(text)
+            if text not in cautions.get(group.key, []):
+                cautions.setdefault(group.key, []).append(text)
+    return found
+
+
 # --- A brand pick steps aside for its own product (decided by Claude, 10 Oct 2026) ---
 
 def _fold_brand_picks(ranking: RankingResult, groups: list[ProductGroup], result: PipelineResult,
@@ -2932,7 +3069,8 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
            contradicting: set[str] = frozenset(), asks: tuple[str, ...] = (), features: tuple[Feature, ...] = (),
            asking: Mapping[str, set[str]] | None = None,
            opposites: tuple = (),
-           titles_ask: Mapping[str, tuple[str, ...]] | None = None) -> tuple[list[ScoredMention], list[KindNote]]:
+           titles_ask: Mapping[str, tuple[str, ...]] | None = None,
+           reformulated: bool = False) -> tuple[list[ScoredMention], list[KindNote]]:
     """A weight for every product mention and kind note of the threads read (module 5), ready for the ranking.
 
     `needs` are the request's needs a comment can talk about (engine.needs.judged_needs, since 15 Oct 2026; every need
@@ -2951,6 +3089,9 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
     otherwise (engine.features.praised_for); a reply further down needs its own words for both. Its reason, weight and
     standing out still go by its words (ScoredMention.needs). Until then every comment of a thread asking for a feature
     had its thread's ask, and none had its thread's need.
+
+    `reformulated` (Noemi, 5 Nov 2026, "Yes, like skincare"): the request's product is a makeup type (_reformulated), so
+    an old comment is at most a medium voice, as an old skincare or haircare comment is (engine.credibility.score_voice).
     """
     by_id = {t.id: t for t in threads}
     group_by_mention = group_of(groups)
@@ -2968,7 +3109,7 @@ def _score(threads: list[Thread], checked: dict[str, CheckResult], groups: list[
 
         def voice_of(comment: Comment) -> VoiceScore:
             if comment.id not in voices:
-                voice = score_voice(comment, thread, res.kept_agreements, copied=copied)
+                voice = score_voice(comment, thread, res.kept_agreements, copied=copied, reformulated=reformulated)
                 voices[comment.id] = _as_low(voice) if _writer(comment) in contradicting else voice
             return voices[comment.id]
 
@@ -3134,8 +3275,15 @@ def _care_tips(threads: list[Thread], checked: dict[str, CheckResult], groups: l
                query: ParsedQuery) -> dict[str, CareTips]:
     """The credible care tips of the threads read, for the products ranked: {product key: CareTips}
     (engine/care_tips.py). An extraction made before instructions v7 has no care tips, so nothing changes for it."""
-    tips = credible_care_tips(threads, checked)
+    tips = credible_care_tips(threads, checked, reformulated=_reformulated(query))
     return attach_care_tips(tips, groups, kinds, query.category, query.product_type or "")
+
+
+def _reformulated(query: ParsedQuery) -> bool:
+    """Whether the request's product is one of the makeup types whose formulas change (config.REFORMULATED_TYPES), so an
+    old comment its answer counts is at most a medium voice (Noemi, 5 Nov 2026: "Yes, like skincare"). A skincare or
+    haircare comment is capped by its thread's category already."""
+    return query.product_type in config.REFORMULATED_TYPES
 
 
 def _writer(comment: Comment) -> str | None:

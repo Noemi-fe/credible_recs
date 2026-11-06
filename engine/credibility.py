@@ -15,7 +15,9 @@ Two layers (the brief's "Credibility score v1", with Noemi's definitions from da
       low     two red flags or more (VOICE_LOW_MIN_RED_FLAGS). Clear paid promotion (a discount code, an affiliate
               or referral link, "#ad") counts as two on its own (PAID_PROMOTION_RED_FLAGS): it isn't a hint, it's a
               conflict of interest.
-  An old skincare or haircare comment can be at most medium (OLD_SKINCARE_POST_MAX_VOICE): formulas change.
+  An old skincare or haircare comment can be at most medium (OLD_SKINCARE_POST_MAX_VOICE): formulas change. Since 5
+  Nov 2026 (Noemi, "Yes, like skincare") so can an old comment counted for a makeup request (config.REFORMULATED_TYPES):
+  a makeup thread is a general one, so the caller says so (score_voice's `reformulated`).
   The guide also lists "no sign they've used anything" as a red flag. It is a switch (VOICE_RED_FLAG_NO_USE), off
   for now: Noemi's labels never applied it, and the evidence layer already scores it.
 - Evidence, once per product mention (score_evidence): how well this writer knows this product. Proof of use sets
@@ -177,13 +179,17 @@ def score_voice(
     agreements: Iterable[ExtractedAgreement] = (),
     history: CommenterHistory | None = None,
     copied: Collection[str] | None = None,
+    reformulated: bool = False,
 ) -> VoiceScore:
     """How far to trust the writer of `comment`, a comment of `thread`.
 
     `agreements` are the replies the extraction found agreeing with the comment above them (any in the thread; only
     the ones answering this comment count). `history` is the writer's commenter history, when known. `copied` are the
     thread's comments that copy another writer's words (copied_comment_ids): a caller scoring many comments of one
-    thread works them out once and passes them in; left out, they are worked out here.
+    thread works them out once and passes them in; left out, they are worked out here. `reformulated` (5 Nov 2026):
+    the comment counts for a product whose formulas change though its thread's category doesn't say so (a makeup
+    request's, config.REFORMULATED_TYPES), so an old comment is at most OLD_SKINCARE_POST_MAX_VOICE, as an old
+    skincare or haircare comment always is.
     """
     if comment.status != "ok":
         return VoiceScore("low", (Sign("deleted comment", f"the comment was {comment.status}: nothing to go on", "red flag"),))
@@ -199,17 +205,20 @@ def score_voice(
         + _recency_signs(comment, thread)
         + _care_signs(text, thread.category)
     )
-    return VoiceScore(_voice_level(signs, thread.category), tuple(signs))
+    return VoiceScore(_voice_level(signs, thread.category, reformulated), tuple(signs))
 
 
-def _voice_level(signs: list[Sign], category: str) -> str:
-    """The rubric: two red flags or more are low; one caps the voice at medium; good signs worth enough are high."""
+def _voice_level(signs: list[Sign], category: str, reformulated: bool = False) -> str:
+    """The rubric: two red flags or more are low; one caps the voice at medium; good signs worth enough are high. An
+    old comment about something reformulated (its category's, or `reformulated`: a makeup request's) is at most
+    OLD_SKINCARE_POST_MAX_VOICE."""
     red_flags = sum(sign.red_flags for sign in signs if sign.kind == "red flag")
     if red_flags >= config.VOICE_LOW_MIN_RED_FLAGS:
         return "low"
     worth = sum(config.VOICE_SIGN_WEIGHTS.get(sign.name, 1) for sign in signs if sign.kind == "good")
     level = "high" if worth >= config.VOICE_HIGH_MIN_GOOD_SIGNS and not red_flags else "medium"
-    if category in config.REFORMULATED_CATEGORIES and any(sign.name == "old post" for sign in signs):
+    if ((reformulated or category in config.REFORMULATED_CATEGORIES)
+            and any(sign.name == "old post" for sign in signs)):
         level = _lower(level, config.OLD_SKINCARE_POST_MAX_VOICE)
     return level
 

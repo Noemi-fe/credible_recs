@@ -335,7 +335,11 @@ about a product the library holds fewer than 6 extracted threads about, is queue
 page's words, for example "We haven't read Reddit about teapots yet, so we've started: check back in about 25 minutes."
 (about 21 minutes more for each request ahead of it while the day's calls last, since a Flash-Lite call is told to take a
 minute and a request 15 calls plus 6 minutes of archive reading; "taking longer than usual" after 150 minutes; and when the free allowance is used up,
-when it is back, with the place in line). That answer isn't remembered: the next ask works it out again. The site starts
+when it is back, with the place in line). Since 4 Nov 2026 (Noemi: "Keep 25 min") the job keeps a request inside those
+numbers: at most 16 archive searches (config ON_DEMAND_SEARCH_CALLS, the round asked for "blush" before; for a common word the advice
+searches such as "blush favorite" come before the newest-100 title searches) and threads whose extraction fits 15 Gemini
+calls (engine.on_demand.within_calls); a request whose searches were cut short and waits for its next try, an hour
+later, is told the wait from that try. That answer isn't remembered: the next ask works it out again. The site starts
 the reading job at once, and at every keep-warm ping while a request waits it asks the bundle's version (one small
 read, a download only when it changed), takes the new threads into its library folder and answers with them, every
 quote shown checked live on Reddit as always. The daily pre-check takes them in too and checks their answers ahead.

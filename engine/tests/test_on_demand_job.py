@@ -339,3 +339,204 @@ def test_a_run_from_the_command_line_asks_gemini_through_that_model(monkeypatch)
     monkeypatch.setattr("engine.arctic_shift.ArcticShiftClient", lambda *a, **k: object())
     assert on_demand.main(["run"]) == 0
     assert seen["model"] == "gemini-test-model" and isinstance(seen["gemini"], Client)
+
+
+# --- A search round cut short is tried again (4 Nov 2026, from Noemi's report about "blush") ---
+# Arctic Shift timed out on about half the searches that day; a round ended by them still read what its first searches
+# found (2 threads a request) and the request was closed with those. Now, when searches failed and the request has
+# fewer than LIBRARY_THREADS_PER_PRODUCT threads, it stays waiting (one more try), and the next run reads the rest,
+# never the bundle's again, up to LIBRARY_THREADS_PER_PRODUCT in all; after ON_DEMAND_MAX_TRIES it is closed with what
+# it has.
+
+class SearchesFail(FakeArchive):
+    """The archive with only the "teapot" searches of the `answering` communities answering (r/tea's): every other
+    search fails, as a busy archive's do."""
+
+    def __init__(self, answering=("tea",), **kwargs):
+        super().__init__(**kwargs)
+        self.answering = answering
+
+    def __call__(self, url, headers):
+        answers = "title=teapot&" in url and any(f"subreddit={name}&" in url for name in self.answering)
+        if "/posts/search" in url and not answers:
+            self.requests.append(url)
+            return 522, b"Cloudflare: the origin didn't answer"
+        return super().__call__(url, headers)
+
+
+def more_teapots(monkeypatch) -> tuple[str, ...]:
+    """Four more made-up teapot threads, in r/BuyItForLife: seven in all, more than a request reads."""
+    from engine.tests import on_demand_fakes
+
+    for n in range(4, 8):
+        monkeypatch.setitem(on_demand_fakes.TEAPOT_THREADS, f"1tea00{n}", ("BuyItForLife", f"Teapot number {n} worth it?", [
+            (f"t{n}a", f"My Brown Betty teapot has lasted {n} years.", "Brown Betty teapot")]))
+    return tuple(on_demand_fakes.TEAPOT_THREADS)
+
+
+def test_a_round_cut_short_leaves_the_request_waiting_and_the_next_run_reads_the_rest(tmp_path, monkeypatch):
+    from engine.config import LIBRARY_THREADS_PER_PRODUCT
+
+    every = more_teapots(monkeypatch)
+    whole = FakeGoogle()  # what one whole round reads, for comparison
+    queued(whole, TEAPOT)
+    (tmp_path / "whole").mkdir()
+    run(tmp_path / "whole", whole, fake_archive=FakeArchive(threads=every))
+    expected = sorted(the_bundle(whole).threads)
+    assert 2 < len(expected) <= LIBRARY_THREADS_PER_PRODUCT  # the library's mix, at most 3 from each community here
+
+    google = FakeGoogle()
+    queued(google, TEAPOT)
+    report = run(tmp_path, google, fake_archive=SearchesFail(threads=every))
+    [entry] = the_queue(google).entries
+    assert sorted(the_bundle(google).threads) == ["1tea001", "1tea003"]  # what r/tea's search found
+    assert entry.status == "waiting" and entry.tries == 1 and entry.read_at is None  # not closed with 2
+    assert report.threads_read == 2 and report.extracted == 2
+    fake = FakeArchive(threads=every)
+    later = run(tmp_path, google, fake_archive=fake, now=NOW + timedelta(minutes=61))
+    assert sorted(the_bundle(google).threads) == expected  # the two tries read what one whole round reads
+    assert later.threads_read == len(expected) - 2
+    assert not any("ids=1tea001" in url or "ids=1tea003" in url for url in fake.requests)  # the bundle's: not again
+    [entry] = the_queue(google).entries
+    assert entry.status == "done" and entry.found == len(expected)
+
+
+def test_after_its_tries_a_request_cut_short_each_time_is_closed_with_what_it_has(tmp_path, monkeypatch):
+    every = more_teapots(monkeypatch)
+    google = FakeGoogle()
+    queued(google, TEAPOT)
+    moment = NOW
+    for _ in range(ON_DEMAND_MAX_TRIES):
+        run(tmp_path, google, fake_archive=SearchesFail(threads=every), now=moment)
+        moment += timedelta(minutes=61)
+    [entry] = the_queue(google).entries
+    assert entry.status == "done" and entry.found == 2 and entry.tries == ON_DEMAND_MAX_TRIES
+    assert sorted(the_bundle(google).threads) == ["1tea001", "1tea003"]
+
+
+def test_a_round_that_found_all_it_needs_is_closed_though_a_search_failed(tmp_path, monkeypatch):
+    from engine.tests import on_demand_fakes
+
+    # Enough teapot threads in both communities for the library's mix (at most 3 from each of the two here): the two
+    # "teapot" searches that answer find all it needs, though the "tea pot" ones fail.
+    for n, community in ((4, "tea"), (5, "BuyItForLife"), (6, "BuyItForLife")):
+        monkeypatch.setitem(on_demand_fakes.TEAPOT_THREADS, f"1tea00{n}", (community, f"Teapot number {n} worth it?", [
+            (f"t{n}a", f"My Brown Betty teapot has lasted {n} years.", "Brown Betty teapot")]))
+    google = FakeGoogle()
+    queued(google, TEAPOT)
+    run(tmp_path, google, fake_archive=SearchesFail(answering=("tea", "BuyItForLife"),
+                                                    threads=tuple(on_demand_fakes.TEAPOT_THREADS)))
+    [entry] = the_queue(google).entries
+    assert entry.status == "done" and entry.tries == 0
+
+
+# --- Inside the old budget (4 Nov 2026, Noemi's "Keep 25 min") ---
+# The told wait (about 25 minutes, 30 requests a day, 39 a month) rests on a request taking 6 minutes of Arctic Shift
+# (config.ON_DEMAND_ARCHIVE_MINUTES) and 15 Gemini calls (config.ON_DEMAND_CALLS_PER_PRODUCT). Round 1's advice searches
+# reach the big threads asking for recommendations, but they had been added on top of the round (about 32 searches, not
+# 16), and big threads take up to 4 calls each (24 for six). So the round's searches have a budget
+# (config.ON_DEMAND_SEARCH_CALLS, main's own "blush" round), the advice searches come before the title searches inside
+# it, and the threads a request reads are chosen so that their extraction fits its Gemini calls.
+
+class MakeupArchive:
+    """Arctic Shift as it answers a type people post about every day: a title search matches whole words, within its
+    dates, and answers only its newest `limit` posts; each thread has as many comments as its post says. Every title
+    and comment is made up."""
+
+    def __init__(self, posts: list[dict]):
+        self.posts, self.requests = {p["id"]: p for p in posts}, []
+
+    def __call__(self, url, headers):
+        import re
+        from datetime import UTC, datetime
+        from urllib.parse import parse_qs, urlparse
+
+        self.requests.append(url)
+        path, query = urlparse(url).path, parse_qs(urlparse(url).query)
+        if path.endswith("/posts/search"):
+            words = set(query["title"][0].lower().split())
+
+            def day(post):
+                return datetime.fromtimestamp(post["created_utc"], UTC).date().isoformat()
+
+            found = [p for p in self.posts.values() if p["subreddit"] == query["subreddit"][0]
+                     and words <= set(re.findall(r"[a-z0-9]+", p["title"].lower()))
+                     and ("after" not in query or day(p) >= query["after"][0])
+                     and ("before" not in query or day(p) < query["before"][0])]
+            data = sorted(found, key=lambda p: p["created_utc"], reverse=True)[:int(query["limit"][0])]
+        elif path.endswith("/posts/ids"):
+            data = [self.posts[tid] for tid in query["ids"][0].split(",") if tid in self.posts]
+        elif path.endswith("/comments/tree"):
+            post = self.posts[query["link_id"][0].removeprefix("t3_")]
+            data = [{"kind": "t1", "data": {
+                "id": f"{post['id']}c{n}", "parent_id": f"t3_{post['id']}", "link_id": f"t3_{post['id']}",
+                "author": f"writer{n}", "body": f"A made-up comment number {n} about a blush.",
+                "created_utc": post["created_utc"] + 3600, "score": 5,
+                "permalink": f"/r/{post['subreddit']}/comments/{post['id']}/x/{post['id']}c{n}/", "replies": ""}}
+                for n in range(post["num_comments"])]
+        else:
+            return 404, b"{}"
+        return 200, json.dumps({"data": data}).encode()
+
+    def searches(self) -> int:
+        return sum("/posts/search" in url for url in self.requests)
+
+
+def makeup_post(post_id: str, subreddit: str, title: str, comments: int, posted: str) -> dict:
+    from datetime import UTC, datetime
+
+    return {"id": post_id, "subreddit": subreddit, "title": title, "selftext": "Made up.", "author": "asker",
+            "created_utc": int(datetime.fromisoformat(posted).replace(tzinfo=UTC).timestamp()), "score": 30,
+            "num_comments": comments, "permalink": f"/r/{subreddit}/comments/{post_id}/x/", "link_flair_text": None}
+
+
+BIG_ADVICE = {"1adv01": 205, "1adv02": 180, "1adv03": 160, "1adv04": 137}
+
+
+def blush_world() -> list[dict]:
+    """110 small recent "blush" posts in each makeup community (more than a search answers), four big advice threads a
+    year or two old (4 Gemini calls each), and a few smaller advice threads."""
+    posts = [makeup_post(f"1sw{i}{n:03d}", c, f"Blush swatch number {n}", 6, f"2026-{5 + n % 4:02d}-{1 + n % 27:02d}")
+             for i, c in enumerate(("Makeup", "Sephora", "MakeupAddiction", "drugstoreMUA")) for n in range(110)]
+    return posts + [
+        makeup_post("1adv01", "Sephora", "Blush you'd call your all-time favorite?", 205, "2024-11-03"),
+        makeup_post("1adv02", "Makeup", "Blush recommendations for a first-timer?", 180, "2024-03-09"),
+        makeup_post("1adv03", "MakeupAddiction", "Which blush is your favorite for summer?", 160, "2025-02-01"),
+        makeup_post("1adv04", "Sephora", "Three favorite blushes you would rebuy forever?", 137, "2025-06-14"),
+        makeup_post("1adv05", "drugstoreMUA", "Budget blush recommendations?", 35, "2025-09-20"),
+        makeup_post("1adv06", "Makeup", "Best blush for a beginner?", 30, "2025-04-11"),
+        makeup_post("1adv07", "drugstoreMUA", "Favorite drugstore blushes?", 28, "2024-12-01"),
+    ]
+
+
+def test_a_blush_like_request_stays_inside_the_old_budget_and_still_reads_the_big_advice_threads(tmp_path):
+    from engine.config import ON_DEMAND_CALLS_PER_PRODUCT, ON_DEMAND_FIRST_MINUTES, ON_DEMAND_SEARCH_CALLS
+
+    google, fake_archive, fake_gemini = FakeGoogle(), MakeupArchive(blush_world()), FakeGemini()
+    queued(google, "blush")
+    report = run(tmp_path, google, fake_archive=fake_archive, fake_gemini=fake_gemini)
+    bundle = the_bundle(google)
+    assert fake_archive.searches() <= ON_DEMAND_SEARCH_CALLS == 16  # main's "blush" round
+    assert fake_gemini.calls <= ON_DEMAND_CALLS_PER_PRODUCT == 15 and report.gemini_calls == fake_gemini.calls
+    assert ON_DEMAND_FIRST_MINUTES == 25  # what the first in line is told, as on main
+    read = set(bundle.threads)
+    assert "1adv01" in read and len(read & set(BIG_ADVICE)) >= 2  # the big advice threads are reached
+    assert len(bundle.extracted()) == len(read) >= 4
+    [entry] = the_queue(google).entries
+    assert entry.status == "done" and entry.found == len(read)
+
+
+def test_a_requests_threads_are_chosen_to_fit_its_gemini_calls():
+    from engine.config import ON_DEMAND_CALLS_PER_PRODUCT
+    from engine.sources import rank_posts
+
+    query = parse_query("blush")
+    ranked = rank_posts(query, [p for p in blush_world() if p["num_comments"] > 6])
+    chosen = on_demand.within_calls(query, ranked)
+    assert sum(on_demand.estimated_calls(p) for p in chosen) <= ON_DEMAND_CALLS_PER_PRODUCT
+    assert "1adv01" in {p["id"] for p in chosen} and len(chosen) <= 6
+    assert len([p for p in chosen if p["id"] in BIG_ADVICE]) == 3  # a fourth big one (4 calls) would pass the 15
+    # Threads read on an earlier try count: with 8 calls spent on them, the rest fits in 7.
+    later = on_demand.within_calls(query, ranked, spent=8, wanted=4)
+    assert sum(on_demand.estimated_calls(p) for p in later) <= 7 and len(later) <= 4
+    assert on_demand.estimated_calls({"num_comments": 205}) == 4 and on_demand.estimated_calls({"num_comments": 0}) == 1

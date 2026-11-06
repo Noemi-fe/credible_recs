@@ -21,7 +21,10 @@ How it works, in four parts:
    queue while it runs (a lease, so two runs never read the same request), and for each waiting request finds threads
    with Arctic Shift's free title search and reads them from its archive (engine.sources.ArchiveSource, the library's
    own archive reader, at its own polite pace: no Bright Data, no Parse), the library's mix of thread kinds, threads
-   already saved left out. Gemini extracts each, one at a time, within its free allowance (engine/gemini_extract.py;
+   already saved left out; within what the visitor's wait is told to take (4 Nov 2026, Noemi's "Keep 25 min"): at most
+   ON_DEMAND_SEARCH_CALLS searches, the advice searches before the title searches for a common word, and threads whose
+   extraction fits ON_DEMAND_CALLS_PER_PRODUCT Gemini calls (within_calls). Gemini extracts each, one at a time,
+   within its free allowance (engine/gemini_extract.py;
    at most ON_DEMAND_GEMINI_CALLS_A_DAY calls a day, and none more that day after its daily 429), and the extraction's
    own checks run: every quote word for word against its comment (engine.extract.check_extraction; a quote that fails
    is never used). Then, when engine.slim is there (the lean library, Noemi's "Keep only comments we use"), the thread
@@ -69,6 +72,7 @@ from pathlib import Path
 
 from engine.config import (
     ARCHIVE_TEXT_KEPT_DAYS,
+    EXTRACT_MAX_COMMENTS,
     FAST_MOVING_TYPES,
     GEMINI_RESET_HOUR_UTC,
     LIBRARY_MIX,
@@ -96,8 +100,10 @@ from engine.config import (
     ON_DEMAND_READ_AGAIN_DAYS,
     ON_DEMAND_RETRY_DAYS,
     ON_DEMAND_RETRY_MINUTES,
+    ON_DEMAND_SEARCH_CALLS,
     ON_DEMAND_START_EVERY_SECONDS,
     ON_DEMAND_START_SECONDS,
+    REMOVED_THREADS,
 )
 from engine.live_check import BUCKET_TIMEOUT, BUNDLE_RELOAD_SECONDS, Bucket, _http_request
 from engine.query import ParsedQuery
@@ -381,6 +387,17 @@ def wait_for(place: int, queue: Queue, now: datetime) -> tuple[int | None, datet
     return None, next_gemini_reset(now) + timedelta(days=(place - today_places) // per_day)
 
 
+def retry_minutes(entry: Entry, now: datetime) -> int:
+    """For a request waiting for its next try (4 Nov 2026: a round of searches cut short by a busy archive, or an
+    archive that couldn't be searched, is tried again ON_DEMAND_RETRY_MINUTES after the last try, and the job reads
+    others first until then): the minutes until that try is due and read, the first in line's wait counted from it.
+    0 for one not waiting for a try."""
+    if not entry.tried_lately(now):
+        return 0
+    due = _time(entry.tried_at) + timedelta(minutes=ON_DEMAND_RETRY_MINUTES)
+    return math.ceil((due - now).total_seconds() / 60) + ON_DEMAND_FIRST_MINUTES
+
+
 def threads_are_old(product_type: str, newest: datetime | None, now: datetime) -> bool:
     """Whether a fast-moving type's newest thread about it is older than ON_DEMAND_OLD_YEARS (25 Oct 2026; the years are
     PROPOSED, the message's wording is approved):
@@ -584,8 +601,13 @@ class SiteReader:
         old = threads_are_old(query.product_type, result.newest_own_thread, now)
         if own >= self.min_threads and not old:
             return Outcome()
-        entry = Entry.waiting_for(query, had=own, refresh=own >= self.min_threads)
         with self._lock:
+            # What the job counts as the library's (4 Nov 2026): the threads baked into the image only. The ones this
+            # folder holds from the bundle are counted by the job as the bundle's; counted here too, a request with 4
+            # threads read on demand counted 8 and was closed as "enough threads about it already", unread.
+            ids = getattr(result, "own_thread_ids", None)
+            baked = own if ids is None else sum(1 for tid in ids if tid not in self._written)
+            entry = Entry.waiting_for(query, had=baked, refresh=own >= self.min_threads)
             queue = self._read_queue(ON_DEMAND_QUEUE_FRESH_SECONDS)
             if queue is None:
                 return Outcome(remember=False)  # the bucket can't be read just now: asked again next time
@@ -607,17 +629,18 @@ class SiteReader:
                 self._first_seen[entry.key] = self._clock()  # queued (again) now: its wait starts now
             self._first_seen.setdefault(entry.key, self._clock())
             self._start_if_due(queue, now)
-            return Outcome(self._state(queue, entry.key, now), remember=False)
+            return Outcome(self._state(queue, entry.key, now, own), remember=False)
 
-    def _state(self, queue: Queue, key: str, now: datetime) -> dict:
+    def _state(self, queue: Queue, key: str, now: datetime, own: int = 0) -> dict:
         """The API's "on_demand" for a waiting entry: where it stands, and the sentence the page shows. The wait comes
         from the queue's length and what the day can read (wait_for), so the tenth in line isn't promised the first's
-        20 minutes (25 Oct 2026)."""
+        20 minutes (25 Oct 2026). `own`: the threads about it the answer had, read on demand ones included (4 Nov 2026:
+        "we've read only a little" stays true when they were all read on demand)."""
         entry = queue.find(key)
         from engine.group_products import plural  # here: grouping is a module answers load anyway
 
         about = plural(entry.product_type)
-        kind = "old" if entry.refresh else "more" if entry.had > 0 else "new"
+        kind = "old" if entry.refresh else "more" if entry.had > 0 or own > 0 else "new"
         waiting = [e.key for e in queue.waiting()]
         ahead = waiting.index(key) if key in waiting else 0
         state = {"state": "reading", "product_type": entry.product_type, "about": about, "read_before": kind != "new",
@@ -636,6 +659,7 @@ class SiteReader:
             return state | {"state": "waiting", "message": message}
         if self._clock() - self._first_seen.get(key, self._clock()) > ON_DEMAND_LATE_MINUTES * 60:
             return state | {"state": "late", "message": LATE.format(about=about)}
+        minutes = max(minutes, retry_minutes(entry, now))
         return state | {"check_back_minutes": minutes, "message": {"new": READING_NEW, "more": READING_MORE,
                                                                    "old": READING_OLD}[kind].format(
             about=about, when=check_back_in(minutes))}
@@ -756,10 +780,11 @@ def write_threads(bundle: Bundle, library_dir: Path, written: dict[str, str]) ->
     """Writes the bundle's extracted threads into a library folder: threads/<id>.json first, then extracted/<id>.json,
     each whole under another name and then swapped in. A thread the folder already holds that wasn't written from the
     bundle (`written`: id -> fingerprint, kept by the caller) is a baked thread: never overwritten. How many were
-    written."""
+    written. A thread Noemi said to remove (config.REMOVED_THREADS) is never written (fix 1 after the warm, 5 Nov 2026:
+    the bundle's own paths, the site's load_threads and Noemi's pull, had not checked it)."""
     count = 0
     for tid, item in sorted(bundle.threads.items()):
-        if item.extraction is None or not re.fullmatch(r"[A-Za-z0-9]+", tid):
+        if item.extraction is None or not re.fullmatch(r"[A-Za-z0-9]+", tid) or tid in REMOVED_THREADS:
             continue
         thread_path = Path(library_dir) / "threads" / f"{tid}.json"
         if thread_path.exists() and tid not in written:
@@ -994,7 +1019,8 @@ def _rest(queues: QueueStore, until: datetime, why: str, report: RunReport) -> N
 
 def _finish_complete(queues: QueueStore, now, report: RunReport) -> bool:
     """Marks done every waiting request whose threads were read and are all in the bundle with their extraction (a
-    thread let go after failing counts for nothing); whether any was."""
+    thread let go after failing counts for nothing, and so does one of Noemi's removed threads, config.REMOVED_THREADS:
+    round 3's fixer, 6 Nov 2026); whether any was."""
     bundle_found = BundleStore(queues.bucket).read()
     if bundle_found is None:
         return False
@@ -1006,7 +1032,8 @@ def _finish_complete(queues: QueueStore, now, report: RunReport) -> bool:
         for entry in queue.waiting():
             if entry.read_at is None:
                 continue
-            mine = [tid for tid, item in bundle.threads.items() if item.entry == entry.key]
+            mine = [tid for tid, item in bundle.threads.items()
+                    if item.entry == entry.key and tid not in REMOVED_THREADS]
             if all(bundle.threads[tid].extraction is not None for tid in mine):
                 entry.finish(now(), found=len(mine), note=f"{len(mine)} threads read and extracted")
                 done.append(entry.product_type)
@@ -1021,11 +1048,22 @@ def _finish_complete(queues: QueueStore, now, report: RunReport) -> bool:
 def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, bundles: BundleStore,
                 library_dir: Path, archive, now, work: Path, report: RunReport) -> None:
     """Finds and reads one waiting request's threads from the archive, into the bundle (waiting for Gemini), then
-    marks it read in the queue (or done, when the library has enough threads about it already or none were found)."""
+    marks it read in the queue (or done, when the library has enough threads about it already or none were found).
+
+    Within the wait the visitor is told (4 Nov 2026, Noemi's "Keep 25 min"): the searches are at most
+    ON_DEMAND_SEARCH_CALLS calls (engine.sources.search_archive: the advice searches before the title searches for a
+    common word), and the threads read are the mix's that fit ON_DEMAND_CALLS_PER_PRODUCT Gemini calls (within_calls),
+    those read on an earlier try counted; a thread whose comments turn out more than its post counted, past the calls
+    left, isn't kept.
+
+    A round of searches cut short (some failed: Arctic Shift busy) that leaves the request with fewer than
+    LIBRARY_THREADS_PER_PRODUCT threads, and calls to spare, keeps it waiting, one try more (4 Nov 2026: such rounds had
+    closed requests with 2 threads): the next try reads the rest of the mix, never the threads read already, which keep
+    their places in it when the searches find them again; after ON_DEMAND_MAX_TRIES it is closed with what it has."""
     from engine.arctic_shift import ArcticShiftError
     from engine.gold import GoldThreadError, unlabelled_gold_ids
     from engine.library import _save
-    from engine.sources import ArchiveSource, choose_mix, for_request
+    from engine.sources import ArchiveSource, for_request
 
     moment = now()
     key = entry.key
@@ -1034,11 +1072,13 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
     except ValueError:
         _change_entry(queues, key, lambda e: e.finish(moment, found=0, failed=True, note="no longer fits module 1"))
         return
-    if not entry.refresh and entry.had + len(bundle.extracted(entry.product_type)) >= ON_DEMAND_MIN_THREADS:
+    # Noemi's removed threads never count among its threads (round 3, 6 Nov 2026, from the rules review of fix 2).
+    extracted = [tid for tid in bundle.extracted(entry.product_type) if tid not in REMOVED_THREADS]
+    if not entry.refresh and entry.had + len(extracted) >= ON_DEMAND_MIN_THREADS:
         _change_entry(queues, key, lambda e: e.finish(moment, found=0, note="enough threads about it already"))
         report.requests_done.append(entry.product_type)
         return
-    source = ArchiveSource(archive)
+    source = ArchiveSource(archive, max_calls=ON_DEMAND_SEARCH_CALLS)
     try:
         ranked = source.rank_candidates(query)
     except ArcticShiftError:
@@ -1053,20 +1093,35 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
         report.notes.append(f"Arctic Shift couldn't be searched for {entry.product_type}: tried again later.")
         return
     saved = {path.stem for path in (library_dir / "threads").glob("*.json")}
-    skip = saved | set(bundle.threads) | unlabelled_gold_ids()
-    fresh = [post for post in ranked if str(post["id"]).removeprefix("t3_") not in skip]
+    skip = saved | set(bundle.threads) | unlabelled_gold_ids() | set(REMOVED_THREADS)  # Noemi's removed two, 5 Nov 2026
+    # Read on an earlier try (4 Nov 2026), never a removed thread: it takes no place among the request's own threads,
+    # nor any of its Gemini calls (round 3, 6 Nov 2026, from the rules review of fix 2), and is never read again (fix 1).
+    mine = {tid for tid, item in bundle.threads.items() if item.entry == key and tid not in REMOVED_THREADS}
+    fresh = [post for post in ranked if _plain_id(post) not in skip or _plain_id(post) in mine]
     if entry.refresh:  # the library's threads are old: only threads posted since count (an unknown date isn't old)
         oldest = _years_before(moment, ON_DEMAND_OLD_YEARS)
         fresh = [post for post in fresh if not _posted_before(post, oldest)]
-    chosen = choose_mix(query, fresh, total=LIBRARY_THREADS_PER_PRODUCT, mix=LIBRARY_MIX)
+    spent = sum(_item_calls(bundle.threads[tid]) for tid in mine)  # Gemini calls of the threads read on earlier tries
+    chosen = within_calls(query, fresh, spent=spent, wanted=LIBRARY_THREADS_PER_PRODUCT - len(mine), mine=mine)
+    room = ON_DEMAND_CALLS_PER_PRODUCT - spent - sum(estimated_calls(post) for post in chosen)
+    # Cut short: searches failed, and the request has fewer threads than a whole round reads, with Gemini calls to
+    # spare for more. Tried again unless this was its last try.
+    cut_short = bool(source.failed) and len(mine) + len(chosen) < LIBRARY_THREADS_PER_PRODUCT and room > 0
+    again = cut_short and entry.tries + 1 < ON_DEMAND_MAX_TRIES
     read: dict[str, Item] = {}
     for post in chosen:
-        post_id = str(post["id"]).removeprefix("t3_")
+        post_id = _plain_id(post)
         try:
             thread = _save(for_request(archive.get_thread(post_id, post["subreddit"]), query), work)
         except (ArcticShiftError, ValueError, GoldThreadError):
             report.failures += 1
             continue
+        calls = thread_calls(thread)
+        if spent + calls > ON_DEMAND_CALLS_PER_PRODUCT:  # more comments than its post counted: past the calls left
+            report.notes.append(f"A {entry.product_type} thread had more comments than its post said: left unread, "
+                                "to keep the request inside its Gemini calls.")
+            continue
+        spent += calls
         text = (work / "threads" / f"{thread.id}.json").read_text(encoding="utf-8")
         read[thread.id] = Item(thread=text, extraction=None, entry=key, product_type=entry.product_type,
                                added_at=moment.isoformat())
@@ -1076,23 +1131,98 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
             return
     report.threads_read += len(read)
     report.requests_read.append(entry.product_type)
+    if cut_short:
+        report.notes.append(f"Arctic Shift's searches for {entry.product_type} were cut short: "
+                            + ("tried again later." if again else "closed with what it has."))
 
-    def mark(mine: Entry):
-        mine.read_at = moment.isoformat()
-        if not read:
-            mine.finish(moment, found=0, note="no new threads in the archive")
+    def mark(waiting: Entry):
+        if cut_short:
+            waiting.tries, waiting.tried_at = waiting.tries + 1, moment.isoformat()
+        if again:
+            return  # still waiting: the next try reads the rest
+        waiting.read_at = moment.isoformat()
+        if not read and not mine:
+            waiting.finish(moment, found=0, note="no new threads in the archive")
 
     _change_entry(queues, key, mark)
-    if not read:
+    if not read and not mine and not again:
         report.requests_done.append(entry.product_type)
+
+
+def _plain_id(post: dict) -> str:
+    return str(post["id"]).removeprefix("t3_")
+
+
+def thread_calls(thread) -> int:
+    """The Gemini calls a thread's extraction takes: one a part of PART_COMMENTS of the comments the extractor reads
+    (engine.extract.shown_comment_ids: at most EXTRACT_MAX_COMMENTS), at least one (_extract_one counts them so too)."""
+    from engine.extract import shown_comment_ids
+    from engine.gemini_extract import PART_COMMENTS
+
+    return max(1, math.ceil(len(shown_comment_ids(thread)) / PART_COMMENTS))
+
+
+def estimated_calls(post: dict) -> int:
+    """The Gemini calls a thread will take, from the comments its post counts, before it is read (4 Nov 2026): a thread
+    of 150 comments or more (EXTRACT_MAX_COMMENTS) is 4 calls of 40, one of 40 or fewer is 1."""
+    from engine.gemini_extract import PART_COMMENTS
+
+    return max(1, math.ceil(min(int(post.get("num_comments") or 0), EXTRACT_MAX_COMMENTS) / PART_COMMENTS))
+
+
+def _item_calls(item: "Item") -> int:
+    """The Gemini calls of a thread already in the bundle (read on an earlier try)."""
+    from engine.models import Thread
+
+    try:
+        return thread_calls(Thread.model_validate_json(item.thread))
+    except ValueError:  # a thread file that doesn't load is let go of before Gemini sees it
+        return 0
+
+
+def within_calls(query: ParsedQuery, ranked: list[dict], spent: int = 0, wanted: int = LIBRARY_THREADS_PER_PRODUCT,
+                 mine: set[str] | frozenset[str] = frozenset(),
+                 budget: int = ON_DEMAND_CALLS_PER_PRODUCT) -> list[dict]:
+    """The threads to read for a request (4 Nov 2026, Noemi's "Keep 25 min"): the library's mix of the ranked posts
+    (engine.sources.choose_mix), best first, each taken while its extraction (estimated_calls) still fits the request's
+    Gemini calls, `budget` less the `spent` on the threads read for it before (`mine`, never taken again); then, for the
+    places left, the next best posts that fit, as many from each community as the mix allows. At most `wanted`.
+
+    The told wait counts 15 calls a request (config.ON_DEMAND_CALLS_PER_PRODUCT); the advice searches find big threads,
+    and six of 150 comments would be 24. So a request reads, say, its three biggest advice threads (12 calls) and three
+    small ones, not six big ones."""
+    from engine.config import MAX_THREADS_PER_SUBREDDIT
+    from engine.sources import _subreddit, choose_mix
+
+    mix = choose_mix(query, ranked, total=LIBRARY_THREADS_PER_PRODUCT, mix=LIBRARY_MIX)
+    in_mix = {_plain_id(post) for post in mix}
+    communities = max(1, len(query.subreddits))
+    per_subreddit = max(MAX_THREADS_PER_SUBREDDIT, math.ceil(LIBRARY_THREADS_PER_PRODUCT / communities))
+    taken = {_subreddit(post): 0 for post in ranked}
+    for post in ranked:
+        if _plain_id(post) in mine:
+            taken[_subreddit(post)] += 1
+    chosen: list[dict] = []
+    room = budget - spent
+    for post in mix + [post for post in ranked if _plain_id(post) not in in_mix]:
+        if len(chosen) >= wanted:
+            break
+        if _plain_id(post) in mine or estimated_calls(post) > room:
+            continue
+        if _plain_id(post) not in in_mix and taken[_subreddit(post)] >= per_subreddit:
+            continue
+        chosen.append(post)
+        taken[_subreddit(post)] += 1
+        room -= estimated_calls(post)
+    return chosen
 
 
 def _extract_one(tid: str, bundle: Bundle, queues: QueueStore, bundles: BundleStore, library_dir: Path, gemini, now,
                  work: Path, report: RunReport) -> bool:
     """Extracts one thread waiting in the bundle, within Gemini's free allowance: checked word for word, slimmed when
     the lean library is here, and saved into the bundle. Whether the run goes on (False: Gemini rests for the day)."""
-    from engine.extract import Extraction, check_extraction, shown_comment_ids
-    from engine.gemini_extract import PART_COMMENTS, extract_threads
+    from engine.extract import Extraction, check_extraction
+    from engine.gemini_extract import extract_threads
     from engine.models import Thread
 
     item = bundle.threads[tid]
@@ -1103,7 +1233,7 @@ def _extract_one(tid: str, bundle: Bundle, queues: QueueStore, bundles: BundleSt
         report.failures += 1
         report.notes.append("A thread waiting for Gemini couldn't be read: let go.")
         return True
-    parts = max(1, math.ceil(len(shown_comment_ids(thread)) / PART_COMMENTS))
+    parts = thread_calls(thread)
     queue_found = queues.read()
     if queue_found is None:
         return False
@@ -1214,6 +1344,8 @@ def pull(bucket: Bucket, library_dir: Path, now=_now) -> PullReport | None:
     report = PullReport()
     by_type: dict[str, list[str]] = {}
     for tid, item in sorted(bundle.threads.items()):
+        if tid in REMOVED_THREADS:
+            continue  # Noemi said to remove it (fix 1 after the warm, 5 Nov 2026): never pulled
         if item.extraction is None:
             report.waiting += 1
             continue

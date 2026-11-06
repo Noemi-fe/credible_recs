@@ -1,5 +1,5 @@
 {
- "about": "Module 1's product types beyond the first ones, as data (14 Oct 2026, Noemi's plan for recs regardless of the category, part 1; chosen by Claude, reported to Noemi). Each type: its name and plural, its category (general, or kitchen, skincare or haircare) and for the general category its department, the names people use for it (keywords; hints are weaker clues, used only when no name is found), the words people put in Reddit post titles about it (title_words), the communities to search for it, most specific first, and where obvious its look-alikes (phrases that hold its words but name something else, set aside by module 1) and the name shown when it isn't the lowercase one. Loaded by engine/config.py and engine/query.py.",
+ "about": "Module 1's product types beyond the first ones, as data (14 Oct 2026, Noemi's plan for recs regardless of the category, part 1; chosen by Claude, reported to Noemi). Each type: its name and plural, its category (general, or kitchen, skincare or haircare) and for the general category its department, the names people use for it (keywords; hints are weaker clues, used only when no name is found), the words people put in Reddit post titles about it (title_words), the communities to search for it, most specific first, and where obvious its look-alikes (phrases that hold its words but name something else, set aside by module 1) and the name shown when it isn't the lowercase one. Since 5 Nov 2026 a type may also list community names: words that name it in a thread's title only when the thread is in one of its own communities (\"primer\" in r/Makeup is a makeup primer, elsewhere often a paint's; \"kohl\" outside the makeup communities is mostly the shop Kohl's), never in a post (engine.sources.title_names). Loaded by engine/config.py and engine/query.py.",
  "types": [
   {
    "name": "dishwasher",
@@ -9548,12 +9548,15 @@
     "bb cushion"
    ],
    "title_words": [
-    "foundation"
+    "foundation",
+    "foundations"
    ],
    "subreddits": [
+    "Makeup",
+    "Sephora",
     "MakeupAddiction",
     "drugstoreMUA",
-    "MakeupRehab"
+    "AsianBeauty"
    ]
   },
   {
@@ -9569,12 +9572,15 @@
     "color corrector"
    ],
    "title_words": [
-    "concealer"
+    "concealer",
+    "concealers"
    ],
    "subreddits": [
+    "Makeup",
+    "Sephora",
     "MakeupAddiction",
     "drugstoreMUA",
-    "MakeupRehab"
+    "AsianBeauty"
    ]
   },
   {
@@ -9592,12 +9598,15 @@
     "lash primer"
    ],
    "title_words": [
-    "mascara"
+    "mascara",
+    "mascaras"
    ],
    "subreddits": [
+    "Makeup",
+    "Sephora",
     "MakeupAddiction",
     "drugstoreMUA",
-    "MakeupRehab"
+    "AsianBeauty"
    ]
   },
   {
@@ -9608,9 +9617,7 @@
    "keywords": [
     "lipstick",
     "liquid lipstick",
-    "lip tint",
     "lip gloss",
-    "lip stain",
     "lip liner",
     "lipsticks",
     "lip crayon",
@@ -9618,13 +9625,42 @@
    ],
    "title_words": [
     "lipstick",
-    "lip gloss",
-    "lip tint"
+    "lipsticks",
+    "lip gloss"
    ],
    "subreddits": [
+    "Makeup",
+    "Sephora",
     "MakeupAddiction",
     "drugstoreMUA",
-    "MakeupRehab"
+    "AsianBeauty"
+   ]
+  },
+  {
+   "name": "lip tint",
+   "plural": "lip tints",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "lip tint",
+    "lip tints",
+    "lip stain",
+    "lip stains",
+    "water tint",
+    "water tints"
+   ],
+   "title_words": [
+    "lip tint",
+    "lip tints",
+    "lip stain",
+    "lip stains"
+   ],
+   "subreddits": [
+    "Makeup",
+    "Sephora",
+    "MakeupAddiction",
+    "drugstoreMUA",
+    "AsianBeauty"
    ]
   },
   {
@@ -9641,13 +9677,22 @@
     "kohl",
     "eyeliners"
    ],
+   "community_names": [
+    "kohl"
+   ],
+   "lookalikes": [
+    "kohl's",
+    "kohl’s"
+   ],
    "title_words": [
-    "eyeliner"
+    "eyeliner",
+    "eyeliners"
    ],
    "subreddits": [
+    "Makeup",
+    "Sephora",
     "MakeupAddiction",
-    "drugstoreMUA",
-    "MakeupRehab"
+    "drugstoreMUA"
    ]
   },
   {
@@ -9666,12 +9711,14 @@
    ],
    "title_words": [
     "eyeshadow",
+    "eyeshadows",
     "palette"
    ],
    "subreddits": [
+    "Makeup",
+    "Sephora",
     "MakeupAddiction",
-    "drugstoreMUA",
-    "MakeupRehab"
+    "drugstoreMUA"
    ]
   },
   {
@@ -9685,17 +9732,98 @@
     "cream blush",
     "powder blush",
     "liquid blush",
-    "bronzer",
     "blushes"
    ],
    "title_words": [
     "blush",
-    "bronzer"
+    "blushes"
    ],
    "subreddits": [
+    "Makeup",
+    "Sephora",
     "MakeupAddiction",
-    "drugstoreMUA",
-    "MakeupRehab"
+    "drugstoreMUA"
+   ]
+  },
+  {
+   "name": "bronzer",
+   "plural": "bronzers",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "bronzer",
+    "bronzers",
+    "cream bronzer",
+    "powder bronzer",
+    "liquid bronzer",
+    "contour stick",
+    "cream contour",
+    "contour palette",
+    "contour powder"
+   ],
+   "title_words": [
+    "bronzer",
+    "bronzers",
+    "contour"
+   ],
+   "subreddits": [
+    "Makeup",
+    "Sephora",
+    "MakeupAddiction",
+    "drugstoreMUA"
+   ]
+  },
+  {
+   "name": "highlighter",
+   "plural": "highlighters",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "highlighter",
+    "highlighters",
+    "liquid highlighter",
+    "powder highlighter",
+    "cream highlighter",
+    "illuminator"
+   ],
+   "title_words": [
+    "highlighter",
+    "highlighters"
+   ],
+   "subreddits": [
+    "Makeup",
+    "Sephora",
+    "MakeupAddiction",
+    "drugstoreMUA"
+   ],
+   "lookalikes": [
+    "highlighter pen",
+    "highlighter pens"
+   ]
+  },
+  {
+   "name": "setting powder",
+   "plural": "setting powders",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "setting powder",
+    "setting powders",
+    "translucent powder",
+    "loose powder",
+    "pressed powder",
+    "finishing powder",
+    "under eye powder"
+   ],
+   "title_words": [
+    "setting powder",
+    "translucent powder"
+   ],
+   "subreddits": [
+    "Makeup",
+    "Sephora",
+    "MakeupAddiction",
+    "drugstoreMUA"
    ]
   },
   {
@@ -9705,24 +9833,19 @@
    "department": "beauty",
    "keywords": [
     "setting spray",
-    "setting powder",
-    "translucent powder",
-    "finishing powder",
     "setting sprays",
     "fixing spray",
-    "makeup setting spray",
-    "pressed powder",
-    "loose powder"
+    "makeup setting spray"
    ],
    "title_words": [
     "setting spray",
-    "setting powder",
-    "powder"
+    "setting sprays"
    ],
    "subreddits": [
+    "Makeup",
+    "Sephora",
     "MakeupAddiction",
-    "drugstoreMUA",
-    "MakeupRehab"
+    "drugstoreMUA"
    ]
   },
   {
@@ -9737,16 +9860,27 @@
     "blurring primer",
     "primer for makeup",
     "foundation primer",
-    "eyeshadow primer",
     "makeup primers"
    ],
+   "community_names": [
+    "primer",
+    "primers"
+   ],
+   "lookalikes": [
+    "eyeshadow primer",
+    "eyeshadow primers",
+    "eye primer",
+    "eye primers"
+   ],
    "title_words": [
-    "primer"
+    "primer",
+    "primers"
    ],
    "subreddits": [
+    "Makeup",
+    "Sephora",
     "MakeupAddiction",
-    "drugstoreMUA",
-    "MakeupRehab"
+    "drugstoreMUA"
    ]
   },
   {
@@ -9757,20 +9891,48 @@
    "keywords": [
     "brow pencil",
     "eyebrow pencil",
-    "brow gel",
-    "eyebrow gel",
     "brow pomade",
     "brow pen",
     "eyebrow pen",
-    "brow pencils",
-    "brow wax",
-    "brow soap"
+    "brow pencils"
    ],
    "title_words": [
     "brow",
     "eyebrow"
    ],
    "subreddits": [
+    "Makeup",
+    "Sephora",
+    "MakeupAddiction",
+    "drugstoreMUA"
+   ]
+  },
+  {
+   "name": "brow gel",
+   "plural": "brow gels",
+   "category": "general",
+   "department": "beauty",
+   "keywords": [
+    "brow gel",
+    "brow gels",
+    "eyebrow gel",
+    "eyebrow gels",
+    "eye brow gel",
+    "clear brow gel",
+    "tinted brow gel",
+    "brow glue",
+    "brow soap",
+    "brow wax",
+    "brow mascara"
+   ],
+   "title_words": [
+    "brow gel",
+    "brow gels",
+    "eyebrow gel"
+   ],
+   "subreddits": [
+    "Makeup",
+    "Sephora",
     "MakeupAddiction",
     "drugstoreMUA"
    ]

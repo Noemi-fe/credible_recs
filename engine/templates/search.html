@@ -1261,6 +1261,13 @@ details[open] > summary .icon { transform: rotate(180deg); }
     return meets ? el("span", { class: "tag bar" }, WORDING.meets_bar) : null;
   }
 
+  /** The tag of an "Also worth a look" row whose product is a hair product in a makeup answer, never a pick (Noemi's
+      decision 2 of 6 Nov 2026), in the answer's words and the row's own colours: shown instead of barTag's, as such a
+      product may outscore the third pick. Nothing for any other row. */
+  function hairTag(item) {
+    return item.hair_product ? el("span", { class: "tag" }, WORDING.hair_product) : null;
+  }
+
   /** A line with an icon in front, its words wrapped so they flow beside it. */
   function withIcon(name, line) {
     line.replaceChildren(...[icon(name), el("span", {}, ...line.childNodes)].filter(Boolean));
@@ -1450,7 +1457,7 @@ details[open] > summary .icon { transform: rotate(180deg); }
   function worthCard(item) {
     const nameId = "worth-" + (++worthCards);
     const head = [el("h4", { id: nameId, class: "row-name" }, item.name), formChip(item.form)];
-    const tags = [barTag(item.meets_bar), ...worthTag(item.voices), prescriptionTag(item.prescription),
+    const tags = [hairTag(item) || barTag(item.meets_bar), ...worthTag(item.voices), prescriptionTag(item.prescription),
       item.price.amount !== null ? el("span", { class: "row-price" }, priceAmount(item.price)) : null];
     return row(icon("eye", "row-mark"), head, tags,
       productImage(item.image),
@@ -1506,14 +1513,14 @@ details[open] > summary .icon { transform: rotate(180deg); }
 
   /** "Skip these": a warning panel, each product with a warning mark and why, its warnings a click away; the first few
       in view, strongest first, the rest behind "Show N more" (13 Oct 2026: brand lines are listed too, so a list can
-      be long). Nothing is left out. */
+      be long). Nothing is left out. A product's notes come before its warnings (Noemi's decision 1 of 6 Nov 2026). */
   function skipSection(items) {
     return el("section", { class: "zone-panel fam-skip skip", "aria-labelledby": "skip-heading" },
       sectionHead("skip-heading", "ban", WORDING.skip_heading),
       ...foldedList("rows", items.map((item) => row(icon("x", "row-mark"),
         [el("strong", { class: "row-name" }, item.name), formChip(item.form), el("span", { class: "row-reason" }, item.reason)],
         [prescriptionTag(item.prescription)],
-        prescriptionLine(item.prescription), quoteList(item.quotes))), LIST_SHOWN_FIRST));
+        prescriptionLine(item.prescription), ...cautionLines(item.cautions), quoteList(item.quotes))), LIST_SHOWN_FIRST));
   }
 
   /** A list of `entries` (list items) with the first `first` in view and the rest in a second list, hidden behind a

@@ -18507,6 +18507,43 @@
     "https://www.dermalogica.co.uk/sitemap_products_1.xml?from=5670154797209&to=15006422401400"
    ],
    "note": "Found by engine.maker_pages in the sitemap https://www.dermalogica.co.uk/sitemap_products_1.xml?from=5670154797209&to=15006422401400; the page names it \"Daily Milkfoliant\"; GBP 65 on the page."
+  },
+  {
+   "product": "The Ordinary High-Adherence Silicone Primer",
+   "category": "general",
+   "product_type": "makeup primer",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/the-ordinary-high-adherence-silicone-primer-30ml/p6061560",
+   "checked_on": "2026-11-05",
+   "available": false,
+   "sources": [
+    "https://www.johnlewis.com/the-ordinary-high-adherence-silicone-primer-30ml/p6061560",
+    "https://well.ca/products/the-ordinary-high-adherence-silicone_129158.html",
+    "https://lyko.com/en/the-ordinary/the-ordinary-high-adherence-silicone-primer-30ml",
+    "https://theordinary.com/en-fm/high-adherence-silicone-primer-100423.html"
+   ],
+   "note": "discontinued: John Lewis's page (read 2026-11-05) says 'No longer available online' and 'We're unlikely to receive more stock of this item'; Well.ca labels it 'No Longer Available' and Lyko 'Product is discontinued'; The Ordinary's own page for it (theordinary.com, read the same day) now shows other products, not this primer. No price: not sold new."
+  },
+  {
+   "product": "Marc Jacobs O!Mega Bronzer",
+   "category": "general",
+   "product_type": "bronzer",
+   "price": null,
+   "currency": "GBP",
+   "shop": "Cosmetics Business",
+   "url": "https://cosmeticsbusiness.com/marc-jacobs-beauty-official-relaunch-date-confirmed",
+   "checked_on": "2026-11-06",
+   "available": false,
+   "also_called": [
+    "Marc Jacobs bronzer"
+   ],
+   "sources": [
+    "https://cosmeticsbusiness.com/marc-jacobs-beauty-official-relaunch-date-confirmed",
+    "https://cosmeticsbusiness.com/first-look-at-the-soon-to-relaunch-marc-jacobs-beauty"
+   ],
+   "note": "discontinued: the original Marc Jacobs Beauty bronzer, gone when Kendo (LVMH's brand incubator) discontinued Marc Jacobs Beauty in 2021 (Cosmetics Business, 21 Apr 2026: relaunch on 1 June 2026 under Coty; 6 May 2026: the new line's bronzer is another product, Legally Bronze). The library's 'Marc Jacobs bronzer' voices (bronzer threads 1sedyr4 and 1b33ot7, and the October 2026 thread 1xf9gkv, whose three voices may mean the new one) mostly mourn or hoard the original. Read 2026-11-06 (fix 2 after the warm, Claude's call from the shopper review). No price: not sold new. The relaunch's bronzer needs an entry of its own under its own name when its voices are read, or this entry's 'Marc Jacobs bronzer' could speak for it."
   }
  ]
 }

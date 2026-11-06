@@ -72,6 +72,7 @@ from engine.config import (
     BRIGHT_DATA_POSTS_DATASET,
     BRIGHT_DATA_RECORDS_IF_UNKNOWN,
     CACHE_MAX_AGE_HOURS,
+    REMOVED_THREADS,
     SUBREDDITS,
 )
 from engine.gold import unlabelled_gold_ids
@@ -902,12 +903,18 @@ def main(argv: list[str], client: BrightDataClient | None = None) -> int:
     status = 0
     into_library = Path(folder).resolve() == LIBRARY_THREADS_DIR.resolve()
     gold = unlabelled_gold_ids() if into_library else set()
+    removed = set(REMOVED_THREADS) if into_library else set()  # Noemi's "Remove those 2 threads" (fix 2, 5 Nov 2026)
     for link in links:
         try:
             post_id = parse_thread_url(link)[1]
             if post_id in gold:
                 print(f"{link}: {post_id} is a gold-set thread Noemi hasn't labelled yet (data/gold/CANDIDATES.md); "
                       "never read into the library, no records spent")
+                status = 1
+                continue
+            if post_id in removed:
+                print(f"{link}: {post_id} is a thread Noemi said to remove (config.REMOVED_THREADS); never read into "
+                      "the library, no records spent")
                 status = 1
                 continue
             if (folder / f"{post_id}.json").exists():

@@ -655,7 +655,12 @@ def test_the_current_instructions_are_v15_and_todo_lists_older_extractions(tmp_p
     # maker's ethics, eco claims, identity or origin is no mention; a quote carries its mention's stance): every v14
     # extraction stays current, the older ones as under v14; the library is brought to both by command
     # (engine/ethics.py, engine/quote_coherence.py).
-    assert current_instructions_version() == "extract-v15"
+    # Then v16 on 4 Nov 2026 (makeup coverage: the names of the new bronzer, highlighter and setting powder types):
+    # every v15 extraction stays current, the older ones as under v15. Was: "extract-v15".
+    # Then v17 on 5 Nov 2026 (Noemi's "Split both": the names of the new lip tint and brow gel types): every v16
+    # extraction stays current, the older ones as under v16; the library's tints and gels are re-typed by command
+    # (engine/makeup_types.py). Was: "extract-v16".
+    assert current_instructions_version() == "extract-v17"
     threads_dir = threads_folder(tmp_path, *(other_thread(i) for i in ("1aaaaa", "1bbbbb", "1ccccc", "1dddddd",
                                                                         "1eeeee", "1ffffff", "1gggggg", "1hhhhhh")))
     write_extraction(threads_dir, make_extraction(thread_id="1aaaaa", instructions_version="extract-v7", mentions=[]))
@@ -707,9 +712,11 @@ def test_the_output_example_is_a_valid_v15_extraction():
     # Then v13 the same day (the routing audit's new types). Was v12.
     # Then v14 on 15 Oct 2026 (SPF lip balms and ethics-only warnings, Noemi's decisions 2 and 5). Was v13.
     # Then v15 later on 15 Oct 2026 (ethics-only praise, quotes carrying their stance: her afternoon decisions). Was v14.
+    # Then v16 on 4 Nov 2026 (makeup coverage: three new types' names). Was v15.
+    # Then v17 on 5 Nov 2026 (lip tint and brow gel, Noemi's "Split both"). Was v16.
     example = instructions_text().split("```json", 1)[1].split("```", 1)[0]
     data = json.loads(example)
-    assert data["instructions_version"] == "extract-v15"
+    assert data["instructions_version"] == "extract-v17"
     for item in data["mentions"]:
         loaded = ExtractedMention.model_validate(item | {"comment_id": "c1aaaa"})  # the example's ids are placeholders
         assert loaded.product_type and loaded.evidence and loaded.evidence_tags
@@ -957,7 +964,14 @@ def test_v8_extractions_of_skincare_and_kitchen_threads_stay_current():
     # Changed on purpose 15 Oct 2026 (instructions v15, Noemi's decisions 2 and 4 of the afternoon): v15's two rules are
     # brought to the older extractions by command (engine/ethics.py, engine/quote_coherence.py), so every v14, v13 and
     # v12 extraction stays current, of all four categories, and the older ones as under v14.
-    assert current_instructions_version() == "extract-v15"
+    # Changed on purpose 4 Nov 2026 (instructions v16, makeup coverage): v16 only adds the names of module 1's new
+    # bronzer, highlighter and setting powder types, so every v15 extraction stays current, of all four categories, and
+    # the older ones as under v15. Was: current "extract-v15".
+    # Changed on purpose 5 Nov 2026 (instructions v17, Noemi's "Split both"): v17 only adds the names of the new lip
+    # tint and brow gel types, and the library's tints and gels are re-typed by command (engine/makeup_types.py), so
+    # every v16 extraction stays current, of all four categories, and the older ones as under v16. Was: current
+    # "extract-v16".
+    assert current_instructions_version() == "extract-v17"
     assert set(extract.STILL_CURRENT["extract-v9"]["extract-v8"]) == {"skincare", "kitchen"}
     assert set(extract.STILL_CURRENT["extract-v10"]["extract-v9"]) == {"skincare", "kitchen", "haircare"}
     assert set(extract.STILL_CURRENT["extract-v10"]["extract-v8"]) == {"skincare", "kitchen"}
@@ -981,6 +995,16 @@ def test_v8_extractions_of_skincare_and_kitchen_threads_stay_current():
     for older in ("extract-v11", "extract-v10", "extract-v9"):
         assert set(extract.STILL_CURRENT["extract-v15"][older]) == {"skincare", "kitchen", "haircare"}
     assert set(extract.STILL_CURRENT["extract-v15"]["extract-v8"]) == {"skincare", "kitchen"}
+    for older in ("extract-v15", "extract-v14", "extract-v13", "extract-v12"):
+        assert set(extract.STILL_CURRENT["extract-v16"][older]) == {"skincare", "kitchen", "haircare", "general"}
+    for older in ("extract-v11", "extract-v10", "extract-v9"):
+        assert set(extract.STILL_CURRENT["extract-v16"][older]) == {"skincare", "kitchen", "haircare"}
+    assert set(extract.STILL_CURRENT["extract-v16"]["extract-v8"]) == {"skincare", "kitchen"}
+    for older in ("extract-v16", "extract-v15", "extract-v14", "extract-v13", "extract-v12"):
+        assert set(extract.STILL_CURRENT["extract-v17"][older]) == {"skincare", "kitchen", "haircare", "general"}
+    for older in ("extract-v11", "extract-v10", "extract-v9"):
+        assert set(extract.STILL_CURRENT["extract-v17"][older]) == {"skincare", "kitchen", "haircare"}
+    assert set(extract.STILL_CURRENT["extract-v17"]["extract-v8"]) == {"skincare", "kitchen"}
 
 
 def test_the_instructions_make_a_lip_product_with_spf_a_lip_balm():

@@ -146,6 +146,7 @@ from engine.config import (
     PARSE_MONTHLY_CREDITS,
     REDDIT_ARCHIVE_DAYS,
     REFRESH_READER,
+    REMOVED_THREADS,
     THREAD_CATEGORIES,
 )
 from engine.extract import ExtractionError
@@ -266,10 +267,11 @@ def archive_source(folder: Path, client: ArcticShiftClient | None) -> ArchiveSou
 
 
 def not_to_read(folder: Path) -> set[str]:
-    """The ids `add` never reads: the threads saved in this library and the gold threads Noemi hasn't labelled yet."""
+    """The ids `add` never reads: the threads saved in this library, the gold threads Noemi hasn't labelled yet and,
+    since 5 Nov 2026, the threads she said to remove (config.REMOVED_THREADS: in the Trash, never read again)."""
     threads = Path(folder) / "threads"
     saved = {path.stem for path in threads.glob("*.json")} if threads.is_dir() else set()
-    return saved | unlabelled_gold_ids()
+    return saved | unlabelled_gold_ids() | set(REMOVED_THREADS)
 
 
 def _live_copy(thread: Thread, folder: Path) -> Thread | None:
@@ -303,7 +305,8 @@ def _find(source: Source, query, limit: int, mix: dict | None, only: str | None)
     if mix is not None and "mix" in inspect.signature(find).parameters:
         return find(query, limit=limit, mix=mix, **({"fill": False} if only is not None else {}))
     threads = find(query, limit=limit)
-    return [t for t in threads if only is None or thread_kind({"title": t.title}, t.category, query.product_type) == only]
+    return [t for t in threads if only is None
+            or thread_kind({"title": t.title, "subreddit": t.community}, t.category, query.product_type) == only]
 
 
 PLACEHOLDERS = {"deleted": "[deleted]", "removed": "[removed]"}  # what Reddit shows in place of the text
@@ -835,7 +838,8 @@ def coverage_by_kind(folder: Path = DEFAULT_LIBRARY_DIR) -> dict[str, dict[str, 
     so it shows which kinds a product still lacks against the library's mix. Threads of no kind aren't listed.
     """
     return {
-        name: {kind: sum(thread_kind({"title": t.title}, t.category, name) == kind for t in threads) for kind in THREAD_KINDS}
+        name: {kind: sum(thread_kind({"title": t.title, "subreddit": t.community}, t.category, name) == kind
+                         for t in threads) for kind in THREAD_KINDS}
         for name, threads in _relevant_threads(folder).items()
     }
 

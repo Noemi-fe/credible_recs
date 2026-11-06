@@ -169,3 +169,20 @@ def test_with_the_reader_config_names_today_the_second_request_in_line_is_told_w
     spent = Line(tmp_path / "spent", waiting=1, calls_used=config.ON_DEMAND_GEMINI_CALLS_A_DAY).asked("stovetop kettle that whistles")
     assert spent["state"] == "waiting" and spent["message"].endswith("Check back tomorrow.")
     assert "1 product is ahead of it" in spent["message"] and "about 30 a day" in spent["message"]
+
+
+def test_a_request_waiting_to_be_tried_again_is_told_the_wait_for_its_next_try(tmp_path):
+    # 4 Nov 2026 (the makeup threads work): a round of searches cut short by a busy archive leaves its request waiting
+    # for another try, ON_DEMAND_RETRY_MINUTES after this one; telling it the first in line's 25 minutes would not be
+    # true. Its wait counts from its next try.
+    line = Line(tmp_path)
+    entry = entry_for(parse_query("teapot for loose leaf tea"), had=0)
+    entry.tries, entry.tried_at = 1, (NOW - timedelta(minutes=10)).isoformat()
+    QueueStore(line.bucket).change(lambda queue: queue.add(entry) and None)
+    state = line.asked()
+    assert state["state"] == "reading"
+    assert state["check_back_minutes"] == config.ON_DEMAND_RETRY_MINUTES - 10 + ON_DEMAND_FIRST_MINUTES == 75
+    assert state["message"] == ("We haven't read Reddit about teapots yet, so we've started: check back in about an"
+                                " hour.")
+    fresh = Line(tmp_path / "fresh").asked()  # one never tried: the first in line's wait, as before
+    assert fresh["check_back_minutes"] == ON_DEMAND_FIRST_MINUTES == 25

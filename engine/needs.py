@@ -47,10 +47,10 @@ from functools import cache
 
 from engine.config import (
     EVERYDAY_BRAND_WORDS, HAIR_LIST_NEEDS, HAIR_LIST_NOUNS, HAIR_LIST_WORDS, HAIR_NEEDS, INGREDIENT_FORM_WORDS,
-    INGREDIENTS, NEED_COMMENT_WORDS, NEED_IGNORED_WORDS, NEED_LOOKALIKES, NEED_PHRASES, NEED_REQUEST_WORDS,
-    NEED_SIZE_UNITS, NEED_VERB_LABELS, NEEDS, NEGATED_NEEDS, NEGATION_REACH, NEGATIONS, NO_HELP_LEADS,
-    NO_HELP_PATTERNS, NO_HELP_POINTERS, REQUEST_WORD_SYNONYMS, TYPE_ASKED_LABEL, TYPE_ASKED_WORDS, TYPE_OTHER_NAMES,
-    TYPE_SYNONYMS,
+    INGREDIENTS, NEED_COMMENT_WORDS, NEED_IGNORED_WORDS, NEED_LABEL_NOUNS, NEED_LOOKALIKES, NEED_PHRASES,
+    NEED_REQUEST_WORDS, NEED_SIZE_UNITS, NEED_VERB_LABELS, NEEDS, NEGATED_NEEDS, NEGATION_REACH, NEGATIONS,
+    NO_HELP_LEADS, NO_HELP_PATTERNS, NO_HELP_POINTERS, REQUEST_WORD_SYNONYMS, TYPE_ASKED_LABEL, TYPE_ASKED_WORDS,
+    TYPE_OTHER_NAMES, TYPE_SYNONYMS,
 )
 from engine.credibility import _own_words
 from engine.ingredients import _whole as _whole_words
@@ -173,7 +173,9 @@ def _labels(query: ParsedQuery, text: str, own: set[str]) -> tuple[dict[int, str
     other are named together, as typed ("small living room", "bread dough", "video calls"), with a number before them
     ("three storey house"), and a need that is a verb reads as one (config.NEED_VERB_LABELS: "drying fast", "staying
     cool", "slipping"). Words that name the product or a brand (judged_needs) part them: "double cleansing oil" is
-    "double cleansing". Comments are still found by each word: found as the two words together only, the espresso
+    "double cleansing". Since 5 Nov 2026 (the shopper review: "1 of them about fair") a word of the request's own named
+    alone is named with the word after it when that one says what it describes (config.NEED_LABEL_NOUNS): "about fair
+    skin", "about old dog", "about damaged hair". Comments are still found by each word: found as the two words together only, the espresso
     machine answer had read fewer threads about steam wands and lost its machines with one (16 Oct 2026). `text` is the
     request in small letters, without what a negation took: the same length as the request, so places don't move."""
     tokens = list(_TOKEN.finditer(text))
@@ -196,11 +198,16 @@ def _labels(query: ParsedQuery, text: str, own: set[str]) -> tuple[dict[int, str
         if (len(group) > 1 and before >= 0 and _is_number(tokens[before].group(0))
                 and not text[tokens[before].end():start].strip()):
             start = tokens[before].start()  # "three storey house"
-        words = query.text[start:last.end()].split()
+        end = last.end()
+        after = group[-1] + 1
+        if (len(group) == 1 and after < len(tokens) and tokens[after].group(0) in NEED_LABEL_NOUNS
+                and not text[end:tokens[after].start()].strip()):
+            end = tokens[after].end()  # "fair skin", "old dog": a word alone named with what it describes (5 Nov 2026)
+        words = query.text[start:end].split()
         verb = NEED_VERB_LABELS.get(first.group(0))
         if verb is not None:
             words[words.index(next(w for w in words if w.lower() == first.group(0)))] = verb
-        label = " ".join(words) if len(group) > 1 or verb is not None else None
+        label = " ".join(words) if len(group) > 1 or verb is not None or end != last.end() else None
         for i in group:
             if label is not None:
                 labels.setdefault(tokens[i].start(), label)
