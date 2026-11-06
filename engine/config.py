@@ -3386,3 +3386,21 @@ QUOTE_LEAVING = QUOTE_LEAVING + r"|\b(?:started|began)\s+(?:buying|using|getting
 QUOTE_SOMEONE_SAID = (r"\b(?:someone|somebody|another (?:commenter|commentor|poster|person)"
                       r"|(?:as|like|what) (?:others|other people))"
                       r"(?: else)? (?:have |had )?(?:said|mentioned|suggested|recommended|posted)\b")
+
+# --- Makeup, after the warm: fix 2 (5 Nov 2026, past midnight) ---
+# Technical calls by Claude, reported to Noemi, from the rules review, the shopper review and the summary fact-check of
+# fix 1. Like the rounds before, they change which quotes and tips an answer shows, never a score.
+#
+# A quote thanking the thread ("thanks everyone who suggested X, I bought it") leans on comments the reader doesn't see,
+# as one answering what someone else said does (QUOTE_SOMEONE_SAID): it comes after a clearer quote, and only makes up
+# a pick's minimum (engine.answer._ELSEWHERE). Thanks to people only: "thanks to the X my brows stay put" and "thanks
+# to all the oil in it" stand.
+QUOTE_THANKS_THREAD = (r"\b(?:thanks|thank you|thank u)(?: so much| again)? (?:everyone|everybody|all|you all|y'all"
+                       r"|guys)\b"
+                       r"|\b(?:thanks|thank you)(?: so much)? to (?:everyone|everybody|all of you|you all|y'all)\b"
+                       r"|\b(?:everyone|everybody|all of you|those|people) who (?:suggested|recommended|mentioned"
+                       r"|upvoted|commented)\b"
+                       r"|\b(?:thanks|thank you)(?: all| everyone)? for (?:the|all the|your) (?:suggestions?"
+                       r"|recommendations?|recs|tips|advice|replies|answers)\b")
+# Makers' capitals (as MAKER_SPELLINGS above): answers had shown "YSL lash clash".
+MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "YSL Lash Clash")

@@ -1936,9 +1936,13 @@ def _says_why(m: ScoredMention) -> bool:
 def _bare_like(m: ScoredMention) -> bool:
     """Whether the quote only likes the product ("I love the Acme cleanser", "Oddly, I really like the Cream to Foam",
     "The best I've tried is from Acme!!!"): a like, and no word besides its names, small words and likes. One word can
-    be the reason ("great, very sharp")."""
+    be the reason ("great, very sharp"). A name word with a plain "s" is the name too (fix 2 after the warm, 5 Nov 2026:
+    a quote liking the brand by its plural and saying nothing else had led the Benefit brow gel pick as a reason)."""
     text = " ".join(_plain(m.quote).split())
-    return bool(_A_LIKE.search(text)) and not _content_words(m.quote, _its_names(m))
+    names = _its_names(m)
+    own = {word for name in names for word in _split_words(name)}
+    rest = [word for word in _content_words(m.quote, names) if not (word.endswith("s") and word[:-1] in own)]
+    return bool(_A_LIKE.search(text)) and not rest
 
 
 def _content_words(quote: str, names: tuple[str, ...]) -> list[str]:
@@ -2065,7 +2069,8 @@ _ELSEWHERE = re.compile(
     r"|\bas you (?:said|say|mentioned|found|noted|described)\b"
     r"|\bwhat you(?:'re| are) (?:wanting|after|describing)\b"
     r"|\byour problem\b|(?-i:\bOP(?:'s)?\b)"
-    rf"|{config.QUOTE_SOMEONE_SAID}", re.IGNORECASE)  # "Someone said X, yes..." (fix 1, 5 Nov 2026)
+    rf"|{config.QUOTE_SOMEONE_SAID}"  # "Someone said X, yes..." (fix 1, 5 Nov 2026)
+    rf"|{config.QUOTE_THANKS_THREAD}", re.IGNORECASE)  # "thanks everyone who suggested X" (fix 2, 5 Nov 2026)
 # Things a quote can lean on that its writer said just before it: "both of them", "either product", "for that reason",
 # "that part"; since 13 Oct 2026 "both in one" (a product holding two things the asker wanted, not shown). The
 # sentences before it are shown with it, when they fit (_widened).
@@ -2999,6 +3004,12 @@ def _whole_needs(names: Iterable[str], heads: Mapping[str, str]) -> tuple[str, .
     return tuple(name for name in names if name not in heads or heads[name] in names)
 
 
+def _talks_about_a_need(text: str, needs: tuple[Need, ...]) -> bool:
+    """Whether a text (a tip's name, its note's quote or comment) talks about one of the request's needs, read as the
+    reason line counts them (_whole_needs: "darker shade" talks about no dark circles). Fix 2, 5 Nov 2026."""
+    return bool(needs) and bool(text) and bool(_whole_needs(needs_met(text, needs), _phrase_heads(needs)))
+
+
 def _fits_a_need(m: ScoredMention, needs: tuple[Need, ...]) -> bool:
     """Whether a quote talks about one of the request's needs, read as the reason line counts them (_whole_needs)."""
     return bool(needs) and bool(_whole_needs(needs_met(m.quote, needs, m.evidence == "long-term use"),
@@ -3114,6 +3125,12 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
     as a primer", "moisturizer": config.TIP_OTHER_CATEGORIES); and in every answer the products ranked under an "Also
     worth a look" line count with the picks' (`lines_products`), so "Avoid: pencil eyeliner" no longer stands beside a
     line of pencils.
+
+    Since fix 2 after the warm (5 Nov 2026, past midnight, from the shopper review; Claude's technical calls): in a
+    makeup answer with a need asked ("foundation for oily skin"), a "Look for" whose name doesn't talk about the need
+    keeps only the notes whose quote or comment does, as the reason line reads needs (_talks_about_a_need), and with
+    none it is no tip: a "cream foundation stick" from a general thread about favourite foundations says nothing to
+    someone with oily skin.
     """
     candidates = []
     asked_words, refused = _asked_and_refused(ranking.category, product_type, request, needs, asks)
@@ -3142,6 +3159,14 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
             continue  # one writer's own experience (5 Nov 2026, makeup answers)
         if _not_for_this_makeup(kind.name, advice, ranking.category, product_type, request):
             continue
+        if (advice == LOOK_FOR and needs and product_type in config.FACE_AND_EYE_TYPES
+                and not _talks_about_a_need(kind.name, needs)):
+            # With a need asked, a makeup "Look for" needs a note whose quote or comment talks about it (fix 2, 5 Nov
+            # 2026: "cream foundation stick" from a general foundation thread, for oily skin).
+            notes = [n for n in notes if _talks_about_a_need(n.quote, needs)
+                     or _talks_about_a_need(check.bodies.get(n.comment_id, ""), needs)]
+            if not notes:
+                continue
         if _plain(kind.name).split()[-1:] and _plain(kind.name).split()[-1] in config.KIND_DANGLING_END_WORDS:
             continue  # a broken label ("mini or travel size of", 5 Nov 2026)
         if (_the_product_asked_for(kind.name, ranking.category, product_type, request)
@@ -3844,7 +3869,9 @@ def _not_for_this_makeup(kind: str, advice: str, category: str, product_type: st
     the warm (same day, the shopper review): a tip whose name doesn't name the type asked for is none
     (_names_this_makeup), and a "Look for" whose name names another category's type and, before its purpose word, not
     this one is offered in its place (config.TIP_OTHER_CATEGORIES and TIP_OTHER_CATEGORY_WORDS: "sunscreen as a
-    primer", "spf as a primer")."""
+    primer", "spf as a primer"). Another makeup type worn as this one still stands ("bronzer worn as blush", part 2;
+    fix 2 tried leaving out "pressed powder in a darker shade as bronzer" and dropped it the same night, as it went
+    against that rule)."""
     if product_type not in config.FACE_AND_EYE_TYPES:
         return False
     words = re.findall(r"[a-z0-9][a-z0-9'-]*", _plain(kind))

@@ -10,6 +10,8 @@ import pytest
 
 from engine import config
 from engine.answer import _names_this_makeup, _stands_alone, _undercuts, write_answer
+from engine.needs import judged_needs
+from engine.query import parse_query
 from engine.rank import rank_products
 from engine.tests.ranking_factories import bodies_for, mention, mentions, note
 
@@ -18,9 +20,9 @@ def kinds_shown(answer) -> list[str]:
     return [kind for item in answer.look_for for kind in item.kind.split(" or ")]
 
 
-def answer_with(items, notes, product_type, request=None):
+def answer_with(items, notes, product_type, request=None, needs=()):
     return write_answer(rank_products(items, "general", notes), bodies_for(*items, *notes), product_type,
-                        request=request or product_type)
+                        request=request or product_type, needs=needs)
 
 
 def two_notes(kind: str, first: str, second: str, stance: str = "recommend") -> list:
@@ -72,8 +74,14 @@ def test_a_makeup_tip_of_a_kind_of_the_type_stays(product_type, kind):
 def test_a_makeup_tip_offering_another_categorys_product_in_its_place_is_left_out(product_type, kind, first, second):
     items = (mentions(3, f"Velo {product_type}", category="general")
              + mentions(3, f"Halo {product_type}", category="general"))
-    answer = answer_with(items, two_notes(kind, first, second), product_type,
-                         request="makeup primer" if product_type == "makeup primer" else product_type)
+    # Changed on purpose on 5 Nov 2026 (fix 2, from the rules review): the foundation case asked a plain "foundation",
+    # where 92c823f's code already left the tip out, so it never failed; it now asks "foundation for oily skin" with
+    # its need, as the settled answer did. Until then the call read: answer_with(items, two_notes(kind, first, second),
+    # product_type, request="makeup primer" if product_type == "makeup primer" else product_type).
+    request, needs = {"makeup primer": ("makeup primer", ()),
+                      "foundation": ("foundation for oily skin",
+                                     judged_needs(parse_query("foundation for oily skin", model=None)))}[product_type]
+    answer = answer_with(items, two_notes(kind, first, second), product_type, request=request, needs=needs)
     assert kind not in kinds_shown(answer)
 
 

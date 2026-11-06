@@ -1591,8 +1591,10 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   it), and their ids, 1co3r5i and 1jlzpoa, are kept in config.REMOVED_THREADS, a list nothing reads a thread from: it
   is in the library's never-read set (engine.library.not_to_read), bulk import's (engine.bulk_import.imported_before)
   and on-demand reading's skip list (engine.on_demand), so no later reading brings them back (part 3 found on-demand
-  reading missed the set_aside folder). The library's request log still lists the two ids under the on-demand reading
-  that brought them in: a record of what happened, ids only.
+  reading missed the set_aside folder; corrected in fix 2 after the warm, from the rules review: "nothing" overstated
+  it, as `python -m engine.bright_data fetch` into the library didn't check the list until fix 2, and the on-demand
+  job's extraction step and forget_baked still don't). The library's request log still lists the two ids under the
+  on-demand reading that brought them in: a record of what happened, ids only.
   (2) Quotes that undercut their product only make up a pick's minimum (engine.answer._undercuts, as in part 2), now
   also: a rival named by its line alone, without its brand (_names_by_its_line: "but True Match suits me better" in a
   Milani blush quote; a line read accents aside, as "L'Oréal" had split in two, and of one word only when it has 4
@@ -1721,9 +1723,11 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   scratch folder), atomically. The calls:
   (a) Urban Decay All Nighter's summary is rewritten (it replaced the saved one under the same key) and says nothing
   of a newer formula, as no cited comment does. The Tower 28, Kosas, Givenchy, Stila liquid liner, got2b, rom&nd and
-  Peripera entries replaced older ones too, as did six skincare ones (the todo had listed each older one as failing in
-  some answer). Of the 41 entries kept, 30 are new and 11 replaced an older one (corrected in fix 1 the same night:
-  this note first said 14 replaced one, counting the three dropped in (c)).
+  Peripera entries replaced older ones too, as did three skincare ones, Beauty of Joseon's eye serum, CeraVe's
+  retinol serum and Eucerin's Sun Gel-Creme (the todo had listed each older one as failing in some answer; corrected
+  in fix 2 after the warm, from the rules review: this note said six, counting the three dropped in (c)). Of the 41
+  entries kept, 30 are new and 11 replaced an older one (corrected in fix 1 the same night: this note first said 14
+  replaced one, counting the three dropped in (c)).
   (b) ROC retinol's entry is dropped (rule 7): its two citable comments say little beyond that it is good. Three
   skincare products got no entry from their writer, as none of their credible comments is in every answer that shows
   them: Beauty of Joseon Relief Sun (rice and niacinamide), Medik8 Crystal Retinal and Eucerin Aquaphor. Smashbox's
@@ -1764,8 +1768,10 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   verified), and threads waiting for a live check, 42 to 56 (the day passing), the only changes, and eval/metrics.json
   holds just these two (its date kept as 5 Nov, Noemi's day; the run ended after midnight UTC). The ingredient and
   needs sections print a few other picks than part 4's run (shampoo, vitamin C, spot treatment): the warm moved them,
-  not this branch's code (those requests are in the sweep, where their picks equal main's). Whole suite: 7,196 passed
-  and 1 failed (the unlabelled gold thread 1v40u3t, which fails on main too).
+  not this branch's code (those requests are in the sweep, where their picks equal main's). (Corrected in fix 2 after
+  the warm, from the rules review: not the warm but the day judged moved them, as it moved the two counts. This run
+  set TZ=UTC and so judged 6 Nov, and eval/metrics.json holds 6 Nov's two counts under a 5 Nov date.) Whole suite:
+  7,196 passed and 1 failed (the unlabelled gold thread 1v40u3t, which fails on main too).
   Left, for Noemi or later: 393 products of the todo are still without a summary (none makeup: 144 general, 120
   kitchen, 94 skincare, 35 haircare), and 246 older entries fail in some answer: the next summarising batches. A
   summary must now be credible in every answer that shows its product, and for a product shown in many wider answers
@@ -1780,20 +1786,26 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   (config.NEED_FIT_FOR_PICKS = False); the product notes (data/product_notes.json: NARS's reformulation, Becca, got2b's
   hair gel) still waiting for her yes and unchanged. The changes have their tests
   (engine/tests/test_makeup_after_warm.py, 31 on made-up text: 21 fail on 92c823f's code, and 10 guard what stays as it
-  was).
+  was; corrected in fix 2 after the warm, from the rules review: 9 guard it, and the tenth, the tinted moisturiser tip
+  for foundation, was meant to show the change but passed on 92c823f's code too, as it asked "foundation" without the
+  oily-skin need; fix 2 asks "foundation for oily skin" with its need, and it now fails on 92c823f's code).
   (1) Tips (engine/answer.py _not_for_this_makeup, _names_this_makeup; config.TIP_OTHER_CATEGORIES and
   TIP_OTHER_CATEGORY_WORDS). In a makeup answer a tip whose name names nothing of the type asked for, by one of module
   1's names for it or the last word of the type's name, is left out: a tool ("eyelash curler" for mascara), another
   product in its place ("lip oils" for lipstick, "skin prep" for a primer) and terse labels ("drugstore", "mini"). And a
   "Look for" whose name, before its purpose word, names another category's product and not the type is left out as
   offered in the type's place ("sunscreen as a primer", "spf as a primer", "moisturizer", "tinted moisturizer for oily
-  skin" for foundation). Part 4's test that kept "drugstore" in a blush answer now says the opposite, on purpose (dated
-  comment in engine/tests/test_makeup_fixes.py). Not done: "twist-up lip liners" stays under lipstick, as module 1 files
+  skin" for foundation). Part 4's test that kept "drugstore" in a lip tint answer (corrected in fix 2 after the warm,
+  from the rules review: this note said blush) now says the opposite, on purpose (dated comment in
+  engine/tests/test_makeup_fixes.py). Not done: "twist-up lip liners" stays under lipstick, as module 1 files
   lip liner under lipstick (a product type, Noemi's).
   (2) An "Avoid" against a shown item's products (engine/answer.py _lines_products, _line_brand). The products ranked
   under an "Also worth a look" line now count with the picks' (the rule of 18 Oct 2026 looked at the picks only), and in
   a makeup answer a line grouped under its brand and the type's name ("Urban Decay eyeliner line", key "urban decay
-  eyeliner") holds the brand's products of the type grouped under the brand alone. "Avoid: pencil eyeliner" goes: the
+  eyeliner") holds the brand's products of the type grouped under the brand alone (corrected in fix 2 after the warm,
+  from the rules review: the code, _line_brand, reads any makeup key ending in the type's last word so, single products
+  too: "Caliray primer" gives the brand "caliray" and "rom&nd Juicy Lasting Tint" gives "rom nd juicy lasting"; no
+  answer moves by it today). "Avoid: pencil eyeliner" goes: the
   Victoria Beckham pick's kohl and kajal pencils and the Urban Decay line's waterline pencils went against it. Outside
   makeup one answer moved the same way: the long-lasting kettle's "Avoid: variable temperature kettle", as all three
   lines under its "Also worth a look" (OXO, Sage, Bonavita) hold variable temperature kettles.
@@ -1839,7 +1851,10 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   Glossier Cloud Paint, now without the comment the shopper review found praising it only as a topper), YSL lash clash's
   flaking as a writer put it, Essence Pure Nude's grammar, and two that kept runs of a writer's own words (Danessa
   Myricks, Peripera). Every entry passes engine.summaries' own text and number checks, has no five-word run of a cited
-  comment's words and cites only comments credible in every answer that shows its product.
+  comment's words and cites only comments credible in every answer that shows its product (corrected in fix 2 after
+  the warm, from the summary fact-check: Benefit Roller Lash's rewrite kept one five-word run of a writer's words,
+  which this round's scan missed, and seven entries still gave one writer's view to several people; fix 2 rewrites
+  them).
   (8) The integrator's note above (5 Nov, evening) is corrected in five places, each marked: the flairs, the "Also worth
   a look" changes the warm made, the count of replaced summaries, the answers showing Biore and ILLIYOON, and the makeup
   quotes by community.
@@ -1862,6 +1877,12 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   to 42, moved too, but 92c823f's own code gives the same 252 and 42 on the same copy minutes later, so they follow the
   live-check cache's state, not this round; so do the ingredient and needs sections, which print part 4's picks again
   with either code (the integrator's note put their change down to the warm). eval/metrics.json holds the two counts.
+  (Corrected in fix 2 after the warm, from the rules review: not the cache's state but the day the evaluation judges
+  by. pipeline._today() is date.today(), which sets the 14-day live-check window; the integrator's runs set TZ=UTC and
+  judged 6 Nov, this round's ran at 23:51 EST without it and judged 5 Nov, as did 92c823f's run minutes later. Judged
+  on 6 Nov the same code gives 257 and 56 and the integrator's ingredient and needs picks. The fix 1 row of
+  eval/RUNS.md is corrected the same way; d41114d's commit message gives the same wrong cause and stays as it is, as
+  correcting it would need a rebase.)
   Left for Noemi: whether Marc Jacobs's bronzer should stay under "Also worth a look" (its voices praise the original,
   no longer made; the brand relaunched in 2026 with another bronzer); NARS Orgasm as a blush pick beside "Skip: NARS
   Orgasm (new formula)" and got2b's hair gel as a brow gel pick (the product notes); the need-fit rule; lip tint and
@@ -1869,3 +1890,93 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   (Givenchy's case; done by hand here: judging them would hide 11 shown summaries of 7 products today, so not in this
   round), and a "but" or "though" passes it however small the downside. The scratch files of this round hold commenters'
   words and go to the Trash with the deletion rule.
+- 5 Nov 2026, night, into 6 Nov (past midnight EST), fix 2 after the warm (Claude, the fixer; Claude's technical calls,
+  reported to Noemi; branch makeup-threads; nothing pushed, merged or deployed). From the second rules review, the
+  shopper review and the summary fact-check of fix 1 (d41114d). Inside Noemi's bounds: no scoring weight, picks bar,
+  product type, told number (about 25 minutes, 30 a day, 39 a month) or the 48-hour quote rule touched; the need-fit
+  rule still off (config.NEED_FIT_FOR_PICKS = False); the product notes (data/product_notes.json: NARS's
+  reformulation, Becca, got2b's hair gel) unchanged, waiting for her yes. Values at the end of engine/config.py ("fix
+  2"); tests in engine/tests/test_makeup_fix2.py (23 on made-up text: 11 fail on d41114d's code, 10 guard what stays
+  and 2 cover fix 1's on-demand lines, which had none, each failing when its line is undone), and one case of
+  engine/tests/test_makeup_after_warm.py changed on purpose with a dated comment (fix 1's note above says why).
+  (1) Tips (engine/answer.py _look_for, _talks_about_a_need). In a makeup answer with a need asked, a "Look for" whose
+  own name doesn't talk about the need stands only on the notes whose quote or comment does, read as the reason line
+  reads needs; with none it is no tip. "Look for: cream foundation stick", from a thread about favourite foundations
+  that says nothing of oily skin, leaves the oily-skin foundation answer, and so does "powder foundation"; "dusty rose
+  blush" leaves blush for fair skin; cream blush loses both its tips ("dusty rose blush", "brush for liquid blush"), as
+  module 1 reads "cream" as its need; the bare "color corrector" leaves concealer for dark circles, where "oil-based
+  cream concealer for dark circles" comes in. Makeup only, as fix 1's tip rules: no tip moved outside makeup. Tried
+  and dropped the same night: leaving out a "Look for" that names another makeup type worn as the type asked for
+  ("pressed powder in a darker shade as bronzer", which the shopper review listed as not blocking). The first final
+  run's whole suite failed on it: part 2 keeps "bronzer worn as blush" on purpose, with a test. Part 2's rule stands, a
+  new test guards it, and the bronzer tip stays, as does eyeliner's "black eyeshadow to set eyeliner".
+  (2) Quotes (config.QUOTE_THANKS_THREAD in engine/answer.py _ELSEWHERE; _bare_like). A quote thanking the thread for
+  its suggestions leans on comments the reader can't see, as one answering what someone else said does (fix 1): it
+  comes after a clearer quote and only makes up a pick's minimum. Thanks for a thing ("thanks to the wax in it")
+  stands. And a quote that only likes its product, naming it by a plural of one of its name's words ("I like Rosas"),
+  is a bare like and comes last, as one naming it plainly already did. Effect: the Benefit brow gel pick (brow gel,
+  eyebrow gel) no longer shows the thank-you quote or the plural like; it leads with a comparison with Anastasia,
+  then its all-day hold. Outside makeup one quote moved: in "moisturiser without niacinamide", La Roche-Posay
+  Lipikar's second "Also worth a look" quote, a bare like of the Triple Repair moisturiser ("moisturizers" now read
+  as its name), gives way to one about dry, sensitive skin.
+  (3) Names: "YSL Lash Clash" as its maker writes it (config.MAKER_SPELLINGS; the mascara answer had "YSL lash clash").
+  (4) The price list (data/prices.json): Marc Jacobs O!Mega Bronzer, also called "Marc Jacobs bronzer", is checked as no
+  longer sold (6 Nov 2026, Cosmetics Business: the brand's makeup was discontinued in 2021, and it relaunched on 1 June
+  2026 under Coty with another bronzer). The library's voices for it praise the original, so it leaves bronzer's "Also
+  worth a look" by the route fix 1 used for The Ordinary's primer, and Physicians Formula Butter Bronzer comes in, with
+  a new summary. Fix 1 had left this for Noemi; the shopper review called it blocking, as a shopper can't buy it, and
+  whether a product is still sold is a fact, so Claude made the call. Deleting the entry undoes it. One rule for
+  discontinued products, and an entry for the relaunch's bronzer once voices for it arrive, are hers to decide.
+  (5) The removed threads (Noemi's "Remove those 2 threads"): `python -m engine.bright_data fetch` into the library now
+  refuses 1co3r5i and 1jlzpoa (config.REMOVED_THREADS), as it refuses unlabelled gold threads, and fix 1's two
+  untested on-demand lines have tests (pull skips the two threads; one already in the bundle under the same request
+  no longer gets past the skip list). Left: the on-demand job's extraction step and forget_baked don't check the list
+  (a copy would have to be in the bucket's bundle, which the deploy of 3 Nov should have emptied).
+  (6) The summaries (data/library/summaries.json, backed up before each write, written atomically; git-ignored). From
+  the fact-check: Givenchy's setting powder entry is dropped. The answer shows a warning under the pick, folded in
+  from the brand's line, that the sentence didn't tell, and as that warning isn't one of the product's own credible
+  mentions no entry can cite it (checked again this round), so the pick shows no summary until the check can judge
+  warnings folded in from a line (code, later). 12 rewritten: one writer's view given to several (Haus Labs Glassy
+  Balm, Anastasia Beverly Hills brow gel, NYX Marshmellow, Tower 28 concealer, ONE/SIZE setting spray, CeraVe's
+  retinol serum; Maybelline Super Stay Skin Tint keeps its words and cites a second writer for them), one writer on
+  both sides (NARS Radiant Creamy), wording (Urban Decay's eyeliner line; Benefit Roller Lash, which kept a five-word
+  run of a writer's words), and downsides left out (The Ordinary's primer, said again to be discontinued as a
+  commenter says; MAC Lady Danger, the writer who gave up MAC lipsticks after contact reactions). 1 new: Physicians
+  Formula Butter Bronzer. The 16 entries fix 1 wrote that stay as written are restamped with when they were really
+  written (04:12:30Z for its first write, within 15 seconds, and 04:26:00Z for its second, the file's time), not 04:30
+  and 04:40. Every entry passes engine.summaries' own text and number checks, has no five-word run of a cited
+  comment's words (apostrophes and punctuation dropped) and cites only comments credible in every answer that shows
+  its product.
+  (7) Earlier notes corrected, each marked "corrected in fix 2": part 4's "a list nothing reads a thread from"; the
+  integrator's "six skincare" (three) and the cause it gave for the evaluation's other ingredient and needs picks;
+  fix 1's test counts, "blush" (a lip tint answer), its wording of _line_brand, its five-word-run claim and the cause
+  it gave for the evaluation's two moving counts. That cause is the day the evaluation judges by, not the live-check
+  cache or the warm: pipeline._today() is date.today(), which sets the 14-day live-check window, and the integrator's
+  runs set TZ=UTC (judged 6 Nov) while fix 1's evaluation ran at 23:51 EST without it (judged 5 Nov). The fix 1 row of
+  eval/RUNS.md is corrected the same way; d41114d's commit message keeps the wrong cause, as correcting it would need
+  a rebase.
+  Measured through the heavy lock on the live profile store (sha d78c2535f930, the same before and after every run),
+  live checks off, with TZ=UTC (judged 6 Nov). Sweep of 295 answers (the same lists as fix 1's), no error, against
+  fix 1's: no pick, pick order, score, Skip item or message moved anywhere; "Also worth a look" in two answers
+  (bronzer, the mascara answer's YSL name), tips in 4 (all makeup), pick quotes in 2 (brow gel, eyebrow gel), "Also
+  worth a look" quotes in 3 (2 makeup and the moisturiser above), summaries in 14 (11 makeup; outside makeup
+  CeraVe's retinol serum reworded in three retinol answers). All 17 makeup answers give 3 picks; 99 of their 100
+  shown items have a summary (Givenchy's, above). Non-makeup shown items with a summary: 628 of 1,212, as before.
+  Every quote shown, 8,216, was found word for word in its saved comment, checked outside the engine; 723 in the 17
+  makeup answers (r/Makeup 208, r/Sephora 301, r/MakeupAddiction 97, r/drugstoreMUA 80, r/AsianBeauty 37; none from
+  r/MakeupRehab). Brand accounts: 1,346 credible voices behind the 100 shown makeup items, run through module 5's own
+  signs again: the same one flag as before (a Thrive Causemetics mascara voice, not shown). `python -m
+  engine.summaries check`: 912 entries, 663 fine, 249 with problems, the same 249 as fix 1's check; none written
+  since 5 Nov. Whole suite: 7,249 passed and 2 failed, the unlabelled gold thread 1v40u3t (which fails on main too)
+  and the check that eval/metrics.json's date has a RUNS.md row, which this round's row of 6 Nov answers.
+  eval/run_eval.py on a copy of the store: identical to the integrator's run (judged 6 Nov too) but module 4's product
+  groups, 34,442 to 34,441 (4,750 to 4,749 loose: fix 1's names), so the blind-test answers show 257 quotes (all
+  verified) and 56 threads wait for a live check, and the ingredient and needs sections print the integrator's picks:
+  this confirms the cause in (7). eval/metrics.json is dated 6 Nov, the day it judged.
+  Left for Noemi: NARS Orgasm as a blush pick beside "Skip: NARS Orgasm (new formula)" and got2b's hair gel as a brow
+  gel pick (the product notes); the need-fit rule; lip tint's and lip stain's 3 threads and brow gel's 5; "twist-up lip
+  liners" under lipstick (module 1 files lip liner under lipstick); one rule for discontinued products and for
+  substitute tips. Not blocking and left: the Etude Fixing Tint quote about its glossy sibling, the Hourglass Veil
+  quote meaning another product, ONE/SIZE's weak quotes, the colour-corrector tips, Gucci's third quote, the KVD Skip
+  and makers' lower-case names. The scratch files of this round hold commenters' words and go to the Trash with the
+  deletion rule.
