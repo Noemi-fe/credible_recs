@@ -444,7 +444,9 @@ def test_the_warm_up_time_limit_and_the_startup_probe_are_as_they_were():
     # Changed on purpose 5 Nov 2026 (the site-memory builder, Noemi's "Let's do A"): the site asks for 2 GiB again, where it asked
     # for 4 GiB from 15 Oct 2026 as a stopgap. The warm-up's time limit and the probe above are the same, and getting ready took
     # as long (132.7 s before, 132.6 s after, on Noemi's computer).
-    assert "--memory 2Gi" in deploy
+    from engine.tests.test_cloudrun import _command
+
+    assert "--memory 2Gi" in _command(deploy, "$GCLOUD run deploy")  # the site's own line: the job's has the same words
 
 
 # --- The page: a small control, remembered in the browser only ---

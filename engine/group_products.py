@@ -135,7 +135,6 @@ Two more steps happen only when the name is shown to a shopper (engine/pipeline.
 """
 
 import re
-import sys
 import threading
 from array import array
 from collections import Counter, defaultdict
@@ -387,8 +386,9 @@ def library_name_index(mentions: Iterable[ProductMention],
 
     aliases = known_aliases() if aliases is None else aliases
     names: dict[str, set[Words]] = defaultdict(set)
+    pool: dict[str, str] = {}  # one string a word, shared by the names of this index (sys.intern would keep them for ever)
     for m in mentions:
-        words = tuple(sys.intern(w) for w in product_words(m.product, aliases.get(m.category, {})))  # one string a word
+        words = tuple(pool.setdefault(w, w) for w in product_words(m.product, aliases.get(m.category, {})))
         if words:
             names[m.category].add(words)
     first = [(_type_words(p.name), _type_phrases(p.name)) for p in FIRST_PRODUCT_TYPES]

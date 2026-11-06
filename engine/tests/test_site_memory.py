@@ -1,8 +1,8 @@
 """The live site's memory, bounded so 2 GiB fits again (5 Nov 2026, Noemi's "Let's do A").
 
 The site had run at 4 GiB since 15 Oct 2026, a stopgap. Measured on 5 Nov 2026 (CLAUDE.md, DECISIONS.md): at 4 GiB it used
-1.9 to 2.0 GiB, growing about 0.03 GiB a day with the library, so at 2 GiB it would run out within hours. These tests hold
-each bound that brings it under 80% of 2 GiB. None changes an answer: every bound only decides what is kept in memory,
+1.9 to 2.0 GiB in its busiest windows, with each instance's memory climbing through its life, so at 2 GiB it would run out
+within hours. These tests hold each bound that brings it under 80% of 2 GiB. None changes an answer: every bound only decides what is kept in memory,
 and an answer worked out again is the same answer.
 
 Every library, request and comment here is made up. Nothing reads data/.
@@ -10,6 +10,8 @@ Every library, request and comment here is made up. Nothing reads data/.
 
 import copy
 import json
+import re
+import sys
 
 import pytest
 
@@ -423,3 +425,344 @@ def test_the_remembered_answers_size_is_twenty_four_megabytes():
 
     assert config.ANSWERS_KEPT_BYTES == 24 * 1024 * 1024
     assert web._answers.limit_bytes == config.ANSWERS_KEPT_BYTES
+
+
+# --- The review of 5 Nov 2026 (evening): the bundle taken in item by item, saved checks kept in memory ---
+#
+# The review measured two things the first round missed. Taking in an on-demand bundle parsed the whole file at once, which
+# takes about 7.8 times its size for a moment (+414 MiB for the 300 largest threads), and on Cloud Run a saved check is a
+# small file on a disk that is memory, a 4 KiB page each whatever its size (18,400 files from the bucket's bundle at the
+# start, 44,838 after a long soak).
+
+import hashlib
+import tracemalloc
+from datetime import UTC, datetime, timedelta
+
+from engine.live_check import LiveChecker
+from engine.on_demand import Bundle, Item, SiteReader, bundle_items, write_threads
+
+TEXT_WITH_EVERYTHING = ('{"id": "t1", "title": "A \\"quoted\\" title {with} [brackets], and a colon: here", '
+                        '"body": "“Curly” and emoji 😀 and a backslash \\\\ and a newline\\nand a tab\\t"}')
+
+
+def an_item(n: int, extraction="{}", thread=None) -> Item:
+    return Item(thread=thread if thread is not None else TEXT_WITH_EVERYTHING.replace("t1", f"t{n}"),
+                extraction=extraction, entry="teapot|teapot|", product_type="teapot",
+                added_at="2026-11-01T10:00:00+00:00", tries=n % 3, slimmed=bool(n % 2))
+
+
+def bundle_bytes(items: dict[str, Item], **dumps) -> bytes:
+    return json.dumps({"version": 1, "threads": {tid: item.as_json() for tid, item in items.items()}},
+                      ensure_ascii=dumps.pop("ensure_ascii", False), **dumps).encode("utf-8")
+
+
+def whole_parse(data: bytes):
+    """What the site did until the review: the whole file parsed at once."""
+    return sorted(Bundle.from_json(json.loads(data)).threads.items())
+
+
+@pytest.mark.parametrize("style", [{}, {"separators": (",", ":")}, {"indent": 2}, {"ensure_ascii": True},
+                                   {"indent": "\t", "ensure_ascii": True}])
+def test_a_bundle_read_item_by_item_gives_the_items_a_whole_parse_gives(style):
+    items = {f"t{n}": an_item(n, extraction=None if n == 3 else TEXT_WITH_EVERYTHING) for n in (5, 3, 9, 1, 12)}
+    data = bundle_bytes(items, **style)
+    assert [(tid, item) for tid, item in bundle_items(data)] == whole_parse(data)
+    assert [tid for tid, _ in bundle_items(data)] == sorted(items)  # in the order write_threads always wrote them
+
+
+def test_a_bundle_with_other_keys_a_threads_key_deeper_down_and_odd_items_reads_like_a_whole_parse():
+    one, two = an_item(1), an_item(2)
+    text = ('{"note": {"threads": {"decoy": {"thread": "x"}}, "list": [1, {"threads": 2}, "}"]}, "version": 1, '
+            f'"threads": {{"b": {json.dumps(two.as_json())}, "skipped": 5, "also": [1, 2], "a": '
+            f'{json.dumps(one.as_json() | {"future_field": {"nested": [1, 2]}})}, "b": {json.dumps(one.as_json())}}}, '
+            '"after": {"threads": 3}}')
+    data = text.encode("utf-8")
+    assert [(tid, item) for tid, item in bundle_items(data)] == whole_parse(data)
+    assert [tid for tid, _ in bundle_items(data)] == ["a", "b"]  # a thread named twice is its last copy, as in a parse
+
+
+def test_a_bundle_with_no_threads_gives_none_whatever_it_says():
+    for text in ('{"version": 1}', '{"version": 1, "threads": null}', '{"threads": {}}', '{"threads": []}',
+                 '{"threads": 0}', '{"threads": {"a": 5, "b": [1], "c": "text", "d": null}}'):
+        assert list(bundle_items(text.encode())) == []
+        assert whole_parse(text.encode()) == []
+
+
+@pytest.mark.parametrize("broken", [b"", b"not json", b"[]", b"5", b'"text"', b"null", b'{"threads": [1]}',
+                                    b'{"threads": "a"}', b'{"threads": 7}', b'{"threads": {"a": {"thread": "x"',
+                                    b'{"threads": {"a": {"nope": 1}}}', b'{"threads": {"a": }}', b'{"threads" {}}',
+                                    b'{"threads": {"a": 1,}}', b'{"threads": {"a": 1} "b": 2}', b'{"threads": {}} junk',
+                                    b'{"threads": {"a": {"thread": "x" "extraction": null}}}',
+                                    b'{"threads": {"a": {"thread": "bad \\q escape", "extraction": null, "entry": "e", '
+                                    b'"product_type": "p", "added_at": "x"}}}', b'\xff\xfe{"threads": {}}'])
+def test_a_bundle_that_cannot_be_read_cannot_be_read_item_by_item_either(broken):
+    for read in (whole_parse, lambda data: list(bundle_items(data))):
+        with pytest.raises((ValueError, TypeError, AttributeError)):
+            read(broken)
+
+
+class OneObject:
+    """A bucket that holds one object, the bundle (made-up: nothing leaves the test)."""
+
+    name = "made-up-bucket"
+
+    def __init__(self, data: bytes):
+        self.data = data
+
+    def lookup(self, name):
+        return True, "7"
+
+    def get(self, name, generation=None):
+        return self.data
+
+
+def reader_for(tmp_path, data: bytes) -> SiteReader:
+    (tmp_path / "library" / "threads").mkdir(parents=True)
+    return SiteReader(OneObject(data), tmp_path / "library", job=None)
+
+
+def test_a_bundle_that_is_bad_in_its_last_item_writes_nothing(tmp_path):
+    good = {f"t{n}": an_item(n) for n in (1, 2, 3)}
+    text = bundle_bytes(good).decode()[:-2] + ', "t9": {"nope": 1}}}'
+    reader = reader_for(tmp_path, text.encode())
+    assert reader.load_threads() is None
+    assert list((tmp_path / "library" / "threads").glob("*.json")) == [] and reader._bundle_generation is None
+
+
+def test_taking_a_bundle_in_writes_what_it_always_wrote_and_remembers_when_each_was_read(tmp_path):
+    items = {f"t{n}": an_item(n) for n in (4, 2, 7)} | {"t8": an_item(8, extraction=None)}
+    reader = reader_for(tmp_path, bundle_bytes(items))
+    assert reader.load_threads() == 3
+    assert sorted(p.stem for p in (tmp_path / "library" / "threads").glob("*.json")) == ["t2", "t4", "t7"]
+    assert (tmp_path / "library" / "extracted" / "t2.json").read_text(encoding="utf-8") == "{}"
+    assert (tmp_path / "library" / "threads" / "t4.json").read_text(encoding="utf-8") == items["t4"].thread
+    assert reader._read_on == {tid: datetime(2026, 11, 1, 10, tzinfo=UTC) for tid in ("t2", "t4", "t7")}
+    assert reader._written == {tid: hashlib.sha256((items[tid].thread + "\0{}").encode()).hexdigest()
+                               for tid in ("t2", "t4", "t7")}
+    assert reader.load_threads() == 0  # the same version of the bundle again: nothing to do
+
+
+def test_taking_in_a_bundle_never_holds_the_whole_of_it_parsed(tmp_path):
+    # Parsed whole, a bundle took about 7.8 times its size for a moment (the review measured +123 MiB for a typical 16.1
+    # MiB bundle and +414 MiB for the 300 largest threads, 52.8 MB). Item by item, only one item is parsed at a time, so
+    # what it needs besides the file itself is a small part of the file.
+    big = ("A “curly” 😀 sentence, with a comma and {braces} and \"quotes\". " * 40)[:2400]
+    items = {f"t{n:03d}": an_item(n, extraction=json.dumps({"mentions": [big] * 25}, ensure_ascii=False),
+                                  thread=json.dumps({"c": [big] * 25}, ensure_ascii=False)) for n in range(60)}
+    data = bundle_bytes(items)
+    assert len(data) > 3_000_000
+    reader = reader_for(tmp_path, data)
+    tracemalloc.start()
+    try:
+        before = tracemalloc.get_traced_memory()[0]
+        tracemalloc.reset_peak()
+        assert reader.load_threads() == 60
+        extra = tracemalloc.get_traced_memory()[1] - before
+        tracemalloc.reset_peak()
+        before = tracemalloc.get_traced_memory()[0]
+        parsed = Bundle.from_json(json.loads(data))
+        whole = tracemalloc.get_traced_memory()[1] - before
+        del parsed
+    finally:
+        tracemalloc.stop()
+    assert whole > 3 * len(data)  # what the old way took (the test's own yardstick)
+    assert extra < 0.25 * len(data)
+
+
+def test_write_threads_still_takes_a_bundle_made_in_memory(tmp_path):
+    folder = tmp_path / "library"
+    bundle = Bundle({"t2": an_item(2), "t1": an_item(1), "t3": an_item(3, extraction=None)})
+    assert write_threads(bundle, folder, written := {}) == 2
+    assert sorted(written) == ["t1", "t2"] and write_threads(bundle, folder, written) == 0
+
+
+def test_a_library_name_pool_is_a_local_one_and_leaves_no_word_for_ever(tmp_path):
+    # sys.intern made the words of the library's names permanent from Python 3.12 (a leak bounded by the vocabulary, but a
+    # leak). The index shares its words through its own pool instead, and the pool goes with the index.
+    from engine import group_products
+
+    assert "sys.intern(" not in open(group_products.__file__, encoding="utf-8").read()
+    word = "zxqvbn" + "wordthatisnew"
+    mentions = [group_products.ProductMention("t1", "c1", f"Lodge {word} skillet", "kitchen", "recommend"),
+                group_products.ProductMention("t2", "c2", f"Lodge {word} pan", "kitchen", "recommend")]
+    index = group_products.library_name_index(mentions)
+    words = [w for name in index._names["kitchen"] for w in name if w == word]
+    assert len(words) == 2 and words[0] is words[1]
+    assert sys.intern(word) is not words[0]  # the word in the index was never interned, so it is not the interned one
+
+
+# --- Saved checks kept in memory on the site ---
+
+URL1 = "https://www.reddit.com/r/BuyItForLife/comments/1kett01/which_kettle/c1aaaa/"
+SAYS = "My Zojirushi kettle has lasted 6 years and still boils perfectly."
+
+
+def kept_checker(tmp_path, in_memory: bool, fetch=None):
+    from engine.tests.test_live_check import Clock, FakeReddit
+
+    clock = Clock()
+    reddit = fetch if fetch is not None else FakeReddit()
+    live = LiveChecker(cache_dir=tmp_path / "cache", fetch=reddit, clock=clock, sleep=clock.sleep, in_memory=in_memory)
+    return live, clock, reddit
+
+
+def test_a_checker_that_keeps_checks_in_memory_makes_no_files_and_reads_reddit_once(tmp_path):
+    live, clock, reddit = kept_checker(tmp_path, in_memory=True)
+    assert live.check(URL1, SAYS).status == "ok"
+    assert live.check(URL1, SAYS).status == "ok" and len(reddit.asked) == 1
+    assert live.saved_count() == 1
+    assert not (tmp_path / "cache").exists()
+
+
+def test_checks_kept_in_memory_answer_every_question_as_checks_kept_in_files_do(tmp_path):
+    from engine.tests.test_live_check import FakeReddit, deleted_page, page
+
+    def run(root, in_memory):
+        live, clock, reddit = kept_checker(root, in_memory, FakeReddit())
+        out = [live.check(URL1, SAYS).status, live.saved_check(URL1, SAYS).status, live.saved_entry(URL1),
+               live.checked_at(URL1), live.last_read(URL1), live.saved_text(URL1), live.read_text(URL1)]
+        other = URL1.replace("c1aaaa", "c2bbbb")
+        live.keep_check(other, "kept another way", clock.now, "bright_data")
+        out += [live.saved_entry(other), live.last_read(other), live.checks_made("bright_data")]
+        reddit.answer = (200, page("different words"))
+        clock.now += timedelta(hours=49)  # past the 48 hours: read again
+        out += [live.check(URL1, SAYS).status, live.saved_entry(URL1), live.saved_entry(other), live.last_read(other)]
+        gone = URL1.replace("c1aaaa", "c3cccc")
+        reddit.answer = (200, deleted_page())
+        out += [live.check(gone, SAYS).status, live.read_if_free(gone), live.read_if_free(URL1)]
+        bundle, count = live._bundle_data()
+        out += [json.loads(bundle)["checks"], count]
+        return json.loads(json.dumps(out, default=str))
+
+    assert run(tmp_path / "files", False) == run(tmp_path / "memory", True)
+
+
+def test_a_bundle_from_the_bucket_is_taken_into_memory_and_the_site_writes_one_the_same_way(tmp_path):
+    from engine.tests.test_live_check_bucket import FakeGoogle
+    from engine.live_check import Bucket
+
+    google = FakeGoogle()
+    made = {}
+    for in_memory in (False, True):
+        live, clock, reddit = kept_checker(tmp_path / str(in_memory), in_memory)
+        live.bucket = Bucket(google.bucket, request=google, clock=lambda: 0.0)
+        entries = {f"{n:032x}.json": {"fetched_at": (clock.now - timedelta(hours=n)).isoformat(), "text": f"words {n}"}
+                   for n in (1, 20, 47, 50)}
+        google.objects.clear()
+        google.objects["live_check/bundle.json"] = (1001, json.dumps({"checks": entries}).encode())
+        assert live.load_bundle() == 3  # the 50-hour one is never taken
+        assert live.saved_count() == 3
+        assert live.save_bundle() == 3
+        made[in_memory] = json.loads(google.objects["live_check/bundle.json"][1])["checks"]
+    assert made[False] == made[True] and sorted(made[True]) == [f"{n:032x}.json" for n in (1, 20, 47)]
+    assert not (tmp_path / "True" / "cache").exists()
+
+
+def test_checks_older_than_48_hours_are_let_go_of_in_memory_whenever_the_bundle_is_made(tmp_path):
+    # Nothing ever uses a check over 48 hours old (check, last_read and the bundle all stop at MAX_AGE), so a long-lived
+    # server lets them go instead of keeping them for its whole life.
+    live, clock, reddit = kept_checker(tmp_path, in_memory=True)
+    for n, hours in enumerate((1, 30, 47, 49, 80)):
+        live.keep_check(URL1.replace("c1aaaa", f"c{n}xxxx"), f"words {n}", clock.now - timedelta(hours=hours), "bright_data")
+    live._keep("0" * 32 + ".json", b"not a check")
+    assert live.saved_count() == 6
+    _, count = live._bundle_data()
+    assert count == 3 and live.saved_count() == 3  # the 49-hour, the 80-hour and the one that is no check
+    clock.now += timedelta(hours=2)
+    assert live.forget_old_checks() == 1 and live.saved_count() == 2  # the 47-hour one, now 49
+
+
+def test_checks_kept_as_files_are_not_let_go_of_by_the_bundle(tmp_path):
+    # The daily job's folder and Noemi's computer's: nothing there is ever deleted by the program.
+    live, clock, reddit = kept_checker(tmp_path, in_memory=False)
+    live.keep_check(URL1, "words", clock.now - timedelta(hours=80), "bright_data")
+    live._bundle_data()
+    assert len(list((tmp_path / "cache").glob("*.json"))) == 1
+    assert live.forget_old_checks() == 0 and len(list((tmp_path / "cache").glob("*.json"))) == 1
+
+
+def test_a_saved_check_in_memory_takes_a_fraction_of_the_page_a_file_takes_on_cloud_run(tmp_path):
+    # On Cloud Run the disk is memory and a file takes whole 4 KiB pages. A check is about 300 bytes of words.
+    live, clock, reddit = kept_checker(tmp_path, in_memory=True)
+    words = "a comment of about three hundred characters " * 7
+    tracemalloc.start()
+    try:
+        before = tracemalloc.get_traced_memory()[0]
+        for n in range(5000):
+            live.keep_check(URL1.replace("c1aaaa", f"c{n:06d}"), words[:300], clock.now, "bright_data")
+        used = tracemalloc.get_traced_memory()[0] - before
+    finally:
+        tracemalloc.stop()
+    assert live.saved_count() == 5000
+    assert used / 5000 < 1024  # under a quarter of the 4,096 a file's page takes
+
+
+def test_the_public_site_with_a_bucket_keeps_its_checks_in_memory_and_nothing_else_does(tmp_path):
+    from engine import web
+    from engine.live_check import BUCKET_VAR
+
+    on_cloud = web.site_live_checker(True, {BUCKET_VAR: "a-bucket"})
+    assert on_cloud.saved_count() == 0 and on_cloud._memory is True
+    for public, environ in ((True, {}), (False, {BUCKET_VAR: "a-bucket"}), (False, {}), (True, {BUCKET_VAR: " "})):
+        assert web.site_live_checker(public, environ)._memory is False  # this machine's folder, as always
+
+
+def test_the_image_limits_glibcs_memory_arenas_to_two():
+    # Many threads (8 answers at once, the ping's reads, the open model's) each get their own malloc arena on Linux, and
+    # memory freed in one is seldom handed back. The review could not measure it on a Mac, and two arenas is the usual
+    # setting for a Python server of this kind.
+    from pathlib import Path
+
+    docker = (Path(__file__).resolve().parents[2] / "deploy" / "cloudrun" / "Dockerfile").read_text(encoding="utf-8")
+    assert "MALLOC_ARENA_MAX=2" in docker.split("RUN mkdir -p /home/user/app")[0]
+
+
+# --- The expressions made for each product type are kept for the answers' types only ---
+#
+# The soak's creep was not fragmentation. The compiled expression that finds a type's names inside the names of the other
+# types of its category (sources._inside_pattern) is 549 KB for each of the general category's 347 types, and a `cache`
+# kept one for every type ever asked about: 31 MB after getting ready, 153 MB after a soak that touched 338 types, up to
+# 196 MB for all 446. Two more were the same (_community_covers up to 268 MB for all types, though few are asked) and
+# _covering_pattern and _covering_phrases (13 and 14 MB). A visitor's own words for a type the open model names add an
+# entry each, so a long-lived server only ever grew. The answers' own memory keeps ANSWERS_KEPT_TYPES types, so these do.
+
+@pytest.mark.parametrize("name", ["_inside_pattern", "_community_covers", "_covering_pattern", "_covering_phrases"])
+def test_what_is_made_for_each_product_type_of_a_big_category_is_kept_for_the_answers_types_only(name):
+    from engine import config, sources
+
+    assert getattr(sources, name).cache_info().maxsize == config.ANSWERS_KEPT_TYPES == 64
+
+
+def test_a_type_asked_after_its_expression_was_let_go_gets_the_same_expression():
+    from engine import config, sources
+    from engine.query import PRODUCT_TYPES
+
+    general = [p for p in PRODUCT_TYPES if p.category == "general"][:config.ANSWERS_KEPT_TYPES + 6]
+    assert len(general) == config.ANSWERS_KEPT_TYPES + 6
+    makers = {"_inside_pattern": lambda p: sources._inside_pattern(p.name, p.category),
+              "_covering_pattern": lambda p: sources._covering_pattern(p.name),
+              "_community_covers": lambda p: sources._community_covers(p.name),
+              "_covering_phrases": lambda p: sources._covering_phrases(p.name)}
+    for name, make in makers.items():
+        getattr(sources, name).cache_clear()
+        first = {p.name: make(p) for p in general}
+        assert getattr(sources, name).cache_info().currsize == config.ANSWERS_KEPT_TYPES  # the first six were let go
+        re.purge()  # re's own cache of 512 expressions turns over in a few answers on the site
+        for p in general[:6]:
+            again = make(p)
+            if hasattr(again, "pattern"):
+                assert again is not first[p.name] and (again.pattern, again.flags) == (first[p.name].pattern, first[p.name].flags)
+            else:
+                assert again == first[p.name]  # a frozenset, or None
+        last = general[-1]
+        assert make(last) is first[last.name] or first[last.name] is None or not hasattr(first[last.name], "pattern")
+
+
+def test_free_words_for_a_type_cannot_grow_the_expressions_for_ever():
+    # A type the open model names in its own words has no entry of the taxonomy's, and each new one was a new expression.
+    from engine import config, sources
+
+    sources._inside_pattern.cache_clear()
+    for n in range(config.ANSWERS_KEPT_TYPES * 3):
+        sources._inside_pattern(f"made up type number {n}", "general")
+    assert sources._inside_pattern.cache_info().currsize == config.ANSWERS_KEPT_TYPES

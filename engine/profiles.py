@@ -286,7 +286,7 @@ class CompactProfileStore(ProfileStore):
         return value
 
     def _read_only(self, *args, **kwargs):
-        raise TypeError("the compact profile store is read only; use ProfileStore to change the library's profiles")
+        raise TypeError("the compact profile store is read only. Use ProfileStore to change the library's profiles")
 
     put_user = put_flair = keep_only = save = _read_only
 

@@ -96,7 +96,7 @@ def load_threads(folder: Path, skip_broken: bool = False, problems: list[str] | 
 
     Any problem raises GoldSetError with the full list. With `skip_broken` (answers, 11 Oct 2026: one bad file had
     stopped every answer), a file with a problem is left out instead and its problems are added to `problems`, for the
-    caller to report; a missing folder still raises. `each` (5 Nov 2026) is told every thread as soon as it is read, so the
+    caller to report. A missing folder still raises. `each` (5 Nov 2026) is told every thread as soon as it is read, so the
     kept library can make each smaller (engine/compact.py) while the rest are still being read."""
     found: list[str] = []
     broken: set[str] = set()

@@ -215,8 +215,8 @@ def test_the_site_reads_ahead_within_a_third_and_a_bit_of_its_own_free_tier():
     # 62,496 vCPU-seconds a month (35% of the site's 180,000 free, no longer under a third) and, at 4 GiB, 249,984
     # GiB-seconds (69% of 360,000, no longer 60%). Still free, with 65% of the vCPU-seconds and 31% of the GiB-seconds left
     # for answering visitors.
-    # Changed on purpose 5 Nov 2026 (the site-memory builder; Noemi, 5 Nov 2026: "Let's do A"): the site runs at 2 GiB again,
-    # its memory bounded (engine/tests/test_site_memory.py; DEPLOY.md, The site's memory), so reading ahead bills at most
+    # Changed on purpose 5 Nov 2026 (the site-memory builder, Noemi's "Let's do A" of 5 Nov 2026): the site runs at 2 GiB again,
+    # its memory bounded (engine/tests/test_site_memory.py and DEPLOY.md, The site's memory), so reading ahead bills at most
     # 124,992 GiB-seconds a month (34.7% of 360,000, where 4 GiB billed 249,984, 69%), which frees the site's free GiB-seconds
     # for answering visitors and for reading on demand to be doubled later. Its vCPU-seconds are as they were.
     assert gib == 2

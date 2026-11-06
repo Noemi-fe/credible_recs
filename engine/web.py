@@ -526,7 +526,7 @@ class RememberedAnswers(dict):
                 self._let_go(key)
 
     def _let_go(self, newest) -> None:
-        """Lets go of answers until the size fits: first those whose time is up, then the oldest; never `newest`."""
+        """Lets go of answers until the size fits. First those whose time is up, then the oldest, and never `newest`."""
         now = _clock()
         for key in [key for key, (until, _) in dict.items(self) if now >= until and key != newest]:
             self._bytes -= self._size_of(dict.pop(self, key))
@@ -556,7 +556,7 @@ class RememberedAnswers(dict):
 
 # Answers already worked out, by (request, library folder, region), each until its time is up (_keep_seconds). Per region
 # since 24 Oct 2026: the lines of a price and of its availability differ by region, so each region's answer is its own.
-_answers = RememberedAnswers()  # key -> (kept until, on _clock; the answer)
+_answers = RememberedAnswers()  # key -> (kept until, on _clock, and the answer)
 # How long a remembered answer is kept at most before it is worked out again, its quotes checked live once more (12 Oct
 # 2026): well within the 48 hours Reddit content may be kept, and short enough that a comment deleted today leaves the
 # answers by tomorrow. Chosen by Claude, reported to Noemi. Since 17 Oct 2026 also never past the moment its oldest
@@ -1812,6 +1812,18 @@ def _options(argv: list[str]) -> tuple[int, Path] | None:
     return port, library_dir
 
 
+def site_live_checker(public: bool, environ=os.environ):
+    """The live checker the server uses (5 Nov 2026). On the public site with a live checks' bucket, which is the site on
+    Cloud Run, the saved checks are kept in memory: the disk there is memory and a file takes a 4 KiB page for about 300
+    bytes of words (engine/live_check.py, _MemoryChecks). Everywhere else, Noemi's computer included, they are files in
+    this machine's folder, as always."""
+    from engine.live_check import BUCKET_VAR
+    from engine.pipeline import live_checker
+
+    on_cloud = public and bool((environ.get(BUCKET_VAR) or "").strip())
+    return live_checker(in_memory=True) if on_cloud else live_checker()
+
+
 def main(argv: list[str]) -> int:
     global profiles, live, store, on_demand, read_ahead
     public = "--public" in argv
@@ -1838,9 +1850,7 @@ def main(argv: list[str]) -> int:
     from engine.pipeline import cached_profiles
 
     profiles = cached_profiles()
-    from engine.pipeline import live_checker
-
-    live = live_checker()
+    live = site_live_checker(public)
     if getattr(live, "bucket", None) is not None:  # the live site: it reads ahead (engine/read_ahead.py)
         from engine.read_ahead import ReadAhead
 

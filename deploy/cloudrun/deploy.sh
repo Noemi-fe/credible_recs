@@ -89,10 +89,11 @@ if [ "$ON_DEMAND" = on ]; then on_demand_bucket; fi
 # 3. The site: public, one server at most, none when idle (the free tier).
 #    On Cloud Run's second-generation environment (14 Oct 2026, measured: getting ready warmed all 65 requests in 40.9 s
 #    there, against 19 of 65 in 122 s on the first generation, whose sandbox makes the engine's many small file reads
-#    slow); same price. Memory (5 Nov 2026, Noemi's "Let's do A"): 2 GiB, where it was 4 GiB from 15 Oct 2026 as a stopgap. The
-#    site's memory is bounded now (engine/tests/test_site_memory.py) and its worst case on Noemi's computer is 1,449 MB, 70.7%
-#    of 2 GiB where 80% is kept free (deploy/cloudrun/DEPLOY.md, The site's memory): watch Cloud Monitoring's memory for the
-#    first day after this deploy. First the threads read on demand come into
+#    slow), the same price. Memory (5 Nov 2026, Noemi's "Let's do A"): 2 GiB, where it was 4 GiB from 15 Oct 2026 as a stopgap.
+#    The site's memory is bounded now (engine/tests/test_site_memory.py). On Noemi's computer its highest in the review's
+#    worst cases was 1,584 MiB, 77.4% of 2 GiB, where 80% is the ceiling (deploy/cloudrun/DEPLOY.md, The site's
+#    memory). Linux is not measured, so watch Cloud Monitoring's memory for the first day and week after this deploy and use
+#    `--memory 3Gi` if it passes 1.6 GiB. First the threads read on demand come into
 #    data/library (through gcloud's sign-in), so the image holds them; when that fails they stay in the bucket, where
 #    the site finds them as it gets ready.
 if [ "$ON_DEMAND" = on ]; then
@@ -158,9 +159,9 @@ rm -rf "$(dirname "$BUNDLE")"
 #    ~2,000 threads; working out the 486 requests peaked at 2.97 GB with the model, 2.25 GB without, on Noemi's computer;
 #    the rules place 484 of them, so the model isn't loaded). 2 GiB again since 5 Nov 2026 (the site-memory builder,
 #    Noemi's "Let's do A"): the library's objects take about a third less memory now, so the plan run for 559 requests over
-#    2,748 threads peaked at 1,092 MB on Noemi's computer (1,410 MB before) and the job's own peak on Cloud Run was 1.35
-#    GiB of its 3 on 4 Nov 2026: about 1.05 GiB is 53% of 2 GiB, inside the 80% kept free (deploy/cloudrun/DEPLOY.md, The
-#    site's memory). Its GiB-seconds fall by a third.
+#    2,748 threads peaked at 913 MB on Noemi's computer (1,410 MB before the change). The job's own peak on Cloud Run
+#    was 1.47 GiB of its 3 at most since 16 Oct 2026 (1.35 GiB on 4 Nov), which is 73.5% of 2 GiB before the saving, so
+#    2 GiB is inside the 80% ceiling (deploy/cloudrun/DEPLOY.md, The site's memory). Its GiB-seconds fall by a third.
 #    Its one secret is the Bright Data key, which the account it runs as may read (when the secret is there).
 if [ "$PRECHECK_BRIGHT_DATA" = on ]; then
     $GCLOUD secrets add-iam-policy-binding bright-data-key --project "$PROJECT" \

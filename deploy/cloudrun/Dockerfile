@@ -19,6 +19,11 @@ ENV HOME=/home/user \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
+# Two malloc arenas at most (5 Nov 2026, the site's memory review): on Linux every thread that allocates gets an arena of
+# its own and memory freed in one is seldom given back, and the site runs 8 answers, the ping's reads and the open model's
+# threads at once. Not measurable on a Mac, so read Cloud Monitoring's memory after the first deploy (DEPLOY.md, The site's
+# memory). The daily jobs run this image too and are not slowed by it.
+ENV MALLOC_ARENA_MAX=2
 # Made by the user itself: a WORKDIR Docker creates belongs to root, and the install below writes into it.
 RUN mkdir -p /home/user/app
 WORKDIR /home/user/app

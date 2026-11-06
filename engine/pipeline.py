@@ -3301,13 +3301,14 @@ def _writer(comment: Comment) -> str | None:
     return comment.author.name.lower() if comment.author is not None else None
 
 
-def live_checker():
+def live_checker(**settings):
     """The live check of shown quotes through Reddit's embed page (engine/live_check.py), for real answers: checks are
     kept in this machine's folder, and in the bucket CREDIBLE_RECS_LIVE_CACHE_BUCKET names when it is set (the live
-    site, which shares it with the daily pre-check, engine/precheck.py; 13 Oct 2026)."""
+    site, which has shared it with the daily pre-check, engine/precheck.py, since 13 Oct 2026). `settings` go to the checker
+    (checker_from_env), such as `in_memory` (the public site on Cloud Run, 5 Nov 2026)."""
     from engine.live_check import checker_from_env
 
-    return checker_from_env()
+    return checker_from_env(**settings)
 
 
 def cached_profiles() -> StoredProfiles:
