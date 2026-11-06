@@ -407,6 +407,25 @@ WORTH_NOTE_BAR_FIRST = "The first {n} meet the bar for a pick ({rule}) but rank 
 WORTH_NOTE_BAR_REST = "{voices} each: less evidence than a pick needs."
 WORTH_NOTE_BAR_REST_STANDOUT = ("{voices} each, or one comment that stands out in its thread: less evidence than a "
                                 "pick needs.")
+# A hair product there (Noemi's decision 2 of 6 Nov 2026: never a pick in a face-makeup answer; listed under Also worth
+# a look with its note, Claude's call): it meets the bar but can outscore the third pick, so it isn't one more product
+# that "ranks below the top 3" (round 3's rules review). Its row is tagged HAIR_PRODUCT_TAG instead of MEETS_BAR, and
+# the note says why it isn't a pick: WORTH_NOTE_BAR_HAIR when every item meeting the bar is one, else
+# WORTH_NOTE_BAR_HAIR_OTHERS. {head} is how many meet the bar (WORTH_HEAD_...), {end} "." or "; then {rest}". Wording
+# Claude's (6 Nov 2026, round 3's fixer).
+HAIR_PRODUCT_TAG = "A hair product, never a makeup pick"
+WORTH_HEAD_ONE = "It meets"
+WORTH_HEAD_EACH = "Each meets"
+WORTH_HEAD_FIRST_ONE = "The first meets"
+WORTH_HEAD_FIRST = "The first {n} meet"
+WORTH_NOTE_BAR_HAIR = "{head} the bar for a pick ({rule}), but {hair}{end}"
+WORTH_NOTE_BAR_HAIR_OTHERS = "{head} the bar for a pick ({rule}); {hair}, and {others} below the top {picks}{end}"
+HAIR_NEVER_ONE = "a hair product is never a makeup pick"
+HAIR_NEVER_MANY = "hair products are never makeup picks"
+HAIR_THE_ONE = "the hair product is never a makeup pick"
+HAIR_THE_MANY = "the hair products are never makeup picks"
+OTHERS_ONE = "the other ranks"
+OTHERS_MANY = "the others rank"
 # One-line summaries (Noemi's decision 4 of 13 Oct 2026; wording decided by Claude, the note approved by Noemi, 19 Oct
 # 2026): shown under a pick's name as "In short: <summary>", with the note saying it is ours and not a quote.
 SUMMARY_LABEL = "In short:"
@@ -622,6 +641,10 @@ class WorthALook:
     link: ShownLink | None = None  # as a pick's (15 Oct 2026)
     image: ShownImage | None = None
     current_model: ShownCurrentModel | None = None  # as a pick's (26 Oct 2026)
+    # True for a hair product in a face-makeup answer (Noemi's decision 2 of 6 Nov 2026; engine.rank.ProductScore.
+    # pickable): never a pick, whatever its score, so tagged HAIR_PRODUCT_TAG instead of MEETS_BAR (6 Nov 2026, round
+    # 3's fixer). False for every other item.
+    hair_product: bool = False
 
 
 @dataclass
@@ -632,6 +655,10 @@ class SkipItem:
     quotes: list[ShownQuote]  # credible warnings, at least 1
     form: str | None = None  # as a pick's
     prescription: str | None = None  # as a pick's (14 Oct 2026)
+    # Its product notes ("Note: ...", engine.product_notes), as a pick's cautions show them: Noemi's decision 1 of 6 Nov
+    # 2026, a note shows wherever its product is shown. Only those notes: a pick's other cautions say how well it suits
+    # the request, which a product to skip needn't.
+    cautions: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -699,8 +726,13 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
                  other_types_threads: Collection[str] = (), region: str = DEFAULT_REGION,
                  today: date | None = None,
                  leading: "Mapping[str, LeadingModel] | None" = None,
-                 current: "Mapping[str, CurrentModel] | None" = None) -> Answer:
+                 current: "Mapping[str, CurrentModel] | None" = None,
+                 product_notes: Mapping[str, list[str]] | None = None) -> Answer:
     """The answer for one request, from its ranking and the current text of its comments ({comment id: body}).
+
+    `product_notes` is each product's checked notes ({product key: [note]}, engine.product_notes; they are among its
+    `cautions` too): a Skip item shows them, and no other caution (Noemi's decision 1 of 6 Nov 2026: a note shows
+    wherever its product is shown).
 
     `prices` is each product's price check ({product key: engine.prices.PriceCheck}), made by the pipeline; a product
     with none shows PRICE_UNKNOWN and AVAILABILITY_UNKNOWN. `care` is each product's care tips ({product key:
@@ -802,6 +834,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     for item in skip:
         item.form = forms.get(item.product_key)
         item.prescription = _prescription(item.product_key, prescription)
+        item.cautions = [CAUTION.format(reason=note) for note in (product_notes or {}).get(item.product_key, [])]
     look_for = _look_for(ranking, check, product_type, unsuited_kinds, request, asks, [pick.name for pick in picks],
                          forms_asked, needs, _picks_names(ranking, picks),
                          _Once(lambda: _lines_products(ranking, [*picks, *worth], product_type)),
@@ -812,6 +845,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
     standout_pick = any(pick.product_key in standing_out for pick in picks)
     standout_item = any(item.product_key in standing_out for item in worth)
     bar_items = sum(item.meets_bar for item in worth)  # past the picks, shown first (Noemi's decision 4, 15 Oct 2026)
+    hair_items = sum(item.meets_bar and item.hair_product for item in worth)  # never picks (6 Nov 2026)
     for pick in picks:  # last, so the line's name is what every rule above read (26 Oct 2026)
         if (lead := (leading or {}).get(pick.product_key)) is not None:
             _titled_by_its_model(pick, lead, check, prices, pages, asks, needs, product_type, region)
@@ -831,7 +865,8 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
         quotes_dropped=check.dropped,
         care_note=care_note,
         worth_a_look=worth,
-        worth_note=_worth_note(len(picks), standout_item, standout_pick, bar_items, len(worth)) if worth else None,
+        worth_note=(_worth_note(len(picks), standout_item, standout_pick, bar_items, len(worth), hair_items)
+                    if worth else None),
         ingredient=ingredient,
         ingredient_note=_ingredient_note(product_type, ingredient, forms_asked),
         title=answer_title(product_type, ingredient),
@@ -1038,6 +1073,7 @@ def _worth_items(ranking: RankingResult, check: "_QuoteCheck", prices: Mapping[s
             summary=_summary(product, _summary_of(product, summaries), check),
             voices=_voices(product, twice=meets_bar),
             meets_bar=meets_bar,
+            hair_product=not product.pickable,  # Noemi's decision 2 of 6 Nov 2026: tagged so (round 3's fixer)
         ))
     return items
 
@@ -1082,18 +1118,22 @@ def _mid_sentence(quote: str, body: str | None) -> bool:
 
 
 def _worth_note(picks: int, standout_item: bool = False, standout_pick: bool = False, bar_items: int = 0,
-                items: int = 0) -> str:
+                items: int = 0, hair_items: int = 0) -> str:
     """The note under "Also worth a look": how much less support its products have than a pick; with an item shown
     thanks to a comment standing out in its thread (`standout_item`, 14 Oct 2026), that it can be one such comment, and
     with such a pick (`standout_pick`) the rule says how it meets the bar. With `bar_items` of its `items` meeting the
     bar on their own but ranked below the top 3 (Noemi's decision 4 of 15 Oct 2026), shown first, it says that first,
-    and the bar they meet (WORTH_NOTE_BAR...)."""
+    and the bar they meet (WORTH_NOTE_BAR...). With `hair_items` of those a hair product (Noemi's decision 2 of 6 Nov
+    2026), it says a hair product is never a makeup pick rather than that it ranks below the top 3, which it may not
+    (WORTH_NOTE_BAR_HAIR...; 6 Nov 2026, round 3's fixer)."""
     voices = _plural(WORTH_A_LOOK_CREDIBLE, "credible voice")
     if bar_items:
         bar = dict(rule=RULE.format(mentions=MIN_CREDIBLE_MENTIONS, threads=MIN_THREADS), picks=PICKS_SHOWN)
+        rest = (WORTH_NOTE_BAR_REST_STANDOUT if standout_item else WORTH_NOTE_BAR_REST).format(voices=voices)
+        if hair_items:
+            return _worth_note_hair(bar_items, items, hair_items, rest, **bar)
         if bar_items == items:
             return (WORTH_NOTE_BAR_ONE if items == 1 else WORTH_NOTE_BAR_EACH).format(**bar)
-        rest = (WORTH_NOTE_BAR_REST_STANDOUT if standout_item else WORTH_NOTE_BAR_REST).format(voices=voices)
         if bar_items == 1:
             return WORTH_NOTE_BAR_FIRST_ONE.format(rest=rest, **bar)
         return WORTH_NOTE_BAR_FIRST.format(n=bar_items, rest=rest, **bar)
@@ -1102,6 +1142,24 @@ def _worth_note(picks: int, standout_item: bool = False, standout_pick: bool = F
     else:
         wording = WORTH_NOTE if picks else WORTH_NOTE_NO_PICKS
     return wording.format(voices=voices, rule=_rule(standout_pick))
+
+
+def _worth_note_hair(bar_items: int, items: int, hair_items: int, rest: str, rule: str, picks: int) -> str:
+    """The note under Also worth a look when `hair_items` of its `bar_items` meeting the bar are hair products (Noemi's
+    decision 2 of 6 Nov 2026): how many meet the bar, that a hair product is never a makeup pick, and that the others
+    rank below the top `picks`; then the rest (`rest`) when there are more `items`."""
+    if bar_items == items:
+        head = WORTH_HEAD_ONE if items == 1 else WORTH_HEAD_EACH
+    else:
+        head = WORTH_HEAD_FIRST_ONE if bar_items == 1 else WORTH_HEAD_FIRST.format(n=bar_items)
+    end = "." if bar_items == items else f"; then {rest}"
+    others = bar_items - hair_items
+    if not others:
+        return WORTH_NOTE_BAR_HAIR.format(head=head, rule=rule, end=end,
+                                          hair=HAIR_NEVER_ONE if hair_items == 1 else HAIR_NEVER_MANY)
+    return WORTH_NOTE_BAR_HAIR_OTHERS.format(head=head, rule=rule, end=end, picks=picks,
+                                             hair=HAIR_THE_ONE if hair_items == 1 else HAIR_THE_MANY,
+                                             others=OTHERS_ONE if others == 1 else OTHERS_MANY)
 
 
 # --- One-line summaries (Noemi's decision 4 of 13 Oct 2026) ---
@@ -4171,7 +4229,8 @@ def without_unread(answer: Answer, comment_ids: set[str], standing_out: Collecti
     if len(worth) < len(answer.worth_a_look):
         note = _worth_note(len(answer.picks), any(item.product_key in standing_out for item in worth),
                            any(pick.product_key in standing_out for pick in answer.picks),
-                           sum(item.meets_bar for item in worth), len(worth))
+                           sum(item.meets_bar for item in worth), len(worth),
+                           sum(item.meets_bar and item.hair_product for item in worth))
     return replace(answer, picks=[summary_read(pick) for pick in answer.picks], worth_a_look=worth,
                    worth_note=note if worth else None)
 
@@ -4233,6 +4292,7 @@ def render_markdown(answer: Answer) -> str:
             form = f" ({FORM_LABEL.lower()}: {item.form})" if item.form else ""
             lines.append(f"- **{item.name}**{form}**:** {item.reason}")
             lines += [f"  - {item.prescription}"] if item.prescription else []
+            lines += [f"  - {caution}" for caution in item.cautions]  # its product notes (6 Nov 2026)
             lines += [f"  - {_render_quote_inline(quote)}" for quote in item.quotes]
         lines.append("")
     if answer.care_note:
@@ -4294,7 +4354,8 @@ def _render_worth(item: WorthALook) -> list[str]:
     """An "Also worth a look" item: its name, MEETS_BAR when it meets the picks bar (15 Oct 2026), summary, reason,
     price (when known, or with a budget), where it is sold (when checked), cautions, quotes and, only when credible voices
     warn against it, its downsides."""
-    lines = [f"### {item.name}", ""] + ([f"**{MEETS_BAR}**", ""] if item.meets_bar else [])
+    tag = HAIR_PRODUCT_TAG if item.hair_product else MEETS_BAR if item.meets_bar else None  # 6 Nov 2026
+    lines = [f"### {item.name}", ""] + ([f"**{tag}**", ""] if tag else [])
     lines += _render_form(item.form) + _render_summary(item.summary) + [item.reason, ""]
     if item.price.amount is not None or item.price.budget_note:  # lighter than a pick: what is known, or the budget's
         lines += _render_price(item.price)

@@ -1019,7 +1019,8 @@ def _rest(queues: QueueStore, until: datetime, why: str, report: RunReport) -> N
 
 def _finish_complete(queues: QueueStore, now, report: RunReport) -> bool:
     """Marks done every waiting request whose threads were read and are all in the bundle with their extraction (a
-    thread let go after failing counts for nothing); whether any was."""
+    thread let go after failing counts for nothing, and so does one of Noemi's removed threads, config.REMOVED_THREADS:
+    round 3's fixer, 6 Nov 2026); whether any was."""
     bundle_found = BundleStore(queues.bucket).read()
     if bundle_found is None:
         return False
@@ -1031,7 +1032,8 @@ def _finish_complete(queues: QueueStore, now, report: RunReport) -> bool:
         for entry in queue.waiting():
             if entry.read_at is None:
                 continue
-            mine = [tid for tid, item in bundle.threads.items() if item.entry == entry.key]
+            mine = [tid for tid, item in bundle.threads.items()
+                    if item.entry == entry.key and tid not in REMOVED_THREADS]
             if all(bundle.threads[tid].extraction is not None for tid in mine):
                 entry.finish(now(), found=len(mine), note=f"{len(mine)} threads read and extracted")
                 done.append(entry.product_type)

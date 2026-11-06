@@ -202,17 +202,22 @@ The JSON for /api/answer (200):
                                                                one, which most are
                            }],
                  "look_for": [{"kind", "advice", "quote": {same shape}}],
-                 "skip": [{"product_key", "name", "reason", "quotes": [...], "prescription"}],
+                 "skip": [{"product_key", "name", "reason", "quotes": [...], "prescription", "cautions"}],
+                                  "cautions": its product notes ("Note: ..."), as a pick's, and no other caution
+                                  (Noemi's decision 1 of 6 Nov 2026); [] when it has none
                  "care_note": [{"tip", "quote"}],   care tips about the kind of product, shown once at the end
                                                     (Noemi, 11 Oct 2026); [] when there are none
                  "worth_a_look": [{"product_key", "name", "reason", "quotes", "downsides", "downsides_share",
                                    "disagreement", "score", "breakdown", "price", "availability", "cautions",
-                                   "summary", "voices", "range", "prescription", "meets_bar", "link", "image"}],
+                                   "summary", "voices", "range", "prescription", "meets_bar", "link", "image",
+                                   "hair_product"}],
                                   "Also worth a look" (Noemi's decision 2, 13 Oct 2026): up to 3 products, shown apart
                                   after the picks and never among them: first those that meet the picks bar but rank
                                   below the top 3, best first ("meets_bar": true, her decision 4 of 15 Oct 2026; the
                                   page tags them with the wording's "meets_bar"), then those with 2 credible
-                                  recommendations across at least 2 threads, best first ("meets_bar": false); the same
+                                  recommendations across at least 2 threads, best first ("meets_bar": false); a hair
+                                  product in a face-makeup answer, never a pick ("hair_product": true, Noemi's decision
+                                  2 of 6 Nov 2026), is tagged with the wording's "hair_product" instead; the same
                                   shapes as a pick's fields, with 1 or 2 quotes, and downsides only when credible voices
                                   warn against it; [] when there are none
                  "worth_note": "2 credible voices each: ...",   the words under its heading, or null without items
@@ -1255,6 +1260,8 @@ def answer_wording() -> dict[str, str]:
         "worth_heading": wording.WORTH_HEADING,
         # The tag of an item there that meets the picks bar but ranks below the top 3 (Noemi's decision 4, 15 Oct 2026).
         "meets_bar": wording.MEETS_BAR,
+        # Its tag instead when it is a hair product in a face-makeup answer, never a pick (6 Nov 2026).
+        "hair_product": wording.HAIR_PRODUCT_TAG,
         # One-line summaries (Noemi, 13 Oct 2026): "In short:" and the note saying it is ours, not a quote.
         "summary_label": wording.SUMMARY_LABEL,
         "summary_about_label": wording.SUMMARY_ABOUT_LABEL,  # a model-titled pick's, about its line (26 Oct 2026)

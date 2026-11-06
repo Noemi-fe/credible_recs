@@ -699,7 +699,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     result.ranked_as_lines = [g.name for g in kept_groups if g.key in lines]
     result.line_keys = {g.key for g in kept_groups if g.key in lines}
     _note_other_names(kept_groups, cautions)
-    _note_products(kept_groups, cautions, query.category)  # checked facts beside the quotes (5 Nov 2026)
+    # Checked facts beside the quotes (5 Nov 2026); a Skip item shows them too, and no other caution (6 Nov 2026).
+    product_notes = _note_products(kept_groups, cautions, query.category)
     # What the answer says beyond the ranking, as write_answer's keywords: about the request's active ingredients (13 Oct
     # 2026), which products its facts say are prescription-only in the UK (Noemi's decision 5 of 14 Oct 2026), which
     # comments' words are Reddit's embed page's text (found edited, they kept Reddit's current text: Noemi's decision 3
@@ -711,7 +712,8 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
                "prescription": _prescription_only(kept_groups, formulas), "flattened": flattened_comments(threads),
                "pages": _pages(kept_groups, named_before, query, product_pages, types),
                "other_types_threads": _threads_about_another_type(checked, threads, query), "region": region,
-               "today": today}  # `today`: the price label's day (26 Oct 2026, the bestfor builder)
+               "today": today,  # `today`: the price label's day (26 Oct 2026, the bestfor builder)
+               "product_notes": product_notes}  # shown under Skip these too (Noemi's decision 1 of 6 Nov 2026)
     kind_mentions = _kind_mentions(checked)
     kinds = group_kinds(kind_mentions, kept_groups, query.category, query.product_type or "")
     with_a_kind = kinds_of(kinds)
@@ -2519,15 +2521,20 @@ def _note_other_names(groups: list[ProductGroup], cautions: dict[str, list[str]]
 
 
 def _note_products(groups: list[ProductGroup], cautions: dict[str, list[str]], category: str | None,
-                   notes: list[ProductNote] | None = None) -> None:
+                   notes: list[ProductNote] | None = None) -> dict[str, list[str]]:
     """Adds each product's checked notes (engine.product_notes, data/product_notes.json: "NARS reformulated its powder
     blushes in 2024...") to its notes, shown under it as CAUTION (5 Nov 2026, the makeup fix round, part 2). Shown only:
-    a note never changes which products are shown."""
+    a note never changes which products are shown. Returns them alone, {product key: [note]}, for Skip these, which shows
+    a product's notes and none of its other cautions (Noemi's decision 1 of 6 Nov 2026: a note shows wherever its
+    product is shown)."""
     notes = load_product_notes() if notes is None else notes
+    found: dict[str, list[str]] = {}
     for group in groups:
         for text in notes_for(group.name, category or "", notes):
+            found.setdefault(group.key, []).append(text)
             if text not in cautions.get(group.key, []):
                 cautions.setdefault(group.key, []).append(text)
+    return found
 
 
 # --- A brand pick steps aside for its own product (decided by Claude, 10 Oct 2026) ---

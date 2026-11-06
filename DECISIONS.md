@@ -2052,8 +2052,11 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   was checked by hand. The ones taken from comments are paraphrased with made-up text that tests the same thing
   (engine/answer.py's docstrings and comments, engine/config.py's comments, engine/tests/test_makeup_fixes.py,
   engine/tests/test_answer_shows.py, engine/tests/test_makeup_fix2.py and five example phrases in the notes of 4 and 5
-  Nov above); the rest are common English or product names. Fix 2's commit message (4e30f34) still holds the phrase and
-  can't be changed without a rebase: the orchestrator's call before the merge.
+  Nov above); the rest are common English or product names. (Corrected by round 3's fixer, from the rules review: this
+  note first said fix 2's commit message still held the phrase. It doesn't: the phrase is in two of that commit's
+  files, engine/answer.py's _bare_like docstring and engine/tests/test_makeup_fix2.py; c872326 takes it out of both, and
+  no other commit's files or message hold it. So the history rewrite before the merge must fold 4e30f34 into c872326,
+  or rewrite 4e30f34's files; rewording its message is not enough: the orchestrator's call.)
   (8) Corrected in round 3: fix 2's note above and its eval/RUNS.md row counted "Also worth a look" quotes changed in 3
   answers; it was 2 (bronzer and "moisturiser without niacinamide"), as the mascara answer's YSL item changed only its
   name.
@@ -2073,8 +2076,8 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   from before is kept in the round's scratch folder): 18 summaries written or rewritten, each passing `python -m
   engine.summaries check`: NARS Orgasm blush line and MAC Ruby Woo (each now tells the warnings (3) folds into it),
   ONE/SIZE's setting spray line (without the comment removed in (6)), Tower 28's concealer line (it cites the warning
-  it shows), 14 more from fix 2's fact-check list (each fixed as its finding said) and Marc Jacobs's bronzer (no
-  answer shows it). Givenchy's setting powder line stays without one: the downside its pick shows is filed under
+  it shows) and 14 more from fix 2's fact-check list (each fixed as its finding said), Marc Jacobs's bronzer among
+  them (no answer shows it; worded as a 19th by mistake at first, corrected by round 3's fixer). Givenchy's setting powder line stays without one: the downside its pick shows is filed under
   another name of the brand's powder, which is not one of the line's credible mentions, so no summary can cite it and
   one that left it out would contradict it (its share line reads "1 of 10" while its score breakdown counts no
   credible warning: the same shape as 34 items of main's own sweep, a downside shown from the line's other names; not
@@ -2091,7 +2094,8 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   sentences that ran close to one comment's own words (a test sentence about daily use in
   engine/tests/test_makeup_split.py and the "same experience" warning of engine/tests/test_answer_shows.py's skip
   test): both reworded with made-up text that tests the same thing (the tests pass unchanged otherwise). Commit
-  4e30f34's message still holds the phrase noted in (7).
+  4e30f34's files (not its message, as this note first said; corrected by round 3's fixer) still hold the phrase noted
+  in (7).
   (11) The integrator's final run (6 Nov 2026, 08:13 to 08:40 UTC), through the heavy lock on the live profile store
   (sha d78c2535f930 before and after every step), live checks off, TZ=UTC, on the committed code with the summaries of
   (9). Sweep of 295 answers (the same lists), no error: against the builder's sweep only summaries moved, in 13 makeup
@@ -2110,10 +2114,13 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   NARS Orgasm shows its three new-formula warnings and its note in both answers that show it; got2b's note shows in
   both brow answers; Becca's is shown nowhere. No hair product is among the picks of the 17 answers. `python -m
   engine.summaries check`: 912 entries, 663 fine, 249 with problems, fix 2's 249 older entries; none of a makeup type.
-  Whole suite, three times (before and after the two test sentences of (10), the last on the final commit): 7,276
+  Whole suite, three times (before and after the two test sentences of (10), the last on the final commit's code
+  before its message was amended, ending at 08:46:31 UTC, while e657ead was committed at 08:46:53; corrected by round
+  3's fixer: the rules review's own run on e657ead gave the same): 7,276
   passed and 1 failed, the unlabelled gold thread 1v40u3t (which fails on main too). Offline evaluation on a copy of
   the store: identical to fix 2's run in every number but the library's quote count, 93,773/94,276 to 93,768/94,271
-  (the five mentions of (6), all five found word for word, so the share is the same to six places); against main's
+  (the five mentions of (6), all five found word for word, so the share is the same to five places, 0.9946646 against
+  0.9946643; corrected by round 3's fixer, it said six); against main's
   last row (2 Nov), the same cells but two: the library's quotes found word for word, 99.60% to 99.47%, and quotes
   shown, 265 to 257 (all verified). The lower share is the library's, not this branch's code (engine/extract.py equals
   main's) and was already in the 4 Nov row, from the 3 Nov verification pass that rewrote kept comments: 99.41% of the
@@ -2128,6 +2135,76 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   orchestrator rewrites before the merge.
   Left for Noemi: whether a hair product under "Also worth a look" should carry the "Meets the bar for a pick" label
   (it does, as a product ranked below the picks does, though got2b's can never be a pick); cream blush losing its only
-  Skip item to a product it doesn't show. Left for the orchestrator: 4e30f34's message (7) and 92c823f's extra
-  trailer.
+  Skip item to a product it doesn't show. Left for the orchestrator: 4e30f34's files, which hold the phrase of (7) (fold
+  that commit into c872326 or rewrite its files: rewording its message is not enough; corrected by round 3's fixer, it
+  said the message), and 92c823f's extra trailer.
+  Round 3's fixer (6 Nov 2026, from 09:20 UTC; Claude: the rules review, the shopper review and the summary fact-check
+  of e657ead; Claude's technical calls, reported to Noemi; nothing pushed, merged or deployed). Inside the same bounds:
+  no scoring weight, picks bar, product type, told number or the 48-hour quote rule touched, engine/config.py unchanged,
+  the need-fit rule still off and data/product_notes.json unchanged. Tests in engine/tests/test_makeup_round3_fix.py (7
+  on made-up text, each failing on e657ead's code); two tests that list an "Also worth a look" item's fields
+  (engine/tests/test_web.py, engine/tests/test_answer_worth.py) changed on purpose with a dated comment, for its new
+  field.
+  (12) Claude's, the rules review's one blocking problem: (7), (10) and the last lines of (11) said a commenter's phrase
+  was still in fix 2's commit message. It was in two of that commit's files instead; the three sentences are corrected
+  above, and so is the orchestrator's task: fold 4e30f34 into c872326, or rewrite 4e30f34's files, before the merge.
+  Also corrected above, from the same review: the library's share found word for word is the same to five places, not
+  six (and in its eval/RUNS.md row); the 18 summaries of (9) were worded as 19; and the integrator's last suite run was
+  on the final commit's code before its message was amended.
+  (13) Claude's, wording (Noemi's decision (2) keeps a hair product out of the picks; the reviews found its label
+  untrue): got2b Glue Spiking Gel outscores the third brow gel pick, so neither the "Meets the bar for a pick" tag nor
+  "ranks below the top 3" was true of it. A hair product under Also worth a look is now tagged "A hair product, never a
+  makeup pick" instead (engine.answer.HAIR_PRODUCT_TAG; the API's worth items carry "hair_product", true only for such
+  an item; the page and the text answer show the tag), and the note under the heading says why it isn't a pick: in
+  brow gel and eyebrow gel, "Each meets the bar for a pick (...); the hair product is never a makeup pick, and the
+  others rank below the top 3." (engine.answer._worth_note_hair, every shape tested). Its place, score and product
+  note are unchanged. Measured: those two answers' note and tag change, and nothing else in the 295.
+  (14) Claude's, Noemi's decision (1) made general: a product note now shows under Skip these too (engine.pipeline.
+  _note_products returns the notes it adds; engine.answer.SkipItem.cautions holds them, and no other caution, as a
+  caution about fit to the request says nothing to a product to skip; the API's skip items carry "cautions", and the
+  page and the text answer show them). Measured: no Skip item of the 295 answers is a noted product, so nothing shown
+  changes today.
+  (15) Claude's, on-demand reading (the rules review): engine.on_demand._finish_complete no longer counts a removed
+  thread (config.REMOVED_THREADS) filed under a request in the bundle, in its count, its note or the wait for its
+  extraction.
+  (16) Claude's, summaries (data/library/summaries.json is outside git; written atomically, the file from before kept
+  in the round's scratch folder): 10 rewritten, each passing `python -m engine.summaries check` in every answer that
+  ranks its product, all writers cited in one summary different people. Kosas's concealer line: looks orange on fair
+  skin, not turns orange (the writer is too fair for the shade). L'Oréal Telescopic's line: no longer says it lifts
+  without clumping beside a shown downside that says the opposite, and now tells the waterproof version's removal
+  downside it shows. Natasha Denona's concealer line: now tells its two shown downsides (too thick; it burns for a
+  writer with eczema). Tower 28's concealer line: in proportion to its 71 credible voices for and 8 against, with the
+  sheer coverage a dark-circles reader needs to know. And six that gave one writer's words to a group, now told as
+  one writer's: Patrick Ta's blush line, Rare Beauty Soft Pinch Liquid Blush, Maybelline Super Lock Brow Glue, Too
+  Faced Chocolate Soleil, Huda Beauty's setting powder line (now also telling the cakey downside it shows) and
+  L'Oréal True Match. The first Rare Beauty rewrite cited a comment that the cream blush answer, which ranks it without
+  showing it, doesn't count, so the check flagged it; rewritten again before the final sweep. Measured: the 10 show in
+  14 places of 10 makeup answers; the check lists 912 entries, 663 fine and the same 249 older entries with problems
+  as before, none of a makeup type.
+  (17) Left, with why: quote choice (ONE/SIZE's three weakest quotes leading, Tower 28's shelf-life quotes, brand lists
+  leading Patrick Ta, NYX Epic Ink and a Cloud Paint quote, Maybelline's and Kosas Air Brow's first quotes): each needs
+  a general rule for which quote leads, which would move quotes in many answers outside makeup, so it is a measured
+  round of its own, not a quick fix; three tip labels in American spelling and the highlighter tip whose quote never
+  names glitter (the tips' names come from module 4's kinds, used in matching; respelling them is not display-only);
+  Milani's blush line's glitter downside, which no summary can cite (the comment is not one of the line's credible
+  mentions); Etude Fixing Tint, joined by module 4 with the glossy Glow Fixing Tint, and its summary's source quote
+  naming the glossy one (a grouping change, not a name fix); the uncited shown downsides of Laura Mercier's, Urban
+  Decay All Nighter's and Victoria Beckham's lines (covered in spirit, the fact-check said); and the earlier leftovers
+  (Rare Beauty's powder highlighter quote, the NYX Brow Glue Skip item's first quote, the fair-skin tip in plain
+  blush).
+  (18) The fixer's run, through the heavy lock on the live profile store (sha d78c2535f930 before and after every
+  step), live checks off, TZ=UTC. Sweep of 295 answers (the same lists), no error, against the integrator's final
+  sweep: only the hair tag and the note in brow gel and eyebrow gel, and the 10 summaries, differ; no pick, order,
+  score, Also worth a look or Skip item, quote, downside, share line, tip or message moved anywhere, and against main's
+  the 278 non-makeup answers' picks, order, scores, Also worth a look and Skip names are equal, the 10 blind-test
+  answers included. All 17 makeup answers give 3 picks; 99 of their 100 shown items show a summary (not Givenchy's
+  setting powder line, as before); non-makeup 628 of 1,212. Every quote shown, 8,251 (the summaries' cited quotes
+  included; 758 in the makeup answers, the 13 more being the rewritten summaries' sources), was found word for word in
+  its saved comment, checked outside the engine; none from r/MakeupRehab or the two removed threads. No hair product
+  is a pick, and no Skip item carries a note. Whole suite: 7,283 passed and 1 failed, the unlabelled gold thread
+  1v40u3t (which fails on main too). Offline evaluation on a copy of the store: every number identical to the
+  integrator's run, so eval/metrics.json is unchanged.
+  Left for Noemi, as before: whether she wants a hair product listed under Also worth a look at all (its label is
+  settled by (13)), and cream blush losing its only Skip item to the NARS line it ranks but doesn't show (her decision
+  spoke of a shown product; folding it for an unshown one too is Claude's reading).
   The scratch files of this round hold commenters' words and go to the Trash with the deletion rule.

@@ -150,10 +150,13 @@ def test_items_are_in_the_json_and_the_text():
     # Changed on purpose 26 Oct 2026 (the names builder; Noemi's decision 3): each item also has its "current_model",
     # the current model of a fast-moving tech product whose reviewed model a newer one replaced, or null
     # (engine/tests/test_current_models.py).
+    # Changed on purpose 6 Nov 2026 (round 3's fixer, Noemi's decision 2 of that day): each item also says whether it
+    # is a hair product in a face-makeup answer, tagged so instead of "meets_bar" ("hair_product";
+    # engine/tests/test_makeup_round3_fix.py).
     assert set(data["worth_a_look"][0]) == {"product_key", "name", "reason", "quotes", "downsides", "downsides_share",
                                            "disagreement", "score", "breakdown", "price", "availability", "cautions",
                                            "summary", "voices", "form", "range", "prescription", "meets_bar", "link",
-                                           "image", "current_model"}
+                                           "image", "current_model", "hair_product"}
     text = render_markdown(answer)
     assert f"## {wording.WORTH_HEADING}" in text and answer.worth_note in text
     assert text.index("Tojiro DP Gyuto") < text.index(wording.WORTH_HEADING) < text.index("Misono UX10")

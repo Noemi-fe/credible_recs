@@ -915,10 +915,13 @@ def test_also_worth_a_look_comes_through_in_the_json(tmp_path):
     # Changed on purpose 15 Oct 2026 (Noemi's decisions 2 and 3 of the late afternoon): an item also has its "link" and
     # "image", as picks do.
     # Changed on purpose 26 Oct 2026 (the names builder): an item also has its "current_model", as picks do.
+    # Changed on purpose 6 Nov 2026 (round 3's fixer, Noemi's decision 2 of that day): an item also says whether it is a
+    # hair product in a face-makeup answer ("hair_product"; engine/tests/test_makeup_round3_fix.py).
     assert set(data["answer"]["worth_a_look"][0]) == {"product_key", "name", "reason", "quotes", "downsides",
                                                      "downsides_share", "disagreement", "score", "breakdown", "price",
                                                      "availability", "cautions", "summary", "voices", "form", "range",
-                                                     "prescription", "meets_bar", "link", "image", "current_model"}
+                                                     "prescription", "meets_bar", "link", "image", "current_model",
+                                                     "hair_product"}
     assert data["answer"]["worth_a_look"][0]["meets_bar"] is False
 
 
