@@ -354,8 +354,8 @@ europe-west1 --project credible-picks`; its report (counts and product types, ne
 
 The job's limits, all in engine/config.py ("On-demand reading"): it starts no new reading after 15 minutes of a run and
 stops at 45; its runs read for at most 92,000 seconds a month since 6 Nov 2026 (50,000 before; then the queue rests until
-the 1st), which at 21 minutes a request is 73 requests a month (39 before; about twice that at the 11 minutes a request
-actually took on 25 Oct 2026) and is what limits the reading, within the free-tier guard (below); it makes at most 450 Gemini calls a day, at most 10 a minute (18 a day with Gemini 3.8 Flash, whose
+08:00 UTC on the 1st, Google's billing month, below), which at 21 minutes a request is 73 requests a month (39 before;
+about twice that at the 11 minutes a request actually took on 25 Oct 2026) and is what limits the reading, within the free-tier guard (below); it makes at most 450 Gemini calls a day, at most 10 a minute (18 a day with Gemini 3.8 Flash, whose
 free allowance is 20 a day and 5 a minute, as Google's own 429 answer says; 100 until 25 Oct 2026): Flash-Lite's is 500
 a day and 15 a minute, and a request takes about 15 calls, so Gemini's calls alone could read 30 requests a day; none more that
 day after Gemini's daily 429 (until 8 am UTC, when the allowance is surely back); at most 20 requests wait at once (10 until
@@ -385,16 +385,24 @@ below), so the month's 92,000 seconds were chosen to keep 10% of each part in ha
 
 - Visitors' first 50,000 seconds of reading a month (config ON_DEMAND_GUARD_FREE_SECONDS, the month before the doubling)
   work exactly as before. Before any visitor read past them, the job asks the free-tier guard (engine/free_tier.py).
+- A month is Google's billing month (6 Nov 2026, from the second cost review). Google's month runs on US Pacific time
+  (Cloud Billing reports start a day at midnight US and Canadian Pacific Time), so it ends at 08:00 UTC on the 1st in
+  winter and 07:00 in summer. The queue's month, its month and guard rests, backfill's pacing and the guard's month
+  turn at one fixed cut, 08:00 UTC on the 1st (config BILLING_MONTH_CUT_HOUR_UTC), never earlier than Google's month
+  end. Until then they turned at midnight UTC, and a rest that woke then let the backlog read under visitors' fresh
+  first 50,000 seconds while Google still billed the old month (up to about 102% of the CPU part with the site at
+  2 GiB, in the review's simulation). Visitors are still told the 1st: 08:00 UTC is the 1st in UK time too.
 - The guard reads, with the job's own service account (deploy.sh grants it roles/monitoring.viewer, read only), what
   Cloud Run has used this month and in the last 7 days from Cloud Monitoring (billable instance time and the CPU and
   memory allocated, by service and job), prices it at Tier 1, adds the days left at the last 7 days' pace at today's
   sizes and the read about to start, and says yes only while each part's projection stays under 90%. Anything it can't
   read or can't trust (no token, an HTTP error, a missing series or one without points, a service in some of the three
   metrics only, an unknown unit, a value that isn't a number of 0 or more) is a no. A no, or a reading that failed,
-  rests reading past the first 50,000 seconds for 6 hours (never past the month's end) and backfill for a day: each try
-  starts the paid job, and a run that asks the guard or does backfill counts at least the minute Google bills a job's
-  run. It keeps a reading 10 minutes: twelve small calls, well inside Cloud Monitoring's free million time series a
-  month.
+  rests reading past the first 50,000 seconds for 6 hours (never past the month's end at 08:00 UTC on the 1st) and
+  backfill for a day: each try starts the paid job, and a run that asks the guard or does backfill counts at least the
+  minute Google bills a job's run. It keeps a reading 10 minutes: twelve small calls, well inside Cloud Monitoring's
+  free million time series a month. The site's month series is required once the month is 6 hours old, the pre-check's
+  once it is 22 hours old (it runs at 4 am UK time, before the cut, so its first run in a month is on the 2nd).
 - Backfill: when no visitor's request waits, the job reads a product nobody asked for, one whose answer the daily
   pre-check found thin (fewer than 3 picks; it lists them in the queue), in an order seeded by the day, never one read in
   the last 30 days. The keep-warm ping looks at most hourly whether one is due and queues it (the pre-check may queue one

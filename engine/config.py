@@ -2389,11 +2389,25 @@ CLOUD_RUN_SIZES = {CLOUD_RUN_SITE: ("service", 1.0, 3.0), CLOUD_RUN_PRECHECK: ("
 # How the guard projects the month: what it used so far, plus the days left at the pace of the last FREE_TIER_PACE_DAYS
 # days, at today's sizes. A reading of Cloud Monitoring is kept FREE_TIER_READING_SECONDS, so a run asks at most once
 # per 10 minutes (Cloud Monitoring's read API: the first million time series returned a month are free per billing
-# account, https://cloud.google.com/stackdriver/pricing, read 6 Nov 2026). The site's and the pre-check's month-so-far
-# figures are required once the month is FREE_TIER_MONTH_HOURS old (the pre-check runs at 4 am UK time).
+# account, https://cloud.google.com/stackdriver/pricing, read 6 Nov 2026). The site's month-so-far figures are required
+# once the month is FREE_TIER_MONTH_HOURS old, the pre-check's once it is FREE_TIER_PRECHECK_MONTH_HOURS old: the
+# pre-check runs at 4 am UK time (03:00 or 04:00 UTC), before the month's cut (BILLING_MONTH_CUT_HOUR_UTC below), so its
+# first run in a month is on the 2nd, 19 or 20 hours after the cut, and 22 hours leaves it 2 or 3 hours to show, as 6
+# hours did when months turned at midnight UTC (6 Nov 2026: until then both were 6 hours from midnight UTC).
 FREE_TIER_PACE_DAYS = 7
 FREE_TIER_READING_SECONDS = 600
 FREE_TIER_MONTH_HOURS = 6
+FREE_TIER_PRECHECK_MONTH_HOURS = 22
+# Google's billing month (6 Nov 2026, the doubling's second cost review): Cloud Billing reports say a day starts at
+# midnight US and Canadian Pacific Time, so Google's month ends at 08:00 UTC on the 1st in winter and at 07:00 UTC in
+# summer. The reading job's month (its seconds, its rests and backfill's pacing) and the free-tier guard's (the Cloud
+# Monitoring window and the days left) turn at one fixed cut, BILLING_MONTH_CUT_HOUR_UTC o'clock UTC on the 1st, never
+# earlier than Google's month end: a moment before it belongs to the month before (engine.free_tier.month_start). Until
+# then they turned at midnight UTC, so a rest woke while Google still billed the old month and the backlog read under
+# visitors' fresh first 50,000 seconds, which never ask the guard (the reviewer's simulation: up to about 102% of the
+# CPU part with the site at 2 GiB). A fixed hour needs no time-zone data. In summer the cut comes an hour after
+# Google's month ends, and visitors are still told the 1st (08:00 UTC is the 1st in UK time too).
+BILLING_MONTH_CUT_HOUR_UTC = 8
 
 # --- Upvotes count more when credible mentions are few (Noemi, 14 Oct 2026; built switched off) ---
 # Noemi: "let's be reasonable. if we have few credible mentions, a highly upvoted comment (10+) counts more", and she

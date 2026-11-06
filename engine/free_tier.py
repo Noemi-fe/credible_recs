@@ -7,11 +7,12 @@ ON_DEMAND_GUARD_FREE_SECONDS of the month, the reading job asks this guard, whic
 from Cloud Monitoring and projects the month:
 
 1. What it reads. For the site's kind (Cloud Run revisions, grouped by service) and the jobs' kind (grouped by job), three
-   metrics, each summed over two windows: the month so far and the last FREE_TIER_PACE_DAYS days. That is twelve small
-   calls to Cloud Monitoring's read API (timeSeries.list, ALIGN_SUM over the whole window, so one point a service or job),
-   with the job's own service account (its access token from the metadata server: no key file). The metrics:
-   run.googleapis.com/container/billable_instance_time (seconds), cpu/allocation_time (vCPU-seconds: it holds the site's
-   startup boosts, which Google bills) and memory/allocation_time (GiB-seconds).
+   metrics, each summed over two windows: the month so far (Google's billing month, which runs on US Pacific time,
+   counted from 08:00 UTC on the 1st: config.BILLING_MONTH_CUT_HOUR_UTC, 6 Nov 2026) and the last FREE_TIER_PACE_DAYS
+   days. That is twelve small calls to Cloud Monitoring's read API (timeSeries.list, ALIGN_SUM over the whole window, so
+   one point a service or job), with the job's own service account (its access token from the metadata server: no key
+   file). The metrics: run.googleapis.com/container/billable_instance_time (seconds), cpu/allocation_time (vCPU-seconds:
+   it holds the site's startup boosts, which Google bills) and memory/allocation_time (GiB-seconds).
 2. Spent so far, per part. For a service or job it knows (config.CLOUD_RUN_SIZES): the CPU it was allocated, never under
    its billable seconds times its vCPUs now, and the memory it was allocated, never under its billable seconds times its
    GiB now; for the reader, never under the queue's own count of its seconds either (Cloud Monitoring lags a few
@@ -26,8 +27,9 @@ from Cloud Monitoring and projects the month:
    failure (fail closed): no project, no token, an HTTP error, an answer that isn't JSON, more than one page, a unit or a
    kind of value it doesn't expect, a series without points, a value that isn't a number of 0 or more (NaN, infinity,
    below 0), a service or job in some of the three metrics but not all, a series missing for the site (either window)
-   or the pre-check (the last 7 days, and the month once it is FREE_TIER_MONTH_HOURS old: the pre-check runs at 4 am UK
-   time), or a projection that isn't a number (fix round, 6 Nov 2026, from the gate's and the reviews' probes).
+   or the pre-check (the last 7 days, and the month once it is FREE_TIER_MONTH_HOURS old for the site and
+   FREE_TIER_PRECHECK_MONTH_HOURS for the pre-check, which runs at 4 am UK time, before the month's cut), or a
+   projection that isn't a number (fix round, 6 Nov 2026, from the gate's and the reviews' probes).
 
 A reading is kept FREE_TIER_READING_SECONDS (a failed one never), so a run asks at most once per 10 minutes: at worst a
 few thousand readings a month, well inside Cloud Monitoring's free million time series a month (test_free_tier.py does
@@ -44,8 +46,9 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from urllib.parse import urlencode
 
-from engine.config import (CLOUD_RUN_PRECHECK, CLOUD_RUN_PRICES, CLOUD_RUN_READER, CLOUD_RUN_SITE, CLOUD_RUN_SIZES,
-                           FREE_TIER_DOLLARS, FREE_TIER_MONTH_HOURS, FREE_TIER_PACE_DAYS, FREE_TIER_READING_SECONDS,
+from engine.config import (BILLING_MONTH_CUT_HOUR_UTC, CLOUD_RUN_PRECHECK, CLOUD_RUN_PRICES, CLOUD_RUN_READER,
+                           CLOUD_RUN_SITE, CLOUD_RUN_SIZES, FREE_TIER_DOLLARS, FREE_TIER_MONTH_HOURS,
+                           FREE_TIER_PACE_DAYS, FREE_TIER_PRECHECK_MONTH_HOURS, FREE_TIER_READING_SECONDS,
                            FREE_TIER_SHARE, ON_DEMAND_PRODUCT_MINUTES)
 from engine.live_check import BUCKET_TIMEOUT, _http_request
 
@@ -99,11 +102,21 @@ def _stamp(moment: datetime) -> str:
 
 
 def month_start(now: datetime) -> datetime:
-    return now.astimezone(UTC).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    """When the month holding `now` began, as the reading job and the guard count Google's billing month (6 Nov 2026):
+    BILLING_MONTH_CUT_HOUR_UTC o'clock UTC on the 1st, never earlier than Google's month end (US Pacific time). A moment
+    before the cut on the 1st belongs to the month before."""
+    cut = timedelta(hours=BILLING_MONTH_CUT_HOUR_UTC)
+    return (now.astimezone(UTC) - cut).replace(day=1, hour=0, minute=0, second=0, microsecond=0) + cut
 
 
 def next_month(now: datetime) -> datetime:
+    """When the next month begins: the cut on the next 1st."""
     return (month_start(now) + timedelta(days=32)).replace(day=1)
+
+
+def month_key(now: datetime) -> str:
+    """The month holding `now`, as the reading job's queue keeps it ("2026-11" until the cut on 1 December)."""
+    return month_start(now).strftime("%Y-%m")
 
 
 class Guard:
@@ -230,12 +243,14 @@ class Guard:
 
 
 def _required(month: Reading, week: Reading, now: datetime) -> None:
-    """The series that must be there: the site's and the pre-check's in the last days, and in the month so far once it
-    is FREE_TIER_MONTH_HOURS old (before then the pre-check hasn't run yet, and the site may have had no request). The
-    reader's may be missing: the queue counts its seconds."""
-    settled = now - month_start(now) >= timedelta(hours=FREE_TIER_MONTH_HOURS)
-    windows = [("the last days", week)] + ([("the month so far", month)] if settled else [])
-    for name in (CLOUD_RUN_SITE, CLOUD_RUN_PRECHECK):
+    """The series that must be there: the site's and the pre-check's in the last days, and in the month so far once the
+    month is FREE_TIER_MONTH_HOURS old for the site (before then it may have had no request) and
+    FREE_TIER_PRECHECK_MONTH_HOURS old for the pre-check (6 Nov 2026: its 4 am UK run on the 1st comes before the
+    month's cut, so its first run in the month is on the 2nd). The reader's may be missing: the queue counts its
+    seconds."""
+    for name, hours in ((CLOUD_RUN_SITE, FREE_TIER_MONTH_HOURS), (CLOUD_RUN_PRECHECK, FREE_TIER_PRECHECK_MONTH_HOURS)):
+        settled = now - month_start(now) >= timedelta(hours=hours)
+        windows = [("the last days", week)] + ([("the month so far", month)] if settled else [])
         rtype = next(rtype for rtype, (kind, _) in KINDS.items() if kind == CLOUD_RUN_SIZES[name][0])
         for said, window in windows:
             if (rtype, name) not in window:

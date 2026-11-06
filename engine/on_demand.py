@@ -50,9 +50,11 @@ How it works, in four parts:
 Free tiers only (the sums are in deploy/cloudrun/DEPLOY.md): no scheduler of its own (the site starts the job, and the
 keep-warm ping starts it again when a start failed), the job's runs at most ON_DEMAND_MONTH_SECONDS a month (92,000
 since the doubling of 6 Nov 2026: 73 requests at 21 minutes), Gemini's free allowance only, two small objects in the
-bucket. Google's free allowance is one pot shared with the site, so every backfill read, and every visitor read past
-the month's first ON_DEMAND_GUARD_FREE_SECONDS of visitors' reading, asks the free-tier guard first (engine/free_tier.py),
-which answers no when the month is projected at 90% of either part or when it can't read Cloud Monitoring.
+bucket. A month is Google's billing month, which runs on US Pacific time: it turns at 08:00 UTC on the 1st, never
+earlier than Google's (config.BILLING_MONTH_CUT_HOUR_UTC, midnight UTC until 6 Nov 2026). Google's free allowance is one
+pot shared with the site, so every backfill read, and every visitor read past the month's first
+ON_DEMAND_GUARD_FREE_SECONDS of visitors' reading, asks the free-tier guard first (engine/free_tier.py), which answers no
+when the month is projected at 90% of either part or when it can't read Cloud Monitoring.
 
     python -m engine.on_demand run       the reading job (on Google Cloud: CREDIBLE_RECS_ON_DEMAND_BUCKET, GEM_API_KEY)
     python -m engine.on_demand status    the queue, in counts and product types (on Noemi's computer, through gcloud)
@@ -122,6 +124,7 @@ from engine.config import (
     ON_DEMAND_START_SECONDS,
     REMOVED_THREADS,
 )
+from engine.free_tier import month_key, month_start, next_month
 from engine.live_check import BUCKET_TIMEOUT, BUNDLE_RELOAD_SECONDS, Bucket, _http_request
 from engine.query import ParsedQuery
 from engine.sources import _posted_before, _years_before, need_words
@@ -137,6 +140,7 @@ RUN_API = "https://run.googleapis.com/v2/"
 _JOB_NAME = re.compile(r"projects/[a-z][a-z0-9-]{4,28}[a-z0-9]/locations/[a-z0-9-]+"
                        r"/jobs/[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?")
 CHANGE_TRIES = 5  # a write over a version another writer moved on is redone from a fresh read this many times at most
+MONTH_KEY = re.compile(r"\d{4}-\d{2}")  # the queue's month, "2026-11" (engine.free_tier.month_key)
 
 # --- Wording visitors see (Claude's wording of 14 and 25 Oct 2026, approved by Noemi, 25 Oct 2026) ---
 # The answer says what is happening in the page's own style; {about} is the product type's plural ("teapots").
@@ -351,9 +355,13 @@ class Queue:
 
     def usage_now(self, now: datetime) -> dict:
         """This month's and Gemini's day's usage (a new month or day starts from nothing): the job's seconds this month,
-        backfill's share of them, and Gemini's calls today."""
-        month, day = now.strftime("%Y-%m"), gemini_day(now).isoformat()
-        if self.usage.get("month") != month:
+        backfill's share of them, and Gemini's calls today. The month is Google's billing month, turning at 08:00 UTC
+        on the 1st (engine.free_tier.month_start, 6 Nov 2026, midnight UTC until then). A month later than now's comes
+        only from a queue written in the hours between midnight and 08:00 UTC on a 1st, before that change: its seconds
+        are kept, never started afresh, and count in the month they were written for."""
+        month, day = month_key(now), gemini_day(now).isoformat()
+        kept = self.usage.get("month")
+        if not (isinstance(kept, str) and MONTH_KEY.fullmatch(kept)) or kept < month:
             self.usage.update(month=month, seconds=0.0, backfill_seconds=0.0)
         if self.usage.get("day") != day:
             self.usage.update(day=day, gemini_calls=0)
@@ -475,11 +483,6 @@ def next_gemini_reset(now: datetime) -> datetime:
     return reset if reset > now else reset + timedelta(days=1)
 
 
-def next_month(now: datetime) -> datetime:
-    first = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    return (first + timedelta(days=32)).replace(day=1)
-
-
 # --- Backfill: products nobody asked for, read when nobody waits (6 Nov 2026) ---
 #
 # Noemi, 5 Nov 2026: "You can double (do it with random products if people don't research any), but make sure my claude
@@ -535,7 +538,7 @@ def backfill_stop(queue: Queue, now: datetime, run_seconds: float = 0.0, run_bac
     seconds = float(usage.get("seconds", 0.0)) + run_seconds
     backfill = float(usage.get("backfill_seconds", 0.0)) + run_backfill
     one, longest = ON_DEMAND_PRODUCT_MINUTES * 60, ON_DEMAND_LEASE_MINUTES * 60
-    first, after = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0), next_month(now)
+    first, after = month_start(now), next_month(now)  # Google's billing month, from 08:00 UTC on the 1st
     if seconds + one > ON_DEMAND_MONTH_SECONDS:
         return "month", after
     if backfill + longest > ON_DEMAND_BACKFILL_SECONDS:

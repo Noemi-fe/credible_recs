@@ -2535,8 +2535,47 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   (2 min 55 s, under the heavy lock). Left as they are, small and noted by the reviews: Google's
   billing month runs in US Pacific time while the queue and the guard count UTC months (backfill is paced out of a
   month's first day, so only visitors' first reads of the 1st, as on main, land in Google's previous month; about 1% of
-  a part at worst); a visitor queued behind a backfill's threads left waiting for Gemini by a run cut short isn't told
+  a part at worst. Corrected the same day: that was about ten times too low, since a rest woke at midnight UTC and the
+  backlog read under visitors' fresh first 50,000 seconds, up to about 102% of the CPU part with the site at 2 GiB in
+  the second cost review's simulation, and it is now fixed by the 08:00 UTC cut below); a visitor queued behind a
+  backfill's threads left waiting for Gemini by a run cut short isn't told
   those minutes; "30 a day" is told on days backfill has used some calls; a backfill can take a thin type past 8
   threads (Gemini, not Claude, so CLAUDE.md's cost rule holds); the site's hourly backfill look holds its lock while it
   reads the bucket. No eval/RUNS.md row and no sweeps this round: nothing an answer, its told wait or its told capacity
   reads changed (the job's code, the guard and their tests only).
+  Month boundary round, 6 Nov 2026 (Claude, after the fix round's second cost and code reviews, with the orchestrator's
+  decision of one fixed cut: technical calls, reported to Noemi, not pushed, merged or deployed). Google's billing month
+  runs on US Pacific time (Cloud Billing reports start a day at midnight US and Canadian Pacific Time), so it ends at
+  08:00 UTC on the 1st in winter and 07:00 in summer, while the queue and the guard counted months from midnight UTC. A
+  month rest, or a guard rest capped at the month's end, woke at midnight UTC and the backlog then read under visitors'
+  fresh first 50,000 seconds, which never ask the guard, while Google still billed the old month (the second cost review
+  simulated up to about 102% of the CPU part with the site at 2 GiB). Every month now turns at one fixed cut, 08:00 UTC
+  on the 1st (config.BILLING_MONTH_CUT_HOUR_UTC, engine.free_tier.month_start, next_month and month_key), never earlier
+  than Google's month end and with no time-zone data: the queue's month (a moment before the cut belongs to the month
+  before), the month and guard rests, backfill's pacing and the guard's Cloud Monitoring window with its days left.
+  Unchanged: visitors' 50,000 unguarded seconds a month (now Google's month), the told wait, the 450 Gemini calls (30
+  requests) a day and the told 73 a month. Visitors are still told the 1st (08:00 UTC is the 1st in UK time too). A
+  queue in the bucket written before the change is read without losing its seconds: mid-month its month is the same
+  either way, a month that can't be read starts afresh as before and one written between midnight and 08:00 UTC on a
+  1st is a month ahead and keeps its seconds (they count in the month they were written for) where a plain comparison
+  would have started it afresh. One knock-on call: the daily pre-check runs at 4 am UK time, before the cut, so its
+  first run in a month is now on the 2nd, and the guard requires its month series 22 hours after the cut (config
+  FREE_TIER_PRECHECK_MONTH_HOURS: 2 or 3 hours after that run, as 6 hours from midnight were), the site's still 6.
+  Counted from the cut at 6 hours, the guard would have failed closed every month from 14:00 UTC on the 1st until the
+  pre-check ran on the 2nd. Left, small: in summer the cut comes an hour after Google's month ends, so reading in that
+  hour (an hour of the reader at most, 1.5% of the CPU part) counts in our old month while Google bills its new one.
+  Also tests for six behaviours the second code review found untested: a reading that fails its required series is
+  never kept (swapped, the guard failed open), a refused backfill a visitor took over meanwhile stays theirs, a visitor
+  read past 50,000 seconds asks the guard about one read's 1,260 seconds, only a backfill begun in this run counts in a
+  visitor's told wait, this run's backfill seconds never count as visitors' and a backfill queued before backfill
+  began resting is dropped unread with the rest kept. Tests first: the 7 month tests failed on 49c242f (the queue's
+  month at 07:59 and 08:00 UTC on the 1st, a backlog left late on the last day by a month rest and by a guard rest read
+  only after the cut, backfill paced from the cut, the guard's window from the cut, the site's month series required 6
+  hours after the cut and the pre-check's 22). The old queue's test passed there, as it should. 13 behaviours undone
+  once each in a scratch copy, all caught. test_free_tier.py 54 to 57, test_on_demand_backfill.py 46 to 56. Changed on
+  purpose with dated notes, the tests that pinned midnight UTC: the month rest's wake (test_on_demand_job.py and
+  test_on_demand_backfill.py), the guard rest capped at the month's end, november() for the pacing tests, the
+  pre-check's hours, the guard's figures for 9 October at noon (72% and 93%, from 71% and 92%), backfill's seconds in
+  one test (9,000, as 10,000 now passes its share) and test_free_tier.py's clock (08:00). The whole suite passed:
+  7,469 passed and 3 skipped, none failed (2 min 53 s, under the heavy lock). No eval/RUNS.md row and no sweeps:
+  nothing an answer, its told wait or its told capacity reads changed.

@@ -141,7 +141,9 @@ def test_the_months_time_is_never_passed(tmp_path):
     run(tmp_path, google, fake_archive=fake)
     queue = the_queue(google)
     assert fake.requests == [] and queue.resting_why == "month"
-    assert queue.resting_until == "2026-11-01T00:00:00+00:00"
+    # 08:00 UTC since 6 Nov 2026 (midnight UTC until then): Google's billing month runs on US Pacific time, so the
+    # month rests until the cut on the 1st, never earlier than Google's month end (config.BILLING_MONTH_CUT_HOUR_UTC).
+    assert queue.resting_until == "2026-11-01T08:00:00+00:00"
 
 
 def test_one_run_at_a_time(tmp_path):

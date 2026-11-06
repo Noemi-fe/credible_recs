@@ -131,8 +131,9 @@ def test_nothing_is_backfilled_while_a_visitor_or_a_backfill_waits_or_reading_re
 
 
 def november(day: float) -> datetime:
-    """`day` days into November 2026 (30 days)."""
-    return datetime(2026, 11, 1, tzinfo=UTC) + timedelta(days=day)
+    """`day` days into November 2026 (30 days), as Google bills it: from 08:00 UTC on 1 November. Changed on purpose 6 Nov
+    2026: from midnight UTC until the month moved to Google's billing month (config.BILLING_MONTH_CUT_HOUR_UTC)."""
+    return datetime(2026, 11, 1, 8, 0, tzinfo=UTC) + timedelta(days=day)
 
 
 def used(backfill: float, total: float | None = None, calls: int = 0, now: datetime | None = None) -> Queue:
@@ -156,7 +157,7 @@ def test_backfill_is_paced_evenly_through_the_month():
 def test_backfill_never_passes_its_half_nor_the_months_time():
     assert backfill_stop(used(ON_DEMAND_BACKFILL_SECONDS - PRODUCT_SECONDS + 1, now=november(29.9)), november(29.9))[0] == "half"
     why, until = backfill_stop(used(0, total=ON_DEMAND_MONTH_SECONDS - PRODUCT_SECONDS + 1), november(15))
-    assert why == "month" and until == datetime(2026, 12, 1, tzinfo=UTC)
+    assert why == "month" and until == datetime(2026, 12, 1, 8, 0, tzinfo=UTC)  # 08:00 UTC since 6 Nov 2026 (the cut)
 
 
 def test_backfill_leaves_gemini_enough_for_20_visitor_requests():
@@ -212,39 +213,43 @@ def test_a_backfill_read_asks_the_guard_reads_arctic_shift_checks_every_quote_an
 def test_a_backfill_asks_the_guard_to_keep_room_for_the_rest_of_visitors_first_50000_seconds(tmp_path):
     # Visitors' first 50,000 seconds never ask the guard, so nothing could stop them later in the month: a backfill read
     # is asked about together with what is left of them, at the reader's size.
+    # Backfill's seconds 9,000, not 10,000, since 6 Nov 2026: with the month from 08:00 UTC on the 1st (Google's billing
+    # month) its share of 9 October at noon is about 11,065 seconds, and 10,000 and one more read would pass it.
     google, guard = FakeGoogle(), FakeGuard(yes=True)
     queue_backfill(google)
-    change(google, lambda queue: queue.usage_now(NOW).update(seconds=30_000, backfill_seconds=10_000))
+    change(google, lambda queue: queue.usage_now(NOW).update(seconds=30_000, backfill_seconds=9_000))
     run(tmp_path, google, guard)
-    visitors = 30_000 - 10_000 + config.ON_DEMAND_START_SECONDS
+    visitors = 30_000 - 9_000 + config.ON_DEMAND_START_SECONDS
     assert guard.asked[0]["extra_seconds"] == PRODUCT_SECONDS + ON_DEMAND_GUARD_FREE_SECONDS - visitors
     # Past their 50,000, nothing more is kept for them: they ask the guard themselves.
     google, guard = FakeGoogle(), FakeGuard(yes=True)
     queue_backfill(google)
-    change(google, lambda queue: queue.usage_now(NOW).update(seconds=70_000, backfill_seconds=10_000))
+    change(google, lambda queue: queue.usage_now(NOW).update(seconds=70_000, backfill_seconds=9_000))
     run(tmp_path, google, guard)
     assert guard.asked[0]["extra_seconds"] == PRODUCT_SECONDS
 
 
 def test_a_month_with_room_for_one_read_but_not_for_visitors_rest_gets_no_backfill(tmp_path):
-    # The real guard over a made-up Cloud Monitoring (9 Oct: 8.5 days gone): one 21-minute read would project the CPU
-    # part at 71%, but with visitors' 49,970 seconds still to come at 92%, past the 90% line. No backfill.
+    # The real guard over a made-up Cloud Monitoring (9 Oct at noon: 8 days and 4 hours gone): one 21-minute read would
+    # project the CPU part at 72%, but with visitors' 49,970 seconds still to come at 93%, past the 90% line. No
+    # backfill. Changed on purpose 6 Nov 2026: the month starts at 08:00 UTC on the 1st (Google's billing month), where
+    # it started at midnight (8.5 days gone, 71% and 92%).
     from engine.free_tier import Guard
     from engine.tests.test_free_tier import PROJECT, FakeMonitoring
 
     site, precheck = ("cloud_run_revision", config.CLOUD_RUN_SITE), ("cloud_run_job", config.CLOUD_RUN_PRECHECK)
     monitoring = FakeMonitoring(month={site: (16_000, 20_000, 48_000), precheck: (16_000, 16_000, 32_000)},
                                 week={site: (14_000, 19_000, 42_000), precheck: (14_000, 14_000, 28_000)},
-                                starts=("2026-10-01T00:00:00Z", "2026-10-02T12:00:00Z"))
+                                starts=("2026-10-01T08:00:00Z", "2026-10-02T12:00:00Z"))  # the cut (6 Nov 2026)
     guard = Guard(PROJECT, token=lambda: "token-1", request=monitoring, clock=lambda: 0.0)
     one_read = guard.allows(NOW, extra_seconds=PRODUCT_SECONDS, reader_seconds=30)
-    assert one_read.yes and one_read.cpu / config.FREE_TIER_DOLLARS["cpu"] == pytest.approx(0.71, abs=0.005)
+    assert one_read.yes and one_read.cpu / config.FREE_TIER_DOLLARS["cpu"] == pytest.approx(0.72, abs=0.005)
     google, fake = FakeGoogle(), FakeArchive()
     queue_backfill(google)
     report = run(tmp_path, google, guard, fake_archive=fake)
     queue = the_queue(google)
     assert fake.requests == [] and queue.entries == [] and queue.backfill_resting_why == "guard"
-    assert any("49,970 of visitors' seconds kept" in note and "CPU $3.97 (92%" in note for note in report.notes)
+    assert any("49,970 of visitors' seconds kept" in note and "CPU $4.00 (93%" in note for note in report.notes)
 
 
 def test_a_run_that_asks_the_guard_or_does_backfill_counts_at_least_the_minute_google_bills(tmp_path):
@@ -266,9 +271,12 @@ def test_a_run_that_asks_the_guard_or_does_backfill_counts_at_least_the_minute_g
     assert the_queue(visitor).usage["seconds"] == config.ON_DEMAND_START_SECONDS  # the stand-in clock never moved
 
 
+# Changed on purpose 6 Nov 2026 (the second cost review): the month's end was midnight UTC, so a rest woke while Google
+# still billed October and the backlog read under visitors' fresh first 50,000 seconds, which never ask the guard. The
+# month now ends at the cut, 08:00 UTC on the 1st (Google's billing month runs on US Pacific time), and so does the rest.
 @pytest.mark.parametrize("when, until", [
     (NOW, NOW + timedelta(hours=config.ON_DEMAND_GUARD_REST_HOURS)),
-    (datetime(2026, 10, 31, 22, 0, tzinfo=UTC), datetime(2026, 11, 1, tzinfo=UTC)),  # a new month starts afresh
+    (datetime(2026, 11, 1, 4, 0, tzinfo=UTC), datetime(2026, 11, 1, 8, 0, tzinfo=UTC)),  # a new month starts afresh
 ])
 def test_past_visitors_first_seconds_a_failed_reading_rests_reading_6_hours_and_never_past_the_month(tmp_path, when,
                                                                                                      until):
@@ -665,3 +673,147 @@ def test_a_deploy_that_bakes_the_bundle_in_tells_the_queue_and_backfill_starts_a
     assert on_demand.forget_baked(bucket(google), local) == 150
     queue = the_queue(google)
     assert queue.bundle_threads == 10 and queue.backfill_resting_until is None and not queue.backfill_resting(NOW)
+
+
+# --- Google's billing month: one cut at 08:00 UTC on the 1st (6 Nov 2026, the second cost review) ---
+#
+# Google's billing month runs on US Pacific time (Cloud Billing reports start a day at midnight US and Canadian Pacific
+# Time), so it ends at 08:00 UTC on the 1st in winter and 07:00 in summer. The queue counted months from midnight UTC: a
+# rest that woke then let the backlog read under visitors' fresh first 50,000 seconds, which never ask the guard, while
+# Google still billed the old month (the reviewer's simulation: up to about 102% of the CPU part with the site at 2 GiB).
+# The month now turns at one fixed cut, 08:00 UTC on the 1st, never earlier than Google's.
+
+CUT = datetime(2026, 12, 1, 8, 0, tzinfo=UTC)  # Google's December starts by then, summer or winter
+LAST_EVENING = datetime(2026, 11, 30, 23, 0, tzinfo=UTC)
+
+
+def a_visitor_waits(google, when: datetime, seconds: float, request: str = TEAPOT) -> None:
+    change(google, lambda queue: queue.add(entry_for(parse_query(request), had=0)))
+    change(google, lambda queue: queue.usage_now(when).update(seconds=seconds, backfill_seconds=0.0))
+
+
+def test_the_queues_month_turns_at_08_00_utc_on_the_1st():
+    queue = Queue()
+    queue.usage_now(LAST_EVENING).update(seconds=91_000.0, backfill_seconds=30_000.0)
+    before = queue.usage_now(CUT - timedelta(minutes=1))  # 07:59 UTC on the 1st: still Google's November
+    assert (before["month"], before["seconds"], before["backfill_seconds"]) == ("2026-11", 91_000.0, 30_000.0)
+    at = queue.usage_now(CUT)
+    assert (at["month"], at["seconds"], at["backfill_seconds"]) == ("2026-12", 0.0, 0.0)
+
+
+def test_a_queue_written_while_months_turned_at_midnight_utc_is_read_without_losing_its_seconds():
+    # The queue in the bucket at deploy time was written by the code before this change. Mid-month its month is the
+    # same either way, so nothing starts afresh. One written between midnight and 08:00 UTC on a 1st is a month ahead
+    # of the billing month and keeps its seconds (they count in the month they were written for). A month that can't
+    # be read starts afresh, as before.
+    written = Queue(usage={"month": "2026-11", "seconds": 61_000.0, "backfill_seconds": 9_000.0,
+                           "day": "2026-11-17", "gemini_calls": 120})
+    read = Queue.from_json(json.loads(json.dumps(written.as_json())))
+    usage = read.usage_now(datetime(2026, 11, 17, 12, 0, tzinfo=UTC))
+    assert (usage["month"], usage["seconds"], usage["backfill_seconds"]) == ("2026-11", 61_000.0, 9_000.0)
+    ahead = Queue(usage={"month": "2026-12", "seconds": 4_000.0, "backfill_seconds": 0.0})
+    for when in (CUT - timedelta(hours=5), CUT, CUT + timedelta(days=1)):
+        assert ahead.usage_now(when)["seconds"] == 4_000.0
+    for unreadable in (None, "", "2026-1", "soon", 202611, {"month": 11}):
+        assert Queue(usage={"month": unreadable, "seconds": 5.0}).usage_now(CUT)["seconds"] == 0.0
+
+
+@pytest.mark.parametrize("left_by", ["month", "guard"])
+def test_a_backlog_left_late_on_the_last_day_is_read_only_once_googles_month_has_ended(tmp_path, left_by):
+    google, fake, guard = FakeGoogle(), FakeArchive(), FakeGuard(yes=False)
+    a_visitor_waits(google, LAST_EVENING,
+                    ON_DEMAND_MONTH_SECONDS - 10 if left_by == "month" else ON_DEMAND_GUARD_FREE_SECONDS)
+    run(tmp_path, google, guard, fake_archive=fake, now=LAST_EVENING)
+    queue = the_queue(google)
+    assert queue.resting_why == left_by and fake.requests == []
+    if left_by == "month":
+        assert queue.resting_until == CUT.isoformat()
+    # 00:30 UTC on the 1st: Google still bills November, so nothing is read under December's fresh seconds.
+    assert not run(tmp_path, google, guard, fake_archive=fake, now=CUT - timedelta(hours=7, minutes=30)).ran
+    assert fake.requests == []
+    if left_by == "guard":
+        # Its 6 hours end at 05:00, still November's: past visitors' first seconds the guard is asked again, and its no
+        # rests reading until the cut, never past it.
+        run(tmp_path, google, guard, fake_archive=fake, now=CUT - timedelta(hours=2, minutes=30))
+        assert fake.requests == [] and the_queue(google).resting_until == CUT.isoformat()
+    asked = len(guard.asked)
+    # After 08:00 UTC it is December's: the request is read within visitors' fresh first seconds, the guard not asked.
+    report = run(tmp_path, google, guard, fake_archive=fake, now=CUT + timedelta(minutes=30))
+    assert report.requests_read == ["teapot"] and fake.requests and len(guard.asked) == asked
+    assert the_queue(google).usage["month"] == "2026-12"
+
+
+def test_backfill_is_paced_from_08_00_utc_on_the_1st():
+    # In the cut's first minutes backfill has no share yet, and its share grows from the cut. A moment before the cut is
+    # still November's, with November's room.
+    soon = CUT + timedelta(minutes=5)
+    why, until = backfill_stop(used(0, now=soon), soon)
+    assert why == "pace" and until == CUT + timedelta(days=31 * PRODUCT_SECONDS / ON_DEMAND_BACKFILL_SECONDS)
+    before = CUT - timedelta(minutes=5)
+    assert backfill_stop(used(ON_DEMAND_BACKFILL_SECONDS // 2, now=before), before) is None
+
+
+# --- Tests the second code review found missing (6 Nov 2026): correct code that no test held ---
+
+def test_a_refused_backfill_a_visitor_took_over_meanwhile_stays_the_visitors(tmp_path):
+    # The refused backfill is taken off the queue only while it is still a backfill: a visitor who asked for the same
+    # product while the guard was being asked keeps their request.
+    google = FakeGoogle()
+    queue_backfill(google)
+
+    class TakenOver(FakeGuard):
+        def allows(self, now, extra_seconds=PRODUCT_SECONDS, reader_seconds=0.0):
+            change(google, lambda queue: queue.add(entry_for(parse_query(TEAPOT), had=0)))  # a visitor asks meanwhile
+            return super().allows(now, extra_seconds, reader_seconds)
+
+    run(tmp_path, google, TakenOver(yes=False))
+    queue = the_queue(google)
+    [entry] = queue.entries
+    assert entry.status == "waiting" and not entry.backfill and queue.backfill_resting_why == "guard"
+
+
+def test_a_visitor_read_past_the_first_50000_seconds_asks_the_guard_about_one_reads_21_minutes(tmp_path):
+    google, guard = FakeGoogle(), FakeGuard(yes=False)
+    a_visitor_waits(google, NOW, ON_DEMAND_GUARD_FREE_SECONDS)
+    run(tmp_path, google, guard)
+    assert [asked["extra_seconds"] for asked in guard.asked] == [PRODUCT_SECONDS] == [1_260]
+
+
+def test_only_a_backfill_begun_in_this_run_counts_in_a_visitors_told_wait():
+    queue = Queue()
+    entry = queue.add(thin(TEAPOT))
+    entry.started_at = (NOW - timedelta(minutes=1)).isoformat()  # begun by an earlier run, cut short
+    assert queue.take_lease(NOW)
+    assert not on_demand.backfill_in_progress(queue, NOW + timedelta(minutes=5))
+    entry.started_at = NOW.isoformat()  # begun by the run holding the queue
+    assert on_demand.backfill_in_progress(queue, NOW + timedelta(minutes=5))
+
+
+def test_this_runs_backfill_seconds_never_count_as_visitors(tmp_path):
+    # A visitor who asks while a backfill is read: the run's seconds so far are backfill's, so the visitor's 49,530 stay
+    # under their first 50,000 and they don't ask the guard (counted as theirs, it would be 50,330).
+    google, ticks, guard = FakeGoogle(), Ticks(), FakeGuard(yes=True)
+    queue_backfill(google)
+    change(google, lambda queue: queue.usage_now(NOW).update(seconds=49_500.0, backfill_seconds=0.0))
+
+    class Slow(FakeArchive):
+        def __call__(self, url, headers):
+            if not self.requests:  # the backfill's first search takes 800 s, and a visitor asks meanwhile
+                ticks.now += 800
+                change(google, lambda queue: queue.add(entry_for(parse_query(KETTLE), had=0)))
+            return super().__call__(url, headers)
+
+    report = run(tmp_path, google, guard, fake_archive=Slow(), ticks=ticks)
+    assert report.backfill_seconds >= 800 and report.requests_read == ["teapot", "electric kettle"]
+    assert len(guard.asked) == 1 and guard.asked[0]["extra_seconds"] == PRODUCT_SECONDS + 470  # the backfill's only
+
+
+def test_a_backfill_queued_before_backfill_began_resting_is_dropped_unread_and_the_rest_kept(tmp_path):
+    google, guard, fake = FakeGoogle(), FakeGuard(yes=True), FakeArchive()
+    queue_backfill(google)
+    until = NOW + timedelta(hours=3)
+    change(google, lambda queue: queue.rest_backfill(until, "pace"))
+    run(tmp_path, google, guard, fake_archive=fake)
+    queue = the_queue(google)
+    assert queue.entries == [] and guard.asked == [] and fake.requests == []
+    assert (queue.backfill_resting_until, queue.backfill_resting_why) == (until.isoformat(), "pace")

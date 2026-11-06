@@ -17,9 +17,11 @@ from engine import config, free_tier
 from engine.free_tier import Guard
 
 PROJECT = "made-up-project"
-NOW = datetime(2026, 11, 11, 0, 0, tzinfo=UTC)  # 10 days of November gone, 20 left
-MONTH_START = "2026-11-01T00:00:00Z"
-WEEK_START = "2026-11-04T00:00:00Z"
+# Moved from midnight to 08:00 UTC on purpose, 6 Nov 2026: the guard's month now starts at 08:00 UTC on the 1st
+# (Google's billing month, config.BILLING_MONTH_CUT_HOUR_UTC), and at 08:00 the sums below still have 10 days gone.
+NOW = datetime(2026, 11, 11, 8, 0, tzinfo=UTC)  # 10 days of November gone, 20 left
+MONTH_START = "2026-11-01T08:00:00Z"
+WEEK_START = "2026-11-04T08:00:00Z"
 SITE, PRECHECK, READER = config.CLOUD_RUN_SITE, config.CLOUD_RUN_PRECHECK, config.CLOUD_RUN_READER
 METRICS = {"billable": "run.googleapis.com/container/billable_instance_time",
            "cpu": "run.googleapis.com/container/cpu/allocation_time",
@@ -332,16 +334,19 @@ def test_an_answer_with_an_int64_value_reads_as_a_number():
     assert int64s.yes and int64s.cpu == pytest.approx(doubles.cpu) and int64s.memory == pytest.approx(doubles.memory)
 
 
-def test_the_pre_check_not_run_yet_on_the_1st_is_no_failure():
-    # The pre-check runs at 4 am UK time: in the first hours of a month it has no series for the month yet; from 6 am
-    # UTC on the 1st it must have one.
+def test_the_pre_check_not_run_yet_in_the_month_is_no_failure():
+    # The pre-check runs at 4 am UK time: in the first hours of a month it has no series for the month yet.
+    # Changed on purpose 6 Nov 2026 (the month now turns at 08:00 UTC on the 1st, Google's billing month): the 4 am run
+    # on the 1st is the month before's, so the first in the month is on the 2nd, 19 or 20 hours after the cut. Its
+    # series is required 22 hours after the cut (06:00 UTC on the 2nd), where it was 6 hours after midnight UTC.
     month = {k: v for k, v in MONTH.items() if k[1] != PRECHECK}
-    early = datetime(2026, 12, 1, 2, 0, tzinfo=UTC)
-    verdict = a_guard(FakeMonitoring(month=month, starts=("2026-12-01T00:00:00Z", "2026-11-24T02:00:00Z"))).allows(early)
+    early = datetime(2026, 12, 2, 5, 59, tzinfo=UTC)
+    verdict = a_guard(FakeMonitoring(month=month, starts=("2026-12-01T08:00:00Z", "2026-11-25T05:59:00Z"))).allows(early)
     assert not verdict.failed, verdict.why
-    later = datetime(2026, 12, 1, 7, 0, tzinfo=UTC)
-    verdict = a_guard(FakeMonitoring(month=month, starts=("2026-12-01T00:00:00Z", "2026-11-24T07:00:00Z"))).allows(later)
+    later = datetime(2026, 12, 2, 6, 0, tzinfo=UTC)
+    verdict = a_guard(FakeMonitoring(month=month, starts=("2026-12-01T08:00:00Z", "2026-11-25T06:00:00Z"))).allows(later)
     assert verdict.failed and PRECHECK in verdict.why
+    assert config.FREE_TIER_PRECHECK_MONTH_HOURS == 22
 
 
 # --- What it asks, and how often ---
@@ -355,7 +360,7 @@ def test_one_reading_is_twelve_small_questions_summed_by_service_and_job():
         query = parse_qs(urlsplit(url).query)
         assert query["aggregation.perSeriesAligner"] == ["ALIGN_SUM"]
         assert query["aggregation.crossSeriesReducer"] == ["REDUCE_SUM"]
-        assert query["interval.endTime"] == ["2026-11-11T00:00:00Z"]
+        assert query["interval.endTime"] == ["2026-11-11T08:00:00Z"]
         start = datetime.fromisoformat(query["interval.startTime"][0].replace("Z", "+00:00"))
         assert query["aggregation.alignmentPeriod"] == [f"{int((NOW - start).total_seconds())}s"]  # one sum each
         asked.add((query["filter"][0], query["interval.startTime"][0]))
@@ -405,3 +410,48 @@ def test_from_the_jobs_settings_it_uses_the_jobs_own_token_and_project():
                                      clock=lambda: 0.0)
     assert guard.allows(NOW).yes
     assert not free_tier.guard_from_env({}, Bucket(), request=FakeMonitoring(), clock=lambda: 0.0).allows(NOW).yes
+
+
+# --- Google's billing month: one cut at 08:00 UTC on the 1st (6 Nov 2026, the second cost review) ---
+
+def test_the_month_window_starts_at_08_00_utc_on_the_1st():
+    # Google's billing month runs on US Pacific time (Cloud Billing reports start a day at midnight US and Canadian
+    # Pacific Time): it ends at 08:00 UTC on the 1st in winter and 07:00 in summer. The guard's month starts at 08:00
+    # UTC, never before Google's, so a moment before the cut on the 1st is still the month before.
+    cut = datetime(2026, 12, 1, 8, 0, tzinfo=UTC)
+    before = cut - timedelta(minutes=1)
+    assert free_tier.month_start(before) == datetime(2026, 11, 1, 8, 0, tzinfo=UTC)
+    assert free_tier.next_month(before) == cut
+    assert free_tier.month_start(cut) == cut and free_tier.next_month(cut) == datetime(2027, 1, 1, 8, 0, tzinfo=UTC)
+    summer = datetime(2026, 7, 1, 7, 30, tzinfo=UTC)  # Google's July began half an hour ago: the guard's hasn't yet
+    assert free_tier.month_start(summer) == datetime(2026, 6, 1, 8, 0, tzinfo=UTC)
+    monitoring = FakeMonitoring(starts=("2026-11-01T08:00:00Z", "2026-11-24T07:59:00Z"))
+    a_guard(monitoring).allows(before)
+    starts = {parse_qs(urlsplit(url).query)["interval.startTime"][0] for url in monitoring.calls}
+    assert starts == {"2026-11-01T08:00:00Z", "2026-11-24T07:59:00Z"}
+    assert config.BILLING_MONTH_CUT_HOUR_UTC == 8
+
+
+def test_the_sites_month_so_far_is_required_6_hours_after_the_cut():
+    cut = datetime(2026, 12, 1, 8, 0, tzinfo=UTC)
+    month = {k: v for k, v in MONTH.items() if k[1] != SITE}
+
+    def verdict(when):
+        week = free_tier._stamp(when - timedelta(days=7))
+        return a_guard(FakeMonitoring(month=month, starts=("2026-12-01T08:00:00Z", week))).allows(when)
+
+    assert not verdict(cut + timedelta(hours=6) - timedelta(minutes=1)).failed
+    late = verdict(cut + timedelta(hours=6))
+    assert late.failed and SITE in late.why
+    assert config.FREE_TIER_MONTH_HOURS == 6
+
+
+def test_a_reading_missing_a_required_series_is_never_kept_so_the_next_ask_reads_again_and_says_no():
+    # The second code review (6 Nov 2026): kept before the check, the next ask in the 10 minutes would project the
+    # reading as whole and could say yes (failing open).
+    monitoring = FakeMonitoring(month={k: v for k, v in MONTH.items() if k[1] != SITE})
+    guard = a_guard(monitoring)
+    first = guard.allows(NOW)
+    assert first.failed and SITE in first.why and len(monitoring.calls) == 12
+    second = guard.allows(NOW + timedelta(minutes=1))
+    assert len(monitoring.calls) == 24 and not second.yes and second.failed and SITE in second.why
