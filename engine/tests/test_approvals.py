@@ -162,12 +162,14 @@ def test_when_the_months_time_is_what_runs_out_the_capacity_is_told_by_the_month
     # month, which keeps 10% of the shared free allowance in hand on the measured use of 17 Oct to 5 Nov 2026 (engine/
     # tests/test_cloudrun.py; "the most, on October's use" until the fix round of 6 Nov 2026, which redid the measured
     # month), read 73 requests of 21 minutes, and the visitor is told 73. The wording is as approved.
+    # Changed on purpose 6 Nov 2026 (Noemi: "say up to 73"): "up to 73 a month", not "about", since past visitors' first
+    # 50,000 seconds the free-tier guard may stop the reading sooner in a busy month.
     assert on_demand.products_a_month() == config.ON_DEMAND_MONTH_SECONDS // (21 * 60) == 73
     left = config.ON_DEMAND_MONTH_SECONDS - 21 * 60  # one request's time left this month
     state = Line(tmp_path, waiting=3, seconds_used=left).asked()
     assert state["message"] == (
         "We haven't read Reddit about teapots yet. It's in line: 3 products are ahead of it, and our free reading "
-        "allowance covers about 73 a month. Check back on 1 November.")
+        "allowance covers up to 73 a month. Check back on 1 November.")
     assert "a day" not in state["message"]
 
 

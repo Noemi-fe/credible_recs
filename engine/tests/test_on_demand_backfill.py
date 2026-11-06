@@ -373,9 +373,10 @@ def test_backfills_last_read_starts_only_while_a_whole_run_still_fits_in_its_hal
 def test_a_guard_rest_is_told_as_the_months_allowance():
     queue = Queue()
     queue.rest(NOW + timedelta(hours=6), "guard")
-    assert on_demand.capacity_text(0, queue, NOW) == f"{on_demand.products_a_month()} a month"
+    # Changed on purpose 6 Nov 2026 (Noemi: "say up to 73"): the month is told "up to", the day still "about".
+    assert on_demand.capacity_text(0, queue, NOW) == f"up to {on_demand.products_a_month()} a month"
     queue.rest(NOW + timedelta(hours=6), "gemini")
-    assert on_demand.capacity_text(0, queue, NOW) == f"{on_demand.products_a_day()} a day"
+    assert on_demand.capacity_text(0, queue, NOW) == f"about {on_demand.products_a_day()} a day"
 
 
 def test_no_guard_or_a_guard_that_breaks_is_a_no():

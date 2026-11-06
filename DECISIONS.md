@@ -2592,3 +2592,10 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   project on the same billing account has no Cloud Run API enabled, so the guard misses nothing there. The step to
   2 GiB must also change CLOUD_RUN_SIZES in engine/config.py (test_cloudrun.py checks it against deploy.sh). This
   deploy restarted the 2-day clock of that step's rule.
+- 6 Nov 2026, "up to 73" (Noemi: "say up to 73"). When the month's reading is what a visitor waits for, the message now
+  says the free reading allowance "covers up to 73 a month", where it said "about 73 a month", because past visitors'
+  first 50,000 seconds the free-tier guard may stop the reading sooner in a busy month. The day's wording is unchanged
+  ("covers about 30 a day"): "about" moved from the three messages into capacity_text, which now returns the whole
+  phrase. Two tests changed on purpose with dated notes (test_approvals.py's month message and
+  test_on_demand_backfill.py's guard rest). The whole suite passed: 7,469 passed and 3 skipped, none failed (3 min 3 s,
+  under the heavy lock).

@@ -372,7 +372,7 @@ read; the answer keeps its picks and says the threads are a few years old). The 
 the queue's length and the day's capacity (engine.on_demand.wait_for): "in about 25 minutes" only while the day's calls
 and the month's reading time can still read the request (21 minutes more for each one ahead), else "It's in line: 3
 products are ahead of it, and our free reading allowance covers about 30 a day. Check back tomorrow" (or the date; and
-once the month's job time is what runs out, "covers about 73 a month. Check back on 1 November" (39 until 6 Nov 2026),
+once the month's job time is what runs out, "covers up to 73 a month. Check back on 1 November" (39 until 6 Nov 2026, "up to" since then),
 because 30 a day beside the 1st of next month would not be true). The wording of this message was approved by Noemi on
 25 Oct 2026. A free-tier guard's no (below) is told like the month's time running out: "our free reading allowance is used
 up for now".
