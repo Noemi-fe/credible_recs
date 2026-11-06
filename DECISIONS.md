@@ -1672,3 +1672,91 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   can't read the r/Makeup, r/Sephora and r/AsianBeauty threads, so this branch is merged before any deploy. The
   scratch folders of parts 3 and 4 (sweeps, library and profile copies) hold commenters' words and writers' names:
   they go to the Trash with the deletion rule by about 7 Nov.
+- 5 Nov 2026, evening, the warm finished, the summaries written, the makeup picks settled (Claude, the integrator;
+  Claude's technical calls, reported to Noemi; branch makeup-threads; nothing pushed, merged or deployed). No code,
+  config, product note or told number changed in this round: it is data (the writers' profiles and the summaries) and
+  the checks of both. Inside Noemi's bounds: no scoring weight, picks bar or product type touched, the need-fit rule
+  still off (config.NEED_FIT_FOR_PICKS = False), the product notes (data/product_notes.json: NARS's reformulation,
+  Becca, got2b's hair gel) still waiting for her yes and unchanged, the told wait (about 25 minutes), 30 a day, 39 a
+  month and the 15 calls a request the same as main's, and the 48-hour quote rule untouched.
+  (1) The warm. The full profile warm of the writers' Reddit histories finished at 18:18 EST after 44 chunks. The store
+  went from 54,361 writers to 58,665 (4,310 added: 4,063 with stats, 247 unknown to the archive; 74,005 flairs to
+  79,486). Nobody lost their stats and no older entry was looked up again (their 30 days run out from 24 Nov). Six
+  writers are gone, with nine flairs, on purpose: they only appear in the two removed threads, 1co3r5i and 1jlzpoa.
+  Every writer with a kept mention now has a stored profile; 1,798 (3.1%) are unknown to the archive and count as
+  having none. 42 look-ups failed over 14 of the chunks (Arctic Shift 502s, timeouts, resets); a failed look-up is not
+  stored, so the next chunk asked again, and the last chunk had none. One batch of 32 comments' flairs was not fetched
+  (a 502): 1,021 of the library's 80,507 kept comments have no stored flair (893 of them had none before the warm).
+  The store's sha was the same before and after each sweep below (d78c2535f930cc8fd6491c203c9156e8721c7f12).
+  (2) The makeup picks, settled. Part 4's picks were measured on a frozen copy of the profiles (06:24 EST) and called
+  provisional. On the finished warm 7 of the 15 makeup requests moved their picks or their order and 8 did not. No code
+  moved them: the profiles did (scores rose for nearly every pick, as high voices arrived). Pick sets changed in four:
+  bronzer (the Hourglass bronzer line, 5.025 to 6.575, takes third from NARS cream bronzer, 5.8 to 6.175, now under
+  Also worth a look); foundation for oily skin (Maybelline Super Stay Skin Tint, 7.65 to 10.625, takes third from NARS
+  Light Reflecting, 8.125 to 10.375, now under Also worth a look); makeup primer for large pores (Hourglass Mineral
+  Veil stays first, Maybelline's grippy primer serum, 1.325 to 1.85, comes in second and NYX Marshmellow, 1.5 to 1.8,
+  third; Danessa Myricks Blurring Balm drops to Also worth a look); brow gel (got2b Glue Spiking Gel, 1.775 to 2.025,
+  takes third from Kosas Air Brow, 1.85, now under Also worth a look). Same three picks in another order in three:
+  concealer for dark circles (Tower 28, Kosas, Natasha Denona), setting spray (Urban Decay All Nighter, ONE/SIZE,
+  Milani Make It Last) and lip tint (rom&nd Juicy Lasting Tint, rom&nd Glasting Water Tint, Peripera Ink Mood Glowy
+  Tint). Unchanged: blush, blush for fair skin, cream blush, highlighter, setting powder, mascara, eyeliner, lipstick;
+  lip stain gives lip tint's answer and eyebrow gel brow gel's. All 17 makeup answers (the 15, lip stain and eyebrow
+  gel) give 3 picks, from 3 threads (lip tint, lip stain) to 12 (blush, blush for fair skin, cream blush, foundation
+  for oily skin, concealer for dark circles, lipstick). The 278 non-makeup answers are unchanged by the warm: every
+  pick, score, order, Also worth a look name, Skip name and message equals main's, the 10 blind-test answers
+  included (same picks, same scores). They differ from main only where the fix rounds meant them to: other quotes for
+  69 picks in 58 answers and Also worth a look items in 21, 9 tip lists and reason lines in 3 answers.
+  (3) The summaries (one-line "In short", engine/prompts/summarise_pick.md, summarise-v1). The summarising batch was
+  only the makeup products and the first skincare ones of the todo: 48 products, in four chunks of 12 (37 makeup
+  products, Urban Decay first, and 11 skincare ones), written by four writers (45 entries) and merged by the
+  integrator into data/library/summaries.json (backup of the 882 entries from before: summaries-before.json in the
+  scratch folder), atomically. The calls:
+  (a) Urban Decay All Nighter's summary is rewritten (it replaced the saved one under the same key) and says nothing
+  of a newer formula, as no cited comment does. The Tower 28, Kosas, Givenchy, Stila liquid liner, got2b, rom&nd and
+  Peripera entries replaced older ones too, as did six skincare ones (the todo had listed each older one as failing in
+  some answer). 30 entries are new, 14 replaced an older one.
+  (b) ROC retinol's entry is dropped (rule 7): its two citable comments say little beyond that it is good. Three
+  skincare products got no entry from their writer, as none of their credible comments is in every answer that shows
+  them: Beauty of Joseon Relief Sun (rice and niacinamide), Medik8 Crystal Retinal and Eucerin Aquaphor. Smashbox's
+  entry now says "apparently" of the eighth tube, as its writer was hedging. Benefit Roller Lash's reformulation
+  suspicion and The Ordinary primer's "discontinued" stay in their sentences as what commenters say, said as theirs.
+  (c) `python -m engine.summaries check` (912 entries, 1,109 requests answered, 509 s) rejected 2 of this round's 44
+  entries in some answers, both skincare: Biore UV Aqua Rich and ILLIYOON Ceramide Ato. Their writer had cited only
+  comments that are credible in every answer of the sweep; the check reads wider answers too (7 and 13 of them), and
+  in those answers none of the product's credible comments is in every one (0 of 26 for Biore, 0 of 25 for ILLIYOON),
+  so no rewrite can pass. Beauty of Joseon Relief Sun Aqua-Fresh's new entry passed but rested on one warning, the
+  only comment credible in every answer (1 of 10), so it read worse than the pick's backing. All three new entries
+  are dropped and the saved ones of before the round are back as they were: the same state as at the start for those
+  three, with the same known failures (the check still lists them). Effect: no non-makeup answer lost a summary it
+  had, and 6 shown items gained one (Eucerin Sun Gel-Creme, Nivea Sun Super Water Gel, Beauty of Joseon's eye serum,
+  CeraVe's retinol serum).
+  (d) What the check says now: 912 entries, 663 fine, 249 with problems: 246 older entries (a cited comment no longer
+  readable in the library, or not credible in some answer) and the 3 restored ones, none from this round. All 41
+  entries of this round that stay (37 makeup, 4 skincare) pass. The engine never shows a summary in an answer where it
+  fails, so the 249 only cost the answers where they fail.
+  (e) Effect on what the answers show. In the 15 makeup requests plus lip stain and eyebrow gel (17 answers, 79
+  makeup products, 100 shown items: 51 picks and 49 Also worth a look items), shown items without a summary went from
+  44 (36 products) to 0: every shown makeup product has a summary, and so has every pick. Non-makeup: shown items
+  with a summary 624 to 630 of 1,212, picks with one 362 to 365 of 639. The summaries' cited quotes are quotes like
+  the others: all verified.
+  Measured through the heavy lock on the live profile store (sha above, unchanged by any run), live checks off. Sweep of
+  295 answers (the 293 of the earlier sweeps and lip stain and eyebrow gel), no error: every quote shown, 8,238 (picks,
+  Also worth a look items, warnings, tips and the summaries' cited quotes), was found word for word in its saved
+  comment, checked outside the engine, 663 of them in the 17 makeup answers (r/Makeup 214, r/Sephora 266,
+  r/MakeupAddiction 100, r/drugstoreMUA 63, r/AsianBeauty 20; none from r/MakeupRehab, the no-buy community). Brand
+  accounts: for the 100 makeup items shown (79 products), all 1,345 credible voices behind them were run through
+  module 5's own signs again: none works for, owns or links a brand, and one (a Thrive Causemetics mascara voice,
+  medium, not shown) carries "salesy language", on an ordinary shopper's comment. eval/run_eval.py (the warm profiles,
+  live checks off): every scored number as in part 4's row; the quotes the blind-test answers show, 252 to 257 (all
+  verified), and threads waiting for a live check, 42 to 56 (the day passing), the only changes, and eval/metrics.json
+  holds just these two (its date kept as 5 Nov, Noemi's day; the run ended after midnight UTC). The ingredient and
+  needs sections print a few other picks than part 4's run (shampoo, vitamin C, spot treatment): the warm moved them,
+  not this branch's code (those requests are in the sweep, where their picks equal main's). Whole suite: 7,196 passed
+  and 1 failed (the unlabelled gold thread 1v40u3t, which fails on main too).
+  Left, for Noemi or later: 393 products of the todo are still without a summary (none makeup: 144 general, 120
+  kitchen, 94 skincare, 35 haircare), and 246 older entries fail in some answer: the next summarising batches. A
+  summary must now be credible in every answer that shows its product, and for a product shown in many wider answers
+  that can leave no comment to cite (Biore UV Aqua Rich, ILLIYOON): a follow-up to judge a summary only in the answers
+  that show it (code, not done here). The product notes wait for her yes. The scratch files of this round (sweeps,
+  the todo and its chunks, the profile copy) hold commenters' words and writers' names and go to the Trash with the
+  deletion rule.
