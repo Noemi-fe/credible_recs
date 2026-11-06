@@ -138,7 +138,7 @@ def test_which_mentions_are_re_typed(typed, product, title, expected):
     assert new_type(typed, product, title) == expected
 
 
-TINT = "I've worn the {} every day for two years and it lasts through lunch."
+TINT = "I've worn the {} daily for two whole years, and it lasts through lunch."
 LIPSTICK = "The {} has been my everyday lipstick for three years now."
 GEL = "I've used the {} every morning for two years, my brows stay put."
 PENCIL = "The {} has been my brow pencil for three years, it never smudges."

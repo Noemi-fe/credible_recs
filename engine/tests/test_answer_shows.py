@@ -281,7 +281,7 @@ def test_an_undercutting_quote_still_makes_up_a_picks_minimum_so_the_picks_stay(
 
 def test_skip_these_never_shows_a_quote_that_leans_on_another_comment():
     leaning = mention("Gritto pen eyeliner", "t1", stance="warn", category="general",
-                      quote="Been using it for years and exactly the same experience here.")
+                      quote="My own went the same way, exactly the same experience here.")
     warnings = [leaning, mention("Gritto pen eyeliner", "t2", stance="warn", category="general",
                                  quote="Exactly the same experience, sadly.")]
     items = warnings + mentions(3, "Inkwell liner", category="general")

@@ -1982,7 +1982,8 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   quote meaning another product, ONE/SIZE's weak quotes, the colour-corrector tips, Gucci's third quote, the KVD Skip
   and makers' lower-case names. The scratch files of this round hold commenters' words and go to the Trash with the
   deletion rule.
-- 6 Nov 2026, round 3 after the warm (Claude, the builder; branch makeup-threads; nothing pushed, merged or deployed).
+- 6 Nov 2026, round 3 after the warm (Claude: the builder, then the summaries writer and the integrator; branch
+  makeup-threads; nothing pushed, merged or deployed).
   Noemi's decisions of 6 Nov 2026 ("yes to all three", in chat), hers, and the round's technical calls from the third
   reviews, Claude's, reported to Noemi. Inside her bounds: apart from her decisions (2) and (3), no scoring weight,
   picks bar, product type, told number (about 25 minutes, 30 a day, 39 a month) or the 48-hour quote rule touched; the
@@ -2068,7 +2069,65 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   lines, NARS Orgasm blush line and MAC Ruby Woo, whose summaries leave out the folded warnings they now show. `python
   -m engine.summaries check`: 912 entries, 662 fine, 250 with problems, fix 2's 249 and ONE/SIZE's (the removed
   comment). Whole suite: 7,276 passed and 1 failed, the unlabelled gold thread 1v40u3t (which fails on main too).
+  (9) Claude's, the summaries round (the summaries writer; data/library/summaries.json is outside git, and its file
+  from before is kept in the round's scratch folder): 18 summaries written or rewritten, each passing `python -m
+  engine.summaries check`: NARS Orgasm blush line and MAC Ruby Woo (each now tells the warnings (3) folds into it),
+  ONE/SIZE's setting spray line (without the comment removed in (6)), Tower 28's concealer line (it cites the warning
+  it shows), 14 more from fix 2's fact-check list (each fixed as its finding said) and Marc Jacobs's bronzer (no
+  answer shows it). Givenchy's setting powder line stays without one: the downside its pick shows is filed under
+  another name of the brand's powder, which is not one of the line's credible mentions, so no summary can cite it and
+  one that left it out would contradict it (its share line reads "1 of 10" while its score breakdown counts no
+  credible warning: the same shape as 34 items of main's own sweep, a downside shown from the line's other names; not
+  new in this round). Seven makeup products (Milani's blush line, Natasha Denona's, Huda Beauty's, Laura Mercier's,
+  Urban Decay All Nighter's, L'Oréal Telescopic's and Victoria Beckham's lines) still leave one shown downside uncited
+  in their summaries; the summaries pass the check, and the pass is left for later. A summary is shown only while
+  every comment it cites passes its live check, so the ones citing most comments (Tower 28's and Kosas's concealer
+  lines, 9 each; Thrive's mascara line, 8) drop out first on a day when one cited comment fails.
+  (10) Claude's, the public repo once more, by the integrator: every run of four or more words that the branch adds
+  (code, tests, DECISIONS.md, RUNS.md, data files and every commit message) was checked against every library comment
+  and thread title, as one comment's longest shared run, not a run stitched from several. No username appears, no
+  whole thread title of four words or more; the longest shared runs (up to 9 words) are product names or lists of
+  product types, and the 6-word overlaps otherwise occur in three or more comments each (everyday phrases), except two
+  sentences that ran close to one comment's own words (a test sentence about daily use in
+  engine/tests/test_makeup_split.py and the "same experience" warning of engine/tests/test_answer_shows.py's skip
+  test): both reworded with made-up text that tests the same thing (the tests pass unchanged otherwise). Commit
+  4e30f34's message still holds the phrase noted in (7).
+  (11) The integrator's final run (6 Nov 2026, 08:13 to 08:40 UTC), through the heavy lock on the live profile store
+  (sha d78c2535f930 before and after every step), live checks off, TZ=UTC, on the committed code with the summaries of
+  (9). Sweep of 295 answers (the same lists), no error: against the builder's sweep only summaries moved, in 13 makeup
+  answers; against fix 2's the changes are the builder's (picks and "Also worth a look" in blush, blush for fair skin,
+  brow gel and eyebrow gel; scores in those four, setting spray and lipstick; Skip in 3; downsides in 8; pick quotes
+  in 5; Skip quotes in 4; "Also worth a look" quotes in 4), all traced to (2) to (6); against main's (278 non-makeup
+  answers): no pick, pick order, score, "Also worth a look" item or Skip item differs, the 10 blind-test answers
+  included (80 of the 278 differ from main's in a shown quote, summary or reason line, 76 at fix 2: the 4 more are
+  (4)'s masked word). All 17 makeup answers give 3 picks; 99 of their 100 shown items have a summary (the builder's
+  sweep: 98; not Givenchy's); non-makeup 628 of 1,212, as before. Every quote shown, 8,238 (the summaries' cited
+  quotes included), was found word for word in its saved comment, checked outside the engine; 745 in the 17 makeup
+  answers (r/Makeup 211, r/Sephora 309, r/MakeupAddiction 101, r/drugstoreMUA 83, r/AsianBeauty 41), none from
+  r/MakeupRehab and none anywhere from threads 1co3r5i or 1jlzpoa. Brand accounts: 1,352 credible voices behind the
+  100 shown makeup items, run through module 5's own signs again: the same one flag as before (a Thrive Causemetics
+  mascara voice, one of 30 behind that pick, a customer's plain remark, not shown), so no brand account drives a pick.
+  NARS Orgasm shows its three new-formula warnings and its note in both answers that show it; got2b's note shows in
+  both brow answers; Becca's is shown nowhere. No hair product is among the picks of the 17 answers. `python -m
+  engine.summaries check`: 912 entries, 663 fine, 249 with problems, fix 2's 249 older entries; none of a makeup type.
+  Whole suite, three times (before and after the two test sentences of (10), the last on the final commit): 7,276
+  passed and 1 failed, the unlabelled gold thread 1v40u3t (which fails on main too). Offline evaluation on a copy of
+  the store: identical to fix 2's run in every number but the library's quote count, 93,773/94,276 to 93,768/94,271
+  (the five mentions of (6), all five found word for word, so the share is the same to six places); against main's
+  last row (2 Nov), the same cells but two: the library's quotes found word for word, 99.60% to 99.47%, and quotes
+  shown, 265 to 257 (all verified). The lower share is the library's, not this branch's code (engine/extract.py equals
+  main's) and was already in the 4 Nov row, from the 3 Nov verification pass that rewrote kept comments: 99.41% of the
+  78,110 mentions outside the makeup communities (the 4 Nov row had 99.41%) and 99.75% of the 16,161 in them.
+  eval/metrics.json is saved from this run, dated 6 Nov. Told numbers (products a day 30, a month 39, the wait told 25
+  minutes for the first and 21 for each, 15 calls a product at a minute each and 6 for the archive, 450 Gemini calls a
+  day, 50,000 seconds a month, 20 waiting, 150 minutes late) are equal to main's in every value; the one config
+  difference, ON_DEMAND_SEARCH_CALLS = 16 (4 Nov, Noemi's "Keep 25 min": the cap that keeps a round inside main's own
+  numbers), is not a told number and unchanged this round (no ON_DEMAND constant moved since 4e30f34). The need-fit
+  rule is off (config.NEED_FIT_FOR_PICKS = False) and the three product notes are in data/product_notes.json. Every
+  commit since main is dated +0000 with the one Opus 5.5 trailer, except 92c823f's extra Sonnet 5.5 trailer, which the
+  orchestrator rewrites before the merge.
   Left for Noemi: whether a hair product under "Also worth a look" should carry the "Meets the bar for a pick" label
-  (it does, as a product ranked below the picks does); cream blush losing its only Skip item to a product it doesn't
-  show. Next, by the summaries writer: the four summaries above. The scratch files of this round hold commenters' words
-  and go to the Trash with the deletion rule.
+  (it does, as a product ranked below the picks does, though got2b's can never be a pick); cream blush losing its only
+  Skip item to a product it doesn't show. Left for the orchestrator: 4e30f34's message (7) and 92c823f's extra
+  trailer.
+  The scratch files of this round hold commenters' words and go to the Trash with the deletion rule.

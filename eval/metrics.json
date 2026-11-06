@@ -58,10 +58,10 @@
       "threads": null
     },
     "ai_quotes_found": {
-      "value": 0.994664601807459,
+      "value": 0.9946643188255136,
       "target": null,
-      "count": 93773,
-      "out_of": 94276,
+      "count": 93768,
+      "out_of": 94271,
       "threads": null
     },
     "request_outcome": {
