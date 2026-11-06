@@ -804,7 +804,7 @@ def write_answer(ranking: RankingResult, bodies: Mapping[str, str], product_type
         item.prescription = _prescription(item.product_key, prescription)
     look_for = _look_for(ranking, check, product_type, unsuited_kinds, request, asks, [pick.name for pick in picks],
                          forms_asked, needs, _picks_names(ranking, picks),
-                         _Once(lambda: _lines_products(ranking, picks, product_type)),
+                         _Once(lambda: _lines_products(ranking, [*picks, *worth], product_type)),
                          other_types_threads=other_types_threads, also_shown=_picks_names(ranking, worth))
     care_note = _care_note([care.get(pick.product_key) for pick in picks], picks, check)
     # Shown thanks to a comment standing out in its thread (14 Oct 2026): the messages and the note say how.
@@ -1562,15 +1562,36 @@ def _lines_products(ranking: RankingResult, picks: Iterable["Pick"], product_typ
     type asked for (18 Oct 2026): a brand or line pick holds them ("Bonavita variable temperature gooseneck" under the
     Bonavita kettle line, "OXO adjustable temp kettle" under OXO's), so they say which kinds of the type it is. Only
     those its credible writers recommend, which are what the pick stands for (a model they only warn against isn't);
-    never one whose name names another type ("Lodge enameled cast iron Dutch oven" under the Lodge skillet line)."""
+    never one whose name names another type ("Lodge enameled cast iron Dutch oven" under the Lodge skillet line). Since
+    fix 1 after the warm (5 Nov 2026) the "Also worth a look" items are passed too: the Urban Decay eyeliner line's
+    24/7 Glide-On pencils say an "Avoid: pencil eyeliner" goes against it. In a makeup answer (config.FACE_AND_EYE_TYPES)
+    a line grouped under its brand and the type's name ("Urban Decay eyeliner line", key "urban decay eyeliner") holds
+    the brand's products of the type grouped under the brand alone too ("urban decay 24 7 glide on pencil ...")."""
     names: list[str] = []
     for pick in picks:
-        under = pick.product_key + " "
+        unders = [pick.product_key + " "]
+        brand = _line_brand(pick.product_key, product_type)
+        if brand:
+            unders.append(brand + " ")
         for product in ranking.products:
-            if (product.key.startswith(under) and product.credible_recommendations
+            if (product.key != pick.product_key and any(product.key.startswith(under) for under in unders)
+                    and product.credible_recommendations
                     and not (_named_types(product.name, ranking.category) - {product_type})):
                 names += [product.name, *(m.written_as for m in product.mentions if m.written_as)]
     return list(dict.fromkeys(names))
+
+
+def _line_brand(key: str, product_type: str | None) -> str:
+    """The brand part of a makeup line's key made of a brand and the type's name or its last word (_lines_products, fix
+    1 after the warm, 5 Nov 2026): "general:urban decay" of "general:urban decay eyeliner" in an eyeliner answer; "" for
+    any other key or type."""
+    if product_type not in config.FACE_AND_EYE_TYPES:
+        return ""
+    words = product_type.lower().split()
+    for suffix in dict.fromkeys((" ".join(words), words[-1])):
+        if key.split(":", 1)[-1].endswith(" " + suffix):
+            return key[:-len(suffix) - 1]
+    return ""
 
 
 def _named_in(ranking: RankingResult) -> dict[str, tuple[tuple[str, str], ...]]:
@@ -2043,7 +2064,8 @@ _ELSEWHERE = re.compile(
     r"|\bthe reasons? (?:he|she|they|you) (?:said|gave|mentioned)\b"
     r"|\bas you (?:said|say|mentioned|found|noted|described)\b"
     r"|\bwhat you(?:'re| are) (?:wanting|after|describing)\b"
-    r"|\byour problem\b|(?-i:\bOP(?:'s)?\b)", re.IGNORECASE)
+    r"|\byour problem\b|(?-i:\bOP(?:'s)?\b)"
+    rf"|{config.QUOTE_SOMEONE_SAID}", re.IGNORECASE)  # "Someone said X, yes..." (fix 1, 5 Nov 2026)
 # Things a quote can lean on that its writer said just before it: "both of them", "either product", "for that reason",
 # "that part"; since 13 Oct 2026 "both in one" (a product holding two things the asker wanted, not shown). The
 # sentences before it are shown with it, when they fit (_widened).
@@ -2477,6 +2499,7 @@ def _undercuts(m: ScoredMention, named: tuple[tuple[str, str], ...], product_typ
 
     for found in re.finditer(config.QUOTE_LEAVING, text):
         after = _CLAUSES.split(text[found.end():], maxsplit=1)[0]
+        after = re.split(r"(?<![a-z0-9'])because(?![a-z0-9'])", after, maxsplit=1)[0]  # the reason (fix 1, 5 Nov 2026)
         if found.start() > own_at and names_another(after) and _first_at(after, own_words) is None:
             return True  # "X was my go-to before I found Y"
     for found in re.finditer(config.QUOTE_GOING_ELSEWHERE, text):
@@ -3084,6 +3107,13 @@ def _look_for(ranking: RankingResult, check: _QuoteCheck, product_type: str | No
     type asked for is no tip either way ("Avoid: face primer" in a makeup primer answer: _one_of_the_types_names), and
     in a makeup answer neither is a one-word kind naming another makeup type ("Look for: spray" in a lip tint answer:
     _not_for_this_makeup).
+
+    Since fix 1 after the warm (5 Nov 2026, from the shopper review; Claude's technical calls): in a makeup answer a tip
+    whose name doesn't name the type asked for is none ("eyelash curler" in a mascara answer, "lip oils" in a lipstick
+    one, "drugstore": _names_this_makeup), nor is a "Look for" naming another category's type in its place ("sunscreen
+    as a primer", "moisturizer": config.TIP_OTHER_CATEGORIES); and in every answer the products ranked under an "Also
+    worth a look" line count with the picks' (`lines_products`), so "Avoid: pencil eyeliner" no longer stands beside a
+    line of pencils.
     """
     candidates = []
     asked_words, refused = _asked_and_refused(ranking.category, product_type, request, needs, asks)
@@ -3810,17 +3840,28 @@ def _not_for_this_makeup(kind: str, advice: str, category: str, product_type: st
     powder") or, before such a word, says the opposite form of one the request names (config.TIP_FORM_OPPOSITES:
     "pressed blush in satin or matte" for cream blush). Since part 4 of the same day, a kind of one word that is the
     last word of another makeup type's names and none of this one's ("spray" in a lip tint answer: a setting spray on the
-    lips, its label cut short) is none either; one naming no type ("drugstore", "mini") is as before."""
+    lips, its label cut short) is none either; one naming no type ("drugstore", "mini") was as before until fix 1 after
+    the warm (same day, the shopper review): a tip whose name doesn't name the type asked for is none
+    (_names_this_makeup), and a "Look for" whose name names another category's type and, before its purpose word, not
+    this one is offered in its place (config.TIP_OTHER_CATEGORIES and TIP_OTHER_CATEGORY_WORDS: "sunscreen as a
+    primer", "spf as a primer")."""
     if product_type not in config.FACE_AND_EYE_TYPES:
         return False
     words = re.findall(r"[a-z0-9][a-z0-9'-]*", _plain(kind))
     if len(words) == 1 and _another_makeup_types_word(words[0], product_type):
         return True
+    if not _names_this_makeup(" ".join(words), product_type):
+        return True  # "eyelash curler" in a mascara answer, "lip oils" in a lipstick one, "drugstore" (fix 1)
     cut = next((i for i, w in enumerate(words) if w in PURPOSE_WORDS), len(words))
     head, rest = " ".join(words[:cut]), " ".join(w for w in words[cut + 1:] if w not in PURPOSE_WORDS)
     if advice == LOOK_FOR:
         if any(_named_types(head, other) for other in config.TIP_OFF_LABEL_CATEGORIES):
             return True
+        if not _names_this_makeup(head, product_type) and (
+                any(_named_types(head, other) for other in config.TIP_OTHER_CATEGORIES if other != category)
+                or any(re.search(rf"(?<![a-z0-9]){re.escape(word)}(?![a-z0-9])", head)
+                       for word in config.TIP_OTHER_CATEGORY_WORDS)):
+            return True  # "sunscreen as a primer", "spf as a primer", "tinted moisturizer for oily skin" (fix 1)
         if any(re.search(rf"(?<![a-z0-9]){re.escape(word)}(?![a-z0-9])", _plain(kind))
                for word in config.TIP_OFF_LABEL_WORDS):
             return True
@@ -3831,6 +3872,18 @@ def _not_for_this_makeup(kind: str, advice: str, category: str, product_type: st
             return True
     named = _named_types(head, category) & set(config.FACE_AND_EYE_TYPES)
     return bool(named) and product_type not in named and product_type not in _named_types(rest, category)
+
+
+def _names_this_makeup(text: str, product_type: str) -> bool:
+    """Whether a tip's words name the makeup type asked for (5 Nov 2026, fix 1 after the warm, from the shopper review:
+    "Look for: eyelash curler" in a mascara answer, "lip oils" in a lipstick one, "skin prep" in a primer one, and the
+    terse "drugstore" and "mini", say nothing about the type): by one of module 1's names for it (engine.sources.
+    mentions_product: "tubing mascara", "color corrector" for concealer) or by the last word of the type's own name as
+    a whole word, a plural aside ("silicone primer" for makeup primer, "hydrating spray" for setting spray)."""
+    if mentions_product(text, product_type):
+        return True
+    last = product_type.lower().split()[-1]
+    return any(w.removesuffix("s") == last.removesuffix("s") for w in re.findall(r"[a-z0-9]+", text.lower()))
 
 
 def _another_makeup_types_word(word: str, product_type: str) -> bool:

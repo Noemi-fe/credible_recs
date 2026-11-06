@@ -3362,3 +3362,27 @@ NO_LONGER_MADE_VOICES = 2
 # Words saying where a makeup product is worn, which name no kind of it: "face primer" is a makeup primer, as "eyebrow
 # gel" is a brow gel; a tip for one is a tip for the type asked for itself (engine.answer._one_of_the_types_names).
 TYPE_PLACE_WORDS = ("face", "facial", "makeup", "eye", "eyebrow", "brow", "lip", "cheek")
+
+# --- Makeup, after the warm: fix 1 (5 Nov 2026) ---
+# Technical calls by Claude, reported to Noemi, from the rules review, the shopper review and the summary fact-check of
+# the settled makeup answers. Like parts 2 and 4, they change which quotes and tips an answer shows, never a score.
+#
+# A makeup tip whose name, before its purpose word, names a product type of another category than the answer's
+# (skincare's moisturiser and sunscreen) and none of the type asked for is no "Look for": it is offered in place of
+# the type ("sunscreen as a primer", "tinted moisturizer for oily skin" in a foundation answer). Haircare's stay in
+# TIP_OFF_LABEL_CATEGORIES, which holds even when the type is named ("hairspray as a setting spray").
+TIP_OTHER_CATEGORIES = ("skincare", "haircare", "kitchen")
+# Words that name such a product though module 1 has no type by them: "spf as a primer" is a sunscreen offered in the
+# primer's place, as "sunscreen as a primer" is ("spf primer" names the primer, and stays).
+TIP_OTHER_CATEGORY_WORDS = ("spf",)
+# A recommendation's quote telling of leaving its product for another named right after "started buying": "I liked X
+# but started buying Y because it's cheaper" (engine.answer._undercuts, as QUOTE_LEAVING's other words). The other
+# product must come before any "because", which gives the reason and may name the product again.
+QUOTE_LEAVING = QUOTE_LEAVING + r"|\b(?:started|began)\s+(?:buying|using|getting|wearing)\b"
+# A quote saying it answers what another commenter said ("Someone said X, yes this is a favourite of mine too") leans
+# on a comment the reader doesn't see, as one saying "as you said" does (engine.answer._ELSEWHERE): it comes after a
+# clearer quote, and only makes up a pick's minimum. "Others" and "other people" only after "as", "like" or "what": "I
+# bought three others recommended online" speaks of other products and stands alone.
+QUOTE_SOMEONE_SAID = (r"\b(?:someone|somebody|another (?:commenter|commentor|poster|person)"
+                      r"|(?:as|like|what) (?:others|other people))"
+                      r"(?: else)? (?:have |had )?(?:said|mentioned|suggested|recommended|posted)\b")

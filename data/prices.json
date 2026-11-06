@@ -18507,6 +18507,24 @@
     "https://www.dermalogica.co.uk/sitemap_products_1.xml?from=5670154797209&to=15006422401400"
    ],
    "note": "Found by engine.maker_pages in the sitemap https://www.dermalogica.co.uk/sitemap_products_1.xml?from=5670154797209&to=15006422401400; the page names it \"Daily Milkfoliant\"; GBP 65 on the page."
+  },
+  {
+   "product": "The Ordinary High-Adherence Silicone Primer",
+   "category": "general",
+   "product_type": "makeup primer",
+   "price": null,
+   "currency": "GBP",
+   "shop": "John Lewis",
+   "url": "https://www.johnlewis.com/the-ordinary-high-adherence-silicone-primer-30ml/p6061560",
+   "checked_on": "2026-11-05",
+   "available": false,
+   "sources": [
+    "https://www.johnlewis.com/the-ordinary-high-adherence-silicone-primer-30ml/p6061560",
+    "https://well.ca/products/the-ordinary-high-adherence-silicone_129158.html",
+    "https://lyko.com/en/the-ordinary/the-ordinary-high-adherence-silicone-primer-30ml",
+    "https://theordinary.com/en-fm/high-adherence-silicone-primer-100423.html"
+   ],
+   "note": "discontinued: John Lewis's page (read 2026-11-05) says 'No longer available online' and 'We're unlikely to receive more stock of this item'; Well.ca labels it 'No Longer Available' and Lyko 'Product is discontinued'; The Ordinary's own page for it (theordinary.com, read the same day) now shows other products, not this primer. No price: not sold new."
   }
  ]
 }

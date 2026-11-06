@@ -79,7 +79,10 @@ def test_a_one_word_makeup_tip_naming_another_makeup_type_is_left_out():
     answer = write_answer(rank_products(items, "general", notes), bodies_for(*items, *notes), "lip tint",
                           request="lip tint")
     assert "spray" not in kinds_shown(answer)
-    assert "drugstore" in kinds_shown(answer)  # a one-word tip naming no makeup type is as before
+    # Changed on purpose on 5 Nov 2026 (fix 1 after the warm, from the shopper review, which found "Look for: drugstore"
+    # and "Look for: mini" too terse to say anything): a makeup tip whose name names nothing of the type asked for is
+    # left out too (engine.answer._names_this_makeup). Until then this line read: assert "drugstore" in kinds_shown(answer).
+    assert "drugstore" not in kinds_shown(answer)
 
 
 # --- Quotes that undercut their product ---

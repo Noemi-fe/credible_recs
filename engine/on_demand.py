@@ -780,10 +780,11 @@ def write_threads(bundle: Bundle, library_dir: Path, written: dict[str, str]) ->
     """Writes the bundle's extracted threads into a library folder: threads/<id>.json first, then extracted/<id>.json,
     each whole under another name and then swapped in. A thread the folder already holds that wasn't written from the
     bundle (`written`: id -> fingerprint, kept by the caller) is a baked thread: never overwritten. How many were
-    written."""
+    written. A thread Noemi said to remove (config.REMOVED_THREADS) is never written (fix 1 after the warm, 5 Nov 2026:
+    the bundle's own paths, the site's load_threads and Noemi's pull, had not checked it)."""
     count = 0
     for tid, item in sorted(bundle.threads.items()):
-        if item.extraction is None or not re.fullmatch(r"[A-Za-z0-9]+", tid):
+        if item.extraction is None or not re.fullmatch(r"[A-Za-z0-9]+", tid) or tid in REMOVED_THREADS:
             continue
         thread_path = Path(library_dir) / "threads" / f"{tid}.json"
         if thread_path.exists() and tid not in written:
@@ -1090,7 +1091,8 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
     saved = {path.stem for path in (library_dir / "threads").glob("*.json")}
     skip = saved | set(bundle.threads) | unlabelled_gold_ids() | set(REMOVED_THREADS)  # Noemi's removed two, 5 Nov 2026
     mine = {tid for tid, item in bundle.threads.items() if item.entry == key}  # read on an earlier try (4 Nov 2026)
-    fresh = [post for post in ranked if _plain_id(post) not in skip or _plain_id(post) in mine]
+    fresh = [post for post in ranked if _plain_id(post) not in skip  # a removed thread even if read before (fix 1)
+             or (_plain_id(post) in mine and _plain_id(post) not in REMOVED_THREADS)]
     if entry.refresh:  # the library's threads are old: only threads posted since count (an unknown date isn't old)
         oldest = _years_before(moment, ON_DEMAND_OLD_YEARS)
         fresh = [post for post in fresh if not _posted_before(post, oldest)]
@@ -1337,6 +1339,8 @@ def pull(bucket: Bucket, library_dir: Path, now=_now) -> PullReport | None:
     report = PullReport()
     by_type: dict[str, list[str]] = {}
     for tid, item in sorted(bundle.threads.items()):
+        if tid in REMOVED_THREADS:
+            continue  # Noemi said to remove it (fix 1 after the warm, 5 Nov 2026): never pulled
         if item.extraction is None:
             report.waiting += 1
             continue
