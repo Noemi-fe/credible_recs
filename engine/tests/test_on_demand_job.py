@@ -431,10 +431,10 @@ def test_a_round_that_found_all_it_needs_is_closed_though_a_search_failed(tmp_pa
 
 
 # --- Inside the old budget (4 Nov 2026, Noemi's "Keep 25 min") ---
-# The told wait (about 25 minutes, 30 requests a day, 39 a month) rests on a request taking 6 minutes of Arctic Shift
-# (config.ON_DEMAND_ARCHIVE_MINUTES) and 15 Gemini calls (config.ON_DEMAND_CALLS_PER_PRODUCT). Round 1's advice searches
-# reach the big threads asking for recommendations, but they had been added on top of the round (about 32 searches, not
-# 16), and big threads take up to 4 calls each (24 for six). So the round's searches have a budget
+# The told wait (about 25 minutes, 30 requests a day, 73 a month since 6 Nov 2026) rests on a request taking 6 minutes
+# of Arctic Shift (config.ON_DEMAND_ARCHIVE_MINUTES) and 15 Gemini calls (config.ON_DEMAND_CALLS_PER_PRODUCT). Round 1's
+# advice searches reach the big threads asking for recommendations, but they had been added on top of the round (about
+# 32 searches, not 16), and big threads take up to 4 calls each (24 for six). So the round's searches have a budget
 # (config.ON_DEMAND_SEARCH_CALLS, main's own "blush" round), the advice searches come before the title searches inside
 # it, and the threads a request reads are chosen so that their extraction fits its Gemini calls.
 

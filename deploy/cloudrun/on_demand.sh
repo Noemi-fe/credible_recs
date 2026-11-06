@@ -59,13 +59,16 @@ on_demand_bucket() {
 # takes about 12). Billed for its whole run, waiting included, so the least that works: 1 vCPU (a job's minimum) and
 # 1 GiB (it never loads the open model). Its one secret is the Gemini key, which RUNNER may read; the site, which also
 # runs as RUNNER, may start it. No schedule of its own: Cloud Scheduler's keep-warm ping drives the retries.
+# Since 6 Nov 2026 (Noemi's doubling: 92,000 seconds a month, 73 requests at 21 minutes, with backfill of thin products
+# when nobody waits) it is told its project, CREDIBLE_RECS_GCP_PROJECT, whose Cloud Run use its free-tier guard reads
+# from Cloud Monitoring (engine/free_tier.py; deploy.sh grants RUNNER roles/monitoring.viewer).
 on_demand_job() {
     $GCLOUD secrets add-iam-policy-binding gemini-key --project "$PROJECT" \
         --member "serviceAccount:$RUNNER" --role roles/secretmanager.secretAccessor >/dev/null
     $GCLOUD run jobs deploy "$READER_JOB" --project "$PROJECT" --region "$REGION" --image "$IMAGE" \
         --command python --args=-m,engine.on_demand,run \
         --tasks 1 --max-retries 0 --task-timeout 45m --memory 1Gi --cpu 1 \
-        --set-env-vars "CREDIBLE_RECS_ON_DEMAND_BUCKET=${ON_DEMAND_BUCKET},CREDIBLE_RECS_QUERY_MODEL=off" \
+        --set-env-vars "CREDIBLE_RECS_ON_DEMAND_BUCKET=${ON_DEMAND_BUCKET},CREDIBLE_RECS_QUERY_MODEL=off,CREDIBLE_RECS_GCP_PROJECT=${PROJECT}" \
         --set-secrets "GEM_API_KEY=gemini-key:latest" --quiet
     $GCLOUD run jobs add-iam-policy-binding "$READER_JOB" --project "$PROJECT" --region "$REGION" \
         --member "serviceAccount:$RUNNER" --role roles/run.invoker >/dev/null

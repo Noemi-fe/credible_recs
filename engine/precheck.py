@@ -103,7 +103,9 @@ On Google Cloud a Cloud Run job runs it once a day (deploy/cloudrun/DEPLOY.md).
 
 The products read on demand (14 Oct 2026; engine/on_demand.py): with CREDIBLE_RECS_ON_DEMAND_BUCKET set, the command
 first takes the threads read on demand into its library folder, and checks ahead the answers about every product type
-in on-demand reading's queue, after the requests above.
+in on-demand reading's queue, after the requests above. Since 6 Nov 2026 (backfill, Noemi's doubling of on-demand
+reading) the plan run also lists in that queue the requests whose answers are thin (fewer than 3 picks), and queues one
+of them when backfill is due (engine.on_demand.precheck_backfill); a dry run lists nothing.
 """
 
 import dataclasses
@@ -207,6 +209,9 @@ class _Found:
     # own comments (their quotes, tiers 0 to 3), 1 and 2 for those that back a product an answer shows or ranks just behind
     # it. A comment in none is absent (USE_NONE). The order kept comments are verified in when their deadlines tie.
     use: dict[str, int] = field(default_factory=dict)
+    # The requests whose answers are thin (fewer than 3 picks: Answer.needs_more_threads), as on-demand reading's
+    # backfill entries (6 Nov 2026, Noemi's doubling: "do it with random products if people don't research any").
+    thin: list = field(default_factory=list)
 
 
 # How much the answers use a comment (25 Oct 2026, the review's option (b)): the order kept comments are verified in when
@@ -396,6 +401,9 @@ def _work_out(requests: list[str], library_dir: Path, checker, profiles, unverif
             if result.answer is None:
                 continue
             found.answered += 1
+            if result.answer.needs_more_threads and result.query.status == "ok" and result.query.product_type:
+                found.thin.append(on_demand.Entry.waiting_for(result.query, had=result.own_threads_available,
+                                                              backfill=True))
             arguments = next(args for args, answer in reversed(written) if answer is result.answer)
             for comment_id, level in used_comments(arguments["ranking"]).items():
                 found.use[comment_id] = min(found.use.get(comment_id, USE_NONE), level)
@@ -1300,6 +1308,12 @@ def plan_run(requests: list[str], library_dir: Path, checker, profiles, dry_run:
             bucket.put(LEDGER_NAME, ledger.dumps(now))
         written = bucket.put(PLAN_NAME, plan_bytes(answers, verify, checker.checks_made("bright_data"), now, edited,
                                                    fallback))
+        # On-demand reading's backfill (6 Nov 2026): the thin answers listed in its queue, and one queued when it is due
+        # (engine.on_demand.precheck_backfill; nothing without its bucket). The site's keep-warm ping starts the job.
+        queued = on_demand.precheck_backfill(os.environ, found.thin, now)
+        if found.thin:
+            print(f"Backfill: {len(found.thin)} thin answer(s) listed for on-demand reading"
+                  f"{'; queued: ' + queued.product_type if queued is not None else ''}.")
     after = VerifyReading()
     _after_the_run(kept, ledger, now, after)
     print(plan_report(found, len(requests), kept, due, loaded, recorded, after, time.perf_counter() - started, dry_run,

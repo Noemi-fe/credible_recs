@@ -182,6 +182,15 @@ $GCLOUD run jobs deploy "$JOB" --project "$PROJECT" --region "$REGION" --image "
 $GCLOUD run jobs add-iam-policy-binding "$JOB" --project "$PROJECT" --region "$REGION" \
     --member "serviceAccount:$RUNNER" --role roles/run.invoker >/dev/null
 #    And on-demand reading's job on the same image (on_demand.sh), which the site may start.
+#    6 Nov 2026 (Noemi's doubling of on-demand reading, option A): before a backfill read, and before any reading past
+#    visitors' first 50,000 seconds of the month, the reading job asks Cloud Monitoring what Cloud Run has used this
+#    month (engine/free_tier.py), with its own service account, so that account may read Cloud Monitoring (read only).
+#    Adding a binding that is there already changes nothing; --condition=None keeps it unconditional. Without it the
+#    guard can't read and says no: visitors' first 50,000 seconds still read, nothing past them and no backfill.
+if [ "$ON_DEMAND" = on ]; then
+    $GCLOUD projects add-iam-policy-binding "$PROJECT" --member "serviceAccount:$RUNNER" \
+        --role roles/monitoring.viewer --condition=None >/dev/null
+fi
 if [ "$ON_DEMAND" = on ]; then on_demand_job; fi
 
 # 5. Once a day at 4 am UK time, when the site is quietest, Cloud Scheduler starts the job.

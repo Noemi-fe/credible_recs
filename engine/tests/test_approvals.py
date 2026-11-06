@@ -158,12 +158,15 @@ def test_in_line_past_the_days_calls_the_message_says_30_a_day(tmp_path):
 def test_when_the_months_time_is_what_runs_out_the_capacity_is_told_by_the_month_not_the_day(tmp_path):
     # 50,000 seconds of job time a month read 39 requests of 21 minutes: it is the month's time, not Gemini's 450
     # calls, that limits the reading, so "about 30 a day" next to "check back on 1 November" would not be true.
-    assert on_demand.products_a_month() == config.ON_DEMAND_MONTH_SECONDS // (21 * 60) == 39
+    # Changed on purpose 6 Nov 2026 (Noemi's doubling of on-demand reading, 5 Nov: "You can double"): 92,000 seconds a
+    # month, the most that keeps 10% of the shared free allowance in hand on October's use (engine/tests/
+    # test_cloudrun.py), read 73 requests of 21 minutes, and the visitor is told 73. The wording is as approved.
+    assert on_demand.products_a_month() == config.ON_DEMAND_MONTH_SECONDS // (21 * 60) == 73
     left = config.ON_DEMAND_MONTH_SECONDS - 21 * 60  # one request's time left this month
     state = Line(tmp_path, waiting=3, seconds_used=left).asked()
     assert state["message"] == (
         "We haven't read Reddit about teapots yet. It's in line: 3 products are ahead of it, and our free reading "
-        "allowance covers about 39 a month. Check back on 1 November.")
+        "allowance covers about 73 a month. Check back on 1 November.")
     assert "a day" not in state["message"]
 
 

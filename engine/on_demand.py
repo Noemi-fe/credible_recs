@@ -43,9 +43,16 @@ How it works, in four parts:
    computer (a thread already there stays as it is), and once the site is deployed the bundle lets go of every thread
    the image now holds.
 
+5. Backfill (6 Nov 2026, Noemi's doubling: "do it with random products if people don't research any"): when no
+   request waits, the job reads a product nobody asked for, one whose answer the daily pre-check found thin, after
+   every visitor's request and within backfill's own limits (see "Backfill" below).
+
 Free tiers only (the sums are in deploy/cloudrun/DEPLOY.md): no scheduler of its own (the site starts the job, and the
-keep-warm ping starts it again when a start failed), the job's runs at most ON_DEMAND_MONTH_SECONDS a month, Gemini's
-free allowance only, two small objects in the bucket.
+keep-warm ping starts it again when a start failed), the job's runs at most ON_DEMAND_MONTH_SECONDS a month (92,000
+since the doubling of 6 Nov 2026: 73 requests at 21 minutes), Gemini's free allowance only, two small objects in the
+bucket. Google's free allowance is one pot shared with the site, so every backfill read, and every visitor read past
+the month's first ON_DEMAND_GUARD_FREE_SECONDS of visitors' reading, asks the free-tier guard first (engine/free_tier.py),
+which answers no when the month is projected at 90% of either part or when it can't read Cloud Monitoring.
 
     python -m engine.on_demand run       the reading job (on Google Cloud: CREDIBLE_RECS_ON_DEMAND_BUCKET, GEM_API_KEY)
     python -m engine.on_demand status    the queue, in counts and product types (on Noemi's computer, through gcloud)
@@ -56,6 +63,7 @@ import importlib
 import json
 import math
 import os
+import random
 import re
 import shutil
 import subprocess
@@ -77,6 +85,11 @@ from engine.config import (
     GEMINI_RESET_HOUR_UTC,
     LIBRARY_MIX,
     LIBRARY_THREADS_PER_PRODUCT,
+    ON_DEMAND_BACKFILL_BUNDLE_THREADS,
+    ON_DEMAND_BACKFILL_CANDIDATES,
+    ON_DEMAND_BACKFILL_EVERY_SECONDS,
+    ON_DEMAND_BACKFILL_SECONDS,
+    ON_DEMAND_BACKFILL_VISITOR_REQUESTS,
     ON_DEMAND_BUNDLE_MAX_THREADS,
     ON_DEMAND_CALLS_PER_PRODUCT,
     ON_DEMAND_EACH_MINUTES,
@@ -85,6 +98,9 @@ from engine.config import (
     ON_DEMAND_GEMINI_CALLS_A_DAY,
     ON_DEMAND_GEMINI_CALLS_A_MINUTE,
     ON_DEMAND_GEMINI_MODEL,
+    ON_DEMAND_GUARD_FAILED_MINUTES,
+    ON_DEMAND_GUARD_FREE_SECONDS,
+    ON_DEMAND_GUARD_REST_HOURS,
     ON_DEMAND_LATE_MINUTES,
     ON_DEMAND_LEASE_MINUTES,
     ON_DEMAND_MAX_DONE,
@@ -138,7 +154,7 @@ WAITING_OLD = ("The Reddit threads we've read about {about} are a few years old.
                "but our free reading allowance is used up for now: check back {when}.")
 # In line behind other requests, past what the day's free allowance can read (25 Oct 2026): {ahead_text} is "1 product
 # is" or "3 products are"; {capacity} is what the free allowance covers, "30 a day" while Gemini's calls limit the
-# reading and "39 a month" once the job's time for the month does (capacity_text).
+# reading and "73 a month" (39 until the doubling of 6 Nov 2026) once the job's time for the month does (capacity_text).
 IN_LINE_NEW = ("We haven't read Reddit about {about} yet. It's in line: {ahead_text} ahead of it, and our free reading "
                "allowance covers about {capacity}. Check back {when}.")
 IN_LINE_MORE = ("We've read only a little on Reddit about {about} so far. Reading more is in line: {ahead_text} ahead of "
@@ -195,15 +211,20 @@ class Entry:
     read_again_after: str | None = None  # when it may be queued again, if its library is still thin then
     found: int = 0  # threads its reading added to the bundle
     note: str | None = None  # the job's last word on it, in a few words (counts only)
+    # True for a product nobody asked for, read when nobody waits (backfill, 6 Nov 2026: Noemi's "do it with random
+    # products if people don't research any"): visitors' requests are always read first.
+    backfill: bool = False
+    started_at: str | None = None  # when a run began reading it (UTC): a backfill read in progress counts in the wait
 
     @classmethod
-    def waiting_for(cls, query: ParsedQuery, had: int, refresh: bool = False) -> "Entry":
+    def waiting_for(cls, query: ParsedQuery, had: int, refresh: bool = False, backfill: bool = False) -> "Entry":
         """The entry for an understood request (module 1's ParsedQuery), whose library has `had` extracted threads about
-        it; `refresh`: its threads are old, so newer ones are wanted."""
+        it; `refresh`: its threads are old, so newer ones are wanted; `backfill`: nobody asked for it (a thin answer the
+        daily pre-check found)."""
         needs = need_words(query)[:ON_DEMAND_NEED_WORDS]
         return cls(key=key_of(query.category, query.product_type, needs), category=query.category,
                    product_type=query.product_type, subreddits=list(query.subreddits), needs=needs,
-                   ingredient_led=query.ingredient_led, had=had, refresh=refresh)
+                   ingredient_led=query.ingredient_led, had=had, refresh=refresh, backfill=backfill)
 
     def query(self) -> ParsedQuery:
         """The request as module 2 reads it, made again from the entry: its product type, category and subreddits, and
@@ -227,7 +248,7 @@ class Entry:
     def wait_again(self, had: int, refresh: bool = False) -> None:
         """Queued again, from the start."""
         self.status, self.had, self.tries, self.tried_at, self.read_at, self.note = "waiting", had, 0, None, None, None
-        self.refresh = refresh
+        self.refresh, self.started_at = refresh, None
 
     def tried_lately(self, now: datetime) -> bool:
         """Whether its last failed try was under ON_DEMAND_RETRY_MINUTES ago: the next run tries others first."""
@@ -258,6 +279,13 @@ class Queue:
     # day}
     usage: dict = field(default_factory=dict)
     last_run: dict | None = None  # the last run's report, in counts
+    # Backfill (6 Nov 2026): the thin products the daily pre-check listed ({"day": the day it listed them, "candidates":
+    # their entries}), whether backfill rests until a time and why ("pace", "half", "month", "gemini", "bundle" or
+    # "guard"), and the threads the bundle held at the job's last look (not baked in yet).
+    backfill: dict | None = None
+    backfill_resting_until: str | None = None
+    backfill_resting_why: str | None = None
+    bundle_threads: int = 0
 
     def find(self, key: str) -> Entry | None:
         return next((entry for entry in self.entries if entry.key == key), None)
@@ -265,9 +293,14 @@ class Queue:
     def waiting(self) -> list[Entry]:
         return [entry for entry in self.entries if entry.status == "waiting"]
 
+    def visitors_waiting(self) -> list[Entry]:
+        """The waiting requests visitors asked for (backfill left out), in the order they were queued."""
+        return [entry for entry in self.waiting() if not entry.backfill]
+
     def add(self, entry: Entry) -> Entry:
         """Queues `entry`, or queues again a done entry of the same request (to the end of the line); the queue's
-        entry. One already waiting stays as it is."""
+        entry. One already waiting stays as it is, unless it is a backfill a visitor now asks for: it is the visitor's
+        then (read with visitors', first), at the end of the line."""
         found = self.find(entry.key)
         if found is None:
             self.entries.append(entry)
@@ -277,6 +310,11 @@ class Queue:
             return entry
         if found.status == "done":
             found.wait_again(entry.had, entry.refresh)
+            found.backfill = entry.backfill
+            self.entries.remove(found)
+            self.entries.append(found)
+        elif found.backfill and not entry.backfill:
+            found.backfill, found.had, found.refresh = False, entry.had, entry.refresh
             self.entries.remove(found)
             self.entries.append(found)
         return found
@@ -302,11 +340,20 @@ class Queue:
     def rest(self, until: datetime, why: str) -> None:
         self.resting_until, self.resting_why = until.isoformat(), why
 
+    def backfill_resting(self, now: datetime) -> bool:
+        until = _time(self.backfill_resting_until)
+        return until is not None and now < until
+
+    def rest_backfill(self, until: datetime, why: str) -> None:
+        """No backfill until then (visitors' reading goes on)."""
+        self.backfill_resting_until, self.backfill_resting_why = until.isoformat(), why
+
     def usage_now(self, now: datetime) -> dict:
-        """This month's and Gemini's day's usage (a new month or day starts from nothing)."""
+        """This month's and Gemini's day's usage (a new month or day starts from nothing): the job's seconds this month,
+        backfill's share of them, and Gemini's calls today."""
         month, day = now.strftime("%Y-%m"), gemini_day(now).isoformat()
         if self.usage.get("month") != month:
-            self.usage.update(month=month, seconds=0.0)
+            self.usage.update(month=month, seconds=0.0, backfill_seconds=0.0)
         if self.usage.get("day") != day:
             self.usage.update(day=day, gemini_calls=0)
         return self.usage
@@ -319,14 +366,20 @@ class Queue:
     def as_json(self) -> dict:
         return {"version": 1, "entries": [entry.as_json() for entry in self.entries], "lease_until": self.lease_until,
                 "resting_until": self.resting_until, "resting_why": self.resting_why, "usage": self.usage,
-                "last_run": self.last_run}
+                "last_run": self.last_run, "backfill": self.backfill,
+                "backfill_resting_until": self.backfill_resting_until,
+                "backfill_resting_why": self.backfill_resting_why, "bundle_threads": self.bundle_threads}
 
     @classmethod
     def from_json(cls, data: dict) -> "Queue":
+        backfill = data.get("backfill")
         return cls(entries=[Entry.from_json(e) for e in data.get("entries") or [] if isinstance(e, dict)],
                    lease_until=data.get("lease_until"), resting_until=data.get("resting_until"),
                    resting_why=data.get("resting_why"), usage=dict(data.get("usage") or {}),
-                   last_run=data.get("last_run"))
+                   last_run=data.get("last_run"), backfill=backfill if isinstance(backfill, dict) else None,
+                   backfill_resting_until=data.get("backfill_resting_until"),
+                   backfill_resting_why=data.get("backfill_resting_why"),
+                   bundle_threads=int(data.get("bundle_threads") or 0))
 
 
 def reader_model() -> str:
@@ -362,10 +415,12 @@ def month_places_left(queue: Queue, now: datetime) -> int:
 
 def capacity_text(place: int, queue: Queue, now: datetime) -> str:
     """What the free allowance covers, for the visitor at `place` in line (25 Oct 2026, Noemi's decision (l) of 19 Oct,
-    on Gemini 3.1 Flash-Lite): "30 a day" while Gemini's calls decide when the place is reached, "39 a month" once the
-    job's time for the month does. Flash-Lite's 450 calls a day could read 30 requests, but the month's job time reads
-    about 39: "30 a day" beside "check back on 1 November" would not be true."""
-    month_limits = (queue.resting_why == "month") if queue.resting(now) else place >= month_places_left(queue, now)
+    on Gemini 3.1 Flash-Lite): "30 a day" while Gemini's calls decide when the place is reached, "73 a month" (39 until
+    the doubling of 6 Nov 2026) once the job's time for the month does. Flash-Lite's 450 calls a day could read 30
+    requests, but the month's job time reads about 73: "30 a day" beside "check back on 1 November" would not be true."""
+    # A rest for the free-tier guard (6 Nov 2026) is the month's allowance too: Google's, shared with the site.
+    month_limits = (queue.resting_why in ("month", "guard")) if queue.resting(now) \
+        else place >= month_places_left(queue, now)
     return f"{products_a_month()} a month" if month_limits else f"{products_a_day()} a day"
 
 
@@ -422,6 +477,128 @@ def next_gemini_reset(now: datetime) -> datetime:
 def next_month(now: datetime) -> datetime:
     first = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     return (first + timedelta(days=32)).replace(day=1)
+
+
+# --- Backfill: products nobody asked for, read when nobody waits (6 Nov 2026) ---
+#
+# Noemi, 5 Nov 2026: "You can double (do it with random products if people don't research any), but make sure my claude
+# usage for this week and in general stays under control". The daily pre-check lists the products whose answers are thin
+# (fewer than 3 picks) in the queue (precheck_backfill); when no request waits, the site's keep-warm ping (hourly at most)
+# or the pre-check queues one of them (backfill_due), in an order seeded by the day they were listed, never one read in
+# the last ON_DEMAND_READ_AGAIN_DAYS; and the job reads it as it reads a visitor's (Arctic Shift, Gemini's free
+# allowance, every quote checked word for word), only after every visitor's request, and only within backfill's own
+# limits (backfill_stop) and the free-tier guard's yes (engine/free_tier.py). No Claude at run time, no Bright Data, no
+# Cloud Scheduler job of its own.
+
+_BACKFILL_FIELDS = ("key", "category", "product_type", "subreddits", "needs", "ingredient_led", "had")
+
+
+def _as_backfill(entry: Entry) -> Entry:
+    """A fresh waiting backfill entry for the same product and need words."""
+    return Entry(key=entry.key, category=entry.category, product_type=entry.product_type,
+                 subreddits=list(entry.subreddits), needs=list(entry.needs), ingredient_led=entry.ingredient_led,
+                 had=entry.had, backfill=True)
+
+
+def backfill_candidates(queue: Queue) -> list[Entry]:
+    """The thin products the daily pre-check listed, as waiting backfill entries."""
+    out = []
+    for data in (queue.backfill or {}).get("candidates") or []:
+        try:
+            out.append(_as_backfill(Entry.from_json(data)))
+        except (TypeError, ValueError, AttributeError):
+            continue  # a candidate that can't be read is left out
+    return out
+
+
+def backfill_order(entries: list[Entry], day: str) -> list[Entry]:
+    """The candidates in a random order seeded by the day (the same all that day, whatever order they came in)."""
+    ordered = sorted(entries, key=lambda entry: entry.key)
+    random.Random(f"backfill {day}").shuffle(ordered)
+    return ordered
+
+
+def backfill_stop(queue: Queue, now: datetime, run_seconds: float = 0.0, run_backfill: float = 0.0,
+                  bundle_threads: int | None = None) -> tuple[str, datetime] | None:
+    """Why one more backfill read can't start now, and until when; None when it can. Each read is counted at the time
+    a request is told to take (ON_DEMAND_PRODUCT_MINUTES). `run_seconds` and `run_backfill`: the running job's seconds
+    and its backfill seconds not counted in the queue yet; `bundle_threads`: the bundle's count, when the job has it.
+    - "month": the month's reading time would run out;
+    - "half": backfill's ON_DEMAND_BACKFILL_SECONDS would be passed (half the month, never visitors' first 50,000);
+    - "pace": backfill would pass its share of the days gone (paced evenly through the month);
+    - "gemini": the day's Gemini calls would leave less than ON_DEMAND_BACKFILL_VISITOR_REQUESTS visitors' requests;
+    - "bundle": the bundle holds ON_DEMAND_BACKFILL_BUNDLE_THREADS threads or more not baked in yet."""
+    usage = Queue(usage=dict(queue.usage)).usage_now(now)
+    seconds = float(usage.get("seconds", 0.0)) + run_seconds
+    backfill = float(usage.get("backfill_seconds", 0.0)) + run_backfill
+    one = ON_DEMAND_PRODUCT_MINUTES * 60
+    first, after = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0), next_month(now)
+    if seconds + one > ON_DEMAND_MONTH_SECONDS:
+        return "month", after
+    if backfill + one > ON_DEMAND_BACKFILL_SECONDS:
+        return "half", after
+    if backfill + one > ON_DEMAND_BACKFILL_SECONDS * ((now - first) / (after - first)):
+        return "pace", first + timedelta(days=(after - first).days * (backfill + one) / ON_DEMAND_BACKFILL_SECONDS)
+    calls = int(usage.get("gemini_calls", 0))
+    if calls + ON_DEMAND_CALLS_PER_PRODUCT * (1 + ON_DEMAND_BACKFILL_VISITOR_REQUESTS) > ON_DEMAND_GEMINI_CALLS_A_DAY:
+        return "gemini", next_gemini_reset(now)
+    if (queue.bundle_threads if bundle_threads is None else bundle_threads) >= ON_DEMAND_BACKFILL_BUNDLE_THREADS:
+        return "bundle", now + timedelta(days=1)
+    return None
+
+
+def backfill_due(queue: Queue, now: datetime) -> Entry | None:
+    """The backfill entry to queue now, or None: nothing waits, reading and backfill don't rest, backfill has room
+    (backfill_stop), and a listed product hasn't been read (or queued) in the last ON_DEMAND_READ_AGAIN_DAYS: the first
+    such in the day's order. The queue is left as it is."""
+    if queue.waiting() or queue.resting(now) or queue.backfill_resting(now) or backfill_stop(queue, now) is not None:
+        return None
+    day = str((queue.backfill or {}).get("day") or now.date().isoformat())
+    for entry in backfill_order(backfill_candidates(queue), day):
+        if any(other.category == entry.category and other.product_type == entry.product_type
+               and (other.status == "waiting" or not other.due_again(now)) for other in queue.entries):
+            continue  # waiting, or read lately (for whatever need words)
+        return entry
+    return None
+
+
+def backfill_in_progress(queue: Queue, now: datetime) -> bool:
+    """Whether the run holding the queue has begun a backfill read (it counts in a visitor's told wait: up to one
+    request's minutes)."""
+    if not queue.leased(now):
+        return False
+    began = _time(queue.lease_until) - timedelta(minutes=ON_DEMAND_LEASE_MINUTES)  # when this run took the queue
+    for entry in queue.waiting():
+        started = _time(entry.started_at)
+        if entry.backfill and started is not None and started >= began:
+            return True
+    return False
+
+
+def precheck_backfill(environ, entries: list[Entry], now: datetime, bucket: Bucket | None = None) -> Entry | None:
+    """For the daily pre-check, with CREDIBLE_RECS_ON_DEMAND_BUCKET set: lists the thin products it found in the queue
+    (one entry per product type, at most ON_DEMAND_BACKFILL_CANDIDATES), and queues one when it is due (backfill_due);
+    the site's keep-warm ping starts the job. The entry queued, or None. `bucket` can be a fake (the tests)."""
+    name = (environ.get(BUCKET_VAR) or "").strip()
+    if not name:
+        return None
+    listed: dict[tuple[str, str], Entry] = {}
+    for entry in entries:
+        listed.setdefault((entry.category, entry.product_type), entry)
+    candidates = [{name_: getattr(_as_backfill(entry), name_) for name_ in _BACKFILL_FIELDS}
+                  for entry in list(listed.values())[:ON_DEMAND_BACKFILL_CANDIDATES]]
+    queued: dict = {}
+
+    def edit(queue: Queue):
+        queue.backfill = {"day": now.date().isoformat(), "candidates": candidates}
+        entry = backfill_due(queue, now)
+        queued["entry"] = None if entry is None else queue.add(entry)
+
+    if QueueStore(bucket or Bucket(name, prefix=PREFIX)).change(edit) is None:
+        print(f"The thin products couldn't be listed in {name}: backfill reads from the last list.", file=sys.stderr,
+              flush=True)
+        return None
+    return queued.get("entry")
 
 
 # --- The bundle: the threads read on demand, with their extractions ---
@@ -707,6 +884,7 @@ class SiteReader:
         self._read_on: dict[str, datetime] = {}  # thread id -> when the job read it from the archive (the bundle's)
         self._first_seen: dict[str, float] = {}  # entry key -> when this server first saw it waiting (memory only)
         self._last_start: float | None = None
+        self._backfill_at: float | None = None  # when the keep-warm ping last looked whether a backfill is due
         self._lock = threading.RLock()
 
     # --- Answers ---
@@ -742,8 +920,10 @@ class SiteReader:
                 if written is None:
                     return Outcome(remember=False)
                 return Outcome(remember=False, again=True) if written else Outcome()
-            if found is None or found.status == "done":
-                if len(queue.waiting()) >= ON_DEMAND_MAX_WAITING:
+            # A backfill waiting for the same request becomes the visitor's (6 Nov 2026): read first, with visitors'.
+            if found is None or found.status == "done" or found.backfill:
+                # A full queue counts visitors' requests only (a backfill never takes a visitor's place).
+                if (found is None or found.status == "done") and len(queue.visitors_waiting()) >= ON_DEMAND_MAX_WAITING:
                     return Outcome(remember=False)  # a full queue: what the library has, asked about again later
                 queue = self.store.change(lambda q: q.add(entry) and None)
                 if queue is None:
@@ -764,8 +944,10 @@ class SiteReader:
 
         about = plural(entry.product_type)
         kind = "old" if entry.refresh else "more" if entry.had > 0 or own > 0 else "new"
-        waiting = [e.key for e in queue.waiting()]
-        ahead = waiting.index(key) if key in waiting else 0
+        # Visitors' requests only are ahead of it (backfill is read after them), and a backfill read already begun
+        # (6 Nov 2026): one request's minutes more.
+        waiting = [e.key for e in queue.visitors_waiting()]
+        ahead = (waiting.index(key) if key in waiting else 0) + backfill_in_progress(queue, now)
         state = {"state": "reading", "product_type": entry.product_type, "about": about, "read_before": kind != "new",
                  "check_back_minutes": None}
         minutes, until = wait_for(ahead, queue, now)
@@ -801,6 +983,7 @@ class SiteReader:
         hourly (BUNDLE_RELOAD_SECONDS). How many threads were written into the folder or taken out of it (the caller
         forgets its remembered answers when there were any)."""
         with self._lock:
+            self._offer_backfill()
             waiting = self._queue is not None and bool(self._queue.waiting())
             due = self._bundle_at is None or self._clock() - self._bundle_at >= BUNDLE_RELOAD_SECONDS
             if not (waiting or due):
@@ -810,6 +993,28 @@ class SiteReader:
                 if queue is not None:
                     self._start_if_due(queue, self._now())
             return self.load_threads() or 0
+
+    def _offer_backfill(self) -> None:
+        """At most every ON_DEMAND_BACKFILL_EVERY_SECONDS (6 Nov 2026): the queue read, and a backfill queued when one
+        is due (backfill_due: nothing waits, backfill has room); the ping then starts the job as for any request."""
+        if self.job is None or (self._backfill_at is not None
+                                and self._clock() - self._backfill_at < ON_DEMAND_BACKFILL_EVERY_SECONDS):
+            return
+        self._backfill_at = self._clock()
+        now = self._now()
+        queue = self._read_queue(0)
+        if queue is None or backfill_due(queue, now) is None:
+            return
+
+        def add(q: Queue):
+            entry = backfill_due(q, now)
+            if entry is None:
+                return False
+            q.add(entry)
+
+        saved = self.store.change(add)
+        if saved is not None:
+            self._queue, self._queue_at = saved, self._clock()
 
     def _read_queue(self, fresh_within: float) -> Queue | None:
         if self._queue is not None and self._queue_at is not None and self._clock() - self._queue_at < fresh_within:
@@ -1005,13 +1210,33 @@ class RunReport:
     resting: str | None = None  # why the queue rests now, if it does
     notes: list[str] = field(default_factory=list)
     seconds: float = 0.0
+    # Backfill (6 Nov 2026), logged as visitors' reads are: each product read for nobody, its seconds (its read and its
+    # threads' extraction) and Gemini calls; their seconds in all; and whether the run did any work for a visitor (a
+    # run that did backfill only counts wholly as backfill's, its start included).
+    backfill: list[dict] = field(default_factory=list)
+    backfill_seconds: float = 0.0
+    visitor_work: bool = False
+    backfill_work: bool = False  # any step for backfill, a read the guard refused included
+    bundle_threads: int | None = None  # the bundle's threads at the run's last look
+    _lines: dict = field(default_factory=dict, repr=False)  # a backfill request's key -> its line in `backfill`
 
     def summary(self) -> dict:
         return {"requests_read": len(self.requests_read), "requests_done": len(self.requests_done),
                 "threads_read": self.threads_read, "extracted": self.extracted, "quotes_kept": self.quotes_kept,
                 "quotes_dropped": self.quotes_dropped, "slimmed": self.slimmed, "whole": self.whole,
                 "failures": self.failures, "gemini_calls": self.gemini_calls, "seconds": round(self.seconds),
-                "resting": self.resting}
+                "resting": self.resting, "backfill": self.backfill, "backfill_seconds": round(self.backfill_seconds)}
+
+    def log_backfill(self, key: str, product_type: str, seconds: float, calls: int = 0) -> None:
+        """Adds a backfill step's seconds and Gemini calls to its product's line (one line a request read)."""
+        line = self._lines.get(key)
+        if line is None:
+            line = self._lines[key] = {"product_type": product_type, "seconds": 0.0, "gemini_calls": 0}
+            self.backfill.append(line)
+        line["seconds"] = round(line["seconds"] + seconds, 1)
+        line["gemini_calls"] += calls
+        self.backfill_seconds += seconds
+        self.backfill_work = True
 
     def text(self) -> str:
         if not self.ran:
@@ -1023,18 +1248,27 @@ class RunReport:
                  f"{self.quotes_dropped}.",
                  f"Kept only the comments answers use: {self.slimmed}; kept whole: {self.whole}.",
                  f"Failures: {self.failures}. Time: {self.seconds / 60:.1f} min."]
+        if self.backfill:
+            lines.append("Backfill read now: " + ", ".join(
+                f"{line['product_type']} ({line['seconds'] / 60:.1f} min, {line['gemini_calls']} Gemini calls)"
+                for line in self.backfill) + ".")
         if self.resting:
             lines.append(f"Resting: {self.resting}.")
         return "\n".join(lines + self.notes)
 
 
 def run_job(bucket: Bucket, library_dir: Path, archive, gemini, now=_now, clock=time.monotonic,
-            work_dir: Path | None = None, new_reading_seconds: float = ON_DEMAND_NEW_READING_SECONDS) -> RunReport:
+            work_dir: Path | None = None, new_reading_seconds: float = ON_DEMAND_NEW_READING_SECONDS,
+            guard=None) -> RunReport:
     """One run of the reading job (see the module's docstring): holds the queue, extracts the threads waiting for
     Gemini, reads the next waiting request's threads from the archive, and so on, until nothing waits, the queue rests
     (Gemini's day, the month's time) or the run's time for new readings is up; then lets go of the queue and adds its
     time to the month's. `archive`: an engine.arctic_shift.ArcticShiftClient; `gemini`: an
-    engine.gemini_extract.GeminiClient; `now` (datetimes) and `clock` (seconds) can be fakes."""
+    engine.gemini_extract.GeminiClient; `now` (datetimes) and `clock` (seconds) can be fakes.
+
+    Visitors first (6 Nov 2026): their requests are read, and their threads extracted, before any backfill. `guard`, the
+    free-tier guard (engine.free_tier.Guard), is asked before every backfill read and before any visitor read past the
+    month's first ON_DEMAND_GUARD_FREE_SECONDS of visitors' reading; without one, it is a no."""
     report = RunReport()
     started = clock()
     queues, bundles = QueueStore(bucket), BundleStore(bucket)
@@ -1063,7 +1297,7 @@ def run_job(bucket: Bucket, library_dir: Path, archive, gemini, now=_now, clock=
     try:
         _let_go_of_old_threads(bundles, now(), report)
         _read_until_done(queues, bundles, Path(library_dir), archive, gemini, now, clock, started, work, report,
-                         new_reading_seconds)
+                         new_reading_seconds, guard)
     except Exception as error:  # reported, and the queue let go of all the same: the next run starts afresh
         report.failures += 1
         report.notes.append(f"The run stopped on an error ({type(error).__name__}).")
@@ -1074,7 +1308,13 @@ def run_job(bucket: Bucket, library_dir: Path, archive, gemini, now=_now, clock=
         def release(queue: Queue):
             queue.release_lease()
             usage = queue.usage_now(now())
-            usage["seconds"] = round(float(usage.get("seconds", 0.0)) + report.seconds + ON_DEMAND_START_SECONDS, 1)
+            ran = report.seconds + ON_DEMAND_START_SECONDS
+            usage["seconds"] = round(float(usage.get("seconds", 0.0)) + ran, 1)
+            # Backfill's share (6 Nov 2026): its own steps' seconds, or the whole run when it did nothing for a visitor.
+            backfill = ran if report.backfill_work and not report.visitor_work else report.backfill_seconds
+            usage["backfill_seconds"] = round(float(usage.get("backfill_seconds", 0.0)) + backfill, 1)
+            if report.bundle_threads is not None:
+                queue.bundle_threads = report.bundle_threads
             queue.last_run = report.summary() | {"at": now().isoformat()}
 
         if queues.change(release) is None:
@@ -1085,24 +1325,33 @@ def run_job(bucket: Bucket, library_dir: Path, archive, gemini, now=_now, clock=
 
 
 def _read_until_done(queues: QueueStore, bundles: BundleStore, library_dir: Path, archive, gemini, now, clock,
-                     started: float, work: Path, report: RunReport, new_reading_seconds: float) -> None:
+                     started: float, work: Path, report: RunReport, new_reading_seconds: float, guard=None) -> None:
+    refused: set[str] = set()  # backfill this run may not read (taken off the queue, or left there if it couldn't be)
     while True:
         found_queue, found_bundle = queues.read(), bundles.read()
         if found_queue is None or found_bundle is None:
             report.notes.append("The bucket couldn't be read: the rest waits for the next run.")
             return
         queue, bundle = found_queue[0], found_bundle[0]
+        report.bundle_threads = len(bundle.threads)
         moment = now()
         if queue.resting(moment):
             report.resting = f"until {queue.resting_until} ({queue.resting_why})"
             return
         usage = queue.usage_now(moment)
-        if float(usage.get("seconds", 0.0)) + (clock() - started) + ON_DEMAND_START_SECONDS >= ON_DEMAND_MONTH_SECONDS:
+        ran = (clock() - started) + ON_DEMAND_START_SECONDS  # this run's seconds, not in the queue yet
+        if float(usage.get("seconds", 0.0)) + ran >= ON_DEMAND_MONTH_SECONDS:
             _rest(queues, next_month(moment), "month", report)
             return
-        waiting_items = [tid for tid, item in bundle.threads.items() if item.extraction is None]
+        backfill_keys = {e.key for e in queue.entries if e.backfill}
+        waiting_items = waiting_for_gemini(bundle, queue)
         if waiting_items:
-            if not _extract_one(waiting_items[0], bundle, queues, bundles, library_dir, gemini, now, work, report):
+            item = bundle.threads[waiting_items[0]]
+            step, calls = clock(), report.gemini_calls
+            going_on = _extract_one(waiting_items[0], bundle, queues, bundles, library_dir, gemini, now, work, report)
+            _count_step(report, item.entry, item.product_type, item.entry in backfill_keys, clock() - step,
+                        report.gemini_calls - calls)
+            if not going_on:
                 return
             _finish_complete(queues, now, report)  # a request whose threads are all in is done at once
             continue
@@ -1111,7 +1360,8 @@ def _read_until_done(queues: QueueStore, bundles: BundleStore, library_dir: Path
         if clock() - started >= new_reading_seconds:
             report.notes.append("This run's time for new readings is up: the rest waits for the next run.")
             return
-        entry = next((e for e in queue.waiting() if e.read_at is None and not e.tried_lately(moment)), None)
+        ready = [e for e in queue.waiting() if e.read_at is None and not e.tried_lately(moment) and e.key not in refused]
+        entry = next((e for e in ready if not e.backfill), None) or next((e for e in ready if e.backfill), None)
         if entry is None:
             return
         if len(bundle.threads) >= ON_DEMAND_BUNDLE_MAX_THREADS:
@@ -1119,7 +1369,94 @@ def _read_until_done(queues: QueueStore, bundles: BundleStore, library_dir: Path
             report.notes.append(f"The bundle holds {len(bundle.threads)} threads not baked in yet: a deploy takes them "
                                 "in (python -m engine.library pull-bucket).")
             return
+        step = clock()
+        if entry.backfill:
+            if not _backfill_may_start(entry, queue, queues, moment, ran, len(bundle.threads), guard, report):
+                report.backfill_seconds += clock() - step  # backfill's time, but nothing read: no line in its log
+                report.backfill_work = True
+                refused.add(entry.key)
+                continue
+            _change_entry(queues, entry.key, lambda e: setattr(e, "started_at", moment.isoformat()))
+        else:
+            visitors = (float(usage.get("seconds", 0.0)) - float(usage.get("backfill_seconds", 0.0))
+                        + ran - report.backfill_seconds)  # visitors' seconds this month, this run's so far included
+            if visitors >= ON_DEMAND_GUARD_FREE_SECONDS:
+                verdict = _ask(guard, moment, float(usage.get("seconds", 0.0)) + ran)
+                if not verdict.yes:
+                    report.visitor_work = True
+                    _rest(queues, moment + _guard_rest(verdict), "guard", report)
+                    report.notes.append(f"Past visitors' first {ON_DEMAND_GUARD_FREE_SECONDS:,} seconds this month, the "
+                                        f"free-tier guard said no ({verdict.why}): reading rests.")
+                    return
         _read_entry(entry, queue, bundle, queues, bundles, library_dir, archive, now, work, report)
+        _count_step(report, entry.key, entry.product_type, entry.backfill, clock() - step)
+
+
+def waiting_for_gemini(bundle: Bundle, queue: Queue) -> list[str]:
+    """The bundle's threads waiting for Gemini, visitors' first (6 Nov 2026), each kind in the bundle's order."""
+    backfill = {entry.key for entry in queue.entries if entry.backfill}
+    waiting = [tid for tid, item in bundle.threads.items() if item.extraction is None]
+    return sorted(waiting, key=lambda tid: bundle.threads[tid].entry in backfill)
+
+
+def _count_step(report: RunReport, key: str, product_type: str, backfill: bool, seconds: float,
+                calls: int = 0) -> None:
+    """A step's time: backfill's (in its product's log line), or a visitor's."""
+    if backfill:
+        report.log_backfill(key, product_type, seconds, calls)
+    else:
+        report.visitor_work = True
+
+
+def _ask(guard, now: datetime, reader_seconds: float):
+    """The free-tier guard's verdict for one request's read; no guard, or a guard that fails, is a no."""
+    from engine.free_tier import Verdict
+
+    if guard is None:
+        return Verdict(False, "no free-tier guard", None, None, failed=True)
+    try:
+        return guard.allows(now, extra_seconds=ON_DEMAND_PRODUCT_MINUTES * 60, reader_seconds=reader_seconds)
+    except Exception as error:  # fail closed
+        return Verdict(False, f"the guard failed ({type(error).__name__})", None, None, failed=True)
+
+
+def _guard_rest(verdict) -> timedelta:
+    """How long reading rests after the guard's no: a short while when it couldn't read Cloud Monitoring."""
+    return (timedelta(minutes=ON_DEMAND_GUARD_FAILED_MINUTES) if verdict.failed
+            else timedelta(hours=ON_DEMAND_GUARD_REST_HOURS))
+
+
+def _backfill_may_start(entry: Entry, queue: Queue, queues: QueueStore, moment: datetime, ran: float, threads: int,
+                        guard, report: RunReport) -> bool:
+    """Before a backfill read: backfill's own limits (backfill_stop, this run's seconds counted), then the free-tier
+    guard. When either says no, the backfill is taken off the queue (a later hour queues one again) and backfill rests;
+    visitors' reading goes on."""
+    usage = queue.usage_now(moment)
+    if queue.backfill_resting(moment):
+        why, until = queue.backfill_resting_why or "resting", _time(queue.backfill_resting_until)
+    else:
+        stop = backfill_stop(queue, moment, run_seconds=ran, run_backfill=report.backfill_seconds,
+                             bundle_threads=threads)
+        why, until = stop if stop is not None else (None, None)
+    if why is None:
+        verdict = _ask(guard, moment, float(usage.get("seconds", 0.0)) + ran)
+        if verdict.yes:
+            return True
+        why, until = "guard", moment + _guard_rest(verdict)
+        report.notes.append(f"The free-tier guard said no to a backfill read ({verdict.why}): backfill rests until "
+                            f"{until.isoformat()}.")
+    else:
+        report.notes.append(f"A backfill read of {entry.product_type} can't start ({why}): backfill rests until "
+                            f"{until.isoformat()}.")
+
+    def drop(waiting: Queue):
+        mine = waiting.find(entry.key)
+        if mine is not None and mine.status == "waiting" and mine.backfill:
+            waiting.entries.remove(mine)
+        waiting.rest_backfill(until, why)
+
+    queues.change(drop)
+    return False
 
 
 def _let_go_of_old_threads(bundles: BundleStore, now: datetime, report: RunReport) -> None:
@@ -1213,7 +1550,8 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
         return
     # Noemi's removed threads never count among its threads (round 3, 6 Nov 2026, from the rules review of fix 2).
     extracted = [tid for tid in bundle.extracted(entry.product_type) if tid not in REMOVED_THREADS]
-    if not entry.refresh and entry.had + len(extracted) >= ON_DEMAND_MIN_THREADS:
+    # A backfill (6 Nov 2026) is for an answer with fewer than 3 picks, whatever its threads: it is read all the same.
+    if not entry.refresh and not entry.backfill and entry.had + len(extracted) >= ON_DEMAND_MIN_THREADS:
         _change_entry(queues, key, lambda e: e.finish(moment, found=0, note="enough threads about it already"))
         report.requests_done.append(entry.product_type)
         return
@@ -1225,7 +1563,7 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
 
         def failed(mine: Entry):
             mine.tries, mine.tried_at = mine.tries + 1, moment.isoformat()
-            if mine.tries >= ON_DEMAND_MAX_TRIES:
+            if mine.tries >= ON_DEMAND_MAX_TRIES or mine.backfill:  # a backfill never waits for another try
                 mine.finish(moment, found=0, failed=True, note="the archive couldn't be searched")
 
         _change_entry(queues, key, failed)
@@ -1246,7 +1584,7 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
     # Cut short: searches failed, and the request has fewer threads than a whole round reads, with Gemini calls to
     # spare for more. Tried again unless this was its last try.
     cut_short = bool(source.failed) and len(mine) + len(chosen) < LIBRARY_THREADS_PER_PRODUCT and room > 0
-    again = cut_short and entry.tries + 1 < ON_DEMAND_MAX_TRIES
+    again = cut_short and entry.tries + 1 < ON_DEMAND_MAX_TRIES and not entry.backfill  # backfill: what it has
     read: dict[str, Item] = {}
     for post in chosen:
         post_id = _plain_id(post)
@@ -1508,8 +1846,10 @@ def pull(bucket: Bucket, library_dir: Path, now=_now) -> PullReport | None:
 def forget_baked(bucket: Bucket, library_dir: Path) -> int | None:
     """Once a deploy has built the image from data/library: the bundle lets go of every thread the library holds with
     its extraction (the image has it now). Written only over the version read, so a thread the job adds meanwhile is
-    never lost. How many it let go of; None when the bucket couldn't be reached."""
+    never lost. How many it let go of; None when the bucket couldn't be reached. Then (6 Nov 2026) the queue learns the
+    bundle's new count, and backfill resting for a full bundle starts again."""
     gone: list[str] = []
+    left: list[int] = []
 
     def drop(bundle: Bundle):
         gone.clear()
@@ -1518,10 +1858,24 @@ def forget_baked(bucket: Bucket, library_dir: Path) -> int | None:
             if here and bundle.threads[tid].extraction is not None:
                 del bundle.threads[tid]
                 gone.append(tid)
+        left[:] = [len(bundle.threads)]
         if not gone:
             return False
 
-    return None if BundleStore(bucket).change(drop) is None else len(gone)
+    if BundleStore(bucket).change(drop) is None:
+        return None
+
+    def count(queue: Queue):
+        resting = queue.backfill_resting_why == "bundle"
+        if queue.bundle_threads == left[0] and not resting:
+            return False
+        queue.bundle_threads = left[0]
+        if resting:
+            queue.backfill_resting_until = queue.backfill_resting_why = None
+
+    if gone and QueueStore(bucket).change(count) is None:
+        print("The queue couldn't learn the bundle's new count: the reading job's next run tells it.", file=sys.stderr)
+    return len(gone)
 
 
 def gcloud_token() -> tuple[str, float]:
@@ -1580,8 +1934,17 @@ def status_text(queue: Queue, now: datetime) -> str:
         lines.append(f"A run holds the queue until {queue.lease_until}.")
     usage = queue.usage_now(now)
     hours = float(usage.get("seconds", 0)) / 3600
-    lines.append(f"This month: {hours:.1f} h of {ON_DEMAND_MONTH_SECONDS / 3600:.1f} h; Gemini today: "
-                 f"{usage.get('gemini_calls', 0)} of {ON_DEMAND_GEMINI_CALLS_A_DAY} calls.")
+    backfill = float(usage.get("backfill_seconds", 0)) / 3600
+    lines.append(f"This month: {hours:.1f} h of {ON_DEMAND_MONTH_SECONDS / 3600:.1f} h (backfill {backfill:.1f} h of "
+                 f"{ON_DEMAND_BACKFILL_SECONDS / 3600:.1f} h); Gemini today: {usage.get('gemini_calls', 0)} of "
+                 f"{ON_DEMAND_GEMINI_CALLS_A_DAY} calls.")
+    listed = (queue.backfill or {}).get("candidates") or []
+    said = f"Backfill: {len(listed)} thin product(s) listed"
+    if queue.backfill:
+        said += f" on {queue.backfill.get('day')}"
+    if queue.backfill_resting(now):
+        said += f"; resting until {queue.backfill_resting_until} ({queue.backfill_resting_why})"
+    lines.append(f"{said}; the bundle held {queue.bundle_threads} thread(s) not baked in at the job's last look.")
     if queue.last_run:
         lines.append(f"Last run: {queue.last_run}.")
     return "\n".join(lines)
@@ -1596,7 +1959,11 @@ def main(argv: list[str]) -> int:
         from engine.arctic_shift import ArcticShiftClient
         from engine.library import DEFAULT_LIBRARY_DIR
 
-        report = run_job(Bucket(name, prefix=PREFIX), DEFAULT_LIBRARY_DIR, ArcticShiftClient(), reader_client())
+        from engine.free_tier import guard_from_env
+
+        bucket = Bucket(name, prefix=PREFIX)
+        report = run_job(bucket, DEFAULT_LIBRARY_DIR, ArcticShiftClient(), reader_client(),
+                         guard=guard_from_env(os.environ, bucket))
         print(report.text())
         return 0
     if argv[:1] == ["status"] and len(argv) in (1, 3):

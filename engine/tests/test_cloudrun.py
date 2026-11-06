@@ -164,48 +164,160 @@ def test_the_pre_check_has_room_for_the_grown_library():
     assert "CREDIBLE_RECS_QUERY_MODEL=off" in job
 
 
-def test_the_jobs_stay_inside_cloud_runs_free_tier_in_the_longest_month():
-    # Free tiers only. Cloud Run jobs are billed per instance-second for their whole run, waiting included: 240,000
-    # vCPU-seconds and 450,000 GiB-seconds a month are free. Changed on purpose, 14 Oct 2026 (the free-tier redesign):
-    # the pre-check runs daily for at most its task timeout (Cloud Run stops it there), the whole 31-day month;
-    # on-demand reading for at most ON_DEMAND_MONTH_SECONDS a month. 10% is kept in hand.
+# --- Google's free allowance: one pot in dollars (6 Nov 2026, Noemi's doubling of on-demand reading, option A) ---
+#
+# Cloud Run's pricing page (https://cloud.google.com/run/pricing, read 6 Nov 2026): "The free tier is applied as a
+# spending based discount using Tier 1 pricing", the same money in each section: 240,000 vCPU-seconds of a job at
+# $0.000018 and 180,000 of a request-billed service at $0.000024 are both $4.32, and 450,000 GiB-seconds at $0.000002
+# and 360,000 at $0.0000025 both $0.90. So the site and both jobs share one pot per part (CPU and memory), in dollars,
+# and every sum below is in that pot. Until 6 Nov 2026 the jobs' and the site's allowances were summed apart.
+
+def _size(command: str) -> tuple[float, float]:
+    """A deploy command's vCPUs and GiB."""
     import re
 
-    from engine.config import ON_DEMAND_MONTH_SECONDS
+    memory = re.search(r"--memory (\d+)(Mi|Gi)", command)
+    return (float(re.search(r"--cpu (\d+)", command).group(1)),
+            int(memory.group(1)) / (1024 if memory.group(2) == "Mi" else 1))
+
+
+def _pot(cpu_seconds: float, gib_seconds: float, kind: str) -> tuple[float, float]:
+    """Dollars of each part at Tier 1 prices: kind "job" (instance-billed) or "service" (request-billed)."""
+    from engine.config import CLOUD_RUN_PRICES
+
+    return cpu_seconds * CLOUD_RUN_PRICES[kind]["cpu"], gib_seconds * CLOUD_RUN_PRICES[kind]["memory"]
+
+
+def test_the_free_allowance_is_one_pot_in_dollars_at_tier_1_prices():
+    from engine.config import CLOUD_RUN_PRICES, FREE_TIER_DOLLARS, FREE_TIER_SHARE
+
+    job, service = CLOUD_RUN_PRICES["job"], CLOUD_RUN_PRICES["service"]
+    assert (job["cpu"], job["memory"], service["cpu"], service["memory"]) == (0.000018, 0.000002, 0.000024, 0.0000025)
+    assert FREE_TIER_DOLLARS["cpu"] == pytest.approx(240_000 * job["cpu"]) == pytest.approx(180_000 * service["cpu"])
+    assert FREE_TIER_DOLLARS["memory"] == pytest.approx(450_000 * job["memory"]) == pytest.approx(
+        360_000 * service["memory"])
+    assert FREE_TIER_DOLLARS == {"cpu": pytest.approx(4.32), "memory": pytest.approx(0.90)}
+    assert FREE_TIER_SHARE == 0.9  # 10% kept in hand on each part
+
+
+def test_the_site_is_request_billed_with_its_startup_boost():
+    # Billed only while it answers (no --no-cpu-throttling, none when idle), at the service prices; its startup boost (2
+    # vCPU while it starts and 10 s after, https://cloud.google.com/run/docs/configuring/services/cpu) is billed, so the
+    # guard counts Cloud Monitoring's CPU allocation, which holds it, never billable time alone.
+    site = _command(DEPLOY_SH.read_text(encoding="utf-8"), '$GCLOUD run deploy')
+    assert "--no-cpu-throttling" not in site and "--min-instances 0" in site and "--cpu-boost" in site
+
+
+def test_the_guards_sizes_and_names_are_the_deploys():
+    import re
+
+    from engine.config import CLOUD_RUN_PRECHECK, CLOUD_RUN_READER, CLOUD_RUN_SITE, CLOUD_RUN_SIZES
+
+    script, reader = DEPLOY_SH.read_text(encoding="utf-8"), ON_DEMAND_SH.read_text(encoding="utf-8")
+    assert re.search(r'SERVICE="\$\{CREDIBLE_RECS_GCP_SERVICE:-([a-z-]+)\}"', script).group(1) == CLOUD_RUN_SITE
+    assert re.search(r'JOB="\$\{CREDIBLE_RECS_GCP_JOB:-([a-z-]+)\}"', script).group(1) == CLOUD_RUN_PRECHECK
+    assert re.search(r'READER_JOB="\$\{CREDIBLE_RECS_GCP_READER_JOB:-([a-z-]+)\}"', reader).group(1) == CLOUD_RUN_READER
+    assert CLOUD_RUN_SIZES == {
+        CLOUD_RUN_SITE: ("service", *_size(_command(script, '$GCLOUD run deploy'))),
+        CLOUD_RUN_PRECHECK: ("job", *_size(_command(script, '$GCLOUD run jobs deploy'))),
+        CLOUD_RUN_READER: ("job", *_size(_command(reader, '$GCLOUD run jobs deploy')))}
+
+
+def _read_ahead_seconds() -> float:
+    """Reading ahead's most billed seconds in a 31-day month: READ_AHEAD_SECONDS and a second more at each keep-warm
+    ping, every 5 minutes (DEPLOY.md's schedule)."""
+    from engine.config import READ_AHEAD_SECONDS
+
+    deploy = (Path(make_context.REPO_ROOT) / "deploy" / "cloudrun" / "DEPLOY.md").read_text(encoding="utf-8")
+    assert '--schedule "*/5 * * * *"' in deploy  # the keep-warm ping
+    return 31 * 24 * 12 * (READ_AHEAD_SECONDS + 1)
+
+
+def test_the_jobs_stay_inside_cloud_runs_free_tier_in_the_longest_month():
+    # Free tiers only. Cloud Run jobs are billed per instance-second for their whole run, waiting included. Changed on
+    # purpose, 14 Oct 2026 (the free-tier redesign): the pre-check runs daily for at most its task timeout (Cloud Run
+    # stops it there), the whole 31-day month; on-demand reading for at most ON_DEMAND_MONTH_SECONDS a month.
+    # Changed on purpose 6 Nov 2026 (Noemi's doubling, option A: one shared pot): the sums are in the pot's dollars, with
+    # the site's reading ahead at its own limit beside the jobs, and they show plainly what the hard caps can't do. The
+    # pre-check at its 55 minutes every day and reading ahead at its limit are 77% of the CPU part and, with the site at
+    # 3 GiB, 97.5% of the memory part before on-demand reading reads a second (80.2% at 2 GiB); visitors' answers on the
+    # site have no cap at all. So no month seconds keep 10% in hand on the memory part at 3 GiB by the caps alone, and
+    # on the CPU part only 30,372 would (44,160 on memory at 2 GiB), under the 50,000 of before the doubling. The caps
+    # can't keep the margin: the free-tier guard (engine/free_tier.py) does, from Cloud Monitoring, before any backfill
+    # read and before any visitor read past the first ON_DEMAND_GUARD_FREE_SECONDS (engine/tests/test_free_tier.py).
+    from engine.config import FREE_TIER_DOLLARS, FREE_TIER_SHARE, ON_DEMAND_MONTH_SECONDS
 
     script = DEPLOY_SH.read_text(encoding="utf-8")
     _, timeout = _precheck_settings(script)
-    precheck = _command(script, '$GCLOUD run jobs deploy')
-    reader = _command(ON_DEMAND_SH.read_text(encoding="utf-8"), '$GCLOUD run jobs deploy')
+    (cpu, gib), (reader_cpu, reader_gib) = (_size(_command(script, '$GCLOUD run jobs deploy')),
+                                            _size(_command(ON_DEMAND_SH.read_text(encoding="utf-8"),
+                                                           '$GCLOUD run jobs deploy')))
+    site_cpu, site_gib = _size(_command(script, '$GCLOUD run deploy'))
+    precheck_seconds, ahead = 31 * timeout * 60, _read_ahead_seconds()
+    precheck = _pot(precheck_seconds * cpu, precheck_seconds * gib, "job")
+    read_ahead = {gib_: _pot(ahead * site_cpu, ahead * gib_, "service") for gib_ in (site_gib, 2)}
+    reader = _pot(ON_DEMAND_MONTH_SECONDS * reader_cpu, ON_DEMAND_MONTH_SECONDS * reader_gib, "job")
+    assert site_gib == 3
+    # The pot table (DEPLOY.md, Costs): dollars of each part at 3 GiB, and at 2 GiB beside it.
+    assert (precheck_seconds * cpu, precheck_seconds * gib) == (102_300, 204_600)
+    assert precheck == (pytest.approx(1.8414), pytest.approx(0.4092))
+    assert read_ahead[3] == (pytest.approx(1.499904), pytest.approx(0.46872))
+    assert read_ahead[2] == (pytest.approx(1.499904), pytest.approx(0.31248))
+    assert ON_DEMAND_MONTH_SECONDS == 92_000 and reader == (pytest.approx(1.656), pytest.approx(0.184))
+    cpu_part = precheck[0] + read_ahead[3][0]
+    memory_part = {gib_: precheck[1] + read_ahead[gib_][1] for gib_ in (3, 2)}
+    assert cpu_part / FREE_TIER_DOLLARS["cpu"] == pytest.approx(0.7734, abs=1e-4)
+    assert memory_part[3] / FREE_TIER_DOLLARS["memory"] == pytest.approx(0.9755, abs=1e-4)
+    assert memory_part[2] / FREE_TIER_DOLLARS["memory"] == pytest.approx(0.8019, abs=1e-4)
+    # Plainly: at 3 GiB the memory part is past 90% by the caps alone, and with the reader's month both parts are over
+    # the whole pot (CPU 115.7%, memory 118.0%; 100.6% at 2 GiB).
+    assert memory_part[3] > FREE_TIER_SHARE * FREE_TIER_DOLLARS["memory"]
+    assert (cpu_part + reader[0]) / FREE_TIER_DOLLARS["cpu"] == pytest.approx(1.1568, abs=1e-4)
+    assert (memory_part[3] + reader[1]) / FREE_TIER_DOLLARS["memory"] == pytest.approx(1.1799, abs=1e-4)
+    assert (memory_part[2] + reader[1]) / FREE_TIER_DOLLARS["memory"] == pytest.approx(1.0063, abs=1e-4)
+    room_cpu = (FREE_TIER_SHARE * FREE_TIER_DOLLARS["cpu"] - cpu_part) / _pot(reader_cpu, 0, "job")[0]
+    room_memory_2 = (FREE_TIER_SHARE * FREE_TIER_DOLLARS["memory"] - memory_part[2]) / _pot(0, reader_gib, "job")[1]
+    assert (round(room_cpu), round(room_memory_2)) == (30_372, 44_160)
 
-    def size(job: str) -> tuple[float, float]:  # vCPUs and GiB
-        memory = re.search(r"--memory (\d+)(Mi|Gi)", job)
-        return float(re.search(r"--cpu (\d+)", job).group(1)), int(memory.group(1)) / (1024 if memory.group(2) ==
-                                                                                           "Mi" else 1)
 
-    precheck_seconds = 31 * timeout * 60
-    (cpu, gib), (reader_cpu, reader_gib) = size(precheck), size(reader)
-    assert precheck_seconds * cpu + ON_DEMAND_MONTH_SECONDS * reader_cpu <= 0.9 * 240_000
-    assert precheck_seconds * gib + ON_DEMAND_MONTH_SECONDS * reader_gib <= 0.9 * 450_000
-    # The sums DEPLOY.md gives: 102,300 vCPU-seconds (43%) for the pre-check at most, 152,300 (63%) with on-demand's
-    # (55 minutes since 14 Oct 2026: Bright Data's jobs may be waited for 20 minutes).
-    assert (precheck_seconds * cpu, precheck_seconds * cpu + ON_DEMAND_MONTH_SECONDS * reader_cpu) == (102_300, 152_300)
+# The month as it was measured (Cloud Monitoring, read-only, 6 Nov 2026: run.googleapis.com/container/
+# billable_instance_time and cpu/allocation_time, summed over October 2026): the site's billable seconds and its CPU
+# allocation (the startup boosts held in it), and the pre-check's. The site came up on 13 Oct, so these are 19 days of
+# it, but its first days were its busiest (deploys, boosts, the 4 GiB stopgap's restarts): its steady 20 days from 17
+# Oct to 5 Nov, scaled to 31, are 52,223 billable seconds and 57,916 vCPU-seconds, under October's.
+OCTOBER = {"site": (52_552.1, 66_221.3), "precheck": (34_510.4, 34_744.1)}
+
+
+def test_the_doubled_month_is_the_most_that_keeps_10_percent_in_hand_on_octobers_measured_use():
+    # 6 Nov 2026 (Noemi's doubling, option A): the brief's 98,000 seconds were for jobs with a pot of their own. In the
+    # shared pot, October's measured use at today's sizes (the site at 3 GiB, the pre-check at 2 GiB, the reader at
+    # 1 GiB) leaves the reader at most 92,960 seconds on the CPU part (the part that binds), so the month is 92,000, the
+    # most to the thousand: 73 requests at 21 minutes (39 before). On memory it is 79.6% of the part at 3 GiB and 65.0%
+    # at 2 GiB. A busier month than October is the free-tier guard's to catch: it projects the month from Cloud
+    # Monitoring before every read past the first 50,000 seconds and every backfill read.
+    from engine.config import CLOUD_RUN_PRECHECK, CLOUD_RUN_READER, CLOUD_RUN_SITE, CLOUD_RUN_SIZES, \
+        FREE_TIER_DOLLARS, FREE_TIER_SHARE, ON_DEMAND_MONTH_SECONDS
+
+    (_, _, site_gib), (_, _, precheck_gib), (_, reader_cpu, reader_gib) = (
+        CLOUD_RUN_SIZES[CLOUD_RUN_SITE], CLOUD_RUN_SIZES[CLOUD_RUN_PRECHECK], CLOUD_RUN_SIZES[CLOUD_RUN_READER])
+
+    def parts(month_seconds: int, gib: float) -> tuple[float, float]:
+        site = _pot(OCTOBER["site"][1], OCTOBER["site"][0] * gib, "service")
+        precheck = _pot(OCTOBER["precheck"][1], OCTOBER["precheck"][0] * precheck_gib, "job")
+        reader = _pot(month_seconds * reader_cpu, month_seconds * reader_gib, "job")
+        return (site[0] + precheck[0] + reader[0]) / FREE_TIER_DOLLARS["cpu"], \
+            (site[1] + precheck[1] + reader[1]) / FREE_TIER_DOLLARS["memory"]
+
+    cpu, memory = parts(ON_DEMAND_MONTH_SECONDS, site_gib)
+    assert cpu < FREE_TIER_SHARE and memory < FREE_TIER_SHARE
+    assert parts(ON_DEMAND_MONTH_SECONDS + 1_000, site_gib)[0] > FREE_TIER_SHARE  # the most, to the thousand
+    assert (round(cpu, 3), round(memory, 3), round(parts(ON_DEMAND_MONTH_SECONDS, 2)[1], 3)) == (0.896, 0.796, 0.65)
 
 
 def test_the_site_reads_ahead_within_a_third_and_a_bit_of_its_own_free_tier():
     # 14 Oct 2026 (the free-tier redesign): the site is billed only while it answers (request-billed: 180,000
     # vCPU-seconds and 360,000 GiB-seconds free a month). Reading ahead adds at most READ_AHEAD_SECONDS (and a second for
     # the last reads to come back) to each keep-warm ping, every 5 minutes (DEPLOY.md's schedule), on the site's size.
-    import re
-
-    from engine.config import READ_AHEAD_SECONDS
-
-    deploy = (Path(make_context.REPO_ROOT) / "deploy" / "cloudrun" / "DEPLOY.md").read_text(encoding="utf-8")
-    assert '--schedule "*/5 * * * *"' in deploy  # the keep-warm ping
-    site = _command(DEPLOY_SH.read_text(encoding="utf-8"), '$GCLOUD run deploy')
-    cpu = float(re.search(r"--cpu (\d+)", site).group(1))
-    gib = int(re.search(r"--memory (\d+)Gi", site).group(1))
-    seconds = 31 * 24 * 12 * (READ_AHEAD_SECONDS + 1)
     # Changed on purpose 15 Oct 2026: the site runs at 4 GiB, a stopgap (at 2 GiB it ran out of memory every 20 to 40
     # minutes with ~1,950 threads, the open model and its warmed answers), so reading ahead's GiB-seconds rise from a
     # third of the free tier to 60% at most (214,272 of 360,000); its vCPU-seconds stay under a third. Bringing the
@@ -225,9 +337,36 @@ def test_the_site_reads_ahead_within_a_third_and_a_bit_of_its_own_free_tier():
     # (52.1% of 360,000), so the memory bound is raised from 0.35 to 0.55. The site steps down to 2 GiB (124,992, 34.7%)
     # once Cloud Monitoring's p99 memory stays under about 1.5 GiB (DEPLOY.md, The site's memory), and this bound can then
     # come back down.
+    # Changed on purpose 6 Nov 2026 (Noemi's doubling, option A: one shared pot): the same shares, now of the pot's
+    # dollars (the site's 180,000 free vCPU-seconds are the pot's $4.32 at the service price, its 360,000 GiB-seconds its
+    # $0.90): $1.50 of CPU (34.7%) and $0.47 of memory at 3 GiB (52.1%; $0.31, 34.7%, at 2 GiB). What is left is shared
+    # with the jobs (the test above).
+    from engine.config import FREE_TIER_DOLLARS
+
+    site = _command(DEPLOY_SH.read_text(encoding="utf-8"), '$GCLOUD run deploy')
+    cpu, gib = _size(site)
+    seconds = _read_ahead_seconds()
     assert gib == 3
     assert seconds * cpu <= 180_000 * 0.35 and seconds * gib <= 360_000 * 0.55
     assert (seconds * cpu, seconds * gib) == (62_496, 187_488)  # DEPLOY.md's sums
+    dollars = _pot(seconds * cpu, seconds * gib, "service")
+    assert dollars[0] <= FREE_TIER_DOLLARS["cpu"] * 0.35 and dollars[1] <= FREE_TIER_DOLLARS["memory"] * 0.55
+    assert _pot(seconds * cpu, seconds * 2, "service")[1] <= FREE_TIER_DOLLARS["memory"] * 0.35
+
+
+def test_the_reading_job_may_read_cloud_monitoring_and_knows_its_project():
+    # 6 Nov 2026 (the free-tier guard): the reading job reads the month's use from Cloud Monitoring with its own service
+    # account (no key file), so the deploy grants that account roles/monitoring.viewer on the project (adding a binding
+    # that is there already changes nothing), and the job is told its project. Without either the guard says no.
+    script = DEPLOY_SH.read_text(encoding="utf-8")
+    grant = _command(script, '$GCLOUD projects add-iam-policy-binding')
+    assert '"$PROJECT"' in grant and '--member "serviceAccount:$RUNNER"' in grant
+    assert "--role roles/monitoring.viewer" in grant and "--condition=None" in grant
+    before = script[:script.index('$GCLOUD projects add-iam-policy-binding')]
+    assert before.rstrip().endswith('if [ "$ON_DEMAND" = on ]; then')  # only with on-demand reading on
+    assert script.index("roles/monitoring.viewer") < script.index("on_demand_job; fi")
+    job = _command(ON_DEMAND_SH.read_text(encoding="utf-8"), '$GCLOUD run jobs deploy')
+    assert "CREDIBLE_RECS_GCP_PROJECT=${PROJECT}" in job
 
 
 def test_the_bright_data_records_stay_well_inside_its_free_tier():
