@@ -5,7 +5,9 @@ Why: the shopper review of 4-5 Nov 2026 found three makeup products whose quotes
 only hint at. NARS reformulated its powder blushes in 2024, and the same answer's Skip these warns about the new formula,
 so a pick praising years of the old one needs to say so. Becca closed in 2021, so a highlighter praised as Becca's needs
 to say who makes it now. And a hair styling gel some writers use on their brows was shown as a brow gel with no word
-about what it is.
+about what it is. Noemi kept all three on 6 Nov 2026, with two decisions beside them: a hair product is never a pick in
+a face-makeup answer (it may still be listed under Also worth a look, with its note), and a "(new formula)" item's
+warnings are the product's own downsides, not a Skip item of their own (engine.pipeline).
 
 A note is only a fact checked on a reliable public page, or the threads' own words (a hair gel some writers use on their
 brows), and names its sources; it never changes which products are shown or their order (a product no longer sold is

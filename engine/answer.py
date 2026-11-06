@@ -2260,10 +2260,10 @@ def _need_stretch(m: ScoredMention, body: str, needs: tuple[Need, ...],
                   others: list[tuple[str, str]]) -> str | None:
     """The quote with the sentences before it back to the nearest one from which the stretch talks about a need (as
     _widened finds them), when its comment names no other product (`others`: whose "this concealer" or "it" the stretch
-    could be about), that sentence is the writer's own ("I have dark circles myself", never "most people get this wrong":
-    _OWN_WORDS), nothing before the quote stands for a product ("I tried it once and hated it": _STANDS_FOR_ONE) and no
-    line starts between; or else with the sentences after it up to the first that does, naming no other product and
-    taking in no turn ("but after years it began to slip": _TURN) nor praise of something else ("I like the X",
+    could be about), that sentence is the writer's own ("my own dark circles are deep", never "most people get this
+    wrong": _OWN_WORDS), nothing before the quote stands for a product ("I tried it once and hated it": _STANDS_FOR_ONE)
+    and no line starts between; or else with the sentences after it up to the first that does, naming no other product
+    and taking in no turn ("but after years it began to slip": _TURN) nor praise of something else ("I like the X",
     "X is good too": _praises_another, for a product the extraction didn't list), when the comment's words name each of its other
     products (one it names only as "it" could be anywhere), on its line and with no question; None when neither fits
     in QUOTE_MAX_WORDS words of the comment's own text, Reddit shows it otherwise (_UNSHOWABLE) or it leans on the
@@ -2297,7 +2297,7 @@ def _need_stretch(m: ScoredMention, body: str, needs: tuple[Need, ...],
         if not added.strip():
             continue
         if (_UNSHOWABLE.search(added) or _in_quoted_block(body, (end, stop)) or _ELSEWHERE.search(added)
-                or re.search(config.NEED_ELSEWHERE, _plain(added))  # "with a separate primer for pores" (part 4)
+                or re.search(config.NEED_ELSEWHERE, _plain(added))  # "and a second primer just for pores" (part 4)
                 or "?" in added or "\n" in added.rstrip() or _TURN.search(_plain(added))
                 or _praises_another(_plain(added), own_words)
                 or names_another(added) or len(_as_written(body, (start, stop)).split()) > QUOTE_MAX_WORDS):
@@ -2387,7 +2387,7 @@ def _given_away(ranking: RankingResult, bodies: Mapping[str, str],
                 needs: tuple[Need, ...]) -> dict[str, frozenset[str]]:
     """{comment id: the request's needs its writer gives to another product}, for the credible recommendations of the
     ranking (5 Nov 2026, part 4, the shopper review: a primer voice counted "about large pores" whose writer goes over
-    their pores "with a separate primer"). In the sentence of the comment holding the quote, a clause that talks about a
+    their pores with another primer). In the sentence of the comment holding the quote, a clause that talks about a
     need, holds config.NEED_ELSEWHERE ("a separate", "another", "something else") and doesn't name the product gives
     that need away: the reason line doesn't count it for this product, and its quote never takes in a sentence for it."""
     if not needs:
@@ -2420,7 +2420,7 @@ def _with_a_need_quote(quotes: list[ShownQuote], candidates: list[ScoredMention]
     4, the shopper review: a foundation pick for oily skin, two of its voices about oily skin, showed none). The first
     quotes stay as they were; with no such candidate, the quotes are as they were. After the round's own sweeps, such a
     quote also needs its writer to talk about the need as the extraction read them (its `needs`), to talk about it
-    outright and in its own sense (_said_outright: "if you cook for six, get a bigger one" is not for a family, "a few
+    outright and in its own sense (_said_outright: "feeding six? buy the larger size" is not for a family, "a few
     years back" is no back pain, "dry days" no dry skin), and to name no other product of its comment (a writer owning
     three grinders, using another most); and a need the reason line never names (a word of the product's own name,
     `check.hidden_needs`) asks for none."""
@@ -2474,7 +2474,7 @@ def _undercuts(m: ScoredMention, named: tuple[tuple[str, str], ...], product_typ
     alone, its words past its brand that the quote's product doesn't share ("but True Match suits me better" for
     L'Oréal's True Match blush: _names_by_its_line); and a quote also undercuts when it says its product was reformulated
     and that it was the writer's or is worse now ("I used to wear it daily... then they reformulated it and reviews say
-    it's worse": config.QUOTE_REFORMULATED, QUOTE_WORSE_SINCE), ranks it second ("In second place is X":
+    it's worse": config.QUOTE_REFORMULATED, QUOTE_WORSE_SINCE), ranks it second ("X takes second place":
     QUOTE_SECOND_PLACE) or, after naming it, means to try others ("but reading this I want to try others":
     QUOTE_TRYING_OTHERS)."""
     if m.stance != "recommend":
@@ -2497,7 +2497,7 @@ def _undercuts(m: ScoredMention, named: tuple[tuple[str, str], ...], product_typ
 
     if any(re.search(config.QUOTE_SECOND_PLACE, clause) and _first_at(clause, own_words) is not None
            and not names_another(clause) for clause in _CLAUSES.split(text)):
-        return True  # "In second place is X", in a clause naming it and no other
+        return True  # "X takes second place", in a clause naming it and no other
     own_at = _first_at(text, own_words)
     if own_at is None or not others:
         return False
@@ -3824,9 +3824,9 @@ def _advice_notes(kind: str, advice: str, notes: list[KindNote], bodies: Mapping
     "Look for"), or a warning about one of the answer's `picks` (for "Avoid", _names_a_pick). Since 5 Nov 2026 none says
     its writer hasn't tried it, or tells someone else's experience or what they heard (engine.credibility._proof_of_use's
     HEARSAY_REASONS and "hasn't tried it": "I haven't tried it, but...", read with straight apostrophes since part 4 of
-    the same day, as the writer's "haven’t" missed it; its letters as written, as "my wife laughs at my fights with our
-    smart washer" is the writer's own), and with `scare_bodies` (the comments, in a makeup answer) none comes from a
-    comment raising a health scare (config.TIP_HEALTH_SCARE_WORDS)."""
+    the same day, as the writer's "haven’t" missed it; its letters as written, as a writer's tale of their own smart
+    appliance told through their spouse is the writer's own), and with `scare_bodies` (the comments, in a makeup
+    answer) none comes from a comment raising a health scare (config.TIP_HEALTH_SCARE_WORDS)."""
     widened, leaning = _standing(notes, bodies, lambda text, note: _names_kind(text, kind, category, product_type),
                                  must_name=True)
     kept = []
@@ -3863,7 +3863,7 @@ def _not_for_this_makeup(kind: str, advice: str, category: str, product_type: st
     eyeshadow to set eyeliner" stay); or, for "Look for", it is something not made for the face or eyes (a type of
     config.TIP_OFF_LABEL_CATEGORIES or one of config.TIP_OFF_LABEL_WORDS: "hairspray as a setting spray", "baby
     powder") or, before such a word, says the opposite form of one the request names (config.TIP_FORM_OPPOSITES:
-    "pressed blush in satin or matte" for cream blush). Since part 4 of the same day, a kind of one word that is the
+    a pressed satin or matte blush for cream blush). Since part 4 of the same day, a kind of one word that is the
     last word of another makeup type's names and none of this one's ("spray" in a lip tint answer: a setting spray on the
     lips, its label cut short) is none either; one naming no type ("drugstore", "mini") was as before until fix 1 after
     the warm (same day, the shopper review): a tip whose name doesn't name the type asked for is none
@@ -4388,11 +4388,13 @@ def breakdown_needs_line(recommends: int | str, warnings: int | str) -> str:
 # --- Swear words, masked on display (Noemi, 12 Oct 2026) ---
 
 # Whole words only, so "Scunthorpe", "shiitake" and "Dickens" stay as written. Regular expressions that read the same in
-# Python and in the page's JavaScript (engine/templates/search.html masks with this same list).
+# Python and in the page's JavaScript (engine/templates/search.html masks with this same list). The bare "ass" and
+# "arse" since 6 Nov 2026 (round 3, from the rules review of fix 2: a brow gel pick led with one), whole words too, so
+# "class", "pass", "assess", "bass" and "badass" stay; "kick-ass" is masked, as a hyphen ends a word.
 MASKED_WORDS = (
     r"(?:mother)?fuck(?:s|ed|er|ers|ing|in|ery)?", r"(?:bull|horse)?shit(?:s|ty|tier|ting|ted|head|heads|show)?",
     r"cunts?", r"bitch(?:es|y|ing)?", r"(?:arse|ass)holes?", r"bastards?", r"dick(?:s|head|heads)?",
-    r"piss(?:ed|ing)?", r"twats?", r"wank(?:er|ers|ing)?", r"bollocks",
+    r"piss(?:ed|ing)?", r"twats?", r"wank(?:er|ers|ing)?", r"bollocks", r"ass(?:es)?", r"arses?",
 )
 _MASKED = re.compile(r"\b(?:" + "|".join(MASKED_WORDS) + r")\b", re.IGNORECASE)
 

@@ -221,15 +221,24 @@ def test_a_removed_thread_read_on_an_earlier_try_takes_no_place_in_its_requests_
     # Fix 1 left a removed thread out of on-demand reading's fresh posts even when the bundle holds it under the same
     # request (engine.on_demand._read_entry): it is never written into a library, so it takes no community's place in
     # the round, and the round reads as though the thread was never there. Here 1tea002 stands in for a removed thread.
+    # Changed on purpose on 6 Nov 2026 (round 3, from the rules review of fix 2): with seven threads in one community
+    # the communities' caps held the round back, so the test passed while the removed thread still counted among the
+    # request's own threads (one place fewer, and its Gemini calls spent). Now twelve more threads across both teapot
+    # communities give the round more than the caps allow, and _read_entry leaves the removed thread out of its own.
     from engine import on_demand
     from engine.live_check import Bucket
     from engine.on_demand import Bundle, BundleStore, Item, QueueStore, entry_for, run_job
+    from engine.tests import on_demand_fakes
     from engine.tests.fake_google import FakeGoogle
     from engine.tests.on_demand_fakes import NOW, FakeArchive, FakeGemini, Ticks, archive, gemini
-    from engine.tests.test_on_demand_job import more_teapots
     from engine.tests.test_web import kettle_library
 
-    every = more_teapots(monkeypatch)
+    communities = parse_query("teapot for loose leaf tea").subreddits
+    for n in range(4, 16):
+        monkeypatch.setitem(on_demand_fakes.TEAPOT_THREADS, f"1tea{n:03d}", (
+            communities[n % len(communities)], f"Teapot number {n} worth it?",
+            [(f"t{n}a", f"My Brown Betty teapot has lasted {n} years.", "Brown Betty teapot")]))
+    every = tuple(on_demand_fakes.TEAPOT_THREADS)
     monkeypatch.setattr(on_demand, "REMOVED_THREADS", ("1tea002",))
 
     def a_round(folder, with_removed: bool):

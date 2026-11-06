@@ -387,6 +387,11 @@ class ProductScore:
     # own it is listed first under Also worth a look (past_the_picks), as a product ranked below the picks is. True for
     # every product while the rule is off.
     fits_need: bool = True
+    # False for a hair product in a face-makeup answer (Noemi's decision 2 of 6 Nov 2026; engine.pipeline._ranked,
+    # config.HAIR_PRODUCT_WORDS): it is never one of RankingResult.qualifying, so never a pick, and when it meets the bar
+    # on its own it heads Also worth a look (past_the_picks), as a product ranked below the picks does. Its score is as
+    # it was. True for every other product.
+    pickable: bool = True
 
     @property
     def credible_recommendations(self) -> list[ScoredMention]:
@@ -433,7 +438,8 @@ class RankingResult:
         """Every product that meets the minimum-evidence rule, best first; with `fill_only`, those the upvote rule lifted
         to it after the others, and whatever the variant, those a comment standing out in its thread lifted (14 Oct
         2026): they only fill places the others leave empty."""
-        found = [p for p in self.products if p.qualifies and p.fits_need]  # fits_need: the need-fit rule (off)
+        # fits_need: the need-fit rule (off); pickable: a hair product in a face-makeup answer (6 Nov 2026)
+        found = [p for p in self.products if p.qualifies and p.fits_need and p.pickable]
         later = [p.by_standout or (self.fill_only and lifted(p)) for p in found]
         return [p for p, late in zip(found, later) if not late] + [p for p, late in zip(found, later) if late]
 

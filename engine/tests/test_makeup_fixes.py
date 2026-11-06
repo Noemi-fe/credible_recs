@@ -50,7 +50,7 @@ def test_a_tip_whose_writer_tells_of_their_own_home_still_counts():
     # their own smart washer, told through their wife, someone else's experience; only the apostrophes are straightened.
     items = mentions(3, "Velo kettle", category="general") + mentions(3, "Halo kettle", category="general")
     notes = [note("smart kettles", "t1", stance="warn",
-                  quote="My partner laughs at me arguing with our smart kettle, it never does what I ask."),
+                  quote="My partner teases me for shouting at our smart kettle when the app ignores me."),
              note("smart kettles", "t2", stance="warn",
                   quote="My husband gave up on our smart kettle, the app kept losing it.")]
     answer = write_answer(rank_products(items, "general", notes), bodies_for(*items, *notes), "electric kettle",
@@ -93,7 +93,7 @@ def test_a_one_word_makeup_tip_naming_another_makeup_type_is_left_out():
     # Its writer's old favourite, since reformulated for the worse.
     "The Rosa blush used to be my daily blush. Then they reformulated it and reviews say it is not as good.",
     # Ranked second to another.
-    "Love the Lumen Petal Glow blush. In second place is the Rosa blush.",
+    "Love the Lumen Petal Glow blush. The Rosa blush takes second place.",
     # Its writer means to try others (the after-sweep of part 4).
     "I use the Rosa blush but reading this I want to try others.",
     "Rosa blush for now, but I want to try others.",
@@ -263,7 +263,7 @@ def test_a_need_sentence_about_the_product_itself_still_counts():
     # Found in part 4's own sweep, in sunscreen, shampoo and garlic press answers: a comparison with other products, or
     # a second bottle of this one, gives no need away.
     "I use the Velo primer every day, it looks less greasy on my large pores than the other brands do.",
-    "I use the Velo primer every day, on my second bottle now and my large pores look smaller.",
+    "I use the Velo primer every day, on my second bottle now and my large pores seem less visible.",
     "I use the Velo primer every day, my large pores look better than with another brand I tried.",
 ])
 def test_comparing_with_other_products_gives_no_need_away(sentence):
@@ -284,7 +284,7 @@ def test_a_hedged_question_comes_after_a_clearer_quote():
     hedge = mention("Velo foundation", "t1", category="general", weight=3.0,
                     quote="The Velo foundation and my old one both worked well, so maybe both are my top ones?")
     clear = [mention("Velo foundation", "t2", category="general", weight=1.0,
-                     quote="I've been loving the Velo foundation, the coverage looks like skin."),
+                     quote="I've been loving the Velo foundation, the finish passes for bare skin."),
              mention("Velo foundation", "t1", category="general", weight=1.0,
                      quote="The Velo foundation wears all day and never looks heavy.")]
     items = [hedge, *clear] + mentions(3, "Halo foundation", category="general")
@@ -304,7 +304,7 @@ def test_with_a_need_asked_a_pick_shows_a_quote_about_it_when_one_stands():
                      quote=f"The Velo foundation is lovely, number {i} of my favourites for coverage.")
              for i in range(4)]
     oily = mention("Velo foundation", "t2", category="general", weight=0.2, needs=("oily",),
-                   quote="Even by the evening I still looked fresh and not oily at all.")
+                   quote="By dinner time my face was still fresh, with no oily shine.")
     items = named + [oily] + mentions(3, "Halo foundation", category="general")
     answer = write_answer(rank_products(items, "general"), bodies_for(*items), "foundation", needs=OILY,
                           request="foundation for oily skin")
@@ -347,14 +347,14 @@ def test_the_need_quote_needs_its_writer_to_talk_about_the_need():
     # Found in part 4's own sweep: a quote whose words fit the need but whose writer, as the extraction read them,
     # never talked about it is not that quote.
     candidate = mention("Velo foundation", "t2", category="general", weight=0.2, needs=(),
-                        quote="Not oily at all, I reach for it most mornings.")
+                        quote="It never turns oily on me, I reach for it most mornings.")
     assert candidate.quote not in _velo_with(candidate, "foundation for oily skin")
 
 
 @pytest.mark.parametrize("request_, needs, quote", [
     # Found in part 4's second sweep: "a few years back" is no back pain, and "dry days" no dry skin.
     ("office chair for back pain", ("back",), "Second-hand from a few years back, still holding up fine."),
-    ("toner for dry skin", ("dry",), "I wear it alone on humid days and layer it on cold, dry days."),
+    ("toner for dry skin", ("dry",), "On muggy afternoons it does fine alone; on cold, dry days I add a layer."),
 ])
 def test_the_need_quote_is_never_one_whose_need_word_means_something_else(request_, needs, quote):
     named = [mention("Velo chair", f"t{i % 2 + 1}", category="general", weight=2.0,
@@ -417,5 +417,5 @@ def test_the_removed_threads_are_never_read_again(tmp_path):
 
 def test_second_place_undercuts_only_the_product_it_ranks_second():
     m = mention("Rosa blush", "t1", category="general", comment="cfirst",
-                quote="The Rosa blush is my number one. In second place is the Lumen Petal Glow blush.")
+                quote="The Rosa blush is my number one. The Lumen Petal Glow blush takes second place.")
     assert not _undercuts(m, ROSA_LUMEN, "blush")

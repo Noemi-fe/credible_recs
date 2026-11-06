@@ -3285,8 +3285,9 @@ KIND_DANGLING_END_WORDS = ("of", "for", "with", "to", "and", "or", "a", "an", "t
                            "by", "than")
 # A health scare the answer can't check is never a tip's backing: a note holding one of these backs no tip.
 TIP_HEALTH_SCARE_WORDS = ("asbestos", "carcinogen", "carcinogenic", "cancer", "cancerous")
-# A makeup tip saying the opposite form of the one the request names (a "cream blush" answer's "pressed blush in satin
-# or matte"): what the form refuses, as engine.answer._asked_and_refused reads refused things, for the makeup types only.
+# A makeup tip saying the opposite form of the one the request names (a "cream blush" answer's tip for a pressed satin
+# or matte blush): what the form refuses, as engine.answer._asked_and_refused reads refused things, for the makeup
+# types only.
 TIP_FORM_OPPOSITES: dict[str, tuple[str, ...]] = {"cream": ("powder", "pressed", "baked"),
                                                   "liquid": ("powder", "pressed", "baked")}
 
@@ -3322,7 +3323,7 @@ REMOVED_THREADS: tuple[str, ...] = ("1co3r5i", "1jlzpoa")
 QUOTE_REFORMULATED = r"\breformulat\w*|\bchanged (?:the|its|their) (?:formula|formulation)\b|\bnew formula\b"
 QUOTE_WORSE_SINCE = (r"\bused to\b|\bnot (?:as|nearly as|quite as) good\b|\bisn't (?:as|nearly as) good\b|\bworse\b"
                      r"|\bnot the same\b|\bisn't the same\b")
-# - ranks it second to another: "In second place is X", "X is the runner-up".
+# - ranks it second to another: "X takes second place", "X is the runner-up".
 QUOTE_SECOND_PLACE = r"\b(?:in )?second place\b|\brunner[- ]?up\b"
 # A recommendation's quote saying its product is no longer made ("discontinued", "taken out of production"), naming no
 # other product of its comment ("X was discontinued, so I switched to Y" is Y's reason): never an "Also worth a look"
@@ -3404,3 +3405,25 @@ QUOTE_THANKS_THREAD = (r"\b(?:thanks|thank you|thank u)(?: so much| again)? (?:e
                        r"|recommendations?|recs|tips|advice|replies|answers)\b")
 # Makers' capitals (as MAKER_SPELLINGS above): answers had shown "YSL lash clash".
 MAKER_SPELLINGS["general"] = (*MAKER_SPELLINGS["general"], "YSL Lash Clash")
+
+# --- Noemi's decisions of 6 Nov 2026 ("yes to all three"), and round 3's technical calls ---
+# (2) A hair product is never a pick in a face-makeup answer (FACE_AND_EYE_TYPES: brow gel, mascara, primer...). What a
+# product is, is read in its names, the shown one and each writer's (engine.pipeline._a_hair_product): one of them says
+# one of these, as TIP_OFF_LABEL_WORDS says a tip is no advice for the face and eyes, and doesn't also name the type
+# asked for ("got2b hair gel" in a brow gel answer, never "Velo brow and hair gel"). Such a product keeps its score:
+# when it meets the bar it heads Also worth a look, with its product note (Claude's call: some writers use it on their
+# brows), as a product ranked below the picks does. Outside face makeup nothing changes. Hair words only: a brow glue, a
+# brow soap or a brow wax is a brow gel, and "pomade", "mousse" and "wax" alone name makeup too (brow pomade, mousse
+# foundation, brow wax).
+HAIR_PRODUCT_WORDS = ("hair gel", "styling gel", "spiking gel", "curl gel", "hairspray", "hair spray", "hair glue",
+                      "edge control", "hair wax", "hair pomade", "hair mousse", "hair oil", "hair serum", "dry shampoo")
+# (3) A "(new formula)" item: the warnings filed under it are about the product sold today, so a mention whose name says
+# it is the new formula of a product the answer has folds into that product (engine.pipeline._new_formulas_folded),
+# where the unchanged scoring weighs it and the answer shows its warnings as that product's downsides and share line.
+# Any category. Only the formula's words: "(new)" or "newer model" is another model, and an old or original formula,
+# or one "pre reformulation", is not the product sold today. A new formula of a product the answer doesn't have stays
+# apart, under its own name.
+NEW_FORMULA_WORDS = (r"\(\s*(?:the\s+)?(?:new(?:er)?\s+(?:formula|formulation)s?|reformulated(?:\s+(?:version|formula))?"
+                     r"|post[- ]?reformulation(?:\s+version)?|after\s+(?:the\s+)?reformulation)\s*\)"
+                     r"|\b(?:the\s+)?new(?:er)?\s+(?:formula|formulation)s?(?:\s+of)?\b"
+                     r"|\breformulated\b|\bpost[- ]?reformulation(?:\s+version)?\b|\bafter\s+(?:the\s+)?reformulation\b")

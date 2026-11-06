@@ -1070,7 +1070,9 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
     except ValueError:
         _change_entry(queues, key, lambda e: e.finish(moment, found=0, failed=True, note="no longer fits module 1"))
         return
-    if not entry.refresh and entry.had + len(bundle.extracted(entry.product_type)) >= ON_DEMAND_MIN_THREADS:
+    # Noemi's removed threads never count among its threads (round 3, 6 Nov 2026, from the rules review of fix 2).
+    extracted = [tid for tid in bundle.extracted(entry.product_type) if tid not in REMOVED_THREADS]
+    if not entry.refresh and entry.had + len(extracted) >= ON_DEMAND_MIN_THREADS:
         _change_entry(queues, key, lambda e: e.finish(moment, found=0, note="enough threads about it already"))
         report.requests_done.append(entry.product_type)
         return
@@ -1090,9 +1092,10 @@ def _read_entry(entry: Entry, queue: Queue, bundle: Bundle, queues: QueueStore, 
         return
     saved = {path.stem for path in (library_dir / "threads").glob("*.json")}
     skip = saved | set(bundle.threads) | unlabelled_gold_ids() | set(REMOVED_THREADS)  # Noemi's removed two, 5 Nov 2026
-    mine = {tid for tid, item in bundle.threads.items() if item.entry == key}  # read on an earlier try (4 Nov 2026)
-    fresh = [post for post in ranked if _plain_id(post) not in skip  # a removed thread even if read before (fix 1)
-             or (_plain_id(post) in mine and _plain_id(post) not in REMOVED_THREADS)]
+    # Read on an earlier try (4 Nov 2026), never a removed thread: it takes no place among the request's own threads,
+    # nor any of its Gemini calls (round 3, 6 Nov 2026, from the rules review of fix 2), and is never read again (fix 1).
+    mine = {tid for tid, item in bundle.threads.items() if item.entry == key and tid not in REMOVED_THREADS}
+    fresh = [post for post in ranked if _plain_id(post) not in skip or _plain_id(post) in mine]
     if entry.refresh:  # the library's threads are old: only threads posted since count (an unknown date isn't old)
         oldest = _years_before(moment, ON_DEMAND_OLD_YEARS)
         fresh = [post for post in fresh if not _posted_before(post, oldest)]

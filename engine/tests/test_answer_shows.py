@@ -185,7 +185,7 @@ def test_a_question_after_the_quote_is_never_taken_in():
 
 def test_with_a_need_asked_a_shade_quote_only_makes_up_the_minimum():
     shade = mention("Rosa blush", "t1", category="general", weight=2.0,
-                    quote="The Rosa blush in that shade is my go-to, and I have olive skin.")
+                    quote="The Rosa blush is my go-to in the warm shade, as I have olive skin.")
     items = [shade] + mentions(3, "Rosa blush", category="general")
     bodies = bodies_for(*items)
     asked = write_answer(rank_products(items, "general"), bodies, "blush", needs=FAIR, request="blush for fair skin")
@@ -195,10 +195,10 @@ def test_with_a_need_asked_a_shade_quote_only_makes_up_the_minimum():
     # "I own it in three shades" says how much its writer likes it, not which shade to buy; and outside makeup no quote is
     # read for shades.
     assert _about_a_shade(shade, FAIR, "blush")
-    assert not _about_a_shade(dataclasses.replace(shade, quote="I have four shades of the Rosa blush, worn daily."),
+    assert not _about_a_shade(dataclasses.replace(shade, quote="The Rosa blush comes with me daily, I own four shades."),
                               FAIR, "blush")
     assert not _about_a_shade(shade, FAIR, "kettle")
-    assert not _about_a_shade(dataclasses.replace(shade, quote="The Rosa blush in that shade is lovely on fair skin."),
+    assert not _about_a_shade(dataclasses.replace(shade, quote="The Rosa blush shade I bought is lovely on fair skin."),
                               FAIR, "blush")
 
 
@@ -289,7 +289,7 @@ def test_skip_these_never_shows_a_quote_that_leans_on_another_comment():
     assert "Gritto pen eyeliner" not in [item.name for item in answer.skip]
     # A pick's downsides are never hidden: a leaning warning about a pick is still shown.
     downside = mention("Inkwell liner", "t1", stance="warn", category="general",
-                       quote="Same experience as the person above, it smudged.")
+                       quote="It went the same way for me as for the person above, it smudged.")
     items = [downside] + mentions(4, "Inkwell liner", category="general")
     answer = write_answer(rank_products(items, "general"), bodies_for(*items), "eyeliner", request="eyeliner")
     assert texts(answer.picks[0].downsides) == [downside.quote]

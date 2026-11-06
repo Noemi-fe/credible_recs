@@ -667,6 +667,9 @@ def _answer(query: ParsedQuery, library_dir: Path, max_threads: int, profiles, p
     product_facts = load_product_facts() if product_facts is None else product_facts
     known = _known_products(product_facts)  # names the facts list knows as one product each (14 Oct 2026)
     brand_ranges = _library_ranges(library)  # what the whole library names of each brand's products (14 Oct 2026)
+    # A "(new formula)" item's mentions are the product sold today's (Noemi's decision 3 of 6 Nov 2026).
+    checked, mentions = _new_formulas_folded(checked, mentions, lambda found: group_products(
+        found, product_type=grouping_type, index=index, known=known, ranges=brand_ranges))
     groups = group_products(mentions, product_type=grouping_type, index=index, known=known, ranges=brand_ranges)
     of_another_type = _of_another_type(groups, query, result)
     if of_another_type:  # grouped again without them, so they neither count for nor name a product (13 Oct 2026)
@@ -839,7 +842,22 @@ def _ranked(scored, query: ParsedQuery, kind_notes, kinds, need_led: bool,
     if skip_only:
         ranking.products = [replace(p, qualifies=False, worth_a_look=False, shortfall=skip_only[p.key])
                             if p.key in skip_only and (p.qualifies or p.worth_a_look) else p for p in ranking.products]
+    if query.product_type in config.FACE_AND_EYE_TYPES:  # Noemi's decision 2 of 6 Nov 2026: never a hair product
+        ranking.products = [replace(p, pickable=False) if p.qualifies and _a_hair_product(p, query.product_type)
+                            else p for p in ranking.products]
     return ranking
+
+
+def _a_hair_product(product, product_type: str) -> bool:
+    """Whether a product is a hair product (Noemi's decision 2 of 6 Nov 2026: "A hair product is never a pick in a
+    face-makeup answer"), by what its names say it is: its shown name or one of its writers' names (ScoredMention.
+    written_as) says one of config.HAIR_PRODUCT_WORDS ("spiking gel", "hairspray", "hair glue"...), as a whole phrase,
+    and doesn't also name the type asked for (a "brow and hair gel" is a brow gel). Writers name such a product by its
+    maker alone or call it a brow gel as often as by what it is, so one name saying it is enough."""
+    names = {product.name, *(m.written_as for m in product.mentions if m.written_as)}
+    return any(re.search(rf"(?<![a-z0-9]){re.escape(word)}(?![a-z0-9])", name.lower())
+               and not mentions_product(name, product_type)
+               for name in names for word in config.HAIR_PRODUCT_WORDS)
 
 
 def _kinds_not_pushed(kinds: list[KindGroup], query: ParsedQuery) -> set[str]:
@@ -1262,6 +1280,76 @@ _RANGES = ("library ranges",)  # where the library keeps them (engine.library_ca
 def _product_mentions(checked: dict[str, CheckResult]) -> list[ProductMention]:
     return [ProductMention(tid, m.comment_id, m.product, _category_of(m), m.stance, m.product_type, m.quote)
             for tid, res in checked.items() for m in res.kept]
+
+
+# --- A "(new formula)" item is the product sold today (Noemi's decision 3 of 6 Nov 2026) ---
+
+_NEW_FORMULA = re.compile(config.NEW_FORMULA_WORDS, re.IGNORECASE)
+
+
+def new_formula_base(name: str) -> str | None:
+    """The name of the product a name says is its new formula ("Velvet Lip Balm (new formula)", "new formulation of
+    Velvet", "Velvet Lip Balm (reformulated)": "Velvet Lip Balm", "Velvet"), or None when the name doesn't say so
+    (config.NEW_FORMULA_WORDS: an old, original or pre-reformulation formula, or "(new)", say something else)."""
+    if not _NEW_FORMULA.search(name):
+        return None
+    base = _NEW_FORMULA.sub(" ", name)
+    base = re.sub(r"\(\s*\)", " ", base)
+    base = " ".join(base.split()).strip(" ,;:-")
+    return base or None
+
+
+def _new_formulas_folded(checked: dict[str, CheckResult], mentions: list[ProductMention], grouper
+                         ) -> tuple[dict[str, CheckResult], list[ProductMention]]:
+    """The checked extractions and their mentions with each "(new formula)" mention folded into the product it is about
+    (Noemi's decision 3 of 6 Nov 2026, option (b): "the credible warnings filed under the '(new formula)' item are about
+    the product sold today"): renamed as that product (new_formula_base), so module 4 groups it there, module 5 scores
+    it and module 6 weighs it there as it weighs every other mention, and the answer shows its warnings as that
+    product's downsides and in its share line. Only when that product is in the answer: `grouper` (the request's own
+    grouping, engine.group_products.group_products) puts the renamed mention in a group holding a mention named
+    otherwise. A new formula of a product the answer doesn't have stays apart, under its own name. A writer who said
+    the same of the product today already counts once (the one mention kept). Any category. The cached extractions are
+    never changed: renamed mentions are copies."""
+    marked = {m: base for m in mentions if (base := new_formula_base(m.product))}
+    if not marked:
+        return checked, mentions
+    renamed = {m: replace(m, product=base) for m, base in marked.items()}
+    plain = [m for m in mentions if m not in marked]
+    own = set(plain)
+    group_by_mention = group_of(grouper(plain + [r for r in dict.fromkeys(renamed.values()) if r not in own]))
+    folded: dict[ProductMention, str] = {}
+    for original, r in renamed.items():
+        group = group_by_mention.get(r)
+        if r in own or (group is not None and any(m in own for m in group.mentions)):
+            folded[original] = r.product
+    if not folded:
+        return checked, mentions
+    # Only a renamed mention is ever dropped, when its writer's comment already names the product sold today with the
+    # same stance (or another renamed one did): every other mention stays as it was, a repeated one included.
+    new_checked = {}
+    for tid, res in checked.items():
+        plain_keys = {(m.comment_id, m.product, m.stance) for m in res.kept
+                      if ProductMention(tid, m.comment_id, m.product, _category_of(m), m.stance) not in folded}
+        kept, added, changed = [], set(), False
+        for m in res.kept:
+            name = folded.get(ProductMention(tid, m.comment_id, m.product, _category_of(m), m.stance))
+            if name is not None:
+                m, changed = m.model_copy(update={"product": name}), True
+                key = (m.comment_id, m.product, m.stance)
+                if key in plain_keys or key in added:
+                    continue
+                added.add(key)
+            kept.append(m)
+        new_checked[tid] = replace(res, kept=kept) if changed else res
+    new_mentions, added_mentions = [], set()
+    for m in mentions:
+        if m in folded:
+            m = renamed[m]
+            if m in own or m in added_mentions:
+                continue
+            added_mentions.add(m)
+        new_mentions.append(m)
+    return new_checked, new_mentions
 
 
 _TYPE_CATEGORY = {p.name: p.category for p in PRODUCT_TYPES}
