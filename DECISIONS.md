@@ -2419,16 +2419,17 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   plainly: the caps alone can't keep 10% in hand. At 3 GiB the memory part can't at any month seconds (it is past 90%
   before on-demand reading reads a second), and the CPU part could only with 30,372 seconds (44,160 on memory at 2 GiB),
   under even the 50,000 of before. Lowering the month seconds can't fix that, so the guard below keeps the margin at run
-  time. The month's seconds were chosen on what was measured (Cloud Monitoring, October 2026): the site billed 52,552 s
-  with 66,221 vCPU-seconds allocated (it came up on 13 Oct; its steady 20 days from 17 Oct, scaled to 31, are lower,
-  52,223 s and 57,916), the pre-check 34,510 s (34,744 vCPU-s), the reader 13,311 s. At today's sizes, the site at 3 GiB
-  and the pre-check at 2 GiB, that is $1.59 and $0.63 of CPU, and $0.39 (site; $0.26 at 2 GiB) and $0.14 of memory. The
-  CPU part binds: the reader's month may be at most 92,960 s at 90%, so ON_DEMAND_MONTH_SECONDS is 92,000, the most to the
-  thousand: CPU 89.6%, memory 79.6% at 3 GiB and 65.0% at 2 GiB. The told capacity follows: 73 a month at 21 minutes
-  (engine.on_demand.products_a_month; 39 before); the told wait (about 25 minutes) and the daily cap (450 calls) are
-  unchanged. A busier month than October is the guard's to catch: at the last 30 days' pace (7 Oct to 6 Nov, with their
-  deploys) the reader would have room for only about 65,650 s, so in such a month the guard stops reading before the
-  told 73.
+  time. The month's seconds were chosen on what was measured (Cloud Monitoring, summed by day; corrected in the fix round
+  below, which found the builder had taken the pre-check's 19 days of October as its whole month): over the 20 days from
+  17 Oct to 5 Nov 2026, scaled to a 31-day month, the site billed 52,223 s with 57,916 vCPU-seconds allocated (it came up
+  on 12 Oct, and its first days were its busiest) and the pre-check 44,028 s (44,425 vCPU-s). At today's sizes, the site
+  at 3 GiB and the pre-check at 2 GiB, that is $1.39 and $0.80 of CPU, and $0.39 (site; $0.26 at 2 GiB) and $0.18 of
+  memory. The CPU part binds: the reader's month may be at most 94,353 s at 90% on these days (90,325 on the last 14
+  days alone, 95,222 on the last 7), and ON_DEMAND_MONTH_SECONDS is 92,000: CPU 89.0%, memory 83.5% at 3 GiB and 69.0%
+  at 2 GiB (the builder's figures on October were 89.6%, 79.6% and 65.0%). The told capacity follows: 73 a month at 21
+  minutes (engine.on_demand.products_a_month; 39 before); the told wait (about 25 minutes) and the daily cap (450 calls)
+  are unchanged. A busier month is the guard's to catch: at the last 30 days' pace (7 Oct to 6 Nov, with their deploys)
+  the reader would have room for only about 65,650 s, so in such a month the guard stops reading before the told 73.
   The guard (engine/free_tier.py). Before every backfill read, and before any visitor read once visitors' own seconds of
   the month reach ON_DEMAND_GUARD_FREE_SECONDS (50,000, the month before the doubling; backfill's seconds never count
   toward them), the reading job asks it. It reads Cloud Monitoring with the job's own service account (the metadata
@@ -2444,11 +2445,15 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   memory). No on any failure, fail closed: no project (CREDIBLE_RECS_GCP_PROJECT, which on_demand.sh now gives the
   reader job), no token, any HTTP status but 200, a call that raises, an answer that isn't JSON, a second page, a unit or
   kind of value it doesn't expect, or a series missing for the site (either window) or the pre-check (the last 7 days,
-  and the month once it is 6 hours old: the pre-check runs at 4 am UK time). A reading is kept 10 minutes, a failed one
-  never. A no rests backfill, or reading past the first 50,000 seconds, for 6 hours (an hour when Cloud Monitoring
-  couldn't be read), and a visitor is then told the free reading allowance is used up for now (capacity_text treats a
-  "guard" rest as the month's). Its calls: at worst about 3,220 readings a month (every run half a minute) x 12 calls x
-  3 series is about 116,000 series, under a fifth of the free million; a likely month about 7,000. deploy.sh grants the
+  and the month once it is 6 hours old: the pre-check runs at 4 am UK time); since the fix round also a series without
+  points, a value that isn't a number of 0 or more (NaN, infinity, below 0), a service or job in some of the three
+  metrics but not all, and a projection that isn't a number. A reading is kept 10 minutes, a failed one never. A no, or
+  a reading that failed, rests reading past the first 50,000 seconds for 6 hours (never past the month's end) and
+  backfill for a day (the fix round; the builder had 6 hours for both, an hour after a failed reading), and a visitor
+  is then told the free reading allowance is used up for now (capacity_text treats a "guard" rest as the month's). Its
+  calls: only a run whose time counts in the month's seconds asks, at least a minute each since the fix round, so at
+  worst about 1,700 readings a month x 12 calls x about 2 series is about 41,000 series, under a twentieth of the free
+  million; a likely month about 7,000. deploy.sh grants the
   runtime service account roles/monitoring.viewer on the project, with on-demand reading on, before the reader job is
   deployed (`gcloud projects add-iam-policy-binding ... --condition=None`: adding a binding that is there changes
   nothing). The account had only roles/logging.logWriter and roles/run.builder at project level (read, 6 Nov 2026), so
@@ -2490,3 +2495,48 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   Left for Noemi (only she can decide): the guard sees this project only, while Google's pot is per billing account,
   which also pays for "My First Project" (no Cloud Run API there today); anything that starts using Cloud Run there
   would share the pot unseen. No eval/RUNS.md row: no evaluation ran (the engine's answers don't change).
+  Fix round, 6 Nov 2026 (Claude, the fixer, after the gate, which failed on the guard failing open, and the code and
+  cost reviews; Claude's technical calls, reported to Noemi; not pushed, merged or deployed). (1) Backfill could use up
+  the room visitors' first 50,000 seconds need: they never ask the guard, and the guard counted a backfill read alone,
+  so in a month where visitors came late every backfill could get a yes and the month still end past 90% (the reviews'
+  sums: about 98.6% of CPU at this month's pace, past the free tier at the last 30 days'). A backfill read now asks the
+  guard about itself and what is left of visitors' 50,000 this month together, at the reader's size. Read only against
+  Cloud Monitoring at about 13:30 UTC with the fixed guard: one read alone is a yes (CPU 67%, memory 84%), with visitors'
+  48,232 seconds still to come a no (memory 94%), so at this month's pace backfill doesn't run while the site is at
+  3 GiB; it gets room once the site steps down to 2 GiB. (2) The guard said yes to answers it couldn't trust: a NaN
+  value (the string or the JSON token), a series with no points (the site's or the pre-check's counted as nothing), a
+  value below 0, or the site's billable series alone missing (its memory pace then nothing: the code review's probe
+  turned a no into a yes). Now a series without points, a value that isn't a number of 0 or more, a service or job in
+  some of the three metrics but not all, and a projection that isn't a number are failed readings, and every failure
+  path has a test (the token raising, an answer that isn't an object, a kind that isn't DELTA, a missing label, an
+  unreadable point, anything else raising inside the guard, no guard, a guard that raises). The fixed guard read real
+  Cloud Monitoring without a failure. (3) After a no, or a reading that failed, the keep-warm ping started the paid job
+  again whenever a rest ended (every hour after a failed reading), only for it to be refused, and runs that short were
+  counted at half a minute where Google bills a job's run at least a minute and Cloud Monitoring shows about nothing.
+  Now a no or a failed reading rests backfill a day and reading past visitors' 50,000 seconds 6 hours (never past the
+  month's end), and a run that asks the guard or does anything for backfill counts at least 60 s (Cloud Run's pricing
+  page, read 6 Nov 2026: jobs are billed "for the entire lifetime of any instance started, with a minimum of 1 minute");
+  a visitor's run within their first 50,000 seconds counts as before. (4) The pot's measured month (the table above,
+  DEPLOY.md and test_cloudrun.py) took the pre-check's 19 days of October as a month; it is now one window, 17 Oct to
+  5 Nov, scaled to 31 days, for the site and the pre-check alike: 92,000 stays (89.0% of CPU; the builder's "the most to
+  the thousand" no longer holds, since 94,000 would fit on this window but not on the last 14 days). Smaller fixes from
+  the reviews: backfill's last read of the month starts only while a whole run (its 50-minute lease) still fits in its
+  42,000 seconds, so a slow read never eats into visitors' 50,000; a backfill whose product type a visitor waits for or
+  had read in the last 30 days (other need words) is dropped unread, as backfill_due already did when queuing; DEPLOY.md's
+  bucket costs for the doubled month (under 0.03 USD) and the guard's reading sums (at worst about 1,700 readings and
+  41,000 series a month: only runs whose time counts in the month's seconds ask). Tests first, each watched failing on
+  the builder's commit (25 failed there) and each behaviour undone once in a scratch copy to see its test fail (23
+  undone, all caught): test_free_tier.py 28 to 54, test_on_demand_backfill.py 31 to 46 (with tests for the builder's
+  changes the gate found untested: backfill_due asking backfill's limits, a new month starting backfill's seconds from
+  nothing, a request queued again starting afresh as whoever asks, backfill's no-retry rule, a backfill read though the
+  threads suffice, the command line giving the job its guard, a guard rest told as the month's allowance), and
+  test_cloudrun.py's measured month redone; three of the builder's tests changed on purpose with dated notes (the guard's
+  extra seconds, backfill's rest, the measured month). The whole suite passed: 7,456 passed and 3 skipped, none failed
+  (2 min 55 s, under the heavy lock). Left as they are, small and noted by the reviews: Google's
+  billing month runs in US Pacific time while the queue and the guard count UTC months (backfill is paced out of a
+  month's first day, so only visitors' first reads of the 1st, as on main, land in Google's previous month; about 1% of
+  a part at worst); a visitor queued behind a backfill's threads left waiting for Gemini by a run cut short isn't told
+  those minutes; "30 a day" is told on days backfill has used some calls; a backfill can take a thin type past 8
+  threads (Gemini, not Claude, so CLAUDE.md's cost rule holds); the site's hourly backfill look holds its lock while it
+  reads the bucket. No eval/RUNS.md row and no sweeps this round: nothing an answer, its told wait or its told capacity
+  reads changed (the job's code, the guard and their tests only).

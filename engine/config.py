@@ -2258,15 +2258,22 @@ ON_DEMAND_EXTRACT_TRIES = 3
 # Doubled on 6 Nov 2026 (Noemi, 5 Nov: "You can double (do it with random products if people don't research any), but
 # make sure my claude usage for this week and in general stays under control"; then "Let's do A"): 50,000 until then.
 # Google's free allowance is one pot in dollars shared by the site and both jobs (FREE_TIER_DOLLARS below), so the
-# brief's 98,000, worked out for jobs with an allowance of their own, doesn't hold. 92,000 is the most, to the thousand,
-# that keeps 10% of each part in hand on October 2026's measured use at today's sizes (the CPU part binds, at 92,960;
-# engine/tests/test_cloudrun.py): 73 requests a month at 21 minutes, where 50,000 read 39. The hard caps alone can't
-# keep that margin, so a busier month is the free-tier guard's to catch (engine/free_tier.py): visitors' first
+# brief's 98,000, worked out for jobs with an allowance of their own, doesn't hold. 92,000 keeps 10% of each part in
+# hand on the measured use of 17 Oct to 5 Nov 2026, scaled to a 31-day month, at today's sizes (the CPU part binds: CPU
+# 89.0%, the reader's room 94,353 s; engine/tests/test_cloudrun.py; the last 14 days alone were busier, 90.7%): 73
+# requests a month at 21 minutes, where 50,000 read 39 (fix round, 6 Nov 2026: the builder had taken the pre-check's 19
+# days of October as its month, so it said 89.6% and "the most to the thousand"). The hard caps alone can't keep that
+# margin, so a busier month is the free-tier guard's to catch (engine/free_tier.py): visitors' first
 # ON_DEMAND_GUARD_FREE_SECONDS a month read as before, and any reading past them, and every backfill read, starts only
 # while the guard projects the month under FREE_TIER_SHARE of each part.
+# A run that asks the guard, or does anything for backfill, counts at least ON_DEMAND_RUN_BILLED_SECONDS: Cloud Run
+# bills a job's instance "for the entire lifetime of any instance started, with a minimum of 1 minute"
+# (https://cloud.google.com/run/pricing, read 6 Nov 2026). A visitor's run within their first 50,000 seconds counts as
+# before.
 ON_DEMAND_NEW_READING_SECONDS = 15 * 60
 ON_DEMAND_MONTH_SECONDS = 92_000
 ON_DEMAND_START_SECONDS = 30
+ON_DEMAND_RUN_BILLED_SECONDS = 60
 ON_DEMAND_LEASE_MINUTES = 50
 # The Gemini model the job reads with (the job's settings may name another: CREDIBLE_RECS_ON_DEMAND_MODEL) and the Gemini
 # calls a day it may make: Gemini's free allowance only (Noemi's decision of 14 Oct 2026), a little under what Google
@@ -2334,16 +2341,20 @@ ON_DEMAND_QUEUE_FRESH_SECONDS = 60
 # - visitors' first ON_DEMAND_GUARD_FREE_SECONDS of the month (the month's time before the doubling) never wait for the
 #   free-tier guard, and backfill's seconds never count against them;
 # - backfill reads for at most ON_DEMAND_BACKFILL_SECONDS a month (half the month, and never into visitors' first
-#   50,000), paced evenly: never more than its share of the days gone, so a busy end of month still has room;
+#   50,000: its last read starts only while a whole run, ON_DEMAND_LEASE_MINUTES, still fits), paced evenly: never more
+#   than its share of the days gone, so a busy end of month still has room;
 # - it starts only while the day's Gemini calls leave enough for ON_DEMAND_BACKFILL_VISITOR_REQUESTS visitors' requests
 #   as well as its own;
 # - it stops while the bundle holds ON_DEMAND_BACKFILL_BUNDLE_THREADS threads or more not baked in yet (half the bundle's
 #   room, ON_DEMAND_BUNDLE_MAX_THREADS);
-# - every backfill read asks the free-tier guard first.
+# - every backfill read asks the free-tier guard first, about the read and the rest of visitors' first
+#   ON_DEMAND_GUARD_FREE_SECONDS this month together (they never ask it, so backfill must leave their room).
 # The site's keep-warm ping looks at most every ON_DEMAND_BACKFILL_EVERY_SECONDS whether one is due, and queues it (no
 # Cloud Scheduler job of its own); the daily pre-check, which lists the thin products, may queue one too. A guard that
-# says no rests backfill (and, past visitors' first seconds, all reading) for ON_DEMAND_GUARD_REST_HOURS; one that
-# can't read Cloud Monitoring, for ON_DEMAND_GUARD_FAILED_MINUTES.
+# says no, or can't read Cloud Monitoring, rests backfill for ON_DEMAND_GUARD_BACKFILL_REST_HOURS and, past visitors'
+# first seconds, all reading for ON_DEMAND_GUARD_REST_HOURS (never past the month's end). Fix round, 6 Nov 2026 (the
+# cost review): each try starts the paid job, so a failed reading no longer rests reading only an hour, and backfill
+# tries again a day later, not 6 hours.
 ON_DEMAND_GUARD_FREE_SECONDS = 50_000
 ON_DEMAND_BACKFILL_SECONDS = min(ON_DEMAND_MONTH_SECONDS // 2, ON_DEMAND_MONTH_SECONDS - ON_DEMAND_GUARD_FREE_SECONDS)
 ON_DEMAND_BACKFILL_VISITOR_REQUESTS = 20
@@ -2351,7 +2362,7 @@ ON_DEMAND_BACKFILL_BUNDLE_THREADS = 150
 ON_DEMAND_BACKFILL_CANDIDATES = 200
 ON_DEMAND_BACKFILL_EVERY_SECONDS = 3600
 ON_DEMAND_GUARD_REST_HOURS = 6
-ON_DEMAND_GUARD_FAILED_MINUTES = 60
+ON_DEMAND_GUARD_BACKFILL_REST_HOURS = 24
 
 # --- Google's free allowance for Cloud Run: one pot in dollars (6 Nov 2026, Noemi's doubling, option A) ---
 # Cloud Run's pricing page (https://cloud.google.com/run/pricing, read 6 Nov 2026): the free tier "is applied as a

@@ -159,8 +159,9 @@ def test_when_the_months_time_is_what_runs_out_the_capacity_is_told_by_the_month
     # 50,000 seconds of job time a month read 39 requests of 21 minutes: it is the month's time, not Gemini's 450
     # calls, that limits the reading, so "about 30 a day" next to "check back on 1 November" would not be true.
     # Changed on purpose 6 Nov 2026 (Noemi's doubling of on-demand reading, 5 Nov: "You can double"): 92,000 seconds a
-    # month, the most that keeps 10% of the shared free allowance in hand on October's use (engine/tests/
-    # test_cloudrun.py), read 73 requests of 21 minutes, and the visitor is told 73. The wording is as approved.
+    # month, which keeps 10% of the shared free allowance in hand on the measured use of 17 Oct to 5 Nov 2026 (engine/
+    # tests/test_cloudrun.py; "the most, on October's use" until the fix round of 6 Nov 2026, which redid the measured
+    # month), read 73 requests of 21 minutes, and the visitor is told 73. The wording is as approved.
     assert on_demand.products_a_month() == config.ON_DEMAND_MONTH_SECONDS // (21 * 60) == 73
     left = config.ON_DEMAND_MONTH_SECONDS - 21 * 60  # one request's time left this month
     state = Line(tmp_path, waiting=3, seconds_used=left).asked()

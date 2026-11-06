@@ -98,7 +98,7 @@ from engine.config import (
     ON_DEMAND_GEMINI_CALLS_A_DAY,
     ON_DEMAND_GEMINI_CALLS_A_MINUTE,
     ON_DEMAND_GEMINI_MODEL,
-    ON_DEMAND_GUARD_FAILED_MINUTES,
+    ON_DEMAND_GUARD_BACKFILL_REST_HOURS,
     ON_DEMAND_GUARD_FREE_SECONDS,
     ON_DEMAND_GUARD_REST_HOURS,
     ON_DEMAND_LATE_MINUTES,
@@ -116,6 +116,7 @@ from engine.config import (
     ON_DEMAND_READ_AGAIN_DAYS,
     ON_DEMAND_RETRY_DAYS,
     ON_DEMAND_RETRY_MINUTES,
+    ON_DEMAND_RUN_BILLED_SECONDS,
     ON_DEMAND_SEARCH_CALLS,
     ON_DEMAND_START_EVERY_SECONDS,
     ON_DEMAND_START_SECONDS,
@@ -524,18 +525,20 @@ def backfill_stop(queue: Queue, now: datetime, run_seconds: float = 0.0, run_bac
     a request is told to take (ON_DEMAND_PRODUCT_MINUTES). `run_seconds` and `run_backfill`: the running job's seconds
     and its backfill seconds not counted in the queue yet; `bundle_threads`: the bundle's count, when the job has it.
     - "month": the month's reading time would run out;
-    - "half": backfill's ON_DEMAND_BACKFILL_SECONDS would be passed (half the month, never visitors' first 50,000);
+    - "half": backfill's ON_DEMAND_BACKFILL_SECONDS could be passed (half the month, never visitors' first 50,000): the
+      next read counted at the most one run can take (its lease, ON_DEMAND_LEASE_MINUTES, outlasts its 45-minute task
+      timeout), not its told 21 minutes, so a slow last read never eats into visitors' 50,000 (fix round, 6 Nov 2026);
     - "pace": backfill would pass its share of the days gone (paced evenly through the month);
     - "gemini": the day's Gemini calls would leave less than ON_DEMAND_BACKFILL_VISITOR_REQUESTS visitors' requests;
     - "bundle": the bundle holds ON_DEMAND_BACKFILL_BUNDLE_THREADS threads or more not baked in yet."""
     usage = Queue(usage=dict(queue.usage)).usage_now(now)
     seconds = float(usage.get("seconds", 0.0)) + run_seconds
     backfill = float(usage.get("backfill_seconds", 0.0)) + run_backfill
-    one = ON_DEMAND_PRODUCT_MINUTES * 60
+    one, longest = ON_DEMAND_PRODUCT_MINUTES * 60, ON_DEMAND_LEASE_MINUTES * 60
     first, after = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0), next_month(now)
     if seconds + one > ON_DEMAND_MONTH_SECONDS:
         return "month", after
-    if backfill + one > ON_DEMAND_BACKFILL_SECONDS:
+    if backfill + longest > ON_DEMAND_BACKFILL_SECONDS:
         return "half", after
     if backfill + one > ON_DEMAND_BACKFILL_SECONDS * ((now - first) / (after - first)):
         return "pace", first + timedelta(days=(after - first).days * (backfill + one) / ON_DEMAND_BACKFILL_SECONDS)
@@ -555,11 +558,18 @@ def backfill_due(queue: Queue, now: datetime) -> Entry | None:
         return None
     day = str((queue.backfill or {}).get("day") or now.date().isoformat())
     for entry in backfill_order(backfill_candidates(queue), day):
-        if any(other.category == entry.category and other.product_type == entry.product_type
-               and (other.status == "waiting" or not other.due_again(now)) for other in queue.entries):
-            continue  # waiting, or read lately (for whatever need words)
+        if type_taken(queue, entry, now):
+            continue
         return entry
     return None
+
+
+def type_taken(queue: Queue, entry: Entry, now: datetime) -> bool:
+    """Whether another entry for the same product type (whatever its need words; the same request read before
+    included) waits, or was read in the last ON_DEMAND_READ_AGAIN_DAYS: backfill leaves that type alone."""
+    return any(other is not entry and other.category == entry.category
+               and other.product_type == entry.product_type
+               and (other.status == "waiting" or not other.due_again(now)) for other in queue.entries)
 
 
 def backfill_in_progress(queue: Queue, now: datetime) -> bool:
@@ -1217,6 +1227,7 @@ class RunReport:
     backfill_seconds: float = 0.0
     visitor_work: bool = False
     backfill_work: bool = False  # any step for backfill, a read the guard refused included
+    guard_asked: bool = False  # whether the run asked the free-tier guard (fix round, 6 Nov 2026)
     bundle_threads: int | None = None  # the bundle's threads at the run's last look
     _lines: dict = field(default_factory=dict, repr=False)  # a backfill request's key -> its line in `backfill`
 
@@ -1309,6 +1320,11 @@ def run_job(bucket: Bucket, library_dir: Path, archive, gemini, now=_now, clock=
             queue.release_lease()
             usage = queue.usage_now(now())
             ran = report.seconds + ON_DEMAND_START_SECONDS
+            # A run that asked the free-tier guard, or did anything for backfill, counts at least the minute Google
+            # bills a job's run (fix round, 6 Nov 2026: a start only to be refused is spent too, and Cloud Monitoring
+            # hardly shows a run that short). A visitor's run within their first 50,000 seconds counts as before.
+            if report.guard_asked or report.backfill_work:
+                ran = max(ran, ON_DEMAND_RUN_BILLED_SECONDS)
             usage["seconds"] = round(float(usage.get("seconds", 0.0)) + ran, 1)
             # Backfill's share (6 Nov 2026): its own steps' seconds, or the whole run when it did nothing for a visitor.
             backfill = ran if report.backfill_work and not report.visitor_work else report.backfill_seconds
@@ -1377,17 +1393,17 @@ def _read_until_done(queues: QueueStore, bundles: BundleStore, library_dir: Path
                 refused.add(entry.key)
                 continue
             _change_entry(queues, entry.key, lambda e: setattr(e, "started_at", moment.isoformat()))
-        else:
-            visitors = (float(usage.get("seconds", 0.0)) - float(usage.get("backfill_seconds", 0.0))
-                        + ran - report.backfill_seconds)  # visitors' seconds this month, this run's so far included
-            if visitors >= ON_DEMAND_GUARD_FREE_SECONDS:
-                verdict = _ask(guard, moment, float(usage.get("seconds", 0.0)) + ran)
-                if not verdict.yes:
-                    report.visitor_work = True
-                    _rest(queues, moment + _guard_rest(verdict), "guard", report)
-                    report.notes.append(f"Past visitors' first {ON_DEMAND_GUARD_FREE_SECONDS:,} seconds this month, the "
-                                        f"free-tier guard said no ({verdict.why}): reading rests.")
-                    return
+        elif _visitors_seconds(usage, ran, report) >= ON_DEMAND_GUARD_FREE_SECONDS:
+            verdict = _ask(guard, moment, float(usage.get("seconds", 0.0)) + ran, report)
+            if not verdict.yes:
+                report.visitor_work = True
+                # 6 hours, whether the guard said no or couldn't read (fix round, 6 Nov 2026: an hour after a failed
+                # reading started the paid job again every hour), never past the month's end.
+                _rest(queues, min(moment + timedelta(hours=ON_DEMAND_GUARD_REST_HOURS), next_month(moment)), "guard",
+                      report)
+                report.notes.append(f"Past visitors' first {ON_DEMAND_GUARD_FREE_SECONDS:,} seconds this month, the "
+                                    f"free-tier guard said no ({verdict.why}): reading rests.")
+                return
         _read_entry(entry, queue, bundle, queues, bundles, library_dir, archive, now, work, report)
         _count_step(report, entry.key, entry.product_type, entry.backfill, clock() - step)
 
@@ -1408,52 +1424,68 @@ def _count_step(report: RunReport, key: str, product_type: str, backfill: bool, 
         report.visitor_work = True
 
 
-def _ask(guard, now: datetime, reader_seconds: float):
-    """The free-tier guard's verdict for one request's read; no guard, or a guard that fails, is a no."""
+def _visitors_seconds(usage: dict, ran: float, report: RunReport) -> float:
+    """Visitors' seconds this month: the month's less backfill's, this run's so far included."""
+    return (float(usage.get("seconds", 0.0)) - float(usage.get("backfill_seconds", 0.0))
+            + ran - report.backfill_seconds)
+
+
+def _ask(guard, now: datetime, reader_seconds: float, report: RunReport | None = None,
+         extra_seconds: float = ON_DEMAND_PRODUCT_MINUTES * 60):
+    """The free-tier guard's verdict for a read of `extra_seconds` (one request's, unless more must be kept for
+    visitors); no guard, or a guard that fails, is a no."""
     from engine.free_tier import Verdict
 
+    if report is not None:
+        report.guard_asked = True
     if guard is None:
         return Verdict(False, "no free-tier guard", None, None, failed=True)
     try:
-        return guard.allows(now, extra_seconds=ON_DEMAND_PRODUCT_MINUTES * 60, reader_seconds=reader_seconds)
+        return guard.allows(now, extra_seconds=extra_seconds, reader_seconds=reader_seconds)
     except Exception as error:  # fail closed
         return Verdict(False, f"the guard failed ({type(error).__name__})", None, None, failed=True)
 
 
-def _guard_rest(verdict) -> timedelta:
-    """How long reading rests after the guard's no: a short while when it couldn't read Cloud Monitoring."""
-    return (timedelta(minutes=ON_DEMAND_GUARD_FAILED_MINUTES) if verdict.failed
-            else timedelta(hours=ON_DEMAND_GUARD_REST_HOURS))
-
-
 def _backfill_may_start(entry: Entry, queue: Queue, queues: QueueStore, moment: datetime, ran: float, threads: int,
                         guard, report: RunReport) -> bool:
-    """Before a backfill read: backfill's own limits (backfill_stop, this run's seconds counted), then the free-tier
-    guard. When either says no, the backfill is taken off the queue (a later hour queues one again) and backfill rests;
-    visitors' reading goes on."""
+    """Before a backfill read: its product type not read lately nor waiting for a visitor, backfill's own limits
+    (backfill_stop, this run's seconds counted), then the free-tier guard. When any says no, the backfill is taken off
+    the queue (a later hour queues one again) and, but for its type, backfill rests; visitors' reading goes on.
+
+    The guard is asked about the read and about what visitors may still read without asking it (fix round, 6 Nov 2026,
+    from the code and cost reviews): the rest of their first ON_DEMAND_GUARD_FREE_SECONDS this month, at the reader's
+    size, so backfill never takes the room those seconds need later in the month. A no, or a reading that failed,
+    rests backfill for ON_DEMAND_GUARD_BACKFILL_REST_HOURS (a day: each try starts the paid job)."""
     usage = queue.usage_now(moment)
-    if queue.backfill_resting(moment):
+    if type_taken(queue, entry, moment):
+        why, until = None, None
+        report.notes.append(f"A backfill read of {entry.product_type} isn't needed: the type was read lately or a "
+                            "visitor waits for it.")
+    elif queue.backfill_resting(moment):
         why, until = queue.backfill_resting_why or "resting", _time(queue.backfill_resting_until)
     else:
         stop = backfill_stop(queue, moment, run_seconds=ran, run_backfill=report.backfill_seconds,
                              bundle_threads=threads)
-        why, until = stop if stop is not None else (None, None)
-    if why is None:
-        verdict = _ask(guard, moment, float(usage.get("seconds", 0.0)) + ran)
-        if verdict.yes:
-            return True
-        why, until = "guard", moment + _guard_rest(verdict)
-        report.notes.append(f"The free-tier guard said no to a backfill read ({verdict.why}): backfill rests until "
-                            f"{until.isoformat()}.")
-    else:
-        report.notes.append(f"A backfill read of {entry.product_type} can't start ({why}): backfill rests until "
-                            f"{until.isoformat()}.")
+        if stop is None:
+            kept = max(0.0, ON_DEMAND_GUARD_FREE_SECONDS - _visitors_seconds(usage, ran, report))
+            verdict = _ask(guard, moment, float(usage.get("seconds", 0.0)) + ran, report,
+                           extra_seconds=ON_DEMAND_PRODUCT_MINUTES * 60 + kept)
+            if verdict.yes:
+                return True
+            stop = "guard", moment + timedelta(hours=ON_DEMAND_GUARD_BACKFILL_REST_HOURS)
+            report.notes.append(f"The free-tier guard said no to a backfill read, with {kept:,.0f} of visitors' "
+                                f"seconds kept ({verdict.why}): backfill rests until {stop[1].isoformat()}.")
+        else:
+            report.notes.append(f"A backfill read of {entry.product_type} can't start ({stop[0]}): backfill rests "
+                                f"until {stop[1].isoformat()}.")
+        why, until = stop
 
     def drop(waiting: Queue):
         mine = waiting.find(entry.key)
         if mine is not None and mine.status == "waiting" and mine.backfill:
             waiting.entries.remove(mine)
-        waiting.rest_backfill(until, why)
+        if why is not None:
+            waiting.rest_backfill(until, why)
 
     queues.change(drop)
     return False

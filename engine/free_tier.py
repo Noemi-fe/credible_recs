@@ -19,11 +19,15 @@ from Cloud Monitoring and projects the month:
    or a job (instance-billed) at Tier 1.
 3. The projection. The spent so far, plus the days left in the month at the last 7 days' pace at today's sizes (so a
    service that has just stepped down in memory counts its old size for the days it ran at it, and its new size from
-   now), plus the read about to start (its told minutes at the reader's size).
+   now), plus the read about to start (its told minutes at the reader's size). For a backfill read the job adds what
+   is left of visitors' first ON_DEMAND_GUARD_FREE_SECONDS this month to that read (fix round, 6 Nov 2026): they never
+   ask the guard, so the month must have room for them too.
 4. The answer: yes only while each part's projection stays under FREE_TIER_SHARE (90%) of the free dollars. No on any
    failure (fail closed): no project, no token, an HTTP error, an answer that isn't JSON, more than one page, a unit or a
-   kind of value it doesn't expect, or a series missing for the site (either window) or the pre-check (the last 7 days,
-   and the month once it is FREE_TIER_MONTH_HOURS old: the pre-check runs at 4 am UK time).
+   kind of value it doesn't expect, a series without points, a value that isn't a number of 0 or more (NaN, infinity,
+   below 0), a service or job in some of the three metrics but not all, a series missing for the site (either window)
+   or the pre-check (the last 7 days, and the month once it is FREE_TIER_MONTH_HOURS old: the pre-check runs at 4 am UK
+   time), or a projection that isn't a number (fix round, 6 Nov 2026, from the gate's and the reviews' probes).
 
 A reading is kept FREE_TIER_READING_SECONDS (a failed one never), so a run asks at most once per 10 minutes: at worst a
 few thousand readings a month, well inside Cloud Monitoring's free million time series a month (test_free_tier.py does
@@ -32,6 +36,7 @@ the sums). The guard sees only this project, while Google's pot is per billing a
 
 import http.client
 import json
+import math
 import time
 import urllib.error
 from collections.abc import Callable
@@ -118,6 +123,8 @@ class Guard:
         try:
             read_on, month, week = self._reading(now)
             cpu, memory = project(month, week, read_on, extra_seconds, reader_seconds)
+            if not (math.isfinite(cpu) and math.isfinite(memory)):
+                raise ReadingFailed("a projection that isn't a number")
         except ReadingFailed as error:
             return Verdict(False, f"Cloud Monitoring couldn't be read ({error}): no reading starts", None, None,
                            failed=True)
@@ -155,11 +162,18 @@ class Guard:
         return end, month, week
 
     def _window(self, token: str, start: datetime, end: datetime) -> Reading:
+        """Each service's and job's three sums over [start, end]. One in some of the three metrics but not all is a
+        failure: a sum left out would count as nothing (the site without its billable seconds would project no
+        memory)."""
         sums: dict[tuple[str, str], dict[str, float]] = {}
         for rtype, (_, label) in KINDS.items():
             for part, (metric, unit) in METRICS.items():
                 for name, value in self._series(token, metric, unit, rtype, label, start, end).items():
                     sums.setdefault((rtype, name), {})[part] = value
+        for (_, name), parts in sums.items():
+            missing = [part for part in METRICS if part not in parts]
+            if missing:
+                raise ReadingFailed(f"no {' or '.join(missing)} series for {name}, though it has the others")
         return {key: Use(**parts) for key, parts in sums.items()}
 
     def _series(self, token: str, metric: str, unit: str, rtype: str, label: str, start: datetime,
@@ -189,7 +203,12 @@ class Guard:
         if answer.get("unit") != unit:
             raise ReadingFailed(f"{metric} in the unit {answer.get('unit')!r}, not {unit!r}")
         sums: dict[str, float] = {}
-        for series in answer.get("timeSeries") or []:
+        found = answer.get("timeSeries") or []
+        if not isinstance(found, list):
+            raise ReadingFailed(f"series of {metric} that aren't a list")
+        for series in found:
+            if not isinstance(series, dict):
+                raise ReadingFailed(f"a series of {metric} that isn't an object")
             field = VALUE_TYPES.get(series.get("valueType"))
             if field is None or series.get("metricKind") != "DELTA":
                 raise ReadingFailed(f"{metric} as {series.get('metricKind')} {series.get('valueType')}, not DELTA "
@@ -197,11 +216,16 @@ class Guard:
             name = (series.get("resource") or {}).get("labels", {}).get(label)
             if not name:
                 raise ReadingFailed(f"a series of {metric} without its {label}")
+            points = series.get("points")
+            if not points or not isinstance(points, list):  # Cloud Monitoring leaves out a series with nothing in it
+                raise ReadingFailed(f"a series of {metric} for {name} without points")
             try:
-                value = sum(float(point["value"][field]) for point in series.get("points") or [])
+                values = [float(point["value"][field]) for point in points]
             except (KeyError, TypeError, ValueError):
                 raise ReadingFailed(f"a point of {metric} that can't be read") from None
-            sums[name] = sums.get(name, 0.0) + value
+            if not all(math.isfinite(value) and value >= 0 for value in values):  # NaN, infinity or below 0
+                raise ReadingFailed(f"a value of {metric} for {name} that isn't a number of 0 or more")
+            sums[name] = sums.get(name, 0.0) + sum(values)
         return sums
 
 

@@ -281,37 +281,49 @@ def test_the_jobs_stay_inside_cloud_runs_free_tier_in_the_longest_month():
 
 
 # The month as it was measured (Cloud Monitoring, read-only, 6 Nov 2026: run.googleapis.com/container/
-# billable_instance_time and cpu/allocation_time, summed over October 2026): the site's billable seconds and its CPU
-# allocation (the startup boosts held in it), and the pre-check's. The site came up on 13 Oct, so these are 19 days of
-# it, but its first days were its busiest (deploys, boosts, the 4 GiB stopgap's restarts): its steady 20 days from 17
-# Oct to 5 Nov, scaled to 31, are 52,223 billable seconds and 57,916 vCPU-seconds, under October's.
-OCTOBER = {"site": (52_552.1, 66_221.3), "precheck": (34_510.4, 34_744.1)}
+# billable_instance_time and cpu/allocation_time, summed by day, UTC): the site's billable seconds and its CPU
+# allocation (the startup boosts held in it), and the pre-check's, over the 20 days from 17 Oct to 5 Nov 2026, scaled to
+# a 31-day month. Changed on purpose 6 Nov 2026 (fix round, the cost review): the builder took October's sums, but the
+# site came up on 12 Oct and the pre-check ran 19 days of October, so the pre-check's month was short by a third. One
+# window for both: the site's steady days (its first ones were its busiest: deploys, boosts, the 4 GiB stopgap's
+# restarts), with the pre-check at its November pace in it.
+MEASURED_DAYS = 20
+MEASURED = {"site": (33_692.3, 37_365.4), "precheck": (28_405.3, 28_661.2)}
 
 
-def test_the_doubled_month_is_the_most_that_keeps_10_percent_in_hand_on_octobers_measured_use():
+def test_the_doubled_month_keeps_10_percent_in_hand_on_the_measured_use():
     # 6 Nov 2026 (Noemi's doubling, option A): the brief's 98,000 seconds were for jobs with a pot of their own. In the
-    # shared pot, October's measured use at today's sizes (the site at 3 GiB, the pre-check at 2 GiB, the reader at
-    # 1 GiB) leaves the reader at most 92,960 seconds on the CPU part (the part that binds), so the month is 92,000, the
-    # most to the thousand: 73 requests at 21 minutes (39 before). On memory it is 79.6% of the part at 3 GiB and 65.0%
-    # at 2 GiB. A busier month than October is the free-tier guard's to catch: it projects the month from Cloud
-    # Monitoring before every read past the first 50,000 seconds and every backfill read.
+    # shared pot, the measured use at today's sizes (the site at 3 GiB, the pre-check at 2 GiB, the reader at 1 GiB)
+    # leaves the reader at most 94,353 seconds on the CPU part (the part that binds): 92,000 is 89.0% of it, 73 requests
+    # at 21 minutes (39 before). On memory it is 83.5% of the part at 3 GiB and 69.0% at 2 GiB. The last 14 days alone
+    # were busier (the reader's room 90,325, so 92,000 is 90.7% there); a busier month is the free-tier guard's to
+    # catch: it projects the month from Cloud Monitoring before every read past the first 50,000 seconds and every
+    # backfill read. (Until the fix round the test said 92,000 was the most to the thousand on October's use: CPU
+    # 89.6%, memory 79.6% and 65.0%.)
     from engine.config import CLOUD_RUN_PRECHECK, CLOUD_RUN_READER, CLOUD_RUN_SITE, CLOUD_RUN_SIZES, \
         FREE_TIER_DOLLARS, FREE_TIER_SHARE, ON_DEMAND_MONTH_SECONDS
 
     (_, _, site_gib), (_, _, precheck_gib), (_, reader_cpu, reader_gib) = (
         CLOUD_RUN_SIZES[CLOUD_RUN_SITE], CLOUD_RUN_SIZES[CLOUD_RUN_PRECHECK], CLOUD_RUN_SIZES[CLOUD_RUN_READER])
+    scale = 31 / MEASURED_DAYS
+    (site_billable, site_cpu), (precheck_billable, precheck_cpu) = (
+        [value * scale for value in MEASURED[name]] for name in ("site", "precheck"))
 
     def parts(month_seconds: int, gib: float) -> tuple[float, float]:
-        site = _pot(OCTOBER["site"][1], OCTOBER["site"][0] * gib, "service")
-        precheck = _pot(OCTOBER["precheck"][1], OCTOBER["precheck"][0] * precheck_gib, "job")
+        site = _pot(site_cpu, site_billable * gib, "service")
+        precheck = _pot(precheck_cpu, precheck_billable * precheck_gib, "job")
         reader = _pot(month_seconds * reader_cpu, month_seconds * reader_gib, "job")
         return (site[0] + precheck[0] + reader[0]) / FREE_TIER_DOLLARS["cpu"], \
             (site[1] + precheck[1] + reader[1]) / FREE_TIER_DOLLARS["memory"]
 
+    assert (round(site_billable), round(site_cpu), round(precheck_billable), round(precheck_cpu)) == (
+        52_223, 57_916, 44_028, 44_425)
     cpu, memory = parts(ON_DEMAND_MONTH_SECONDS, site_gib)
     assert cpu < FREE_TIER_SHARE and memory < FREE_TIER_SHARE
-    assert parts(ON_DEMAND_MONTH_SECONDS + 1_000, site_gib)[0] > FREE_TIER_SHARE  # the most, to the thousand
-    assert (round(cpu, 3), round(memory, 3), round(parts(ON_DEMAND_MONTH_SECONDS, 2)[1], 3)) == (0.896, 0.796, 0.65)
+    assert (round(cpu, 3), round(memory, 3), round(parts(ON_DEMAND_MONTH_SECONDS, 2)[1], 3)) == (0.89, 0.835, 0.69)
+    room = (FREE_TIER_SHARE * FREE_TIER_DOLLARS["cpu"] - _pot(site_cpu, 0, "service")[0]
+            - _pot(precheck_cpu, 0, "job")[0]) / _pot(reader_cpu, 0, "job")[0]
+    assert round(room) == 94_353 and ON_DEMAND_MONTH_SECONDS == 92_000 < room
 
 
 def test_the_site_reads_ahead_within_a_third_and_a_bit_of_its_own_free_tier():

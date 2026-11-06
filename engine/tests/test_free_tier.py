@@ -213,6 +213,125 @@ def test_a_series_of_another_kind_of_value_answers_no():
     assert not verdict.yes and verdict.failed
 
 
+# Fix round, 6 Nov 2026 (the gate's and the reviews' probes): answers Cloud Monitoring is unlikely to give, but each one
+# made the guard say yes with what it couldn't read. Each is a failed reading now.
+
+def altered(change, monitoring=None):
+    """Cloud Monitoring's answers (FakeMonitoring's), each changed by `change(answer, metric part, resource type,
+    window)` before the guard reads it."""
+    monitoring = monitoring or FakeMonitoring()
+
+    def ask(method, url, headers, body=None, timeout=None):
+        status, data = monitoring(method, url, headers, body, timeout)
+        query = parse_qs(urlsplit(url).query)
+        metric = query["filter"][0].split('metric.type="')[1].split('"')[0]
+        rtype = query["filter"][0].split('resource.type="')[1].split('"')[0]
+        window = "month" if query["interval.startTime"][0] == monitoring.starts[0] else "week"
+        answer = json.loads(data)
+        answer = change(answer, next(part for part, full in METRICS.items() if full == metric), rtype, window)
+        return status, answer if isinstance(answer, bytes) else json.dumps(answer).encode()
+
+    return ask
+
+
+def each_value(new):
+    """Every point's value changed to `new` (a value, or a function of the value)."""
+    def change(answer, part, rtype, window):
+        for series in answer.get("timeSeries", []):
+            for point in series["points"]:
+                old = point["value"]["doubleValue"]
+                point["value"]["doubleValue"] = new(old) if callable(new) else new
+        return answer
+    return change
+
+
+def of(name, change_series):
+    """`change_series(series)` on `name`'s series only (None leaves it out)."""
+    def change(answer, part, rtype, window):
+        kept = []
+        for series in answer.get("timeSeries", []):
+            if next(iter(series["resource"]["labels"].values())) == name:
+                series = change_series(series, part, window)
+            if series is not None:
+                kept.append(series)
+        answer["timeSeries"] = kept
+        return answer
+    return change
+
+
+@pytest.mark.parametrize("change, why", [
+    (each_value("NaN"), "number"),  # the string Cloud Monitoring's JSON could hold
+    (each_value(float("nan")), "number"),  # the JSON token NaN
+    (each_value(float("inf")), "number"),
+    (each_value(lambda value: -value), "number"),
+    (each_value(lambda value: -1e12), "number"),
+    (each_value("abc"), "can't be read"),
+    (of(SITE, lambda series, part, window: {**series, "points": []}), "without points"),
+    (of(PRECHECK, lambda series, part, window: {**series, "points": []}), "without points"),
+    (of(READER, lambda series, part, window: {**series, "points": []}), "without points"),
+    (of(SITE, lambda series, part, window: {k: v for k, v in series.items() if k != "points"}), "without points"),
+    # The site's billable seconds alone left out of the last 7 days: its memory pace would be nothing (the code review's
+    # probe: memory $0.817, a no, fell to $0.660, a yes).
+    (of(SITE, lambda series, part, window: None if (part, window) == ("billable", "week") else series), "billable"),
+    (of(PRECHECK, lambda series, part, window: None if part == "memory" else series), "memory"),
+    (of(READER, lambda series, part, window: None if part == "cpu" else series), "cpu"),
+    (of(SITE, lambda series, part, window: {**series, "metricKind": "GAUGE"}), "not DELTA"),
+    (of(SITE, lambda series, part, window: {**series, "resource": {"labels": {}}}), "service_name"),
+    (of(READER, lambda series, part, window: {**series, "resource": {"labels": {"project_id": PROJECT}}}), "job_name"),
+    (of(SITE, lambda series, part, window: {**series, "points": [{"value": {}}]}), "can't be read"),
+    (of(SITE, lambda series, part, window: {**series, "points": [{"value": {"int64Value": "12"}}]}), "can't be read"),
+    (lambda answer, part, rtype, window: [answer], "isn't an object"),
+    (lambda answer, part, rtype, window: {**answer, "timeSeries": {"made-up": 1}}, "aren't a list"),
+    (lambda answer, part, rtype, window: {**answer, "timeSeries": ["made-up"]}, "isn't an object"),
+])
+def test_an_answer_it_cant_trust_answers_no(change, why):
+    verdict = a_guard(altered(change)).allows(NOW)
+    assert not verdict.yes and verdict.failed and why in verdict.why, verdict.why
+    assert verdict.cpu is None and verdict.memory is None
+
+
+def test_with_every_answer_whole_the_same_reading_says_yes():
+    # The changes above, undone: the stand-in's own answers pass through `altered` unharmed.
+    verdict = a_guard(altered(lambda answer, part, rtype, window: answer)).allows(NOW)
+    assert verdict.yes and not verdict.failed
+
+
+def test_values_too_big_to_add_up_answer_no():
+    # Each value finite, but their sum in dollars isn't a number the guard can compare: a failed reading, never a yes.
+    verdict = a_guard(altered(each_value(1e308))).allows(NOW)
+    assert not verdict.yes and verdict.failed and "projection" in verdict.why
+
+
+def test_a_token_that_cant_be_had_answers_no():
+    def broken():
+        raise OSError("made-up: the metadata server didn't answer")
+
+    verdict = Guard(PROJECT, token=broken, request=FakeMonitoring(), clock=lambda: 0.0).allows(NOW)
+    assert not verdict.yes and verdict.failed and "token" in verdict.why
+
+
+def test_anything_else_going_wrong_inside_the_guard_answers_no(monkeypatch):
+    def broken(*args, **kwargs):
+        raise ZeroDivisionError("made-up")
+
+    monkeypatch.setattr(free_tier, "project", broken)
+    verdict = a_guard(FakeMonitoring()).allows(NOW)
+    assert not verdict.yes and verdict.failed and "ZeroDivisionError" in verdict.why
+
+
+def test_an_answer_with_an_int64_value_reads_as_a_number():
+    # INT64 values come as strings in Cloud Monitoring's JSON; read as numbers, the same reading as the doubles.
+    def as_int64(answer, part, rtype, window):
+        for series in answer.get("timeSeries", []):
+            series["valueType"] = "INT64"
+            for point in series["points"]:
+                point["value"] = {"int64Value": str(int(point["value"]["doubleValue"]))}
+        return answer
+
+    doubles, int64s = a_guard(FakeMonitoring()).allows(NOW), a_guard(altered(as_int64)).allows(NOW)
+    assert int64s.yes and int64s.cpu == pytest.approx(doubles.cpu) and int64s.memory == pytest.approx(doubles.memory)
+
+
 def test_the_pre_check_not_run_yet_on_the_1st_is_no_failure():
     # The pre-check runs at 4 am UK time: in the first hours of a month it has no series for the month yet; from 6 am
     # UTC on the 1st it must have one.

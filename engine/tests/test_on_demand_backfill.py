@@ -187,7 +187,11 @@ def test_a_backfill_read_asks_the_guard_reads_arctic_shift_checks_every_quote_an
     google, guard = FakeGoogle(), FakeGuard(yes=True)
     queue_backfill(google)
     report = run(tmp_path, google, guard)
-    assert len(guard.asked) == 1 and guard.asked[0]["extra_seconds"] == PRODUCT_SECONDS
+    # Changed on purpose 6 Nov 2026 (fix round, the code and cost reviews): the guard was asked about the read alone;
+    # now about the read and the rest of visitors' first 50,000 seconds (this run's start counted as theirs so far).
+    assert len(guard.asked) == 1
+    kept = ON_DEMAND_GUARD_FREE_SECONDS - config.ON_DEMAND_START_SECONDS
+    assert guard.asked[0]["extra_seconds"] == PRODUCT_SECONDS + kept
     bundle = the_bundle(google)
     assert len(bundle.threads) == 3
     assert {Thread.model_validate_json(item.thread).read_from for item in bundle.threads.values()} == {"arctic_shift"}
@@ -203,9 +207,205 @@ def test_a_backfill_read_asks_the_guard_reads_arctic_shift_checks_every_quote_an
     assert queue.bundle_threads == 3
 
 
-@pytest.mark.parametrize("failed, hours", [(False, config.ON_DEMAND_GUARD_REST_HOURS),
-                                          (True, config.ON_DEMAND_GUARD_FAILED_MINUTES / 60)])
+# --- Fix round, 6 Nov 2026 (the gate, the code review and the cost review) ---
+
+def test_a_backfill_asks_the_guard_to_keep_room_for_the_rest_of_visitors_first_50000_seconds(tmp_path):
+    # Visitors' first 50,000 seconds never ask the guard, so nothing could stop them later in the month: a backfill read
+    # is asked about together with what is left of them, at the reader's size.
+    google, guard = FakeGoogle(), FakeGuard(yes=True)
+    queue_backfill(google)
+    change(google, lambda queue: queue.usage_now(NOW).update(seconds=30_000, backfill_seconds=10_000))
+    run(tmp_path, google, guard)
+    visitors = 30_000 - 10_000 + config.ON_DEMAND_START_SECONDS
+    assert guard.asked[0]["extra_seconds"] == PRODUCT_SECONDS + ON_DEMAND_GUARD_FREE_SECONDS - visitors
+    # Past their 50,000, nothing more is kept for them: they ask the guard themselves.
+    google, guard = FakeGoogle(), FakeGuard(yes=True)
+    queue_backfill(google)
+    change(google, lambda queue: queue.usage_now(NOW).update(seconds=70_000, backfill_seconds=10_000))
+    run(tmp_path, google, guard)
+    assert guard.asked[0]["extra_seconds"] == PRODUCT_SECONDS
+
+
+def test_a_month_with_room_for_one_read_but_not_for_visitors_rest_gets_no_backfill(tmp_path):
+    # The real guard over a made-up Cloud Monitoring (9 Oct: 8.5 days gone): one 21-minute read would project the CPU
+    # part at 71%, but with visitors' 49,970 seconds still to come at 92%, past the 90% line. No backfill.
+    from engine.free_tier import Guard
+    from engine.tests.test_free_tier import PROJECT, FakeMonitoring
+
+    site, precheck = ("cloud_run_revision", config.CLOUD_RUN_SITE), ("cloud_run_job", config.CLOUD_RUN_PRECHECK)
+    monitoring = FakeMonitoring(month={site: (16_000, 20_000, 48_000), precheck: (16_000, 16_000, 32_000)},
+                                week={site: (14_000, 19_000, 42_000), precheck: (14_000, 14_000, 28_000)},
+                                starts=("2026-10-01T00:00:00Z", "2026-10-02T12:00:00Z"))
+    guard = Guard(PROJECT, token=lambda: "token-1", request=monitoring, clock=lambda: 0.0)
+    one_read = guard.allows(NOW, extra_seconds=PRODUCT_SECONDS, reader_seconds=30)
+    assert one_read.yes and one_read.cpu / config.FREE_TIER_DOLLARS["cpu"] == pytest.approx(0.71, abs=0.005)
+    google, fake = FakeGoogle(), FakeArchive()
+    queue_backfill(google)
+    report = run(tmp_path, google, guard, fake_archive=fake)
+    queue = the_queue(google)
+    assert fake.requests == [] and queue.entries == [] and queue.backfill_resting_why == "guard"
+    assert any("49,970 of visitors' seconds kept" in note and "CPU $3.97 (92%" in note for note in report.notes)
+
+
+def test_a_run_that_asks_the_guard_or_does_backfill_counts_at_least_the_minute_google_bills(tmp_path):
+    # Cloud Run bills a job's run for at least a minute (https://cloud.google.com/run/pricing, read 6 Nov 2026).
+    assert config.ON_DEMAND_RUN_BILLED_SECONDS == 60
+    refused = FakeGoogle()
+    queue_backfill(refused)
+    run(tmp_path, refused, FakeGuard(yes=False))  # started only to be refused: a few seconds of work
+    assert the_queue(refused).usage["seconds"] == the_queue(refused).usage["backfill_seconds"] == 60
+    past = FakeGoogle()
+    change(past, lambda queue: queue.add(entry_for(parse_query(TEAPOT), had=0)))
+    change(past, lambda queue: queue.usage_now(NOW).update(seconds=ON_DEMAND_GUARD_FREE_SECONDS))
+    run(tmp_path, past, FakeGuard(yes=False))
+    assert the_queue(past).usage["seconds"] == ON_DEMAND_GUARD_FREE_SECONDS + 60
+    # A visitor's run within their first 50,000 seconds counts as it always has.
+    visitor = FakeGoogle()
+    change(visitor, lambda queue: queue.add(entry_for(parse_query(TEAPOT), had=0)))
+    run(tmp_path, visitor, FakeGuard(yes=False))
+    assert the_queue(visitor).usage["seconds"] == config.ON_DEMAND_START_SECONDS  # the stand-in clock never moved
+
+
+@pytest.mark.parametrize("when, until", [
+    (NOW, NOW + timedelta(hours=config.ON_DEMAND_GUARD_REST_HOURS)),
+    (datetime(2026, 10, 31, 22, 0, tzinfo=UTC), datetime(2026, 11, 1, tzinfo=UTC)),  # a new month starts afresh
+])
+def test_past_visitors_first_seconds_a_failed_reading_rests_reading_6_hours_and_never_past_the_month(tmp_path, when,
+                                                                                                     until):
+    # Changed on purpose 6 Nov 2026 (fix round, the cost review): an hour's rest after a failed reading started the paid
+    # job every hour while a visitor waited.
+    google = FakeGoogle()
+    change(google, lambda queue: queue.add(entry_for(parse_query(TEAPOT), had=0)))
+    change(google, lambda queue: queue.usage_now(when).update(seconds=ON_DEMAND_GUARD_FREE_SECONDS))
+    run(tmp_path, google, FakeGuard(yes=False, failed=True), now=when)
+    queue = the_queue(google)
+    assert queue.resting_why == "guard" and queue.resting_until == until.isoformat()
+
+
+def test_no_backfill_is_offered_while_its_own_limits_say_no(tmp_path):
+    # The ping (and the pre-check) offer one only when backfill_stop has room: otherwise it would start the paid job
+    # every hour only for the job to drop it.
+    google, ticks = FakeGoogle(), Ticks()
+
+    def paced_out(queue):
+        with_candidates(queue, [made_up("made-up teapot")])
+        queue.usage_now(NOW).update(seconds=20_000, backfill_seconds=20_000)  # far past its share of 8.5 days
+
+    change(google, paced_out)
+    assert backfill_stop(the_queue(google), NOW)[0] == "pace" and backfill_due(the_queue(google), NOW) is None
+    a_site(tmp_path, google, ticks).on_ping()
+    assert the_queue(google).waiting() == [] and google.jobs_started == []
+
+
+def test_a_new_month_starts_backfills_seconds_from_nothing():
+    queue = with_candidates(Queue(), [made_up("made-up teapot")])
+    queue.usage.update(month="2026-09", seconds=91_000.0, backfill_seconds=ON_DEMAND_BACKFILL_SECONDS)
+    assert backfill_stop(queue, NOW) is None and backfill_due(queue, NOW) is not None
+    assert queue.usage_now(NOW)["backfill_seconds"] == 0.0
+
+
+def test_a_request_queued_again_starts_afresh_as_whoever_asks_now():
+    queue = Queue()
+    entry = queue.add(thin(TEAPOT))
+    entry.started_at = NOW.isoformat()
+    entry.finish(NOW, found=2)
+    again = queue.add(entry_for(parse_query(TEAPOT), had=2))  # a visitor, later
+    assert again is entry and again.status == "waiting" and again.started_at is None and not again.backfill
+    again.finish(NOW, found=1)
+    assert queue.add(thin(TEAPOT)).backfill  # and backfill, later still
+
+
+def test_a_backfill_never_waits_for_another_try(tmp_path, monkeypatch):
+    from engine.tests.test_on_demand_job import SearchesFail, more_teapots
+
+    down = FakeGoogle()
+    queue_backfill(down)
+    run(tmp_path, down, FakeGuard(yes=True), fake_archive=FakeArchive(down=True))
+    [entry] = the_queue(down).entries
+    assert entry.status == "done" and entry.found == 0 and entry.tries == 1  # a visitor's would wait for 2 more tries
+    every = more_teapots(monkeypatch)
+    cut_short = FakeGoogle()
+    queue_backfill(cut_short)
+    run(tmp_path, cut_short, FakeGuard(yes=True), fake_archive=SearchesFail(threads=every))
+    [entry] = the_queue(cut_short).entries
+    assert entry.status == "done" and entry.found == 2  # closed with what it found; a visitor's would wait
+
+
+def test_a_backfill_reads_though_its_library_has_enough_threads(tmp_path):
+    # Thin is fewer than 3 picks, whatever the threads: a visitor's request with this many isn't read.
+    google, fake = FakeGoogle(), FakeArchive()
+    change(google, lambda queue: queue.add(Entry.waiting_for(parse_query(TEAPOT), had=config.ON_DEMAND_MIN_THREADS,
+                                                             backfill=True)))
+    report = run(tmp_path, google, FakeGuard(yes=True), fake_archive=fake)
+    assert fake.requests and report.threads_read == 3
+
+
+def test_a_backfill_of_a_type_a_visitor_had_read_meanwhile_is_dropped_unread(tmp_path):
+    # The code review: a visitor asking for the same product type with other need words doesn't take the backfill over;
+    # the backfill was then read again right after the visitor's read. Now it is dropped, and backfill doesn't rest.
+    google, guard = FakeGoogle(), FakeGuard(yes=True)
+    queue_backfill(google)
+    change(google, lambda queue: queue.add(entry_for(parse_query("teapot that keeps tea hot"), had=0)))
+    report = run(tmp_path, google, guard)
+    assert report.requests_read == ["teapot"] and guard.asked == []
+    queue = the_queue(google)
+    assert [e.backfill for e in queue.entries] == [False] and not queue.backfill_resting(NOW)
+
+
+def test_backfills_last_read_starts_only_while_a_whole_run_still_fits_in_its_half():
+    # The code review: a read counted at 21 minutes can take a run's whole 45, so backfill could pass its 42,000 and
+    # leave visitors under their 50,000. Its last read now starts only while a whole run (its 50-minute lease) fits.
+    longest = config.ON_DEMAND_LEASE_MINUTES * 60
+    late = november(29.9)
+    assert backfill_stop(used(ON_DEMAND_BACKFILL_SECONDS - longest, now=late), late) is None
+    assert backfill_stop(used(ON_DEMAND_BACKFILL_SECONDS - longest + 1, now=late), late)[0] == "half"
+    assert ON_DEMAND_BACKFILL_SECONDS + ON_DEMAND_GUARD_FREE_SECONDS <= ON_DEMAND_MONTH_SECONDS
+
+
+def test_a_guard_rest_is_told_as_the_months_allowance():
+    queue = Queue()
+    queue.rest(NOW + timedelta(hours=6), "guard")
+    assert on_demand.capacity_text(0, queue, NOW) == f"{on_demand.products_a_month()} a month"
+    queue.rest(NOW + timedelta(hours=6), "gemini")
+    assert on_demand.capacity_text(0, queue, NOW) == f"{on_demand.products_a_day()} a day"
+
+
+def test_no_guard_or_a_guard_that_breaks_is_a_no():
+    assert not on_demand._ask(None, NOW, 0.0).yes and on_demand._ask(None, NOW, 0.0).failed
+
+    class Broken:
+        def allows(self, *args, **kwargs):
+            raise RuntimeError("made-up")
+
+    verdict = on_demand._ask(Broken(), NOW, 0.0)
+    assert not verdict.yes and verdict.failed and "RuntimeError" in verdict.why
+
+
+def test_the_reading_job_from_the_command_line_has_its_guard(monkeypatch):
+    from engine import free_tier
+
+    seen = {}
+
+    def fake_run_job(bucket, library, archive, gemini, **kwargs):
+        seen.update(kwargs)
+        return types.SimpleNamespace(text=lambda: "report")
+
+    monkeypatch.setenv(on_demand.BUCKET_VAR, NAME)
+    monkeypatch.setenv(free_tier.PROJECT_VAR, "made-up-project")
+    monkeypatch.setattr(on_demand, "run_job", fake_run_job)
+    monkeypatch.setattr(on_demand, "reader_client", lambda: object())
+    monkeypatch.setattr("engine.arctic_shift.ArcticShiftClient", lambda *a, **k: object())
+    assert on_demand.main(["run"]) == 0
+    assert isinstance(seen["guard"], free_tier.Guard) and seen["guard"].project == "made-up-project"
+
+
+# Changed on purpose 6 Nov 2026 (fix round, from the cost review): backfill rested 6 hours after a no and an hour after
+# a failed reading, and each time a rest ended the keep-warm ping started the paid job only for it to be refused
+# again; now either rests backfill a day.
+@pytest.mark.parametrize("failed, hours", [(False, config.ON_DEMAND_GUARD_BACKFILL_REST_HOURS),
+                                          (True, config.ON_DEMAND_GUARD_BACKFILL_REST_HOURS)])
 def test_a_guard_that_says_no_or_cant_read_stops_backfill_and_leaves_visitors_alone(tmp_path, failed, hours):
+    assert config.ON_DEMAND_GUARD_BACKFILL_REST_HOURS == 24
     google, guard, fake = FakeGoogle(), FakeGuard(yes=False, failed=failed), FakeArchive()
     queue_backfill(google)
     report = run(tmp_path, google, guard, fake_archive=fake)

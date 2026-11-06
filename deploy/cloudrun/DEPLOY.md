@@ -380,8 +380,8 @@ up for now".
 **Doubled, with backfill and a free-tier guard** (6 Nov 2026; Noemi, 5 Nov: "You can double (do it with random products
 if people don't research any), but make sure my claude usage for this week and in general stays under control", then
 "Let's do A"). Google's free allowance for Cloud Run is one pot in dollars shared by the site and both jobs (Costs,
-below), so the month's 92,000 seconds are the most that keep 10% of each part in hand on October's measured use, and the
-hard caps alone can't promise it. So:
+below), so the month's 92,000 seconds were chosen to keep 10% of each part in hand on the measured use (17 Oct to 5 Nov
+2026, scaled to a month), and the hard caps alone can't promise it. So:
 
 - Visitors' first 50,000 seconds of reading a month (config ON_DEMAND_GUARD_FREE_SECONDS, the month before the doubling)
   work exactly as before. Before any visitor read past them, the job asks the free-tier guard (engine/free_tier.py).
@@ -389,18 +389,24 @@ hard caps alone can't promise it. So:
   Cloud Run has used this month and in the last 7 days from Cloud Monitoring (billable instance time and the CPU and
   memory allocated, by service and job), prices it at Tier 1, adds the days left at the last 7 days' pace at today's
   sizes and the read about to start, and says yes only while each part's projection stays under 90%. Anything it can't
-  read (no token, an HTTP error, a missing series, an unknown unit) is a no. A no rests reading past the first 50,000
-  seconds for 6 hours (an hour when Cloud Monitoring couldn't be read). It keeps a reading 10 minutes: twelve small calls,
-  well inside Cloud Monitoring's free million time series a month.
+  read or can't trust (no token, an HTTP error, a missing series or one without points, a service in some of the three
+  metrics only, an unknown unit, a value that isn't a number of 0 or more) is a no. A no, or a reading that failed,
+  rests reading past the first 50,000 seconds for 6 hours (never past the month's end) and backfill for a day: each try
+  starts the paid job, and a run that asks the guard or does backfill counts at least the minute Google bills a job's
+  run. It keeps a reading 10 minutes: twelve small calls, well inside Cloud Monitoring's free million time series a
+  month.
 - Backfill: when no visitor's request waits, the job reads a product nobody asked for, one whose answer the daily
   pre-check found thin (fewer than 3 picks; it lists them in the queue), in an order seeded by the day, never one read in
   the last 30 days. The keep-warm ping looks at most hourly whether one is due and queues it (the pre-check may queue one
   too): no new Cloud Scheduler job. Visitors always come first: a visitor's request is read before any backfill, a
   visitor asking for the product a backfill waits on makes it theirs, a full queue counts visitors only, and a backfill
   read already begun adds one request's 21 minutes to the wait a visitor is told. Backfill reads for at most 42,000
-  seconds a month (half the month, never into visitors' 50,000), paced evenly (never more than its share of the days
-  gone), only while the day's Gemini calls leave room for 20 visitors' requests, never while the bundle holds 150
-  threads or more not baked in, from Arctic Shift only, and only after the guard's yes. Its threads go through every
+  seconds a month (half the month, never into visitors' 50,000: its last read starts only while a whole run still fits),
+  paced evenly (never more than its share of the days gone), only while the day's Gemini calls leave room for 20
+  visitors' requests, never while the bundle holds 150 threads or more not baked in, never a type a visitor waits for or
+  had read in the last 30 days, from Arctic Shift only, and only after the guard's yes. The guard is asked about the
+  read together with what is left of visitors' first 50,000 seconds this month (they never ask it, so nothing could stop
+  them later): backfill only reads in a month with room for both. Its threads go through every
   usual check (each quote word for word, and live on Reddit before it is shown), and the job's report logs each backfill
   read (product type, minutes, Gemini calls) beside the visitors' reads. `python -m engine.on_demand status` shows
   backfill's hours of the month and its list.
@@ -784,26 +790,34 @@ vCPU while it starts and 10 s after) is billed too. In dollars, for a 31-day mon
 
 Visitors' answers on the site have no cap at all. So the caps alone can't keep 10% in hand: at 3 GiB the memory part is
 past 90% before on-demand reading reads a second, and on the CPU part only 30,372 of its seconds would fit (44,160 on
-memory at 2 GiB). What was measured (Cloud Monitoring, read only, 6 Nov 2026) is far under the caps: in October the site
-billed 52,552 s with 66,221 vCPU-seconds allocated (its boosts included; it came up on 13 Oct, and its first days were its
-busiest) and the pre-check 34,510 s (34,744 vCPU-s), the reader 13,311 s. At today's sizes that is:
+memory at 2 GiB). What was measured (Cloud Monitoring, read only, 6 Nov 2026, summed by day) is far under the caps. Over
+the 20 days from 17 Oct to 5 Nov 2026, scaled to a 31-day month (the site came up on 12 Oct and its first days were its
+busiest, with deploys, boosts and the 4 GiB stopgap's restarts), the site billed 52,223 s with 57,916 vCPU-seconds
+allocated (its boosts included) and the pre-check 44,028 s (44,425 vCPU-s). At today's sizes that is:
 
 | | CPU | Memory, site at 3 GiB | Memory, site at 2 GiB |
 |---|---|---|---|
-| The site, October | $1.59 | $0.39 | $0.26 |
-| The pre-check, October, at 2 GiB | $0.63 | $0.14 | $0.14 |
+| The site | $1.39 | $0.39 | $0.26 |
+| The pre-check, at 2 GiB | $0.80 | $0.18 | $0.18 |
 | On-demand reading's month, 92,000 s | $1.66 | $0.18 | $0.18 |
-| All three | $3.87 (89.6%) | $0.72 (79.6%) | $0.58 (65.0%) |
+| All three | $3.85 (89.0%) | $0.75 (83.5%) | $0.62 (69.0%) |
 
-The CPU part binds: the reader's month could be at most 92,960 s, so it is 92,000. A month busier than October (the last
-30 days, 7 Oct to 6 Nov, with their deploys, would leave the reader about 65,650 s) is the free-tier guard's to catch
-(On-demand reading, above): past visitors' first 50,000 seconds, and for every backfill read, it reads the month so far
-and stops reading while the projection is at 90% of either part. The guard sees this project only; the billing account
+The CPU part binds: on these 20 days the reader's month could be at most 94,353 s at 90%; the last 14 days alone were
+busier (90,325 s, so 92,000 is 90.7% there) and the last 7 a little quieter (95,222 s). 92,000 is kept. (Until the fix
+round of 6 Nov 2026 this table took October's sums, where the pre-check ran only 19 days: 89.6%, 79.6% and 65.0%.) The
+pre-check's daily time is growing (about 1,100 s a day in late October, about 1,700 in early November), and a busier
+month (the last 30 days, 7 Oct to 6 Nov, with their deploys, would leave the reader about 65,650 s) is the free-tier
+guard's to catch (On-demand reading, above): past visitors' first 50,000 seconds, and for every backfill read, it reads
+the month so far and stops reading while the projection is at 90% of either part. Nothing caps the site's own answers,
+as before the doubling: a month with the site's traffic tripled for its last 10 days would pass the free tier with or
+without on-demand reading. The guard sees this project only; the billing account
 also pays for "My First Project", which runs no Cloud Run today. Cloud Monitoring's read API (https://cloud.google.com/stackdriver/pricing,
 read 6 Nov 2026): $0.50 per million time series returned, the first million a month free per billing account, each call
 counting its series or one, whichever is more; the project may make 6,000 time-series queries a minute. The guard makes
-12 calls a reading, at most one reading per 10 minutes of a run: at worst about 116,000 series a month if every run were
-half a minute, about 7,000 in a likely month. 0 EUR.
+12 calls a reading, about 24 series (the site and a small test service, the two jobs), at most one reading per 10
+minutes of a run, and only a run whose time counts in the month's 92,000 seconds asks it, at least a minute each (since
+the fix round of 6 Nov 2026): at worst about 1,700 readings, about 41,000 series a month, about 7,000 in a likely month.
+0 EUR.
 
 On-demand reading (estimates, 14 Oct 2026; 0 EUR). The reading job is billed like the pre-check, per instance-second
 for its whole run, waiting included, on 1 vCPU and 1 GiB. One product takes about 12 minutes: about 6 minutes of
@@ -826,11 +840,14 @@ reads a month). Arctic Shift: free, at its own pace. Starting a job (Cloud Run's
 Gemini is the only traffic out of Google: about 0.25 MB a product, about 17 MB in a capped month, about 0.002 USD.
 The on-demand bucket, effectively nothing, like the live checks': Class A (writes), the site's 1 a queued request and
 the job's about 20 a product (the queue's lease, usage and states, the bundle after each thread: 11 for 3 threads in
-the tests), about 1,500 in a capped month, 0.008 USD; Class B (reads), the job's about 120 a product (it reads the
-queue and the bundle afresh before every change: 63 for 3 threads in the tests), the site's hourly question about the
-bundle's version (about 720 a month) and its every-5-minutes questions while a request waits (about 18 a product), the
-pre-check's few a run, about 10,500 in all, 0.004 USD; storage: only threads not baked in yet (about 35 KB each with
-its extraction, at most 300 threads, about 10 MB, 0.0002 USD a month). Under 0.02 USD a month in all.
+the tests), about 1,500 in a month capped at 50,000 s, 0.008 USD; Class B (reads), the job's about 120 a product (it
+reads the queue and the bundle afresh before every change: 63 for 3 threads in the tests), the site's hourly question
+about the bundle's version (about 720 a month) and its every-5-minutes questions while a request waits (about 18 a
+product), the pre-check's few a run, about 10,500 in all, 0.004 USD; storage: only threads not baked in yet (about 35
+KB each with its extraction, at most 300 threads, about 10 MB, 0.0002 USD a month). Under 0.02 USD a month in all.
+Since the doubling (6 Nov 2026) a month capped at 92,000 s reads about 130 products at the 12 minutes one takes: about
+2,600 Class A, plus at most about 750 for backfill queued by the hourly ping, about 0.017 USD; about 16,000 Class B,
+plus the ping's hourly look at the queue (about 750), about 0.007 USD. Under 0.03 USD a month in all.
 
 Bright Data (estimates, 13 Oct 2026; no money: the free tier is 5,000 records a month, and past it jobs simply stop).
 Reading a thread costs a record for its post and one for each top-level comment: 22 for the median thread the answers
