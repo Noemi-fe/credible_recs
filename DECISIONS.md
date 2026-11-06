@@ -2579,3 +2579,16 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   one test (9,000, as 10,000 now passes its share) and test_free_tier.py's clock (08:00). The whole suite passed:
   7,469 passed and 3 skipped, none failed (2 min 53 s, under the heavy lock). No eval/RUNS.md row and no sweeps:
   nothing an answer, its told wait or its told capacity reads changed.
+- 6 Nov 2026, the doubling deployed (Claude, the orchestrator; Noemi's "You can double" of 5 Nov and her go-ahead to
+  merge and deploy once every gate passes). The branch passed after three rounds (the build, a fix round for the
+  visitors' reserve and the guard failing closed, and the month round above), with the code review and the cost review
+  both clear on the last. It was merged as 561340a and deployed as revision 00082 at 3 GiB. The deploy pulled 12 brow
+  gel and lip tint threads read on demand that morning and applied the verification record (100 items dropped). It
+  granted the site's and jobs' service account roles/monitoring.viewer on the project and told the reading job its
+  project (CREDIBLE_RECS_GCP_PROJECT), both checked afterwards. Live, all 19 checked requests gave 3 picks with their
+  quotes and summaries. Brow gel's third pick is now Rare Beauty, not Kosas Air Brow, because its answer reads 10
+  threads where it read 5. The told capacity is 73 a month. Backfill will be refused while the site is at 3 GiB (the
+  guard projects memory at about 94% with visitors' remaining seconds kept), so it waits for the step to 2 GiB. Another
+  project on the same billing account has no Cloud Run API enabled, so the guard misses nothing there. The step to
+  2 GiB must also change CLOUD_RUN_SIZES in engine/config.py (test_cloudrun.py checks it against deploy.sh). This
+  deploy restarted the 2-day clock of that step's rule.
