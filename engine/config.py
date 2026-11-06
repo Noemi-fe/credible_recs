@@ -2255,9 +2255,25 @@ ON_DEMAND_EXTRACT_TRIES = 3
 # inside their free 240,000 vCPU-seconds a month (deploy/cloudrun/DEPLOY.md). Each run also counts
 # ON_DEMAND_START_SECONDS for starting up. A run holds the queue (its lease) for ON_DEMAND_LEASE_MINUTES at most: longer
 # than its task timeout, so a run cut short never keeps the next one out for long.
+# Doubled on 6 Nov 2026 (Noemi, 5 Nov: "You can double (do it with random products if people don't research any), but
+# make sure my claude usage for this week and in general stays under control"; then "Let's do A"): 50,000 until then.
+# Google's free allowance is one pot in dollars shared by the site and both jobs (FREE_TIER_DOLLARS below), so the
+# brief's 98,000, worked out for jobs with an allowance of their own, doesn't hold. 92,000 keeps 10% of each part in
+# hand on the measured use of 17 Oct to 5 Nov 2026, scaled to a 31-day month, at today's sizes (the CPU part binds: CPU
+# 89.0%, the reader's room 94,353 s; engine/tests/test_cloudrun.py; the last 14 days alone were busier, 90.7%): 73
+# requests a month at 21 minutes, where 50,000 read 39 (fix round, 6 Nov 2026: the builder had taken the pre-check's 19
+# days of October as its month, so it said 89.6% and "the most to the thousand"). The hard caps alone can't keep that
+# margin, so a busier month is the free-tier guard's to catch (engine/free_tier.py): visitors' first
+# ON_DEMAND_GUARD_FREE_SECONDS a month read as before, and any reading past them, and every backfill read, starts only
+# while the guard projects the month under FREE_TIER_SHARE of each part.
+# A run that asks the guard, or does anything for backfill, counts at least ON_DEMAND_RUN_BILLED_SECONDS: Cloud Run
+# bills a job's instance "for the entire lifetime of any instance started, with a minimum of 1 minute"
+# (https://cloud.google.com/run/pricing, read 6 Nov 2026). A visitor's run within their first 50,000 seconds counts as
+# before.
 ON_DEMAND_NEW_READING_SECONDS = 15 * 60
-ON_DEMAND_MONTH_SECONDS = 50_000
+ON_DEMAND_MONTH_SECONDS = 92_000
 ON_DEMAND_START_SECONDS = 30
+ON_DEMAND_RUN_BILLED_SECONDS = 60
 ON_DEMAND_LEASE_MINUTES = 50
 # The Gemini model the job reads with (the job's settings may name another: CREDIBLE_RECS_ON_DEMAND_MODEL) and the Gemini
 # calls a day it may make: Gemini's free allowance only (Noemi's decision of 14 Oct 2026), a little under what Google
@@ -2280,7 +2296,8 @@ ON_DEMAND_GEMINI_CALLS_A_MINUTE = 10
 # 25 Oct 2026 (a Gemini 3.8 Flash call took 3.4 to 4.5 minutes, which made a request an hour); a safe minute a call,
 # and 6 minutes for Arctic Shift's paced searches and reads, make a request 21 minutes of the job. The month's job time
 # (ON_DEMAND_MONTH_SECONDS) is then what limits the reading, not Gemini: 39 requests a month at these 21 minutes (about
-# twice that at the 11 a request actually takes), and the visitor is told so (engine.on_demand.products_a_month). These
+# twice that at the 11 a request actually takes), and the visitor is told so (engine.on_demand.products_a_month); 73
+# since the doubling of 6 Nov 2026, backfill's share included (it never takes visitors' place in line). These
 # numbers describe the reader above; a different reader changes them (and the cap) together.
 # 4 Nov 2026 (Noemi: "Keep 25 min"): round 1 of the makeup work had added the archive reader's advice searches
 # (ARCHIVE_ADVICE_SEARCHES) on top of a request's round and timed it on a busy archive (17 minutes of Arctic Shift, 24
@@ -2316,6 +2333,81 @@ ON_DEMAND_LATE_MINUTES = 150
 # request it knows is waiting.
 ON_DEMAND_START_EVERY_SECONDS = 300
 ON_DEMAND_QUEUE_FRESH_SECONDS = 60
+# Backfill (6 Nov 2026, Noemi's "do it with random products if people don't research any"; values chosen by Claude from
+# her brief): when no request waits, the job reads a product nobody asked for, one whose answer is thin (fewer than 3
+# picks: the daily pre-check lists them, at most ON_DEMAND_BACKFILL_CANDIDATES product types), in an order seeded by the
+# day they were listed, never one read in the last ON_DEMAND_READ_AGAIN_DAYS. Visitors always come first, and backfill
+# never takes what they need:
+# - visitors' first ON_DEMAND_GUARD_FREE_SECONDS of the month (the month's time before the doubling) never wait for the
+#   free-tier guard, and backfill's seconds never count against them;
+# - backfill reads for at most ON_DEMAND_BACKFILL_SECONDS a month (half the month, and never into visitors' first
+#   50,000: its last read starts only while a whole run, ON_DEMAND_LEASE_MINUTES, still fits), paced evenly: never more
+#   than its share of the days gone, so a busy end of month still has room;
+# - it starts only while the day's Gemini calls leave enough for ON_DEMAND_BACKFILL_VISITOR_REQUESTS visitors' requests
+#   as well as its own;
+# - it stops while the bundle holds ON_DEMAND_BACKFILL_BUNDLE_THREADS threads or more not baked in yet (half the bundle's
+#   room, ON_DEMAND_BUNDLE_MAX_THREADS);
+# - every backfill read asks the free-tier guard first, about the read and the rest of visitors' first
+#   ON_DEMAND_GUARD_FREE_SECONDS this month together (they never ask it, so backfill must leave their room).
+# The site's keep-warm ping looks at most every ON_DEMAND_BACKFILL_EVERY_SECONDS whether one is due, and queues it (no
+# Cloud Scheduler job of its own); the daily pre-check, which lists the thin products, may queue one too. A guard that
+# says no, or can't read Cloud Monitoring, rests backfill for ON_DEMAND_GUARD_BACKFILL_REST_HOURS and, past visitors'
+# first seconds, all reading for ON_DEMAND_GUARD_REST_HOURS (never past the month's end). Fix round, 6 Nov 2026 (the
+# cost review): each try starts the paid job, so a failed reading no longer rests reading only an hour, and backfill
+# tries again a day later, not 6 hours.
+ON_DEMAND_GUARD_FREE_SECONDS = 50_000
+ON_DEMAND_BACKFILL_SECONDS = min(ON_DEMAND_MONTH_SECONDS // 2, ON_DEMAND_MONTH_SECONDS - ON_DEMAND_GUARD_FREE_SECONDS)
+ON_DEMAND_BACKFILL_VISITOR_REQUESTS = 20
+ON_DEMAND_BACKFILL_BUNDLE_THREADS = 150
+ON_DEMAND_BACKFILL_CANDIDATES = 200
+ON_DEMAND_BACKFILL_EVERY_SECONDS = 3600
+ON_DEMAND_GUARD_REST_HOURS = 6
+ON_DEMAND_GUARD_BACKFILL_REST_HOURS = 24
+
+# --- Google's free allowance for Cloud Run: one pot in dollars (6 Nov 2026, Noemi's doubling, option A) ---
+# Cloud Run's pricing page (https://cloud.google.com/run/pricing, read 6 Nov 2026): the free tier "is applied as a
+# spending based discount using Tier 1 pricing" and is aggregated by billing account, the same money in every section:
+# a job's 240,000 vCPU-seconds and 450,000 GiB-seconds, and a request-billed service's 180,000 and 360,000, are each
+# $4.32 of CPU and $0.90 of memory. So the site and both jobs share one pot per part, priced at Tier 1 (europe-west1 is
+# Tier 1): jobs (instance-billed) and request-billed services below. The site is request-billed (deploy.sh: no
+# --no-cpu-throttling, none when idle) and its startup CPU boost is billed. FREE_TIER_SHARE of each part is the most a
+# month may be projected to use before the free-tier guard (engine/free_tier.py) says no.
+CLOUD_RUN_PRICES = {"job": {"cpu": 0.000018, "memory": 0.000002},  # per vCPU-second and per GiB-second
+                    "service": {"cpu": 0.000024, "memory": 0.0000025}}
+FREE_TIER_DOLLARS = {"cpu": 240_000 * CLOUD_RUN_PRICES["job"]["cpu"],  # $4.32
+                     "memory": 450_000 * CLOUD_RUN_PRICES["job"]["memory"]}  # $0.90
+FREE_TIER_SHARE = 0.9
+# The services and jobs the guard knows, by their names in deploy/cloudrun/deploy.sh and on_demand.sh, with their sizes
+# there (kind, vCPUs, GiB): the site at 3 GiB since 6 Nov 2026 (2 GiB to follow, DEPLOY.md, The site's memory), the
+# daily pre-check and the on-demand reader. Anything else on Cloud Run in the project counts by what Cloud Monitoring says
+# it was allocated. engine/tests/test_cloudrun.py checks these against the deploy's own flags.
+CLOUD_RUN_SITE = "credible-recs"
+CLOUD_RUN_PRECHECK = "credible-recs-precheck"
+CLOUD_RUN_READER = "credible-recs-reader"
+CLOUD_RUN_SIZES = {CLOUD_RUN_SITE: ("service", 1.0, 3.0), CLOUD_RUN_PRECHECK: ("job", 1.0, 2.0),
+                   CLOUD_RUN_READER: ("job", 1.0, 1.0)}
+# How the guard projects the month: what it used so far, plus the days left at the pace of the last FREE_TIER_PACE_DAYS
+# days, at today's sizes. A reading of Cloud Monitoring is kept FREE_TIER_READING_SECONDS, so a run asks at most once
+# per 10 minutes (Cloud Monitoring's read API: the first million time series returned a month are free per billing
+# account, https://cloud.google.com/stackdriver/pricing, read 6 Nov 2026). The site's month-so-far figures are required
+# once the month is FREE_TIER_MONTH_HOURS old, the pre-check's once it is FREE_TIER_PRECHECK_MONTH_HOURS old: the
+# pre-check runs at 4 am UK time (03:00 or 04:00 UTC), before the month's cut (BILLING_MONTH_CUT_HOUR_UTC below), so its
+# first run in a month is on the 2nd, 19 or 20 hours after the cut, and 22 hours leaves it 2 or 3 hours to show, as 6
+# hours did when months turned at midnight UTC (6 Nov 2026: until then both were 6 hours from midnight UTC).
+FREE_TIER_PACE_DAYS = 7
+FREE_TIER_READING_SECONDS = 600
+FREE_TIER_MONTH_HOURS = 6
+FREE_TIER_PRECHECK_MONTH_HOURS = 22
+# Google's billing month (6 Nov 2026, the doubling's second cost review): Cloud Billing reports say a day starts at
+# midnight US and Canadian Pacific Time, so Google's month ends at 08:00 UTC on the 1st in winter and at 07:00 UTC in
+# summer. The reading job's month (its seconds, its rests and backfill's pacing) and the free-tier guard's (the Cloud
+# Monitoring window and the days left) turn at one fixed cut, BILLING_MONTH_CUT_HOUR_UTC o'clock UTC on the 1st, never
+# earlier than Google's month end: a moment before it belongs to the month before (engine.free_tier.month_start). Until
+# then they turned at midnight UTC, so a rest woke while Google still billed the old month and the backlog read under
+# visitors' fresh first 50,000 seconds, which never ask the guard (the reviewer's simulation: up to about 102% of the
+# CPU part with the site at 2 GiB). A fixed hour needs no time-zone data. In summer the cut comes an hour after
+# Google's month ends, and visitors are still told the 1st (08:00 UTC is the 1st in UK time too).
+BILLING_MONTH_CUT_HOUR_UTC = 8
 
 # --- Upvotes count more when credible mentions are few (Noemi, 14 Oct 2026; built switched off) ---
 # Noemi: "let's be reasonable. if we have few credible mentions, a highly upvoted comment (10+) counts more", and she
